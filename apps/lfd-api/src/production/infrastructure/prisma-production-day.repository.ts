@@ -64,6 +64,16 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
             lines: { select: { sku: true, productName: true, quantity: true } },
           },
         },
+        // Les réassorts figés à l'arrêt (lot R3a) — à part des commandes.
+        resupplies: {
+          select: {
+            resupplyId: true,
+            siteId: true,
+            siteLabel: true,
+            lines: { select: { sku: true, productName: true, quantity: true } },
+          },
+          orderBy: { resupplyId: "asc" },
+        },
         counts: {
           select: {
             sku: true,
@@ -125,6 +135,7 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
         })),
         sheetDetails: sheetDetailsOf(order),
       })),
+      resupplies: row.resupplies,
       counts: row.counts.map((count) => ({
         sku: count.sku,
         productName: count.productName,
@@ -204,6 +215,7 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
       const carried = await carriedPacking(tx, snapshot.serviceDay);
       await tx.productionOrder.deleteMany({ where: { serviceDay: snapshot.serviceDay } });
       await tx.productionCount.deleteMany({ where: { serviceDay: snapshot.serviceDay } });
+      await tx.productionResupply.deleteMany({ where: { serviceDay: snapshot.serviceDay } });
       for (const order of snapshot.orders) {
         await tx.productionOrder.create({
           data: {
@@ -226,6 +238,17 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
                 ...carried.lines.get(`${order.orderId}/${line.sku}`),
               })),
             },
+          },
+        });
+      }
+      for (const resupply of snapshot.resupplies ?? []) {
+        await tx.productionResupply.create({
+          data: {
+            serviceDay: snapshot.serviceDay,
+            resupplyId: resupply.resupplyId,
+            siteId: resupply.siteId,
+            siteLabel: resupply.siteLabel,
+            lines: { create: resupply.lines.map((line) => ({ ...line })) },
           },
         });
       }

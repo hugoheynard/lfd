@@ -24,7 +24,12 @@ import {
 import { ProductionDayRepository } from "../../../domain/ports/production-day.repository.js";
 import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
 import { RecordingDayLock } from "../../__tests__/batch-doubles.js";
-import { CutoffRules } from "../../__tests__/settings-doubles.js";
+import {
+  CutoffRules,
+  DayResupplies,
+  ResupplyTime,
+  stopRulesOf,
+} from "../../__tests__/settings-doubles.js";
 import { InMemoryWithdrawals } from "../../__tests__/withdrawal-doubles.js";
 import { CloseProductionDayCommand } from "../close-production-day.command.js";
 import { CloseProductionDayHandler } from "../close-production-day.handler.js";
@@ -189,6 +194,8 @@ function subject(
   rows: readonly ProducibleOrder[],
   withdrawals: InMemoryWithdrawals = new InMemoryWithdrawals(),
   cutoffs: CutoffRules = new CutoffRules(),
+  resupplies: DayResupplies = new DayResupplies(),
+  resupplyTime: ResupplyTime = new ResupplyTime(),
 ) {
   const days = new Days(day);
   const calls: CommerceCall[] = [];
@@ -218,7 +225,8 @@ function subject(
         authorsKnownAs({ firstName: "Marie", lastName: "Dupont" }, "staff-1"),
       ),
       withdrawals,
-      cutoffs,
+      stopRulesOf(cutoffs, resupplyTime),
+      resupplies,
     ),
   };
 }
@@ -530,5 +538,82 @@ describe("réannoncer une journée déjà close", () => {
     await handler.execute(new CloseProductionDayCommand(DAY));
 
     expect(commerce.asked).toBe(0);
+  });
+});
+
+/** Un réassort « pour demain » envoyé au Village (lot R3a). */
+const VILLAGE_RESUPPLY = {
+  resupplyId: "rs_1",
+  siteId: "site_village",
+  siteLabel: "Le Village",
+  lines: [
+    { sku: "VIE-001", productName: "Croissant", quantity: 12 },
+    { sku: "PAIN-001", productName: "Baguette", quantity: 5 },
+  ],
+};
+
+describe("le réassort au plan figé (lot R3a)", () => {
+  const open = () => ProductionDay.open(ServiceDay.of(DAY));
+
+  it("fige les réassorts à part des commandes, et les compte au TOTAL (décision B)", async () => {
+    const resupplies = new DayResupplies([VILLAGE_RESUPPLY]);
+    const { handler, days } = subject(open(), [order()], undefined, undefined, resupplies);
+
+    await handler.execute(new CloseProductionDayCommand(DAY));
+
+    expect(days.saved?.orders.map((frozen) => frozen.orderId)).toEqual(["ord_1"]);
+    expect(days.saved?.resupplies).toEqual([VILLAGE_RESUPPLY]);
+    expect(days.saved?.counts).toEqual([
+      { sku: "PAIN-001", productName: "Baguette", quantity: 5, done: null },
+      { sku: "VIE-001", productName: "Croissant", quantity: 52, done: null },
+    ]);
+  });
+
+  it("le fait porte les réassorts figés, le journal compte toujours les seules commandes", async () => {
+    const resupplies = new DayResupplies([VILLAGE_RESUPPLY]);
+    const { handler, events, durable } = subject(
+      open(),
+      [order()],
+      undefined,
+      undefined,
+      resupplies,
+    );
+
+    const closure = await handler.execute(new CloseProductionDayCommand(DAY));
+
+    expect(closure.absorbed).toBe(1);
+    expect(events.published).toEqual([new ProductionDayClosedJournalEvent(DAY, 1)]);
+    expect(durable.facts[0]).toEqual(
+      new ProductionDayClosedEvent(DAY, NOW, ["ord_1"], null, ["rs_1"]).durableFact(),
+    );
+  });
+
+  it("une journée de réassorts seuls n'est pas vide : elle s'arrête", async () => {
+    const resupplies = new DayResupplies([VILLAGE_RESUPPLY]);
+    const { handler, days } = subject(open(), [], undefined, undefined, resupplies);
+
+    const closure = await handler.execute(new CloseProductionDayCommand(DAY));
+
+    expect(closure.alreadyClosed).toBe(false);
+    expect(days.saved?.orders).toEqual([]);
+    expect(days.saved?.counts.map((count) => count.quantity)).toEqual([5, 12]);
+  });
+
+  it("refuse l'arrêt à la main avant l'heure du réassort, plus tardive que l'heure générale", async () => {
+    // NOW = 20:00 à Paris la veille ; générale 19:00 + 30 min, réassort 20:30.
+    const cutoffs = new CutoffRules([{ daysBefore: 1, time: "19:00", graceMinutes: 30 }]);
+    const { handler, days } = subject(
+      open(),
+      [order()],
+      undefined,
+      cutoffs,
+      undefined,
+      new ResupplyTime("20:30"),
+    );
+
+    const refusal = handler.execute(new CloseProductionDayCommand(DAY, "manual", "staff-1"));
+
+    await expect(refusal).rejects.toThrow("le lundi 7 septembre à 20:30");
+    expect(days.saved).toBeNull();
   });
 });

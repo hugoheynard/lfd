@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import type { OrderCutoffSettingsView } from '@lfd/contracts';
+import { clockTimeSchema, type OrderCutoffSettingsView } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
   FoldBadgeComponent,
@@ -8,7 +8,6 @@ import {
   FoldCardComponent,
   FoldElementTitleComponent,
   FoldEmptyStateComponent,
-  FoldInlineConfirmComponent,
   FoldLoadingStateComponent,
 } from 'fold-ng';
 
@@ -18,13 +17,15 @@ import { OrderCutoffSettingsService } from '../order-cutoff-settings.service';
 type LoadState = 'loading' | 'ready' | 'error';
 
 /**
- * **La limite du réassort boutique** — sur la page de l'heure limite (Hugo,
- * 2026-10-21 : « la limite ou absence de limite [du réassort] devrait être
- * définie dans les réglages limites »).
+ * **L'heure limite du réassort boutique** — sur la page de l'heure limite
+ * (lot R3a, `reassort-boutiques/plan-reapprovisionnement.md` §13.3, Hugo
+ * 2026-10-21) : « la veille, HH:MM », 20:00 par défaut.
  *
- * Opposée depuis le lot R1 (2026-10-21) au réassort commandé « Pour demain »
- * (`reassort-boutiques/README.md`) ; « Au plus tôt » n'y est jamais soumis.
- * Même droit que la page, `lfc_order_settings`.
+ * Elle remplace l'interrupteur « soumis / sans limite » : passé cette heure,
+ * le réassort « Pour demain » est refusé, et le plan du fournil s'arrête à la
+ * plus tardive de cette heure et de l'heure limite générale (rattrapage
+ * compris). « Au plus tôt » n'y est jamais soumis. Même droit que la page,
+ * `lfc_order_settings`.
  */
 @Component({
   selector: 'app-resupply-cutoff-card',
@@ -36,7 +37,6 @@ type LoadState = 'loading' | 'ready' | 'error';
     FoldCardComponent,
     FoldElementTitleComponent,
     FoldEmptyStateComponent,
-    FoldInlineConfirmComponent,
     FoldLoadingStateComponent,
   ],
   templateUrl: './resupply-cutoff-card.html',
@@ -51,12 +51,14 @@ export class ResupplyCutoffCard {
   protected readonly settings = signal<OrderCutoffSettingsView | null>(null);
   protected readonly pending = signal(false);
   protected readonly failure = signal<string | null>(null);
+  /** L'heure saisie, `null` tant qu'on n'a pas touché au champ. */
+  protected readonly draft = signal<string | null>(null);
 
-  protected readonly subject = computed(() => this.settings()?.resupplySubjectToCutoff ?? true);
-  protected readonly effect = computed(() =>
-    this.subject()
-      ? 'Le réassort boutique pourra être demandé au fournil à toute heure, une fois cette commande bâtie.'
-      : 'Le réassort boutique suivra l’heure limite générale, une fois sa commande au fournil bâtie.',
+  protected readonly current = computed(() => this.settings()?.resupplyCutoffTime ?? '');
+  protected readonly time = computed(() => this.draft() ?? this.current());
+  protected readonly timeIsValid = computed(() => clockTimeSchema.safeParse(this.time()).success);
+  protected readonly canSave = computed(
+    () => this.timeIsValid() && this.time() !== this.current() && !this.pending(),
   );
 
   constructor() {
@@ -73,18 +75,23 @@ export class ResupplyCutoffCard {
     }
   }
 
-  /** Bascule, puis relit. Un refus laisse l'état servi, avec la raison. */
-  protected async toggle(): Promise<void> {
-    if (this.pending()) {
+  protected onTime(event: Event): void {
+    this.draft.set((event.target as HTMLInputElement).value);
+  }
+
+  /** Enregistre l'heure, puis relit. Un refus laisse l'heure servie, avec la raison. */
+  protected async save(): Promise<void> {
+    if (!this.canSave()) {
       return;
     }
     this.pending.set(true);
     this.failure.set(null);
     try {
-      await this.service.update({ resupplySubjectToCutoff: !this.subject() });
+      await this.service.update({ resupplyCutoffTime: this.time() });
       this.settings.set(await this.service.read());
+      this.draft.set(null);
     } catch (error) {
-      this.failure.set(httpErrorMessage(error, "Le réglage n'a pas pu être enregistré."));
+      this.failure.set(httpErrorMessage(error, "L'heure n'a pas pu être enregistrée."));
     } finally {
       this.pending.set(false);
     }

@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { ProductionOrderWithdrawalDesk } from "./application/services/production-order-withdrawal.desk.js";
+import { PlanStopRules } from "./application/services/plan-stop-rules.js";
 import { ProductionPlanAdmissionDesk } from "./application/services/production-plan-admission.desk.js";
 import { ClosedPlansReader } from "./channels/commerce/closed-plans.reader.js";
 import { OrderInscriptionReader } from "./channels/commerce/order-inscription.reader.js";
@@ -232,7 +233,9 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     // Les réglages du fournil — les jours fermés (A1) : schéma `production`,
     // un dépôt et un lecteur (ISP). L'arrêt automatique suit l'heure limite
     // générale (2026-10-21), lue au commerce par `OrderCutoffRulesReader`,
-    // relié par `ProductionFeedModule`.
+    // relié par `ProductionFeedModule`. Depuis le lot R3a du réassort, à la
+    // plus tardive d'elle et de l'heure du réassort : `PlanStopRules`.
+    PlanStopRules,
     AddProductionClosedDayHandler,
     RemoveProductionClosedDayHandler,
     GetProductionSettingsHandler,

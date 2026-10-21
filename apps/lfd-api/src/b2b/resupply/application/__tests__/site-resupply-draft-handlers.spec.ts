@@ -1,3 +1,4 @@
+import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import {
@@ -10,6 +11,7 @@ import {
   ResupplyDayPassedError,
   ResupplyLineNotInDraftError,
   ResupplyPastCutoffError,
+  ResupplyPlanStoppedError,
   SiteResupplyChangedMeanwhileError,
   SiteResupplyDraftOpenedMeanwhileError,
   SiteResupplyNotFoundError,
@@ -20,12 +22,14 @@ import { CorrectSiteResupplyLineCommand } from "../correct-site-resupply-line.co
 import { CorrectSiteResupplyLineHandler } from "../correct-site-resupply-line.handler.js";
 import { ListSiteResuppliesHandler } from "../list-site-resupplies.handler.js";
 import { ListSiteResuppliesQuery } from "../list-site-resupplies.query.js";
+import { ResupplyPlanGate } from "../resupply-plan-gate.js";
 import { SendBakehouseResupplyCommand } from "../send-bakehouse-resupply.command.js";
 import { SendBakehouseResupplyHandler } from "../send-bakehouse-resupply.handler.js";
 import { SendSiteResupplyCommand } from "../send-site-resupply.command.js";
 import { SendSiteResupplyHandler } from "../send-site-resupply.handler.js";
 import { WithdrawSiteResupplyLineCommand } from "../withdraw-site-resupply-line.command.js";
 import { WithdrawSiteResupplyLineHandler } from "../withdraw-site-resupply-line.handler.js";
+import { RecordingAdmissionDesk } from "../../../orders/application/commands/__tests__/plan-doubles.js";
 import { Catalogue, Directory, Sites } from "./resupply-doubles.js";
 import {
   FixedResupplyCutoff,
@@ -42,7 +46,8 @@ const TOMORROW = "2026-01-03";
 const VILLAGE = "site_village";
 const LABO = "site_labo";
 
-function setup(deadline: Date | null = null) {
+/** `stopped` : les journées dont le plan du fournil est arrêté (lot R3a). */
+function setup(deadline: Date | null = null, stopped: readonly string[] = []) {
   const store = new InMemorySiteResupplies();
   const cutoff = new FixedResupplyCutoff(deadline);
   const clock = new FixedClock(NOW);
@@ -58,14 +63,28 @@ function setup(deadline: Date | null = null) {
   ]);
   const sites = new Sites([VILLAGE, LABO]);
   const ids = new FixedIdGenerator("resupply");
+  const desk = new RecordingAdmissionDesk(stopped);
+  const gate = new ResupplyPlanGate(desk);
+  const uow = new DirectUnitOfWork();
   return {
     store,
     clock,
+    desk,
     add: new AddSiteResupplyLineHandler(store, catalogue, sites, clock, ids),
     correct: new CorrectSiteResupplyLineHandler(store),
     withdraw: new WithdrawSiteResupplyLineHandler(store),
-    send: new SendSiteResupplyHandler(store, cutoff, staff, clock),
-    bakehouse: new SendBakehouseResupplyHandler(store, catalogue, sites, cutoff, staff, clock, ids),
+    send: new SendSiteResupplyHandler(store, cutoff, staff, clock, gate, uow),
+    bakehouse: new SendBakehouseResupplyHandler(
+      store,
+      catalogue,
+      sites,
+      cutoff,
+      staff,
+      clock,
+      ids,
+      gate,
+      uow,
+    ),
     list: new ListSiteResuppliesHandler(new InMemorySiteResupplyReader(store), cutoff, clock),
   };
 }
@@ -259,13 +278,37 @@ describe("la demande en cours — envoyer", () => {
     ).rejects.toThrow(EmptyResupplyError);
   });
 
-  it("« pour demain » envoyé après l'heure limite est refusé, et reste en cours", async () => {
+  it("« pour demain » envoyé après l'heure du réassort est refusé, et reste en cours", async () => {
     const { add, send, store } = setup(new Date(NOW.getTime() - HOUR_MS));
+    const id = await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "tomorrow", "CRO", 5));
+
+    const refusal = send.execute(
+      new SendSiteResupplyCommand(VILLAGE, id, versionOf(store, id), "s"),
+    );
+
+    await expect(refusal).rejects.toThrow(ResupplyPastCutoffError);
+    // Lot R3a : le message dit l'heure et le geste de sortie.
+    await expect(refusal).rejects.toThrow(/la veille à 16:00.*Demandez au fournil/u);
+    expect(store.all()[0]?.placed).toBeNull();
+  });
+
+  it("« pour demain » se tient au guichet du plan, sous le verrou de sa journée (R3a)", async () => {
+    const { add, send, store, desk } = setup();
+    const id = await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "tomorrow", "CRO", 5));
+
+    await send.execute(new SendSiteResupplyCommand(VILLAGE, id, versionOf(store, id), "s"));
+
+    expect(desk.held).toEqual([TOMORROW]);
+    expect(store.all()[0]?.placed).not.toBeNull();
+  });
+
+  it("« pour demain » est refusé sur un plan déjà arrêté, même avant l'heure (R3a)", async () => {
+    const { add, send, store } = setup(null, [TOMORROW]);
     const id = await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "tomorrow", "CRO", 5));
 
     await expect(
       send.execute(new SendSiteResupplyCommand(VILLAGE, id, versionOf(store, id), "s")),
-    ).rejects.toThrow(ResupplyPastCutoffError);
+    ).rejects.toThrow(ResupplyPlanStoppedError);
     expect(store.all()[0]?.placed).toBeNull();
   });
 

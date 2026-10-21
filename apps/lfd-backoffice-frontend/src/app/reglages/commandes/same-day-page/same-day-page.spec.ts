@@ -18,7 +18,7 @@ import { SameDayPage } from './same-day-page';
 
 const CLOSED: OrderCutoffSettingsView = {
   sameDayAllowed: false,
-  resupplySubjectToCutoff: true,
+  resupplyCutoffTime: '20:00',
   updatedAt: null,
   updatedBy: null,
 };
@@ -44,7 +44,7 @@ class FakeSettings {
     const before = this.current instanceof Error ? CLOSED : this.current;
     this.current = {
       sameDayAllowed: patch.sameDayAllowed ?? before.sameDayAllowed,
-      resupplySubjectToCutoff: patch.resupplySubjectToCutoff ?? before.resupplySubjectToCutoff,
+      resupplyCutoffTime: patch.resupplyCutoffTime ?? before.resupplyCutoffTime,
       updatedAt: '2026-10-21T08:00:00.000Z',
       updatedBy: 'Hugo',
     };

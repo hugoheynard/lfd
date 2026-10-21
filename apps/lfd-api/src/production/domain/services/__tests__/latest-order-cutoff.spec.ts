@@ -1,7 +1,13 @@
 import { localToInstant } from "@lfd/contracts";
 
 import { HouseTime } from "../../value-objects/house-time.value-object.js";
-import { planClosesAt, latestOrderCutoff, type OrderCutoffRule } from "../latest-order-cutoff.js";
+import {
+  latestOrderCutoff,
+  type OrderCutoffRule,
+  planClosesAt,
+  planStopRules,
+  planStopsAt,
+} from "../latest-order-cutoff.js";
 
 const rule = (daysBefore: number, time: string, graceMinutes = 0): OrderCutoffRule => ({
   daysBefore,
@@ -53,5 +59,32 @@ describe("planClosesAt — l'instant où le plan d'une journée s'arrête seul",
 
   it("l'heure limite sautée au passage à l'heure d'été : pas d'instant", () => {
     expect(planClosesAt(rule(1, "02:30"), "2026-03-30")).toBeNull();
+  });
+});
+
+/** Lot R3a du réassort (Hugo, 2026-10-21) : un seul arrêt, à la plus tardive des deux heures. */
+describe("planStopsAt — l'heure générale et l'heure du réassort", () => {
+  const paris = (day: string, time: string): Date | null => localToInstant(day, time);
+
+  it("sans règle générale, aucune heure : l'heure du réassort seule n'arrête rien", () => {
+    expect(planStopRules(null, "20:00")).toEqual([]);
+    expect(planStopsAt(planStopRules(null, "20:00"), "2026-10-07")).toBeNull();
+  });
+
+  it("s'arrête à l'heure du réassort quand elle est plus tardive", () => {
+    const rules = planStopRules(rule(1, "18:00", 30), "20:00");
+    expect(planStopsAt(rules, "2026-10-07")).toEqual(paris("2026-10-06", "20:00"));
+  });
+
+  it("s'arrête à la fin du rattrapage quand il dépasse l'heure du réassort", () => {
+    const rules = planStopRules(rule(1, "19:45", 30), "20:00");
+    expect(planStopsAt(rules, "2026-10-07")).toEqual(paris("2026-10-06", "20:15"));
+  });
+
+  it("la page dit la plus tardive des deux, sans rattrapage pour le réassort", () => {
+    expect(latestOrderCutoff(planStopRules(rule(1, "18:00", 30), "21:00"))).toEqual({
+      daysBefore: 1,
+      time: HouseTime.of("21:00", "close"),
+    });
   });
 });

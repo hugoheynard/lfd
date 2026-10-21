@@ -12,7 +12,12 @@ import type { DayDemand } from "../../../domain/services/production-forecast.js"
 import type { ServiceRange } from "../../../domain/value-objects/service-range.value-object.js";
 import { GetProductionForecastHandler } from "../get-production-forecast.handler.js";
 import { GetProductionForecastQuery } from "../get-production-forecast.query.js";
-import { ClosedDaysTable, CutoffRules, SettingsReader } from "../../__tests__/settings-doubles.js";
+import {
+  ClosedDaysTable,
+  CutoffRules,
+  SettingsReader,
+  stopRulesOf,
+} from "../../__tests__/settings-doubles.js";
 
 /** L'instant de la maison `time` le jour `day` — les dates sont le SUJET, l'horloge est fixée. */
 function at(day: string, time: string): Date {
@@ -64,7 +69,7 @@ function handlerOf(
     w.clock,
     new SettingsReader(w.closedDays),
     w.attempts,
-    w.cutoffs,
+    stopRulesOf(w.cutoffs),
   );
 }
 

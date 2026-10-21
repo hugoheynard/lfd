@@ -5,3 +5,30 @@
   font-size: var(--fold-text-sm);
   line-height: 1.45;
 }
+
+.edit {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--fold-space-sm);
+}
+
+.time {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.time-label {
+  font-size: var(--fold-text-sm);
+  font-weight: 600;
+}
+
+.time input {
+  padding: var(--fold-space-sm);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-sm);
+  background: var(--fold-color-surface-card);
+  color: inherit;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}

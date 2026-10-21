@@ -1,5 +1,16 @@
 # Plan — une seule heure : l'arrêt du plan suit l'heure limite
 
+> **Révisé le 2026-10-21 (lot R3a du réassort,
+> [`../reassort-boutiques/plan-reapprovisionnement.md`](../reassort-boutiques/plan-reapprovisionnement.md)
+> §13.3).** « Une seule heure » ne tient plus à la lettre : le plan de J
+> s'arrête à la **plus tardive** de la fin du rattrapage de l'heure limite
+> générale et de l'**heure du réassort** (« la veille, HH:MM », 20:00 par
+> défaut, sur la même page). Un seul arrêt, un seul compte total. Tout ce qui
+> se déclenche à l'arrêt (balayage des paiements en suspens, confirmation des
+> commandes, liste à coliser, composition des tournées, envoi du dossier) se
+> décale d'autant. Sans heure limite générale, rien n'arrête le plan seul,
+> comme avant.
+
 > **Bâti le 2026-10-21 (lot 2 : serveur, back-office, docs), non commité à
 > l'écriture de ce bandeau.** L'état vit dans
 > [`../production/arret-du-plan.md`](../production/arret-du-plan.md) et

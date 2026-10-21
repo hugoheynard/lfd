@@ -32,7 +32,10 @@ export class ProductionDayAlreadyClosedError extends BusinessError {
 /** On n'arrête pas une journée sans commande : il n'y aurait rien à produire. */
 export class ProductionDayEmptyError extends BusinessError {
   constructor(serviceDay: string) {
-    super("production.day.empty", `Aucune commande à produire le ${serviceDay} : rien à arrêter.`);
+    super(
+      "production.day.empty",
+      `Aucune commande ni aucun réassort à produire le ${serviceDay} : rien à arrêter.`,
+    );
   }
 }
 

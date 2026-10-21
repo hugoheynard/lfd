@@ -10,7 +10,7 @@ import { PermissionsStore } from '../../../auth/permissions.store';
 import { OrderCutoffSettingsService } from '../order-cutoff-settings.service';
 import { ResupplyCutoffCard } from './resupply-cutoff-card';
 
-/** La limite du réassort (Hugo, 2026-10-21) : opposée au réassort « Pour demain » depuis le lot R1. */
+/** L'heure limite du réassort (lot R3a, 2026-10-21) : « la veille, HH:MM », opposée à « Pour demain ». */
 async function mount(
   permissions: readonly StaffPermission[],
   initial: OrderCutoffSettingsView,
@@ -29,8 +29,7 @@ async function mount(
             patches.push(patch);
             current = {
               ...current,
-              resupplySubjectToCutoff:
-                patch.resupplySubjectToCutoff ?? current.resupplySubjectToCutoff,
+              resupplyCutoffTime: patch.resupplyCutoffTime ?? current.resupplyCutoffTime,
             };
             return Promise.resolve();
           },
@@ -51,7 +50,7 @@ async function mount(
 
 const VIEW: OrderCutoffSettingsView = {
   sameDayAllowed: false,
-  resupplySubjectToCutoff: true,
+  resupplyCutoffTime: '20:00',
   updatedAt: null,
   updatedBy: null,
 };
@@ -59,37 +58,52 @@ const VIEW: OrderCutoffSettingsView = {
 const root = (fixture: ComponentFixture<ResupplyCutoffCard>): HTMLElement =>
   fixture.nativeElement as HTMLElement;
 
+function typeTime(fixture: ComponentFixture<ResupplyCutoffCard>, value: string): void {
+  const input = root(fixture).querySelector<HTMLInputElement>('[data-resupply-cutoff-time]');
+  if (input === null) {
+    throw new Error('le champ de l’heure manque');
+  }
+  input.value = value;
+  input.dispatchEvent(new Event('change'));
+  fixture.detectChanges();
+}
+
 describe('ResupplyCutoffCard', () => {
-  it('dit l’état, et qu’il vise le réassort « Pour demain » seulement', async () => {
+  it('dit l’heure, l’arrêt à la plus tardive, et qu’elle vise « Pour demain » seulement', async () => {
     const { fixture } = await mount(['lfc_order_settings:read'], VIEW);
 
     const text = root(fixture).textContent ?? '';
-    expect(text).toContain('Soumis à l’heure limite');
+    expect(text).toContain('La veille, 20:00');
+    expect(text).toContain('la plus tardive');
     expect(text).toContain('« Pour demain »');
     expect(text).toContain('« Au plus tôt » n');
-    expect(root(fixture).querySelector('[data-resupply-cutoff-toggle]')).toBeNull();
+    expect(root(fixture).querySelector('[data-resupply-cutoff-time]')).toBeNull();
   });
 
-  it('dit « sans limite » quand le réglage est levé', async () => {
-    const { fixture } = await mount(['lfc_order_settings:read'], {
-      ...VIEW,
-      resupplySubjectToCutoff: false,
-    });
-
-    expect(root(fixture).querySelector('[data-resupply-cutoff-value]')?.textContent).toContain(
-      'Sans limite',
-    );
-  });
-
-  it('bascule sous le droit d’écriture, en n’envoyant que sa clé', async () => {
+  it('enregistre une nouvelle heure sous le droit d’écriture, en n’envoyant que sa clé', async () => {
     const { fixture, patches } = await mount(
       ['lfc_order_settings:read', 'lfc_order_settings:write'],
       VIEW,
     );
-    await fixture.componentInstance['toggle']();
+    typeTime(fixture, '21:30');
+    await fixture.componentInstance['save']();
     fixture.detectChanges();
 
-    expect(patches).toEqual([{ resupplySubjectToCutoff: false }]);
-    expect(root(fixture).textContent).toContain('Sans limite');
+    expect(patches).toEqual([{ resupplyCutoffTime: '21:30' }]);
+    expect(root(fixture).textContent).toContain('La veille, 21:30');
+  });
+
+  it('n’envoie rien tant que l’heure est vide ou inchangée', async () => {
+    const { fixture, patches } = await mount(
+      ['lfc_order_settings:read', 'lfc_order_settings:write'],
+      VIEW,
+    );
+    await fixture.componentInstance['save']();
+    typeTime(fixture, '');
+    await fixture.componentInstance['save']();
+    fixture.detectChanges();
+
+    expect(patches).toEqual([]);
+    expect(root(fixture).textContent).toContain('format HH:MM');
   });
 });

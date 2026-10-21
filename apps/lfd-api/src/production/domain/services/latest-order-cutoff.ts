@@ -76,3 +76,39 @@ export function planClosesAt(rule: OrderCutoffRule | null, day: string): Date | 
   const limit = orderLimitInstant(rule, day);
   return limit === null ? null : new Date(limit.getTime() + rule.graceMinutes * MINUTE_MS);
 }
+
+/**
+ * **Les heures qui arrêtent le plan** (lot R3a du réassort, Hugo 2026-10-21,
+ * `reassort-boutiques/plan-reapprovisionnement.md` §13.3) : l'heure limite
+ * générale et l'heure du réassort (« la veille, HH:MM », sans rattrapage).
+ * Le plan s'arrête à la PLUS TARDIVE — un seul compte total imprimé.
+ *
+ * Sans règle générale, aucune : rien n'arrête le plan tout seul, comme avant.
+ * L'heure du réassort seule n'arrête pas un plan que les clients peuvent
+ * encore remplir sans limite.
+ */
+export function planStopRules(
+  general: OrderCutoffRule | null,
+  resupplyEveTime: string,
+): readonly OrderCutoffRule[] {
+  if (general === null) {
+    return [];
+  }
+  return [general, { daysBefore: EVE, time: resupplyEveTime, graceMinutes: 0 }];
+}
+
+/**
+ * L'instant où le plan de `day` s'arrête tout seul : la plus tardive des
+ * {@link planStopRules}, chacune lue par {@link planClosesAt}. Une heure qui
+ * n'existe pas ce jour-là (heure sautée) est ignorée ; aucune : `null`.
+ */
+export function planStopsAt(rules: readonly OrderCutoffRule[], day: string): Date | null {
+  let latest: Date | null = null;
+  for (const rule of rules) {
+    const at = planClosesAt(rule, day);
+    if (at !== null && (latest === null || at.getTime() > latest.getTime())) {
+      latest = at;
+    }
+  }
+  return latest;
+}

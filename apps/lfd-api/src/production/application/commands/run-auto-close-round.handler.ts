@@ -4,7 +4,6 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../platform/time/clock.js";
 import { DayOrdersReader } from "../../channels/commerce/day-orders.reader.js";
-import { OrderCutoffRulesReader } from "../../channels/commerce/order-cutoff-rules.reader.js";
 import { ProductionDayEmptyError } from "../../domain/errors/production-errors.js";
 import { AutoCloseAttempts } from "../../domain/ports/auto-close-attempts.js";
 import { AutoCloseRoundReader } from "../../domain/ports/auto-close-round.reader.js";
@@ -15,7 +14,8 @@ import {
   closesOnItsOwnDay,
   todayNeedsCatchUp,
 } from "../../domain/services/auto-close-round.js";
-import { planClosesAt } from "../../domain/services/latest-order-cutoff.js";
+import { planStopsAt } from "../../domain/services/latest-order-cutoff.js";
+import { PlanStopRules } from "../services/plan-stop-rules.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
 import { PlanArrestBell } from "../services/plan-arrest-bell.js";
 import {
@@ -70,7 +70,7 @@ export class RunAutoCloseRoundHandler implements ICommandHandler<
     private readonly orders: DayOrdersReader,
     private readonly closer: AutomaticDayCloser,
     private readonly bell: PlanArrestBell,
-    private readonly cutoffRules: OrderCutoffRulesReader,
+    private readonly stopRules: PlanStopRules,
   ) {}
 
   async execute(): Promise<AutoCloseRoundReport> {
@@ -78,9 +78,11 @@ export class RunAutoCloseRoundHandler implements ICommandHandler<
     const local = instantToLocal(now);
     const today = ServiceDay.of(local.day);
     const tomorrow = ServiceDay.of(addDays(local.day, 1));
-    const general = (await this.cutoffRules.rules())[0] ?? null;
-    const outcome = await this.forDay(tomorrow, planClosesAt(general, tomorrow.value), now);
-    const todayClosesAt = planClosesAt(general, today.value);
+    // La plus tardive de l'heure limite générale (rattrapage compris) et de
+    // l'heure du réassort (lot R3a, 2026-10-21).
+    const rules = await this.stopRules.rules();
+    const outcome = await this.forDay(tomorrow, planStopsAt(rules, tomorrow.value), now);
+    const todayClosesAt = planStopsAt(rules, today.value);
     if (closesOnItsOwnDay(todayClosesAt, today.value)) {
       const todayOutcome = await this.forDay(today, todayClosesAt, now);
       return { tomorrow: tomorrow.value, outcome, todayOutcome, todayOverdue: false };

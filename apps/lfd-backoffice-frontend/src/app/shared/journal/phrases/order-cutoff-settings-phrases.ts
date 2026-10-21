@@ -7,9 +7,10 @@ import { byActor, text, type Phrase, type PhraseFact, type Segment } from '../ph
  * **Le jour même, et l'interrupteur retiré** — le miroir de
  * `order_cutoff_settings.updated` dans `@lfd/contracts`.
  *
- * Depuis le 2026-10-21, la charge porte le jour même et la limite du réassort
- * boutique (`resupplySubjectToCutoff`) ; les lignes d'avant portent aussi
- * `enabled` (l'interrupteur de l'heure limite générale, lot O3), et leur
+ * Depuis le 2026-10-21, la charge porte le jour même et l'heure limite du
+ * réassort boutique (`resupplyCutoffTime`, lot R3a) ; les lignes du même jour
+ * d'avant R3a portent l'interrupteur `resupplySubjectToCutoff`, celles d'avant
+ * aussi `enabled` (l'interrupteur de l'heure limite générale, lot O3), et leur
  * phrase le dit toujours.
  */
 /** L'avant et l'après d'une clé booléenne, ou `null` si la charge ne les porte pas. */
@@ -46,7 +47,18 @@ function changes(fact: PhraseFact): string[] {
         : 'a levé l’heure limite pour le réassort boutique',
     );
   }
+  const time = timeChange(fact);
+  if (time !== null && time.before !== time.after) {
+    said.push(`a réglé l’heure limite du réassort boutique à la veille, ${time.after}`);
+  }
   return said;
+}
+
+/** L'avant et l'après de l'heure du réassort (lot R3a), ou `null`. */
+function timeChange(fact: PhraseFact): { before: string; after: string } | null {
+  const before = recordOf(fact.payload['previous'])?.['resupplyCutoffTime'];
+  const after = fact.payload['resupplyCutoffTime'];
+  return typeof before === 'string' && typeof after === 'string' ? { before, after } : null;
 }
 
 /** La charge porte au moins l'avant et l'après du jour même. */
@@ -56,7 +68,8 @@ function readable(fact: PhraseFact): boolean {
 
 /**
  * Les clés que la phrase a dites : `enabled` seulement sur une ligne d'avant le
- * 2026-10-21, `resupplySubjectToCutoff` seulement sur une ligne d'après.
+ * 2026-10-21, `resupplySubjectToCutoff` seulement sur une ligne du même jour
+ * d'avant le lot R3a, `resupplyCutoffTime` sur une ligne d'après.
  */
 function saidKeys(fact: PhraseFact): string[] {
   if (!readable(fact)) {
@@ -65,7 +78,8 @@ function saidKeys(fact: PhraseFact): string[] {
   const optional = ['enabled', 'resupplySubjectToCutoff'].filter(
     (key) => change(fact, key) !== null,
   );
-  return [...optional, 'sameDayAllowed', 'previous'];
+  const time = timeChange(fact) === null ? [] : ['resupplyCutoffTime'];
+  return [...optional, ...time, 'sameDayAllowed', 'previous'];
 }
 
 function orderCutoffSettings(fact: PhraseFact): Segment[] {

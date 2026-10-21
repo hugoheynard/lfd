@@ -1,8 +1,16 @@
 import type { ProducibleOrder } from "../../channels/commerce/day-orders.reader.js";
+import type { PlacedResupply } from "../../channels/commerce/day-resupplies.reader.js";
 import type {
   ProducedItemSnapshot,
+  ProductionLineSnapshot,
   ProductionOrderSnapshot,
+  ProductionResupplySnapshot,
 } from "../entities/production-day.snapshot.js";
+
+/** Ce que le compte additionne : une commande ou un réassort — des lignes. */
+export interface CountedItem {
+  readonly lines: readonly ProductionLineSnapshot[];
+}
 
 /**
  * **Le compte à produire, et la copie des commandes qu'il résume** — deux
@@ -41,8 +49,24 @@ export function freezeOrder(order: ProducibleOrder): ProductionOrderSnapshot {
   };
 }
 
+/** Le réassort, recopié tel qu'il était à l'arrêt (lot R3a). */
+export function freezeResupply(resupply: PlacedResupply): ProductionResupplySnapshot {
+  return {
+    resupplyId: resupply.resupplyId,
+    siteId: resupply.siteId,
+    siteLabel: resupply.siteLabel,
+    lines: resupply.lines.map((line) => ({
+      sku: line.sku,
+      productName: line.productName,
+      quantity: line.quantity,
+    })),
+  };
+}
+
 /**
- * Le compte à produire, **trié par SKU**.
+ * Le compte à produire, **trié par SKU** — commandes ET réassorts depuis le
+ * lot R3a (décision B, Hugo 2026-10-21 : les fournées se cochent sur le
+ * total).
  *
  * Trié, et pas dans l'ordre d'arrivée des commandes : deux clôtures des mêmes
  * commandes doivent rendre le même compte, sans quoi le PDF qu'on en tire
@@ -53,7 +77,7 @@ export function freezeOrder(order: ProducibleOrder): ProductionOrderSnapshot {
  * commandes d'une même journée portent le même catalogue ; si elles divergeaient,
  * c'est le SKU qui ferait foi, pas le libellé.
  */
-export function countOf(orders: readonly ProducibleOrder[]): readonly ProducedItemSnapshot[] {
+export function countOf(orders: readonly CountedItem[]): readonly ProducedItemSnapshot[] {
   const bySku = new Map<string, ProducedItemSnapshot>();
   for (const order of orders) {
     for (const line of order.lines) {
@@ -116,6 +140,7 @@ export function absorbArrivals(
   known: readonly ProductionOrderSnapshot[],
   counts: readonly ProducedItemSnapshot[],
   incoming: readonly ProducibleOrder[],
+  resupplies: readonly ProductionResupplySnapshot[] = [],
 ): AbsorbedArrivals {
   const knownIds = new Set(known.map((order) => order.orderId));
   const arrivals = incoming.filter((order) => !knownIds.has(order.orderId));
@@ -125,20 +150,10 @@ export function absorbArrivals(
   const merged = [...known, ...arrivals.map(freezeOrder)];
   return {
     orders: merged,
-    counts: countOf(
-      merged.map((order) => ({
-        orderId: order.orderId,
-        reference: order.reference,
-        customerLabel: order.customerLabel,
-        fulfillmentMethod: order.fulfillmentMethod,
-        destination: order.destination,
-        dueAt: order.dueAt,
-        clientele: order.clientele,
-        siteId: order.siteId,
-        lines: order.lines,
-        sheetDetails: order.sheetDetails,
-      })),
-    ),
+    // Les réassorts figés restent au compte : le retirage n'en absorbe
+    // aucun (aucun ne peut être envoyé pour une journée arrêtée, R3a), mais
+    // un compte refait sans eux les ferait disparaître des fournées.
+    counts: countOf([...merged, ...resupplies]),
     count: arrivals.length,
   };
 }

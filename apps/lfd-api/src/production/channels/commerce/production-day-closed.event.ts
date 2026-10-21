@@ -48,6 +48,12 @@ export class ProductionDayClosedEvent implements DurableEvent {
     readonly orderIds: readonly string[],
     /** Présent sur une réannonce : l'instant du geste, pour la clé seulement. */
     readonly reannouncedAt: Date | null = null,
+    /**
+     * Les réassorts figés par cet arrêt (lot R3a, 2026-10-21) — la liste que
+     * la livraison et le colisage suivront (R3b, R3c), jamais l'état vivant
+     * du commerce. Absente des faits écrits avant : relue vide.
+     */
+    readonly resupplyIds: readonly string[] = [],
   ) {}
 
   durableFact(): DurableFact {
@@ -66,6 +72,7 @@ export class ProductionDayClosedEvent implements DurableEvent {
         // clé, et l'envoi du dossier ignore une réannonce. Absent des faits
         // écrits avant : relu comme une clôture.
         reannouncedAt: this.reannouncedAt?.toISOString() ?? null,
+        resupplyIds: [...this.resupplyIds],
       },
     };
   }
@@ -77,7 +84,7 @@ export class ProductionDayClosedEvent implements DurableEvent {
    * @throws {ProductionDayClosedPayloadError}
    */
   static fromPayload(payload: Readonly<Record<string, unknown>>): ProductionDayClosedEvent {
-    const { serviceDay, closedAt, orderIds, reannouncedAt } = payload;
+    const { serviceDay, closedAt, orderIds, reannouncedAt, resupplyIds } = payload;
     const at = typeof closedAt === "string" ? new Date(closedAt) : null;
     const again = typeof reannouncedAt === "string" ? new Date(reannouncedAt) : null;
     if (
@@ -86,12 +93,21 @@ export class ProductionDayClosedEvent implements DurableEvent {
       Number.isNaN(at.getTime()) ||
       !Array.isArray(orderIds) ||
       !orderIds.every((id): id is string => typeof id === "string") ||
-      (again !== null && Number.isNaN(again.getTime()))
+      (again !== null && Number.isNaN(again.getTime())) ||
+      !optionalIds(resupplyIds)
     ) {
       throw new ProductionDayClosedPayloadError();
     }
-    return new ProductionDayClosedEvent(serviceDay, at, orderIds, again);
+    return new ProductionDayClosedEvent(serviceDay, at, orderIds, again, resupplyIds ?? []);
   }
+}
+
+/** Une liste d'identifiants, ou rien (un fait écrit avant le champ). */
+export function optionalIds(value: unknown): value is readonly string[] | undefined {
+  return (
+    value === undefined ||
+    (Array.isArray(value) && value.every((id): id is string => typeof id === "string"))
+  );
 }
 
 /** Le fait `production.day_closed` reçu ne respecte pas son contrat. */

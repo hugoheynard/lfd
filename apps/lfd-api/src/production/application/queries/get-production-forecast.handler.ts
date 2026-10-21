@@ -7,7 +7,6 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../platform/time/clock.js";
 import { ExpectedProductionReader } from "../../channels/commerce/expected-production.reader.js";
-import { OrderCutoffRulesReader } from "../../channels/commerce/order-cutoff-rules.reader.js";
 import {
   AutoCloseAttemptLog,
   type DatedAttemptTrace,
@@ -15,7 +14,8 @@ import {
 import { ProductionPlanReader } from "../../domain/ports/production-plan.reader.js";
 import { ProductionSettingsReader } from "../../domain/ports/production-settings.reader.js";
 import { forecastDayState, type HouseMoment } from "../../domain/services/forecast-day-state.js";
-import { type OrderCutoffRule, planClosesAt } from "../../domain/services/latest-order-cutoff.js";
+import { type OrderCutoffRule, planStopsAt } from "../../domain/services/latest-order-cutoff.js";
+import { PlanStopRules } from "../services/plan-stop-rules.js";
 import { forecastMatrix, type ForecastColumn } from "../../domain/services/production-forecast.js";
 import { ServiceRange } from "../../domain/value-objects/service-range.value-object.js";
 import { GetProductionForecastQuery } from "./get-production-forecast.query.js";
@@ -51,7 +51,7 @@ export class GetProductionForecastHandler implements IQueryHandler<
     private readonly clock: Clock,
     private readonly settings: ProductionSettingsReader,
     private readonly attempts: AutoCloseAttemptLog,
-    private readonly cutoffRules: OrderCutoffRulesReader,
+    private readonly stopRules: PlanStopRules,
   ) {}
 
   async execute(query: GetProductionForecastQuery): Promise<ProductionForecastView> {
@@ -59,7 +59,7 @@ export class GetProductionForecastHandler implements IQueryHandler<
     const [arrested, expected, rules, closedDays, attempts] = await Promise.all([
       this.plan.arrestedBetween(range),
       this.expected.expectedBetween(range),
-      this.cutoffRules.rules(),
+      this.stopRules.rules(),
       this.settings.closedDaysFrom(range.from.value),
       this.attempts.between(range),
     ]);
@@ -68,9 +68,8 @@ export class GetProductionForecastHandler implements IQueryHandler<
     const local = instantToLocal(now);
     const moment: HouseMoment = { today: local.day, now };
     const closed = new Set(closedDays);
-    const rule = rules[0] ?? null;
     return {
-      days: matrix.columns.map((column) => withState(column, moment, rule, closed, attempts)),
+      days: matrix.columns.map((column) => withState(column, moment, rules, closed, attempts)),
       lines: matrix.rows,
       peakDate: matrix.peakDate,
       totalUnits: matrix.totalUnits,
@@ -81,11 +80,11 @@ export class GetProductionForecastHandler implements IQueryHandler<
 function withState(
   column: ForecastColumn,
   moment: HouseMoment,
-  rule: OrderCutoffRule | null,
+  rules: readonly OrderCutoffRule[],
   closedDays: ReadonlySet<string>,
   attempts: readonly DatedAttemptTrace[],
 ): ProductionForecastDay {
-  const closesAt = planClosesAt(rule, column.date);
+  const closesAt = planStopsAt(rules, column.date);
   const state = forecastDayState(
     {
       date: column.date,

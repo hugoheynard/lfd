@@ -1,6 +1,7 @@
 import type { DurableEvent, DurableFact } from "../../../platform/outbox/durable-event.js";
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 import { instantOf, textOf } from "../packing/payload-fields.js";
+import { optionalIds } from "./production-day-closed.event.js";
 
 /** Nom stable du fait, clé de routage vers `@DurableHandler`. */
 export const PRODUCTION_DAY_REOPENED = "production.day_reopened";
@@ -36,6 +37,8 @@ export class ProductionDayReopenedEvent implements DurableEvent {
     readonly closedAt: Date,
     /** Les commandes que le plan défait portait. */
     readonly orderIds: readonly string[],
+    /** Les réassorts que le plan défait portait (lot R3a) ; vide sur un fait d'avant. */
+    readonly resupplyIds: readonly string[] = [],
   ) {}
 
   durableFact(): DurableFact {
@@ -47,6 +50,7 @@ export class ProductionDayReopenedEvent implements DurableEvent {
         reopenedAt: this.reopenedAt.toISOString(),
         closedAt: this.closedAt.toISOString(),
         orderIds: [...this.orderIds],
+        resupplyIds: [...this.resupplyIds],
       },
     };
   }
@@ -61,16 +65,24 @@ export class ProductionDayReopenedEvent implements DurableEvent {
     const reopenedAt = instantOf(payload["reopenedAt"]);
     const closedAt = instantOf(payload["closedAt"]);
     const orderIds = payload["orderIds"];
+    const resupplyIds = payload["resupplyIds"];
     if (
       serviceDay === null ||
       reopenedAt === null ||
       closedAt === null ||
       !Array.isArray(orderIds) ||
-      !orderIds.every((id): id is string => typeof id === "string")
+      !orderIds.every((id): id is string => typeof id === "string") ||
+      !optionalIds(resupplyIds)
     ) {
       throw new ProductionDayReopenedPayloadError();
     }
-    return new ProductionDayReopenedEvent(serviceDay, reopenedAt, closedAt, orderIds);
+    return new ProductionDayReopenedEvent(
+      serviceDay,
+      reopenedAt,
+      closedAt,
+      orderIds,
+      resupplyIds ?? [],
+    );
   }
 }
 

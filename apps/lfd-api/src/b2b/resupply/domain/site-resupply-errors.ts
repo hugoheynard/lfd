@@ -55,9 +55,9 @@ export class UnknownResupplyOriginError extends DomainError {
 }
 
 /**
- * La commande du soir pour demain arrive après l'heure limite générale, et
- * le réassort y est soumis (`resupply_subject_to_cutoff`). Le geste de sortie
- * est nommé : commander « au plus tôt », ou régler le réassort sans limite.
+ * Le comptoir envoie « pour demain » après l'heure du réassort (lot R3a,
+ * 2026-10-21) : le plan du fournil s'arrête dessus, la demande n'y entrerait
+ * plus. Le geste de sortie est nommé : demander au fournil.
  */
 export class ResupplyPastCutoffError extends BusinessError {
   constructor(
@@ -66,7 +66,52 @@ export class ResupplyPastCutoffError extends BusinessError {
   ) {
     super(
       "resupply.order.past_cutoff",
-      `L'heure limite pour commander le réassort du ${serviceDay} est passée (${limitLabel}). Commandez « au plus tôt » pour aujourd'hui, ou demandez à régler le réassort « sans limite » (Réglages › Commandes › Heure limite).`,
+      `L'heure limite du réassort pour le ${serviceDay} est passée (${limitLabel}) : la demande n'entre plus au plan du fournil. Demandez au fournil s'il peut encore l'ajouter à sa fournée.`,
+    );
+  }
+}
+
+/**
+ * Le comptoir envoie « pour demain » alors que le plan de cette journée est
+ * déjà arrêté (lot R3a) — un arrêt fait à la main, avant l'heure du réassort,
+ * faute d'heure limite générale. Même sortie : demander au fournil.
+ */
+export class ResupplyPlanStoppedError extends BusinessError {
+  constructor(readonly serviceDay: string) {
+    super(
+      "resupply.order.plan_stopped",
+      `Le plan du fournil pour le ${serviceDay} est arrêté : la demande n'y entre plus. Demandez au fournil s'il peut encore l'ajouter à sa fournée.`,
+    );
+  }
+}
+
+/**
+ * Le FOURNIL envoie « pour demain » après l'heure du réassort ou l'arrêt de
+ * son plan (lot R3a). Le message lui parle à lui : la demande du comptoir
+ * n'a pas de recours, le fournil en a un, produire hors plan.
+ */
+export class BakehouseResupplyAfterStopError extends BusinessError {
+  constructor(
+    readonly serviceDay: string,
+    readonly limitLabel: string,
+  ) {
+    super(
+      "resupply.order.bakehouse_after_stop",
+      `Le plan du ${serviceDay} est arrêté (heure du réassort : ${limitLabel}) : un réassort pour demain ne s'y inscrit plus. Ajoutez les pièces à la fournée hors plan — le retirage (« Reprendre le tirage ») ne reprend que les commandes —, puis envoyez-les « au plus tôt » le jour même pour que le point les réceptionne.`,
+    );
+  }
+}
+
+/**
+ * Le réassort est figé dans le plan arrêté du fournil (lot R3a, Q3 du §13 :
+ * « figé, il ne s'annule plus »). Le geste de sortie : réceptionner ce qui
+ * arrive vraiment, avec l'écart.
+ */
+export class ResupplyFrozenInPlanError extends BusinessError {
+  constructor(readonly serviceDay: string) {
+    super(
+      "resupply.order.frozen_in_plan",
+      `Le plan du fournil pour le ${serviceDay} est arrêté : ce réassort y est figé et ne s'annule plus. Réceptionnez-le avec un écart (Réceptionner les réassorts).`,
     );
   }
 }

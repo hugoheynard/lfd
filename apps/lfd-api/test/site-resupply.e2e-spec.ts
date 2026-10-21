@@ -6,7 +6,7 @@
  * Ce qui ne s'éprouve qu'ici : le droit du comptoir (`handover_counter`) et
  * celui du fournil pour la lecture, le mur par point (un réassort d'un autre
  * point est introuvable), l'heure limite lue dans la vraie règle générale et
- * le vrai réglage « réassort soumis », la quantité refusée jusqu'à la base.
+ * la vraie heure du réassort (lot R3a), la quantité refusée jusqu'à la base.
  *
  * Depuis le lot R1d (2026-10-21) : le réassort que le FOURNIL envoie, sous
  * son droit neuf `production_resupply`, à part de la demande du comptoir.
@@ -123,11 +123,12 @@ async function cutoffAtSixTheDayBefore(): Promise<void> {
     .expect(204);
 }
 
-async function resupplySubjectToCutoff(subject: boolean): Promise<void> {
+/** L'heure du réassort (lot R3a), posée par la route de l'écran. */
+async function resupplyCutoffAt(time: string): Promise<void> {
   await ctx
     .asSub(E2E_STAFF_SUB)
     .patch("/admin/order-cutoff-settings")
-    .send({ resupplySubjectToCutoff: subject })
+    .send({ resupplyCutoffTime: time })
     .expect(204);
 }
 
@@ -226,8 +227,8 @@ describe("le fournil envoie un réassort (R1d)", () => {
     expect(await ctx.prisma.siteResupply.count()).toBe(0);
   });
 
-  it("soumis : « pour demain » du fournil bute sur la même heure limite que le comptoir (409)", async () => {
-    await cutoffAtSixTheDayBefore();
+  it("« pour demain » du fournil bute sur la même heure du réassort que le comptoir (409, R3a)", async () => {
+    await resupplyCutoffAt("18:00");
     const sender = await bakehouseSender();
     const siteId = await seedSite("Val Village");
     const article = await firstArticle(await counter());
@@ -235,7 +236,7 @@ describe("le fournil envoie un réassort (R1d)", () => {
     const route = `/admin/bakehouse-resupplies/sites/${siteId}`;
 
     const refused = await sender.post(route).send({ target: "tomorrow", lines }).expect(409);
-    expect(refused.body).toMatchObject({ code: "resupply.order.past_cutoff" });
+    expect(refused.body).toMatchObject({ code: "resupply.order.bakehouse_after_stop" });
     await sender.post(route).send({ target: "asap", lines }).expect(201);
   });
 
@@ -288,9 +289,9 @@ describe("le mur par point", () => {
   });
 });
 
-describe("l'heure limite", () => {
-  it("soumis : « pour demain » est refusé après la limite (409), « au plus tôt » passe", async () => {
-    await cutoffAtSixTheDayBefore();
+describe("l'heure du réassort (lot R3a)", () => {
+  it("« pour demain » est refusé après l'heure du réassort (409), « au plus tôt » passe", async () => {
+    await resupplyCutoffAt("18:00");
     const agent = await counter();
     const siteId = await seedSite("Val Village");
     const article = await firstArticle(agent);
@@ -299,31 +300,31 @@ describe("l'heure limite", () => {
     const { sent: refused } = await counterSends(agent, siteId, "tomorrow", lines);
     expect(refused.status).toBe(409);
     expect(refused.body).toMatchObject({ code: "resupply.order.past_cutoff" });
+    expect(JSON.stringify(refused.body)).toContain("la veille à 18:00");
+    expect(JSON.stringify(refused.body)).toContain("Demandez au fournil");
     await counterSent(agent, siteId, "asap", lines);
 
     const view = await listOf(agent, siteId);
     expect(view.tomorrowOrderUntil).toBe("2026-09-08T16:00:00.000Z");
   });
 
-  it("soumis : « pour demain » passe avant la limite", async () => {
+  it("« pour demain » passe après l'heure limite générale, avant celle du réassort", async () => {
     await cutoffAtSixTheDayBefore();
-    clock.set(new Date("2026-09-08T15:59:00Z"));
+    await resupplyCutoffAt("20:30");
     const agent = await counter();
     const siteId = await seedSite("Val Village");
     const article = await firstArticle(agent);
 
     await counterSent(agent, siteId, "tomorrow", [{ sku: article.sku, quantity: 3 }]);
+    expect((await listOf(agent, siteId)).tomorrowOrderUntil).toBe("2026-09-08T18:30:00.000Z");
   });
 
-  it("sans limite : « pour demain » passe le soir, et aucune limite n'est annoncée", async () => {
-    await cutoffAtSixTheDayBefore();
-    await resupplySubjectToCutoff(false);
+  it("par défaut, la veille à 20:00 : « pour demain » passe à 20:00 pile", async () => {
     const agent = await counter();
     const siteId = await seedSite("Val Village");
     const article = await firstArticle(agent);
 
     await counterSent(agent, siteId, "tomorrow", [{ sku: article.sku, quantity: 3 }]);
-    expect((await listOf(agent, siteId)).tomorrowOrderUntil).toBeNull();
   });
 });
 

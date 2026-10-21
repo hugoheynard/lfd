@@ -498,3 +498,166 @@ Hugo, non commité) : `ResupplyArticleView` gagne `categoryId` et
 catalogue publié du commerce — champ ajouté, rien retiré) ; la table
 affiche « Tout » puis une puce par famille présente (`fold-view-toggle`),
 combinée à la recherche.
+
+## 13. R3 — Le réassort du soir au plan figé (conçu le 2026-10-21, doc-first)
+
+> Décisions de Hugo du 2026-10-21 : Q1 le Labo passe aussi au colisage ;
+> Q2 la feuille porte un total par produit (commandes + réassorts) en plus de
+> la section à part ; Q3 un réassort figé ne s'annule plus ; Q4 le colisage
+> ouvre un lecteur de la quantité emballée, que le commerce lit.
+
+### 13.0 Ce qui existe (ouvert le 2026-10-21)
+
+- **Le fournil ne connaît aucun réassort** : aucun fichier de `src/production`
+  ni de `src/packing` ne le nomme. Tout son circuit est en forme de commande :
+  `DayOrdersReader.producibleFor(day)` (`production/channels/commerce/day-orders.reader.ts`)
+  rend des `ProducibleOrder` avec `fulfillmentMethod: "pickup" | "delivery"`,
+  `clientele`, `sheetDetails` (le bon) — des champs qu'un réassort n'a pas.
+- **Le plan se fige** dans `close-production-day.handler.ts` (`closeUnderLock`) :
+  verrou, `ProductionDay.close(producible, withdrawn, …)`, journal,
+  `production.day_closed`, puis un `production.packing_list_drawn` par commande
+  (clé `…:<serviceDay>:<orderId>`), dans une seule unité de travail. La
+  feuille compte par SKU (`countOf`, `production-count.ts`), les commandes
+  restent détaillées (`ProductionOrder`, sans FK vers `public`).
+- **Le colisage** tient `PackingOrder` clé `(serviceDay, orderId)`. On peut y
+  mettre MOINS que la quantité : la ligne reste « incomplète »
+  (`packing-sheet.ts`, `markByAllocation`) ; plus est refusé. Aucune quantité
+  « réellement emballée » n'est publiée.
+- **Le transfert interne** porte déjà le genre `resupply`
+  (`delivery_internal_transfer_item.kind`, `resupply_id` opaque, CHECK
+  exclusif, index partiel `…_resupply_key`) et le domaine le connaît
+  (`internal-transfer-state.ts`) ; **aucun écrivain**.
+- **Le commerce** : `SiteResupply` (`target: tomorrow | asap`, `serviceDay`,
+  `placed`, `cancelled`, `origin`), aucun canal exposé à un autre bloc.
+
+### 13.1 Ce qu'on bâtit
+
+```mermaid
+flowchart LR
+  C["commerce<br/>SiteResupply envoyé<br/>pour demain"] -->|"DayResuppliesReader<br/>(production/channels/commerce)"| F["fournil — arrêt du plan<br/>production_resupply figé<br/>feuille : section Réassorts + total"]
+  F -->|"production.resupply_list_drawn"| P["colisage<br/>fiche « Réassort Village »<br/>quantité réellement emballée"]
+  F -->|"production.day_closed"| D["livraison<br/>transfert du Village :<br/>élément kind=resupply"]
+  P -->|"PackedResuppliesReader<br/>(packing/channels/commerce,<br/>déclaré ET implémenté par le colisage)"| R["commerce — réception<br/>pré-remplie de l'emballé"]
+```
+
+1. **Un canal à part** : `apps/lfd-api/src/production/channels/commerce/day-resupplies.reader.ts`
+   — `DayResuppliesReader.placedFor(day)` → `{ resupplyId, siteId, siteLabel,
+lines: {sku, productName, quantity}[] }[]`, réassorts **pour demain,
+   envoyés, non annulés**. Le commerce l'implémente ; `appBootstrap` relie.
+   Jamais mêlé à `ProducibleOrder`. Le « au plus tôt » n'y entre pas (R4).
+2. **Figé à l'arrêt**, dans la même unité de travail : tables
+   `production.production_resupply` + `_line` (clé `(serviceDay, resupplyId)`,
+   aucune FK vers `public`). `ProductionDay` porte `resupplies` à côté
+   d'`orders`. Un plan vide de commandes mais avec des réassorts n'est **pas
+   vide** (`ProductionDayEmptyError` à revoir). Le compte de commandes du
+   journal ne change pas.
+3. **La feuille de production** : la section « Réassorts » (par point, par
+   produit), et un **total par produit commandes + réassorts** (Q2). Le
+   retirage (`absorbArrivals`) n'admet pas de réassort : il naît figé.
+4. **Q3 — figé, il ne s'annule plus** : `SiteResupply.cancel` refuse un
+   réassort pour demain dont la journée est arrêtée (409, « le plan du
+   fournil est arrêté : réceptionnez avec un écart »). Le commerce lit l'état
+   du plan par le canal existant (`ClosedPlansReader`, à vérifier au lot).
+5. **Colisage** : un fait `production.resupply_list_drawn:<serviceDay>:<resupplyId>`
+   publié par le fournil (`production/channels/packing/`) ; le colisage tient
+   une fiche de réassort **à part** de `PackingOrder` (tables `packing.packing_resupply`
+   - `_line`), titrée « Réassort <point> ». Il saisit la quantité **réellement
+     emballée** par ligne (≤ demandée, 0 permis), puis clôt la fiche : le
+     `packed` par ligne est écrit. Le Labo y passe aussi (Q1).
+6. **Le lecteur de l'emballé (Q4)** : `PackedResuppliesReader`, dans
+   `packing/channels/commerce/` (à créer, R3b),
+   **déclaré et implémenté par le colisage** (forme des lecteurs d'historique
+   du 2026-10-08) : `packedOf(resupplyIds)` → quantités emballées par ligne,
+   null tant que la fiche n'est pas close. La matrice gagne `b2b → packing :
+port uniquement` ; `packing → b2b` reste interdit. La réception (R2) se
+   pré-remplit de l'emballé quand il est connu, sinon du demandé.
+7. **Transfert du Village** : à `production.day_closed`, la livraison
+   attache au transfert du site un élément `kind=resupply` par réassort de
+   ce site (lu par son canal commerce existant, `delivery/channels/commerce/`,
+   lecteur à ajouter) ; le manifeste et la feuille de tournée l'affichent
+   « Réassort ». Un point servi sur place (Labo) : aucun transfert.
+
+### 13.2 Lots
+
+| Lot     | Contenu                                                                                                                       | Touche                               |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| **R3a** | Canal `DayResuppliesReader`, gel à l'arrêt, tables du fournil, feuille (section + total), refus d'annuler une fois figé ; e2e | commerce, fournil, migration         |
+| **R3b** | Fait `resupply_list_drawn`, fiche de réassort au colisage, quantité emballée, `PackedResuppliesReader`, réception pré-remplie | fournil, colisage, commerce, matrice |
+| **R3c** | Élément `resupply` du transfert du Village, manifeste et feuille de tournée                                                   | livraison, commerce                  |
+| **R3d** | Back-office : feuille, poste du colisage, manifeste                                                                           | back-office                          |
+
+`vitruve` avant R3a : il déplace des frontières (une arête `b2b → packing`),
+crée des faits durables entre blocs (`@DurableHandler`) et porte des
+migrations.
+
+### 13.3 Contredit par `vitruve`, et l'heure de l'arrêt (Hugo, 2026-10-21) — l'emporte sur le §13.1 là où ils divergent
+
+`vitruve` (2026-10-21) : 4 BLOQUANTS — un envoi « pour demain » après l'arrêt
+n'est ni figé ni refusé (aucun verrou de journée à l'envoi, `deadline` nulle
+« sans limite ») ; l'annulation se croise avec l'arrêt hors verrou ; la
+réouverture ignore les réassorts (fiches survivantes, clé de fait sans
+`:after-reopening:`) ; la livraison lirait l'état vivant du commerce au lieu
+de la liste figée (le fait `production.day_closed` ne porte que des
+`orderIds`). 7 SÉRIEUX (total de la feuille et fournées, journée « vide »,
+destination de la fiche au colisage, contenu du transfert, porte des blocs,
+écran « Réassorts à produire » vivant, réception avant la clôture du colisage).
+
+**Le moment de l'arrêt — la piste retenue, avec l'incertitude de Hugo.**
+Trois façons ont été écartées : accepter un envoi tardif et laisser le
+retirage l'absorber (dépend d'un clic qu'on peut oublier : 20 croissants
+acceptés et jamais produits) ; refuser et proposer « au plus tôt » (R4 non
+bâti) ; « pour demain = avant l'heure limite client » (Hugo : « dommage de ne
+pas imprimer une seule fois le compte total »). Proposé par Hugo, **retenu
+avec réserve** (« je ne sais pas trop si c'est la bonne méthode ») :
+
+- **Deux heures, un seul arrêt.** L'heure limite CLIENT bloque les commandes
+  pour demain ; une heure limite du RÉASSORT, plus tardive (la veille, HH:MM),
+  bloque les réassorts pour demain ; **le plan s'arrête à la plus tardive des
+  deux** — un seul compte total imprimé, une feuille, un dossier, une liste à
+  coliser, un transfert.
+- Ce qui arrive après l'arrêt passe par le **retirage** du fournil, comme une
+  commande hors plan.
+- **Révise « une seule heure »** (`../limites-de-commande/plan-une-seule-heure.md`
+  §5) : l'arrêt suit la plus tardive des heures limites, et l'écran le dit.
+  Tout ce qui se déclenche à l'arrêt (paiements en suspens, liste à coliser,
+  composition des tournées) se décale d'autant — à vérifier au lot.
+- Le réglage `resupply_subject_to_cutoff` (oui/non) devient une heure du
+  réassort, sur la page de l'heure limite.
+- L'envoi et l'annulation d'un réassort pour demain passent par le guichet
+  d'admission du plan, sous le verrou de la journée (comme `OrderPlanGate`).
+
+**Corrections retenues** : réouverture symétrique des commandes (dégel, retrait
+des fiches, suffixe `:after-reopening:`, fiche entamée = pas de réouverture,
+annulation de nouveau permise) ; `production.day_closed` gagne `resupplyIds`
+(champ ajouté) ; journée vide = 0 commande et 0 réassort ; fiche de colisage
+avec destination (transfert ou sur place), dans la progression, les bacs et le
+retour ; transfert : l'emballé s'il est connu, sinon le demandé, par
+`packing/channels/delivery/` ; second chemin d'attache pour un site sans
+commande ; `b2b → packing` dans la porte et la matrice ; « Réassorts à
+produire » ne montre plus que le non figé.
+
+**Ouvert** : l'heure du réassort par défaut ; B (fournées cochées sur le
+total) ; C (réception faite avant l'emballé : le compte du comptoir fait foi).
+
+**Tranché (Hugo, 2026-10-21)** : heure du réassort par défaut **la veille à
+20:00** ; B — les fournées se cochent sur le **total** commandes + réassorts ;
+C — la réception faite avant l'emballé : **le compte du comptoir fait foi**.
+« Vu que l'arrêt est automatique » : le décaler à la plus tardive des heures
+ne demande aucun geste.
+
+**R3a ✅ (bâti le 2026-10-21, non commité)** — ce qui diffère du texte
+ci-dessous : la feuille (section « Réassorts » du PDF/écran) n'est pas faite
+(R3d) — seul le total des comptes inclut les réassorts ; le retirage n'absorbe
+aucun réassort, aucun ne pouvant arriver après l'arrêt (envoi refusé sous le
+verrou) — il les garde au compte refait ; l'arrêt les lit SOUS le verrou
+plutôt qu'avant + relecture des annulations. Sans heure limite générale,
+l'heure du réassort seule n'arrête pas le plan.
+
+**R3a (révisé)** : heure du réassort (réglage, page de l'heure limite ; la
+colonne `resupply_subject_to_cutoff` reste en base, documentée à retirer) ;
+arrêt automatique à la plus tardive des deux heures ; envoi et annulation d'un
+réassort pour demain sous le verrou de la journée (guichet d'admission) ;
+`DayResuppliesReader` ; gel dans les tables du fournil ; total des comptes
+(fournées) ; journée vide ; réouverture symétrique côté fournil ; retirage qui
+absorbe aussi les réassorts arrivés ; `production.day_closed` + `resupplyIds` ;
+« Réassorts à produire » limité au non figé.

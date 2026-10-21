@@ -58,6 +58,14 @@ export {
 // L'heure limite générale, qui déclenche l'arrêt automatique du plan (2026-10-21).
 export { OrderCutoffRulesReader } from "./order-cutoff-rules.reader.js";
 export type { OrderCutoffRule } from "../../domain/services/latest-order-cutoff.js";
+// Le réassort au plan figé (lot R3a, 2026-10-21) : l'heure du réassort, qui
+// repousse l'arrêt, et les réassorts envoyés pour la journée, figés à l'arrêt.
+export { ResupplyCutoffTimeReader } from "./resupply-cutoff-time.reader.js";
+export {
+  DayResuppliesReader,
+  type PlacedResupply,
+  type PlacedResupplyLine,
+} from "./day-resupplies.reader.js";
 // L'annulation staff (doc `documentation/commandes/annulation/annulation-par-le-staff.md`, C3.4,
 // 2026-10-12) : deux ports que le fournil DÉCLARE et IMPLÉMENTE pour le
 // commerce — retirer une commande sous le verrou de la journée, et dire si

@@ -1,9 +1,17 @@
 import type { StaffTrace } from "../../account/domain/value-objects/staff-trace.js";
+import { InvalidResupplyCutoffTimeError } from "./order-cutoff-errors.js";
+
+/** `HH:MM` sur 24 h : l'heure qui existe sur une pendule. */
+const CLOCK_TIME = /^([01]\d|2[0-3]):[0-5]\d$/u;
 
 /**
  * **Le jour même**, tel qu'on l'écrit (plan
  * `documentation/commandes/plan-reglages-commandes.md`, §8.3 ; sa page depuis
  * le 2026-10-21).
+ *
+ * Porte aussi, depuis le lot R3a du réassort (2026-10-21), **l'heure limite
+ * du réassort pour demain** (« la veille, HH:MM ») ; l'interrupteur
+ * `resupply_subject_to_cutoff` qu'elle remplace reste en base, ni lu ni écrit.
  *
  * Il portait aussi l'interrupteur de l'heure limite générale (lot O3) : retiré
  * le 2026-10-21, l'heure limite déclenche l'arrêt du plan et reste donc
@@ -18,7 +26,7 @@ import type { StaffTrace } from "../../account/domain/value-objects/staff-trace.
 export class OrderCutoffSettings {
   private constructor(
     readonly sameDayAllowed: boolean,
-    readonly resupplySubjectToCutoff: boolean,
+    readonly resupplyCutoffTime: string,
     readonly at: Date,
     readonly author: StaffTrace,
   ) {}
@@ -26,18 +34,24 @@ export class OrderCutoffSettings {
   /**
    * Le réglage posé, avec son instant et son auteur. Une clé absente du geste
    * garde sa valeur courante : chaque page n'envoie que la sienne (le jour
-   * même, la limite du réapprovisionnement — 2026-10-21).
+   * même, l'heure du réassort — 2026-10-21).
+   *
+   * @throws {InvalidResupplyCutoffTimeError} l'heure du réassort n'existe pas.
    */
   static pose(input: {
     readonly current: OrderCutoffSettingsState;
     readonly sameDayAllowed?: boolean | undefined;
-    readonly resupplySubjectToCutoff?: boolean | undefined;
+    readonly resupplyCutoffTime?: string | undefined;
     readonly at: Date;
     readonly author: StaffTrace;
   }): OrderCutoffSettings {
+    const resupplyCutoffTime = input.resupplyCutoffTime ?? input.current.resupplyCutoffTime;
+    if (!CLOCK_TIME.test(resupplyCutoffTime)) {
+      throw new InvalidResupplyCutoffTimeError(resupplyCutoffTime);
+    }
     return new OrderCutoffSettings(
       input.sameDayAllowed ?? input.current.sameDayAllowed,
-      input.resupplySubjectToCutoff ?? input.current.resupplySubjectToCutoff,
+      resupplyCutoffTime,
       input.at,
       input.author,
     );
@@ -47,7 +61,7 @@ export class OrderCutoffSettings {
   sameAs(current: OrderCutoffSettingsState): boolean {
     return (
       this.sameDayAllowed === current.sameDayAllowed &&
-      this.resupplySubjectToCutoff === current.resupplySubjectToCutoff
+      this.resupplyCutoffTime === current.resupplyCutoffTime
     );
   }
 }
@@ -55,9 +69,6 @@ export class OrderCutoffSettings {
 /** Le réglage sans sa trace. */
 export interface OrderCutoffSettingsState {
   readonly sameDayAllowed: boolean;
-  /**
-   * Le réapprovisionnement d'un site suit-il l'heure limite générale ? Stocké
-   * SANS effet tant qu'il n'est pas commandé au fournil (2026-10-21).
-   */
-  readonly resupplySubjectToCutoff: boolean;
+  /** L'heure limite du réassort pour demain, `HH:MM` la veille (lot R3a). */
+  readonly resupplyCutoffTime: string;
 }

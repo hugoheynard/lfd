@@ -77,4 +77,18 @@ describe('l’heure limite générale (order_cutoff_settings.updated)', () => {
     expect(sentence(input)).toBe('Colette Martin a levé l’heure limite pour le réassort boutique');
     expect(renderFact(input).detail).toEqual([]);
   });
+
+  /** Lot R3a (2026-10-21) : l'interrupteur devient une heure. */
+  it('dit l’heure du réassort boutique posée, sans détail résiduel', () => {
+    const input = updated({
+      sameDayAllowed: false,
+      resupplyCutoffTime: '21:30',
+      previous: { sameDayAllowed: false, resupplyCutoffTime: '20:00' },
+    });
+
+    expect(sentence(input)).toBe(
+      'Colette Martin a réglé l’heure limite du réassort boutique à la veille, 21:30',
+    );
+    expect(renderFact(input).detail).toEqual([]);
+  });
 });

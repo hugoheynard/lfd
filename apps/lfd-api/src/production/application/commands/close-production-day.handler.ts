@@ -10,7 +10,7 @@ import {
   DayOrdersReader,
   type ProducibleOrder,
 } from "../../channels/commerce/day-orders.reader.js";
-import { OrderCutoffRulesReader } from "../../channels/commerce/order-cutoff-rules.reader.js";
+import { DayResuppliesReader } from "../../channels/commerce/day-resupplies.reader.js";
 import { PendingSettlementSweeper } from "../../channels/commerce/pending-settlement.sweeper.js";
 import { ProductionDayClosedEvent } from "../../channels/commerce/production-day-closed.event.js";
 import {
@@ -24,9 +24,10 @@ import { OrderWithdrawalsReader } from "../../domain/ports/order-withdrawals.rea
 import { ProductionDayLock } from "../../domain/ports/production-day.lock.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import { refuseCloseBeforeCutoff } from "../../domain/services/early-close.js";
-import { planClosesAt } from "../../domain/services/latest-order-cutoff.js";
+import { planStopsAt } from "../../domain/services/latest-order-cutoff.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
 import { packingListFactsOf } from "../services/packing-list-facts.js";
+import { PlanStopRules } from "../services/plan-stop-rules.js";
 import { CloseProductionDayCommand } from "./close-production-day.command.js";
 
 /**
@@ -45,8 +46,9 @@ import { CloseProductionDayCommand } from "./close-production-day.command.js";
  *
  * ## Pas avant l'heure limite (depuis le 2026-10-21)
  *
- * Le plan d'une journée s'arrête tout seul à la fin du rattrapage de l'heure
- * limite générale (`limites-de-commande/plan-une-seule-heure.md` §5). Un
+ * Le plan d'une journée s'arrête tout seul à la plus tardive de la fin du
+ * rattrapage de l'heure limite générale (`limites-de-commande/plan-une-seule-heure.md`
+ * §5) et de l'heure du réassort (lot R3a du réassort, `PlanStopRules`). Un
  * arrêt demandé plus tôt — à la main — est refusé AVANT le balayage, qui
  * annulerait sinon les paiements de clients encore en train de commander.
  *
@@ -133,7 +135,8 @@ export class CloseProductionDayHandler implements ICommandHandler<
     private readonly lock: ProductionDayLock,
     private readonly authors: StaffAuthorDirectory,
     private readonly withdrawals: OrderWithdrawalsReader,
-    private readonly cutoffRules: OrderCutoffRulesReader,
+    private readonly stopRules: PlanStopRules,
+    private readonly resupplies: DayResuppliesReader,
   ) {}
 
   async execute(command: CloseProductionDayCommand): Promise<ProductionPlanClosure> {
@@ -167,8 +170,8 @@ export class CloseProductionDayHandler implements ICommandHandler<
    * commerce, hors verrou, comme les commandes.
    */
   private async refuseBeforeCutoff(day: ServiceDay): Promise<void> {
-    const general = (await this.cutoffRules.rules())[0] ?? null;
-    refuseCloseBeforeCutoff(day.value, planClosesAt(general, day.value), this.clock.now());
+    const closesAt = planStopsAt(await this.stopRules.rules(), day.value);
+    refuseCloseBeforeCutoff(day.value, closesAt, this.clock.now());
   }
 
   /**
@@ -207,8 +210,13 @@ export class CloseProductionDayHandler implements ICommandHandler<
       // Les retraits de l'annulation staff, lus SOUS le verrou : une commande
       // annulée après la lecture du commerce y figure (plan d'annulation, C3.4).
       const withdrawn = await this.withdrawals.withdrawnOn(day);
+      // Les réassorts pour demain, lus SOUS le verrou (lot R3a) : leur envoi
+      // et leur annulation prennent le même verrou par le guichet
+      // d'admission, donc ce qui est lu ici est définitif — rien ne s'y
+      // ajoute ni ne s'en retire après l'arrêt.
+      const resupplies = await this.resupplies.placedFor(day);
       const now = this.clock.now();
-      current.close(producible, withdrawn, now, signer);
+      current.close(producible, withdrawn, now, signer, resupplies);
       await this.days.save(current);
       await this.events.publishTraced(
         new ProductionDayClosedJournalEvent(day.value, current.orders.length, automatic),
@@ -265,7 +273,8 @@ export class CloseProductionDayHandler implements ICommandHandler<
     reannouncedAt: Date | null,
   ): ProductionDayClosedEvent {
     const orderIds = current.orders.map((order) => order.orderId);
-    return new ProductionDayClosedEvent(day.value, closedAt, orderIds, reannouncedAt);
+    const resupplyIds = current.resupplies.map((resupply) => resupply.resupplyId);
+    return new ProductionDayClosedEvent(day.value, closedAt, orderIds, reannouncedAt, resupplyIds);
   }
 
   private report(

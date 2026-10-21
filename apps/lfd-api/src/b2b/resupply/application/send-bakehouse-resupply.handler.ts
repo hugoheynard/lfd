@@ -1,5 +1,6 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { StaffDirectory } from "../../account/domain/ports/staff-directory.js";
@@ -12,6 +13,7 @@ import type { SiteResupplyLine } from "../domain/site-resupply-line.js";
 import { SiteResupplyRepository } from "../domain/site-resupply.repository.js";
 import { traceOf } from "./resupply-receipt-trace.js";
 import { SendBakehouseResupplyCommand } from "./send-bakehouse-resupply.command.js";
+import { ResupplyPlanGate } from "./resupply-plan-gate.js";
 import { catalogueLine } from "./site-resupply-draft.js";
 
 /**
@@ -21,8 +23,9 @@ import { catalogueLine } from "./site-resupply-draft.js";
  * et envoyé d'un geste : il n'ouvre ni ne touche la demande en cours du
  * comptoir, et le port n'en est jamais consulté. Les règles d'envoi sont
  * celles du comptoir — au moins une ligne, libellés lus au catalogue publié,
- * l'heure limite de sa journée pour « pour demain » si le réassort y est
- * soumis.
+ * l'heure du réassort pour « pour demain ». Depuis le lot R3a, « pour
+ * demain » s'admet au plan sous le verrou de la journée : après l'arrêt, il
+ * est refusé, et le message dit au fournil son recours.
  */
 @CommandHandler(SendBakehouseResupplyCommand)
 export class SendBakehouseResupplyHandler implements ICommandHandler<
@@ -37,6 +40,8 @@ export class SendBakehouseResupplyHandler implements ICommandHandler<
     private readonly staff: StaffDirectory,
     private readonly clock: Clock,
     private readonly ids: IdGenerator,
+    private readonly gate: ResupplyPlanGate,
+    private readonly uow: UnitOfWork,
   ) {}
 
   async execute(command: SendBakehouseResupplyCommand): Promise<string> {
@@ -49,15 +54,20 @@ export class SendBakehouseResupplyHandler implements ICommandHandler<
       lines.push(await catalogueLine(this.catalogue, requested));
     }
     const serviceDay = serviceDayFor(command.target, trace.at);
-    const resupply = SiteResupply.sentByBakehouse({
-      id: this.ids.next(),
-      siteId: command.siteId,
-      target: command.target,
-      lines,
-      trace,
-      deadline: await this.cutoff.deadlineFor(serviceDay),
+    const deadline = await this.cutoff.deadlineFor(serviceDay);
+    const id = this.ids.next();
+    await this.uow.run(async () => {
+      const resupply = SiteResupply.sentByBakehouse({
+        id,
+        siteId: command.siteId,
+        target: command.target,
+        lines,
+        trace,
+        deadline,
+        planStopped: await this.gate.hold(command.target, serviceDay),
+      });
+      await this.resupplies.save(resupply);
     });
-    await this.resupplies.save(resupply);
-    return resupply.id;
+    return id;
   }
 }

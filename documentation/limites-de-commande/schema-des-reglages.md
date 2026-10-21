@@ -186,7 +186,7 @@ flowchart TB
   subgraph E1["Réglages › Commandes › Heure limite<br/>« Heure limite générale — arrêt du plan de production pour le lendemain »"]
     R1["① L'HEURE LIMITE GÉNÉRALE — une seule règle<br/>« la veille, 23 h » + rattrapage<br/>vaut pour tout le monde, toujours en vigueur<br/>droit lfc_order_settings"]
     R7["⑦ Dérogations pendant le rattrapage<br/>droit b2b_order_waivers"]
-    R9["⑨ Réassort boutique : soumis à l'heure limite / sans limite<br/>stocké, SANS effet tant que le réassort<br/>n'est pas commandé au fournil"]
+    R9["⑨ Heure limite du réassort boutique<br/>« la veille, HH:MM », 20:00 par défaut<br/>refuse « Pour demain » après elle"]
   end
   subgraph E2["Fiche produit (et Référentiel › Limites de commande, en lecture + retrait)"]
     R4["④ Limite PAR PRODUIT — entière<br/>« 2 jours avant, 12 h », sans rattrapage<br/>droit pim_catalog"]
@@ -197,7 +197,8 @@ flowchart TB
   subgraph E4["Opérations datées"]
     R6["⑥ Fenêtre d'opération — à trancher"]
   end
-  R1 -- "déclenche à la fin du rattrapage" --> P["Le plan du fournil pour le lendemain se fige<br/>(plus de réglage côté fournil ; rouvrir reste possible)"]
+  R1 -- "la plus tardive de ① (rattrapage compris)…" --> P["Le plan du fournil pour le lendemain se fige<br/>commandes ET réassorts<br/>(plus de réglage côté fournil ; rouvrir reste possible)"]
+  R9 -- "…et de ⑨" --> P
 ```
 
 Disparus : ①bis (règles par point × jour), ② (l'interrupteur), le rang global,
@@ -231,6 +232,14 @@ défaut). Elle ne décidait rien à son ajout ; depuis le lot R1 du même jour,
 elle s'oppose au réassort commandé « Pour demain » — jamais à « Au plus tôt »
 ([`plan-jour-meme-sur-stock.md`](plan-jour-meme-sur-stock.md) §7 ; le réassort a son dossier,
 [`../reassort-boutiques/`](../reassort-boutiques/README.md)).
+
+**Révisé le 2026-10-21 (lot R3a du réassort)** : ⑨ n'est plus un
+interrupteur mais une **heure** — `order_cutoff_settings.resupply_cutoff_time`,
+« la veille, HH:MM », `20:00` par défaut. Passé elle, « Pour demain » est
+refusé (409, « demandez au fournil ») ; le plan du fournil s'arrête à la plus
+tardive de ① (rattrapage compris) et de ⑨, et fige alors les réassorts avec
+les commandes. `resupply_subject_to_cutoff` reste en base, ni lue ni écrite, à
+retirer ([`reglages-generaux.md`](reglages-generaux.md) §1, colonnes mortes).
 
 **Reste à faire** : les recommandations « commandable aujourd'hui » alignées sur
 « la plus stricte gagne », le devis qui signale la limite, le rattrapage réuni

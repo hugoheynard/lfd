@@ -1,10 +1,16 @@
 import type { ProducibleOrder } from "../../channels/commerce/day-orders.reader.js";
+import type { PlacedResupply } from "../../channels/commerce/day-resupplies.reader.js";
 import {
   ProductionDayAlreadyClosedError,
   ProductionDayEmptyError,
   ProductionDayNotClosedError,
 } from "../errors/production-errors.js";
-import { absorbArrivals, countOf, freezeOrder } from "../services/production-count.js";
+import {
+  absorbArrivals,
+  countOf,
+  freezeOrder,
+  freezeResupply,
+} from "../services/production-count.js";
 import {
   LEGACY_PACKING_OWNER,
   PACKING_PACKING_OWNER,
@@ -20,6 +26,7 @@ import type {
   ProducedItemSnapshot,
   ProductionDaySnapshot,
   ProductionOrderSnapshot,
+  ProductionResupplySnapshot,
 } from "./production-day.snapshot.js";
 import type { PlanSigner } from "./plan-signer.js";
 
@@ -33,6 +40,7 @@ export type {
   ProductionDaySnapshot,
   ProductionLineSnapshot,
   ProductionOrderSnapshot,
+  ProductionResupplySnapshot,
 } from "./production-day.snapshot.js";
 
 /**
@@ -48,7 +56,8 @@ export type {
  *    donnerait un autre nombre que celui sur lequel le fournil a lancé ses
  *    fournées — et c'est le seul document de tout ce dossier qui ne se
  *    refabrique pas.
- * 2. **Une journée sans commande ne s'arrête pas.** Fermer le vide écrirait un
+ * 2. **Une journée sans commande ni réassort ne s'arrête pas** (réassorts :
+ *    lot R3a, 2026-10-21). Fermer le vide écrirait un
  *    fait — « ce jour-là on a produit ceci » — là où il n'y a rien eu, et le
  *    compte à produire du lendemain hériterait d'un zéro qu'on croirait mesuré.
  *
@@ -77,6 +86,7 @@ export class ProductionDay {
     private countsValue: readonly ProducedItemSnapshot[],
     private batchesValue: readonly ProductionBatchSnapshot[],
     private reopenedValue: PackedMark | null = null,
+    private resuppliesValue: readonly ProductionResupplySnapshot[] = [],
   ) {}
 
   /**
@@ -100,6 +110,7 @@ export class ProductionDay {
       snapshot.counts,
       snapshot.batches,
       snapshot.reopened ?? null,
+      snapshot.resupplies ?? [],
     );
   }
 
@@ -140,7 +151,12 @@ export class ProductionDay {
     return this.ordersValue;
   }
 
-  /** Le **compte à produire** : un article, une quantité, tous clients confondus. */
+  /** Les réassorts figés à l'arrêt (lot R3a) — à part des commandes, au compte quand même. */
+  get resupplies(): readonly ProductionResupplySnapshot[] {
+    return this.resuppliesValue;
+  }
+
+  /** Le **compte à produire** : un article, une quantité, commandes et réassorts confondus. */
   get counts(): readonly ProducedItemSnapshot[] {
     return this.countsValue;
   }
@@ -217,23 +233,29 @@ export class ProductionDay {
    * @param by qui arrête — `null` quand on ne le sait pas (un semis) : le
    *   dossier dit alors « Arrêté le … », sans inventer d'auteur.
    * @throws {ProductionDayAlreadyClosedError} elle l'est déjà — cf. l'en-tête.
-   * @throws {ProductionDayEmptyError} rien à produire ce jour-là, retraits ôtés.
+   * @param resupplies les réassorts « pour demain » envoyés et non annulés
+   *   (lot R3a), lus par l'appelant SOUS le verrou : ils sont figés à part
+   *   des commandes, et leurs lignes entrent au compte à produire.
+   * @throws {ProductionDayEmptyError} rien à produire ce jour-là, retraits ôtés
+   *   — ni commande, ni réassort.
    */
   close(
     orders: readonly ProducibleOrder[],
     withdrawn: ReadonlySet<string>,
     at: Date,
     by: PlanSigner | null,
+    resupplies: readonly PlacedResupply[] = [],
   ): void {
     if (this.isClosed) {
       throw new ProductionDayAlreadyClosedError(this.day.value);
     }
     const kept = withoutWithdrawn(orders, withdrawn);
-    if (kept.length === 0) {
+    if (kept.length === 0 && resupplies.length === 0) {
       throw new ProductionDayEmptyError(this.day.value);
     }
     this.ordersValue = kept.map(freezeOrder);
-    this.countsValue = countOf(kept);
+    this.resuppliesValue = resupplies.map(freezeResupply);
+    this.countsValue = countOf([...kept, ...this.resuppliesValue]);
     this.closedAtValue = at;
     this.closedByValue = by;
     // Écrit ici et nulle part ailleurs (colisage, §13, B1) : la journée garde
@@ -276,7 +298,7 @@ export class ProductionDay {
       throw new ProductionDayNotClosedError(this.day.value);
     }
     const kept = withoutWithdrawn(orders, withdrawn);
-    const absorbed = absorbArrivals(this.ordersValue, this.countsValue, kept);
+    const absorbed = absorbArrivals(this.ordersValue, this.countsValue, kept, this.resuppliesValue);
     if (absorbed.count === 0) {
       return 0;
     }
@@ -289,7 +311,10 @@ export class ProductionDay {
 
   /**
    * **Rouvre la journée** (Hugo, 2026-10-14) : l'arrêt est défait, le plan
-   * effacé (commandes, compte, retirage), et la trace `reopened` posée. Les
+   * effacé (commandes, réassorts — lot R3a —, compte, retirage), et la trace
+   * `reopened` posée. Les réassorts dégelés redeviennent annulables au
+   * commerce : la journée n'est plus arrêtée. L'appelant lit
+   * {@link resupplies} AVANT pour les nommer dans le fait. Les
    * fournées annulées restent : elles sont l'historique du four, pas du plan.
    * Le prochain arrêt refait un instantané neuf, avec un nouvel instant.
    *
@@ -308,6 +333,7 @@ export class ProductionDay {
     this.retakenValue = null;
     this.retakenByNameValue = null;
     this.ordersValue = [];
+    this.resuppliesValue = [];
     this.countsValue = [];
     this.reopenedValue = { at, by };
     return released;
@@ -323,6 +349,7 @@ export class ProductionDay {
       retakenByName: this.retakenByNameValue,
       packingOwner: this.packingOwnerValue,
       orders: this.ordersValue,
+      resupplies: this.resuppliesValue,
       counts: this.countsValue,
       batches: this.batchesValue,
       reopened: this.reopenedValue,

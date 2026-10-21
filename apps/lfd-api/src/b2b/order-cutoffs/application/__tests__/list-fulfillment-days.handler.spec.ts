@@ -25,7 +25,7 @@ class SameDay extends OrderCutoffSettingsReader {
     return Promise.resolve({
       enabled: true,
       sameDayAllowed: this.allowed,
-      resupplySubjectToCutoff: true,
+      resupplyCutoffTime: "20:00",
       updatedAt: null,
       updatedBy: null,
     });

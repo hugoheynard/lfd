@@ -49,14 +49,22 @@ flowchart LR
 - **La demande en cours** (lot R1c, 2026-10-21) : le brouillon se
   persiste — voir la section suivante. `PlaceSiteResupplyHandler`, le geste
   d'un seul tenant de R1, passe désormais par elle.
-- **L'heure limite** : `place()` refuse une visée `tomorrow` après l'heure
-  limite générale de sa journée (borne incluse, rattrapage non compris) quand
-  `resupply_subject_to_cutoff` est vrai — **le réglage a désormais un
-  effet**. `asap` n'en a jamais. La règle est celle du commerce
-  (`OrderCutoffsInForce` + `orderCutoffInstant`), lue par le port
-  `ResupplyCutoff` (`apps/lfd-api/src/b2b/resupply/infrastructure/general-resupply-cutoff.ts`).
-- **Annuler** : un réassort passé s'annule, une fois ; rien en aval ne le
-  tient encore. Une annulation est un état, jamais une suppression.
+- **L'heure limite** (révisée au lot R3a, 2026-10-21) : `place()` refuse une
+  visée `tomorrow` après **l'heure du réassort** (« la veille, HH:MM »,
+  `order_cutoff_settings.resupply_cutoff_time`, 20:00 par défaut ; borne
+  incluse), ou sur un plan déjà arrêté. `asap` n'en a jamais. Lue par le port
+  `ResupplyCutoff` (`apps/lfd-api/src/b2b/resupply/infrastructure/settings-resupply-cutoff.ts`).
+  L'ancien interrupteur `resupply_subject_to_cutoff` reste en base, mort.
+- **Le plan figé** (lot R3a) : l'envoi et l'annulation « pour demain » passent
+  par le guichet d'admission du plan sous le verrou de la journée
+  (`ResupplyPlanGate`) ; l'arrêt du fournil fige les réassorts envoyés
+  (`DayResuppliesReader`, implémenté par `ProductionDayResupplies`) et les
+  compte au total. Détail : [`../production/arret-du-plan.md`](../production/arret-du-plan.md).
+- **Annuler** : un réassort passé s'annule, une fois — sauf réceptionné (R1d)
+  ou, pour demain, figé dans un plan arrêté (R3a, 409 « réceptionnez avec un
+  écart »). Une annulation est un état, jamais une suppression.
+- **Réassorts à produire** : depuis R3a, un « pour demain » d'un plan arrêté
+  n'y est plus (il est dans la feuille du fournil).
 - **Les tables** : `site_resupply` et `site_resupply_line` (unique par
   réassort et SKU, quantité > 0 en CHECK), schéma `public`, migration
   `20261021170000_le_reassort_commande_par_un_point` (additive), puis

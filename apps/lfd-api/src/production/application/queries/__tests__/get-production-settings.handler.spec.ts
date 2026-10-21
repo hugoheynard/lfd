@@ -2,7 +2,13 @@ import { addDays } from "@lfd/contracts";
 
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import { todayOf } from "../../../domain/services/relative-day.js";
-import { ClosedDaysTable, CutoffRules, SettingsReader } from "../../__tests__/settings-doubles.js";
+import {
+  ClosedDaysTable,
+  CutoffRules,
+  ResupplyTime,
+  SettingsReader,
+  stopRulesOf,
+} from "../../__tests__/settings-doubles.js";
 import { GetProductionSettingsHandler } from "../get-production-settings.handler.js";
 
 const NOW = new Date();
@@ -11,12 +17,13 @@ const TODAY = todayOf(NOW);
 function subject() {
   const closedDays = new ClosedDaysTable();
   const cutoffs = new CutoffRules();
+  const resupplyTime = new ResupplyTime();
   const handler = new GetProductionSettingsHandler(
     new SettingsReader(closedDays),
-    cutoffs,
+    stopRulesOf(cutoffs, resupplyTime),
     new FixedClock(NOW),
   );
-  return { closedDays, cutoffs, handler };
+  return { closedDays, cutoffs, resupplyTime, handler };
 }
 
 describe("GetProductionSettingsHandler", () => {
@@ -49,5 +56,22 @@ describe("GetProductionSettingsHandler", () => {
     cutoffs.current = [{ daysBefore: 1, time: "23:00", graceMinutes: 90 }];
 
     expect((await handler.execute()).automaticClose).toEqual({ daysBefore: 0, time: "00:30" });
+  });
+
+  /** Lot R3a (2026-10-21) : l'arrêt suit la plus tardive des deux heures, et la page le dit. */
+  it("rend l'heure du réassort quand elle est plus tardive que l'heure générale", async () => {
+    const { handler, cutoffs, resupplyTime } = subject();
+    cutoffs.current = [{ daysBefore: 1, time: "18:00", graceMinutes: 30 }];
+    resupplyTime.current = "20:00";
+
+    expect((await handler.execute()).automaticClose).toEqual({ daysBefore: 1, time: "20:00" });
+  });
+
+  it("garde l'heure générale, rattrapage compris, quand le réassort tombe avant", async () => {
+    const { handler, cutoffs, resupplyTime } = subject();
+    cutoffs.current = [{ daysBefore: 1, time: "21:00", graceMinutes: 30 }];
+    resupplyTime.current = "20:00";
+
+    expect((await handler.execute()).automaticClose).toEqual({ daysBefore: 1, time: "21:30" });
   });
 });

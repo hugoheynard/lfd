@@ -132,6 +132,23 @@ export interface ProductionBatchSnapshot {
   readonly pendingReturn: number;
 }
 
+/**
+ * **Un réassort figé à l'arrêt** (lot R3a du réassort, 2026-10-21) — ce que
+ * le commerce a envoyé « pour demain » à un point, recopié. À part des
+ * commandes : il n'a ni client, ni acheminement, ni bon. Ses lignes comptent
+ * dans le compte à produire (décision B : les fournées se cochent sur le
+ * total commandes + réassorts).
+ */
+export interface ProductionResupplySnapshot {
+  /** L'identifiant du réassort au commerce, opaque. */
+  readonly resupplyId: string;
+  /** Le point qui le recevra, opaque. */
+  readonly siteId: string;
+  /** Son nom figé à l'arrêt ; `null` : inconnu. */
+  readonly siteLabel: string | null;
+  readonly lines: readonly ProductionLineSnapshot[];
+}
+
 /** L'état d'une journée, tel que l'adaptateur l'écrit et le relit. */
 export interface ProductionDaySnapshot {
   readonly serviceDay: string;
@@ -151,6 +168,11 @@ export interface ProductionDaySnapshot {
   /** Qui colise la journée — écrit à la clôture (colisage, §13, B1). */
   readonly packingOwner: PackingOwner;
   readonly orders: readonly ProductionOrderSnapshot[];
+  /**
+   * Les réassorts figés à l'arrêt (lot R3a). Facultatifs à la RÉHYDRATATION
+   * seulement (absents valent `[]`) ; `toSnapshot` les rend toujours.
+   */
+  readonly resupplies?: readonly ProductionResupplySnapshot[];
   readonly counts: readonly ProducedItemSnapshot[];
   /** Toutes les fournées du jour, annulées comprises, dans l'ordre de la base. */
   readonly batches: readonly ProductionBatchSnapshot[];

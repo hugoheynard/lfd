@@ -364,5 +364,6 @@
   "test/resupply-receipt.e2e-spec.ts": 5426,
   "test/site-resupply-draft.e2e-spec.ts": 11241,
   "test/site-resupply.e2e-spec.ts": 10127,
-  "test/site-stock-alert.e2e-spec.ts": 11791
+  "test/site-stock-alert.e2e-spec.ts": 11791,
+  "test/resupply-frozen-plan.e2e-spec.ts": 8937
 }

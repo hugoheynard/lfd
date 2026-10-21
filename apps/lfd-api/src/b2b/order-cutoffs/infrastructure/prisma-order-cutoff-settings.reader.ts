@@ -21,7 +21,7 @@ export class PrismaOrderCutoffSettingsReader extends OrderCutoffSettingsReader {
       where: { key: ORDER_CUTOFF_SETTINGS_KEY },
       select: {
         sameDayAllowed: true,
-        resupplySubjectToCutoff: true,
+        resupplyCutoffTime: true,
         updatedAt: true,
         updatedByName: true,
       },
@@ -31,7 +31,7 @@ export class PrismaOrderCutoffSettingsReader extends OrderCutoffSettingsReader {
     }
     return {
       sameDayAllowed: row.sameDayAllowed,
-      resupplySubjectToCutoff: row.resupplySubjectToCutoff,
+      resupplyCutoffTime: row.resupplyCutoffTime,
       updatedAt: row.updatedAt.toISOString(),
       // Un agent que l'annuaire ne connaissait pas a été figé sans nom : on ne l'invente pas.
       updatedBy: row.updatedByName === "" ? null : row.updatedByName,

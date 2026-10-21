@@ -7,6 +7,7 @@ import {
   StaffDirectory,
   type StaffIdentity,
 } from "../../../account/domain/ports/staff-directory.js";
+import { InvalidResupplyCutoffTimeError } from "../../domain/order-cutoff-errors.js";
 import type { OrderCutoffSettings } from "../../domain/order-cutoff-settings.js";
 import { OrderCutoffSettingsReader } from "../../domain/order-cutoff-settings.reader.js";
 import { OrderCutoffSettingsRepository } from "../../domain/order-cutoff-settings.repository.js";
@@ -46,7 +47,7 @@ class Directory extends StaffDirectory {
 
 const SAME_DAY_OPEN: OrderCutoffSettingsView = {
   sameDayAllowed: true,
-  resupplySubjectToCutoff: true,
+  resupplyCutoffTime: "20:00",
   updatedAt: AT.toISOString(),
   updatedBy: "Alex",
 };
@@ -103,39 +104,50 @@ describe("UpdateOrderCutoffSettingsHandler", () => {
     });
     expect(events.traced[0]?.journalFact().payload).toEqual({
       sameDayAllowed: false,
-      resupplySubjectToCutoff: true,
-      previous: { sameDayAllowed: true, resupplySubjectToCutoff: true },
+      resupplyCutoffTime: "20:00",
+      previous: { sameDayAllowed: true, resupplyCutoffTime: "20:00" },
     });
   });
 
-  /** La limite du réapprovisionnement (2026-10-21) : une page n'envoie que sa clé. */
-  it("pose la limite du réapprovisionnement sans toucher au jour même", async () => {
+  /** L'heure du réassort (lot R3a, 2026-10-21) : une page n'envoie que sa clé. */
+  it("pose l'heure du réassort sans toucher au jour même", async () => {
     const written = new Written();
     const events = new RecordingPublisher();
 
     await handler(SAME_DAY_OPEN, written, events).execute(
-      new UpdateOrderCutoffSettingsCommand({ resupplySubjectToCutoff: false }, "staff_agent"),
+      new UpdateOrderCutoffSettingsCommand({ resupplyCutoffTime: "21:30" }, "staff_agent"),
     );
 
     expect(written.puts[0]?.sameDayAllowed).toBe(true);
-    expect(written.puts[0]?.resupplySubjectToCutoff).toBe(false);
+    expect(written.puts[0]?.resupplyCutoffTime).toBe("21:30");
     expect(events.traced[0]?.journalFact().payload).toEqual({
       sameDayAllowed: true,
-      resupplySubjectToCutoff: false,
-      previous: { sameDayAllowed: true, resupplySubjectToCutoff: true },
+      resupplyCutoffTime: "21:30",
+      previous: { sameDayAllowed: true, resupplyCutoffTime: "20:00" },
     });
   });
 
-  it("le jour même posé seul garde la limite du réapprovisionnement courante", async () => {
+  it("le jour même posé seul garde l'heure du réassort courante", async () => {
     const written = new Written();
 
     await handler(
-      { ...SAME_DAY_OPEN, resupplySubjectToCutoff: false },
+      { ...SAME_DAY_OPEN, resupplyCutoffTime: "22:15" },
       written,
       new RecordingPublisher(),
     ).execute(new UpdateOrderCutoffSettingsCommand({ sameDayAllowed: false }, "staff_agent"));
 
-    expect(written.puts[0]?.resupplySubjectToCutoff).toBe(false);
+    expect(written.puts[0]?.resupplyCutoffTime).toBe("22:15");
+  });
+
+  it("refuse une heure du réassort qui n'existe pas, sans rien écrire", async () => {
+    const written = new Written();
+
+    const refusal = handler(SAME_DAY_OPEN, written, new RecordingPublisher()).execute(
+      new UpdateOrderCutoffSettingsCommand({ resupplyCutoffTime: "24:00" }, "staff_agent"),
+    );
+
+    await expect(refusal).rejects.toThrow(InvalidResupplyCutoffTimeError);
+    expect(written.puts).toEqual([]);
   });
 
   it("reposer l'état courant n'écrit rien et ne journalise rien", async () => {

@@ -41,7 +41,7 @@ export class UpdateOrderCutoffSettingsHandler implements ICommandHandler<
       const next = OrderCutoffSettings.pose({
         current: previous,
         sameDayAllowed: command.patch.sameDayAllowed,
-        resupplySubjectToCutoff: command.patch.resupplySubjectToCutoff,
+        resupplyCutoffTime: command.patch.resupplyCutoffTime,
         at: this.clock.now(),
         author,
       });

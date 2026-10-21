@@ -55,10 +55,14 @@ le 2026-10-21, §2). L'écran
 (`reglages/commandes/cutoffs-section/`) ne montre que la générale ; il ne liste
 plus de règles « non reprises ».
 
-### `public.order_cutoff_settings` — le jour même (`OrderCutoffSettings`, `prisma/schema/public/settings.prisma`)
+### `public.order_cutoff_settings` — le jour même et l'heure du réassort (`OrderCutoffSettings`, `prisma/schema/public/settings.prisma`)
 
-Une ligne au plus, clé `orders` : `same_day_allowed` (défaut `false`), et
-l'auteur du geste. **Ligne absente = jour même non autorisé.** La colonne
+Une ligne au plus, clé `orders` : `same_day_allowed` (défaut `false`),
+`resupply_cutoff_time` (l'heure limite du réassort pour demain, « la veille,
+HH:MM », défaut `20:00`, CHECK de forme — lot R3a du réassort, 2026-10-21,
+migration `20261022100000_le_reassort_au_plan_fige`), et l'auteur du geste.
+Vue et `PATCH` portent `resupplyCutoffTime` ; le domaine refuse une heure qui
+n'existe pas (`InvalidResupplyCutoffTimeError`, 400). **Ligne absente = jour même non autorisé.** La colonne
 `enabled` (l'interrupteur, §2) reste en base, ni lue ni écrite depuis le
 2026-10-21. Routes `GET`/`PATCH admin/order-cutoff-settings`
 (`lfc_order_settings`) : la vue est `{ sameDayAllowed, updatedAt, updatedBy }`,
@@ -80,6 +84,17 @@ toujours), rien quand l'état ne change pas.
   seule règle, la générale, « la veille à 18:00 », rattrapage `0`.
 - Les deux n'ont que la ligne générale dans `order_cutoffs` (prod : lu par Hugo
   le 2026-10-21) : la migration du CHECK y passe.
+
+### Colonnes mortes, à retirer (tenu depuis le 2026-10-21)
+
+Ni lues ni écrites ; elles restent en base jusqu'à un déploiement qui les
+supprime, une fois qu'aucun binaire en service ne les nomme.
+
+| Colonne                                                             | Morte depuis         | Pourquoi                                                |
+| ------------------------------------------------------------------- | -------------------- | ------------------------------------------------------- |
+| `public.order_cutoff_settings.enabled`                              | 2026-10-21           | l'interrupteur de l'heure limite, §2                    |
+| `public.order_cutoff_settings.resupply_subject_to_cutoff`           | 2026-10-21 (lot R3a) | remplacée par `resupply_cutoff_time`                    |
+| `production.production_settings.close_mode`, `close_at`, `alert_at` | 2026-10-21           | [`plan-une-seule-heure.md`](plan-une-seule-heure.md) §5 |
 
 ## 2. L'interrupteur — retiré le 2026-10-21
 
@@ -155,7 +170,8 @@ Une journée dont le plan du fournil est arrêté n'est plus proposée
 (`ClosedPlansReader`) et refuse la commande client
 (`orders.production_plan_closed`, sous le verrou `production_day:<jour>`) ;
 l'équipe est reçue, marquée `placed_off_plan`. Depuis le 2026-10-21, le plan
-s'arrête tout seul à la fin du rattrapage de la règle générale — l'écran de
+s'arrête tout seul à la **plus tardive** de la fin du rattrapage de la règle
+générale et de l'heure du réassort (lot R3a, même jour) — l'écran de
 l'heure limite le dit (« Heure limite générale — arrêt du plan de production
 pour le lendemain »). Voir [`../production/arret-du-plan.md`](../production/arret-du-plan.md).
 

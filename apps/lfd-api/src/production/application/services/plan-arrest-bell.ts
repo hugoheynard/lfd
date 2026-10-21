@@ -54,8 +54,8 @@ export class PlanArrestBell {
   async nothingToArrest(day: ServiceDay, at: Date): Promise<void> {
     const label = frenchDayLabel(day.value);
     await this.ring(PLAN_ARREST_NOTICES.nothingToArrest, day, at, {
-      subject: `Rien à arrêter pour le ${label} : aucune commande`,
-      body: `L'arrêt automatique n'a trouvé aucune commande pour le ${label}. Rien n'est à produire ; si des commandes arrivent encore, arrêtez le plan depuis le prévisionnel.`,
+      subject: `Rien à arrêter pour le ${label} : aucune commande ni réassort`,
+      body: `L'arrêt automatique n'a trouvé ni commande ni réassort pour le ${label}. Rien n'est à produire ; si des commandes arrivent encore, arrêtez le plan depuis le prévisionnel.`,
     });
   }
 

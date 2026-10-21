@@ -8,7 +8,10 @@ import {
   ResupplyLineNotInDraftError,
   ResupplyAlreadyReceivedNotCancellableError,
   ResupplyNotCancellableError,
+  BakehouseResupplyAfterStopError,
+  ResupplyFrozenInPlanError,
   ResupplyPastCutoffError,
+  ResupplyPlanStoppedError,
   SiteResupplyChangedMeanwhileError,
   UnknownResupplyTargetError,
 } from "./site-resupply-errors.js";
@@ -126,7 +129,7 @@ export class SiteResupply {
    * « Je t'envoie ça » — le réassort du fournil (lot R1d), créé et envoyé
    * d'un geste : ses lignes (un même article deux fois s'additionne), puis
    * `place` avec les règles du comptoir — au moins une ligne, l'heure limite
-   * de sa journée pour « pour demain » quand le réassort y est soumis.
+   * de sa journée pour « pour demain », et le plan pas encore arrêté (R3a).
    */
   static sentByBakehouse(input: {
     readonly id: string;
@@ -135,12 +138,13 @@ export class SiteResupply {
     readonly lines: readonly SiteResupplyLine[];
     readonly trace: SiteResupplyTrace;
     readonly deadline: Date | null;
+    readonly planStopped: boolean;
   }): SiteResupply {
     const resupply = SiteResupply.blank(input, input.trace.at, "bakehouse");
     for (const line of input.lines) {
       resupply.addLine(line);
     }
-    resupply.place(input.trace, input.deadline);
+    resupply.place(input.trace, input.deadline, input.planStopped);
     return resupply;
   }
 
@@ -246,13 +250,14 @@ export class SiteResupply {
   }
 
   /**
-   * Passe le réassort. `deadline` est l'heure limite de sa journée quand le
-   * réassort y est soumis, `null` sinon (réglé sans limite, ou aucune limite
-   * posée) ; « au plus tôt » l'ignore toujours. La borne est incluse, comme
-   * pour une commande : à la seconde de la limite, c'est encore accepté.
-   * Une demande dont la journée est passée ne s'envoie plus.
+   * Passe le réassort. `deadline` est l'heure du réassort pour sa journée
+   * (« la veille, HH:MM », lot R3a), `null` si elle n'existe pas ce jour-là ;
+   * `planStopped` dit si le plan du fournil pour cette journée est arrêté,
+   * lu SOUS le verrou de la journée. « Au plus tôt » ignore les deux. La borne
+   * est incluse : à la seconde de l'heure, c'est encore accepté. Une demande
+   * dont la journée est passée ne s'envoie plus.
    */
-  place(trace: SiteResupplyTrace, deadline: Date | null): void {
+  place(trace: SiteResupplyTrace, deadline: Date | null, planStopped: boolean): void {
     this.assertDraft();
     if (this.lineList.length === 0) {
       throw new EmptyResupplyError();
@@ -260,20 +265,46 @@ export class SiteResupply {
     if (instantToLocal(trace.at).day > this.serviceDay) {
       throw new ResupplyDayPassedError(this.serviceDay);
     }
-    if (this.target === "tomorrow" && deadline !== null && trace.at > deadline) {
-      const limit = instantToLocal(deadline);
-      throw new ResupplyPastCutoffError(this.serviceDay, `${limit.day} à ${limit.time}`);
+    if (this.target === "tomorrow") {
+      this.assertBeforeStop(trace.at, deadline, planStopped);
     }
     this.placedTrace = trace;
+  }
+
+  /** Avant l'heure du réassort ET avant l'arrêt — le message suit qui envoie. */
+  private assertBeforeStop(at: Date, deadline: Date | null, planStopped: boolean): void {
+    const late = deadline !== null && at > deadline;
+    if (!late && !planStopped) {
+      return;
+    }
+    const limit = deadline === null ? null : instantToLocal(deadline);
+    const label = limit === null ? "inconnue" : `la veille à ${limit.time}`;
+    if (this.origin === "bakehouse") {
+      throw new BakehouseResupplyAfterStopError(this.serviceDay, label);
+    }
+    if (late) {
+      throw new ResupplyPastCutoffError(this.serviceDay, label);
+    }
+    throw new ResupplyPlanStoppedError(this.serviceDay);
   }
 
   /**
    * Annule un réassort passé. `reception`, lue par l'appelant (`null` avant
    * « Réceptionner ») : arrivé et attesté, il ne s'annule plus (R1d).
+   * `planStopped`, lu SOUS le verrou de la journée : un réassort « pour
+   * demain » figé dans un plan arrêté ne s'annule plus (R3a, Q3) ; rouvert,
+   * il s'annule de nouveau.
    */
-  cancel(trace: SiteResupplyTrace, reception: SiteResupplyTrace | null): void {
+  cancel(
+    trace: SiteResupplyTrace,
+    reception: SiteResupplyTrace | null,
+    planStopped: boolean,
+  ): void {
     if (this.status !== "placed") {
       throw new ResupplyNotCancellableError();
+    }
+    if (this.target === "tomorrow" && planStopped) {
+      throw new ResupplyFrozenInPlanError(this.serviceDay);
     }
     if (reception !== null) {
       throw new ResupplyAlreadyReceivedNotCancellableError(

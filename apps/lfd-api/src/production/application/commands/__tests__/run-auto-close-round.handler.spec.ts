@@ -19,7 +19,13 @@ import { AutomaticDayCloser } from "../../../domain/ports/automatic-day-closer.j
 import type { AttemptTrace } from "../../../domain/services/auto-close-round.js";
 import type { OrderCutoffRule } from "../../../domain/services/latest-order-cutoff.js";
 import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
-import { ClosedDaysTable, CutoffRules, SettingsReader } from "../../__tests__/settings-doubles.js";
+import {
+  ClosedDaysTable,
+  CutoffRules,
+  ResupplyTime,
+  SettingsReader,
+  stopRulesOf,
+} from "../../__tests__/settings-doubles.js";
 import { PlanArrestBell } from "../../services/plan-arrest-bell.js";
 import { RunAutoCloseRoundHandler } from "../run-auto-close-round.handler.js";
 
@@ -151,7 +157,12 @@ class Bell extends StaffNotifier {
 /** L'heure limite générale du commerce : la veille à 21:00, sans rattrapage. */
 const EVE_AT_21: OrderCutoffRule = { daysBefore: 1, time: "21:00", graceMinutes: 0 };
 
-function subject(time: string, rule: OrderCutoffRule | null = EVE_AT_21, day = TODAY) {
+function subject(
+  time: string,
+  rule: OrderCutoffRule | null = EVE_AT_21,
+  day = TODAY,
+  resupplyTime: ResupplyTime = new ResupplyTime(),
+) {
   const closedDays = new ClosedDaysTable();
   const fournil = new Fournil();
   const commerce = new Commerce();
@@ -167,7 +178,7 @@ function subject(time: string, rule: OrderCutoffRule | null = EVE_AT_21, day = T
     commerce,
     closer,
     new PlanArrestBell(bell),
-    new CutoffRules(rule === null ? [] : [rule]),
+    stopRulesOf(new CutoffRules(rule === null ? [] : [rule]), resupplyTime),
   );
   return { handler, fournil, commerce, closer, bell, clock, closedDays, attempts };
 }
@@ -201,6 +212,18 @@ describe("l'arrêt automatique à l'heure limite générale (2026-10-21)", () =>
     expect(s.fournil.attempts.size).toBe(0);
   });
 
+  /** Lot R3a (2026-10-21) : un seul arrêt, à la plus tardive des deux heures. */
+  it("attend l'heure du réassort quand elle est plus tardive que l'heure générale", async () => {
+    const before = subject("21:30", EVE_AT_21, TODAY, new ResupplyTime("22:00"));
+    before.commerce.orders.set(TOMORROW, [order("o1")]);
+    const after = subject("22:00", EVE_AT_21, TODAY, new ResupplyTime("22:00"));
+    after.commerce.orders.set(TOMORROW, [order("o1")]);
+
+    expect((await before.handler.execute()).outcome).toBe("nothing");
+    expect((await after.handler.execute()).outcome).toBe("closed");
+    expect(after.closer.closed).toEqual([TOMORROW]);
+  });
+
   it("lendemain vide : trace `empty`, « rien à arrêter » une fois, plus de tentative", async () => {
     const s = subject("21:00");
 
@@ -216,7 +239,7 @@ describe("l'arrêt automatique à l'heure limite générale (2026-10-21)", () =>
       ],
     ]);
     expect(s.bell.notices[0]).toMatchObject({
-      subject: "Rien à arrêter pour le mercredi 7 octobre : aucune commande",
+      subject: "Rien à arrêter pour le mercredi 7 octobre : aucune commande ni réassort",
       audience: "production_count_stop:write",
       link: "/production/previsionnel",
     });

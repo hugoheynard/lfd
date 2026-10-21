@@ -16,7 +16,7 @@ import { UpdateOrderCutoffSettingsCommand } from "../application/update-order-cu
  * Le **jour même** — Réglages › Commandes › Jour même (§8.3 ; sa page depuis
  * le 2026-10-21). Sous `lfc_order_settings`, comme l'heure limite.
  *
- * `GET` rend la vue ; `PATCH` (`204`) prend `{ sameDayAllowed?, resupplySubjectToCutoff? }` (la limite du réapprovisionnement, 2026-10-21 — sans effet tant qu'il n'est pas commandé au fournil). L'interrupteur
+ * `GET` rend la vue ; `PATCH` (`204`) prend `{ sameDayAllowed?, resupplyCutoffTime? }` (l'heure limite du réassort pour demain, « la veille, HH:MM », lot R3a du 2026-10-21). L'interrupteur
  * de l'heure limite générale (`enabled`) est retiré le 2026-10-21
  * (`limites-de-commande/plan-une-seule-heure.md` §5) : une charge qui le porte
  * est refusée en 400.

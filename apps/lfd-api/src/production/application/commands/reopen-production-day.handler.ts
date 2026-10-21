@@ -69,6 +69,8 @@ export class ReopenProductionDayHandler implements ICommandHandler<
       await this.lock.lock(day);
       const current = await this.days.load(day);
       const closedAt = current.closedAt;
+      // Lus AVANT `reopen`, qui les efface (lot R3a) : le fait les nomme.
+      const resupplyIds = current.resupplies.map((resupply) => resupply.resupplyId);
       const now = this.clock.now();
       const released = current.reopen(progress, now, command.staffUserId);
       await this.days.save(current);
@@ -78,7 +80,13 @@ export class ReopenProductionDayHandler implements ICommandHandler<
       // `closedAt` n'est pas nul : `reopen` a refusé une journée ouverte. On le
       // traite plutôt que de l'affirmer, comme la réannonce de la clôture.
       await this.durable.publish(
-        new ProductionDayReopenedEvent(day.value, now, closedAt ?? now, released).durableFact(),
+        new ProductionDayReopenedEvent(
+          day.value,
+          now,
+          closedAt ?? now,
+          released,
+          resupplyIds,
+        ).durableFact(),
       );
       return { date: day.value, released: released.length, reopenedAt: now.toISOString() };
     });

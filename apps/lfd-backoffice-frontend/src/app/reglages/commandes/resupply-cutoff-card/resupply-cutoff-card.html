@@ -2,54 +2,58 @@
   <fold-element-title
     cardHeader
     variant="title"
-    title="Réassort boutique"
+    title="Heure limite du réassort boutique"
     subtitle="S'applique au réassort commandé « Pour demain » ; « Au plus tôt » n'a jamais d'heure limite."
   >
     @if (state() === 'ready') {
-      <fold-badge
-        titleAction
-        [variant]="subject() ? 'info' : 'neutral'"
-        [content]="subject() ? 'Soumis à l’heure limite' : 'Sans limite'"
-      />
+      <fold-badge titleAction variant="info" [content]="'La veille, ' + current()" />
     }
   </fold-element-title>
 
   @switch (state()) {
     @case ('loading') {
-      <fold-loading message="Chargement du réglage du réassort…" />
+      <fold-loading message="Chargement de l'heure du réassort…" />
     }
     @case ('error') {
-      <fold-empty-state tone="alert" title="Impossible de charger le réglage du réassort">
+      <fold-empty-state tone="alert" title="Impossible de charger l'heure du réassort">
         <button foldButton (click)="load()">Réessayer</button>
       </fold-empty-state>
     }
     @case ('ready') {
       <p class="text" data-resupply-cutoff-value>
-        @if (subject()) {
-          Soumis à l'heure limite : le réassort pour demain se commande avant l'heure limite
-          générale, comme une commande.
-        } @else {
-          Sans limite : le réassort pour demain se commande à toute heure.
-        }
+        Le réassort pour demain se commande jusqu'à la veille, {{ current() }}. Le plan du fournil
+        s'arrête à la plus tardive de cette heure et de l'heure limite générale (rattrapage compris)
+        : un seul compte total, commandes et réassorts.
       </p>
 
       @if (canWrite()) {
-        <fold-inline-confirm
-          intent="primary"
-          [message]="effect()"
-          [loading]="pending()"
-          (confirmed)="toggle()"
-        >
+        <!-- `<input type="time">` en natif, comme l'heure limite générale : Signal
+             Forms ne couvre pas les heures. -->
+        <div class="edit">
+          <label class="time">
+            <span class="time-label">La veille, à</span>
+            <input
+              type="time"
+              [value]="time()"
+              (change)="onTime($event)"
+              required
+              data-resupply-cutoff-time
+            />
+          </label>
           <button
             foldButton
             size="sm"
-            emphasis="outline"
-            [disabled]="pending()"
-            data-resupply-cutoff-toggle
+            [disabled]="!canSave()"
+            [loading]="pending()"
+            (click)="save()"
+            data-resupply-cutoff-save
           >
-            {{ subject() ? 'Sans limite' : 'Soumettre à l’heure limite' }}
+            Enregistrer
           </button>
-        </fold-inline-confirm>
+        </div>
+        @if (!timeIsValid()) {
+          <fold-callout variant="alert">Renseignez une heure au format HH:MM.</fold-callout>
+        }
       }
 
       @if (failure(); as message) {

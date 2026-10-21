@@ -19,9 +19,12 @@ import type {
   SiteResuppliesView,
   SiteStockAlertsView,
 } from "@lfd/contracts";
+import { instantToLocal, localToInstant } from "@lfd/contracts";
 import type request from "supertest";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import { Clock } from "../src/platform/time/clock.js";
+import { FixedClock } from "../src/platform/time/fixed-clock.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { counterSent } from "./site-resupply-scene.js";
 
@@ -33,11 +36,24 @@ const stubAdminVerifier = {
 /** Une journée de forme valide, jamais comparée à l'horloge : seul le droit est éprouvé. */
 const ANY_DAY = "2026-01-02";
 
+/**
+ * Midi aujourd'hui, à l'heure de Paris : avant l'heure du réassort par défaut
+ * (la veille, 20:00 — lot R3a), un « pour demain » part quelle que soit
+ * l'heure où la suite tourne. Relatif à maintenant, jamais un jour du calendrier.
+ */
+function todayAtNoon(): Date {
+  return localToInstant(instantToLocal(new Date()).day, "12:00") ?? new Date();
+}
+
+const clock = new FixedClock(todayAtNoon());
 let ctx: E2eContext;
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
-    overrides: [{ token: AdminTokenVerifier, value: stubAdminVerifier }],
+    overrides: [
+      { token: AdminTokenVerifier, value: stubAdminVerifier },
+      { token: Clock, value: clock },
+    ],
   });
 });
 
@@ -47,6 +63,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
+  clock.set(todayAtNoon());
 });
 
 async function seedSite(label = "Val Village"): Promise<string> {
@@ -271,7 +288,7 @@ describe("les trous fermés au lot R1d", () => {
     const agent = await counter();
     const siteId = await seedSite();
     const [first] = await articlesOf(agent);
-    // Aucune heure limite n'est posée dans la base jetable : « pour demain » part.
+    // À midi, avant l'heure du réassort par défaut : « pour demain » part.
     const id = await counterSent(agent, siteId, "tomorrow", [{ sku: first.sku, quantity: 4 }]);
 
     const refused = await agent

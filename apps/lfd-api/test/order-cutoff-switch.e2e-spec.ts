@@ -175,7 +175,7 @@ describe("l'interrupteur de l'heure limite générale, retiré le 2026-10-21", (
 
     expect(view).toEqual({
       sameDayAllowed: false,
-      resupplySubjectToCutoff: true,
+      resupplyCutoffTime: "20:00",
       updatedAt: null,
       updatedBy: null,
     });
@@ -195,6 +195,8 @@ describe("l'interrupteur de l'heure limite générale, retiré le 2026-10-21", (
   it("une ligne résiduelle « désactivée » n'éteint plus l'heure limite, ni au fournil", async () => {
     await seedGeneralRule();
     await leaveResidualSwitchOff();
+    // L'heure du réassort au plus tôt (lot R3a) : l'arrêt lu reste l'heure générale.
+    await staff().patch(ROUTE).send({ resupplyCutoffTime: "00:00" }).expect(204);
     // Pour AUJOURD'HUI, la limite de la veille à 00:01 est franchie à toute heure.
     const refused = await ctx
       .asSub(MEMBER)
@@ -221,20 +223,26 @@ describe("l'interrupteur de l'heure limite générale, retiré le 2026-10-21", (
       {
         payload: {
           sameDayAllowed: true,
-          resupplySubjectToCutoff: true,
-          previous: { sameDayAllowed: false, resupplySubjectToCutoff: true },
+          resupplyCutoffTime: "20:00",
+          previous: { sameDayAllowed: false, resupplyCutoffTime: "20:00" },
         },
       },
     ]);
   });
 
-  /** La limite du réapprovisionnement (2026-10-21) : stockée, relue, sans toucher au jour même. */
-  it("la limite du réapprovisionnement se pose seule, et le jour même reste", async () => {
+  /** L'heure du réassort (lot R3a, 2026-10-21) : posée, relue, sans toucher au jour même. */
+  it("l'heure du réassort se pose seule, et le jour même reste", async () => {
     await setSameDay(true);
-    await staff().patch(ROUTE).send({ resupplySubjectToCutoff: false }).expect(204);
+    await staff().patch(ROUTE).send({ resupplyCutoffTime: "21:15" }).expect(204);
 
     const view = jsonBody<OrderCutoffSettingsView>(await staff().get(ROUTE).expect(200));
-    expect(view).toMatchObject({ sameDayAllowed: true, resupplySubjectToCutoff: false });
+    expect(view).toMatchObject({ sameDayAllowed: true, resupplyCutoffTime: "21:15" });
+  });
+
+  it("refuse (400) une heure du réassort qui n'existe pas, sans rien écrire", async () => {
+    await staff().patch(ROUTE).send({ resupplyCutoffTime: "25:00" }).expect(400);
+
+    expect(await ctx.prisma.orderCutoffSettings.count()).toBe(0);
   });
 
   it("refuse (400) une charge vide", async () => {

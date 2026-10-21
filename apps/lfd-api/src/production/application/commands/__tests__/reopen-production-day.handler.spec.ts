@@ -155,6 +155,29 @@ describe("ReopenProductionDayHandler", () => {
     );
   });
 
+  /** Lot R3a : la réouverture dégèle aussi les réassorts, et le fait les nomme. */
+  it("dégèle les réassorts figés et les nomme dans le fait", async () => {
+    const day = ProductionDay.open(ServiceDay.of(DAY));
+    day.close([order("ord_1")], new Set<string>(), CLOSED, null, [
+      {
+        resupplyId: "rs_1",
+        siteId: "site_village",
+        siteLabel: "Le Village",
+        lines: [{ sku: "PAI-SEI", productName: "Pain de seigle", quantity: 3 }],
+      },
+    ]);
+    const { handler, days, durable } = setup(day);
+
+    const reopening = await handler.execute(new ReopenProductionDayCommand(DAY, "staff-1"));
+
+    expect(reopening.released).toBe(1);
+    expect(days.saved?.resupplies).toEqual([]);
+    const [fact] = durable.of(PRODUCTION_DAY_REOPENED);
+    expect(ProductionDayReopenedEvent.fromPayload(fact?.payload ?? {}).resupplyIds).toEqual([
+      "rs_1",
+    ]);
+  });
+
   it("refuse quand le colisage a commencé, sans rien écrire ni publier", async () => {
     const { handler, days, events, durable } = setup(closedDay(), {
       packing: true,

@@ -30,3 +30,13 @@ export class DuplicateOrderCutoffError extends BusinessError {
     );
   }
 }
+
+/** L'heure limite du réassort n'est pas une heure de pendule (lot R3a, 2026-10-21). */
+export class InvalidResupplyCutoffTimeError extends DomainError {
+  constructor(readonly time: string) {
+    super(
+      "order_cutoff_settings.invalid_resupply_time",
+      `L'heure limite du réassort doit être une heure de 00:00 à 23:59 (reçu : « ${time} »). Choisissez une heure dans le champ, par exemple 20:00.`,
+    );
+  }
+}

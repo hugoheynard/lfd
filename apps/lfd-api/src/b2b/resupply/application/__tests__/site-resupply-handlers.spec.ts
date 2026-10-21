@@ -1,3 +1,4 @@
+import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import {
@@ -5,9 +6,14 @@ import {
   ResupplySiteUnknownError,
 } from "../../domain/resupply-receipt-errors.js";
 import {
+  FixedClosedPlans,
+  RecordingAdmissionDesk,
+} from "../../../orders/application/commands/__tests__/plan-doubles.js";
+import {
+  BakehouseResupplyAfterStopError,
   ResupplyAlreadyReceivedNotCancellableError,
+  ResupplyFrozenInPlanError,
   ResupplyNotCancellableError,
-  ResupplyPastCutoffError,
   SiteResupplyNotFoundError,
 } from "../../domain/site-resupply-errors.js";
 import { CancelSiteResupplyCommand } from "../cancel-site-resupply.command.js";
@@ -15,6 +21,7 @@ import { CancelSiteResupplyHandler } from "../cancel-site-resupply.handler.js";
 import { ListResuppliesToProduceHandler } from "../list-resupplies-to-produce.handler.js";
 import { ListSiteResuppliesHandler } from "../list-site-resupplies.handler.js";
 import { ListSiteResuppliesQuery } from "../list-site-resupplies.query.js";
+import { ResupplyPlanGate } from "../resupply-plan-gate.js";
 import { SendBakehouseResupplyCommand } from "../send-bakehouse-resupply.command.js";
 import { SendBakehouseResupplyHandler } from "../send-bakehouse-resupply.handler.js";
 import { Catalogue, Directory, Sites } from "./resupply-doubles.js";
@@ -43,18 +50,26 @@ const CATALOGUE = new Catalogue([
   },
 ]);
 
-function setup(deadline: Date | null = null) {
+/**
+ * `stopped` : les journées dont le plan est arrêté (lot R3a) — le guichet
+ * doublé les dit closes, et note chaque journée qu'on lui fait tenir.
+ */
+function setup(deadline: Date | null = null, stopped: readonly string[] = []) {
   const store = new InMemorySiteResupplies();
   const reader = new InMemorySiteResupplyReader(store);
   const cutoff = new FixedResupplyCutoff(deadline);
   const clock = new FixedClock(NOW);
   const staff = new Directory({ name: "Lou Martin", role: "counter" });
   const receptions = new KnownReceptions();
+  const desk = new RecordingAdmissionDesk(stopped);
+  const gate = new ResupplyPlanGate(desk);
+  const uow = new DirectUnitOfWork();
   return {
     store,
     receptions,
     cutoff,
     clock,
+    desk,
     place: new SendBakehouseResupplyHandler(
       store,
       CATALOGUE,
@@ -63,13 +78,16 @@ function setup(deadline: Date | null = null) {
       staff,
       clock,
       new FixedIdGenerator("resupply"),
+      gate,
+      uow,
     ),
-    cancel: new CancelSiteResupplyHandler(store, receptions, staff, clock),
+    cancel: new CancelSiteResupplyHandler(store, receptions, staff, clock, gate, uow),
     list: new ListSiteResuppliesHandler(reader, cutoff, clock),
     toProduce: new ListResuppliesToProduceHandler(
       reader,
       new SiteLabels(new Map([[VILLAGE, "Val Village"]])),
       clock,
+      new FixedClosedPlans(stopped),
     ),
   };
 }
@@ -107,15 +125,42 @@ describe("le fournil envoie un réassort (R1d)", () => {
     ]);
   });
 
-  it("oppose l'heure limite de SA journée à « pour demain », et n'écrit rien", async () => {
+  it("oppose l'heure du réassort de SA journée à « pour demain », et n'écrit rien", async () => {
     const { place, cutoff, store } = setup(new Date(NOW.getTime() - HOUR_MS));
+
+    const refusal = place.execute(
+      new SendBakehouseResupplyCommand(VILLAGE, "tomorrow", [{ sku: "CRO", quantity: 1 }], "s"),
+    );
+
+    // Lot R3a : le message parle au fournil, et lui donne son recours.
+    await expect(refusal).rejects.toThrow(BakehouseResupplyAfterStopError);
+    await expect(refusal).rejects.toThrow(/hors plan/u);
+    expect(cutoff.asked).toEqual([TOMORROW]);
+    expect(store.saves).toBe(0);
+  });
+
+  it("« pour demain » se tient au guichet du plan, sous le verrou de SA journée (R3a)", async () => {
+    const { place, desk } = setup();
+
+    await place.execute(
+      new SendBakehouseResupplyCommand(VILLAGE, "tomorrow", [{ sku: "CRO", quantity: 1 }], "s"),
+    );
+    await place.execute(
+      new SendBakehouseResupplyCommand(VILLAGE, "asap", [{ sku: "CRO", quantity: 1 }], "s"),
+    );
+
+    // « Au plus tôt » n'entre pas au plan : aucun verrou.
+    expect(desk.held).toEqual([TOMORROW]);
+  });
+
+  it("refuse « pour demain » quand le plan est déjà arrêté, même avant l'heure (R3a)", async () => {
+    const { place, store } = setup(null, [TOMORROW]);
 
     await expect(
       place.execute(
         new SendBakehouseResupplyCommand(VILLAGE, "tomorrow", [{ sku: "CRO", quantity: 1 }], "s"),
       ),
-    ).rejects.toThrow(ResupplyPastCutoffError);
-    expect(cutoff.asked).toEqual([TOMORROW]);
+    ).rejects.toThrow(BakehouseResupplyAfterStopError);
     expect(store.saves).toBe(0);
   });
 
@@ -191,6 +236,36 @@ describe("annuler un réassort", () => {
     expect(store.all()[0]?.cancelled).toBeNull();
   });
 
+  /** Lot R3a, Q3 : figé dans un plan arrêté, il ne s'annule plus. */
+  it("refuse d'annuler un réassort « pour demain » figé dans un plan arrêté", async () => {
+    const open = setup();
+    const id = await open.place.execute(
+      new SendBakehouseResupplyCommand(VILLAGE, "tomorrow", [{ sku: "CRO", quantity: 3 }], "s"),
+    );
+    const { cancel, store, desk } = setup(null, [TOMORROW]);
+    for (const row of open.store.all()) {
+      store.put(row);
+    }
+
+    const refusal = cancel.execute(new CancelSiteResupplyCommand(VILLAGE, id, "s"));
+
+    await expect(refusal).rejects.toThrow(ResupplyFrozenInPlanError);
+    await expect(refusal).rejects.toThrow(/réceptionnez-le avec un écart/iu);
+    expect(desk.held).toEqual([TOMORROW]);
+    expect(store.all()[0]?.cancelled).toBeNull();
+  });
+
+  it("un réassort « au plus tôt » s'annule même quand le plan du jour est arrêté", async () => {
+    const { place, cancel, store } = setup(null, [TODAY]);
+    const id = await place.execute(
+      new SendBakehouseResupplyCommand(VILLAGE, "asap", [{ sku: "CRO", quantity: 3 }], "s"),
+    );
+
+    await cancel.execute(new CancelSiteResupplyCommand(VILLAGE, id, "s"));
+
+    expect(store.all()[0]?.cancelled).not.toBeNull();
+  });
+
   it("un réassort d'un autre point est introuvable", async () => {
     const { place, cancel } = setup();
     const id = await place.execute(
@@ -224,5 +299,27 @@ describe("les réassorts à produire", () => {
     ]);
     expect(today?.totals).toEqual([{ sku: "CRO", label: "Croissant", quantity: 15 }]);
     expect(tomorrow?.totals).toEqual([{ sku: "PAC", label: "Pain au chocolat", quantity: 7 }]);
+  });
+});
+
+describe("les réassorts à produire, une fois le plan arrêté (R3a)", () => {
+  it("ne montre plus un « pour demain » figé dans un plan arrêté ; « au plus tôt » reste", async () => {
+    const open = setup();
+    const send = (target: "asap" | "tomorrow", quantity: number) =>
+      open.place.execute(
+        new SendBakehouseResupplyCommand(VILLAGE, target, [{ sku: "CRO", quantity }], "s"),
+      );
+    await send("asap", 4);
+    await send("tomorrow", 9);
+    const stopped = setup(null, [TOMORROW]);
+    for (const row of open.store.all()) {
+      stopped.store.put(row);
+    }
+
+    const [today, tomorrow] = (await stopped.toProduce.execute()).days;
+
+    expect(today?.totals).toEqual([{ sku: "CRO", label: "Croissant", quantity: 4 }]);
+    expect(tomorrow?.sites).toEqual([]);
+    expect(tomorrow?.totals).toEqual([]);
   });
 });

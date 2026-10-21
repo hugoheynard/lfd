@@ -23,6 +23,41 @@ soir. Un arrêt à la main **avant** cet instant est refusé ; après (un arrêt
 automatique qui a échoué), il reste ouvert. Rouvrir reste possible, et
 l'équipe saisit toujours « hors plan ».
 
+**Depuis le lot R3a du réassort (2026-10-21)**, l'arrêt tombe à la **plus
+tardive** de la fin du rattrapage de la règle générale et de l'**heure du
+réassort** (« la veille, HH:MM », 20:00 par défaut, Réglages › Commandes ›
+Heure limite) — `PlanStopRules` (`apps/lfd-api/src/production/application/services/plan-stop-rules.ts`),
+seul lecteur des quatre usages : le tour automatique, le refus d'un arrêt
+anticipé, le prévisionnel et la page Production › Réglages. Le fournil lit
+l'heure du réassort au commerce par `ResupplyCutoffTimeReader`
+(`production/channels/commerce/`). Ce qui se déclenche à l'arrêt se décale
+d'autant quand l'heure du réassort est la plus tardive : le balayage des
+paiements en suspens, la confirmation des commandes, la liste à coliser, la
+composition des tournées (abonné de `production.day_closed`) et l'envoi du
+dossier du jour.
+
+### Les réassorts figés à l'arrêt (lot R3a)
+
+L'arrêt lit, **sous le verrou de la journée**, les réassorts « pour demain »
+envoyés et non annulés (`DayResuppliesReader`, implémenté par le commerce,
+`apps/lfd-api/src/b2b/resupply/application/production-day-resupplies.ts`) et les fige à part
+des commandes (`production.production_resupply` + `_line`, aucune clé vers
+`public`). Le compte à produire est le **total** commandes + réassorts — les
+fournées se cochent sur lui ; le journal compte toujours les seules
+commandes. Une journée n'est vide que sans commande **ni** réassort.
+`production.day_closed` et `production.day_reopened` portent `resupplyIds`
+(absent des faits d'avant : relu vide ; aucun abonné ne le lit encore — R3b,
+R3c).
+
+L'envoi et l'annulation d'un réassort « pour demain » prennent le même
+verrou (`ResupplyPlanGate` → `PlanAdmissionDesk`) : passé l'arrêt, l'envoi
+est refusé (le comptoir : « demandez au fournil » ; le fournil : produire hors
+plan) et l'annulation aussi (« réceptionnez avec un écart »). Aucun réassort
+ne peut donc arriver après l'arrêt : le retirage n'en absorbe aucun, il garde
+seulement les réassorts figés dans le compte qu'il refait. La réouverture
+les dégèle (ils redeviennent annulables) ; le retrait d'une fiche de colisage
+de réassort sera R3b.
+
 ## Ce que fait un arrêt
 
 ```mermaid

@@ -3,6 +3,7 @@ import { Global, Module } from "@nestjs/common";
 import { CatalogModule } from "../b2b/catalog/catalog.module.js";
 import { CatalogWorkshopShelvesReader } from "../b2b/catalog/infrastructure/catalog-workshop-shelves.reader.js";
 import { ProductionOrderCutoffRulesReader } from "../b2b/order-cutoffs/infrastructure/production-order-cutoff-rules.reader.js";
+import { ProductionResupplyCutoffTimeReader } from "../b2b/order-cutoffs/infrastructure/production-resupply-cutoff-time.reader.js";
 import { OrderCutoffsModule } from "../b2b/order-cutoffs/order-cutoffs.module.js";
 import { OrdersModule } from "../b2b/orders/orders.module.js";
 import { PendingSettlementSweep } from "../b2b/orders/application/services/pending-settlement-sweep.service.js";
@@ -10,13 +11,17 @@ import { DueThresholds } from "../b2b/orders/application/services/due-thresholds
 import { SitedDayOrders } from "../b2b/orders/application/services/sited-day-orders.service.js";
 import { PrismaExpectedProductionReader } from "../b2b/orders/infrastructure/prisma-expected-production.reader.js";
 import { PrismaPendingOrdersReader } from "../b2b/orders/infrastructure/prisma-pending-orders.reader.js";
+import { ProductionDayResupplies } from "../b2b/resupply/application/production-day-resupplies.js";
+import { ResupplyModule } from "../b2b/resupply/resupply.module.js";
 import {
   DayOrdersReader,
+  DayResuppliesReader,
   DueThresholdsReader,
   ExpectedProductionReader,
   OrderCutoffRulesReader,
   PendingCommerceOrdersReader,
   PendingSettlementSweeper,
+  ResupplyCutoffTimeReader,
   WorkshopShelvesReader,
 } from "../production/channels/commerce/index.js";
 
@@ -46,7 +51,7 @@ import {
  */
 @Global()
 @Module({
-  imports: [OrdersModule, CatalogModule, OrderCutoffsModule],
+  imports: [OrdersModule, CatalogModule, OrderCutoffsModule, ResupplyModule],
   providers: [
     // `useExisting` : l'instance d'`OrdersModule`, qui a les ports des sites
     // (échéance par site, lot T0).
@@ -74,14 +79,21 @@ import {
     // L'heure limite générale, qui déclenche l'arrêt automatique du plan
     // (2026-10-21, `plan-une-seule-heure.md` §5) : la règle est au commerce.
     { provide: OrderCutoffRulesReader, useClass: ProductionOrderCutoffRulesReader },
+    // Le réassort au plan figé (lot R3a, 2026-10-21) : l'heure du réassort,
+    // qui repousse l'arrêt, et les réassorts « pour demain » que l'arrêt fige.
+    // Un canal à part des commandes : jamais mêlés à `ProducibleOrder`.
+    { provide: ResupplyCutoffTimeReader, useClass: ProductionResupplyCutoffTimeReader },
+    { provide: DayResuppliesReader, useExisting: ProductionDayResupplies },
   ],
   exports: [
     DayOrdersReader,
+    DayResuppliesReader,
     DueThresholdsReader,
     ExpectedProductionReader,
     OrderCutoffRulesReader,
     PendingCommerceOrdersReader,
     PendingSettlementSweeper,
+    ResupplyCutoffTimeReader,
     WorkshopShelvesReader,
   ],
 })

@@ -16,6 +16,8 @@ import { GetResupplyReceiptHandler } from "./application/get-resupply-receipt.ha
 import { ListResuppliesToProduceHandler } from "./application/list-resupplies-to-produce.handler.js";
 import { ListResupplyArticlesHandler } from "./application/list-resupply-articles.handler.js";
 import { ListSiteResuppliesHandler } from "./application/list-site-resupplies.handler.js";
+import { ProductionDayResupplies } from "./application/production-day-resupplies.js";
+import { ResupplyPlanGate } from "./application/resupply-plan-gate.js";
 import { ReceiveResupplyLineHandler } from "./application/receive-resupply-line.handler.js";
 import { ReceiveSiteResupplyHandler } from "./application/receive-site-resupply.handler.js";
 import { SendBakehouseResupplyHandler } from "./application/send-bakehouse-resupply.handler.js";
@@ -40,7 +42,7 @@ import { AdminResuppliesToProduceController } from "./http/admin-resupplies-to-p
 import { AdminResupplyReceiptsController } from "./http/admin-resupply-receipts.controller.js";
 import { AdminSiteResuppliesController } from "./http/admin-site-resupplies.controller.js";
 import { CatalogResupplyCatalogue } from "./infrastructure/catalog-resupply-catalogue.js";
-import { GeneralResupplyCutoff } from "./infrastructure/general-resupply-cutoff.js";
+import { SettingsResupplyCutoff } from "./infrastructure/settings-resupply-cutoff.js";
 import { PrismaResupplyReceptions } from "./infrastructure/prisma-resupply-receptions.js";
 import { PrismaResupplySiteLabels } from "./infrastructure/prisma-resupply-site-labels.js";
 import { PrismaResupplyReceiptReader } from "./infrastructure/prisma-resupply-receipt.reader.js";
@@ -64,7 +66,13 @@ import { PrismaStockAlertRepository } from "./infrastructure/prisma-stock-alert.
  *
  * `CatalogModule` pour le catalogue publié ; `AccountModule` pour le seul
  * `StaffDirectory` (l'auteur figé du geste) ; `OrderCutoffsInForceModule`
- * pour l'heure limite générale et le réglage « réassort soumis ».
+ * pour l'heure du réassort (lot R3a).
+ *
+ * Depuis le lot R3a (2026-10-21), l'envoi et l'annulation « pour demain »
+ * passent par le guichet d'admission du plan (`ResupplyPlanGate`, ports du
+ * fournil reliés par `ProductionDeskFeedModule`), et le module publie
+ * `ProductionDayResupplies`, que `ProductionFeedModule` relie au port
+ * `DayResuppliesReader` du fournil.
  */
 @Module({
   imports: [CatalogModule, AccountModule, OrderCutoffsInForceModule],
@@ -84,7 +92,7 @@ import { PrismaStockAlertRepository } from "./infrastructure/prisma-stock-alert.
     { provide: ResupplySites, useClass: PrismaResupplySites },
     { provide: SiteResupplyRepository, useClass: PrismaSiteResupplyRepository },
     { provide: SiteResupplyReader, useClass: PrismaSiteResupplyReader },
-    { provide: ResupplyCutoff, useClass: GeneralResupplyCutoff },
+    { provide: ResupplyCutoff, useClass: SettingsResupplyCutoff },
     { provide: ResupplySiteLabels, useClass: PrismaResupplySiteLabels },
     { provide: StockAlertRepository, useClass: PrismaStockAlertRepository },
     { provide: StockAlertReader, useClass: PrismaStockAlertReader },
@@ -107,6 +115,9 @@ import { PrismaStockAlertRepository } from "./infrastructure/prisma-stock-alert.
     LiftStockAlertHandler,
     ListSiteStockAlertsHandler,
     ListLiveStockAlertsHandler,
+    ResupplyPlanGate,
+    ProductionDayResupplies,
   ],
+  exports: [ProductionDayResupplies],
 })
 export class ResupplyModule {}
