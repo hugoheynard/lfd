@@ -47,6 +47,13 @@ describe('copy-labels — un nom lisible pour chaque clé', () => {
     );
   });
 
+  it('distingue la limite courte de la vignette de la phrase de la fiche (2026-10-21)', () => {
+    expect(name('product.madeToOrderShortEve').label).toBe(
+      'Vignette du rayon — sur commande, la veille',
+    );
+    expect(name('product.madeToOrderEve').label).toBe('Fiche — préparé sur commande, la veille');
+  });
+
   it('se replie encore sur un rôle en fin de nom, puis sur les mots du segment', () => {
     expect(name('x.inconnuTitle').label).toBe('Titre — inconnu');
     expect(name('x.inconnu').label).toBe('Inconnu');

@@ -200,6 +200,25 @@ describe('ProductTile', () => {
     expect(el.querySelector('.note')).toBeNull();
   });
 
+  /** La limite propre de l'article, en court sur la vignette (Hugo, 2026-10-21). */
+  it('dit « Sur commande · 2 jours avant 12 h » quand l’article porte sa limite', () => {
+    const el = fixture.nativeElement as HTMLElement;
+
+    fixture.componentRef.setInput('product', {
+      ...TEST_ITEMS[0],
+      orderTimeLimit: { daysBefore: 2, time: '12:00' },
+    });
+    fixture.detectChanges();
+
+    expect(el.querySelector('[data-made-to-order]')?.textContent?.trim()).toBe(
+      'Sur commande · 2 jours avant 12\u00a0h',
+    );
+  });
+
+  it('ne dit rien quand l’article suit la règle générale', () => {
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-made-to-order]')).toBeNull();
+  });
+
   describe('sa forme de vitrine', () => {
     const tile = (): Element | null =>
       (fixture.nativeElement as HTMLElement).querySelector('.tile');

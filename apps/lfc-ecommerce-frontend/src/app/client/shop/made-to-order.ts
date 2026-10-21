@@ -25,16 +25,53 @@ export function madeToOrderLabel(
   locale: LocaleCode,
   forms: MadeToOrderForms,
 ): string | null {
+  return phrase(limit, locale, [
+    forms.madeToOrderSameDay,
+    forms.madeToOrderEve,
+    forms.madeToOrderDays,
+  ]);
+}
+
+/** Les trois formes COURTES, celles de la vignette. */
+export interface MadeToOrderShortForms {
+  readonly madeToOrderShortDays: string;
+  readonly madeToOrderShortEve: string;
+  readonly madeToOrderShortSameDay: string;
+}
+
+/**
+ * **« Sur commande · 2 jours avant 12 h »** — la même limite, en court, sur
+ * la vignette du rayon (Hugo, 2026-10-21). Même règle que
+ * {@link madeToOrderLabel} : rien quand le serveur n'en sert pas.
+ */
+export function madeToOrderShortLabel(
+  limit: ShopItemOrderLimit | undefined,
+  locale: LocaleCode,
+  forms: MadeToOrderShortForms,
+): string | null {
+  return phrase(limit, locale, [
+    forms.madeToOrderShortSameDay,
+    forms.madeToOrderShortEve,
+    forms.madeToOrderShortDays,
+  ]);
+}
+
+/** Le jour même, la veille, ou `{n}` jours : une seule logique pour les deux longueurs. */
+function phrase(
+  limit: ShopItemOrderLimit | undefined,
+  locale: LocaleCode,
+  [sameDay, eve, days]: readonly [string, string, string],
+): string | null {
   if (limit === undefined) {
     return null;
   }
   const time = clockLabel(limit.time, locale);
   if (limit.daysBefore === 0) {
-    return fill(forms.madeToOrderSameDay, { time });
+    return fill(sameDay, { time });
   }
   return limit.daysBefore === 1
-    ? fill(forms.madeToOrderEve, { time })
-    : fill(forms.madeToOrderDays, { n: String(limit.daysBefore), time });
+    ? fill(eve, { time })
+    : fill(days, { n: String(limit.daysBefore), time });
 }
 
 /**

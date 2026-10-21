@@ -1976,6 +1976,27 @@
           "en": "Made to order — order on the day, by {time}",
           "it": "Preparato su ordinazione — da ordinare in giornata, entro le {time}",
           "variables": ["time"]
+        },
+        {
+          "key": "product.madeToOrderShortDays",
+          "fr": "Sur commande · {n} jours avant {time}",
+          "en": "Made to order · {n} days ahead, by {time}",
+          "it": "Su ordinazione · {n} giorni prima, entro le {time}",
+          "variables": ["n", "time"]
+        },
+        {
+          "key": "product.madeToOrderShortEve",
+          "fr": "Sur commande · la veille avant {time}",
+          "en": "Made to order · day before, by {time}",
+          "it": "Su ordinazione · il giorno prima, entro le {time}",
+          "variables": ["time"]
+        },
+        {
+          "key": "product.madeToOrderShortSameDay",
+          "fr": "Sur commande · le jour même avant {time}",
+          "en": "Made to order · same day, by {time}",
+          "it": "Su ordinazione · in giornata, entro le {time}",
+          "variables": ["time"]
         }
       ],
       "unrecorded": []

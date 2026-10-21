@@ -63,6 +63,14 @@
         <span class="value">
           <span class="promise">{{ c().unset }}</span>
         </span>
+        <!-- Rien de choisi, mais le premier jour possible et sa limite se
+             disent déjà — l'entrée par défaut (Hugo, 2026-10-21). Jamais
+             « trop tard » ici : la règle pure s'en garde. -->
+        @if (lateNotice(); as notice) {
+          <fold-callout variant="warning" appearance="flat" data-late-day>{{
+            notice
+          }}</fold-callout>
+        }
         <span class="acts">
           <button class="act" type="button" (click)="houseRequested.emit()">
             {{ c().choose }}

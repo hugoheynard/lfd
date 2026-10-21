@@ -302,6 +302,9 @@ export const IT: ClientCopy = {
     madeToOrderDays: 'Preparato su ordinazione — da ordinare {n} giorni prima, entro le {time}',
     madeToOrderEve: 'Preparato su ordinazione — da ordinare il giorno prima, entro le {time}',
     madeToOrderSameDay: 'Preparato su ordinazione — da ordinare in giornata, entro le {time}',
+    madeToOrderShortDays: 'Su ordinazione · {n} giorni prima, entro le {time}',
+    madeToOrderShortEve: 'Su ordinazione · il giorno prima, entro le {time}',
+    madeToOrderShortSameDay: 'Su ordinazione · in giornata, entro le {time}',
   },
   cart: {
     kicker: 'Il carrello',

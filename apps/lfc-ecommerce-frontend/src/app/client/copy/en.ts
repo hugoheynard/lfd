@@ -298,6 +298,9 @@ export const EN: ClientCopy = {
     madeToOrderDays: 'Made to order — order {n} days ahead, by {time}',
     madeToOrderEve: 'Made to order — order the day before, by {time}',
     madeToOrderSameDay: 'Made to order — order on the day, by {time}',
+    madeToOrderShortDays: 'Made to order · {n} days ahead, by {time}',
+    madeToOrderShortEve: 'Made to order · day before, by {time}',
+    madeToOrderShortSameDay: 'Made to order · same day, by {time}',
   },
   cart: {
     kicker: 'The basket',

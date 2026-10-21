@@ -77,16 +77,13 @@ export class ServiceDayNotice {
 
   private readonly decision = computed<DayNotice>(() => {
     const service = this.order.choice();
-    if (service === null) {
-      return null;
-    }
     const now = this.clock.now();
     const point = this.point();
     const day = this.points.dayFor(point);
     const tomorrow = addDays(instantToLocal(now).day, 1);
     return decideDayNotice({
       now,
-      held: service.date,
+      held: service?.date ?? null,
       first: day?.date ?? null,
       firstOrderUntil: day?.orderUntil ?? null,
       tomorrowOrderUntil: this.seenLimits().get(`${point ?? ''}|${tomorrow}`) ?? null,
@@ -131,7 +128,7 @@ export class ServiceDayNotice {
 
   private say(notice: DayNotice): string | null {
     const service = this.order.choice();
-    if (notice === null || service === null) {
+    if (notice === null) {
       return null;
     }
     const copy = this.c();
@@ -139,7 +136,7 @@ export class ServiceDayNotice {
     const today = instantToLocal(this.clock.now()).day;
     const day = (date: string): string =>
       serviceDayLabel(date, today, locale, { today: copy.today, tomorrow: copy.tomorrow });
-    const delivery = service.mode === 'delivery';
+    const delivery = service?.mode === 'delivery';
     switch (notice.kind) {
       case 'slipped':
         return fill(copy.slipped, { day: day(notice.held), next: day(notice.first) });

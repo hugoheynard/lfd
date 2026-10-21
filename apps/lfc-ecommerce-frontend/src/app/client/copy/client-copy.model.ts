@@ -546,6 +546,16 @@ export interface ClientCopy {
     readonly madeToOrderEve: string;
     /** Le jour même : `{time}` l'heure. */
     readonly madeToOrderSameDay: string;
+    /**
+     * 🔴 La même limite, en COURT sur la vignette du rayon (Hugo, 2026-10-21) :
+     * « Sur commande · 2 jours avant 12 h ». La phrase longue reste sur la
+     * fiche. `{n}` et `{time}` comme au-dessus.
+     */
+    readonly madeToOrderShortDays: string;
+    /** La veille, en court : `{time}`. */
+    readonly madeToOrderShortEve: string;
+    /** Le jour même, en court : `{time}`. */
+    readonly madeToOrderShortSameDay: string;
   };
   readonly cart: {
     readonly kicker: string;

@@ -296,6 +296,9 @@ export const FR: ClientCopy = {
     madeToOrderDays: 'Préparé sur commande — à commander {n} jours à l’avance, avant {time}',
     madeToOrderEve: 'Préparé sur commande — à commander la veille, avant {time}',
     madeToOrderSameDay: 'Préparé sur commande — à commander le jour même, avant {time}',
+    madeToOrderShortDays: 'Sur commande · {n} jours avant {time}',
+    madeToOrderShortEve: 'Sur commande · la veille avant {time}',
+    madeToOrderShortSameDay: 'Sur commande · le jour même avant {time}',
   },
   cart: {
     kicker: 'Le panier',

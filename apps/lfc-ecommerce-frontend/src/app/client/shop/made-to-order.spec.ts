@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { madeToOrderLabel } from './made-to-order';
+import { madeToOrderLabel, madeToOrderShortLabel } from './made-to-order';
 
 const FORMS = {
   madeToOrderDays: 'Préparé sur commande — à commander {n} jours à l’avance, avant {time}',
@@ -34,5 +34,29 @@ describe('madeToOrderLabel', () => {
 
   it("l'heure dans la forme de la langue, sans décalage de fuseau", () => {
     expect(madeToOrderLabel({ daysBefore: 1, time: '18:00' }, 'en', FORMS)).toContain('6:00');
+  });
+});
+
+describe('madeToOrderShortLabel — la vignette', () => {
+  const SHORT = {
+    madeToOrderShortDays: 'Sur commande · {n} jours avant {time}',
+    madeToOrderShortEve: 'Sur commande · la veille avant {time}',
+    madeToOrderShortSameDay: 'Sur commande · le jour même avant {time}',
+  };
+
+  it('les trois formes courtes', () => {
+    expect(madeToOrderShortLabel({ daysBefore: 2, time: '12:00' }, 'fr', SHORT)).toBe(
+      'Sur commande · 2 jours avant 12\u00a0h',
+    );
+    expect(madeToOrderShortLabel({ daysBefore: 1, time: '18:00' }, 'fr', SHORT)).toBe(
+      'Sur commande · la veille avant 18\u00a0h',
+    );
+    expect(madeToOrderShortLabel({ daysBefore: 0, time: '09:00' }, 'fr', SHORT)).toBe(
+      'Sur commande · le jour même avant 9\u00a0h',
+    );
+  });
+
+  it('rien sans limite servie', () => {
+    expect(madeToOrderShortLabel(undefined, 'fr', SHORT)).toBeNull();
   });
 });

@@ -16,6 +16,7 @@ import {
 } from '@lfd/storefront-layout';
 
 import { ClientLocale } from '../../client-locale.service';
+import { madeToOrderShortLabel } from '../made-to-order';
 import { operationGate } from '../operations';
 import { ShopCatalogue } from '../shop-catalogue.store';
 import { objectPositionOf, tileArtOf } from '../shelf-display';
@@ -126,6 +127,15 @@ export class ProductTile {
       this.t(),
     );
   });
+
+  /**
+   * **« Sur commande · 2 jours avant 12 h »** (Hugo, 2026-10-21) : la limite
+   * propre de l'article, en court — servie seulement quand elle est plus
+   * stricte que la règle générale. La phrase longue est sur la fiche.
+   */
+  protected readonly madeToOrder = computed(() =>
+    madeToOrderShortLabel(this.product().orderTimeLimit, this.locale.current(), this.t().product),
+  );
 
   /**
    * Le prix **dans l'assiette de qui regarde**, sans sa mention — le gabarit la

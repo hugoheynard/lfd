@@ -170,3 +170,51 @@ describe('decideDayNotice — la limite d’un article du panier', () => {
     expect(notice).toMatchObject({ kind: 'countdown', minutesLeft: 100, item: 'la bûche' });
   });
 });
+
+/**
+ * 🔴 Avant tout choix de service (Hugo, 2026-10-21) : la barre annonce le
+ * premier jour de l'entrée par défaut et sa limite — et ne dit JAMAIS « trop
+ * tard », puisque rien n'est encore choisi.
+ */
+describe('decideDayNotice — sans choix de service', () => {
+  it('la forme calme du premier jour', () => {
+    expect(decideDayNotice(input({ held: null }))).toEqual({
+      kind: 'calm',
+      first: WEDNESDAY,
+      until: new Date(TUESDAY_23H),
+    });
+  });
+
+  it('le compte à rebours sous six heures', () => {
+    expect(decideDayNotice(input({ held: null, now: tuesdayAt('20:45') }))).toEqual({
+      kind: 'countdown',
+      first: WEDNESDAY,
+      minutesLeft: 135,
+    });
+  });
+
+  it('la limite plus stricte d’un article du panier', () => {
+    const tart = { name: 'la tarte', limit: { daysBefore: 1, time: '18:00' } };
+
+    expect(
+      decideDayNotice(input({ held: null, now: tuesdayAt('16:20'), cartLimits: [tart] })),
+    ).toEqual({ kind: 'countdown', first: WEDNESDAY, minutesLeft: 100, item: 'la tarte' });
+  });
+
+  it('jamais « trop tard » : premier jour après demain, limite de demain lue', () => {
+    const notice = decideDayNotice(
+      input({
+        held: null,
+        now: tuesdayAt('23:30'),
+        first: THURSDAY,
+        firstOrderUntil: '2026-10-21T21:00:00.000Z',
+        tomorrowOrderUntil: TUESDAY_23H,
+      }),
+    );
+    expect(notice).toBeNull();
+  });
+
+  it('ni opération ni « slipped » sans jour gardé', () => {
+    expect(decideDayNotice(input({ held: null, first: THURSDAY, byOperation: true }))).toBeNull();
+  });
+});

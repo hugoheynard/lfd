@@ -18,8 +18,12 @@ const MINUTE_MS = 60_000;
 export interface DayNoticeInput {
   /** L'instant présent — fourni, jamais lu ici. */
   readonly now: Date;
-  /** Le jour gardé par le choix du client, `AAAA-MM-JJ`. */
-  readonly held: string;
+  /**
+   * Le jour gardé par le choix du client, `AAAA-MM-JJ` — `null` quand rien
+   * n'est encore choisi : la boutique annonce alors le premier jour de
+   * l'entrée par défaut, et ne dit jamais « trop tard » (Hugo, 2026-10-21).
+   */
+  readonly held: string | null;
   /** Le premier jour que le serveur accorde, ou `null` s'il n'en dit rien. */
   readonly first: string | null;
   /** La limite annoncée de ce premier jour (ISO), ou `null` : aucune. */
@@ -77,6 +81,9 @@ export type DayNotice =
  * — un jour choisi plus tôt, ou celui d'une opération —, alors que le serveur
  * accordait demain. « Trop tard » ne se dit plus que quand le PREMIER jour
  * accordé est postérieur à demain ; avant, on prévient.
+ *
+ * Sans choix (`held` à `null`, 2026-10-21) : seulement la forme calme ou le
+ * compte à rebours du premier jour — jamais « trop tard », jamais « slipped ».
  */
 export function decideDayNotice(input: DayNoticeInput): DayNotice {
   const { first, held } = input;
@@ -84,11 +91,16 @@ export function decideDayNotice(input: DayNoticeInput): DayNotice {
     return null;
   }
   // Des jours `AAAA-MM-JJ` se comparent comme des chaînes.
-  if (held < first) {
+  if (held !== null && held < first) {
     return { kind: 'slipped', held, first };
   }
   const tomorrow = addDays(instantToLocal(input.now).day, 1);
   if (first > tomorrow) {
+    if (held === null) {
+      // Rien n'est choisi : rien n'est « trop tard », et l'opération se dira
+      // au choix du jour.
+      return null;
+    }
     return input.byOperation
       ? { kind: 'operation', first }
       : { kind: 'late', held, passedAt: passedLimit(input.tomorrowOrderUntil, input.now) };
