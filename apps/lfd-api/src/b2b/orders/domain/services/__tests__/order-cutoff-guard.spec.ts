@@ -93,7 +93,7 @@ describe("la limite de l'ARTICLE, quand le référentiel en déclare une", () =>
   /** Et celui-là le jour même à 23 h : mercredi 12, 21:00Z — bien plus tard. */
   const LOOSE: OrderLimitSpec = { daysBefore: 0, time: "23:00", graceMinutes: 0 };
 
-  it("remplace la règle du commerce quand l'article en porte une", () => {
+  it("l'article plus TÔT que la règle gagne", () => {
     const now = "2026-08-10T10:30:00.000Z";
     // Le commerce laisserait passer (limite mardi 18 h) ; l'article, non.
     expect(() => guard({ lines: [line("ENT-001", STRICT)], now })).toThrow(PastOrderCutoffError);
@@ -101,15 +101,21 @@ describe("la limite de l'ARTICLE, quand le référentiel en déclare une", () =>
   });
 
   /**
-   * 🔴 L'article ne se contente pas de resserrer : il **remplace**. Sans ça, le
-   * rang `produit` ne pourrait jamais déclarer un article commandable plus tard
-   * que le reste — c'est-à-dire l'usage même pour lequel il existe.
+   * 🔴 La plus stricte gagne TOUJOURS (Hugo, 2026-10-21). Jusque-là l'article
+   * REMPLAÇAIT la règle, et une limite plus tardive la relâchait.
    */
-  it("peut RELÂCHER par rapport à la règle du commerce", () => {
+  it("l'article plus TARD que la règle ne la relâche pas : la règle gagne", () => {
     // 18:30 à Paris le mardi : le commerce a fermé à 18 h, l'article non.
     const now = "2026-08-11T16:30:00.000Z";
-    expect(() => guard({ lines: [line("VIE-001")], now })).toThrow(PastOrderCutoffError);
-    expect(() => guard({ lines: [line("BOI-001", LOOSE)], now })).not.toThrow();
+    expect(() => guard({ lines: [line("BOI-001", LOOSE)], now })).toThrow(PastOrderCutoffError);
+  });
+
+  it("règle générale désactivée (aucune en vigueur) : l'article seul décide", () => {
+    const now = "2026-08-11T16:30:00.000Z";
+    expect(() => guard({ fallback: [], lines: [line("BOI-001", LOOSE)], now })).not.toThrow();
+    expect(() =>
+      guard({ fallback: [], lines: [line("ENT-001", STRICT)], now: "2026-08-10T10:30:00.000Z" }),
+    ).toThrow(PastOrderCutoffError);
   });
 
   /**
@@ -133,21 +139,56 @@ describe("la limite de l'ARTICLE, quand le référentiel en déclare une", () =>
   });
 
   /**
-   * La grâce d'un article l'emporte sur un refus définitif du commerce — c'est
-   * la conséquence directe du remplacement, et elle vaut d'être écrite : le
-   * client reçoit « appelez-nous » là où il aurait eu « trop tard ».
+   * Chaque limite garde SA grâce, et c'est la décision la plus fermée — grâce
+   * comprise — qui est opposée : la grâce de l'article ne rouvre pas le refus
+   * sec de la règle.
    */
-  it("rend la grâce de l'article, pas le refus sec du commerce", () => {
+  it("oppose le refus sec de la règle à la grâce d'un article de même heure", () => {
     const gracieux: OrderLimitSpec = { daysBefore: 1, time: "18:00", graceMinutes: 45 };
+    expect(() =>
+      guard({ lines: [line("ENT-001", gracieux)], now: "2026-08-11T16:10:00.000Z" }),
+    ).toThrow(PastOrderCutoffError);
+  });
+
+  it("rend la grâce de la règle quand l'article, plus tardif, est encore ouvert", () => {
     try {
-      guard({ lines: [line("ENT-001", gracieux)], now: "2026-08-11T16:10:00.000Z" });
+      guard({
+        fallback: [commerceRule({ graceMinutes: 30 })],
+        lines: [line("BOI-001", LOOSE)],
+        now: "2026-08-11T16:10:00.000Z",
+      });
       throw new Error("le refus attendu n'a pas eu lieu");
     } catch (error: unknown) {
       expect(error).toBeInstanceOf(OrderCutoffGraceError);
       expect((error as OrderCutoffGraceError).graceEndsAt.toISOString()).toBe(
-        "2026-08-11T16:45:00.000Z",
+        "2026-08-11T16:30:00.000Z",
       );
     }
+  });
+
+  it("entre deux grâces, rend celle qui se ferme la première", () => {
+    // Article 17 h 30 + 60 min (fin 18 h 30), règle 18 h + 20 min (fin 18 h 20).
+    const article: OrderLimitSpec = { daysBefore: 1, time: "17:30", graceMinutes: 60 };
+    try {
+      guard({
+        fallback: [commerceRule({ graceMinutes: 20 })],
+        lines: [line("ENT-001", article)],
+        now: "2026-08-11T16:10:00.000Z",
+      });
+      throw new Error("le refus attendu n'a pas eu lieu");
+    } catch (error: unknown) {
+      expect(error).toBeInstanceOf(OrderCutoffGraceError);
+      expect((error as OrderCutoffGraceError).graceEndsAt.toISOString()).toBe(
+        "2026-08-11T16:20:00.000Z",
+      );
+    }
+  });
+
+  it("la grâce d'un article plus tôt l'emporte sur une règle encore ouverte", () => {
+    const article: OrderLimitSpec = { daysBefore: 1, time: "17:00", graceMinutes: 90 };
+    expect(() =>
+      guard({ lines: [line("ENT-001", article)], now: "2026-08-11T15:30:00.000Z" }),
+    ).toThrow(OrderCutoffGraceError);
   });
 
   /**
@@ -174,6 +215,7 @@ describe("la dérogation, seul chemin de sortie", () => {
   it("laisse passer dans la grâce, et rend l'autorisation dépensée", () => {
     const spent = guard({
       lines: [line("ENT-001", GRACIEUX)],
+      fallback: [],
       waiver: { id: "w1" },
       now: DANS_LA_GRACE,
     });
@@ -195,6 +237,7 @@ describe("la dérogation, seul chemin de sortie", () => {
     expect(() =>
       guard({
         lines: [line("ENT-001", GRACIEUX)],
+        fallback: [],
         waiver: { id: "w1" },
         now: "2026-08-11T16:45:01.000Z",
       }),
@@ -209,7 +252,7 @@ describe("la dérogation, seul chemin de sortie", () => {
    */
   it("refuse une saisie du back-office sans dérogation, comme n'importe qui", () => {
     expect(() =>
-      guard({ lines: [line("ENT-001", GRACIEUX)], waiver: null, now: DANS_LA_GRACE }),
+      guard({ lines: [line("ENT-001", GRACIEUX)], fallback: [], waiver: null, now: DANS_LA_GRACE }),
     ).toThrow(OrderCutoffGraceError);
   });
 });

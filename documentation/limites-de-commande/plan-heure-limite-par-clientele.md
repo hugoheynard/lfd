@@ -315,6 +315,11 @@ journée fermée : c'est un client qui se déplace pour rien, avec un QR valide.
 
 ## 6. La limite d'article s'applique au public — décidé, et dans ce sens-là
 
+> ⚠️ **Périmé le 2026-10-21** : Hugo a décidé que « la plus stricte gagne
+> TOUJOURS ». L'article ne remplace plus la règle du commerce, il ne peut que la
+> resserrer — cf. [`README.md`](README.md) §2. Le texte ci-dessous décrit l'état
+> antérieur.
+
 `order-cutoff-guard.ts` le dit en rouge : **« L'article ne peut pas RELÂCHER la
 règle du commerce, il la remplace. »** Un article portant son `orderTimeLimit`
 décide seul.

@@ -26,6 +26,7 @@ import {
   FulfillmentWindowRequiredError,
   NoDeliveryZoneForPostalCodeError,
   OrderCompanyNotFoundError,
+  PastOrderCutoffError,
   PickupNotConfiguredError,
   TermsNotGrantedError,
 } from "../../../domain/errors/order-errors.js";
@@ -420,6 +421,8 @@ function drafting(
     readonly deliveryVat?: FixedDeliveryVat;
     readonly plans?: OrderPlanGate;
     readonly salesTerms?: FixedSalesTerms;
+    readonly cutoffs?: OrderCutoffReader;
+    readonly limits?: InMemoryProductCatalog;
   } = {},
 ): OrderDrafting {
   return new OrderDrafting(
@@ -453,9 +456,9 @@ function drafting(
       noPreferredPickup,
     ),
     audience.book ?? noDeliveryDefaults(),
-    noOrderCutoffs,
+    audience.cutoffs ?? noOrderCutoffs,
     new FixedClock(PRICED_AT),
-    catalog,
+    audience.limits ?? catalog,
     noWaivers,
     noLateFee,
     new CustomerAudiences(companiesAt(audience.status === undefined ? "active" : audience.status)),
@@ -2108,5 +2111,70 @@ describe("PlaceOrderHandler — les CGV en vigueur", () => {
     const placed = await placeAs("active", new FixedSalesTerms());
 
     expect(placed?.salesTerms).toEqual({ document: "salesTermsPro", revision: null, fileId: null });
+  });
+});
+
+/**
+ * La plus stricte gagne TOUJOURS (Hugo, 2026-10-21) : la limite propre d'un
+ * article ne remplace plus la règle générale, elle ne peut que la resserrer.
+ */
+describe("PlaceOrderHandler — limite d'article et règle générale", () => {
+  /** 2026-01-15 09:00Z = 10 h à Paris ; la livraison est demandée le lendemain. */
+  const NEXT_DAY = "2026-01-16";
+  /** La veille à 9 h (Paris) : déjà passée à PRICED_AT. */
+  const GENERAL: OrderCutoffReader = {
+    list: () =>
+      Promise.resolve([
+        {
+          id: "def",
+          pickupAddressId: null,
+          pickupLabel: null,
+          weekday: null,
+          daysBefore: 1,
+          time: "09:00",
+          graceMinutes: 0,
+        },
+      ]),
+  };
+  /** Le jour même à 23 h : bien plus tard que la règle générale. */
+  const lateLimits = new InMemoryProductCatalog([
+    { ...CATALOG["VIE-001"]!, orderTimeLimit: { daysBefore: 0, time: "23:00", graceMinutes: 0 } },
+  ]);
+
+  function lateHandler(cutoffs: OrderCutoffReader, sink: { placed: OrderToPlace | null }) {
+    return new PlaceOrderHandler(
+      guard(null, null),
+      drafting(pickups(LABO_POINT), zones(), { cutoffs, limits: lateLimits }),
+      capturingRepo(sink),
+      payments(),
+      events(),
+      noWaivers,
+      new FixedClock(PRICED_AT),
+      freeKeys,
+      noReader,
+      directWork,
+      new FixedVoucherQuotes(),
+      new RecordingRedemption(),
+      new RecordingDurable(),
+      intakeAt(),
+    );
+  }
+
+  it("une limite d'article plus tardive ne relâche pas l'heure limite générale", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    await expect(
+      lateHandler(GENERAL, sink).execute(
+        new PlaceOrderCommand("u1", payload({ requestedDeliveryDate: NEXT_DAY }), null),
+      ),
+    ).rejects.toBeInstanceOf(PastOrderCutoffError);
+    expect(sink.placed).toBeNull();
+  });
+
+  it("règle générale désactivée (aucune en vigueur) : la limite d'article seule décide", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    await lateHandler(noOrderCutoffs, sink).execute(
+      new PlaceOrderCommand("u1", payload({ requestedDeliveryDate: NEXT_DAY }), null),
+    );
+    expect(sink.placed).not.toBeNull();
   });
 });

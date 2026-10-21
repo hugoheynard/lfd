@@ -31,11 +31,15 @@ La garde est `ensureWithinOrderCutoff`
 2026-10-21), appelée par `OrderDrafting.ensureNotTooLate` pour les passations
 client, invité et équipe :
 
-1. **Ligne par ligne**, un article qui porte une limite d'article est jugé par
-   **elle seule** (`decideOrderLimit`) ; un article qui n'en porte pas est jugé
-   par la règle générale (`decideOrderCutoff`, calculée une fois par panier).
-   ⚠️ L'article **remplace** la règle générale, il ne s'y ajoute pas : une limite
-   d'article plus tardive que la générale l'emporte pour cet article.
+1. **Ligne par ligne, la plus stricte gagne toujours** (décision de Hugo,
+   2026-10-21) : la décision d'une ligne est la plus fermée entre la limite de
+   l'article, si elle existe (`decideOrderLimit`), et la règle générale en
+   vigueur pour ce jour et ce point (`decideOrderCutoff`, calculée une fois par
+   panier). Une limite d'article plus tardive ne relâche jamais la règle
+   générale. Règle générale désactivée (interrupteur) : seule la limite
+   d'article compte. Chaque limite garde **sa** grâce, et l'on compare des
+   décisions grâce comprise ; entre deux grâces, celle qui se ferme la première
+   est opposée. (Jusqu'au 2026-10-21, l'article **remplaçait** la règle.)
 2. **Sur le panier, la plus fermée gagne** : `open` < `grace` < `closed`. Un
    panier ne se découpe pas.
 3. Dans la grâce, seule une dérogation ouverte fait passer ; sinon

@@ -34,16 +34,25 @@ const SEVERITY: Readonly<Record<OrderCutoffDecision["status"], number>> = {
  * ## Deux sources, une seule décision
  *
  * Depuis le fil v6, chaque article peut porter **sa** limite, résolue par le
- * référentiel sur l'échelle `global → famille → produit → déclinaison`. Un
- * article qui en porte une l'oppose ; un article qui n'en porte pas retombe sur
- * la règle du commerce (`OrderCutoff`).
+ * référentiel sur l'échelle `global → famille → produit → déclinaison`.
  *
- * 🔴 **L'article ne peut pas RELÂCHER la règle du commerce, il la remplace.**
- * C'est un choix, et il se discutera : un article sans limite propre suit le
- * commerce, un article qui en a une décide seul. Le mélange — prendre le plus
- * contraignant des deux — aurait rendu impossible de déclarer un article
- * commandable plus tard que le reste, ce qui est précisément l'usage du rang
- * `produit`.
+ * 🔴 **La plus stricte gagne TOUJOURS** (Hugo, 2026-10-21). Pour chaque ligne,
+ * la décision est la plus fermée entre la limite de l'article (s'il en porte
+ * une) et la règle du commerce en vigueur pour ce jour et ce point. Un article
+ * ne RELÂCHE jamais la règle générale ; il ne peut que la resserrer. Jusqu'à
+ * cette date, la limite de l'article REMPLAÇAIT la règle — une limite posée au
+ * rang global du référentiel aurait neutralisé l'heure limite du commerce.
+ *
+ * Quand l'heure limite générale est désactivée, le lecteur des règles en
+ * vigueur n'en rend aucune : la règle du commerce n'oppose rien, et seule la
+ * limite de l'article compte.
+ *
+ * **Chaque limite garde sa propre grâce**, et on compare des DÉCISIONS, pas des
+ * heures : `closed` l'emporte sur `grace`, qui l'emporte sur `open`. Entre deux
+ * grâces, c'est celle qui se ferme la première qui est rendue. La décision la
+ * plus fermée inclut donc sa tolérance : une règle à 18 h sans grâce ferme
+ * avant un article à 17 h 30 avec une heure de grâce, et c'est le refus sec qui
+ * est opposé — prêter à l'une la grâce de l'autre rouvrirait ce qu'elle ferme.
  *
  * ## Le panier ferme quand sa ligne la plus urgente ferme
  *
@@ -81,7 +90,7 @@ const SEVERITY: Readonly<Record<OrderCutoffDecision["status"], number>> = {
  */
 export function ensureWithinOrderCutoff(input: {
   readonly lines: readonly LineOrderLimit[];
-  /** Les règles du commerce, opposées aux articles qui n'ont pas la leur. */
+  /** Les règles du commerce EN VIGUEUR (aucune si l'interrupteur est coupé), opposées à toutes les lignes. */
   readonly fallback: readonly OrderCutoffView[];
   readonly pickupAddressId: string | null;
   readonly fulfillmentDate: string;
@@ -103,12 +112,11 @@ export function ensureWithinOrderCutoff(input: {
 }
 
 /**
- * La décision la plus fermée parmi les lignes.
- *
- * Le repli du commerce est calculé **une seule fois**, et paresseusement : c'est
- * une résolution complète, et un panier de vingt lignes dont aucune ne porte de
- * limite la referait vingt fois pour le même résultat. Un panier vide n'a rien à
- * opposer — il sera refusé ailleurs, et pas pour l'heure.
+ * La décision la plus fermée : la règle du commerce, puis chaque limite
+ * d'article. La règle vaut pour toutes les lignes, donc « la plus fermée par
+ * ligne, puis la plus fermée du panier » revient à la plus fermée de
+ * l'ensemble — calculée une fois. Un panier vide n'a rien à opposer : il sera
+ * refusé ailleurs, et pas pour l'heure.
  */
 function strictestOf(input: {
   readonly lines: readonly LineOrderLimit[];
@@ -117,26 +125,35 @@ function strictestOf(input: {
   readonly fulfillmentDate: string;
   readonly now: Date;
 }): OrderCutoffDecision {
-  let fromCommerce: OrderCutoffDecision | null = null;
-  const commerce = (): OrderCutoffDecision => {
-    fromCommerce ??= decideOrderCutoff(
-      input.fallback,
-      input.pickupAddressId,
-      input.fulfillmentDate,
-      input.now,
-    );
-    return fromCommerce;
-  };
-
-  let strictest: OrderCutoffDecision = { status: "open", rule: null, limit: null, graceEnd: null };
+  if (input.lines.length === 0) {
+    return { status: "open", rule: null, limit: null, graceEnd: null };
+  }
+  const commerce = decideOrderCutoff(
+    input.fallback,
+    input.pickupAddressId,
+    input.fulfillmentDate,
+    input.now,
+  );
+  let strictest: OrderCutoffDecision = commerce;
   for (const line of input.lines) {
-    const decision =
-      line.limit === null
-        ? commerce()
-        : decideOrderLimit(line.limit, input.fulfillmentDate, input.now);
-    if (SEVERITY[decision.status] > SEVERITY[strictest.status]) {
-      strictest = decision;
-    }
+    strictest = stricterOf(
+      strictest,
+      decideOrderLimit(line.limit, input.fulfillmentDate, input.now),
+    );
   }
   return strictest;
+}
+
+/**
+ * La plus fermée de deux décisions, chacune avec sa grâce. À état égal en
+ * grâce, celle dont la grâce se ferme la première : c'est elle qui refusera.
+ */
+function stricterOf(a: OrderCutoffDecision, b: OrderCutoffDecision): OrderCutoffDecision {
+  if (SEVERITY[b.status] !== SEVERITY[a.status]) {
+    return SEVERITY[b.status] > SEVERITY[a.status] ? b : a;
+  }
+  if (a.status === "grace" && a.graceEnd !== null && b.graceEnd !== null) {
+    return b.graceEnd.getTime() < a.graceEnd.getTime() ? b : a;
+  }
+  return a;
 }

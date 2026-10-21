@@ -368,14 +368,34 @@ describe("la limite portée par l'ARTICLE, reçue du référentiel", () => {
   });
 
   /**
-   * 🔴 L'article **remplace** la règle du commerce, il ne se contente pas de la
-   * resserrer. Sans ça, le rang `produit` ne pourrait jamais déclarer un article
-   * commandable plus tard que le reste — l'usage même pour lequel il existe.
+   * Régression (2026-10-21) : la limite de l'article REMPLAÇAIT la règle du
+   * commerce, et une limite plus tardive la relâchait — une limite posée au rang
+   * global du référentiel aurait neutralisé l'heure limite générale. Décision de
+   * Hugo : la plus stricte gagne TOUJOURS.
    */
-  it("laisse passer sur la limite de l'article, là où le commerce refuserait", async () => {
-    // Le commerce a fermé (limite hier) ; l'article, lui, ferme dans 30 jours.
+  it("une limite d'article plus tardive ne relâche pas l'heure limite générale", async () => {
+    // Le commerce a fermé (limite hier) ; l'article, lui, ferme ce soir.
     await seedCutoff({ daysBefore: 1, time: "00:01" });
     await seedArticleLimit("VIE-001", { daysBefore: 0, time: "23:59", graceMinutes: 0 });
+
+    const response = await ctx
+      .asSub(MEMBER)
+      .post("/orders")
+      .send(order({ requestedDeliveryDate: serviceDay(0) }))
+      .expect(409);
+
+    expect(response.body).toMatchObject({ code: "orders.cutoff.past" });
+    expect(await orderCount()).toBe(0);
+  });
+
+  it("heure limite générale désactivée : seule la limite de l'article compte", async () => {
+    await seedCutoff({ daysBefore: 1, time: "00:01" });
+    await seedArticleLimit("VIE-001", { daysBefore: 0, time: "23:59", graceMinutes: 0 });
+    await ctx
+      .asSub(STAFF)
+      .patch("/admin/order-cutoff-settings")
+      .send({ enabled: false })
+      .expect(204);
 
     await ctx
       .asSub(MEMBER)

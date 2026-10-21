@@ -57,18 +57,19 @@ ne bouge.
 
 `OrderDrafting.ensureNotTooLate` relit le catalogue sur les SKU du panier
 (`resolveMany(skus, "pro")`) et passe à `ensureWithinOrderCutoff` la limite de
-chaque ligne. **Un article qui porte une limite est jugé par elle seule** — la
-règle générale du commerce ne le concerne plus, même si elle est plus stricte ;
-puis la plus fermée du panier gagne ([`README.md`](README.md) §2). La limite
-d'article garde sa grâce, ses dérogations et sa surtaxe, et ne dépend pas de
-l'interrupteur de l'heure limite générale.
+chaque ligne. 🔴 **La plus stricte gagne toujours** (décision de Hugo,
+2026-10-21) : chaque ligne est jugée par la plus fermée entre la limite de
+l'article (s'il en porte une) et la règle générale en vigueur pour ce jour et ce
+point ; puis la plus fermée du panier gagne ([`README.md`](README.md) §2). Une
+limite d'article plus tardive ne relâche donc jamais la règle générale. Chaque
+limite garde sa propre grâce ; les dérogations et la surtaxe valent pour la
+décision retenue. Interrupteur de l'heure limite générale désactivé, il n'y a
+plus de règle en vigueur, et seule la limite d'article compte.
 
-⚠️ Conséquence (vérifiée en dev le 2026-10-21) : dès qu'un **rang global** pose
-délai et heure au référentiel, **tous** les articles portent une limite
-d'article, et la règle générale du commerce ne décide plus de rien à la
-passation — elle ne sert alors qu'à `/fulfillment-days` et à la comparaison du
-§4. En dev, le rang global vaut « la veille, 18:00, grâce 60 min ». L'état du
-référentiel en production n'a pas été lu.
+Jusqu'au 2026-10-21, la limite d'article **remplaçait** la règle générale : un
+rang global posé au référentiel la neutralisait à la passation. Ce n'est plus
+le cas — un rang global plus tardif que la règle générale est désormais sans
+effet, un rang global plus tôt la resserre partout.
 
 ## 4. Ce que sert la boutique (depuis `a1e1c62f5`, 2026-10-21)
 
@@ -78,7 +79,9 @@ référentiel en production n'a pas été lu.
 sur `/shop/catalogue` et `/shop/catalogue/mine`, à partir de la limite résolue
 de l'unité vendue par défaut.
 
-Il n'est servi que si la limite est **plus stricte** que la règle générale
+Il n'est servi que si la limite est **plus stricte** que la règle générale — ce
+qui est, depuis le 2026-10-21, exactement le cas où elle change la décision de la
+passation
 (`shownItemOrderLimit` / `isStricterOrderLimit`,
 `packages/contracts/src/item-order-limit.ts`) : son instant, pour un même jour
 de service, tombe plus tôt — comparé en minutes de pendule avant le minuit du
