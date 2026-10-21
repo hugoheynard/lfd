@@ -51,8 +51,6 @@ import { openCompletion } from '../completion/completion-open';
 import { DataDeskCard } from '../data/data-desk-card/data-desk-card';
 import { DataMobileCard } from '../data/data-mobile-card/data-mobile-card';
 import { DossierCard } from '../dossier-card/dossier-card';
-import { InvoicesDeskCard } from '../invoices/invoices-desk-card/invoices-desk-card';
-import { InvoicesMobileCard } from '../invoices/invoices-mobile-card/invoices-mobile-card';
 import { IdentityDeskCard } from '../identity/identity-desk-card/identity-desk-card';
 import { IdentityMobileCard } from '../identity/identity-mobile-card/identity-mobile-card';
 import { KbisDeskCard } from '../kbis/kbis-desk-card/kbis-desk-card';
@@ -69,9 +67,9 @@ import { UsersDeskCard } from '../users/users-desk-card/users-desk-card';
 import { UsersMobileCard } from '../users/users-mobile-card/users-mobile-card';
 
 /**
- * Les dix sujets, numérotés dans l'ordre de lecture. Le mandat suit le RIB
- * qu'il autorise à débiter ; les factures (E6) suivent le mandat qui les
- * prélève, et se montrent aux mêmes rôles que le RIB.
+ * Les neuf sujets, numérotés dans l'ordre de lecture. Le mandat suit le RIB
+ * qu'il autorise à débiter. Les factures ont quitté le dossier le 2026-10-21
+ * pour leur page, `/mes-factures` (plan `plan-page-mes-factures.md`).
  *
  * « Mes informations » n'en est plus (2026-09-14) : Mon compte est le dossier
  * de la SOCIÉTÉ, et la personne a sa propre page, `/mon-profil` (2026-09-22).
@@ -83,7 +81,6 @@ const SECTIONS = [
   'addresses',
   'bank',
   'mandate',
-  'invoices',
   'payment',
   'preferences',
   'data',
@@ -139,8 +136,6 @@ const BANK_ROLES: ReadonlySet<CompanyMemberRole> = new Set(['owner', 'billing'])
     FoldWellComponent,
     IdentityDeskCard,
     IdentityMobileCard,
-    InvoicesDeskCard,
-    InvoicesMobileCard,
     KbisDeskCard,
     KbisMobileCard,
     MandateDeskCard,
@@ -274,7 +269,7 @@ export class ComptePage {
     completionCount(this.completion().length, this.t().account),
   );
 
-  /** Les éléments de chaque carte, calculés une fois pour les dix cartes. */
+  /** Les éléments de chaque carte, calculés une fois pour les neuf cartes. */
   protected readonly cardCompletion = computed(() => {
     const items = this.completion();
     return {
@@ -326,7 +321,7 @@ export class ComptePage {
     const bank = this.showsBank();
     const mandate = this.showsMandate();
     const shown = SECTIONS.filter(
-      (key) => (bank || (key !== 'bank' && key !== 'invoices')) && (mandate || key !== 'mandate'),
+      (key) => (bank || key !== 'bank') && (mandate || key !== 'mandate'),
     );
     return shown.map((key, index) => ({
       key,

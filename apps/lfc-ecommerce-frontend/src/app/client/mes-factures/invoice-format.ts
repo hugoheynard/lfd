@@ -1,12 +1,18 @@
-import type { IssuedInvoiceLineView, IssuedInvoiceSummaryView } from '@lfd/contracts';
+import type {
+  IssuedInvoiceLineView,
+  IssuedInvoiceSummaryView,
+  MyInvoiceSettlementStatus,
+  MyInvoiceSettlementView,
+} from '@lfd/contracts';
+import type { FoldBadgeVariant } from 'fold-ng';
 
-import type { LocaleCode } from '../../client-locale.service';
-import { fill } from '../../copy/client-copy.service';
-import type { AccountInvoicesCopy } from '../../copy/screens/account-invoices.copy';
+import type { LocaleCode } from '../client-locale.service';
+import { fill } from '../copy/client-copy.service';
+import type { AccountInvoicesCopy } from '../copy/screens/account-invoices.copy';
 
 /**
- * Les mises en forme de « Mes factures » (E6) — les deux cartes et le
- * dialogue les partagent. Entiers jusqu'au bout : la quantité est en
+ * Les mises en forme de « Mes factures » — la page `/mes-factures` et le
+ * dialogue d'une pièce les partagent. Entiers jusqu'au bout : la quantité est en
  * millièmes, le taux de pénalité en points de base.
  */
 
@@ -35,9 +41,71 @@ export function invoiceMonth(month: string, locale: LocaleCode): string {
   }).format(new Date(`${month}-01T12:00:00.000Z`));
 }
 
-/** « 3 factures », « 1 facture ». */
-export function invoicesCount(count: number, copy: AccountInvoicesCopy): string {
-  return count === 1 ? copy.countOne : fill(copy.count, { n: String(count) });
+/** `9` → « septembre » : le nom du mois, pour le filtre. */
+export function monthName(month: number, locale: LocaleCode): string {
+  return new Intl.DateTimeFormat(INTL_LOCALE[locale], { month: 'long', timeZone: 'UTC' }).format(
+    new Date(Date.UTC(2000, month - 1, 15)),
+  );
+}
+
+/** Le libellé de chaque statut de règlement (plan `plan-page-mes-factures.md` §7.1). */
+function statusLabel(status: MyInvoiceSettlementStatus, copy: AccountInvoicesCopy): string {
+  const labels: Readonly<Record<MyInvoiceSettlementStatus, string>> = {
+    card_paid: copy.statusCardPaid,
+    collection_planned: copy.statusCollectionPlanned,
+    collected: copy.statusCollected,
+    collection_rejected: copy.statusRejected,
+    recollection_planned: copy.statusRecollectionPlanned,
+    settled: copy.statusSettled,
+    closed: copy.statusClosed,
+    processing: copy.statusProcessing,
+  };
+  return labels[status];
+}
+
+/** « Prélevée le 5 oct. 2026 » ; le libellé seul quand le statut n'a pas de date. */
+export function settlementLabel(
+  settlement: MyInvoiceSettlementView,
+  copy: AccountInvoicesCopy,
+  locale: LocaleCode,
+): string {
+  const label = statusLabel(settlement.status, copy);
+  return settlement.date === null
+    ? label
+    : `${label} ${fill(copy.statusOn, { date: invoiceDay(settlement.date, locale) })}`;
+}
+
+/**
+ * Le ton de la pastille : le rejet est le SEUL état en défaut (Hugo, Q1) ; ce
+ * qui attend notre équipe ou est clos ne demande rien au client.
+ */
+export function settlementTone(status: MyInvoiceSettlementStatus): FoldBadgeVariant {
+  const tones: Readonly<Record<MyInvoiceSettlementStatus, FoldBadgeVariant>> = {
+    card_paid: 'success',
+    collection_planned: 'info',
+    collected: 'success',
+    collection_rejected: 'alert',
+    recollection_planned: 'info',
+    settled: 'success',
+    closed: 'neutral',
+    processing: 'neutral',
+  };
+  return tones[status];
+}
+
+/**
+ * « rejeté avec 2 autres factures du même prélèvement » — un rejet porte sur
+ * toute la ligne bancaire (§7.1). `null` hors rejet, ou seule sur sa ligne.
+ */
+export function rejectedWithOthers(
+  settlement: MyInvoiceSettlementView,
+  copy: AccountInvoicesCopy,
+): string | null {
+  const others = settlement.otherInvoicesOnDebit;
+  if (settlement.status !== 'collection_rejected' || others === 0) {
+    return null;
+  }
+  return others === 1 ? copy.rejectedWithOne : fill(copy.rejectedWith, { n: String(others) });
 }
 
 /** « Facture » ou « Avoir ». */

@@ -3,7 +3,7 @@ import { vi } from 'vitest';
 import type { IssuedInvoiceView } from '@lfd/contracts';
 import { FoldPanelRef } from 'fold-ng';
 
-import { ClientInvoices } from '../../../client-invoices.service';
+import { ClientInvoices } from '../../client-invoices.service';
 import { CREDIT_NOTE, SEPTEMBER_DETAIL } from '../invoice.fixture';
 import { InvoiceDialog } from './invoice-dialog';
 

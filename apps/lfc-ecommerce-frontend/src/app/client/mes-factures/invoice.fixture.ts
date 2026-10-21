@@ -1,10 +1,10 @@
-import type { IssuedInvoiceSummaryView, IssuedInvoiceView } from '@lfd/contracts';
+import type { IssuedInvoiceView, MyIssuedInvoiceView } from '@lfd/contracts';
 
 /**
  * Des pièces de « Mes factures » pour les specs (E6). Les dates ne sont
  * qu'affichées : aucune n'est comparée à l'horloge.
  */
-export const SEPTEMBER: IssuedInvoiceSummaryView = {
+export const SEPTEMBER: MyIssuedInvoiceView = {
   invoiceId: 'inv_1',
   number: 'FA-2026-000007',
   kind: 'invoice',
@@ -18,9 +18,10 @@ export const SEPTEMBER: IssuedInvoiceSummaryView = {
   totalVatCents: 550,
   totalTtcCents: 10_550,
   documentAvailable: false,
+  settlement: { status: 'collection_planned', date: '2026-10-15', otherInvoicesOnDebit: 0 },
 };
 
-export const CREDIT_NOTE: IssuedInvoiceSummaryView = {
+export const CREDIT_NOTE: MyIssuedInvoiceView = {
   ...SEPTEMBER,
   invoiceId: 'cn_1',
   number: 'FA-2026-000009',
@@ -31,10 +32,35 @@ export const CREDIT_NOTE: IssuedInvoiceSummaryView = {
   periodClosesAt: null,
   periodLabel: null,
   totalTtcCents: 1_055,
+  settlement: null,
+};
+
+/** Une facture REJETÉE, PDF rendu, avec deux autres factures sur la même ligne. */
+export const AUGUST_REJECTED: MyIssuedInvoiceView = {
+  ...SEPTEMBER,
+  invoiceId: 'inv_0',
+  number: 'FA-2026-000004',
+  issuedOn: '2026-08-31',
+  period: '2026-08',
+  periodLabel: 'du 1er au 31 août 2026',
+  totalTtcCents: 20_000,
+  documentAvailable: true,
+  settlement: { status: 'collection_rejected', date: '2026-09-20', otherInvoicesOnDebit: 2 },
 };
 
 export const SEPTEMBER_DETAIL: IssuedInvoiceView = {
-  ...SEPTEMBER,
+  invoiceId: SEPTEMBER.invoiceId,
+  number: SEPTEMBER.number,
+  kind: SEPTEMBER.kind,
+  correctedInvoiceNumber: SEPTEMBER.correctedInvoiceNumber,
+  issuedOn: SEPTEMBER.issuedOn,
+  dueOn: SEPTEMBER.dueOn,
+  period: SEPTEMBER.period,
+  periodClosesAt: SEPTEMBER.periodClosesAt,
+  periodLabel: SEPTEMBER.periodLabel,
+  totalHtCents: SEPTEMBER.totalHtCents,
+  totalVatCents: SEPTEMBER.totalVatCents,
+  totalTtcCents: SEPTEMBER.totalTtcCents,
   payerCompanyId: 'cmp_1',
   seller: {
     name: 'La Folie Douce',

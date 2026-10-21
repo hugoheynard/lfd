@@ -72,7 +72,6 @@ export const ACCOUNT_FR: AccountCopy = {
     payment: 'Paiement',
     preferences: 'Préférences',
     data: 'Mes données',
-    invoices: 'Mes factures',
   },
   identityBrand: 'Enseigne',
   identityCompany: 'Raison sociale',

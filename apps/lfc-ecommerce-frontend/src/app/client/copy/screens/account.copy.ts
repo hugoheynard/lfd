@@ -78,7 +78,6 @@ export interface AccountCopy {
     readonly payment: string;
     readonly preferences: string;
     readonly data: string;
-    readonly invoices: string;
   };
   readonly identityBrand: string;
   readonly identityCompany: string;

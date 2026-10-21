@@ -193,16 +193,6 @@
               </section>
             }
 
-            <!-- « Mes factures » (facture-emise.md) : les pièces
-                 adressées à la société, aux mêmes rôles que le RIB — l'API
-                 tient le même mur. -->
-            @if (showsBank()) {
-              <section class="card invoices" id="compte-invoices">
-                <app-invoices-desk-card class="desk" />
-                <app-invoices-mobile-card class="mobile" />
-              </section>
-            }
-
             <section class="card payment" id="compte-payment">
               <app-payment-desk-card class="desk" />
               <app-payment-mobile-card class="mobile" />

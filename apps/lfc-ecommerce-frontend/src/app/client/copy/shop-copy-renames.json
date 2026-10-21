@@ -6,6 +6,9 @@
     "proLanding.personalLead": null,
     "proLanding.personalLink": null,
     "shop.upsell": null,
-    "shop.upsellLine": null
+    "shop.upsellLine": null,
+    "account.sections.invoices": "account.invoices.title",
+    "account.invoices.count": null,
+    "account.invoices.countOne": null
   }
 }

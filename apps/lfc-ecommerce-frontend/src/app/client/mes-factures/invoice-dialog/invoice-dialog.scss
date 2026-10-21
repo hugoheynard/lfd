@@ -1,4 +1,4 @@
-@use '../../account-card' as card;
+@use '../../mon-compte/account-card' as card;
 
 .meta {
   @include card.note;

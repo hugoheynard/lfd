@@ -5918,13 +5918,6 @@
           "variables": []
         },
         {
-          "key": "account.sections.invoices",
-          "fr": "Mes factures",
-          "en": "My invoices",
-          "it": "Le mie fatture",
-          "variables": []
-        },
-        {
           "key": "account.identityBrand",
           "fr": "Enseigne",
           "en": "Trading name",
@@ -8705,6 +8698,27 @@
           "variables": []
         },
         {
+          "key": "account.invoices.title",
+          "fr": "Mes factures",
+          "en": "My invoices",
+          "it": "Le mie fatture",
+          "variables": []
+        },
+        {
+          "key": "account.invoices.lead",
+          "fr": "Vos factures et avoirs, leur règlement, et leurs PDF.",
+          "en": "Your invoices and credit notes, their payment, and their PDFs.",
+          "it": "Le fatture e le note di credito, il loro pagamento e i loro PDF.",
+          "variables": []
+        },
+        {
+          "key": "account.invoices.noneTitle",
+          "fr": "Aucune facture",
+          "en": "No invoice",
+          "it": "Nessuna fattura",
+          "variables": []
+        },
+        {
           "key": "account.invoices.none",
           "fr": "Aucune facture pour l’instant. La facture du mois est émise le dernier jour du mois.",
           "en": "No invoice yet. The monthly invoice is issued on the last day of the month.",
@@ -8712,17 +8726,326 @@
           "variables": []
         },
         {
-          "key": "account.invoices.count",
-          "fr": "{n} factures",
-          "en": "{n} invoices",
-          "it": "{n} fatture",
+          "key": "account.invoices.noneFilteredTitle",
+          "fr": "Aucune pièce pour ces filtres",
+          "en": "Nothing matches these filters",
+          "it": "Nessun documento per questi filtri",
+          "variables": []
+        },
+        {
+          "key": "account.invoices.noneFiltered",
+          "fr": "Changez l’année, le mois ou le type pour en voir d’autres.",
+          "en": "Change the year, month or type to see others.",
+          "it": "Cambia anno, mese o tipo per vederne altri.",
+          "variables": []
+        },
+        {
+          "key": "account.invoices.forbiddenTitle",
+          "fr": "Factures réservées",
+          "en": "Invoices are restricted",
+          "it": "Fatture riservate",
+          "variables": []
+        },
+        {
+          "key": "account.invoices.forbidden",
+          "fr": "Seuls le titulaire du compte et le contact comptabilité voient les factures de la société.",
+          "en": "Only the account holder and the billing contact can see the company’s invoices.",
+          "it": "Solo il titolare del conto e il contatto amministrativo vedono le fatture della società.",
+          "variables": []
+        },
+        {
+          "key": "account.invoices.dueTitle",
+          "fr": "Total dû",
+          "en": "Amount due",
+          "it": "Totale dovuto",
+          "variables": []
+        },
+        {
+          "key": "account.invoices.dueCount",
+          "fr": "{n} factures à prélever",
+          "en": "{n} invoices to be debited",
+          "it": "{n} fatture da addebitare",
           "variables": ["n"]
         },
         {
-          "key": "account.invoices.countOne",
-          "fr": "1 facture",
-          "en": "1 invoice",
-          "it": "1 fattura",
+          "key": "account.invoices.dueCountOne",
+          "fr": "1 facture à prélever",
+          "en": "1 invoice to be debited",
+          "it": "1 fattura da addebitare",
+          "variables": []
+        },
+        {
+          "key": "account.invoices.dueNothing",
+          "fr": "Rien à régler pour l’instant.",
+          "en": "Nothing to pay for now.",
+          "it": "Niente da pagare per ora.",
+          "variables": []
+        },
+        {
+          "key": "account.invoices.dueRejected",
+          "fr": "dont {n} rejetées ({amount}) — à régulariser",
+          "en": "of which {n} rejected ({amount}) — to be settled",
+          "it": "di cui {n} respinte ({amount}) — da regolarizzare",
+          "variables": ["n", "amount"]
+        },
+        {
+          "key": "account.invoices.dueRejectedOne",
+          "fr": "dont 1 rejetée ({amount}) — à régulariser",
+          "en": "of which 1 rejected ({amount}) — to be settled",
+          "it": "di cui 1 respinta ({amount}) — da regolarizzare",
+          "variables": ["amount"]
+        },
+        {
+          "key": "account.invoices.dueNote",
+          "fr": "L’état de votre compte : ce total ne suit pas les filtres. Les avoirs n’en sont pas déduits.",
+          "en": "The state of your account: this total ignores the filters. Credit notes are not deducted.",
+          "it": "Lo stato del conto: questo totale non segue i filtri. Le note di credito non vengono detratte.",
+          "variables": []
+        },
+        {
+          "key": "account.invoices.creditNotesShown",
+          "fr": "{n} avoirs dans la liste : {amount}",
+          "en": "{n} credit notes in the list: {amount}",
+          "it": "{n} note di credito nell’elenco: {amount}",
+          "variables": ["n", "amount"]
+        },
+        {
+          "key": "account.invoices.creditNotesShownOne",
+          "fr": "1 avoir dans la liste : {amount}",
+          "en": "1 credit note in the list: {amount}",
+          "it": "1 nota di credito nell’elenco: {amount}",
+          "variables": ["amount"]
+        },
+        {
+          "key": "account.invoices.filterYear",
+          "fr": "Année",
+          "en": "Year",
+          "it": "Anno",
+          "variables": []
+        },
+        {
+          "key": "account.invoices.filterMonth",
+          "fr": "Mois",
+          "en": "Month",
+          "it": "Mese",
+          "variables": []
+        },
+        {
+          "key": "account.invoices.filterKind",
+          "fr": "Pièces",
+          "en": "Documents",
+          "it": "Documenti",
+          "variables": []
+        },
+        {
+          "key": "account.invoices.allYears",
+          "fr": "Toutes",
+          "en": "All",
+          "it": "Tutti",
+          "variables": []
+        },
+        {
+          "key": "account.invoices.allMonths",
+          "fr": "Tous",
+          "en": "All",
+          "it": "Tutti",
+          "variables": []
+        },
+        {
+          "key": "account.invoices.kindAll",
+          "fr": "Tout",
+          "en": "All",
+          "it": "Tutto",
+          "variables": []
+        },
+        {
+          "key": "account.invoices.kindInvoices",
+          "fr": "Factures",
+          "en": "Invoices",
+          "it": "Fatture",
+          "variables": []
+        },
+        {
+          "key": "account.invoices.kindCreditNotes",
+          "fr": "Avoirs",
+          "en": "Credit notes",
+          "it": "Note di credito",
+          "variables": []
+        },
+        {
+          "key": "account.invoices.colNumber",
+          "fr": "Numéro",
+          "en": "Number",
+          "it": "Numero",
+          "variables": []
+        },
+        {
+          "key": "account.invoices.colKind",
+          "fr": "Type",
+          "en": "Type",
+          "it": "Tipo",
+          "variables": []
+        },
+        {
+          "key": "account.invoices.colPeriod",
+          "fr": "Période",
+          "en": "Period",
+          "it": "Periodo",
+          "variables": []
+        },
+        {
+          "key": "account.invoices.colIssued",
+          "fr": "Émise le",
+          "en": "Issued on",
+          "it": "Emessa il",
+          "variables": []
+        },
+        {
+          "key": "account.invoices.colTotal",
+          "fr": "TTC",
+          "en": "Incl. VAT",
+          "it": "IVA incl.",
+          "variables": []
+        },
+        {
+          "key": "account.invoices.colStatus",
+          "fr": "Statut",
+          "en": "Status",
+          "it": "Stato",
+          "variables": []
+        },
+        {
+          "key": "account.invoices.colActions",
+          "fr": "Pièce",
+          "en": "Document",
+          "it": "Documento",
+          "variables": []
+        },
+        {
+          "key": "account.invoices.statusCardPaid",
+          "fr": "Acquittée par carte",
+          "en": "Paid by card",
+          "it": "Pagata con carta",
+          "variables": []
+        },
+        {
+          "key": "account.invoices.statusCollectionPlanned",
+          "fr": "Prélèvement prévu",
+          "en": "Direct debit scheduled",
+          "it": "Addebito previsto",
+          "variables": []
+        },
+        {
+          "key": "account.invoices.statusCollected",
+          "fr": "Prélevée",
+          "en": "Debited",
+          "it": "Addebitata",
+          "variables": []
+        },
+        {
+          "key": "account.invoices.statusRejected",
+          "fr": "Prélèvement rejeté — à régulariser",
+          "en": "Direct debit rejected — to be settled",
+          "it": "Addebito respinto — da regolarizzare",
+          "variables": []
+        },
+        {
+          "key": "account.invoices.statusRecollectionPlanned",
+          "fr": "Nouveau prélèvement prévu",
+          "en": "New direct debit scheduled",
+          "it": "Nuovo addebito previsto",
+          "variables": []
+        },
+        {
+          "key": "account.invoices.statusSettled",
+          "fr": "Réglée",
+          "en": "Settled",
+          "it": "Saldata",
+          "variables": []
+        },
+        {
+          "key": "account.invoices.statusClosed",
+          "fr": "Clôturée",
+          "en": "Closed",
+          "it": "Chiusa",
+          "variables": []
+        },
+        {
+          "key": "account.invoices.statusProcessing",
+          "fr": "En cours de traitement",
+          "en": "Being processed",
+          "it": "In lavorazione",
+          "variables": []
+        },
+        {
+          "key": "account.invoices.processingHint",
+          "fr": "notre équipe s’en occupe",
+          "en": "our team is on it",
+          "it": "se ne occupa il nostro team",
+          "variables": []
+        },
+        {
+          "key": "account.invoices.statusOn",
+          "fr": "le {date}",
+          "en": "on {date}",
+          "it": "il {date}",
+          "variables": ["date"]
+        },
+        {
+          "key": "account.invoices.rejectedWith",
+          "fr": "rejeté avec {n} autres factures du même prélèvement",
+          "en": "rejected with {n} other invoices of the same debit",
+          "it": "respinto con altre {n} fatture dello stesso addebito",
+          "variables": ["n"]
+        },
+        {
+          "key": "account.invoices.rejectedWithOne",
+          "fr": "rejeté avec 1 autre facture du même prélèvement",
+          "en": "rejected with 1 other invoice of the same debit",
+          "it": "respinto con un’altra fattura dello stesso addebito",
+          "variables": []
+        },
+        { "key": "account.invoices.noStatus", "fr": "—", "en": "—", "it": "—", "variables": [] },
+        {
+          "key": "account.invoices.download",
+          "fr": "PDF",
+          "en": "PDF",
+          "it": "PDF",
+          "variables": []
+        },
+        {
+          "key": "account.invoices.selectRow",
+          "fr": "Sélectionner {number}",
+          "en": "Select {number}",
+          "it": "Seleziona {number}",
+          "variables": ["number"]
+        },
+        {
+          "key": "account.invoices.selectAll",
+          "fr": "Tout sélectionner",
+          "en": "Select all",
+          "it": "Seleziona tutto",
+          "variables": []
+        },
+        {
+          "key": "account.invoices.downloadSelection",
+          "fr": "Télécharger la sélection ({n})",
+          "en": "Download the selection ({n})",
+          "it": "Scarica la selezione ({n})",
+          "variables": ["n"]
+        },
+        {
+          "key": "account.invoices.downloadShown",
+          "fr": "Télécharger tout ce qui est affiché",
+          "en": "Download everything shown",
+          "it": "Scarica tutto ciò che è visualizzato",
+          "variables": []
+        },
+        {
+          "key": "account.invoices.archiveFailed",
+          "fr": "Le zip n’a pas pu être préparé. Réessayez dans un instant.",
+          "en": "The zip could not be prepared. Please try again in a moment.",
+          "it": "Impossibile preparare lo zip. Riprova tra un istante.",
           "variables": []
         },
         {

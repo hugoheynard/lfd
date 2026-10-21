@@ -1,0 +1,196 @@
+<ng-template clientBanner>
+  <app-client-banner-block [title]="copy().title" [lead]="copy().lead" />
+</ng-template>
+
+<div class="page">
+  @if (!allowed()) {
+    <fold-empty-state
+      data-invoices-forbidden
+      [title]="copy().forbiddenTitle"
+      [subtitle]="copy().forbidden"
+    >
+      <fold-icon empty-icon name="lock" />
+    </fold-empty-state>
+  } @else {
+    @switch (status()) {
+      @case ('loading') {
+        <fold-loading [message]="copy().loading" />
+      }
+      @case ('failed') {
+        <fold-empty-state
+          tone="alert"
+          data-invoices-failed
+          [title]="copy().loadFailedTitle"
+          [subtitle]="copy().loadFailedBody"
+        >
+          <button foldButton emphasis="solid" intent="primary" type="button" (click)="retry()">
+            {{ t().account.loadRetry }}
+          </button>
+        </fold-empty-state>
+      }
+      @default {
+        @if (due(); as amount) {
+          <fold-card data-amount-due>
+            <fold-element-title
+              cardHeader
+              variant="title"
+              [title]="copy().dueTitle"
+              [subtitle]="amount.count"
+            />
+            <div class="due">
+              <strong class="due-total" data-due-total>{{ amount.total }}</strong>
+              @if (amount.rejected; as rejected) {
+                <fold-badge variant="alert" data-due-rejected [content]="rejected" />
+              }
+              <p class="note">{{ copy().dueNote }}</p>
+              @if (creditNotes(); as notes) {
+                <p class="note" data-credit-notes>{{ notes }}</p>
+              }
+            </div>
+          </fold-card>
+        }
+
+        <div class="filters">
+          <fold-listbox
+            size="sm"
+            data-filter-year
+            [label]="copy().filterYear"
+            [options]="yearOptions()"
+            [value]="filters().year"
+            (selectionChange)="chooseYear($event)"
+          />
+          <fold-listbox
+            size="sm"
+            data-filter-month
+            [label]="copy().filterMonth"
+            [options]="monthOptions()"
+            [value]="filters().month"
+            [disabled]="filters().year === null"
+            (selectionChange)="chooseMonth($event)"
+          />
+          <fold-listbox
+            size="sm"
+            data-filter-kind
+            [label]="copy().filterKind"
+            [options]="kindOptions()"
+            [value]="filters().kind"
+            (selectionChange)="chooseKind($event)"
+          />
+        </div>
+
+        @if (problem(); as message) {
+          <fold-callout variant="alert" announce data-invoices-problem>{{ message }}</fold-callout>
+        }
+
+        @if (rows().length === 0) {
+          @if (filtered()) {
+            <fold-empty-state
+              data-invoices-none
+              [title]="copy().noneFilteredTitle"
+              [subtitle]="copy().noneFiltered"
+            >
+              <fold-icon empty-icon name="receipt" />
+            </fold-empty-state>
+          } @else {
+            <fold-empty-state
+              data-invoices-none
+              [title]="copy().noneTitle"
+              [subtitle]="copy().none"
+            >
+              <fold-icon empty-icon name="receipt" />
+            </fold-empty-state>
+          }
+        } @else {
+          <fold-data-table
+            narrowLayout="cards"
+            selectable
+            [caption]="copy().title"
+            [columns]="columns()"
+            [rows]="rows()"
+            [rowKey]="key"
+            [loading]="refreshing()"
+            [selectionLabel]="selectionLabel"
+            [labels]="tableLabels()"
+            [(selected)]="selected"
+          >
+            <div foldToolbar class="toolbar">
+              <button
+                foldButton
+                size="sm"
+                emphasis="solid"
+                intent="primary"
+                icon="download"
+                type="button"
+                data-download-selection
+                [disabled]="selected().size === 0"
+                [loading]="archiving() === 'selection'"
+                (click)="downloadSelection()"
+              >
+                {{ selectionCount() }}
+              </button>
+              <button
+                foldButton
+                size="sm"
+                emphasis="soft"
+                intent="primary"
+                icon="download"
+                type="button"
+                data-download-shown
+                [loading]="archiving() === 'shown'"
+                (click)="downloadShown()"
+              >
+                {{ copy().downloadShown }}
+              </button>
+            </div>
+
+            <ng-template foldCell="status" let-row>
+              <span class="status" [attr.data-status]="row.invoiceId">
+                @if (row.settlement; as settlement) {
+                  <fold-badge [variant]="tone(settlement.status)" [content]="statusOf(row)" />
+                  @if (settlement.status === 'processing') {
+                    <span class="note">{{ copy().processingHint }}</span>
+                  }
+                  @if (othersOf(row); as others) {
+                    <span class="note" data-rejected-with>{{ others }}</span>
+                  }
+                } @else {
+                  <span class="note">{{ copy().noStatus }}</span>
+                }
+              </span>
+            </ng-template>
+
+            <ng-template foldCell="actions" let-row>
+              <span class="actions">
+                <button
+                  foldButton
+                  size="sm"
+                  emphasis="soft"
+                  intent="primary"
+                  type="button"
+                  [attr.data-open]="row.invoiceId"
+                  (click)="open(row)"
+                >
+                  {{ copy().open }}
+                </button>
+                @if (row.documentAvailable) {
+                  <button
+                    foldButton
+                    size="sm"
+                    emphasis="outline"
+                    intent="neutral"
+                    icon="download"
+                    type="button"
+                    [attr.data-download]="row.invoiceId"
+                    (click)="download(row)"
+                  >
+                    {{ copy().download }}
+                  </button>
+                }
+              </span>
+            </ng-template>
+          </fold-data-table>
+        }
+      }
+    }
+  }
+</div>

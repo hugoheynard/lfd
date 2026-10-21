@@ -1,61 +1,65 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { inject, Injectable, signal } from '@angular/core';
-import type {
-  IssuedInvoiceSummaryView,
-  IssuedInvoiceView,
-  IssuedInvoicesView,
-} from '@lfd/contracts';
+import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from '@angular/common/http';
+import { inject, Injectable } from '@angular/core';
+import type { IssuedInvoiceView, MyIssuedInvoicesView } from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { AUTH_CONFIG } from '../auth/auth.config';
 import { AuthFacade } from '../auth/auth.facade';
+import { attachmentFileName } from './mes-factures/content-disposition';
 
-/** Où en est la lecture de « Mes factures ». */
-export type InvoicesReadStatus = 'loading' | 'failed' | 'ready';
+/** Les filtres de la liste — année et mois d'ÉMISSION, type de pièce. */
+export interface InvoiceFilters {
+  readonly year: number | null;
+  /** Ne se pose qu'avec une année : le serveur refuse un mois seul. */
+  readonly month: number | null;
+  readonly kind: 'invoice' | 'credit_note' | null;
+}
+
+/** Ce que le zip désigne : les pièces filtrées, ou une sélection — jamais les deux. */
+export type InvoiceArchiveRequest =
+  { readonly filters: InvoiceFilters } | { readonly ids: readonly string[] };
+
+/** Un zip reçu, et le nom que le serveur lui donne. */
+export interface InvoiceArchive {
+  readonly fileName: string;
+  readonly blob: Blob;
+}
+
+/** Le nom de repli, quand `Content-Disposition` n'est pas lisible. */
+export const ARCHIVE_FALLBACK_NAME = 'factures.zip';
 
 /**
- * **Les factures de la société** — la section « Mes factures » de
- * `/mon-compte` (plan `documentation/comptabilite/facturation/facture-emise.md`). Des lectures seulement : une facture émise ne change plus.
+ * Le serveur a refusé le zip. `message` est le sien — il nomme les pièces en
+ * cause (plan `plan-page-mes-factures.md` §7.5) — ou `null` quand la réponse
+ * n'en portait pas (réseau, panne).
+ */
+export class InvoiceArchiveRefused extends Error {
+  constructor(readonly serverMessage: string | null) {
+    super(serverMessage ?? 'zip refusé');
+  }
+}
+
+/**
+ * **Les factures de la société** — la page `/mes-factures` (plan
+ * `documentation/comptabilite/facturation/plan-page-mes-factures.md`). Des
+ * lectures seulement : une facture émise ne change plus. Sans état : la page
+ * tient sa liste, ses filtres et sa sélection.
  *
- * Une lecture partagée par les deux cartes (bureau et mobile, toutes deux
- * dans le DOM), comme `ClientBankAccount`. Paresseuse : seuls `owner` et
- * `billing` voient ces cartes, et l'API refuserait les autres. Le mur
- * (404 hors société, 403 autre rôle) est tenu par l'API.
+ * Le mur (404 hors société, 403 hors `owner|billing`) est tenu par l'API.
  */
 @Injectable({ providedIn: 'root' })
 export class ClientInvoices {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthFacade);
 
-  private readonly _status = signal<InvoicesReadStatus>('loading');
-  private readonly _invoices = signal<readonly IssuedInvoiceSummaryView[]>([]);
-  private readFor: string | null = null;
-
-  readonly status = this._status.asReadonly();
-  readonly invoices = this._invoices.asReadonly();
-
-  /** Lit la liste si ce n'est pas déjà fait : la seconde carte ne relit pas. */
-  ensure(companyId: string): void {
-    if (this.readFor !== companyId) {
-      void this.reload(companyId);
-    }
-  }
-
-  /** Relit — après un échec (« Réessayer »). */
-  async reload(companyId: string): Promise<void> {
-    this.readFor = companyId;
-    if (this._status() === 'failed') {
-      this._status.set('loading');
-    }
-    try {
-      const { invoices } = await firstValueFrom(
-        this.http.get<IssuedInvoicesView>(this.url(companyId), { headers: await this.headers() }),
-      );
-      this._invoices.set(invoices);
-      this._status.set('ready');
-    } catch {
-      this._status.set('failed');
-    }
+  /** `GET /companies/:companyId/invoices?year&month&kind` — la liste filtrée et le total dû. */
+  async list(companyId: string, filters: InvoiceFilters): Promise<MyIssuedInvoicesView> {
+    return firstValueFrom(
+      this.http.get<MyIssuedInvoicesView>(this.url(companyId), {
+        headers: await this.headers(),
+        params: filterParams(filters),
+      }),
+    );
   }
 
   /** `GET /companies/:companyId/invoices/:invoiceId` — une pièce, rejetée en cas d'échec. */
@@ -80,6 +84,34 @@ export class ClientInvoices {
     );
   }
 
+  /**
+   * `GET …/invoices.zip` — entier ou refusé (P2) : le serveur ne sert jamais un
+   * zip incomplet. Un refus lève {@link InvoiceArchiveRefused} avec SON message.
+   */
+  async archive(companyId: string, request: InvoiceArchiveRequest): Promise<InvoiceArchive> {
+    const params =
+      'ids' in request
+        ? new HttpParams().set('ids', request.ids.join(','))
+        : filterParams(request.filters);
+    try {
+      const response = await firstValueFrom(
+        this.http.get(`${this.url(companyId)}.zip`, {
+          headers: await this.headers(),
+          params,
+          responseType: 'blob',
+          observe: 'response',
+        }),
+      );
+      return {
+        fileName:
+          attachmentFileName(response.headers.get('Content-Disposition')) ?? ARCHIVE_FALLBACK_NAME,
+        blob: response.body ?? new Blob([]),
+      };
+    } catch (error) {
+      throw new InvoiceArchiveRefused(await serverMessageOf(error));
+    }
+  }
+
   private url(companyId: string): string {
     return `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/invoices`;
   }
@@ -87,5 +119,39 @@ export class ClientInvoices {
   private async headers(): Promise<HttpHeaders> {
     const token = await firstValueFrom(this.auth.accessToken$());
     return new HttpHeaders({ Authorization: `Bearer ${token}` });
+  }
+}
+
+function filterParams(filters: InvoiceFilters): HttpParams {
+  let params = new HttpParams();
+  if (filters.year !== null) {
+    params = params.set('year', String(filters.year));
+    if (filters.month !== null) {
+      params = params.set('month', String(filters.month));
+    }
+  }
+  if (filters.kind !== null) {
+    params = params.set('kind', filters.kind);
+  }
+  return params;
+}
+
+/**
+ * Le `message` de l'enveloppe d'`AppErrorFilter`. Demandé en blob, le corps
+ * d'erreur arrive en `Blob` lui aussi : il faut le relire en texte.
+ */
+async function serverMessageOf(error: unknown): Promise<string | null> {
+  if (!(error instanceof HttpErrorResponse) || !(error.error instanceof Blob)) {
+    return null;
+  }
+  try {
+    const body: unknown = JSON.parse(await error.error.text());
+    if (typeof body === 'object' && body !== null && 'message' in body) {
+      const { message } = body;
+      return typeof message === 'string' && message !== '' ? message : null;
+    }
+    return null;
+  } catch {
+    return null;
   }
 }

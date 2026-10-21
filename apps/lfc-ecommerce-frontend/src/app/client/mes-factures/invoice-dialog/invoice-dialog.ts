@@ -19,12 +19,12 @@ import {
   FoldPanelHostService,
 } from 'fold-ng';
 
-import { ClientInvoices } from '../../../client-invoices.service';
-import { ClientLocale } from '../../../client-locale.service';
-import { ClientCopyService, fill } from '../../../copy/client-copy.service';
-import { formatCents, formatRate } from '../../../format-money';
-import { downloadBlob } from '../../../mes-commandes/download-blob';
-import { dialogSide } from '../../../panel-side';
+import { ClientInvoices } from '../../client-invoices.service';
+import { ClientLocale } from '../../client-locale.service';
+import { ClientCopyService, fill } from '../../copy/client-copy.service';
+import { formatCents, formatRate } from '../../format-money';
+import { downloadBlob } from '../../mes-commandes/download-blob';
+import { dialogSide } from '../../panel-side';
 import {
   basisPoints,
   invoiceDay,
@@ -32,7 +32,7 @@ import {
   invoiceMeta,
   invoiceQuantity,
   unitPriceLabel,
-} from '../invoices-section';
+} from '../invoice-format';
 
 /** Charge d'ouverture : la société, et la pièce à lire. */
 export interface InvoiceDialogData {
@@ -94,7 +94,7 @@ export class InvoiceDialog {
   protected readonly title = computed(() => {
     const invoice = this.invoice();
     return invoice === null
-      ? this.t().account.sections.invoices
+      ? this.copy().title
       : `${invoiceKind(invoice, this.copy())} ${invoice.number}`;
   });
   protected readonly meta = computed(() => {

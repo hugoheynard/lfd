@@ -1,5 +1,4 @@
-import { inject } from '@angular/core';
-import { Router, type Route, type Routes } from '@angular/router';
+import type { Route, Routes } from '@angular/router';
 
 import { authenticatedGuard } from './auth/authenticated.guard';
 import { DEV_BYPASS_AUTH } from './auth/dev-flags';
@@ -215,14 +214,14 @@ export const routes: Routes = [
           ),
       },
       {
-        // « Mes factures » vit dans le dossier (`/mon-compte#compte-invoices`)
-        // depuis E6 : les factures émises s'y lisent, PDF compris. L'adresse
-        // historique — le menu, des favoris — y mène ; la maquette du relevé
-        // qu'elle servait a été retirée le 2026-10-09 (suite (d) d'E6).
+        // « MES FACTURES », sa page depuis le 2026-10-21 (plan
+        // `plan-page-mes-factures.md`) : elle a quitté le dossier, où elle
+        // n'était qu'une carte. Écran de SOCIÉTÉ, même garde que le dossier.
         path: 'mes-factures',
-        pathMatch: 'full',
-        redirectTo: () =>
-          inject(Router).createUrlTree(['/mon-compte'], { fragment: 'compte-invoices' }),
+        canActivate: [companyWorkspaceGuard],
+        title: 'Mes factures — La Folie Coffee',
+        loadComponent: () =>
+          import('./client/mes-factures/invoices-page/invoices-page').then((m) => m.InvoicesPage),
       },
       {
         // LE DOSSIER, écrit pour celui qui le possède. Sept cartes et pas sept

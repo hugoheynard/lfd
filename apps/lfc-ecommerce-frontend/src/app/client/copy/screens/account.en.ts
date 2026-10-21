@@ -72,7 +72,6 @@ export const ACCOUNT_EN: AccountCopy = {
     payment: 'Payment',
     preferences: 'Preferences',
     data: 'My data',
-    invoices: 'My invoices',
   },
   identityBrand: 'Trading name',
   identityCompany: 'Registered name',

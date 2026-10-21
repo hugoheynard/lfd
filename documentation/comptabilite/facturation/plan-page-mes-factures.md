@@ -255,3 +255,55 @@ seule lecture `visibleTo` filtrée par les ids.
   référence `C-XXXXXX`.
 - Les ids de la sélection sont restreints en forme à `[A-Za-z0-9_-]{1,64}` ;
   leur nombre n'est borné que par le plafond du domaine.
+
+## 10. P3 — la page, bâtie (2026-10-21, non commitée à l'écriture)
+
+- **La page** `apps/lfc-ecommerce-frontend/src/app/client/mes-factures/invoices-page/` :
+  page du shell client (bandeau `clientBanner`, pas de `fold-page-layout`),
+  route `/mes-factures` sous `companyWorkspaceGuard` — la redirection vers
+  `/mon-compte#compte-invoices` est retirée. La société est celle de l'espace
+  (`ClientCompany`), comme la carte. Hors `owner|billing|admin` (l'administrateur depuis 5da7346b6), un
+  `fold-empty-state` le dit et rien n'est lu.
+- **En tête** : le total dû (`amountDue`, une `fold-card`), « dont N
+  rejetées (montant) » en pastille `alert`, la mention qu'il ne suit pas les
+  filtres ni ne déduit les avoirs, puis les avoirs **de la liste affichée**
+  et leur montant (voir écart).
+- **Filtres** année / mois / Tout-Factures-Avoirs en `fold-listbox`, relus
+  au serveur ; le mois est inactif sans année, et tombe quand l'année tombe.
+  Les années proposées sont celles vues dans les réponses (la première
+  lecture est sans filtre).
+- **La liste** : `fold-data-table` sélectionnable, `narrowLayout="cards"`
+  (cartes empilées en pile) — numéro, type, période, émission, TTC, statut
+  (`fold-badge` : rejet `alert`, prévu/re-présenté `info`,
+  carte/prélevée/réglée `success`, clôturée et en cours de traitement
+  `neutral` ; « notre équipe s'en occupe » sous ce dernier ; « rejeté avec N
+  autres factures du même prélèvement » sous un REJET seulement), « Voir »
+  (le dialogue de la pièce) et « PDF » quand il est rendu.
+- **Le zip** : « Télécharger la sélection (N) » (`ids`) et « Télécharger tout
+  ce qui est affiché » (les filtres), par blob ; nom lu dans
+  `Content-Disposition` (`apps/lfc-ecommerce-frontend/src/app/client/mes-factures/content-disposition.ts`, copie de celui
+  du back-office), repli `factures.zip`. Un refus affiche le `message` du
+  serveur dans un `fold-callout` alert, la liste reste.
+- **Retiré** : les cartes bureau/mobile et le panneau de `/mon-compte`
+  (le sommaire passe à huit/neuf sections). Le dialogue d'une pièce, les mises
+  en forme (`apps/lfc-ecommerce-frontend/src/app/client/mes-factures/invoice-format.ts`) et le fixture ont déménagé dans
+  `client/mes-factures/` ; `ClientInvoices` est devenu sans état (`list`,
+  `one`, `document`, `archive`).
+- **Textes** : `account-invoices.copy.ts` (fr/en/it) ; `account.sections.invoices`
+  renommé en `account.invoices.title`, `count`/`countOne` retirés
+  (`shop-copy-renames.json`), `pnpm copy:digest` passé.
+- **Tests** : `apps/lfc-ecommerce-frontend/src/app/client/mes-factures/invoices-page/invoices-page.spec.ts` (total, filtres, statuts et tons,
+  sélection, zip et son refus, cartes en pile, rôle refusé),
+  `apps/lfc-ecommerce-frontend/src/app/client/mes-factures/invoice-format.spec.ts`, `content-disposition.spec.ts`.
+
+**Écarts / à trancher**
+
+- Les avoirs « listés à part avec leur montant » : `MyAmountDueView` ne
+  porte aucun champ d'avoir, donc le montant affiché en tête est celui des
+  avoirs **de la liste filtrée**, et le texte le dit (« dans la liste »).
+  Un total des avoirs du compte, indépendant des filtres, demanderait un champ
+  au contrat. **À trancher par Hugo.**
+- La ligne « rejeté avec N autres » n'est montrée que sur un rejet ; un
+  `otherInvoicesOnDebit` > 0 d'une facture prélevée n'est pas dit.
+- Rien n'a été vu à l'écran (ni bureau, ni pile, ni le nom du zip à travers
+  la passerelle).

@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1385 textes
+## Sommaire — 1432 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -41,13 +41,13 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Mes commandes](#espace-orders) | `orders` | 99 |
 | [Annuler une commande — Mes commandes et la page invité](#espace-ordercancel) | `orderCancel` | 54 |
 | [Fidélité](#espace-loyalty) | `loyalty` | 38 |
-| [Mon compte (factures comprises)](#espace-account) | `account` | 478 |
+| [Mon compte (factures comprises)](#espace-account) | `account` | 525 |
 | [Le compte pro — le dictionnaire général](#espace-pro) | `pro` | 8 |
 | [Le compte pro — l’écran](#espace-proaccount) | `proAccount` | 27 |
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
-| **Total** | | **1385** |
+| **Total** | | **1432** |
 
 ## Le parcours de commande
 
@@ -1104,7 +1104,7 @@ Source : `screens/loyalty.copy.ts` · 38 textes.
 
 ### Mon compte (factures comprises) — `account`
 
-Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 478 textes.
+Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 525 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -1146,7 +1146,6 @@ Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 
 | `account.sections.payment` | Paiement | Payment | Pagamento |  |
 | `account.sections.preferences` | Préférences | Preferences | Preferenze |  |
 | `account.sections.data` | Mes données | My data | I miei dati |  |
-| `account.sections.invoices` | Mes factures | My invoices | Le mie fatture |  |
 | `account.identityBrand` | Enseigne | Trading name | Insegna |  |
 | `account.identityCompany` | Raison sociale | Registered name | Ragione sociale |  |
 | `account.identityForm` | Forme juridique | Legal form | Forma giuridica |  |
@@ -1545,9 +1544,57 @@ Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 
 | `account.invoices.loading` | Lecture de vos factures… | Loading your invoices… | Lettura delle fatture… |  |
 | `account.invoices.loadFailedTitle` | Impossible de lire vos factures | Your invoices could not be loaded | Impossibile leggere le fatture |  |
 | `account.invoices.loadFailedBody` | La lecture a échoué — vos factures, elles, sont intactes. | Loading failed — your invoices themselves are intact. | La lettura non è riuscita — le fatture, invece, sono intatte. |  |
+| `account.invoices.title` | Mes factures | My invoices | Le mie fatture |  |
+| `account.invoices.lead` | Vos factures et avoirs, leur règlement, et leurs PDF. | Your invoices and credit notes, their payment, and their PDFs. | Le fatture e le note di credito, il loro pagamento e i loro PDF. |  |
+| `account.invoices.noneTitle` | Aucune facture | No invoice | Nessuna fattura |  |
 | `account.invoices.none` | Aucune facture pour l’instant. La facture du mois est émise le dernier jour du mois. | No invoice yet. The monthly invoice is issued on the last day of the month. | Nessuna fattura per ora. La fattura del mese è emessa l’ultimo giorno del mese. |  |
-| `account.invoices.count` | {n} factures | {n} invoices | {n} fatture | `{n}` |
-| `account.invoices.countOne` | 1 facture | 1 invoice | 1 fattura |  |
+| `account.invoices.noneFilteredTitle` | Aucune pièce pour ces filtres | Nothing matches these filters | Nessun documento per questi filtri |  |
+| `account.invoices.noneFiltered` | Changez l’année, le mois ou le type pour en voir d’autres. | Change the year, month or type to see others. | Cambia anno, mese o tipo per vederne altri. |  |
+| `account.invoices.forbiddenTitle` | Factures réservées | Invoices are restricted | Fatture riservate |  |
+| `account.invoices.forbidden` | Seuls le titulaire du compte et le contact comptabilité voient les factures de la société. | Only the account holder and the billing contact can see the company’s invoices. | Solo il titolare del conto e il contatto amministrativo vedono le fatture della società. |  |
+| `account.invoices.dueTitle` | Total dû | Amount due | Totale dovuto |  |
+| `account.invoices.dueCount` | {n} factures à prélever | {n} invoices to be debited | {n} fatture da addebitare | `{n}` |
+| `account.invoices.dueCountOne` | 1 facture à prélever | 1 invoice to be debited | 1 fattura da addebitare |  |
+| `account.invoices.dueNothing` | Rien à régler pour l’instant. | Nothing to pay for now. | Niente da pagare per ora. |  |
+| `account.invoices.dueRejected` | dont {n} rejetées ({amount}) — à régulariser | of which {n} rejected ({amount}) — to be settled | di cui {n} respinte ({amount}) — da regolarizzare | `{n}` `{amount}` |
+| `account.invoices.dueRejectedOne` | dont 1 rejetée ({amount}) — à régulariser | of which 1 rejected ({amount}) — to be settled | di cui 1 respinta ({amount}) — da regolarizzare | `{amount}` |
+| `account.invoices.dueNote` | L’état de votre compte : ce total ne suit pas les filtres. Les avoirs n’en sont pas déduits. | The state of your account: this total ignores the filters. Credit notes are not deducted. | Lo stato del conto: questo totale non segue i filtri. Le note di credito non vengono detratte. |  |
+| `account.invoices.creditNotesShown` | {n} avoirs dans la liste : {amount} | {n} credit notes in the list: {amount} | {n} note di credito nell’elenco: {amount} | `{n}` `{amount}` |
+| `account.invoices.creditNotesShownOne` | 1 avoir dans la liste : {amount} | 1 credit note in the list: {amount} | 1 nota di credito nell’elenco: {amount} | `{amount}` |
+| `account.invoices.filterYear` | Année | Year | Anno |  |
+| `account.invoices.filterMonth` | Mois | Month | Mese |  |
+| `account.invoices.filterKind` | Pièces | Documents | Documenti |  |
+| `account.invoices.allYears` | Toutes | All | Tutti |  |
+| `account.invoices.allMonths` | Tous | All | Tutti |  |
+| `account.invoices.kindAll` | Tout | All | Tutto |  |
+| `account.invoices.kindInvoices` | Factures | Invoices | Fatture |  |
+| `account.invoices.kindCreditNotes` | Avoirs | Credit notes | Note di credito |  |
+| `account.invoices.colNumber` | Numéro | Number | Numero |  |
+| `account.invoices.colKind` | Type | Type | Tipo |  |
+| `account.invoices.colPeriod` | Période | Period | Periodo |  |
+| `account.invoices.colIssued` | Émise le | Issued on | Emessa il |  |
+| `account.invoices.colTotal` | TTC | Incl. VAT | IVA incl. |  |
+| `account.invoices.colStatus` | Statut | Status | Stato |  |
+| `account.invoices.colActions` | Pièce | Document | Documento |  |
+| `account.invoices.statusCardPaid` | Acquittée par carte | Paid by card | Pagata con carta |  |
+| `account.invoices.statusCollectionPlanned` | Prélèvement prévu | Direct debit scheduled | Addebito previsto |  |
+| `account.invoices.statusCollected` | Prélevée | Debited | Addebitata |  |
+| `account.invoices.statusRejected` | Prélèvement rejeté — à régulariser | Direct debit rejected — to be settled | Addebito respinto — da regolarizzare |  |
+| `account.invoices.statusRecollectionPlanned` | Nouveau prélèvement prévu | New direct debit scheduled | Nuovo addebito previsto |  |
+| `account.invoices.statusSettled` | Réglée | Settled | Saldata |  |
+| `account.invoices.statusClosed` | Clôturée | Closed | Chiusa |  |
+| `account.invoices.statusProcessing` | En cours de traitement | Being processed | In lavorazione |  |
+| `account.invoices.processingHint` | notre équipe s’en occupe | our team is on it | se ne occupa il nostro team |  |
+| `account.invoices.statusOn` | le {date} | on {date} | il {date} | `{date}` |
+| `account.invoices.rejectedWith` | rejeté avec {n} autres factures du même prélèvement | rejected with {n} other invoices of the same debit | respinto con altre {n} fatture dello stesso addebito | `{n}` |
+| `account.invoices.rejectedWithOne` | rejeté avec 1 autre facture du même prélèvement | rejected with 1 other invoice of the same debit | respinto con un’altra fattura dello stesso addebito |  |
+| `account.invoices.noStatus` | — | — | — |  |
+| `account.invoices.download` | PDF | PDF | PDF |  |
+| `account.invoices.selectRow` | Sélectionner {number} | Select {number} | Seleziona {number} | `{number}` |
+| `account.invoices.selectAll` | Tout sélectionner | Select all | Seleziona tutto |  |
+| `account.invoices.downloadSelection` | Télécharger la sélection ({n}) | Download the selection ({n}) | Scarica la selezione ({n}) | `{n}` |
+| `account.invoices.downloadShown` | Télécharger tout ce qui est affiché | Download everything shown | Scarica tutto ciò che è visualizzato |  |
+| `account.invoices.archiveFailed` | Le zip n’a pas pu être préparé. Réessayez dans un instant. | The zip could not be prepared. Please try again in a moment. | Impossibile preparare lo zip. Riprova tra un istante. |  |
 | `account.invoices.invoice` | Facture | Invoice | Fattura |  |
 | `account.invoices.creditNote` | Avoir | Credit note | Nota di credito |  |
 | `account.invoices.issuedOn` | émise le {date} | issued on {date} | emessa il {date} | `{date}` |
