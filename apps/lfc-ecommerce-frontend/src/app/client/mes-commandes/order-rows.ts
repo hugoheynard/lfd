@@ -1,4 +1,9 @@
-import type { FulfillmentWindow, CustomerOrderView } from '@lfd/contracts';
+import type {
+  CompanyOrderAuthorView,
+  CompanyOrderSiteView,
+  CustomerOrderView,
+  FulfillmentWindow,
+} from '@lfd/contracts';
 import { isSettled } from '@lfd/contracts/shop-values';
 
 import { formatWindow } from '../format-hour';
@@ -41,6 +46,32 @@ import { formatWindow } from '../format-hour';
  * elle le DESSINE. C'est une présentation, pas une affirmation.
  */
 
+/**
+ * **Une commande telle que la liste la rend** — la commande, plus son site et
+ * son auteur quand la liste est celle d'une société
+ * (`CompanyOrderListItemView`, plan `plan-commandes-des-sites.md`, C1).
+ *
+ * En perso (`GET /orders/mine`), le serveur ne rend ni l'un ni l'autre : `site`
+ * vaut `null` (la commande est celle de la liste) et `author` aussi — on ne
+ * fabrique pas un auteur que la réponse ne porte pas.
+ */
+export interface ListedOrder extends CustomerOrderView {
+  readonly site: CompanyOrderSiteView | null;
+  readonly author: CompanyOrderAuthorView | null;
+}
+
+/** Une commande perso, élevée au rang de ligne de liste — sans site ni auteur. */
+export function listedOf(order: CustomerOrderView): ListedOrder {
+  return { ...order, site: null, author: null };
+}
+
+/**
+ * Ce que les fabriques de lignes lisent : une commande, avec son site et son
+ * auteur QUAND la liste les porte. L'accueil et les suites passent une
+ * `CustomerOrderView` nue, qui n'en dit rien.
+ */
+export type RowSource = CustomerOrderView & Partial<Pick<ListedOrder, 'site' | 'author'>>;
+
 /** Une étape franchie, ou à franchir. */
 export interface TrackStep {
   /** Le MÉTIER, jamais le logiciel : « au fournil », pas « PROCESSING ». */
@@ -79,6 +110,8 @@ export interface TrackedOrder {
   /** Retrait : le point choisi. Coursier : vide. */
   readonly pickup: string;
   readonly pickupNote: string;
+  /** Le site de la commande, vu du compte principal ; vide sinon. */
+  readonly site: string;
 }
 
 /**
@@ -167,6 +200,13 @@ export interface HistoryOrder {
   readonly origin: OrderOrigin;
   /** La maison de l'espace courant — elle situe la personne, pas la ligne. */
   readonly org: string;
+  /**
+   * Le site de la commande — `null` quand c'est la société listée elle-même.
+   * La colonne « Site » nomme alors {@link org}.
+   */
+  readonly site: string | null;
+  /** « passée par Prénom N. » / « par l'équipe » ; vide quand la liste ne le dit pas. */
+  readonly author: string;
 }
 
 /** Ce que les libellés du domaine ne portent pas : les mots de l'écran. */
@@ -182,6 +222,9 @@ export interface RowCopy {
   readonly noWindow: string;
   /** « avant » — le mot devant une échéance. */
   readonly before: string;
+  /** `{name}` : l'auteur figé de la commande. */
+  readonly authorCustomer: string;
+  readonly authorTeam: string;
 }
 
 /**
@@ -209,6 +252,8 @@ export function rowCopyOf(copy: {
   readonly qrReady: string;
   readonly noWindow: string;
   readonly before: string;
+  readonly authorCustomer: string;
+  readonly authorTeam: string;
 }): RowCopy {
   return {
     pickup: copy.modePickup,
@@ -221,6 +266,8 @@ export function rowCopyOf(copy: {
     qrReady: copy.qrReady,
     noWindow: copy.noWindow,
     before: copy.before,
+    authorCustomer: copy.authorCustomer,
+    authorTeam: copy.authorTeam,
   };
 }
 
@@ -261,7 +308,7 @@ export function isLive(order: CustomerOrderView): boolean {
 }
 
 /** Le suivi d'une commande en cours. */
-export function trackedOf(order: CustomerOrderView, copy: RowCopy): TrackedOrder {
+export function trackedOf(order: RowSource, copy: RowCopy): TrackedOrder {
   const at = STEP_OF_STATUS[order.status] ?? 0;
   const place = placeOf(order);
   return {
@@ -282,11 +329,12 @@ export function trackedOf(order: CustomerOrderView, copy: RowCopy): TrackedOrder
     // Le QR n'est « prêt » que si le jeton existe VRAIMENT — il n'est émis que
     // pour les commandes en retrait.
     pickupNote: order.handoverToken === null ? '' : copy.qrReady,
+    site: order.site?.name ?? '',
   };
 }
 
 /** Une ligne d'historique. */
-export function historyRowOf(order: CustomerOrderView, org: string, copy: RowCopy): HistoryOrder {
+export function historyRowOf(order: RowSource, org: string, copy: RowCopy): HistoryOrder {
   return {
     id: order.id,
     reference: order.orderNumber,
@@ -305,7 +353,19 @@ export function historyRowOf(order: CustomerOrderView, org: string, copy: RowCop
     refund: refundOf(order),
     origin: originOf(order),
     org,
+    site: order.site?.name ?? null,
+    author: authorOf(order.author ?? null, copy),
   };
+}
+
+/** Qui a passé la commande, dit avec les mots de l'écran — un fait figé (§7.6). */
+function authorOf(author: CompanyOrderAuthorView | null, copy: RowCopy): string {
+  if (author === null) {
+    return '';
+  }
+  return author.kind === 'team'
+    ? copy.authorTeam
+    : copy.authorCustomer.replace('{name}', author.name);
 }
 
 /** Le règlement de la ligne : le régime d'abord, puis l'état réel de la carte. */

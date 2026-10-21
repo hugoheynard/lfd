@@ -13,6 +13,10 @@
     <span class="total">{{ total() }}</span>
   </div>
   <h3 class="title">{{ order().title }}</h3>
+  <!-- Vu du compte principal, le site pour lequel le pain part. -->
+  @if (order().site !== '') {
+    <p class="sub" data-site>{{ order().site }}</p>
+  }
   <p class="sub">{{ order().sub }}</p>
   <div class="bar" role="img" [attr.aria-label]="progressLabel()">
     <span class="bar-fill" [style.width.%]="order().percent"></span>

@@ -4474,6 +4474,30 @@
           "variables": []
         },
         { "key": "orders.colTotal", "fr": "Total", "en": "Total", "it": "Totale", "variables": [] },
+        { "key": "orders.colSite", "fr": "Site", "en": "Site", "it": "Sede", "variables": [] },
+        { "key": "orders.filterSite", "fr": "Site", "en": "Site", "it": "Sede", "variables": [] },
+        {
+          "key": "orders.filterAllSites",
+          "fr": "Tous les sites",
+          "en": "All sites",
+          "it": "Tutte le sedi",
+          "variables": []
+        },
+        {
+          "key": "orders.authorCustomer",
+          "fr": "passée par {name}",
+          "en": "placed by {name}",
+          "it": "effettuato da {name}",
+          "variables": ["name"]
+        },
+        {
+          "key": "orders.authorTeam",
+          "fr": "par l’équipe",
+          "en": "by our team",
+          "it": "dal nostro team",
+          "variables": []
+        },
+        { "key": "orders.detailSite", "fr": "Site", "en": "Site", "it": "Sede", "variables": [] },
         {
           "key": "orders.pieces",
           "fr": "{n} art.",
@@ -4567,9 +4591,9 @@
         },
         {
           "key": "orders.statusReceived",
-          "fr": "Reçue",
-          "en": "Received",
-          "it": "Ricevuto",
+          "fr": "Enregistrée",
+          "en": "Registered",
+          "it": "Registrata",
           "variables": []
         },
         {

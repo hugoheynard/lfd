@@ -3,7 +3,9 @@ import { ActivatedRoute, Router } from '@angular/router';
 import {
   FoldElementTitleComponent,
   FoldIconComponent,
+  FoldListboxComponent,
   FoldPageSectionComponent,
+  type FoldSelectOption,
   FoldPanelHostService,
 } from 'fold-ng';
 
@@ -31,6 +33,9 @@ import { HistoryTable } from '../history-table/history-table';
 import { NotifyService } from '../../../notify.service';
 import { ReportDialog } from '../report-dialog/report-dialog';
 import { TrackCard } from '../track-card/track-card';
+
+/** L'option « Tous les sites » — aucun identifiant de société n'est vide. */
+const ALL_SITES = '';
 
 /**
  * `/mes-commandes` — le suivi, puis la mémoire.
@@ -63,6 +68,7 @@ import { TrackCard } from '../track-card/track-card';
     ClientBannerOutlet,
     FoldElementTitleComponent,
     FoldIconComponent,
+    FoldListboxComponent,
     FoldPageSectionComponent,
     FoldScrollIndicatorComponent,
     FoldWellComponent,
@@ -108,6 +114,25 @@ export class CommandesPage {
   });
 
   /**
+   * La liste porte-t-elle des commandes de sites ? C'est la DONNÉE qui décide,
+   * jamais le rôle : un site, ou un principal sans héritage, n'en reçoit
+   * aucune — et ne voit ni la colonne « Site » ni son filtre.
+   */
+  protected readonly withSites = computed(() => this.history_.sites().length > 0);
+
+  /** « Tous les sites », le compte principal lui-même, puis chacun de ses sites. */
+  protected readonly siteOptions = computed<readonly FoldSelectOption<string>[]>(() => {
+    const own = this.client.company();
+    return [
+      { value: ALL_SITES, label: this.t().orders.filterAllSites },
+      ...(own === null ? [] : [{ value: own.id, label: this.client.name() }]),
+      ...this.history_.sites().map((site) => ({ value: site.companyId, label: site.name })),
+    ];
+  });
+
+  protected readonly chosenSite = computed(() => this.history_.site() ?? ALL_SITES);
+
+  /**
    * Le sur-titre du bandeau : combien de commandes VIVENT en ce moment.
    *
    * Il double le compte du puits, et c'est voulu : celui-ci se lit AVANT
@@ -127,6 +152,11 @@ export class CommandesPage {
     this.chrome.back.set(null);
     this.chrome.menu.set(true);
     this.chrome.barOnDesktop.set(true);
+  }
+
+  /** Le filtre est RELU au serveur (`?site=`) : le mur est dans sa requête. */
+  protected chooseSite(site: string): void {
+    this.history_.chooseSite(site === ALL_SITES ? null : site);
   }
 
   /** Une commande vient d'être annulée : la liste se relit, le suivi la quitte. */

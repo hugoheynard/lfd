@@ -83,6 +83,13 @@
   --fold-page-section-gap: var(--fold-space-md);
 }
 
+/* Le filtre tient sa largeur naturelle ; il ne s'étire pas sur la section. */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-md);
+}
+
 @media (min-width: 900px) {
   .page {
     gap: var(--fold-space-2xl);

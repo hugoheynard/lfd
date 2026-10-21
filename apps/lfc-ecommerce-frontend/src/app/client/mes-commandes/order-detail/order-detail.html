@@ -2,6 +2,14 @@
 <div class="facts">
   <p class="facts-head">{{ t().orders.detailHead }}</p>
   <dl class="facts-list">
+    <!-- Ouverte depuis le compte principal, la commande d'un site dit lequel :
+         les gestes qui suivent agissent sur LUI. -->
+    @if (order().site; as site) {
+      <div class="fact" data-site>
+        <dt>{{ t().orders.detailSite }}</dt>
+        <dd>{{ site }}</dd>
+      </div>
+    }
     <div class="fact">
       <dt>{{ t().orders.detailSlot }}</dt>
       <dd>{{ order().slot }}</dd>

@@ -1,11 +1,16 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { effect, inject, Injectable, signal } from '@angular/core';
-import type { CustomerOrderView } from '@lfd/contracts';
+import type {
+  CompanyOrderListItemView,
+  CompanyOrderSiteView,
+  CustomerOrderView,
+} from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { ClientWorkspace } from '../client-workspace.service';
 import { AUTH_CONFIG } from '../../auth/auth.config';
 import { AuthFacade } from '../../auth/auth.facade';
+import { listedOf, type ListedOrder, type RowSource } from './order-rows';
 
 /**
  * **Les commandes du client**, telles que notre base les porte.
@@ -32,6 +37,19 @@ import { AuthFacade } from '../../auth/auth.facade';
  * Pas de compte, pas de commandes — et surtout pas celles d'un autre. Un échec
  * de lecture laisse la liste vide : l'écran montre alors qu'il n'a rien à
  * afficher, ce qui est vrai.
+ *
+ * ## Les sites, vus du compte principal
+ *
+ * La liste d'une société rend aussi, pour son `owner` ou son `admin`, les
+ * commandes de ses sites — chacune avec son `site` (plan
+ * `documentation/comptes-client/plan-commandes-des-sites.md`, C1/C2). Le
+ * filtre par site est RELU au serveur (`?site=`), jamais appliqué ici : le mur
+ * est dans sa requête, et une liste filtrée à la main montrerait ce que le
+ * serveur aurait refusé de rendre.
+ *
+ * Aucune déduction du rôle : {@link sites} est ce que la dernière liste
+ * NON filtrée a nommé. Vide — un site, un principal sans héritage — et l'écran
+ * ne montre ni colonne ni filtre.
  */
 @Injectable({ providedIn: 'root' })
 export class ClientOrderHistory {
@@ -39,10 +57,24 @@ export class ClientOrderHistory {
   private readonly auth = inject(AuthFacade);
   private readonly workspace = inject(ClientWorkspace);
 
-  private readonly rows = signal<readonly CustomerOrderView[]>([]);
+  private readonly rows = signal<readonly ListedOrder[]>([]);
 
   /** Toutes les commandes lues, **la plus récente en tête**. */
   readonly orders = this.rows.asReadonly();
+
+  private readonly siteFilter = signal<string | null>(null);
+
+  /** Le filtre par site : l'identifiant d'une société, ou `null` pour toutes. */
+  readonly site = this.siteFilter.asReadonly();
+
+  private readonly knownSites = signal<readonly CompanyOrderSiteView[]>([]);
+
+  /**
+   * Les sites que la liste complète porte — lus sur la dernière réponse NON
+   * filtrée : filtrer sur un site ne doit pas faire disparaître les autres du
+   * choix.
+   */
+  readonly sites = this.knownSites.asReadonly();
 
   /** Ce qu'on a déjà lu : sans ce garde, l'effet rechargerait à chaque signal. */
   private loadedFor: string | null = null;
@@ -57,14 +89,25 @@ export class ClientOrderHistory {
         // Les commandes de l'espace quitté ne restent pas à l'écran pendant la relecture.
         this.rows.set([]);
       }
+      // Un filtre et des sites ne valent que pour la société qui les a rendus.
+      this.siteFilter.set(null);
+      this.knownSites.set([]);
       this.loadedFor = current;
       void this.load(current, this.workspace.company()?.id ?? null);
     });
   }
 
   /** Pose une liste déjà obtenue — les suites s'en servent au lieu de doubler. */
-  receive(orders: readonly CustomerOrderView[]): void {
-    this.rows.set(sorted(orders));
+  receive(orders: readonly RowSource[]): void {
+    this.rows.set(
+      sorted(
+        orders.map((order) => ({
+          ...order,
+          site: order.site ?? null,
+          author: order.author ?? null,
+        })),
+      ),
+    );
     this.loadedFor = 'posé-par-la-suite';
   }
 
@@ -79,6 +122,18 @@ export class ClientOrderHistory {
     }
     this.loadedFor = current;
     void this.load(current, this.workspace.company()?.id ?? null);
+  }
+
+  /**
+   * Filtre la liste sur un site — ou les montre tous (`null`) — et la RELIT.
+   * Sans effet hors d'une société : le perso n'a pas de site.
+   */
+  chooseSite(site: string | null): void {
+    if (site === this.siteFilter() || this.workspace.company() === null) {
+      return;
+    }
+    this.siteFilter.set(site);
+    this.reload();
   }
 
   /**
@@ -110,19 +165,21 @@ export class ClientOrderHistory {
   }
 
   private async load(workspace: string, companyId: string | null): Promise<void> {
-    const base = AUTH_CONFIG.apiBaseUrl;
-    const url =
-      companyId === null ? `${base}/orders/mine` : `${base}/companies/${companyId}/orders`;
+    const site = companyId === null ? null : this.siteFilter();
     try {
       const token = await firstValueFrom(this.auth.accessToken$());
-      const orders = await firstValueFrom(
-        this.http.get<readonly CustomerOrderView[]>(url, {
-          headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
-        }),
-      );
-      // Une réponse revenue après une bascule est l'historique d'un autre espace.
-      if (this.loadedFor === workspace) {
-        this.rows.set(sorted(orders));
+      const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+      const orders = await (companyId === null
+        ? this.personal(headers)
+        : this.ofCompany(companyId, site, headers));
+      // Une réponse revenue après une bascule (d'espace OU de filtre) est la
+      // liste d'une autre question.
+      if (this.loadedFor !== workspace || this.siteFilter() !== site) {
+        return;
+      }
+      this.rows.set(sorted(orders));
+      if (site === null) {
+        this.knownSites.set(sitesOf(orders));
       }
     } catch {
       // Relisible : un échec ne doit pas condamner l'écran pour la session.
@@ -131,6 +188,40 @@ export class ClientOrderHistory {
       }
     }
   }
+
+  private async personal(headers: HttpHeaders): Promise<readonly ListedOrder[]> {
+    const orders = await firstValueFrom(
+      this.http.get<readonly CustomerOrderView[]>(`${AUTH_CONFIG.apiBaseUrl}/orders/mine`, {
+        headers,
+      }),
+    );
+    return orders.map(listedOf);
+  }
+
+  private ofCompany(
+    companyId: string,
+    site: string | null,
+    headers: HttpHeaders,
+  ): Promise<readonly CompanyOrderListItemView[]> {
+    const params = site === null ? new HttpParams() : new HttpParams().set('site', site);
+    return firstValueFrom(
+      this.http.get<readonly CompanyOrderListItemView[]>(
+        `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/orders`,
+        { headers, params },
+      ),
+    );
+  }
+}
+
+/** Les sites distincts d'une liste, dans l'ordre alphabétique de leur nom. */
+function sitesOf(orders: readonly ListedOrder[]): readonly CompanyOrderSiteView[] {
+  const byId = new Map<string, CompanyOrderSiteView>();
+  for (const order of orders) {
+    if (order.site !== null) {
+      byId.set(order.site.companyId, order.site);
+    }
+  }
+  return [...byId.values()].sort((a, b) => a.name.localeCompare(b.name, 'fr'));
 }
 
 /**
@@ -140,7 +231,7 @@ export class ClientOrderHistory {
  * l'instant où il a cliqué. Deux commandes du même jour se départagent alors sur
  * l'heure de passation, qui est toujours présente.
  */
-function sorted(orders: readonly CustomerOrderView[]): readonly CustomerOrderView[] {
+function sorted(orders: readonly ListedOrder[]): readonly ListedOrder[] {
   return [...orders].sort((a, b) => {
     const day = (b.requestedDeliveryDate ?? '').localeCompare(a.requestedDeliveryDate ?? '');
     return day === 0 ? b.placedAt.localeCompare(a.placedAt) : day;

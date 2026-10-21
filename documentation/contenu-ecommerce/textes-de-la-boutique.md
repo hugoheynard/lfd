@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1432 textes
+## Sommaire — 1438 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -38,7 +38,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le cadre — bandeaux, installation, erreurs générales](#espace-chrome) | `chrome` | 39 |
 | [La navigation](#espace-nav) | `nav` | 24 |
 | [La colonne d’accompagnement](#espace-aside) | `aside` | 4 |
-| [Mes commandes](#espace-orders) | `orders` | 99 |
+| [Mes commandes](#espace-orders) | `orders` | 105 |
 | [Annuler une commande — Mes commandes et la page invité](#espace-ordercancel) | `orderCancel` | 54 |
 | [Fidélité](#espace-loyalty) | `loyalty` | 38 |
 | [Mon compte (factures comprises)](#espace-account) | `account` | 525 |
@@ -47,7 +47,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
-| **Total** | | **1432** |
+| **Total** | | **1438** |
 
 ## Le parcours de commande
 
@@ -886,7 +886,7 @@ Source : `fr.ts · en.ts · it.ts` · 4 textes.
 
 ### Mes commandes — `orders`
 
-Source : `screens/orders.copy.ts` · 99 textes.
+Source : `screens/orders.copy.ts` · 105 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -915,6 +915,12 @@ Source : `screens/orders.copy.ts` · 99 textes.
 | `orders.colStatus` | Statut | Status | Stato |  |
 | `orders.colPayment` | Règlement | Settlement | Pagamento |  |
 | `orders.colTotal` | Total | Total | Totale |  |
+| `orders.colSite` | Site | Site | Sede |  |
+| `orders.filterSite` | Site | Site | Sede |  |
+| `orders.filterAllSites` | Tous les sites | All sites | Tutte le sedi |  |
+| `orders.authorCustomer` | passée par {name} | placed by {name} | effettuato da {name} | `{name}` |
+| `orders.authorTeam` | par l’équipe | by our team | dal nostro team |  |
+| `orders.detailSite` | Site | Site | Sede |  |
 | `orders.pieces` | {n} art. | {n} items | {n} art. | `{n}` |
 | `orders.modePickup` | Retrait | Collection | Ritiro |  |
 | `orders.modeDelivery` | Coursier | Courier | Corriere |  |
@@ -928,7 +934,7 @@ Source : `screens/orders.copy.ts` · 99 textes.
 | `orders.before` | avant | before | entro le |  |
 | `orders.statusCancelled` | Annulée | Cancelled | Annullata |  |
 | `orders.emptyOrders` | Aucune commande pour l’instant. | No orders yet. | Nessun ordine per ora. |  |
-| `orders.statusReceived` | Reçue | Received | Ricevuto |  |
+| `orders.statusReceived` | Enregistrée | Registered | Registrata |  |
 | `orders.statusBakery` | Au fournil | In the bakehouse | In forno |  |
 | `orders.statusReady` | Prête | Ready | Pronto |  |
 | `orders.statusRoute` | En route | On the way | In viaggio |  |

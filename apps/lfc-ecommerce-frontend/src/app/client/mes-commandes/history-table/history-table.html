@@ -7,17 +7,25 @@
   [(expanded)]="expanded"
 >
   <ng-template foldCell="reference" let-order>
-    <span class="ref">
-      <span class="ref-num">{{ order.reference }}</span>
-      <!-- La pastille d'origine ne dit que l'EXCEPTION : une commande passée
+    <span class="stack">
+      <span class="ref">
+        <span class="ref-num">{{ order.reference }}</span>
+        <!-- La pastille d'origine ne dit que l'EXCEPTION : une commande passée
            dans l'app n'a rien à annoncer, et l'écrire partout ferait
            disparaître les deux qui comptent. Pour le téléphone elle nomme
            l'ACTEUR et non le canal — la maison a pris la commande pour le
            client, et c'est la seule ligne qu'il n'a pas saisie lui-même. -->
-      @if (order.origin !== '') {
-        <span class="origin" [class.origin--house]="order.origin === 'phone'">
-          {{ originLabel(order.origin) }}
-        </span>
+        @if (order.origin !== '') {
+          <span class="origin" [class.origin--house]="order.origin === 'phone'">
+            {{ originLabel(order.origin) }}
+          </span>
+        }
+      </span>
+      <!-- L'auteur figé de la commande : « passée par Camille D. », « par
+         l'équipe ». C'est ce qui dit au site que le compte principal a
+         commandé pour lui. -->
+      @if (order.author !== '') {
+        <span class="author" data-author>{{ order.author }}</span>
       }
     </span>
   </ng-template>

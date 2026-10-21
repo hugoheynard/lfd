@@ -149,4 +149,41 @@ describe('HistoryTable', () => {
     // passer, un lecteur d'écran français entendrait « Show details ».
     expect(toggles()[0]?.getAttribute('aria-label')).toBe(FR.orders.expand);
   });
+
+  describe('les commandes des sites (plan des commandes des sites, C2)', () => {
+    const base = ROWS[0] as HistoryOrder;
+    const withSite: readonly HistoryOrder[] = [
+      { ...base, reference: 'CMD-OWN', site: null, org: 'Groupe des Cimes' },
+      { ...base, reference: 'CMD-SITE', site: 'Hôtel des Cimes', author: 'passée par Camille D.' },
+    ];
+    const headers = (): string[] =>
+      Array.from(el().querySelectorAll('th, .folddt-card-label, dt')).map(
+        (cell) => cell.textContent?.trim() ?? '',
+      );
+
+    it('n’a PAS de colonne « Site » quand la liste n’en porte pas', () => {
+      fixture.componentRef.setInput('orders', withSite);
+      fixture.detectChanges();
+      expect(headers()).not.toContain(FR.orders.colSite);
+      expect(el().textContent).not.toContain('Hôtel des Cimes');
+    });
+
+    it('nomme le site, ou le compte principal pour ses propres commandes', () => {
+      fixture.componentRef.setInput('orders', withSite);
+      fixture.componentRef.setInput('withSites', true);
+      fixture.detectChanges();
+      expect(el().textContent).toContain(FR.orders.colSite);
+      expect(el().textContent).toContain('Hôtel des Cimes');
+      expect(el().textContent).toContain('Groupe des Cimes');
+    });
+
+    it('dit qui a passé la commande, sous sa référence', () => {
+      fixture.componentRef.setInput('orders', withSite);
+      fixture.detectChanges();
+      const authors = Array.from(el().querySelectorAll('[data-author]')).map((a) =>
+        a.textContent?.trim(),
+      );
+      expect(authors).toEqual(['passée par Camille D.']);
+    });
+  });
 });

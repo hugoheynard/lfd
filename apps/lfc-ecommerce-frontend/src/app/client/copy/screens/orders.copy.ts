@@ -54,6 +54,19 @@ export interface OrdersCopy {
   readonly colStatus: string;
   readonly colPayment: string;
   readonly colTotal: string;
+  /**
+   * Le site d'une commande — la colonne n'apparaît que si la liste en porte
+   * (le compte principal, plan `plan-commandes-des-sites.md`, C2).
+   */
+  readonly colSite: string;
+  /** Le libellé du filtre par site. */
+  readonly filterSite: string;
+  readonly filterAllSites: string;
+  /** `{name}` est remplacé par « Prénom N. », l'auteur figé de la commande. */
+  readonly authorCustomer: string;
+  /** La commande a été saisie par l'équipe de la maison. */
+  readonly authorTeam: string;
+  readonly detailSite: string;
   /** `{n}` est remplacé par le nombre d'articles. */
   readonly pieces: string;
   /** Les deux modes, en toutes lettres. La commande porte un mot ANGLAIS. */
@@ -79,6 +92,7 @@ export interface OrdersCopy {
    * 🔴 Ce libellé manquait, et le tableau annonçait « Prête » à sa place : le
    * repli couvrait TOUT ce qui n'était ni annulé, ni remis, ni en route. Un
    * client lisait donc « prête » sur une commande passée dix minutes plus tôt.
+   * « Reçue » est devenu « Enregistrée » le 2026-10-21 (Hugo) : « reçue » n’était pas clair — on l’a, rien n’est encore lancé.
    */
   readonly statusReceived: string;
   /** **Au fournil** — le plan du soir l'a inscrite, la fabrication est lancée. */
@@ -202,6 +216,12 @@ export const ORDERS_FR: OrdersCopy = {
   colStatus: 'Statut',
   colPayment: 'Règlement',
   colTotal: 'Total',
+  colSite: 'Site',
+  filterSite: 'Site',
+  filterAllSites: 'Tous les sites',
+  authorCustomer: 'passée par {name}',
+  authorTeam: 'par l’équipe',
+  detailSite: 'Site',
   pieces: '{n} art.',
   modePickup: 'Retrait',
   modeDelivery: 'Coursier',
@@ -215,7 +235,7 @@ export const ORDERS_FR: OrdersCopy = {
   before: 'avant',
   statusCancelled: 'Annulée',
   emptyOrders: 'Aucune commande pour l’instant.',
-  statusReceived: 'Reçue',
+  statusReceived: 'Enregistrée',
   statusBakery: 'Au fournil',
   statusReady: 'Prête',
   statusRoute: 'En route',
@@ -306,6 +326,12 @@ export const ORDERS_EN: OrdersCopy = {
   colStatus: 'Status',
   colPayment: 'Settlement',
   colTotal: 'Total',
+  colSite: 'Site',
+  filterSite: 'Site',
+  filterAllSites: 'All sites',
+  authorCustomer: 'placed by {name}',
+  authorTeam: 'by our team',
+  detailSite: 'Site',
   pieces: '{n} items',
   modePickup: 'Collection',
   modeDelivery: 'Courier',
@@ -319,7 +345,7 @@ export const ORDERS_EN: OrdersCopy = {
   before: 'before',
   statusCancelled: 'Cancelled',
   emptyOrders: 'No orders yet.',
-  statusReceived: 'Received',
+  statusReceived: 'Registered',
   statusBakery: 'In the bakehouse',
   statusReady: 'Ready',
   statusRoute: 'On the way',
@@ -410,6 +436,12 @@ export const ORDERS_IT: OrdersCopy = {
   colStatus: 'Stato',
   colPayment: 'Pagamento',
   colTotal: 'Totale',
+  colSite: 'Sede',
+  filterSite: 'Sede',
+  filterAllSites: 'Tutte le sedi',
+  authorCustomer: 'effettuato da {name}',
+  authorTeam: 'dal nostro team',
+  detailSite: 'Sede',
   pieces: '{n} art.',
   modePickup: 'Ritiro',
   modeDelivery: 'Corriere',
@@ -423,7 +455,7 @@ export const ORDERS_IT: OrdersCopy = {
   before: 'entro le',
   statusCancelled: 'Annullata',
   emptyOrders: 'Nessun ordine per ora.',
-  statusReceived: 'Ricevuto',
+  statusReceived: 'Registrata',
   statusBakery: 'In forno',
   statusReady: 'Pronto',
   statusRoute: 'In viaggio',

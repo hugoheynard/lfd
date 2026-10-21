@@ -27,6 +27,8 @@ export const ROWS: readonly HistoryOrder[] = [
     refund: { kind: 'none' },
     origin: '',
     org: "La Folie Douce Val d'Isère",
+    site: null,
+    author: '',
   },
   {
     id: 'ord_0008',
@@ -46,6 +48,8 @@ export const ROWS: readonly HistoryOrder[] = [
     refund: { kind: 'partial', refundedCents: 1_250 },
     origin: 'phone',
     org: "La Folie Douce Val d'Isère",
+    site: null,
+    author: '',
   },
   {
     id: 'ord_0009',
@@ -62,5 +66,7 @@ export const ROWS: readonly HistoryOrder[] = [
     refund: { kind: 'none' },
     origin: 'recurring',
     org: "La Folie Douce Val d'Isère",
+    site: null,
+    author: '',
   },
 ];

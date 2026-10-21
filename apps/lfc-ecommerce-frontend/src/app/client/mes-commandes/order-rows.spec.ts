@@ -13,6 +13,8 @@ const COPY: RowCopy = {
   qrReady: 'Votre QR est prêt',
   noWindow: 'Aucune tranche demandée',
   before: 'avant',
+  authorCustomer: 'passée par {name}',
+  authorTeam: 'par l’équipe',
 };
 
 /** Une commande de retrait, telle que `GET /companies/:id/orders` la rend. */
@@ -275,5 +277,26 @@ describe('le statut annoncé au client', () => {
 
   it('garde l’annulation au-dessus de tout le reste', () => {
     expect(statusFor('cancelled')).toBe('cancelled');
+  });
+});
+
+describe('le site et l’auteur d’une commande (plan des commandes des sites, C2)', () => {
+  it('nomme le site d’une commande de site, et rien pour la société listée', () => {
+    const ofSite = { ...ORDER, site: { companyId: 'co_site', name: 'Hôtel des Cimes' } };
+    expect(historyRowOf(ofSite, 'Groupe', COPY).site).toBe('Hôtel des Cimes');
+    expect(trackedOf(ofSite, COPY).site).toBe('Hôtel des Cimes');
+    expect(historyRowOf({ ...ORDER, site: null }, 'Groupe', COPY).site).toBeNull();
+    expect(trackedOf(ORDER, COPY).site).toBe('');
+  });
+
+  it('dit qui a passé la commande, le client ou l’équipe', () => {
+    const byCustomer = { ...ORDER, author: { kind: 'customer' as const, name: 'Camille D.' } };
+    expect(historyRowOf(byCustomer, '', COPY).author).toBe('passée par Camille D.');
+    const byTeam = { ...ORDER, author: { kind: 'team' as const } };
+    expect(historyRowOf(byTeam, '', COPY).author).toBe('par l’équipe');
+  });
+
+  it('ne fabrique aucun auteur quand la liste n’en porte pas (perso)', () => {
+    expect(historyRowOf(ORDER, '', COPY).author).toBe('');
   });
 });

@@ -1,6 +1,6 @@
 # Plan — les commandes des sites dans la boutique du principal
 
-> **Doc-first, 2026-10-21.** C1 (serveur) bâti le 2026-10-21 — §8 ; C2 à faire. Demandé par Hugo le 2026-10-21 :
+> **Doc-first, 2026-10-21.** C1 (serveur) bâti le 2026-10-21 — §8 ; C2 (boutique) bâti le 2026-10-21 — §9. Demandé par Hugo le 2026-10-21 :
 > « voir la page mes commandes avec les sites ». C'est une partie du lot **S6**
 > de [`sous-comptes.md`](sous-comptes.md) (« côté client », 🟡 à faire),
 > limitée aux COMMANDES. Déplace une frontière de sécurité (le mur tenant) :
@@ -216,3 +216,27 @@ le site et par l'équipe. Une annulation par un membre du site garde son texte.
 - **Règlement et PDF** : passent par `accessToOrder`, sans e2e propre (le
   double Stripe de la scène ne relit pas d'intention ; le PDF partage le
   handler du bon).
+
+## 9. Bâti — lot C2, boutique (2026-10-21, non commité à l'écriture)
+
+- **La liste** (`client/mes-commandes/client-order-history.service.ts`) lit
+  `CompanyOrderListItemView` ; le perso est élevé en `ListedOrder` sans site
+  ni auteur (`order-rows.ts`, `listedOf`). Le filtre est RELU au serveur
+  (`?site=`, `chooseSite`) ; `sites` est ce que la dernière liste NON filtrée
+  a nommé — filtrer ne fait pas disparaître les autres choix.
+- **La colonne « Site » et le filtre** (`fold-listbox` : « Tous les sites »,
+  le principal, chaque site) n'apparaissent que si `sites` n'est pas vide —
+  la donnée décide, aucun rôle n'est lu (`commandes-page`, `history-table`,
+  entrée `withSites`). La colonne nomme le principal pour ses propres
+  commandes.
+- **L'auteur** (`author`, §7.6) se lit sous la référence de chaque ligne :
+  « passée par Prénom N. » / « par l'équipe » — côté site comme côté principal.
+- **Le site** figure sur la carte de suivi et dans le tiroir de détail.
+- **Les gestes** (annuler, signaler, régler, bon/PDF) appellent les routes
+  `/orders/:id/…`, qui ne lisent pas l'espace de travail (vérifié le
+  2026-10-21 : seuls passation, devis, panier, points de retrait et messages
+  lisent `ActingCompany`) ; l'en-tête d'espace reste celui du principal et ne
+  contredit rien.
+- Libellé `statusReceived` : « Reçue » → « Enregistrée » (Hugo, 2026-10-21).
+- **Non fait** : la mention « annulée par … du compte principal » au suivi
+  (§7.9) — aucun champ de contrat ne la porte (§8, écarts).

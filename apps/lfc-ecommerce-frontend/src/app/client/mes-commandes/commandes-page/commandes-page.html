@@ -48,8 +48,22 @@
       [subtitle]="t().orders.historyNote"
     />
 
+    @if (withSites()) {
+      <div class="filters">
+        <fold-listbox
+          size="sm"
+          data-filter-site
+          [label]="t().orders.filterSite"
+          [options]="siteOptions()"
+          [value]="chosenSite()"
+          (selectionChange)="chooseSite($event)"
+        />
+      </div>
+    }
+
     <app-history-table
       [orders]="history()"
+      [withSites]="withSites()"
       [openOrderId]="openOrderId"
       (problemRaised)="report($event)"
       (orderCancelled)="reload()"

@@ -56,6 +56,12 @@ export class HistoryTable {
   readonly orders = input.required<readonly HistoryOrder[]>();
 
   /**
+   * La liste porte des commandes de sites : la colonne « Site » paraît. L'écran
+   * le lit sur la donnée, jamais sur un rôle.
+   */
+  readonly withSites = input(false);
+
+  /**
    * La commande dont le tiroir s'ouvre d'office — le lien du courriel
    * (`/mes-commandes/:orderId`). Inconnue de la liste : rien ne s'ouvre.
    */
@@ -92,11 +98,16 @@ export class HistoryTable {
 
   protected readonly columns = computed<readonly FoldTableColumn<HistoryOrder>[]>(() => {
     const copy = this.t().orders;
+    // Le site, ou le compte principal lui-même pour ses propres commandes.
+    const site: readonly FoldTableColumn<HistoryOrder>[] = this.withSites()
+      ? [{ key: 'site', label: copy.colSite, value: (order) => order.site ?? order.org }]
+      : [];
     return [
       { key: 'reference', label: copy.colOrder },
-      // 🔴 La colonne « Passée par » est partie : `CustomerOrderView` porte l'auteur
-      // STAFF d'une saisie, jamais l'acheteur. Elle répétait le nom du compte à
-      // chaque ligne, et c'était le seul endroit où on le lisait comme un fait.
+      ...site,
+      // La colonne « Passée par » est partie : elle répétait le nom du compte à
+      // chaque ligne. L'auteur FIGÉ d'une commande (`author`, depuis C1 du plan
+      // des commandes des sites) se lit sous la référence, pas en colonne.
       { key: 'mode', label: copy.colMode },
       { key: 'date', label: copy.colDate },
       { key: 'status', label: copy.colStatus },

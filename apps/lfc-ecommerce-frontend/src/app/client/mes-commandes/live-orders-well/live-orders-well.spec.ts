@@ -16,6 +16,8 @@ const COPY = rowCopyOf({
   qrReady: 'Votre QR est prêt',
   noWindow: '',
   before: 'avant',
+  authorCustomer: 'passée par {name}',
+  authorTeam: 'par l’équipe',
 });
 
 const ONE: TrackedOrder = trackedOf(LIVE_PICKUP, COPY);
