@@ -1,7 +1,7 @@
 import { instantToLocal } from "@lfd/contracts";
 
 import type { FrozenVatShare } from "../ports/cycle-orders.reader.js";
-import { CSV_BOM, CSV_SEPARATOR, csvEuros, csvQuoted } from "./csv-cells.js";
+import { CSV_BOM, CSV_SEPARATOR, csvEuros, csvQuoted } from "../../../../platform/csv/csv-cells.js";
 import type { StatementAggregate, StatementLine, StatementTotals } from "./cycle-statement.js";
 
 /** Ce que l'en-tête du fichier doit dire de lui-même. */

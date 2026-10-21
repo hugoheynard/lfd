@@ -3,20 +3,13 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { CompanyOrderSummaryReader } from "../../domain/ports/company-order-summary.reader.js";
 import { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
-import { ensureOrderMember } from "../../domain/services/order-access.js";
-import {
-  ensureAllSummarized,
-  summarizeOrders,
-  summarySelectionOf,
-} from "../../domain/services/order-summary.js";
+import { loadCompanyOrderSummary } from "./company-order-summary-support.js";
 import { SummarizeCompanyOrdersQuery } from "./summarize-company-orders.query.js";
 
 /**
  * Récapitule des commandes sélectionnées (`plan-recapitulatif-des-commandes.md`,
- * §6) : membre de la société d'abord, plafond ensuite — les deux AVANT toute
- * lecture —, puis UNE lecture sous le mur de la liste. Un id absent du
- * résultat est hors du mur : refus qui le nomme, jamais un récapitulatif
- * partiel. L'agrégation est celle du domaine.
+ * §6) — le format `json`. Garde, plafond, lecture et agrégation sont ceux de
+ * {@link loadCompanyOrderSummary}, partagés avec le PDF et le tableur.
  */
 @QueryHandler(SummarizeCompanyOrdersQuery)
 export class SummarizeCompanyOrdersHandler implements IQueryHandler<
@@ -29,16 +22,6 @@ export class SummarizeCompanyOrdersHandler implements IQueryHandler<
   ) {}
 
   async execute(query: SummarizeCompanyOrdersQuery): Promise<CompanyOrderSummaryView> {
-    const role = await this.guard.roleOf(query.actorUserId, query.companyId);
-    ensureOrderMember(role, query.companyId);
-    const orderIds = summarySelectionOf(query.orderIds);
-
-    const sources = await this.orders.ordersFor({
-      actorUserId: query.actorUserId,
-      companyId: query.companyId,
-      orderIds,
-    });
-    ensureAllSummarized(orderIds, sources);
-    return summarizeOrders(query.companyId, sources);
+    return loadCompanyOrderSummary(this.guard, this.orders, query);
   }
 }

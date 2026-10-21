@@ -148,3 +148,40 @@ récapitulatif des particuliers serait une autre route, en TTC. Hors de ce plan.
   (`apps/lfd-api/src/b2b/orders/application/queries/__tests__/summarize-company-orders.handler.spec.ts`, `list-company-orders.handler.spec.ts`),
   e2e `apps/lfd-api/test/company-order-summary.e2e-spec.ts`, contrat
   (`packages/contracts/src/__tests__/company-orders.spec.ts`).
+
+## 8. R2 — bâti le 2026-10-21 (non commité à l'écriture de ces lignes)
+
+- **Trois formats, une route** : `format` vaut `json` | `pdf` | `csv`
+  (`ORDER_SUMMARY_FORMATS`, `packages/contracts/src/company-orders.ts`). Les
+  trois passent par `loadCompanyOrderSummary`
+  (`apps/lfd-api/src/b2b/orders/application/queries/company-order-summary-support.ts`) :
+  mêmes refus (membre, plafond, id hors mur), une seule lecture des commandes.
+  Le PDF et le CSV sont des queries à part (`ExportCompanyOrderSummaryPdfQuery`,
+  `ExportCompanyOrderSummaryCsvQuery`) qui dessinent le `CompanyOrderSummaryView`
+  calculé, sans relecture des commandes ; seule lecture de plus, le nom de la
+  société demandeuse (`OrderSummaryRequesterReader`), qu'aucune commande comptée
+  ne porte forcément.
+- **PDF A4 portrait** (`apps/lfd-api/src/b2b/orders/domain/services/order-summary-pdf.ts`, `apps/lfd-api/src/b2b/orders/domain/services/order-summary-pdf-frame.ts`) :
+  quatre colonnes y tiennent. Trousse `platform/pdf/paper-pdf-kit.ts`, logo
+  `BrandLogoSource`, date de génération au `Clock` (heure de Paris). En-tête,
+  société demandeuse, « Sélection de N commandes — M comptées, K exclues »,
+  §6.4 ; une table par société, son bas (les gestes nuls sont tus) ; le total
+  général — produits répétés seulement s'il y a plusieurs sociétés, sinon son
+  seul bas ; les exclues et pourquoi ; titre et barre de titres repris sur
+  page neuve (« (suite) »), « Page x/N » en pied.
+- **CSV** (`apps/lfd-api/src/b2b/orders/domain/services/order-summary-csv.ts`) : une ligne par (société, produit),
+  puis toutes les lignes du bas (même à zéro), le total général sous la même
+  forme, puis les exclues. Les cellules viennent de
+  `apps/lfd-api/src/platform/csv/csv-cells.ts`, montée de `b2b/accounting/` (les quatre CSV comptables
+  la lisent) : un texte qui commence par `=`, `+`, `-`, `@` prend une
+  apostrophe, sauf s'il est un nombre (`-12,50`) ; `csvEuros` n'est jamais
+  neutralisé. Les tests comptables (unitaires et e2e) passent inchangés.
+- **Fichiers** : `recapitulatif-<société>-<AAAA-MM-JJ>.pdf|csv`, jour de Paris,
+  `Content-Disposition` exposé au CORS comme les autres exports.
+- ⚠️ **La période n'est pas imprimée** : le corps ne porte que des ids, et la
+  vue aucune date. Le document dit la SÉLECTION ; dire « du … au … » demande
+  d'envoyer les bornes du filtre dans le corps, ou de lire les jours — à trancher.
+- Tests : `apps/lfd-api/src/platform/csv/__tests__/csv-cells.spec.ts`,
+  `apps/lfd-api/src/b2b/orders/domain/services/__tests__/order-summary-papers.spec.ts` (texte du PDF lu),
+  `apps/lfd-api/src/b2b/orders/application/queries/__tests__/export-company-order-summary.handlers.spec.ts`,
+  e2e `apps/lfd-api/test/company-order-summary.e2e-spec.ts` (les trois formats sous le même mur).

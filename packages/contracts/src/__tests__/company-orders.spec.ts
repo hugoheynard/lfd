@@ -28,9 +28,17 @@ describe("companyOrderSummaryRequestSchema", () => {
     expect(companyOrderSummaryRequestSchema.safeParse({ orderIds: [] }).success).toBe(false);
   });
 
-  it("refuse un format que le lot R1 ne sert pas encore", () => {
+  it("sert le PDF et le tableur depuis le lot R2", () => {
+    for (const format of ["pdf", "csv"] as const) {
+      expect(companyOrderSummaryRequestSchema.parse({ orderIds: ["o1"], format }).format).toBe(
+        format,
+      );
+    }
+  });
+
+  it("refuse un format qu'aucun lot ne sert", () => {
     expect(
-      companyOrderSummaryRequestSchema.safeParse({ orderIds: ["o1"], format: "pdf" }).success,
+      companyOrderSummaryRequestSchema.safeParse({ orderIds: ["o1"], format: "xlsx" }).success,
     ).toBe(false);
   });
 });

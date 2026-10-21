@@ -945,6 +945,7 @@ export {
   companyOrdersQuerySchema,
   companyOrderSummaryRequestSchema,
   ORDER_SUMMARY_EXCLUSION_REASONS,
+  ORDER_SUMMARY_FORMATS,
   ORDER_SUMMARY_MAX_ORDERS,
 } from "./company-orders.js";
 export type {
@@ -954,6 +955,7 @@ export type {
   OrderSummaryCompanyView,
   OrderSummaryExcludedView,
   OrderSummaryExclusionReason,
+  OrderSummaryFormat,
   OrderSummaryProductView,
   OrderSummaryTableView,
   CompanyOrdersQuery,

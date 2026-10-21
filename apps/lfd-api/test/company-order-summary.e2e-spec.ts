@@ -11,6 +11,8 @@
  * Sociétés, rattachements et commandes semés par Prisma (dette de
  * `test/factories.ts`) ; tous les gestes par HTTP. Aucune date absolue.
  */
+import { Buffer } from "node:buffer";
+
 import {
   type CompanyOrderListItemView,
   type CompanyOrderSummaryView,
@@ -22,6 +24,7 @@ import {
   OrderStatus,
   PaymentStatus,
 } from "../src/platform/database/client/client.js";
+import { pdfPages } from "../src/platform/pdf/__tests__/pdf-text.js";
 import { jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import {
   bootCustomerScene,
@@ -184,6 +187,96 @@ describe("le récapitulatif sous le mur de la liste (§6.5)", () => {
     const response = await summarize(boss, g.principal, ids).expect(400);
 
     expect(JSON.stringify(response.body)).toContain(String(ORDER_SUMMARY_MAX_ORDERS));
+  });
+});
+
+describe("le récapitulatif en PDF et au tableur (lot R2) — même mur, mêmes refus", () => {
+  const summarizeAs = (
+    who: Person,
+    companyId: string,
+    orderIds: readonly string[],
+    format: "pdf" | "csv",
+  ) =>
+    ctx
+      .asSub(who.sub)
+      .post(`/companies/${companyId}/orders/summary`)
+      .send({ orderIds, format })
+      .buffer(true)
+      .parse((res, callback) => {
+        const chunks: Buffer[] = [];
+        res.on("data", (chunk: Buffer) => chunks.push(chunk));
+        res.on("end", () => {
+          callback(null, Buffer.concat(chunks));
+        });
+      });
+
+  function bytesOf(body: unknown): Buffer {
+    if (!(body instanceof Uint8Array)) {
+      throw new TypeError("le corps servi n'est pas binaire");
+    }
+    return Buffer.from(body);
+  }
+
+  it("PDF : la société demandeuse, ses sites, le bas, nommé et exposé au téléchargement", async () => {
+    const g = await group();
+    const boss = await principalMember(g, CustomerRole.owner);
+    const own = await accountOrder(g.principal, boss);
+    const ofSite = await accountOrder(g.site, g.siteOwner);
+    const cancelled = await accountOrder(g.principal, boss, { status: OrderStatus.cancelled });
+
+    const response = await summarizeAs(boss, g.principal, [own, ofSite, cancelled], "pdf").expect(
+      200,
+    );
+
+    expect(response.headers["content-type"]).toContain("application/pdf");
+    expect(response.headers["content-disposition"]).toMatch(
+      /recapitulatif-[a-z0-9-]+-\d{4}-\d{2}-\d{2}\.pdf/u,
+    );
+    const text = pdfPages(bytesOf(response.body)).join(" ").replace(/\s+/gu, " ");
+    expect(text).toContain("RÉCAPITULATIF DE COMMANDES");
+    expect(text).toContain("Montants à la commande");
+    expect(text).toContain("Total général");
+    expect(text).toContain("21,10");
+    expect(text).toContain("annulée");
+    expect(text).toContain("Page 1/1");
+  });
+
+  it("CSV : BOM, une ligne par (société, produit), puis le bas", async () => {
+    const g = await group();
+    const boss = await principalMember(g, CustomerRole.owner);
+    const own = await accountOrder(g.principal, boss);
+
+    const response = await summarizeAs(boss, g.principal, [own], "csv").expect(200);
+
+    expect(response.headers["content-type"]).toContain("text/csv");
+    expect(response.headers["content-disposition"]).toMatch(/recapitulatif-.+\.csv/u);
+    const csv = bytesOf(response.body).toString("utf8");
+    expect(csv.startsWith("\uFEFF")).toBe(true);
+    expect(csv).toContain('"Croissant";"VIE-001";1;1,00');
+    expect(csv).toContain('"Total général";"Total TTC";"";;10,55');
+  });
+
+  it.each(["pdf", "csv"] as const)(
+    "%s : un site ne peut pas inclure une commande de son frère — 404 qui la nomme",
+    async (format) => {
+      const g = await group();
+      const own = await accountOrder(g.site, g.siteOwner);
+      const ofSibling = await accountOrder(g.sibling, g.siblingOwner);
+
+      const response = await summarizeAs(g.siteOwner, g.site, [own, ofSibling], format).expect(404);
+
+      expect(bytesOf(response.body).toString("utf8")).toContain(ofSibling);
+    },
+  );
+
+  it.each(["pdf", "csv"] as const)("%s : au-delà du plafond, 400 qui le nomme", async (format) => {
+    const g = await group();
+    const boss = await principalMember(g, CustomerRole.owner);
+    const ids = Array.from({ length: ORDER_SUMMARY_MAX_ORDERS + 1 }, (_, i) => `ord_${i}`);
+
+    const response = await summarizeAs(boss, g.principal, ids, format).expect(400);
+
+    expect(bytesOf(response.body).toString("utf8")).toContain(String(ORDER_SUMMARY_MAX_ORDERS));
   });
 });
 

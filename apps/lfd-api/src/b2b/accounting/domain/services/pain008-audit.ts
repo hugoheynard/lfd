@@ -1,4 +1,9 @@
-import { CSV_BOM, CSV_SEPARATOR, csvEuros as euros, csvQuoted as quoted } from "./csv-cells.js";
+import {
+  CSV_BOM,
+  CSV_SEPARATOR,
+  csvEuros as euros,
+  csvQuoted as quoted,
+} from "../../../../platform/csv/csv-cells.js";
 
 /**
  * **Le contrôle du lot** — un CSV lu DEPUIS le fichier XML, jamais à côté.

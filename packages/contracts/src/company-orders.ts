@@ -59,14 +59,18 @@ export interface CompanyOrderListItemView extends CustomerOrderView {
  */
 export const ORDER_SUMMARY_MAX_ORDERS = 200;
 
+/** Les formats du récapitulatif : à l'écran, imprimé, au tableur (§6.5). */
+export const ORDER_SUMMARY_FORMATS = ["json", "pdf", "csv"] as const;
+export type OrderSummaryFormat = (typeof ORDER_SUMMARY_FORMATS)[number];
+
 /**
  * Le corps de `POST /companies/:companyId/orders/summary` — une LECTURE, en
- * `POST` parce que la sélection va dans le corps (§6.5). `json` seul au lot
- * R1 ; le PDF et le tableur arrivent au lot R2.
+ * `POST` parce que la sélection va dans le corps (§6.5). Le même
+ * récapitulatif en `json` (R1), en PDF et en tableur CSV (R2, 2026-10-21).
  */
 export const companyOrderSummaryRequestSchema = z.object({
   orderIds: z.array(z.string().min(1)).min(1),
-  format: z.enum(["json"]).default("json"),
+  format: z.enum(ORDER_SUMMARY_FORMATS).default("json"),
 });
 export type CompanyOrderSummaryRequest = z.infer<typeof companyOrderSummaryRequestSchema>;
 

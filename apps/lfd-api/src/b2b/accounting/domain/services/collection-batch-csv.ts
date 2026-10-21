@@ -1,4 +1,4 @@
-import { CSV_BOM, CSV_SEPARATOR, csvEuros, csvQuoted } from "./csv-cells.js";
+import { CSV_BOM, CSV_SEPARATOR, csvEuros, csvQuoted } from "../../../../platform/csv/csv-cells.js";
 
 /** Ce que le CSV de contrôle lit d'une ligne de lot. Jamais l'IBAN entier. */
 export interface BatchCsvLine {

@@ -1,4 +1,4 @@
-import { CSV_BOM, CSV_SEPARATOR, csvEuros, csvQuoted } from "./csv-cells.js";
+import { CSV_BOM, CSV_SEPARATOR, csvEuros, csvQuoted } from "../../../../platform/csv/csv-cells.js";
 import { rateLabel, STATEMENT_SCOPE } from "./cycle-statement-csv.js";
 import type { DossierCalendarNotes } from "./invoice-dossier-calendar.js";
 import { historyCell, placeCell } from "./invoice-dossier-history-cells.js";
