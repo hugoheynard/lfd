@@ -5,7 +5,14 @@ import { OrderTimeLimitRepository } from "../domain/ports/order-time-limit.repos
 
 export class ListOrderTimeLimitsQuery {}
 
-/** Toutes les règles posées, pour l'écran de réglages. Lecture pure. */
+/**
+ * Les limites de **produit**, pour l'écran de réglages. Lecture pure.
+ *
+ * Depuis le 2026-10-21, seul le produit porte une limite au référentiel ; une
+ * ligne résiduelle d'une autre portée n'est plus montrée, parce qu'elle ne
+ * s'applique plus (la résolution l'ignore). Elle se retire encore par son
+ * identifiant.
+ */
 @QueryHandler(ListOrderTimeLimitsQuery)
 export class ListOrderTimeLimitsHandler implements IQueryHandler<
   ListOrderTimeLimitsQuery,
@@ -14,6 +21,6 @@ export class ListOrderTimeLimitsHandler implements IQueryHandler<
   constructor(private readonly limits: OrderTimeLimitRepository) {}
 
   async execute(): Promise<readonly OrderTimeLimitView[]> {
-    return this.limits.list();
+    return (await this.limits.list()).filter((rule) => rule.scope.type === "product");
   }
 }

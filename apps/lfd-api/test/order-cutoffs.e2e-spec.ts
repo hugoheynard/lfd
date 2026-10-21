@@ -313,20 +313,15 @@ describe("la limite portée par l'ARTICLE, reçue du référentiel", () => {
    * référentiel, la fiche y est activée, et la boîte d'envoi les livre.
    */
   it("refuse une commande à partir d'une règle posée au référentiel", async () => {
-    // Le rang global, celui qui ne vise personne en particulier : il doit
-    // atteindre un article qu'aucune règle ne nomme. Quatorze jours, le plus
-    // long préavis que le référentiel accepte, pour une remise dans dix.
+    // La limite du PRODUIT (seule portée depuis le 2026-10-21). Quatorze
+    // jours, le plus long préavis que le référentiel accepte, pour une remise
+    // dans dix.
+    const fiche = await anActiveFiche(() => ctx.asSub(STAFF), "Croissant du fil");
     await ctx
       .asSub(STAFF)
       .put("/pim/order-time-limits")
-      .send({
-        scope: { type: "global", id: null },
-        daysBefore: 14,
-        time: "23:59",
-        graceMinutes: null,
-      })
+      .send({ scope: { type: "product", id: fiche.id }, daysBefore: 14, time: "23:59" })
       .expect(200);
-    const fiche = await anActiveFiche(() => ctx.asSub(STAFF), "Croissant du fil");
     await relayAll(ctx);
     await ctx
       .asSub(STAFF)

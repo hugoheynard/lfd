@@ -7,23 +7,27 @@ import { orderLimitChanges, type OrderLimitTarget } from "../order-limit-descent
  * implémentation que l'ingestion du push, et seulement ce qui change.
  */
 
-const GLOBAL: SyncOrderTimeLimitRule = {
+/**
+ * Décision de Hugo du 2026-10-21 : une limite par PRODUIT, règle entière, sans
+ * rattrapage. Les autres rangs, encore rangés chez le récepteur, sont ignorés.
+ */
+const PRODUCT: SyncOrderTimeLimitRule = {
+  scope: { type: "product", id: "prd_1" },
+  daysBefore: 2,
+  time: "12:00",
+  graceMinutes: 30,
+};
+const RESIDUAL_GLOBAL: SyncOrderTimeLimitRule = {
   scope: { type: "global", id: null },
   daysBefore: 1,
   time: "18:00",
-  graceMinutes: null,
+  graceMinutes: 60,
 };
-const PASTRY: SyncOrderTimeLimitRule = {
+const RESIDUAL_CATEGORY: SyncOrderTimeLimitRule = {
   scope: { type: "category", id: "cat_root" },
-  daysBefore: null,
+  daysBefore: 1,
   time: "16:00",
   graceMinutes: 30,
-};
-const ONE_VARIANT: SyncOrderTimeLimitRule = {
-  scope: { type: "variant", id: "var_big" },
-  daysBefore: 3,
-  time: null,
-  graceMinutes: null,
 };
 const TREE = [
   { id: "cat_root", parentId: null },
@@ -42,28 +46,24 @@ function target(over: Partial<OrderLimitTarget> = {}): OrderLimitTarget {
 }
 
 describe("orderLimitChanges", () => {
-  it("descend l'échelle champ par champ, par la lignée de la famille", () => {
-    expect(orderLimitChanges([GLOBAL, PASTRY], TREE, [target()])).toEqual([
-      { sku: "TAR-1-1", limit: { daysBefore: 1, time: "16:00", graceMinutes: 30 } },
+  it("pose la limite du produit, sans rattrapage", () => {
+    expect(orderLimitChanges([PRODUCT], TREE, [target()])).toEqual([
+      { sku: "TAR-1-1", limit: { daysBefore: 2, time: "12:00", graceMinutes: 0 } },
     ]);
   });
 
-  it("vise une déclinaison par son identifiant au référentiel", () => {
-    const changes = orderLimitChanges([GLOBAL, ONE_VARIANT], TREE, [
-      target(),
-      target({ sku: "TAR-1-2", variantId: "var_big" }),
-    ]);
-
-    expect(changes).toEqual([
-      { sku: "TAR-1-1", limit: { daysBefore: 1, time: "18:00", graceMinutes: 0 } },
-      { sku: "TAR-1-2", limit: { daysBefore: 3, time: "18:00", graceMinutes: 0 } },
-    ]);
+  it("ignore un rang global et une famille résiduels", () => {
+    expect(
+      orderLimitChanges([RESIDUAL_GLOBAL, RESIDUAL_CATEGORY], TREE, [
+        target({ productId: "prd_autre" }),
+      ]),
+    ).toEqual([]);
   });
 
   it("ne rend pas un article dont la limite ne change pas", () => {
-    const current = { daysBefore: 1, time: "18:00", graceMinutes: 0 };
+    const current = { daysBefore: 2, time: "12:00", graceMinutes: 0 };
 
-    expect(orderLimitChanges([GLOBAL], TREE, [target({ current })])).toEqual([]);
+    expect(orderLimitChanges([PRODUCT, RESIDUAL_GLOBAL], TREE, [target({ current })])).toEqual([]);
   });
 
   /** Une échelle vidée retire la limite — c'est ce que l'ingestion du push fait. */

@@ -31,7 +31,13 @@ export class B2bCatalogRulesEmitter extends CatalogRulesEmitter {
   async emitRules(): Promise<void> {
     await this.sequence.lockRules();
     const seq = await this.sequence.next();
-    const rules = (await this.limits.list()).map(toSyncRule);
+    // Le produit seulement (décision de Hugo, 2026-10-21) : un rang global,
+    // une famille ou une déclinaison résiduels ne traversent plus — le commerce
+    // les ignorerait de toute façon, mais un fait qui les porte ferait croire
+    // qu'ils comptent encore.
+    const rules = (await this.limits.list())
+      .filter((rule) => rule.scope.type === "product")
+      .map(toSyncRule);
     await this.durable.publish(
       new CatalogRulesChangedFact(seq, this.clock.now().toISOString(), rules).durableFact(),
     );

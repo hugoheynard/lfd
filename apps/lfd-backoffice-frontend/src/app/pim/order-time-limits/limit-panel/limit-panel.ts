@@ -7,12 +7,7 @@ import {
   input,
   signal,
 } from '@angular/core';
-import type {
-  OrderTimeLimitPayload,
-  OrderTimeLimitScope,
-  OrderTimeLimitScopeType,
-  OrderTimeLimitView,
-} from '@lfd/pim-contracts';
+import type { OrderTimeLimitPayload, OrderTimeLimitView } from '@lfd/pim-contracts';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
@@ -24,76 +19,30 @@ import {
 
 import { NotifyService } from '../../../notify.service';
 import { OrderTimeLimitsService } from '../order-time-limits.service';
-import { absenceLabel, daysPhrase, gracePhrase, scopeLabel } from '../limit-format';
+import { daysPhrase } from '../limit-format';
 
-/** Une cible proposable : une famille du catalogue. */
-export interface LimitTargetChoice {
-  readonly id: string;
-  readonly label: string;
-}
-
-/** Charge d'ouverture : la règle à modifier, ou `null` pour en poser une. */
+/** Charge d'ouverture : le produit visé, et sa limite s'il en a une. */
 export interface LimitPanelData {
+  readonly productId: string;
+  /** Le nom du produit, pour l'en-tête. */
+  readonly label: string;
   readonly rule: OrderTimeLimitView | null;
-  /** Les familles, pour le sélecteur de portée. */
-  readonly categories: readonly LimitTargetChoice[];
-  /**
-   * Une portée **imposée**, quand le panneau s'ouvre depuis l'objet lui-même —
-   * la fiche d'un produit, une de ses déclinaisons.
-   *
-   * Le sélecteur disparaît alors : on est déjà dans le contexte de la cible, et
-   * proposer d'en changer inviterait à poser depuis cet écran une règle qui vise
-   * autre chose que ce qu'on regarde.
-   */
-  readonly preset?: { readonly scope: OrderTimeLimitScope; readonly label: string };
 }
 
-/** La valeur qui dit « ce rang ne se prononce pas » dans les sélecteurs. */
-const INHERIT = '';
+/** Les délais proposés. Pas d'entrée « hériter » : il n'y a plus de rang au-dessus. */
+const DAYS_CHOICES: FoldSelectOption<string>[] = [0, 1, 2, 3, 7].map((days) => ({
+  value: String(days),
+  label: days === 7 ? 'Une semaine avant' : daysPhrase(days),
+}));
 
 /**
- * Les délais proposés, **sans** l'entrée d'absence : celle-ci se libelle
- * différemment selon le rang, et la coller ici en dur ferait promettre au rang
- * global un « rang supérieur » qui n'existe pas.
- */
-const DAYS_CHOICES: FoldSelectOption<string>[] = [
-  { value: '0', label: 'Le jour même' },
-  { value: '1', label: 'La veille' },
-  { value: '2', label: "L'avant-veille" },
-  { value: '3', label: '3 jours avant' },
-  { value: '7', label: 'Une semaine avant' },
-];
-
-const GRACE_CHOICES: FoldSelectOption<string>[] = [
-  { value: '0', label: 'Aucun — la limite est ferme' },
-  { value: '15', label: '15 minutes' },
-  { value: '30', label: '30 minutes' },
-  { value: '45', label: '45 minutes' },
-  { value: '60', label: '1 heure' },
-  { value: '120', label: '2 heures' },
-];
-
-/**
- * Panneau **Limite de commande** — pose ou modifie la règle d'une portée.
+ * Panneau **Limite de commande** — pose ou modifie la limite d'UN produit.
  *
- * ## Les trois champs sont indépendants, et c'est tout le sujet
- *
- * Chacun peut dire « hériter ». « Le pain ferme à 16 h » ne recopie pas le
- * nombre de jours ; « l'entremets demande un jour de plus » ne recopie pas
- * l'heure. Le jour où le labo passe de 18 h à 16 h, tout ce qui n'a pas d'heure
- * propre suit — alors qu'une règle recopiée entière serait restée figée.
- *
- * L'heure hérite quand le champ est **vide** : `<input type="time">` sait être
- * vide, et un second contrôle « hériter / préciser » aurait posé la même
- * question deux fois.
- *
- * ## Ce que ce panneau ne fait pas
- *
- * Il ne pose **pas** de limite sur un produit ni sur une déclinaison. Ces
- * rangs-là existent et se lisent dans la liste, mais se posent depuis la fiche
- * du produit — c'est là qu'on regarde quand on se demande combien de temps CET
- * article demande, et un sélecteur de produit dans un écran de réglages ferait
- * chercher au mauvais endroit.
+ * Depuis le 2026-10-21 (décision de Hugo, `limites-de-commande/
+ * schema-des-reglages.md` §4) : une limite par produit, **règle entière** — le
+ * délai ET l'heure — et **sans rattrapage** : le seul rattrapage est celui de
+ * la règle générale (Réglages › Commandes › Heure limite). Plus de choix de
+ * portée, plus de champ « hériter ». Une déclinaison suit son produit.
  */
 @Component({
   selector: 'app-limit-panel',
@@ -113,148 +62,39 @@ export class LimitPanel {
 
   readonly data = input<LimitPanelData | undefined>(undefined);
 
-  protected readonly inherit = INHERIT;
-
-  /**
-   * 🔴 **Le rang global est la RACINE : il n'hérite de rien.**
-   *
-   * Y proposer « Hériter du rang supérieur » envoyait chercher une règle plus
-   * haut, qu'on ne trouvait jamais. Ce que l'absence veut dire là-bas est tout
-   * autre — et bien plus lourd : sans délai ni heure, aucune limite ne
-   * s'applique nulle part.
-   */
-  protected readonly daysChoices = computed<FoldSelectOption<string>[]>(() => [
-    { value: INHERIT, label: this.absence('daysBefore') },
-    ...DAYS_CHOICES,
-  ]);
-
-  protected readonly graceChoices = computed<FoldSelectOption<string>[]>(() => [
-    { value: INHERIT, label: this.absence('graceMinutes') },
-    ...GRACE_CHOICES,
-  ]);
-
-  /** Ce que « laisser vide » veut dire pour l'heure, à ce rang-ci. */
-  protected readonly timeHint = computed(() =>
-    this.scopeType() === 'global'
-      ? "Laisser vide si la production ne ferme à aucune heure fixe. Sans heure, aucune limite ne s'applique."
-      : 'Laisser vide pour hériter du rang supérieur.',
-  );
-
-  /**
-   * ⚠️ Au rang global, une règle sans délai OU sans heure **ne refuse rien**.
-   *
-   * Contre-intuitif, donc dit : on croirait avoir réglé quelque chose. Ce n'est
-   * pas un refus — un rang inférieur peut compléter — mais tel quel, la règle
-   * est inerte.
-   */
-  protected readonly globalIncomplete = computed(
-    () =>
-      this.scopeType() === 'global' && (this.daysBefore() === INHERIT || this.time().trim() === ''),
-  );
-
-  protected readonly scopeType = signal<OrderTimeLimitScopeType>('global');
-  protected readonly scopeId = signal<string | null>(null);
-  protected readonly daysBefore = signal<string>(INHERIT);
+  protected readonly daysChoices = DAYS_CHOICES;
+  protected readonly daysBefore = signal<string>('1');
   protected readonly time = signal<string>('');
-  protected readonly graceMinutes = signal<string>(INHERIT);
   protected readonly saving = signal(false);
 
-  protected readonly categories = computed(() => this.data()?.categories ?? []);
-  protected readonly editing = computed(() => this.data()?.rule ?? null);
-  protected readonly isCreate = computed(() => this.editing() === null);
+  protected readonly label = computed(() => this.data()?.label ?? '');
+  protected readonly isCreate = computed(() => (this.data()?.rule ?? null) === null);
   protected readonly heading = computed(() =>
     this.isCreate() ? 'Nouvelle limite de commande' : 'Modifier la limite',
   );
 
-  /**
-   * La portée ne se change **pas** à la modification : déplacer une règle d'une
-   * famille à l'autre n'est pas une modification, c'est une suppression et une
-   * création. Le confondre ferait perdre la trace de ce qui s'appliquait à
-   * l'ancienne portée.
-   */
-  protected readonly scopeLocked = computed(
-    () => !this.isCreate() || this.data()?.preset !== undefined,
+  /** Le délai ET l'heure : une limite qui n'en dit qu'un ne refuserait rien. */
+  protected readonly canSubmit = computed(() => this.time().trim() !== '' && !this.saving());
+
+  protected readonly recap = computed(() =>
+    this.time().trim() === ''
+      ? "Renseignez l'heure : une limite dit le délai et l'heure."
+      : `Commander au plus tard ${daysPhrase(Number(this.daysBefore())).toLowerCase()}, avant ${this.time()}. Passé cette heure, la commande est refusée.`,
   );
-
-  /** Ce que la portée vise, en clair, quand elle est verrouillée. */
-  protected readonly lockedScopeLabel = computed(() => {
-    const preset = this.data()?.preset;
-    if (preset !== undefined) {
-      return preset.label;
-    }
-    const rule = this.editing();
-    return rule === null ? '' : scopeLabel(rule);
-  });
-
-  protected readonly scopeChoices = computed<FoldSelectOption<string>[]>(() => [
-    { value: 'global', label: 'Toute la production' },
-    ...this.categories().map((category) => ({
-      value: `category:${category.id}`,
-      label: `Famille — ${category.label}`,
-    })),
-  ]);
-
-  protected readonly scopeValue = computed(() =>
-    this.scopeType() === 'global' ? 'global' : `${this.scopeType()}:${this.scopeId() ?? ''}`,
-  );
-
-  /**
-   * Une règle qui ne dit rien est refusée par le serveur, et l'écran ne doit pas
-   * l'envoyer pour l'apprendre. Pour ne rien dire, on **supprime** la règle —
-   * c'est le même geste, et il est lisible.
-   */
-  protected readonly saysSomething = computed(
-    () =>
-      this.daysBefore() !== INHERIT || this.time().trim() !== '' || this.graceMinutes() !== INHERIT,
-  );
-
-  protected readonly canSubmit = computed(() => this.saysSomething() && !this.saving());
-
-  /** La règle relue en une phrase, pour la vérifier avant d'enregistrer. */
-  protected readonly recap = computed(() => {
-    const scope = this.scopeType();
-    const jours = daysPhrase(numberOrNull(this.daysBefore()), scope);
-    const heure = this.time().trim() === '' ? absenceLabel(scope, 'time') : this.time();
-    const grace = gracePhrase(numberOrNull(this.graceMinutes()), scope);
-    return `Délai : ${jours.toLowerCase()} · Heure : ${heure} · Rattrapage : ${grace.toLowerCase()}.`;
-  });
 
   constructor() {
     effect(() => {
-      const preset = this.data()?.preset;
-      if (preset !== undefined) {
-        this.scopeType.set(preset.scope.type);
-        this.scopeId.set(preset.scope.id);
-      }
       const rule = this.data()?.rule ?? null;
       if (rule === null) {
         return;
       }
-      this.scopeType.set(rule.scope.type);
-      this.scopeId.set(rule.scope.id);
-      this.daysBefore.set(rule.daysBefore === null ? INHERIT : String(rule.daysBefore));
+      this.daysBefore.set(String(rule.daysBefore ?? 1));
       this.time.set(rule.time ?? '');
-      this.graceMinutes.set(rule.graceMinutes === null ? INHERIT : String(rule.graceMinutes));
     });
-  }
-
-  protected onScope(value: string): void {
-    if (value === 'global') {
-      this.scopeType.set('global');
-      this.scopeId.set(null);
-      return;
-    }
-    const [, id = ''] = value.split(':');
-    this.scopeType.set('category');
-    this.scopeId.set(id);
   }
 
   protected onDays(value: string): void {
     this.daysBefore.set(value);
-  }
-
-  protected onGrace(value: string): void {
-    this.graceMinutes.set(value);
   }
 
   protected onTime(event: Event): void {
@@ -262,15 +102,16 @@ export class LimitPanel {
   }
 
   protected async submit(): Promise<void> {
-    if (!this.canSubmit()) {
+    const data = this.data();
+    if (!this.canSubmit() || data === undefined) {
       return;
     }
     this.saving.set(true);
     const payload: OrderTimeLimitPayload = {
-      scope: { type: this.scopeType(), id: this.scopeId() },
-      daysBefore: numberOrNull(this.daysBefore()),
-      time: this.time().trim() === '' ? null : this.time(),
-      graceMinutes: numberOrNull(this.graceMinutes()),
+      scope: { type: 'product', id: data.productId },
+      daysBefore: Number(this.daysBefore()),
+      time: this.time(),
+      graceMinutes: null,
     };
     try {
       await this.api.set(payload);
@@ -286,16 +127,4 @@ export class LimitPanel {
   protected cancel(): void {
     this.ref.close();
   }
-
-  /** Le libellé de l'absence, pour le rang en cours d'édition. */
-  private absence(field: 'daysBefore' | 'time' | 'graceMinutes'): string {
-    return this.scopeType() === 'global'
-      ? absenceLabel('global', field)
-      : `${absenceLabel(this.scopeType(), field)} du rang supérieur`;
-  }
-}
-
-/** `''` = « ce rang ne se prononce pas ». Tout le reste est un entier. */
-function numberOrNull(value: string): number | null {
-  return value === INHERIT ? null : Number(value);
 }

@@ -55,65 +55,58 @@ function limitOf(sku: string) {
   });
 }
 
+/**
+ * Depuis le 2026-10-21 (décision de Hugo, `limites-de-commande/
+ * schema-des-reglages.md` §4) : une limite par PRODUIT, règle entière, sans
+ * rattrapage. Ce sont toujours des RÈGLES qui voyagent — des règles de produit.
+ */
 describe("les limites de commande voyagent en règles", () => {
-  it("rangées sous leur numéro, puis descendues sur un article neuf reçu par sa fiche", async () => {
-    await staff()
-      .put(LIMITS)
-      .send({ scope: { type: "global", id: null }, daysBefore: 1, time: "18:00", graceMinutes: 15 })
-      .expect(200);
-    await relayAll(ctx);
-    const rules = await ctx.prisma.catalogRules.findUnique({
-      where: { kind: "order_time_limits" },
-    });
-    expect(rules?.rules).toEqual([
-      { scope: { type: "global", id: null }, daysBefore: 1, time: "18:00", graceMinutes: 15 },
-    ]);
-
-    // Un article NEUF : la plateforme ne le connaissait pas.
+  it("rangées sous leur numéro, puis descendues sur l'article du produit", async () => {
     const fiche = await anActiveFiche(staff, "Pain aux raisins");
-    await relayAll(ctx);
-
-    expect(await limitOf(fiche.variantSku)).toMatchObject({
-      orderLimitDaysBefore: 1,
-      orderLimitTime: "18:00",
-      orderLimitGraceMinutes: 15,
-    });
-  });
-
-  it("une règle de famille posée après coup se descend sur les articles déjà en vente", async () => {
-    const fiche = await anActiveFiche(staff, "Chausson");
     await relayAll(ctx);
     expect(await limitOf(fiche.variantSku)).toMatchObject({ orderLimitTime: null });
 
     await staff()
       .put(LIMITS)
-      .send({
-        scope: { type: "global", id: null },
-        daysBefore: 2,
-        time: "12:00",
-        graceMinutes: null,
-      })
+      .send({ scope: { type: "product", id: fiche.id }, daysBefore: 1, time: "18:00" })
       .expect(200);
+    await relayAll(ctx);
+
+    const rules = await ctx.prisma.catalogRules.findUnique({
+      where: { kind: "order_time_limits" },
+    });
+    expect(rules?.rules).toEqual([
+      {
+        scope: { type: "product", id: fiche.id },
+        daysBefore: 1,
+        time: "18:00",
+        graceMinutes: null,
+      },
+    ]);
+    expect(await limitOf(fiche.variantSku)).toMatchObject({
+      orderLimitDaysBefore: 1,
+      orderLimitTime: "18:00",
+      orderLimitGraceMinutes: 0,
+    });
+  });
+
+  it("un article NEUF prend la limite déjà posée sur son produit", async () => {
+    const fiche = await anActiveFiche(staff, "Chausson");
     await staff()
       .put(LIMITS)
-      .send({
-        scope: { type: "category", id: fiche.categoryId },
-        daysBefore: null,
-        time: "10:00",
-        graceMinutes: null,
-      })
+      .send({ scope: { type: "product", id: fiche.id }, daysBefore: 2, time: "12:00" })
       .expect(200);
     await relayAll(ctx);
 
     expect(await limitOf(fiche.variantSku)).toMatchObject({
       orderLimitDaysBefore: 2,
-      orderLimitTime: "10:00",
+      orderLimitTime: "12:00",
       orderLimitGraceMinutes: 0,
     });
   });
 
-  /** L'identifiant de déclinaison que seul le fait d'une fiche apporte. */
-  it("vise une déclinaison par son identifiant au référentiel", async () => {
+  /** Une déclinaison suit son produit : elle n'a plus de limite propre. */
+  it("refuse une limite de déclinaison, et la déclinaison suit son produit", async () => {
     const fiche = await anActiveFiche(staff, "Galette");
     await relayAll(ctx);
     const item = await limitOf(fiche.variantSku);
@@ -121,19 +114,11 @@ describe("les limites de commande voyagent en règles", () => {
 
     await staff()
       .put(LIMITS)
-      .send({
-        scope: { type: "variant", id: item?.variantId ?? "" },
-        daysBefore: 3,
-        time: "09:00",
-        graceMinutes: null,
-      })
-      .expect(200);
+      .send({ scope: { type: "variant", id: item?.variantId ?? "" }, daysBefore: 3, time: "09:00" })
+      .expect(400);
     await relayAll(ctx);
 
-    expect(await limitOf(fiche.variantSku)).toMatchObject({
-      orderLimitDaysBefore: 3,
-      orderLimitTime: "09:00",
-    });
+    expect(await limitOf(fiche.variantSku)).toMatchObject({ orderLimitTime: null });
   });
 });
 

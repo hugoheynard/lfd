@@ -1,63 +1,32 @@
 <fold-panel-header [title]="heading()" />
 
 <div class="body">
-  @if (scopeLocked()) {
-    <!-- La portée ne se change pas : déplacer une règle est une suppression
-         suivie d'une création, pas une modification. -->
-    <fold-callout appearance="inset" variant="neutral">
-      S'applique à <strong>{{ lockedScopeLabel() }}</strong>
-    </fold-callout>
-  } @else {
-    <fold-listbox
-      label="S'applique à"
-      [options]="scopeChoices()"
-      [value]="scopeValue()"
-      (selectionChange)="onScope($event)"
-    />
-  }
+  <fold-callout appearance="inset" variant="neutral">
+    S'applique à <strong>{{ label() }}</strong
+    >, et à toutes ses déclinaisons.
+  </fold-callout>
 
   <fold-listbox
     label="Le délai"
-    [options]="daysChoices()"
+    [options]="daysChoices"
     [value]="daysBefore()"
     (selectionChange)="onDays($event)"
   />
 
   <!-- `<input type="time">` en natif : fold ne couvre pas les heures, et le
-       contrôle du navigateur vaut mieux qu'un masque maison. VIDE = hérite du
-       rang supérieur ; un second contrôle « hériter / préciser » aurait posé la
-       même question deux fois. -->
+       contrôle du navigateur vaut mieux qu'un masque maison. -->
   <label class="time">
     <span class="time-label">L'heure</span>
     <input type="time" [value]="time()" (change)="onTime($event)" />
-    <span class="time-hint">{{ timeHint() }}</span>
   </label>
 
-  <fold-listbox
-    label="Le rattrapage"
-    [options]="graceChoices()"
-    [value]="graceMinutes()"
-    (selectionChange)="onGrace($event)"
-  />
-
-  @if (globalIncomplete()) {
-    <!-- Contre-intuitif, donc dit : l'échelle exige le jour ET l'heure. Une
-         règle globale amputée n'est pas refusée — un rang inférieur peut la
-         compléter — mais telle quelle, elle ne refuse rien. -->
-    <fold-callout variant="warning">
-      Sans <strong>délai</strong> et sans <strong>heure</strong>, cette règle ne refusera aucune
-      commande&nbsp;: il faut les deux pour qu'une limite existe.
-    </fold-callout>
-  }
-
-  @if (!saysSomething()) {
-    <fold-callout variant="alert">
-      Renseignez au moins un des trois réglages. Pour qu'un rang ne se prononce sur rien, supprimez
-      sa règle&nbsp;: c'est le même geste, et il se lit.
-    </fold-callout>
-  }
-
+  <!-- Pas de rattrapage par produit (Hugo, 2026-10-21) : le dire, parce que
+       l'écran en proposait un. -->
   <fold-callout variant="info">{{ recap() }}</fold-callout>
+  <fold-callout appearance="inset" variant="neutral">
+    Pas de rattrapage sur un produit&nbsp;: le seul rattrapage est celui de la règle générale
+    (Réglages › Commandes › Heure limite), où une dérogation peut s'accorder.
+  </fold-callout>
 </div>
 
 <div class="actions">

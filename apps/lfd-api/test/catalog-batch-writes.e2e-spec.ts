@@ -33,7 +33,8 @@ import { bootstrapE2e, daysAgo, E2E_STAFF_ID, type E2eContext } from "./e2e-harn
 const FEW = 3;
 const MANY = 70;
 const FAMILY = "fam-lot";
-const GLOBAL_LIMIT = { daysBefore: 1, time: "18:00", graceMinutes: 15 };
+/** Sans rattrapage : une limite de produit n'en a plus (2026-10-21). */
+const PRODUCT_LIMIT = { daysBefore: 1, time: "18:00", graceMinutes: null };
 
 let ctx: E2eContext;
 let counter: SchemaOpsCounter;
@@ -210,30 +211,37 @@ describe("l'enregistrement d'agrégats en lot (saveMany)", () => {
 });
 
 describe("la descente des limites de commande sur tout le catalogue", () => {
-  async function deliverGlobalLimit(): Promise<void> {
-    seq += 1;
-    const fact = new CatalogRulesChangedFact(seq, daysAgo(0), [
-      { scope: { type: "global", id: null }, ...GLOBAL_LIMIT },
-    ]);
-    await deliver(fact.durableFact());
+  /**
+   * Une limite sur CHAQUE produit : depuis le 2026-10-21, le référentiel n'a
+   * plus de rang global, et c'est la seule façon de toucher tout le catalogue.
+   */
+  function deliverLimitsOn(count: number): () => Promise<void> {
+    return async () => {
+      seq += 1;
+      const rules = Array.from({ length: count }, (_, index) => ({
+        scope: { type: "product" as const, id: `prd_lot_${String(index)}` },
+        ...PRODUCT_LIMIT,
+      }));
+      await deliver(new CatalogRulesChangedFact(seq, daysAgo(0), rules).durableFact());
+    };
   }
 
   // P2028 (2026-10-17) : une écriture par article en vente dans la transaction de la livraison.
   it(`coûte autant pour ${String(FEW)} articles que pour ${String(MANY)}`, async () => {
     await deliverAsFacts(ctx, catalogueOf(FEW), ALONE);
-    const few = await operationsOf(deliverGlobalLimit);
+    const few = await operationsOf(deliverLimitsOn(FEW));
     await ctx.reset();
     await deliverAsFacts(ctx, catalogueOf(MANY), ALONE);
-    const many = await operationsOf(deliverGlobalLimit);
+    const many = await operationsOf(deliverLimitsOn(MANY));
 
     expect(many).toBe(few);
     expect(
       await ctx.prisma.catalogItem.count({
         where: {
           sku: { startsWith: "LOT-" },
-          orderLimitDaysBefore: GLOBAL_LIMIT.daysBefore,
-          orderLimitTime: GLOBAL_LIMIT.time,
-          orderLimitGraceMinutes: GLOBAL_LIMIT.graceMinutes,
+          orderLimitDaysBefore: PRODUCT_LIMIT.daysBefore,
+          orderLimitTime: PRODUCT_LIMIT.time,
+          orderLimitGraceMinutes: 0,
         },
       }),
     ).toBe(MANY);

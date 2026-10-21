@@ -1,6 +1,10 @@
 import type { OrderTimeLimitPayload } from "@lfd/pim-contracts";
 
-import { EmptyOrderTimeLimitError } from "../errors/order-time-limit-errors.js";
+import {
+  IncompleteOrderTimeLimitError,
+  ProductGraceRetiredError,
+  RetiredOrderTimeLimitScopeError,
+} from "../errors/order-time-limit-errors.js";
 import { LimitScope } from "../value-objects/limit-scope.js";
 
 /** Ce qu'un rang peut poser. `null` = **ce rang ne se prononce pas**. */
@@ -13,11 +17,14 @@ export interface LimitValues {
 /**
  * **Une limite posée sur une portée.**
  *
- * L'entité ne connaît ni l'échelle ni l'héritage : elle garantit qu'**une ligne
- * dit quelque chose**. Résoudre est le travail d'un service de domaine, qui
- * lit plusieurs de ces règles — les mélanger ici ferait dépendre la validité
- * d'une ligne de l'existence des autres, et la première règle créée serait
- * toujours refusée.
+ * Depuis le 2026-10-21 (décision de Hugo, `limites-de-commande/
+ * schema-des-reglages.md` §4) : **une limite par produit, règle entière**. Ni
+ * « toute la production » (elle se règle au commerce), ni famille, ni
+ * déclinaison (elle suit son produit) ; et plus d'héritage champ par champ —
+ * le délai et l'heure sont tous deux posés. **Pas de rattrapage** (même jour,
+ * point 2) : le seul rattrapage est celui de la règle générale du commerce, et
+ * la dérogation reste le geste d'exception. `graceMinutes` n'accepte que
+ * `null` ou `0`, et s'enregistre `null`.
  */
 export class OrderTimeLimit {
   private constructor(
@@ -31,17 +38,24 @@ export class OrderTimeLimit {
    * en a **au plus une par portée** : reposer sur la même portée remplace, ça ne
    * crée pas un second avis.
    *
-   * @throws {EmptyOrderTimeLimitError} les trois réglages sont absents.
+   * @throws {RetiredOrderTimeLimitScopeError} la portée n'est pas un produit.
+   * @throws {IncompleteOrderTimeLimitError} le délai ou l'heure manque.
    */
   static set(id: string, payload: OrderTimeLimitPayload): OrderTimeLimit {
-    const values = valuesOf(payload);
-    ensureSaysSomething(values);
-    return new OrderTimeLimit(id, LimitScope.of(payload.scope), values);
+    const scope = LimitScope.of(payload.scope);
+    ensureProduct(scope);
+    const values = productValuesOf(payload);
+    return new OrderTimeLimit(id, scope, values);
   }
 
-  /** Rehydrate depuis la base. Les invariants se revérifient — une ligne écrite à la main aussi. */
+  /**
+   * Rehydrate depuis la base. La portée se revérifie (cohérence `id`/type) ;
+   * la règle « produit seulement, règle entière » NON : une ligne d'avant le
+   * 2026-10-21 doit encore pouvoir se relire pour être retirée. La résolution
+   * l'ignore, et `reset` la refuse.
+   */
   static reconstitute(id: string, payload: OrderTimeLimitPayload): OrderTimeLimit {
-    return OrderTimeLimit.set(id, payload);
+    return new OrderTimeLimit(id, LimitScope.of(payload.scope), valuesOf(payload));
   }
 
   /**
@@ -50,12 +64,12 @@ export class OrderTimeLimit {
    * une création — et le confondre ferait perdre la trace de ce qui s'appliquait
    * à l'ancienne portée.
    *
-   * @throws {EmptyOrderTimeLimitError} les trois réglages sont absents.
+   * @throws {RetiredOrderTimeLimitScopeError} la règle vise une portée retirée.
+   * @throws {IncompleteOrderTimeLimitError} le délai ou l'heure manque.
    */
   reset(payload: OrderTimeLimitPayload): void {
-    const values = valuesOf(payload);
-    ensureSaysSomething(values);
-    this.values = values;
+    ensureProduct(this.scope);
+    this.values = productValuesOf(payload);
   }
 
   get daysBefore(): number | null {
@@ -80,12 +94,34 @@ function valuesOf(payload: OrderTimeLimitPayload): LimitValues {
 }
 
 /**
- * Une règle dont les trois valeurs sont nulles n'est pas « une règle permissive »,
- * c'est une ligne muette : elle laisserait tout hériter du rang du dessus tout en
- * se montrant à l'écran comme une règle. Pour ne rien dire, on supprime.
+ * Les valeurs d'une limite de produit : délai ET heure, sans rattrapage.
+ *
+ * Un rattrapage non nul est **refusé**, pas ignoré : l'ignorer laisserait
+ * l'appelant croire qu'il a posé une heure de grâce que la passation
+ * n'appliquera jamais.
  */
-function ensureSaysSomething(values: LimitValues): void {
-  if (values.daysBefore === null && values.time === null && values.graceMinutes === null) {
-    throw new EmptyOrderTimeLimitError();
+function productValuesOf(payload: OrderTimeLimitPayload): LimitValues {
+  const values = valuesOf(payload);
+  ensureComplete(values);
+  if (values.graceMinutes !== null && values.graceMinutes !== 0) {
+    throw new ProductGraceRetiredError();
+  }
+  return { ...values, graceMinutes: null };
+}
+
+/** Seul le produit porte encore une limite au référentiel (2026-10-21). */
+function ensureProduct(scope: LimitScope): void {
+  if (scope.type !== "product") {
+    throw new RetiredOrderTimeLimitScopeError(scope.type);
+  }
+}
+
+/**
+ * Plus de rang au-dessus dont hériter : un délai sans heure, ou l'inverse, se
+ * montrerait comme une règle sans jamais rien refuser.
+ */
+function ensureComplete(values: LimitValues): void {
+  if (values.daysBefore === null || values.time === null) {
+    throw new IncompleteOrderTimeLimitError();
   }
 }

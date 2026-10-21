@@ -6,70 +6,106 @@
 > [`architecture-heure-limite-de-commande.md`](architecture-heure-limite-de-commande.md).
 > Entrée du dossier : [`README.md`](README.md).
 
-Le délai propre à un article : « un gâteau d'anniversaire se sait deux jours
+Le délai propre à un produit : « un gâteau d'anniversaire se sait deux jours
 avant ». Il est réglé au **référentiel**, parce qu'il tient au temps de
-production de l'article, et il s'oppose à **toutes** les clientèles.
+production, et il s'oppose à **toutes** les clientèles.
+
+🔴 **Depuis le 2026-10-21 (décisions de Hugo, [`schema-des-reglages.md`](schema-des-reglages.md) §4) :
+une limite par PRODUIT, règle entière, sans rattrapage.** « Toute la
+production » se règle au commerce ([`reglages-generaux.md`](reglages-generaux.md)) ;
+une famille n'a plus de limite propre ; une déclinaison suit son produit ; le
+seul rattrapage est celui de la règle générale.
 
 ## 1. Au référentiel
 
 **Table** `pim.order_time_limit` (`OrderTimeLimit`,
-`apps/lfd-api/prisma/schema/pim/sales-contexts.prisma`) : `scope_type`
-(`global` | `category` | `product` | `variant`), `scope_id` (`NULL` si et
-seulement si `global`), `days_before?` (`0` = le jour même), `time?` (`HH:MM`,
-pendule de Paris), `grace_minutes?`. Une règle par portée, tenue par l'index
-unique `order_time_limit_one_per_scope` posé en SQL.
+`apps/lfd-api/prisma/schema/pim/sales-contexts.prisma`) : `scope_type`,
+`scope_id`, `days_before`, `time` (`HH:MM`, pendule de Paris), `grace_minutes`.
+Une règle par portée, tenue par l'index unique `order_time_limit_one_per_scope`.
+Les colonnes n'ont pas changé ; ce qui a changé :
 
-**Échelle** : déclinaison → produit → famille la plus proche → … → racine →
-global. **Chaque champ** prend la première valeur non nulle en descendant
-(`resolveOrderTimeLimit`, `packages/catalog-sync/src/order-time-limit-resolution.ts`,
-réexporté par `pim/order-time-limitation/domain/services/`). `NULL` veut dire
-« ce rang ne se prononce pas », pas « aucune limite ». **Une limite n'existe
-que si le délai ET l'heure sont résolus** ; la grâce vaut `0` si personne ne la
-déclare.
+- **le domaine** (`OrderTimeLimit.set` / `reset`) refuse toute portée autre que
+  `product` (`pim.order_time_limit.scope_retired`, 400, le message dit où se
+  règle la générale), une limite sans délai OU sans heure
+  (`pim.order_time_limit.incomplete`) et un rattrapage non nul
+  (`pim.order_time_limit.grace_retired` — refusé plutôt qu'ignoré, pour qu'on ne
+  croie pas avoir posé une grâce). Un rattrapage `0` s'enregistre `NULL` ;
+- **la base** : la migration `20261021120000_une_limite_de_commande_par_produit`
+  ajoute `order_time_limit_product_only` (`scope_type = 'product'`) et
+  `order_time_limit_no_grace` (`grace_minutes` `NULL` ou `0`). Additive ; elle
+  échoue si une ligne la viole (aucune en production, d'après Hugo le
+  2026-10-21 ; en dev, les lignes « Toute la production » et « Viennoiseries »
+  ont été retirées par `RemoveOrderTimeLimitCommand` le même jour, et le
+  rattrapage d'une heure du Gros florentin remis à zéro par
+  `SetOrderTimeLimitCommand`). **⚠️ À relire avant promotion.**
+- **une ligne résiduelle** (globale, famille, déclinaison) se relit encore
+  (`reconstitute`) pour pouvoir se retirer, mais ne se modifie plus, ne
+  s'affiche plus (`ListOrderTimeLimits` ne rend que les produits), ne traverse
+  plus (l'émetteur filtre) et ne s'applique plus (la résolution l'ignore). La
+  garde qui refusait de retirer le global sous des règles qui en héritaient
+  (`GlobalOrderTimeLimitStillNeededError`) est retirée : plus rien n'hérite.
 
-**Écrans** (droit `pim_catalog`, routes `order-time-limits` GET/PUT/DELETE) :
+**Résolution** (`resolveOrderTimeLimit`,
+`packages/catalog-sync/src/order-time-limit-resolution.ts`, partagée par les
+deux rives) : la règle du produit de l'article, si elle pose le délai ET
+l'heure ; rattrapage toujours `0`. Rien d'autre n'est lu.
+
+**Écrans** (droit `pim_catalog`) :
 
 - **Référentiel › Général › Limites de commande** (`/pim/limites-de-commande`,
-  `OrderTimeLimitsPage`) — la liste des règles, tous rangs ; l'écran prévient
-  quand aucune règle globale n'existe alors que d'autres rangs se prononcent ;
-- la carte **« Limite de commande (liée au temps de production) »** de la fiche
-  produit (`product-form/form-sections/order-limit/`) — elle montre la limite
-  qui **s'applique** (`explainOrderTimeLimit`), avec sa provenance, pas
-  seulement ce que l'article pose.
-
-Réglages › Commandes › Heure limite y renvoie par un lien, sans rien en lire.
+  `OrderTimeLimitsPage`) — en tête, la règle générale du commerce **en
+  lecture** (« Toute la production : la veille à 18:00, rattrapage aucun — se
+  règle dans Réglages › Commandes › Heure limite », avec le lien ; elle dit
+  quand l'interrupteur la coupe ou qu'elle n'existe pas). Lue par
+  `GET /pim/order-time-limits/general-cutoff` : la route du commerce est murée
+  par `lfc_order_settings`, et `pim → b2b` est interdit — le référentiel déclare
+  le port `GeneralOrderCutoffReader`
+  (`pim/channels/b2b-platform/general-order-cutoff/`), le commerce
+  l'implémente (`CommerceGeneralOrderCutoffReader`), `appBootstrap/
+general-order-cutoff.module.ts` les relie. Puis la liste des produits qui ont
+  une limite (modifier, retirer) ; plus de choix de portée, plus de « poser »
+  ici ;
+- la carte **« Limite de commande »** de la fiche produit
+  (`product-form/form-sections/order-limit/`) — la limite du produit (délai,
+  heure), ou « pas de limite propre » ; poser, modifier, retirer. Le panneau
+  n'a plus ni portée, ni « hériter », ni rattrapage.
 
 ## 2. La propagation au commerce
 
 `SetOrderTimeLimit` / `RemoveOrderTimeLimit` émettent, dans leur transaction,
 le fait durable **`pim.catalog_rules_changed`**
 (`pim/channels/b2b-platform/products/catalog-rules-changed.fact.ts`) : ce sont
-les **règles** qui traversent, pas des limites résolues. Le commerce
+les **règles** qui traversent, pas des limites résolues — et, depuis le
+2026-10-21, les seules règles de produit (`B2bCatalogRulesEmitter` filtre). Le commerce
 (`OnCatalogRulesChangedHandler`, `b2b/catalog/application/handlers/`) les range
 dans `public.catalog_rules` si le fait est plus récent (`applied_seq`), puis
-`OrderLimitsRefresher` les **descend sur chaque article en vente** — colonnes
+`OrderLimitsRefresher` les **descend sur chaque article en vente** (la règle de
+son produit seulement, depuis le 2026-10-21) — colonnes
 `CatalogItem.orderLimitDaysBefore` / `orderLimitTime` / `orderLimitGraceMinutes`.
 Les faits d'une fiche et d'une famille redescendent aussi (un article reclassé
-prend les limites de sa nouvelle famille). Avant tout fait de règles reçu, rien
+prenait les limites de sa nouvelle famille — sans effet depuis le 2026-10-21,
+plus aucune famille n'en porte). Avant tout fait de règles reçu, rien
 ne bouge.
 
 ## 3. À la passation
 
 `OrderDrafting.ensureNotTooLate` relit le catalogue sur les SKU du panier
 (`resolveMany(skus, "pro")`) et passe à `ensureWithinOrderCutoff` la limite de
-chaque ligne. 🔴 **La plus stricte gagne toujours** (décision de Hugo,
+chaque ligne. Depuis le 2026-10-21, une limite d'article **n'a jamais de
+grâce** : la garde la force à `0` (`withoutGrace`,
+`order-cutoff-guard.ts`), même si une grâce est encore rangée sur l'article —
+passée l'heure, refus sec. 🔴 **La plus stricte gagne toujours** (décision de Hugo,
 2026-10-21) : chaque ligne est jugée par la plus fermée entre la limite de
 l'article (s'il en porte une) et la règle générale en vigueur pour ce jour et ce
 point ; puis la plus fermée du panier gagne ([`README.md`](README.md) §2). Une
-limite d'article plus tardive ne relâche donc jamais la règle générale. Chaque
-limite garde sa propre grâce ; les dérogations et la surtaxe valent pour la
-décision retenue. Interrupteur de l'heure limite générale désactivé, il n'y a
+limite d'article plus tardive ne relâche donc jamais la règle générale. Seule
+la règle générale a une grâce, et c'est pendant elle que la dérogation et la
+surtaxe valent. Interrupteur de l'heure limite générale désactivé, il n'y a
 plus de règle en vigueur, et seule la limite d'article compte.
 
 Jusqu'au 2026-10-21, la limite d'article **remplaçait** la règle générale : un
-rang global posé au référentiel la neutralisait à la passation. Ce n'est plus
-le cas — un rang global plus tardif que la règle générale est désormais sans
-effet, un rang global plus tôt la resserre partout.
+rang global posé au référentiel la neutralisait à la passation. Ce rang n'existe
+plus (§1).
 
 ## 4. Ce que sert la boutique (depuis `a1e1c62f5`, 2026-10-21)
 

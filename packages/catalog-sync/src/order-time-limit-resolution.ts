@@ -41,84 +41,45 @@ export interface LimitTarget {
 }
 
 /**
- * **Résout la limite d'un article** en remontant l'échelle, **champ par champ**.
+ * **Résout la limite d'un article** : celle de **son produit**, et rien d'autre.
  *
- * ```
- * déclinaison → produit → famille la plus proche → … → racine → global
- * ```
+ * 🔴 Depuis le 2026-10-21 (décision de Hugo,
+ * `documentation/limites-de-commande/schema-des-reglages.md` §4, points 1 à
+ * 3), le référentiel n'a plus qu'**une limite par produit, règle entière, sans
+ * rattrapage** :
  *
- * Chaque champ prend la **première valeur non nulle** rencontrée en descendant
- * cette liste. C'est ce qui fait qu'un rang peut poser ce qu'il change sans
- * recopier le reste : « le pain ferme à 16 h » n'a pas à redire le nombre de
- * jours, « l'entremets demande un jour de plus » n'a pas à redire l'heure.
+ * - « toute la production » se règle au commerce (Réglages › Commandes › Heure
+ *   limite) ; une famille n'a plus de limite propre ; une déclinaison suit son
+ *   produit. Une règle résiduelle de ces portées — d'avant la décision, ou
+ *   d'un fait déjà rangé chez le récepteur — est **ignorée** ici, et c'est ce
+ *   qui la rend inerte sans migration destructive ;
+ * - plus d'héritage champ par champ : la règle du produit dit le délai ET
+ *   l'heure, sinon il n'y a pas de limite ;
+ * - le rattrapage vaut toujours `0` : le seul rattrapage est celui de la règle
+ *   générale. Une grâce résiduelle sur une ligne produit est ignorée.
  *
- * L'alternative — un rang qui se prononce l'emporte **entièrement** — aurait
- * obligé chaque article à dupliquer l'heure du labo pour changer d'un jour. Le
- * jour où cette heure change, chaque copie serait restée figée, en silence.
+ * `variantId` et `categoryPath` restent dans {@link LimitTarget} : les
+ * appelants les portent encore, et la forme ne change pas pour eux.
  *
- * ## Ce qui rend `null`
- *
- * Une limite n'existe que si **le jour et l'heure** sont tous deux résolus.
- * Inventer un défaut (« la veille à 18 h ») ferait refuser des commandes au nom
- * d'une règle que personne n'a écrite — le contraire de ce que le référentiel
- * doit garantir. Le rattrapage, lui, a un défaut honnête : pas de rattrapage
- * déclaré = limite ferme = `0`.
- *
- * Fonction **pure** : aucun port, aucune horloge. Elle dit ce qu'une règle vaut,
- * jamais si l'on est en retard — cette comparaison-là appartient à qui tient
- * l'horloge.
+ * Fonction **pure** : aucun port, aucune horloge.
  */
 export function resolveOrderTimeLimit(
   rules: readonly SyncOrderTimeLimitRule[],
   target: LimitTarget,
 ): SyncOrderTimeLimit | null {
-  const ordered = mostSpecificFirst(rules, target);
-
-  const daysBefore = firstDefined(ordered, (rule) => rule.daysBefore);
-  const time = firstDefined(ordered, (rule) => rule.time);
-  if (daysBefore === null || time === null) {
+  const rule = productRuleOf(rules, target);
+  if (rule === undefined || rule.daysBefore === null || rule.time === null) {
     return null;
   }
-  return { daysBefore, time, graceMinutes: firstDefined(ordered, (r) => r.graceMinutes) ?? 0 };
+  return { daysBefore: rule.daysBefore, time: rule.time, graceMinutes: 0 };
 }
 
-/**
- * Les règles qui visent cet article, **de la plus précise à la plus générale**.
- *
- * On construit la liste des portées attendues puis on y pioche, plutôt que de
- * trier les règles : le tri aurait demandé un rang numérique par famille, donc
- * une seconde expression de la profondeur de l'arbre — et deux expressions d'une
- * même hiérarchie finissent par se contredire sur un cas limite.
- */
-function mostSpecificFirst(
+/** La règle posée sur le produit de l'article, s'il y en a une. */
+function productRuleOf(
   rules: readonly SyncOrderTimeLimitRule[],
   target: LimitTarget,
-): readonly SyncOrderTimeLimitRule[] {
-  const byKey = new Map(rules.map((rule) => [`${rule.scope.type}:${rule.scope.id ?? ""}`, rule]));
-  const keys = [
-    ...(target.variantId === null ? [] : [`variant:${target.variantId}`]),
-    `product:${target.productId}`,
-    ...target.categoryPath.map((id) => `category:${id}`),
-    "global:",
-  ];
-  return keys.flatMap((key) => {
-    const found = byKey.get(key);
-    return found === undefined ? [] : [found];
-  });
-}
-
-/** La première valeur non nulle en descendant l'échelle, ou `null`. */
-function firstDefined<T>(
-  ordered: readonly SyncOrderTimeLimitRule[],
-  read: (rule: SyncOrderTimeLimitRule) => T | null,
-): T | null {
-  for (const rule of ordered) {
-    const value = read(rule);
-    if (value !== null) {
-      return value;
-    }
-  }
-  return null;
+): SyncOrderTimeLimitRule | undefined {
+  return rules.find((rule) => rule.scope.type === "product" && rule.scope.id === target.productId);
 }
 
 /** D'où vient une valeur résolue : le rang qui l'a posée. */
@@ -142,40 +103,23 @@ export interface ExplainedOrderTimeLimit {
 }
 
 /**
- * La même résolution, mais qui **dit d'où vient** chaque valeur.
+ * La même résolution, avec la **provenance** de chaque valeur.
  *
- * Elle partage la descente d'échelle avec {@link resolveOrderTimeLimit} — deux
- * parcours auraient fini par diverger sur un cas limite, et c'est l'écran qui
- * aurait alors affirmé autre chose que ce que la commande applique.
- *
- * `graceMinutes` reste `null` quand personne ne le pose : c'est à l'appelant de
- * dire « aucun rattrapage », parce que la valeur par défaut (`0`) n'a pas de
- * rang d'origine à nommer.
+ * Depuis le 2026-10-21, la seule provenance possible est le produit, et le
+ * rattrapage n'en a pas (`null`) : gardée pour la forme de ses lecteurs, elle
+ * partage {@link resolveOrderTimeLimit} pour ne jamais dire autre chose que la
+ * passation.
  */
 export function explainOrderTimeLimit(
   rules: readonly SyncOrderTimeLimitRule[],
   target: LimitTarget,
 ): ExplainedOrderTimeLimit {
-  const ordered = mostSpecificFirst(rules, target);
+  const limit = resolveOrderTimeLimit(rules, target);
   return {
-    daysBefore: firstPosed(ordered, (rule) => rule.daysBefore),
-    time: firstPosed(ordered, (rule) => rule.time),
-    graceMinutes: firstPosed(ordered, (rule) => rule.graceMinutes),
+    daysBefore: limit === null ? null : { value: limit.daysBefore, from: "product" },
+    time: limit === null ? null : { value: limit.time, from: "product" },
+    graceMinutes: null,
   };
-}
-
-/** La première valeur posée en descendant l'échelle, avec le rang qui la pose. */
-function firstPosed<T>(
-  ordered: readonly SyncOrderTimeLimitRule[],
-  read: (rule: SyncOrderTimeLimitRule) => T | null,
-): ResolvedField<T> | null {
-  for (const rule of ordered) {
-    const value = read(rule);
-    if (value !== null) {
-      return { value, from: rule.scope.type };
-    }
-  }
-  return null;
 }
 
 /** Ce qu'il faut d'une famille pour remonter son arbre. */

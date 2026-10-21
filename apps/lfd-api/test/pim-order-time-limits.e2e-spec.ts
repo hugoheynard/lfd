@@ -8,7 +8,10 @@
  * - la contrainte `CHECK` qui refuse une portée contradictoire même écrite
  *   hors du domaine ;
  * - le `PUT` sans identifiant : la **portée** est la clé, et reposer dessus
- *   remplace au lieu de créer un second avis.
+ *   remplace au lieu de créer un second avis ;
+ * - depuis le 2026-10-21 (décision de Hugo, `limites-de-commande/
+ *   schema-des-reglages.md` §4) : une limite par PRODUIT, règle entière, sans
+ *   rattrapage — refusée autrement par le domaine ET par la base.
  */
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
@@ -51,20 +54,16 @@ async function list(): Promise<readonly LimitRow[]> {
   return jsonBody<readonly LimitRow[]>(await staff().get(LIMITS).expect(200));
 }
 
+const PRODUCT = { type: "product", id: "prd_e2e" } as const;
+
 describe("poser une limite", () => {
-  it("crée la règle globale, puis la REMPLACE au lieu d'en créer une seconde", async () => {
+  it("crée la limite d'un produit, puis la REMPLACE au lieu d'en créer une seconde", async () => {
     const first = jsonBody<{ id: string }>(
-      await staff()
-        .put(LIMITS)
-        .send({ scope: { type: "global", id: null }, daysBefore: 1, time: "18:00" })
-        .expect(200),
+      await staff().put(LIMITS).send({ scope: PRODUCT, daysBefore: 1, time: "18:00" }).expect(200),
     );
 
     const second = jsonBody<{ id: string }>(
-      await staff()
-        .put(LIMITS)
-        .send({ scope: { type: "global", id: null }, daysBefore: 1, time: "16:00" })
-        .expect(200),
+      await staff().put(LIMITS).send({ scope: PRODUCT, daysBefore: 1, time: "16:00" }).expect(200),
     );
 
     // Le MÊME identifiant : un changement d'heure ne fait pas disparaître la
@@ -76,85 +75,82 @@ describe("poser une limite", () => {
     expect(rows[0]?.time).toBe("16:00");
   });
 
-  it("garde les portées distinctes côte à côte", async () => {
+  it("garde deux produits côte à côte", async () => {
+    await staff().put(LIMITS).send({ scope: PRODUCT, daysBefore: 1, time: "18:00" }).expect(200);
     await staff()
       .put(LIMITS)
-      .send({ scope: { type: "global", id: null }, daysBefore: 1, time: "18:00" })
-      .expect(200);
-    await staff()
-      .put(LIMITS)
-      .send({ scope: { type: "category", id: "patisserie" }, time: "16:00" })
+      .send({ scope: { type: "product", id: "prd_autre" }, daysBefore: 2, time: "12:00" })
       .expect(200);
 
     expect(await list()).toHaveLength(2);
   });
 
-  /**
-   * Lot B du plan des phrases (2026-09-19) : le fait ne citait la portée que
-   * par sa clé (`category:<id>`). Il la dit en mots, sous le nom QUE LA
-   * FAMILLE PORTAIT — renommée après coup, la ligne ne bouge pas.
-   */
-  it("fige au journal la portée en mots, sous le nom du moment de sa famille", async () => {
-    const category = jsonBody<{ id: string }>(
-      await staff()
-        .post("/pim/catalogue/categories")
-        .send({ name: { fr: "Tartes" } })
-        .expect(201),
-    );
-    await staff()
-      .put(LIMITS)
-      .send({ scope: { type: "global", id: null }, daysBefore: 1, time: "18:00" })
-      .expect(200);
-    await staff()
-      .put(LIMITS)
-      .send({ scope: { type: "category", id: category.id }, time: "16:00" })
-      .expect(200);
-    await ctx.prisma.category.update({
-      where: { id: category.id },
-      data: { name: { fr: "Tartes fines" } },
-    });
+  /** Lot B du plan des phrases (2026-09-19) : la portée se fige en mots au journal. */
+  it("fige au journal la portée en mots", async () => {
+    await staff().put(LIMITS).send({ scope: PRODUCT, daysBefore: 1, time: "18:00" }).expect(200);
 
     const facts = await ctx.prisma.activityEvent.findMany({
       where: { type: "order_time_limit.set" },
-      orderBy: { occurredAt: "asc" },
       select: { payload: true },
     });
 
     expect(facts.map((fact) => fact.payload)).toEqual([
-      expect.objectContaining({ subjectLabel: "Toute la production" }),
-      expect.objectContaining({ subjectLabel: "Famille « Tartes »" }),
+      expect.objectContaining({ subjectLabel: "Produit prd_e2e", scope: "product:prd_e2e" }),
     ]);
+  });
+
+  /**
+   * Décision de Hugo du 2026-10-21 : « toute la production » se règle dans
+   * Réglages › Commandes › Heure limite ; une famille n'a plus de limite ; une
+   * déclinaison suit son produit. Le refus nomme où aller.
+   */
+  it.each([
+    ["global", null],
+    ["category", "patisserie"],
+    ["variant", "var_e2e"],
+  ] as const)("refuse la portée %s, en disant où se règle la générale", async (type, id) => {
+    const refusal = await staff()
+      .put(LIMITS)
+      .send({ scope: { type, id }, daysBefore: 1, time: "18:00" })
+      .expect(400);
+
+    expect(refusal.body).toMatchObject({ code: "pim.order_time_limit.scope_retired" });
+    expect(JSON.stringify(refusal.body)).toContain("Réglages › Commandes › Heure limite");
+    expect(await list()).toHaveLength(0);
+  });
+
+  it("refuse une limite de produit sans délai ou sans heure", async () => {
+    const refusal = await staff().put(LIMITS).send({ scope: PRODUCT, time: "16:00" }).expect(400);
+
+    expect(refusal.body).toMatchObject({ code: "pim.order_time_limit.incomplete" });
+    expect(await list()).toHaveLength(0);
+  });
+
+  /** Point 2 (2026-10-21) : le seul rattrapage est celui de la règle générale. */
+  it("refuse un rattrapage sur une limite de produit", async () => {
+    const refusal = await staff()
+      .put(LIMITS)
+      .send({ scope: PRODUCT, daysBefore: 1, time: "18:00", graceMinutes: 30 })
+      .expect(400);
+
+    expect(refusal.body).toMatchObject({ code: "pim.order_time_limit.grace_retired" });
+    expect(await list()).toHaveLength(0);
   });
 
   it("refuse une portée qui se contredit", async () => {
     await staff()
       .put(LIMITS)
-      .send({ scope: { type: "global", id: "patisserie" }, time: "16:00" })
-      .expect(400);
-    await staff()
-      .put(LIMITS)
-      .send({ scope: { type: "product", id: null }, time: "16:00" })
+      .send({ scope: { type: "product", id: null }, daysBefore: 1, time: "16:00" })
       .expect(400);
 
-    expect(await list()).toHaveLength(0);
-  });
-
-  it("refuse une règle qui ne dit rien", async () => {
-    await staff()
-      .put(LIMITS)
-      .send({ scope: { type: "global", id: null } })
-      .expect(400);
     expect(await list()).toHaveLength(0);
   });
 });
 
 describe("retirer une limite", () => {
-  it("supprime la ligne — c'est le geste pour dire « ce rang ne se prononce pas »", async () => {
+  it("supprime la ligne — le produit n'a plus de limite propre", async () => {
     const created = jsonBody<{ id: string }>(
-      await staff()
-        .put(LIMITS)
-        .send({ scope: { type: "category", id: "patisserie" }, time: "16:00" })
-        .expect(200),
+      await staff().put(LIMITS).send({ scope: PRODUCT, daysBefore: 1, time: "16:00" }).expect(200),
     );
 
     await staff().delete(`${LIMITS}/${created.id}`).expect(204);
@@ -164,79 +160,66 @@ describe("retirer une limite", () => {
   it("404 sur une règle qui n'existe pas", async () => {
     await staff().delete(`${LIMITS}/inexistant`).expect(404);
   });
+});
 
-  /**
-   * 🔴 Le verrou, éprouvé de bout en bout : l'héritage étant champ par champ,
-   * une famille qui ne pose que l'heure emprunte son délai au global. Retirer
-   * le global la rendrait MUETTE — pas plus permissive — et l'écran
-   * continuerait de l'afficher comme si elle s'appliquait.
-   *
-   * Ce que seul l'e2e prouve ici : le refus traverse le contrôleur avec le bon
-   * statut, et la règle est TOUJOURS là après. Un refus qui supprime quand même
-   * serait pire que pas de refus.
-   */
-  it("refuse de retirer le rang global quand une règle inférieure en dépend", async () => {
-    const global = jsonBody<{ id: string }>(
-      await staff()
-        .put(LIMITS)
-        .send({ scope: { type: "global", id: null }, daysBefore: 1, time: "18:00" })
-        .expect(200),
-    );
-    // Une heure, pas de délai : elle ne se suffit pas.
-    await staff()
-      .put(LIMITS)
-      .send({ scope: { type: "category", id: "patisserie" }, time: "16:00" })
-      .expect(200);
+describe("la règle générale du commerce, en lecture", () => {
+  const GENERAL = `${LIMITS}/general-cutoff`;
 
-    const refusal = await staff().delete(`${LIMITS}/${global.id}`).expect(409);
-
-    expect(refusal.body).toMatchObject({ code: "pim.order_time_limit.global_still_needed" });
-    expect(await list()).toHaveLength(2);
+  it("dit qu'il n'y en a pas quand le commerce n'en a aucune", async () => {
+    expect(jsonBody(await staff().get(GENERAL).expect(200))).toEqual({ enabled: true, rule: null });
   });
 
-  it("laisse retirer le rang global quand chaque autre règle se suffit", async () => {
-    const global = jsonBody<{ id: string }>(
-      await staff()
-        .put(LIMITS)
-        .send({ scope: { type: "global", id: null }, daysBefore: 1, time: "18:00" })
-        .expect(200),
-    );
-    // Délai ET heure : celle-là ne doit rien au rang du dessus.
+  it("montre la règle par défaut, et dit quand l'interrupteur la coupe", async () => {
     await staff()
-      .put(LIMITS)
-      .send({ scope: { type: "category", id: "patisserie" }, daysBefore: 2, time: "16:00" })
-      .expect(200);
+      .post("/admin/order-cutoffs")
+      .send({ pickupAddressId: null, weekday: null, daysBefore: 1, time: "18:00", graceMinutes: 0 })
+      .expect(201);
 
-    await staff().delete(`${LIMITS}/${global.id}`).expect(204);
-    expect(await list()).toHaveLength(1);
+    expect(jsonBody(await staff().get(GENERAL).expect(200))).toEqual({
+      enabled: true,
+      rule: { daysBefore: 1, time: "18:00", graceMinutes: 0 },
+    });
+
+    await staff().patch("/admin/order-cutoff-settings").send({ enabled: false }).expect(204);
+
+    expect(jsonBody(await staff().get(GENERAL).expect(200))).toMatchObject({ enabled: false });
   });
 });
 
 describe("ce que la base refuse, même hors du domaine", () => {
   /**
-   * **Régression par construction : deux règles globales.**
-   *
-   * `@@unique([scopeType, scopeId])` de Prisma ne l'aurait pas empêché —
-   * Postgres tient chaque `NULL` pour distinct, et la résolution serait devenue
-   * dépendante de l'ordre de lecture. C'est l'index sur `coalesce(scope_id, '')`
-   * qui porte la garantie, et il ne se teste qu'ici.
+   * **Régression par construction : deux limites sur le même produit.** C'est
+   * l'index sur `coalesce(scope_id, '')` qui porte la garantie.
    */
-  it("refuse une SECONDE règle globale insérée en direct", async () => {
+  it("refuse une SECONDE limite du même produit insérée en direct", async () => {
     await ctx.prisma.orderTimeLimit.create({
-      data: { id: "l1", scopeType: "global", scopeId: null, daysBefore: 1, time: "18:00" },
+      data: { id: "l1", scopeType: "product", scopeId: "prd_e2e", daysBefore: 1, time: "18:00" },
     });
 
     await expect(
       ctx.prisma.orderTimeLimit.create({
-        data: { id: "l2", scopeType: "global", scopeId: null, daysBefore: 2, time: "16:00" },
+        data: { id: "l2", scopeType: "product", scopeId: "prd_e2e", daysBefore: 2, time: "16:00" },
       }),
     ).rejects.toThrow();
   });
 
-  it("refuse une portée contradictoire insérée en direct", async () => {
+  /** `order_time_limit_product_only` et `order_time_limit_no_grace` (2026-10-21). */
+  it("refuse une limite globale ou un rattrapage insérés en direct", async () => {
     await expect(
       ctx.prisma.orderTimeLimit.create({
-        data: { id: "l3", scopeType: "global", scopeId: "patisserie", time: "18:00" },
+        data: { id: "l3", scopeType: "global", scopeId: null, daysBefore: 1, time: "18:00" },
+      }),
+    ).rejects.toThrow();
+    await expect(
+      ctx.prisma.orderTimeLimit.create({
+        data: {
+          id: "l4",
+          scopeType: "product",
+          scopeId: "prd_e2e",
+          daysBefore: 1,
+          time: "18:00",
+          graceMinutes: 30,
+        },
       }),
     ).rejects.toThrow();
   });

@@ -1,12 +1,8 @@
-import { ORDER_TIME_LIMIT_SCOPE_LABELS, type OrderTimeLimitView } from "@lfd/pim-contracts";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { PIM_EVENTS, PimJournal } from "../../journal/pim-journal.js";
-import {
-  GlobalOrderTimeLimitStillNeededError,
-  OrderTimeLimitNotFoundError,
-} from "../domain/errors/order-time-limit-errors.js";
+import { OrderTimeLimitNotFoundError } from "../domain/errors/order-time-limit-errors.js";
 import { CatalogRulesEmitter } from "../domain/ports/catalog-rules.emitter.js";
 import { OrderTimeLimitRepository } from "../domain/ports/order-time-limit.repository.js";
 import { limitScopeLabel } from "../domain/services/limit-scope-label.js";
@@ -19,10 +15,9 @@ export class RemoveOrderTimeLimitCommand {
 /**
  * **Retire** la limite d'une portée.
  *
- * Supprimer EST le geste pour dire « ce rang ne se prononce pas » : l'article
- * retombe alors sur le rang du dessus. C'est aussi pourquoi une ligne aux trois
- * valeurs nulles est refusée à l'écriture — elle dirait la même chose en se
- * montrant à l'écran comme une règle.
+ * Supprimer EST le geste pour dire « ce produit n'a pas de limite propre » :
+ * seule la règle générale du commerce le juge alors (depuis le 2026-10-21 ;
+ * avant, l'article retombait sur un rang du dessus, qui n'existe plus).
  *
  * Une exception à « pas de DELETE physique », et elle est nommée : un réglage
  * n'est pas un agrégat métier. Il n'a ni cycle de vie, ni pièce comptable qui en
@@ -30,24 +25,13 @@ export class RemoveOrderTimeLimitCommand {
  * ligne, il est le seul endroit où la règle a encore existé — d'où le fait qu'on
  * y verse ses trois valeurs avant de la retirer.
  *
- * ## 🔴 Le rang global ne se retire pas sous les autres
+ * ## Plus de garde sur le rang global (2026-10-21)
  *
- * L'héritage se fait champ par champ. Une famille qui ne pose que l'heure
- * emprunte son délai au global, et la résolution rend `null` dès qu'un des deux
- * manque : retirer le global rendrait ces règles **muettes**, pas plus
- * permissives — et l'écran continuerait de les afficher comme si elles
- * s'appliquaient.
- *
- * C'est un **refus**, pas une consigne, et c'est délibéré : la garde du commerce
- * (`OrderCutoff`) s'efface derrière l'échelle, ce qui fait du rang global la
- * seule chose qui refuse une commande en retard pour un article dont personne
- * n'a parlé. Un `DELETE` sans garde suffisait à ouvrir toute la plateforme, en
- * silence. Cf. `documentation/limites-de-commande/demontage-order-cutoff.md`.
- *
- * ⚠️ Ce que ce refus ne couvre pas, et qui reste voulu : retirer un rang global
- * **seul de son espèce** passe. Il n'y a alors rien à rendre muet, et « je
- * n'oppose plus de limite » est un état légitime — écrit dans la garde. Ce
- * qu'on ferme, c'est de le faire sans le voir.
+ * Elle refusait de retirer « toute la production » sous des règles qui en
+ * héritaient. Le référentiel n'a plus qu'une limite par produit, règle
+ * entière, et la résolution ignore tout autre rang : retirer une ligne
+ * résiduelle (globale, famille, déclinaison) ne change donc plus rien à ce qui
+ * s'applique — c'est le geste qui les vide.
  */
 @CommandHandler(RemoveOrderTimeLimitCommand)
 export class RemoveOrderTimeLimitHandler implements ICommandHandler<
@@ -62,19 +46,12 @@ export class RemoveOrderTimeLimitHandler implements ICommandHandler<
   ) {}
 
   async execute(command: RemoveOrderTimeLimitCommand): Promise<void> {
-    // Toutes les règles d'un coup : il en faut le contenu de celle qu'on retire
-    // (pour le journal) ET celui des autres (pour le refus). Deux lectures
-    // séparées auraient pu se contredire entre elles.
+    // Toutes les règles, résiduelles comprises : une ligne d'avant le
+    // 2026-10-21 (globale, famille, déclinaison) doit pouvoir se retirer.
     const rules = await this.limits.list();
     const doomed = rules.find((rule) => rule.id === command.id);
     if (doomed === undefined) {
       throw new OrderTimeLimitNotFoundError(command.id);
-    }
-    if (doomed.scope.type === "global") {
-      const dependents = orphanedBy(rules, doomed);
-      if (dependents.length > 0) {
-        throw new GlobalOrderTimeLimitStillNeededError(dependents);
-      }
     }
 
     await this.uow.run(async () => {
@@ -100,21 +77,4 @@ export class RemoveOrderTimeLimitHandler implements ICommandHandler<
       await this.rules.emitRules();
     });
   }
-}
-
-/**
- * Les règles qui deviendraient muettes si `doomed` partait, **nommées**.
- *
- * Le critère est celui de la résolution, pas une approximation : une règle
- * survit seule si elle pose **le délai ET l'heure**. Celle qui n'en pose qu'un
- * les complète par un rang supérieur — et le seul rang supérieur du global,
- * c'est rien.
- */
-function orphanedBy(
-  rules: readonly OrderTimeLimitView[],
-  doomed: OrderTimeLimitView,
-): readonly string[] {
-  return rules
-    .filter((rule) => rule.id !== doomed.id && (rule.daysBefore === null || rule.time === null))
-    .map((rule) => rule.scopeLabel ?? ORDER_TIME_LIMIT_SCOPE_LABELS[rule.scope.type]);
 }

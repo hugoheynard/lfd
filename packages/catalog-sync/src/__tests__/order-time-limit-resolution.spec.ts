@@ -2,7 +2,7 @@ import { categoryPathOf, resolveOrderTimeLimit } from "../order-time-limit-resol
 import type { SyncOrderTimeLimitRule } from "../snapshot.js";
 
 /**
- * La descente de l'échelle, éprouvée **là où elle vit désormais**.
+ * La résolution, éprouvée **là où elle vit** — partagée par les deux rives.
  *
  * Ces cas venaient de `resolveLimitsByVariant`, côté référentiel, qui résolvait
  * avant d'émettre. La v7 envoie les rangs et fait descendre les deux rives par
@@ -59,56 +59,58 @@ describe("categoryPathOf", () => {
   });
 });
 
-describe("resolveOrderTimeLimit sur un arbre", () => {
-  it("compose les rangs champ par champ en remontant l'arbre", () => {
-    // La racine pose le délai, la famille proche pose l'heure : ni l'une ni
-    // l'autre ne se suffit, et ensemble elles font une limite.
-    const rules = [
-      rule({ scope: { type: "category", id: "boulangerie" }, daysBefore: 1 }),
-      rule({ scope: { type: "category", id: "pain" }, time: "16:00" }),
-    ];
+/**
+ * Décision de Hugo du 2026-10-21 (`limites-de-commande/schema-des-reglages.md`
+ * §4) : une limite par PRODUIT, règle entière, sans rattrapage. Les autres
+ * rangs, s'il en reste en base ou dans un fait déjà rangé, sont ignorés.
+ */
+describe("resolveOrderTimeLimit — le produit seulement", () => {
+  const target = { variantId: "var_1", productId: "prd_1", categoryPath: ["pain", "boulangerie"] };
 
-    expect(
-      resolveOrderTimeLimit(rules, {
-        variantId: "var_1",
-        productId: "prd_1",
-        categoryPath: categoryPathOf(TREE, "pain"),
-      }),
-    ).toEqual({ daysBefore: 1, time: "16:00", graceMinutes: 0 });
-  });
+  it("rend la limite du produit", () => {
+    const rules = [rule({ scope: { type: "product", id: "prd_1" }, daysBefore: 2, time: "12:00" })];
 
-  it("laisse deux familles voisines diverger", () => {
-    const rules = [
-      rule({ scope: { type: "category", id: "boulangerie" }, daysBefore: 1, time: "18:00" }),
-      rule({ scope: { type: "category", id: "pain" }, time: "16:00" }),
-    ];
-    const target = (categoryId: string) => ({
-      variantId: "var_1",
-      productId: "prd_1",
-      categoryPath: categoryPathOf(TREE, categoryId),
+    expect(resolveOrderTimeLimit(rules, target)).toEqual({
+      daysBefore: 2,
+      time: "12:00",
+      graceMinutes: 0,
     });
-
-    expect(resolveOrderTimeLimit(rules, target("pain"))?.time).toBe("16:00");
-    expect(resolveOrderTimeLimit(rules, target("viennoiserie"))?.time).toBe("18:00");
   });
 
-  it("ne rend rien quand la lignée ne donne pas le jour ET l'heure", () => {
-    // Une heure sans délai ne se compare à rien : inventer « la veille » ferait
-    // refuser des commandes au nom d'une règle que personne n'a écrite.
-    const rules = [rule({ scope: { type: "category", id: "pain" }, time: "16:00" })];
+  it("ignore un rang global, une famille et une déclinaison résiduels", () => {
+    const rules = [
+      rule({ scope: { type: "global", id: null }, daysBefore: 1, time: "18:00" }),
+      rule({ scope: { type: "category", id: "pain" }, daysBefore: 1, time: "16:00" }),
+      rule({ scope: { type: "variant", id: "var_1" }, daysBefore: 3, time: "10:00" }),
+    ];
 
-    expect(
-      resolveOrderTimeLimit(rules, {
-        variantId: "var_1",
-        productId: "prd_1",
-        categoryPath: categoryPathOf(TREE, "pain"),
+    expect(resolveOrderTimeLimit(rules, target)).toBeNull();
+  });
+
+  it("n'emprunte plus rien à une famille quand le produit ne pose qu'une heure", () => {
+    const rules = [
+      rule({ scope: { type: "category", id: "pain" }, daysBefore: 1 }),
+      rule({ scope: { type: "product", id: "prd_1" }, time: "16:00" }),
+    ];
+
+    expect(resolveOrderTimeLimit(rules, target)).toBeNull();
+  });
+
+  /** Le seul rattrapage est celui de la règle générale (2026-10-21, point 2). */
+  it("traite une grâce résiduelle du produit comme nulle", () => {
+    const rules = [
+      rule({
+        scope: { type: "product", id: "prd_1" },
+        daysBefore: 0,
+        time: "19:00",
+        graceMinutes: 60,
       }),
-    ).toBeNull();
+    ];
+
+    expect(resolveOrderTimeLimit(rules, target)?.graceMinutes).toBe(0);
   });
 
   it("ne rend rien sans aucune règle", () => {
-    expect(
-      resolveOrderTimeLimit([], { variantId: "var_1", productId: "prd_1", categoryPath: ["pain"] }),
-    ).toBeNull();
+    expect(resolveOrderTimeLimit([], target)).toBeNull();
   });
 });

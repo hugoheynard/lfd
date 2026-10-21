@@ -52,6 +52,7 @@ import { PackingModule } from "../packing/packing.module.js";
 import { PackingFeedModule } from "./packing-feed.module.js";
 import { ProductionDeskFeedModule } from "./production-desk-feed.module.js";
 import { PackingDeliveryFeedModule } from "./packing-delivery-feed.module.js";
+import { GeneralOrderCutoffModule } from "./general-order-cutoff.module.js";
 import { ImageCatalogueModule } from "./image-catalogue.module.js";
 import { MediaLibraryCensusModule } from "./media-library-census.module.js";
 import { MediaCarriersModule } from "./media-carriers.module.js";
@@ -161,6 +162,7 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     // Le fil des images : le port que le référentiel déclare, branché sur
     // l'adaptateur de la médiathèque.
     ImageCatalogueModule,
+    GeneralOrderCutoffModule,
     // Le même fonds, décrit aux opérations du commerce (`b2b → media` interdit).
     OperationImageLibraryModule,
     MediaLibraryCensusModule,

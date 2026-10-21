@@ -126,3 +126,21 @@ export interface ResolvedOrderTimeLimit {
 export interface SetOrderTimeLimitResponse {
   readonly id: string;
 }
+
+/**
+ * **La règle générale du commerce**, montrée en lecture en tête de la page des
+ * limites de commande (`GET /pim/order-time-limits/general-cutoff`).
+ *
+ * Depuis le 2026-10-21 (décision de Hugo), « toute la production » ne se règle
+ * plus au référentiel mais dans Réglages › Commandes › Heure limite. `rule`
+ * vaut `null` quand le commerce n'en a aucune ; `enabled` à `false` dit que
+ * l'interrupteur la coupe — elle reste en base, et n'oppose rien.
+ */
+export interface GeneralOrderCutoffView {
+  readonly enabled: boolean;
+  readonly rule: {
+    readonly daysBefore: number;
+    readonly time: string;
+    readonly graceMinutes: number;
+  } | null;
+}

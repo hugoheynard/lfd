@@ -39,6 +39,13 @@ class RecordingSequence extends PublicationSequence {
   }
 }
 
+const RESIDUAL = {
+  scopeLabel: null,
+  daysBefore: 1,
+  time: "18:00",
+  graceMinutes: 60,
+} as const;
+
 class TableLimits extends OrderTimeLimitRepository {
   constructor(private readonly sequence: RecordingSequence) {
     super();
@@ -48,12 +55,16 @@ class TableLimits extends OrderTimeLimitRepository {
     return Promise.resolve([
       {
         id: "lim_1",
-        scope: { type: "category", id: "cat_1" },
-        scopeLabel: "Viennoiserie",
+        scope: { type: "product", id: "prd_1" },
+        scopeLabel: "VIE-001",
         daysBefore: 1,
         time: "16:00",
         graceMinutes: null,
       },
+      // Des lignes d'avant le 2026-10-21, que la décision de Hugo a retirées.
+      { ...RESIDUAL, id: "lim_g", scope: { type: "global", id: null } },
+      { ...RESIDUAL, id: "lim_c", scope: { type: "category", id: "cat_1" } },
+      { ...RESIDUAL, id: "lim_v", scope: { type: "variant", id: "var_1" } },
     ]);
   }
   findByScope(): Promise<OrderTimeLimit | null> {
@@ -90,11 +101,12 @@ describe("B2bCatalogRulesEmitter", () => {
     expect(fact?.key).toBe("pim.catalog_rules_changed:77");
     const parsed = CatalogRulesChangedFact.fromPayload(fact?.payload ?? {});
     expect(parsed).toMatchObject({ seq: 77, emittedAt: NOW.toISOString() });
-    // La forme du FIL : ni identifiant, ni nom de famille — un renommage ne
-    // doit pas faire un fait.
+    // La forme du FIL : ni identifiant, ni nom — un renommage ne doit pas faire
+    // un fait. Et le produit SEULEMENT : depuis le 2026-10-21, un rang global,
+    // une famille ou une déclinaison résiduels ne traversent plus.
     expect(parsed.orderTimeLimits).toEqual([
       {
-        scope: { type: "category", id: "cat_1" },
+        scope: { type: "product", id: "prd_1" },
         daysBefore: 1,
         time: "16:00",
         graceMinutes: null,

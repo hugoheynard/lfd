@@ -6,9 +6,10 @@ import type { WriteTicket } from "../../../../platform/journal/scoped-journal.js
 
 import { OrderTimeLimit } from "../../domain/entities/order-time-limit.js";
 import {
-  EmptyOrderTimeLimitError,
-  GlobalOrderTimeLimitStillNeededError,
+  IncompleteOrderTimeLimitError,
   InvalidOrderTimeLimitScopeError,
+  ProductGraceRetiredError,
+  RetiredOrderTimeLimitScopeError,
   OrderTimeLimitNotFoundError,
 } from "../../domain/errors/order-time-limit-errors.js";
 import { LimitScopeNamer } from "../../domain/ports/limit-scope.namer.js";
@@ -23,7 +24,7 @@ import { RecordingRulesEmitter } from "../../domain/ports/__tests__/recording-ru
 
 function payload(over: Partial<OrderTimeLimitPayload> = {}): OrderTimeLimitPayload {
   return {
-    scope: { type: "global", id: null },
+    scope: { type: "product", id: "p1" },
     daysBefore: 1,
     time: "18:00",
     graceMinutes: null,
@@ -45,10 +46,10 @@ interface Doubles {
  * `jest.mock` de module : c'est le contrat qu'on veut éprouver, et un module
  * moqué laisserait dériver le double du port qu'il prétend jouer.
  */
-/** Les cibles que le référentiel nomme — une famille ici, le reste inconnu. */
+/** Les cibles que le référentiel nomme — un produit ici, le reste inconnu. */
 class TableScopeNamer extends LimitScopeNamer {
   nameOf(scope: LimitScope): Promise<string | null> {
-    return Promise.resolve(scope.id === "cat_1" ? "Tartes" : null);
+    return Promise.resolve(scope.id === "p2" ? "Bûche" : null);
   }
 }
 
@@ -120,10 +121,10 @@ describe("SetOrderTimeLimitHandler", () => {
     const { handler, journal } = doubles(null);
 
     await handler.execute(
-      new SetOrderTimeLimitCommand(payload({ scope: { type: "category", id: "cat_1" } })),
+      new SetOrderTimeLimitCommand(payload({ scope: { type: "product", id: "p2" } })),
     );
 
-    expect(journal.entries[0]?.payload).toMatchObject({ subjectLabel: "Famille « Tartes »" });
+    expect(journal.entries[0]?.payload).toMatchObject({ subjectLabel: "Produit « Bûche »" });
   });
 
   it("journalise la portée et les trois valeurs", async () => {
@@ -133,8 +134,8 @@ describe("SetOrderTimeLimitHandler", () => {
 
     expect(journal.types()).toEqual(["order_time_limit.set"]);
     expect(journal.entries[0]?.payload).toEqual({
-      subjectLabel: "Toute la production",
-      scope: "global:",
+      subjectLabel: "Produit p1",
+      scope: "product:p1",
       daysBefore: 1,
       time: "18:00",
       graceMinutes: null,
@@ -153,7 +154,7 @@ describe("SetOrderTimeLimitHandler", () => {
       handler.execute(
         new SetOrderTimeLimitCommand(payload({ daysBefore: null, time: null, graceMinutes: null })),
       ),
-    ).rejects.toBeInstanceOf(EmptyOrderTimeLimitError);
+    ).rejects.toBeInstanceOf(IncompleteOrderTimeLimitError);
     expect(journal.entries).toHaveLength(0);
   });
 
@@ -202,7 +203,7 @@ describe("SetOrderTimeLimitHandler", () => {
       handler.execute(
         new SetOrderTimeLimitCommand(payload({ daysBefore: null, time: null, graceMinutes: null })),
       ),
-    ).rejects.toBeInstanceOf(EmptyOrderTimeLimitError);
+    ).rejects.toBeInstanceOf(IncompleteOrderTimeLimitError);
     expect(saved).toHaveLength(0);
   });
 
@@ -214,10 +215,73 @@ describe("SetOrderTimeLimitHandler", () => {
       handler.execute(
         new SetOrderTimeLimitCommand(payload({ daysBefore: null, time: null, graceMinutes: null })),
       ),
-    ).rejects.toBeInstanceOf(EmptyOrderTimeLimitError);
+    ).rejects.toBeInstanceOf(IncompleteOrderTimeLimitError);
     expect(saved).toHaveLength(0);
     // L'agrégat n'a pas bougé non plus : le refus vient de LUI, pas du handler.
     expect(existing.time).toBe("18:00");
+  });
+
+  /**
+   * Décision de Hugo du 2026-10-21 : « toute la production » se règle au
+   * commerce, une famille n'a plus de limite, une déclinaison suit son produit.
+   */
+  it.each([
+    ["global", null],
+    ["category", "cat_1"],
+    ["variant", "v1"],
+  ] as const)("refuse une limite de portée %s, sans trace ni émission", async (type, id) => {
+    const { handler, saved, journal, rules } = doubles(null);
+
+    const refusal = handler.execute(new SetOrderTimeLimitCommand(payload({ scope: { type, id } })));
+
+    await expect(refusal).rejects.toBeInstanceOf(RetiredOrderTimeLimitScopeError);
+    await expect(refusal).rejects.toThrow(/Réglages › Commandes › Heure limite/u);
+    expect(saved).toHaveLength(0);
+    expect(journal.entries).toHaveLength(0);
+    expect(rules.emissions).toEqual([]);
+  });
+
+  /** Une ligne globale résiduelle ne se modifie pas non plus : elle se retire. */
+  it("refuse de modifier une règle globale résiduelle", async () => {
+    const residual = OrderTimeLimit.reconstitute(
+      "vieux",
+      payload({ scope: { type: "global", id: null } }),
+    );
+    const { handler, saved } = doubles(residual);
+
+    await expect(
+      handler.execute(
+        new SetOrderTimeLimitCommand(payload({ scope: { type: "global", id: null } })),
+      ),
+    ).rejects.toBeInstanceOf(RetiredOrderTimeLimitScopeError);
+    expect(saved).toHaveLength(0);
+  });
+
+  it("refuse une limite de produit sans heure", async () => {
+    const { handler } = doubles(null);
+
+    await expect(
+      handler.execute(new SetOrderTimeLimitCommand(payload({ time: null }))),
+    ).rejects.toBeInstanceOf(IncompleteOrderTimeLimitError);
+  });
+
+  /** Point 2 (2026-10-21) : le seul rattrapage est celui de la règle générale. */
+  it("refuse un rattrapage sur une limite de produit", async () => {
+    const { handler, saved } = doubles(null);
+
+    await expect(
+      handler.execute(new SetOrderTimeLimitCommand(payload({ graceMinutes: 60 }))),
+    ).rejects.toBeInstanceOf(ProductGraceRetiredError);
+    expect(saved).toHaveLength(0);
+  });
+
+  it("remet à zéro le rattrapage résiduel d'un produit qu'on repose", async () => {
+    const residual = OrderTimeLimit.reconstitute("vieux", payload({ graceMinutes: 60 }));
+    const { handler, saved } = doubles(residual);
+
+    await handler.execute(new SetOrderTimeLimitCommand(payload({ graceMinutes: 0 })));
+
+    expect(saved[0]?.graceMinutes).toBeNull();
   });
 });
 
@@ -309,71 +373,15 @@ describe("RemoveOrderTimeLimitHandler", () => {
   });
 
   /**
-   * 🔴 Le verrou. L'héritage est champ par champ : une famille qui ne pose que
-   * l'heure emprunte son délai au global, et la résolution rend `null` dès qu'un
-   * des deux manque. Retirer le global la rendrait MUETTE — pas plus permissive
-   * — pendant que l'écran continuerait de l'afficher.
+   * La garde qui refusait de retirer le global sous des règles qui en
+   * héritaient est tombée le 2026-10-21 : plus aucun rang n'hérite, et la
+   * résolution ignore le global. Le retirer est le geste qui le vide.
    */
-  it("refuse de retirer le rang global quand une règle inférieure en dépend", async () => {
-    const { handler, removed, journal } = removeDoubles([
-      view(),
-      view({
-        id: "id_cat",
-        scope: { type: "category", id: "cat_1" },
-        scopeLabel: "Viennoiserie",
-        daysBefore: null,
-        time: "16:00",
-      }),
-    ]);
-
-    await expect(handler.execute(new RemoveOrderTimeLimitCommand("id_global"))).rejects.toThrow(
-      GlobalOrderTimeLimitStillNeededError,
-    );
-    // Ni écriture, ni trace : un fait journalisé pour une décision refusée
-    // laisserait dans le journal quelque chose qui n'a jamais eu lieu.
-    expect(removed).toEqual([]);
-    expect(journal.types()).toEqual([]);
-  });
-
-  /** Le refus NOMME la règle en cause : il est lu par du personnel sans le code sous les yeux. */
-  it("nomme les règles qui deviendraient muettes", async () => {
-    const { handler } = removeDoubles([
-      view(),
-      view({
-        id: "id_cat",
-        scope: { type: "category", id: "cat_1" },
-        scopeLabel: "Viennoiserie",
-        time: null,
-      }),
-    ]);
-
-    await expect(handler.execute(new RemoveOrderTimeLimitCommand("id_global"))).rejects.toThrow(
-      /Viennoiserie/u,
-    );
-  });
-
-  it("laisse retirer le global quand chaque autre règle se suffit à elle-même", async () => {
-    // Délai ET heure : celle-là ne doit rien au rang du dessus.
+  it("retire un rang global résiduel, même sous des familles incomplètes", async () => {
     const { handler, removed } = removeDoubles([
       view(),
-      view({
-        id: "id_cat",
-        scope: { type: "category", id: "cat_1" },
-        scopeLabel: "Pain",
-        daysBefore: 2,
-        time: "14:00",
-      }),
+      view({ id: "id_cat", scope: { type: "category", id: "cat_1" }, daysBefore: null }),
     ]);
-
-    await handler.execute(new RemoveOrderTimeLimitCommand("id_global"));
-
-    expect(removed).toEqual(["id_global"]);
-  });
-
-  it("laisse retirer un rang global seul de son espèce", async () => {
-    // Il n'y a rien à rendre muet, et « je n'oppose plus de limite » reste un
-    // état légitime — c'est le défaut écrit dans la garde.
-    const { handler, removed } = removeDoubles([view()]);
 
     await handler.execute(new RemoveOrderTimeLimitCommand("id_global"));
 

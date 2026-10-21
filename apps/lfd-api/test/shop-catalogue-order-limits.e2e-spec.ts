@@ -54,7 +54,8 @@ function pushWithLimits(): Promise<void> {
           graceMinutes: 30,
         },
         {
-          scope: { type: "variant", id: `var_${TART}` },
+          // Une déclinaison n'a plus de limite propre (2026-10-21) : sur le produit.
+          scope: { type: "product", id: `prd_${TART}` },
           daysBefore: 1,
           time: "18:00",
           graceMinutes: null,

@@ -210,7 +210,7 @@ describe("les mentions d’étiquette traversent le fil", () => {
 });
 
 /**
- * **L'échelle des limites traverse ; sa résolution arrive** (v7 du fil).
+ * **Les règles des limites traversent ; leur résolution arrive** (v7 du fil).
  *
  * Ce que seul ce niveau prouve : les colonnes `order_limit_*` du miroir sont
  * remplies par une DESCENTE faite à l'ingestion, à partir de quelques règles —
@@ -248,38 +248,12 @@ describe("les limites de commande traversent le fil, en RÈGLES", () => {
   }
 
   /**
-   * 🔴 Le cœur de la v7 : UNE règle globale, aucune limite portée par les
-   * déclinaisons, et chaque article ingéré porte la limite résolue.
+   * 🔴 Depuis le 2026-10-21 (décision de Hugo, `limites-de-commande/
+   * schema-des-reglages.md` §4) : seule la règle d'un PRODUIT s'applique, sans
+   * rattrapage. Un global, une famille ou une déclinaison encore portés par un
+   * snapshot sont ignorés.
    */
-  it("résout une règle globale sur chaque article ingéré", async () => {
-    await push(
-      withLimits(
-        snapshotOf([
-          { sku: "VIE-001", priceMillicents: 200_000 },
-          { sku: "VIE-002", priceMillicents: 220_000 },
-        ]),
-        [rule({ type: "global", id: null }, { daysBefore: 1, time: "18:00", graceMinutes: null })],
-      ),
-    );
-
-    // `graceMinutes` vaut `0` : le `null` du fil dit « ce rang ne se prononce
-    // pas », et pas de rattrapage déclaré signifie limite ferme.
-    const attendu = {
-      orderLimitDaysBefore: 1,
-      orderLimitTime: "18:00",
-      orderLimitGraceMinutes: 0,
-    };
-    expect(await limitOf("VIE-001-1")).toEqual(attendu);
-    expect(await limitOf("VIE-002-1")).toEqual(attendu);
-  });
-
-  /**
-   * L'héritage est **champ par champ**, et il l'est jusqu'ici : la famille ne
-   * redit pas le nombre de jours du global, la déclinaison ne redit pas
-   * l'heure de sa famille. Ce cas éprouve au passage le rang « déclinaison »,
-   * seul motif pour lequel l'identifiant traverse depuis la v7.
-   */
-  it("compose les rangs, du global à la déclinaison", async () => {
+  it("résout la règle du produit, sans grâce, sur ses articles", async () => {
     await push(
       withLimits(
         snapshotOf([
@@ -287,14 +261,9 @@ describe("les limites de commande traversent le fil, en RÈGLES", () => {
           { sku: "VIE-002", priceMillicents: 220_000 },
         ]),
         [
-          rule({ type: "global", id: null }, { daysBefore: 1, time: "18:00", graceMinutes: 30 }),
           rule(
-            { type: "category", id: CATEGORY.id },
-            { daysBefore: null, time: "16:00", graceMinutes: null },
-          ),
-          rule(
-            { type: "variant", id: "var_VIE-002" },
-            { daysBefore: 3, time: null, graceMinutes: null },
+            { type: "product", id: "prd_VIE-001" },
+            { daysBefore: 1, time: "18:00", graceMinutes: 30 },
           ),
         ],
       ),
@@ -302,13 +271,35 @@ describe("les limites de commande traversent le fil, en RÈGLES", () => {
 
     expect(await limitOf("VIE-001-1")).toEqual({
       orderLimitDaysBefore: 1,
-      orderLimitTime: "16:00",
-      orderLimitGraceMinutes: 30,
+      orderLimitTime: "18:00",
+      orderLimitGraceMinutes: 0,
     });
     expect(await limitOf("VIE-002-1")).toEqual({
-      orderLimitDaysBefore: 3,
-      orderLimitTime: "16:00",
-      orderLimitGraceMinutes: 30,
+      orderLimitDaysBefore: null,
+      orderLimitTime: null,
+      orderLimitGraceMinutes: null,
+    });
+  });
+
+  it("ignore un global, une famille et une déclinaison résiduels", async () => {
+    await push(
+      withLimits(snapshotOf([{ sku: "VIE-002", priceMillicents: 220_000 }]), [
+        rule({ type: "global", id: null }, { daysBefore: 1, time: "18:00", graceMinutes: 30 }),
+        rule(
+          { type: "category", id: CATEGORY.id },
+          { daysBefore: 1, time: "16:00", graceMinutes: null },
+        ),
+        rule(
+          { type: "variant", id: "var_VIE-002" },
+          { daysBefore: 3, time: "09:00", graceMinutes: null },
+        ),
+      ]),
+    );
+
+    expect(await limitOf("VIE-002-1")).toEqual({
+      orderLimitDaysBefore: null,
+      orderLimitTime: null,
+      orderLimitGraceMinutes: null,
     });
   });
 

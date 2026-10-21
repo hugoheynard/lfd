@@ -279,6 +279,7 @@ export type {
   OrderTimeLimitScopeType,
   OrderTimeLimitView,
   SetOrderTimeLimitResponse,
+  GeneralOrderCutoffView,
   ResolvedOrderTimeLimit,
 } from "./order-time-limit.js";
 

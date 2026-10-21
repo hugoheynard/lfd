@@ -3,6 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import type {
+  GeneralOrderCutoffView,
   OrderTimeLimitPayload,
   OrderTimeLimitView,
   SetOrderTimeLimitResponse,
@@ -26,6 +27,14 @@ export class OrderTimeLimitsService {
 
   async list(): Promise<readonly OrderTimeLimitView[]> {
     return firstValueFrom(this.http.get<readonly OrderTimeLimitView[]>(this.url()));
+  }
+
+  /**
+   * La règle générale du commerce, en lecture (2026-10-21) : « toute la
+   * production » se règle dans Réglages › Commandes › Heure limite.
+   */
+  async general(): Promise<GeneralOrderCutoffView> {
+    return firstValueFrom(this.http.get<GeneralOrderCutoffView>(`${this.url()}/general-cutoff`));
   }
 
   /** Crée ou remplace la règle de cette portée. Rend son identifiant. */

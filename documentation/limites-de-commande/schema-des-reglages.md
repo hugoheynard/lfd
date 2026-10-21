@@ -96,14 +96,33 @@ Chaque point est un fait du code, avec l'exemple qui le rend concret.
 
 ## 4. Les questions à trancher pour simplifier
 
-- **Une seule limite « pour tout le catalogue »** : ① ou le rang global de ④ ?
-  L'autre disparaît.
-- **Un seul rattrapage**, ou aucun (et la dérogation devient le seul geste) ?
-- **L'héritage de ④** : par règle entière (une ligne = « N jours, HH:MM ») plutôt
-  que champ par champ ?
+- ✅ **Une seule limite « pour tout le catalogue »** — tranché par Hugo le
+  2026-10-21 : c'est ① (la règle générale du commerce, `public.order_cutoffs`,
+  Réglages › Commandes › Heure limite, droit `lfc_order_settings`). Le rang
+  **global** de ④ disparaît : le référentiel refuse de le poser
+  (`pim.order_time_limit.scope_retired`), la résolution ignore une ligne
+  résiduelle, et la page `/pim/limites-de-commande` montre ① **en lecture**
+  (route `GET /pim/order-time-limits/general-cutoff`, servie par le port
+  `GeneralOrderCutoffReader` que le référentiel déclare et que le commerce
+  implémente).
+- ✅ **Un seul rattrapage** — tranché par Hugo le 2026-10-21 : celui de ①. Une
+  limite de produit n'en a plus (refusé à la pose,
+  `pim.order_time_limit.grace_retired` ; une grâce résiduelle vaut `0` à la
+  résolution comme dans la garde de passation). La dérogation ⑦ reste le geste
+  d'exception, pendant le rattrapage de ①.
+- ✅ **L'héritage de ④** — tranché par Hugo le 2026-10-21 : il n'y a plus
+  d'échelle. ④ est **une limite par produit**, règle entière (délai ET heure) ;
+  plus de famille, plus de déclinaison (elle suit son produit). Détail :
+  [`limites-produit.md`](limites-produit.md).
 - **Les règles par point × jour** : les éditer à l'écran, ou les retirer ?
+  (Tranché par Hugo le 2026-10-21 : les retirer — **pas encore bâti**, lot à
+  part.)
 - **L'arrêt du plan** : l'aligner sur la limite (il ne la contredit jamais), ou
   l'annoncer dans la boutique ?
 - **Le devis** : vérifie-t-il la limite ?
 - **Un écran de lecture unique** : pour un produit, un point et un jour, « la
   limite qui s'applique, et pourquoi ».
+
+⚠️ Les §1 à §3 décrivent l'existant **d'avant** ces décisions : ④ y a encore
+ses rangs, sa grâce et son héritage. Ils restent tels quels comme point de
+départ de la simplification.

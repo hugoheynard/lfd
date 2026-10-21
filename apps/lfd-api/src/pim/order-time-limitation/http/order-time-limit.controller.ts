@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Put } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import {
+  type GeneralOrderCutoffView,
   orderTimeLimitPayloadSchema,
   type OrderTimeLimitPayload,
   type OrderTimeLimitView,
@@ -8,6 +9,7 @@ import {
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
+import { GetGeneralOrderCutoffQuery } from "../application/get-general-order-cutoff.js";
 import { ListOrderTimeLimitsQuery } from "../application/list-order-time-limits.js";
 import { RemoveOrderTimeLimitCommand } from "../application/remove-order-time-limit.js";
 import { SetOrderTimeLimitCommand } from "../application/set-order-time-limit.js";
@@ -39,6 +41,18 @@ export class OrderTimeLimitController {
   list(): Promise<readonly OrderTimeLimitView[]> {
     return this.queries.execute<ListOrderTimeLimitsQuery, readonly OrderTimeLimitView[]>(
       new ListOrderTimeLimitsQuery(),
+    );
+  }
+
+  /**
+   * La règle générale du commerce, en lecture : « toute la production » se
+   * règle dans Réglages › Commandes › Heure limite depuis le 2026-10-21, et
+   * cette page la montre sans demander le droit de la régler.
+   */
+  @Get("general-cutoff")
+  generalCutoff(): Promise<GeneralOrderCutoffView> {
+    return this.queries.execute<GetGeneralOrderCutoffQuery, GeneralOrderCutoffView>(
+      new GetGeneralOrderCutoffQuery(),
     );
   }
 

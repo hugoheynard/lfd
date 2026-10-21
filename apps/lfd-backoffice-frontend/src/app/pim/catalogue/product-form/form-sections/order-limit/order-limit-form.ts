@@ -1,4 +1,3 @@
-import { LowerCasePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -8,162 +7,58 @@ import {
   signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import {
-  categoryPathOf,
-  explainOrderTimeLimit,
-  type OrderTimeLimitScopeType,
-  type OrderTimeLimitView,
-} from '@lfd/pim-contracts';
-import {
-  FoldButtonComponent,
-  FoldCalloutComponent,
-  FoldCheckboxComponent,
-  FoldPanelHostService,
-} from 'fold-ng';
+import type { OrderTimeLimitView } from '@lfd/pim-contracts';
+import { FoldButtonComponent, FoldCalloutComponent, FoldPanelHostService } from 'fold-ng';
 
 import { NotifyService } from '../../../../../notify.service';
-import { CategoryStore } from '../../../category-store';
-import {
-  daysPhrase,
-  gracePhrase,
-  provenanceLabel,
-  timePhrase,
-} from '../../../../order-time-limits/limit-format';
+import { daysPhrase } from '../../../../order-time-limits/limit-format';
 import { LimitPanel } from '../../../../order-time-limits/limit-panel/limit-panel';
 import { OrderTimeLimitsService } from '../../../../order-time-limits/order-time-limits.service';
 import { ProductFormStore } from '../../product-form-store';
-import { limitApplies, ownRule, type OrderLimitRow } from './order-limit-row';
+import { limitApplies, productRule } from './order-limit-row';
 
 /**
- * **Limite de commande** — jusqu'à quand on prend commande de cet article.
+ * **Limite de commande** — jusqu'à quand on prend commande de ce produit.
  *
- * ## Elle montre ce qui S'APPLIQUE, pas seulement ce qui est posé
- *
- * Une carte qui n'afficherait que la règle propre à cette fiche écrirait
- * « Hérité » sans dire de quoi — c'est-à-dire rien. L'écran résout donc
- * l'échelle entière et nomme, **pour chaque valeur**, le rang qui la pose : une
- * heure peut venir de la famille, un délai de la fiche et un rattrapage du
- * réglage général, sur la même ligne.
- *
- * La résolution est celle du référentiel, importée du contrat. La recopier ici
- * aurait été le pire des deux mondes : l'écran et la commande ne se lisent pas
- * au même endroit, donc leur désaccord n'aurait sauté aux yeux de personne.
- *
- * ## L'alignement suit l'idiome de la fiche
- *
- * Sur la déclinaison **par défaut**, pas de case : c'est elle qui porte la
- * limite de la fiche, comme pour les autres cartes. Sur une autre, la case
- * « Aligner sur la fiche » — cochée, la déclinaison ne pose rien et suit ;
- * décochée, elle a la sienne.
+ * Depuis le 2026-10-21 (décision de Hugo, `limites-de-commande/
+ * schema-des-reglages.md` §4) : une limite par **produit**, règle entière (le
+ * délai ET l'heure), **sans rattrapage**, valable pour toutes ses
+ * déclinaisons. La règle générale, elle, se règle dans Réglages › Commandes ›
+ * Heure limite ; la plus stricte des deux s'applique.
  *
  * ## Elle ne participe PAS à l'enregistrement de la fiche
  *
  * La limite vit dans un autre contexte, avec sa propre route. Le panneau écrit
- * seul en se fermant, et la case écrit immédiatement — rien à accrocher au garde
- * « modifications non enregistrées », et rien à perdre en quittant l'écran.
+ * seul en se fermant — rien à accrocher au garde « modifications non
+ * enregistrées ».
  */
 @Component({
   selector: 'app-order-limit-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    FoldButtonComponent,
-    FoldCalloutComponent,
-    FoldCheckboxComponent,
-    LowerCasePipe,
-    RouterLink,
-  ],
+  imports: [FoldButtonComponent, FoldCalloutComponent, RouterLink],
   templateUrl: './order-limit-form.html',
   styleUrls: ['../form-section.scss', './order-limit-form.scss'],
 })
 export class OrderLimitForm {
   private readonly api = inject(OrderTimeLimitsService);
-  private readonly categories = inject(CategoryStore);
   private readonly panelHost = inject(FoldPanelHostService);
   private readonly notify = inject(NotifyService);
   protected readonly store = inject(ProductFormStore);
 
   private readonly rules = signal<readonly OrderTimeLimitView[]>([]);
   protected readonly failed = signal(false);
-  protected readonly pendingRemoval = signal<string | null>(null);
+  protected readonly pendingRemoval = signal(false);
 
-  /** La lignée de familles de cette fiche, la plus proche d'abord. */
-  private readonly categoryPath = computed(() =>
-    categoryPathOf(this.categories.items(), this.store.categoryId()),
-  );
+  /** La limite posée sur ce produit, ou `null`. */
+  protected readonly rule = computed(() => productRule(this.rules(), this.store.productId()));
 
-  /**
-   * La ligne de **la fiche** : ce qu'elle pose, et ce qui s'applique à elle
-   * quand aucune déclinaison ne s'en écarte.
-   */
-  protected readonly productRow = computed<OrderLimitRow | null>(() => {
-    const productId = this.store.productId();
-    if (productId === '') {
-      return null;
-    }
-    return {
-      scopeType: 'product',
-      scopeId: productId,
-      label: 'Cette fiche',
-      rule: ownRule(this.rules(), 'product', productId),
-      effective: explainOrderTimeLimit(this.rules(), {
-        variantId: null,
-        productId,
-        categoryPath: this.categoryPath(),
-      }),
-    };
+  /** Ce qui s'applique, en une phrase — ou `null` : seule la règle générale juge. */
+  protected readonly phrase = computed(() => {
+    const rule = this.rule();
+    return limitApplies(rule)
+      ? `${daysPhrase(rule.daysBefore ?? 0)}, avant ${rule.time ?? ''}`
+      : null;
   });
-
-  /** La ligne de la déclinaison ouverte, ou `null` s'il n'y en a pas. */
-  protected readonly variantRow = computed<OrderLimitRow | null>(() => {
-    const productId = this.store.productId();
-    const variantId = this.store.selectedVariantId();
-    if (productId === '' || variantId === '') {
-      return null;
-    }
-    return {
-      scopeType: 'variant',
-      scopeId: variantId,
-      label: 'Cette déclinaison',
-      rule: ownRule(this.rules(), 'variant', variantId),
-      effective: explainOrderTimeLimit(this.rules(), {
-        variantId,
-        productId,
-        categoryPath: this.categoryPath(),
-      }),
-    };
-  });
-
-  /**
-   * La déclinaison **suit la fiche** — c'est-à-dire qu'elle ne pose rien.
-   *
-   * L'alignement n'est pas un drapeau stocké : c'est l'ABSENCE d'une règle sur
-   * la portée `variant`. Un drapeau en plus aurait pu contredire la règle qu'il
-   * décrit, et il aurait fallu décider lequel des deux fait foi.
-   */
-  protected readonly variantAligned = computed(() => this.variantRow()?.rule == null);
-
-  /**
-   * La case ne s'affiche **pas sur la déclinaison par défaut**, comme sur les
-   * autres cartes : c'est elle qui porte ce que la fiche déclare, elle ne peut
-   * pas s'aligner sur elle-même.
-   */
-  protected readonly canAlign = computed(
-    () => this.variantRow() !== null && !this.store.editingDefault(),
-  );
-
-  /** La ligne qu'on montre : celle de la déclinaison si elle s'écarte, sinon la fiche. */
-  protected readonly shown = computed<OrderLimitRow | null>(() =>
-    this.canAlign() && !this.variantAligned() ? this.variantRow() : this.productRow(),
-  );
-
-  /**
-   * La ligne montrée est-elle **modifiable ici** ?
-   *
-   * Sur une déclinaison alignée, non : ce qu'on lit est porté par la fiche, et
-   * c'est en ouvrant la déclinaison par défaut qu'on le change — exactement ce
-   * que disent les autres cartes portées par le produit.
-   */
-  protected readonly editable = computed(() => !this.canAlign() || !this.variantAligned());
 
   constructor() {
     // Rechargé quand la fiche change d'identité : rester sur les règles de la
@@ -180,63 +75,15 @@ export class OrderLimitForm {
       this.rules.set(await this.api.list());
       this.failed.set(false);
     } catch {
-      // On ne montre pas une carte vide : « aucune limite » et « on n'a pas pu
-      // lire » ne se ressemblent que sur un écran mal fait.
+      // « Aucune limite » et « on n'a pas pu lire » ne se ressemblent que sur
+      // un écran mal fait.
       this.failed.set(true);
     }
   }
 
-  protected applies(row: OrderLimitRow): boolean {
-    return limitApplies(row.effective);
-  }
-
-  protected days(row: OrderLimitRow): string {
-    return daysPhrase(row.effective.daysBefore?.value ?? null, row.scopeType);
-  }
-
-  protected time(row: OrderLimitRow): string {
-    return timePhrase(row.effective.time?.value ?? null, row.scopeType);
-  }
-
-  /** `null` = personne ne le pose ⇒ limite ferme, et c'est une réponse. */
-  protected grace(row: OrderLimitRow): string {
-    return gracePhrase(row.effective.graceMinutes?.value ?? 0, row.scopeType);
-  }
-
-  /** D'où vient cette valeur, ou `null` quand c'est cette portée qui la pose. */
-  protected fromDays(row: OrderLimitRow): string | null {
-    return this.origin(row, row.effective.daysBefore?.from);
-  }
-
-  protected fromTime(row: OrderLimitRow): string | null {
-    return this.origin(row, row.effective.time?.from);
-  }
-
-  protected fromGrace(row: OrderLimitRow): string | null {
-    return this.origin(row, row.effective.graceMinutes?.from);
-  }
-
-  protected async onAlign(aligned: boolean): Promise<void> {
-    const row = this.variantRow();
-    if (row === null) {
-      return;
-    }
-    if (!aligned) {
-      this.edit(row);
-      return;
-    }
-    if (row.rule !== null) {
-      await this.remove(row.rule);
-    }
-  }
-
-  protected edit(row: OrderLimitRow): void {
+  protected edit(): void {
     const ref = this.panelHost.open(LimitPanel, {
-      data: {
-        rule: row.rule,
-        categories: [],
-        preset: { scope: { type: row.scopeType, id: row.scopeId }, label: row.label },
-      },
+      data: { productId: this.store.productId(), label: this.store.pageTitle(), rule: this.rule() },
     });
     void ref.closed.then((saved) => {
       if (saved === true) {
@@ -245,30 +92,26 @@ export class OrderLimitForm {
     });
   }
 
-  protected askRemove(rule: OrderTimeLimitView): void {
-    this.pendingRemoval.set(rule.id);
+  protected askRemove(): void {
+    this.pendingRemoval.set(true);
   }
 
   protected cancelRemove(): void {
-    this.pendingRemoval.set(null);
+    this.pendingRemoval.set(false);
   }
 
-  protected async remove(rule: OrderTimeLimitView): Promise<void> {
-    this.pendingRemoval.set(null);
+  protected async remove(): Promise<void> {
+    const rule = this.rule();
+    this.pendingRemoval.set(false);
+    if (rule === null) {
+      return;
+    }
     try {
       await this.api.remove(rule.id);
-      this.notify.success('Limite retirée — cet article suit de nouveau ce dont il hérite.');
+      this.notify.success('Limite retirée — seule la règle générale juge ce produit.');
       await this.load();
     } catch (error) {
       this.notify.error(error);
     }
-  }
-
-  /** Rien à dire quand la valeur vient de la portée qu'on regarde. */
-  private origin(row: OrderLimitRow, from: OrderTimeLimitScopeType | undefined): string | null {
-    if (from === undefined || from === row.scopeType) {
-      return null;
-    }
-    return provenanceLabel(from);
   }
 }

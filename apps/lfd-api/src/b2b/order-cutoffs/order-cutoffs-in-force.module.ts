@@ -4,6 +4,7 @@ import { SwitchedOrderCutoffs } from "./application/switched-order-cutoffs.js";
 import { OrderCutoffSettingsReader } from "./domain/order-cutoff-settings.reader.js";
 import { OrderCutoffRepository } from "./domain/order-cutoff.repository.js";
 import { OrderCutoffsInForce } from "./domain/order-cutoffs-in-force.js";
+import { CommerceGeneralOrderCutoffReader } from "./infrastructure/pim-general-order-cutoff.reader.js";
 import { PrismaOrderCutoffSettingsReader } from "./infrastructure/prisma-order-cutoff-settings.reader.js";
 import { PrismaOrderCutoffRepository } from "./infrastructure/prisma-order-cutoff.repository.js";
 
@@ -23,7 +24,15 @@ import { PrismaOrderCutoffRepository } from "./infrastructure/prisma-order-cutof
     { provide: OrderCutoffRepository, useClass: PrismaOrderCutoffRepository },
     { provide: OrderCutoffSettingsReader, useClass: PrismaOrderCutoffSettingsReader },
     { provide: OrderCutoffsInForce, useClass: SwitchedOrderCutoffs },
+    // Ce que le référentiel lit de la règle générale (2026-10-21), relié par
+    // `appBootstrap/general-order-cutoff.module.ts`.
+    CommerceGeneralOrderCutoffReader,
   ],
-  exports: [OrderCutoffRepository, OrderCutoffsInForce, OrderCutoffSettingsReader],
+  exports: [
+    OrderCutoffRepository,
+    OrderCutoffsInForce,
+    OrderCutoffSettingsReader,
+    CommerceGeneralOrderCutoffReader,
+  ],
 })
 export class OrderCutoffsInForceModule {}

@@ -6,8 +6,9 @@ import { OrderLimitsRefresher } from "../order-limits-refresher.service.js";
  * ce qui change.
  */
 
+/** Depuis le 2026-10-21, seule une limite de PRODUIT compte. */
 const GLOBAL = {
-  scope: { type: "global" as const, id: null },
+  scope: { type: "product" as const, id: "prd_1" },
   daysBefore: 2,
   time: "12:00",
   graceMinutes: null,

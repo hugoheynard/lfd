@@ -47,12 +47,13 @@ const SEVERITY: Readonly<Record<OrderCutoffDecision["status"], number>> = {
  * vigueur n'en rend aucune : la règle du commerce n'oppose rien, et seule la
  * limite de l'article compte.
  *
- * **Chaque limite garde sa propre grâce**, et on compare des DÉCISIONS, pas des
- * heures : `closed` l'emporte sur `grace`, qui l'emporte sur `open`. Entre deux
- * grâces, c'est celle qui se ferme la première qui est rendue. La décision la
- * plus fermée inclut donc sa tolérance : une règle à 18 h sans grâce ferme
- * avant un article à 17 h 30 avec une heure de grâce, et c'est le refus sec qui
- * est opposé — prêter à l'une la grâce de l'autre rouvrirait ce qu'elle ferme.
+ * **Seule la règle du commerce a une grâce** (Hugo, 2026-10-21) : une limite
+ * d'article ferme sèchement à son heure, quoi que porte la ligne. On compare
+ * des DÉCISIONS, pas des heures : `closed` l'emporte sur `grace`, qui
+ * l'emporte sur `open`. Un article plus tôt que la règle, passé son heure,
+ * refuse donc sec même pendant la grâce de la règle — prêter à l'un la grâce
+ * de l'autre rouvrirait ce qu'il ferme. (Jusqu'à cette date, chaque limite
+ * gardait sa propre grâce.)
  *
  * ## Le panier ferme quand sa ligne la plus urgente ferme
  *
@@ -138,7 +139,12 @@ function strictestOf(input: {
   for (const line of input.lines) {
     strictest = stricterOf(
       strictest,
-      decideOrderLimit(line.limit, input.fulfillmentDate, input.now),
+      // Une limite d'article n'a JAMAIS de grâce (Hugo, 2026-10-21, point 2 de
+      // `limites-de-commande/schema-des-reglages.md`) : passée l'heure, refus
+      // sec. Forcée ici aussi, parce qu'une grâce déjà rangée sur un article
+      // (`CatalogItem.orderLimitGraceMinutes`) ne se rafraîchit qu'au prochain
+      // fait de règles.
+      decideOrderLimit(withoutGrace(line.limit), input.fulfillmentDate, input.now),
     );
   }
   return strictest;
@@ -156,4 +162,9 @@ function stricterOf(a: OrderCutoffDecision, b: OrderCutoffDecision): OrderCutoff
     return b.graceEnd.getTime() < a.graceEnd.getTime() ? b : a;
   }
   return a;
+}
+
+/** La limite d'un article, rattrapage retiré : seule la règle du commerce en a un. */
+function withoutGrace(limit: OrderLimitSpec | null): OrderLimitSpec | null {
+  return limit === null ? null : { ...limit, graceMinutes: 0 };
 }

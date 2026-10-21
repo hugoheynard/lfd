@@ -1,16 +1,9 @@
 <fold-page-layout icon="clock" title="Limites de commande">
   <p description>
-    <strong>Jusqu'à quand on prend commande</strong> pour une journée d'acheminement donnée. Une
-    règle par portée&nbsp;: toute la production, une famille, un produit, une déclinaison — la plus
-    précise l'emporte.
+    <strong>Jusqu'à quand on prend commande</strong> pour une journée de retrait ou de livraison.
+    Une règle générale pour toute la production, et, pour un produit qui demande plus de temps, sa
+    propre limite — la plus stricte des deux s'applique.
   </p>
-
-  <fold-callout appearance="inset" variant="info">
-    L'héritage se fait <strong>champ par champ</strong>&nbsp;: «&nbsp;le pain ferme à
-    16&nbsp;h&nbsp;» ne recopie pas le délai, «&nbsp;l'entremets demande un jour de plus&nbsp;» ne
-    recopie pas l'heure. Le jour où la production change son heure, tout ce qui n'en a pas une
-    propre suit.
-  </fold-callout>
 
   @switch (state()) {
     @case ('loading') {
@@ -22,61 +15,43 @@
       </fold-empty-state>
     }
     @default {
-      <fold-card>
-        <div class="head">
-          <button foldButton size="sm" icon="plus" (click)="add()">Poser une limite</button>
-        </div>
+      <!-- La règle générale du commerce, EN LECTURE : elle se règle ailleurs,
+           sous un autre droit (décision de Hugo, 2026-10-21). -->
+      @if (generalPhrase(); as phrase) {
+        <fold-callout [variant]="generalDisabled() ? 'warning' : 'info'">
+          <strong>Toute la production</strong>&nbsp;: {{ phrase }}
+          @if (generalDisabled()) {
+            — <strong>désactivée</strong>, elle ne refuse aucune commande
+          }
+          — se règle dans
+          <a routerLink="/reglages/commandes/heure-limite">Réglages › Commandes › Heure limite</a>.
+        </fold-callout>
+      } @else {
+        <fold-callout variant="warning">
+          <strong>Toute la production</strong>&nbsp;: aucune règle générale — se règle dans
+          <a routerLink="/reglages/commandes/heure-limite">Réglages › Commandes › Heure limite</a>.
+        </fold-callout>
+      }
 
+      <fold-card>
         @if (ordered().length === 0) {
-          <!-- Aucune règle = aucune limite. Ce n'est pas une page vide, c'est un
-               état du référentiel, et il vaut mieux le dire. -->
           <fold-empty-state
-            title="Aucune limite de commande"
-            subtitle="Tant qu'aucune règle n'existe, une commande est acceptée quelle que soit l'heure — c'est la règle du commerce qui s'applique alors, si elle en a une."
+            title="Aucun produit n'a sa propre limite"
+            subtitle="Chaque produit suit la règle générale. Une limite propre se pose depuis la fiche du produit."
           >
             <fold-icon empty-icon name="clock" [size]="28" />
           </fold-empty-state>
         } @else {
-          @if (hasNoGlobal()) {
-            <!-- Contre-intuitif, donc dit : l'échelle exige le jour ET l'heure.
-                 Une famille qui ne pose qu'une heure, sans global pour porter le
-                 délai, ne produit AUCUNE limite. -->
-            <fold-callout variant="warning">
-              Aucune règle ne couvre <strong>toute la production</strong>. Une portée qui n'hérite
-              d'aucun délai ne produit aucune limite&nbsp;: il faut le jour <em>et</em> l'heure pour
-              qu'une commande puisse être refusée.
-            </fold-callout>
-          }
-
           <ul class="limits">
             @for (rule of ordered(); track rule.id) {
               <li class="limit">
-                <div class="limit-scope">
-                  <span class="limit-name">{{ scope(rule) }}</span>
-                  <fold-badge [content]="kind(rule)" variant="neutral" />
-                </div>
-
-                <dl class="limit-values">
-                  <div>
-                    <dt>Délai</dt>
-                    <dd>{{ days(rule) }}</dd>
-                  </div>
-                  <div>
-                    <dt>Heure</dt>
-                    <dd>{{ time(rule) }}</dd>
-                  </div>
-                  <div>
-                    <dt>Rattrapage</dt>
-                    <dd>{{ grace(rule) }}</dd>
-                  </div>
-                </dl>
+                <span class="limit-name">{{ name(rule) }}</span>
+                <span class="limit-value">{{ limit(rule) }}</span>
 
                 <div class="limit-actions">
-                  @if (editable(rule)) {
-                    <button foldButton emphasis="soft" size="sm" (click)="edit(rule)">
-                      Modifier
-                    </button>
-                  }
+                  <button foldButton emphasis="soft" size="sm" (click)="edit(rule)">
+                    Modifier
+                  </button>
                   @if (pendingRemoval() === rule.id) {
                     <button foldButton intent="danger" size="sm" (click)="remove(rule)">
                       Confirmer
@@ -103,9 +78,8 @@
       </fold-card>
 
       <fold-callout appearance="inset" variant="neutral">
-        Les limites d'un <strong>produit</strong> ou d'une <strong>déclinaison</strong> se posent
-        depuis la fiche du produit&nbsp;— c'est là qu'on regarde quand on se demande ce que cet
-        article demande. Elles se lisent et se retirent ici.
+        La limite d'un produit se <strong>pose</strong> depuis sa fiche&nbsp;; elle vaut pour toutes
+        ses déclinaisons, sans rattrapage. Elle se lit, se modifie et se retire ici.
       </fold-callout>
     }
   }
