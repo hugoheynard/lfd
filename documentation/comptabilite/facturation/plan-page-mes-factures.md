@@ -307,3 +307,53 @@ seule lecture `visibleTo` filtrée par les ids.
   `otherInvoicesOnDebit` > 0 d'une facture prélevée n'est pas dit.
 - Rien n'a été vu à l'écran (ni bureau, ni pile, ni le nom du zip à travers
   la passerelle).
+
+## 11. Voir la page vivante — `seed:invoices` (2026-10-21)
+
+```bash
+pnpm --filter lfd-api seed:sub-accounts   # d'abord : le groupe des Cimes et ses deux hôtels
+pnpm --filter lfd-api seed:invoices       # une seule fois par poste
+```
+
+Base **locale** seulement (`refuseNonLocalTarget` sur l'URL, puis
+`refuseUnlessLocalDevelopment` sur `AppConfig`). Logique :
+`apps/lfd-api/src/dev/seeding/invoices.seed.ts` et ses voisins `invoice-*.seed.ts`.
+
+**Ce qu'il fait, par les commandes réelles**, chaque geste au `Clock` de son
+instant passé : règlement au compte (mensuel) accordé au groupe, RIB et mandat
+SEPA (frappe, scan, signature) pour le groupe et les deux hôtels, mode de
+facturation **hebdomadaire** pour les trois — le seul rythme qui donne assez
+de clôtures passées pour un statut par lot —, puis, semaine par semaine
+depuis le 1er du mois d'il y a six semaines : une commande par hôtel le
+jeudi, la facture à la clôture, le lot constitué puis déposé. Les retours
+bancaires sont saisis à la fin (une re-présentation saisie avant un lot
+suivant y entrerait).
+
+| Semaine (de la plus ancienne) | Ce que chaque hôtel voit                                                       |
+| ----------------------------- | ------------------------------------------------------------------------------ |
+| 1                             | **Réglée** (rejet puis « réglée autrement »)                                   |
+| 2                             | **Nouveau prélèvement prévu** (rejet puis re-présentation)                     |
+| 3                             | **Prélèvement rejeté — à régulariser**                                         |
+| 4                             | la facture **du principal** (les deux hôtels suivent sa facturation), Prélevée |
+| 5                             | **Prélevée**                                                                   |
+| 6                             | **Prélèvement prévu le [échéance du lot]** (lot constitué, non déposé)         |
+| 7                             | **Prélèvement prévu le [échéance de la facture]** (aucun lot)                  |
+
+`dev_test_ocp` est rattaché administrateur des deux hôtels (même chemin que
+les gouvernantes de `seed:sub-accounts`).
+
+**Ce qu'il touche hors des Cimes, et le dit** : il complète l'entité émettrice
+(numéro de TVA **dérivé** du SIREN factice, mentions de paiement) et
+**abaisse** les deux mises en service (`invoicing_floor`, `collection_floor`)
+au début de son calendrier — seule écriture directe, faute de geste : ce sont
+des marques de migration. Les bons des autres clients passés depuis relèvent
+alors de la facture du mois.
+
+**Ce qu'il ne sème pas** : ni facture carte ni avoir. Une facture carte exige
+une commande encaissée par Stripe (le harnais double la passerelle, aucun
+encaissement ne se constate) et retirée au comptoir ; un avoir naît seulement
+du remboursement d'une commande réglée par carte.
+
+**Une seule fois** : une facture est immuable. Relancé, il le dit et ne refait
+rien. ⚠️ `seed:sub-accounts` relancé APRÈS efface les commandes des hôtels,
+factures comprises dans leurs bons : les factures restent, orphelines.

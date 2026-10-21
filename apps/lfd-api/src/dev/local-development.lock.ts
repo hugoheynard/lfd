@@ -16,7 +16,9 @@ import type { AppConfig } from "../platform/config/app-config.js";
  * dans le service ; déplacée telle quelle, sans changer le statut qu'un écran
  * en ligne reçoit (503).
  */
-export function refuseUnlessLocalDevelopment(config: AppConfig): void {
+export function refuseUnlessLocalDevelopment(
+  config: Pick<AppConfig, "isProduction" | "databaseUrl">,
+): void {
   if (config.isProduction()) {
     throw new ServiceUnavailableException(
       "Le rechargement du jeu de données n'existe pas en production.",

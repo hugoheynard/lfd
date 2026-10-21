@@ -144,6 +144,8 @@ export interface SeedOrder {
   readonly settlement?: "card" | "account";
   /** La clé d'idempotence de la passation ; absente = tirée au hasard. */
   readonly idempotencyKey?: string;
+  /** La note de la commande ; absente = vide. Un semis s'en sert pour retrouver les siennes. */
+  readonly note?: string;
 }
 
 /** Une commande posée : son identifiant (la clé de la livraison) et son numéro (celle du fournil). */
@@ -352,7 +354,7 @@ export async function place(
     // Labo, il y a porte close.
     requestedWindow: await chosenWindowOf(context, order, delivery),
     requestedDeliveryDate: order.forDay,
-    note: "",
+    note: order.note ?? "",
     lines: [...order.lines],
   };
   const placed = await runWithRequestContext(
