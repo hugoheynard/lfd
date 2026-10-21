@@ -16,6 +16,7 @@ function view(
       orderCount: 0,
       closed: false,
       state: 'open',
+      closesAt: null,
     })),
     lines: lines.map((line) => ({
       ...line,
