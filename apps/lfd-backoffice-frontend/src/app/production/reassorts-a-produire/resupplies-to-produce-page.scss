@@ -1,0 +1,79 @@
+.days,
+.day-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+}
+
+.totals {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.totals th {
+  padding: 0 var(--fold-space-xs) var(--fold-space-xs);
+  border-bottom: 1px solid var(--fold-color-border);
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-semibold);
+  letter-spacing: var(--fold-tracking-wide);
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.totals td {
+  padding: var(--fold-space-xs);
+  border-bottom: 1px solid var(--fold-color-border-subtle);
+  font-size: var(--fold-text-sm);
+}
+
+.totals .num {
+  text-align: right;
+}
+
+.site {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.site-title {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-semibold);
+}
+
+.resupplies {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fold-text-sm);
+}
+
+.resupplies li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+}
+
+.muted {
+  color: var(--fold-color-text-muted);
+}
+
+.totals .muted {
+  display: block;
+  font-size: var(--fold-text-2xs);
+}
+
+/* La légende nomme le tableau pour un lecteur d'écran sans encombrer l'œil. */
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

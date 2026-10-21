@@ -50,3 +50,61 @@ model ResupplyReceiptLine {
   @@map("resupply_receipt_line")
   @@schema("public")
 }
+
+/// **Le réassort d'un point** — ce que le comptoir demande au fournil pour sa
+/// vitrine (lot R1 de `documentation/reassort-boutiques/plan-reapprovisionnement.md`,
+/// §12, Hugo 2026-10-21). JAMAIS une commande : aucun prix, aucune TVA, aucun
+/// règlement, aucune clé vers `orders`. Seuls les réassorts passés sont écrits
+/// (le brouillon se compose à l'écran) ; une annulation est un état, pas une
+/// suppression.
+model SiteResupply {
+  id String @id
+
+  /// Le point de retrait (`pickup_addresses.id`), sans clé étrangère : un
+  /// point archivé ne doit pas emporter ce qu'il a demandé.
+  siteId     String   @map("site_id")
+  /// `tomorrow` (le soir pour demain) | `asap` (« au plus tôt », le jour même).
+  target     String
+  /// La journée visée (date civile de Paris), déduite de la visée au geste.
+  serviceDay DateTime @map("service_day") @db.Date
+
+  /// Verrou optimiste : deux postes qui annulent en même temps ne s'écrasent pas.
+  version Int @default(1)
+
+  /// Le geste « Passer le réassort » : instant du `Clock`, auteur figé.
+  placedAt        DateTime @map("placed_at")
+  placedByStaffId String   @map("placed_by_staff_id")
+  placedByName    String   @map("placed_by_name")
+  placedByRole    String   @map("placed_by_role")
+
+  /// Le geste « Annuler » ; tous `null` tant qu'il est passé.
+  cancelledAt        DateTime? @map("cancelled_at")
+  cancelledByStaffId String?   @map("cancelled_by_staff_id")
+  cancelledByName    String?   @map("cancelled_by_name")
+  cancelledByRole    String?   @map("cancelled_by_role")
+
+  lines SiteResupplyLine[]
+
+  @@index([serviceDay, siteId])
+  @@map("site_resupply")
+  @@schema("public")
+}
+
+/// Une ligne demandée : le SKU produit, son libellé FIGÉ au geste (catalogue
+/// publié), la quantité demandée (entier > 0).
+model SiteResupplyLine {
+  id String @id @default(cuid())
+
+  resupplyId String       @map("resupply_id")
+  resupply   SiteResupply @relation(fields: [resupplyId], references: [id], onDelete: Restrict)
+
+  sku      String
+  label    String
+  quantity Int
+  /// Rang d'affichage : l'ordre de saisie.
+  position Int
+
+  @@unique([resupplyId, sku])
+  @@map("site_resupply_line")
+  @@schema("public")
+}

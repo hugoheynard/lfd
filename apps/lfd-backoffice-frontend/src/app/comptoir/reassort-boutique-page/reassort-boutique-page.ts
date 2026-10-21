@@ -29,6 +29,7 @@ import {
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { HandoverQueueStore } from '../../handover-shop/handover-queue.store';
+import { ResupplyOrderCard } from './resupply-order-card/resupply-order-card';
 import { ResupplyReceiptsService } from './resupply-receipts.service';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -37,6 +38,11 @@ type LoadState = 'loading' | 'ready' | 'error';
  * **Le réassort boutique** — ce que la vitrine d'un point de retrait a reçu
  * pour une journée, et le stock estimé qui en découle (plan
  * `limites-de-commande/plan-jour-meme-sur-stock.md`, J1, 2026-10-21).
+ *
+ * Depuis le lot R1 (`reassort-boutiques/plan-reapprovisionnement.md` §12,
+ * 2026-10-21), la page commande aussi le réassort au fournil
+ * (`ResupplyOrderCard`), au-dessus de la réception, qui ne change pas (R2 la
+ * refera).
  *
  * Le stock estimé est le reçu tant que le circuit « jour même sur stock »
  * n'existe pas (J2) : les commandes déjà passées pour ce jour l'ont été la
@@ -64,6 +70,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     FoldLoadingStateComponent,
     FoldNumberInputComponent,
     FoldPageLayoutComponent,
+    ResupplyOrderCard,
   ],
   templateUrl: './reassort-boutique-page.html',
   styleUrl: './reassort-boutique-page.scss',

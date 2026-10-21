@@ -1,3 +1,9 @@
+.cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+}
+
 .receipt-body {
   display: flex;
   flex-direction: column;

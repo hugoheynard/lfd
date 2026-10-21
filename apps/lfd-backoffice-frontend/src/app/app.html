@@ -136,6 +136,21 @@
             ></a>
           }
 
+          @if (canSeeResuppliesToProduce()) {
+            <!-- RÉASSORTS À PRODUIRE — ce que les points commandent pour leur vitrine
+               (lot R1, 2026-10-21), sous le Fournil : en lecture, distinct des commandes. -->
+            <a
+              fold-menu-item
+              icon="store"
+              label="Réassorts"
+              routerLink="/reassorts-a-produire"
+              routerLinkActive
+              #resuppliesRla="routerLinkActive"
+              [active]="resuppliesRla.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
+
           @if (canSeePacking()) {
             <!-- COLISAGE — un poste à part de la production (2026-10-04) : ses
                données restent au fournil, son geste a son entrée. -->
@@ -863,6 +878,19 @@
               routerLinkActive
               #bakehouseTile="routerLinkActive"
               [active]="bakehouseTile.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
+          @if (canSeeResuppliesToProduce()) {
+            <!-- La MÊME entrée qu'au rail, sous le Fournil. -->
+            <a
+              fold-nav-tile
+              icon="store"
+              label="Réassorts"
+              routerLink="/reassorts-a-produire"
+              routerLinkActive
+              #resuppliesTile="routerLinkActive"
+              [active]="resuppliesTile.isActive"
               (click)="mobileNavOpen.set(false)"
             ></a>
           }

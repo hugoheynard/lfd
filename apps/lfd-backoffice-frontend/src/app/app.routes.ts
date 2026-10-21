@@ -629,6 +629,18 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./production/fiche-atelier/fiche-atelier').then((m) => m.FicheAtelier),
   },
+  // RÉASSORTS À PRODUIRE (lot R1, `reassort-boutiques/plan-reapprovisionnement.md`
+  // §12, 2026-10-21) : ce que les points ont commandé pour leur vitrine, en
+  // lecture, sous le Fournil — sous la fournée ou le prévisionnel, comme la route.
+  {
+    path: 'reassorts-a-produire',
+    canActivate: [anyPermissionGuard('production_worksheet:read', 'production_plan:read')],
+    title: 'Réassorts à produire — LFC B2B admin',
+    loadComponent: () =>
+      import('./production/reassorts-a-produire/resupplies-to-produce-page').then(
+        (m) => m.ResuppliesToProducePage,
+      ),
+  },
   // CHARGER MA TOURNÉE : le chargement du livreur a sa propre adresse, sous
   // le même droit — un rechargement le rouvre.
   {

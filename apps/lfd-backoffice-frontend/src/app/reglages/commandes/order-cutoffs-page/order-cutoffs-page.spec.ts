@@ -71,11 +71,11 @@ describe('OrderCutoffsPage', () => {
     expect(root(fixture).querySelector('[data-b2c-card]')).toBeNull();
   });
 
-  it('porte la limite du réassort boutique, sans effet encore (2026-10-21)', async () => {
+  it('porte la limite du réassort boutique, opposée au réassort « Pour demain » (R1, 2026-10-21)', async () => {
     const fixture = await mount(['lfc_order_settings:read']);
 
     expect(root(fixture).querySelector('app-resupply-cutoff-card')?.textContent).toContain(
-      'commandé au fournil',
+      '« Pour demain »',
     );
   });
 

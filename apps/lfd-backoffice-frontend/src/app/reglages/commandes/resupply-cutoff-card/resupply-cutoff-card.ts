@@ -22,9 +22,9 @@ type LoadState = 'loading' | 'ready' | 'error';
  * 2026-10-21 : « la limite ou absence de limite [du réassort] devrait être
  * définie dans les réglages limites »).
  *
- * Stockée et affichée, SANS effet : le réapprovisionnement n'est pas encore
- * commandé au fournil (`reassort-boutiques/plan-reapprovisionnement.md`).
- * La carte le dit. Même droit que la page, `lfc_order_settings`.
+ * Opposée depuis le lot R1 (2026-10-21) au réassort commandé « Pour demain »
+ * (`reassort-boutiques/README.md`) ; « Au plus tôt » n'y est jamais soumis.
+ * Même droit que la page, `lfc_order_settings`.
  */
 @Component({
   selector: 'app-resupply-cutoff-card',

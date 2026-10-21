@@ -10,7 +10,7 @@ import { PermissionsStore } from '../../../auth/permissions.store';
 import { OrderCutoffSettingsService } from '../order-cutoff-settings.service';
 import { ResupplyCutoffCard } from './resupply-cutoff-card';
 
-/** La limite du réassort (Hugo, 2026-10-21) : stockée, affichée, sans effet encore. */
+/** La limite du réassort (Hugo, 2026-10-21) : opposée au réassort « Pour demain » depuis le lot R1. */
 async function mount(
   permissions: readonly StaffPermission[],
   initial: OrderCutoffSettingsView,
@@ -60,12 +60,13 @@ const root = (fixture: ComponentFixture<ResupplyCutoffCard>): HTMLElement =>
   fixture.nativeElement as HTMLElement;
 
 describe('ResupplyCutoffCard', () => {
-  it('dit l’état et qu’il est sans effet tant que le réassort n’est pas commandé au fournil', async () => {
+  it('dit l’état, et qu’il vise le réassort « Pour demain » seulement', async () => {
     const { fixture } = await mount(['lfc_order_settings:read'], VIEW);
 
     const text = root(fixture).textContent ?? '';
     expect(text).toContain('Soumis à l’heure limite');
-    expect(text).toContain("S'appliquera quand le réassort sera commandé au fournil.");
+    expect(text).toContain('« Pour demain »');
+    expect(text).toContain('« Au plus tôt » n');
     expect(root(fixture).querySelector('[data-resupply-cutoff-toggle]')).toBeNull();
   });
 

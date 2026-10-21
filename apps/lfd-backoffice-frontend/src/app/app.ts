@@ -236,6 +236,16 @@ export class App {
     this.permissions.can('production_worksheet:read'),
   );
 
+  /**
+   * Réassorts à produire (lot R1, 2026-10-21) — sous le Fournil, à qui tient
+   * la fournée ou le prévisionnel : le même droit que sa route serveur.
+   */
+  protected readonly canSeeResuppliesToProduce = computed(
+    () =>
+      this.permissions.can('production_worksheet:read') ||
+      this.permissions.can('production_plan:read'),
+  );
+
   /** Le Colisage — un poste à part (2026-10-04), sous son seul droit. */
   protected readonly canSeePacking = computed(() =>
     this.permissions.can('production_packing:read'),
@@ -276,6 +286,7 @@ export class App {
       this.canSeeProdManager() ||
       this.canSeeTourManager() ||
       this.canSeeBakehouse() ||
+      this.canSeeResuppliesToProduce() ||
       this.canSeePacking() ||
       this.canSeeCounter() ||
       this.canSeeCourier(),

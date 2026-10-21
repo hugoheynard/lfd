@@ -1,0 +1,145 @@
+<fold-card data-resupply-order>
+  <fold-element-title
+    cardHeader
+    variant="title"
+    title="Commander au fournil"
+    subtitle="Pour demain : la commande du soir, préparée pour le matin. Au plus tôt : pour aujourd'hui, quand la vitrine se vide — sans heure limite."
+  />
+
+  <div class="order-body">
+    @if (canWrite()) {
+      <div class="targets" role="group" aria-label="Pour quand">
+        <button
+          foldButton
+          data-resupply-target="tomorrow"
+          [emphasis]="target() === 'tomorrow' ? 'solid' : 'outline'"
+          [attr.aria-pressed]="target() === 'tomorrow'"
+          (click)="pick('tomorrow')"
+        >
+          Pour demain
+        </button>
+        <button
+          foldButton
+          data-resupply-target="asap"
+          [emphasis]="target() === 'asap' ? 'solid' : 'outline'"
+          [attr.aria-pressed]="target() === 'asap'"
+          (click)="pick('asap')"
+        >
+          Au plus tôt
+        </button>
+      </div>
+
+      @if (target() === 'tomorrow' && orderUntil(); as until) {
+        <p class="hint" data-resupply-until>Pour demain, jusqu'à {{ until }} aujourd'hui.</p>
+      }
+
+      @if (target() !== null) {
+        @if (draft().length > 0) {
+          <ul class="draft" data-resupply-draft>
+            @for (line of draft(); track line.sku) {
+              <li [attr.data-resupply-draft-line]="line.sku">
+                <span>{{ line.quantity }} × {{ line.label }}</span>
+                <button
+                  foldButton
+                  size="sm"
+                  emphasis="outline"
+                  intent="danger"
+                  (click)="removeLine(line.sku)"
+                >
+                  Retirer
+                </button>
+              </li>
+            }
+          </ul>
+        }
+
+        <div class="add">
+          <fold-combobox
+            label="Article"
+            placeholder="Nom ou référence d'un article du catalogue"
+            emptyText="Aucun article ne correspond — ou il est déjà dans le réassort."
+            resultLabel="articles"
+            [options]="addableOptions()"
+            [value]="pickedSku()"
+            (valueChange)="pickedSku.set($event)"
+          />
+          <fold-number-input
+            label="Quantité demandée"
+            [value]="pickedQuantity()"
+            (valueChange)="pickedQuantity.set($event)"
+            [min]="1"
+            integer
+          />
+          <button foldButton emphasis="outline" [disabled]="!canAdd()" (click)="addLine()">
+            Ajouter
+          </button>
+        </div>
+
+        <div class="submit">
+          <button
+            foldButton
+            data-resupply-place
+            [disabled]="!canPlace()"
+            [loading]="pending()"
+            (click)="place()"
+          >
+            Passer le réassort
+          </button>
+        </div>
+      }
+    }
+
+    @if (failure(); as message) {
+      <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+    }
+
+    @if (loadFailed()) {
+      <fold-empty-state tone="alert" title="Impossible de lire les réassorts du point">
+        <button foldButton (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    } @else {
+      @for (day of days(); track day.day) {
+        <section class="day" [attr.data-resupply-day]="day.day">
+          <h3 class="day-title">{{ day.label }}</h3>
+          @if (day.resupplies.length === 0) {
+            <p class="muted">Aucun réassort commandé.</p>
+          } @else {
+            <ul class="resupplies">
+              @for (resupply of day.resupplies; track resupply.id) {
+                <li [attr.data-resupply-item]="resupply.id">
+                  <div class="resupply-head">
+                    <strong>{{ targetLabels[resupply.target] }}</strong>
+                    @if (resupply.status === 'placed') {
+                      <fold-status-badge status="active" label="Passé" />
+                    } @else {
+                      <fold-status-badge status="terminated" label="Annulé" />
+                    }
+                    @if (canWrite() && resupply.status === 'placed') {
+                      <button
+                        foldButton
+                        size="sm"
+                        emphasis="outline"
+                        intent="danger"
+                        data-resupply-cancel
+                        [disabled]="pending()"
+                        (click)="cancel(resupply)"
+                      >
+                        Annuler
+                      </button>
+                    }
+                  </div>
+                  <p class="lines">
+                    @for (line of resupply.lines; track line.sku; let last = $last) {
+                      {{ line.quantity }} × {{ line.label }}{{ last ? '' : ', ' }}
+                    }
+                  </p>
+                  <p class="muted">{{ placedLine(resupply) }}</p>
+                </li>
+              }
+            </ul>
+          }
+        </section>
+      }
+    }
+  </div>
+</fold-card>

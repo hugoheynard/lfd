@@ -3,7 +3,7 @@
     cardHeader
     variant="title"
     title="Réassort boutique"
-    subtitle="S'appliquera quand le réassort sera commandé au fournil."
+    subtitle="S'applique au réassort commandé « Pour demain » ; « Au plus tôt » n'a jamais d'heure limite."
   >
     @if (state() === 'ready') {
       <fold-badge
@@ -26,12 +26,11 @@
     @case ('ready') {
       <p class="text" data-resupply-cutoff-value>
         @if (subject()) {
-          Soumis à l'heure limite : le réassort se demandera avant l'heure limite générale, comme
-          une commande.
+          Soumis à l'heure limite : le réassort pour demain se commande avant l'heure limite
+          générale, comme une commande.
         } @else {
-          Sans limite : le réassort pourra se demander à toute heure.
+          Sans limite : le réassort pour demain se commande à toute heure.
         }
-        Sans effet aujourd'hui : le réassort n'est pas encore commandé au fournil.
       </p>
 
       @if (canWrite()) {

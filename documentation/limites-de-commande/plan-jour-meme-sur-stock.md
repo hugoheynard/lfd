@@ -142,8 +142,9 @@ produit et des quantités, et éventuellement un stock »).
   réassort] devrait être définie dans les réglages limites ») : Réglages ›
   Commandes › Heure limite, carte « Réassort boutique : soumis à l'heure
   limite / sans limite » (`order_cutoff_settings.resupply_subject_to_cutoff`,
-  oui par défaut). **Sans effet** tant que le réassort n'est pas commandé au
-  fournil ; l'écran le dit.
+  oui par défaut). Sans effet à son ajout ; opposée depuis le lot R1
+  (2026-10-21) au réassort commandé « Pour demain »
+  ([`../reassort-boutiques/README.md`](../reassort-boutiques/README.md)).
 
 Reste de J1 : le réglage « jour même » réécrit (oui/non + heure de fin) et le
 choix Q2 (part réservée / toute la vitrine) — non bâtis.

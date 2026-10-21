@@ -283,6 +283,8 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // LE FOURNIL, sorti de la Production le 2026-10-06, sous la fiche d'atelier.
   fournil: 'production_worksheet:read',
   'prod-manager': 'production_plan:read',
+  // Les réassorts à produire (lot R1, 2026-10-21) : la fournée OU le prévisionnel.
+  'reassorts-a-produire': { anyOf: ['production_worksheet:read', 'production_plan:read'] },
   // Partis en Réglages › Production le 2026-10-13 (Hugo).
   'reglages/production/fournil': 'production_settings:read',
   // LE COMPTOIR non plus : la file de retrait (`handover_counter`) et la

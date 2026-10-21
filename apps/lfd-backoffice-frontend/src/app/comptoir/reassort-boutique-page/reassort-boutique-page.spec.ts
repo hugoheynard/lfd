@@ -9,6 +9,7 @@ import { HandoverQueueStore } from '../../handover-shop/handover-queue.store';
 import { parisToday } from '../../shared/paris-today';
 import { ReassortBoutiquePage } from './reassort-boutique-page';
 import { ResupplyReceiptsService } from './resupply-receipts.service';
+import { SiteResuppliesService } from './site-resupplies.service';
 
 /**
  * Le réassort boutique (J1, 2026-10-21) : un point de retrait, une journée,
@@ -78,6 +79,18 @@ class FakeReceipts {
   }
 }
 
+/** La commande au fournil (R1) a sa propre suite : ici, une liste vide suffit. */
+const NO_RESUPPLIES = {
+  list: (siteId: string) =>
+    Promise.resolve({
+      siteId,
+      today: TODAY,
+      tomorrow: TODAY,
+      tomorrowOrderUntil: null,
+      resupplies: [],
+    }),
+};
+
 /** Le chargement enchaîne deux lectures : on laisse passer les tâches en attente. */
 async function settle(fixture: ComponentFixture<ReassortBoutiquePage>): Promise<void> {
   fixture.detectChanges();
@@ -100,6 +113,7 @@ async function mount(
     imports: [ReassortBoutiquePage],
     providers: [
       { provide: ResupplyReceiptsService, useValue: api },
+      { provide: SiteResuppliesService, useValue: NO_RESUPPLIES },
       { provide: HandoverQueueStore, useValue: band },
       {
         provide: PermissionsStore,
