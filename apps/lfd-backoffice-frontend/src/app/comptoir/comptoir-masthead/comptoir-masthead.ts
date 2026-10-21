@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Injector, computed, inject } from '@angular/core';
 import { FoldSurfaceDirective, FoldViewNavComponent } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { HandoverMasthead } from '../../handover-shop/handover-masthead/handover-masthead';
+import { HandoverQueueStore } from '../../handover-shop/handover-queue.store';
 import { WorkspaceCatalogue } from '../../shared/workspace-rail/workspaces';
 
 /**
@@ -22,6 +23,9 @@ import { WorkspaceCatalogue } from '../../shared/workspace-rail/workspaces';
  * Sur le chrome, et à la taille d'une tablette : cibles de 48 px et texte de
  * corps plein, parce que le comptoir se sert au doigt.
  */
+/** La vue du réassort, par sa clé dans `COMPTOIR_VIEWS`. */
+const REASSORT_KEY = 'reassort';
+
 @Component({
   selector: 'app-comptoir-masthead',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -39,8 +43,26 @@ import { WorkspaceCatalogue } from '../../shared/workspace-rail/workspaces';
 export class ComptoirMasthead {
   private readonly permissions = inject(PermissionsStore);
 
-  /** Les onglets permis, dans l'ordre de `COMPTOIR_VIEWS`. */
-  protected readonly views = inject(WorkspaceCatalogue).views('comptoir');
+  private readonly injector = inject(Injector);
+  private readonly permitted = inject(WorkspaceCatalogue).views('comptoir');
+
+  /**
+   * Les onglets permis, dans l'ordre de `COMPTOIR_VIEWS` — et celui du
+   * réassort nomme le point ouvert : « Réassort Labo » (Hugo, 2026-10-21).
+   *
+   * ⚠️ La file est lue par l'injecteur, et seulement pour qui tient le
+   * retrait : un `inject` de champ l'instancierait pour tout poste, et
+   * ramènerait le 403 que la bande évite (cf. plus haut).
+   */
+  protected readonly views = computed(() => {
+    const views = this.permitted();
+    const place = this.holdsCounter() ? this.injector.get(HandoverQueueStore).activePlace() : null;
+    return views.map((view) =>
+      view.key === REASSORT_KEY
+        ? { ...view, label: place === null ? 'Réassort' : `Réassort ${place.label}` }
+        : view,
+    );
+  });
 
   /** Monte-t-on la part du retrait — et donc la file ? */
   protected readonly holdsCounter = computed(() => this.permissions.can('handover_counter:read'));

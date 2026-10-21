@@ -466,7 +466,7 @@ export const COMPTOIR_VIEWS: readonly WorkspaceView[] = [
   // retrait, parce que c'est le même poste — à confirmer par Hugo.
   {
     key: 'reassort',
-    label: 'Réassort boutique',
+    label: 'Réassort',
     link: '/comptoir/reassort',
     icon: 'package',
     needs: 'handover_counter:read',

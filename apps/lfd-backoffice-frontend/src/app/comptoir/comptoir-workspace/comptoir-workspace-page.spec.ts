@@ -60,6 +60,7 @@ const COMMANDE: readonly StaffPermission[] = ['b2b_counter:read', 'b2b_place_ord
 async function open(
   granted: readonly StaffPermission[],
   url: string,
+  places: readonly { id: string; label: string }[] = [],
 ): Promise<RouterTestingHarness> {
   TestBed.resetTestingModule();
   queue = new FakeQueue();
@@ -87,7 +88,7 @@ async function open(
       { provide: DayVersionWatcher, useValue: { watch: () => undefined } },
       {
         provide: PickupAddressesService,
-        useValue: { list: () => Promise.resolve([]), listFor: () => Promise.resolve([]) },
+        useValue: { list: () => Promise.resolve(places), listFor: () => Promise.resolve([]) },
       },
     ],
   });
@@ -118,7 +119,7 @@ describe('ComptoirWorkspacePage — les onglets du comptoir', () => {
     expect(labels).toHaveLength(3);
     // Ordre revu par Hugo le 2026-10-12 : le retrait en tête.
     expect(labels[0]).toContain('Retrait boutique');
-    expect(labels[1]).toContain('Réassort boutique');
+    expect(labels[1]).toContain('Réassort');
     expect(labels[2]).toContain('Nouvelle commande pro');
   });
 
@@ -131,7 +132,14 @@ describe('ComptoirWorkspacePage — les onglets du comptoir', () => {
 
   it('marque actif l’onglet de l’URL', async () => {
     const harness = await open([...RETRAIT, ...COMMANDE], '/comptoir/reassort');
-    expect(activeLabel(harness)).toContain('Réassort boutique');
+    expect(activeLabel(harness)).toContain('Réassort');
+  });
+
+  it('nomme l’onglet du réassort d’après le point ouvert dans la bande', async () => {
+    const harness = await open(RETRAIT, '/comptoir/reassort', [{ id: 'site_l', label: 'Labo' }]);
+    await harness.fixture.whenStable();
+    harness.detectChanges();
+    expect(activeLabel(harness)).toBe('Réassort Labo');
   });
 
   it('ne publie plus de rail secondaire', async () => {

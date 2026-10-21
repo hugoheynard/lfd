@@ -169,6 +169,21 @@ export class HandoverQueueStore {
   });
 
   /**
+   * Le point de retrait ouvert dans la bande, s'il est un site connu — `null`
+   * sur l'onglet « Sans point de retrait », sur un site archivé que la file
+   * nomme encore, et tant que les sites ne sont pas lus. C'est le point que
+   * suivent les autres vues du comptoir (le réassort, 2026-10-21) : une seule
+   * source, celle que le comptoir a sous les yeux.
+   */
+  readonly activePlace = computed<CounterPlace | null>(
+    () => this.places().find((place) => place.id === this.activeTab()) ?? null,
+  );
+
+  /** Les sites sont-ils lus ? Avant, « aucun point ouvert » ne se conclut pas. */
+  private readonly placesState = signal(false);
+  readonly placesLoaded = this.placesState.asReadonly();
+
+  /**
    * Les lignes de l'onglet ouvert. **Pas ordonnées ici** : l'ordre de la file
    * appartient à la file, et `app-queue-table` le pose.
    */
@@ -212,7 +227,8 @@ export class HandoverQueueStore {
     this.pickupAddresses
       .list()
       .then((list) => this.places.set(list.map((place) => ({ id: place.id, label: place.label }))))
-      .catch(() => undefined);
+      .catch(() => undefined)
+      .finally(() => this.placesState.set(true));
     effect(() => {
       void this.load(this.day());
     });

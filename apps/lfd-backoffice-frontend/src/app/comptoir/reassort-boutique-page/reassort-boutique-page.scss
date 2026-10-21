@@ -1,19 +1,7 @@
-.filters {
+.receipt-body {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: var(--fold-space-md);
-  align-items: end;
-  margin-bottom: var(--fold-space-md);
-}
-
-.field {
-  display: grid;
-  gap: var(--fold-space-xs);
-}
-
-.field-label {
-  color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-sm);
 }
 
 .lines {
@@ -60,11 +48,10 @@
   flex-wrap: wrap;
   gap: var(--fold-space-md);
   align-items: end;
-  margin-top: var(--fold-space-md);
 }
 
 .trace {
-  margin: var(--fold-space-md) 0 0;
+  margin: 0;
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-sm);
 }

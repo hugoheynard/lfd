@@ -1,14 +1,11 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
-import type {
-  PickupAddressView,
-  ResupplyArticleView,
-  ResupplyReceiptView,
-  StaffPermission,
-} from '@lfd/contracts';
+import { signal } from '@angular/core';
+import type { ResupplyArticleView, ResupplyReceiptView, StaffPermission } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { PermissionsStore } from '../../auth/permissions.store';
-import { PickupAddressesService } from '../../b2b/reglages/pickup-addresses.service';
+import type { CounterPlace } from '../../handover-shop/handover-queue';
+import { HandoverQueueStore } from '../../handover-shop/handover-queue.store';
 import { parisToday } from '../../shared/paris-today';
 import { ReassortBoutiquePage } from './reassort-boutique-page';
 import { ResupplyReceiptsService } from './resupply-receipts.service';
@@ -18,18 +15,16 @@ import { ResupplyReceiptsService } from './resupply-receipts.service';
  * des lignes reçues ; le stock estimé est le reçu tant que le jour même sur
  * stock n'existe pas — aucune colonne « commandé ».
  */
-function point(id: string, label: string): PickupAddressView {
+const TODAY = parisToday();
+const VILLAGE: CounterPlace = { id: 'site_v', label: 'Village' };
+const LABO: CounterPlace = { id: 'site_l', label: 'Labo' };
+
+/** La bande du comptoir, doublée : le point ouvert et la lecture des sites. */
+function counter(initial: CounterPlace | null = VILLAGE) {
   return {
-    id,
-    label,
-    ligne1: '1 rue du Four',
-    ligne2: '',
-    codePostal: '73150',
-    ville: 'Val d’Isère',
-    pays: 'France',
-    discount: null,
-    discountAudiences: { b2b: true, b2c: true },
-    opening: { publicOpening: null, proPickup: null },
+    activePlace: signal<CounterPlace | null>(initial),
+    placesLoaded: signal(true),
+    day: signal(TODAY),
   };
 }
 
@@ -94,18 +89,18 @@ async function settle(fixture: ComponentFixture<ReassortBoutiquePage>): Promise<
 async function mount(
   permissions: readonly StaffPermission[],
   api = new FakeReceipts(),
-): Promise<{ fixture: ComponentFixture<ReassortBoutiquePage>; api: FakeReceipts }> {
+  band = counter(),
+): Promise<{
+  fixture: ComponentFixture<ReassortBoutiquePage>;
+  api: FakeReceipts;
+  band: ReturnType<typeof counter>;
+}> {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [ReassortBoutiquePage],
     providers: [
       { provide: ResupplyReceiptsService, useValue: api },
-      {
-        provide: PickupAddressesService,
-        useValue: {
-          list: () => Promise.resolve([point('site_v', 'Village'), point('site_f', 'Front')]),
-        },
-      },
+      { provide: HandoverQueueStore, useValue: band },
       {
         provide: PermissionsStore,
         useValue: { can: (p: StaffPermission): boolean => permissions.includes(p) },
@@ -114,14 +109,14 @@ async function mount(
   });
   const fixture = TestBed.createComponent(ReassortBoutiquePage);
   await settle(fixture);
-  return { fixture, api };
+  return { fixture, api, band };
 }
 
 const root = (fixture: ComponentFixture<ReassortBoutiquePage>): HTMLElement =>
   fixture.nativeElement as HTMLElement;
 
 describe('ReassortBoutiquePage', () => {
-  it('lit le premier point de retrait pour aujourd’hui, et dit le vide', async () => {
+  it('lit le point ouvert dans la bande pour aujourd’hui, et dit le vide', async () => {
     const { fixture, api } = await mount(['handover_counter:read']);
 
     expect(api.calls).toEqual([`read site_v ${parisToday()}`]);
@@ -177,13 +172,43 @@ describe('ReassortBoutiquePage', () => {
     expect(fixture.componentInstance['addableOptions']().map((o) => o.value)).toEqual(['PAC']);
   });
 
-  it('change de point de retrait et de journée', async () => {
-    const { fixture, api } = await mount(['handover_counter:read']);
+  it('suit le point de la bande : un changement relit la liste, et le titre le nomme', async () => {
+    const { fixture, api, band } = await mount(['handover_counter:read']);
+    const title = (): string => fixture.componentInstance['title']();
 
-    await fixture.componentInstance['chooseSite']('site_f');
-    await fixture.componentInstance['chooseDay']('2026-01-03');
+    expect(title()).toBe('Réassort Village');
+    expect(root(fixture).querySelector('fold-listbox')).toBeNull();
 
-    expect(api.calls.slice(1)).toEqual([`read site_f ${parisToday()}`, 'read site_f 2026-01-03']);
+    band.activePlace.set(LABO);
+    await settle(fixture);
+
+    expect(api.calls).toEqual([`read site_v ${parisToday()}`, `read site_l ${parisToday()}`]);
+    expect(title()).toBe('Réassort Labo');
+    expect(root(fixture).textContent).toContain('Réassort Labo');
+  });
+
+  it('suit la journée de la bande : ses flèches relisent la liste', async () => {
+    const { fixture, api, band } = await mount(['handover_counter:read']);
+
+    band.day.set('2026-01-03');
+    await settle(fixture);
+
+    expect(api.calls).toEqual([`read site_v ${TODAY}`, 'read site_v 2026-01-03']);
+    expect(root(fixture).querySelector('input[type="date"]')).toBeNull();
+  });
+
+  it('sans point ouvert, s’appelle « Réassort » et invite à en choisir un dans le bandeau', async () => {
+    const { fixture, api } = await mount(
+      ['handover_counter:read'],
+      new FakeReceipts(),
+      counter(null),
+    );
+
+    expect(fixture.componentInstance['title']()).toBe('Réassort');
+    expect(api.calls).toEqual([]);
+    expect(root(fixture).querySelector('[data-resupply-no-place]')?.textContent).toContain(
+      'bandeau du comptoir',
+    );
   });
 
   it('dit l’échec de chargement par un état fold', async () => {
