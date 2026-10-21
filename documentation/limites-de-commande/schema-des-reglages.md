@@ -158,3 +158,57 @@ Chaque point est un fait du code, avec l'exemple qui le rend concret.
 ⚠️ Les §1 à §3 décrivent l'existant **d'avant** ces décisions : ④ y a encore
 ses rangs, sa grâce et son héritage. Ils restent tels quels comme point de
 départ de la simplification.
+
+## 5. Aujourd'hui, après la simplification (2026-10-21)
+
+Les §1 à §3 restent l'« avant ». Voici l'« après », bâti le 2026-10-21 (commits
+a05a665c0, b1aff4320, 16841ad60). **Quatre réglages au lieu de huit.**
+
+```mermaid
+flowchart TB
+  subgraph E1["Réglages › Commandes › Heure limite<br/>« Heure limite générale — arrêt du plan de production pour le lendemain »"]
+    R1["① L'HEURE LIMITE GÉNÉRALE — une seule règle<br/>« la veille, 23 h » + rattrapage<br/>vaut pour tout le monde, toujours en vigueur<br/>droit lfc_order_settings"]
+    R7["⑦ Dérogations pendant le rattrapage<br/>droit b2b_order_waivers"]
+  end
+  subgraph E2["Fiche produit (et Référentiel › Limites de commande, en lecture + retrait)"]
+    R4["④ Limite PAR PRODUIT — entière<br/>« 2 jours avant, 12 h », sans rattrapage<br/>droit pim_catalog"]
+  end
+  subgraph E3["Réglages › Commandes › Jour même (en attente de la commande à J sur stock)"]
+    R3["③ Jour même autorisé / non"]
+  end
+  subgraph E4["Opérations datées"]
+    R6["⑥ Fenêtre d'opération — à trancher"]
+  end
+  R1 -- "déclenche à la fin du rattrapage" --> P["Le plan du fournil pour le lendemain se fige<br/>(plus de réglage côté fournil ; rouvrir reste possible)"]
+```
+
+Disparus : ①bis (règles par point × jour), ② (l'interrupteur), le rang global,
+les familles et les déclinaisons de ④, le rattrapage d'un produit, l'héritage
+champ par champ, le mode manuel/automatique et l'heure propre de l'arrêt du plan.
+
+```mermaid
+flowchart TD
+  C["Commande pour la journée J"] --> S{"J = aujourd'hui<br/>et ③ jour même interdit ?"}
+  S -- oui --> X1["refus : jour même fermé"]
+  S -- non --> L["La plus stricte de :<br/>① l'heure limite générale<br/>④ la limite de chaque produit du panier"]
+  L --> D{"décision"}
+  D -- ouverte --> O{"⑥ article d'opération :<br/>dans sa fenêtre ?"}
+  D -- "rattrapage de ①" --> W{"⑦ dérogation ?"}
+  W -- "oui (+ surtaxe)" --> O
+  W -- non --> X3["refus : « appelez-nous »"]
+  D -- fermée --> X4["refus : trop tard"]
+  O -- oui --> OK["✅ acceptée"]
+  O -- non --> X5["refus : hors fenêtre"]
+```
+
+Le plan arrêté n'apparaît plus comme une garde à part : il s'arrête à
+l'instant où ① ferme, et ne contredit donc jamais l'heure annoncée. La boutique
+annonce ① et ④ (« Pour jeudi, commandez avant 23 h », « Plus que… », « Préparé
+sur commande — … », « un article de votre panier : trop tard pour… ») ; après
+l'heure, elle propose le premier jour encore ouvert (le surlendemain).
+
+**Reste à faire** : les recommandations « commandable aujourd'hui » alignées sur
+« la plus stricte gagne », le devis qui signale la limite, le rattrapage réuni
+sur la page de l'heure limite (surtaxe en lecture) — en cours ; puis ⑥ la
+fenêtre des opérations ; puis l'écran de lecture unique ; plus tard, ③ avec la
+commande à J sur stock.
