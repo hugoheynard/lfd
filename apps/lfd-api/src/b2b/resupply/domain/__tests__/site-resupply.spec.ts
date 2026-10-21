@@ -1,15 +1,18 @@
 import { resupplyTotals } from "../resupply-totals.js";
+import { resupplyOriginOf } from "../resupply-origin.js";
 import { resupplyTargetOf, SiteResupply } from "../site-resupply.js";
 import {
   EmptyResupplyError,
   IncompleteResupplyLineError,
   InvalidRequestedQuantityError,
   ResupplyAlreadyPlacedError,
+  ResupplyAlreadyReceivedNotCancellableError,
   ResupplyDayPassedError,
   ResupplyLineNotInDraftError,
   ResupplyNotCancellableError,
   ResupplyPastCutoffError,
   SiteResupplyChangedMeanwhileError,
+  UnknownResupplyOriginError,
   UnknownResupplyTargetError,
 } from "../site-resupply-errors.js";
 import { SiteResupplyLine } from "../site-resupply-line.js";
@@ -109,6 +112,7 @@ describe("SiteResupply — les lignes", () => {
       target: "asap",
       serviceDay: "2026-01-02",
       version: 3,
+      origin: "counter",
       lines: [],
       placed: null,
       cancelled: null,
@@ -193,14 +197,75 @@ describe("SiteResupply — l'annulation", () => {
   it("annule un réassort passé, une seule fois", () => {
     const resupply = draft("asap");
     resupply.place(trace(EVENING), null);
-    resupply.cancel(trace(LATE_NIGHT));
+    resupply.cancel(trace(LATE_NIGHT), null);
     expect(resupply.status).toBe("cancelled");
     expect(resupply.cancelled).toEqual(trace(LATE_NIGHT));
-    expect(() => resupply.cancel(trace(LATE_NIGHT))).toThrow(ResupplyNotCancellableError);
+    expect(() => resupply.cancel(trace(LATE_NIGHT), null)).toThrow(ResupplyNotCancellableError);
   });
 
   it("un brouillon ne s'annule pas : il n'a jamais été passé", () => {
-    expect(() => draft("asap").cancel(trace(EVENING))).toThrow(ResupplyNotCancellableError);
+    expect(() => draft("asap").cancel(trace(EVENING), null)).toThrow(ResupplyNotCancellableError);
+  });
+
+  /** Trou laissé par R2 : un réassort arrivé et réceptionné s'annulait encore. */
+  it("un réassort déjà réceptionné ne s'annule plus, et le refus nomme qui et à quelle heure", () => {
+    const resupply = draft("asap");
+    resupply.place(trace(EVENING), null);
+    const reception = { at: LATE_NIGHT, author: { ...AUTHOR, name: "Léa Roux" } };
+
+    expect(() => resupply.cancel(trace(LATE_NIGHT), reception)).toThrow(
+      ResupplyAlreadyReceivedNotCancellableError,
+    );
+    expect(() => resupply.cancel(trace(LATE_NIGHT), reception)).toThrow(
+      /déjà réceptionné par Léa Roux à 23:30/u,
+    );
+    expect(resupply.status).toBe("placed");
+  });
+});
+
+describe("SiteResupply — l'origine (R1d)", () => {
+  it("la demande du comptoir est un brouillon d'origine `counter`", () => {
+    expect(draft("asap").origin).toBe("counter");
+  });
+
+  it("le fournil crée ET envoie son réassort d'un geste, sans brouillon", () => {
+    const sent = SiteResupply.sentByBakehouse({
+      id: "rs2",
+      siteId: "site_1",
+      target: "asap",
+      lines: [line("CRO", 5), line("PAC", 2), line("CRO", 3)],
+      trace: trace(EVENING),
+      deadline: null,
+    });
+
+    expect(sent).toMatchObject({ origin: "bakehouse", status: "placed", serviceDay: "2026-01-02" });
+    expect(sent.placed).toEqual(trace(EVENING));
+    expect(sent.lines.map((entry) => [entry.sku, entry.quantity])).toEqual([
+      ["CRO", 8],
+      ["PAC", 2],
+    ]);
+    expect(() => sent.addLine(line("CRO", 1))).toThrow(ResupplyAlreadyPlacedError);
+  });
+
+  it("le fournil suit les règles d'envoi du comptoir : pas vide, l'heure limite pour demain", () => {
+    const send = (lines: readonly SiteResupplyLine[], deadline: Date | null) =>
+      SiteResupply.sentByBakehouse({
+        id: "rs3",
+        siteId: "site_1",
+        target: "tomorrow",
+        lines,
+        trace: trace(LATE_NIGHT),
+        deadline,
+      });
+
+    expect(() => send([], null)).toThrow(EmptyResupplyError);
+    expect(() => send([line("CRO", 1)], DEADLINE)).toThrow(ResupplyPastCutoffError);
+    expect(send([line("CRO", 1)], null).serviceDay).toBe("2026-01-03");
+  });
+
+  it("relit une origine stockée et refuse une valeur inconnue", () => {
+    expect(resupplyOriginOf("bakehouse")).toBe("bakehouse");
+    expect(() => resupplyOriginOf("livreur")).toThrow(UnknownResupplyOriginError);
   });
 });
 

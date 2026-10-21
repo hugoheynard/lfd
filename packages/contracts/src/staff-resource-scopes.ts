@@ -259,6 +259,11 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
     write:
       "Choisir l'arrêt automatique ou manuel, en régler les heures, et ajouter ou retirer un jour fermé.",
   },
+  production_resupply: {
+    read: "Voir les points et le catalogue proposés à l'envoi d'un réassort par le fournil.",
+    write:
+      "Envoyer un réassort à un point depuis le fournil — pour aujourd'hui ou pour demain —, à part de la demande du comptoir.",
+  },
   handover_counter: {
     read: "Voir la file des retraits et le détail d'une commande à remettre.",
     write: "Remettre une commande au client, au scan de son QR ou à la main.",

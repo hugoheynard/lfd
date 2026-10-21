@@ -2,7 +2,6 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import type {
   PlacedSiteResupplyResponse,
-  PlaceSiteResupplyPayload,
   ResupplyTarget,
   SiteResuppliesView,
 } from '@lfd/contracts';
@@ -15,8 +14,9 @@ import { B2B_API_BASE } from '../../api/api-config';
  * le droit du comptoir (`handover_counter`), lots R1 et R1c du plan
  * `reassort-boutiques/plan-reapprovisionnement.md`. Depuis R1c, le comptoir
  * remplit la demande en cours de chaque visée (ajouter, corriger, retirer,
- * envoyer) ; `place` reste le geste d'un seul tenant du fournil. L'écran
- * relit la liste après chaque geste.
+ * envoyer). L'écran relit la liste après chaque geste. Le geste d'un seul
+ * tenant du fournil (`place`) est retiré au lot R1d : il envoyait la
+ * demande du comptoir ; le fournil envoie les siens à part.
  */
 @Injectable({ providedIn: 'root' })
 export class SiteResuppliesService {
@@ -24,10 +24,6 @@ export class SiteResuppliesService {
 
   list(siteId: string): Promise<SiteResuppliesView> {
     return firstValueFrom(this.http.get<SiteResuppliesView>(this.site(siteId)));
-  }
-
-  place(siteId: string, payload: PlaceSiteResupplyPayload): Promise<PlacedSiteResupplyResponse> {
-    return firstValueFrom(this.http.post<PlacedSiteResupplyResponse>(this.site(siteId), payload));
   }
 
   /** Ajoute à la demande en cours de la visée ; un article présent voit sa quantité s'additionner. */

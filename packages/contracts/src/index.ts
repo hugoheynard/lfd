@@ -2409,6 +2409,7 @@ export {
   addSiteResupplyLineSchema,
   correctSiteResupplyLineSchema,
   placeSiteResupplySchema,
+  RESUPPLY_ORIGINS,
   RESUPPLY_TARGETS,
   seenSiteResupplyVersionSchema,
 } from "./site-resupply.js";
@@ -2419,6 +2420,7 @@ export type {
   PlaceSiteResupplyPayload,
   ResuppliesToProduceView,
   ResupplyDayToProduceView,
+  ResupplyOrigin,
   ResupplySiteToProduceView,
   ResupplyTarget,
   ResupplyTotalView,

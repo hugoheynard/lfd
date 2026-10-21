@@ -16,6 +16,9 @@
       <section class="reception" [attr.data-resupply-reception]="reception.resupplyId">
         <div class="reception-head">
           <strong>{{ targetLabels[reception.target] }}</strong>
+          @if (reception.origin === 'bakehouse') {
+            <span class="origin" data-resupply-reception-bakehouse>{{ bakehouseMark }}</span>
+          }
           @if (reception.status === 'received') {
             <fold-status-badge status="active" label="Réceptionné" />
           } @else {

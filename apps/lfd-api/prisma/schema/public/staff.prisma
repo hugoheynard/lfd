@@ -165,6 +165,11 @@ enum StaffResource {
   /// du fournil : mode d'arrêt, heures, jours fermés.
   production_count_stop
   production_settings
+  /// LE RÉASSORT ENVOYÉ PAR LE FOURNIL — « je t'envoie ça » à un point,
+  /// à part de la demande du comptoir (2026-10-21,
+  /// `documentation/reassort-boutiques/plan-reapprovisionnement.md`, R1d).
+  /// Accordée à l'écran.
+  production_resupply
   /// LE RETRAIT AU COMPTOIR — la file, la remise, le scan (même plan).
   handover_counter
   /// La FEUILLE DE ROUTE du jour, sortie de `b2b_orders` (2026-09-29,

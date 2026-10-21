@@ -6,8 +6,11 @@ export interface RequestedResupplyLine {
   readonly quantity: number;
 }
 
-/** Passe un réassort pour un point. Acte staff ; rend l'identifiant. */
-export class PlaceSiteResupplyCommand {
+/**
+ * « Envoyer un réassort » depuis le fournil, pour un point (lot R1d). Acte
+ * staff ; rend l'identifiant du réassort créé.
+ */
+export class SendBakehouseResupplyCommand {
   constructor(
     readonly siteId: string,
     readonly target: ResupplyTarget,

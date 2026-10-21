@@ -10,7 +10,14 @@ import {
   FoldPageLayoutComponent,
 } from 'fold-ng';
 
-import { parisClock, RESUPPLY_TARGET_LABELS, resupplyDayLabel } from '../../shared/resupply-labels';
+import { PermissionsStore } from '../../auth/permissions.store';
+import {
+  BAKEHOUSE_ORIGIN_MARK,
+  parisClock,
+  RESUPPLY_TARGET_LABELS,
+  resupplyDayLabel,
+} from '../../shared/resupply-labels';
+import { BakehouseResupplyCard } from './bakehouse-resupply-card/bakehouse-resupply-card';
 import { LiveStockAlertsCard } from './live-stock-alerts-card/live-stock-alerts-card';
 import { LiveStockAlertsService } from './live-stock-alerts.service';
 import { ResuppliesToProduceService } from './resupplies-to-produce.service';
@@ -26,12 +33,18 @@ type LoadState = 'loading' | 'ready' | 'error';
  * feuille où le fournil le voit.
  *
  * En tête depuis le lot R1b (2026-10-21) : les ruptures et stocks faibles
- * déclarés par les points, avec « Lancer un réassort au plus tôt ».
+ * déclarés par les points — pour information depuis R1d, qui a retiré le
+ * bouton qui envoyait la demande du comptoir.
+ *
+ * Depuis le lot R1d (2026-10-21) : « Envoyer un réassort », le geste du
+ * fournil, à qui tient `production_resupply:write` ; un réassort qu'il a
+ * envoyé est marqué « Envoyé par le fournil » dans la journée.
  */
 @Component({
   selector: 'app-resupplies-to-produce-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    BakehouseResupplyCard,
     FoldButtonComponent,
     FoldCardComponent,
     FoldElementTitleComponent,
@@ -47,6 +60,10 @@ type LoadState = 'loading' | 'ready' | 'error';
 export class ResuppliesToProducePage {
   private readonly service = inject(ResuppliesToProduceService);
   private readonly stockAlerts = inject(LiveStockAlertsService);
+  private readonly permissions = inject(PermissionsStore);
+
+  protected readonly canSend = computed(() => this.permissions.can('production_resupply:write'));
+  protected readonly bakehouseMark = BAKEHOUSE_ORIGIN_MARK;
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly view = signal<ResuppliesToProduceView | null>(null);

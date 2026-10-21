@@ -1,4 +1,5 @@
 import { ResupplyCutoff } from "../../domain/resupply-cutoff.js";
+import { ResupplyReceptions } from "../../domain/resupply-receptions.js";
 import { ResupplySiteLabels } from "../../domain/resupply-site-labels.js";
 import {
   isPlaced,
@@ -6,6 +7,7 @@ import {
   type ResupplyTarget,
   SiteResupply,
   type SiteResupplySnapshot,
+  type SiteResupplyTrace,
 } from "../../domain/site-resupply.js";
 import {
   SiteResupplyChangedMeanwhileError,
@@ -22,6 +24,7 @@ function snapshotOf(resupply: SiteResupply, version: number): SiteResupplySnapsh
     target: resupply.target,
     serviceDay: resupply.serviceDay,
     version,
+    origin: resupply.origin,
     lines: resupply.lines,
     placed: resupply.placed,
     cancelled: resupply.cancelled,
@@ -87,6 +90,7 @@ export class InMemorySiteResupplies extends SiteResupplyRepository {
         row.siteId === siteId &&
         row.target === target &&
         row.serviceDay === serviceDay &&
+        row.origin === "counter" &&
         row.placed === null,
     );
   }
@@ -138,5 +142,20 @@ export class SiteLabels extends ResupplySiteLabels {
 
   labelsOf(siteIds: readonly string[]): Promise<ReadonlyMap<string, string>> {
     return Promise.resolve(new Map([...this.known].filter(([id]) => siteIds.includes(id))));
+  }
+}
+
+/** Les réceptions connues, par (point, réassort) ; retient les questions posées. */
+export class KnownReceptions extends ResupplyReceptions {
+  readonly asked: string[] = [];
+  private readonly known = new Map<string, SiteResupplyTrace>();
+
+  receive(siteId: string, resupplyId: string, trace: SiteResupplyTrace): void {
+    this.known.set(`${siteId}:${resupplyId}`, trace);
+  }
+
+  receptionOf(siteId: string, resupplyId: string): Promise<SiteResupplyTrace | null> {
+    this.asked.push(`${siteId}:${resupplyId}`);
+    return Promise.resolve(this.known.get(`${siteId}:${resupplyId}`) ?? null);
   }
 }

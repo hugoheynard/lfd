@@ -8,6 +8,9 @@
  * point est introuvable), l'heure limite lue dans la vraie règle générale et
  * le vrai réglage « réassort soumis », la quantité refusée jusqu'à la base.
  *
+ * Depuis le lot R1d (2026-10-21) : le réassort que le FOURNIL envoie, sous
+ * son droit neuf `production_resupply`, à part de la demande du comptoir.
+ *
  * L'horloge est gelée : la limite se compare à elle seule, jamais au calendrier.
  */
 import type {
@@ -21,6 +24,7 @@ import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js
 import { Clock } from "../src/platform/time/clock.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { counterSends, counterSent } from "./site-resupply-scene.js";
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -86,6 +90,10 @@ async function holderOf(
   return ctx.asSub(sub);
 }
 
+function bakehouseSender(): Promise<request.Agent> {
+  return holderOf("fournil-envoi", [{ resource: "production_resupply", action: "write" }]);
+}
+
 function counter(): Promise<request.Agent> {
   return holderOf("comptoir-commande", [{ resource: "handover_counter", action: "write" }]);
 }
@@ -124,16 +132,12 @@ async function resupplySubjectToCutoff(subject: boolean): Promise<void> {
 }
 
 describe("commander un réassort", () => {
-  it("le comptoir passe un réassort « au plus tôt », le relit, puis l'annule", async () => {
+  it("le comptoir envoie un réassort « au plus tôt », le relit, puis l'annule", async () => {
     const agent = await counter();
     const siteId = await seedSite("Val Village");
     const article = await firstArticle(agent);
 
-    const placed = await agent
-      .post(`/admin/site-resupplies/sites/${siteId}`)
-      .send({ target: "asap", lines: [{ sku: article.sku, quantity: 12 }] })
-      .expect(201);
-    const { id } = jsonBody<{ id: string }>(placed);
+    const id = await counterSent(agent, siteId, "asap", [{ sku: article.sku, quantity: 12 }]);
 
     const view = await listOf(agent, siteId);
     expect(view).toMatchObject({ today: TODAY, tomorrow: TOMORROW });
@@ -142,6 +146,7 @@ describe("commander un réassort", () => {
         id,
         serviceDay: TODAY,
         target: "asap",
+        origin: "counter",
         status: "placed",
         lines: [{ sku: article.sku, label: article.name, quantity: 12 }],
       }),
@@ -154,24 +159,109 @@ describe("commander un réassort", () => {
     expect(await ctx.prisma.siteResupply.count()).toBe(1);
   });
 
-  it("refuse une quantité nulle (400), un article inconnu (404), un réassort vide (400)", async () => {
+  /** R1d : le `POST` d'un seul tenant, qui envoyait la demande du comptoir, est retiré. */
+  it("le geste d'un seul tenant n'existe plus côté comptoir (404)", async () => {
     const agent = await counter();
     const siteId = await seedSite("Val Village");
-    const article = await firstArticle(agent);
-    const route = `/admin/site-resupplies/sites/${siteId}`;
 
     await agent
+      .post(`/admin/site-resupplies/sites/${siteId}`)
+      .send({ target: "asap", lines: [{ sku: "VIE-001", quantity: 1 }] })
+      .expect(404);
+  });
+});
+
+describe("le fournil envoie un réassort (R1d)", () => {
+  it("crée un réassort à part, signé du fournil ; la demande en cours du comptoir ne bouge pas", async () => {
+    const desk = await counter();
+    const sender = await bakehouseSender();
+    const siteId = await seedSite("Val Village");
+    const article = await firstArticle(desk);
+    const draftRoute = `/admin/site-resupplies/sites/${siteId}/drafts/asap/lines`;
+    await desk.post(draftRoute).send({ sku: article.sku, quantity: 2 }).expect(201);
+    const before = (await listOf(desk, siteId)).drafts;
+
+    const sent = await sender
+      .post(`/admin/bakehouse-resupplies/sites/${siteId}`)
+      .send({ target: "asap", lines: [{ sku: article.sku, quantity: 10 }] })
+      .expect(201);
+
+    const { id } = jsonBody<{ id: string }>(sent);
+    const view = await listOf(desk, siteId);
+    expect(view.drafts).toEqual(before);
+    expect(view.resupplies).toEqual([
+      expect.objectContaining({
+        id,
+        origin: "bakehouse",
+        status: "placed",
+        lines: [{ sku: article.sku, label: article.name, quantity: 10 }],
+      }),
+    ]);
+  });
+
+  it("refuse une quantité nulle (400), un article inconnu (404), un envoi vide (400), un point inconnu (404)", async () => {
+    const sender = await bakehouseSender();
+    const siteId = await seedSite("Val Village");
+    const [article] = jsonBody<readonly ResupplyArticleView[]>(
+      await sender.get("/admin/bakehouse-resupplies/articles").expect(200),
+    );
+    const sku = article?.sku ?? "";
+    const route = `/admin/bakehouse-resupplies/sites/${siteId}`;
+
+    await sender
       .post(route)
-      .send({ target: "asap", lines: [{ sku: article.sku, quantity: 0 }] })
+      .send({ target: "asap", lines: [{ sku, quantity: 0 }] })
       .expect(400);
-    await agent
+    await sender
       .post(route)
       .send({ target: "asap", lines: [{ sku: "INCONNU-9", quantity: 1 }] })
       .expect(404);
-    await agent.post(route).send({ target: "asap", lines: [] }).expect(400);
-    await agent.post(route).send({ target: "hier", lines: [] }).expect(400);
+    await sender.post(route).send({ target: "asap", lines: [] }).expect(400);
+    await sender.post(route).send({ target: "hier", lines: [] }).expect(400);
+    await sender
+      .post("/admin/bakehouse-resupplies/sites/site_inconnu")
+      .send({ target: "asap", lines: [{ sku, quantity: 1 }] })
+      .expect(404);
 
     expect(await ctx.prisma.siteResupply.count()).toBe(0);
+  });
+
+  it("soumis : « pour demain » du fournil bute sur la même heure limite que le comptoir (409)", async () => {
+    await cutoffAtSixTheDayBefore();
+    const sender = await bakehouseSender();
+    const siteId = await seedSite("Val Village");
+    const article = await firstArticle(await counter());
+    const lines = [{ sku: article.sku, quantity: 3 }];
+    const route = `/admin/bakehouse-resupplies/sites/${siteId}`;
+
+    const refused = await sender.post(route).send({ target: "tomorrow", lines }).expect(409);
+    expect(refused.body).toMatchObject({ code: "resupply.order.past_cutoff" });
+    await sender.post(route).send({ target: "asap", lines }).expect(201);
+  });
+
+  it("son droit à lui : ni le comptoir ni la fournée n'envoient ; la lecture voit points et articles", async () => {
+    const siteId = await seedSite("Val Village");
+    const body = { target: "asap", lines: [{ sku: "VIE-001", quantity: 1 }] };
+    const route = `/admin/bakehouse-resupplies/sites/${siteId}`;
+
+    await (await counter()).post(route).send(body).expect(403);
+    const worksheet = await holderOf("fournee", [
+      { resource: "production_worksheet", action: "write" },
+    ]);
+    await worksheet.post(route).send(body).expect(403);
+    await worksheet.get("/admin/bakehouse-resupplies/articles").expect(403);
+
+    const reader = await holderOf("fournil-envoi-lecture", [
+      { resource: "production_resupply", action: "read" },
+    ]);
+    await reader.post(route).send(body).expect(403);
+    await reader.get("/admin/bakehouse-resupplies/articles").expect(200);
+    const sites = jsonBody<readonly { id: string }[]>(
+      await reader.get("/admin/pickup-addresses").expect(200),
+    );
+    expect(sites.map((site) => site.id)).toContain(siteId);
+    // Le droit du fournil n'ouvre pas le comptoir.
+    await reader.get(`/admin/site-resupplies/sites/${siteId}`).expect(403);
   });
 });
 
@@ -181,16 +271,20 @@ describe("le mur par point", () => {
     const village = await seedSite("Val Village");
     const labo = await seedSite("Le Labo");
     const article = await firstArticle(agent);
-    const { id } = jsonBody<{ id: string }>(
-      await agent
-        .post(`/admin/site-resupplies/sites/${village}`)
-        .send({ target: "asap", lines: [{ sku: article.sku, quantity: 4 }] })
+    const id = await counterSent(agent, village, "asap", [{ sku: article.sku, quantity: 4 }]);
+    const sender = await bakehouseSender();
+    const sent = jsonBody<{ id: string }>(
+      await sender
+        .post(`/admin/bakehouse-resupplies/sites/${village}`)
+        .send({ target: "asap", lines: [{ sku: article.sku, quantity: 6 }] })
         .expect(201),
     );
 
     expect((await listOf(agent, labo)).resupplies).toEqual([]);
     await agent.post(`/admin/site-resupplies/sites/${labo}/${id}/cancel`).expect(404);
-    expect((await listOf(agent, village)).resupplies[0]?.status).toBe("placed");
+    await agent.post(`/admin/site-resupplies/sites/${labo}/${sent.id}/cancel`).expect(404);
+    const villageView = await listOf(agent, village);
+    expect(villageView.resupplies.map((resupply) => resupply.status)).toEqual(["placed", "placed"]);
   });
 });
 
@@ -200,12 +294,12 @@ describe("l'heure limite", () => {
     const agent = await counter();
     const siteId = await seedSite("Val Village");
     const article = await firstArticle(agent);
-    const route = `/admin/site-resupplies/sites/${siteId}`;
     const lines = [{ sku: article.sku, quantity: 3 }];
 
-    const refused = await agent.post(route).send({ target: "tomorrow", lines }).expect(409);
+    const { sent: refused } = await counterSends(agent, siteId, "tomorrow", lines);
+    expect(refused.status).toBe(409);
     expect(refused.body).toMatchObject({ code: "resupply.order.past_cutoff" });
-    await agent.post(route).send({ target: "asap", lines }).expect(201);
+    await counterSent(agent, siteId, "asap", lines);
 
     const view = await listOf(agent, siteId);
     expect(view.tomorrowOrderUntil).toBe("2026-09-08T16:00:00.000Z");
@@ -218,10 +312,7 @@ describe("l'heure limite", () => {
     const siteId = await seedSite("Val Village");
     const article = await firstArticle(agent);
 
-    await agent
-      .post(`/admin/site-resupplies/sites/${siteId}`)
-      .send({ target: "tomorrow", lines: [{ sku: article.sku, quantity: 3 }] })
-      .expect(201);
+    await counterSent(agent, siteId, "tomorrow", [{ sku: article.sku, quantity: 3 }]);
   });
 
   it("sans limite : « pour demain » passe le soir, et aucune limite n'est annoncée", async () => {
@@ -231,10 +322,7 @@ describe("l'heure limite", () => {
     const siteId = await seedSite("Val Village");
     const article = await firstArticle(agent);
 
-    await agent
-      .post(`/admin/site-resupplies/sites/${siteId}`)
-      .send({ target: "tomorrow", lines: [{ sku: article.sku, quantity: 3 }] })
-      .expect(201);
+    await counterSent(agent, siteId, "tomorrow", [{ sku: article.sku, quantity: 3 }]);
     expect((await listOf(agent, siteId)).tomorrowOrderUntil).toBeNull();
   });
 });
@@ -247,8 +335,8 @@ describe("les droits", () => {
     ]);
     await reader.get(`/admin/site-resupplies/sites/${siteId}`).expect(200);
     await reader
-      .post(`/admin/site-resupplies/sites/${siteId}`)
-      .send({ target: "asap", lines: [{ sku: "VIE-001", quantity: 1 }] })
+      .post(`/admin/site-resupplies/sites/${siteId}/drafts/asap/lines`)
+      .send({ sku: "VIE-001", quantity: 1 })
       .expect(403);
 
     const other = await holderOf("commandes-seules", [{ resource: "b2b_orders", action: "read" }]);
@@ -260,18 +348,9 @@ describe("les droits", () => {
     const agent = await counter();
     const village = await seedSite("Val Village");
     const article = await firstArticle(agent);
-    const route = `/admin/site-resupplies/sites/${village}`;
-    await agent
-      .post(route)
-      .send({ target: "asap", lines: [{ sku: article.sku, quantity: 5 }] })
-      .expect(201);
-    const { id } = jsonBody<{ id: string }>(
-      await agent
-        .post(route)
-        .send({ target: "tomorrow", lines: [{ sku: article.sku, quantity: 9 }] })
-        .expect(201),
-    );
-    await agent.post(`${route}/${id}/cancel`).expect(204);
+    await counterSent(agent, village, "asap", [{ sku: article.sku, quantity: 5 }]);
+    const id = await counterSent(agent, village, "tomorrow", [{ sku: article.sku, quantity: 9 }]);
+    await agent.post(`/admin/site-resupplies/sites/${village}/${id}/cancel`).expect(204);
 
     await agent.get("/admin/site-resupplies/to-produce").expect(403);
     const bakehouse = await holderOf("fournil", [

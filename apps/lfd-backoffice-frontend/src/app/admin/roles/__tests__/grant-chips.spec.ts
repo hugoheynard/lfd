@@ -124,9 +124,11 @@ describe('grantGroups', () => {
    * 62 encore le même jour : `lfd_webhooks` entre, `shop_vitrine` est retiré
    * (webhooks/vitrine.md) — comme `b2b_catalog`, il ne compte plus. 63 le
    * 2026-10-20 : `allergen_matrix`, la matrice des allergènes et ses exports
-   * (pim/plan-matrice-des-allergenes.md, AM2).
+   * (pim/plan-matrice-des-allergenes.md, AM2). 64 le 2026-10-21 :
+   * `production_resupply`, le réassort envoyé par le fournil
+   * (reassort-boutiques/plan-reapprovisionnement.md, R1d).
    */
   it('compte les domaines du catalogue', () => {
-    expect(RESOURCE_COUNT).toBe(63);
+    expect(RESOURCE_COUNT).toBe(64);
   });
 });

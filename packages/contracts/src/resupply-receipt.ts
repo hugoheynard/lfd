@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { ResupplyTarget } from "./site-resupply.js";
+import type { ResupplyOrigin, ResupplyTarget } from "./site-resupply.js";
 
 /**
  * **La réception du réassort d'un point** — Comptoir › Réassort boutique
@@ -42,6 +42,8 @@ export interface ResupplyReceptionLineView {
 export interface ResupplyReceptionView {
   readonly resupplyId: string;
   readonly target: ResupplyTarget;
+  /** `bakehouse` : « envoyé par le fournil » (R1d) ; il se réceptionne comme les autres. */
+  readonly origin: ResupplyOrigin;
   readonly placedAt: string;
   /** Nom figé de qui l'a envoyé ; `null` s'il est inconnu. */
   readonly placedBy: string | null;

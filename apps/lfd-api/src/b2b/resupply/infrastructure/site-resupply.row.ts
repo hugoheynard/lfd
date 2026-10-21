@@ -1,3 +1,4 @@
+import { resupplyOriginOf } from "../domain/resupply-origin.js";
 import { resupplyTargetOf, type SiteResupplySnapshot } from "../domain/site-resupply.js";
 
 /** Une journée civile en colonne `DATE` : minuit UTC, que Postgres tronque au jour. */
@@ -18,6 +19,7 @@ export interface SiteResupplyRow {
   readonly target: string;
   readonly serviceDay: Date;
   readonly version: number;
+  readonly origin: string;
   readonly placedAt: Date | null;
   readonly placedByStaffId: string | null;
   readonly placedByName: string | null;
@@ -34,7 +36,7 @@ export interface SiteResupplyRow {
 }
 
 /**
- * Ligne → instantané du domaine. La visée revalide ; la journée se relit en
+ * Ligne → instantané du domaine. La visée et l'origine revalident ; la journée se relit en
  * UTC. Un envoi est entier en base (CHECK `site_resupply_placement_whole`) :
  * un auteur absent à côté d'un instant n'arrive pas.
  */
@@ -45,6 +47,7 @@ export function snapshotOf(row: SiteResupplyRow): SiteResupplySnapshot {
     target: resupplyTargetOf(row.target),
     serviceDay: row.serviceDay.toISOString().slice(0, 10),
     version: row.version,
+    origin: resupplyOriginOf(row.origin),
     lines: row.lines,
     placed:
       row.placedAt === null

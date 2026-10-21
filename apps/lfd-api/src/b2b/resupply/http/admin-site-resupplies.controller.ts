@@ -4,8 +4,6 @@ import {
   type CorrectSiteResupplyLinePayload,
   correctSiteResupplyLineSchema,
   type PlacedSiteResupplyResponse,
-  type PlaceSiteResupplyPayload,
-  placeSiteResupplySchema,
   RESUPPLY_TARGETS,
   type ResupplyTarget,
   type SeenSiteResupplyVersionPayload,
@@ -24,7 +22,6 @@ import { AddSiteResupplyLineCommand } from "../application/add-site-resupply-lin
 import { CancelSiteResupplyCommand } from "../application/cancel-site-resupply.command.js";
 import { CorrectSiteResupplyLineCommand } from "../application/correct-site-resupply-line.command.js";
 import { ListSiteResuppliesQuery } from "../application/list-site-resupplies.query.js";
-import { PlaceSiteResupplyCommand } from "../application/place-site-resupply.command.js";
 import { SendSiteResupplyCommand } from "../application/send-site-resupply.command.js";
 import { WithdrawSiteResupplyLineCommand } from "../application/withdraw-site-resupply-line.command.js";
 
@@ -41,7 +38,12 @@ const targetParamSchema = z.enum(RESUPPLY_TARGETS);
  * Depuis le lot R1c (2026-10-21), la demande en cours d'une visée est
  * enregistrée : on y ajoute (`drafts/:target/lines`), on corrige, on retire,
  * on envoie (`send`) — les trois derniers sous la version vue par le poste.
- * `POST :siteId` reste le geste d'un seul tenant, que le fournil emploie.
+ *
+ * Le `POST :siteId` d'un seul tenant, qu'employait le bouton « Lancer un
+ * réassort au plus tôt » du fournil, est retiré au lot R1d : il envoyait la
+ * demande DU COMPTOIR. Le fournil envoie désormais les siens à part
+ * (`AdminBakehouseResuppliesController`). Annuler un réassort déjà
+ * réceptionné est refusé (409).
  */
 @Controller("admin/site-resupplies/sites")
 @AdminSurface("handover_counter")
@@ -57,19 +59,6 @@ export class AdminSiteResuppliesController {
     return this.queries.execute<ListSiteResuppliesQuery, SiteResuppliesView>(
       new ListSiteResuppliesQuery(siteId),
     );
-  }
-
-  @Post(":siteId")
-  @RequirePermission("handover_counter:write")
-  async place(
-    @Param("siteId") siteId: string,
-    @Body(new ZodBody(placeSiteResupplySchema)) body: PlaceSiteResupplyPayload,
-    @StaffUserId() staffUserId: string,
-  ): Promise<PlacedSiteResupplyResponse> {
-    const id = await this.commands.execute<PlaceSiteResupplyCommand, string>(
-      new PlaceSiteResupplyCommand(siteId, body.target, body.lines, staffUserId),
-    );
-    return { id };
   }
 
   @Post(":siteId/:resupplyId/cancel")

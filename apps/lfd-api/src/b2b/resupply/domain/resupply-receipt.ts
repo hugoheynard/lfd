@@ -8,6 +8,7 @@ import {
   ReceiptLineNotFoundError,
   ReceiptNotYetReceivedError,
   ResupplyAlreadyReceivedError,
+  ResupplyDayNotYetComeError,
 } from "./resupply-receipt-errors.js";
 import { ResupplyReceiptLine, type ResupplyReceiptLineSnapshot } from "./resupply-receipt-line.js";
 
@@ -135,12 +136,19 @@ export class ResupplyReceipt {
     return this.trace;
   }
 
-  /** « Réceptionner » : toutes les lignes attendues deviennent reçues, d'un geste. */
+  /**
+   * « Réceptionner » : toutes les lignes attendues deviennent reçues, d'un
+   * geste. Refusé avant sa journée, à l'heure de Paris (lot R1d) : le stock
+   * d'un jour ne compte que ce qui est arrivé ce jour-là.
+   */
   receiveAll(trace: ResupplyReceiptTrace): void {
     const already = this.receivedTrace;
     if (already !== null) {
       const at = instantToLocal(already.at);
       throw new ResupplyAlreadyReceivedError(already.author.name, `le ${at.day} à ${at.time}`);
+    }
+    if (instantToLocal(trace.at).day < this.serviceDay) {
+      throw new ResupplyDayNotYetComeError(this.serviceDay);
     }
     this.lineList = this.lineList.map((line) => line.receivedAsExpected());
     this.receivedTrace = trace;

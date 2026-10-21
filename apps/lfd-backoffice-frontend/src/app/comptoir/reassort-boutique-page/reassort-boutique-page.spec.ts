@@ -152,6 +152,7 @@ function expected(resupplyId: string, quantity: number): ResupplyReceptionView {
   return {
     resupplyId,
     target: 'asap',
+    origin: 'counter',
     placedAt: '2026-01-02T07:00:00.000Z',
     placedBy: 'Max',
     status: 'expected',

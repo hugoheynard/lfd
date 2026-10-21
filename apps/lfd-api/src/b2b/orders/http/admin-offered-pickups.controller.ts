@@ -40,6 +40,8 @@ export class AdminOfferedPickupsController {
     "b2b_settings:read",
     "handover_counter:read",
     "b2b_counter:read",
+    // Le fournil choisit le point auquel il envoie un réassort (lot R1d).
+    "production_resupply:read",
   )
   list(
     @Query("companyId", new ZodQuery(companyIdSchema)) companyId: string | undefined,

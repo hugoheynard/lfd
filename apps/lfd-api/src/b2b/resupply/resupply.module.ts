@@ -16,14 +16,15 @@ import { GetResupplyReceiptHandler } from "./application/get-resupply-receipt.ha
 import { ListResuppliesToProduceHandler } from "./application/list-resupplies-to-produce.handler.js";
 import { ListResupplyArticlesHandler } from "./application/list-resupply-articles.handler.js";
 import { ListSiteResuppliesHandler } from "./application/list-site-resupplies.handler.js";
-import { PlaceSiteResupplyHandler } from "./application/place-site-resupply.handler.js";
 import { ReceiveResupplyLineHandler } from "./application/receive-resupply-line.handler.js";
 import { ReceiveSiteResupplyHandler } from "./application/receive-site-resupply.handler.js";
+import { SendBakehouseResupplyHandler } from "./application/send-bakehouse-resupply.handler.js";
 import { SendSiteResupplyHandler } from "./application/send-site-resupply.handler.js";
 import { WithdrawResupplyLineHandler } from "./application/withdraw-resupply-line.handler.js";
 import { WithdrawSiteResupplyLineHandler } from "./application/withdraw-site-resupply-line.handler.js";
 import { ResupplyCatalogue } from "./domain/resupply-catalogue.js";
 import { ResupplyCutoff } from "./domain/resupply-cutoff.js";
+import { ResupplyReceptions } from "./domain/resupply-receptions.js";
 import { ResupplyReceiptReader } from "./domain/resupply-receipt.reader.js";
 import { ResupplyReceiptRepository } from "./domain/resupply-receipt.repository.js";
 import { ResupplySiteLabels } from "./domain/resupply-site-labels.js";
@@ -32,6 +33,7 @@ import { SiteResupplyReader } from "./domain/site-resupply.reader.js";
 import { SiteResupplyRepository } from "./domain/site-resupply.repository.js";
 import { StockAlertReader } from "./domain/stock-alert.reader.js";
 import { StockAlertRepository } from "./domain/stock-alert.repository.js";
+import { AdminBakehouseResuppliesController } from "./http/admin-bakehouse-resupplies.controller.js";
 import { AdminLiveStockAlertsController } from "./http/admin-live-stock-alerts.controller.js";
 import { AdminSiteStockAlertsController } from "./http/admin-site-stock-alerts.controller.js";
 import { AdminResuppliesToProduceController } from "./http/admin-resupplies-to-produce.controller.js";
@@ -39,6 +41,7 @@ import { AdminResupplyReceiptsController } from "./http/admin-resupply-receipts.
 import { AdminSiteResuppliesController } from "./http/admin-site-resupplies.controller.js";
 import { CatalogResupplyCatalogue } from "./infrastructure/catalog-resupply-catalogue.js";
 import { GeneralResupplyCutoff } from "./infrastructure/general-resupply-cutoff.js";
+import { PrismaResupplyReceptions } from "./infrastructure/prisma-resupply-receptions.js";
 import { PrismaResupplySiteLabels } from "./infrastructure/prisma-resupply-site-labels.js";
 import { PrismaResupplyReceiptReader } from "./infrastructure/prisma-resupply-receipt.reader.js";
 import { PrismaResupplyReceiptRepository } from "./infrastructure/prisma-resupply-receipt.repository.js";
@@ -54,7 +57,8 @@ import { PrismaStockAlertRepository } from "./infrastructure/prisma-stock-alert.
  * 2026-10-21) — la RÉCEPTION (ce que la vitrine a reçu, lot J1 du plan du
  * jour même ; un reçu par réassort depuis le lot R2) et, depuis le lot R1 (2026-10-21), la DEMANDE au fournil
  * (`SiteResupply`), que le fournil lit en lecture — sa demande en cours
- * enregistrée depuis R1c ; et, depuis le lot R1b,
+ * enregistrée depuis R1c, et celle que le fournil envoie à part depuis R1d ;
+ * et, depuis le lot R1b,
  * les alertes de stock du comptoir (`StockAlert`). Aucune dépendance au
  * modèle `Order`.
  *
@@ -70,10 +74,12 @@ import { PrismaStockAlertRepository } from "./infrastructure/prisma-stock-alert.
     AdminResuppliesToProduceController,
     AdminSiteStockAlertsController,
     AdminLiveStockAlertsController,
+    AdminBakehouseResuppliesController,
   ],
   providers: [
     { provide: ResupplyReceiptRepository, useClass: PrismaResupplyReceiptRepository },
     { provide: ResupplyReceiptReader, useClass: PrismaResupplyReceiptReader },
+    { provide: ResupplyReceptions, useClass: PrismaResupplyReceptions },
     { provide: ResupplyCatalogue, useClass: CatalogResupplyCatalogue },
     { provide: ResupplySites, useClass: PrismaResupplySites },
     { provide: SiteResupplyRepository, useClass: PrismaSiteResupplyRepository },
@@ -89,7 +95,7 @@ import { PrismaStockAlertRepository } from "./infrastructure/prisma-stock-alert.
     CorrectReceivedResupplyLineHandler,
     GetResupplyReceiptHandler,
     ListResupplyArticlesHandler,
-    PlaceSiteResupplyHandler,
+    SendBakehouseResupplyHandler,
     CancelSiteResupplyHandler,
     AddSiteResupplyLineHandler,
     CorrectSiteResupplyLineHandler,

@@ -5,6 +5,7 @@ import {
   ResupplySiteUnknownError,
 } from "../../domain/resupply-receipt-errors.js";
 import {
+  ResupplyAlreadyReceivedNotCancellableError,
   ResupplyNotCancellableError,
   ResupplyPastCutoffError,
   SiteResupplyNotFoundError,
@@ -14,12 +15,13 @@ import { CancelSiteResupplyHandler } from "../cancel-site-resupply.handler.js";
 import { ListResuppliesToProduceHandler } from "../list-resupplies-to-produce.handler.js";
 import { ListSiteResuppliesHandler } from "../list-site-resupplies.handler.js";
 import { ListSiteResuppliesQuery } from "../list-site-resupplies.query.js";
-import { PlaceSiteResupplyCommand } from "../place-site-resupply.command.js";
-import { PlaceSiteResupplyHandler } from "../place-site-resupply.handler.js";
+import { SendBakehouseResupplyCommand } from "../send-bakehouse-resupply.command.js";
+import { SendBakehouseResupplyHandler } from "../send-bakehouse-resupply.handler.js";
 import { Catalogue, Directory, Sites } from "./resupply-doubles.js";
 import {
   FixedResupplyCutoff,
   InMemorySiteResupplies,
+  KnownReceptions,
   InMemorySiteResupplyReader,
   SiteLabels,
 } from "./site-resupply-doubles.js";
@@ -42,11 +44,13 @@ function setup(deadline: Date | null = null) {
   const cutoff = new FixedResupplyCutoff(deadline);
   const clock = new FixedClock(NOW);
   const staff = new Directory({ name: "Lou Martin", role: "counter" });
+  const receptions = new KnownReceptions();
   return {
     store,
+    receptions,
     cutoff,
     clock,
-    place: new PlaceSiteResupplyHandler(
+    place: new SendBakehouseResupplyHandler(
       store,
       CATALOGUE,
       new Sites([VILLAGE, LABO]),
@@ -55,7 +59,7 @@ function setup(deadline: Date | null = null) {
       clock,
       new FixedIdGenerator("resupply"),
     ),
-    cancel: new CancelSiteResupplyHandler(store, staff, clock),
+    cancel: new CancelSiteResupplyHandler(store, receptions, staff, clock),
     list: new ListSiteResuppliesHandler(reader, cutoff, clock),
     toProduce: new ListResuppliesToProduceHandler(
       reader,
@@ -65,12 +69,12 @@ function setup(deadline: Date | null = null) {
   };
 }
 
-describe("passer un réassort", () => {
-  it("compose le brouillon au catalogue, le passe et rend son identifiant", async () => {
+describe("le fournil envoie un réassort (R1d)", () => {
+  it("le compose au catalogue, l'envoie d'un geste, signé du fournil, et rend son identifiant", async () => {
     const { place, list } = setup();
 
     const id = await place.execute(
-      new PlaceSiteResupplyCommand(
+      new SendBakehouseResupplyCommand(
         VILLAGE,
         "tomorrow",
         [{ sku: "CRO", quantity: 24 }],
@@ -87,6 +91,7 @@ describe("passer un réassort", () => {
         siteId: VILLAGE,
         serviceDay: TOMORROW,
         target: "tomorrow",
+        origin: "bakehouse",
         status: "placed",
         lines: [{ sku: "CRO", label: "Croissant", quantity: 24 }],
         placedAt: NOW.toISOString(),
@@ -102,7 +107,7 @@ describe("passer un réassort", () => {
 
     await expect(
       place.execute(
-        new PlaceSiteResupplyCommand(VILLAGE, "tomorrow", [{ sku: "CRO", quantity: 1 }], "s"),
+        new SendBakehouseResupplyCommand(VILLAGE, "tomorrow", [{ sku: "CRO", quantity: 1 }], "s"),
       ),
     ).rejects.toThrow(ResupplyPastCutoffError);
     expect(cutoff.asked).toEqual([TOMORROW]);
@@ -113,7 +118,7 @@ describe("passer un réassort", () => {
     const { place, store } = setup(new Date(NOW.getTime() - HOUR_MS));
 
     await place.execute(
-      new PlaceSiteResupplyCommand(VILLAGE, "asap", [{ sku: "PAC", quantity: 6 }], "s"),
+      new SendBakehouseResupplyCommand(VILLAGE, "asap", [{ sku: "PAC", quantity: 6 }], "s"),
     );
 
     expect(store.all().map((row) => row.serviceDay)).toEqual([TODAY]);
@@ -124,11 +129,11 @@ describe("passer un réassort", () => {
     const lines = [{ sku: "CRO", quantity: 1 }];
 
     await expect(
-      place.execute(new PlaceSiteResupplyCommand("site_x", "asap", lines, "s")),
+      place.execute(new SendBakehouseResupplyCommand("site_x", "asap", lines, "s")),
     ).rejects.toThrow(ResupplySiteUnknownError);
     await expect(
       place.execute(
-        new PlaceSiteResupplyCommand(VILLAGE, "asap", [{ sku: "X", quantity: 1 }], "s"),
+        new SendBakehouseResupplyCommand(VILLAGE, "asap", [{ sku: "X", quantity: 1 }], "s"),
       ),
     ).rejects.toThrow(ResupplyArticleUnknownError);
     expect(store.saves).toBe(0);
@@ -138,7 +143,9 @@ describe("passer un réassort", () => {
     const { place, store } = setup();
     const lines = [{ sku: "CRO", quantity: 2 }];
 
-    await place.execute(new PlaceSiteResupplyCommand(VILLAGE, "asap", [...lines, ...lines], "s"));
+    await place.execute(
+      new SendBakehouseResupplyCommand(VILLAGE, "asap", [...lines, ...lines], "s"),
+    );
 
     expect(store.all()[0]?.lines).toEqual([expect.objectContaining({ sku: "CRO", quantity: 4 })]);
   });
@@ -148,7 +155,7 @@ describe("annuler un réassort", () => {
   it("annule sous le point de l'URL, et pas deux fois", async () => {
     const { place, cancel, list } = setup();
     const id = await place.execute(
-      new PlaceSiteResupplyCommand(VILLAGE, "asap", [{ sku: "CRO", quantity: 3 }], "s"),
+      new SendBakehouseResupplyCommand(VILLAGE, "asap", [{ sku: "CRO", quantity: 3 }], "s"),
     );
 
     await cancel.execute(new CancelSiteResupplyCommand(VILLAGE, id, "staff_lou"));
@@ -160,10 +167,29 @@ describe("annuler un réassort", () => {
     );
   });
 
+  /** Trou laissé par R2 : un réassort arrivé et réceptionné s'annulait encore. */
+  it("refuse d'annuler un réassort déjà réceptionné, en nommant qui et à quelle heure", async () => {
+    const { place, cancel, receptions, store } = setup();
+    const id = await place.execute(
+      new SendBakehouseResupplyCommand(VILLAGE, "asap", [{ sku: "CRO", quantity: 3 }], "s"),
+    );
+    receptions.receive(VILLAGE, id, {
+      at: NOW,
+      author: { staffUserId: "staff_lea", name: "Léa Roux", role: "counter" },
+    });
+
+    const refusal = cancel.execute(new CancelSiteResupplyCommand(VILLAGE, id, "s"));
+
+    await expect(refusal).rejects.toThrow(ResupplyAlreadyReceivedNotCancellableError);
+    await expect(refusal).rejects.toThrow(/réceptionné par Léa Roux à 17:00/u);
+    expect(receptions.asked).toEqual([`${VILLAGE}:${id}`]);
+    expect(store.all()[0]?.cancelled).toBeNull();
+  });
+
   it("un réassort d'un autre point est introuvable", async () => {
     const { place, cancel } = setup();
     const id = await place.execute(
-      new PlaceSiteResupplyCommand(VILLAGE, "asap", [{ sku: "CRO", quantity: 3 }], "s"),
+      new SendBakehouseResupplyCommand(VILLAGE, "asap", [{ sku: "CRO", quantity: 3 }], "s"),
     );
 
     await expect(cancel.execute(new CancelSiteResupplyCommand(LABO, id, "s"))).rejects.toThrow(
@@ -176,7 +202,7 @@ describe("les réassorts à produire", () => {
   it("par journée puis par point, sans les annulés, avec le cumul par article", async () => {
     const { place, cancel, toProduce } = setup();
     const order = (siteId: string, target: "asap" | "tomorrow", sku: string, quantity: number) =>
-      place.execute(new PlaceSiteResupplyCommand(siteId, target, [{ sku, quantity }], "s"));
+      place.execute(new SendBakehouseResupplyCommand(siteId, target, [{ sku, quantity }], "s"));
     await order(VILLAGE, "asap", "CRO", 10);
     await order(LABO, "asap", "CRO", 5);
     await order(VILLAGE, "tomorrow", "PAC", 7);

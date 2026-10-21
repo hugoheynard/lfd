@@ -63,6 +63,10 @@
   color: var(--fold-color-text-muted);
 }
 
+.mark {
+  font-weight: var(--fold-weight-semibold);
+}
+
 .totals .muted {
   display: block;
   font-size: var(--fold-text-2xs);

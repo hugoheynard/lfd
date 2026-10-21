@@ -112,6 +112,7 @@ class FakeResupplies {
           siteId,
           serviceDay: draft.serviceDay,
           target: draft.target,
+          origin: 'counter',
           status: 'placed',
           lines: draft.lines,
           placedAt: '2026-01-02T15:00:00.000Z',

@@ -6,7 +6,9 @@
 > mais le fournil ne fait encore que la LIRE : elle n'entre ni au plan figé, ni
 > au colisage, ni au transfert (R3). Les **ruptures et stocks faibles** du
 > comptoir aussi (lot R1b, 2026-10-21), sans effet encore sur la boutique. La
-> **demande en cours** est enregistrée depuis le lot R1c (2026-10-21). Ce document décrit ce qui existe, vérifié
+> **demande en cours** est enregistrée depuis le lot R1c (2026-10-21). Le
+> **fournil envoie ses propres réassorts**, à part, depuis le lot R1d
+> (2026-10-21). Ce document décrit ce qui existe, vérifié
 > dans le code le 2026-10-21. La conception
 > complète, lots et questions ouvertes compris, est dans
 > [`plan-reapprovisionnement.md`](plan-reapprovisionnement.md).
@@ -117,11 +119,10 @@ placed_at IS NULL` ; deux postes qui l'ouvrent au même instant, le second
   `PATCH :resupplyId/lines/:sku` (corriger), `POST
 :resupplyId/lines/:sku/withdraw` (retirer), `POST :resupplyId/send`
   (envoyer). La lecture sert `drafts` à côté de `resupplies` (envoyés).
-- **Le `POST :siteId` de R1** est gardé — le bouton « Lancer un réassort au
-  plus tôt » du fournil l'emploie — et passe par la demande en cours : ses
-  lignes s'ajoutent à la demande de la visée, puis la demande ENTIÈRE part,
-  avec ce que le comptoir y avait mis. Un seul réassort « au plus tôt » à la
-  fois, jamais deux demandes parallèles.
+- **Le `POST :siteId` de R1 est retiré** (lot R1d, 2026-10-21) : il
+  ajoutait ses lignes à la demande « au plus tôt » DU COMPTOIR et l'envoyait
+  entière ; son seul appelant, le bouton « Lancer un réassort au plus tôt »
+  du fournil, est retiré avec lui.
 - **L'écran** : la carte « Commander au fournil » montre la demande en
   cours de chaque visée, quantités corrigibles, « Envoyer le réassort » ;
   elle relit après chaque geste, toutes les 15 s onglet visible, et dès
@@ -136,7 +137,7 @@ placed_at IS NULL` ; deux postes qui l'ouvrent au même instant, le second
 ```mermaid
 flowchart LR
   C["Comptoir › Réassort<br/>« Rupture » / « Stock faible »<br/>(une ligne reçue ou le catalogue)"] --> A["StockAlert<br/>vivante → levée"]
-  A --> F["Fournil › Réassorts à produire<br/>« Village : rupture — Croissant »<br/>« Lancer un réassort au plus tôt »"]
+  A --> F["Fournil › Réassorts à produire<br/>« Village : rupture — Croissant »<br/>(pour information)"]
   R["« Réceptionner » un réassort, ou une ligne<br/>sans commande, de l'article au point"] -->|"même transaction"| A
   C -->|"« Lever »"| A
 ```
@@ -171,13 +172,56 @@ flowchart LR
   tête de la page Réassort (`comptoir/reassort-boutique-page/stock-alerts-card/`),
   et les gestes sur chaque ligne reçue ; au fournil, « Alertes des points » en
   tête de « Réassorts à produire »
-  (`production/reassorts-a-produire/live-stock-alerts-card/`). « Lancer un
-  réassort au plus tôt » ajoute l'article à la demande `asap` du point et
-  l'envoie (R1c), par la route du comptoir : il n'apparaît qu'à qui tient
-  `handover_counter:write` — aucun droit du fournil ne couvre cette route.
+  (`production/reassorts-a-produire/live-stock-alerts-card/`), **pour
+  information** depuis le lot R1d : le bouton « Lancer un réassort au plus
+  tôt », qui envoyait la demande du comptoir, est retiré. Pour répondre, le
+  fournil envoie son propre réassort (section suivante).
 - **Aucun effet sur la boutique ni sur la passation** : une rupture ne bloque
   encore rien, un stock faible n'avertit aucun client (lot J2). L'écran du
   comptoir le dit.
+
+## Ce qui est bâti : le fournil envoie un réassort (lot R1d, 2026-10-21)
+
+« Je t'envoie ça » — quand un point le demande au téléphone, le fournil
+entre la demande lui-même, à part de celle du comptoir.
+
+```mermaid
+flowchart LR
+  F["Fournil › Réassorts à produire<br/>« Envoyer un réassort »<br/>point · visée · articles"] -->|"production_resupply:write"| S["SiteResupply<br/>origin = bakehouse<br/>créé ET envoyé"]
+  D["Demande en cours du comptoir<br/>origin = counter, brouillon"] -.->|"jamais touchée"| S
+  S --> R["Comptoir › Réceptionner les réassorts<br/>« Envoyé par le fournil »"]
+```
+
+- **L'origine** : `SiteResupply.origin` — `counter` (le comptoir, par sa
+  demande en cours) ou `bakehouse` (le fournil). `SiteResupply.sentByBakehouse`
+  crée le réassort avec ses lignes (un article donné deux fois s'additionne)
+  et l'envoie d'un geste, avec les règles du comptoir : au moins une ligne,
+  libellés lus au catalogue publié, l'heure limite de sa journée pour « pour
+  demain » si le réassort y est soumis, jamais pour « au plus tôt ». Il n'a
+  jamais de brouillon : `SendBakehouseResupplyHandler` ne consulte pas la
+  demande en cours.
+- **La table** : `site_resupply.origin` (`TEXT NOT NULL DEFAULT 'counter'`),
+  migration additive `20261022000100_l_origine_du_reassort` ; CHECK
+  `site_resupply_origin_known` et `site_resupply_bakehouse_placed` (un
+  réassort du fournil a toujours un `placed_at`). L'index unique partiel des
+  demandes en cours (`WHERE placed_at IS NULL`) ne change pas : un réassort
+  du fournil n'y entre jamais.
+- **Le droit** : `production_resupply` (« Production — Envoi de réassort »),
+  ajouté à `StaffResource` par `20261022000000_le_droit_du_reassort_du_fournil`
+  sans être accordé à personne ; il s'accorde à l'écran des rôles (la graine
+  le donne au seul administrateur). Distinct de `handover_counter` : ni le
+  comptoir ni la fournée n'envoient au nom du fournil.
+- **Les routes** : `admin/bakehouse-resupplies` sous `production_resupply` —
+  `GET articles` (le catalogue publié, `:read`) et `POST sites/:siteId`
+  (`{ target, lines }`, `:write`, rend `{ id }`). Les points proposés se
+  lisent sur `GET /admin/pickup-addresses`, ouvert à
+  `production_resupply:read`.
+- **Les écrans** : au fournil, la carte « Envoyer un réassort »
+  (`production/reassorts-a-produire/bakehouse-resupply-card/`), composée à
+  l'écran puis envoyée, sous `production_resupply:write` ; dans la liste du
+  jour, « Envoyé par le fournil ». Au comptoir, la carte « Réceptionner les
+  réassorts » le marque de même ; il se réceptionne en un geste comme les
+  autres, et le comptoir peut l'annuler tant qu'il n'est pas réceptionné.
 
 ## Ce qui est bâti : la réception au comptoir (refaite au lot R2, 2026-10-21)
 
@@ -203,13 +247,18 @@ plein service » ; un reçu par réassort ; la saisie de secours devient un
     geste. Une ligne ne se corrige (`correct`) qu'**après** ; on n'y ajoute ni
     n'en retire d'article. Un second « Réceptionner » est refusé (409), il
     n'est jamais rejoué en silence. Seul un réassort envoyé et non annulé se
-    réceptionne ;
+    réceptionne, et pas avant sa journée à l'heure de Paris (409
+    `resupply.receipt.day_not_yet_come`, lot R1d) ;
   - **le réassort sans commande** (`resupplyId` nul) : `receive`, `correct`,
     `withdraw`, ligne par ligne, chaque ligne reçue dès sa saisie ; un même
     article deux fois est refusé (« corrigez sa quantité »).
 - **Le reçu n'est écrit qu'une fois reçu** : avant « Réceptionner », l'attendu
   se lit du réassort lui-même. Le stock ne monte qu'à la réception, jamais à
   l'envoi.
+- **Un réassort réceptionné ne s'annule plus** (lot R1d) : l'annulation lit
+  sa réception par le port `ResupplyReceptions` et `SiteResupply.cancel` la
+  refuse (409 `resupply.order.already_received`, « déjà réceptionné par X à
+  HH:MM »).
 - **Le verrou optimiste** : un reçu porte une `version` ; deux postes qui
   corrigent en même temps font refuser le second
   (`ResupplyReceiptChangedMeanwhileError`).
@@ -256,8 +305,11 @@ n'y est jamais soumis. Voir
 
 - **La quantité emballée** comme attendu (R3) : l'attendu est encore la
   quantité demandée.
-- **Annuler un réassort déjà réceptionné** : l'annulation n'en sait rien et
-  reste permise ; le reçu reste et compte au stock (l'écran le sert encore).
+- **La course annuler / réceptionner** : l'annulation lit la réception puis
+  écrit le réassort ; « Réceptionner » ne touche pas la version du réassort.
+  Deux postes qui annulent et réceptionnent à la même seconde peuvent encore
+  laisser un réassort annulé ET réceptionné (le reçu reste et compte au
+  stock). Fermé seulement si la réception passe un jour par l'agrégat.
 - **Le branchement de la commande** (R3, R4) : produite au plan figé, colisée,
   portée par le transfert interne
   ([`../livraisons/transferts/plan-transfert-interne.md`](../livraisons/transferts/plan-transfert-interne.md)) —

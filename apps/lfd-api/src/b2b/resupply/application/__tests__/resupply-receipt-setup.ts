@@ -19,7 +19,8 @@ import { InMemorySiteResupplies, InMemorySiteResupplyReader } from "./site-resup
 import { InMemoryStockAlerts } from "./stock-alert-doubles.js";
 
 /** Le banc des handlers de la réception (lot R2) : doubles partagés, une horloge fixe. */
-export const AT = new Date(0);
+/** 09:00 à Paris le jour du réassort : « Réceptionner » n'est permis qu'à partir de sa journée. */
+export const AT = new Date("2026-01-02T08:00:00Z");
 export const SITE = "site_village";
 export const OTHER = "site_labo";
 export const DAY = "2026-01-02";
@@ -41,6 +42,7 @@ export function placed(
     target: "asap",
     serviceDay: DAY,
     version: 2,
+    origin: "counter",
     lines,
     placed: { at: AT, author: AUTHOR },
     cancelled: null,

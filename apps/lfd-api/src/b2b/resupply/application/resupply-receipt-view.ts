@@ -21,6 +21,7 @@ export function receptionView(
   return {
     resupplyId: resupply.id,
     target: resupply.target,
+    origin: resupply.origin,
     placedAt: resupply.placed.at.toISOString(),
     placedBy: nameOf(resupply.placed.author.name),
     status: received === null ? "expected" : "received",

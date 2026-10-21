@@ -17,6 +17,15 @@ export const RESUPPLY_TARGETS = ["tomorrow", "asap"] as const;
 export type ResupplyTarget = (typeof RESUPPLY_TARGETS)[number];
 
 /**
+ * Qui envoie un réassort (lot R1d, 2026-10-21) : `counter` — le comptoir, par
+ * sa demande en cours ; `bakehouse` — le fournil, « je t'envoie ça », un
+ * réassort à part, créé déjà envoyé, qui ne touche jamais la demande du
+ * comptoir.
+ */
+export const RESUPPLY_ORIGINS = ["counter", "bakehouse"] as const;
+export type ResupplyOrigin = (typeof RESUPPLY_ORIGINS)[number];
+
+/**
  * `placed` tant que rien ne l'a annulé. Un brouillon — la demande en cours —
  * n'a pas de statut ici : il est servi à part (`SiteResupplyDraftView`).
  */
@@ -35,6 +44,8 @@ export interface SiteResupplyView {
   /** `AAAA-MM-JJ` : demain pour `tomorrow`, le jour du geste pour `asap`. */
   readonly serviceDay: string;
   readonly target: ResupplyTarget;
+  /** Qui l'a envoyé : le comptoir, ou le fournil (R1d). */
+  readonly origin: ResupplyOrigin;
   readonly status: SiteResupplyStatus;
   /** Dans l'ordre de saisie. */
   readonly lines: readonly SiteResupplyLineView[];
@@ -86,12 +97,17 @@ export interface SiteResuppliesView {
 }
 
 /**
- * `POST /admin/site-resupplies/sites/:siteId` — passer un réassort d'un
- * geste. Depuis R1c, les lignes s'AJOUTENT à la demande en cours de la visée
- * (une quantité s'additionne à celle d'un article déjà présent), puis la
- * demande entière est envoyée. Le libellé n'est PAS accepté : le serveur le
- * lit au catalogue publié. Les règles (quantité entière > 0, au moins une
- * ligne) vivent dans le domaine.
+ * `POST /admin/bakehouse-resupplies/sites/:siteId` — le fournil envoie un
+ * réassort au point, d'un geste (lot R1d). Un réassort À PART : il ne touche
+ * pas la demande en cours du comptoir. Un article présent deux fois voit ses
+ * quantités s'additionner. Le libellé n'est PAS accepté : le serveur le lit
+ * au catalogue publié. Les règles (quantité entière > 0, au moins une ligne,
+ * heure limite pour demain si le réassort y est soumis) vivent dans le
+ * domaine.
+ *
+ * Jusqu'au 2026-10-21, le même corps passait par `POST
+ * /admin/site-resupplies/sites/:siteId`, qui envoyait la demande « au plus
+ * tôt » DU COMPTOIR : retiré au lot R1d.
  */
 export const placeSiteResupplySchema = z
   .object({

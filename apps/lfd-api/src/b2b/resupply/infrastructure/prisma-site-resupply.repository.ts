@@ -63,7 +63,15 @@ export class PrismaSiteResupplyRepository extends SiteResupplyRepository {
     serviceDay: string,
   ): Promise<SiteResupply | null> {
     const row = await this.prisma.siteResupply.findFirst({
-      where: { siteId, target, serviceDay: dayColumn(serviceDay), placedAt: null },
+      // Le fournil n'a pas de brouillon (CHECK `site_resupply_bakehouse_placed`) :
+      // l'origine dit seulement en clair que c'est celle du comptoir.
+      where: {
+        siteId,
+        target,
+        serviceDay: dayColumn(serviceDay),
+        origin: "counter",
+        placedAt: null,
+      },
       include: { lines: SITE_RESUPPLY_LINES },
     });
     return row === null ? null : SiteResupply.restore(snapshotOf(row));
@@ -100,6 +108,7 @@ export class PrismaSiteResupplyRepository extends SiteResupplyRepository {
           siteId: resupply.siteId,
           target: resupply.target,
           serviceDay: dayColumn(resupply.serviceDay),
+          origin: resupply.origin,
           ...tracesOf(resupply),
           lines: { create: linesOf(resupply) },
         },

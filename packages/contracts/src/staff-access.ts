@@ -465,6 +465,13 @@ export const staffResourceSchema = z.enum([
    * `documentation/production/arret-du-plan.md`, §2 et §6).
    */
   "production_settings",
+  /**
+   * **Le réassort envoyé par le fournil** — « je t'envoie ça » à un point, à
+   * part de la demande du comptoir (Hugo, 2026-10-21,
+   * `documentation/reassort-boutiques/plan-reapprovisionnement.md`, R1d).
+   * Ajoutée sans être accordée : elle s'accorde à l'écran.
+   */
+  "production_resupply",
 
   // ── `handover.` — LE RETRAIT ────────────────────────────────────────────
   /** **Le retrait au comptoir** — la file, la remise manuelle, le scan du QR. */
@@ -740,6 +747,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   production_packing: "Production — Colisage",
   production_count_stop: "Production — Arrêt du plan",
   production_settings: "Production — Réglages",
+  production_resupply: "Production — Envoi de réassort",
   handover_counter: "Retrait au comptoir",
   b2b_companies: "Comptes clients",
   b2b_orders: "Commandes",
@@ -868,6 +876,9 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     production_settings: "write",
     production_worksheet: "write",
     production_packing: "write",
+    // L'administrateur seul (2026-10-21, réassort R1d) : en production,
+    // accordée à l'écran.
+    production_resupply: "write",
     handover_counter: "write",
     delivery_procedures: "write",
     delivery_decisions: "write",

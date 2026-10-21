@@ -1,6 +1,7 @@
 import {
   ReceiptNotYetReceivedError,
   ResupplyAlreadyReceivedError,
+  ResupplyDayNotYetComeError,
   ResupplyNotReceivableError,
 } from "../../domain/resupply-receipt-errors.js";
 import { SiteResupplyNotFoundError } from "../../domain/site-resupply-errors.js";
@@ -22,6 +23,7 @@ describe("« Réceptionner » un réassort", () => {
       {
         resupplyId: "resupply_1",
         target: "asap",
+        origin: "counter",
         placedAt: AT.toISOString(),
         placedBy: "Lou Martin",
         status: "expected",
@@ -77,6 +79,34 @@ describe("« Réceptionner » un réassort", () => {
       receiveResupply.execute(new ReceiveSiteResupplyCommand(SITE, "resupply_other", "staff_lou")),
     ).rejects.toThrow(SiteResupplyNotFoundError);
     expect(receipts.all()).toEqual([]);
+  });
+
+  /** Trou laissé par R2 : un réassort de demain se réceptionnait dès aujourd'hui. */
+  it("refuse de réceptionner un réassort d'une journée future, sans rien écrire", async () => {
+    const { resupplies, receipts, receiveResupply } = setup();
+    resupplies.put(
+      placed("resupply_tomorrow", CRO_24, { target: "tomorrow", serviceDay: "2026-01-03" }),
+    );
+
+    await expect(
+      receiveResupply.execute(
+        new ReceiveSiteResupplyCommand(SITE, "resupply_tomorrow", "staff_lou"),
+      ),
+    ).rejects.toThrow(ResupplyDayNotYetComeError);
+    expect(receipts.all()).toEqual([]);
+  });
+
+  it("un réassort envoyé par le fournil arrive marqué, et se réceptionne en un geste (R1d)", async () => {
+    const { resupplies, receiveResupply, read } = setup();
+    resupplies.put(placed("resupply_bakehouse", CRO_24, { origin: "bakehouse" }));
+
+    await receiveResupply.execute(
+      new ReceiveSiteResupplyCommand(SITE, "resupply_bakehouse", "staff_lou"),
+    );
+
+    const view = await read.execute(new GetResupplyReceiptQuery(SITE, DAY));
+    expect(view.receptions[0]).toMatchObject({ origin: "bakehouse", status: "received" });
+    expect(view.stock[0]).toMatchObject({ sku: "CRO", receivedQuantity: 24 });
   });
 
   it("lève l'alerte vivante de chaque article reçu au point, pas d'un article reçu à zéro", async () => {

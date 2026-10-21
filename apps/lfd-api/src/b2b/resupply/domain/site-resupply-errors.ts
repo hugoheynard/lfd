@@ -44,6 +44,16 @@ export class UnknownResupplyTargetError extends DomainError {
   }
 }
 
+/** Une origine inconnue relue en base. */
+export class UnknownResupplyOriginError extends DomainError {
+  constructor(readonly origin: string) {
+    super(
+      "resupply.order.unknown_origin",
+      `L'origine « ${origin} » n'existe pas : un réassort vient du comptoir ou du fournil.`,
+    );
+  }
+}
+
 /**
  * La commande du soir pour demain arrive après l'heure limite générale, et
  * le réassort y est soumis (`resupply_subject_to_cutoff`). Le geste de sortie
@@ -67,6 +77,20 @@ export class ResupplyAlreadyPlacedError extends BusinessError {
     super(
       "resupply.order.already_placed",
       "Ce réassort est déjà envoyé : ses lignes ne changent plus. Rechargez la page : un nouvel ajout ouvre une nouvelle demande.",
+    );
+  }
+}
+
+/**
+ * Le réassort est déjà arrivé au point et réceptionné (lot R1d, trou laissé
+ * par R2) : l'annuler ferait disparaître ce que la vitrine a reçu de l'écran
+ * du fournil, alors que le stock du jour le compte.
+ */
+export class ResupplyAlreadyReceivedNotCancellableError extends BusinessError {
+  constructor(byName: string, atLabel: string) {
+    super(
+      "resupply.order.already_received",
+      `Ce réassort est déjà réceptionné${byName === "" ? "" : ` par ${byName}`} à ${atLabel} : il ne s'annule plus. S'il y a un écart, corrigez la quantité reçue dans « Réceptionner les réassorts ».`,
     );
   }
 }

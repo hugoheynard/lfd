@@ -2,33 +2,41 @@ import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import type {
   LiveStockAlertsView,
-  PlaceSiteResupplyPayload,
   ResuppliesToProduceView,
+  ResupplyOrigin,
   SiteResupplyView,
   StaffPermission,
 } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { PermissionsStore } from '../../auth/permissions.store';
-import { SiteResuppliesService } from '../../comptoir/reassort-boutique-page/site-resupplies.service';
+import { PickupAddressesService } from '../../b2b/reglages/pickup-addresses.service';
+import { BakehouseResupplyCard } from './bakehouse-resupply-card/bakehouse-resupply-card';
+import { BakehouseResuppliesService } from './bakehouse-resupplies.service';
 import { LiveStockAlertsService } from './live-stock-alerts.service';
-import { LiveStockAlertsCard } from './live-stock-alerts-card/live-stock-alerts-card';
 import { ResuppliesToProducePage } from './resupplies-to-produce-page';
 import { ResuppliesToProduceService } from './resupplies-to-produce.service';
 
 /**
  * Réassorts à produire (R1, 2026-10-21) : l'écran du fournil, en lecture —
- * par journée, le cumul par article puis chaque point. Rien n'y est un geste.
+ * par journée, le cumul par article puis chaque point. Rien n'y est un geste,
+ * sauf « Envoyer un réassort » sous `production_resupply:write` (R1d).
  */
 const TODAY = '2026-01-02';
 const TOMORROW = '2026-01-03';
 
-function resupply(id: string, target: 'asap' | 'tomorrow', serviceDay: string): SiteResupplyView {
+function resupply(
+  id: string,
+  target: 'asap' | 'tomorrow',
+  serviceDay: string,
+  origin: ResupplyOrigin = 'counter',
+): SiteResupplyView {
   return {
     id,
     siteId: 'site_v',
     serviceDay,
     target,
+    origin,
     status: 'placed',
     lines: [{ sku: 'CRO', label: 'Croissant', quantity: 12 }],
     placedAt: '2026-01-02T08:30:00.000Z',
@@ -46,7 +54,11 @@ const VIEW: ResuppliesToProduceView = {
         {
           siteId: 'site_v',
           siteLabel: 'Val Village',
-          resupplies: [resupply('rs1', 'tomorrow', TODAY), resupply('rs2', 'asap', TODAY)],
+          resupplies: [
+            resupply('rs1', 'tomorrow', TODAY),
+            resupply('rs2', 'asap', TODAY),
+            resupply('rs3', 'asap', TODAY, 'bakehouse'),
+          ],
         },
       ],
       totals: [{ sku: 'CRO', label: 'Croissant', quantity: 24 }],
@@ -91,11 +103,18 @@ class FakeAlerts {
   }
 }
 
-/** La passation du comptoir, doublée : retient ce qui est passé. */
-class FakeResupplies {
-  readonly placed: { siteId: string; payload: PlaceSiteResupplyPayload }[] = [];
-  place(siteId: string, payload: PlaceSiteResupplyPayload): Promise<{ id: string }> {
-    this.placed.push({ siteId, payload });
+/** Les points et le catalogue de la carte « Envoyer un réassort » (R1d). */
+class FakePickups {
+  list(): Promise<readonly { id: string; label: string }[]> {
+    return Promise.resolve([{ id: 'site_v', label: 'Val Village' }]);
+  }
+}
+
+class FakeBakehouse {
+  articles(): Promise<readonly { sku: string; name: string }[]> {
+    return Promise.resolve([{ sku: 'CRO', name: 'Croissant' }]);
+  }
+  send(): Promise<{ id: string }> {
     return Promise.resolve({ id: 'rs_new' });
   }
 }
@@ -103,7 +122,6 @@ class FakeResupplies {
 async function mount(
   api = new FakeService(),
   permissions: readonly StaffPermission[] = ['production_worksheet:read'],
-  resupplies = new FakeResupplies(),
 ): Promise<{ fixture: ComponentFixture<ResuppliesToProducePage>; root: HTMLElement }> {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
@@ -111,7 +129,8 @@ async function mount(
     providers: [
       { provide: ResuppliesToProduceService, useValue: api },
       { provide: LiveStockAlertsService, useValue: new FakeAlerts() },
-      { provide: SiteResuppliesService, useValue: resupplies },
+      { provide: PickupAddressesService, useValue: new FakePickups() },
+      { provide: BakehouseResuppliesService, useValue: new FakeBakehouse() },
       {
         provide: PermissionsStore,
         useValue: { can: (p: StaffPermission): boolean => permissions.includes(p) },
@@ -167,42 +186,66 @@ describe('ResuppliesToProducePage', () => {
   });
 });
 
-describe('ResuppliesToProducePage — alertes des points (R1b)', () => {
-  it('dit en tête « Village : rupture — Croissant » ; sans le droit du comptoir, aucun bouton', async () => {
+describe('ResuppliesToProducePage — alertes des points (R1b), pour information (R1d)', () => {
+  it('dit en tête « Village : rupture — Croissant »', async () => {
     const { root } = await mount();
 
     const alert = root.querySelector('[data-live-stock-alert="site_v:CRO"]');
     expect(alert?.textContent).toContain('Village : rupture — Croissant');
-    expect(root.querySelector('[data-live-stock-alert-open]')).toBeNull();
   });
 
-  it('avec le droit du comptoir, lance un réassort « au plus tôt » de cet article pour ce point', async () => {
-    const api = new FakeService();
-    const resupplies = new FakeResupplies();
-    const { fixture, root } = await mount(
-      api,
-      ['production_worksheet:read', 'handover_counter:write'],
-      resupplies,
-    );
+  /**
+   * Régression : « Lancer un réassort au plus tôt » envoyait la demande « au
+   * plus tôt » DU COMPTOIR, avec ce que le comptoir y avait mis (R1b/R1c).
+   */
+  it('ne propose plus aucun geste sur une alerte, même avec le droit du comptoir', async () => {
+    const { root } = await mount(new FakeService(), [
+      'production_worksheet:read',
+      'handover_counter:write',
+    ]);
 
-    root.querySelector<HTMLButtonElement>('[data-live-stock-alert-open]')?.click();
-    fixture.detectChanges();
+    const alerts = root.querySelector('[data-live-stock-alerts]');
+    expect(alerts?.querySelector('button, fold-number-input')).toBeNull();
+    expect(alerts?.textContent).not.toContain('Lancer un réassort');
+  });
+});
+
+describe('ResuppliesToProducePage — le réassort envoyé par le fournil (R1d)', () => {
+  it('marque « Envoyé par le fournil » ce que le fournil a envoyé, et lui seul', async () => {
+    const { root } = await mount();
+
+    const marks = root.querySelectorAll('[data-to-produce-bakehouse]');
+    expect(marks).toHaveLength(1);
+    expect(marks[0]?.textContent).toContain('Envoyé par le fournil');
+  });
+
+  it('« Envoyer un réassort » paraît sous production_resupply:write, et seulement là', async () => {
+    const without = await mount();
+    expect(without.root.querySelector('app-bakehouse-resupply-card')).toBeNull();
+
+    const { root } = await mount(new FakeService(), [
+      'production_worksheet:read',
+      'production_resupply:write',
+    ]);
+    expect(root.querySelector('[data-bakehouse-resupply]')).not.toBeNull();
+  });
+
+  it('un envoi fait relire la page', async () => {
+    const api = new FakeService();
+    const { fixture } = await mount(api, [
+      'production_worksheet:read',
+      'production_resupply:write',
+    ]);
     const card: unknown = fixture.debugElement.query(
-      By.css('app-live-stock-alerts-card'),
+      By.css('app-bakehouse-resupply-card'),
     ).componentInstance;
-    if (!(card instanceof LiveStockAlertsCard)) {
-      throw new Error('la carte des alertes manque');
+    if (!(card instanceof BakehouseResupplyCard)) {
+      throw new Error('la carte « Envoyer un réassort » manque');
     }
-    card['quantity'].set(18);
-    fixture.detectChanges();
-    root.querySelector<HTMLButtonElement>('[data-live-stock-alert-place]')?.click();
-    await new Promise((resolve) => setTimeout(resolve));
+
+    card.sent.emit();
     await fixture.whenStable();
 
-    expect(resupplies.placed).toEqual([
-      { siteId: 'site_v', payload: { target: 'asap', lines: [{ sku: 'CRO', quantity: 18 }] } },
-    ]);
-    // La page relit après la passation.
     expect(api.reads).toBe(2);
   });
 });

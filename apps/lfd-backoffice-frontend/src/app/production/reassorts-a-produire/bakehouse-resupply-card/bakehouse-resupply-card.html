@@ -1,0 +1,113 @@
+<fold-card data-bakehouse-resupply>
+  <fold-element-title
+    cardHeader
+    variant="title"
+    title="Envoyer un réassort"
+    subtitle="« Je t'envoie ça » : un réassort à part, signé du fournil — par exemple quand un point le demande au téléphone. La demande en cours du comptoir n'est pas touchée."
+  />
+
+  <div class="body">
+    @if (loadFailed()) {
+      <fold-empty-state tone="alert" title="Impossible de lire les points et le catalogue">
+        <button foldButton (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    } @else {
+      <div class="row">
+        <fold-listbox
+          label="Point"
+          placeholder="Choisir un point"
+          [options]="siteOptions()"
+          [value]="siteId()"
+          (selectionChange)="siteId.set($event)"
+        />
+        <div class="targets" role="group" aria-label="Pour quand">
+          <button
+            foldButton
+            data-bakehouse-target="asap"
+            [emphasis]="target() === 'asap' ? 'solid' : 'outline'"
+            [attr.aria-pressed]="target() === 'asap'"
+            (click)="pickTarget('asap')"
+          >
+            Aujourd'hui, au plus tôt
+          </button>
+          <button
+            foldButton
+            data-bakehouse-target="tomorrow"
+            [emphasis]="target() === 'tomorrow' ? 'solid' : 'outline'"
+            [attr.aria-pressed]="target() === 'tomorrow'"
+            (click)="pickTarget('tomorrow')"
+          >
+            Pour demain
+          </button>
+        </div>
+      </div>
+
+      <div class="row">
+        <fold-combobox
+          label="Article"
+          placeholder="Nom ou référence d'un article du catalogue"
+          emptyText="Aucun article ne correspond."
+          resultLabel="articles"
+          [options]="articleOptions()"
+          [value]="pickedSku()"
+          (valueChange)="pickedSku.set($event)"
+        />
+        <fold-number-input
+          label="Quantité"
+          [value]="pickedQuantity()"
+          (valueChange)="pickedQuantity.set($event)"
+          [min]="1"
+          integer
+        />
+        <button
+          foldButton
+          emphasis="outline"
+          data-bakehouse-add
+          [disabled]="!canAdd()"
+          (click)="addLine()"
+        >
+          Ajouter
+        </button>
+      </div>
+
+      @if (lines().length > 0) {
+        <ul class="lines">
+          @for (line of lines(); track line.sku) {
+            <li [attr.data-bakehouse-line]="line.sku">
+              <span class="line-label">{{ line.quantity }} × {{ line.label }}</span>
+              <button
+                foldButton
+                size="sm"
+                emphasis="outline"
+                intent="danger"
+                data-bakehouse-withdraw
+                (click)="withdraw(line.sku)"
+              >
+                Retirer
+              </button>
+            </li>
+          }
+        </ul>
+      }
+
+      <div class="submit">
+        <button
+          foldButton
+          data-bakehouse-send
+          [disabled]="!canSend()"
+          [loading]="pending()"
+          (click)="send()"
+        >
+          Envoyer
+        </button>
+      </div>
+    }
+
+    @if (failure(); as message) {
+      <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+    }
+    @if (done(); as message) {
+      <fold-callout variant="success" announce data-bakehouse-done>{{ message }}</fold-callout>
+    }
+  </div>
+</fold-card>

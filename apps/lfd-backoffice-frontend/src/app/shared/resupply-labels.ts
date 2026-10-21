@@ -25,3 +25,9 @@ export const RESUPPLY_TARGET_LABELS: Readonly<Record<ResupplyTarget, string>> = 
   tomorrow: 'Pour demain',
   asap: 'Au plus tôt',
 };
+
+/**
+ * La marque d'un réassort envoyé par le fournil, à part de la demande du
+ * comptoir (lot R1d) — la même sur l'écran du fournil et à la réception.
+ */
+export const BAKEHOUSE_ORIGIN_MARK = 'Envoyé par le fournil';

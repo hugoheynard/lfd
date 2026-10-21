@@ -103,6 +103,20 @@ export class ResupplyAlreadyReceivedError extends BusinessError {
   }
 }
 
+/**
+ * Le réassort vise une journée qui n'est pas encore venue (lot R1d, trou
+ * laissé par R2) : « Réceptionner » aujourd'hui un réassort de demain
+ * compterait au stock d'un jour où la vitrine ne l'a pas.
+ */
+export class ResupplyDayNotYetComeError extends BusinessError {
+  constructor(readonly serviceDay: string) {
+    super(
+      "resupply.receipt.day_not_yet_come",
+      `Ce réassort est pour le ${serviceDay}, une journée qui n'est pas encore venue : il se réceptionne ce jour-là, à son arrivée. S'il est déjà là, saisissez-le dans « Réassort sans commande » d'aujourd'hui.`,
+    );
+  }
+}
+
 /** Un écart ne se corrige qu'après « Réceptionner » : avant, rien n'est reçu. */
 export class ReceiptNotYetReceivedError extends BusinessError {
   constructor() {

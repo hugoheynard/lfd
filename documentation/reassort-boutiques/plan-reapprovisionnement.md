@@ -416,7 +416,7 @@ stock du jour additionne les reçus.
   tableau « Stock estimé du jour » en somme, et « Réassort sans commande »
   replié en bas. État dans le [README](README.md).
 
-### R1d — Le fournil envoie un réassort, à part de la demande du comptoir (Hugo, 2026-10-21)
+### R1d ✅ — Le fournil envoie un réassort, à part de la demande du comptoir (Hugo, 2026-10-21 ; bâti le 2026-10-21, non commité)
 
 « Pourquoi le fournil lancerait le réassort [du comptoir] ? Après, je trouve
 intéressant la capacité du fournil à dire "je t'envoie ça" — typiquement si le
@@ -437,3 +437,51 @@ autre façon de faire. »
   rôles), distinct de `handover_counter`.
 
 Bâti juste après R2.
+
+✅ **Bâti le 2026-10-21** : `SiteResupply.origin` (`counter` | `bakehouse`,
+migration additive `20261022000100_l_origine_du_reassort`, défaut
+`counter`) ; `SiteResupply.sentByBakehouse` crée et envoie d'un geste, sans
+brouillon ; la ressource `production_resupply`
+(`20261022000000_le_droit_du_reassort_du_fournil`, accordée à l'écran) et
+la route `admin/bakehouse-resupplies` ; le `POST :siteId` du comptoir et le
+bouton des alertes retirés ; « Envoyé par le fournil » au fournil et à la
+réception. Les deux trous de R2 sont fermés : annuler un réassort
+réceptionné est refusé (409 `resupply.order.already_received`), réceptionner
+avant sa journée aussi (409 `resupply.receipt.day_not_yet_come`). État dans
+le [README](README.md).
+
+### R1e — Une table de tous les produits, pensée « comptoir, un clic » (Hugo, 2026-10-21)
+
+« Au niveau de l'écran, on ferait mieux d'avoir une table avec tous les
+produits, avec le stock actuel. » — « Et les boutons de déclaration rupture /
+faible. » — « Pense comptoir, un clic ; filtre au-dessus de la table par
+catégorie. »
+
+La page Réassort du point (bandeau) remplace ses cartes par :
+
+- **En tête, seulement s'il y en a** : « N réassorts à réceptionner », chacun
+  avec son bouton **Réceptionner** (R2).
+- **Au-dessus de la table** : des **puces de catégorie** (une par famille du
+  catalogue, « Tout » par défaut), un clic filtre ; et une recherche.
+- **La table**, tous les produits du catalogue public :
+
+| Produit                              | Stock du jour               | État                            | Au plus tôt | Pour demain |
+| ------------------------------------ | --------------------------- | ------------------------------- | ----------- | ----------- |
+| somme des reçus réceptionnés du jour | `OK` · `Faible` · `Rupture` | quantité de la demande en cours | idem        |
+
+- **Un clic partout** :
+  - l'**État** est un sélecteur à trois positions sur la ligne ; un clic
+    déclare (Faible, Rupture) ou lève (OK), sans confirmation — le même clic
+    défait ; une rupture passe la ligne en rouge, un stock faible en orange ;
+    déclarer une rupture place le curseur dans « Au plus tôt » ;
+  - **Au plus tôt / Pour demain** se saisissent dans la case (la demande en
+    cours de R1c, enregistrée et partagée) ; des pas rapides (+1, +5, +10)
+    à côté de la case ;
+  - en bas : **« Envoyer au plus tôt (N) »** et **« Envoyer pour demain (N) »**.
+- **Tri par défaut** : ruptures et stocks faibles en tête, puis les produits
+  demandés, puis le reste.
+- **Le réassort sans commande** devient un geste discret (« + reçu sans
+  commande » dans un menu de la ligne), plus une carte.
+
+Aucun changement serveur attendu : tout ce qu'il faut existe (R1–R2). Bâti
+juste après R1d (même page).

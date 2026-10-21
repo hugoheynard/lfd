@@ -1,0 +1,38 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.row,
+.targets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-md);
+  align-items: end;
+}
+
+.lines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lines li {
+  display: flex;
+  gap: var(--fold-space-md);
+  align-items: center;
+  font-size: var(--fold-text-sm);
+}
+
+.line-label {
+  flex: 1;
+}
+
+.submit {
+  display: flex;
+  justify-content: flex-end;
+}

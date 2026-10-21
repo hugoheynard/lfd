@@ -20,8 +20,8 @@ import { CorrectSiteResupplyLineCommand } from "../correct-site-resupply-line.co
 import { CorrectSiteResupplyLineHandler } from "../correct-site-resupply-line.handler.js";
 import { ListSiteResuppliesHandler } from "../list-site-resupplies.handler.js";
 import { ListSiteResuppliesQuery } from "../list-site-resupplies.query.js";
-import { PlaceSiteResupplyCommand } from "../place-site-resupply.command.js";
-import { PlaceSiteResupplyHandler } from "../place-site-resupply.handler.js";
+import { SendBakehouseResupplyCommand } from "../send-bakehouse-resupply.command.js";
+import { SendBakehouseResupplyHandler } from "../send-bakehouse-resupply.handler.js";
 import { SendSiteResupplyCommand } from "../send-site-resupply.command.js";
 import { SendSiteResupplyHandler } from "../send-site-resupply.handler.js";
 import { WithdrawSiteResupplyLineCommand } from "../withdraw-site-resupply-line.command.js";
@@ -60,7 +60,7 @@ function setup(deadline: Date | null = null) {
     correct: new CorrectSiteResupplyLineHandler(store),
     withdraw: new WithdrawSiteResupplyLineHandler(store),
     send: new SendSiteResupplyHandler(store, cutoff, staff, clock),
-    place: new PlaceSiteResupplyHandler(store, catalogue, sites, cutoff, staff, clock, ids),
+    bakehouse: new SendBakehouseResupplyHandler(store, catalogue, sites, cutoff, staff, clock, ids),
     list: new ListSiteResuppliesHandler(new InMemorySiteResupplyReader(store), cutoff, clock),
   };
 }
@@ -143,6 +143,7 @@ describe("la demande en cours — ajouter", () => {
       target: "asap",
       serviceDay: TODAY,
       version: 1,
+      origin: "counter",
       lines: [],
       placed: null,
       cancelled: null,
@@ -273,21 +274,48 @@ describe("la demande en cours — envoyer", () => {
   });
 });
 
-describe("passer d'un geste (le bouton du fournil) passe par la demande en cours", () => {
-  it("ajoute à la demande « au plus tôt » du comptoir, puis l'envoie entière", async () => {
-    const { add, place, store } = setup();
-    const id = await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "asap", "PAC", 4));
+describe("le fournil envoie à part : la demande en cours du comptoir n'est jamais touchée (R1d)", () => {
+  /**
+   * Régression : le bouton du fournil ajoutait son article à la demande « au
+   * plus tôt » DU COMPTOIR, puis l'envoyait entière (R1b/R1c).
+   */
+  it("un réassort du fournil ne s'ajoute ni n'envoie la demande « au plus tôt » du comptoir", async () => {
+    const { add, bakehouse, store } = setup();
+    const draftId = await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "asap", "PAC", 4));
+    const draftVersion = versionOf(store, draftId);
 
-    const placed = await place.execute(
-      new PlaceSiteResupplyCommand(VILLAGE, "asap", [{ sku: "CRO", quantity: 10 }], "s"),
+    const sentId = await bakehouse.execute(
+      new SendBakehouseResupplyCommand(VILLAGE, "asap", [{ sku: "CRO", quantity: 10 }], "s"),
     );
 
-    expect(placed).toBe(id);
-    expect(store.all()).toHaveLength(1);
-    expect(store.all()[0]?.placed).not.toBeNull();
-    expect(store.all()[0]?.lines.map((line) => [line.sku, line.quantity])).toEqual([
-      ["PAC", 4],
-      ["CRO", 10],
-    ]);
+    expect(sentId).not.toBe(draftId);
+    const draft = store.all().find((row) => row.id === draftId);
+    expect(draft).toMatchObject({ origin: "counter", placed: null, version: draftVersion });
+    expect(draft?.lines.map((line) => [line.sku, line.quantity])).toEqual([["PAC", 4]]);
+    const sent = store.all().find((row) => row.id === sentId);
+    expect(sent?.origin).toBe("bakehouse");
+    expect(sent?.placed).not.toBeNull();
+  });
+
+  it("après un envoi du fournil, le comptoir ajoute toujours à SA demande", async () => {
+    const { add, bakehouse, list } = setup();
+    await bakehouse.execute(
+      new SendBakehouseResupplyCommand(VILLAGE, "asap", [{ sku: "CRO", quantity: 10 }], "s"),
+    );
+
+    const draftId = await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "asap", "PAC", 2));
+
+    const view = await list.execute(new ListSiteResuppliesQuery(VILLAGE));
+    expect(view.drafts.map((draft) => draft.id)).toEqual([draftId]);
+    expect(view.resupplies.map((resupply) => resupply.origin)).toEqual(["bakehouse"]);
+  });
+
+  it("un envoi du fournil sans ligne est refusé, et n'écrit rien", async () => {
+    const { bakehouse, store } = setup();
+
+    await expect(
+      bakehouse.execute(new SendBakehouseResupplyCommand(VILLAGE, "asap", [], "s")),
+    ).rejects.toThrow(EmptyResupplyError);
+    expect(store.saves).toBe(0);
   });
 });

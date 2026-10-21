@@ -71,9 +71,10 @@ model ResupplyReceiptLine {
 /// **Le réassort d'un point** — ce que le comptoir demande au fournil pour sa
 /// vitrine (lot R1 de `documentation/reassort-boutiques/plan-reapprovisionnement.md`,
 /// §12, Hugo 2026-10-21). JAMAIS une commande : aucun prix, aucune TVA, aucun
-/// règlement, aucune clé vers `orders`. Seuls les réassorts passés sont écrits
-/// (le brouillon se compose à l'écran) ; une annulation est un état, pas une
-/// suppression.
+/// règlement, aucune clé vers `orders`. Depuis R1c, la demande en cours
+/// (brouillon, `placed_at` nul) est écrite aussi ; depuis R1d, le fournil
+/// envoie les siens (`origin`), créés déjà envoyés. Une annulation est un
+/// état, pas une suppression.
 model SiteResupply {
   id String @id
 
@@ -84,6 +85,10 @@ model SiteResupply {
   target     String
   /// La journée visée (date civile de Paris), déduite de la visée au geste.
   serviceDay DateTime @map("service_day") @db.Date
+  /// Qui l'envoie (lot R1d) : `counter` — le comptoir, par sa demande en
+  /// cours ; `bakehouse` — le fournil, « je t'envoie ça », jamais brouillon
+  /// (CHECK `site_resupply_bakehouse_placed`).
+  origin     String   @default("counter")
 
   /// Verrou optimiste : deux postes qui remplissent, envoient ou annulent en
   /// même temps ne s'écrasent pas.

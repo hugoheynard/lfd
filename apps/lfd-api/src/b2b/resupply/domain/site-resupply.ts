@@ -6,11 +6,13 @@ import {
   ResupplyAlreadyPlacedError,
   ResupplyDayPassedError,
   ResupplyLineNotInDraftError,
+  ResupplyAlreadyReceivedNotCancellableError,
   ResupplyNotCancellableError,
   ResupplyPastCutoffError,
   SiteResupplyChangedMeanwhileError,
   UnknownResupplyTargetError,
 } from "./site-resupply-errors.js";
+import type { ResupplyOrigin } from "./resupply-origin.js";
 import { SiteResupplyLine } from "./site-resupply-line.js";
 
 /** `tomorrow` : la commande du soir pour demain ; `asap` : « au plus tôt », aujourd'hui. */
@@ -46,6 +48,8 @@ export interface SiteResupplySnapshot {
   readonly target: ResupplyTarget;
   readonly serviceDay: string;
   readonly version: number;
+  /** Qui l'envoie (lot R1d) ; `counter` pour tout ce qui précède. */
+  readonly origin: ResupplyOrigin;
   readonly lines: readonly {
     readonly sku: string;
     readonly label: string;
@@ -91,6 +95,9 @@ export function serviceDayFor(target: ResupplyTarget, at: Date): string {
  * Le brouillon est « la demande en cours » du point pour une visée : une
  * seule par (point, visée, journée), tenue par un index unique partiel en
  * base ; les postes le remplissent sous verrou de version.
+ *
+ * Depuis R1d, le fournil envoie les siens (`bakehouse`), créés ET envoyés
+ * d'un geste : sans brouillon, ils ne touchent jamais la demande du comptoir.
  */
 export class SiteResupply {
   private constructor(
@@ -99,6 +106,7 @@ export class SiteResupply {
     readonly target: ResupplyTarget,
     readonly serviceDay: string,
     readonly version: number,
+    readonly origin: ResupplyOrigin,
     private lineList: readonly SiteResupplyLine[],
     private placedTrace: SiteResupplyTrace | null,
     private cancelledTrace: SiteResupplyTrace | null,
@@ -111,8 +119,29 @@ export class SiteResupply {
     readonly target: ResupplyTarget;
     readonly at: Date;
   }): SiteResupply {
-    const serviceDay = serviceDayFor(input.target, input.at);
-    return new SiteResupply(input.id, input.siteId, input.target, serviceDay, 0, [], null, null);
+    return SiteResupply.blank(input, input.at, "counter");
+  }
+
+  /**
+   * « Je t'envoie ça » — le réassort du fournil (lot R1d), créé et envoyé
+   * d'un geste : ses lignes (un même article deux fois s'additionne), puis
+   * `place` avec les règles du comptoir — au moins une ligne, l'heure limite
+   * de sa journée pour « pour demain » quand le réassort y est soumis.
+   */
+  static sentByBakehouse(input: {
+    readonly id: string;
+    readonly siteId: string;
+    readonly target: ResupplyTarget;
+    readonly lines: readonly SiteResupplyLine[];
+    readonly trace: SiteResupplyTrace;
+    readonly deadline: Date | null;
+  }): SiteResupply {
+    const resupply = SiteResupply.blank(input, input.trace.at, "bakehouse");
+    for (const line of input.lines) {
+      resupply.addLine(line);
+    }
+    resupply.place(input.trace, input.deadline);
+    return resupply;
   }
 
   /** Réhydrate un réassort, brouillon compris ; chaque ligne revalide. */
@@ -123,9 +152,29 @@ export class SiteResupply {
       snapshot.target,
       snapshot.serviceDay,
       snapshot.version,
+      snapshot.origin,
       snapshot.lines.map((line) => SiteResupplyLine.of(line)),
       snapshot.placed,
       snapshot.cancelled,
+    );
+  }
+
+  /** Un réassort neuf, sans ligne ni geste ; sa journée découle du geste `at`. */
+  private static blank(
+    input: { readonly id: string; readonly siteId: string; readonly target: ResupplyTarget },
+    at: Date,
+    origin: ResupplyOrigin,
+  ): SiteResupply {
+    return new SiteResupply(
+      input.id,
+      input.siteId,
+      input.target,
+      serviceDayFor(input.target, at),
+      0,
+      origin,
+      [],
+      null,
+      null,
     );
   }
 
@@ -219,12 +268,18 @@ export class SiteResupply {
   }
 
   /**
-   * Annule un réassort passé. Permis tant que rien en aval ne le tient — en
-   * R1, rien ne le tient encore : le fournil le lit sans le figer (R3).
+   * Annule un réassort passé. `reception`, lue par l'appelant (`null` avant
+   * « Réceptionner ») : arrivé et attesté, il ne s'annule plus (R1d).
    */
-  cancel(trace: SiteResupplyTrace): void {
+  cancel(trace: SiteResupplyTrace, reception: SiteResupplyTrace | null): void {
     if (this.status !== "placed") {
       throw new ResupplyNotCancellableError();
+    }
+    if (reception !== null) {
+      throw new ResupplyAlreadyReceivedNotCancellableError(
+        reception.author.name,
+        instantToLocal(reception.at).time,
+      );
     }
     this.cancelledTrace = trace;
   }

@@ -8,6 +8,10 @@
  * mur par point, le libellé lu au vrai catalogue publié, l'unicité d'un reçu
  * par réassort et du réassort sans commande par (point, journée) en base, la
  * levée d'une alerte dans la transaction de « Réceptionner ».
+ *
+ * Depuis le lot R1d (2026-10-21) : le réassort envoyé par le fournil se
+ * réceptionne au comptoir comme les autres ; un réassort réceptionné ne
+ * s'annule plus ; un réassort d'une journée future ne se réceptionne pas.
  */
 import type {
   ResupplyArticleView,
@@ -19,6 +23,7 @@ import type request from "supertest";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { counterSent } from "./site-resupply-scene.js";
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -111,16 +116,12 @@ async function articlesOf(
 }
 
 /** Un réassort « au plus tôt » envoyé par le comptoir ; rend son identifiant. */
-async function placeAsap(
+function placeAsap(
   agent: request.Agent,
   siteId: string,
   lines: readonly { sku: string; quantity: number }[],
 ): Promise<string> {
-  const placed = await agent
-    .post(`/admin/site-resupplies/sites/${siteId}`)
-    .send({ target: "asap", lines })
-    .expect(201);
-  return jsonBody<{ id: string }>(placed).id;
+  return counterSent(agent, siteId, "asap", lines);
 }
 
 describe("« Réceptionner » un réassort", () => {
@@ -235,6 +236,49 @@ describe("« Réceptionner » un réassort", () => {
       .post(`/admin/resupply-receipts/${siteId}/resupplies/${id}/receive`)
       .expect(409);
     expect(refused.body).toMatchObject({ code: "resupply.receipt.resupply_not_receivable" });
+  });
+});
+
+describe("les trous fermés au lot R1d", () => {
+  it("le réassort du fournil arrive marqué, se réceptionne en un geste, puis ne s'annule plus", async () => {
+    const agent = await counter();
+    const siteId = await seedSite();
+    const [first] = await articlesOf(agent);
+    const sender = await holderOf("fournil-envoi", [
+      { resource: "production_resupply", action: "write" },
+    ]);
+    const { id } = jsonBody<{ id: string }>(
+      await sender
+        .post(`/admin/bakehouse-resupplies/sites/${siteId}`)
+        .send({ target: "asap", lines: [{ sku: first.sku, quantity: 8 }] })
+        .expect(201),
+    );
+
+    expect((await readReceipt(agent, siteId)).receptions).toMatchObject([
+      { resupplyId: id, origin: "bakehouse", status: "expected" },
+    ]);
+    await agent.post(`/admin/resupply-receipts/${siteId}/resupplies/${id}/receive`).expect(204);
+    const refused = await agent
+      .post(`/admin/site-resupplies/sites/${siteId}/${id}/cancel`)
+      .expect(409);
+    expect(refused.body).toMatchObject({ code: "resupply.order.already_received" });
+    expect((await readReceipt(agent, siteId)).stock).toEqual([
+      { sku: first.sku, label: first.name, receivedQuantity: 8, estimatedStock: 8 },
+    ]);
+  });
+
+  it("un réassort « pour demain » ne se réceptionne pas aujourd'hui (409), et rien n'est écrit", async () => {
+    const agent = await counter();
+    const siteId = await seedSite();
+    const [first] = await articlesOf(agent);
+    // Aucune heure limite n'est posée dans la base jetable : « pour demain » part.
+    const id = await counterSent(agent, siteId, "tomorrow", [{ sku: first.sku, quantity: 4 }]);
+
+    const refused = await agent
+      .post(`/admin/resupply-receipts/${siteId}/resupplies/${id}/receive`)
+      .expect(409);
+    expect(refused.body).toMatchObject({ code: "resupply.receipt.day_not_yet_come" });
+    expect(await ctx.prisma.resupplyReceipt.count()).toBe(0);
   });
 });
 

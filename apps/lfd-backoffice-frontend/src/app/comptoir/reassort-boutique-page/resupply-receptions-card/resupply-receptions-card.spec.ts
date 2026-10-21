@@ -10,6 +10,7 @@ const LINE = { sku: 'CRO', label: 'Croissant', expectedQuantity: 24, receivedQua
 const EXPECTED: ResupplyReceptionView = {
   resupplyId: 'r1',
   target: 'tomorrow',
+  origin: 'counter',
   placedAt: '2026-01-01T18:00:00.000Z',
   placedBy: 'Max',
   status: 'expected',
@@ -57,6 +58,27 @@ describe('ResupplyReceptionsCard', () => {
 
     expect(service.calls).toEqual(['receive site_v r1']);
     expect(changed()).toBe(1);
+  });
+
+  it('marque « Envoyé par le fournil » le réassort du fournil, qui se réceptionne en un geste (R1d)', async () => {
+    const fromBakehouse: ResupplyReceptionView = { ...EXPECTED, origin: 'bakehouse' };
+    const { root, service, fixture } = mount(
+      [EXPECTED, { ...fromBakehouse, resupplyId: 'r2' }],
+      true,
+    );
+
+    expect(
+      root.querySelector('[data-resupply-reception="r1"] [data-resupply-reception-bakehouse]'),
+    ).toBeNull();
+    const marked = root.querySelector('[data-resupply-reception="r2"]');
+    expect(marked?.querySelector('[data-resupply-reception-bakehouse]')?.textContent).toContain(
+      'Envoyé par le fournil',
+    );
+
+    marked?.querySelector<HTMLButtonElement>('[data-resupply-receive]')?.click();
+    await fixture.whenStable();
+
+    expect(service.calls).toEqual(['receive site_v r2']);
   });
 
   it('dit le refus du serveur sans prévenir la page', async () => {

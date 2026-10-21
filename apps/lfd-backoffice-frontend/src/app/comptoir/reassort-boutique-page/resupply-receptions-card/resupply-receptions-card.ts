@@ -20,7 +20,11 @@ import {
   FoldStatusBadgeComponent,
 } from 'fold-ng';
 
-import { parisClock, RESUPPLY_TARGET_LABELS } from '../../../shared/resupply-labels';
+import {
+  BAKEHOUSE_ORIGIN_MARK,
+  parisClock,
+  RESUPPLY_TARGET_LABELS,
+} from '../../../shared/resupply-labels';
 import { ResupplyReceiptsService } from '../resupply-receipts.service';
 
 /**
@@ -33,6 +37,10 @@ import { ResupplyReceiptsService } from '../resupply-receipts.service';
  * en lecture et UN bouton « Réceptionner », qui les reçoit toutes d'un geste.
  * Ensuite : « Réceptionné par X à HH:MM », et la correction d'un écart, ligne
  * par ligne. Avant « Réceptionner », rien ne se corrige : rien n'est reçu.
+ *
+ * Depuis le lot R1d (2026-10-21), un réassort que le fournil a envoyé de
+ * lui-même est marqué « Envoyé par le fournil » ; il se réceptionne d'un
+ * geste comme les autres.
  *
  * La carte fait ses gestes et prévient la page (`changed`), qui relit tout
  * (le stock du jour et les alertes que la réception a levées).
@@ -61,6 +69,7 @@ export class ResupplyReceptionsCard {
   readonly changed = output();
 
   protected readonly targetLabels = RESUPPLY_TARGET_LABELS;
+  protected readonly bakehouseMark = BAKEHOUSE_ORIGIN_MARK;
   protected readonly pending = signal(false);
   protected readonly failure = signal<string | null>(null);
   /** Les reçus en cours de correction, par « réassort/SKU ». */

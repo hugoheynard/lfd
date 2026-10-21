@@ -9,13 +9,16 @@ import {
   ReceiptLineNotFoundError,
   ReceiptNotYetReceivedError,
   ResupplyAlreadyReceivedError,
+  ResupplyDayNotYetComeError,
 } from "../resupply-receipt-errors.js";
 import { ResupplyReceiptLine } from "../resupply-receipt-line.js";
 
 const DAY = "2026-01-02";
-const TRACE = { at: new Date(0), author: { staffUserId: "staff_1", name: "Lou", role: "counter" } };
+/** 9 h à Paris le jour du réassort : seules des dates comparées entre elles. */
+const MORNING = new Date("2026-01-02T08:00:00Z");
+const TRACE = { at: MORNING, author: { staffUserId: "staff_1", name: "Lou", role: "counter" } };
 const LATER = {
-  at: new Date(60_000),
+  at: new Date(MORNING.getTime() + 60_000),
   author: { staffUserId: "staff_2", name: "Max", role: "counter" },
 };
 
@@ -208,5 +211,34 @@ describe("estimateStock", () => {
 
   it("une journée sans reçu n'a pas de stock", () => {
     expect(estimateStock([expecting()])).toEqual([]);
+  });
+});
+
+describe("ResupplyReceipt — pas avant sa journée (R1d)", () => {
+  /** Trou laissé par R2 : un réassort de demain se réceptionnait dès ce soir. */
+  it("refuse de réceptionner la veille au soir, à l'heure de Paris, et ne reçoit rien", () => {
+    const receipt = expecting();
+    // 23 h 30 à Paris le 1er janvier : encore la veille de la journée du réassort.
+    const eve = { ...TRACE, at: new Date("2026-01-01T22:30:00Z") };
+
+    expect(() => receipt.receiveAll(eve)).toThrow(ResupplyDayNotYetComeError);
+    expect(() => receipt.receiveAll(eve)).toThrow(/2026-01-02/u);
+    expect(receipt.status).toBe("expected");
+  });
+
+  it("réceptionne dès minuit à Paris, même si l'UTC est encore la veille", () => {
+    const receipt = expecting();
+
+    receipt.receiveAll({ ...TRACE, at: new Date("2026-01-01T23:30:00Z") });
+
+    expect(receipt.status).toBe("received");
+  });
+
+  it("réceptionne un réassort d'une journée passée (arrivé, attesté en retard)", () => {
+    const receipt = expecting();
+
+    receipt.receiveAll({ ...TRACE, at: new Date("2026-01-05T08:00:00Z") });
+
+    expect(receipt.status).toBe("received");
   });
 });

@@ -7,9 +7,9 @@ import { SiteResupplyLine } from "../domain/site-resupply-line.js";
 import { SiteResupplyRepository } from "../domain/site-resupply.repository.js";
 
 /**
- * Gardes et gestes PARTAGÉS par les cas de la demande en cours (lot R1c) :
- * l'ajout d'un article, et le passage d'un geste d'un seul tenant, ouvrent
- * tous deux la demande de la visée au besoin.
+ * Gardes et gestes PARTAGÉS par les cas de la demande en cours (lot R1c),
+ * et la lecture d'une ligne au catalogue, que l'envoi du fournil (R1d)
+ * partage aussi.
  */
 
 /** La demande en cours du point pour cette visée à l'instant `at`, ouverte si aucune. */
@@ -23,19 +23,29 @@ export async function currentDraft(
   return open ?? SiteResupply.draft({ id: ids.next(), ...input });
 }
 
-/** Ajoute un article au brouillon, son libellé lu au catalogue publié — jamais pris du client. */
+/** Une ligne demandée, son libellé lu au catalogue publié — jamais pris du client. */
+export async function catalogueLine(
+  catalogue: ResupplyCatalogue,
+  requested: { readonly sku: string; readonly quantity: number },
+): Promise<SiteResupplyLine> {
+  const article = await catalogue.article(requested.sku);
+  if (article === null) {
+    throw new ResupplyArticleUnknownError(requested.sku);
+  }
+  return SiteResupplyLine.of({
+    sku: article.sku,
+    label: article.name,
+    quantity: requested.quantity,
+  });
+}
+
+/** Ajoute un article au brouillon, son libellé lu au catalogue publié. */
 export async function addArticle(
   catalogue: ResupplyCatalogue,
   resupply: SiteResupply,
   requested: { readonly sku: string; readonly quantity: number },
 ): Promise<void> {
-  const article = await catalogue.article(requested.sku);
-  if (article === null) {
-    throw new ResupplyArticleUnknownError(requested.sku);
-  }
-  resupply.addLine(
-    SiteResupplyLine.of({ sku: article.sku, label: article.name, quantity: requested.quantity }),
-  );
+  resupply.addLine(await catalogueLine(catalogue, requested));
 }
 
 /** Le réassort sous le point de l'URL : celui d'un autre point est introuvable. */

@@ -20,21 +20,9 @@
 }
 
 .alerts li {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--fold-space-sm);
-  align-items: center;
-  justify-content: space-between;
   font-size: var(--fold-text-sm);
 }
 
 .sentence.out {
   font-weight: var(--fold-weight-semibold);
-}
-
-.launch {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--fold-space-xs);
-  align-items: end;
 }
