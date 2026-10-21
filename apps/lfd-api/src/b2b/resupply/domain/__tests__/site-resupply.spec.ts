@@ -5,9 +5,11 @@ import {
   IncompleteResupplyLineError,
   InvalidRequestedQuantityError,
   ResupplyAlreadyPlacedError,
-  ResupplyLineDuplicatedError,
+  ResupplyDayPassedError,
+  ResupplyLineNotInDraftError,
   ResupplyNotCancellableError,
   ResupplyPastCutoffError,
+  SiteResupplyChangedMeanwhileError,
   UnknownResupplyTargetError,
 } from "../site-resupply-errors.js";
 import { SiteResupplyLine } from "../site-resupply-line.js";
@@ -69,9 +71,50 @@ describe("SiteResupply — la journée suit la visée, à l'heure de Paris", () 
 });
 
 describe("SiteResupply — les lignes", () => {
-  it("refuse le même article deux fois", () => {
+  it("un article ajouté de nouveau voit sa quantité s'ADDITIONNER, à sa place", () => {
     const resupply = draft("asap");
-    expect(() => resupply.addLine(line("CRO", 1))).toThrow(ResupplyLineDuplicatedError);
+    resupply.addLine(line("PAC", 2));
+    resupply.addLine(line("CRO", 3));
+    expect(resupply.lines.map((l) => [l.sku, l.quantity])).toEqual([
+      ["CRO", 15],
+      ["PAC", 2],
+    ]);
+  });
+
+  it("corrige la quantité d'un article, à un entier positif seulement", () => {
+    const resupply = draft("asap");
+    resupply.correctLine("CRO", 4);
+    expect(resupply.lines[0]?.quantity).toBe(4);
+    expect(() => resupply.correctLine("CRO", 0)).toThrow(InvalidRequestedQuantityError);
+    expect(resupply.lines[0]?.quantity).toBe(4);
+  });
+
+  it("retire un article ; la demande peut rester vide, mais ne s'envoie pas", () => {
+    const resupply = draft("asap");
+    resupply.withdrawLine("CRO");
+    expect(resupply.lines).toEqual([]);
+    expect(() => resupply.place(trace(EVENING), null)).toThrow(EmptyResupplyError);
+  });
+
+  it("corriger ou retirer un article absent est refusé", () => {
+    const resupply = draft("asap");
+    expect(() => resupply.correctLine("PAC", 1)).toThrow(ResupplyLineNotInDraftError);
+    expect(() => resupply.withdrawLine("PAC")).toThrow(ResupplyLineNotInDraftError);
+  });
+
+  it("refuse un geste posé sur une autre version que la sienne", () => {
+    const resupply = SiteResupply.restore({
+      id: "r",
+      siteId: "s",
+      target: "asap",
+      serviceDay: "2026-01-02",
+      version: 3,
+      lines: [],
+      placed: null,
+      cancelled: null,
+    });
+    expect(() => resupply.assertSeen(2)).toThrow(SiteResupplyChangedMeanwhileError);
+    expect(() => resupply.assertSeen(3)).not.toThrow();
   });
 
   it("refuse de passer un réassort vide", () => {
@@ -83,6 +126,8 @@ describe("SiteResupply — les lignes", () => {
     const resupply = draft("asap");
     resupply.place(trace(EVENING), null);
     expect(() => resupply.addLine(line("PAC", 1))).toThrow(ResupplyAlreadyPlacedError);
+    expect(() => resupply.correctLine("CRO", 1)).toThrow(ResupplyAlreadyPlacedError);
+    expect(() => resupply.withdrawLine("CRO")).toThrow(ResupplyAlreadyPlacedError);
     expect(() => resupply.place(trace(EVENING), null)).toThrow(ResupplyAlreadyPlacedError);
   });
 });
@@ -118,6 +163,29 @@ describe("SiteResupply — l'heure limite", () => {
     expect(() => resupply.place(trace(LATE_NIGHT), DEADLINE)).toThrow(
       /2026-01-02 à 18:00.*au plus tôt/u,
     );
+  });
+});
+
+describe("SiteResupply — une journée passée", () => {
+  /** 9 h à Paris le 4 janvier : la journée du 3 est passée. */
+  const TWO_DAYS_LATER = new Date("2026-01-04T08:00:00Z");
+  /** 9 h à Paris le 3 janvier : la journée visée, le matin même. */
+  const NEXT_MORNING = new Date("2026-01-03T08:00:00Z");
+
+  it("une demande « pour demain » restée en cours ne s'envoie plus le surlendemain", () => {
+    const resupply = draft("tomorrow");
+    expect(() => resupply.place(trace(TWO_DAYS_LATER), null)).toThrow(ResupplyDayPassedError);
+    expect(resupply.status).toBe("draft");
+  });
+
+  it("le matin de sa journée, « pour demain » part encore si aucune limite ne s'y oppose", () => {
+    const resupply = draft("tomorrow");
+    resupply.place(trace(NEXT_MORNING), null);
+    expect(resupply.status).toBe("placed");
+  });
+
+  it("une demande « au plus tôt » de la veille ne s'envoie plus", () => {
+    expect(() => draft("asap").place(trace(NEXT_MORNING), null)).toThrow(ResupplyDayPassedError);
   });
 });
 

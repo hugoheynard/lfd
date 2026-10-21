@@ -11,6 +11,7 @@ import {
 } from 'fold-ng';
 
 import { parisClock } from '../../../shared/resupply-labels';
+import { AsapDraftAdder } from '../asap-draft-adder/asap-draft-adder';
 import { SiteStockAlertsStore } from '../site-stock-alerts.store';
 import { StockAlertActions } from '../stock-alert-actions/stock-alert-actions';
 
@@ -29,13 +30,16 @@ const LEVEL_VARIANTS: Readonly<Record<StockAlertLevel, FoldBadgeVariant>> = {
  * **Rupture et stock faible** — en tête de la page Réassort (lot R1b,
  * `reassort-boutiques/plan-reapprovisionnement.md`, 2026-10-21) : les alertes
  * vivantes du point, et la déclaration sur n'importe quel article du
- * catalogue. Elles avertissent le fournil ; elles n'ont encore aucun effet
+ * catalogue. Chaque alerte propose « Ajouter à la demande au plus tôt »
+ * (lot R1c) : l'article rejoint la demande en cours du point, plutôt qu'un
+ * réassort à part. Elles avertissent le fournil ; elles n'ont encore aucun effet
  * sur la boutique ni sur la passation (J2) — la carte le dit.
  */
 @Component({
   selector: 'app-stock-alerts-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    AsapDraftAdder,
     FoldBadgeComponent,
     FoldCalloutComponent,
     FoldCardComponent,

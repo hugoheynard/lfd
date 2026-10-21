@@ -1,14 +1,14 @@
-import type { SiteResupplyView } from "@lfd/contracts";
+import type { SiteResupplyDraftView, SiteResupplyView } from "@lfd/contracts";
 
-import type { SiteResupplySnapshot } from "../domain/site-resupply.js";
+import type { PlacedSiteResupplySnapshot, SiteResupplySnapshot } from "../domain/site-resupply.js";
 
 /** Un auteur que l'annuaire ne connaissait pas a été figé sans nom : on ne l'invente pas. */
 function nameOf(name: string): string | null {
   return name === "" ? null : name;
 }
 
-/** Le réassort tel que les écrans le lisent. */
-export function siteResupplyView(snapshot: SiteResupplySnapshot): SiteResupplyView {
+/** Le réassort envoyé tel que les écrans le lisent. */
+export function siteResupplyView(snapshot: PlacedSiteResupplySnapshot): SiteResupplyView {
   return {
     id: snapshot.id,
     siteId: snapshot.siteId,
@@ -24,5 +24,20 @@ export function siteResupplyView(snapshot: SiteResupplySnapshot): SiteResupplyVi
     placedBy: nameOf(snapshot.placed.author.name),
     cancelledAt: snapshot.cancelled?.at.toISOString() ?? null,
     cancelledBy: snapshot.cancelled === null ? null : nameOf(snapshot.cancelled.author.name),
+  };
+}
+
+/** La demande en cours telle que le comptoir la remplit. */
+export function siteResupplyDraftView(snapshot: SiteResupplySnapshot): SiteResupplyDraftView {
+  return {
+    id: snapshot.id,
+    target: snapshot.target,
+    serviceDay: snapshot.serviceDay,
+    version: snapshot.version,
+    lines: snapshot.lines.map((line) => ({
+      sku: line.sku,
+      label: line.label,
+      quantity: line.quantity,
+    })),
   };
 }

@@ -2400,8 +2400,16 @@ export type {
   SubAccountNoticeRuleView,
   SubAccountNoticesView,
 } from "./sub-account-notices.js";
-export { placeSiteResupplySchema, RESUPPLY_TARGETS } from "./site-resupply.js";
+export {
+  addSiteResupplyLineSchema,
+  correctSiteResupplyLineSchema,
+  placeSiteResupplySchema,
+  RESUPPLY_TARGETS,
+  seenSiteResupplyVersionSchema,
+} from "./site-resupply.js";
 export type {
+  AddSiteResupplyLinePayload,
+  CorrectSiteResupplyLinePayload,
   PlacedSiteResupplyResponse,
   PlaceSiteResupplyPayload,
   ResuppliesToProduceView,
@@ -2409,7 +2417,9 @@ export type {
   ResupplySiteToProduceView,
   ResupplyTarget,
   ResupplyTotalView,
+  SeenSiteResupplyVersionPayload,
   SiteResuppliesView,
+  SiteResupplyDraftView,
   SiteResupplyLineView,
   SiteResupplyStatus,
   SiteResupplyView,

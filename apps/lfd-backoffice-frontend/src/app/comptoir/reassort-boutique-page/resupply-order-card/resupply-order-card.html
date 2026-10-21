@@ -3,7 +3,7 @@
     cardHeader
     variant="title"
     title="Commander au fournil"
-    subtitle="Pour demain : la commande du soir, préparée pour le matin. Au plus tôt : pour aujourd'hui, quand la vitrine se vide — sans heure limite."
+    subtitle="Pour demain : la commande du soir, préparée pour le matin. Au plus tôt : pour aujourd'hui, quand la vitrine se vide — sans heure limite. La demande en cours est enregistrée : tous les postes du comptoir la voient et la remplissent."
   />
 
   <div class="order-body">
@@ -34,32 +34,13 @@
       }
 
       @if (target() !== null) {
-        @if (draft().length > 0) {
-          <ul class="draft" data-resupply-draft>
-            @for (line of draft(); track line.sku) {
-              <li [attr.data-resupply-draft-line]="line.sku">
-                <span>{{ line.quantity }} × {{ line.label }}</span>
-                <button
-                  foldButton
-                  size="sm"
-                  emphasis="outline"
-                  intent="danger"
-                  (click)="removeLine(line.sku)"
-                >
-                  Retirer
-                </button>
-              </li>
-            }
-          </ul>
-        }
-
         <div class="add">
           <fold-combobox
             label="Article"
             placeholder="Nom ou référence d'un article du catalogue"
-            emptyText="Aucun article ne correspond — ou il est déjà dans le réassort."
+            emptyText="Aucun article ne correspond."
             resultLabel="articles"
-            [options]="addableOptions()"
+            [options]="articleOptions()"
             [value]="pickedSku()"
             (valueChange)="pickedSku.set($event)"
           />
@@ -70,20 +51,14 @@
             [min]="1"
             integer
           />
-          <button foldButton emphasis="outline" [disabled]="!canAdd()" (click)="addLine()">
-            Ajouter
-          </button>
-        </div>
-
-        <div class="submit">
           <button
             foldButton
-            data-resupply-place
-            [disabled]="!canPlace()"
-            [loading]="pending()"
-            (click)="place()"
+            emphasis="outline"
+            data-resupply-draft-add
+            [disabled]="!canAdd()"
+            (click)="addLine()"
           >
-            Passer le réassort
+            Ajouter à la demande
           </button>
         </div>
       }
@@ -98,11 +73,74 @@
         <button foldButton (click)="load()">Réessayer</button>
       </fold-empty-state>
     } @else {
+      @for (draft of drafts(); track draft.id) {
+        <section class="draft" [attr.data-resupply-draft]="draft.target">
+          <h3 class="day-title">Demande en cours · {{ draftTitle(draft) }}</h3>
+          @if (draft.lines.length === 0) {
+            <p class="muted">Aucun article : ajoutez-en avant d'envoyer.</p>
+          } @else {
+            <ul class="draft-lines">
+              @for (line of draft.lines; track line.sku) {
+                <li [attr.data-resupply-draft-line]="line.sku">
+                  <span class="draft-label">{{ line.label }}</span>
+                  @if (canWrite()) {
+                    <fold-number-input
+                      label="Quantité"
+                      [value]="quantityOf(draft, line)"
+                      (valueChange)="setQuantity(draft, line, $event)"
+                      [min]="1"
+                      integer
+                    />
+                    @if (changed(draft, line)) {
+                      <button
+                        foldButton
+                        size="sm"
+                        data-resupply-correct
+                        [disabled]="pending()"
+                        (click)="correct(draft, line)"
+                      >
+                        Corriger
+                      </button>
+                    }
+                    <button
+                      foldButton
+                      size="sm"
+                      emphasis="outline"
+                      intent="danger"
+                      data-resupply-withdraw
+                      [disabled]="pending()"
+                      (click)="withdraw(draft, line)"
+                    >
+                      Retirer
+                    </button>
+                  } @else {
+                    <span>{{ line.quantity }}</span>
+                  }
+                </li>
+              }
+            </ul>
+          }
+          @if (canWrite()) {
+            <div class="submit">
+              <button
+                foldButton
+                data-resupply-send
+                [disabled]="draft.lines.length === 0 || pending()"
+                [loading]="pending()"
+                (click)="send(draft)"
+              >
+                Envoyer le réassort
+              </button>
+            </div>
+          }
+        </section>
+      }
+
       @for (day of days(); track day.day) {
         <section class="day" [attr.data-resupply-day]="day.day">
           <h3 class="day-title">{{ day.label }}</h3>
           @if (day.resupplies.length === 0) {
-            <p class="muted">Aucun réassort commandé.</p>
+            <p class="muted">Aucun réassort envoyé.</p>
           } @else {
             <ul class="resupplies">
               @for (resupply of day.resupplies; track resupply.id) {
@@ -110,7 +148,7 @@
                   <div class="resupply-head">
                     <strong>{{ targetLabels[resupply.target] }}</strong>
                     @if (resupply.status === 'placed') {
-                      <fold-status-badge status="active" label="Passé" />
+                      <fold-status-badge status="active" label="Envoyé" />
                     } @else {
                       <fold-status-badge status="terminated" label="Annulé" />
                     }

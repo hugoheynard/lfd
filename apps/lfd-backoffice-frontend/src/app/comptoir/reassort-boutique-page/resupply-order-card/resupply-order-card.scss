@@ -17,7 +17,7 @@
   justify-content: flex-end;
 }
 
-.draft,
+.draft-lines,
 .resupplies {
   display: flex;
   flex-direction: column;
@@ -27,12 +27,17 @@
   list-style: none;
 }
 
-.draft li {
+.draft-lines li {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--fold-space-md);
-  align-items: center;
-  justify-content: space-between;
+  align-items: end;
   font-size: var(--fold-text-sm);
+}
+
+.draft-label {
+  flex: 1;
+  align-self: center;
 }
 
 .resupplies li {
@@ -47,6 +52,7 @@
   align-items: center;
 }
 
+.draft,
 .day {
   display: flex;
   flex-direction: column;

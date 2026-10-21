@@ -18,10 +18,10 @@ export interface SiteResupplyRow {
   readonly target: string;
   readonly serviceDay: Date;
   readonly version: number;
-  readonly placedAt: Date;
-  readonly placedByStaffId: string;
-  readonly placedByName: string;
-  readonly placedByRole: string;
+  readonly placedAt: Date | null;
+  readonly placedByStaffId: string | null;
+  readonly placedByName: string | null;
+  readonly placedByRole: string | null;
   readonly cancelledAt: Date | null;
   readonly cancelledByStaffId: string | null;
   readonly cancelledByName: string | null;
@@ -33,7 +33,11 @@ export interface SiteResupplyRow {
   }[];
 }
 
-/** Ligne → instantané du domaine. La visée revalide ; la journée se relit en UTC. */
+/**
+ * Ligne → instantané du domaine. La visée revalide ; la journée se relit en
+ * UTC. Un envoi est entier en base (CHECK `site_resupply_placement_whole`) :
+ * un auteur absent à côté d'un instant n'arrive pas.
+ */
 export function snapshotOf(row: SiteResupplyRow): SiteResupplySnapshot {
   return {
     id: row.id,
@@ -42,10 +46,17 @@ export function snapshotOf(row: SiteResupplyRow): SiteResupplySnapshot {
     serviceDay: row.serviceDay.toISOString().slice(0, 10),
     version: row.version,
     lines: row.lines,
-    placed: {
-      at: row.placedAt,
-      author: { staffUserId: row.placedByStaffId, name: row.placedByName, role: row.placedByRole },
-    },
+    placed:
+      row.placedAt === null
+        ? null
+        : {
+            at: row.placedAt,
+            author: {
+              staffUserId: row.placedByStaffId ?? "",
+              name: row.placedByName ?? "",
+              role: row.placedByRole ?? "",
+            },
+          },
     cancelled:
       row.cancelledAt === null
         ? null

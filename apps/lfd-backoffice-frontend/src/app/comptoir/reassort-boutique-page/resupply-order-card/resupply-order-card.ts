@@ -11,10 +11,10 @@ import {
 import type {
   ResupplyArticleView,
   ResupplyTarget,
-  SiteResuppliesView,
+  SiteResupplyDraftView,
+  SiteResupplyLineView,
   SiteResupplyView,
 } from '@lfd/contracts';
-import { httpErrorMessage } from '@lfd/endpoints';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
@@ -28,29 +28,26 @@ import {
 } from 'fold-ng';
 
 import { PermissionsStore } from '../../../auth/permissions.store';
+import { refreshWhileVisible } from '../../../shared/periodic-refresh';
 import {
   parisClock,
   RESUPPLY_TARGET_LABELS,
   resupplyDayLabel,
 } from '../../../shared/resupply-labels';
-import { SiteResuppliesService } from '../site-resupplies.service';
-
-/** Une ligne du brouillon : il vit à l'écran jusqu'à « Passer le réassort ». */
-interface DraftLine {
-  readonly sku: string;
-  readonly label: string;
-  readonly quantity: number;
-}
+import { SiteResuppliesStore } from '../site-resupplies.store';
 
 /**
- * **Commander le réassort** du point ouvert dans le bandeau (lot R1,
- * `reassort-boutiques/plan-reapprovisionnement.md` §12, 2026-10-21) : choisir
- * « Pour demain » (la commande du soir, avant l'heure limite si le réassort y
- * est soumis) ou « Au plus tôt » (aujourd'hui, sans heure limite), saisir les
- * lignes, passer ; puis la liste des réassorts du point, annulables.
+ * **Commander le réassort** du point ouvert dans le bandeau (lots R1 et R1c,
+ * `reassort-boutiques/plan-reapprovisionnement.md`, 2026-10-21) : choisir
+ * « Pour demain » (la commande du soir, avant l'heure limite si le réassort
+ * y est soumis) ou « Au plus tôt » (aujourd'hui, sans heure limite), ajouter
+ * des articles à la DEMANDE EN COURS de cette visée, puis « Envoyer le
+ * réassort » ; ensuite la liste des réassorts envoyés, annulables.
  *
- * Le brouillon reste à l'écran : le serveur ne reçoit qu'un réassort entier,
- * et c'est lui qui en fixe la journée, sur son horloge.
+ * Depuis R1c, la demande en cours est enregistrée : chaque ajout, correction
+ * ou retrait l'écrit, et l'écran la relit — après chaque geste, toutes les
+ * 15 s tant que l'onglet est visible, et dès qu'on y revient. Un autre poste
+ * la remplit donc sous vos yeux, et un rechargement ne la perd plus.
  */
 @Component({
   selector: 'app-resupply-order-card',
@@ -69,7 +66,7 @@ interface DraftLine {
   styleUrl: './resupply-order-card.scss',
 })
 export class ResupplyOrderCard {
-  private readonly service = inject(SiteResuppliesService);
+  private readonly store = inject(SiteResuppliesStore);
   private readonly permissions = inject(PermissionsStore);
 
   /** Le point du bandeau. */
@@ -79,33 +76,41 @@ export class ResupplyOrderCard {
 
   protected readonly canWrite = computed(() => this.permissions.can('handover_counter:write'));
   protected readonly targetLabels = RESUPPLY_TARGET_LABELS;
-  protected readonly view = signal<SiteResuppliesView | null>(null);
-  protected readonly loadFailed = signal(false);
+  protected readonly view = this.store.view;
+  protected readonly drafts = this.store.drafts;
+  protected readonly loadFailed = this.store.loadFailed;
+  protected readonly pending = this.store.pending;
+  protected readonly failure = this.store.failure;
   protected readonly target = signal<ResupplyTarget | null>(null);
-  protected readonly draft = signal<readonly DraftLine[]>([]);
   protected readonly pickedSku = signal<string | null>(null);
   protected readonly pickedQuantity = signal<number | null>(null);
-  protected readonly pending = signal(false);
-  protected readonly failure = signal<string | null>(null);
+  /**
+   * Les quantités en cours de correction, par demande, VERSION et article :
+   * une demande changée par un autre poste fait tomber la saisie faite sur
+   * l'ancienne, plutôt que de l'envoyer sur ce qu'on n'a pas vu.
+   */
+  protected readonly edits = signal<ReadonlyMap<string, number | null>>(new Map());
 
-  protected readonly addableOptions = computed<FoldSelectOption<string>[]>(() => {
-    const present = new Set(this.draft().map((line) => line.sku));
-    return this.articles()
-      .filter((article) => !present.has(article.sku))
-      .map((article) => ({ value: article.sku, label: `${article.name} · ${article.sku}` }));
-  });
-  protected readonly canAdd = computed(
-    () => this.pickedSku() !== null && (this.pickedQuantity() ?? 0) >= 1,
+  /** Tout le catalogue : un article déjà demandé s'ajoute en plus. */
+  protected readonly articleOptions = computed<FoldSelectOption<string>[]>(() =>
+    this.articles().map((article) => ({
+      value: article.sku,
+      label: `${article.name} · ${article.sku}`,
+    })),
   );
-  protected readonly canPlace = computed(
-    () => this.target() !== null && this.draft().length > 0 && !this.pending(),
+  protected readonly canAdd = computed(
+    () =>
+      this.target() !== null &&
+      this.pickedSku() !== null &&
+      (this.pickedQuantity() ?? 0) >= 1 &&
+      !this.pending(),
   );
   /** « Pour demain » : jusqu'à quelle heure, quand une limite s'applique. */
   protected readonly orderUntil = computed(() => {
     const until = this.view()?.tomorrowOrderUntil ?? null;
     return until === null ? null : parisClock(until);
   });
-  /** Les réassorts du point, aujourd'hui d'abord, puis demain. */
+  /** Les réassorts envoyés du point, aujourd'hui d'abord, puis demain. */
   protected readonly days = computed(() => {
     const view = this.view();
     if (view === null) {
@@ -120,93 +125,96 @@ export class ResupplyOrderCard {
 
   constructor() {
     effect(() => {
-      this.siteId();
+      const siteId = this.siteId();
       untracked(() => {
-        this.reset();
-        void this.load();
+        this.target.set(null);
+        this.pickedSku.set(null);
+        this.pickedQuantity.set(null);
+        this.edits.set(new Map());
+        void this.store.load(siteId);
       });
     });
+    refreshWhileVisible(() => this.refresh());
   }
 
   protected pick(target: ResupplyTarget): void {
     this.target.set(target);
-    this.failure.set(null);
   }
 
-  protected addLine(): void {
+  protected async addLine(): Promise<void> {
+    const target = this.target();
     const sku = this.pickedSku();
     const quantity = this.pickedQuantity();
-    const article = this.articles().find((candidate) => candidate.sku === sku);
-    if (article === undefined || quantity === null || quantity < 1) {
+    if (target === null || sku === null || quantity === null || !this.canAdd()) {
       return;
     }
-    this.draft.update((lines) => [...lines, { sku: article.sku, label: article.name, quantity }]);
-    this.pickedSku.set(null);
-    this.pickedQuantity.set(null);
+    if (await this.store.addLine(target, sku, quantity)) {
+      this.pickedSku.set(null);
+      this.pickedQuantity.set(null);
+    }
   }
 
-  protected removeLine(sku: string): void {
-    this.draft.update((lines) => lines.filter((line) => line.sku !== sku));
+  protected draftTitle(draft: SiteResupplyDraftView): string {
+    return `${this.targetLabels[draft.target]} — ${resupplyDayLabel(draft.serviceDay)}`;
   }
 
-  protected async place(): Promise<void> {
-    const target = this.target();
-    if (target === null || !this.canPlace()) {
-      return;
+  protected quantityOf(draft: SiteResupplyDraftView, line: SiteResupplyLineView): number | null {
+    const edit = this.edits().get(editKey(draft, line.sku));
+    return edit === undefined ? line.quantity : edit;
+  }
+
+  protected setQuantity(
+    draft: SiteResupplyDraftView,
+    line: SiteResupplyLineView,
+    quantity: number | null,
+  ): void {
+    this.edits.update((edits) => new Map(edits).set(editKey(draft, line.sku), quantity));
+  }
+
+  protected changed(draft: SiteResupplyDraftView, line: SiteResupplyLineView): boolean {
+    const quantity = this.quantityOf(draft, line);
+    return quantity !== null && quantity >= 1 && quantity !== line.quantity;
+  }
+
+  protected async correct(draft: SiteResupplyDraftView, line: SiteResupplyLineView): Promise<void> {
+    const quantity = this.quantityOf(draft, line);
+    if (quantity !== null) {
+      await this.store.correctLine(draft, line.sku, quantity);
     }
-    const lines = this.draft().map(({ sku, quantity }) => ({ sku, quantity }));
-    const done = await this.act((siteId) => this.service.place(siteId, { target, lines }));
-    if (done) {
-      this.reset();
-    }
+  }
+
+  protected async withdraw(
+    draft: SiteResupplyDraftView,
+    line: SiteResupplyLineView,
+  ): Promise<void> {
+    await this.store.withdrawLine(draft, line.sku);
+  }
+
+  protected async send(draft: SiteResupplyDraftView): Promise<void> {
+    await this.store.send(draft);
   }
 
   protected async cancel(resupply: SiteResupplyView): Promise<void> {
-    await this.act((siteId) => this.service.cancel(siteId, resupply.id));
+    await this.store.cancel(resupply);
   }
 
   protected placedLine(resupply: SiteResupplyView): string {
     const by = resupply.placedBy === null ? '' : ` par ${resupply.placedBy}`;
-    return `Passé à ${parisClock(resupply.placedAt)}${by}`;
+    return `Envoyé à ${parisClock(resupply.placedAt)}${by}`;
   }
 
-  protected async load(): Promise<void> {
-    const siteId = this.siteId();
-    try {
-      const view = await this.service.list(siteId);
-      // Une réponse d'un point quitté entre-temps est jetée.
-      if (siteId === this.siteId()) {
-        this.view.set(view);
-        this.loadFailed.set(false);
-      }
-    } catch {
-      this.loadFailed.set(true);
-    }
+  protected load(): Promise<void> {
+    return this.store.load(this.siteId());
   }
 
-  /** Un geste, puis la relecture. Un refus laisse l'écran tel quel, avec sa raison. */
-  private async act(gesture: (siteId: string) => Promise<unknown>): Promise<boolean> {
-    if (this.pending()) {
-      return false;
-    }
-    this.pending.set(true);
-    this.failure.set(null);
-    try {
-      await gesture(this.siteId());
+  /** La relecture périodique se tait pendant un geste : il relit lui-même. */
+  private async refresh(): Promise<void> {
+    if (!this.pending()) {
       await this.load();
-      return true;
-    } catch (error) {
-      this.failure.set(httpErrorMessage(error, "Le réassort n'a pas pu être enregistré."));
-      return false;
-    } finally {
-      this.pending.set(false);
     }
   }
+}
 
-  private reset(): void {
-    this.target.set(null);
-    this.draft.set([]);
-    this.pickedSku.set(null);
-    this.pickedQuantity.set(null);
-  }
+function editKey(draft: SiteResupplyDraftView, sku: string): string {
+  return `${draft.id}:${String(draft.version)}:${sku}`;
 }

@@ -4,7 +4,8 @@
 > (commit `558b376c8`) ; la **commande** au fournil aussi (lot R1, 2026-10-21),
 > mais le fournil ne fait encore que la LIRE : elle n'entre ni au plan figé, ni
 > au colisage, ni au transfert (R3). Les **ruptures et stocks faibles** du
-> comptoir aussi (lot R1b, 2026-10-21), sans effet encore sur la boutique. Ce document décrit ce qui existe, vérifié
+> comptoir aussi (lot R1b, 2026-10-21), sans effet encore sur la boutique. La
+> **demande en cours** est enregistrée depuis le lot R1c (2026-10-21). Ce document décrit ce qui existe, vérifié
 > dans le code le 2026-10-21. La conception
 > complète, lots et questions ouvertes compris, est dans
 > [`plan-reapprovisionnement.md`](plan-reapprovisionnement.md).
@@ -41,10 +42,9 @@ flowchart LR
   catalogue publié, quantité entière > 0, un article une fois, au moins une),
   l'état brouillon → passé → annulé, l'auteur et l'instant de chaque geste.
   Aucun prix, aucune dépendance à `Order`.
-- **Le brouillon ne se persiste pas** : il vit à l'écran, et le serveur
-  reçoit un réassort entier qu'il compose et passe d'un geste
-  (`PlaceSiteResupplyHandler`). La base ne porte que des réassorts passés ou
-  annulés.
+- **La demande en cours** (lot R1c, 2026-10-21) : le brouillon se
+  persiste — voir la section suivante. `PlaceSiteResupplyHandler`, le geste
+  d'un seul tenant de R1, passe désormais par elle.
 - **L'heure limite** : `place()` refuse une visée `tomorrow` après l'heure
   limite générale de sa journée (borne incluse, rattrapage non compris) quand
   `resupply_subject_to_cutoff` est vrai — **le réglage a désormais un
@@ -55,11 +55,13 @@ flowchart LR
   tient encore. Une annulation est un état, jamais une suppression.
 - **Les tables** : `site_resupply` et `site_resupply_line` (unique par
   réassort et SKU, quantité > 0 en CHECK), schéma `public`, migration
-  `20261021170000_le_reassort_commande_par_un_point` (additive).
+  `20261021170000_le_reassort_commande_par_un_point` (additive), puis
+  `20261021210000_la_demande_de_reassort_en_cours` (R1c, additive).
 - **Les routes** : `admin/site-resupplies/sites/:siteId` sous
   `handover_counter` — lecture (les réassorts du point pour aujourd'hui et
   demain, et jusqu'à quand « Pour demain » passe), écriture (passer,
-  `…/:resupplyId/cancel`). Le point est dans chaque `where` : un réassort
+  `…/:resupplyId/cancel`) ; depuis R1c, les gestes de la demande en cours
+  (section suivante). Le point est dans chaque `where` : un réassort
   d'un autre point est introuvable (404).
   `admin/site-resupplies/to-produce` sous `production_worksheet:read` **ou**
   `production_plan:read` : aujourd'hui puis demain, par point, les réassorts
@@ -73,6 +75,60 @@ flowchart LR
   du commerce depuis le navigateur ; aucun bloc serveur ne traverse
   (`production → b2b` reste interdit). Le canal viendra quand le réassort
   entrera au plan figé (R3).
+
+## Ce qui est bâti : la demande en cours, enregistrée (lot R1c, 2026-10-21)
+
+```mermaid
+flowchart LR
+  A["Comptoir (n'importe quel poste)<br/>« Ajouter à la demande »<br/>ou une alerte : « Ajouter à la demande au plus tôt »"] --> D["SiteResupply en brouillon<br/>une par (point, visée, journée)"]
+  D -->|"corriger · retirer<br/>(version vue)"| D
+  D -->|"« Envoyer le réassort »"| S["SiteResupply envoyé"]
+  S --> F["Fournil › Réassorts à produire"]
+  S -.->|"prochain ajout"| N["nouvelle demande en cours"]
+```
+
+- **Le modèle** : la demande en cours est l'état `draft` de `SiteResupply`,
+  persisté. Une seule par (point, visée, journée) : index unique PARTIEL
+  `site_resupply_open_draft_key (site_id, target, service_day) WHERE
+placed_at IS NULL` ; deux postes qui l'ouvrent au même instant, le second
+  est refusé en 409 (`resupply.order.draft_opened_meanwhile`) et refait son
+  geste. Les colonnes `placed_*` sont nullables depuis la migration
+  `20261021210000_la_demande_de_reassort_en_cours` (CHECK : un envoi est
+  entier ; seul un réassort envoyé s'annule).
+- **Les gestes** : ajouter (`addLine`) — un article déjà présent voit sa
+  quantité **s'additionner** ; corriger (`correctLine`, entier ≥ 1) ;
+  retirer (`withdrawLine`, la demande peut rester vide) ; envoyer
+  (`place`, les règles de R1 : heure limite pour « pour demain » si le
+  réassort y est soumis). Une demande vide ne part pas (400).
+- **Le verrou de version** : corriger, retirer et envoyer portent la
+  version que le poste a vue ; un poste qui ne l'a plus est refusé en 409
+  (`resupply.order.changed_meanwhile`) plutôt que d'écraser l'autre. Ajouter
+  n'en porte pas : deux ajouts se cumulent, ils ne s'écrasent jamais.
+- **Une journée passée** : une demande « pour demain » restée sans envoi
+  garde sa journée. Le matin de cette journée, elle s'affiche encore et
+  part si l'heure limite ne s'y oppose pas ; une fois la journée passée,
+  elle **quitte l'écran** (le comptoir ne lit que aujourd'hui et demain) et
+  son envoi est refusé (409, `resupply.order.day_passed`). Elle reste en
+  base, jamais supprimée ; le prochain ajout ouvre la demande de la journée
+  en cours, à côté. Même règle pour « au plus tôt » de la veille.
+- **Les routes**, sous `admin/site-resupplies/sites/:siteId`,
+  `handover_counter:write` : `POST drafts/:target/lines` (ajouter),
+  `PATCH :resupplyId/lines/:sku` (corriger), `POST
+:resupplyId/lines/:sku/withdraw` (retirer), `POST :resupplyId/send`
+  (envoyer). La lecture sert `drafts` à côté de `resupplies` (envoyés).
+- **Le `POST :siteId` de R1** est gardé — le bouton « Lancer un réassort au
+  plus tôt » du fournil l'emploie — et passe par la demande en cours : ses
+  lignes s'ajoutent à la demande de la visée, puis la demande ENTIÈRE part,
+  avec ce que le comptoir y avait mis. Un seul réassort « au plus tôt » à la
+  fois, jamais deux demandes parallèles.
+- **L'écran** : la carte « Commander au fournil » montre la demande en
+  cours de chaque visée, quantités corrigibles, « Envoyer le réassort » ;
+  elle relit après chaque geste, toutes les 15 s onglet visible, et dès
+  qu'on revient sur l'onglet (`refreshWhileVisible`). L'état est partagé par
+  `SiteResuppliesStore` (fourni par la page) avec la proposition « Ajouter à
+  la demande au plus tôt » de chaque alerte de stock
+  (`comptoir/reassort-boutique-page/asap-draft-adder/`).
+- **Le fournil ne voit jamais une demande non envoyée.**
 
 ## Ce qui est bâti : rupture et stock faible au comptoir (lot R1b, 2026-10-21)
 
@@ -114,8 +170,8 @@ flowchart LR
   et les gestes sur chaque ligne reçue ; au fournil, « Alertes des points » en
   tête de « Réassorts à produire »
   (`production/reassorts-a-produire/live-stock-alerts-card/`). « Lancer un
-  réassort au plus tôt » passe un réassort `asap` de l'article pour le point
-  par la route du comptoir : il n'apparaît qu'à qui tient
+  réassort au plus tôt » ajoute l'article à la demande `asap` du point et
+  l'envoie (R1c), par la route du comptoir : il n'apparaît qu'à qui tient
   `handover_counter:write` — aucun droit du fournil ne couvre cette route.
 - **Aucun effet sur la boutique ni sur la passation** : une rupture ne bloque
   encore rien, un stock faible n'avertit aucun client (lot J2). L'écran du

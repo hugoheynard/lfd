@@ -1,7 +1,11 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
-import type { SiteResupplySnapshot } from "../domain/site-resupply.js";
+import {
+  isPlaced,
+  type PlacedSiteResupplySnapshot,
+  type SiteResupplySnapshot,
+} from "../domain/site-resupply.js";
 import { SiteResupplyReader } from "../domain/site-resupply.reader.js";
 import { dayColumn, SITE_RESUPPLY_LINES, snapshotOf } from "./site-resupply.row.js";
 
@@ -19,17 +23,23 @@ export class PrismaSiteResupplyReader extends SiteResupplyReader {
     const rows = await this.prisma.siteResupply.findMany({
       where: { siteId, serviceDay: { in: serviceDays.map(dayColumn) } },
       include: { lines: SITE_RESUPPLY_LINES },
+      // Les demandes en cours (sans `placed_at`) d'abord : Postgres range
+      // les `NULL` en tête d'un tri descendant.
       orderBy: [{ placedAt: "desc" }, { id: "desc" }],
     });
     return rows.map(snapshotOf);
   }
 
-  async placedOn(serviceDays: readonly string[]): Promise<readonly SiteResupplySnapshot[]> {
+  async placedOn(serviceDays: readonly string[]): Promise<readonly PlacedSiteResupplySnapshot[]> {
     const rows = await this.prisma.siteResupply.findMany({
-      where: { serviceDay: { in: serviceDays.map(dayColumn) }, cancelledAt: null },
+      where: {
+        serviceDay: { in: serviceDays.map(dayColumn) },
+        placedAt: { not: null },
+        cancelledAt: null,
+      },
       include: { lines: SITE_RESUPPLY_LINES },
       orderBy: [{ placedAt: "asc" }, { id: "asc" }],
     });
-    return rows.map(snapshotOf);
+    return rows.map(snapshotOf).filter(isPlaced);
   }
 }

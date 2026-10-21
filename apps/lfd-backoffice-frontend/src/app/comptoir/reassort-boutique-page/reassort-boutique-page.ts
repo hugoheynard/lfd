@@ -31,6 +31,7 @@ import { PermissionsStore } from '../../auth/permissions.store';
 import { HandoverQueueStore } from '../../handover-shop/handover-queue.store';
 import { ResupplyOrderCard } from './resupply-order-card/resupply-order-card';
 import { ResupplyReceiptsService } from './resupply-receipts.service';
+import { SiteResuppliesStore } from './site-resupplies.store';
 import { SiteStockAlertsStore } from './site-stock-alerts.store';
 import { StockAlertActions } from './stock-alert-actions/stock-alert-actions';
 import { StockAlertsCard } from './stock-alerts-card/stock-alerts-card';
@@ -51,6 +52,11 @@ type LoadState = 'loading' | 'ready' | 'error';
  * stocks faibles du point (`StockAlertsCard` en tête, et les gestes sur
  * chaque ligne reçue) ; un article reçu lève son alerte côté serveur, d'où la
  * relecture des alertes après chaque geste de réception.
+ *
+ * Depuis le lot R1c (2026-10-21), la demande de réassort en cours est
+ * enregistrée et partagée par `SiteResuppliesStore` : la carte « Commander
+ * au fournil » la remplit et l'envoie, et chaque alerte propose d'y ajouter
+ * son article « au plus tôt ».
  *
  * Le stock estimé est le reçu tant que le circuit « jour même sur stock »
  * n'existe pas (J2) : les commandes déjà passées pour ce jour l'ont été la
@@ -82,7 +88,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     StockAlertActions,
     StockAlertsCard,
   ],
-  providers: [SiteStockAlertsStore],
+  providers: [SiteStockAlertsStore, SiteResuppliesStore],
   templateUrl: './reassort-boutique-page.html',
   styleUrl: './reassort-boutique-page.scss',
 })

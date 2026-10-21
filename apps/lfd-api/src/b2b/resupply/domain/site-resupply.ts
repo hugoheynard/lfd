@@ -4,9 +4,11 @@ import type { StaffTrace } from "../../account/domain/value-objects/staff-trace.
 import {
   EmptyResupplyError,
   ResupplyAlreadyPlacedError,
-  ResupplyLineDuplicatedError,
+  ResupplyDayPassedError,
+  ResupplyLineNotInDraftError,
   ResupplyNotCancellableError,
   ResupplyPastCutoffError,
+  SiteResupplyChangedMeanwhileError,
   UnknownResupplyTargetError,
 } from "./site-resupply-errors.js";
 import { SiteResupplyLine } from "./site-resupply-line.js";
@@ -33,7 +35,11 @@ export interface SiteResupplyTrace {
   readonly author: StaffTrace;
 }
 
-/** L'état persisté d'un réassort passé (un brouillon ne se persiste pas). */
+/**
+ * L'état persisté d'un réassort. Depuis le lot R1c (2026-10-21), le
+ * brouillon — « la demande en cours » — se persiste aussi : `placed` est
+ * alors `null`.
+ */
 export interface SiteResupplySnapshot {
   readonly id: string;
   readonly siteId: string;
@@ -45,8 +51,24 @@ export interface SiteResupplySnapshot {
     readonly label: string;
     readonly quantity: number;
   }[];
-  readonly placed: SiteResupplyTrace;
+  readonly placed: SiteResupplyTrace | null;
   readonly cancelled: SiteResupplyTrace | null;
+}
+
+/** Un réassort envoyé (passé, annulé ou non). */
+export type PlacedSiteResupplySnapshot = SiteResupplySnapshot & {
+  readonly placed: SiteResupplyTrace;
+};
+
+/** Le réassort a-t-il été envoyé ? Un brouillon ne l'a pas été. */
+export function isPlaced(snapshot: SiteResupplySnapshot): snapshot is PlacedSiteResupplySnapshot {
+  return snapshot.placed !== null;
+}
+
+/** La journée qu'une visée désigne à l'instant `at`, à l'heure de Paris. */
+export function serviceDayFor(target: ResupplyTarget, at: Date): string {
+  const today = instantToLocal(at).day;
+  return target === "tomorrow" ? addDays(today, 1) : today;
 }
 
 /**
@@ -59,10 +81,16 @@ export interface SiteResupplySnapshot {
  * Paris : `tomorrow` vise le lendemain, `asap` le jour même. Elle n'est pas
  * saisie, pour qu'un poste à l'horloge fausse ne vise pas un autre jour.
  *
- * Ce que l'agrégat garantit : un article au plus une fois, des quantités
- * entières > 0, au moins une ligne pour passer, l'heure limite opposée à
- * `tomorrow` quand elle s'applique (jamais à `asap`), et
+ * Ce que l'agrégat garantit : un article au plus une fois (un second ajout
+ * du même article ADDITIONNE sa quantité — le geste naturel en plein
+ * service, lot R1c), des quantités entières > 0, au moins une ligne pour
+ * passer, l'heure limite opposée à `tomorrow` quand elle s'applique (jamais
+ * à `asap`), une journée pas encore passée à l'envoi, et
  * brouillon → passé → annulé, dans cet ordre seulement.
+ *
+ * Le brouillon est « la demande en cours » du point pour une visée : une
+ * seule par (point, visée, journée), tenue par un index unique partiel en
+ * base ; les postes le remplissent sous verrou de version.
  */
 export class SiteResupply {
   private constructor(
@@ -83,12 +111,11 @@ export class SiteResupply {
     readonly target: ResupplyTarget;
     readonly at: Date;
   }): SiteResupply {
-    const today = instantToLocal(input.at).day;
-    const serviceDay = input.target === "tomorrow" ? addDays(today, 1) : today;
+    const serviceDay = serviceDayFor(input.target, input.at);
     return new SiteResupply(input.id, input.siteId, input.target, serviceDay, 0, [], null, null);
   }
 
-  /** Réhydrate un réassort passé ; chaque ligne revalide. */
+  /** Réhydrate un réassort, brouillon compris ; chaque ligne revalide. */
   static restore(snapshot: SiteResupplySnapshot): SiteResupply {
     return new SiteResupply(
       snapshot.id,
@@ -121,13 +148,52 @@ export class SiteResupply {
     return this.cancelledTrace;
   }
 
-  /** Ajoute un article au brouillon. Refusé s'il y est déjà, ou si le réassort est passé. */
+  /**
+   * Ajoute un article au brouillon. Déjà présent, sa quantité s'ADDITIONNE :
+   * deux postes qui ajoutent des croissants en demandent la somme.
+   */
   addLine(line: SiteResupplyLine): void {
     this.assertDraft();
-    if (this.lineList.some((existing) => existing.sku === line.sku)) {
-      throw new ResupplyLineDuplicatedError(line.sku);
+    const existing = this.lineList.find((candidate) => candidate.sku === line.sku);
+    if (existing === undefined) {
+      this.lineList = [...this.lineList, line];
+      return;
     }
-    this.lineList = [...this.lineList, line];
+    const summed = SiteResupplyLine.of({
+      sku: existing.sku,
+      label: existing.label,
+      quantity: existing.quantity + line.quantity,
+    });
+    this.lineList = this.lineList.map((candidate) =>
+      candidate.sku === line.sku ? summed : candidate,
+    );
+  }
+
+  /** Remplace la quantité d'un article du brouillon (entière, un ou plus). */
+  correctLine(sku: string, quantity: number): void {
+    this.assertDraft();
+    const existing = this.lineOf(sku);
+    const corrected = SiteResupplyLine.of({ sku, label: existing.label, quantity });
+    this.lineList = this.lineList.map((candidate) =>
+      candidate.sku === sku ? corrected : candidate,
+    );
+  }
+
+  /** Retire un article du brouillon. */
+  withdrawLine(sku: string): void {
+    this.assertDraft();
+    this.lineOf(sku);
+    this.lineList = this.lineList.filter((candidate) => candidate.sku !== sku);
+  }
+
+  /**
+   * Refuse un geste posé sur une version que le poste n'a plus sous les
+   * yeux : deux postes ne s'écrasent pas, même l'un après l'autre.
+   */
+  assertSeen(version: number): void {
+    if (version !== this.version) {
+      throw new SiteResupplyChangedMeanwhileError();
+    }
   }
 
   /**
@@ -135,11 +201,15 @@ export class SiteResupply {
    * réassort y est soumis, `null` sinon (réglé sans limite, ou aucune limite
    * posée) ; « au plus tôt » l'ignore toujours. La borne est incluse, comme
    * pour une commande : à la seconde de la limite, c'est encore accepté.
+   * Une demande dont la journée est passée ne s'envoie plus.
    */
   place(trace: SiteResupplyTrace, deadline: Date | null): void {
     this.assertDraft();
     if (this.lineList.length === 0) {
       throw new EmptyResupplyError();
+    }
+    if (instantToLocal(trace.at).day > this.serviceDay) {
+      throw new ResupplyDayPassedError(this.serviceDay);
     }
     if (this.target === "tomorrow" && deadline !== null && trace.at > deadline) {
       const limit = instantToLocal(deadline);
@@ -157,6 +227,14 @@ export class SiteResupply {
       throw new ResupplyNotCancellableError();
     }
     this.cancelledTrace = trace;
+  }
+
+  private lineOf(sku: string): SiteResupplyLine {
+    const line = this.lineList.find((candidate) => candidate.sku === sku);
+    if (line === undefined) {
+      throw new ResupplyLineNotInDraftError(sku);
+    }
+    return line;
   }
 
   private assertDraft(): void {

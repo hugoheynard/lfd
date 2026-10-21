@@ -2,7 +2,6 @@ import {
   BusinessError,
   DomainError,
   ResourceNotFoundError,
-  TechnicalError,
 } from "../../../platform/shared/errors/app-error.js";
 
 /** Une quantité demandée qui n'est pas un entier strictement positif. */
@@ -25,22 +24,12 @@ export class IncompleteResupplyLineError extends DomainError {
   }
 }
 
-/** Le même article deux fois dans un réassort : une ligne suffit. */
-export class ResupplyLineDuplicatedError extends DomainError {
-  constructor(readonly sku: string) {
-    super(
-      "resupply.order.duplicated_line",
-      `Cet article (${sku}) figure deux fois dans le réassort : gardez une seule ligne avec la quantité totale.`,
-    );
-  }
-}
-
 /** Un réassort sans article : rien à produire. */
 export class EmptyResupplyError extends DomainError {
   constructor() {
     super(
       "resupply.order.empty",
-      "Un réassort porte au moins un article : ajoutez une ligne avant de le passer.",
+      "Un réassort porte au moins un article : ajoutez une ligne à la demande avant de l'envoyer.",
     );
   }
 }
@@ -77,7 +66,7 @@ export class ResupplyAlreadyPlacedError extends BusinessError {
   constructor() {
     super(
       "resupply.order.already_placed",
-      "Ce réassort est déjà passé : ses lignes ne changent plus. Annulez-le et passez-en un autre.",
+      "Ce réassort est déjà envoyé : ses lignes ne changent plus. Rechargez la page : un nouvel ajout ouvre une nouvelle demande.",
     );
   }
 }
@@ -107,17 +96,45 @@ export class SiteResupplyChangedMeanwhileError extends BusinessError {
   constructor() {
     super(
       "resupply.order.changed_meanwhile",
-      "Ce réassort vient d'être modifié depuis un autre poste : rechargez la page, puis refaites votre geste.",
+      "Cette demande de réassort vient d'être modifiée depuis un autre poste : rechargez la page pour voir ses lignes à jour, puis refaites votre geste.",
     );
   }
 }
 
-/** Un brouillon atteint la persistance : un défaut de câblage, pas un geste du comptoir. */
-export class DraftResupplyNotPersistableError extends TechnicalError {
+/** La ligne visée n'est plus dans la demande : un autre poste l'a retirée. */
+export class ResupplyLineNotInDraftError extends BusinessError {
+  constructor(readonly sku: string) {
+    super(
+      "resupply.order.line_not_in_draft",
+      `L'article ${sku} n'est plus dans la demande en cours : un autre poste l'a sans doute retiré. Rechargez la page, puis ajoutez-le de nouveau s'il le faut.`,
+    );
+  }
+}
+
+/**
+ * Une demande dont la journée est passée — le plus souvent une demande
+ * « pour demain » restée sans envoi jusqu'au surlendemain. Elle ne
+ * s'envoie plus : le comptoir ne la voit plus, et un nouvel ajout ouvre la
+ * demande de la journée en cours.
+ */
+export class ResupplyDayPassedError extends BusinessError {
+  constructor(readonly serviceDay: string) {
+    super(
+      "resupply.order.day_passed",
+      `Cette demande visait le ${serviceDay}, une journée passée : elle ne s'envoie plus. Ajoutez les articles à la demande en cours (« Pour demain » ou « Au plus tôt »), puis envoyez-la.`,
+    );
+  }
+}
+
+/**
+ * Deux postes ont ouvert en même temps la demande d'une même visée : l'index
+ * unique partiel de la base a refusé la seconde.
+ */
+export class SiteResupplyDraftOpenedMeanwhileError extends BusinessError {
   constructor() {
     super(
-      "resupply.order.draft_not_persisted",
-      "Un réassort en brouillon ne s'enregistre pas : il se passe d'un geste. Signalez-le à l'équipe technique.",
+      "resupply.order.draft_opened_meanwhile",
+      "Une demande vient d'être ouverte pour cette visée depuis un autre poste : refaites votre geste, l'article s'ajoutera à elle.",
     );
   }
 }

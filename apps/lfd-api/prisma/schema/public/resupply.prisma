@@ -68,14 +68,18 @@ model SiteResupply {
   /// La journée visée (date civile de Paris), déduite de la visée au geste.
   serviceDay DateTime @map("service_day") @db.Date
 
-  /// Verrou optimiste : deux postes qui annulent en même temps ne s'écrasent pas.
+  /// Verrou optimiste : deux postes qui remplissent, envoient ou annulent en
+  /// même temps ne s'écrasent pas.
   version Int @default(1)
 
-  /// Le geste « Passer le réassort » : instant du `Clock`, auteur figé.
-  placedAt        DateTime @map("placed_at")
-  placedByStaffId String   @map("placed_by_staff_id")
-  placedByName    String   @map("placed_by_name")
-  placedByRole    String   @map("placed_by_role")
+  /// Le geste « Envoyer le réassort » : instant du `Clock`, auteur figé. Tous
+  /// `null` tant que c'est la demande en cours (brouillon, lot R1c). Une seule
+  /// demande en cours par (point, visée, journée) : index unique partiel
+  /// `site_resupply_open_draft_key`, que Prisma ne sait pas déclarer.
+  placedAt        DateTime? @map("placed_at")
+  placedByStaffId String?   @map("placed_by_staff_id")
+  placedByName    String?   @map("placed_by_name")
+  placedByRole    String?   @map("placed_by_role")
 
   /// Le geste « Annuler » ; tous `null` tant qu'il est passé.
   cancelledAt        DateTime? @map("cancelled_at")

@@ -4,7 +4,7 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 import { Clock } from "../../../platform/time/clock.js";
 import { ResupplySiteLabels } from "../domain/resupply-site-labels.js";
 import { resupplyTotals } from "../domain/resupply-totals.js";
-import type { SiteResupplySnapshot } from "../domain/site-resupply.js";
+import type { PlacedSiteResupplySnapshot } from "../domain/site-resupply.js";
 import { SiteResupplyReader } from "../domain/site-resupply.reader.js";
 import { ListResuppliesToProduceQuery } from "./list-resupplies-to-produce.query.js";
 import { resupplyDays } from "./resupply-days.js";
@@ -44,7 +44,7 @@ export class ListResuppliesToProduceHandler implements IQueryHandler<
 
 function dayView(
   serviceDay: string,
-  resupplies: readonly SiteResupplySnapshot[],
+  resupplies: readonly PlacedSiteResupplySnapshot[],
   labels: ReadonlyMap<string, string>,
 ): ResupplyDayToProduceView {
   const siteIds = [...new Set(resupplies.map((resupply) => resupply.siteId))];

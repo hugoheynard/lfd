@@ -3,19 +3,23 @@ import { Module } from "@nestjs/common";
 import { AccountModule } from "../account/account.module.js";
 import { CatalogModule } from "../catalog/catalog.module.js";
 import { OrderCutoffsInForceModule } from "../order-cutoffs/order-cutoffs-in-force.module.js";
+import { AddSiteResupplyLineHandler } from "./application/add-site-resupply-line.handler.js";
 import { CancelSiteResupplyHandler } from "./application/cancel-site-resupply.handler.js";
 import { DeclareStockAlertHandler } from "./application/declare-stock-alert.handler.js";
 import { LiftStockAlertHandler } from "./application/lift-stock-alert.handler.js";
 import { ListLiveStockAlertsHandler } from "./application/list-live-stock-alerts.handler.js";
 import { ListSiteStockAlertsHandler } from "./application/list-site-stock-alerts.handler.js";
 import { CorrectResupplyLineHandler } from "./application/correct-resupply-line.handler.js";
+import { CorrectSiteResupplyLineHandler } from "./application/correct-site-resupply-line.handler.js";
 import { GetResupplyReceiptHandler } from "./application/get-resupply-receipt.handler.js";
 import { ListResuppliesToProduceHandler } from "./application/list-resupplies-to-produce.handler.js";
 import { ListResupplyArticlesHandler } from "./application/list-resupply-articles.handler.js";
 import { ListSiteResuppliesHandler } from "./application/list-site-resupplies.handler.js";
 import { PlaceSiteResupplyHandler } from "./application/place-site-resupply.handler.js";
 import { ReceiveResupplyLineHandler } from "./application/receive-resupply-line.handler.js";
+import { SendSiteResupplyHandler } from "./application/send-site-resupply.handler.js";
 import { WithdrawResupplyLineHandler } from "./application/withdraw-resupply-line.handler.js";
+import { WithdrawSiteResupplyLineHandler } from "./application/withdraw-site-resupply-line.handler.js";
 import { ResupplyCatalogue } from "./domain/resupply-catalogue.js";
 import { ResupplyCutoff } from "./domain/resupply-cutoff.js";
 import { ResupplyReceiptRepository } from "./domain/resupply-receipt.repository.js";
@@ -45,7 +49,8 @@ import { PrismaStockAlertRepository } from "./infrastructure/prisma-stock-alert.
  * `documentation/reassort-boutiques/plan-reapprovisionnement.md`, Hugo
  * 2026-10-21) — la RÉCEPTION (ce que la vitrine a reçu, lot J1 du plan du
  * jour même) et, depuis le lot R1 (2026-10-21), la DEMANDE au fournil
- * (`SiteResupply`), que le fournil lit en lecture ; et, depuis le lot R1b,
+ * (`SiteResupply`), que le fournil lit en lecture — sa demande en cours
+ * enregistrée depuis R1c ; et, depuis le lot R1b,
  * les alertes de stock du comptoir (`StockAlert`). Aucune dépendance au
  * modèle `Order`.
  *
@@ -79,6 +84,10 @@ import { PrismaStockAlertRepository } from "./infrastructure/prisma-stock-alert.
     ListResupplyArticlesHandler,
     PlaceSiteResupplyHandler,
     CancelSiteResupplyHandler,
+    AddSiteResupplyLineHandler,
+    CorrectSiteResupplyLineHandler,
+    WithdrawSiteResupplyLineHandler,
+    SendSiteResupplyHandler,
     ListSiteResuppliesHandler,
     ListResuppliesToProduceHandler,
     DeclareStockAlertHandler,

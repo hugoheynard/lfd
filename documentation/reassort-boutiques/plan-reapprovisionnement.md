@@ -348,7 +348,7 @@ dans le [README](README.md). Le bouton « Lancer un réassort au plus tôt » du
 fournil passe par la route du comptoir : il n'apparaît qu'à qui tient
 `handover_counter:write`.
 
-### R1c — La demande en cours, enregistrée (Hugo, 2026-10-21)
+### R1c ✅ — La demande en cours, enregistrée (Hugo, 2026-10-21 ; bâti le 2026-10-21, non commité)
 
 « Un état général de la demande de réassort, pré-envoi de la demande, stocké. »
 En R1, le brouillon ne vit qu'à l'écran : un rechargement ou un autre poste le
@@ -365,3 +365,13 @@ perd. R1c l'enregistre :
   réassort à part.
 
 Bâti juste après R1b (mêmes écrans, même agrégat).
+
+✅ **Bâti le 2026-10-21** : le brouillon de `SiteResupply` se persiste (les
+colonnes `placed_*` deviennent nullables, index unique partiel
+`site_resupply_open_draft_key` — migration additive
+`20261021210000_la_demande_de_reassort_en_cours`) ; ajouter (la quantité
+s'additionne), corriger, retirer, envoyer, sous verrou de version ; une
+demande vide ou d'une journée passée ne part pas. Le `POST` d'un seul tenant
+de R1 est gardé et passe par la demande en cours (le bouton du fournil
+l'ajoute à la demande « au plus tôt » et l'envoie entière). État dans le
+[README](README.md).

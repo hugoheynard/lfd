@@ -34,6 +34,7 @@
             </span>
             @if (canWrite()) {
               <app-stock-alert-actions [sku]="alert.sku" />
+              <app-asap-draft-adder [sku]="alert.sku" />
             }
           </li>
         }

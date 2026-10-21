@@ -3,14 +3,16 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../platform/time/clock.js";
 import { ResupplyCutoff } from "../domain/resupply-cutoff.js";
+import { isPlaced } from "../domain/site-resupply.js";
 import { SiteResupplyReader } from "../domain/site-resupply.reader.js";
 import { ListSiteResuppliesQuery } from "./list-site-resupplies.query.js";
 import { resupplyDays } from "./resupply-days.js";
-import { siteResupplyView } from "./site-resupply-view.js";
+import { siteResupplyDraftView, siteResupplyView } from "./site-resupply-view.js";
 
 /**
- * Sert la liste du comptoir : les réassorts du point pour aujourd'hui et
- * demain, annulés compris, et jusqu'à quand « Pour demain » est accepté.
+ * Sert la liste du comptoir : les demandes en cours du point (lot R1c) et
+ * ses réassorts envoyés pour aujourd'hui et demain, annulés compris, et
+ * jusqu'à quand « Pour demain » est accepté.
  */
 @QueryHandler(ListSiteResuppliesQuery)
 export class ListSiteResuppliesHandler implements IQueryHandler<
@@ -34,7 +36,8 @@ export class ListSiteResuppliesHandler implements IQueryHandler<
       today,
       tomorrow,
       tomorrowOrderUntil: deadline?.toISOString() ?? null,
-      resupplies: resupplies.map(siteResupplyView),
+      drafts: resupplies.filter((resupply) => !isPlaced(resupply)).map(siteResupplyDraftView),
+      resupplies: resupplies.filter(isPlaced).map(siteResupplyView),
     };
   }
 }

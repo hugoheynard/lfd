@@ -36,8 +36,11 @@ interface SiteAlert {
  * **Les alertes des points** — en tête de « Réassorts à produire » (lot R1b,
  * `reassort-boutiques/plan-reapprovisionnement.md`, 2026-10-21) :
  * « Village : rupture — Croissant ». « Lancer un réassort au plus tôt » passe
- * un réassort `asap` de cet article pour ce point, par la route du comptoir —
- * le bouton n'apparaît donc qu'à qui tient `handover_counter:write`, le droit
+ * un réassort `asap` de cet article pour ce point, par la route du comptoir.
+ * Depuis R1c, la route l'AJOUTE à la demande « au plus tôt » en cours du
+ * point, puis envoie cette demande entière — ce que le comptoir y avait mis
+ * part avec : un seul réassort « au plus tôt » à la fois. Le bouton
+ * n'apparaît qu'à qui tient `handover_counter:write`, le droit
  * de cette route (aucun droit du fournil ne la couvre, vérifié le 2026-10-21).
  */
 @Component({
@@ -91,7 +94,7 @@ export class LiveStockAlertsCard {
     this.opened.set(null);
   }
 
-  /** Passe le réassort « au plus tôt » de cet article pour ce point. */
+  /** Ajoute l'article à la demande « au plus tôt » du point, et l'envoie (R1c). */
   protected async launch(entry: SiteAlert): Promise<void> {
     const quantity = this.quantity();
     if (quantity === null || this.pending()) {

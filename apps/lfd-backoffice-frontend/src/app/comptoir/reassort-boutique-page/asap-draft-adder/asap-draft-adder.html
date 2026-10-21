@@ -1,0 +1,19 @@
+<div class="adder" [attr.data-asap-draft-adder]="sku()">
+  @if (opened()) {
+    <fold-number-input
+      label="Quantité demandée"
+      [value]="quantity()"
+      (valueChange)="quantity.set($event)"
+      [min]="1"
+      integer
+    />
+    <button foldButton size="sm" data-asap-draft-add [disabled]="!canAdd()" (click)="add()">
+      Ajouter
+    </button>
+    <button foldButton size="sm" emphasis="soft" (click)="close()">Annuler</button>
+  } @else {
+    <button foldButton size="sm" emphasis="outline" data-asap-draft-open (click)="open()">
+      Ajouter à la demande au plus tôt
+    </button>
+  }
+</div>

@@ -1,0 +1,293 @@
+import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
+import { FixedClock } from "../../../../platform/time/fixed-clock.js";
+import {
+  ResupplyArticleUnknownError,
+  ResupplySiteUnknownError,
+} from "../../domain/resupply-receipt-errors.js";
+import {
+  EmptyResupplyError,
+  ResupplyAlreadyPlacedError,
+  ResupplyDayPassedError,
+  ResupplyLineNotInDraftError,
+  ResupplyPastCutoffError,
+  SiteResupplyChangedMeanwhileError,
+  SiteResupplyDraftOpenedMeanwhileError,
+  SiteResupplyNotFoundError,
+} from "../../domain/site-resupply-errors.js";
+import { AddSiteResupplyLineCommand } from "../add-site-resupply-line.command.js";
+import { AddSiteResupplyLineHandler } from "../add-site-resupply-line.handler.js";
+import { CorrectSiteResupplyLineCommand } from "../correct-site-resupply-line.command.js";
+import { CorrectSiteResupplyLineHandler } from "../correct-site-resupply-line.handler.js";
+import { ListSiteResuppliesHandler } from "../list-site-resupplies.handler.js";
+import { ListSiteResuppliesQuery } from "../list-site-resupplies.query.js";
+import { PlaceSiteResupplyCommand } from "../place-site-resupply.command.js";
+import { PlaceSiteResupplyHandler } from "../place-site-resupply.handler.js";
+import { SendSiteResupplyCommand } from "../send-site-resupply.command.js";
+import { SendSiteResupplyHandler } from "../send-site-resupply.handler.js";
+import { WithdrawSiteResupplyLineCommand } from "../withdraw-site-resupply-line.command.js";
+import { WithdrawSiteResupplyLineHandler } from "../withdraw-site-resupply-line.handler.js";
+import { Catalogue, Directory, Sites } from "./resupply-doubles.js";
+import {
+  FixedResupplyCutoff,
+  InMemorySiteResupplies,
+  InMemorySiteResupplyReader,
+} from "./site-resupply-doubles.js";
+
+/** 17 h à Paris le 2 janvier : les journées ne sont comparées qu'à cette horloge figée. */
+const NOW = new Date("2026-01-02T16:00:00Z");
+const HOUR_MS = 60 * 60 * 1000;
+const DAY_MS = 24 * HOUR_MS;
+const TODAY = "2026-01-02";
+const TOMORROW = "2026-01-03";
+const VILLAGE = "site_village";
+const LABO = "site_labo";
+
+function setup(deadline: Date | null = null) {
+  const store = new InMemorySiteResupplies();
+  const cutoff = new FixedResupplyCutoff(deadline);
+  const clock = new FixedClock(NOW);
+  const staff = new Directory({ name: "Lou Martin", role: "counter" });
+  const catalogue = new Catalogue([
+    { sku: "CRO", name: "Croissant" },
+    { sku: "PAC", name: "Pain au chocolat" },
+  ]);
+  const sites = new Sites([VILLAGE, LABO]);
+  const ids = new FixedIdGenerator("resupply");
+  return {
+    store,
+    clock,
+    add: new AddSiteResupplyLineHandler(store, catalogue, sites, clock, ids),
+    correct: new CorrectSiteResupplyLineHandler(store),
+    withdraw: new WithdrawSiteResupplyLineHandler(store),
+    send: new SendSiteResupplyHandler(store, cutoff, staff, clock),
+    place: new PlaceSiteResupplyHandler(store, catalogue, sites, cutoff, staff, clock, ids),
+    list: new ListSiteResuppliesHandler(new InMemorySiteResupplyReader(store), cutoff, clock),
+  };
+}
+
+function versionOf(store: InMemorySiteResupplies, id: string): number {
+  return store.all().find((row) => row.id === id)?.version ?? -1;
+}
+
+describe("la demande en cours — ajouter", () => {
+  it("ouvre la demande de la visée au premier ajout, et la sert au comptoir", async () => {
+    const { add, list } = setup();
+
+    const id = await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "tomorrow", "CRO", 12));
+
+    const view = await list.execute(new ListSiteResuppliesQuery(VILLAGE));
+    expect(view.drafts).toEqual([
+      {
+        id,
+        target: "tomorrow",
+        serviceDay: TOMORROW,
+        version: 1,
+        lines: [{ sku: "CRO", label: "Croissant", quantity: 12 }],
+      },
+    ]);
+    expect(view.resupplies).toEqual([]);
+  });
+
+  it("un article déjà présent voit sa quantité S'ADDITIONNER, dans la même demande", async () => {
+    const { add, store } = setup();
+
+    const first = await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "asap", "CRO", 5));
+    await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "asap", "PAC", 2));
+    const second = await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "asap", "CRO", 3));
+
+    expect(second).toBe(first);
+    expect(store.all()).toHaveLength(1);
+    expect(store.all()[0]?.lines.map((line) => [line.sku, line.quantity])).toEqual([
+      ["CRO", 8],
+      ["PAC", 2],
+    ]);
+  });
+
+  it("une demande par visée : « pour demain » et « au plus tôt » ne se mêlent pas", async () => {
+    const { add, list } = setup();
+
+    await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "tomorrow", "CRO", 1));
+    await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "asap", "CRO", 1));
+
+    const { drafts } = await list.execute(new ListSiteResuppliesQuery(VILLAGE));
+    expect(drafts.map((draft) => [draft.target, draft.serviceDay]).sort()).toEqual([
+      ["asap", TODAY],
+      ["tomorrow", TOMORROW],
+    ]);
+  });
+
+  it("refuse un point inconnu et un article hors catalogue, sans rien écrire", async () => {
+    const { add, store } = setup();
+
+    await expect(
+      add.execute(new AddSiteResupplyLineCommand("site_x", "asap", "CRO", 1)),
+    ).rejects.toThrow(ResupplySiteUnknownError);
+    await expect(
+      add.execute(new AddSiteResupplyLineCommand(VILLAGE, "asap", "X", 1)),
+    ).rejects.toThrow(ResupplyArticleUnknownError);
+    expect(store.saves).toBe(0);
+  });
+
+  it("deux postes qui ouvrent la même demande en même temps : le second est refusé", async () => {
+    // L'autre poste a ouvert la demande entre la lecture et l'écriture : ce
+    // dépôt ne la voit pas à la lecture, mais la tient à l'écriture.
+    class OpenedMeanwhile extends InMemorySiteResupplies {
+      override openDraft(): Promise<null> {
+        return Promise.resolve(null);
+      }
+    }
+    const store = new OpenedMeanwhile();
+    store.put({
+      id: "other",
+      siteId: VILLAGE,
+      target: "asap",
+      serviceDay: TODAY,
+      version: 1,
+      lines: [],
+      placed: null,
+      cancelled: null,
+    });
+    const add = new AddSiteResupplyLineHandler(
+      store,
+      new Catalogue([{ sku: "CRO", name: "Croissant" }]),
+      new Sites([VILLAGE]),
+      new FixedClock(NOW),
+      new FixedIdGenerator("resupply"),
+    );
+
+    await expect(
+      add.execute(new AddSiteResupplyLineCommand(VILLAGE, "asap", "CRO", 1)),
+    ).rejects.toThrow(SiteResupplyDraftOpenedMeanwhileError);
+  });
+});
+
+describe("la demande en cours — corriger, retirer, sous la version vue", () => {
+  it("corrige une quantité et retire une ligne", async () => {
+    const { add, correct, withdraw, store } = setup();
+    const id = await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "asap", "CRO", 5));
+    await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "asap", "PAC", 2));
+
+    await correct.execute(
+      new CorrectSiteResupplyLineCommand(VILLAGE, id, "CRO", 9, versionOf(store, id)),
+    );
+    await withdraw.execute(
+      new WithdrawSiteResupplyLineCommand(VILLAGE, id, "PAC", versionOf(store, id)),
+    );
+
+    expect(store.all()[0]?.lines.map((line) => [line.sku, line.quantity])).toEqual([["CRO", 9]]);
+  });
+
+  it("un poste qui n'a plus la dernière version est refusé, sans rien écraser", async () => {
+    const { add, correct, withdraw, store } = setup();
+    const id = await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "asap", "CRO", 5));
+    const seen = versionOf(store, id);
+    // Un autre poste ajoute entre-temps.
+    await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "asap", "CRO", 1));
+
+    await expect(
+      correct.execute(new CorrectSiteResupplyLineCommand(VILLAGE, id, "CRO", 2, seen)),
+    ).rejects.toThrow(SiteResupplyChangedMeanwhileError);
+    await expect(
+      withdraw.execute(new WithdrawSiteResupplyLineCommand(VILLAGE, id, "CRO", seen)),
+    ).rejects.toThrow(SiteResupplyChangedMeanwhileError);
+    expect(store.all()[0]?.lines[0]?.quantity).toBe(6);
+  });
+
+  it("refuse une ligne absente, et la demande d'un autre point", async () => {
+    const { add, correct, store } = setup();
+    const id = await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "asap", "CRO", 5));
+
+    await expect(
+      correct.execute(
+        new CorrectSiteResupplyLineCommand(VILLAGE, id, "PAC", 1, versionOf(store, id)),
+      ),
+    ).rejects.toThrow(ResupplyLineNotInDraftError);
+    await expect(
+      correct.execute(new CorrectSiteResupplyLineCommand(LABO, id, "CRO", 1, versionOf(store, id))),
+    ).rejects.toThrow(SiteResupplyNotFoundError);
+  });
+});
+
+describe("la demande en cours — envoyer", () => {
+  it("l'envoie au nom du poste ; le prochain ajout ouvre une nouvelle demande", async () => {
+    const { add, send, list, store } = setup();
+    const id = await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "asap", "CRO", 5));
+
+    await send.execute(new SendSiteResupplyCommand(VILLAGE, id, versionOf(store, id), "staff_lou"));
+    const next = await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "asap", "PAC", 1));
+
+    const view = await list.execute(new ListSiteResuppliesQuery(VILLAGE));
+    expect(next).not.toBe(id);
+    expect(view.resupplies).toEqual([
+      expect.objectContaining({ id, status: "placed", placedBy: "Lou Martin" }),
+    ]);
+    expect(view.drafts.map((draft) => draft.id)).toEqual([next]);
+  });
+
+  it("une demande envoyée ne bouge plus et ne se renvoie pas", async () => {
+    const { add, send, correct, store } = setup();
+    const id = await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "asap", "CRO", 5));
+    await send.execute(new SendSiteResupplyCommand(VILLAGE, id, versionOf(store, id), "s"));
+
+    await expect(
+      send.execute(new SendSiteResupplyCommand(VILLAGE, id, versionOf(store, id), "s")),
+    ).rejects.toThrow(ResupplyAlreadyPlacedError);
+    await expect(
+      correct.execute(
+        new CorrectSiteResupplyLineCommand(VILLAGE, id, "CRO", 1, versionOf(store, id)),
+      ),
+    ).rejects.toThrow(ResupplyAlreadyPlacedError);
+  });
+
+  it("une demande vidée ne s'envoie pas", async () => {
+    const { add, withdraw, send, store } = setup();
+    const id = await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "asap", "CRO", 5));
+    await withdraw.execute(
+      new WithdrawSiteResupplyLineCommand(VILLAGE, id, "CRO", versionOf(store, id)),
+    );
+
+    await expect(
+      send.execute(new SendSiteResupplyCommand(VILLAGE, id, versionOf(store, id), "s")),
+    ).rejects.toThrow(EmptyResupplyError);
+  });
+
+  it("« pour demain » envoyé après l'heure limite est refusé, et reste en cours", async () => {
+    const { add, send, store } = setup(new Date(NOW.getTime() - HOUR_MS));
+    const id = await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "tomorrow", "CRO", 5));
+
+    await expect(
+      send.execute(new SendSiteResupplyCommand(VILLAGE, id, versionOf(store, id), "s")),
+    ).rejects.toThrow(ResupplyPastCutoffError);
+    expect(store.all()[0]?.placed).toBeNull();
+  });
+
+  it("une demande « pour demain » dont la journée est passée ne s'envoie plus, et quitte l'écran", async () => {
+    const { add, send, list, store, clock } = setup();
+    const id = await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "tomorrow", "CRO", 5));
+    clock.set(new Date(NOW.getTime() + 2 * DAY_MS));
+
+    await expect(
+      send.execute(new SendSiteResupplyCommand(VILLAGE, id, versionOf(store, id), "s")),
+    ).rejects.toThrow(ResupplyDayPassedError);
+    expect((await list.execute(new ListSiteResuppliesQuery(VILLAGE))).drafts).toEqual([]);
+  });
+});
+
+describe("passer d'un geste (le bouton du fournil) passe par la demande en cours", () => {
+  it("ajoute à la demande « au plus tôt » du comptoir, puis l'envoie entière", async () => {
+    const { add, place, store } = setup();
+    const id = await add.execute(new AddSiteResupplyLineCommand(VILLAGE, "asap", "PAC", 4));
+
+    const placed = await place.execute(
+      new PlaceSiteResupplyCommand(VILLAGE, "asap", [{ sku: "CRO", quantity: 10 }], "s"),
+    );
+
+    expect(placed).toBe(id);
+    expect(store.all()).toHaveLength(1);
+    expect(store.all()[0]?.placed).not.toBeNull();
+    expect(store.all()[0]?.lines.map((line) => [line.sku, line.quantity])).toEqual([
+      ["PAC", 4],
+      ["CRO", 10],
+    ]);
+  });
+});

@@ -1,15 +1,21 @@
 import { ResupplyCutoff } from "../../domain/resupply-cutoff.js";
 import { ResupplySiteLabels } from "../../domain/resupply-site-labels.js";
-import { SiteResupply, type SiteResupplySnapshot } from "../../domain/site-resupply.js";
+import {
+  isPlaced,
+  type PlacedSiteResupplySnapshot,
+  type ResupplyTarget,
+  SiteResupply,
+  type SiteResupplySnapshot,
+} from "../../domain/site-resupply.js";
+import {
+  SiteResupplyChangedMeanwhileError,
+  SiteResupplyDraftOpenedMeanwhileError,
+} from "../../domain/site-resupply-errors.js";
 import { SiteResupplyReader } from "../../domain/site-resupply.reader.js";
 import { SiteResupplyRepository } from "../../domain/site-resupply.repository.js";
 
-/** L'instantané d'un réassort passé, tel que la base le rendrait. */
+/** L'instantané d'un réassort, brouillon compris, tel que la base le rendrait. */
 function snapshotOf(resupply: SiteResupply, version: number): SiteResupplySnapshot {
-  const placed = resupply.placed;
-  if (placed === null) {
-    throw new TypeError("Le double ne garde que des réassorts passés, comme la base.");
-  }
   return {
     id: resupply.id,
     siteId: resupply.siteId,
@@ -17,7 +23,7 @@ function snapshotOf(resupply: SiteResupply, version: number): SiteResupplySnapsh
     serviceDay: resupply.serviceDay,
     version,
     lines: resupply.lines,
-    placed,
+    placed: resupply.placed,
     cancelled: resupply.cancelled,
   };
 }
@@ -25,6 +31,8 @@ function snapshotOf(resupply: SiteResupply, version: number): SiteResupplySnapsh
 /**
  * Les réassorts en mémoire, lecture ET écriture : `save` garde le dernier
  * état, `load` le réhydrate sous le point demandé, comme le `where` de la base.
+ * Il tient aussi les deux refus de la base : le verrou de version, et une
+ * seule demande en cours par (point, visée, journée).
  */
 export class InMemorySiteResupplies extends SiteResupplyRepository {
   private readonly rows = new Map<string, SiteResupplySnapshot>();
@@ -37,7 +45,24 @@ export class InMemorySiteResupplies extends SiteResupplyRepository {
     );
   }
 
+  openDraft(
+    siteId: string,
+    target: ResupplyTarget,
+    serviceDay: string,
+  ): Promise<SiteResupply | null> {
+    const row = this.openRow(siteId, target, serviceDay);
+    return Promise.resolve(row === undefined ? null : SiteResupply.restore(row));
+  }
+
   save(resupply: SiteResupply): Promise<void> {
+    if (resupply.version === 0) {
+      const open = this.openRow(resupply.siteId, resupply.target, resupply.serviceDay);
+      if (resupply.placed === null && open !== undefined) {
+        return Promise.reject(new SiteResupplyDraftOpenedMeanwhileError());
+      }
+    } else if (this.rows.get(resupply.id)?.version !== resupply.version) {
+      return Promise.reject(new SiteResupplyChangedMeanwhileError());
+    }
     this.saves += 1;
     this.rows.set(resupply.id, snapshotOf(resupply, resupply.version + 1));
     return Promise.resolve();
@@ -45,6 +70,25 @@ export class InMemorySiteResupplies extends SiteResupplyRepository {
 
   all(): readonly SiteResupplySnapshot[] {
     return [...this.rows.values()];
+  }
+
+  /** Range un état tel quel, comme un autre poste l'aurait écrit. */
+  put(snapshot: SiteResupplySnapshot): void {
+    this.rows.set(snapshot.id, snapshot);
+  }
+
+  private openRow(
+    siteId: string,
+    target: ResupplyTarget,
+    serviceDay: string,
+  ): SiteResupplySnapshot | undefined {
+    return this.all().find(
+      (row) =>
+        row.siteId === siteId &&
+        row.target === target &&
+        row.serviceDay === serviceDay &&
+        row.placed === null,
+    );
   }
 }
 
@@ -63,9 +107,12 @@ export class InMemorySiteResupplyReader extends SiteResupplyReader {
     );
   }
 
-  placedOn(days: readonly string[]): Promise<readonly SiteResupplySnapshot[]> {
+  placedOn(days: readonly string[]): Promise<readonly PlacedSiteResupplySnapshot[]> {
     return Promise.resolve(
-      this.store.all().filter((row) => row.cancelled === null && days.includes(row.serviceDay)),
+      this.store
+        .all()
+        .filter(isPlaced)
+        .filter((row) => row.cancelled === null && days.includes(row.serviceDay)),
     );
   }
 }

@@ -362,6 +362,7 @@
   "test/site-orders-from-principal.e2e-spec.ts": 17116,
   "test/company-order-summary.e2e-spec.ts": 8168,
   "test/resupply-receipt.e2e-spec.ts": 5426,
+  "test/site-resupply-draft.e2e-spec.ts": 11241,
   "test/site-resupply.e2e-spec.ts": 10127,
   "test/site-stock-alert.e2e-spec.ts": 11791
 }

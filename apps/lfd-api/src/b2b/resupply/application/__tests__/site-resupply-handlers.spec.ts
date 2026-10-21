@@ -5,7 +5,6 @@ import {
   ResupplySiteUnknownError,
 } from "../../domain/resupply-receipt-errors.js";
 import {
-  ResupplyLineDuplicatedError,
   ResupplyNotCancellableError,
   ResupplyPastCutoffError,
   SiteResupplyNotFoundError,
@@ -120,7 +119,7 @@ describe("passer un réassort", () => {
     expect(store.all().map((row) => row.serviceDay)).toEqual([TODAY]);
   });
 
-  it("refuse un point inconnu, un article hors catalogue, un article en double", async () => {
+  it("refuse un point inconnu, un article hors catalogue", async () => {
     const { place, store } = setup();
     const lines = [{ sku: "CRO", quantity: 1 }];
 
@@ -132,10 +131,16 @@ describe("passer un réassort", () => {
         new PlaceSiteResupplyCommand(VILLAGE, "asap", [{ sku: "X", quantity: 1 }], "s"),
       ),
     ).rejects.toThrow(ResupplyArticleUnknownError);
-    await expect(
-      place.execute(new PlaceSiteResupplyCommand(VILLAGE, "asap", [...lines, ...lines], "s")),
-    ).rejects.toThrow(ResupplyLineDuplicatedError);
     expect(store.saves).toBe(0);
+  });
+
+  it("un article donné deux fois est demandé en une ligne, quantités additionnées (R1c)", async () => {
+    const { place, store } = setup();
+    const lines = [{ sku: "CRO", quantity: 2 }];
+
+    await place.execute(new PlaceSiteResupplyCommand(VILLAGE, "asap", [...lines, ...lines], "s"));
+
+    expect(store.all()[0]?.lines).toEqual([expect.objectContaining({ sku: "CRO", quantity: 4 })]);
   });
 });
 

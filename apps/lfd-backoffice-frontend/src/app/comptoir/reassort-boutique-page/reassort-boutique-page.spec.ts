@@ -4,6 +4,7 @@ import { By } from '@angular/platform-browser';
 import type {
   ResupplyArticleView,
   ResupplyReceiptView,
+  SiteResuppliesView,
   SiteStockAlertsView,
   StaffPermission,
   StockAlertLevel,
@@ -17,6 +18,7 @@ import { HandoverQueueStore } from '../../handover-shop/handover-queue.store';
 import { parisToday } from '../../shared/paris-today';
 import { ReassortBoutiquePage } from './reassort-boutique-page';
 import { ResupplyReceiptsService } from './resupply-receipts.service';
+import { AsapDraftAdder } from './asap-draft-adder/asap-draft-adder';
 import { SiteResuppliesService } from './site-resupplies.service';
 import { SiteStockAlertsService } from './site-stock-alerts.service';
 import { StockAlertsCard } from './stock-alerts-card/stock-alerts-card';
@@ -89,17 +91,43 @@ class FakeReceipts {
   }
 }
 
-/** La commande au fournil (R1) a sa propre suite : ici, une liste vide suffit. */
-const NO_RESUPPLIES = {
-  list: (siteId: string) =>
-    Promise.resolve({
+/**
+ * La commande au fournil (R1, R1c) a sa propre suite : ici, une demande en
+ * cours qui retient ce qu'on y ajoute, pour la proposition des alertes.
+ */
+class FakeResupplies {
+  readonly added: string[] = [];
+
+  list(siteId: string): Promise<SiteResuppliesView> {
+    return Promise.resolve({
       siteId,
       today: TODAY,
       tomorrow: TODAY,
       tomorrowOrderUntil: null,
+      drafts:
+        this.added.length === 0
+          ? []
+          : [
+              {
+                id: 'draft_asap',
+                target: 'asap',
+                serviceDay: TODAY,
+                version: this.added.length,
+                lines: this.added.map((sku) => ({ sku, label: sku, quantity: 1 })),
+              },
+            ],
       resupplies: [],
-    }),
-};
+    });
+  }
+
+  addLine(siteId: string, target: string, sku: string, quantity: number): Promise<{ id: string }> {
+    this.added.push(sku);
+    this.calls.push(`add ${siteId} ${target} ${sku} ${String(quantity)}`);
+    return Promise.resolve({ id: 'draft_asap' });
+  }
+
+  readonly calls: string[] = [];
+}
 
 /**
  * Les alertes de stock (R1b) en mémoire : déclarer redéclare la vivante,
@@ -150,18 +178,20 @@ async function mount(
   api = new FakeReceipts(),
   band = counter(),
   alerts = new FakeAlerts(),
+  resupplies = new FakeResupplies(),
 ): Promise<{
   fixture: ComponentFixture<ReassortBoutiquePage>;
   api: FakeReceipts;
   band: ReturnType<typeof counter>;
   alerts: FakeAlerts;
+  resupplies: FakeResupplies;
 }> {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [ReassortBoutiquePage],
     providers: [
       { provide: ResupplyReceiptsService, useValue: api },
-      { provide: SiteResuppliesService, useValue: NO_RESUPPLIES },
+      { provide: SiteResuppliesService, useValue: resupplies },
       { provide: SiteStockAlertsService, useValue: alerts },
       { provide: HandoverQueueStore, useValue: band },
       {
@@ -172,7 +202,7 @@ async function mount(
   });
   const fixture = TestBed.createComponent(ReassortBoutiquePage);
   await settle(fixture);
-  return { fixture, api, band, alerts };
+  return { fixture, api, band, alerts, resupplies };
 }
 
 const root = (fixture: ComponentFixture<ReassortBoutiquePage>): HTMLElement =>
@@ -367,5 +397,30 @@ describe('ReassortBoutiquePage — ruptures et stocks faibles (R1b)', () => {
     page['pickedQuantity'].set(6);
     await page['add']();
     expect(alerts.calls.filter((c) => c.startsWith('list')).length).toBe(before + 1);
+  });
+
+  it('propose d’ajouter l’article en alerte à la demande « au plus tôt » en cours (R1c)', async () => {
+    const alerts = new FakeAlerts();
+    await alerts.declare('site_v', 'CRO', 'out_of_stock');
+    const { fixture, resupplies } = await mount(WRITE, new FakeReceipts(), counter(), alerts);
+
+    click(fixture, '[data-stock-alert="CRO"] [data-asap-draft-open]');
+    await settle(fixture);
+    const adder: unknown = fixture.debugElement.query(
+      By.css('[data-stock-alert="CRO"] app-asap-draft-adder'),
+    ).componentInstance;
+    if (!(adder instanceof AsapDraftAdder)) {
+      throw new Error('la proposition manque');
+    }
+    adder['quantity'].set(12);
+    await settle(fixture);
+    click(fixture, '[data-stock-alert="CRO"] [data-asap-draft-add]');
+    await settle(fixture);
+
+    expect(resupplies.calls).toEqual(['add site_v asap CRO 12']);
+    // La carte de commande, qui partage le même état, montre aussitôt la demande.
+    expect(
+      root(fixture).querySelector('[data-resupply-draft="asap"] [data-resupply-draft-line="CRO"]'),
+    ).not.toBeNull();
   });
 });
