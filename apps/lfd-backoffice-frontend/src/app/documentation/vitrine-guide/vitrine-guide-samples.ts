@@ -59,7 +59,7 @@ X-Vitrine-Key: <votre clé de lecture>`;
 
 export const SAMPLE_ERROR = `{
   "code": "vitrine.read_key.refused",
-  "message": "Clé de lecture absente ou inconnue (en-tête X-Vitrine-Key). …",
+  "message": "Clé de lecture absente ou inconnue (en-tête X-Vitrine-Key, ou paramètre « key » de l’URL). …",
   "requestId": "…"
 }`;
 

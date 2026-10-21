@@ -160,7 +160,7 @@ export class VitrineReadKeyRefusedError extends AuthorizationError {
   constructor() {
     super(
       "vitrine.read_key.refused",
-      "Clé de lecture absente ou inconnue (en-tête X-Vitrine-Key). Après une régénération au back-office, l'ancienne clé ne vaut plus : demander la nouvelle.",
+      "Clé de lecture absente ou inconnue (en-tête X-Vitrine-Key, ou paramètre « key » de l’URL). Après une régénération au back-office, l'ancienne clé ne vaut plus : demander la nouvelle.",
     );
   }
 }

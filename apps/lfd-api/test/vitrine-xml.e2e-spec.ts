@@ -159,6 +159,31 @@ describe("la vitrine en XML", () => {
     expect(jsonBody<{ code: string }>(refusal).code).toBe("vitrine.read_key.refused");
   });
 
+  /**
+   * L'outil d'import de l'agence n'a qu'un champ « clé » et ne pose pas
+   * d'en-tête : sa lecture était refusée en 403 avec une clé valide
+   * (2026-10-21).
+   */
+  it("accepte la clé dans l'URL, blancs autour retirés, quand l'en-tête manque", async () => {
+    const key = await aSubscriberWithACatalogue();
+    // En-tête vide : l'outil n'en pose pas, le paramètre prend le relais.
+    const response = await read(
+      `/vitrine/catalogue?format=xml&key=${encodeURIComponent(` ${key}\n`)}`,
+      "",
+    ).expect(200);
+    expect(bodyText(response)).toContain("<catalogue>");
+  });
+
+  it("préfère l'en-tête au paramètre quand les deux sont là", async () => {
+    const key = await aSubscriberWithACatalogue();
+    await ctx.http().get("/vitrine/catalogue?key=inconnue").set("x-vitrine-key", key).expect(200);
+    await ctx
+      .http()
+      .get(`/vitrine/catalogue?key=${key}`)
+      .set("x-vitrine-key", "inconnue")
+      .expect(403);
+  });
+
   it("sert le XSD sans clé, en XML", async () => {
     const response = await ctx.http().get("/vitrine/schema.xsd").expect(200);
     expect(response.headers["content-type"]).toBe("application/xml; charset=utf-8");

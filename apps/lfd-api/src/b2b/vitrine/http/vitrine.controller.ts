@@ -24,6 +24,7 @@ import {
   xmlFile,
   type VitrineFormat,
 } from "./vitrine-representation.js";
+import { readKeyOf, readKeyQuerySchema, VITRINE_KEY_QUERY } from "./vitrine-read-key.js";
 
 /** `?lang=fr|en|it`, le français par défaut — comme `GET /shop/catalogue`. */
 const languageQuerySchema = z
@@ -40,6 +41,9 @@ const languageQuerySchema = z
  * ne protège rien. Le débit est borné par IP, comme la boutique — la
  * passerelle route par déployable, pas par chemin.
  *
+ * La clé peut aussi venir de `?key=` (agence, 2026-10-21 : son outil d'import
+ * ne pose pas d'en-tête) — voir `readKeyOf`.
+ *
  * Chaque lecture se sert aussi en XML (Hugo, 2026-10-18) : `Accept:
  * application/xml` ou `?format=xml`, décrit par `GET /vitrine/schema.xsd`.
  */
@@ -51,21 +55,23 @@ export class VitrineController {
 
   @Get("catalogue")
   async catalogue(
-    @Headers(VITRINE_KEY_HEADER) readKey: string | undefined,
+    @Headers(VITRINE_KEY_HEADER) headerKey: string | undefined,
+    @Query(VITRINE_KEY_QUERY, new ZodQuery(readKeyQuerySchema)) queryKey: string | undefined,
     @Headers("accept") accept: string | undefined,
     @Query("lang", new ZodQuery(languageQuerySchema)) language: ContentLocale,
     @Query("format", new ZodQuery(formatQuerySchema)) format: VitrineFormat,
     @Res({ passthrough: true }) response: Response,
   ): Promise<VitrineCatalogueView | StreamableFile> {
     const view = await this.queries.execute<ReadVitrineCatalogueQuery, VitrineCatalogueView>(
-      new ReadVitrineCatalogueQuery(readKey, language),
+      new ReadVitrineCatalogueQuery(readKeyOf(headerKey, queryKey), language),
     );
     return vitrineRepresentation(view, "catalogue", { format, accept }, response);
   }
 
   @Get("articles/:sku")
   async article(
-    @Headers(VITRINE_KEY_HEADER) readKey: string | undefined,
+    @Headers(VITRINE_KEY_HEADER) headerKey: string | undefined,
+    @Query(VITRINE_KEY_QUERY, new ZodQuery(readKeyQuerySchema)) queryKey: string | undefined,
     @Headers("accept") accept: string | undefined,
     @Param("sku") sku: string,
     @Query("lang", new ZodQuery(languageQuerySchema)) language: ContentLocale,
@@ -73,21 +79,22 @@ export class VitrineController {
     @Res({ passthrough: true }) response: Response,
   ): Promise<VitrineItemView | StreamableFile> {
     const view = await this.queries.execute<ReadVitrineArticleQuery, VitrineItemView>(
-      new ReadVitrineArticleQuery(readKey, sku, language),
+      new ReadVitrineArticleQuery(readKeyOf(headerKey, queryKey), sku, language),
     );
     return vitrineRepresentation(view, "item", { format, accept }, response);
   }
 
   @Get("textes")
   async texts(
-    @Headers(VITRINE_KEY_HEADER) readKey: string | undefined,
+    @Headers(VITRINE_KEY_HEADER) headerKey: string | undefined,
+    @Query(VITRINE_KEY_QUERY, new ZodQuery(readKeyQuerySchema)) queryKey: string | undefined,
     @Headers("accept") accept: string | undefined,
     @Query("lang", new ZodQuery(languageQuerySchema)) language: ContentLocale,
     @Query("format", new ZodQuery(formatQuerySchema)) format: VitrineFormat,
     @Res({ passthrough: true }) response: Response,
   ): Promise<VitrineTextsView | StreamableFile> {
     const view = await this.queries.execute<ReadVitrineTextsQuery, VitrineTextsView>(
-      new ReadVitrineTextsQuery(readKey, language),
+      new ReadVitrineTextsQuery(readKeyOf(headerKey, queryKey), language),
     );
     return vitrineRepresentation(view, "texts", { format, accept }, response);
   }

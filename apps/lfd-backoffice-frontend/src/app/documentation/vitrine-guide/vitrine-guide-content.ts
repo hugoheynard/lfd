@@ -80,7 +80,7 @@ export const PRINCIPLE_POINTS: readonly string[] = [
 ];
 
 export const AUTH_POINTS: readonly string[] = [
-  '**La clé de lecture** accompagne chacune de vos lectures, dans l’en-tête `X-Vitrine-Key`. Elle vous identifie et applique vos ensembles cochés. Absente, inconnue, régénérée ou abonnement coupé de notre côté : réponse `403`.',
+  '**La clé de lecture** accompagne chacune de vos lectures, dans l’en-tête `X-Vitrine-Key` — ou, si votre outil ne sait pas poser d’en-tête, dans l’URL : `?key=<votre clé>` (l’en-tête l’emporte s’il est là). Elle vous identifie et applique vos ensembles cochés. Absente, inconnue, régénérée ou abonnement coupé de notre côté : réponse `403`.',
   '**Le secret de signature** ne voyage jamais : il vous sert à vérifier que chaque notification vient de nous et n’a pas été modifiée.',
 ];
 
