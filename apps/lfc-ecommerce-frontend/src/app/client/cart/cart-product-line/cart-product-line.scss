@@ -74,6 +74,12 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* La limite propre de l'article, sous son prix. */
+.made-to-order {
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-secondary);
+}
+
 .sum {
   grid-area: sum;
   justify-self: end;

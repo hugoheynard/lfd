@@ -249,6 +249,24 @@ describe('ProductSheet', () => {
       expect(facts().some((fact) => fact.startsWith(FR.product.operationPickup))).toBe(false);
     });
   });
+  /** La limite propre de la pièce, quand le serveur la sert (Hugo, 2026-10-21). */
+  it('dit « Préparé sur commande » quand la pièce porte une limite plus stricte', () => {
+    mount(
+      { ...(TEST_ITEMS[0] as ShopItemView), orderTimeLimit: { daysBefore: 2, time: '12:00' } },
+      0,
+      false,
+    );
+
+    expect(el().querySelector('[data-made-to-order]')?.textContent?.trim()).toBe(
+      'Préparé sur commande — à commander 2 jours à l’avance, avant 12\u00a0h',
+    );
+  });
+
+  it('ne dit rien quand la pièce suit la règle générale', () => {
+    mount(TEST_ITEMS[0] as ShopItemView, 0, false);
+
+    expect(el().querySelector('[data-made-to-order]')).toBeNull();
+  });
 });
 
 describe('ProductSheet — la suggestion du staff (RS2, fiche)', () => {

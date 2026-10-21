@@ -643,6 +643,12 @@ export type {
   OrderCutoffView,
 } from "./order-cutoff.js";
 
+export {
+  generalOrderCutoff,
+  isStricterOrderLimit,
+  shownItemOrderLimit,
+} from "./item-order-limit.js";
+export type { ShopItemOrderLimit } from "./item-order-limit.js";
 export { orderCutoffWaiverPayloadSchema, waiverDateSchema } from "./order-cutoff-waiver.js";
 export { lateFeeAdjustmentSchema, orderLateFeePayloadSchema } from "./order-late-fee.js";
 export {

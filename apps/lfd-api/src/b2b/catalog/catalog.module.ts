@@ -41,6 +41,9 @@ import { ReadShopCatalogueHandler } from "./application/queries/read-shop-catalo
 import { ReadShopFeaturedHandler } from "./application/queries/read-shop-featured.handler.js";
 import { SaleOperations } from "./application/sale-operations.service.js";
 import { ShopCataloguePricing } from "./application/shop-catalogue-pricing.service.js";
+import { ShopOrderCutoffsReader } from "./domain/ports/shop-order-cutoffs.reader.js";
+import { OrderCutoffsInForce } from "../order-cutoffs/domain/order-cutoffs-in-force.js";
+import { OrderCutoffsInForceModule } from "../order-cutoffs/order-cutoffs-in-force.module.js";
 import { ExportCatalogCsvHandler } from "./application/queries/export-catalog-csv.handler.js";
 import { GetCatalogSummaryHandler } from "./application/queries/get-catalog-summary.handler.js";
 import { GetPublishedCatalogHandler } from "./application/queries/get-published-catalog.handler.js";
@@ -85,7 +88,10 @@ import { PrismaCatalogColdReader } from "./infrastructure/prisma-catalog-cold.re
   // panier (R22). Elle passe par LA porte du prix, et non par le chargeur —
   // c'est ce qui a fait retirer les entrées par SKU de la porte, qui la
   // faisaient dépendre du catalogue et fermaient le cycle.
-  imports: [PricerModule, CanonicalPriceHistoryModule],
+  // `OrderCutoffsInForceModule` : la vitrine ne montre la limite d'un article
+  // que si elle est plus stricte que la règle générale (§9 de
+  // `architecture-heure-limite-de-commande.md`, 2026-10-21).
+  imports: [PricerModule, CanonicalPriceHistoryModule, OrderCutoffsInForceModule],
   controllers: [
     AdminCatalogController,
     // La vitrine, sans jeton : on visite d'abord, on s'identifie pour régler.
@@ -111,6 +117,7 @@ import { PrismaCatalogColdReader } from "./infrastructure/prisma-catalog-cold.re
     // bas : la route reconnue l'appelle avec un `companyId`, la publique avec
     // `null`, et c'est la seule différence entre elles.
     ShopCataloguePricing,
+    { provide: ShopOrderCutoffsReader, useExisting: OrderCutoffsInForce },
     // Le prix ne se décide plus ici (lot D, 2026-10-15) : il se RETRACE
     // depuis le référentiel, une fois au déploiement.
     RetracePricesFromReferentialHandler,

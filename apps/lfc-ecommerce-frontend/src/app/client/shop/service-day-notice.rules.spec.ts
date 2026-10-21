@@ -27,6 +27,7 @@ function input(over: Partial<DayNoticeInput> = {}): DayNoticeInput {
     firstOrderUntil: TUESDAY_23H,
     tomorrowOrderUntil: null,
     byOperation: false,
+    cartLimits: [],
     ...over,
   };
 }
@@ -112,5 +113,60 @@ describe('limitHasPassed', () => {
     expect(limitHasPassed(TUESDAY_23H, new Date(TUESDAY_23H))).toBe(false);
     expect(limitHasPassed(TUESDAY_23H, tuesdayAt('23:01'))).toBe(true);
     expect(limitHasPassed(null, tuesdayAt('23:01'))).toBe(false);
+  });
+});
+
+/**
+ * 🔴 La limite d'un ARTICLE du panier, plus stricte que la générale, décide
+ * pour ce jour (Hugo, 2026-10-21) : « Plus que 1 h 40 pour commander la bûche
+ * pour jeudi ».
+ */
+describe('decideDayNotice — la limite d’un article du panier', () => {
+  const BUCHE = { name: 'la bûche', limit: { daysBefore: 1, time: '18:00' } };
+
+  it('la veille à 18 h, mardi 16 h 20 : le compte à rebours nomme l’article', () => {
+    const notice = decideDayNotice(input({ now: tuesdayAt('16:20'), cartLimits: [BUCHE] }));
+
+    expect(notice).toEqual({
+      kind: 'countdown',
+      first: WEDNESDAY,
+      minutesLeft: 100,
+      item: 'la bûche',
+    });
+  });
+
+  it('plus de six heures devant soi : la forme calme, à l’heure de l’article', () => {
+    const notice = decideDayNotice(input({ now: tuesdayAt('09:00'), cartLimits: [BUCHE] }));
+
+    expect(notice).toEqual({
+      kind: 'calm',
+      first: WEDNESDAY,
+      until: tuesdayAt('18:00'),
+      item: 'la bûche',
+    });
+  });
+
+  it('la plus fermée du panier l’emporte', () => {
+    const tart = { name: 'la tarte', limit: { daysBefore: 1, time: '20:00' } };
+
+    const notice = decideDayNotice(input({ now: tuesdayAt('16:20'), cartLimits: [tart, BUCHE] }));
+
+    expect(notice).toMatchObject({ kind: 'countdown', item: 'la bûche' });
+  });
+
+  it('une limite d’article plus LÂCHE que la générale ne la remplace pas', () => {
+    const sameDay = { name: 'le pain', limit: { daysBefore: 0, time: '09:00' } };
+
+    const notice = decideDayNotice(input({ now: tuesdayAt('20:00'), cartLimits: [sameDay] }));
+
+    expect(notice).toEqual({ kind: 'countdown', first: WEDNESDAY, minutesLeft: 180 });
+  });
+
+  it('sans règle générale annoncée, l’article décide seul', () => {
+    const notice = decideDayNotice(
+      input({ now: tuesdayAt('16:20'), firstOrderUntil: null, cartLimits: [BUCHE] }),
+    );
+
+    expect(notice).toMatchObject({ kind: 'countdown', minutesLeft: 100, item: 'la bûche' });
   });
 });

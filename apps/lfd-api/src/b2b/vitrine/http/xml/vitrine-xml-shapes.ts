@@ -3,6 +3,7 @@ import {
   type ShopImageFocal,
   type ShopImageView,
   type ShopItemOperationView,
+  type ShopItemOrderLimit,
   type ShopOperationText,
   type ShopOperationView,
   type ShopShelfView,
@@ -61,6 +62,12 @@ const itemOperation = objectOf<ShopItemOperationView>({
   state: required(operationState),
 });
 
+/** La limite propre d'un article, plus stricte que la générale (2026-10-21). */
+const itemOrderLimit = objectOf<ShopItemOrderLimit>({
+  daysBefore: required(xmlInteger),
+  time: required(xmlString),
+});
+
 export const VITRINE_ITEM_SHAPE: XmlObjectShape = objectOf<VitrineItemView>({
   sku: required(xmlString),
   name: required(xmlString),
@@ -75,6 +82,7 @@ export const VITRINE_ITEM_SHAPE: XmlObjectShape = objectOf<VitrineItemView>({
   isFeatured: optional(xmlBoolean),
   audience: required(oneOf(["public", "pro", "both"])),
   operation: optional(itemOperation),
+  orderTimeLimit: optional(itemOrderLimit),
 });
 
 const shelf = objectOf<ShopShelfView>({

@@ -151,4 +151,24 @@ describe('CartProductLine', () => {
     expect(dropped).toBe(1);
     expect(quantities).toBe(0);
   });
+
+  /** La limite propre de l'article, sous son prix (Hugo, 2026-10-21). */
+  it('dit la limite propre de l’article quand le serveur la sert', () => {
+    fixture = TestBed.createComponent(CartProductLine);
+    fixture.componentRef.setInput('line', {
+      product: { ...TEST_ITEMS[0]!, orderTimeLimit: { daysBefore: 1, time: '18:00' } },
+      quantity: 1,
+    });
+    fixture.detectChanges();
+
+    expect(text('[data-made-to-order]')).toBe(
+      'Préparé sur commande — à commander la veille, avant 18\u00a0h',
+    );
+  });
+
+  it('ne dit rien pour un article qui suit la règle générale', () => {
+    render(1);
+
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-made-to-order]')).toBeNull();
+  });
 });

@@ -1,4 +1,9 @@
-import { addDays, instantToLocal } from '@lfd/contracts';
+import {
+  addDays,
+  instantToLocal,
+  orderLimitInstant,
+  type ShopItemOrderLimit,
+} from '@lfd/contracts';
 
 /**
  * **Au-delà de six heures, on ne compte pas.** « Plus que 8 h » à 15 h pour
@@ -23,6 +28,19 @@ export interface DayNoticeInput {
   readonly tomorrowOrderUntil: string | null;
   /** Les jours sont bornés par une opération datée que porte le panier. */
   readonly byOperation: boolean;
+  /**
+   * Les limites PROPRES des articles du panier — celles que le serveur sert
+   * parce qu'elles sont plus strictes que la générale (2026-10-21). Vide : le
+   * panier suit la règle générale.
+   */
+  readonly cartLimits: readonly CartItemLimit[];
+}
+
+/** Un article du panier qui porte sa propre limite. */
+export interface CartItemLimit {
+  /** Le nom de l'article, tel que la boutique l'affiche. */
+  readonly name: string;
+  readonly limit: ShopItemOrderLimit;
 }
 
 /**
@@ -36,10 +54,19 @@ export type DayNotice =
   | { readonly kind: 'operation'; readonly first: string }
   /** Demain est VRAIMENT refusé : le premier jour accordé est postérieur. */
   | { readonly kind: 'late'; readonly held: string; readonly passedAt: Date | null }
-  /** La limite du premier jour tombe aujourd'hui, dans moins de six heures. */
-  | { readonly kind: 'countdown'; readonly first: string; readonly minutesLeft: number }
-  /** La limite du premier jour tombe aujourd'hui, plus tard. */
-  | { readonly kind: 'calm'; readonly first: string; readonly until: Date }
+  /**
+   * La limite du premier jour tombe aujourd'hui, dans moins de six heures.
+   * `item` : c'est la limite de CET article du panier qui décide — absent
+   * quand c'est la règle générale.
+   */
+  | {
+      readonly kind: 'countdown';
+      readonly first: string;
+      readonly minutesLeft: number;
+      readonly item?: string;
+    }
+  /** La limite du premier jour tombe aujourd'hui, plus tard. `item` : idem. */
+  | { readonly kind: 'calm'; readonly first: string; readonly until: Date; readonly item?: string }
   | null;
 
 /**
@@ -66,7 +93,36 @@ export function decideDayNotice(input: DayNoticeInput): DayNotice {
       ? { kind: 'operation', first }
       : { kind: 'late', held, passedAt: passedLimit(input.tomorrowOrderUntil, input.now) };
   }
-  return deadlineNotice(first, input.firstOrderUntil, input.now);
+  const deciding = decidingLimit(first, input.firstOrderUntil, input.cartLimits);
+  const notice = deadlineNotice(first, deciding.until, input.now);
+  return notice === null || deciding.item === null ? notice : { ...notice, item: deciding.item };
+}
+
+/**
+ * **Quelle limite décide pour ce jour** : la générale annoncée par le serveur,
+ * ou celle d'un article du panier quand elle tombe AVANT — la plus fermée du
+ * panier, la même règle que la passation (`ensureWithinOrderCutoff`). Sans
+ * règle générale, la plus fermée des articles.
+ */
+function decidingLimit(
+  day: string,
+  general: string | null,
+  cartLimits: readonly CartItemLimit[],
+): { readonly until: string | null; readonly item: string | null } {
+  if (cartLimits.length === 0) {
+    return { until: general, item: null };
+  }
+  const announced = general === null ? null : new Date(general);
+  let until = announced === null || Number.isNaN(announced.getTime()) ? null : announced;
+  let item: string | null = null;
+  for (const entry of cartLimits) {
+    const at = orderLimitInstant({ ...entry.limit, graceMinutes: 0 }, day);
+    if (at !== null && (until === null || at.getTime() < until.getTime())) {
+      until = at;
+      item = entry.name;
+    }
+  }
+  return { until: until === null ? null : until.toISOString(), item };
 }
 
 /** La limite de demain, seulement si elle est bien passée. */
@@ -76,7 +132,11 @@ function passedLimit(iso: string | null, now: Date): Date | null {
 }
 
 /** Prévenir avant : seulement quand la limite tombe AUJOURD'HUI et n'est pas passée. */
-function deadlineNotice(first: string, orderUntil: string | null, now: Date): DayNotice {
+function deadlineNotice(
+  first: string,
+  orderUntil: string | null,
+  now: Date,
+): Extract<DayNotice, { readonly kind: 'countdown' | 'calm' }> | null {
   const until = orderUntil === null ? null : new Date(orderUntil);
   if (until === null || Number.isNaN(until.getTime())) {
     return null;

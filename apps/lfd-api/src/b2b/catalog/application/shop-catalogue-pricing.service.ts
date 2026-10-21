@@ -12,6 +12,8 @@ import {
 } from "../domain/ports/catalog.reader.js";
 import { catalogueArticle } from "../domain/catalogue-article.js";
 import { CATALOG_SOURCE_LANGUAGE } from "../domain/catalog-translations.js";
+import { ShopOrderCutoffsReader } from "../domain/ports/shop-order-cutoffs.reader.js";
+import { withOrderLimits } from "./shop-catalogue-order-limits.js";
 import { inShopLanguage, shopCatalogueOf } from "./shop-catalogue-view.js";
 
 /**
@@ -84,6 +86,7 @@ export class ShopCataloguePricing {
     private readonly pricer: Pricer,
     private readonly operations: CatalogOperationsReader,
     private readonly clock: Clock,
+    private readonly cutoffs: ShopOrderCutoffsReader,
   ) {}
 
   /**
@@ -132,17 +135,21 @@ export class ShopCataloguePricing {
     // Les opérations datées se lisent avec le rayon (D5) : deux lectures de
     // plus sur la route anonyme, sans cache — le miroir des opérations tient
     // en quelques lignes, et une clôture doit s'appliquer à la minute.
-    const [sellable, operations, operationOnlySkus] = await Promise.all([
+    // Les heures limites en vigueur : une lecture de plus, pour ne montrer la
+    // limite d'un article que si elle est plus stricte que la générale (§9).
+    const [sellable, operations, operationOnlySkus, cutoffs] = await Promise.all([
       this.catalog.listSellable(audience),
       this.operations.sellableOperations(),
       this.operations.operationOnlySkus(),
+      this.cutoffs.list(),
     ]);
-    const catalogue = shopCatalogueOf(sellable, {
+    const shown = shopCatalogueOf(sellable, {
       operations,
       operationOnlySkus,
       audience,
       now: this.clock.now(),
     });
+    const catalogue = withOrderLimits(shown, sellable, cutoffs);
     if (catalogue.items.length === 0) {
       return catalogue;
     }

@@ -1,6 +1,9 @@
 <span class="what">
   <span class="name">{{ name() }}</span>
   <span class="unit">{{ unit() }}</span>
+  @if (madeToOrder(); as limit) {
+    <span class="made-to-order" data-made-to-order>{{ limit }}</span>
+  }
 </span>
 
 <span class="sum">{{ sum() }}</span>

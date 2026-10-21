@@ -1,6 +1,7 @@
 import { computed, effect, inject, Injectable, signal, untracked } from '@angular/core';
 import { addDays, instantToLocal } from '@lfd/contracts';
 
+import { CartStore } from '../cart/cart.store';
 import { ClientLocale } from '../client-locale.service';
 import { fill } from '../copy/client-copy.service';
 import { commandTermsCopy } from '../copy/screens/command-terms.copy';
@@ -9,7 +10,13 @@ import { serviceDayLabel } from '../format-day';
 import { OrderContextStore } from '../order-context.store';
 import { leftLabel, limitHourLabel, weekdayLabel } from './cutoff-labels';
 import { ServicePoints } from './pickup-points.store';
-import { decideDayNotice, type DayNotice, limitHasPassed } from './service-day-notice.rules';
+import {
+  type CartItemLimit,
+  decideDayNotice,
+  type DayNotice,
+  limitHasPassed,
+} from './service-day-notice.rules';
+import { ShopCatalogue } from './shop-catalogue.store';
 import { ShopClock } from './shop-clock';
 
 /**
@@ -39,6 +46,8 @@ export class ServiceDayNotice {
   private readonly points = inject(ServicePoints);
   private readonly locale = inject(ClientLocale);
   private readonly clock = inject(ShopClock);
+  private readonly cart = inject(CartStore);
+  private readonly catalogue = inject(ShopCatalogue);
   private readonly c = screenCopy('commandTerms', commandTermsCopy);
 
   /** Les limites lues, par `point|jour` — demain une fois tombé n'est plus servi. */
@@ -48,6 +57,22 @@ export class ServiceDayNotice {
   private readonly point = computed(() => {
     const service = this.order.choice();
     return service?.mode === 'pickup' ? service.pickupAddressId : null;
+  });
+
+  /**
+   * Les articles du panier qui portent leur propre limite (2026-10-21) : le
+   * serveur ne la sert que plus stricte que la générale, et c'est alors elle
+   * qui peut décider du compte à rebours.
+   */
+  private readonly cartLimits = computed<readonly CartItemLimit[]>(() => {
+    const quantities = this.cart.quantities();
+    return this.catalogue
+      .items()
+      .flatMap((item) =>
+        item.orderTimeLimit !== undefined && (quantities[item.sku] ?? 0) > 0
+          ? [{ name: item.name, limit: item.orderTimeLimit }]
+          : [],
+      );
   });
 
   private readonly decision = computed<DayNotice>(() => {
@@ -66,6 +91,7 @@ export class ServiceDayNotice {
       firstOrderUntil: day?.orderUntil ?? null,
       tomorrowOrderUntil: this.seenLimits().get(`${point ?? ''}|${tomorrow}`) ?? null,
       byOperation: this.points.daysScopedToCart(),
+      cartLimits: this.cartLimits(),
     });
   });
 
@@ -127,14 +153,16 @@ export class ServiceDayNotice {
               time: limitHourLabel(notice.passedAt, locale),
             });
       case 'countdown':
-        return fill(copy.cutoffCountdown, {
+        return fill(notice.item === undefined ? copy.cutoffCountdown : copy.cutoffCountdownItem, {
           left: leftLabel(notice.minutesLeft, copy),
           day: weekdayLabel(notice.first, locale),
+          name: notice.item ?? '',
         });
       case 'calm':
-        return fill(copy.cutoffCalm, {
+        return fill(notice.item === undefined ? copy.cutoffCalm : copy.cutoffCalmItem, {
           day: weekdayLabel(notice.first, locale),
           time: limitHourLabel(notice.until, locale),
+          name: notice.item ?? '',
         });
     }
   }

@@ -773,6 +773,57 @@ et la passation seule refuse.
 d'office : le message dit le jour possible et demande de changer avant de
 régler (le créneau choisi pourrait ne pas exister l'autre jour).
 
+### ✅ La limite propre d'un article, sur sa fiche et au panier — livré le 2026-10-21
+
+> « montrer sur les fiches produit la limite de commande propre au produit,
+> pour qu'on comprenne le délai de préparation » — Hugo, 2026-10-21.
+
+**Ce qui se dit** : « Préparé sur commande — à commander 2 jours à l'avance,
+avant 12 h » (« — à commander la veille, avant 18 h », « — à commander le jour
+même, avant 9 h »), sur la fiche produit et sous le prix de la ligne du panier.
+Jamais la grâce.
+
+**Quand** : seulement si la limite de l'article — celle que le référentiel
+résout sur l'échelle déclinaison → produit → famille → global, et qui descend
+au commerce par `catalog_rules_changed` — est **plus stricte** que la règle
+générale de la boutique. « Plus stricte » : son instant limite, pour un même
+jour de service, tombe plus tôt (`isStricterOrderLimit`, `@lfd/contracts`,
+comparé en minutes de pendule avant le minuit du jour de service). À égalité,
+rien : l'article ne dirait rien que la boutique ne dise déjà.
+
+**La règle générale** est le défaut de la plateforme **tous jours, tous points**
+(`generalOrderCutoff` : `pickupAddressId` et `weekday` à `null`) parmi les
+règles **en vigueur** — l'interrupteur de l'heure limite générale compris :
+désactivée, il n'y en a plus, et toute limite d'article se montre. ⚠️ Une règle
+propre à un jour ou à un point n'y entre pas : la fiche ne connaît ni le jour ni
+le point. C'est le compte à rebours, qui les connaît, qui compare au jour près.
+
+**Le serveur** : `ShopItemView.orderTimeLimit` (`{ daysBefore, time }`),
+**absent du fil** quand l'article suit la règle générale — la règle de
+`catalogPriceMillicents`, qui garde la surface publique étroite. Posé par
+`withOrderLimits` dans `ShopCataloguePricing`, donc sur les deux routes
+(`/shop/catalogue` et `/shop/catalogue/mine`). Les règles en vigueur arrivent
+par le port `ShopOrderCutoffsReader` du catalogue, lié à `OrderCutoffsInForce`,
+que `OrderCutoffsInForceModule` fournit désormais seul (`OrderCutoffsModule`
+importe `CatalogModule` ; l'inverse aurait fermé un cycle).
+
+⚠️ **La vitrine des agences partage la vue** : `VitrineItemView` dérive de
+`ShopItemView`, et `/vitrine/*` sert donc aussi `orderTimeLimit` — en XML,
+`<orderTimeLimit><daysBefore/><time/></orderTimeLimit>`, facultatif dans le XSD
+servi (`vitrine-xml-shapes.ts`).
+
+**Le compte à rebours la nomme** : quand une limite d'article du panier tombe
+plus tôt que la limite générale annoncée pour le jour dont la barre parle
+(`FulfillmentDayView.orderUntil`), c'est elle qui décide — la plus fermée du
+panier, comme à la passation — et la phrase nomme l'article : « Plus que 1 h 40
+pour commander Bûche pour jeudi. », « Pour jeudi, commandez Bûche avant 18 h. »
+(`decideDayNotice`, entrée `cartLimits`).
+
+⚠️ **Ce qui n'est pas dit** : une limite d'article **déjà passée** pour le jour
+accordé (une limite à deux jours, commandée pour demain). La barre ne dit rien,
+la fiche et la ligne du panier disent le délai, et la passation refuse. Dire
+« trop tard pour cet article » au panier reste à décider.
+
 ## 10. ✅ Le piège du fuseau — réglé le 2026-09-04
 
 `orderCutoffInstant` construit son instant avec le constructeur `Date` local :

@@ -43,6 +43,14 @@
   color: var(--fold-color-text-secondary);
 }
 
+/* La limite propre de la pièce : une phrase, pas un fait du tableau. */
+.made-to-order {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  line-height: var(--lfc-leading-body);
+  color: var(--fold-color-text);
+}
+
 /* Les faits, ENTRE DEUX FILETS : la fournée aujourd'hui, pièce et allergènes
    quand le serveur les servira. */
 .facts {

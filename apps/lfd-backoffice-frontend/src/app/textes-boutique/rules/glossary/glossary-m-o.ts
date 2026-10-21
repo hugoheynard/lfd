@@ -1,5 +1,8 @@
 /** Segments de clé `M`–`O` → ce que le texte est, dit comme la boutique le dit. */
 export const GLOSSARY_M_O: Readonly<Record<string, string>> = {
+  madeToOrderDays: 'Fiche — préparé sur commande, plusieurs jours à l’avance',
+  madeToOrderEve: 'Fiche — préparé sur commande, la veille',
+  madeToOrderSameDay: 'Fiche — préparé sur commande, le jour même',
   mandate: 'Mandat SEPA',
   mandateActive: 'Mandat actif',
   mandateActiveBody: 'Mandat actif — texte',

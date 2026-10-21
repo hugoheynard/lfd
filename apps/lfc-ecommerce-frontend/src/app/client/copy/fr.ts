@@ -293,6 +293,9 @@ export const FR: ClientCopy = {
     update: 'Mettre à jour',
     inCart: 'Déjà au panier',
     signInToOrder: 'Se connecter pour commander',
+    madeToOrderDays: 'Préparé sur commande — à commander {n} jours à l’avance, avant {time}',
+    madeToOrderEve: 'Préparé sur commande — à commander la veille, avant {time}',
+    madeToOrderSameDay: 'Préparé sur commande — à commander le jour même, avant {time}',
   },
   cart: {
     kicker: 'Le panier',

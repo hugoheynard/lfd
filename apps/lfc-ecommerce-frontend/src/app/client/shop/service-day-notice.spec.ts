@@ -7,7 +7,10 @@ import { describe, expect, it } from 'vitest';
 
 import { OrderContextStore, type ServiceChoice } from '../order-context.store';
 import { ServicePoints } from './pickup-points.store';
+import { CartStore } from '../cart/cart.store';
 import { ServiceDayNotice } from './service-day-notice';
+import { ShopCatalogue } from './shop-catalogue.store';
+import { TEST_CATALOGUE } from './shop-catalogue.fixture';
 import { ShopClock } from './shop-clock';
 
 const TODAY = instantToLocal(new Date()).day;
@@ -123,6 +126,28 @@ describe('ServiceDayNotice — l’heure limite annoncée', () => {
     expect(message).not.toContain('Plus que');
     // L'heure s'écrit avec une espace insécable, comme partout (`formatHour`).
     expect(message).toBe('Pour mercredi, commandez avant 23\u00a0h.');
+  });
+
+  /**
+   * 🔴 La limite d'un article du panier, plus stricte que la générale, décide
+   * (Hugo, 2026-10-21) : « Plus que 1 h 40 pour commander la bûche pour jeudi ».
+   */
+  it('nomme l’article du panier dont la limite décide', () => {
+    const { notice } = setUp(
+      new Date('2026-10-20T14:20:00.000Z'),
+      [{ pickupAddressId: null, date: WEDNESDAY, orderUntil: TUESDAY_23H }],
+      WEDNESDAY,
+    );
+    const base = TEST_CATALOGUE.items[0];
+    if (base === undefined) {
+      throw new Error('le catalogue de test est vide');
+    }
+    const piece = { ...base, name: 'la bûche', orderTimeLimit: { daysBefore: 1, time: '18:00' } };
+    TestBed.inject(ShopCatalogue).receive({ ...TEST_CATALOGUE, items: [piece] });
+    TestBed.inject(CartStore).setQuantity(piece.sku, 1);
+    TestBed.tick();
+
+    expect(notice.message()).toBe('Plus que 1 h 40 pour commander la bûche pour mercredi.');
   });
 
   it('dit le temps restant sous six heures', () => {

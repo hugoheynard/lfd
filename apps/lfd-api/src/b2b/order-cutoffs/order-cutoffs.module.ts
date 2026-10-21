@@ -5,22 +5,17 @@ import { CatalogModule } from "../catalog/catalog.module.js";
 import { PickupAddressesModule } from "../pickup-addresses/pickup-addresses.module.js";
 import { GetOrderCutoffSettingsHandler } from "./application/get-order-cutoff-settings.handler.js";
 import { ListFulfillmentDaysHandler } from "./application/list-fulfillment-days.handler.js";
-import { SwitchedOrderCutoffs } from "./application/switched-order-cutoffs.js";
 import { UpdateOrderCutoffSettingsHandler } from "./application/update-order-cutoff-settings.handler.js";
 import { CreateOrderCutoffHandler } from "./application/create-order-cutoff.handler.js";
 import { ListOrderCutoffsHandler } from "./application/list-order-cutoffs.handler.js";
 import { RemoveOrderCutoffHandler } from "./application/remove-order-cutoff.handler.js";
 import { UpdateOrderCutoffHandler } from "./application/update-order-cutoff.handler.js";
-import { OrderCutoffSettingsReader } from "./domain/order-cutoff-settings.reader.js";
 import { OrderCutoffSettingsRepository } from "./domain/order-cutoff-settings.repository.js";
-import { OrderCutoffRepository } from "./domain/order-cutoff.repository.js";
-import { OrderCutoffsInForce } from "./domain/order-cutoffs-in-force.js";
+import { OrderCutoffsInForceModule } from "./order-cutoffs-in-force.module.js";
 import { AdminOrderCutoffSettingsController } from "./http/admin-order-cutoff-settings.controller.js";
 import { AdminOrderCutoffsController } from "./http/admin-order-cutoffs.controller.js";
 import { FulfillmentDaysController } from "./http/fulfillment-days.controller.js";
-import { PrismaOrderCutoffSettingsReader } from "./infrastructure/prisma-order-cutoff-settings.reader.js";
 import { PrismaOrderCutoffSettingsRepository } from "./infrastructure/prisma-order-cutoff-settings.repository.js";
-import { PrismaOrderCutoffRepository } from "./infrastructure/prisma-order-cutoff.repository.js";
 
 /**
  * **Heures limites de commande** — jusqu'à quand on commande pour un
@@ -41,25 +36,24 @@ import { PrismaOrderCutoffRepository } from "./infrastructure/prisma-order-cutof
   // Les points de retrait pour `GET /fulfillment-days` : la journée se calcule
   // par point, et c'est ce module-ci qui possède les règles qui la décident.
   // Le catalogue, pour les jours d'une opération datée (`SaleOperations`).
-  imports: [PickupAddressesModule, CatalogModule, AccountModule],
+  imports: [PickupAddressesModule, CatalogModule, AccountModule, OrderCutoffsInForceModule],
   controllers: [
     AdminOrderCutoffsController,
     AdminOrderCutoffSettingsController,
     FulfillmentDaysController,
   ],
   providers: [
-    { provide: OrderCutoffRepository, useClass: PrismaOrderCutoffRepository },
     ListFulfillmentDaysHandler,
     ListOrderCutoffsHandler,
     CreateOrderCutoffHandler,
     UpdateOrderCutoffHandler,
     RemoveOrderCutoffHandler,
-    { provide: OrderCutoffSettingsReader, useClass: PrismaOrderCutoffSettingsReader },
     { provide: OrderCutoffSettingsRepository, useClass: PrismaOrderCutoffSettingsRepository },
-    { provide: OrderCutoffsInForce, useClass: SwitchedOrderCutoffs },
     GetOrderCutoffSettingsHandler,
     UpdateOrderCutoffSettingsHandler,
   ],
-  exports: [OrderCutoffRepository, OrderCutoffsInForce, OrderCutoffSettingsReader],
+  // Les règles en vigueur vivent dans leur module (cf. `OrderCutoffsInForceModule`) ;
+  // réexportées pour que les lecteurs d'avant n'aient rien à changer.
+  exports: [OrderCutoffsInForceModule],
 })
 export class OrderCutoffsModule {}

@@ -30,6 +30,11 @@
       @if (piece.note) {
         <p class="note">{{ piece.note }}</p>
       }
+      <!-- La limite propre de la pièce : seulement quand elle est plus stricte
+           que la règle générale de la boutique (le serveur en décide). -->
+      @if (madeToOrder(); as limit) {
+        <p class="made-to-order" data-made-to-order>{{ limit }}</p>
+      }
 
       <dl class="facts">
         @for (fact of facts(); track fact.key) {

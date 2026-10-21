@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1506 textes
+## Sommaire — 1511 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -20,8 +20,8 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Connexion et création de compte](#espace-signup) | `signup` | 24 |
 | [Commander — l'écran d'entrée de la commande](#espace-commande) | `commande` | 39 |
 | [Rayon / boutique](#espace-shop) | `shop` | 59 |
-| [Rayon — la fiche produit](#espace-product) | `product` | 13 |
-| [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 31 |
+| [Rayon — la fiche produit](#espace-product) | `product` | 16 |
+| [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 33 |
 | [Choix du lieu — la maison](#espace-housepicker) | `housePicker` | 8 |
 | [Choix du lieu et de l’heure — le dialogue commun](#espace-dialog) | `dialog` | 1 |
 | [Choix du lieu — le retrait](#espace-pickupdialog) | `pickupDialog` | 10 |
@@ -47,7 +47,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
-| **Total** | | **1506** |
+| **Total** | | **1511** |
 
 ## Le parcours de commande
 
@@ -394,7 +394,7 @@ Source : `fr.ts · en.ts · it.ts` · 59 textes.
 
 ### Rayon — la fiche produit — `product`
 
-Source : `fr.ts · en.ts · it.ts` · 13 textes.
+Source : `fr.ts · en.ts · it.ts` · 16 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -411,12 +411,15 @@ Source : `fr.ts · en.ts · it.ts` · 13 textes.
 | `product.update` | Mettre à jour | Update | Aggiorna |  |
 | `product.inCart` | Déjà au panier | Already in basket | Già nel carrello |  |
 | `product.signInToOrder` | Se connecter pour commander | Sign in to order | Accedi per ordinare |  |
+| `product.madeToOrderDays` | Préparé sur commande — à commander {n} jours à l’avance, avant {time} | Made to order — order {n} days ahead, by {time} | Preparato su ordinazione — da ordinare {n} giorni prima, entro le {time} | `{n}` `{time}` |
+| `product.madeToOrderEve` | Préparé sur commande — à commander la veille, avant {time} | Made to order — order the day before, by {time} | Preparato su ordinazione — da ordinare il giorno prima, entro le {time} | `{time}` |
+| `product.madeToOrderSameDay` | Préparé sur commande — à commander le jour même, avant {time} | Made to order — order on the day, by {time} | Preparato su ordinazione — da ordinare in giornata, entro le {time} | `{time}` |
 
 <a id="espace-commandterms"></a>
 
 ### Barre de commande — la maison et l’heure retenues — `commandTerms`
 
-Source : `screens/command-terms.copy.ts` · 31 textes.
+Source : `screens/command-terms.copy.ts` · 33 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -438,6 +441,8 @@ Source : `screens/command-terms.copy.ts` · 31 textes.
 | `commandTerms.cutoffLeftHours` | {h} h | {h} h | {h} h | `{h}` |
 | `commandTerms.cutoffLeftMinutes` | {m} min | {m} min | {m} min | `{m}` |
 | `commandTerms.cutoffCalm` | Pour {day}, commandez avant {time}. | For {day}, order before {time}. | Per {day}, ordinate entro le {time}. | `{day}` `{time}` |
+| `commandTerms.cutoffCountdownItem` | Plus que {left} pour commander {name} pour {day}. | Only {left} left to order {name} for {day}. | Ancora {left} per ordinare {name} per {day}. | `{left}` `{name}` `{day}` |
+| `commandTerms.cutoffCalmItem` | Pour {day}, commandez {name} avant {time}. | For {day}, order {name} before {time}. | Per {day}, ordinate {name} entro le {time}. | `{day}` `{name}` `{time}` |
 | `commandTerms.modeTitle` | Retrait ou coursier ? | Pickup or courier? | Ritiro o corriere? |  |
 | `commandTerms.close` | Fermer | Close | Chiudi |  |
 | `commandTerms.pickup` | Retrait | Pickup | Ritiro |  |

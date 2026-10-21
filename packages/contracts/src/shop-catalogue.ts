@@ -1,3 +1,5 @@
+import type { ShopItemOrderLimit } from "./item-order-limit.js";
+
 /**
  * **Le catalogue tel qu'une boutique PUBLIQUE le montre.**
  *
@@ -209,6 +211,21 @@ export interface ShopItemView {
    * croissant de Noël) n'en porte pas : rien ne restreint sa vente.
    */
   readonly operation?: ShopItemOperationView;
+  /**
+   * **La limite de commande propre à l'article** — « Préparé sur commande — à
+   * commander 2 jours à l'avance, avant 12 h » (Hugo, 2026-10-21,
+   * `architecture-heure-limite-de-commande.md` §9) : la limite que le
+   * référentiel résout pour l'article (déclinaison, produit ou famille).
+   *
+   * Servie **seulement quand elle est plus stricte** que la règle générale de
+   * la boutique (`shownItemOrderLimit`) — sinon la fiche dirait ce que la
+   * boutique dit déjà. Jamais la grâce.
+   *
+   * Optionnel, donc **absent du fil** quand l'article suit la règle générale —
+   * la règle de `catalogPriceMillicents` : la surface publique reste étroite.
+   * ⚠️ Un élargissement ASSUMÉ : ce que la fiche affiche, rien de plus.
+   */
+  readonly orderTimeLimit?: ShopItemOrderLimit;
 }
 
 /** À qui un article se vend — une VALEUR du référentiel, recopiée telle quelle. */

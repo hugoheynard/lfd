@@ -65,6 +65,15 @@ export interface CommandTermsCopy {
   readonly cutoffLeftMinutes: string;
   /** Plus de six heures devant soi : `{day}` le jour, `{time}` l'heure limite. */
   readonly cutoffCalm: string;
+  /**
+   * 🔴 C'est la limite d'un ARTICLE du panier qui décide — plus stricte que la
+   * générale pour ce jour (Hugo, 2026-10-21) : « Plus que 1 h 40 pour
+   * commander la bûche pour jeudi ». `{name}` le nom de l'article, `{left}`
+   * et `{day}` comme {@link cutoffCountdown}.
+   */
+  readonly cutoffCountdownItem: string;
+  /** La même chose, plus de six heures devant soi : `{name}`, `{day}`, `{time}`. */
+  readonly cutoffCalmItem: string;
 
   /** La question qui précède les deux portes quand rien n'est choisi (O6, 2026-10-13). */
   readonly modeTitle: string;
@@ -121,6 +130,8 @@ export const COMMAND_TERMS_FR: CommandTermsCopy = {
   cutoffLeftHours: '{h} h',
   cutoffLeftMinutes: '{m} min',
   cutoffCalm: 'Pour {day}, commandez avant {time}.',
+  cutoffCountdownItem: 'Plus que {left} pour commander {name} pour {day}.',
+  cutoffCalmItem: 'Pour {day}, commandez {name} avant {time}.',
   modeTitle: 'Retrait ou coursier ?',
   close: 'Fermer',
   pickup: 'Retrait',
@@ -157,6 +168,8 @@ export const COMMAND_TERMS_EN: CommandTermsCopy = {
   cutoffLeftHours: '{h} h',
   cutoffLeftMinutes: '{m} min',
   cutoffCalm: 'For {day}, order before {time}.',
+  cutoffCountdownItem: 'Only {left} left to order {name} for {day}.',
+  cutoffCalmItem: 'For {day}, order {name} before {time}.',
   modeTitle: 'Pickup or courier?',
   close: 'Close',
   pickup: 'Pickup',
@@ -194,6 +207,8 @@ export const COMMAND_TERMS_IT: CommandTermsCopy = {
   cutoffLeftHours: '{h} h',
   cutoffLeftMinutes: '{m} min',
   cutoffCalm: 'Per {day}, ordinate entro le {time}.',
+  cutoffCountdownItem: 'Ancora {left} per ordinare {name} per {day}.',
+  cutoffCalmItem: 'Per {day}, ordinate {name} entro le {time}.',
   modeTitle: 'Ritiro o corriere?',
   close: 'Chiudi',
   pickup: 'Ritiro',

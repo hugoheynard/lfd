@@ -295,6 +295,9 @@ export const EN: ClientCopy = {
     update: 'Update',
     inCart: 'Already in basket',
     signInToOrder: 'Sign in to order',
+    madeToOrderDays: 'Made to order — order {n} days ahead, by {time}',
+    madeToOrderEve: 'Made to order — order the day before, by {time}',
+    madeToOrderSameDay: 'Made to order — order on the day, by {time}',
   },
   cart: {
     kicker: 'The basket',

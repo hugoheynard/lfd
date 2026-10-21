@@ -1,4 +1,4 @@
-import type { CatalogPricing } from "@lfd/contracts";
+import type { CatalogPricing, OrderCutoffView } from "@lfd/contracts";
 
 import {
   FixedStopwatch,
@@ -17,6 +17,7 @@ import type { SkuVolumeReader } from "../../../../pricing/domain/ports/sku-volum
 import { VolumeCommitmentReader } from "../../../../pricing/domain/ports/volume-commitment.reader.js";
 import type { VolumeLadderReader } from "../../../../pricing/domain/ports/volume-ladder.reader.js";
 import type { VolumeCommitment } from "../../../../pricing/domain/volume-commitment.js";
+import { ShopOrderCutoffsReader } from "../../../domain/ports/shop-order-cutoffs.reader.js";
 import { CanonicalPriceHistoryReader } from "../../../domain/ports/canonical-price-history.reader.js";
 import {
   CatalogReader,
@@ -138,16 +139,43 @@ const noCustomerVolumes: CustomerVolumeReader = {
   committedVolumesFor: () => Promise.resolve(new Map<string, number>()),
 };
 
+/** Les heures limites en vigueur : celles qu'on lui donne. */
+class GivenCutoffs extends ShopOrderCutoffsReader {
+  constructor(private readonly rules: readonly OrderCutoffView[]) {
+    super();
+  }
+
+  list(): Promise<readonly OrderCutoffView[]> {
+    return Promise.resolve(this.rules);
+  }
+}
+
+/** La règle générale de la boutique en production : la veille à 23 h. */
+const GENERAL_EVE_23: OrderCutoffView = {
+  id: "general",
+  pickupAddressId: null,
+  pickupLabel: null,
+  weekday: null,
+  daysBefore: 1,
+  time: "23:00",
+  graceMinutes: 30,
+};
+
 const BAGUETTE = "PAI-001";
 const RESERVED = "PRO-001";
 
-function fixture() {
+function fixture(
+  publicItems: readonly ResolvedCatalogItem[] = [
+    catalogItem(BAGUETTE, { unitPriceMillicents: PUBLIC_MILLICENTS }),
+  ],
+  cutoffs: readonly OrderCutoffView[] = [GENERAL_EVE_23],
+) {
   const catalog = new SellableCatalog({
     pro: [
       catalogItem(BAGUETTE, { unitPriceMillicents: PRO_MILLICENTS, isFeatured: true }),
       catalogItem(RESERVED, { audience: "pro" }),
     ],
-    public: [catalogItem(BAGUETTE, { unitPriceMillicents: PUBLIC_MILLICENTS })],
+    public: publicItems,
   });
   const mercuriales = new AskedMercuriales();
   const commitments = new AskedCommitments();
@@ -172,6 +200,7 @@ function fixture() {
     pricer,
     new InMemoryCatalogOperations(),
     new FixedClock(NOW),
+    new GivenCutoffs(cutoffs),
   );
   return { handler: new ReadShopCatalogueHandler(pricing), catalog, mercuriales, commitments };
 }
@@ -210,5 +239,57 @@ describe("ReadShopCatalogueHandler", () => {
 
     expect(mercuriales.askedFor.every((companyId) => companyId === null)).toBe(true);
     expect(commitments.askedFor.every((companyId) => companyId === null)).toBe(true);
+  });
+
+  describe("la limite propre d'un article (§9 de l'heure limite, 2026-10-21)", () => {
+    const BUCHE = "BUC-001";
+    const EVE_18 = "TAR-001";
+    const SAME_DAY = "PAI-002";
+    const items = [
+      catalogItem(BUCHE, { orderTimeLimit: { daysBefore: 2, time: "12:00", graceMinutes: 15 } }),
+      catalogItem(EVE_18, { orderTimeLimit: { daysBefore: 1, time: "18:00", graceMinutes: 0 } }),
+      catalogItem(SAME_DAY, { orderTimeLimit: { daysBefore: 0, time: "09:00", graceMinutes: 0 } }),
+      catalogItem(BAGUETTE),
+    ];
+    const limitsOf = (view: Awaited<ReturnType<ReadShopCatalogueHandler["execute"]>>) =>
+      view.items.map((item) => [item.sku, item.orderTimeLimit ?? null]);
+
+    it("ne sert que les limites PLUS STRICTES que la générale, sans la grâce", async () => {
+      const { handler } = fixture(items);
+
+      const view = await handler.execute(new ReadShopCatalogueQuery("fr"));
+
+      expect(limitsOf(view)).toEqual([
+        [BUCHE, { daysBefore: 2, time: "12:00" }],
+        [EVE_18, { daysBefore: 1, time: "18:00" }],
+        [SAME_DAY, null],
+        [BAGUETTE, null],
+      ]);
+    });
+
+    it("🔴 la clé est ABSENTE du fil pour un article qui suit la règle générale", async () => {
+      const { handler } = fixture(items);
+
+      const view = await handler.execute(new ReadShopCatalogueQuery("fr"));
+
+      expect(Object.keys(view.items[3] ?? {})).not.toContain("orderTimeLimit");
+    });
+
+    it("heure limite générale désactivée (aucune règle) : toute limite d'article se montre", async () => {
+      const { handler } = fixture(items, []);
+
+      const view = await handler.execute(new ReadShopCatalogueQuery("fr"));
+
+      expect(limitsOf(view)[2]).toEqual([SAME_DAY, { daysBefore: 0, time: "09:00" }]);
+    });
+
+    it("une règle d'un seul jour n'est pas la règle générale", async () => {
+      const { handler } = fixture(items, [{ ...GENERAL_EVE_23, weekday: "sun", daysBefore: 3 }]);
+
+      const view = await handler.execute(new ReadShopCatalogueQuery("fr"));
+
+      expect(limitsOf(view)[3]).toEqual([BAGUETTE, null]);
+      expect(limitsOf(view)[1]).toEqual([EVE_18, { daysBefore: 1, time: "18:00" }]);
+    });
   });
 });

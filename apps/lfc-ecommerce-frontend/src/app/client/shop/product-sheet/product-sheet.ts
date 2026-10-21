@@ -18,6 +18,7 @@ import type { ShopItemView } from '@lfd/contracts';
 import { discountBp, lineTotalCents, millicentsFromCents, unitPriceCents } from '@lfd/money';
 
 import { ClientLocale } from '../../client-locale.service';
+import { madeToOrderLabel } from '../made-to-order';
 import { operationGate, pickupSpan } from '../operations';
 import { artOf, objectPositionOf, ovenHoursOf } from '../shelf-display';
 import { mediaSrcset, sizedMedia, SHEET_WIDTHS } from '../media-source';
@@ -112,6 +113,11 @@ export class ProductSheet {
   });
 
   protected readonly showsTtc = this.basis.showsTtc;
+
+  /** La limite propre de la pièce, plus stricte que la générale — ou rien (2026-10-21). */
+  protected readonly madeToOrder = computed(() =>
+    madeToOrderLabel(this.product()?.orderTimeLimit, this.locale.current(), this.t().product),
+  );
 
   /**
    * Le brouillon : ce qui est au panier, ou une pièce. Il se réaligne quand la

@@ -536,6 +536,16 @@ export interface ClientCopy {
     readonly inCart: string;
     /** Le bouton de la fiche en visite pro : il ouvre la connexion au lieu d'ajouter. */
     readonly signInToOrder: string;
+    /**
+     * 🔴 La limite propre d'un article, plus stricte que la règle générale
+     * (Hugo, 2026-10-21) — sur la fiche et sur la ligne du panier. `{n}` le
+     * nombre de jours (deux et plus), `{time}` l'heure — « 12 h ».
+     */
+    readonly madeToOrderDays: string;
+    /** La veille : `{time}` l'heure. */
+    readonly madeToOrderEve: string;
+    /** Le jour même : `{time}` l'heure. */
+    readonly madeToOrderSameDay: string;
   };
   readonly cart: {
     readonly kicker: string;

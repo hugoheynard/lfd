@@ -4,6 +4,8 @@ import { FoldIconComponent, FoldNumberInputComponent } from 'fold-ng';
 
 import { formatCents } from '../../format-money';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
+import { ClientLocale } from '../../client-locale.service';
+import { madeToOrderLabel } from '../../shop/made-to-order';
 import { ShopPriceBasis } from '../../shop/shop-price-basis.service';
 import { type CartLine } from '../cart-total';
 
@@ -69,6 +71,13 @@ export class CartProductLine {
   protected readonly name = computed(() => this.line().product.name);
 
   protected readonly quantity = computed(() => this.line().quantity);
+
+  private readonly locale = inject(ClientLocale);
+
+  /** La limite propre de l'article, plus stricte que la générale — ou rien (2026-10-21). */
+  protected readonly madeToOrder = computed(() =>
+    madeToOrderLabel(this.line().product.orderTimeLimit, this.locale.current(), this.t().product),
+  );
 
   /**
    * Le prix d'UNE pièce, dans l'assiette de qui regarde, mention comprise.

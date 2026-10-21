@@ -1955,6 +1955,27 @@
           "en": "Sign in to order",
           "it": "Accedi per ordinare",
           "variables": []
+        },
+        {
+          "key": "product.madeToOrderDays",
+          "fr": "Préparé sur commande — à commander {n} jours à l’avance, avant {time}",
+          "en": "Made to order — order {n} days ahead, by {time}",
+          "it": "Preparato su ordinazione — da ordinare {n} giorni prima, entro le {time}",
+          "variables": ["n", "time"]
+        },
+        {
+          "key": "product.madeToOrderEve",
+          "fr": "Préparé sur commande — à commander la veille, avant {time}",
+          "en": "Made to order — order the day before, by {time}",
+          "it": "Preparato su ordinazione — da ordinare il giorno prima, entro le {time}",
+          "variables": ["time"]
+        },
+        {
+          "key": "product.madeToOrderSameDay",
+          "fr": "Préparé sur commande — à commander le jour même, avant {time}",
+          "en": "Made to order — order on the day, by {time}",
+          "it": "Preparato su ordinazione — da ordinare in giornata, entro le {time}",
+          "variables": ["time"]
         }
       ],
       "unrecorded": []
@@ -2090,6 +2111,20 @@
           "en": "For {day}, order before {time}.",
           "it": "Per {day}, ordinate entro le {time}.",
           "variables": ["day", "time"]
+        },
+        {
+          "key": "commandTerms.cutoffCountdownItem",
+          "fr": "Plus que {left} pour commander {name} pour {day}.",
+          "en": "Only {left} left to order {name} for {day}.",
+          "it": "Ancora {left} per ordinare {name} per {day}.",
+          "variables": ["left", "name", "day"]
+        },
+        {
+          "key": "commandTerms.cutoffCalmItem",
+          "fr": "Pour {day}, commandez {name} avant {time}.",
+          "en": "For {day}, order {name} before {time}.",
+          "it": "Per {day}, ordinate {name} entro le {time}.",
+          "variables": ["day", "name", "time"]
         },
         {
           "key": "commandTerms.modeTitle",
