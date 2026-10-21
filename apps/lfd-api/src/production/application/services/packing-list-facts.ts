@@ -1,5 +1,9 @@
 import { PackingListDrawnEvent } from "../../channels/packing/packing-list-drawn.event.js";
-import type { ProductionOrderSnapshot } from "../../domain/entities/production-day.js";
+import { ResupplyListDrawnEvent } from "../../channels/packing/resupply-list-drawn.event.js";
+import type {
+  ProductionOrderSnapshot,
+  ProductionResupplySnapshot,
+} from "../../domain/entities/production-day.js";
 import type { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
 
 /**
@@ -40,4 +44,38 @@ export function packingListFactsOf(
         reopenedAt,
       ),
   );
+}
+
+/**
+ * **Les réassorts à coliser, en faits** — un par réassort d'un point SERVI
+ * PAR TRANSFERT (réassort, lot R3b ; §13.4, Q1 révisée : le Labo ne passe pas
+ * au colisage). Partagée par l'arrêt et sa réannonce ; le retirage n'en
+ * publie aucun, il n'absorbe pas de réassort.
+ */
+export function resupplyListFactsOf(
+  day: ServiceDay,
+  resupplies: readonly ProductionResupplySnapshot[],
+  drawnAt: Date,
+  reopenedAt: Date | null,
+): readonly ResupplyListDrawnEvent[] {
+  return resupplies
+    .filter((resupply) => resupply.servedByTransfer)
+    .map(
+      (resupply) =>
+        new ResupplyListDrawnEvent(
+          day.value,
+          drawnAt,
+          {
+            resupplyId: resupply.resupplyId,
+            siteId: resupply.siteId,
+            siteLabel: resupply.siteLabel,
+            lines: resupply.lines.map((line) => ({
+              sku: line.sku,
+              productName: line.productName,
+              quantity: line.quantity,
+            })),
+          },
+          reopenedAt,
+        ),
+    );
 }

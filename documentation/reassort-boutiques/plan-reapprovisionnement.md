@@ -661,3 +661,61 @@ réassort pour demain sous le verrou de la journée (guichet d'admission) ;
 (fournées) ; journée vide ; réouverture symétrique côté fournil ; retirage qui
 absorbe aussi les réassorts arrivés ; `production.day_closed` + `resupplyIds` ;
 « Réassorts à produire » limité au non figé.
+
+### 13.4 Après R3a (2026-10-21) — points ouverts et Q1 révisée
+
+**Bâti** : R3a, commit `1b231fadd` (état dans le [README](README.md)).
+
+**Ouvert, noté à la demande de Hugo** :
+
+1. **Aucun recours après l'arrêt.** Le retirage n'absorbe que des commandes,
+   et l'envoi « pour demain » est refusé sous le verrou : un réassort ne peut
+   plus rejoindre un plan arrêté. Le fournil n'a que « produire hors plan, puis
+   envoyer au plus tôt le jour même ». À trancher : cela suffit-il, ou faut-il
+   un vrai ajout tardif ?
+2. **Heure limite client absente** : l'heure du réassort seule n'arrête pas le
+   plan (choix du bâtisseur). Sans objet tant que l'heure limite générale est
+   toujours en vigueur (« une seule heure »).
+3. **Le refus d'un arrêt anticipé** nomme « l'heure limite générale » même
+   quand l'heure du réassort fixe l'arrêt : l'heure est juste, la cause non.
+   Corrigé en R3b.
+4. **Le décalage de l'arrêt** (balayage des paiements, confirmation des
+   commandes, liste à coliser, composition des tournées, dossier du jour)
+   n'est pas éprouvé en e2e.
+5. **L'arrêt relit toute la liste des réassorts sous le verrou** (lecture d'un
+   autre bloc, verrou tenu) plutôt que « lire avant, relire les annulations ».
+   À confirmer.
+6. La section « Réassorts » de la feuille (écran, PDF) : R3d. Aucun abonné ne
+   lit encore `resupplyIds` (R3b, R3c).
+7. `site-resupply.ts` (331 lignes) et `prisma-production-day.repository.ts`
+   (~350) dépassent 300 lignes.
+
+**Q1 révisée (Hugo, 2026-10-21)** : « le magasin d'usine est aussi le labo de
+prod — coliser, c'est coliser pour aller à la pièce du dessus ». Retenu : **un
+point qui n'est pas servi par transfert (réglage du site « approvisionné par » : `supply = transfer`) ne passe PAS par le
+colisage**. Seuls les réassorts d'un site servi par transfert (Village) ont une
+fiche au colisage et une quantité emballée ; ceux du Labo vont de la feuille à
+la vitrine, et leur réception reste pré-remplie du demandé (le compte du
+comptoir fait foi, C). Révisable : une seule condition dans l'abonné du
+colisage.
+
+**R3b ✅ (bâti le 2026-10-21, non commité)** — ce qui diffère du texte :
+
+- Le filtre « servi par transfert » est au **fournil** (figé à l'arrêt,
+  `production_resupply.served_by_transfer`, publié pour ceux-là seuls), pas
+  dans l'abonné du colisage comme le dit la Q1 révisée. Le réviser reste une
+  seule condition, côté fournil (`resupplyListFactsOf`). Un réassort figé
+  avant la colonne vaut `false` (aucune fiche).
+- La saisie de l'emballé **prend dans la réserve** du colisage
+  (`packing_stock.packed`) : refusée si le four n'a pas remis les pièces ; un
+  retour du fournil ne les reprend pas. C'est ainsi que la fiche « entre dans
+  le retour ».
+- **Les bacs : non.** `container` a une clé étrangère vers `packing_order`, et
+  `BinDesk`, le chargement et le départ raisonnent par commande — y faire
+  entrer une fiche de réassort demande une décision (R3c).
+- La clôture est refusée tant qu'une ligne n'est pas saisie (0 explicite).
+  Aucun fait à la clôture : le commerce lit l'emballé à la réception.
+- Le point 3 ci-dessus est corrigé : le refus nomme l'heure du réassort quand
+  c'est elle qui fixe l'arrêt (`planStopOf`).
+- Routes : `GET|PUT|POST admin/packing/:date/resupplies…` sous
+  `production_packing` ; l'écran est R3d.

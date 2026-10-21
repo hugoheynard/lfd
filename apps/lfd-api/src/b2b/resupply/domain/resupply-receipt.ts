@@ -80,10 +80,20 @@ export class ResupplyReceipt {
     private trace: ResupplyReceiptTrace | null,
   ) {}
 
-  /** Le reçu attendu d'un réassort envoyé : son attendu est la quantité demandée. */
-  static expecting(id: string, resupply: ReceivableResupply): ResupplyReceipt {
+  /**
+   * Le reçu attendu d'un réassort envoyé. Son attendu est la quantité
+   * EMBALLÉE au colisage quand elle est connue (lot R3b : `packed`, SKU →
+   * pièces, d'une fiche close), sinon la quantité demandée.
+   */
+  static expecting(
+    id: string,
+    resupply: ReceivableResupply,
+    packed: ReadonlyMap<string, number> | null = null,
+  ): ResupplyReceipt {
     assertServiceDay(resupply.serviceDay);
-    const lines = resupply.lines.map((line) => ResupplyReceiptLine.expected(line));
+    const lines = expectedLinesOf(resupply, packed).map((line) =>
+      ResupplyReceiptLine.expected(line),
+    );
     return new ResupplyReceipt(
       id,
       resupply.siteId,
@@ -205,4 +215,20 @@ function assertServiceDay(serviceDay: string): void {
   if (!SERVICE_DAY.test(serviceDay)) {
     throw new InvalidServiceDayError(serviceDay);
   }
+}
+
+/**
+ * Les lignes attendues : l'emballé s'il est connu, sinon le demandé (lot
+ * R3b, §13.1 point 6). Partagé avec la page de réception, qui montre
+ * l'attendu avant « Réceptionner ».
+ */
+export function expectedLinesOf(
+  resupply: Pick<ReceivableResupply, "lines">,
+  packed: ReadonlyMap<string, number> | null,
+): readonly { readonly sku: string; readonly label: string; readonly quantity: number }[] {
+  return resupply.lines.map((line) => ({
+    sku: line.sku,
+    label: line.label,
+    quantity: packed?.get(line.sku) ?? line.quantity,
+  }));
 }

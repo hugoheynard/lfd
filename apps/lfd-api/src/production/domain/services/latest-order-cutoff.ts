@@ -90,11 +90,47 @@ export function planClosesAt(rule: OrderCutoffRule | null, day: string): Date | 
 export function planStopRules(
   general: OrderCutoffRule | null,
   resupplyEveTime: string,
-): readonly OrderCutoffRule[] {
+): readonly PlanStopRule[] {
   if (general === null) {
     return [];
   }
-  return [general, { daysBefore: EVE, time: resupplyEveTime, graceMinutes: 0 }];
+  return [
+    { ...general, cause: "general" },
+    { daysBefore: EVE, time: resupplyEveTime, graceMinutes: 0, cause: "resupply" },
+  ];
+}
+
+/**
+ * Ce qui fixe l'arrêt (lot R3b, §13.4 point 3) : l'heure limite générale des
+ * clients, ou l'heure du réassort. Le refus d'un arrêt anticipé nomme la
+ * vraie cause — l'heure seule ne dit pas laquelle régler.
+ */
+export type PlanStopCause = "general" | "resupply";
+
+/** Une règle d'arrêt, avec ce qu'elle représente. */
+export interface PlanStopRule extends OrderCutoffRule {
+  readonly cause: PlanStopCause;
+}
+
+/** L'arrêt d'une journée : l'instant et la règle qui le fixe. */
+export interface PlanStop {
+  readonly at: Date;
+  readonly cause: PlanStopCause;
+}
+
+/**
+ * Comme {@link planStopsAt}, avec la cause. À égalité, la première règle —
+ * la générale — l'emporte : c'est elle que les clients voient.
+ */
+export function planStopOf(rules: readonly PlanStopRule[], day: string): PlanStop | null {
+  let latest: PlanStop | null = null;
+  for (const rule of rules) {
+    const at = planClosesAt(rule, day);
+    if (at !== null && (latest === null || at.getTime() > latest.at.getTime())) {
+      latest = { at, cause: rule.cause };
+    }
+  }
+  return latest;
 }
 
 /**

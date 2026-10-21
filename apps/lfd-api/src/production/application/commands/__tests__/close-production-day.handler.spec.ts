@@ -15,6 +15,10 @@ import {
 import { PendingSettlementSweeper } from "../../../channels/commerce/pending-settlement.sweeper.js";
 import { ProductionDayClosedEvent } from "../../../channels/commerce/production-day-closed.event.js";
 import { PackingListDrawnEvent } from "../../../channels/packing/packing-list-drawn.event.js";
+import {
+  PRODUCTION_RESUPPLY_LIST_DRAWN,
+  ResupplyListDrawnEvent,
+} from "../../../channels/packing/resupply-list-drawn.event.js";
 import { ProductionDay } from "../../../domain/entities/production-day.js";
 import { ProductionDayClosedJournalEvent } from "../../../domain/events/production-day.events.js";
 import {
@@ -546,6 +550,7 @@ const VILLAGE_RESUPPLY = {
   resupplyId: "rs_1",
   siteId: "site_village",
   siteLabel: "Le Village",
+  servedByTransfer: true,
   lines: [
     { sku: "VIE-001", productName: "Croissant", quantity: 12 },
     { sku: "PAIN-001", productName: "Baguette", quantity: 5 },
@@ -615,5 +620,84 @@ describe("le réassort au plan figé (lot R3a)", () => {
 
     await expect(refusal).rejects.toThrow("le lundi 7 septembre à 20:30");
     expect(days.saved).toBeNull();
+  });
+
+  /** Lot R3b (§13.4 point 3) : le refus nommait l'heure générale même quand le réassort fixait l'arrêt. */
+  it("le refus nomme l'heure du réassort quand c'est elle qui fixe l'arrêt", async () => {
+    const cutoffs = new CutoffRules([{ daysBefore: 1, time: "19:00", graceMinutes: 30 }]);
+    const { handler } = subject(
+      open(),
+      [order()],
+      undefined,
+      cutoffs,
+      undefined,
+      new ResupplyTime("20:30"),
+    );
+
+    const refusal = handler.execute(new CloseProductionDayCommand(DAY, "manual", "staff-1"));
+
+    await expect(refusal).rejects.toThrow("s'arrête tout seul à l'heure du réassort");
+    await expect(refusal).rejects.toThrow("avancez l'heure du réassort");
+  });
+});
+
+/** Un réassort « pour demain » au Labo, servi sur place (lot R3b). */
+const LABO_RESUPPLY = {
+  resupplyId: "rs_labo",
+  siteId: "site_labo",
+  siteLabel: "Le Labo",
+  servedByTransfer: false,
+  lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 6 }],
+};
+
+describe("le réassort à coliser (lot R3b)", () => {
+  const open = () => ProductionDay.open(ServiceDay.of(DAY));
+  const typesOf = (facts: readonly { readonly type: string }[]) => facts.map((fact) => fact.type);
+
+  it("publie un fait par réassort d'un point servi par transfert, aucun pour le Labo", async () => {
+    const resupplies = new DayResupplies([VILLAGE_RESUPPLY, LABO_RESUPPLY]);
+    const { handler, durable } = subject(open(), [order()], undefined, undefined, resupplies);
+
+    await handler.execute(new CloseProductionDayCommand(DAY));
+
+    const drawn = durable.facts.filter((fact) => fact.type === PRODUCTION_RESUPPLY_LIST_DRAWN);
+    expect(drawn).toEqual([
+      new ResupplyListDrawnEvent(DAY, NOW, {
+        resupplyId: "rs_1",
+        siteId: "site_village",
+        siteLabel: "Le Village",
+        lines: VILLAGE_RESUPPLY.lines,
+      }).durableFact(),
+    ]);
+    expect(drawn[0]?.key).toBe(`${PRODUCTION_RESUPPLY_LIST_DRAWN}:${DAY}:rs_1`);
+    expect(typesOf(durable.facts)).toContain("production.packing_list_drawn");
+  });
+
+  it("la réannonce republie la même clé", async () => {
+    const resupplies = new DayResupplies([VILLAGE_RESUPPLY]);
+    const { handler, durable } = subject(open(), [order()], undefined, undefined, resupplies);
+    await handler.execute(new CloseProductionDayCommand(DAY));
+    const first = durable.facts.find((fact) => fact.type === PRODUCTION_RESUPPLY_LIST_DRAWN);
+
+    await handler.execute(new CloseProductionDayCommand(DAY));
+
+    const keys = durable.facts
+      .filter((fact) => fact.type === PRODUCTION_RESUPPLY_LIST_DRAWN)
+      .map((fact) => fact.key);
+    expect(keys).toEqual([first?.key, first?.key]);
+  });
+
+  it("après une réouverture, la clé porte le suffixe de la réouverture", () => {
+    const reopenedAt = new Date(NOW.getTime() - 60_000);
+    const fact = new ResupplyListDrawnEvent(
+      DAY,
+      NOW,
+      { resupplyId: "rs_1", siteId: "site_village", siteLabel: null, lines: [] },
+      reopenedAt,
+    ).durableFact();
+
+    expect(fact.key).toBe(
+      `${PRODUCTION_RESUPPLY_LIST_DRAWN}:${DAY}:rs_1:after-reopening:${reopenedAt.toISOString()}`,
+    );
   });
 });

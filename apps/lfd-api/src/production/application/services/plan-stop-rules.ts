@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { OrderCutoffRulesReader } from "../../channels/commerce/order-cutoff-rules.reader.js";
 import { ResupplyCutoffTimeReader } from "../../channels/commerce/resupply-cutoff-time.reader.js";
-import { type OrderCutoffRule, planStopRules } from "../../domain/services/latest-order-cutoff.js";
+import { type PlanStopRule, planStopRules } from "../../domain/services/latest-order-cutoff.js";
 
 /**
  * **Les heures qui arrêtent le plan**, lues au commerce par les deux ports du
@@ -21,7 +21,7 @@ export class PlanStopRules {
   ) {}
 
   /** Vide sans règle générale : rien n'arrête le plan tout seul. */
-  async rules(): Promise<readonly OrderCutoffRule[]> {
+  async rules(): Promise<readonly PlanStopRule[]> {
     const [rules, resupplyTime] = await Promise.all([
       this.cutoffRules.rules(),
       this.resupplyCutoff.eveTime(),

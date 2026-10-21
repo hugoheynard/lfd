@@ -129,10 +129,12 @@ export class ProducedItemNotFoundError extends ResourceNotFoundError {
  * train de commander. Pour figer plus tôt, on avance l'heure limite.
  */
 export class PlanClosedBeforeOrderCutoffError extends BusinessError {
-  constructor(dayLabel: string, closesAtLabel: string) {
+  constructor(dayLabel: string, closesAtLabel: string, cause: "general" | "resupply" = "general") {
     super(
       "production.day.before_order_cutoff",
-      `Le plan du ${dayLabel} s'arrête tout seul à l'heure limite générale, rattrapage compris : le ${closesAtLabel}. D'ici là, les clients peuvent encore commander pour ce jour. Pour figer le plan plus tôt, avancez l'heure limite dans Réglages › Commandes › Heure limite.`,
+      cause === "general"
+        ? `Le plan du ${dayLabel} s'arrête tout seul à l'heure limite générale, rattrapage compris : le ${closesAtLabel}. D'ici là, les clients peuvent encore commander pour ce jour. Pour figer le plan plus tôt, avancez l'heure limite dans Réglages › Commandes › Heure limite.`
+        : `Le plan du ${dayLabel} s'arrête tout seul à l'heure du réassort, plus tardive que l'heure limite des clients : le ${closesAtLabel}. D'ici là, les points de vente peuvent encore envoyer un réassort pour ce jour. Pour figer le plan plus tôt, avancez l'heure du réassort dans Réglages › Commandes › Heure limite.`,
     );
   }
 }

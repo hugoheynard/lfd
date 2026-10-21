@@ -774,6 +774,13 @@ export type {
   TransferPackingPieces,
   PackingContainerView,
 } from "./packing-containers.js";
+export { enterPackedResupplyLineSchema } from "./packing-resupplies.js";
+export type {
+  EnterPackedResupplyLine,
+  PackingResuppliesView,
+  PackingResupplyLineView,
+  PackingResupplyView,
+} from "./packing-resupplies.js";
 export { productionPackingQuerySchema } from "./production-packing.js";
 export type {
   PackingLine,

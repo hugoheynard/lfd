@@ -4,6 +4,10 @@ import {
   ProductionDayReopenedEvent,
 } from "../../../../production/channels/packing/index.js";
 import { PackingListWithdrawal } from "../../../domain/ports/packing-list-withdrawal.js";
+import {
+  InMemoryResupplies,
+  InMemoryResupplyRepository,
+} from "../../__tests__/resupply-doubles.js";
 import { OnProductionDayReopened } from "../on-production-day-reopened.handler.js";
 
 /** Instants recopiés, jamais comparés à l'horloge — exception étroite du §5. */
@@ -40,7 +44,11 @@ describe("OnProductionDayReopened (colisage)", () => {
   it("retire de la liste du jour les commandes du plan défait", async () => {
     const withdrawal = new RecordingWithdrawal();
 
-    await new OnProductionDayReopened(withdrawal, new ClosedPlans([])).handle(DELIVERY);
+    await new OnProductionDayReopened(
+      withdrawal,
+      new ClosedPlans([]),
+      new InMemoryResupplies(),
+    ).handle(DELIVERY);
 
     expect(withdrawal.calls).toEqual([{ serviceDay: DAY, orderIds: ["ord_1"] }]);
   });
@@ -48,8 +56,51 @@ describe("OnProductionDayReopened (colisage)", () => {
   it("ne retire rien si la journée est de nouveau arrêtée", async () => {
     const withdrawal = new RecordingWithdrawal();
 
-    await new OnProductionDayReopened(withdrawal, new ClosedPlans([DAY])).handle(DELIVERY);
+    await new OnProductionDayReopened(
+      withdrawal,
+      new ClosedPlans([DAY]),
+      new InMemoryResupplies(),
+    ).handle(DELIVERY);
 
     expect(withdrawal.calls).toEqual([]);
+  });
+
+  /** Lot R3b : la réouverture retire aussi les fiches de réassort intouchées. */
+  it("retire les fiches de réassort intouchées, garde une fiche entamée", async () => {
+    const resupplies = new InMemoryResupplies();
+    for (const resupplyId of ["rs_1", "rs_2"]) {
+      await resupplies.draw({
+        serviceDay: DAY,
+        resupplyId,
+        siteId: "site_village",
+        siteLabel: "Le Village",
+        drawnAt: CLOSED,
+        lines: [{ sku: "CRO", productName: "Croissant", quantity: 6 }],
+      });
+    }
+    const repository = new InMemoryResupplyRepository(resupplies);
+    const started = await repository.lock(DAY, "rs_2");
+    started?.enterPacked("CRO", 6, { at: CLOSED, by: "staff_lou" });
+    if (started) {
+      await repository.save(started);
+    }
+    const delivery = {
+      ...DELIVERY,
+      payload: new ProductionDayReopenedEvent(
+        DAY,
+        REOPENED,
+        CLOSED,
+        ["ord_1"],
+        ["rs_1", "rs_2"],
+      ).durableFact().payload,
+    };
+
+    await new OnProductionDayReopened(
+      new RecordingWithdrawal(),
+      new ClosedPlans([]),
+      resupplies,
+    ).handle(delivery);
+
+    expect([...resupplies.rows.keys()]).toEqual([`${DAY}/rs_2`]);
   });
 });

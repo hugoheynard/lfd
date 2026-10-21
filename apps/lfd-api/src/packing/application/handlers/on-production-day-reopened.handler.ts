@@ -11,6 +11,7 @@ import {
   ProductionDayReopenedEvent,
 } from "../../../production/channels/packing/index.js";
 import { PackingListWithdrawal } from "../../domain/ports/packing-list-withdrawal.js";
+import { PackingResupplyListing } from "../../domain/ports/packing-resupply-listing.js";
 
 /** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
 export const ON_PRODUCTION_DAY_REOPENED = "packing.withdraw-reopened-list";
@@ -19,6 +20,9 @@ export const ON_PRODUCTION_DAY_REOPENED = "packing.withdraw-reopened-list";
  * **La liste à coliser d'une journée rouverte se retire** (Hugo,
  * 2026-10-14). Au prochain arrêt, le fournil la tirera de nouveau, commande
  * par commande, dans l'état du moment.
+ *
+ * Les fiches de réassort du plan défait (`resupplyIds`, lot R3b) se retirent
+ * de même, dans la même unité de travail.
  *
  * Rien si la journée est de nouveau arrêtée quand le fait arrive : la boîte
  * d'envoi ne garantit pas l'ordre, et le nouveau tirage est peut-être déjà
@@ -30,6 +34,7 @@ export class OnProductionDayReopened implements DurableSubscriber {
   constructor(
     private readonly withdrawal: PackingListWithdrawal,
     private readonly plans: ClosedPlansReader,
+    private readonly resupplies: PackingResupplyListing,
   ) {}
 
   async handle(delivery: DurableDelivery): Promise<void> {
@@ -39,5 +44,6 @@ export class OnProductionDayReopened implements DurableSubscriber {
       return;
     }
     await this.withdrawal.withdrawUntouched(event.serviceDay, event.orderIds);
+    await this.resupplies.withdrawUntouched(event.serviceDay, event.resupplyIds);
   }
 }

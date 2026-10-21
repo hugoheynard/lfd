@@ -24,9 +24,9 @@ import { OrderWithdrawalsReader } from "../../domain/ports/order-withdrawals.rea
 import { ProductionDayLock } from "../../domain/ports/production-day.lock.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import { refuseCloseBeforeCutoff } from "../../domain/services/early-close.js";
-import { planStopsAt } from "../../domain/services/latest-order-cutoff.js";
+import { planStopOf } from "../../domain/services/latest-order-cutoff.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
-import { packingListFactsOf } from "../services/packing-list-facts.js";
+import { packingListFactsOf, resupplyListFactsOf } from "../services/packing-list-facts.js";
 import { PlanStopRules } from "../services/plan-stop-rules.js";
 import { CloseProductionDayCommand } from "./close-production-day.command.js";
 
@@ -170,8 +170,8 @@ export class CloseProductionDayHandler implements ICommandHandler<
    * commerce, hors verrou, comme les commandes.
    */
   private async refuseBeforeCutoff(day: ServiceDay): Promise<void> {
-    const closesAt = planStopsAt(await this.stopRules.rules(), day.value);
-    refuseCloseBeforeCutoff(day.value, closesAt, this.clock.now());
+    const stop = planStopOf(await this.stopRules.rules(), day.value);
+    refuseCloseBeforeCutoff(day.value, stop, this.clock.now());
   }
 
   /**
@@ -253,7 +253,11 @@ export class CloseProductionDayHandler implements ICommandHandler<
     return this.report(day, at, current.orders.length, true);
   }
 
-  /** Une commande, un fait — l'instant est celui du tirage d'origine. */
+  /**
+   * Une commande, un fait — l'instant est celui du tirage d'origine. Et un
+   * fait par réassort d'un point servi par transfert (lot R3b), même unité
+   * de travail, même instant, même suffixe de réouverture.
+   */
   private async publishPackingList(
     day: ServiceDay,
     current: ProductionDay,
@@ -261,6 +265,9 @@ export class CloseProductionDayHandler implements ICommandHandler<
   ): Promise<void> {
     const reopenedAt = current.reopened?.at ?? null;
     for (const fact of packingListFactsOf(day, current.orders, drawnAt, reopenedAt)) {
+      await this.durable.publish(fact.durableFact());
+    }
+    for (const fact of resupplyListFactsOf(day, current.resupplies, drawnAt, reopenedAt)) {
       await this.durable.publish(fact.durableFact());
     }
   }

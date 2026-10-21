@@ -3,6 +3,8 @@ import { Global, Module } from "@nestjs/common";
 import { PrismaPackingDayVersionReader } from "../packing/infrastructure/prisma-packing-day-version.reader.js";
 import { PrismaDayPackingProgressReader } from "../packing/infrastructure/prisma-day-packing-progress.reader.js";
 import { PrismaPackedOrdersReader } from "../packing/infrastructure/prisma-packed-orders.reader.js";
+import { PackedResuppliesReader } from "../packing/channels/commerce/index.js";
+import { PrismaPackedResuppliesReader } from "../packing/infrastructure/prisma-packed-resupplies.reader.js";
 import { PackingModule } from "../packing/packing.module.js";
 import {
   DayPackingProgressReader,
@@ -19,7 +21,7 @@ import { ProductionModule } from "../production/production.module.js";
  * **Le fil du colisage, relié** (plan `colisage/colisage.md`, K1, K2,
  * K3a ; l'ancien poste et l'ombre retirés en K3c).
  *
- * Quatre ports, deux sens :
+ * Les ports, deux sens :
  *
  * - `PackingDayVersionReader` (K2) — la production DÉCLARE, le colisage
  *   implémente : la version du jour au colisage, que la version du fournil
@@ -30,6 +32,10 @@ import { ProductionModule } from "../production/production.module.js";
  * - `PackedOrdersReader` (K3a) — la production DÉCLARE, le colisage
  *   implémente : « cette commande est-elle colisée ? », pour l'état du jour et
  *   le contrôle qualité.
+ *
+ * - `PackedResuppliesReader` (réassort R3b, 2026-10-21) — le colisage
+ *   DÉCLARE ET IMPLÉMENTE, le commerce lit : l'emballé d'un réassort, pour
+ *   pré-remplir sa réception (`packing/channels/commerce/`).
  *
  * Les faits, eux, ne passent pas par ici : ils vont par la boîte d'envoi, et
  * les abonnés les trouvent par `@DurableHandler`.
@@ -48,6 +54,7 @@ import { ProductionModule } from "../production/production.module.js";
     // La réouverture d'une journée (2026-10-14) : « le colisage a-t-il
     // commencé ? » — la production déclare, le colisage implémente.
     { provide: DayPackingProgressReader, useClass: PrismaDayPackingProgressReader },
+    { provide: PackedResuppliesReader, useExisting: PrismaPackedResuppliesReader },
   ],
   exports: [
     PackingDayVersionReader,
@@ -55,6 +62,7 @@ import { ProductionModule } from "../production/production.module.js";
     PlannedDestinationsReader,
     PackedOrdersReader,
     DayPackingProgressReader,
+    PackedResuppliesReader,
   ],
 })
 export class PackingFeedModule {}

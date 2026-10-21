@@ -148,7 +148,9 @@ const ALLOWED = {
   // ⚠️ Le référentiel, lui, n'atteint PAS `media` : il déclare son port et ne
   // sait pas qui le branche. C'est `appBootstrap` qui relie.
   media: new Set(["staff", "platform", "pim"]),
-  b2b: new Set(["staff", "pim", "platform", "production", "handover", "delivery"]),
+  // `packing` depuis le 2026-10-21 (réassort, R3b) : par son canal SEULEMENT
+  // (`PORT_SURFACE`) — le commerce lit la quantité emballée d'un réassort.
+  b2b: new Set(["staff", "pim", "platform", "production", "handover", "delivery", "packing"]),
   production: new Set(["staff", "platform"]),
   // `delivery` depuis le 2026-10-01 (a-la-porte.md, BQ) : le retrait
   // implémente ce que la livraison déclare — par son canal SEULEMENT, cf.
@@ -243,6 +245,14 @@ const PORT_SURFACE = {
   // commerce lit pour l'historique des bons du dossier de facturation — sur
   // le modèle de `ContainerManagedOrders` (`packing/channels/delivery/`).
   "b2b→delivery": "delivery/channels/commerce/",
+  // Le commerce LIT la quantité réellement emballée d'un réassort, pour
+  // pré-remplir sa réception (2026-10-21, réassort R3b,
+  // `reassort-boutiques/plan-reapprovisionnement.md` §13.1 point 6) : le
+  // colisage DÉCLARE ET IMPLÉMENTE `PackedResuppliesReader`, même figure que
+  // `OrderHandoverHistoryReader`. Le commerce ne lit aucune table du colisage.
+  //
+  // ⚠️ `packing → b2b` reste INTERDIT : le colisage ne sait pas qui le lit.
+  "b2b→packing": "packing/channels/commerce/",
   // Le RETRAIT implémente ce que la livraison déclare (2026-10-01,
   // `a-la-porte.md`, BQ) : « lesquelles sont retenues ? » au départ, et
   // « elles sont parties » après lui. La garde passe au livreur au départ, et

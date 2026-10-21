@@ -320,17 +320,29 @@ R1 (2026-10-21), il s'applique à la commande « Pour demain » ; « Au plus tô
 n'y est jamais soumis. Voir
 [`../limites-de-commande/schema-des-reglages.md`](../limites-de-commande/schema-des-reglages.md).
 
+## Ce qui est bâti : le réassort au colisage (lot R3b, 2026-10-21)
+
+- **Seul un point servi par transfert** (`supply = transfer`) passe au
+  colisage : le fournil le fige à l'arrêt (`served_by_transfer`) et publie
+  `production.resupply_list_drawn` pour lui seul. Le Labo n'a pas de fiche.
+- **La fiche « Réassort <point> »** au colisage, à part des commandes : saisie
+  de l'emballé par ligne (0 ≤ q ≤ demandée), clôture. Détail :
+  [`../colisage/colisage.md`](../colisage/colisage.md) §2.2.
+- **La réception se pré-remplit de l'emballé** d'une fiche close
+  (`PackedResuppliesReader`, `packing/channels/commerce/`), sinon du demandé.
+  Le compte du comptoir fait foi (décision C) : un emballé connu après la
+  réception ne change rien.
+- **Le refus d'un arrêt anticipé** nomme sa cause : l'heure limite générale,
+  ou l'heure du réassort quand c'est elle qui fixe l'arrêt.
+
 ## Ce qui reste
 
-- **La quantité emballée** comme attendu (R3) : l'attendu est encore la
-  quantité demandée.
 - **La course annuler / réceptionner** : l'annulation lit la réception puis
   écrit le réassort ; « Réceptionner » ne touche pas la version du réassort.
   Deux postes qui annulent et réceptionnent à la même seconde peuvent encore
   laisser un réassort annulé ET réceptionné (le reçu reste et compte au
   stock). Fermé seulement si la réception passe un jour par l'agrégat.
-- **Le branchement de la commande** (R3, R4) : produite au plan figé, colisée,
-  portée par le transfert interne
+- **Le branchement de la commande** (R3c, R4) : portée par le transfert interne
   ([`../livraisons/transferts/plan-transfert-interne.md`](../livraisons/transferts/plan-transfert-interne.md)) —
   lots du [plan](plan-reapprovisionnement.md).
 - **Le jour même sur stock** (J2) : les commandes qui puisent dans la vitrine,

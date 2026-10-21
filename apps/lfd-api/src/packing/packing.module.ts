@@ -36,6 +36,20 @@ import { PackingBoardController } from "./http/packing-board.controller.js";
 import { PackingOrdersController } from "./http/packing-orders.controller.js";
 import { PrismaPackedOrdersReader } from "./infrastructure/prisma-packed-orders.reader.js";
 import { PrismaPackingBoardReader } from "./infrastructure/prisma-packing-board.reader.js";
+import { OnResupplyListDrawn } from "./application/handlers/on-resupply-list-drawn.handler.js";
+import { ClosePackingResupplyHandler } from "./application/resupplies/close-packing-resupply.handler.js";
+import { EnterPackedResupplyLineHandler } from "./application/resupplies/enter-packed-resupply-line.handler.js";
+import { ListPackingResuppliesHandler } from "./application/resupplies/list-packing-resupplies.handler.js";
+import { PackingResupplyBoardReader } from "./domain/ports/packing-resupply-board.reader.js";
+import { PackingResupplyListing } from "./domain/ports/packing-resupply-listing.js";
+import { PackingResupplyRepository } from "./domain/ports/packing-resupply.repository.js";
+import { PrismaPackedResuppliesReader } from "./infrastructure/prisma-packed-resupplies.reader.js";
+import {
+  PrismaPackingResupplyBoardReader,
+  PrismaPackingResupplyRepository,
+} from "./infrastructure/prisma-packing-resupply.repository.js";
+import { PrismaPackingResupplyListing } from "./infrastructure/prisma-packing-resupply-listing.js";
+import { PackingResuppliesController } from "./http/packing-resupplies.controller.js";
 
 /**
  * **Le colisage** — son propre bloc depuis le 2026-10-04 (plan
@@ -62,9 +76,19 @@ import { PrismaPackingBoardReader } from "./infrastructure/prisma-packing-board.
  * K3c : l'ancien chemin est retiré — le poste du fournil, ses ports
  * (`PackingStation`, `PackingStationReader`), l'ombre et sa route de
  * comparaison (`LegacyPackingReader`). Plan, §17.3.
+ *
+ * Réassort R3b (2026-10-21) : la fiche de réassort, à part des commandes —
+ * son abonné (`production.resupply_list_drawn`), ses gestes (saisir l'emballé,
+ * clore), sa liste, et `PackedResuppliesReader`, que le commerce lit par
+ * `packing/channels/commerce/` (relié par `PackingFeedModule`).
  */
 @Module({
-  controllers: [PackingContainersController, PackingBoardController, PackingOrdersController],
+  controllers: [
+    PackingContainersController,
+    PackingBoardController,
+    PackingOrdersController,
+    PackingResuppliesController,
+  ],
   providers: [
     OnPackingListDrawn,
     OnHandedToPacking,
@@ -96,7 +120,16 @@ import { PrismaPackingBoardReader } from "./infrastructure/prisma-packing-board.
     ReopenPackingOrderHandler,
     { provide: PackingBoardReader, useClass: PrismaPackingBoardReader },
     PrismaPackedOrdersReader,
+    // La fiche de réassort (R3b).
+    OnResupplyListDrawn,
+    EnterPackedResupplyLineHandler,
+    ClosePackingResupplyHandler,
+    ListPackingResuppliesHandler,
+    { provide: PackingResupplyRepository, useClass: PrismaPackingResupplyRepository },
+    { provide: PackingResupplyListing, useClass: PrismaPackingResupplyListing },
+    { provide: PackingResupplyBoardReader, useClass: PrismaPackingResupplyBoardReader },
+    PrismaPackedResuppliesReader,
   ],
-  exports: [PrismaContainerManagedOrders, PrismaPackedOrdersReader],
+  exports: [PrismaContainerManagedOrders, PrismaPackedOrdersReader, PrismaPackedResuppliesReader],
 })
 export class PackingModule {}

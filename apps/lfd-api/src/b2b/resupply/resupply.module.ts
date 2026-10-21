@@ -35,6 +35,7 @@ import { SiteResupplyReader } from "./domain/site-resupply.reader.js";
 import { SiteResupplyRepository } from "./domain/site-resupply.repository.js";
 import { StockAlertReader } from "./domain/stock-alert.reader.js";
 import { StockAlertRepository } from "./domain/stock-alert.repository.js";
+import { TransferServedSites } from "./domain/transfer-served-sites.js";
 import { AdminBakehouseResuppliesController } from "./http/admin-bakehouse-resupplies.controller.js";
 import { AdminLiveStockAlertsController } from "./http/admin-live-stock-alerts.controller.js";
 import { AdminSiteStockAlertsController } from "./http/admin-site-stock-alerts.controller.js";
@@ -52,6 +53,7 @@ import { PrismaSiteResupplyReader } from "./infrastructure/prisma-site-resupply.
 import { PrismaSiteResupplyRepository } from "./infrastructure/prisma-site-resupply.repository.js";
 import { PrismaStockAlertReader } from "./infrastructure/prisma-stock-alert.reader.js";
 import { PrismaStockAlertRepository } from "./infrastructure/prisma-stock-alert.repository.js";
+import { PrismaTransferServedSites } from "./infrastructure/prisma-transfer-served-sites.js";
 
 /**
  * **Le réapprovisionnement d'un site** (modèle B de
@@ -94,6 +96,7 @@ import { PrismaStockAlertRepository } from "./infrastructure/prisma-stock-alert.
     { provide: SiteResupplyReader, useClass: PrismaSiteResupplyReader },
     { provide: ResupplyCutoff, useClass: SettingsResupplyCutoff },
     { provide: ResupplySiteLabels, useClass: PrismaResupplySiteLabels },
+    { provide: TransferServedSites, useClass: PrismaTransferServedSites },
     { provide: StockAlertRepository, useClass: PrismaStockAlertRepository },
     { provide: StockAlertReader, useClass: PrismaStockAlertReader },
     ReceiveResupplyLineHandler,

@@ -198,3 +198,57 @@ model PackingContainerLine {
   @@map("container_line")
   @@schema("packing")
 }
+
+/// **Une fiche de réassort au colisage** (réassort, lot R3b, 2026-10-21 —
+/// `documentation/reassort-boutiques/plan-reapprovisionnement.md` §13). À part
+/// de `PackingOrder` : un réassort n'a ni client, ni bon, ni acheminement.
+/// Inscrite par `production.resupply_list_drawn`, seulement pour un point
+/// servi par transfert (§13.4, Q1 révisée). Titrée « Réassort <point> » ;
+/// sa destination est le transfert du point.
+///
+/// ⚠️ Aucune clé étrangère vers `production` ni vers `public` : le réassort
+/// est un identifiant OPAQUE du commerce.
+model PackingResupply {
+  serviceDay String @map("service_day") @db.VarChar(10)
+  resupplyId String @map("resupply_id")
+
+  /// Le point servi par transfert, opaque, et son nom figé à l'arrêt.
+  siteId    String  @map("site_id")
+  siteLabel String? @map("site_label")
+
+  drawnAt DateTime @map("drawn_at") @db.Timestamptz(6)
+
+  /// La clôture de la fiche : la quantité emballée de chaque ligne est
+  /// définitive, et le commerce peut la lire. Les deux ensemble (CHECK).
+  closedAt DateTime? @map("closed_at") @db.Timestamptz(6)
+  closedBy String?   @map("closed_by")
+
+  lines PackingResupplyLine[]
+
+  @@id([serviceDay, resupplyId])
+  @@index([resupplyId])
+  @@map("packing_resupply")
+  @@schema("packing")
+}
+
+/// Une ligne d'une fiche de réassort : la quantité DEMANDÉE, et celle
+/// réellement emballée (0 ≤ emballée ≤ demandée, CHECK), `NULL` tant que
+/// personne ne l'a saisie. Les pièces emballées sortent de la réserve du jour
+/// (`packing_stock.packed`) : le fournil ne les reprend pas en retour.
+model PackingResupplyLine {
+  serviceDay String          @map("service_day") @db.VarChar(10)
+  resupplyId String          @map("resupply_id")
+  resupply   PackingResupply @relation(fields: [serviceDay, resupplyId], references: [serviceDay, resupplyId], onDelete: Restrict)
+
+  sku         String
+  productName String @map("product_name")
+  quantity    Int
+
+  packed   Int?      @map("packed")
+  packedAt DateTime? @map("packed_at") @db.Timestamptz(6)
+  packedBy String?   @map("packed_by")
+
+  @@id([serviceDay, resupplyId, sku])
+  @@map("packing_resupply_line")
+  @@schema("packing")
+}

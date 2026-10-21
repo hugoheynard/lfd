@@ -766,6 +766,11 @@ model ProductionResupply {
   siteId     String  @map("site_id")
   siteLabel  String? @map("site_label")
 
+  /// Le point est servi par un transfert interne, figé à l'arrêt (réassort,
+  /// lot R3b) : seul un tel réassort a une fiche au colisage. `false` pour un
+  /// réassort figé avant la colonne — servi sur place par défaut, aucune fiche.
+  servedByTransfer Boolean @default(false) @map("served_by_transfer")
+
   lines ProductionResupplyLine[]
 
   @@unique([serviceDay, resupplyId])

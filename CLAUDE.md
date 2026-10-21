@@ -317,7 +317,7 @@ src/
 | **`staff`**        | —                | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✓          |
 | **`pim`**          | ✓ (autorisation) | —                   | **port uniquement** | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✓          |
 | **`media`**        | ✓ (autorisation) | **port uniquement** | —                   | ✗     | ✗                   | ✗                   | ✗     | ✗                   | ✗                   | ✓          |
-| **`b2b`**          | ✓ (autorisation) | **port uniquement** | ✗                   | —     | **port uniquement** | **port uniquement** | ✗     | **port uniquement** | ✗                   | ✓          |
+| **`b2b`**          | ✓ (autorisation) | **port uniquement** | ✗                   | —     | **port uniquement** | **port uniquement** | ✗     | **port uniquement** | **port uniquement** | ✓          |
 | **`production`**   | ✓ (autorisation) | ✗                   | ✗                   | **✗** | —                   | ✗                   | ✗     | ✗                   | **✗**               | ✓          |
 | **`handover`**     | ✓ (autorisation) | ✗                   | ✗                   | **✗** | **port uniquement** | —                   | ✗     | **port uniquement** | ✗                   | ✓          |
 | **`delivery`**     | ✓ (autorisation) | ✗                   | ✗                   | **✗** | **port uniquement** | ✗                   | ✗     | —                   | **port uniquement** | ✓          |
@@ -371,6 +371,13 @@ implémenté par le bloc lui-même**, que la comptabilité du commerce lit pour 
 dossier de facturation (`OrderHandoverHistoryReader`, `OrderDeliveryHistoryReader` —
 [`documentation/comptabilite/facturation/simulateur-dossier-de-facturation.md`](documentation/comptabilite/facturation/simulateur-dossier-de-facturation.md)).
 Lectures synchrones, par lot ; `handover → b2b` et `delivery → b2b` restent interdits.
+
+Depuis le 2026-10-21, `packing/channels/commerce/` porte un lecteur de la même
+forme : `PackedResuppliesReader`, **déclaré et implémenté par le colisage**,
+que la réception d'un réassort lit pour se pré-remplir de la quantité
+réellement emballée (plan
+[`documentation/reassort-boutiques/plan-reapprovisionnement.md`](documentation/reassort-boutiques/plan-reapprovisionnement.md) §13, R3b).
+D'où la case `b2b → packing : port uniquement` ; `packing → b2b` reste interdit.
 
 🔴 **`delivery` écoute la clôture du fournil par un canal** (2026-10-04,
 Hugo, option B — `documentation/livraisons/tournees/composition-automatique.md`,

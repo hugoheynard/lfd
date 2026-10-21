@@ -70,6 +70,7 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
             resupplyId: true,
             siteId: true,
             siteLabel: true,
+            servedByTransfer: true,
             lines: { select: { sku: true, productName: true, quantity: true } },
           },
           orderBy: { resupplyId: "asc" },
@@ -248,6 +249,7 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
             resupplyId: resupply.resupplyId,
             siteId: resupply.siteId,
             siteLabel: resupply.siteLabel,
+            servedByTransfer: resupply.servedByTransfer,
             lines: { create: resupply.lines.map((line) => ({ ...line })) },
           },
         });

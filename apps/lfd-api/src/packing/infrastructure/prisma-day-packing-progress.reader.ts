@@ -9,7 +9,9 @@ import { DayPackingProgressReader } from "../../production/channels/packing/inde
  *
  * Un contenant compte même annulé : ses lignes restent, et la liste du jour
  * ne se retire pas sous elles (clé étrangère `Restrict`). Les bacs comptés à
- * l'ancienne (`container_count`) et les bacs fermés comptent aussi.
+ * l'ancienne (`container_count`) et les bacs fermés comptent aussi. Depuis le
+ * lot R3b du réassort, une fiche de réassort entamée — une ligne saisie, ou
+ * close — compte aussi (§13.3 : fiche entamée = pas de réouverture).
  */
 @Injectable()
 export class PrismaDayPackingProgressReader extends DayPackingProgressReader {
@@ -31,6 +33,15 @@ export class PrismaDayPackingProgressReader extends DayPackingProgressReader {
     const orders = await this.prisma.packingOrder.count({
       where: { serviceDay, OR: [{ packedAt: { not: null } }, { containerCount: { gt: 0 } }] },
     });
-    return orders > 0;
+    if (orders > 0) {
+      return true;
+    }
+    const resupplies = await this.prisma.packingResupply.count({
+      where: {
+        serviceDay,
+        OR: [{ closedAt: { not: null } }, { lines: { some: { packed: { not: null } } } }],
+      },
+    });
+    return resupplies > 0;
   }
 }

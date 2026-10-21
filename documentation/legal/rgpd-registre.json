@@ -450,6 +450,24 @@
       "information": false
     },
     {
+      "colonne": "packing.packing_resupply.closed_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`closed_by`) sur `packing_resupply`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "packing.packing_resupply_line.packed_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`packed_by`) sur `packing_resupply_line`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "pim.b2b_channel_binding.published_by",
       "personne": "staff",
       "categorie": "auteur-geste",

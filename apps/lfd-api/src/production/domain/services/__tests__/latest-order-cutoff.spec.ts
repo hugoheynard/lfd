@@ -5,6 +5,7 @@ import {
   latestOrderCutoff,
   type OrderCutoffRule,
   planClosesAt,
+  planStopOf,
   planStopRules,
   planStopsAt,
 } from "../latest-order-cutoff.js";
@@ -86,5 +87,30 @@ describe("planStopsAt — l'heure générale et l'heure du réassort", () => {
       daysBefore: 1,
       time: HouseTime.of("21:00", "close"),
     });
+  });
+});
+
+/** Lot R3b (§13.4 point 3) : le refus d'un arrêt anticipé nomme ce qui fixe l'arrêt. */
+describe("planStopOf — l'arrêt et sa cause", () => {
+  const paris = (day: string, time: string): Date | null => localToInstant(day, time);
+
+  it("le réassort quand son heure est la plus tardive", () => {
+    expect(planStopOf(planStopRules(rule(1, "18:00", 30), "20:00"), "2026-10-07")).toEqual({
+      at: paris("2026-10-06", "20:00"),
+      cause: "resupply",
+    });
+  });
+
+  it("l'heure générale quand elle est plus tardive, ou à égalité", () => {
+    expect(planStopOf(planStopRules(rule(1, "19:45", 30), "20:00"), "2026-10-07")?.cause).toBe(
+      "general",
+    );
+    expect(planStopOf(planStopRules(rule(1, "20:00"), "20:00"), "2026-10-07")?.cause).toBe(
+      "general",
+    );
+  });
+
+  it("rien sans règle générale", () => {
+    expect(planStopOf(planStopRules(null, "20:00"), "2026-10-07")).toBeNull();
   });
 });

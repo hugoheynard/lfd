@@ -2,6 +2,7 @@ import { instantToLocal } from "@lfd/contracts";
 
 import { PlanClosedBeforeOrderCutoffError } from "../errors/production-errors.js";
 import { closeDue, frenchDayLabel } from "./auto-close-round.js";
+import type { PlanStop } from "./latest-order-cutoff.js";
 
 /**
  * **Pas d'arrêt avant l'heure limite** (Hugo, 2026-10-21 —
@@ -12,15 +13,19 @@ import { closeDue, frenchDayLabel } from "./auto-close-round.js";
  * que le tour (`closeDue`) : l'arrêt automatique passe toujours. Sans heure
  * limite posée (`null`), rien ne l'arrête seul, et l'arrêt reste ouvert.
  *
- * @throws {PlanClosedBeforeOrderCutoffError} `now` précède `closesAt`.
+ * Le refus nomme ce qui fixe l'arrêt — l'heure limite générale ou l'heure
+ * du réassort (lot R3b, §13.4 point 3).
+ *
+ * @throws {PlanClosedBeforeOrderCutoffError} `now` précède l'arrêt.
  */
-export function refuseCloseBeforeCutoff(day: string, closesAt: Date | null, now: Date): void {
-  if (closesAt === null || closeDue(closesAt, now)) {
+export function refuseCloseBeforeCutoff(day: string, stop: PlanStop | null, now: Date): void {
+  if (stop === null || closeDue(stop.at, now)) {
     return;
   }
-  const local = instantToLocal(closesAt);
+  const local = instantToLocal(stop.at);
   throw new PlanClosedBeforeOrderCutoffError(
     frenchDayLabel(day),
     `${frenchDayLabel(local.day)} à ${local.time}`,
+    stop.cause,
   );
 }

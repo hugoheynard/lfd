@@ -1,6 +1,10 @@
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
+import {
+  PackedResuppliesReader,
+  type PackedResupplyLines,
+} from "../../../../packing/channels/commerce/index.js";
 import type { SiteResupplySnapshot } from "../../domain/site-resupply.js";
 import { CorrectReceivedResupplyLineHandler } from "../correct-received-resupply-line.handler.js";
 import { CorrectResupplyLineHandler } from "../correct-resupply-line.handler.js";
@@ -55,7 +59,20 @@ export function placed(
   };
 }
 
+/**
+ * L'emballé au colisage, posé à la main (lot R3b) : un réassort absent de la
+ * table n'a pas de fiche close.
+ */
+export class FixedPackedResupplies extends PackedResuppliesReader {
+  readonly closed = new Map<string, PackedResupplyLines>();
+
+  packedOf(ids: readonly string[]): Promise<ReadonlyMap<string, PackedResupplyLines | null>> {
+    return Promise.resolve(new Map(ids.map((id) => [id, this.closed.get(id) ?? null])));
+  }
+}
+
 export function setup() {
+  const packed = new FixedPackedResupplies();
   const receipts = new InMemoryReceipts();
   const resupplies = new InMemorySiteResupplies();
   const alerts = new InMemoryStockAlerts();
@@ -67,6 +84,7 @@ export function setup() {
     receipts,
     resupplies,
     alerts,
+    packed,
     receiveResupply: new ReceiveSiteResupplyHandler(
       resupplies,
       receipts,
@@ -75,6 +93,7 @@ export function setup() {
       clock,
       ids,
       uow,
+      packed,
     ),
     correctReceived: new CorrectReceivedResupplyLineHandler(receipts, staff, clock, uow),
     receive: new ReceiveResupplyLineHandler(
@@ -92,6 +111,7 @@ export function setup() {
     read: new GetResupplyReceiptHandler(
       new InMemoryReceiptReader(receipts),
       new InMemorySiteResupplyReader(resupplies),
+      packed,
     ),
   };
 }

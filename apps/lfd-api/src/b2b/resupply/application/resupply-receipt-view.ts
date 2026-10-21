@@ -1,6 +1,6 @@
 import type { ResupplyReceptionView, UnorderedReceiptView } from "@lfd/contracts";
 
-import type { ResupplyReceipt } from "../domain/resupply-receipt.js";
+import { expectedLinesOf, type ResupplyReceipt } from "../domain/resupply-receipt.js";
 import type { PlacedSiteResupplySnapshot } from "../domain/site-resupply.js";
 
 /** Un auteur que l'annuaire ne connaissait pas a été figé sans nom : on ne l'invente pas. */
@@ -10,12 +10,14 @@ function nameOf(name: string): string | null {
 
 /**
  * Un réassort envoyé et sa réception. Avant « Réceptionner », ses lignes
- * attendues sont celles du réassort ; après, celles du reçu (attendu figé à
+ * attendues sont l'emballé au colisage s'il est connu (lot R3b), sinon le
+ * demandé ; après, celles du reçu (attendu figé à
  * la réception, reçu corrigé s'il y a eu un écart).
  */
 export function receptionView(
   resupply: PlacedSiteResupplySnapshot,
   receipt: ResupplyReceipt | null,
+  packed: ReadonlyMap<string, number> | null = null,
 ): ResupplyReceptionView {
   const received = receipt?.received ?? null;
   return {
@@ -29,7 +31,7 @@ export function receptionView(
     receivedBy: received === null ? null : nameOf(received.author.name),
     lines:
       receipt === null
-        ? resupply.lines.map((line) => ({
+        ? expectedLinesOf(resupply, packed).map((line) => ({
             sku: line.sku,
             label: line.label,
             expectedQuantity: line.quantity,

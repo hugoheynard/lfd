@@ -73,13 +73,14 @@ Tous passent par la boîte d'envoi, et leurs abonnés sont des
 `@DurableHandler` — un redémarrage ne perd rien, et une même clé ne s'applique
 qu'une fois.
 
-| Fait                            | Publié par | Quand                                                             | Abonné                                                                   |
-| ------------------------------- | ---------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| `production.packing_list_drawn` | fournil    | la clôture de la journée : une commande, ses lignes, son échéance | `OnPackingListDrawn` — crée la `packing_order` et ses lignes             |
-| `production.handed_to_packing`  | fournil    | une fournée sort du four : des pièces sont remises au colisage    | `OnHandedToPacking` — `received` de la réserve, un reçu par remise       |
-| `production.return_requested`   | fournil    | une fournée remise est annulée ou décochée                        | `OnReturnRequested` — rend ce qui n'est pas au bac (`PackingReturnDesk`) |
-| `packing.returned`              | colisage   | la réponse à une demande de retour (rendu, éventuellement `0`)    | `OnPackingReturned` (fournil)                                            |
-| `packing.order_packed`          | colisage   | une commande est fermée — clé `packing.order_packed:<orderId>`    | `OnPackingOrderPacked` (commerce) — `markReady`                          |
+| Fait                             | Publié par | Quand                                                                  | Abonné                                                                   |
+| -------------------------------- | ---------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `production.packing_list_drawn`  | fournil    | la clôture de la journée : une commande, ses lignes, son échéance      | `OnPackingListDrawn` — crée la `packing_order` et ses lignes             |
+| `production.handed_to_packing`   | fournil    | une fournée sort du four : des pièces sont remises au colisage         | `OnHandedToPacking` — `received` de la réserve, un reçu par remise       |
+| `production.return_requested`    | fournil    | une fournée remise est annulée ou décochée                             | `OnReturnRequested` — rend ce qui n'est pas au bac (`PackingReturnDesk`) |
+| `packing.returned`               | colisage   | la réponse à une demande de retour (rendu, éventuellement `0`)         | `OnPackingReturned` (fournil)                                            |
+| `packing.order_packed`           | colisage   | une commande est fermée — clé `packing.order_packed:<orderId>`         | `OnPackingOrderPacked` (commerce) — `markReady`                          |
+| `production.resupply_list_drawn` | fournil    | l'arrêt du plan : un réassort d'un point **servi par transfert** (R3b) | `OnResupplyListDrawn` — crée la `packing_resupply` et ses lignes         |
 
 Les trois abonnés du colisage écrivent par `PackingShadowLedger` : le nom date
 de l'ombre du premier lot, et reste parce que les noms d'abonnés sont les clés
@@ -88,6 +89,34 @@ des reçus déjà posés.
 Les gestes sur les contenants sont **journalisés** (pas publiés) :
 `packing_container.opened | filled | emptied | voided`, sujet la commande.
 Rouvrir une commande ne l'est pas : aucun type de fait n'existe pour lui.
+
+### 2.2 Le réassort (lot R3b, 2026-10-21)
+
+Le fournil fige à l'arrêt si le point d'un réassort est servi par transfert
+(`supply = transfer` au commerce, `production_resupply.served_by_transfer`) et
+ne publie `production.resupply_list_drawn` que pour ceux-là — clé
+`…:<jour>:<resupplyId>`, suffixée `:after-reopening:<instant>` après une
+réouverture. Le Labo (servi sur place) n'a pas de fiche
+([plan du réassort](../reassort-boutiques/plan-reapprovisionnement.md) §13.4).
+
+La fiche (`PackingResupply`) est **à part** de `PackingSheet` : titre
+« Réassort <point> », destination le transfert du point. Le poste saisit la
+quantité réellement emballée par ligne (0 ≤ q ≤ demandée), puis clôt (refusé
+tant qu'une ligne n'est pas saisie). La saisie prend les pièces dans la
+réserve (`packing_stock.packed`) : on n'emballe pas ce qui n'est pas sorti du
+four, et un retour du fournil ne reprend pas ce qui part au point.
+
+- **Progression** : une fiche entamée (ligne saisie, ou close) compte dans
+  `DayPackingProgressReader.startedOn` — la réouverture est refusée.
+- **Réouverture** : `OnProductionDayReopened` retire aussi les fiches
+  intouchées (`resupplyIds`).
+- **Commerce** : `packing/channels/commerce/PackedResuppliesReader`, déclaré et
+  implémenté ici, rend l'emballé d'une fiche close ; la réception du point s'en
+  pré-remplit (`b2b → packing : port uniquement`).
+- **Bacs** : ⚠️ une fiche de réassort n'entre **pas** dans les contenants —
+  `container` porte une clé étrangère vers `packing_order`, et `BinDesk`
+  comme le chargement raisonnent par commande. À trancher avec le transfert
+  (R3c).
 
 ## 3. Le flux d'une journée
 
@@ -256,6 +285,9 @@ les écritures. Les contrôleurs n'injectent que les bus.
 | `GET …/shareable-halves`                               | les moitiés libres d'un bac voisin                        | `production_packing:read`                               |
 | `POST admin/packing/:date/orders/:orderId/close`       | fermer — déclarer prête (`204`)                           | `production_packing:write`                              |
 | `POST admin/packing/:date/orders/:orderId/reopen`      | rouvrir le rangement (`204`)                              | idem                                                    |
+| `GET admin/packing/:date/resupplies`                   | les fiches de réassort du jour (`PackingResuppliesView`)  | `production_packing:read`                               |
+| `PUT …/resupplies/:resupplyId/lines/:sku`              | saisir l'emballé `{ quantity }` (`204`)                   | `production_packing:write`                              |
+| `POST …/resupplies/:resupplyId/close`                  | clore la fiche (`204`)                                    | idem                                                    |
 
 Les écritures rendent peu ou rien : l'écran relit le `board`.
 
@@ -289,16 +321,18 @@ Les écritures rendent peu ou rien : l'écran relit le `board`.
 `production`, `delivery` ni `public` : une commande et un bac y sont des
 identifiants opaques plus un instantané.
 
-| Table             | Clé                            | Ce qu'elle tient                                                                               |
-| ----------------- | ------------------------------ | ---------------------------------------------------------------------------------------------- |
-| `packing_order`   | `(service_day, order_id)`      | la commande reçue : référence, client, mode, échéance, `drawn_at`, fermeture, `container_mode` |
-| `packing_line`    | `(service_day, order_id, sku)` | une ligne due, et sa marque « au bac »                                                         |
-| `packing_stock`   | `(service_day, sku)`           | la réserve : `received`, `returned`, `packed`                                                  |
-| `packing_receipt` | `id`                           | un reçu par remise du fournil (idempotence)                                                    |
-| `packing_return`  | `request_id`                   | une demande de retour et sa réponse                                                            |
-| `container`       | `id`                           | un contenant : `bag` ou `bin` (+ instantané `bin_id`, `bin_code`, `bin_half`), ouvert / annulé |
-| `container_line`  | `(container_id, sku)`          | ce qu'un contenant porte d'un article                                                          |
-| `day_change`      | `id` (auto)                    | le journal de version du poste, lu par la relecture des écrans                                 |
+| Table                   | Clé                               | Ce qu'elle tient                                                                               |
+| ----------------------- | --------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `packing_order`         | `(service_day, order_id)`         | la commande reçue : référence, client, mode, échéance, `drawn_at`, fermeture, `container_mode` |
+| `packing_line`          | `(service_day, order_id, sku)`    | une ligne due, et sa marque « au bac »                                                         |
+| `packing_stock`         | `(service_day, sku)`              | la réserve : `received`, `returned`, `packed`                                                  |
+| `packing_receipt`       | `id`                              | un reçu par remise du fournil (idempotence)                                                    |
+| `packing_return`        | `request_id`                      | une demande de retour et sa réponse                                                            |
+| `container`             | `id`                              | un contenant : `bag` ou `bin` (+ instantané `bin_id`, `bin_code`, `bin_half`), ouvert / annulé |
+| `container_line`        | `(container_id, sku)`             | ce qu'un contenant porte d'un article                                                          |
+| `day_change`            | `id` (auto)                       | le journal de version du poste, lu par la relecture des écrans                                 |
+| `packing_resupply`      | `(service_day, resupply_id)`      | une fiche de réassort (R3b) : point, `drawn_at`, clôture                                       |
+| `packing_resupply_line` | `(service_day, resupply_id, sku)` | demandé, emballé saisi (`0 ≤ packed ≤ quantity`, CHECK)                                        |
 
 ## 8. Ce qui reste en base
 

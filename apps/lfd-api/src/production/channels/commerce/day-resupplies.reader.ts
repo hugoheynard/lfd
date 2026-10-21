@@ -15,6 +15,12 @@ export interface PlacedResupply {
   readonly siteId: string;
   /** Son nom, pour la feuille ; `null` : inconnu du commerce. */
   readonly siteLabel: string | null;
+  /**
+   * Le point est servi par un transfert interne (`supply = transfer` au
+   * commerce, lot R3b) : seul un tel réassort passe au colisage (§13.4,
+   * Q1 révisée). `false` : servi sur place (le Labo), de la feuille à la vitrine.
+   */
+  readonly servedByTransfer: boolean;
   readonly lines: readonly PlacedResupplyLine[];
 }
 

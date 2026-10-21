@@ -1,6 +1,7 @@
 import type { ResupplyReceiptView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
+import { PackedResuppliesReader } from "../../../packing/channels/commerce/index.js";
 import { estimateStock } from "../domain/estimated-stock.js";
 import { ResupplyReceipt } from "../domain/resupply-receipt.js";
 import { ResupplyReceiptReader } from "../domain/resupply-receipt.reader.js";
@@ -25,6 +26,7 @@ export class GetResupplyReceiptHandler implements IQueryHandler<
   constructor(
     private readonly receipts: ResupplyReceiptReader,
     private readonly resupplies: SiteResupplyReader,
+    private readonly packed: PackedResuppliesReader,
   ) {}
 
   async execute(query: GetResupplyReceiptQuery): Promise<ResupplyReceiptView> {
@@ -38,11 +40,17 @@ export class GetResupplyReceiptHandler implements IQueryHandler<
         receipt.resupplyId === null ? [] : [[receipt.resupplyId, receipt] as const],
       ),
     );
-    const receptions = resupplies
+    const served = resupplies
       .filter(isPlaced)
       .filter((resupply) => resupply.cancelled === null || byResupply.has(resupply.id))
-      .sort((a, b) => a.placed.at.getTime() - b.placed.at.getTime() || a.id.localeCompare(b.id))
-      .map((resupply) => receptionView(resupply, byResupply.get(resupply.id) ?? null));
+      .sort((a, b) => a.placed.at.getTime() - b.placed.at.getTime() || a.id.localeCompare(b.id));
+    // L'emballé au colisage, pour l'attendu de ceux qui ne sont pas encore reçus (R3b).
+    const packed = await this.packed.packedOf(
+      served.filter((resupply) => !byResupply.has(resupply.id)).map((resupply) => resupply.id),
+    );
+    const receptions = served.map((resupply) =>
+      receptionView(resupply, byResupply.get(resupply.id) ?? null, packed.get(resupply.id) ?? null),
+    );
     return {
       siteId: query.siteId,
       serviceDay: query.serviceDay,

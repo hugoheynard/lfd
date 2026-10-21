@@ -5,6 +5,7 @@
  * | Pièce                   | Nature           | Ce qu'elle porte                              |
  * | ----------------------- | ---------------- | --------------------------------------------- |
  * | `PackingListDrawnEvent` | fait durable     | une commande à coliser, avec son échéance     |
+ * | `ResupplyListDrawnEvent` | fait durable    | un réassort à coliser (point servi par transfert, R3b) |
  * | `HandedToPackingEvent`  | fait durable     | une fournée sortie = remise au colisage       |
  * | `ReturnRequestedEvent`  | fait durable     | une fournée remise, puis annulée              |
  * | `PackingReturnedEvent`  | fait durable     | la réponse du colisage à un retour            |
@@ -29,6 +30,13 @@ export {
   type PackingListLine,
   type PackingListOrder,
 } from "./packing-list-drawn.event.js";
+export {
+  PRODUCTION_RESUPPLY_LIST_DRAWN,
+  ResupplyListDrawnEvent,
+  ResupplyListDrawnPayloadError,
+  type ResupplyListLine,
+  type ResupplyToPack,
+} from "./resupply-list-drawn.event.js";
 export {
   PRODUCTION_RETURN_REQUESTED,
   ReturnRequestedEvent,

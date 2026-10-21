@@ -17,8 +17,8 @@ export interface ResupplyReceiptLineSnapshot {
  * `reassort-boutiques/plan-reapprovisionnement.md` §12). Aucun montant : un
  * réapprovisionnement est un mouvement interne, jamais une vente.
  *
- * - L'attendu est la quantité DEMANDÉE au réassort (la quantité emballée la
- *   remplacera en R3) ; `null` sur un réassort sans commande, où rien n'était
+ * - L'attendu est la quantité EMBALLÉE au colisage quand elle est connue
+ *   (lot R3b), sinon la quantité DEMANDÉE au réassort ; `null` sur un réassort sans commande, où rien n'était
  *   attendu.
  * - Le reçu est `null` tant que le comptoir n'a pas réceptionné : seul le
  *   reçu fait le stock.
