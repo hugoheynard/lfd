@@ -303,6 +303,12 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   PackingContainer: "packing",
   PackingContainerLine: "packing",
   ProductionReturnRequest: "production",
+  // Le réassort (R3a, R3b, 2026-10-22) : figé au plan du fournil, puis
+  // recopié au colisage pour y être emballé.
+  ProductionResupply: "production",
+  ProductionResupplyLine: "production",
+  PackingResupply: "packing",
+  PackingResupplyLine: "packing",
 };
 
 /** Le schéma d'un modèle, ou le seau du SQL brut quand il n'y a pas de modèle. */

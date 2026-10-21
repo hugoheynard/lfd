@@ -1061,11 +1061,12 @@ Ce qui précise le texte :
   « Stock », la recherche et les onglets du téléphone sont masqués (ils
   parlent des colonnes). Le renvoi n'est montré qu'à qui peut ouvrir
   `/prod-manager/reassorts`.
-- **Rafraîchi** avec les colonnes, au même mécanisme — mais **aucune
-  écriture du réassort ne fait bouger la version du jour** (vérifié le
-  2026-10-22 : `day_change` n'est alimenté que par des déclencheurs sur les
-  commandes, les fournées et les tournées ; rien sur `site_resupply`,
-  `resupply_receipt` ni `stock_alert`). L'onglet se relit donc quand une
-  commande, une fournée ou une tournée du jour bouge, au changement de jour
-  ou au rechargement — pas à la réception d'un réassort. Le fermer demande
-  une migration (déclencheurs) : à décider.
+- **Rafraîchi** avec les colonnes, au même mécanisme. Depuis la migration
+  `20261022140000_le_reassort_fait_bouger_la_journee` (2026-10-22), les
+  écritures du réassort font bouger la version du jour : déclencheurs
+  `day_change` sur `site_resupply`, `resupply_receipt` (commerce),
+  `production_resupply(_line)` (fournil) et `packing_resupply(_line)`
+  (colisage). **Reste une limite** : `site_stock_alert` ne porte aucun jour
+  (une alerte vit par point et par SKU, sans `service_day`) — une alerte
+  déclarée ne relit l'onglet qu'au prochain mouvement du jour ou au
+  rechargement.

@@ -72,18 +72,40 @@ async function holderOf(key: string, grants: readonly RoleGrant[]): Promise<requ
  * l'arrêt automatique n'est plus un réglage du fournil : il suit l'heure
  * limite générale, et la page le lit.
  */
+/** L'heure du réassort, la veille (R3a) — l'autre borne de l'arrêt automatique. */
+async function setResupplyCutoff(time: string): Promise<void> {
+  await admin()
+    .patch("/admin/order-cutoff-settings")
+    .send({ resupplyCutoffTime: time })
+    .expect(204);
+}
+
 describe("l'arrêt automatique, lu de l'heure limite générale", () => {
   it("sans heure limite posée : rien n'arrête le plan seul, aucun jour fermé", async () => {
     expect(await read()).toEqual({ automaticClose: null, closedDays: [] });
   });
 
   it("suit l'heure limite générale, rattrapage compris", async () => {
+    // Depuis R3a, l'arrêt attend la plus tardive de la générale (rattrapage
+    // compris) et de l'heure du réassort (20:00 par défaut) : le réassort est
+    // posé plus tôt, pour que ce soit bien la générale qu'on éprouve.
+    await setResupplyCutoff("18:00");
     await admin()
       .put("/admin/order-cutoffs/general")
       .send({ time: "18:00", daysBefore: 1, graceMinutes: 30 })
       .expect(204);
 
     expect((await read()).automaticClose).toEqual({ daysBefore: 1, time: "18:30" });
+  });
+
+  it("attend l'heure du réassort quand elle tombe plus tard que la générale (R3a)", async () => {
+    await setResupplyCutoff("20:00");
+    await admin()
+      .put("/admin/order-cutoffs/general")
+      .send({ time: "18:00", daysBefore: 1, graceMinutes: 30 })
+      .expect(204);
+
+    expect((await read()).automaticClose).toEqual({ daysBefore: 1, time: "20:00" });
   });
 
   it("ne se règle plus : la route du mode et des heures est retirée", async () => {
@@ -109,7 +131,10 @@ describe("l'arrêt à la main avant l'heure limite (Hugo, 2026-10-21, Q1)", () =
   });
 
   it("passe une fois l'heure limite tombée — ici, sur une journée vide", async () => {
-    // Quatorze jours avant à 00:00 : tombée depuis longtemps pour demain.
+    // Quatorze jours avant à 00:00 : tombée depuis longtemps pour demain. Le
+    // réassort (la veille, donc aujourd'hui) est posé à 00:00 aussi : sans
+    // lui, l'arrêt attendrait 20:00 ce soir (R3a) et le refus serait l'heure.
+    await setResupplyCutoff("00:00");
     await admin()
       .put("/admin/order-cutoffs/general")
       .send({ time: "00:00", daysBefore: 14, graceMinutes: 0 })

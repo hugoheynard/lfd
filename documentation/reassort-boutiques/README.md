@@ -505,11 +505,11 @@ flowchart LR
   réassort, aucun reçu ni alerte ») ; un point archivé n'apparaît, après les
   autres, que s'il porte quelque chose ce jour-là.
 - **Front** : `supervision/stock-board/` ; lu avec les colonnes, au même
-  rythme (`SupervisionReads.stock`) — mais une écriture de réassort, de reçu
-  ou d'alerte ne fait pas bouger la version du jour (aucun déclencheur
-  `day_change` sur leurs tables, vérifié le 2026-10-22) : l'onglet ne se
-  relit qu'au mouvement d'une commande, d'une fournée, d'une tournée, ou au
-  rechargement. En « Stock », la recherche et les
+  rythme (`SupervisionReads.stock`). Un réassort envoyé, figé, emballé ou
+  reçu fait bouger la version du jour (déclencheurs `day_change`, migration
+  `20261022140000`, 2026-10-22) ; une alerte de stock non — elle ne porte
+  pas de jour, et ne se voit qu'au prochain mouvement ou au rechargement.
+  En « Stock », la recherche et les
   onglets du téléphone sont masqués. Le renvoi « Ouvrir le réassort » mène à
   `/prod-manager/reassorts`, montré à qui a `production_worksheet:read` ou
   `production_plan:read`.
