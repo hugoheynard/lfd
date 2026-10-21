@@ -6,6 +6,24 @@
 > dossier) et nomme ce qui embrouille — c'est le point de départ de la
 > simplification, pas une proposition. Entrée du dossier : [`README.md`](README.md).
 
+## 0. Le modèle, en une phrase (Hugo, 2026-10-21)
+
+**Demain se commande avant l'heure limite ; aujourd'hui se prend dans le
+stock.** La seule question est le jour visé — pas la clientèle.
+
+| On commande pour…              | La marchandise vient…                       | Ce qui limite                                                                                  | Qui              |
+| ------------------------------ | ------------------------------------------- | ---------------------------------------------------------------------------------------------- | ---------------- |
+| **demain ou après** (J+1, J+N) | du **plan du fournil**, fabriquée pour elle | l'**heure limite générale** — passée (rattrapage compris), demain est fermé ET le plan se fige | tout le monde    |
+| **aujourd'hui** (J)            | de la **vitrine**, déjà fabriquée           | le **stock disponible**, pas une heure                                                         | les particuliers |
+| un produit **sur commande**    | du plan, avec un délai                      | sa **limite produit** (« 2 jours avant 12 h »), en plus de l'heure générale — la plus stricte  | tout le monde    |
+
+Conséquences : pas de case « s'applique aux particuliers » (l'heure limite
+protège le plan, donc tout le monde) ; le réglage « jour même » n'est pas une
+exception à l'heure limite mais un autre circuit, celui du stock. ⚠️ Le stock
+de la vitrine en temps réel **n'existe pas** (2026-10-21) : tant qu'il manque,
+un particulier commande à partir de demain, comme un pro. La commande à J sur
+stock est un chantier à part.
+
 ## 1. La carte : huit réglages, quatre écrans, quatre droits
 
 ```mermaid
