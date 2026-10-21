@@ -19,9 +19,9 @@
       @default {
         @if (marginsMissing()) {
           <fold-callout variant="info">
-            Les marges de livraison et de retrait ne sont pas toutes deux réglées : la journée n'a
-            qu'une échéance, « la journée ».
-            <a routerLink="/reglages/livraison/zones">Régler les marges</a>
+            Une seule échéance, « la journée » : les marges de production (facultatives) ne sont pas
+            réglées toutes les deux. Les régler découpe la journée selon l'heure de chaque commande.
+            <a routerLink="/reglages/livraison/zones">Marges de production</a>
           </fold-callout>
         }
 
