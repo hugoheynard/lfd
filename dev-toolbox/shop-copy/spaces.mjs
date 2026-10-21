@@ -98,7 +98,12 @@ export const OTHER_SPACES = [
   },
   { kind: "dictionary", space: "nav", title: "La navigation" },
   { kind: "dictionary", space: "aside", title: "La colonne d’accompagnement" },
-  { kind: "dictionary", space: "orders", title: "Mes commandes", file: "screens/orders.copy.ts" },
+  {
+    kind: "dictionary",
+    space: "orders",
+    title: "Mes commandes (récapitulatif compris)",
+    file: "screens/orders.copy.ts · screens/order-summary.copy.ts",
+  },
   {
     kind: "screen",
     space: "orderCancel",
@@ -150,6 +155,7 @@ export const GRAFTED_SCREEN_FILES = {
   "screens/account.it.ts": "account",
   "screens/account-invoices.copy.ts": "account.invoices",
   "screens/orders.copy.ts": "orders",
+  "screens/order-summary.copy.ts": "orders.summary",
   "screens/loyalty.copy.ts": "loyalty",
   "screens/delivery-procedure.fr.ts": "deliveryProcedure",
   "screens/delivery-procedure.en.ts": "deliveryProcedure",

@@ -87,6 +87,7 @@ export class CompanyOrdersController {
    * §6.5). Même mur que la liste ; un id hors du mur → 404 qui le nomme.
    * `format` : `json` (l'écran), `pdf` (A4, lot R2) ou `csv` (tableur, lot R2) —
    * les trois sous les mêmes refus, le nom du fichier dans `Content-Disposition`.
+   * `period`, facultative, n'est qu'imprimée sur le PDF et le tableur (§9).
    */
   @Post(":companyId/orders/summary")
   @HttpCode(HttpStatus.OK)
@@ -97,10 +98,10 @@ export class CompanyOrdersController {
     @Res({ passthrough: true }) response: Response,
   ): Promise<CompanyOrderSummaryView | StreamableFile | string> {
     if (body.format === "pdf") {
-      return this.summaryPdf(user.userId, companyId, body.orderIds, response);
+      return this.summaryPdf(user.userId, companyId, body, response);
     }
     if (body.format === "csv") {
-      return this.summaryCsv(user.userId, companyId, body.orderIds, response);
+      return this.summaryCsv(user.userId, companyId, body, response);
     }
     return this.queries.execute<SummarizeCompanyOrdersQuery, CompanyOrderSummaryView>(
       new SummarizeCompanyOrdersQuery(user.userId, companyId, body.orderIds),
@@ -110,13 +111,13 @@ export class CompanyOrdersController {
   private async summaryPdf(
     userId: string,
     companyId: string,
-    orderIds: readonly string[],
+    body: CompanyOrderSummaryRequest,
     response: Response,
   ): Promise<StreamableFile> {
     const file = await this.queries.execute<
       ExportCompanyOrderSummaryPdfQuery,
       CompanyOrderSummaryPdfFile
-    >(new ExportCompanyOrderSummaryPdfQuery(userId, companyId, orderIds));
+    >(new ExportCompanyOrderSummaryPdfQuery(userId, companyId, body.orderIds, body.period ?? null));
     response.setHeader("Content-Type", "application/pdf");
     response.setHeader(
       "Content-Disposition",
@@ -128,13 +129,13 @@ export class CompanyOrdersController {
   private async summaryCsv(
     userId: string,
     companyId: string,
-    orderIds: readonly string[],
+    body: CompanyOrderSummaryRequest,
     response: Response,
   ): Promise<string> {
     const file = await this.queries.execute<
       ExportCompanyOrderSummaryCsvQuery,
       CompanyOrderSummaryCsvFile
-    >(new ExportCompanyOrderSummaryCsvQuery(userId, companyId, orderIds));
+    >(new ExportCompanyOrderSummaryCsvQuery(userId, companyId, body.orderIds, body.period ?? null));
     response.setHeader("Content-Type", "text/csv; charset=utf-8");
     response.setHeader(
       "Content-Disposition",

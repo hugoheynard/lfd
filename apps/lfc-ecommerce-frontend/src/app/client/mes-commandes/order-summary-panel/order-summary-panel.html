@@ -1,0 +1,98 @@
+<fold-panel-header [title]="copy().title" [subtitle]="subtitle()" [closeLabel]="closeLabel()" />
+
+<fold-panel-body>
+  @switch (state().kind) {
+    @case ('loading') {
+      <fold-loading [message]="copy().loading" />
+    }
+    @case ('refused') {
+      <fold-callout variant="alert" announce data-summary-refused>{{ refusal() }}</fold-callout>
+    }
+    @default {
+      <fold-callout appearance="inset" variant="info" data-summary-amounts>{{
+        copy().amountsNote
+      }}</fold-callout>
+      <p class="selection" data-summary-selection>{{ selectionLine() }}</p>
+
+      <div class="acts">
+        <button
+          foldButton
+          size="sm"
+          emphasis="outline"
+          intent="neutral"
+          icon="download"
+          type="button"
+          data-summary-pdf
+          [loading]="exporting() === 'pdf'"
+          (click)="download('pdf')"
+        >
+          {{ copy().pdf }}
+        </button>
+        <button
+          foldButton
+          size="sm"
+          emphasis="outline"
+          intent="neutral"
+          icon="download"
+          type="button"
+          data-summary-csv
+          [loading]="exporting() === 'csv'"
+          (click)="download('csv')"
+        >
+          {{ copy().csv }}
+        </button>
+      </div>
+      @if (exportRefusal(); as message) {
+        <fold-callout variant="alert" announce data-summary-export-refused>{{
+          message
+        }}</fold-callout>
+      }
+
+      @if (companies().length === 0) {
+        <p class="selection" data-summary-none>{{ copy().noneCounted }}</p>
+      }
+      @for (block of companies(); track block.key) {
+        <ng-container [ngTemplateOutlet]="table" [ngTemplateOutletContext]="{ $implicit: block }" />
+      }
+      @if (total(); as block) {
+        <ng-container [ngTemplateOutlet]="table" [ngTemplateOutletContext]="{ $implicit: block }" />
+      }
+
+      @if (excluded().length > 0) {
+        <section class="block" data-summary-excluded>
+          <fold-element-title variant="caps" [title]="copy().excludedHead" />
+          <ul class="excluded">
+            @for (order of excluded(); track order.orderId) {
+              <li>{{ order.text }}</li>
+            }
+          </ul>
+        </section>
+      }
+    }
+  }
+</fold-panel-body>
+
+<!-- Une table : le titre et son compte, les produits s'il y en a, le bas. -->
+<ng-template #table let-block>
+  <section class="block" [attr.data-summary-block]="block.key">
+    <fold-element-title variant="title" [title]="block.title" [subtitle]="block.count" />
+    @if (block.products.length > 0) {
+      <fold-data-table
+        narrowLayout="cards"
+        density="compact"
+        [caption]="block.title"
+        [columns]="columns()"
+        [rows]="block.products"
+        [rowKey]="productKey"
+      />
+    }
+    <dl class="bottom">
+      @for (line of block.bottom; track line.label) {
+        <div class="bottom-line" [class.bottom-line--strong]="line.strong">
+          <dt>{{ line.label }}</dt>
+          <dd>{{ line.amount }}</dd>
+        </div>
+      }
+    </dl>
+  </section>
+</ng-template>

@@ -5,6 +5,8 @@ import {
   type OrderSummaryExclusionReason,
 } from "@lfd/contracts";
 
+import type { OrderSummaryPeriod } from "./order-summary-period.js";
+
 /**
  * **Ce que le PDF et le tableur du récapitulatif disent en commun** (plan
  * `documentation/commandes/plan-recapitulatif-des-commandes.md`, lot R2) — les
@@ -19,6 +21,11 @@ export interface OrderSummaryPaper {
   readonly requesterName: string;
   /** L'instant du rendu, lu au `Clock`. */
   readonly generatedAt: Date;
+  /**
+   * Les bornes du filtre affiché à la sélection (§9) — imprimées, jamais
+   * relues contre les commandes ; `null` : aucune borne posée.
+   */
+  readonly period: OrderSummaryPeriod | null;
 }
 
 export const SUMMARY_TITLE = "Récapitulatif de commandes — montants à la commande";

@@ -10,6 +10,8 @@ import {
   summarizeOrders,
   summarySelectionOf,
 } from "../../domain/services/order-summary.js";
+import type { OrderSummaryPeriod } from "../../domain/services/order-summary-period.js";
+import { companyOrderDayRangeOf } from "./company-order-day-range.js";
 
 /** Qui demande le récapitulatif, pour quelle société, et quelles commandes. */
 export interface CompanyOrderSummaryRequestScope {
@@ -59,4 +61,26 @@ export async function summaryRequesterName(
     throw new OrderCompanyNotFoundError(companyId);
   }
   return name;
+}
+
+/** Les bornes telles que le corps les porte : chacune facultative. */
+export interface RequestedSummaryPeriod {
+  readonly from?: string | undefined;
+  readonly to?: string | undefined;
+}
+
+/**
+ * La période à imprimer (§9) : les mêmes vérifications que le filtre de la
+ * liste — jour existant, début ≤ fin —, faites AVANT toute lecture. `null`
+ * quand aucune borne n'est posée. Informative : elle ne touche pas à la
+ * sélection.
+ *
+ * @throws {InvalidOrderListDayError} un jour qui n'existe pas au calendrier.
+ * @throws {InvertedOrderDayRangeError} le début suit la fin.
+ */
+export function summaryPeriodOf(
+  requested: RequestedSummaryPeriod | null,
+): OrderSummaryPeriod | null {
+  const range = companyOrderDayRangeOf(requested?.from ?? null, requested?.to ?? null);
+  return range.from === null && range.to === null ? null : range;
 }

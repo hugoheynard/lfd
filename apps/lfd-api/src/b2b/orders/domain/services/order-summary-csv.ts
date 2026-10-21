@@ -11,6 +11,7 @@ import {
   summaryBottomRows,
   TOTAL_LABEL,
 } from "./order-summary-paper.js";
+import { periodSentence } from "./order-summary-period.js";
 
 /**
  * **Le récapitulatif au tableur** (plan
@@ -31,6 +32,7 @@ export function renderOrderSummaryCsv(paper: OrderSummaryPaper): string {
       csvQuoted(paper.requesterName),
       csvQuoted(`Généré le ${parisDateTime(paper.generatedAt)}`),
     ]),
+    ...periodRows(paper),
     line([csvQuoted(selectionSentence(summary))]),
     line([csvQuoted(SUMMARY_SCOPE_NOTE)]),
     "",
@@ -40,6 +42,12 @@ export function renderOrderSummaryCsv(paper: OrderSummaryPaper): string {
     ...excludedRows(paper),
   ];
   return `${CSV_BOM}${rows.join("\r\n")}\r\n`;
+}
+
+/** La période du filtre (§9), sur sa ligne — aucune sans borne. */
+function periodRows(paper: OrderSummaryPaper): readonly string[] {
+  const period = periodSentence(paper.period);
+  return period === null ? [] : [line([csvQuoted(period)])];
 }
 
 function line(cells: readonly string[]): string {

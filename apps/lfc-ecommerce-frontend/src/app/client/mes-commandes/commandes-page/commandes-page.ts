@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
   FoldElementTitleComponent,
@@ -18,7 +25,7 @@ import { NewOrderAction } from '../../nav/new-order-action/new-order-action';
 import { ClientChrome } from '../../client-chrome.service';
 import { ClientCopyService } from '../../copy/client-copy.service';
 import { ClientCompany } from '../../client-company.service';
-import { ClientOrderHistory } from '../client-order-history.service';
+import { ClientOrderHistory, type OrderDays } from '../client-order-history.service';
 import { OrderSheetService } from '../order-sheet.service';
 import { downloadBlob } from '../download-blob';
 import {
@@ -33,6 +40,9 @@ import { HistoryTable } from '../history-table/history-table';
 import { NotifyService } from '../../../notify.service';
 import { ReportDialog } from '../report-dialog/report-dialog';
 import { TrackCard } from '../track-card/track-card';
+import { OrderDayFilter } from '../order-day-filter/order-day-filter';
+import { OrderSelectionBar } from '../order-selection-bar/order-selection-bar';
+import { OrderSummaryPanel } from '../order-summary-panel/order-summary-panel';
 
 /** L'option « Tous les sites » — aucun identifiant de société n'est vide. */
 const ALL_SITES = '';
@@ -74,6 +84,8 @@ const ALL_SITES = '';
     FoldWellComponent,
     HistoryTable,
     NewOrderAction,
+    OrderDayFilter,
+    OrderSelectionBar,
     TrackCard,
   ],
   templateUrl: './commandes-page.html',
@@ -130,6 +142,31 @@ export class CommandesPage {
     ];
   });
 
+  /**
+   * Une société est ouverte : le filtre de jours, les cases et le
+   * récapitulatif paraissent (plan du récapitulatif, R3). Le perso n'en a pas
+   * (§6.8) — `GET /orders/mine` n'a ni filtre ni récapitulatif.
+   */
+  protected readonly inCompany = computed(() => this.client.company() !== null);
+
+  protected readonly days = this.history_.days;
+
+  /** Les cases cochées, par référence — la clé de ligne de la table. */
+  protected readonly selected = signal<ReadonlySet<string | number>>(new Set());
+
+  /**
+   * Les commandes cochées ET affichées : une ligne qu'un filtre a fait sortir
+   * de la liste ne part pas au récapitulatif sans qu'on la voie.
+   */
+  private readonly selectedIds = computed(() => {
+    const keys = this.selected();
+    return this.history()
+      .filter((order) => keys.has(order.reference))
+      .map((order) => order.id);
+  });
+
+  protected readonly selectedCount = computed(() => this.selectedIds().length);
+
   protected readonly chosenSite = computed(() => this.history_.site() ?? ALL_SITES);
 
   /**
@@ -157,6 +194,24 @@ export class CommandesPage {
   /** Le filtre est RELU au serveur (`?site=`) : le mur est dans sa requête. */
   protected chooseSite(site: string): void {
     this.history_.chooseSite(site === ALL_SITES ? null : site);
+  }
+
+  /** Les bornes sont RELUES au serveur (`?from=&to=`), combinées au site. */
+  protected chooseDays(days: OrderDays): void {
+    this.history_.chooseDays(days);
+  }
+
+  /** Le récapitulatif de ce qui est coché, avec la période affichée — calculé au serveur. */
+  protected summarize(): void {
+    const company = this.client.company();
+    if (company === null || this.selectedIds().length === 0) {
+      return;
+    }
+    OrderSummaryPanel.open(this.panels, {
+      companyId: company.id,
+      orderIds: this.selectedIds(),
+      period: this.history_.days(),
+    });
   }
 
   /** Une commande vient d'être annulée : la liste se relit, le suivi la quitte. */

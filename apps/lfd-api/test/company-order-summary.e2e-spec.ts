@@ -256,6 +256,35 @@ describe("le récapitulatif en PDF et au tableur (lot R2) — même mur, mêmes 
     expect(csv).toContain('"Total général";"Total TTC";"";;10,55');
   });
 
+  it("CSV : la période du corps est imprimée, et ne retire aucune commande (§9)", async () => {
+    const g = await group();
+    const boss = await principalMember(g, CustomerRole.owner);
+    const own = await accountOrder(g.principal, boss);
+    // Bornes sans rapport avec le jour de la commande : informatives, les ids font foi.
+    const period = { from: "2020-01-01", to: "2020-01-15" };
+
+    const response = await ctx
+      .asSub(boss.sub)
+      .post(`/companies/${g.principal}/orders/summary`)
+      .send({ orderIds: [own], format: "csv", period })
+      .expect(200);
+
+    expect(response.text).toContain("Retraits et livraisons du 1er au 15 janvier 2020");
+    expect(response.text).toContain('"Croissant";"VIE-001";1;1,00');
+  });
+
+  it("une période mal formée : 400", async () => {
+    const g = await group();
+    const boss = await principalMember(g, CustomerRole.owner);
+    const own = await accountOrder(g.principal, boss);
+
+    await ctx
+      .asSub(boss.sub)
+      .post(`/companies/${g.principal}/orders/summary`)
+      .send({ orderIds: [own], format: "pdf", period: { from: "2020-02-30" } })
+      .expect(400);
+  });
+
   it.each(["pdf", "csv"] as const)(
     "%s : un site ne peut pas inclure une commande de son frère — 404 qui la nomme",
     async (format) => {

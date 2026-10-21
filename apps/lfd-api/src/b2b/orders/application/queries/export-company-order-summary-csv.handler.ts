@@ -6,7 +6,11 @@ import { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
 import { OrderSummaryRequesterReader } from "../../domain/ports/order-summary-requester.reader.js";
 import { renderOrderSummaryCsv } from "../../domain/services/order-summary-csv.js";
 import { orderSummaryFileName } from "../../domain/services/order-summary-paper.js";
-import { loadCompanyOrderSummary, summaryRequesterName } from "./company-order-summary-support.js";
+import {
+  loadCompanyOrderSummary,
+  summaryPeriodOf,
+  summaryRequesterName,
+} from "./company-order-summary-support.js";
 import { ExportCompanyOrderSummaryCsvQuery } from "./export-company-order-summary-csv.query.js";
 
 /** Ce que la route sert : le texte du tableur et son nom. */
@@ -32,9 +36,10 @@ export class ExportCompanyOrderSummaryCsvHandler implements IQueryHandler<
   ) {}
 
   async execute(query: ExportCompanyOrderSummaryCsvQuery): Promise<CompanyOrderSummaryCsvFile> {
+    const period = summaryPeriodOf(query.period);
     const summary = await loadCompanyOrderSummary(this.guard, this.orders, query);
     const requesterName = await summaryRequesterName(this.requester, query.companyId);
-    const paper = { summary, requesterName, generatedAt: this.clock.now() };
+    const paper = { summary, requesterName, generatedAt: this.clock.now(), period };
     return { fileName: orderSummaryFileName(paper, "csv"), csv: renderOrderSummaryCsv(paper) };
   }
 }

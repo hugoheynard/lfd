@@ -49,6 +49,7 @@ function paper(over: Partial<CompanyOrderSummaryView> = {}): OrderSummaryPaper {
   return {
     requesterName: "Café du Port & Fils",
     generatedAt: GENERATED_AT,
+    period: null,
     summary: {
       amountsAt: "placement",
       companies,
@@ -145,6 +146,31 @@ describe("le récapitulatif en PDF", () => {
     const second = await renderOrderSummaryPdf(paper(), LOGO);
 
     expect(first.equals(second)).toBe(true);
+  });
+});
+
+describe("la période du filtre (§9)", () => {
+  const withPeriod = (): OrderSummaryPaper => ({
+    ...paper(),
+    period: { from: "2026-10-01", to: "2026-10-15" },
+  });
+
+  it("le PDF l'imprime en plus de la sélection", async () => {
+    const text = pdfText(await renderOrderSummaryPdf(withPeriod(), LOGO));
+    expect(text).toContain("Retraits et livraisons du 1er au 15 octobre 2026");
+    expect(text).toContain("Sélection de 5 commandes");
+  });
+
+  it("le tableur l'écrit sur sa ligne, avant la sélection", () => {
+    const csv = renderOrderSummaryCsv(withPeriod());
+    expect(csv).toContain('"Retraits et livraisons du 1er au 15 octobre 2026"\r\n"Sélection');
+  });
+
+  it("sans période, aucun des deux ne l'invente", async () => {
+    expect(renderOrderSummaryCsv(paper())).not.toContain("Retraits et livraisons");
+    expect(pdfText(await renderOrderSummaryPdf(paper(), LOGO))).not.toContain(
+      "Retraits et livraisons",
+    );
   });
 });
 

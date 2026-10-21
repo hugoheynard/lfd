@@ -1,3 +1,10 @@
+import {
+  ORDER_SUMMARY_EN,
+  ORDER_SUMMARY_FR,
+  ORDER_SUMMARY_IT,
+  type OrderSummaryCopy,
+} from './order-summary.copy';
+
 /**
  * Ce que dit `/mes-commandes`, dans les trois langues.
  *
@@ -62,6 +69,8 @@ export interface OrdersCopy {
   /** Le libellé du filtre par site. */
   readonly filterSite: string;
   readonly filterAllSites: string;
+  /** Le filtre de jours, la sélection et le récapitulatif (lot R3). */
+  readonly summary: OrderSummaryCopy;
   /** `{name}` est remplacé par « Prénom N. », l'auteur figé de la commande. */
   readonly authorCustomer: string;
   /** La commande a été saisie par l'équipe de la maison. */
@@ -219,6 +228,7 @@ export const ORDERS_FR: OrdersCopy = {
   colSite: 'Site',
   filterSite: 'Site',
   filterAllSites: 'Tous les sites',
+  summary: ORDER_SUMMARY_FR,
   authorCustomer: 'passée par {name}',
   authorTeam: 'par l’équipe',
   detailSite: 'Site',
@@ -329,6 +339,7 @@ export const ORDERS_EN: OrdersCopy = {
   colSite: 'Site',
   filterSite: 'Site',
   filterAllSites: 'All sites',
+  summary: ORDER_SUMMARY_EN,
   authorCustomer: 'placed by {name}',
   authorTeam: 'by our team',
   detailSite: 'Site',
@@ -439,6 +450,7 @@ export const ORDERS_IT: OrdersCopy = {
   colSite: 'Sede',
   filterSite: 'Sede',
   filterAllSites: 'Tutte le sedi',
+  summary: ORDER_SUMMARY_IT,
   authorCustomer: 'effettuato da {name}',
   authorTeam: 'dal nostro team',
   detailSite: 'Sede',

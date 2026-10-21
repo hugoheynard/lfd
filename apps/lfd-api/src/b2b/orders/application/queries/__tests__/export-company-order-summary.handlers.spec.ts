@@ -3,7 +3,10 @@ import type { Buffer } from "node:buffer";
 import { BrandLogoSource } from "../../../../../platform/brand/brand-logo.source.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { OrderCompanyNotFoundError } from "../../../domain/errors/order-errors.js";
-import { OrderSummaryOrdersNotFoundError } from "../../../domain/errors/order-summary-errors.js";
+import {
+  InvertedOrderDayRangeError,
+  OrderSummaryOrdersNotFoundError,
+} from "../../../domain/errors/order-summary-errors.js";
 import {
   CompanyOrderSummaryReader,
   type CompanyOrderSummaryScope,
@@ -143,6 +146,36 @@ describe("le récapitulatif imprimé et au tableur (lot R2)", () => {
         new ExportCompanyOrderSummaryCsvQuery("usr_1", "co_principal", ["o1", "o_frere"]),
       ),
     ).rejects.toEqual(new OrderSummaryOrdersNotFoundError(["o_frere"]));
+  });
+
+  it("la période du corps est imprimée, la sélection reste celle des ids (§9)", async () => {
+    const reader = new RecordingSummary([source("o1")]);
+
+    const file = await csvHandler(reader).execute(
+      new ExportCompanyOrderSummaryCsvQuery("usr_1", "co_principal", ["o1"], {
+        from: "2026-10-01",
+        to: "2026-10-15",
+      }),
+    );
+
+    expect(reader.scopes).toEqual([
+      { actorUserId: "usr_1", companyId: "co_principal", orderIds: ["o1"] },
+    ]);
+    expect(file.csv).toContain("Retraits et livraisons du 1er au 15 octobre 2026");
+  });
+
+  it("une période inversée est refusée avant toute lecture", async () => {
+    const reader = new RecordingSummary([source("o1")]);
+
+    await expect(
+      pdfHandler(reader).execute(
+        new ExportCompanyOrderSummaryPdfQuery("usr_1", "co_principal", ["o1"], {
+          from: "2026-10-15",
+          to: "2026-10-01",
+        }),
+      ),
+    ).rejects.toBeInstanceOf(InvertedOrderDayRangeError);
+    expect(reader.scopes).toEqual([]);
   });
 
   it("sans rattachement : 404, et rien n'est lu", async () => {

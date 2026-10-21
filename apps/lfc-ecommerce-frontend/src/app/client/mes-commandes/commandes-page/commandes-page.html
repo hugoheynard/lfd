@@ -48,16 +48,19 @@
       [subtitle]="t().orders.historyNote"
     />
 
-    @if (withSites()) {
+    @if (inCompany()) {
       <div class="filters">
-        <fold-listbox
-          size="sm"
-          data-filter-site
-          [label]="t().orders.filterSite"
-          [options]="siteOptions()"
-          [value]="chosenSite()"
-          (selectionChange)="chooseSite($event)"
-        />
+        @if (withSites()) {
+          <fold-listbox
+            size="sm"
+            data-filter-site
+            [label]="t().orders.filterSite"
+            [options]="siteOptions()"
+            [value]="chosenSite()"
+            (selectionChange)="chooseSite($event)"
+          />
+        }
+        <app-order-day-filter [days]="days()" (daysChange)="chooseDays($event)" />
       </div>
     }
 
@@ -65,9 +68,13 @@
       [orders]="history()"
       [withSites]="withSites()"
       [openOrderId]="openOrderId"
+      [selectable]="inCompany()"
+      [(selected)]="selected"
       (problemRaised)="report($event)"
       (orderCancelled)="reload()"
       (purchaseOrderRequested)="downloadSheet($event)"
-    />
+    >
+      <app-order-selection-bar historyToolbar [count]="selectedCount()" (summarize)="summarize()" />
+    </app-history-table>
   </fold-page-section>
 </div>

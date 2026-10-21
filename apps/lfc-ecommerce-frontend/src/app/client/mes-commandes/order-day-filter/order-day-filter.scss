@@ -1,0 +1,19 @@
+.filter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+/* Les deux champs côte à côte, et le bouton calé sur leur ligne de base. */
+.fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--fold-space-md);
+}
+
+.note {
+  margin: 0;
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+}

@@ -5,6 +5,7 @@ import {
   inject,
   input,
   linkedSignal,
+  model,
   output,
   signal,
 } from '@angular/core';
@@ -82,6 +83,19 @@ export class HistoryTable {
     computation: (key) => (key === null ? new Set() : new Set([key])),
   });
 
+  /**
+   * Les cases à cocher du récapitulatif (lot R3 du plan du récapitulatif) —
+   * l'écran ne les montre que dans une société : `GET /orders/mine` n'a pas de
+   * récapitulatif (§6.8).
+   */
+  readonly selectable = input(false);
+
+  /**
+   * Les commandes cochées, par RÉFÉRENCE (la clé de ligne). La case d'en-tête
+   * de la table coche tout ce qui est AFFICHÉ, et rien d'autre.
+   */
+  readonly selected = model<ReadonlySet<string | number>>(new Set());
+
   /** Le signalement — l'écran décide de la surface qui l'accueille. */
   readonly problemRaised = output<HistoryOrder>();
 
@@ -130,7 +144,13 @@ export class HistoryTable {
   protected readonly labels = computed(() => ({
     expandRow: this.t().orders.expand,
     collapseRow: this.t().orders.collapse,
+    selectAll: this.t().orders.summary.selectAll,
+    selectRow: this.t().orders.summary.selectRow,
   }));
+
+  /** Le nom d'une case : la référence que le client lit. */
+  protected readonly selectionLabel = (order: HistoryOrder): string =>
+    `${this.t().orders.summary.selectRow} ${order.reference}`;
 
   protected readonly key = (order: HistoryOrder): string => order.reference;
 

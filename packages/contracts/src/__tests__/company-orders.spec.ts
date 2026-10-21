@@ -41,4 +41,20 @@ describe("companyOrderSummaryRequestSchema", () => {
       companyOrderSummaryRequestSchema.safeParse({ orderIds: ["o1"], format: "xlsx" }).success,
     ).toBe(false);
   });
+
+  it("accepte une période facultative, bornes AAAA-MM-JJ chacune facultative (R3)", () => {
+    expect(
+      companyOrderSummaryRequestSchema.parse({
+        orderIds: ["o1"],
+        format: "pdf",
+        period: { from: "2026-10-01" },
+      }).period,
+    ).toEqual({ from: "2026-10-01" });
+    expect(
+      companyOrderSummaryRequestSchema.safeParse({
+        orderIds: ["o1"],
+        period: { from: "01/10/2026" },
+      }).success,
+    ).toBe(false);
+  });
 });

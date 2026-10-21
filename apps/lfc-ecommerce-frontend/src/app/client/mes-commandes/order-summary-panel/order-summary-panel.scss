@@ -1,0 +1,66 @@
+/* Même montage que `mandate-panel` : l'hôte se borne, `fold-panel-body` défile. */
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.selection {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+.acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+}
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+/* Le bas, cadré à droite comme le pavé d'une facture. */
+.bottom {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  align-self: flex-end;
+  width: min(100%, 360px);
+  margin: 0;
+}
+
+.bottom-line {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+  font-size: var(--fold-text-sm);
+
+  dt,
+  dd {
+    margin: 0;
+  }
+
+  dd {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.bottom-line--strong {
+  padding-top: var(--fold-space-xs);
+  border-top: 1px solid var(--fold-color-border);
+  font-weight: var(--fold-weight-bold);
+}
+
+.excluded {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  padding-left: var(--fold-space-lg);
+  font-size: var(--fold-text-sm);
+}

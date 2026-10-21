@@ -1,0 +1,23 @@
+<div class="bar">
+  <div class="line">
+    <span class="count" data-selection-count>{{ label() }}</span>
+    <button
+      foldButton
+      size="sm"
+      emphasis="solid"
+      intent="primary"
+      icon="receipt"
+      type="button"
+      data-summarize
+      [disabled]="count() === 0 || over()"
+      (click)="summarize.emit()"
+    >
+      {{ copy().open }}
+    </button>
+  </div>
+  @if (over()) {
+    <fold-callout variant="warning" announce data-selection-cap>{{ capExceeded() }}</fold-callout>
+  } @else {
+    <p class="hint" data-selection-hint>{{ capHint() }}</p>
+  }
+</div>

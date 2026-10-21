@@ -71,6 +71,13 @@ export type OrderSummaryFormat = (typeof ORDER_SUMMARY_FORMATS)[number];
 export const companyOrderSummaryRequestSchema = z.object({
   orderIds: z.array(z.string().min(1)).min(1),
   format: z.enum(ORDER_SUMMARY_FORMATS).default("json"),
+  /**
+   * Les bornes du filtre AFFICHÉ quand la sélection a été faite (lot R3,
+   * §9) — purement informatives : le PDF et le tableur les impriment, elles
+   * n'élargissent ni ne restreignent la sélection (les ids font foi). Mêmes
+   * règles que le filtre de la liste.
+   */
+  period: z.object({ from: orderDaySchema.optional(), to: orderDaySchema.optional() }).optional(),
 });
 export type CompanyOrderSummaryRequest = z.infer<typeof companyOrderSummaryRequestSchema>;
 

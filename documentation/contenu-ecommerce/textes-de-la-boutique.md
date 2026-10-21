@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1438 textes
+## Sommaire — 1481 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -38,7 +38,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le cadre — bandeaux, installation, erreurs générales](#espace-chrome) | `chrome` | 39 |
 | [La navigation](#espace-nav) | `nav` | 24 |
 | [La colonne d’accompagnement](#espace-aside) | `aside` | 4 |
-| [Mes commandes](#espace-orders) | `orders` | 105 |
+| [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 148 |
 | [Annuler une commande — Mes commandes et la page invité](#espace-ordercancel) | `orderCancel` | 54 |
 | [Fidélité](#espace-loyalty) | `loyalty` | 38 |
 | [Mon compte (factures comprises)](#espace-account) | `account` | 525 |
@@ -47,7 +47,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
-| **Total** | | **1438** |
+| **Total** | | **1481** |
 
 ## Le parcours de commande
 
@@ -884,9 +884,9 @@ Source : `fr.ts · en.ts · it.ts` · 4 textes.
 
 <a id="espace-orders"></a>
 
-### Mes commandes — `orders`
+### Mes commandes (récapitulatif compris) — `orders`
 
-Source : `screens/orders.copy.ts` · 105 textes.
+Source : `screens/orders.copy.ts · screens/order-summary.copy.ts` · 148 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -918,6 +918,49 @@ Source : `screens/orders.copy.ts` · 105 textes.
 | `orders.colSite` | Site | Site | Sede |  |
 | `orders.filterSite` | Site | Site | Sede |  |
 | `orders.filterAllSites` | Tous les sites | All sites | Tutte le sedi |  |
+| `orders.summary.filterFrom` | Du | From | Dal |  |
+| `orders.summary.filterTo` | Au | To | Al |  |
+| `orders.summary.filterClear` | Effacer les dates | Clear dates | Cancella le date |  |
+| `orders.summary.filterUndated` | Les commandes sans date de retrait n’apparaissent pas. | Orders without a pickup date are not shown. | Gli ordini senza data di ritiro non compaiono. |  |
+| `orders.summary.selectedMany` | {n} sélectionnées | {n} selected | {n} selezionati | `{n}` |
+| `orders.summary.selectedOne` | 1 sélectionnée | 1 selected | 1 selezionato |  |
+| `orders.summary.selectedNone` | Aucune sélectionnée | None selected | Nessuno selezionato |  |
+| `orders.summary.capHint` | Jusqu’à {max} commandes par récapitulatif. | Up to {max} orders per summary. | Fino a {max} ordini per riepilogo. | `{max}` |
+| `orders.summary.capExceeded` | Le récapitulatif porte au plus {max} commandes : retirez-en {extra}. | A summary covers at most {max} orders: remove {extra}. | Il riepilogo comprende al massimo {max} ordini: togline {extra}. | `{max}` `{extra}` |
+| `orders.summary.selectAll` | Sélectionner toutes les commandes affichées | Select every order shown | Seleziona tutti gli ordini visualizzati |  |
+| `orders.summary.selectRow` | Sélectionner la commande | Select the order | Seleziona l’ordine |  |
+| `orders.summary.open` | Récapitulatif | Summary | Riepilogo |  |
+| `orders.summary.title` | Récapitulatif | Summary | Riepilogo |  |
+| `orders.summary.selection` | Sélection de {n} commandes | Selection of {n} orders | Selezione di {n} ordini | `{n}` |
+| `orders.summary.periodBetween` | Retraits et livraisons du {from} au {to} | Pickups and deliveries from {from} to {to} | Ritiri e consegne dal {from} al {to} | `{from}` `{to}` |
+| `orders.summary.periodFrom` | Retraits et livraisons à partir du {from} | Pickups and deliveries from {from} | Ritiri e consegne dal {from} | `{from}` |
+| `orders.summary.periodTo` | Retraits et livraisons jusqu’au {to} | Pickups and deliveries until {to} | Ritiri e consegne fino al {to} | `{to}` |
+| `orders.summary.loading` | Récapitulatif en cours… | Building the summary… | Riepilogo in corso… |  |
+| `orders.summary.amountsNote` | Montants à la commande : remboursements et avoirs postérieurs non déduits. Le relevé comptable, ce sont les factures. | Amounts as ordered: later refunds and credit notes are not deducted. The accounting statement is the invoices. | Importi all’ordine: rimborsi e note di credito successivi non dedotti. Il rendiconto contabile sono le fatture. |  |
+| `orders.summary.colProduct` | Produit | Product | Prodotto |  |
+| `orders.summary.colSku` | SKU | SKU | SKU |  |
+| `orders.summary.colQuantity` | Qté | Qty | Qtà |  |
+| `orders.summary.colHt` | Total HT | Total excl. VAT | Totale IVA esclusa |  |
+| `orders.summary.orderCountMany` | {n} commandes | {n} orders | {n} ordini | `{n}` |
+| `orders.summary.orderCountOne` | 1 commande | 1 order | 1 ordine |  |
+| `orders.summary.subtotal` | Sous-total HT | Subtotal excl. VAT | Subtotale IVA esclusa |  |
+| `orders.summary.discount` | Remises | Discounts | Sconti |  |
+| `orders.summary.voucher` | Bons de fidélité | Loyalty vouchers | Buoni fedeltà |  |
+| `orders.summary.deliveryFee` | Livraison | Delivery | Consegna |  |
+| `orders.summary.lateFee` | Surtaxes de commande tardive | Late order surcharges | Maggiorazioni per ordine tardivo |  |
+| `orders.summary.vat` | TVA {rate} | VAT {rate} | IVA {rate} | `{rate}` |
+| `orders.summary.unventilatedVat` | dont TVA non ventilée | of which VAT not broken down | di cui IVA non ripartita |  |
+| `orders.summary.total` | Total TTC | Total incl. VAT | Totale IVA inclusa |  |
+| `orders.summary.grandTotal` | Total général | Grand total | Totale generale |  |
+| `orders.summary.noneCounted` | Aucune commande comptée dans cette sélection. | No order counted in this selection. | Nessun ordine conteggiato in questa selezione. |  |
+| `orders.summary.excludedHead` | Commandes exclues des totaux | Orders left out of the totals | Ordini esclusi dai totali |  |
+| `orders.summary.excludedCancelled` | annulée | cancelled | annullato |  |
+| `orders.summary.excludedPending` | paiement en attente | payment pending | pagamento in attesa |  |
+| `orders.summary.excludedFailed` | paiement refusé | payment refused | pagamento rifiutato |  |
+| `orders.summary.pdf` | PDF | PDF | PDF |  |
+| `orders.summary.csv` | Tableur | Spreadsheet | Foglio di calcolo |  |
+| `orders.summary.failed` | Le récapitulatif n’a pas pu être établi. Réessayez dans un instant. | The summary could not be built. Try again in a moment. | Non è stato possibile preparare il riepilogo. Riprova tra un istante. |  |
+| `orders.summary.exportFailed` | Le fichier n’a pas pu être produit. Réessayez dans un instant. | The file could not be produced. Try again in a moment. | Non è stato possibile produrre il file. Riprova tra un istante. |  |
 | `orders.authorCustomer` | passée par {name} | placed by {name} | effettuato da {name} | `{name}` |
 | `orders.authorTeam` | par l’équipe | by our team | dal nostro team |  |
 | `orders.detailSite` | Site | Site | Sede |  |

@@ -4,8 +4,16 @@
   [rows]="orders()"
   [rowKey]="key"
   [labels]="labels()"
+  [selectable]="selectable()"
+  [selectionLabel]="selectionLabel"
+  [(selected)]="selected"
   [(expanded)]="expanded"
 >
+  <!-- Le compteur et le bouton du récapitulatif, fournis par l'écran. -->
+  @if (selectable()) {
+    <div foldToolbar><ng-content select="[historyToolbar]" /></div>
+  }
+
   <ng-template foldCell="reference" let-order>
     <span class="stack">
       <span class="ref">

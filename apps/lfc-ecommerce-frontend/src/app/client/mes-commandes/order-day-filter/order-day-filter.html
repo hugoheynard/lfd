@@ -1,0 +1,37 @@
+<div class="filter">
+  <div class="fields">
+    <fold-date
+      size="sm"
+      data-day-from
+      [label]="copy().filterFrom"
+      [value]="days().from ?? ''"
+      [max]="days().to ?? undefined"
+      (valueChange)="chooseFrom($event)"
+    />
+    <fold-date
+      size="sm"
+      data-day-to
+      [label]="copy().filterTo"
+      [value]="days().to ?? ''"
+      [min]="days().from ?? undefined"
+      (valueChange)="chooseTo($event)"
+    />
+    @if (bounded()) {
+      <button
+        foldButton
+        size="sm"
+        emphasis="outline"
+        intent="neutral"
+        icon="close"
+        type="button"
+        data-day-clear
+        (click)="clear()"
+      >
+        {{ copy().filterClear }}
+      </button>
+    }
+  </div>
+  @if (bounded()) {
+    <p class="note" data-day-undated>{{ copy().filterUndated }}</p>
+  }
+</div>

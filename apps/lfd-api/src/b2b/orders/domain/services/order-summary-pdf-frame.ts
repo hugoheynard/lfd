@@ -18,6 +18,7 @@ import {
   selectionSentence,
   SUMMARY_SCOPE_NOTE,
 } from "./order-summary-paper.js";
+import { periodSentence } from "./order-summary-period.js";
 
 /**
  * **Le cadre du récapitulatif en PDF** — l'en-tête de la première page et le
@@ -31,7 +32,7 @@ export const FOOT_SPACE = 10 * MM;
 
 /**
  * Le logo, le titre et « montants à la commande », la société demandeuse, la
- * sélection, la date de génération et ce que les montants ne sont pas (§6.4).
+ * période s'il y en a une, la sélection, la date de génération et ce que les montants ne sont pas (§6.4).
  *
  * @returns l'ordonnée sous le filet de l'en-tête.
  */
@@ -47,6 +48,11 @@ export function drawSummaryHeader(doc: Doc, paper: OrderSummaryPaper, logo: Buff
   y += 5 * MM;
   put(doc, paper.requesterName, LEFT, y, { size: 13, bold: true });
   y += 6 * MM;
+  const period = periodSentence(paper.period);
+  if (period !== null) {
+    put(doc, period, LEFT, y, { size: 10, bold: true });
+    y += 5 * MM;
+  }
   put(doc, selectionSentence(paper.summary), LEFT, y, { size: 10 });
   y += 5 * MM;
   put(doc, SUMMARY_SCOPE_NOTE, LEFT, y, { size: 9, width: WIDTH });

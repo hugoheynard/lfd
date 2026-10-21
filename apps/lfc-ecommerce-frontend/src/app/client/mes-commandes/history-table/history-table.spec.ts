@@ -186,4 +186,28 @@ describe('HistoryTable', () => {
       expect(authors).toEqual(['passée par Camille D.']);
     });
   });
+
+  describe('les cases du récapitulatif (plan du récapitulatif, R3)', () => {
+    const boxes = (): HTMLInputElement[] =>
+      Array.from(el().querySelectorAll('input[type="checkbox"]'));
+
+    it('n’en montre aucune hors d’une société', () => {
+      expect(boxes()).toEqual([]);
+    });
+
+    it('coche une ligne par sa référence, et l’en-tête coche tout ce qui est affiché', () => {
+      fixture.componentRef.setInput('selectable', true);
+      fixture.detectChanges();
+      // L'en-tête, puis une case par ligne.
+      expect(boxes().length).toBe(ROWS.length + 1);
+
+      boxes()[1]?.click();
+      fixture.detectChanges();
+      expect([...fixture.componentInstance.selected()]).toEqual([ROWS[0]?.reference]);
+
+      boxes()[0]?.click();
+      fixture.detectChanges();
+      expect(fixture.componentInstance.selected().size).toBe(ROWS.length);
+    });
+  });
 });

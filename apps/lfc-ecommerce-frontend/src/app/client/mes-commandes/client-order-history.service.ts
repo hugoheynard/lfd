@@ -50,7 +50,22 @@ import { listedOf, type ListedOrder, type RowSource } from './order-rows';
  * Aucune déduction du rôle : {@link sites} est ce que la dernière liste
  * NON filtrée a nommé. Vide — un site, un principal sans héritage — et l'écran
  * ne montre ni colonne ni filtre.
+ *
+ * ## Les jours de retrait ou de livraison
+ *
+ * Le filtre « du … au … » (`plan-recapitulatif-des-commandes.md`, lot R3) est
+ * relu au serveur comme le site (`?from=&to=`, bornes incluses), et se combine
+ * avec lui. Une commande sans date sort dès qu'une borne est posée.
  */
+/** Les bornes du filtre de jour — chacune facultative. */
+export interface OrderDays {
+  readonly from: string | null;
+  readonly to: string | null;
+}
+
+/** Aucune borne : la valeur de repos, comparée par identité. */
+export const NO_DAYS: OrderDays = { from: null, to: null };
+
 @Injectable({ providedIn: 'root' })
 export class ClientOrderHistory {
   private readonly http = inject(HttpClient);
@@ -66,6 +81,11 @@ export class ClientOrderHistory {
 
   /** Le filtre par site : l'identifiant d'une société, ou `null` pour toutes. */
   readonly site = this.siteFilter.asReadonly();
+
+  private readonly dayFilter = signal<OrderDays>(NO_DAYS);
+
+  /** Les bornes posées sur le jour de retrait/livraison, `AAAA-MM-JJ` ou `null`. */
+  readonly days = this.dayFilter.asReadonly();
 
   private readonly knownSites = signal<readonly CompanyOrderSiteView[]>([]);
 
@@ -91,6 +111,7 @@ export class ClientOrderHistory {
       }
       // Un filtre et des sites ne valent que pour la société qui les a rendus.
       this.siteFilter.set(null);
+      this.dayFilter.set(NO_DAYS);
       this.knownSites.set([]);
       this.loadedFor = current;
       void this.load(current, this.workspace.company()?.id ?? null);
@@ -137,6 +158,22 @@ export class ClientOrderHistory {
   }
 
   /**
+   * Borne la liste sur les jours de retrait/livraison et la RELIT. Sans effet
+   * hors d'une société : `GET /orders/mine` n'a pas ce filtre.
+   */
+  chooseDays(days: OrderDays): void {
+    const current = this.dayFilter();
+    if (
+      (days.from === current.from && days.to === current.to) ||
+      this.workspace.company() === null
+    ) {
+      return;
+    }
+    this.dayFilter.set(days.from === null && days.to === null ? NO_DAYS : days);
+    this.reload();
+  }
+
+  /**
    * **Une** commande, relue au serveur.
    *
    * Une lecture propre plutôt qu'une pioche dans la liste déjà chargée : un lien
@@ -166,19 +203,21 @@ export class ClientOrderHistory {
 
   private async load(workspace: string, companyId: string | null): Promise<void> {
     const site = companyId === null ? null : this.siteFilter();
+    const days = companyId === null ? NO_DAYS : this.dayFilter();
     try {
       const token = await firstValueFrom(this.auth.accessToken$());
       const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
       const orders = await (companyId === null
         ? this.personal(headers)
-        : this.ofCompany(companyId, site, headers));
+        : this.ofCompany(companyId, site, days, headers));
       // Une réponse revenue après une bascule (d'espace OU de filtre) est la
       // liste d'une autre question.
-      if (this.loadedFor !== workspace || this.siteFilter() !== site) {
+      if (this.loadedFor !== workspace || this.siteFilter() !== site || this.dayFilter() !== days) {
         return;
       }
       this.rows.set(sorted(orders));
-      if (site === null) {
+      // Une liste bornée dans le temps tairait les sites sans commande ces jours-là.
+      if (site === null && days === NO_DAYS) {
         this.knownSites.set(sitesOf(orders));
       }
     } catch {
@@ -201,9 +240,19 @@ export class ClientOrderHistory {
   private ofCompany(
     companyId: string,
     site: string | null,
+    days: OrderDays,
     headers: HttpHeaders,
   ): Promise<readonly CompanyOrderListItemView[]> {
-    const params = site === null ? new HttpParams() : new HttpParams().set('site', site);
+    let params = new HttpParams();
+    for (const [name, value] of [
+      ['site', site],
+      ['from', days.from],
+      ['to', days.to],
+    ] as const) {
+      if (value !== null) {
+        params = params.set(name, value);
+      }
+    }
     return firstValueFrom(
       this.http.get<readonly CompanyOrderListItemView[]>(
         `${AUTH_CONFIG.apiBaseUrl}/companies/${companyId}/orders`,

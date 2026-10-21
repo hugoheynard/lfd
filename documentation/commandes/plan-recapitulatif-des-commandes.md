@@ -1,6 +1,6 @@
 # Plan — filtrer par date et récapituler des commandes dans la boutique
 
-> **Doc-first, 2026-10-21.** Rien n'est bâti. Demandé par Hugo le 2026-10-21 :
+> **Doc-first, 2026-10-21.** R1, R2 et R3 bâtis le 2026-10-21 (§7–§9). Demandé par Hugo le 2026-10-21 :
 > « filtrer aussi par date, sélectionner les rows de commande et demander un
 > récapitulatif avec une agrégation des skus ». Touche à l'argent (HT, TVA,
 > TTC) : contredit par `vitruve` avant d'être soumis. **Contredit le 2026-10-21 :
@@ -185,3 +185,52 @@ récapitulatif des particuliers serait une autre route, en TTC. Hors de ce plan.
   `apps/lfd-api/src/b2b/orders/domain/services/__tests__/order-summary-papers.spec.ts` (texte du PDF lu),
   `apps/lfd-api/src/b2b/orders/application/queries/__tests__/export-company-order-summary.handlers.spec.ts`,
   e2e `apps/lfd-api/test/company-order-summary.e2e-spec.ts` (les trois formats sous le même mur).
+
+## 9. R3 — bâti le 2026-10-21 (non commité à l'écriture de ces lignes)
+
+- **La période, informative (serveur)** : le corps de `POST
+/companies/:companyId/orders/summary` accepte `period: { from?, to? }`
+  (`AAAA-MM-JJ`, `companyOrderSummaryRequestSchema`). Mêmes vérifications que
+  le filtre de la liste — jour existant, début ≤ fin
+  (`summaryPeriodOf`, `apps/lfd-api/src/b2b/orders/application/queries/company-order-summary-support.ts`),
+  avant toute lecture. Elle n'élargit ni ne restreint la sélection : les ids
+  font foi. Le PDF et le CSV l'impriment en plus de « Sélection de N
+  commandes » (`periodSentence`, `apps/lfd-api/src/b2b/orders/domain/services/order-summary-period.ts`) :
+  « Retraits et livraisons du 1er au 15 octobre 2026 », « le … », « à partir
+  du … », « jusqu'au … ». Le format `json` l'ignore — l'écran affiche la sienne.
+  Ce qui était laissé à trancher au §8 (« la période n'est pas imprimée ») est
+  tranché ainsi.
+- **Boutique — filtre** : `app-order-day-filter` (deux `fold-date`, bornes
+  croisées `min`/`max`, une paire inversée n'est pas émise), relu au serveur
+  `?from=&to=` par `ClientOrderHistory.chooseDays`, combiné à `?site=` ; une
+  borne posée affiche « les commandes sans date de retrait n'apparaissent
+  pas ». Les sites au choix ne se relisent que sur une liste sans site ni
+  borne. Visible dans une société seulement (§6.8).
+- **Sélection** : cases de `fold-data-table` (`selectable`, `[(selected)]`,
+  par référence) ; la case d'en-tête coche ce qui est affiché. Seules les
+  lignes cochées ET affichées partent. `app-order-selection-bar` dans la barre
+  d'outils de la table : « N sélectionnées », le plafond (200) dit d'avance,
+  et au-delà un `fold-callout` qui dit combien retirer, bouton grisé.
+- **Panneau** `app-order-summary-panel` (`panelSide()` : une consultation) :
+  le JSON du serveur, une table par société (produit, SKU, quantité, HT), son
+  bas comme une facture (gestes nuls tus, comme au PDF), le total général
+  (produits répétés seulement s'il y a plusieurs sociétés), les exclues et
+  leur motif, la mention §6.4. « PDF » et « Tableur » renvoient la même
+  sélection et la période affichée ; nom par `Content-Disposition`, repli
+  `recapitulatif.pdf|csv`. Un refus (id hors mur, plafond) s'affiche avec le
+  message du serveur. Service `OrderSummaryService`
+  (`apps/lfc-ecommerce-frontend/src/app/client/mes-commandes/order-summary.service.ts`).
+- **Textes** : `apps/lfc-ecommerce-frontend/src/app/client/copy/screens/order-summary.copy.ts` (fr/en/it), sous
+  `orders.summary`, rangé dans `dev-toolbox/shop-copy/spaces.mjs` ; recueil
+  régénéré (`pnpm copy:digest`).
+- ⚠️ **« N sans date » n'est toujours pas servi** (§7) : la phrase de l'écran
+  dit la règle, pas le compte.
+- Tests : `apps/lfd-api/src/b2b/orders/domain/services/__tests__/order-summary-period.spec.ts`,
+  `apps/lfd-api/src/b2b/orders/domain/services/__tests__/order-summary-papers.spec.ts`,
+  `apps/lfd-api/src/b2b/orders/application/queries/__tests__/export-company-order-summary.handlers.spec.ts`,
+  e2e `apps/lfd-api/test/company-order-summary.e2e-spec.ts` (période imprimée
+  sans retirer de commande, période mal formée → 400), contrat ; boutique, sous
+  `apps/lfc-ecommerce-frontend/src/app/client/mes-commandes/` : `client-order-history.service.spec.ts`,
+  `history-table/history-table.spec.ts`, `apps/lfc-ecommerce-frontend/src/app/client/mes-commandes/order-day-filter/order-day-filter.spec.ts`,
+  `apps/lfc-ecommerce-frontend/src/app/client/mes-commandes/order-selection-bar/order-selection-bar.spec.ts`,
+  `apps/lfc-ecommerce-frontend/src/app/client/mes-commandes/order-summary-panel/order-summary-panel.spec.ts`, `apps/lfc-ecommerce-frontend/src/app/client/mes-commandes/order-summary.service.spec.ts`.

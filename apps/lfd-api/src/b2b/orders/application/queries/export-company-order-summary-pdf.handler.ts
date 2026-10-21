@@ -9,7 +9,11 @@ import { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
 import { OrderSummaryRequesterReader } from "../../domain/ports/order-summary-requester.reader.js";
 import { orderSummaryFileName } from "../../domain/services/order-summary-paper.js";
 import { renderOrderSummaryPdf } from "../../domain/services/order-summary-pdf.js";
-import { loadCompanyOrderSummary, summaryRequesterName } from "./company-order-summary-support.js";
+import {
+  loadCompanyOrderSummary,
+  summaryPeriodOf,
+  summaryRequesterName,
+} from "./company-order-summary-support.js";
 import { ExportCompanyOrderSummaryPdfQuery } from "./export-company-order-summary-pdf.query.js";
 
 /** Ce que la route sert : les octets et leur nom. */
@@ -39,12 +43,13 @@ export class ExportCompanyOrderSummaryPdfHandler implements IQueryHandler<
   ) {}
 
   async execute(query: ExportCompanyOrderSummaryPdfQuery): Promise<CompanyOrderSummaryPdfFile> {
+    const period = summaryPeriodOf(query.period);
     const summary = await loadCompanyOrderSummary(this.guard, this.orders, query);
     const [requesterName, logo] = await Promise.all([
       summaryRequesterName(this.requester, query.companyId),
       this.logo.load(),
     ]);
-    const paper = { summary, requesterName, generatedAt: this.clock.now() };
+    const paper = { summary, requesterName, generatedAt: this.clock.now(), period };
     return {
       fileName: orderSummaryFileName(paper, "pdf"),
       bytes: await renderOrderSummaryPdf(paper, logo),

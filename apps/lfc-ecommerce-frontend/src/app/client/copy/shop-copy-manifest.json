@@ -4319,8 +4319,8 @@
     },
     {
       "space": "orders",
-      "title": "Mes commandes",
-      "source": "screens/orders.copy.ts",
+      "title": "Mes commandes (récapitulatif compris)",
+      "source": "screens/orders.copy.ts · screens/order-summary.copy.ts",
       "journey": false,
       "entries": [
         {
@@ -4481,6 +4481,289 @@
           "fr": "Tous les sites",
           "en": "All sites",
           "it": "Tutte le sedi",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.filterFrom",
+          "fr": "Du",
+          "en": "From",
+          "it": "Dal",
+          "variables": []
+        },
+        { "key": "orders.summary.filterTo", "fr": "Au", "en": "To", "it": "Al", "variables": [] },
+        {
+          "key": "orders.summary.filterClear",
+          "fr": "Effacer les dates",
+          "en": "Clear dates",
+          "it": "Cancella le date",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.filterUndated",
+          "fr": "Les commandes sans date de retrait n’apparaissent pas.",
+          "en": "Orders without a pickup date are not shown.",
+          "it": "Gli ordini senza data di ritiro non compaiono.",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.selectedMany",
+          "fr": "{n} sélectionnées",
+          "en": "{n} selected",
+          "it": "{n} selezionati",
+          "variables": ["n"]
+        },
+        {
+          "key": "orders.summary.selectedOne",
+          "fr": "1 sélectionnée",
+          "en": "1 selected",
+          "it": "1 selezionato",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.selectedNone",
+          "fr": "Aucune sélectionnée",
+          "en": "None selected",
+          "it": "Nessuno selezionato",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.capHint",
+          "fr": "Jusqu’à {max} commandes par récapitulatif.",
+          "en": "Up to {max} orders per summary.",
+          "it": "Fino a {max} ordini per riepilogo.",
+          "variables": ["max"]
+        },
+        {
+          "key": "orders.summary.capExceeded",
+          "fr": "Le récapitulatif porte au plus {max} commandes : retirez-en {extra}.",
+          "en": "A summary covers at most {max} orders: remove {extra}.",
+          "it": "Il riepilogo comprende al massimo {max} ordini: togline {extra}.",
+          "variables": ["max", "extra"]
+        },
+        {
+          "key": "orders.summary.selectAll",
+          "fr": "Sélectionner toutes les commandes affichées",
+          "en": "Select every order shown",
+          "it": "Seleziona tutti gli ordini visualizzati",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.selectRow",
+          "fr": "Sélectionner la commande",
+          "en": "Select the order",
+          "it": "Seleziona l’ordine",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.open",
+          "fr": "Récapitulatif",
+          "en": "Summary",
+          "it": "Riepilogo",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.title",
+          "fr": "Récapitulatif",
+          "en": "Summary",
+          "it": "Riepilogo",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.selection",
+          "fr": "Sélection de {n} commandes",
+          "en": "Selection of {n} orders",
+          "it": "Selezione di {n} ordini",
+          "variables": ["n"]
+        },
+        {
+          "key": "orders.summary.periodBetween",
+          "fr": "Retraits et livraisons du {from} au {to}",
+          "en": "Pickups and deliveries from {from} to {to}",
+          "it": "Ritiri e consegne dal {from} al {to}",
+          "variables": ["from", "to"]
+        },
+        {
+          "key": "orders.summary.periodFrom",
+          "fr": "Retraits et livraisons à partir du {from}",
+          "en": "Pickups and deliveries from {from}",
+          "it": "Ritiri e consegne dal {from}",
+          "variables": ["from"]
+        },
+        {
+          "key": "orders.summary.periodTo",
+          "fr": "Retraits et livraisons jusqu’au {to}",
+          "en": "Pickups and deliveries until {to}",
+          "it": "Ritiri e consegne fino al {to}",
+          "variables": ["to"]
+        },
+        {
+          "key": "orders.summary.loading",
+          "fr": "Récapitulatif en cours…",
+          "en": "Building the summary…",
+          "it": "Riepilogo in corso…",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.amountsNote",
+          "fr": "Montants à la commande : remboursements et avoirs postérieurs non déduits. Le relevé comptable, ce sont les factures.",
+          "en": "Amounts as ordered: later refunds and credit notes are not deducted. The accounting statement is the invoices.",
+          "it": "Importi all’ordine: rimborsi e note di credito successivi non dedotti. Il rendiconto contabile sono le fatture.",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.colProduct",
+          "fr": "Produit",
+          "en": "Product",
+          "it": "Prodotto",
+          "variables": []
+        },
+        { "key": "orders.summary.colSku", "fr": "SKU", "en": "SKU", "it": "SKU", "variables": [] },
+        {
+          "key": "orders.summary.colQuantity",
+          "fr": "Qté",
+          "en": "Qty",
+          "it": "Qtà",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.colHt",
+          "fr": "Total HT",
+          "en": "Total excl. VAT",
+          "it": "Totale IVA esclusa",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.orderCountMany",
+          "fr": "{n} commandes",
+          "en": "{n} orders",
+          "it": "{n} ordini",
+          "variables": ["n"]
+        },
+        {
+          "key": "orders.summary.orderCountOne",
+          "fr": "1 commande",
+          "en": "1 order",
+          "it": "1 ordine",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.subtotal",
+          "fr": "Sous-total HT",
+          "en": "Subtotal excl. VAT",
+          "it": "Subtotale IVA esclusa",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.discount",
+          "fr": "Remises",
+          "en": "Discounts",
+          "it": "Sconti",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.voucher",
+          "fr": "Bons de fidélité",
+          "en": "Loyalty vouchers",
+          "it": "Buoni fedeltà",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.deliveryFee",
+          "fr": "Livraison",
+          "en": "Delivery",
+          "it": "Consegna",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.lateFee",
+          "fr": "Surtaxes de commande tardive",
+          "en": "Late order surcharges",
+          "it": "Maggiorazioni per ordine tardivo",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.vat",
+          "fr": "TVA {rate}",
+          "en": "VAT {rate}",
+          "it": "IVA {rate}",
+          "variables": ["rate"]
+        },
+        {
+          "key": "orders.summary.unventilatedVat",
+          "fr": "dont TVA non ventilée",
+          "en": "of which VAT not broken down",
+          "it": "di cui IVA non ripartita",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.total",
+          "fr": "Total TTC",
+          "en": "Total incl. VAT",
+          "it": "Totale IVA inclusa",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.grandTotal",
+          "fr": "Total général",
+          "en": "Grand total",
+          "it": "Totale generale",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.noneCounted",
+          "fr": "Aucune commande comptée dans cette sélection.",
+          "en": "No order counted in this selection.",
+          "it": "Nessun ordine conteggiato in questa selezione.",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.excludedHead",
+          "fr": "Commandes exclues des totaux",
+          "en": "Orders left out of the totals",
+          "it": "Ordini esclusi dai totali",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.excludedCancelled",
+          "fr": "annulée",
+          "en": "cancelled",
+          "it": "annullato",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.excludedPending",
+          "fr": "paiement en attente",
+          "en": "payment pending",
+          "it": "pagamento in attesa",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.excludedFailed",
+          "fr": "paiement refusé",
+          "en": "payment refused",
+          "it": "pagamento rifiutato",
+          "variables": []
+        },
+        { "key": "orders.summary.pdf", "fr": "PDF", "en": "PDF", "it": "PDF", "variables": [] },
+        {
+          "key": "orders.summary.csv",
+          "fr": "Tableur",
+          "en": "Spreadsheet",
+          "it": "Foglio di calcolo",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.failed",
+          "fr": "Le récapitulatif n’a pas pu être établi. Réessayez dans un instant.",
+          "en": "The summary could not be built. Try again in a moment.",
+          "it": "Non è stato possibile preparare il riepilogo. Riprova tra un istante.",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.exportFailed",
+          "fr": "Le fichier n’a pas pu être produit. Réessayez dans un instant.",
+          "en": "The file could not be produced. Try again in a moment.",
+          "it": "Non è stato possibile produrre il file. Riprova tra un istante.",
           "variables": []
         },
         {

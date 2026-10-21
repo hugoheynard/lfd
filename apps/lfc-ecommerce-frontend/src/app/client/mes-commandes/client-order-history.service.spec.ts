@@ -89,3 +89,63 @@ describe('ClientOrderHistory — les commandes des sites (plan des commandes des
     expect(listRequest().request.params.has('site')).toBe(false);
   });
 });
+
+describe('ClientOrderHistory — les jours de retrait (plan du récapitulatif, R3)', () => {
+  let http: HttpTestingController;
+  let history: ClientOrderHistory;
+
+  beforeEach(() => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRecognised(),
+        provideWorkspace(workspaceDouble(TOMMEUSES.id, [TOMMEUSES])),
+      ],
+    });
+    http = TestBed.inject(HttpTestingController);
+    history = TestBed.inject(ClientOrderHistory);
+    TestBed.tick();
+  });
+
+  const listRequest = () =>
+    http.expectOne((r) => r.url.endsWith(`/companies/${TOMMEUSES.id}/orders`));
+
+  it('relit les bornes au SERVEUR, combinées au site, et garde les sites au choix', async () => {
+    await settle();
+    listRequest().flush([OWN, OF_SITE]);
+    await settle();
+
+    history.chooseSite(HOTEL.companyId);
+    await settle();
+    listRequest().flush([OF_SITE]);
+    await settle();
+
+    history.chooseDays({ from: '2026-10-01', to: '2026-10-15' });
+    await settle();
+    const bounded = listRequest();
+    expect(bounded.request.params.get('site')).toBe(HOTEL.companyId);
+    expect(bounded.request.params.get('from')).toBe('2026-10-01');
+    expect(bounded.request.params.get('to')).toBe('2026-10-15');
+    bounded.flush([]);
+    await settle();
+    expect(history.orders()).toEqual([]);
+    expect(history.sites()).toEqual([HOTEL]);
+
+    history.chooseDays({ from: null, to: '2026-10-15' });
+    await settle();
+    const onlyTo = listRequest();
+    expect(onlyTo.request.params.has('from')).toBe(false);
+    onlyTo.flush([]);
+  });
+
+  it('les mêmes bornes ne relisent rien', async () => {
+    await settle();
+    listRequest().flush([OWN]);
+    await settle();
+    history.chooseDays({ from: null, to: null });
+    await settle();
+    http.expectNone((r) => r.url.endsWith('/orders'));
+  });
+});
