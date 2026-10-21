@@ -51,6 +51,7 @@ import {
 } from '../supervision-links';
 import { DAY_REFRESH_MS, watchSupervisionDay } from '../supervision-refresh';
 import { SupervisionService } from '../supervision.service';
+import { StockBoard, SUPERVISION_VIEWS, type SupervisionView } from '../stock-board/stock-board';
 import {
   blockersOf,
   columnBlockersOf,
@@ -99,6 +100,7 @@ const BOARD_NARROW = '(max-width: 900px)';
     PreparationColumn,
     SupervisionCalendar,
     SupervisionColumn,
+    StockBoard,
   ],
   providers: [QualityBoardStore],
   templateUrl: './supervision-page.html',
@@ -127,6 +129,10 @@ export class SupervisionPage {
   protected readonly preparation = this.reads.preparation;
   protected readonly packing = this.reads.packing;
   protected readonly handover = this.reads.handover;
+
+  /** Journée (les trois colonnes) ou Stock (lot S1) ; le jour choisi vaut pour les deux. */
+  protected readonly view = signal<SupervisionView>('day');
+  protected readonly viewOptions = SUPERVISION_VIEWS;
 
   /** Le rôle choisit l'onglet d'arrivée ; le dernier ouvert ne l'emporte pas. */
   protected readonly tab = signal<Column>(
@@ -236,6 +242,12 @@ export class SupervisionPage {
   protected selectTab(key: string): void {
     if (key === 'preparation' || key === 'packing' || key === 'handover') {
       this.tab.set(key);
+    }
+  }
+
+  protected pickView(value: string): void {
+    if (value === 'day' || value === 'stock') {
+      this.view.set(value);
     }
   }
 

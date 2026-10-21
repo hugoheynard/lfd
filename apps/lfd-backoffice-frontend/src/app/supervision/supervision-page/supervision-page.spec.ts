@@ -4,6 +4,7 @@ import { provideRouter } from '@angular/router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type {
+  DayStockOverviewView,
   DaySupervisionView,
   HandoverQueueView,
   QualityBoardView,
@@ -174,7 +175,13 @@ interface Reads {
   preparation?: () => Promise<ProductionWorksheetView>;
   packing?: () => Promise<ProductionPackingView>;
   handover?: () => Promise<HandoverQueueView>;
+  stock?: (date: string) => Promise<DayStockOverviewView>;
 }
+
+const STOCK: DayStockOverviewView = {
+  serviceDay: DATE,
+  sites: [{ siteId: 'village', siteLabel: 'Val Village', resupplies: [], products: [] }],
+};
 
 async function mount(
   reads: Reads = {},
@@ -199,6 +206,7 @@ async function mount(
           preparation: reads.preparation ?? (() => Promise.resolve(WORKSHEET)),
           packing: reads.packing ?? (() => Promise.resolve(packingView())),
           handover: reads.handover ?? (() => Promise.resolve(QUEUE)),
+          stock: reads.stock ?? (() => Promise.resolve(STOCK)),
         },
       },
       {
@@ -572,5 +580,25 @@ describe('SupervisionPage', () => {
       'alert',
     );
     expect(column(fixture, 'preparation')?.textContent).toContain('Pain au chocolat');
+  });
+
+  it('bascule sur Stock (S1) : les colonnes laissent la place aux points, relus au même jour', async () => {
+    const stock = vi.fn(() => Promise.resolve(STOCK));
+    const fixture = await mount({ stock });
+
+    expect(stock).toHaveBeenCalledWith(DATE);
+    expect(root(fixture).querySelector('[data-stock-board]')).toBeNull();
+    const toggle = [
+      ...root(fixture).querySelectorAll<HTMLButtonElement>('[data-view-toggle] button'),
+    ];
+    toggle.find((button) => button.textContent?.includes('Stock'))?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(column(fixture, 'preparation')).toBeNull();
+    expect(root(fixture).querySelector('[data-search]')).toBeNull();
+    expect(root(fixture).querySelector('[data-stock-site="village"]')?.textContent).toContain(
+      'Val Village',
+    );
   });
 });

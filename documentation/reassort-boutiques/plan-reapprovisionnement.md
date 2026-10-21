@@ -802,6 +802,9 @@ dans le code, ou seulement dans
   le titre. Lien `/comptoir/reassort`.
 - **Limite** : un transfert de réassort seul ne se réceptionne qu'au site
   (« Remis au site ») — « Réceptionner » au comptoir passe par une commande.
+  — **Levée le 2026-10-22** (non commité) : la file du comptoir rend le
+  transfert de réassort seul, qui se réceptionne par lui-même
+  (`POST admin/handover/transfers/:transferId/reception`) ; cf. README.
 - Au passage : le cadre du colisage dit « Réassort <point> »
   (`packing-frames.ts`).
 
@@ -886,7 +889,8 @@ table. »
   « Réassorts » par R1g (2026-10-22).
 
 **Non fait** : la carte d'arrêt de transfert du tableau des tournées compte
-les commandes seules (« 0 commande » pour un transfert de réassort).
+les commandes seules (« 0 commande » pour un transfert de réassort). — **Fait le 2026-10-22** (non commité) : « N commandes · M réassorts »
+(`resupplyCount`).
 
 ### À venir — un onglet « Stock » dans la Supervision (Hugo, 2026-10-21 ; non conçu)
 
@@ -1018,7 +1022,7 @@ TOTAL, la part de réassort en second.
 - **Non touché** : l'e-mail du dossier (`dossierCountsOf`) annonce encore les
   pièces des commandes seules.
 
-### S1 — L'onglet Stock de la Supervision (conçu le 2026-10-22, après R3e)
+### S1 ✅ — L'onglet Stock de la Supervision (conçu le 2026-10-22, après R3e ; bâti le 2026-10-22, non commité)
 
 Conçu à partir de la page ouverte le 2026-10-22
 (`apps/lfd-backoffice-frontend/src/app/supervision/supervision-page/`) : la
@@ -1042,3 +1046,26 @@ dont les onglets n'existent qu'en écran étroit (`fold-view-nav`, `tabs()`).
 - **Serveur** : une lecture `GetDayStockOverview(day)` dans `b2b/resupply`,
   tous points confondus, sous `b2b_supervision:read` (le droit de la page),
   sans écriture ; rafraîchie comme le reste de la Supervision.
+
+✅ **Bâti le 2026-10-22 (non commité)** — état dans le [README](README.md).
+Ce qui précise le texte :
+
+- **Route** `GET admin/supervision/stock/:day` (le jour obligatoire : l'écran
+  le tient de sa journée), port de lecture `DayStockReader`, calcul pur
+  `dayStockOf`.
+- **États** : réceptionné › arrivé › figé › envoyé, le plus avancé
+  l'emporte ; un annulé n'y est que s'il avait été réceptionné. L'attendu est
+  l'emballé au colisage s'il est connu, sinon le demandé.
+- **Choix du bâtisseur** : tous les points non archivés ont leur carte, même
+  vide ; un point archivé n'y vient que s'il porte quelque chose. En
+  « Stock », la recherche et les onglets du téléphone sont masqués (ils
+  parlent des colonnes). Le renvoi n'est montré qu'à qui peut ouvrir
+  `/prod-manager/reassorts`.
+- **Rafraîchi** avec les colonnes, au même mécanisme — mais **aucune
+  écriture du réassort ne fait bouger la version du jour** (vérifié le
+  2026-10-22 : `day_change` n'est alimenté que par des déclencheurs sur les
+  commandes, les fournées et les tournées ; rien sur `site_resupply`,
+  `resupply_receipt` ni `stock_alert`). L'onglet se relit donc quand une
+  commande, une fournée ou une tournée du jour bouge, au changement de jour
+  ou au rechargement — pas à la réception d'un réassort. Le fermer demande
+  une migration (déclencheurs) : à décider.

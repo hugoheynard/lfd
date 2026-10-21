@@ -10,7 +10,8 @@
 > comptoir aussi (lot R1b, 2026-10-21), sans effet encore sur la boutique. La
 > **demande en cours** est enregistrée depuis le lot R1c (2026-10-21). Un
 > réassort **arrivé** (transfert reçu, ou « Monté » au fournil) sonne au
-> comptoir depuis le lot R3e (2026-10-22). Le
+> comptoir depuis le lot R3e (2026-10-22). La **Supervision** a un onglet
+> **Stock** en lecture depuis le lot S1 (2026-10-22). Le
 > **fournil envoie ses propres réassorts**, à part, depuis le lot R1d
 > (2026-10-21). L'écran du comptoir est **une table de tous les produits**
 > depuis le lot R1e (2026-10-21). Ce document décrit ce qui existe, vérifié
@@ -470,19 +471,74 @@ flowchart LR
   les porte aussi.
 - e2e : `apps/lfd-api/test/resupply-arrived.e2e-spec.ts`.
 
+## Ce qui est bâti : l'onglet Stock de la Supervision (lot S1, 2026-10-22)
+
+`/supervision` porte une bascule **« Journée · Stock »** dans son bandeau, à
+côté du choix du jour, en large comme en étroit. « Journée » est le tableau à
+trois colonnes, inchangé ; « Stock » montre, pour le jour regardé, une
+`fold-card` par point. Lecture seule.
+
+```mermaid
+flowchart LR
+  P["/supervision · « Stock »"] -->|"GET admin/supervision/stock/:day<br/>b2b_supervision:read"| H["GetDayStockOverviewHandler"]
+  H --> D["DayStockReader<br/>points · réassorts envoyés · reçus du jour"]
+  H --> A["StockAlertReader.liveEverywhere"]
+  H --> F["ClosedPlansReader (figé)<br/>PackedResuppliesReader (emballé)"]
+  H --> S["dayStockOf (domaine)"]
+```
+
+- **Serveur** : `GetDayStockOverviewQuery` + handler (`b2b/resupply/application/`),
+  port de lecture dédié `DayStockReader` (tous points, la journée : points
+  non archivés dans l'ordre de création, réassorts envoyés annulés compris,
+  reçus), contrôleur `AdminSupervisionStockController` sous
+  `b2b_supervision` — le droit de la page. Contrat `DayStockOverviewView`
+  (`packages/contracts/src/day-stock-overview.ts`).
+- **Le calcul** (`domain/day-stock.ts`, `dayStockOf`) : l'état d'un réassort
+  est le plus avancé de **réceptionné** › **arrivé** › **figé** (« pour
+  demain » d'un plan arrêté) › **envoyé** ; un annulé n'y est que s'il avait
+  été réceptionné. Par produit : le **stock du jour** (`estimateStock`, la
+  somme des reçus réceptionnés), l'**alerte vivante**, l'**attendu** (l'emballé
+  au colisage, sinon le demandé, des réassorts ni annulés ni réceptionnés).
+  Seuls les produits qu'un reçu, une alerte ou un attendu nomment ; tri :
+  alertes, attendus, le reste, par libellé.
+- **Tous les points non archivés** ont leur carte, même vide (« Aucun
+  réassort, aucun reçu ni alerte ») ; un point archivé n'apparaît, après les
+  autres, que s'il porte quelque chose ce jour-là.
+- **Front** : `supervision/stock-board/` ; lu avec les colonnes, au même
+  rythme (`SupervisionReads.stock`) — mais une écriture de réassort, de reçu
+  ou d'alerte ne fait pas bouger la version du jour (aucun déclencheur
+  `day_change` sur leurs tables, vérifié le 2026-10-22) : l'onglet ne se
+  relit qu'au mouvement d'une commande, d'une fournée, d'une tournée, ou au
+  rechargement. En « Stock », la recherche et les
+  onglets du téléphone sont masqués. Le renvoi « Ouvrir le réassort » mène à
+  `/prod-manager/reassorts`, montré à qui a `production_worksheet:read` ou
+  `production_plan:read`.
+- e2e : `apps/lfd-api/test/supervision-stock.e2e-spec.ts`.
+
+## Ce qui est bâti : le transfert de réassort seul, au tableau et au comptoir (2026-10-22, non commité)
+
+- **Le tableau des tournées** : la carte d'arrêt de transfert dit
+  « N commandes · M réassorts », ou « M réassorts » seul
+  (`DeliveryRoundTransferStopView.resupplyCount`, ajout ; éléments PORTÉS
+  comptés par genre dans `prisma-delivery-rounds.reader.ts` — le compte des
+  commandes y ignore désormais aussi un élément sorti, comme celui du livreur).
+- **Le comptoir** : la file (`HandoverQueueView.resupplyTransfers`, ajout) rend
+  les transferts de la journée qui ne portent que des réassorts
+  (`ResupplyTransfersReader`, `delivery/channels/handover/`, déclaré et
+  implémenté par la livraison) ; la bande « Réceptionner » de l'onglet du site
+  les montre (« 0 bac · 2 réassorts ») et les réceptionne par le transfert
+  lui-même : `POST admin/handover/transfers/:transferId/reception`
+  (`TransferReceptionDesk.receiveTransfer`, même règle, même journal, même
+  fait `delivery.transfer_received` — donc « arrivé » sans tournée). La route
+  par commande reste servie ; l'écran passe désormais par le transfert pour
+  tous.
+- e2e : `apps/lfd-api/test/resupply-transfer-reception.e2e-spec.ts`.
+
 ## Ce qui reste
 
-- **Un transfert de réassort seul ne se réceptionne qu'au site** (« Remis au
-  site ») : « Réceptionner » au comptoir passe par une commande du transfert
-  (`TransferReceptionDesk.receiveForOrder`). Sans tournée, ses réassorts ne
-  passent pas « arrivé » — le comptoir les réceptionne quand même.
 - **« Au plus tôt » au Village** : ni transfert (R4), ni « Monté » proposé
   (l'écran le réserve aux points servis sur place ; le serveur l'accepte).
 - **La cloche ne cible pas le point** : tout le comptoir l'entend.
-
-- **La carte d'arrêt de transfert** (tableau des tournées) dit « N commandes »
-  et rien des réassorts : un transfert de réassort seul s'y lit « 0 commande ».
-  Il faudrait un `resupplyCount` sur `DeliveryRoundTransferStopView`.
 
 - **La course annuler / réceptionner** : l'annulation lit la réception puis
   écrit le réassort ; « Réceptionner » ne touche pas la version du réassort.

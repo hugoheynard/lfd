@@ -1,0 +1,94 @@
+@switch (state().status) {
+  @case ('loading') {
+    <fold-loading message="Lecture du stock des points…" />
+  }
+  @case ('error') {
+    <fold-empty-state tone="alert" title="Le stock des points n'a pas pu être lu">
+      <button foldButton emphasis="outline" type="button" (click)="retry.emit()">Réessayer</button>
+    </fold-empty-state>
+  }
+}
+
+@if (state(); as current) {
+  @if (current.status === 'ready') {
+    <div class="stock" data-stock-board>
+      @if (current.stale) {
+        <fold-callout variant="alert" data-stock-stale>
+          La dernière relecture du stock a échoué : ce qui est affiché peut être en retard.
+        </fold-callout>
+      }
+      @if (canOpen()) {
+        <a class="renvoi" routerLink="/prod-manager/reassorts" data-stock-open>
+          Ouvrir le réassort →
+        </a>
+      }
+      @for (site of current.data.sites; track site.siteId) {
+        <fold-card [attr.data-stock-site]="site.siteId">
+          <fold-element-title cardHeader variant="title" [title]="siteTitle(site)" />
+          <div class="site-body">
+            @if (site.resupplies.length === 0 && site.products.length === 0) {
+              <p class="muted" data-stock-site-empty>
+                Aucun réassort, aucun reçu ni alerte pour ce jour.
+              </p>
+            }
+            @for (resupply of site.resupplies; track resupply.resupplyId) {
+              <div class="resupply" [attr.data-stock-resupply]="resupply.resupplyId">
+                <strong>{{ titleOf(resupply) }}</strong>
+                <span class="muted">
+                  @if (resupply.name !== null) {
+                    {{ targetLabels[resupply.target] }} ·
+                  }
+                  {{ originLabels[resupply.origin] }} · {{ resupply.pieces }} pièces
+                </span>
+                <fold-status-badge
+                  [status]="stateBadges[resupply.state].status"
+                  [label]="stateBadges[resupply.state].label"
+                  [attr.data-stock-resupply-state]="resupply.state"
+                />
+              </div>
+            }
+            @if (site.products.length > 0) {
+              <table class="products">
+                <caption class="sr">
+                  Produits du point
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Produit</th>
+                    <th scope="col">Alerte</th>
+                    <th scope="col" class="num">Attendu</th>
+                    <th scope="col" class="num">Stock du jour</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (product of site.products; track product.sku) {
+                    <tr [attr.data-stock-product]="product.sku">
+                      <td>{{ product.label }}</td>
+                      <td>
+                        @if (product.alert; as alert) {
+                          <fold-badge
+                            radius="square"
+                            [variant]="alertBadges[alert].variant"
+                            [content]="alertBadges[alert].label"
+                          />
+                        }
+                      </td>
+                      <td class="num">{{ product.expected === 0 ? '—' : product.expected }}</td>
+                      <td class="num">{{ product.stock }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            }
+          </div>
+        </fold-card>
+      } @empty {
+        <fold-empty-state
+          title="Aucun point de retrait"
+          subtitle="Aucun point de retrait ouvert : il n'y a pas de stock à suivre."
+          data-stock-empty
+        />
+      }
+    </div>
+  }
+}

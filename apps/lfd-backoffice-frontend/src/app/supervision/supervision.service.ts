@@ -3,6 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import type {
+  DayStockOverviewView,
   DaySupervisionView,
   HandoverQueueView,
   ProductionPackingView,
@@ -66,6 +67,15 @@ export class SupervisionService {
     return firstValueFrom(
       this.http.get<HandoverQueueView>(
         `${B2B_API_BASE}/admin/supervision/handover?jour=${encodeURIComponent(day)}`,
+      ),
+    );
+  }
+
+  /** L'onglet Stock (lot S1) : par point, ses réassorts et ses produits du jour. */
+  async stock(date: string): Promise<DayStockOverviewView> {
+    return firstValueFrom(
+      this.http.get<DayStockOverviewView>(
+        `${B2B_API_BASE}/admin/supervision/stock/${encodeURIComponent(date)}`,
       ),
     );
   }

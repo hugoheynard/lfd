@@ -12,6 +12,7 @@ import { ListSiteStockAlertsHandler } from "./application/list-site-stock-alerts
 import { CorrectReceivedResupplyLineHandler } from "./application/correct-received-resupply-line.handler.js";
 import { CorrectResupplyLineHandler } from "./application/correct-resupply-line.handler.js";
 import { CorrectSiteResupplyLineHandler } from "./application/correct-site-resupply-line.handler.js";
+import { GetDayStockOverviewHandler } from "./application/get-day-stock-overview.handler.js";
 import { GetResupplyProductionDayHandler } from "./application/get-resupply-production-day.handler.js";
 import { GetResupplyReceiptHandler } from "./application/get-resupply-receipt.handler.js";
 import { ListResuppliesToProduceHandler } from "./application/list-resupplies-to-produce.handler.js";
@@ -29,6 +30,7 @@ import { SendBakehouseResupplyHandler } from "./application/send-bakehouse-resup
 import { SendSiteResupplyHandler } from "./application/send-site-resupply.handler.js";
 import { WithdrawResupplyLineHandler } from "./application/withdraw-resupply-line.handler.js";
 import { WithdrawSiteResupplyLineHandler } from "./application/withdraw-site-resupply-line.handler.js";
+import { DayStockReader } from "./domain/day-stock.reader.js";
 import { ResupplyCatalogue } from "./domain/resupply-catalogue.js";
 import { ResupplyCutoff } from "./domain/resupply-cutoff.js";
 import { ResupplyReceptions } from "./domain/resupply-receptions.js";
@@ -51,6 +53,8 @@ import { AdminSiteStockAlertsController } from "./http/admin-site-stock-alerts.c
 import { AdminResuppliesToProduceController } from "./http/admin-resupplies-to-produce.controller.js";
 import { AdminResupplyReceiptsController } from "./http/admin-resupply-receipts.controller.js";
 import { AdminSiteResuppliesController } from "./http/admin-site-resupplies.controller.js";
+import { AdminSupervisionStockController } from "./http/admin-supervision-stock.controller.js";
+import { PrismaDayStockReader } from "./infrastructure/prisma-day-stock.reader.js";
 import { CatalogResupplyCatalogue } from "./infrastructure/catalog-resupply-catalogue.js";
 import { SettingsResupplyCutoff } from "./infrastructure/settings-resupply-cutoff.js";
 import { PrismaResupplyReceptions } from "./infrastructure/prisma-resupply-receptions.js";
@@ -89,6 +93,9 @@ import { PrismaTransferServedSites } from "./infrastructure/prisma-transfer-serv
  * ou la réception du transfert qui le porte (`MarkArrivedOnTransferReceived`,
  * abonné durable du fait `delivery.transfer_received`) ; la cloche sonne au
  * comptoir (`ResupplyArrivedBell`).
+ *
+ * Depuis le lot S1 (2026-10-22), l'onglet Stock de la Supervision
+ * (`GetDayStockOverview`, sous `b2b_supervision`), en lecture seule.
  */
 @Module({
   imports: [CatalogModule, AccountModule, OrderCutoffsInForceModule],
@@ -99,6 +106,7 @@ import { PrismaTransferServedSites } from "./infrastructure/prisma-transfer-serv
     AdminSiteStockAlertsController,
     AdminLiveStockAlertsController,
     AdminBakehouseResuppliesController,
+    AdminSupervisionStockController,
   ],
   providers: [
     { provide: ResupplyReceiptRepository, useClass: PrismaResupplyReceiptRepository },
@@ -114,6 +122,7 @@ import { PrismaTransferServedSites } from "./infrastructure/prisma-transfer-serv
     { provide: TransferServedSites, useClass: PrismaTransferServedSites },
     { provide: StockAlertRepository, useClass: PrismaStockAlertRepository },
     { provide: StockAlertReader, useClass: PrismaStockAlertReader },
+    { provide: DayStockReader, useClass: PrismaDayStockReader },
     ReceiveResupplyLineHandler,
     CorrectResupplyLineHandler,
     WithdrawResupplyLineHandler,
@@ -121,6 +130,7 @@ import { PrismaTransferServedSites } from "./infrastructure/prisma-transfer-serv
     CorrectReceivedResupplyLineHandler,
     GetResupplyProductionDayHandler,
     GetResupplyReceiptHandler,
+    GetDayStockOverviewHandler,
     ListResupplyArticlesHandler,
     SendBakehouseResupplyHandler,
     CancelSiteResupplyHandler,

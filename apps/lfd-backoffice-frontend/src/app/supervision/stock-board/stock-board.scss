@@ -1,0 +1,65 @@
+:host {
+  display: block;
+}
+
+.stock,
+.site-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.resupply {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+.renvoi {
+  align-self: flex-end;
+  font-size: var(--fold-text-sm);
+}
+
+.products {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.products th {
+  padding: 0 var(--fold-space-xs) var(--fold-space-xs);
+  border-bottom: 1px solid var(--fold-color-border);
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-semibold);
+  letter-spacing: var(--fold-tracking-wide);
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.products td {
+  padding: var(--fold-space-xs);
+  border-bottom: 1px solid var(--fold-color-border-subtle);
+  font-size: var(--fold-text-sm);
+  vertical-align: middle;
+}
+
+.products .num {
+  text-align: right;
+}
+
+.muted {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+/* La légende nomme le tableau pour un lecteur d'écran sans encombrer l'œil. */
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

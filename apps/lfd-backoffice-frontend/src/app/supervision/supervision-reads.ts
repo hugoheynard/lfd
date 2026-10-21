@@ -1,5 +1,6 @@
 import { signal } from '@angular/core';
 import type {
+  DayStockOverviewView,
   DaySupervisionView,
   HandoverQueueView,
   ProductionPackingView,
@@ -31,6 +32,8 @@ export class SupervisionReads {
   readonly preparation = signal<ColumnState<ProductionWorksheetView>>(LOADING);
   readonly packing = signal<ColumnState<ProductionPackingView>>(LOADING);
   readonly handover = signal<ColumnState<HandoverQueueView>>(LOADING);
+  /** L'onglet Stock (lot S1), relu avec les colonnes : au même rythme. */
+  readonly stock = signal<ColumnState<DayStockOverviewView>>(LOADING);
 
   constructor(
     private readonly service: SupervisionService,
@@ -40,7 +43,7 @@ export class SupervisionReads {
 
   /** Tout relire depuis le jour du serveur — le premier chargement, ou quand il a échoué. */
   async load(): Promise<void> {
-    const all = [this.day, this.preparation, this.packing, this.handover];
+    const all = [this.day, this.preparation, this.packing, this.handover, this.stock];
     all.forEach((column) => column.set(LOADING));
     this.quality.reset();
     let day: DaySupervisionView;
@@ -85,6 +88,15 @@ export class SupervisionReads {
     await this.readColumn(column, date, true);
   }
 
+  /** Réessayer l'onglet Stock ; sans jour connu, tout l'écran. */
+  async retryStock(): Promise<void> {
+    const date = this.date();
+    if (date === null) {
+      return this.load();
+    }
+    await this.readStock(date, true);
+  }
+
   private learn(day: DaySupervisionView): void {
     this.day.set(ready(day));
     // Minuit est passé au serveur : l'écran le suit, s'il n'a pas choisi.
@@ -97,8 +109,14 @@ export class SupervisionReads {
       this.readColumn('preparation', date),
       this.readColumn('packing', date),
       this.readColumn('handover', date),
+      this.readStock(date),
       this.quality.read(date),
     ]);
+  }
+
+  private readStock(date: string, reset = false): Promise<void> {
+    const current = (): boolean => date === this.date();
+    return readInto(this.stock, () => this.service.stock(date), current, reset);
   }
 
   private readColumn(column: Column, date: string, reset = false): Promise<void> {

@@ -252,3 +252,21 @@ fold-page-layout {
     border-left: none;
   }
 }
+
+/* ── L'ONGLET STOCK (lot S1) : les cartes des points, défilant sous le bandeau ── */
+
+.stock-view {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--fold-space-lg);
+  background: var(--fold-color-bg-page);
+}
+
+.stock-view.narrow {
+  padding: var(--fold-space-sm) var(--fold-space-md);
+}
+
+.masthead.narrow .day-nav {
+  flex-wrap: wrap;
+}
