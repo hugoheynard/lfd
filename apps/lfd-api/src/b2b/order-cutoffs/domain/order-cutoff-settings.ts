@@ -18,26 +18,46 @@ import type { StaffTrace } from "../../account/domain/value-objects/staff-trace.
 export class OrderCutoffSettings {
   private constructor(
     readonly sameDayAllowed: boolean,
+    readonly resupplySubjectToCutoff: boolean,
     readonly at: Date,
     readonly author: StaffTrace,
   ) {}
 
-  /** Le réglage posé, avec son instant et son auteur. */
+  /**
+   * Le réglage posé, avec son instant et son auteur. Une clé absente du geste
+   * garde sa valeur courante : chaque page n'envoie que la sienne (le jour
+   * même, la limite du réapprovisionnement — 2026-10-21).
+   */
   static pose(input: {
-    readonly sameDayAllowed: boolean;
+    readonly current: OrderCutoffSettingsState;
+    readonly sameDayAllowed?: boolean | undefined;
+    readonly resupplySubjectToCutoff?: boolean | undefined;
     readonly at: Date;
     readonly author: StaffTrace;
   }): OrderCutoffSettings {
-    return new OrderCutoffSettings(input.sameDayAllowed, input.at, input.author);
+    return new OrderCutoffSettings(
+      input.sameDayAllowed ?? input.current.sameDayAllowed,
+      input.resupplySubjectToCutoff ?? input.current.resupplySubjectToCutoff,
+      input.at,
+      input.author,
+    );
   }
 
   /** Le geste ne change rien à l'état courant. */
   sameAs(current: OrderCutoffSettingsState): boolean {
-    return this.sameDayAllowed === current.sameDayAllowed;
+    return (
+      this.sameDayAllowed === current.sameDayAllowed &&
+      this.resupplySubjectToCutoff === current.resupplySubjectToCutoff
+    );
   }
 }
 
 /** Le réglage sans sa trace. */
 export interface OrderCutoffSettingsState {
   readonly sameDayAllowed: boolean;
+  /**
+   * Le réapprovisionnement d'un site suit-il l'heure limite générale ? Stocké
+   * SANS effet tant qu'il n'est pas commandé au fournil (2026-10-21).
+   */
+  readonly resupplySubjectToCutoff: boolean;
 }

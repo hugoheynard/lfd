@@ -39,7 +39,9 @@ export class UpdateOrderCutoffSettingsHandler implements ICommandHandler<
     await this.uow.run(async () => {
       const previous = await this.reader.current();
       const next = OrderCutoffSettings.pose({
+        current: previous,
         sameDayAllowed: command.patch.sameDayAllowed,
+        resupplySubjectToCutoff: command.patch.resupplySubjectToCutoff,
         at: this.clock.now(),
         author,
       });

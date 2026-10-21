@@ -31,7 +31,11 @@ export class OrderCutoffSettingsUpdatedEvent implements JournaledEvent {
       subjectId: ORDER_CUTOFF_SETTINGS_SUBJECT,
       payload: {
         sameDayAllowed: this.next.sameDayAllowed,
-        previous: { sameDayAllowed: this.previous.sameDayAllowed },
+        resupplySubjectToCutoff: this.next.resupplySubjectToCutoff,
+        previous: {
+          sameDayAllowed: this.previous.sameDayAllowed,
+          resupplySubjectToCutoff: this.previous.resupplySubjectToCutoff,
+        },
       },
     };
   }

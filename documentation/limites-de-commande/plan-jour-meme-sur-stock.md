@@ -1,6 +1,7 @@
 # Plan — le jour même des particuliers, sur le stock déclaré (version simple)
 
-> **Doc-first, 2026-10-21.** Rien n'est bâti. Demandé par Hugo le 2026-10-21 :
+> **Partiel, 2026-10-21.** J1 est bâti par la **réception du réassort** (voir
+> §7) ; J2 à J4 ne le sont pas. Demandé par Hugo le 2026-10-21 :
 > « comment je règle, moi, le jour même pour le particulier ? » → « prépare le
 > plan, version simple ». C'est la ligne « aujourd'hui » du modèle
 > ([`schema-des-reglages.md`](schema-des-reglages.md) §0) : **demain se commande
@@ -32,8 +33,13 @@ heure de fin. Chaque commande décompte le stock déclaré.**
 - **Le stock du jour** : une liste (article, quantité offerte) pour une journée,
   posée et corrigée par le comptoir ; pas de stock « réel » (les ventes au
   comptoir sans commande ne sont pas suivies).
-- **Le reste** = offert − commandé (commandes non annulées du jour pour cet
-  article). Calculé, jamais écrit à la main.
+- **Le reste** (le stock estimé) = reçu − ce que les commandes **« jour même
+  sur stock »** (J2) en ont pris, commandes annulées exclues. Calculé, jamais
+  écrit à la main. Les commandes déjà passées pour ce jour **ne s'y
+  soustraient pas** : passées la veille avant l'heure limite, elles sont dans
+  le plan du fournil, fabriquées pour elles, et ne puisent pas dans la vitrine
+  (Hugo, 2026-10-21). Tant que J2 n'existe pas, le stock estimé **est** le
+  reçu.
 - **L'heure de fin du jour même** : un réglage, « jusqu'à 16 h » par exemple ;
   passé, « aujourd'hui » n'est plus proposé.
 - **Qui** : les particuliers seulement (`public`). Un pro commande pour demain.
@@ -107,3 +113,37 @@ heure de fin. Chaque commande décompte le stock déclaré.**
   déclaration du jour est **pré-remplie** par lui. Sans réassort reçu ni
   déclaration, « aujourd'hui » n'est pas proposé — jamais un stock inventé.
 - **Q5** — ouverte.
+
+## 7. Ce qui est bâti (2026-10-21)
+
+**J1, sous la forme de la réception du réassort** (demande de Hugo du
+2026-10-21 : « commençons par faire la page [Réassort boutique] ; des lignes
+produit et des quantités, et éventuellement un stock »).
+
+- **L'agrégat `ResupplyReceipt`** (`apps/lfd-api/src/b2b/resupply/`) : ce que
+  la vitrine d'un point de retrait a reçu pour une journée — une par (site,
+  journée), des lignes (SKU produit, libellé figé lu au catalogue publié de la
+  boutique, quantité reçue entière ≥ 0). C'est la partie **reçue** du futur
+  `SiteResupply` (modèle B, [`plan-reapprovisionnement.md`](../livraisons/transferts/plan-reapprovisionnement.md)
+  §9) : deux agrégats, parce que demander et recevoir ont deux auteurs et deux
+  moments. Aucun prix, aucune dépendance au modèle `Order`.
+- **Un article en double est refusé** (409, « corrigez sa quantité ») plutôt
+  qu'additionné : une seconde saisie est plus souvent un doublon qu'un second
+  arrivage.
+- **Le stock estimé** est calculé à la lecture (`estimateStock`) et vaut le
+  reçu ; aucun port de décompte n'est posé d'avance — J2 l'ajoutera.
+- **Routes** `/admin/resupply-receipts` sous `handover_counter` (Q1 : le
+  comptoir), table `resupply_receipt` + `resupply_receipt_line` (migration
+  additive `20261021150000`), verrou optimiste par version.
+- **L'écran** : Comptoir › Réassort boutique — point de retrait, journée
+  (aujourd'hui par défaut), lignes reçues et stock estimé ; ajouter, corriger,
+  retirer.
+- **La limite du réassort** (Hugo : « la limite ou absence de limite [du
+  réassort] devrait être définie dans les réglages limites ») : Réglages ›
+  Commandes › Heure limite, carte « Réassort boutique : soumis à l'heure
+  limite / sans limite » (`order_cutoff_settings.resupply_subject_to_cutoff`,
+  oui par défaut). **Sans effet** tant que le réassort n'est pas commandé au
+  fournil ; l'écran le dit.
+
+Reste de J1 : le réglage « jour même » réécrit (oui/non + heure de fin) et le
+choix Q2 (part réservée / toute la vitrine) — non bâtis.

@@ -31,6 +31,7 @@ import { LoyaltyModule } from "../b2b/loyalty/loyalty.module.js";
 import { DevModule } from "../dev/dev.module.js";
 import { OrderCutoffsModule } from "../b2b/order-cutoffs/order-cutoffs.module.js";
 import { OrderWaiversModule } from "../b2b/order-waivers/order-waivers.module.js";
+import { ResupplyModule } from "../b2b/resupply/resupply.module.js";
 import { CatalogModule } from "../b2b/catalog/catalog.module.js";
 import { OpsModule } from "../ops/ops.module.js";
 import { PimModule } from "../pim/pim.module.js";
@@ -120,6 +121,7 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     DevModule,
     OrderCutoffsModule,
     OrderWaiversModule,
+    ResupplyModule,
     PickupAddressesModule,
     // La vitrine : les pages composées de la boutique, et leur éditeur.
     StorefrontModule,

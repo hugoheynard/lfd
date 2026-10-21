@@ -1,8 +1,166 @@
-<fold-page-layout>
-  <fold-empty-state
-    title="Réassort boutique — à venir"
-    subtitle="Cet écran servira à demander au fournil de quoi regarnir la boutique. Il n'est pas encore construit."
-  >
-    <fold-icon empty-icon name="package" />
-  </fold-empty-state>
+<fold-page-layout icon="package" title="Réassort boutique">
+  <p description>
+    Ce que la vitrine a reçu pour la journée, article par article. Le stock estimé en découle : il
+    n'est jamais saisi.
+  </p>
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Chargement du réassort…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Impossible de charger le réassort">
+        <button foldButton (click)="start()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      @if (siteOptions().length === 0) {
+        <fold-empty-state
+          title="Aucun point de retrait"
+          subtitle="Le réassort se saisit par point de retrait : créez-en un dans Réglages › Sites."
+        >
+          <fold-icon empty-icon name="package" />
+        </fold-empty-state>
+      } @else {
+        <div class="filters" data-resupply-filters>
+          <fold-listbox
+            label="Point de retrait"
+            [options]="siteOptions()"
+            [value]="siteId()"
+            (selectionChange)="chooseSite($event)"
+          />
+          <!-- `<input type="date">` en natif : le contrôle du navigateur bat tout masque maison. -->
+          <label class="field">
+            <span class="field-label">Journée</span>
+            <input
+              type="date"
+              data-resupply-day
+              [value]="day()"
+              (change)="chooseDay($any($event.target).value)"
+            />
+          </label>
+        </div>
+
+        <fold-card data-resupply-receipt>
+          <fold-element-title
+            cardHeader
+            variant="title"
+            title="Reçu pour la vitrine"
+            subtitle="Stock estimé = reçu − ce que les commandes « jour même sur stock » en prendront. Ce circuit n'est pas encore ouvert : aujourd'hui, le stock estimé est le reçu. Les commandes déjà passées pour ce jour sont fabriquées pour elles et ne puisent pas dans la vitrine."
+          />
+
+          @if (lines().length === 0) {
+            <fold-empty-state
+              title="Rien de reçu pour cette journée"
+              [subtitle]="
+                canWrite()
+                  ? 'Ajoutez les articles arrivés en vitrine, ci-dessous.'
+                  : 'Personne n’a encore saisi le réassort de ce jour.'
+              "
+            >
+              <fold-icon empty-icon name="package" />
+            </fold-empty-state>
+          } @else {
+            <table class="lines" data-resupply-lines>
+              <caption class="sr">
+                Articles reçus
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Article</th>
+                  <th scope="col" class="num">Reçu</th>
+                  <th scope="col" class="num">Stock estimé</th>
+                  @if (canWrite()) {
+                    <th scope="col"><span class="sr">Gestes</span></th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                @for (line of lines(); track line.sku) {
+                  <tr [attr.data-resupply-line]="line.sku">
+                    <td>
+                      {{ line.label }}
+                      <span class="muted">{{ line.sku }}</span>
+                    </td>
+                    <td class="num">
+                      @if (canWrite()) {
+                        <fold-number-input
+                          size="sm"
+                          label="Reçu"
+                          [value]="draftOf(line)"
+                          (valueChange)="setDraft(line.sku, $event)"
+                          [min]="0"
+                          integer
+                          [disabled]="pending()"
+                        />
+                      } @else {
+                        {{ line.receivedQuantity }}
+                      }
+                    </td>
+                    <td class="num" data-resupply-estimated>{{ line.estimatedStock }}</td>
+                    @if (canWrite()) {
+                      <td class="actions">
+                        @if (changed(line)) {
+                          <button
+                            foldButton
+                            size="sm"
+                            [disabled]="pending()"
+                            (click)="correct(line)"
+                          >
+                            Corriger
+                          </button>
+                        }
+                        <button
+                          foldButton
+                          size="sm"
+                          emphasis="outline"
+                          intent="danger"
+                          [disabled]="pending()"
+                          (click)="withdraw(line)"
+                        >
+                          Retirer
+                        </button>
+                      </td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+
+          @if (canWrite()) {
+            <div class="add" data-resupply-add>
+              <fold-combobox
+                label="Article reçu"
+                placeholder="Nom ou référence d'un article du catalogue"
+                emptyText="Aucun article ne correspond — ou il est déjà sur la liste."
+                resultLabel="articles"
+                [options]="addableOptions()"
+                [value]="pickedSku()"
+                (valueChange)="pickedSku.set($event)"
+              />
+              <fold-number-input
+                label="Quantité reçue"
+                [value]="pickedQuantity()"
+                (valueChange)="pickedQuantity.set($event)"
+                [min]="0"
+                integer
+              />
+              <button foldButton [disabled]="!canAdd()" [loading]="pending()" (click)="add()">
+                Ajouter
+              </button>
+            </div>
+          }
+
+          @if (receipt()?.updatedBy; as author) {
+            <p class="trace">Dernière saisie par {{ author }}.</p>
+          }
+
+          @if (failure(); as message) {
+            <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+          }
+        </fold-card>
+      }
+    }
+  }
 </fold-page-layout>

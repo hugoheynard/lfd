@@ -66,4 +66,15 @@ describe('l’heure limite générale (order_cutoff_settings.updated)', () => {
     expect(sentence(input)).toBe('Colette Martin a fermé les commandes pour le jour même');
     expect(renderFact(input).detail).toEqual([]);
   });
+
+  it('dit la limite du réassort boutique levée, sans détail résiduel', () => {
+    const input = updated({
+      sameDayAllowed: false,
+      resupplySubjectToCutoff: false,
+      previous: { sameDayAllowed: false, resupplySubjectToCutoff: true },
+    });
+
+    expect(sentence(input)).toBe('Colette Martin a levé l’heure limite pour le réassort boutique');
+    expect(renderFact(input).detail).toEqual([]);
+  });
 });

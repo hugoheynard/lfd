@@ -16,6 +16,7 @@ export class PrismaOrderCutoffSettingsRepository extends OrderCutoffSettingsRepo
     // `enabled` n'est plus écrit (2026-10-21) : la colonne garde son défaut.
     const row = {
       sameDayAllowed: settings.sameDayAllowed,
+      resupplySubjectToCutoff: settings.resupplySubjectToCutoff,
       updatedAt: settings.at,
       updatedByStaffId: settings.author.staffUserId,
       updatedByName: settings.author.name,

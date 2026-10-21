@@ -1,0 +1,80 @@
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-md);
+  align-items: end;
+  margin-bottom: var(--fold-space-md);
+}
+
+.field {
+  display: grid;
+  gap: var(--fold-space-2xs);
+}
+
+.field-label {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.lines {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.lines th {
+  padding: 0 var(--fold-space-xs) var(--fold-space-xs);
+  border-bottom: 1px solid var(--fold-color-border);
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-semibold);
+  letter-spacing: var(--fold-tracking-wide);
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.lines td {
+  padding: var(--fold-space-xs);
+  border-bottom: 1px solid var(--fold-color-border-subtle);
+  font-size: var(--fold-text-sm);
+  vertical-align: middle;
+}
+
+.lines .num {
+  text-align: right;
+}
+
+.muted {
+  display: block;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-2xs);
+}
+
+.actions {
+  display: flex;
+  gap: var(--fold-space-xs);
+  justify-content: flex-end;
+}
+
+.add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-md);
+  align-items: end;
+  margin-top: var(--fold-space-md);
+}
+
+.trace {
+  margin: var(--fold-space-md) 0 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+/* La légende nomme le tableau pour un lecteur d'écran sans encombrer l'œil. */
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

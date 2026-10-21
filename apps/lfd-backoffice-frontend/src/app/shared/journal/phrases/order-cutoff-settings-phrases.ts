@@ -7,9 +7,10 @@ import { byActor, text, type Phrase, type PhraseFact, type Segment } from '../ph
  * **Le jour même, et l'interrupteur retiré** — le miroir de
  * `order_cutoff_settings.updated` dans `@lfd/contracts`.
  *
- * Depuis le 2026-10-21, la charge ne porte plus que le jour même ; les lignes
- * d'avant portent aussi `enabled` (l'interrupteur de l'heure limite générale,
- * lot O3), et leur phrase le dit toujours.
+ * Depuis le 2026-10-21, la charge porte le jour même et la limite du réassort
+ * boutique (`resupplySubjectToCutoff`) ; les lignes d'avant portent aussi
+ * `enabled` (l'interrupteur de l'heure limite générale, lot O3), et leur
+ * phrase le dit toujours.
  */
 /** L'avant et l'après d'une clé booléenne, ou `null` si la charge ne les porte pas. */
 function change(fact: PhraseFact, key: string): { before: boolean; after: boolean } | null {
@@ -37,6 +38,14 @@ function changes(fact: PhraseFact): string[] {
         : 'a fermé les commandes pour le jour même',
     );
   }
+  const resupply = change(fact, 'resupplySubjectToCutoff');
+  if (resupply !== null && resupply.before !== resupply.after) {
+    said.push(
+      resupply.after
+        ? 'a soumis le réassort boutique à l’heure limite générale'
+        : 'a levé l’heure limite pour le réassort boutique',
+    );
+  }
   return said;
 }
 
@@ -45,14 +54,18 @@ function readable(fact: PhraseFact): boolean {
   return change(fact, 'sameDayAllowed') !== null;
 }
 
-/** Les clés que la phrase a dites : `enabled` seulement sur une ligne d'avant le 2026-10-21. */
+/**
+ * Les clés que la phrase a dites : `enabled` seulement sur une ligne d'avant le
+ * 2026-10-21, `resupplySubjectToCutoff` seulement sur une ligne d'après.
+ */
 function saidKeys(fact: PhraseFact): string[] {
   if (!readable(fact)) {
     return [];
   }
-  return change(fact, 'enabled') === null
-    ? ['sameDayAllowed', 'previous']
-    : ['enabled', 'sameDayAllowed', 'previous'];
+  const optional = ['enabled', 'resupplySubjectToCutoff'].filter(
+    (key) => change(fact, key) !== null,
+  );
+  return [...optional, 'sameDayAllowed', 'previous'];
 }
 
 function orderCutoffSettings(fact: PhraseFact): Segment[] {

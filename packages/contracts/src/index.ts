@@ -1961,6 +1961,18 @@ export {
 } from "./order-cutoff-settings.js";
 export type { OrderCutoffSettingsPatch, OrderCutoffSettingsView } from "./order-cutoff-settings.js";
 export {
+  correctResupplyLineSchema,
+  receiveResupplyLineSchema,
+  resupplyServiceDaySchema,
+} from "./resupply-receipt.js";
+export type {
+  CorrectResupplyLinePayload,
+  ReceiveResupplyLinePayload,
+  ResupplyArticleView,
+  ResupplyReceiptLineView,
+  ResupplyReceiptView,
+} from "./resupply-receipt.js";
+export {
   DEFAULT_ORDER_OPENING,
   ORDERS_CLOSED_FOR_AUDIENCE,
   ordersOpenTo,

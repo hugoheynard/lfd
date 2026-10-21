@@ -46,6 +46,7 @@ class Directory extends StaffDirectory {
 
 const SAME_DAY_OPEN: OrderCutoffSettingsView = {
   sameDayAllowed: true,
+  resupplySubjectToCutoff: true,
   updatedAt: AT.toISOString(),
   updatedBy: "Alex",
 };
@@ -102,8 +103,39 @@ describe("UpdateOrderCutoffSettingsHandler", () => {
     });
     expect(events.traced[0]?.journalFact().payload).toEqual({
       sameDayAllowed: false,
-      previous: { sameDayAllowed: true },
+      resupplySubjectToCutoff: true,
+      previous: { sameDayAllowed: true, resupplySubjectToCutoff: true },
     });
+  });
+
+  /** La limite du réapprovisionnement (2026-10-21) : une page n'envoie que sa clé. */
+  it("pose la limite du réapprovisionnement sans toucher au jour même", async () => {
+    const written = new Written();
+    const events = new RecordingPublisher();
+
+    await handler(SAME_DAY_OPEN, written, events).execute(
+      new UpdateOrderCutoffSettingsCommand({ resupplySubjectToCutoff: false }, "staff_agent"),
+    );
+
+    expect(written.puts[0]?.sameDayAllowed).toBe(true);
+    expect(written.puts[0]?.resupplySubjectToCutoff).toBe(false);
+    expect(events.traced[0]?.journalFact().payload).toEqual({
+      sameDayAllowed: true,
+      resupplySubjectToCutoff: false,
+      previous: { sameDayAllowed: true, resupplySubjectToCutoff: true },
+    });
+  });
+
+  it("le jour même posé seul garde la limite du réapprovisionnement courante", async () => {
+    const written = new Written();
+
+    await handler(
+      { ...SAME_DAY_OPEN, resupplySubjectToCutoff: false },
+      written,
+      new RecordingPublisher(),
+    ).execute(new UpdateOrderCutoffSettingsCommand({ sameDayAllowed: false }, "staff_agent"));
+
+    expect(written.puts[0]?.resupplySubjectToCutoff).toBe(false);
   });
 
   it("reposer l'état courant n'écrit rien et ne journalise rien", async () => {

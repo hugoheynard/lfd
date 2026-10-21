@@ -476,9 +476,16 @@ export const ORDERS_PRODUCTION_FACTS = {
   "order_cutoff_settings.updated": fact(
     payload({
       sameDayAllowed: z.boolean(),
-      previous: payload({ sameDayAllowed: z.boolean() }),
+      resupplySubjectToCutoff: z.boolean(),
+      previous: payload({ sameDayAllowed: z.boolean(), resupplySubjectToCutoff: z.boolean() }),
     }),
     [
+      // Du 2026-10-21 (interrupteur retiré) à l'arrivée de la limite du
+      // réapprovisionnement, le même jour.
+      payload({
+        sameDayAllowed: z.boolean(),
+        previous: payload({ sameDayAllowed: z.boolean() }),
+      }),
       payload({
         enabled: z.boolean(),
         sameDayAllowed: z.boolean(),

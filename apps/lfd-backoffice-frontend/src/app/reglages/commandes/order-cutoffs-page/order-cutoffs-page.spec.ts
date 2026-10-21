@@ -1,12 +1,17 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import type { OrderCutoffView, StaffPermission } from '@lfd/contracts';
+import {
+  DEFAULT_ORDER_CUTOFF_SETTINGS,
+  type OrderCutoffView,
+  type StaffPermission,
+} from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { OrderCutoffWaiversService } from '../../../commandes/order-cutoff-waivers.service';
 import { OrderLateFeeService } from '../../../comptabilite/order-late-fee/order-late-fee.service';
 import { NotifyService } from '../../../notify.service';
+import { OrderCutoffSettingsService } from '../order-cutoff-settings.service';
 import { OrderCutoffsService } from '../order-cutoffs.service';
 import { OrderCutoffsPage } from './order-cutoffs-page';
 
@@ -36,6 +41,10 @@ async function mount(
       provideRouter([]),
       { provide: OrderCutoffsService, useValue: { general: () => Promise.resolve(general) } },
       { provide: OrderLateFeeService, useValue: { read: () => Promise.resolve(null) } },
+      {
+        provide: OrderCutoffSettingsService,
+        useValue: { read: () => Promise.resolve(DEFAULT_ORDER_CUTOFF_SETTINGS) },
+      },
       { provide: OrderCutoffWaiversService, useValue: { listOpen: () => Promise.resolve([]) } },
       { provide: NotifyService, useValue: { success: () => undefined, error: () => undefined } },
       {
@@ -60,6 +69,14 @@ describe('OrderCutoffsPage', () => {
 
     expect(root(fixture).querySelector('app-cutoffs-section')).not.toBeNull();
     expect(root(fixture).querySelector('[data-b2c-card]')).toBeNull();
+  });
+
+  it('porte la limite du réassort boutique, sans effet encore (2026-10-21)', async () => {
+    const fixture = await mount(['lfc_order_settings:read']);
+
+    expect(root(fixture).querySelector('app-resupply-cutoff-card')?.textContent).toContain(
+      'commandé au fournil',
+    );
   });
 
   it('ne montre ni dérogations ni renvoi sans leurs droits', async () => {

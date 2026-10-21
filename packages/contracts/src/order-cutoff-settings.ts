@@ -16,6 +16,14 @@ export interface OrderCutoffSettingsView {
    * 2026-10-14) : le délai minimum est ce réglage, jamais une règle en dur.
    */
   readonly sameDayAllowed: boolean;
+  /**
+   * Le réapprovisionnement d'un site est-il soumis à l'heure limite générale ?
+   * (Hugo, 2026-10-21 : « la limite ou absence de limite [du réassort] devrait
+   * être définie dans les réglages limites ».) `true` par défaut. Stocké et
+   * affiché, SANS effet tant que le réapprovisionnement n'est pas commandé au
+   * fournil (`documentation/livraisons/transferts/plan-reapprovisionnement.md`).
+   */
+  readonly resupplySubjectToCutoff: boolean;
   /** Instant du dernier geste ; `null` tant que personne n'a rien réglé. */
   readonly updatedAt: string | null;
   /** Le nom de qui l'a posé, figé au geste ; `null` tant que personne n'a rien réglé. */
@@ -25,14 +33,26 @@ export interface OrderCutoffSettingsView {
 /** Le réglage tant que personne ne l'a posé : jour même fermé — rien ne s'ouvre au déploiement. */
 export const DEFAULT_ORDER_CUTOFF_SETTINGS: OrderCutoffSettingsView = {
   sameDayAllowed: false,
+  resupplySubjectToCutoff: true,
   updatedAt: null,
   updatedBy: null,
 };
 
 /**
- * `PATCH /admin/order-cutoff-settings` — le jour même, seul réglage qui reste.
- * Strict : une charge qui porte encore `enabled` (l'interrupteur retiré le
- * 2026-10-21) est refusée plutôt qu'avalée en silence.
+ * `PATCH /admin/order-cutoff-settings` — le jour même et la limite du
+ * réapprovisionnement (2026-10-21). Une vraie rustine : chaque page n'envoie
+ * que sa clé, au moins une est exigée. Strict : une charge qui porte encore
+ * `enabled` (l'interrupteur retiré le 2026-10-21) est refusée plutôt
+ * qu'avalée en silence.
  */
-export const orderCutoffSettingsPatchSchema = z.object({ sameDayAllowed: z.boolean() }).strict();
+export const orderCutoffSettingsPatchSchema = z
+  .object({
+    sameDayAllowed: z.boolean().optional(),
+    resupplySubjectToCutoff: z.boolean().optional(),
+  })
+  .strict()
+  .refine(
+    (patch) => patch.sameDayAllowed !== undefined || patch.resupplySubjectToCutoff !== undefined,
+    { message: "Indiquez au moins un réglage à poser." },
+  );
 export type OrderCutoffSettingsPatch = z.infer<typeof orderCutoffSettingsPatchSchema>;

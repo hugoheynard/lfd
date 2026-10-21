@@ -173,7 +173,12 @@ describe("l'interrupteur de l'heure limite générale, retiré le 2026-10-21", (
   it("la vue ne le porte plus : le jour même seul, sans auteur tant que personne ne l'a réglé", async () => {
     const view = jsonBody<OrderCutoffSettingsView>(await staff().get(ROUTE).expect(200));
 
-    expect(view).toEqual({ sameDayAllowed: false, updatedAt: null, updatedBy: null });
+    expect(view).toEqual({
+      sameDayAllowed: false,
+      resupplySubjectToCutoff: true,
+      updatedAt: null,
+      updatedBy: null,
+    });
   });
 
   it("refuse (400) une charge qui veut encore le couper, sans rien écrire", async () => {
@@ -213,8 +218,29 @@ describe("l'interrupteur de l'heure limite générale, retiré le 2026-10-21", (
       select: { payload: true },
     });
     expect(facts).toEqual([
-      { payload: { sameDayAllowed: true, previous: { sameDayAllowed: false } } },
+      {
+        payload: {
+          sameDayAllowed: true,
+          resupplySubjectToCutoff: true,
+          previous: { sameDayAllowed: false, resupplySubjectToCutoff: true },
+        },
+      },
     ]);
+  });
+
+  /** La limite du réapprovisionnement (2026-10-21) : stockée, relue, sans toucher au jour même. */
+  it("la limite du réapprovisionnement se pose seule, et le jour même reste", async () => {
+    await setSameDay(true);
+    await staff().patch(ROUTE).send({ resupplySubjectToCutoff: false }).expect(204);
+
+    const view = jsonBody<OrderCutoffSettingsView>(await staff().get(ROUTE).expect(200));
+    expect(view).toMatchObject({ sameDayAllowed: true, resupplySubjectToCutoff: false });
+  });
+
+  it("refuse (400) une charge vide", async () => {
+    await staff().patch(ROUTE).send({}).expect(400);
+
+    expect(await ctx.prisma.orderCutoffSettings.count()).toBe(0);
   });
 });
 

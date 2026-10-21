@@ -270,6 +270,10 @@ model OrderCutoffSettings {
   /// Une commande peut-elle viser AUJOURD'HUI ? (Hugo, 2026-10-14, §8.3.) Non
   /// par défaut ; aucune règle de délai codée en dur ailleurs.
   sameDayAllowed Boolean @default(false) @map("same_day_allowed")
+  /// Le réapprovisionnement d'un site est-il soumis à l'heure limite générale ?
+  /// (Hugo, 2026-10-21.) Oui par défaut. Stocké et affiché, SANS effet tant que
+  /// le réapprovisionnement n'est pas commandé au fournil.
+  resupplySubjectToCutoff Boolean @default(true) @map("resupply_subject_to_cutoff")
 
   /// Instant du geste, lu du `Clock`.
   updatedAt        DateTime @map("updated_at")

@@ -12,6 +12,7 @@ import { PermissionsStore } from '../../../auth/permissions.store';
 import { CutoffWaiversCard } from '../cutoff-waivers-card/cutoff-waivers-card';
 import { GRACE_CHOICES } from '../cutoffs-section/cutoff-format';
 import { CutoffsSection } from '../cutoffs-section/cutoffs-section';
+import { ResupplyCutoffCard } from '../resupply-cutoff-card/resupply-cutoff-card';
 import { LateFeeSummaryCard } from '../late-fee-summary-card/late-fee-summary-card';
 
 /**
@@ -53,6 +54,7 @@ import { LateFeeSummaryCard } from '../late-fee-summary-card/late-fee-summary-ca
     FoldElementTitleComponent,
     FoldPageLayoutComponent,
     LateFeeSummaryCard,
+    ResupplyCutoffCard,
     RouterLink,
   ],
   templateUrl: './order-cutoffs-page.html',

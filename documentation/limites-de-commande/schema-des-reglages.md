@@ -186,6 +186,7 @@ flowchart TB
   subgraph E1["Réglages › Commandes › Heure limite<br/>« Heure limite générale — arrêt du plan de production pour le lendemain »"]
     R1["① L'HEURE LIMITE GÉNÉRALE — une seule règle<br/>« la veille, 23 h » + rattrapage<br/>vaut pour tout le monde, toujours en vigueur<br/>droit lfc_order_settings"]
     R7["⑦ Dérogations pendant le rattrapage<br/>droit b2b_order_waivers"]
+    R9["⑨ Réassort boutique : soumis à l'heure limite / sans limite<br/>stocké, SANS effet tant que le réassort<br/>n'est pas commandé au fournil"]
   end
   subgraph E2["Fiche produit (et Référentiel › Limites de commande, en lecture + retrait)"]
     R4["④ Limite PAR PRODUIT — entière<br/>« 2 jours avant, 12 h », sans rattrapage<br/>droit pim_catalog"]
@@ -223,6 +224,11 @@ l'instant où ① ferme, et ne contredit donc jamais l'heure annoncée. La bouti
 annonce ① et ④ (« Pour jeudi, commandez avant 23 h », « Plus que… », « Préparé
 sur commande — … », « un article de votre panier : trop tard pour… ») ; après
 l'heure, elle propose le premier jour encore ouvert (le surlendemain).
+
+**Ajouté le 2026-10-21** : ⑨, la limite du réassort boutique, sur la page de
+l'heure limite (`order_cutoff_settings.resupply_subject_to_cutoff`, oui par
+défaut). Elle ne décide rien encore : le réassort n'est pas commandé au
+fournil ([`plan-jour-meme-sur-stock.md`](plan-jour-meme-sur-stock.md) §7).
 
 **Reste à faire** : les recommandations « commandable aujourd'hui » alignées sur
 « la plus stricte gagne », le devis qui signale la limite, le rattrapage réuni

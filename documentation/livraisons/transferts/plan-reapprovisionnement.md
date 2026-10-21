@@ -1,6 +1,14 @@
 # Plan — le réapprovisionnement d'un site
 
-> **État : 📐 doc-first, 2026-10-14.** Rien n'est bâti. Planifié par Hugo
+> **État au 2026-10-21 : partiel.** La **réception** est bâtie (agrégat
+> `ResupplyReceipt`, `b2b/resupply/`, et la page Comptoir › Réassort boutique —
+> [`plan-jour-meme-sur-stock.md`](../../limites-de-commande/plan-jour-meme-sur-stock.md)
+> §7), ainsi que le réglage « soumis à l'heure limite / sans limite », stocké
+> sans effet. Restent : la **commande au fournil** (`SiteResupply`, lots R1–R5)
+> et son branchement aux lecteurs du fournil, du colisage et du transfert ; la
+> décision A/B est tranchée en B (§9).
+>
+> **Doc-first d'origine, 2026-10-14.** Planifié par Hugo
 > (« oui planifie le réassort après ») à la suite du transfert interne
 > ([`plan-transfert-interne.md`](plan-transfert-interne.md)), qui lui a déjà
 > réservé sa place : l'élément de transfert de genre `resupply`, le cadre
@@ -153,3 +161,13 @@ une branche dans l'agrégat lui-même.
 **Recommandation maintenue : B**, avec un **genre explicite** (`kind:
 order | resupply`) au contrat de ce que le fournil produit et dans les faits
 `production.*` / `packing.*`, plutôt qu'un identifiant préfixé.
+
+## 9. Décision de Hugo (2026-10-21) : B
+
+« Pas de prix, part sur B. » Le réapprovisionnement d'un site est un **agrégat
+à part** (`SiteResupply`), jamais une commande : pas de prix, pas de TVA, pas
+de règlement, pas de chiffre d'affaires. Le coût est de le brancher dans les
+lecteurs du fournil, du colisage et du transfert (§3), le jour où il sera
+commandé au fournil. La **réception** au comptoir (lignes produit, quantités
+reçues, stock estimé du jour) est bâtie avant la commande, le 2026-10-21 —
+voir [`../../limites-de-commande/plan-jour-meme-sur-stock.md`](../../limites-de-commande/plan-jour-meme-sur-stock.md).

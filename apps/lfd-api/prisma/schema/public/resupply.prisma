@@ -1,0 +1,52 @@
+/// **La réception d'un réapprovisionnement** — ce qu'un site a reçu pour sa
+/// vitrine un jour donné (plan `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`,
+/// lot J1 ; modèle B de `documentation/livraisons/transferts/plan-reapprovisionnement.md`).
+///
+/// La partie « reçue » du futur `SiteResupply` : un mouvement interne, JAMAIS
+/// une commande — aucun prix, aucune TVA, aucun règlement. Une par (site,
+/// journée). Le stock estimé (reçu − commandé) n'est pas stocké : il se calcule.
+model ResupplyReceipt {
+  id String @id
+
+  /// Le site de retrait (`pickup_addresses.id`), sans clé étrangère : un site
+  /// archivé ne doit pas emporter ce qu'il a reçu.
+  siteId     String   @map("site_id")
+  /// La journée de vente (date civile de Paris).
+  serviceDay DateTime @map("service_day") @db.Date
+
+  /// Verrou optimiste : deux postes qui corrigent la même liste ne s'écrasent pas.
+  version Int @default(0)
+
+  /// Instant du dernier geste, lu du `Clock`.
+  updatedAt        DateTime @map("updated_at")
+  /// Qui l'a fait, figé au geste : l'id de fiche staff, un nom et un rôle instantanés.
+  updatedByStaffId String   @map("updated_by_staff_id")
+  updatedByName    String   @map("updated_by_name")
+  updatedByRole    String   @map("updated_by_role")
+
+  lines ResupplyReceiptLine[]
+
+  @@unique([siteId, serviceDay])
+  @@map("resupply_receipt")
+  @@schema("public")
+}
+
+/// Une ligne reçue : le SKU produit, son libellé FIGÉ à la saisie (lu au
+/// catalogue publié), la quantité reçue (entier ≥ 0).
+model ResupplyReceiptLine {
+  id String @id @default(cuid())
+
+  receiptId String          @map("receipt_id")
+  receipt   ResupplyReceipt @relation(fields: [receiptId], references: [id], onDelete: Restrict)
+
+  sku      String
+  label    String
+  quantity Int
+  /// Rang d'affichage : l'ordre de saisie.
+  position Int
+
+  @@unique([receiptId, sku])
+  @@index([receiptId])
+  @@map("resupply_receipt_line")
+  @@schema("public")
+}
