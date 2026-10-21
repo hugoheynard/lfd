@@ -155,3 +155,9 @@ destinataires habituels du site.
 **Irréversibilité** : tout futur geste sur une commande existante devra
 passer par `accessToOrder` ; le JSDoc d'`effectiveRole` (qui annonce deux
 autres voies) est corrigé en C1.
+
+**7.9 La source d'une annulation (Hugo, 2026-10-21)** : quand c'est le compte
+principal qui annule la commande d'un site, le mail d'annulation au site et le
+suivi de la commande le DISENT — « annulée par [nom], du compte principal
+[enseigne du principal] ». Même mention dans l'historique de la commande vu par
+le site et par l'équipe. Une annulation par un membre du site garde son texte.
