@@ -289,8 +289,12 @@ describe("Prod manager voit les réassorts (R3d)", () => {
     );
   }
 
-  /** Hugo, 2026-10-21 : « mes 18 sont dans le prévisionnel mais pas au dossier ». */
-  it("le dossier du jour montre l'envoyé avant l'arrêt, le figé après, et le PDF l'imprime", async () => {
+  /**
+   * Hugo, 2026-10-21 : « mes 18 sont dans le prévisionnel mais pas au dossier »,
+   * puis (R3d-bis) « ça ne me l'a pas ajouté à la fiche de poste viennoiserie ».
+   */
+  it("le dossier du jour montre l'envoyé avant l'arrêt, le figé après ; le PDF le compte sur la fiche de poste et imprime son bon", async () => {
+    await place(ctx, issued, [{ sku: CROISSANT, quantity: 4 }]);
     await twoHours();
     clock.set(at("19:00"));
     const { id } = await sendTomorrow(18);
@@ -320,7 +324,9 @@ describe("Prod manager voit les réassorts (R3d)", () => {
       })
       .expect(200);
     const pages = Buffer.isBuffer(pdf.body) ? pdfPages(pdf.body) : [];
-    expect(pages[0]).toContain("18 pièces de réassort");
-    expect(pages[0]).toContain("18 pièces pour 1 point");
+    expect(pages[0]).toMatch(/1 commande .*· 1 réassort · 22 pièces dont 18 de réassort/);
+    // La fiche de poste du croissant : le total d'abord, la part ensuite.
+    expect(pages[0]).toMatch(/22 .{0,2}dont 18 réassort/);
+    expect(pages.at(-1)).toContain("RÉASSORT 1/1");
   });
 });

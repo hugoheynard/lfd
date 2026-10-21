@@ -220,7 +220,7 @@ describe("renderDayDossierPdf", () => {
 describe("dayDossierPdfKey — la version de mise en page", () => {
   it("n'est plus la clé d'avant E1b : un dossier archivé à l'ancien papier n'est jamais resservi", () => {
     expect(dayDossierPdfKey(DAY, null)).not.toBe(`${DAY}/dossier-du-jour.pdf`);
-    expect(dayDossierPdfKey(DAY, RETAKEN)).toContain("-v6-retirage-");
+    expect(dayDossierPdfKey(DAY, RETAKEN)).toContain("-v7-retirage-");
   });
 });
 
@@ -228,30 +228,38 @@ describe("dayDossierPdfKey", () => {
   it("une clé pour la clôture, une autre par retirage : le complément n'écrase pas l'original", () => {
     const original = dayDossierPdfKey(DAY, null);
     const completed = dayDossierPdfKey(DAY, RETAKEN);
-    expect(original).toBe(`${DAY}/dossier-du-jour-v6.pdf`);
+    expect(original).toBe(`${DAY}/dossier-du-jour-v7.pdf`);
     expect(completed).not.toBe(original);
     expect(completed.startsWith(`${DAY}/`)).toBe(true);
   });
 
-  it("imprime la section « Réassorts » par point sous le récapitulatif, comptée dans le lot", async () => {
+  it("compte le réassort sur la fiche de poste, total d'abord, et imprime son bon après les bons de commande", async () => {
     const dossier = dayDossierOf([order("LFC-0001", 6)], new Map(), [
       {
         resupplyId: "r-1",
         siteId: "site-v",
         siteLabel: "Village",
         servedByTransfer: true,
-        lines: [{ sku: "VIE-002", productName: "Pain au chocolat", quantity: 18 }],
+        lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 18 }],
       },
     ]);
     const pages = pdfPages(await renderDayDossierPdf(dossier, STAMP, () => ""));
-    expect(pages).toHaveLength(2);
-    expect(pages[0]).toContain("1 commande (1 en livraison) · 6 pièces + 18 pièces de réassort");
-    expect(pages[0]).toContain("18 pièces pour 1 point");
-    expect(pages[0]).toContain("RÉASSORT VILLAGE");
-    expect(pages[0]).toContain("Pain au chocolat");
+    expect(pages).toHaveLength(3);
+    expect(pages[0]).toContain(
+      "1 commande (1 en livraison) · 1 réassort · 24 pièces dont 18 de réassort",
+    );
+    // Le tiret long n'est pas relu par `pdf-text` : le total, puis sa part.
+    expect(pages[0]).toMatch(/24 .{0,2}dont 18 réassort/);
+    expect(pages[0]).not.toContain("RÉASSORT VILLAGE");
+    expect(pages[1]).toContain("BON 1/1");
+    expect(pages[2]).toContain("RÉASSORT 1/1");
+    expect(pages[2]).toContain("Réassort Village");
+    expect(pages[2]).toContain("Croissant");
+    expect(pages[2]).toContain("18 pièces");
+    expect(pages[2]).not.toContain("€");
   });
 
-  it("une journée à réassorts seuls se tire en une page, sans bon", async () => {
+  it("une journée à réassorts seuls : le récapitulatif, puis le bon de réassort", async () => {
     const dossier = dayDossierOf([], new Map(), [
       {
         resupplyId: "r-1",
@@ -262,7 +270,8 @@ describe("dayDossierPdfKey", () => {
       },
     ]);
     const pages = pdfPages(await renderDayDossierPdf(dossier, STAMP, () => ""));
-    expect(pages).toHaveLength(1);
-    expect(pages[0]).toContain("RÉASSORT VILLAGE");
+    expect(pages).toHaveLength(2);
+    expect(pages[0]).toContain("1 réassort · 18 pièces dont 18 de réassort");
+    expect(pages[1]).toContain("Réassort Village");
   });
 });

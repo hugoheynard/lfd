@@ -2,10 +2,10 @@ import type { Buffer } from "node:buffer";
 
 import { type PlanSigner, signedVerb, staffSigner } from "../entities/plan-signer.js";
 import type { ProductionOrderSnapshot } from "../entities/production-day.js";
-import { methodSplitOf } from "./dossier-addressees.js";
-import type { DayDossier, DossierRecapGroup } from "./day-dossier.js";
+import type { DayDossier } from "./day-dossier.js";
+import { drawRecapGroup, lotCount } from "./day-dossier-recap-pdf.js";
 import { dossierSheetHeadOf, type DossierSheetHead } from "./dossier-sheet-head.js";
-import { drawResupplies } from "./day-dossier-resupplies-pdf.js";
+import { drawResupplySheet } from "./day-dossier-resupplies-pdf.js";
 import {
   LEFT,
   MARGIN_Y,
@@ -28,8 +28,8 @@ import {
 import { methodLabel } from "./fulfillment-method-label.js";
 
 /**
- * **Le dossier du jour, en PDF** — le récapitulatif, puis un bon par commande,
- * en UN fichier : c'est le paquet qui part au fournil (plan
+ * **Le dossier du jour, en PDF** — le récapitulatif, puis un bon par commande
+ * et un bon par réassort, en UN fichier : c'est le paquet qui part au fournil (plan
  * `documentation/production/dossier-prod-du-jour.md`, E1).
  *
  * Même mise en page que la feuille d'atelier et le compte à produire, dont il
@@ -81,6 +81,13 @@ export function renderDayDossierPdf(
           drawScan(doc, url, order.reference, room(doc, end, SCAN_SIZE + 4 * MM, stamp));
         }
       });
+      dossier.resupplySheets.forEach((resupply, index) => {
+        doc.addPage();
+        const rank = `réassort ${String(index + 1)}/${String(dossier.resupplySheets.length)}`;
+        drawResupplySheet(doc, resupply, lotBanner(stamp), rank, (at, needed) =>
+          room(doc, at, needed, stamp),
+        );
+      });
       footers(doc, stamp);
     },
     true,
@@ -107,8 +114,12 @@ export function renderDayDossierPdf(
  *
  * `v6` (2026-10-21, R3d du réassort) : la section « Réassorts » par point, et
  * leurs pièces dans le compte du lot.
+ *
+ * `v7` (2026-10-21, R3d-bis du réassort) : les fiches de poste comptent
+ * commandes + réassorts (« dont N réassort » en détail), et un bon par
+ * réassort suit les bons de commande ; la section « Réassorts » est retirée.
  */
-export const DOSSIER_LAYOUT_VERSION = "v6";
+export const DOSSIER_LAYOUT_VERSION = "v7";
 
 export function dayDossierPdfKey(serviceDay: string, retakenAt: Date | null): string {
   const base = `${serviceDay}/dossier-du-jour-${DOSSIER_LAYOUT_VERSION}`;
@@ -122,20 +133,6 @@ function plural(count: number, word: string): string {
   return `${String(count)} ${word}${count > 1 ? "s" : ""}`;
 }
 
-/**
- * « N commandes (R en retrait, L en livraison) · P pièces » — le lot compté,
- * en une phrase. Une part à zéro ne s'écrit pas : « 3 commandes (3 en retrait) ».
- */
-function lotCount(dossier: DayDossier): string {
-  const pickup = dossier.sheets.filter((order) => order.fulfillmentMethod === "pickup").length;
-  const split = methodSplitOf(pickup, dossier.sheets.length - pickup);
-  const orders = plural(dossier.sheets.length, "commande");
-  const lot = `${split === "" ? orders : `${orders} (${split})`} · ${plural(dossier.pieces, "pièce")}`;
-  return dossier.resupplyPieces === 0
-    ? lot
-    : `${lot} + ${plural(dossier.resupplyPieces, "pièce")} de réassort`;
-}
-
 function drawRecap(doc: Doc, dossier: DayDossier, stamp: DossierStamp): void {
   let y = MARGIN_Y;
   put(doc, "À FABRIQUER", LEFT, y, { size: 16, bold: true });
@@ -146,31 +143,8 @@ function drawRecap(doc: Doc, dossier: DayDossier, stamp: DossierStamp): void {
   putCaps(doc, `RÉCAPITULATIF — ${lotCount(dossier)}`, LEFT, y);
   y += 8 * MM;
   for (const group of dossier.recap) {
-    y = drawGroup(doc, group, y, stamp);
+    y = drawRecapGroup(doc, group, y, (at, needed) => room(doc, at, needed, stamp));
   }
-  drawResupplies(doc, dossier, y, (at, needed) => room(doc, at, needed, stamp));
-}
-
-function drawGroup(doc: Doc, group: DossierRecapGroup, top: number, stamp: DossierStamp): number {
-  let y = room(doc, top, 16 * MM, stamp);
-  put(doc, group.label.toUpperCase(), LEFT, y, { size: 11, bold: true });
-  putRight(doc, String(group.quantity), RIGHT, y, 11, true);
-  y += 5 * MM;
-  rule(doc, y, 1);
-  y += 3.5 * MM;
-  for (const line of group.lines) {
-    y = room(doc, y, 10 * MM, stamp);
-    put(doc, String(line.quantity), LEFT, y - 1.2 * MM, { size: 16, bold: true });
-    put(doc, line.productName, LEFT + 20 * MM, y, { size: 12, width: WIDTH - 75 * MM });
-    putRight(doc, line.sku, RIGHT - 22 * MM, y + 1 * MM, 9);
-    // Sur combien de commandes ça se répartit : 240 en 3 fois ne se prépare
-    // pas comme 240 en 40.
-    putRight(doc, `${String(line.orderCount)} cde${line.orderCount > 1 ? "s" : ""}`, RIGHT, y, 10);
-    y += 6 * MM;
-    rule(doc, y, 0.6, ROW_GRAY);
-    y += 3 * MM;
-  }
-  return y + 4 * MM;
 }
 
 function drawSheet(

@@ -4,6 +4,7 @@ import {
   type CatalogFamilyView,
   type CatalogItemView,
   type AtelierSheet,
+  type ProductionDayResupply,
 } from '@lfd/contracts';
 import { catalogShelves } from '@lfd/b2b-ui/catalog';
 
@@ -23,14 +24,17 @@ import { catalogShelves } from '@lfd/b2b-ui/catalog';
  * disparaît pas pour autant — il tombe dans un groupe à part, en fin de liste.
  */
 
-/** Un produit à fabriquer, tous bons de commande confondus. */
+/** Un produit à fabriquer, commandes et réassorts confondus. */
 export interface ProductionRecapLine {
   readonly sku: string;
   /** Le nom **figé à la commande** — le seul dont on soit sûr qu'il a été vendu. */
   readonly productName: string;
+  /** Le TOTAL que le poste enfourne : commandes + réassorts (R3d-bis). */
   readonly quantity: number;
   /** Sur combien de commandes il se répartit : 240 en 3 fois n'est pas 240 en 40. */
   readonly orderCount: number;
+  /** Dont réassort — un détail du total, jamais à part de lui. */
+  readonly resupplyQuantity: number;
 }
 
 /** Un rayon et son contenu. */
@@ -39,6 +43,7 @@ export interface ProductionRecapGroup {
   readonly family: CatalogFamilyView | null;
   readonly label: string;
   readonly quantity: number;
+  readonly resupplyQuantity: number;
   readonly lines: readonly ProductionRecapLine[];
 }
 
@@ -67,6 +72,7 @@ interface Tally {
   productName: string;
   quantity: number;
   orderCount: number;
+  resupplyQuantity: number;
 }
 
 /**
@@ -88,27 +94,14 @@ export function productionRecap(
    * normal a son catalogue, et c'est la panne qui doit se déclarer.
    */
   shelvesKnown = true,
+  /**
+   * Les réassorts de la journée (R3d-bis, Hugo 2026-10-21) : ils vont sur les
+   * mêmes fiches de poste, dans le total — c'est ce que le poste enfourne.
+   */
+  resupplies: readonly ProductionDayResupply[] = [],
 ): readonly ProductionRecapGroup[] {
   const familyOf = new Map(catalogue.map((item) => [item.sku, item.family]));
-  const bySku = new Map<string, Tally>();
-
-  for (const sheet of sheets) {
-    for (const line of sheet.lines) {
-      const tally = bySku.get(line.sku);
-      if (tally === undefined) {
-        bySku.set(line.sku, {
-          productName: line.productName,
-          quantity: line.quantity,
-          orderCount: 1,
-        });
-        continue;
-      }
-      tally.quantity += line.quantity;
-      tally.orderCount += 1;
-    }
-  }
-
-  const tallied: ProductionRecapLine[] = [...bySku].map(([sku, tally]) => ({ sku, ...tally }));
+  const tallied = talliesOf(sheets, resupplies);
   return catalogShelves(tallied, (line) => familyOf.get(line.sku) ?? null).map((shelf) => {
     const lines = [...shelf.items].sort(
       (a, b) => b.quantity - a.quantity || a.productName.localeCompare(b.productName, 'fr'),
@@ -117,9 +110,44 @@ export function productionRecap(
       family: shelf.family,
       label: shelfLabel(shelf.family, shelvesKnown),
       quantity: lines.reduce((sum, line) => sum + line.quantity, 0),
+      resupplyQuantity: lines.reduce((sum, line) => sum + line.resupplyQuantity, 0),
       lines,
     };
   });
+}
+
+/** Additionne par SKU les lignes des bons et celles des réassorts. */
+function talliesOf(
+  sheets: readonly AtelierSheet[],
+  resupplies: readonly ProductionDayResupply[],
+): ProductionRecapLine[] {
+  const bySku = new Map<string, Tally>();
+  const add = (sku: string, productName: string, quantity: number, fromOrder: boolean): void => {
+    const tally = bySku.get(sku) ?? {
+      productName,
+      quantity: 0,
+      orderCount: 0,
+      resupplyQuantity: 0,
+    };
+    bySku.set(sku, tally);
+    tally.quantity += quantity;
+    if (fromOrder) {
+      tally.orderCount += 1;
+    } else {
+      tally.resupplyQuantity += quantity;
+    }
+  };
+  for (const sheet of sheets) {
+    for (const line of sheet.lines) {
+      add(line.sku, line.productName, line.quantity, true);
+    }
+  }
+  for (const resupply of resupplies) {
+    for (const line of resupply.lines) {
+      add(line.sku, line.productName, line.quantity, false);
+    }
+  }
+  return [...bySku].map(([sku, tally]) => ({ sku, ...tally }));
 }
 
 /**
@@ -137,7 +165,12 @@ export function shelfLabel(family: CatalogFamilyView | null, shelvesKnown: boole
   return shelvesKnown ? OFF_CATALOG_LABEL : UNKNOWN_SHELF_LABEL;
 }
 
-/** Le total de pièces du lot — le chiffre qu'on annonce au fournil en une phrase. */
+/** Le total de pièces du lot, réassorts compris — le chiffre qu'on annonce au fournil. */
 export function totalPieces(groups: readonly ProductionRecapGroup[]): number {
   return groups.reduce((sum, group) => sum + group.quantity, 0);
+}
+
+/** Les pièces de réassort du lot — le détail du total. */
+export function resupplyPieces(groups: readonly ProductionRecapGroup[]): number {
+  return groups.reduce((sum, group) => sum + group.resupplyQuantity, 0);
 }

@@ -185,7 +185,7 @@ describe('les réassorts au dossier', () => {
     ],
   });
 
-  it('montre une journée à réassorts seuls, comptés à part, sans changer le nombre de commandes', async () => {
+  it('montre une journée à réassorts seuls : comptés dans le total, nombre de commandes inchangé', async () => {
     const { fixture } = await render(async () => new Blob(), false, {
       sheets: [],
       resupplies: VILLAGE(false),
@@ -194,19 +194,28 @@ describe('les réassorts au dossier', () => {
 
     expect(el.textContent).not.toContain('Rien à produire ce jour-là');
     expect(el.querySelector('.pr-count')?.textContent).toContain('0 commande');
-    expect(el.querySelector('.pr-count-resupply')?.textContent).toContain(
-      '+ 18 pièces de réassort',
-    );
-    expect(el.querySelector('.pr-resupplies')?.textContent).toContain('Réassort Village');
+    expect(el.querySelector('.pr-count')?.textContent).toContain('18 pièces');
+    expect(el.querySelector('.pr-count-resupply')?.textContent).toContain('dont 18 de réassort');
     expect(el.querySelector('.pr-resupplies-live')).not.toBeNull();
   });
 
-  it('ne dit plus « envoyés » sur une journée arrêtée : ce sont les réassorts figés', async () => {
+  /**
+   * Régression R3d-bis : la fiche de poste ne comptait pas le réassort d'une
+   * journée arrêtée (Hugo, 2026-10-21) — il était dans une section à part.
+   */
+  it('compte le réassort sur la fiche de poste, total d’abord, et lui donne son bon', async () => {
     const { fixture } = await render(async () => new Blob(), true, { resupplies: VILLAGE(true) });
     const el = fixture.nativeElement as HTMLElement;
 
     expect(el.querySelector('.pr-count')?.textContent).toContain('1 commande');
-    expect(el.querySelector('.pr-resupplies')?.textContent).toContain('Pain au chocolat');
+    const rows = [...el.querySelectorAll('.pr-table tr')].map((row) => row.textContent ?? '');
+    const chocolat = rows.find((row) => row.includes('Pain au chocolat')) ?? '';
+    expect(chocolat).toContain('18');
+    expect(chocolat).toContain('dont 18 réassort');
     expect(el.querySelector('.pr-resupplies-live')).toBeNull();
+    const bon = el.querySelector('app-bon-reassort');
+    expect(bon?.textContent).toContain('Réassort Village');
+    expect(bon?.textContent).toContain('réassort 1/1');
+    expect(bon?.textContent).not.toContain('€');
   });
 });

@@ -1,7 +1,7 @@
 import type { CatalogFamilyView, CatalogItemView, AtelierSheet } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
-import { productionRecap, totalPieces } from '../production-recap';
+import { productionRecap, resupplyPieces, totalPieces } from '../production-recap';
 
 function sheet(reference: string, lines: [string, string, number][]): AtelierSheet {
   return {
@@ -130,5 +130,35 @@ describe('le récapitulatif de production', () => {
   it('rend une liste vide pour un lot vide', () => {
     expect(productionRecap([], CATALOGUE)).toEqual([]);
     expect(totalPieces([])).toBe(0);
+  });
+
+  /** R3d-bis (Hugo, 2026-10-21) : la fiche de poste compte les réassorts. */
+  it('additionne les réassorts dans le total du produit et du rayon, la part à côté', () => {
+    const recap = productionRecap([sheet('C-1', [['CRO', 'Croissant', 24]])], CATALOGUE, true, [
+      {
+        resupplyId: 'r-1',
+        siteId: 'site-v',
+        siteLabel: 'Village',
+        servedByTransfer: true,
+        lines: [
+          { sku: 'CRO', productName: 'Croissant', quantity: 18 },
+          { sku: 'PAC', productName: 'Pain au chocolat', quantity: 6 },
+        ],
+      },
+    ]);
+
+    expect(recap[0]).toMatchObject({ label: 'Viennoiseries', quantity: 48, resupplyQuantity: 24 });
+    expect(recap[0]?.lines).toEqual([
+      { sku: 'CRO', productName: 'Croissant', quantity: 42, orderCount: 1, resupplyQuantity: 18 },
+      {
+        sku: 'PAC',
+        productName: 'Pain au chocolat',
+        quantity: 6,
+        orderCount: 0,
+        resupplyQuantity: 6,
+      },
+    ]);
+    expect(totalPieces(recap)).toBe(48);
+    expect(resupplyPieces(recap)).toBe(24);
   });
 });

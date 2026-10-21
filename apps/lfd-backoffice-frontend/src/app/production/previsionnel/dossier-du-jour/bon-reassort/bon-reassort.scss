@@ -1,0 +1,107 @@
+/* La même feuille que le bon de commande (`fiche-production`) : une carte à
+   l'écran, la page du PDF au tirage. */
+:host {
+  display: block;
+  padding: 14mm 12mm;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-card);
+  color: var(--fold-color-text);
+}
+
+.br-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 6mm;
+  padding-bottom: 4mm;
+  border-bottom: 2px solid currentColor;
+}
+
+.br-batch {
+  margin: 0 0 2mm;
+  font-size: 10pt;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.br-title {
+  margin: 0;
+  font-size: 20pt;
+  line-height: 1.1;
+}
+
+.br-route {
+  margin: 1mm 0 0;
+  font-size: 11pt;
+}
+
+.br-kind {
+  margin: 0;
+  font-size: 16pt;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.br-lines {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.br-caption {
+  padding: 3mm 0 2mm;
+  font-size: 10pt;
+  letter-spacing: 0.08em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.br-lines th,
+.br-lines td {
+  padding: 2.5mm 2mm;
+  border-bottom: 1px solid var(--fold-color-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.br-lines th {
+  font-size: 9pt;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.br-qty-head,
+.br-qty {
+  width: 18mm;
+  font-variant-numeric: tabular-nums;
+}
+
+.br-qty {
+  font-size: 16pt;
+  font-weight: 700;
+}
+
+.br-product {
+  display: block;
+  font-size: 12pt;
+}
+
+.br-sku {
+  display: block;
+  font-size: 8pt;
+  letter-spacing: 0.04em;
+}
+
+.br-tick-head,
+.br-tick {
+  width: 16mm;
+  text-align: center;
+}
+
+.br-box {
+  display: inline-block;
+  width: 6mm;
+  height: 6mm;
+  border: 1.5px solid currentColor;
+}

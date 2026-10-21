@@ -69,8 +69,20 @@ describe("dayDossierOf", () => {
       [SHELF_LABEL_OFF_CATALOG, 1],
     ]);
     expect(dossier.recap[0]?.lines).toEqual([
-      { sku: "VIE-001", productName: "Croissant", quantity: 50, orderCount: 2 },
-      { sku: "VIE-002", productName: "Pain au chocolat", quantity: 40, orderCount: 1 },
+      {
+        sku: "VIE-001",
+        productName: "Croissant",
+        quantity: 50,
+        orderCount: 2,
+        resupplyQuantity: 0,
+      },
+      {
+        sku: "VIE-002",
+        productName: "Pain au chocolat",
+        quantity: 40,
+        orderCount: 1,
+        resupplyQuantity: 0,
+      },
     ]);
     expect(dossier.pieces).toBe(93);
   });
@@ -93,8 +105,19 @@ describe("dayDossierOf", () => {
     expect(dossier.recap[0]?.lines.map((line) => line.productName)).toEqual(["Brioche", "Zeste"]);
   });
 
-  it("range les réassorts à part, par point, fusionnés par produit, le plus gros d'abord", () => {
+  /**
+   * Régression R3d-bis : la fiche de poste viennoiserie ne comptait pas le
+   * réassort d'une journée arrêtée (Hugo, 2026-10-21) — il était à part.
+   */
+  it("compte les réassorts DANS les fiches de poste, part lisible, total d'abord", () => {
     const dossier = dayDossierOf(ORDERS, SHELVES, [
+      {
+        resupplyId: "r-2",
+        siteId: "site-v",
+        siteLabel: "Village",
+        servedByTransfer: true,
+        lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 6 }],
+      },
       {
         resupplyId: "r-1",
         siteId: "site-v",
@@ -106,13 +129,6 @@ describe("dayDossierOf", () => {
         ],
       },
       {
-        resupplyId: "r-2",
-        siteId: "site-v",
-        siteLabel: "Village",
-        servedByTransfer: true,
-        lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 6 }],
-      },
-      {
         resupplyId: "r-3",
         siteId: "site-l",
         siteLabel: null,
@@ -120,27 +136,34 @@ describe("dayDossierOf", () => {
         lines: [{ sku: "PAI-SEI", productName: "Pain de seigle", quantity: 3 }],
       },
     ]);
-    expect(dossier.resupplies).toEqual([
-      {
-        label: "site-l",
-        quantity: 3,
-        lines: [{ sku: "PAI-SEI", productName: "Pain de seigle", quantity: 3 }],
-      },
-      {
-        label: "Village",
-        quantity: 22,
-        lines: [
-          { sku: "VIE-001", productName: "Croissant", quantity: 12 },
-          { sku: "VIE-002", productName: "Pain au chocolat", quantity: 10 },
-        ],
-      },
-    ]);
+    expect(dossier.recap[0]).toEqual({
+      label: "Viennoiseries",
+      quantity: 112,
+      resupplyQuantity: 22,
+      lines: [
+        {
+          sku: "VIE-001",
+          productName: "Croissant",
+          quantity: 62,
+          orderCount: 2,
+          resupplyQuantity: 12,
+        },
+        {
+          sku: "VIE-002",
+          productName: "Pain au chocolat",
+          quantity: 50,
+          orderCount: 1,
+          resupplyQuantity: 10,
+        },
+      ],
+    });
+    expect(dossier.pieces).toBe(118);
     expect(dossier.resupplyPieces).toBe(25);
-    // Les commandes ne bougent pas : le récapitulatif reste le leur.
-    expect(dossier.pieces).toBe(93);
+    // Un bon par réassort, non fusionné : par point, puis par identifiant.
+    expect(dossier.resupplySheets.map((sheet) => sheet.resupplyId)).toEqual(["r-3", "r-1", "r-2"]);
   });
 
-  it("monte un dossier de réassorts seuls, sans bon", () => {
+  it("monte un dossier de réassorts seuls : fiches de poste et bons de réassort, sans bon de commande", () => {
     const dossier = dayDossierOf([], SHELVES, [
       {
         resupplyId: "r-1",
@@ -151,7 +174,11 @@ describe("dayDossierOf", () => {
       },
     ]);
     expect(dossier.sheets).toEqual([]);
-    expect(dossier.recap).toEqual([]);
+    expect(dossier.recap.map((group) => [group.label, group.quantity])).toEqual([
+      ["Viennoiseries", 18],
+    ]);
+    expect(dossier.resupplySheets).toHaveLength(1);
+    expect(dossier.pieces).toBe(18);
     expect(dossier.resupplyPieces).toBe(18);
   });
 });

@@ -9,6 +9,7 @@ import { ProductionDocumentStore } from "../../../platform/storage/production-do
 import { WorkshopShelvesReader } from "../../channels/commerce/workshop-shelves.reader.js";
 import type {
   ProductionDay,
+  ProductionLineSnapshot,
   ProductionOrderSnapshot,
 } from "../../domain/entities/production-day.js";
 import { ProductionDayNotClosedError } from "../../domain/errors/production-errors.js";
@@ -97,8 +98,8 @@ export class ProductionPapers {
   }
 
   /**
-   * **Le dossier du jour** — récapitulatif par rayon, puis un bon par commande,
-   * lus dans ce que la journée a figé.
+   * **Le dossier du jour** — récapitulatif par rayon (réassorts compris), puis
+   * un bon par commande et par réassort, lus dans ce que la journée a figé.
    *
    * Archivé **par tirage arrêté** : la clé porte l'instant du dernier retirage
    * (`dayDossierPdfKey`), si bien qu'un retirage fabrique un dossier complété
@@ -124,9 +125,13 @@ export class ProductionPapers {
     if (archived !== null) {
       return { bytes: archived, fileName };
     }
-    const shelves = await this.shelvesOrNull(snapshot.serviceDay, snapshot.orders);
+    const resupplies = snapshot.resupplies ?? [];
+    const shelves = await this.shelvesOrNull(snapshot.serviceDay, [
+      ...snapshot.orders.flatMap((order) => order.lines),
+      ...resupplies.flatMap((resupply) => resupply.lines),
+    ]);
     const bytes = await renderDayDossierPdf(
-      dayDossierOf(snapshot.orders, shelves, snapshot.resupplies ?? []),
+      dayDossierOf(snapshot.orders, shelves, resupplies),
       {
         serviceDay: snapshot.serviceDay,
         closedAt,
@@ -142,12 +147,15 @@ export class ProductionPapers {
     return { bytes, fileName };
   }
 
-  /** Les rayons des SKU du jour, ou `null` — panne journalisée, jamais tue. */
+  /**
+   * Les rayons des SKU du jour — commandes ET réassorts, qui vont sur les mêmes
+   * fiches de poste (R3d-bis) —, ou `null` : panne journalisée, jamais tue.
+   */
   private async shelvesOrNull(
     serviceDay: string,
-    orders: readonly ProductionOrderSnapshot[],
+    lines: readonly ProductionLineSnapshot[],
   ): Promise<ReadonlyMap<string, CatalogFamilyView> | null> {
-    const skus = [...new Set(orders.flatMap((order) => order.lines.map((line) => line.sku)))];
+    const skus = [...new Set(lines.map((line) => line.sku))];
     try {
       return await this.shelves.shelvesOf(skus);
     } catch (error) {

@@ -398,17 +398,25 @@ flowchart LR
   compte, seule la part est dite) — `resupplyUnits`, `resupplyQuantities`.
   Le compte de commandes n'en dit rien.
 
-- **Le dossier du jour** (`/prod-manager/previsionnel`, et son PDF figé) :
-  une section « Réassorts » par point et par produit, à part du
-  récapitulatif des commandes. Route `GET admin/production/batch/:date/resupplies`
-  (`GetDayResuppliesQuery`, `ProductionDayResuppliesView`) : la copie figée
-  (`production_resupply`) d'une journée arrêtée, l'envoyé « pour demain »
-  (`DayResuppliesReader`) d'une journée ouverte — l'écran le dit « envoyés »,
-  le PDF reste refusé tant que le plan n'est pas arrêté. Le compte de la barre
-  ajoute « + N pièces de réassort », le nombre de commandes ne bouge pas. Le
-  PDF (mise en page `v6`) imprime la section sous le récapitulatif
-  (`apps/lfd-api/src/production/domain/services/day-dossier-resupplies-pdf.ts`)
-  et ajoute les pièces au compte du lot. Une journée à réassorts seuls se tire.
+- **Le dossier du jour** (`/prod-manager/previsionnel`, et son PDF figé) —
+  depuis R3d-bis (2026-10-21) : **les fiches de poste par rayon comptent
+  commandes + réassorts**, le total d'abord, la part ensuite (« 42 — dont 18
+  réassort ») ; **un bon de réassort par réassort** suit les bons de commande
+  (le point, ses lignes, ses quantités, sans prix ni QR, marqué « Réassort »).
+  La section « Réassorts » par point de R3d est retirée, à l'écran comme au
+  PDF : elle disait deux fois la même chose. Route
+  `GET admin/production/batch/:date/resupplies` (`GetDayResuppliesQuery`,
+  `ProductionDayResuppliesView`) : la copie figée (`production_resupply`)
+  d'une journée arrêtée, l'envoyé « pour demain » (`DayResuppliesReader`)
+  d'une journée ouverte — l'écran le dit « envoyés », le PDF reste refusé tant
+  que le plan n'est pas arrêté. Le compte du lot dit « N commandes · M
+  réassorts · P pièces dont Q de réassort » ; le nombre de commandes ne bouge
+  pas. PDF en mise en page `v7`
+  (`apps/lfd-api/src/production/domain/services/day-dossier.ts`,
+  `apps/lfd-api/src/production/domain/services/day-dossier-recap-pdf.ts`,
+  `apps/lfd-api/src/production/domain/services/day-dossier-resupplies-pdf.ts`) ; à l'écran,
+  le bon est `previsionnel/dossier-du-jour/bon-reassort/`, dans la vue
+  « Bons ». Une journée à réassorts seuls se tire.
 - **« Arrêter le plan »** propose une journée sans commande mais à réassorts
   (`resupplyUnits > 0`), comme le serveur l'accepte depuis R3a.
 - **Les fiches de réassort au poste du colisage** : bouton « Fiches de

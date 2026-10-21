@@ -1,0 +1,39 @@
+<header class="br-head">
+  <div>
+    <p class="br-batch">Lot du {{ dayLabel() }} · réassort {{ rank() }}/{{ total() }}</p>
+    <h2 class="br-title">Réassort {{ siteLabel() }}</h2>
+    <p class="br-route">{{ resupply().servedByTransfer ? 'Par transfert' : 'Servi sur place' }}</p>
+  </div>
+  <p class="br-kind">Réassort</p>
+</header>
+
+<table class="br-lines">
+  <caption class="br-caption">
+    À préparer —
+    {{
+      pieces()
+    }}
+    pièce{{
+      pieces() > 1 ? 's' : ''
+    }}
+  </caption>
+  <thead>
+    <tr>
+      <th scope="col" class="br-qty-head">Qté</th>
+      <th scope="col">Produit</th>
+      <th scope="col" class="br-tick-head">Fait</th>
+    </tr>
+  </thead>
+  <tbody>
+    @for (line of resupply().lines; track line.sku) {
+      <tr>
+        <td class="br-qty">{{ line.quantity }}</td>
+        <td>
+          <span class="br-product">{{ line.productName }}</span>
+          <span class="br-sku">{{ line.sku }}</span>
+        </td>
+        <td class="br-tick"><span class="br-box" aria-hidden="true"></span></td>
+      </tr>
+    }
+  </tbody>
+</table>

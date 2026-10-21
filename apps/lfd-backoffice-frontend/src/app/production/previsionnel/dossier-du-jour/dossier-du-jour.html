@@ -24,9 +24,7 @@
         pieces() > 1 ? 's' : ''
       }}
       @if (resupplyPieces() > 0) {
-        <span class="pr-count-resupply">
-          + {{ resupplyPieces() }} pièce{{ resupplyPieces() > 1 ? 's' : '' }} de réassort
-        </span>
+        <span class="pr-count-resupply">dont {{ resupplyPieces() }} de réassort</span>
       }
     </p>
     <!-- Le tirage est le PDF figé du serveur, pas l'onglet affiché : le
@@ -109,94 +107,85 @@
       <!-- Les deux vues sont un aperçu à l'écran ; le papier est le PDF du
            serveur (2026-10-06). -->
       <section class="pr-view" [class.is-hidden]="view() !== 'recap'" aria-label="Récapitulatif">
-        @if (sheets().length > 0) {
-          <article class="pr-sheet pr-recap">
-            <header class="pr-recap-head">
-              <p class="pr-recap-batch">Lot du {{ dayLabel() }}</p>
-              <h2 class="pr-recap-title">À fabriquer</h2>
-              <p class="pr-recap-sum">
-                {{ sheets().length }} commande{{ sheets().length > 1 ? 's' : '' }} ·
-                {{ pieces() }} pièce{{ pieces() > 1 ? 's' : '' }}
-              </p>
-            </header>
+        <!-- Les fiches de poste comptent commandes + réassorts : le total
+             d'abord, la part de réassort en détail (R3d-bis, 2026-10-21). -->
+        <article class="pr-sheet pr-recap">
+          <header class="pr-recap-head">
+            <p class="pr-recap-batch">Lot du {{ dayLabel() }}</p>
+            <h2 class="pr-recap-title">À fabriquer</h2>
+            <p class="pr-recap-sum">
+              {{ sheets().length }} commande{{ sheets().length > 1 ? 's' : '' }}
+              @if (resupplySheets().length > 0) {
+                · {{ resupplySheets().length }} réassort{{ resupplySheets().length > 1 ? 's' : '' }}
+              }
+              · {{ pieces() }} pièce{{ pieces() > 1 ? 's' : '' }}
+              @if (resupplyPieces() > 0) {
+                <span class="pr-part">dont {{ resupplyPieces() }} de réassort</span>
+              }
+            </p>
+          </header>
+          @if (resupplySheets().length > 0 && !resuppliesFrozen()) {
+            <fold-callout variant="info" class="pr-resupplies-live">
+              Réassorts envoyés pour ce jour : ils seront figés à l’arrêt du plan, et imprimés avec
+              le dossier.
+            </fold-callout>
+          }
 
-            @for (group of recap(); track group.label) {
-              <section class="pr-group">
-                <h3 class="pr-group-title">
-                  {{ group.label }}
-                  <span class="pr-group-sum">{{ group.quantity }}</span>
-                </h3>
-                <table class="pr-table">
-                  <tbody>
-                    @for (line of group.lines; track line.sku) {
-                      <tr>
-                        <td class="pr-qty">{{ line.quantity }}</td>
-                        <td>
-                          <span class="pr-product">{{ line.productName }}</span>
-                          <span class="pr-sku">{{ line.sku }}</span>
-                        </td>
-                        <!-- Sur combien de commandes ça se répartit : 240 en 3 fois
+          @for (group of recap(); track group.label) {
+            <section class="pr-group">
+              <h3 class="pr-group-title">
+                {{ group.label }}
+                <span class="pr-group-sum">
+                  {{ group.quantity }}
+                  @if (group.resupplyQuantity > 0) {
+                    <span class="pr-part">dont {{ group.resupplyQuantity }} réassort</span>
+                  }
+                </span>
+              </h3>
+              <table class="pr-table">
+                <tbody>
+                  @for (line of group.lines; track line.sku) {
+                    <tr>
+                      <td class="pr-qty">{{ line.quantity }}</td>
+                      <td>
+                        <span class="pr-product">{{ line.productName }}</span>
+                        @if (line.resupplyQuantity > 0) {
+                          <span class="pr-part">dont {{ line.resupplyQuantity }} réassort</span>
+                        }
+                        <span class="pr-sku">{{ line.sku }}</span>
+                      </td>
+                      <!-- Sur combien de commandes ça se répartit : 240 en 3 fois
                            ne se prépare pas comme 240 en 40. -->
-                        <td class="pr-spread">
+                      <td class="pr-spread">
+                        @if (line.orderCount > 0) {
                           {{ line.orderCount }} cde{{ line.orderCount > 1 ? 's' : '' }}
-                        </td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </section>
-            }
-          </article>
-        }
-
-        <!-- Les réassorts, à part des commandes : ni client ni bon (R3d). -->
-        @if (resupplyPoints().length > 0) {
-          <article class="pr-sheet pr-recap pr-resupplies" aria-label="Réassorts">
-            <header class="pr-recap-head">
-              <h2 class="pr-recap-title">Réassorts</h2>
-              <p class="pr-recap-sum">
-                {{ resupplyPieces() }} pièce{{ resupplyPieces() > 1 ? 's' : '' }} pour
-                {{ resupplyPoints().length }} point{{ resupplyPoints().length > 1 ? 's' : '' }}
-              </p>
-            </header>
-            @if (!resuppliesFrozen()) {
-              <fold-callout variant="info" class="pr-resupplies-live">
-                Envoyés pour ce jour : ils seront figés à l’arrêt du plan, et imprimés avec le
-                dossier.
-              </fold-callout>
-            }
-            @for (point of resupplyPoints(); track point.siteId) {
-              <section class="pr-group">
-                <h3 class="pr-group-title">
-                  Réassort {{ point.label }}
-                  <span class="pr-group-sum">{{ point.quantity }}</span>
-                </h3>
-                <table class="pr-table">
-                  <tbody>
-                    @for (line of point.lines; track line.sku) {
-                      <tr>
-                        <td class="pr-qty">{{ line.quantity }}</td>
-                        <td>
-                          <span class="pr-product">{{ line.productName }}</span>
-                          <span class="pr-sku">{{ line.sku }}</span>
-                        </td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </section>
-            }
-          </article>
-        }
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </section>
+          }
+        </article>
       </section>
 
-      <section class="pr-view" [class.is-hidden]="view() !== 'bons'" aria-label="Bons de commande">
+      <section class="pr-view" [class.is-hidden]="view() !== 'bons'" aria-label="Bons">
         <div class="pr-stack">
           @for (sheet of sheets(); track sheet.orderId; let i = $index) {
             <app-fiche-production
               [sheet]="sheet"
               [rank]="i + 1"
               [total]="sheets().length"
+              [dayLabel]="dayLabel()"
+            />
+          }
+          <!-- Un bon par réassort, après les bons de commande — comme le PDF. -->
+          @for (resupply of resupplySheets(); track resupply.resupplyId; let i = $index) {
+            <app-bon-reassort
+              [resupply]="resupply"
+              [rank]="i + 1"
+              [total]="resupplySheets().length"
               [dayLabel]="dayLabel()"
             />
           }

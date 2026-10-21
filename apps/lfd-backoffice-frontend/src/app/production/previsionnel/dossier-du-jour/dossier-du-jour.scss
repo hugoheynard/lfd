@@ -163,14 +163,18 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* ── Les réassorts (R3d) : à part des commandes ──────────────────────────── */
+/* ── Les réassorts (R3d-bis) : DANS le total, la part en détail ─────────── */
 
 .pr-count-resupply {
   color: var(--fold-color-text-muted);
 }
 
-.pr-resupplies {
-  margin-top: var(--fold-space-lg);
+/* « dont 18 réassort » : lisible, jamais plus gros que le total qu'il détaille. */
+.pr-part {
+  display: block;
+  font-size: 9pt;
+  font-weight: 400;
+  color: var(--fold-color-text-muted);
 }
 
 .pr-resupplies-live {

@@ -26,10 +26,11 @@ import type {
 
 import { AdminCatalogService } from '../../../commandes/catalog.service';
 import { FicheProduction } from '../../fiche-production/fiche-production';
-import { productionRecap, totalPieces } from '../../production-recap';
+import { productionRecap, resupplyPieces, totalPieces } from '../../production-recap';
 import { ProductionService } from '../../production.service';
 import { DueThresholdsSection } from '../due-thresholds-section/due-thresholds-section';
-import { resupplyPiecesOf, resupplyPointsOf } from './resupply-points';
+import { BonReassort } from './bon-reassort/bon-reassort';
+import { resupplySheetsOf } from './resupply-sheets';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -39,7 +40,7 @@ const HTTP_CONFLICT = 409;
 /** Les deux lectures d'un même lot. On ouvre sur la fabrication. */
 const VIEWS: readonly FoldViewToggleOption[] = [
   { value: 'recap', label: 'Récapitulatif', icon: 'list' },
-  { value: 'bons', label: 'Bons de commande', icon: 'receipt' },
+  { value: 'bons', label: 'Bons', icon: 'receipt' },
 ];
 
 const DAY_LABEL = new Intl.DateTimeFormat('fr-FR', {
@@ -108,6 +109,7 @@ export function defaultDossierDate(): string {
   selector: 'app-dossier-du-jour',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    BonReassort,
     DueThresholdsSection,
     FicheProduction,
     FoldButtonComponent,
@@ -156,27 +158,27 @@ export class DossierDuJour {
    */
   protected readonly shelvesLost = signal(false);
 
-  protected readonly recap = computed(() =>
-    productionRecap(this.sheets(), this.catalogue(), !this.shelvesLost()),
-  );
-  protected readonly pieces = computed(() => totalPieces(this.recap()));
-
   /**
-   * Les réassorts de la journée (lot R3d) : figés si le plan est arrêté,
-   * envoyés « pour demain » sinon — à part des commandes, qu'ils ne comptent
-   * pas. `null` : pas encore lus, ou lecture ratée (`resuppliesLost`).
+   * Les réassorts (R3d) : figés à l'arrêt, envoyés sinon ; dans les fiches de
+   * poste et un bon chacun (R3d-bis). `null` : non lus, ou `resuppliesLost`.
    */
   private readonly resupplies = signal<ProductionDayResuppliesView | null>(null);
   protected readonly resuppliesLost = signal(false);
-  protected readonly resupplyPoints = computed(() =>
-    resupplyPointsOf(this.resupplies()?.resupplies ?? []),
+  protected readonly resupplySheets = computed(() =>
+    resupplySheetsOf(this.resupplies()?.resupplies ?? []),
   );
-  protected readonly resupplyPieces = computed(() => resupplyPiecesOf(this.resupplyPoints()));
+
+  /** Les fiches de poste : commandes + réassorts, total d'abord (R3d-bis). */
+  protected readonly recap = computed(() =>
+    productionRecap(this.sheets(), this.catalogue(), !this.shelvesLost(), this.resupplySheets()),
+  );
+  protected readonly pieces = computed(() => totalPieces(this.recap()));
+  protected readonly resupplyPieces = computed(() => resupplyPieces(this.recap()));
   /** Les réassorts affichés sont-ils la copie figée à l'arrêt ? */
   protected readonly resuppliesFrozen = computed(() => this.resupplies()?.frozen ?? false);
   /** Rien à montrer : ni commande, ni réassort. */
   protected readonly empty = computed(
-    () => this.sheets().length === 0 && this.resupplyPoints().length === 0,
+    () => this.sheets().length === 0 && this.resupplySheets().length === 0,
   );
 
   /** « samedi 16 août » — l'en-tête de chaque feuille. */

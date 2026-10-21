@@ -890,3 +890,58 @@ des puces de famille ; l'heure limite est lue dans `tomorrowOrderUntil`, que la
 vue des réassorts du site porte déjà (résolue par le serveur depuis
 `resupplyCutoffTime`, `null` = sans limite → « Pour demain ») ; l'instant est
 une entrée `now` du composant. Une rupture déclarée bascule en « Au plus tôt ».
+
+### R3d-bis ✅ — Le réassort compte sur les fiches de poste (Hugo, 2026-10-21 ; bâti le 2026-10-21, non commité)
+
+« Ça ne me l'a pas ajouté à la fiche de poste viennoiserie ; on doit avoir le
+bon de réassort, mais que ça passe quand même dans le compte total. » Tranche
+la question laissée ouverte par R3d (récapitulatif « À fabriquer » séparé ou
+additionné) :
+
+- **Les fiches de poste (par rayon) et le récapitulatif « À fabriquer » du
+  dossier comptent commandes + réassorts** : c'est ce que le poste enfourne.
+  La part de réassort peut s'y lire (« dont N réassort »), jamais à part du
+  total.
+- **Un bon de réassort par réassort** dans le dossier, à côté des bons de
+  commande : le point, ses lignes, ses quantités — sans prix. Il remplace la
+  section « Réassorts » de R3d dans le PDF si elle fait doublon.
+
+### R1g — Nommer un réassort (Hugo, 2026-10-21 ; doc-first)
+
+« On devrait pouvoir donner un nom à une demande de réassort ou à un réassort,
+exemple : vitrine du matin. »
+
+- Un **nom facultatif** sur `SiteResupply` (texte court, ~60 caractères),
+  posé sur la demande en cours au comptoir ou à l'envoi du fournil, modifiable
+  tant que le réassort n'est pas envoyé.
+- Il se lit partout où le réassort se nomme : bon de réassort du dossier,
+  onglet Réassorts de Prod manager, fiche du colisage, manifeste, liste « à
+  réceptionner » (« Vitrine du matin — Village »).
+- Proposé : les noms déjà employés au point sont suggérés à la saisie (pas de
+  liste à administrer). Premier pas vers le modèle récurrent (Q-C1, « plus
+  tard ») sans le décider.
+- Migration additive (une colonne nullable).
+
+✅ **Bâti le 2026-10-21 (non commité).** Précision de Hugo pendant le lot :
+« comprendre le volume global par produit » — chaque produit dit d'abord son
+TOTAL, la part de réassort en second.
+
+- **Les fiches de poste** (le récapitulatif par rayon du dossier, écran et
+  PDF) additionnent commandes + réassorts : « 42 » en gros, « dont 18
+  réassort » dessous ; l'en-tête du rayon « 42 — dont 18 réassort » ; le lot
+  « N commandes · M réassorts · P pièces dont Q de réassort ». Un produit de
+  réassort seul n'a pas de « N cdes ». **Pas de réutilisation de
+  `countsValue`** : le récapitulatif a besoin du nombre de commandes par
+  produit, que les comptes n'ont pas ; il additionne les mêmes sources figées
+  (commandes et réassorts de la journée). La fiche d'atelier, elle, lit déjà
+  les comptes (réassorts inclus depuis R3a) : rien à y changer.
+- **Un bon de réassort par réassort** (non fusionnés, par point puis par
+  identifiant), après les bons de commande : « Réassort Village », « Par
+  transfert » / « Servi sur place », lignes et case « Fait », sans prix ni QR,
+  numéroté « réassort 1/2 ». La section « Réassorts » de R3d est retirée **au
+  PDF et à l'écran** : à l'écran, le bon vit dans la vue « Bons » (renommée
+  depuis « Bons de commande ») ; l'avis « envoyés, figés à l'arrêt » passe en
+  tête du récapitulatif.
+- PDF en `v7` ; les rayons du PDF sont lus aussi pour les SKU des réassorts.
+- **Non touché** : l'e-mail du dossier (`dossierCountsOf`) annonce encore les
+  pièces des commandes seules.
