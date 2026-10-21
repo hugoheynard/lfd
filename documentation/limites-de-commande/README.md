@@ -97,13 +97,14 @@ flowchart LR
 
 ## 5. Les docs du dossier
 
-| Doc                                                                                    | État | Ce qu'elle porte                                                                                                   |
-| -------------------------------------------------------------------------------------- | ---- | ------------------------------------------------------------------------------------------------------------------ |
-| [`reglages-generaux.md`](reglages-generaux.md)                                         | ✅   | **État** de l'heure limite générale : tables, interrupteur, jour même, dérogations, `orderUntil`, compte à rebours |
-| [`limites-produit.md`](limites-produit.md)                                             | ✅   | **État** de la limite par article : échelle du référentiel, propagation, passation, « Préparé sur commande »       |
-| [`architecture-heure-limite-de-commande.md`](architecture-heure-limite-de-commande.md) | 🟡   | Le **pourquoi** (2026-09-04) : trois états, grâce, dérogation, **surtaxe de retard**, fuseau                       |
-| [`demontage-order-cutoff.md`](demontage-order-cutoff.md)                               | ⏸️   | Plan **suspendu** : retirer `OrderCutoff` au profit de l'échelle                                                   |
-| [`plan-heure-limite-par-clientele.md`](plan-heure-limite-par-clientele.md)             | 📐   | Plan **non bâti** : la limite du B2C (délai d'article à J+N, stock à J)                                            |
+| Doc                                                                                    | État | Ce qu'elle porte                                                                                                                                |
+| -------------------------------------------------------------------------------------- | ---- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`schema-des-reglages.md`](schema-des-reglages.md)                                     | 🗺️   | **Le schéma** (2026-10-21) : les huit réglages, le chemin d'une commande, ce qui rend le paramétrage incompréhensible, les questions à trancher |
+| [`reglages-generaux.md`](reglages-generaux.md)                                         | ✅   | **État** de l'heure limite générale : tables, interrupteur, jour même, dérogations, `orderUntil`, compte à rebours                              |
+| [`limites-produit.md`](limites-produit.md)                                             | ✅   | **État** de la limite par article : échelle du référentiel, propagation, passation, « Préparé sur commande »                                    |
+| [`architecture-heure-limite-de-commande.md`](architecture-heure-limite-de-commande.md) | 🟡   | Le **pourquoi** (2026-09-04) : trois états, grâce, dérogation, **surtaxe de retard**, fuseau                                                    |
+| [`demontage-order-cutoff.md`](demontage-order-cutoff.md)                               | ⏸️   | Plan **suspendu** : retirer `OrderCutoff` au profit de l'échelle                                                                                |
+| [`plan-heure-limite-par-clientele.md`](plan-heure-limite-par-clientele.md)             | 📐   | Plan **non bâti** : la limite du B2C (délai d'article à J+N, stock à J)                                                                         |
 
 Hors du dossier, et cités plutôt que déplacés :
 [`../commandes/plan-reglages-commandes.md`](../commandes/plan-reglages-commandes.md)
