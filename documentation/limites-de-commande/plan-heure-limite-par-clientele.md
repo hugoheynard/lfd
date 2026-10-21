@@ -1,5 +1,13 @@
 # La limite du B2C : le délai de l'ARTICLE à J+N, le stock à J
 
+> ⚠️ **Relu le 2026-10-21** : le lot 1 (§4) n'est **pas** bâti — la passation
+> oppose la règle générale à toute ligne sans limite d'article, quelle que soit
+> la clientèle (`OrderDrafting.ensureNotTooLate`). Le « jour même » demandé au
+> §0 est devenu un **réglage** général (`order_cutoff_settings.same_day_allowed`,
+> 2026-10-14), pas une règle de clientèle : voir
+> [`reglages-generaux.md`](reglages-generaux.md) §4. Déplacé de `commandes/`
+> le 2026-10-21.
+
 **Statut** : 📐 conception, rien n'est bâti. Écrit le 2026-09-17, **contredit
 par `vitruve`** le même jour (quatre BLOQUANTS), puis refondu **trois fois** —
 la dernière sur une correction de Hugo qui renverse la décision D2 et change le

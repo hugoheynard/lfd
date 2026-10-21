@@ -214,7 +214,7 @@ export interface ShopItemView {
   /**
    * **La limite de commande propre à l'article** — « Préparé sur commande — à
    * commander 2 jours à l'avance, avant 12 h » (Hugo, 2026-10-21,
-   * `architecture-heure-limite-de-commande.md` §9) : la limite que le
+   * `limites-de-commande/limites-produit.md` §4) : la limite que le
    * référentiel résout pour l'article (déclinaison, produit ou famille).
    *
    * Servie **seulement quand elle est plus stricte** que la règle générale de

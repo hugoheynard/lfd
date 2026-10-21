@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1511 textes
+## Sommaire — 1514 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -20,7 +20,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Connexion et création de compte](#espace-signup) | `signup` | 24 |
 | [Commander — l'écran d'entrée de la commande](#espace-commande) | `commande` | 39 |
 | [Rayon / boutique](#espace-shop) | `shop` | 59 |
-| [Rayon — la fiche produit](#espace-product) | `product` | 16 |
+| [Rayon — la fiche produit](#espace-product) | `product` | 19 |
 | [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 33 |
 | [Choix du lieu — la maison](#espace-housepicker) | `housePicker` | 8 |
 | [Choix du lieu et de l’heure — le dialogue commun](#espace-dialog) | `dialog` | 1 |
@@ -47,7 +47,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
-| **Total** | | **1511** |
+| **Total** | | **1514** |
 
 ## Le parcours de commande
 
@@ -394,7 +394,7 @@ Source : `fr.ts · en.ts · it.ts` · 59 textes.
 
 ### Rayon — la fiche produit — `product`
 
-Source : `fr.ts · en.ts · it.ts` · 16 textes.
+Source : `fr.ts · en.ts · it.ts` · 19 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -414,6 +414,9 @@ Source : `fr.ts · en.ts · it.ts` · 16 textes.
 | `product.madeToOrderDays` | Préparé sur commande — à commander {n} jours à l’avance, avant {time} | Made to order — order {n} days ahead, by {time} | Preparato su ordinazione — da ordinare {n} giorni prima, entro le {time} | `{n}` `{time}` |
 | `product.madeToOrderEve` | Préparé sur commande — à commander la veille, avant {time} | Made to order — order the day before, by {time} | Preparato su ordinazione — da ordinare il giorno prima, entro le {time} | `{time}` |
 | `product.madeToOrderSameDay` | Préparé sur commande — à commander le jour même, avant {time} | Made to order — order on the day, by {time} | Preparato su ordinazione — da ordinare in giornata, entro le {time} | `{time}` |
+| `product.madeToOrderShortDays` | Sur commande · {n} jours avant {time} | Made to order · {n} days ahead, by {time} | Su ordinazione · {n} giorni prima, entro le {time} | `{n}` `{time}` |
+| `product.madeToOrderShortEve` | Sur commande · la veille avant {time} | Made to order · day before, by {time} | Su ordinazione · il giorno prima, entro le {time} | `{time}` |
+| `product.madeToOrderShortSameDay` | Sur commande · le jour même avant {time} | Made to order · same day, by {time} | Su ordinazione · in giornata, entro le {time} | `{time}` |
 
 <a id="espace-commandterms"></a>
 

@@ -3,6 +3,11 @@
 **État au 2026-10-06.** Remplace le plan de l’arrêt du plan (lots A0 à A3
 bâtis le 2026-10-06, retiré ce jour-là — il vit dans l'historique git).
 
+> Ce que l'arrêt fait aux commandes (jour plus proposé, client refusé,
+> équipe reçue hors plan), avec les autres limites de commande :
+> [`../limites-de-commande/README.md`](../limites-de-commande/README.md)
+> (2026-10-21).
+
 ## En une phrase
 
 **Arrêter le plan d'une journée, c'est figer ce que le fournil va produire.**

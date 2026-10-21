@@ -2,8 +2,8 @@ import type { OrderCutoffView } from "./order-cutoff.js";
 
 /**
  * **La limite propre d'un article, telle que la boutique la montre** (Hugo,
- * 2026-10-21 — `documentation/commandes/architecture-heure-limite-de-commande.md`
- * §9) : « Préparé sur commande — à commander 2 jours à l'avance, avant 12 h ».
+ * 2026-10-21 — `documentation/limites-de-commande/limites-produit.md`
+ * §4) : « Préparé sur commande — à commander 2 jours à l'avance, avant 12 h ».
  *
  * Sans la grâce, délibérément : la boutique annonce l'heure annoncée, pas le
  * rattrapage qu'un humain peut accorder après elle — la même règle que

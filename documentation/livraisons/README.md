@@ -106,4 +106,4 @@ dossier de leur sujet :
 - [`../commandes/architecture-tva-des-frais-de-port.md`](../commandes/architecture-tva-des-frais-de-port.md) : la TVA des frais de livraison (bâtie). Reste dans `order/`, qui garde les TODO de la commande (règle du 2026-09-17).
 - [`../colisage/todo-colisage-tri-par-echeance.md`](../colisage/todo-colisage-tri-par-echeance.md) : trier le colisage selon le départ du véhicule.
 - [`../commandes/architecture-bon-de-commande.md`](../commandes/architecture-bon-de-commande.md) : il n'y a pas de « bon de livraison », une seule pièce qui porte un mode d'acheminement.
-- [`../commandes/plan-creneaux-de-retrait.md`](../commandes/plan-creneaux-de-retrait.md) et [`../commandes/architecture-heure-limite-de-commande.md`](../commandes/architecture-heure-limite-de-commande.md) : les créneaux et l'heure limite, qui s'appliquent aussi aux livraisons.
+- [`../commandes/plan-creneaux-de-retrait.md`](../commandes/plan-creneaux-de-retrait.md) et [`../limites-de-commande/architecture-heure-limite-de-commande.md`](../limites-de-commande/architecture-heure-limite-de-commande.md) : les créneaux et l'heure limite, qui s'appliquent aussi aux livraisons.

@@ -89,8 +89,8 @@ import { PrismaCatalogColdReader } from "./infrastructure/prisma-catalog-cold.re
   // c'est ce qui a fait retirer les entrées par SKU de la porte, qui la
   // faisaient dépendre du catalogue et fermaient le cycle.
   // `OrderCutoffsInForceModule` : la vitrine ne montre la limite d'un article
-  // que si elle est plus stricte que la règle générale (§9 de
-  // `architecture-heure-limite-de-commande.md`, 2026-10-21).
+  // que si elle est plus stricte que la règle générale (§4 de
+  // `limites-de-commande/limites-produit.md`, 2026-10-21).
   imports: [PricerModule, CanonicalPriceHistoryModule, OrderCutoffsInForceModule],
   controllers: [
     AdminCatalogController,

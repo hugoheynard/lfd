@@ -2,7 +2,7 @@ import type { OrderCutoffView } from "@lfd/contracts";
 
 /**
  * Port de **lecture** des heures limites EN VIGUEUR, vu par la vitrine (Hugo,
- * 2026-10-21 — `architecture-heure-limite-de-commande.md` §9) : la fiche
+ * 2026-10-21 — `limites-de-commande/limites-produit.md` §4) : la fiche
  * produit ne montre la limite d'un article que si elle est plus stricte que la
  * règle générale, et il faut donc la connaître.
  *

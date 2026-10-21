@@ -319,7 +319,7 @@ reste servie.
 **La sous-carte « Heures limites de commande »**, posée le 2026-10-13
 (`0def0a6c9`), a été retirée le jour même (`1b286aaf6`, Hugo) : l'heure limite
 par point appartient à `OrderCutoff`, en démontage
-([`../commandes/demontage-order-cutoff.md`](../commandes/demontage-order-cutoff.md)),
+([`../limites-de-commande/demontage-order-cutoff.md`](../limites-de-commande/demontage-order-cutoff.md)),
 et la limite générale va dans Réglages › Commandes.
 
 ## 5. Les droits — granulaires (Hugo, 2026-10-13)

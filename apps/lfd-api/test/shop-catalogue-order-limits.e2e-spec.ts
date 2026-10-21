@@ -7,7 +7,7 @@ import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
 
 /**
  * **La limite propre d'un article, sur la vitrine** (Hugo, 2026-10-21 —
- * `documentation/commandes/architecture-heure-limite-de-commande.md` §9) : la
+ * `documentation/limites-de-commande/limites-produit.md` §4) : la
  * limite que le référentiel descend avec l'article ne paraît que si elle est
  * plus stricte que la règle générale de la boutique, et jamais sa grâce.
  *

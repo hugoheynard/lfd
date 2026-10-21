@@ -204,8 +204,8 @@ au lieu de garder l'ancien décompte, frais de coursier compris.
   redirections), la spec des onglets de `/reglages` (retirée le 2026-10-10
   avec la page : les Réglages n'ont plus d'écran),
   b2b/b2b-page/b2b-page.spec.ts (retirée le 2026-10-17). **Docs** qui citent l'ancien chemin :
-  `documentation/commandes/architecture-heure-limite-de-commande.md`,
-  `documentation/commandes/demontage-order-cutoff.md`,
+  `documentation/limites-de-commande/architecture-heure-limite-de-commande.md`,
+  `documentation/limites-de-commande/demontage-order-cutoff.md`,
   `documentation/plan-demo-2026-09-19.md` (vitruve, S7).
 - **Dans les pages.** Le point de retrait a sa **page**, et non un panneau
   (`/b2b/reglages/points-de-retrait/:id`, depuis le 2026-09-16, `380871e86`) :

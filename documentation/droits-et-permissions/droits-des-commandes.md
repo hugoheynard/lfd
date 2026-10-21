@@ -295,7 +295,7 @@ Deux surfaces de commande vivent sous les réglages de la plateforme :
 ([`../commandes/plan-reglages-commandes.md`](../commandes/plan-reglages-commandes.md)) ;
 les anciennes adresses sous `/b2b/reglages/` redirigent. Voir
 [`../commandes/ouverture-de-la-boutique.md`](../commandes/ouverture-de-la-boutique.md) et
-[`../commandes/architecture-heure-limite-de-commande.md`](../commandes/architecture-heure-limite-de-commande.md).
+[`../limites-de-commande/architecture-heure-limite-de-commande.md`](../limites-de-commande/architecture-heure-limite-de-commande.md).
 
 L'accès aux fonctionnalités (`b2b_feature_access`) n'ouvre **pas** la boutique :
 son catalogue ne porte que `customerMandate` et `facebookLogin`

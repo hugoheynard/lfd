@@ -590,7 +590,7 @@ model OrderLateFee {
   /// il suit le référentiel. Celui-ci est recopié une fois et rien ne le
   /// rafraîchit — un taux re-valué au PIM laisse la surtaxe derrière, en
   /// silence. Assumé, et décrit dans
-  /// `documentation/commandes/architecture-heure-limite-de-commande.md` §8.
+  /// `documentation/limites-de-commande/architecture-heure-limite-de-commande.md` §8.
   ///
   /// **Sans valeur par défaut.** Inventer 20 % ou 5,5 % facturerait un taux que
   /// personne n'a décidé, sur toutes les commandes tardives et rétroactivement.

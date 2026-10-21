@@ -12,7 +12,7 @@ import { PrismaOrderCutoffRepository } from "./infrastructure/prisma-order-cutof
  * que `OrderCutoffsModule` exporte, sortie dans un module à elle (2026-10-21).
  *
  * Parce que la vitrine en a besoin (`CatalogModule`, limite d'un article plus
- * stricte que la générale — `architecture-heure-limite-de-commande.md` §9), et
+ * stricte que la générale — `limites-de-commande/limites-produit.md` §4), et
  * que `OrderCutoffsModule` importe `CatalogModule` pour les jours d'une
  * opération datée : l'importer en retour fermerait un cycle. Ce module-ci
  * n'importe rien ; `OrderCutoffsModule` l'importe et le réexporte, et ses
