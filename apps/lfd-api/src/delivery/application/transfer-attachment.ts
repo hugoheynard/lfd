@@ -3,8 +3,9 @@ import { Injectable } from "@nestjs/common";
 import { DomainEventPublisher } from "../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../platform/id/id-generator.js";
 import { Clock } from "../../platform/time/clock.js";
-import { type TransferOrderRef, TransferOrdersReader } from "../channels/commerce/index.js";
-import { InternalTransfer } from "../domain/entities/internal-transfer.js";
+import { FrozenResuppliesReader } from "../../production/channels/delivery/index.js";
+import { TransferOrdersReader } from "../channels/commerce/index.js";
+import { InternalTransfer, type TransferItem } from "../domain/entities/internal-transfer.js";
 import { InternalTransferOpenedEvent } from "../domain/events/internal-transfer.events.js";
 import { InternalTransferRepository } from "../domain/ports/internal-transfer.repository.js";
 
@@ -20,11 +21,19 @@ import { InternalTransferRepository } from "../domain/ports/internal-transfer.re
  * transaction des abonnés à l'arrêt du plan et au retirage — aucune lecture
  * réseau ici. Une commande qui n'est pas un retrait actif d'un site servi par
  * transfert ne fait rien : c'est le commerce qui le décide, par son canal.
+ *
+ * **Le réassort** (lot R3c, 2026-10-21) : un second chemin, à côté des
+ * commandes. Les réassorts FIGÉS par l'arrêt — les `resupplyIds` du fait,
+ * jamais l'état vivant du commerce — d'un point servi par transfert entrent
+ * dans le transfert prévu de ce point, ouvert au besoin : un point sans
+ * commande ce jour-là reçoit quand même le sien. Un point servi sur place (le
+ * Labo) n'a pas de transfert.
  */
 @Injectable()
 export class TransferAttachment {
   constructor(
     private readonly orders: TransferOrdersReader,
+    private readonly resupplies: FrozenResuppliesReader,
     private readonly transfers: InternalTransferRepository,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
@@ -39,15 +48,57 @@ export class TransferAttachment {
     const refs = await this.orders.transferOrdersAmong(orderIds);
     let attached = 0;
     for (const ref of refs) {
-      if (await this.attach(ref)) {
+      if (await this.attach({ kind: "order", orderId: ref.orderId }, ref)) {
         attached += 1;
       }
     }
     return attached;
   }
 
-  private async attach(ref: TransferOrderRef): Promise<boolean> {
-    const item = { kind: "order", orderId: ref.orderId } as const;
+  /** Rend le nombre de réassorts rangés par cet appel. */
+  async attachResupplies(serviceDay: string, resupplyIds: readonly string[]): Promise<number> {
+    if (resupplyIds.length === 0) {
+      return 0;
+    }
+    const frozen = await this.resupplies.frozenOf(serviceDay, resupplyIds);
+    let attached = 0;
+    for (const resupply of frozen.filter((candidate) => candidate.servedByTransfer)) {
+      const item = { kind: "resupply", resupplyId: resupply.resupplyId } as const;
+      // Un nom inconnu à l'arrêt : le transfert garde l'identifiant du point,
+      // seule chose sûre (le nom ne se devine pas).
+      const site = { siteId: resupply.siteId, siteLabel: resupply.siteLabel ?? resupply.siteId };
+      if (await this.attach(item, { ...site, day: resupply.serviceDay })) {
+        attached += 1;
+      }
+    }
+    return attached;
+  }
+
+  /**
+   * **Le plan rouvert : ses réassorts sortent** (lot R3c, symétrique de
+   * l'attache) — de leur transfert tant qu'il est prévu ; parti ou reçu, rien
+   * ne bouge (le fournil a refusé la réouverture si une tournée était partie).
+   * Le transfert reste, même vide : un nouvel arrêt y rangera de nouveau.
+   * Rend le nombre de réassorts sortis.
+   */
+  async detachResupplies(resupplyIds: readonly string[]): Promise<number> {
+    let detached = 0;
+    for (const resupplyId of resupplyIds) {
+      const item = { kind: "resupply", resupplyId } as const;
+      const holderId = await this.transfers.holderOf(item);
+      const holder = holderId === null ? null : await this.transfers.load(holderId);
+      if (holder !== null && holder.detach(item, this.clock.now()) === "detached") {
+        await this.transfers.save(holder);
+        detached += 1;
+      }
+    }
+    return detached;
+  }
+
+  private async attach(
+    item: TransferItem,
+    ref: { readonly day: string; readonly siteId: string; readonly siteLabel: string },
+  ): Promise<boolean> {
     if ((await this.transfers.holderOf(item)) !== null) {
       return false;
     }

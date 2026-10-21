@@ -64,12 +64,14 @@ export class InMemoryHandoffReader extends ProductionHandoffReader {
     super();
   }
 
-  handedAmong(day: ServiceDay, batchIds: readonly string[]): Promise<ReadonlySet<string>> {
+  handedAmong(day: ServiceDay, batchIds: readonly string[]): Promise<ReadonlyMap<string, number>> {
     return Promise.resolve(
-      new Set(
-        batchIds.filter((id) => {
+      new Map(
+        batchIds.flatMap((id) => {
           const row = this.ledger.rows.get(id);
-          return row !== undefined && row.serviceDay === day.value && row.handoff.quantity > 0;
+          return row !== undefined && row.serviceDay === day.value && row.handoff.quantity > 0
+            ? [[id, row.handoff.quantity] as const]
+            : [];
         }),
       ),
     );

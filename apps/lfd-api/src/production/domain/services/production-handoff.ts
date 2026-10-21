@@ -39,11 +39,15 @@ export function returnRequestIdOf(batchId: string): string {
  * sur des journées d'avant les fournées (§13, B3). C'est l'appelant qui ne
  * passe que la fournée qu'il vient de DÉCLARER, pas celles qu'il matérialise.
  */
-export function handoffOf(batch: ProductionBatchSnapshot): ProductionHandoff {
+export function handoffOf(
+  batch: ProductionBatchSnapshot,
+  /** La part remise (R3c : un réassort servi sur place en garde une part, `on-site-share.ts`). */
+  quantity: number = batch.quantity,
+): ProductionHandoff {
   return {
     id: batch.id,
     sku: batch.sku,
-    quantity: batch.quantity,
+    quantity,
     source: "batch",
     at: batch.recorded.at,
     by: batch.recorded.by,
@@ -51,13 +55,18 @@ export function handoffOf(batch: ProductionBatchSnapshot): ProductionHandoff {
   };
 }
 
-/** Le retour d'une fournée remise puis annulée — toute sa quantité, signée négative. */
-export function returnOf(batch: ProductionBatchSnapshot, mark: PackedMark): ProductionHandoff {
+/** Le retour d'une fournée remise puis annulée — tout ce qui a été remis, signé négatif. */
+export function returnOf(
+  batch: ProductionBatchSnapshot,
+  mark: PackedMark,
+  /** Ce que sa remise a porté — la fournée entière, sauf part gardée sur place (R3c). */
+  handed: number = batch.quantity,
+): ProductionHandoff {
   const requestId = returnRequestIdOf(batch.id);
   return {
     id: requestId,
     sku: batch.sku,
-    quantity: -batch.quantity,
+    quantity: -handed,
     source: "batch",
     at: mark.at,
     by: mark.by,

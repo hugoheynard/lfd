@@ -11,14 +11,17 @@ export class PrismaProductionHandoffReader extends ProductionHandoffReader {
     super();
   }
 
-  async handedAmong(day: ServiceDay, batchIds: readonly string[]): Promise<ReadonlySet<string>> {
+  async handedAmong(
+    day: ServiceDay,
+    batchIds: readonly string[],
+  ): Promise<ReadonlyMap<string, number>> {
     if (batchIds.length === 0) {
-      return new Set();
+      return new Map();
     }
     const rows = await this.prisma.productionHandoff.findMany({
       where: { serviceDay: day.value, id: { in: [...batchIds] }, quantity: { gt: 0 } },
-      select: { id: true },
+      select: { id: true, quantity: true },
     });
-    return new Set(rows.map((row) => row.id));
+    return new Map(rows.map((row) => [row.id, row.quantity]));
   }
 }

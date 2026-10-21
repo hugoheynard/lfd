@@ -3,11 +3,16 @@ import { Injectable } from "@nestjs/common";
 import { DurablePublisher } from "../../../platform/outbox/durable-publisher.js";
 import { HandedToPackingEvent } from "../../channels/packing/handed-to-packing.event.js";
 import { ReturnRequestedEvent } from "../../channels/packing/return-requested.event.js";
-import type { PackedMark, ProductionBatchSnapshot } from "../../domain/entities/production-day.js";
+import type {
+  PackedMark,
+  ProductionBatchSnapshot,
+  ProductionDay,
+} from "../../domain/entities/production-day.js";
 import { ProductionHandoffLedger } from "../../domain/ports/production-handoff.ledger.js";
 import { ProductionHandoffReader } from "../../domain/ports/production-handoff.reader.js";
 import { ProductionReturnRequests } from "../../domain/ports/production-return.requests.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
+import { handedShareOf } from "../../domain/services/on-site-share.js";
 import { handoffOf, returnOf } from "../../domain/services/production-handoff.js";
 import type { PackingOwner } from "../../domain/value-objects/packing-owner.js";
 import type { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
@@ -33,9 +38,28 @@ export class PackingHandoffs {
     private readonly ids: IdGenerator,
   ) {}
 
-  /** La fournée déclarée est remise. Rejouée, elle ne l'est qu'une fois (même `id`, même clé). */
-  async handOver(day: ServiceDay, batch: ProductionBatchSnapshot): Promise<void> {
-    const handoff = handoffOf(batch);
+  /**
+   * La fournée déclarée est remise. Rejouée, elle ne l'est qu'une fois (même
+   * `id`, même clé).
+   *
+   * Depuis R3c, seulement sa part pour le colisage : la part d'un réassort
+   * servi sur place (le Labo) monte directement et n'est pas remise
+   * (`on-site-share.ts`). Une fournée gardée entière n'écrit rien — ni ligne,
+   * ni fait : le registre ne porte jamais de remise nulle.
+   */
+  async handOver(
+    day: ServiceDay,
+    current: ProductionDay,
+    batch: ProductionBatchSnapshot,
+  ): Promise<void> {
+    const earlier = current.batches
+      .filter((other) => other.sku === batch.sku && other.id !== batch.id)
+      .map((other) => other.id);
+    const handed = handedShareOf(current, batch, await this.handed.handedAmong(day, earlier));
+    if (handed === 0) {
+      return;
+    }
+    const handoff = handoffOf(batch, handed);
     await this.ledger.record(day, handoff);
     await this.durable.publish(
       new HandedToPackingEvent(
@@ -67,14 +91,14 @@ export class PackingHandoffs {
       batches.map((batch) => batch.id),
     );
     for (const batch of batches.filter((candidate) => handed.has(candidate.id))) {
-      const back = returnOf(batch, mark);
+      const back = returnOf(batch, mark, handed.get(batch.id));
       await this.ledger.record(day, back);
       await this.durable.publish(
         new ReturnRequestedEvent(
           back.id,
           day.value,
           batch.sku,
-          batch.quantity,
+          -back.quantity,
           owner === "legacy",
           mark.at,
           batch.id,
@@ -106,11 +130,14 @@ export class PackingHandoffs {
     );
     for (const batch of batches.filter((candidate) => handed.has(candidate.id))) {
       const requestId = `return-${this.ids.next()}`;
+      // Ce que le colisage a reçu de la fournée, pas la fournée : une part
+      // gardée pour un réassort sur place ne lui a jamais été remise (R3c).
+      const quantity = handed.get(batch.id) ?? batch.quantity;
       await this.requests.request(day, {
         requestId,
         batchId: batch.id,
         sku: batch.sku,
-        quantity: batch.quantity,
+        quantity,
         requested: mark,
       });
       await this.durable.publish(
@@ -118,7 +145,7 @@ export class PackingHandoffs {
           requestId,
           day.value,
           batch.sku,
-          batch.quantity,
+          quantity,
           false,
           mark.at,
           batch.id,

@@ -21,6 +21,7 @@ import { departAndFreeze } from "../delivery-departure-support.js";
 import { asDriverRefusal } from "../driver-refusals.js";
 import { DepartMyRoundCommand } from "./depart-my-round.command.js";
 import { InternalTransferRepository } from "../../domain/ports/internal-transfer.repository.js";
+import { TransferResupplyContents } from "../transfer-resupply-contents.js";
 
 /**
  * **« Commencer ma tournée »** — la porte du LIVREUR (plan « Ma tournée »,
@@ -54,6 +55,7 @@ export class DepartMyRoundHandler implements ICommandHandler<DepartMyRoundComman
     private readonly holders: StaffPermissionHolders,
     private readonly transfers: InternalTransferRepository,
     private readonly contents: TransferOrderContentsReader,
+    private readonly resupplies: TransferResupplyContents,
   ) {}
 
   async execute(command: DepartMyRoundCommand): Promise<void> {
@@ -85,6 +87,7 @@ export class DepartMyRoundHandler implements ICommandHandler<DepartMyRoundComman
         holders: this.holders,
         transfers: this.transfers,
         contents: this.contents,
+        resupplies: this.resupplies,
       });
     } catch (error) {
       throw await asDriverRefusal(error, this.orders, round.orderIds);

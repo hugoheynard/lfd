@@ -7,6 +7,7 @@ import {
 } from "../../__tests__/transfer-doubles.js";
 import { GetInternalTransferManifestHandler } from "../get-internal-transfer-manifest.handler.js";
 import { GetInternalTransferManifestQuery } from "../get-internal-transfer-manifest.query.js";
+import { resupplyContentsOver } from "../../__tests__/resupply-transfer-doubles.js";
 
 // Des jours comparés entre eux seulement, jamais à l'horloge.
 const DAY = "2030-03-12";
@@ -24,6 +25,7 @@ function handlerOver(
   return new GetInternalTransferManifestHandler(
     new InternalTransfersReaderOver(transfers),
     contents,
+    resupplyContentsOver(),
   );
 }
 

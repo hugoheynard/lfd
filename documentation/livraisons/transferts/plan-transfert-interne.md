@@ -98,6 +98,21 @@ jamais lu comme une livraison.
 >   manifeste a le **même format de ligne** pour les deux genres, pour que le
 >   réapprovisionnement s'y branche sans le changer.
 >   Son plan : [`plan-reapprovisionnement.md`](../../reassort-boutiques/plan-reapprovisionnement.md) (2026-10-14).
+>
+> **⚠️ Bâti depuis le 2026-10-21 (réassort, lot R3c)** — la phrase « NON
+> BÂTI » ci-dessus date du 2026-10-13. Le genre `resupply` a son écrivain :
+> à `production.day_closed`, `TransferAttachment.attachResupplies` range les
+> réassorts FIGÉS (les `resupplyIds` du fait) d'un point servi par transfert
+> dans le transfert prévu du point, ouvert au besoin (un point sans commande
+> ce jour-là en reçoit un) ; `ForgetReopenedPlan` les détache à la
+> réouverture. Son contenu a son lecteur : la copie figée du fournil
+> (`production/channels/delivery/FrozenResuppliesReader`), l'emballé d'une
+> fiche de colisage close (`packing/channels/delivery/`, la même classe
+> `PackedResuppliesReader`), sinon le demandé (`TransferResupplyContents`).
+> Le manifeste, « Ma tournée » et le papier le lisent sans changer de
+> format ; `unplacedOn` place un transfert qui ne porte qu'un réassort. Le
+> réassort part dans les bacs du TRANSFERT, sans contenant au colisage.
+> État : [`../../reassort-boutiques/README.md`](../../reassort-boutiques/README.md).
 
 ```mermaid
 stateDiagram-v2

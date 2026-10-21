@@ -113,10 +113,18 @@ four, et un retour du fournil ne reprend pas ce qui part au point.
 - **Commerce** : `packing/channels/commerce/PackedResuppliesReader`, déclaré et
   implémenté ici, rend l'emballé d'une fiche close ; la réception du point s'en
   pré-remplit (`b2b → packing : port uniquement`).
-- **Bacs** : ⚠️ une fiche de réassort n'entre **pas** dans les contenants —
-  `container` porte une clé étrangère vers `packing_order`, et `BinDesk`
-  comme le chargement raisonnent par commande. À trancher avec le transfert
-  (R3c).
+- **Bacs** (tranché au lot R3c, 2026-10-21) : une fiche de réassort n'a
+  **pas** de contenant au colisage — `container` garde sa clé étrangère vers
+  `packing_order`, aucune migration. Ce qu'elle emballe part dans les bacs du
+  **transfert** de son point (`delivery_bin`, sujet `transfer`), déclarés au
+  chargement comme pour les sacs des retraits du site
+  ([plan du transfert](../livraisons/transferts/plan-transfert-interne.md),
+  lot T3). Le transfert porte le réassort comme élément `kind = resupply`.
+- **Ce que le four remet** (R3c) : une fournée ne remet au colisage que la
+  part du colisage — commandes et points servis par transfert ; la part d'un
+  réassort servi sur place (le Labo) monte directement et n'entre jamais dans
+  `packing_stock` (`apps/lfd-api/src/production/domain/services/on-site-share.ts`). Une demande
+  de retour ne porte que ce qui a été remis.
 
 ## 3. Le flux d'une journée
 

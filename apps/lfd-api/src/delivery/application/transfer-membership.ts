@@ -76,7 +76,7 @@ export class TransferMembership {
     orderId: string,
     cause: "cancelled" | "moved",
   ): Promise<boolean> {
-    const outcome = holder.detachOrder(orderId, this.clock.now());
+    const outcome = holder.detach({ kind: "order", orderId }, this.clock.now());
     const order = await this.cite(orderId);
     if (outcome === "frozen") {
       await this.events.publishTraced(new InternalTransferOrderKeptEvent(holder, order, cause));

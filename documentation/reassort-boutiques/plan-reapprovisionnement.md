@@ -719,3 +719,61 @@ colisage.
   c'est elle qui fixe l'arrêt (`planStopOf`).
 - Routes : `GET|PUT|POST admin/packing/:date/resupplies…` sous
   `production_packing` ; l'écran est R3d.
+
+**Après R3b (Hugo, 2026-10-21)** : 1 — les bacs du réassort se traitent avec
+le transfert (R3c) ; 2 — on ne saisit au colisage que ce que le four a remis :
+**validé** ; 3 — les fournées des réassorts d'un point servi sur place (Labo)
+ne sont **pas** remises au colisage (elles y resteraient libres sans fiche) :
+fait en tête de R3c.
+
+**R3c ✅ (bâti le 2026-10-21, non commité)** — ce qui diffère du texte ou
+le précise :
+
+- **Décision 3 d'abord** : une fournée ne remet au colisage que la part du
+  colisage ; la part d'un réassort servi sur place monte directement
+  (`apps/lfd-api/src/production/domain/services/on-site-share.ts`). **Ordre choisi par le bâtisseur, faute d'écrit** :
+  le colisage d'abord, puis le point sur place, puis le surplus au colisage
+  (comme avant). Une demande de retour, et la condition « tout rendu » de
+  `OnPackingReturned`, portent sur ce qui a été REMIS, pas sur la fournée.
+- **Le canal** : point 7 disait « par son canal commerce,
+  `delivery/channels/commerce/` » ; bâti par `production/channels/delivery/`
+  (`FrozenResuppliesReader`, déclaré ET implémenté par la production) — la
+  copie FIGÉE, ce que le §13.3 exige ; `delivery → production` est permis
+  par ce canal. L'emballé : `PackedResuppliesReader` réexporté par
+  `packing/channels/delivery/` (même classe, aucun port neuf).
+- **Second chemin** : un point sans commande reçoit son transfert ;
+  `unplacedOn` ne demandait qu'une commande portée, il demande désormais un
+  élément porté.
+- **Réouverture** : les réassorts sortent du transfert prévu ; le transfert
+  (et son arrêt, s'il était placé) reste, même vide — non retiré.
+- **Bacs (décision 1)** : aucun changement de schéma. Les bacs d'un
+  transfert appartiennent au TRANSFERT (`delivery_bin.transfer_id`, T3), pas
+  à ses commandes ; le réassort y part sans contenant au colisage. Si un
+  contenant « réassort » est voulu AU COLISAGE (un sac par point), c'est une
+  autre décision : `container.resupply_id` + CHECK, non fait.
+- **Nom inconnu** : un réassort figé sans nom de point ouvre un transfert
+  nommé par l'identifiant du point (rien d'autre n'est sûr dans la
+  transaction de l'abonné).
+- e2e : `apps/lfd-api/test/resupply-transfer.e2e-spec.ts`.
+
+### R3e — « Réassort arrivé » : un seul signal, deux gestes (Hugo, 2026-10-21 ; doc-first, après R3d)
+
+« Comment le fournil dit à la boutique Labo : je t'envoie ça ? » — « Ça ne
+peut pas être le même signal que dans le cas colisage → Village ? »
+
+Aujourd'hui, un réassort attendu apparaît dans « à réceptionner » (figé au
+plan, ou envoyé par le fournil, R1d), mais **rien ne dit qu'il est
+physiquement arrivé**. On ajoute un seul signal, quel que soit le chemin :
+
+| Point                         | Ce qui déclenche « arrivé »       | Qui                   |
+| ----------------------------- | --------------------------------- | --------------------- |
+| servi par transfert (Village) | la réception du transfert au site | le geste du transfert |
+| servi sur place (Labo)        | « Monté », sur le réassort        | le fournil            |
+
+Derrière, la même chose : la cloche du back-office sonne au comptoir du point
+(« Réassort arrivé — à réceptionner ») et le réassort passe d'**attendu** à
+**arrivé** dans la liste à réceptionner.
+
+À vérifier avant de bâtir : la réception d'un transfert au site existe-t-elle
+dans le code, ou seulement dans
+[`../livraisons/transferts/plan-transfert-interne.md`](../livraisons/transferts/plan-transfert-interne.md) ?

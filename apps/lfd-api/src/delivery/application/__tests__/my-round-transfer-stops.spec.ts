@@ -8,6 +8,7 @@ import {
   plannedTransfer,
 } from "./transfer-doubles.js";
 import { FixedTransferSitePlaces, VAL_VILLAGE_PLACE } from "./transfer-site-places-double.js";
+import { resupplyContentsOver } from "./resupply-transfer-doubles.js";
 
 // Des jours comparés entre eux seulement, jamais à l'horloge.
 const DAY = "2030-03-12";
@@ -37,6 +38,7 @@ function sourcesOver(
   return {
     transfers: new InternalTransfersReaderOver(transfers),
     contents: new FixedTransferContents(LINES),
+    resupplies: resupplyContentsOver(),
     bins: new FixedTransferBinCounts(new Map([["t_1", 3]])),
     places,
   };

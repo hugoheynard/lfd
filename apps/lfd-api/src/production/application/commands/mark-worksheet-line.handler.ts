@@ -61,7 +61,7 @@ export class MarkWorksheetLineHandler implements ICommandHandler<MarkWorksheetLi
       const stored = await this.batches.record(day, batch);
       current.acknowledge(batch, stored.serviceDay, stored.batch);
       if (stored.batch.cancelled === null) {
-        await this.handoffs.handOver(day, stored.batch);
+        await this.handoffs.handOver(day, current, stored.batch);
       }
     });
   }

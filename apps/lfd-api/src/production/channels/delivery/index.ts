@@ -29,3 +29,10 @@ export {
 } from "../commerce/production-day-reopened.event.js";
 export { ClosedPlansReader } from "../commerce/closed-plans.reader.js";
 export { DayDispatchProgressReader } from "./day-dispatch-progress.reader.js";
+// Le réassort (lot R3c, 2026-10-21) : la copie figée à l'arrêt, que la
+// livraison lit pour attacher un réassort au transfert de son point.
+export {
+  FrozenResuppliesReader,
+  type FrozenResupply,
+  type FrozenResupplyLine,
+} from "./frozen-resupplies.reader.js";

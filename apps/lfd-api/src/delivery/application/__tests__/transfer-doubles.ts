@@ -28,7 +28,9 @@ import {
 import { RecordingPublisher } from "../../../platform/events/__tests__/recording-publisher.js";
 import { FixedIdGenerator } from "../../../platform/id/fixed-id-generator.js";
 import { FixedClock } from "../../../platform/time/fixed-clock.js";
+import type { FrozenResupply } from "../../../production/channels/delivery/index.js";
 import { TransferAttachment } from "../transfer-attachment.js";
+import { FixedFrozenResupplies } from "./resupply-transfer-doubles.js";
 import { TransferPlacer } from "../transfer-placer.js";
 
 /**
@@ -98,7 +100,7 @@ export class InternalTransfersReaderOver extends InternalTransfersReader {
           (t) =>
             t.serviceDay === serviceDay &&
             t.departedAt === null &&
-            t.orderIds.length > 0 &&
+            t.heldItems.length > 0 &&
             !this.placed.has(t.id),
         )
         .map((t) => ({ id: t.id, siteId: t.siteId })),
@@ -226,15 +228,17 @@ export function plannedTransfer(
 
 /**
  * Un rangement des transferts réel, sur des doubles : sans retrait d'un site
- * servi par transfert (`refs` vide), il ne fait rien.
+ * servi par transfert (`refs` vide) ni réassort figé, il ne fait rien.
  */
 export function attachmentOver(
   refs: readonly TransferOrderRef[] = [],
   transfers = new InMemoryInternalTransfers(),
   events = new RecordingPublisher(),
+  resupplies: readonly FrozenResupply[] = [],
 ): TransferAttachment {
   return new TransferAttachment(
     new FixedTransferOrders(refs),
+    new FixedFrozenResupplies(resupplies),
     transfers,
     new FixedIdGenerator("tr"),
     new FixedClock(new Date(0)),

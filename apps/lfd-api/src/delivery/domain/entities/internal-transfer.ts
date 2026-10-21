@@ -54,7 +54,7 @@ export {
  * - **reçu, il est clos** (lot T2) : une réception, une seule — remise au
  *   site après le départ, ou manuelle depuis `planned`, motif obligatoire ;
  *   un transfert reçu ne part plus (le départ l'ignore, B2 du §12.3) ;
- * - une commande se RETIRE tant qu'il est prévu ; parti ou reçu, rien ne
+ * - un élément se RETIRE tant qu'il est prévu ; parti ou reçu, rien ne
  *   bouge (le manifeste est figé, le transfert ne « ramène » rien).
  */
 export class InternalTransfer {
@@ -164,6 +164,11 @@ export class InternalTransfer {
     return this.heldItems.flatMap((item) => (item.kind === "order" ? [item.orderId] : []));
   }
 
+  /** Les réassorts qu'il porte, dans l'ordre d'ajout (lot R3c). */
+  get resupplyIds(): readonly string[] {
+    return this.heldItems.flatMap((item) => (item.kind === "resupply" ? [item.resupplyId] : []));
+  }
+
   /**
    * Ajoute un élément — rend `false` s'il y est déjà (rien ne change).
    * @throws {InternalTransferMismatchError} un autre site ou un autre jour.
@@ -256,13 +261,16 @@ export class InternalTransfer {
   }
 
   /**
-   * **Retire une commande** (lot T2, décision 4 de Hugo) — annulée, changée
-   * de jour ou de site. Prévu : elle sort (`detached`). Parti ou reçu : rien
-   * ne bouge, le manifeste figé fait foi (`frozen`) ; l'appelant le dit au
-   * journal. Absente : `absent`.
+   * **Retire un élément** — une commande annulée, changée de jour ou de site
+   * (lot T2, décision 4 de Hugo) ; un réassort d'un plan rouvert (lot R3c).
+   * Prévu : il sort (`detached`). Parti ou reçu : rien ne bouge, le manifeste
+   * figé fait foi (`frozen`) ; l'appelant le dit au journal. Absent : `absent`.
    */
-  detachOrder(orderId: string, at: Date): TransferDetachment {
-    const held = this.heldItems.find((item) => item.kind === "order" && item.orderId === orderId);
+  detach(target: TransferItem, at: Date): TransferDetachment {
+    const subject = subjectOf(target);
+    const held = this.heldItems.find(
+      (item) => item.kind === target.kind && subjectOf(item) === subject,
+    );
     if (held === undefined) {
       return "absent";
     }

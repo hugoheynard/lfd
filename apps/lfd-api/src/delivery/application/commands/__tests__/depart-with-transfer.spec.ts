@@ -19,6 +19,7 @@ import {
   stopOf,
 } from "./loading-doubles.js";
 import { deliveryOn, FixedDeliveryOrders, InMemoryDeliveryRounds } from "./round-doubles.js";
+import { resupplyContentsOver } from "../../__tests__/resupply-transfer-doubles.js";
 
 /*
  * « Partir » avec un arrêt de transfert interne (plan du transfert interne,
@@ -94,6 +95,7 @@ function setup(transferLoaded: boolean, receivedByHand = false, withBins = true)
     new FixedStaffPermissionHolders(),
     transfers,
     new FixedTransferContents(new Map([["o_v1", [{ sku: "PAIN", name: "Pain", quantity: 4 }]]])),
+    resupplyContentsOver(),
   );
   return { handler, transfers, durable, departed };
 }

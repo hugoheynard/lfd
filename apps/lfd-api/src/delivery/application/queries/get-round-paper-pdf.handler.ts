@@ -23,6 +23,7 @@ import { renderRoundPaperPdf, roundPaperFileName } from "../../domain/services/r
 import { driverNamesOf } from "../delivery-driver-support.js";
 import { roundPaperOf } from "../round-paper-of.js";
 import { GetRoundPaperPdfQuery } from "./get-round-paper-pdf.query.js";
+import { TransferResupplyContents } from "../transfer-resupply-contents.js";
 
 /** Un papier servi : ses octets et le nom proposé au téléchargement. */
 export interface RoundPaperFile {
@@ -57,6 +58,7 @@ export class GetRoundPaperPdfHandler implements IQueryHandler<
     private readonly sitePlaces: TransferSitePlacesReader,
     private readonly sites: TransferSitesReader,
     private readonly colors: DeliveryColorsReader,
+    private readonly resupplies: TransferResupplyContents,
   ) {}
 
   async execute(query: GetRoundPaperPdfQuery): Promise<RoundPaperFile> {
@@ -73,6 +75,7 @@ export class GetRoundPaperPdfHandler implements IQueryHandler<
       roundPaperTransfersOf(round.serviceDay, round.transferStops, {
         transfers: this.transfers,
         contents: this.transferContents,
+        resupplies: this.resupplies,
         bins: this.transferBins,
         places: this.sitePlaces,
         sites: this.sites,

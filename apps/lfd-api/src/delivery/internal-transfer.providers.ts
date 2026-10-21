@@ -14,6 +14,7 @@ import { PrismaCarriedOrderTransfers } from "./infrastructure/prisma-carried-ord
 import { PrismaTransferBinCounts } from "./infrastructure/prisma-transfer-bin-counts.reader.js";
 import { GetInternalTransferManifestHandler } from "./application/queries/get-internal-transfer-manifest.handler.js";
 import { TransferAttachment } from "./application/transfer-attachment.js";
+import { TransferResupplyContents } from "./application/transfer-resupply-contents.js";
 import { TransferPlacement } from "./application/transfer-placement.js";
 import { TransferPlaceFinder, TransferPlacer } from "./application/transfer-placer.js";
 import { TransferRouting } from "./application/transfer-routing.js";
@@ -39,7 +40,9 @@ import {
  *
  * Les ports que le commerce implémente (`TransferOrdersReader`,
  * `TransferSitesReader`, `TransferOrderContentsReader`) sont reliés dans
- * `appBootstrap/delivery-feed.module.ts`.
+ * `appBootstrap/delivery-feed.module.ts`. Le réassort (lot R3c) lit la copie
+ * figée du fournil (`FrozenResuppliesReader`, `production-delivery-feed`) et
+ * l'emballé du colisage (`PackedResuppliesReader`, `packing-feed`).
  */
 export const INTERNAL_TRANSFER_CONTROLLERS: readonly Type[] = [InternalTransfersController];
 
@@ -59,6 +62,8 @@ export const INTERNAL_TRANSFER_PROVIDERS: readonly Provider[] = [
   { provide: InternalTransferRepository, useClass: PrismaInternalTransferRepository },
   { provide: InternalTransfersReader, useClass: PrismaInternalTransfersReader },
   { provide: TransferredOrdersReader, useClass: PrismaTransferredOrdersReader },
+  // Réassort, lot R3c : le contenu d'un réassort dans le transfert.
+  TransferResupplyContents,
   // Lot T3 : les bacs du transfert, et « arrivée au site ? » avec F4.
   DeclareTransferBinsHandler,
   GetDeliveryTransferBinsHandler,

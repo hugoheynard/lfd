@@ -3,8 +3,9 @@
 > **État : 🟡 partiel, 2026-10-21.** La **réception** au comptoir est bâtie
 > (commit `558b376c8`), et se fait en **un geste par réassort** depuis le lot
 > R2 (2026-10-21) ; la **commande** au fournil aussi (lot R1, 2026-10-21),
-> mais le fournil ne fait encore que la LIRE : elle n'entre ni au plan figé, ni
-> au colisage, ni au transfert (R3). Les **ruptures et stocks faibles** du
+> et elle entre au plan figé (R3a), au colisage (R3b) et au transfert du point
+> (R3c, 2026-10-21) ; les écrans du fournil, du colisage et du manifeste
+> restent à faire (R3d). Les **ruptures et stocks faibles** du
 > comptoir aussi (lot R1b, 2026-10-21), sans effet encore sur la boutique. La
 > **demande en cours** est enregistrée depuis le lot R1c (2026-10-21). Le
 > **fournil envoie ses propres réassorts**, à part, depuis le lot R1d
@@ -35,7 +36,7 @@ envoyé attend son reçu, pré-rempli de la quantité demandée.
 flowchart LR
   C["Comptoir › Réassort<br/>(point du bandeau)<br/>« Pour demain » / « Au plus tôt »"] --> S["SiteResupply<br/>placé → annulé"]
   S --> F["Fournil › Réassorts à produire<br/>(lecture : par jour, par point, cumul)"]
-  S -.->|"R3, non bâti"| P["plan figé · colisage · transfert"]
+  S -->|"R3a–R3c"| P["plan figé · colisage · transfert"]
 ```
 
 - **Le code** : `apps/lfd-api/src/b2b/resupply/`, à côté de la réception.
@@ -335,6 +336,39 @@ n'y est jamais soumis. Voir
 - **Le refus d'un arrêt anticipé** nomme sa cause : l'heure limite générale,
   ou l'heure du réassort quand c'est elle qui fixe l'arrêt.
 
+## Ce qui est bâti : le réassort dans le transfert (lot R3c, 2026-10-21)
+
+```mermaid
+flowchart LR
+  F["fournil — arrêt du plan<br/>production.day_closed + resupplyIds"] -->|"FrozenResuppliesReader<br/>(production/channels/delivery)"| T["livraison — transfert du point<br/>élément kind = resupply"]
+  P["colisage — fiche close<br/>quantité emballée"] -->|"PackedResuppliesReader<br/>(packing/channels/delivery)"| M["manifeste · papier de tournée<br/>emballé, sinon demandé"]
+  T --> M
+```
+
+- **L'attache** : à `production.day_closed`, la livraison (`LearnArrestedPlan`
+  → `TransferAttachment.attachResupplies`) range chaque réassort figé d'un
+  point servi par transfert dans le transfert prévu de ce point, ouvert au
+  besoin — un point sans commande ce jour-là reçoit le sien. La liste vient
+  des `resupplyIds` DU FAIT ; le point et les lignes, de la copie figée du
+  fournil (`FrozenResuppliesReader`, déclaré et implémenté par la
+  production), jamais du commerce vivant. Le Labo n'a aucun transfert.
+- **Le contenu** : manifeste, « Ma tournée » et papier de tournée lisent
+  l'emballé d'une fiche close (`PackedResuppliesReader`, réexporté par
+  `packing/channels/delivery/`), sinon le demandé ; une ligne emballée à zéro
+  ne part pas. Figé au départ comme les commandes.
+- **La réouverture** détache les réassorts du plan défait de leur transfert
+  encore prévu (`ForgetReopenedPlan`) ; le transfert reste, même vide.
+- **Les bacs** : ceux du transfert (`delivery_bin`, sujet `transfer`,
+  déclarés au chargement) portent aussi le réassort. Aucune migration : un
+  réassort n'a pas de contenant au colisage, il part dans les bacs du
+  transfert.
+- **La part du Labo ne descend pas au colisage** : une fournée cochée sur le
+  total ne remet que la part du colisage (commandes + points servis par
+  transfert) ; la part d'un réassort servi sur place monte directement
+  (`apps/lfd-api/src/production/domain/services/on-site-share.ts` — le colisage d'abord, puis
+  le point sur place, puis le surplus au colisage). Une demande de retour ne
+  porte que ce qui a été remis.
+
 ## Ce qui reste
 
 - **La course annuler / réceptionner** : l'annulation lit la réception puis
@@ -342,9 +376,13 @@ n'y est jamais soumis. Voir
   Deux postes qui annulent et réceptionnent à la même seconde peuvent encore
   laisser un réassort annulé ET réceptionné (le reçu reste et compte au
   stock). Fermé seulement si la réception passe un jour par l'agrégat.
-- **Le branchement de la commande** (R3c, R4) : portée par le transfert interne
+- **Le « au plus tôt »** (R4) n'entre pas au transfert : seuls les réassorts
+  figés à l'arrêt y vont
   ([`../livraisons/transferts/plan-transfert-interne.md`](../livraisons/transferts/plan-transfert-interne.md)) —
   lots du [plan](plan-reapprovisionnement.md).
+- **Un transfert vidé par la réouverture** garde son arrêt dans la tournée
+  s'il était placé ; il n'est pas retiré (comme un transfert vidé par
+  l'annulation de ses commandes).
 - **Le jour même sur stock** (J2) : les commandes qui puisent dans la vitrine,
   leur décompte dans le stock estimé, et l'effet des alertes de R1b (une
   rupture bloque la vente en ligne du jour, un stock faible avertit) —

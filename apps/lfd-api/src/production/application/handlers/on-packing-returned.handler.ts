@@ -13,6 +13,7 @@ import { ProductionBatchRepository } from "../../domain/ports/production-batch.r
 import { ProductionDayLock } from "../../domain/ports/production-day.lock.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import { ProductionHandoffLedger } from "../../domain/ports/production-handoff.ledger.js";
+import { ProductionHandoffReader } from "../../domain/ports/production-handoff.reader.js";
 import { ProductionReturnRequests } from "../../domain/ports/production-return.requests.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
 
@@ -28,7 +29,7 @@ export const ON_PACKING_RETURNED = "production.take-back-returned";
  * 1. la demande reçoit sa réponse, une fois (conditionnée en base) ;
  * 2. une remise négative de ce qui est rendu entre au registre — « remis »
  *    baisse d'autant, et `sorti ≥ remis` tient (§11 SÉRIEUX) ;
- * 3. si la fournée a tout rendu, elle est annulée — signée par celui qui a
+ * 3. si la fournée a rendu tout ce qu'elle avait remis, elle est annulée — signée par celui qui a
  *    demandé, à l'instant de la décision. Un retour partiel la laisse compter
  *    pour le reste ; un refus (`0`) ne change rien, et la fiche le montre.
  *
@@ -43,6 +44,7 @@ export class OnPackingReturned implements DurableSubscriber {
     private readonly days: ProductionDayRepository,
     private readonly batches: ProductionBatchRepository,
     private readonly lock: ProductionDayLock,
+    private readonly handed: ProductionHandoffReader,
   ) {}
 
   async handle(delivery: DurableDelivery): Promise<void> {
@@ -65,7 +67,13 @@ export class OnPackingReturned implements DurableSubscriber {
     const batch = (await this.days.load(day)).batches.find(
       (candidate) => candidate.id === answered.batchId,
     );
-    if (batch !== undefined && batch.returned >= batch.quantity) {
+    // « Tout rendu » = tout ce que le colisage a REÇU, pas la fournée : une
+    // part gardée pour un réassort sur place ne lui a jamais été remise (R3c).
+    const handed =
+      batch === undefined
+        ? undefined
+        : (await this.handed.handedAmong(day, [batch.id])).get(batch.id);
+    if (batch !== undefined && batch.returned >= (handed ?? batch.quantity)) {
       await this.batches.cancel(day, batch.id, { at: event.decidedAt, by: answered.requested.by });
     }
   }

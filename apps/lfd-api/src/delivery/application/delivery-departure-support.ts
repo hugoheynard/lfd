@@ -22,6 +22,7 @@ import type { DeliveryRoundRepository } from "../domain/ports/delivery-round.rep
 import type { InternalTransferRepository } from "../domain/ports/internal-transfer.repository.js";
 import { loadTransfer } from "./internal-transfer-support.js";
 import { itemContentsOf } from "./transfer-contents.js";
+import type { TransferResupplyContents } from "./transfer-resupply-contents.js";
 import type { DepartedStopRepository } from "../domain/ports/departed-stop.repository.js";
 import type { DoorstepSettingsReader } from "../domain/ports/doorstep-settings.reader.js";
 import type { StopLoadingRepository } from "../domain/ports/stop-loading.repository.js";
@@ -42,6 +43,8 @@ export interface DepartureDeps {
   readonly transfers: InternalTransferRepository;
   /** Le contenu de leurs commandes, pour figer le manifeste au départ. */
   readonly contents: TransferOrderContentsReader;
+  /** Le contenu de leurs réassorts — l'emballé si la fiche est close (R3c). */
+  readonly resupplies: TransferResupplyContents;
 }
 
 /**
@@ -165,7 +168,7 @@ async function departTransfers(
   if (transfers.length === 0) {
     return;
   }
-  const contents = await itemContentsOf(deps.contents, transfers);
+  const contents = await itemContentsOf(deps.contents, deps.resupplies, transfers);
   for (const transfer of transfers) {
     if (transfer.depart(at, contents)) {
       await deps.transfers.save(transfer);

@@ -164,7 +164,9 @@ export class PrismaInternalTransfersReader extends InternalTransfersReader {
         serviceDay,
         departedAt: null,
         receivedAt: null,
-        items: { some: { kind: "order", ...HELD_ITEM } },
+        // Tout élément porté : un transfert qui ne porte qu'un réassort (un
+        // point sans commande ce jour-là, lot R3c) se place aussi.
+        items: { some: HELD_ITEM },
         stops: { none: LIVE_STOP },
       },
       orderBy: [{ createdAt: "asc" }, { id: "asc" }],

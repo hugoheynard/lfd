@@ -15,6 +15,7 @@ import { orderIdOf } from "../../domain/entities/delivery-round-state.js";
 import { DeliveryDayReadinessRepository } from "../../domain/ports/delivery-day-readiness.repository.js";
 import { DeliveryRoundRepository } from "../../domain/ports/delivery-round.repository.js";
 import { DeliveryRoundsReader } from "../../domain/ports/delivery-rounds.reader.js";
+import { TransferAttachment } from "../transfer-attachment.js";
 
 /** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
 export const FORGET_REOPENED_PLAN = "delivery.forget-reopened-plan";
@@ -29,10 +30,14 @@ export const FORGET_REOPENED_PLAN = "delivery.forget-reopened-plan";
  *   ligne reste avec `removed_at`. Les tournées, même vides, restent : la
  *   prochaine composition les réutilise.
  *
- * Ce qu'il ne touche PAS : les arrêts de transfert et les transferts. Un
- * retrait d'un site servi par transfert y entre dès sa PASSATION
- * (`AttachOnOrderPlaced`), pas à l'arrêt : il reste une commande valable du
- * jour, et son transfert est toujours dû.
+ * - les RÉASSORTS du plan défait (`resupplyIds`, lot R3c) sortent de leur
+ *   transfert encore prévu : ils n'y étaient entrés qu'à l'arrêt, et le
+ *   fournil ne les a plus figés. Le transfert reste, même vide.
+ *
+ * Ce qu'il ne touche PAS : les arrêts de transfert, ni les commandes des
+ * transferts. Un retrait d'un site servi par transfert y entre dès sa
+ * PASSATION (`AttachOnOrderPlaced`), pas à l'arrêt : il reste une commande
+ * valable du jour, et son transfert est toujours dû.
  *
  * Rien si la journée est de nouveau arrêtée quand le fait arrive (la boîte
  * d'envoi ne garantit pas l'ordre) : défaire défairait le nouveau plan. Une
@@ -50,6 +55,7 @@ export class ForgetReopenedPlan implements DurableSubscriber {
     private readonly reader: DeliveryRoundsReader,
     private readonly rounds: DeliveryRoundRepository,
     private readonly clock: Clock,
+    private readonly attachment: TransferAttachment,
   ) {}
 
   async handle(delivery: DurableDelivery): Promise<void> {
@@ -65,6 +71,7 @@ export class ForgetReopenedPlan implements DurableSubscriber {
       await this.days.save(day);
     }
     await this.removeStops(event.serviceDay, new Set(event.orderIds), now);
+    await this.attachment.detachResupplies(event.resupplyIds);
   }
 
   /** Sort les commandes du plan défait des tournées du jour restées au dépôt. */

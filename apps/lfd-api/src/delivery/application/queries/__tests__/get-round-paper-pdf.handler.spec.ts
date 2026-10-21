@@ -33,6 +33,7 @@ import {
 } from "../../__tests__/transfer-site-places-double.js";
 import { GetRoundPaperPdfHandler, type RoundPaperFile } from "../get-round-paper-pdf.handler.js";
 import { GetRoundPaperPdfQuery } from "../get-round-paper-pdf.query.js";
+import { resupplyContentsOver } from "../../__tests__/resupply-transfer-doubles.js";
 
 /** Le jour n'est que recopié dans le papier : rien ne le compare à l'horloge. */
 const DAY = "2026-10-07";
@@ -176,6 +177,7 @@ function subject(round: RoundPaperRow | null = ROUND, colors = new FixedDelivery
       },
     ]),
     colors,
+    resupplyContentsOver(),
   );
   return { handler, procedures, colors };
 }

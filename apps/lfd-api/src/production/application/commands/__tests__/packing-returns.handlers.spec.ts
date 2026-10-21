@@ -11,7 +11,11 @@ import {
   InMemoryBatches,
   RecordingDayLock,
 } from "../../__tests__/batch-doubles.js";
-import { handoffsOnDoubles, returnCountsOf } from "../../__tests__/handoff-doubles.js";
+import {
+  handoffsOnDoubles,
+  InMemoryHandoffReader,
+  returnCountsOf,
+} from "../../__tests__/handoff-doubles.js";
 import { OnPackingReturned } from "../../handlers/on-packing-returned.handler.js";
 import { CancelBatchCommand } from "../cancel-batch.command.js";
 import { CancelBatchHandler } from "../cancel-batch.handler.js";
@@ -68,7 +72,14 @@ function setup() {
     record: new RecordBatchHandler(days, store, clock, uow, handoffs.service),
     cancel: new CancelBatchHandler(days, store, lock, clock, uow, handoffs.service),
     unmark: new UnmarkWorksheetLineHandler(days, store, lock, clock, uow, handoffs.service),
-    answer: new OnPackingReturned(handoffs.requests, handoffs.ledger, days, store, lock),
+    answer: new OnPackingReturned(
+      handoffs.requests,
+      handoffs.ledger,
+      days,
+      store,
+      lock,
+      new InMemoryHandoffReader(handoffs.ledger),
+    ),
   };
 }
 

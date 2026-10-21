@@ -30,6 +30,7 @@ import {
   FixedTransferContents,
   InMemoryInternalTransfers,
 } from "../../__tests__/transfer-doubles.js";
+import { resupplyContentsOver } from "../../__tests__/resupply-transfer-doubles.js";
 
 // Des jours comparés entre eux seulement, jamais à l'horloge.
 const DAY = "2030-03-12";
@@ -107,6 +108,7 @@ function departMine(
     holders,
     new InMemoryInternalTransfers(),
     new FixedTransferContents(),
+    resupplyContentsOver(),
   );
   return { handler, rounds, departed, events, durable };
 }

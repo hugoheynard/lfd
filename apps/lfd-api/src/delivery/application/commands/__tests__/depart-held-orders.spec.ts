@@ -22,6 +22,7 @@ import {
   FixedTransferContents,
   InMemoryInternalTransfers,
 } from "../../__tests__/transfer-doubles.js";
+import { resupplyContentsOver } from "../../__tests__/resupply-transfer-doubles.js";
 
 /*
  * « Partir » du dépôt refuse une commande retenue au contrôle qualité
@@ -69,6 +70,7 @@ function depart(holds: FixedDepartureHolds) {
     new FixedStaffPermissionHolders(),
     new InMemoryInternalTransfers(),
     new FixedTransferContents(),
+    resupplyContentsOver(),
   );
   return { handler, rounds, departed, events, durable };
 }

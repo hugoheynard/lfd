@@ -9,6 +9,7 @@ import {
   InMemoryDayReadiness,
   orderFact,
 } from "../handlers/__tests__/day-readiness-doubles.js";
+import { FixedFrozenResupplies } from "./resupply-transfer-doubles.js";
 import { TransferAttachment } from "../transfer-attachment.js";
 import { TransferMembership } from "../transfer-membership.js";
 import {
@@ -55,7 +56,14 @@ function scene(options: {
     new FixedDeliveryOrders([orderFact("o_1"), orderFact("o_2")]),
     transfers,
     days,
-    new TransferAttachment(orders, transfers, new FixedIdGenerator("tr"), clock, events),
+    new TransferAttachment(
+      orders,
+      new FixedFrozenResupplies(),
+      transfers,
+      new FixedIdGenerator("tr"),
+      clock,
+      events,
+    ),
     placer,
     clock,
     events,

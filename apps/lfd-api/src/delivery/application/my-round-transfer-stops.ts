@@ -10,11 +10,14 @@ import type { InternalTransfersReader } from "../domain/ports/internal-transfers
 import type { TransferBinCounts } from "../domain/ports/transfer-bin-counts.reader.js";
 import { transferClientelesOf, withClienteles } from "./transfer-categories.js";
 import { itemContentsOf } from "./transfer-contents.js";
+import type { TransferResupplyContents } from "./transfer-resupply-contents.js";
 
 /** Les lectures que l'arrêt de transfert du livreur assemble. */
 export interface DriverTransferStopSources {
   readonly transfers: InternalTransfersReader;
   readonly contents: TransferOrderContentsReader;
+  /** Le contenu des réassorts — l'emballé si la fiche est close (R3c). */
+  readonly resupplies: TransferResupplyContents;
   readonly bins: TransferBinCounts;
   readonly places: TransferSitePlacesReader;
 }
@@ -48,7 +51,7 @@ export async function driverTransferStopsOf(
   }
   const unfrozen = [...loaded.values()].filter((transfer) => transfer.departedAt === null);
   const [itemContents, clienteles, binCounts, places] = await Promise.all([
-    itemContentsOf(sources.contents, unfrozen),
+    itemContentsOf(sources.contents, sources.resupplies, unfrozen),
     transferClientelesOf(sources.contents, [...loaded.values()]),
     sources.bins.liveBinCounts([...loaded.keys()]),
     sources.places.placesOf([...new Set([...loaded.values()].map((t) => t.siteId))]),

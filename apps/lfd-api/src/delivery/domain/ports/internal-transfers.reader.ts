@@ -13,8 +13,9 @@ export interface UnplacedTransferRow {
  */
 export abstract class InternalTransfersReader {
   /**
-   * Les transferts PRÉVUS de ce jour, portant au moins une commande, qu'aucun
-   * arrêt vivant n'emporte — du plus ancien au plus récent.
+   * Les transferts PRÉVUS de ce jour, portant au moins un élément (une
+   * commande ou, depuis R3c, un réassort), qu'aucun arrêt vivant n'emporte —
+   * du plus ancien au plus récent.
    */
   abstract unplacedOn(serviceDay: string): Promise<readonly UnplacedTransferRow[]>;
 

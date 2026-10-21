@@ -100,11 +100,11 @@ describe("InternalTransfer.receive", () => {
   });
 });
 
-describe("InternalTransfer.detachOrder", () => {
+describe("InternalTransfer.detach", () => {
   it("sort une commande d'un transfert prévu : elle ne compte plus, ni au manifeste", () => {
     const transfer = withOrders("o_1", "o_2");
 
-    expect(transfer.detachOrder("o_1", LATER)).toBe("detached");
+    expect(transfer.detach({ kind: "order", orderId: "o_1" }, LATER)).toBe("detached");
 
     expect(transfer.orderIds).toEqual(["o_2"]);
     expect(transfer.manifest(() => []).orders.items.map((item) => item.subjectId)).toEqual(["o_2"]);
@@ -115,7 +115,7 @@ describe("InternalTransfer.detachOrder", () => {
 
   it("une commande sortie peut y revenir : un nouvel élément, l'ancien reste", () => {
     const transfer = withOrders("o_1");
-    transfer.detachOrder("o_1", LATER);
+    transfer.detach({ kind: "order", orderId: "o_1" }, LATER);
 
     expect(
       transfer.attach({ itemId: "i_9", item: { kind: "order", orderId: "o_1" } }, SITE, LATER),
@@ -126,11 +126,11 @@ describe("InternalTransfer.detachOrder", () => {
   it("parti ou reçu, rien ne bouge : le manifeste figé fait foi", () => {
     const transfer = departed("o_1");
 
-    expect(transfer.detachOrder("o_1", LATER)).toBe("frozen");
+    expect(transfer.detach({ kind: "order", orderId: "o_1" }, LATER)).toBe("frozen");
     expect(transfer.orderIds).toEqual(["o_1"]);
   });
 
   it("une commande absente : rien", () => {
-    expect(withOrders("o_1").detachOrder("o_2", LATER)).toBe("absent");
+    expect(withOrders("o_1").detach({ kind: "order", orderId: "o_2" }, LATER)).toBe("absent");
   });
 });

@@ -14,11 +14,14 @@ import type {
 } from "../domain/services/round-paper.js";
 import { addressLinesOf } from "./round-paper-address.js";
 import { itemContentsOf } from "./transfer-contents.js";
+import type { TransferResupplyContents } from "./transfer-resupply-contents.js";
 
 /** Les lectures qu'un arrêt de transfert imprimé assemble. */
 export interface RoundPaperTransferSources {
   readonly transfers: InternalTransfersReader;
   readonly contents: TransferOrderContentsReader;
+  /** Le contenu des réassorts — l'emballé si la fiche est close (R3c). */
+  readonly resupplies: TransferResupplyContents;
   readonly bins: TransferBinCounts;
   readonly places: TransferSitePlacesReader;
   readonly sites: TransferSitesReader;
@@ -50,6 +53,7 @@ export async function roundPaperTransfersOf(
   const [contents, bins, places, sites] = await Promise.all([
     itemContentsOf(
       sources.contents,
+      sources.resupplies,
       loaded.filter((transfer) => transfer.departedAt === null),
     ),
     sources.bins.liveBinCounts(loaded.map((transfer) => transfer.id)),

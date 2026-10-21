@@ -38,6 +38,7 @@ import {
   InMemoryInternalTransfers,
   InternalTransfersReaderOver,
 } from "../../__tests__/transfer-doubles.js";
+import { resupplyContentsOver } from "../../__tests__/resupply-transfer-doubles.js";
 
 // Des jours comparés entre eux seulement, jamais à l'horloge.
 const DAY = "2030-03-12";
@@ -203,6 +204,7 @@ describe("DepartDeliveryRoundHandler — L4-C4, Q14", () => {
       new FixedStaffPermissionHolders(),
       new InMemoryInternalTransfers(),
       new FixedTransferContents(),
+      resupplyContentsOver(),
     );
     return { handler, rounds, departed, events, durable };
   }
@@ -334,6 +336,7 @@ describe("DepartDeliveryRoundHandler — L4-C4, Q14", () => {
       new FixedStaffPermissionHolders(),
       new InMemoryInternalTransfers(),
       new FixedTransferContents(),
+      resupplyContentsOver(),
     );
 
     await expect(

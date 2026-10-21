@@ -7,8 +7,8 @@ import type { ManifestLine } from "../services/transfer-manifest.js";
 
 /**
  * Un **élément** d'un transfert (décision de Hugo du 2026-10-13) : une
- * commande en retrait au site, ou un réapprovisionnement de la boutique du site — ce
- * second genre est déclaré, pas bâti : aucun écrivain ne le produit.
+ * commande en retrait au site, ou un réassort de la boutique du site — écrit
+ * à l'arrêt du plan depuis le lot R3c du réassort (`TransferAttachment`).
  */
 export type TransferItem =
   | { readonly kind: "order"; readonly orderId: string }
@@ -75,5 +75,5 @@ export function isLive(item: HeldTransferItem): boolean {
   return item.detachedAt === undefined;
 }
 
-/** Ce que `detachOrder` a fait d'une commande (lot T2, décision 4 de Hugo). */
+/** Ce que `detach` a fait d'un élément (lot T2, décision 4 de Hugo ; R3c). */
 export type TransferDetachment = "detached" | "frozen" | "absent";

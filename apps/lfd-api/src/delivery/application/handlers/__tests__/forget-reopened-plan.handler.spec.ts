@@ -8,6 +8,8 @@ import { DeliveryDayReadiness } from "../../../domain/entities/delivery-day-read
 import { DeliveryRound } from "../../../domain/entities/delivery-round.js";
 import { InMemoryDeliveryRounds, roundWith } from "../../commands/__tests__/round-doubles.js";
 import { RoundsReaderOver } from "../../commands/__tests__/routing-doubles.js";
+import { attachmentOver, InMemoryInternalTransfers } from "../../__tests__/transfer-doubles.js";
+import { frozenResupply } from "../../__tests__/resupply-transfer-doubles.js";
 import { ForgetReopenedPlan } from "../forget-reopened-plan.handler.js";
 import { InMemoryDayReadiness } from "./day-readiness-doubles.js";
 
@@ -32,7 +34,11 @@ function departed(round: DeliveryRound): DeliveryRound {
   return DeliveryRound.restore({ ...round.toSnapshot(), departedAt: CLOSED });
 }
 
-function setup(rounds: InMemoryDeliveryRounds, closed: readonly string[] = []) {
+function setup(
+  rounds: InMemoryDeliveryRounds,
+  closed: readonly string[] = [],
+  transfers = new InMemoryInternalTransfers(),
+) {
   const days = new InMemoryDayReadiness();
   const ready = DeliveryDayReadiness.start(DAY, CLOSED);
   ready.learnClosure(CLOSED, ["ord_1", "ord_2"], CLOSED);
@@ -43,21 +49,29 @@ function setup(rounds: InMemoryDeliveryRounds, closed: readonly string[] = []) {
     createdAt: ready.createdAt,
     updatedAt: ready.updatedAt,
   });
+  const attachment = attachmentOver([], transfers, undefined, [frozenResupply("res_1", DAY)]);
   const handler = new ForgetReopenedPlan(
     new ClosedPlans(closed),
     days,
     new RoundsReaderOver(rounds),
     rounds,
     new FixedClock(NOW),
+    attachment,
   );
-  return { handler, days };
+  return { handler, days, attachment };
 }
 
-function fact(orderIds: readonly string[]) {
+function fact(orderIds: readonly string[], resupplyIds: readonly string[] = []) {
   return {
     eventId: "evt_1",
     type: PRODUCTION_DAY_REOPENED,
-    payload: new ProductionDayReopenedEvent(DAY, REOPENED, CLOSED, orderIds).durableFact().payload,
+    payload: new ProductionDayReopenedEvent(
+      DAY,
+      REOPENED,
+      CLOSED,
+      orderIds,
+      resupplyIds,
+    ).durableFact().payload,
   };
 }
 
@@ -101,5 +115,28 @@ describe("ForgetReopenedPlan", () => {
     await handler.handle(fact(["ord_1"]));
 
     expect(rounds.saved).toEqual(["r1"]);
+  });
+
+  /** R3c : le réassort n'est entré au transfert qu'à l'arrêt — il en sort à la réouverture. */
+  it("sort du transfert prévu les réassorts du plan défait ; le transfert reste", async () => {
+    const transfers = new InMemoryInternalTransfers();
+    const { handler, attachment } = setup(new InMemoryDeliveryRounds(), [], transfers);
+    await attachment.attachResupplies(DAY, ["res_1"]);
+
+    await handler.handle(fact([], ["res_1"]));
+
+    const [transfer] = transfers.all();
+    expect(transfer?.resupplyIds).toEqual([]);
+    expect(transfer?.status).toBe("planned");
+  });
+
+  it("ne sort aucun réassort quand la journée est de nouveau arrêtée", async () => {
+    const transfers = new InMemoryInternalTransfers();
+    const { handler, attachment } = setup(new InMemoryDeliveryRounds(), [DAY], transfers);
+    await attachment.attachResupplies(DAY, ["res_1"]);
+
+    await handler.handle(fact([], ["res_1"]));
+
+    expect(transfers.all()[0]?.resupplyIds).toEqual(["res_1"]);
   });
 });

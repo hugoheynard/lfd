@@ -28,6 +28,7 @@ import {
 import { TransferBinCounts } from "../../domain/ports/transfer-bin-counts.reader.js";
 import { StopSheets } from "../stop-sheets.js";
 import { GetMyDeliveryRoundQuery } from "./get-my-delivery-round.query.js";
+import { TransferResupplyContents } from "../transfer-resupply-contents.js";
 
 /**
  * **Ma tournée, arrêt par arrêt** (plan « Ma tournée », MT-D4, MT-D5 v2).
@@ -62,6 +63,7 @@ export class GetMyDeliveryRoundHandler implements IQueryHandler<
     private readonly decisions: StopDecisionsReader,
     private readonly transferBins: TransferBinCounts,
     private readonly sitePlaces: TransferSitePlacesReader,
+    private readonly resupplies: TransferResupplyContents,
   ) {}
 
   async execute(query: GetMyDeliveryRoundQuery): Promise<MyDeliveryRoundView> {
@@ -87,6 +89,7 @@ export class GetMyDeliveryRoundHandler implements IQueryHandler<
     const transferStops = await driverTransferStopsOf(round.transferStops, {
       transfers: this.transfers,
       contents: this.contents,
+      resupplies: this.resupplies,
       bins: this.transferBins,
       places: this.sitePlaces,
     });

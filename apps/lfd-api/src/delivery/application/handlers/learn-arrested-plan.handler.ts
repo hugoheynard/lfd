@@ -31,6 +31,8 @@ export const LEARN_ARRESTED_PLAN = "delivery.learn-arrested-plan";
  *
  * - borné aux `orderIds` DU FAIT, jamais au statut `confirmed` (l'abonné du
  *   commerce peut ne pas être passé) ;
+ * - range au transfert de leur point les retraits d'un site servi par
+ *   transfert, et les réassorts figés (`resupplyIds` du fait, lot R3c) ;
  * - n'en garde que les livraisons NON annulées, lues au commerce par le canal ;
  * - en fait l'UNION dans l'ensemble du jour (`DeliveryDayReadiness`) ;
  * - sonne seulement si l'ensemble a grandi — à la première clôture reçue,
@@ -59,6 +61,9 @@ export class LearnArrestedPlan implements DurableSubscriber {
     // Les retraits des sites servis par transfert rejoignent leur transfert
     // (lot T1) ; la composition, après la validation, les placera.
     await this.attachment.attachAmong(event.orderIds);
+    // Les réassorts figés d'un point servi par transfert (réassort, R3c) : à
+    // partir de la liste DU FAIT, un point sans commande compris.
+    await this.attachment.attachResupplies(event.serviceDay, event.resupplyIds);
     const day =
       (await this.days.load(event.serviceDay)) ?? DeliveryDayReadiness.start(event.serviceDay, now);
     const announced = day.learnClosure(event.closedAt, deliveryIds, now);
