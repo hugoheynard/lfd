@@ -8,8 +8,12 @@ import type { Invoice } from "../entities/invoice.js";
  * site frère. Le mur est dans la requête, pas dans l'appelant.
  */
 export abstract class CompanyInvoicesReader {
-  /** Les pièces visibles, les plus récentes d'abord (numéro décroissant). */
-  abstract visibleTo(companyId: string): Promise<readonly Invoice[]>;
+  /**
+   * Les pièces visibles, les plus récentes d'abord (numéro décroissant). Avec
+   * `onlyIds`, celles d'entre elles seulement — le zip d'une sélection (P2) lit
+   * le mur ET la sélection en une seule lecture.
+   */
+  abstract visibleTo(companyId: string, onlyIds?: readonly string[]): Promise<readonly Invoice[]>;
 
   /** La pièce si elle est visible par cette société, sinon `null` (absente ou d'un autre). */
   abstract oneVisibleTo(invoiceId: string, companyId: string): Promise<Invoice | null>;

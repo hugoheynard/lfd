@@ -42,16 +42,26 @@ export class MemoryInvoiceReader extends InvoiceReader {
  * passé un des bons (`orderCompanies` : bon → société ; absent = le payeur).
  */
 export class MemoryCompanyInvoices extends CompanyInvoicesReader {
+  /** Chaque lecture de liste, avec sa sélection : prouve qu'il n'y en a qu'une. */
+  readonly listCalls: (readonly string[] | undefined)[] = [];
+  oneCalls = 0;
   constructor(
     private readonly invoices: readonly Invoice[],
     private readonly orderCompanies: ReadonlyMap<string, string> = new Map(),
   ) {
     super();
   }
-  visibleTo(companyId: string): Promise<readonly Invoice[]> {
-    return Promise.resolve(this.invoices.filter((invoice) => this.sees(invoice, companyId)));
+  visibleTo(companyId: string, onlyIds?: readonly string[]): Promise<readonly Invoice[]> {
+    this.listCalls.push(onlyIds);
+    return Promise.resolve(
+      this.invoices.filter(
+        (invoice) =>
+          this.sees(invoice, companyId) && (onlyIds === undefined || onlyIds.includes(invoice.id)),
+      ),
+    );
   }
   oneVisibleTo(invoiceId: string, companyId: string): Promise<Invoice | null> {
+    this.oneCalls += 1;
     const invoice = this.invoices.find((candidate) => candidate.id === invoiceId);
     return Promise.resolve(invoice !== undefined && this.sees(invoice, companyId) ? invoice : null);
   }
@@ -127,7 +137,10 @@ export class MemoryKeptStore extends CustomerDocumentStore {
     return Promise.resolve(key);
   }
 
+  readonly readKeys: string[] = [];
+
   read(key: string): Promise<Buffer> {
+    this.readKeys.push(key);
     const found = this.objects.get(key);
     return found === undefined
       ? Promise.reject(new Error(`objet absent : ${key}`))

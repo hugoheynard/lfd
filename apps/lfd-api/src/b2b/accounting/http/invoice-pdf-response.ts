@@ -2,6 +2,7 @@ import { StreamableFile } from "@nestjs/common";
 import { contentDispositionAttachment, sanitiseFileName } from "@lfd/storage";
 import type { Response } from "express";
 
+import type { InvoiceArchive } from "../application/invoice-archive-support.js";
 import type { InvoiceDocument } from "../application/invoice-document-support.js";
 
 /**
@@ -16,4 +17,17 @@ export function invoicePdfResponse(document: InvoiceDocument, response: Response
     contentDispositionAttachment(sanitiseFileName(document.fileName, "facture.pdf")),
   );
   return new StreamableFile(document.bytes);
+}
+
+/** La réponse HTTP du zip de « Mes factures » (P2) : `application/zip`, en `attachment`. */
+export function invoiceArchiveResponse(
+  archive: InvoiceArchive,
+  response: Response,
+): StreamableFile {
+  response.setHeader("Content-Type", "application/zip");
+  response.setHeader(
+    "Content-Disposition",
+    contentDispositionAttachment(sanitiseFileName(archive.fileName, "factures.zip")),
+  );
+  return new StreamableFile(archive.bytes);
 }

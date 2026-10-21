@@ -213,3 +213,45 @@ seule lecture `visibleTo` filtrée par les ids.
   **À confirmer par Hugo.**
 - `settled` et `closed` n'ont pas de date ; `collection_planned` /
   `collected` d'un lot sans échéance figée ni avis rendent `date: null`.
+
+## 9. P2 — le zip, bâti (2026-10-21, non commité à l'écriture)
+
+- **La route** `GET /companies/:companyId/invoices.zip` : soit les filtres de
+  la liste (`year`, `month`, `kind` ; aucun = tout ce qui est visible), soit
+  `ids=a,b,c` — jamais les deux (400). Forme : `myInvoicesArchiveQuerySchema`
+  (`packages/contracts/src/my-invoices-archive.ts`). Contrôleur QueryBus seul ;
+  les refus sortent par `AppErrorFilter`.
+- **Le mur** : `ensureInvoiceAccess` (`owner|billing`), puis UNE lecture
+  `CompanyInvoicesReader.visibleTo(companyId, onlyIds?)` — la sélection est
+  dans le `where` de la même requête que le mur. Rien n'est lu sur 403/404.
+- **Les règles**, pures : `apps/lfd-api/src/b2b/accounting/domain/services/invoice-archive.ts`
+  — plafond `INVOICE_ARCHIVE_MAX_PIECES = 200` ; refus nommés
+  (`domain/errors/invoice-archive-errors.ts`) : id non visible (404, les ids),
+  rien à zipper (409), plus de 200 (409, le compte), PDF pas rendu (409, les
+  numéros), empreinte fausse (500, les numéros — toutes relues avant de
+  refuser). Ordre : numéro décroissant.
+- **La lecture** : `application/invoice-archive-support.ts` relit chaque PDF par
+  `readInvoiceDocument` (empreinte vérifiée), 8 lectures de front, TOUT avant
+  que le contrôleur n'écrive un en-tête.
+- **Le zip** : port `domain/ports/stored-zip-writer.ts`, adaptateur
+  `infrastructure/fflate-stored-zip-writer.ts` — `fflate` 0.8.3 (exact, hors
+  catalogue : consommateur unique ; déjà tiré par pdfkit), entrées en STORE,
+  datées du jour d'émission à midi UTC (même contenu → mêmes octets).
+  Entrées `FA-AAAA-NNNNNN.pdf` (un avoir : son numéro), nom
+  `factures-<société>-<filtre>.zip` — société = enseigne, sinon raison
+  sociale (port `CompanyLabelReader`), en ASCII minuscule ; filtre = `tout`,
+  `AAAA`, `AAAA-MM`, suffixé `-factures`/`-avoirs`, ou `selection`.
+- **Tests** : domaine `domain/services/__tests__/invoice-archive.spec.ts`,
+  adaptateur `infrastructure/__tests__/fflate-stored-zip-writer.spec.ts`,
+  handler `application/queries/__tests__/invoice-archive.handler.spec.ts`,
+  contrat `packages/contracts/src/__tests__/my-invoices-archive.spec.ts`, e2e
+  `apps/lfd-api/test/my-invoices-archive.e2e-spec.ts` (zip relu, octets égaux
+  au PDF servi, STORE, 403/404/400, id d'une autre société refusé, filtre vide).
+
+**Écarts / choix à confirmer**
+
+- Un filtre qui ne retient rien est REFUSÉ (409) plutôt que servi en zip vide.
+- « Société » du nom de fichier lue comme enseigne/raison sociale, pas la
+  référence `C-XXXXXX`.
+- Les ids de la sélection sont restreints en forme à `[A-Za-z0-9_-]{1,64}` ;
+  leur nombre n'est borné que par le plafond du domaine.

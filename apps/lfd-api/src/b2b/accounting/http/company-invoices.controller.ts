@@ -1,6 +1,8 @@
 import {
+  myInvoicesArchiveQuerySchema,
   myInvoicesQuerySchema,
   type IssuedInvoiceView,
+  type MyInvoicesArchiveQuery,
   type MyInvoicesQuery,
   type MyIssuedInvoicesView,
 } from "@lfd/contracts";
@@ -11,13 +13,16 @@ import type { Response } from "express";
 import { CurrentUser } from "../../../platform/auth/current-user.decorator.js";
 import type { Principal } from "../../../platform/auth/principal.js";
 import { ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
+import type { InvoiceArchive } from "../application/invoice-archive-support.js";
 import type { InvoiceDocument } from "../application/invoice-document-support.js";
 import {
+  ExportMyCompanyInvoicesArchiveQuery,
   GetMyCompanyInvoiceDocumentQuery,
   GetMyCompanyInvoiceQuery,
   ListMyCompanyInvoicesQuery,
 } from "../application/queries/issued-invoice-queries.js";
-import { invoicePdfResponse } from "./invoice-pdf-response.js";
+import { invoiceArchiveResponse, invoicePdfResponse } from "./invoice-pdf-response.js";
+import { archiveSelectionOf } from "./invoice-archive-selection.js";
 
 /**
  * Surface **client** de « Mes factures » (plan `facture-emise.md`) — la section de `/mon-compte`. Le mur (détenteur ou facturation ;
@@ -41,6 +46,24 @@ export class CompanyInvoicesController {
         kind: query.kind ?? null,
       }),
     );
+  }
+
+  /**
+   * Le zip des PDF (P2) : les pièces filtrées, ou une sélection d'`ids`.
+   * Tout est lu et vérifié AVANT le premier en-tête : un refus sort par
+   * `AppErrorFilter`, jamais un zip partiel en 200.
+   */
+  @Get(":companyId/invoices.zip")
+  async archive(
+    @CurrentUser() user: Principal,
+    @Param("companyId") companyId: string,
+    @Query(new ZodQuery(myInvoicesArchiveQuerySchema)) query: MyInvoicesArchiveQuery,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<StreamableFile> {
+    const archive = await this.queries.execute<ExportMyCompanyInvoicesArchiveQuery, InvoiceArchive>(
+      new ExportMyCompanyInvoicesArchiveQuery(user.userId, companyId, archiveSelectionOf(query)),
+    );
+    return invoiceArchiveResponse(archive, response);
   }
 
   @Get(":companyId/invoices/:invoiceId")

@@ -4,6 +4,7 @@ import { AppConfig } from "../../platform/config/app-config.js";
 import { ResendInvoiceNoticeHandler } from "./application/commands/resend-invoice-notice.handler.js";
 import { RenderCreditNoteDocument } from "./application/handlers/render-credit-note-document.handler.js";
 import { SendInvoiceNotice } from "./application/handlers/send-invoice-notice.handler.js";
+import { ExportMyCompanyInvoicesArchiveHandler } from "./application/queries/export-my-company-invoices-archive.handler.js";
 import { GetIssuedInvoiceDocumentHandler } from "./application/queries/get-issued-invoice-document.handler.js";
 import { GetInvoiceSpecimenHandler } from "./application/queries/get-invoice-specimen.handler.js";
 import { GetIssuedInvoiceHandler } from "./application/queries/get-issued-invoice.handler.js";
@@ -14,12 +15,16 @@ import { ListMyCompanyInvoicesHandler } from "./application/queries/list-my-comp
 import { InvoiceDocumentRenderer } from "./application/services/invoice-document-renderer.js";
 import { InvoiceNoticeSender } from "./application/services/invoice-notice-sender.js";
 import { CompanyInvoicesReader } from "./domain/ports/company-invoices.reader.js";
+import { CompanyLabelReader } from "./domain/ports/company-label.reader.js";
+import { StoredZipWriter } from "./domain/ports/stored-zip-writer.js";
 import { InvoiceFontSource } from "./domain/ports/invoice-font-source.js";
 import { InvoiceMailOrigins } from "./domain/ports/invoice-mail-origins.js";
 import { InvoicePeriodsReader } from "./domain/ports/invoice-periods.reader.js";
 import { InvoiceSettlementFactsReader } from "./domain/ports/invoice-settlement-facts.reader.js";
 import { InvoiceSiteContactsReader } from "./domain/ports/invoice-site-contacts.reader.js";
+import { FflateStoredZipWriter } from "./infrastructure/fflate-stored-zip-writer.js";
 import { PrismaCompanyInvoicesReader } from "./infrastructure/prisma-company-invoices.reader.js";
+import { PrismaCompanyLabelReader } from "./infrastructure/prisma-company-label.reader.js";
 import { DiskInvoiceFontSource } from "./infrastructure/disk-invoice-font-source.js";
 import { PrismaInvoicePeriodsReader } from "./infrastructure/prisma-invoice-periods.reader.js";
 import { PrismaInvoiceSettlementFactsReader } from "./infrastructure/prisma-invoice-settlement-facts.reader.js";
@@ -33,6 +38,8 @@ import { PrismaInvoiceSiteContactsReader } from "./infrastructure/prisma-invoice
  */
 export const ISSUED_INVOICE_PROVIDERS: readonly Provider[] = [
   { provide: CompanyInvoicesReader, useClass: PrismaCompanyInvoicesReader },
+  { provide: CompanyLabelReader, useClass: PrismaCompanyLabelReader },
+  { provide: StoredZipWriter, useClass: FflateStoredZipWriter },
   { provide: InvoicePeriodsReader, useClass: PrismaInvoicePeriodsReader },
   { provide: InvoiceSettlementFactsReader, useClass: PrismaInvoiceSettlementFactsReader },
   { provide: InvoiceSiteContactsReader, useClass: PrismaInvoiceSiteContactsReader },
@@ -51,6 +58,8 @@ export const ISSUED_INVOICE_PROVIDERS: readonly Provider[] = [
   RenderCreditNoteDocument,
   GetIssuedInvoiceDocumentHandler,
   GetMyCompanyInvoiceDocumentHandler,
+  // Le zip de « Mes factures » (plan `plan-page-mes-factures.md`, P2).
+  ExportMyCompanyInvoicesArchiveHandler,
   ListMyCompanyInvoicesHandler,
   GetMyCompanyInvoiceHandler,
   ListCompanyInvoicesHandler,

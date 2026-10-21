@@ -256,6 +256,8 @@ export type {
   OrderInvoicesView,
 } from "./issued-invoices.js";
 export { myInvoicesQuerySchema } from "./my-issued-invoices.js";
+export { myInvoicesArchiveQuerySchema } from "./my-invoices-archive.js";
+export type { MyInvoicesArchiveQuery } from "./my-invoices-archive.js";
 export type {
   MyAmountDueView,
   MyInvoiceSettlementStatus,

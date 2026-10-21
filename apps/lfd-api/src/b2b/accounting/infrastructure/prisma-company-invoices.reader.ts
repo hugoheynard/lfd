@@ -16,10 +16,13 @@ export class PrismaCompanyInvoicesReader extends CompanyInvoicesReader {
     super();
   }
 
-  async visibleTo(companyId: string): Promise<readonly Invoice[]> {
+  async visibleTo(companyId: string, onlyIds?: readonly string[]): Promise<readonly Invoice[]> {
     const covering = await this.coveringOrdersOf(companyId, null);
     const rows = await this.prisma.invoice.findMany({
-      where: { OR: [{ payerCompanyId: companyId }, { id: { in: [...covering] } }] },
+      where: {
+        ...(onlyIds === undefined ? {} : { id: { in: [...onlyIds] } }),
+        OR: [{ payerCompanyId: companyId }, { id: { in: [...covering] } }],
+      },
       include: INVOICE_ROW_INCLUDE,
       orderBy: [{ year: "desc" }, { rank: "desc" }],
     });

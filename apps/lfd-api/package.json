@@ -66,6 +66,7 @@
     "@nestjs/throttler": "catalog:",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
+    "fflate": "0.8.3",
     "helmet": "^8.1.0",
     "jose": "^6.2.3",
     "pdfkit": "^0.20.2",

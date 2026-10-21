@@ -69,8 +69,11 @@ export interface LedgerFilter {
 
 export const NO_LEDGER_FILTER: LedgerFilter = { year: null, month: null, kind: null };
 
+/** Ce que le filtre et l'ordre lisent d'une pièce — le zip (P2) filtre aussi par là. */
+export type FilterableEntry = Pick<LedgerEntry, "number" | "isCreditNote" | "issuedOn">;
+
 /** Les pièces retenues par le filtre, les plus récentes d'abord (numéro décroissant). */
-export function filteredLedger<T extends LedgerEntry>(
+export function filteredLedger<T extends FilterableEntry>(
   entries: readonly T[],
   filter: LedgerFilter,
 ): readonly T[] {
@@ -79,7 +82,7 @@ export function filteredLedger<T extends LedgerEntry>(
     .sort((a, b) => (a.number < b.number ? 1 : a.number > b.number ? -1 : 0));
 }
 
-function matches(entry: LedgerEntry, filter: LedgerFilter): boolean {
+function matches(entry: FilterableEntry, filter: LedgerFilter): boolean {
   const [year, month] = entry.issuedOn.split("-").map(Number);
   if (filter.kind !== null && (filter.kind === "credit_note") !== entry.isCreditNote) {
     return false;

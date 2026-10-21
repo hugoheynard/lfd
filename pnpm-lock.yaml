@@ -373,6 +373,9 @@ importers:
       '@prisma/client':
         specifier: ^7.8.0
         version: 7.8.0(prisma@7.8.0(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@6.0.3))(typescript@6.0.3)
+      fflate:
+        specifier: 0.8.3
+        version: 0.8.3
       helmet:
         specifier: ^8.1.0
         version: 8.3.0

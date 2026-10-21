@@ -1,3 +1,4 @@
+import type { ArchiveSelection } from "../../domain/services/invoice-archive.js";
 import { NO_LEDGER_FILTER, type LedgerFilter } from "../../domain/services/my-invoices-ledger.js";
 
 /**
@@ -47,4 +48,16 @@ export class GetMyCompanyInvoiceDocumentQuery {
 /** Le PDF rangé d'une pièce, depuis la comptabilité du back-office (E3b). */
 export class GetIssuedInvoiceDocumentQuery {
   constructor(readonly invoiceId: string) {}
+}
+
+/**
+ * Le zip de « Mes factures » (P2) : les PDF rangés des pièces filtrées, ou
+ * d'une sélection — le mur de la liste, et un zip entier ou un refus.
+ */
+export class ExportMyCompanyInvoicesArchiveQuery {
+  constructor(
+    readonly actorUserId: string,
+    readonly companyId: string,
+    readonly selection: ArchiveSelection,
+  ) {}
 }
