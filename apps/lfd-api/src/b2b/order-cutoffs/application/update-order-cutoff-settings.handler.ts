@@ -12,8 +12,9 @@ import { OrderCutoffSettingsRepository } from "../domain/order-cutoff-settings.r
 import { UpdateOrderCutoffSettingsCommand } from "./update-order-cutoff-settings.command.js";
 
 /**
- * Pose l'interrupteur de l'heure limite générale et le jour même (lot O3, §8.3). L'état remplacé est
- * relu DANS la transaction ; l'écriture et son fait partent ensemble — un
+ * Pose le jour même (§8.3 ; l'interrupteur de l'heure limite générale qu'il
+ * posait aussi est retiré le 2026-10-21). L'état remplacé est relu DANS la
+ * transaction ; l'écriture et son fait partent ensemble — un
  * journal en panne annule la bascule.
  *
  * Reposer l'état courant n'écrit rien et ne journalise rien : un double clic
@@ -38,8 +39,7 @@ export class UpdateOrderCutoffSettingsHandler implements ICommandHandler<
     await this.uow.run(async () => {
       const previous = await this.reader.current();
       const next = OrderCutoffSettings.pose({
-        current: previous,
-        patch: command.patch,
+        sameDayAllowed: command.patch.sameDayAllowed,
         at: this.clock.now(),
         author,
       });

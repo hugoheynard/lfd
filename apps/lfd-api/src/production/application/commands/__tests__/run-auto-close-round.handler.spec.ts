@@ -9,7 +9,6 @@ import {
   DayOrdersReader,
   type ProducibleOrder,
 } from "../../../channels/commerce/day-orders.reader.js";
-import { ProductionCloseSettings } from "../../../domain/entities/production-close-settings.js";
 import { ProductionDayEmptyError } from "../../../domain/errors/production-errors.js";
 import {
   AutoCloseAttempts,
@@ -18,12 +17,9 @@ import {
 import { AutoCloseRoundReader } from "../../../domain/ports/auto-close-round.reader.js";
 import { AutomaticDayCloser } from "../../../domain/ports/automatic-day-closer.js";
 import type { AttemptTrace } from "../../../domain/services/auto-close-round.js";
+import type { OrderCutoffRule } from "../../../domain/services/latest-order-cutoff.js";
 import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
-import {
-  ClosedDaysTable,
-  SettingsReader,
-  SettingsTable,
-} from "../../__tests__/settings-doubles.js";
+import { ClosedDaysTable, CutoffRules, SettingsReader } from "../../__tests__/settings-doubles.js";
 import { PlanArrestBell } from "../../services/plan-arrest-bell.js";
 import { RunAutoCloseRoundHandler } from "../run-auto-close-round.handler.js";
 
@@ -152,52 +148,53 @@ class Bell extends StaffNotifier {
   }
 }
 
-function subject(time: string) {
-  const settings = new SettingsTable();
+/** L'heure limite générale du commerce : la veille à 21:00, sans rattrapage. */
+const EVE_AT_21: OrderCutoffRule = { daysBefore: 1, time: "21:00", graceMinutes: 0 };
+
+function subject(time: string, rule: OrderCutoffRule | null = EVE_AT_21, day = TODAY) {
   const closedDays = new ClosedDaysTable();
   const fournil = new Fournil();
   const commerce = new Commerce();
   const closer = new Closer(fournil, commerce);
   const bell = new Bell();
-  const clock = new FixedClock(at(time));
+  const clock = new FixedClock(at(time, day));
   const attempts = new Attempts(fournil);
   const handler = new RunAutoCloseRoundHandler(
     clock,
-    new SettingsReader(settings, closedDays),
+    new SettingsReader(closedDays),
     fournil,
     attempts,
     commerce,
     closer,
     new PlanArrestBell(bell),
+    new CutoffRules(rule === null ? [] : [rule]),
   );
-  const setMode = (mode: "auto" | "manual"): void => {
-    const row = ProductionCloseSettings.initial();
-    row.change({ mode, closeAt: "21:00", alertAt: "20:00" }, null, "fiche_1", clock.now());
-    settings.row = row;
-  };
-  return { handler, fournil, commerce, closer, bell, clock, closedDays, attempts, setMode };
+  return { handler, fournil, commerce, closer, bell, clock, closedDays, attempts };
 }
 
-describe("le tour en mode automatique", () => {
-  it("arrête le plan du lendemain passé l'heure, une seule fois", async () => {
+describe("l'arrêt automatique à l'heure limite générale (2026-10-21)", () => {
+  it("arrête le plan du lendemain passé l'heure limite, une seule fois", async () => {
     const s = subject("21:02");
-    s.setMode("auto");
     s.commerce.orders.set(TOMORROW, [order("o1")]);
 
     const first = await s.handler.execute();
     s.fournil.closedPlans.delete(TOMORROW); // même s'il se rouvrait, la trace tient
     const second = await s.handler.execute();
 
-    expect(first).toEqual({ tomorrow: TOMORROW, outcome: "closed", todayOverdue: false });
+    expect(first).toEqual({
+      tomorrow: TOMORROW,
+      outcome: "closed",
+      todayOutcome: "nothing",
+      todayOverdue: false,
+    });
     expect(second.outcome).toBe("nothing");
     expect(s.closer.closed).toEqual([TOMORROW]);
     expect(s.fournil.attempts.get(TOMORROW)).toBe("closed");
     expect(s.bell.notices).toEqual([]);
   });
 
-  it("ne fait rien avant l'heure réglée", async () => {
+  it("ne fait rien avant l'heure limite", async () => {
     const s = subject("20:55");
-    s.setMode("auto");
     s.commerce.orders.set(TOMORROW, [order("o1")]);
 
     expect((await s.handler.execute()).outcome).toBe("nothing");
@@ -206,7 +203,6 @@ describe("le tour en mode automatique", () => {
 
   it("lendemain vide : trace `empty`, « rien à arrêter » une fois, plus de tentative", async () => {
     const s = subject("21:00");
-    s.setMode("auto");
 
     await s.handler.execute();
     s.clock.advanceMs(5 * 60 * 1000);
@@ -228,7 +224,6 @@ describe("le tour en mode automatique", () => {
 
   it("une autre panne : trace `failed` et son message, une alerte, pas de nouvelle tentative", async () => {
     const s = subject("21:00");
-    s.setMode("auto");
     s.commerce.orders.set(TOMORROW, [order("o1")]);
     s.closer.failure = new TypeError("Stripe injoignable");
 
@@ -248,7 +243,6 @@ describe("le tour en mode automatique", () => {
 
   it("une instance qui perd la prise ne tente rien", async () => {
     const s = subject("21:00");
-    s.setMode("auto");
     s.commerce.orders.set(TOMORROW, [order("o1")]);
     s.attempts.lost = true;
 
@@ -258,7 +252,6 @@ describe("le tour en mode automatique", () => {
 
   it("jour fermé : ni arrêt, ni alerte, ni question au commerce", async () => {
     const s = subject("22:00");
-    s.setMode("auto");
     s.closedDays.days.set(TOMORROW, "fiche_1");
 
     expect((await s.handler.execute()).outcome).toBe("nothing");
@@ -269,7 +262,6 @@ describe("le tour en mode automatique", () => {
 
   it("le jour fermé se lit pour le lendemain seulement", async () => {
     const s = subject("22:00");
-    s.setMode("auto");
     s.closedDays.days.set("2026-10-08", "fiche_1");
     s.commerce.orders.set(TOMORROW, [order("o1")]);
 
@@ -286,7 +278,6 @@ describe("la tentative restée en suspens (Q8)", () => {
 
   it("au-delà de quinze minutes : une alerte dédiée, une seule, sans retentative", async () => {
     const s = subject("21:20");
-    s.setMode("auto");
     s.commerce.orders.set(TOMORROW, [order("o1")]);
     stalledSince(s, 16);
 
@@ -308,7 +299,6 @@ describe("la tentative restée en suspens (Q8)", () => {
 
   it("avant quinze minutes : rien encore", async () => {
     const s = subject("21:10");
-    s.setMode("auto");
     stalledSince(s, 10);
 
     expect((await s.handler.execute()).outcome).toBe("nothing");
@@ -317,7 +307,6 @@ describe("la tentative restée en suspens (Q8)", () => {
 
   it("arrêtée entre-temps à la main : pas d'alerte", async () => {
     const s = subject("21:20");
-    s.setMode("auto");
     stalledSince(s, 16);
     s.fournil.closedPlans.add(TOMORROW);
 
@@ -326,44 +315,53 @@ describe("la tentative restée en suspens (Q8)", () => {
   });
 });
 
-describe("le tour en mode manuel", () => {
-  it("part du réglage initial (manuel, 20:00) : alerte si le lendemain porte des commandes", async () => {
-    const s = subject("20:05");
+describe("le rattrapage de l'heure limite, et son absence", () => {
+  const WITH_GRACE: OrderCutoffRule = { daysBefore: 1, time: "21:00", graceMinutes: 30 };
+
+  /** Q3 (Hugo, 2026-10-21) : à la FIN du rattrapage, pas à l'heure limite. */
+  it("attend la fin du rattrapage avant d'arrêter", async () => {
+    const during = subject("21:25", WITH_GRACE);
+    during.commerce.orders.set(TOMORROW, [order("o1")]);
+    const after = subject("21:30", WITH_GRACE);
+    after.commerce.orders.set(TOMORROW, [order("o1")]);
+
+    expect((await during.handler.execute()).outcome).toBe("nothing");
+    expect((await after.handler.execute()).outcome).toBe("closed");
+  });
+
+  it("sans heure limite posée, rien n'arrête le plan, et plus aucune alerte du soir", async () => {
+    const s = subject("23:55", null);
     s.commerce.orders.set(TOMORROW, [order("o1")]);
 
-    await s.handler.execute();
-    await s.handler.execute();
-
+    expect((await s.handler.execute()).outcome).toBe("nothing");
     expect(s.closer.closed).toEqual([]);
-    expect(s.bell.notices.map((notice) => notice.idempotencyKey)).toEqual([
-      `notification:production.plan_not_arrested:${TOMORROW}`,
-    ]);
-    expect(s.bell.notices[0]?.body).toContain("L'heure d'alerte est passée");
+    expect(s.bell.notices).toEqual([]);
   });
 
-  it("n'alerte pas un lendemain vide, ni avant l'heure", async () => {
-    const empty = subject("21:00");
-    await empty.handler.execute();
-    const early = subject("19:55");
-    early.commerce.orders.set(TOMORROW, [order("o1")]);
-    await early.handler.execute();
+  /**
+   * Un rattrapage qui passe minuit : le plan d'AUJOURD'HUI s'arrête
+   * aujourd'hui, à 00:30 — et n'est pas « en retard » avant.
+   */
+  it("arrête le plan d'aujourd'hui quand son rattrapage passe minuit", async () => {
+    const midnight: OrderCutoffRule = { daysBefore: 1, time: "23:30", graceMinutes: 60 };
+    const before = subject("00:20", midnight, TOMORROW);
+    before.commerce.orders.set(TOMORROW, [order("o1")]);
+    const after = subject("00:35", midnight, TOMORROW);
+    after.commerce.orders.set(TOMORROW, [order("o1")]);
 
-    expect([...empty.bell.notices, ...early.bell.notices]).toEqual([]);
-  });
+    const early = await before.handler.execute();
+    const late = await after.handler.execute();
 
-  it("ne demande pas au commerce le lendemain avant l'heure", async () => {
-    const s = subject("19:55");
-
-    await s.handler.execute();
-
-    expect(s.commerce.asked).toEqual([TODAY]);
+    expect(early).toMatchObject({ todayOutcome: "nothing", todayOverdue: false });
+    expect(before.bell.notices).toEqual([]);
+    expect(late).toMatchObject({ todayOutcome: "closed", todayOverdue: false });
+    expect(after.closer.closed).toEqual([TOMORROW]);
   });
 });
 
 describe("le rattrapage d'aujourd'hui (S4)", () => {
   it("alerte une fois si le plan d'aujourd'hui porte des commandes sans être arrêté — sans l'arrêter", async () => {
     const s = subject("06:10");
-    s.setMode("auto");
     s.commerce.orders.set(TODAY, [order("o1")]);
 
     const report = await s.handler.execute();

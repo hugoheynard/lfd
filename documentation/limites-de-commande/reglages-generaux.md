@@ -50,17 +50,23 @@ faits `order_cutoff.created` / `order_cutoff.updated`). Une charge qui porte un
 point ou un jour est refusée en 400, `order_cutoffs.scope_retired`, avec un
 message qui renvoie à la règle générale et à la limite produit. Les routes de
 collection (`GET` liste, `POST`, `PATCH /:id`, `DELETE /:id`) sont retirées : la
-générale ne se supprime pas, l'interrupteur l'éteint. L'écran
+générale ne se supprime pas, et ne s'éteint plus (l'interrupteur est retiré
+le 2026-10-21, §2). L'écran
 (`reglages/commandes/cutoffs-section/`) ne montre que la générale ; il ne liste
 plus de règles « non reprises ».
 
-### `public.order_cutoff_settings` — l'interrupteur et le jour même (`OrderCutoffSettings`, `prisma/schema/public/settings.prisma`)
+### `public.order_cutoff_settings` — le jour même (`OrderCutoffSettings`, `prisma/schema/public/settings.prisma`)
 
-Une ligne au plus, clé `orders` : `enabled` (défaut `true`), `same_day_allowed`
-(défaut `false`), et l'auteur du geste. **Ligne absente = activée, jour même
-non autorisé.** Routes `GET`/`PATCH admin/order-cutoff-settings`
-(`lfc_order_settings`) ; chaque bascule effective écrit le fait
-`order_cutoff_settings.updated`, rien quand l'état ne change pas.
+Une ligne au plus, clé `orders` : `same_day_allowed` (défaut `false`), et
+l'auteur du geste. **Ligne absente = jour même non autorisé.** La colonne
+`enabled` (l'interrupteur, §2) reste en base, ni lue ni écrite depuis le
+2026-10-21. Routes `GET`/`PATCH admin/order-cutoff-settings`
+(`lfc_order_settings`) : la vue est `{ sameDayAllowed, updatedAt, updatedBy }`,
+le `PATCH` prend `{ sameDayAllowed }` seul (schéma strict : une charge qui
+porte `enabled` est refusée en 400). Chaque bascule effective écrit le fait
+`order_cutoff_settings.updated` (`{ sameDayAllowed, previous }` ; les lignes
+d'avant le 2026-10-21 portent aussi `enabled`, et le journal les lit
+toujours), rien quand l'état ne change pas.
 
 ### Ce qu'il y a en base (2026-10-21)
 
@@ -75,18 +81,23 @@ non autorisé.** Routes `GET`/`PATCH admin/order-cutoff-settings`
 - Les deux n'ont que la ligne générale dans `order_cutoffs` (prod : lu par Hugo
   le 2026-10-21) : la migration du CHECK y passe.
 
-## 2. L'interrupteur
+## 2. L'interrupteur — retiré le 2026-10-21
 
-Désactivée, la règle générale **n'est plus servie** : le port
-`OrderCutoffsInForce` (`b2b/order-cutoffs/domain/order-cutoffs-in-force.ts`)
-rend « aucune règle » à la passation (`OrderCutoffReader`, donc aussi la
-relance de règlement), à la boutique (`ListFulfillmentDaysHandler`, catalogue)
-et au fournil (`ProductionOrderCutoffRulesReader`, qui n'a alors plus de borne
-pour son heure d'arrêt). La règle **reste en base** ; la réactiver la remet
-telle quelle. L'écran d'administration lit toujours les règles.
+L'heure limite générale déclenche l'arrêt du plan du fournil
+([`plan-une-seule-heure.md`](plan-une-seule-heure.md) §5) : une heure limite
+qu'on coupe ne l'arrêterait plus. Elle est donc **toujours en vigueur** dès
+qu'elle est posée : `OrderCutoffsInForce`
+(`b2b/order-cutoffs/domain/order-cutoffs-in-force.ts`, implémenté par
+`GeneralOrderCutoffInForce`) rend la règle générale enregistrée sans lire
+`enabled`, pour la passation (`OrderCutoffReader`, donc aussi la relance de
+règlement), la boutique (`ListFulfillmentDaysHandler`, catalogue) et le fournil
+(`ProductionOrderCutoffRulesReader`). Le geste et l'affichage sont retirés du
+back-office ; la page `/pim/limites-de-commande` ne dit plus « désactivée ».
+Une ligne résiduelle à `enabled = false` ne coupe rien (e2e
+`order-cutoff-switch`).
 
-Ce que l'interrupteur ne coupe pas : les **limites d'article**, avec leur grâce,
-leurs dérogations et leur surtaxe ; l'arrêt du plan ; le jour même.
+Tant qu'aucune règle générale n'est posée, rien n'est opposé et rien n'arrête
+le plan tout seul.
 
 ⚠️ Sans règle, la relance de règlement (`isSettlementReminderDue`) ne part
 plus — laissé tel quel, non tranché par Hugo (plan des réglages §8.3).
@@ -112,6 +123,11 @@ Une dérogation utilisée déclenche la **surtaxe de retard** : §8 de
 
 ## 4. Le jour même
 
+Sa page depuis le 2026-10-21 : **Réglages › Commandes › Jour même**
+(`/reglages/commandes/jour-meme`, `reglages/commandes/same-day-page/`, entrée
+du rail et des tuiles), sous `lfc_order_settings` — il quittait l'écran de
+l'heure limite avec l'interrupteur ([`plan-une-seule-heure.md`](plan-une-seule-heure.md) §6).
+
 `same_day_allowed` à `false` (défaut) : aujourd'hui n'est pas proposé par la
 boutique et toute passation qui vise une journée non postérieure à aujourd'hui
 est refusée (`orders.same_day_closed`) — client, invité et équipe. Exception :
@@ -122,8 +138,10 @@ l'équipe sur un plan arrêté est reçue hors plan sans que ce réglage s'y opp
 Une journée dont le plan du fournil est arrêté n'est plus proposée
 (`ClosedPlansReader`) et refuse la commande client
 (`orders.production_plan_closed`, sous le verrou `production_day:<jour>`) ;
-l'équipe est reçue, marquée `placed_off_plan`. Ce n'est pas un réglage du
-commerce : voir [`../production/arret-du-plan.md`](../production/arret-du-plan.md).
+l'équipe est reçue, marquée `placed_off_plan`. Depuis le 2026-10-21, le plan
+s'arrête tout seul à la fin du rattrapage de la règle générale — l'écran de
+l'heure limite le dit (« Heure limite générale — arrêt du plan de production
+pour le lendemain »). Voir [`../production/arret-du-plan.md`](../production/arret-du-plan.md).
 
 ## 6. `/fulfillment-days` et ce que la boutique en dit
 

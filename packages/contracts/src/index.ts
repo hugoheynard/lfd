@@ -813,17 +813,10 @@ export type {
   WorkshopBatch,
   WorkshopLineContainer,
 } from "./production-batches.js";
-export {
-  productionCloseModeSchema,
-  productionCloseSettingsPayloadSchema,
-  productionClosedDayPayloadSchema,
-} from "./production-settings.js";
+export { productionClosedDayPayloadSchema } from "./production-settings.js";
 export type {
-  ProductionCloseMode,
-  ProductionCloseSettingsPayload,
-  ProductionCloseSettingsView,
+  ProductionAutomaticCloseView,
   ProductionClosedDayPayload,
-  ProductionLatestOrderCutoffView,
   ProductionSettingsView,
 } from "./production-settings.js";
 export {

@@ -1,87 +1,53 @@
 import { addDays } from "@lfd/contracts";
 
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
-import { ProductionCloseSettings } from "../../../domain/entities/production-close-settings.js";
 import { todayOf } from "../../../domain/services/relative-day.js";
-import {
-  ClosedDaysTable,
-  CutoffRules,
-  SettingsReader,
-  SettingsTable,
-} from "../../__tests__/settings-doubles.js";
-import { OrderCutoffSwitchReader } from "../../../channels/commerce/order-cutoff-switch.reader.js";
+import { ClosedDaysTable, CutoffRules, SettingsReader } from "../../__tests__/settings-doubles.js";
 import { GetProductionSettingsHandler } from "../get-production-settings.handler.js";
-
-/** L'interrupteur de l'heure limite générale au commerce, fixé par le test. */
-class CutoffSwitch extends OrderCutoffSwitchReader {
-  on = true;
-
-  enabled(): Promise<boolean> {
-    return Promise.resolve(this.on);
-  }
-}
 
 const NOW = new Date();
 const TODAY = todayOf(NOW);
 
 function subject() {
-  const settings = new SettingsTable();
   const closedDays = new ClosedDaysTable();
   const cutoffs = new CutoffRules();
-  const cutoffSwitch = new CutoffSwitch();
   const handler = new GetProductionSettingsHandler(
-    new SettingsReader(settings, closedDays),
+    new SettingsReader(closedDays),
     cutoffs,
     new FixedClock(NOW),
-    cutoffSwitch,
   );
-  return { settings, closedDays, cutoffs, cutoffSwitch, handler };
+  return { closedDays, cutoffs, handler };
 }
 
 describe("GetProductionSettingsHandler", () => {
-  it("rend le réglage de départ quand personne n'a réglé, sans heure limite", async () => {
+  it("sans heure limite générale, rien n'arrête le plan tout seul", async () => {
     const { handler } = subject();
 
-    expect(await handler.execute()).toEqual({
-      close: { mode: "manual", closeAt: null, alertAt: "20:00" },
-      latestOrderCutoff: null,
-      orderCutoffEnabled: true,
-      closedDays: [],
-    });
+    expect(await handler.execute()).toEqual({ automaticClose: null, closedDays: [] });
   });
 
-  it("rend le réglage posé, l'heure limite la plus tardive, et les jours fermés à venir", async () => {
-    const { handler, settings, closedDays, cutoffs } = subject();
-    const posed = ProductionCloseSettings.initial();
-    posed.change({ mode: "auto", closeAt: "21:00", alertAt: null }, null, "s-1", NOW);
-    settings.row = posed;
-    cutoffs.current = [
-      { daysBefore: 1, time: "18:00", graceMinutes: 0 },
-      { daysBefore: 1, time: "19:00", graceMinutes: 15 },
-    ];
+  /**
+   * 2026-10-21 (`plan-une-seule-heure.md` §5) : l'arrêt automatique n'est plus
+   * un réglage du fournil — il est lu de l'heure limite générale, rattrapage
+   * compris, et servi en lecture.
+   */
+  it("rend l'arrêt automatique tel que l'heure limite le fixe, et les jours fermés à venir", async () => {
+    const { handler, closedDays, cutoffs } = subject();
+    cutoffs.current = [{ daysBefore: 1, time: "23:00", graceMinutes: 15 }];
     closedDays.days.set(addDays(TODAY, -1), "s-1");
     closedDays.days.set(addDays(TODAY, 5), "s-1");
     closedDays.days.set(TODAY, "s-1");
 
     expect(await handler.execute()).toEqual({
-      close: { mode: "auto", closeAt: "21:00", alertAt: null },
-      latestOrderCutoff: { daysBefore: 1, time: "19:15" },
-      orderCutoffEnabled: true,
+      automaticClose: { daysBefore: 1, time: "23:15" },
       closedDays: [TODAY, addDays(TODAY, 5)],
     });
   });
 
-  /**
-   * Lot O3 (B2) : désactivée, le commerce ne rend plus de règle — et la page
-   * doit pouvoir dire « désactivée » plutôt que « aucune heure limite ».
-   */
-  it("dit que l'heure limite générale est désactivée, sans heure limite à respecter", async () => {
-    const { handler, cutoffSwitch } = subject();
-    cutoffSwitch.on = false;
+  it("un rattrapage qui passe minuit arrête le plan le jour même", async () => {
+    const { handler, cutoffs } = subject();
+    cutoffs.current = [{ daysBefore: 1, time: "23:00", graceMinutes: 90 }];
 
-    expect(await handler.execute()).toMatchObject({
-      latestOrderCutoff: null,
-      orderCutoffEnabled: false,
-    });
+    expect((await handler.execute()).automaticClose).toEqual({ daysBefore: 0, time: "00:30" });
   });
 });

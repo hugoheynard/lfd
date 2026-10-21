@@ -3,7 +3,6 @@ import { TestBed } from '@angular/core/testing';
 import type {
   ProductionForecastView,
   ProductionPlanClosure,
-  ProductionSettingsView,
   StaffPermission,
 } from '@lfd/contracts';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -12,7 +11,6 @@ import { AdminCatalogService } from '../../../commandes/catalog.service';
 import { PrevisionnelPage } from '../previsionnel-page';
 import { NotifyService } from '../../../notify.service';
 import { ProductionService } from '../../production.service';
-import { ProductionSettingsService } from '../../production-settings.service';
 import { PermissionsStore } from '../../../auth/permissions.store';
 
 /**
@@ -50,7 +48,11 @@ function dayMonthOf(offset: number): string {
 /** Un jour de la matrice, réduit à ce que le choix de la cible en lit. */
 function day(
   date: string,
-  options: { readonly closed?: boolean; readonly orderCount?: number } = {},
+  options: {
+    readonly closed?: boolean;
+    readonly orderCount?: number;
+    readonly closesAt?: string | null;
+  } = {},
 ): ProductionForecastView['days'][number] {
   return {
     date,
@@ -58,6 +60,8 @@ function day(
     orderCount: options.orderCount ?? 4,
     closed: options.closed ?? false,
     state: options.closed === true ? 'closed' : 'open',
+    // Sans heure limite posée par défaut : rien n'arrête le plan seul, le bouton reste ouvert.
+    closesAt: options.closesAt ?? null,
   };
 }
 
@@ -534,75 +538,36 @@ describe('le prévisionnel — arrêter le plan', () => {
   });
 
   /**
-   * En mode automatique, le bouton du soir est un arrêt ANTICIPÉ : le serveur
-   * arrêterait seul à `closeAt` (plan d'arrêt, Q4, Hugo 2026-10-06).
+   * Depuis le 2026-10-21 (`plan-une-seule-heure.md` §5), le plan s'arrête tout
+   * seul à l'heure limite générale, et un arrêt à la main avant est refusé :
+   * le bouton du soir dit l'heure plutôt que de proposer un refus.
    */
-  describe('le libellé selon le mode d’arrêt', () => {
-    async function renderWith(
-      canRead: boolean,
-      settings: () => Promise<ProductionSettingsView>,
-    ): Promise<{ el: HTMLElement; settingsCall: ReturnType<typeof vi.fn> }> {
-      const settingsCall = vi.fn(settings);
-      TestBed.configureTestingModule({
-        providers: [
-          provideRouter([]),
-          {
-            provide: ProductionService,
-            useValue: {
-              forecast: async () => forecast([day(dayIn(0), { closed: true }), day(dayIn(1))]),
-              closeDay: vi.fn(),
-            },
-          },
-          { provide: AdminCatalogService, useValue: { list: async () => [] } },
-          { provide: ProductionSettingsService, useValue: { settings: settingsCall } },
-          {
-            provide: PermissionsStore,
-            useValue: canRead ? grants(ARREST, 'production_settings:read') : grants(ARREST),
-          },
-        ],
-      });
-      const fixture = TestBed.createComponent(PrevisionnelPage);
-      fixture.detectChanges();
-      await TestBed.runInInjectionContext(() => fixture.componentInstance['load']());
-      fixture.detectChanges();
-      return { el: fixture.nativeElement as HTMLElement, settingsCall };
-    }
-
-    function settingsOf(mode: 'auto' | 'manual'): ProductionSettingsView {
-      return {
-        close: { mode, closeAt: '21:30', alertAt: '20:00' },
-        latestOrderCutoff: null,
-        orderCutoffEnabled: true,
-        closedDays: [],
-      };
-    }
+  describe('le bouton du soir et l’arrêt automatique', () => {
+    const HOUR = 60 * 60 * 1000;
 
     function arrestText(el: HTMLElement): string {
       return el.querySelector('button.pv-arrest')?.textContent?.replace(/\s+/g, ' ').trim() ?? '';
     }
 
-    it('en auto, dit « maintenant (avant <heure>) »', async () => {
-      const { el } = await renderWith(true, async () => settingsOf('auto'));
-      expect(arrestText(el)).toContain(dayMonthOf(1));
-      expect(arrestText(el)).toContain('maintenant (avant 21:30)');
+    it('avant l’heure limite, dit l’arrêt automatique, désactivé', async () => {
+      const later = new Date(Date.now() + 3 * HOUR).toISOString();
+      const el = await render(
+        forecast([day(dayIn(0), { closed: true }), day(dayIn(1), { closesAt: later })]),
+      );
+
+      const button = el.querySelector('button.pv-arrest') as HTMLButtonElement;
+      expect(button.hasAttribute('data-auto-close-ahead')).toBe(true);
+      expect(button.disabled).toBe(true);
+      expect(arrestText(el)).toContain('Arrêt automatique');
     });
 
-    it('en manuel, garde le libellé sans heure', async () => {
-      const { el } = await renderWith(true, async () => settingsOf('manual'));
-      expect(arrestText(el)).toContain(dayMonthOf(1));
-      expect(arrestText(el)).not.toContain('avant');
-    });
+    it('l’heure limite passée, propose l’arrêt à la main — sans « maintenant (avant …) »', async () => {
+      const earlier = new Date(Date.now() - HOUR).toISOString();
+      const el = await render(
+        forecast([day(dayIn(0), { closed: true }), day(dayIn(1), { closesAt: earlier })]),
+      );
 
-    it('sans le droit de lire les réglages, ne les appelle pas', async () => {
-      const { el, settingsCall } = await renderWith(false, async () => settingsOf('auto'));
-      expect(settingsCall).not.toHaveBeenCalled();
-      expect(arrestText(el)).not.toContain('avant');
-    });
-
-    it('une lecture des réglages en échec garde le libellé manuel, sans erreur', async () => {
-      const { el } = await renderWith(true, async () => {
-        throw new Error('réseau');
-      });
+      expect(el.querySelector('[data-auto-close-ahead]')).toBeNull();
       expect(arrestText(el)).toContain(dayMonthOf(1));
       expect(arrestText(el)).not.toContain('avant');
     });

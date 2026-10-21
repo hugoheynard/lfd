@@ -5,7 +5,7 @@ import type { OrderCutoffSettings } from "../domain/order-cutoff-settings.js";
 import { OrderCutoffSettingsRepository } from "../domain/order-cutoff-settings.repository.js";
 import { ORDER_CUTOFF_SETTINGS_KEY } from "./order-cutoff-settings.key.js";
 
-/** Adaptateur Prisma de l'écriture de l'interrupteur : un `upsert` sur la clé naturelle `orders`. */
+/** Adaptateur Prisma de l'écriture du jour même : un `upsert` sur la clé naturelle `orders`. */
 @Injectable()
 export class PrismaOrderCutoffSettingsRepository extends OrderCutoffSettingsRepository {
   constructor(private readonly prisma: PrismaService) {
@@ -13,8 +13,8 @@ export class PrismaOrderCutoffSettingsRepository extends OrderCutoffSettingsRepo
   }
 
   async put(settings: OrderCutoffSettings): Promise<void> {
+    // `enabled` n'est plus écrit (2026-10-21) : la colonne garde son défaut.
     const row = {
-      enabled: settings.enabled,
       sameDayAllowed: settings.sameDayAllowed,
       updatedAt: settings.at,
       updatedByStaffId: settings.author.staffUserId,

@@ -50,10 +50,10 @@ export type ProductionForecastQuery = z.infer<typeof productionForecastQuerySche
  *
  * - `past` : journée avant aujourd'hui ;
  * - `closed` : plan arrêté (et pas passée) ;
- * - `overdue` : plan non arrêté et en retard — aujourd'hui avec des commandes ;
- *   demain non vide, non fermé, l'heure d'alerte (manuel) ou d'arrêt (auto)
- *   passée ; ou un arrêt automatique échoué ou en suspens depuis plus de
- *   quinze minutes ;
+ * - `overdue` : plan non arrêté et en retard — aujourd'hui avec des commandes
+ *   (hors un arrêt automatique encore à venir aujourd'hui) ; demain non vide,
+ *   non fermé, son arrêt automatique (`closesAt`) passé ; ou un arrêt
+ *   automatique échoué ou en suspens depuis plus de quinze minutes ;
  * - `closedDay` : jour fermé du fournil ;
  * - `open` : le reste.
  *
@@ -94,6 +94,14 @@ export interface ProductionForecastDay {
    * journée passée, là où `state` vaut alors `past`.
    */
   readonly state: ProductionForecastDayState;
+  /**
+   * L'instant ISO où le plan de cette journée s'arrête tout seul : la fin du
+   * rattrapage de l'heure limite générale pour elle (2026-10-21,
+   * `limites-de-commande/plan-une-seule-heure.md` §5). Avant, un arrêt à la
+   * main est refusé. `null` : aucune heure limite posée — rien ne l'arrête
+   * seul, et l'arrêt à la main reste ouvert.
+   */
+  readonly closesAt: string | null;
 }
 
 /** Une ligne : un produit, et ce qu'il pèse chaque jour de la plage. */

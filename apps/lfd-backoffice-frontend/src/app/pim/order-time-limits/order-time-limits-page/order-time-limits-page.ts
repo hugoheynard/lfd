@@ -74,7 +74,6 @@ export class OrderTimeLimitsPage {
   });
 
   /** La règle générale existe mais l'interrupteur la coupe. */
-  protected readonly generalDisabled = computed(() => this.general()?.enabled === false);
 
   constructor() {
     void this.load();

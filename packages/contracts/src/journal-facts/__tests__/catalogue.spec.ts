@@ -51,6 +51,8 @@ describe("le catalogue des faits", () => {
       // `product.nutrition_saved` : les deux moitiés de la fiche réglementaire
       // s'enregistrent séparément. Ses lignes restent lisibles, charge entière.
       "product.declaration_saved",
+      // L'arrêt du plan suit l'heure limite générale (2026-10-21) : plus de mode.
+      "production_settings.close_changed",
       "staff_user.deleted",
       "tax_regime.created",
       "tax_regime.deleted",

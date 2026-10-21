@@ -1,7 +1,8 @@
 /**
- * E2E des **réglages du fournil** — l'arrêt du plan et les jours fermés (plan
- * `documentation/production/arret-du-plan.md`, §2, §6, Q5, Q6, lot A1),
- * et le droit neuf de l'arrêt (`production_count_stop`).
+ * E2E des **réglages du fournil** — l'arrêt du plan (lu de l'heure limite
+ * générale depuis le 2026-10-21) et les jours fermés (plan
+ * `documentation/production/arret-du-plan.md`), et le droit de l'arrêt
+ * (`production_count_stop`).
  *
  * Tout passe par les vraies routes, la vraie base et ses contraintes. Les
  * droits se posent comme à l'écran : un rôle créé par l'administrateur, qui ne
@@ -66,61 +67,59 @@ async function holderOf(key: string, grants: readonly RoleGrant[]): Promise<requ
   return ctx.asSub(sub);
 }
 
-describe("le réglage d'arrêt du plan", () => {
-  it("part en manuel, alerte à 20:00, sans heure limite ni jour fermé", async () => {
-    expect(await read()).toEqual({
-      close: { mode: "manual", closeAt: null, alertAt: "20:00" },
-      latestOrderCutoff: null,
-      orderCutoffEnabled: true,
-      closedDays: [],
-    });
+/**
+ * Depuis le 2026-10-21 (`limites-de-commande/plan-une-seule-heure.md` §5),
+ * l'arrêt automatique n'est plus un réglage du fournil : il suit l'heure
+ * limite générale, et la page le lit.
+ */
+describe("l'arrêt automatique, lu de l'heure limite générale", () => {
+  it("sans heure limite posée : rien n'arrête le plan seul, aucun jour fermé", async () => {
+    expect(await read()).toEqual({ automaticClose: null, closedDays: [] });
   });
 
-  it("passe en automatique après l'heure limite, et le journalise", async () => {
+  it("suit l'heure limite générale, rattrapage compris", async () => {
     await admin()
       .put("/admin/order-cutoffs/general")
       .send({ time: "18:00", daysBefore: 1, graceMinutes: 30 })
       .expect(204);
 
+    expect((await read()).automaticClose).toEqual({ daysBefore: 1, time: "18:30" });
+  });
+
+  it("ne se règle plus : la route du mode et des heures est retirée", async () => {
     await admin()
       .put(`${ROUTE}/close`)
       .send({ mode: "auto", closeAt: "21:00", alertAt: "20:00" })
-      .expect(204);
-
-    expect(await read()).toMatchObject({
-      close: { mode: "auto", closeAt: "21:00", alertAt: "20:00" },
-      latestOrderCutoff: { daysBefore: 1, time: "18:30" },
-    });
-    const facts = await ctx.prisma.activityEvent.findMany({
-      where: { type: "production_settings.close_changed" },
-    });
-    expect(facts).toHaveLength(1);
+      .expect(404);
   });
+});
 
-  it("refuse (409) une heure d'arrêt antérieure à l'heure limite, rattrapage compris", async () => {
+describe("l'arrêt à la main avant l'heure limite (Hugo, 2026-10-21, Q1)", () => {
+  it("est refusé (409), en disant l'heure et où la changer", async () => {
+    // Le plan de DAY s'arrête le jour même à 23:59 : toujours à venir.
     await admin()
       .put("/admin/order-cutoffs/general")
-      .send({ time: "18:00", daysBefore: 1, graceMinutes: 30 })
+      .send({ time: "23:59", daysBefore: 0, graceMinutes: 0 })
+      .expect(204);
+
+    const response = await admin().post(`/admin/production/batch/${DAY}/close`).expect(409);
+
+    expect(response.body).toMatchObject({ code: "production.day.before_order_cutoff" });
+    expect(JSON.stringify(response.body)).toContain("Réglages › Commandes › Heure limite");
+  });
+
+  it("passe une fois l'heure limite tombée — ici, sur une journée vide", async () => {
+    // Quatorze jours avant à 00:00 : tombée depuis longtemps pour demain.
+    await admin()
+      .put("/admin/order-cutoffs/general")
+      .send({ time: "00:00", daysBefore: 14, graceMinutes: 0 })
       .expect(204);
 
     const response = await admin()
-      .put(`${ROUTE}/close`)
-      .send({ mode: "auto", closeAt: "18:15", alertAt: null })
+      .post(`/admin/production/batch/${serviceDay(1)}/close`)
       .expect(409);
 
-    expect(JSON.stringify(response.body)).toContain("la veille à 18:30");
-    expect((await read()).close.mode).toBe("manual");
-  });
-
-  it.each([
-    ["hors bornes", { mode: "auto", closeAt: "11:00", alertAt: null }],
-    ["automatique sans heure", { mode: "auto", closeAt: null, alertAt: "20:00" }],
-    ["manuel sans alerte", { mode: "manual", closeAt: null, alertAt: null }],
-    ["heure mal formée", { mode: "manual", closeAt: null, alertAt: "20h" }],
-  ])("refuse (400) : %s", async (_case, body) => {
-    await admin().put(`${ROUTE}/close`).send(body).expect(400);
-
-    expect((await read()).close).toEqual({ mode: "manual", closeAt: null, alertAt: "20:00" });
+    expect(response.body).toMatchObject({ code: "production.day.empty" });
   });
 });
 
@@ -168,10 +167,7 @@ describe("les droits", () => {
     ]);
 
     await baker.get(ROUTE).expect(403);
-    await baker
-      .put(`${ROUTE}/close`)
-      .send({ mode: "manual", closeAt: null, alertAt: "19:00" })
-      .expect(403);
+    await baker.post(`${ROUTE}/closed-days`).send({ date: today() }).expect(403);
   });
 
   it("`production_settings:read` lit, ne règle pas", async () => {

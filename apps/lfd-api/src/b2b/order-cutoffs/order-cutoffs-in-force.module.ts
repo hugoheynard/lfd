@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 
-import { SwitchedOrderCutoffs } from "./application/switched-order-cutoffs.js";
+import { GeneralOrderCutoffInForce } from "./application/general-order-cutoff-in-force.js";
 import { OrderCutoffSettingsReader } from "./domain/order-cutoff-settings.reader.js";
 import { OrderCutoffsInForce } from "./domain/order-cutoffs-in-force.js";
 import { StoredOrderCutoffReader } from "./domain/stored-order-cutoff.reader.js";
@@ -23,7 +23,7 @@ import { PrismaStoredOrderCutoffReader } from "./infrastructure/prisma-stored-or
   providers: [
     { provide: StoredOrderCutoffReader, useClass: PrismaStoredOrderCutoffReader },
     { provide: OrderCutoffSettingsReader, useClass: PrismaOrderCutoffSettingsReader },
-    { provide: OrderCutoffsInForce, useClass: SwitchedOrderCutoffs },
+    { provide: OrderCutoffsInForce, useClass: GeneralOrderCutoffInForce },
     // Ce que le référentiel lit de la règle générale (2026-10-21), relié par
     // `appBootstrap/general-order-cutoff.module.ts`.
     CommerceGeneralOrderCutoffReader,

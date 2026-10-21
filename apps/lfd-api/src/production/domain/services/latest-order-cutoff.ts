@@ -1,3 +1,5 @@
+import { orderLimitInstant } from "@lfd/contracts";
+
 import { HouseTime, MINUTES_IN_DAY } from "../value-objects/house-time.value-object.js";
 
 /**
@@ -21,14 +23,13 @@ export interface LatestOrderCutoff {
 /** La veille : le jour où le plan du lendemain s'arrête. */
 const EVE = 1;
 
+const MINUTE_MS = 60_000;
+
 /**
- * **L'heure limite effective la plus tardive**, toutes règles confondues (Q5).
- *
- * Toutes les règles, et pas « celle du lendemain » : l'heure d'arrêt est UNE
- * pour la maison et vaut chaque soir, quel que soit le point de retrait ou le
- * jour servi — elle doit donc suivre la plus tardive d'entre elles. Le
- * rattrapage compte : une commande passée dans la grâce est légitime, et
- * l'arrêt la laisserait hors du compte.
+ * **L'heure limite effective la plus tardive**, rattrapage compris — l'heure de
+ * l'arrêt automatique, telle que la page Production › Réglages la dit.
+ * Depuis le 2026-10-21, le commerce n'en sert qu'une (la générale) ; la forme
+ * en liste reste celle du canal.
  *
  * Chaque règle se lit en minutes depuis le minuit de la veille, puis la plus
  * grande est rendue sous forme de règle normalisée : une limite à 22:00 la
@@ -55,25 +56,23 @@ export function latestOrderCutoff(rules: readonly OrderCutoffRule[]): LatestOrde
 }
 
 /**
- * Une heure d'arrêt, posée la veille, précède-t-elle cette limite ? Une limite
- * plus tôt que la veille ne gêne jamais ; une limite le jour même gêne toujours.
+ * **L'instant où le plan de `day` s'arrête tout seul** (Hugo, 2026-10-21 —
+ * `limites-de-commande/plan-une-seule-heure.md` §5, Q3) : la fin du
+ * rattrapage de l'heure limite générale pour cette journée — l'instant où
+ * plus aucune commande client ne peut passer. Plus tôt, une commande passée
+ * dans le rattrapage avec une dérogation arriverait sur un plan déjà figé.
+ *
+ * La même conversion que la passation (`orderLimitInstant`, Europe/Paris) :
+ * le fournil et la boutique ne peuvent pas dire deux heures différentes.
+ *
+ * `null` : aucune règle (rien n'arrête le plan seul), ou une heure limite qui
+ * n'existe pas ce jour-là (l'heure sautée du passage à l'heure d'été, que la
+ * passation n'oppose pas non plus).
  */
-export function closesBeforeCutoff(closeAt: HouseTime, cutoff: LatestOrderCutoff): boolean {
-  if (cutoff.daysBefore > EVE) {
-    return false;
+export function planClosesAt(rule: OrderCutoffRule | null, day: string): Date | null {
+  if (rule === null) {
+    return null;
   }
-  return cutoff.daysBefore < EVE || closeAt.isBefore(cutoff.time);
-}
-
-/** La limite dite à qui règle : « la veille à 18:00 », « le jour même à 01:00 ». */
-export function describeCutoff(cutoff: LatestOrderCutoff): string {
-  if (cutoff.daysBefore === EVE) {
-    return `la veille à ${cutoff.time.value}`;
-  }
-  if (cutoff.daysBefore === 0) {
-    return `le jour même à ${cutoff.time.value}`;
-  }
-  return cutoff.daysBefore > EVE
-    ? `${String(cutoff.daysBefore)} jours avant à ${cutoff.time.value}`
-    : `${String(-cutoff.daysBefore)} jour(s) après à ${cutoff.time.value}`;
+  const limit = orderLimitInstant(rule, day);
+  return limit === null ? null : new Date(limit.getTime() + rule.graceMinutes * MINUTE_MS);
 }

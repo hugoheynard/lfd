@@ -4,9 +4,9 @@ import type { JournalFact, JournaledEvent } from "../../../platform/journal/jour
 import type { OrderCutoffSettingsState } from "./order-cutoff-settings.js";
 
 /**
- * **Le fait de l'interrupteur de l'heure limite générale** (lot O3).
- *
- * Désactiver la règle laisse passer d'un coup toute commande tardive : la
+ * **Le fait du jour même** (§8.3). Il disait aussi l'interrupteur de l'heure
+ * limite générale jusqu'au 2026-10-21 (retiré) ; les lignes d'avant gardent
+ * `enabled`. Ouvrir le jour même change ce que la boutique propose : la
  * réclamation qui suit demande « depuis quand, et qui ». Rangé sous
  * `commandes` dans `activity-module.ts`.
  */
@@ -30,12 +30,8 @@ export class OrderCutoffSettingsUpdatedEvent implements JournaledEvent {
       subjectType: "order_cutoff_settings",
       subjectId: ORDER_CUTOFF_SETTINGS_SUBJECT,
       payload: {
-        enabled: this.next.enabled,
         sameDayAllowed: this.next.sameDayAllowed,
-        previous: {
-          enabled: this.previous.enabled,
-          sameDayAllowed: this.previous.sameDayAllowed,
-        },
+        previous: { sameDayAllowed: this.previous.sameDayAllowed },
       },
     };
   }

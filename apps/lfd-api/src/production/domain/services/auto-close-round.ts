@@ -1,24 +1,24 @@
-import { minutesOfDay, weekdayOf } from "@lfd/contracts";
+import { instantToLocal, weekdayOf } from "@lfd/contracts";
 
-import type { CloseSettingsValues } from "../entities/production-close-settings.js";
 import type { AutoCloseOutcome } from "../ports/auto-close-attempts.js";
 
 /**
- * **Le tour de l'arrêt du plan** — ce que le passage du cron (toutes les cinq minutes) décide pour
- * le lendemain (plan `documentation/production/arret-du-plan.md`, §3, §4,
- * B2, S4, lot A2).
+ * **Le tour de l'arrêt du plan** — ce que le passage du cron (toutes les cinq
+ * minutes) décide pour une journée (plan `documentation/production/arret-du-plan.md`).
  *
- * Pur : l'heure de la maison et l'état des journées arrivent lus. Le tour ne
- * décide que ce qu'il peut décider sans demander au commerce ; savoir si le
- * lendemain porte des commandes est la question qu'il ne pose que lorsqu'il
- * le faut (`alert_if_orders`), pour ne pas la poser toutes les cinq minutes.
+ * Depuis le 2026-10-21, il n'y a plus de mode : le plan d'une journée s'arrête
+ * TOUJOURS seul, à la fin du rattrapage de l'heure limite générale pour elle
+ * (`planClosesAt`, `limites-de-commande/plan-une-seule-heure.md` §5). Plus
+ * d'heure d'arrêt à part, plus d'alerte du soir.
+ *
+ * Pur : l'instant d'arrêt et l'état des journées arrivent lus.
  */
 
-/** Ce que l'on sait du lendemain au moment du tour. */
-export interface TomorrowState {
+/** Ce que l'on sait d'une journée à arrêter au moment du tour. */
+export interface PendingDayState {
   /** Un jour fermé du fournil (Q6) : ni arrêt, ni alerte. */
   readonly isClosedDay: boolean;
-  /** Le plan est déjà arrêté — à la main (arrêt anticipé) ou par un tour précédent. */
+  /** Le plan est déjà arrêté — par un tour précédent, ou à la main après l'heure. */
   readonly isPlanClosed: boolean;
   /** La tentative automatique tracée pour cette journée (B2), ou `null`. */
   readonly attempt: AttemptTrace | null;
@@ -52,62 +52,54 @@ export function attemptNeedsHand(attempt: AttemptTrace, now: Date): boolean {
 }
 
 /**
- * - `nothing` : rien à faire pour le lendemain ;
- * - `attempt_close` : mode automatique, l'heure est passée — tenter l'arrêt,
- *   une seule fois (la trace tranche entre deux instances) ;
- * - `alert_if_orders` : mode manuel, l'heure d'alerte est passée — prévenir,
- *   si le lendemain porte des commandes ;
+ * - `nothing` : rien à faire pour cette journée ;
+ * - `attempt_close` : l'instant d'arrêt est passé — tenter l'arrêt, une seule
+ *   fois (la trace tranche entre deux instances) ;
  * - `alert_stalled` : la tentative est restée `pending` plus de quinze
  *   minutes (Q8) — prévenir qu'il faut arrêter à la main. Pas de retentative :
  *   on ne sait pas jusqu'où la tentative morte est allée chez Stripe.
  */
-export type TomorrowStep = "nothing" | "attempt_close" | "alert_if_orders" | "alert_stalled";
+export type CloseStep = "nothing" | "attempt_close" | "alert_stalled";
 
-/**
- * Le pas du tour pour le lendemain.
- *
- * L'heure courante est comparée à l'heure réglée, toutes deux `HH:MM` de la
- * maison : avant l'heure, rien. `close_at` ≤ 23:55 (garanti par l'agrégat, S4)
- * laisse au moins un tour du cron dans la journée.
- */
-export function tomorrowStep(
-  settings: CloseSettingsValues,
-  moment: { readonly time: string; readonly now: Date },
-  tomorrow: TomorrowState,
-): TomorrowStep {
-  if (tomorrow.isClosedDay || tomorrow.isPlanClosed) {
+/** Le pas du tour pour une journée, à l'instant `now`. */
+export function closeStep(closesAt: Date | null, now: Date, day: PendingDayState): CloseStep {
+  if (day.isClosedDay || day.isPlanClosed) {
     return "nothing";
   }
-  if (tomorrow.attempt !== null && attemptStalled(tomorrow.attempt, moment.now)) {
+  if (day.attempt !== null && attemptStalled(day.attempt, now)) {
     return "alert_stalled";
   }
-  if (settings.mode === "auto") {
-    return tomorrow.attempt === null && armed(settings, moment.time) ? "attempt_close" : "nothing";
-  }
-  return armed(settings, moment.time) ? "alert_if_orders" : "nothing";
+  return day.attempt === null && closeDue(closesAt, now) ? "attempt_close" : "nothing";
 }
 
 /**
- * L'heure qui compte pour le lendemain est-elle passée ? `close_at` en
- * automatique, `alert_at` en manuel — le même seuil pour le tour (A2) et pour
- * l'état du prévisionnel (A3), qui ne le recopient pas.
+ * L'instant d'arrêt est-il passé ? Le même seuil pour le tour, pour l'état du
+ * prévisionnel et pour le refus d'un arrêt anticipé — ils ne le recopient pas.
+ * Sans instant (aucune heure limite posée), jamais.
  */
-export function armed(settings: CloseSettingsValues, time: string): boolean {
-  return reached(time, settings.mode === "auto" ? settings.closeAt : settings.alertAt);
+export function closeDue(closesAt: Date | null, now: Date): boolean {
+  return closesAt !== null && now.getTime() >= closesAt.getTime();
+}
+
+/**
+ * Le plan d'AUJOURD'HUI s'arrête-t-il tout seul aujourd'hui ? Oui quand son
+ * instant d'arrêt tombe dans la journée même — une heure limite « le jour
+ * même », ou un rattrapage qui passe minuit. Sinon, son arrêt était hier, et
+ * un plan d'aujourd'hui encore ouvert relève du rattrapage (S4) : on prévient,
+ * on n'arrête pas d'office une fournée déjà au four.
+ */
+export function closesOnItsOwnDay(closesAt: Date | null, today: string): boolean {
+  return closesAt !== null && instantToLocal(closesAt).day === today;
 }
 
 /**
  * Le rattrapage (S4) : le plan d'AUJOURD'HUI n'est pas arrêté et porte des
- * commandes. Il n'est jamais arrêté automatiquement — la fournée est déjà au
- * four —, on prévient seulement.
+ * commandes, alors que son arrêt tombait avant aujourd'hui. Il n'est pas
+ * arrêté automatiquement — la fournée est déjà au four —, on prévient
+ * seulement (cf. {@link closesOnItsOwnDay}).
  */
 export function todayNeedsCatchUp(isPlanClosed: boolean, orderCount: number): boolean {
   return !isPlanClosed && orderCount > 0;
-}
-
-/** L'heure réglée est-elle atteinte ? Une heure absente ne l'est jamais. */
-function reached(time: string, setting: string | null): boolean {
-  return setting !== null && minutesOfDay(time) >= minutesOfDay(setting);
 }
 
 const WEEKDAYS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];

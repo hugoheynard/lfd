@@ -383,23 +383,10 @@ describe("la limite portée par l'ARTICLE, reçue du référentiel", () => {
     expect(await orderCount()).toBe(0);
   });
 
-  it("heure limite générale désactivée : seule la limite de l'article compte", async () => {
-    await seedCutoff({ daysBefore: 1, time: "00:01" });
-    await seedArticleLimit("VIE-001", { daysBefore: 0, time: "23:59", graceMinutes: 0 });
-    await ctx
-      .asSub(STAFF)
-      .patch("/admin/order-cutoff-settings")
-      .send({ enabled: false })
-      .expect(204);
-
-    await ctx
-      .asSub(MEMBER)
-      .post("/orders")
-      .send(order({ requestedDeliveryDate: serviceDay(0) }))
-      .expect(201);
-
-    expect(await orderCount()).toBe(1);
-  });
+  // « heure limite générale désactivée : seule la limite de l'article compte »
+  // est retiré avec l'interrupteur le 2026-10-21 (`plan-une-seule-heure.md` §5) ;
+  // qu'une ligne résiduelle ne coupe plus rien est éprouvé dans
+  // `order-cutoff-switch.e2e-spec.ts`.
 
   it("retombe sur la règle du commerce quand l'article ne déclare rien", async () => {
     await seedCutoff({ daysBefore: 1, time: "00:01" });

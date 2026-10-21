@@ -4,7 +4,6 @@ import type {
   DossierRecipientPayload,
   DossierRecipientView,
   DossierStaffCandidateView,
-  ProductionCloseSettingsPayload,
   ProductionSettingsView,
 } from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
@@ -15,12 +14,13 @@ const SETTINGS = `${B2B_API_BASE}/admin/production/settings`;
 const RECIPIENTS = `${SETTINGS}/dossier-recipients`;
 
 /**
- * **Les réglages du fournil** — l'arrêt du plan et les jours fermés (plan
- * `documentation/production/arret-du-plan.md`, lot A1), sous
- * `production_settings`.
+ * **Les réglages du fournil** — l'arrêt du plan en lecture et les jours fermés
+ * (plan `documentation/production/arret-du-plan.md`), sous
+ * `production_settings`. L'arrêt ne se règle plus ici depuis le 2026-10-21 :
+ * il suit l'heure limite générale.
  *
  * Aucun état : l'écran relit après chaque écriture. Les refus remontent tels
- * quels — le 409 d'une heure d'arrêt trop tôt nomme l'heure limite.
+ * quels.
  */
 @Injectable({ providedIn: 'root' })
 export class ProductionSettingsService {
@@ -28,10 +28,6 @@ export class ProductionSettingsService {
 
   settings(): Promise<ProductionSettingsView> {
     return firstValueFrom(this.http.get<ProductionSettingsView>(SETTINGS));
-  }
-
-  async changeClose(payload: ProductionCloseSettingsPayload): Promise<void> {
-    await firstValueFrom(this.http.put(`${SETTINGS}/close`, payload));
   }
 
   async addClosedDay(date: string): Promise<void> {

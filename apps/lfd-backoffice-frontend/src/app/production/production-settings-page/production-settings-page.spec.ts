@@ -1,19 +1,18 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import type { ProductionCloseSettingsPayload, ProductionSettingsView } from '@lfd/contracts';
+import { provideRouter } from '@angular/router';
+import type { ProductionSettingsView } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { PermissionsStore } from '../../auth/permissions.store';
-import { NotifyService } from '../../notify.service';
 import { ProductionSettingsService } from '../production-settings.service';
-import { autoImpossibleReason, ProductionSettingsPage } from './production-settings-page';
+import { automaticCloseLabel, ProductionSettingsPage } from './production-settings-page';
 
 const FAR_DAY = '2999-12-25';
 
 interface Wire {
   view: ProductionSettingsView;
-  closes: ProductionCloseSettingsPayload[];
   added: string[];
   removed: string[];
   refuse: string | null;
@@ -28,12 +27,9 @@ function refusal(message: string): HttpErrorResponse {
 async function boot(canWrite = true): Promise<ComponentFixture<ProductionSettingsPage>> {
   wire = {
     view: {
-      close: { mode: 'manual', closeAt: null, alertAt: '20:00' },
-      latestOrderCutoff: { daysBefore: 1, time: '18:30' },
-      orderCutoffEnabled: true,
+      automaticClose: { daysBefore: 1, time: '23:00' },
       closedDays: [FAR_DAY],
     },
-    closes: [],
     added: [],
     removed: [],
     refuse: null,
@@ -48,10 +44,6 @@ async function boot(canWrite = true): Promise<ComponentFixture<ProductionSetting
         provide: ProductionSettingsService,
         useValue: {
           settings: () => Promise.resolve(wire.view),
-          changeClose: (payload: ProductionCloseSettingsPayload) => {
-            wire.closes.push(payload);
-            return gate();
-          },
           addClosedDay: (date: string) => {
             wire.added.push(date);
             return gate();
@@ -64,7 +56,7 @@ async function boot(canWrite = true): Promise<ComponentFixture<ProductionSetting
           dossierStaffCandidates: () => Promise.resolve([]),
         } satisfies Partial<Record<keyof ProductionSettingsService, unknown>>,
       },
-      { provide: NotifyService, useValue: { success: () => undefined } },
+      provideRouter([]),
       {
         provide: PermissionsStore,
         useValue: {
@@ -103,58 +95,45 @@ function click(fixture: ComponentFixture<ProductionSettingsPage>, selector: stri
 const has = (fixture: ComponentFixture<ProductionSettingsPage>, selector: string): boolean =>
   fixture.nativeElement.querySelector(selector) !== null;
 
-describe('Production › Réglages — l’arrêt du plan', () => {
-  it('bascule en automatique, envoie les deux heures — celle d’alerte est gardée', async () => {
+/** Depuis le 2026-10-21 (`plan-une-seule-heure.md` §5) : l'arrêt se lit, il ne se règle plus ici. */
+describe('Production › Réglages — l’arrêt du plan, en lecture', () => {
+  it('dit l’arrêt automatique à l’heure limite, avec le lien pour la régler', async () => {
     const fixture = await boot();
-    expect(has(fixture, '[data-alert-at]')).toBe(true);
+    const callout = fixture.nativeElement.querySelector('[data-automatic-close]') as HTMLElement;
 
-    emit(fixture, '[data-mode]', 'valueChange', 'auto');
-    expect(has(fixture, '[data-close-at]')).toBe(true);
+    expect(callout.textContent).toContain(
+      'Arrêt automatique à l’heure limite : la veille, 23 h (rattrapage compris)',
+    );
+    const link = callout.querySelector('a') as HTMLAnchorElement;
+    expect(link.getAttribute('href')).toBe('/reglages/commandes/heure-limite');
+  });
+
+  it('ne propose plus ni mode, ni heure, ni enregistrement', async () => {
+    const fixture = await boot();
+
+    expect(has(fixture, '[data-mode]')).toBe(false);
+    expect(has(fixture, '[data-close-at]')).toBe(false);
     expect(has(fixture, '[data-alert-at]')).toBe(false);
-
-    emit(fixture, '[data-close-at]', 'valueChange', '21:00');
-    click(fixture, '[data-save-close]');
-    await settle(fixture);
-
-    expect(wire.closes).toEqual([{ mode: 'auto', closeAt: '21:00', alertAt: '20:00' }]);
+    expect(has(fixture, '[data-save-close]')).toBe(false);
   });
 
-  it('affiche le refus du serveur tel quel', async () => {
+  it('prévient quand aucune heure limite n’est posée', async () => {
     const fixture = await boot();
-    wire.refuse = 'L’heure d’arrêt 17:00 précède l’heure limite de commande, la veille à 18:30.';
-    emit(fixture, '[data-alert-at]', 'valueChange', '21:00');
-    click(fixture, '[data-save-close]');
-    await settle(fixture);
-
-    const callout = fixture.nativeElement.querySelector('[data-close-refusal]') as HTMLElement;
-    expect(callout.textContent).toContain('précède l’heure limite de commande');
-  });
-
-  it('rappelle la dernière heure limite de commande', async () => {
-    const fixture = await boot();
-    const cutoff = fixture.nativeElement.querySelector('[data-cutoff]') as HTMLElement;
-    expect(cutoff.textContent).toContain('Dernière heure limite de commande : la veille à 18:30');
-  });
-
-  it('dit pourquoi le mode automatique est impossible', () => {
-    expect(autoImpossibleReason(null)).toContain('impossible');
-    expect(autoImpossibleReason({ daysBefore: 0, time: '08:00' })).toContain('jour même');
-    expect(autoImpossibleReason({ daysBefore: 1, time: '18:30' })).toBeNull();
-  });
-
-  /** Lot O3 (B2) : désactivée, l'arrêt du plan est la limite, et rien ne le borne. */
-  it('ne bloque pas le mode automatique quand l’heure limite générale est désactivée', async () => {
-    expect(autoImpossibleReason(null, false)).toBeNull();
-    const fixture = await boot();
-    wire.view = { ...wire.view, latestOrderCutoff: null, orderCutoffEnabled: false };
+    wire.view = { ...wire.view, automaticClose: null };
     await fixture.componentInstance['load']();
     fixture.detectChanges();
 
-    const el = fixture.nativeElement as HTMLElement;
-    expect(el.querySelector('[data-cutoff-off]')?.textContent).toContain(
-      'rien ne borne l’heure d’arrêt',
-    );
-    expect(el.querySelector('[data-auto-impossible]')).toBeNull();
+    expect(has(fixture, '[data-no-cutoff]')).toBe(true);
+    expect(has(fixture, '[data-automatic-close]')).toBe(false);
+  });
+
+  it.each([
+    [{ daysBefore: 1, time: '23:00' }, 'la veille, 23 h (rattrapage compris)'],
+    [{ daysBefore: 1, time: '21:30' }, 'la veille, 21 h 30 (rattrapage compris)'],
+    [{ daysBefore: 0, time: '00:30' }, 'le jour même, 0 h 30 (rattrapage compris)'],
+    [{ daysBefore: 2, time: '12:00' }, '2 jours avant, 12 h (rattrapage compris)'],
+  ])('dit %o « %s »', (close, label) => {
+    expect(automaticCloseLabel(close)).toBe(label);
   });
 });
 
@@ -186,9 +165,8 @@ describe('Production › Réglages — les jours fermés', () => {
 describe('Production › Réglages — sans droit d’écriture', () => {
   it('montre tout et ne propose aucun geste', async () => {
     const fixture = await boot(false);
-    expect(has(fixture, '[data-alert-at]')).toBe(true);
+    expect(has(fixture, '[data-automatic-close]')).toBe(true);
     expect(has(fixture, '[data-closed-day]')).toBe(true);
-    expect(has(fixture, '[data-save-close]')).toBe(false);
     expect(has(fixture, '[data-remove-day]')).toBe(false);
     expect(has(fixture, '[data-add-day]')).toBe(false);
   });

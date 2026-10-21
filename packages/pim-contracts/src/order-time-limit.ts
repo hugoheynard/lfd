@@ -133,11 +133,11 @@ export interface SetOrderTimeLimitResponse {
  *
  * Depuis le 2026-10-21 (décision de Hugo), « toute la production » ne se règle
  * plus au référentiel mais dans Réglages › Commandes › Heure limite. `rule`
- * vaut `null` quand le commerce n'en a aucune ; `enabled` à `false` dit que
- * l'interrupteur la coupe — elle reste en base, et n'oppose rien.
+ * vaut `null` quand le commerce n'en a aucune. Elle est toujours en vigueur :
+ * l'interrupteur qui la coupait (`enabled`) est retiré le 2026-10-21
+ * (`limites-de-commande/plan-une-seule-heure.md` §5).
  */
 export interface GeneralOrderCutoffView {
-  readonly enabled: boolean;
   readonly rule: {
     readonly daysBefore: number;
     readonly time: string;

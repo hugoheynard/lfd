@@ -6,11 +6,11 @@ import { firstValueFrom } from 'rxjs';
 import { B2B_API_BASE } from '../../api/api-config';
 
 /**
- * **L'interrupteur de l'heure limite générale** — Réglages › Commandes › Heure
- * limite (`documentation/commandes/plan-reglages-commandes.md`, §8.1, lot O3).
+ * **Le jour même** — Réglages › Commandes › Jour même (2026-10-21 ;
+ * l'interrupteur de l'heure limite générale qu'il portait est retiré).
  *
- * Le serveur rend une vue même quand personne n'a rien réglé : activée,
- * `updatedAt` et `updatedBy` à `null`.
+ * Le serveur rend une vue même quand personne n'a rien réglé : jour même
+ * fermé, `updatedAt` et `updatedBy` à `null`.
  */
 @Injectable({ providedIn: 'root' })
 export class OrderCutoffSettingsService {

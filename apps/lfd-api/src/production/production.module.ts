@@ -25,14 +25,11 @@ import {
   PrismaAutoCloseRoundReader,
 } from "./infrastructure/prisma-auto-close-round.js";
 import { AddProductionClosedDayHandler } from "./application/commands/add-production-closed-day.handler.js";
-import { ChangeProductionCloseSettingsHandler } from "./application/commands/change-production-close-settings.handler.js";
 import { RemoveProductionClosedDayHandler } from "./application/commands/remove-production-closed-day.handler.js";
 import { GetProductionSettingsHandler } from "./application/queries/get-production-settings.handler.js";
-import { ProductionCloseSettingsRepository } from "./domain/ports/production-close-settings.repository.js";
 import { ProductionClosedDayRepository } from "./domain/ports/production-closed-day.repository.js";
 import { ProductionSettingsReader } from "./domain/ports/production-settings.reader.js";
 import { ProductionSettingsController } from "./http/production-settings.controller.js";
-import { PrismaProductionCloseSettingsRepository } from "./infrastructure/prisma-production-close-settings.repository.js";
 import { PrismaProductionClosedDayRepository } from "./infrastructure/prisma-production-closed-day.repository.js";
 import { PrismaProductionSettingsReader } from "./infrastructure/prisma-production-settings.reader.js";
 import { AddExternalDossierRecipientHandler } from "./application/commands/add-external-dossier-recipient.handler.js";
@@ -232,18 +229,13 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     // `PackingFeedModule`.
     ChannelQualityHeldOrdersReader,
     DayPlannedDestinationsReader,
-    // Les réglages du fournil — l'arrêt du plan et les jours fermés (A1) :
-    // schéma `production`, deux dépôts et un lecteur (ISP). L'heure limite
-    // vient du commerce par `OrderCutoffRulesReader`, relié par
-    // `ProductionFeedModule`.
-    ChangeProductionCloseSettingsHandler,
+    // Les réglages du fournil — les jours fermés (A1) : schéma `production`,
+    // un dépôt et un lecteur (ISP). L'arrêt automatique suit l'heure limite
+    // générale (2026-10-21), lue au commerce par `OrderCutoffRulesReader`,
+    // relié par `ProductionFeedModule`.
     AddProductionClosedDayHandler,
     RemoveProductionClosedDayHandler,
     GetProductionSettingsHandler,
-    {
-      provide: ProductionCloseSettingsRepository,
-      useClass: PrismaProductionCloseSettingsRepository,
-    },
     { provide: ProductionClosedDayRepository, useClass: PrismaProductionClosedDayRepository },
     { provide: ProductionSettingsReader, useClass: PrismaProductionSettingsReader },
     // Les destinataires du dossier du jour (`dossier-prod-du-jour.md`, E2) :

@@ -18,7 +18,6 @@ const BUCHE: OrderTimeLimitView = {
 /** Le service doublé : seules ses deux lectures servent à l'affichage. */
 class FakeService {
   generalView: GeneralOrderCutoffView = {
-    enabled: true,
     rule: { daysBefore: 1, time: '18:00', graceMinutes: 0 },
   };
   list(): Promise<readonly OrderTimeLimitView[]> {
@@ -56,16 +55,14 @@ describe('OrderTimeLimitsPage', () => {
     expect(text).toContain('Réglages › Commandes › Heure limite');
   });
 
-  it('dit quand la règle générale est désactivée', async () => {
-    const api = new FakeService();
-    api.generalView = { ...api.generalView, enabled: false };
-
-    expect(await render(api)).toContain('désactivée, elle ne refuse aucune commande');
+  /** L'interrupteur de l'heure limite générale est retiré le 2026-10-21 : plus rien à dire de lui. */
+  it('ne parle plus d’une règle générale désactivée', async () => {
+    expect(await render(new FakeService())).not.toContain('désactivée');
   });
 
   it("dit quand le commerce n'a aucune règle générale", async () => {
     const api = new FakeService();
-    api.generalView = { enabled: true, rule: null };
+    api.generalView = { rule: null };
 
     expect(await render(api)).toContain('aucune règle générale');
   });

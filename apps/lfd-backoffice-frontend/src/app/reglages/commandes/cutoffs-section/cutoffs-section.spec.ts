@@ -82,25 +82,22 @@ describe('CutoffsSection — la limite générale', () => {
 });
 
 /**
- * Lot O3 (`plan-reglages-commandes.md` §8.1, B1) : l'heure limite générale
- * désactivée, la section grise ce qui n'appartient qu'à elle et le dit — la
- * règle reste lisible et modifiable, la réactivation la remettra telle quelle.
+ * Hugo, 2026-10-21 (`plan-une-seule-heure.md` §5) : l'heure limite générale
+ * déclenche l'arrêt du plan et vaut pour tout le monde ; l'écran le dit. Elle
+ * ne dort plus — l'interrupteur est retiré.
  */
-describe('CutoffsSection — la règle qui dort', () => {
-  it('désactivée, dit que la limite et son rattrapage ne s’appliquent pas', async () => {
+describe('CutoffsSection — ce que l’heure limite déclenche', () => {
+  it('se titre par sa conséquence, et dit le plan figé', async () => {
     const fixture = await mount(['lfc_order_settings:write'], GENERAL);
-    fixture.componentRef.setInput('dormant', true);
-    fixture.detectChanges();
+    const text = root(fixture).textContent ?? '';
 
-    expect(root(fixture).querySelector('[data-cutoff-dormant]')?.textContent).toContain(
-      "ne s'appliquent pas",
-    );
-    expect(root(fixture).querySelector('fold-card')?.classList.contains('dormant')).toBe(true);
-    expect(root(fixture).querySelector('[data-cutoff-general]')).not.toBeNull();
-    expect(buttons(fixture)).toEqual(['Modifier']);
+    expect(text).toContain('Heure limite générale — arrêt du plan de production pour le lendemain');
+    expect(text).toContain('tout le monde');
+    expect(text).toContain('liste à coliser, tournées, paiements en suspens annulés');
+    expect(text).not.toContain('Clientèle professionnelle');
   });
 
-  it('activée, ne dit rien de plus', async () => {
+  it('ne grise plus rien : l’interrupteur est retiré', async () => {
     const fixture = await mount(['lfc_order_settings:write'], GENERAL);
 
     expect(root(fixture).querySelector('[data-cutoff-dormant]')).toBeNull();

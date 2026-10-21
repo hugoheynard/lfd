@@ -263,6 +263,9 @@ model OrderCutoffSettings {
   /// Toujours `orders` : il n'y a qu'un réglage.
   key String @id
 
+  /// L'interrupteur de l'heure limite générale (lot O3). Ni lu ni écrit depuis
+  /// le 2026-10-21 : l'heure limite déclenche l'arrêt du plan, elle est toujours
+  /// en vigueur (`limites-de-commande/plan-une-seule-heure.md` §5). Gardée, morte.
   enabled        Boolean @default(true)
   /// Une commande peut-elle viser AUJOURD'HUI ? (Hugo, 2026-10-14, §8.3.) Non
   /// par défaut ; aucune règle de délai codée en dur ailleurs.

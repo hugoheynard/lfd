@@ -1,0 +1,63 @@
+<fold-page-layout icon="calendar" title="Jour même">
+  <p description>
+    Une commande peut-elle viser aujourd'hui ? Demain se commande avant l'heure limite générale ;
+    aujourd'hui se prendra un jour sur le stock de la vitrine, qui n'existe pas encore.
+  </p>
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Chargement du réglage du jour même…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Impossible de charger le réglage du jour même">
+        <button foldButton (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      <fold-card data-same-day>
+        <fold-element-title
+          cardHeader
+          variant="title"
+          title="Commandes pour le jour même"
+          subtitle="Pour la boutique comme pour la saisie de l'équipe."
+        >
+          <fold-badge
+            titleAction
+            [variant]="allowed() ? 'info' : 'neutral'"
+            [content]="allowed() ? 'Autorisées' : 'Non autorisées'"
+          />
+        </fold-element-title>
+
+        <p class="text">
+          @if (allowed()) {
+            Autorisées : une commande peut viser aujourd'hui, tant que l'heure limite et le plan de
+            production du jour le permettent.
+          } @else {
+            Non autorisées : le premier jour proposé et accepté est demain.
+          }
+        </p>
+
+        @if (canWrite()) {
+          <fold-inline-confirm
+            intent="primary"
+            [message]="effect()"
+            [loading]="pending()"
+            (confirmed)="toggle()"
+          >
+            <button foldButton size="sm" emphasis="outline" [disabled]="pending()">
+              {{ allowed() ? 'Ne plus autoriser' : 'Autoriser' }}
+            </button>
+          </fold-inline-confirm>
+        }
+
+        @if (settings()?.updatedBy; as author) {
+          <p class="text trace">Dernier réglage par {{ author }}.</p>
+        }
+
+        @if (failure(); as message) {
+          <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+        }
+      </fold-card>
+    }
+  }
+</fold-page-layout>

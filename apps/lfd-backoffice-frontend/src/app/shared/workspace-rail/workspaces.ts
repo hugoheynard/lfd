@@ -321,6 +321,15 @@ export const EXPLOITATION_VIEWS: readonly WorkspaceView[] = [
     needs: 'lfc_order_settings:read',
   },
   {
+    // Sa page depuis le 2026-10-21 (`plan-une-seule-heure.md` §6).
+    key: 'commandes-jour-meme',
+    label: 'Jour même',
+    link: '/reglages/commandes/jour-meme',
+    icon: 'calendar',
+    section: 'Commandes',
+    needs: 'lfc_order_settings:read',
+  },
+  {
     key: 'commandes-annulation',
     label: 'Annulation de commande',
     link: '/reglages/commandes/annulation',

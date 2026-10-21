@@ -1,9 +1,9 @@
 import { addDays, type ProductionForecastDayState } from "@lfd/contracts";
 
-import type { CloseSettingsValues } from "../entities/production-close-settings.js";
 import {
-  armed,
   attemptNeedsHand,
+  closeDue,
+  closesOnItsOwnDay,
   todayNeedsCatchUp,
   type AttemptTrace,
 } from "./auto-close-round.js";
@@ -19,16 +19,15 @@ export interface ForecastDayFacts {
   readonly isClosedDay: boolean;
   /** La tentative automatique tracée pour cette journée, ou `null`. */
   readonly attempt: AttemptTrace | null;
+  /** L'instant où son plan s'arrête tout seul (`planClosesAt`), ou `null`. */
+  readonly closesAt: Date | null;
 }
 
 /** L'instant de la maison auquel l'état est dit. */
 export interface HouseMoment {
   /** Aujourd'hui, `AAAA-MM-JJ`, à l'heure de Paris. */
   readonly today: string;
-  /** L'heure courante, `HH:MM`, à l'heure de Paris. */
-  readonly time: string;
   readonly now: Date;
-  readonly settings: CloseSettingsValues;
 }
 
 /**
@@ -38,12 +37,13 @@ export interface HouseMoment {
  * 1. `past` — avant aujourd'hui ;
  * 2. `closed` — plan arrêté ;
  * 3. `overdue` — en retard : l'arrêt automatique a échoué ou est resté en
- *    suspens (Q8) ; aujourd'hui non arrêté avec des commandes (S4) ; demain non
- *    arrêté, non vide, non fermé, l'heure du réglage passée ;
+ *    suspens (Q8) ; aujourd'hui non arrêté avec des commandes (S4), sauf si
+ *    son arrêt automatique tombe aujourd'hui et n'est pas encore passé ;
+ *    demain non arrêté, non vide, non fermé, son arrêt automatique passé ;
  * 4. `closedDay` — jour fermé du fournil ;
  * 5. `open` — le reste.
  *
- * Les seuils sont ceux du tour (A2) — `armed`, `attemptNeedsHand`,
+ * Les seuils sont ceux du tour (A2) — `closeDue`, `attemptNeedsHand`,
  * `todayNeedsCatchUp` —, pas une copie : l'écran et la cloche ne peuvent pas
  * dire deux choses différentes de la même journée.
  */
@@ -67,11 +67,11 @@ function overdue(facts: ForecastDayFacts, moment: HouseMoment): boolean {
   if (facts.attempt !== null && attemptNeedsHand(facts.attempt, moment.now)) {
     return true;
   }
-  if (facts.date === moment.today) {
+  if (facts.date === moment.today && !closesOnItsOwnDay(facts.closesAt, moment.today)) {
     return todayNeedsCatchUp(false, facts.orderCount);
   }
-  if (facts.date === addDays(moment.today, 1)) {
-    return !facts.isClosedDay && facts.orderCount > 0 && armed(moment.settings, moment.time);
+  if (facts.date === moment.today || facts.date === addDays(moment.today, 1)) {
+    return !facts.isClosedDay && facts.orderCount > 0 && closeDue(facts.closesAt, moment.now);
   }
   return false;
 }

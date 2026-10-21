@@ -7,7 +7,7 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../platform/time/clock.js";
 import { ExpectedProductionReader } from "../../channels/commerce/expected-production.reader.js";
-import { ProductionCloseSettings } from "../../domain/entities/production-close-settings.js";
+import { OrderCutoffRulesReader } from "../../channels/commerce/order-cutoff-rules.reader.js";
 import {
   AutoCloseAttemptLog,
   type DatedAttemptTrace,
@@ -15,6 +15,7 @@ import {
 import { ProductionPlanReader } from "../../domain/ports/production-plan.reader.js";
 import { ProductionSettingsReader } from "../../domain/ports/production-settings.reader.js";
 import { forecastDayState, type HouseMoment } from "../../domain/services/forecast-day-state.js";
+import { type OrderCutoffRule, planClosesAt } from "../../domain/services/latest-order-cutoff.js";
 import { forecastMatrix, type ForecastColumn } from "../../domain/services/production-forecast.js";
 import { ServiceRange } from "../../domain/value-objects/service-range.value-object.js";
 import { GetProductionForecastQuery } from "./get-production-forecast.query.js";
@@ -33,8 +34,9 @@ import { GetProductionForecastQuery } from "./get-production-forecast.query.js";
  * enchaîner doublerait la latence d'un écran qu'on ouvre en levant les yeux.
  *
  * L'état de chaque colonne (plan `arret-du-plan.md`, §5, lot A3) se dit
- * ici, à l'heure du `Clock`, avec le réglage, les jours fermés et les
- * tentatives automatiques lus en même temps que le reste.
+ * ici, à l'heure du `Clock`, avec l'heure limite générale (lue au commerce),
+ * les jours fermés et les tentatives automatiques lus en même temps que le
+ * reste. Chaque colonne porte l'instant où son plan s'arrête tout seul.
  *
  * Il n'écrit rien, pas même un compteur — §4.
  */
@@ -49,29 +51,26 @@ export class GetProductionForecastHandler implements IQueryHandler<
     private readonly clock: Clock,
     private readonly settings: ProductionSettingsReader,
     private readonly attempts: AutoCloseAttemptLog,
+    private readonly cutoffRules: OrderCutoffRulesReader,
   ) {}
 
   async execute(query: GetProductionForecastQuery): Promise<ProductionForecastView> {
     const range = ServiceRange.of(query.from, query.to);
-    const [arrested, expected, settings, closedDays, attempts] = await Promise.all([
+    const [arrested, expected, rules, closedDays, attempts] = await Promise.all([
       this.plan.arrestedBetween(range),
       this.expected.expectedBetween(range),
-      this.settings.closeSettings(),
+      this.cutoffRules.rules(),
       this.settings.closedDaysFrom(range.from.value),
       this.attempts.between(range),
     ]);
     const matrix = forecastMatrix(range, arrested, expected);
     const now = this.clock.now();
     const local = instantToLocal(now);
-    const moment: HouseMoment = {
-      today: local.day,
-      time: local.time,
-      now,
-      settings: settings ?? ProductionCloseSettings.initial().values,
-    };
+    const moment: HouseMoment = { today: local.day, now };
     const closed = new Set(closedDays);
+    const rule = rules[0] ?? null;
     return {
-      days: matrix.columns.map((column) => withState(column, moment, closed, attempts)),
+      days: matrix.columns.map((column) => withState(column, moment, rule, closed, attempts)),
       lines: matrix.rows,
       peakDate: matrix.peakDate,
       totalUnits: matrix.totalUnits,
@@ -82,9 +81,11 @@ export class GetProductionForecastHandler implements IQueryHandler<
 function withState(
   column: ForecastColumn,
   moment: HouseMoment,
+  rule: OrderCutoffRule | null,
   closedDays: ReadonlySet<string>,
   attempts: readonly DatedAttemptTrace[],
 ): ProductionForecastDay {
+  const closesAt = planClosesAt(rule, column.date);
   const state = forecastDayState(
     {
       date: column.date,
@@ -92,8 +93,9 @@ function withState(
       orderCount: column.orderCount,
       isClosedDay: closedDays.has(column.date),
       attempt: attempts.find((attempt) => attempt.day === column.date) ?? null,
+      closesAt,
     },
     moment,
   );
-  return { ...column, state };
+  return { ...column, state, closesAt: closesAt?.toISOString() ?? null };
 }

@@ -15,74 +15,30 @@
             <fold-element-title
               variant="title"
               title="Arrêt du plan"
-              subtitle="Comment le plan du lendemain s’arrête, chaque soir."
-            >
-              @if (canWrite()) {
-                <button
-                  titleAction
-                  foldButton
-                  size="sm"
-                  [loading]="saving()"
-                  [disabled]="!canSave()"
-                  (click)="save()"
-                  data-save-close
-                >
-                  Enregistrer
-                </button>
-              }
-            </fold-element-title>
-
-            @if (closeRefusal(); as message) {
-              <fold-callout variant="alert" announce data-close-refusal>{{ message }}</fold-callout>
-            }
-
-            <fold-view-toggle
-              ariaLabel="Mode d’arrêt du plan"
-              [options]="modeOptions()"
-              [value]="mode()"
-              (valueChange)="onMode($event)"
-              data-mode
+              subtitle="Le plan du lendemain s’arrête tout seul à l’heure limite générale de commande."
             />
 
-            @if (mode() === 'manual') {
-              <fold-time
-                label="Heure d’alerte"
-                hint="À partir de cette heure, le bouton d’arrêt apparaît ; passé l’heure sans arrêt, la journée passe en alerte."
-                [value]="alertAt()"
-                [min]="earliest"
-                [max]="latest"
-                [step]="step"
-                [readOnly]="!canWrite()"
-                (valueChange)="alertAt.set($event)"
-                data-alert-at
-              />
+            @if (automaticClose(); as when) {
+              <fold-callout variant="info" data-automatic-close>
+                Arrêt automatique à l’heure limite : {{ when }} — se règle dans
+                <a routerLink="/reglages/commandes/heure-limite"
+                  >Réglages › Commandes › Heure limite</a
+                >.
+              </fold-callout>
             } @else {
-              <fold-time
-                label="Heure d’arrêt"
-                hint="Le plan du lendemain s’arrête tout seul à cette heure, à cinq minutes près. Le bouton reste pour un arrêt anticipé."
-                [value]="closeAt()"
-                [min]="earliest"
-                [max]="latest"
-                [step]="step"
-                [readOnly]="!canWrite()"
-                (valueChange)="closeAt.set($event)"
-                data-close-at
-              />
-            }
-            <p class="note">{{ boundsHint }}</p>
-
-            @if (cutoffOff()) {
-              <fold-callout variant="info" data-cutoff-off>
-                L’heure limite générale de commande est désactivée : rien ne borne l’heure d’arrêt.
-                C’est l’arrêt du plan qui ferme la journée aux commandes.
-              </fold-callout>
-            } @else if (autoImpossible(); as reason) {
-              <fold-callout variant="warning" data-auto-impossible>{{ reason }}</fold-callout>
-            } @else if (cutoffSentence(); as sentence) {
-              <fold-callout variant="info" data-cutoff>
-                {{ sentence }} Une heure d’arrêt automatique ne peut pas la précéder.
+              <fold-callout variant="warning" data-no-cutoff>
+                Aucune heure limite générale n’est posée : rien n’arrête le plan tout seul. Elle se
+                pose dans
+                <a routerLink="/reglages/commandes/heure-limite"
+                  >Réglages › Commandes › Heure limite</a
+                >.
               </fold-callout>
             }
+            <p class="note">
+              Avant cette heure, un arrêt à la main est refusé : les clients peuvent encore
+              commander. Un plan arrêté se rouvre depuis le
+              <a routerLink="/prod-manager">Prod manager</a>, tant que rien n’a commencé.
+            </p>
           </div>
         </fold-card>
 

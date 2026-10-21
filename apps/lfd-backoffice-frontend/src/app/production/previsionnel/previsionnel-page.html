@@ -144,7 +144,21 @@
           -->
           @if (state() === 'ready' && canArrest()) {
             @if (dayToArrest(); as day) {
-              @if (arrestingDay() === day.date) {
+              @if (autoCloseAhead(); as label) {
+                <!-- Avant l'heure limite, le serveur refuse l'arrêt à la main
+                     (2026-10-21) : le bouton dit quand le plan s'arrêtera seul. -->
+                <button
+                  foldButton
+                  emphasis="solid"
+                  intent="primary"
+                  size="sm"
+                  class="pv-arrest"
+                  disabled
+                  data-auto-close-ahead
+                >
+                  {{ label }}
+                </button>
+              } @else if (arrestingDay() === day.date) {
                 <fold-inline-confirm
                   [open]="true"
                   [loading]="arresting()"
@@ -159,9 +173,7 @@
                     day.orderCount +
                     ' commande(s), ' +
                     day.totalUnits +
-                    ' pièce(s)' +
-                    (autoCloseAt() ? ', maintenant (avant ' + autoCloseAt() + ')' : '') +
-                    ' ? Son compte à produire sera figé.'
+                    ' pièce(s) ? Son compte à produire sera figé.'
                   "
                   (confirmed)="arrest(day.date)"
                   (cancelled)="arrestingDay.set(null)"
@@ -178,9 +190,6 @@
                   (click)="arrestingDay.set(day.date)"
                 >
                   Arrêter le plan du {{ day.weekday }} {{ day.dayMonth }}
-                  @if (autoCloseAt(); as closeAt) {
-                    maintenant (avant {{ closeAt }})
-                  }
                 </button>
               }
             } @else {

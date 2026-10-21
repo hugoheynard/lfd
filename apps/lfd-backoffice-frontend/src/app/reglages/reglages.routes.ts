@@ -124,6 +124,15 @@ export const reglagesRoutes: Routes = [
           ),
       },
       {
+        // Le jour même a sa page (Hugo, 2026-10-21, `plan-une-seule-heure.md`
+        // §6) : même droit que l'heure limite qu'il quittait.
+        path: 'commandes/jour-meme',
+        canActivate: [permissionGuard('lfc_order_settings:read')],
+        title: 'Jour même — LFC B2B admin',
+        loadComponent: () =>
+          import('./commandes/same-day-page/same-day-page').then((m) => m.SameDayPage),
+      },
+      {
         path: 'commandes/annulation',
         canActivate: [permissionGuard('lfc_order_settings:read')],
         title: 'Annulation de commande — LFC B2B admin',

@@ -7,17 +7,12 @@ import {
   AutoCloseAttemptLog,
   type DatedAttemptTrace,
 } from "../../../domain/ports/auto-close-attempt-log.js";
-import { ProductionCloseSettings } from "../../../domain/entities/production-close-settings.js";
 import { ProductionPlanReader } from "../../../domain/ports/production-plan.reader.js";
 import type { DayDemand } from "../../../domain/services/production-forecast.js";
 import type { ServiceRange } from "../../../domain/value-objects/service-range.value-object.js";
 import { GetProductionForecastHandler } from "../get-production-forecast.handler.js";
 import { GetProductionForecastQuery } from "../get-production-forecast.query.js";
-import {
-  ClosedDaysTable,
-  SettingsReader,
-  SettingsTable,
-} from "../../__tests__/settings-doubles.js";
+import { ClosedDaysTable, CutoffRules, SettingsReader } from "../../__tests__/settings-doubles.js";
 
 /** L'instant de la maison `time` le jour `day` — les dates sont le SUJET, l'horloge est fixée. */
 function at(day: string, time: string): Date {
@@ -43,7 +38,8 @@ class AttemptLog extends AutoCloseAttemptLog {
 
 interface World {
   readonly clock: FixedClock;
-  readonly settings: SettingsTable;
+  /** L'heure limite générale du commerce : la veille à 20:00 par défaut. */
+  readonly cutoffs: CutoffRules;
   readonly closedDays: ClosedDaysTable;
   readonly attempts: AttemptLog;
 }
@@ -51,7 +47,7 @@ interface World {
 function world(now: Date = at("2026-09-03", "10:00")): World {
   return {
     clock: new FixedClock(now),
-    settings: new SettingsTable(),
+    cutoffs: new CutoffRules([{ daysBefore: 1, time: "20:00", graceMinutes: 0 }]),
     closedDays: new ClosedDaysTable(),
     attempts: new AttemptLog(),
   };
@@ -66,8 +62,9 @@ function handlerOf(
     plan,
     expected,
     w.clock,
-    new SettingsReader(w.settings, w.closedDays),
+    new SettingsReader(w.closedDays),
     w.attempts,
+    w.cutoffs,
   );
 }
 
@@ -120,10 +117,33 @@ describe("GetProductionForecastHandler", () => {
       new GetProductionForecastQuery("2026-09-03", "2026-09-05"),
     );
 
+    // Chaque colonne porte l'instant de son arrêt automatique : la veille à 20:00 (2026-10-21).
+    const closesAt = (eve: string): string => at(eve, "20:00").toISOString();
     expect(view.days).toEqual([
-      { date: "2026-09-03", totalUnits: 186, orderCount: 12, closed: true, state: "closed" },
-      { date: "2026-09-04", totalUnits: 0, orderCount: 0, closed: false, state: "open" },
-      { date: "2026-09-05", totalUnits: 410, orderCount: 47, closed: false, state: "open" },
+      {
+        date: "2026-09-03",
+        totalUnits: 186,
+        orderCount: 12,
+        closed: true,
+        state: "closed",
+        closesAt: closesAt("2026-09-02"),
+      },
+      {
+        date: "2026-09-04",
+        totalUnits: 0,
+        orderCount: 0,
+        closed: false,
+        state: "open",
+        closesAt: closesAt("2026-09-03"),
+      },
+      {
+        date: "2026-09-05",
+        totalUnits: 410,
+        orderCount: 47,
+        closed: false,
+        state: "open",
+        closesAt: closesAt("2026-09-04"),
+      },
     ]);
     expect(view.lines).toEqual([
       { sku: "PAI-BAG", productName: "Baguette", quantities: [186, 0, 410], totalUnits: 596 },
@@ -184,11 +204,9 @@ describe("GetProductionForecastHandler", () => {
       ]);
     });
 
-    it("lit le réglage : en automatique, demain n'est en retard qu'à l'heure d'arrêt", async () => {
+    it("lit l'heure limite générale : demain n'est en retard qu'à la fin du rattrapage", async () => {
       const w = world(at("2026-09-03", "20:05"));
-      const row = ProductionCloseSettings.initial();
-      row.change({ mode: "auto", closeAt: "21:00", alertAt: null }, null, "fiche_1", w.clock.now());
-      w.settings.row = row;
+      w.cutoffs.current = [{ daysBefore: 1, time: "20:00", graceMinutes: 60 }];
       const expected = new ExpectedStub([demand("2026-09-04", 2)]);
 
       expect(await states(w, new PlanStub([]), expected)).toContain("2026-09-04:open");

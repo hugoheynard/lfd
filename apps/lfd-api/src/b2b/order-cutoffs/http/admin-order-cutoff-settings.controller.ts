@@ -13,11 +13,13 @@ import { GetOrderCutoffSettingsQuery } from "../application/get-order-cutoff-set
 import { UpdateOrderCutoffSettingsCommand } from "../application/update-order-cutoff-settings.command.js";
 
 /**
- * L'interrupteur **staff** de l'heure limite générale — Réglages › Commandes ›
- * Heure limite (`documentation/commandes/plan-reglages-commandes.md`, §8.1,
- * lot O3). Sous `lfc_order_settings`, comme la règle qu'il éteint.
+ * Le **jour même** — Réglages › Commandes › Jour même (§8.3 ; sa page depuis
+ * le 2026-10-21). Sous `lfc_order_settings`, comme l'heure limite.
  *
- * `GET` rend la vue ; `PATCH` (`204`) prend `{ enabled }`.
+ * `GET` rend la vue ; `PATCH` (`204`) prend `{ sameDayAllowed }`. L'interrupteur
+ * de l'heure limite générale (`enabled`) est retiré le 2026-10-21
+ * (`limites-de-commande/plan-une-seule-heure.md` §5) : une charge qui le porte
+ * est refusée en 400.
  */
 @Controller("admin/order-cutoff-settings")
 @AdminSurface("lfc_order_settings")

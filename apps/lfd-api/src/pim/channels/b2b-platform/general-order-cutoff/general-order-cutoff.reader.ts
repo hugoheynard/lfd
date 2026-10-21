@@ -1,12 +1,10 @@
 /**
  * La règle générale du commerce, telle que le référentiel la MONTRE.
  *
- * `rule` est `null` quand le commerce n'a aucune règle générale ; `enabled`
- * dit si l'interrupteur la sert (désactivée, elle reste en base et n'oppose
- * rien).
+ * `rule` est `null` quand le commerce n'a aucune règle générale. Toujours en
+ * vigueur depuis le 2026-10-21 : l'interrupteur qui la coupait est retiré.
  */
 export interface GeneralOrderCutoff {
-  readonly enabled: boolean;
   readonly rule: {
     readonly daysBefore: number;
     readonly time: string;

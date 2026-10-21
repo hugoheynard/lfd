@@ -10,6 +10,7 @@ import {
   DayOrdersReader,
   type ProducibleOrder,
 } from "../../channels/commerce/day-orders.reader.js";
+import { OrderCutoffRulesReader } from "../../channels/commerce/order-cutoff-rules.reader.js";
 import { PendingSettlementSweeper } from "../../channels/commerce/pending-settlement.sweeper.js";
 import { ProductionDayClosedEvent } from "../../channels/commerce/production-day-closed.event.js";
 import {
@@ -22,6 +23,8 @@ import { ProductionDayClosedJournalEvent } from "../../domain/events/production-
 import { OrderWithdrawalsReader } from "../../domain/ports/order-withdrawals.reader.js";
 import { ProductionDayLock } from "../../domain/ports/production-day.lock.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
+import { refuseCloseBeforeCutoff } from "../../domain/services/early-close.js";
+import { planClosesAt } from "../../domain/services/latest-order-cutoff.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
 import { packingListFactsOf } from "../services/packing-list-facts.js";
 import { CloseProductionDayCommand } from "./close-production-day.command.js";
@@ -39,6 +42,13 @@ import { CloseProductionDayCommand } from "./close-production-day.command.js";
  * restent AVANT le verrou : pas d'appel d'un autre bloc sous un verrou tenu. Il
  * n'écrit rien chez le commerce : `confirmed` est un fait du commerce, tiré du
  * nôtre par un abonné qui vit chez lui. Chaque contexte n'écrit que ses tables.
+ *
+ * ## Pas avant l'heure limite (depuis le 2026-10-21)
+ *
+ * Le plan d'une journée s'arrête tout seul à la fin du rattrapage de l'heure
+ * limite générale (`limites-de-commande/plan-une-seule-heure.md` §5). Un
+ * arrêt demandé plus tôt — à la main — est refusé AVANT le balayage, qui
+ * annulerait sinon les paiements de clients encore en train de commander.
  *
  * ## Balayer d'abord, compter ensuite (depuis le 2026-09-26)
  *
@@ -123,19 +133,25 @@ export class CloseProductionDayHandler implements ICommandHandler<
     private readonly lock: ProductionDayLock,
     private readonly authors: StaffAuthorDirectory,
     private readonly withdrawals: OrderWithdrawalsReader,
+    private readonly cutoffRules: OrderCutoffRulesReader,
   ) {}
 
   async execute(command: CloseProductionDayCommand): Promise<ProductionPlanClosure> {
     const day = ServiceDay.of(command.serviceDay);
-    // AVANT le chargement et avant la branche de réannonce : le balayage vaut
-    // pour chaque appel, et une journée déjà close n'en est pas dispensée (S4).
-    // Hors du verrou : c'est un appel au commerce, qui écrit chez lui.
-    await this.settlements.sweep(day);
-
     // Lecture HORS verrou, qui ne sert qu'à épargner la question au commerce
     // quand la journée est déjà close. Elle ne décide jamais d'une clôture :
     // la décision se reprend sous le verrou, sur la journée relue.
-    if ((await this.days.load(day)).isClosed) {
+    const alreadyClosed = (await this.days.load(day)).isClosed;
+    if (!alreadyClosed) {
+      // AVANT le balayage : un arrêt refusé n'annule aucun paiement. Un arrêt
+      // déjà fait reste tel quel, sa réannonce n'est pas un arrêt (2026-10-21).
+      await this.refuseBeforeCutoff(day);
+    }
+    // Avant la branche de réannonce : le balayage vaut pour chaque appel, et
+    // une journée déjà close n'en est pas dispensée (S4). Hors du verrou :
+    // c'est un appel au commerce, qui écrit chez lui.
+    await this.settlements.sweep(day);
+    if (alreadyClosed) {
       return this.reannounce(day);
     }
     // Les commandes du commerce sont lues AVANT le verrou, comme au retirage :
@@ -143,6 +159,16 @@ export class CloseProductionDayHandler implements ICommandHandler<
     const producible = await this.orders.producibleFor(day);
     const signer = await this.signerOf(command);
     return this.closeUnderLock(day, producible, signer);
+  }
+
+  /**
+   * Pas d'arrêt avant la fin du rattrapage de l'heure limite générale pour
+   * cette journée (2026-10-21, `plan-une-seule-heure.md` §5) — lue au
+   * commerce, hors verrou, comme les commandes.
+   */
+  private async refuseBeforeCutoff(day: ServiceDay): Promise<void> {
+    const general = (await this.cutoffRules.rules())[0] ?? null;
+    refuseCloseBeforeCutoff(day.value, planClosesAt(general, day.value), this.clock.now());
   }
 
   /**

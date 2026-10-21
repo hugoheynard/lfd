@@ -28,12 +28,12 @@ import { PermissionsStore } from '../../auth/permissions.store';
 import { AdminCatalogService } from '../../commandes/catalog.service';
 import { refreshWhileVisible } from '../../shared/periodic-refresh';
 import { ProductionService } from '../production.service';
-import { ProductionSettingsService } from '../production-settings.service';
 import { NotifyService } from '../../notify.service';
 import { DossierDuJour, defaultDossierDate } from './dossier-du-jour/dossier-du-jour';
 import { ForecastTable } from './forecast-table/forecast-table';
 import { ReopenDay } from './reopen-day/reopen-day';
 import { forecastRayons, totalOfRayons } from './previsionnel-matrix';
+import { autoCloseAheadLabel } from './auto-close-label';
 import { FORECAST_DAYS, forecastHeaders, isoDay, shiftDay, windowEnd } from './previsionnel-range';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -133,18 +133,14 @@ export class PrevisionnelPage {
   private readonly catalog = inject(AdminCatalogService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
-  private readonly settings = inject(ProductionSettingsService);
   private readonly notify = inject(NotifyService);
   private readonly permissions = inject(PermissionsStore);
 
   /**
-   * L'heure d'arrêt automatique quand le fournil est en mode `auto`, sinon
-   * `null`. En auto, le bouton du soir est un arrêt ANTICIPÉ — le serveur
-   * arrêterait seul à cette heure (plan d'arrêt, Q4, Hugo 2026-10-06). Sans le
-   * droit de lire les réglages, ou si la lecture échoue, on reste au libellé
-   * manuel : rien d'affiché pour ça.
+   * L'instant de la dernière lecture : le bouton du soir le compare à l'arrêt
+   * automatique de sa journée. Relu avec la page, toutes les 60 secondes.
    */
-  protected readonly autoCloseAt = signal<string | null>(null);
+  private readonly now = signal(new Date());
 
   protected readonly state = signal<LoadState>('loading');
 
@@ -248,6 +244,21 @@ export class PrevisionnelPage {
    * gestes ne bouge pas d'une page à l'autre. Si demain est déjà arrêté, il le
    * dit — c'est la réponse à la question qu'on se pose le soir.
    */
+  /**
+   * Le plan visé s'arrête-t-il encore tout seul, plus tard (Hugo, 2026-10-21 —
+   * `plan-une-seule-heure.md` §5) ? Alors le bouton le dit, désactivé : un
+   * arrêt à la main avant l'heure limite est refusé par le serveur. L'instant
+   * vient de la colonne (`closesAt`), calculé par le serveur.
+   */
+  protected readonly autoCloseAhead = computed(() => {
+    const target = this.dayToArrest();
+    if (target === undefined) {
+      return null;
+    }
+    const day = this.aheadDays().find((candidate) => candidate.date === target.date);
+    return autoCloseAheadLabel(day?.closesAt ?? null, this.now());
+  });
+
   protected readonly nothingToArrestLabel = computed(() => {
     const tomorrow = this.aheadHeaders().find((header) => header.date > this.today);
     return tomorrow?.closed === true
@@ -370,15 +381,14 @@ export class PrevisionnelPage {
     const seq = ++this.readSeq;
     const from = this.from();
     try {
-      const [forecast, ahead, closeAt] = await Promise.all([
+      const [forecast, ahead] = await Promise.all([
         this.production.forecast(from, windowEnd(from)),
         this.readAhead(from),
-        this.readAutoCloseAt(),
       ]);
       if (seq === this.readSeq) {
+        this.now.set(new Date());
         this.forecast.set(forecast);
         this.aheadRead.set(ahead);
-        this.autoCloseAt.set(closeAt);
       }
     } catch {
       // Silencieux par construction : la lecture précédente reste juste à
@@ -484,18 +494,17 @@ export class PrevisionnelPage {
       // — mais elle ne doit pas se taire non plus, d'où le `null` plutôt qu'un
       // tableau vide : les deux se lisent pareil à l'affichage, et un seul des
       // deux est une panne.
-      const [forecast, catalogue, ahead, closeAt] = await Promise.all([
+      const [forecast, catalogue, ahead] = await Promise.all([
         this.production.forecast(from, windowEnd(from)),
         this.catalog.list().catch(() => null),
         this.readAhead(from),
-        this.readAutoCloseAt(),
       ]);
       if (seq !== this.readSeq) {
         return;
       }
+      this.now.set(new Date());
       this.forecast.set(forecast);
       this.aheadRead.set(ahead);
-      this.autoCloseAt.set(closeAt);
       this.shelvesLost.set(catalogue === null);
       this.catalogue.set(catalogue ?? []);
       this.state.set('ready');
@@ -503,19 +512,6 @@ export class PrevisionnelPage {
       if (seq === this.readSeq) {
         this.state.set('error');
       }
-    }
-  }
-
-  /** L'heure d'arrêt automatique, ou `null` — ne lève jamais. */
-  private async readAutoCloseAt(): Promise<string | null> {
-    if (!this.permissions.can('production_settings:read')) {
-      return null;
-    }
-    try {
-      const { close } = await this.settings.settings();
-      return close.mode === 'auto' ? close.closeAt : null;
-    } catch {
-      return null;
     }
   }
 }

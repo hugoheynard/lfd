@@ -14,7 +14,7 @@ import { GetOrderCutoffSettingsHandler } from "../get-order-cutoff-settings.hand
 import { UpdateOrderCutoffSettingsCommand } from "../update-order-cutoff-settings.command.js";
 import { UpdateOrderCutoffSettingsHandler } from "../update-order-cutoff-settings.handler.js";
 
-/** L'interrupteur de l'heure limite générale (lot O3, `plan-reglages-commandes.md` §8.1). */
+/** Le jour même (§8.3) — l'interrupteur de l'heure limite générale est retiré le 2026-10-21. */
 
 const AT = new Date(0);
 
@@ -44,9 +44,8 @@ class Directory extends StaffDirectory {
   }
 }
 
-const DISABLED: OrderCutoffSettingsView = {
-  enabled: false,
-  sameDayAllowed: false,
+const SAME_DAY_OPEN: OrderCutoffSettingsView = {
+  sameDayAllowed: true,
   updatedAt: AT.toISOString(),
   updatedBy: "Alex",
 };
@@ -68,15 +67,15 @@ function handler(
 }
 
 describe("UpdateOrderCutoffSettingsHandler", () => {
-  it("désactive, et fige l'instant et l'auteur", async () => {
+  it("ouvre le jour même, et fige l'instant et l'auteur", async () => {
     const written = new Written();
 
     await handler(DEFAULT_ORDER_CUTOFF_SETTINGS, written, new RecordingPublisher()).execute(
-      new UpdateOrderCutoffSettingsCommand({ enabled: false }, "staff_agent"),
+      new UpdateOrderCutoffSettingsCommand({ sameDayAllowed: true }, "staff_agent"),
     );
 
     expect(written.puts).toHaveLength(1);
-    expect(written.puts[0]?.enabled).toBe(false);
+    expect(written.puts[0]?.sameDayAllowed).toBe(true);
     expect(written.puts[0]?.at).toBe(AT);
     expect(written.puts[0]?.author).toEqual({
       staffUserId: "staff_agent",
@@ -85,38 +84,25 @@ describe("UpdateOrderCutoffSettingsHandler", () => {
     });
   });
 
-  it("journalise chaque bascule, avec l'état remplacé", async () => {
+  /**
+   * Le fait ne porte plus `enabled` depuis le 2026-10-21 : l'interrupteur est
+   * retiré, et l'écrire figerait au journal un réglage que plus rien ne lit.
+   */
+  it("journalise chaque bascule, avec l'état remplacé — sans l'interrupteur retiré", async () => {
     const events = new RecordingPublisher();
 
-    await handler(DISABLED, new Written(), events).execute(
-      new UpdateOrderCutoffSettingsCommand({ enabled: true }, "staff_agent"),
+    await handler(SAME_DAY_OPEN, new Written(), events).execute(
+      new UpdateOrderCutoffSettingsCommand({ sameDayAllowed: false }, "staff_agent"),
     );
 
     expect(events.factTypes()).toEqual(["order_cutoff_settings.updated"]);
     expect(events.traced[0]?.journalFact()).toMatchObject({
       subjectType: "order_cutoff_settings",
       subjectId: "orders",
-      payload: {
-        enabled: true,
-        sameDayAllowed: false,
-        previous: { enabled: false, sameDayAllowed: false },
-      },
     });
-  });
-
-  it("ouvre le jour même sans toucher à l'heure limite, et le journalise", async () => {
-    const written = new Written();
-    const events = new RecordingPublisher();
-
-    await handler(DEFAULT_ORDER_CUTOFF_SETTINGS, written, events).execute(
-      new UpdateOrderCutoffSettingsCommand({ sameDayAllowed: true }, "staff_agent"),
-    );
-
-    expect([written.puts[0]?.enabled, written.puts[0]?.sameDayAllowed]).toEqual([true, true]);
     expect(events.traced[0]?.journalFact().payload).toEqual({
-      enabled: true,
-      sameDayAllowed: true,
-      previous: { enabled: true, sameDayAllowed: false },
+      sameDayAllowed: false,
+      previous: { sameDayAllowed: true },
     });
   });
 
@@ -124,8 +110,8 @@ describe("UpdateOrderCutoffSettingsHandler", () => {
     const written = new Written();
     const events = new RecordingPublisher();
 
-    await handler(DISABLED, written, events).execute(
-      new UpdateOrderCutoffSettingsCommand({ enabled: false }, "staff_agent"),
+    await handler(SAME_DAY_OPEN, written, events).execute(
+      new UpdateOrderCutoffSettingsCommand({ sameDayAllowed: true }, "staff_agent"),
     );
 
     expect(written.puts).toEqual([]);
@@ -136,7 +122,7 @@ describe("UpdateOrderCutoffSettingsHandler", () => {
     const written = new Written();
 
     await handler(DEFAULT_ORDER_CUTOFF_SETTINGS, written, new RecordingPublisher(), null).execute(
-      new UpdateOrderCutoffSettingsCommand({ enabled: false }, "staff_inconnu"),
+      new UpdateOrderCutoffSettingsCommand({ sameDayAllowed: true }, "staff_inconnu"),
     );
 
     expect(written.puts[0]?.author).toEqual({ staffUserId: "staff_inconnu", name: "", role: "" });

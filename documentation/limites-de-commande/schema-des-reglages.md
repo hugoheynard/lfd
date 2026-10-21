@@ -140,8 +140,17 @@ Chaque point est un fait du code, avec l'exemple qui le rend concret.
   ignorent une ligne résiduelle (`resolveOrderCutoff`), et l'écran n'a plus
   qu'une ressource, `GET`/`PUT admin/order-cutoffs/general`. ①bis disparaît
   de la carte. État : [`reglages-generaux.md`](reglages-generaux.md) §1.
-- **L'arrêt du plan** : l'aligner sur la limite (il ne la contredit jamais), ou
-  l'annoncer dans la boutique ?
+- ✅ **L'arrêt du plan** — tranché par Hugo le 2026-10-21, **bâti le
+  2026-10-21** (lot 2, [`plan-une-seule-heure.md`](plan-une-seule-heure.md)) :
+  l'heure limite générale déclenche tout. Le plan de J s'arrête seul à la fin
+  du rattrapage de ① pour J ; un arrêt à la main avant est refusé
+  (`production.day.before_order_cutoff`) ; plus de mode ni d'alerte du soir ;
+  l'écran du fournil montre l'heure en lecture. ⑤ disparaît de la carte en
+  tant que réglage.
+- ✅ **L'interrupteur ②** (point 7) — retiré, **bâti le 2026-10-21** (lot 2) :
+  l'heure limite est toujours en vigueur (`OrderCutoffsInForce` ne lit plus
+  `enabled`, colonne gardée). Le jour même ③ garde son réglage, sur sa page
+  (Réglages › Commandes › Jour même).
 - **Le devis** : vérifie-t-il la limite ?
 - **Un écran de lecture unique** : pour un produit, un point et un jour, « la
   limite qui s'applique, et pourquoi ».

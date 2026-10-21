@@ -12,6 +12,7 @@ import { PendingSettlementSweeper } from "../../../channels/commerce/pending-set
 import { ProductionDay } from "../../../domain/entities/production-day.js";
 import { ProductionDayRepository } from "../../../domain/ports/production-day.repository.js";
 import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
+import { CutoffRules } from "../../__tests__/settings-doubles.js";
 import { InMemoryWithdrawals } from "../../__tests__/withdrawal-doubles.js";
 import { RecordingDayLock } from "../../__tests__/batch-doubles.js";
 import { CloseProductionDayCommand } from "../close-production-day.command.js";
@@ -119,6 +120,7 @@ function subject(sequence: ProductionDay[]) {
     new RecordingDayLock(trace),
     new FixedStaffAuthorDirectory(),
     new InMemoryWithdrawals(trace),
+    new CutoffRules(),
   );
   return { handler, days, events, durable, trace };
 }

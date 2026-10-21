@@ -117,3 +117,19 @@ export class ProducedItemNotFoundError extends ResourceNotFoundError {
     );
   }
 }
+
+/**
+ * Un arrêt du plan **avant l'heure limite générale** (Hugo, 2026-10-21 —
+ * `limites-de-commande/plan-une-seule-heure.md` §4 Q1, §5) : jusqu'à la fin
+ * du rattrapage, les clients peuvent encore commander pour cette journée, et
+ * la boutique l'annonce. Arrêter plus tôt annulerait le paiement de clients en
+ * train de commander. Pour figer plus tôt, on avance l'heure limite.
+ */
+export class PlanClosedBeforeOrderCutoffError extends BusinessError {
+  constructor(dayLabel: string, closesAtLabel: string) {
+    super(
+      "production.day.before_order_cutoff",
+      `Le plan du ${dayLabel} s'arrête tout seul à l'heure limite générale, rattrapage compris : le ${closesAtLabel}. D'ici là, les clients peuvent encore commander pour ce jour. Pour figer le plan plus tôt, avancez l'heure limite dans Réglages › Commandes › Heure limite.`,
+    );
+  }
+}

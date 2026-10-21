@@ -249,6 +249,8 @@ describe("le prévisionnel du fournil", () => {
       orderCount: 1,
       closed: false,
       state: "open",
+      // Aucune heure limite posée : rien n'arrête le plan seul (2026-10-21).
+      closesAt: null,
     });
 
     await ctx.asSub("staff-e2e").post(`/admin/production/batch/${DAY_1}/close`).expect(201);
@@ -260,6 +262,7 @@ describe("le prévisionnel du fournil", () => {
       orderCount: 1,
       closed: true,
       state: "closed",
+      closesAt: null,
     });
     expect(after.lines[0]?.quantities).toEqual([6]);
   });
@@ -310,9 +313,15 @@ describe("le prévisionnel du fournil", () => {
     const states = async (): Promise<string[]> =>
       (await forecast(DAY_1, DAY_3)).days.map((day) => `${day.date}:${day.state}`);
 
-    it("la veille, passé l'heure d'alerte (manuel, 20:00), la journée non arrêtée est en retard", async () => {
+    /** Depuis le 2026-10-21, le seuil est l'heure limite générale (ici la veille à 20:00). */
+    it("la veille, passé l'heure limite générale, la journée non arrêtée est en retard", async () => {
       const companyId = await seedSociete();
       await placeOrder(companyId, DAY_1, [{ sku: "VIE-001", quantity: 6 }]);
+      await ctx
+        .asSub("staff-e2e")
+        .put("/admin/order-cutoffs/general")
+        .send({ daysBefore: 1, time: "20:00", graceMinutes: 0 })
+        .expect(204);
       const eve = addDays(DAY_1, -1);
 
       clock.set(houseInstant(eve, "19:55"));

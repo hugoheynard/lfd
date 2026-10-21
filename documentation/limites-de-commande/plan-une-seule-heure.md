@@ -1,6 +1,14 @@
 # Plan — une seule heure : l'arrêt du plan suit l'heure limite
 
-> **Doc-first, 2026-10-21.** Rien n'est bâti. Point 5 du
+> **Bâti le 2026-10-21 (lot 2 : serveur, back-office, docs), non commité à
+> l'écriture de ce bandeau.** L'état vit dans
+> [`../production/arret-du-plan.md`](../production/arret-du-plan.md) et
+> [`reglages-generaux.md`](reglages-generaux.md) ; ce plan garde les décisions
+> (§4–§6), que le code cite. Aucune migration : les colonnes `close_mode`,
+> `close_at`, `alert_at` et `order_cutoff_settings.enabled` restent en base,
+> ni lues ni écrites.
+>
+> Écrit doc-first le 2026-10-21. Point 5 du
 > [`schema-des-reglages.md`](schema-des-reglages.md) ; décision de Hugo du
 > 2026-10-21 : « une seule heure, qu'on met dans l'heure limite ; le réglage du
 > fournil doit s'adapter ». À bâtir APRÈS le lot « une seule limite générale /

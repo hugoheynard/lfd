@@ -1,6 +1,5 @@
-import type { ProductionForecastDayState } from "@lfd/contracts";
+import { localToInstant, type ProductionForecastDayState } from "@lfd/contracts";
 
-import type { CloseSettingsValues } from "../../entities/production-close-settings.js";
 import type { AttemptTrace } from "../auto-close-round.js";
 import {
   forecastDayState,
@@ -14,22 +13,36 @@ const TODAY = "2026-10-06";
 const TOMORROW = "2026-10-07";
 const LATER = "2026-10-09";
 
-const NOW = new Date(Date.UTC(2026, 9, 6, 19, 30));
 const MINUTE = 60 * 1000;
 
-const MANUAL: CloseSettingsValues = { mode: "manual", closeAt: null, alertAt: "20:00" };
-const AUTO: CloseSettingsValues = { mode: "auto", closeAt: "21:00", alertAt: null };
-
-function moment(time: string, settings: CloseSettingsValues = MANUAL): HouseMoment {
-  return { today: TODAY, time, now: NOW, settings };
+function paris(time: string, date = TODAY): Date {
+  const instant = localToInstant(date, time);
+  if (instant === null) {
+    throw new TypeError(`heure locale inexistante : ${date} ${time}`);
+  }
+  return instant;
 }
 
+function moment(time: string): HouseMoment {
+  return { today: TODAY, now: paris(time) };
+}
+
+/** Par défaut, l'arrêt de la journée tombe la veille à 21:00. */
 function day(date: string, facts: Partial<ForecastDayFacts> = {}): ForecastDayFacts {
-  return { date, planClosed: false, orderCount: 0, isClosedDay: false, attempt: null, ...facts };
+  const eve = date === TOMORROW ? TODAY : date === TODAY ? YESTERDAY : date;
+  return {
+    date,
+    planClosed: false,
+    orderCount: 0,
+    isClosedDay: false,
+    attempt: null,
+    closesAt: paris("21:00", eve),
+    ...facts,
+  };
 }
 
-function attempt(outcome: AttemptTrace["outcome"], minutesAgo: number): AttemptTrace {
-  return { outcome, attemptedAt: new Date(NOW.getTime() - minutesAgo * MINUTE) };
+function attempt(outcome: AttemptTrace["outcome"], at: Date, minutesAgo: number): AttemptTrace {
+  return { outcome, attemptedAt: new Date(at.getTime() - minutesAgo * MINUTE) };
 }
 
 describe("l'état d'une journée du prévisionnel", () => {
@@ -61,11 +74,22 @@ describe("l'état d'une journée du prévisionnel", () => {
       moment("06:00"),
       "closedDay",
     ],
-    ["demain, manuel, avant l'alerte", day(TOMORROW, { orderCount: 3 }), moment("19:59"), "open"],
-    ["demain, manuel, à l'alerte", day(TOMORROW, { orderCount: 3 }), moment("20:00"), "overdue"],
-    ["demain, manuel, vide", day(TOMORROW), moment("22:00"), "open"],
+    ["demain, avant l'arrêt", day(TOMORROW, { orderCount: 3 }), moment("20:59"), "open"],
     [
-      "demain, manuel, fermé",
+      "demain, arrêt passé, non arrêté",
+      day(TOMORROW, { orderCount: 3 }),
+      moment("21:00"),
+      "overdue",
+    ],
+    ["demain, vide", day(TOMORROW), moment("22:00"), "open"],
+    [
+      "demain, sans heure limite posée",
+      day(TOMORROW, { orderCount: 3, closesAt: null }),
+      moment("23:00"),
+      "open",
+    ],
+    [
+      "demain, fermé",
       day(TOMORROW, { orderCount: 3, isClosedDay: true }),
       moment("22:00"),
       "closedDay",
@@ -77,35 +101,40 @@ describe("l'état d'une journée du prévisionnel", () => {
       "closed",
     ],
     [
-      "demain, auto, avant l'arrêt",
-      day(TOMORROW, { orderCount: 3 }),
-      moment("20:30", AUTO),
-      "open",
-    ],
-    ["demain, auto, à l'arrêt", day(TOMORROW, { orderCount: 3 }), moment("21:00", AUTO), "overdue"],
-    [
-      "demain, auto échoué",
-      day(TOMORROW, { orderCount: 3, attempt: attempt("failed", 2) }),
-      moment("21:02", AUTO),
+      "demain, arrêt automatique échoué",
+      day(TOMORROW, { orderCount: 3, attempt: attempt("failed", paris("21:02"), 2) }),
+      moment("21:02"),
       "overdue",
     ],
     [
-      "demain, auto en suspens depuis 10 min",
-      day(TOMORROW, { attempt: attempt("pending", 10) }),
-      moment("20:40", AUTO),
+      "demain, en suspens depuis 10 min",
+      day(TOMORROW, { attempt: attempt("pending", paris("21:10"), 10) }),
+      moment("21:10"),
       "open",
     ],
     [
-      "demain, auto en suspens depuis 16 min",
-      day(TOMORROW, { attempt: attempt("pending", 16) }),
-      moment("20:40", AUTO),
+      "demain, en suspens depuis 16 min",
+      day(TOMORROW, { attempt: attempt("pending", paris("21:16"), 16) }),
+      moment("21:16"),
       "overdue",
     ],
     [
-      "demain, auto vide (rien à arrêter)",
-      day(TOMORROW, { attempt: attempt("empty", 30) }),
-      moment("21:30", AUTO),
+      "demain, vide (rien à arrêter)",
+      day(TOMORROW, { attempt: attempt("empty", paris("21:30"), 30) }),
+      moment("21:30"),
       "open",
+    ],
+    [
+      "aujourd'hui, arrêt à 00:30 (rattrapage passé minuit), pas encore",
+      day(TODAY, { orderCount: 3, closesAt: paris("00:30") }),
+      moment("00:20"),
+      "open",
+    ],
+    [
+      "aujourd'hui, arrêt à 00:30 passé, non arrêté",
+      day(TODAY, { orderCount: 3, closesAt: paris("00:30") }),
+      moment("00:40"),
+      "overdue",
     ],
     [
       "plus tard, avec commandes, heure passée",

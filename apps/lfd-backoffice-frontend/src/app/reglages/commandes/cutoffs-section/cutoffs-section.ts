@@ -1,9 +1,8 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import type { OrderCutoffView } from '@lfd/contracts';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
-  FoldCalloutComponent,
   FoldCardComponent,
   FoldEmptyStateComponent,
   FoldIconComponent,
@@ -19,23 +18,21 @@ import { cutoffSentence, graceSentence } from './cutoff-format';
 type LoadState = 'loading' | 'ready' | 'error';
 
 /**
- * **La limite générale de la clientèle professionnelle** — Réglages ›
- * Commandes › Heure limite de commande.
+ * **L'heure limite générale** — Réglages › Commandes › Heure limite de
+ * commande. Pour tout le monde, et elle déclenche l'arrêt du plan de
+ * production pour le lendemain (Hugo, 2026-10-21 —
+ * `documentation/limites-de-commande/plan-une-seule-heure.md` §5).
  *
  * Une seule règle : la générale (décision de Hugo du 2026-10-21,
  * `documentation/limites-de-commande/schema-des-reglages.md` §4, point 4). Les
  * règles par point de retrait ou par jour sont retirées — le serveur les
  * refuse et n'en sert plus —, et l'écran ne les liste plus. La générale ne se
- * supprime pas d'ici : l'interrupteur l'éteint.
+ * supprime pas, et ne s'éteint plus : l'interrupteur est retiré le 2026-10-21.
  *
  * Le serveur ouvre la lecture sous `lfc_order_settings:read` et l'écriture
  * sous `lfc_order_settings:write` (plan, §3.4) : sans ce dernier, la règle se
  * lit et aucun geste ne promet un refus.
- *
- * `dormant` (lot O3, §8.1) : l'heure limite générale est désactivée. La
- * section reste lisible et modifiable — la règle est en base, et la
- * réactivation la remettra telle quelle — mais elle est grisée et le dit :
- * ni elle ni son rattrapage ne s'appliquent.
+
  */
 @Component({
   selector: 'app-cutoffs-section',
@@ -44,7 +41,6 @@ type LoadState = 'loading' | 'ready' | 'error';
     FoldCardComponent,
     FoldBadgeComponent,
     FoldButtonComponent,
-    FoldCalloutComponent,
     FoldEmptyStateComponent,
     FoldIconComponent,
     FoldLoadingStateComponent,
@@ -56,9 +52,6 @@ export class CutoffsSection {
   private readonly api = inject(OrderCutoffsService);
   private readonly panelHost = inject(FoldPanelHostService);
   private readonly permissions = inject(PermissionsStore);
-
-  /** L'heure limite générale est désactivée : la règle dort. */
-  readonly dormant = input(false);
 
   protected readonly canWrite = computed(() => this.permissions.can('lfc_order_settings:write'));
 

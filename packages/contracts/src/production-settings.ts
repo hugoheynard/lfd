@@ -1,70 +1,34 @@
 import { z } from "zod";
 
 /**
- * **Les réglages du fournil** — l'arrêt du plan et les jours fermés (plan
- * `documentation/production/arret-du-plan.md`, §2, Q5, Q6 ; lot A1).
- *
- * Un seul réglage pour la maison : la clôture est par journée, tous lieux
- * confondus. Les heures sont des heures de pendule d'Europe/Paris, `HH:MM`.
+ * **Les réglages du fournil** — l'arrêt du plan, en lecture, et les jours
+ * fermés (plan `documentation/production/arret-du-plan.md`). Les heures sont
+ * des heures de pendule d'Europe/Paris, `HH:MM`.
  */
-
-/** `auto` : le serveur arrête le plan du lendemain à `closeAt` ; `manual` : on alerte à `alertAt`. */
-export const productionCloseModeSchema = z.enum(["auto", "manual"]);
-export type ProductionCloseMode = z.infer<typeof productionCloseModeSchema>;
 
 /**
- * Charge d'écriture du réglage d'arrêt.
- *
- * La FORME seulement : une heure manquante pour son mode, mal formée ou hors
- * bornes, et une heure d'arrêt antérieure à l'heure limite de commande, sont
- * refusées par le domaine (400 / 409), avec un message qui nomme le cas.
- *
- * Les deux heures voyagent toujours : celle de l'autre mode est gardée, pour
- * qu'un aller-retour entre les modes ne la perde pas.
+ * **L'arrêt automatique**, tel que l'heure limite générale le fixe : `daysBefore`
+ * jours avant la journée servie, à `time`, rattrapage compris. `1` = la veille.
+ * Une limite à 22:00 la veille avec trois heures de rattrapage se dit « le
+ * jour même (`0`) à 01:00 ».
  */
-export const productionCloseSettingsPayloadSchema = z.object({
-  mode: productionCloseModeSchema,
-  closeAt: z.string().trim().nullable(),
-  alertAt: z.string().trim().nullable(),
-});
-export type ProductionCloseSettingsPayload = z.infer<typeof productionCloseSettingsPayloadSchema>;
-
-/** Le réglage d'arrêt tel qu'il est en vigueur. */
-export interface ProductionCloseSettingsView {
-  readonly mode: ProductionCloseMode;
-  /** L'heure d'arrêt automatique ; requise en `auto`. */
-  readonly closeAt: string | null;
-  /** L'heure d'alerte ; requise en `manual`. */
-  readonly alertAt: string | null;
-}
-
-/**
- * **L'heure limite de commande la plus tardive**, rattrapage compris, toutes
- * règles confondues (points de retrait, jours de la semaine).
- *
- * Exprimée comme une règle d'heure limite : `daysBefore` jours avant la journée
- * servie, à `time`. `1` = la veille — le jour où le plan s'arrête. Une heure
- * d'arrêt automatique ne peut pas la précéder (Q5).
- */
-export interface ProductionLatestOrderCutoffView {
+export interface ProductionAutomaticCloseView {
   readonly daysBefore: number;
   readonly time: string;
 }
 
-/** `GET /admin/production/settings`. */
+/**
+ * `GET /admin/production/settings`.
+ *
+ * Depuis le 2026-10-21, le fournil ne règle plus ni mode ni heure : le plan
+ * d'une journée s'arrête tout seul à la fin du rattrapage de l'heure limite
+ * générale (`documentation/limites-de-commande/plan-une-seule-heure.md` §5).
+ * La page le montre en lecture ; il se règle dans Réglages › Commandes ›
+ * Heure limite.
+ */
 export interface ProductionSettingsView {
-  readonly close: ProductionCloseSettingsView;
-  /**
-   * `null` : aucune heure limite n'est servie par le commerce — aucune règle
-   * posée, ou l'heure limite générale désactivée (`orderCutoffEnabled`).
-   */
-  readonly latestOrderCutoff: ProductionLatestOrderCutoffView | null;
-  /**
-   * L'heure limite générale est-elle active au commerce ? Désactivée (lot O3,
-   * 2026-10-14), plus rien ne borne l'heure d'arrêt : c'est l'arrêt du plan
-   * qui ferme la journée, et le mode automatique reste permis.
-   */
-  readonly orderCutoffEnabled: boolean;
+  /** `null` : aucune heure limite générale n'est posée — rien n'arrête le plan tout seul. */
+  readonly automaticClose: ProductionAutomaticCloseView | null;
   /** Les jours fermés d'aujourd'hui (compris) à plus tard, `AAAA-MM-JJ`, dans l'ordre. */
   readonly closedDays: readonly string[];
 }

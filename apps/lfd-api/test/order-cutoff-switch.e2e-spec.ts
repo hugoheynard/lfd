@@ -1,14 +1,15 @@
 import { randomUUID } from "node:crypto";
 /**
  * E2E du **lot O3** de `documentation/commandes/plan-reglages-commandes.md`
- * (§8, §8.1, 2026-10-14) : l'interrupteur de l'heure limite générale, et
- * l'arrêt du plan de production devenu une limite.
+ * (§8, §8.1, 2026-10-14) : l'arrêt du plan de production devenu une limite,
+ * et le jour même. L'interrupteur de l'heure limite générale, que ce fichier
+ * éprouvait aussi, est retiré le 2026-10-21
+ * (`limites-de-commande/plan-une-seule-heure.md` §5) : il prouve désormais
+ * qu'il ne coupe plus rien.
  *
  * Ce que seul le vrai SQL prouve :
- * - l'interrupteur est LU en base à chaque passation, et la règle reste en
- *   base pendant qu'il dort ;
- * - la boutique (`GET /fulfillment-days`) et le fournil (`GET
- *   /admin/production/settings`) lisent la même chose que la passation ;
+ * - une ligne résiduelle `enabled = false` n'éteint plus l'heure limite, ni à
+ *   la passation, ni au fournil (`GET /admin/production/settings`) ;
  * - **O5** : une commande ne passe plus sur un plan arrêté — ni par le client,
  *   ni par l'équipe. Ce test-là échouait avant le lot (201, la commande hors du
  *   compte à produire).
@@ -103,8 +104,22 @@ async function seedGeneralRule(): Promise<void> {
     .expect(204);
 }
 
-async function setEnabled(enabled: boolean): Promise<void> {
-  await staff().patch(ROUTE).send({ enabled }).expect(204);
+/**
+ * L'interrupteur tel qu'un geste d'avant le 2026-10-21 l'a laissé : coupé. La
+ * route ne l'écrit plus ; seule une ligne résiduelle peut encore le porter.
+ */
+async function leaveResidualSwitchOff(): Promise<void> {
+  await ctx.prisma.orderCutoffSettings.create({
+    data: {
+      key: "orders",
+      enabled: false,
+      sameDayAllowed: true,
+      updatedAt: new Date(),
+      updatedByStaffId: STAFF,
+      updatedByName: "Avant le retrait",
+      updatedByRole: "admin",
+    },
+  });
 }
 
 async function setSameDay(sameDayAllowed: boolean): Promise<void> {
@@ -154,63 +169,52 @@ async function closePlan(day: string): Promise<void> {
   await ctx.drain();
 }
 
-describe("l'interrupteur de l'heure limite générale", () => {
-  it("part activé, sans auteur, tant que personne ne l'a réglé", async () => {
+describe("l'interrupteur de l'heure limite générale, retiré le 2026-10-21", () => {
+  it("la vue ne le porte plus : le jour même seul, sans auteur tant que personne ne l'a réglé", async () => {
     const view = jsonBody<OrderCutoffSettingsView>(await staff().get(ROUTE).expect(200));
 
-    expect(view).toEqual({
-      enabled: true,
-      sameDayAllowed: false,
-      updatedAt: null,
-      updatedBy: null,
-    });
+    expect(view).toEqual({ sameDayAllowed: false, updatedAt: null, updatedBy: null });
   });
 
-  it("se désactive, se relit, et journalise la bascule — une seule fois", async () => {
-    await setEnabled(false);
-    await setEnabled(false);
+  it("refuse (400) une charge qui veut encore le couper, sans rien écrire", async () => {
+    await staff().patch(ROUTE).send({ enabled: false }).expect(400);
+
+    expect(await ctx.prisma.orderCutoffSettings.count()).toBe(0);
+  });
+
+  /**
+   * Régression par construction : coupée, l'heure limite laissait passer les
+   * commandes tardives ET n'arrêtait plus le plan. Une ligne résiduelle à
+   * `false` ne coupe plus rien.
+   */
+  it("une ligne résiduelle « désactivée » n'éteint plus l'heure limite, ni au fournil", async () => {
+    await seedGeneralRule();
+    await leaveResidualSwitchOff();
+    // Pour AUJOURD'HUI, la limite de la veille à 00:01 est franchie à toute heure.
+    const refused = await ctx
+      .asSub(MEMBER)
+      .post("/orders")
+      .send(order(serviceDay(0)))
+      .expect(409);
+    expect(refused.body).toMatchObject({ code: "orders.cutoff.past" });
+
+    const settings = await staff().get("/admin/production/settings").expect(200);
+    expect(settings.body).toMatchObject({ automaticClose: { daysBefore: 1, time: "00:01" } });
+  });
+
+  it("le jour même se pose, se relit, et se journalise une seule fois — sans l'interrupteur", async () => {
+    await setSameDay(true);
+    await setSameDay(true);
 
     const view = jsonBody<OrderCutoffSettingsView>(await staff().get(ROUTE).expect(200));
-    expect(view.enabled).toBe(false);
-    expect(view.updatedAt).not.toBeNull();
+    expect(view.sameDayAllowed).toBe(true);
     const facts = await ctx.prisma.activityEvent.findMany({
       where: { type: "order_cutoff_settings.updated" },
       select: { payload: true },
     });
     expect(facts).toEqual([
-      {
-        payload: {
-          enabled: false,
-          sameDayAllowed: false,
-          previous: { enabled: true, sameDayAllowed: false },
-        },
-      },
+      { payload: { sameDayAllowed: true, previous: { sameDayAllowed: false } } },
     ]);
-  });
-
-  it("désactivée, une commande passe malgré la limite générale ; réactivée, elle est refusée", async () => {
-    await seedGeneralRule();
-    // Pour AUJOURD'HUI, la limite de la veille à 00:01 est franchie à toute heure.
-    const today = serviceDay(0);
-    await setEnabled(false);
-    await setSameDay(true);
-
-    await ctx.asSub(MEMBER).post("/orders").send(order(today)).expect(201);
-
-    await setEnabled(true);
-    const refused = await ctx.asSub(MEMBER).post("/orders").send(order(today)).expect(409);
-    expect(refused.body).toMatchObject({ code: "orders.cutoff.past" });
-    // La règle a dormi, elle n'a pas bougé.
-    expect(await ctx.prisma.orderCutoff.count()).toBe(1);
-  });
-
-  it("désactivée, le fournil n'a plus d'heure limite à respecter, et le sait", async () => {
-    await seedGeneralRule();
-    await setEnabled(false);
-
-    const settings = await staff().get("/admin/production/settings").expect(200);
-
-    expect(settings.body).toMatchObject({ latestOrderCutoff: null, orderCutoffEnabled: false });
   });
 });
 
@@ -268,7 +272,6 @@ describe("l'arrêt du plan est une limite (O5)", () => {
   });
 
   it("la boutique ne propose plus une journée arrêtée", async () => {
-    await setEnabled(false);
     await setSameDay(true);
     const today = serviceDay(0);
     await closePlan(today);
@@ -283,8 +286,6 @@ describe("l'arrêt du plan est une limite (O5)", () => {
 
 describe("le jour même, réglage admin (§8.3)", () => {
   it("fermé par défaut : la boutique propose demain, et refuse aujourd'hui au client", async () => {
-    await setEnabled(false);
-
     const days = jsonBody<readonly FulfillmentDayView[]>(
       await ctx.http().get("/fulfillment-days").expect(200),
     );
@@ -303,8 +304,7 @@ describe("le jour même, réglage admin (§8.3)", () => {
     expect(refused.body).toMatchObject({ code: "orders.same_day_closed" });
   });
 
-  it("ouvert : la boutique propose aujourd'hui, heure limite désactivée", async () => {
-    await setEnabled(false);
+  it("ouvert : la boutique propose aujourd'hui, sans heure limite posée", async () => {
     await setSameDay(true);
 
     const days = jsonBody<readonly FulfillmentDayView[]>(

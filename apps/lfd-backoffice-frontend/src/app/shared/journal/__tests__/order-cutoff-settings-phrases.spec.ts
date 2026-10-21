@@ -44,7 +44,7 @@ describe('l’heure limite générale (order_cutoff_settings.updated)', () => {
   });
 
   it('une charge illisible garde une phrase neutre', () => {
-    expect(sentence(updated({}))).toBe('Colette Martin a réglé l’heure limite de commande');
+    expect(sentence(updated({}))).toBe('Colette Martin a réglé le jour même');
   });
 
   it('dit l’ouverture du jour même', () => {
@@ -57,5 +57,13 @@ describe('l’heure limite générale (order_cutoff_settings.updated)', () => {
         }),
       ),
     ).toBe('Colette Martin a autorisé les commandes pour le jour même');
+  });
+
+  /** La charge du 2026-10-21 : le jour même seul, l'interrupteur étant retiré. */
+  it('lit la charge sans interrupteur', () => {
+    const input = updated({ sameDayAllowed: false, previous: { sameDayAllowed: true } });
+
+    expect(sentence(input)).toBe('Colette Martin a fermé les commandes pour le jour même');
+    expect(renderFact(input).detail).toEqual([]);
   });
 });

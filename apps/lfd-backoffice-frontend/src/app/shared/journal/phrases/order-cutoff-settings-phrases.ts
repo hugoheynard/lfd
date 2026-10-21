@@ -4,13 +4,12 @@ import { recordOf } from '../payload-read';
 import { byActor, text, type Phrase, type PhraseFact, type Segment } from '../phrase';
 
 /**
- * **L'interrupteur de l'heure limite générale** (lot O3 de
- * `plan-reglages-commandes.md`, 2026-10-14) — le miroir de
+ * **Le jour même, et l'interrupteur retiré** — le miroir de
  * `order_cutoff_settings.updated` dans `@lfd/contracts`.
  *
- * La charge porte l'état posé ; la phrase dit l'effet, pas la case : une
- * heure limite désactivée laisse passer les commandes tardives jusqu'à l'arrêt
- * du plan.
+ * Depuis le 2026-10-21, la charge ne porte plus que le jour même ; les lignes
+ * d'avant portent aussi `enabled` (l'interrupteur de l'heure limite générale,
+ * lot O3), et leur phrase le dit toujours.
  */
 /** L'avant et l'après d'une clé booléenne, ou `null` si la charge ne les porte pas. */
 function change(fact: PhraseFact, key: string): { before: boolean; after: boolean } | null {
@@ -41,9 +40,19 @@ function changes(fact: PhraseFact): string[] {
   return said;
 }
 
-/** La charge porte l'avant et l'après des deux réglages. */
+/** La charge porte au moins l'avant et l'après du jour même. */
 function readable(fact: PhraseFact): boolean {
-  return change(fact, 'enabled') !== null && change(fact, 'sameDayAllowed') !== null;
+  return change(fact, 'sameDayAllowed') !== null;
+}
+
+/** Les clés que la phrase a dites : `enabled` seulement sur une ligne d'avant le 2026-10-21. */
+function saidKeys(fact: PhraseFact): string[] {
+  if (!readable(fact)) {
+    return [];
+  }
+  return change(fact, 'enabled') === null
+    ? ['sameDayAllowed', 'previous']
+    : ['enabled', 'sameDayAllowed', 'previous'];
 }
 
 function orderCutoffSettings(fact: PhraseFact): Segment[] {
@@ -51,20 +60,10 @@ function orderCutoffSettings(fact: PhraseFact): Segment[] {
   if (said.length > 0) {
     return [text(said.join(' et '))];
   }
-  return [
-    text(
-      readable(fact)
-        ? 'a réglé l’heure limite de commande sans la changer'
-        : 'a réglé l’heure limite de commande',
-    ),
-  ];
+  return [text(readable(fact) ? 'a réglé le jour même sans le changer' : 'a réglé le jour même')];
 }
 
 export const ORDER_CUTOFF_SETTINGS_PHRASES = {
   'order_cutoff_settings.updated': (fact) =>
-    byActor(
-      fact,
-      orderCutoffSettings(fact),
-      readable(fact) ? ['enabled', 'sameDayAllowed', 'previous'] : [],
-    ),
+    byActor(fact, orderCutoffSettings(fact), saidKeys(fact)),
 } satisfies Partial<Record<JournalFactType, Phrase>>;

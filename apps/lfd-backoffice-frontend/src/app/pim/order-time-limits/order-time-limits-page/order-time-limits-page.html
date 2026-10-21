@@ -18,11 +18,8 @@
       <!-- La règle générale du commerce, EN LECTURE : elle se règle ailleurs,
            sous un autre droit (décision de Hugo, 2026-10-21). -->
       @if (generalPhrase(); as phrase) {
-        <fold-callout [variant]="generalDisabled() ? 'warning' : 'info'">
+        <fold-callout variant="info">
           <strong>Toute la production</strong>&nbsp;: {{ phrase }}
-          @if (generalDisabled()) {
-            — <strong>désactivée</strong>, elle ne refuse aucune commande
-          }
           — se règle dans
           <a routerLink="/reglages/commandes/heure-limite">Réglages › Commandes › Heure limite</a>.
         </fold-callout>

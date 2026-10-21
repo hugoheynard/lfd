@@ -17,10 +17,14 @@ import { ProductionDayClosedEvent } from "../../../channels/commerce/production-
 import { PackingListDrawnEvent } from "../../../channels/packing/packing-list-drawn.event.js";
 import { ProductionDay } from "../../../domain/entities/production-day.js";
 import { ProductionDayClosedJournalEvent } from "../../../domain/events/production-day.events.js";
-import { ProductionDayEmptyError } from "../../../domain/errors/production-errors.js";
+import {
+  PlanClosedBeforeOrderCutoffError,
+  ProductionDayEmptyError,
+} from "../../../domain/errors/production-errors.js";
 import { ProductionDayRepository } from "../../../domain/ports/production-day.repository.js";
 import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
 import { RecordingDayLock } from "../../__tests__/batch-doubles.js";
+import { CutoffRules } from "../../__tests__/settings-doubles.js";
 import { InMemoryWithdrawals } from "../../__tests__/withdrawal-doubles.js";
 import { CloseProductionDayCommand } from "../close-production-day.command.js";
 import { CloseProductionDayHandler } from "../close-production-day.handler.js";
@@ -184,6 +188,7 @@ function subject(
   day: ProductionDay,
   rows: readonly ProducibleOrder[],
   withdrawals: InMemoryWithdrawals = new InMemoryWithdrawals(),
+  cutoffs: CutoffRules = new CutoffRules(),
 ) {
   const days = new Days(day);
   const calls: CommerceCall[] = [];
@@ -213,9 +218,60 @@ function subject(
         authorsKnownAs({ firstName: "Marie", lastName: "Dupont" }, "staff-1"),
       ),
       withdrawals,
+      cutoffs,
     ),
   };
 }
+
+/**
+ * Pas d'arrêt avant l'heure limite générale (Hugo, 2026-10-21 —
+ * `limites-de-commande/plan-une-seule-heure.md` §4 Q1, §5). `NOW` est 20:00 à
+ * Paris, la veille de `DAY`.
+ */
+describe("l'arrêt avant l'heure limite générale", () => {
+  const open = () => ProductionDay.open(ServiceDay.of(DAY));
+
+  it("est refusé avant la fin du rattrapage, sans balayer ni écrire", async () => {
+    const cutoffs = new CutoffRules([{ daysBefore: 1, time: "19:45", graceMinutes: 30 }]);
+    const { handler, days, calls, durable } = subject(open(), [order()], undefined, cutoffs);
+
+    const refusal = handler.execute(new CloseProductionDayCommand(DAY, "manual", "staff-1"));
+
+    await expect(refusal).rejects.toThrow(PlanClosedBeforeOrderCutoffError);
+    await expect(refusal).rejects.toThrow(
+      "Le plan du mardi 8 septembre s'arrête tout seul à l'heure limite générale, rattrapage compris : le lundi 7 septembre à 20:15.",
+    );
+    await expect(refusal).rejects.toThrow("Réglages › Commandes › Heure limite");
+    expect(calls).toEqual([]);
+    expect(days.saved).toBeNull();
+    expect(durable.facts).toEqual([]);
+  });
+
+  it("passe à la fin du rattrapage pile", async () => {
+    const cutoffs = new CutoffRules([{ daysBefore: 1, time: "19:30", graceMinutes: 30 }]);
+    const { handler } = subject(open(), [order()], undefined, cutoffs);
+
+    const closure = await handler.execute(new CloseProductionDayCommand(DAY, "manual", "staff-1"));
+
+    expect(closure.alreadyClosed).toBe(false);
+  });
+
+  it("passe sans heure limite posée : rien ne l'arrête seul", async () => {
+    const { handler } = subject(open(), [order()]);
+
+    expect((await handler.execute(new CloseProductionDayCommand(DAY))).alreadyClosed).toBe(false);
+  });
+
+  /** « Un arrêt déjà fait reste tel quel » : sa réannonce n'est pas un nouvel arrêt. */
+  it("laisse réannoncer une journée déjà arrêtée, même avant l'heure limite", async () => {
+    const closed = open();
+    closed.close([order()], new Set<string>(), EARLIER, null);
+    const cutoffs = new CutoffRules([{ daysBefore: 1, time: "23:00", graceMinutes: 0 }]);
+    const { handler } = subject(closed, [order()], undefined, cutoffs);
+
+    expect((await handler.execute(new CloseProductionDayCommand(DAY))).alreadyClosed).toBe(true);
+  });
+});
 
 describe("clore une journée", () => {
   it("inscrit les commandes, arrête le compte, et PUBLIE le fait", async () => {

@@ -166,23 +166,18 @@ describe("la règle générale du commerce, en lecture", () => {
   const GENERAL = `${LIMITS}/general-cutoff`;
 
   it("dit qu'il n'y en a pas quand le commerce n'en a aucune", async () => {
-    expect(jsonBody(await staff().get(GENERAL).expect(200))).toEqual({ enabled: true, rule: null });
+    expect(jsonBody(await staff().get(GENERAL).expect(200))).toEqual({ rule: null });
   });
 
-  it("montre la règle par défaut, et dit quand l'interrupteur la coupe", async () => {
+  it("montre la règle par défaut", async () => {
     await staff()
       .put("/admin/order-cutoffs/general")
       .send({ pickupAddressId: null, weekday: null, daysBefore: 1, time: "18:00", graceMinutes: 0 })
       .expect(204);
 
     expect(jsonBody(await staff().get(GENERAL).expect(200))).toEqual({
-      enabled: true,
       rule: { daysBefore: 1, time: "18:00", graceMinutes: 0 },
     });
-
-    await staff().patch("/admin/order-cutoff-settings").send({ enabled: false }).expect(204);
-
-    expect(jsonBody(await staff().get(GENERAL).expect(200))).toMatchObject({ enabled: false });
   });
 });
 

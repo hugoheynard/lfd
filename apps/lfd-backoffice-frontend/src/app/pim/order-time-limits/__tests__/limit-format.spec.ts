@@ -68,13 +68,12 @@ describe('generalCutoffPhrase', () => {
   it('dit la règle générale du commerce', () => {
     expect(
       generalCutoffPhrase({
-        enabled: true,
         rule: { daysBefore: 1, time: '18:00', graceMinutes: 0 },
       }),
     ).toBe('La veille à 18:00, rattrapage aucun');
   });
 
   it("rend null quand le commerce n'en a pas", () => {
-    expect(generalCutoffPhrase({ enabled: true, rule: null })).toBeNull();
+    expect(generalCutoffPhrase({ rule: null })).toBeNull();
   });
 });

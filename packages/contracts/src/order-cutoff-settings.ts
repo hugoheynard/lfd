@@ -1,18 +1,16 @@
 import { z } from "zod";
 
 /**
- * **L'interrupteur de l'heure limite générale** (Hugo, 2026-10-14 —
- * `documentation/commandes/plan-reglages-commandes.md`, §8 et §8.1, lot O3).
+ * **Le jour même** — Réglages › Commandes › Jour même (Hugo, 2026-10-14 pour
+ * le réglage, 2026-10-21 pour sa page).
  *
- * Désactivée, la règle du commerce (`OrderCutoff`) n'est plus servie : ni à la
- * passation, ni à la boutique (`GET /fulfillment-days`), ni au fournil (l'heure
- * d'arrêt n'est plus bornée). Elle reste en base : la réactiver la remet telle
- * quelle. Les limites PRODUIT, leur rattrapage, leurs dérogations et leur
- * surtaxe ne changent pas ; l'arrêt du plan ferme une journée dans tous les cas.
+ * Cette vue portait aussi l'interrupteur de l'heure limite générale (lot O3,
+ * 2026-10-14). Il est retiré le 2026-10-21 : l'heure limite déclenche l'arrêt
+ * du plan, elle est donc toujours en vigueur
+ * (`documentation/limites-de-commande/plan-une-seule-heure.md` §5). La colonne
+ * `enabled` reste en base, plus personne ne la lit ni ne l'écrit.
  */
 export interface OrderCutoffSettingsView {
-  /** `true` : la règle générale s'applique. */
-  readonly enabled: boolean;
   /**
    * Une commande peut-elle viser aujourd'hui ? `false` par défaut (§8.3, Hugo
    * 2026-10-14) : le délai minimum est ce réglage, jamais une règle en dur.
@@ -24,18 +22,17 @@ export interface OrderCutoffSettingsView {
   readonly updatedBy: string | null;
 }
 
-/** Le réglage tant que personne ne l'a posé : activée — rien ne s'ouvre au déploiement. */
+/** Le réglage tant que personne ne l'a posé : jour même fermé — rien ne s'ouvre au déploiement. */
 export const DEFAULT_ORDER_CUTOFF_SETTINGS: OrderCutoffSettingsView = {
-  enabled: true,
   sameDayAllowed: false,
   updatedAt: null,
   updatedBy: null,
 };
 
-/** `PATCH /admin/order-cutoff-settings` — les seules clés présentes changent, il en faut une. */
-export const orderCutoffSettingsPatchSchema = z
-  .object({ enabled: z.boolean().optional(), sameDayAllowed: z.boolean().optional() })
-  .refine((patch) => patch.enabled !== undefined || patch.sameDayAllowed !== undefined, {
-    message: "au moins un réglage : enabled ou sameDayAllowed",
-  });
+/**
+ * `PATCH /admin/order-cutoff-settings` — le jour même, seul réglage qui reste.
+ * Strict : une charge qui porte encore `enabled` (l'interrupteur retiré le
+ * 2026-10-21) est refusée plutôt qu'avalée en silence.
+ */
+export const orderCutoffSettingsPatchSchema = z.object({ sameDayAllowed: z.boolean() }).strict();
 export type OrderCutoffSettingsPatch = z.infer<typeof orderCutoffSettingsPatchSchema>;

@@ -58,7 +58,7 @@ export function byName(a: OrderTimeLimitView, b: OrderTimeLimitView): number {
  * La règle générale du commerce, en une phrase pour l'en-tête de la page.
  *
  * « Toute la production : la veille à 18:00, rattrapage aucun ». `null` quand
- * le commerce n'en a pas ; l'interrupteur se dit à part.
+ * le commerce n'en a pas.
  */
 export function generalCutoffPhrase(general: GeneralOrderCutoffView): string | null {
   const rule = general.rule;

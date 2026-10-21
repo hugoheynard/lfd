@@ -55,7 +55,7 @@ export {
   type DueThresholdKind,
   type SkuDueThresholds,
 } from "./due-thresholds.reader.js";
-// L'heure limite de commande, que l'arrêt automatique ne précède pas (A1, Q5).
+// L'heure limite générale, qui déclenche l'arrêt automatique du plan (2026-10-21).
 export { OrderCutoffRulesReader } from "./order-cutoff-rules.reader.js";
 export type { OrderCutoffRule } from "../../domain/services/latest-order-cutoff.js";
 // L'annulation staff (doc `documentation/commandes/annulation/annulation-par-le-staff.md`, C3.4,
@@ -70,9 +70,6 @@ export { OrderInscriptionReader } from "./order-inscription.reader.js";
 // (proposer, refuser tôt), et admettre une commande sous le verrou de la journée.
 export { ClosedPlansReader } from "./closed-plans.reader.js";
 export { PlanAdmissionDesk, type PlanAdmission } from "./plan-admission.desk.js";
-// L'interrupteur de l'heure limite générale, que la page Production › Réglages
-// dit : désactivée, plus rien ne borne l'heure d'arrêt (O3, B2).
-export { OrderCutoffSwitchReader } from "./order-cutoff-switch.reader.js";
 // La réouverture d'une journée (Hugo, 2026-10-14) : le fait que le commerce
 // écoute pour rendre `placed` les commandes que l'arrêt défait avait confirmées.
 export {

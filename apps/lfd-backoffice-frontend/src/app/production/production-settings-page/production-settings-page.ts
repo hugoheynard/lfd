@@ -1,9 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import type {
-  ProductionCloseMode,
-  ProductionLatestOrderCutoffView,
-  ProductionSettingsView,
-} from '@lfd/contracts';
+import { RouterLink } from '@angular/router';
+import type { ProductionAutomaticCloseView, ProductionSettingsView } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
   FoldButtonComponent,
@@ -16,13 +13,9 @@ import {
   FoldIconComponent,
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
-  FoldTimeComponent,
-  FoldViewToggleComponent,
-  type FoldViewToggleOption,
 } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
-import { NotifyService } from '../../notify.service';
 import { parisToday } from '../../shared/paris-today';
 import { DossierRecipientsCard } from '../dossier-recipients-card/dossier-recipients-card';
 import { ProductionSettingsService } from '../production-settings.service';
@@ -33,52 +26,40 @@ type LoadState =
   | { readonly status: 'error' }
   | { readonly status: 'ready'; readonly view: ProductionSettingsView };
 
-/** Les bornes que l'agrégat tient (plan, S4) ; rappelées, pas revérifiées. */
-const EARLIEST = '12:00';
-const LATEST = '23:55';
-/** « À cinq minutes près » : le tour du serveur passe toutes les cinq minutes. */
-const FIVE_MINUTES_IN_SECONDS = 300;
 const DAY_BEFORE = 1;
+const SAME_DAY = 0;
 
-/**
- * Pourquoi le mode automatique est impossible, ou `null` s'il ne l'est pas.
- *
- * Le plan s'arrête la VEILLE : sans heure limite, ou avec une heure limite le
- * jour même, aucune heure d'arrêt ne laisserait toutes les commandes dedans.
- *
- * Sauf quand l'heure limite générale est DÉSACTIVÉE au commerce (lot O3,
- * `plan-reglages-commandes.md` §8.1, B2) : l'arrêt du plan est alors la limite
- * — une commande qui arrive après est refusée, pas laissée hors du plan — et
- * rien ne le borne. Le serveur ne refusait déjà pas le mode automatique sans
- * heure limite (`refuseAutoWithout`, vérifié le 2026-10-14).
- */
-export function autoImpossibleReason(
-  cutoff: ProductionLatestOrderCutoffView | null,
-  orderCutoffEnabled = true,
-): string | null {
-  if (!orderCutoffEnabled) {
-    return null;
-  }
-  if (cutoff === null) {
-    return 'Aucune heure limite de commande n’est réglée : sans elle, rien ne garantit qu’un arrêt automatique laisse toutes les commandes du lendemain dans le plan. Le mode automatique est impossible.';
-  }
-  if (cutoff.daysBefore === 0) {
-    return `Les commandes restent ouvertes jusqu’au jour même, à ${cutoff.time} : un arrêt la veille laisserait des commandes hors du plan. Le mode automatique est impossible.`;
-  }
-  return null;
+/** « 23 h », « 23 h 30 » — l'heure comme l'équipe la dit. */
+function spokenTime(time: string): string {
+  const [hours = '', minutes = ''] = time.split(':');
+  const hour = String(Number(hours));
+  return minutes === '00' ? `${hour} h` : `${hour} h ${minutes}`;
 }
 
-/** « la veille à 18:30 », « 2 jours avant à 12:00 ». */
-export function cutoffLabel(cutoff: ProductionLatestOrderCutoffView): string {
+/**
+ * « la veille, 23 h (rattrapage compris) », « le jour même, 0 h 30 (…) » —
+ * l'arrêt automatique tel que l'heure limite générale le fixe.
+ */
+export function automaticCloseLabel(close: ProductionAutomaticCloseView): string {
   const when =
-    cutoff.daysBefore === DAY_BEFORE ? 'la veille' : `${String(cutoff.daysBefore)} jours avant`;
-  return `${when} à ${cutoff.time}`;
+    close.daysBefore === DAY_BEFORE
+      ? 'la veille'
+      : close.daysBefore === SAME_DAY
+        ? 'le jour même'
+        : `${String(close.daysBefore)} jours avant`;
+  return `${when}, ${spokenTime(close.time)} (rattrapage compris)`;
 }
 
 /**
  * **Production › Réglages** (plan `documentation/production/arret-du-plan.md`,
- * §2, Q5, Q6 ; lot A1) — comment le plan du lendemain s'arrête, et les jours
- * où le fournil ne produit pas.
+ * Q6 ; lot A1) — quand le plan du lendemain s'arrête, et les jours où le
+ * fournil ne produit pas.
+ *
+ * L'arrêt ne se règle plus ici (Hugo, 2026-10-21 —
+ * `limites-de-commande/plan-une-seule-heure.md` §5) : il tombe à l'heure
+ * limite générale, rattrapage compris, et la page le dit en lecture avec le
+ * lien vers Réglages › Commandes › Heure limite. Plus de mode, plus d'heure
+ * d'alerte.
  *
  * Sans `production_settings:write`, tout est en lecture seule : le serveur
  * refuserait de toute façon, et un champ qui promet une écriture refusée
@@ -99,86 +80,39 @@ export function cutoffLabel(cutoff: ProductionLatestOrderCutoffView): string {
     FoldIconComponent,
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
-    FoldTimeComponent,
-    FoldViewToggleComponent,
+    RouterLink,
   ],
   templateUrl: './production-settings-page.html',
   styleUrl: './production-settings-page.scss',
 })
 export class ProductionSettingsPage {
   private readonly api = inject(ProductionSettingsService);
-  private readonly notify = inject(NotifyService);
   private readonly permissions = inject(PermissionsStore);
 
   protected readonly canWrite = computed(() => this.permissions.can('production_settings:write'));
 
   protected readonly state = signal<LoadState>({ status: 'loading' });
-  protected readonly mode = signal<ProductionCloseMode>('manual');
-  protected readonly closeAt = signal('');
-  protected readonly alertAt = signal('');
-  protected readonly saving = signal(false);
-  protected readonly closeRefusal = signal<string | null>(null);
 
   protected readonly newDay = signal('');
   protected readonly dayBusy = signal(false);
   protected readonly dayRefusal = signal<string | null>(null);
 
   protected readonly today = parisToday();
-  protected readonly earliest = EARLIEST;
-  protected readonly latest = LATEST;
-  protected readonly step = FIVE_MINUTES_IN_SECONDS;
-  protected readonly boundsHint = `Entre ${EARLIEST} et ${LATEST}.`;
 
   private readonly view = computed(() => {
     const state = this.state();
     return state.status === 'ready' ? state.view : null;
   });
 
-  protected readonly autoImpossible = computed(() => {
-    const view = this.view();
-    return view === null
-      ? null
-      : autoImpossibleReason(view.latestOrderCutoff, view.orderCutoffEnabled);
-  });
-
-  /** L'heure limite générale est désactivée au commerce : plus rien ne borne l'arrêt. */
-  protected readonly cutoffOff = computed(() => this.view()?.orderCutoffEnabled === false);
-
-  protected readonly cutoffSentence = computed(() => {
-    const cutoff = this.view()?.latestOrderCutoff ?? null;
-    return cutoff === null ? null : `Dernière heure limite de commande : ${cutoffLabel(cutoff)}.`;
-  });
-
-  protected readonly modeOptions = computed((): readonly FoldViewToggleOption[] => {
-    const readOnly = !this.canWrite();
-    // Un réglage déjà en automatique reste sélectionnable : on doit pouvoir le lire.
-    const autoBlocked = this.autoImpossible() !== null && this.view()?.close.mode !== 'auto';
-    return [
-      { value: 'manual', label: 'Manuel', disabled: readOnly },
-      { value: 'auto', label: 'Automatique', disabled: readOnly || autoBlocked },
-    ];
+  /** « la veille, 23 h (rattrapage compris) », ou `null` sans heure limite posée. */
+  protected readonly automaticClose = computed(() => {
+    const close = this.view()?.automaticClose ?? null;
+    return close === null ? null : automaticCloseLabel(close);
   });
 
   protected readonly closedDays = computed(() =>
     (this.view()?.closedDays ?? []).map((date) => ({ date, label: dayLabelOf(date) })),
   );
-
-  protected readonly canSave = computed(() => {
-    const view = this.view();
-    if (view === null || !this.canWrite() || this.saving()) {
-      return false;
-    }
-    const hour = this.mode() === 'auto' ? this.closeAt() : this.alertAt();
-    if (hour === '') {
-      return false;
-    }
-    const close = view.close;
-    return (
-      this.mode() !== close.mode ||
-      this.closeAt() !== (close.closeAt ?? '') ||
-      this.alertAt() !== (close.alertAt ?? '')
-    );
-  });
 
   protected readonly canAddDay = computed(
     () =>
@@ -195,34 +129,6 @@ export class ProductionSettingsPage {
 
   protected retry(): void {
     void this.load();
-  }
-
-  protected onMode(value: string): void {
-    if (value === 'auto' || value === 'manual') {
-      this.mode.set(value);
-    }
-  }
-
-  protected async save(): Promise<void> {
-    if (!this.canSave()) {
-      return;
-    }
-    this.saving.set(true);
-    this.closeRefusal.set(null);
-    try {
-      // Les deux heures voyagent toujours : celle de l'autre mode est gardée.
-      await this.api.changeClose({
-        mode: this.mode(),
-        closeAt: this.closeAt() === '' ? null : this.closeAt(),
-        alertAt: this.alertAt() === '' ? null : this.alertAt(),
-      });
-      this.notify.success('Arrêt du plan enregistré.');
-      await this.load();
-    } catch (error) {
-      this.closeRefusal.set(httpErrorMessage(error, 'Le réglage n’a pas pu être enregistré.'));
-    } finally {
-      this.saving.set(false);
-    }
   }
 
   protected async addDay(): Promise<void> {
@@ -262,9 +168,6 @@ export class ProductionSettingsPage {
     try {
       const view = await this.api.settings();
       this.state.set({ status: 'ready', view });
-      this.mode.set(view.close.mode);
-      this.closeAt.set(view.close.closeAt ?? '');
-      this.alertAt.set(view.close.alertAt ?? '');
     } catch {
       this.state.set({ status: 'error' });
     }

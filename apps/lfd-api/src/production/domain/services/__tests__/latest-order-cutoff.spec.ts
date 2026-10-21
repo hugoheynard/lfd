@@ -1,10 +1,7 @@
+import { localToInstant } from "@lfd/contracts";
+
 import { HouseTime } from "../../value-objects/house-time.value-object.js";
-import {
-  closesBeforeCutoff,
-  describeCutoff,
-  latestOrderCutoff,
-  type OrderCutoffRule,
-} from "../latest-order-cutoff.js";
+import { planClosesAt, latestOrderCutoff, type OrderCutoffRule } from "../latest-order-cutoff.js";
 
 const rule = (daysBefore: number, time: string, graceMinutes = 0): OrderCutoffRule => ({
   daysBefore,
@@ -38,33 +35,23 @@ describe("latestOrderCutoff — la limite la plus tardive, toutes règles confon
   });
 });
 
-describe("closesBeforeCutoff — l'heure d'arrêt précède-t-elle la limite ?", () => {
-  const at = (time: string) => HouseTime.of(time, "close");
+/** Les dates sont le SUJET : comparées entre elles, jamais à l'horloge. */
+describe("planClosesAt — l'instant où le plan d'une journée s'arrête seul", () => {
+  const paris = (day: string, time: string): Date | null => localToInstant(day, time);
 
-  it("la veille : avant la limite oui, à la limite ou après non", () => {
-    const cutoff = { daysBefore: 1, time: at("18:00") };
-
-    expect(closesBeforeCutoff(at("17:59"), cutoff)).toBe(true);
-    expect(closesBeforeCutoff(at("18:00"), cutoff)).toBe(false);
-    expect(closesBeforeCutoff(at("21:00"), cutoff)).toBe(false);
+  it("sans règle, rien ne l'arrête seul", () => {
+    expect(planClosesAt(null, "2026-10-07")).toBeNull();
   });
 
-  it("une limite plus tôt que la veille ne gêne jamais, une limite le jour même toujours", () => {
-    expect(closesBeforeCutoff(at("12:00"), { daysBefore: 2, time: at("23:00") })).toBe(false);
-    expect(closesBeforeCutoff(at("23:55"), { daysBefore: 0, time: at("06:00") })).toBe(true);
+  it("à la fin du rattrapage de la veille, à l'heure de Paris", () => {
+    expect(planClosesAt(rule(1, "23:00", 30), "2026-10-07")).toEqual(paris("2026-10-06", "23:30"));
   });
-});
 
-describe("describeCutoff", () => {
-  it("dit la limite en mots", () => {
-    expect(describeCutoff({ daysBefore: 1, time: HouseTime.of("18:00", "close") })).toBe(
-      "la veille à 18:00",
-    );
-    expect(describeCutoff({ daysBefore: 0, time: HouseTime.of("01:00", "close") })).toBe(
-      "le jour même à 01:00",
-    );
-    expect(describeCutoff({ daysBefore: 2, time: HouseTime.of("20:00", "close") })).toBe(
-      "2 jours avant à 20:00",
-    );
+  it("un rattrapage qui passe minuit tombe le jour même", () => {
+    expect(planClosesAt(rule(1, "23:30", 60), "2026-10-07")).toEqual(paris("2026-10-07", "00:30"));
+  });
+
+  it("l'heure limite sautée au passage à l'heure d'été : pas d'instant", () => {
+    expect(planClosesAt(rule(1, "02:30"), "2026-03-30")).toBeNull();
   });
 });

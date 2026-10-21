@@ -467,16 +467,24 @@ export const ORDERS_PRODUCTION_FACTS = {
   /** La règle effacée, telle qu'elle décidait — elle n'emportait que son id avant le 2026-09-19. */
   "order_cutoff.removed": fact(cutoffRule(), [empty()]),
   /**
-   * **L'interrupteur de l'heure limite générale et le jour même** (lot O3,
-   * 2026-10-14) : l'état posé et celui qu'il remplace. Désactivée, la règle reste en base et n'est
-   * plus servie — le journal dit depuis quand une commande tardive passait.
+   * **Le jour même** : l'état posé et celui qu'il remplace. Jusqu'au
+   * 2026-10-21, la charge portait aussi l'interrupteur de l'heure limite
+   * générale (`enabled`, lot O3, 2026-10-14) ; il est retiré
+   * (`limites-de-commande/plan-une-seule-heure.md` §5), et les lignes écrites
+   * avant gardent leur forme — l'historique ci-dessous.
    */
   "order_cutoff_settings.updated": fact(
     payload({
-      enabled: z.boolean(),
       sameDayAllowed: z.boolean(),
-      previous: payload({ enabled: z.boolean(), sameDayAllowed: z.boolean() }),
+      previous: payload({ sameDayAllowed: z.boolean() }),
     }),
+    [
+      payload({
+        enabled: z.boolean(),
+        sameDayAllowed: z.boolean(),
+        previous: payload({ enabled: z.boolean(), sameDayAllowed: z.boolean() }),
+      }),
+    ],
   ),
   "order_cutoff_waiver.granted": fact(waiverDecision(), [waiverDecisionBeforeLabel()]),
   "order_cutoff_waiver.revoked": fact(waiverDecision(), [waiverDecisionBeforeLabel()]),

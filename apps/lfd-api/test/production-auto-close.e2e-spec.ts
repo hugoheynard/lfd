@@ -2,7 +2,9 @@
  * E2E du **tour de l'arrêt du plan** (plan
  * `documentation/production/arret-du-plan.md`, §3, §4, B2, S4, S7, S8,
  * lot A2) — la route machine que le cron du Worker appelle toutes les cinq
- * minutes.
+ * minutes. Depuis le 2026-10-21, l'heure limite générale déclenche tout
+ * (`limites-de-commande/plan-une-seule-heure.md` §5) : plus de mode, plus
+ * d'alerte du soir.
  *
  * L'horloge est fixée : les commandes se passent à l'heure réelle pour la
  * journée servie par défaut (dans une semaine), puis l'horloge saute à la
@@ -31,6 +33,7 @@ const EVE = addDays(SERVICE_DAY, -1);
 interface Report {
   readonly tomorrow: string;
   readonly outcome: string;
+  readonly todayOutcome: string;
   readonly todayOverdue: boolean;
 }
 
@@ -74,10 +77,11 @@ function admin(): request.Agent {
   return ctx.asSub(STAFF);
 }
 
-async function setAuto(): Promise<void> {
+/** L'heure limite générale, posée par la route de l'écran : la veille à 21:00. */
+async function setCutoff(graceMinutes = 0): Promise<void> {
   await admin()
-    .put("/admin/production/settings/close")
-    .send({ mode: "auto", closeAt: "21:00", alertAt: "20:00" })
+    .put("/admin/order-cutoffs/general")
+    .send({ daysBefore: 1, time: "21:00", graceMinutes })
     .expect(204);
 }
 
@@ -85,13 +89,18 @@ async function noticesOf(kind: string) {
   return ctx.prisma.staffNotification.findMany({ where: { kind } });
 }
 
-describe("mode automatique", () => {
-  it("à l'heure, arrête le plan du lendemain UNE fois, signé par le système", async () => {
+describe("l'arrêt automatique à l'heure limite générale", () => {
+  it("à l'heure limite, arrête le plan du lendemain UNE fois, signé par le système", async () => {
     await place(ctx, issued, [{ sku: CROISSANT, quantity: 4 }]);
-    await setAuto();
+    await setCutoff();
     clock.set(houseInstant(EVE, "21:03"));
 
-    expect(await tour()).toEqual({ tomorrow: SERVICE_DAY, outcome: "closed", todayOverdue: false });
+    expect(await tour()).toEqual({
+      tomorrow: SERVICE_DAY,
+      outcome: "closed",
+      todayOutcome: "nothing",
+      todayOverdue: false,
+    });
     expect((await tour()).outcome).toBe("nothing");
 
     const day = await ctx.prisma.productionDay.findUnique({ where: { serviceDay: SERVICE_DAY } });
@@ -111,9 +120,9 @@ describe("mode automatique", () => {
     });
   });
 
-  it("avant l'heure, ne fait rien", async () => {
+  it("avant l'heure limite, ne fait rien", async () => {
     await place(ctx, issued, [{ sku: CROISSANT, quantity: 4 }]);
-    await setAuto();
+    await setCutoff();
     clock.set(houseInstant(EVE, "20:58"));
 
     expect((await tour()).outcome).toBe("nothing");
@@ -121,7 +130,7 @@ describe("mode automatique", () => {
   });
 
   it("lendemain vide : « rien à arrêter » une fois, et plus aucune tentative", async () => {
-    await setAuto();
+    await setCutoff();
     clock.set(houseInstant(EVE, "21:00"));
 
     expect((await tour()).outcome).toBe("empty");
@@ -142,7 +151,7 @@ describe("mode automatique", () => {
 
   it("veille d'un jour fermé : ni arrêt, ni alerte", async () => {
     await place(ctx, issued, [{ sku: CROISSANT, quantity: 4 }]);
-    await setAuto();
+    await setCutoff();
     await admin()
       .post("/admin/production/settings/closed-days")
       .send({ date: SERVICE_DAY })
@@ -158,7 +167,7 @@ describe("mode automatique", () => {
 describe("la tentative restée en suspens (Q8)", () => {
   it("passé quinze minutes, une alerte dédiée, une seule, et aucune nouvelle tentative", async () => {
     await place(ctx, issued, [{ sku: CROISSANT, quantity: 4 }]);
-    await setAuto();
+    await setCutoff();
     // Le processus est mort entre la prise et l'issue : la trace reste `pending`.
     await ctx.prisma.productionAutoCloseAttempt.create({
       data: {
@@ -191,15 +200,25 @@ describe("la tentative restée en suspens (Q8)", () => {
   });
 });
 
-describe("mode manuel (le réglage de départ, alerte à 20:00)", () => {
-  it("passé l'heure, une seule alerte — et le plan n'est pas arrêté", async () => {
+describe("le rattrapage de l'heure limite, et son absence", () => {
+  /** Q3 (Hugo, 2026-10-21) : l'arrêt attend la FIN du rattrapage. */
+  it("attend la fin du rattrapage avant d'arrêter", async () => {
     await place(ctx, issued, [{ sku: CROISSANT, quantity: 4 }]);
-    clock.set(houseInstant(EVE, "20:10"));
+    await setCutoff(30);
 
-    expect((await tour()).outcome).toBe("alerted");
-    expect((await tour()).outcome).toBe("alerted");
+    clock.set(houseInstant(EVE, "21:20"));
+    expect((await tour()).outcome).toBe("nothing");
+    clock.set(houseInstant(EVE, "21:30"));
+    expect((await tour()).outcome).toBe("closed");
+  });
 
-    expect(await noticesOf("production.plan_not_arrested")).toHaveLength(1);
+  /** Régression du mode manuel retiré : plus d'alerte du soir. */
+  it("sans heure limite posée : ni arrêt, ni alerte du soir", async () => {
+    await place(ctx, issued, [{ sku: CROISSANT, quantity: 4 }]);
+    clock.set(houseInstant(EVE, "23:55"));
+
+    expect((await tour()).outcome).toBe("nothing");
+    expect(await noticesOf("production.plan_not_arrested")).toHaveLength(0);
     const day = await ctx.prisma.productionDay.findUnique({ where: { serviceDay: SERVICE_DAY } });
     expect(day?.closedAt ?? null).toBeNull();
   });
@@ -208,7 +227,7 @@ describe("mode manuel (le réglage de départ, alerte à 20:00)", () => {
 describe("le rattrapage (S4)", () => {
   it("le plan d'aujourd'hui ouvert avec des commandes : une alerte, jamais d'arrêt", async () => {
     await place(ctx, issued, [{ sku: CROISSANT, quantity: 4 }]);
-    await setAuto();
+    await setCutoff();
     clock.set(houseInstant(SERVICE_DAY, "07:00"));
 
     expect((await tour()).todayOverdue).toBe(true);

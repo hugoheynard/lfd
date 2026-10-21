@@ -40,8 +40,6 @@ const UNNAMED_SUBJECTS: Readonly<Record<string, string>> = {
   "order_opening.updated": "réglage unique : son sujet n'a pas d'autre nom que son type",
   "staff_suggestion_order.changed": "réglage unique : son sujet n'a pas d'autre nom que son type",
   "order_cutoff_settings.updated": "réglage unique : son sujet n'a pas d'autre nom que son type",
-  "production_settings.close_changed":
-    "réglage unique : son sujet n'a pas d'autre nom que son type",
   "payment_refund.unmatched":
     "un remboursement hors commande n'a d'autre nom que son `re_…`, qui est déjà son sujet",
 };

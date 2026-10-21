@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { clockTime, count, day, fact, payload, subjectLabel } from "./fact.js";
+import { clockTime, count, day, fact, payload, retired, subjectLabel } from "./fact.js";
 
 /**
  * **Les réglages du fournil** (plan `documentation/production/arret-du-plan.md`,
@@ -33,8 +33,13 @@ const dossierRecipient = () =>
   });
 
 export const PRODUCTION_SETTINGS_FACTS = {
-  /** Le mode ou une heure a changé. `before` est le réglage en vigueur, défaut compris. */
-  "production_settings.close_changed": fact(
+  /**
+   * Le mode ou une heure a changé. `before` est le réglage en vigueur, défaut compris.
+   * Retiré le 2026-10-21 : l'arrêt du plan suit l'heure limite générale, il
+   * n'a plus de mode ni d'heure à lui (`limites-de-commande/plan-une-seule-heure.md`
+   * §5). Les lignes écrites avant restent lisibles.
+   */
+  "production_settings.close_changed": retired(
     payload({ before: closeSettings(), after: closeSettings() }),
   ),
   /** Un jour où le fournil ne produit pas. */

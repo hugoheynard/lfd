@@ -1,6 +1,6 @@
 # L'arrêt du plan de production
 
-**État au 2026-10-06.** Remplace le plan de l’arrêt du plan (lots A0 à A3
+**État au 2026-10-06, arrêt réécrit le 2026-10-21.** Remplace le plan de l’arrêt du plan (lots A0 à A3
 bâtis le 2026-10-06, retiré ce jour-là — il vit dans l'historique git).
 
 > Ce que l'arrêt fait aux commandes (jour plus proposé, client refusé,
@@ -14,8 +14,14 @@ bâtis le 2026-10-06, retiré ce jour-là — il vit dans l'historique git).
 Tant qu'un plan n'est pas arrêté, rien ne part en fournée : pas d'heure de
 tirage, pas de liste à coliser, pas de tournée composée.
 
-Le geste se fait **la veille au soir**, pour le lendemain. Il peut se faire à
-la main ou tout seul, selon le réglage.
+**Depuis le 2026-10-21, l'heure limite générale déclenche tout** (décision de
+Hugo, [`../limites-de-commande/plan-une-seule-heure.md`](../limites-de-commande/plan-une-seule-heure.md)
+§5) : le plan de la journée J s'arrête **tout seul** à la fin du rattrapage de
+la règle générale pour J (« la veille, 23 h » + rattrapage). Il n'y a plus de
+mode manuel ou automatique, plus d'heure d'arrêt à part, plus d'alerte du
+soir. Un arrêt à la main **avant** cet instant est refusé ; après (un arrêt
+automatique qui a échoué), il reste ouvert. Rouvrir reste possible, et
+l'équipe saisit toujours « hors plan ».
 
 ## Ce que fait un arrêt
 
@@ -112,8 +118,8 @@ Ce qui **ne l'est pas** :
 - le drapeau « reçue hors plan » d'une commande saisie par l'équipe après
   l'arrêt : il reste posé ;
 - l'**arrêt automatique** : sa tentative du jour est déjà tracée, il ne
-  repasse pas — une journée rouverte s'arrête **à la main** (en mode manuel,
-  l'alerte repart à son heure).
+  repasse pas — une journée rouverte s'arrête **à la main** (son heure limite
+  est passée, l'arrêt à la main est donc permis).
 
 L'ordre des faits n'est pas garanti par la boîte d'envoi : chaque abonné ne
 défait que si la journée est **toujours ouverte** (`ClosedPlansReader`) ; le
@@ -132,27 +138,27 @@ fiche d'atelier (bandeau d'écart) ; son déménagement est au plan de lancement
 
 ## Le réglage — Production › Réglages
 
-| Mode                                       | Ce qu'on règle     | Ce qui se passe                                                                                       |
-| ------------------------------------------ | ------------------ | ----------------------------------------------------------------------------------------------------- |
-| **Manuel** (au départ, alerte à **20:00**) | une heure d'alerte | passé l'heure, si le plan du lendemain n'est pas arrêté, une alerte part et la colonne passe en rouge |
-| **Automatique**                            | une heure d'arrêt  | à l'heure, le serveur arrête le plan du lendemain (à cinq minutes près)                               |
+**Plus de réglage d'arrêt** depuis le 2026-10-21. La page affiche en lecture
+« Arrêt automatique à l'heure limite : la veille, 23 h (rattrapage compris) —
+se règle dans Réglages › Commandes › Heure limite », avec le lien
+(`GET admin/production/settings` rend `automaticClose: { daysBefore, time }`,
+rattrapage compris, ou `null` sans heure limite posée). La route `PUT
+admin/production/settings/close` est retirée. Les colonnes
+`production.production_settings.close_mode`, `close_at`, `alert_at` restent
+en base, ni lues ni écrites (aucune migration) ; le fait
+`production_settings.close_changed` est **retiré** du catalogue mais reste
+lisible au journal.
 
-Ce qui est refusé, avec un message qui le dit :
-
-- un mode sans son heure, une heure mal formée ;
-- une heure d'arrêt hors de **12:00 – 23:55** (passé minuit, « le lendemain »
-  deviendrait le surlendemain) ;
-- une heure d'arrêt **avant la dernière heure limite de commande** (rattrapage
-  compris), lue au commerce : arrêter plus tôt annulerait le paiement de
-  clients encore en train de commander. Si une règle permet de commander le
-  jour même, le mode automatique est impossible, et la page le dit.
+Un arrêt à la main avant l'heure limite (rattrapage compris) est refusé en 409,
+`production.day.before_order_cutoff`, **avant** le balayage des paiements :
+« Le plan du mardi 8 septembre s'arrête tout seul à l'heure limite générale,
+rattrapage compris : le lundi 7 septembre à 23:00. … Pour figer le plan plus
+tôt, avancez l'heure limite dans Réglages › Commandes › Heure limite. » Une
+journée déjà arrêtée se réannonce sans ce contrôle. Sans heure limite posée,
+rien n'arrête le plan tout seul et l'arrêt à la main reste ouvert.
 
 **Le calendrier des jours fermés du fournil** se tient sur la même page. La
 veille d'un jour fermé, ni arrêt ni alerte.
-
-Un seul réglage pour la maison, tous lieux confondus : la clôture est par
-journée. Chaque changement est journalisé (« … a réglé l'arrêt du plan :
-automatique, arrêt à 20:30 ; c'était manuel, alerte à 20:00 »).
 
 ## L'arrêt automatique et les alertes
 
@@ -160,15 +166,15 @@ Le Worker réveille l'API toutes les cinq minutes ; il appelle la route machine
 `POST admin/production/auto-close` (jeton du Worker, pas de droit staff). À
 chaque tour, à l'heure de Paris :
 
-| Situation                                                         | Ce qui se passe                                                                                                                                                            |
-| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Le lendemain est un jour fermé, ou déjà arrêté                    | rien                                                                                                                                                                       |
-| **Automatique**, heure d'arrêt passée                             | le vrai arrêt, **une seule tentative par journée** (trace `production.production_auto_close_attempt`, prise par une seule instance). Journal : « arrêté automatiquement ». |
-| … et le lendemain est vide                                        | alerte « Rien à arrêter pour le … : aucune commande »                                                                                                                      |
-| … et l'arrêt échoue                                               | alerte avec la raison ; **pas de nouvelle tentative** (relancer toutes les cinq minutes rappellerait Stripe sur une panne qui ne guérit pas seule)                         |
-| … et la tentative reste en cours plus de **15 minutes**           | alerte « L'arrêt automatique du plan du … n'a pas abouti »                                                                                                                 |
-| **Manuel**, heure d'alerte passée, lendemain avec commandes       | alerte « Le plan du … n'est pas arrêté »                                                                                                                                   |
-| Le plan **d'aujourd'hui** n'est pas arrêté et porte des commandes | alerte « Le plan d'aujourd'hui n'a pas été arrêté ». Jamais arrêté d'office : la fournée est déjà au four.                                                                 |
+| Situation                                                                                               | Ce qui se passe                                                                                                                                                            |
+| ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Le lendemain est un jour fermé, ou déjà arrêté, ou aucune heure limite n'est posée                      | rien                                                                                                                                                                       |
+| Fin du rattrapage de l'heure limite pour le lendemain passée                                            | le vrai arrêt, **une seule tentative par journée** (trace `production.production_auto_close_attempt`, prise par une seule instance). Journal : « arrêté automatiquement ». |
+| … et le lendemain est vide                                                                              | alerte « Rien à arrêter pour le … : aucune commande »                                                                                                                      |
+| … et l'arrêt échoue                                                                                     | alerte avec la raison ; **pas de nouvelle tentative** (relancer toutes les cinq minutes rappellerait Stripe sur une panne qui ne guérit pas seule)                         |
+| … et la tentative reste en cours plus de **15 minutes**                                                 | alerte « L'arrêt automatique du plan du … n'a pas abouti »                                                                                                                 |
+| L'arrêt d'**aujourd'hui** tombe aujourd'hui même (rattrapage qui passe minuit, limite « le jour même ») | même tentative que pour le lendemain (`todayOutcome`)                                                                                                                      |
+| Le plan **d'aujourd'hui** n'est pas arrêté, porte des commandes, et son arrêt tombait avant aujourd'hui | alerte « Le plan d'aujourd'hui n'a pas été arrêté ». Jamais arrêté d'office : la fournée est déjà au four.                                                                 |
 
 Les alertes vont dans la cloche et en push, aux personnes qui ont
 `production_count_stop`, **une par type et par journée** même avec plusieurs
@@ -190,8 +196,9 @@ l'arrêt automatique (`domain/services/forecast-day-state.ts`) :
 - **Bandeau rouge, en haut de la page, sur toutes les semaines** : le plan
   d'aujourd'hui n'est pas arrêté. Bouton « Arrêter le plan du … maintenant ».
 - **Bouton du soir**, toujours à la même place, sur toutes les semaines :
-  « Arrêter le plan du <lendemain> » (en mode automatique : « … maintenant
-  (avant <heure>) », un arrêt anticipé). Sans rien à arrêter, il reste,
+  avant l'heure limite, désactivé, « Arrêt automatique lundi à 23:00 »
+  (chaque colonne porte `closesAt`, calculé par le serveur) ; l'heure passée
+  sans arrêt, « Arrêter le plan du <lendemain> ». Sans rien à arrêter, il reste,
   désactivé : « Rien à arrêter » ou « Plan du … arrêté ».
 - **Les deux boutons suivent `production_count_stop:write`** (2026-10-07) :
   sans ce droit, le bandeau rouge reste — l'oubli est un fait sur la journée —
@@ -207,7 +214,7 @@ l'arrêt automatique (`domain/services/forecast-day-state.ts`) :
 | Droit                   | Ce qu'il donne                                                                                                                                                                                                                                                               |
 | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `production_count_stop` | arrêter le plan (soir, anticipé, rattrapage) ; recevoir les alertes                                                                                                                                                                                                          |
-| `production_settings`   | lire / modifier le mode, les heures et les jours fermés                                                                                                                                                                                                                      |
+| `production_settings`   | lire l'arrêt automatique ; lire / modifier les jours fermés                                                                                                                                                                                                                  |
 | `production_plan`       | lire le plan du soir. ⚠️ Son `write` ne donne **plus rien** : proposé à l'écran des rôles, décrit « N'ajoute rien » — incohérence assumée, voir [`droits-et-permissions/todo-ressources-en-lecture-seule.md`](../droits-et-permissions/todo-ressources-en-lecture-seule.md). |
 
 Les migrations ajoutent ces ressources sans les accorder : on les règle à
@@ -216,16 +223,18 @@ arrêtaient le plan.
 
 ## Où vit le code
 
-- Fournil (`apps/lfd-api/src/production/`) : réglage
-  `domain/entities/production-close-settings.ts`, jours fermés
+- Fournil (`apps/lfd-api/src/production/`) : instant d'arrêt
+  `domain/services/latest-order-cutoff.ts` (`planClosesAt`), refus d'un arrêt
+  anticipé `apps/lfd-api/src/production/domain/services/early-close.ts`, jours fermés
   `domain/entities/production-closed-day.ts`, tour
   `domain/services/auto-close-round.ts` et
   `application/commands/run-auto-close-round.handler.ts`, arrêt signé
   automatique `application/services/bus-automatic-day-closer.ts`, alertes
   `application/services/plan-arrest-bell.ts`, routes
   `http/production-settings.controller.ts` et `http/auto-close.controller.ts`.
-- Heure limite lue au commerce par le canal
-  `channels/commerce/order-cutoff-rules.reader.ts`.
+- Heure limite générale lue au commerce par le canal
+  `channels/commerce/order-cutoff-rules.reader.ts` (`production → b2b` reste
+  interdit) — par le tour, le prévisionnel, la clôture et la page.
 - Worker : `apps/lfd-api/container/worker.ts`.
 - Écrans : `apps/lfd-backoffice-frontend/src/app/production/previsionnel/`,
   `…/production/production-settings-page/`.
