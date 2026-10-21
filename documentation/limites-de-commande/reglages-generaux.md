@@ -121,6 +121,22 @@ commande sans société n'a pas de dérogation possible.
 Une dérogation utilisée déclenche la **surtaxe de retard** : §8 de
 [`architecture-heure-limite-de-commande.md`](architecture-heure-limite-de-commande.md).
 
+**À l'écran (2026-10-21)** : la page de l'heure limite a, sous l'heure, une
+section « Rattrapage » qui réunit la durée (réglée avec l'heure, sous
+`lfc_order_settings`), les dérogations (`cutoff-waivers-card`, sous
+`b2b_order_waivers:read`) et la surtaxe **en lecture**
+(`late-fee-summary-card` : montant et taux sous `b2b_late_fee:read` — sans ce
+droit la carte le dit et ne lit rien ; lien « Modifier dans Comptabilité »
+sous `b2b_late_fee:write`). La surtaxe se règle toujours en Comptabilité
+(`/comptabilite/surtaxe-de-retard`), dont l'écran renvoie à cette page.
+
+**Le devis du comptoir** (`POST admin/orders/quote`, 2026-10-21) signale
+l'heure limite du jour visé quand on lui donne `requestedDeliveryDate` :
+`cutoff: { status, until }` — `open` (jusqu'à `until`, grâce non comprise),
+`grace` (jusqu'à la fin du rattrapage), `closed`. Même décision que la
+passation, sans les dérogations : il dit l'état de la journée, il ne refuse
+rien (`OrderCutoffNotice`).
+
 ## 4. Le jour même
 
 Sa page depuis le 2026-10-21 : **Réglages › Commandes › Jour même**

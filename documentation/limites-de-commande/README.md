@@ -50,6 +50,11 @@ client, invité et équipe :
    `orders.cutoff.grace` (« appelez-nous »). Au-delà : `orders.cutoff.past`.
 4. **Rien nulle part → tout passe.**
 
+La même décision (`decideStrictestOrderCutoff`, exportée de la garde le
+2026-10-21) sert aussi ceux qui **annoncent** sans refuser : les suggestions
+(`keepOrderable`, qui ne garde qu'un article `open`) et le devis du comptoir
+(`cutoff` de `OrderQuoteView`, [`reglages-generaux.md`](reglages-generaux.md) §3).
+
 À côté de cette garde : le **jour même** non autorisé refuse
 (`orders.same_day_closed`), le **plan arrêté** refuse le client
 (`orders.production_plan_closed`, `order-plan-gate.service.ts` ; l'équipe est
@@ -106,6 +111,7 @@ flowchart LR
 | -------------------------------------------------------------------------------------- | ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`schema-des-reglages.md`](schema-des-reglages.md)                                     | 🗺️   | **Le schéma** (2026-10-21) : les huit réglages, le chemin d'une commande, ce qui rend le paramétrage incompréhensible, les questions à trancher (1 à 4 tranchées et bâties) |
 | [`plan-une-seule-heure.md`](plan-une-seule-heure.md)                                   | 📐   | **Plan bâti** (2026-10-21) : l'arrêt du plan du fournil suit l'heure limite — une seule heure ; interrupteur retiré, jour même sur sa page                                  |
+| [`plan-jour-meme-sur-stock.md`](plan-jour-meme-sur-stock.md)                           | 📐   | **Plan** (2026-10-21) : le jour même des particuliers sur le stock déclaré par le comptoir, aligné sur le réassort reçu                                                     |
 | [`reglages-generaux.md`](reglages-generaux.md)                                         | ✅   | **État** de l'heure limite générale : tables, interrupteur, jour même, dérogations, `orderUntil`, compte à rebours                                                          |
 | [`limites-produit.md`](limites-produit.md)                                             | ✅   | **État** de la limite par produit (règle entière, sans rattrapage), propagation, passation, « Préparé sur commande »                                                        |
 | [`architecture-heure-limite-de-commande.md`](architecture-heure-limite-de-commande.md) | 🟡   | Le **pourquoi** (2026-09-04) : trois états, grâce, dérogation, **surtaxe de retard**, fuseau                                                                                |

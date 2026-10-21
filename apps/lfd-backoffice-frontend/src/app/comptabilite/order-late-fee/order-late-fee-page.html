@@ -85,11 +85,20 @@
 
     <!-- Où se règle l'autre moitié du sujet. La surtaxe n'a de sens que face à
          une limite : sans limite, aucune commande n'est jamais tardive. -->
-    <fold-callout appearance="inset" variant="neutral">
-      Jusqu'à quand on prend commande — et le rattrapage accordé d'office — se règlent au
-      référentiel.
-      <a actions foldButton size="sm" emphasis="outline" routerLink="/pim/limites-de-commande">
-        Limites de commande
+    <!-- Le renvoi pointait le référentiel jusqu'au 2026-10-21 : l'heure et son
+         rattrapage vivent sur la page de l'heure limite, qui montre aussi
+         cette surtaxe en lecture (schéma des réglages, point 2). -->
+    <fold-callout appearance="inset" variant="neutral" data-cutoff-link>
+      Jusqu'à quand on prend commande, la durée du rattrapage et les dérogations se règlent sur la
+      page de l'heure limite.
+      <a
+        actions
+        foldButton
+        size="sm"
+        emphasis="outline"
+        routerLink="/reglages/commandes/heure-limite"
+      >
+        Heure limite de commande
       </a>
     </fold-callout>
   }

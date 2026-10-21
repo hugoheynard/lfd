@@ -58,6 +58,38 @@ describe("keepOrderable", () => {
     expect(kept).toEqual([]);
   });
 
+  /**
+   * Régression : la limite d'un article REMPLAÇAIT la règle du commerce dans
+   * les suggestions, alors que la passation prend la plus stricte depuis le
+   * 2026-10-21 — on suggérait un article qu'un clic ne pouvait plus commander.
+   */
+  it("ne suggère pas un article à limite plus tardive quand la règle du commerce est passée", () => {
+    const kept = keepOrderable({
+      candidates: [open],
+      inCart: new Set(),
+      target,
+      fallback: [COMMERCE_CLOSES_AT_NINE],
+      now: now(),
+    });
+    expect(kept).toEqual([]);
+  });
+
+  /** Régression : la grâce d'une limite d'article comptait encore — elle n'en a plus. */
+  it("écarte un article passé son heure même s'il porte une grâce résiduelle", () => {
+    const lateGrace = {
+      sku: "LATE_GRACE",
+      orderTimeLimit: { daysBefore: 1, time: "09:30", graceMinutes: 120 },
+    };
+    const kept = keepOrderable({
+      candidates: [lateGrace],
+      inCart: new Set(),
+      target,
+      fallback: [],
+      now: now(),
+    });
+    expect(kept).toEqual([]);
+  });
+
   it("n'oppose aucune heure tant qu'aucun jour n'est visé", () => {
     const kept = keepOrderable({
       candidates: [closed, open],

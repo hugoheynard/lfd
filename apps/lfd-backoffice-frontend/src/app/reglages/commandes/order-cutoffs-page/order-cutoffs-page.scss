@@ -3,3 +3,14 @@
   flex-direction: column;
   gap: var(--fold-space-lg);
 }
+
+.grace {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.duration {
+  margin: 0;
+  font-weight: 600;
+}

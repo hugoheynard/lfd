@@ -1,6 +1,7 @@
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 import type { OrderQuoteLineView, OrderQuotePayload, OrderQuoteView } from "@lfd/contracts";
 
+import { OrderCutoffNotice } from "../services/order-cutoff-notice.service.js";
 import { OrderDrafting } from "../services/order-drafting.service.js";
 import { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
 import { ensureOrderMember } from "../../domain/services/order-access.js";
@@ -37,6 +38,7 @@ export class QuoteOrderHandler implements IQueryHandler<QuoteOrderQuery, OrderQu
   constructor(
     private readonly drafting: OrderDrafting,
     private readonly guard: OrderGuardReader,
+    private readonly cutoffNotice: OrderCutoffNotice,
   ) {}
 
   async execute(query: QuoteOrderQuery): Promise<OrderQuoteView> {
@@ -66,8 +68,19 @@ export class QuoteOrderHandler implements IQueryHandler<QuoteOrderQuery, OrderQu
       })),
     );
 
+    const { requestedDeliveryDate } = query.payload;
     return {
       lines: lines.map(toQuoteLine),
+      // Un SIGNAL, pas un refus : le devis répond toujours, la passation seule
+      // refuse — mais par la même décision, pour qu'un devis ne promette plus
+      // ce que la caisse refusera (point 8, 2026-10-21).
+      cutoff:
+        requestedDeliveryDate === undefined
+          ? null
+          : await this.cutoffNotice.forDay(
+              query.payload.lines.map((line) => line.sku),
+              requestedDeliveryDate,
+            ),
       // Le sous-total est un MONTANT : il s'arrondit au centime, une fois par
       // ligne, exactement comme la commande le fera. Sommer des millicentimes
       // rendrait un devis mille fois trop cher — et un devis qui ne prédit pas

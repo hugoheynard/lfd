@@ -88,6 +88,11 @@ Chaque point est un fait du code, avec l'exemple qui le rend concret.
    l'écran de ①, avec un droit à elle ; ce qu'elle coûte (⑧, la surtaxe) se
    règle en Comptabilité, sous un troisième droit. Aucun écran ne montre le
    rattrapage qui s'appliquera vraiment à un panier, ni ce qu'il coûtera.
+   _Fait le 2026-10-21 :_ la page de l'heure limite a une section
+   « Rattrapage » sous l'heure — sa durée, les dérogations (`b2b_order_waivers`)
+   et la surtaxe **en lecture** (`b2b_late_fee:read`, lien « Modifier dans
+   Comptabilité » sous `b2b_late_fee:write`) ; l'écran de Comptabilité renvoie
+   à cette page ([`reglages-generaux.md`](reglages-generaux.md) §3).
 3. **L'échelle de ④ hérite CHAMP PAR CHAMP.** Une famille peut fixer les jours,
    le produit l'heure, la déclinaison le rattrapage : la limite d'une
    déclinaison est un assemblage de trois rangs. _Exemple : « 2 jours » (famille)
@@ -106,7 +111,12 @@ Chaque point est un fait du code, avec l'exemple qui le rend concret.
 7. **Un interrupteur qui ne coupe qu'un des deux globaux.** ② désactive ① ;
    le rang global de ④ continue de s'appliquer.
 8. **Le devis ne vérifie rien** : un devis peut être accepté puis refusé à la
-   passation.
+   passation. _Fait le 2026-10-21 pour le devis du comptoir_ (`POST
+admin/orders/quote`) : il prend `requestedDeliveryDate` (facultatif) et
+   rend `cutoff: { status: open|grace|closed, until }`, calculé par la même
+   décision que la passation (`decideStrictestOrderCutoff`) — un signal, pas un
+   refus. Le devis client (`POST /orders/quote`) ne le porte pas, et le devis
+   de la boutique (`POST /shop/quote`) ne connaît pas de jour : rien n'y change.
 9. **Ce qui est en base n'est pas ce qu'on croit.** En prod le 2026-10-20, on
    pensait l'heure limite « désactivée le 14 octobre » : elle ne l'était qu'en
    dev ; la prod n'a aucune ligne d'interrupteur, donc elle est activée par
@@ -151,7 +161,14 @@ Chaque point est un fait du code, avec l'exemple qui le rend concret.
   l'heure limite est toujours en vigueur (`OrderCutoffsInForce` ne lit plus
   `enabled`, colonne gardée). Le jour même ③ garde son réglage, sur sa page
   (Réglages › Commandes › Jour même).
-- **Le devis** : vérifie-t-il la limite ?
+- ✅ **Le devis** — tranché par Hugo le 2026-10-21, **bâti le 2026-10-21** :
+  il SIGNALE (sans refuser) l'état de l'heure limite pour le jour visé, par
+  la même décision que la passation (point 8). Les suggestions suivent aussi
+  cette décision depuis le même jour (`keepOrderable` faisait encore primer
+  la limite d'article).
+- ✅ **Le rattrapage réuni** — tranché par Hugo le 2026-10-21, **bâti le
+  2026-10-21** : une section « Rattrapage » sur la page de l'heure limite
+  (point 2) ; la surtaxe s'y lit, elle se règle en Comptabilité.
 - **Un écran de lecture unique** : pour un produit, un point et un jour, « la
   limite qui s'applique, et pourquoi ».
 

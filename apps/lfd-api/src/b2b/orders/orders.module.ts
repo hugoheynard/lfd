@@ -102,6 +102,7 @@ import { ShopCartController } from "./http/shop-cart.controller.js";
 import { ShopQuoteController } from "./http/shop-quote.controller.js";
 import { OrderOperations } from "./application/services/order-operations.service.js";
 import { OrderDrafting } from "./application/services/order-drafting.service.js";
+import { OrderCutoffNotice } from "./application/services/order-cutoff-notice.service.js";
 import { OrderPlanGate } from "./application/services/order-plan-gate.service.js";
 import { SameDayOrderReader } from "./domain/ports/same-day-order.reader.js";
 import { SettingsSameDayOrderReader } from "./infrastructure/settings-same-day-order.reader.js";
@@ -304,6 +305,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
   ],
   providers: [
     OrderDrafting,
+    OrderCutoffNotice,
     // L'arrêt du plan opposé à la passation (lot O3) ; ses deux ports viennent
     // du fournil par `ProductionDeskFeedModule`.
     OrderPlanGate,

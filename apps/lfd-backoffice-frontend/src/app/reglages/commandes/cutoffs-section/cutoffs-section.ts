@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  output,
+  signal,
+} from '@angular/core';
 import type { OrderCutoffView } from '@lfd/contracts';
 import {
   FoldBadgeComponent,
@@ -58,6 +65,13 @@ export class CutoffsSection {
   protected readonly state = signal<LoadState>('loading');
   protected readonly general = signal<OrderCutoffView | null>(null);
 
+  /**
+   * La règle lue, à chaque chargement : la section « Rattrapage » de la page
+   * en affiche la durée sans relire le serveur — une seconde lecture
+   * resterait en retard après « Modifier ».
+   */
+  readonly ruleLoaded = output<OrderCutoffView | null>();
+
   constructor() {
     void this.load();
   }
@@ -65,8 +79,10 @@ export class CutoffsSection {
   protected async load(): Promise<void> {
     this.state.set('loading');
     try {
-      this.general.set(await this.api.general());
+      const rule = await this.api.general();
+      this.general.set(rule);
       this.state.set('ready');
+      this.ruleLoaded.emit(rule);
     } catch {
       this.state.set('error');
     }

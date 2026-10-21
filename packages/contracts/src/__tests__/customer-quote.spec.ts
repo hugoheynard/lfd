@@ -15,6 +15,7 @@ import type { OrderQuoteView } from "../order.js";
  */
 const STAFF_QUOTE: OrderQuoteView = {
   subtotalCents: 2_400,
+  cutoff: { status: "grace", until: "2026-03-10T22:30:00.000Z" },
   lines: [
     {
       sku: "VIE-001",
@@ -75,6 +76,14 @@ describe("toCustomerQuote", () => {
     "floored",
   ])("ne rend pas « %s » au client", (field) => {
     expect(toCustomerQuote(STAFF_QUOTE).lines[0]).not.toHaveProperty(field);
+  });
+
+  /**
+   * Le signal d'heure limite (2026-10-21) est une vue du comptoir : `grace` dit
+   * qu'un rattrapage existe, et la grâce ne s'annonce jamais au client.
+   */
+  it("ne rend pas l'heure limite du devis au client", () => {
+    expect(toCustomerQuote(STAFF_QUOTE)).not.toHaveProperty("cutoff");
   });
 
   it("rend le prix, le tarif d'entrée et la grille tels quels", () => {

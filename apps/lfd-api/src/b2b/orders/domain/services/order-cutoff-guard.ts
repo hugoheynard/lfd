@@ -98,7 +98,7 @@ export function ensureWithinOrderCutoff(input: {
   readonly waiver: { readonly id: string } | null;
   readonly now: Date;
 }): string | null {
-  const decision = strictestOf(input);
+  const decision = decideStrictestOrderCutoff(input);
   if (decision.status === "open") {
     return null;
   }
@@ -117,8 +117,13 @@ export function ensureWithinOrderCutoff(input: {
  * ligne, puis la plus fermée du panier » revient à la plus fermée de
  * l'ensemble — calculée une fois. Un panier vide n'a rien à opposer : il sera
  * refusé ailleurs, et pas pour l'heure.
+ *
+ * Exportée pour que les lecteurs qui ANNONCENT sans refuser — les suggestions,
+ * le devis — décident exactement comme la passation : une seconde copie de la
+ * règle a déjà divergé une fois (les suggestions faisaient encore primer la
+ * limite d'article jusqu'au 2026-10-21).
  */
-function strictestOf(input: {
+export function decideStrictestOrderCutoff(input: {
   readonly lines: readonly LineOrderLimit[];
   readonly fallback: readonly OrderCutoffView[];
   readonly fulfillmentDate: string;
@@ -146,6 +151,9 @@ function strictestOf(input: {
 /**
  * La plus fermée de deux décisions, chacune avec sa grâce. À état égal en
  * grâce, celle dont la grâce se ferme la première : c'est elle qui refusera.
+ * À égalité ouverte, celle dont la limite tombe la première (une limite
+ * `null` n'oppose rien) : sans effet sur la passation, qui laisse passer
+ * toute décision ouverte, mais c'est l'heure que le devis annonce.
  */
 function stricterOf(a: OrderCutoffDecision, b: OrderCutoffDecision): OrderCutoffDecision {
   if (SEVERITY[b.status] !== SEVERITY[a.status]) {
@@ -153,6 +161,9 @@ function stricterOf(a: OrderCutoffDecision, b: OrderCutoffDecision): OrderCutoff
   }
   if (a.status === "grace" && a.graceEnd !== null && b.graceEnd !== null) {
     return b.graceEnd.getTime() < a.graceEnd.getTime() ? b : a;
+  }
+  if (a.status === "open" && b.limit !== null) {
+    return a.limit === null || b.limit.getTime() < a.limit.getTime() ? b : a;
   }
   return a;
 }

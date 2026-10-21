@@ -981,6 +981,7 @@ export type {
   OrderQuotePayload,
   OrderQuoteLineView,
   OrderQuoteView,
+  OrderQuoteCutoffView,
   CustomerOrderQuoteLineView,
   CustomerOrderQuoteView,
   CustomerPriceStepView,

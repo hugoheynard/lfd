@@ -1,0 +1,57 @@
+<fold-card data-late-fee-summary>
+  <fold-element-title
+    cardHeader
+    variant="title"
+    title="Surtaxe de retard"
+    subtitle="Ce qu'une dérogation ajoute au panier. Elle se règle en Comptabilité."
+  />
+
+  @switch (state()) {
+    @case ('forbidden') {
+      <p class="note" data-late-fee-forbidden>
+        Vous n'avez pas accès à la surtaxe de retard : elle se lit avec le droit « Surtaxe de retard
+        » de la Comptabilité.
+      </p>
+    }
+    @case ('loading') {
+      <fold-loading message="Chargement de la surtaxe…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Impossible de charger la surtaxe">
+        <button foldButton (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @default {
+      @if (amount(); as label) {
+        <dl class="facts" data-late-fee-value>
+          <div>
+            <dt>Montant</dt>
+            <dd>{{ label }}</dd>
+          </div>
+          <div>
+            <dt>Taux de TVA</dt>
+            <dd>{{ vatRate() ?? 'non choisi' }}</dd>
+          </div>
+        </dl>
+      } @else {
+        <p class="note" data-late-fee-none>
+          Aucune — une commande rattrapée ne coûte rien de plus.
+        </p>
+      }
+    }
+  }
+
+  @if (canEdit()) {
+    <div cardFooter class="foot">
+      <a
+        foldButton
+        emphasis="outline"
+        size="sm"
+        routerLink="/comptabilite/surtaxe-de-retard"
+        data-late-fee-edit
+      >
+        Modifier dans Comptabilité
+      </a>
+    </div>
+  }
+</fold-card>

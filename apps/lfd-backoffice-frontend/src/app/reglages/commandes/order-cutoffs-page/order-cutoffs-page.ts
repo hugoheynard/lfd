@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import type { OrderCutoffView } from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldCardComponent,
@@ -9,7 +10,9 @@ import {
 
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { CutoffWaiversCard } from '../cutoff-waivers-card/cutoff-waivers-card';
+import { GRACE_CHOICES } from '../cutoffs-section/cutoff-format';
 import { CutoffsSection } from '../cutoffs-section/cutoffs-section';
+import { LateFeeSummaryCard } from '../late-fee-summary-card/late-fee-summary-card';
 
 /**
  * **Heure limite de commande** — Réglages › Commandes
@@ -29,6 +32,15 @@ import { CutoffsSection } from '../cutoffs-section/cutoffs-section';
  *
  * L'interrupteur de l'heure limite générale est retiré (2026-10-21), et le
  * jour même a sa page (Réglages › Commandes › Jour même).
+ *
+ * ## La section « Rattrapage » (Hugo, 2026-10-21)
+ *
+ * Le rattrapage avait trois morceaux dans trois écrans (point 2 de
+ * `limites-de-commande/schema-des-reglages.md`) : sa durée, les dérogations
+ * qui ne valent que pendant lui, et ce qu'elles coûtent. Ils se lisent ici
+ * ensemble, sous l'heure, chacun sous son droit : la durée avec la règle
+ * (`lfc_order_settings`), les dérogations sous `b2b_order_waivers`, la
+ * surtaxe EN LECTURE sous `b2b_late_fee` — elle se règle en Comptabilité.
  */
 @Component({
   selector: 'app-order-cutoffs-page',
@@ -40,6 +52,7 @@ import { CutoffsSection } from '../cutoffs-section/cutoffs-section';
     FoldCardComponent,
     FoldElementTitleComponent,
     FoldPageLayoutComponent,
+    LateFeeSummaryCard,
     RouterLink,
   ],
   templateUrl: './order-cutoffs-page.html',
@@ -50,4 +63,20 @@ export class OrderCutoffsPage {
 
   protected readonly seesWaivers = computed(() => this.permissions.can('b2b_order_waivers:read'));
   protected readonly seesCatalogue = computed(() => this.permissions.can('pim_catalog:read'));
+
+  /** La règle générale telle que la section de l'heure l'a lue ; `undefined` avant. */
+  protected readonly general = signal<OrderCutoffView | null | undefined>(undefined);
+
+  /** La durée du rattrapage en clair, ou `null` tant que l'heure n'est pas lue. */
+  protected readonly graceDuration = computed(() => {
+    const rule = this.general();
+    if (rule === undefined) {
+      return null;
+    }
+    if (rule === null) {
+      return "Aucun — l'heure limite générale n'est pas posée.";
+    }
+    const choice = GRACE_CHOICES.find((option) => option.value === rule.graceMinutes);
+    return choice?.label ?? `${rule.graceMinutes} minutes`;
+  });
 }

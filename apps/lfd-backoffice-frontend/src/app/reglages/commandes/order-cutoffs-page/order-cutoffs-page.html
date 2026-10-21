@@ -6,11 +6,33 @@
   </p>
 
   <div class="blocks">
-    <app-cutoffs-section />
+    <app-cutoffs-section (ruleLoaded)="general.set($event)" />
 
-    @if (seesWaivers()) {
-      <app-cutoff-waivers-card />
-    }
+    <section class="grace" data-grace-section>
+      <fold-element-title
+        variant="caps"
+        title="Rattrapage"
+        subtitle="Après l'heure, un temps où la commande est encore refusée mais où une dérogation peut la laisser passer — moyennant la surtaxe."
+      />
+
+      <fold-card data-grace-duration>
+        <fold-element-title
+          cardHeader
+          variant="title"
+          title="Durée du rattrapage"
+          subtitle="Se règle avec l'heure limite générale, ci-dessus."
+        />
+        @if (graceDuration(); as label) {
+          <p class="duration">{{ label }}</p>
+        }
+      </fold-card>
+
+      @if (seesWaivers()) {
+        <app-cutoff-waivers-card />
+      }
+
+      <app-late-fee-summary-card />
+    </section>
 
     @if (seesCatalogue()) {
       <fold-card data-pim-link>

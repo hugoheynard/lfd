@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import type { OrderLateFeePayload, OrderLateFeeView, StaffPermission } from '@lfd/contracts';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -152,5 +153,26 @@ describe("l'écran de surtaxe de retard", () => {
     expect(page['ratesUnavailable']()).toBe(true);
     // Et surtout : on n'accuse pas le taux d'être orphelin faute d'avoir la liste.
     expect(page['orphanRate']()).toBe(false);
+  });
+
+  /** Le renvoi pointait le référentiel ; l'heure et son rattrapage vivent aux Réglages (2026-10-21). */
+  it('renvoie à la page de l’heure limite', async () => {
+    TestBed.configureTestingModule({
+      imports: [OrderLateFeePage],
+      providers: [
+        provideRouter([]),
+        { provide: OrderLateFeeService, useValue: { read: async () => null } },
+        { provide: VatRateHttpApi, useValue: { list: async () => [] } },
+        { provide: NotifyService, useValue: { success: () => undefined, error: () => undefined } },
+        { provide: PermissionsStore, useValue: { can: () => true } },
+      ],
+    });
+    const fixture = TestBed.createComponent(OrderLateFeePage);
+    // Le renvoi n'apparaît qu'une fois le réglage lu : on attend le chargement.
+    await fixture.componentInstance['load']();
+    fixture.detectChanges();
+
+    const link = (fixture.nativeElement as HTMLElement).querySelector('[data-cutoff-link] a');
+    expect(link?.getAttribute('href')).toBe('/reglages/commandes/heure-limite');
   });
 });

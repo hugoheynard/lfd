@@ -195,6 +195,7 @@
   "test/order-customer-cancel.e2e-spec.ts": 14568,
   "test/order-cutoffs.e2e-spec.ts": 12711,
   "test/order-delivery-vat.e2e-spec.ts": 3500,
+  "test/order-quote-cutoff.e2e-spec.ts": 4000,
   "test/order-guest-cancel.e2e-spec.ts": 10911,
   "test/order-handover-proof.e2e-spec.ts": 6126,
   "test/order-opening.e2e-spec.ts": 7528,

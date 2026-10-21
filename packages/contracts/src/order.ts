@@ -14,6 +14,7 @@ import type { CartAdjustment } from "./cart-adjustment.js";
 import type { DeliveryVatMode } from "./order-delivery-vat.js";
 import type { LateFeeAdjustment } from "./order-late-fee.js";
 import type { SettlementRegime } from "./order-sheet.js";
+import type { OrderCutoffStatus } from "./order-cutoff.js";
 import { exposedHandoverToken } from "./order-settlement.values.js";
 import { contentLocales } from "./platform-content.defaults.js";
 
@@ -1091,6 +1092,16 @@ export const orderQuotePayloadSchema = z.object({
    * n'est pas un panier (cf. {@link quoteQuantitySchema}).
    */
   lines: z.array(quoteLineInputSchema).min(1).max(MAX_ORDER_LINES),
+  /**
+   * Le jour de retrait/livraison visé, s'il est déjà choisi — la même forme
+   * que `requestedDeliveryDate` à la passation. Absent : le devis ne dit rien
+   * de l'heure limite (`cutoff: null`). Ajouté le 2026-10-21 (point 8 de
+   * `limites-de-commande/schema-des-reglages.md`).
+   */
+  requestedDeliveryDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/u, "date de retrait/livraison (AAAA-MM-JJ)")
+    .optional(),
 });
 export type OrderQuotePayload = z.infer<typeof orderQuotePayloadSchema>;
 
@@ -1205,8 +1216,32 @@ export function toCustomerQuote(view: OrderQuoteView): CustomerOrderQuoteView {
   };
 }
 
+/**
+ * **Où en est l'heure limite** pour le jour visé par un devis — un SIGNAL,
+ * jamais un refus : le devis répond toujours, et seule la passation refuse.
+ *
+ * Calculé par la même décision que la passation (la plus stricte entre la
+ * règle générale et la limite de chaque article) : un devis accepté puis
+ * refusé à la caisse était le point 8 de `schema-des-reglages.md`.
+ */
+export interface OrderQuoteCutoffView {
+  /** `open` passe ; `grace` ne passe qu'avec une dérogation ; `closed` ne passe plus. */
+  readonly status: OrderCutoffStatus;
+  /**
+   * ISO 8601. `open` : l'instant limite (grâce non comprise), ou `null` s'il
+   * n'y a rien à opposer ; `grace` : la fin du rattrapage ; `closed` : `null`.
+   */
+  readonly until: string | null;
+}
+
 export interface OrderQuoteView {
   readonly lines: readonly OrderQuoteLineView[];
+  /**
+   * L'heure limite du jour visé, ou `null` quand le devis n'en nomme aucun
+   * (`requestedDeliveryDate` absent). Vue du **staff** seulement : le devis
+   * client ({@link toCustomerQuote}) ne la porte pas.
+   */
+  readonly cutoff: OrderQuoteCutoffView | null;
   /**
    * Le sous-total **HT** des lignes résolues.
    *
