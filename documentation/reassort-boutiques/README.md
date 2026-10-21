@@ -8,7 +8,8 @@
 > comptoir aussi (lot R1b, 2026-10-21), sans effet encore sur la boutique. La
 > **demande en cours** est enregistrée depuis le lot R1c (2026-10-21). Le
 > **fournil envoie ses propres réassorts**, à part, depuis le lot R1d
-> (2026-10-21). Ce document décrit ce qui existe, vérifié
+> (2026-10-21). L'écran du comptoir est **une table de tous les produits**
+> depuis le lot R1e (2026-10-21). Ce document décrit ce qui existe, vérifié
 > dans le code le 2026-10-21. La conception
 > complète, lots et questions ouvertes compris, est dans
 > [`plan-reapprovisionnement.md`](plan-reapprovisionnement.md).
@@ -276,13 +277,20 @@ plein service » ; un reçu par réassort ; la saisie de secours devient un
   `PATCH :siteId/resupplies/:resupplyId/lines/:sku` (un écart),
   `POST|PATCH|DELETE :siteId/:day/lines…` (le sans commande). Le point est
   dans chaque `where` : un réassort d'un autre point est introuvable (404).
-- **L'écran** : `apps/lfd-backoffice-frontend/src/app/comptoir/reassort-boutique-page/`,
-  pour le point et la journée du bandeau — « Réceptionner les réassorts »
+- **L'écran** (refait au lot R1e, 2026-10-21, « pense comptoir, un clic ») :
+  `apps/lfd-backoffice-frontend/src/app/comptoir/reassort-boutique-page/`,
+  pour le point et la journée du bandeau, sans titre propre (l'onglet le
+  dit). En tête, seulement s'il y en a, « Réceptionner les réassorts »
   (`resupply-receptions-card/` : les réassorts envoyés qui visent la journée,
-  « au plus tôt » du jour comme « pour demain » de la veille, attendus en
-  lecture et un bouton ; puis « Réceptionné par X à HH:MM » et l'écart par
-  ligne), le tableau « Stock estimé du jour », et « Réassort sans commande »
-  replié en bas (`unordered-receipt-card/`).
+  un bouton chacun, puis « Réceptionné par X à HH:MM » et l'écart par ligne).
+  Puis UNE table de tous les produits publiés (`resupply-stock-table/`) :
+  stock du jour (somme des reçus réceptionnés), état OK · Faible · Rupture
+  en un clic (ligne rouge ou orange, en tête du tri, une rupture place le
+  curseur dans « Au plus tôt »), « Au plus tôt » et « Pour demain » saisis
+  dans la case (la demande en cours de R1c) avec des pas +1/+5/+10,
+  « Envoyer au plus tôt (N) » / « Envoyer pour demain (N) », et le reçu sans
+  commande dans le menu de la ligne. Une recherche ; **pas de puces de
+  catégorie** : `ResupplyArticleView` ne porte pas la famille.
 
 ### Le stock estimé
 

@@ -1,6 +1,5 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
-import { By } from '@angular/platform-browser';
 import type {
   ResupplyArticleView,
   ResupplyReceiptLineView,
@@ -21,12 +20,8 @@ import { HandoverQueueStore } from '../../handover-shop/handover-queue.store';
 import { parisToday } from '../../shared/paris-today';
 import { ReassortBoutiquePage } from './reassort-boutique-page';
 import { ResupplyReceiptsService } from './resupply-receipts.service';
-import { ResupplyReceptionsCard } from './resupply-receptions-card/resupply-receptions-card';
-import { AsapDraftAdder } from './asap-draft-adder/asap-draft-adder';
 import { SiteResuppliesService } from './site-resupplies.service';
 import { SiteStockAlertsService } from './site-stock-alerts.service';
-import { StockAlertsCard } from './stock-alerts-card/stock-alerts-card';
-import { UnorderedReceiptCard } from './unordered-receipt-card/unordered-receipt-card';
 
 /**
  * Le réassort boutique (J1, refait au lot R2 le 2026-10-21) : un point de
@@ -279,16 +274,6 @@ async function mount(
 const root = (fixture: ComponentFixture<ReassortBoutiquePage>): HTMLElement =>
   fixture.nativeElement as HTMLElement;
 
-function unorderedCard(fixture: ComponentFixture<ReassortBoutiquePage>): UnorderedReceiptCard {
-  const card: unknown = fixture.debugElement.query(
-    By.css('app-unordered-receipt-card'),
-  ).componentInstance;
-  if (!(card instanceof UnorderedReceiptCard)) {
-    throw new Error('la carte du réassort sans commande manque');
-  }
-  return card;
-}
-
 function clickOn(fixture: ComponentFixture<ReassortBoutiquePage>, selector: string): void {
   const button = root(fixture).querySelector<HTMLButtonElement>(selector);
   if (button === null) {
@@ -298,93 +283,62 @@ function clickOn(fixture: ComponentFixture<ReassortBoutiquePage>, selector: stri
 }
 
 describe('ReassortBoutiquePage', () => {
-  it('lit le point ouvert dans la bande pour aujourd’hui, et dit le vide', async () => {
+  it('lit le point ouvert dans la bande pour aujourd’hui, et montre tous les produits', async () => {
     const { fixture, api } = await mount(['handover_counter:read']);
 
     expect(api.calls).toEqual([`read site_v ${parisToday()}`]);
-    expect(root(fixture).textContent).toContain('Rien de reçu pour cette journée');
-    expect(root(fixture).querySelector('[data-resupply-add]')).toBeNull();
+    expect(root(fixture).querySelectorAll('[data-resupply-row]').length).toBe(ARTICLES.length);
+    // Rien à réceptionner : pas de carte en tête.
+    expect(root(fixture).querySelector('app-resupply-receptions-card')).toBeNull();
   });
 
-  it('montre le stock estimé du jour, somme des reçus, sans colonne « commandé »', async () => {
+  it('montre le stock du jour, somme des reçus, sans colonne « commandé »', async () => {
     const api = new FakeReceipts();
     api.unordered = [{ sku: 'CRO', label: 'Croissant', receivedQuantity: 2 }];
     api.receptions = [{ ...expected('r1', 12) }];
     await api.receiveResupply('site_v', 'r1');
     const { fixture } = await mount(['handover_counter:read'], api);
 
-    const row = root(fixture).querySelector('[data-resupply-stock] [data-resupply-line="CRO"]');
+    const row = root(fixture).querySelector('[data-resupply-row="CRO"]');
     expect(row?.textContent).toContain('Croissant');
-    expect(row?.querySelector('[data-resupply-estimated]')?.textContent?.trim()).toBe('14');
+    expect(row?.querySelector('[data-resupply-stock]')?.textContent?.trim()).toBe('14');
     expect(root(fixture).querySelector('thead')?.textContent).not.toContain('ommandé');
-    expect(root(fixture).textContent).toContain('le stock estimé est le reçu');
   });
 
-  it('réceptionne un réassort d’un geste, puis dit qui et quand, et corrige un écart', async () => {
+  it('met les réassorts à réceptionner EN TÊTE, et réceptionne d’un geste', async () => {
     const api = new FakeReceipts();
     api.receptions = [expected('r1', 12)];
     const { fixture } = await mount(['handover_counter:read', 'handover_counter:write'], api);
-    const reception = '[data-resupply-reception="r1"]';
+    const cards = root(fixture).querySelector('.cards');
 
-    expect(root(fixture).querySelector(`${reception} [data-resupply-correct-received]`)).toBeNull();
-    expect(root(fixture).querySelector('[data-resupply-stock] [data-resupply-line]')).toBeNull();
-    clickOn(fixture, `${reception} [data-resupply-receive]`);
+    expect(cards?.firstElementChild?.tagName.toLowerCase()).toBe('app-resupply-receptions-card');
+    clickOn(fixture, '[data-resupply-reception="r1"] [data-resupply-receive]');
     await settle(fixture);
 
-    expect(root(fixture).querySelector(`${reception} [data-resupply-receive]`)).toBeNull();
+    expect(api.calls.filter((c) => !c.startsWith('read'))).toEqual(['receive-resupply r1']);
     expect(
-      root(fixture).querySelector(`${reception} [data-resupply-received-by]`)?.textContent,
-    ).toContain('Réceptionné par Lou à');
-    expect(
-      root(fixture).querySelector('[data-resupply-line="CRO"] [data-resupply-estimated]')
-        ?.textContent,
+      root(fixture).querySelector('[data-resupply-row="CRO"] [data-resupply-stock]')?.textContent,
     ).toContain('12');
-
-    const card: unknown = fixture.debugElement.query(
-      By.css('app-resupply-receptions-card'),
-    ).componentInstance;
-    const view = api.receptions[0];
-    const line = view?.lines[0];
-    if (!(card instanceof ResupplyReceptionsCard) || view === undefined || line === undefined) {
-      throw new Error('la carte de réception manque');
-    }
-    card['setDraft'](view, line, 10);
-    await settle(fixture);
-    clickOn(fixture, `${reception} [data-resupply-correct-received]`);
-    await settle(fixture);
-
-    expect(api.calls.filter((c) => !c.startsWith('read'))).toEqual([
-      'receive-resupply r1',
-      'correct-received r1 CRO 10',
-    ]);
-    expect(
-      root(fixture).querySelector('[data-resupply-line="CRO"] [data-resupply-estimated]')
-        ?.textContent,
-    ).toContain('10');
   });
 
-  it('en lecture seule, ni « Réceptionner » ni saisie sans commande', async () => {
+  it('en lecture seule, ni « Réceptionner » ni geste sur la table', async () => {
     const api = new FakeReceipts();
     api.receptions = [expected('r1', 12)];
     const { fixture } = await mount(['handover_counter:read'], api);
 
     expect(root(fixture).querySelector('[data-resupply-receive]')).toBeNull();
-    expect(root(fixture).querySelector('[data-resupply-add]')).toBeNull();
+    expect(root(fixture).querySelector('fold-view-toggle')).toBeNull();
   });
 
-  it('suit le point de la bande : un changement relit la liste, et le titre le nomme', async () => {
+  it('suit le point de la bande, sans titre à elle : l’onglet le nomme déjà', async () => {
     const { fixture, api, band } = await mount(['handover_counter:read']);
-    const title = (): string => fixture.componentInstance['title']();
-
-    expect(title()).toBe('Réassort Village');
-    expect(root(fixture).querySelector('fold-listbox')).toBeNull();
 
     band.activePlace.set(LABO);
     await settle(fixture);
 
     expect(api.calls).toEqual([`read site_v ${parisToday()}`, `read site_l ${parisToday()}`]);
-    expect(title()).toBe('Réassort Labo');
-    expect(root(fixture).textContent).toContain('Réassort Labo');
+    expect(root(fixture).textContent).not.toContain('Réassort Labo');
+    expect(root(fixture).querySelector('fold-listbox')).toBeNull();
   });
 
   it('suit la journée de la bande : ses flèches relisent la liste', async () => {
@@ -397,14 +351,13 @@ describe('ReassortBoutiquePage', () => {
     expect(root(fixture).querySelector('input[type="date"]')).toBeNull();
   });
 
-  it('sans point ouvert, s’appelle « Réassort » et invite à en choisir un dans le bandeau', async () => {
+  it('sans point ouvert, invite à en choisir un dans le bandeau', async () => {
     const { fixture, api } = await mount(
       ['handover_counter:read'],
       new FakeReceipts(),
       counter(null),
     );
 
-    expect(fixture.componentInstance['title']()).toBe('Réassort');
     expect(api.calls).toEqual([]);
     expect(root(fixture).querySelector('[data-resupply-no-place]')?.textContent).toContain(
       'bandeau du comptoir',
@@ -420,115 +373,26 @@ describe('ReassortBoutiquePage', () => {
       'Impossible de charger le réassort',
     );
   });
-});
 
-describe('ReassortBoutiquePage — ruptures et stocks faibles (R1b)', () => {
-  const WRITE: readonly StaffPermission[] = ['handover_counter:read', 'handover_counter:write'];
-
-  function click(fixture: ComponentFixture<ReassortBoutiquePage>, selector: string): void {
-    const button = root(fixture).querySelector<HTMLButtonElement>(selector);
-    if (button === null) {
-      throw new Error(`bouton absent : ${selector}`);
-    }
-    button.click();
-  }
-
-  it('dit en tête les alertes vivantes du point, et qu’elles n’agissent pas sur la boutique', async () => {
+  it('relit les alertes et la demande en cours avec la liste, et après une réception', async () => {
+    const api = new FakeReceipts();
+    api.receptions = [expected('r1', 12)];
     const alerts = new FakeAlerts();
-    await alerts.declare('site_v', 'CRO', 'out_of_stock');
+    await alerts.declare('site_v', 'PAC', 'out_of_stock');
     alerts.calls.length = 0;
     const { fixture } = await mount(
-      ['handover_counter:read'],
-      new FakeReceipts(),
+      ['handover_counter:read', 'handover_counter:write'],
+      api,
       counter(),
       alerts,
     );
 
     expect(alerts.calls).toEqual(['list site_v']);
-    const card = root(fixture).querySelector('[data-stock-alerts]');
-    expect(card?.querySelector('[data-stock-alert="CRO"]')?.textContent).toContain('Rupture');
-    expect(card?.querySelector('[data-stock-alert="CRO"]')?.textContent).toContain('Croissant');
-    expect(card?.querySelector('[data-stock-alerts-no-effect]')?.textContent).toContain(
-      'Sans effet sur la boutique',
-    );
-    // Lecture seule : aucun geste.
-    expect(root(fixture).querySelector('[data-stock-alert-actions]')).toBeNull();
-    expect(root(fixture).querySelector('[data-stock-alerts-declare]')).toBeNull();
-  });
-
-  it('déclare depuis le catalogue (combobox), puis redéclare et lève', async () => {
-    const { fixture, alerts } = await mount(WRITE);
-    const card: unknown = fixture.debugElement.query(
-      By.css('app-stock-alerts-card'),
-    ).componentInstance;
-    if (!(card instanceof StockAlertsCard)) {
-      throw new Error('la carte des alertes manque');
-    }
-    card['pickedSku'].set('PAC');
-    await settle(fixture);
-
-    click(fixture, '[data-stock-alerts-declare] [data-stock-alert-declare="low"]');
-    await settle(fixture);
-    expect(root(fixture).querySelector('[data-stock-alert="PAC"]')?.textContent).toContain(
-      'Stock faible',
-    );
-
-    click(fixture, '[data-stock-alert="PAC"] [data-stock-alert-declare="out_of_stock"]');
-    await settle(fixture);
-    click(fixture, '[data-stock-alert="PAC"] [data-stock-alert-lift]');
-    await settle(fixture);
-
-    expect(alerts.calls.filter((c) => !c.startsWith('list'))).toEqual([
-      'declare PAC low',
-      'declare PAC out_of_stock',
-      'lift alert_PAC',
-    ]);
-    expect(root(fixture).querySelector('[data-stock-alert="PAC"]')).toBeNull();
-  });
-
-  it('déclare depuis une ligne du stock, et relit les alertes après une réception', async () => {
-    const api = new FakeReceipts();
-    api.unordered = [{ sku: 'CRO', label: 'Croissant', receivedQuantity: 2 }];
-    const { fixture, alerts } = await mount(WRITE, api);
-
-    click(fixture, '[data-resupply-line="CRO"] [data-stock-alert-declare="out_of_stock"]');
-    await settle(fixture);
-    expect(alerts.calls).toContain('declare CRO out_of_stock');
     expect(
-      root(fixture).querySelector('[data-resupply-line="CRO"] [data-stock-alert-lift]'),
-    ).not.toBeNull();
-
-    const before = alerts.calls.filter((c) => c.startsWith('list')).length;
-    const card = unorderedCard(fixture);
-    card['pickedSku'].set('PAC');
-    card['pickedQuantity'].set(6);
-    await card['add']();
+      root(fixture).querySelector('[data-resupply-row]')?.getAttribute('data-resupply-row'),
+    ).toBe('PAC');
+    clickOn(fixture, '[data-resupply-reception="r1"] [data-resupply-receive]');
     await settle(fixture);
-    expect(alerts.calls.filter((c) => c.startsWith('list')).length).toBe(before + 1);
-  });
-
-  it('propose d’ajouter l’article en alerte à la demande « au plus tôt » en cours (R1c)', async () => {
-    const alerts = new FakeAlerts();
-    await alerts.declare('site_v', 'CRO', 'out_of_stock');
-    const { fixture, resupplies } = await mount(WRITE, new FakeReceipts(), counter(), alerts);
-
-    click(fixture, '[data-stock-alert="CRO"] [data-asap-draft-open]');
-    await settle(fixture);
-    const adder: unknown = fixture.debugElement.query(
-      By.css('[data-stock-alert="CRO"] app-asap-draft-adder'),
-    ).componentInstance;
-    if (!(adder instanceof AsapDraftAdder)) {
-      throw new Error('la proposition manque');
-    }
-    adder['quantity'].set(12);
-    await settle(fixture);
-    click(fixture, '[data-stock-alert="CRO"] [data-asap-draft-add]');
-    await settle(fixture);
-
-    expect(resupplies.calls).toEqual(['add site_v asap CRO 12']);
-    // La carte de commande, qui partage le même état, montre aussitôt la demande.
-    expect(
-      root(fixture).querySelector('[data-resupply-draft="asap"] [data-resupply-draft-line="CRO"]'),
-    ).not.toBeNull();
+    expect(alerts.calls).toEqual(['list site_v', 'list site_v']);
   });
 });

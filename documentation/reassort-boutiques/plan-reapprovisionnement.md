@@ -450,7 +450,7 @@ réceptionné est refusé (409 `resupply.order.already_received`), réceptionner
 avant sa journée aussi (409 `resupply.receipt.day_not_yet_come`). État dans
 le [README](README.md).
 
-### R1e — Une table de tous les produits, pensée « comptoir, un clic » (Hugo, 2026-10-21)
+### R1e ✅ — Une table de tous les produits, pensée « comptoir, un clic » (Hugo, 2026-10-21 ; bâti le 2026-10-21, non commité)
 
 « Au niveau de l'écran, on ferait mieux d'avoir une table avec tous les
 produits, avec le stock actuel. » — « Et les boutons de déclaration rupture /
@@ -485,3 +485,13 @@ La page Réassort du point (bandeau) remplace ses cartes par :
 
 Aucun changement serveur attendu : tout ce qu'il faut existe (R1–R2). Bâti
 juste après R1d (même page).
+
+✅ **Bâti le 2026-10-21**, front seul : `ResupplyStockTable`
+(`comptoir/reassort-boutique-page/resupply-stock-table/`) ; le titre
+« Réassort <point> » est retiré (l'onglet du bandeau le dit, Hugo) ; la carte
+« Réceptionner les réassorts » passe en tête, seulement s'il y en a ; les
+cartes « Commander au fournil » et « Réassort sans commande » sont
+supprimées (la table les remplace). **Non bâti : les puces de catégorie** —
+`ResupplyArticleView` ne porte que `sku` et `name`, la famille n'arrive pas
+au comptoir ; il faut l'ajouter à la route `admin/resupply-receipts/articles`
+(manque serveur, à décider). La recherche est là.

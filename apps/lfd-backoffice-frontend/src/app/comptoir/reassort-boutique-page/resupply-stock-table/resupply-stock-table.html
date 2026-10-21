@@ -1,0 +1,181 @@
+<div class="stock-table">
+  <fold-search
+    placeholder="Chercher un produit"
+    ariaLabel="Chercher un produit"
+    [value]="query()"
+    (valueChange)="query.set($event)"
+    [resultCount]="visibleRows().length"
+    resultLabel="produits"
+  />
+
+  @if (alertFailure(); as failure) {
+    <fold-callout variant="alert" announce>{{ failure }}</fold-callout>
+  }
+  @if (resupplyFailure(); as failure) {
+    <fold-callout variant="alert" announce>{{ failure }}</fold-callout>
+  }
+  @if (unorderedFailure(); as failure) {
+    <fold-callout variant="alert" announce>{{ failure }}</fold-callout>
+  }
+
+  <table class="lines" data-resupply-stock-table>
+    <caption class="sr">
+      Stock du jour et réassort, par produit
+    </caption>
+    <thead>
+      <tr>
+        <th scope="col">Produit</th>
+        <th scope="col" class="num">Stock du jour</th>
+        <th scope="col">État</th>
+        <th scope="col">Au plus tôt</th>
+        <th scope="col">Pour demain</th>
+        @if (canWrite()) {
+          <th scope="col"><span class="sr">Actions</span></th>
+        }
+      </tr>
+    </thead>
+    <tbody>
+      @for (row of visibleRows(); track row.sku) {
+        <tr
+          [attr.data-resupply-row]="row.sku"
+          [class.out]="row.state === 'out_of_stock'"
+          [class.low]="row.state === 'low'"
+        >
+          <td>
+            {{ row.name }}
+            <span class="muted">{{ row.sku }}</span>
+          </td>
+          <td class="num" data-resupply-stock>{{ row.stock }}</td>
+          <td>
+            @if (canWrite()) {
+              <fold-view-toggle
+                [attr.data-resupply-state]="row.sku"
+                [ariaLabel]="'État de ' + row.name"
+                [options]="stateOptions"
+                [value]="row.state"
+                (valueChange)="setState(row, $event)"
+              />
+            } @else {
+              {{ row.state === 'ok' ? 'OK' : row.state === 'low' ? 'Faible' : 'Rupture' }}
+            }
+          </td>
+          @for (target of targets; track target) {
+            <td>
+              @if (canWrite()) {
+                <div
+                  class="quantity"
+                  [attr.data-resupply-asap]="target === 'asap' ? row.sku : null"
+                  [attr.data-resupply-tomorrow]="target === 'tomorrow' ? row.sku : null"
+                  (focusout)="commit(target, row)"
+                  (keydown.enter)="commit(target, row)"
+                >
+                  <fold-number-input
+                    size="sm"
+                    [value]="quantityOf(target, row)"
+                    (valueChange)="setQuantity(target, row, $event)"
+                    [min]="0"
+                    integer
+                    [disabled]="resuppliesPending()"
+                  />
+                  @for (quantity of steps; track quantity) {
+                    <button
+                      foldButton
+                      type="button"
+                      emphasis="soft"
+                      intent="neutral"
+                      size="sm"
+                      [disabled]="resuppliesPending()"
+                      (click)="step(target, row, quantity)"
+                    >
+                      +{{ quantity }}
+                    </button>
+                  }
+                </div>
+              } @else {
+                {{ target === 'asap' ? row.asap : row.tomorrow }}
+              }
+            </td>
+          }
+          @if (canWrite()) {
+            <td class="num">
+              <fold-dropdown placement="bottom-end" ariaLabel="Autres gestes">
+                <button
+                  foldPopoverTrigger="menu"
+                  foldButton
+                  type="button"
+                  emphasis="soft"
+                  intent="neutral"
+                  size="sm"
+                  aria-label="Autres gestes"
+                >
+                  <fold-icon name="more-vertical" [size]="16" />
+                </button>
+                <fold-dropdown-item icon="plus" (selected)="openUnordered(row)">
+                  {{
+                    row.unordered === null
+                      ? '+ reçu sans commande'
+                      : 'Reçu sans commande (' + row.unordered + ')'
+                  }}
+                </fold-dropdown-item>
+              </fold-dropdown>
+              @if (unorderedSku() === row.sku) {
+                <div class="quantity" data-resupply-unordered-editor>
+                  <fold-number-input
+                    size="sm"
+                    label="Reçu sans commande"
+                    [value]="unorderedQuantity()"
+                    (valueChange)="unorderedQuantity.set($event)"
+                    [min]="1"
+                    integer
+                  />
+                  <button
+                    foldButton
+                    type="button"
+                    size="sm"
+                    [disabled]="unorderedPending()"
+                    (click)="saveUnordered(row)"
+                  >
+                    Enregistrer
+                  </button>
+                  <button
+                    foldButton
+                    type="button"
+                    emphasis="soft"
+                    intent="neutral"
+                    size="sm"
+                    (click)="closeUnordered()"
+                  >
+                    Annuler
+                  </button>
+                </div>
+              }
+            </td>
+          }
+        </tr>
+      }
+    </tbody>
+  </table>
+
+  @if (canWrite()) {
+    <div class="send">
+      <button
+        foldButton
+        type="button"
+        data-resupply-send-asap
+        [disabled]="asapCount() === 0 || resuppliesPending()"
+        (click)="send('asap')"
+      >
+        Envoyer au plus tôt ({{ asapCount() }})
+      </button>
+      <button
+        foldButton
+        type="button"
+        data-resupply-send-tomorrow
+        [disabled]="tomorrowCount() === 0 || resuppliesPending()"
+        (click)="send('tomorrow')"
+      >
+        Envoyer pour demain ({{ tomorrowCount() }})
+      </button>
+    </div>
+  }
+</div>

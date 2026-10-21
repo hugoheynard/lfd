@@ -11,7 +11,6 @@ import type { ResupplyArticleView, ResupplyReceiptView } from '@lfd/contracts';
 import {
   FoldCalloutComponent,
   FoldCardComponent,
-  FoldElementTitleComponent,
   FoldEmptyStateComponent,
   FoldIconComponent,
   FoldLoadingStateComponent,
@@ -20,14 +19,11 @@ import {
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { HandoverQueueStore } from '../../handover-shop/handover-queue.store';
-import { ResupplyOrderCard } from './resupply-order-card/resupply-order-card';
 import { ResupplyReceiptsService } from './resupply-receipts.service';
 import { ResupplyReceptionsCard } from './resupply-receptions-card/resupply-receptions-card';
+import { ResupplyStockTable } from './resupply-stock-table/resupply-stock-table';
 import { SiteResuppliesStore } from './site-resupplies.store';
 import { SiteStockAlertsStore } from './site-stock-alerts.store';
-import { StockAlertActions } from './stock-alert-actions/stock-alert-actions';
-import { StockAlertsCard } from './stock-alerts-card/stock-alerts-card';
-import { UnorderedReceiptCard } from './unordered-receipt-card/unordered-receipt-card';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -57,6 +53,13 @@ type LoadState = 'loading' | 'ready' | 'error';
  * bas ; et le stock estimé du jour est la SOMME des reçus, tous confondus.
  * Les gestes vivent dans les deux cartes ; la page relit tout après chacun.
  *
+ * Depuis le lot R1e (Hugo, 2026-10-21 : « pense comptoir, un clic »), les
+ * cartes laissent place à UNE table de tous les produits
+ * (`ResupplyStockTable`) : stock du jour, état en un clic, demande en cours
+ * saisie dans la case, reçu sans commande dans le menu de la ligne. Les
+ * réassorts à réceptionner passent EN TÊTE, et seulement s'il y en a. Le
+ * titre « Réassort Labo » est retiré : l'onglet du bandeau le dit déjà.
+ *
  * Le stock estimé est le reçu tant que le circuit « jour même sur stock »
  * n'existe pas (J2) : les commandes déjà passées pour ce jour l'ont été la
  * veille, le fournil les a fabriquées pour elles, et elles ne puisent pas dans
@@ -75,16 +78,12 @@ type LoadState = 'loading' | 'ready' | 'error';
   imports: [
     FoldCalloutComponent,
     FoldCardComponent,
-    FoldElementTitleComponent,
     FoldEmptyStateComponent,
     FoldIconComponent,
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
-    ResupplyOrderCard,
     ResupplyReceptionsCard,
-    StockAlertActions,
-    StockAlertsCard,
-    UnorderedReceiptCard,
+    ResupplyStockTable,
   ],
   providers: [SiteStockAlertsStore, SiteResuppliesStore],
   templateUrl: './reassort-boutique-page.html',
@@ -95,6 +94,7 @@ export class ReassortBoutiquePage {
   private readonly counter = inject(HandoverQueueStore);
   private readonly permissions = inject(PermissionsStore);
   private readonly alerts = inject(SiteStockAlertsStore);
+  private readonly resupplies = inject(SiteResuppliesStore);
 
   protected readonly canWrite = computed(() => this.permissions.can('handover_counter:write'));
   protected readonly state = signal<LoadState>('loading');
@@ -104,17 +104,14 @@ export class ReassortBoutiquePage {
   protected readonly siteId = computed(() => this.place()?.id ?? null);
   /** Les sites sont-ils lus ? Sans eux, « aucun point » ne se conclut pas. */
   protected readonly placesLoaded = this.counter.placesLoaded;
-  /** « Réassort Labo » — le titre nomme le point que la bande a ouvert. */
-  protected readonly title = computed(() => {
-    const place = this.place();
-    return place === null ? 'Réassort' : `Réassort ${place.label}`;
-  });
   /** La journée des flèches du bandeau : une seule source de journée sur l'écran. */
   protected readonly day = this.counter.day;
   protected readonly receipt = signal<ResupplyReceiptView | null>(null);
   protected readonly refreshFailed = signal(false);
   /** Le stock estimé du jour : la somme des reçus. */
   protected readonly stock = computed(() => this.receipt()?.stock ?? []);
+  protected readonly receptions = computed(() => this.receipt()?.receptions ?? []);
+  protected readonly unordered = computed(() => this.receipt()?.unordered.lines ?? []);
 
   /** Le catalogue est lu une fois ; changer de point ne le relit pas. */
   private articlesLoaded = false;
@@ -161,6 +158,7 @@ export class ReassortBoutiquePage {
     const [receipt] = await Promise.all([
       siteId === null ? null : this.service.read(siteId, day),
       this.alerts.load(siteId),
+      this.resupplies.load(siteId),
     ]);
     // Une réponse d'un point ou d'un jour quitté entre-temps est jetée.
     if (siteId === this.siteId() && day === this.day()) {

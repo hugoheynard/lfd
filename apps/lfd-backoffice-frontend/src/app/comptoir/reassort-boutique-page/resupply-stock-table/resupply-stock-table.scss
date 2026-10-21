@@ -1,4 +1,4 @@
-.unordered-body {
+.stock-table {
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-md);
@@ -31,32 +31,35 @@
   text-align: right;
 }
 
-.sku {
+/* Une rupture en rouge, un stock faible en orange : la ligne se voit de loin. */
+.lines tr.out td {
+  background: var(--fold-color-alert-surface);
+}
+
+.lines tr.low td {
+  background: var(--fold-color-warning-surface);
+}
+
+.quantity {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+  align-items: end;
+}
+
+.send {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--fold-space-md);
+}
+
+.muted {
   display: block;
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-2xs);
 }
 
-.actions {
-  display: flex;
-  gap: var(--fold-space-xs);
-  justify-content: flex-end;
-}
-
-.add {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--fold-space-md);
-  align-items: end;
-}
-
-.muted {
-  margin: 0;
-  color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-sm);
-}
-
-/* La légende nomme le tableau pour un lecteur d'écran sans encombrer l'œil. */
 .sr {
   position: absolute;
   width: 1px;
