@@ -6,11 +6,13 @@ import type {
   CompanyHierarchyView,
   LegalEntityView,
   PayerBillingModeView,
+  StaffPermission,
 } from '@lfd/contracts';
 import { FoldInlineConfirmComponent, FoldListboxComponent } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
 
 import type { AdminCompanyDetail } from '../../comptes-clients/admin-company';
+import { PermissionsStore } from '../../auth/permissions.store';
 import { LegalEntitiesService } from '../../comptabilite/legal-entities.service';
 import { NotifyService } from '../../notify.service';
 import { PayerBillingModeService } from '../facturation/payer-billing-mode.service';
@@ -123,6 +125,7 @@ const ENTITY = { id: 'le1', name: 'La Folie Douce', archivedAt: null } as const;
 async function boot(
   view: PayerBillingModeView,
   client: AdminCompanyDetail = company(),
+  granted: readonly StaffPermission[] = ['b2b_accounting:read', 'b2b_accounting:write'],
 ): Promise<ComponentFixture<PayerBillingModeCard>> {
   wire = { view, refuse: null, gets: 0, set: [], cancelled: [] };
   TestBed.resetTestingModule();
@@ -157,6 +160,10 @@ async function boot(
         },
       },
       { provide: NotifyService, useValue: { success: () => undefined, error: () => undefined } },
+      {
+        provide: PermissionsStore,
+        useValue: { can: (permission: StaffPermission): boolean => granted.includes(permission) },
+      },
     ],
   });
   const fixture = TestBed.createComponent(PayerBillingModeCard);
@@ -283,5 +290,22 @@ describe('PayerBillingModeCard — le mode de facturation d’un client', () => 
 
     expect(modeChoice(fixture)).toBeDefined();
     expect(text(fixture)).not.toContain('Suit le mode');
+  });
+
+  it('sans le droit d’écriture comptable : le choix est fermé, et la carte dit pourquoi', async () => {
+    const fixture = await boot(modeView(), company(), ['b2b_accounting:read']);
+
+    expect(text(fixture)).toContain('Seule la comptabilité peut changer ce mode');
+    expect(
+      (modeChoice(fixture)?.componentInstance as FoldListboxComponent<unknown>).disabled(),
+    ).toBe(true);
+    expect(saveButton(fixture)?.disabled).toBe(true);
+  });
+
+  it('sans le droit de lecture comptable : rien n’est lu, la carte dit pourquoi', async () => {
+    const fixture = await boot(modeView(), company(), []);
+
+    expect(wire.gets).toBe(0);
+    expect(text(fixture)).toContain('réservé à la comptabilité');
   });
 });

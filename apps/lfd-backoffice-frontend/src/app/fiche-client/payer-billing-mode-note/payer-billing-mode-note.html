@@ -1,0 +1,5 @@
+<fold-callout appearance="inset" variant="neutral" icon="calendar" data-payer-mode-note>
+  {{ sentence() ?? 'Le mode de facturation de ce client' }}
+  {{ sentence() === null ? 'se règle' : 'Il se règle' }} dans l'onglet
+  <a [routerLink]="['/comptes-clients', company().id, 'informations']">Informations</a>.
+</fold-callout>

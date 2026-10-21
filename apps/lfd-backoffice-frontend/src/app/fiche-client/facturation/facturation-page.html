@@ -49,11 +49,11 @@
       </article>
     </section>
 
-    <!-- Le mode de facturation du client (plan-rythme-de-facturation §16, M4b) :
-         il dit quand ses périodes se ferment, avant les factures qu'elles
-         produisent. -->
+    <!-- Le mode de facturation se RÈGLE dans Informations (déplacé le
+         2026-10-21, plan-rythme-de-facturation §16) : ici, un rappel et un
+         renvoi, pas un second endroit pour régler la même chose. -->
     @if (company(); as company) {
-      <app-payer-billing-mode-card [company]="company" />
+      <app-payer-billing-mode-note [company]="company" />
     }
 
     <!-- Les factures émises (facture-emise.md) : les pièces

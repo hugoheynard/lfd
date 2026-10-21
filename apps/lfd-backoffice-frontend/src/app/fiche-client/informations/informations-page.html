@@ -282,6 +282,13 @@
               (debitSetupChange)="fiche.reload()"
             />
           }
+
+          <!-- Le mode de facturation, juste sous les conditions de règlement
+               qu'il rythme (déplacé de Facturation le 2026-10-21). Un site
+               facturé chez son principal le dit, sans formulaire. -->
+          @if (fiche.company(); as c) {
+            <app-payer-billing-mode-card [company]="c" />
+          }
         }
         <!-- Le geste qui clôt le dossier, épinglé : il se perdait au fil d'une
              fiche qui s'allonge. Pendant staff du rail « assistance » côté

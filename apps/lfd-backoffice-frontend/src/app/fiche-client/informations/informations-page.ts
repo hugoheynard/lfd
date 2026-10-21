@@ -37,6 +37,7 @@ import { PermissionsStore } from '../../auth/permissions.store';
 import { ActivationAside } from '../activation-aside/activation-aside';
 import { HolderPicker, type HolderChoice } from '../holder-picker/holder-picker';
 import { PaiementSection } from '../paiement-section/paiement-section';
+import { PayerBillingModeCard } from '../payer-billing-mode-card/payer-billing-mode-card';
 import { FollowParentToggle } from '../follow-parent-toggle/follow-parent-toggle';
 import { FicheClientActions } from './fiche-client.actions';
 import { FicheClientFacade } from './fiche-client.facade';
@@ -75,6 +76,7 @@ import { UncoveredDeliveryAddresses } from '../uncovered-delivery-addresses/unco
   providers: [FicheClientFacade, FicheClientStore, FicheClientPanels, FicheClientActions],
   imports: [
     GroupAccountCard,
+    PayerBillingModeCard,
     FoldAsideLayoutComponent,
     FoldButtonComponent,
     FoldCalloutComponent,

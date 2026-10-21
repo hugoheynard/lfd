@@ -33,7 +33,7 @@ import { CycleStatementCard } from './cycle-statement-card/cycle-statement-card'
 import { CollectionReturnsCard } from '../collection-returns-card/collection-returns-card';
 import { DetachedUnpaidCard } from '../detached-unpaid-card/detached-unpaid-card';
 import { IssuedInvoicesCard } from '../issued-invoices-card/issued-invoices-card';
-import { PayerBillingModeCard } from '../payer-billing-mode-card/payer-billing-mode-card';
+import { PayerBillingModeNote } from '../payer-billing-mode-note/payer-billing-mode-note';
 import {
   groupByYear,
   ledgerRows,
@@ -73,7 +73,7 @@ const ORDERS_WINDOW = 200;
     CycleStatementCard,
     DetachedUnpaidCard,
     IssuedInvoicesCard,
-    PayerBillingModeCard,
+    PayerBillingModeNote,
     FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,

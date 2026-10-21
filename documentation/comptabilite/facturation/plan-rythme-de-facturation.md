@@ -589,6 +589,10 @@ modes ; chaque client choisit un mode.** Plus aucune date propre à un client.
 - **Fiche du client, section facturation** : le mode (Mensuel par défaut),
   le programmé et sa prise d'effet, l'avertissement §12, ses prochaines
   clôtures.
+  **Déplacée le 2026-10-21 (Hugo)** dans l'onglet **Informations**, sous
+  les conditions de règlement ; Facturation n'en garde qu'une ligne de
+  rappel qui renvoie à Informations (`payer-billing-mode-note`). La carte
+  se ferme sans `b2b_accounting:write` et le dit.
 - Restes « mois » : tableau de bord, journal (« Mois pas encore
   prélevable »), message du refus de préparation.
 

@@ -13,6 +13,10 @@
         Suit le mode de <strong>{{ payer }}</strong
         >&nbsp;: ce site est facturé à son nom, à ses clôtures.
       </p>
+    } @else if (!canRead()) {
+      <p class="said" data-payer-mode-no-read>
+        Le mode de facturation est réservé à la comptabilité (droit « comptabilité » en lecture).
+      </p>
     } @else {
       @switch (state()) {
         @case ('loading') {
@@ -57,7 +61,7 @@
                     foldButton
                     size="sm"
                     emphasis="outline"
-                    [disabled]="busy()"
+                    [disabled]="!canWrite() || busy()"
                     data-payer-mode-cancel
                   >
                     Annuler ce changement
@@ -86,10 +90,15 @@
             </p>
           }
 
+          @if (!canWrite()) {
+            <p class="said" data-payer-mode-no-write>
+              Seule la comptabilité peut changer ce mode (droit « comptabilité » en écriture).
+            </p>
+          }
           <fold-listbox
             label="Mode de facturation"
             [options]="choices"
-            [disabled]="lockedUntil() !== null"
+            [disabled]="!canWrite() || lockedUntil() !== null"
             [value]="draft()"
             (selectionChange)="chooseMode($event)"
             data-payer-mode-choice

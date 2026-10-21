@@ -37,6 +37,7 @@ import {
 } from '../../comptabilite/billing-rhythm-wording';
 import { longDay } from '../../comptabilite/collection-month-wording';
 import { LegalEntitiesService } from '../../comptabilite/legal-entities.service';
+import { PermissionsStore } from '../../auth/permissions.store';
 import { NotifyService } from '../../notify.service';
 import { PayerBillingModeService } from '../facturation/payer-billing-mode.service';
 
@@ -86,6 +87,11 @@ export class PayerBillingModeCard {
   private readonly entitiesApi = inject(LegalEntitiesService);
   private readonly api = inject(PayerBillingModeService);
   private readonly notify = inject(NotifyService);
+  private readonly permissions = inject(PermissionsStore);
+
+  /** Lire le mode demande `b2b_accounting:read` ; le changer, `:write` — le serveur refuse de toute façon. */
+  protected readonly canRead = computed(() => this.permissions.can('b2b_accounting:read'));
+  protected readonly canWrite = computed(() => this.permissions.can('b2b_accounting:write'));
 
   protected readonly choices = PAYER_MODE_CHOICES;
   protected readonly rule = ONE_CHANGE_AT_A_TIME;
@@ -145,7 +151,11 @@ export class PayerBillingModeCard {
   });
 
   protected readonly canSave = computed(
-    () => !this.busy() && this.lockedUntil() === null && this.draft() !== this.standing(),
+    () =>
+      this.canWrite() &&
+      !this.busy() &&
+      this.lockedUntil() === null &&
+      this.draft() !== this.standing(),
   );
 
   protected readonly confirmMessage = computed(
@@ -159,7 +169,7 @@ export class PayerBillingModeCard {
       const followed = this.followedPayer();
       const id = this.company().id;
       untracked(() => {
-        if (followed === null) {
+        if (followed === null && this.canRead()) {
           void this.load(id);
         }
       });

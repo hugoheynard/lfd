@@ -244,3 +244,23 @@ describe('InformationsPage — un compte actif au règlement différé sans mand
     expect(host.querySelector('lfd-company-activation-checklist')).toBeNull();
   });
 });
+
+/**
+ * Le mode de facturation se règle ICI depuis le 2026-10-21 (demande de Hugo) :
+ * sous les conditions de règlement qu'il rythme, et plus dans Facturation.
+ */
+describe('InformationsPage — le mode de facturation', () => {
+  it('porte la carte du mode, après la section de paiement', async () => {
+    const host = (await boot(child([]))).nativeElement as HTMLElement;
+    const card = host.querySelector('app-payer-billing-mode-card');
+    const payment = host.querySelector('app-paiement-section');
+
+    expect(card).not.toBeNull();
+    expect(payment).not.toBeNull();
+    expect(
+      payment !== null && card !== null
+        ? payment.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING
+        : 0,
+    ).toBeTruthy();
+  });
+});
