@@ -24,7 +24,7 @@ describe('les mots du rythme de facturation', () => {
     expect(PAYER_MODE_CHOICES.map((choice) => choice.label)).toEqual([
       'Mensuel — par défaut',
       'Deux fois par mois',
-      'Chaque semaine',
+      'Hebdomadaire',
     ]);
   });
 

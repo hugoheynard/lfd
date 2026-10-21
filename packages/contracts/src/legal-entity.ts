@@ -38,7 +38,7 @@ export type BillingRhythmKind = z.infer<typeof billingRhythmKindSchema>;
 export const BILLING_RHYTHM_KIND_LABELS: Readonly<Record<BillingRhythmKind, string>> = {
   monthly: "Mensuel",
   semimonthly: "Deux fois par mois",
-  weekly: "Chaque semaine",
+  weekly: "Hebdomadaire",
 };
 
 /**

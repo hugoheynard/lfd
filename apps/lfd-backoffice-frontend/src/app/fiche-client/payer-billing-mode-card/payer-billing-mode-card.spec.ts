@@ -232,7 +232,7 @@ describe('PayerBillingModeCard — le mode de facturation d’un client', () => 
     const fixture = await boot(modeView(PENDING));
 
     expect(text(fixture)).toContain(
-      'Programmé : Chaque semaine, à partir de la clôture du 1er novembre 2026.',
+      'Programmé : Hebdomadaire, à partir de la clôture du 1er novembre 2026.',
     );
     expect(text(fixture)).toContain('modifiable à partir du 1er novembre 2026');
     expect(

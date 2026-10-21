@@ -29,7 +29,7 @@ function modeDates(mode: unknown, days: unknown): string {
 }
 
 /**
- * « a programmé les dates du mode Chaque semaine de l'entité émettrice « X » :
+ * « a programmé les dates du mode Hebdomadaire de l'entité émettrice « X » :
  * chaque semaine le mercredi, à partir du … (au lieu de chaque semaine le
  * lundi) » — ou l'annulation d'un programmé.
  */
@@ -83,7 +83,7 @@ function payer(fact: PhraseFact): Segment[] {
 
 /**
  * « a programmé le mode de facturation de « Le Bistrot » chez l'entité
- * émettrice « X » : Chaque semaine, à partir du … (au lieu de Mensuel) » — ou
+ * émettrice « X » : Hebdomadaire, à partir du … (au lieu de Mensuel) » — ou
  * l'annulation d'un passage programmé.
  */
 const payerBillingModeChanged: Phrase = (fact) => {

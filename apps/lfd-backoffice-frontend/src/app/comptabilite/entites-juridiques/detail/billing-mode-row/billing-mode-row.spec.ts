@@ -117,7 +117,7 @@ describe('BillingModeRow — les dates d’un mode de l’entité', () => {
   it('dit les dates en vigueur, la règle permanente, trois clôtures et les clients du mode', () => {
     const fixture = boot(modeView('weekly', { payerCount: 2 }));
 
-    expect(text(fixture)).toContain('Chaque semaine');
+    expect(text(fixture)).toContain('Hebdomadaire');
     expect(text(fixture)).toContain('Chaque semaine, clôture le lundi.');
     expect(text(fixture)).toContain(
       'Un seul changement à la fois : le nouveau réglage prend effet à la prochaine clôture ; le suivant ne sera possible qu’après.',

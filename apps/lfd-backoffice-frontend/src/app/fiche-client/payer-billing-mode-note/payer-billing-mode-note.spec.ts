@@ -121,7 +121,7 @@ describe('PayerBillingModeNote — le rappel du mode dans Facturation', () => {
     const { fixture } = await boot(company());
 
     expect(text(fixture)).toContain(
-      'Mode de facturation : Chaque semaine (passage à Mensuel programmé).',
+      'Mode de facturation : Hebdomadaire (passage à Mensuel programmé).',
     );
     const link = (fixture.nativeElement as HTMLElement).querySelector('a');
     expect(link?.textContent).toContain('Informations');
