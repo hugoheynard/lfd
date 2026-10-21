@@ -4,6 +4,7 @@ import { ConstituteCollectionBatchesCommand } from "../../b2b/accounting/applica
 import { DepositCollectionBatchCommand } from "../../b2b/accounting/application/commands/deposit-collection-batch.command.js";
 import { IssueMonthlyInvoicesCommand } from "../../b2b/accounting/application/commands/issue-monthly-invoices.command.js";
 import { invoicingMomentOf } from "../../b2b/accounting/domain/services/invoicing-closures.js";
+import { handOverAtCounter } from "./invoice-handovers.seed.js";
 import { DEPOSIT_DELAY_MS, orderInstantOf, type InvoiceWeek } from "./invoice-weeks.seed.js";
 import {
   asStaff,
@@ -121,9 +122,10 @@ async function placeWeekOrder(
 ): Promise<void> {
   const at = orderInstantOf(closesAt);
   const target = await targetOf(context, companyId, name);
-  await place(context, target, {
+  const forDay = isoDay(shiftDays(at, 1));
+  const placed = await place(context, target, {
     at,
-    forDay: isoDay(shiftDays(at, 1)),
+    forDay,
     method: "pickup",
     point: null,
     window: PICKUP_WINDOW,
@@ -131,6 +133,9 @@ async function placeWeekOrder(
     paid: false,
     note: INVOICE_SEED_NOTE,
   });
+  // Retirée le vendredi, avant la facture du dimanche : une commande facturée
+  // a vécu sa vie jusqu'au bout (`invoice-handovers.seed.ts`).
+  await handOverAtCounter(context, placed.reference, forDay);
 }
 
 /** La facture de la semaine, deux minutes après qu'elle est devenue émettable. */

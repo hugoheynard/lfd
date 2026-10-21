@@ -325,7 +325,11 @@ SEPA (frappe, scan, signature) pour le groupe et les deux hôtels, mode de
 facturation **hebdomadaire** pour les trois — le seul rythme qui donne assez
 de clôtures passées pour un statut par lot —, puis, semaine par semaine
 depuis le 1er du mois d'il y a six semaines : une commande par hôtel le
-jeudi, la facture à la clôture, le lot constitué puis déposé. Les retours
+jeudi, **retirée au comptoir du Labo le vendredi à 6 h**
+(`ConfirmManualHandoverCommand`, `apps/lfd-api/src/dev/seeding/invoice-handovers.seed.ts` — le retrait
+n'exige ni journée arrêtée ni colisage pour une commande au compte, et le
+fait mène le commerce à `fulfilled`), la facture à la clôture, le lot
+constitué puis déposé. Les retours
 bancaires sont saisis à la fin (une re-présentation saisie avant un lot
 suivant y entrerait).
 
@@ -355,5 +359,8 @@ encaissement ne se constate) et retirée au comptoir ; un avoir naît seulement
 du remboursement d'une commande réglée par carte.
 
 **Une seule fois** : une facture est immuable. Relancé, il le dit et ne refait
-rien. ⚠️ `seed:sub-accounts` relancé APRÈS efface les commandes des hôtels,
+rien — sauf **retirer** ses commandes restées « en cours » (rattrapage des
+postes semés avant le 2026-10-21, où elles ne l'étaient jamais) : même geste,
+au vendredi de chacune, idempotent, sans toucher ni facture ni lot. Fait le
+2026-10-21 sur `lfc_b2b_dev` : 14 commandes retirées, 0 à la relance. ⚠️ `seed:sub-accounts` relancé APRÈS efface les commandes des hôtels,
 factures comprises dans leurs bons : les factures restent, orphelines.

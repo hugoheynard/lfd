@@ -3,6 +3,7 @@ import { refuseUnlessLocalDevelopment } from "../local-development.lock.js";
 import { HOTEL_GROUP, HOTELS } from "./sub-account-hotels.seed.js";
 import { ensureAdminMembership } from "./sub-account-people.seed.js";
 import { INVOICE_SEED_NOTE, playWeek, type PlayedWeek } from "./invoice-cycles.seed.js";
+import { handOverPendingSeeded } from "./invoice-handovers.seed.js";
 import { accountingStaffId, lowerFloors, readyLegalEntity } from "./invoice-entity.seed.js";
 import { readyPayers, type SeedPayer } from "./invoice-payers.seed.js";
 import { recordReturns } from "./invoice-returns.seed.js";
@@ -35,7 +36,12 @@ export interface InvoiceSeedContext extends SeedContext {
 }
 
 export type InvoiceSeedReport =
-  | { readonly kind: "already_seeded"; readonly invoices: number }
+  | {
+      readonly kind: "already_seeded";
+      readonly invoices: number;
+      /** Les commandes du semis retirées par cette relance — le rattrapage. */
+      readonly handedOver: number;
+    }
   | {
       readonly kind: "seeded";
       readonly weeks: readonly { readonly closesAt: string; readonly fate: WeekFate }[];
@@ -59,7 +65,10 @@ export async function seedInvoices(context: InvoiceSeedContext): Promise<Invoice
   });
   if (existing > 0) {
     await attachDevUser(context, hotels);
-    return { kind: "already_seeded", invoices: existing };
+    // Le rattrapage : un poste semé avant que le semis ne retire ses
+    // commandes les voit « en cours ». Ni facture ni lot n'est touché.
+    const handedOver = await handOverPendingSeeded(context, payerIds, INVOICE_SEED_NOTE);
+    return { kind: "already_seeded", invoices: existing, handedOver };
   }
   await context.prisma.order.deleteMany({
     where: { companyId: { in: payerIds }, note: INVOICE_SEED_NOTE },

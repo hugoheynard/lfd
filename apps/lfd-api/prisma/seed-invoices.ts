@@ -37,7 +37,8 @@ async function main(): Promise<void> {
     if (report.kind === "already_seeded") {
       console.log(
         `· Déjà semé : ${String(report.invoices)} facture(s) sur le groupe des Cimes — rien ` +
-          `n'est refait (une facture ne s'efface pas). « ${DEV_USER_ID} » reste administrateur des deux hôtels.`,
+          `n'est refait (une facture ne s'efface pas). « ${DEV_USER_ID} » reste administrateur des deux hôtels.\n` +
+          `· ${String(report.handedOver)} commande(s) du semis retirée(s) au comptoir (rattrapage).`,
       );
       return;
     }
