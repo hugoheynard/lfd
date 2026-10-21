@@ -359,8 +359,14 @@ encaissement ne se constate) et retirée au comptoir ; un avoir naît seulement
 du remboursement d'une commande réglée par carte.
 
 **Une seule fois** : une facture est immuable. Relancé, il le dit et ne refait
-rien — sauf **retirer** ses commandes restées « en cours » (rattrapage des
-postes semés avant le 2026-10-21, où elles ne l'étaient jamais) : même geste,
-au vendredi de chacune, idempotent, sans toucher ni facture ni lot. Fait le
-2026-10-21 sur `lfc_b2b_dev` : 14 commandes retirées, 0 à la relance. ⚠️ `seed:sub-accounts` relancé APRÈS efface les commandes des hôtels,
+rien — sauf **retirer** toute commande des trois sociétés des Cimes dont le
+jour est **passé** et qui n'a pas été retirée (rattrapage des postes semés
+avant le 2026-10-21 : les bons du semis et ceux de `seed:sub-accounts`) :
+même geste, au jour de chacune, idempotent, sans toucher ni facture ni lot,
+jamais une commande du jour ou à venir (`handOverPastOrders`). Fait le
+2026-10-21 sur `lfc_b2b_dev` : 14 puis 6 commandes retirées, 0 à la relance.
+
+`seed:sub-accounts` retire désormais lui-même ses commandes dont le jour est
+passé, par le même geste (`handOverAtCounter`), livraisons des chalets
+comprises ; celles du jour et à venir restent en cours. ⚠️ `seed:sub-accounts` relancé APRÈS efface les commandes des hôtels,
 factures comprises dans leurs bons : les factures restent, orphelines.

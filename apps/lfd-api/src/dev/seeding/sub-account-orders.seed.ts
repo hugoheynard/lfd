@@ -1,3 +1,4 @@
+import { handOverAtCounter, isPastServiceDay } from "./invoice-handovers.seed.js";
 import {
   atHour,
   isoDay,
@@ -128,7 +129,7 @@ export async function seedSubAccountOrders(
       throw new Error(`« ${order.company} » n'a pas été semé avant ses commandes.`);
     }
     const target = await targetOf(context, companyId, order.company);
-    await place(context, target, {
+    const placedOrder = await place(context, target, {
       at: shiftDays(forDay, -1),
       forDay: isoDay(forDay),
       method: order.method,
@@ -138,6 +139,11 @@ export async function seedSubAccountOrders(
       paid: order.paid ?? false,
       ...(order.settlement === undefined ? {} : { settlement: order.settlement }),
     });
+    // Un jour passé a été servi : la commande est retirée, par le vrai geste.
+    // Aujourd'hui et à venir restent en cours (`invoice-handovers.seed.ts`).
+    if (isPastServiceDay(isoDay(forDay), context.now)) {
+      await handOverAtCounter(context, placedOrder.reference, isoDay(forDay));
+    }
     placed += 1;
   }
   return { removed: removed.count, placed };

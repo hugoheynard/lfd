@@ -88,7 +88,10 @@ dans `dev-scenario-steps.ts` (écrits côté écran, les nombres viennent du ser
 ## 4. Décisions par défaut et reste à faire
 
 - Les sous-comptes de démo (« Alpes », « Cimes ») **ne suivent pas** les étapes :
-  ils restent posés par `seed:sub-accounts` (défaut non contesté).
+  ils restent posés par `seed:sub-accounts` (défaut non contesté). Depuis le
+  2026-10-21, ce semis retire au comptoir (`ConfirmManualHandoverCommand`, au
+  jour de la commande) celles dont le jour est passé ; aujourd'hui et à venir
+  restent en cours.
 - Pas d'étape « tournées parties » : le départ se fait à l'écran, c'est ce qu'on
   montre.
 - La phrase d'état dit « étape N **sur 5** » alors qu'il y a six étapes (0 à 5) ;
