@@ -13,12 +13,12 @@ export class InvoiceCompanyNotFoundError extends ResourceNotFoundError {
   }
 }
 
-/** Membre, mais ni détenteur ni facturation. */
+/** Membre, mais ni détenteur, ni administrateur, ni facturation. */
 export class InvoiceRoleRequiredError extends AuthorizationError {
   constructor(readonly companyId: string) {
     super(
       "accounting.invoice.role_required",
-      "Les factures ne sont visibles que du détenteur du compte et du rôle « facturation ». Demandez au détenteur de vous attribuer ce rôle.",
+      "Les factures ne sont visibles que du détenteur du compte, de l'administrateur et du rôle « facturation ». Demandez au détenteur de vous attribuer l'un de ces rôles.",
     );
   }
 }
