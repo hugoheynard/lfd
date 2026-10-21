@@ -941,8 +941,21 @@ export {
   refundedCentsOf,
 } from "./order.js";
 export { exposedHandoverToken, isSettled } from "./order-settlement.values.js";
-export { companyOrdersQuerySchema } from "./company-orders.js";
+export {
+  companyOrdersQuerySchema,
+  companyOrderSummaryRequestSchema,
+  ORDER_SUMMARY_EXCLUSION_REASONS,
+  ORDER_SUMMARY_MAX_ORDERS,
+} from "./company-orders.js";
 export type {
+  CompanyOrderSummaryRequest,
+  CompanyOrderSummaryView,
+  OrderSummaryBottomView,
+  OrderSummaryCompanyView,
+  OrderSummaryExcludedView,
+  OrderSummaryExclusionReason,
+  OrderSummaryProductView,
+  OrderSummaryTableView,
   CompanyOrdersQuery,
   CompanyOrderSiteView,
   CompanyOrderAuthorView,

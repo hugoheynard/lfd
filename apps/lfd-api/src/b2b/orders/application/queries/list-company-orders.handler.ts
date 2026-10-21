@@ -6,6 +6,7 @@ import {
 } from "../../domain/ports/company-order-list.reader.js";
 import { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
 import { ensureOrderMember } from "../../domain/services/order-access.js";
+import { companyOrderDayRangeOf } from "./company-order-day-range.js";
 import { ListCompanyOrdersQuery } from "./list-company-orders.query.js";
 
 /**
@@ -28,11 +29,13 @@ export class ListCompanyOrdersHandler implements IQueryHandler<
   async execute(query: ListCompanyOrdersQuery): Promise<readonly CompanyOrderEntry[]> {
     const role = await this.guard.roleOf(query.actorUserId, query.companyId);
     ensureOrderMember(role, query.companyId);
+    const days = companyOrderDayRangeOf(query.from, query.to);
 
     return this.orders.listFor({
       actorUserId: query.actorUserId,
       companyId: query.companyId,
       site: query.site,
+      ...days,
     });
   }
 }

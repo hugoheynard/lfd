@@ -118,3 +118,33 @@ est exclue du filtre daté et le résultat le compte (« N sans date »).
 
 **6.8 Q2** : non — une commande personnelle n'a pas de société ; le
 récapitulatif des particuliers serait une autre route, en TTC. Hors de ce plan.
+
+## 7. Ce qui est bâti
+
+**R1 — serveur, bâti le 2026-10-21 (non commité à l'écriture de ces lignes).**
+
+- **Filtre de jour** sur `GET /companies/:companyId/orders?from=&to=` :
+  `AAAA-MM-JJ` par Zod (`companyOrdersQuerySchema`), jour existant et
+  début ≤ fin vérifiés au handler (`apps/lfd-api/src/b2b/orders/application/queries/company-order-day-range.ts`), bornes
+  incluses sur `requested_delivery_date`, en `AND` sous le mur. Une borne
+  posée exclut les commandes sans date. ⚠️ **« N sans date » n'est PAS
+  servi** : la réponse de la liste est un tableau (servi à C2), et le compter
+  demande de changer sa forme ou d'ajouter un canal — à trancher.
+- **Le mur** de C1 est sorti dans `apps/lfd-api/src/b2b/orders/infrastructure/company-order-wall.ts`,
+  partagé par la liste et le récapitulatif.
+- **Récapitulatif** `POST /companies/:companyId/orders/summary` (corps
+  `{ orderIds, format: "json" }`, `companyOrderSummaryRequestSchema`) : query
+  `SummarizeCompanyOrdersQuery`, port `CompanyOrderSummaryReader` (une
+  lecture, sous le mur, SANS `CUSTOMER_VISIBLE` pour pouvoir nommer les
+  exclues). Membre puis plafond (`ORDER_SUMMARY_MAX_ORDERS` = 200, 400) avant
+  toute lecture ; id hors mur → 404 qui le nomme.
+- **Agrégation pure** `apps/lfd-api/src/b2b/orders/domain/services/order-summary.ts` : une table par
+  société (la société listée, puis les sites par nom), par SKU quantité + HT
+  (`line_total_cents`) ; bas = sommes des colonnes (sous-total, remise, bon,
+  livraison, surtaxe, TVA par taux depuis `vat_shares`, TTC = `total_cents`) ;
+  une commande sans `vat_shares` voit sa TVA sommée dans
+  `unventilatedVatCents`, sans taux inventé ; `amountsAt: "placement"`.
+- Tests : domaine (`apps/lfd-api/src/b2b/orders/domain/services/__tests__/order-summary.spec.ts`), handler
+  (`apps/lfd-api/src/b2b/orders/application/queries/__tests__/summarize-company-orders.handler.spec.ts`, `list-company-orders.handler.spec.ts`),
+  e2e `apps/lfd-api/test/company-order-summary.e2e-spec.ts`, contrat
+  (`packages/contracts/src/__tests__/company-orders.spec.ts`).

@@ -1,6 +1,9 @@
 import { z } from "zod";
 
-import type { CustomerOrderView } from "./order.js";
+import type { CustomerOrderView, VatShareView } from "./order.js";
+
+/** Un jour `AAAA-MM-JJ` ; l'existence au calendrier se vérifie au serveur. */
+const orderDaySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "jour attendu au format AAAA-MM-JJ");
 
 /**
  * **« Mes commandes » d'une société, sites compris** — `GET
@@ -14,6 +17,13 @@ import type { CustomerOrderView } from "./order.js";
  */
 export const companyOrdersQuerySchema = z.object({
   site: z.string().min(1).optional(),
+  /**
+   * Bornes INCLUSES sur le jour de retrait/livraison (`requested_delivery_date`)
+   * — plan `documentation/commandes/plan-recapitulatif-des-commandes.md`, §6.6.
+   * Une commande sans date sort de la liste dès qu'une borne est posée.
+   */
+  from: orderDaySchema.optional(),
+  to: orderDaySchema.optional(),
 });
 export type CompanyOrdersQuery = z.infer<typeof companyOrdersQuerySchema>;
 
@@ -41,4 +51,93 @@ export interface CompanyOrderListItemView extends CustomerOrderView {
   /** `null` : la commande est celle de la société listée. */
   readonly site: CompanyOrderSiteView | null;
   readonly author: CompanyOrderAuthorView;
+}
+
+/**
+ * **Le plafond du récapitulatif** (§6.5) : au-delà, le serveur refuse en le
+ * nommant, et l'écran le dit avant d'envoyer.
+ */
+export const ORDER_SUMMARY_MAX_ORDERS = 200;
+
+/**
+ * Le corps de `POST /companies/:companyId/orders/summary` — une LECTURE, en
+ * `POST` parce que la sélection va dans le corps (§6.5). `json` seul au lot
+ * R1 ; le PDF et le tableur arrivent au lot R2.
+ */
+export const companyOrderSummaryRequestSchema = z.object({
+  orderIds: z.array(z.string().min(1)).min(1),
+  format: z.enum(["json"]).default("json"),
+});
+export type CompanyOrderSummaryRequest = z.infer<typeof companyOrderSummaryRequestSchema>;
+
+/** Un produit du récapitulatif : un SKU, même vendu à deux prix (§6.1). */
+export interface OrderSummaryProductView {
+  readonly sku: string;
+  /** Le nom figé de la commande la plus récente qui le porte. */
+  readonly name: string;
+  readonly quantity: number;
+  /** Somme des `line_total_cents` — hors taxe, en centimes. */
+  readonly htCents: number;
+}
+
+/**
+ * Le bas d'une table, comme une facture (§6.1) : chaque montant est la SOMME
+ * de la colonne des commandes, en centimes — jamais un recalcul.
+ */
+export interface OrderSummaryBottomView {
+  readonly subtotalCents: number;
+  readonly discountCents: number;
+  readonly voucherDiscountCents: number;
+  readonly deliveryFeeCents: number;
+  readonly lateFeeCents: number;
+  /** La TVA par taux, somme des `vat_shares`, taux croissants. */
+  readonly vat: readonly VatShareView[];
+  /**
+   * La TVA des commandes qui n'ont pas de ventilation par taux
+   * (`vat_shares` nul) — sommée telle quelle, sans taux inventé.
+   */
+  readonly unventilatedVatCents: number;
+  /** Somme des `total_cents` — le TTC à la commande. */
+  readonly totalCents: number;
+}
+
+/** Une table : les produits et le bas d'un ensemble de commandes. */
+export interface OrderSummaryTableView {
+  readonly orderCount: number;
+  readonly products: readonly OrderSummaryProductView[];
+  readonly bottom: OrderSummaryBottomView;
+}
+
+/** La table d'une société : le principal, ou l'un de ses sites (§6.2). */
+export interface OrderSummaryCompanyView extends OrderSummaryTableView {
+  readonly companyId: string;
+  readonly name: string;
+}
+
+export const ORDER_SUMMARY_EXCLUSION_REASONS = [
+  "cancelled",
+  "payment_pending",
+  "payment_failed",
+] as const;
+export type OrderSummaryExclusionReason = (typeof ORDER_SUMMARY_EXCLUSION_REASONS)[number];
+
+/** Une commande sélectionnée mais laissée hors des totaux, et pourquoi. */
+export interface OrderSummaryExcludedView {
+  readonly orderId: string;
+  readonly orderNumber: string;
+  readonly reason: OrderSummaryExclusionReason;
+}
+
+/**
+ * Le récapitulatif de commandes sélectionnées (§6). `amountsAt: "placement"`
+ * : les montants sont ceux de la commande — remboursements et avoirs
+ * postérieurs non déduits ; le relevé comptable, ce sont les factures (§6.4).
+ */
+export interface CompanyOrderSummaryView {
+  readonly amountsAt: "placement";
+  /** La société listée d'abord, puis chaque site par nom. */
+  readonly companies: readonly OrderSummaryCompanyView[];
+  /** Le total général, par produit et par ligne du bas. */
+  readonly total: OrderSummaryTableView;
+  readonly excluded: readonly OrderSummaryExcludedView[];
 }

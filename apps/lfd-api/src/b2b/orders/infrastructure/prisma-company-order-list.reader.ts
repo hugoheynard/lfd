@@ -3,12 +3,12 @@ import { Injectable } from "@nestjs/common";
 
 import type { Prisma } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
-import { INHERITING_PARENT_ROLES } from "../../account/domain/services/effective-role.js";
 import {
   CompanyOrderListReader,
   type CompanyOrderEntry,
   type CompanyOrderListScope,
 } from "../domain/ports/company-order-list.reader.js";
+import { companyOrderWallOf } from "./company-order-wall.js";
 import { CUSTOMER_VISIBLE, ORDER_SELECT, toOrderView } from "./prisma-order.reader.js";
 
 const LIST_SELECT = {
@@ -23,7 +23,9 @@ type ListRow = Prisma.OrderGetPayload<{ select: typeof LIST_SELECT }>;
  * (`plan-commandes-des-sites.md`, §7.5) : la société elle-même, OU une
  * société dont elle est le parent ACTUEL et où le demandeur hérite — membre
  * `owner`/`admin` ACCEPTÉ de la société listée, celle-ci `active`. Le filtre
- * de site s'ajoute en `AND` : il ne peut que rétrécir le périmètre.
+ * de site s'ajoute en `AND` : il ne peut que rétrécir le périmètre — comme
+ * le filtre de jour de retrait/livraison, bornes incluses
+ * (`plan-recapitulatif-des-commandes.md`, §6.6).
  */
 @Injectable()
 export class PrismaCompanyOrderListReader extends CompanyOrderListReader {
@@ -33,7 +35,9 @@ export class PrismaCompanyOrderListReader extends CompanyOrderListReader {
 
   async listFor(scope: CompanyOrderListScope): Promise<readonly CompanyOrderEntry[]> {
     const rows = await this.prisma.order.findMany({
-      where: { AND: [wallOf(scope), siteFilterOf(scope), CUSTOMER_VISIBLE] },
+      where: {
+        AND: [companyOrderWallOf(scope), siteFilterOf(scope), dayFilterOf(scope), CUSTOMER_VISIBLE],
+      },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       select: LIST_SELECT,
     });
@@ -41,32 +45,32 @@ export class PrismaCompanyOrderListReader extends CompanyOrderListReader {
   }
 }
 
-/** Le mur : la société, et ses sites quand le demandeur en hérite. */
-function wallOf(scope: CompanyOrderListScope): Prisma.OrderWhereInput {
+function siteFilterOf(scope: CompanyOrderListScope): Prisma.OrderWhereInput {
+  return scope.site === null ? {} : { companyId: scope.site };
+}
+
+/**
+ * Les bornes du jour de retrait/livraison. Une borne posée exclut les
+ * commandes sans date : `gte`/`lte` ne retiennent jamais un `NULL`.
+ */
+function dayFilterOf(scope: CompanyOrderListScope): Prisma.OrderWhereInput {
+  if (scope.from === null && scope.to === null) {
+    return {};
+  }
   return {
-    OR: [
-      { companyId: scope.companyId },
-      {
-        company: {
-          parentCompanyId: scope.companyId,
-          parentCompany: {
-            status: "active",
-            memberships: {
-              some: {
-                userId: scope.actorUserId,
-                acceptedAt: { not: null },
-                role: { in: [...INHERITING_PARENT_ROLES] },
-              },
-            },
-          },
-        },
-      },
-    ],
+    requestedDeliveryDate: {
+      ...(scope.from === null ? {} : { gte: dateColumnOf(scope.from) }),
+      ...(scope.to === null ? {} : { lte: dateColumnOf(scope.to) }),
+    },
   };
 }
 
-function siteFilterOf(scope: CompanyOrderListScope): Prisma.OrderWhereInput {
-  return scope.site === null ? {} : { companyId: scope.site };
+/**
+ * Un jour → la valeur d'une colonne `@db.Date` : un jour sans fuseau, que
+ * Prisma transporte à minuit UTC, comparé à d'autres jours seulement.
+ */
+function dateColumnOf(day: string): Date {
+  return new Date(`${day}T00:00:00.000Z`);
 }
 
 function entryOf(row: ListRow, listedCompanyId: string): CompanyOrderEntry {

@@ -148,10 +148,12 @@ import { PrismaPendingOrdersReader } from "./infrastructure/prisma-pending-order
 import { GetProductionBatchHandler } from "./application/queries/get-production-batch.handler.js";
 import { ListAdminOrdersHandler } from "./application/queries/list-admin-orders.handler.js";
 import { ListCompanyOrdersHandler } from "./application/queries/list-company-orders.handler.js";
+import { SummarizeCompanyOrdersHandler } from "./application/queries/summarize-company-orders.handler.js";
 import { ListPersonalOrdersHandler } from "./application/queries/list-personal-orders.handler.js";
 import { CustomerSkuReader } from "./domain/ports/customer-sku.reader.js";
 import { OrderCutoffReader } from "./domain/ports/order-cutoff.reader.js";
 import { CompanyOrderListReader } from "./domain/ports/company-order-list.reader.js";
+import { CompanyOrderSummaryReader } from "./domain/ports/company-order-summary.reader.js";
 import { OrderAccessReader } from "./domain/ports/order-access.reader.js";
 import { OrderGuardReader } from "./domain/ports/order-guard.reader.js";
 import { OrderPayerReader } from "./domain/ports/order-payer.reader.js";
@@ -177,6 +179,7 @@ import { PrismaPurchaseHistoryReader } from "./infrastructure/prisma-purchase-hi
 import { AudienceOrderReader } from "../audiences/domain/ports/audience-order.reader.js";
 import { PrismaAudienceOrderReader } from "./infrastructure/prisma-audience-order.reader.js";
 import { PrismaCompanyOrderListReader } from "./infrastructure/prisma-company-order-list.reader.js";
+import { PrismaCompanyOrderSummaryReader } from "./infrastructure/prisma-company-order-summary.reader.js";
 import { PrismaOrderAccessReader } from "./infrastructure/prisma-order-access.reader.js";
 import { PrismaOrderGuardReader } from "./infrastructure/prisma-order-guard.reader.js";
 import { PrismaPreferredPickupReader } from "./infrastructure/prisma-preferred-pickup.reader.js";
@@ -328,6 +331,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     { provide: CancellationSubjectReader, useClass: PrismaCancellationSubjectReader },
     { provide: OrderCancellationRepository, useClass: PrismaOrderCancellationRepository },
     ListCompanyOrdersHandler,
+    SummarizeCompanyOrdersHandler,
     ListPersonalOrdersHandler,
     GetOrderHandler,
     GetOrderSheetHandler,
@@ -484,6 +488,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // `roleOf`, qui garde la passation et le devis.
     { provide: OrderAccessReader, useClass: PrismaOrderAccessReader },
     { provide: CompanyOrderListReader, useClass: PrismaCompanyOrderListReader },
+    { provide: CompanyOrderSummaryReader, useClass: PrismaCompanyOrderSummaryReader },
     { provide: OrderPayerReader, useClass: PrismaOrderPayerReader },
     // Le port étroit du statut, sur la MÊME instance que le garde : la clientèle
     // n'a besoin que de lui, et deux lecteurs du statut n'auraient aucune raison

@@ -6,6 +6,10 @@ export interface CompanyOrderListScope {
   readonly companyId: string;
   /** Une seule société du périmètre, ou `null` : tout le périmètre. */
   readonly site: string | null;
+  /** Premier jour de retrait/livraison retenu (inclus), ou `null`. */
+  readonly from: string | null;
+  /** Dernier jour retenu (inclus), ou `null`. */
+  readonly to: string | null;
 }
 
 /** Une commande de la liste, avec son site et son auteur. */

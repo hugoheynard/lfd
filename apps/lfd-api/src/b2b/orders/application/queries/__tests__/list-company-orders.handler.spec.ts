@@ -1,4 +1,6 @@
+import { InvalidOrderListDayError } from "../../../domain/errors/admin-order-list-errors.js";
 import { OrderCompanyNotFoundError } from "../../../domain/errors/order-errors.js";
+import { InvertedOrderDayRangeError } from "../../../domain/errors/order-summary-errors.js";
 import {
   CompanyOrderListReader,
   type CompanyOrderEntry,
@@ -49,8 +51,40 @@ describe("ListCompanyOrdersHandler (lot C1 de plan-commandes-des-sites)", () => 
     await handler.execute(new ListCompanyOrdersQuery("usr_1", "co_principal", "co_site"));
 
     expect(list.scopes).toEqual([
-      { actorUserId: "usr_1", companyId: "co_principal", site: "co_site" },
+      { actorUserId: "usr_1", companyId: "co_principal", site: "co_site", from: null, to: null },
     ]);
+  });
+
+  it("passe les bornes de jour vérifiées (plan récapitulatif, §6.6)", async () => {
+    const list = new RecordingList();
+    const handler = new ListCompanyOrdersHandler(new OwnRole("owner"), list);
+
+    await handler.execute(
+      new ListCompanyOrdersQuery("usr_1", "co_principal", null, "2026-03-01", "2026-03-31"),
+    );
+
+    expect(list.scopes).toEqual([
+      {
+        actorUserId: "usr_1",
+        companyId: "co_principal",
+        site: null,
+        from: "2026-03-01",
+        to: "2026-03-31",
+      },
+    ]);
+  });
+
+  it.each([
+    ["un jour absent du calendrier", "2026-02-30", null, InvalidOrderListDayError],
+    ["un début après la fin", "2026-03-31", "2026-03-01", InvertedOrderDayRangeError],
+  ])("refuse %s, sans rien lire", async (_case, from, to, error) => {
+    const list = new RecordingList();
+    const handler = new ListCompanyOrdersHandler(new OwnRole("owner"), list);
+
+    await expect(
+      handler.execute(new ListCompanyOrdersQuery("usr_1", "co_principal", null, from, to)),
+    ).rejects.toBeInstanceOf(error);
+    expect(list.scopes).toEqual([]);
   });
 
   it("sans rattachement à la société listée : 404, et rien n'est lu", async () => {
