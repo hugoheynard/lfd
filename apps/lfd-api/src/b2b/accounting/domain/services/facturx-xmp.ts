@@ -9,7 +9,10 @@
  * propriétés `fx:` elles-mêmes. Écrites d'après la spécification Factur-X
  * 1.0 (de mémoire, 2026-10-08). veraPDF 1.30.2 accepte le schéma
  * d'extension (PDF/A-3B, `verify:facturx-pdf`, 2026-10-09) ; il ne juge pas
- * les VALEURS `fx:` au regard de Factur-X.
+ * les VALEURS `fx:` au regard de Factur-X. ⚠️ Toujours NON VÉRIFIÉES au
+ * 2026-10-22 : la spécification Factur-X 1.09.2 n'est distribuée par la
+ * FNFE-MPE que contre une adresse e-mail, et ni le XSD ni les Schematrons
+ * (qui ne lisent que le XML) ne les couvrent.
  *
  * Aucune valeur variable : le type est `INVOICE` pour une facture comme pour
  * un avoir (le XML porte 380 ou 381), et le nom du fichier joint est fixé

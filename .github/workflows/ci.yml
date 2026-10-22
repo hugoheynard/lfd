@@ -404,6 +404,11 @@ jobs:
           path: apps/lfd-api/node_modules/.cache/jest
           key: jest-unit-${{ hashFiles('pnpm-lock.yaml', 'apps/lfd-api/jest.base.cjs') }}-${{ github.sha }}
           restore-keys: jest-unit-${{ hashFiles('pnpm-lock.yaml', 'apps/lfd-api/jest.base.cjs') }}-
+      # La conformité française du Factur-X valide le XML contre le XSD par
+      # `xmllint` (`facturx-fr-validation.ts`, 2026-10-22) : garanti ici plutôt
+      # que supposé présent sur l'image.
+      - name: Installer xmllint
+        run: command -v xmllint || (sudo apt-get update && sudo apt-get install -y libxml2-utils)
       - name: Tests unitaires
         timeout-minutes: 12
         run: pnpm --filter lfd-api test:unit

@@ -1,8 +1,8 @@
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, renameSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, renameSync } from "node:fs";
 import { createRequire } from "node:module";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import SaxonJS from "saxon-js";
@@ -18,12 +18,12 @@ import SaxonJS from "saxon-js";
  * déposée recompile d'elle-même. Aucun réseau : tout part du fichier commité.
  */
 
-const APP_ROOT = join(
+export const APP_ROOT = join(
   dirname(fileURLToPath(import.meta.url)),
   ...Array.from({ length: 6 }, () => ".."),
 );
 const XSLT_PATH = join(APP_ROOT, "test", "fixtures", "en16931-cii", "EN16931-CII-validation.xslt");
-const CACHE_DIRECTORY = join(APP_ROOT, "node_modules", ".cache", "en16931-cii");
+const CACHE_ROOT = join(APP_ROOT, "node_modules", ".cache");
 
 /** La première compilation prend ~6 s ; les suivantes lisent le cache. */
 export const SCHEMATRON_COMPILE_TIMEOUT_MS = 120_000;
@@ -39,24 +39,42 @@ export interface SchematronFailure {
   readonly location: string;
 }
 
-/** Compile le SEF s'il manque, et rend son chemin. */
+/** Compile le SEF du Schematron EN 16931 s'il manque, et rend son chemin. */
 export function compiledSchematron(): string {
-  const digest = createHash("sha256").update(readFileSync(XSLT_PATH)).digest("hex");
-  const sef = join(CACHE_DIRECTORY, `${digest}.sef.json`);
+  return compiledStylesheet(XSLT_PATH, "en16931-cii");
+}
+
+/**
+ * Compile une feuille Schematron (XSLT) en SEF s'il manque, dans
+ * `node_modules/.cache/<cache>/`, et rend son chemin. Les `companions` — une
+ * liste de codes lue par `document()` — sont recopiés À CÔTÉ du SEF :
+ * `saxon-js` les résout depuis l'emplacement de la feuille compilée.
+ */
+export function compiledStylesheet(
+  xsltPath: string,
+  cache: string,
+  companions: readonly string[] = [],
+): string {
+  const directory = join(CACHE_ROOT, cache);
+  mkdirSync(directory, { recursive: true });
+  for (const companion of companions) {
+    copyFileSync(companion, join(directory, basename(companion)));
+  }
+  const digest = createHash("sha256").update(readFileSync(xsltPath)).digest("hex");
+  const sef = join(directory, `${digest}.sef.json`);
   if (existsSync(sef)) {
     return sef;
   }
-  mkdirSync(CACHE_DIRECTORY, { recursive: true });
   const partial = `${sef}.${String(process.pid)}.tmp`;
   const xslt3 = createRequire(import.meta.url).resolve("xslt3/xslt3.js");
   const run = spawnSync(
     process.execPath,
-    [xslt3, `-xsl:${XSLT_PATH}`, `-export:${partial}`, "-nogo", "-relocate:on"],
+    [xslt3, `-xsl:${xsltPath}`, `-export:${partial}`, "-nogo", "-relocate:on"],
     { encoding: "utf8", timeout: SCHEMATRON_COMPILE_TIMEOUT_MS },
   );
   if (run.status !== 0 || !existsSync(partial)) {
     throw new Error(
-      `La compilation du Schematron EN 16931 a échoué (code ${String(run.status)}) : ${run.stderr}`,
+      `La compilation du Schematron ${basename(xsltPath)} a échoué (code ${String(run.status)}) : ${run.stderr}`,
     );
   }
   // Renommage atomique : deux workers Jest peuvent compiler en même temps.
@@ -64,10 +82,15 @@ export function compiledSchematron(): string {
   return sef;
 }
 
-/** Passe un XML CII au Schematron et rend chaque règle enfreinte. */
+/** Passe un XML CII au Schematron EN 16931 et rend chaque règle enfreinte. */
 export function schematronFailures(xml: string): readonly SchematronFailure[] {
+  return stylesheetFailures(compiledSchematron(), xml);
+}
+
+/** Passe un XML à une feuille Schematron compilée et rend chaque règle enfreinte. */
+export function stylesheetFailures(sef: string, xml: string): readonly SchematronFailure[] {
   const svrl = SaxonJS.transform(
-    { stylesheetFileName: compiledSchematron(), sourceText: xml, destination: "serialized" },
+    { stylesheetFileName: sef, sourceText: xml, destination: "serialized" },
     "sync",
   ).principalResult;
   return [...svrl.matchAll(FAILED_ASSERT)].map((match) => ({

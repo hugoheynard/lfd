@@ -12,8 +12,10 @@ dans [`facture-carte-et-remboursements.md`](facture-carte-et-remboursements.md).
 
 - C'est la plateforme qui émet, tant qu'un logiciel comptable ne le fait pas ;
   elle fera toujours le fichier de prélèvement.
-- Profil Factur-X **EN 16931**. Une facture pour **toute vente pro** ; le
-  **public** n'en reçoit pas (bon chiffré).
+- Profil Factur-X **EN 16931**, avec la **CIUS-FR** (2026-10-22 : on le
+  garde ; XP Z12-012 retient deux profils, EN16931 avec CIUS-FR et
+  EXTENDED-CTC-FR). Factur-X visé : **1.09.2**. Une facture pour **toute
+  vente pro** ; le **public** n'en reçoit pas (bon chiffré).
 - Numérotation continue et chronologique ; une facture émise ne se supprime
   pas, elle se compense par un **avoir** (381).
 - **La facture précède le lot** : émise le dernier jour du mois, le lot du 1er
@@ -247,11 +249,48 @@ ni `fatal` ni `warning`, et **sept PDF déclarés conformes PDF/A-3B**.
   acheteur (`StatementBuyerReader`), commune à la facture du mois, à la facture
   carte et au dossier. Un payeur bloqué est signalé, pas facturé.
 
-**Ce qui n'est toujours pas vérifié** : le schéma XSD CII D16B (l'ordre des
-éléments reste écrit de mémoire) ; les règles **CIUS FR** et celles de la
-plateforme de réception (PA/PDP) au-delà d'EN 16931 ; les valeurs XMP Factur-X
-(`fx:`) — veraPDF n'accepte que leur schéma d'extension, il ne contrôle pas
-Factur-X (un validateur dédié, type Mustang, le ferait).
+### La conformité française (2026-10-22)
+
+Artefacts officiels FNFE-MPE, recopiés sans modification sous
+`apps/lfd-api/test/fixtures/facturx-fr/` — provenance, URL, empreintes et ce
+qui n'a pas pu être récupéré dans son `README.md` :
+
+| Ce qui est vérifié                    | Version                                   | Résultat sur les six pièces témoins                      |
+| ------------------------------------- | ----------------------------------------- | -------------------------------------------------------- |
+| XSD Factur-X du profil EN 16931       | Factur-X **1.09.2** (`xmllint`)           | **valides** : l'ordre des éléments n'est plus de mémoire |
+| Schematron Factur-X EN 16931          | 1.09.2 (paquet FNFE `fixFR04`)            | aucun refus ; un avertissement, `PEPPOL-EN16931-R008`    |
+| Schematron **BR-FR Flux 2** (CIUS-FR) | **v1.4.0.04** du 2026-09-04, mode `FATAL` | refus restants = les manques de donnée ci-dessous        |
+
+Spec : `apps/lfd-api/src/b2b/accounting/domain/services/__tests__/facturx-fr-conformance.spec.ts` (Jest
+unitaire ; `xmllint` doit être sur le poste). Elle énumère les manques un
+par un : une règle qui se met à passer la fait rougir autant qu'une faute
+nouvelle.
+
+- **BT-23, cadre de facturation** (BR-FR-08) : écrit depuis le 2026-10-22 —
+  `B1` (dépôt d'une facture de bien), `B2` pour la facture carte acquittée en
+  entier (`billingFramework`, `facturx-xml.ts`).
+- **BT-24** : `urn:cen.eu:en16931:2017`, seule valeur admise par la liste de
+  codes du Schematron Factur-X 1.09.2.
+- **Mentions** : `PMD`, `PMT`, `AAB` exigées par BR-FR-05 et présentes ;
+  SIREN vendeur et acheteur en schéma `0002` (BR-FR-10/11) passent.
+- **R008** : `ApplicableHeaderTradeDelivery` est vide sans lieu de livraison
+  distinct ni date de livraison unique ; le XSD l'exige quand même.
+
+**Les manques de donnée** — règles BR-FR laissées rouges, rien d'inventé :
+
+| Règle                   | Donnée                                   | D'où elle devrait venir                                                                                       |
+| ----------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| BR-FR-13 / **BT-34**    | adresse électronique du vendeur          | celle que notre plateforme agréée nous attribuera à l'annuaire ; à figer avec les faits de l'entité émettrice |
+| BR-FR-12 / **BT-49**    | adresse électronique de l'acheteur       | l'annuaire de la réforme (forme `SIREN` ou `SIREN_xxx`, schéma `0225`) — aucun lecteur n'existe               |
+| BR-FR-CO-05 / **BT-26** | date de la facture corrigée, sur l'avoir | la facture d'origine : à figer sur l'avoir à son émission (aujourd'hui seul BT-25, le numéro, l'est)          |
+
+**Ce qui n'est toujours pas vérifié** : les valeurs XMP `fx:Version` /
+`fx:ConformanceLevel` (la spécification Factur-X 1.09.2 n'est distribuée que
+contre une adresse e-mail ; ni le XSD ni les Schematrons ne lisent le XMP) ;
+les contrôles propres à la plateforme agréée de réception. Sous `B2`, XP
+Z12-012 veut BT-9 = date du paiement ; la facture carte écrit
+`max(paiement, émission)` (`cardInvoiceDueOn`) — le Schematron n'exige que
+sa présence.
 
 ## Prévenir, consulter, renvoyer
 
@@ -285,8 +324,10 @@ Factur-X (un validateur dédié, type Mustang, le ferait).
 
 ## Ce qui reste ouvert
 
-- **Validation externe** : Schematron EN 16931 et veraPDF tournent (§ « La
-  validation ») ; restent le XSD CII, la CIUS FR et les valeurs XMP Factur-X.
+- **Validation externe** : Schematron EN 16931, veraPDF, XSD Factur-X 1.09.2,
+  Schematron Factur-X et BR-FR Flux 2 tournent (§ « La validation », « La
+  conformité française ») ; restent les valeurs XMP Factur-X et les trois
+  manques de donnée BT-34, BT-49, BT-26.
 - **Le verrou d'objet du seau** (runbook) n'est pas posé.
 - **Re-rendu** : aucun geste dédié pour une pièce dont le rendu a échoué ; le
   renvoi de l'e-mail le fait au passage.

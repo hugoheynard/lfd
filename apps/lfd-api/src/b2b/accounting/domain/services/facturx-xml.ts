@@ -27,17 +27,20 @@ import { headerSettlement, lineTradeTax } from "./facturx-settlement.js";
  *
  * Le Schematron EN 16931 officiel (CII, `validation-1.3.16`) passe sur
  * chaque forme de pièce émise sans règle enfreinte
- * (`__tests__/facturx-schematron.spec.ts`, 2026-10-09). ⚠️ Le schéma XSD
- * CII D16B, lui, n'a toujours pas été passé : l'ordre des éléments reste
- * écrit de mémoire. Les règles arithmétiques sont aussi rejouées à
- * l'émission par `facturXArithmeticViolations`.
+ * (`__tests__/facturx-schematron.spec.ts`, 2026-10-09). Depuis le
+ * 2026-10-22, le XSD Factur-X 1.09.2 EN 16931 aussi — l'ordre des éléments
+ * n'est plus de mémoire — ainsi que le Schematron Factur-X et le Schematron
+ * BR-FR Flux 2 v1.4.0.04 (CIUS-FR), aux manques de donnée près que
+ * `__tests__/facturx-fr-conformance.spec.ts` énumère. Les règles
+ * arithmétiques sont aussi rejouées à l'émission par
+ * `facturXArithmeticViolations`.
  */
 export function renderFacturXml(invoice: Invoice): string {
   const state = invoice.toState();
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
     `<rsm:CrossIndustryInvoice ${NAMESPACES}>`,
-    exchangedDocumentContext(),
+    exchangedDocumentContext(state),
     exchangedDocument(state),
     "<rsm:SupplyChainTradeTransaction>",
     ...state.lines.map(lineItem),
@@ -57,16 +60,40 @@ const NAMESPACES = [
 ].join(" ");
 
 /**
- * BT-24 — l'identifiant du profil EN 16931 (« COMFORT ») de Factur-X : la
- * norme seule, sans extension ni CIUS. Écrit de mémoire, à vérifier contre
- * la spec Factur-X 1.07 (2026-10-08) — BASIC et EXTENDED y ajoutent un
- * suffixe `#compliant#…` / `#conformant#…`, pas ce profil.
+ * BT-24 — l'identifiant du profil EN 16931 (« COMFORT ») de Factur-X. C'est
+ * la SEULE valeur que la liste de codes du Schematron Factur-X 1.09.2
+ * EN16931 admet (`FACTUR-X_EN16931_codedb.xml`, liste 1 — vérifié le
+ * 2026-10-22) : la CIUS-FR ne s'y annonce pas, elle s'exprime par BT-23.
  */
 export const FACTURX_EN16931_PROFILE = "urn:cen.eu:en16931:2017";
 
-function exchangedDocumentContext(): string {
+const BILLING_FRAMEWORK_NATURE: Readonly<
+  Record<InvoiceState["mentions"]["operationCategory"], string>
+> = { goods: "B" };
+const BILLING_FRAMEWORK_DEPOSIT = "1";
+const BILLING_FRAMEWORK_ALREADY_PAID = "2";
+
+/**
+ * BT-23 — le cadre de facturation de la réforme (XP Z12-012 v1.4, Annexe A ;
+ * règle BR-FR-08, obligatoire). Lettre : la nature de l'opération (`B` bien —
+ * la livraison facturée est accessoire au bien, pas une prestation `M`).
+ * Chiffre : `2` facture déjà payée — la facture carte acquittée EN ENTIER
+ * (E5a) : le cadre impose BT-113 = BT-112 et un net à payer nul ; sinon `1`,
+ * le dépôt d'une facture, déjà-payé partiel compris.
+ */
+export function billingFramework(state: InvoiceState): string {
+  const fullyPaid = state.prepayment?.amountCents === state.vat.totalCents;
+  const deposit = fullyPaid ? BILLING_FRAMEWORK_ALREADY_PAID : BILLING_FRAMEWORK_DEPOSIT;
+  return `${BILLING_FRAMEWORK_NATURE[state.mentions.operationCategory]}${deposit}`;
+}
+
+/** BT-23 puis BT-24, dans l'ordre de `ExchangedDocumentContextType`. */
+function exchangedDocumentContext(state: InvoiceState): string {
   return [
     "<rsm:ExchangedDocumentContext>",
+    "<ram:BusinessProcessSpecifiedDocumentContextParameter>",
+    textElement("ram:ID", billingFramework(state)),
+    "</ram:BusinessProcessSpecifiedDocumentContextParameter>",
     "<ram:GuidelineSpecifiedDocumentContextParameter>",
     textElement("ram:ID", FACTURX_EN16931_PROFILE),
     "</ram:GuidelineSpecifiedDocumentContextParameter>",

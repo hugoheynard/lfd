@@ -10,10 +10,11 @@ import { basisPointsPercent, centsAmount, textElement } from "./facturx-format.j
  * notes (BG-1), avec le code de sujet UNTDID 4451 que l'usage français de
  * Factur-X leur donne.
  *
- * ⚠️ Codes de sujet écrits DE MÉMOIRE (`PMD` pénalités, `PMT` indemnité
- * forfaitaire, `AAB` escompte, `AAI` information générale) — à vérifier
- * contre la spec Factur-X 1.07 et le Schematron (2026-10-08). Ils ne changent
- * aucun montant ; un code faux est un avertissement, pas une facture fausse.
+ * Codes de sujet : `PMD` pénalités, `PMT` indemnité forfaitaire, `AAB`
+ * escompte — les trois que la règle BR-FR-05 du Schematron BR-FR Flux 2
+ * v1.4.0.04 exige dans BG-1 et retrouve dans nos pièces ; `AAI` information
+ * générale, admis par la liste de codes du Schematron Factur-X 1.09.2
+ * (`__tests__/facturx-fr-conformance.spec.ts`, vérifié le 2026-10-22).
  */
 
 const SUBJECT_LATE_PENALTIES = "PMD";
