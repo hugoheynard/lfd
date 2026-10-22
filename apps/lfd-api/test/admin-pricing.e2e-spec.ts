@@ -2094,3 +2094,17 @@ describe("🔴 reposer sur une période rangée", () => {
     await ladder({ label: "Le suivant" }).expect(201);
   });
 });
+
+/**
+ * Régression : un `kind` hors liste sortait en 500 `internal.unexpected` — le
+ * `ZodError` d'un `.parse` écrit dans la route n'était pas catégorisé (fix
+ * 2026-10-22).
+ */
+describe("une liste de gabarits mal demandée", () => {
+  it("🔴 un genre de gabarit inconnu est refusé en 400 qui nomme le paramètre", async () => {
+    const response = await staff().get("/admin/pricing/templates?kind=catalogue");
+
+    expect(response.status).toBe(400);
+    expect(JSON.stringify(response.body)).toContain("kind");
+  });
+});

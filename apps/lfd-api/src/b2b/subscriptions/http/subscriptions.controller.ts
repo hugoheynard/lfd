@@ -25,7 +25,7 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { ActingCompany } from "../../../platform/auth/acting-company.decorator.js";
 import { CurrentUser } from "../../../platform/auth/current-user.decorator.js";
 import type { Principal } from "../../../platform/auth/principal.js";
-import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
+import { ZodBody, ZodParam } from "../../../platform/shared/http/zod-body.pipe.js";
 import { CreateSubscriptionCommand } from "../application/commands/create-subscription.command.js";
 import { DeleteSubscriptionCommand } from "../application/commands/delete-subscription.command.js";
 import { SetSubscriptionStatusCommand } from "../application/commands/set-subscription-status.command.js";
@@ -79,17 +79,12 @@ export class SubscriptionsController {
   override(
     @CurrentUser() user: Principal,
     @Param("id") id: string,
-    @Param("date") date: string,
+    @Param("date", new ZodParam(occurrenceDateSchema, "date")) date: string,
     @Body(new ZodBody(upsertOccurrenceOverridePayloadSchema))
     payload: UpsertOccurrenceOverridePayload,
   ): Promise<void> {
     return this.commands.execute<UpsertOccurrenceOverrideCommand, void>(
-      new UpsertOccurrenceOverrideCommand(
-        user.userId,
-        id,
-        occurrenceDateSchema.parse(date),
-        payload,
-      ),
+      new UpsertOccurrenceOverrideCommand(user.userId, id, date, payload),
     );
   }
 

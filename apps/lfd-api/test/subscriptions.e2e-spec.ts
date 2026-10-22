@@ -208,3 +208,25 @@ describe("émission du journal (subscription.created)", () => {
     expect(event!.payload).toMatchObject({ subscriptionId: id, recurrence: "weekly" });
   });
 });
+
+/**
+ * Régression : une date d'échéance hors AAAA-MM-JJ sortait en 500
+ * `internal.unexpected` — le `ZodError` d'un `.parse` écrit dans la route
+ * n'était pas catégorisé (fix 2026-10-22).
+ */
+describe("un chemin mal formé", () => {
+  it("🔴 une date d'échéance mal formée est refusée en 400 qui nomme le paramètre, rien n'est écrit", async () => {
+    const id = await createSubscription();
+
+    const response = await ctx
+      .asSub(OWNER)
+      .put(`/subscriptions/${id}/occurrences/demain`)
+      .send({ skipped: true });
+
+    expect(response.status).toBe(400);
+    expect(JSON.stringify(response.body)).toContain("date");
+    expect(await ctx.prisma.subscriptionOccurrence.count({ where: { subscriptionId: id } })).toBe(
+      0,
+    );
+  });
+});

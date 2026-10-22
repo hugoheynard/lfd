@@ -15,7 +15,7 @@ import type { Response } from "express";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface, RequirePermission } from "../../platform/auth/admin-surface.decorator.js";
-import { ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
+import { ZodParam, ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
 import { CloseProductionDayCommand } from "../application/commands/close-production-day.command.js";
 import { ReopenProductionDayCommand } from "../application/commands/reopen-production-day.command.js";
 import { GetAtelierSheetPdfQuery } from "../application/queries/get-atelier-sheet-pdf.query.js";
@@ -27,6 +27,13 @@ import { GetProductionForecastQuery } from "../application/queries/get-productio
 import { GetProductionDueThresholdsQuery } from "../application/queries/get-production-due-thresholds.query.js";
 import { StaffUserId } from "../../platform/auth/staff.decorator.js";
 import type { ProductionPaper } from "../application/services/production-paper.service.js";
+
+/**
+ * Le jour du chemin, validé dans sa FORME par un pipe : un `.parse` écrit dans
+ * la route laissait sortir un `ZodError` nu, rendu en 500 (corrigé le
+ * 2026-10-22). Le pipe le rend en 400 en nommant le paramètre.
+ */
+const DAY = new ZodParam(productionBatchQuerySchema.shape.date, "date");
 
 /**
  * **La journée de fabrication, côté fournil.**
@@ -70,13 +77,13 @@ export class ProductionDayController {
    */
   @Get("batch/:date/compte-a-produire.pdf")
   async count(
-    @Param("date") date: string,
+    @Param("date", DAY) date: string,
     @Res({ passthrough: true }) response: Response,
   ): Promise<StreamableFile> {
     return this.paper(
       response,
       await this.queries.execute<GetProductionCountPdfQuery, ProductionPaper>(
-        new GetProductionCountPdfQuery(productionBatchQuerySchema.parse({ date }).date),
+        new GetProductionCountPdfQuery(date),
       ),
     );
   }
@@ -90,13 +97,13 @@ export class ProductionDayController {
    */
   @Get("batch/:date/dossier.pdf")
   async dossier(
-    @Param("date") date: string,
+    @Param("date", DAY) date: string,
     @Res({ passthrough: true }) response: Response,
   ): Promise<StreamableFile> {
     return this.paper(
       response,
       await this.queries.execute<GetDayDossierPdfQuery, ProductionPaper>(
-        new GetDayDossierPdfQuery(productionBatchQuerySchema.parse({ date }).date),
+        new GetDayDossierPdfQuery(date),
       ),
     );
   }
@@ -114,14 +121,14 @@ export class ProductionDayController {
   @Get("batch/:date/sheets/:reference.pdf")
   @RequirePermission("production_worksheet:read")
   async sheet(
-    @Param("date") date: string,
+    @Param("date", DAY) date: string,
     @Param("reference") reference: string,
     @Res({ passthrough: true }) response: Response,
   ): Promise<StreamableFile> {
     return this.paper(
       response,
       await this.queries.execute<GetAtelierSheetPdfQuery, ProductionPaper>(
-        new GetAtelierSheetPdfQuery(productionBatchQuerySchema.parse({ date }).date, reference),
+        new GetAtelierSheetPdfQuery(date, reference),
       ),
     );
   }
@@ -167,9 +174,9 @@ export class ProductionDayController {
    * prévisionnel (`production_plan`).
    */
   @Get("batch/:date/due-thresholds")
-  async dueThresholds(@Param("date") date: string): Promise<ProductionDueThresholdsView> {
+  async dueThresholds(@Param("date", DAY) date: string): Promise<ProductionDueThresholdsView> {
     return this.queries.execute<GetProductionDueThresholdsQuery, ProductionDueThresholdsView>(
-      new GetProductionDueThresholdsQuery(productionBatchQuerySchema.parse({ date }).date),
+      new GetProductionDueThresholdsQuery(date),
     );
   }
 
@@ -179,9 +186,9 @@ export class ProductionDayController {
    * part des commandes.
    */
   @Get("batch/:date/resupplies")
-  async resupplies(@Param("date") date: string): Promise<ProductionDayResuppliesView> {
+  async resupplies(@Param("date", DAY) date: string): Promise<ProductionDayResuppliesView> {
     return this.queries.execute<GetDayResuppliesQuery, ProductionDayResuppliesView>(
-      new GetDayResuppliesQuery(productionBatchQuerySchema.parse({ date }).date),
+      new GetDayResuppliesQuery(date),
     );
   }
 
@@ -195,9 +202,9 @@ export class ProductionDayController {
    * la cherche. Zéro attendu ; autre chose se rattrape en reclosant.
    */
   @Get("batch/:date/status")
-  async status(@Param("date") date: string): Promise<ProductionDayStatus> {
+  async status(@Param("date", DAY) date: string): Promise<ProductionDayStatus> {
     return this.queries.execute<GetProductionDayStatusQuery, ProductionDayStatus>(
-      new GetProductionDayStatusQuery(productionBatchQuerySchema.parse({ date }).date),
+      new GetProductionDayStatusQuery(date),
     );
   }
 
@@ -221,15 +228,11 @@ export class ProductionDayController {
   @Post("batch/:date/close")
   @RequirePermission("production_count_stop:write")
   async close(
-    @Param("date") date: string,
+    @Param("date", DAY) date: string,
     @StaffUserId() staffUserId: string,
   ): Promise<ProductionPlanClosure> {
     return this.commands.execute<CloseProductionDayCommand, ProductionPlanClosure>(
-      new CloseProductionDayCommand(
-        productionBatchQuerySchema.parse({ date }).date,
-        "manual",
-        staffUserId,
-      ),
+      new CloseProductionDayCommand(date, "manual", staffUserId),
     );
   }
 
@@ -246,11 +249,11 @@ export class ProductionDayController {
   @Post("batch/:date/reopen")
   @RequirePermission("production_count_stop:write")
   async reopen(
-    @Param("date") date: string,
+    @Param("date", DAY) date: string,
     @StaffUserId() staffUserId: string,
   ): Promise<ProductionPlanReopening> {
     return this.commands.execute<ReopenProductionDayCommand, ProductionPlanReopening>(
-      new ReopenProductionDayCommand(productionBatchQuerySchema.parse({ date }).date, staffUserId),
+      new ReopenProductionDayCommand(date, staffUserId),
     );
   }
 }

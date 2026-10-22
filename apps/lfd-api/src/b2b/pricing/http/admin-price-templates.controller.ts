@@ -4,6 +4,7 @@ import {
   savePriceTemplatePayloadSchema,
   type ApplyPriceTemplatePayload,
   type MercurialeBenchmarkView,
+  type PriceTemplateKind,
   type PriceTemplateView,
   type SavePriceTemplatePayload,
 } from "@lfd/contracts";
@@ -23,7 +24,7 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
-import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
+import { ZodBody, ZodParam } from "../../../platform/shared/http/zod-body.pipe.js";
 import { ApplyPriceTemplateCommand } from "../application/commands/apply-price-template.command.js";
 import { SavePriceTemplateCommand } from "../application/commands/save-price-template.command.js";
 import { GetPriceTemplateQuery } from "../application/queries/get-price-template.query.js";
@@ -62,9 +63,11 @@ export class AdminPriceTemplatesController {
   }
 
   @Get()
-  async list(@Query("kind") kind: string): Promise<readonly PriceTemplateView[]> {
+  async list(
+    @Query("kind", new ZodParam(priceTemplateKindSchema, "kind")) kind: PriceTemplateKind,
+  ): Promise<readonly PriceTemplateView[]> {
     return this.queries.execute<ListPriceTemplatesQuery, readonly PriceTemplateView[]>(
-      new ListPriceTemplatesQuery(priceTemplateKindSchema.parse(kind)),
+      new ListPriceTemplatesQuery(kind),
     );
   }
 

@@ -156,3 +156,29 @@ describe("rouvrir une journée arrêtée", () => {
     expect(await packingList()).toEqual([order?.id]);
   });
 });
+
+/**
+ * Régression : un jour hors AAAA-MM-JJ sortait en 500 `internal.unexpected` sur
+ * toutes les routes de la journée — le `ZodError` d'un `.parse` écrit dans la
+ * route n'était pas catégorisé (fix 2026-10-22).
+ */
+describe("un chemin mal formé", () => {
+  it("🔴 un jour mal formé est refusé en 400 qui nomme le paramètre, sur chaque route de la journée", async () => {
+    const day = "/admin/production/batch/demain";
+    const responses = await Promise.all([
+      ctx.asSub(STAFF).get(`${day}/compte-a-produire.pdf`),
+      ctx.asSub(STAFF).get(`${day}/dossier.pdf`),
+      ctx.asSub(STAFF).get(`${day}/sheets/CMD-1.pdf`),
+      ctx.asSub(STAFF).get(`${day}/due-thresholds`),
+      ctx.asSub(STAFF).get(`${day}/resupplies`),
+      ctx.asSub(STAFF).get(`${day}/status`),
+      ctx.asSub(STAFF).post(`${day}/close`),
+      ctx.asSub(STAFF).post(`${day}/reopen`),
+    ]);
+
+    expect(responses.map((response) => response.status)).toEqual(Array(8).fill(400));
+    for (const response of responses) {
+      expect(JSON.stringify(response.body)).toContain("date");
+    }
+  });
+});
