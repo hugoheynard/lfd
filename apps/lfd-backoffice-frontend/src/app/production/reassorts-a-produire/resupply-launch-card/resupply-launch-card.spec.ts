@@ -29,6 +29,8 @@ function resupply(
     arrivedBy: null,
     launchedAt: null,
     launchedBy: null,
+    departedAt: null,
+    departedBy: null,
     ...extra,
   };
 }
@@ -66,7 +68,7 @@ class FakeService {
   }
 }
 
-function mount(canLaunch: boolean) {
+function mount(canLaunch: boolean, view: ResupplyProductionDayView = VIEW) {
   const service = new FakeService();
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
@@ -74,7 +76,7 @@ function mount(canLaunch: boolean) {
     providers: [{ provide: BakehouseResuppliesService, useValue: service }],
   });
   const fixture = TestBed.createComponent(ResupplyLaunchCard);
-  fixture.componentRef.setInput('view', VIEW);
+  fixture.componentRef.setInput('view', view);
   fixture.componentRef.setInput('canLaunch', canLaunch);
   let launched = 0;
   fixture.componentInstance.launched.subscribe(() => (launched += 1));
@@ -132,5 +134,50 @@ describe('ResupplyLaunchCard', () => {
     expect(root.querySelector('fold-callout')?.textContent).toContain('déjà lancé');
     expect(launched()).toBe(0);
     expect(mount(false).root.querySelector('[data-resupply-launch]')).toBeNull();
+  });
+
+  /** R4d : lancé, puis parti (Village) ou arrivé (Labo), chaque étape avec son heure. */
+  it('dit d’un lancé s’il est parti, puis arrivé, avec l’heure et l’auteur', () => {
+    const launched = { launchedAt: '2026-01-03T08:40:00.000Z', launchedBy: 'Max' };
+    const view: ResupplyProductionDayView = {
+      ...VIEW,
+      sites: [
+        {
+          siteId: 'village',
+          siteLabel: 'Val Village',
+          resupplies: [
+            resupply('r6', 'village', {
+              ...launched,
+              departedAt: '2026-01-03T09:15:00.000Z',
+              departedBy: 'Léa',
+            }),
+          ],
+        },
+        {
+          siteId: 'labo',
+          siteLabel: 'Le Labo',
+          resupplies: [
+            resupply('r7', 'labo', {
+              ...launched,
+              arrivedAt: '2026-01-03T09:30:00.000Z',
+              arrivedBy: 'Paul',
+            }),
+          ],
+        },
+      ],
+    };
+    const { root } = mount(true, view);
+
+    const village = root.querySelector('[data-resupply-launch-row="r6"]');
+    const labo = root.querySelector('[data-resupply-launch-row="r7"]');
+    expect(village?.querySelector('[data-resupply-stage="departed"]')?.textContent).toContain(
+      '10:15 · Léa',
+    );
+    expect(village?.querySelector('[data-resupply-stage="arrived"]')).toBeNull();
+    expect(labo?.querySelector('[data-resupply-stage="departed"]')).toBeNull();
+    expect(labo?.querySelector('[data-resupply-stage="arrived"]')?.textContent).toContain('Arrivé');
+    expect(labo?.querySelector('[data-resupply-stage="arrived"]')?.textContent).toContain(
+      '10:30 · Paul',
+    );
   });
 });

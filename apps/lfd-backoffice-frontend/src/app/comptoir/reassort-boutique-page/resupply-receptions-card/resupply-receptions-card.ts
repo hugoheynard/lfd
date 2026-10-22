@@ -25,6 +25,7 @@ import {
   parisClock,
   RESUPPLY_TARGET_LABELS,
 } from '../../../shared/resupply-labels';
+import { resupplySteps, type ResupplyStep } from '../../../shared/resupply-steps';
 import { ResupplyReceiptsService } from '../resupply-receipts.service';
 
 /**
@@ -48,6 +49,10 @@ import { ResupplyReceiptsService } from '../resupply-receipts.service';
  * Depuis le lot R3e (2026-10-22), un réassort attendu dit s'il est
  * « Arrivé » (le transfert reçu au point, ou « Monté » au fournil) ou encore
  * « Attendu ». Réceptionner ne l'attend pas : le comptoir fait foi.
+ *
+ * Depuis le lot R4d (2026-10-22), un réassort attendu montre son chemin :
+ * Envoyé → Lancé → Parti → Arrivé, chaque étape atteinte avec son heure et
+ * son auteur quand on les a. Aucune n'ouvre ni ne ferme « Réceptionner ».
  *
  * La carte fait ses gestes et prévient la page (`changed`), qui relit tout
  * (le stock du jour et les alertes que la réception a levées).
@@ -89,6 +94,10 @@ export class ResupplyReceptionsCard {
       this.receptions();
       untracked(() => this.drafts.set(new Map()));
     });
+  }
+
+  protected stepsOf(reception: ResupplyReceptionView): readonly ResupplyStep[] {
+    return resupplySteps(reception);
   }
 
   protected receivedLine(reception: ResupplyReceptionView): string {

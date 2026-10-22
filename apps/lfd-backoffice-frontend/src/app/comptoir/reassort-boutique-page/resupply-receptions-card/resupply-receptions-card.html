@@ -33,6 +33,18 @@
           }
         </div>
 
+        @if (reception.status === 'expected') {
+          <!-- R4d : le chemin du réassort, étapes atteintes seulement ; un affichage. -->
+          <ol class="steps" data-resupply-steps aria-label="Où en est le réassort">
+            @for (step of stepsOf(reception); track step.key) {
+              <li class="step" [attr.data-resupply-step]="step.key">
+                <fold-status-badge [status]="step.status" [label]="step.label" />
+                <span class="muted">{{ step.detail }}</span>
+              </li>
+            }
+          </ol>
+        }
+
         <table class="lines">
           <caption class="sr">
             Lignes du réassort

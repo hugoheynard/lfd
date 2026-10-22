@@ -38,6 +38,14 @@ export interface SiteResupplyLaunch {
 }
 
 /**
+ * Le départ de la tournée qui emporte le transfert du réassort (R4d), tel
+ * que le commerce l'AFFICHE : l'instant, et le nom figé du livreur (`null`
+ * pour une tournée sans livreur, ou que l'annuaire ne nomme pas). Aucun
+ * refus ne le lit.
+ */
+export type SiteResupplyDeparture = SiteResupplyLaunch;
+
+/**
  * L'état persisté d'un réassort. Depuis le lot R1c (2026-10-21), le
  * brouillon — « la demande en cours » — se persiste aussi : `placed` est
  * alors `null`.
@@ -69,6 +77,11 @@ export interface SiteResupplySnapshot {
    * lancé. Facultatif à la RÉHYDRATATION seulement (absent vaut `null`).
    */
   readonly launched?: SiteResupplyLaunch | null;
+  /**
+   * « Parti à HH:MM » (R4d) ; `null` tant que la tournée qui porte son
+   * transfert n'est pas partie. Facultatif à la RÉHYDRATATION seulement.
+   */
+  readonly departed?: SiteResupplyDeparture | null;
 }
 
 /** Un réassort envoyé (passé, annulé ou non). */

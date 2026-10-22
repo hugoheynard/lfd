@@ -30,6 +30,10 @@ export function receptionView(
     status: received === null ? "expected" : "received",
     arrivedAt: resupply.arrived?.at.toISOString() ?? null,
     arrivedBy: resupply.arrived === null ? null : nameOf(resupply.arrived.author.name),
+    launchedAt: resupply.launched?.at.toISOString() ?? null,
+    launchedBy: resupply.launched?.byName ?? null,
+    departedAt: resupply.departed?.at.toISOString() ?? null,
+    departedBy: resupply.departed?.byName ?? null,
     receivedAt: received?.at.toISOString() ?? null,
     receivedBy: received === null ? null : nameOf(received.author.name),
     lines:

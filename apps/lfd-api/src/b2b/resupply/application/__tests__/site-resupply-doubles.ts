@@ -37,6 +37,7 @@ function snapshotOf(resupply: SiteResupply, version: number): SiteResupplySnapsh
     cancelled: resupply.cancelled,
     arrived: resupply.arrived,
     launched: resupply.launched,
+    departed: resupply.departed,
   };
 }
 

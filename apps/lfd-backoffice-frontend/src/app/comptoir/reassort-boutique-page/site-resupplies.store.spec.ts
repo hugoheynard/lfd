@@ -32,6 +32,8 @@ const LAUNCHED: SiteResupplyView = {
   arrivedBy: null,
   launchedAt: '2026-01-03T06:30:00.000Z',
   launchedBy: 'Max',
+  departedAt: null,
+  departedBy: null,
 };
 
 class FakeService {

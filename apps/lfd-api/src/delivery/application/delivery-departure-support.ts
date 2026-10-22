@@ -20,6 +20,7 @@ import { DeliveryRoundDepartedEvent } from "../domain/events/delivery-loading.ev
 import type { InternalTransfer } from "../domain/entities/internal-transfer.js";
 import type { DeliveryRoundRepository } from "../domain/ports/delivery-round.repository.js";
 import type { InternalTransferRepository } from "../domain/ports/internal-transfer.repository.js";
+import { TransferDepartedFact } from "../channels/commerce/transfer-departed.fact.js";
 import { loadTransfer } from "./internal-transfer-support.js";
 import { itemContentsOf } from "./transfer-contents.js";
 import type { TransferResupplyContents } from "./transfer-resupply-contents.js";
@@ -106,7 +107,7 @@ export async function departAndFreeze(
   refuseHeldOrders(round, sheets, held);
   await deps.rounds.save(round);
   await deps.departedStops.record(departed);
-  await departTransfers(transfers, at, deps);
+  await departTransfers(transfers, at, round.driverStaffId, deps);
   await deps.durable.publish(
     new DeliveryRoundDepartedFact(round.id, round.serviceDay, at, round.orderIds).durableFact(),
   );
@@ -158,11 +159,13 @@ async function loadTransfers(
 
 /**
  * Les transferts partent avec la tournée et figent leur manifeste. Un
- * transfert déjà parti n'écrit rien : le premier départ fait foi.
+ * transfert déjà parti n'écrit rien : le premier départ fait foi. Chaque
+ * transfert qui part écrit son fait durable (R4d) : ses réassorts sont partis.
  */
 async function departTransfers(
   transfers: readonly InternalTransfer[],
   at: Date,
+  driverStaffId: string | null,
   deps: DepartureDeps,
 ): Promise<void> {
   if (transfers.length === 0) {
@@ -172,6 +175,16 @@ async function departTransfers(
   for (const transfer of transfers) {
     if (transfer.depart(at, contents)) {
       await deps.transfers.save(transfer);
+      await deps.durable.publish(
+        new TransferDepartedFact(
+          transfer.id,
+          transfer.siteId,
+          transfer.serviceDay,
+          at,
+          driverStaffId,
+          transfer.resupplyIds,
+        ).durableFact(),
+      );
     }
   }
 }

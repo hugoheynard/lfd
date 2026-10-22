@@ -17,6 +17,10 @@ const EXPECTED: ResupplyReceptionView = {
   status: 'expected',
   arrivedAt: null,
   arrivedBy: null,
+  launchedAt: null,
+  launchedBy: null,
+  departedAt: null,
+  departedBy: null,
   receivedAt: null,
   receivedBy: null,
   lines: [LINE],
@@ -68,6 +72,31 @@ describe('ResupplyReceptionsCard', () => {
       'Arrivé, signalé par Paul à 07:30',
     );
     expect(root.querySelectorAll('[data-resupply-receive]')).toHaveLength(2);
+  });
+
+  /** R4d : le chemin Envoyé → Lancé → Parti → Arrivé, et Réceptionner toujours permis. */
+  it('montre les étapes atteintes dans l’ordre, avec l’heure et l’auteur, et laisse réceptionner', () => {
+    const departed: ResupplyReceptionView = {
+      ...EXPECTED,
+      target: 'asap',
+      launchedAt: '2026-01-02T06:05:00.000Z',
+      launchedBy: 'Max',
+      departedAt: '2026-01-02T07:30:00.000Z',
+      departedBy: 'Léa',
+    };
+    const { root } = mount([departed], true);
+
+    const steps = [...root.querySelectorAll('[data-resupply-step]')];
+    expect(steps.map((step) => step.getAttribute('data-resupply-step'))).toEqual([
+      'sent',
+      'launched',
+      'departed',
+    ]);
+    expect(steps[1]?.textContent).toContain('Lancé');
+    expect(steps[1]?.textContent).toContain('07:05 · Max');
+    expect(steps[2]?.textContent).toContain('Parti');
+    expect(steps[2]?.textContent).toContain('08:30 · Léa');
+    expect(root.querySelectorAll('[data-resupply-receive]')).toHaveLength(1);
   });
 
   it('montre l’attendu en lecture et un seul bouton « Réceptionner », qui prévient la page', async () => {

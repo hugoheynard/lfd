@@ -128,6 +128,13 @@ model SiteResupply {
   launchedAt     DateTime? @map("launched_at") @db.Timestamptz(6)
   launchedByName String?   @map("launched_by_name")
 
+  /// « Parti à HH:MM » (lot R4d) : l'AFFICHAGE du départ de la tournée qui
+  /// porte le transfert du réassort, posé par l'abonné du fait
+  /// `delivery.transfer_departed`. Aucun refus ne le lit. Nom figé du
+  /// livreur, `null` si la tournée n'en avait pas.
+  departedAt     DateTime? @map("departed_at") @db.Timestamptz(6)
+  departedByName String?   @map("departed_by_name")
+
   lines   SiteResupplyLine[]
   /// Son reçu, une fois réceptionné (lot R2).
   receipt ResupplyReceipt?

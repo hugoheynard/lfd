@@ -93,6 +93,14 @@ export interface SiteResupplyView {
   readonly launchedAt: string | null;
   /** Nom figé de qui l'a lancé ; `null` s'il ne l'est pas ou si l'annuaire ne le nommait pas. */
   readonly launchedBy: string | null;
+  /**
+   * « Parti » (R4d) : la tournée qui porte son transfert est partie ; `null`
+   * tant qu'elle ne l'est pas — et toujours pour un point servi sur place.
+   * Un affichage posé par le fait de la livraison ; aucun refus ne le lit.
+   */
+  readonly departedAt: string | null;
+  /** Nom figé du livreur ; `null` sans livreur, ou si l'annuaire ne le nommait pas. */
+  readonly departedBy: string | null;
 }
 
 /**

@@ -20,6 +20,8 @@ import {
 } from "./loading-doubles.js";
 import { deliveryOn, FixedDeliveryOrders, InMemoryDeliveryRounds } from "./round-doubles.js";
 import { resupplyContentsOver } from "../../__tests__/resupply-transfer-doubles.js";
+import { DELIVERY_ROUND_DEPARTED } from "../../../channels/handover/index.js";
+import { DELIVERY_TRANSFER_DEPARTED } from "../../../channels/commerce/index.js";
 
 /*
  * « Partir » avec un arrêt de transfert interne (plan du transfert interne,
@@ -64,6 +66,11 @@ function loadedBin(binId: string) {
 
 function setup(transferLoaded: boolean, receivedByHand = false, withBins = true) {
   const transfer = plannedTransfer("t_1", DAY, NOW, ["o_v1"]);
+  transfer.attach(
+    { itemId: "t_1_r1", item: { kind: "resupply", resupplyId: "rs_1" } },
+    { siteId: "site_vv", serviceDay: DAY },
+    NOW,
+  );
   if (receivedByHand) {
     transfer.receive({ at: NOW, by: "staff_counter", reason: "Venu par le personnel" });
   }
@@ -111,7 +118,8 @@ describe("Partir avec un arrêt de transfert (lot T1)", () => {
     expect(transfer?.toSnapshot().manifest).toEqual([
       { itemId: "t_1_i1", sku: "PAIN", productName: "Pain", quantity: 4 },
     ]);
-    expect(durable.facts.map((fact) => fact.payload["orderIds"])).toEqual([["o_1"]]);
+    const roundFacts = durable.facts.filter((fact) => fact.type === DELIVERY_ROUND_DEPARTED);
+    expect(roundFacts.map((fact) => fact.payload["orderIds"])).toEqual([["o_1"]]);
     expect(departed.recorded.map((stop) => stop.stopId)).toEqual(["r_1_s1"]);
   });
 
@@ -149,5 +157,36 @@ describe("Partir avec un arrêt de transfert (lot T1)", () => {
     await expect(refusal).rejects.toThrow(DeliveryRoundNotReadyError);
     await expect(refusal).rejects.toThrow(/→ Val Village/u);
     expect(transfers.all()[0]?.departedAt).toBeNull();
+  });
+
+  /** R4d : le commerce apprend « réassort parti » du départ du transfert qui le porte. */
+  it("écrit le fait « transfert parti » avec ses réassorts, l'instant et le livreur (R4d)", async () => {
+    const { handler, durable } = setup(true);
+
+    await handler.execute(new DepartDeliveryRoundCommand("r_1", { version: 1 }));
+
+    const departedFacts = durable.facts.filter((fact) => fact.type === DELIVERY_TRANSFER_DEPARTED);
+    expect(departedFacts).toEqual([
+      {
+        type: DELIVERY_TRANSFER_DEPARTED,
+        key: `${DELIVERY_TRANSFER_DEPARTED}:t_1`,
+        payload: {
+          transferId: "t_1",
+          siteId: "site_vv",
+          serviceDay: DAY,
+          departedAt: NOW.toISOString(),
+          driverStaffId: null,
+          resupplyIds: ["rs_1"],
+        },
+      },
+    ]);
+  });
+
+  it("n'écrit aucun fait « transfert parti » pour un transfert reçu à la main avant le départ (R4d)", async () => {
+    const { handler, durable } = setup(false, true);
+
+    await handler.execute(new DepartDeliveryRoundCommand("r_1", { version: 1 }));
+
+    expect(durable.facts.filter((fact) => fact.type === DELIVERY_TRANSFER_DEPARTED)).toEqual([]);
   });
 });

@@ -16,6 +16,13 @@
         @if (row.launchedAt !== null) {
           <fold-status-badge status="active" label="Lancé" />
           <span class="muted" data-resupply-launched-by>{{ launchedLine(row) }}</span>
+          <!-- R4d : après le lancement, le chemin — parti, puis arrivé. -->
+          @for (step of laterSteps(row); track step.key) {
+            <span class="stage" [attr.data-resupply-stage]="step.key">
+              <fold-status-badge [status]="step.status" [label]="step.label" />
+              <span class="muted">{{ step.detail }}</span>
+            </span>
+          }
         } @else if (launchedHere().has(row.resupplyId)) {
           <fold-status-badge status="active" label="Lancé" />
         } @else if (canLaunch()) {

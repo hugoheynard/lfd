@@ -37,6 +37,9 @@ export const SUPERVISION_VIEWS: readonly FoldViewToggleOption[] = [
 const STATE_BADGES: Readonly<Record<DayStockResupplyState, { status: string; label: string }>> = {
   sent: { status: 'coming-soon', label: 'Envoyé' },
   frozen: { status: 'terminated', label: 'Figé au plan' },
+  // R4d : un « au plus tôt » lancé au fournil, puis parti avec sa tournée.
+  launched: { status: 'in-progress', label: 'Lancé' },
+  departed: { status: 'in-progress', label: 'Parti' },
   arrived: { status: 'pending', label: 'Arrivé' },
   received: { status: 'active', label: 'Réceptionné' },
 };

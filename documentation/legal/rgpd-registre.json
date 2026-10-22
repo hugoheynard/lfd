@@ -1179,6 +1179,15 @@
       "information": false
     },
     {
+      "colonne": "public.site_resupply.departed_by_name",
+      "personne": "staff",
+      "categorie": "identite",
+      "finalite": "Nom figé du livreur de la tournée qui emporte le transfert d'un réassort (`site_resupply`, lot R4d), affiché « Parti à HH:MM », lisible même si la fiche staff change.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "public.site_resupply.launched_by_name",
       "personne": "staff",
       "categorie": "identite",

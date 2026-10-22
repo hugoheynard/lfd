@@ -21,6 +21,7 @@ import { ListSiteResuppliesHandler } from "./application/list-site-resupplies.ha
 import { MarkArrivedOnTransferReceived } from "./application/mark-arrived-on-transfer-received.handler.js";
 import { MarkResupplyMountedHandler } from "./application/mark-resupply-mounted.handler.js";
 import { RecordLaunchOnResupplyLaunched } from "./application/record-launch-on-resupply-launched.handler.js";
+import { RecordDepartureOnTransferDeparted } from "./application/record-departure-on-transfer-departed.handler.js";
 import { ResupplyArrivedBell } from "./application/resupply-arrived-bell.js";
 import { ProductionDayResupplies } from "./application/production-day-resupplies.js";
 import { ProductionRangeResupplies } from "./application/production-range-resupplies.js";
@@ -152,6 +153,8 @@ import { PrismaTransferServedSites } from "./infrastructure/prisma-transfer-serv
     ResupplyArrivedBell,
     // L'affichage « Lancé par X à HH:MM » (R4a), abonné durable du fait du fournil.
     RecordLaunchOnResupplyLaunched,
+    // « Parti » (R4d) : le départ du transfert qui porte le réassort, un affichage.
+    RecordDepartureOnTransferDeparted,
     ResupplyPlanGate,
     ProductionDayResupplies,
     ProductionRangeResupplies,

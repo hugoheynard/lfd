@@ -48,6 +48,8 @@ class FakeResupplies {
               arrivedBy: null,
               launchedAt: null,
               launchedBy: null,
+              departedAt: null,
+              departedBy: null,
             },
           ],
         },

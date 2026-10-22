@@ -24,3 +24,9 @@
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-sm);
 }
+
+.stage {
+  display: inline-flex;
+  gap: var(--fold-space-xs);
+  align-items: center;
+}

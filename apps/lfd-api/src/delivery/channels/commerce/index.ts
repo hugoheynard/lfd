@@ -93,3 +93,11 @@ export {
   TransferReceivedFact,
   TransferReceivedPayloadError,
 } from "./transfer-received.fact.js";
+// « Transfert parti », fait durable (lot R4d, 2026-10-22) : déclaré ET écrit
+// par la livraison au départ de la tournée, entendu par le commerce — ses
+// réassorts sont partis (un affichage).
+export {
+  DELIVERY_TRANSFER_DEPARTED,
+  TransferDepartedFact,
+  TransferDepartedPayloadError,
+} from "./transfer-departed.fact.js";

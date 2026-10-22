@@ -69,3 +69,18 @@
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+.steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm) var(--fold-space-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  display: flex;
+  gap: var(--fold-space-xs);
+  align-items: center;
+}

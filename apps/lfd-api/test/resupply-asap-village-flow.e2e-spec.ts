@@ -8,7 +8,7 @@
  * `resupply-asap-transfer`, `resupply-transfer-reception`, `resupply-receipt`).
  * Ce qui ne s'éprouve qu'ici : qu'ils S'ENCHAÎNENT — le même fait part au
  * colisage et à la livraison, la tournée part avec l'emballé, le transfert
- * reçu dit le réassort arrivé — par les vraies routes et la vraie boîte
+ * reçu dit le réassort arrivé, le départ le dit parti (R4d) — par les vraies routes et la vraie boîte
  * d'envoi, sans écriture de raccord. La journée n'a jamais été arrêtée : le
  * lancement l'ouvre (Q5), sans dossier (Q6).
  *
@@ -16,6 +16,7 @@
  * une semaine). Aucune date du calendrier.
  */
 import type {
+  DayStockOverviewView,
   InternalTransferManifestView,
   MyDeliveryRoundView,
   PackingResuppliesView,
@@ -26,7 +27,8 @@ import { localToInstant } from "@lfd/contracts";
 import { RoadTravelTimeReader } from "../src/delivery/channels/commerce/index.js";
 import { Clock } from "../src/platform/time/clock.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";
-import { jsonBody, type E2eContext } from "./e2e-harness.js";
+import { RECORD_DEPARTURE_ON_TRANSFER_DEPARTED } from "../src/b2b/resupply/application/record-departure-on-transfer-departed.handler.js";
+import { daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { MY_ROUND, seedDriverRole, staffWithRole } from "./delivery-driver-scene.js";
 import { binTypeId, depart, loadBin } from "./delivery-loading-scene.js";
 import { ADMIN_VERIFIER_OVERRIDE, addVehicle, ROUNDS, roundOf } from "./delivery-rounds-scene.js";
@@ -175,6 +177,43 @@ async function stepDeparture(transferId: string): Promise<{ roundId: string; pau
   return { roundId, paul };
 }
 
+/**
+ * J 08:30 — « Parti » (R4d) : le comptoir et la Supervision le lisent, à
+ * l'instant du départ et au nom du livreur ; rejoué, le fait ne réécrit rien.
+ */
+async function stepDepartedShown(flow: Flow): Promise<void> {
+  const path = `/admin/resupply-receipts/${flow.village}/${SERVICE_DAY}`;
+  const view = jsonBody<ResupplyReceiptView>(await staff().get(path).expect(200));
+  expect(view.receptions).toMatchObject([
+    {
+      resupplyId: flow.resupplyId,
+      launchedAt: at("07:05").toISOString(),
+      departedAt: at("08:30").toISOString(),
+      arrivedAt: null,
+    },
+  ]);
+  expect(view.receptions[0]?.departedBy).toContain("staff-paul");
+  const board = jsonBody<DayStockOverviewView>(
+    await staff().get(`/admin/supervision/stock/${SERVICE_DAY}`).expect(200),
+  );
+  const village = board.sites.find((site) => site.siteId === flow.village);
+  expect(village?.resupplies).toMatchObject([{ resupplyId: flow.resupplyId, state: "departed" }]);
+
+  clock.set(at("08:45"));
+  // Le fait relivré (un relais mort après l'effet) : le premier départ fait foi.
+  const replay = await ctx.prisma.outboxDelivery.updateMany({
+    where: { subscriber: RECORD_DEPARTURE_ON_TRANSFER_DEPARTED },
+    data: { deliveredAt: null, claimedUntil: null, nextAttemptAt: daysAgo(1) },
+  });
+  expect(replay.count).toBe(1);
+  await settle();
+  const replayed = await ctx.prisma.siteResupply.findUniqueOrThrow({
+    where: { id: flow.resupplyId },
+    select: { departedAt: true },
+  });
+  expect(replayed.departedAt).toEqual(at("08:30"));
+}
+
 /** J 09:00 — « Remis au site » : le réassort est arrivé, la cloche sonne au comptoir. */
 async function stepSiteDrop(flow: Flow, roundId: string, paul: Paul): Promise<void> {
   clock.set(at("09:00"));
@@ -222,6 +261,8 @@ describe("le parcours « au plus tôt » du Village, du lancement à la récepti
     await stepPacking(flow);
     // 4. J 08:30 — chargé, parti : le manifeste fige l'emballé.
     const { roundId, paul } = await stepDeparture(transferId);
+    // 4 bis. J 08:30 — « parti » au comptoir et à la Supervision, idempotent.
+    await stepDepartedShown(flow);
     // 5. J 09:00 — « Remis au site » : arrivé, cloche au comptoir.
     await stepSiteDrop(flow, roundId, paul);
     // 6. J 09:10 — le comptoir réceptionne 7.

@@ -30,6 +30,8 @@ export function siteResupplyView(snapshot: PlacedSiteResupplySnapshot): SiteResu
     arrivedBy: snapshot.arrived === null ? null : nameOf(snapshot.arrived.author.name),
     launchedAt: snapshot.launched?.at.toISOString() ?? null,
     launchedBy: snapshot.launched?.byName ?? null,
+    departedAt: snapshot.departed?.at.toISOString() ?? null,
+    departedBy: snapshot.departed?.byName ?? null,
   };
 }
 

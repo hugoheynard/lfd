@@ -57,6 +57,12 @@ export interface ResupplyReceptionView {
    */
   readonly arrivedAt: string | null;
   readonly arrivedBy: string | null;
+  /** « Lancé » au fournil (R4a, « au plus tôt » seulement) ; `null` sinon. */
+  readonly launchedAt: string | null;
+  readonly launchedBy: string | null;
+  /** « Parti » (R4d) : la tournée qui porte son transfert est partie ; `null` sinon. */
+  readonly departedAt: string | null;
+  readonly departedBy: string | null;
   /** Instant de « Réceptionner » ; `null` tant qu'il est attendu. */
   readonly receivedAt: string | null;
   readonly receivedBy: string | null;

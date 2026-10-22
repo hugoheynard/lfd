@@ -134,6 +134,8 @@ describe("le fournil envoie un réassort (R1d)", () => {
         arrivedBy: null,
         launchedAt: null,
         launchedBy: null,
+        departedAt: null,
+        departedBy: null,
       },
     ]);
   });

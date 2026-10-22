@@ -1,7 +1,11 @@
 import { FixedClosedPlans } from "../../../orders/application/commands/__tests__/plan-doubles.js";
 import { DayStockReader, type DayStockSite } from "../../domain/day-stock.reader.js";
 import type { ResupplyReceiptSnapshot } from "../../domain/resupply-receipt.js";
-import { isPlaced, type PlacedSiteResupplySnapshot } from "../../domain/site-resupply.js";
+import {
+  isPlaced,
+  type PlacedSiteResupplySnapshot,
+  type SiteResupplySnapshot,
+} from "../../domain/site-resupply.js";
 import { StockAlert } from "../../domain/stock-alert.js";
 import { GetDayStockOverviewHandler } from "../get-day-stock-overview.handler.js";
 import { GetDayStockOverviewQuery } from "../get-day-stock-overview.query.js";
@@ -46,8 +50,9 @@ class InMemoryDayStockReader extends DayStockReader {
  * (PAC, 6 demandés, 5 emballés), un arrivé (BAG), un annulé ; une rupture sur
  * TAR. Le Labo : rien. Un point archivé : une alerte seule.
  */
-async function world(stopped: readonly string[]) {
+async function world(stopped: readonly string[], extra: readonly SiteResupplySnapshot[] = []) {
   const bench = setup();
+  extra.forEach((resupply) => bench.resupplies.put(resupply));
   bench.resupplies.put(placed("r_cro", CRO_24));
   bench.resupplies.put(
     placed("r_pac", [{ sku: "PAC", label: "Pain au chocolat", quantity: 6 }], {
@@ -136,5 +141,27 @@ describe("l'onglet Stock de la Supervision (S1)", () => {
       products: [],
     });
     expect(view.sites[0]?.resupplies[1]).toMatchObject({ resupplyId: "r_pac", state: "sent" });
+  });
+
+  /** R4d : un « au plus tôt » lancé, puis parti, se lit sous son état le plus avancé. */
+  it("dit « lancé » puis « parti », et « arrivé » l'emporte sur « parti »", async () => {
+    const launched = { at: AT, byName: "Paul" };
+    const departed = { at: AT, byName: "Léa" };
+    const line = [{ sku: "ECL", label: "Éclair", quantity: 2 }];
+    const view = await world(
+      [DAY],
+      [
+        placed("r_lau", line, { launched }),
+        placed("r_dep", line, { launched, departed }),
+        placed("r_arr", line, { launched, departed, arrived: { at: AT, author: AUTHOR } }),
+      ],
+    );
+
+    const states = new Map(
+      (view.sites[0]?.resupplies ?? []).map((resupply) => [resupply.resupplyId, resupply.state]),
+    );
+    expect(states.get("r_lau")).toBe("launched");
+    expect(states.get("r_dep")).toBe("departed");
+    expect(states.get("r_arr")).toBe("arrived");
   });
 });

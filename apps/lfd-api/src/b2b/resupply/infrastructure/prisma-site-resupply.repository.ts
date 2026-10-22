@@ -30,6 +30,8 @@ function tracesOf(resupply: SiteResupply) {
     arrivedByRole: arrived?.author.role ?? null,
     launchedAt: resupply.launched?.at ?? null,
     launchedByName: resupply.launched?.byName ?? null,
+    departedAt: resupply.departed?.at ?? null,
+    departedByName: resupply.departed?.byName ?? null,
   };
 }
 

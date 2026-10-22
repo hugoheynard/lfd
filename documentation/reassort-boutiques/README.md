@@ -727,10 +727,59 @@ sequenceDiagram
   parcours `apps/lfd-api/test/resupply-asap-village-flow.e2e-spec.ts` (du
   lancement à la réception, horloge qui saute).
 
+## Ce qui est bâti : le suivi, « lancé » et « parti » (lot R4d, 2026-10-22, non commité)
+
+Plan : [`plan-au-plus-tot.md`](plan-au-plus-tot.md) §1 « Les états ». Un
+**affichage** seulement : aucun refus ne lit « parti », et « Réceptionner »
+reste permis à tout moment (le comptoir fait foi).
+
+```mermaid
+sequenceDiagram
+  participant L as Livraison (departAndFreeze)
+  participant O as Boîte d'envoi
+  participant C as Commerce (abonné durable)
+  L->>L: la tournée part, chaque transfert prévu avec elle
+  L->>O: delivery.transfer_departed, une clé par transfert — point, jour, instant, livreur, réassorts
+  O-->>C: RecordDepartureOnTransferDeparted
+  C->>C: SiteResupply.recordDeparture → site_resupply.departed_at / departed_by_name
+```
+
+- **Le fait** `delivery.transfer_departed`
+  (`apps/lfd-api/src/delivery/channels/commerce/transfer-departed.fact.ts`),
+  déclaré ET écrit par la livraison, réexporté par `channels/commerce/`. Écrit
+  par `departAndFreeze` dans la transaction du départ, pour chaque transfert
+  qui part vraiment (`InternalTransfer.depart` rend `true`) : un transfert
+  déjà reçu à la main n'en écrit pas. Distinct de `delivery.round_departed`,
+  qui ne nomme que les commandes livrées. Le livreur est celui de la
+  tournée (`null` sans livreur).
+- **L'abonné** : `RecordDepartureOnTransferDeparted`
+  (`apps/lfd-api/src/b2b/resupply/application/record-departure-on-transfer-departed.handler.ts`),
+  `@DurableHandler`, nom `b2b.resupply-departure-on-transfer-departed`. Le
+  nom du livreur est lu à l'annuaire et figé. Rejoué, rien ne change
+  (`recordDeparture` rend `false`) ; un réassort introuvable sous le point
+  est écarté et journalisé. Vaut aussi pour un réassort du soir porté par un
+  transfert.
+- **Migration** `20261022190000_le_reassort_parti` : `site_resupply.departed_at`,
+  `departed_by_name`, nullables (registre RGPD : `departed_by_name`).
+- **Les contrats** : `ResupplyReceptionView` gagne `launchedAt/By` et
+  `departedAt/By` ; `SiteResupplyView` gagne `departedAt/By` ;
+  `DayStockResupplyState` gagne `launched` et `departed` (réceptionné ›
+  arrivé › parti › lancé › figé › envoyé).
+- **Au comptoir** (`resupply-receptions-card`) : un réassort attendu montre
+  ses étapes atteintes, Envoyé → Lancé → Parti → Arrivé, chacune avec son
+  heure et son auteur quand on les a (`apps/lfd-backoffice-frontend/src/app/shared/resupply-steps.ts`).
+- **À l'onglet Stock** de la Supervision : « Lancé », « Parti ».
+- **Prod manager › Réassorts, carte « Au plus tôt »** : un réassort lancé dit
+  aussi « Parti » (Village) puis « Arrivé » (transfert reçu, ou « Monté »).
+- e2e : le parcours `apps/lfd-api/test/resupply-asap-village-flow.e2e-spec.ts`
+  (étape 4 bis : « parti » au comptoir et à la Supervision, rejeu du fait
+  sans effet).
+
 ## Ce qui reste
 
-- **Le suivi du « au plus tôt »** (R4d, [`plan-au-plus-tot.md`](plan-au-plus-tot.md)) :
-  lancé / parti au comptoir, à l'onglet Stock, à Prod manager.
+- **« Réceptionné » à Prod manager** : la carte « Au plus tôt » lit
+  `SiteResupplyView`, qui ne porte pas la réception ; elle s'arrête à
+  « Arrivé ».
 - **Un « au plus tôt » sans véhicule libre** : la cloche sonne une fois ; le
   placement ne se rejoue qu'à la composition ou à l'affectation à la main.
 - **La réserve naît au traitement du fait**, pas à l'instant du lancement : une

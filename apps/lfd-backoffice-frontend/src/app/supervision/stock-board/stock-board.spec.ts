@@ -118,4 +118,44 @@ describe('StockBoard', () => {
     expect(root.querySelector('[data-stock-stale]')).not.toBeNull();
     expect(root.querySelector('[data-stock-site="village"]')).not.toBeNull();
   });
+
+  /** R4d : « lancé » et « parti » ont leur mot, entre « figé » et « arrivé ». */
+  it('dit « Lancé » et « Parti » pour un réassort « au plus tôt » en route', () => {
+    const inFlight: DayStockOverviewView = {
+      ...VIEW,
+      sites: [
+        {
+          siteId: 'village',
+          siteLabel: 'Val Village',
+          products: [],
+          resupplies: [
+            {
+              resupplyId: 'r3',
+              name: null,
+              target: 'asap',
+              origin: 'counter',
+              state: 'launched',
+              pieces: 4,
+            },
+            {
+              resupplyId: 'r4',
+              name: null,
+              target: 'asap',
+              origin: 'counter',
+              state: 'departed',
+              pieces: 2,
+            },
+          ],
+        },
+      ],
+    };
+    const { root } = mount(ready(inFlight));
+
+    expect(root.querySelector('[data-stock-resupply-state="launched"]')?.textContent).toContain(
+      'Lancé',
+    );
+    expect(root.querySelector('[data-stock-resupply-state="departed"]')?.textContent).toContain(
+      'Parti',
+    );
+  });
 });

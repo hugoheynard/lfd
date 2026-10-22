@@ -11,10 +11,13 @@ import type { StockAlertLevel } from "./site-stock-alert.js";
 
 /**
  * Où en est un réassort du jour, du plus avancé au moins avancé :
- * `received` (réceptionné, R2) › `arrived` (le signal de R3e) › `frozen`
- * (« pour demain » d'un plan arrêté, R3a) › `sent` (envoyé).
+ * `received` (réceptionné, R2) › `arrived` (le signal de R3e) › `departed`
+ * (la tournée qui porte son transfert est partie, R4d) › `launched` (« au
+ * plus tôt » lancé au fournil, R4a) › `frozen` (« pour demain » d'un plan
+ * arrêté, R3a) › `sent` (envoyé).
  */
-export type DayStockResupplyState = "sent" | "frozen" | "arrived" | "received";
+export type DayStockResupplyState =
+  "sent" | "frozen" | "launched" | "departed" | "arrived" | "received";
 
 /** Un réassort envoyé pour la journée. */
 export interface DayStockResupplyView {

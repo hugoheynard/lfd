@@ -18,6 +18,7 @@ import {
 } from 'fold-ng';
 
 import { parisClock, resupplyTitle } from '../../../shared/resupply-labels';
+import { type ResupplyStep, resupplySteps } from '../../../shared/resupply-steps';
 import { BakehouseResuppliesService } from '../bakehouse-resupplies.service';
 import { resupplyLaunchRows, type ResupplyLaunchRow } from './resupply-launch-rows';
 
@@ -31,6 +32,10 @@ import { resupplyLaunchRows, type ResupplyLaunchRow } from './resupply-launch-ro
  * sous `production_resupply:write` (`canLaunch`), le droit de la route ; sans
  * lui, la carte se lit. « Lancé par X à HH:MM » suit le fait du fournil :
  * l'affichage peut arriver un instant après le geste.
+ *
+ * Depuis R4d (2026-10-22), un réassort lancé dit aussi où il en est :
+ * « Parti » (sa tournée, Village) puis « Arrivé » (transfert reçu, ou
+ * « Monté » au Labo), avec l'heure et l'auteur quand on les a.
  */
 @Component({
   selector: 'app-resupply-launch-card',
@@ -70,6 +75,11 @@ export class ResupplyLaunchCard {
   protected launchedLine(row: ResupplyLaunchRow): string {
     const at = row.launchedAt === null ? '' : ` à ${parisClock(row.launchedAt)}`;
     return `Lancé${row.launchedBy === null ? '' : ` par ${row.launchedBy}`}${at}`;
+  }
+
+  /** Les étapes atteintes APRÈS le lancement : parti, arrivé. */
+  protected laterSteps(row: ResupplyLaunchRow): readonly ResupplyStep[] {
+    return resupplySteps(row).filter((step) => step.key === 'departed' || step.key === 'arrived');
   }
 
   protected async launch(row: ResupplyLaunchRow): Promise<void> {

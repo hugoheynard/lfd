@@ -31,6 +31,8 @@ function resupply(
     arrivedBy: null,
     launchedAt: null,
     launchedBy: null,
+    departedAt: null,
+    departedBy: null,
     ...extra,
   };
 }

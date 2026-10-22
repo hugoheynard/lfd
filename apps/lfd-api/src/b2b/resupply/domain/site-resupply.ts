@@ -22,6 +22,7 @@ import { SiteResupplyLine } from "./site-resupply-line.js";
 import {
   type ResupplyTarget,
   serviceDayFor,
+  type SiteResupplyDeparture,
   type SiteResupplyLaunch,
   type SiteResupplySnapshot,
   type SiteResupplyStatus,
@@ -34,6 +35,7 @@ export {
   type ResupplyTarget,
   resupplyTargetOf,
   serviceDayFor,
+  type SiteResupplyDeparture,
   type SiteResupplyLaunch,
   type SiteResupplySnapshot,
   type SiteResupplyStatus,
@@ -82,6 +84,7 @@ export class SiteResupply {
     private cancelledTrace: SiteResupplyTrace | null,
     private arrivedTrace: SiteResupplyTrace | null,
     private launchedMark: SiteResupplyLaunch | null = null,
+    private departedMark: SiteResupplyDeparture | null = null,
   ) {}
 
   /** Un brouillon, au geste `at` : sa journée en découle. */
@@ -134,6 +137,7 @@ export class SiteResupply {
       snapshot.cancelled,
       snapshot.arrived,
       snapshot.launched ?? null,
+      snapshot.departed ?? null,
     );
   }
 
@@ -213,6 +217,27 @@ export class SiteResupply {
       return false;
     }
     this.launchedMark = launch;
+    return true;
+  }
+
+  /** « Parti à HH:MM » (R4d), ou `null`. Un affichage, pas une garde. */
+  get departed(): SiteResupplyDeparture | null {
+    return this.departedMark;
+  }
+
+  /**
+   * **La tournée qui porte son transfert est partie** (R4d) — l'affichage,
+   * posé par l'abonné au fait `delivery.transfer_departed`. Seul un réassort
+   * envoyé part ; rejoué, rien ne change. Aucun refus n'en dépend :
+   * « Réceptionner » reste permis avant comme après.
+   *
+   * @returns `true` si l'affichage vient d'être posé ; `false` sinon.
+   */
+  recordDeparture(departure: SiteResupplyDeparture): boolean {
+    if (this.status !== "placed" || this.departedMark !== null) {
+      return false;
+    }
+    this.departedMark = departure;
     return true;
   }
 

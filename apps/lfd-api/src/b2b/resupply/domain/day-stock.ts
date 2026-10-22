@@ -4,8 +4,13 @@ import type { ResupplyOrigin } from "./resupply-origin.js";
 import type { PlacedSiteResupplySnapshot, ResupplyTarget } from "./site-resupply.js";
 import type { StockAlertLevel, StockAlertSnapshot } from "./stock-alert.js";
 
-/** Où en est un réassort du jour, du moins avancé au plus avancé. */
-export type DayStockResupplyState = "sent" | "frozen" | "arrived" | "received";
+/**
+ * Où en est un réassort du jour, du moins avancé au plus avancé : envoyé ›
+ * figé (« pour demain », plan arrêté) › lancé (« au plus tôt », R4a) › parti
+ * (sa tournée, R4d) › arrivé › réceptionné.
+ */
+export type DayStockResupplyState =
+  "sent" | "frozen" | "launched" | "departed" | "arrived" | "received";
 
 /** Un réassort du jour, au point. */
 export interface DayStockResupply {
@@ -98,6 +103,12 @@ function stateOf(
   }
   if (resupply.arrived !== null) {
     return "arrived";
+  }
+  if ((resupply.departed ?? null) !== null) {
+    return "departed";
+  }
+  if ((resupply.launched ?? null) !== null) {
+    return "launched";
   }
   return resupply.target === "tomorrow" && planStopped ? "frozen" : "sent";
 }

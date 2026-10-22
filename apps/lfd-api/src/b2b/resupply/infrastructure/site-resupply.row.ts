@@ -35,6 +35,8 @@ export interface SiteResupplyRow {
   readonly arrivedByRole: string | null;
   readonly launchedAt: Date | null;
   readonly launchedByName: string | null;
+  readonly departedAt: Date | null;
+  readonly departedByName: string | null;
   readonly lines: readonly {
     readonly sku: string;
     readonly label: string;
@@ -92,5 +94,7 @@ export function snapshotOf(row: SiteResupplyRow): SiteResupplySnapshot {
           },
     // L'affichage du lancement (R4a) : un nom absent reste `null`.
     launched: row.launchedAt === null ? null : { at: row.launchedAt, byName: row.launchedByName },
+    // L'affichage du départ (R4d) : une tournée sans livreur laisse le nom `null`.
+    departed: row.departedAt === null ? null : { at: row.departedAt, byName: row.departedByName },
   };
 }
