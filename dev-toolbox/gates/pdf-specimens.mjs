@@ -17,8 +17,12 @@
  *
  * ## Ce que la porte appelle « sur la planche »
  *
- * Un document est couvert quand un handler d'exemple
- * (`…/application/queries/*specimen*.handler.ts`) l'appelle. Un document qui
+ * Un document est couvert quand on peut le VOIR : un handler d'exemple
+ * (`…/application/queries/*specimen*.handler.ts`) l'appelle, une route
+ * `admin/document-specimens/<clé>.pdf` sert la requête de ce handler, et la
+ * page range cette clé dans `SPECIMEN_GROUPS`. Hugo, le même jour : un exemple
+ * servi par l'API mais absent de la page ne se regarde pas. Une vignette sans
+ * route échoue aussi : elle resterait vide. Un document qui
  * n'est qu'une **brique** d'un autre — le PDF Factur-X que la facture
  * enveloppe — est couvert quand tous les fichiers qui l'appellent définissent
  * un document couvert : son rendu se voit à travers celui-là.
@@ -51,6 +55,11 @@ const DOCUMENT = /^export\s+(?:async\s+)?function\s+(render\w*(?:Pdf|Document))\
 const OPENS_PDF =
   /\bnew\s+PDFDocument\s*\(|^\s*(?:return\s+|const\s+\w+\s*=\s*)?(?:await\s+)?render\s*\(/m;
 const SPECIMEN = /\/application\/queries\/[^/]*specimen[^/]*\.handler\.ts$/;
+const SCREEN_CATALOGUE = join(
+  ROOT,
+  "apps/lfd-backoffice-frontend/src/app/comptabilite/document-specimen-catalogue.ts",
+);
+const ROUTE_PREFIX = '@Controller("admin/document-specimens")';
 
 /** Tous les `.ts` de production sous `src`, les `__tests__/` exclus. */
 function* sources(dir) {
@@ -89,6 +98,45 @@ for (const file of files) {
   }
 }
 
+/** Les clés que la page montre : celles rangées dans `SPECIMEN_GROUPS`. */
+function screenKeys() {
+  const text = readFileSync(SCREEN_CATALOGUE, "utf8");
+  const groups = text.slice(text.indexOf("SPECIMEN_GROUPS"));
+  return new Set(
+    [...groups.matchAll(/group\([^,]+,\s*\[([^\]]*)\]/g)].flatMap((match) =>
+      [...match[1].matchAll(/'([^']+)'/g)].map((key) => key[1]),
+    ),
+  );
+}
+
+/** Requête d'exemple → les routes `admin/document-specimens/<clé>.pdf` qui la servent. */
+function routesByQuery() {
+  const routes = new Map();
+  for (const file of files.filter((candidate) => candidate.text.includes(ROUTE_PREFIX))) {
+    const methods = file.text.split(/(?=@Get\()/).slice(1);
+    for (const method of methods) {
+      const key = /@Get\("([^"]+)\.pdf"\)/.exec(method)?.[1];
+      for (const query of method.matchAll(/new\s+(\w+Query)\s*\(/g)) {
+        if (key !== undefined) {
+          routes.set(query[1], [...(routes.get(query[1]) ?? []), key]);
+        }
+      }
+    }
+  }
+  return routes;
+}
+
+const shown = screenKeys();
+const routes = routesByQuery();
+const servedKeys = new Set([...routes.values()].flat());
+
+/** Un handler d'exemple dont une route est montrée par la page. */
+function specimenOnScreen(path) {
+  const text = files.find((file) => file.path === path)?.text ?? "";
+  const query = /@QueryHandler\((\w+)\)/.exec(text)?.[1];
+  return query !== undefined && (routes.get(query) ?? []).some((key) => shown.has(key));
+}
+
 /** Les fichiers (hors le sien) qui appellent ce document. */
 function callersOf(name, home) {
   const call = new RegExp(`\\b${name}\\s*\\(`);
@@ -106,7 +154,7 @@ while (grew) {
       continue;
     }
     const callers = callersOf(name, home);
-    const bySpecimen = callers.some((path) => SPECIMEN.test(`/${path}`));
+    const bySpecimen = callers.some((path) => SPECIMEN.test(`/${path}`) && specimenOnScreen(path));
     const byCoveredDocument =
       callers.length > 0 &&
       callers.every((path) =>
@@ -134,16 +182,23 @@ const missing = [...documents].filter(
   ([name, home]) => !covered.has(name) && !DEBT.has(name) && !brickOfDebt(name, home),
 );
 const stale = [...DEBT].filter((name) => !documents.has(name) || covered.has(name));
+// L'autre sens : une vignette dont aucune route ne sert le PDF reste vide.
+const orphanKeys = [...shown].filter((key) => !servedKeys.has(key));
 
-if (unnamed.length > 0 || missing.length > 0 || stale.length > 0) {
+if (unnamed.length > 0 || missing.length > 0 || stale.length > 0 || orphanKeys.length > 0) {
   console.error("\n✗ pdf-specimens\n");
+  for (const key of orphanKeys) {
+    console.error(
+      `  la planche montre « ${key} », qu'aucune route admin/document-specimens ne sert`,
+    );
+  }
   for (const path of unnamed) {
     console.error(
       `  ${path}  ouvre un PDF sans exporter de fonction render…Pdf — nommez le document`,
     );
   }
   for (const [name, home] of missing) {
-    console.error(`  ${home}  ${name} n'a pas d'exemple sur la planche des documents`);
+    console.error(`  ${home}  ${name} n'a pas d'exemple visible sur la planche des documents`);
   }
   for (const name of stale) {
     console.error(
@@ -152,8 +207,10 @@ if (unnamed.length > 0 || missing.length > 0 || stale.length > 0) {
   }
   console.error(
     "\n  Un document absent de la planche ne se contrôle qu'en le produisant pour\n" +
-      "  de vrai. Ajoutez un handler `…/application/queries/*specimen*.handler.ts`\n" +
-      "  qui l'appelle avec des données d'exemple, et sa vignette sur la planche.\n",
+      "  de vrai. Il lui faut les trois : un handler\n" +
+      "  `…/application/queries/*specimen*.handler.ts` qui l'appelle avec des données\n" +
+      "  d'exemple, une route `admin/document-specimens/<clé>.pdf` qui le sert, et la\n" +
+      "  clé dans `SPECIMEN_GROUPS` (`document-specimen-catalogue.ts`).\n",
   );
   process.exit(1);
 }

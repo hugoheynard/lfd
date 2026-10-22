@@ -94,14 +94,17 @@ n'appartiennent à personne.
 
 ## La porte qui tient la planche complète (2026-10-22)
 
-`pnpm lint:pdf-specimens` (`dev-toolbox/gates/pdf-specimens.mjs`) refuse tout
-document PDF du serveur — une fonction exportée `render…Pdf` — qu'aucun handler
-d'exemple (`…/application/queries/*specimen*.handler.ts`) n'appelle. Une brique
-d'un document couvert (le PDF Factur-X que la facture enveloppe) est couverte
-avec lui. Cinq documents n'avaient pas d'exemple ce jour-là : le mandat SEPA,
-le récapitulatif de commandes d'une société, le compte à produire, la matrice
-des allergènes et le dossier du jour. Ils sont inscrits en dette dans la porte,
-et la liste ne peut que se vider.
+`pnpm lint:pdf-specimens` (`dev-toolbox/gates/pdf-specimens.mjs`) suit chaque
+document PDF du serveur — une fonction exportée `render…Pdf` — jusqu'à l'écran :
+un handler d'exemple (`…/application/queries/*specimen*.handler.ts`) qui
+l'appelle, une route `admin/document-specimens/<clé>.pdf` qui sert sa requête,
+et la clé rangée dans `SPECIMEN_GROUPS`
+(`apps/lfd-backoffice-frontend/src/app/comptabilite/document-specimen-catalogue.ts`).
+Un maillon manquant la fait rougir. Dans l'autre sens, une vignette dont
+aucune route ne sert le PDF la fait rougir aussi. Une brique d'un document
+couvert (le PDF Factur-X que la facture enveloppe) est couverte avec lui.
 
-⚠️ La porte voit le handler d'exemple, pas la vignette à l'écran : un exemple
-servi par l'API mais absent de la page ne la fait pas rougir.
+Cinq documents n'avaient pas d'exemple le 2026-10-22 : le mandat SEPA, le
+récapitulatif de commandes d'une société, le compte à produire, la matrice des
+allergènes et le dossier du jour. Ils sont inscrits en dette dans la porte, et
+la liste ne peut que se vider.
