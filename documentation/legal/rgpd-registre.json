@@ -675,6 +675,15 @@
       "information": false
     },
     {
+      "colonne": "production.production_resupply.launched_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a lancé un réassort « au plus tôt » au fournil (`launched_by`) sur `production_resupply` (lot R4a).",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "production.production_day.retaken_by",
       "personne": "staff",
       "categorie": "auteur-geste",
@@ -1165,6 +1174,15 @@
       "personne": "staff",
       "categorie": "auteur-geste",
       "finalite": "Tracer quel membre du staff a dit le réassort arrivé (`arrived_by_staff_id`) sur `site_resupply` : la réception du transfert qui le porte, ou « Monté » au fournil (lot R3e).",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.site_resupply.launched_by_name",
+      "personne": "staff",
+      "categorie": "identite",
+      "finalite": "Nom figé de qui a lancé au fournil un réassort « au plus tôt » (`site_resupply`, lot R4a), affiché « Lancé par X à HH:MM », lisible même si la fiche staff change.",
       "conservation": "aucune-limite-decidee",
       "purge": null,
       "information": false

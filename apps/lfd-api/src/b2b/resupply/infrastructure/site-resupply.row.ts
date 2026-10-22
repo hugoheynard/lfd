@@ -33,6 +33,8 @@ export interface SiteResupplyRow {
   readonly arrivedByStaffId: string | null;
   readonly arrivedByName: string | null;
   readonly arrivedByRole: string | null;
+  readonly launchedAt: Date | null;
+  readonly launchedByName: string | null;
   readonly lines: readonly {
     readonly sku: string;
     readonly label: string;
@@ -88,5 +90,7 @@ export function snapshotOf(row: SiteResupplyRow): SiteResupplySnapshot {
               role: row.arrivedByRole ?? "",
             },
           },
+    // L'affichage du lancement (R4a) : un nom absent reste `null`.
+    launched: row.launchedAt === null ? null : { at: row.launchedAt, byName: row.launchedByName },
   };
 }

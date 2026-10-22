@@ -159,6 +159,10 @@
       </div>
     }
 
+    @if (launchable(); as view) {
+      <app-resupply-launch-card [view]="view" [canLaunch]="canSend()" (launched)="load()" />
+    }
+
     @if (mountable(); as view) {
       <app-resupply-mount-card [view]="view" [canMount]="canSend()" (mounted)="load()" />
     }

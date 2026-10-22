@@ -156,6 +156,17 @@ export interface ProductionResupplySnapshot {
   readonly lines: readonly ProductionLineSnapshot[];
 }
 
+/**
+ * **Un réassort « au plus tôt » lancé** par le fournil (R4a,
+ * `reassort-boutiques/plan-au-plus-tot.md` §2) — ajouté au plan du jour par
+ * son geste, compté dans les fournées comme celui du soir. `launched` : quand
+ * et par qui (identifiant staff). Rangé À PART des réassorts du soir : la
+ * réouverture ne l'efface pas, et le ré-arrêt le garde.
+ */
+export interface LaunchedResupplySnapshot extends ProductionResupplySnapshot {
+  readonly launched: PackedMark;
+}
+
 /** L'état d'une journée, tel que l'adaptateur l'écrit et le relit. */
 export interface ProductionDaySnapshot {
   readonly serviceDay: string;
@@ -180,6 +191,11 @@ export interface ProductionDaySnapshot {
    * seulement (absents valent `[]`) ; `toSnapshot` les rend toujours.
    */
   readonly resupplies?: readonly ProductionResupplySnapshot[];
+  /**
+   * Les réassorts « au plus tôt » lancés (R4a). Facultatifs à la
+   * RÉHYDRATATION seulement (absents valent `[]`) ; `toSnapshot` les rend toujours.
+   */
+  readonly launchedResupplies?: readonly LaunchedResupplySnapshot[];
   readonly counts: readonly ProducedItemSnapshot[];
   /** Toutes les fournées du jour, annulées comprises, dans l'ordre de la base. */
   readonly batches: readonly ProductionBatchSnapshot[];

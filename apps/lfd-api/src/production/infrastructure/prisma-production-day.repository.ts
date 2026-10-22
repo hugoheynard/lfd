@@ -6,6 +6,7 @@ import { ProductionDayRepository } from "../domain/ports/production-day.reposito
 import type { ServiceDay } from "../domain/value-objects/service-day.value-object.js";
 import { BATCH_COLUMNS, batchOf, returnsByBatch } from "./prisma-production-batch.repository.js";
 import { signerColumns, signerOf } from "./production-day-signer.columns.js";
+import { RESUPPLY_COLUMNS, resupplyRowOf, splitResupplies } from "./production-resupply.columns.js";
 import {
   SHEET_COLUMNS,
   clienteleOf,
@@ -64,18 +65,8 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
             lines: { select: { sku: true, productName: true, quantity: true } },
           },
         },
-        // Les réassorts figés à l'arrêt (lot R3a) — à part des commandes.
-        resupplies: {
-          select: {
-            resupplyId: true,
-            siteId: true,
-            siteLabel: true,
-            name: true,
-            servedByTransfer: true,
-            lines: { select: { sku: true, productName: true, quantity: true } },
-          },
-          orderBy: { resupplyId: "asc" },
-        },
+        // Les réassorts figés à l'arrêt (lot R3a) et les lancés (R4a) — à part des commandes.
+        resupplies: RESUPPLY_COLUMNS,
         counts: {
           select: {
             sku: true,
@@ -137,7 +128,7 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
         })),
         sheetDetails: sheetDetailsOf(order),
       })),
-      resupplies: row.resupplies,
+      ...splitResupplies(row.resupplies),
       counts: row.counts.map((count) => ({
         sku: count.sku,
         productName: count.productName,
@@ -243,17 +234,10 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
           },
         });
       }
-      for (const resupply of snapshot.resupplies ?? []) {
+      const resupplies = [...(snapshot.resupplies ?? []), ...(snapshot.launchedResupplies ?? [])];
+      for (const resupply of resupplies) {
         await tx.productionResupply.create({
-          data: {
-            serviceDay: snapshot.serviceDay,
-            resupplyId: resupply.resupplyId,
-            siteId: resupply.siteId,
-            siteLabel: resupply.siteLabel,
-            name: resupply.name,
-            servedByTransfer: resupply.servedByTransfer,
-            lines: { create: resupply.lines.map((line) => ({ ...line })) },
-          },
+          data: { serviceDay: snapshot.serviceDay, ...resupplyRowOf(resupply) },
         });
       }
       if (snapshot.counts.length > 0) {

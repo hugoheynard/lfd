@@ -28,6 +28,8 @@ export function siteResupplyView(snapshot: PlacedSiteResupplySnapshot): SiteResu
     cancelledBy: snapshot.cancelled === null ? null : nameOf(snapshot.cancelled.author.name),
     arrivedAt: snapshot.arrived?.at.toISOString() ?? null,
     arrivedBy: snapshot.arrived === null ? null : nameOf(snapshot.arrived.author.name),
+    launchedAt: snapshot.launched?.at.toISOString() ?? null,
+    launchedBy: snapshot.launched?.byName ?? null,
   };
 }
 

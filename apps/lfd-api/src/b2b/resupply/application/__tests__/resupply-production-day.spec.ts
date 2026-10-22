@@ -22,6 +22,7 @@ import {
   InMemorySiteResupplyReader,
   KnownReceptions,
   SiteLabels,
+  FixedLaunches,
 } from "./site-resupply-doubles.js";
 
 /** 17 h à Paris le 2 janvier : les journées sont le SUJET, l'horloge est fixée. */
@@ -46,7 +47,8 @@ async function world() {
   const reader = new InMemorySiteResupplyReader(store);
   const clock = new FixedClock(NOW);
   const staff = new Directory({ name: "Lou Martin", role: "counter" });
-  const gate = new ResupplyPlanGate(new RecordingAdmissionDesk([]));
+  const launches = new FixedLaunches();
+  const gate = new ResupplyPlanGate(new RecordingAdmissionDesk([]), launches);
   const uow = new DirectUnitOfWork();
   const place = new SendBakehouseResupplyHandler(
     store,

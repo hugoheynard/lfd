@@ -289,6 +289,30 @@ function productionDay(verb: string, singular: string, plural: string): Phrase {
 }
 
 /**
+ * « Marie Dupont a lancé le réassort « Vitrine du midi » pour Le Village au
+ * plan du 22 octobre 2026 » (R4a) — et, quand la journée n'était pas
+ * arrêtée, « ; le plan s'ouvre avec ce seul réassort ».
+ */
+const resupplyLaunched: Phrase = (fact) => {
+  const resupplyName = optional(fact.payload['resupplyName']);
+  const site = optional(fact.payload['siteLabel']);
+  return byActor(
+    fact,
+    [
+      text('a lancé le réassort '),
+      ...(resupplyName === null ? [] : [name(resupplyName), text(' ')]),
+      ...(site === null ? [] : [text('pour '), name(site), text(' ')]),
+      text('au plan '),
+      ...serviceDay(fact),
+      ...(fact.payload['openedPlan'] === true
+        ? [text(' ; le plan s’ouvre avec ce seul réassort')]
+        : []),
+    ],
+    ['subjectLabel', 'serviceDay', 'resupplyId', 'resupplyName', 'siteLabel', 'openedPlan'],
+  );
+};
+
+/**
  * « Jean Dupont a passé la commande ORD-142 » — le NUMÉRO, jamais
  * l'identifiant : c'est par lui qu'on retrouve une commande. Le sujet de la
  * ligne est le client qui l'a passée (`customerLabel` au catalogue) : quand
@@ -482,6 +506,7 @@ export const ORDERS_PHRASES = {
     'commande retirée du plan',
     'commandes retirées du plan',
   ),
+  'production_day.resupply_launched': resupplyLaunched,
 
   'production_container.set': (fact) => {
     const before = fact.payload['before'];

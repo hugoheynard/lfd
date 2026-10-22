@@ -17,7 +17,9 @@ import { resupplyDays } from "./resupply-days.js";
  * Depuis le lot R3a (2026-10-21), un réassort « pour demain » d'une journée
  * dont le plan est arrêté n'y est plus : il est figé dans la feuille du
  * fournil, et le compter ici aussi le ferait produire deux fois. L'écran ne
- * montre donc que ce qui n'est pas figé.
+ * montre donc que ce qui n'est pas figé. Depuis R4a (2026-10-22), un « au
+ * plus tôt » LANCÉ n'y est plus non plus, pour la même raison : il est au plan
+ * du jour, compté dans les fournées.
  */
 @QueryHandler(ListResuppliesToProduceQuery)
 export class ListResuppliesToProduceHandler implements IQueryHandler<
@@ -35,7 +37,9 @@ export class ListResuppliesToProduceHandler implements IQueryHandler<
     const { today, tomorrow } = resupplyDays(this.clock.now());
     const stopped = new Set(await this.plans.closedBetween(today, tomorrow));
     const placed = (await this.reader.placedOn([today, tomorrow])).filter(
-      (resupply) => !(resupply.target === "tomorrow" && stopped.has(resupply.serviceDay)),
+      (resupply) =>
+        !(resupply.target === "tomorrow" && stopped.has(resupply.serviceDay)) &&
+        (resupply.launched ?? null) === null,
     );
     const labels = await this.sites.labelsOf([...new Set(placed.map((r) => r.siteId))]);
     return {

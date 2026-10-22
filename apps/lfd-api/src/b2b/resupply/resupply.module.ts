@@ -20,6 +20,7 @@ import { ListResupplyArticlesHandler } from "./application/list-resupply-article
 import { ListSiteResuppliesHandler } from "./application/list-site-resupplies.handler.js";
 import { MarkArrivedOnTransferReceived } from "./application/mark-arrived-on-transfer-received.handler.js";
 import { MarkResupplyMountedHandler } from "./application/mark-resupply-mounted.handler.js";
+import { RecordLaunchOnResupplyLaunched } from "./application/record-launch-on-resupply-launched.handler.js";
 import { ResupplyArrivedBell } from "./application/resupply-arrived-bell.js";
 import { ProductionDayResupplies } from "./application/production-day-resupplies.js";
 import { ProductionRangeResupplies } from "./application/production-range-resupplies.js";
@@ -149,6 +150,8 @@ import { PrismaTransferServedSites } from "./infrastructure/prisma-transfer-serv
     MarkResupplyMountedHandler,
     MarkArrivedOnTransferReceived,
     ResupplyArrivedBell,
+    // L'affichage « Lancé par X à HH:MM » (R4a), abonné durable du fait du fournil.
+    RecordLaunchOnResupplyLaunched,
     ResupplyPlanGate,
     ProductionDayResupplies,
     ProductionRangeResupplies,

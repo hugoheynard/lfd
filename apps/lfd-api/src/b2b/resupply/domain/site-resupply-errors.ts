@@ -116,6 +116,21 @@ export class ResupplyFrozenInPlanError extends BusinessError {
   }
 }
 
+/**
+ * Le réassort « au plus tôt » est LANCÉ au fournil (R4a,
+ * `reassort-boutiques/plan-au-plus-tot.md`) : il est au plan du jour et compté
+ * dans les fournées. Le geste de sortie : réceptionner ce qui arrive
+ * vraiment, avec l'écart — ou voir le fournil.
+ */
+export class ResupplyLaunchedNotCancellableError extends BusinessError {
+  constructor(readonly serviceDay: string) {
+    super(
+      "resupply.order.launched",
+      `Le fournil a déjà lancé ce réassort pour le ${serviceDay} : il est en fabrication et ne s'annule plus. Réceptionnez-le avec un écart (Réceptionner les réassorts), ou voyez le fournil.`,
+    );
+  }
+}
+
 /** Le geste vise un réassort qui n'est plus un brouillon. */
 export class ResupplyAlreadyPlacedError extends BusinessError {
   constructor() {

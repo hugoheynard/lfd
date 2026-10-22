@@ -551,9 +551,65 @@ transfert, fournée dont seule la part des commandes descend au colisage,
 « Monté » (arrivé, cloche, idempotent), réception pré-remplie au demandé (20)
 et stock lu par la Supervision.
 
+## Ce qui est bâti : « Lancer » un réassort « au plus tôt » (lot R4a, 2026-10-22, non commité)
+
+Plan : [`plan-au-plus-tot.md`](plan-au-plus-tot.md) §2. Le fournil **lance** un
+réassort « au plus tôt » envoyé : il entre au plan du jour et compte dans les
+fournées ; le comptoir ne peut plus l'annuler.
+
+```mermaid
+sequenceDiagram
+  participant PM as Prod manager › Réassorts
+  participant F as Fournil (verrou production_day:jour)
+  participant C as Commerce
+  PM->>F: POST admin/production/batch/:date/resupplies/:id/launch
+  F->>F: verrou, relecture de la journée
+  F->>C: asapToLaunch(jour, id) — sous le verrou
+  F->>F: ProductionDay.launchResupply → save, journal, fait
+  F-->>C: production.resupply_launched (durable)
+  C->>C: site_resupply.launched_at / launched_by_name (affichage)
+  Note over C,F: Annuler au comptoir : LaunchedResupplies.isLaunched(jour, id), même verrou
+```
+
+- **L'agrégat** : `ProductionDay.launchResupply`
+  (`apps/lfd-api/src/production/domain/entities/production-day.ts`, règles dans
+  `production-day.launch.ts`) — un geste à part du retirage. Le réassort est
+  rangé à part des réassorts du soir (`launchedResupplies`), ajouté au compte
+  par la même fonction que l'arrêt ; refus : déjà lancé. La réouverture le
+  **garde**, le ré-arrêt le recompte ; il compte aussi dans la part « sur
+  place » d'une fournée (un « au plus tôt » du Labo lancé ne descend pas au
+  colisage).
+- **La journée jamais arrêtée** (Q5) : « Lancer » l'ouvre arrêtée, signée de qui
+  lance, avec ce seul réassort — journal `production_day.resupply_launched`,
+  `openedPlan: true`. **Garde ajoutée au lot** : si l'arrêt avait encore des
+  commandes (hors retraits) ou des réassorts du soir à figer, le lancement est
+  refusé (409 « arrêtez d'abord le plan du jour ») — sinon elles sortiraient du
+  plan. Ni `production.day_closed`, ni dossier du jour (Q6).
+- **Les ports** : `DayResuppliesReader.asapToLaunch` (le commerce, lu sous le
+  verrou ; `placedFor` reste « pour demain ») ; `LaunchedResupplies.isLaunched`
+  (`production/channels/commerce/`, déclaré et implémenté par le fournil), que
+  l'annulation lit par `ResupplyPlanGate.launched` sous le même verrou — refus
+  `ResupplyLaunchedNotCancellableError` (409).
+- **Le fait** `production.resupply_launched:<jour>:<resupplyId>`
+  (+ `:after-reopening:<instant>`) : lignes, point, `servedByTransfer`, nom,
+  instant et auteur. Seul abonné à ce lot : le commerce
+  (`RecordLaunchOnResupplyLaunched`, durable) — l'affichage. Colisage et
+  livraison : R4b, R4c.
+- **Les tables** : migration `20261022150000_le_reassort_lance` (additive) —
+  `production_resupply.kind` (`evening` par défaut, CHECK), `launched_at`,
+  `launched_by` (CHECK « asap ⇔ lancé ») ; `site_resupply.launched_at`,
+  `launched_by_name` (nullables, affichage).
+- **L'écran** : carte « Au plus tôt » de l'onglet Réassorts
+  (`apps/lfd-backoffice-frontend/src/app/production/reassorts-a-produire/resupply-launch-card/`),
+  « Lancer » sous `production_resupply:write`, « Lancé par X à HH:MM ».
+  « Réassorts à produire » ne montre plus un lancé. Au comptoir, le refus
+  d'annuler s'affiche avec le message du serveur.
+- e2e : `apps/lfd-api/test/resupply-launch.e2e-spec.ts` (Q5, refus, course
+  lancer/annuler, réouverture).
+
 ## Ce qui reste
 
-- **« Au plus tôt » au Village** (plan de la version complète : [`plan-au-plus-tot.md`](plan-au-plus-tot.md)) : ni transfert (R4), ni « Monté » proposé
+- **« Au plus tôt » au Village** (plan de la version complète : [`plan-au-plus-tot.md`](plan-au-plus-tot.md)) : lancé depuis R4a, mais ni fiche au colisage (R4b), ni transfert (R4c), ni « Monté » proposé
   (l'écran le réserve aux points servis sur place ; le serveur l'accepte).
 - **La cloche ne cible pas le point** : tout le comptoir l'entend.
 

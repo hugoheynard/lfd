@@ -3,6 +3,9 @@ import { Module } from "@nestjs/common";
 import { ProductionOrderWithdrawalDesk } from "./application/services/production-order-withdrawal.desk.js";
 import { PlanStopRules } from "./application/services/plan-stop-rules.js";
 import { ProductionPlanAdmissionDesk } from "./application/services/production-plan-admission.desk.js";
+import { ProductionLaunchedResupplies } from "./application/services/production-launched-resupplies.js";
+import { LaunchResupplyHandler } from "./application/commands/launch-resupply.handler.js";
+import { ProductionResupplyLaunchController } from "./http/production-resupply-launch.controller.js";
 import { ClosedPlansReader } from "./channels/commerce/closed-plans.reader.js";
 import { OrderInscriptionReader } from "./channels/commerce/order-inscription.reader.js";
 import { OrderWithdrawalLedger } from "./domain/ports/order-withdrawal.ledger.js";
@@ -153,6 +156,8 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     AdminAtelierSheetSpecimenController,
     ProductionDossierRecipientsController,
     AutoCloseController,
+    // « Lancer » un réassort « au plus tôt » (R4a, `plan-au-plus-tot.md`).
+    ProductionResupplyLaunchController,
   ],
   providers: [
     CloseProductionDayHandler,
@@ -170,6 +175,7 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     CancelBatchHandler,
     RetakeProductionDayHandler,
     ReopenProductionDayHandler,
+    LaunchResupplyHandler,
     SetProductionContainerHandler,
     RemoveProductionContainerHandler,
     GetProductionDayStatusHandler,
@@ -272,6 +278,9 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     PrismaClosedPlansReader,
     { provide: ClosedPlansReader, useExisting: PrismaClosedPlansReader },
     ProductionPlanAdmissionDesk,
+    // Le refus synchrone d'annuler un réassort lancé (R4a) : relié par
+    // `ProductionDeskFeedModule`, comme le guichet d'admission.
+    ProductionLaunchedResupplies,
   ],
   // La lecture des contrôles sert aussi la retenue que la production PUBLIE au
   // retrait (`channels/handover/`, QC3) — son adaptateur est relié par la
@@ -284,6 +293,7 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     PrismaOrderInscriptionReader,
     PrismaClosedPlansReader,
     ProductionPlanAdmissionDesk,
+    ProductionLaunchedResupplies,
   ],
 })
 export class ProductionModule {}

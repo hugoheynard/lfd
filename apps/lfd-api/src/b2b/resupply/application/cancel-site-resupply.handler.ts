@@ -18,7 +18,9 @@ import { traceOf } from "./resupply-receipt-trace.js";
  * Depuis le lot R3a (2026-10-21), sous le verrou de la journée
  * (`ResupplyPlanGate`) : un réassort « pour demain » figé dans un plan arrêté
  * ne s'annule plus, et l'arrêt ne peut pas se glisser entre la lecture et
- * l'écriture.
+ * l'écriture. Depuis R4a (2026-10-22), un « au plus tôt » LANCÉ au fournil
+ * ne s'annule plus : la question est posée au fournil sous le même verrou,
+ * jamais à la colonne d'affichage du commerce.
  */
 @CommandHandler(CancelSiteResupplyCommand)
 export class CancelSiteResupplyHandler implements ICommandHandler<CancelSiteResupplyCommand, void> {
@@ -39,8 +41,9 @@ export class CancelSiteResupplyHandler implements ICommandHandler<CancelSiteResu
         throw new SiteResupplyNotFoundError(command.resupplyId);
       }
       const stopped = await this.gate.hold(resupply.target, resupply.serviceDay);
+      const launched = await this.gate.launched(resupply.target, resupply.serviceDay, resupply.id);
       const reception = await this.receptions.receptionOf(command.siteId, resupply.id);
-      resupply.cancel(trace, reception, stopped);
+      resupply.cancel(trace, reception, stopped, launched);
       await this.resupplies.save(resupply);
     });
   }

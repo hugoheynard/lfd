@@ -1,0 +1,42 @@
+<fold-card data-resupply-launch-card>
+  <fold-element-title
+    cardHeader
+    variant="title"
+    title="Au plus tôt"
+    subtitle="Les réassorts que les points demandent pour aujourd'hui. « Lancer » les ajoute au plan du jour et aux fournées : le comptoir ne peut plus les annuler."
+  />
+
+  <div class="body">
+    @for (row of rows(); track row.resupplyId) {
+      <div class="row" [attr.data-resupply-launch-row]="row.resupplyId">
+        <div class="said">
+          <strong>{{ titleOf(row) }}</strong>
+          <span class="muted">{{ row.pieces }} pièces</span>
+        </div>
+        @if (row.launchedAt !== null) {
+          <fold-status-badge status="active" label="Lancé" />
+          <span class="muted" data-resupply-launched-by>{{ launchedLine(row) }}</span>
+        } @else if (launchedHere().has(row.resupplyId)) {
+          <fold-status-badge status="active" label="Lancé" />
+        } @else if (canLaunch()) {
+          <button
+            foldButton
+            size="sm"
+            data-resupply-launch
+            [disabled]="pending() !== null"
+            [loading]="pending() === row.resupplyId"
+            (click)="launch(row)"
+          >
+            Lancer
+          </button>
+        } @else {
+          <fold-status-badge status="coming-soon" label="Envoyé" />
+        }
+      </div>
+    }
+
+    @if (failure(); as message) {
+      <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+    }
+  </div>
+</fold-card>

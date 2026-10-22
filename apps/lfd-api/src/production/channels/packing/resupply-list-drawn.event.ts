@@ -93,7 +93,7 @@ function resupplyOf(value: unknown): ResupplyToPack | null {
   const siteId = textOf(raw["siteId"]);
   const siteLabel = raw["siteLabel"];
   const name = raw["name"] ?? null;
-  const lines = linesOf(raw["lines"]);
+  const lines = resupplyLinesOf(raw["lines"]);
   if (
     resupplyId === null ||
     siteId === null ||
@@ -106,7 +106,8 @@ function resupplyOf(value: unknown): ResupplyToPack | null {
   return { resupplyId, siteId, siteLabel, name, lines };
 }
 
-function linesOf(value: unknown): readonly ResupplyListLine[] | null {
+/** Les lignes d'un réassort relues d'un payload, ou `null` hors contrat — partagé avec `ResupplyLaunchedEvent`. */
+export function resupplyLinesOf(value: unknown): readonly ResupplyListLine[] | null {
   if (!Array.isArray(value) || value.length === 0) {
     return null;
   }

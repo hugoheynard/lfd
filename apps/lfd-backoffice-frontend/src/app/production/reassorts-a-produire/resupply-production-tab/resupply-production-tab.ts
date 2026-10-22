@@ -24,6 +24,8 @@ import { isoDay, shiftDay } from '../../previsionnel/previsionnel-range';
 import { BakehouseResupplyCard } from '../bakehouse-resupply-card/bakehouse-resupply-card';
 import { LiveStockAlertsService } from '../live-stock-alerts.service';
 import { ResuppliesToProduceService } from '../resupplies-to-produce.service';
+import { ResupplyLaunchCard } from '../resupply-launch-card/resupply-launch-card';
+import { resupplyLaunchRows } from '../resupply-launch-card/resupply-launch-rows';
 import { ResupplyMountCard } from '../resupply-mount-card/resupply-mount-card';
 import { resupplyMountRows } from '../resupply-mount-card/resupply-mount-rows';
 import {
@@ -60,7 +62,9 @@ function normalize(text: string): string {
  * maintenant : une journée passée ne les montre pas.
  *
  * Depuis le lot R3e (2026-10-22), la carte « À monter » porte le second
- * geste : « Monté », pour les réassorts d'un point servi sur place.
+ * geste : « Monté », pour les réassorts d'un point servi sur place. Depuis
+ * R4a, la carte « Au plus tôt » porte « Lancer » : le réassort du jour entre
+ * au plan du fournil.
  *
  * La journée vit dans l'URL (`?day=`) ; par défaut, demain — le service que
  * le fournil prépare.
@@ -70,6 +74,7 @@ function normalize(text: string): string {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     BakehouseResupplyCard,
+    ResupplyLaunchCard,
     ResupplyMountCard,
     FoldButtonComponent,
     FoldButtonIconComponent,
@@ -104,6 +109,12 @@ export class ResupplyProductionTab {
   private readonly alerts = signal<LiveStockAlertsView | null>(null);
   /** Les alertes n'ont pas pu être lues : la table reste juste, sans leurs marques. */
   protected readonly alertsLost = signal(false);
+
+  /** La journée, si un point y a un « au plus tôt » envoyé : la carte « Au plus tôt » (R4a). */
+  protected readonly launchable = computed(() => {
+    const view = this.view();
+    return view !== null && resupplyLaunchRows(view).length > 0 ? view : null;
+  });
 
   /** La journée, si un point servi sur place y a un réassort envoyé : la carte « À monter ». */
   protected readonly mountable = computed(() => {

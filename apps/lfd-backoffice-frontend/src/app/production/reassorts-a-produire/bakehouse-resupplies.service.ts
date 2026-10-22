@@ -54,6 +54,20 @@ export class BakehouseResuppliesService {
     );
   }
 
+  /**
+   * « Lancer » (R4a, `reassort-boutiques/plan-au-plus-tot.md`) : le fournil
+   * ajoute un réassort « au plus tôt » au plan du jour. Une route du fournil
+   * (`admin/production`), sous le même droit `production_resupply:write`.
+   */
+  async launch(serviceDay: string, resupplyId: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(
+        `${B2B_API_BASE}/admin/production/batch/${encodeURIComponent(serviceDay)}/resupplies/${encodeURIComponent(resupplyId)}/launch`,
+        null,
+      ),
+    );
+  }
+
   private base(): string {
     return `${B2B_API_BASE}/admin/bakehouse-resupplies`;
   }

@@ -27,6 +27,17 @@ export interface SiteResupplyTrace {
 }
 
 /**
+ * Le lancement au fournil d'un réassort « au plus tôt » (R4a), tel que le
+ * commerce l'AFFICHE : l'instant et le nom figé de qui a lancé (`null` si
+ * l'annuaire n'en avait pas). Le refus d'annuler ne le lit pas : il demande
+ * au fournil, sous le verrou de la journée.
+ */
+export interface SiteResupplyLaunch {
+  readonly at: Date;
+  readonly byName: string | null;
+}
+
+/**
  * L'état persisté d'un réassort. Depuis le lot R1c (2026-10-21), le
  * brouillon — « la demande en cours » — se persiste aussi : `placed` est
  * alors `null`.
@@ -53,6 +64,11 @@ export interface SiteResupplySnapshot {
    * qui le porte, ou « Monté » au fournil ; `null` tant qu'il est attendu.
    */
   readonly arrived: SiteResupplyTrace | null;
+  /**
+   * « Lancé par X à HH:MM » (R4a) ; `null` tant que le fournil ne l'a pas
+   * lancé. Facultatif à la RÉHYDRATATION seulement (absent vaut `null`).
+   */
+  readonly launched?: SiteResupplyLaunch | null;
 }
 
 /** Un réassort envoyé (passé, annulé ou non). */

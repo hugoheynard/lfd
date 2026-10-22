@@ -600,6 +600,22 @@ export const ORDERS_PRODUCTION_FACTS = {
   /** La réouverture (2026-10-14) : `absorbed` = commandes retirées du plan. */
   "production_day.reopened": fact(dayFact()),
   /**
+   * Un réassort « au plus tôt » lancé par le fournil (R4a,
+   * `reassort-boutiques/plan-au-plus-tot.md`) : son nom et son point, figés
+   * au lancement. `openedPlan` : la journée n'était pas arrêtée, et ce
+   * lancement l'a ouverte arrêtée avec ce seul réassort (Q5).
+   */
+  "production_day.resupply_launched": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      serviceDay: day(),
+      resupplyId: z.string().min(1),
+      resupplyName: z.string().nullable(),
+      siteLabel: z.string().nullable(),
+      openedPlan: z.boolean(),
+    }),
+  ),
+  /**
    * Le libellé est le SKU : la production ne lit pas le référentiel, et aucun
    * port de son contexte ne nomme un article hors d'une commande. Le SKU est
    * le nom le plus lisible qu'elle connaisse.

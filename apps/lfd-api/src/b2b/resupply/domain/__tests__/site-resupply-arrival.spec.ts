@@ -67,7 +67,7 @@ describe("SiteResupply.markArrived", () => {
 
   it("refuse un réassort annulé", () => {
     const resupply = placed();
-    resupply.cancel({ at: ARRIVED_AT, author: LOU }, null, false);
+    resupply.cancel({ at: ARRIVED_AT, author: LOU }, null, false, false);
 
     expect(() => resupply.markArrived({ at: LATER, author: PAUL }, null)).toThrow(
       ResupplyNotArrivableError,

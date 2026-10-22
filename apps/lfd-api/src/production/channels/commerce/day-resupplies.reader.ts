@@ -34,7 +34,8 @@ export interface PlacedResupply {
  * Un canal À PART de {@link DayOrdersReader} : un réassort n'a ni client, ni
  * mode d'acheminement, ni bon — le mêler à `ProducibleOrder` obligerait à
  * inventer ces champs. Seuls les réassorts « pour demain », envoyés et non
- * annulés ; « au plus tôt » n'entre pas au plan (R4).
+ * annulés pour {@link placedFor} ; un « au plus tôt » n'entre au plan que
+ * lancé, un par un ({@link asapToLaunch}, R4a).
  *
  * L'arrêt du plan le lit SOUS le verrou de la journée : l'envoi et
  * l'annulation d'un réassort pour demain prennent le même verrou
@@ -43,4 +44,16 @@ export interface PlacedResupply {
  */
 export abstract class DayResuppliesReader {
   abstract placedFor(day: ServiceDay): Promise<readonly PlacedResupply[]>;
+
+  /**
+   * **Le réassort « au plus tôt » que le fournil lance** (R4a,
+   * `reassort-boutiques/plan-au-plus-tot.md` §2) : celui-là seulement, envoyé
+   * pour cette journée et non annulé — `null` sinon. Un port CIBLÉ, et pas
+   * un élargissement de {@link placedFor} : l'arrêt relirait sinon tous les
+   * « au plus tôt » comme s'ils étaient du soir (SÉRIEUX 4).
+   *
+   * Lu SOUS le verrou de la journée, comme `placedFor` : l'annulation d'un
+   * « au plus tôt » prend le même verrou (`LaunchedResupplies`).
+   */
+  abstract asapToLaunch(day: ServiceDay, resupplyId: string): Promise<PlacedResupply | null>;
 }

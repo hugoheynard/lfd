@@ -18,9 +18,17 @@ import {
 } from "../value-objects/packing-owner.js";
 import { ServiceDay } from "../value-objects/service-day.value-object.js";
 import * as batching from "./production-day.batches.js";
+import {
+  assertNotLaunched,
+  assertNothingElseToFreeze,
+  launchedOf,
+  type PendingPlan,
+  type ResupplyLaunchGesture,
+} from "./production-day.launch.js";
 import { assertReopenable, type DownstreamProgress } from "./production-day.reopening.js";
 import type {
   DoneMark,
+  LaunchedResupplySnapshot,
   PackedMark,
   ProductionBatchSnapshot,
   ProducedItemSnapshot,
@@ -28,12 +36,18 @@ import type {
   ProductionOrderSnapshot,
   ProductionResupplySnapshot,
 } from "./production-day.snapshot.js";
-import type { PlanSigner } from "./plan-signer.js";
+import { type PlanSigner, staffSigner } from "./plan-signer.js";
 
 // La forme de la journée vit à côté ; réexportée : l'agrégat reste le point d'entrée.
 export type { DownstreamProgress } from "./production-day.reopening.js";
+export {
+  NOTHING_PENDING,
+  type PendingPlan,
+  type ResupplyLaunchGesture,
+} from "./production-day.launch.js";
 export type {
   DoneMark,
+  LaunchedResupplySnapshot,
   ProductionBatchSnapshot,
   PackedMark,
   ProducedItemSnapshot,
@@ -87,6 +101,7 @@ export class ProductionDay {
     private batchesValue: readonly ProductionBatchSnapshot[],
     private reopenedValue: PackedMark | null = null,
     private resuppliesValue: readonly ProductionResupplySnapshot[] = [],
+    private launchedValue: readonly LaunchedResupplySnapshot[] = [],
   ) {}
 
   /**
@@ -111,6 +126,7 @@ export class ProductionDay {
       snapshot.batches,
       snapshot.reopened ?? null,
       snapshot.resupplies ?? [],
+      snapshot.launchedResupplies ?? [],
     );
   }
 
@@ -154,6 +170,16 @@ export class ProductionDay {
   /** Les réassorts figés à l'arrêt (lot R3a) — à part des commandes, au compte quand même. */
   get resupplies(): readonly ProductionResupplySnapshot[] {
     return this.resuppliesValue;
+  }
+
+  /** Les réassorts « au plus tôt » lancés (R4a) — à part de ceux du soir, au compte aussi. */
+  get launchedResupplies(): readonly LaunchedResupplySnapshot[] {
+    return this.launchedValue;
+  }
+
+  /** Tous les réassorts au plan : ceux du soir, puis les lancés — ce que les fournées servent. */
+  get plannedResupplies(): readonly ProductionResupplySnapshot[] {
+    return [...this.resuppliesValue, ...this.launchedValue];
   }
 
   /** Le **compte à produire** : un article, une quantité, commandes et réassorts confondus. */
@@ -250,12 +276,13 @@ export class ProductionDay {
       throw new ProductionDayAlreadyClosedError(this.day.value);
     }
     const kept = withoutWithdrawn(orders, withdrawn);
-    if (kept.length === 0 && resupplies.length === 0) {
+    // Un réassort lancé avant une réouverture (R4a) survit : il suffit au plan.
+    if (kept.length === 0 && resupplies.length === 0 && this.launchedValue.length === 0) {
       throw new ProductionDayEmptyError(this.day.value);
     }
     this.ordersValue = kept.map(freezeOrder);
     this.resuppliesValue = resupplies.map(freezeResupply);
-    this.countsValue = countOf([...kept, ...this.resuppliesValue]);
+    this.countsValue = countOf([...kept, ...this.plannedResupplies]);
     this.closedAtValue = at;
     this.closedByValue = by;
     // Écrit ici et nulle part ailleurs (colisage, §13, B1) : la journée garde
@@ -298,7 +325,12 @@ export class ProductionDay {
       throw new ProductionDayNotClosedError(this.day.value);
     }
     const kept = withoutWithdrawn(orders, withdrawn);
-    const absorbed = absorbArrivals(this.ordersValue, this.countsValue, kept, this.resuppliesValue);
+    const absorbed = absorbArrivals(
+      this.ordersValue,
+      this.countsValue,
+      kept,
+      this.plannedResupplies,
+    );
     if (absorbed.count === 0) {
       return 0;
     }
@@ -311,11 +343,13 @@ export class ProductionDay {
 
   /**
    * **Rouvre la journée** (Hugo, 2026-10-14) : l'arrêt est défait, le plan
-   * effacé (commandes, réassorts — lot R3a —, compte, retirage), et la trace
+   * effacé (commandes, réassorts du soir — lot R3a —, compte, retirage), et la trace
    * `reopened` posée. Les réassorts dégelés redeviennent annulables au
    * commerce : la journée n'est plus arrêtée. L'appelant lit
    * {@link resupplies} AVANT pour les nommer dans le fait. Les
    * fournées annulées restent : elles sont l'historique du four, pas du plan.
+   * Les réassorts LANCÉS restent aussi (R4a, S4 de `vitruve`) : le comptoir
+   * ne peut plus les annuler, et le ré-arrêt les remet au compte.
    * Le prochain arrêt refait un instantané neuf, avec un nouvel instant.
    *
    * @returns les commandes que le plan portait, pour le fait et le journal.
@@ -339,6 +373,41 @@ export class ProductionDay {
     return released;
   }
 
+  /**
+   * **Lance un réassort « au plus tôt »** (R4a, `reassort-boutiques/plan-au-plus-tot.md`
+   * §2) : un geste à part du retirage, qui n'absorbe que des commandes. Le
+   * réassort, lu par l'appelant SOUS le verrou de la journée, entre au plan
+   * à part de ceux du soir, et ses lignes au compte (décision B). Le compte se
+   * refait par la même fonction que l'arrêt — l'appelant a matérialisé les
+   * coches héritées avant ({@link materialize}).
+   *
+   * Sur une journée qui n'est pas arrêtée (Q5), le lancement l'ARRÊTE avec ce
+   * seul réassort, signé de qui lance — à condition qu'il n'y ait rien
+   * d'autre à figer (`pending`, lu par l'appelant).
+   *
+   * @returns `true` si la journée vient d'être arrêtée par ce lancement.
+   * @throws {ResupplyAlreadyLaunchedError} @throws {ResupplyLaunchOnUnarrestedPlanError}
+   */
+  launchResupply(
+    resupply: PlacedResupply,
+    gesture: ResupplyLaunchGesture,
+    pending: PendingPlan,
+  ): boolean {
+    assertNotLaunched(this.day.value, this.launchedValue, resupply.resupplyId);
+    const opening = !this.isClosed;
+    if (opening) {
+      assertNothingElseToFreeze(this.day.value, pending);
+    }
+    this.launchedValue = [...this.launchedValue, launchedOf(resupply, gesture)];
+    this.countsValue = countOf([...this.ordersValue, ...this.plannedResupplies]);
+    if (opening) {
+      this.closedAtValue = gesture.at;
+      this.closedByValue = staffSigner(gesture.staffUserId, gesture.name);
+      this.packingOwnerValue = PACKING_PACKING_OWNER;
+    }
+    return opening;
+  }
+
   /** L'état à écrire. Les getters de l'agrégat, jamais ses champs privés. */
   toSnapshot(): ProductionDaySnapshot {
     return {
@@ -350,6 +419,7 @@ export class ProductionDay {
       packingOwner: this.packingOwnerValue,
       orders: this.ordersValue,
       resupplies: this.resuppliesValue,
+      launchedResupplies: this.launchedValue,
       counts: this.countsValue,
       batches: this.batchesValue,
       reopened: this.reopenedValue,

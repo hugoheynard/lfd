@@ -84,6 +84,15 @@ export interface SiteResupplyView {
   readonly arrivedAt: string | null;
   /** Nom figé de qui l'a dit arrivé ; `null` s'il est attendu ou inconnu. */
   readonly arrivedBy: string | null;
+  /**
+   * « Au plus tôt » LANCÉ au fournil (R4a, `reassort-boutiques/plan-au-plus-tot.md`) :
+   * il est au plan du jour et ne s'annule plus ; `null` tant qu'il ne l'est
+   * pas — et toujours pour un « pour demain ». Posé par le fait du fournil :
+   * il peut suivre le lancement d'un instant.
+   */
+  readonly launchedAt: string | null;
+  /** Nom figé de qui l'a lancé ; `null` s'il ne l'est pas ou si l'annuaire ne le nommait pas. */
+  readonly launchedBy: string | null;
 }
 
 /**

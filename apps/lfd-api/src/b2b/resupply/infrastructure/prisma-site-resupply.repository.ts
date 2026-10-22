@@ -13,6 +13,7 @@ import { dayColumn, SITE_RESUPPLY_LINES, snapshotOf } from "./site-resupply.row.
 /** Le nom (R1g) et les colonnes des trois gestes datés (l'arrivée depuis R3e), `null` tant qu'ils n'ont pas eu lieu. */
 function tracesOf(resupply: SiteResupply) {
   const { placed, cancelled, arrived } = resupply;
+  // Le lancement (R4a) n'est qu'un affichage, posé par le fait du fournil.
   return {
     name: resupply.name,
     placedAt: placed?.at ?? null,
@@ -27,6 +28,8 @@ function tracesOf(resupply: SiteResupply) {
     arrivedByStaffId: arrived?.author.staffUserId ?? null,
     arrivedByName: arrived?.author.name ?? null,
     arrivedByRole: arrived?.author.role ?? null,
+    launchedAt: resupply.launched?.at ?? null,
+    launchedByName: resupply.launched?.byName ?? null,
   };
 }
 

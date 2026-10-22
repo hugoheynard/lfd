@@ -32,6 +32,7 @@ import {
   InMemorySiteResupplyReader,
   SiteLabels,
   InMemoryResupplyUsedNames,
+  FixedLaunches,
 } from "./site-resupply-doubles.js";
 
 /** 17 h à Paris le 2 janvier ; l'heure limite double est posée relativement à lui. */
@@ -63,7 +64,8 @@ function setup(deadline: Date | null = null, stopped: readonly string[] = []) {
   const staff = new Directory({ name: "Lou Martin", role: "counter" });
   const receptions = new KnownReceptions();
   const desk = new RecordingAdmissionDesk(stopped);
-  const gate = new ResupplyPlanGate(desk);
+  const launches = new FixedLaunches();
+  const gate = new ResupplyPlanGate(desk, launches);
   const uow = new DirectUnitOfWork();
   return {
     store,
@@ -130,6 +132,8 @@ describe("le fournil envoie un réassort (R1d)", () => {
         cancelledBy: null,
         arrivedAt: null,
         arrivedBy: null,
+        launchedAt: null,
+        launchedBy: null,
       },
     ]);
   });

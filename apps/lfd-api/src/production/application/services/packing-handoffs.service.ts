@@ -55,7 +55,14 @@ export class PackingHandoffs {
     const earlier = current.batches
       .filter((other) => other.sku === batch.sku && other.id !== batch.id)
       .map((other) => other.id);
-    const handed = handedShareOf(current, batch, await this.handed.handedAmong(day, earlier));
+    // Les réassorts LANCÉS comptent dans la part sur place (R4a) : un « au
+    // plus tôt » du Labo, lancé, monte de la feuille comme celui du soir.
+    const planned = {
+      counts: current.counts,
+      resupplies: current.plannedResupplies,
+      batches: current.batches,
+    };
+    const handed = handedShareOf(planned, batch, await this.handed.handedAmong(day, earlier));
     if (handed === 0) {
       return;
     }

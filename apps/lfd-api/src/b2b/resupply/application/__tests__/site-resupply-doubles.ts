@@ -1,3 +1,7 @@
+import {
+  LaunchedResupplies,
+  type ServiceDay,
+} from "../../../../production/channels/commerce/index.js";
 import { ResupplyCutoff } from "../../domain/resupply-cutoff.js";
 import { ResupplyReceptions } from "../../domain/resupply-receptions.js";
 import { ResupplySiteLabels } from "../../domain/resupply-site-labels.js";
@@ -32,6 +36,7 @@ function snapshotOf(resupply: SiteResupply, version: number): SiteResupplySnapsh
     placed: resupply.placed,
     cancelled: resupply.cancelled,
     arrived: resupply.arrived,
+    launched: resupply.launched,
   };
 }
 
@@ -191,5 +196,23 @@ export class FixedTransferServedSites extends TransferServedSites {
 
   servedByTransfer(siteIds: readonly string[]): Promise<ReadonlySet<string>> {
     return Promise.resolve(new Set(siteIds.filter((id) => this.transferSites.includes(id))));
+  }
+}
+
+/**
+ * Le fournil doublé pour l'annulation d'un « au plus tôt » (R4a) : `launched`
+ * dit quels réassorts il a lancés ; `asked` note chaque question, posée
+ * sous le verrou de la journée.
+ */
+export class FixedLaunches extends LaunchedResupplies {
+  readonly asked: string[] = [];
+
+  constructor(readonly launched: Set<string> = new Set<string>()) {
+    super();
+  }
+
+  isLaunched(day: ServiceDay, resupplyId: string): Promise<boolean> {
+    this.asked.push(`${day.value}:${resupplyId}`);
+    return Promise.resolve(this.launched.has(resupplyId));
   }
 }

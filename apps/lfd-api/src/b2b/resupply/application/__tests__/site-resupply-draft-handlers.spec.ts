@@ -36,6 +36,7 @@ import {
   InMemorySiteResupplies,
   InMemorySiteResupplyReader,
   InMemoryResupplyUsedNames,
+  FixedLaunches,
 } from "./site-resupply-doubles.js";
 
 /** 17 h à Paris le 2 janvier : les journées ne sont comparées qu'à cette horloge figée. */
@@ -65,7 +66,8 @@ function setup(deadline: Date | null = null, stopped: readonly string[] = []) {
   const sites = new Sites([VILLAGE, LABO]);
   const ids = new FixedIdGenerator("resupply");
   const desk = new RecordingAdmissionDesk(stopped);
-  const gate = new ResupplyPlanGate(desk);
+  const launches = new FixedLaunches();
+  const gate = new ResupplyPlanGate(desk, launches);
   const uow = new DirectUnitOfWork();
   return {
     store,

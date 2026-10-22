@@ -773,6 +773,15 @@ model ProductionResupply {
   /// réassort figé avant la colonne — servi sur place par défaut, aucune fiche.
   servedByTransfer Boolean @default(false) @map("served_by_transfer")
 
+  /// `evening` : figé à l'arrêt du soir ; `asap` : « au plus tôt », LANCÉ par
+  /// le fournil dans la journée (réassort, lot R4a) — CHECK
+  /// `production_resupply_kind_known`. Un lancé, et lui seul, porte l'instant
+  /// et l'identifiant staff de son lancement (CHECK
+  /// `production_resupply_asap_launched`, `production_resupply_launch_whole`).
+  kind       String    @default("evening")
+  launchedAt DateTime? @map("launched_at") @db.Timestamptz(6)
+  launchedBy String?   @map("launched_by")
+
   lines ProductionResupplyLine[]
 
   @@unique([serviceDay, resupplyId])

@@ -9,6 +9,7 @@ import {
   ResupplyNotCancellableError,
   BakehouseResupplyAfterStopError,
   ResupplyFrozenInPlanError,
+  ResupplyLaunchedNotCancellableError,
   ResupplyPastCutoffError,
   ResupplyPlanStoppedError,
   ResupplyNotArrivableError,
@@ -20,6 +21,7 @@ import { SiteResupplyLine } from "./site-resupply-line.js";
 import {
   type ResupplyTarget,
   serviceDayFor,
+  type SiteResupplyLaunch,
   type SiteResupplySnapshot,
   type SiteResupplyStatus,
   type SiteResupplyTrace,
@@ -31,6 +33,7 @@ export {
   type ResupplyTarget,
   resupplyTargetOf,
   serviceDayFor,
+  type SiteResupplyLaunch,
   type SiteResupplySnapshot,
   type SiteResupplyStatus,
   type SiteResupplyTrace,
@@ -77,6 +80,7 @@ export class SiteResupply {
     private placedTrace: SiteResupplyTrace | null,
     private cancelledTrace: SiteResupplyTrace | null,
     private arrivedTrace: SiteResupplyTrace | null,
+    private launchedMark: SiteResupplyLaunch | null = null,
   ) {}
 
   /** Un brouillon, au geste `at` : sa journée en découle. */
@@ -128,6 +132,7 @@ export class SiteResupply {
       snapshot.placed,
       snapshot.cancelled,
       snapshot.arrived,
+      snapshot.launched ?? null,
     );
   }
 
@@ -186,6 +191,28 @@ export class SiteResupply {
 
   get arrived(): SiteResupplyTrace | null {
     return this.arrivedTrace;
+  }
+
+  /** « Lancé par X à HH:MM » au fournil (R4a), ou `null`. Un affichage, pas une garde. */
+  get launched(): SiteResupplyLaunch | null {
+    return this.launchedMark;
+  }
+
+  /**
+   * **Le fournil l'a lancé** (R4a) — l'affichage, posé par l'abonné au fait
+   * `production.resupply_launched`. Seul un « au plus tôt » envoyé se lance ;
+   * rejoué, rien ne change.
+   *
+   * @returns `true` si l'affichage vient d'être posé ; `false` sinon (déjà
+   *   posé, ou réassort qui n'est pas un « au plus tôt » envoyé — l'abonné
+   *   l'écarte sans relivrer le fait sans fin).
+   */
+  recordLaunch(launch: SiteResupplyLaunch): boolean {
+    if (this.target !== "asap" || this.status !== "placed" || this.launchedMark !== null) {
+      return false;
+    }
+    this.launchedMark = launch;
+    return true;
   }
 
   /**
@@ -303,18 +330,23 @@ export class SiteResupply {
    * « Réceptionner ») : arrivé et attesté, il ne s'annule plus (R1d).
    * `planStopped`, lu SOUS le verrou de la journée : un réassort « pour
    * demain » figé dans un plan arrêté ne s'annule plus (R3a, Q3) ; rouvert,
-   * il s'annule de nouveau.
+   * il s'annule de nouveau. `launched`, lu au fournil SOUS le même verrou
+   * (R4a) : un « au plus tôt » lancé est au plan, il ne s'annule plus.
    */
   cancel(
     trace: SiteResupplyTrace,
     reception: SiteResupplyTrace | null,
     planStopped: boolean,
+    launched: boolean,
   ): void {
     if (this.status !== "placed") {
       throw new ResupplyNotCancellableError();
     }
     if (this.target === "tomorrow" && planStopped) {
       throw new ResupplyFrozenInPlanError(this.serviceDay);
+    }
+    if (launched) {
+      throw new ResupplyLaunchedNotCancellableError(this.serviceDay);
     }
     if (reception !== null) {
       throw new ResupplyAlreadyReceivedNotCancellableError(

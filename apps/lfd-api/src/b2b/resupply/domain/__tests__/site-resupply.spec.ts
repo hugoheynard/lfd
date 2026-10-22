@@ -208,16 +208,16 @@ describe("SiteResupply — l'annulation", () => {
   it("annule un réassort passé, une seule fois", () => {
     const resupply = draft("asap");
     resupply.place(trace(EVENING), null, false);
-    resupply.cancel(trace(LATE_NIGHT), null, false);
+    resupply.cancel(trace(LATE_NIGHT), null, false, false);
     expect(resupply.status).toBe("cancelled");
     expect(resupply.cancelled).toEqual(trace(LATE_NIGHT));
-    expect(() => resupply.cancel(trace(LATE_NIGHT), null, false)).toThrow(
+    expect(() => resupply.cancel(trace(LATE_NIGHT), null, false, false)).toThrow(
       ResupplyNotCancellableError,
     );
   });
 
   it("un brouillon ne s'annule pas : il n'a jamais été passé", () => {
-    expect(() => draft("asap").cancel(trace(EVENING), null, false)).toThrow(
+    expect(() => draft("asap").cancel(trace(EVENING), null, false, false)).toThrow(
       ResupplyNotCancellableError,
     );
   });
@@ -228,10 +228,10 @@ describe("SiteResupply — l'annulation", () => {
     resupply.place(trace(EVENING), null, false);
     const reception = { at: LATE_NIGHT, author: { ...AUTHOR, name: "Léa Roux" } };
 
-    expect(() => resupply.cancel(trace(LATE_NIGHT), reception, false)).toThrow(
+    expect(() => resupply.cancel(trace(LATE_NIGHT), reception, false, false)).toThrow(
       ResupplyAlreadyReceivedNotCancellableError,
     );
-    expect(() => resupply.cancel(trace(LATE_NIGHT), reception, false)).toThrow(
+    expect(() => resupply.cancel(trace(LATE_NIGHT), reception, false, false)).toThrow(
       /déjà réceptionné par Léa Roux à 23:30/u,
     );
     expect(resupply.status).toBe("placed");
@@ -322,19 +322,21 @@ describe("SiteResupply — le plan du fournil arrêté (lot R3a)", () => {
     const resupply = draft("tomorrow", EVENING);
     resupply.place(trace(EVENING), DEADLINE, false);
 
-    expect(() => resupply.cancel(trace(LATE_NIGHT), null, true)).toThrow(
+    expect(() => resupply.cancel(trace(LATE_NIGHT), null, true, false)).toThrow(
       /arrêté.*Réceptionnez-le avec un écart/u,
     );
-    expect(() => resupply.cancel(trace(LATE_NIGHT), null, true)).toThrow(ResupplyFrozenInPlanError);
+    expect(() => resupply.cancel(trace(LATE_NIGHT), null, true, false)).toThrow(
+      ResupplyFrozenInPlanError,
+    );
     expect(resupply.status).toBe("placed");
-    resupply.cancel(trace(LATE_NIGHT), null, false);
+    resupply.cancel(trace(LATE_NIGHT), null, false, false);
     expect(resupply.status).toBe("cancelled");
   });
 
   it("« au plus tôt » s'annule quel que soit l'état du plan", () => {
     const resupply = draft("asap", EVENING);
     resupply.place(trace(EVENING), null, false);
-    resupply.cancel(trace(LATE_NIGHT), null, true);
+    resupply.cancel(trace(LATE_NIGHT), null, true, false);
     expect(resupply.status).toBe("cancelled");
   });
 });

@@ -27,6 +27,7 @@ export const PRODUCTION_DAY_FACTS = {
   closed: "production_day.closed",
   retaken: "production_day.retaken",
   reopened: "production_day.reopened",
+  resupplyLaunched: "production_day.resupply_launched",
 } as const satisfies Readonly<Record<string, JournalFactType>>;
 
 /** Le sujet : la journée, désignée par sa date de service — sa clé en base. */
@@ -108,6 +109,43 @@ export class ProductionDayReopenedJournalEvent implements JournaledEvent {
       subjectType: SUBJECT_TYPE,
       subjectId: this.serviceDay,
       payload: dayPayload(this.serviceDay, this.released),
+    };
+  }
+}
+
+/**
+ * Fait : **un réassort « au plus tôt » est lancé** (R4a,
+ * `reassort-boutiques/plan-au-plus-tot.md` §2) — entré au plan du jour par le
+ * geste du fournil. Le réassort se cite par son nom et son point, figés au
+ * lancement. `openedPlan` : la journée n'était pas arrêtée, et ce lancement
+ * l'a ouverte arrêtée avec ce seul réassort (Q5) — le journal le dit en
+ * clair, parce que c'est un plan d'un genre nouveau.
+ */
+export class ProductionResupplyLaunchedJournalEvent implements JournaledEvent {
+  constructor(
+    /** `AAAA-MM-JJ`. */
+    readonly serviceDay: string,
+    readonly resupply: {
+      readonly resupplyId: string;
+      readonly name: string | null;
+      readonly siteLabel: string | null;
+    },
+    readonly openedPlan: boolean,
+  ) {}
+
+  journalFact(): JournalFact {
+    return {
+      type: PRODUCTION_DAY_FACTS.resupplyLaunched,
+      subjectType: SUBJECT_TYPE,
+      subjectId: this.serviceDay,
+      payload: {
+        subjectLabel: this.serviceDay,
+        serviceDay: this.serviceDay,
+        resupplyId: this.resupply.resupplyId,
+        resupplyName: this.resupply.name,
+        siteLabel: this.resupply.siteLabel,
+        openedPlan: this.openedPlan,
+      },
     };
   }
 }

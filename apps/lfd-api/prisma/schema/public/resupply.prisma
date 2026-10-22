@@ -121,6 +121,13 @@ model SiteResupply {
   arrivedByName    String?   @map("arrived_by_name")
   arrivedByRole    String?   @map("arrived_by_role")
 
+  /// « Lancé par X à HH:MM » (lot R4a) : l'AFFICHAGE du lancement d'un
+  /// réassort « au plus tôt » au fournil, posé par l'abonné du fait
+  /// `production.resupply_launched`. Le refus d'annuler ne le lit pas : il
+  /// est synchrone, au fournil. Nom figé, `null` si l'annuaire n'en avait pas.
+  launchedAt     DateTime? @map("launched_at") @db.Timestamptz(6)
+  launchedByName String?   @map("launched_by_name")
+
   lines   SiteResupplyLine[]
   /// Son reçu, une fois réceptionné (lot R2).
   receipt ResupplyReceipt?

@@ -176,12 +176,12 @@ déclencheurs `day_change` (posés le 2026-10-22) couvrent déjà
 
 ## 4. Les lots
 
-| Lot     | Contenu                                                                                                                                                                                                    | Touche                                    |
-| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| **R4a** | `launchResupply` (agrégat, port ciblé, verrou), `LaunchedResupplies` synchrone et refus d'annuler, fait `resupply_launched`, réouverture, journée jamais arrêtée (selon Q5) ; « Lancer » dans Prod manager | fournil, commerce, back-office            |
-| **R4b** | Le colisage : fiche « au plus tôt » sur le fait, réserve de stock (selon Q7)                                                                                                                               | colisage, back-office                     |
-| **R4c** | La livraison : abonné au fait → attache + `placeDaySoon` ; `FrozenResuppliesReader` élargi ; cloche « aucun véhicule »                                                                                     | livraison, fournil (lecteur), back-office |
-| **R4d** | Le suivi : lancé / parti au comptoir, à l'onglet Stock, à Prod manager                                                                                                                                     | commerce, back-office                     |
+| Lot                                                              | Contenu                                                                                                                                                                                                    | Touche                                    |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| **R4a** ✅ bâti le 2026-10-22, non commité — [README](README.md) | `launchResupply` (agrégat, port ciblé, verrou), `LaunchedResupplies` synchrone et refus d'annuler, fait `resupply_launched`, réouverture, journée jamais arrêtée (selon Q5) ; « Lancer » dans Prod manager | fournil, commerce, back-office            |
+| **R4b**                                                          | Le colisage : fiche « au plus tôt » sur le fait, réserve de stock (selon Q7)                                                                                                                               | colisage, back-office                     |
+| **R4c**                                                          | La livraison : abonné au fait → attache + `placeDaySoon` ; `FrozenResuppliesReader` élargi ; cloche « aucun véhicule »                                                                                     | livraison, fournil (lecteur), back-office |
+| **R4d**                                                          | Le suivi : lancé / parti au comptoir, à l'onglet Stock, à Prod manager                                                                                                                                     | commerce, back-office                     |
 
 ## 5. Hors périmètre
 
@@ -230,3 +230,19 @@ déclencheurs `day_change` (posés le 2026-10-22) couvrent déjà
 | S8 — le stock du colisage                                        | non traité                                           | réserve proposée (Q7)                                               |
 | S9 — migrations sans engagement                                  | « colonnes »                                         | §3 : tables, colonnes, défauts, CHECK                               |
 | Mineurs                                                          | `:asap` dans la clé ; « transferts tirés à l'arrêt » | clé sans `:asap`, avec `:after-reopening:` ; §0 corrigé             |
+
+## 9. Décisions (2026-10-22)
+
+Hugo : « donc tu peux lancer R4 », sur les propositions du §7, retenues telles
+quelles (révisables lot par lot) :
+
+- **Q1** — le **fournil** lance ; pas de lancement automatique.
+- **Q3** — **pas de seuil** : un réassort lancé rejoint le premier transfert non
+  parti du site, ou en ouvre un.
+- **Q4** — au Labo, **« Lancer » puis « Monté »**.
+- **Q5** — « Lancer » sur une journée jamais arrêtée **l'ouvre arrêtée** avec ce
+  seul réassort.
+- **Q6** — le dossier du jour **n'est pas renvoyé** à chaque lancement.
+- **Q7** — le colisage **réserve** les pièces d'un réassort lancé.
+
+Ordre : un lot à la fois — R4a, puis R4b, R4c, R4d.
