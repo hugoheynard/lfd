@@ -196,6 +196,26 @@ describe('ComptePage', () => {
   });
 
   /**
+   * Régression : `href="#ancre"` se résolvait contre `<base href="/">` et
+   * menait à `/#compte-payment`, l'accueil (production, 2026-10-22).
+   */
+  it('un lien du sommaire descend à sa section, sans quitter la page', () => {
+    // jsdom n'implémente pas `scrollIntoView` : la section reçoit le sien.
+    const section = el().querySelector<HTMLElement>('#compte-payment');
+    const scrollIntoView = vi.fn();
+    if (section !== null) {
+      section.scrollIntoView = scrollIntoView;
+    }
+    const link = el().querySelector<HTMLAnchorElement>('.summary-link[href="#compte-payment"]');
+    const click = new MouseEvent('click', { bubbles: true, cancelable: true });
+
+    link?.dispatchEvent(click);
+
+    expect(click.defaultPrevented).toBe(true);
+    expect(scrollIntoView).toHaveBeenCalledTimes(1);
+  });
+
+  /**
    * Deux cartes par section, et le CSS de la page n'en affiche qu'une au pli.
    * L'ancre reste sur la SECTION : le sommaire mène au même endroit aux deux
    * largeurs.

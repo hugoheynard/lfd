@@ -91,7 +91,11 @@
             <ol class="summary-list">
               @for (entry of summary(); track entry.key) {
                 <li>
-                  <a class="summary-link" [href]="'#' + entry.anchor">
+                  <a
+                    class="summary-link"
+                    [href]="'#' + entry.anchor"
+                    (click)="goToSection($event, entry.anchor)"
+                  >
                     <span class="summary-num">{{ entry.number }}</span
                     >{{ entry.label }}
                   </a>

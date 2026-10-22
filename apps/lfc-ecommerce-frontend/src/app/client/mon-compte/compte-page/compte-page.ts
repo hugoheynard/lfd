@@ -7,6 +7,7 @@ import {
   inject,
   untracked,
 } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
 import { CompanyActivationChecklist } from '@lfd/b2b-ui/company';
 import type { CompanyMemberRole } from '@lfd/contracts';
 import {
@@ -232,6 +233,7 @@ export class ComptePage {
       this.showsBank() && this.bank.account() !== null && this.access.customerMandate() === 'open',
   );
 
+  private readonly document = inject(DOCUMENT);
   private readonly activation = inject(ClientActivation);
   private readonly addresses = inject(ClientAddresses);
   private readonly mandates = inject(ClientMandate);
@@ -280,6 +282,18 @@ export class ComptePage {
       bank: completionFor(items, 'bank'),
     };
   });
+
+  /**
+   * Un lien du sommaire : descend à sa section, sans changer d'écran.
+   *
+   * Un simple `href="#ancre"` se résout contre le `<base href="/">` de
+   * l'application, pas contre la page : il menait à `/#compte-payment`,
+   * c'est-à-dire l'accueil (constaté en production le 2026-10-22).
+   */
+  protected goToSection(event: MouseEvent, anchor: string): void {
+    event.preventDefault();
+    this.document.getElementById(anchor)?.scrollIntoView({ block: 'start' });
+  }
 
   /** Un raccourci de la synthèse : le dialogue de l'élément. */
   protected completeStep(key: string): void {
