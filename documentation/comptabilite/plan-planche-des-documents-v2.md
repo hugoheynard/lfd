@@ -79,10 +79,10 @@ Constats :
   chaque commande porte sa propre couleur. Répond à Q2.
 - **Le mot n'est pas écrit** : pro ou particulier reste porté par la couleur
   et la mise en page, sans « Pro » ni « Particulier » en toutes lettres.
-- **La couleur est figée sur la commande** à la passation, comme son prix :
-  un bon réimprimé garde sa couleur, même après un changement de départ.
-  Demande une colonne sur la commande et une reprise des commandes passées,
-  donc une migration.
+- **La couleur se lit au moment d'imprimer**, au départ actuel, comme
+  aujourd'hui. Décidée « figée » puis revue le même jour par Hugo : quand on
+  réorganise les départs, un papier doit montrer en un coup d'œil la
+  répartition **actuelle**. Pas de colonne, pas de migration.
 
 ## 1. Ce que Hugo demande
 
