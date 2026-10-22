@@ -59,7 +59,13 @@ describe("renderDayDossierPdf — le bon figé à l'arrêt (E1b)", () => {
       },
     };
     const pages = pdfPages(
-      await renderDayDossierPdf(dayDossierOf([frozen], new Map()), STAMP, () => "", NO_COLORS),
+      await renderDayDossierPdf(
+        dayDossierOf([frozen], new Map()),
+        STAMP,
+        () => "",
+        NO_COLORS,
+        NO_COLORS,
+      ),
     );
     const sheet = pages[1] ?? "";
     for (const text of [
@@ -82,7 +88,9 @@ describe("renderDayDossierPdf — le bon figé à l'arrêt (E1b)", () => {
   });
 
   it("une journée arrêtée avant le lot garde le rendu d'avant, sans « undefined » ni « null »", async () => {
-    const pages = pdfPages(await renderDayDossierPdf(DOSSIER, STAMP, () => "", NO_COLORS));
+    const pages = pdfPages(
+      await renderDayDossierPdf(DOSSIER, STAMP, () => "", NO_COLORS, NO_COLORS),
+    );
     expect(pages[1]).toContain("Client LFC-0001");
     expect(pages[1]).toContain("3 rue du Four");
     expect(pages[1]).not.toContain("NOTE DU CLIENT");
@@ -96,7 +104,13 @@ describe("renderDayDossierPdf — le bon figé à l'arrêt (E1b)", () => {
   it("date le pied à l'heure de Paris, pas en UTC", async () => {
     const lateNight = new Date("2026-10-07T22:30:00.000Z");
     const pages = pdfPages(
-      await renderDayDossierPdf(DOSSIER, { ...STAMP, closedAt: lateNight }, () => "", NO_COLORS),
+      await renderDayDossierPdf(
+        DOSSIER,
+        { ...STAMP, closedAt: lateNight },
+        () => "",
+        NO_COLORS,
+        NO_COLORS,
+      ),
     );
     expect(pages[0]).toContain("Arrêté le jeudi 8 octobre 2026 à 00:30");
   });
@@ -109,6 +123,7 @@ describe("renderDayDossierPdf", () => {
         DOSSIER,
         { serviceDay: DAY, closedAt: CLOSED, retakenAt: null, closedBy: null, retakenByName: null },
         () => "",
+        NO_COLORS,
         NO_COLORS,
       ),
     );
@@ -137,6 +152,7 @@ describe("renderDayDossierPdf", () => {
         },
         () => "",
         NO_COLORS,
+        NO_COLORS,
       ),
     );
     expect(pages[0]).toContain("complété le mercredi 7 octobre 2026");
@@ -155,11 +171,13 @@ describe("renderDayDossierPdf", () => {
       stamp,
       () => "https://admin/colisage/x",
       NO_COLORS,
+      NO_COLORS,
     );
     const second = await renderDayDossierPdf(
       DOSSIER,
       stamp,
       () => "https://admin/colisage/x",
+      NO_COLORS,
       NO_COLORS,
     );
     expect(first.equals(second)).toBe(true);
@@ -178,6 +196,7 @@ describe("renderDayDossierPdf", () => {
         { serviceDay: DAY, closedAt: CLOSED, retakenAt: null, closedBy: null, retakenByName: null },
         () => "",
         NO_COLORS,
+        NO_COLORS,
       ),
     );
     expect(pages.length).toBeGreaterThan(2);
@@ -189,7 +208,9 @@ describe("renderDayDossierPdf", () => {
   });
 
   it("dit le jour où la marchandise est attendue, en toutes lettres", async () => {
-    const pages = pdfPages(await renderDayDossierPdf(DOSSIER, STAMP, () => "", NO_COLORS));
+    const pages = pdfPages(
+      await renderDayDossierPdf(DOSSIER, STAMP, () => "", NO_COLORS, NO_COLORS),
+    );
     expect(pages[0]).toContain("Lot pour le jeudi 8 octobre 2026");
     expect(pages[1]).toContain("LOT POUR LE JEU. 8 OCT. · BON 1/2");
   });
@@ -206,6 +227,7 @@ describe("renderDayDossierPdf", () => {
         },
         () => "",
         NO_COLORS,
+        NO_COLORS,
       ),
     );
     expect(byMarie[0]).toContain("Arrêté par Marie Dupont le mercredi 7 octobre 2026");
@@ -215,6 +237,7 @@ describe("renderDayDossierPdf", () => {
         DOSSIER,
         { ...STAMP, closedBy: { kind: "automatic" } },
         () => "",
+        NO_COLORS,
         NO_COLORS,
       ),
     );
@@ -226,12 +249,14 @@ describe("renderDayDossierPdf", () => {
       [order("LFC-0001", 4), { ...order("LFC-0002", 6), fulfillmentMethod: "pickup" }],
       new Map(),
     );
-    const pages = pdfPages(await renderDayDossierPdf(mixed, STAMP, () => "", NO_COLORS));
+    const pages = pdfPages(await renderDayDossierPdf(mixed, STAMP, () => "", NO_COLORS, NO_COLORS));
     expect(pages[0]).toContain("2 commandes (1 en retrait, 1 en livraison) · 10 pièces");
   });
 
   it("numérote chaque page « x/N » dans le pied", async () => {
-    const pages = pdfPages(await renderDayDossierPdf(DOSSIER, STAMP, () => "", NO_COLORS));
+    const pages = pdfPages(
+      await renderDayDossierPdf(DOSSIER, STAMP, () => "", NO_COLORS, NO_COLORS),
+    );
     expect(pages).toHaveLength(3);
     expect(pages[0]).toContain("1/3");
     expect(pages[1]).toContain("2/3");
@@ -242,7 +267,7 @@ describe("renderDayDossierPdf", () => {
 describe("dayDossierPdfKey — la version de mise en page", () => {
   it("n'est plus la clé d'avant E1b : un dossier archivé à l'ancien papier n'est jamais resservi", () => {
     expect(dayDossierPdfKey(DAY, null)).not.toBe(`${DAY}/dossier-du-jour.pdf`);
-    expect(dayDossierPdfKey(DAY, RETAKEN)).toContain("-v9-retirage-");
+    expect(dayDossierPdfKey(DAY, RETAKEN)).toContain("-v10-retirage-");
   });
 });
 
@@ -250,7 +275,7 @@ describe("dayDossierPdfKey", () => {
   it("une clé pour la clôture, une autre par retirage : le complément n'écrase pas l'original", () => {
     const original = dayDossierPdfKey(DAY, null);
     const completed = dayDossierPdfKey(DAY, RETAKEN);
-    expect(original).toBe(`${DAY}/dossier-du-jour-v9.pdf`);
+    expect(original).toBe(`${DAY}/dossier-du-jour-v10.pdf`);
     expect(completed).not.toBe(original);
     expect(completed.startsWith(`${DAY}/`)).toBe(true);
   });
@@ -266,7 +291,9 @@ describe("dayDossierPdfKey", () => {
         lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 18 }],
       },
     ]);
-    const pages = pdfPages(await renderDayDossierPdf(dossier, STAMP, () => "", NO_COLORS));
+    const pages = pdfPages(
+      await renderDayDossierPdf(dossier, STAMP, () => "", NO_COLORS, NO_COLORS),
+    );
     expect(pages).toHaveLength(3);
     expect(pages[0]).toContain(
       "1 commande (1 en livraison) · 1 réassort · 24 pièces dont 18 de réassort",
@@ -293,7 +320,9 @@ describe("dayDossierPdfKey", () => {
         lines: [{ sku: "VIE-002", productName: "Pain au chocolat", quantity: 18 }],
       },
     ]);
-    const pages = pdfPages(await renderDayDossierPdf(dossier, STAMP, () => "", NO_COLORS));
+    const pages = pdfPages(
+      await renderDayDossierPdf(dossier, STAMP, () => "", NO_COLORS, NO_COLORS),
+    );
     expect(pages).toHaveLength(2);
     expect(pages[0]).toContain("1 réassort · 18 pièces dont 18 de réassort");
     expect(pages[1]).toContain("Réassort Village");
@@ -310,7 +339,9 @@ describe("dayDossierPdfKey", () => {
         lines: [{ sku: "VIE-002", productName: "Pain au chocolat", quantity: 18 }],
       },
     ]);
-    const pages = pdfPages(await renderDayDossierPdf(dossier, STAMP, () => "", NO_COLORS));
+    const pages = pdfPages(
+      await renderDayDossierPdf(dossier, STAMP, () => "", NO_COLORS, NO_COLORS),
+    );
     // Le tiret long n'est pas relu par `pdf-text` : le nom, puis le point.
     expect(pages[1]).toMatch(/Vitrine du matin .{0,2}Village/);
     expect(pages[1]).not.toContain("Réassort Village");
@@ -319,12 +350,13 @@ describe("dayDossierPdfKey", () => {
 
 describe("renderDayDossierPdf — la pastille par commande (§0 bis, 2026-10-22)", () => {
   it("pose une pastille sur le bon d'une commande colorée : le papier change, pas son texte", async () => {
-    const plain = await renderDayDossierPdf(DOSSIER, STAMP, () => "", NO_COLORS);
+    const plain = await renderDayDossierPdf(DOSSIER, STAMP, () => "", NO_COLORS, NO_COLORS);
     const colored = await renderDayDossierPdf(
       DOSSIER,
       STAMP,
       () => "",
       new Map([["id-LFC-0001", "#e4572e"]]),
+      NO_COLORS,
     );
     expect(colored.equals(plain)).toBe(false);
     expect(pdfPages(colored)).toEqual(pdfPages(plain));
@@ -332,18 +364,63 @@ describe("renderDayDossierPdf — la pastille par commande (§0 bis, 2026-10-22)
 
   it("n'écrit ni « Pro » ni « Particulier » : la couleur seule porte la clientèle", async () => {
     const pages = pdfPages(
-      await renderDayDossierPdf(DOSSIER, STAMP, () => "", new Map([["id-LFC-0001", "#e4572e"]])),
+      await renderDayDossierPdf(
+        DOSSIER,
+        STAMP,
+        () => "",
+        new Map([["id-LFC-0001", "#e4572e"]]),
+        NO_COLORS,
+      ),
     );
     expect(pages.join("")).not.toMatch(/\bPro\b|Particulier/);
   });
 
   it("une couleur d'une commande hors du dossier ne pose rien", async () => {
-    const plain = await renderDayDossierPdf(DOSSIER, STAMP, () => "", NO_COLORS);
+    const plain = await renderDayDossierPdf(DOSSIER, STAMP, () => "", NO_COLORS, NO_COLORS);
     const stranger = await renderDayDossierPdf(
       DOSSIER,
       STAMP,
       () => "",
       new Map([["id-ailleurs", "#e4572e"]]),
+      NO_COLORS,
+    );
+    expect(stranger.equals(plain)).toBe(true);
+  });
+});
+
+describe("renderDayDossierPdf — la pastille du bon de réassort (Hugo, 2026-10-22)", () => {
+  const withResupply = dayDossierOf([], new Map(), [
+    {
+      resupplyId: "r-1",
+      siteId: "site-v",
+      siteLabel: "Village",
+      name: null,
+      servedByTransfer: true,
+      lines: [{ sku: "VIE-002", productName: "Pain au chocolat", quantity: 18 }],
+    },
+  ]);
+
+  it("pose la teinte du site devant le titre : le papier change, pas un mot", async () => {
+    const plain = await renderDayDossierPdf(withResupply, STAMP, () => "", NO_COLORS, NO_COLORS);
+    const tinted = await renderDayDossierPdf(
+      withResupply,
+      STAMP,
+      () => "",
+      NO_COLORS,
+      new Map([["site-v", "#26a69a"]]),
+    );
+    expect(tinted.equals(plain)).toBe(false);
+    expect(pdfPages(tinted)).toEqual(pdfPages(plain));
+  });
+
+  it("un site sans teinte ne pose rien", async () => {
+    const plain = await renderDayDossierPdf(withResupply, STAMP, () => "", NO_COLORS, NO_COLORS);
+    const stranger = await renderDayDossierPdf(
+      withResupply,
+      STAMP,
+      () => "",
+      NO_COLORS,
+      new Map([["site-ailleurs", "#26a69a"]]),
     );
     expect(stranger.equals(plain)).toBe(true);
   });

@@ -1,5 +1,6 @@
 import type { ProductionResupplySnapshot } from "../entities/production-day.js";
 import { resupplySheetTitleOf } from "./day-dossier.js";
+import { drawOrderSwatch } from "./order-color-swatch.js";
 import {
   LEFT,
   MARGIN_Y,
@@ -29,7 +30,10 @@ export type MakeRoom = (y: number, needed: number) => number;
  * chose.
  *
  * `banner` est le bandeau du lot (« LOT POUR LE MER. 7 OCT. ») ; `rank`,
- * « réassort 1/2 ». Rend le `y` sous la dernière ligne.
+ * « réassort 1/2 ». `color` est la teinte de réassort du site destinataire
+ * (Hugo, 2026-10-22) : une pastille devant le titre, du même dessin que celle
+ * des commandes, sans mot ; `null` — site sans teinte — n'en pose aucune.
+ * Rend le `y` sous la dernière ligne.
  */
 export function drawResupplySheet(
   doc: Doc,
@@ -37,14 +41,16 @@ export function drawResupplySheet(
   banner: string,
   rank: string,
   room: MakeRoom,
+  color: string | null,
 ): number {
   let y = MARGIN_Y;
   putCaps(doc, `${banner} · ${rank.toUpperCase()}`, LEFT, y);
   y += 5 * MM;
-  put(doc, resupplySheetTitleOf(resupply), LEFT, y, {
+  const swatch = drawOrderSwatch(doc, color, LEFT, y + 0.5 * MM);
+  put(doc, resupplySheetTitleOf(resupply), LEFT + swatch, y, {
     size: 16,
     bold: true,
-    width: WIDTH - 40 * MM,
+    width: WIDTH - 40 * MM - swatch,
   });
   putRight(doc, "RÉASSORT", RIGHT, y + 1, 12, true);
   y += 8 * MM;

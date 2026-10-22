@@ -93,8 +93,15 @@ Constats :
   > `ResupplyPrintColorsReader` (`production/channels/commerce/`, implémenté
   > par `b2b/sites`). Un réassort prend la teinte de son site destinataire
   > dans le camembert ; gris si le site n'en a pas. Le compte à produire
-  > d'exemple de la planche en montre une. Les bons de réassort du dossier du
-  > jour n'ont pas de référence : ils ne portent pas de pastille.
+  > d'exemple de la planche en montre une.
+  > ~~Les bons de réassort du dossier du jour n'ont pas de référence : ils ne
+  > portent pas de pastille.~~ Revu par Hugo le 2026-10-22, **bâti le
+  > 2026-10-22** (non commité à l'écriture) : chaque bon de réassort porte la
+  > pastille de la teinte de son site destinataire **devant son titre**, même
+  > dessin que celle des commandes (`order-color-swatch.ts`), aucun mot ; rien
+  > si le site n'a pas de teinte. Lue au tirage par `ResupplyPrintColorsReader`
+  > dans `ProductionPapers.dossierOf` ; clé d'archive du dossier montée en
+  > `v10`. Le dossier d'exemple de la planche la montre.
 - **Les papiers déjà tirés gardent les couleurs de leur premier tirage** :
   accepté. Un papier réimprimé reste celui qui est parti à l'atelier ; une
   réorganisation se voit en tirant à nouveau.

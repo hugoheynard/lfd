@@ -159,7 +159,10 @@ export class ProductionPapers {
       ...snapshot.orders.flatMap((order) => order.lines),
       ...resupplies.flatMap((resupply) => resupply.lines),
     ]);
-    const colors = await this.colors.colorsOf(snapshot.orders.map((order) => order.orderId));
+    const [colors, resupplyColors] = await Promise.all([
+      this.colors.colorsOf(snapshot.orders.map((order) => order.orderId)),
+      this.resupplyColors.colorsOf([...new Set(resupplies.map((resupply) => resupply.siteId))]),
+    ]);
     const bytes = await renderDayDossierPdf(
       dayDossierOf(snapshot.orders, shelves, resupplies),
       {
@@ -171,6 +174,7 @@ export class ProductionPapers {
       },
       (reference) => this.colisageUrl(reference),
       colors,
+      resupplyColors,
     );
     if (shelves !== null) {
       await this.archive(key, bytes);

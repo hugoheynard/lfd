@@ -64,14 +64,17 @@ export interface DossierStamp {
  * vide — aucun code n'est alors imprimé, comme sur la feuille d'atelier.
  * `colors` porte la pastille de chaque bon de commande, par `orderId` (§0 bis
  * du plan de la planche des documents v2, 2026-10-22) ; une commande absente
- * n'en a pas. Le récapitulatif, compté par article, et les bons de réassort,
- * qui ne sont pas des commandes, n'en portent aucune.
+ * n'en a pas. Le récapitulatif, compté par article, n'en porte aucune.
+ * `resupplyColors` porte, par `siteId`, la teinte de réassort du site
+ * destinataire : la pastille d'un bon de réassort (Hugo, 2026-10-22) ; un
+ * site absent n'en a pas.
  */
 export function renderDayDossierPdf(
   dossier: DayDossier,
   stamp: DossierStamp,
   colisageUrlOf: (reference: string) => string,
   colors: ReadonlyMap<string, string>,
+  resupplyColors: ReadonlyMap<string, string>,
 ): Promise<Buffer> {
   return render(
     stamp.retakenAt ?? stamp.closedAt,
@@ -90,8 +93,13 @@ export function renderDayDossierPdf(
       dossier.resupplySheets.forEach((resupply, index) => {
         doc.addPage();
         const rank = `réassort ${String(index + 1)}/${String(dossier.resupplySheets.length)}`;
-        drawResupplySheet(doc, resupply, lotBanner(stamp), rank, (at, needed) =>
-          room(doc, at, needed, stamp),
+        drawResupplySheet(
+          doc,
+          resupply,
+          lotBanner(stamp),
+          rank,
+          (at, needed) => room(doc, at, needed, stamp),
+          resupplyColors.get(resupply.siteId) ?? null,
         );
       });
       footers(doc, stamp);
@@ -130,8 +138,11 @@ export function renderDayDossierPdf(
  *
  * `v9` (2026-10-22, §0 bis du plan de la planche des documents v2) : chaque
  * bon de commande porte la pastille de sa couleur devant sa référence.
+ *
+ * `v10` (2026-10-22, Hugo) : chaque bon de réassort porte la pastille de la
+ * teinte de réassort de son site devant son titre.
  */
-export const DOSSIER_LAYOUT_VERSION = "v9";
+export const DOSSIER_LAYOUT_VERSION = "v10";
 
 export function dayDossierPdfKey(serviceDay: string, retakenAt: Date | null): string {
   const base = `${serviceDay}/dossier-du-jour-${DOSSIER_LAYOUT_VERSION}`;

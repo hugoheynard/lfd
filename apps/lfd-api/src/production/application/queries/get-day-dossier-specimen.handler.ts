@@ -8,6 +8,7 @@ import { renderDayDossierPdf } from "../../domain/services/day-dossier-pdf.js";
 import { specimenServiceDay } from "../document-specimens/specimen-data.js";
 import {
   SPECIMEN_DAY_COLORS,
+  SPECIMEN_DAY_RESUPPLY_COLORS,
   SPECIMEN_DAY_ORDERS,
   SPECIMEN_DAY_RESUPPLIES,
   SPECIMEN_DAY_SHELVES,
@@ -49,6 +50,7 @@ export class GetDayDossierSpecimenHandler implements IQueryHandler<
       },
       (reference) => (base === null ? "" : `${base}/colisage/${encodeURIComponent(reference)}`),
       SPECIMEN_DAY_COLORS,
+      SPECIMEN_DAY_RESUPPLY_COLORS,
     );
     return { bytes, fileName: "exemple-dossier-du-jour.pdf" };
   }

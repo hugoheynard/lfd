@@ -119,3 +119,18 @@ describe("ProductionPapers.countOf — la teinte du réassort (Hugo, 2026-10-22)
     expect(tinted.bytes.equals(grey.bytes)).toBe(false);
   });
 });
+
+describe("ProductionPapers.dossierOf — la pastille du bon de réassort (Hugo, 2026-10-22)", () => {
+  it("demande la teinte du site destinataire, une fois, et la pose sur le bon", async () => {
+    const resupplyColors = new FixedResupplyPrintColors(new Map([["site-v", "#26a69a"]]));
+    const tinted = await papersWith(new FixedOrderPrintColors(), resupplyColors).papers.dossierOf(
+      dayWithResupplies(),
+    );
+    const grey = await papersWith(new FixedOrderPrintColors()).papers.dossierOf(
+      dayWithResupplies(),
+    );
+
+    expect(resupplyColors.asked).toEqual([["site-v"]]);
+    expect(tinted.bytes.equals(grey.bytes)).toBe(false);
+  });
+});
