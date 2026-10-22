@@ -1,7 +1,9 @@
 # Documents — la planche d'exemples
 
 > Doc d'état, bâtie le 2026-10-20 (demande de Hugo : « une planche d'exemples
-> pour un contrôle visuel des documents »).
+> pour un contrôle visuel des documents »). La version 2 (vrais articles,
+> B2B/B2C, retrait/livraison, couleurs, transfert) est notée dans
+> [`plan-planche-des-documents-v2.md`](plan-planche-des-documents-v2.md).
 
 **Ce que c'est.** Un écran de la Comptabilité — `/comptabilite/planche-des-documents`
 — qui montre les papiers tels qu'ils sortent, rendus à partir de **données
