@@ -159,6 +159,18 @@ model Order {
   // Alimente le plan de prod (« à produire pour demain »).
   requestedDeliveryDate DateTime? @map("requested_delivery_date") @db.Date
 
+  /// **Le jour (Europe/Paris) de la première remise attestée** — au comptoir,
+  /// à la porte ou déposée. Le mois de la facture du bon en découle (CGI art.
+  /// 269-1-a et 269-2-a : fait générateur et exigibilité à la livraison ; plan
+  /// `plan-zero-faille.md`, lot ZL).
+  ///
+  /// Posée UNE fois, par l'abonné durable du retrait
+  /// (`RecordDeliveryDayOnHandover`), et jamais déplacée ensuite : le
+  /// déclencheur `orders_delivered_on_frozen` refuse de la changer. `NULL` =
+  /// pas encore constatée — le bon n'est dans aucune facture, et figure dans
+  /// les « Bons à constater » une fois son jour passé.
+  deliveredOn DateTime? @map("delivered_on") @db.Date
+
   // Acheminement. `delivery` = **coursier** : `deliveryZoneId` (zone tarifée) +
   // `deliveryAddressSnapshot` (adresse libre FIGÉE, comme les prix). `pickup` =
   // **retrait** : `pickupAddress` (snapshot des champs postaux du labo). La relation
@@ -373,6 +385,7 @@ model Order {
   @@index([placedByUserId])
   @@index([placedByStaffId])
   @@index([requestedDeliveryDate])
+  @@index([deliveredOn])
   @@index([status])
   @@index([paymentStatus])
   @@index([fromSubscriptionId])

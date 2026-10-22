@@ -2,8 +2,6 @@ import { instantToLocal } from "@lfd/contracts";
 import { Logger } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
-import { OrderDeliveryHistoryReader } from "../../../../delivery/channels/commerce/index.js";
-import { OrderHandoverHistoryReader } from "../../../../handover/channels/commerce/index.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
@@ -113,8 +111,6 @@ export class IssueMonthlyInvoicesHandler implements ICommandHandler<
     private readonly issuers: InvoiceIssuersReader,
     private readonly buyers: StatementBuyerReader,
     private readonly mandates: CollectionMandatesReader,
-    private readonly handovers: OrderHandoverHistoryReader,
-    private readonly deliveries: OrderDeliveryHistoryReader,
     private readonly issuer: InvoiceIssuer,
     private readonly outcomes: MonthlyInvoiceOutcomes,
     private readonly rows: OrderRowsLock,
@@ -181,8 +177,6 @@ export class IssueMonthlyInvoicesHandler implements ICommandHandler<
       reader: this.reader,
       buyers: this.buyers,
       mandates: this.mandates,
-      handovers: this.handovers,
-      deliveries: this.deliveries,
     };
     const context = await readMonthlyContext(readers, payers, follows, at);
     const plan = planMonthlyInvoices(payers, { legalEntityId, ...context }, invoiced);

@@ -31,7 +31,7 @@ import { simulateInvoiceDossier } from "../src/b2b/accounting/domain/services/in
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { createCompany, createUser } from "./factories.js";
+import { createCompany, createUser, deliveredOnColumn } from "./factories.js";
 
 const SIREN = "552100554";
 const ICS = "FR72ZZZ123456";
@@ -222,6 +222,7 @@ async function orderOf(
       vatCents: spec.vatCents,
       paymentStatus: "not_required",
       createdAt: new Date(closesAt.getTime() - daysBefore * DAY_MS),
+      deliveredOn: deliveredOnColumn(new Date(closesAt.getTime() - daysBefore * DAY_MS)),
       ...(bon === null
         ? {}
         : {

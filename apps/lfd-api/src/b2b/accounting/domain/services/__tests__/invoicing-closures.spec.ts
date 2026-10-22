@@ -6,6 +6,7 @@ import { BillingRhythm } from "../../value-objects/billing-rhythm.js";
 import { BillingRhythmSetting } from "../../value-objects/billing-rhythm-setting.js";
 import { StatementMonth } from "../../value-objects/statement-month.js";
 import {
+  closureAfter,
   closureToInvoice,
   closuresToAttempt,
   invoicedPeriodOf,
@@ -102,16 +103,56 @@ describe("hebdomadaire au lundi", () => {
     );
   });
 
-  it("une semaine à cheval sur deux mois, puis sur deux années", () => {
+  /**
+   * Q-L1 (lot ZL, Hugo 2026-10-22) : une semaine à cheval sur deux mois civils
+   * fait DEUX périodes — une facture récapitulative ne couvre qu'un mois
+   * (CGI art. 289-I-3). Le 1er du mois est une clôture de tout rythme.
+   */
+  it("une semaine à cheval sur deux mois : deux périodes, coupées au 1er", () => {
+    const thu1Oct = new Date("2026-09-30T22:00:00.000Z");
     const mon5Oct = new Date("2026-10-04T22:00:00.000Z");
+    expect(closureAfter(MON_28_SEP, WEEKLY_MONDAY)).toEqual(thu1Oct);
+    expect(periodLabelOf(invoicedPeriodOf(thu1Oct, WEEKLY_MONDAY))).toBe(
+      "du 28 au 30 septembre 2026",
+    );
+    expect(periodMonthOf(thu1Oct)).toBe("2026-09");
+    expect(invoicingMomentOf(thu1Oct)).toEqual(new Date("2026-09-30T21:55:00.000Z"));
     expect(periodLabelOf(invoicedPeriodOf(mon5Oct, WEEKLY_MONDAY))).toBe(
-      "du 28 septembre au 4 octobre 2026",
+      "du 1er au 4 octobre 2026",
     );
     expect(periodMonthOf(mon5Oct)).toBe("2026-10");
+  });
+
+  it("une semaine à cheval sur deux années : la facture de décembre s'émet le 31, sur l'année qui finit", () => {
+    const fri1Jan = new Date("2026-12-31T23:00:00.000Z");
     const mon4Jan = new Date("2027-01-03T23:00:00.000Z");
-    expect(periodLabelOf(invoicedPeriodOf(mon4Jan, WEEKLY_MONDAY))).toBe(
-      "du 28 décembre 2026 au 3 janvier 2027",
+    expect(periodLabelOf(invoicedPeriodOf(fri1Jan, WEEKLY_MONDAY))).toBe(
+      "du 28 au 31 décembre 2026",
     );
+    // Le jour d'émission — et donc l'année du compteur — est le 31 décembre.
+    expect(lastDayOf(fri1Jan)).toBe("2026-12-31");
+    expect(invoicingMomentOf(fri1Jan)).toEqual(new Date("2026-12-31T22:55:00.000Z"));
+    expect(periodLabelOf(invoicedPeriodOf(mon4Jan, WEEKLY_MONDAY))).toBe(
+      "du 1er au 3 janvier 2027",
+    );
+    expect(lastDayOf(mon4Jan)).toBe("2027-01-03");
+  });
+
+  it("un bimensuel 1/16 et un mensuel au 1er ne changent pas : leurs clôtures tombent déjà au 1er", () => {
+    const semimonthly = BillingRhythmSetting.of(BillingRhythm.semimonthly(1, 16), null);
+    expect(closureAfter(new Date("2026-10-16T10:00:00.000Z"), semimonthly)).toEqual(
+      new Date("2026-10-31T23:00:00.000Z"),
+    );
+    expect(
+      closureAfter(new Date("2026-10-16T10:00:00.000Z"), BillingRhythmSetting.initial()),
+    ).toEqual(new Date("2026-10-31T23:00:00.000Z"));
+  });
+
+  it("février : un mensuel au 28 coupe le 1er mars, puis clôt le 28 mars", () => {
+    const monthly28 = BillingRhythmSetting.of(BillingRhythm.monthly(28), null);
+    const mon1Mar = new Date("2027-02-28T23:00:00.000Z");
+    expect(periodLabelOf(invoicedPeriodOf(mon1Mar, monthly28))).toBe("du 28 au 28 février 2027");
+    expect(closureAfter(mon1Mar, monthly28)).toEqual(new Date("2027-03-27T23:00:00.000Z"));
   });
 
   it("passage à l'heure d'hiver (25 octobre 2026) : la semaine dure 169 heures, l'émission reste à 23h55", () => {

@@ -27,7 +27,13 @@ import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js
 import { CustomerRole, OrderClientele } from "../src/platform/database/client/client.js";
 import { OutboxRelay } from "../src/platform/outbox/outbox-relay.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { addBillingAddress, attachTo, createCompany, createUser } from "./factories.js";
+import {
+  addBillingAddress,
+  attachTo,
+  createCompany,
+  createUser,
+  markDelivered,
+} from "./factories.js";
 
 const ENTITIES = "/admin/accounting/legal-entities";
 const TOTAL = 1_055;
@@ -336,6 +342,10 @@ describe("la frontière avec la facture du mois", () => {
     const account = await proOrder({ account: true });
     await pay(card);
     await handOver(card);
+    // Les deux livrés hier (lot ZL : l'assiette suit la livraison) — seul le
+    // mode de règlement les distingue.
+    await markDelivered(ctx.prisma, card.orderId, new Date(daysAgo(1)));
+    await markDelivered(ctx.prisma, account.orderId, new Date(daysAgo(1)));
 
     const window = billableOrderWhere(new Date(daysAgo(30)), new Date(daysAgo(-1)));
     const billable = await ctx.prisma.order.findMany({ where: window, select: { id: true } });

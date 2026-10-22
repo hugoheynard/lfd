@@ -49,16 +49,17 @@ describe("InvoicingCalendar — la facture par payeur à sa clôture (M2)", () =
     }
   });
 
-  it("le mensuel réglé au 5 : le calendrier suit SES dates, pas le 1er", () => {
+  it("le mensuel réglé au 5 : le calendrier suit SES dates, et le 1er coupe le mois civil (Q-L1)", () => {
     const monthly = ModeDatesTimeline.of("monthly", [
       { effectiveFrom: paris("2026-09-01"), rhythm: BillingRhythm.monthly(5) },
     ]);
     const calendar = InvoicingCalendar.of(defaultModes({ monthly }), []);
     expect(calendar.closureAfter(paris("2026-09-01"))).toEqual(paris("2026-09-05"));
-    expect(calendar.isClosure(paris("2026-10-01"))).toBe(false);
+    expect(calendar.isClosure(paris("2026-10-01"))).toBe(true);
+    expect(calendar.isClosure(paris("2026-10-02"))).toBe(false);
   });
 
-  it("un payeur hebdomadaire : ses lundis et le 1er, et chacun clôt à SES instants", () => {
+  it("un payeur hebdomadaire : ses lundis ET le 1er (Q-L1) ; le mensuel, le 1er seulement", () => {
     const calendar = InvoicingCalendar.of(defaultModes(), [WEEKLY_SINCE_AUGUST]);
     const monday = paris("2026-09-28");
     const first = paris("2026-10-01");
@@ -66,7 +67,9 @@ describe("InvoicingCalendar — la facture par payeur à sa clôture (M2)", () =
     expect(calendar.isClosure(monday)).toBe(true);
     expect(calendar.closesFor("c_week", monday)).toBe(true);
     expect(calendar.closesFor("c_month", monday)).toBe(false);
-    expect(calendar.closesFor("c_week", first)).toBe(false);
+    // La semaine du 28 septembre est coupée au 1er octobre : deux factures.
+    expect(calendar.closesFor("c_week", first)).toBe(true);
+    expect(calendar.payerPeriodOf("c_week", first)).toEqual({ startsAt: monday, closesAt: first });
     expect(calendar.closesFor("c_month", first)).toBe(true);
     expect(calendar.payerPeriodOf("c_week", monday)).toEqual({
       startsAt: paris("2026-09-21"),
@@ -140,8 +143,8 @@ describe("InvoicingCalendar — la facture par payeur à sa clôture (M2)", () =
 describe("InvoicingCalendar — qui clôt, et le cycle du lot (M4c)", () => {
   const mixed = InvoicingCalendar.of(defaultModes(), [WEEKLY_SINCE_AUGUST]);
 
-  it("au 1er le mensuel, au lundi l'hebdomadaire, un lundi 1er les deux (mensuel d'abord)", () => {
-    expect(mixed.modesClosingAt(paris("2026-10-01"))).toEqual(["monthly"]);
+  it("au 1er les deux (Q-L1), au lundi l'hebdomadaire, un lundi 1er les deux (mensuel d'abord)", () => {
+    expect(mixed.modesClosingAt(paris("2026-10-01"))).toEqual(["monthly", "weekly"]);
     expect(mixed.modesClosingAt(paris("2026-10-05"))).toEqual(["weekly"]);
     expect(mixed.modesClosingAt(paris("2027-02-01"))).toEqual(["monthly", "weekly"]);
   });

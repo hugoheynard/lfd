@@ -97,10 +97,9 @@ describe("le lot de prélèvement", () => {
     expect(() => CollectionBatch.constitute(input({ cycle: tuesday, calendar: weekly }))).toThrow(
       FirstClosureOffRhythmError,
     );
-    // Le 1er octobre n'est pas une clôture du lundi.
-    expect(() => CollectionBatch.constitute(input({ calendar: weekly }))).toThrow(
-      FirstClosureOffRhythmError,
-    );
+    // Le 1er octobre n'est pas un lundi, mais il ouvre un mois civil : c'est
+    // une clôture de tout rythme depuis le lot ZL (Q-L1, une facture par mois).
+    expect(() => CollectionBatch.constitute(input({ calendar: weekly }))).not.toThrow();
   });
 
   it("rythmes mêlés : le 1er ET le lundi d'un payeur hebdomadaire sont des clôtures du lot (M3)", () => {

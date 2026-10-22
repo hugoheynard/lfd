@@ -1,3 +1,5 @@
+import { instantToLocal, weekdayOf } from "@lfd/contracts";
+
 import type { RhythmTimeline } from "../../b2b/accounting/domain/services/invoicing-closures.js";
 import {
   closureAfter,
@@ -109,6 +111,12 @@ export function planInvoiceCalendar(now: Date): InvoiceCalendar {
  * Les clôtures hebdomadaires après `from` dont le dépôt est déjà passé. Une
  * première semaine trop courte pour y commander (le jeudi la précède) est
  * sautée : sa commande tomberait sous le plancher, jamais facturée.
+ *
+ * Les LUNDIS seulement : depuis le lot ZL (Q-L1), le 1er du mois clôt aussi
+ * l'hebdomadaire, et sa période peut ne durer qu'un jour — trop court pour
+ * qu'une commande du jeudi y soit retirée. Le semis ne la joue pas ; un bon
+ * livré avant ce 1er part dans la facture du lundi suivant, qui prend tout ce
+ * qui est livré et pas encore facturé (Q-L2).
  */
 function weeklyClosures(from: Date, now: Date): readonly Date[] {
   const closures: Date[] = [];
@@ -116,10 +124,17 @@ function weeklyClosures(from: Date, now: Date): readonly Date[] {
     if (cursor.getTime() + DEPOSIT_DELAY_MS > now.getTime()) {
       return closures;
     }
-    if (orderInstantOf(cursor).getTime() > from.getTime()) {
+    if (isMonday(cursor) && orderInstantOf(cursor).getTime() > from.getTime()) {
       closures.push(cursor);
     }
   }
+}
+
+/** Lundi, en jour de semaine `weekdayOf` (0 = dimanche). */
+const MONDAY = 1;
+
+function isMonday(closesAt: Date): boolean {
+  return weekdayOf(instantToLocal(closesAt).day) === MONDAY;
 }
 
 /** La commande de la semaine : passée le jeudi à 9 h, pour le vendredi. */

@@ -98,9 +98,10 @@ describe("rythmes mêlés : un payeur hebdomadaire, les autres au mensuel", () =
     // Le lot du lundi 28 : le mensuel garde son mois d'août, l'hebdomadaire sa semaine.
     expect(MIXED.payerPeriodStartAt("c_month", paris("2026-09-28"))).toEqual(paris("2026-08-01"));
     expect(MIXED.payerPeriodStartAt("c_week", paris("2026-09-28"))).toEqual(paris("2026-09-21"));
-    // Le lot du 1er : le mois du mensuel, la semaine de l'hebdomadaire.
+    // Le lot du 1er : le mois du mensuel, la fin de semaine de l'hebdomadaire —
+    // coupée au 1er (Q-L1, lot ZL).
     expect(MIXED.payerPeriodStartAt("c_month", paris("2026-10-01"))).toEqual(paris("2026-09-01"));
-    expect(MIXED.payerPeriodStartAt("c_week", paris("2026-10-01"))).toEqual(paris("2026-09-21"));
+    expect(MIXED.payerPeriodStartAt("c_week", paris("2026-10-01"))).toEqual(paris("2026-09-28"));
   });
 
   it("l'automatisme vise le lundi, et un lundi non tenté est manqué", () => {

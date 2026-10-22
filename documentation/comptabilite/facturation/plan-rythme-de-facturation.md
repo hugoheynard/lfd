@@ -12,6 +12,14 @@
 > R1–R5a restent bâtis et servent de socle (le rythme de l'entité devient le
 > défaut).
 >
+> 🔴 **2026-10-22 — le 1er de chaque mois est une clôture de TOUT rythme**
+> (lot ZL de [`plan-zero-faille.md`](plan-zero-faille.md), Q-L1 : une
+> facture récapitulative ne couvre qu'un mois civil, CGI art. 289-I-3). Une
+> semaine, une quinzaine ou un mois « au 28 » qui chevauche deux mois fait
+> deux périodes, donc deux factures et deux lots. Tenu dans le domaine,
+> `isClosingDay` (`billing-cycle.ts`) ; partout où ce plan dit « les lundis »
+> ou « le 28 », lire « et le 1er ». Le §17 le détaille.
+>
 > 🔴 **Révisé par Hugo le 2026-10-12 : « le rythme est défini par l'entité ».**
 > Aucun rythme par payeur. Tout ce qui parle de `payer_billing_rhythm`, de
 > période propre au payeur ou de rythmes mêlés est caduc (§10).
@@ -1102,3 +1110,28 @@ plancher y passe en `findFirst`. Seul l'e2e pouvait le voir.
   porter : il faudrait une lecture dédiée au lot à préparer.
 - `modesClosingAt` reste : les cartes de clôture (`MonthlyClosureView.modes`)
   disent qui clôt à cet instant, ce qui est bien leur sujet.
+
+## 17. Le mois civil coupe toute période (lot ZL, 2026-10-22)
+
+Bâti avec le lot ZL de [`plan-zero-faille.md`](plan-zero-faille.md) (§12,
+décision Q-L1 de Hugo) : un bon se facture dans le mois de sa livraison, et
+une facture récapitulative ne couvre qu'un mois civil (CGI art. 289-I-3).
+
+- **Où** : `isClosingDay(day, rhythm)` (`domain/services/billing-cycle.ts`) —
+  un jour du rythme, OU le 1er du mois. `closingDayFrom` la lit ; tout le
+  reste (`nextClosureAfter`, `closureAtOrBefore`, `closureAfter`,
+  `previousClosureOf`, `InvoicingCalendar`, `PayerTimeline`,
+  `ModeDatesTimeline`, le relevé, le lot, l'automatisme) suit sans une ligne
+  de plus. `BillingRhythm.closesOn` ne change pas : le rythme ne dit que SES
+  jours.
+- **Ce que ça change** : un hebdomadaire au lundi clôt aussi le jeudi 1er
+  octobre 2026 (« du 28 au 30 septembre », puis « du 1er au 4 octobre ») ; un
+  mensuel au 5 ou au 28 clôt aussi le 1er ; un bimensuel 1/16 et le mensuel
+  au 1er ne changent pas. Le 1er janvier coupe une semaine à cheval sur deux
+  années : la facture de décembre s'émet le 31 décembre et prend son numéro
+  dans le compteur de l'année qui finit (l'année est celle de `issued_on`).
+- **Le lot suit** : il se constitue par clôture ; une clôture de plus, un lot
+  de plus. `FirstClosureOffRhythmError` ne refuse plus un 1er.
+- **Les tests** qui affirmaient l'inverse (« au 1er l'hebdomadaire ne clôt
+  pas », « le 28 février puis le 28 mars ») ont été réécrits sur la nouvelle
+  règle, chacun commenté « Q-L1 ».

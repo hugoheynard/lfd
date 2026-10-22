@@ -243,6 +243,10 @@ export type {
   MonthlyInvoicesView,
 } from "./monthly-invoices.js";
 export type {
+  UnconfirmedDeliveriesView,
+  UnconfirmedDeliveryView,
+} from "./unconfirmed-deliveries.js";
+export type {
   CardInvoiceOutcome,
   CardInvoiceRetryView,
   CardInvoiceSignalView,

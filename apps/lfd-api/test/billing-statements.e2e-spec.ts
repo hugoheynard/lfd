@@ -24,7 +24,7 @@ import { cycleToConstitute } from "../src/b2b/accounting/domain/services/billing
 import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { createCompany, createUser } from "./factories.js";
+import { createCompany, createUser, deliveredOnColumn } from "./factories.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const BASE = "/admin/accounting/collection";
@@ -159,6 +159,7 @@ async function orderOf(companyId: string, daysBefore: number, halfCent = false):
       vatCents,
       paymentStatus: "not_required",
       createdAt: new Date(closesAt.getTime() - daysBefore * DAY_MS),
+      deliveredOn: deliveredOnColumn(new Date(closesAt.getTime() - daysBefore * DAY_MS)),
       vatShares: [{ rate: 5.5, amountCents: vatCents }],
       lines: {
         create: {

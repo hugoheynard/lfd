@@ -23,7 +23,7 @@ import { CustomerRole } from "../src/platform/database/client/client.js";
 import type { B2bMails } from "../src/platform/mailer/mail-templates.js";
 import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { attachTo, createCompany, createUser } from "./factories.js";
+import { attachTo, createCompany, createUser, deliveredOnColumn } from "./factories.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const ICS = "FR72ZZZ123456";
@@ -167,6 +167,7 @@ async function orderOf(companyId: string): Promise<string> {
       vatCents: 550,
       paymentStatus: "not_required",
       createdAt: new Date(closesAt.getTime() - 2 * DAY_MS),
+      deliveredOn: deliveredOnColumn(new Date(closesAt.getTime() - 2 * DAY_MS)),
       vatShares: [{ rate: 5.5, amountCents: 550 }],
       lines: {
         create: {

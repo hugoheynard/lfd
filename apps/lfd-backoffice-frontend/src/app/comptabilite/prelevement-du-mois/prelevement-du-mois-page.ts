@@ -33,6 +33,7 @@ import { BankReturns } from './bank-returns/bank-returns';
 import { BatchHistory, type HistoryDownload } from './batch-history/batch-history';
 import { ExcludedOrders } from './excluded-orders/excluded-orders';
 import { CardInvoiceSignals } from './card-invoice-signals/card-invoice-signals';
+import { UnconfirmedDeliveries } from './unconfirmed-deliveries/unconfirmed-deliveries';
 import { MonthInvoices, periodLastDay } from './month-invoices/month-invoices';
 import { MonthPreview } from './month-preview/month-preview';
 import { MonthSchedule } from './month-schedule/month-schedule';
@@ -85,6 +86,7 @@ import { SettlePanel } from './settle-panel/settle-panel';
     FoldPageSectionComponent,
     MonthInvoices,
     CardInvoiceSignals,
+    UnconfirmedDeliveries,
     MonthPreview,
     MonthSchedule,
     PendingBatch,

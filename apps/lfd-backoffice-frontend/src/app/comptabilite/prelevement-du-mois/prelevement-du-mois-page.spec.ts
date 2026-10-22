@@ -19,6 +19,7 @@ import type {
 import { PermissionsStore } from '../../auth/permissions.store';
 import { NotifyService } from '../../notify.service';
 import { CardInvoicesService } from '../card-invoices.service';
+import { UnconfirmedDeliveriesService } from '../unconfirmed-deliveries.service';
 import { CollectionBatchesService } from '../collection-batches.service';
 import { LegalEntitiesService } from '../legal-entities.service';
 import { MonthlyInvoicesService } from '../monthly-invoices.service';
@@ -232,6 +233,13 @@ async function render(
         useValue: {
           signals: () => Promise.resolve({ signaled: [] }),
         } satisfies Pick<CardInvoicesService, 'signals'>,
+      },
+      // Les bons à constater (ZL) se lisent à part ; aucun ici.
+      {
+        provide: UnconfirmedDeliveriesService,
+        useValue: {
+          list: () => Promise.resolve({ before: '2030-01-01', orders: [] }),
+        } satisfies Pick<UnconfirmedDeliveriesService, 'list'>,
       },
       {
         provide: LegalEntitiesService,

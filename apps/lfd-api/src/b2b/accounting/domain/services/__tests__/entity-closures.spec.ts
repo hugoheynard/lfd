@@ -128,17 +128,21 @@ describe("hebdomadaire du lundi", () => {
     expect(entityCycleToConstitute(WEDNESDAY, WEEKLY_MONDAY, recorded).startsAt).toEqual(recorded);
   });
 
-  it("une clôture est un lundi à 00h00, rien d'autre", () => {
+  it("une clôture est un lundi ou un 1er du mois à 00h00, rien d'autre (Q-L1, lot ZL)", () => {
     expect(isEntityClosure(MONDAY_12, WEEKLY_MONDAY)).toBe(true);
     expect(isEntityClosure(WEDNESDAY, WEEKLY_MONDAY)).toBe(false);
-    expect(isEntityClosure(new Date("2026-09-30T22:00:00.000Z"), WEEKLY_MONDAY)).toBe(false);
+    // Jeudi 1er octobre : le mois civil ferme, la semaine est coupée.
+    expect(isEntityClosure(new Date("2026-09-30T22:00:00.000Z"), WEEKLY_MONDAY)).toBe(true);
+    expect(isEntityClosure(new Date("2026-10-01T22:00:00.000Z"), WEEKLY_MONDAY)).toBe(false);
   });
 
   it("passe l'heure d'hiver sans décaler minuit", () => {
-    // Le 25 octobre 2026, Paris repasse à UTC+1 : le lundi 26 clôt à 23h00 UTC.
-    expect(upcomingClosures(MONDAY_12, WEEKLY_MONDAY, 3)).toEqual([
+    // Le 25 octobre 2026, Paris repasse à UTC+1 : le lundi 26 clôt à 23h00 UTC,
+    // puis le dimanche 1er novembre ferme le mois (Q-L1), puis le lundi 2.
+    expect(upcomingClosures(MONDAY_12, WEEKLY_MONDAY, 4)).toEqual([
       MONDAY_19,
       new Date("2026-10-25T23:00:00.000Z"),
+      new Date("2026-10-31T23:00:00.000Z"),
       new Date("2026-11-01T23:00:00.000Z"),
     ]);
   });

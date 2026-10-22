@@ -1,0 +1,33 @@
+@if (error(); as message) {
+  <fold-callout variant="alert" data-unconfirmed-error>{{ message }}</fold-callout>
+} @else if (orders().length > 0) {
+  <fold-card data-unconfirmed>
+    <fold-element-title
+      variant="title"
+      icon="truck"
+      title="Bons à constater"
+      subtitle="Leur jour est passé, aucune remise n’est enregistrée : ils ne sont dans aucune facture."
+    />
+    <fold-callout variant="warning">
+      {{ orders().length }} bon(s) à constater&nbsp;: enregistrer leur retrait ou leur livraison —
+      ou les annuler s’ils n’ont jamais été remis. Ils partiront alors dans la facture du mois de
+      leur livraison.
+    </fold-callout>
+    <fold-data-table
+      caption="Bons à constater"
+      narrowLayout="cards"
+      [columns]="columns"
+      [rows]="orders()"
+      [rowKey]="rowKey"
+      data-unconfirmed-table
+    >
+      <ng-template foldCell="order" let-row>
+        <a [routerLink]="['/commandes', row.orderId]">{{ row.orderNumber }}</a>
+      </ng-template>
+      <ng-template foldCell="company" let-row>{{ row.companyName }}</ng-template>
+      <ng-template foldCell="day" let-row>{{ day(row.serviceDay) }}</ng-template>
+      <ng-template foldCell="method" let-row>{{ method(row.fulfillmentMethod) }}</ng-template>
+      <ng-template foldCell="total" let-row>{{ euros(row.totalCents) }}</ng-template>
+    </fold-data-table>
+  </fold-card>
+}

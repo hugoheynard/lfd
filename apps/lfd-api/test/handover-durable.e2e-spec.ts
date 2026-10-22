@@ -11,7 +11,7 @@
  * commande prête et réglée (même dette que `test/factories.ts`) ; le retrait,
  * lui, passe par la vraie route du comptoir.
  */
-import type { SetLoyaltySettingsPayload } from "@lfd/contracts";
+import { instantToLocal, type SetLoyaltySettingsPayload } from "@lfd/contracts";
 
 import { ON_ORDER_HANDED_OVER } from "../src/b2b/orders/application/handlers/on-order-handed-over.handler.js";
 import { CREDIT_POINTS_ON_HANDOVER } from "../src/b2b/loyalty/application/handlers/credit-points-on-handover.handler.js";
@@ -135,6 +135,24 @@ function facts(type: string) {
   return ctx.prisma.outboxMessage.findMany({ where: { type } });
 }
 
+/** `orders.delivered_on`, `AAAA-MM-JJ` (lot ZL). */
+async function deliveryDayOf(id: string): Promise<string | null> {
+  const row = await ctx.prisma.order.findUniqueOrThrow({
+    where: { id },
+    select: { deliveredOn: true },
+  });
+  return row.deliveredOn?.toISOString().slice(0, 10) ?? null;
+}
+
+/** Le jour de Paris du retrait attesté. */
+async function handoverDayOf(id: string): Promise<string | null> {
+  const row = await ctx.prisma.order.findUniqueOrThrow({
+    where: { id },
+    select: { handedOverAt: true },
+  });
+  return row.handedOverAt === null ? null : instantToLocal(row.handedOverAt).day;
+}
+
 function journaled() {
   return ctx.prisma.activityEvent.count({ where: { type: "order.handed_over" } });
 }
@@ -155,6 +173,8 @@ describe("le retrait passe par la boîte d'envoi", () => {
     expect(await statusOf(order.id)).toEqual({ status: "fulfilled" });
     expect(await earned()).toEqual([{ orderId: order.id, points: 2_340 }]);
     expect(await journaled()).toBe(1);
+    // Lot ZL : le même fait pose le jour de livraison du bon, jour de Paris.
+    expect(await deliveryDayOf(order.id)).toEqual(await handoverDayOf(order.id));
     const [delivery] = await ctx.prisma.outboxDelivery.findMany({
       where: { subscriber: ON_ORDER_HANDED_OVER },
     });
@@ -200,6 +220,8 @@ describe("le retrait passe par la boîte d'envoi", () => {
     expect(handedOver).toHaveLength(2);
     expect(handedOver.filter((fact) => fact.key.includes(":reannounced:"))).toHaveLength(1);
     expect(await facts("order.fulfilled")).toHaveLength(1);
+    // La réannonce ne déplace pas le jour de livraison (lot ZL).
+    expect(await deliveryDayOf(order.id)).toEqual(await handoverDayOf(order.id));
     expect(await earned()).toHaveLength(1);
     expect(await journaled()).toBe(1);
   });

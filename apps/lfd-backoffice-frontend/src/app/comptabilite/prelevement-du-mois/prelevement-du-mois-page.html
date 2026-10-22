@@ -47,6 +47,9 @@
         }
       }
 
+      <!-- 3 bis. Les bons au compte sans remise, jour passé (ZL) : hors de toute facture tant qu'on ne les constate pas. -->
+      <app-unconfirmed-deliveries />
+
       <!-- 3 bis. Les factures carte qui ne sont pas parties (E5a) : rien quand il n'y en a pas. -->
       <app-card-invoice-signals [canWrite]="canWrite()" />
 

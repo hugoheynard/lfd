@@ -279,7 +279,7 @@ describe("la fiche porte les dates des trois modes et la dernière clôture (M1,
     expect(monthly?.upcomingClosures.map((closure) => closure.periodLabel)).toEqual([
       "du 1er au 31 octobre 2026",
       "du 1er au 14 novembre 2026",
-      "du 15 novembre au 14 décembre 2026",
+      "du 15 au 30 novembre 2026",
     ]);
   });
 

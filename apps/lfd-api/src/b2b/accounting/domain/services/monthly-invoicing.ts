@@ -28,6 +28,12 @@ export interface InvoiceableOrder {
   /** La société qui a commandé — le site, pour un sous-compte. */
   readonly companyId: string;
   readonly placedAt: Date;
+  /**
+   * `AAAA-MM-JJ` — `orders.delivered_on`, le jour qui l'a fait entrer dans
+   * l'assiette (lot ZL). Jamais `null` sous `billableOrderWhere` ; le type le
+   * garde nullable pour que le bloqueur M5 reste un filet.
+   */
+  readonly deliveredOn: string | null;
   readonly billedCompanyId: string | null;
   readonly frozen: FrozenInvoiceOrder;
 }

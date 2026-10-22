@@ -72,6 +72,8 @@ interface OrderSeed {
   readonly status?: "placed" | "cancelled";
   readonly paymentStatus?: "not_required" | "paid";
   readonly fulfillmentMethod?: "pickup" | "delivery";
+  /** Le jour de livraison (lot ZL) : aujourd'hui par défaut ; `null`, jamais remis. */
+  readonly deliveredOn?: string | null;
 }
 
 const PICKUP_SNAPSHOT = {
@@ -93,6 +95,7 @@ async function seedOrder(seed: OrderSeed): Promise<string> {
   const lateVat = lateRate === null ? 0 : Math.round((lateFee * lateRate) / 100);
   const goodsVat = Math.round(goods * 0.055);
   const day = seed.requestedDay === undefined ? TODAY : seed.requestedDay;
+  const delivered = seed.deliveredOn === undefined ? TODAY : seed.deliveredOn;
   await ctx.prisma.order.create({
     data: {
       orderNumber,
@@ -120,6 +123,7 @@ async function seedOrder(seed: OrderSeed): Promise<string> {
         : {}),
       paymentStatus: seed.paymentStatus ?? "not_required",
       ...(day === null ? {} : { requestedDeliveryDate: new Date(`${day}T00:00:00.000Z`) }),
+      ...(delivered === null ? {} : { deliveredOn: new Date(`${delivered}T00:00:00.000Z`) }),
       lines: {
         create: [
           {
@@ -259,7 +263,7 @@ describe("l'historique et le lieu de chaque bon (DF3)", () => {
     const port = await client("Boulangerie du Port");
     const counter = await seedOrder({ ...port, quantity: 1, fulfillmentMethod: "pickup" });
     const delivered = await seedOrder({ ...port, quantity: 2 });
-    const never = await seedOrder({ ...port, quantity: 3 });
+    const never = await seedOrder({ ...port, quantity: 3, deliveredOn: null });
     const handedOverAt = new Date(daysAgo(0));
     await ctx.prisma.orderHandover.create({
       data: {
@@ -294,8 +298,12 @@ describe("l'historique et le lieu de chaque bon (DF3)", () => {
 
     const view = await dossier(port.companyId);
 
-    expect(view.neverHandedOver).toEqual([never]);
-    const [first, second, third] = view.orders;
+    // Lot ZL : un bon jamais remis n'est plus dans l'assiette — ni dans le
+    // dossier, ni dans la facture. Il attendra dans les « Bons à constater »
+    // une fois son jour passé (`invoice-delivery-month.e2e-spec.ts`).
+    expect(view.neverHandedOver).toEqual([]);
+    expect(view.orders.map((order) => order.reference)).not.toContain(never);
+    const [first, second] = view.orders;
     expect(first?.place).toEqual({
       method: "pickup",
       label: "Labo du Port",
@@ -309,10 +317,9 @@ describe("l'historique et le lieu de chaque bon (DF3)", () => {
       ["handed_over_at_door", null],
     ]);
     expect(second?.actualDeliveryDay).toBe(TODAY);
-    expect(third?.history).toEqual([]);
 
     const orders = await staff().get(`${BASE}/companies/${port.companyId}/orders.csv`).expect(200);
-    expect(orders.text).toContain(`"Facturés sans aucun fait de retrait : ${never}"`);
+    expect(orders.text).not.toContain(never);
     expect(orders.text).toContain('"Retrait — Labo du Port, 1 quai du Four, 13002 Marseille"');
     expect(orders.text).toContain(`remis à la porte ${handedOverAt.toISOString()} (saisie)"`);
   });

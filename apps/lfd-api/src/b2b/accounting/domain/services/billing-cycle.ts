@@ -219,6 +219,30 @@ export function periodAt(
   return { startsAt: closureAtOrBefore(now, rhythm), closesAt };
 }
 
+/** Le jour du mois qui ouvre un mois civil — une clôture pour tout rythme. */
+const CIVIL_MONTH_FIRST_DAY = 1;
+
+/**
+ * **Ce jour local clôt-il une période de l'entité ?** — un jour du rythme,
+ * OU le 1er d'un mois civil, quel que soit le rythme (lot ZL, Q-L1, Hugo
+ * 2026-10-22).
+ *
+ * Une facture récapitulative couvre les livraisons d'UN mois civil (CGI art.
+ * 289-I-3) : un hebdomadaire ou un bimensuel qui chevauche deux mois, ou un
+ * mensuel « le 28 », produit donc deux périodes, une par mois. Écrit ici et
+ * pas dans un handler : la facture, le relevé, le lot et le calendrier lisent
+ * tous la suite des clôtures, et aucun ne peut en voir une autre. Le mensuel
+ * au 1er n'en change pas.
+ */
+export function isClosingDay(day: string, rhythm: BillingRhythm): boolean {
+  const dayOfMonth = Number(day.slice(8, 10));
+  if (dayOfMonth === CIVIL_MONTH_FIRST_DAY) {
+    return true;
+  }
+  const isoWeekday = weekdayOf(day) === 0 ? SUNDAY_ISO : weekdayOf(day);
+  return rhythm.closesOn(dayOfMonth, isoWeekday);
+}
+
 /**
  * Le premier jour de clôture en partant de `day`, dans le sens `step`.
  * Vers l'avant, `day` lui-même est exclu (sa clôture de 00h00 est déjà passée) ;
@@ -228,8 +252,7 @@ function closingDayFrom(day: string, rhythm: BillingRhythm, step: 1 | -1): strin
   const first = step === 1 ? 1 : 0;
   for (let offset = first; offset <= RHYTHM_SEARCH_DAYS; offset += 1) {
     const candidate = addDays(day, offset * step);
-    const isoWeekday = weekdayOf(candidate) === 0 ? SUNDAY_ISO : weekdayOf(candidate);
-    if (rhythm.closesOn(Number(candidate.slice(8, 10)), isoWeekday)) {
+    if (isClosingDay(candidate, rhythm)) {
       return candidate;
     }
   }

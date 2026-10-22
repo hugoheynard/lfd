@@ -11,6 +11,8 @@
  * En attendant, elles restent **minimales et nommées** : chaque appel ne
  * mentionne que ce qui compte pour le test, le reste est un défaut plausible.
  */
+import { instantToLocal } from "@lfd/contracts";
+
 import {
   CompanyStatus,
   CustomerRole,
@@ -235,18 +237,48 @@ const HANDOVER_AFTER_PLACEMENT_MS = 60 * 60 * 1000;
  * pas (plan `plan-zero-faille.md`, M5, lot ZA). Même dette que le reste du
  * fichier : écrit par Prisma, faute de chemin public qui n'exige pas une
  * journée de production.
+ *
+ * Il pose aussi `orders.delivered_on` — ce que l'abonné du retrait
+ * (`RecordDeliveryDayOnHandover`) écrirait sur le fait, que cette écriture
+ * directe ne publie pas (lot ZL) : le jour de Paris du retrait.
  */
 export async function handOver(
   prisma: PrismaService,
   order: { readonly id: string; readonly orderNumber: string; readonly createdAt: Date },
 ): Promise<void> {
+  const handedOverAt = new Date(order.createdAt.getTime() + HANDOVER_AFTER_PLACEMENT_MS);
   await prisma.orderHandover.create({
     data: {
       orderId: order.id,
       reference: order.orderNumber,
-      handedOverAt: new Date(order.createdAt.getTime() + HANDOVER_AFTER_PLACEMENT_MS),
+      handedOverAt,
       handedOverBy: "staff-e2e",
       handedOverVia: "scan",
     },
   });
+  await markDelivered(prisma, order.id, handedOverAt);
+}
+
+/**
+ * Le **jour de livraison** d'un bon, sans fait de retrait : pour les suites
+ * qui éprouvent l'assiette (relevé, lot, dossier) et pas le retrait — un bon
+ * non livré n'y entre plus (lot ZL). Le jour de Paris de `at`.
+ */
+export async function markDelivered(
+  prisma: PrismaService,
+  orderId: string,
+  at: Date,
+): Promise<void> {
+  await prisma.order.update({
+    where: { id: orderId },
+    data: { deliveredOn: deliveredOnColumn(at) },
+  });
+}
+
+/**
+ * La colonne `delivered_on` (`@db.Date`) du jour de Paris de `at` — pour une
+ * fixture qui sème un bon livré d'un seul `create` (lot ZL).
+ */
+export function deliveredOnColumn(at: Date): Date {
+  return new Date(`${instantToLocal(at).day}T00:00:00.000Z`);
 }

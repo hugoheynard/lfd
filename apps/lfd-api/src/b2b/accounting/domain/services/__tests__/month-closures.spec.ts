@@ -39,13 +39,14 @@ describe("closuresOfMonth — les clôtures du mois en cours, et la dernière pa
     ]);
   });
 
-  it("mensuel au 15, le 3 : la dernière passée (15 septembre) précède celle du mois", () => {
+  it("mensuel au 15, le 3 : la dernière passée (le 1er, fin du mois civil) précède celle du 15", () => {
     const monthly = ModeDatesTimeline.of("monthly", [
       { effectiveFrom: paris("2026-01-01"), rhythm: BillingRhythm.monthly(15) },
     ]);
     const calendar = InvoicingCalendar.of(defaultModes({ monthly }), []);
+    // Le 1er octobre coupe la période du 15 septembre (Q-L1, lot ZL).
     expect(closuresOfMonth(calendar, paris("2026-10-03", "08:00"))).toEqual([
-      paris("2026-09-15"),
+      paris("2026-10-01"),
       paris("2026-10-15"),
     ]);
   });

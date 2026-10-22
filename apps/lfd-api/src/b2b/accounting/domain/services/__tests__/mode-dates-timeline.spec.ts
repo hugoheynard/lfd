@@ -30,7 +30,14 @@ describe("ModeDatesTimeline — la suite des dates d'un mode (M1, §16.6-1)", ()
 
     it("la période en cours se termine comme annoncée, la suivante suit les nouvelles dates", () => {
       expect(iso(timeline.closuresBetween(paris("2026-09-15"), paris("2026-12-31")))).toEqual(
-        iso([paris("2026-10-01"), paris("2026-11-01"), paris("2026-11-15"), paris("2026-12-15")]),
+        // Le 1er décembre coupe le mois du 15 (Q-L1, lot ZL).
+        iso([
+          paris("2026-10-01"),
+          paris("2026-11-01"),
+          paris("2026-11-15"),
+          paris("2026-12-01"),
+          paris("2026-12-15"),
+        ]),
       );
     });
 

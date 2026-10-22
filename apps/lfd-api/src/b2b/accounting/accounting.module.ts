@@ -2,6 +2,7 @@ import { AdminIssuedInvoicesController } from "./http/admin-issued-invoices.cont
 import { CompanyInvoicesController } from "./http/company-invoices.controller.js";
 import { BILLING_MODE_CONTROLLERS, BILLING_MODE_PROVIDERS } from "./billing-mode.providers.js";
 import { CARD_INVOICE_PROVIDERS } from "./card-invoice.providers.js";
+import { DELIVERY_DAY_PROVIDERS } from "./delivery-day.providers.js";
 import { MANDATE_BANK_EXPORT_PROVIDERS } from "./mandate-bank-export.providers.js";
 import { COLLECTION_RETURN_PROVIDERS } from "./collection-return.providers.js";
 import { AdminCollectionReturnsController } from "./http/admin-collection-returns.controller.js";
@@ -81,6 +82,7 @@ import { MonthlyInvoicingReader } from "./domain/ports/monthly-invoicing.reader.
 import { AdminCardInvoicesController } from "./http/admin-card-invoices.controller.js";
 import { AdminInvoiceSpecimenController } from "./http/admin-invoice-specimen.controller.js";
 import { AdminMonthlyInvoicesController } from "./http/admin-monthly-invoices.controller.js";
+import { AdminUnconfirmedDeliveriesController } from "./http/admin-unconfirmed-deliveries.controller.js";
 import { PrismaInvoiceAutopilotRuns } from "./infrastructure/prisma-invoice-autopilot-runs.js";
 import { PrismaMonthlyInvoiceOutcomes } from "./infrastructure/prisma-monthly-invoice-outcomes.js";
 import { PrismaMonthlyInvoicesReader } from "./infrastructure/prisma-monthly-invoices.reader.js";
@@ -205,6 +207,7 @@ import { PrismaOrderRowsLock } from "./infrastructure/prisma-order-rows-lock.js"
     CollectionAutopilotController,
     InvoiceAutopilotController,
     AdminMonthlyInvoicesController,
+    AdminUnconfirmedDeliveriesController,
     AdminCardInvoicesController,
     AdminInvoiceSpecimenController,
     AdminBillingStatementsController,
@@ -269,6 +272,7 @@ import { PrismaOrderRowsLock } from "./infrastructure/prisma-order-rows-lock.js"
     SendCollectionNotice,
     ...ISSUED_INVOICE_PROVIDERS,
     ...CARD_INVOICE_PROVIDERS,
+    ...DELIVERY_DAY_PROVIDERS,
     ...BILLING_MODE_PROVIDERS,
     ...MANDATE_BANK_EXPORT_PROVIDERS,
     ...COLLECTION_RETURN_PROVIDERS,

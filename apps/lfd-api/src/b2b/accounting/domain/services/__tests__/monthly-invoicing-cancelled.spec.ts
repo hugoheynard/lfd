@@ -21,6 +21,7 @@ function bon(id: string): InvoiceableOrder {
     orderNumber: `CMD-${id}`,
     companyId: "c_port",
     placedAt: PLACED,
+    deliveredOn: "2026-09-16",
     billedCompanyId: null,
     frozen: frozenOrder(`CMD-${id}`, PLACED),
   };

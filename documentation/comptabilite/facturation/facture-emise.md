@@ -20,10 +20,15 @@ dans [`facture-carte-et-remboursements.md`](facture-carte-et-remboursements.md).
   pas, elle se compense par un **avoir** (381).
 - **La facture précède le lot** : émise le dernier jour du mois, le lot du 1er
   ne fait qu'encaisser des factures émises (Q1).
-- **Le mois est celui de la COMMANDE** (`createdAt`), pas de la livraison :
-  « une commande faite le 30 ou le 31 et livrée le 1er est facturée sur le mois
-  passé » (Q2). La facture du 31 au soir porte donc des bons pas encore livrés —
-  **à confirmer par le cabinet**.
+- **Le mois est celui de la LIVRAISON** (`orders.delivered_on`) depuis le lot
+  ZL ([`plan-zero-faille.md`](plan-zero-faille.md), §11–§12, Hugo
+  2026-10-22) — il était celui de la commande (`createdAt`, Q2). Pour une
+  livraison de biens, le fait générateur et l'exigibilité de la TVA sont la
+  livraison (CGI art. 269-1-a et 269-2-a) ; une facture récapitulative couvre
+  les livraisons d'un même mois civil (CGI art. 289-I-3). Un bon commandé le
+  30 et livré le 5 part dans la facture du mois du 5. **La facture carte
+  garde son fait générateur** (le paiement, `facture-carte-et-remboursements.md`) :
+  ZL ne la touche pas — à confirmer au cabinet.
 - **L'acheteur légal est la maison mère** ; l'émission prévient les rôles
   facturation de la maison mère **et** des sous-comptes dont les bons figurent
   sur la facture (Q3).
@@ -38,7 +43,7 @@ dans [`facture-carte-et-remboursements.md`](facture-carte-et-remboursements.md).
 
 ```mermaid
 flowchart LR
-  B["Bons au compte du mois<br/>(createdAt)"] --> F["Dernier jour · 23h55<br/>une facture par payeur légal et par mandat<br/>ou une issue SIGNALÉE"]
+  B["Bons au compte LIVRÉS<br/>(delivered_on ≤ fin de période,<br/>jamais facturés)"] --> F["Dernier jour · 23h55<br/>une facture par payeur légal et par mandat<br/>ou une issue SIGNALÉE"]
   F -->|"invoice.issued"| N["PDF/A-3 rendu, puis e-mail<br/>avec la pièce jointe"]
   F --> L["Le 1er · lot<br/>une ligne = des factures émises<br/>montant = Σ TTC"]
   L --> A["Avis : montant et numéros"]
@@ -79,15 +84,17 @@ compte actif sans SIREN reste actif.
   lettres, chiffres et `-` : BR-FR-01/02 (BT-1) tenues par construction.
 - **Bon sans date de livraison** (`delivered_on` NULL) : l'émission est
   bloquée (`order_delivery_unknown`, M5) ; le refus nomme le bon et le geste
-  (enregistrer son retrait ou sa livraison, ou l'annuler).
+  (enregistrer son retrait ou sa livraison, ou l'annuler). Depuis ZL, ce n'est
+  plus qu'un **filet** : l'assiette ne prend que des bons livrés, et un bon
+  sans date est dans les « Bons à constater » (§ « La date de livraison »).
 - **Parties figées** (vendeur, acheteur = payeur légal) ; mentions copiées de
   l'entité, catégorie `goods`, pas d'option sur les débits.
   `Invoice.issue` juge les manques **avant** tout le reste
   (`InvoiceIssuanceBlockedError`, 409).
 - **Quantité** en millièmes entiers ; `H87` reste entière, `KGM` admet trois
   décimales.
-- **Dates de livraison réelles** par bon (`orders[].deliveredOn`), `null` si
-  inconnue.
+- **Dates de livraison** par bon (`orders[].deliveredOn`) : la copie de
+  `orders.delivered_on`, celle qui a fait entrer le bon dans l'assiette (ZL).
 - **Remises et frais** : pas de ligne à part, ils vivent dans la ventilation par
   taux.
 - **Invariants** (`InvoiceTotalsMismatchError`, 500) : Σ lignes par taux, base =
@@ -149,13 +156,27 @@ domaine `domain/services/monthly-invoicing.ts`. Routes
 (`MONTHLY_INVOICE_CRON`, `apps/lfd-api/container/worker.ts` et
 `apps/lfd-api/wrangler.jsonc`).
 
-- **Périmètre** : les bons passés au compte (`billableOrderWhere`) créés depuis
-  le plancher jusqu'à la fin du mois, qu'aucune 380 ne porte encore ; payeur par
-  `billedPayerOf`, mandat par `effectiveMandateOf` (la règle du lot). Les bons
-  sans mandat effectif font leur facture, sans moyen de paiement.
+- **Périmètre** (lot ZL, 2026-10-22) : les bons passés au compte et non
+  annulés (`billableOrderWhere`) **livrés** depuis le plancher jusqu'au
+  dernier jour de la période — `delivered_on` comparé jour à jour, à Paris —
+  qu'aucune 380 ne porte encore (filtre en mémoire de
+  `PrismaMonthlyInvoicingReader`, tenu en base par l'index unique
+  `invoice_order_invoiced_once`). Un bon livré le 31 mais constaté le 1er,
+  après l'émission, part dans la facture suivante, sa ligne « livré le 31 »
+  (Q-L2) : jamais perdu, jamais deux fois. Payeur par `billedPayerOf`, mandat
+  par `effectiveMandateOf` (la règle du lot). Les bons sans mandat effectif
+  font leur facture, sans moyen de paiement.
+- **Les six lecteurs** de `billableOrderWhere` (facture, dossier, relevé,
+  aperçu du lot, constitution, état d'encaissement) lisent la livraison ; la
+  facture et la constitution partent du plancher et retirent ce qui est déjà
+  facturé, ou n'est plus ouvert à l'encaissement.
 - **La période** (depuis R3, 2026-10-12,
   [`plan-rythme-de-facturation.md`](plan-rythme-de-facturation.md)) : une
-  **clôture** du rythme de l'entité, plus un mois. Les issues et les tentatives
+  **clôture** du rythme de l'entité, plus un mois. **Le 1er de chaque mois est
+  une clôture de tout rythme** depuis ZL (Q-L1, `isClosingDay`,
+  `domain/services/billing-cycle.ts`) : une semaine, une quinzaine ou un mois
+  « au 28 » qui chevauche deux mois civils fait deux périodes, donc deux
+  factures — et deux lots. Les issues et les tentatives
   sont clées par `period_closes_at` (migration `20261012200000`) ; `month`
   reste en base, nulle et plus écrite. Le passage rattrape dans l'ordre toutes
   les clôtures manquées (`closuresToAttempt`, au plus 12).
@@ -191,6 +212,31 @@ toute la facture ; une facture dont un bon n'est plus ouvert attend.
 `invoice_split` ne sert plus que de filet quand les mandats ont changé entre
 l'émission et le lot. L'avis cite les numéros (`collection_notice.invoice_numbers`),
 le `RmtInf` aussi. Un lot annulé relâche ses factures.
+
+### La date de livraison (lot ZL)
+
+`orders.delivered_on` (DATE, jour de Paris, migration
+`20261022180000_la_date_de_livraison_du_bon`) est posée **une fois**, par
+l'abonné durable `RecordDeliveryDayOnHandover` du fait `handover.handed_over`
+(canal `handover/channels/commerce/`) : `RecordOrderDeliveryDayHandler` relit
+le retrait et les arrêts de tournée par leurs canaux et applique
+`deliveredOnOf` — le jour de la tournée qui l'a remis à la porte, sinon le jour
+du retrait. Écriture conditionnée (`delivered_on IS NULL`), et le déclencheur
+`orders_delivered_on_frozen` refuse de la changer : un bac ramené puis relivré
+ne la déplace pas. La livraison ne publie vers le commerce aucun fait de remise
+(son départ n'en est pas un) : ses arrêts sont lus au moment du retrait.
+
+**Les bons à constater** : `GET admin/accounting/unconfirmed-deliveries`
+(`ListUnconfirmedDeliveriesQuery`) rend les bons au compte, non annulés, sans
+`delivered_on`, dont le jour demandé est passé (Paris). L'écran « Prélèvement
+du mois » les montre à côté des factures, avec le geste de sortie (enregistrer
+le retrait ou la livraison, ou annuler). Un bon sans jour demandé n'y figure
+pas.
+
+**La reprise** (développement) : `seed:invoices` relancé rejoue
+`RecordOrderDeliveryDayCommand` pour chaque commande retirée sans date
+(`datePastDeliveries`). La production n'avait émis aucune facture au
+2026-10-22.
 
 **La bascule** : `invoicing_floor`, posé par migration au 1er du mois qui suit le
 déploiement. Avant, un bon garde l'arrêté figé ; depuis, un bon sans facture
@@ -371,6 +417,7 @@ sa présence.
   signalée (`InvoiceMonthlyOutcome`). Auteur : le système sous le passage
   automatique, la personne sous le bouton — comme le prélèvement. Les deux
   sont dans `domain/events/invoice-autopilot.events.ts`.
-- **Au cabinet** : facture établie avant la livraison (Q2), nouvelles mentions
-  de la réforme.
+- **Au cabinet** : ~~facture établie avant la livraison (Q2)~~ (levé par ZL :
+  un bon se facture dans le mois de sa livraison), fait générateur de la
+  facture carte (le paiement), nouvelles mentions de la réforme.
 - **F5** (bons en HT pour les pros au compte) reste à faire.

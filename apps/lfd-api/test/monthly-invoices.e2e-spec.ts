@@ -19,6 +19,7 @@ import {
   instantToLocal,
   weekdayOf,
   type CollectionCycleView,
+  type UnconfirmedDeliveriesView,
   type IssuedInvoicesView,
   type MonthlyInvoiceReportView,
   type MonthlyInvoicesView,
@@ -39,7 +40,14 @@ import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
 import { Clock } from "../src/platform/time/clock.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { addBillingAddress, attachTo, createCompany, createUser, handOver } from "./factories.js";
+import {
+  addBillingAddress,
+  attachTo,
+  createCompany,
+  createUser,
+  handOver,
+  markDelivered,
+} from "./factories.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 
 const HOUR_MS = 60 * 60 * 1000;
@@ -165,7 +173,12 @@ async function entity(): Promise<string> {
 /** Un payeur au compte : mandat B2B actif, détenteur joignable, un bon du mois. */
 async function payer(
   entityId: string,
-  options: { readonly siren?: string; readonly billingAddress?: boolean } = {},
+  options: {
+    readonly siren?: string;
+    readonly billingAddress?: boolean;
+    /** `false` : le bon n'a jamais été remis — ni retrait, ni `delivered_on`. */
+    readonly handedOver?: boolean;
+  } = {},
 ) {
   seq += 1;
   const company = await createCompany(ctx.prisma, {
@@ -220,7 +233,9 @@ async function payer(
     },
     select: { id: true, orderNumber: true, createdAt: true },
   });
-  await handOver(ctx.prisma, placedOrder);
+  if (options.handedOver !== false) {
+    await handOver(ctx.prisma, placedOrder);
+  }
   return company;
 }
 
@@ -257,11 +272,14 @@ async function view(entityId: string): Promise<MonthlyInvoicesView> {
   );
 }
 
-async function issueByHand(entityId: string): Promise<MonthlyInvoiceReportView> {
+async function issueByHand(
+  entityId: string,
+  closure: Date = closesAt,
+): Promise<MonthlyInvoiceReportView> {
   return jsonBody<MonthlyInvoiceReportView>(
     await staff()
       .post(MONTHLY)
-      .send({ legalEntityId: entityId, periodClosesAt: closesAt.toISOString() })
+      .send({ legalEntityId: entityId, periodClosesAt: closure.toISOString() })
       .expect(200),
   );
 }
@@ -438,25 +456,23 @@ describe("la facture du mois, puis le lot qui l'encaisse (E4)", () => {
   });
 
   /** M5 (plan `plan-zero-faille.md`, lot ZA) : la date de livraison ne s'invente pas. */
-  it("un bon jamais retiré signale son payeur en nommant le bon ; aucun numéro n'est pris", async () => {
+  /**
+   * Lot ZL : ce test éprouvait le bloqueur M5 (lot ZA) — un bon sans date de
+   * livraison bloquait la facture de son payeur. Un bon jamais remis n'est
+   * plus dans l'assiette : il ne bloque personne, n'est facturé nulle part,
+   * et figure dans les « Bons à constater ». Le bloqueur reste un filet,
+   * éprouvé par `issue-monthly-invoices.handler.spec.ts`.
+   */
+  it("un bon jamais retiré n'est dans aucune facture, ne bloque personne, et attend d'être constaté", async () => {
     const id = await entity();
     const complete = await payer(id);
-    const waiting = await payer(id);
-    const order = await ctx.prisma.order.findFirstOrThrow({
-      where: { companyId: waiting.id },
-      select: { id: true, orderNumber: true },
-    });
-    await ctx.prisma.orderHandover.delete({ where: { orderId: order.id } });
+    const waiting = await payer(id, { handedOver: false });
 
     const report = await issueByHand(id);
 
     expect(report.issued.map((issue) => issue.payerCompanyId)).toEqual([complete.id]);
-    expect(report.blocked.map((issue) => issue.payerCompanyId)).toEqual([waiting.id]);
-    const signaled = (await view(id)).signaled;
-    expect(signaled[0]?.message).toContain(
-      `Le bon ${order.orderNumber} n'a pas de date de livraison`,
-    );
-    expect(signaled[0]?.message).toContain("Enregistrer son retrait ou sa livraison");
+    expect(report.blocked).toEqual([]);
+    expect((await view(id)).signaled).toEqual([]);
     expect(await ctx.prisma.invoice.count({ where: { payerCompanyId: waiting.id } })).toBe(0);
     const counter = await ctx.prisma.invoiceNumberCounter.findMany({ select: { lastRank: true } });
     expect(counter).toEqual([{ lastRank: 1 }]);
@@ -1039,3 +1055,157 @@ async function siteOnOwnMandate(
   await handOver(ctx.prisma, placedOrder);
   return { id: site.id, reference };
 }
+
+describe("facturer chaque bon dans le mois de sa livraison (lot ZL)", () => {
+  /** La clôture du mois qui SUIT le mois facturé — le mois du jour du test. */
+  function nextMonthClosure(): Date {
+    return nextClosureAfter(closesAt, BillingRhythm.default());
+  }
+
+  /** L'unique bon (jamais remis) du payeur. */
+  function orderOf(companyId: string) {
+    return ctx.prisma.order.findFirstOrThrow({
+      where: { companyId },
+      select: { id: true, orderNumber: true },
+    });
+  }
+
+  async function deliveredOnOfLine(orderId: string): Promise<string | null> {
+    const line = await ctx.prisma.invoiceOrder.findFirstOrThrow({ where: { orderId } });
+    return line.deliveredOn?.toISOString().slice(0, 10) ?? null;
+  }
+
+  it("commandé le 30, livré le 5 : facturé avec le mois de SA livraison, pas celui de sa commande", async () => {
+    const id = await entity();
+    const company = await payer(id, { handedOver: false });
+    const order = await orderOf(company.id);
+
+    // Le dernier soir du mois commandé : rien à facturer, rien de bloqué.
+    const first = await issueByHand(id);
+    expect(first.issued).toEqual([]);
+    expect(first.blocked).toEqual([]);
+
+    // Livré le 5 du mois suivant (Paris), facturé à SA clôture.
+    const fifth = new Date(closesAt.getTime() + 4 * DAY_MS + 8 * HOUR_MS);
+    await markDelivered(ctx.prisma, order.id, fifth);
+    const next = nextMonthClosure();
+    clock.set(new Date(invoicingMomentOf(next).getTime() + 2 * 60 * 1000));
+    const second = await issueByHand(id, next);
+
+    expect(second.issued.map((issue) => issue.payerCompanyId)).toEqual([company.id]);
+    expect(second.issued[0]?.issuedOn).toBe(lastDayOf(next));
+    expect(await deliveredOnOfLine(order.id)).toBe(instantToLocal(fifth).day);
+  });
+
+  it("livré le 31, constaté le 1er après l'émission : dans la facture suivante, « livré le 31 », facturé et prélevé une fois", async () => {
+    const id = await entity();
+    const company = await payer(id, { handedOver: false });
+    const order = await orderOf(company.id);
+    expect((await issueByHand(id)).issued).toEqual([]);
+    // Le lot du 1er : le bon n'est pas livré, il n'est pas prélevé.
+    clock.set(new Date(closesAt.getTime() + 2 * HOUR_MS));
+    expect((await pass()).runs.map((run) => run.outcome)).toEqual(["nothing_to_collect"]);
+
+    // Constaté le 1er au matin : livré la veille au soir, le 31 (Paris).
+    clock.set(new Date(closesAt.getTime() + 8 * HOUR_MS));
+    const lastEvening = new Date(closesAt.getTime() - 4 * HOUR_MS);
+    await markDelivered(ctx.prisma, order.id, lastEvening);
+    const next = nextMonthClosure();
+    clock.set(new Date(invoicingMomentOf(next).getTime() + 2 * 60 * 1000));
+    const report = await issueByHand(id, next);
+
+    expect(report.issued.map((issue) => issue.payerCompanyId)).toEqual([company.id]);
+    expect(await deliveredOnOfLine(order.id)).toBe(lastDayOf(closesAt));
+    // Rejoué : jamais deux fois.
+    expect((await issueByHand(id, next)).issued).toEqual([]);
+    expect(await ctx.prisma.invoiceOrder.count({ where: { orderId: order.id } })).toBe(1);
+
+    // Le lot de la clôture suivante prélève CETTE facture, une fois ; le
+    // passage d'après ne la reprend pas.
+    clock.set(new Date(next.getTime() + 2 * HOUR_MS));
+    expect((await pass()).runs.map((run) => run.outcome)).toEqual(["constituted"]);
+    expect(await invoicesCollectedAt(next)).toEqual(await invoiceIdsOf([company.id]));
+    clock.set(new Date(next.getTime() + 3 * HOUR_MS));
+    await pass();
+    expect(await ctx.prisma.collectionBatchLineInvoice.count()).toBe(1);
+  });
+
+  it("une semaine à cheval sur deux mois : deux factures, une par mois civil (Q-L1)", async () => {
+    const id = await entity();
+    const company = await payer(id, { handedOver: false });
+    const startsAt = month.cycle().startsAt;
+    clock.set(new Date(startsAt.getTime() - HOUR_MS));
+    await staff()
+      .put(`${ENTITIES}/${id}/payers/${company.id}/billing-mode`)
+      .send({ mode: "weekly" })
+      .expect(204);
+    const order = await orderOf(company.id);
+    // Livré le dernier jour du mois, et un second bon le 1er du suivant.
+    await markDelivered(ctx.prisma, order.id, new Date(closesAt.getTime() - 4 * HOUR_MS));
+    await laterOrder(company.id, new Date(closesAt.getTime() + 2 * HOUR_MS));
+
+    // Le dernier soir du mois : sa semaine est coupée au 1er.
+    clock.set(new Date(issuableFrom.getTime() + 2 * 60 * 1000));
+    await invoicePass();
+    // Puis la veille du lundi qui suit (ou du 1er suivant).
+    const after = nextClosureAfter(closesAt, BillingRhythm.weekly(1));
+    clock.set(new Date(invoicingMomentOf(after).getTime() + 2 * 60 * 1000));
+    await invoicePass();
+
+    const invoices = await ctx.prisma.invoice.findMany({
+      where: { payerCompanyId: company.id },
+      orderBy: { rank: "asc" },
+      include: { orders: { select: { deliveredOn: true } } },
+    });
+    expect(invoices.map((invoice) => invoice.issuedOn.toISOString().slice(0, 7))).toEqual([
+      lastDayOf(closesAt).slice(0, 7),
+      lastDayOf(after).slice(0, 7),
+    ]);
+    expect(
+      invoices.map((invoice) =>
+        invoice.orders.map((line) => line.deliveredOn?.toISOString().slice(0, 10)),
+      ),
+    ).toEqual([[lastDayOf(closesAt)], [instantToLocal(closesAt).day]]);
+  });
+
+  it("les bons à constater : jour passé, sans remise, au compte ; ils en sortent une fois constatés", async () => {
+    const id = await entity();
+    const company = await payer(id, { handedOver: false });
+    const order = await orderOf(company.id);
+    const served = new Date(closesAt.getTime() - 2 * DAY_MS);
+    await ctx.prisma.order.update({
+      where: { id: order.id },
+      data: { requestedDeliveryDate: new Date(`${instantToLocal(served).day}T00:00:00.000Z`) },
+    });
+
+    const waiting = jsonBody<UnconfirmedDeliveriesView>(
+      await staff().get("/admin/accounting/unconfirmed-deliveries").expect(200),
+    );
+    expect(waiting.before).toBe(lastDayOf(closesAt));
+    expect(waiting.orders).toEqual([
+      expect.objectContaining({
+        orderNumber: order.orderNumber,
+        companyId: company.id,
+        serviceDay: instantToLocal(served).day,
+        totalCents: 10_550,
+      }),
+    ]);
+
+    await markDelivered(ctx.prisma, order.id, served);
+    const after = jsonBody<UnconfirmedDeliveriesView>(
+      await staff().get("/admin/accounting/unconfirmed-deliveries").expect(200),
+    );
+    expect(after.orders).toEqual([]);
+  });
+
+  it("le jour de livraison posé ne bouge plus : la base le refuse", async () => {
+    const id = await entity();
+    const company = await payer(id, { handedOver: false });
+    const order = await orderOf(company.id);
+    await markDelivered(ctx.prisma, order.id, new Date(closesAt.getTime() - DAY_MS));
+
+    await expect(
+      markDelivered(ctx.prisma, order.id, new Date(closesAt.getTime() + DAY_MS)),
+    ).rejects.toThrow(/ne change plus/u);
+  });
+});

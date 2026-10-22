@@ -25,6 +25,7 @@ function bon(companyId: string, overrides: Partial<InvoiceableOrder> = {}): Invo
     orderNumber,
     companyId,
     placedAt,
+    deliveredOn: "2026-09-16",
     billedCompanyId: null,
     frozen: frozenOrder(orderNumber, placedAt),
     ...overrides,

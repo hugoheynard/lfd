@@ -156,14 +156,15 @@ describe("GetMonthlyInvoices — les clôtures du mois (M4c)", () => {
     const closures = (await view).closures;
 
     expect(closures.map((closure) => [closure.periodClosesAt, closure.modes])).toEqual([
-      [paris("2026-10-01").toISOString(), ["monthly"]],
+      // Le 1er clôt aussi l'hebdomadaire : sa semaine est coupée (Q-L1).
+      [paris("2026-10-01").toISOString(), ["monthly", "weekly"]],
       [paris("2026-10-05").toISOString(), ["weekly"]],
       [paris("2026-10-12").toISOString(), ["weekly"]],
       [paris("2026-10-19").toISOString(), ["weekly"]],
       [paris("2026-10-26").toISOString(), ["weekly"]],
     ]);
     expect(closures.map((closure) => closure.reached)).toEqual([true, true, false, false, false]);
-    expect(closures[1]?.periodLabel).toBe("du 28 septembre au 4 octobre 2026");
+    expect(closures[1]?.periodLabel).toBe("du 1er au 4 octobre 2026");
   });
 
   it("chaque clôture porte SES lots, et la vue du haut est la clôture à émettre", async () => {

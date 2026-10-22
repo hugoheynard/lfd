@@ -13,11 +13,14 @@ import {
 } from "./frozen-invoice-order.mapper.js";
 import { ISSUED_OUTCOME, mandateIdOfColumn } from "./prisma-monthly-invoice-outcomes.js";
 
+/** `AAAA-MM-JJ`. */
+const DAY_LENGTH = 10;
+
 /**
  * Ce que lit la facture du mois (E4). L'assiette est `billableOrderWhere`,
  * écrite une fois et partagée avec le relevé et le lot ; `invoice_order`
  * n'a pas de relation vers `orders` (l'id est opaque) : deux lectures,
- * jointes en mémoire.
+ * jointes en mémoire — c'est ici que « jamais facturé » se juge (lot ZL).
  */
 @Injectable()
 export class PrismaMonthlyInvoicingReader extends MonthlyInvoicingReader {
@@ -34,7 +37,13 @@ export class PrismaMonthlyInvoicingReader extends MonthlyInvoicingReader {
     const orders = await this.prisma.order.findMany({
       where: billableOrderWhere(from, to),
       orderBy: [{ createdAt: "asc" }, { orderNumber: "asc" }],
-      select: { ...FROZEN_INVOICE_ORDER_SELECT, id: true, companyId: true, billedCompanyId: true },
+      select: {
+        ...FROZEN_INVOICE_ORDER_SELECT,
+        id: true,
+        companyId: true,
+        billedCompanyId: true,
+        deliveredOn: true,
+      },
     });
     const invoiced = await this.prisma.invoiceOrder.findMany({
       where: {
@@ -53,6 +62,8 @@ export class PrismaMonthlyInvoicingReader extends MonthlyInvoicingReader {
               orderNumber: order.orderNumber,
               companyId: order.companyId,
               placedAt: order.createdAt,
+              // `@db.Date` : minuit UTC, dont la date ISO EST le jour de Paris.
+              deliveredOn: order.deliveredOn?.toISOString().slice(0, DAY_LENGTH) ?? null,
               billedCompanyId: order.billedCompanyId,
               frozen: toFrozenInvoiceOrder(order),
             },

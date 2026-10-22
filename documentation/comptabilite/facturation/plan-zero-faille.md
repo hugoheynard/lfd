@@ -252,3 +252,108 @@ ce qui arrive avant son émission se voit dans ses lignes.
 | **ZC**                             | Prélèvement net des avoirs par bon (M3), imputation sur le prochain prélèvement, virement à faire suivi                       | dépend de ZB                         |
 | **ZD**                             | F2 (BT-9 rendu), F9 + M6 (rendu déterministe), F8 (verrou du seau)                                                            | intégrité                            |
 | **ZE**                             | F3/F4 (adresses électroniques, garde datée), F6, F7, F5                                                                       | dépend de la plateforme agréée       |
+
+## 11. Facturer chaque bon dans le mois de sa livraison (Hugo, 2026-10-22, à contredire)
+
+ZA a bâti M5 tel qu'écrit : une facture dont un bon n'a pas de date de
+livraison n'est pas émise. Avec l'assiette actuelle par **date de commande**
+(`billable-order-criterion.ts`, `created_at`), un bon commandé le 30 pour le 5
+tombe dans la facture d'octobre et la **bloque jusqu'au 5**.
+
+**La règle fiscale** : pour une livraison de biens, la TVA est exigible à la
+livraison (CGI art. 269, 1 a) ; une facture récapitulative couvre les
+livraisons d'un même mois civil et s'établit au plus tard à la fin de ce mois
+(CGI art. 289, I-3). Décision de Hugo : **un bon se facture dans le mois de sa
+livraison**.
+
+Ce qui change :
+
+- **L'assiette** d'une facture du mois = les bons **livrés** (retirés au
+  comptoir ou livrés) entre le début et la fin du cycle — la date de livraison
+  (`delivered_on`, déjà figée sur `invoice_order`) remplace `created_at`.
+- **Un bon non encore livré** à la fin du cycle n'est pas dans la facture : il
+  partira dans celle du cycle où il sera livré. M5 ne bloque plus personne.
+- **Le relevé, le dossier et le prélèvement** lisent la même assiette (ils
+  partagent `billableOrderWhere`) : le prélèvement suit la facture.
+- **Rythmes** : mensuel, bimensuel, hebdomadaire — même règle, par cycle.
+- **Un bon jamais livré** (annulé) n'est jamais facturé ; un bon livré puis
+  annulé relève de M2 (avoir).
+- **Bascule** : production sans aucune facture (2026-10-22) — pas de reprise.
+
+## 12. Contredit (`vitruve`, 2026-10-22) — l'emporte sur le §11
+
+**Vrai** : la date de livraison n'existe pas sur `orders` (elle est calculée à
+l'émission, depuis les faits des blocs `handover` et `delivery`, qu'une requête
+du commerce ne peut pas joindre) ; un bon livré mais **constaté après** la
+tentative de 23h55 tomberait entre deux fenêtres ; les cycles hebdomadaire et
+bimensuel chevauchent deux mois civils, contre l'article 289-I-3 ; un bon jamais
+constaté disparaîtrait en silence ; six lecteurs partagent l'assiette, pas
+trois. Citation fiscale à préciser : fait générateur (269-1-a) **et
+exigibilité** (269-2-a) à la livraison.
+
+**Inexact** : le double comptage est déjà interdit **en base** —
+`invoice_order_invoiced_once`, index unique sur `order_id` pour les 380
+(`20261008190000_la_facture_emise`, l. 110), vérifié le 2026-10-22.
+
+**La règle, réécrite** :
+
+- **Assiette d'une facture** = les bons **livrés, non annulés, jamais
+  facturés** dont la date de livraison est **au plus tard** la fin du cycle.
+  « Jamais facturé » est tenu par l'index unique : un bon ne peut ni manquer
+  (un bon constaté en retard part dans la facture suivante) ni compter deux
+  fois.
+- **La date de livraison devient une donnée du commerce** : une colonne
+  `orders.delivered_on` (jour Europe/Paris), posée **une seule fois**, à la
+  première remise attestée, par un `@DurableHandler` qui écoute les faits de
+  retrait et de tournée (option (a) de `vitruve`). Elle ne bouge plus ensuite
+  (un bac ramené puis relivré ne la déplace pas).
+- **Les cycles s'arrêtent à la fin du mois civil** : un cycle hebdomadaire qui
+  chevauche deux mois produit deux factures (Q-L1).
+- **Un bon livré et constaté après l'émission de son mois** part dans la
+  facture suivante, marqué « livré le … » (Q-L2).
+- **Un bon jamais constaté** (`neverHandedOver`) entre dans une liste nommée au
+  back-office, « Bons à constater », au lieu de disparaître.
+- **Les six lecteurs** de `billableOrderWhere` passent au même critère, dans le
+  même lot ; la facture carte garde son fait générateur (le paiement), à
+  confirmer au cabinet.
+- **Irréversible** dès la première facture émise sous cette règle : à bâtir
+  avant la première facture de production.
+
+**Questions** :
+
+- **Q-L1** — Un cycle hebdomadaire ou bimensuel qui chevauche deux mois :
+  **deux factures** (une par mois civil, proposé), ou décaler la clôture à la
+  fin du mois ?
+- **Q-L2** — Un bon livré le 31 mais constaté le 1ᵉʳ, après l'émission
+  d'octobre : **dans la facture de novembre** (proposé, simple, jamais perdu),
+  ou une facture de rattrapage d'octobre émise aussitôt ?
+
+**Décisions (Hugo, 2026-10-22)** : Q-L1 — un cycle qui chevauche deux mois
+produit **deux factures**, une par mois civil ; Q-L2 — un bon livré le 31 et
+constaté après l'émission d'octobre part **dans la facture de novembre**.
+Lot **ZL** (facturer à la livraison), à bâtir avant ZB.
+
+**ZL ✅ bâti le 2026-10-22 (non commité).** Ce qui existe :
+
+- `orders.delivered_on` (DATE, jour de Paris ; migration
+  `20261022180000_la_date_de_livraison_du_bon`, additive), posée une fois par
+  `RecordDeliveryDayOnHandover` (abonné durable de `handover.handed_over`) →
+  `RecordOrderDeliveryDayHandler`, qui applique `deliveredOnOf` aux faits lus
+  par les canaux du retrait et de la livraison ; le déclencheur
+  `orders_delivered_on_frozen` refuse de la déplacer.
+- `billableOrderWhere` compare `delivered_on` jour à jour (Paris) ; les six
+  lecteurs le partagent. « Jamais facturé » reste hors du critère commun (il
+  viderait le lot, constitué après la facture) : la facture le juge en mémoire
+  sur `invoice_order` 380, le lot sur l'état d'encaissement.
+- Q-L1 : `isClosingDay` (`billing-cycle.ts`) — le 1er clôt tout rythme
+  (`plan-rythme-de-facturation.md`, §17).
+- Q-L2 : un bon constaté après l'émission part dans la facture suivante, sa
+  ligne portant `delivered_on`.
+- M5 : la facture lit `delivered_on` du bon ; le bloqueur reste un filet
+  (test `issue-monthly-invoices.handler.spec.ts`).
+- « Bons à constater » : `GET admin/accounting/unconfirmed-deliveries`, carte
+  de l'écran « Prélèvement du mois ».
+- La facture carte garde son fait générateur (le paiement).
+
+Doc d'état : [`facture-emise.md`](facture-emise.md), § « La date de
+livraison ».

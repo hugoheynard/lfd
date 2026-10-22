@@ -23,8 +23,11 @@ describe("nextClosureAfter — mensuel", () => {
     );
   });
 
-  it("le 28 : passé le 28 février, la suivante est le 28 mars, à l'heure d'hiver", () => {
+  it("le 28 : passé le 28 février, le 1er mars (mois civil, Q-L1), puis le 28 mars", () => {
     expect(next("2027-02-28T12:00:00.000Z", BillingRhythm.monthly(28))).toBe(
+      "2027-02-28T23:00:00.000Z",
+    );
+    expect(next("2027-03-02T12:00:00.000Z", BillingRhythm.monthly(28))).toBe(
       "2027-03-27T23:00:00.000Z",
     );
   });
@@ -54,8 +57,9 @@ describe("nextClosureAfter — bimensuel", () => {
     expect(next("2026-09-15T22:00:00.000Z", firstAndSixteenth)).toBe("2026-09-30T22:00:00.000Z");
   });
 
-  it("5/20 : après le 20 décembre, le 5 janvier", () => {
-    expect(next("2026-12-25T10:00:00.000Z", fifthAndTwentieth)).toBe("2027-01-04T23:00:00.000Z");
+  it("5/20 : après le 20 décembre, le 1er janvier (changement d'année), puis le 5", () => {
+    expect(next("2026-12-25T10:00:00.000Z", fifthAndTwentieth)).toBe("2026-12-31T23:00:00.000Z");
+    expect(next("2026-12-31T23:00:00.000Z", fifthAndTwentieth)).toBe("2027-01-04T23:00:00.000Z");
   });
 
   it("5/20 : à l'instant exact du 5, rend le 20", () => {
@@ -98,9 +102,10 @@ describe("passages d'heure", () => {
   });
 
   it("une période qui enjambe l'heure d'été n'est pas bornée à minuit UTC", () => {
+    // Le 16 mars → le 1er avril : la fin du mois civil la coupe (Q-L1).
     const period = periodAt(new Date("2026-03-25T12:00:00.000Z"), BillingRhythm.monthly(16), null);
     expect(period.startsAt.toISOString()).toBe("2026-03-15T23:00:00.000Z");
-    expect(period.closesAt.toISOString()).toBe("2026-04-15T22:00:00.000Z");
+    expect(period.closesAt.toISOString()).toBe("2026-03-31T22:00:00.000Z");
   });
 });
 

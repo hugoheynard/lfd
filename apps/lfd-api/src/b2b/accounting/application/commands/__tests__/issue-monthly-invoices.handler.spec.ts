@@ -37,20 +37,13 @@ import {
 } from "./collection-doubles.js";
 import {
   CountingNumbering,
-  EveryOrderHandedOver,
   FakeMonthlyReader,
   FixedIssuers,
   FixedModeDates,
   FixedPayerModes,
   MemoryInvoices,
   MemoryOutcomes,
-  NoHandovers,
-  NoStops,
 } from "./monthly-invoice-doubles.js";
-import type {
-  OrderHandoverHistoryFact,
-  OrderHandoverHistoryReader,
-} from "../../../../../handover/channels/commerce/index.js";
 
 /**
  * La facture par période (lot E4, par clôture depuis R3) — l'orchestration,
@@ -70,21 +63,8 @@ const FLOOR = new Date("2026-08-31T22:00:00.000Z");
 /** Les clés d'issue (payeur × mandat effectif, E4b) des deux payeurs mandatés. */
 const PORT = invoiceGroupKey("c_port", "m_c_port");
 const PRINCIPAL = invoiceGroupKey("c_principal", "m_c_principal");
-/** Le retrait des bons, le 16 septembre au matin (Paris) — dans la période facturée. */
-const HANDED_OVER_AT = new Date("2026-09-16T07:00:00.000Z");
-
-/** Tous les bons retirés, sauf un : celui-là n'a ni retrait ni livraison (M5). */
-class HandedOverExcept extends EveryOrderHandedOver {
-  constructor(private readonly missing: string) {
-    super(HANDED_OVER_AT);
-  }
-  override async ofOrders(
-    orderIds: readonly string[],
-  ): Promise<ReadonlyMap<string, OrderHandoverHistoryFact>> {
-    const all = await super.ofOrders(orderIds);
-    return new Map([...all].filter(([orderId]) => orderId !== this.missing));
-  }
-}
+/** Le jour de livraison des bons (`orders.delivered_on`) — dans la période facturée. */
+const DELIVERED_ON = "2026-09-16";
 
 let seq = 0;
 function bon(companyId: string, overrides: Partial<InvoiceableOrder> = {}): InvoiceableOrder {
@@ -96,6 +76,7 @@ function bon(companyId: string, overrides: Partial<InvoiceableOrder> = {}): Invo
     orderNumber,
     companyId,
     placedAt,
+    deliveredOn: DELIVERED_ON,
     billedCompanyId: null,
     frozen: frozenOrder(orderNumber, placedAt),
     ...overrides,
@@ -125,8 +106,6 @@ function harness(
     /** Les payeurs qui ont choisi un mode ; aucun : tous mensuels au 1er. */
     payers?: readonly PayerModeSegments[];
     closure?: string;
-    /** Par défaut, tout bon a été retiré : un bon sans date bloque (M5). */
-    handovers?: OrderHandoverHistoryReader;
   } = {},
 ) {
   const invoices = new MemoryInvoices();
@@ -151,8 +130,6 @@ function harness(
     new FixedIssuers([SELLER_FACTS]),
     options.buyers ?? new FixedBuyers(),
     mandates,
-    options.handovers ?? new EveryOrderHandedOver(HANDED_OVER_AT),
-    new NoStops(),
     issuer,
     outcomes,
     rows,
@@ -431,8 +408,6 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
         new FixedIssuers([SELLER_FACTS]),
         new FixedBuyers(),
         new FakeMandates(),
-        new NoHandovers(),
-        new NoStops(),
         new InvoiceIssuer(
           new CountingNumbering(),
           h.invoices,
@@ -530,8 +505,9 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
     expect(h.outcomes.rows.has(PRINCIPAL)).toBe(false);
   });
 
-  it("rythmes mêlés, au 1er : le mensuel a son mois entier, l'hebdomadaire ne clôt pas", async () => {
-    // Le jeudi 1er octobre 2026 n'est pas un lundi : seul le mensuel clôt.
+  it("rythmes mêlés, au 1er : le mensuel a son mois entier, l'hebdomadaire sa fin de semaine (Q-L1)", async () => {
+    // Le jeudi 1er octobre 2026 n'est pas un lundi, mais il ferme le mois
+    // civil : l'hebdomadaire clôt aussi, sa semaine du 28 est coupée.
     const h = harness({ payers: [WEEKLY_PORT] });
     const weekly = bon("c_port");
     const monthly = bon("c_principal");
@@ -539,11 +515,14 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
 
     const report = await h.run();
 
-    expect(report.issued.map((issue) => issue.payerCompanyId)).toEqual(["c_principal"]);
-    expect(report.periodLabel).toBe("du 1er au 30 septembre 2026");
-    expect(h.invoices.inserted[0]?.toState().orders.map((o) => o.orderId)).toEqual([
-      monthly.orderId,
+    expect(report.issued.map((issue) => issue.payerCompanyId).sort()).toEqual([
+      "c_port",
+      "c_principal",
     ]);
+    expect(report.periodLabel).toBe("du 1er au 30 septembre 2026");
+    expect(
+      h.invoices.inserted.map((invoice) => invoice.toState().orders[0]?.orderId).sort(),
+    ).toEqual([monthly.orderId, weekly.orderId].sort());
   });
 
   it("le site d'un payeur hebdomadaire est facturé avec lui, au lundi", async () => {
@@ -581,7 +560,12 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
       closure: "2026-10-04T22:00:00.000Z",
       at: new Date("2026-10-04T21:56:00.000Z"),
     });
-    atMonday.reader.orders = [bon("c_port", { placedAt: new Date("2026-10-02T08:00:00.000Z") })];
+    atMonday.reader.orders = [
+      bon("c_port", {
+        placedAt: new Date("2026-10-02T08:00:00.000Z"),
+        deliveredOn: "2026-10-02",
+      }),
+    ];
 
     const report = await atMonday.run();
 
@@ -687,10 +671,14 @@ describe("IssueMonthlyInvoices — les annulées entre la préparation et l'émi
 });
 
 describe("IssueMonthlyInvoices — la date de livraison (M5, lot ZA)", () => {
-  /** M5 (lot ZA) : la date de livraison est obligatoire ; elle ne s'invente pas. */
+  /**
+   * M5 (lot ZA) : la date de livraison est obligatoire ; elle ne s'invente pas.
+   * Depuis ZL, l'assiette ne rend plus de bon sans `delivered_on` : le
+   * bloqueur reste un FILET, éprouvé ici par un lecteur qui en rendrait un.
+   */
   it("un bon sans date de livraison signale son payeur, en nommant le bon et le geste ; les autres sont facturés", async () => {
-    const unknown = bon("c_principal");
-    const h = harness({ handovers: new HandedOverExcept(unknown.orderId) });
+    const unknown = bon("c_principal", { deliveredOn: null });
+    const h = harness();
     h.reader.orders = [unknown, bon("c_port")];
 
     const report = await h.run();
@@ -707,7 +695,7 @@ describe("IssueMonthlyInvoices — la date de livraison (M5, lot ZA)", () => {
     ]);
   });
 
-  it("la facture date chaque bon du jour de son retrait", async () => {
+  it("la facture date chaque bon de SON `delivered_on` — celui qui l'a fait entrer dans l'assiette", async () => {
     const h = harness();
     h.reader.orders = [bon("c_port")];
 

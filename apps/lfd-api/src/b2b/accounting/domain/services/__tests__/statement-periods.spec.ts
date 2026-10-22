@@ -40,8 +40,9 @@ describe("currentStatementPeriod", () => {
 
 describe("requestedStatementPeriod", () => {
   it("rend une période passée, close", () => {
+    // La semaine du 28 septembre est coupée au 1er octobre (Q-L1, lot ZL).
     const period = requestedStatementPeriod(new Date("2026-10-04T22:00:00.000Z"), NOW, WEEKLY);
-    expect(period.label).toBe("du 28 septembre au 4 octobre 2026");
+    expect(period.label).toBe("du 1er au 4 octobre 2026");
     expect(period.inProgress).toBe(false);
   });
 

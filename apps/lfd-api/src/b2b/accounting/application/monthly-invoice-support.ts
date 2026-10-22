@@ -1,13 +1,10 @@
-import type { OrderDeliveryHistoryReader } from "../../../delivery/channels/commerce/index.js";
-import type { OrderHandoverHistoryReader } from "../../../handover/channels/commerce/index.js";
 import type { StatementBuyer } from "../domain/entities/billing-statement.js";
 import type { CollectionMandate } from "../domain/ports/collection-mandates.reader.js";
 import type { CollectionMandatesReader } from "../domain/ports/collection-mandates.reader.js";
 import type { MonthlyInvoicingReader } from "../domain/ports/monthly-invoicing.reader.js";
 import type { BillingFollow } from "../domain/ports/statement-billing.reader.js";
 import type { StatementBuyerReader } from "../domain/ports/statement-buyer.reader.js";
-import type { DossierStopFact } from "../domain/services/invoice-dossier-history.js";
-import { deliveredOnOf, type PayerOrders } from "../domain/services/monthly-invoicing.js";
+import type { PayerOrders } from "../domain/services/monthly-invoicing.js";
 import type { CollectionFormName } from "../domain/value-objects/collection-form.js";
 
 /**
@@ -18,10 +15,6 @@ export interface MonthlyContextReaders {
   readonly reader: MonthlyInvoicingReader;
   readonly buyers: StatementBuyerReader;
   readonly mandates: CollectionMandatesReader;
-  /** Le retrait de chaque bon — déclaré et implémenté par `handover`. */
-  readonly handovers: OrderHandoverHistoryReader;
-  /** Les arrêts de chaque bon — déclaré et implémenté par `delivery`. */
-  readonly deliveries: OrderDeliveryHistoryReader;
 }
 
 export interface MonthlyContext {
@@ -30,7 +23,12 @@ export interface MonthlyContext {
   readonly names: ReadonlyMap<string, string>;
   readonly mandates: readonly CollectionMandate[];
   readonly collectionForms: ReadonlyMap<string, CollectionFormName>;
-  /** La date de livraison réelle de chaque bon, ou `null`. */
+  /**
+   * La date de livraison de chaque bon : `orders.delivered_on`, celle qui l'a
+   * fait entrer dans l'assiette (lot ZL) — plus recalculée depuis les faits
+   * du retrait et de la tournée à l'émission, pour que « livré le … » et le
+   * mois de la facture ne puissent pas diverger.
+   */
   readonly deliveredOn: ReadonlyMap<string, string | null>;
 }
 
@@ -52,22 +50,13 @@ export async function readMonthlyContext(
   const orders = payerOrders.flatMap((payer) => payer.orders);
   const sites = unique(orders.map((order) => order.companyId));
   const companies = unique([...payers, ...sites]);
-  const ids = orders.map((order) => order.orderId);
-  const [buyers, names, mandates, collectionForms, handovers, stops] = await Promise.all([
+  const [buyers, names, mandates, collectionForms] = await Promise.all([
     readers.buyers.buyersOf(payers),
     readers.reader.companyNames(payers),
     readers.mandates.activeFor(companies),
     readers.reader.collectionFormsAt(sites, at),
-    readers.handovers.ofOrders(ids),
-    readers.deliveries.ofOrders(ids),
   ]);
-  const stopsOf = new Map<string, DossierStopFact[]>();
-  for (const stop of stops) {
-    stopsOf.set(stop.orderId, [...(stopsOf.get(stop.orderId) ?? []), stop]);
-  }
-  const deliveredOn = new Map(
-    ids.map((id) => [id, deliveredOnOf(handovers.get(id) ?? null, stopsOf.get(id) ?? [])]),
-  );
+  const deliveredOn = new Map(orders.map((order) => [order.orderId, order.deliveredOn]));
   return { follows, buyers, names, mandates, collectionForms, deliveredOn };
 }
 

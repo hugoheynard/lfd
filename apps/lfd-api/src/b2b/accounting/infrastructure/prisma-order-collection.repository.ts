@@ -4,7 +4,7 @@ import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { OrderCollection } from "../domain/entities/order-collection.js";
 import { OrderCollectionRepository } from "../domain/ports/order-collection.repository.js";
 import { Clock } from "../../../platform/time/clock.js";
-import { billableOrderWhere } from "./billable-order-criterion.js";
+import { billableSinceWhere } from "./billable-order-criterion.js";
 import { orderCollectionColumns, toOrderCollectionState } from "./order-collection.mapper.js";
 
 /** Adaptateur d'écriture des états d'encaissement — un `upsert` par commande. */
@@ -23,7 +23,7 @@ export class PrismaOrderCollectionRepository extends OrderCollectionRepository {
       return null;
     }
     const order = await this.prisma.order.findFirst({
-      where: { ...billableOrderWhere(floor.floorAt, this.clock.now()), id: orderId },
+      where: { ...billableSinceWhere(floor.floorAt), id: orderId },
       select: { id: true, totalCents: true },
     });
     if (order === null) {

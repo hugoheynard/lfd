@@ -65,7 +65,14 @@ describe("PayerTimeline — la suite d'un payeur (M1, §16.2, §16.6-3)", () => 
     );
 
     expect(iso(timeline.closuresBetween(paris("2026-10-08"), paris("2026-12-05")))).toEqual(
-      iso([paris("2026-11-01"), paris("2026-11-05"), paris("2026-11-20"), paris("2026-12-05")]),
+      // Le 1er décembre coupe la quinzaine du 20 novembre (Q-L1, lot ZL).
+      iso([
+        paris("2026-11-01"),
+        paris("2026-11-05"),
+        paris("2026-11-20"),
+        paris("2026-12-01"),
+        paris("2026-12-05"),
+      ]),
     );
     expect(timeline.previousClosureOf(paris("2026-11-05"))).toEqual(paris("2026-11-01"));
   });
@@ -79,7 +86,8 @@ describe("PayerTimeline — la suite d'un payeur (M1, §16.2, §16.6-3)", () => 
     const timeline = PayerTimeline.of([], modes);
 
     expect(iso(timeline.closuresBetween(paris("2026-10-08"), paris("2026-12-15")))).toEqual(
-      iso([paris("2026-11-01"), paris("2026-11-15"), paris("2026-12-15")]),
+      // Le 1er décembre coupe le mois du 15 (Q-L1, lot ZL).
+      iso([paris("2026-11-01"), paris("2026-11-15"), paris("2026-12-01"), paris("2026-12-15")]),
     );
   });
 

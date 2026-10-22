@@ -180,11 +180,12 @@ describe("ListStatementCyclesHandler", () => {
     expect(cycles.at(-1)?.periodStartsAt).toBe("2025-10-31T23:00:00.000Z");
   });
 
-  it("un payeur hebdomadaire : SES semaines, pas des mois", async () => {
+  it("un payeur hebdomadaire : SES semaines, coupées au 1er du mois (Q-L1)", async () => {
     const { cycles } = await listHandler(WEEKLY, null).execute(ofC1);
-    expect(cycles.slice(0, 2).map((cycle) => cycle.periodLabel)).toEqual([
+    expect(cycles.slice(0, 3).map((cycle) => cycle.periodLabel)).toEqual([
       "du 5 au 11 octobre 2026",
-      "du 28 septembre au 4 octobre 2026",
+      "du 1er au 4 octobre 2026",
+      "du 28 au 30 septembre 2026",
     ]);
   });
 
@@ -208,6 +209,7 @@ describe("ListStatementCyclesHandler", () => {
     expect(weekly.cycles.map((cycle) => cycle.periodClosesAt)).toEqual([
       "2026-10-11T22:00:00.000Z",
       "2026-10-04T22:00:00.000Z",
+      "2026-09-30T22:00:00.000Z",
     ]);
 
     const future = await listHandler(
@@ -280,8 +282,9 @@ describe("GetCycleStatementHandler", () => {
     const view = await handler.execute(
       new GetCycleStatementQuery("c1", "2026-10-04T22:00:00.000Z"),
     );
-    expect(view.cycle.periodLabel).toBe("du 28 septembre au 4 octobre 2026");
-    expect(reader.asked[0]?.cycle.startsAt.toISOString()).toBe("2026-09-27T22:00:00.000Z");
+    // Coupée au 1er octobre (Q-L1, lot ZL).
+    expect(view.cycle.periodLabel).toBe("du 1er au 4 octobre 2026");
+    expect(reader.asked[0]?.cycle.startsAt.toISOString()).toBe("2026-09-30T22:00:00.000Z");
   });
 
   it("refuse une période future sans interroger les commandes", async () => {
