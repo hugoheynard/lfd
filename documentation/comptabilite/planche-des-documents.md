@@ -91,3 +91,17 @@ n'appartiennent à personne.
   `application/pdf` non vide, 401 sans jeton, 403 sans `b2b_accounting:read`, et
   le compte des commandes et des factures ne bouge pas.
 - Écran : `apps/lfd-backoffice-frontend/src/app/comptabilite/document-specimens/`.
+
+## La porte qui tient la planche complète (2026-10-22)
+
+`pnpm lint:pdf-specimens` (`dev-toolbox/gates/pdf-specimens.mjs`) refuse tout
+document PDF du serveur — une fonction exportée `render…Pdf` — qu'aucun handler
+d'exemple (`…/application/queries/*specimen*.handler.ts`) n'appelle. Une brique
+d'un document couvert (le PDF Factur-X que la facture enveloppe) est couverte
+avec lui. Cinq documents n'avaient pas d'exemple ce jour-là : le mandat SEPA,
+le récapitulatif de commandes d'une société, le compte à produire, la matrice
+des allergènes et le dossier du jour. Ils sont inscrits en dette dans la porte,
+et la liste ne peut que se vider.
+
+⚠️ La porte voit le handler d'exemple, pas la vignette à l'écran : un exemple
+servi par l'API mais absent de la page ne la fait pas rougir.
