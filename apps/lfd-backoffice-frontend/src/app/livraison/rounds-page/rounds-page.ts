@@ -46,6 +46,7 @@ import { type RoundGesture, RoundsBoard } from '../rounds-board/rounds-board';
 import { RoundsDay } from '../rounds-day';
 import { RoundsDayWriter } from '../rounds-day-writer';
 import { RoundsLayoutGestures } from '../rounds-layout-gestures';
+import { CompositionGapsCallout } from '../composition-gaps-callout/composition-gaps-callout';
 import { RoundsPreview } from '../rounds-preview';
 import { SitePaletteStore } from '../../shared/logistics-colors/site-palette.store';
 import { RoundsSettingsReads } from '../rounds-settings-reads';
@@ -97,6 +98,7 @@ const UNDO_MS = 8000;
     FoldPopoverTriggerDirective,
     FoldToastComponent,
     FoldViewToggleComponent,
+    CompositionGapsCallout,
     DayReadinessBanner,
     PlannerPopover,
     RoundsBoard,

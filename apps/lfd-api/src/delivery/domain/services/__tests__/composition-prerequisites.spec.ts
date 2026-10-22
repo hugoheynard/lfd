@@ -59,7 +59,7 @@ describe("ensureComposable", () => {
       NoMeasuredVehicleError,
     );
     expect(() => ensureComposable({ measuredVehicleIds: [], activeBinTypeIds: ["b1"] })).toThrow(
-      /Livraison → Véhicules avant de proposer des tournées/u,
+      /Réglages → Livraison → Véhicules avant de proposer des tournées/u,
     );
   });
 

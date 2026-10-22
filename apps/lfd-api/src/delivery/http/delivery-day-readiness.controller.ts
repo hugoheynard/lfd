@@ -1,10 +1,11 @@
-import type { DeliveryDayReadinessView } from "@lfd/contracts";
+import type { DeliveryCompositionGapsView, DeliveryDayReadinessView } from "@lfd/contracts";
 import { Controller, Get, Query } from "@nestjs/common";
 import { QueryBus } from "@nestjs/cqrs";
 import { z } from "zod";
 
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
 import { ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
+import { GetCompositionGapsQuery } from "../application/queries/get-composition-gaps.query.js";
 import { GetDeliveryDayReadinessQuery } from "../application/queries/get-delivery-day-readiness.query.js";
 
 const dayQuerySchema = z.object({
@@ -28,6 +29,18 @@ export class DeliveryDayReadinessController {
   ): Promise<DeliveryDayReadinessView> {
     return this.queries.execute<GetDeliveryDayReadinessQuery, DeliveryDayReadinessView>(
       new GetDeliveryDayReadinessQuery(query.day),
+    );
+  }
+
+  /**
+   * **Ce qui empêche, maintenant, de composer** (2026-10-22) : sans jour, la
+   * flotte et les bacs entiers. Le Tour manager et la Supervision l'affichent ;
+   * liste vide, rien ne s'affiche.
+   */
+  @Get("composition-gaps")
+  compositionGaps(): Promise<DeliveryCompositionGapsView> {
+    return this.queries.execute<GetCompositionGapsQuery, DeliveryCompositionGapsView>(
+      new GetCompositionGapsQuery(),
     );
   }
 }

@@ -23,6 +23,7 @@ import {
 } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
+import { CompositionGapsCallout } from '../../livraison/composition-gaps-callout/composition-gaps-callout';
 import { narrowViewport } from '../../shared/viewport/narrow-viewport';
 import { dataOf } from '../column-state';
 import { handoverBoard } from '../handover-slots';
@@ -83,6 +84,7 @@ const BOARD_NARROW = '(max-width: 900px)';
   selector: 'app-supervision-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    CompositionGapsCallout,
     FoldButtonIconComponent,
     FoldCalloutComponent,
     FoldPageLayoutComponent,
@@ -148,6 +150,11 @@ export class SupervisionPage {
     packing: this.permissions.can(LINK_PERMISSIONS.packing),
     handover: this.permissions.can(LINK_PERMISSIONS.handover),
   }));
+
+  /** Le manque de flotte, au bandeau : à qui lit les tournées, et à lui seul (2026-10-22). */
+  protected readonly showCompositionGaps = computed(() =>
+    this.permissions.can('delivery_rounds:read'),
+  );
 
   protected readonly preparationBoard = computed(() => {
     const view = dataOf(this.preparation());

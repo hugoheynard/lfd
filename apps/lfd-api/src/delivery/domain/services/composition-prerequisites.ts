@@ -42,6 +42,22 @@ export function compositionGapOf(input: CompositionBase): CompositionGap | null 
   return input.activeBinTypeIds.length === 0 ? "no_active_bin_type" : null;
 }
 
+/**
+ * TOUT ce qui manque au socle, véhicule d'abord — pour qui l'affiche en
+ * permanence (le Tour manager, la Supervision, 2026-10-22) : une flotte vide
+ * ET un catalogue vide se disent ensemble, plutôt que l'un après l'autre.
+ */
+export function compositionGapsOf(input: CompositionBase): readonly CompositionGap[] {
+  const gaps: CompositionGap[] = [];
+  if (input.measuredVehicleIds.length === 0) {
+    gaps.push("no_measured_vehicle");
+  }
+  if (input.activeBinTypeIds.length === 0) {
+    gaps.push("no_active_bin_type");
+  }
+  return gaps;
+}
+
 /** @throws {NoMeasuredVehicleError} @throws {NoActiveBinTypeError} */
 export function ensureComposable(input: CompositionBase): void {
   const gap = compositionGapOf(input);

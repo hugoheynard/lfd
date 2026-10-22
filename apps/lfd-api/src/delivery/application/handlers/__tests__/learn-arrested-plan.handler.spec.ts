@@ -140,7 +140,7 @@ describe("LearnArrestedPlan — la livraison apprend que le plan est arrêté", 
 
     await receive(["d1"]);
 
-    expect(notifier.notified[0]?.body).toContain("Livraison → Bacs");
+    expect(notifier.notified[0]?.body).toContain("Réglages → Livraison → Bacs");
   });
 
   it("une unité de travail qui échoue ne prévient personne", async () => {

@@ -8,6 +8,7 @@ import { DayStopsLocator } from "./application/day-stops-locator.js";
 import { DeliveryStopsLocating } from "./application/delivery-stops-locating.js";
 import { PlanArrestedBell } from "./application/plan-arrested-bell.js";
 import { RingRoundsGapBellHandler } from "./application/commands/ring-rounds-gap-bell.handler.js";
+import { GetCompositionGapsHandler } from "./application/queries/get-composition-gaps.handler.js";
 import { GetDeliveryDayReadinessHandler } from "./application/queries/get-delivery-day-readiness.handler.js";
 import { DeliveryDayReadinessReader } from "./domain/ports/delivery-day-readiness.reader.js";
 import { DeliveryDayReadinessRepository } from "./domain/ports/delivery-day-readiness.repository.js";
@@ -37,6 +38,8 @@ export const DAY_READINESS_PROVIDERS: readonly Provider[] = [
   LocateOnOrderPlaced,
   { provide: DayStopsLocator, useExisting: DeliveryStopsLocating },
   GetDeliveryDayReadinessHandler,
+  // Le manque de flotte, affiché en permanence (2026-10-22).
+  GetCompositionGapsHandler,
   // L'alerte avant le jour J : la cloche « hors tournée », passée par la machine.
   RingRoundsGapBellHandler,
   { provide: DeliveryDayReadinessRepository, useClass: PrismaDeliveryDayReadinessRepository },

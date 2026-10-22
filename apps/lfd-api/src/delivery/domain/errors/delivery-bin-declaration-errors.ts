@@ -31,7 +31,7 @@ export class BinTypeArchivedForDeclarationError extends BusinessError {
   constructor(name: string) {
     super(
       "delivery.bin_type_archived_for_declaration",
-      `Le type « ${name} » est archivé : il ne se déclare plus. Choisissez un type en service, ou réactivez-le dans Livraison → Bacs.`,
+      `Le type « ${name} » est archivé : il ne se déclare plus. Choisissez un type en service, ou réactivez-le dans Réglages → Livraison → Bacs.`,
     );
   }
 }

@@ -231,6 +231,12 @@ flowchart TD
   le volume utile et le plancher ; passages de roue et caisse froide sont
   facultatifs (Q5). Sans eux, « Proposer » refuse, et on ne peut pas archiver
   le dernier véhicule ni le dernier bac.
+  Depuis le 2026-10-22, le manque se **voit** sans attendre « Proposer » :
+  `GET /admin/delivery/rounds/composition-gaps` (sous `delivery_rounds:read`)
+  rend les manques actuels, et le Tour manager comme le bandeau de la
+  Supervision l'affichent en avertissement, avec le lien vers Réglages ›
+  Livraison › Véhicules ou › Bacs. Les refus disent désormais « Réglages →
+  Livraison → … », où ces écrans vivent réellement.
 - **Sans contenance, on place sans contrôler, et on le dit (2026-10-06,
   correction de CA4).** Une commande dont la demande en bacs est inconnue (ni
   bac déclaré, ni contenance pour tous ses produits) est placée comme avant

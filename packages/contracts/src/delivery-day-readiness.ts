@@ -36,3 +36,13 @@ export type DeliveryDayDue = "today" | "tomorrow";
 
 /** Aucun véhicule en service n'a ses cotes ; aucun type de bac n'est en service. */
 export type DeliveryCompositionGap = "no_measured_vehicle" | "no_active_bin_type";
+
+/**
+ * **Ce qui empêche, maintenant, de composer les tournées** (2026-10-22) —
+ * `GET /admin/delivery/rounds/composition-gaps`, sous `delivery_rounds:read`.
+ * Indépendant d'un jour : c'est la flotte et le catalogue des bacs ENTIERS.
+ * Liste vide = rien ne manque, et l'écran ne dit rien.
+ */
+export interface DeliveryCompositionGapsView {
+  readonly gaps: readonly DeliveryCompositionGap[];
+}

@@ -1,0 +1,17 @@
+@if (state(); as state) {
+  @if (state.status === 'error') {
+    <fold-callout variant="warning" data-composition-gaps-failed>
+      La flotte et les bacs n’ont pas pu être vérifiés : on ne sait pas si les tournées peuvent être
+      composées. Rechargez la page pour réessayer.
+    </fold-callout>
+  } @else if (state.status === 'ready') {
+    @for (line of state.lines; track line.gap) {
+      <fold-callout variant="warning" [attr.data-composition-gap]="line.gap">
+        Les tournées ne peuvent pas être composées : {{ line.words }}.
+        <a actions foldButton emphasis="outline" size="sm" [routerLink]="line.link">
+          {{ line.linkLabel }}
+        </a>
+      </fold-callout>
+    }
+  }
+}

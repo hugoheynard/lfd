@@ -1159,6 +1159,7 @@ export type {
 } from "./delivery-rounds.js";
 export type {
   DeliveryDayReadinessView,
+  DeliveryCompositionGapsView,
   DeliveryDayArrestView,
   DeliveryCompositionGap,
   DeliveryDayDue,

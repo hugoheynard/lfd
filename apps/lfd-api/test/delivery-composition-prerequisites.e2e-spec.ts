@@ -56,7 +56,7 @@ describe("« Proposer » sans socle", () => {
     expect(refusal(refused)).toMatchObject({
       code: "delivery.no_measured_vehicle",
       message:
-        "Aucun véhicule en service n'a ses cotes — il manque la longueur, la largeur ou la hauteur utiles de « Kangoo » : renseignez-les dans Livraison → Véhicules avant de proposer des tournées.",
+        "Aucun véhicule en service n'a ses cotes — il manque la longueur, la largeur ou la hauteur utiles de « Kangoo » : renseignez-les dans Réglages → Livraison → Véhicules avant de proposer des tournées.",
     });
   });
 
@@ -66,7 +66,7 @@ describe("« Proposer » sans socle", () => {
     const refused = await admin(ctx).get(`${PROPOSAL}?day=${DAY}`).expect(409);
 
     expect(refusal(refused)).toMatchObject({ code: "delivery.no_active_bin_type" });
-    expect(refusal(refused).message).toContain("Livraison → Bacs");
+    expect(refusal(refused).message).toContain("Réglages → Livraison → Bacs");
   });
 
   it("avec un véhicule mesuré et un type de bac, « Proposer » répond", async () => {
@@ -114,7 +114,7 @@ describe("aucun geste ne défait le socle", () => {
     const refused = await admin(ctx).post(`${LOADING}/bins/${only}/archive`).expect(409);
 
     expect(refusal(refused).code).toBe("delivery.last_active_bin_type");
-    expect(refusal(refused).message).toContain("Livraison → Bacs");
+    expect(refusal(refused).message).toContain("Réglages → Livraison → Bacs");
     expect(await ctx.prisma.deliveryBinType.count({ where: { archivedAt: null } })).toBe(1);
 
     await binTypeId(ctx, "Bac L e2e");
@@ -125,5 +125,45 @@ describe("aucun geste ne défait le socle", () => {
     const kangoo = await addVehicle(ctx, "Kangoo");
 
     await admin(ctx).post(`${VEHICLES}/${kangoo}/retirement`).expect(204);
+  });
+});
+
+/**
+ * Régression : la composition automatique échouait en silence (journaux
+ * seulement) sans flotte mesurée ni bac en service ; l'écran n'en savait rien
+ * (2026-10-22). La lecture rend les manques, sans jour, sous `delivery_rounds`.
+ */
+describe("les manques, lus par l'écran", () => {
+  const GAPS = "/admin/delivery/rounds/composition-gaps";
+
+  async function gaps(): Promise<readonly string[]> {
+    return jsonBody<{ gaps: readonly string[] }>(await admin(ctx).get(GAPS).expect(200)).gaps;
+  }
+
+  it("🔴 un bac archivé, aucun autre en service : le manque de bacs", async () => {
+    await addVehicle(ctx, "Master", MEASURED);
+    const only = await binTypeId(ctx);
+    // L'API refuse d'archiver le dernier bac : on rejoue l'état d'une flotte
+    // antérieure à CA1, que la production peut encore porter.
+    await ctx.prisma.deliveryBinType.update({
+      where: { id: only },
+      data: { archivedAt: new Date() },
+    });
+
+    expect(await gaps()).toEqual(["no_active_bin_type"]);
+  });
+
+  it("🔴 un véhicule en service sans cotes : le manque de véhicule mesuré", async () => {
+    await binTypeId(ctx);
+    await addVehicle(ctx, "Kangoo");
+
+    expect(await gaps()).toEqual(["no_measured_vehicle"]);
+  });
+
+  it("tout est là : aucun manque", async () => {
+    await binTypeId(ctx);
+    await addVehicle(ctx, "Master", MEASURED);
+
+    expect(await gaps()).toEqual([]);
   });
 });

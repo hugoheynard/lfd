@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type {
   DayStockOverviewView,
+  DeliveryCompositionGapsView,
   DaySupervisionView,
   HandoverQueueView,
   QualityBoardView,
@@ -18,6 +19,7 @@ import { FoldPanelHostService } from 'fold-ng';
 
 import { type DayWatch, DayVersionWatcher } from '../../shared/day-version/day-version-watcher';
 import { PermissionsStore } from '../../auth/permissions.store';
+import { DeliveryRoundsService } from '../../livraison/delivery-rounds.service';
 import { QualityService } from '../quality.service';
 import { SupervisionService } from '../supervision.service';
 import { shiftServiceDay } from '../supervision-day';
@@ -176,6 +178,7 @@ interface Reads {
   packing?: () => Promise<ProductionPackingView>;
   handover?: () => Promise<HandoverQueueView>;
   stock?: (date: string) => Promise<DayStockOverviewView>;
+  compositionGaps?: () => Promise<DeliveryCompositionGapsView>;
 }
 
 const STOCK: DayStockOverviewView = {
@@ -207,6 +210,12 @@ async function mount(
           packing: reads.packing ?? (() => Promise.resolve(packingView())),
           handover: reads.handover ?? (() => Promise.resolve(QUEUE)),
           stock: reads.stock ?? (() => Promise.resolve(STOCK)),
+        },
+      },
+      {
+        provide: DeliveryRoundsService,
+        useValue: {
+          compositionGaps: reads.compositionGaps ?? (() => Promise.resolve({ gaps: [] })),
         },
       },
       {
@@ -600,5 +609,38 @@ describe('SupervisionPage', () => {
     expect(root(fixture).querySelector('[data-stock-site="village"]')?.textContent).toContain(
       'Val Village',
     );
+  });
+
+  /**
+   * Régression : sans bac en service, la composition automatique échouait
+   * dans les journaux seulement (2026-10-22).
+   */
+  it('le manque de flotte au bandeau, pour qui lit les tournées', async () => {
+    const gaps = () =>
+      Promise.resolve<DeliveryCompositionGapsView>({ gaps: ['no_active_bin_type'] });
+    const fixture = await mount({ compositionGaps: gaps }, [
+      'b2b_supervision:read',
+      'delivery_rounds:read',
+    ]);
+    await new Promise((resolve) => setTimeout(resolve));
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(
+      root(fixture).querySelector('[data-composition-gap="no_active_bin_type"]')?.textContent,
+    ).toContain('Les tournées ne peuvent pas être composées');
+  });
+
+  it('sans le droit de lecture des tournées, rien — pas même la lecture', async () => {
+    let asked = 0;
+    const fixture = await mount({
+      compositionGaps: () => {
+        asked += 1;
+        return Promise.resolve({ gaps: ['no_active_bin_type'] });
+      },
+    });
+
+    expect(root(fixture).querySelector('[data-composition-gap]')).toBeNull();
+    expect(asked).toBe(0);
   });
 });

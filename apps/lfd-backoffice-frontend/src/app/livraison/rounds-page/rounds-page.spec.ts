@@ -297,6 +297,7 @@ async function boot(
           unassignDriver: (roundId: string, payload: unknown) =>
             outcome(`unassignDriver ${roundId} ${JSON.stringify(payload)}`),
           returnToDepot: (roundId: string) => outcome(`return ${roundId}`),
+          compositionGaps: () => Promise.resolve({ gaps: [] }),
           readiness: (day: string) => {
             readinessReads.push(day);
             return Promise.resolve({ day, arrested });

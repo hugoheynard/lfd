@@ -58,7 +58,7 @@ export class NoVehicleForProposalError extends BusinessError {
   constructor(day: string) {
     super(
       "delivery.no_vehicle_for_proposal",
-      `Aucun véhicule en service le ${day} : ajoutez ou réactivez un véhicule dans Livraison → Réglages, puis reproposez.`,
+      `Aucun véhicule en service le ${day} : ajoutez ou réactivez un véhicule dans Réglages → Livraison → Véhicules, puis reproposez.`,
     );
   }
 }

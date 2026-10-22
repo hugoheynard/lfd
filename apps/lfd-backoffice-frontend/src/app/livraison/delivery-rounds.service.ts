@@ -3,6 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import type {
   AssignDeliveryDriverPayload,
   AssignDeliveryStopPayload,
+  DeliveryCompositionGapsView,
   DeliveryDayReadinessView,
   DeliveryDriversView,
   DeliveryRoundsDayView,
@@ -60,6 +61,14 @@ export class DeliveryRoundsService {
         `${ROUNDS}/plan-stopped?day=${encodeURIComponent(day)}`,
       ),
     );
+  }
+
+  /**
+   * Ce qui empêche, maintenant, de composer les tournées — sans jour : la
+   * flotte et les bacs entiers (2026-10-22). Liste vide, rien ne manque.
+   */
+  compositionGaps(): Promise<DeliveryCompositionGapsView> {
+    return firstValueFrom(this.http.get<DeliveryCompositionGapsView>(`${ROUNDS}/composition-gaps`));
   }
 
   async open(payload: OpenDeliveryRoundPayload): Promise<void> {

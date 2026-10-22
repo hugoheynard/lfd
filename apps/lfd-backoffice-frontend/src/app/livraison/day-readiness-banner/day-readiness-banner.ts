@@ -22,8 +22,9 @@ type ReadinessState =
 /** Ce qui manque au socle, et où le régler — les mots du refus de « Proposer ». */
 const GAP_WORDS: Readonly<Record<DeliveryCompositionGap, string>> = {
   no_measured_vehicle:
-    'aucun véhicule en service n’a ses cotes. Renseignez-les dans Livraison → Véhicules',
-  no_active_bin_type: 'aucun type de bac n’est en service. Ajoutez-en un dans Livraison → Bacs',
+    'aucun véhicule en service n’a ses cotes. Renseignez-les dans Réglages → Livraison → Véhicules',
+  no_active_bin_type:
+    'aucun type de bac n’est en service. Ajoutez-en un dans Réglages → Livraison → Bacs',
 };
 
 /** Le jour imminent, comme l'équipe le dit. */
