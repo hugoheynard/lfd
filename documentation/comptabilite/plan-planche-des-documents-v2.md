@@ -72,6 +72,18 @@ Constats :
 - Les documents qui agrègent plusieurs commandes (atelier, dossier du jour,
   transfert) n'en portent aucune : c'est là que la question Q2 se pose.
 
+### Décisions sur les couleurs (Hugo, 2026-10-22)
+
+- **Une pastille par commande** sur les documents qui en regroupent plusieurs
+  (fiche d'atelier, compte à produire, dossier du jour, transfert interne) :
+  chaque commande porte sa propre couleur. Répond à Q2.
+- **Le mot n'est pas écrit** : pro ou particulier reste porté par la couleur
+  et la mise en page, sans « Pro » ni « Particulier » en toutes lettres.
+- **La couleur est figée sur la commande** à la passation, comme son prix :
+  un bon réimprimé garde sa couleur, même après un changement de départ.
+  Demande une colonne sur la commande et une reprise des commandes passées,
+  donc une migration.
+
 ## 1. Ce que Hugo demande
 
 1. **De vrais articles du catalogue** : choisir les articles (et leurs
@@ -113,8 +125,7 @@ Constats :
 
 - **Q1** — La liste exacte des documents B2B et B2C (lesquels apparaissent dans
   chaque mode) ?
-- **Q2** — La couleur sur la fiche d'atelier : même trait que le bon, ou une
-  autre forme (une fiche porte plusieurs commandes de couleurs différentes) ?
+- **Q2** — ✅ tranchée le 2026-10-22 : une pastille par commande (§0 bis).
 - **Q3** — Les documents à ajouter, par ordre de priorité (manifeste, bon de
   réassort, dossier du jour, avoir, mandat, essai de prélèvement) ?
 - **Q4** — Scénario mémorisé (on retrouve sa planche) ou recomposé à chaque
