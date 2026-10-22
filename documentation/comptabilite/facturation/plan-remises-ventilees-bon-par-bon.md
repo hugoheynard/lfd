@@ -29,35 +29,77 @@ Ce n'est pas né avec le lot A : le bon de fidélité, et la remise de retrait
 avant lui, se répartissaient déjà sur le cycle. Le lot A l'a rendu plus
 visible, parce qu'une exclusion sépare les taux.
 
-## 1. Ce qui change
+## 1. Ce qui change (révisé après `vitruve`, 2026-10-22)
 
-- **R1** — chaque remise d'un bon se répartit par taux **sur ce bon**, avec
-  son assiette (lignes éligibles pour la remise de retrait, toutes pour le bon
-  de fidélité), un arrondi par taux et par bon, à la même règle que
-  `computeOrderTotals`.
-- **R2** — la facture **additionne**, taux par taux, ces parts déjà
-  réparties. Elle ne reventile plus rien. Elle garde une remise par motif et
-  par taux (`company_discount`, `loyalty_voucher`), ce qu'exige BG-20 et que
-  le Factur-X écrit déjà (BT-92 par taux).
-- **R3** — `invoiceVatBreakdown` reçoit des remises **déjà réparties par
-  taux**, en plus de celles qu'il répartit lui-même. Les frais (port qui suit
-  la marchandise) gardent leur mécanisme actuel : ils ne sont pas en cause.
-- **R4** — la TVA par taux reste calculée **une fois** sur la base nette du
-  taux (BR-S-09) : seule la base change, pas la façon de taxer.
+- **R1 — tout ce qui se répartit se répartit sur son bon.** Pour chaque bon,
+  dans l'ordre de `ventilateVat` (`packages/money/src/vat.ts`) :
+  1. la remise de retrait, sur les seules lignes éligibles du bon ;
+  2. le bon de fidélité, sur le **net que la remise a laissé**, pas sur le
+     brut : sinon la répartition ne retombe pas sur les parts figées du bon, et
+     une base par taux peut devenir négative ;
+  3. le port qui suit la marchandise, sur les bases **brutes** du bon, comme à
+     la passation. Il était en cause aussi : la facture le répartissait sur le
+     cycle (`deliveryCharges`), avec le même défaut que les remises.
+- **R2 — l'arrondi au centime se fait par bon, au plus fort reste.** Le bon ne
+  garde que des fractions exactes et n'arrondit que la TVA ; la facture exige
+  des parts en centimes (BT-92 par taux). Chaque montant d'un bon est donc
+  découpé en parts entières par taux qui somment **exactement** à ce montant :
+  partie entière de chaque part, puis les centimes restants aux plus fortes
+  fractions, à égalité par taux croissant. La somme des BT-92 reste égale à
+  BT-107 (BR-CO-11).
+- **R3 — la facture additionne, taux par taux**, les parts entières de ses
+  bons. Elle ne répartit plus rien elle-même : `invoiceVatBreakdown` reçoit des
+  remises et des frais déjà découpés par taux. Elle garde une remise par motif
+  et par taux (`company_discount`, `loyalty_voucher`), ce qu'exige BG-20.
+- **R4 — la TVA par taux reste calculée une fois** sur la base nette du taux
+  (BR-S-09). Seule la base change.
+- **R5 — les bons non ventilés** (sans parts figées) passent par le même
+  découpage : leur écart reste calculé comme aujourd'hui, sur les seuls bons
+  concernés.
 
 ## 2. Ce que ça implique
 
-- La répartition par bon se recalcule depuis les lignes figées du bon et ses
-  montants figés (`discountCents`, `voucherDiscountCents`) — pas depuis la
-  règle du jour.
-- L'écart « arrondi » du dossier ne contient plus que de l'arrondi.
-- Une facture déjà émise ne change pas : elle est figée. Les factures émises
-  avant ce lot gardent leur ventilation ; la production n'en comptait aucune
-  le 2026-10-22.
+- Le découpage se recalcule depuis les lignes figées du bon et ses montants
+  figés (`discountCents`, `voucherDiscountCents`, `deliveryFeeCents`), jamais
+  depuis la règle du jour. **À vérifier avant de bâtir** : que
+  `voucherDiscountCents` figé soit bien le montant borné, comme la garde
+  l'impose déjà à la remise de retrait.
+- **Ce qui reste comme écart, et pourquoi.** Le bon arrondit
+  `base exacte × taux` ; la facture arrondit `Σ parts entières × taux`. Il reste
+  donc un écart de **pur arrondi**, borné à un demi-centime par bon et par taux.
+  L'écart de composition, lui, disparaît. Le relevé de cycle
+  (`cycle-statement.ts`), qui lit les parts figées des bons, garde le même
+  écart d'arrondi avec la facture : il sera dit à l'écran.
+- **L'API de `@lfd/money` change** (`InvoiceAllowance`, `InvoiceCharge`) :
+  huit fichiers hors du paquet la touchent (dossier, facture émise,
+  échantillons et specs Factur-X, e2e des factures). `pnpm test` à la racine
+  est obligatoire.
+- **Les commentaires qui deviendront faux** sont corrigés dans le même lot :
+  la tête d'`invoice-dossier.ts` (« la TVA se recalcule sur l'agrégat ») et
+  celle d'`invoice-vat.ts` (« les répartitions… l'appelant le décide »).
+- **Les avoirs** (lot ZB, à venir) hériteront de la règle : un avoir sur un
+  bon se découpe sur ce bon.
+- **Une facture déjà émise ne change pas** : sa ventilation est relue telle
+  quelle (`vat_breakdown`). La production n'en comptait aucune le matin du
+  2026-10-22 (requête lancée par Hugo : 0 ligne).
 
 ## 3. Tests
 
-- L'exemple du §0, chiffré : la TVA de la facture égale la somme des bons.
-- Sans exclusion et avec des bons de même composition : résultat identique à
-  aujourd'hui.
+- L'exemple du §0, chiffré : sans la répartition bon par bon, l'écart de
+  composition apparaît ; avec, il disparaît.
+- Le même exemple avec du port qui suit la marchandise sur des bons de
+  compositions différentes.
+- Une remise de retrait qui absorbe tout un taux, puis un bon de fidélité :
+  aucune base négative.
+- Pour tout cycle : `|TVA facture − Σ TVA des bons| ≤ ½ centime × bons × taux`,
+  et Σ BT-92 = BT-107.
+- Sans exclusion, bons de même composition : résultat identique à aujourd'hui.
 - Les validations Factur-X (XSD, EN 16931, BR-FR) restent vertes.
+
+## 4. Contredit par `vitruve` (2026-10-22)
+
+Trois objections bloquantes, toutes reprises au §1 : le port était aussi en
+cause (R1.3), le bon de fidélité porte sur le net de la remise (R1.2), et la
+règle d'arrondi n'existait pas (R2). Les sérieuses sont reprises au §1 et au
+§2 : le test borné, les bons non ventilés (R5), BR-CO-11, l'API de
+`@lfd/money`, le relevé, les avoirs, les commentaires.
