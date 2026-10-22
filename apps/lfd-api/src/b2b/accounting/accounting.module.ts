@@ -85,6 +85,7 @@ import { ClosureBatchesReader } from "./domain/ports/closure-batches.reader.js";
 import { MonthlyInvoicingReader } from "./domain/ports/monthly-invoicing.reader.js";
 import { AdminCardInvoicesController } from "./http/admin-card-invoices.controller.js";
 import { AdminInvoiceSpecimenController } from "./http/admin-invoice-specimen.controller.js";
+import { AdminSepaMandateSpecimensController } from "./http/admin-sepa-mandate-specimens.controller.js";
 import { AdminMonthlyInvoicesController } from "./http/admin-monthly-invoices.controller.js";
 import { AdminUnconfirmedDeliveriesController } from "./http/admin-unconfirmed-deliveries.controller.js";
 import { PrismaInvoiceAutopilotRuns } from "./infrastructure/prisma-invoice-autopilot-runs.js";
@@ -137,6 +138,7 @@ import { GetInvoiceDossierHandler } from "./application/queries/get-invoice-doss
 import { ListStatementCyclesHandler } from "./application/queries/list-statement-cycles.handler.js";
 import { GetMandateSchemeUsageHandler } from "./application/queries/get-mandate-scheme-usage.handler.js";
 import { ExportSampleMandateHandler } from "./application/queries/export-sample-mandate.handler.js";
+import { GetSepaMandateSpecimenHandler } from "./application/queries/get-sepa-mandate-specimen.handler.js";
 import { GetLegalEntityLogoHandler } from "./application/queries/get-legal-entity-logo.handler.js";
 import { GetLegalEntityHandler } from "./application/queries/get-legal-entity.handler.js";
 import { ListLegalEntitiesHandler } from "./application/queries/list-legal-entities.handler.js";
@@ -214,6 +216,7 @@ import { PrismaOrderRowsLock } from "./infrastructure/prisma-order-rows-lock.js"
     AdminUnconfirmedDeliveriesController,
     AdminCardInvoicesController,
     AdminInvoiceSpecimenController,
+    AdminSepaMandateSpecimensController,
     AdminBillingStatementsController,
     AdminDetachedUnpaidController,
     CompanyDetachedUnpaidController,
@@ -322,6 +325,7 @@ import { PrismaOrderRowsLock } from "./infrastructure/prisma-order-rows-lock.js"
     GetLegalEntityHandler,
     GetMandateSchemeUsageHandler,
     ExportSampleMandateHandler,
+    GetSepaMandateSpecimenHandler,
     GetCurrentBillingCycleHandler,
     ExportCycleDraftHandler,
     ExportCycleAuditHandler,

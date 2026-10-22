@@ -49,15 +49,18 @@ describe('la planche des documents', () => {
     expect(page['source']()).not.toBeNull();
   });
 
-  it('range les cinq exemplaires en trois groupes', async () => {
+  it('range les neuf exemplaires en six groupes', async () => {
     const page = await mount(new Specimens());
 
     expect(page['groups'].map((group) => group.title)).toEqual([
       'Bons chiffrés',
       'Bons non chiffrés',
       'Factures',
+      'Mandats',
+      'Récapitulatifs',
+      'Catalogue',
     ]);
-    expect(page['groups'].flatMap((group) => group.options).length).toBe(5);
+    expect(page['groups'].flatMap((group) => group.options).length).toBe(9);
   });
 
   it('charge l’exemplaire choisi et révoque l’URL précédente', async () => {

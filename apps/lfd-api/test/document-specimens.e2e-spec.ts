@@ -3,9 +3,10 @@
  * chaque bloc sert sous `admin/document-specimens/`
  * (`documentation/comptabilite/planche-des-documents.md`).
  *
- * Ce que seul l'e2e prouve : les quatre contrôleurs montés dans leurs trois
- * blocs, le même mur (`b2b_accounting:read`), les en-têtes servis, et que rien
- * ne s'écrit — ni commande, ni facture.
+ * Ce que seul l'e2e prouve : les sept contrôleurs montés dans leurs quatre
+ * blocs — le référentiel compris, hors de son préfixe `/pim` —, le même mur
+ * (`b2b_accounting:read`), les en-têtes servis, et que rien ne s'écrit — ni
+ * commande, ni facture, ni mandat.
  */
 import { Buffer } from "node:buffer";
 
@@ -26,6 +27,10 @@ const DOCUMENTS = [
   "invoice.pdf",
   "atelier-sheet.pdf",
   "round-paper.pdf",
+  "sepa-mandate-b2b.pdf",
+  "sepa-mandate-core.pdf",
+  "order-summary.pdf",
+  "allergen-matrix.pdf",
 ] as const;
 
 let ctx: E2eContext;
@@ -59,7 +64,11 @@ function getPdf(agent: ReturnType<E2eContext["asSub"]>, document: string): reque
 }
 
 async function counts(): Promise<readonly number[]> {
-  return [await ctx.prisma.order.count(), await ctx.prisma.invoice.count()];
+  return [
+    await ctx.prisma.order.count(),
+    await ctx.prisma.invoice.count(),
+    await ctx.prisma.paymentMandate.count(),
+  ];
 }
 
 describe("GET /admin/document-specimens/*", () => {
@@ -75,7 +84,7 @@ describe("GET /admin/document-specimens/*", () => {
     expect(bytes.subarray(0, 5).toString("latin1")).toBe("%PDF-");
   });
 
-  it("n'écrit rien : ni commande, ni facture", async () => {
+  it("n'écrit rien : ni commande, ni facture, ni mandat", async () => {
     const before = await counts();
 
     for (const document of DOCUMENTS) {

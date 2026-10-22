@@ -42,14 +42,12 @@ const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 const SRC = join(ROOT, "apps", "lfd-api", "src");
 const KIT = "platform/pdf/paper-pdf-kit.ts";
 
-/** Les documents sans exemple au 2026-10-22 — la liste ne peut que se vider. */
-const DEBT = new Set([
-  "renderSepaMandatePdf",
-  "renderOrderSummaryPdf",
-  "renderProductionCountPdf",
-  "renderAllergenMatrixPdf",
-  "renderDayDossierPdf",
-]);
+/**
+ * Les documents sans exemple au 2026-10-22 — la liste ne peut que se vider.
+ * Le mandat SEPA, le récapitulatif de commandes et la matrice des allergènes
+ * en sont sortis le même jour.
+ */
+const DEBT = new Set(["renderProductionCountPdf", "renderDayDossierPdf"]);
 
 const DOCUMENT = /^export\s+(?:async\s+)?function\s+(render\w*(?:Pdf|Document))\b/gm;
 const OPENS_PDF =
