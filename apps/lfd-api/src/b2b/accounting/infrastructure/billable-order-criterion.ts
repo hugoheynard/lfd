@@ -58,9 +58,11 @@ import type { Prisma } from "../../../platform/database/client/client.js";
  * qui rend une commande prélevable est la décision prise à SA passation
  * (décision de Hugo, 2026-09-10).
  *
- * Partagé par les six lecteurs de l'assiette — la facture, le dossier, le
- * relevé, l'aperçu du lot, la constitution et l'état d'encaissement (relu le
- * 2026-10-22) : deux copies du critère finiraient par diverger.
+ * Partagé par les lecteurs de l'assiette — la facture, l'aperçu du lot, la
+ * constitution et l'état d'encaissement (relu le 2026-10-22) : deux copies du
+ * critère finiraient par diverger. Le relevé et le dossier n'y lisent plus
+ * une fenêtre : ils suivent la facture (`cycle-order-membership.ts`), et
+ * partagent `accountOrderWhere`.
  */
 export function billableOrderWhere(from: Date, to: Date): Prisma.OrderWhereInput {
   return {
@@ -93,5 +95,10 @@ export function accountOrderWhere(): Prisma.OrderWhereInput {
 
 /** Le jour de Paris d'un instant, sous la forme d'une colonne `@db.Date`. */
 function parisDayOf(instant: Date): Date {
-  return new Date(`${instantToLocal(instant).day}T00:00:00.000Z`);
+  return dayColumnOf(instantToLocal(instant).day);
+}
+
+/** Un jour `AAAA-MM-JJ` sous la forme d'une colonne `@db.Date` (minuit UTC). */
+export function dayColumnOf(day: string): Date {
+  return new Date(`${day}T00:00:00.000Z`);
 }

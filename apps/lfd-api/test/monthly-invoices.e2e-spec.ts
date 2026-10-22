@@ -19,6 +19,8 @@ import {
   instantToLocal,
   weekdayOf,
   type CollectionCycleView,
+  type CycleStatementView,
+  type InvoiceDossierView,
   type UnconfirmedDeliveriesView,
   type IssuedInvoicesView,
   type MonthlyInvoiceReportView,
@@ -1128,6 +1130,75 @@ describe("facturer chaque bon dans le mois de sa livraison (lot ZL)", () => {
     clock.set(new Date(next.getTime() + 3 * HOUR_MS));
     await pass();
     expect(await ctx.prisma.collectionBatchLineInvoice.count()).toBe(1);
+  });
+
+  /** Les ids des bons du relevé de `companyId` à la clôture `at`. */
+  async function statementOrderIds(companyId: string, at: Date): Promise<readonly string[]> {
+    const view = jsonBody<CycleStatementView>(
+      await staff()
+        .get(
+          `/admin/accounting/statements/companies/${companyId}?periodClosesAt=${at.toISOString()}`,
+        )
+        .expect(200),
+    );
+    return view.groups.flatMap((group) => group.orders.map((order) => order.id));
+  }
+
+  /** Les numéros des bons du dossier de `companyId` à la clôture `at`. */
+  async function dossierReferences(companyId: string, at: Date): Promise<readonly string[]> {
+    const view = jsonBody<InvoiceDossierView>(
+      await staff()
+        .get(
+          `/admin/accounting/invoice-dossiers/companies/${companyId}?periodClosesAt=${at.toISOString()}`,
+        )
+        .expect(200),
+    );
+    return view.orders.map((order) => order.reference);
+  }
+
+  /**
+   * « Le relevé suit la facture » (Hugo, 2026-10-22) : avant, le relevé et le
+   * dossier bornaient par jour de livraison, et le bon du 31 constaté après
+   * l'émission d'octobre apparaissait au relevé d'OCTOBRE alors qu'il part
+   * dans la facture de NOVEMBRE.
+   */
+  it("le bon du 31 constaté le 1er : absent du relevé d'octobre, au relevé et au dossier de novembre, facturé une fois", async () => {
+    const id = await entity();
+    const late = await payer(id, { handedOver: false });
+    const onTime = await payer(id);
+    const lateOrder = await orderOf(late.id);
+    expect((await issueByHand(id)).issued.map((issue) => issue.payerCompanyId)).toEqual([
+      onTime.id,
+    ]);
+
+    clock.set(new Date(closesAt.getTime() + 8 * HOUR_MS));
+    await markDelivered(ctx.prisma, lateOrder.id, new Date(closesAt.getTime() - 4 * HOUR_MS));
+    const next = nextMonthClosure();
+
+    // Le cycle facturé montre exactement SA facture.
+    const invoiced = await ctx.prisma.invoiceOrder.findMany({
+      where: { invoice: { payerCompanyId: onTime.id } },
+      select: { orderId: true },
+    });
+    expect(await statementOrderIds(onTime.id, closesAt)).toEqual(invoiced.map((r) => r.orderId));
+    // Le retardataire : ni au relevé ni au dossier d'octobre, mais à ceux de novembre.
+    expect(await statementOrderIds(late.id, closesAt)).toEqual([]);
+    expect(await dossierReferences(late.id, closesAt)).toEqual([]);
+    expect(await statementOrderIds(late.id, next)).toEqual([lateOrder.id]);
+    expect(await dossierReferences(late.id, next)).toEqual([lateOrder.orderNumber]);
+
+    // Novembre émis : il y reste, une fois, et toujours pas en octobre.
+    clock.set(new Date(invoicingMomentOf(next).getTime() + 2 * 60 * 1000));
+    expect((await issueByHand(id, next)).issued.map((issue) => issue.payerCompanyId)).toEqual([
+      late.id,
+    ]);
+    expect(await statementOrderIds(late.id, next)).toEqual([lateOrder.id]);
+    expect(await statementOrderIds(late.id, closesAt)).toEqual([]);
+    expect(await ctx.prisma.invoiceOrder.count({ where: { orderId: lateOrder.id } })).toBe(1);
+
+    // Le lot d'octobre constitué en retard ne prend pas la facture de novembre.
+    await staff().post(`${COLLECTION}/batches`).send({ legalEntityId: id }).expect(201);
+    expect(await invoicesCollectedAt(closesAt)).toEqual(await invoiceIdsOf([onTime.id]));
   });
 
   it("une semaine à cheval sur deux mois : deux factures, une par mois civil (Q-L1)", async () => {

@@ -63,13 +63,19 @@ export class PrismaCollectionCandidatesReader extends CollectionCandidatesReader
         billedCompanyId: true,
       },
     });
-    const states = await this.prisma.orderCollection.findMany({
-      where: { orderId: { in: orders.map((order) => order.id) } },
-    });
+    const ids = orders.map((order) => order.id);
+    const [states, later] = await Promise.all([
+      this.prisma.orderCollection.findMany({ where: { orderId: { in: ids } } }),
+      this.invoicedAfter(ids, closesAt),
+    ]);
     const stateOf = new Map(states.map((row) => [row.orderId, row]));
     return orders.flatMap((order) => {
       const state = stateOf.get(order.id);
-      if (order.companyId === null || (state !== undefined && !isOpen(state.state))) {
+      if (
+        order.companyId === null ||
+        later.has(order.id) ||
+        (state !== undefined && !isOpen(state.state))
+      ) {
         return [];
       }
       return [
@@ -85,6 +91,28 @@ export class PrismaCollectionCandidatesReader extends CollectionCandidatesReader
         },
       ];
     });
+  }
+
+  /**
+   * Les bons portés par une facture d'une période qui se clôt APRÈS ce lot :
+   * livrés avant sa clôture mais constatés après l'émission, ils sont dans la
+   * facture suivante et se prélèvent avec elle (« le relevé suit la facture »,
+   * Hugo 2026-10-22). Sans ce filtre, un lot constitué en retard prendrait
+   * une partie de la facture suivante et l'écarterait en `invoice_split`.
+   */
+  private async invoicedAfter(
+    orderIds: readonly string[],
+    closesAt: Date,
+  ): Promise<ReadonlySet<string>> {
+    const rows = await this.prisma.invoiceOrder.findMany({
+      where: {
+        orderId: { in: [...orderIds] },
+        invoiceType: COMMERCIAL_INVOICE,
+        invoice: { monthlyOutcome: { periodClosesAt: { gt: closesAt } } },
+      },
+      select: { orderId: true },
+    });
+    return new Set(rows.map((row) => row.orderId));
   }
 
   async billingFollowsOf(companyIds: readonly string[]): Promise<readonly BillingFollow[]> {

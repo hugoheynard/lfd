@@ -9,15 +9,17 @@ import {
 } from "../domain/ports/invoice-dossier.reader.js";
 import type { BillingCycle } from "../domain/services/billing-cycle.js";
 import type { DossierOrderPlace } from "../domain/services/invoice-dossier.types.js";
-import { billableOrderWhere } from "./billable-order-criterion.js";
+import { accountOrderWhere } from "./billable-order-criterion.js";
+import { companyWallWhere, cycleOrderIds } from "./cycle-order-membership.js";
 import {
   FROZEN_INVOICE_ORDER_SELECT,
   toFrozenInvoiceOrder,
 } from "./frozen-invoice-order.mapper.js";
 
 /**
- * Les bons d'un dossier de facturation, par le **même critère** que le relevé
- * et l'assiette du prélèvement (`billableOrderWhere`), et le même filtre de
+ * Les bons d'un dossier de facturation, par la **même appartenance** que le
+ * relevé (`cycleOrderIds` : ceux que la facture du cycle porte ou portera), et
+ * le même filtre de
  * sociétés que `PrismaCycleOrdersReader`.
  *
  * 🔴 `company_id` (ou le payeur copié) est dans le `where` : le dossier ne lit
@@ -41,10 +43,14 @@ export class PrismaInvoiceDossierReader extends InvoiceDossierReader {
     companyIds: readonly string[],
     cycle: BillingCycle,
   ): Promise<readonly InvoiceDossierOrder[]> {
+    const ids = await cycleOrderIds(this.prisma, companyIds, cycle);
     const rows = await this.prisma.order.findMany({
+      // Les commandes de ces sociétés, ET celles qu'elles paient (le payeur
+      // copié, S4) : un site détaché depuis reste sur le relevé de qui l'a
+      // réglé. Le tri par payeur est fait par le domaine (`billedPayerOf`).
       where: {
-        ...billableOrderWhere(cycle.startsAt, cycle.closesAt),
-        OR: [{ companyId: { in: [...companyIds] } }, { billedCompanyId: { in: [...companyIds] } }],
+        AND: [accountOrderWhere(), companyWallWhere(companyIds)],
+        id: { in: [...ids] },
       },
       orderBy: [{ createdAt: "asc" }, { orderNumber: "asc" }],
       select: DOSSIER_ORDER_SELECT,
@@ -69,7 +75,7 @@ function toDossierOrder(row: DossierOrderRow): InvoiceDossierOrder {
   return {
     orderId: row.id,
     place: placeOf(row),
-    // Jamais vide : `billableOrderWhere` exige une société.
+    // Jamais vide : `accountOrderWhere` exige une société.
     companyId: row.companyId ?? "",
     billedCompanyId: row.billedCompanyId,
     order: toFrozenInvoiceOrder(row),

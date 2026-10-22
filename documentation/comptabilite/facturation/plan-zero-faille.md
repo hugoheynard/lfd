@@ -357,3 +357,15 @@ Lot **ZL** (facturer à la livraison), à bâtir avant ZB.
 
 Doc d'état : [`facture-emise.md`](facture-emise.md), § « La date de
 livraison ».
+
+**Après ZL (Hugo, 2026-10-22)** : 1 — **le relevé suit la facture** : un bon
+livré le 31 et constaté après l'émission d'octobre apparaît au relevé (et au
+dossier) de **novembre**, là où il est facturé ; 2 — le lot de prélèvement de
+plus au 1ᵉʳ du mois (conséquence de « une facture par mois civil ») est
+**accepté**.
+
+**« Le relevé suit la facture » ✅ bâti le 2026-10-22 (non commité).** Le
+relevé et le dossier lisent `cycleOrderIds` (bons de la facture du cycle, ou
+qu'elle prendra — `pendingOrderIsInCycle`) ; le lot écarte un bon facturé
+pour une clôture postérieure. Doc d'état : [`facture-emise.md`](facture-emise.md),
+§ « La date de livraison ».

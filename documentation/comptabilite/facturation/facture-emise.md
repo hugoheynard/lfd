@@ -233,6 +233,22 @@ du mois » les montre à côté des factures, avec le geste de sortie (enregistr
 le retrait ou la livraison, ou annuler). Un bon sans jour demandé n'y figure
 pas.
 
+**Le relevé suit la facture** (Hugo, 2026-10-22) : le relevé et le dossier
+d'un cycle montrent les bons que SA facture porte ou portera, et eux seuls
+(`apps/lfd-api/src/b2b/accounting/infrastructure/cycle-order-membership.ts`). Un bon facturé est au cycle de
+sa facture 380 (l'issue `issued` de même clôture), quel que soit son jour de
+livraison. Un bon pas encore facturé est au cycle dont la facture le prendra
+(`apps/lfd-api/src/b2b/accounting/domain/services/pending-order-cycle.ts`) : avec `R` la dernière clôture où
+la facture est passée (une issue rangée, ou une tentative « émise » / « rien à
+facturer »), le cycle `[s, c[` le porte s'il est livré avant `c`, que `c > R`,
+et qu'il est livré dans le cycle ou que `s ≤ R`. Le bon livré le 31 et constaté
+après l'émission d'octobre est donc au relevé de novembre, jamais à celui
+d'octobre ; la partition (un cycle, ni deux ni aucun) est éprouvée jour par
+jour par `apps/lfd-api/src/b2b/accounting/domain/services/__tests__/pending-order-cycle.spec.ts`. Un bon livré avant `invoicing_floor`
+reste dans le cycle de sa livraison. Le lot, lui, écarte un bon dont la
+facture se clôt après lui (`PrismaCollectionCandidatesReader.invoicedAfter`) :
+constitué en retard, il ne prélève pas la facture suivante.
+
 **La reprise** (développement) : `seed:invoices` relancé rejoue
 `RecordOrderDeliveryDayCommand` pour chaque commande retirée sans date
 (`datePastDeliveries`). La production n'avait émis aucune facture au
