@@ -404,14 +404,6 @@ jobs:
           path: apps/lfd-api/node_modules/.cache/jest
           key: jest-unit-${{ hashFiles('pnpm-lock.yaml', 'apps/lfd-api/jest.base.cjs') }}-${{ github.sha }}
           restore-keys: jest-unit-${{ hashFiles('pnpm-lock.yaml', 'apps/lfd-api/jest.base.cjs') }}-
-      # La conformité française du Factur-X valide le XML contre le XSD par
-      # `xmllint` (`facturx-fr-validation.ts`, 2026-10-22) : garanti ici plutôt
-      # que supposé présent sur l'image.
-      # Borné : le 2026-10-22, un `apt-get` sans délai a tenu une tranche e2e
-      # vingt-trois minutes sans rien rendre (verrou ou miroir).
-      - name: Installer xmllint
-        timeout-minutes: 4
-        run: command -v xmllint || (sudo apt-get -o DPkg::Lock::Timeout=60 -o Acquire::Retries=3 update && sudo apt-get -o DPkg::Lock::Timeout=60 -o Acquire::Retries=3 install -y --no-install-recommends libxml2-utils)
       - name: Tests unitaires
         timeout-minutes: 12
         run: pnpm --filter lfd-api test:unit
@@ -560,13 +552,6 @@ jobs:
           path: apps/lfd-api/node_modules/.cache/jest
           key: jest-e2e-${{ hashFiles('pnpm-lock.yaml', 'apps/lfd-api/jest.base.cjs') }}-${{ github.sha }}
           restore-keys: jest-e2e-${{ hashFiles('pnpm-lock.yaml', 'apps/lfd-api/jest.base.cjs') }}-
-      # Le prélèvement d'essai valide son pain.008 contre le XSD par `xmllint`
-      # (`collection-tests.e2e-spec.ts`) : même garantie que pour les unitaires.
-      # Borné : le 2026-10-22, un `apt-get` sans délai a tenu une tranche e2e
-      # vingt-trois minutes sans rien rendre (verrou ou miroir).
-      - name: Installer xmllint
-        timeout-minutes: 4
-        run: command -v xmllint || (sudo apt-get -o DPkg::Lock::Timeout=60 -o Acquire::Retries=3 update && sudo apt-get -o DPkg::Lock::Timeout=60 -o Acquire::Retries=3 install -y --no-install-recommends libxml2-utils)
       # ⚠️ PAS de `--` avant `--shard` : pnpm le transmet tel quel, et Jest lit
       # alors « --shard=1/4 » comme un motif de chemin de test. Zéro suite
       # trouvée, et un échec qui parle de tout sauf de la vraie cause.

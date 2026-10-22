@@ -1,4 +1,3 @@
-import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 
 import {
@@ -7,6 +6,7 @@ import {
   type SchematronFailure,
   stylesheetFailures,
 } from "./en16931-schematron.js";
+import { xsdValidationErrors } from "./xsd-validation.js";
 
 /**
  * **Les artefacts officiels de la conformité française**, rejoués dans les
@@ -15,7 +15,8 @@ import {
  * FNFE-MPE `2026_09_04_FNFE_SCHEMATRONS_FR_CTC_V1.4.0.04`, commités sous
  * `test/fixtures/facturx-fr/` avec leur provenance (`README.md`).
  *
- * Le XSD passe par `xmllint` (libxml2) : `saxon-js` ne valide pas de schéma.
+ * Le XSD passe par libxml2 en WebAssembly (`xsd-validation.ts`) : `saxon-js`
+ * ne valide pas de schéma.
  * Les deux Schematrons passent par le même chemin que l'EN 16931
  * (`en16931-schematron.ts`) : compilés une fois en SEF dans un cache non suivi.
  */
@@ -26,33 +27,12 @@ const FACTURX_XSLT = join(FIXTURES, "schematron", "FACTUR-X_EN16931.xslt");
 const FACTURX_CODEDB = join(FIXTURES, "schematron", "FACTUR-X_EN16931_codedb.xml");
 const BR_FR_XSLT = join(FIXTURES, "schematron", "BR-FR-Flux2-Schematron-CII.xslt");
 
-/** Ce qu'un `xmllint` absent rend à `spawnSync` : le message dit quoi installer. */
-const MISSING_BINARY = "ENOENT";
-
 /**
- * Valide un XML contre le XSD Factur-X EN 16931 et rend les erreurs de
- * `xmllint`, une par ligne ; `[]` si le document est valide.
+ * Valide un XML contre le XSD Factur-X EN 16931 ; `[]` si le document est
+ * valide.
  */
-export function xsdErrors(xml: string): readonly string[] {
-  const run = spawnSync("xmllint", ["--noout", "--schema", XSD_PATH, "-"], {
-    input: xml,
-    encoding: "utf8",
-  });
-  if (run.error !== undefined) {
-    const missing = "code" in run.error && run.error.code === MISSING_BINARY;
-    throw new Error(
-      missing
-        ? "xmllint est introuvable : installer libxml2 (apt `libxml2-utils`, livré avec macOS)."
-        : `xmllint n'a pas pu tourner : ${run.error.message}`,
-    );
-  }
-  if (run.status === 0) {
-    return [];
-  }
-  return run.stderr
-    .split("\n")
-    .map((line) => line.trim())
-    .filter((line) => line !== "" && !line.endsWith("fails to validate"));
+export function xsdErrors(xml: string): Promise<readonly string[]> {
+  return xsdValidationErrors(xml, XSD_PATH);
 }
 
 /** Compile les deux Schematrons français s'il le faut (appel de `beforeAll`). */

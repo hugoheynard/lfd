@@ -31,4 +31,4 @@ valide ici peut encore être refusé par la banque — seul son portail le dira.
 ## Mettre à jour
 
 Déposer le nouveau fichier sous le même nom et mettre ce tableau à jour. Le
-XSD passe par `xmllint` (libxml2), qui doit être sur le poste.
+XSD passe par libxml2 en WebAssembly (`xmllint-wasm`, `xsd-validation.ts`) : rien à installer.

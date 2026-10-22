@@ -40,30 +40,30 @@ function batchXml(): string {
 }
 
 describe("le XSD pain.008.001.02", () => {
-  it("valide le fichier d'un lot réel (RCUR et OOFF)", () => {
+  it("valide le fichier d'un lot réel (RCUR et OOFF)", async () => {
     const xml = batchXml();
 
     expect(xml).toContain("<SeqTp>RCUR</SeqTp>");
     expect(xml).toContain("<SeqTp>OOFF</SeqTp>");
-    expect(pain008XsdErrors(xml)).toEqual([]);
+    expect(await pain008XsdErrors(xml)).toEqual([]);
   });
 
-  it.each(["RCUR", "FRST"] as const)("valide le fichier d'un essai en %s", (sequence) => {
-    expect(pain008XsdErrors(generated({ sequence }).toPersistence().xml)).toEqual([]);
+  it.each(["RCUR", "FRST"] as const)("valide le fichier d'un essai en %s", async (sequence) => {
+    expect(await pain008XsdErrors(generated({ sequence }).toPersistence().xml)).toEqual([]);
   });
 
-  it("refuse un fichier dont la séquence n'existe pas (le validateur n'est pas creux)", () => {
+  it("refuse un fichier dont la séquence n'existe pas (le validateur n'est pas creux)", async () => {
     const broken = generated()
       .toPersistence()
       .xml.replace("<SeqTp>RCUR</SeqTp>", "<SeqTp>XXXX</SeqTp>");
 
-    expect(pain008XsdErrors(broken)).not.toEqual([]);
+    expect(await pain008XsdErrors(broken)).not.toEqual([]);
   });
 
-  it("refuse une référence de plus de 35 caractères", () => {
+  it("refuse une référence de plus de 35 caractères", async () => {
     const xml = generated().toPersistence().xml;
     const long = xml.replace(/<MsgId>([^<]*)<\/MsgId>/u, "<MsgId>$1-TROP-LONG</MsgId>");
 
-    expect(pain008XsdErrors(long)).not.toEqual([]);
+    expect(await pain008XsdErrors(long)).not.toEqual([]);
   });
 });

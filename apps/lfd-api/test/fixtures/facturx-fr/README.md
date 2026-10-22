@@ -46,4 +46,4 @@ recopiée.
 Déposer les nouveaux fichiers sous les mêmes noms et mettre ce tableau à jour.
 Les SEF compilés vivent dans `node_modules/.cache/facturx-fr-*`, nommés par
 l'empreinte de l'XSLT : une nouvelle version se recompile d'elle-même.
-Le XSD passe par `xmllint` (libxml2), qui doit être sur le poste.
+Le XSD passe par libxml2 en WebAssembly (`xmllint-wasm`, `xsd-validation.ts`) : rien à installer.

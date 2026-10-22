@@ -312,7 +312,7 @@ describe("générer un prélèvement d'essai", () => {
     expect(file.headers["content-disposition"]).toContain(
       `ESSAI-prelevement-ESS-${created.testId}.xml`,
     );
-    expect(pain008XsdErrors(xml)).toEqual([]);
+    expect(await pain008XsdErrors(xml)).toEqual([]);
     expect(xml).toContain("<SeqTp>FRST</SeqTp>");
     expect(xml).toContain(`<ReqdColltnDt>${day}</ReqdColltnDt>`);
     expect(xml).toContain(DEBTOR_IBAN);

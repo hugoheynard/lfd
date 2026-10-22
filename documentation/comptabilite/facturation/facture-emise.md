@@ -336,14 +336,14 @@ Artefacts officiels FNFE-MPE, recopiés sans modification sous
 `apps/lfd-api/test/fixtures/facturx-fr/` — provenance, URL, empreintes et ce
 qui n'a pas pu être récupéré dans son `README.md` :
 
-| Ce qui est vérifié                    | Version                                   | Résultat sur les six pièces témoins                      |
-| ------------------------------------- | ----------------------------------------- | -------------------------------------------------------- |
-| XSD Factur-X du profil EN 16931       | Factur-X **1.09.2** (`xmllint`)           | **valides** : l'ordre des éléments n'est plus de mémoire |
-| Schematron Factur-X EN 16931          | 1.09.2 (paquet FNFE `fixFR04`)            | aucun refus ; un avertissement, `PEPPOL-EN16931-R008`    |
-| Schematron **BR-FR Flux 2** (CIUS-FR) | **v1.4.0.04** du 2026-09-04, mode `FATAL` | refus restants = les manques de donnée ci-dessous        |
+| Ce qui est vérifié                    | Version                                      | Résultat sur les six pièces témoins                      |
+| ------------------------------------- | -------------------------------------------- | -------------------------------------------------------- |
+| XSD Factur-X du profil EN 16931       | Factur-X **1.09.2** (libxml2 en WebAssembly) | **valides** : l'ordre des éléments n'est plus de mémoire |
+| Schematron Factur-X EN 16931          | 1.09.2 (paquet FNFE `fixFR04`)               | aucun refus ; un avertissement, `PEPPOL-EN16931-R008`    |
+| Schematron **BR-FR Flux 2** (CIUS-FR) | **v1.4.0.04** du 2026-09-04, mode `FATAL`    | refus restants = les manques de donnée ci-dessous        |
 
 Spec : `apps/lfd-api/src/b2b/accounting/domain/services/__tests__/facturx-fr-conformance.spec.ts` (Jest
-unitaire ; `xmllint` doit être sur le poste). Elle énumère les manques un
+unitaire ; libxml2 en WebAssembly, `xmllint-wasm`, rien à installer sur le poste depuis le 2026-10-22). Elle énumère les manques un
 par un : une règle qui se met à passer la fait rougir autant qu'une faute
 nouvelle.
 

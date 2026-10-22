@@ -64,22 +64,22 @@ beforeAll(() => {
 }, SCHEMATRON_COMPILE_TIMEOUT_MS * 2);
 
 describe("XSD Factur-X 1.09.2 EN 16931", () => {
-  it("accepte l'exemple officiel CII_example1 (témoin du validateur)", () => {
-    expect(xsdErrors(readFileSync(OFFICIAL_EXAMPLE, "utf8"))).toEqual([]);
+  it("accepte l'exemple officiel CII_example1 (témoin du validateur)", async () => {
+    expect(await xsdErrors(readFileSync(OFFICIAL_EXAMPLE, "utf8"))).toEqual([]);
   });
 
-  it("refuse un élément hors de sa séquence : il lit vraiment l'ordre", () => {
+  it("refuse un élément hors de sa séquence : il lit vraiment l'ordre", async () => {
     const xml = renderFacturXml(samples[0]?.[1] ?? fail("aucune pièce témoin"));
     const swapped = xml.replace(
       /(<ram:TypeCode>380<\/ram:TypeCode>)(<ram:IssueDateTime>.*?<\/ram:IssueDateTime>)/u,
       "$2$1",
     );
     expect(swapped).not.toEqual(xml);
-    expect(xsdErrors(swapped)).not.toEqual([]);
+    expect(await xsdErrors(swapped)).not.toEqual([]);
   });
 
-  it.each(samples)("%s : valide contre le schéma", (_name, invoice) => {
-    expect(xsdErrors(renderFacturXml(invoice))).toEqual([]);
+  it.each(samples)("%s : valide contre le schéma", async (_name, invoice) => {
+    expect(await xsdErrors(renderFacturXml(invoice))).toEqual([]);
   });
 });
 
