@@ -63,6 +63,7 @@ export function frozenResupply(
     readonly servedByTransfer?: boolean;
     readonly quantity?: number;
     readonly name?: string | null;
+    readonly launchedAt?: Date | null;
   } = {},
 ): FrozenResupply {
   return {
@@ -73,5 +74,6 @@ export function frozenResupply(
     name: options.name ?? null,
     servedByTransfer: options.servedByTransfer ?? true,
     lines: [{ sku: "CRO-001", productName: "Croissant", quantity: options.quantity ?? 6 }],
+    launchedAt: options.launchedAt ?? null,
   };
 }

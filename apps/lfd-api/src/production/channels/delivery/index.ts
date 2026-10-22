@@ -36,3 +36,11 @@ export {
   type FrozenResupply,
   type FrozenResupplyLine,
 } from "./frozen-resupplies.reader.js";
+// Le réassort « au plus tôt » lancé (R4c, 2026-10-22) : la livraison l'attache
+// au transfert non parti de son point et le place, comme le soir — et apprend
+// l'arrêt d'une journée que ce lancement a ouverte (`openedPlan`).
+export {
+  PRODUCTION_RESUPPLY_LAUNCHED,
+  ResupplyLaunchedEvent,
+  ResupplyLaunchedPayloadError,
+} from "../commerce/resupply-launched.event.js";

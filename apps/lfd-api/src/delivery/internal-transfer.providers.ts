@@ -17,6 +17,9 @@ import { PrismaResupplyOnlyTransfers } from "./infrastructure/prisma-resupply-on
 import { PrismaTransferBinCounts } from "./infrastructure/prisma-transfer-bin-counts.reader.js";
 import { GetInternalTransferManifestHandler } from "./application/queries/get-internal-transfer-manifest.handler.js";
 import { TransferAttachment } from "./application/transfer-attachment.js";
+import { AsapTransferDispatch } from "./application/asap-transfer-dispatch.js";
+import { AsapTransferUnplacedBell } from "./application/asap-transfer-unplaced-bell.js";
+import { AttachLaunchedResupply } from "./application/handlers/attach-launched-resupply.handler.js";
 import { TransferResupplyContents } from "./application/transfer-resupply-contents.js";
 import { TransferPlacement } from "./application/transfer-placement.js";
 import { TransferPlaceFinder, TransferPlacer } from "./application/transfer-placer.js";
@@ -67,6 +70,10 @@ export const INTERNAL_TRANSFER_PROVIDERS: readonly Provider[] = [
   { provide: TransferredOrdersReader, useClass: PrismaTransferredOrdersReader },
   // Réassort, lot R3c : le contenu d'un réassort dans le transfert.
   TransferResupplyContents,
+  // Réassort « au plus tôt », R4c : l'abonné au lancement, son placement, sa cloche.
+  AttachLaunchedResupply,
+  AsapTransferDispatch,
+  AsapTransferUnplacedBell,
   // Lot T3 : les bacs du transfert, et « arrivée au site ? » avec F4.
   DeclareTransferBinsHandler,
   GetDeliveryTransferBinsHandler,

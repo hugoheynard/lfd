@@ -18,6 +18,7 @@ import type {
   LoadingStopRow,
 } from "../domain/ports/delivery-loading.reader.js";
 import { orderStopsOf, transferStopsOf } from "../domain/entities/delivery-round-state.js";
+import { resuppliesAfterLoadingOf } from "./transfer-late-resupplies.js";
 
 /**
  * Les vues du chargement (plan de tournée, lot 4 ; lot 4 bis, tranche B),
@@ -220,6 +221,7 @@ export function loadingRoundView(
       position: stop.position,
       state: stopStateOf(stop),
       bins: loadingBinViewsOf(stop, context),
+      resuppliesAfterLoading: resuppliesAfterLoadingOf(stop),
     })),
   };
 }

@@ -11,14 +11,22 @@ import {
 import type { SiteResupplySnapshot } from "../../domain/site-resupply.js";
 import {
   ResupplyNotArrivableError,
+  ResupplyNotLaunchedNotMountableError,
   SiteResupplyNotFoundError,
 } from "../../domain/site-resupply-errors.js";
+import { RecordingAdmissionDesk } from "../../../orders/application/commands/__tests__/plan-doubles.js";
 import { MarkArrivedOnTransferReceived } from "../mark-arrived-on-transfer-received.handler.js";
 import { MarkResupplyMountedCommand } from "../mark-resupply-mounted.command.js";
 import { MarkResupplyMountedHandler } from "../mark-resupply-mounted.handler.js";
 import { ResupplyArrivedBell } from "../resupply-arrived-bell.js";
+import { ResupplyPlanGate } from "../resupply-plan-gate.js";
 import { Directory } from "./resupply-doubles.js";
-import { InMemorySiteResupplies, KnownReceptions, SiteLabels } from "./site-resupply-doubles.js";
+import {
+  FixedLaunches,
+  InMemorySiteResupplies,
+  KnownReceptions,
+  SiteLabels,
+} from "./site-resupply-doubles.js";
 
 /**
  * « Réassort arrivé » (lot R3e) : « Monté » au fournil pour un point servi
@@ -79,6 +87,7 @@ function world() {
   const afterCommit = new HeldAfterCommit();
   const work = new BackgroundWork();
   const bell = new ResupplyArrivedBell(notifier, afterCommit, work);
+  const launches = new FixedLaunches();
   const mounted = new MarkResupplyMountedHandler(
     resupplies,
     receptions,
@@ -86,6 +95,7 @@ function world() {
     staff,
     new FixedClock(NOW),
     bell,
+    new ResupplyPlanGate(new RecordingAdmissionDesk([]), launches),
     new DirectUnitOfWork(),
   );
   const onTransfer = new MarkArrivedOnTransferReceived(resupplies, receptions, labels, staff, bell);
@@ -94,7 +104,7 @@ function world() {
     await work.whenIdle();
     return notifier.notices;
   };
-  return { resupplies, receptions, mounted, onTransfer, rung, afterCommit };
+  return { resupplies, receptions, mounted, onTransfer, rung, afterCommit, launches };
 }
 
 function transferReceived(resupplyIds: readonly string[]): DurableDelivery {
@@ -176,6 +186,44 @@ describe("« Monté » (R3e, point servi sur place)", () => {
     await expect(
       mounted.execute(new MarkResupplyMountedCommand(LABO, "rs_2", "staff_paul")),
     ).rejects.toThrow(SiteResupplyNotFoundError);
+  });
+});
+
+describe("« Monté » sur un « au plus tôt » (R4c, Q4 : « Lancer » puis « Monté »)", () => {
+  const ASAP = { target: "asap", serviceDay: "2030-03-12" } as const;
+
+  /** Régression : le serveur acceptait « Monté » sur un « au plus tôt » jamais lancé (R4b). */
+  it("refuse tant que le fournil ne l'a pas lancé — question posée au fournil, rien ne sonne", async () => {
+    const { resupplies, mounted, rung, launches } = world();
+    resupplies.put(placed("rs_asap", LABO, ASAP));
+
+    await expect(
+      mounted.execute(new MarkResupplyMountedCommand(LABO, "rs_asap", "staff_paul")),
+    ).rejects.toThrow(ResupplyNotLaunchedNotMountableError);
+
+    expect(launches.asked).toEqual(["2030-03-12:rs_asap"]);
+    expect(resupplies.all()[0]?.arrived).toBeNull();
+    expect(await rung()).toEqual([]);
+  });
+
+  it("lancé, il passe à arrivé et sonne", async () => {
+    const { resupplies, mounted, rung, launches } = world();
+    launches.launched.add("rs_asap");
+    resupplies.put(placed("rs_asap", LABO, ASAP));
+
+    await mounted.execute(new MarkResupplyMountedCommand(LABO, "rs_asap", "staff_paul"));
+
+    expect(resupplies.all()[0]?.arrived?.at).toEqual(NOW);
+    expect(await rung()).toHaveLength(1);
+  });
+
+  it("un « pour demain » ne pose pas la question au fournil", async () => {
+    const { resupplies, mounted, launches } = world();
+    resupplies.put(placed("rs_1", LABO));
+
+    await mounted.execute(new MarkResupplyMountedCommand(LABO, "rs_1", "staff_paul"));
+
+    expect(launches.asked).toEqual([]);
   });
 });
 

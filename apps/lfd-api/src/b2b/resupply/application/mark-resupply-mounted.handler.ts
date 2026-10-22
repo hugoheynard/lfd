@@ -9,6 +9,7 @@ import { SiteResupplyNotFoundError } from "../domain/site-resupply-errors.js";
 import { SiteResupplyRepository } from "../domain/site-resupply.repository.js";
 import { MarkResupplyMountedCommand } from "./mark-resupply-mounted.command.js";
 import { ResupplyArrivedBell } from "./resupply-arrived-bell.js";
+import { ResupplyPlanGate } from "./resupply-plan-gate.js";
 import { traceOf } from "./resupply-receipt-trace.js";
 
 /**
@@ -19,10 +20,15 @@ import { traceOf } from "./resupply-receipt-trace.js";
  * Chargé sous le point de l'URL (le mur par point). Idempotent : déjà
  * arrivé, ou déjà réceptionné, rien ne change et rien ne sonne. Le serveur
  * ne refuse pas « Monté » à un point servi par transfert — l'écran ne le
- * propose qu'aux autres (un « au plus tôt » du Village n'a pas de transfert
- * qui le dise arrivé).
+ * propose qu'aux autres.
+ *
+ * Depuis R4c (Q4), un « au plus tôt » n'est monté qu'une fois LANCÉ : la
+ * question est posée au fournil sous le verrou de la journée
+ * (`ResupplyPlanGate.launched`, comme l'annulation), jamais à la colonne
+ * d'affichage.
  *
  * @throws {SiteResupplyNotFoundError} @throws {ResupplyNotArrivableError}
+ * @throws {ResupplyNotLaunchedNotMountableError}
  */
 @CommandHandler(MarkResupplyMountedCommand)
 export class MarkResupplyMountedHandler implements ICommandHandler<
@@ -36,6 +42,7 @@ export class MarkResupplyMountedHandler implements ICommandHandler<
     private readonly staff: StaffDirectory,
     private readonly clock: Clock,
     private readonly bell: ResupplyArrivedBell,
+    private readonly gate: ResupplyPlanGate,
     private readonly uow: UnitOfWork,
   ) {}
 
@@ -47,7 +54,8 @@ export class MarkResupplyMountedHandler implements ICommandHandler<
         throw new SiteResupplyNotFoundError(command.resupplyId);
       }
       const reception = await this.receptions.receptionOf(command.siteId, resupply.id);
-      if (!resupply.markArrived(trace, reception)) {
+      const launched = await this.gate.launched(resupply.target, resupply.serviceDay, resupply.id);
+      if (!resupply.markMounted(trace, reception, launched)) {
         return;
       }
       await this.resupplies.save(resupply);

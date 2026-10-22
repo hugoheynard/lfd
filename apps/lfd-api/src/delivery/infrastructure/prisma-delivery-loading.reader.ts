@@ -32,7 +32,17 @@ const ROUND_SELECT = {
       kind: true,
       orderId: true,
       transferId: true,
-      transfer: { select: { siteId: true, siteLabel: true } },
+      transfer: {
+        select: {
+          siteId: true,
+          siteLabel: true,
+          // R4c : un réassort « au plus tôt » rangé après le chargement.
+          items: {
+            where: { kind: "resupply", detachedAt: null },
+            select: { attachedAt: true },
+          },
+        },
+      },
       position: true,
       binLoads: { where: { loadedAt: { not: null } }, select: { binId: true, loadedAt: true } },
     },
@@ -90,6 +100,9 @@ export class PrismaDeliveryLoadingReader extends DeliveryLoadingReader {
         stopId: stop.id,
         siteLabel: stop.transfer?.siteLabel ?? null,
         siteId: stop.transfer?.siteId ?? null,
+        ...(stop.transfer === null
+          ? {}
+          : { resuppliesAttachedAt: stop.transfer.items.map((item) => item.attachedAt) }),
         position: stop.position,
         bins: bins.filter((bin) => isCarriedBy(stop, carried, bin)),
         loaded: new Map(

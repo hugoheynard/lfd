@@ -65,6 +65,11 @@ export class TransferBinsCard {
 
   protected readonly title = computed(() => `→ ${this.stop().siteLabel}`);
   protected readonly subtitle = computed(() => transferBinsSummary(this.stop()));
+  /**
+   * R4c — des réassorts « au plus tôt » rangés dans ce transfert après son
+   * dernier bac chargé : il les emporte, mais il leur faut un bac de plus.
+   */
+  protected readonly lateResupplies = computed(() => this.stop().resuppliesAfterLoading ?? 0);
 
   /** Le formulaire est replié tant qu'on ne déclare pas. */
   protected readonly declaring = signal(false);

@@ -46,6 +46,11 @@ export type LoadingStopRow = StopSubject & {
   readonly bins: readonly BinRow[];
   /** Les bacs chargés dans CET arrêt, et quand. */
   readonly loaded: ReadonlyMap<string, Date>;
+  /**
+   * Un arrêt de transfert : l'instant où chacun de ses réassorts encore
+   * portés y est entré (R4c). Absent pour une commande.
+   */
+  readonly resuppliesAttachedAt?: readonly Date[];
 };
 
 /** Une tournée, vue du dépôt. */

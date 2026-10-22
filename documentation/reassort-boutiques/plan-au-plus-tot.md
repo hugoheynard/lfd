@@ -157,8 +157,12 @@ at, by)` — **pas** le retirage, qui n'absorbe que des commandes et rend 0
   répartiteur sonne pour un transfert « au plus tôt » non placé (ajout).
 - **Un transfert déjà chargé** : attacher à un transfert dont l'arrêt est chargé
   mais pas parti est permis par `attach` (non parti) ; le réassort se charge
-  alors au bac du transfert avant « Partir ». À vérifier au lot (non vérifié par
-  `vitruve`).
+  alors au bac du transfert avant « Partir ». **Vérifié au lot R4c
+  (2026-10-22)** : l'écran du chargement signale les réassorts entrés après le
+  dernier bac chargé (« un bac de plus »).
+- **La journée ouverte par un lancement** (R4c, 2026-10-22) : le fait
+  `resupply_launched` porte `openedPlan`, et la livraison y apprend l'arrêt —
+  sans `production.day_closed`, donc sans dossier (Q6).
 
 ## 3. Les migrations — ce qui sera jugé
 
@@ -180,7 +184,7 @@ déclencheurs `day_change` (posés le 2026-10-22) couvrent déjà
 | ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
 | **R4a** ✅ bâti le 2026-10-22, `babc1ccbd` — [README](README.md) | `launchResupply` (agrégat, port ciblé, verrou), `LaunchedResupplies` synchrone et refus d'annuler, fait `resupply_launched`, réouverture, journée jamais arrêtée (selon Q5) ; « Lancer » dans Prod manager | fournil, commerce, back-office            |
 | **R4b** ✅ bâti le 2026-10-22, non commité — [README](README.md) | Le colisage : fiche « au plus tôt » sur le fait, réserve de stock (selon Q7) ; correctif Q4 (« Monté » au Labo une fois lancé)                                                                             | colisage, back-office                     |
-| **R4c**                                                          | La livraison : abonné au fait → attache + `placeDaySoon` ; `FrozenResuppliesReader` élargi ; cloche « aucun véhicule »                                                                                     | livraison, fournil (lecteur), back-office |
+| **R4c** ✅ bâti le 2026-10-22, non commité — [README](README.md) | La livraison : abonné au fait → attache + `placeDaySoon` ; `FrozenResuppliesReader` élargi ; cloche « aucun véhicule »                                                                                     | livraison, fournil (lecteur), back-office |
 | **R4d**                                                          | Le suivi : lancé / parti au comptoir, à l'onglet Stock, à Prod manager                                                                                                                                     | commerce, back-office                     |
 
 ## 5. Hors périmètre

@@ -34,6 +34,14 @@ export class ResupplyLaunchedEvent implements DurableEvent {
     readonly resupply: PlacedResupply,
     /** La dernière réouverture de la journée, ou `null` — n'entre que dans la clé. */
     readonly reopenedAt: Date | null = null,
+    /**
+     * Ce lancement a ARRÊTÉ la journée (Q5 : une journée jamais arrêtée
+     * s'ouvre arrêtée avec ce seul réassort), à l'instant `launchedAt` (R4c).
+     * Le fournil ne publie pas `production.day_closed` dans ce cas — il
+     * renverrait le dossier (Q6) : c'est ce champ qui apprend l'arrêt à la
+     * livraison. Absent des faits écrits avant R4c : relu `false`.
+     */
+    readonly openedPlan: boolean = false,
   ) {}
 
   durableFact(): DurableFact {
@@ -47,6 +55,7 @@ export class ResupplyLaunchedEvent implements DurableEvent {
         launchedAt: this.launchedAt.toISOString(),
         launchedBy: this.launchedBy,
         launchedByName: this.launchedByName,
+        openedPlan: this.openedPlan,
         resupply: { ...this.resupply, lines: this.resupply.lines.map((line) => ({ ...line })) },
       },
     };
@@ -59,16 +68,26 @@ export class ResupplyLaunchedEvent implements DurableEvent {
     const launchedBy = textOf(payload["launchedBy"]);
     const launchedByName = payload["launchedByName"] ?? null;
     const resupply = launchedResupplyOf(payload["resupply"]);
+    const openedPlan = payload["openedPlan"] ?? false;
     if (
       serviceDay === null ||
       launchedAt === null ||
       launchedBy === null ||
       (launchedByName !== null && typeof launchedByName !== "string") ||
-      resupply === null
+      resupply === null ||
+      typeof openedPlan !== "boolean"
     ) {
       throw new ResupplyLaunchedPayloadError();
     }
-    return new ResupplyLaunchedEvent(serviceDay, launchedAt, launchedBy, launchedByName, resupply);
+    return new ResupplyLaunchedEvent(
+      serviceDay,
+      launchedAt,
+      launchedBy,
+      launchedByName,
+      resupply,
+      null,
+      openedPlan,
+    );
   }
 }
 

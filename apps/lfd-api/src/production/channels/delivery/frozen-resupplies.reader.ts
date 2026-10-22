@@ -5,7 +5,10 @@ export interface FrozenResupplyLine {
   readonly quantity: number;
 }
 
-/** Un réassort tel que l'arrêt du plan l'a figé. */
+/**
+ * Un réassort tel que le plan l'a figé : à l'arrêt (« pour demain »), ou à
+ * son lancement (« au plus tôt », R4a — rendu aussi depuis R4c).
+ */
 export interface FrozenResupply {
   readonly resupplyId: string;
   /** `AAAA-MM-JJ` — la journée qui l'a figé. */
@@ -18,6 +21,11 @@ export interface FrozenResupply {
   /** Le point est servi par un transfert interne, figé à l'arrêt (R3b). */
   readonly servedByTransfer: boolean;
   readonly lines: readonly FrozenResupplyLine[];
+  /**
+   * L'instant du LANCEMENT d'un « au plus tôt » (R4c, S7 de `vitruve`) ;
+   * `null` pour un réassort figé à l'arrêt du soir.
+   */
+  readonly launchedAt: Date | null;
 }
 
 /**
@@ -35,8 +43,9 @@ export interface FrozenResupply {
  */
 export abstract class FrozenResuppliesReader {
   /**
-   * Les réassorts figés de cette journée parmi ces identifiants. Absent : pas
-   * (ou plus — réouverture) au plan arrêté.
+   * Les réassorts figés de cette journée parmi ces identifiants, lancés
+   * compris. Absent : pas (ou plus — réouverture) au plan arrêté ; un lancé
+   * survit à la réouverture (R4a).
    */
   abstract frozenOf(
     serviceDay: string,

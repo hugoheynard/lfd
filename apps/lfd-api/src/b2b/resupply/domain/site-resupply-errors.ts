@@ -180,6 +180,19 @@ export class ResupplyNotArrivableError extends BusinessError {
   }
 }
 
+/**
+ * « Monté » sur un réassort « au plus tôt » que le fournil n'a pas lancé
+ * (R4c, Q4 : « Lancer » puis « Monté ») — il n'est pas au plan.
+ */
+export class ResupplyNotLaunchedNotMountableError extends BusinessError {
+  constructor(readonly serviceDay: string) {
+    super(
+      "resupply.order.not_launched",
+      `Ce réassort « au plus tôt » du ${serviceDay} n'a pas été lancé : il n'est pas au plan, rien n'est à monter. Lancez-le d'abord (Prod manager › Réassorts › Lancer), puis marquez-le monté.`,
+    );
+  }
+}
+
 /** Aucun réassort de cet identifiant pour ce point. */
 export class SiteResupplyNotFoundError extends ResourceNotFoundError {
   constructor(readonly resupplyId: string) {

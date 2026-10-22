@@ -1,5 +1,8 @@
 import { SiteResupply } from "../site-resupply.js";
-import { ResupplyNotArrivableError } from "../site-resupply-errors.js";
+import {
+  ResupplyNotArrivableError,
+  ResupplyNotLaunchedNotMountableError,
+} from "../site-resupply-errors.js";
 import { SiteResupplyLine } from "../site-resupply-line.js";
 
 /**
@@ -93,5 +96,44 @@ describe("SiteResupply.markArrived", () => {
     });
 
     expect(restored.arrived).toEqual({ at: ARRIVED_AT, author: PAUL });
+  });
+});
+
+describe("SiteResupply.markMounted (R4c, Q4 : « Lancer » puis « Monté »)", () => {
+  it("refuse un « au plus tôt » que le fournil n'a pas lancé", () => {
+    const resupply = placed();
+
+    expect(() => resupply.markMounted({ at: ARRIVED_AT, author: PAUL }, null, false)).toThrow(
+      ResupplyNotLaunchedNotMountableError,
+    );
+    expect(resupply.arrived).toBeNull();
+  });
+
+  it("lancé, il passe à arrivé", () => {
+    const resupply = placed();
+
+    expect(resupply.markMounted({ at: ARRIVED_AT, author: PAUL }, null, true)).toBe(true);
+    expect(resupply.arrived).toEqual({ at: ARRIVED_AT, author: PAUL });
+  });
+
+  it("déjà réceptionné, non lancé : le comptoir a fait foi, rien n'est refusé", () => {
+    const resupply = placed();
+
+    expect(
+      resupply.markMounted({ at: LATER, author: PAUL }, { at: ARRIVED_AT, author: LOU }, false),
+    ).toBe(false);
+  });
+
+  it("un « pour demain » se monte sans lancement", () => {
+    const resupply = SiteResupply.draft({
+      id: "rs3",
+      siteId: "site_1",
+      target: "tomorrow",
+      at: PLACED_AT,
+    });
+    resupply.addLine(SiteResupplyLine.of({ sku: "CRO", label: "Croissant", quantity: 12 }));
+    resupply.place({ at: PLACED_AT, author: LOU }, null, false);
+
+    expect(resupply.markMounted({ at: ARRIVED_AT, author: PAUL }, null, false)).toBe(true);
   });
 });

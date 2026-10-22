@@ -13,6 +13,7 @@ import {
   ResupplyPastCutoffError,
   ResupplyPlanStoppedError,
   ResupplyNotArrivableError,
+  ResupplyNotLaunchedNotMountableError,
   SiteResupplyChangedMeanwhileError,
 } from "./site-resupply-errors.js";
 import { resupplyNameOf } from "./resupply-name.js";
@@ -236,6 +237,28 @@ export class SiteResupply {
     }
     this.arrivedTrace = trace;
     return true;
+  }
+
+  /**
+   * **« Monté »** (R3e) — « il est là » par le geste du fournil. Un « au plus
+   * tôt » n'est monté qu'une fois LANCÉ (Q4, R4c) : avant, il n'est pas au
+   * plan, rien n'a été fabriqué pour lui. Déjà arrivé ou réceptionné, rien
+   * ne change et rien n'est refusé. `launched` est lu au fournil par
+   * l'appelant, jamais à la colonne d'affichage du commerce.
+   *
+   * @returns `true` si le réassort vient de passer d'attendu à arrivé.
+   * @throws {ResupplyNotArrivableError} @throws {ResupplyNotLaunchedNotMountableError}
+   */
+  markMounted(
+    trace: SiteResupplyTrace,
+    reception: SiteResupplyTrace | null,
+    launched: boolean,
+  ): boolean {
+    const awaited = this.status === "placed" && this.arrivedTrace === null && reception === null;
+    if (awaited && this.target === "asap" && !launched) {
+      throw new ResupplyNotLaunchedNotMountableError(this.serviceDay);
+    }
+    return this.markArrived(trace, reception);
   }
 
   /**

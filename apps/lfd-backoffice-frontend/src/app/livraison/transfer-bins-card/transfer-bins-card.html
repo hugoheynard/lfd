@@ -15,6 +15,18 @@
       </a>
     </fold-element-title>
 
+    @if (lateResupplies() > 0) {
+      <fold-callout variant="warning" data-late-resupplies>
+        {{
+          lateResupplies() === 1
+            ? 'Un réassort « au plus tôt » a rejoint ce transfert après son chargement'
+            : lateResupplies() +
+              ' réassorts « au plus tôt » ont rejoint ce transfert après son chargement'
+        }}
+        : déclarez et chargez un bac de plus avant « Partir ».
+      </fold-callout>
+    }
+
     @if (canWrite()) {
       @if (declaring()) {
         @if (typesError(); as message) {

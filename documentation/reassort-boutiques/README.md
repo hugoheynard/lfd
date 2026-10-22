@@ -594,7 +594,8 @@ sequenceDiagram
   (+ `:after-reopening:<instant>`) : lignes, point, `servedByTransfer`, nom,
   instant et auteur. Abonnés : le commerce
   (`RecordLaunchOnResupplyLaunched`, durable) — l'affichage ; le colisage
-  (R4b, ci-dessous). Livraison : R4c.
+  (R4b, ci-dessous) ; la livraison (R4c, ci-dessous). Depuis R4c, il porte
+  aussi `openedPlan` : ce lancement a ouvert la journée (Q5).
 - **Les tables** : migration `20261022150000_le_reassort_lance` (additive) —
   `production_resupply.kind` (`evening` par défaut, CHECK), `launched_at`,
   `launched_by` (CHECK « asap ⇔ lancé ») ; `site_resupply.launched_at`,
@@ -659,17 +660,79 @@ sequenceDiagram
   dit « En attente du four » et « N attendus du four » par ligne.
 - **Correctif R4a/Q4** : au Labo, la carte « À monter » ne propose « Monté »
   sur un « au plus tôt » qu'une fois lancé (« À lancer d'abord » sinon) — les
-  réassorts du soir sont inchangés. Le serveur, lui, accepte encore « Monté »
-  sur un non lancé.
+  réassorts du soir sont inchangés. Le serveur le refuse depuis R4c.
 - e2e : `apps/lfd-api/test/resupply-asap-packing.e2e-spec.ts` (fiche, attente
   du four, clôture ; deux saisies concurrentes ; commande qui alloue pendant
   le lancement ; Labo sans fiche).
 
+## Ce qui est bâti : le transport du « au plus tôt » (lot R4c, 2026-10-22, non commité)
+
+Plan : [`plan-au-plus-tot.md`](plan-au-plus-tot.md) §2 ④. La livraison écoute
+le même fait que le colisage, en même temps, et emprunte les mécanismes du
+soir sans en écrire de nouveaux.
+
+```mermaid
+sequenceDiagram
+  participant F as Fournil
+  participant L as Livraison (abonné durable)
+  participant T as TransferAttachment
+  participant P as Placement de fond
+  participant R as Répartiteur (cloche)
+  F-->>L: production.resupply_launched (servedByTransfer, openedPlan)
+  opt openedPlan — la journée vient d'être ouverte par ce lancement
+    L->>L: DeliveryDayReadiness.learnClosure(launchedAt, [])
+  end
+  L->>T: attachResupplies(jour, [resupplyId]) — premier transfert NON PARTI du point, sinon un neuf
+  L-->>P: après la validation : placeDay(jour) — tournée intégrée, sinon dédiée sur un véhicule libre
+  P->>P: le transfert qui porte le réassort a-t-il un arrêt ?
+  P-->>R: non → « Réassort au plus tôt sans tournée — <point> »
+```
+
+- **L'abonné** : `AttachLaunchedResupply`
+  (`apps/lfd-api/src/delivery/application/handlers/attach-launched-resupply.handler.ts`),
+  `@DurableHandler`, nom `delivery.attach-launched-resupply`, fait relu par
+  `production/channels/delivery/`. Rien pour un point servi sur place
+  (Labo) — sauf apprendre l'arrêt d'une journée ouverte. Rejeu sans effet.
+- **La journée ouverte par un lancement** (Q5) : le fournil ne publie pas
+  `production.day_closed` (il renverrait le dossier, Q6). Choix : le fait
+  `resupply_launched` porte `openedPlan` (absent des faits d'avant : `false`),
+  et la livraison pose l'arrêt (`delivery_day_readiness.closed_at` = instant
+  du lancement), sans livraison à annoncer, donc sans cloche du plan arrêté.
+  La composition voit ainsi la journée arrêtée.
+- **Le placement** : `AsapTransferDispatch`
+  (`apps/lfd-api/src/delivery/application/asap-transfer-dispatch.ts`) diffère
+  après la validation `TransferPlacer.placeDay` — ce que `placeDaySoon`
+  diffère — puis demande si le transfert du réassort est resté sans arrêt.
+  Si oui, `AsapTransferUnplacedBell` sonne sous `delivery_rounds:write`
+  (`delivery.asap_transfer_unplaced`, clé par réassort).
+- **La copie figée** : `FrozenResuppliesReader` rendait déjà les lancés (même
+  table, `kind = asap`) ; il porte désormais `launchedAt` (`null` pour un
+  réassort du soir).
+- **Un transfert chargé mais pas parti** : vérifié — `InternalTransfer.attach`
+  ne refuse qu'un transfert parti ou reçu, et des bacs se déclarent tant
+  qu'il est prévu. Le réassort y entre donc ; la vue du chargement porte
+  `resuppliesAfterLoading` (réassorts entrés après le dernier bac chargé), et
+  la carte des bacs du transfert
+  (`apps/lfd-backoffice-frontend/src/app/livraison/transfer-bins-card/`) dit
+  « déclarez et chargez un bac de plus avant « Partir » ». Un bac chargé
+  ensuite efface le signal.
+- **« Monté »** sur un « au plus tôt » non lancé : refusé
+  (`ResupplyNotLaunchedNotMountableError`, 409 `resupply.order.not_launched`),
+  la question posée au fournil par `ResupplyPlanGate.launched`, sous le verrou
+  de la journée, comme l'annulation.
+- Aucune migration.
+- e2e : `apps/lfd-api/test/resupply-asap-transfer.e2e-spec.ts` (transfert
+  neuf placé ; journée ouverte ; transfert parti → neuf ; aucun véhicule →
+  cloche ; transfert chargé → signal ; « Monté » avant « Lancer ») et le
+  parcours `apps/lfd-api/test/resupply-asap-village-flow.e2e-spec.ts` (du
+  lancement à la réception, horloge qui saute).
+
 ## Ce qui reste
 
-- **« Au plus tôt » au Village** (plan de la version complète : [`plan-au-plus-tot.md`](plan-au-plus-tot.md)) : lancé (R4a) et colisé avec sa réserve (R4b), mais pas encore attaché à un transfert (R4c).
-- **« Monté » sur un « au plus tôt » non lancé** : l'écran ne le propose plus
-  (R4b) ; le serveur l'accepte encore.
+- **Le suivi du « au plus tôt »** (R4d, [`plan-au-plus-tot.md`](plan-au-plus-tot.md)) :
+  lancé / parti au comptoir, à l'onglet Stock, à Prod manager.
+- **Un « au plus tôt » sans véhicule libre** : la cloche sonne une fois ; le
+  placement ne se rejoue qu'à la composition ou à l'affectation à la main.
 - **La réserve naît au traitement du fait**, pas à l'instant du lancement : une
   commande mise au bac entre les deux garde ses pièces, et la fiche attend le
   four.
@@ -680,10 +743,6 @@ sequenceDiagram
   Deux postes qui annulent et réceptionnent à la même seconde peuvent encore
   laisser un réassort annulé ET réceptionné (le reçu reste et compte au
   stock). Fermé seulement si la réception passe un jour par l'agrégat.
-- **Le « au plus tôt »** (R4) n'entre pas au transfert : seuls les réassorts
-  figés à l'arrêt y vont
-  ([`../livraisons/transferts/plan-transfert-interne.md`](../livraisons/transferts/plan-transfert-interne.md)) —
-  lots du [plan](plan-reapprovisionnement.md).
 - **Un transfert vidé par la réouverture** garde son arrêt dans la tournée
   s'il était placé ; il n'est pas retiré (comme un transfert vidé par
   l'annulation de ses commandes).

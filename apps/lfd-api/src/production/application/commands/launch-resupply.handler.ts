@@ -53,8 +53,9 @@ import { LaunchResupplyCommand } from "./launch-resupply.command.js";
  * Il ne renvoie pas le dossier du jour (Q6) et ne publie pas
  * `production.day_closed`, même quand il ouvre la journée : le fait
  * déclencherait l'envoi du dossier. Il publie `production.resupply_launched`,
- * que le commerce écoute pour l'affichage ; le colisage et la livraison
- * l'écouteront (R4b, R4c).
+ * que le commerce écoute pour l'affichage, le colisage (R4b) et la livraison
+ * (R4c) ; quand le lancement ouvre la journée, le fait le dit (`openedPlan`),
+ * et c'est par lui que la livraison apprend l'arrêt.
  */
 @CommandHandler(LaunchResupplyCommand)
 export class LaunchResupplyHandler implements ICommandHandler<LaunchResupplyCommand, void> {
@@ -134,6 +135,7 @@ export class LaunchResupplyHandler implements ICommandHandler<LaunchResupplyComm
         gesture.name,
         resupply,
         reopenedAt,
+        openedPlan,
       ).durableFact(),
     );
   }

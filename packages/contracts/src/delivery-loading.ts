@@ -259,6 +259,13 @@ export interface DeliveryLoadingTransferStopView {
   readonly position: number;
   readonly state: DeliveryLoadingStopState;
   readonly bins: readonly DeliveryLoadingBinView[];
+  /**
+   * Les réassorts « au plus tôt » (R4c) rangés dans ce transfert APRÈS son
+   * dernier bac chargé : le transfert est encore au dépôt, il les emporte,
+   * mais il leur faut sans doute un bac de plus — l'écran le dit. Absent ou
+   * 0 : rien d'arrivé depuis le chargement (ou rien de chargé encore).
+   */
+  readonly resuppliesAfterLoading?: number;
 }
 
 /** Une tournée du jour, vue du dépôt — de quoi choisir le véhicule à charger. */
