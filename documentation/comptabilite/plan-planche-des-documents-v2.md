@@ -42,6 +42,36 @@ les factures** (ni avoirs) : pièces comptables, sans couleur de destination
   **aucune** couleur, même pour une vraie commande.
 - Pas de transfert interne, pas de manifeste, pas de numéros de commande réels.
 
+## 0 bis. Inventaire des couleurs sur les papiers (ouvert le 2026-10-22)
+
+Côté serveur seulement (`apps/lfd-api/src`) ; les impressions faites par les
+fronts ne sont pas inventoriées. Factures et avoirs exclus.
+
+| Document                                                                | Couleur de destination                            | Pro / particulier    | Plusieurs commandes      |
+| ----------------------------------------------------------------------- | ------------------------------------------------- | -------------------- | ------------------------ |
+| Bon pro (`order-sheet-pdf.ts`)                                          | trait sous le titre (`order-sheet-pdf-header.ts`) | par la mise en page  | non                      |
+| Bon public (même générateur)                                            | même trait, couleur B2C                           | par la mise en page  | non                      |
+| QR de retrait (dans le bon)                                             | aucune                                            | aucune               | non                      |
+| Fiche d'atelier, compte à produire (`atelier-sheet-pdf.ts`)             | aucune                                            | aucune               | oui, agrégés par article |
+| Dossier du jour (`day-dossier-pdf.ts` et ses annexes, réassort compris) | aucune                                            | aucune               | oui                      |
+| Feuille de tournée (`round-paper-pdf-stop.ts`)                          | carré par arrêt                                   | par la couleur seule | oui, un carré par arrêt  |
+| Bloc du transfert interne (`round-paper-pdf-transfer.ts`)               | aucune                                            | aucune               | oui                      |
+| Manifeste de transfert                                                  | pas de PDF, une vue à l'écran                     | —                    | —                        |
+| Fiche de colisage, étiquette de bac                                     | pas de PDF serveur trouvé                         | —                    | —                        |
+| Planche (spécimen du bon)                                               | aucune (`categoryColor: null`)                    | —                    | —                        |
+
+Constats :
+
+- Pro et particulier ne se distinguent **jamais par un mot** : par la mise en
+  page sur le bon, par la couleur seule sur la feuille de tournée. Une couleur
+  non posée et une clientèle inconnue y donnent le même résultat, aucun carré.
+- La couleur d'une livraison se lit **au rendu**, au départ courant
+  (`prisma-order-sheet-color.source.ts`), pas au site figé de la commande. Un
+  bon rendu après un changement de départ prend la nouvelle couleur. Voulu ou
+  non : à trancher.
+- Les documents qui agrègent plusieurs commandes (atelier, dossier du jour,
+  transfert) n'en portent aucune : c'est là que la question Q2 se pose.
+
 ## 1. Ce que Hugo demande
 
 1. **De vrais articles du catalogue** : choisir les articles (et leurs
