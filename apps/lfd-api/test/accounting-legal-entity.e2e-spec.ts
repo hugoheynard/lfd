@@ -19,7 +19,7 @@ import { instantToLocal, type BillingCycleView, type LegalEntityView } from "@lf
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { createCompany, createUser } from "./factories.js";
+import { createCompany, createUser, markDelivered } from "./factories.js";
 import { storageKeys } from "./storage.js";
 
 /** SIREN dont la clé de Luhn est bonne : un SIREN inventé se fait refuser. */
@@ -433,7 +433,7 @@ async function billedCompany(
   orderSeq += 1;
   const company = await createCompany(ctx.prisma, { raisonSociale: name });
   const user = await createUser(ctx.prisma, { auth0Sub: `billed-${String(orderSeq)}` });
-  await ctx.prisma.order.create({
+  const order = await ctx.prisma.order.create({
     data: {
       orderNumber: `CMD-CYCLE-${String(orderSeq)}`,
       companyId: company.id,
@@ -442,6 +442,8 @@ async function billedCompany(
       totalCents: 12_345,
     },
   });
+  // Livrée le jour de sa passation : l'assiette du cycle suit la livraison (lot ZL).
+  await markDelivered(ctx.prisma, order.id, order.createdAt);
   if (scheme === null) {
     return;
   }

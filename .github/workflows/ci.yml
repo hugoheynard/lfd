@@ -557,6 +557,10 @@ jobs:
           path: apps/lfd-api/node_modules/.cache/jest
           key: jest-e2e-${{ hashFiles('pnpm-lock.yaml', 'apps/lfd-api/jest.base.cjs') }}-${{ github.sha }}
           restore-keys: jest-e2e-${{ hashFiles('pnpm-lock.yaml', 'apps/lfd-api/jest.base.cjs') }}-
+      # Le prélèvement d'essai valide son pain.008 contre le XSD par `xmllint`
+      # (`collection-tests.e2e-spec.ts`) : même garantie que pour les unitaires.
+      - name: Installer xmllint
+        run: command -v xmllint || (sudo apt-get update && sudo apt-get install -y libxml2-utils)
       # ⚠️ PAS de `--` avant `--shard` : pnpm le transmet tel quel, et Jest lit
       # alors « --shard=1/4 » comme un motif de chemin de test. Zéro suite
       # trouvée, et un échec qui parle de tout sauf de la vraie cause.
