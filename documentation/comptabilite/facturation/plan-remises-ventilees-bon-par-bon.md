@@ -1,6 +1,11 @@
 # Plan — les remises de la facture, ventilées bon par bon
 
-> **Doc-first, 2026-10-22.** Rien n'est bâti. Touche **l'argent** (TVA par taux
+> **Bâti le 2026-10-22, non commité à l'écriture de cette ligne** :
+> `packages/money/src/order-vat-split.ts`,
+> `apps/lfd-api/src/b2b/accounting/domain/services/invoice-order-split.ts` côté
+> facturation. Ce qui suit était le plan.
+>
+> **Doc-first, 2026-10-22.** Touche **l'argent** (TVA par taux
 > de la facture, Factur-X) : `vitruve` avant Hugo. Suite de V7 du plan
 > [`plan-remise-retrait-par-clientele-et-exclusions.md`](../../livraisons/clientele/plan-remise-retrait-par-clientele-et-exclusions.md).
 

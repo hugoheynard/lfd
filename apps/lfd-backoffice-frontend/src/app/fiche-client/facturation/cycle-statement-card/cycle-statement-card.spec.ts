@@ -216,6 +216,15 @@ describe('CycleStatementCard', () => {
     ).not.toBeNull();
   });
 
+  /** La facture recalcule la TVA une fois par taux : le relevé le dit (plan remises bon par bon, §2). */
+  it('prévient que la facture peut différer de quelques centimes d’arrondi', async () => {
+    const plain = boot(['b2b_companies:read']);
+    await settle(plain.fixture);
+    expect(
+      (plain.fixture.nativeElement as HTMLElement).querySelector('[data-statement-vat-rounding]'),
+    ).not.toBeNull();
+  });
+
   it('réserve l’export à la comptabilité', async () => {
     const reader = boot(['b2b_companies:read']);
     await settle(reader.fixture);

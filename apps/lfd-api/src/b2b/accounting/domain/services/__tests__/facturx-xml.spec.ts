@@ -1,4 +1,4 @@
-import { invoiceVatBreakdown, type InvoiceVatBreakdown } from "@lfd/money";
+import { invoiceVatBreakdown, splitOrderByRate, type InvoiceVatBreakdown } from "@lfd/money";
 
 import {
   BUYER,
@@ -110,19 +110,22 @@ describe("renderFacturXml — facture simple", () => {
 
 describe("renderFacturXml — deux taux, remise et port au prorata", () => {
   const lines: readonly InvoiceLineInput[] = [line("PAIN", 5.5, 1_333, 3), line("JUS", 20, 667)];
+  const goods = lines.map((l) => ({ htCents: l.amountCents, vatRate: l.vatRate }));
+  const split = splitOrderByRate({
+    lines: goods,
+    eligibleDiscountCents: 101,
+    discountCents: 0,
+    extras: [{ htCents: 199, followsGoods: true }],
+  });
   const vat = invoiceVatBreakdown({
-    goods: lines.map((l) => ({ htCents: l.amountCents, vatRate: l.vatRate })),
+    goods,
     allowances: [
-      { key: "company_discount", amountCents: 101 },
-      { key: "loyalty_voucher", amountCents: 0 },
+      { key: "company_discount", byRate: split.eligibleDiscount },
+      { key: "loyalty_voucher", byRate: split.discount },
     ],
     charges: [
-      { key: "delivery_standard", htCents: 250, vatRate: 20 },
-      {
-        key: "delivery_follows_goods",
-        htCents: 199,
-        prorataBases: lines.map((l) => ({ htCents: l.amountCents, vatRate: l.vatRate })),
-      },
+      { key: "delivery_standard", byRate: [{ vatRate: 20, amountCents: 250 }] },
+      { key: "delivery_follows_goods", byRate: split.extras[0] ?? [] },
     ],
   });
   const invoice = Invoice.issue(issueInput({ lines, vat }));

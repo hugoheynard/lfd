@@ -1,4 +1,4 @@
-import { invoiceVatBreakdown } from "../invoice-vat.js";
+import { splitOrderByRate } from "../order-vat-split.js";
 import { ventilateVat, type VatLine } from "../vat.js";
 
 /**
@@ -106,33 +106,26 @@ describe("ventilateVat — la remise restreinte", () => {
   });
 });
 
-describe("invoiceVatBreakdown — une remise à assiette restreinte", () => {
-  it("se répartit sur ses seules bases", () => {
-    const result = invoiceVatBreakdown({
-      goods: [
-        { htCents: 1000, vatRate: 5.5 },
-        { htCents: 1000, vatRate: 20 },
-      ],
-      allowances: [
-        { key: "company", amountCents: 100, prorataBases: [{ htCents: 1000, vatRate: 5.5 }] },
-      ],
-      charges: [],
+describe("splitOrderByRate — une remise à assiette restreinte", () => {
+  it("se découpe sur ses seules lignes éligibles", () => {
+    const split = splitOrderByRate({
+      lines: [PAIN, BOISSON_EXCLUE],
+      eligibleDiscountCents: 100,
+      discountCents: 0,
+      extras: [],
     });
 
-    expect(result.categories.map((c) => [c.rate, c.allowances[0]?.amountCents])).toEqual([
-      [5.5, 100],
-      [20, 0],
-    ]);
-    expect(result.vatCents).toBe(50 + 200);
+    expect(split.eligibleDiscount).toEqual([{ vatRate: 5.5, amountCents: 100 }]);
   });
 
-  it("refuse une remise dont l'assiette est vide", () => {
-    expect(() =>
-      invoiceVatBreakdown({
-        goods: [{ htCents: 1000, vatRate: 20 }],
-        allowances: [{ key: "company", amountCents: 100, prorataBases: [] }],
-        charges: [],
-      }),
-    ).toThrow(RangeError);
+  it("sans ligne éligible, la remise ne s'applique pas — comme au bon", () => {
+    const split = splitOrderByRate({
+      lines: [BOISSON_EXCLUE],
+      eligibleDiscountCents: 100,
+      discountCents: 0,
+      extras: [],
+    });
+
+    expect(split.eligibleDiscount).toEqual([]);
   });
 });

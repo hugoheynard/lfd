@@ -94,6 +94,16 @@
             </fold-callout>
           }
 
+          @if (statement.totals.vatByRate.length > 0) {
+            <!-- Le relevé somme la TVA figée de chaque commande ; la facture la
+                 recalcule une fois par taux (plan remises ventilées bon par bon, §2). -->
+            <fold-callout appearance="inset" variant="neutral" data-statement-vat-rounding>
+              La TVA par taux est la somme de celle de chaque commande. La facture du cycle la
+              calcule une fois par taux&nbsp;: elle peut en différer de quelques centimes d’arrondi,
+              détaillés au dossier de facturation.
+            </fold-callout>
+          }
+
           @if (payerOf(statement); as payer) {
             <!-- Le relevé d'un site : ses seules commandes, mais il ne les règle
                  pas toutes — le principal qu'il suivait à leur date les paie. -->

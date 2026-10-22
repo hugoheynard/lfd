@@ -1,12 +1,10 @@
 import {
-  DELIVERY_VAT_RATE,
   invoiceVatBreakdown,
   type InvoiceCharge,
   type InvoiceVatBreakdown,
-  type VatLine,
+  type RatedCents,
 } from "@lfd/money";
 
-import { InvoiceDossierLateFeeRateMissingError } from "../errors/invoice-dossier-errors.js";
 import type {
   FrozenDeliveryVatMode,
   FrozenInvoiceOrder,
@@ -16,29 +14,43 @@ import type {
   InvoiceGaps,
   VatRoundingGap,
 } from "./invoice-dossier.types.js";
-import { aggregateInvoiceLines, normalizedVatRate } from "./invoice-lines.js";
+import { aggregateInvoiceLines } from "./invoice-lines.js";
 import { inconsistentOrders } from "./invoice-order-consistency.js";
+import {
+  lateFeeOf,
+  splitInvoiceOrder,
+  standardDeliveryOf,
+  type OrderInvoiceSplit,
+} from "./invoice-order-split.js";
 
 /**
  * **Le simulateur de dossier de facturation** — pur, sans horloge ni base.
  *
- * ## 🔴 La facture est calculée en une fois ; les bons restent des bons
+ * ## 🔴 La facture additionne ses bons ; elle ne répartit rien
  *
- * La norme des factures structurées calcule la TVA d'un taux sur la facture
- * entière ; nos bons l'arrondissent bon par bon. Le HT des lignes, lui, est
- * repris des bons (F6, 2026-10-08, `invoice-lines.ts`) ; la TVA se recalcule
- * sur l'agrégat, et ce qui sépare la facture de la somme des bons se range en
- * écarts — arrondi de la TVA, TVA non ventilée, bon incohérent — dont la
- * somme est la différence, au centime (plan
- * `simulateur-dossier-de-facturation.md`, D4, §3.4).
+ * Le HT des lignes est repris des bons (F6, 2026-10-08, `invoice-lines.ts`).
+ * Les remises et le port qui suit la marchandise le sont aussi, **taux par
+ * taux** : chaque bon les découpe sur ses propres lignes, au plus fort reste
+ * (`invoice-order-split.ts`), et la facture somme ces parts par motif et par
+ * taux (plan `plan-remises-ventilees-bon-par-bon.md`, R1-R3, 2026-10-22). Une
+ * répartition faite une fois sur le cycle faisait glisser la remise d'un bon
+ * sur les taux d'un autre — un écart de composition rangé en « arrondi ».
+ *
+ * Seule la TVA se recalcule : une fois par taux, sur la base imposable entière
+ * de la facture (BR-S-09). Ce qui sépare la facture de la somme des bons se
+ * range en écarts — arrondi de la TVA, TVA non ventilée, bon incohérent — dont
+ * la somme est la différence, au centime (plan
+ * `simulateur-dossier-de-facturation.md`, D4, §3.4). L'arrondi de la TVA est
+ * désormais un pur arrondi : le bon arrondit `base exacte × taux`, la facture
+ * `Σ parts entières × taux`.
  *
  * ## La part de TVA des bons non ventilés
  *
  * La TVA d'un taux est calculée sur toute la facture ; le plan range pourtant
  * à part « la TVA des bons d'avant le 2026-09-07 dans la facture ». Elle est
- * prise ici comme la TVA de la facture **que ces seuls bons feraient**, et
- * l'arrondi de la TVA reçoit le reste. La somme des deux écarts ne dépend pas
- * de ce choix ; leur partage, si — il est remonté au plan.
+ * prise ici comme la TVA de la facture **que ces seuls bons feraient** — leurs
+ * parts découpées de la même façon (R5) —, et l'arrondi de la TVA reçoit le
+ * reste. La somme des deux écarts ne dépend pas de ce choix ; leur partage, si.
  *
  * Un bon dont les parts figées ne retombent pas sur son `vatCents` est traité
  * comme non ventilé, comme au relevé de cycle (`cycle-statement.ts`) : sans
@@ -69,34 +81,22 @@ export function simulateInvoiceDossier(orders: readonly FrozenInvoiceOrder[]): I
   };
 }
 
-/** La facture de ces bons, en une fois. */
+/** La facture de ces bons : leurs parts additionnées, la TVA calculée une fois. */
 function buildInvoice(orders: readonly FrozenInvoiceOrder[]): Invoice {
   const lines = aggregateInvoiceLines(orders);
-  const companyDiscountCents = sum(orders.map((order) => order.discountCents));
-  const voucherDiscountCents = sum(orders.map((order) => order.voucherDiscountCents));
-  const goods = lines.map((line) => ({ htCents: line.amountCents, vatRate: line.vatRate }));
+  const splits = orders.map(splitInvoiceOrder);
   const vat = invoiceVatBreakdown({
-    goods,
+    goods: lines.map((line) => ({ htCents: line.amountCents, vatRate: line.vatRate })),
     allowances: [
-      // La remise de retrait se répartit sur les seules lignes qui y étaient
-      // éligibles (V3 du plan des exclusions) : la ventiler sur une boisson
-      // exclue retrancherait de la base à 20 % ce que le bon a retranché du
-      // pain à 5,5 %. Le bon de fidélité garde toutes les marchandises.
-      {
-        key: COMPANY_DISCOUNT,
-        amountCents: companyDiscountCents,
-        prorataBases: lines
-          .filter((line) => line.pickupDiscountEligible !== false)
-          .map((line) => ({ htCents: line.amountCents, vatRate: line.vatRate })),
-      },
-      { key: LOYALTY_VOUCHER, amountCents: voucherDiscountCents },
+      { key: COMPANY_DISCOUNT, byRate: splits.flatMap((split) => split.pickupDiscount) },
+      { key: LOYALTY_VOUCHER, byRate: splits.flatMap((split) => split.voucher) },
     ],
-    charges: [...deliveryCharges(orders), ...lateFeeCharges(orders)],
+    charges: [...deliveryCharges(splits), ...lateFeeCharges(orders)],
   });
   return {
     lines,
-    companyDiscountCents,
-    voucherDiscountCents,
+    companyDiscountCents: sum(splits.map((split) => split.pickupDiscountCents)),
+    voucherDiscountCents: sum(splits.map((split) => split.voucherCents)),
     lateFeeCents: sum(orders.map((order) => order.lateFeeCents)),
     deliveries: deliveryLines(orders),
     vat,
@@ -126,55 +126,32 @@ function deliveryLines(orders: readonly FrozenInvoiceOrder[]): readonly InvoiceD
     .map(({ mode, amountCents }) => ({ mode, amountCents }));
 }
 
-/**
- * Le port au taux normal, et le port qui suit la vente — réparti au prorata
- * des bases marchandise DES SEULS bons en ce mode, lues sur leurs lignes figées.
- */
-function deliveryCharges(orders: readonly FrozenInvoiceOrder[]): readonly InvoiceCharge[] {
-  const standard = orders.filter((o) => modeOf(o) === "standard");
-  const following = orders.filter((o) => modeOf(o) === "follows_goods");
+/** Le port au taux normal, et le port qui suit la vente — les parts de ses bons. */
+function deliveryCharges(splits: readonly OrderInvoiceSplit[]): readonly InvoiceCharge[] {
+  const standard = splits.map(standardDeliveryOf).filter((part) => part !== null);
+  const following = splits.flatMap((split) => split.followingDelivery);
   const charges: InvoiceCharge[] = [];
-  const standardCents = sum(standard.map((o) => o.deliveryFeeCents));
-  if (standardCents !== 0) {
-    charges.push({ key: DELIVERY_STANDARD, htCents: standardCents, vatRate: DELIVERY_VAT_RATE });
+  if (standard.length > 0) {
+    charges.push({ key: DELIVERY_STANDARD, byRate: standard });
   }
-  const followingCents = sum(following.map((o) => o.deliveryFeeCents));
-  if (followingCents !== 0) {
-    const carrying = following.filter((o) => o.deliveryFeeCents !== 0);
-    charges.push({
-      key: DELIVERY_FOLLOWS_GOODS,
-      htCents: followingCents,
-      prorataBases: goodsOf(carrying),
-    });
+  if (following.length > 0) {
+    charges.push({ key: DELIVERY_FOLLOWS_GOODS, byRate: following });
   }
   return charges;
 }
 
-function goodsOf(orders: readonly FrozenInvoiceOrder[]): readonly VatLine[] {
-  return orders.flatMap((order) =>
-    order.lines.map((line) => ({
-      htCents: line.lineTotalCents,
-      vatRate: normalizedVatRate(line.vatRate, order.reference),
-    })),
-  );
-}
-
 /** La surtaxe, une charge par taux ; un bon sans taux arrête le dossier. */
 function lateFeeCharges(orders: readonly FrozenInvoiceOrder[]): readonly InvoiceCharge[] {
-  const byRate = new Map<number, number>();
+  const byRate = new Map<number, RatedCents[]>();
   for (const order of orders) {
-    if (order.lateFeeCents === 0) {
-      continue;
+    const fee = lateFeeOf(order);
+    if (fee !== null) {
+      byRate.set(fee.vatRate, [...(byRate.get(fee.vatRate) ?? []), fee]);
     }
-    if (order.lateFeeVatRate === null) {
-      throw new InvoiceDossierLateFeeRateMissingError(order.reference);
-    }
-    byRate.set(order.lateFeeVatRate, (byRate.get(order.lateFeeVatRate) ?? 0) + order.lateFeeCents);
   }
-  return [...byRate.entries()].map(([vatRate, htCents]) => ({
+  return [...byRate.entries()].map(([vatRate, parts]) => ({
     key: `${LATE_FEE_PREFIX}${String(vatRate)}`,
-    htCents,
-    vatRate,
+    byRate: parts,
   }));
 }
 

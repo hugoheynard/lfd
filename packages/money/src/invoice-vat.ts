@@ -1,5 +1,6 @@
 import { fractionByBasisPoints, fromCents, roundToCents } from "./exact.js";
-import { DELIVERY_VAT_RATE, type VatLine } from "./vat.js";
+import type { RatedCents } from "./order-vat-split.js";
+import type { VatLine } from "./vat.js";
 
 /**
  * **La ventilation de TVA d'une FACTURE** — au sens de la norme EN 16931, que
@@ -17,43 +18,35 @@ import { DELIVERY_VAT_RATE, type VatLine } from "./vat.js";
  * centimes différents ; mêler les deux dans une seule fonction aurait fait
  * dépendre le bon d'une option de facture.
  *
- * ## Les répartitions, aux plus forts restes
+ * ## Elle ne répartit plus rien (2026-10-22)
  *
- * Une remise ou un port qui suit la marchandise se répartit au prorata des
- * bases, **en centimes entiers** : chaque taux reçoit sa part plancher, puis les
- * centimes restants vont aux plus forts restes — à égalité, au taux le plus
- * élevé d'abord. La somme des parts vaut alors le montant, exactement : une
- * facture dont les remises par taux ne retombent pas sur la remise totale est
- * refusée par un validateur.
+ * Remises et frais arrivent **déjà découpés par taux**, en centimes entiers :
+ * chaque bon découpe les siens (`splitOrderByRate`), et l'appelant additionne
+ * ces parts taux par taux (plan
+ * `documentation/comptabilite/facturation/plan-remises-ventilees-bon-par-bon.md`, R3).
+ * Une répartition faite ici, sur toutes les marchandises de la facture, faisait
+ * glisser la remise d'un bon sur les taux d'un autre. Il ne reste qu'à poser,
+ * par taux, la base imposable et sa TVA, calculée une fois (R4).
  *
  * Elle ne connaît aucune règle de facturation : quelles remises, quels frais,
- * quel port suit quelles marchandises — l'appelant le décide.
+ * sur quels bons — l'appelant le décide.
  */
 
 /**
- * Une remise d'une **nature** (remise société, bon de fidélité…), POSITIVE, en centimes.
- *
- * `prorataBases` restreint son assiette, comme celle d'un frais : la remise
- * d'un point de retrait ne se répartit que sur les lignes qui y étaient
- * éligibles (V3 du plan
- * `documentation/livraisons/clientele/plan-remise-retrait-par-clientele-et-exclusions.md`).
- * Absent = toutes les marchandises de la facture, ce qu'était toute remise
- * avant les exclusions.
+ * Une remise d'une **nature** (remise de retrait, bon de fidélité…), POSITIVE,
+ * déjà découpée par taux en centimes. Une part sur un taux sans marchandise
+ * est refusée : elle rendrait une base négative.
  */
 export interface InvoiceAllowance {
   readonly key: string;
-  readonly amountCents: number;
-  readonly prorataBases?: readonly VatLine[] | undefined;
+  readonly byRate: readonly RatedCents[];
 }
 
-/**
- * Un frais hors remise, en centimes : soit à son propre taux, soit réparti au
- * prorata de bases marchandise **fournies par l'appelant** — celles des seuls
- * bons dont le port suit la vente, pas celles de toute la facture.
- */
-export type InvoiceCharge =
-  | { readonly key: string; readonly htCents: number; readonly vatRate: number }
-  | { readonly key: string; readonly htCents: number; readonly prorataBases: readonly VatLine[] };
+/** Un frais hors remise (port, surtaxe), déjà découpé par taux en centimes. */
+export interface InvoiceCharge {
+  readonly key: string;
+  readonly byRate: readonly RatedCents[];
+}
 
 /** Entrées de {@link invoiceVatBreakdown}. Tout est hors taxe, en centimes. */
 export interface InvoiceVatInput {
@@ -100,23 +93,21 @@ export interface InvoiceVatBreakdown {
 /**
  * Ventile la TVA d'une facture, catégorie par catégorie.
  *
- * ⚠️ Une remise sur une facture **sans marchandise** n'a aucune base où se
- * répartir : `RangeError`, plutôt qu'une remise qui disparaîtrait du calcul.
- * Un frais au prorata de bases toutes nulles prend, lui, le taux normal — la
- * même règle que `ventilateVat`.
+ * ⚠️ Une remise qui dépasse la marchandise de son taux — ou qui tombe sur un
+ * taux sans marchandise — rendrait une base imposable négative : `RangeError`,
+ * plutôt qu'un avoir déguisé en facture.
  */
 export function invoiceVatBreakdown(input: InvoiceVatInput): InvoiceVatBreakdown {
   const goodsByRate = sumByRate(input.goods);
-  const allowanceParts = input.allowances.map((allowance) =>
-    allocateAllowance(allowance, goodsByRate),
-  );
-  const chargeParts = input.charges.map(allocateCharge);
+  const allowanceParts = input.allowances.map((allowance) => byRateOf(allowance.byRate));
+  const chargeParts = input.charges.map((charge) => byRateOf(charge.byRate));
   const rates = new Set<number>(goodsByRate.keys());
   for (const parts of chargeParts) {
     for (const rate of parts.keys()) {
       rates.add(rate);
     }
   }
+  ensureAllowancesFit(input.allowances, allowanceParts, goodsByRate);
   const categories = [...rates]
     .sort((left, right) => left - right)
     .map((rate) =>
@@ -163,66 +154,32 @@ function totalsOf(categories: readonly InvoiceVatCategory[]): InvoiceVatBreakdow
   };
 }
 
-function allocateAllowance(
-  allowance: InvoiceAllowance,
+function ensureAllowancesFit(
+  allowances: readonly InvoiceAllowance[],
+  parts: readonly ReadonlyMap<number, number>[],
   goodsByRate: ReadonlyMap<number, number>,
-): ReadonlyMap<number, number> {
-  const bases =
-    allowance.prorataBases === undefined ? goodsByRate : sumByRate(allowance.prorataBases);
-  if (allowance.amountCents !== 0 && totalWeight(bases) === 0) {
-    throw new RangeError(`Remise « ${allowance.key} » sans aucune marchandise où la répartir.`);
-  }
-  return allocateLargestRemainder(allowance.amountCents, bases);
+): void {
+  const used = new Map<number, number>();
+  parts.forEach((byRate, index) => {
+    for (const [rate, cents] of byRate) {
+      const total = (used.get(rate) ?? 0) + cents;
+      used.set(rate, total);
+      if (cents < 0 || total > (goodsByRate.get(rate) ?? 0)) {
+        const key = allowances[index]?.key ?? "";
+        throw new RangeError(
+          `Remise « ${key} » au taux de ${String(rate)} % : elle dépasse la marchandise de ce taux.`,
+        );
+      }
+    }
+  });
 }
 
-function allocateCharge(charge: InvoiceCharge): ReadonlyMap<number, number> {
-  if ("vatRate" in charge) {
-    return new Map([[charge.vatRate, charge.htCents]]);
+function byRateOf(rated: readonly RatedCents[]): ReadonlyMap<number, number> {
+  const byRate = new Map<number, number>();
+  for (const part of rated) {
+    byRate.set(part.vatRate, (byRate.get(part.vatRate) ?? 0) + Math.trunc(part.amountCents));
   }
-  const bases = sumByRate(charge.prorataBases);
-  if (totalWeight(bases) === 0) {
-    return new Map([[DELIVERY_VAT_RATE, charge.htCents]]);
-  }
-  return allocateLargestRemainder(charge.htCents, bases);
-}
-
-/**
- * Répartit `amountCents` au prorata de `weights`, en centimes entiers : les
- * planchers, puis un centime par plus fort reste — à égalité, taux le plus
- * élevé d'abord. Σ des parts = `amountCents`, exactement. En `bigint` : le
- * produit montant × poids n'a pas à rester sous `MAX_SAFE_INTEGER`.
- */
-function allocateLargestRemainder(
-  amountCents: number,
-  weights: ReadonlyMap<number, number>,
-): ReadonlyMap<number, number> {
-  const total = BigInt(totalWeight(weights));
-  const parts = new Map<number, number>();
-  if (total === 0n) {
-    return parts;
-  }
-  const amount = BigInt(Math.trunc(amountCents));
-  const remainders: { readonly rate: number; readonly remainder: bigint }[] = [];
-  let allocated = 0n;
-  for (const [rate, weight] of weights) {
-    const numerator = amount * BigInt(weight);
-    const floor = numerator / total;
-    parts.set(rate, Number(floor));
-    allocated += floor;
-    remainders.push({ rate, remainder: numerator % total });
-  }
-  remainders.sort((left, right) =>
-    left.remainder === right.remainder
-      ? right.rate - left.rate
-      : left.remainder > right.remainder
-        ? -1
-        : 1,
-  );
-  for (let left = amount - allocated, i = 0; left > 0n; left -= 1n, i += 1) {
-    const rate = remainders[i % remainders.length]?.rate ?? 0;
-    parts.set(rate, (parts.get(rate) ?? 0) + 1);
-  }
-  return parts;
+  return byRate;
 }
 
 function partOf(
@@ -239,14 +196,6 @@ function sumByRate(lines: readonly VatLine[]): Map<number, number> {
     byRate.set(line.vatRate, (byRate.get(line.vatRate) ?? 0) + Math.trunc(line.htCents));
   }
   return byRate;
-}
-
-function totalWeight(weights: ReadonlyMap<number, number>): number {
-  let total = 0;
-  for (const weight of weights.values()) {
-    total += weight;
-  }
-  return total;
 }
 
 function sumAmounts(parts: readonly InvoiceVatPart[]): number {

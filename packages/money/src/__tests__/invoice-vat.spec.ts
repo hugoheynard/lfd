@@ -1,87 +1,71 @@
 import { invoiceVatBreakdown } from "../invoice-vat.js";
 
+/**
+ * Depuis le 2026-10-22, la facture ne répartit plus rien : remises et frais
+ * arrivent découpés par taux (`splitOrderByRate`, éprouvé à part). Ce qui
+ * reste à éprouver ici : les catégories, la base imposable, la TVA une fois
+ * par taux (BR-S-09), et le refus d'une base négative.
+ */
 describe("invoiceVatBreakdown", () => {
-  /**
-   * 333 / 333 / 334 sur 1000, remise de 100 : 33,3 / 33,3 / 33,4 → planchers
-   * 33 / 33 / 33, un centime de reste, au plus fort reste (20 %, 0,4).
-   * TVA : 300 × 5,5 % = 16,5 → 17 ; 300 × 10 % = 30 ; 300 × 20 % = 60.
-   */
-  it("répartit une remise aux plus forts restes, sa somme exactement", () => {
-    const result = invoiceVatBreakdown({
-      goods: [
-        { htCents: 333, vatRate: 5.5 },
-        { htCents: 333, vatRate: 10 },
-        { htCents: 334, vatRate: 20 },
-      ],
-      allowances: [{ key: "company", amountCents: 100 }],
-      charges: [],
-    });
-
-    expect(result.categories.map((c) => [c.rate, c.allowances[0]?.amountCents])).toEqual([
-      [5.5, 33],
-      [10, 33],
-      [20, 34],
-    ]);
-    expect(result.categories.map((c) => [c.taxableBaseCents, c.vatCents])).toEqual([
-      [300, 17],
-      [300, 30],
-      [300, 60],
-    ]);
-    expect(result).toMatchObject({
-      goodsHtCents: 1000,
-      allowancesCents: 100,
-      taxableBaseCents: 900,
-      vatCents: 107,
-      totalCents: 1007,
-    });
-  });
-
-  it("à égalité de reste, donne le centime au taux le plus élevé", () => {
-    const result = invoiceVatBreakdown({
-      goods: [
-        { htCents: 500, vatRate: 20 },
-        { htCents: 500, vatRate: 5.5 },
-      ],
-      allowances: [{ key: "voucher", amountCents: 1 }],
-      charges: [],
-    });
-
-    expect(result.categories.map((c) => [c.rate, c.allowances[0]?.amountCents])).toEqual([
-      [5.5, 0],
-      [20, 1],
-    ]);
-  });
-
-  it("répartit chaque remise à part, une part par nature et par taux", () => {
+  it("pose les parts reçues taux par taux, une part par nature, zéros compris", () => {
     const result = invoiceVatBreakdown({
       goods: [
         { htCents: 1000, vatRate: 5.5 },
         { htCents: 3000, vatRate: 20 },
       ],
       allowances: [
-        { key: "company", amountCents: 400 },
-        { key: "voucher", amountCents: 3 },
+        { key: "company", byRate: [{ vatRate: 5.5, amountCents: 100 }] },
+        {
+          key: "voucher",
+          byRate: [
+            { vatRate: 5.5, amountCents: 1 },
+            { vatRate: 20, amountCents: 2 },
+          ],
+        },
       ],
       charges: [],
     });
 
-    // 400 → 100 / 300 ; 3 → 0,75 / 2,25 → 0 / 2 + reste à 5,5 % (0,75 > 0,25).
     expect(result.categories.map((c) => c.allowances)).toEqual([
       [
         { key: "company", amountCents: 100 },
         { key: "voucher", amountCents: 1 },
       ],
       [
-        { key: "company", amountCents: 300 },
+        { key: "company", amountCents: 0 },
         { key: "voucher", amountCents: 2 },
       ],
     ]);
+    // 899 × 5,5 % = 49,445 → 49 ; 2998 × 20 % = 599,6 → 600.
+    expect(result.categories.map((c) => [c.taxableBaseCents, c.vatCents])).toEqual([
+      [899, 49],
+      [2998, 600],
+    ]);
+    expect(result).toMatchObject({ allowancesCents: 103, vatCents: 649, totalCents: 4546 });
+  });
+
+  it("additionne deux parts du même taux d'une même nature", () => {
+    const result = invoiceVatBreakdown({
+      goods: [{ htCents: 1000, vatRate: 5.5 }],
+      allowances: [
+        {
+          key: "company",
+          byRate: [
+            { vatRate: 5.5, amountCents: 30 },
+            { vatRate: 5.5, amountCents: 20 },
+          ],
+        },
+      ],
+      charges: [],
+    });
+
+    expect(result.categories[0]?.allowances).toEqual([{ key: "company", amountCents: 50 }]);
   });
 
   it("une remise égale à la base laisse une base et une TVA nulles", () => {
     const result = invoiceVatBreakdown({
       goods: [{ htCents: 1000, vatRate: 5.5 }],
-      allowances: [{ key: "company", amountCents: 1000 }],
+      allowances: [{ key: "company", byRate: [{ vatRate: 5.5, amountCents: 1000 }] }],
       charges: [],
     });
 
@@ -98,11 +82,11 @@ describe("invoiceVatBreakdown", () => {
     expect(result.totalCents).toBe(0);
   });
 
-  it("sans marchandise, un frais à son taux fait seul sa catégorie", () => {
+  it("sans marchandise, un frais fait seul sa catégorie", () => {
     const result = invoiceVatBreakdown({
       goods: [],
       allowances: [],
-      charges: [{ key: "delivery", htCents: 500, vatRate: 20 }],
+      charges: [{ key: "delivery", byRate: [{ vatRate: 20, amountCents: 500 }] }],
     });
 
     expect(result.categories).toEqual([
@@ -117,57 +101,27 @@ describe("invoiceVatBreakdown", () => {
     ]);
   });
 
-  it("refuse une remise qu'aucune marchandise ne peut porter", () => {
+  it("refuse une remise sur un taux sans marchandise", () => {
     expect(() =>
       invoiceVatBreakdown({
-        goods: [],
-        allowances: [{ key: "company", amountCents: 10 }],
+        goods: [{ htCents: 1000, vatRate: 20 }],
+        allowances: [{ key: "company", byRate: [{ vatRate: 5.5, amountCents: 10 }] }],
         charges: [],
       }),
     ).toThrow(RangeError);
   });
 
-  it("un frais au prorata de bases nulles prend le taux normal", () => {
-    const result = invoiceVatBreakdown({
-      goods: [],
-      allowances: [],
-      charges: [{ key: "delivery", htCents: 500, prorataBases: [] }],
-    });
-
-    expect(result.categories.map((c) => [c.rate, c.vatCents])).toEqual([[20, 100]]);
-  });
-
-  /**
-   * Le port suit les bases QU'ON LUI DONNE (200 / 100), pas celles de la
-   * facture (1000 / 1000) : 66,67 / 33,33 → 66 / 33 + 1 au plus fort reste.
-   * TVA sur base arrondie : 1067 × 5,5 % = 58,685 → 59 ; 1033 × 10 % = 103,3 → 103.
-   */
-  it("répartit un port qui suit la marchandise au prorata de ses propres bases", () => {
-    const result = invoiceVatBreakdown({
-      goods: [
-        { htCents: 1000, vatRate: 5.5 },
-        { htCents: 1000, vatRate: 10 },
-      ],
-      allowances: [],
-      charges: [
-        {
-          key: "delivery",
-          htCents: 100,
-          prorataBases: [
-            { htCents: 200, vatRate: 5.5 },
-            { htCents: 100, vatRate: 10 },
-          ],
-        },
-      ],
-    });
-
-    expect(
-      result.categories.map((c) => [c.charges[0]?.amountCents, c.taxableBaseCents, c.vatCents]),
-    ).toEqual([
-      [67, 1067, 59],
-      [33, 1033, 103],
-    ]);
-    expect(result).toMatchObject({ chargesCents: 100, vatCents: 162, totalCents: 2262 });
+  it("refuse des remises qui, ensemble, dépassent la marchandise d'un taux", () => {
+    expect(() =>
+      invoiceVatBreakdown({
+        goods: [{ htCents: 100, vatRate: 5.5 }],
+        allowances: [
+          { key: "company", byRate: [{ vatRate: 5.5, amountCents: 60 }] },
+          { key: "voucher", byRate: [{ vatRate: 5.5, amountCents: 41 }] },
+        ],
+        charges: [],
+      }),
+    ).toThrow(/dépasse la marchandise/);
   });
 
   /**
@@ -180,8 +134,8 @@ describe("invoiceVatBreakdown", () => {
         { htCents: 500, vatRate: 5.5 },
         { htCents: 500, vatRate: 5.5 },
       ],
-      allowances: [{ key: "company", amountCents: 1 }],
-      charges: [{ key: "late_fee", htCents: 200, vatRate: 10 }],
+      allowances: [{ key: "company", byRate: [{ vatRate: 5.5, amountCents: 1 }] }],
+      charges: [{ key: "late_fee", byRate: [{ vatRate: 10, amountCents: 200 }] }],
     });
 
     expect(result.categories.map((c) => [c.rate, c.taxableBaseCents, c.vatCents])).toEqual([

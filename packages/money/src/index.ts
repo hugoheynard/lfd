@@ -36,6 +36,8 @@ export type { VatExtra, VatLine, VatShare, VatVentilation, VatVentilationInput }
  */
 export { htFromTtc, htMillicentsOf, ttcCentsFromHtMillicents } from "./tax.js";
 export { invoiceVatBreakdown } from "./invoice-vat.js";
+export { splitCents, splitOrderByRate } from "./order-vat-split.js";
+export type { OrderVatSplit, RatedCents } from "./order-vat-split.js";
 export type {
   InvoiceAllowance,
   InvoiceCharge,

@@ -1,4 +1,4 @@
-import { invoiceVatBreakdown } from "@lfd/money";
+import { invoiceVatBreakdown, splitOrderByRate } from "@lfd/money";
 
 import {
   BUYER,
@@ -16,7 +16,10 @@ import {
   type InvoiceLineInput,
 } from "../../entities/invoice.types.js";
 import { InvoiceNumber } from "../../value-objects/invoice-number.js";
+import { simulateInvoiceDossier } from "../invoice-dossier.js";
+import { invoiceFromDossier } from "../invoice-from-dossier.js";
 import { refundCreditNote } from "../refund-credit-note.js";
+import { frozenBon, goodsLine } from "./per-order-cycle-fixtures.js";
 
 /**
  * **Les pièces témoins de la validation Factur-X** : une par forme que
@@ -53,12 +56,19 @@ export interface FacturXSample {
 function multiRateWithDiscountAndDelivery(): Invoice {
   const lines: readonly InvoiceLineInput[] = [line("PAIN", 5.5, 1_333, 3), line("JUS", 20, 667)];
   const goods = lines.map((l) => ({ htCents: l.amountCents, vatRate: l.vatRate }));
+  // Un seul bon : sa remise et son port qui suit la marchandise, découpés sur lui.
+  const split = splitOrderByRate({
+    lines: goods,
+    eligibleDiscountCents: 101,
+    discountCents: 0,
+    extras: [{ htCents: 199, followsGoods: true }],
+  });
   const vat = invoiceVatBreakdown({
     goods,
-    allowances: [{ key: "company_discount", amountCents: 101 }],
+    allowances: [{ key: "company_discount", byRate: split.eligibleDiscount }],
     charges: [
-      { key: "delivery_standard", htCents: 250, vatRate: 20 },
-      { key: "delivery_follows_goods", htCents: 199, prorataBases: goods },
+      { key: "delivery_standard", byRate: [{ vatRate: 20, amountCents: 250 }] },
+      { key: "delivery_follows_goods", byRate: split.extras[0] ?? [] },
     ],
   });
   return Invoice.issue(realisticInput({ id: "inv_rates", lines, vat }));
@@ -120,6 +130,36 @@ function weighed(): Invoice {
   return Invoice.issue(realisticInput({ id: "inv_kgm", lines, vat: breakdownOf(lines) }));
 }
 
+/**
+ * Un cycle dont chaque bon a sa composition : remise de retrait sur le pain
+ * seul (boisson exclue), port qui suit la marchandise, port au taux normal.
+ * Les remises et le port arrivent découpés bon par bon (plan
+ * `plan-remises-ventilees-bon-par-bon.md`, §3).
+ */
+function perOrderCycle(): Invoice {
+  const computed = simulateInvoiceDossier([
+    frozenBon({
+      reference: "CMD-1",
+      lines: [goodsLine("PAIN", 5.5, 2_333), goodsLine("JUS", 20, 1_001, true)],
+      pickupDiscountCents: 467,
+    }),
+    frozenBon({
+      reference: "CMD-2",
+      lines: [goodsLine("PAIN", 5.5, 1_111), goodsLine("JUS", 20, 777), goodsLine("FLAN", 10, 499)],
+      deliveryFeeCents: 333,
+      deliveryVatMode: "follows_goods",
+    }),
+    frozenBon({
+      reference: "CMD-3",
+      lines: [goodsLine("JUS", 20, 3_001)],
+      deliveryFeeCents: 250,
+      deliveryVatMode: "standard",
+    }),
+  ]).invoice;
+  const { lines: _lines, vat: _vat, ...issue } = realisticInput({ id: "inv_per_order" });
+  return invoiceFromDossier({ ...issue, computed });
+}
+
 export function facturXSamples(): readonly FacturXSample[] {
   return [
     { name: "facture-du-mois", invoice: Invoice.issue(realisticInput({})) },
@@ -128,5 +168,6 @@ export function facturXSamples(): readonly FacturXSample[] {
     { name: "carte-acquittee", invoice: paidByCard() },
     { name: "avoir-partiel", invoice: partialCreditNote() },
     { name: "quantites-au-kilo", invoice: weighed() },
+    { name: "remises-bon-par-bon", invoice: perOrderCycle() },
   ];
 }

@@ -1,12 +1,16 @@
 import type { FrozenInvoiceOrder, InconsistentOrder } from "./invoice-dossier.types.js";
+import { splitInvoiceOrder } from "./invoice-order-split.js";
 
 /**
  * **Un bon dont le total ne se recompose pas** à partir de ses propres montants
  * figés : `Σ lignes − remise − bon de fidélité + port + surtaxe + TVA`.
  *
- * Le cas connu est la remise plafonnée à la passation, mais la règle ne le
- * suppose pas : tout bon qui ne vérifie pas l'égalité est signalé (décision de
- * Hugo, 2026-10-08). Les trois écarts du plan (§3.4) supposent cette égalité
+ * Les remises sont celles que la facture déduit, **bornées** comme le bon
+ * les a bornées (`invoice-order-split.ts`, 2026-10-22) : une remise figée
+ * au-delà du panier — bons d'avant `90eac6979` — n'est plus déduite en entier
+ * par la facture, et n'est donc plus un écart. La règle ne suppose aucun cas :
+ * tout bon qui ne vérifie pas l'égalité est signalé (décision de Hugo,
+ * 2026-10-08). Les trois écarts du plan (§3.4) supposent cette égalité
  * bon par bon ; sans elle, ils ne s'additionnent plus en la différence. L'écart
  * de ces bons devient donc un **quatrième terme nommé**, et la somme reste
  * exacte au centime.
@@ -30,10 +34,11 @@ export function inconsistentOrders(
 
 function recomposedTotalCents(order: FrozenInvoiceOrder): number {
   const goods = order.lines.reduce((total, line) => total + line.lineTotalCents, 0);
+  const split = splitInvoiceOrder(order);
   return (
     goods -
-    order.discountCents -
-    order.voucherDiscountCents +
+    split.pickupDiscountCents -
+    split.voucherCents +
     order.deliveryFeeCents +
     order.lateFeeCents +
     order.vatCents

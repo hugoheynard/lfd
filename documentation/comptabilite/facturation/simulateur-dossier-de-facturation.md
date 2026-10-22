@@ -31,14 +31,19 @@ unitPriceMillicents, taux normalisé)` ; quantité = Σ, prix unitaire à cinq
   retrouve le HT de ses bons au centime ; la norme l'admet), période =
   première → dernière date demandée, libellé le plus récent (« vendu aussi
   sous… » si un autre).
-- **Remises** par nature (remise société, bon de fidélité) et **frais**
-  (surtaxe, livraison) : sommes exactes des montants figés. La livraison suit
-  le mode figé sur chaque bon : taux normal, ou prorata des bases de ses bons.
+- **Remises** par nature (remise de retrait, bon de fidélité) et **frais**
+  (surtaxe, livraison) : **découpés bon par bon** depuis le 2026-10-22
+  ([`plan-remises-ventilees-bon-par-bon.md`](plan-remises-ventilees-bon-par-bon.md)).
+  Chaque bon découpe, dans l'ordre de `ventilateVat`, sa remise de retrait sur
+  ses lignes éligibles, son bon de fidélité sur le net laissé, son port qui
+  suit la marchandise sur ses bases brutes — en centimes, aux **plus forts
+  restes**, égalité au taux le plus bas (`splitOrderByRate`,
+  `packages/money/src/order-vat-split.ts`). La facture additionne ces parts
+  par motif et par taux ; elle ne répartit plus rien.
 - **La TVA se calcule une fois, sur la facture** (EN 16931, BR-S-09) :
-  `invoiceVatBreakdown` (`packages/money/src/invoice-vat.ts`) répartit chaque
-  remise au prorata des bases aux **plus forts restes**, puis TVA d'un taux =
-  `arrondi(base imposable arrondie × taux)`. `ventilateVat`, celle des bons,
-  n'a pas changé.
+  `invoiceVatBreakdown` (`packages/money/src/invoice-vat.ts`) pose par taux la
+  base imposable, puis TVA d'un taux = `arrondi(base imposable × taux)`.
+  `ventilateVat`, celle des bons, n'a pas changé.
 
 ## 2. Les écarts
 

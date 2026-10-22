@@ -55,7 +55,11 @@ describe("simulateInvoiceDossier — les bons incohérents", () => {
     const capped = bon("CMD-9", 2, 500, 60);
     const dossier = simulateInvoiceDossier([bon("CMD-1", 7, 50), capped]);
 
-    const recomposed = lineTotalCents(33_333, 2) - capped.discountCents + capped.vatCents;
+    // Depuis le découpage bon par bon (2026-10-22), la facture ne déduit d'un
+    // bon que la remise bornée à sa marchandise — 67 c ici, pas les 500 figés —
+    // et c'est ce montant-là que le quatrième terme recompose.
+    const goods = lineTotalCents(33_333, 2);
+    const recomposed = goods - Math.min(capped.discountCents, goods) + capped.vatCents;
     expect(dossier.inconsistentOrders).toEqual([
       {
         reference: "CMD-9",
