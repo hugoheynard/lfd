@@ -10,15 +10,15 @@ const NOW = new Date();
 const TOMORROW = addDays(instantToLocal(NOW).day, 1);
 
 describe("le bon de commande d'exemple", () => {
-  it("pro : deux taux, la remise du point, le port, réglé au compte et hors taxe", () => {
+  it("pro : deux taux, le port sans remise de retrait, réglé au compte et hors taxe", () => {
     const sheet = specimenClientSheet("pro", NOW);
 
     expect(sheet.variant).toBe("pro");
     expect(sheet.fulfillment.method).toBe("delivery");
     expect(sheet.requestedFor).toBe(TOMORROW);
     expect(sheet.money.vatShares?.map((share) => share.rate)).toEqual([5.5, 20]);
-    // 5 % du sous-total, au centime le plus proche.
-    expect(sheet.money.discountCents).toBe(Math.round(sheet.money.subtotalCents * 0.05));
+    // Livré : pas de remise de retrait à côté du port (V5, 2026-10-22).
+    expect(sheet.money.discountCents).toBe(0);
     expect(sheet.money.deliveryFeeCents).toBe(1_500);
     expect(sheet.money.settlement).toBe("account");
     expect(sheet.lines.every((line) => line.unitPriceTtcCents === null)).toBe(true);
@@ -30,6 +30,9 @@ describe("le bon de commande d'exemple", () => {
 
     expect(sheet.variant).toBe("public");
     expect(sheet.fulfillment.method).toBe("pickup");
+    // 5 % du sous-total, au centime le plus proche — la remise du point.
+    expect(sheet.money.discountCents).toBe(Math.round(sheet.money.subtotalCents * 0.05));
+    expect(sheet.money.deliveryFeeCents).toBe(0);
     expect(sheet.lines.every((line) => line.lineTotalTtcCents !== null)).toBe(true);
     expect(sheet.money.settlement).toBe("paid");
     expect(sheet.customerPhone).not.toBeNull();

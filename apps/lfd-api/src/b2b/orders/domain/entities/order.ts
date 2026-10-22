@@ -22,6 +22,7 @@ import {
   ensureDeliveryFeeMatches,
   ensureDiscountMatches,
   ensureLateFeeMatches,
+  ensurePickupDiscountOnlyOnPickup,
   voucherDiscountOf,
 } from "./order-amount-guards.js";
 import { clienteleOf, normalizeFulfillment } from "./order-fulfillment.js";
@@ -124,6 +125,7 @@ export class Order {
     ensureDiscountMatches(input, eligibleSubtotalCents);
     ensureLateFeeMatches(input, subtotalCents);
     ensureDeliveryFeeMatches(input, subtotalCents);
+    ensurePickupDiscountOnlyOnPickup(input, fulfillment);
     const voucherDiscountCents = voucherDiscountOf(
       input.voucher,
       input.companyId,

@@ -1,7 +1,10 @@
 import type { BillingAddressPayload } from "@lfd/contracts";
 import { millicentsFromCents } from "@lfd/money";
 
-import { InvalidOrderPaymentError } from "../../errors/order-errors.js";
+import {
+  InvalidOrderPaymentError,
+  MisplacedPickupDiscountError,
+} from "../../errors/order-errors.js";
 import type { OrderLineInput } from "../../value-objects/order-line.js";
 import { Order, type DraftOrderInput } from "../order.js";
 
@@ -132,5 +135,59 @@ describe("Order.draft — la remise de retrait sur les lignes éligibles", () =>
       { rate: 5.5, amountCents: 45 },
       { rate: 20, amountCents: 180 },
     ]);
+  });
+});
+
+/** V5 du plan : une remise de retrait n'existe que sur une commande retirée. */
+describe("Order.draft — la remise de retrait seulement sur un retrait", () => {
+  const FEE = { mode: "amount", cents: 1_500 } as const;
+  const FREE = { mode: "amount", cents: 0 } as const;
+  const DELIVERED: DraftOrderInput["fulfillment"] = {
+    method: "delivery",
+    deliveryZoneId: "zone_1",
+    deliveryAddress: ADDRESS,
+    deliveryAddressId: null,
+    pickupAddress: null,
+  };
+
+  it("refuse une remise de retrait sur une livraison avec port", () => {
+    expect(() =>
+      placed({ fulfillment: DELIVERED, deliveryFeeCents: 1_500, deliveryFeeAdjustment: FEE }),
+    ).toThrow(new MisplacedPickupDiscountError("not_picked_up"));
+  });
+
+  it("refuse une remise de retrait sur une livraison à 0 €", () => {
+    expect(() =>
+      placed({ fulfillment: DELIVERED, deliveryFeeCents: 0, deliveryFeeAdjustment: FREE }),
+    ).toThrow(new MisplacedPickupDiscountError("not_picked_up"));
+  });
+
+  it("refuse une remise figée qui rend zéro, sur une livraison", () => {
+    expect(() => placed({ fulfillment: DELIVERED, lines: [BOISSON], discountCents: 0 })).toThrow(
+      new MisplacedPickupDiscountError("not_picked_up"),
+    );
+  });
+
+  it("refuse un retrait remisé qui porterait des frais de livraison", () => {
+    expect(() => placed({ deliveryFeeCents: 1_500, deliveryFeeAdjustment: FEE })).toThrow(
+      new MisplacedPickupDiscountError("with_delivery_fee"),
+    );
+  });
+
+  it("accepte le retrait remisé, sans port", () => {
+    expect(placed().discountCents).toBe(100);
+  });
+
+  it("accepte la livraison avec son port, sans remise", () => {
+    const state = placed({
+      fulfillment: DELIVERED,
+      discountCents: 0,
+      discountAdjustment: null,
+      deliveryFeeCents: 1_500,
+      deliveryFeeAdjustment: FEE,
+    });
+
+    expect(state.deliveryFeeCents).toBe(1_500);
+    expect(state.discountCents).toBe(0);
   });
 });

@@ -1,12 +1,12 @@
 import { cartAdjustmentCents, discountCentsOf } from "@lfd/contracts";
 
-import { InvalidOrderPaymentError } from "../errors/order-errors.js";
+import { InvalidOrderPaymentError, MisplacedPickupDiscountError } from "../errors/order-errors.js";
 import {
   InvalidOrderVoucherError,
   VoucherNotForCompanyOrderError,
 } from "../errors/order-voucher-errors.js";
 import { voucherImputationCents } from "../services/voucher-imputation.js";
-import type { DraftOrderInput, OrderVoucher } from "./order.js";
+import type { DraftOrderInput, OrderFulfillmentInput, OrderVoucher } from "./order.js";
 
 /**
  * Les **gardes de montant** de `Order.draft` : chaque terme du panier arrive de
@@ -93,6 +93,31 @@ export function ensureDiscountMatches(input: DraftOrderInput, eligibleSubtotalCe
     throw new InvalidOrderPaymentError(
       "La remise retenue ne correspond pas à l'ajustement appliqué.",
     );
+  }
+}
+
+/**
+ * Une remise de retrait n'existe que sur une commande **retirée** — frais ou
+ * pas — et une commande retirée n'a pas de port (V5 du plan
+ * `plan-remise-retrait-par-clientele-et-exclusions.md`, Hugo, 2026-10-22).
+ * Lu sur le montant ET sur la trace figée : un ajustement de remise qui rend
+ * zéro reste une remise de retrait posée au mauvais endroit.
+ *
+ * @throws {MisplacedPickupDiscountError} remise sur une commande livrée, ou
+ * à côté de frais de livraison sur un retrait.
+ */
+export function ensurePickupDiscountOnlyOnPickup(
+  input: DraftOrderInput,
+  fulfillment: OrderFulfillmentInput,
+): void {
+  if (input.discountCents === 0 && input.discountAdjustment === null) {
+    return;
+  }
+  if (fulfillment.method !== "pickup") {
+    throw new MisplacedPickupDiscountError("not_picked_up");
+  }
+  if (input.deliveryFeeCents > 0) {
+    throw new MisplacedPickupDiscountError("with_delivery_fee");
   }
 }
 

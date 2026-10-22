@@ -95,12 +95,20 @@ function line(
 /**
  * La commande d'exemple de la variante demandée, composée par l'agrégat.
  *
+ * 🔴 **Seul le bon public porte la remise** : elle est celle d'un point de
+ * retrait, et le bon pro part en livraison avec son port. Les deux ensemble
+ * sont refusés par l'agrégat (V5 du plan
+ * `plan-remise-retrait-par-clientele-et-exclusions.md`, 2026-10-22).
+ *
  * La remise se calcule sur le sous-total que l'agrégat rend : un premier
  * brouillon sans remise le donne, le second porte la remise que
  * `discountCentsOf` en déduit — exactement la garde que l'agrégat refait.
  */
 function specimenOrder(variant: SheetVariant, requestedFor: Date): Order {
-  const base = variant === "pro" ? proInput(requestedFor) : publicInput(requestedFor);
+  if (variant === "pro") {
+    return Order.draft(proInput(requestedFor));
+  }
+  const base = publicInput(requestedFor);
   const subtotalCents = Order.draft(base).earningAmounts.subtotalCents;
   return Order.draft({
     ...base,

@@ -183,6 +183,34 @@ export class InvalidOrderPaymentError extends DomainError {
   }
 }
 
+/** Les deux cas qu'une remise de retrait peut rencontrer hors de sa place. */
+export type MisplacedPickupDiscountCase = "not_picked_up" | "with_delivery_fee";
+
+const MISPLACED_PICKUP_DISCOUNT_MESSAGES: Readonly<Record<MisplacedPickupDiscountCase, string>> = {
+  not_picked_up:
+    "Cette commande est livrée et porte une remise de retrait : la remise du point " +
+    "de retrait ne s'applique qu'à une commande retirée. Passer la commande en " +
+    "retrait, ou la livrer sans remise de retrait.",
+  with_delivery_fee:
+    "Cette commande en retrait porte des frais de livraison à côté de sa remise de " +
+    "retrait : une commande retirée n'a pas de port. Retirer les frais de livraison.",
+};
+
+/**
+ * Une remise de retrait hors d'une commande retirée. Elle n'existe que sur une
+ * commande retirée, frais ou pas, et une commande retirée n'a pas de port (V5
+ * du plan `plan-remise-retrait-par-clientele-et-exclusions.md`, Hugo,
+ * 2026-10-22). Refus de forme (400) : aucun parcours ne le produit.
+ */
+export class MisplacedPickupDiscountError extends DomainError {
+  constructor(readonly misplacement: MisplacedPickupDiscountCase) {
+    super(
+      `orders.pickup_discount.${misplacement}`,
+      MISPLACED_PICKUP_DISCOUNT_MESSAGES[misplacement],
+    );
+  }
+}
+
 /**
  * On demande à régler une commande qui n'attend aucun règlement — déjà payée,
  * portée au compte, ou annulée. Refus **métier** (409) : la demande est bien

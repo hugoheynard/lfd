@@ -21,7 +21,7 @@ describe("la facture d'exemple", () => {
     expect(state.orders.map((order) => order.reference)).toEqual(["EXEMPLE-0001", "EXEMPLE-0002"]);
   });
 
-  it("reprend les lignes des deux bons, deux taux, la remise et le port", () => {
+  it("reprend les lignes des deux bons, deux taux et le port, sans remise de retrait", () => {
     const order = specimenProOrderState(NOW);
     const state = specimenInvoice(NOW).toState();
 
@@ -29,7 +29,9 @@ describe("la facture d'exemple", () => {
       order.lines.map((line) => 2 * line.lineTotalCents),
     );
     expect(new Set(state.lines.map((line) => line.vatRate))).toEqual(new Set([5.5, 20]));
-    expect(state.vat.allowancesCents).toBe(2 * order.discountCents);
+    // Des bons livrés : aucune remise de retrait (V5, 2026-10-22).
+    expect(order.discountCents).toBe(0);
+    expect(state.vat.allowancesCents).toBe(0);
     expect(state.vat.chargesCents).toBe(2 * order.deliveryFeeCents);
   });
 });

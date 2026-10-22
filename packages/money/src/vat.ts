@@ -239,12 +239,11 @@ function netOfDiscounts(lines: readonly VatLine[], steps: readonly DiscountStep[
  * solde), les proportions nettes sont 0/0. Tant que les remises portent sur
  * toutes les lignes, les deux proportions coïncident.
  *
- * ⚠️ Une remise **restreinte** les fait diverger. Ce n'est pas un cas que la
- * caisse produit au 2026-10-22 : la remise restreinte est celle du point de
- * retrait, et la passation ne la pose qu'en retrait, sans port (V5 du plan
- * des exclusions — l'agrégat `Order` ne le refuse PAS : le bon d'exemple
- * porte une remise et un port, `specimen-data.ts`). La surtaxe, elle,
- * porte son propre taux.
+ * ⚠️ Une remise **restreinte** les ferait diverger, et ce cas n'existe pas :
+ * la remise restreinte est celle du point de retrait, et une commande retirée
+ * n'a pas de port. L'agrégat `Order` refuse une remise de retrait hors d'un
+ * retrait ou à côté de frais de livraison (`MisplacedPickupDiscountError`, V5
+ * du plan des exclusions — vérifié le 2026-10-22). La surtaxe, elle, porte son propre taux.
  * Sans marchandise du tout, l'extra prend le taux normal.
  */
 function addExtra(
