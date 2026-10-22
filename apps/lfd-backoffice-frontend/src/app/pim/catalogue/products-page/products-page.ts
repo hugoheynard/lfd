@@ -1,12 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
   FoldButtonIconComponent,
   FoldCalloutComponent,
+  FoldCheckboxComponent,
   FoldDataTableCellDirective,
   FoldDataTableComponent,
   FoldDropdownComponent,
@@ -17,6 +18,7 @@ import {
   FoldPaginatorComponent,
   FoldPopoverTriggerDirective,
   FoldSearchComponent,
+  FoldViewToggleComponent,
   type FoldBadgeVariant,
   type FoldTableColumn,
   type FoldTableSort,
@@ -25,6 +27,16 @@ import {
 import { CatalogueApi, type Category, type Product, type VatRate } from '../catalogue-api';
 import { productStatusLabel, productStatusVariant } from '../product-status';
 import type { ProductStatus } from '../../data/models';
+import {
+  ALL_STATUSES,
+  familyOptions,
+  filterFromParams,
+  filterProducts,
+  filterToParams,
+  maskApplies,
+  type ProductsFilter,
+  type StatusFilter,
+} from './products-filter';
 import { nextSort, sortRows } from './products-sort';
 
 @Component({
@@ -46,6 +58,8 @@ import { nextSort, sortRows } from './products-sort';
     FoldElementTitleComponent,
     FoldLinkComponent,
     FoldButtonIconComponent,
+    FoldViewToggleComponent,
+    FoldCheckboxComponent,
   ],
   templateUrl: './products-page.html',
   styleUrl: './products-page.scss',
@@ -53,6 +67,7 @@ import { nextSort, sortRows } from './products-sort';
 export class ProductsPage {
   private readonly api = inject(CatalogueApi);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   protected readonly products = signal<Product[]>([]);
   protected readonly categories = signal<Category[]>([]);
@@ -68,6 +83,23 @@ export class ProductsPage {
   protected readonly selectedCount = computed(() => this.selection().size);
   private readonly selectedIds = computed(() => [...this.selection()].map((key) => String(key)));
 
+  /** Famille, état et masque des archivées — relus de l'URL au chargement. */
+  protected readonly filter = signal<ProductsFilter>(
+    filterFromParams(this.route.snapshot.queryParamMap),
+  );
+  protected readonly familyOptions = computed(() =>
+    familyOptions(this.categories(), this.products()),
+  );
+  protected readonly statusOptions: readonly { value: StatusFilter; label: string }[] = [
+    { value: ALL_STATUSES, label: 'Toutes' },
+    { value: 'published', label: 'Actives' },
+    { value: 'draft', label: 'Inactives' },
+    { value: 'archived', label: 'Archivées' },
+  ];
+  /** Le masque est sans effet hors de « Toutes » : la case se grise alors. */
+  protected readonly maskDisabled = computed(() => this.filter().status !== ALL_STATUSES);
+  protected readonly maskChecked = computed(() => maskApplies(this.filter()));
+
   /**
    * Filtre du tableau : par nom, par référence **ou par famille**.
    *
@@ -81,7 +113,7 @@ export class ProductsPage {
    */
   protected readonly visibleProducts = computed<Product[]>(() => {
     const q = this.query().trim().toLowerCase();
-    const products = this.products();
+    const products = filterProducts(this.products(), this.filter());
     if (q === '') {
       return products;
     }
@@ -161,10 +193,18 @@ export class ProductsPage {
   // Pas de variante « illisible » ici : cette page tient sa propre liste et son
   // propre `error`, qu'elle AFFICHE au-dessus du tableau. L'état vide ne ment
   // donc pas — contrairement aux écrans qui lisent un store en silence.
-  protected readonly emptyState = {
-    title: 'Aucun produit',
-    subtitle: 'Créez votre premier produit pour démarrer le catalogue.',
-  };
+  // Un catalogue rempli que les filtres vident ne doit pas inviter à créer.
+  protected readonly emptyState = computed(() =>
+    this.products().length === 0
+      ? {
+          title: 'Aucun produit',
+          subtitle: 'Créez votre premier produit pour démarrer le catalogue.',
+        }
+      : {
+          title: 'Aucune fiche ne correspond',
+          subtitle: "Élargissez la famille, l'état ou la recherche.",
+        },
+  );
 
   protected readonly rowKey = (product: Product): string => product.id;
 
@@ -208,7 +248,45 @@ export class ProductsPage {
   /** Filtrer remet en page 1 pour ne pas rester sur une page vide. */
   protected onSearch(query: string): void {
     this.query.set(query);
+    this.afterFilter();
+  }
+
+  protected chooseFamily(family: string): void {
+    this.setFilter({ ...this.filter(), family });
+  }
+
+  protected chooseStatus(value: string): void {
+    const status = this.statusOptions.find((option) => option.value === value)?.value;
+    this.setFilter({ ...this.filter(), status: status ?? ALL_STATUSES });
+  }
+
+  protected toggleMask(hideArchived: boolean): void {
+    this.setFilter({ ...this.filter(), hideArchived });
+  }
+
+  /** Le filtre change, et l'URL le retient : un rechargement garde la vue. */
+  private setFilter(filter: ProductsFilter): void {
+    this.filter.set(filter);
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: filterToParams(filter),
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+    this.afterFilter();
+  }
+
+  /**
+   * Retour en page 1, et la sélection perd les lignes devenues invisibles :
+   * « Actions (N) » archiverait sinon des fiches qu'on ne voit plus.
+   */
+  private afterFilter(): void {
     this.page.set(1);
+    const visible = new Set(this.visibleProducts().map((p) => p.id));
+    const kept = [...this.selection()].filter((key) => visible.has(String(key)));
+    if (kept.length !== this.selection().size) {
+      this.selection.set(new Set(kept));
+    }
   }
 
   protected onPageSize(size: number): void {

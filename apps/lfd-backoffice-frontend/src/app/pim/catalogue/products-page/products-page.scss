@@ -5,6 +5,13 @@ code {
   font-size: 0.85em;
 }
 
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-md);
+}
+
 .table-toolbar {
   container-type: inline-size;
   display: flex;

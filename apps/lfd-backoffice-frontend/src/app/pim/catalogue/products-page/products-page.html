@@ -24,6 +24,35 @@
     </fold-callout>
   }
 
+  <div class="filters">
+    <fold-view-toggle
+      data-products-family
+      ariaLabel="Filtrer par famille"
+      size="sm"
+      [options]="familyOptions()"
+      [value]="filter().family"
+      (valueChange)="chooseFamily($event)"
+    />
+    <fold-view-toggle
+      data-products-status
+      ariaLabel="Filtrer par état"
+      size="sm"
+      [options]="statusOptions"
+      [value]="filter().status"
+      (valueChange)="chooseStatus($event)"
+    />
+    <!-- Hors de « Toutes », l'état choisit déjà : la case se grise et se lit
+         décochée, parce qu'elle ne cache plus rien. -->
+    <fold-checkbox
+      data-products-mask
+      size="sm"
+      label="Masquer les archivées"
+      [checked]="maskChecked()"
+      [disabled]="maskDisabled()"
+      (checkedChange)="toggleMask($event)"
+    />
+  </div>
+
   <fold-data-table
     [columns]="columns"
     [rows]="pagedProducts()"
@@ -36,7 +65,7 @@
     selectable
     [(selected)]="selection"
     toolbarSurface="accent"
-    [empty]="emptyState"
+    [empty]="emptyState()"
   >
     <div foldToolbar class="table-toolbar">
       <fold-element-title class="toolbar-title" variant="bar" icon="grid" title="Catalogue" />
