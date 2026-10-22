@@ -123,6 +123,12 @@ produits du catalogue publié, en sélection multiple.
   dans une catégorie remisée, ou réinclus dans une catégorie exclue. La table
   du §4.A.1 porte donc un sens (`exclude` | `include`), et une réinclusion
   n'est admise que sur un produit.
+- **Deux modes de portée** (Hugo, 2026-10-22 : « tout sauf… ou ça plus
+  ça ») : chaque remise est `all_except` (toutes les lignes sauf celles
+  listées) ou `only` (aucune ligne sauf celles listées). Dans les deux, une
+  règle sur un produit l'emporte sur celle de sa catégorie. La reprise pose
+  `all_except` sans règle, c'est-à-dire le comportement d'aujourd'hui. Une
+  remise `only` sans aucune inclusion ne porte sur rien : l'agrégat la refuse.
 - **Q2 — oui** : une règle sur un produit couvre toutes ses variantes.
 - **Catégorie figée sur la commande** : chaque ligne porte, en snapshot, le
   produit et la catégorie de l'article au moment de la passation
