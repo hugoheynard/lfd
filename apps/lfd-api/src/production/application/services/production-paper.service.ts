@@ -6,6 +6,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { AppConfig } from "../../../platform/config/app-config.js";
 import { DocumentStorageUnavailableError } from "../../../platform/shared/errors/storage-errors.js";
 import { ProductionDocumentStore } from "../../../platform/storage/production-document-store.js";
+import { OrderPrintColorsReader } from "../../channels/commerce/order-print-colors.reader.js";
 import { WorkshopShelvesReader } from "../../channels/commerce/workshop-shelves.reader.js";
 import type {
   ProductionDay,
@@ -19,6 +20,7 @@ import {
   renderAtelierSheetPdf,
   renderProductionCountPdf,
 } from "../../domain/services/atelier-sheet-pdf.js";
+import { countColorSharesOf } from "../../domain/services/count-color-shares.js";
 import { dayDossierOf } from "../../domain/services/day-dossier.js";
 import { dayDossierPdfKey, renderDayDossierPdf } from "../../domain/services/day-dossier-pdf.js";
 
@@ -64,9 +66,13 @@ export class ProductionPapers {
     private readonly documents: ProductionDocumentStore,
     private readonly config: AppConfig,
     private readonly shelves: WorkshopShelvesReader,
+    private readonly colors: OrderPrintColorsReader,
   ) {}
 
-  /** La feuille d'une commande, avec son QR de colisage. */
+  /**
+   * La feuille d'une commande, avec son QR de colisage et la pastille de sa
+   * couleur, lue au tirage (§0 bis du plan de la planche des documents v2).
+   */
   async sheetOf(
     order: ProductionOrderSnapshot,
     serviceDay: string,
@@ -75,7 +81,16 @@ export class ProductionPapers {
     return this.storedOr(
       atelierSheetPdfKey(order.orderId),
       `fiche-atelier-${order.reference}.pdf`,
-      () => renderAtelierSheetPdf(order, serviceDay, closedAt, this.colisageUrl(order.reference)),
+      async () => {
+        const colors = await this.colors.colorsOf([order.orderId]);
+        return renderAtelierSheetPdf(
+          order,
+          serviceDay,
+          closedAt,
+          this.colisageUrl(order.reference),
+          colors.get(order.orderId) ?? null,
+        );
+      },
     );
   }
 
@@ -93,7 +108,15 @@ export class ProductionPapers {
     return this.storedOr(
       productionCountPdfKey(snapshot.serviceDay),
       `compte-a-produire-${snapshot.serviceDay}.pdf`,
-      () => renderProductionCountPdf(snapshot.counts, snapshot.serviceDay, closedAt),
+      async () => {
+        const colors = await this.colors.colorsOf(snapshot.orders.map((order) => order.orderId));
+        return renderProductionCountPdf(
+          snapshot.counts,
+          snapshot.serviceDay,
+          closedAt,
+          countColorSharesOf(snapshot.orders, snapshot.resupplies ?? [], colors),
+        );
+      },
     );
   }
 
@@ -130,6 +153,7 @@ export class ProductionPapers {
       ...snapshot.orders.flatMap((order) => order.lines),
       ...resupplies.flatMap((resupply) => resupply.lines),
     ]);
+    const colors = await this.colors.colorsOf(snapshot.orders.map((order) => order.orderId));
     const bytes = await renderDayDossierPdf(
       dayDossierOf(snapshot.orders, shelves, resupplies),
       {
@@ -140,6 +164,7 @@ export class ProductionPapers {
         retakenByName: snapshot.retakenByName,
       },
       (reference) => this.colisageUrl(reference),
+      colors,
     );
     if (shelves !== null) {
       await this.archive(key, bytes);

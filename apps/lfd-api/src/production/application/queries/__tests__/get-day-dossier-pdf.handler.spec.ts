@@ -9,6 +9,7 @@ import { ProductionDayNotClosedError } from "../../../domain/errors/production-e
 import { ProductionDayRepository } from "../../../domain/ports/production-day.repository.js";
 import { dayDossierPdfKey } from "../../../domain/services/day-dossier-pdf.js";
 import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
+import { FixedOrderPrintColors } from "../../__tests__/order-print-colors-doubles.js";
 import { InMemoryProductionStore } from "../../__tests__/quality-doubles.js";
 import { ProductionPapers } from "../../services/production-paper.service.js";
 import { GetDayDossierPdfHandler } from "../get-day-dossier-pdf.handler.js";
@@ -76,14 +77,17 @@ class NoAdminOrigin extends AppConfig {
   }
 }
 
-function setup(day: ProductionDay): {
+function setup(
+  day: ProductionDay,
+  colors = new FixedOrderPrintColors(),
+): {
   handler: GetDayDossierPdfHandler;
   store: InMemoryProductionStore;
   shelves: Shelves;
 } {
   const store = new InMemoryProductionStore();
   const shelves = new Shelves();
-  const papers = new ProductionPapers(store, new NoAdminOrigin(), shelves);
+  const papers = new ProductionPapers(store, new NoAdminOrigin(), shelves, colors);
   return { handler: new GetDayDossierPdfHandler(new Days(day), papers), store, shelves };
 }
 
@@ -132,5 +136,16 @@ describe("GetDayDossierPdfHandler", () => {
     const paper = await handler.execute(new GetDayDossierPdfQuery(DAY));
     expect(paper.bytes.length).toBeGreaterThan(0);
     expect(store.objects.size).toBe(0);
+  });
+
+  it("lit la couleur de chaque commande au tirage, et ne la relit pas sur un dossier archivé", async () => {
+    const colors = new FixedOrderPrintColors(new Map([["ord_1", "#2e86ab"]]));
+    const { handler } = setup(closedDay(), colors);
+    const colored = await handler.execute(new GetDayDossierPdfQuery(DAY));
+    await handler.execute(new GetDayDossierPdfQuery(DAY));
+    expect(colors.asked).toEqual([["ord_1"]]);
+
+    const plain = await setup(closedDay()).handler.execute(new GetDayDossierPdfQuery(DAY));
+    expect(colored.bytes.equals(plain.bytes)).toBe(false);
   });
 });

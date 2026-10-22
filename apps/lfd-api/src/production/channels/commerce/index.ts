@@ -100,3 +100,6 @@ export {
   ResupplyLaunchedEvent,
   ResupplyLaunchedPayloadError,
 } from "./resupply-launched.event.js";
+// La pastille par commande sur les papiers du fournil (plan de la planche des
+// documents v2, §0 bis, 2026-10-22) : la couleur lue au tirage, par le commerce.
+export { OrderPrintColorsReader } from "./order-print-colors.reader.js";

@@ -127,6 +127,7 @@ import { OrderSheetAttachment } from "./application/services/order-sheet-attachm
 import { OrderSheetLogoSource } from "./domain/ports/order-sheet-logo.source.js";
 import { OrderSheetColorSource } from "./domain/ports/order-sheet-color.source.js";
 import { PrismaOrderSheetColorSource } from "./infrastructure/prisma-order-sheet-color.source.js";
+import { PrismaOrderPrintColors } from "./infrastructure/prisma-order-print-colors.reader.js";
 import { MailDeliveryEnRoute } from "./application/handlers/mail-delivery-en-route.handler.js";
 import { OnProductionDayClosed } from "./application/handlers/on-production-day-closed.handler.js";
 import { OnProductionDayReopened } from "./application/handlers/on-production-day-reopened.handler.js";
@@ -353,6 +354,9 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // allergènes §2) : un seul lecteur pour tous les papiers.
     { provide: OrderSheetLogoSource, useExisting: BrandLogoSource },
     { provide: OrderSheetColorSource, useClass: PrismaOrderSheetColorSource },
+    // La même règle, par lot, pour les papiers qui regroupent des commandes
+    // (fournil, transfert) : reliée à leurs ports dans `appBootstrap`.
+    PrismaOrderPrintColors,
     GetOrderPaymentHandler,
     GetAdminOrderHandler,
     GetOrderHandoverProofHandler,
@@ -546,6 +550,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     PrismaPendingOrdersReader,
     PendingSettlementSweep,
     DueThresholds,
+    PrismaOrderPrintColors,
     // Et le port de lecture des commandes, dont le troisième dépend : il
     // DÉLÈGUE la lecture du sujet de remise plutôt que de recopier son `select`,
     // et Nest doit pouvoir le lui donner là où il est instancié.

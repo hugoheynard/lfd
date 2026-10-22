@@ -19,6 +19,9 @@ import {
   rule,
 } from "../../../platform/pdf/paper-pdf-kit.js";
 import { methodLabel } from "./fulfillment-method-label.js";
+import { drawCountPie } from "./count-color-pie.js";
+import type { CountColorShare } from "./count-color-shares.js";
+import { drawOrderSwatch } from "./order-color-swatch.js";
 
 /**
  * **Les papiers du fournil** — la feuille d'une commande, et le compte du jour.
@@ -53,19 +56,24 @@ import { methodLabel } from "./fulfillment-method-label.js";
  * `colisageUrl` est vide quand l'origine du back-office n'est pas configurée :
  * on n'imprime alors AUCUN code, plutôt qu'un carré qui ne mènerait nulle part
  * une fois scanné devant un four.
+ *
+ * `color` est la pastille de la commande, devant sa référence (§0 bis du plan
+ * de la planche des documents v2, 2026-10-22) — `null` : aucune pastille.
  */
 export function renderAtelierSheetPdf(
   order: ProductionOrderSnapshot,
   serviceDay: string,
   closedAt: Date,
   colisageUrl: string,
+  color: string | null,
 ): Promise<Buffer> {
   return render(closedAt, `Fiche d'atelier ${order.reference}`, (doc) => {
     let y = MARGIN_Y;
     put(doc, "FICHE D'ATELIER", LEFT, y, { size: 16, bold: true });
     putRight(doc, longDate(serviceDay), RIGHT, y + 3, 12, true);
     y += 5.5 * MM;
-    put(doc, order.reference, LEFT, y, { size: 13, bold: true });
+    const swatch = drawOrderSwatch(doc, color, LEFT, y + 0.3 * MM);
+    put(doc, order.reference, LEFT + swatch, y, { size: 13, bold: true });
     putRight(doc, methodLabel(order.fulfillmentMethod), RIGHT, y, 11);
     y += 5 * MM;
     rule(doc, y, 2);
@@ -122,11 +130,16 @@ export function renderAtelierSheetPdf(
  * liste de commandes : le fournil s'en sert pour lancer des fournées, pas pour
  * préparer des sacs. La feuille par commande, elle, nomme le client — les deux
  * ne se remplacent pas.
+ *
+ * `shares` est la répartition du jour entre les couleurs de destination : UN
+ * camembert en haut, à droite du total (Hugo, 2026-10-22), sans un mot. Vide :
+ * aucun camembert.
  */
 export function renderProductionCountPdf(
   items: readonly ProducedItemSnapshot[],
   serviceDay: string,
   closedAt: Date,
+  shares: readonly CountColorShare[],
 ): Promise<Buffer> {
   return render(closedAt, `Compte à produire ${serviceDay}`, (doc) => {
     let y = MARGIN_Y;
@@ -138,6 +151,10 @@ export function renderProductionCountPdf(
     const total = items.reduce((sum, item) => sum + item.quantity, 0);
     y += 5 * MM;
     putCaps(doc, `${String(items.length)} articles, ${String(total)} pièces`, LEFT, y);
+    if (shares.length > 0) {
+      drawCountPie(doc, shares, { x: RIGHT - PIE, y: y + PIE - 1 * MM }, PIE);
+      y += 2 * PIE - 2 * MM;
+    }
     y += 7 * MM;
 
     for (const item of items) {
@@ -161,6 +178,9 @@ export function renderProductionCountPdf(
     putRight(doc, "La Folie Coffee — Fournil", RIGHT, PAGE_HEIGHT - MARGIN_Y, 9);
   });
 }
+
+/** Le rayon du camembert du jour. */
+const PIE = 6 * MM;
 
 /** La clé du compte à produire. Une par journée : il n'y en a jamais deux. */
 export function productionCountPdfKey(serviceDay: string): string {

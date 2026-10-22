@@ -1,4 +1,5 @@
 import type {
+  TransferOrderColorsReader,
   TransferOrderContentsReader,
   TransferSitePlacesReader,
   TransferSitesReader,
@@ -25,6 +26,8 @@ export interface RoundPaperTransferSources {
   readonly bins: TransferBinCounts;
   readonly places: TransferSitePlacesReader;
   readonly sites: TransferSitesReader;
+  /** La couleur de chaque commande portée, lue au tirage (§0 bis, 2026-10-22). */
+  readonly colors: TransferOrderColorsReader;
 }
 
 /**
@@ -50,7 +53,7 @@ export async function roundPaperTransfersOf(
     }
   }
   const siteIds = [...new Set(loaded.map((transfer) => transfer.siteId))];
-  const [contents, bins, places, sites, names] = await Promise.all([
+  const [contents, bins, places, sites, names, colors] = await Promise.all([
     itemContentsOf(
       sources.contents,
       sources.resupplies,
@@ -60,6 +63,7 @@ export async function roundPaperTransfersOf(
     sources.places.placesOf(siteIds),
     sources.sites.sitesFor(day, siteIds),
     sources.resupplies.namesOf(loaded),
+    colorsOf(sources.colors, loaded),
   ]);
   return new Map(
     loaded.map((transfer) => {
@@ -72,6 +76,10 @@ export async function roundPaperTransfersOf(
         arrivalBy: sites.get(transfer.siteId)?.arrivalBy ?? null,
         binCount: bins.get(transfer.id) ?? 0,
         orderCount: manifest.orders.items.length,
+        orderColors: manifest.orders.items.flatMap((item) => {
+          const color = colors.get(item.subjectId);
+          return color === undefined ? [] : [color];
+        }),
         orderTotals: printedLines(manifest.orders.totals),
         resupplyCount: manifest.resupplies.items.length,
         resupplyTotals: printedLines(manifest.resupplies.totals),
@@ -83,6 +91,15 @@ export async function roundPaperTransfersOf(
       return [transfer.id, stop];
     }),
   );
+}
+
+/** Une lecture pour tous les transferts de la feuille ; aucune s'ils ne portent rien. */
+async function colorsOf(
+  reader: TransferOrderColorsReader,
+  transfers: readonly InternalTransfer[],
+): Promise<ReadonlyMap<string, string>> {
+  const orderIds = transfers.flatMap((transfer) => transfer.orderIds);
+  return orderIds.length === 0 ? new Map() : reader.colorsOf(orderIds);
 }
 
 function printedLines(lines: readonly ManifestLine[]): readonly RoundPaperTransferLine[] {

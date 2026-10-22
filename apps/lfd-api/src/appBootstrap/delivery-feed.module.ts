@@ -20,12 +20,14 @@ import { CommerceTransferSites } from "../b2b/orders/application/services/commer
 import { PickupAddressesModule } from "../b2b/pickup-addresses/pickup-addresses.module.js";
 import { PickupDepartureCandidatesReader } from "../b2b/pickup-addresses/infrastructure/pickup-departure-candidates.reader.js";
 import { SiteTransferPlacesReader } from "../b2b/pickup-addresses/infrastructure/site-transfer-places.reader.js";
+import { DeliveryTransferOrderColorsReader } from "../b2b/orders/infrastructure/delivery-transfer-order-colors.reader.js";
 import { SiteDeliveryColorsReader } from "../b2b/sites/infrastructure/site-delivery-colors.reader.js";
 import { SitesModule } from "../b2b/sites/sites.module.js";
 import {
   CommerceDayVersionReader,
   DeliveryAddressPointCorrector,
   DeliveryColorsReader,
+  TransferOrderColorsReader,
   DeliveryAddressPointsReader,
   DeliveryOrderLinesReader,
   DeliveryOrdersReader,
@@ -125,6 +127,8 @@ import { ResolvedDepartureSiteReader } from "../delivery/infrastructure/resolved
     { provide: TransferSitesReader, useExisting: CommerceTransferSites },
     { provide: TransferSitePlacesReader, useClass: SiteTransferPlacesReader },
     { provide: DeliveryColorsReader, useClass: SiteDeliveryColorsReader },
+    // La pastille par commande du transfert imprimé (2026-10-22) : la règle du bon.
+    { provide: TransferOrderColorsReader, useClass: DeliveryTransferOrderColorsReader },
   ],
   exports: [
     DepartureCandidatesReader,
@@ -145,6 +149,7 @@ import { ResolvedDepartureSiteReader } from "../delivery/infrastructure/resolved
     TransferSitesReader,
     TransferSitePlacesReader,
     DeliveryColorsReader,
+    TransferOrderColorsReader,
   ],
 })
 export class DeliveryFeedModule {}

@@ -10,6 +10,7 @@ import { PendingSettlementSweep } from "../b2b/orders/application/services/pendi
 import { DueThresholds } from "../b2b/orders/application/services/due-thresholds.service.js";
 import { SitedDayOrders } from "../b2b/orders/application/services/sited-day-orders.service.js";
 import { PrismaExpectedProductionReader } from "../b2b/orders/infrastructure/prisma-expected-production.reader.js";
+import { ProductionOrderPrintColorsReader } from "../b2b/orders/infrastructure/production-order-print-colors.reader.js";
 import { PrismaPendingOrdersReader } from "../b2b/orders/infrastructure/prisma-pending-orders.reader.js";
 import { ProductionDayResupplies } from "../b2b/resupply/application/production-day-resupplies.js";
 import { ProductionRangeResupplies } from "../b2b/resupply/application/production-range-resupplies.js";
@@ -21,6 +22,7 @@ import {
   ExpectedProductionReader,
   ExpectedResuppliesReader,
   OrderCutoffRulesReader,
+  OrderPrintColorsReader,
   PendingCommerceOrdersReader,
   PendingSettlementSweeper,
   ResupplyCutoffTimeReader,
@@ -88,6 +90,9 @@ import {
     { provide: DayResuppliesReader, useExisting: ProductionDayResupplies },
     // Le prévisionnel compte les réassorts pour demain, à part (lot R3d).
     { provide: ExpectedResuppliesReader, useExisting: ProductionRangeResupplies },
+    // La pastille par commande des papiers du fournil (2026-10-22) : la
+    // couleur lue au tirage, par la règle du bon de commande.
+    { provide: OrderPrintColorsReader, useClass: ProductionOrderPrintColorsReader },
   ],
   exports: [
     DayOrdersReader,
@@ -96,6 +101,7 @@ import {
     ExpectedProductionReader,
     ExpectedResuppliesReader,
     OrderCutoffRulesReader,
+    OrderPrintColorsReader,
     PendingCommerceOrdersReader,
     PendingSettlementSweeper,
     ResupplyCutoffTimeReader,

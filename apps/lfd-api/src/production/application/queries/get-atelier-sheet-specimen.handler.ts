@@ -36,6 +36,9 @@ export class GetAtelierSheetSpecimenHandler implements IQueryHandler<
       specimenServiceDay(now),
       now,
       colisageUrl,
+      // Le spécimen n'a pas de commande réelle, donc pas de couleur : comme
+      // la planche (`categoryColor: null`), aucune pastille.
+      null,
     );
     return { bytes, fileName: "exemple-fiche-atelier.pdf" };
   }

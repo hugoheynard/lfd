@@ -34,6 +34,7 @@ import {
 import { GetRoundPaperPdfHandler, type RoundPaperFile } from "../get-round-paper-pdf.handler.js";
 import { GetRoundPaperPdfQuery } from "../get-round-paper-pdf.query.js";
 import { resupplyContentsOver } from "../../__tests__/resupply-transfer-doubles.js";
+import { FixedTransferOrderColors } from "../../__tests__/transfer-colors-doubles.js";
 
 /** Le jour n'est que recopié dans le papier : rien ne le compare à l'horloge. */
 const DAY = "2026-10-07";
@@ -150,7 +151,11 @@ const PROCEDURE: DeliveryOrderProcedure = {
   steps: [{ id: "s1", title: "Entrer par la cour", body: "", hasPhoto: true, photoRevision: "r1" }],
 };
 
-function subject(round: RoundPaperRow | null = ROUND, colors = new FixedDeliveryColors(NO_COLORS)) {
+function subject(
+  round: RoundPaperRow | null = ROUND,
+  colors = new FixedDeliveryColors(NO_COLORS),
+  transferColors = new FixedTransferOrderColors(),
+) {
   const procedures = new FixedProcedures([PROCEDURE]);
   const handler = new GetRoundPaperPdfHandler(
     new FixedRoundPaper(round),
@@ -178,8 +183,9 @@ function subject(round: RoundPaperRow | null = ROUND, colors = new FixedDelivery
     ]),
     colors,
     resupplyContentsOver(),
+    transferColors,
   );
-  return { handler, procedures, colors };
+  return { handler, procedures, colors, transferColors };
 }
 
 function textOf(file: RoundPaperFile): string {
@@ -229,6 +235,23 @@ describe("GetRoundPaperPdfHandler — la feuille de tournée tirée au moment", 
     await painted.handler.execute(query);
 
     expect(painted.colors.calls).toBe(2);
+    expect(after.bytes.equals(before.bytes)).toBe(false);
+    expect(textOf(after)).toBe(textOf(before));
+  });
+
+  it("lit la couleur des commandes du transfert au tirage : une pastille par commande colorée, sans mot (§0 bis)", async () => {
+    const plain = subject();
+    const painted = subject(
+      ROUND,
+      new FixedDeliveryColors(NO_COLORS),
+      new FixedTransferOrderColors(new Map([["o_vv1", "#43a047"]])),
+    );
+    const query = new GetRoundPaperPdfQuery("round_1", true);
+
+    const before = await plain.handler.execute(query);
+    const after = await painted.handler.execute(query);
+
+    expect(painted.transferColors.asked).toEqual([["o_vv1", "o_vv2"]]);
     expect(after.bytes.equals(before.bytes)).toBe(false);
     expect(textOf(after)).toBe(textOf(before));
   });

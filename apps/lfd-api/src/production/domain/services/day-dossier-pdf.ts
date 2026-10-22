@@ -26,6 +26,7 @@ import {
   type Doc,
 } from "../../../platform/pdf/paper-pdf-kit.js";
 import { methodLabel } from "./fulfillment-method-label.js";
+import { drawOrderSwatch } from "./order-color-swatch.js";
 
 /**
  * **Le dossier du jour, en PDF** — le récapitulatif, puis un bon par commande
@@ -61,11 +62,16 @@ export interface DossierStamp {
 /**
  * Rend le dossier. `colisageUrlOf` rend l'URL du QR d'un bon, ou une chaîne
  * vide — aucun code n'est alors imprimé, comme sur la feuille d'atelier.
+ * `colors` porte la pastille de chaque bon de commande, par `orderId` (§0 bis
+ * du plan de la planche des documents v2, 2026-10-22) ; une commande absente
+ * n'en a pas. Le récapitulatif, compté par article, et les bons de réassort,
+ * qui ne sont pas des commandes, n'en portent aucune.
  */
 export function renderDayDossierPdf(
   dossier: DayDossier,
   stamp: DossierStamp,
   colisageUrlOf: (reference: string) => string,
+  colors: ReadonlyMap<string, string>,
 ): Promise<Buffer> {
   return render(
     stamp.retakenAt ?? stamp.closedAt,
@@ -75,7 +81,7 @@ export function renderDayDossierPdf(
       dossier.sheets.forEach((order, index) => {
         doc.addPage();
         const rank = `bon ${String(index + 1)}/${String(dossier.sheets.length)}`;
-        const end = drawSheet(doc, order, rank, stamp);
+        const end = drawSheet(doc, order, rank, stamp, colors.get(order.orderId) ?? null);
         const url = colisageUrlOf(order.reference);
         if (url !== "") {
           drawScan(doc, url, order.reference, room(doc, end, SCAN_SIZE + 4 * MM, stamp));
@@ -121,8 +127,11 @@ export function renderDayDossierPdf(
  *
  * `v8` (2026-10-21, R1g du réassort) : le bon d'un réassort nommé se titre
  * « Vitrine du matin — Village ».
+ *
+ * `v9` (2026-10-22, §0 bis du plan de la planche des documents v2) : chaque
+ * bon de commande porte la pastille de sa couleur devant sa référence.
  */
-export const DOSSIER_LAYOUT_VERSION = "v8";
+export const DOSSIER_LAYOUT_VERSION = "v9";
 
 export function dayDossierPdfKey(serviceDay: string, retakenAt: Date | null): string {
   const base = `${serviceDay}/dossier-du-jour-${DOSSIER_LAYOUT_VERSION}`;
@@ -155,11 +164,12 @@ function drawSheet(
   order: ProductionOrderSnapshot,
   rank: string,
   stamp: DossierStamp,
+  color: string | null,
 ): number {
   let y = MARGIN_Y;
   putCaps(doc, `${lotBanner(stamp)} · ${rank.toUpperCase()}`, LEFT, y);
   const head = dossierSheetHeadOf(order);
-  y = drawHead(doc, order, head, y + 5 * MM);
+  y = drawHead(doc, order, head, y + 5 * MM, color);
   rule(doc, y, 2);
   const pieces = order.lines.reduce((sum, line) => sum + line.quantity, 0);
   y += 5 * MM;
@@ -191,6 +201,7 @@ function drawHead(
   order: ProductionOrderSnapshot,
   head: DossierSheetHead,
   top: number,
+  color: string | null,
 ): number {
   let y = top;
   put(doc, head.title, LEFT, y, { size: 16, bold: true, width: WIDTH - 40 * MM });
@@ -202,7 +213,8 @@ function drawHead(
     put(doc, head.subtitle, LEFT, y - 1.5 * MM, { size: 11 });
     y += 5 * MM;
   }
-  put(doc, order.reference, LEFT, y, { size: 12, bold: true });
+  const swatch = drawOrderSwatch(doc, color, LEFT, y);
+  put(doc, order.reference, LEFT + swatch, y, { size: 12, bold: true });
   putRight(doc, head.when, RIGHT, y, 11);
   return drawMentions(doc, head, y + 5.5 * MM) + 2.5 * MM;
 }

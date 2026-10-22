@@ -38,6 +38,7 @@ import { InMemoryProductionStore } from "../../__tests__/quality-doubles.js";
 import { DossierDispatch } from "../../services/dossier-dispatch.service.js";
 import { PlanArrestBell } from "../../services/plan-arrest-bell.js";
 import { ProductionPapers } from "../../services/production-paper.service.js";
+import { FixedOrderPrintColors } from "../../__tests__/order-print-colors-doubles.js";
 import { SendDossierOnDayClosed } from "../send-dossier-on-day-closed.handler.js";
 import { SendDossierOnDayRetaken } from "../send-dossier-on-day-retaken.handler.js";
 
@@ -186,6 +187,7 @@ export function setup(
       options.store ?? new InMemoryProductionStore(),
       new NoAdminOrigin(),
       new Shelves(),
+      new FixedOrderPrintColors(),
     ),
     log,
     mailer,

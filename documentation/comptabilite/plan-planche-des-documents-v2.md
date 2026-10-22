@@ -72,6 +72,15 @@ Constats :
 - Les documents qui agrègent plusieurs commandes (atelier, dossier du jour,
   transfert) n'en portent aucune : c'est là que la question Q2 se pose.
 
+> **Bâti le 2026-10-22** : une pastille par commande sur la fiche d'atelier
+> et le dossier du jour (devant la référence), un point par commande sur le
+> transfert interne (couleur de retrait du site d'arrivée), un camembert global
+> en haut du compte à produire (réassorts et commandes sans couleur en gris).
+> Couleurs lues au tirage par `production/channels/commerce/` et
+> `delivery/channels/commerce/`. ⚠️ Ces papiers sont archivés au premier
+> tirage : leur couleur s'y fige, et ceux tirés avant ce jour n'en ont pas.
+> Le tableau ci-dessus décrit l'état d'avant.
+
 ### Décisions sur les couleurs (Hugo, 2026-10-22)
 
 - **Une pastille par commande** sur les documents qui en regroupent plusieurs

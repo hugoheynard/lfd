@@ -18,6 +18,7 @@ function transfer(overrides: Partial<RoundPaperTransferStop> = {}): RoundPaperTr
     arrivalBy: "09:30",
     binCount: 2,
     orderCount: 3,
+    orderColors: [],
     orderTotals: [{ productName: "Croissant", quantity: 12 }],
     resupplyCount: 0,
     resupplyTotals: [],
@@ -26,8 +27,8 @@ function transfer(overrides: Partial<RoundPaperTransferStop> = {}): RoundPaperTr
   };
 }
 
-async function textOf(stop: RoundPaperTransferStop): Promise<string> {
-  const paper: RoundPaper = {
+function paperOf(stop: RoundPaperTransferStop): RoundPaper {
+  return {
     vehicleName: "Kangoo blanc",
     passage: 1,
     serviceDay: DAY,
@@ -36,7 +37,10 @@ async function textOf(stop: RoundPaperTransferStop): Promise<string> {
     stops: [stop],
     printedAt: PRINTED,
   };
-  return pdfPages(await renderRoundPaperPdf(paper)).join("\n");
+}
+
+async function textOf(stop: RoundPaperTransferStop): Promise<string> {
+  return pdfPages(await renderRoundPaperPdf(paperOf(stop))).join("\n");
 }
 
 describe("la feuille de tournée — l'arrêt de transfert", () => {
@@ -85,5 +89,25 @@ describe("la feuille de tournée — l'arrêt de transfert", () => {
 
     expect(text).toContain("RÉASSORTS · 2 RÉASSORTS");
     expect(text).toContain("Vitrine du matin · Goûter");
+  });
+});
+
+describe("la feuille de tournée — une pastille par commande du transfert (§0 bis, 2026-10-22)", () => {
+  it("pose les pastilles sous le titre des commandes, sans changer un mot", async () => {
+    const plain = await renderRoundPaperPdf(paperOf(transfer()));
+    const colored = await renderRoundPaperPdf(
+      paperOf(transfer({ orderColors: ["#43a047", "#e4572e"] })),
+    );
+    expect(colored.equals(plain)).toBe(false);
+    expect(pdfPages(colored)).toEqual(pdfPages(plain));
+    expect(pdfPages(colored).join("")).not.toMatch(/\bPro\b|Particulier/);
+  });
+
+  it("tient sur la ligne suivante quand les commandes sont nombreuses", async () => {
+    const many = Array.from({ length: 80 }, () => "#43a047");
+    const pages = pdfPages(
+      await renderRoundPaperPdf(paperOf(transfer({ orderCount: 80, orderColors: many }))),
+    );
+    expect(pages.join("\n")).toContain("12 × Croissant");
   });
 });

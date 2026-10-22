@@ -9,6 +9,7 @@ import {
   DeliveryOrdersReader,
   type DeliveryOrderProcedure,
   DeliveryProceduresReader,
+  TransferOrderColorsReader,
   TransferOrderContentsReader,
   TransferSitePlacesReader,
   TransferSitesReader,
@@ -59,6 +60,7 @@ export class GetRoundPaperPdfHandler implements IQueryHandler<
     private readonly sites: TransferSitesReader,
     private readonly colors: DeliveryColorsReader,
     private readonly resupplies: TransferResupplyContents,
+    private readonly transferColors: TransferOrderColorsReader,
   ) {}
 
   async execute(query: GetRoundPaperPdfQuery): Promise<RoundPaperFile> {
@@ -79,6 +81,7 @@ export class GetRoundPaperPdfHandler implements IQueryHandler<
         bins: this.transferBins,
         places: this.sitePlaces,
         sites: this.sites,
+        colors: this.transferColors,
       }),
     ]);
     const paper = roundPaperOf({

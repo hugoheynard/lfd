@@ -65,6 +65,13 @@ export interface RoundPaperTransferStop {
   readonly arrivalBy: string | null;
   readonly binCount: number;
   readonly orderCount: number;
+  /**
+   * Une pastille par commande colorée, dans l'ordre du manifeste (plan
+   * `comptabilite/plan-planche-des-documents-v2.md`, §0 bis, Hugo
+   * 2026-10-22) — lue au tirage. Une commande sans couleur n'en a pas : la
+   * liste peut être plus courte que `orderCount`.
+   */
+  readonly orderColors: readonly string[];
   readonly orderTotals: readonly RoundPaperTransferLine[];
   readonly resupplyCount: number;
   readonly resupplyTotals: readonly RoundPaperTransferLine[];
