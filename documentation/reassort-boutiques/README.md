@@ -544,6 +544,13 @@ colisage et transfert qui porte commande et réassort, fournée et emballé
 commande retirée), réception pré-remplie et stock lu par la Supervision — une
 seule horloge figée qui saute d'une étape à l'autre.
 
+Son pendant sur place, le Labo, l'est par
+`apps/lfd-api/test/resupply-labo-flow.e2e-spec.ts` : envoi nommé et commande la
+veille, arrêt automatique (bon « Servi sur place »), ni fiche au colisage ni
+transfert, fournée dont seule la part des commandes descend au colisage,
+« Monté » (arrivé, cloche, idempotent), réception pré-remplie au demandé (20)
+et stock lu par la Supervision.
+
 ## Ce qui reste
 
 - **« Au plus tôt » au Village** (plan de la version complète : [`plan-au-plus-tot.md`](plan-au-plus-tot.md)) : ni transfert (R4), ni « Monté » proposé
