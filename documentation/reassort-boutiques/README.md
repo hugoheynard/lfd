@@ -551,7 +551,7 @@ transfert, fournée dont seule la part des commandes descend au colisage,
 « Monté » (arrivé, cloche, idempotent), réception pré-remplie au demandé (20)
 et stock lu par la Supervision.
 
-## Ce qui est bâti : « Lancer » un réassort « au plus tôt » (lot R4a, 2026-10-22, non commité)
+## Ce qui est bâti : « Lancer » un réassort « au plus tôt » (lot R4a, 2026-10-22, `babc1ccbd`)
 
 Plan : [`plan-au-plus-tot.md`](plan-au-plus-tot.md) §2. Le fournil **lance** un
 réassort « au plus tôt » envoyé : il entre au plan du jour et compte dans les
@@ -592,9 +592,9 @@ sequenceDiagram
   `ResupplyLaunchedNotCancellableError` (409).
 - **Le fait** `production.resupply_launched:<jour>:<resupplyId>`
   (+ `:after-reopening:<instant>`) : lignes, point, `servedByTransfer`, nom,
-  instant et auteur. Seul abonné à ce lot : le commerce
-  (`RecordLaunchOnResupplyLaunched`, durable) — l'affichage. Colisage et
-  livraison : R4b, R4c.
+  instant et auteur. Abonnés : le commerce
+  (`RecordLaunchOnResupplyLaunched`, durable) — l'affichage ; le colisage
+  (R4b, ci-dessous). Livraison : R4c.
 - **Les tables** : migration `20261022150000_le_reassort_lance` (additive) —
   `production_resupply.kind` (`evening` par défaut, CHECK), `launched_at`,
   `launched_by` (CHECK « asap ⇔ lancé ») ; `site_resupply.launched_at`,
@@ -607,10 +607,72 @@ sequenceDiagram
 - e2e : `apps/lfd-api/test/resupply-launch.e2e-spec.ts` (Q5, refus, course
   lancer/annuler, réouverture).
 
+## Ce qui est bâti : la fiche « au plus tôt » au colisage, et sa réserve (lot R4b, 2026-10-22, non commité)
+
+Plan : [`plan-au-plus-tot.md`](plan-au-plus-tot.md) §2 ③, Q7. Le colisage
+écoute `production.resupply_launched` ; un réassort lancé d'un point servi par
+transfert y ouvre sa fiche et **réserve** ses pièces sur la réserve du jour.
+
+```mermaid
+sequenceDiagram
+  participant F as Fournil
+  participant K as Colisage (verrou packing_stock jour × SKU)
+  participant P as Poste de colisage
+  F-->>K: production.resupply_launched (servedByTransfer)
+  K->>K: fiche packing_resupply kind = asap, « … · au plus tôt »
+  K->>K: PackingStock.reserve(resupplyId, quantité) — par SKU, sous verrou
+  Note over K: libre des commandes = reçu − rendu − au bac − réservé dû
+  F-->>K: remises suivantes (received +=) : servent la réserve d'abord
+  P->>K: saisie de l'emballé → takeForResupply (sa réserve, jamais celle d'un lancé avant elle)
+  P->>K: clôture → lift : ce qui n'est pas emballé redevient libre
+```
+
+- **L'abonné** : `OnResupplyLaunched`
+  (`apps/lfd-api/src/packing/application/handlers/on-resupply-launched.handler.ts`),
+  `@DurableHandler`, nom `packing.draw-launched-resupply`. Rien pour un point
+  servi sur place (Labo). Le fait est relu par `production/channels/packing/`,
+  qui le réexporte. Rejeu sans effet (fiche inscrite si absente, réservation
+  posée si absente, même levée).
+- **La réserve** : `PackingStock` porte ses réservations
+  (`apps/lfd-api/src/packing/domain/entities/packing-stock.ts`, règle pure
+  dans `apps/lfd-api/src/packing/domain/services/stock-reservations.ts`). Le reste dû d'une réservation
+  = sa quantité − l'emballé de sa ligne, déduit, pas stocké. `free` (mise au
+  bac d'une commande, « Proposer », retour au fournil) retire tout le reste
+  dû ; une fiche « au plus tôt » prend sur le sien, et les réservations se
+  servent **dans l'ordre du lancement** (deux lancés sur une remise courte ne
+  se bloquent pas). Une réservation ne prend **jamais** une pièce au bac : si
+  le four n'a pas remis assez, la fiche est « en attente du four ». La clôture
+  la lève (`released_at`).
+- **Le poste** : `GET admin/packing/:date/resupplies` porte `kind`,
+  `awaitingOven` (fiche) et `awaitingOven` par ligne ; les « au plus tôt » en
+  tête, dans l'ordre du lancement. Le compteur « en attente de la prod » des
+  commandes retire aussi le réservé (`BoardStock.reserved`).
+- **Réouverture** : la fiche « au plus tôt » d'un réassort lancé n'est jamais
+  retirée (`withdrawUntouched` ne vise que `kind = evening`).
+- **Les tables** : migration `20261022170000_la_reserve_du_reassort`
+  (additive) — `packing_resupply.kind` (`evening` par défaut, CHECK) ;
+  `packing_stock_reservation` `(service_day, resupply_id, sku)`, `quantity > 0`,
+  `reserved_at`, `released_at`, clé étrangère vers la ligne de la fiche,
+  déclencheurs `day_change`. Aucune colonne ne nomme une personne.
+- **L'écran** : la fiche au poste de colisage
+  (`apps/lfd-backoffice-frontend/src/app/production/colisage/packing-resupplies/`)
+  dit « En attente du four » et « N attendus du four » par ligne.
+- **Correctif R4a/Q4** : au Labo, la carte « À monter » ne propose « Monté »
+  sur un « au plus tôt » qu'une fois lancé (« À lancer d'abord » sinon) — les
+  réassorts du soir sont inchangés. Le serveur, lui, accepte encore « Monté »
+  sur un non lancé.
+- e2e : `apps/lfd-api/test/resupply-asap-packing.e2e-spec.ts` (fiche, attente
+  du four, clôture ; deux saisies concurrentes ; commande qui alloue pendant
+  le lancement ; Labo sans fiche).
+
 ## Ce qui reste
 
-- **« Au plus tôt » au Village** (plan de la version complète : [`plan-au-plus-tot.md`](plan-au-plus-tot.md)) : lancé depuis R4a, mais ni fiche au colisage (R4b), ni transfert (R4c), ni « Monté » proposé
-  (l'écran le réserve aux points servis sur place ; le serveur l'accepte).
+- **« Au plus tôt » au Village** (plan de la version complète : [`plan-au-plus-tot.md`](plan-au-plus-tot.md)) : lancé (R4a) et colisé avec sa réserve (R4b), mais pas encore attaché à un transfert (R4c).
+- **« Monté » sur un « au plus tôt » non lancé** : l'écran ne le propose plus
+  (R4b) ; le serveur l'accepte encore.
+- **La réserve naît au traitement du fait**, pas à l'instant du lancement : une
+  commande mise au bac entre les deux garde ses pièces, et la fiche attend le
+  four.
 - **La cloche ne cible pas le point** : tout le comptoir l'entend.
 
 - **La course annuler / réceptionner** : l'annulation lit la réception puis

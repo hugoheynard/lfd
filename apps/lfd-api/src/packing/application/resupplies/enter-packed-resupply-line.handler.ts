@@ -17,6 +17,9 @@ import { lockedResupply } from "./resupply-support.js";
  * et on n'emballe pas ce qui n'est pas sorti du four. Ordre des verrous :
  * la fiche, puis la réserve — celui des bacs.
  *
+ * Une fiche « au plus tôt » (R4b) prend sur sa réservation, jamais sur
+ * celle d'un réassort lancé avant elle ; une fiche du soir n'a que le libre.
+ *
  * @throws {PackingResupplyNotDrawnError} @throws {PackingResupplyClosedError}
  * @throws {PackingResupplyLineNotFoundError} @throws {PackedResupplyQuantityOutOfRangeError}
  * @throws {LineNotProducedYetError} la réserve ne couvre pas la hausse.
@@ -43,9 +46,9 @@ export class EnterPackedResupplyLineHandler implements ICommandHandler<
       if (change.delta !== 0) {
         const stock = await this.stocks.lock(command.serviceDay, change.sku);
         if (change.delta > 0) {
-          stock.take(change.delta, change.productName);
+          stock.takeForResupply(command.resupplyId, change.delta, change.productName);
         } else {
-          stock.release(-change.delta);
+          stock.releaseFromResupply(command.resupplyId, -change.delta);
         }
         await this.stocks.save(stock);
       }

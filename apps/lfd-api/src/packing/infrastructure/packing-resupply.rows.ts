@@ -1,7 +1,10 @@
-import type {
-  PackingResupplyLineSnapshot,
-  PackingResupplySnapshot,
+import {
+  PACKING_RESUPPLY_KINDS,
+  type PackingResupplyKind,
+  type PackingResupplyLineSnapshot,
+  type PackingResupplySnapshot,
 } from "../domain/entities/packing-resupply.js";
+import { TechnicalError } from "../../platform/shared/errors/app-error.js";
 
 /** Les colonnes lues d'une fiche de réassort et de ses lignes. */
 export const RESUPPLY_SELECT = {
@@ -10,6 +13,7 @@ export const RESUPPLY_SELECT = {
   siteId: true,
   siteLabel: true,
   name: true,
+  kind: true,
   drawnAt: true,
   closedAt: true,
   closedBy: true,
@@ -41,6 +45,7 @@ interface ResupplyRow {
   readonly siteId: string;
   readonly siteLabel: string | null;
   readonly name: string | null;
+  readonly kind: string;
   readonly drawnAt: Date;
   readonly closedAt: Date | null;
   readonly closedBy: string | null;
@@ -68,6 +73,7 @@ export function resupplyOf(row: ResupplyRow): PackingResupplySnapshot {
     siteId: row.siteId,
     siteLabel: row.siteLabel,
     name: row.name,
+    kind: kindOf(row.kind),
     drawnAt: row.drawnAt,
     closed:
       row.closedAt === null || row.closedBy === null
@@ -75,4 +81,23 @@ export function resupplyOf(row: ResupplyRow): PackingResupplySnapshot {
         : { at: row.closedAt, by: row.closedBy },
     lines: row.lines.map(lineOf),
   };
+}
+
+/** Le CHECK `packing_resupply_kind_known` n'admet que ces deux valeurs. */
+function kindOf(raw: string): PackingResupplyKind {
+  const kind = PACKING_RESUPPLY_KINDS.find((known) => known === raw);
+  if (kind === undefined) {
+    throw new PackingResupplyKindUnknownError(raw);
+  }
+  return kind;
+}
+
+/** Une fiche relue porte un genre que le CHECK de la table aurait dû refuser. */
+export class PackingResupplyKindUnknownError extends TechnicalError {
+  constructor(raw: string) {
+    super(
+      "packing.resupply.kind_unknown",
+      `Une fiche de réassort au colisage porte le genre « ${raw} », que le poste ne connaît pas (attendu : evening ou asap). La contrainte de la table a été levée ou contournée : la rétablir, puis corriger la ligne en base.`,
+    );
+  }
 }

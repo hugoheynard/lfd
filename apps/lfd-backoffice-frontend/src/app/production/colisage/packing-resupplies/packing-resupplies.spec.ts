@@ -13,11 +13,15 @@ function fiche(packed: number | null, status: 'open' | 'closed' = 'open'): Packi
   return {
     resupplyId: 'r-1',
     title: 'Réassort Village',
+    kind: 'evening',
     siteId: 'site-v',
     destination: { kind: 'transfer', siteId: 'site-v' },
     status,
+    awaitingOven: false,
     closedAt: null,
-    lines: [{ sku: 'PAC', productName: 'Pain au chocolat', requested: 18, packed }],
+    lines: [
+      { sku: 'PAC', productName: 'Pain au chocolat', requested: 18, packed, awaitingOven: 0 },
+    ],
   };
 }
 
@@ -112,5 +116,25 @@ describe('PackingResupplies', () => {
     expect(el.querySelector('fold-number-input')).toBeNull();
     expect(el.querySelector('button.pr-close')).toBeNull();
     expect(el.textContent).toContain('Close');
+  });
+
+  /** Lot R4b : la fiche « au plus tôt » attend ce que le four n'a pas remis. */
+  it('une fiche « au plus tôt » dit qu’elle attend le four, et combien par ligne', async () => {
+    const packing = new Packing();
+    const asap = fiche(null);
+    packing.current = [
+      {
+        ...asap,
+        title: 'Réassort Village · au plus tôt',
+        kind: 'asap',
+        awaitingOven: true,
+        lines: [{ ...asap.lines[0]!, awaitingOven: 5 }],
+      },
+    ];
+    const { el } = await mount(packing);
+
+    expect(el.textContent).toContain('Réassort Village · au plus tôt');
+    expect(el.textContent).toContain('En attente du four');
+    expect(el.querySelector('[data-awaiting-oven]')?.textContent).toContain('5 attendus du four');
   });
 });

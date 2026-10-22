@@ -105,11 +105,15 @@ function firstDrawnAt(day: PackingBoardDay): Date | null {
  * Le disponible ne couvre pas la quantité — `shortfall`, la règle même de la
  * garde (`PackingStock.take`) : la ligne que l'écran grise est celle que le
  * serveur refuse. Le libre n'est pas borné ici : une réserve en dette manque
- * d'autant. Rien à poser n'attend rien.
+ * d'autant. Rien à poser n'attend rien. Les pièces qu'un réassort lancé
+ * réserve (R4b) n'y sont pas : `PackingStock.free` les retire aussi.
  */
 function awaitingOf(day: PackingBoardDay): Awaiting {
   const free = new Map(
-    day.stocks.map((stock) => [stock.sku, stock.received - stock.returned - stock.packed] as const),
+    day.stocks.map(
+      (stock) =>
+        [stock.sku, stock.received - stock.returned - stock.packed - stock.reserved] as const,
+    ),
   );
   return (sku, quantity) => shortfall(free.get(sku) ?? 0, quantity) > 0;
 }

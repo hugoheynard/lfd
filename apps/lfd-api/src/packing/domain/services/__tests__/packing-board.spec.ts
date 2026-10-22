@@ -195,7 +195,7 @@ describe("packingBoardOf — le poste servi par le colisage (K3a)", () => {
             ],
           }),
         ],
-        stocks: [{ sku: "CRO", received: 10, returned: 0, packed: 6 }],
+        stocks: [{ sku: "CRO", received: 10, returned: 0, packed: 6, reserved: 0 }],
       }),
     );
 
@@ -244,8 +244,8 @@ describe("packingBoardOf — le poste servi par le colisage (K3a)", () => {
       sources({
         orders: [order({ orderId: "1", lines: [line("CRO", 5), line("PAI", 2)] })],
         stocks: [
-          { sku: "CRO", received: 6, returned: 2, packed: 0 },
-          { sku: "PAI", received: 2, returned: 0, packed: 0 },
+          { sku: "CRO", received: 6, returned: 2, packed: 0, reserved: 0 },
+          { sku: "PAI", received: 2, returned: 0, packed: 0, reserved: 0 },
         ],
       }),
     );
@@ -268,7 +268,7 @@ describe("packingBoardOf — le poste servi par le colisage (K3a)", () => {
           }),
           order({ orderId: "2", lines: [line("CRO", 3, false, "Croissant")] }),
         ],
-        stocks: [{ sku: "CRO", received: 7, returned: 0, packed: 4 }],
+        stocks: [{ sku: "CRO", received: 7, returned: 0, packed: 4, reserved: 0 }],
       }),
     );
 
@@ -326,10 +326,10 @@ describe("packingBoardOf — le poste servi par le colisage (K3a)", () => {
           order({ orderId: "D", lines: [line("CRO", 16, false, "Croissant")] }),
         ],
         stocks: [
-          { sku: "BAG", received: 23, returned: 0, packed: 23 },
-          { sku: "CHA", received: 6, returned: 0, packed: 6 },
-          { sku: "CRO", received: 423, returned: 0, packed: 346 },
-          { sku: "PAI", received: 41, returned: 0, packed: 0 },
+          { sku: "BAG", received: 23, returned: 0, packed: 23, reserved: 0 },
+          { sku: "CHA", received: 6, returned: 0, packed: 6, reserved: 0 },
+          { sku: "CRO", received: 423, returned: 0, packed: 346, reserved: 0 },
+          { sku: "PAI", received: 41, returned: 0, packed: 0, reserved: 0 },
         ],
       }),
     );

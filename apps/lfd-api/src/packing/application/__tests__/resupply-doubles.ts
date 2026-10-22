@@ -12,7 +12,7 @@ import { PackingResupplyRepository } from "../../domain/ports/packing-resupply.r
 /**
  * Les fiches de réassort en mémoire (lot R3b) — une seule table, que la
  * liste, le dépôt et la lecture partagent, avec la sémantique de la vraie :
- * inscrite une fois, retirée seulement intouchée.
+ * inscrite une fois, retirée seulement intouchée et du soir.
  */
 export class InMemoryResupplies extends PackingResupplyListing {
   readonly rows = new Map<string, PackingResupplySnapshot>();
@@ -26,6 +26,7 @@ export class InMemoryResupplies extends PackingResupplyListing {
         siteId: resupply.siteId,
         siteLabel: resupply.siteLabel,
         name: resupply.name,
+        kind: resupply.kind,
         drawnAt: resupply.drawnAt,
         closed: null,
         lines: resupply.lines.map((line) => ({ ...line, packed: null })),
@@ -39,7 +40,11 @@ export class InMemoryResupplies extends PackingResupplyListing {
     for (const id of resupplyIds) {
       const key = `${serviceDay}/${id}`;
       const row = this.rows.get(key);
-      if (row !== undefined && !PackingResupply.fromSnapshot(row).started) {
+      if (
+        row !== undefined &&
+        row.kind === "evening" &&
+        !PackingResupply.fromSnapshot(row).started
+      ) {
         this.rows.delete(key);
         count += 1;
       }

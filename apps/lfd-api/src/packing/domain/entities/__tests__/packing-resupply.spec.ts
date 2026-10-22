@@ -17,6 +17,7 @@ function sheet(): PackingResupply {
     siteId: "site_village",
     siteLabel: "Le Village",
     name: null,
+    kind: "evening",
     drawnAt: AT,
     closed: null,
     lines: [
@@ -40,6 +41,17 @@ describe("PackingResupply — la fiche de réassort au colisage (R3b)", () => {
     });
     expect(named.title).toBe("Vitrine du matin — Le Village");
     expect(named.toSnapshot().name).toBe("Vitrine du matin");
+  });
+
+  it("lancé « au plus tôt » (R4b), se titre « <nom> — <point> · au plus tôt »", () => {
+    const launched = PackingResupply.fromSnapshot({
+      ...sheet().toSnapshot(),
+      name: "Rupture de midi",
+      kind: "asap",
+    });
+    expect(launched.title).toBe("Rupture de midi — Le Village · au plus tôt");
+    const anonymous = PackingResupply.fromSnapshot({ ...sheet().toSnapshot(), kind: "asap" });
+    expect(anonymous.title).toBe("Réassort Le Village · au plus tôt");
   });
 
   it("saisit l'emballé, 0 et la quantité demandée compris, et rend l'écart à la réserve", () => {

@@ -23,6 +23,12 @@ import { serverMessageOf } from '../../server-message';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
+/** L'état d'une fiche, tel que son badge le dit. */
+interface ResupplyBadge {
+  readonly status: 'success' | 'pending' | 'coming-soon';
+  readonly label: string;
+}
+
 /** La clé d'une saisie : une ligne d'une fiche. */
 function lineKey(resupplyId: string, sku: string): string {
   return `${resupplyId}::${sku}`;
@@ -38,6 +44,10 @@ function lineKey(resupplyId: string, sku: string): string {
  * (on n'emballe que ce que le four a remis) et la clôture (toutes les lignes
  * saisies) sont au serveur ; un refus s'affiche tel quel, et l'écran relit
  * après chaque geste accepté. Le seul état gardé est le brouillon d'une saisie.
+ *
+ * Une fiche « au plus tôt » (lot R4b) vient en tête, déjà titrée par le
+ * serveur ; tant que le four n'a pas remis ce qu'elle réserve, elle dit
+ * « En attente du four », et chaque ligne combien elle en attend.
  */
 @Component({
   selector: 'app-packing-resupplies',
@@ -68,6 +78,16 @@ export class PackingResupplies {
   protected readonly busy = signal<string | null>(null);
   /** Le dernier refus du serveur, tel quel. */
   protected readonly failure = signal<string | null>(null);
+
+  /** Close, en attente du four (R4b), ou à emballer. */
+  protected badgeOf(resupply: PackingResupplyView): ResupplyBadge {
+    if (resupply.status === 'closed') {
+      return { status: 'success', label: 'Close' };
+    }
+    return resupply.awaitingOven
+      ? { status: 'coming-soon', label: 'En attente du four' }
+      : { status: 'pending', label: 'À emballer' };
+  }
 
   protected readonly openCount = computed(
     () => this.resupplies().filter((resupply) => resupply.status === 'open').length,

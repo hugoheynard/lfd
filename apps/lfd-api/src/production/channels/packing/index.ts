@@ -6,6 +6,7 @@
  * | ----------------------- | ---------------- | --------------------------------------------- |
  * | `PackingListDrawnEvent` | fait durable     | une commande à coliser, avec son échéance     |
  * | `ResupplyListDrawnEvent` | fait durable    | un réassort à coliser (point servi par transfert, R3b) |
+ * | `ResupplyLaunchedEvent` | fait durable     | un réassort « au plus tôt » lancé (R4a), colisé s'il part par transfert (R4b) |
  * | `HandedToPackingEvent`  | fait durable     | une fournée sortie = remise au colisage       |
  * | `ReturnRequestedEvent`  | fait durable     | une fournée remise, puis annulée              |
  * | `PackingReturnedEvent`  | fait durable     | la réponse du colisage à un retour            |
@@ -63,4 +64,10 @@ export {
   ProductionDayReopenedPayloadError,
 } from "../commerce/production-day-reopened.event.js";
 export { ClosedPlansReader } from "../commerce/closed-plans.reader.js";
+// Le réassort « au plus tôt » lancé (R4a) : le même fait que le commerce lit,
+// que le colisage écoute à son tour (R4b) — un fait, plusieurs abonnés.
+export {
+  PRODUCTION_RESUPPLY_LAUNCHED,
+  ResupplyLaunchedEvent,
+} from "../commerce/resupply-launched.event.js";
 export { DayPackingProgressReader } from "./day-packing-progress.reader.js";

@@ -1,7 +1,9 @@
 import type { DurableFact } from "../../../platform/outbox/durable-event.js";
 import { DurablePublisher } from "../../../platform/outbox/durable-publisher.js";
 import { PackingSheet, type PackingSheetSnapshot } from "../../domain/entities/packing-sheet.js";
-import { PackingStock } from "../../domain/entities/packing-stock.js";
+import { PackingStock, type PackingStockSnapshot } from "../../domain/entities/packing-stock.js";
+import { PackingDayStocksReader } from "../../domain/ports/packing-day-stocks.reader.js";
+import type { StockReservationSnapshot } from "../../domain/services/stock-reservations.js";
 import {
   PackingReturnLedger,
   PackingReturnReader,
@@ -59,6 +61,11 @@ export class InMemorySheets extends PackingSheetRepository {
 /** La réserve, adossée à celle de l'ombre (reçu, rendu) et à un compte au bac. */
 export class InMemoryStocks extends PackingStockRepository {
   private readonly packed = new Map<string, number>();
+  /**
+   * Les réservations (R4b), telles que l'adaptateur les relit : leur emballé
+   * suit l'agrégat, comme la ligne de la fiche s'écrit sous le même verrou.
+   */
+  readonly reservations = new Map<string, readonly StockReservationSnapshot[]>();
 
   constructor(private readonly shadow: InMemoryShadow) {
     super();
@@ -68,7 +75,13 @@ export class InMemoryStocks extends PackingStockRepository {
     const key = `${serviceDay}/${sku}`;
     const held = this.shadow.stocks.get(key) ?? { received: 0, returned: 0 };
     return Promise.resolve(
-      PackingStock.fromSnapshot({ serviceDay, sku, ...held, packed: this.packed.get(key) ?? 0 }),
+      PackingStock.fromSnapshot({
+        serviceDay,
+        sku,
+        ...held,
+        packed: this.packed.get(key) ?? 0,
+        reservations: this.reservations.get(key) ?? [],
+      }),
     );
   }
 
@@ -77,11 +90,33 @@ export class InMemoryStocks extends PackingStockRepository {
     const held = this.shadow.stocks.get(key) ?? { received: 0, returned: 0 };
     this.shadow.stocks.set(key, { ...held, returned: stock.returned });
     this.packed.set(key, stock.packed);
+    this.reservations.set(key, stock.reservations);
     return Promise.resolve();
   }
 
   packedOf(serviceDay: string, sku: string): number {
     return this.packed.get(`${serviceDay}/${sku}`) ?? 0;
+  }
+
+  /** Les réserves d'une journée, telles que `lock` les rendrait — sans verrou. */
+  async snapshotsOn(serviceDay: string): Promise<readonly PackingStockSnapshot[]> {
+    const keys = new Set([...this.shadow.stocks.keys(), ...this.packed.keys()]);
+    const skus = [...keys]
+      .filter((key) => key.startsWith(`${serviceDay}/`))
+      .map((key) => key.slice(serviceDay.length + 1));
+    const stocks = await Promise.all(skus.map((sku) => this.lock(serviceDay, sku)));
+    return stocks.map((stock) => stock.toSnapshot());
+  }
+}
+
+/** La lecture des réserves du jour (R4b), adossée au dépôt en mémoire. */
+export class InMemoryDayStocks extends PackingDayStocksReader {
+  constructor(private readonly stocks: InMemoryStocks) {
+    super();
+  }
+
+  on(serviceDay: string): Promise<readonly PackingStockSnapshot[]> {
+    return this.stocks.snapshotsOn(serviceDay);
   }
 }
 

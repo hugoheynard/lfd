@@ -220,6 +220,10 @@ model PackingResupply {
 
   drawnAt DateTime @map("drawn_at") @db.Timestamptz(6)
 
+  /// `evening` : figé à l'arrêt (R3b) ; `asap` : réassort « au plus tôt »
+  /// lancé dans la journée (R4b), en tête du poste (CHECK).
+  kind String @default("evening")
+
   /// La clôture de la fiche : la quantité emballée de chaque ligne est
   /// définitive, et le commerce peut la lire. Les deux ensemble (CHECK).
   closedAt DateTime? @map("closed_at") @db.Timestamptz(6)
@@ -250,7 +254,32 @@ model PackingResupplyLine {
   packedAt DateTime? @map("packed_at") @db.Timestamptz(6)
   packedBy String?   @map("packed_by")
 
+  reservation PackingStockReservation?
+
   @@id([serviceDay, resupplyId, sku])
   @@map("packing_resupply_line")
+  @@schema("packing")
+}
+
+/// **La part de la réserve du jour retenue par un réassort lancé** (réassort,
+/// lot R4b — `reassort-boutiques/plan-au-plus-tot.md` §2 ③, Q7). Posée par le
+/// fait `production.resupply_launched` sous le verrou de `packing_stock`
+/// `(jour, SKU)` : une commande ne prend pas une pièce réservée, et la fiche
+/// prend la sienne en premier. Reste dû = `quantity` − emballé de la ligne.
+/// Levée (`released_at`) à la clôture de la fiche. Jamais effacée.
+model PackingStockReservation {
+  serviceDay String              @map("service_day") @db.VarChar(10)
+  sku        String
+  resupplyId String              @map("resupply_id")
+  line       PackingResupplyLine @relation(fields: [serviceDay, resupplyId, sku], references: [serviceDay, resupplyId, sku], onDelete: Restrict, map: "packing_stock_reservation_line_fkey")
+
+  /// Les pièces réservées (> 0, CHECK) — la quantité demandée par la ligne.
+  quantity   Int
+  reservedAt DateTime  @map("reserved_at") @db.Timestamptz(6)
+  releasedAt DateTime? @map("released_at") @db.Timestamptz(6)
+
+  @@id([serviceDay, resupplyId, sku])
+  @@index([serviceDay, sku])
+  @@map("packing_stock_reservation")
   @@schema("packing")
 }

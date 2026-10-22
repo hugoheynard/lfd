@@ -35,12 +35,14 @@ export interface BoardOrder {
   readonly containerList: readonly BoardContainer[];
 }
 
-/** La réserve d'un article : reçu du four, rendu, au bac. */
+/** La réserve d'un article : reçu du four, rendu, au bac, réservé. */
 export interface BoardStock {
   readonly sku: string;
   readonly received: number;
   readonly returned: number;
   readonly packed: number;
+  /** Ce que les réassorts lancés retiennent encore (R4b) — hors d'atteinte des commandes. */
+  readonly reserved: number;
 }
 
 /** Ce que le colisage tient d'une journée — ses commandes et ses réserves. */

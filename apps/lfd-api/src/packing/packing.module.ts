@@ -37,6 +37,9 @@ import { PackingOrdersController } from "./http/packing-orders.controller.js";
 import { PrismaPackedOrdersReader } from "./infrastructure/prisma-packed-orders.reader.js";
 import { PrismaPackingBoardReader } from "./infrastructure/prisma-packing-board.reader.js";
 import { OnResupplyListDrawn } from "./application/handlers/on-resupply-list-drawn.handler.js";
+import { OnResupplyLaunched } from "./application/handlers/on-resupply-launched.handler.js";
+import { PackingDayStocksReader } from "./domain/ports/packing-day-stocks.reader.js";
+import { PrismaPackingDayStocksReader } from "./infrastructure/prisma-packing-day-stocks.reader.js";
 import { ClosePackingResupplyHandler } from "./application/resupplies/close-packing-resupply.handler.js";
 import { EnterPackedResupplyLineHandler } from "./application/resupplies/enter-packed-resupply-line.handler.js";
 import { ListPackingResuppliesHandler } from "./application/resupplies/list-packing-resupplies.handler.js";
@@ -122,12 +125,14 @@ import { PackingResuppliesController } from "./http/packing-resupplies.controlle
     PrismaPackedOrdersReader,
     // La fiche de réassort (R3b).
     OnResupplyListDrawn,
+    OnResupplyLaunched,
     EnterPackedResupplyLineHandler,
     ClosePackingResupplyHandler,
     ListPackingResuppliesHandler,
     { provide: PackingResupplyRepository, useClass: PrismaPackingResupplyRepository },
     { provide: PackingResupplyListing, useClass: PrismaPackingResupplyListing },
     { provide: PackingResupplyBoardReader, useClass: PrismaPackingResupplyBoardReader },
+    { provide: PackingDayStocksReader, useClass: PrismaPackingDayStocksReader },
     PrismaPackedResuppliesReader,
   ],
   exports: [PrismaContainerManagedOrders, PrismaPackedOrdersReader, PrismaPackedResuppliesReader],

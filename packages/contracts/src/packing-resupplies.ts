@@ -15,17 +15,29 @@ export interface PackingResupplyLineView {
   readonly requested: number;
   /** `null` : pas encore saisie. */
   readonly packed: number | null;
+  /**
+   * Les pièces réservées que le four n'a pas encore remises (fiche « au plus
+   * tôt », R4b) ; 0 : tout est là, ou fiche du soir (rien de réservé).
+   */
+  readonly awaitingOven: number;
 }
+
+/** `evening` : figé à l'arrêt du soir ; `asap` : « au plus tôt », lancé dans la journée (R4b). */
+export type PackingResupplyKind = "evening" | "asap";
 
 /** Une fiche de réassort du jour. */
 export interface PackingResupplyView {
   readonly resupplyId: string;
-  /** « Réassort <point> ». */
+  /** « Réassort <point> », suffixé « · au plus tôt » pour un lancé. */
   readonly title: string;
+  /** Les « au plus tôt » viennent en tête de la liste. */
+  readonly kind: PackingResupplyKind;
   readonly siteId: string;
   /** La destination : le transfert interne vers ce point. */
   readonly destination: { readonly kind: "transfer"; readonly siteId: string };
   readonly status: "open" | "closed";
+  /** Une fiche ouverte dont une ligne attend encore le four (R4b). */
+  readonly awaitingOven: boolean;
   readonly closedAt: string | null;
   readonly lines: readonly PackingResupplyLineView[];
 }

@@ -59,3 +59,13 @@ export class PackingResupplyIncompleteError extends BusinessError {
     );
   }
 }
+
+/** Une réservation de réassort sans pièce, ou en pièces fractionnaires. */
+export class StockReservationQuantityInvalidError extends DomainError {
+  constructor(sku: string, quantity: number) {
+    super(
+      "packing.resupply.reservation_invalid",
+      `La réservation de « ${sku} » pour un réassort lancé doit porter un nombre entier de pièces supérieur à 0 (reçu : ${String(quantity)}). Le fait du fournil est hors contrat : corriger l'émetteur, puis rejouer le message depuis la carte de santé.`,
+    );
+  }
+}

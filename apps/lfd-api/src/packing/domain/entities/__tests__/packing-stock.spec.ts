@@ -8,6 +8,7 @@ function stock(received: number, returned = 0, packed = 0): PackingStock {
     received,
     returned,
     packed,
+    reservations: [],
   });
 }
 

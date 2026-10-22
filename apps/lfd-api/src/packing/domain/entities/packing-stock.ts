@@ -1,5 +1,12 @@
+import { StockReservationQuantityInvalidError } from "../errors/packing-resupply-errors.js";
 import { LineNotProducedYetError } from "../errors/packing-station-errors.js";
 import { shortfall } from "../services/placement.js";
+import {
+  availableTo,
+  awaitingOvenOf,
+  reservedOf,
+  type StockReservationSnapshot,
+} from "../services/stock-reservations.js";
 
 /** L'état d'une réserve, tel que l'adaptateur l'écrit et le relit. */
 export interface PackingStockSnapshot {
@@ -11,6 +18,8 @@ export interface PackingStockSnapshot {
   readonly returned: number;
   /** Les pièces au bac, tous bacs confondus — une SOMME, pas une ligne. */
   readonly packed: number;
+  /** Les réservations des réassorts lancés (R4b), levées comprises. */
+  readonly reservations: readonly StockReservationSnapshot[];
 }
 
 /**
@@ -25,6 +34,13 @@ export interface PackingStockSnapshot {
  *
  * `packed` est une somme : le jour où une ligne se répartira entre plusieurs
  * bacs (K2b), la réserve ne changera pas de forme.
+ *
+ * **La réservation d'un réassort lancé** (R4b, Q7) passe sous le même verrou :
+ * le libre des commandes et des retours retire ce que les réservations
+ * retiennent encore, et une fiche « au plus tôt » prend la sienne avant
+ * tout le monde. Une réservation ne prend JAMAIS une pièce déjà au bac : si
+ * le four n'a pas encore remis assez, elle attend les remises suivantes
+ * (« en attente du four »), et le libre des commandes reste à zéro d'ici là.
  */
 export class PackingStock {
   private constructor(
@@ -33,6 +49,7 @@ export class PackingStock {
     readonly received: number,
     private returnedValue: number,
     private packedValue: number,
+    private reservationsValue: readonly StockReservationSnapshot[],
   ) {}
 
   static fromSnapshot(snapshot: PackingStockSnapshot): PackingStock {
@@ -42,6 +59,7 @@ export class PackingStock {
       snapshot.received,
       snapshot.returned,
       snapshot.packed,
+      snapshot.reservations,
     );
   }
 
@@ -53,9 +71,21 @@ export class PackingStock {
     return this.packedValue;
   }
 
-  /** Ce qui peut encore aller au bac, ou être rendu. Jamais négatif. */
+  get reservations(): readonly StockReservationSnapshot[] {
+    return this.reservationsValue;
+  }
+
+  /** Ce que les réservations retiennent encore. */
+  get reserved(): number {
+    return reservedOf(this.reservationsValue);
+  }
+
+  /**
+   * Ce qui peut encore aller au bac d'une commande, ou être rendu — hors des
+   * pièces réservées. Jamais négatif.
+   */
   get free(): number {
-    return Math.max(0, this.received - this.returnedValue - this.packedValue);
+    return Math.max(0, this.received - this.returnedValue - this.packedValue - this.reserved);
   }
 
   /**
@@ -70,6 +100,72 @@ export class PackingStock {
       throw new LineNotProducedYetError(productName, missing);
     }
     this.packedValue += quantity;
+  }
+
+  /**
+   * **Un réassort lancé réserve** (R4b) : il retient `quantity` pièces de la
+   * réserve, qu'elles soient déjà sorties du four ou non — jamais refusé pour
+   * manque, puisqu'il ne prend rien au bac. Une réservation existante, même
+   * levée, reste telle quelle : le rejeu du fait ne réserve pas deux fois.
+   *
+   * @returns `true` si la réservation est neuve.
+   * @throws {StockReservationQuantityInvalidError} pas un entier > 0.
+   */
+  reserve(resupplyId: string, quantity: number, at: Date): boolean {
+    if (!Number.isInteger(quantity) || quantity <= 0) {
+      throw new StockReservationQuantityInvalidError(this.sku, quantity);
+    }
+    if (this.reservationsValue.some((reservation) => reservation.resupplyId === resupplyId)) {
+      return false;
+    }
+    this.reservationsValue = [
+      ...this.reservationsValue,
+      { resupplyId, quantity, packed: 0, reservedAt: at, releasedAt: null },
+    ];
+    return true;
+  }
+
+  /**
+   * La fiche est close : sa réservation se lève, et ce qu'elle n'a pas
+   * emballé redevient libre. Rien à lever (un réassort du soir, ou déjà
+   * levée) : `false`.
+   */
+  lift(resupplyId: string, at: Date): boolean {
+    const own = this.reservationsValue.find((reservation) => reservation.resupplyId === resupplyId);
+    if (own === undefined || own.releasedAt !== null) {
+      return false;
+    }
+    this.reservationsValue = this.reservationsValue.map((reservation) =>
+      reservation === own ? { ...own, releasedAt: at } : reservation,
+    );
+    return true;
+  }
+
+  /**
+   * **Une fiche de réassort emballe** : elle prend sur sa propre réservation,
+   * jamais sur celle d'un réassort lancé avant elle (servi le premier) ; une
+   * fiche du soir n'a que le libre des commandes.
+   *
+   * @throws {LineNotProducedYetError} le four n'a pas encore remis assez.
+   */
+  takeForResupply(resupplyId: string, quantity: number, productName: string): void {
+    const missing = shortfall(availableTo(this, this.reservationsValue, resupplyId), quantity);
+    if (missing > 0) {
+      throw new LineNotProducedYetError(productName, missing);
+    }
+    this.packedValue += quantity;
+    this.shiftOwnPacked(resupplyId, quantity);
+  }
+
+  /** La fiche emballe moins : les pièces reviennent, à sa réservation d'abord. */
+  releaseFromResupply(resupplyId: string, quantity: number): void {
+    this.packedValue = Math.max(0, this.packedValue - quantity);
+    this.shiftOwnPacked(resupplyId, -quantity);
+  }
+
+  /** Ce que la réservation de `resupplyId` attend encore du four. */
+  awaitingOven(resupplyId: string): number {
+    return awaitingOvenOf(this, this.reservationsValue, resupplyId);
   }
 
   /** Des pièces ressortent d'un bac et redeviennent disponibles. */
@@ -97,6 +193,15 @@ export class PackingStock {
       received: this.received,
       returned: this.returnedValue,
       packed: this.packedValue,
+      reservations: this.reservationsValue,
     };
+  }
+
+  private shiftOwnPacked(resupplyId: string, delta: number): void {
+    this.reservationsValue = this.reservationsValue.map((reservation) =>
+      reservation.resupplyId === resupplyId
+        ? { ...reservation, packed: Math.max(0, reservation.packed + delta) }
+        : reservation,
+    );
   }
 }

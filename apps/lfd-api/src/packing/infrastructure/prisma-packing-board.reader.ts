@@ -10,7 +10,9 @@ import {
   PackingBoardReader,
   type PackingBoardDay,
 } from "../domain/ports/packing-board.reader.js";
+import { reservedOf } from "../domain/services/stock-reservations.js";
 import { CONTAINER_SELECT, containerModeOf, containerOf } from "./packing-container.mapper.js";
+import { reservationsOn } from "./packing-stock-reservation.rows.js";
 
 /** Ce qu'on relit d'une commande pour le poste. */
 const ORDER_SELECT = {
@@ -56,7 +58,7 @@ export class PrismaPackingBoardReader extends PackingBoardReader {
   }
 
   async dayOf(serviceDay: string): Promise<PackingBoardDay> {
-    const [orders, stocks] = await Promise.all([
+    const [orders, stocks, reservations] = await Promise.all([
       this.prisma.packingOrder.findMany({
         where: { serviceDay },
         select: ORDER_SELECT,
@@ -67,11 +69,18 @@ export class PrismaPackingBoardReader extends PackingBoardReader {
         select: { sku: true, received: true, returned: true, packed: true },
         orderBy: { sku: "asc" },
       }),
+      reservationsOn(this.prisma, serviceDay),
     ]);
     const liveBins = await this.desk.liveBins(
       orders.flatMap((order) => order.containers.flatMap((row) => row.binId ?? [])),
     );
-    return { orders: orders.map((row) => boardOrderOf(row, liveBins)), stocks };
+    return {
+      orders: orders.map((row) => boardOrderOf(row, liveBins)),
+      stocks: stocks.map((stock) => ({
+        ...stock,
+        reserved: reservedOf(reservations.get(stock.sku) ?? []),
+      })),
+    };
   }
 }
 

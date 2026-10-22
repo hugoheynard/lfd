@@ -39,6 +39,7 @@ describe("OnResupplyListDrawn (colisage, R3b)", () => {
       siteId: "site_village",
       siteLabel: "Le Village",
       name: null,
+      kind: "evening",
       drawnAt: DRAWN,
       closed: null,
       lines: [{ sku: "CRO", productName: "Croissant", quantity: 12, packed: null }],

@@ -21,6 +21,14 @@ export interface PackingResupplyLineSnapshot {
   readonly packed: (ResupplyMark & { readonly quantity: number }) | null;
 }
 
+/**
+ * Le genre d'une fiche : `evening`, un réassort figé à l'arrêt du soir (R3b) ;
+ * `asap`, un réassort « au plus tôt » lancé dans la journée (R4b), qui
+ * réserve ses pièces et passe en tête du poste.
+ */
+export const PACKING_RESUPPLY_KINDS = ["evening", "asap"] as const;
+export type PackingResupplyKind = (typeof PACKING_RESUPPLY_KINDS)[number];
+
 /** L'état d'une fiche, tel que l'adaptateur l'écrit et le relit. */
 export interface PackingResupplySnapshot {
   readonly serviceDay: string;
@@ -29,6 +37,7 @@ export interface PackingResupplySnapshot {
   readonly siteLabel: string | null;
   /** Le nom du réassort (R1g) ; `null` : sans nom, ou fiche tirée avant le champ. */
   readonly name: string | null;
+  readonly kind: PackingResupplyKind;
   readonly drawnAt: Date;
   readonly closed: ResupplyMark | null;
   readonly lines: readonly PackingResupplyLineSnapshot[];
@@ -61,6 +70,7 @@ export class PackingResupply {
     readonly siteId: string,
     readonly siteLabel: string | null,
     readonly name: string | null,
+    readonly kind: PackingResupplyKind,
     readonly drawnAt: Date,
     private closedValue: ResupplyMark | null,
     private linesValue: readonly PackingResupplyLineSnapshot[],
@@ -73,6 +83,7 @@ export class PackingResupply {
       snapshot.siteId,
       snapshot.siteLabel,
       snapshot.name,
+      snapshot.kind,
       snapshot.drawnAt,
       snapshot.closed,
       snapshot.lines,
@@ -81,10 +92,11 @@ export class PackingResupply {
 
   /**
    * « Vitrine du matin — <point> » s'il est nommé (R1g), sinon « Réassort
-   * <point> » — le nom du point, ou son identifiant s'il est inconnu.
+   * <point> » — le nom du point, ou son identifiant s'il est inconnu ;
+   * suffixé « · au plus tôt » pour un réassort lancé (R4b).
    */
   get title(): string {
-    return titleOf(this.siteLabel, this.siteId, this.name);
+    return titleOf(this.siteLabel, this.siteId, this.name, this.kind);
   }
 
   get closed(): ResupplyMark | null {
@@ -152,6 +164,7 @@ export class PackingResupply {
       siteId: this.siteId,
       siteLabel: this.siteLabel,
       name: this.name,
+      kind: this.kind,
       drawnAt: this.drawnAt,
       closed: this.closedValue,
       lines: this.linesValue,
@@ -166,7 +179,13 @@ export class PackingResupply {
 }
 
 /** Le titre de la fiche — partagé avec la lecture du poste. */
-export function titleOf(siteLabel: string | null, siteId: string, name: string | null): string {
+export function titleOf(
+  siteLabel: string | null,
+  siteId: string,
+  name: string | null,
+  kind: PackingResupplyKind,
+): string {
   const site = siteLabel ?? siteId;
-  return name === null ? `Réassort ${site}` : `${name} — ${site}`;
+  const title = name === null ? `Réassort ${site}` : `${name} — ${site}`;
+  return kind === "asap" ? `${title} · au plus tôt` : title;
 }

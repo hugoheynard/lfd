@@ -16,6 +16,8 @@
         @if (row.arrivedAt !== null) {
           <fold-status-badge status="active" label="Arrivé" />
           <span class="muted" data-resupply-mounted-by>{{ arrivedLine(row) }}</span>
+        } @else if (!row.mountable) {
+          <fold-status-badge status="pending" label="À lancer d'abord" />
         } @else if (canMount()) {
           <button
             foldButton

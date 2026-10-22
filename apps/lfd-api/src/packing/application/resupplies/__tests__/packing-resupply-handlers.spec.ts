@@ -11,7 +11,7 @@ import {
   InMemoryResupplyRepository,
 } from "../../__tests__/resupply-doubles.js";
 import { InMemoryShadow } from "../../__tests__/shadow-doubles.js";
-import { InMemoryStocks } from "../../__tests__/station-doubles.js";
+import { InMemoryDayStocks, InMemoryStocks } from "../../__tests__/station-doubles.js";
 import { ClosePackingResupplyCommand } from "../close-packing-resupply.command.js";
 import { ClosePackingResupplyHandler } from "../close-packing-resupply.handler.js";
 import { EnterPackedResupplyLineCommand } from "../enter-packed-resupply-line.command.js";
@@ -31,6 +31,7 @@ async function setup(received = 24) {
     siteId: "site_village",
     siteLabel: "Le Village",
     name: null,
+    kind: "evening",
     drawnAt: AT,
     lines: [{ sku: "CRO", productName: "Croissant", quantity: 12 }],
   });
@@ -44,8 +45,11 @@ async function setup(received = 24) {
     table,
     stocks,
     enter: new EnterPackedResupplyLineHandler(repository, stocks, clock, uow),
-    close: new ClosePackingResupplyHandler(repository, clock, uow),
-    list: new ListPackingResuppliesHandler(new InMemoryResupplyBoard(table)),
+    close: new ClosePackingResupplyHandler(repository, stocks, clock, uow),
+    list: new ListPackingResuppliesHandler(
+      new InMemoryResupplyBoard(table),
+      new InMemoryDayStocks(stocks),
+    ),
   };
 }
 
@@ -96,11 +100,15 @@ describe("la fiche de réassort au poste (R3b)", () => {
         {
           resupplyId: "rs_1",
           title: "Réassort Le Village",
+          kind: "evening",
           siteId: "site_village",
           destination: { kind: "transfer", siteId: "site_village" },
           status: "closed",
+          awaitingOven: false,
           closedAt: AT.toISOString(),
-          lines: [{ sku: "CRO", productName: "Croissant", requested: 12, packed: 11 }],
+          lines: [
+            { sku: "CRO", productName: "Croissant", requested: 12, packed: 11, awaitingOven: 0 },
+          ],
         },
       ],
     });

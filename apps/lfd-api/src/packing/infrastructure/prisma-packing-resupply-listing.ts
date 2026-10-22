@@ -30,6 +30,7 @@ export class PrismaPackingResupplyListing extends PackingResupplyListing {
           siteId: resupply.siteId,
           siteLabel: resupply.siteLabel,
           name: resupply.name,
+          kind: resupply.kind,
           drawnAt: resupply.drawnAt,
         },
       ],
@@ -49,6 +50,7 @@ export class PrismaPackingResupplyListing extends PackingResupplyListing {
       where: {
         serviceDay,
         resupplyId: { in: [...resupplyIds] },
+        kind: "evening",
         closedAt: null,
         lines: { none: { packed: { not: null } } },
       },

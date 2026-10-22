@@ -53,6 +53,12 @@
   font-size: var(--fold-text-xs);
 }
 
+.pr-awaiting {
+  display: block;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+}
+
 .pr-gesture {
   text-align: right;
 }

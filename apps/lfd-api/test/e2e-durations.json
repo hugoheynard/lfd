@@ -375,5 +375,6 @@
   "test/resupply-village-flow.e2e-spec.ts": 7114,
   "test/resupply-labo-flow.e2e-spec.ts": 5257,
   "test/resupply-launch.e2e-spec.ts": 6060,
+  "test/resupply-asap-packing.e2e-spec.ts": 8826,
   "test/supervision-stock.e2e-spec.ts": 7400
 }

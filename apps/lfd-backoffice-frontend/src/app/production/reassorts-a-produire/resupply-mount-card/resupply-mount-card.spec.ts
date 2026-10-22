@@ -64,7 +64,7 @@ class FakeService {
   }
 }
 
-function mount(canMount: boolean) {
+function mount(canMount: boolean, view: ResupplyProductionDayView = VIEW) {
   const service = new FakeService();
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
@@ -72,7 +72,7 @@ function mount(canMount: boolean) {
     providers: [{ provide: BakehouseResuppliesService, useValue: service }],
   });
   const fixture = TestBed.createComponent(ResupplyMountCard);
-  fixture.componentRef.setInput('view', VIEW);
+  fixture.componentRef.setInput('view', view);
   fixture.componentRef.setInput('canMount', canMount);
   let mounted = 0;
   fixture.componentInstance.mounted.subscribe(() => (mounted += 1));
@@ -123,5 +123,35 @@ describe('ResupplyMountCard', () => {
     expect(root.querySelector('fold-callout')).not.toBeNull();
     expect(mounted()).toBe(0);
     expect(mount(false).root.querySelector('[data-resupply-mount]')).toBeNull();
+  });
+
+  /** Correctif R4a/Q4 (lot R4b) : au Labo, « Lancer » puis « Monté ». */
+  it('un « au plus tôt » ne propose « Monté » qu’une fois lancé', () => {
+    const view: ResupplyProductionDayView = {
+      ...VIEW,
+      sites: [
+        {
+          siteId: 'labo',
+          siteLabel: 'Le Labo',
+          resupplies: [
+            resupply('a1', 'labo', { target: 'asap' }),
+            resupply('a2', 'labo', {
+              target: 'asap',
+              launchedAt: '2026-01-03T07:00:00.000Z',
+              launchedBy: 'Max',
+            }),
+          ],
+        },
+      ],
+    };
+
+    const { root } = mount(true, view);
+
+    const waiting = root.querySelector('[data-resupply-mount-row="a1"]');
+    expect(waiting?.querySelector('[data-resupply-mount]')).toBeNull();
+    expect(waiting?.textContent).toContain("À lancer d'abord");
+    expect(
+      root.querySelector('[data-resupply-mount-row="a2"] [data-resupply-mount]'),
+    ).not.toBeNull();
   });
 });

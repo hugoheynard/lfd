@@ -75,6 +75,7 @@ describe("OnProductionDayReopened (colisage)", () => {
         siteId: "site_village",
         siteLabel: "Le Village",
         name: null,
+        kind: "evening",
         drawnAt: CLOSED,
         lines: [{ sku: "CRO", productName: "Croissant", quantity: 6 }],
       });
@@ -103,5 +104,33 @@ describe("OnProductionDayReopened (colisage)", () => {
     ).handle(delivery);
 
     expect([...resupplies.rows.keys()]).toEqual([`${DAY}/rs_2`]);
+  });
+
+  /** Lot R4b : un réassort lancé survit à la réouverture (R4a), sa fiche aussi. */
+  it("garde la fiche « au plus tôt » d'un réassort lancé, même intouchée", async () => {
+    const resupplies = new InMemoryResupplies();
+    await resupplies.draw({
+      serviceDay: DAY,
+      resupplyId: "rs_asap",
+      siteId: "site_village",
+      siteLabel: "Le Village",
+      name: null,
+      kind: "asap",
+      drawnAt: CLOSED,
+      lines: [{ sku: "CRO", productName: "Croissant", quantity: 6 }],
+    });
+    const delivery = {
+      ...DELIVERY,
+      payload: new ProductionDayReopenedEvent(DAY, REOPENED, CLOSED, [], ["rs_asap"]).durableFact()
+        .payload,
+    };
+
+    await new OnProductionDayReopened(
+      new RecordingWithdrawal(),
+      new ClosedPlans([]),
+      resupplies,
+    ).handle(delivery);
+
+    expect([...resupplies.rows.keys()]).toEqual([`${DAY}/rs_asap`]);
   });
 });

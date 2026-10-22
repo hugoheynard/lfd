@@ -21,7 +21,7 @@
       @if (resupplies().length === 0) {
         <fold-empty-state
           title="Aucune fiche de réassort"
-          subtitle="Aucun réassort d’un point servi par transfert n’est figé pour cette journée."
+          subtitle="Aucun réassort d’un point servi par transfert n’est figé ni lancé pour cette journée."
         />
       } @else {
         <p class="pr-summary">
@@ -33,8 +33,8 @@
             <header cardHeader class="pr-head">
               <h2 class="pr-title">{{ resupply.title }}</h2>
               <fold-status-badge
-                [status]="resupply.status === 'closed' ? 'success' : 'pending'"
-                [label]="resupply.status === 'closed' ? 'Close' : 'À emballer'"
+                [status]="badgeOf(resupply).status"
+                [label]="badgeOf(resupply).label"
               />
             </header>
             <table class="pr-table">
@@ -53,7 +53,15 @@
                       <span class="pr-product">{{ line.productName }}</span>
                       <span class="pr-sku">{{ line.sku }}</span>
                     </td>
-                    <td class="pr-num pr-requested">{{ line.requested }}</td>
+                    <td class="pr-num pr-requested">
+                      {{ line.requested }}
+                      @if (resupply.status === 'open' && line.awaitingOven > 0) {
+                        <span class="pr-awaiting" data-awaiting-oven
+                          >{{ line.awaitingOven }} attendu{{ line.awaitingOven > 1 ? 's' : '' }} du
+                          four</span
+                        >
+                      }
+                    </td>
                     <td class="pr-num">
                       @if (resupply.status === 'open') {
                         <fold-number-input
