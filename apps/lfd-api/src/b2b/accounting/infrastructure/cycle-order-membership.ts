@@ -15,6 +15,9 @@ import { ISSUED_OUTCOME } from "./prisma-monthly-invoice-outcomes.js";
 /** `AAAA-MM-JJ`. */
 const DAY_LENGTH = 10;
 
+/** Le statut d'un bon annulé (`orders.status`). */
+const CANCELLED_STATUS = "cancelled";
+
 /** Une tentative close qui dit que la facture est passée à sa clôture. */
 const PASSED_RUN_OUTCOMES: readonly InvoiceAutopilotOutcome[] = ["issued", "nothing_to_invoice"];
 
@@ -40,19 +43,64 @@ const PASSED_RUN_OUTCOMES: readonly InvoiceAutopilotOutcome[] = ["issued", "noth
  * copié) parmi les sociétés demandées, et le lecteur qui rend les lignes le
  * repose avec les ids. La lecture des factures, elle, filtre par payeur.
  *
+ * 🔴 **Un cycle déjà facturé montre EXACTEMENT les bons de sa facture**
+ * (Hugo, 2026-10-22) — un bon annulé APRÈS l'émission compris : la pièce ne
+ * bouge pas, le relevé non plus, et le lecteur le marque « annulé après
+ * facturation » (l'avoir reste à émettre, lot ZB). D'où `cycleOrderWhere`,
+ * qui n'applique `accountOrderWhere` qu'aux bons à venir.
+ *
  * @returns les ids, sans ordre ; le lecteur relit et trie.
  */
-export async function cycleOrderIds(
+export async function cycleOrderMembership(
   prisma: PrismaService,
   companyIds: readonly string[],
   cycle: BillingCycle,
-): Promise<readonly string[]> {
+): Promise<CycleOrderMembership> {
   const progress = await invoicingProgress(prisma);
   const [invoiced, pending] = await Promise.all([
     invoicedInCycle(prisma, companyIds, cycle),
     pendingInCycle(prisma, companyIds, cycle, progress),
   ]);
-  return [...new Set([...invoiced, ...pending])];
+  return { invoiced, pending };
+}
+
+/** Les bons d'un cycle, selon que sa facture les porte déjà ou les portera. */
+export interface CycleOrderMembership {
+  /** Portés par la 380 émise du cycle — quel que soit leur statut aujourd'hui. */
+  readonly invoiced: readonly string[];
+  /** Pas encore facturés : l'assiette vivante (`accountOrderWhere`) s'y applique. */
+  readonly pending: readonly string[];
+}
+
+/**
+ * Le `where` de relecture des bons d'un cycle, mur compris : un bon facturé
+ * reste lu même annulé depuis ; un bon à venir doit être encore au compte et
+ * vivant.
+ */
+export function cycleOrderWhere(
+  companyIds: readonly string[],
+  membership: CycleOrderMembership,
+): Prisma.OrderWhereInput {
+  return {
+    AND: [
+      companyWallWhere(companyIds),
+      {
+        OR: [
+          { id: { in: [...membership.invoiced] } },
+          { AND: [accountOrderWhere(), { id: { in: [...membership.pending] } }] },
+        ],
+      },
+    ],
+  };
+}
+
+/** Un bon que la facture porte, et qui a été annulé depuis : l'avoir reste à émettre. */
+export function isCancelledAfterInvoicing(
+  membership: CycleOrderMembership,
+  orderId: string,
+  status: string,
+): boolean {
+  return status === CANCELLED_STATUS && membership.invoiced.includes(orderId);
 }
 
 /** Le mur : les bons de ces sociétés, ET ceux qu'elles paient (payeur copié, S4). */

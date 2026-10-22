@@ -13,6 +13,8 @@ export interface InvoiceDossierOrder {
   readonly order: FrozenInvoiceOrder;
   /** Où le bon se retire ou se livre. */
   readonly place: DossierOrderPlace;
+  /** Porté par la facture émise du cycle, puis annulé : il reste, l'avoir est à émettre (ZB). */
+  readonly cancelledAfterInvoicing: boolean;
 }
 
 /**

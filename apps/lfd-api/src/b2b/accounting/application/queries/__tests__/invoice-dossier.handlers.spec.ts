@@ -222,6 +222,7 @@ function entry(
     billedCompanyId,
     order,
     place: { method: "pickup", label: "Labo", address: "1 rue du Four, 75001 Paris" },
+    cancelledAfterInvoicing: false,
   };
 }
 
@@ -278,6 +279,22 @@ describe("GetInvoiceDossierHandler", () => {
     expect(view.ordersTotalCents).toBe(212);
     expect(view.differenceCents).toBe(view.gaps.totalCents);
     expect(view.threeGapInvariantHolds).toBe(true);
+  });
+
+  it("garde au dossier le bon annulé après facturation, marqué", async () => {
+    const reader = new RecordingDossiers("Maison mère", [
+      entry("c1", bon("CMD-1", "2026-09-14")),
+      { ...entry("c1", bon("CMD-2", "2026-09-15")), cancelledAfterInvoicing: true },
+    ]);
+    const view = await getHandler(reader, new FixedBilling([])).execute(
+      new GetInvoiceDossierQuery("c1", SEPTEMBER_CLOSES_AT),
+    );
+
+    expect(view.orders.map((order) => [order.reference, order.cancelledAfterInvoicing])).toEqual([
+      ["CMD-1", false],
+      ["CMD-2", true],
+    ]);
+    expect(view.ordersTotalCents).toBe(212);
   });
 
   it("écarte le bon d'un site que la société ne réglait pas, comme le relevé", async () => {

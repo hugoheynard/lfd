@@ -104,7 +104,12 @@ function toView(
   };
 }
 
-function toOrderView({ order, place, history }: DossierOrderRecord): InvoiceDossierOrderView {
+function toOrderView({
+  order,
+  place,
+  history,
+  cancelledAfterInvoicing,
+}: DossierOrderRecord): InvoiceDossierOrderView {
   return {
     reference: order.reference,
     placedAt: order.createdAt.toISOString(),
@@ -122,6 +127,7 @@ function toOrderView({ order, place, history }: DossierOrderRecord): InvoiceDoss
     place,
     history: history.events.map(toEventView),
     actualDeliveryDay: history.actualDeliveryDay,
+    cancelledAfterInvoicing,
   };
 }
 

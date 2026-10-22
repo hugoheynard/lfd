@@ -9,8 +9,11 @@ import {
 } from "../domain/ports/invoice-dossier.reader.js";
 import type { BillingCycle } from "../domain/services/billing-cycle.js";
 import type { DossierOrderPlace } from "../domain/services/invoice-dossier.types.js";
-import { accountOrderWhere } from "./billable-order-criterion.js";
-import { companyWallWhere, cycleOrderIds } from "./cycle-order-membership.js";
+import {
+  cycleOrderMembership,
+  cycleOrderWhere,
+  isCancelledAfterInvoicing,
+} from "./cycle-order-membership.js";
 import {
   FROZEN_INVOICE_ORDER_SELECT,
   toFrozenInvoiceOrder,
@@ -18,7 +21,7 @@ import {
 
 /**
  * Les bons d'un dossier de facturation, par la **même appartenance** que le
- * relevé (`cycleOrderIds` : ceux que la facture du cycle porte ou portera), et
+ * relevé (`cycleOrderMembership` : ceux que la facture du cycle porte ou portera), et
  * le même filtre de
  * sociétés que `PrismaCycleOrdersReader`.
  *
@@ -43,19 +46,19 @@ export class PrismaInvoiceDossierReader extends InvoiceDossierReader {
     companyIds: readonly string[],
     cycle: BillingCycle,
   ): Promise<readonly InvoiceDossierOrder[]> {
-    const ids = await cycleOrderIds(this.prisma, companyIds, cycle);
+    const membership = await cycleOrderMembership(this.prisma, companyIds, cycle);
     const rows = await this.prisma.order.findMany({
       // Les commandes de ces sociétés, ET celles qu'elles paient (le payeur
       // copié, S4) : un site détaché depuis reste sur le relevé de qui l'a
       // réglé. Le tri par payeur est fait par le domaine (`billedPayerOf`).
-      where: {
-        AND: [accountOrderWhere(), companyWallWhere(companyIds)],
-        id: { in: [...ids] },
-      },
+      // Un bon facturé reste lu même annulé depuis (`cycleOrderWhere`).
+      where: cycleOrderWhere(companyIds, membership),
       orderBy: [{ createdAt: "asc" }, { orderNumber: "asc" }],
       select: DOSSIER_ORDER_SELECT,
     });
-    return rows.map(toDossierOrder);
+    return rows.map((row) =>
+      toDossierOrder(row, isCancelledAfterInvoicing(membership, row.id, row.status)),
+    );
   }
 }
 
@@ -67,15 +70,20 @@ const DOSSIER_ORDER_SELECT = {
   deliveryAddressSnapshot: true,
   companyId: true,
   billedCompanyId: true,
+  status: true,
 } satisfies Prisma.OrderSelect;
 
 type DossierOrderRow = Prisma.OrderGetPayload<{ select: typeof DOSSIER_ORDER_SELECT }>;
 
-function toDossierOrder(row: DossierOrderRow): InvoiceDossierOrder {
+function toDossierOrder(
+  row: DossierOrderRow,
+  cancelledAfterInvoicing: boolean,
+): InvoiceDossierOrder {
   return {
     orderId: row.id,
+    cancelledAfterInvoicing,
     place: placeOf(row),
-    // Jamais vide : `accountOrderWhere` exige une société.
+    // Jamais vide : `accountOrderWhere` exige une société, et un bon facturé l'a passé.
     companyId: row.companyId ?? "",
     billedCompanyId: row.billedCompanyId,
     order: toFrozenInvoiceOrder(row),

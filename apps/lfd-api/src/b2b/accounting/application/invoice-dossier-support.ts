@@ -143,6 +143,7 @@ async function withHistories(
   return entries.map((entry) => ({
     order: entry.order,
     place: entry.place,
+    cancelledAfterInvoicing: entry.cancelledAfterInvoicing,
     history: orderHistory(
       handovers.get(entry.orderId) ?? null,
       stopsByOrder.get(entry.orderId) ?? [],

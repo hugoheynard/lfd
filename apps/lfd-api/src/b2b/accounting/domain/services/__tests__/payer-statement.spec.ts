@@ -30,6 +30,7 @@ function order(companyId: string, siteName: string, placedAt: Date, cents: numbe
     vatShares: [{ rate: 5.5, amountCents: vat }],
     totalCents: cents + vat,
     collectionState: "due",
+    cancelledAfterInvoicing: false,
   };
 }
 

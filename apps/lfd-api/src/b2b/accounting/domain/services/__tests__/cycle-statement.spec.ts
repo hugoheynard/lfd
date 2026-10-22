@@ -24,6 +24,7 @@ function order(overrides: Partial<CycleOrder>): CycleOrder {
     vatShares: [],
     totalCents: 0,
     collectionState: "due",
+    cancelledAfterInvoicing: false,
     ...overrides,
   };
 }

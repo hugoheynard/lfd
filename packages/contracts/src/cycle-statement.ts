@@ -52,7 +52,11 @@ export interface StatementCyclesView {
 export interface CycleStatementOrderView {
   readonly id: string;
   readonly orderNumber: string;
-  /** ISO — l'instant de passation, qui range la commande dans son cycle. */
+  /**
+   * ISO — l'instant de passation. Il ne range PAS la commande dans son cycle :
+   * depuis ZL (2026-10-22), un cycle montre les bons que sa facture porte ou
+   * portera, rangés par jour de livraison.
+   */
   readonly placedAt: string;
   /** La société qui a commandé — le site, quand c'est un sous-compte. */
   readonly companyId: string;
@@ -82,6 +86,12 @@ export interface CycleStatementOrderView {
    * quand aucun lot ne l'a encore vue.
    */
   readonly collectionState: OrderCollectionStateView;
+  /**
+   * Vrai : la facture émise du cycle porte ce bon, annulé depuis. Il reste au
+   * relevé — le total du relevé reste celui de la facture — et l'avoir reste à
+   * émettre (« Annulé après facturation »).
+   */
+  readonly cancelledAfterInvoicing: boolean;
 }
 
 /** Une société qui en règle une autre. */
@@ -111,8 +121,9 @@ export interface CycleStatementView {
   readonly companyName: string;
   readonly cycle: StatementCycleView;
   /**
-   * Toujours `true` avant S4-0 : le relevé est recalculé à chaque lecture, et
-   * une commande annulée après coup en sort.
+   * Toujours `true` avant S4-0 : le relevé est recalculé à chaque lecture.
+   * Une commande annulée avant la facture du cycle en sort ; annulée après,
+   * elle reste, marquée `cancelledAfterInvoicing`.
    */
   readonly provisional: boolean;
   /** Le périmètre, en toutes lettres — ce que le relevé ne couvre pas. */

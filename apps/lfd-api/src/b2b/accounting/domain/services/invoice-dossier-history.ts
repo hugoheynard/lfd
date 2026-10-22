@@ -67,6 +67,8 @@ export interface DossierOrderRecord {
   readonly order: FrozenInvoiceOrder;
   readonly place: DossierOrderPlace;
   readonly history: DossierOrderHistory;
+  /** Porté par la facture émise du cycle, puis annulé (l'avoir est à émettre, lot ZB). */
+  readonly cancelledAfterInvoicing: boolean;
 }
 
 /** La frise d'un bon, à partir de ce que le retrait et la livraison en disent. */

@@ -52,6 +52,12 @@ export interface CycleOrder {
    * aucune ligne ne la cite : aucun lot ne l'a encore vue.
    */
   readonly collectionState: OrderCollectionStateName;
+  /**
+   * Porté par la facture émise du cycle, puis annulé : il reste au relevé —
+   * le relevé d'un cycle facturé est sa facture (Hugo, 2026-10-22) — et
+   * l'avoir reste à émettre (lot ZB).
+   */
+  readonly cancelledAfterInvoicing: boolean;
 }
 
 /** La société d'un relevé, sous ses deux noms. */
@@ -83,7 +89,8 @@ export abstract class CycleOrdersReader {
    * (`billedPayerOf`).
    *
    * 🔴 Même périmètre que l'assiette : ni les commandes réglées par carte, ni
-   * les gratuites, ni les annulées, ni celles d'un particulier.
+   * les gratuites, ni les annulées, ni celles d'un particulier — sauf un bon
+   * que la facture émise du cycle porte, annulé APRÈS : il y reste, marqué.
    */
   abstract cycleOrders(
     companyIds: readonly string[],

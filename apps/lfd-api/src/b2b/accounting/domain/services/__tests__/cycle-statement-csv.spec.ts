@@ -34,6 +34,7 @@ function order(overrides: Partial<CycleOrder>): CycleOrder {
     ],
     totalCents: 12_000,
     collectionState: "due",
+    cancelledAfterInvoicing: false,
     ...overrides,
   };
 }

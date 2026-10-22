@@ -21,6 +21,7 @@ export function dossierOrder(
     place: { method: 'pickup', label: 'Labo', address: '1 rue du Four' },
     history: [],
     actualDeliveryDay: null,
+    cancelledAfterInvoicing: false,
     ...overrides,
   };
 }

@@ -28,6 +28,13 @@
           @if (row.vatShares === null) {
             <fold-badge variant="neutral" content="TVA non ventilée" />
           }
+          @if (row.cancelledAfterInvoicing) {
+            <fold-badge
+              variant="warning"
+              content="Annulé après facturation — avoir à émettre"
+              data-dossier-cancelled-after-invoicing
+            />
+          }
         </span>
       </ng-template>
       <ng-template foldCell="placed" let-row>{{ instant(row.placedAt) }}</ng-template>

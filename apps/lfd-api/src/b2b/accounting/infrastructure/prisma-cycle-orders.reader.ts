@@ -10,12 +10,15 @@ import {
   type StatementCompany,
 } from "../domain/ports/cycle-orders.reader.js";
 import type { BillingCycle } from "../domain/services/billing-cycle.js";
-import { accountOrderWhere } from "./billable-order-criterion.js";
-import { companyWallWhere, cycleOrderIds } from "./cycle-order-membership.js";
+import {
+  cycleOrderMembership,
+  cycleOrderWhere,
+  isCancelledAfterInvoicing,
+} from "./cycle-order-membership.js";
 
 /**
  * Les commandes d'un relevé : celles que la facture du cycle porte ou
- * portera (`cycleOrderIds` — le relevé suit la facture, Hugo 2026-10-22),
+ * portera (`cycleOrderMembership` — le relevé suit la facture, Hugo 2026-10-22),
  * restreintes à UNE société.
  *
  * 🔴 `company_id` est dans le `where` : ce sont les sociétés demandées — celle
@@ -42,15 +45,13 @@ export class PrismaCycleOrdersReader extends CycleOrdersReader {
     companyIds: readonly string[],
     cycle: BillingCycle,
   ): Promise<readonly CycleOrder[]> {
-    const ids = await cycleOrderIds(this.prisma, companyIds, cycle);
+    const membership = await cycleOrderMembership(this.prisma, companyIds, cycle);
     const rows = await this.prisma.order.findMany({
       // Les commandes de ces sociétés, ET celles qu'elles paient (le payeur
       // copié, S4) : un site détaché depuis reste sur le relevé de qui l'a
       // réglé. Le tri par payeur est fait par le domaine (`billedPayerOf`).
-      where: {
-        AND: [accountOrderWhere(), companyWallWhere(companyIds)],
-        id: { in: [...ids] },
-      },
+      // Un bon facturé reste lu même annulé depuis (`cycleOrderWhere`).
+      where: cycleOrderWhere(companyIds, membership),
       orderBy: [{ createdAt: "asc" }, { orderNumber: "asc" }],
       select: {
         id: true,
@@ -66,6 +67,7 @@ export class PrismaCycleOrdersReader extends CycleOrdersReader {
         totalCents: true,
         companyId: true,
         billedCompanyId: true,
+        status: true,
         company: { select: { raisonSociale: true, enseigne: true } },
       },
     });
@@ -80,7 +82,7 @@ export class PrismaCycleOrdersReader extends CycleOrdersReader {
       id: row.id,
       orderNumber: row.orderNumber,
       placedAt: row.createdAt,
-      // Jamais vide : `accountOrderWhere` exige une société.
+      // Jamais vide : `accountOrderWhere` exige une société, et un bon facturé l'a passé.
       companyId: row.companyId ?? "",
       billedCompanyId: row.billedCompanyId,
       siteName: row.company === null ? "" : companyDisplayName(row.company),
@@ -93,6 +95,7 @@ export class PrismaCycleOrdersReader extends CycleOrdersReader {
       vatShares: parseVatShares(row.vatShares),
       totalCents: row.totalCents,
       collectionState: stateOf.get(row.id) ?? "due",
+      cancelledAfterInvoicing: isCancelledAfterInvoicing(membership, row.id, row.status),
     }));
   }
 }

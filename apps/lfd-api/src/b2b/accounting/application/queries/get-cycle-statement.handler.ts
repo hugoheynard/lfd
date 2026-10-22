@@ -99,5 +99,6 @@ function toOrderView(line: StatementLine): CycleStatementOrderView {
     vatCents: line.vatCents,
     totalCents: line.totalCents,
     collectionState: line.collectionState,
+    cancelledAfterInvoicing: line.cancelledAfterInvoicing,
   };
 }

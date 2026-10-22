@@ -149,6 +149,7 @@ const ORDER: CycleOrder = {
   vatShares: null,
   totalCents: 1_055,
   collectionState: "due",
+  cancelledAfterInvoicing: false,
 };
 
 const listHandler = (
@@ -254,6 +255,23 @@ describe("GetCycleStatementHandler", () => {
     expect(view.provisional).toBe(true);
     expect(view.totals.unventilatedVatCents).toBe(55);
     expect(view.groups[0]?.orders[0]).toMatchObject({ orderNumber: "CMD-1", vatVentilated: false });
+  });
+
+  it("garde au relevé le bon annulé après facturation, marqué, et le compte au total", async () => {
+    const cancelled: CycleOrder = {
+      ...ORDER,
+      id: "o2",
+      orderNumber: "CMD-2",
+      cancelledAfterInvoicing: true,
+    };
+    const reader = new RecordingCycleOrders("Boulangerie du Port", [ORDER, cancelled]);
+    const view = await getHandler(reader).execute(new GetCycleStatementQuery("c1", undefined));
+
+    expect(view.groups[0]?.orders.map((order) => order.cancelledAfterInvoicing)).toEqual([
+      false,
+      true,
+    ]);
+    expect(view.totals.totalCents).toBe(2 * ORDER.totalCents);
   });
 
   it("lit une période passée comme close", async () => {

@@ -143,7 +143,10 @@ export interface InvoiceDossierHistoryEventView {
 export interface InvoiceDossierOrderView {
   /** Le numéro de commande. */
   readonly reference: string;
-  /** ISO — la passation, qui range le bon dans le cycle. */
+  /**
+   * ISO — la passation. Elle ne range PAS le bon dans le cycle : depuis ZL
+   * (2026-10-22), l'appartenance suit la facture (jour de livraison).
+   */
   readonly placedAt: string;
   /** `AAAA-MM-JJ`, ou `null`. */
   readonly requestedDeliveryDate: string | null;
@@ -167,6 +170,11 @@ export interface InvoiceDossierOrderView {
    * rapporté puis replacé. `null` au comptoir, ou pas encore livré.
    */
   readonly actualDeliveryDay: string | null;
+  /**
+   * Vrai : la facture émise du cycle porte ce bon, annulé depuis. Il reste au
+   * dossier ; l'avoir reste à émettre (« Annulé après facturation »).
+   */
+  readonly cancelledAfterInvoicing: boolean;
 }
 
 /** Un bon dont le total figé ne se recompose pas à partir de ses montants. */
