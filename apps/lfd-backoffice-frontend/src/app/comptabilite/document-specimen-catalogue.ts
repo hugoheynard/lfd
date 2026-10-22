@@ -10,7 +10,9 @@ export type SpecimenKey =
   | 'sepa-mandate-b2b'
   | 'sepa-mandate-core'
   | 'order-summary'
-  | 'allergen-matrix';
+  | 'allergen-matrix'
+  | 'production-count'
+  | 'day-dossier';
 
 /** Le nom de chaque exemplaire. Un `Record` : une clé ajoutée sans nom ne compile pas. */
 export const SPECIMEN_LABELS: Readonly<Record<SpecimenKey, string>> = {
@@ -23,6 +25,8 @@ export const SPECIMEN_LABELS: Readonly<Record<SpecimenKey, string>> = {
   'sepa-mandate-core': 'Mandat SEPA CORE',
   'order-summary': 'Récapitulatif de commandes',
   'allergen-matrix': 'Matrice des allergènes',
+  'production-count': 'Compte à produire',
+  'day-dossier': 'Dossier du jour',
 };
 
 /** Un groupe de la planche : ce qu'un document dit de l'argent. */
@@ -38,13 +42,15 @@ function group(title: string, keys: readonly SpecimenKey[]): SpecimenGroup {
 /**
  * **La planche, rangée par ce que le papier montre** : les bons qui portent
  * des prix, ceux qui n'en portent aucun (le fournil et le livreur ne lisent
- * jamais un montant), la facture, les deux mandats SEPA, le récapitulatif de
+ * jamais un montant), les papiers du fournil pour la journée (compte à
+ * produire, dossier du jour), la facture, les deux mandats SEPA, le récapitulatif de
  * commandes d'une société, et la matrice des allergènes du catalogue. Il n'y
  * a pas de bon « bureau » : le bon que le staff ouvre est celui du client.
  */
 export const SPECIMEN_GROUPS: readonly SpecimenGroup[] = [
   group('Bons chiffrés', ['order-sheet-pro', 'order-sheet-public']),
   group('Bons non chiffrés', ['atelier-sheet', 'round-paper']),
+  group('Fournil', ['production-count', 'day-dossier']),
   group('Factures', ['invoice']),
   group('Mandats', ['sepa-mandate-b2b', 'sepa-mandate-core']),
   group('Récapitulatifs', ['order-summary']),

@@ -3,10 +3,10 @@
  * chaque bloc sert sous `admin/document-specimens/`
  * (`documentation/comptabilite/planche-des-documents.md`).
  *
- * Ce que seul l'e2e prouve : les sept contrôleurs montés dans leurs quatre
+ * Ce que seul l'e2e prouve : les huit contrôleurs montés dans leurs quatre
  * blocs — le référentiel compris, hors de son préfixe `/pim` —, le même mur
  * (`b2b_accounting:read`), les en-têtes servis, et que rien ne s'écrit — ni
- * commande, ni facture, ni mandat.
+ * commande, ni facture, ni mandat, ni journée de fabrication.
  */
 import { Buffer } from "node:buffer";
 
@@ -31,6 +31,8 @@ const DOCUMENTS = [
   "sepa-mandate-core.pdf",
   "order-summary.pdf",
   "allergen-matrix.pdf",
+  "production-count.pdf",
+  "day-dossier.pdf",
 ] as const;
 
 let ctx: E2eContext;
@@ -68,6 +70,7 @@ async function counts(): Promise<readonly number[]> {
     await ctx.prisma.order.count(),
     await ctx.prisma.invoice.count(),
     await ctx.prisma.paymentMandate.count(),
+    await ctx.prisma.productionDay.count(),
   ];
 }
 
@@ -84,7 +87,7 @@ describe("GET /admin/document-specimens/*", () => {
     expect(bytes.subarray(0, 5).toString("latin1")).toBe("%PDF-");
   });
 
-  it("n'écrit rien : ni commande, ni facture, ni mandat", async () => {
+  it("n'écrit rien : ni commande, ni facture, ni mandat, ni journée de fabrication", async () => {
     const before = await counts();
 
     for (const document of DOCUMENTS) {

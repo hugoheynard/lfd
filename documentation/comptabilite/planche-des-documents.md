@@ -11,23 +11,25 @@ d'exemple fixes** : jamais une vraie commande, **rien d'écrit en base, rien
 d'archivé, rien d'envoyé**. On choisit un document à gauche, l'aperçu PDF
 s'affiche à droite, et « Ouvrir dans un onglet » sert à l'imprimer.
 
-| Groupe            | Document                     | Route (`GET`)                                     | Bloc qui le sert | Rendu pur utilisé         |
-| ----------------- | ---------------------------- | ------------------------------------------------- | ---------------- | ------------------------- |
-| Bons chiffrés     | bon de commande pro          | `admin/document-specimens/order-sheet-pro.pdf`    | `b2b/orders`     | `renderOrderSheetPdf`     |
-| Bons chiffrés     | bon de commande public       | `admin/document-specimens/order-sheet-public.pdf` | `b2b/orders`     | `renderOrderSheetPdf`     |
-| Bons non chiffrés | fiche d'atelier              | `admin/document-specimens/atelier-sheet.pdf`      | `production`     | `renderAtelierSheetPdf`   |
-| Bons non chiffrés | feuille de tournée (livreur) | `admin/document-specimens/round-paper.pdf`        | `delivery`       | `renderRoundPaperPdf`     |
-| Factures          | facture Factur-X (PDF/A-3)   | `admin/document-specimens/invoice.pdf`            | `b2b/accounting` | `renderInvoicePdf`        |
-| Mandats           | mandat SEPA interentreprises | `admin/document-specimens/sepa-mandate-b2b.pdf`   | `b2b/accounting` | `renderSepaMandatePdf`    |
-| Mandats           | mandat SEPA CORE             | `admin/document-specimens/sepa-mandate-core.pdf`  | `b2b/accounting` | `renderSepaMandatePdf`    |
-| Récapitulatifs    | récapitulatif de commandes   | `admin/document-specimens/order-summary.pdf`      | `b2b/orders`     | `renderOrderSummaryPdf`   |
-| Catalogue         | matrice des allergènes       | `admin/document-specimens/allergen-matrix.pdf`    | `pim`            | `renderAllergenMatrixPdf` |
+| Groupe            | Document                     | Route (`GET`)                                     | Bloc qui le sert | Rendu pur utilisé          |
+| ----------------- | ---------------------------- | ------------------------------------------------- | ---------------- | -------------------------- |
+| Bons chiffrés     | bon de commande pro          | `admin/document-specimens/order-sheet-pro.pdf`    | `b2b/orders`     | `renderOrderSheetPdf`      |
+| Bons chiffrés     | bon de commande public       | `admin/document-specimens/order-sheet-public.pdf` | `b2b/orders`     | `renderOrderSheetPdf`      |
+| Bons non chiffrés | fiche d'atelier              | `admin/document-specimens/atelier-sheet.pdf`      | `production`     | `renderAtelierSheetPdf`    |
+| Bons non chiffrés | feuille de tournée (livreur) | `admin/document-specimens/round-paper.pdf`        | `delivery`       | `renderRoundPaperPdf`      |
+| Fournil           | compte à produire            | `admin/document-specimens/production-count.pdf`   | `production`     | `renderProductionCountPdf` |
+| Fournil           | dossier du jour              | `admin/document-specimens/day-dossier.pdf`        | `production`     | `renderDayDossierPdf`      |
+| Factures          | facture Factur-X (PDF/A-3)   | `admin/document-specimens/invoice.pdf`            | `b2b/accounting` | `renderInvoicePdf`         |
+| Mandats           | mandat SEPA interentreprises | `admin/document-specimens/sepa-mandate-b2b.pdf`   | `b2b/accounting` | `renderSepaMandatePdf`     |
+| Mandats           | mandat SEPA CORE             | `admin/document-specimens/sepa-mandate-core.pdf`  | `b2b/accounting` | `renderSepaMandatePdf`     |
+| Récapitulatifs    | récapitulatif de commandes   | `admin/document-specimens/order-summary.pdf`      | `b2b/orders`     | `renderOrderSummaryPdf`    |
+| Catalogue         | matrice des allergènes       | `admin/document-specimens/allergen-matrix.pdf`    | `pim`            | `renderAllergenMatrixPdf`  |
 
 ## Pourquoi chaque bloc sert ses propres exemplaires
 
 La matrice des blocs (`CLAUDE.md` §3) interdit au commerce d'importer le
 fournil ou la livraison, et ne le laisse lire le référentiel que par son
-canal. Un seul contrôleur qui rendrait les neuf documents traverserait donc
+canal. Un seul contrôleur qui rendrait les onze documents traverserait donc
 trois frontières. Chaque bloc sert les siens, sous le **même
 préfixe** et le **même droit**, et l'écran les assemble :
 
@@ -40,6 +42,7 @@ flowchart LR
   screen -->|sepa-mandate-*.pdf| mandates["b2b/accounting<br/>AdminSepaMandateSpecimensController"]
   screen -->|allergen-matrix.pdf| pim["pim<br/>AdminAllergenMatrixSpecimenController"]
   screen -->|atelier-sheet.pdf| production["production<br/>AdminAtelierSheetSpecimenController"]
+  screen -->|production-count.pdf, day-dossier.pdf| dayPapers["production<br/>AdminDayPapersSpecimensController"]
   screen -->|round-paper.pdf| delivery["delivery<br/>AdminRoundPaperSpecimenController"]
 ```
 
@@ -87,6 +90,17 @@ n'appartiennent à personne.
   pièce n'est rangée. Sans logo.
 - **Fiche d'atelier** et **feuille de tournée** : les mêmes articles, recopiés
   et non importés. Le QR de colisage encode `/colisage/EXEMPLE-0001`.
+- **Compte à produire** et **dossier du jour**
+  (`production/…/specimen-day.ts`) : une journée
+  d'exemple — la commande de la fiche d'atelier et deux autres (une en
+  retrait, une sans couleur), plus un réassort « Vitrine du matin » —, passée
+  par les calculs mêmes de la clôture (`countOf`, `countColorSharesOf`,
+  `dayDossierOf`). Deux **couleurs d'exemple** (`#2e86ab`, `#e4572e`),
+  qu'aucune destination ne porte, font voir le camembert du compte et les
+  pastilles des bons ; la commande sans couleur et le réassort forment la
+  part neutre. Deux rayons d'exemple (Pains, Viennoiseries) ; la tasse n'en a
+  aucun et tombe en « Hors catalogue ». Le dossier est arrêté par
+  « EXEMPLE — Marie Dupont », jamais retiré, et n'est pas archivé.
 - **Mandats SEPA** (`b2b/accounting/…/specimen-mandate.ts`) : un créancier et
   un débiteur fictifs (SIREN `999999999`, ICS `FR00ZZZ999999`, IBAN en `9…`),
   rendus sous les deux schémas **sans émission** — aucune RUM tirée, aucun
@@ -109,8 +123,6 @@ n'appartiennent à personne.
   décision (le bon que le bureau ouvre est celui du client).
 - **Pas de seconde facture « Factur-X »** : la facture EST le PDF/A-3 Factur-X ;
   `renderFacturXPdf` n'est que son contenant.
-- **Pas de dossier du jour ni de compte à produire** : ils demanderaient une
-  journée d'exemple. Ce sont les deux documents encore en dette dans la porte.
 - **Pas de couleur de catégorie** sur le bon : elle se lit sur une vraie
   commande.
 
@@ -120,7 +132,8 @@ n'appartiennent à personne.
   facture) et un spec par handler (`*-specimen.handler.spec.ts`).
 - E2E : `apps/lfd-api/test/document-specimens.e2e-spec.ts` — chaque route rend
   `application/pdf` non vide, 401 sans jeton, 403 sans `b2b_accounting:read`, et
-  le compte des commandes, des factures et des mandats ne bouge pas.
+  le compte des commandes, des factures, des mandats et des journées de
+  fabrication ne bouge pas.
 - Écran : `apps/lfd-backoffice-frontend/src/app/comptabilite/document-specimens/`.
 
 ## La porte qui tient la planche complète (2026-10-22)
@@ -137,6 +150,5 @@ couvert (le PDF Factur-X que la facture enveloppe) est couverte avec lui.
 
 Cinq documents n'avaient pas d'exemple le 2026-10-22 : le mandat SEPA, le
 récapitulatif de commandes d'une société, le compte à produire, la matrice des
-allergènes et le dossier du jour. Le mandat, le récapitulatif et la matrice
-l'ont reçu le même jour ; restent en dette dans la porte le compte à produire
-et le dossier du jour, et la liste ne peut que se vider.
+allergènes et le dossier du jour. Tous l'ont reçu le même jour : la porte n'a
+plus de liste de dette, et un document sans exemple échoue sans recours.

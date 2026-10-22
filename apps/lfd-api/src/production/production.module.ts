@@ -83,7 +83,10 @@ import {
 import { PrismaQualityUploadRepository } from "./infrastructure/prisma-quality-upload.repository.js";
 import { GetAtelierSheetPdfHandler } from "./application/queries/get-atelier-sheet-pdf.handler.js";
 import { GetAtelierSheetSpecimenHandler } from "./application/queries/get-atelier-sheet-specimen.handler.js";
+import { GetDayDossierSpecimenHandler } from "./application/queries/get-day-dossier-specimen.handler.js";
+import { GetProductionCountSpecimenHandler } from "./application/queries/get-production-count-specimen.handler.js";
 import { AdminAtelierSheetSpecimenController } from "./http/admin-atelier-sheet-specimen.controller.js";
+import { AdminDayPapersSpecimensController } from "./http/admin-day-papers-specimens.controller.js";
 import { GetCurrentProductionWorksheetHandler } from "./application/queries/get-current-production-worksheet.handler.js";
 import { GetDayDossierPdfHandler } from "./application/queries/get-day-dossier-pdf.handler.js";
 import { GetDayResuppliesHandler } from "./application/queries/get-day-resupplies.handler.js";
@@ -154,6 +157,7 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     ProductionSettingsController,
     // La fiche d'atelier d'EXEMPLE de la planche des documents (2026-10-20).
     AdminAtelierSheetSpecimenController,
+    AdminDayPapersSpecimensController,
     ProductionDossierRecipientsController,
     AutoCloseController,
     // « Lancer » un réassort « au plus tôt » (R4a, `plan-au-plus-tot.md`).
@@ -189,6 +193,8 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     GetDayResuppliesHandler,
     GetAtelierSheetPdfHandler,
     GetAtelierSheetSpecimenHandler,
+    GetDayDossierSpecimenHandler,
+    GetProductionCountSpecimenHandler,
     ProductionPapers,
     // La lecture de la fiche, partagée par la route datée et la route « en
     // cours » : un handler n'en appelle pas un autre (§4).

@@ -27,12 +27,11 @@
  * enveloppe — est couvert quand tous les fichiers qui l'appellent définissent
  * un document couvert : son rendu se voit à travers celui-là.
  *
- * ## La dette, comptée et décroissante
+ * ## Plus de dette
  *
- * Au 2026-10-22, cinq documents n'avaient pas d'exemple. Ils sont inscrits
- * ci-dessous : un document hors liste sans exemple échoue, et un document
- * inscrit qui a reçu son exemple — ou qui a disparu — échoue aussi, pour que la
- * liste ne fasse que se vider.
+ * Au 2026-10-22 au matin, cinq documents n'avaient pas d'exemple ; le soir
+ * même, tous l'avaient. Il n'y a plus de liste d'exception : un document sans
+ * exemple échoue, sans recours.
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
@@ -41,13 +40,6 @@ import { fileURLToPath } from "node:url";
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 const SRC = join(ROOT, "apps", "lfd-api", "src");
 const KIT = "platform/pdf/paper-pdf-kit.ts";
-
-/**
- * Les documents sans exemple au 2026-10-22 — la liste ne peut que se vider.
- * Le mandat SEPA, le récapitulatif de commandes et la matrice des allergènes
- * en sont sortis le même jour.
- */
-const DEBT = new Set(["renderProductionCountPdf", "renderDayDossierPdf"]);
 
 const DOCUMENT = /^export\s+(?:async\s+)?function\s+(render\w*(?:Pdf|Document))\b/gm;
 const OPENS_PDF =
@@ -165,25 +157,11 @@ while (grew) {
   }
 }
 
-/** Une brique dont tous les appelants sont des documents inscrits en dette. */
-function brickOfDebt(name, home) {
-  const callers = callersOf(name, home);
-  return (
-    callers.length > 0 &&
-    callers.every((path) =>
-      [...documents].some(([other, otherHome]) => otherHome === path && DEBT.has(other)),
-    )
-  );
-}
-
-const missing = [...documents].filter(
-  ([name, home]) => !covered.has(name) && !DEBT.has(name) && !brickOfDebt(name, home),
-);
-const stale = [...DEBT].filter((name) => !documents.has(name) || covered.has(name));
+const missing = [...documents].filter(([name]) => !covered.has(name));
 // L'autre sens : une vignette dont aucune route ne sert le PDF reste vide.
 const orphanKeys = [...shown].filter((key) => !servedKeys.has(key));
 
-if (unnamed.length > 0 || missing.length > 0 || stale.length > 0 || orphanKeys.length > 0) {
+if (unnamed.length > 0 || missing.length > 0 || orphanKeys.length > 0) {
   console.error("\n✗ pdf-specimens\n");
   for (const key of orphanKeys) {
     console.error(
@@ -198,11 +176,6 @@ if (unnamed.length > 0 || missing.length > 0 || stale.length > 0 || orphanKeys.l
   for (const [name, home] of missing) {
     console.error(`  ${home}  ${name} n'a pas d'exemple visible sur la planche des documents`);
   }
-  for (const name of stale) {
-    console.error(
-      `  ${name}  est inscrit en dette mais a son exemple, ou n'existe plus — retirez-le de la liste`,
-    );
-  }
   console.error(
     "\n  Un document absent de la planche ne se contrôle qu'en le produisant pour\n" +
       "  de vrai. Il lui faut les trois : un handler\n" +
@@ -214,6 +187,5 @@ if (unnamed.length > 0 || missing.length > 0 || stale.length > 0 || orphanKeys.l
 }
 
 console.log(
-  `✓ pdf-specimens : ${String(covered.size)} document(s) sur la planche ; ` +
-    `${String(DEBT.size)} sans exemple — compté, en baisse seulement.`,
+  `✓ pdf-specimens : ${String(covered.size)} document(s) sur la planche ; ` + "aucun sans exemple.",
 );
