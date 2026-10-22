@@ -16,6 +16,18 @@ numérotation au vrai format. Seules les données qui désigneraient une vraie
 personne ou consommeraient un vrai numéro sont des exemples, marqués. Tout
 écart entre la planche et un vrai document est un défaut de la planche.
 
+**Et sur les couleurs** (Hugo, 2026-10-22) : « tout ce qui peut faciliter
+l'identification visuelle de la destination finale — retrait, B2B, B2C,
+livraison — avec les couleurs doit être présent. » Chaque document papier qui
+suit une commande (bon, fiche d'atelier, fiche de colisage, feuille de tournée,
+manifeste, bon de réassort) porte la couleur de sa destination finale (le site
+de retrait, ou la livraison), et distingue pro et particulier ; la planche le
+montre parce que les vrais documents le portent. Ce qui ne le porte pas encore
+— la fiche d'atelier au minimum — est un chantier des **vrais** documents, à
+inventorier document par document avant le lot (Q2 du §3 en dépend). **Pas
+les factures** (ni avoirs) : pièces comptables, sans couleur de destination
+(Hugo, 2026-10-22).
+
 ## 0. Ce qui existe (ouvert le 2026-10-22)
 
 - Cinq documents : bon pro, bon public, fiche d'atelier, feuille de tournée,
