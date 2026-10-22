@@ -534,6 +534,16 @@ flowchart LR
   tous.
 - e2e : `apps/lfd-api/test/resupply-transfer-reception.e2e-spec.ts`.
 
+## Le parcours du Village, de bout en bout (2026-10-22)
+
+Le parcours du Village est joué de bout en bout par
+`apps/lfd-api/test/resupply-village-flow.e2e-spec.ts` : envoi nommé et
+commande la veille, arrêt automatique à la plus tardive des heures, fiche du
+colisage et transfert qui porte commande et réassort, fournée et emballé
+(18 sur 20), départ et manifeste figé, « Remis au site » (arrivé, cloche,
+commande retirée), réception pré-remplie et stock lu par la Supervision — une
+seule horloge figée qui saute d'une étape à l'autre.
+
 ## Ce qui reste
 
 - **« Au plus tôt » au Village** (plan de la version complète : [`plan-au-plus-tot.md`](plan-au-plus-tot.md)) : ni transfert (R4), ni « Monté » proposé

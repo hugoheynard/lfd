@@ -371,5 +371,6 @@
   "test/resupply-name.e2e-spec.ts": 5967,
   "test/resupply-arrived.e2e-spec.ts": 5673,
   "test/resupply-transfer-reception.e2e-spec.ts": 8010,
+  "test/resupply-village-flow.e2e-spec.ts": 7114,
   "test/supervision-stock.e2e-spec.ts": 7400
 }
