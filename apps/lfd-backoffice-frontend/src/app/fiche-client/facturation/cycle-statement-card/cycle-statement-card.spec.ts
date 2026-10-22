@@ -52,6 +52,7 @@ const ORDER: CycleStatementOrderView = {
   vatCents: 523,
   totalCents: 11_523,
   collectionState: 'collected',
+  cancelledAfterInvoicing: false,
 };
 
 function totalsOf(unventilatedVatCents = 0, count = 1): CycleStatementTotalsView {
@@ -244,6 +245,34 @@ describe('CycleStatementCard', () => {
     const entity = host.querySelector<HTMLAnchorElement>('[data-statement-self-paying] a');
     expect(entity?.textContent).toContain('Club Med Tignes');
     expect(entity?.getAttribute('href')).toBe('/comptes-clients/club/facturation');
+  });
+
+  it('marque le bon annulé après facturation, sans le retirer', async () => {
+    const plain = boot(['b2b_companies:read']);
+    await settle(plain.fixture);
+    expect(
+      (plain.fixture.nativeElement as HTMLElement).querySelector(
+        '[data-statement-cancelled-after-invoicing]',
+      ),
+    ).toBeNull();
+
+    const cancelled = boot(['b2b_companies:read']);
+    cancelled.wire.view = (month) => {
+      const base = statementOf(month);
+      return {
+        ...base,
+        groups: base.groups.map((group) => ({
+          ...group,
+          orders: group.orders.map((order) => ({ ...order, cancelledAfterInvoicing: true })),
+        })),
+      };
+    };
+    await settle(cancelled.fixture);
+    const badge = (cancelled.fixture.nativeElement as HTMLElement).querySelector(
+      '[data-statement-cancelled-after-invoicing]',
+    );
+    expect(badge?.textContent).toContain('Annulé après facturation');
+    expect(text(cancelled.fixture)).toContain('CMD-1');
   });
 
   it('nomme le principal sur le relevé d’un site qui le suivait', async () => {

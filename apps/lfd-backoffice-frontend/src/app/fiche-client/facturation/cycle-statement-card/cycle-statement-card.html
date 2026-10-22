@@ -54,7 +54,8 @@
                tout le chiffre d'affaires. Le périmètre vient du serveur. -->
           <fold-callout appearance="inset" variant="warning" data-statement-provisional>
             <strong>Relevé provisoire.</strong> Il est recalculé à chaque lecture&nbsp;: une
-            commande annulée après coup en sort. Ce n’est pas une facture.
+            commande annulée avant la facture du cycle en sort ; annulée après, elle reste, marquée.
+            Ce n’est pas une facture.
             {{ statement.scope }}
           </fold-callout>
 
@@ -134,6 +135,15 @@
                     <span class="ref">{{ row.orderNumber }}</span>
                     @if (row.paidBy; as paidBy) {
                       <fold-badge variant="info" [content]="'payé par ' + paidBy.name" />
+                    }
+                    @if (row.cancelledAfterInvoicing) {
+                      <!-- Facturé puis annulé : la facture le porte, l'avoir
+                           reste à émettre — il reste au relevé. -->
+                      <fold-badge
+                        variant="warning"
+                        content="Annulé après facturation — avoir à émettre"
+                        data-statement-cancelled-after-invoicing
+                      />
                     }
                   </ng-template>
                   <ng-template foldCell="ht" let-row>{{ euros(row.htCents) }}</ng-template>
