@@ -51,6 +51,10 @@ const ALLOWED = new Set([
   // Le froid relayé à la livraison (lot 4 bis, 2026-09-29) : il PORTE le
   // filtre (`...STILL_SOLD`) — un article retiré n'a plus à être chargé froid.
   "apps/lfd-api/src/b2b/catalog/infrastructure/prisma-catalog-cold.reader.ts",
+  // Le rangement des SKU de commande (plan des exclusions de la remise de
+  // retrait, V4, 2026-10-22) : il PORTE le filtre (`...STILL_SOLD`) — la
+  // caisse ne range que ce qu'elle vend, un article retiré n'a pas de ligne.
+  "apps/lfd-api/src/b2b/catalog/infrastructure/prisma-order-line-classification.reader.ts",
   // La descente des limites de commande (lot 2b du catalogue synchronisé,
   // 2026-10-15) : elle PORTE le filtre — un article retiré reçoit ses limites
   // quand le fait de sa fiche le remet en vente.

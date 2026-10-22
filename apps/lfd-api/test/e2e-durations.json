@@ -380,5 +380,6 @@
   "test/resupply-asap-packing.e2e-spec.ts": 8826,
   "test/supervision-stock.e2e-spec.ts": 7400,
   "test/resupply-asap-transfer.e2e-spec.ts": 12000,
-  "test/resupply-asap-village-flow.e2e-spec.ts": 8000
+  "test/resupply-asap-village-flow.e2e-spec.ts": 8000,
+  "test/pickup-discount-exclusions.e2e-spec.ts": 7484
 }

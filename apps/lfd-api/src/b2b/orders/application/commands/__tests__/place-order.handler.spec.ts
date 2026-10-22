@@ -1,3 +1,4 @@
+import { FixedLineClassifications } from "../../../domain/ports/__tests__/line-classification-doubles.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedOrderPayers, ownPayers } from "./payer-doubles.js";
 import {
@@ -305,6 +306,14 @@ const noPreferredPickup: PreferredPickupReader = {
 };
 
 /** Points de retrait doublés : seul le point **résolu** varie. */
+/** −20 % sur tout le panier, sans règle — la remise d'avant les exclusions. */
+const TWENTY_PERCENT = {
+  adjustment: { mode: "percent", bp: 2000 },
+  scope: "all_except",
+  categories: [],
+  products: [],
+} as const;
+
 function pickups(resolved: PickupAddressView | null = null): PickupAddressRepository {
   return {
     list: () => Promise.resolve(resolved === null ? [] : [resolved]),
@@ -423,8 +432,10 @@ function drafting(
     readonly salesTerms?: FixedSalesTerms;
     readonly cutoffs?: OrderCutoffReader;
     readonly limits?: InMemoryProductCatalog;
+    readonly classifications?: FixedLineClassifications;
   } = {},
 ): OrderDrafting {
+  const classifications = audience.classifications ?? new FixedLineClassifications();
   return new OrderDrafting(
     new OrderLinePricing(
       catalog,
@@ -454,6 +465,7 @@ function drafting(
       zonesDouble,
       deliveryAvailability(audience.delivery),
       noPreferredPickup,
+      classifications,
     ),
     audience.book ?? noDeliveryDefaults(),
     audience.cutoffs ?? noOrderCutoffs,
@@ -467,6 +479,7 @@ function drafting(
     audience.deliveryVat ?? new FixedDeliveryVat(),
     audience.plans ?? openPlanGate(),
     audience.salesTerms ?? new FixedSalesTerms(),
+    classifications,
   );
 }
 
@@ -478,8 +491,7 @@ const LABO_POINT: PickupAddressView = {
   codePostal: "75002",
   ville: "Paris",
   pays: "France",
-  discount: null,
-  discountAudiences: { b2b: true, b2c: true },
+  discounts: { b2b: null, b2c: null },
   // Aucune heure déclarée : le point n'oppose alors rien à la tranche demandée.
   // Les cas d'ouverture sont couverts par `agreed-fulfillment.spec`.
   opening: { publicOpening: null, proPickup: null },
@@ -786,6 +798,11 @@ describe("PlaceOrderHandler", () => {
         // tout pourrait un jour afficher par erreur (R3, 2026-09-21).
         unitPriceTtcCents: null,
         lineTotalTtcCents: null,
+        // Aucune remise de retrait, et un catalogue doublé qui ne range rien :
+        // éligible, non classée.
+        pickupDiscountEligible: true,
+        productId: null,
+        categoryId: null,
         // Aucune règle dans ces doubles : la trace existe et dit qu'aucun étage
         // n'a joué. C'est une affirmation, pas une absence.
         pricing: {
@@ -937,7 +954,10 @@ describe("PlaceOrderHandler", () => {
 
   it("en RETRAIT, applique la remise du point au total", async () => {
     const sink = { placed: null as OrderToPlace | null };
-    const point: PickupAddressView = { ...LABO_POINT, discount: { mode: "percent", bp: 2000 } };
+    const point: PickupAddressView = {
+      ...LABO_POINT,
+      discounts: { b2b: TWENTY_PERCENT, b2c: TWENTY_PERCENT },
+    };
     const handler = new PlaceOrderHandler(
       guard("orders", "active"),
       drafting(pickups(point), zones()),
@@ -969,12 +989,66 @@ describe("PlaceOrderHandler", () => {
    * ACTIVE suit les règles B2C. Une remise réservée aux pros ne s'obtient pas en
    * déclarant une société.
    */
+  /**
+   * Plan `plan-remise-retrait-par-clientele-et-exclusions.md`, R1 et R2 : la
+   * remise ne porte que sur les lignes qu'elle couvre, et chaque ligne fige
+   * son drapeau, son produit et sa famille.
+   */
+  it("en RETRAIT, remise les seules lignes couvertes et fige leur éligibilité", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const point: PickupAddressView = {
+      ...LABO_POINT,
+      discounts: {
+        b2b: { ...TWENTY_PERCENT, products: [{ productId: "p_pain_choc", eligible: false }] },
+        b2c: null,
+      },
+    };
+    const classifications = new FixedLineClassifications({
+      "VIE-001": { productId: "p_croissant", categoryId: "c_vie", categoryPath: ["c_vie"] },
+      "VIE-002": { productId: "p_pain_choc", categoryId: "c_vie", categoryPath: ["c_vie"] },
+    });
+    const handler = new PlaceOrderHandler(
+      guard("orders", "active"),
+      drafting(pickups(point), zones(), { classifications }),
+      capturingRepo(sink),
+      payments(),
+      events(),
+      noWaivers,
+      new FixedClock(PRICED_AT),
+      freeKeys,
+      noReader,
+      directWork,
+      new FixedVoucherQuotes(),
+      new RecordingRedemption(),
+      new RecordingDurable(),
+      intakeAt(),
+    );
+    const lines = [
+      { sku: "VIE-001", quantity: 2 },
+      { sku: "VIE-002", quantity: 1 },
+    ];
+
+    // 400 éligibles + 220 exclus ; remise 20 % de 400 = 80 ; total = 540.
+    await handler.execute(new PlaceOrderCommand("u1", payload({ lines }), "c1"));
+
+    expect(sink.placed?.subtotalCents).toBe(620);
+    expect(sink.placed?.discountCents).toBe(80);
+    expect(sink.placed?.totalCents).toBe(540);
+    expect(
+      sink.placed?.lines.map((line) => [line.sku, line.pickupDiscountEligible, line.productId]),
+    ).toEqual([
+      ["VIE-001", true, "p_croissant"],
+      ["VIE-002", false, "p_pain_choc"],
+    ]);
+    // Une lecture, pas deux : la passation donne au service ce qu'elle a lu.
+    expect(classifications.asked).toHaveLength(1);
+  });
+
   it("en RETRAIT, ne remise pas une société en attente quand la remise est réservée aux pros", async () => {
     const sink = { placed: null as OrderToPlace | null };
     const point: PickupAddressView = {
       ...LABO_POINT,
-      discount: { mode: "percent", bp: 2000 },
-      discountAudiences: { b2b: true, b2c: false },
+      discounts: { b2b: TWENTY_PERCENT, b2c: null },
     };
     const handler = new PlaceOrderHandler(
       guard("orders", "pending", "none"),

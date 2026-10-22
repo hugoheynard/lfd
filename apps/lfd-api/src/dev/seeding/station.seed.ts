@@ -1,5 +1,4 @@
 import {
-  ALL_DISCOUNT_AUDIENCES,
   type CartAdjustment,
   type DeliveryZonePayload,
   type OrderCutoffPayload,
@@ -166,14 +165,22 @@ async function seedPickupPoints({ prisma, commands }: StationContext): Promise<v
       codePostal: point.codePostal,
       ville: point.ville,
       pays: "France",
-      discount: point.discount,
-      discountAudiences: ALL_DISCOUNT_AUDIENCES,
+      discounts: discountsFor(point.discount),
       opening: point.opening,
       gps: point.gps,
     };
     await commands.execute(new CreatePickupAddressCommand(payload));
     console.log(`✓ Point de retrait « ${point.label} » semé.`);
   }
+}
+
+/** La remise semée vaut pour les deux clientèles, sans règle de portée. */
+function discountsFor(adjustment: CartAdjustment | null): PickupAddressPayload["discounts"] {
+  if (adjustment === null) {
+    return { b2b: null, b2c: null };
+  }
+  const discount = { adjustment, scope: "all_except" as const, categories: [], products: [] };
+  return { b2b: discount, b2c: discount };
 }
 
 async function seedDeliveryZones({ prisma, commands }: StationContext): Promise<void> {

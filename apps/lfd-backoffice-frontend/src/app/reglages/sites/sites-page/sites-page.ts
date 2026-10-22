@@ -24,6 +24,7 @@ import { openingRows } from '../../../b2b/reglages/pickup-opening.model';
 import { type DeliveryOpenness, pickupGaps } from '../pickup-coverage';
 import { roleLabels } from '../site-role-labels';
 import { SITES_PATH } from '../sites-path';
+import { singleDiscountOf } from '../site-discount-bridge';
 import { SitesService } from '../sites.service';
 
 export { roleLabels } from '../site-role-labels';
@@ -101,10 +102,11 @@ export class SitesPage {
    * fermée aux particuliers se lirait comme offerte à tous.
    */
   protected discountLabel(point: SiteView): string {
-    if (point.discount === null) {
+    const { discount, audiences } = singleDiscountOf(point.discounts);
+    if (discount === null) {
       return '';
     }
-    return `− ${formatAdjustmentValue(point.discount)}${discountAudienceSuffix(point.discountAudiences)}`;
+    return `− ${formatAdjustmentValue(discount)}${discountAudienceSuffix(audiences)}`;
   }
 
   /**

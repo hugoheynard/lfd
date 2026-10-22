@@ -112,6 +112,10 @@ describe("Order.draft — calcul monétaire", () => {
         // Ligne fabriquée à la main : sans résolution, il n'y a rien à tracer.
         pricing: null,
         allergens: null,
+        // Sans drapeau ni rangement à l'entrée : éligible, non classée.
+        pickupDiscountEligible: true,
+        productId: null,
+        categoryId: null,
       },
     ]);
   });

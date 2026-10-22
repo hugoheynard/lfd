@@ -2,15 +2,12 @@ import { Injectable } from "@nestjs/common";
 
 import { Prisma } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
-import {
-  fromAdjustmentColumns,
-  toAdjustmentColumns,
-} from "../../pricing/cart-adjustment.mapper.js";
+import { toAdjustmentColumns } from "../../pricing/cart-adjustment.mapper.js";
 import { PickupDiscount } from "../../pickup-addresses/domain/pickup-discount.js";
 import { Site, type SiteColors } from "../domain/site.js";
 import { SiteColor } from "../domain/site-color.js";
 import { SiteRepository } from "../domain/site.repository.js";
-import { gpsOf, openingOf, SITE_SELECT, type SiteRow } from "./site-row.js";
+import { discountsOf, gpsOf, openingOf, SITE_SELECT, type SiteRow } from "./site-row.js";
 
 function colorOf(value: string | null): SiteColor | null {
   return value === null ? null : SiteColor.of(value);
@@ -30,10 +27,7 @@ function toDomain(row: SiteRow): Site {
       pays: row.pays,
       opening: openingOf(row.opening),
       gps: gpsOf(row.gps),
-      discount: PickupDiscount.of(fromAdjustmentColumns(row.discountMode, row.discountValue), {
-        b2b: row.discountForB2b,
-        b2c: row.discountForB2c,
-      }),
+      discount: PickupDiscount.of(discountsOf(row)),
     },
     roles: {
       pickup: row.pickup,
@@ -60,7 +54,9 @@ function hexOf(colors: SiteColors, key: keyof SiteColors): string | null {
 /** Les getters de l'agrégat → la ligne. */
 function toPersistence(site: Site): Prisma.SiteUncheckedCreateInput {
   const { id, place, roles, colors, archivedAt } = site.snapshot();
-  const discount = toAdjustmentColumns(place.discount.adjustment);
+  const { b2b, b2c } = place.discount;
+  const pro = toAdjustmentColumns(b2b?.adjustment ?? null);
+  const individual = toAdjustmentColumns(b2c?.adjustment ?? null);
   return {
     id,
     label: place.label,
@@ -72,10 +68,16 @@ function toPersistence(site: Site): Prisma.SiteUncheckedCreateInput {
     opening: place.opening,
     // `DbNull` : l'ABSENCE de point, pas un `null` JSON.
     gps: place.gps === null ? Prisma.DbNull : place.gps,
-    discountMode: discount.mode,
-    discountValue: discount.value,
-    discountForB2b: place.discount.audiences.b2b,
-    discountForB2c: place.discount.audiences.b2c,
+    // La remise des pros dans les colonnes d'avant, sa case cochée : c'est ce
+    // que la lecture exige (`discountsOf`). `discount_for_b2c` n'est plus
+    // écrit — colonne morte, gardée pour un retour arrière (V8).
+    discountMode: pro.mode,
+    discountValue: pro.value,
+    discountForB2b: true,
+    discountScope: b2b?.scope ?? "all_except",
+    b2cDiscountMode: individual.mode,
+    b2cDiscountValue: individual.value,
+    b2cDiscountScope: b2c?.scope ?? "all_except",
     pickup: roles.pickup,
     pickupForB2b: roles.pickupAudiences.b2b,
     pickupForB2c: roles.pickupAudiences.b2c,
@@ -90,6 +92,29 @@ function toPersistence(site: Site): Prisma.SiteUncheckedCreateInput {
     deliveryColorB2c: hexOf(colors, "deliveryB2c"),
     archivedAt,
   };
+}
+
+/** Les règles des deux remises, en lignes. L'identifiant dérive de la cible : stable d'une écriture à l'autre. */
+function rulesOf(site: Site): Prisma.PickupDiscountRuleCreateManyInput[] {
+  const { id, place } = site.snapshot();
+  return (["b2b", "b2c"] as const).flatMap((audience) => {
+    const discount = place.discount[audience];
+    if (discount === null) {
+      return [];
+    }
+    const row = (target: "category" | "product", targetId: string, eligible: boolean) => ({
+      id: `${id}:${audience}:${target}:${targetId}`,
+      siteId: id,
+      audience,
+      target,
+      targetId,
+      eligible,
+    });
+    return [
+      ...discount.categories.map((rule) => row("category", rule.categoryId, rule.eligible)),
+      ...discount.products.map((rule) => row("product", rule.productId, rule.eligible)),
+    ];
+  });
 }
 
 /**
@@ -108,8 +133,18 @@ export class PrismaSiteRepository extends SiteRepository {
     return row === null ? null : toDomain(row);
   }
 
+  /**
+   * Le site, puis ses règles de remise **remplacées en bloc** : elles sont des
+   * valeurs de la remise, sans identité ni histoire propre (le journal porte
+   * l'histoire). Dans la transaction ambiante de l'unité de travail.
+   */
   async save(site: Site): Promise<void> {
     const data = toPersistence(site);
     await this.prisma.site.upsert({ where: { id: site.id }, create: data, update: data });
+    await this.prisma.pickupDiscountRule.deleteMany({ where: { siteId: site.id } });
+    const rules = rulesOf(site);
+    if (rules.length > 0) {
+      await this.prisma.pickupDiscountRule.createMany({ data: rules });
+    }
   }
 }

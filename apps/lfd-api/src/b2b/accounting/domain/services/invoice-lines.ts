@@ -3,9 +3,11 @@ import { PIECE_UNIT } from "../value-objects/invoice-unit.js";
 import type { FrozenInvoiceOrder, InvoiceLine } from "./invoice-dossier.types.js";
 
 /**
- * **Les lignes de la facture** : une par `(sku, prix, taux normalisé)` (plan
- * simulateur, D2 et §3.1). Un changement de tarif ou de taux dans le cycle
- * fait donc deux lignes du même produit.
+ * **Les lignes de la facture** : une par `(sku, prix, taux normalisé,
+ * éligibilité à la remise de retrait)` (plan simulateur, D2 et §3.1 ; V3 du
+ * plan des exclusions). Un changement de tarif ou de taux dans le cycle fait
+ * donc deux lignes du même produit — et une ligne exclue de la remise ne se
+ * fond pas dans une ligne remisée, sans quoi la remise se répartirait sur elle.
  *
  * ## Le montant d'une ligne est REPRIS des bons (F6, 2026-10-08)
  *
@@ -38,6 +40,7 @@ interface LineAccumulator {
   readonly sku: string;
   readonly unitPriceMillicents: number;
   readonly vatRate: number;
+  readonly eligible: boolean;
   quantity: number;
   ordersLineTotalCents: number;
   label: string;
@@ -55,8 +58,10 @@ export function aggregateInvoiceLines(
   for (const order of orders) {
     for (const line of order.lines) {
       const vatRate = normalizedVatRate(line.vatRate, order.reference);
-      const key = `${line.sku}|${String(line.unitPriceMillicents)}|${String(vatRate)}`;
-      const acc = byKey.get(key) ?? openAccumulator(line.sku, line.unitPriceMillicents, vatRate);
+      const eligible = line.pickupDiscountEligible ?? true;
+      const key = `${line.sku}|${String(line.unitPriceMillicents)}|${String(vatRate)}|${String(eligible)}`;
+      const acc =
+        byKey.get(key) ?? openAccumulator(line.sku, line.unitPriceMillicents, vatRate, eligible);
       byKey.set(key, acc);
       accumulate(acc, order, line.productNameSnapshot, line.quantity, line.lineTotalCents);
     }
@@ -68,11 +73,13 @@ function openAccumulator(
   sku: string,
   unitPriceMillicents: number,
   vatRate: number,
+  eligible: boolean,
 ): LineAccumulator {
   return {
     sku,
     unitPriceMillicents,
     vatRate,
+    eligible,
     quantity: 0,
     ordersLineTotalCents: 0,
     label: "",
@@ -123,6 +130,7 @@ function closeAccumulator(acc: LineAccumulator): InvoiceLine {
     ordersLineTotalCents: acc.ordersLineTotalCents,
     firstDeliveryDate: acc.firstDeliveryDate,
     lastDeliveryDate: acc.lastDeliveryDate,
+    ...(acc.eligible ? {} : { pickupDiscountEligible: false as const }),
   };
 }
 
@@ -133,5 +141,9 @@ function compareLines(left: LineAccumulator, right: LineAccumulator): number {
   if (left.unitPriceMillicents !== right.unitPriceMillicents) {
     return left.unitPriceMillicents - right.unitPriceMillicents;
   }
-  return left.vatRate - right.vatRate;
+  if (left.vatRate !== right.vatRate) {
+    return left.vatRate - right.vatRate;
+  }
+  // L'éligible d'abord : c'est l'ordre d'avant les exclusions.
+  return Number(right.eligible) - Number(left.eligible);
 }

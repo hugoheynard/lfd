@@ -7,19 +7,24 @@ import {
   type GpsPoint,
   gpsPointSchema,
 } from "./address.js";
-import { cartAdjustmentSchema, type CartAdjustment } from "./cart-adjustment.js";
+import { cartAdjustmentSchema } from "./cart-adjustment.js";
 import { minutesOfDay, timeOfMinutes } from "./paris-time.js";
-import type { CustomerAudience } from "./customer-audience.js";
 import { ALL_DISCOUNT_AUDIENCES } from "./pickup-discount-audiences.js";
+import {
+  type AudiencePickupDiscount,
+  pickupDiscountFor,
+  type PickupDiscounts,
+} from "./pickup-discount-scope.js";
 
-// Le défaut vit sans zod, pour le démarrage de la boutique : on le réexporte.
-export { ALL_DISCOUNT_AUDIENCES };
+// Le défaut et la règle vivent sans zod, pour le démarrage de la boutique : on
+// les réexporte.
+export { ALL_DISCOUNT_AUDIENCES, pickupDiscountFor };
 
 /**
- * **À qui s'applique la remise d'un point** : les pros, les particuliers, ou les
- * deux. Sans réduction, ces cases ne sont pas lues. Une réduction qui ne vise
- * aucune clientèle est refusée par le serveur.
- * Cf. `documentation/livraisons/clientele/plan-remise-et-livraison-par-clientele.md`, D2.
+ * **Deux cases, une par clientèle.** Né comme « à qui s'applique la remise
+ * d'un point » (D2 de `plan-remise-et-livraison-par-clientele.md`) ; la remise
+ * a depuis une valeur par clientèle (`pickupDiscountsSchema`), et la forme ne
+ * sert plus qu'aux clientèles d'un retrait (`SiteView.pickupAudiences`).
  */
 export const pickupDiscountAudiencesSchema = z.object({
   b2b: z.boolean(),
@@ -27,18 +32,42 @@ export const pickupDiscountAudiencesSchema = z.object({
 });
 export type PickupDiscountAudiences = z.infer<typeof pickupDiscountAudiencesSchema>;
 
-/** Le défaut à la création, et l'existant : toute clientèle reçoit la remise. */
+/**
+ * **La remise d'un point pour une clientèle** — sa réduction, son mode de
+ * portée et ses règles (plan
+ * `documentation/livraisons/clientele/plan-remise-retrait-par-clientele-et-exclusions.md`).
+ * La forme seulement : une règle en double, ou un mode `only` qui n'inclut
+ * rien, est refusée par le serveur (`AudienceDiscount`). Le type sans zod est
+ * `AudiencePickupDiscount` (`pickup-discount-scope.ts`).
+ */
+export const audiencePickupDiscountSchema = z
+  .object({
+    adjustment: cartAdjustmentSchema,
+    scope: z.enum(["all_except", "only"]).default("all_except"),
+    categories: z
+      .array(z.object({ categoryId: z.string().min(1), eligible: z.boolean() }).readonly())
+      .readonly()
+      .default([]),
+    products: z
+      .array(z.object({ productId: z.string().min(1), eligible: z.boolean() }).readonly())
+      .readonly()
+      .default([]),
+  })
+  .readonly();
 
-/** La remise du point pour cette clientèle, ou `null` si elle ne la reçoit pas. */
-export function pickupDiscountFor(
-  point: {
-    readonly discount: CartAdjustment | null;
-    readonly discountAudiences: PickupDiscountAudiences;
-  },
-  audience: CustomerAudience,
-): CartAdjustment | null {
-  return point.discount !== null && point.discountAudiences[audience] ? point.discount : null;
-}
+// Le type sans zod et le schéma doivent dire la même chose : une divergence
+// rougit ici, à la compilation, plutôt qu'au premier point servi.
+type Parsed = z.infer<typeof audiencePickupDiscountSchema>;
+const SAME_SHAPE: [Parsed, AudiencePickupDiscount] extends [AudiencePickupDiscount, Parsed]
+  ? true
+  : never = true;
+void SAME_SHAPE;
+
+/** Les deux remises d'un point ; `null` = la clientèle n'en reçoit pas. */
+export const pickupDiscountsSchema = z.object({
+  b2b: audiencePickupDiscountSchema.nullable(),
+  b2c: audiencePickupDiscountSchema.nullable(),
+});
 
 /**
  * Contrat de fil des **points de retrait** (laboratoires) — adresses **globales**
@@ -86,8 +115,11 @@ export function pickupWindows(opening: PickupOpening): readonly FulfillmentWindo
  * disparaît) ; un client qui l'envoie encore le voit ignoré, pas refusé.
  */
 export const pickupAddressPayloadSchema = billingAddressPayloadSchema.extend({
-  discount: cartAdjustmentSchema.nullable().default(null),
-  discountAudiences: pickupDiscountAudiencesSchema.default(ALL_DISCOUNT_AUDIENCES),
+  /**
+   * Une remise par clientèle (V6, 2026-10-22 : remplace `discount` et
+   * `discountAudiences`, cassés dans le même déploiement en pré-release).
+   */
+  discounts: pickupDiscountsSchema.default({ b2b: null, b2c: null }),
   opening: pickupOpeningSchema.default({ publicOpening: null, proPickup: null }),
   /**
    * Le point GPS du lieu (`plan-preparation-de-tournee.md`, Q9, 2026-09-29) :
@@ -118,13 +150,12 @@ export const pickupSnapshotSchema = billingAddressPayloadSchema.extend({
 export type PickupSnapshot = z.infer<typeof pickupSnapshotSchema>;
 
 /**
- * La charge d'une **modification** : la même, sauf les clientèles de la remise,
- * **absentes = inchangées**. Avec le défaut de la création, un onglet du
- * back-office ouvert avant leur existence rouvrirait en silence une remise
- * fermée au public (vitruve, S2 du plan).
+ * La charge d'une **modification** : la même, sauf les remises, **absentes =
+ * inchangées**. Avec le défaut de la création, un onglet ouvert avant elles
+ * effacerait en silence les remises et leurs règles.
  */
 export const pickupAddressUpdatePayloadSchema = pickupAddressPayloadSchema.extend({
-  discountAudiences: pickupDiscountAudiencesSchema.optional(),
+  discounts: pickupDiscountsSchema.optional(),
 });
 export type PickupAddressUpdatePayload = z.infer<typeof pickupAddressUpdatePayloadSchema>;
 
@@ -137,10 +168,11 @@ export interface PickupAddressView {
   readonly codePostal: string;
   readonly ville: string;
   readonly pays: string;
-  /** Remise appliquée au panier en cas de retrait ici, ou `null`. */
-  readonly discount: CartAdjustment | null;
-  /** À qui la remise s'applique ; sans remise, sans effet. */
-  readonly discountAudiences: PickupDiscountAudiences;
+  /**
+   * La remise appliquée au panier en cas de retrait ici, une par clientèle —
+   * avec ce qu'elle couvre (`pickupDiscountCovers`).
+   */
+  readonly discounts: PickupDiscounts;
   /**
    * **À qui le site remet en retrait** (Hugo, 2026-10-15) — un site peut être
    * réservé aux pros ou aux particuliers. Toujours rendu par le serveur ;

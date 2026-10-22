@@ -1,0 +1,136 @@
+import type { BillingAddressPayload } from "@lfd/contracts";
+import { millicentsFromCents } from "@lfd/money";
+
+import { InvalidOrderPaymentError } from "../../errors/order-errors.js";
+import type { OrderLineInput } from "../../value-objects/order-line.js";
+import { Order, type DraftOrderInput } from "../order.js";
+
+/**
+ * La remise de retrait sur ses seules lignes éligibles — la garde de
+ * l'agrégat (V1) et la ventilation (R1) du plan
+ * `documentation/livraisons/clientele/plan-remise-retrait-par-clientele-et-exclusions.md`.
+ */
+const ADDRESS: BillingAddressPayload = {
+  label: "",
+  ligne1: "1 rue du Test",
+  ligne2: "",
+  codePostal: "73000",
+  ville: "Chambéry",
+  pays: "France",
+};
+
+/** Le pain à 5,5 %, remisé ; la boisson à 20 %, exclue. 10 € HT chacun. */
+const PAIN: OrderLineInput = {
+  sku: "PAI-001",
+  productName: "Pain",
+  unitPriceMillicents: millicentsFromCents(1_000),
+  vatRate: 5.5,
+  quantity: 1,
+  productId: "p_pain",
+  categoryId: "c_pains",
+};
+const BOISSON: OrderLineInput = {
+  sku: "BOI-001",
+  productName: "Jus",
+  unitPriceMillicents: millicentsFromCents(1_000),
+  vatRate: 20,
+  quantity: 1,
+  pickupDiscountEligible: false,
+  productId: "p_jus",
+  categoryId: "c_boissons",
+};
+const TEN_PERCENT = { mode: "percent", bp: 1_000 } as const;
+
+function input(over: Partial<DraftOrderInput> = {}): DraftOrderInput {
+  return {
+    companyId: null,
+    billedCompanyId: null,
+    principal: null,
+    placedByStaffId: null,
+    agreed: {
+      window: { value: null, source: "default" },
+      contact: { value: null, source: "default" },
+      signatureRequired: { value: false, source: "default" },
+    },
+    placedByUserId: "user_1",
+    fulfillment: {
+      method: "pickup",
+      deliveryZoneId: null,
+      deliveryAddress: null,
+      deliveryAddressId: null,
+      pickupAddress: ADDRESS,
+    },
+    requestedDeliveryDate: null,
+    note: "",
+    catalogVersionId: null,
+    lines: [PAIN, BOISSON],
+    discountCents: 100,
+    discountAdjustment: TEN_PERCENT,
+    deliveryFeeCents: 0,
+    deliveryFeeAdjustment: null,
+    lateFeeCents: 0,
+    lateFeeAdjustment: null,
+    deliveryVatMode: "standard",
+    voucher: null,
+    salesTerms: { document: "salesTerms", revision: null, fileId: null },
+    locale: null,
+    ...over,
+  };
+}
+
+function placed(over: Partial<DraftOrderInput> = {}): ReturnType<Order["toPersistence"]> {
+  const order = Order.draft(input(over));
+  order.deferPayment();
+  return order.toPersistence();
+}
+
+describe("Order.draft — la remise de retrait sur les lignes éligibles", () => {
+  /** L'exemple du §3 : la base à 20 % reste entière. */
+  it("ventile la remise sur les seules lignes éligibles", () => {
+    const state = placed();
+
+    // (1000 − 100) × 5,5 % = 49,5 → 50 ; 1000 × 20 % = 200.
+    expect(state.vatShares).toEqual([
+      { rate: 5.5, amountCents: 50 },
+      { rate: 20, amountCents: 200 },
+    ]);
+    expect(state.totalCents).toBe(2_000 - 100 + 250);
+  });
+
+  it("fige le drapeau, le produit et la famille sur chaque ligne", () => {
+    const lines = placed().lines.map((line) => ({
+      sku: line.sku,
+      eligible: line.pickupDiscountEligible,
+      productId: line.productId,
+      categoryId: line.categoryId,
+    }));
+
+    expect(lines).toEqual([
+      { sku: "PAI-001", eligible: true, productId: "p_pain", categoryId: "c_pains" },
+      { sku: "BOI-001", eligible: false, productId: "p_jus", categoryId: "c_boissons" },
+    ]);
+  });
+
+  /** V1 : avant, l'agrégat recalculait sur le sous-total entier et refusait ce bon. */
+  it("recalcule l'assiette lui-même, sur le drapeau des lignes", () => {
+    expect(() => placed({ discountCents: 200 })).toThrow(InvalidOrderPaymentError);
+  });
+
+  it("tient une ligne sans drapeau pour éligible — les bons d'avant", () => {
+    const { pickupDiscountEligible: _dropped, ...unflagged } = BOISSON;
+
+    expect(placed({ lines: [PAIN, unflagged], discountCents: 200 }).discountCents).toBe(200);
+  });
+
+  /** Le bon de fidélité garde toutes les lignes pour assiette, après la remise. */
+  it("laisse le bon se ventiler sur toutes les lignes", () => {
+    const state = placed({ voucher: { id: "v_1", valueCents: 190 } });
+
+    expect(state.voucherDiscountCents).toBe(190);
+    // Le pain : 900 × 0,9 = 810 → 44,55 → 45 ; le jus : 1000 × 0,9 = 900 → 180.
+    expect(state.vatShares).toEqual([
+      { rate: 5.5, amountCents: 45 },
+      { rate: 20, amountCents: 180 },
+    ]);
+  });
+});

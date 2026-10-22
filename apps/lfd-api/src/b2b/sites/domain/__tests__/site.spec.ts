@@ -22,7 +22,7 @@ const PLACE: SitePlace = {
   pays: "France",
   opening: { publicOpening: null, proPickup: null },
   gps: { lat: 45.45, lng: 6.98 },
-  discount: PickupDiscount.of(null, { b2b: true, b2c: true }),
+  discount: PickupDiscount.of({ b2b: null, b2c: null }),
 };
 
 const ROLES: SiteRoles = {

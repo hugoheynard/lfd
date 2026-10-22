@@ -106,8 +106,15 @@ async function seedProsOnlyPoint(): Promise<string> {
       ville: "Paris",
       pays: "France",
       isDefault: true,
-      discount: { mode: "percent", bp: 1_000 },
-      discountAudiences: { b2b: true, b2c: false },
+      discounts: {
+        b2b: {
+          adjustment: { mode: "percent", bp: 1_000 },
+          scope: "all_except",
+          categories: [],
+          products: [],
+        },
+        b2c: null,
+      },
     })
     .expect(201);
   return jsonBody<CreatedPickupResponse>(response).id;

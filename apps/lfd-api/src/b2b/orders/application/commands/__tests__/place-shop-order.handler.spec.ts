@@ -1,3 +1,4 @@
+import { FixedLineClassifications } from "../../../domain/ports/__tests__/line-classification-doubles.js";
 import {
   DEFAULT_DELIVERY_AVAILABILITY,
   type CatalogPricing,
@@ -210,8 +211,7 @@ const LABO_POINT: PickupAddressView = {
   codePostal: "75002",
   ville: "Paris",
   pays: "France",
-  discount: null,
-  discountAudiences: { b2b: true, b2c: true },
+  discounts: { b2b: null, b2c: null },
   opening: { publicOpening: null, proPickup: null },
 };
 
@@ -270,7 +270,13 @@ function drafting(
       ),
       new FixedClock(PRICED_AT),
     ),
-    new CartAdjustments(pickups(), zones(), deliveryAvailability(delivery), noPreferredPickup),
+    new CartAdjustments(
+      pickups(),
+      zones(),
+      deliveryAvailability(delivery),
+      noPreferredPickup,
+      new FixedLineClassifications(),
+    ),
     noDeliveryDefaults,
     noOrderCutoffs,
     new FixedClock(PRICED_AT),
@@ -283,6 +289,7 @@ function drafting(
     new FixedDeliveryVat(),
     plans,
     salesTerms,
+    new FixedLineClassifications(),
   );
 }
 

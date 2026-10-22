@@ -1,9 +1,5 @@
-import {
-  type CartAdjustment,
-  type CustomerAudience,
-  type PickupAddressView,
-  pickupDiscountFor,
-} from '@lfd/contracts';
+import type { CartAdjustment, CustomerAudience, PickupAddressView } from '@lfd/contracts';
+import { pickupDiscountFor } from '@lfd/contracts/shop-values';
 
 import { fill } from '../copy/client-copy.service';
 import { formatCents, formatRate } from '../format-money';
@@ -21,6 +17,21 @@ import { formatCents, formatRate } from '../format-money';
  * s'annonce pas en perso. Tout lecteur passe par `pickupDiscountFor`, la règle
  * que le serveur applique au devis.
  */
+
+/**
+ * La réduction d'un point pour une clientèle, ou `null`.
+ *
+ * ⚠️ Depuis le 2026-10-22, chaque clientèle a SA remise, avec des familles ou
+ * des produits exclus (plan `plan-remise-retrait-par-clientele-et-exclusions.md`).
+ * La boutique n'annonce encore que la réduction ; « sur les articles
+ * éligibles » est le lot C du plan.
+ */
+export function pickupAdjustmentFor(
+  point: PickupAddressView,
+  audience: CustomerAudience,
+): CartAdjustment | null {
+  return pickupDiscountFor(point, audience)?.adjustment ?? null;
+}
 
 /** Ce qu'un point promet à une clientèle, en une étiquette. */
 export interface PickupOffer {
@@ -49,7 +60,7 @@ export function pickupOffer(
   audience: CustomerAudience,
   copy: PickupOfferCopy,
 ): PickupOffer {
-  const discount = pickupDiscountFor(point, audience);
+  const discount = pickupAdjustmentFor(point, audience);
   if (discount === null) {
     return { label: audience === 'b2b' ? copy.proPrice : copy.shopPrice, hasOffer: false };
   }
@@ -75,7 +86,7 @@ export function bestPickupDiscount(
   audience: CustomerAudience,
 ): CartAdjustment | null {
   const offers = points
-    .map((point) => pickupDiscountFor(point, audience))
+    .map((point) => pickupAdjustmentFor(point, audience))
     .filter((d) => d !== null);
   const percents = offers.filter((d) => d.mode === 'percent');
   if (percents.length > 0) {

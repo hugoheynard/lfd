@@ -3,6 +3,7 @@ import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import type {
   CompanyStatus,
+  CartAdjustment,
   CustomerOrderLineView,
   CustomerOrderView,
   PickupAddressView,
@@ -39,6 +40,18 @@ import { NOEL, storefrontObject } from '../shop/storefront/storefront.fixture';
 import { AccueilPublic } from './accueil-public';
 import { ShopCopyOverrides } from '../copy/shop-copy-overrides';
 
+/** La remise d'un point pour les clientèles cochées, sans règle de portée. */
+function discountsFor(
+  adjustment: CartAdjustment | null,
+  audiences: { readonly b2b: boolean; readonly b2c: boolean } = { b2b: true, b2c: true },
+): PickupAddressView['discounts'] {
+  const discount =
+    adjustment === null
+      ? null
+      : { adjustment, scope: 'all_except' as const, categories: [], products: [] };
+  return { b2b: audiences.b2b ? discount : null, b2c: audiences.b2c ? discount : null };
+}
+
 /**
  * **L'accueil public** — ce que voit un visiteur sans compte.
  *
@@ -48,7 +61,10 @@ import { ShopCopyOverrides } from '../copy/shop-copy-overrides';
  * jamais dire « aucune maison » pendant qu'il charge.
  */
 
-function point(over: Partial<PickupAddressView> & { id: string }): PickupAddressView {
+function point(
+  over: Partial<PickupAddressView> & { id: string; discount?: CartAdjustment | null },
+): PickupAddressView {
+  const { discount = null, ...rest } = over;
   return {
     label: 'Le Labo',
     ligne1: 'route de la Balme',
@@ -56,10 +72,9 @@ function point(over: Partial<PickupAddressView> & { id: string }): PickupAddress
     codePostal: '73150',
     ville: "Val d'Isère",
     pays: 'France',
-    discount: null,
-    discountAudiences: { b2b: true, b2c: true },
+    discounts: discountsFor(discount),
     opening: { publicOpening: null, proPickup: null },
-    ...over,
+    ...rest,
   };
 }
 

@@ -16,8 +16,7 @@ function point(id: string, label: string): PickupAddressView {
     codePostal: '73150',
     ville: 'Val d’Isère',
     pays: 'France',
-    discount: null,
-    discountAudiences: { b2b: true, b2c: true },
+    discounts: { b2b: null, b2c: null },
     opening: { publicOpening: null, proPickup: null },
   };
 }

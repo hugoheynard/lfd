@@ -531,6 +531,20 @@ model OrderLine {
   /// vérifier — et l'affirmation fabriquée serait « sans allergène ».
   allergens Json? @map("allergens")
 
+  /// **La ligne entrait-elle dans l'assiette de la remise de retrait ?** Figé
+  /// à la passation (R2 du plan
+  /// `plan-remise-retrait-par-clientele-et-exclusions.md`) : une famille
+  /// déplacée ou une règle changée demain ne réécrit pas la TVA d'un bon
+  /// d'hier. Défaut `true` : les bons d'avant étaient tous éligibles.
+  pickupDiscountEligible Boolean @default(true) @map("pickup_discount_eligible")
+
+  /// Le produit et la famille de l'article à la passation — identifiants
+  /// opaques du catalogue, en snapshot : ce qui dit POURQUOI une ligne était
+  /// exclue. `NULL` sur les bons d'avant le 2026-10-22, ou pour un SKU que le
+  /// catalogue ne classait pas.
+  productId  String? @map("product_id")
+  categoryId String? @map("category_id")
+
   // Un SKU n'apparaît qu'UNE fois par commande. `place-order` fusionne déjà les
   // quantités du panier ; la contrainte rend la règle structurelle plutôt que
   // conventionnelle. C'est aussi ce qui rend une moyenne par SKU calculable sans

@@ -33,6 +33,12 @@ import { OrderCutoffWaiverGate } from "../../domain/ports/order-cutoff-waiver.ga
 import { OrderDeliveryVatReader } from "../../domain/ports/order-delivery-vat.reader.js";
 import { OrderLateFeeReader } from "../../domain/ports/order-late-fee.reader.js";
 import {
+  type OrderLineClassification,
+  OrderLineClassificationReader,
+} from "../../domain/ports/order-line-classification.reader.js";
+import type { PricedLine } from "../../domain/services/pickup-discount-eligibility.js";
+import type { OrderLineInput } from "../../domain/value-objects/order-line.js";
+import {
   OrderPayerReader,
   type OrderPayerStanding,
 } from "../../domain/ports/order-payer.reader.js";
@@ -99,6 +105,8 @@ interface ResolvedFulfillment {
   readonly discountCents: number;
   /** L'ajustement figé qui l'a produite (taux/montant du point), ou `null`. */
   readonly discountAdjustment: CartAdjustment | null;
+  /** Les SKU que la remise de retrait ne couvre pas — vide en coursier. */
+  readonly ineligibleSkus: ReadonlySet<string>;
   /** Le barème de zone qui a produit les frais, ou `null` en retrait. */
   readonly deliveryFeeAdjustment: CartAdjustment | null;
   readonly deliveryFeeCents: number;
@@ -138,6 +146,7 @@ export class OrderDrafting {
     private readonly deliveryVat: OrderDeliveryVatReader,
     private readonly plans: OrderPlanGate,
     private readonly salesTerms: OrderSalesTermsReader,
+    private readonly classifications: OrderLineClassificationReader,
   ) {}
 
   /**
@@ -182,20 +191,22 @@ export class OrderDrafting {
     // par la même fonction que la ligne persistée. Deux arithmétiques ici
     // feraient diverger le seuil de franco du total facturé — sur un centime,
     // et seulement pour certains paniers.
-    const subtotalCents = lines.reduce(
-      (sum, line) => sum + lineTotalCents(line.unitPriceMillicents, line.quantity),
-      0,
-    );
+    const priced: readonly PricedLine[] = lines.map((line) => ({
+      sku: line.sku,
+      htCents: lineTotalCents(line.unitPriceMillicents, line.quantity),
+    }));
+    const subtotalCents = priced.reduce((sum, line) => sum + line.htCents, 0);
+    // Produit et famille, lus UNE fois et figés sur chaque ligne : ce qui dira
+    // demain pourquoi une ligne était exclue de la remise (plan des exclusions).
+    const known = await this.classifications.classify(priced.map((line) => line.sku));
     // La clientèle, lue UNE fois : elle tarife l'acheminement et désigne les
     // CGV que la commande porte (plan des CGV, C2″, C4′) — deux lectures
     // pourraient diverger d'une validation de société entre les deux.
     const audience = await this.audiences.of(parties.companyId);
-    const acheminement = await this.resolveFulfillment(
-      content,
-      subtotalCents,
-      audience,
-      parties.companyId,
-    );
+    const acheminement = await this.resolveFulfillment(content, priced, audience, {
+      companyId: parties.companyId,
+      known,
+    });
     // APRÈS la résolution, et l'ordre est un choix : la règle qui s'applique est
     // celle du point EFFECTIVEMENT retenu, qu'on ne connaît qu'ici. Le coût est
     // de tarifer un panier qu'on refusera ensuite ; le prix de l'inverse serait
@@ -252,7 +263,7 @@ export class OrderDrafting {
       // portent leur snapshot (prix, nom, TVA) ; la colonne reste en base et
       // les commandes passées gardent la leur.
       catalogVersionId: null,
-      lines,
+      lines: lines.map((line) => classified(line, known, acheminement.ineligibleSkus)),
       discountCents: acheminement.discountCents,
       discountAdjustment: acheminement.discountAdjustment,
       deliveryFeeAdjustment: acheminement.deliveryFeeAdjustment,
@@ -469,19 +480,27 @@ export class OrderDrafting {
    */
   private async resolveFulfillment(
     content: OrderContent,
-    subtotalCents: number,
+    priced: readonly PricedLine[],
     audience: CustomerAudience,
-    companyId: string | null,
+    {
+      companyId,
+      known,
+    }: {
+      readonly companyId: string | null;
+      readonly known: ReadonlyMap<string, OrderLineClassification>;
+    },
   ): Promise<ResolvedFulfillment> {
+    const subtotalCents = priced.reduce((sum, line) => sum + line.htCents, 0);
     if (content.fulfillmentMethod === "pickup") {
       // La remise vient du service PARTAGÉ avec le devis de la boutique : deux
       // implémentations de « quelle remise s'applique » finiraient par annoncer
       // un montant que la caisse contredit.
       const retrait = await this.adjustments.forPickup(
         content.pickupAddressId,
-        subtotalCents,
+        priced,
         audience,
         companyId,
+        known,
       );
       // La tranche demandée doit tenir dans l'une des fenêtres du point — jamais
       // dans leur union : entre le créneau pro et l'ouverture publique il peut y
@@ -499,6 +518,7 @@ export class OrderDrafting {
         pickupAddress: toSnapshot(retrait.point),
         discountCents: retrait.discountCents,
         discountAdjustment: retrait.discountAdjustment,
+        ineligibleSkus: retrait.ineligibleSkus,
         // Un retrait n'a pas de frais de zone : pas de barème à figer.
         deliveryFeeAdjustment: null,
         deliveryFeeCents: 0,
@@ -527,6 +547,7 @@ export class OrderDrafting {
       discountCents: 0,
       // Le coursier n'ouvre droit à aucune remise : c'est le retrait qui en porte une.
       discountAdjustment: null,
+      ineligibleSkus: new Set(),
       deliveryFeeCents: coursier.feeCents,
       // Le barème de la zone, figé avec son montant : `zone.fee` est mutable, et
       // une facture doit pouvoir dire « Val d'Isère, 20 € forfaitaires » plutôt
@@ -551,6 +572,24 @@ function toSnapshot(point: PickupAddressView): PickupSnapshot {
     codePostal: point.codePostal,
     ville: point.ville,
     pays: point.pays,
+  };
+}
+
+/**
+ * La ligne, avec ce qui se fige d'elle pour la remise de retrait : son
+ * rangement au catalogue et son éligibilité (R2 du plan des exclusions).
+ */
+function classified(
+  line: OrderLineInput,
+  known: ReadonlyMap<string, OrderLineClassification>,
+  ineligible: ReadonlySet<string>,
+): OrderLineInput {
+  const where = known.get(line.sku);
+  return {
+    ...line,
+    pickupDiscountEligible: !ineligible.has(line.sku),
+    productId: where?.productId ?? null,
+    categoryId: where?.categoryId ?? null,
   };
 }
 

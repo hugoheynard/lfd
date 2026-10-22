@@ -1,13 +1,13 @@
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
-import { PickupDiscountWithoutAudienceError } from "../../domain/pickup-errors.js";
+import { PickupDiscountScopeIncludesNothingError } from "../../domain/pickup-errors.js";
 import { CreatePickupAddressCommand } from "../create-pickup-address.command.js";
 import { CreatePickupAddressHandler } from "../create-pickup-address.handler.js";
 import { FIELDS, StoredPoints } from "./pickup-address-doubles.js";
 
-describe("CreatePickupAddressHandler — les clientèles de la remise", () => {
-  it("refuse de créer un point dont la réduction ne vise personne", async () => {
+describe("CreatePickupAddressHandler — les remises par clientèle", () => {
+  it("refuse de créer un point dont une remise « seulement » n'inclut rien", async () => {
     const points = new StoredPoints(null);
     const handler = new CreatePickupAddressHandler(
       points,
@@ -20,11 +20,18 @@ describe("CreatePickupAddressHandler — les clientèles de la remise", () => {
       handler.execute(
         new CreatePickupAddressCommand({
           ...FIELDS,
-          discount: { mode: "percent", bp: 500 },
-          discountAudiences: { b2b: false, b2c: false },
+          discounts: {
+            b2b: {
+              adjustment: { mode: "percent", bp: 500 },
+              scope: "only",
+              categories: [],
+              products: [],
+            },
+            b2c: null,
+          },
         }),
       ),
-    ).rejects.toBeInstanceOf(PickupDiscountWithoutAudienceError);
+    ).rejects.toBeInstanceOf(PickupDiscountScopeIncludesNothingError);
     expect(points.written).toBeNull();
   });
 });
@@ -39,8 +46,7 @@ describe("CreatePickupAddressHandler — le point GPS", () => {
     ).execute(
       new CreatePickupAddressCommand({
         ...FIELDS,
-        discount: null,
-        discountAudiences: { b2b: true, b2c: true },
+        discounts: { b2b: null, b2c: null },
         ...(gps === undefined ? {} : { gps }),
       }),
     );

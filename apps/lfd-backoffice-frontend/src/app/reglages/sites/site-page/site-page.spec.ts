@@ -23,6 +23,14 @@ import { SiteIdentityCard } from './site-identity-card/site-identity-card';
 import { SitesService } from '../sites.service';
 import { SitePage } from './site-page';
 
+/** 8 € pour une clientèle, sans règle de portée. */
+const EIGHT_EUROS = {
+  adjustment: { mode: 'amount', cents: 800 },
+  scope: 'all_except',
+  categories: [],
+  products: [],
+} as const;
+
 /**
  * **Un site, en page** — l'ancienne page du point de retrait, élargie (plan
  * des sites, S1). Les cas du point restent (clientèles de la réduction, GPS,
@@ -39,8 +47,7 @@ const LABO: SiteView = {
   codePostal: '75011',
   ville: 'Paris',
   pays: 'France',
-  discount: { mode: 'amount', cents: 800 },
-  discountAudiences: { b2b: true, b2c: false },
+  discounts: { b2b: EIGHT_EUROS, b2c: null },
   opening: { publicOpening: null, proPickup: null },
   gps: null,
   pickup: true,
@@ -254,10 +261,10 @@ describe('SitePage — la réduction, une sous-carte à elle', () => {
 
     await identity(fixture)['save']();
 
-    expect(pickups.updated[0]).toMatchObject({
-      discount: { mode: 'amount', cents: 800 },
-      discountAudiences: { b2b: true, b2c: false },
-    });
+    // Depuis le 2026-10-22, l'adresse n'envoie plus les remises : absentes,
+    // elles restent celles du serveur — ni le brouillon, ni un écrasement.
+    expect(pickups.updated[0]?.label).toBe('Laboratoire bis');
+    expect(pickups.updated[0] && 'discounts' in pickups.updated[0]).toBe(false);
   });
 
   it('modifier la réduction n’enregistre qu’elle, sur le lieu ENREGISTRÉ', async () => {
@@ -271,7 +278,7 @@ describe('SitePage — la réduction, une sous-carte à elle', () => {
     expect(pickups.updated).toHaveLength(1);
     expect(pickups.updated[0]).toMatchObject({
       ligne1: LABO.ligne1,
-      discountAudiences: { b2b: true, b2c: true },
+      discounts: { b2b: EIGHT_EUROS, b2c: EIGHT_EUROS },
     });
     expect(pickups.updated[0] && 'gps' in pickups.updated[0]).toBe(false);
   });
@@ -283,15 +290,15 @@ describe('SitePage — la réduction, une sous-carte à elle', () => {
 
     await identity(fixture)['save']();
 
-    expect(pickups.created[0]).toMatchObject({
-      discount: null,
-      discountAudiences: { b2b: true, b2c: true },
-    });
+    expect(pickups.created[0]).toMatchObject({ discounts: { b2b: null, b2c: null } });
     expect(fixture.debugElement.query(By.directive(SiteDiscountCard))).toBeNull();
   });
 
   it('grise les cases tant qu’il n’y a pas de réduction', async () => {
-    const { fixture } = await mount('pick_1', [{ ...LABO, discount: null }, VILLAGE]);
+    const { fixture } = await mount('pick_1', [
+      { ...LABO, discounts: { b2b: null, b2c: null } },
+      VILLAGE,
+    ]);
 
     expect(audienceBoxes(fixture).map((box) => box.disabled)).toEqual([true, true]);
   });
@@ -302,19 +309,19 @@ describe('SitePage — la réduction, une sous-carte à elle', () => {
     expect(audienceBoxes(fixture).map((box) => box.disabled)).toEqual([false, false]);
   });
 
-  it('🔴 retirer la réduction ne remet pas les cases à zéro', async () => {
-    // Sans réduction, le serveur ne les lit pas ; les effacer ferait perdre un
-    // choix qu'on retrouverait en rouvrant la réduction.
+  /**
+   * Depuis le 2026-10-22, une clientèle sans remise vaut `null` côté serveur :
+   * retirer la réduction la retire aux deux. Les cases d'avant ne se gardent
+   * plus — la carte par clientèle est le lot B du plan des exclusions.
+   */
+  it('retirer la réduction la retire aux deux clientèles', async () => {
     const { fixture, pickups } = await mount('pick_1');
     const card = discountCard(fixture);
     card['setDiscount'](null);
 
     await card['save']();
 
-    expect(pickups.updated[0]).toMatchObject({
-      discount: null,
-      discountAudiences: { b2b: true, b2c: false },
-    });
+    expect(pickups.updated[0]).toMatchObject({ discounts: { b2b: null, b2c: null } });
   });
 
   it('refuse d’envoyer une réduction qui ne vise personne, et le dit DANS la sous-carte', async () => {

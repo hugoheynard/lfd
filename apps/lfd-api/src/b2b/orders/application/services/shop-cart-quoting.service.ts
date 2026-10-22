@@ -22,6 +22,7 @@ import { LoyaltyVoucherQuoteReader } from "../../domain/ports/loyalty-voucher-qu
 import { OrderDeliveryVatReader } from "../../domain/ports/order-delivery-vat.reader.js";
 import { deliveryExtraOf } from "../../domain/services/vat.js";
 import { voucherImputationCents } from "../../domain/services/voucher-imputation.js";
+import type { PricedLine } from "../../domain/services/pickup-discount-eligibility.js";
 import { voucherTotalEffectCents } from "../../domain/services/voucher-total-effect.js";
 
 import { CartAdjustments } from "./cart-adjustments.service.js";
@@ -54,12 +55,15 @@ export interface ShopCartQuote {
 interface CartTerms {
   readonly discountCents: number;
   readonly discountAdjustment: ShopQuoteView["discountAdjustment"];
+  /** Les SKU que la remise du point ne couvre pas. */
+  readonly ineligibleSkus: ReadonlySet<string>;
   readonly deliveryFeeCents: number;
 }
 
 const NO_TERMS: CartTerms = {
   discountCents: 0,
   discountAdjustment: null,
+  ineligibleSkus: new Set(),
   deliveryFeeCents: 0,
 };
 
@@ -128,7 +132,11 @@ export class ShopCartQuoting {
     // ligne. C'est ce que fait `Order.draft`, et c'est ce qui fait qu'un seuil
     // de remise se déclenche au même centime des deux côtés.
     const subtotalHtCents = lines.reduce((sum, line) => sum + line.lineTotalCents, 0);
-    const terms = await this.termsOf(query.payload.fulfillment, subtotalHtCents, query.companyId);
+    const terms = await this.termsOf(
+      query.payload.fulfillment,
+      lines.map((line) => ({ sku: line.sku, htCents: line.lineTotalCents })),
+      query.companyId,
+    );
     const voucherDiscountCents = await this.voucherDiscountOf(
       query,
       subtotalHtCents - terms.discountCents,
@@ -141,10 +149,12 @@ export class ShopCartQuoting {
       lines: lines.map((line): VatLine => ({
         htCents: line.lineTotalCents,
         vatRate: line.vatRatePercent,
+        discountEligible: !terms.ineligibleSkus.has(line.sku),
       })),
-      // Le bon s'ajoute à la remise, comme dans `computeOrderTotals` : devis et
-      // commande ventilent la même somme (plan des points, C1).
-      discountCents: terms.discountCents + voucherDiscountCents,
+      // Les deux remises sur leurs assiettes, comme dans `computeOrderTotals` :
+      // celle du point sur les lignes qu'elle couvre, le bon sur toutes (V2).
+      eligibleDiscountCents: terms.discountCents,
+      discountCents: voucherDiscountCents,
       // Le coursier est un terme HORS remise — on ne fait pas de geste
       // commercial sur une prestation —, taxé selon le mode réglé, traduit par
       // la même fonction que `computeOrderTotals`.
@@ -220,7 +230,7 @@ export class ShopCartQuoting {
    */
   private async termsOf(
     fulfillment: ShopQuoteFulfillment | null,
-    subtotalHtCents: number,
+    priced: readonly PricedLine[],
     companyId: string | null,
   ): Promise<CartTerms> {
     if (fulfillment === null) {
@@ -230,23 +240,29 @@ export class ShopCartQuoting {
     if (fulfillment.method === "pickup") {
       const retrait = await this.adjustments.forPickup(
         fulfillment.pickupAddressId,
-        subtotalHtCents,
+        priced,
         audience,
         companyId,
       );
       return {
         discountCents: retrait.discountCents,
         discountAdjustment: retrait.discountAdjustment,
+        ineligibleSkus: retrait.ineligibleSkus,
         deliveryFeeCents: 0,
       };
     }
     const coursier = await this.adjustments.forDelivery(
       fulfillment.codePostal,
-      subtotalHtCents,
+      priced.reduce((sum, line) => sum + line.htCents, 0),
       audience,
     );
     // Le coursier n'ouvre droit à aucune remise : c'est le retrait qui en porte une.
-    return { discountCents: 0, discountAdjustment: null, deliveryFeeCents: coursier.feeCents };
+    return {
+      discountCents: 0,
+      discountAdjustment: null,
+      ineligibleSkus: new Set(),
+      deliveryFeeCents: coursier.feeCents,
+    };
   }
 }
 

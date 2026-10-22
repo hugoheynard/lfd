@@ -360,8 +360,7 @@ describe("Plus de site par défaut (Hugo, 2026-10-15)", () => {
       codePostal: "73150",
       ville: "Val",
       pays: "France",
-      discount: null,
-      discountAudiences: { b2b: true, b2c: true },
+      discounts: { b2b: null, b2c: null },
       opening: { publicOpening: null, proPickup: null },
     };
 

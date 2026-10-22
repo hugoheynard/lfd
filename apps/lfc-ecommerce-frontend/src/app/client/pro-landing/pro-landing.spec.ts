@@ -3,7 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import type { PickupAddressView, ShopFeaturedView } from '@lfd/contracts';
+import type { CartAdjustment, PickupAddressView, ShopFeaturedView } from '@lfd/contracts';
 import { FoldPanelHostService } from 'fold-ng';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -16,6 +16,18 @@ import { ContactDialog } from '../shop/contact-dialog/contact-dialog';
 import { NO_CONTACT_SETTINGS } from '../shop/contact-settings.store';
 import { ProLanding } from './pro-landing';
 
+/** La remise d'un point pour les clientèles cochées, sans règle de portée. */
+function discountsFor(
+  adjustment: CartAdjustment | null,
+  audiences: { readonly b2b: boolean; readonly b2c: boolean } = { b2b: true, b2c: true },
+): PickupAddressView['discounts'] {
+  const discount =
+    adjustment === null
+      ? null
+      : { adjustment, scope: 'all_except' as const, categories: [], products: [] };
+  return { b2b: audiences.b2b ? discount : null, b2c: audiences.b2c ? discount : null };
+}
+
 const LABO: PickupAddressView = {
   id: 'pick_labo',
   label: 'Le Labo',
@@ -24,16 +36,14 @@ const LABO: PickupAddressView = {
   codePostal: '73150',
   ville: 'Val d’Isère',
   pays: 'France',
-  discount: { mode: 'percent', bp: 1000 },
-  discountAudiences: { b2b: true, b2c: true },
+  discounts: discountsFor({ mode: 'percent', bp: 1000 }),
   opening: { proPickup: null, publicOpening: null },
 };
 const VILLAGE: PickupAddressView = {
   ...LABO,
   id: 'pick_village',
   label: 'Le Village',
-  discount: { mode: 'percent', bp: 1500 },
-  discountAudiences: { b2b: false, b2c: true },
+  discounts: discountsFor({ mode: 'percent', bp: 1500 }, { b2b: false, b2c: true }),
 };
 
 const FEATURED: ShopFeaturedView = [

@@ -1,8 +1,8 @@
 import {
   cartAdjustmentCents,
   deliveryOpenTo,
-  discountCentsOf,
   pickupDiscountFor,
+  pickupDiscountHasRules,
   pickupOpenTo,
   preselectedPickupId,
   type CartAdjustment,
@@ -22,13 +22,27 @@ import {
   PickupNotOfferedToAudienceError,
 } from "../../domain/errors/order-errors.js";
 import { PickupChoiceRequiredError } from "../../domain/errors/pickup-choice-errors.js";
+import {
+  type OrderLineClassification,
+  OrderLineClassificationReader,
+} from "../../domain/ports/order-line-classification.reader.js";
 import { PreferredPickupReader } from "../../domain/ports/preferred-pickup.reader.js";
+import {
+  ineligibleSkusOf,
+  pickupDiscountCentsOf,
+  type PricedLine,
+} from "../../domain/services/pickup-discount-eligibility.js";
 
 /** Le point de retrait retenu, et ce qu'il retire du panier. */
 export interface ResolvedPickup {
   readonly point: PickupAddressView;
   readonly discountCents: number;
   readonly discountAdjustment: CartAdjustment | null;
+  /**
+   * Les SKU que la remise ne couvre pas — vide sans remise ou sans règle.
+   * La passation en fige le drapeau sur chaque ligne (R2).
+   */
+  readonly ineligibleSkus: ReadonlySet<string>;
 }
 
 /** La zone déduite du code postal, et ce qu'elle ajoute au panier. */
@@ -93,6 +107,7 @@ export class CartAdjustments {
     private readonly zones: DeliveryZoneRepository,
     private readonly delivery: DeliveryAvailabilityReader,
     private readonly preferences: PreferredPickupReader,
+    private readonly classifications: OrderLineClassificationReader,
   ) {}
 
   /**
@@ -109,6 +124,11 @@ export class CartAdjustments {
    * Une remise qui ne vise pas la clientèle rend `0` et `null` — ce que la
    * commande fige alors, comme pour un point sans remise.
    *
+   * La remise porte sur les seules lignes qu'elle couvre (R1 du plan des
+   * exclusions) : `known` est le rangement que la passation a déjà lu pour le
+   * figer ; sans lui (le devis), il n'est lu que si la remise a des règles —
+   * une remise sur tout le panier n'a rien à demander au catalogue.
+   *
    * Un site réservé à l'autre clientèle (Hugo, 2026-10-15) est refusé ICI,
    * pour que le devis et les trois passations — client, boutique, équipe —
    * opposent le même refus : le panier ne promet pas ce que la caisse refuse.
@@ -120,9 +140,10 @@ export class CartAdjustments {
    */
   async forPickup(
     pickupAddressId: string | null,
-    subtotalCents: number,
+    lines: readonly PricedLine[],
     audience: CustomerAudience,
     companyId: string | null,
+    known: ReadonlyMap<string, OrderLineClassification> | null = null,
   ): Promise<ResolvedPickup> {
     const point =
       pickupAddressId === null
@@ -138,13 +159,19 @@ export class CartAdjustments {
       throw new PickupClosedForAudienceError(point.label, audience, others.length > 0);
     }
     const discount = pickupDiscountFor(point, audience);
+    const ruled = discount !== null && pickupDiscountHasRules(discount);
+    const classifications = !ruled
+      ? new Map<string, OrderLineClassification>()
+      : (known ?? (await this.classifications.classify(lines.map((line) => line.sku))));
+    const ineligibleSkus = ineligibleSkusOf(discount, lines, classifications);
     return {
       point,
-      // `discountCentsOf` et non `cartAdjustmentCents` : une remise est bornée à
-      // ce qu'elle remise. Les frais de zone, juste en dessous, ne le sont pas —
-      // une course peut coûter plus cher qu'un petit panier.
-      discountCents: discount === null ? 0 : discountCentsOf(discount, subtotalCents),
-      discountAdjustment: discount,
+      // Bornée à ce qu'elle remise (`discountCentsOf`) : l'assiette éligible.
+      // Les frais de zone, juste en dessous, ne le sont pas — une course peut
+      // coûter plus cher qu'un petit panier.
+      discountCents: pickupDiscountCentsOf(discount, lines, ineligibleSkus),
+      discountAdjustment: discount?.adjustment ?? null,
+      ineligibleSkus,
     };
   }
 

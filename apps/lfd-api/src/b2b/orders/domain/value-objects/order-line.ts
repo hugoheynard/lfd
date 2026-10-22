@@ -34,6 +34,22 @@ export interface OrderLineInput {
    * inoffensif. Ici il ne l'est pas.
    */
   readonly allergens?: OrderLineAllergens | null;
+  /**
+   * **La ligne entre-t-elle dans l'assiette de la remise de retrait ?** Décidé
+   * par la passation (`CartAdjustments.forPickup`) et figé ici (R2 du plan
+   * `plan-remise-retrait-par-clientele-et-exclusions.md`) : l'agrégat recalcule
+   * la remise à partir de ce drapeau, jamais d'une assiette reçue. Absent =
+   * éligible, ce qu'était toute ligne avant les exclusions.
+   */
+  readonly pickupDiscountEligible?: boolean;
+  /**
+   * Le produit et la famille de l'article à la passation, en snapshot —
+   * identifiants opaques du catalogue, qui disent POURQUOI une ligne était
+   * exclue. Absent ou `null` = non classé (une ligne fabriquée à la main, un
+   * SKU que le catalogue ne rangeait pas).
+   */
+  readonly productId?: string | null;
+  readonly categoryId?: string | null;
 }
 
 /** Une ligne prête à persister (snapshots figés + total calculé). */
@@ -70,6 +86,10 @@ export interface OrderLineSnapshot extends OrderLineInput {
    * — « on ne sait pas » — que le type l'oblige à poser.
    */
   readonly allergens: OrderLineAllergens | null;
+  /** Requis ici, décidé une fois : l'adaptateur écrit ce que l'agrégat a vu. */
+  readonly pickupDiscountEligible: boolean;
+  readonly productId: string | null;
+  readonly categoryId: string | null;
 }
 
 /**
@@ -90,6 +110,9 @@ export class OrderLine {
     readonly lineTotalTtcCents: number | null,
     readonly pricing: OrderLinePricingTrace | null,
     readonly allergens: OrderLineAllergens | null,
+    readonly pickupDiscountEligible: boolean,
+    readonly productId: string | null,
+    readonly categoryId: string | null,
   ) {}
 
   /**
@@ -141,6 +164,9 @@ export class OrderLine {
       // une absence. La fabriquer transformerait une ignorance en affirmation,
       // sur le seul champ dont une erreur ne se rattrape pas.
       input.allergens ?? null,
+      input.pickupDiscountEligible ?? true,
+      input.productId ?? null,
+      input.categoryId ?? null,
     );
   }
 
@@ -156,6 +182,9 @@ export class OrderLine {
       lineTotalTtcCents: this.lineTotalTtcCents,
       pricing: this.pricing,
       allergens: this.allergens,
+      pickupDiscountEligible: this.pickupDiscountEligible,
+      productId: this.productId,
+      categoryId: this.categoryId,
     };
   }
 }

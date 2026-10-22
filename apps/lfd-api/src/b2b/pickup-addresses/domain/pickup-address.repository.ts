@@ -11,13 +11,10 @@ import type { PickupDiscount } from "./pickup-discount.js";
  * Ce qu'on écrit d'un point : ses champs, et sa remise **déjà validée** —
  * la charge des faits `pickup_address.created` / `updated`.
  *
- * La remise est un {@link PickupDiscount} et non les deux champs du contrat :
- * une réduction qui ne vise aucune clientèle ne peut donc pas l'atteindre.
+ * La remise est un {@link PickupDiscount} et non le champ du contrat : une
+ * remise que ses règles refusent ne peut donc pas l'atteindre.
  */
-export type PickupAddressWrite = Omit<
-  PickupAddressPayload,
-  "discount" | "discountAudiences" | "gps"
-> & {
+export type PickupAddressWrite = Omit<PickupAddressPayload, "discounts" | "gps"> & {
   readonly discount: PickupDiscount;
   /** Résolu par le handler : jamais « absent » une fois arrivé ici. */
   readonly gps: GpsPoint | null;

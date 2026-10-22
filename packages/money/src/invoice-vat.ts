@@ -30,10 +30,20 @@ import { DELIVERY_VAT_RATE, type VatLine } from "./vat.js";
  * quel port suit quelles marchandises — l'appelant le décide.
  */
 
-/** Une remise d'une **nature** (remise société, bon de fidélité…), POSITIVE, en centimes. */
+/**
+ * Une remise d'une **nature** (remise société, bon de fidélité…), POSITIVE, en centimes.
+ *
+ * `prorataBases` restreint son assiette, comme celle d'un frais : la remise
+ * d'un point de retrait ne se répartit que sur les lignes qui y étaient
+ * éligibles (V3 du plan
+ * `documentation/livraisons/clientele/plan-remise-retrait-par-clientele-et-exclusions.md`).
+ * Absent = toutes les marchandises de la facture, ce qu'était toute remise
+ * avant les exclusions.
+ */
 export interface InvoiceAllowance {
   readonly key: string;
   readonly amountCents: number;
+  readonly prorataBases?: readonly VatLine[] | undefined;
 }
 
 /**
@@ -157,10 +167,12 @@ function allocateAllowance(
   allowance: InvoiceAllowance,
   goodsByRate: ReadonlyMap<number, number>,
 ): ReadonlyMap<number, number> {
-  if (allowance.amountCents !== 0 && totalWeight(goodsByRate) === 0) {
+  const bases =
+    allowance.prorataBases === undefined ? goodsByRate : sumByRate(allowance.prorataBases);
+  if (allowance.amountCents !== 0 && totalWeight(bases) === 0) {
     throw new RangeError(`Remise « ${allowance.key} » sans aucune marchandise où la répartir.`);
   }
-  return allocateLargestRemainder(allowance.amountCents, goodsByRate);
+  return allocateLargestRemainder(allowance.amountCents, bases);
 }
 
 function allocateCharge(charge: InvoiceCharge): ReadonlyMap<number, number> {

@@ -37,6 +37,7 @@ export const FROZEN_INVOICE_ORDER_SELECT = {
       vatRate: true,
       quantity: true,
       lineTotalCents: true,
+      pickupDiscountEligible: true,
     },
   },
 } satisfies Prisma.OrderSelect;
@@ -60,6 +61,7 @@ export function toFrozenInvoiceOrder(row: FrozenInvoiceOrderRow): FrozenInvoiceO
       vatRate: line.vatRate.toString(),
       quantity: line.quantity,
       lineTotalCents: line.lineTotalCents,
+      pickupDiscountEligible: line.pickupDiscountEligible,
     })),
     discountCents: row.discountCents,
     voucherDiscountCents: row.voucherDiscountCents,

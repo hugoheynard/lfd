@@ -22,8 +22,7 @@ const LABO: PickupAddressView = {
   codePostal: '75011',
   ville: 'Paris',
   pays: 'France',
-  discount: null,
-  discountAudiences: { b2b: true, b2c: true },
+  discounts: { b2b: null, b2c: null },
   // Aucune heure déclarée : le point n'oppose rien à la tranche demandée.
   opening: { publicOpening: null, proPickup: null },
 };

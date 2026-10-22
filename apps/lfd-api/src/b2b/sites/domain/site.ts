@@ -45,8 +45,7 @@ export interface SiteRoles {
   readonly pickup: boolean;
   /**
    * Les clientèles qui peuvent y retirer. Lues seulement si `pickup` : un site
-   * sans retrait les garde telles quelles, comme `PickupDiscount` garde les
-   * cases d'une remise retirée.
+   * sans retrait les garde telles quelles.
    */
   readonly pickupAudiences: SitePickupAudiences;
   readonly supply: SiteSupply;

@@ -74,10 +74,21 @@ function buildInvoice(orders: readonly FrozenInvoiceOrder[]): Invoice {
   const lines = aggregateInvoiceLines(orders);
   const companyDiscountCents = sum(orders.map((order) => order.discountCents));
   const voucherDiscountCents = sum(orders.map((order) => order.voucherDiscountCents));
+  const goods = lines.map((line) => ({ htCents: line.amountCents, vatRate: line.vatRate }));
   const vat = invoiceVatBreakdown({
-    goods: lines.map((line) => ({ htCents: line.amountCents, vatRate: line.vatRate })),
+    goods,
     allowances: [
-      { key: COMPANY_DISCOUNT, amountCents: companyDiscountCents },
+      // La remise de retrait se répartit sur les seules lignes qui y étaient
+      // éligibles (V3 du plan des exclusions) : la ventiler sur une boisson
+      // exclue retrancherait de la base à 20 % ce que le bon a retranché du
+      // pain à 5,5 %. Le bon de fidélité garde toutes les marchandises.
+      {
+        key: COMPANY_DISCOUNT,
+        amountCents: companyDiscountCents,
+        prorataBases: lines
+          .filter((line) => line.pickupDiscountEligible !== false)
+          .map((line) => ({ htCents: line.amountCents, vatRate: line.vatRate })),
+      },
       { key: LOYALTY_VOUCHER, amountCents: voucherDiscountCents },
     ],
     charges: [...deliveryCharges(orders), ...lateFeeCharges(orders)],

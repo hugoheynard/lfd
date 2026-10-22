@@ -1,3 +1,4 @@
+import { FixedLineClassifications } from "../../../domain/ports/__tests__/line-classification-doubles.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedOrderPayers, ownPayers } from "./payer-doubles.js";
 import { InMemoryProductCatalog } from "../../../../catalog/infrastructure/in-memory-product-catalog.js";
@@ -188,8 +189,7 @@ const LABO: PickupAddressView = {
   codePostal: "75002",
   ville: "Paris",
   pays: "France",
-  discount: null,
-  discountAudiences: { b2b: true, b2c: true },
+  discounts: { b2b: null, b2c: null },
   // Aucune heure déclarée : le point n'oppose alors rien à la tranche demandée.
   // Les cas d'ouverture sont couverts par `agreed-fulfillment.spec`.
   opening: { publicOpening: null, proPickup: null },
@@ -359,6 +359,7 @@ function handler(
         zones,
         deliveryAvailability(options.delivery),
         noPreferredPickup,
+        new FixedLineClassifications(),
       ),
       noDeliveryDefaults(),
       noOrderCutoffs,
@@ -372,6 +373,7 @@ function handler(
       new FixedDeliveryVat(),
       options.plans ?? openPlanGate(),
       options.salesTerms ?? new FixedSalesTerms(),
+      new FixedLineClassifications(),
     ),
     repo(sink),
     options.payments ?? payments(),
@@ -715,7 +717,13 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
           ),
           new FixedClock(PRICED_AT),
         ),
-        new CartAdjustments(pickups, zones, deliveryAvailability(), noPreferredPickup),
+        new CartAdjustments(
+          pickups,
+          zones,
+          deliveryAvailability(),
+          noPreferredPickup,
+          new FixedLineClassifications(),
+        ),
         noDeliveryDefaults(),
         noOrderCutoffs,
         new FixedClock(PRICED_AT),
@@ -728,6 +736,7 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
         new FixedDeliveryVat(),
         openPlanGate(),
         new FixedSalesTerms(),
+        new FixedLineClassifications(),
       ),
       repo(sink),
       payments(intents),

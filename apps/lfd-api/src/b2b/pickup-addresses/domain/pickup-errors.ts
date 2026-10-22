@@ -12,13 +12,29 @@ export class PickupAddressNotFoundError extends ResourceNotFoundError {
 }
 
 /**
- * Une réduction de retrait qui ne vise **aucune clientèle** (**400**) : elle ne
- * s'appliquerait à personne, et l'écran afficherait une remise que la caisse
- * n'accorde jamais. Le geste de sortie est dans le message.
+ * Une remise « seulement » qui n'inclut rien (**400**) : elle ne porterait sur
+ * aucune ligne, et l'écran afficherait une remise que la caisse n'accorde
+ * jamais — le pendant, depuis le 2026-10-22, de la remise sans clientèle.
  */
-export class PickupDiscountWithoutAudienceError extends DomainError {
-  constructor() {
-    super("pickup.discount.no_audience", "Cochez au moins une clientèle, ou retirez la réduction.");
+export class PickupDiscountScopeIncludesNothingError extends DomainError {
+  constructor(readonly audienceLabel: string) {
+    super(
+      "pickup.discount.only_includes_nothing",
+      `La remise ${audienceLabel} ne porte que sur les articles choisis, et aucun n'est choisi : ajoutez une famille ou un produit, ou passez-la sur « tous les articles sauf ».`,
+    );
+  }
+}
+
+/** La même famille ou le même produit réglé deux fois dans une remise (**400**). */
+export class PickupDiscountDuplicateRuleError extends DomainError {
+  constructor(
+    readonly audienceLabel: string,
+    readonly targetId: string,
+  ) {
+    super(
+      "pickup.discount.duplicate_rule",
+      `La remise ${audienceLabel} règle deux fois « ${targetId} » : gardez une seule règle pour cet article ou cette famille.`,
+    );
   }
 }
 

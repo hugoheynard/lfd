@@ -59,6 +59,20 @@ async function seedPeople(): Promise<string> {
   return company.id;
 }
 
+/** La même remise aux deux clientèles, sans règle — `0` = aucune. */
+function discountsOf(cents: number): Record<string, unknown> {
+  const discount =
+    cents === 0
+      ? null
+      : {
+          adjustment: { mode: "amount", cents },
+          scope: "all_except",
+          categories: [],
+          products: [],
+        };
+  return { b2b: discount, b2c: discount };
+}
+
 /** Un site créé comme le back-office le crée, puis réservé si demandé. */
 async function seedSite(
   label: string,
@@ -76,7 +90,7 @@ async function seedSite(
       pays: "France",
       // Une remise propre à chaque site : c'est elle qui dit, au devis, quel
       // point a été retenu sans qu'on l'ait choisi.
-      discount: discountCents === 0 ? null : { mode: "amount", cents: discountCents },
+      discounts: discountsOf(discountCents),
     })
     .expect(201);
   const id = jsonBody<CreatedPickupResponse>(response).id;
@@ -136,12 +150,12 @@ describe("les listes, filtrées au serveur", () => {
     const points = jsonBody<readonly PickupAddressView[]>(response);
 
     expect(labels(points)).toEqual(["Les deux", "Pros seulement"]);
-    expect(points.map((point) => pickupDiscountFor(point, "b2b"))).toEqual([
+    expect(points.map((point) => pickupDiscountFor(point, "b2b")?.adjustment)).toEqual([
       { mode: "amount", cents: 100 },
       { mode: "amount", cents: 200 },
     ]);
     expect(Object.keys(points[0] ?? {}).sort()).toEqual(
-      ["codePostal", "discount", "discountAudiences", "gps", "id", "label", "ligne1", "ligne2"]
+      ["codePostal", "discounts", "gps", "id", "label", "ligne1", "ligne2"]
         .concat(["opening", "pays", "pickupAudiences", "ville"])
         .sort(),
     );

@@ -115,7 +115,13 @@ export class Order {
     const clientele = clienteleOf(input.companyId);
     const lines = input.lines.map((line) => OrderLine.create(line, clientele));
     const subtotalCents = lines.reduce((sum, line) => sum + line.lineTotalCents, 0);
-    ensureDiscountMatches(input, subtotalCents);
+    // L'assiette de la remise de retrait, relue sur le drapeau des lignes —
+    // jamais reçue de l'appelant (V1 du plan des exclusions).
+    const eligibleSubtotalCents = lines.reduce(
+      (sum, line) => (line.pickupDiscountEligible ? sum + line.lineTotalCents : sum),
+      0,
+    );
+    ensureDiscountMatches(input, eligibleSubtotalCents);
     ensureLateFeeMatches(input, subtotalCents);
     ensureDeliveryFeeMatches(input, subtotalCents);
     const voucherDiscountCents = voucherDiscountOf(
@@ -138,7 +144,11 @@ export class Order {
     // quand les lignes le sont sur le net. Elle est passée de commentaire à
     // code exécuté.
     const { vatCents, vatShares, totalCents } = computeOrderTotals({
-      lines: lines.map((line) => ({ htCents: line.lineTotalCents, vatRate: line.vatRate })),
+      lines: lines.map((line) => ({
+        htCents: line.lineTotalCents,
+        vatRate: line.vatRate,
+        discountEligible: line.pickupDiscountEligible,
+      })),
       discountCents: input.discountCents,
       voucherDiscountCents,
       deliveryFeeCents: input.deliveryFeeCents,

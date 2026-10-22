@@ -14,7 +14,8 @@ import { TechnicalError } from "../../../../platform/shared/errors/app-error.js"
  *
  * Les prix du catalogue sont **HT**. La TVA se calcule par **taux** : on regroupe
  * les lignes par taux (5,5 % alimentaire, 20 % non-alimentaire, …), on déduit la
- * remise (retrait) au prorata de chaque groupe, puis on applique le taux au net.
+ * remise (retrait) au prorata des seules lignes qu'elle couvre, puis le bon au
+ * prorata de toutes, puis on applique le taux au net.
  * Les **frais de livraison** (service coursier) suivent le mode réglé par le
  * comptable : au taux normal (`standard`), ou au prorata des marchandises
  * qu'ils transportent (`follows_goods`, décision du 2026-09-21).
@@ -52,16 +53,21 @@ export class MissingLateFeeVatRateError extends TechnicalError {
 
 /** Entrées du calcul de TVA d'une commande. */
 export interface VatInput {
+  /** Les marchandises — `discountEligible` dit l'assiette de la remise de retrait. */
   readonly lines: readonly VatLine[];
-  /** Remise (retrait) déduite des marchandises, HT, en centimes. */
+  /**
+   * Remise (retrait) déduite des seules lignes éligibles, HT, en centimes —
+   * ventilée au prorata de ces lignes-là (R1 du plan
+   * `plan-remise-retrait-par-clientele-et-exclusions.md`).
+   */
   readonly discountCents: number;
   /**
    * La part du **bon de fidélité** imputée, HT, en centimes — `0` sans bon.
    *
-   * Passée à `ventilateVat` **ajoutée** à la remise, sans toucher sa signature
-   * (plan des points, C1) : les deux sont HT et retranchées des marchandises au
-   * prorata de chaque taux, leur somme se ventile donc comme chacune à part.
-   * Absent = aucun bon.
+   * Son assiette est **toutes** les lignes, celle de la remise de retrait ne
+   * l'est plus : les deux partent donc à `ventilateVat` séparément, la remise
+   * restreinte d'abord, le bon sur ce qu'elle a laissé (V2). Elles étaient
+   * additionnées tant qu'elles avaient la même assiette. Absent = aucun bon.
    */
   readonly voucherDiscountCents?: number;
   /** Frais de livraison (zone), HT, en centimes. */
@@ -138,7 +144,8 @@ export interface OrderTotals {
 export function computeOrderTotals(input: VatInput): OrderTotals {
   const ventilated = ventilateVat({
     lines: input.lines,
-    discountCents: input.discountCents + (input.voucherDiscountCents ?? 0),
+    eligibleDiscountCents: input.discountCents,
+    discountCents: input.voucherDiscountCents ?? 0,
     extras: extrasOf(input),
   });
   return {

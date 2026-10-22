@@ -30,7 +30,12 @@ import {
 import { screenCopy } from '../copy/shop-copy-composer';
 import { OrderContextStore } from '../order-context.store';
 import { formatHour } from '../format-hour';
-import { bestPickupDiscount, discountLabel, pickupOffer } from '../shop/pickup-discount';
+import {
+  bestPickupDiscount,
+  discountLabel,
+  pickupAdjustmentFor,
+  pickupOffer,
+} from '../shop/pickup-discount';
 import { OrderDoors } from '../shop/order-doors';
 import { CartFulfillmentDays } from '../shop/cart-fulfillment-days.service';
 import { ServicePoints } from '../shop/pickup-points.store';
@@ -522,7 +527,8 @@ export class AccueilPublic {
     return points.map((point) => {
       // Le drapeau ne se pose QU'UNE fois : deux cartes « le plus avantageux »
       // ne diraient plus rien.
-      const isBest = !flagged && best !== null && sameAdjustment(point.discount, best);
+      const isBest =
+        !flagged && best !== null && sameAdjustment(pickupAdjustmentFor(point, audience), best);
       if (isBest) {
         flagged = true;
       }

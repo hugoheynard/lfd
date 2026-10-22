@@ -10,6 +10,13 @@ import { ListPickupAddressesHandler } from "../list-pickup-addresses.handler.js"
 import { ListPickupAddressesQuery } from "../list-pickup-addresses.query.js";
 import { FIELDS } from "./pickup-address-doubles.js";
 
+const TEN_PERCENT = {
+  adjustment: { mode: "percent", bp: 1000 },
+  scope: "all_except",
+  categories: [],
+  products: [],
+} as const;
+
 const point = (
   id: string,
   pickupAudiences: { readonly b2b: boolean; readonly b2c: boolean },
@@ -18,8 +25,10 @@ const point = (
   ...FIELDS,
   id,
   label: id,
-  discount: { mode: "percent", bp: 1000 },
-  discountAudiences,
+  discounts: {
+    b2b: discountAudiences.b2b ? TEN_PERCENT : null,
+    b2c: discountAudiences.b2c ? TEN_PERCENT : null,
+  },
   pickupAudiences,
   gps: null,
 });
@@ -64,7 +73,7 @@ describe("ListPickupAddressesHandler — par clientèle", () => {
 
     expect(pickups.asked).toEqual(["b2b"]);
     expect(listed.map((p) => p.label)).toEqual(["Labo", "Pros"]);
-    expect(listed.map((p) => pickupDiscountFor(p, "b2b"))).toEqual([
+    expect(listed.map((p) => pickupDiscountFor(p, "b2b")?.adjustment ?? null)).toEqual([
       { mode: "percent", bp: 1000 },
       { mode: "percent", bp: 1000 },
     ]);
@@ -79,7 +88,7 @@ describe("ListPickupAddressesHandler — par clientèle", () => {
 
     expect(pickups.asked).toEqual(["b2c"]);
     expect(listed.map((p) => p.label)).toEqual(["Labo", "Village"]);
-    expect(listed.map((p) => pickupDiscountFor(p, "b2c"))).toEqual([
+    expect(listed.map((p) => pickupDiscountFor(p, "b2c")?.adjustment ?? null)).toEqual([
       null,
       { mode: "percent", bp: 1000 },
     ]);

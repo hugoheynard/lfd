@@ -33,7 +33,7 @@
                 @for (role of roles(point); track role) {
                   <fold-badge [content]="role" variant="info" />
                 }
-                @if (point.discount !== null) {
+                @if (discountLabel(point) !== '') {
                   <fold-badge [content]="discountLabel(point)" variant="accent" />
                 }
               </lfd-address>

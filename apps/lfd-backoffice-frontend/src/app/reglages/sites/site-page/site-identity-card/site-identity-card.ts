@@ -8,7 +8,7 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { ALL_DISCOUNT_AUDIENCES, type SiteView } from '@lfd/contracts';
+import type { SiteView } from '@lfd/contracts';
 import { AddressForm, type PostalAddress } from '@lfd/b2b-ui/address';
 import {
   EMPTY_POSTAL_DRAFT,
@@ -119,8 +119,7 @@ export class SiteIdentityCard {
   private async create(identity: SiteIdentity): Promise<void> {
     const created = await this.sites.create({
       ...identity,
-      discount: null,
-      discountAudiences: ALL_DISCOUNT_AUDIENCES,
+      discounts: { b2b: null, b2c: null },
       opening: EMPTY_OPENING,
     });
     this.notify.success('Site ajouté.');

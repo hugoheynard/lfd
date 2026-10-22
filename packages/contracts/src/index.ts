@@ -2042,11 +2042,26 @@ export type {
 } from "./order-opening.js";
 export {
   ALL_DISCOUNT_AUDIENCES,
+  audiencePickupDiscountSchema,
   pickupAddressUpdatePayloadSchema,
   pickupDiscountAudiencesSchema,
-  pickupDiscountFor,
+  pickupDiscountsSchema,
 } from "./pickup.js";
 export type { PickupAddressUpdatePayload, PickupDiscountAudiences } from "./pickup.js";
+export {
+  NO_PICKUP_DISCOUNTS,
+  pickupDiscountCovers,
+  pickupDiscountFor,
+  pickupDiscountHasRules,
+} from "./pickup-discount-scope.js";
+export type {
+  AudiencePickupDiscount,
+  PickupDiscountCategoryRule,
+  PickupDiscountLineFacts,
+  PickupDiscountProductRule,
+  PickupDiscounts,
+  PickupDiscountScope,
+} from "./pickup-discount-scope.js";
 export {
   PICKUP_CHOICE_REQUIRED,
   PICKUP_CLOSED_FOR_AUDIENCE,

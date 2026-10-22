@@ -127,8 +127,8 @@ const pickupPointBeforeLabel = () =>
     discountAudiences: payload({ b2b: z.boolean(), b2c: z.boolean() }),
   });
 
-/** Un point de retrait, et la remise qu'on y consent. */
-const pickupPoint = () =>
+/** Un point de retrait et sa remise commune, avant les remises par clientèle (2026-10-22). */
+const pickupPointBeforeAudienceDiscounts = () =>
   payload({
     /** Le nom du point — le même que `label`, sous la clé que lit tout le journal. */
     subjectLabel: subjectLabel(),
@@ -139,6 +139,34 @@ const pickupPoint = () =>
     discount: percentOrAmount().nullable(),
     /** À quelle clientèle la remise s'applique. */
     discountAudiences: payload({ b2b: z.boolean(), b2c: z.boolean() }),
+  });
+
+/**
+ * La remise d'une clientèle, telle que le journal la relit : la réduction, le
+ * mode de portée et le NOMBRE de règles — leurs identifiants sont opaques, ils
+ * ne se relisent pas.
+ */
+const audienceDiscount = () =>
+  payload({
+    discount: percentOrAmount(),
+    scope: z.enum(["all_except", "only"]),
+    categoryRules: count(),
+    productRules: count(),
+  });
+
+/**
+ * Un point de retrait, et la remise qu'on y consent à chaque clientèle (plan
+ * `plan-remise-retrait-par-clientele-et-exclusions.md`, 2026-10-22).
+ */
+const pickupPoint = () =>
+  payload({
+    /** Le nom du point — le même que `label`, sous la clé que lit tout le journal. */
+    subjectLabel: subjectLabel(),
+    label: z.string(),
+    ville: z.string(),
+    codePostal: z.string(),
+    /** `null` : la clientèle ne reçoit aucune remise au retrait. */
+    discounts: payload({ b2b: audienceDiscount().nullable(), b2c: audienceDiscount().nullable() }),
   });
 
 /**
@@ -393,8 +421,14 @@ export const ORDERS_PRODUCTION_FACTS = {
   /** Le nom de la zone au moment où elle disparaît — le fait de création dit ce qu'elle facturait. */
   "delivery_zone.removed": fact(payload({ subjectLabel: subjectLabel() }), [empty()]),
 
-  "pickup_address.created": fact(pickupPoint(), [pickupPointBeforeLabel()]),
-  "pickup_address.updated": fact(pickupPoint(), [pickupPointBeforeLabel()]),
+  "pickup_address.created": fact(pickupPoint(), [
+    pickupPointBeforeAudienceDiscounts(),
+    pickupPointBeforeLabel(),
+  ]),
+  "pickup_address.updated": fact(pickupPoint(), [
+    pickupPointBeforeAudienceDiscounts(),
+    pickupPointBeforeLabel(),
+  ]),
   "pickup_address.removed": fact(payload({ subjectLabel: subjectLabel() }), [empty()]),
   "pickup_address.default_set": fact(payload({ subjectLabel: subjectLabel() }), [empty()]),
   /**

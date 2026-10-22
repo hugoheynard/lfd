@@ -26,8 +26,7 @@ const POINT: PickupAddressView = {
   codePostal: "75004",
   ville: "Paris",
   pays: "France",
-  discount: null,
-  discountAudiences: { b2b: true, b2c: true },
+  discounts: { b2b: null, b2c: null },
   opening: { publicOpening: null, proPickup: null },
 };
 

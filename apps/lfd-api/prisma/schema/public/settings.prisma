@@ -37,8 +37,28 @@ model Site {
   // particuliers. Défaut `true` = l'existant, où toute requête la reçoit. Sans
   // remise, ces cases ne sont pas lues ; une remise qui n'en coche aucune est
   // refusée par `PickupDiscount`. Cf. `plan-remise-et-livraison-par-clientele.md`, D2.
+  //
+  // ⚠️ Depuis le 2026-10-22 (plan `plan-remise-retrait-par-clientele-et-exclusions.md`),
+  // `discount_mode`/`discount_value` portent la remise des PROS, lue seulement
+  // si `discount_for_b2b` ; `discount_for_b2c` n'a plus de lecteur (colonne
+  // morte, CLAUDE.md §0 — gardée pour qu'un retour arrière reste possible, V8).
   discountForB2b Boolean @default(true) @map("discount_for_b2b")
   discountForB2c Boolean @default(true) @map("discount_for_b2c")
+
+  /// Le mode de portée de la remise des pros : toutes les lignes sauf les
+  /// règles (`all_except`, l'existant), ou aucune sauf les règles (`only`).
+  discountScope PickupDiscountScope @default(all_except) @map("discount_scope")
+
+  /// La remise des PARTICULIERS, dans ses propres colonnes (2026-10-22) :
+  /// `NULL` = aucune. Reprise à la migration depuis la remise commune quand la
+  /// case B2C était cochée.
+  b2cDiscountMode  CartAdjustmentMode? @map("b2c_discount_mode")
+  b2cDiscountValue Int?                @map("b2c_discount_value")
+  b2cDiscountScope PickupDiscountScope @default(all_except) @map("b2c_discount_scope")
+
+  /// Les règles de portée des deux remises — familles et produits, chacune
+  /// avec son sens.
+  discountRules PickupDiscountRule[]
 
   // Quand un pro peut venir : ouverture au public ET créneau réservé aux pros,
   // deux fenêtres NOMMÉES et jamais fusionnées — leur union peut avoir un trou
@@ -473,5 +493,54 @@ model PublicPickupClosure {
 
   @@index([pickupAddressId, fromDay])
   @@map("public_pickup_closures")
+  @@schema("public")
+}
+
+/// Le mode de portée d'une remise de retrait (Hugo, 2026-10-22).
+enum PickupDiscountScope {
+  all_except
+  only
+
+  @@schema("public")
+}
+
+/// La clientèle à laquelle une règle de remise s'applique.
+enum PickupDiscountAudience {
+  b2b
+  b2c
+
+  @@schema("public")
+}
+
+/// Ce qu'une règle de remise vise : une famille du catalogue ou un produit.
+enum PickupDiscountTarget {
+  category
+  product
+
+  @@schema("public")
+}
+
+/// **Une règle de portée de la remise d'un point de retrait** (plan
+/// `documentation/livraisons/clientele/plan-remise-retrait-par-clientele-et-exclusions.md`) :
+/// telle famille, ou tel produit (toutes ses déclinaisons), est éligible ou
+/// non à la remise de telle clientèle. Une règle produit l'emporte sur celle
+/// de sa famille. `target_id` est un identifiant OPAQUE du catalogue, sans
+/// clé étrangère : une famille retirée laisse une règle orpheline, que
+/// l'écran signale (V9).
+///
+/// Écrite par l'agrégat `Site`, qui la remplace en bloc avec la remise : « pas
+/// de règle sans réduction » et « `only` inclut quelque chose » y sont tenus.
+model PickupDiscountRule {
+  id       String                 @id @default(cuid())
+  siteId   String                 @map("site_id")
+  site     Site                   @relation(fields: [siteId], references: [id], onDelete: Restrict)
+  audience PickupDiscountAudience
+  target   PickupDiscountTarget
+  targetId String                 @map("target_id")
+  eligible Boolean
+
+  @@unique([siteId, audience, target, targetId])
+  @@index([siteId])
+  @@map("pickup_discount_rules")
   @@schema("public")
 }

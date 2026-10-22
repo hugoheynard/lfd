@@ -21,6 +21,13 @@ export interface FrozenInvoiceLine {
   readonly vatRate: string;
   readonly quantity: number;
   readonly lineTotalCents: number;
+  /**
+   * La ligne entrait-elle dans l'assiette de la remise de retrait, figé à la
+   * passation (R2 du plan `plan-remise-retrait-par-clientele-et-exclusions.md`).
+   * Absent = éligible : ce qu'étaient toutes les lignes avant les exclusions,
+   * et ce que la colonne dit d'elles.
+   */
+  readonly pickupDiscountEligible?: boolean;
 }
 
 /** Une part de TVA figée sur un bon. */
@@ -72,6 +79,12 @@ export interface InvoiceLine {
   /** Première et dernière date demandée ; `null` si aucun bon de la clé n'en porte. */
   readonly firstDeliveryDate: string | null;
   readonly lastDeliveryDate: string | null;
+  /**
+   * `false` = ces lignes étaient exclues de la remise de retrait : elles font
+   * une ligne de facture à part, sinon la remise se répartirait sur elles.
+   * Absent = éligibles, le cas de toute ligne d'avant les exclusions.
+   */
+  readonly pickupDiscountEligible?: false;
 }
 
 /** Une ligne de livraison de la facture — une par mode présent dans le cycle. */

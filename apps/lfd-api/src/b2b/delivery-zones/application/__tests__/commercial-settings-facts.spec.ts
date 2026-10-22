@@ -49,8 +49,15 @@ const PICKUP: PickupAddressPayload = {
   codePostal: "75004",
   ville: "Paris",
   pays: "France",
-  discount: { mode: "percent", bp: 500 },
-  discountAudiences: { b2b: true, b2c: false },
+  discounts: {
+    b2b: {
+      adjustment: { mode: "percent", bp: 500 },
+      scope: "all_except",
+      categories: [{ categoryId: "c_boissons", eligible: false }],
+      products: [],
+    },
+    b2c: null,
+  },
   opening: { publicOpening: null, proPickup: null },
 };
 
@@ -70,7 +77,7 @@ function zones(stored: DeliveryZoneView | null = null): DeliveryZoneRepository {
 function sites(): InMemorySites {
   return new InMemorySites(
     storedSite("pickup_2", {
-      place: { ...PLACE, discount: PickupDiscount.of(null, { b2b: true, b2c: true }) },
+      place: { ...PLACE, discount: PickupDiscount.of({ b2b: null, b2c: null }) },
     }),
     storedSite("pickup_1"),
   );
@@ -139,7 +146,7 @@ describe("Les réglages commerciaux au journal", () => {
     expect(events.factTypes()).toEqual(["delivery_zone.updated"]);
   });
 
-  it("emporte la REMISE d'un point de retrait et ses clientèles — c'est la décision commerciale", async () => {
+  it("emporte la REMISE de chaque clientèle d'un point de retrait — c'est la décision commerciale", async () => {
     const events = new RecordingPublisher();
 
     await new UpdatePickupAddressHandler(sites(), events, new DirectUnitOfWork()).execute(
@@ -148,10 +155,12 @@ describe("Les réglages commerciaux au journal", () => {
 
     expect(events.traced[0]?.journalFact().payload).toMatchObject({
       ville: "Paris",
-      discount: { bp: 500 },
-      // « à qui » fait partie de la décision : 5 % pour les pros seulement
-      // n'est pas 5 % pour tout le monde.
-      discountAudiences: { b2b: true, b2c: false },
+      // « à qui » et « sur quoi » font partie de la décision : 5 % pour les
+      // pros, boissons exclues, n'est pas 5 % pour tout le monde.
+      discounts: {
+        b2b: { discount: { bp: 500 }, scope: "all_except", categoryRules: 1, productRules: 0 },
+        b2c: null,
+      },
     });
   });
 

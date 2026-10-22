@@ -70,6 +70,11 @@ export function ensureDeliveryFeeMatches(input: DraftOrderInput, subtotalCents: 
  * commande pourrait porter « −20 % » à côté d'une remise de 12 € : le libellé et
  * le chiffre se contrediraient sur la facture, et rien ne dirait lequel ment.
  *
+ * 🔴 **L'assiette est celle des lignes éligibles**, recalculée par l'agrégat à
+ * partir du drapeau de ses lignes (V1 du plan
+ * `plan-remise-retrait-par-clientele-et-exclusions.md`) : recevoir l'assiette
+ * de l'appelant, c'était lui faire confiance sur le seul nombre qui compte.
+ *
  * 🔴 Il compare du **borné** à du borné (`discountCentsOf`), là où il comparait
  * du brut. Une remise en montant fixe supérieure au panier — 50 € sur 10 € —
  * passait donc telle quelle et s'enregistrait à 50 € à côté d'un sous-total de
@@ -80,11 +85,11 @@ export function ensureDeliveryFeeMatches(input: DraftOrderInput, subtotalCents: 
  *
  * @throws {InvalidOrderPaymentError} le libellé ne correspond pas au montant.
  */
-export function ensureDiscountMatches(input: DraftOrderInput, subtotalCents: number): void {
+export function ensureDiscountMatches(input: DraftOrderInput, eligibleSubtotalCents: number): void {
   if (input.discountAdjustment === null) {
     return;
   }
-  if (discountCentsOf(input.discountAdjustment, subtotalCents) !== input.discountCents) {
+  if (discountCentsOf(input.discountAdjustment, eligibleSubtotalCents) !== input.discountCents) {
     throw new InvalidOrderPaymentError(
       "La remise retenue ne correspond pas à l'ajustement appliqué.",
     );

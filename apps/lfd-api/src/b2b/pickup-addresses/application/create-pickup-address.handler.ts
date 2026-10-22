@@ -14,7 +14,7 @@ import { CreatePickupAddressCommand } from "./create-pickup-address.command.js";
  * Handler **staff** : crée un point de retrait — un site neuf, qui remet, est
  * approvisionné sur place et n'expédie pas (lot S1 des sites, 2026-10-13).
  *
- * `PickupDiscount` refuse une remise sans clientèle. Aucun site n'est « par
+ * `PickupDiscount` refuse une remise que ses règles rendent vide. Aucun site n'est « par
  * défaut » depuis le 2026-10-15 : la présélection se décide par client. Le
  * mur est la surface staff de la route.
  */
@@ -31,8 +31,8 @@ export class CreatePickupAddressHandler implements ICommandHandler<
   ) {}
 
   async execute(command: CreatePickupAddressCommand): Promise<string> {
-    const { discount, discountAudiences, gps, ...fields } = command.payload;
-    const resolved = PickupDiscount.of(discount, discountAudiences);
+    const { discounts, gps, ...fields } = command.payload;
+    const resolved = PickupDiscount.of(discounts);
     // Absent à la création : aucun point GPS saisi.
     const position = gps ?? null;
     return await this.uow.run(async () => {

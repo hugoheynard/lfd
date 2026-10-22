@@ -36,7 +36,7 @@ export class StoredPoints extends InMemorySites {
                 pays: stored.pays,
                 opening: stored.opening,
                 gps: stored.gps ?? null,
-                discount: PickupDiscount.of(stored.discount, stored.discountAudiences),
+                discount: PickupDiscount.of(stored.discounts),
               },
             }),
           ]),

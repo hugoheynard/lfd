@@ -25,26 +25,26 @@ export class UpdatePickupAddressHandler implements ICommandHandler<
   ) {}
 
   /**
-   * Clientèles absentes = celles de la base, relues DANS la transaction : la
-   * règle se juge sur l'état qui sera écrit, pas sur la seule charge. Une
-   * réduction posée sans cases sur un point dont les deux sont décochées est
-   * donc refusée, et non enregistrée pour personne.
+   * Remises absentes = celles de la base, relues DANS la transaction.
    *
    * @throws {PickupAddressNotFoundError} l'`id` n'existe pas.
-   * @throws {PickupDiscountWithoutAudienceError} la remise ne vise personne.
+   * @throws {PickupDiscountScopeIncludesNothingError} une remise « seulement » sans inclusion.
+   * @throws {PickupDiscountDuplicateRuleError} une règle en double.
    * @throws {ArchivedSiteError} le site est archivé.
    */
   async execute(command: UpdatePickupAddressCommand): Promise<void> {
-    const { discount, discountAudiences, gps, ...fields } = command.payload;
+    const { discounts, gps, ...fields } = command.payload;
     await this.uow.run(async () => {
       const site = await this.sites.load(command.id);
       if (site === null) {
         throw new PickupAddressNotFoundError(command.id);
       }
       const current = site.snapshot().place;
-      const resolved = PickupDiscount.of(discount, discountAudiences ?? current.discount.audiences);
-      // Absent = inchangé, comme les clientèles : un onglet ouvert avant le
-      // champ n'efface pas une position saisie.
+      // Absentes = inchangées : un onglet ouvert avant les remises par
+      // clientèle n'efface ni une remise ni ses règles.
+      const resolved = discounts === undefined ? current.discount : PickupDiscount.of(discounts);
+      // Absent = inchangé, de même : un onglet ouvert avant le champ n'efface
+      // pas une position saisie.
       const position = gps === undefined ? current.gps : gps;
       site.revise(placeOf(fields, resolved, position));
       await this.sites.save(site);

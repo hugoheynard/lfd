@@ -4,7 +4,11 @@
  * défaut a disparu le 2026-10-15 (Hugo) : plus de geste « défaut », plus de
  * point en tête.
  */
-import type { CreatedPickupResponse, PickupAddressView } from "@lfd/contracts";
+import type {
+  AudiencePickupDiscount,
+  CreatedPickupResponse,
+  PickupAddressView,
+} from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
@@ -98,10 +102,17 @@ describe("points de retrait", () => {
 });
 
 /**
- * Les clientèles de la remise d'un point (plan `remise-et-livraison-par-clientele`, D2).
+ * Les remises d'un point, une par clientèle, avec leur portée (plan
+ * `plan-remise-retrait-par-clientele-et-exclusions.md`, lot A, 2026-10-22).
  */
-describe("points de retrait — clientèles de la remise", () => {
+describe("points de retrait — une remise par clientèle", () => {
   const TEN_PERCENT = { mode: "percent", bp: 1_000 } as const;
+  const PRO: AudiencePickupDiscount = {
+    adjustment: TEN_PERCENT,
+    scope: "all_except",
+    categories: [{ categoryId: "c_boissons", eligible: false }],
+    products: [{ productId: "p_jus", eligible: true }],
+  };
 
   async function createWith(body: Record<string, unknown>): Promise<string> {
     const response = await staff()
@@ -119,86 +130,74 @@ describe("points de retrait — clientèles de la remise", () => {
     return first;
   }
 
-  it("à la création, sans clientèles : la remise vaut pour les deux — l'existant", async () => {
-    await createWith({ discount: TEN_PERCENT });
+  it("à la création, sans remises : aucune clientèle n'en reçoit", async () => {
+    await createWith({});
 
-    expect((await only()).discountAudiences).toEqual({ b2b: true, b2c: true });
+    expect((await only()).discounts).toEqual({ b2b: null, b2c: null });
   });
 
-  it("sert les clientèles posées, sur la liste publique", async () => {
-    await createWith({ discount: TEN_PERCENT, discountAudiences: { b2b: true, b2c: false } });
+  it("sert chaque remise avec ses règles, relues de leur table", async () => {
+    await createWith({ discounts: { b2b: PRO, b2c: null } });
 
-    const served = await only();
-    expect(served.discount).toEqual(TEN_PERCENT);
-    expect(served.discountAudiences).toEqual({ b2b: true, b2c: false });
+    expect((await only()).discounts).toEqual({ b2b: PRO, b2c: null });
   });
 
-  /**
-   * Régression (vitruve, S2) : un onglet du back-office ouvert avant le
-   * déploiement renvoie une charge SANS clientèles. Validée avec le schéma de
-   * création, elle prenait le défaut « les deux » et rouvrait au public une
-   * remise fermée, en silence.
-   */
-  it("un PATCH sans discountAudiences ne rouvre rien", async () => {
-    const id = await createWith({
-      discount: TEN_PERCENT,
-      discountAudiences: { b2b: true, b2c: false },
-    });
+  it("un PATCH sans remises n'efface ni la remise ni ses règles", async () => {
+    const id = await createWith({ discounts: { b2b: PRO, b2c: null } });
 
     await staff()
       .patch(`/admin/pickup-addresses/${id}`)
-      .send({ ...point("Labo Paris — renommé"), discount: TEN_PERCENT })
+      .send({ ...point("Labo Paris — renommé") })
       .expect(204);
 
     const served = await only();
     expect(served.label).toBe("Labo Paris — renommé");
-    expect(served.discountAudiences).toEqual({ b2b: true, b2c: false });
+    expect(served.discounts).toEqual({ b2b: PRO, b2c: null });
   });
 
-  it("refuse (400) une réduction qui ne vise aucune clientèle, à la création", async () => {
-    const response = await staff()
-      .post("/admin/pickup-addresses")
-      .send({
-        ...point("Labo Paris"),
-        discount: TEN_PERCENT,
-        discountAudiences: { b2b: false, b2c: false },
-      })
-      .expect(400);
-
-    expect((response.body as { code?: string }).code).toBe("pickup.discount.no_audience");
-    expect(await list()).toHaveLength(0);
-  });
-
-  it("refuse (400) la même chose en modification, et n'écrit rien", async () => {
-    const id = await createWith({ discount: TEN_PERCENT });
-
-    const response = await staff()
-      .patch(`/admin/pickup-addresses/${id}`)
-      .send({
-        ...point("Labo Paris"),
-        discount: { mode: "amount", cents: 300 },
-        discountAudiences: { b2b: false, b2c: false },
-      })
-      .expect(400);
-
-    expect((response.body as { code?: string }).code).toBe("pickup.discount.no_audience");
-    expect((await only()).discount).toEqual(TEN_PERCENT);
-  });
-
-  it("sans réduction, accepte les deux cases décochées et les conserve", async () => {
-    const id = await createWith({ discount: TEN_PERCENT });
+  it("remplace les règles en bloc quand la remise change", async () => {
+    const id = await createWith({ discounts: { b2b: PRO, b2c: null } });
+    const individual: AudiencePickupDiscount = {
+      adjustment: { mode: "amount", cents: 300 },
+      scope: "only",
+      categories: [{ categoryId: "c_pains", eligible: true }],
+      products: [],
+    };
 
     await staff()
       .patch(`/admin/pickup-addresses/${id}`)
-      .send({
-        ...point("Labo Paris"),
-        discount: null,
-        discountAudiences: { b2b: false, b2c: false },
-      })
+      .send({ ...point("Labo Paris"), discounts: { b2b: null, b2c: individual } })
       .expect(204);
 
-    const served = await only();
-    expect(served.discount).toBeNull();
-    expect(served.discountAudiences).toEqual({ b2b: false, b2c: false });
+    expect((await only()).discounts).toEqual({ b2b: null, b2c: individual });
+    expect(await ctx.prisma.pickupDiscountRule.count({ where: { siteId: id } })).toBe(1);
+  });
+
+  it("refuse (400) une remise « seulement » qui n'inclut rien, et n'écrit rien", async () => {
+    const id = await createWith({ discounts: { b2b: PRO, b2c: null } });
+
+    const response = await staff()
+      .patch(`/admin/pickup-addresses/${id}`)
+      .send({
+        ...point("Labo Paris"),
+        discounts: { b2b: { ...PRO, scope: "only", categories: [], products: [] }, b2c: null },
+      })
+      .expect(400);
+
+    expect((response.body as { code?: string }).code).toBe("pickup.discount.only_includes_nothing");
+    expect((await only()).discounts.b2b).toEqual(PRO);
+  });
+
+  /**
+   * La reprise sans effacement (V8) : la réduction d'avant est celle des pros
+   * seulement si leur case était cochée. Un point d'avant le lot, dont la
+   * remise était fermée aux pros, est simulé en décochant la case en base —
+   * aucun geste du domaine ne produit plus cet état.
+   */
+  it("ne donne pas aux pros une réduction dont leur case était décochée", async () => {
+    const id = await createWith({ discounts: { b2b: PRO, b2c: null } });
+    await ctx.prisma.site.update({ where: { id }, data: { discountForB2b: false } });
+
+    expect((await only()).discounts.b2b).toBeNull();
   });
 });

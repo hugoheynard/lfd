@@ -8,7 +8,7 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { type CartAdjustment, type PickupDiscountAudiences, type SiteView } from '@lfd/contracts';
+import type { PickupDiscountAudiences, SiteView } from '@lfd/contracts';
 import {
   fromCartAdjustment,
   PriceAlterationField,
@@ -27,16 +27,14 @@ import {
 
 import { NotifyService } from '../../../../notify.service';
 import { SitesService } from '../../sites.service';
+import { discountsFrom, singleDiscountOf, type SingleDiscount } from '../../site-discount-bridge';
 import { placePayload } from '../site-place-payload';
 
 /** La réduction telle que l'écran l'édite. */
-interface DiscountDraft {
-  readonly discount: CartAdjustment | null;
-  readonly audiences: PickupDiscountAudiences;
-}
+type DiscountDraft = SingleDiscount;
 
 function draftOf(site: SiteView): DiscountDraft {
-  return { discount: site.discount, audiences: site.discountAudiences };
+  return singleDiscountOf(site.discounts);
 }
 
 /**
@@ -109,8 +107,7 @@ export class SiteDiscountCard {
       await this.sites.update(
         this.site().id,
         placePayload(this.site(), {
-          discount: this.draft().discount,
-          discountAudiences: this.draft().audiences,
+          discounts: discountsFrom(this.draft(), this.site().discounts),
         }),
       );
       this.notify.success('Réduction de retrait enregistrée.');

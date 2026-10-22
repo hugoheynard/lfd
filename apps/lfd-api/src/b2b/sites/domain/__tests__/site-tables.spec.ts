@@ -18,7 +18,7 @@ const PLACE: SitePlace = {
   pays: "France",
   opening: { publicOpening: null, proPickup: null },
   gps: null,
-  discount: PickupDiscount.of(null, { b2b: true, b2c: true }),
+  discount: PickupDiscount.of({ b2b: null, b2c: null }),
 };
 
 /** Une date comparée à aucune horloge : elle n'est que recopiée. */

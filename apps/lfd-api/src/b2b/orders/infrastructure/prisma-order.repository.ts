@@ -162,6 +162,11 @@ export class PrismaOrderRepository extends OrderRepository {
             // question ne se repose plus jamais après (R3, 2026-09-21).
             unitPriceTtcCents: line.unitPriceTtcCents,
             lineTotalTtcCents: line.lineTotalTtcCents,
+            // Figés par l'agrégat (R2 du plan des exclusions) : la facture
+            // lit ce drapeau, jamais la règle du jour.
+            pickupDiscountEligible: line.pickupDiscountEligible,
+            productId: line.productId,
+            categoryId: line.categoryId,
             basePriceMillicents: line.pricing?.basePriceMillicents ?? null,
             // `Prisma.DbNull` et non `null` : sur une colonne JSON nullable,
             // `null` désigne le *littéral* JSON `null`, pas l'absence de valeur.

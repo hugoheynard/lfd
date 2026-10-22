@@ -1,21 +1,31 @@
-import type { PickupAddressUpdatePayload, PickupAddressView } from "@lfd/contracts";
+import type {
+  AudiencePickupDiscount,
+  PickupAddressUpdatePayload,
+  PickupAddressView,
+} from "@lfd/contracts";
 
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import {
   PickupAddressNotFoundError,
-  PickupDiscountWithoutAudienceError,
+  PickupDiscountDuplicateRuleError,
 } from "../../domain/pickup-errors.js";
 import { UpdatePickupAddressCommand } from "../update-pickup-address.command.js";
 import { UpdatePickupAddressHandler } from "../update-pickup-address.handler.js";
 import { FIELDS, StoredPoints } from "./pickup-address-doubles.js";
 
-/** Un point dont la remise est fermée au public — l'état que S2 ne doit pas rouvrir. */
+/** −10 % aux pros, boissons exclues ; rien aux particuliers. */
+const PRO_DISCOUNT: AudiencePickupDiscount = {
+  adjustment: { mode: "percent", bp: 1_000 },
+  scope: "all_except",
+  categories: [{ categoryId: "c_boissons", eligible: false }],
+  products: [],
+};
+
 const PROS_ONLY: PickupAddressView = {
   ...FIELDS,
   id: "pickup_1",
-  discount: { mode: "percent", bp: 1_000 },
-  discountAudiences: { b2b: true, b2c: false },
+  discounts: { b2b: PRO_DISCOUNT, b2c: null },
 };
 
 function update(
@@ -28,83 +38,68 @@ function update(
   );
 }
 
-describe("UpdatePickupAddressHandler — les clientèles de la remise", () => {
+describe("UpdatePickupAddressHandler — les remises par clientèle", () => {
   /**
-   * Régression (vitruve, S2) : avec le défaut de la création, un onglet du
-   * back-office ouvert avant le déploiement renvoyait une charge SANS
-   * clientèles, et rouvrait en silence au public une remise fermée.
+   * Un onglet ouvert avant les remises par clientèle renvoie une charge SANS
+   * elles : il ne doit effacer ni la remise ni ses règles.
    */
-  it("clientèles absentes : garde celles de la base au lieu de rouvrir aux deux", async () => {
+  it("remises absentes : garde celles de la base, règles comprises", async () => {
     const points = new StoredPoints(PROS_ONLY);
 
-    await update(points, { ...FIELDS, discount: { mode: "percent", bp: 1_500 } });
+    await update(points, { ...FIELDS });
 
-    expect(points.written?.discount.audiences).toEqual({ b2b: true, b2c: false });
-    expect(points.written?.discount.adjustment).toEqual({ mode: "percent", bp: 1_500 });
+    expect(points.written?.discount.discounts).toEqual({ b2b: PRO_DISCOUNT, b2c: null });
   });
 
-  it("clientèles présentes : les écrit", async () => {
+  it("remises présentes : les écrit, chaque clientèle la sienne", async () => {
     const points = new StoredPoints(PROS_ONLY);
+    const individual: AudiencePickupDiscount = {
+      adjustment: { mode: "amount", cents: 300 },
+      scope: "only",
+      categories: [],
+      products: [{ productId: "p_baguette", eligible: true }],
+    };
 
-    await update(points, {
-      ...FIELDS,
-      discount: { mode: "percent", bp: 1_000 },
-      discountAudiences: { b2b: false, b2c: true },
-    });
+    await update(points, { ...FIELDS, discounts: { b2b: null, b2c: individual } });
 
-    expect(points.written?.discount.audiences).toEqual({ b2b: false, b2c: true });
+    expect(points.written?.discount.discounts).toEqual({ b2b: null, b2c: individual });
   });
 
-  /**
-   * La règle se juge sur l'état ÉCRIT : une réduction posée sans cases sur un
-   * point dont les deux sont décochées ne viserait personne.
-   */
-  it("refuse une réduction sans cases sur un point dont les cases stockées sont décochées", async () => {
-    const points = new StoredPoints({
-      ...PROS_ONLY,
-      discount: null,
-      discountAudiences: { b2b: false, b2c: false },
-    });
+  it("refuse une règle en double, sans rien écrire", async () => {
+    const points = new StoredPoints(PROS_ONLY);
+    const twice: AudiencePickupDiscount = {
+      ...PRO_DISCOUNT,
+      categories: [
+        { categoryId: "c_boissons", eligible: false },
+        { categoryId: "c_boissons", eligible: true },
+      ],
+    };
 
     await expect(
-      update(points, { ...FIELDS, discount: { mode: "amount", cents: 300 } }),
-    ).rejects.toBeInstanceOf(PickupDiscountWithoutAudienceError);
+      update(points, { ...FIELDS, discounts: { b2b: twice, b2c: null } }),
+    ).rejects.toBeInstanceOf(PickupDiscountDuplicateRuleError);
     expect(points.written).toBeNull();
-  });
-
-  it("retirer la réduction garde les cases décochées, sans refus", async () => {
-    const points = new StoredPoints(PROS_ONLY);
-
-    await update(points, {
-      ...FIELDS,
-      discount: null,
-      discountAudiences: { b2b: false, b2c: false },
-    });
-
-    expect(points.written?.discount.adjustment).toBeNull();
-    expect(points.written?.discount.audiences).toEqual({ b2b: false, b2c: false });
   });
 
   it("un point introuvable est un 404, et rien n'est journalisé", async () => {
     const events = new RecordingPublisher();
 
-    await expect(
-      update(new StoredPoints(null), { ...FIELDS, discount: null }, events),
-    ).rejects.toBeInstanceOf(PickupAddressNotFoundError);
+    await expect(update(new StoredPoints(null), { ...FIELDS }, events)).rejects.toBeInstanceOf(
+      PickupAddressNotFoundError,
+    );
     expect(events.traced).toHaveLength(0);
   });
 
-  it("journalise les clientèles EFFECTIVES, pas la charge", async () => {
+  it("journalise les remises EFFECTIVES, pas la charge", async () => {
     const events = new RecordingPublisher();
 
-    await update(
-      new StoredPoints(PROS_ONLY),
-      { ...FIELDS, discount: { mode: "percent", bp: 1_000 } },
-      events,
-    );
+    await update(new StoredPoints(PROS_ONLY), { ...FIELDS }, events);
 
     expect(events.traced[0]?.journalFact().payload).toMatchObject({
-      discountAudiences: { b2b: true, b2c: false },
+      discounts: {
+        b2b: { discount: { bp: 1_000 }, scope: "all_except", categoryRules: 1, productRules: 0 },
+        b2c: null,
+      },
     });
   });
 });
@@ -116,7 +111,7 @@ describe("UpdatePickupAddressHandler — le point GPS", () => {
   it("absent : garde celui de la base", async () => {
     const points = new StoredPoints(LOCATED);
 
-    await update(points, { ...FIELDS, discount: null });
+    await update(points, { ...FIELDS });
 
     expect(points.written?.gps).toEqual({ lat: 45.9, lng: 6.1 });
   });
@@ -124,10 +119,10 @@ describe("UpdatePickupAddressHandler — le point GPS", () => {
   it("présent : l'écrit, et `null` l'efface", async () => {
     const points = new StoredPoints(LOCATED);
 
-    await update(points, { ...FIELDS, discount: null, gps: { lat: 1, lng: 2 } });
+    await update(points, { ...FIELDS, gps: { lat: 1, lng: 2 } });
     expect(points.written?.gps).toEqual({ lat: 1, lng: 2 });
 
-    await update(points, { ...FIELDS, discount: null, gps: null });
+    await update(points, { ...FIELDS, gps: null });
     expect(points.written?.gps).toBeNull();
   });
 });

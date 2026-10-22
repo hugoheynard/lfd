@@ -8,7 +8,7 @@ import type { PickupAddressUpdatePayload, SiteView } from '@lfd/contracts';
  * Une seule route écrit l'adresse, les heures et la réduction (`PATCH admin/sites/:id`, relu le 2026-10-13) : il n'existe pas de
  * route par sujet. Renvoyer l'état relu pour tout le reste garantit qu'une
  * carte n'écrase pas la saisie non enregistrée d'une autre. `gps` est absent :
- * il reste inchangé (il se saisit avec les rôles).
+ * il reste inchangé (il se saisit avec les rôles), comme les remises.
  */
 export function placePayload(
   site: SiteView,
@@ -22,8 +22,8 @@ export function placePayload(
     ville: site.ville,
     pays: site.pays,
     opening: site.opening,
-    discount: site.discount,
-    discountAudiences: site.discountAudiences,
+    // Les remises sont absentes, donc inchangées : seule la carte de la
+    // réduction les envoie (2026-10-22).
     ...change,
   };
 }

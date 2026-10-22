@@ -5,7 +5,7 @@ import type { PickupDiscount } from "../../pickup-addresses/domain/pickup-discou
 import type { SitePlace } from "../domain/site.js";
 
 /** Les champs postaux et horaires d'une charge de point, sans le reste. */
-type PlaceFields = Omit<PickupAddressPayload, "discount" | "discountAudiences" | "gps">;
+type PlaceFields = Omit<PickupAddressPayload, "discounts" | "gps">;
 
 /** Le lieu d'un site, depuis une charge déjà résolue (remise validée, GPS décidé). */
 export function placeOf(

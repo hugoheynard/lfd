@@ -36,8 +36,7 @@ const LABO: PickupAddressView = {
   codePostal: '73150',
   ville: 'Val d’Isère',
   pays: 'France',
-  discount: null,
-  discountAudiences: { b2b: true, b2c: true },
+  discounts: { b2b: null, b2c: null },
   opening: { proPickup: null, publicOpening: null },
 };
 

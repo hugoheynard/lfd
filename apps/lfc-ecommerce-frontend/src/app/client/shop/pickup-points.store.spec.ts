@@ -18,8 +18,8 @@ import { ServicePoints } from './pickup-points.store';
 import { hydrateWith, operationCatalogue } from './shop-catalogue.fixture';
 import { ShopCatalogue } from './shop-catalogue.store';
 
-/** Un point tel qu'une API d'AVANT les clientèles de remise le sert : sans `discountAudiences`. */
-const OLD_POINT: Omit<PickupAddressView, 'discountAudiences'> = {
+/** Un point tel qu'une API d'AVANT les remises par clientèle le sert : sans `discounts`. */
+const OLD_POINT: Omit<PickupAddressView, 'discounts'> = {
   id: 'pick_labo',
   label: 'Le Labo',
   ligne1: 'Route de la Balme',
@@ -27,7 +27,6 @@ const OLD_POINT: Omit<PickupAddressView, 'discountAudiences'> = {
   codePostal: '73150',
   ville: 'Val d’Isère',
   pays: 'France',
-  discount: { mode: 'percent', bp: 1_000 },
   opening: { proPickup: null, publicOpening: null },
 };
 
@@ -53,9 +52,9 @@ describe('ServicePoints — le réglage de livraison et les vues anciennes', () 
   });
 
   /** Plan §4 : un front servi avant l'API lit une vue sans les nouveaux champs. */
-  it('tient pour ouvertes les clientèles absentes d’un point', () => {
+  it('n’annonce aucune remise pour un point servi sans `discounts`', () => {
     points.receive([OLD_POINT], []);
-    expect(points.pickups()[0]?.discountAudiences).toEqual({ b2b: true, b2c: true });
+    expect(points.pickups()[0]?.discounts).toEqual({ b2b: null, b2c: null });
   });
 
   it('ouvert aux deux, et NON connu, tant que rien n’est lu', () => {
@@ -73,7 +72,7 @@ describe('ServicePoints — le réglage de livraison et les vues anciennes', () 
 
     expect(points.deliveryAvailability()).toMatchObject({ openToB2b: true, openToB2c: false });
     expect(points.deliveryAvailabilityKnown()).toBe(true);
-    expect(points.pickups()[0]?.discountAudiences).toEqual({ b2b: true, b2c: true });
+    expect(points.pickups()[0]?.discounts).toEqual({ b2b: null, b2c: null });
     http.verify();
   });
 

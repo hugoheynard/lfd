@@ -53,6 +53,11 @@ export {
 } from "./contact.values.js";
 export { ALL_DISCOUNT_AUDIENCES } from "./pickup-discount-audiences.js";
 export {
+  NO_PICKUP_DISCOUNTS,
+  pickupDiscountCovers,
+  pickupDiscountFor,
+} from "./pickup-discount-scope.js";
+export {
   PICKUP_CHOICE_REQUIRED,
   PICKUP_CLOSED_FOR_AUDIENCE,
   pickupOpenTo,

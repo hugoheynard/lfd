@@ -16,6 +16,18 @@ import { ServicePoints } from '../pickup-points.store';
 import { PublicHousePickerDialog } from './public-house-picker-dialog';
 import { ShopCopyOverrides } from '../../copy/shop-copy-overrides';
 
+/** La remise d'un point pour les clientèles cochées, sans règle de portée. */
+function discountsFor(
+  adjustment: CartAdjustment | null,
+  audiences: { readonly b2b: boolean; readonly b2c: boolean } = { b2b: true, b2c: true },
+): PickupAddressView['discounts'] {
+  const discount =
+    adjustment === null
+      ? null
+      : { adjustment, scope: 'all_except' as const, categories: [], products: [] };
+  return { b2b: audiences.b2b ? discount : null, b2c: audiences.b2c ? discount : null };
+}
+
 /** Un point COMPLET : aucun cast, donc rien qui puisse mentir sur sa forme. */
 function point(
   id: string,
@@ -30,8 +42,7 @@ function point(
     codePostal: '73150',
     ville: "Val d'Isère",
     pays: 'France',
-    discount,
-    discountAudiences: { b2b: true, b2c: true },
+    discounts: discountsFor(discount),
     opening: { publicOpening: { start: '07:00', end: '12:00' }, proPickup: null },
   };
 }

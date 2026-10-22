@@ -3,7 +3,7 @@ import { computed, effect, inject, Injectable, signal, untracked } from '@angula
 import type { DeliveryZoneView, FulfillmentDayView, PickupAddressView } from '@lfd/contracts';
 // Valeurs par le sous-chemin sans zod : chargé au démarrage (budget `cloudflare`).
 import {
-  ALL_DISCOUNT_AUDIENCES,
+  NO_PICKUP_DISCOUNTS,
   DEFAULT_DELIVERY_AVAILABILITY,
   type PublicDeliveryAvailabilityView,
 } from '@lfd/contracts/shop-values';
@@ -327,8 +327,8 @@ export class ServicePoints {
 }
 
 /**
- * Un point tel qu'une API servie AVANT les clientèles de remise peut le rendre :
- * sans `discountAudiences`.
+ * Un point tel qu'une API servie AVANT les remises par clientèle peut le
+ * rendre : sans `discounts` (2026-10-22 ; avant, sans `discountAudiences`).
  *
  * Ce n'est pas une copie du contrat : l'appel HTTP est typé par
  * `PickupAddressView`, et ce type n'élargit que le PARAMÈTRE du normaliseur —
@@ -338,8 +338,8 @@ export class ServicePoints {
  * servi avant l'API lit une vue sans les nouveaux champs — et doit les tenir
  * pour ouverts, c'est-à-dire pour ce qui s'appliquait jusque-là.
  */
-type ServedPickup = Omit<PickupAddressView, 'discountAudiences'> & {
-  readonly discountAudiences?: PickupAddressView['discountAudiences'];
+type ServedPickup = Omit<PickupAddressView, 'discounts'> & {
+  readonly discounts?: PickupAddressView['discounts'];
 };
 
 /** Une journée telle qu'une API d'avant le 2026-10-21 la rend : sans `orderUntil`. */
@@ -355,9 +355,13 @@ function servedDay(day: ServedDay): FulfillmentDayView {
 /** Le réglage tel qu'une API partiellement à jour peut le rendre. */
 type ServedDeliveryAvailability = Partial<PublicDeliveryAvailabilityView>;
 
-/** Un point sans clientèles déclarées reçoit la remise pour tous : l'existant. */
+/**
+ * Un point sans `discounts` vient d'une API d'avant : la boutique n'y annonce
+ * aucune remise plutôt que d'en inventer une — le devis, servi par le
+ * serveur, dit de toute façon ce qui s'applique.
+ */
 function servedPickup(point: ServedPickup): PickupAddressView {
-  return { ...point, discountAudiences: point.discountAudiences ?? ALL_DISCOUNT_AUDIENCES };
+  return { ...point, discounts: point.discounts ?? NO_PICKUP_DISCOUNTS };
 }
 
 /** Une clientèle absente de la vue est tenue pour ouverte : l'existant. */

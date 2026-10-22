@@ -20,6 +20,9 @@ describe("OrderLine", () => {
       lineTotalTtcCents: null,
       pricing: null,
       allergens: null,
+      pickupDiscountEligible: true,
+      productId: null,
+      categoryId: null,
     });
   });
 

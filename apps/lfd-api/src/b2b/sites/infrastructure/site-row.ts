@@ -1,7 +1,10 @@
 import {
+  type AudiencePickupDiscount,
+  type CustomerAudience,
   type GpsPoint,
   gpsPointSchema,
   type PickupAddressView,
+  type PickupDiscounts,
   type PickupOpening,
   pickupOpeningSchema,
   type StoredSiteView,
@@ -27,7 +30,11 @@ export const SITE_SELECT = {
   discountMode: true,
   discountValue: true,
   discountForB2b: true,
-  discountForB2c: true,
+  discountScope: true,
+  b2cDiscountMode: true,
+  b2cDiscountValue: true,
+  b2cDiscountScope: true,
+  discountRules: { select: { audience: true, target: true, targetId: true, eligible: true } },
   opening: true,
   gps: true,
   pickup: true,
@@ -63,6 +70,55 @@ export function gpsOf(value: Prisma.JsonValue | null): GpsPoint | null {
   return parsed.success ? parsed.data : null;
 }
 
+type RuleRow = SiteRow["discountRules"][number];
+
+/** La remise d'une clientèle, depuis ses colonnes et ses règles. */
+function audienceDiscountOf(
+  adjustment: AudiencePickupDiscount["adjustment"] | null,
+  scope: AudiencePickupDiscount["scope"],
+  rules: readonly RuleRow[],
+  audience: CustomerAudience,
+): AudiencePickupDiscount | null {
+  if (adjustment === null) {
+    return null;
+  }
+  // L'ordre de saisie n'existe pas : celui de la cible, pour une lecture stable.
+  const own = rules
+    .filter((rule) => rule.audience === audience)
+    .sort((left, right) => left.targetId.localeCompare(right.targetId));
+  return {
+    adjustment,
+    scope,
+    categories: own
+      .filter((rule) => rule.target === "category")
+      .map((rule) => ({ categoryId: rule.targetId, eligible: rule.eligible })),
+    products: own
+      .filter((rule) => rule.target === "product")
+      .map((rule) => ({ productId: rule.targetId, eligible: rule.eligible })),
+  };
+}
+
+/**
+ * **Les deux remises d'un site** (2026-10-22). Celle des pros est la remise
+ * d'avant (`discount_mode`/`discount_value`), lue seulement si la case B2B
+ * était cochée — c'est la reprise sans effacement (V8) ; celle des
+ * particuliers a ses colonnes, recopiées par la migration.
+ */
+export function discountsOf(row: SiteRow): PickupDiscounts {
+  const pro = row.discountForB2b
+    ? fromAdjustmentColumns(row.discountMode, row.discountValue)
+    : null;
+  return {
+    b2b: audienceDiscountOf(pro, row.discountScope, row.discountRules, "b2b"),
+    b2c: audienceDiscountOf(
+      fromAdjustmentColumns(row.b2cDiscountMode, row.b2cDiscountValue),
+      row.b2cDiscountScope,
+      row.discountRules,
+      "b2c",
+    ),
+  };
+}
+
 /** Le site vu comme un point de retrait — le contrat servi au client depuis août. */
 export function toPickupView(row: SiteRow): PickupAddressView {
   return {
@@ -74,8 +130,7 @@ export function toPickupView(row: SiteRow): PickupAddressView {
     ville: row.ville,
     opening: openingOf(row.opening),
     pays: row.pays,
-    discount: fromAdjustmentColumns(row.discountMode, row.discountValue),
-    discountAudiences: { b2b: row.discountForB2b, b2c: row.discountForB2c },
+    discounts: discountsOf(row),
     pickupAudiences: { b2b: row.pickupForB2b, b2c: row.pickupForB2c },
     gps: gpsOf(row.gps),
   };

@@ -44,10 +44,19 @@ import { fractionByBasisPoints, roundToCents, type Exact } from "./exact.js";
  */
 export const DELIVERY_VAT_RATE = 20;
 
-/** Un montant **hors taxe** en centimes et le taux qui le frappe, en pourcent. */
+/**
+ * Un montant **hors taxe** en centimes et le taux qui le frappe, en pourcent.
+ *
+ * `discountEligible` dit si la ligne entre dans l'assiette de la remise
+ * **restreinte** ({@link VatVentilationInput.eligibleDiscountCents}) — la remise
+ * d'un point de retrait, dont certaines catégories ou produits sont exclus
+ * (`documentation/livraisons/clientele/plan-remise-retrait-par-clientele-et-exclusions.md`, R1).
+ * Absent = éligible : c'est ce qu'étaient toutes les lignes avant les exclusions.
+ */
 export interface VatLine {
   readonly htCents: number;
   readonly vatRate: number;
+  readonly discountEligible?: boolean | undefined;
 }
 
 /**
@@ -72,9 +81,23 @@ export interface VatShare {
 
 /** Entrées de {@link ventilateVat}. Tout est **hors taxe**, en centimes. */
 export interface VatVentilationInput {
-  /** Les marchandises — les seules que la remise touche. */
+  /** Les marchandises — les seules que les remises touchent. */
   readonly lines: readonly VatLine[];
-  /** La remise, POSITIVE, retranchée des marchandises au prorata de chaque taux. */
+  /**
+   * La remise d'assiette **restreinte**, POSITIVE : retranchée des seules lignes
+   * éligibles, au prorata de chacune — la remise du point de retrait (R1 du plan
+   * des exclusions). Appliquée AVANT {@link discountCents}, bornée au hors taxe
+   * des lignes éligibles. Absent = `0`.
+   *
+   * 🔴 Pourquoi une assiette à part : une remise sur le pain à 5,5 % ventilée au
+   * prorata de tout le panier retrancherait une part de la base à 20 % d'une
+   * boisson exclue — la TVA serait fausse, sur le bon comme sur la facture.
+   */
+  readonly eligibleDiscountCents?: number | undefined;
+  /**
+   * La remise sur **toutes** les lignes, POSITIVE (le bon de fidélité) —
+   * retranchée APRÈS la remise restreinte, au prorata du net qu'elle a laissé.
+   */
   readonly discountCents: number;
   /**
    * Les termes de panier taxés **hors remise** : livraison, surtaxe de retard.
@@ -116,23 +139,29 @@ export interface VatVentilation {
 export function ventilateVat(input: VatVentilationInput): VatVentilation {
   const subtotalHtCents = sumHt(input.lines);
   const extrasHtCents = sumHt(input.extras);
-  // La remise est bornée au sous-total : au-delà, elle rendrait une assiette
-  // négative, donc une TVA négative — un avoir déguisé en commande. Le total
-  // fait la même borne, et les deux doivent la faire au même endroit.
-  const discountCents = Math.min(Math.max(0, input.discountCents), subtotalHtCents);
+  // Les remises sont bornées à leur assiette : au-delà, elles rendraient une
+  // base négative, donc une TVA négative — un avoir déguisé en commande. La
+  // restreinte d'abord (le point de retrait), celle de toutes les lignes
+  // ensuite (le bon), sur ce que la première a laissé.
+  const net = netOfDiscounts(input.lines, [
+    { cents: input.eligibleDiscountCents ?? 0, appliesTo: isDiscountEligible },
+    { cents: input.discountCents, appliesTo: () => true },
+  ]);
+  const discountCents = net.appliedCents;
   const netHtCents = subtotalHtCents - discountCents;
 
-  // Tous les numérateurs partagent le sous-total pour dénominateur : le prorata
-  // s'accumule alors en entiers, sans que les fractions se multiplient à chaque
-  // ligne ajoutée.
-  const den = BigInt(subtotalHtCents === 0 ? 1 : subtotalHtCents);
+  // Un dénominateur commun à toutes les parts : celui des remises, multiplié
+  // par le sous-total que le prorata des extras qui suivent la marchandise
+  // demande. Aucun arrondi avant le dernier, un par taux.
+  const subtotal = BigInt(subtotalHtCents === 0 ? 1 : subtotalHtCents);
+  const den = net.den * subtotal;
   const numByRate = new Map<number, bigint>();
-  for (const line of input.lines) {
-    add(numByRate, line.vatRate, BigInt(Math.trunc(line.htCents)) * BigInt(netHtCents));
-  }
+  input.lines.forEach((line, index) => {
+    add(numByRate, line.vatRate, (net.nums[index] ?? 0n) * subtotal);
+  });
   const grossByRate = grossHtByRate(input.lines);
   for (const extra of input.extras) {
-    addExtra(numByRate, extra, den, grossByRate);
+    addExtra(numByRate, extra, { den, netDen: net.den }, grossByRate);
   }
 
   const vat = [...numByRate.entries()]
@@ -152,6 +181,54 @@ export function ventilateVat(input: VatVentilationInput): VatVentilation {
   };
 }
 
+function isDiscountEligible(line: VatLine): boolean {
+  return line.discountEligible !== false;
+}
+
+/** Une remise et son assiette. */
+interface DiscountStep {
+  readonly cents: number;
+  readonly appliesTo: (line: VatLine) => boolean;
+}
+
+/** Le net de chaque ligne, exact : `nums[i] / den`, et ce que les remises ont retranché. */
+interface NetLines {
+  readonly nums: readonly bigint[];
+  readonly den: bigint;
+  readonly appliedCents: number;
+}
+
+/**
+ * Retranche les remises l'une après l'autre, chacune au prorata du net des
+ * lignes de son assiette.
+ *
+ * Une seule remise sur toutes les lignes rend `ht × (S − d) / S` — exactement
+ * l'ancien calcul. Deux remises sur toutes les lignes rendent la même fraction
+ * que leur somme : séquentielles ou additionnées, elles ventilent pareil.
+ *
+ * Chaque remise est bornée, en centimes entiers, au net restant de son
+ * assiette ; une assiette vide ou soldée la laisse sans effet.
+ */
+function netOfDiscounts(lines: readonly VatLine[], steps: readonly DiscountStep[]): NetLines {
+  let nums = lines.map((line) => BigInt(Math.trunc(line.htCents)));
+  let den = 1n;
+  let appliedCents = 0;
+  for (const step of steps) {
+    const inScope = lines.map(step.appliesTo);
+    const base = nums.reduce((sum, num, index) => (inScope[index] ? sum + num : sum), 0n);
+    const available = base / den;
+    const applied = BigInt(Math.min(Math.max(0, Math.trunc(step.cents)), Number(available)));
+    if (applied === 0n || base === 0n) {
+      continue;
+    }
+    const kept = base - applied * den;
+    nums = nums.map((num, index) => (inScope[index] ? num * kept : num * base));
+    den *= base;
+    appliedCents += Number(applied);
+  }
+  return { nums, den, appliedCents };
+}
+
 /**
  * Un extra à taux propre entre dans son groupe ; un extra qui suit la
  * marchandise se répartit au prorata de la base BRUTE de chaque taux :
@@ -159,27 +236,34 @@ export function ventilateVat(input: VatVentilationInput): VatVentilation {
  * de plus, chaque groupe reste arrondi une fois.
  *
  * Brute et pas nette : quand la remise absorbe toute la marchandise (un bon qui
- * solde), les proportions nettes sont 0/0. Tant que le net est positif, la
- * remise est proratisée uniformément, et les deux proportions coïncident.
+ * solde), les proportions nettes sont 0/0. Tant que les remises portent sur
+ * toutes les lignes, les deux proportions coïncident.
+ *
+ * ⚠️ Une remise **restreinte** les fait diverger. Ce n'est pas un cas que la
+ * caisse produit au 2026-10-22 : la remise restreinte est celle du point de
+ * retrait, et la passation ne la pose qu'en retrait, sans port (V5 du plan
+ * des exclusions — l'agrégat `Order` ne le refuse PAS : le bon d'exemple
+ * porte une remise et un port, `specimen-data.ts`). La surtaxe, elle,
+ * porte son propre taux.
  * Sans marchandise du tout, l'extra prend le taux normal.
  */
 function addExtra(
   byRate: Map<number, bigint>,
   extra: VatExtra,
-  den: bigint,
+  dens: { readonly den: bigint; readonly netDen: bigint },
   grossByRate: ReadonlyMap<number, bigint>,
 ): void {
   const ht = BigInt(Math.trunc(extra.htCents));
   if ("vatRate" in extra) {
-    add(byRate, extra.vatRate, ht * den);
+    add(byRate, extra.vatRate, ht * dens.den);
     return;
   }
   if (grossByRate.size === 0) {
-    add(byRate, DELIVERY_VAT_RATE, ht * den);
+    add(byRate, DELIVERY_VAT_RATE, ht * dens.den);
     return;
   }
   for (const [rate, gross] of grossByRate) {
-    add(byRate, rate, ht * gross);
+    add(byRate, rate, ht * gross * dens.netDen);
   }
 }
 

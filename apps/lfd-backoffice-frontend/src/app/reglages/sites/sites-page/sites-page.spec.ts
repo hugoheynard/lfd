@@ -7,6 +7,14 @@ import { DeliveryAvailabilityService } from '../../../b2b/reglages/delivery-avai
 import { SitesService } from '../sites.service';
 import { roleLabels, SitesPage } from './sites-page';
 
+/** 8 € pour une clientèle, sans règle de portée. */
+const EIGHT_EUROS = {
+  adjustment: { mode: 'amount', cents: 800 },
+  scope: 'all_except',
+  categories: [],
+  products: [],
+} as const;
+
 /**
  * **La liste des sites** (l'ancienne page des points de retrait). Ce qu'elle tient de neuf : la remise d'un
  * point se lit avec sa clientèle, faute de quoi une remise réservée aux pros
@@ -21,8 +29,7 @@ const LABO: SiteView = {
   codePostal: '75011',
   ville: 'Paris',
   pays: 'France',
-  discount: { mode: 'amount', cents: 800 },
-  discountAudiences: { b2b: true, b2c: false },
+  discounts: { b2b: EIGHT_EUROS, b2c: null },
   opening: { publicOpening: null, proPickup: null },
   gps: null,
   pickup: true,
@@ -82,7 +89,7 @@ describe('SitesPage', () => {
   });
 
   it('ne dit pas de clientèle quand la remise vise les deux', async () => {
-    const both = { ...LABO, discountAudiences: { b2b: true, b2c: true } };
+    const both = { ...LABO, discounts: { b2b: EIGHT_EUROS, b2c: EIGHT_EUROS } };
     const fixture = await mount([both]);
 
     expect(fixture.componentInstance['discountLabel'](both)).not.toContain('·');

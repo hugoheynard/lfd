@@ -14,15 +14,27 @@ import { ServicePoints } from '../pickup-points.store';
 import { OrderBar } from './order-bar';
 import { ShopCopyOverrides } from '../../copy/shop-copy-overrides';
 
+/** La remise d'un point pour les clientèles cochées, sans règle de portée. */
+function discountsFor(
+  adjustment: CartAdjustment | null,
+  audiences: { readonly b2b: boolean; readonly b2c: boolean } = { b2b: true, b2c: true },
+): PickupAddressView['discounts'] {
+  const discount =
+    adjustment === null
+      ? null
+      : { adjustment, scope: 'all_except' as const, categories: [], products: [] };
+  return { b2b: audiences.b2b ? discount : null, b2c: audiences.b2c ? discount : null };
+}
+
 const LABO_ID = 'pick_labo';
 
 /** Toute clientèle reçoit la remise — le défaut du dépôt, et celui d'ici. */
-const POUR_TOUS: PickupAddressView['discountAudiences'] = { b2b: true, b2c: true };
+const POUR_TOUS = { b2b: true, b2c: true } as const;
 
 /** Un point COMPLET : aucun cast, donc rien qui puisse mentir sur sa forme. */
 function point(
   discount: CartAdjustment | null = null,
-  discountAudiences: PickupAddressView['discountAudiences'] = POUR_TOUS,
+  discountAudiences: { readonly b2b: boolean; readonly b2c: boolean } = POUR_TOUS,
 ): PickupAddressView {
   return {
     id: LABO_ID,
@@ -32,8 +44,7 @@ function point(
     codePostal: '73150',
     ville: "Val d'Isère",
     pays: 'France',
-    discount,
-    discountAudiences,
+    discounts: discountsFor(discount, discountAudiences),
     opening: { publicOpening: { start: '07:00', end: '12:00' }, proPickup: null },
   };
 }

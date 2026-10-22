@@ -56,6 +56,8 @@ import { CatalogColdReader } from "./domain/ports/catalog-cold.reader.js";
 import { PrismaCatalogOperationsReader } from "./infrastructure/prisma-catalog-operations.reader.js";
 import { PrismaReceivedOperationsReader } from "./infrastructure/prisma-received-operations.reader.js";
 import { PrismaCatalogColdReader } from "./infrastructure/prisma-catalog-cold.reader.js";
+import { OrderLineClassificationReader } from "../orders/domain/ports/order-line-classification.reader.js";
+import { PrismaOrderLineClassificationReader } from "./infrastructure/prisma-order-line-classification.reader.js";
 
 /**
  * **Le catalogue de la plateforme** : ce que le PIM pousse, plus ce qu'on décide
@@ -152,6 +154,9 @@ import { PrismaCatalogColdReader } from "./infrastructure/prisma-catalog-cold.re
     // Le froid des produits (fil v12, lot 4 bis) : un lecteur à lui, que seul
     // le relais vers la livraison lit.
     { provide: CatalogColdReader, useClass: PrismaCatalogColdReader },
+    // Le port que la commande DÉCLARE (V4 du plan des exclusions), implémenté
+    // ici sur les articles : la table appartient au catalogue.
+    { provide: OrderLineClassificationReader, useClass: PrismaOrderLineClassificationReader },
   ],
   // L'historique sort d'ici parce que l'écran de tarification en a besoin : sa
   // lecture datée doit rendre le tarif de CE jour-là, pas celui d'aujourd'hui.
@@ -162,6 +167,9 @@ import { PrismaCatalogColdReader } from "./infrastructure/prisma-catalog-cold.re
     ProductCatalogReader,
     // Pour le relais des produits vers la livraison (lot 4 bis) : le froid.
     CatalogColdReader,
+    // Pour la caisse et le devis : le rangement d'un SKU, que la remise de
+    // retrait juge (plan des exclusions, V4).
+    OrderLineClassificationReader,
     // Pour `orders/`, qui sert la même vitrine à un client reconnu. Le sens est
     // le seul possible : `OrdersModule` importe déjà `CatalogModule`, et
     // l'inverse serait un cycle — c'est aussi pourquoi la table des rayons est

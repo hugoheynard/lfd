@@ -134,7 +134,8 @@ function pickupDiscountOf(
   const point = DEMO_PICKUP_ADDRESSES.find(
     (candidate) => candidate.id === fulfillment.pickupAddressId,
   );
-  return point?.discount?.mode === 'percent' ? point.discount : null;
+  const discount = point?.discounts.b2c?.adjustment ?? null;
+  return discount?.mode === 'percent' ? discount : null;
 }
 
 function deliveryFeeOf(fulfillment: QuoteRequest['fulfillment']): number {

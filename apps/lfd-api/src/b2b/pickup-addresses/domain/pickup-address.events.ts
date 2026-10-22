@@ -1,3 +1,4 @@
+import type { AudiencePickupDiscount } from "@lfd/contracts";
 import type { JournalFactType } from "@lfd/contracts/journal-facts";
 
 import type { JournalFact, JournaledEvent } from "../../../platform/journal/journal-fact.js";
@@ -26,25 +27,31 @@ export const PICKUP_ADDRESS_FACTS = {
 } as const satisfies Readonly<Record<string, JournalFactType>>;
 
 /**
- * Ce qu'on relit d'un point de retrait : où il est, ce qu'il remise, et à qui.
- *
- * Les clientèles partent même sans remise : ce sont les cases que l'admin a
- * laissées, et une remise reposée plus tard s'appliquera à elles.
+ * Ce qu'on relit d'un point de retrait : où il est, et ce qu'il remise à
+ * chaque clientèle — la réduction, son mode de portée et le nombre de ses
+ * règles (2026-10-22).
  */
 function placeAndDiscount(point: PickupAddressWrite): Record<string, unknown> {
-  const { adjustment, audiences } = point.discount;
+  const { b2b, b2c } = point.discount;
   return {
     subjectLabel: point.label,
     label: point.label,
     ville: point.ville,
     codePostal: point.codePostal,
-    discount:
-      adjustment === null
-        ? null
-        : adjustment.mode === "percent"
-          ? { bp: adjustment.bp }
-          : { cents: adjustment.cents },
-    discountAudiences: { b2b: audiences.b2b, b2c: audiences.b2c },
+    discounts: { b2b: summaryOf(b2b), b2c: summaryOf(b2c) },
+  };
+}
+
+function summaryOf(discount: AudiencePickupDiscount | null): Record<string, unknown> | null {
+  if (discount === null) {
+    return null;
+  }
+  const { adjustment } = discount;
+  return {
+    discount: adjustment.mode === "percent" ? { bp: adjustment.bp } : { cents: adjustment.cents },
+    scope: discount.scope,
+    categoryRules: discount.categories.length,
+    productRules: discount.products.length,
   };
 }
 

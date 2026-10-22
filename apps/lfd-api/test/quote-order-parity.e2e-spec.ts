@@ -97,6 +97,10 @@ async function seedPickup(): Promise<string> {
       isDefault: true,
       discountMode: "percent",
       discountValue: 1_000,
+      // La remise des particuliers a ses colonnes depuis le 2026-10-22 : la
+      // même, comme la reprise l'a recopiée pour tout point ouvert aux deux.
+      b2cDiscountMode: "percent",
+      b2cDiscountValue: 1_000,
     },
     select: { id: true },
   });
