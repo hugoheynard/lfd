@@ -536,7 +536,7 @@ flowchart LR
 
 ## Ce qui reste
 
-- **« Au plus tôt » au Village** : ni transfert (R4), ni « Monté » proposé
+- **« Au plus tôt » au Village** (plan de la version complète : [`plan-au-plus-tot.md`](plan-au-plus-tot.md)) : ni transfert (R4), ni « Monté » proposé
   (l'écran le réserve aux points servis sur place ; le serveur l'accepte).
 - **La cloche ne cible pas le point** : tout le comptoir l'entend.
 
