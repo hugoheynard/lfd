@@ -56,6 +56,7 @@ const NO_COLORS = {
   pickupColorB2c: null,
   deliveryColorB2b: null,
   deliveryColorB2c: null,
+  resupplyColor: null,
 } as const;
 
 async function create(label: string): Promise<string> {
@@ -211,6 +212,36 @@ describe("admin/sites — couleurs libres", () => {
       .expect(204);
     await staff().put(`/admin/sites/${id}/couleurs`).send(NO_COLORS).expect(204);
     expect((await site(id)).deliveryColorB2b).toBeNull();
+  });
+
+  it("règle la teinte du réassort, et un payload sans elle la laisse en place (Hugo, 2026-10-22)", async () => {
+    const id = await create("Val Village");
+    await staff()
+      .put(`/admin/sites/${id}/couleurs`)
+      .send({ ...NO_COLORS, resupplyColor: "#26A69A" })
+      .expect(204);
+    expect((await site(id)).resupplyColor).toBe("#26a69a");
+
+    const { resupplyColor: _absent, ...before } = NO_COLORS;
+    await staff()
+      .put(`/admin/sites/${id}/couleurs`)
+      .send({ ...before, pickupColorB2b: "#16a34a" })
+      .expect(204);
+    expect((await site(id)).resupplyColor).toBe("#26a69a");
+
+    await staff().put(`/admin/sites/${id}/couleurs`).send(NO_COLORS).expect(204);
+    expect((await site(id)).resupplyColor).toBeNull();
+  });
+
+  it("refuse une teinte de réassort hors `#rrggbb` (400), et la base aussi (CHECK)", async () => {
+    const id = await create("Val Village");
+    await staff()
+      .put(`/admin/sites/${id}/couleurs`)
+      .send({ ...NO_COLORS, resupplyColor: "teal" })
+      .expect(400);
+    await expect(
+      ctx.prisma.site.update({ where: { id }, data: { resupplyColor: "teal" } }),
+    ).rejects.toThrow();
   });
 
   it("la base refuse une forme hors `#rrggbb` même sans l'agrégat (CHECK)", async () => {

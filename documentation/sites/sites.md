@@ -237,6 +237,17 @@ l'enregistre quand même — aide, pas règle. Aucune couleur n'est posée par u
 migration : elles se saisissent à l'écran (« Adroit » est le nom d'un site
 que Hugo saisira, Q3 ; aucun nom de site dans le code).
 
+**La teinte du réassort** (Hugo, 2026-10-22) : une cinquième colonne,
+`resupply_color`, même forme et même `CHECK` (migration `20261022240000`),
+tenue par `SiteColors.resupply`. Elle peint la part des réassorts que le site
+reçoit dans le camembert du compte à produire ; `NULL` = gris. Elle voyage
+dans le même `PUT …/couleurs`, où elle est **facultative : absente =
+inchangée** (un onglet ouvert avant elle ne l'efface pas), `null` la retire.
+Le fait `pickup_address.colors_set` la porte (`resupplyColor`, absente des
+faits antérieurs). Lue au tirage par le fournil via
+`ResupplyPrintColorsReader` (`production/channels/commerce/`), que
+`SiteResupplyPrintColorsReader` implémente.
+
 Qui les **lit** (depuis le 2026-10-13, lots L1a/L1b/L5 du plan du tri et des
 couleurs, non commités à l'écriture) : la palette en lecture seule
 `GET admin/sites/palette` (colisage et livraison, sans `lfc_site_settings`),
@@ -282,7 +293,7 @@ de détail et une `fold-card` par sujet :
 - **Rôles**, dans cet ordre : Retrait (+ « Retrait pour les pros » /
   « Retrait pour les particuliers », au moins une — 2026-10-15 ; + couleurs
   retrait B2B / B2C) →
-  Approvisionné (+ mode) → Mise en place au comptoir → Livraison (+ point
+  Approvisionné (+ teinte du réassort, 2026-10-22 ; + mode) → Mise en place au comptoir → Livraison (+ point
   GPS, + couleurs livraison B2B / B2C). Le point se saisit sous le premier
   rôle qui l'exige (« par transfert », puis « Livraison » — les deux ne
   coexistent pas). Une capacité décochée masque ses couleurs sans les

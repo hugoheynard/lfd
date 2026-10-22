@@ -7,6 +7,7 @@ import { AppConfig } from "../../../platform/config/app-config.js";
 import { DocumentStorageUnavailableError } from "../../../platform/shared/errors/storage-errors.js";
 import { ProductionDocumentStore } from "../../../platform/storage/production-document-store.js";
 import { OrderPrintColorsReader } from "../../channels/commerce/order-print-colors.reader.js";
+import { ResupplyPrintColorsReader } from "../../channels/commerce/resupply-print-colors.reader.js";
 import { WorkshopShelvesReader } from "../../channels/commerce/workshop-shelves.reader.js";
 import type {
   ProductionDay,
@@ -67,6 +68,7 @@ export class ProductionPapers {
     private readonly config: AppConfig,
     private readonly shelves: WorkshopShelvesReader,
     private readonly colors: OrderPrintColorsReader,
+    private readonly resupplyColors: ResupplyPrintColorsReader,
   ) {}
 
   /**
@@ -109,12 +111,16 @@ export class ProductionPapers {
       productionCountPdfKey(snapshot.serviceDay),
       `compte-a-produire-${snapshot.serviceDay}.pdf`,
       async () => {
-        const colors = await this.colors.colorsOf(snapshot.orders.map((order) => order.orderId));
+        const resupplies = snapshot.resupplies ?? [];
+        const [colors, resupplyColors] = await Promise.all([
+          this.colors.colorsOf(snapshot.orders.map((order) => order.orderId)),
+          this.resupplyColors.colorsOf([...new Set(resupplies.map((resupply) => resupply.siteId))]),
+        ]);
         return renderProductionCountPdf(
           snapshot.counts,
           snapshot.serviceDay,
           closedAt,
-          countColorSharesOf(snapshot.orders, snapshot.resupplies ?? [], colors),
+          countColorSharesOf(snapshot.orders, resupplies, colors, resupplyColors),
         );
       },
     );

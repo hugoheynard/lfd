@@ -15,6 +15,8 @@ import { PrismaPendingOrdersReader } from "../b2b/orders/infrastructure/prisma-p
 import { ProductionDayResupplies } from "../b2b/resupply/application/production-day-resupplies.js";
 import { ProductionRangeResupplies } from "../b2b/resupply/application/production-range-resupplies.js";
 import { ResupplyModule } from "../b2b/resupply/resupply.module.js";
+import { SiteResupplyPrintColorsReader } from "../b2b/sites/infrastructure/site-resupply-print-colors.reader.js";
+import { SitesModule } from "../b2b/sites/sites.module.js";
 import {
   DayOrdersReader,
   DayResuppliesReader,
@@ -26,6 +28,7 @@ import {
   PendingCommerceOrdersReader,
   PendingSettlementSweeper,
   ResupplyCutoffTimeReader,
+  ResupplyPrintColorsReader,
   WorkshopShelvesReader,
 } from "../production/channels/commerce/index.js";
 
@@ -55,7 +58,7 @@ import {
  */
 @Global()
 @Module({
-  imports: [OrdersModule, CatalogModule, OrderCutoffsModule, ResupplyModule],
+  imports: [OrdersModule, CatalogModule, OrderCutoffsModule, ResupplyModule, SitesModule],
   providers: [
     // `useExisting` : l'instance d'`OrdersModule`, qui a les ports des sites
     // (échéance par site, lot T0).
@@ -93,6 +96,8 @@ import {
     // La pastille par commande des papiers du fournil (2026-10-22) : la
     // couleur lue au tirage, par la règle du bon de commande.
     { provide: OrderPrintColorsReader, useClass: ProductionOrderPrintColorsReader },
+    // La teinte de réassort du site qui le reçoit (décisions du soir, 2026-10-22).
+    { provide: ResupplyPrintColorsReader, useClass: SiteResupplyPrintColorsReader },
   ],
   exports: [
     DayOrdersReader,
@@ -105,6 +110,7 @@ import {
     PendingCommerceOrdersReader,
     PendingSettlementSweeper,
     ResupplyCutoffTimeReader,
+    ResupplyPrintColorsReader,
     WorkshopShelvesReader,
   ],
 })

@@ -49,7 +49,7 @@ export const SPECIMEN_DAY_ORDERS: readonly ProductionOrderSnapshot[] = [
   },
 ];
 
-/** Le réassort d'exemple : le bon annexe du dossier, la part neutre du camembert. */
+/** Le réassort d'exemple : le bon annexe du dossier, la part teintée de son site au camembert. */
 export const SPECIMEN_DAY_RESUPPLIES: readonly ProductionResupplySnapshot[] = [
   {
     resupplyId: "specimen-resupply",
@@ -68,6 +68,14 @@ export const SPECIMEN_DAY_RESUPPLIES: readonly ProductionResupplySnapshot[] = [
 export const SPECIMEN_DAY_COLORS: ReadonlyMap<string, string> = new Map([
   [SPECIMEN_ORDER.orderId, "#2e86ab"],
   ["specimen-order-2", "#e4572e"],
+]);
+
+/**
+ * La teinte de réassort d'exemple, par `siteId` (Hugo, 2026-10-22) : la part
+ * du réassort au camembert du compte à produire.
+ */
+export const SPECIMEN_DAY_RESUPPLY_COLORS: ReadonlyMap<string, string> = new Map([
+  ["specimen-site", "#26a69a"],
 ]);
 
 const BREADS: CatalogFamilyView = { id: "specimen-breads", name: "Pains", position: 1 };

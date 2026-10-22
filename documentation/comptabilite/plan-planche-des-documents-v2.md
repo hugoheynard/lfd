@@ -87,6 +87,14 @@ Constats :
   de ses couleurs de retrait et de livraison. Elle remplace le gris des
   réassorts dans le camembert du compte à produire. À bâtir : un réglage de
   plus sur le site (migration additive), lu au tirage comme les autres.
+  > **Bâti le 2026-10-22** (non commité à l'écriture) : colonne
+  > `resupply_color` sur le site (migration `20261022240000`), réglée sous
+  > « Approvisionné » dans Réglages › Sites, lue au tirage par le port
+  > `ResupplyPrintColorsReader` (`production/channels/commerce/`, implémenté
+  > par `b2b/sites`). Un réassort prend la teinte de son site destinataire
+  > dans le camembert ; gris si le site n'en a pas. Le compte à produire
+  > d'exemple de la planche en montre une. Les bons de réassort du dossier du
+  > jour n'ont pas de référence : ils ne portent pas de pastille.
 - **Les papiers déjà tirés gardent les couleurs de leur premier tirage** :
   accepté. Un papier réimprimé reste celui qui est parti à l'atelier ; une
   réorganisation se voit en tirant à nouveau.

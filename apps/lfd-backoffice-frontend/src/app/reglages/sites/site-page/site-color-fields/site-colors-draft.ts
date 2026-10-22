@@ -2,7 +2,14 @@ import type { SiteColorsPayload, SiteView } from '@lfd/contracts';
 
 import { normalizeSiteColor, SITE_COLOR_MESSAGES, siteColorIssue } from '../../site-color';
 
-export type ColorKey = keyof SiteColorsPayload;
+/**
+ * Le brouillon des couleurs : chaque champ présent, `null` = aucune. Le
+ * contrat laisse la teinte du réassort facultative (absente = inchangée) ;
+ * l'écran, lui, l'envoie toujours.
+ */
+export type SiteColorsDraft = { readonly [K in keyof SiteColorsPayload]-?: string | null };
+
+export type ColorKey = keyof SiteColorsDraft;
 
 /** Une couleur à l'écran : son champ et son libellé. */
 export interface ColorSlot {
@@ -22,7 +29,17 @@ export const DELIVERY_SLOTS: readonly ColorSlot[] = [
   { key: 'deliveryColorB2c', label: 'Couleur livraison B2C' },
 ];
 
-const ALL_KEYS: readonly ColorKey[] = [...PICKUP_SLOTS, ...DELIVERY_SLOTS].map((s) => s.key);
+/**
+ * Sous « Approvisionné » : la teinte des réassorts que le site reçoit —
+ * leur part du camembert du compte à produire (Hugo, 2026-10-22).
+ */
+export const RESUPPLY_SLOTS: readonly ColorSlot[] = [
+  { key: 'resupplyColor', label: 'Teinte du réassort' },
+];
+
+const ALL_KEYS: readonly ColorKey[] = [...PICKUP_SLOTS, ...DELIVERY_SLOTS, ...RESUPPLY_SLOTS].map(
+  (s) => s.key,
+);
 
 /** À quelles clientèles on livre — `null` tant que la lecture n'a pas répondu. */
 export interface DeliveryOpen {
@@ -51,12 +68,13 @@ export function closedColors(open: DeliveryOpen | null): Partial<Record<ColorKey
   };
 }
 
-export function colorsOf(site: SiteView): SiteColorsPayload {
+export function colorsOf(site: SiteView): SiteColorsDraft {
   return {
     pickupColorB2b: site.pickupColorB2b,
     pickupColorB2c: site.pickupColorB2c,
     deliveryColorB2b: site.deliveryColorB2b,
     deliveryColorB2c: site.deliveryColorB2c,
+    resupplyColor: site.resupplyColor,
   };
 }
 
@@ -65,7 +83,7 @@ function normalized(value: string | null): string | null {
 }
 
 /** La phrase de refus de chaque couleur saisie mal formée. */
-export function colorIssues(draft: SiteColorsPayload): Partial<Record<ColorKey, string>> {
+export function colorIssues(draft: SiteColorsDraft): Partial<Record<ColorKey, string>> {
   const issues: Partial<Record<ColorKey, string>> = {};
   for (const key of ALL_KEYS) {
     const value = draft[key];
@@ -77,17 +95,18 @@ export function colorIssues(draft: SiteColorsPayload): Partial<Record<ColorKey, 
   return issues;
 }
 
-export function colorsDirty(draft: SiteColorsPayload, stored: SiteColorsPayload): boolean {
+export function colorsDirty(draft: SiteColorsDraft, stored: SiteColorsDraft): boolean {
   return ALL_KEYS.some((key) => normalized(draft[key]) !== normalized(stored[key]));
 }
 
-/** Les quatre couleurs EN BLOC, normalisées : la charge du `PUT …/couleurs`. */
-export function colorsPayload(draft: SiteColorsPayload): SiteColorsPayload {
+/** Les couleurs EN BLOC, normalisées : la charge du `PUT …/couleurs`. */
+export function colorsPayload(draft: SiteColorsDraft): SiteColorsDraft {
   return {
     pickupColorB2b: normalized(draft.pickupColorB2b),
     pickupColorB2c: normalized(draft.pickupColorB2c),
     deliveryColorB2b: normalized(draft.deliveryColorB2b),
     deliveryColorB2c: normalized(draft.deliveryColorB2c),
+    resupplyColor: normalized(draft.resupplyColor),
   };
 }
 
@@ -96,9 +115,9 @@ export function colorsPayload(draft: SiteColorsPayload): SiteColorsPayload {
  * revient à `null` — on peut retirer une couleur (Hugo, 2026-10-13).
  */
 export function withColor(
-  draft: SiteColorsPayload,
+  draft: SiteColorsDraft,
   key: ColorKey,
   value: string | null,
-): SiteColorsPayload {
+): SiteColorsDraft {
   return { ...draft, [key]: value === null || value.trim() === '' ? null : value };
 }

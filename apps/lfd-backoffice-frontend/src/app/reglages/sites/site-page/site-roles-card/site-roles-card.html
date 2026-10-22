@@ -63,6 +63,15 @@
       [value]="draft().supply"
       (selectionChange)="set('supply', $event)"
     />
+    <!-- La teinte des réassorts que ce site reçoit (Hugo, 2026-10-22) : leur
+         part du camembert du compte à produire. Gris si aucune. -->
+    <app-site-color-fields
+      [slots]="resupplySlots"
+      [draft]="colors()"
+      [issues]="colorIssues()"
+      [readOnly]="readOnly()"
+      (colorChange)="setColor($event)"
+    />
 
     <!-- Le mode ne dit rien d'un site approvisionné sur place : il reste
          enregistré tel quel, mais ne se montre qu'avec le transfert. -->

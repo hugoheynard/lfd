@@ -241,6 +241,7 @@ describe('la liste des commandes du colisage', () => {
           pickupColorB2c: '#fdd835',
           deliveryColorB2b: null,
           deliveryColorB2c: null,
+          resupplyColor: null,
         },
       ],
     });

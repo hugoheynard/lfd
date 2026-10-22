@@ -8,6 +8,7 @@ const NO_COLORS = {
   pickupColorB2c: null,
   deliveryColorB2b: null,
   deliveryColorB2c: null,
+  resupplyColor: null,
 } as const;
 
 const FOURNIL: SitePaletteEntryView = {

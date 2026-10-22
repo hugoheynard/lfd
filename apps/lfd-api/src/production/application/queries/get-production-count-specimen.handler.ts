@@ -9,6 +9,7 @@ import {
   SPECIMEN_DAY_COLORS,
   SPECIMEN_DAY_ORDERS,
   SPECIMEN_DAY_RESUPPLIES,
+  SPECIMEN_DAY_RESUPPLY_COLORS,
 } from "../document-specimens/specimen-day.js";
 import type { ProductionPaper } from "../services/production-paper.service.js";
 import { GetProductionCountSpecimenQuery } from "./get-production-count-specimen.query.js";
@@ -32,7 +33,12 @@ export class GetProductionCountSpecimenHandler implements IQueryHandler<
       countOf([...SPECIMEN_DAY_ORDERS, ...SPECIMEN_DAY_RESUPPLIES]),
       specimenServiceDay(now),
       now,
-      countColorSharesOf(SPECIMEN_DAY_ORDERS, SPECIMEN_DAY_RESUPPLIES, SPECIMEN_DAY_COLORS),
+      countColorSharesOf(
+        SPECIMEN_DAY_ORDERS,
+        SPECIMEN_DAY_RESUPPLIES,
+        SPECIMEN_DAY_COLORS,
+        SPECIMEN_DAY_RESUPPLY_COLORS,
+      ),
     );
     return { bytes, fileName: "exemple-compte-a-produire.pdf" };
   }

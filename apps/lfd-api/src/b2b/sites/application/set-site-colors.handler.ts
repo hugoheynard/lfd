@@ -33,18 +33,25 @@ export class SetSiteColorsHandler implements ICommandHandler<SetSiteColorsComman
    */
   async execute(command: SetSiteColorsCommand): Promise<void> {
     const { payload } = command;
-    const colors = {
+    const given = {
       pickupB2b: colorOf(payload.pickupColorB2b),
       pickupB2c: colorOf(payload.pickupColorB2c),
       deliveryB2b: colorOf(payload.deliveryColorB2b),
       deliveryB2c: colorOf(payload.deliveryColorB2c),
     };
+    const resupply = payload.resupplyColor;
+    const givenResupply = resupply === undefined ? undefined : colorOf(resupply);
     await this.uow.run(async () => {
       const site = await this.sites.load(command.siteId);
       if (site === null) {
         throw new PickupAddressNotFoundError(command.siteId);
       }
       const before = site.snapshot().colors;
+      // Absent = inchangé : un onglet ouvert avant la teinte du réassort ne l'efface pas.
+      const colors = {
+        ...given,
+        resupply: givenResupply === undefined ? before.resupply : givenResupply,
+      };
       site.paint(colors);
       await this.sites.save(site);
       await this.events.publishTraced(new SiteColorsSetEvent(site.id, site.label, before, colors));

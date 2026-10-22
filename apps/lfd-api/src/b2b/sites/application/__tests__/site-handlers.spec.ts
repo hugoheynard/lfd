@@ -10,6 +10,7 @@ import { PickupAddressNotFoundError } from "../../../pickup-addresses/domain/pic
 import { SiteColor } from "../../domain/site-color.js";
 import {
   DepartureSiteMustDeliverError,
+  SiteColorFormatError,
   SiteDeliveryDepartureWithoutGpsError,
   SitePickupWithoutAudienceError,
   SiteTransferWithoutGpsError,
@@ -332,6 +333,7 @@ describe("SetSiteColorsHandler", () => {
           pickupB2c: null,
           deliveryB2b: null,
           deliveryB2c: null,
+          resupply: null,
         },
       }),
     );
@@ -341,6 +343,58 @@ describe("SetSiteColorsHandler", () => {
       pickupColorB2b: null,
       removed: ["pickupColorB2b"],
     });
+  });
+});
+
+describe("SetSiteColorsHandler — la teinte du réassort (Hugo, 2026-10-22)", () => {
+  function paintedVillage(): InMemorySites {
+    return new InMemorySites(
+      storedSite("site_village", {
+        colors: {
+          pickupB2b: null,
+          pickupB2c: null,
+          deliveryB2b: null,
+          deliveryB2c: null,
+          resupply: SiteColor.of("#26a69a"),
+        },
+      }),
+    );
+  }
+
+  async function paint(
+    sites: InMemorySites,
+    resupplyColor?: string | null,
+  ): Promise<RecordingPublisher> {
+    const events = new RecordingPublisher();
+    const payload = resupplyColor === undefined ? NO_COLORS : { ...NO_COLORS, resupplyColor };
+    await new SetSiteColorsHandler(sites, events, new DirectUnitOfWork()).execute(
+      new SetSiteColorsCommand("site_village", payload),
+    );
+    return events;
+  }
+
+  it("enregistre la teinte du réassort en minuscules, et le journal la porte", async () => {
+    const sites = twoSites();
+    const events = await paint(sites, "#26A69A");
+    expect(sites.stateOf("site_village")?.colors.resupply?.hex).toBe("#26a69a");
+    expect(events.traced[0]?.journalFact().payload).toMatchObject({ resupplyColor: "#26a69a" });
+  });
+
+  it("absente du payload, la teinte posée reste : un onglet d'avant ne l'efface pas", async () => {
+    const sites = paintedVillage();
+    await paint(sites);
+    expect(sites.stateOf("site_village")?.colors.resupply?.hex).toBe("#26a69a");
+  });
+
+  it("`null` la retire, et le journal le dit", async () => {
+    const sites = paintedVillage();
+    const events = await paint(sites, null);
+    expect(sites.stateOf("site_village")?.colors.resupply).toBeNull();
+    expect(events.traced[0]?.journalFact().payload).toMatchObject({ removed: ["resupplyColor"] });
+  });
+
+  it("refuse une teinte qui n'est pas #rrggbb", async () => {
+    await expect(paint(twoSites(), "teal")).rejects.toThrow(SiteColorFormatError);
   });
 });
 

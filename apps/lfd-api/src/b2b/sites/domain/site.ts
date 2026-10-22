@@ -60,12 +60,14 @@ export interface SiteRoles {
   readonly eatIn: boolean;
 }
 
-/** Les quatre couleurs de la logistique ; `null` = pas encore saisie. */
+/** Les couleurs de la logistique ; `null` = pas encore saisie. */
 export interface SiteColors {
   readonly pickupB2b: SiteColor | null;
   readonly pickupB2c: SiteColor | null;
   readonly deliveryB2b: SiteColor | null;
   readonly deliveryB2c: SiteColor | null;
+  /** La teinte des réassorts que le site reçoit (Hugo, 2026-10-22). */
+  readonly resupply: SiteColor | null;
 }
 
 /** Tout l'état d'un site — la forme lue et écrite par l'adaptateur. */
@@ -93,6 +95,7 @@ const NO_COLORS: SiteColors = {
   pickupB2c: null,
   deliveryB2b: null,
   deliveryB2c: null,
+  resupply: null,
 };
 
 /**
@@ -234,7 +237,7 @@ export class Site {
   }
 
   /**
-   * Les quatre couleurs, en bloc. `null` RETIRE une couleur : on peut
+   * Les couleurs, en bloc. `null` RETIRE une couleur : on peut
    * revenir à « pas de couleur » (Hugo, 2026-10-13) — les couleurs sont
    * facultatives pour de bon.
    *

@@ -218,6 +218,7 @@ export const SITE_COLOR_FIELD = domain('couleur d’un site', {
   pickupColorB2c: 'Couleur du retrait particulier',
   deliveryColorB2b: 'Couleur de la livraison pro',
   deliveryColorB2c: 'Couleur de la livraison particulier',
+  resupplyColor: 'Teinte du réassort',
 });
 
 /** Un contenant du colisage (K2b) : un bac de livraison, ou un sac à emporter. */

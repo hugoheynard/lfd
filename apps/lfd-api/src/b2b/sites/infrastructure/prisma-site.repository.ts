@@ -43,6 +43,7 @@ function toDomain(row: SiteRow): Site {
       pickupB2c: colorOf(row.pickupColorB2c),
       deliveryB2b: colorOf(row.deliveryColorB2b),
       deliveryB2c: colorOf(row.deliveryColorB2c),
+      resupply: colorOf(row.resupplyColor),
     },
   });
 }
@@ -90,6 +91,7 @@ function toPersistence(site: Site): Prisma.SiteUncheckedCreateInput {
     pickupColorB2c: hexOf(colors, "pickupB2c"),
     deliveryColorB2b: hexOf(colors, "deliveryB2b"),
     deliveryColorB2c: hexOf(colors, "deliveryB2c"),
+    resupplyColor: hexOf(colors, "resupply"),
     archivedAt,
   };
 }

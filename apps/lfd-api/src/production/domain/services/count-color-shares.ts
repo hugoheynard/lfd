@@ -16,9 +16,10 @@ export interface CountColorShare {
  *
  * Lue dans ce que la journée a FIGÉ : les lignes de chaque commande et de
  * chaque réassort, les mêmes que `countOf` additionne — si bien que la somme
- * des parts est le total de pièces du compte. Une commande sans couleur, et
- * tout réassort (qui n'est pas une commande et n'a pas de couleur), tombent
- * dans la part neutre `null`.
+ * des parts est le total de pièces du compte. Une commande sans couleur tombe
+ * dans la part neutre `null`. Un réassort prend la teinte de réassort du site
+ * qui le reçoit (`resupplyColors`, par `siteId` — décision du soir de Hugo,
+ * 2026-10-22), et la part neutre si ce site n'en a pas.
  *
  * Pure et déterministe : les parts colorées par teinte croissante, la neutre
  * en dernier — deux tirages rendent le même dessin.
@@ -27,6 +28,7 @@ export function countColorSharesOf(
   orders: readonly ProductionOrderSnapshot[],
   resupplies: readonly ProductionResupplySnapshot[],
   colors: ReadonlyMap<string, string>,
+  resupplyColors: ReadonlyMap<string, string>,
 ): readonly CountColorShare[] {
   const shares = new Map<string | null, number>();
   const add = (color: string | null, quantity: number): void => {
@@ -37,7 +39,8 @@ export function countColorSharesOf(
     order.lines.forEach((line) => add(color, line.quantity));
   }
   for (const resupply of resupplies) {
-    resupply.lines.forEach((line) => add(null, line.quantity));
+    const color = resupplyColors.get(resupply.siteId) ?? null;
+    resupply.lines.forEach((line) => add(color, line.quantity));
   }
   return sortedShares(shares);
 }

@@ -16,6 +16,7 @@ describe('deliveryStopCategories — la couleur de chaque arrêt de livraison (L
           pickupColorB2c: null,
           deliveryColorB2b: '#1e88e5',
           deliveryColorB2c: null,
+          resupplyColor: null,
         },
       ],
     );

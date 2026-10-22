@@ -9,7 +9,10 @@ import { ProductionDayNotClosedError } from "../../../domain/errors/production-e
 import { ProductionDayRepository } from "../../../domain/ports/production-day.repository.js";
 import { dayDossierPdfKey } from "../../../domain/services/day-dossier-pdf.js";
 import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
-import { FixedOrderPrintColors } from "../../__tests__/order-print-colors-doubles.js";
+import {
+  FixedOrderPrintColors,
+  FixedResupplyPrintColors,
+} from "../../__tests__/order-print-colors-doubles.js";
 import { InMemoryProductionStore } from "../../__tests__/quality-doubles.js";
 import { ProductionPapers } from "../../services/production-paper.service.js";
 import { GetDayDossierPdfHandler } from "../get-day-dossier-pdf.handler.js";
@@ -87,7 +90,13 @@ function setup(
 } {
   const store = new InMemoryProductionStore();
   const shelves = new Shelves();
-  const papers = new ProductionPapers(store, new NoAdminOrigin(), shelves, colors);
+  const papers = new ProductionPapers(
+    store,
+    new NoAdminOrigin(),
+    shelves,
+    colors,
+    new FixedResupplyPrintColors(),
+  );
   return { handler: new GetDayDossierPdfHandler(new Days(day), papers), store, shelves };
 }
 

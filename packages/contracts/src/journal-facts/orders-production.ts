@@ -472,8 +472,18 @@ export const ORDERS_PRODUCTION_FACTS = {
       pickupColorB2c: z.string().nullable(),
       deliveryColorB2b: z.string().nullable(),
       deliveryColorB2c: z.string().nullable(),
+      /** La teinte du réassort (Hugo, 2026-10-22) ; absente des faits antérieurs. */
+      resupplyColor: z.string().nullable().optional(),
       removed: z
-        .array(z.enum(["pickupColorB2b", "pickupColorB2c", "deliveryColorB2b", "deliveryColorB2c"]))
+        .array(
+          z.enum([
+            "pickupColorB2b",
+            "pickupColorB2c",
+            "deliveryColorB2b",
+            "deliveryColorB2c",
+            "resupplyColor",
+          ]),
+        )
         .optional(),
     }),
   ),

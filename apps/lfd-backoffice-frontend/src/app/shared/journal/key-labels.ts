@@ -262,6 +262,7 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   replacedMandateId: 'Mandat remplacé',
   resource: 'Clé de la ressource',
   resourceLabel: 'Ressource',
+  resupplyColor: 'Teinte du réassort',
   revisionId: 'Révision',
   role: 'Rôle',
   roleLabel: 'Rôle',

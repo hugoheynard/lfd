@@ -29,6 +29,7 @@ export function sitePaletteOf(
     pickupColorB2c: site.pickupColorB2c,
     deliveryColorB2b: site.deliveryColorB2b,
     deliveryColorB2c: site.deliveryColorB2c,
+    resupplyColor: site.resupplyColor,
   }));
 }
 

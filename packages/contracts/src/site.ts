@@ -60,12 +60,18 @@ export const siteRolesPayloadSchema = z.object({
 });
 export type SiteRolesPayload = z.infer<typeof siteRolesPayloadSchema>;
 
-/** Les quatre couleurs, enregistrées en bloc ; `null` = pas encore saisie. */
+/** Les couleurs, enregistrées en bloc ; `null` = pas encore saisie. */
 export const siteColorsPayloadSchema = z.object({
   pickupColorB2b: siteColorSchema.nullable(),
   pickupColorB2c: siteColorSchema.nullable(),
   deliveryColorB2b: siteColorSchema.nullable(),
   deliveryColorB2c: siteColorSchema.nullable(),
+  /**
+   * La teinte des réassorts que ce site reçoit (Hugo, 2026-10-22). **Absent =
+   * inchangé** : le champ arrive sur un contrat servi, et un onglet ouvert
+   * avant lui ne doit pas l'effacer. `null` la retire.
+   */
+  resupplyColor: siteColorSchema.nullable().optional(),
 });
 export type SiteColorsPayload = z.infer<typeof siteColorsPayloadSchema>;
 
@@ -86,6 +92,8 @@ export interface StoredSiteView
     SiteColorsPayload {
   /** Toujours rendu : `false` = aucune salle. */
   readonly eatIn: boolean;
+  /** Toujours rendu : `null` = aucune teinte, le réassort reste gris. */
+  readonly resupplyColor: string | null;
   /** Toujours rendu : `null` = pas saisi (le trajet ne se calcule pas sans lui). */
   readonly gps: GpsPoint | null;
   /** ISO 8601, ou `null` : un site archivé n'est plus proposé. */
@@ -104,6 +112,8 @@ export interface StoredSiteView
  * commande déjà passée garde son site.
  */
 export interface SitePaletteEntryView extends SiteColorsPayload {
+  /** Toujours rendu : `null` = aucune teinte de réassort. */
+  readonly resupplyColor: string | null;
   readonly id: string;
   readonly label: string;
   readonly supply: SiteSupply;

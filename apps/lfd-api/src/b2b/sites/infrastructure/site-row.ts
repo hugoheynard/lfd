@@ -50,6 +50,7 @@ export const SITE_SELECT = {
   pickupColorB2c: true,
   deliveryColorB2b: true,
   deliveryColorB2c: true,
+  resupplyColor: true,
 } as const;
 
 export type SiteRow = Prisma.SiteGetPayload<{ select: typeof SITE_SELECT }>;
@@ -151,6 +152,7 @@ export function toSiteView(row: SiteRow): StoredSiteView {
     pickupColorB2c: row.pickupColorB2c,
     deliveryColorB2b: row.deliveryColorB2b,
     deliveryColorB2c: row.deliveryColorB2c,
+    resupplyColor: row.resupplyColor,
     archivedAt: row.archivedAt === null ? null : row.archivedAt.toISOString(),
   };
 }

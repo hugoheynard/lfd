@@ -1,7 +1,7 @@
 import type { Doc } from "../../../platform/pdf/paper-pdf-kit.js";
 import type { CountColorShare } from "./count-color-shares.js";
 
-/** La teinte de la part neutre : commandes sans couleur, réassorts. */
+/** La teinte de la part neutre : commandes sans couleur, réassorts dont le site n'a pas de teinte. */
 export const NEUTRAL_SHARE = "#bdbdbd";
 
 /**

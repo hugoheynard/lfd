@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import type { SiteColorsPayload } from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
@@ -8,7 +7,7 @@ import {
 } from 'fold-ng';
 
 import { normalizeSiteColor, siteColorIssue } from '../../site-color';
-import type { ColorKey, ColorSlot } from './site-colors-draft';
+import type { ColorKey, ColorSlot, SiteColorsDraft } from './site-colors-draft';
 
 /** Une saisie de couleur, remontée à la carte qui tient le brouillon. */
 export interface ColorChange {
@@ -31,7 +30,7 @@ export interface ColorChange {
 })
 export class SiteColorFields {
   readonly slots = input.required<readonly ColorSlot[]>();
-  readonly draft = input.required<SiteColorsPayload>();
+  readonly draft = input.required<SiteColorsDraft>();
   readonly issues = input<Partial<Record<ColorKey, string>>>({});
   /** Les champs grisés, et pourquoi. */
   readonly closed = input<Partial<Record<ColorKey, string>>>({});

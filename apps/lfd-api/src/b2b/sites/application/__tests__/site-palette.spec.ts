@@ -36,6 +36,7 @@ function site(id: string, overrides: Partial<StoredSiteView> = {}): StoredSiteVi
     pickupColorB2c: null,
     deliveryColorB2b: null,
     deliveryColorB2c: null,
+    resupplyColor: null,
     ...overrides,
   };
 }
@@ -68,11 +69,12 @@ const VILLAGE = site("vv", {
   label: "Val Village",
   supply: "transfer",
   pickupColorB2c: "#9e9e9e",
+  resupplyColor: "#26a69a",
   archivedAt: "2026-01-01T00:00:00.000Z",
 });
 
 describe("GetSitePaletteHandler — la palette de la logistique (L1a)", () => {
-  it("rend l'id, le nom, l'approvisionnement, les quatre couleurs et le départ — rien d'autre", async () => {
+  it("rend l'id, le nom, l'approvisionnement, les couleurs (réassort compris) et le départ — rien d'autre", async () => {
     const handler = new GetSitePaletteHandler(
       new FixedSites([FOURNIL, VILLAGE]),
       new FixedDepartureSite("fournil"),
@@ -90,6 +92,7 @@ describe("GetSitePaletteHandler — la palette de la logistique (L1a)", () => {
         pickupColorB2c: null,
         deliveryColorB2b: "#1e88e5",
         deliveryColorB2c: "#8e24aa",
+        resupplyColor: null,
       },
       {
         id: "vv",
@@ -100,6 +103,7 @@ describe("GetSitePaletteHandler — la palette de la logistique (L1a)", () => {
         pickupColorB2c: "#9e9e9e",
         deliveryColorB2b: null,
         deliveryColorB2c: null,
+        resupplyColor: "#26a69a",
       },
     ]);
   });

@@ -39,6 +39,7 @@ describe("countColorSharesOf — la répartition du jour par couleur", () => {
         ["b", "#2e86ab"],
         ["c", "#e4572e"],
       ]),
+      new Map(),
     );
     expect(shares).toEqual([
       { color: "#2e86ab", quantity: 4 },
@@ -48,12 +49,41 @@ describe("countColorSharesOf — la répartition du jour par couleur", () => {
   });
 
   it("la somme des parts est le total de pièces du compte : rien ne se perd ni ne s'invente", () => {
-    const shares = countColorSharesOf([order("a", 3)], [RESUPPLY], new Map());
+    const shares = countColorSharesOf(
+      [order("a", 3)],
+      [RESUPPLY],
+      new Map(),
+      new Map([["site-v", "#26a69a"]]),
+    );
     const total = shares.reduce((sum, share) => sum + share.quantity, 0);
     expect(total).toBe(8);
   });
 
   it("sans commande ni réassort, aucune part", () => {
-    expect(countColorSharesOf([], [], new Map())).toEqual([]);
+    expect(countColorSharesOf([], [], new Map(), new Map())).toEqual([]);
+  });
+
+  it("un réassort prend la teinte de réassort de son site (Hugo, 2026-10-22)", () => {
+    const shares = countColorSharesOf(
+      [order("a", 3), order("d", 1)],
+      [RESUPPLY, { ...RESUPPLY, resupplyId: "r-2", siteId: "site-sans-teinte" }],
+      new Map([["a", "#e4572e"]]),
+      new Map([["site-v", "#26a69a"]]),
+    );
+    expect(shares).toEqual([
+      { color: "#26a69a", quantity: 5 },
+      { color: "#e4572e", quantity: 3 },
+      { color: null, quantity: 6 },
+    ]);
+  });
+
+  it("la teinte de réassort ne peint jamais une commande, même du même site", () => {
+    const shares = countColorSharesOf(
+      [{ ...order("a", 2), siteId: "site-v" }],
+      [],
+      new Map(),
+      new Map([["site-v", "#26a69a"]]),
+    );
+    expect(shares).toEqual([{ color: null, quantity: 2 }]);
   });
 });

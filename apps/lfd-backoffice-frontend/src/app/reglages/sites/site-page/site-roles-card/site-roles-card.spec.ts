@@ -33,6 +33,7 @@ const SITE: SiteView = {
   pickupColorB2c: null,
   deliveryColorB2b: null,
   deliveryColorB2c: null,
+  resupplyColor: null,
   archivedAt: null,
   isDeparture: false,
 };
@@ -296,6 +297,46 @@ describe('SiteRolesCard — l’ordre de la carte', () => {
       expect(at, label).toBeGreaterThanOrEqual(from);
       from = at;
     }
+  });
+});
+
+describe('SiteRolesCard — la teinte du réassort (Hugo, 2026-10-22)', () => {
+  it('se règle sous « Approvisionné », avant la mise en place', () => {
+    const { fixture } = mount();
+    const text: string = fixture.nativeElement.textContent;
+    const supply = text.indexOf('Approvisionné');
+    const tint = text.indexOf('Teinte du réassort');
+    expect(tint).toBeGreaterThan(supply);
+    expect(text.indexOf('Mise en place au comptoir')).toBeGreaterThan(tint);
+  });
+
+  it('s’envoie avec les autres couleurs, normalisée', async () => {
+    const { fixture, sites } = mount();
+    fixture.componentInstance['setColor']({ key: 'resupplyColor', value: '#26A69A' });
+
+    await fixture.componentInstance['save']();
+
+    expect(sites.painted[0]?.resupplyColor).toBe('#26a69a');
+    expect(sites.calls).toEqual(['colors']);
+  });
+
+  it('« Aucune couleur » la retire : le réassort redevient gris', async () => {
+    const { fixture, sites } = mount({ ...SITE, resupplyColor: '#26a69a' });
+    fixture.componentInstance['setColor']({ key: 'resupplyColor', value: null });
+
+    await fixture.componentInstance['save']();
+
+    expect(sites.painted[0]?.resupplyColor).toBeNull();
+  });
+
+  it('refuse une teinte mal formée avant l’envoi', async () => {
+    const { fixture, sites } = mount();
+    fixture.componentInstance['setColor']({ key: 'resupplyColor', value: '#26a6' });
+    fixture.detectChanges();
+
+    await fixture.componentInstance['save']();
+
+    expect(sites.painted).toEqual([]);
   });
 });
 

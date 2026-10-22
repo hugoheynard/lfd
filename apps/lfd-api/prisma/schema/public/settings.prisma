@@ -117,6 +117,9 @@ model Site {
   pickupColorB2c   String? @map("pickup_color_b2c")
   deliveryColorB2b String? @map("delivery_color_b2b")
   deliveryColorB2c String? @map("delivery_color_b2c")
+  /// La teinte des RÉASSORTS que ce site reçoit (Hugo, 2026-10-22) : elle
+  /// peint leur part du camembert du compte à produire. `NULL` = gris.
+  resupplyColor    String? @map("resupply_color")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

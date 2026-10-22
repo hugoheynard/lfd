@@ -42,6 +42,7 @@ const LABO: SiteView = {
   pickupColorB2c: null,
   deliveryColorB2b: null,
   deliveryColorB2c: null,
+  resupplyColor: null,
   archivedAt: null,
   isDeparture: false,
 };

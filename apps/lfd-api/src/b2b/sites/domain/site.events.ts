@@ -95,6 +95,7 @@ export class SiteColorsSetEvent implements JournaledEvent {
         pickupColorB2c: this.colors.pickupB2c?.hex ?? null,
         deliveryColorB2b: this.colors.deliveryB2b?.hex ?? null,
         deliveryColorB2c: this.colors.deliveryB2c?.hex ?? null,
+        resupplyColor: this.colors.resupply?.hex ?? null,
         removed: removedColors(this.before, this.colors),
       },
     };
@@ -107,6 +108,7 @@ const COLOR_FIELDS: readonly (readonly [keyof SiteColors, string])[] = [
   ["pickupB2c", "pickupColorB2c"],
   ["deliveryB2b", "deliveryColorB2b"],
   ["deliveryB2c", "deliveryColorB2c"],
+  ["resupply", "resupplyColor"],
 ];
 
 /** Les couleurs posées avant et vides après — « retirées » (Hugo, 2026-10-13). */
