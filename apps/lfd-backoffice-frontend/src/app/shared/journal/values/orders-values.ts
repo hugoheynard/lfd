@@ -82,6 +82,15 @@ export const DOORSTEP_RULE = domain('décision réglée d’avance à la porte',
 });
 
 /**
+ * La portée de la remise d'un point de retrait (`pickup_address.*`, plan
+ * `plan-remise-retrait-par-clientele-et-exclusions.md`, 2026-10-22).
+ */
+export const PICKUP_DISCOUNT_SCOPE = domain('portée de la remise de retrait', {
+  all_except: 'Tout, sauf les exclusions',
+  only: 'Seulement les inclusions',
+});
+
+/**
  * Le point d'adresse corrigé d'après les livraisons
  * (`company.delivery_address_point_corrected` — `gps-y-aller-et-position.md` §6).
  */
@@ -250,6 +259,7 @@ export const ORDERS_VALUES: ValueFamily = {
     TRANSFER_FROZEN_STATE,
     STOP_DECISION_SOURCE,
     DOORSTEP_RULE,
+    PICKUP_DISCOUNT_SCOPE,
     ADDRESS_POINT_KIND,
     BIN_LOAD_VIA,
     BIN_HALF,

@@ -64,6 +64,7 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   carbsG: 'Glucides',
   cartWithoutFamilyId: 'Sans article de la famille',
   category: 'Catégorie',
+  categoryRules: 'Règles par famille',
   categoryId: 'Famille',
   cause: 'Cause',
   cents: 'Montant',
@@ -112,6 +113,7 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   descriptionShort: 'Description courte',
   discount: 'Réduction',
   discountAudiences: 'Clientèles de la réduction',
+  discounts: 'Remises par clientèle',
   deliveryDeparture: 'Livraison',
   effect: 'Effet',
   eatIn: 'Sur place',
@@ -236,6 +238,7 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   priceCents: 'Prix TTC',
   priceMillicents: 'Prix HT',
   priority: 'Priorité',
+  productRules: 'Règles par produit',
   promisedQuantity: 'Quantité promise',
   // Lot P : le prix pro HT saisi (`product.pricing_saved`, `product.pro_price_prefilled`).
   proPriceMillicents: 'Prix pro HT',
