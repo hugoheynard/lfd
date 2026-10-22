@@ -45,10 +45,7 @@ export async function readyPayers(
       await grantMonthlyTerms(context, payer.companyId);
       await ensureBankAccount(context, payer);
       await ensureActiveMandate(context, payer.companyId, at);
-      // Idempotent dans le handler : redemander le mode actuel n'est pas un fait.
-      await context.commands.execute(
-        new SetPayerBillingModeCommand(legalEntityId, payer.companyId, "weekly", staffId),
-      );
+      await ensureWeeklyMode(context, { legalEntityId, companyId: payer.companyId, staffId });
     });
   }
 }
@@ -121,5 +118,31 @@ async function ensureActiveMandate(context: SeedContext, companyId: string, at: 
       isoDay(at),
       proofRevisionOf(proven.proofStorageKey),
     ),
+  );
+}
+
+/**
+ * Le mode hebdomadaire, seulement s'il n'est ni en vigueur ni déjà programmé :
+ * le handler tient pour idempotent le mode EN VIGUEUR, mais refuse un second
+ * changement pendant qu'un premier attend sa date — un semis rejoué au même
+ * instant du calendrier le retrouverait programmé (vu le 2026-10-22).
+ */
+async function ensureWeeklyMode(
+  context: SeedContext,
+  {
+    legalEntityId,
+    companyId,
+    staffId,
+  }: { legalEntityId: string; companyId: string; staffId: string },
+): Promise<void> {
+  const weekly = await context.prisma.payerBillingMode.findFirst({
+    where: { legalEntityId, payerCompanyId: companyId, mode: "weekly", cancelledAt: null },
+    select: { id: true },
+  });
+  if (weekly !== null) {
+    return;
+  }
+  await context.commands.execute(
+    new SetPayerBillingModeCommand(legalEntityId, companyId, "weekly", staffId),
   );
 }
