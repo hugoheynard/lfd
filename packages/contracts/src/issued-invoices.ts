@@ -15,7 +15,7 @@ export type IssuedInvoiceKind = "invoice" | "credit_note";
 /** Une ligne de la liste. */
 export interface IssuedInvoiceSummaryView {
   readonly invoiceId: string;
-  /** `FA-AAAA-NNNNNN`. */
+  /** `FA-<préfixe de l'entité>-AAAA-NNNNNN` (lot ZA). */
   readonly number: string;
   readonly kind: IssuedInvoiceKind;
   /** Le numéro de la facture qu'un avoir corrige ; `null` pour une facture. */

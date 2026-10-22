@@ -86,7 +86,7 @@ const ISSUED: MonthlyInvoiceReport = {
   periodClosesAt: OCT_1,
   periodStartsAt: SEP_1,
   periodLabel: "du 1er au 30 septembre 2026",
-  issued: [{ payerCompanyId: "c_port", number: "FA-2026-000001", issuedOn: "2026-09-30" }],
+  issued: [{ payerCompanyId: "c_port", number: "FA-LFD-2026-000001", issuedOn: "2026-09-30" }],
   blocked: [{ payerCompanyId: "c_quai", message: "SIREN manquant" }],
   alreadyInvoiced: 0,
   unbillableOrders: 0,

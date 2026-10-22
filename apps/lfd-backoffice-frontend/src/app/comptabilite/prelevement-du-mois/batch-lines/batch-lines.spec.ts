@@ -104,12 +104,15 @@ describe('BatchLines', () => {
 
 describe('une ligne qui encaisse des factures émises (E4)', () => {
   const invoiced = (): CollectionBatchLineView =>
-    line({ billingStatementId: null, invoiceNumbers: ['FA-2026-000001', 'FA-2026-000002'] });
+    line({
+      billingStatementId: null,
+      invoiceNumbers: ['FA-LFD-2026-000001', 'FA-LFD-2026-000002'],
+    });
 
   it('cite ses factures, garde Σ bons et l’écart, et n’ouvre aucun arrêté', () => {
     expect(toRow(invoiced())).toMatchObject({
       statementId: null,
-      invoiceNumbers: ['FA-2026-000001', 'FA-2026-000002'],
+      invoiceNumbers: ['FA-LFD-2026-000001', 'FA-LFD-2026-000002'],
       gap: expect.stringMatching(/^−0,01\s€$/u) as string,
     });
   });
@@ -118,7 +121,7 @@ describe('une ligne qui encaisse des factures émises (E4)', () => {
     const host = await render([invoiced()]);
 
     expect(host.querySelector('[data-line-invoices]')?.textContent).toContain(
-      'Factures FA-2026-000001, FA-2026-000002',
+      'Factures FA-LFD-2026-000001, FA-LFD-2026-000002',
     );
     expect(host.querySelector('a[href]')).toBeNull();
     expect(host.querySelector('[data-before-statement]')).toBeNull();

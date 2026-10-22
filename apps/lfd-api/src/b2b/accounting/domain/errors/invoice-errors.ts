@@ -15,7 +15,53 @@ import type { InvoiceIssuanceBlocker } from "../services/invoice-issuance-blocke
  * et le message le dit.
  */
 
-/** Un numéro de facture qui n'a pas la forme `FA-<année>-<n° sur 6 chiffres>`. */
+/**
+ * Un préfixe de numéro qui n'est pas fait de 2 à 6 lettres (lot ZA). Saisi à
+ * l'écran de l'entité : le message dit la forme attendue et un exemple.
+ */
+export class InvalidInvoicePrefixError extends DomainError {
+  constructor(readonly raw: string) {
+    super(
+      "accounting.invoice.prefix_invalid",
+      `Préfixe de numéro de facture « ${raw} » invalide : 2 à 6 lettres sans accent, ` +
+        "par exemple LFD.",
+    );
+  }
+}
+
+/**
+ * Le préfixe d'une entité qui a déjà émis : chaque pièce l'imprime, et la
+ * suite de ses numéros doit se lire d'un seul tenant (lot ZA).
+ */
+export class InvoicePrefixIsFrozenError extends BusinessError {
+  constructor(
+    readonly entityName: string,
+    readonly current: string,
+    readonly attempted: string,
+  ) {
+    super(
+      "accounting.invoice.prefix_frozen",
+      `L'entité « ${entityName} » a déjà émis des factures numérotées FA-${current}-… : ` +
+        `son préfixe ne peut plus devenir ${attempted}. Pour numéroter sous un autre ` +
+        "préfixe, déclarez une seconde entité juridique.",
+    );
+  }
+}
+
+/** Deux entités ne partagent pas un préfixe : leurs numéros se confondraient. */
+export class InvoicePrefixTakenError extends BusinessError {
+  constructor(
+    readonly prefix: string,
+    readonly holderName: string,
+  ) {
+    super(
+      "accounting.invoice.prefix_taken",
+      `Le préfixe ${prefix} est déjà celui de l'entité « ${holderName} » : en choisir un autre.`,
+    );
+  }
+}
+
+/** Un numéro de facture qui n'a pas la forme `FA-<préfixe>-<année>-<n° sur 6 chiffres>`. */
 export class InvalidInvoiceNumberError extends DomainError {
   constructor(
     readonly raw: string,

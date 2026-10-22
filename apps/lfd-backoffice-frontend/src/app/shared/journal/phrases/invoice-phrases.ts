@@ -33,7 +33,7 @@ const ENTITY: Noun = { the: 'l’entité émettrice', a: 'une entité émettrice
 
 const KEYS = ['subjectLabel', 'payer', 'legalEntity', 'issuedOn', 'orderCount', 'totalCents'];
 
-/** « la facture « FA-2026-000001 » » — ou tout sujet nommé du fait, lié à sa fiche. */
+/** « la facture « FA-LFD-2026-000001 » » — ou tout sujet nommé du fait, lié à sa fiche. */
 function piece(fact: PhraseFact, noun: Noun): Segment[] {
   const label = subjectLabelOf(fact);
   return label === null

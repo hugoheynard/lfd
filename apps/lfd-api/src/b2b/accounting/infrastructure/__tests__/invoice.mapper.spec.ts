@@ -35,6 +35,7 @@ function rowOf(invoice: Invoice, correctsNumber: string | null = null): InvoiceR
     id: data.id,
     legalEntityId: data.legalEntityId,
     number: data.number,
+    invoicePrefix: data.invoicePrefix,
     year: data.year,
     rank: data.rank,
     type: data.type,
@@ -75,7 +76,7 @@ function rowOf(invoice: Invoice, correctsNumber: string | null = null): InvoiceR
 describe("invoice.mapper — écrire puis relire", () => {
   it("relit une facture à l'identique, document compris", () => {
     const invoice = issuedInvoice();
-    invoice.attachDocument("invoices/FA-2026-000001.pdf", "c".repeat(64));
+    invoice.attachDocument("invoices/FA-LFD-2026-000001.pdf", "c".repeat(64));
 
     expect(toInvoice(rowOf(invoice)).toState()).toEqual(invoice.toState());
   });
@@ -110,7 +111,7 @@ describe("invoice.mapper — écrire puis relire", () => {
     const lines = [line("PAIN", 5.5, 500)];
     const note = Invoice.creditNote({
       id: "cn_1",
-      number: InvoiceNumber.compose(2026, 2),
+      number: InvoiceNumber.compose("LFD", 2026, 2),
       issuedOn: "2026-10-03",
       corrected,
       priorCreditNotes: [],

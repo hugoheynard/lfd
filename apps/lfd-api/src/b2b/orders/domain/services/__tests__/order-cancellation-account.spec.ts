@@ -16,7 +16,7 @@ describe("engagementBlockOf — l'engagement comptable en refus", () => {
   });
 
   it.each([
-    { kind: "invoiced", invoiceNumber: "FA-2026-000001", issuedOn: "2026-09-30" },
+    { kind: "invoiced", invoiceNumber: "FA-LFD-2026-000001", issuedOn: "2026-09-30" },
     { kind: "collecting", state: "batched", collectionDay: null, statementNumber: null },
     { kind: "collected", state: "returned", collectionDay: "2026-10-05" },
     { kind: "written_off" },
@@ -32,11 +32,11 @@ describe("engagementRefusalOf — les phrases (C5.6)", () => {
     expect(
       engagementRefusalOf({
         kind: "invoiced",
-        invoiceNumber: "FA-2026-000012",
+        invoiceNumber: "FA-LFD-2026-000012",
         issuedOn: "2026-09-30",
       }),
     ).toBe(
-      "Cette commande a été facturée le 30/09/2026 (facture n° FA-2026-000012). Une facture émise ne s'efface pas : il faut un avoir, que l'équipe ne peut pas encore émettre ici. Voyez avec la comptabilité.",
+      "Cette commande a été facturée le 30/09/2026 (facture n° FA-LFD-2026-000012). Une facture émise ne s'efface pas : il faut un avoir, que l'équipe ne peut pas encore émettre ici. Voyez avec la comptabilité.",
     );
   });
 

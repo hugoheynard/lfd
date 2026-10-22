@@ -45,6 +45,9 @@ const SELLER: InvoiceSeller = {
   creditorBic: "AGRIFRPP",
 };
 
+/** « EX » : un exemple ne prend le préfixe d'aucune entité réelle (lot ZA). */
+const SPECIMEN_PREFIX = "EX";
+
 const SELLER_FACTS: InvoiceSellerFacts = {
   legalEntityId: SELLER.legalEntityId,
   name: SELLER.name,
@@ -57,6 +60,7 @@ const SELLER_FACTS: InvoiceSellerFacts = {
     recoveryIndemnityCents: 4_000,
     earlyPaymentDiscount: "Pas d'escompte pour paiement anticipé.",
   }),
+  invoicePrefix: SPECIMEN_PREFIX,
 };
 
 const BUYER: InvoiceBuyer = {
@@ -109,7 +113,7 @@ export function specimenInvoice(now: Date): Invoice {
   const frozen = ORDERS.map((order) => frozenOf(state, order.reference, now));
   return invoiceFromDossier({
     id: "specimen-invoice",
-    number: InvoiceNumber.compose(Number(today.slice(0, 4)), SPECIMEN_SEQUENCE),
+    number: InvoiceNumber.compose(SPECIMEN_PREFIX, Number(today.slice(0, 4)), SPECIMEN_SEQUENCE),
     issuedOn: today,
     dueOn: addDays(today, DUE_AFTER_DAYS),
     sellerFacts: SELLER_FACTS,

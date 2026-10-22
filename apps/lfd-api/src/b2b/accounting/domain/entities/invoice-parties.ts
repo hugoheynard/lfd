@@ -1,9 +1,16 @@
 import { InvoiceAssemblyError, InvoiceIssuanceBlockedError } from "../errors/invoice-errors.js";
 import {
   invoiceIssuanceBlockers,
+  orderDeliveryBlockers,
   type InvoiceSellerFacts,
 } from "../services/invoice-issuance-blockers.js";
-import type { InvoiceBuyer, InvoiceMentions, InvoiceSeller } from "./invoice.types.js";
+import type { InvoiceNumber } from "../value-objects/invoice-number.js";
+import type {
+  InvoiceBuyer,
+  InvoiceMentions,
+  InvoiceOrderReference,
+  InvoiceSeller,
+} from "./invoice.types.js";
 
 /** Les parties d'une facture qu'on a le droit d'émettre. */
 export interface IssuableParties {
@@ -13,28 +20,41 @@ export interface IssuableParties {
 }
 
 /**
- * Juge les parties par `invoiceIssuanceBlockers` (E0) et refuse en citant
- * TOUS les manques — l'écran du dossier et l'émission disent la même chose.
- * Rien n'est comblé : un SIREN vide ou un taux absent arrêtent l'émission.
+ * Juge les parties par `invoiceIssuanceBlockers` (E0) et les bons par
+ * `orderDeliveryBlockers` (M5, lot ZA), et refuse en citant TOUS les manques
+ * — l'écran du dossier et l'émission disent la même chose. Rien n'est
+ * comblé : un SIREN vide, un taux absent ou une date de livraison inconnue
+ * arrêtent l'émission.
  *
  * @throws {InvoiceIssuanceBlockedError} au moins un manque.
- * @throws {InvoiceAssemblyError} le vendeur figé n'est pas l'entité jugée.
+ * @throws {InvoiceAssemblyError} le vendeur figé n'est pas l'entité jugée, ou
+ *         le numéro ne porte pas le préfixe de l'entité.
  */
 export function issuableParties(
-  number: string,
-  legalEntityId: string,
+  number: InvoiceNumber,
   sellerFacts: InvoiceSellerFacts | null,
   seller: InvoiceSeller,
   buyer: InvoiceBuyer | null,
+  orders: readonly InvoiceOrderReference[],
 ): IssuableParties {
-  const blockers = invoiceIssuanceBlockers(sellerFacts, buyer);
+  const legalEntityId = seller.legalEntityId;
+  const blockers = [
+    ...invoiceIssuanceBlockers(sellerFacts, buyer),
+    ...orderDeliveryBlockers(orders),
+  ];
   if (blockers.length > 0 || sellerFacts === null || buyer === null) {
     throw new InvoiceIssuanceBlockedError(blockers);
   }
-  if (sellerFacts.legalEntityId !== legalEntityId || seller.legalEntityId !== legalEntityId) {
-    throw new InvoiceAssemblyError(number, "le vendeur figé n'est pas l'entité émettrice");
+  if (sellerFacts.legalEntityId !== legalEntityId) {
+    throw new InvoiceAssemblyError(number.value, "le vendeur figé n'est pas l'entité émettrice");
   }
-  return { seller, buyer, mentions: mentionsOf(number, sellerFacts) };
+  if (sellerFacts.invoicePrefix !== number.prefix) {
+    throw new InvoiceAssemblyError(
+      number.value,
+      `numéro pris sous un autre préfixe que celui de l'entité (${String(sellerFacts.invoicePrefix)})`,
+    );
+  }
+  return { seller, buyer, mentions: mentionsOf(number.value, sellerFacts) };
 }
 
 function mentionsOf(number: string, facts: InvoiceSellerFacts): InvoiceMentions {

@@ -1,6 +1,7 @@
 import {
   CorrectLegalEntityCommand,
   SetInvoicePaymentTermsCommand,
+  SetInvoicePrefixCommand,
 } from "../../b2b/accounting/application/commands/legal-entity-commands.js";
 import { InvoiceSeedPrerequisiteError } from "./invoice-seed-errors.js";
 import { asStaff, type SeedContext } from "./order-placing.seed.js";
@@ -30,6 +31,9 @@ import { asStaff, type SeedContext } from "./order-placing.seed.js";
  * les bons des autres clients passés depuis cette date relèvent désormais de
  * la facture du mois, plus de l'ancien arrêté.
  */
+
+/** Le préfixe de numéro des factures (lot ZA), repris des e2e. */
+const INVOICE_PREFIX = "LFD";
 
 /** Les mentions de paiement, reprises des e2e — les bornes légales les acceptent. */
 const PAYMENT_TERMS = {
@@ -86,6 +90,9 @@ export async function readyLegalEntity(context: SeedContext, at: Date): Promise<
       entity.invoiceEarlyPaymentDiscount === null;
     if (unset) {
       await context.commands.execute(new SetInvoicePaymentTermsCommand(entity.id, PAYMENT_TERMS));
+    }
+    if (entity.invoicePrefix === null) {
+      await context.commands.execute(new SetInvoicePrefixCommand(entity.id, INVOICE_PREFIX));
     }
   });
   return entity.id;

@@ -41,7 +41,7 @@ function dayOf(column: Date): string {
   return column.toISOString().slice(0, 10);
 }
 
-/** Agrégat → données de création, bons compris. Le numéro se redécompose en année et rang. */
+/** Agrégat → données de création, bons compris. Le numéro se redécompose en préfixe, année et rang. */
 export function toInvoiceCreate(invoice: Invoice): Prisma.InvoiceUncheckedCreateInput {
   const state = invoice.toState();
   const number = InvoiceNumber.parse(state.number);
@@ -49,6 +49,7 @@ export function toInvoiceCreate(invoice: Invoice): Prisma.InvoiceUncheckedCreate
     id: state.id,
     legalEntityId: state.legalEntityId,
     number: state.number,
+    invoicePrefix: number.prefix,
     year: number.year,
     rank: number.sequence,
     type: state.type,

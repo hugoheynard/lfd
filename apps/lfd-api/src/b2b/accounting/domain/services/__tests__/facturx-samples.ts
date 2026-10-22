@@ -99,7 +99,7 @@ function partialCreditNote(): Invoice {
   }
   return Invoice.creditNote({
     id: "cn_partial",
-    number: InvoiceNumber.compose(2026, 2),
+    number: InvoiceNumber.compose("LFD", 2026, 2),
     issuedOn: "2026-10-02",
     corrected,
     priorCreditNotes: [],

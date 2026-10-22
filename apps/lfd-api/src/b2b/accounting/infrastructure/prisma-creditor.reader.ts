@@ -5,7 +5,7 @@ import { PrismaService } from "../../../platform/database/prisma.service.js";
 import type { CreditorSnapshot } from "../domain/creditor-snapshot.js";
 import { SeveralIssuersError } from "../domain/errors/accounting-errors.js";
 import { CreditorReader } from "../domain/ports/creditor.reader.js";
-import { toDomain } from "./legal-entity.mapper.js";
+import { LEGAL_ENTITY_ROW_INCLUDE, toDomain } from "./legal-entity.mapper.js";
 
 /**
  * Adaptateur Prisma de l'émetteur figé.
@@ -26,7 +26,10 @@ export class PrismaCreditorReader extends CreditorReader {
   }
 
   async snapshot(legalEntityId: string): Promise<CreditorSnapshot | null> {
-    const row = await this.prisma.legalEntity.findUnique({ where: { id: legalEntityId } });
+    const row = await this.prisma.legalEntity.findUnique({
+      where: { id: legalEntityId },
+      include: LEGAL_ENTITY_ROW_INCLUDE,
+    });
     return row === null ? null : toDomain(row, this.cipher).creditorSnapshot();
   }
 
@@ -38,6 +41,7 @@ export class PrismaCreditorReader extends CreditorReader {
       where: { archivedAt: null },
       orderBy: { createdAt: "asc" },
       take: 2,
+      include: LEGAL_ENTITY_ROW_INCLUDE,
     });
     if (rows.length === 0) {
       return null;

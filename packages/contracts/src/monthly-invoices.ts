@@ -11,7 +11,7 @@ import type { BillingRhythmKind } from "./legal-entity.js";
 /** Une facture émise pour la période. */
 export interface MonthlyInvoiceView {
   readonly invoiceId: string;
-  /** `FA-AAAA-NNNNNN`. */
+  /** `FA-<préfixe de l'entité>-AAAA-NNNNNN` (lot ZA). */
   readonly number: string;
   readonly payerCompanyId: string;
   readonly payerName: string;

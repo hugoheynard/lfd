@@ -16,7 +16,7 @@ function creditInput(
 ): IssueCreditNoteInput {
   return {
     id: "cn_1",
-    number: InvoiceNumber.compose(2026, 2),
+    number: InvoiceNumber.compose("LFD", 2026, 2),
     issuedOn: "2026-10-03",
     corrected,
     priorCreditNotes: [],
@@ -35,7 +35,7 @@ describe("Invoice.creditNote", () => {
     expect(note.toState()).toMatchObject({
       type: "381",
       correctedInvoiceId: invoice.id,
-      correctedInvoiceNumber: "FA-2026-000001",
+      correctedInvoiceNumber: "FA-LFD-2026-000001",
       dueOn: null,
       buyer: invoice.toState().buyer,
       mentions: invoice.toState().mentions,
@@ -56,7 +56,7 @@ describe("Invoice.creditNote", () => {
     const first = Invoice.creditNote(creditInput(invoice, [line("PAIN", 5.5, 600)]));
     const remaining = creditInput(invoice, [line("PAIN", 5.5, 400)], {
       id: "cn_2",
-      number: InvoiceNumber.compose(2026, 3),
+      number: InvoiceNumber.compose("LFD", 2026, 3),
       priorCreditNotes: [first],
     });
     expect(Invoice.creditNote(remaining).totalHtCents).toBe(400);
@@ -89,13 +89,13 @@ describe("Invoice.creditNote", () => {
 
   it("refuse de corriger un avoir", () => {
     const note = Invoice.creditNote(creditInput(issuedInvoice(), LINES));
-    const input = creditInput(note, LINES, { number: InvoiceNumber.compose(2026, 3) });
+    const input = creditInput(note, LINES, { number: InvoiceNumber.compose("LFD", 2026, 3) });
     expect(() => Invoice.creditNote(input)).toThrow(InvalidCreditNoteError);
   });
 
   it.each([
     ["daté avant la facture", { issuedOn: "2026-09-29" }],
-    ["au numéro de la facture", { number: InvoiceNumber.compose(2026, 1) }],
+    ["au numéro de la facture", { number: InvoiceNumber.compose("LFD", 2026, 1) }],
     [
       "sur un bon absent de la facture",
       { orders: [{ orderId: "o_9", reference: "CMD-9", deliveredOn: null }] },
@@ -108,7 +108,7 @@ describe("Invoice.creditNote", () => {
 
   it("refuse un avoir antérieur qui corrige une autre facture", () => {
     const other = Invoice.issue(
-      issueInput({ id: "inv_2", number: InvoiceNumber.compose(2026, 5) }),
+      issueInput({ id: "inv_2", number: InvoiceNumber.compose("LFD", 2026, 5) }),
     );
     const foreign = Invoice.creditNote(creditInput(other, LINES));
     const input = creditInput(issuedInvoice(), LINES, { priorCreditNotes: [foreign] });

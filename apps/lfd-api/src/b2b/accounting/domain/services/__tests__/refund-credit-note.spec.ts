@@ -44,7 +44,7 @@ function creditAll(invoice: Invoice, refunds: readonly number[]): Invoice[] {
     notes.push(
       Invoice.creditNote({
         id: `cn_${String(index)}`,
-        number: InvoiceNumber.compose(2026, index + 2),
+        number: InvoiceNumber.compose("LFD", 2026, index + 2),
         issuedOn: "2026-10-02",
         corrected: invoice,
         priorCreditNotes: [...notes],

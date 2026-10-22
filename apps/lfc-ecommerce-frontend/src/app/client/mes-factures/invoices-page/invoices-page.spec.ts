@@ -208,14 +208,16 @@ describe('InvoicesPage', () => {
 
   it('un refus du zip s’affiche avec le message du serveur, et la liste reste', async () => {
     archiveAnswer = () =>
-      Promise.reject(new InvoiceArchiveRefused('Le PDF de FA-2026-000007 n’est pas encore rendu.'));
+      Promise.reject(
+        new InvoiceArchiveRefused('Le PDF de FA-LFD-2026-000007 n’est pas encore rendu.'),
+      );
     const el = await render();
 
     el.querySelector<HTMLButtonElement>('[data-download-shown]')?.click();
     await settle();
 
     expect(text(el, '[data-invoices-problem]')).toBe(
-      'Le PDF de FA-2026-000007 n’est pas encore rendu.',
+      'Le PDF de FA-LFD-2026-000007 n’est pas encore rendu.',
     );
     expect(el.querySelector('[data-status="inv_1"]')).not.toBeNull();
   });

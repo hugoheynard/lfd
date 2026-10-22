@@ -143,8 +143,9 @@ export async function prepareCardInvoice(
         prepayment: { amountCents: candidate.totalCents, paidOn },
         computed,
       });
-    // À blanc, sous un numéro de la bonne année : seul le rang changera.
-    draft(InvoiceNumber.compose(Number(issuedOn.slice(0, 4)), 1));
+    // À blanc, sous un numéro de la bonne année et du préfixe de l'entité :
+    // seul le rang changera. `invoiceIssuanceBlockers` a refusé un préfixe absent.
+    draft(InvoiceNumber.compose(seller.invoicePrefix ?? "", Number(issuedOn.slice(0, 4)), 1));
     return { kind: "ready", key: { ...base, legalEntityId: entityId }, issuedOn, draft };
   } catch (error: unknown) {
     if (error instanceof DomainError || error instanceof BusinessError) {

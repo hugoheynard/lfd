@@ -9,6 +9,8 @@ import {
   type LegalEntityView,
   setInvoicePaymentTermsPayloadSchema,
   type SetInvoicePaymentTermsPayload,
+  setInvoicePrefixPayloadSchema,
+  type SetInvoicePrefixPayload,
 } from "@lfd/contracts";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
@@ -17,6 +19,7 @@ import {
   CorrectLegalEntityCommand,
   DeclareLegalEntityCommand,
   SetInvoicePaymentTermsCommand,
+  SetInvoicePrefixCommand,
   SetLegalEntityArchivedCommand,
 } from "../application/commands/legal-entity-commands.js";
 import {
@@ -119,6 +122,20 @@ export class AdminLegalEntitiesController {
     @Body(new ZodBody(setInvoicePaymentTermsPayloadSchema)) payload: SetInvoicePaymentTermsPayload,
   ): Promise<void> {
     await this.commands.execute(new SetInvoicePaymentTermsCommand(id, payload));
+  }
+
+  /**
+   * Le préfixe de numéro des factures (lot ZA) — `FA-<préfixe>-AAAA-NNNNNN`.
+   * Répond 400 hors de 2 à 6 lettres, 409 s'il est pris par une autre entité
+   * ou si l'entité a déjà émis (il est alors gelé).
+   */
+  @Put(":id/invoice-prefix")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async setInvoicePrefix(
+    @Param("id") id: string,
+    @Body(new ZodBody(setInvoicePrefixPayloadSchema)) payload: SetInvoicePrefixPayload,
+  ): Promise<void> {
+    await this.commands.execute(new SetInvoicePrefixCommand(id, payload.prefix));
   }
 
   /**

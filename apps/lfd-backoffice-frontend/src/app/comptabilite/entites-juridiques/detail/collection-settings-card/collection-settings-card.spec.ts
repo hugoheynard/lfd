@@ -68,6 +68,8 @@ function entity(over: Partial<LegalEntityView> = {}): LegalEntityView {
       earlyPaymentDiscount: null,
     },
     missingToInvoice: [],
+    invoicePrefix: 'LFD',
+    invoicePrefixFrozen: false,
     ...over,
   };
 }

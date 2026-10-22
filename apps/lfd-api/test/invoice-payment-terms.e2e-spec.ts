@@ -62,7 +62,10 @@ async function declare(): Promise<string> {
       },
     })
     .expect(201);
-  return jsonBody<{ id: string }>(response).id;
+  const id = jsonBody<{ id: string }>(response).id;
+  // Le préfixe (lot ZA) est posé : cette suite ne juge que les mentions.
+  await staff().put(`${BASE}/${id}/invoice-prefix`).send({ prefix: "LFD" }).expect(204);
+  return id;
 }
 
 async function read(id: string): Promise<LegalEntityView> {

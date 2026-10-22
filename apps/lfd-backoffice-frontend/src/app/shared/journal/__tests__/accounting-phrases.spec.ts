@@ -160,6 +160,23 @@ describe('l’entité émettrice', () => {
     );
   });
 
+  it('dit le préfixe de numéro posé, puis corrigé (lot ZA)', () => {
+    expect(
+      sentence(
+        entity('legal_entity.invoice_prefix_set', { subjectLabel: ENTITY, from: null, to: 'LFD' }),
+      ),
+    ).toBe(
+      'Colette Martin a posé le préfixe des numéros de facture de l’entité émettrice « La Folie Douce SAS » : LFD',
+    );
+    expect(
+      sentence(
+        entity('legal_entity.invoice_prefix_set', { subjectLabel: ENTITY, from: 'LFC', to: 'LFD' }),
+      ),
+    ).toBe(
+      'Colette Martin a posé le préfixe des numéros de facture de l’entité émettrice « La Folie Douce SAS » de LFC à LFD',
+    );
+  });
+
   it('dit l’archivage et la restauration', () => {
     expect(sentence(entity('legal_entity.restored', { subjectLabel: ENTITY }))).toBe(
       'Colette Martin a restauré l’entité émettrice « La Folie Douce SAS »',
@@ -467,7 +484,7 @@ describe('la préparation automatique (PA3)', () => {
 it('la facture émise dit son nombre de bons', () => {
   const issued = sentence({
     ...entity('invoice.issued', {
-      subjectLabel: 'FA-2026-000007',
+      subjectLabel: 'FA-LFD-2026-000007',
       payer: CAFE,
       orderCount: 3,
       totalCents: 1200,
@@ -480,7 +497,7 @@ it('la facture émise dit son nombre de bons', () => {
 });
 
 describe('l’e-mail « votre facture » (E6)', () => {
-  const notice = { subjectLabel: 'FA-2026-000007', payer: CAFE, recipientCount: 2 };
+  const notice = { subjectLabel: 'FA-LFD-2026-000007', payer: CAFE, recipientCount: 2 };
 
   function ofInvoice(type: string, payload: Record<string, unknown>): FactInput {
     return { ...entity(type, payload), subjectType: 'invoice', subjectId: 'inv_1' };
@@ -489,7 +506,7 @@ describe('l’e-mail « votre facture » (E6)', () => {
   it('dit l’envoi par le nombre de destinataires, jamais leur adresse', () => {
     const sent = sentence(ofInvoice('invoice.notice_sent', notice));
 
-    expect(sent).toContain('a prévenu de la facture « FA-2026-000007 »');
+    expect(sent).toContain('a prévenu de la facture « FA-LFD-2026-000007 »');
     expect(sent).toContain('Café des Halles');
     expect(sent).toContain('2 destinataire(s)');
     expect(sent).not.toContain('@');
@@ -504,21 +521,21 @@ describe('l’e-mail « votre facture » (E6)', () => {
           failure: 'personne à prévenir',
         }),
       ),
-    ).toContain('n’a pas pu prévenir de la facture « FA-2026-000007 »');
+    ).toContain('n’a pas pu prévenir de la facture « FA-LFD-2026-000007 »');
   });
 
   it('dit le renvoi par le staff, et son refus s’il y en a un (suite (b))', () => {
     expect(sentence(ofInvoice('invoice.notice_resent', { ...notice, failure: null }))).toContain(
-      'a renvoyé l’e-mail de la facture « FA-2026-000007 »',
+      'a renvoyé l’e-mail de la facture « FA-LFD-2026-000007 »',
     );
     expect(
       sentence(ofInvoice('invoice.notice_resent', { ...notice, failure: 'rebond dur' })),
-    ).toContain('n’a pas pu renvoyer l’e-mail de la facture « FA-2026-000007 » ');
+    ).toContain('n’a pas pu renvoyer l’e-mail de la facture « FA-LFD-2026-000007 » ');
   });
 });
 
 describe('le PDF Factur-X de la pièce (E3b)', () => {
-  const document = { subjectLabel: 'FA-2026-000007', payer: CAFE, kind: 'invoice' };
+  const document = { subjectLabel: 'FA-LFD-2026-000007', payer: CAFE, kind: 'invoice' };
 
   function ofInvoice(type: string, payload: Record<string, unknown>): FactInput {
     return { ...entity(type, payload), subjectType: 'invoice', subjectId: 'inv_1' };
@@ -533,7 +550,7 @@ describe('le PDF Factur-X de la pièce (E3b)', () => {
       }),
     );
 
-    expect(rendered).toContain('a rendu le PDF Factur-X de la facture « FA-2026-000007 »');
+    expect(rendered).toContain('a rendu le PDF Factur-X de la facture « FA-LFD-2026-000007 »');
     expect(rendered).toContain('48213 octets');
     expect(rendered).not.toContain('invoices/');
   });
@@ -547,7 +564,7 @@ describe('le PDF Factur-X de la pièce (E3b)', () => {
       }),
     );
 
-    expect(failed).toContain('n’a pas pu rendre le PDF Factur-X de l’avoir « FA-2026-000007 »');
+    expect(failed).toContain('n’a pas pu rendre le PDF Factur-X de l’avoir « FA-LFD-2026-000007 »');
     expect(failed).toContain('police illisible');
   });
 });

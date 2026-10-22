@@ -120,6 +120,7 @@ import { SetPreNotificationHandler } from "./application/commands/set-pre-notifi
 import { SetCollectionScheduleHandler } from "./application/commands/set-collection-schedule.handler.js";
 import { SetAutoCollectionHandler } from "./application/commands/set-auto-collection.handler.js";
 import { SetInvoicePaymentTermsHandler } from "./application/commands/set-invoice-payment-terms.handler.js";
+import { SetInvoicePrefixHandler } from "./application/commands/set-invoice-prefix.handler.js";
 import { ExportCycleAuditHandler } from "./application/queries/export-cycle-audit.handler.js";
 import { ExportCycleDraftHandler } from "./application/queries/export-cycle-draft.handler.js";
 import { GetCurrentBillingCycleHandler } from "./application/queries/get-current-billing-cycle.handler.js";
@@ -302,6 +303,7 @@ import { PrismaOrderRowsLock } from "./infrastructure/prisma-order-rows-lock.js"
     SetCollectionScheduleHandler,
     SetAutoCollectionHandler,
     SetInvoicePaymentTermsHandler,
+    SetInvoicePrefixHandler,
     SetLegalEntityArchivedHandler,
     SetLegalEntityLogoHandler,
     RemoveLegalEntityLogoHandler,

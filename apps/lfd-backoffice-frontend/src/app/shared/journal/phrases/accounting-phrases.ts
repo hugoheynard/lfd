@@ -570,6 +570,16 @@ export const ACCOUNTING_PHRASES = {
     invoicePaymentTerms,
     ['latePenaltyRateBasisPoints', 'recoveryIndemnityCents', 'earlyPaymentDiscount'],
   ),
+  'legal_entity.invoice_prefix_set': onEntity(
+    'a posé le préfixe des numéros de facture',
+    'de',
+    (fact) => {
+      const from = optional(fact.payload['from']);
+      const to = value(optional(fact.payload['to']) ?? '—');
+      return from === null ? [text(' : '), to] : [text(' '), ...fromTo([value(from)], [to])];
+    },
+    ['from', 'to'],
+  ),
   'legal_entity.mandate_scheme_changed': onEntity(
     'a passé les mandats à venir',
     'de',

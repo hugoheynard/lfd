@@ -16,6 +16,8 @@ export interface InvoiceSellerFacts {
   readonly vatNumber: string;
   readonly archived: boolean;
   readonly paymentTerms: InvoicePaymentTerms;
+  /** Le préfixe de numéro (lot ZA) ; `null` = pas encore posé, l'entité n'émet pas. */
+  readonly invoicePrefix: string | null;
 }
 
 /** Ce qu'il faut savoir de l'**acheteur** — le payeur légal (Q3). */
@@ -38,6 +40,8 @@ export type InvoiceIssuanceBlockerCode =
   | "issuer_archived"
   | "seller_incomplete"
   | "payment_terms_missing"
+  | "invoice_prefix_missing"
+  | "order_delivery_unknown"
   | "buyer_unknown"
   | "buyer_siren_missing"
   | "buyer_vat_missing"
@@ -133,7 +137,54 @@ export function sellerBlockers(
         `(${terms.join(", ")}) : les saisir sur sa fiche, carte « Mentions de la facture ».`,
     });
   }
+  if (seller.invoicePrefix === null) {
+    blockers.push(invoicePrefixMissingBlocker(seller.name));
+  }
   return blockers;
+}
+
+/**
+ * Pas de préfixe, pas de numéro (plan `plan-zero-faille.md`, F14, lot ZA) :
+ * le numéro d'une pièce nomme son entité, et une entité qui n'en a pas ne
+ * s'invente pas un nom. Exporté pour la numérotation, qui le relit en base
+ * sous verrou et refuse avec la même phrase.
+ */
+export function invoicePrefixMissingBlocker(entityName: string): InvoiceIssuanceBlocker {
+  return {
+    code: "invoice_prefix_missing",
+    message:
+      `L'entité « ${entityName} » n'a pas de préfixe de numéro de facture : le poser sur sa ` +
+      "fiche (Comptabilité › Entités juridiques), carte « Numérotation des factures ». Il ne " +
+      "se change plus après la première facture.",
+  };
+}
+
+/** Ce qu'il faut savoir d'un bon pour juger qu'il peut être facturé. */
+export interface InvoiceOrderFacts {
+  readonly reference: string;
+  /** La date de livraison réelle (`AAAA-MM-JJ`), ou `null` : ni retrait ni livraison enregistrés. */
+  readonly deliveredOn: string | null;
+}
+
+/**
+ * Un bon sans date de livraison ne se facture pas (plan `plan-zero-faille.md`,
+ * M5, décision de Hugo du 2026-10-22) : la date de la livraison est une mention
+ * obligatoire, et la facture n'imprime jamais une date que personne n'a
+ * constatée — ni la date demandée, ni le jour de l'émission. Un manque par bon,
+ * qui nomme le bon et le geste de sortie.
+ */
+export function orderDeliveryBlockers(
+  orders: readonly InvoiceOrderFacts[],
+): readonly InvoiceIssuanceBlocker[] {
+  return orders
+    .filter((order) => order.deliveredOn === null)
+    .map((order) => ({
+      code: "order_delivery_unknown" as const,
+      message:
+        `Le bon ${order.reference} n'a pas de date de livraison : ni son retrait au comptoir ` +
+        "ni sa livraison en tournée n'ont été enregistrés. Enregistrer son retrait ou sa " +
+        "livraison — ou l'annuler s'il n'a jamais été remis au client —, puis relancer la facture.",
+    }));
 }
 
 /**

@@ -19,7 +19,7 @@ describe('les mises en forme de « Mes factures »', () => {
       'émise le 30 sept. 2026 · commandes de septembre 2026 · échéance le 15 oct. 2026',
     );
     expect(invoiceMeta(CREDIT_NOTE, COPY, 'fr')).toBe(
-      'émise le 30 sept. 2026 · corrige la facture FA-2026-000007',
+      'émise le 30 sept. 2026 · corrige la facture FA-LFD-2026-000007',
     );
   });
 

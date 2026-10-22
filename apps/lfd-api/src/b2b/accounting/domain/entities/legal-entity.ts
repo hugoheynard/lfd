@@ -23,6 +23,8 @@ import {
   type InvoicePaymentTermsInput,
 } from "../value-objects/invoice-payment-terms.js";
 import type { InvoiceSellerFacts } from "../services/invoice-issuance-blockers.js";
+import { InvoicePrefixIsFrozenError } from "../errors/invoice-errors.js";
+import { InvoicePrefix } from "../value-objects/invoice-prefix.js";
 
 /**
  * Le délai EPC par défaut entre la pré-notification et le débit. Il se réduit
@@ -114,6 +116,14 @@ export interface LegalEntitySnapshot {
   readonly invoiceLatePenaltyRateBasisPoints: number | null;
   readonly invoiceRecoveryIndemnityCents: number | null;
   readonly invoiceEarlyPaymentDiscount: string | null;
+  /** Le préfixe de numéro des factures (lot ZA) ; `null` = pas encore posé. */
+  readonly invoicePrefix: string | null;
+  /**
+   * L'entité a-t-elle déjà émis une pièce ? Lu en base (`invoice`), jamais
+   * écrit : comme `firstMandateIssuedAt`, l'agrégat le LIT pour geler le
+   * préfixe, et `save` ne l'écrit pas — il n'a pas de colonne.
+   */
+  readonly invoicesIssued: boolean;
 }
 
 /**
@@ -158,6 +168,8 @@ export class LegalEntity {
     private autoCollectionEnabledValue: boolean,
     private collectionScheduleValue: CollectionSchedule,
     private paymentTermsValue: InvoicePaymentTerms,
+    private invoicePrefixValue: InvoicePrefix | null,
+    private readonly invoicesIssuedValue: boolean,
   ) {}
 
   /**
@@ -195,6 +207,9 @@ export class LegalEntity {
       // Les mentions de paiement : à renseigner. Le taux légal n'est qu'une
       // suggestion d'écran (Q4), jamais un défaut posé ici.
       InvoicePaymentTerms.empty(),
+      // Le préfixe se choisit à l'écran, et rien n'est émis.
+      null,
+      false,
     );
   }
 
@@ -240,6 +255,8 @@ export class LegalEntity {
         recoveryIndemnityCents: snapshot.invoiceRecoveryIndemnityCents,
         earlyPaymentDiscount: snapshot.invoiceEarlyPaymentDiscount,
       }),
+      snapshot.invoicePrefix === null ? null : InvoicePrefix.create(snapshot.invoicePrefix),
+      snapshot.invoicesIssued,
     );
   }
 
@@ -444,6 +461,39 @@ export class LegalEntity {
     return true;
   }
 
+  get invoicePrefix(): InvoicePrefix | null {
+    return this.invoicePrefixValue;
+  }
+
+  /** Le préfixe est-il gelé ? La fiche l'affiche pour refuser AVANT la saisie. */
+  get invoicePrefixFrozen(): boolean {
+    return this.invoicesIssuedValue;
+  }
+
+  /**
+   * Pose le préfixe de numéro des factures (plan `plan-zero-faille.md`, F14,
+   * lot ZA). Libre tant que l'entité n'a rien émis ; **gelé dès la première
+   * pièce** (Q-M3, Hugo, 2026-10-22) : chaque numéro l'imprime, et une suite
+   * qui changerait de nom en cours d'année ne se justifierait plus.
+   *
+   * La base tient la même règle (`legal_entity_invoice_prefix_frozen`) pour
+   * une pièce émise entre la lecture de l'entité et son écriture.
+   *
+   * @returns vrai si le préfixe a réellement changé — une saisie rejouée n'est pas un fait.
+   * @throws {InvoicePrefixIsFrozenError} l'entité a émis, et le préfixe change.
+   */
+  setInvoicePrefix(prefix: InvoicePrefix): boolean {
+    const current = this.invoicePrefixValue;
+    if (current !== null && current.equals(prefix)) {
+      return false;
+    }
+    if (this.invoicesIssuedValue) {
+      throw new InvoicePrefixIsFrozenError(this.nameValue, current?.value ?? "", prefix.value);
+    }
+    this.invoicePrefixValue = prefix;
+    return true;
+  }
+
   /** Le vendeur tel que `invoiceIssuanceBlockers` le juge — une copie à plat. */
   invoiceSellerFacts(): InvoiceSellerFacts {
     return {
@@ -454,6 +504,7 @@ export class LegalEntity {
       vatNumber: this.vatNumberValue,
       archived: this.archivedAtValue !== null,
       paymentTerms: this.paymentTermsValue,
+      invoicePrefix: this.invoicePrefixValue?.value ?? null,
     };
   }
 
@@ -590,6 +641,8 @@ export class LegalEntity {
       invoiceLatePenaltyRateBasisPoints: this.paymentTermsValue.latePenaltyRateBasisPoints,
       invoiceRecoveryIndemnityCents: this.paymentTermsValue.recoveryIndemnityCents,
       invoiceEarlyPaymentDiscount: this.paymentTermsValue.earlyPaymentDiscount,
+      invoicePrefix: this.invoicePrefixValue?.value ?? null,
+      invoicesIssued: this.invoicesIssuedValue,
     };
   }
 

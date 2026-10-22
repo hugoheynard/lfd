@@ -37,6 +37,7 @@ import {
 } from "./collection-doubles.js";
 import {
   CountingNumbering,
+  EveryOrderHandedOver,
   FakeMonthlyReader,
   FixedIssuers,
   FixedModeDates,
@@ -46,6 +47,10 @@ import {
   NoHandovers,
   NoStops,
 } from "./monthly-invoice-doubles.js";
+import type {
+  OrderHandoverHistoryFact,
+  OrderHandoverHistoryReader,
+} from "../../../../../handover/channels/commerce/index.js";
 
 /**
  * La facture par période (lot E4, par clôture depuis R3) — l'orchestration,
@@ -65,6 +70,21 @@ const FLOOR = new Date("2026-08-31T22:00:00.000Z");
 /** Les clés d'issue (payeur × mandat effectif, E4b) des deux payeurs mandatés. */
 const PORT = invoiceGroupKey("c_port", "m_c_port");
 const PRINCIPAL = invoiceGroupKey("c_principal", "m_c_principal");
+/** Le retrait des bons, le 16 septembre au matin (Paris) — dans la période facturée. */
+const HANDED_OVER_AT = new Date("2026-09-16T07:00:00.000Z");
+
+/** Tous les bons retirés, sauf un : celui-là n'a ni retrait ni livraison (M5). */
+class HandedOverExcept extends EveryOrderHandedOver {
+  constructor(private readonly missing: string) {
+    super(HANDED_OVER_AT);
+  }
+  override async ofOrders(
+    orderIds: readonly string[],
+  ): Promise<ReadonlyMap<string, OrderHandoverHistoryFact>> {
+    const all = await super.ofOrders(orderIds);
+    return new Map([...all].filter(([orderId]) => orderId !== this.missing));
+  }
+}
 
 let seq = 0;
 function bon(companyId: string, overrides: Partial<InvoiceableOrder> = {}): InvoiceableOrder {
@@ -105,6 +125,8 @@ function harness(
     /** Les payeurs qui ont choisi un mode ; aucun : tous mensuels au 1er. */
     payers?: readonly PayerModeSegments[];
     closure?: string;
+    /** Par défaut, tout bon a été retiré : un bon sans date bloque (M5). */
+    handovers?: OrderHandoverHistoryReader;
   } = {},
 ) {
   const invoices = new MemoryInvoices();
@@ -129,7 +151,7 @@ function harness(
     new FixedIssuers([SELLER_FACTS]),
     options.buyers ?? new FixedBuyers(),
     mandates,
-    new NoHandovers(),
+    options.handovers ?? new EveryOrderHandedOver(HANDED_OVER_AT),
     new NoStops(),
     issuer,
     outcomes,
@@ -322,8 +344,8 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
       [principal.orderNumber],
     ]);
     expect(report.issued.map((issue) => issue.number)).toEqual([
-      "FA-2026-000001",
-      "FA-2026-000002",
+      "FA-LFD-2026-000001",
+      "FA-LFD-2026-000002",
     ]);
     expect(h.outcomes.rows.get(invoiceGroupKey("c_principal", "m_c_chalet"))?.key).toMatchObject({
       mandateReference: "RUM-chalet",
@@ -375,8 +397,8 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
 
     expect(report.issued.map((issue) => issue.issuedOn)).toEqual(["2026-10-02", "2026-10-02"]);
     expect(h.invoices.inserted.map((invoice) => invoice.number)).toEqual([
-      "FA-2026-000001",
-      "FA-2026-000002",
+      "FA-LFD-2026-000001",
+      "FA-LFD-2026-000002",
     ]);
     // La période facturée reste septembre : la clôture du 1er octobre borne les bons.
     expect(h.reader.asked).toEqual([{ from: FLOOR, to: new Date("2026-09-30T22:00:00.000Z") }]);
@@ -661,5 +683,38 @@ describe("IssueMonthlyInvoices — les annulées entre la préparation et l'émi
     await h.run();
 
     expect(h.outcomes.rows.get(PORT)?.key.unbillableOrders).toEqual([]);
+  });
+});
+
+describe("IssueMonthlyInvoices — la date de livraison (M5, lot ZA)", () => {
+  /** M5 (lot ZA) : la date de livraison est obligatoire ; elle ne s'invente pas. */
+  it("un bon sans date de livraison signale son payeur, en nommant le bon et le geste ; les autres sont facturés", async () => {
+    const unknown = bon("c_principal");
+    const h = harness({ handovers: new HandedOverExcept(unknown.orderId) });
+    h.reader.orders = [unknown, bon("c_port")];
+
+    const report = await h.run();
+
+    expect(report.issued.map((issue) => issue.payerCompanyId)).toEqual(["c_port"]);
+    expect(report.blocked.map((issue) => issue.payerCompanyId)).toEqual(["c_principal"]);
+    const signalled = h.outcomes.rows.get(PRINCIPAL);
+    expect(signalled?.invoiceId).toBeNull();
+    expect(signalled?.message).toContain(`Le bon ${unknown.orderNumber} n'a pas de date`);
+    expect(signalled?.message).toContain("n'a pas de date de livraison");
+    expect(signalled?.message).toContain("Enregistrer son retrait ou sa livraison");
+    expect(h.invoices.inserted.map((invoice) => invoice.toState().buyer.companyId)).toEqual([
+      "c_port",
+    ]);
+  });
+
+  it("la facture date chaque bon du jour de son retrait", async () => {
+    const h = harness();
+    h.reader.orders = [bon("c_port")];
+
+    await h.run();
+
+    expect(h.invoices.inserted[0]?.toState().orders.map((order) => order.deliveredOn)).toEqual([
+      "2026-09-16",
+    ]);
   });
 });

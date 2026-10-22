@@ -59,8 +59,8 @@ describe("assembleCollection — le lot encaisse des factures émises (E4)", () 
   it("une ligne regroupe les factures du payeur ; son montant est Σ TTC des factures", () => {
     const [a, b, c] = [order("c_port"), order("c_port"), order("c_port")];
     // Des totaux qui ne sont PAS la somme des bons : rien n'est recalculé.
-    const first = invoice("FA-2026-000002", [a, b], 1_999);
-    const second = invoice("FA-2026-000001", [c], 1_001);
+    const first = invoice("FA-LFD-2026-000002", [a, b], 1_999);
+    const second = invoice("FA-LFD-2026-000001", [c], 1_001);
 
     const { debits, exclusions } = assembleCollection(
       input({ orders: [a, b, c], invoices: byOrder([first, second]) }),
@@ -86,7 +86,7 @@ describe("assembleCollection — le lot encaisse des factures émises (E4)", () 
   it("un bon d'avant la mise en service garde l'arrêté ; jamais sur la même ligne qu'une facture", () => {
     const old = order("c_port", { placedAt: BEFORE_FLOOR });
     const fresh = order("c_port");
-    const issued = invoice("FA-2026-000001", [fresh], 1_000);
+    const issued = invoice("FA-LFD-2026-000001", [fresh], 1_000);
 
     const { debits } = assembleCollection(
       input({ orders: [old, fresh], invoices: byOrder([issued]) }),
@@ -106,7 +106,7 @@ describe("assembleCollection — le lot encaisse des factures émises (E4)", () 
 
   it("sans plancher, un bon facturé suit quand même sa facture — jamais un arrêté de plus", () => {
     const fresh = order("c_port");
-    const issued = invoice("FA-2026-000001", [fresh], 1_000);
+    const issued = invoice("FA-LFD-2026-000001", [fresh], 1_000);
 
     const { debits } = assembleCollection(
       input({ orders: [fresh], invoices: byOrder([issued]), invoicingFloor: null }),
@@ -118,7 +118,7 @@ describe("assembleCollection — le lot encaisse des factures émises (E4)", () 
   it("une facture dont les bons tombent sur deux mandats est écartée entière (`invoice_split`)", () => {
     const own = order("c_port");
     const site = order("c_chalet", { billedCompanyId: "c_port" });
-    const issued = invoice("FA-2026-000001", [own, site], 2_000);
+    const issued = invoice("FA-LFD-2026-000001", [own, site], 2_000);
 
     const { debits, exclusions } = assembleCollection(
       input({
@@ -150,7 +150,7 @@ describe("assembleCollection — le lot encaisse des factures émises (E4)", () 
 
   it("un bon écarté écarte toute sa facture, pour la même raison", () => {
     const [a, b] = [order("c_none"), order("c_none")];
-    const issued = invoice("FA-2026-000001", [a, b], 2_000);
+    const issued = invoice("FA-LFD-2026-000001", [a, b], 2_000);
 
     const { exclusions, unmandatedCompanies } = assembleCollection(
       input({ orders: [a, b], invoices: byOrder([issued]) }),
@@ -162,7 +162,7 @@ describe("assembleCollection — le lot encaisse des factures émises (E4)", () 
 
   it("une facture dont un bon n'est plus à prélever (réglé autrement) attend : pas de morceau", () => {
     const [a, b] = [order("c_port"), order("c_port")];
-    const issued = invoice("FA-2026-000001", [a, b], 2_000);
+    const issued = invoice("FA-LFD-2026-000001", [a, b], 2_000);
 
     // `b` n'est plus parmi les bons ouverts : seul `a` est lu.
     const { debits, exclusions } = assembleCollection(
@@ -177,8 +177,8 @@ describe("assembleCollection — le lot encaisse des factures émises (E4)", () 
 describe("renderBatchFile — la ligne cite ses factures", () => {
   it("porte les factures, et le RmtInf les nomme", () => {
     const [a, b] = [order("c_port"), order("c_quai")];
-    const port = invoice("FA-2026-000001", [a], 1_000);
-    const quai = invoice("FA-2026-000002", [b], 1_000);
+    const port = invoice("FA-LFD-2026-000001", [a], 1_000);
+    const quai = invoice("FA-LFD-2026-000002", [b], 1_000);
     const { debits } = assembleCollection(
       input({ orders: [a, b], invoices: byOrder([port, quai]) }),
     );
@@ -198,6 +198,6 @@ describe("renderBatchFile — la ligne cite ses factures", () => {
       [{ invoiceId: port.invoiceId, number: port.number }],
       [{ invoiceId: quai.invoiceId, number: quai.number }],
     ]);
-    expect(file.xml).toContain("<Ustrd>Facture FA-2026-000001</Ustrd>");
+    expect(file.xml).toContain("<Ustrd>Facture FA-LFD-2026-000001</Ustrd>");
   });
 });

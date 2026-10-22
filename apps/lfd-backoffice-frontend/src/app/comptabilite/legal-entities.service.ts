@@ -15,6 +15,7 @@ import type {
   SetCollectionSchedulePayload,
   SetCreditorAccountPayload,
   SetInvoicePaymentTermsPayload,
+  SetInvoicePrefixPayload,
   SetMandateDefaultsPayload,
   SetMandateSchemePayload,
   SetPreNotificationPayload,
@@ -187,6 +188,15 @@ export class LegalEntitiesService {
    */
   async setInvoicePaymentTerms(id: string, payload: SetInvoicePaymentTermsPayload): Promise<void> {
     await firstValueFrom(this.http.put<void>(`${this.base}/${id}/invoice-payment-terms`, payload));
+  }
+
+  /**
+   * Le préfixe de numéro des factures (lot ZA) — `FA-<préfixe>-AAAA-NNNNNN`.
+   * 400 hors de 2 à 6 lettres, 409 s'il est pris par une autre entité ou si
+   * l'entité a déjà émis : les mots du serveur nomment le cas.
+   */
+  async setInvoicePrefix(id: string, payload: SetInvoicePrefixPayload): Promise<void> {
+    await firstValueFrom(this.http.put<void>(`${this.base}/${id}/invoice-prefix`, payload));
   }
 
   /**

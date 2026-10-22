@@ -84,6 +84,7 @@ async function declareEntity(
   name = "La Folie Douce",
   siren = "552100554",
   vatNumber = "FR40552100554",
+  prefix = "LFD",
 ): Promise<string> {
   const response = await ctx
     .asSub("staff-e2e")
@@ -104,7 +105,13 @@ async function declareEntity(
       },
     })
     .expect(201);
-  return jsonBody<{ id: string }>(response).id;
+  const id = jsonBody<{ id: string }>(response).id;
+  await ctx
+    .asSub("staff-e2e")
+    .put(`/admin/accounting/legal-entities/${id}/invoice-prefix`)
+    .send({ prefix })
+    .expect(204);
+  return id;
 }
 
 /** Des bons neufs à chaque appel : l'unicité d'un bon facturé ne se croise pas entre tests. */
@@ -112,7 +119,11 @@ function freshOrders(): [InvoiceOrderReference, InvoiceOrderReference] {
   seq += 2;
   // Pas dans l'ordre des numéros : la relecture rend l'ordre d'écriture (`position`).
   return [
-    { orderId: `o_${String(seq + 1)}`, reference: `CMD-${String(seq + 1)}`, deliveredOn: null },
+    {
+      orderId: `o_${String(seq + 1)}`,
+      reference: `CMD-${String(seq + 1)}`,
+      deliveredOn: ISSUED_ON,
+    },
     { orderId: `o_${String(seq)}`, reference: `CMD-${String(seq)}`, deliveredOn: ISSUED_ON },
   ];
 }
@@ -140,7 +151,13 @@ function draftFor(
         seller: { ...base.seller, legalEntityId: entityId },
         ...(base.sellerFacts === null
           ? {}
-          : { sellerFacts: { ...base.sellerFacts, legalEntityId: entityId } }),
+          : {
+              sellerFacts: {
+                ...base.sellerFacts,
+                legalEntityId: entityId,
+                invoicePrefix: number.prefix,
+              },
+            }),
         orders: options.orders ?? freshOrders(),
       }),
     );
@@ -188,7 +205,7 @@ describe("la facture émise", () => {
     expect(facts).toEqual([
       {
         payload: {
-          subjectLabel: "FA-2026-000001",
+          subjectLabel: "FA-LFD-2026-000001",
           legalEntity: { id: entity, name: issued.toState().seller.name },
           payer: { id: "c_port", name: "Boulangerie du Port" },
           issuedOn: ISSUED_ON,
@@ -201,19 +218,18 @@ describe("la facture émise", () => {
 
   it("numérote à la suite par entité et par année, et repart à 1 l'année suivante", async () => {
     const first = await declareEntity();
-    const second = await declareEntity("Seconde entité", "732829320", "FR44732829320");
+    const second = await declareEntity("Seconde entité", "732829320", "FR44732829320", "SEC");
 
     await issue(first);
     await issue(first);
     await issue(first, { issuedOn: NEXT_YEAR_ON, dueOn: NEXT_YEAR_ON });
 
-    expect(await numbersOf(first, 2026)).toEqual(["FA-2026-000001", "FA-2026-000002"]);
-    expect(await numbersOf(first, 2027)).toEqual(["FA-2027-000001"]);
-    // Le numéro est unique dans toute la base (plan § 9, une seule entité encaisse) :
-    // la seconde entité prend sa propre séquence, et sa première émission de
-    // 2026 heurte le FA-2026-000001 de la première.
-    await expect(issue(second)).rejects.toThrow(/number/u);
-    expect(await numbersOf(second, 2026)).toEqual([]);
+    expect(await numbersOf(first, 2026)).toEqual(["FA-LFD-2026-000001", "FA-LFD-2026-000002"]);
+    expect(await numbersOf(first, 2027)).toEqual(["FA-LFD-2027-000001"]);
+    // F14 (lot ZA) : chaque entité numérote sous SON préfixe — la seconde ne
+    // heurte plus le FA-…-2026-000001 de la première, elle le nomme autrement.
+    await issue(second);
+    expect(await numbersOf(second, 2026)).toEqual(["FA-SEC-2026-000001"]);
   });
 
   it("donne deux numéros distincts et consécutifs à deux émissions concurrentes", async () => {
@@ -222,8 +238,8 @@ describe("la facture émise", () => {
     const issued = await Promise.all([issue(entity), issue(entity)]);
 
     expect(issued.map((invoice) => invoice.number).sort()).toEqual([
-      "FA-2026-000001",
-      "FA-2026-000002",
+      "FA-LFD-2026-000001",
+      "FA-LFD-2026-000002",
     ]);
   });
 
@@ -240,7 +256,7 @@ describe("la facture émise", () => {
     await expect(refused).rejects.toBeInstanceOf(InvoiceIssuanceBlockedError);
     await issue(entity);
 
-    expect(await numbersOf(entity, 2026)).toEqual(["FA-2026-000001", "FA-2026-000002"]);
+    expect(await numbersOf(entity, 2026)).toEqual(["FA-LFD-2026-000001", "FA-LFD-2026-000002"]);
     const counter = await ctx.prisma.invoiceNumberCounter.findMany({
       where: { legalEntityId: entity },
     });
@@ -260,7 +276,7 @@ describe("la facture émise", () => {
     const repository = ctx.app.get(InvoiceRepository);
 
     const loaded = await mustRead(issued.id);
-    loaded.attachDocument("invoices/FA-2026-000001.pdf", SHA);
+    loaded.attachDocument("invoices/FA-LFD-2026-000001.pdf", SHA);
     await repository.attachDocument(loaded);
     // Une seconde copie, chargée avant la pose : l'agrégat l'accepte, la base non.
     issued.attachDocument("invoices/autre.pdf", "b".repeat(64));
@@ -269,7 +285,7 @@ describe("la facture émise", () => {
       InvoiceDocumentAlreadyAttachedError,
     );
     const reread = (await reader().byId(issued.id))?.toState();
-    expect(reread?.documentKey).toBe("invoices/FA-2026-000001.pdf");
+    expect(reread?.documentKey).toBe("invoices/FA-LFD-2026-000001.pdf");
     expect(reread?.documentSha256).toBe(SHA);
   });
 
@@ -327,7 +343,7 @@ describe("la facture émise", () => {
     await expect(issue(entity, { orders: [orders[0]] })).rejects.toThrow(/order_id/u);
 
     await issue(entity);
-    expect(await numbersOf(entity, 2026)).toEqual(["FA-2026-000001", "FA-2026-000002"]);
+    expect(await numbersOf(entity, 2026)).toEqual(["FA-LFD-2026-000001", "FA-LFD-2026-000002"]);
   });
 });
 
@@ -340,7 +356,7 @@ describe("la chronologie", () => {
     await expect(issue(entity)).rejects.toBeInstanceOf(InvoiceIssuedBeforePreviousError);
     await issue(entity, { issuedOn: DUE_ON, dueOn: DUE_ON });
 
-    expect(await numbersOf(entity, 2026)).toEqual(["FA-2026-000001", "FA-2026-000002"]);
+    expect(await numbersOf(entity, 2026)).toEqual(["FA-LFD-2026-000001", "FA-LFD-2026-000002"]);
     await expect(
       ctx.prisma.invoiceNumberCounter.updateMany({
         where: { legalEntityId: entity },
@@ -373,18 +389,18 @@ describe("l'avoir", () => {
         }),
     });
 
-    expect(creditNote.number).toBe("FA-2026-000002");
+    expect(creditNote.number).toBe("FA-LFD-2026-000002");
     const read = (await reader().byId("cn_e2e"))?.toState();
     expect(read).toEqual(creditNote.toState());
     expect(read?.correctedInvoiceId).toBe(invoice.id);
-    expect(read?.correctedInvoiceNumber).toBe("FA-2026-000001");
+    expect(read?.correctedInvoiceNumber).toBe("FA-LFD-2026-000001");
     const facts = await ctx.prisma.activityEvent.findMany({
       where: { subjectId: "cn_e2e", type: "invoice.credit_note_issued" },
       select: { payload: true },
     });
     expect(facts[0]?.payload).toMatchObject({
-      subjectLabel: "FA-2026-000002",
-      correctedInvoice: { id: invoice.id, name: "FA-2026-000001" },
+      subjectLabel: "FA-LFD-2026-000002",
+      correctedInvoice: { id: invoice.id, name: "FA-LFD-2026-000001" },
     });
   });
 });

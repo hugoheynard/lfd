@@ -225,3 +225,28 @@ function accepts(parse: () => unknown): boolean {
     return false;
   }
 }
+
+/** L'heure qui sépare, dans une fixture, la passation d'un bon de son retrait. */
+const HANDOVER_AFTER_PLACEMENT_MS = 60 * 60 * 1000;
+
+/**
+ * Le **retrait** d'un bon au comptoir, une heure après sa passation : la
+ * facture date sa livraison de ce jour-là, et un bon sans date ne se facture
+ * pas (plan `plan-zero-faille.md`, M5, lot ZA). Même dette que le reste du
+ * fichier : écrit par Prisma, faute de chemin public qui n'exige pas une
+ * journée de production.
+ */
+export async function handOver(
+  prisma: PrismaService,
+  order: { readonly id: string; readonly orderNumber: string; readonly createdAt: Date },
+): Promise<void> {
+  await prisma.orderHandover.create({
+    data: {
+      orderId: order.id,
+      reference: order.orderNumber,
+      handedOverAt: new Date(order.createdAt.getTime() + HANDOVER_AFTER_PLACEMENT_MS),
+      handedOverBy: "staff-e2e",
+      handedOverVia: "scan",
+    },
+  });
+}

@@ -54,6 +54,10 @@ class InMemoryEntities extends LegalEntityRepository {
       [...this.rows.values()].some((entity) => entity.id !== exceptId && !entity.archived),
     );
   }
+
+  invoicePrefixHolder(): Promise<string | null> {
+    return Promise.resolve(null);
+  }
 }
 
 /**

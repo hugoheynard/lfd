@@ -18,8 +18,14 @@
 //     (`invoice_number_counter_monotonic`), ne se supprime pas ;
 //   · un bon n'est porté que par UNE facture 380 (index partiel
 //     `invoice_order_invoiced_once`) ;
-//   · numéro = `FA-<year>-<rank sur 6>`, année = celle de `issued_on`,
-//     TTC = HT + TVA, 381 ⇔ facture corrigée, avoir sans échéance.
+//   · numéro = `FA-<invoice_prefix>-<year>-<rank sur 6>`, année = celle de
+//     `issued_on`, TTC = HT + TVA, 381 ⇔ facture corrigée, avoir sans échéance
+//     (forme remplacée par `20261022160000_le_prefixe_de_numero`) ;
+//   · lot ZA (`20261022160000_le_prefixe_de_numero`) : `invoice_prefix` est
+//     celui de l'entité à l'émission (`invoice_prefix_of_entity`), le rang est
+//     celui que le compteur vient d'atteindre (`invoice_rank_from_counter`), et
+//     un compteur ne finit pas sa transaction sans sa pièce
+//     (`invoice_number_counter_has_invoice`, différé).
 
 /// Une facture (380) ou un avoir (381), figé à l'émission.
 model Invoice {
@@ -29,10 +35,15 @@ model Invoice {
   legalEntityId String      @map("legal_entity_id")
   legalEntity   LegalEntity @relation(fields: [legalEntityId], references: [id], onDelete: Restrict)
 
-  /// `FA-<année>-<n° sur 6 chiffres>` — recomposé de `year` et `rank`.
-  number String @unique
-  year   Int
-  rank   Int
+  /// `FA-<préfixe>-<année>-<n° sur 6 chiffres>` — recomposé de
+  /// `invoicePrefix`, `year` et `rank`.
+  number        String @unique
+  /// Le préfixe de l'entité À L'ÉMISSION (lot ZA) : un CHECK ne lit pas une
+  /// autre table, d'où la recopie. Le préfixe de l'entité est gelé dès sa
+  /// première pièce : les deux ne divergent pas.
+  invoicePrefix String @map("invoice_prefix")
+  year          Int
+  rank          Int
 
   /// `380` facture, `381` avoir (UNTDID 1001).
   type String

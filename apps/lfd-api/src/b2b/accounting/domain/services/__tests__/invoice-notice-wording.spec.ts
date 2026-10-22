@@ -21,7 +21,7 @@ describe("le contenu de « Votre facture » (E6)", () => {
     expect(
       invoiceNoticeContent(invoice.toState(), SEPTEMBER, "https://boutique.test/mon-compte"),
     ).toEqual({
-      invoiceNumber: "FA-2026-000001",
+      invoiceNumber: "FA-LFD-2026-000001",
       sellerName: invoice.toState().seller.name,
       buyerName: "Boulangerie du Port",
       issuedOn: "mercredi 30 septembre 2026",
@@ -44,7 +44,7 @@ describe("le contenu de « Votre facture » (E6)", () => {
     const lines = [line("PAIN", 5.5, 500)];
     const creditNote = Invoice.creditNote({
       id: "cn_1",
-      number: InvoiceNumber.compose(2026, 2),
+      number: InvoiceNumber.compose("LFD", 2026, 2),
       issuedOn: "2026-10-01",
       corrected: issuedInvoice(),
       priorCreditNotes: [],

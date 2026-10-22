@@ -134,7 +134,7 @@ const SEPTEMBER: MonthlyClosureView = {
   invoices: [
     {
       invoiceId: 'inv1',
-      number: 'FA-2026-000001',
+      number: 'FA-LFD-2026-000001',
       payerCompanyId: 'c1',
       payerName: 'Boulangerie du Port',
       issuedOn: '2026-09-30',
@@ -291,7 +291,7 @@ describe('PrelevementDuMoisPage', () => {
     const fixture = await render(new FakeApi(), undefined, ENTITY, invoicesApi);
 
     expect(host(fixture).querySelector('[data-invoices-table]')?.textContent).toContain(
-      'FA-2026-000001',
+      'FA-LFD-2026-000001',
     );
     expect(host(fixture).querySelector('[data-signaled-table]')?.textContent).toContain(
       'Chalet Sans SIREN',

@@ -58,7 +58,11 @@ describe("legalEntityColumns", () => {
     // qu'un auteur, `FirstMandateLedger`, qui l'écrit sous condition dans la
     // transaction de la frappe. Réécrit par `save`, il serait remis à `null` par
     // tout geste staff ayant chargé l'entité avant une frappe concurrente.
-    const excluded = new Set(["id", "creditorIban", "firstMandateIssuedAt"]);
+    //
+    // `invoicesIssued` sort enfin (lot ZA) : ce n'est pas une colonne, c'est
+    // l'existence d'une pièce de l'entité, lue à la relecture — le gel du
+    // préfixe n'a d'autre auteur que l'émission elle-même.
+    const excluded = new Set(["id", "creditorIban", "firstMandateIssuedAt", "invoicesIssued"]);
     const expected = Object.keys(snapshot)
       .filter((key) => !excluded.has(key))
       .concat("creditorIbanSealed")

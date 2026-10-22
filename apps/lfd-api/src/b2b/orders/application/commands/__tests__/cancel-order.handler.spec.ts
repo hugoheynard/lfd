@@ -488,13 +488,13 @@ describe("CancelOrderHandler — au compte (lot C5)", () => {
   it("facturée au premier regard : refus nommé, sans verrou ni retrait ni fermeture", async () => {
     const { handler, trace, engagements } = scene({
       subject: ACCOUNT,
-      engagement: { kind: "invoiced", invoiceNumber: "FA-2026-000012", issuedOn: "2026-09-30" },
+      engagement: { kind: "invoiced", invoiceNumber: "FA-LFD-2026-000012", issuedOn: "2026-09-30" },
     });
 
     await expect(handler.execute(cancel())).rejects.toMatchObject({
       code: "orders.cancel.invoiced",
       message: expect.stringContaining(
-        "facturée le 30/09/2026 (facture n° FA-2026-000012)",
+        "facturée le 30/09/2026 (facture n° FA-LFD-2026-000012)",
       ) as string,
     });
     expect(trace).toEqual(["engagement:ord_1"]);

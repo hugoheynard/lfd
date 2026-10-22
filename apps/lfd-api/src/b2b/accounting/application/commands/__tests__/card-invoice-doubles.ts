@@ -47,7 +47,7 @@ export class ChronologicalNumbering extends InvoiceNumbering {
     }
     this.rank += 1;
     this.lastIssuedOn = issuedOn;
-    const number = InvoiceNumber.compose(Number(issuedOn.slice(0, 4)), this.rank);
+    const number = InvoiceNumber.compose("LFD", Number(issuedOn.slice(0, 4)), this.rank);
     this.taken.push(number.value);
     return Promise.resolve(number);
   }

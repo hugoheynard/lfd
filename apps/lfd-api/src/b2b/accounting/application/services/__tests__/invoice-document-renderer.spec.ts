@@ -31,7 +31,7 @@ import { MemoryInvoiceReader, MemoryKeptStore } from "./issued-invoice-doubles.j
  * sont comparées qu'entre elles ; `NOW` ne sert qu'au tampon des faits.
  */
 const NOW = new Date("2026-09-30T21:55:00.000Z");
-const KEY = "invoices/le_1/FA-2026-000001.pdf";
+const KEY = "invoices/le_1/FA-LFD-2026-000001.pdf";
 
 class RecordingRepository extends InvoiceRepository {
   readonly attached: string[] = [];
@@ -101,7 +101,7 @@ describe("InvoiceDocumentRenderer — une pièce, un PDF, une fois", () => {
 
     const document = await h.renderer.ensure(invoice.id);
 
-    expect(document?.fileName).toBe("FA-2026-000001.pdf");
+    expect(document?.fileName).toBe("FA-LFD-2026-000001.pdf");
     expect(document?.bytes.subarray(0, 5).toString("latin1")).toBe("%PDF-");
     expect(h.kept.saved).toEqual([KEY]);
     expect(h.kept.objects.get(KEY)?.contentType).toBe("application/pdf");
@@ -116,7 +116,7 @@ describe("InvoiceDocumentRenderer — une pièce, un PDF, une fois", () => {
         subjectId: invoice.id,
         occurredAt: NOW,
         payload: {
-          subjectLabel: "FA-2026-000001",
+          subjectLabel: "FA-LFD-2026-000001",
           payer: { id: "c_port", name: "Boulangerie du Port" },
           kind: "invoice",
           byteCount: document?.bytes.length,
@@ -171,7 +171,7 @@ describe("InvoiceDocumentRenderer — une pièce, un PDF, une fois", () => {
     const [failed] = h.events.traced.map((event) => event.journalFact());
     expect(failed).toMatchObject({
       type: "invoice.document_render_failed",
-      payload: { subjectLabel: "FA-2026-000001", kind: "invoice" },
+      payload: { subjectLabel: "FA-LFD-2026-000001", kind: "invoice" },
     });
     expect(String(failed?.payload["failure"])).toContain("rien n'a été écrasé");
   });
@@ -195,7 +195,7 @@ describe("InvoiceDocumentRenderer — une pièce, un PDF, une fois", () => {
     const lines = [line("PAIN", 5.5, 500)];
     const note = Invoice.creditNote({
       id: "inv_2",
-      number: InvoiceNumber.compose(2026, 2),
+      number: InvoiceNumber.compose("LFD", 2026, 2),
       issuedOn: "2026-10-02",
       corrected,
       priorCreditNotes: [],
@@ -207,7 +207,7 @@ describe("InvoiceDocumentRenderer — une pièce, un PDF, une fois", () => {
 
     await h.renderer.ensure(note.id);
 
-    expect(h.kept.saved).toEqual(["invoices/le_1/FA-2026-000002.pdf"]);
+    expect(h.kept.saved).toEqual(["invoices/le_1/FA-LFD-2026-000002.pdf"]);
     expect(h.events.traced[0]?.journalFact().payload).toMatchObject({ kind: "credit_note" });
   });
 

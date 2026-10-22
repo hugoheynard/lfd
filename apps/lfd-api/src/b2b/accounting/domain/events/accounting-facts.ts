@@ -51,6 +51,11 @@ export const ACCOUNTING_FACTS = {
    */
   invoicePaymentTermsChanged: "legal_entity.invoice_payment_terms_changed",
   /**
+   * Le préfixe de numéro des factures est posé (plan `plan-zero-faille.md`,
+   * lot ZA) — libre tant que l'entité n'a rien émis, gelé ensuite.
+   */
+  invoicePrefixSet: "legal_entity.invoice_prefix_set",
+  /**
    * Le schéma des mandats à venir bascule — CORE ↔ interentreprises. Les
    * brouillons de l'entité deviennent caducs dans la même transaction ; les
    * actifs gardent le leur.

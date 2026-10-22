@@ -197,7 +197,7 @@ export interface DeliveryEnRouteCopy {
  * comptabilité, en français : seuls les mots du gabarit se traduisent ici.
  */
 export interface InvoiceIssuedCopy {
-  /** `{number}` — « Votre facture FA-2026-000001 ». */
+  /** `{number}` — « Votre facture FA-LFD-2026-000001 ». */
   readonly title: string;
   /** `{title}`, `{seller}`. */
   readonly subject: string;

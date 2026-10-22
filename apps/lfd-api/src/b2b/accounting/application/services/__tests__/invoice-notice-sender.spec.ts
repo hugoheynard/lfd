@@ -131,7 +131,7 @@ describe("« Votre facture » part à l'émission (E6, Q3)", () => {
       ],
     ]);
     expect(h.mailer.sent[0]?.data).toMatchObject({
-      invoiceNumber: "FA-2026-000001",
+      invoiceNumber: "FA-LFD-2026-000001",
       period: "du 1er au 30 septembre 2026",
       total: "16,55\u00A0€",
       paymentMeans: "Prélèvement SEPA — mandat RUM-PORT-1",
@@ -143,7 +143,7 @@ describe("« Votre facture » part à l'émission (E6, Q3)", () => {
         subjectId: MONTHLY.id,
         occurredAt: NOW,
         payload: {
-          subjectLabel: "FA-2026-000001",
+          subjectLabel: "FA-LFD-2026-000001",
           payer: { id: "c_port", name: "Boulangerie du Port" },
           recipientCount: 2,
         },
@@ -155,10 +155,10 @@ describe("« Votre facture » part à l'émission (E6, Q3)", () => {
     const h = setup();
     const pdf = Buffer.from("%PDF-1.7 rendu");
 
-    await h.sender.send(MONTHLY.id, { fileName: "FA-2026-000001.pdf", bytes: pdf });
+    await h.sender.send(MONTHLY.id, { fileName: "FA-LFD-2026-000001.pdf", bytes: pdf });
 
     expect(h.mailer.sent[0]?.data).toMatchObject({
-      document: { fileName: "FA-2026-000001.pdf", pdfBase64: pdf.toString("base64") },
+      document: { fileName: "FA-LFD-2026-000001.pdf", pdfBase64: pdf.toString("base64") },
     });
   });
 

@@ -273,6 +273,13 @@ export interface LegalEntityView {
    * domaine (`sellerBlockers`). Vide quand rien ne manque côté vendeur.
    */
   readonly missingToInvoice: readonly string[];
+  /**
+   * Le préfixe de numéro des factures — le `LFD` de `FA-LFD-2026-000001`
+   * (lot ZA) ; `null` tant qu'il n'est pas posé, et l'entité n'émet pas.
+   */
+  readonly invoicePrefix: string | null;
+  /** Vrai dès la première pièce émise : le préfixe ne change plus. */
+  readonly invoicePrefixFrozen: boolean;
   /** Zone 20 du mandat — ce que le contrat couvre, en une ligne. */
   readonly mandateContractDescription: string;
   /** Zone 12 du mandat — récurrent, ou ponctuel. */
@@ -579,3 +586,14 @@ export const setInvoicePaymentTermsPayloadSchema = z.strictObject({
   earlyPaymentDiscount: z.string().nullable(),
 });
 export type SetInvoicePaymentTermsPayload = z.infer<typeof setInvoicePaymentTermsPayloadSchema>;
+
+/**
+ * Le préfixe de numéro des factures : 2 à 6 lettres, recopiées du domaine
+ * (`InvoicePrefix`), qui reste l'autorité — l'écran s'en sert pour guider.
+ */
+export const INVOICE_PREFIX_MIN_LENGTH = 2;
+export const INVOICE_PREFIX_MAX_LENGTH = 6;
+
+/** Poser le préfixe. La FORME seulement — l'agrégat juge les lettres et le gel. */
+export const setInvoicePrefixPayloadSchema = z.strictObject({ prefix: z.string() });
+export type SetInvoicePrefixPayload = z.infer<typeof setInvoicePrefixPayloadSchema>;

@@ -24,6 +24,7 @@ const SELLER: InvoiceSellerFacts = {
     recoveryIndemnityCents: 4_000,
     earlyPaymentDiscount: "néant",
   }),
+  invoicePrefix: "LFD",
 };
 
 function buyerWith(billingAddressLines: readonly string[]): InvoiceBuyer & InvoiceBuyerFacts {

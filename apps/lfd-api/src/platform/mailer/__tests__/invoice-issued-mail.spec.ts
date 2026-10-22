@@ -14,7 +14,7 @@ const invoice = REGISTRY["customer.invoice-issued"];
 
 function render(overrides: Partial<Parameters<typeof invoice>[0]> = {}) {
   return invoice({
-    invoiceNumber: "FA-2026-000007",
+    invoiceNumber: "FA-LFD-2026-000007",
     sellerName: "La Folie Douce",
     buyerName: "Boulangerie du Port",
     issuedOn: "mercredi 30 septembre 2026",
@@ -33,9 +33,9 @@ describe("le courriel « votre facture »", () => {
   it("porte numéro, date, période, payeur, échéance, règlement, TTC et le lien", () => {
     const rendered = render();
 
-    expect(rendered.subject).toBe("Votre facture FA-2026-000007 — La Folie Douce");
+    expect(rendered.subject).toBe("Votre facture FA-LFD-2026-000007 — La Folie Douce");
     for (const expected of [
-      "FA-2026-000007",
+      "FA-LFD-2026-000007",
       "mercredi 30 septembre 2026",
       "pour les commandes du 5 au 11 octobre 2026",
       "Boulangerie du Port",
@@ -53,11 +53,15 @@ describe("le courriel « votre facture »", () => {
 
   it("joint le PDF Factur-X rendu, sous le nom de la pièce, et l'annonce", () => {
     const rendered = render({
-      document: { fileName: "FA-2026-000007.pdf", pdfBase64: "JVBERi0=" },
+      document: { fileName: "FA-LFD-2026-000007.pdf", pdfBase64: "JVBERi0=" },
     });
 
     expect(rendered.attachments).toEqual([
-      { filename: "FA-2026-000007.pdf", contentBase64: "JVBERi0=", contentType: "application/pdf" },
+      {
+        filename: "FA-LFD-2026-000007.pdf",
+        contentBase64: "JVBERi0=",
+        contentType: "application/pdf",
+      },
     ]);
     expect(rendered.html).toContain("format PDF Factur-X");
   });
@@ -74,10 +78,10 @@ describe("le courriel « votre facture »", () => {
     const english = render({ locale: "en" });
     const italian = render({ locale: "it" });
 
-    expect(english.subject).toBe("Your invoice FA-2026-000007 — La Folie Douce");
+    expect(english.subject).toBe("Your invoice FA-LFD-2026-000007 — La Folie Douce");
     expect(english.html).toContain("See my invoices");
     expect(english.html).toContain("Total incl. VAT");
-    expect(italian.subject).toBe("La sua fattura FA-2026-000007 — La Folie Douce");
+    expect(italian.subject).toBe("La sua fattura FA-LFD-2026-000007 — La Folie Douce");
     expect(italian.html).toContain("Vedi le mie fatture");
   });
 });

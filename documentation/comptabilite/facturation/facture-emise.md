@@ -72,8 +72,14 @@ compte actif sans SIREN reste actif.
 `invoice-invariants.ts`, `invoice-parties.ts`), `value-objects/invoice-number.ts`,
 `value-objects/invoice-quantity.ts`, `services/invoice-from-dossier.ts`.
 
-- **Numéro** `FA-<année>-<6 chiffres>`, avoirs dans la même séquence ; l'année
-  est celle de `issued_on`.
+- **Numéro** `FA-<préfixe>-<année>-<6 chiffres>` (ex. `FA-LFD-2026-000001`,
+  lot ZA de [`plan-zero-faille.md`](plan-zero-faille.md)), avoirs dans la même
+  séquence ; l'année est celle de `issued_on`, le préfixe celui de l'entité
+  (`InvoicePrefix`, 2 à 6 lettres majuscules). 21 caractères au plus,
+  lettres, chiffres et `-` : BR-FR-01/02 (BT-1) tenues par construction.
+- **Bon sans date de livraison** (`delivered_on` NULL) : l'émission est
+  bloquée (`order_delivery_unknown`, M5) ; le refus nomme le bon et le geste
+  (enregistrer son retrait ou sa livraison, ou l'annuler).
 - **Parties figées** (vendeur, acheteur = payeur légal) ; mentions copiées de
   l'entité, catégorie `goods`, pas d'option sur les débits.
   `Invoice.issue` juge les manques **avant** tout le reste
@@ -111,6 +117,19 @@ WHERE last_issued_on <= jour` dans la transaction de l'émission, refusé hors
 - **Le brouillon se construit après le numéro** : `InvoiceIssuer.issue` reçoit
   une fonction `draft(number)`.
 - **Numéro unique dans toute la base**, en plus de (entité, année, rang).
+- **Préfixe par entité** (lot ZA, migration `20261022160000_le_prefixe_de_numero`) :
+  `legal_entities.invoice_prefix`, posé dans la fiche de l'entité au
+  back-office (carte « Numérotation des factures », `PUT
+/admin/accounting/legal-entities/:id/invoice-prefix`), unique entre entités,
+  **figé dès la première pièce** — agrégat (`InvoicePrefixIsFrozenError`) et
+  base (`legal_entity_invoice_prefix_frozen`). Sans préfixe, l'entité n'émet
+  pas (`invoice_prefix_missing`). Recopié sur `invoice.invoice_prefix` ;
+  `invoice_prefix_of_entity` refuse une pièce d'un autre préfixe, la ligne de
+  l'entité lue `FOR SHARE`.
+- **Rang lié au compteur en base** (lot ZA) : `invoice_rank_from_counter`
+  refuse une pièce dont le rang n'est pas celui que le compteur vient
+  d'atteindre ; `invoice_number_counter_has_invoice` (différé au COMMIT)
+  refuse un compteur avancé sans sa pièce. « Aucun trou » tient en base.
 - **Un bon n'est facturé qu'une fois** : index partiel unique sur
   `invoice_order.order_id` pour les seules 380. Un avoir, même total, ne libère
   pas ses bons.

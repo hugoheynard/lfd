@@ -6,7 +6,7 @@ import type { IssuedInvoiceView, MyIssuedInvoiceView } from '@lfd/contracts';
  */
 export const SEPTEMBER: MyIssuedInvoiceView = {
   invoiceId: 'inv_1',
-  number: 'FA-2026-000007',
+  number: 'FA-LFD-2026-000007',
   kind: 'invoice',
   correctedInvoiceNumber: null,
   issuedOn: '2026-09-30',
@@ -24,9 +24,9 @@ export const SEPTEMBER: MyIssuedInvoiceView = {
 export const CREDIT_NOTE: MyIssuedInvoiceView = {
   ...SEPTEMBER,
   invoiceId: 'cn_1',
-  number: 'FA-2026-000009',
+  number: 'FA-LFD-2026-000009',
   kind: 'credit_note',
-  correctedInvoiceNumber: 'FA-2026-000007',
+  correctedInvoiceNumber: 'FA-LFD-2026-000007',
   dueOn: null,
   period: null,
   periodClosesAt: null,
@@ -39,7 +39,7 @@ export const CREDIT_NOTE: MyIssuedInvoiceView = {
 export const AUGUST_REJECTED: MyIssuedInvoiceView = {
   ...SEPTEMBER,
   invoiceId: 'inv_0',
-  number: 'FA-2026-000004',
+  number: 'FA-LFD-2026-000004',
   issuedOn: '2026-08-31',
   period: '2026-08',
   periodLabel: 'du 1er au 31 août 2026',

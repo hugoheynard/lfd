@@ -166,6 +166,9 @@ export {
   RECOVERY_INDEMNITY_MIN_CENTS,
   RECOVERY_INDEMNITY_MAX_CENTS,
   EARLY_PAYMENT_DISCOUNT_MAX_LENGTH,
+  setInvoicePrefixPayloadSchema,
+  INVOICE_PREFIX_MIN_LENGTH,
+  INVOICE_PREFIX_MAX_LENGTH,
 } from "./legal-entity.js";
 export type { BillingCycleView } from "./billing-cycle.js";
 export { exportMandatesForBankPayloadSchema } from "./mandate-bank-export.js";
@@ -374,6 +377,7 @@ export type {
   SetPayerBillingModePayload,
   InvoicePaymentTermsView,
   SetInvoicePaymentTermsPayload,
+  SetInvoicePrefixPayload,
 } from "./legal-entity.js";
 export {
   fulfillmentPreferencePayloadSchema,
@@ -783,6 +787,7 @@ export { enterPackedResupplyLineSchema } from "./packing-resupplies.js";
 export type {
   EnterPackedResupplyLine,
   PackingResuppliesView,
+  PackingResupplyKind,
   PackingResupplyLineView,
   PackingResupplyView,
 } from "./packing-resupplies.js";

@@ -32,6 +32,7 @@ export const SELLER_FACTS: InvoiceSellerFacts = {
   vatNumber: "FR00900000001",
   archived: false,
   paymentTerms: TERMS,
+  invoicePrefix: "LFD",
 };
 
 export const BUYER: InvoiceBuyer = {
@@ -82,7 +83,7 @@ export function breakdownOf(lines: readonly InvoiceLineInput[]): InvoiceVatBreak
 export function issueInput(overrides: Partial<IssueInvoiceInput> = {}): IssueInvoiceInput {
   return {
     id: "inv_1",
-    number: InvoiceNumber.compose(2026, 1),
+    number: InvoiceNumber.compose("LFD", 2026, 1),
     issuedOn: ISSUED_ON,
     dueOn: DUE_ON,
     sellerFacts: SELLER_FACTS,
@@ -91,7 +92,7 @@ export function issueInput(overrides: Partial<IssueInvoiceInput> = {}): IssueInv
     deliveryAddressLines: null,
     orders: [
       { orderId: "o_1", reference: "CMD-001", deliveredOn: "2026-09-12" },
-      { orderId: "o_2", reference: "CMD-002", deliveredOn: null },
+      { orderId: "o_2", reference: "CMD-002", deliveredOn: "2026-09-13" },
     ],
     lines: LINES,
     vat: breakdownOf(LINES),

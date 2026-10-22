@@ -1,9 +1,24 @@
 import type { LegalEntityRecord } from "../domain/ports/legal-entity.reader.js";
 
 import type { FieldCipher } from "../../../platform/crypto/field-cipher.js";
-import type { LegalEntity as LegalEntityRow } from "../../../platform/database/client/client.js";
+import type {
+  LegalEntity as LegalEntityTable,
+  Prisma,
+} from "../../../platform/database/client/client.js";
 import { LegalEntity, type LegalEntitySnapshot } from "../domain/entities/legal-entity.js";
 import { sellerBlockers } from "../domain/services/invoice-issuance-blockers.js";
+
+/**
+ * Ce que toute relecture d'une entité charge en plus de sa ligne : UNE de ses
+ * pièces, s'il y en a — c'est ce qui gèle son préfixe de numéro (lot ZA).
+ */
+export const LEGAL_ENTITY_ROW_INCLUDE = {
+  invoices: { select: { id: true }, take: 1 },
+} as const satisfies Prisma.LegalEntityInclude;
+
+export type LegalEntityRow = LegalEntityTable & {
+  readonly invoices: readonly { readonly id: string }[];
+};
 
 /**
  * Ligne → agrégat. Les value objects **revalident** au passage : une ligne écrite
@@ -84,6 +99,8 @@ export function toView(entity: LegalEntity, isLastActive: boolean): LegalEntityR
     },
     // Du domaine, comme `missingToCollect` : une seule définition de « peut facturer ».
     missingToInvoice: sellerBlockers(entity.invoiceSellerFacts()).map((blocker) => blocker.message),
+    invoicePrefix: snapshot.invoicePrefix,
+    invoicePrefixFrozen: entity.invoicePrefixFrozen,
     mandateContractDescription: snapshot.mandateContractDescription,
     mandatePaymentType: snapshot.mandatePaymentType,
     mandateScheme: snapshot.mandateScheme,
@@ -140,6 +157,8 @@ function toSnapshot(row: LegalEntityRow, cipher: FieldCipher): LegalEntitySnapsh
     invoiceLatePenaltyRateBasisPoints: row.invoiceLatePenaltyRateBasisPoints,
     invoiceRecoveryIndemnityCents: row.invoiceRecoveryIndemnityCents,
     invoiceEarlyPaymentDiscount: row.invoiceEarlyPaymentDiscount,
+    invoicePrefix: row.invoicePrefix,
+    invoicesIssued: row.invoices.length > 0,
   };
 }
 
@@ -171,11 +190,14 @@ function toSnapshot(row: LegalEntityRow, cipher: FieldCipher): LegalEntitySnapsh
  * frappe. S'il figurait ici, un geste staff qui a chargé l'entité AVANT une
  * frappe concurrente le remettrait à `null` en sauvant — et le créancier
  * imprimé redeviendrait corrigeable sous des mandats déjà frappés.
+ *
+ * N'écrit pas non plus `invoicesIssued` (lot ZA) : ce n'est pas une colonne,
+ * c'est l'existence d'une ligne d'`invoice`, lue à la relecture.
  */
 export function legalEntityColumns(
   snapshot: LegalEntitySnapshot,
   cipher: FieldCipher,
-): Omit<LegalEntitySnapshot, "id" | "creditorIban" | "firstMandateIssuedAt"> & {
+): Omit<LegalEntitySnapshot, "id" | "creditorIban" | "firstMandateIssuedAt" | "invoicesIssued"> & {
   readonly creditorIbanSealed: string | null;
 } {
   return {
@@ -216,5 +238,6 @@ export function legalEntityColumns(
     invoiceLatePenaltyRateBasisPoints: snapshot.invoiceLatePenaltyRateBasisPoints,
     invoiceRecoveryIndemnityCents: snapshot.invoiceRecoveryIndemnityCents,
     invoiceEarlyPaymentDiscount: snapshot.invoiceEarlyPaymentDiscount,
+    invoicePrefix: snapshot.invoicePrefix,
   };
 }

@@ -16,7 +16,7 @@ import { NO_LEDGER_FILTER } from "../my-invoices-ledger.js";
 function piece(rank: number, overrides: Partial<ArchiveCandidate> = {}): ArchiveCandidate {
   return {
     id: `inv_${String(rank)}`,
-    number: `FA-2026-${String(rank).padStart(6, "0")}`,
+    number: `FA-LFD-2026-${String(rank).padStart(6, "0")}`,
     isCreditNote: false,
     issuedOn: "2026-03-01",
     rendered: true,
@@ -80,7 +80,7 @@ describe("les pièces du zip de « Mes factures » (P2)", () => {
     const visible = [piece(1), piece(2, { rendered: false }), piece(3, { rendered: false })];
 
     expect(() => archivePieces(visible, ALL)).toThrow(InvoiceArchiveNotRenderedError);
-    expect(() => archivePieces(visible, ALL)).toThrow(/FA-2026-000003, FA-2026-000002/);
+    expect(() => archivePieces(visible, ALL)).toThrow(/FA-LFD-2026-000003, FA-LFD-2026-000002/);
     expect(archivePieces(visible, { by: "ids", ids: ["inv_1"] })).toHaveLength(1);
   });
 });

@@ -76,6 +76,8 @@ const BASE_ENTITY: LegalEntityView = {
     earlyPaymentDiscount: null,
   },
   missingToInvoice: [],
+  invoicePrefix: 'LFD',
+  invoicePrefixFrozen: false,
 };
 
 const VIEW: MandateBankExportsView = {

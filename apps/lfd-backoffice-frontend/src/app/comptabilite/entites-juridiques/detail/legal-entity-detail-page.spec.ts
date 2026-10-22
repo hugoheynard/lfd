@@ -90,6 +90,8 @@ function entity(over: Partial<LegalEntityView> = {}): LegalEntityView {
       earlyPaymentDiscount: null,
     },
     missingToInvoice: [],
+    invoicePrefix: 'LFD',
+    invoicePrefixFrozen: false,
     ...over,
   };
 }
@@ -333,6 +335,9 @@ describe('LegalEntityDetailPage', () => {
       'Taux des pénalités de retard (%)',
       'Indemnité forfaitaire de recouvrement (€)',
       'Escompte pour paiement anticipé',
+      // Et la carte de la numérotation un depuis le 2026-10-22 (lot ZA) : le
+      // préfixe libre de l'entité fixture — toujours pas un champ ICS.
+      'Préfixe des factures',
     ]);
     expect(text(fixture)).toContain('Il ne se remplace pas');
   });

@@ -11,7 +11,7 @@ import { FixedClock } from "../src/platform/time/fixed-clock.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import { setUpEntity } from "./collection-returns-scene.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";
-import { addBillingAddress, attachTo, createCompany, createUser } from "./factories.js";
+import { addBillingAddress, attachTo, createCompany, createUser, handOver } from "./factories.js";
 
 /**
  * **La scène de l'annulation d'une commande AU COMPTE** (doc
@@ -183,7 +183,8 @@ export async function payer(
 
 /**
  * Un bon au compte de 105,50 € (100 € HT à 5,5 %), passé deux jours avant la
- * clôture, sans jour de service : le fournil n'a rien à retirer. `id` permet
+ * clôture, sans jour de service : le fournil n'a rien à retirer ; retiré au
+ * comptoir une heure après (lot ZA : sans date de livraison, pas de facture). `id` permet
  * de choisir l'identifiant (casse mêlée, pour la collation) ; `incoherent`
  * en fait un bon non facturable.
  */
@@ -192,7 +193,7 @@ export async function accountOrder(
   options: { readonly id?: string; readonly incoherent?: boolean } = {},
 ): Promise<{ readonly id: string; readonly orderNumber: string }> {
   seq += 1;
-  return context().prisma.order.create({
+  const placed = await context().prisma.order.create({
     data: {
       ...(options.id === undefined ? {} : { id: options.id }),
       orderNumber: `CMD-C5-${String(seq)}`,
@@ -217,8 +218,11 @@ export async function accountOrder(
         },
       },
     },
-    select: { id: true, orderNumber: true },
+    select: { id: true, orderNumber: true, createdAt: true },
   });
+  // Retiré au comptoir : un bon sans date de livraison ne se facture pas (M5).
+  await handOver(context().prisma, placed);
+  return { id: placed.id, orderNumber: placed.orderNumber };
 }
 
 export const REASON = "Le client s'est trompé de semaine";

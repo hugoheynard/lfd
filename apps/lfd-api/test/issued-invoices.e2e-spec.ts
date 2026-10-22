@@ -35,7 +35,7 @@ import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
 import { Clock } from "../src/platform/time/clock.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { addBillingAddress, attachTo, createCompany, createUser } from "./factories.js";
+import { addBillingAddress, attachTo, createCompany, createUser, handOver } from "./factories.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const ICS = "FR72ZZZ123456";
@@ -141,6 +141,8 @@ async function entity(): Promise<string> {
       earlyPaymentDiscount: "néant",
     })
     .expect(204);
+  // Le préfixe de numéro (lot ZA) : sans lui, l'entité n'émet pas.
+  await staff().put(`${ENTITIES}/${id}/invoice-prefix`).send({ prefix: "LFD" }).expect(204);
   return id;
 }
 
@@ -157,7 +159,7 @@ async function member(companyId: string, role: CustomerRole, email: string): Pro
 async function orderOf(companyId: string, placedBy: string): Promise<void> {
   seq += 1;
   const user = await ctx.prisma.user.findUniqueOrThrow({ where: { auth0Sub: placedBy } });
-  await ctx.prisma.order.create({
+  const placedOrder = await ctx.prisma.order.create({
     data: {
       orderNumber: `CMD-E6-${String(seq)}`,
       companyId,
@@ -179,7 +181,9 @@ async function orderOf(companyId: string, placedBy: string): Promise<void> {
         },
       },
     },
+    select: { id: true, orderNumber: true, createdAt: true },
   });
+  await handOver(ctx.prisma, placedOrder);
 }
 
 /**

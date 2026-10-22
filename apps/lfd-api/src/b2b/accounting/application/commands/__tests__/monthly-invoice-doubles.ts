@@ -53,7 +53,7 @@ export class CountingNumbering extends InvoiceNumbering {
   private rank = 0;
   next(_legalEntityId: string, issuedOn: string): Promise<InvoiceNumber> {
     this.rank += 1;
-    return Promise.resolve(InvoiceNumber.compose(Number(issuedOn.slice(0, 4)), this.rank));
+    return Promise.resolve(InvoiceNumber.compose("LFD", Number(issuedOn.slice(0, 4)), this.rank));
   }
 }
 
@@ -147,6 +147,26 @@ export class NoHandovers extends OrderHandoverHistoryReader {
   facts = new Map<string, OrderHandoverHistoryFact>();
   ofOrders(): Promise<ReadonlyMap<string, OrderHandoverHistoryFact>> {
     return Promise.resolve(this.facts);
+  }
+}
+
+/**
+ * Chaque bon demandé a été retiré au comptoir à `handedOverAt` : la facture
+ * date sa livraison de ce jour-là (M5, lot ZA — un bon sans date bloque).
+ */
+export class EveryOrderHandedOver extends OrderHandoverHistoryReader {
+  constructor(private readonly handedOverAt: Date) {
+    super();
+  }
+  ofOrders(orderIds: readonly string[]): Promise<ReadonlyMap<string, OrderHandoverHistoryFact>> {
+    return Promise.resolve(
+      new Map(
+        orderIds.map((orderId) => [
+          orderId,
+          { orderId, handedOverAt: this.handedOverAt, via: "scan", atDoor: false },
+        ]),
+      ),
+    );
   }
 }
 

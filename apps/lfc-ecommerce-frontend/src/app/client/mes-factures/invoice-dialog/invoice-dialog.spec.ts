@@ -113,7 +113,7 @@ describe('InvoiceDialog', () => {
     );
 
     expect(el.querySelector('[data-invoice-meta]')?.textContent).toContain(
-      'corrige la facture FA-2026-000007',
+      'corrige la facture FA-LFD-2026-000007',
     );
   });
 

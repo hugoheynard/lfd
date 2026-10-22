@@ -32,7 +32,7 @@ import {
  */
 
 const PDF = Buffer.from("%PDF-1.7 pièce rangée");
-const KEY = "invoices/le_1/FA-2026-000001.pdf";
+const KEY = "invoices/le_1/FA-LFD-2026-000001.pdf";
 
 function rendered(): Invoice {
   const invoice = Invoice.issue(issueInput());
@@ -40,11 +40,13 @@ function rendered(): Invoice {
   return invoice;
 }
 
-const PENDING = Invoice.issue(issueInput({ id: "inv_2", number: InvoiceNumber.compose(2026, 2) }));
+const PENDING = Invoice.issue(
+  issueInput({ id: "inv_2", number: InvoiceNumber.compose("LFD", 2026, 2) }),
+);
 const OTHER_PAYER = Invoice.issue(
   issueInput({
     id: "inv_3",
-    number: InvoiceNumber.compose(2026, 3),
+    number: InvoiceNumber.compose("LFD", 2026, 3),
     buyer: { ...BUYER, companyId: "c_other", name: "Autre" },
   }),
 );
@@ -76,7 +78,7 @@ describe("le PDF d'une pièce, côté client (E3b)", () => {
       new GetMyCompanyInvoiceDocumentQuery("u_compta", "c_port", "inv_1"),
     );
 
-    expect(document.fileName).toBe("FA-2026-000001.pdf");
+    expect(document.fileName).toBe("FA-LFD-2026-000001.pdf");
     expect(document.bytes.equals(PDF)).toBe(true);
   });
 

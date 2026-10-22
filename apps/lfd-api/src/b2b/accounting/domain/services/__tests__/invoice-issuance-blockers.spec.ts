@@ -1,5 +1,6 @@
 import {
   invoiceIssuanceBlockers,
+  orderDeliveryBlockers,
   payerIssuanceBlockers,
   sellerBlockers,
   type InvoiceBuyerFacts,
@@ -19,6 +20,7 @@ const SELLER: InvoiceSellerFacts = {
     recoveryIndemnityCents: 4_000,
     earlyPaymentDiscount: "néant",
   }),
+  invoicePrefix: "LFD",
 };
 
 const BUYER: InvoiceBuyerFacts = {
@@ -135,5 +137,36 @@ describe("payerIssuanceBlockers — l'entité qui facturera", () => {
       "buyer_siren_missing",
     ]);
     expect(blockers[0]?.message).toContain("2 entités émettrices");
+  });
+});
+
+describe("le préfixe et la date de livraison (lot ZA)", () => {
+  it("une entité sans préfixe ne peut pas émettre : le manque dit où le poser", () => {
+    const blockers = sellerBlockers({ ...SELLER, invoicePrefix: null });
+    expect(blockers.map((b) => b.code)).toEqual(["invoice_prefix_missing"]);
+    expect(blockers[0]?.message).toContain("La Folie Douce SAS");
+    expect(blockers[0]?.message).toContain("Comptabilité › Entités juridiques");
+    expect(blockers[0]?.message).toContain("Numérotation des factures");
+  });
+
+  it("un bon sans date de livraison : un manque par bon, qui le nomme avec le geste", () => {
+    const blockers = orderDeliveryBlockers([
+      { reference: "CMD-001", deliveredOn: "2026-09-12" },
+      { reference: "CMD-002", deliveredOn: null },
+      { reference: "CMD-003", deliveredOn: null },
+    ]);
+    expect(blockers.map((b) => b.code)).toEqual([
+      "order_delivery_unknown",
+      "order_delivery_unknown",
+    ]);
+    expect(blockers[0]?.message).toContain("Le bon CMD-002 n'a pas de date de livraison");
+    expect(blockers[1]?.message).toContain("Le bon CMD-003");
+    expect(blockers[0]?.message).toContain("Enregistrer son retrait ou sa livraison");
+  });
+
+  it("tous les bons datés : aucun manque", () => {
+    expect(orderDeliveryBlockers([{ reference: "CMD-001", deliveredOn: "2026-09-12" }])).toEqual(
+      [],
+    );
   });
 });

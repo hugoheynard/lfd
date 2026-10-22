@@ -62,7 +62,7 @@ describe("renderFacturXml — facture simple", () => {
     expect(xml).toContain(`<ram:ID>${FACTURX_EN16931_PROFILE}</ram:ID>`);
     expect(FACTURX_EN16931_PROFILE).toBe("urn:cen.eu:en16931:2017");
     expect(xml).toContain(
-      '<ram:ID>FA-2026-000001</ram:ID><ram:TypeCode>380</ram:TypeCode><ram:IssueDateTime><udt:DateTimeString format="102">20260930</udt:DateTimeString></ram:IssueDateTime>',
+      '<ram:ID>FA-LFD-2026-000001</ram:ID><ram:TypeCode>380</ram:TypeCode><ram:IssueDateTime><udt:DateTimeString format="102">20260930</udt:DateTimeString></ram:IssueDateTime>',
     );
     expect(xml).not.toContain("InvoiceReferencedDocument");
   });
@@ -95,7 +95,7 @@ describe("renderFacturXml — facture simple", () => {
     expect(xml).toContain("Pas d&apos;escompte pour paiement anticipé.");
     expect(xml).toContain("Catégorie d&apos;opération : livraison de biens.");
     expect(xml).toContain(
-      "Bons de commande : CMD-001 (livré le 12/09/2026), CMD-002 (livraison non constatée).",
+      "Bons de commande : CMD-001 (livré le 12/09/2026), CMD-002 (livré le 13/09/2026).",
     );
   });
 
@@ -155,7 +155,7 @@ describe("renderFacturXml — avoir", () => {
   const creditLines = [line("JUS", 20, 500)];
   const note = Invoice.creditNote({
     id: "cn_1",
-    number: InvoiceNumber.compose(2026, 2),
+    number: InvoiceNumber.compose("LFD", 2026, 2),
     issuedOn: "2026-10-03",
     corrected,
     priorCreditNotes: [],
@@ -166,9 +166,9 @@ describe("renderFacturXml — avoir", () => {
   const xml = renderFacturXml(note);
 
   it("est un 381 qui cite la facture corrigée (BT-25), sans échéance", () => {
-    expect(xml).toContain("<ram:ID>FA-2026-000002</ram:ID><ram:TypeCode>381</ram:TypeCode>");
+    expect(xml).toContain("<ram:ID>FA-LFD-2026-000002</ram:ID><ram:TypeCode>381</ram:TypeCode>");
     expect(xml).toContain(
-      "<ram:InvoiceReferencedDocument><ram:IssuerAssignedID>FA-2026-000001</ram:IssuerAssignedID></ram:InvoiceReferencedDocument>",
+      "<ram:InvoiceReferencedDocument><ram:IssuerAssignedID>FA-LFD-2026-000001</ram:IssuerAssignedID></ram:InvoiceReferencedDocument>",
     );
     expect(xml).not.toContain("DueDateDateTime");
     expect(xml).toContain("Avoir : sans échéance.");

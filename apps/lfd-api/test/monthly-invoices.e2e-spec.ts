@@ -39,7 +39,7 @@ import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
 import { Clock } from "../src/platform/time/clock.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { addBillingAddress, attachTo, createCompany, createUser } from "./factories.js";
+import { addBillingAddress, attachTo, createCompany, createUser, handOver } from "./factories.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 
 const HOUR_MS = 60 * 60 * 1000;
@@ -63,7 +63,7 @@ const TERMS = {
 const ENTITIES = "/admin/accounting/legal-entities";
 const COLLECTION = "/admin/accounting/collection";
 const MONTHLY = "/admin/accounting/monthly-invoices";
-const NUMBER = /^FA-\d{4}-\d{6}$/u;
+const NUMBER = /^FA-LFD-\d{4}-\d{6}$/u;
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -157,6 +157,7 @@ async function entity(): Promise<string> {
     .send({ ...RIB, iban: "FR1420041010050500013M02606", holder: "La Folie Douce" })
     .expect(204);
   await staff().put(`${ENTITIES}/${id}/invoice-payment-terms`).send(TERMS).expect(204);
+  await staff().put(`${ENTITIES}/${id}/invoice-prefix`).send({ prefix: "LFD" }).expect(204);
   await staff().put(`${ENTITIES}/${id}/auto-collection`).send({ enabled: true }).expect(204);
   return id;
 }
@@ -195,7 +196,7 @@ async function payer(
     email: `patron${String(seq)}@port.test`,
   });
   await attachTo(ctx.prisma, owner.id, company.id, CustomerRole.owner);
-  await ctx.prisma.order.create({
+  const placedOrder = await ctx.prisma.order.create({
     data: {
       orderNumber: `CMD-E4-${String(seq)}`,
       companyId: company.id,
@@ -217,7 +218,9 @@ async function payer(
         },
       },
     },
+    select: { id: true, orderNumber: true, createdAt: true },
   });
+  await handOver(ctx.prisma, placedOrder);
   return company;
 }
 
@@ -432,6 +435,31 @@ describe("la facture du mois, puis le lot qui l'encaisse (E4)", () => {
     expect(signaled.map((row) => row.payerCompanyId)).toEqual([homeless.id]);
     expect(signaled[0]?.message).toContain("ajoutez l'adresse de facturation");
     expect(await ctx.prisma.invoice.count({ where: { payerCompanyId: homeless.id } })).toBe(0);
+  });
+
+  /** M5 (plan `plan-zero-faille.md`, lot ZA) : la date de livraison ne s'invente pas. */
+  it("un bon jamais retiré signale son payeur en nommant le bon ; aucun numéro n'est pris", async () => {
+    const id = await entity();
+    const complete = await payer(id);
+    const waiting = await payer(id);
+    const order = await ctx.prisma.order.findFirstOrThrow({
+      where: { companyId: waiting.id },
+      select: { id: true, orderNumber: true },
+    });
+    await ctx.prisma.orderHandover.delete({ where: { orderId: order.id } });
+
+    const report = await issueByHand(id);
+
+    expect(report.issued.map((issue) => issue.payerCompanyId)).toEqual([complete.id]);
+    expect(report.blocked.map((issue) => issue.payerCompanyId)).toEqual([waiting.id]);
+    const signaled = (await view(id)).signaled;
+    expect(signaled[0]?.message).toContain(
+      `Le bon ${order.orderNumber} n'a pas de date de livraison`,
+    );
+    expect(signaled[0]?.message).toContain("Enregistrer son retrait ou sa livraison");
+    expect(await ctx.prisma.invoice.count({ where: { payerCompanyId: waiting.id } })).toBe(0);
+    const counter = await ctx.prisma.invoiceNumberCounter.findMany({ select: { lastRank: true } });
+    expect(counter).toEqual([{ lastRank: 1 }]);
   });
 
   it("le bouton le 2 du mois suivant : datée du 2, jamais antidatée, numéro dans l'ordre", async () => {
@@ -902,7 +930,7 @@ async function payersInvoiced(): Promise<readonly string[]> {
 async function laterOrder(companyId: string, createdAt: Date): Promise<void> {
   seq += 1;
   const user = await createUser(ctx.prisma, { auth0Sub: `r3-later-${String(seq)}` });
-  await ctx.prisma.order.create({
+  const placedOrder = await ctx.prisma.order.create({
     data: {
       orderNumber: `CMD-R3-${String(seq)}`,
       companyId,
@@ -924,7 +952,9 @@ async function laterOrder(companyId: string, createdAt: Date): Promise<void> {
         },
       },
     },
+    select: { id: true, orderNumber: true, createdAt: true },
   });
+  await handOver(ctx.prisma, placedOrder);
 }
 
 /**
@@ -981,7 +1011,7 @@ async function siteOnOwnMandate(
     },
   });
   const user = await createUser(ctx.prisma, { auth0Sub: `e4b-site-${String(seq)}` });
-  await ctx.prisma.order.create({
+  const placedOrder = await ctx.prisma.order.create({
     data: {
       orderNumber: `CMD-E4-${String(seq)}`,
       companyId: site.id,
@@ -1004,6 +1034,8 @@ async function siteOnOwnMandate(
         },
       },
     },
+    select: { id: true, orderNumber: true, createdAt: true },
   });
+  await handOver(ctx.prisma, placedOrder);
   return { id: site.id, reference };
 }

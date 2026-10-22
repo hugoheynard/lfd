@@ -10,7 +10,7 @@ import { IssuedInvoicesCard } from './issued-invoices-card';
 /** Des dates seulement affichées : aucune n'est comparée à l'horloge. */
 const INVOICE: IssuedInvoiceSummaryView = {
   invoiceId: 'inv_1',
-  number: 'FA-2026-000007',
+  number: 'FA-LFD-2026-000007',
   kind: 'invoice',
   correctedInvoiceNumber: null,
   issuedOn: '2026-09-30',
@@ -61,9 +61,9 @@ describe('IssuedInvoicesCard', () => {
     const credit: IssuedInvoiceSummaryView = {
       ...INVOICE,
       invoiceId: 'cn_1',
-      number: 'FA-2026-000009',
+      number: 'FA-LFD-2026-000009',
       kind: 'credit_note',
-      correctedInvoiceNumber: 'FA-2026-000007',
+      correctedInvoiceNumber: 'FA-LFD-2026-000007',
       dueOn: null,
       period: null,
     };
@@ -75,7 +75,7 @@ describe('IssuedInvoicesCard', () => {
     expect(row?.textContent).toContain('septembre 2026');
     expect(row?.textContent).toMatch(/105,50/u);
     expect(host.querySelector('[data-issued-invoice="cn_1"]')?.textContent).toContain(
-      'corrige FA-2026-000007',
+      'corrige FA-LFD-2026-000007',
     );
   });
 
@@ -115,7 +115,7 @@ describe('IssuedInvoicesCard', () => {
     ) {
       saved.push(this.download);
     });
-    const pending = { ...INVOICE, invoiceId: 'inv_0', number: 'FA-2026-000006' };
+    const pending = { ...INVOICE, invoiceId: 'inv_0', number: 'FA-LFD-2026-000006' };
     const rendered = { ...INVOICE, documentAvailable: true };
     const host = (await boot(() => Promise.resolve({ invoices: [rendered, pending] })))
       .nativeElement as HTMLElement;
@@ -131,7 +131,7 @@ describe('IssuedInvoicesCard', () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(pdfAsked).toEqual(['inv_1']);
-    expect(saved).toEqual(['FA-2026-000007.pdf']);
+    expect(saved).toEqual(['FA-LFD-2026-000007.pdf']);
     vi.restoreAllMocks();
   });
 });

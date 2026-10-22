@@ -31,4 +31,12 @@ export abstract class LegalEntityRepository {
    * elle vit dans le handler plutôt que dans `archive()`.
    */
   abstract hasAnotherActive(exceptId: string): Promise<boolean>;
+
+  /**
+   * Le nom de l'**autre** entité qui porte déjà ce préfixe de numéro, ou
+   * `null` (lot ZA). Même raison que la précédente : l'unicité est une
+   * propriété de l'ensemble, qu'un agrégat ne voit pas. La base la tient
+   * aussi (index unique) ; cette question sert à refuser avec un nom.
+   */
+  abstract invoicePrefixHolder(prefix: string, exceptId: string): Promise<string | null>;
 }

@@ -23,7 +23,7 @@ function invoicedWorld(): { readonly w: World; readonly invoice: CollectableInvo
   const [a, b] = [order("c_port"), order("c_port")];
   const invoice: CollectableInvoice = {
     invoiceId: "inv_1",
-    number: "FA-2026-000001",
+    number: "FA-LFD-2026-000001",
     totalCents: 1_999,
     orderIds: [a.orderId, b.orderId],
   };

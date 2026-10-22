@@ -39,7 +39,7 @@ describe("Invoice.issue", () => {
   it("fige le numéro, les parties, les mentions et les totaux, sans statut de paiement", () => {
     const state = issuedInvoice().toState();
     expect(state).toMatchObject({
-      number: "FA-2026-000001",
+      number: "FA-LFD-2026-000001",
       type: "380",
       correctedInvoiceId: null,
       issuedOn: "2026-09-30",
@@ -63,12 +63,44 @@ describe("Invoice.issue", () => {
     ]);
   });
 
-  it("garde les bons (BT-13) et ne leur invente pas de date de livraison", () => {
+  it("garde les bons (BT-13) et leur date de livraison réelle", () => {
     expect(
       issuedInvoice()
         .toState()
         .orders.map((o) => o.deliveredOn),
-    ).toEqual(["2026-09-12", null]);
+    ).toEqual(["2026-09-12", "2026-09-13"]);
+  });
+
+  /** M5 (plan `plan-zero-faille.md`, lot ZA) : la date de livraison ne s'invente pas. */
+  it("refuse un bon sans date de livraison, en le nommant avec le geste de sortie", () => {
+    const issue = (): Invoice =>
+      Invoice.issue(
+        issueInput({
+          orders: [
+            { orderId: "o_1", reference: "CMD-001", deliveredOn: "2026-09-12" },
+            { orderId: "o_2", reference: "CMD-002", deliveredOn: null },
+          ],
+        }),
+      );
+    expect(issue).toThrow(InvoiceIssuanceBlockedError);
+    expect(issue).toThrow(/Le bon CMD-002 n'a pas de date de livraison/u);
+    expect(issue).toThrow(/Enregistrer son retrait ou sa livraison/u);
+    expect(issue).not.toThrow(/CMD-001/u);
+  });
+
+  /** F14 (lot ZA) : le numéro nomme l'entité ; un autre préfixe est une pièce mal assemblée. */
+  it("refuse un numéro pris sous un autre préfixe que celui de l'entité", () => {
+    expect(() =>
+      Invoice.issue(issueInput({ number: InvoiceNumber.compose("XYZ", 2026, 1) })),
+    ).toThrow(InvoiceAssemblyError);
+  });
+
+  it("refuse d'émettre pour une entité sans préfixe, en disant où le poser", () => {
+    const issue = (): Invoice =>
+      Invoice.issue(issueInput({ sellerFacts: { ...SELLER_FACTS, invoicePrefix: null } }));
+    expect(issue).toThrow(InvoiceIssuanceBlockedError);
+    expect(issue).toThrow(/n'a pas de préfixe de numéro de facture/u);
+    expect(issue).toThrow(/Numérotation des factures/u);
   });
 
   it("porte l'unité et une quantité décimale par ligne", () => {
@@ -135,9 +167,9 @@ describe("Invoice.issue — refus d'émettre", () => {
   });
 
   it("refuse un numéro d'une autre année que l'émission", () => {
-    expect(() => Invoice.issue(issueInput({ number: InvoiceNumber.compose(2025, 1) }))).toThrow(
-      InvoiceAssemblyError,
-    );
+    expect(() =>
+      Invoice.issue(issueInput({ number: InvoiceNumber.compose("LFD", 2025, 1) })),
+    ).toThrow(InvoiceAssemblyError);
   });
 
   it.each([
@@ -149,8 +181,8 @@ describe("Invoice.issue — refus d'émettre", () => {
       "bon cité deux fois",
       {
         orders: [
-          { orderId: "o", reference: "C", deliveredOn: null },
-          { orderId: "o", reference: "C", deliveredOn: null },
+          { orderId: "o", reference: "C", deliveredOn: "2026-09-12" },
+          { orderId: "o", reference: "C", deliveredOn: "2026-09-12" },
         ],
       },
     ],
@@ -185,9 +217,9 @@ describe("Invoice.issue — les totaux se recomposent", () => {
 describe("Invoice.attachDocument", () => {
   it("pose la clé et l'empreinte une fois", () => {
     const invoice = issuedInvoice();
-    invoice.attachDocument("invoices/FA-2026-000001.pdf", SHA);
+    invoice.attachDocument("invoices/FA-LFD-2026-000001.pdf", SHA);
     expect(invoice.toState()).toMatchObject({
-      documentKey: "invoices/FA-2026-000001.pdf",
+      documentKey: "invoices/FA-LFD-2026-000001.pdf",
       documentSha256: SHA,
     });
   });

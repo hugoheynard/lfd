@@ -4,7 +4,7 @@ import { FieldCipher } from "../../../platform/crypto/field-cipher.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { InvoiceIssuersReader } from "../domain/ports/invoice-issuers.reader.js";
 import type { InvoiceSellerFacts } from "../domain/services/invoice-issuance-blockers.js";
-import { toDomain } from "./legal-entity.mapper.js";
+import { LEGAL_ENTITY_ROW_INCLUDE, toDomain } from "./legal-entity.mapper.js";
 
 /**
  * Les entités en service, rebâties en agrégat le temps d'en tirer les faits
@@ -24,6 +24,7 @@ export class PrismaInvoiceIssuersReader extends InvoiceIssuersReader {
     const rows = await this.prisma.legalEntity.findMany({
       where: { archivedAt: null },
       orderBy: { createdAt: "asc" },
+      include: LEGAL_ENTITY_ROW_INCLUDE,
     });
     return rows.map((row) => toDomain(row, this.cipher).invoiceSellerFacts());
   }

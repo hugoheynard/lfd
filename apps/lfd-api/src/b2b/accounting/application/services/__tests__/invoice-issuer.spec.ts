@@ -37,7 +37,7 @@ class StepNumbering extends InvoiceNumbering {
     this.rank += 1;
     const year = Number(issuedOn.slice(0, 4));
     this.steps.log.push(`number:${legalEntityId}:${String(year)}`);
-    return Promise.resolve(InvoiceNumber.compose(year, this.rank));
+    return Promise.resolve(InvoiceNumber.compose("LFD", year, this.rank));
   }
 }
 
@@ -98,11 +98,11 @@ describe("InvoiceIssuer — numéroter, écrire, journaliser en une transaction"
 
     const invoice = await h.issuer.issue({ legalEntityId: ENTITY, issuedOn: ISSUED_ON, draft });
 
-    expect(invoice.number).toBe("FA-2026-000001");
+    expect(invoice.number).toBe("FA-LFD-2026-000001");
     expect(h.steps.log).toEqual([
       "uow:begin",
       `number:${ENTITY}:2026`,
-      "insert:FA-2026-000001",
+      "insert:FA-LFD-2026-000001",
       "journal:invoice.issued",
       `durable:invoice.issued:${invoice.id}`,
       "uow:end",
@@ -120,7 +120,7 @@ describe("InvoiceIssuer — numéroter, écrire, journaliser en une transaction"
       subjectId: invoice.id,
       occurredAt: NOW,
       payload: {
-        subjectLabel: "FA-2026-000001",
+        subjectLabel: "FA-LFD-2026-000001",
         legalEntity: { id: ENTITY, name: invoice.toState().seller.name },
         payer: { id: "c_port", name: "Boulangerie du Port" },
         issuedOn: ISSUED_ON,
@@ -161,8 +161,8 @@ describe("InvoiceIssuer — numéroter, écrire, journaliser en une transaction"
       type: "invoice.credit_note_issued",
       subjectId: "cn_1",
       payload: {
-        subjectLabel: "FA-2026-000002",
-        correctedInvoice: { id: corrected.id, name: "FA-2026-000001" },
+        subjectLabel: "FA-LFD-2026-000002",
+        correctedInvoice: { id: corrected.id, name: "FA-LFD-2026-000001" },
       },
     });
   });

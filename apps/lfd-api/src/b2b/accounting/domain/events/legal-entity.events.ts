@@ -242,6 +242,29 @@ export class AutoCollectionChangedEvent implements JournaledEvent {
  * compris (« à renseigner ») : c'est ce qui dira quelles mentions portaient
  * les factures émises de part et d'autre (plan `facture-emise.md`).
  */
+/**
+ * Le préfixe de numéro des factures est posé — l'avant et l'après : « sous
+ * quel préfixe numérotait-on, et qui l'a choisi » doit se lire seul (lot ZA).
+ */
+export class InvoicePrefixSetEvent implements JournaledEvent {
+  constructor(
+    readonly entity: LegalEntitySubject,
+    readonly at: Date,
+    readonly from: string | null,
+    readonly to: string,
+  ) {}
+
+  journalFact(): JournalFact {
+    return {
+      type: ACCOUNTING_FACTS.invoicePrefixSet,
+      subjectType: SUBJECT,
+      subjectId: this.entity.id,
+      occurredAt: this.at,
+      payload: { subjectLabel: this.entity.name, from: this.from, to: this.to },
+    };
+  }
+}
+
 export class InvoicePaymentTermsChangedEvent implements JournaledEvent {
   constructor(
     readonly entity: LegalEntitySubject,

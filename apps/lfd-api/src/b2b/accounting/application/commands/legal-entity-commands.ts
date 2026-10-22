@@ -98,6 +98,19 @@ export class SetInvoicePaymentTermsCommand {
   ) {}
 }
 
+/**
+ * Le préfixe de numéro des factures (plan `plan-zero-faille.md`, F14, lot ZA)
+ * — un geste à part, jamais un champ de la correction : il se gèle à la
+ * première pièce, et un geste sans retour ne se range pas parmi des champs
+ * qui se corrigent tous les jours.
+ */
+export class SetInvoicePrefixCommand {
+  constructor(
+    readonly legalEntityId: string,
+    readonly prefix: string,
+  ) {}
+}
+
 /** Archiver, ou remettre en service. Le drapeau évite deux commandes jumelles. */
 export class SetLegalEntityArchivedCommand {
   constructor(

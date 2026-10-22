@@ -79,6 +79,13 @@ class InMemoryEntities extends LegalEntityRepository {
     const other = [...this.rows.values()].some((e) => e.id !== exceptId && !e.archived);
     return Promise.resolve(other);
   }
+
+  invoicePrefixHolder(prefix: string, exceptId: string): Promise<string | null> {
+    const holder = [...this.rows.values()].find(
+      (e) => e.id !== exceptId && e.invoicePrefix?.value === prefix,
+    );
+    return Promise.resolve(holder?.name ?? null);
+  }
 }
 
 function sampleEntity(id = "le1"): LegalEntity {

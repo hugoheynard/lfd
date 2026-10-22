@@ -10,7 +10,7 @@ import { OrderInvoicesCard } from './order-invoices-card';
 /** Des dates seulement affichées : aucune n'est comparée à l'horloge. */
 const INVOICE: IssuedInvoiceSummaryView = {
   invoiceId: 'inv_1',
-  number: 'FA-2026-000007',
+  number: 'FA-LFD-2026-000007',
   kind: 'invoice',
   correctedInvoiceNumber: null,
   issuedOn: '2026-09-30',
@@ -26,9 +26,9 @@ const INVOICE: IssuedInvoiceSummaryView = {
 const CREDIT: IssuedInvoiceSummaryView = {
   ...INVOICE,
   invoiceId: 'cn_1',
-  number: 'FA-2026-000008',
+  number: 'FA-LFD-2026-000008',
   kind: 'credit_note',
-  correctedInvoiceNumber: 'FA-2026-000007',
+  correctedInvoiceNumber: 'FA-LFD-2026-000007',
   dueOn: null,
   totalTtcCents: 400,
 };
@@ -73,7 +73,7 @@ describe('OrderInvoicesCard', () => {
     const rows = element.querySelectorAll('[data-order-invoice]');
     expect(rows).toHaveLength(2);
     expect(rows[0]?.querySelector('a')?.getAttribute('href')).toBe('/comptabilite/factures/inv_1');
-    expect(rows[1]?.textContent).toContain('corrige FA-2026-000007');
+    expect(rows[1]?.textContent).toContain('corrige FA-LFD-2026-000007');
     expect(rows[1]?.textContent).toContain('4,00');
   });
 

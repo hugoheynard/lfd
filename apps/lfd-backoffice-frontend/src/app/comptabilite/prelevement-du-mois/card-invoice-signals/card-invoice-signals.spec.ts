@@ -26,7 +26,7 @@ interface World {
 async function boot(
   signals: () => Promise<{ signaled: readonly CardInvoiceSignalView[] }>,
   canWrite = true,
-  retry: CardInvoiceRetryView = { outcome: 'issued', number: 'FA-2030-000001', message: null },
+  retry: CardInvoiceRetryView = { outcome: 'issued', number: 'FA-LFD-2030-000001', message: null },
 ): Promise<World> {
   const retried: string[] = [];
   const said: string[] = [];
@@ -86,7 +86,7 @@ describe('CardInvoiceSignals', () => {
 
     expect(world.retried).toEqual(['o_1']);
     expect(world.said[0]).toContain('Facture émise');
-    expect(world.said[0]).toContain('FA-2030-000001');
+    expect(world.said[0]).toContain('FA-LFD-2030-000001');
   });
 
   it("sans le droit d'écriture, aucun bouton", async () => {

@@ -1,0 +1,40 @@
+/* Les blocs de la carte se séparent par le gap, jamais par une marge. */
+.ip-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.ip-said {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+  max-width: 65ch;
+}
+
+/* Le numéro se lit comme il s'imprime : à chasse fixe. */
+.ip-number {
+  font-family: var(--fold-font-mono);
+  color: var(--fold-color-text);
+}
+
+.ip-current {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+.ip-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--fold-space-sm);
+}
+
+.ip-row fold-input {
+  flex: 0 1 18rem;
+}
+
+.ip-actions {
+  display: flex;
+  justify-content: flex-end;
+}

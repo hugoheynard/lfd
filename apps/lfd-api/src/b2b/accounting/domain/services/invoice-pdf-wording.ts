@@ -60,7 +60,7 @@ export function documentTitle(state: InvoiceState): string {
   return state.correctedInvoiceId === null ? "FACTURE" : "AVOIR";
 }
 
-/** Le nom du fichier remis : `FA-2026-000001.pdf`. */
+/** Le nom du fichier remis : `FA-LFD-2026-000001.pdf`. */
 export function invoiceDocumentFileName(state: Pick<InvoiceState, "number">): string {
   return `${state.number}.pdf`;
 }

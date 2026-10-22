@@ -31,7 +31,7 @@ const SEPTEMBER = Invoice.issue(
 const OCTOBER = Invoice.issue(
   issueInput({
     id: "inv_2",
-    number: InvoiceNumber.compose(2026, 2),
+    number: InvoiceNumber.compose("LFD", 2026, 2),
     issuedOn: "2026-10-31",
     dueOn: "2026-11-14",
   }),
@@ -39,7 +39,7 @@ const OCTOBER = Invoice.issue(
 const OTHER_PAYER = Invoice.issue(
   issueInput({
     id: "inv_3",
-    number: InvoiceNumber.compose(2026, 3),
+    number: InvoiceNumber.compose("LFD", 2026, 3),
     buyer: { ...BUYER, companyId: "c_other", name: "Autre" },
   }),
 );
@@ -59,10 +59,10 @@ const roles = new FixedRoles(
 const MOTHER = Invoice.issue(
   issueInput({
     id: "inv_9",
-    number: InvoiceNumber.compose(2026, 9),
+    number: InvoiceNumber.compose("LFD", 2026, 9),
     orders: [
-      { orderId: "o_port", reference: "CMD-008", deliveredOn: null },
-      { orderId: "o_site", reference: "CMD-009", deliveredOn: null },
+      { orderId: "o_port", reference: "CMD-008", deliveredOn: "2026-09-20" },
+      { orderId: "o_site", reference: "CMD-009", deliveredOn: "2026-09-21" },
     ],
   }),
 );
@@ -85,8 +85,8 @@ describe("« Mes factures » côté client (E6)", () => {
     for (const user of ["u_owner", "u_compta"]) {
       const view = await list.execute(new ListMyCompanyInvoicesQuery(user, "c_port"));
       expect(view.invoices.map((invoice) => [invoice.number, invoice.period])).toEqual([
-        ["FA-2026-000002", null],
-        ["FA-2026-000001", "2026-09"],
+        ["FA-LFD-2026-000002", null],
+        ["FA-LFD-2026-000001", "2026-09"],
       ]);
     }
   });
@@ -96,7 +96,7 @@ describe("« Mes factures » côté client (E6)", () => {
 
     expect(view.invoices[1]).toEqual({
       invoiceId: "inv_1",
-      number: "FA-2026-000001",
+      number: "FA-LFD-2026-000001",
       kind: "invoice",
       correctedInvoiceNumber: null,
       issuedOn: "2026-09-30",
@@ -136,7 +136,7 @@ describe("« Mes factures » côté client (E6)", () => {
     expect(view.mandateReference).toBe("RUM-PORT-1");
     expect(view.orders).toEqual([
       { reference: "CMD-001", deliveredOn: "2026-09-12" },
-      { reference: "CMD-002", deliveredOn: null },
+      { reference: "CMD-002", deliveredOn: "2026-09-13" },
     ]);
     expect(view.documentAvailable).toBe(false);
     expect(JSON.stringify(view.seller)).not.toMatch(/iban|bic/iu);
@@ -165,7 +165,7 @@ describe("« Mes factures » d'un site (E6, suite (a))", () => {
   it("voit, en lecture, les pièces de sa maison mère qui couvrent un de ses bons", async () => {
     const view = await list.execute(new ListMyCompanyInvoicesQuery("u_site", "c_site"));
 
-    expect(view.invoices.map((invoice) => invoice.number)).toEqual(["FA-2026-000009"]);
+    expect(view.invoices.map((invoice) => invoice.number)).toEqual(["FA-LFD-2026-000009"]);
     const one = await read.execute(new GetMyCompanyInvoiceQuery("u_site", "c_site", "inv_9"));
     expect(one.payerCompanyId).toBe("c_port");
   });
@@ -206,11 +206,11 @@ describe("« Mes factures » : règlement, total dû, filtres (plan page-mes-fac
 
     expect(view.invoices.map((one) => [one.number, one.settlement])).toEqual([
       [
-        "FA-2026-000002",
+        "FA-LFD-2026-000002",
         { status: "collection_planned", date: "2026-11-14", otherInvoicesOnDebit: 0 },
       ],
       [
-        "FA-2026-000001",
+        "FA-LFD-2026-000001",
         { status: "collection_rejected", date: "2026-10-12", otherInvoicesOnDebit: 2 },
       ],
     ]);
@@ -231,7 +231,7 @@ describe("« Mes factures » : règlement, total dû, filtres (plan page-mes-fac
       new ListMyCompanyInvoicesQuery("u_owner", "c_port", { year: 2026, month: 10, kind: null }),
     );
 
-    expect(view.invoices.map((one) => one.number)).toEqual(["FA-2026-000002"]);
+    expect(view.invoices.map((one) => one.number)).toEqual(["FA-LFD-2026-000002"]);
     expect(view.amountDue.totalCents).toBe(2 * 1_655);
     const notes = await list.execute(
       new ListMyCompanyInvoicesQuery("u_owner", "c_port", {
@@ -268,7 +268,7 @@ describe("les factures depuis le back-office (E6)", () => {
     const list = await new ListCompanyInvoicesHandler(invoices, periods).execute(
       new ListCompanyInvoicesQuery("c_other"),
     );
-    expect(list.invoices.map((invoice) => invoice.number)).toEqual(["FA-2026-000003"]);
+    expect(list.invoices.map((invoice) => invoice.number)).toEqual(["FA-LFD-2026-000003"]);
 
     const one = await new GetIssuedInvoiceHandler(invoices, periods).execute(
       new GetIssuedInvoiceQuery("inv_3"),

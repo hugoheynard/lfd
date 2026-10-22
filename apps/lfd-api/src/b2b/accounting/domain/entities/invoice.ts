@@ -87,23 +87,26 @@ export class Invoice {
   ) {}
 
   /**
-   * Émet une facture. Les parties sont jugées par `invoiceIssuanceBlockers`
-   * AVANT tout le reste : un manque se dit en premier, et en entier.
+   * Émet une facture. Les parties et les bons sont jugés par
+   * `invoiceIssuanceBlockers` et `orderDeliveryBlockers` AVANT tout le reste :
+   * un manque se dit en premier, et en entier.
    *
-   * @throws {InvoiceIssuanceBlockedError} un manque nommé (vendeur, mentions, acheteur).
+   * @throws {InvoiceIssuanceBlockedError} un manque nommé (vendeur, préfixe,
+   *         mentions, acheteur, bon sans date de livraison).
    * @throws {InvalidInvoiceError} date, ligne ou bon mal formé.
    * @throws {InvoiceTotalsMismatchError} la ventilation ne se recompose pas.
-   * @throws {InvoiceAssemblyError} numéro d'une autre année que l'émission.
+   * @throws {InvoiceAssemblyError} numéro d'une autre année que l'émission, ou
+   *         d'un autre préfixe que l'entité.
    */
   static issue(input: IssueInvoiceInput): Invoice {
     const number = input.number.value;
     const legalEntityId = input.seller.legalEntityId;
     const parties = issuableParties(
-      number,
-      legalEntityId,
+      input.number,
       input.sellerFacts,
       input.seller,
       input.buyer,
+      input.orders,
     );
     assertDates(input.number, input.issuedOn, input.dueOn);
     if (input.orders.length === 0) {

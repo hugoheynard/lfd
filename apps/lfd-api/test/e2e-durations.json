@@ -152,6 +152,7 @@
   "test/invitation-expiry.e2e-spec.ts": 6000,
   "test/invoice-dossiers.e2e-spec.ts": 6300,
   "test/invoice-payment-terms.e2e-spec.ts": 4000,
+  "test/invoice-numbering-guards.e2e-spec.ts": 13294,
   "test/invoices.e2e-spec.ts": 9000,
   "test/issued-invoices.e2e-spec.ts": 9000,
   "test/kbis.e2e-spec.ts": 4507,

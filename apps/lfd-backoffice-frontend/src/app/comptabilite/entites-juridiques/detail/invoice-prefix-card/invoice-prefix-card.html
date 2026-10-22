@@ -1,0 +1,53 @@
+<fold-page-section
+  title="Numérotation des factures"
+  description="Le préfixe que chaque numéro de facture et d’avoir de cette entité imprime, pour qu’aucune lecture ne confonde ses pièces avec celles d’une autre entité."
+  separator
+>
+  <div class="ip-stack">
+    @if (entity().invoicePrefixFrozen) {
+      <div class="ip-current" data-invoice-prefix-frozen>
+        <fold-input
+          label="Préfixe des factures"
+          [value]="entity().invoicePrefix ?? ''"
+          [disabled]="true"
+        />
+        <span class="ip-number">{{ current() }}</span>
+        <fold-badge content="figé" variant="neutral" radius="pill" />
+      </div>
+      <p class="ip-said">
+        Lecture seule&nbsp;: cette entité a émis sa première facture, son préfixe ne change plus.
+        Pour numéroter sous un autre préfixe, déclarez une seconde entité juridique.
+      </p>
+    } @else {
+      @if (entity().invoicePrefix === null) {
+        <fold-callout variant="warning" data-invoice-prefix-missing>
+          Aucun préfixe&nbsp;: cette entité ne peut pas émettre de facture tant qu’il n’est pas
+          posé.
+        </fold-callout>
+      }
+      <div class="ip-row">
+        <fold-input
+          label="Préfixe des factures"
+          [hint]="hint"
+          placeholder="LFD"
+          [value]="draft()"
+          (valueChange)="draft.set($event)"
+        />
+      </div>
+      @if (preview(); as number) {
+        <p class="ip-said" data-invoice-prefix-preview>
+          Les numéros s’écriront <span class="ip-number">{{ number }}</span
+          >.
+        </p>
+      }
+      <fold-callout variant="info">
+        Le préfixe se corrige librement jusqu’à la première facture de l’entité, puis il est figé.
+      </fold-callout>
+      <div class="ip-actions">
+        <button foldButton [disabled]="busy() || draft().trim() === ''" (click)="save()">
+          Enregistrer
+        </button>
+      </div>
+    }
+  </div>
+</fold-page-section>

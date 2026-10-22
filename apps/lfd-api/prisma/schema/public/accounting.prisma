@@ -186,6 +186,14 @@ model LegalEntity {
   invoiceRecoveryIndemnityCents     Int?    @map("invoice_recovery_indemnity_cents")
   invoiceEarlyPaymentDiscount       String? @map("invoice_early_payment_discount")
 
+  /// Le préfixe de numéro des factures — le `LFD` de `FA-LFD-2026-000001`
+  /// (plan `plan-zero-faille.md`, F14, lot ZA). `null` = pas encore posé :
+  /// l'entité n'émet pas. Unique entre entités ; 2 à 6 lettres majuscules
+  /// (CHECK) ; ne change plus dès qu'une `invoice` de l'entité existe
+  /// (déclencheur `legal_entity_invoice_prefix_frozen`, invisible ici —
+  /// `20261022160000_le_prefixe_de_numero`).
+  invoicePrefix String? @unique @map("invoice_prefix")
+
   // La clé de l'objet qui porte le LOGO de l'entité, dans le stockage objet.
   // `null` = pas de logo, et c'est un état parfaitement vivable : le mandat sort
   // alors avec sa cellule vide. Le logo ne conditionne PAS l'encaissement.
@@ -211,7 +219,8 @@ model LegalEntity {
 
   // Les factures et avoirs émis sous cette entité, et leur compteur par année
   // (plan `facture-emise.md`). Côté inverse obligatoire pour
-  // Prisma ; le FK empêche d'effacer une entité qu'une facture cite.
+  // Prisma ; le FK empêche d'effacer une entité qu'une facture cite. Depuis
+  // le lot ZA, la relecture d'une entité en lit UNE : elle gèle le préfixe.
   invoices               Invoice[]
   invoiceCounter         InvoiceNumberCounter[]
   // La facture du mois (E4) : l'issue par payeur, et la tentative automatique.

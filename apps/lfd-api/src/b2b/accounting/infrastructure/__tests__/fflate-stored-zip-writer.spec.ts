@@ -21,12 +21,12 @@ function methodsOf(zip: Uint8Array): number[] {
 describe("le zip rangé sans compression", () => {
   const entries = [
     {
-      name: "FA-2026-000002.pdf",
+      name: "FA-LFD-2026-000002.pdf",
       bytes: new TextEncoder().encode("%PDF b".repeat(50)),
       modifiedOn: "2026-03-02",
     },
     {
-      name: "FA-2026-000001.pdf",
+      name: "FA-LFD-2026-000001.pdf",
       bytes: new TextEncoder().encode("%PDF a"),
       modifiedOn: "2026-03-01",
     },
@@ -37,9 +37,11 @@ describe("le zip rangé sans compression", () => {
 
     expect(methodsOf(zip)).toEqual([0, 0]);
     const read = unzipSync(zip);
-    expect(Object.keys(read)).toEqual(["FA-2026-000002.pdf", "FA-2026-000001.pdf"]);
+    expect(Object.keys(read)).toEqual(["FA-LFD-2026-000002.pdf", "FA-LFD-2026-000001.pdf"]);
     expect(
-      Buffer.from(read["FA-2026-000002.pdf"] ?? []).equals(Buffer.from(entries[0]?.bytes ?? [])),
+      Buffer.from(read["FA-LFD-2026-000002.pdf"] ?? []).equals(
+        Buffer.from(entries[0]?.bytes ?? []),
+      ),
     ).toBe(true);
   });
 

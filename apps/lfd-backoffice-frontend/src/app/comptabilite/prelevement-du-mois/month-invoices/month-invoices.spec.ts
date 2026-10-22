@@ -24,7 +24,7 @@ const VIEW: MonthlyClosureView = {
   invoices: [
     {
       invoiceId: 'inv1',
-      number: 'FA-2026-000001',
+      number: 'FA-LFD-2026-000001',
       payerCompanyId: 'c1',
       payerName: 'Boulangerie du Port',
       issuedOn: '2026-09-30',
@@ -64,7 +64,7 @@ describe('MonthInvoices', () => {
 
     expect(host.textContent).toContain('Les factures du 1er au 30 septembre 2026');
     const table = host.querySelector('[data-invoices-table]')?.textContent ?? '';
-    expect(table).toContain('FA-2026-000001');
+    expect(table).toContain('FA-LFD-2026-000001');
     expect(table).toMatch(/105,50\s€/u);
     expect(table).toContain('—');
     expect(host.querySelector('[data-invoice-unbillable]')?.textContent).toContain('CMD-9');

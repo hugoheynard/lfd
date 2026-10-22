@@ -30,6 +30,8 @@ export interface InvoiceIssuanceBlockerView {
     | "issuer_archived"
     | "seller_incomplete"
     | "payment_terms_missing"
+    | "invoice_prefix_missing"
+    | "order_delivery_unknown"
     | "buyer_unknown"
     | "buyer_siren_missing"
     | "buyer_vat_missing"

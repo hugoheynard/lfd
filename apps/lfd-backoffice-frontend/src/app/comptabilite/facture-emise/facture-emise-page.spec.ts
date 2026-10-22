@@ -19,7 +19,7 @@ import { FactureEmisePage } from './facture-emise-page';
 function issuedInvoice(over: Partial<IssuedInvoiceView> = {}): IssuedInvoiceView {
   return {
     invoiceId: 'inv_1',
-    number: 'FA-2026-000007',
+    number: 'FA-LFD-2026-000007',
     kind: 'invoice',
     correctedInvoiceNumber: null,
     issuedOn: '2026-09-30',
@@ -181,7 +181,7 @@ describe('FactureEmisePage', () => {
         Promise.resolve(
           issuedInvoice({
             kind: 'credit_note',
-            correctedInvoiceNumber: 'FA-2026-000001',
+            correctedInvoiceNumber: 'FA-LFD-2026-000001',
             dueOn: null,
           }),
         ),
@@ -189,7 +189,7 @@ describe('FactureEmisePage', () => {
     );
 
     expect(page.querySelector('[data-invoice-issued]')?.textContent).toContain(
-      'corrige la facture FA-2026-000001',
+      'corrige la facture FA-LFD-2026-000001',
     );
   });
 
@@ -252,7 +252,7 @@ describe('FactureEmisePage', () => {
       await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(resent).toEqual(['inv_1']);
-      expect(successes).toEqual(['L’e-mail de la facture FA-2026-000007 est reparti.']);
+      expect(successes).toEqual(['L’e-mail de la facture FA-LFD-2026-000007 est reparti.']);
 
       resendAnswer = () => Promise.reject(new HttpErrorResponse({ status: 409 }));
       (page.querySelector('[data-invoice-resend]') as HTMLButtonElement).click();

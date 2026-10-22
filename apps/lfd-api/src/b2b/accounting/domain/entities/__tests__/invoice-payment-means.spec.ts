@@ -32,7 +32,7 @@ describe("Invoice — le moyen de paiement figé (BG-16)", () => {
     const invoice = Invoice.issue(issueInput({ paymentMeans: SEPA }));
     const note = Invoice.creditNote({
       id: "cn_1",
-      number: InvoiceNumber.compose(2026, 2),
+      number: InvoiceNumber.compose("LFD", 2026, 2),
       issuedOn: invoice.toState().issuedOn,
       corrected: invoice,
       priorCreditNotes: [],

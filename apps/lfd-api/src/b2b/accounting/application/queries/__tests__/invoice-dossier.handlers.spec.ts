@@ -165,6 +165,7 @@ const COMPLETE_SELLER: InvoiceSellerFacts = {
     recoveryIndemnityCents: 4_000,
     earlyPaymentDiscount: "néant",
   }),
+  invoicePrefix: "LFD",
 };
 
 const COMPLETE_BUYER: StatementBuyer = {

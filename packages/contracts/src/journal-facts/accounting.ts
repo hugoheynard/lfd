@@ -150,6 +150,8 @@ export const ACCOUNTING_FACTS = {
     recoveryIndemnityCents: cents().nullable(),
     earlyPaymentDiscount: z.string().nullable(),
   }),
+  /** Le préfixe de numéro des factures, avant et après (lot ZA) ; gelé dès la première pièce. */
+  "legal_entity.invoice_prefix_set": labelled({ from: z.string().nullable(), to: z.string() }),
   "legal_entity.mandate_scheme_changed": labelled({ from: sepaScheme(), to: sepaScheme() }),
   "legal_entity.archived": labelled({}),
   "legal_entity.restored": labelled({}),

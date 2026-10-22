@@ -28,7 +28,7 @@ const EVENT = new RefundNotCreditedEvent(
   "CMD-1",
   "ref_1",
   1_250,
-  "FA-2026-000004",
+  "FA-LFD-2026-000004",
   "account_invoice",
 );
 
@@ -51,7 +51,7 @@ describe("RingRefundNotCredited", () => {
         occurredAt: NOW,
       },
     ]);
-    expect(notifier.notices[0]?.body).toContain("FA-2026-000004");
+    expect(notifier.notices[0]?.body).toContain("FA-LFD-2026-000004");
   });
 
   it("une cloche en panne ne remonte pas", async () => {

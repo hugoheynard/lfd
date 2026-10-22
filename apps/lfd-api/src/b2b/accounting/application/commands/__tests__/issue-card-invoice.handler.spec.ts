@@ -51,7 +51,7 @@ describe("IssueCardInvoiceHandler — les deux ordres d'arrivée", () => {
     w.reader.orders.set("o_1", order());
     const paid = await issue(w);
 
-    expect(paid).toMatchObject({ outcome: "issued", number: "FA-2026-000001" });
+    expect(paid).toMatchObject({ outcome: "issued", number: "FA-LFD-2026-000001" });
     expect(w.invoices.inserted).toHaveLength(1);
   });
 
@@ -100,7 +100,7 @@ describe("IssueCardInvoiceHandler — idempotence et chronologie", () => {
 
     expect((await issue(w)).outcome).toBe("already_invoiced");
     expect(w.invoices.inserted).toHaveLength(1);
-    expect(w.numbering.taken).toEqual(["FA-2026-000001"]);
+    expect(w.numbering.taken).toEqual(["FA-LFD-2026-000001"]);
   });
 
   it("un rejeu après minuit est daté du jour réel, sans heurter le dernier jour émis", async () => {
@@ -140,6 +140,18 @@ describe("IssueCardInvoiceHandler — rien ne boucle", () => {
     fixed.reader.orders.set("o_1", order());
 
     expect((await issue(fixed)).outcome).toBe("issued");
+  });
+
+  /** F14 (lot ZA) : une entité sans préfixe n'émet pas ; le refus dit où le poser. */
+  it("une entité sans préfixe de numéro : signalée avant tout numéro, le message dit où le poser", async () => {
+    const w = cardWorld(RETRAIT, [{ ...SELLER_FACTS, invoicePrefix: null }]);
+    w.reader.orders.set("o_1", order());
+
+    const result = await issue(w);
+
+    expect(result.outcome).toBe("blocked");
+    expect(result.message).toContain("n'a pas de préfixe de numéro de facture");
+    expect(w.numbering.taken).toEqual([]);
   });
 
   it("un TTC recalculé qui ne tombe pas sur l'encaissé est signalé, pas facturé", async () => {

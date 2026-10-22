@@ -49,7 +49,7 @@ describe("invoiceFromDossier", () => {
 
   it("ne reprend pas la date DEMANDÉE comme date de livraison", () => {
     const state = invoiceFromDossier(input()).toState();
-    expect(state.orders.map((o) => o.deliveredOn)).toEqual(["2026-09-12", null]);
+    expect(state.orders.map((o) => o.deliveredOn)).toEqual(["2026-09-12", "2026-09-13"]);
     expect(JSON.stringify(state)).not.toContain("2026-09-16");
   });
 

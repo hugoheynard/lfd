@@ -3,7 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { FieldCipher } from "../../../platform/crypto/field-cipher.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { LegalEntityReader, type LegalEntityRecord } from "../domain/ports/legal-entity.reader.js";
-import { toDomain, toView } from "./legal-entity.mapper.js";
+import { LEGAL_ENTITY_ROW_INCLUDE, toDomain, toView } from "./legal-entity.mapper.js";
 
 /**
  * Adaptateur Prisma de la lecture d'écran.
@@ -29,6 +29,7 @@ export class PrismaLegalEntityReader extends LegalEntityReader {
       // Les vivantes d'abord : une entité archivée est une trace qu'on garde
       // pour les documents qui la citent, pas une fiche qu'on vient consulter.
       orderBy: [{ archivedAt: { sort: "asc", nulls: "first" } }, { name: "asc" }],
+      include: LEGAL_ENTITY_ROW_INCLUDE,
     });
     // La liste porte déjà l'ensemble : « la dernière en service » se lit sans
     // seconde requête, et sans que la définition existe à deux endroits.
@@ -39,7 +40,10 @@ export class PrismaLegalEntityReader extends LegalEntityReader {
   }
 
   async byId(id: string): Promise<LegalEntityRecord | null> {
-    const row = await this.prisma.legalEntity.findUnique({ where: { id } });
+    const row = await this.prisma.legalEntity.findUnique({
+      where: { id },
+      include: LEGAL_ENTITY_ROW_INCLUDE,
+    });
     if (row === null) {
       return null;
     }

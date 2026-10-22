@@ -138,7 +138,7 @@ describe("renderInvoicePdf — ce que la facture imprime", () => {
       "Pas d'escompte pour paiement anticipé.",
       "livraison de biens",
       "CMD-001 (livré le 12/09/2026)",
-      "CMD-002 (livraison non constatée)",
+      "CMD-002 (livré le 13/09/2026)",
       `${state.number} — ${state.seller.name}`,
       "page 1 / 1",
     ]) {
@@ -163,7 +163,7 @@ describe("renderInvoicePdf — ce que la facture imprime", () => {
     const lines = [line("PAIN", 5.5, 500)];
     const note = Invoice.creditNote({
       id: "inv_2",
-      number: InvoiceNumber.compose(2026, 2),
+      number: InvoiceNumber.compose("LFD", 2026, 2),
       issuedOn: "2026-10-02",
       corrected,
       priorCreditNotes: [],
@@ -174,7 +174,7 @@ describe("renderInvoicePdf — ce que la facture imprime", () => {
     const printed = drawnUnicodeText(await render(note));
 
     expect(printed).toContain("AVOIR");
-    expect(printed).toContain("Avoir sur la facture FA-2026-000001");
+    expect(printed).toContain("Avoir sur la facture FA-LFD-2026-000001");
     expect(printed).toContain("Total TTC de l'avoir");
     expect(printed).not.toContain("Date d'échéance");
   });
@@ -218,8 +218,8 @@ describe("renderInvoicePdf — ce que la facture imprime", () => {
 
 describe("invoiceDocumentKey", () => {
   it("dérive la clé de l'entité et du numéro, et de rien d'autre", () => {
-    expect(invoiceDocumentKey({ legalEntityId: "le_1", number: "FA-2026-000001" })).toBe(
-      "invoices/le_1/FA-2026-000001.pdf",
+    expect(invoiceDocumentKey({ legalEntityId: "le_1", number: "FA-LFD-2026-000001" })).toBe(
+      "invoices/le_1/FA-LFD-2026-000001.pdf",
     );
   });
 });

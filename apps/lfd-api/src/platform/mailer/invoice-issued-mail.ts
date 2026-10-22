@@ -44,7 +44,7 @@ export interface InvoiceIssuedMailData {
 
 /** La pièce jointe : le nom remis au client et les octets du PDF rangé. */
 export interface InvoiceMailDocument {
-  /** `FA-2026-000001.pdf`. */
+  /** `FA-LFD-2026-000001.pdf`. */
   readonly fileName: string;
   readonly pdfBase64: string;
 }

@@ -45,7 +45,7 @@ export type InvoiceDoc = PDFKit.PDFDocument;
 
 /** Ce que le contenant reçoit — tout sauf le dessin. */
 export interface FacturXPdfInput {
-  /** « Facture FA-2026-000001 » — le titre du document (Info et XMP). */
+  /** « Facture FA-LFD-2026-000001 » — le titre du document (Info et XMP). */
   readonly title: string;
   /** `AAAA-MM-JJ` : la date de toutes les métadonnées du fichier. */
   readonly issuedOn: string;

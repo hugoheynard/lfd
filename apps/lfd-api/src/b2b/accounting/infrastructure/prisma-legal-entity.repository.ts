@@ -4,7 +4,7 @@ import { FieldCipher } from "../../../platform/crypto/field-cipher.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import type { LegalEntity } from "../domain/entities/legal-entity.js";
 import { LegalEntityRepository } from "../domain/ports/legal-entity.repository.js";
-import { legalEntityColumns, toDomain } from "./legal-entity.mapper.js";
+import { LEGAL_ENTITY_ROW_INCLUDE, legalEntityColumns, toDomain } from "./legal-entity.mapper.js";
 
 /**
  * Adaptateur Prisma du port d'**écriture**.
@@ -28,7 +28,10 @@ export class PrismaLegalEntityRepository extends LegalEntityRepository {
   }
 
   async load(id: string): Promise<LegalEntity | null> {
-    const row = await this.prisma.legalEntity.findUnique({ where: { id } });
+    const row = await this.prisma.legalEntity.findUnique({
+      where: { id },
+      include: LEGAL_ENTITY_ROW_INCLUDE,
+    });
     return row === null ? null : toDomain(row, this.cipher);
   }
 
@@ -65,5 +68,13 @@ export class PrismaLegalEntityRepository extends LegalEntityRepository {
       select: { id: true },
     });
     return other !== null;
+  }
+
+  async invoicePrefixHolder(prefix: string, exceptId: string): Promise<string | null> {
+    const holder = await this.prisma.legalEntity.findFirst({
+      where: { invoicePrefix: prefix, id: { not: exceptId } },
+      select: { name: true },
+    });
+    return holder?.name ?? null;
   }
 }

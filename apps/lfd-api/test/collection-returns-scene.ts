@@ -8,7 +8,7 @@
  */
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { jsonBody, type E2eContext } from "./e2e-harness.js";
-import { addBillingAddress, attachTo, createCompany, createUser } from "./factories.js";
+import { addBillingAddress, attachTo, createCompany, createUser, handOver } from "./factories.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const ENTITIES = "/admin/accounting/legal-entities";
@@ -62,6 +62,8 @@ export async function setUpEntity(staff: Staff): Promise<string> {
       earlyPaymentDiscount: "néant",
     })
     .expect(204);
+  // Le préfixe de numéro (lot ZA) : sans lui, l'entité n'émet pas.
+  await staff().put(`${ENTITIES}/${id}/invoice-prefix`).send({ prefix: "LFD" }).expect(204);
   return id;
 }
 
@@ -93,7 +95,7 @@ export async function invoicedPayer(
   });
   const owner = await createUser(ctx.prisma, { auth0Sub: "r5-owner", email: "patron@port.test" });
   await attachTo(ctx.prisma, owner.id, company.id, CustomerRole.owner);
-  await ctx.prisma.order.create({
+  const placedOrder = await ctx.prisma.order.create({
     data: {
       orderNumber: "CMD-R5-1",
       companyId: company.id,
@@ -115,7 +117,9 @@ export async function invoicedPayer(
         },
       },
     },
+    select: { id: true, orderNumber: true, createdAt: true },
   });
+  await handOver(ctx.prisma, placedOrder);
   return company.id;
 }
 

@@ -46,7 +46,7 @@ function rendered(rank: number, bytes: Buffer, companyId = BUYER.companyId): Inv
   const invoice = Invoice.issue(
     issueInput({
       id: `inv_${String(rank)}`,
-      number: InvoiceNumber.compose(2026, rank),
+      number: InvoiceNumber.compose("LFD", 2026, rank),
       buyer: { ...BUYER, companyId },
     }),
   );
@@ -99,8 +99,8 @@ describe("le zip de « Mes factures » (P2)", () => {
     expect(h.reader.oneCalls).toBe(0);
     const [entries] = h.zip.written;
     expect(entries?.map((entry) => entry.name)).toEqual([
-      "FA-2026-000002.pdf",
-      "FA-2026-000001.pdf",
+      "FA-LFD-2026-000002.pdf",
+      "FA-LFD-2026-000001.pdf",
     ]);
     expect(Buffer.from(entries?.[1]?.bytes ?? []).equals(PDF_1)).toBe(true);
   });
@@ -116,7 +116,7 @@ describe("le zip de « Mes factures » (P2)", () => {
     );
 
     expect(h.reader.listCalls).toEqual([["inv_2"]]);
-    expect(h.zip.written[0]?.map((entry) => entry.name)).toEqual(["FA-2026-000002.pdf"]);
+    expect(h.zip.written[0]?.map((entry) => entry.name)).toEqual(["FA-LFD-2026-000002.pdf"]);
   });
 
   it("le mur : non-membre 404, autre rôle 403 — et rien n'est lu", async () => {
@@ -149,7 +149,7 @@ describe("le zip de « Mes factures » (P2)", () => {
 
   it("une pièce pas rendue : refusée avant toute lecture du seau", async () => {
     const pending = Invoice.issue(
-      issueInput({ id: "inv_3", number: InvoiceNumber.compose(2026, 3) }),
+      issueInput({ id: "inv_3", number: InvoiceNumber.compose("LFD", 2026, 3) }),
     );
     const h = harness([rendered(1, PDF_1), pending], BYTES);
 
@@ -173,7 +173,7 @@ describe("le zip de « Mes factures » (P2)", () => {
     );
 
     await expect(refusal).rejects.toThrow(InvoiceArchiveTamperedError);
-    await expect(refusal).rejects.toThrow(/FA-2026-000002, FA-2026-000001/);
+    await expect(refusal).rejects.toThrow(/FA-LFD-2026-000002, FA-LFD-2026-000001/);
     expect(h.zip.written).toEqual([]);
   });
 });

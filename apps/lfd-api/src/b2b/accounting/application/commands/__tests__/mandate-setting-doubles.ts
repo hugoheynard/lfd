@@ -74,6 +74,10 @@ export class StepEntities extends LegalEntityRepository {
   hasAnotherActive(): Promise<boolean> {
     return Promise.resolve(false);
   }
+
+  invoicePrefixHolder(): Promise<string | null> {
+    return Promise.resolve(null);
+  }
 }
 
 /** Le port de caducité : rend ce qu'on lui confie, et marque chaque temps. */

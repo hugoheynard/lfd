@@ -115,6 +115,8 @@ async function entity(): Promise<void> {
       earlyPaymentDiscount: "néant",
     })
     .expect(204);
+  // Le préfixe de numéro (lot ZA) : sans lui, l'entité n'émet pas.
+  await staff().put(`${ENTITIES}/${id}/invoice-prefix`).send({ prefix: "LFD" }).expect(204);
 }
 
 interface Seeded {
