@@ -124,6 +124,15 @@ produits du catalogue publié, en sélection multiple.
   du §4.A.1 porte donc un sens (`exclude` | `include`), et une réinclusion
   n'est admise que sur un produit.
 - **Q2 — oui** : une règle sur un produit couvre toutes ses variantes.
+- **Catégorie figée sur la commande** : chaque ligne porte, en snapshot, le
+  produit et la catégorie de l'article au moment de la passation
+  (`order_lines.product_id`, `order_lines.category_id`), en plus du drapeau
+  d'éligibilité. On sait alors pourquoi une ligne était exclue, et le port de
+  V4 ne sert qu'à la passation et aux avenants.
+- **V5 — sans objet** : une remise de retrait n'existe que sur une commande
+  retirée, donc sans frais de livraison. La garde de l'agrégat le vérifie.
+- **V6 — oui** : le contrat servi à la boutique change de forme dans le même
+  déploiement.
 - **Q3 — oui** : la reprise recopie la réduction actuelle côté particuliers
   quand la case B2C est cochée (sans rien effacer, V8).
 
