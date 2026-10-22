@@ -176,6 +176,18 @@ describe('InformationsPage — un SITE (suit la facturation)', () => {
 });
 
 describe('InformationsPage — une ENTITÉ (ne suit pas la facturation)', () => {
+  /**
+   * Régression : la fiche ne passait plus l'identifiant de la société à la
+   * section de paiement (2026-10-20, `4f49992e0`) ; elle se croyait en
+   * ouverture de compte et cachait le RIB et le mandat de tous les clients.
+   */
+  it('ouvre le RIB et le mandat de la société, pas le mode ouverture', async () => {
+    const host = (await boot(child([]))).nativeElement as HTMLElement;
+
+    expect(host.querySelector('.pm-later')).toBeNull();
+    expect(host.querySelector('app-bank-account-section')).not.toBeNull();
+  });
+
   it('reste la fiche d’un client : identité, facturation et paiement propres', async () => {
     const host = (await boot(child([]))).nativeElement as HTMLElement;
 

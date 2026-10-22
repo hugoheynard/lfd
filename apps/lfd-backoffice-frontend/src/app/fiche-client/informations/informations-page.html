@@ -272,6 +272,7 @@
             <app-site-payment-note [parent]="parent" />
           } @else if (fiche.company(); as c) {
             <app-paiement-section
+              [companyId]="c.id"
               [companyName]="c.raisonSociale"
               [siren]="c.siren"
               [companyLegalForm]="c.formeJuridique"

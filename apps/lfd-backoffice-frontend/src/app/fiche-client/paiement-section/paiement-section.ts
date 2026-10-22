@@ -136,8 +136,15 @@ export class PaiementSection {
   private readonly mandates = inject(MandatesService);
   private readonly notify = inject(NotifyService);
 
-  /** La société concernée ; `null` tant qu'elle n'existe pas (mode ouverture). */
-  readonly companyId = input<string | null>(null);
+  /**
+   * La société concernée ; `null` tant qu'elle n'existe pas (mode ouverture).
+   *
+   * Obligatoire, même nulle : la fiche l'a perdue le 2026-10-20 (`4f49992e0`),
+   * et la section, croyant le compte pas encore ouvert, a caché le RIB et le
+   * mandat de tous les clients sans qu'aucun contrôle ne rougisse. Requise, son
+   * oubli ne compile plus.
+   */
+  readonly companyId = input.required<string | null>();
   /** Raison sociale — rappelée dans le panneau, pour ne pas mandater le mauvais compte. */
   readonly companyName = input('');
   /** Les crédits accordés — vide veut dire « paie à la commande », comme tout le monde. */
