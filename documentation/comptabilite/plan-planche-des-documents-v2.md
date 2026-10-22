@@ -81,6 +81,16 @@ Constats :
 > tirage : leur couleur s'y fige, et ceux tirés avant ce jour n'en ont pas.
 > Le tableau ci-dessus décrit l'état d'avant.
 
+### Décisions du soir (Hugo, 2026-10-22)
+
+- **Le réassort a sa propre teinte, définie sur le site** qui le reçoit, à côté
+  de ses couleurs de retrait et de livraison. Elle remplace le gris des
+  réassorts dans le camembert du compte à produire. À bâtir : un réglage de
+  plus sur le site (migration additive), lu au tirage comme les autres.
+- **Les papiers déjà tirés gardent les couleurs de leur premier tirage** :
+  accepté. Un papier réimprimé reste celui qui est parti à l'atelier ; une
+  réorganisation se voit en tirant à nouveau.
+
 ### Décisions sur les couleurs (Hugo, 2026-10-22)
 
 - **Une pastille par commande** sur les documents qui en regroupent plusieurs
