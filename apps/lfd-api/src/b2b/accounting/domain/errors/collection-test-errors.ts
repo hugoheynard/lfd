@@ -4,6 +4,7 @@ import {
   ResourceNotFoundError,
   TechnicalError,
 } from "../../../../platform/shared/errors/app-error.js";
+import type { BankExportExclusionReason } from "../ports/mandates-for-bank-export.reader.js";
 
 /**
  * Les refus du **prélèvement d'essai** (plan
@@ -26,7 +27,7 @@ export class CollectionTestAmountOutOfRangeError extends DomainError {
   }
 }
 
-/** L'échéance tombe avant le délai du calendrier des lots. */
+/** L'échéance tombe avant le délai minimal d'un essai (jours ouvrés TARGET2). */
 export class CollectionTestDayTooEarlyError extends DomainError {
   constructor(
     readonly day: string,
@@ -34,7 +35,7 @@ export class CollectionTestDayTooEarlyError extends DomainError {
   ) {
     super(
       "accounting.collection_test.day_too_early",
-      `Échéance refusée (${day}) : le calendrier des prélèvements ne permet pas une échéance avant le ${earliest}. Choisir le ${earliest} ou une date ultérieure.`,
+      `Échéance refusée (${day}) : un prélèvement d'essai ne peut pas tomber avant le ${earliest}, premier jour qu'admet le délai de la banque compté en jours ouvrés TARGET2. Choisir le ${earliest} ou une date ultérieure.`,
     );
   }
 }
@@ -251,6 +252,30 @@ export class CollectionTestFileTamperedError extends TechnicalError {
     super(
       "accounting.collection_test.file_tampered",
       `Le fichier gardé de l'essai ${messageId} ne correspond plus à son empreinte : il n'est pas rendu. Ne déposer aucune copie de ce fichier, et le signaler à l'équipe technique.`,
+    );
+  }
+}
+
+/** Pourquoi le mandat ne part pas à la banque — les mots de la carte de l'entité. */
+const NOT_EXPORTABLE_WORDING: Readonly<Record<BankExportExclusionReason, string>> = {
+  taken_over:
+    "il a été repris d'un autre créancier, et la banque doit dire comment déclarer un mandat migré.",
+  no_account: "aucun RIB n'est recopié pour lui. Saisir le RIB depuis la fiche de la société.",
+  no_bic: "son RIB n'a pas de BIC. Compléter le BIC depuis la fiche de la société.",
+};
+
+/**
+ * Le mandat de l'établissement ne peut pas partir dans le fichier de la
+ * banque : repris d'un autre créancier, sans RIB, ou sans BIC.
+ */
+export class CollectionTestMandateNotExportableError extends BusinessError {
+  constructor(
+    readonly mandateReference: string,
+    readonly reason: BankExportExclusionReason,
+  ) {
+    super(
+      "accounting.collection_test.mandate_not_exportable",
+      `Le mandat ${mandateReference} ne peut pas partir dans le fichier de la banque : ${NOT_EXPORTABLE_WORDING[reason]}`,
     );
   }
 }

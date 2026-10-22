@@ -5,6 +5,7 @@ import { GenerateCollectionTestHandler } from "./application/commands/generate-c
 import { MarkCollectionTestRefundedHandler } from "./application/commands/mark-collection-test-refunded.handler.js";
 import { WithdrawOwnEstablishmentHandler } from "./application/commands/withdraw-own-establishment.handler.js";
 import { ExportCollectionTestFileHandler } from "./application/queries/export-collection-test-file.handler.js";
+import { ExportCollectionTestMandateHandler } from "./application/queries/export-collection-test-mandate.handler.js";
 import { GetCollectionTestDebtorsHandler } from "./application/queries/get-collection-test-debtors.handler.js";
 import { ListCollectionTestsHandler } from "./application/queries/list-collection-tests.handler.js";
 import { ListOwnEstablishmentsHandler } from "./application/queries/list-own-establishments.handler.js";
@@ -57,6 +58,7 @@ export const COLLECTION_TEST_PROVIDERS: readonly Provider[] = [
   GetCollectionTestDebtorsHandler,
   ListCollectionTestsHandler,
   ExportCollectionTestFileHandler,
+  ExportCollectionTestMandateHandler,
 ];
 
 export const COLLECTION_TEST_CONTROLLERS = [

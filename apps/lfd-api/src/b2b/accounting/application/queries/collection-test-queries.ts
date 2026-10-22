@@ -11,3 +11,11 @@ export class ListCollectionTestsQuery {}
 export class ExportCollectionTestFileQuery {
   constructor(readonly testId: string) {}
 }
+
+/**
+ * Le fichier d'import du mandat d'UN établissement pour la banque — le même
+ * format que l'export de l'entité, sans figer d'export (plan §7).
+ */
+export class ExportCollectionTestMandateQuery {
+  constructor(readonly companyId: string) {}
+}

@@ -25,6 +25,7 @@ import {
 
 import { httpErrorMessage } from '@lfd/endpoints';
 
+import { saveBlob } from '../../../shared/download/save-blob';
 import { centsOf } from '../../cents-field';
 import { CollectionTestsService } from '../../collection-tests.service';
 import { day, euros } from '../../invoice-dossier-format';
@@ -44,8 +45,9 @@ export function eligibleDebtors(
 /**
  * **Générer un prélèvement d'essai** (plan `plan-prelevement-d-essai.md`) —
  * un débiteur parmi nos établissements, un montant d'au plus le plafond,
- * l'échéance proposée par le calendrier des lots, une séquence permise par le
- * mandat. L'écran ne fait que proposer : chaque refus est celui de l'agrégat,
+ * l'échéance la plus proche (J + 2 jours ouvrés, sans pré-notification : Q6),
+ * une séquence permise par le mandat. Le mandat choisi s'exporte aussi au
+ * format d'import de la banque, seul. L'écran ne fait que proposer : chaque refus est celui de l'agrégat,
  * affiché tel que le serveur le rédige.
  */
 @Component({
@@ -74,6 +76,7 @@ export class GenerateTestPanel {
   protected readonly sequence = signal<TestSequenceView | null>(null);
   protected readonly remittance = signal('');
   protected readonly saving = signal(false);
+  protected readonly exporting = signal(false);
   protected readonly error = signal<string | null>(null);
 
   protected readonly debtors = computed(() => {
@@ -94,6 +97,10 @@ export class GenerateTestPanel {
   );
   protected readonly maxLabel = computed(() => euros(this.data()?.tool.maxAmountCents ?? 0));
   protected readonly defaultRemittance = computed(() => this.data()?.tool.defaultRemittance ?? '');
+  /** Le `min` du sélecteur de date : la même borne que celle du serveur. */
+  protected readonly earliestDay = computed(
+    () => this.debtor()?.earliestCollectionDay ?? undefined,
+  );
   protected readonly earliestLabel = computed(() => {
     const earliest = this.debtor()?.earliestCollectionDay ?? null;
     return earliest === null ? '' : day(earliest);
@@ -149,6 +156,24 @@ export class GenerateTestPanel {
       this.error.set(httpErrorMessage(caught, 'Le fichier d’essai n’a pas été généré.'));
     } finally {
       this.saving.set(false);
+    }
+  }
+
+  /** Le CSV du seul mandat de l'établissement choisi, pour le portail de la banque. */
+  protected async exportMandate(): Promise<void> {
+    const debtor = this.debtor();
+    if (debtor === null || debtor.mandate === null) {
+      return;
+    }
+    this.exporting.set(true);
+    this.error.set(null);
+    try {
+      const file = await this.api.mandateFile(debtor.companyId);
+      saveBlob(file, `ESSAI-mandat-banque-${debtor.mandate.reference}.csv`);
+    } catch (caught) {
+      this.error.set(httpErrorMessage(caught, 'Le mandat n’a pas pu être exporté.'));
+    } finally {
+      this.exporting.set(false);
     }
   }
 

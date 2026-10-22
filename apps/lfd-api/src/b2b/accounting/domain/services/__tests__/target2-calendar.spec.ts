@@ -1,4 +1,5 @@
 import {
+  businessDaysAfter,
   businessDaysBefore,
   easterSunday,
   isTarget2BusinessDay,
@@ -80,5 +81,15 @@ describe("businessDaysBefore", () => {
 
   it("saute le lundi de Pâques et le Vendredi saint (mardi 7 avril − 1 = jeudi 2)", () => {
     expect(businessDaysBefore("2026-04-07", 1)).toBe("2026-04-02");
+  });
+});
+
+describe("businessDaysAfter", () => {
+  it("compte les jours OUVRÉS (vendredi + 2 = mardi)", () => {
+    expect(businessDaysAfter("2026-10-23", 2)).toBe("2026-10-27");
+  });
+
+  it("saute Noël, le 26 et le week-end (jeudi 24 décembre 2026 + 2 = mardi 29)", () => {
+    expect(businessDaysAfter("2026-12-24", 2)).toBe("2026-12-29");
   });
 });

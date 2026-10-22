@@ -14,6 +14,7 @@ import { isAuditCoherent } from "../../services/pain008-audit.js";
 import type { TestBankReturn } from "../collection-test.js";
 import {
   CREATED_AT,
+  DUE_DAY,
   EARLIEST_DAY,
   TEST_ID,
   eligible,
@@ -49,11 +50,17 @@ describe("générer un prélèvement d'essai", () => {
     expect(() => generated({ amountCents })).toThrow(CollectionTestAmountOutOfRangeError);
   });
 
-  it("refuse une échéance avant le calendrier des lots, en nommant la plus proche", () => {
-    expect(() => generated({ requestedCollectionDay: "2026-11-04" })).toThrow(
+  it("accepte l'échéance la plus proche, J + 2 jours ouvrés (jeudi → lundi)", () => {
+    expect(generated({ requestedCollectionDay: EARLIEST_DAY }).toPersistence()).toMatchObject({
+      requestedCollectionDay: EARLIEST_DAY,
+    });
+  });
+
+  it("refuse J + 1 jour ouvré, en nommant la plus proche — la pré-notification n'y est plus", () => {
+    expect(() => generated({ requestedCollectionDay: "2026-10-23" })).toThrow(
       CollectionTestDayTooEarlyError,
     );
-    expect(() => generated({ requestedCollectionDay: "2026-11-04" })).toThrow(/2026-11-05/u);
+    expect(() => generated({ requestedCollectionDay: "2026-10-23" })).toThrow(/2026-10-26/u);
   });
 
   it("refuse un jour fermé de TARGET2 (un samedi), en nommant le suivant", () => {
@@ -101,7 +108,7 @@ describe("générer un prélèvement d'essai", () => {
     expect(state.xml).toContain(`<EndToEndId>ESS-${TEST_ID}</EndToEndId>`);
     expect(state.xml).toContain("<SeqTp>FRST</SeqTp>");
     expect(state.xml).toContain("<LclInstrm><Cd>B2B</Cd></LclInstrm>");
-    expect(state.xml).toContain(`<ReqdColltnDt>${EARLIEST_DAY}</ReqdColltnDt>`);
+    expect(state.xml).toContain(`<ReqdColltnDt>${DUE_DAY}</ReqdColltnDt>`);
     expect(state.xml).toContain('<InstdAmt Ccy="EUR">0.37</InstdAmt>');
     expect(state.xml).toContain("<NbOfTxs>1</NbOfTxs>");
     expect(state.xml).toContain("<CreDtTm>2026-10-22T10:00:00</CreDtTm>");

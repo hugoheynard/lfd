@@ -60,6 +60,16 @@ export class CollectionTestsService {
     );
   }
 
+  /**
+   * Le mandat de l'établissement au format d'import de la banque — une seule
+   * ligne. Ne fige aucun export de l'entité.
+   */
+  async mandateFile(companyId: string): Promise<Blob> {
+    return firstValueFrom(
+      this.http.get(`${this.tests}/debtors/${companyId}/mandate.csv`, { responseType: 'blob' }),
+    );
+  }
+
   async markRefunded(testId: string, refundedOn: string): Promise<void> {
     await firstValueFrom(this.http.post<void>(`${this.tests}/${testId}/refunded`, { refundedOn }));
   }

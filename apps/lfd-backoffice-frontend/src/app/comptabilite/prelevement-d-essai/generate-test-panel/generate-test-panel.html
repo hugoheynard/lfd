@@ -17,6 +17,17 @@
           mandate.ibanLast4
         }}. Le schéma du fichier est celui du mandat.
       </fold-callout>
+      <button
+        foldButton
+        size="sm"
+        emphasis="outline"
+        intent="neutral"
+        data-export-mandate
+        [loading]="exporting()"
+        (click)="exportMandate()"
+      >
+        Exporter le mandat pour la banque
+      </button>
     }
   }
   <fold-input
@@ -34,7 +45,12 @@
   <fold-date
     label="Échéance"
     required
-    [hint]="'Au plus tôt le ' + earliestLabel() + ', d’après le calendrier des prélèvements.'"
+    [min]="earliestDay()"
+    [hint]="
+      'Au plus tôt le ' +
+      earliestLabel() +
+      ' : deux jours ouvrés, la pré-notification étant levée pour nos établissements.'
+    "
     [(value)]="collectionDay"
   />
   <fold-listbox label="Séquence" [options]="sequenceOptions()" [(value)]="sequence" />

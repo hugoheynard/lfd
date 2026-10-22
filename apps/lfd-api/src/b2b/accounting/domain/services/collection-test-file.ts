@@ -8,22 +8,35 @@ import {
   type TestSequence,
 } from "./pain008-document.js";
 import { sha256Of } from "./collection-batch-file.js";
-import { collectionDayOf } from "./collection-calendar.js";
 import { testSepaIdentifiers } from "./collection-test-identifiers.js";
+import { businessDaysAfter } from "./target2-calendar.js";
 import type { SepaScheme } from "../value-objects/sepa-scheme.js";
 
 /** Le libellé (`RmtInf/Ustrd`) quand le staff n'en donne pas (plan §1). */
 export const DEFAULT_TEST_REMITTANCE = "ESSAI PRELEVEMENT";
 
 /**
- * L'échéance la plus proche qu'un essai admet, et celle que l'écran propose :
- * le calendrier des lots réels (`collection-calendar.ts`), comme si le cycle
- * se clôturait à l'instant de la génération — même délai N (ou de
- * pré-notification), même report au jour ouvré TARGET2. Pas de règle neuve
- * (plan §4).
+ * Le délai minimal d'un essai, en jours ouvrés TARGET2 après le jour (Paris)
+ * de la génération.
+ *
+ * 2 est notre hypothèse du 2026-10-22 (Hugo) : la pré-notification du
+ * débiteur est levée par décision écrite pour nos établissements (Q6), il ne
+ * reste que le délai de la banque, que `question-banque.md` 3.4 lui demande.
+ * À ajuster ici seul quand elle aura répondu.
  */
-export function earliestTestCollectionDay(at: Date, creditor: CreditorSnapshot): string {
-  return collectionDayOf(at, creditor.preNotificationDays, creditor.collectionDaysAfterClosure);
+export const TEST_COLLECTION_MIN_BUSINESS_DAYS = 2;
+
+/**
+ * L'échéance la plus proche qu'un essai admet, et celle que l'écran propose :
+ * J + `TEST_COLLECTION_MIN_BUSINESS_DAYS` jours ouvrés TARGET2, comptés depuis
+ * le jour de Paris de la génération.
+ *
+ * Ce n'est PAS le calendrier des lots (`collectionDayOf`), qui inclut le
+ * délai de pré-notification : sur nos propres établissements, il est levé
+ * (Q6, plan §6). Les lots réels n'en changent pas.
+ */
+export function earliestTestCollectionDay(at: Date): string {
+  return businessDaysAfter(instantToLocal(at).day, TEST_COLLECTION_MIN_BUSINESS_DAYS);
 }
 
 /** Le jour local de Paris d'un instant — pour comparer à une échéance. */

@@ -22,9 +22,13 @@ import type {
   CollectionTestsView,
   OwnEstablishmentsView,
 } from "@lfd/contracts";
+import { instantToLocal } from "@lfd/contracts";
 
 import { pain002 } from "../src/b2b/accounting/domain/services/__tests__/bank-return-file-fixtures.js";
+import { signatureDateCell } from "../src/b2b/accounting/domain/services/mandate-bank-export-values.js";
 import { sha256Of } from "../src/b2b/accounting/domain/services/collection-batch-file.js";
+import { TEST_COLLECTION_MIN_BUSINESS_DAYS } from "../src/b2b/accounting/domain/services/collection-test-file.js";
+import { businessDaysAfter } from "../src/b2b/accounting/domain/services/target2-calendar.js";
 import { pain008XsdErrors } from "../src/b2b/accounting/domain/services/__tests__/pain008-xsd.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { Clock } from "../src/platform/time/clock.js";
@@ -57,6 +61,8 @@ const stubAdminVerifier = {
     Promise.resolve({ subject: token, scopes: [] }),
 };
 
+/** Signé il y a deux mois — comparé seulement à sa cellule F. */
+const SIGNED_AT = daysAgo(60);
 const clock = new FixedClock(new Date());
 let ctx: E2eContext;
 let seq = 0;
@@ -128,7 +134,7 @@ async function ourCompany(
       creditorId: entityId,
       reference: `RUM-ESS-${String(seq)}`,
       status: "active",
-      acceptedAt: new Date(daysAgo(60)),
+      acceptedAt: new Date(SIGNED_AT),
       scheme: "B2B",
       paymentType,
     },
@@ -190,6 +196,7 @@ describe("le droit `collection_test`", () => {
     await accountant().post(ESTABLISHMENTS).send({ companyId: "c" }).expect(403);
     await accountant().get(`${TESTS}/debtors`).expect(403);
     await accountant().post(TESTS).send({}).expect(403);
+    await accountant().get(`${TESTS}/debtors/c/mandate.csv`).expect(403);
   });
 });
 
@@ -241,6 +248,21 @@ describe("générer un prélèvement d'essai", () => {
 
     expect(JSON.stringify(response.body)).toContain("Folie Douce Val");
     expect(await ctx.prisma.collectionTest.count()).toBe(0);
+  });
+
+  it("propose et accepte J + 2 jours ouvrés, refuse J + 1 en nommant la date minimale", async () => {
+    const entityId = await entity();
+    const { companyId } = await ourCompany(entityId);
+    await declare(companyId);
+    const today = instantToLocal(clock.now()).day;
+    const earliest = businessDaysAfter(today, TEST_COLLECTION_MIN_BUSINESS_DAYS);
+
+    expect(await proposedDay()).toBe(earliest);
+    const refused = await generate(companyId, {
+      requestedCollectionDay: businessDaysAfter(today, 1),
+    }).expect(400);
+    expect(JSON.stringify(refused.body)).toContain(earliest);
+    await generate(companyId, { requestedCollectionDay: earliest }).expect(201);
   });
 
   it("refuse 1,01 € (400), et FNAL à la porte (400)", async () => {
@@ -335,6 +357,47 @@ describe("générer un prélèvement d'essai", () => {
       refundedOn: day,
       refundedByName: "Opérateur E2E",
     });
+  });
+});
+
+describe("le mandat de l'établissement pour la banque", () => {
+  it("rend la seule ligne du mandat choisi, au format d'import, sans figer d'export", async () => {
+    const entityId = await entity();
+    const { companyId, mandateId } = await ourCompany(entityId);
+    const other = await ourCompany(entityId);
+    await declare(companyId);
+    await declare(other.companyId);
+    const { reference } = await ctx.prisma.paymentMandate.findUniqueOrThrow({
+      where: { id: mandateId },
+    });
+
+    const file = await staff().get(`${TESTS}/debtors/${companyId}/mandate.csv`).expect(200);
+
+    expect(file.headers["cache-control"]).toBe("no-store");
+    expect(file.headers["content-type"]).toContain("text/csv");
+    expect(file.headers["content-disposition"]).toContain(
+      `ESSAI-mandat-banque-552100554-${reference}.csv`,
+    );
+    const cells = file.text.split(";");
+    expect(file.text.split("\r\n")).toEqual([expect.any(String), ""]);
+    expect(cells.slice(0, 8)).toEqual([
+      reference,
+      "FR72ZZZ123456",
+      "Folie Douce Val",
+      DEBTOR_IBAN,
+      expect.stringMatching(/^BNPAFRPP/u),
+      signatureDateCell(new Date(SIGNED_AT)),
+      "RCUR",
+      "B2B",
+    ]);
+    expect(file.text.endsWith(";;;;;;;;;;\r\n")).toBe(true);
+    expect(await ctx.prisma.mandateBankExport.count()).toBe(0);
+  });
+
+  it("refuse une société non déclarée (409)", async () => {
+    const entityId = await entity();
+    const { companyId } = await ourCompany(entityId);
+    await staff().get(`${TESTS}/debtors/${companyId}/mandate.csv`).expect(409);
   });
 });
 

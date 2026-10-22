@@ -5,10 +5,8 @@ import { CollectionCandidatesReader } from "../../domain/ports/collection-candid
 import { LegalEntityReader } from "../../domain/ports/legal-entity.reader.js";
 import { MandateBankExportsReader } from "../../domain/ports/mandate-bank-exports.reader.js";
 import { MandatesForBankExportReader } from "../../domain/ports/mandates-for-bank-export.reader.js";
-import { nameOf } from "../../domain/services/collection-debit-drafts.js";
-import { renderMandateBankCsv } from "../../domain/services/mandate-bank-export-csv.js";
 import { currentMandatesOf } from "../../domain/services/mandate-bank-export-selection.js";
-import { exportEntityOrFail } from "../mandate-bank-export-support.js";
+import { exportEntityOrFail, mandateBankCsvOf } from "../mandate-bank-export-support.js";
 import { ExportMandateBankFileQuery } from "./mandate-bank-export-queries.js";
 
 export interface MandateBankFile {
@@ -46,21 +44,7 @@ export class ExportMandateBankFileHandler implements IQueryHandler<
     }
     const { exportable } = await this.mandates.activeOf(entity.id);
     const mandates = currentMandatesOf(lines, exportable);
-    const names = await this.candidates.companyNames([
-      ...new Set(mandates.map((mandate) => mandate.debtorCompanyId)),
-    ]);
-    const csv = renderMandateBankCsv(
-      mandates.map((mandate) => ({
-        reference: mandate.reference,
-        ics: entity.ics,
-        debtorName: nameOf(mandate.debtorCompanyId, names),
-        iban: mandate.iban,
-        bic: mandate.bic,
-        signedAt: mandate.signedAt,
-        paymentType: mandate.paymentType,
-        scheme: mandate.scheme,
-      })),
-    );
+    const csv = await mandateBankCsvOf(this.candidates, entity, mandates);
     return { csv, fileName: `mandats-banque-${entity.siren}-${query.exportId}.csv` };
   }
 }

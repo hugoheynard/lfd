@@ -84,7 +84,7 @@ export class GetCollectionTestDebtorsHandler implements IQueryHandler<
       if (creditor.creditorBic === null || creditor.creditorBic === "") {
         throw new CreditorBicMissingError(creditor.name);
       }
-      const earliestCollectionDay = earliestTestCollectionDay(at, creditor);
+      const earliestCollectionDay = earliestTestCollectionDay(at);
       return {
         ...base,
         mandate,

@@ -8,12 +8,14 @@ import { CollectionTest, type GenerateCollectionTestInput } from "../collection-
  * DONNÉ (il joue l'horloge) : l'échéance n'est comparée qu'à lui, jamais à
  * l'horloge réelle — les dates peuvent rester absolues.
  *
- * Jeudi 22 octobre 2026, 10 h à Paris ; délai de 14 jours → échéance la plus
- * proche : jeudi 5 novembre 2026 (jour ouvré TARGET2).
+ * Jeudi 22 octobre 2026, 10 h à Paris → échéance la plus proche : J + 2
+ * jours ouvrés TARGET2, lundi 26 octobre 2026. Les essais des fixtures
+ * tombent plus loin, le jeudi 5 novembre (`DUE_DAY`).
  */
 export const TEST_ID = "01JBQ7Z5K8M3QT9P2X4BE55A00";
 export const CREATED_AT = new Date("2026-10-22T08:00:00.000Z");
-export const EARLIEST_DAY = "2026-11-05";
+export const EARLIEST_DAY = "2026-10-26";
+export const DUE_DAY = "2026-11-05";
 export const OUR_COMPANY = "c_nous";
 
 export function eligible(
@@ -44,7 +46,7 @@ export function generateInput(
     verdict: eligible(),
     sequence: "RCUR",
     amountCents: 100,
-    requestedCollectionDay: EARLIEST_DAY,
+    requestedCollectionDay: DUE_DAY,
     remittance: null,
     ...overrides,
   };

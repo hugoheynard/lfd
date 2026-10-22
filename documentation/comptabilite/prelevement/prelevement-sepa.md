@@ -452,8 +452,8 @@ dans la graine ; en production, accordé à l'écran).
 - **Sur qui** : une société déclarée « à nous » (`own_establishment`), active,
   avec **un** mandat actif chez une de nos entités. Sinon, refus nommé.
 - **Le fichier** : UN débit, rendu par le même `renderPain008Document` que les
-  lots, sans bandeau ; montant 1 à 100 centimes ; échéance au plus tôt celle du
-  calendrier des lots ; séquence `RCUR` | `FRST` sur un mandat récurrent,
+  lots, sans bandeau ; montant 1 à 100 centimes ; échéance au plus tôt J + 2
+  jours ouvrés TARGET2, sans pré-notification (ajustable, `question-banque.md` 3.4) ; séquence `RCUR` | `FRST` sur un mandat récurrent,
   `OOFF` sur un mandat ponctuel qu'aucun lot non annulé ne porte — `FNAL`
   inexprimable ; schéma = celui du mandat ; libellé « ESSAI PRELEVEMENT » par
   défaut. Références `ESS-<ULID>` (`MsgId`, `EndToEndId`) et
@@ -464,6 +464,9 @@ dans la graine ; en production, accordé à l'écran).
 - **Après** : « à rembourser » une fois l'échéance passée sans retour, jusqu'au
   geste « Marqué remboursé » (jour, auteur). Un retour bancaire `ESS-…` importé
   (`pain.002` / `camt.054`) se rattache à son essai, jamais à un lot.
+- **Le mandat pour la banque** : depuis le panneau, le CSV `ModeleImportMandats`
+  du seul mandat de l'établissement choisi (même rendu que l'export des
+  mandats). Une lecture : aucun export figé, rien de marqué.
 - **Pré-notification** : décision écrite du 2026-10-22, affichée sur la page
   Nos établissements — pas d'avis individuel pour nos propres établissements.
 - **Le XSD** : `pain.008.001.02` (ISO 20022, provenance dans

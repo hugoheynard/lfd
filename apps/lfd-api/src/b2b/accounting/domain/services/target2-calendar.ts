@@ -88,3 +88,16 @@ export function businessDaysBefore(day: string, count: number): string {
   }
   return candidate;
 }
+
+/** Le `count`-ième jour ouvré APRÈS ce jour (ce jour exclu). */
+export function businessDaysAfter(day: string, count: number): string {
+  let candidate = day;
+  let remaining = count;
+  while (remaining > 0) {
+    candidate = addDays(candidate, 1);
+    if (isTarget2BusinessDay(candidate)) {
+      remaining -= 1;
+    }
+  }
+  return candidate;
+}

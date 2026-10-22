@@ -29,10 +29,12 @@ import { GenerateCollectionTestCommand } from "../application/commands/generate-
 import { MarkCollectionTestRefundedCommand } from "../application/commands/mark-collection-test-refunded.command.js";
 import {
   ExportCollectionTestFileQuery,
+  ExportCollectionTestMandateQuery,
   GetCollectionTestDebtorsQuery,
   ListCollectionTestsQuery,
 } from "../application/queries/collection-test-queries.js";
 import type { CollectionTestFile } from "../application/queries/export-collection-test-file.handler.js";
+import type { MandateBankFile } from "../application/queries/export-mandate-bank-file.handler.js";
 
 /**
  * **Le prélèvement d'essai** — Comptabilité › Prélèvement › « Prélèvement
@@ -83,6 +85,28 @@ export class AdminCollectionTestsController {
       ),
     );
     return { testId };
+  }
+
+  /**
+   * Le mandat de l'établissement au format d'import de la banque (A à H, sans
+   * en-tête). IBAN en clair : sous l'ÉCRITURE. Ne fige ni ne marque aucun export.
+   */
+  @Get("debtors/:companyId/mandate.csv")
+  @RequirePermission("collection_test:write")
+  @Header("Content-Type", "text/csv; charset=us-ascii")
+  @Header("Cache-Control", "no-store")
+  async mandate(
+    @Param("companyId") companyId: string,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<string> {
+    const file = await this.queries.execute<ExportCollectionTestMandateQuery, MandateBankFile>(
+      new ExportCollectionTestMandateQuery(companyId),
+    );
+    response.setHeader(
+      "Content-Disposition",
+      contentDispositionAttachment(sanitiseFileName(file.fileName, "mandat-banque.csv")),
+    );
+    return file.csv;
   }
 
   /** Le fichier GARDÉ — mêmes octets à chaque téléchargement, empreinte vérifiée. */

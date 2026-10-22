@@ -9,6 +9,7 @@ import {
   OwnEstablishmentNotDeclaredError,
 } from "../../../domain/errors/collection-test-errors.js";
 import {
+  DUE_DAY,
   EARLIEST_DAY,
   OUR_COMPANY,
 } from "../../../domain/entities/__tests__/collection-test-fixtures.js";
@@ -29,7 +30,7 @@ function generate(
   return new GenerateCollectionTestCommand(
     OUR_COMPANY,
     overrides.amountCents ?? 100,
-    EARLIEST_DAY,
+    DUE_DAY,
     overrides.sequence ?? "RCUR",
     null,
     "staff_1",

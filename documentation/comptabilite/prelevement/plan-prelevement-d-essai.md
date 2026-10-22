@@ -148,10 +148,28 @@ factures, aux bons, aux lots ni à l'état d'encaissement.
   Références `ESS-<ULID>` / `ESS-<ULID>-<séquence>` (≤ 35, testées). XSD ISO
   `pain.008.001.02` recopié sous `apps/lfd-api/test/fixtures/pain008/` et joué
   sur un lot réel et sur un essai.
-- **Échéance** : `collectionDayOf(maintenant, délai de pré-notification, N)` de
-  l'entité du mandat — le calendrier des lots, « comme si le cycle se
-  clôturait à l'instant ». Refus d'un jour plus tôt, et d'un jour fermé de
-  TARGET2.
+- **Échéance** (révisée le 2026-10-22, Hugo) : **J + 2 jours ouvrés TARGET2**
+  depuis le jour (Paris) de la génération — `TEST_COLLECTION_MIN_BUSINESS_DAYS`
+  dans `collection-test-file.ts`, compté par `businessDaysAfter` du calendrier
+  TARGET2. La pré-notification n'y entre plus : elle est levée par la décision
+  écrite (Q6). Le 2 est une hypothèse, à ajuster quand la banque aura répondu
+  à `question-banque.md` 3.4. Proposée par défaut à l'écran (et `min` du
+  sélecteur) ; refus d'un jour plus tôt en nommant la date minimale, et d'un
+  jour fermé de TARGET2. Les lots réels gardent `collectionDayOf`, inchangé.
+  Première version (même jour) : le calendrier des lots, pré-notification
+  comprise — « pas avant le 30 » pour un essai du 22.
+- **Mandat pour la banque** (2026-10-22) : bouton « Exporter le mandat pour la
+  banque » du panneau de génération → `GET
+/admin/accounting/collection-tests/debtors/:companyId/mandate.csv` sous
+  `collection_test:write`. Le fichier `ModeleImportMandats` de l'export des
+  mandats (même rendu `mandateBankCsvOf`, même encodage), réduit au seul mandat
+  de l'établissement. **Une lecture** : il ne fige aucun export et ne marque
+  rien — l'export groupé de l'entité garde le mandat « à exporter » tant qu'un
+  de SES exports n'a pas été marqué importé. Le fichier d'essai n'atteste pas
+  que la banque l'a reçu ; le compter comme tel ferait sortir le mandat de
+  l'export groupé sans preuve. Refus nommés : société non déclarée, zéro ou
+  plusieurs mandats, entité sans ICS, mandat écarté de l'export (repris, sans
+  RIB, sans BIC).
 - **Plafond** : `MAX_COLLECTION_TEST_CENTS = 100` (1 €), tenu par l'agrégat et
   par un CHECK en base.
 - **Q7** : « mandat ponctuel utilisé par un lot réel » = une ligne d'un lot
@@ -170,4 +188,11 @@ factures, aux bons, aux lots ni à l'état d'encaissement.
   passe « à rembourser » à son échéance comme un autre ;
 - la **durée de conservation** du fichier gardé (`collection_test.xml`, IBAN en
   clair) : `a-decider` au registre RGPD ;
-- la question `FRST` reste à la banque (`question-banque.md` 3.7).
+- la question `FRST` reste à la banque (`question-banque.md` 3.7) ;
+- le délai de J + 2 jours ouvrés reste une hypothèse (`question-banque.md` 3.4) ;
+- un mandat importé à la banque depuis l'essai réapparaît dans l'export groupé
+  de l'entité (rien ne le sait) : la banque le recevra deux fois si on
+  l'exporte aussi par là ;
+- l'export du mandat ne s'offre que sur un établissement **essayable** (le
+  panneau ne liste que ceux-là) : un mandat ponctuel déjà pris par un lot ne
+  s'exporte pas depuis l'essai.

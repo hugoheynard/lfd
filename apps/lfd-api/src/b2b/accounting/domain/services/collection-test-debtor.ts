@@ -62,26 +62,44 @@ export function judgeTestDebtor(facts: TestDebtorFacts): TestDebtorVerdict {
   if (facts.companyStatus !== ACTIVE_STATUS) {
     return refused(new CollectionTestDebtorInactiveError(facts.companyName, facts.companyStatus));
   }
-  const ours = facts.mandates.filter(
-    (mandate): mandate is TestMandate => mandate.creditorId !== null,
-  );
-  const [mandate, ...others] = ours;
-  if (mandate === undefined) {
-    return refused(new CollectionTestNoMandateError(facts.companyName));
+  const own = ownSingleMandate(facts.companyName, facts.mandates);
+  if (own.kind === "refused") {
+    return own;
   }
-  if (others.length > 0) {
-    return refused(
-      new CollectionTestAmbiguousMandateError(
-        facts.companyName,
-        ours.map((each) => each.reference),
-      ),
-    );
-  }
+  const { mandate } = own;
   const sequences = testSequencesOf(mandate, facts.batchedMandateIds);
   if (sequences.length === 0) {
     return refused(new CollectionTestOneOffUsedError(mandate.reference));
   }
   return { kind: "eligible", mandate, sequences };
+}
+
+/**
+ * Le seul mandat actif de la société chez une de nos entités — celui sous
+ * lequel un essai prélève, et celui que l'essai exporte pour la banque.
+ * Plusieurs : choisir serait deviner le créancier ; aucun : rien à prélever.
+ */
+export function ownSingleMandate(
+  companyName: string,
+  mandates: readonly CollectionMandate[],
+):
+  | { readonly kind: "found"; readonly mandate: TestMandate }
+  | { readonly kind: "refused"; readonly refusal: AppError } {
+  const ours = mandates.filter((mandate): mandate is TestMandate => mandate.creditorId !== null);
+  const [mandate, ...others] = ours;
+  if (mandate === undefined) {
+    return { kind: "refused", refusal: new CollectionTestNoMandateError(companyName) };
+  }
+  if (others.length > 0) {
+    return {
+      kind: "refused",
+      refusal: new CollectionTestAmbiguousMandateError(
+        companyName,
+        ours.map((each) => each.reference),
+      ),
+    };
+  }
+  return { kind: "found", mandate };
 }
 
 /** Les séquences encore possibles sur ce mandat. */

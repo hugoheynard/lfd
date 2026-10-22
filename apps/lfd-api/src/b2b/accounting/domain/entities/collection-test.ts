@@ -101,10 +101,7 @@ export class CollectionTest {
     const { verdict, creditor } = input;
     assertAmount(input.amountCents);
     const sequence = admittedSequence(verdict, input.sequence);
-    assertCollectionDay(
-      input.requestedCollectionDay,
-      earliestTestCollectionDay(input.created.at, creditor),
-    );
+    assertCollectionDay(input.requestedCollectionDay, earliestTestCollectionDay(input.created.at));
     const remittance = testRemittanceOf(input.remittance);
     if (remittance === "") {
       throw new CollectionTestRemittanceEmptyError();
