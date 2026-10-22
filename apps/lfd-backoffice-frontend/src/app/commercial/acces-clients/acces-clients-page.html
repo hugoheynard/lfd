@@ -15,7 +15,7 @@
         class="search"
         size="sm"
         placeholder="Société, e-mail du détenteur…"
-        (searchChange)="search.set($event)"
+        (searchChange)="onSearchChange($event)"
       />
     </div>
 
@@ -25,7 +25,7 @@
       hover
       clickable
       [columns]="columns"
-      [rows]="visible()"
+      [rows]="paged()"
       [rowKey]="rowKey"
       [loading]="state() === 'loading'"
       [empty]="empty"
@@ -88,5 +88,20 @@
         }
       </ng-template>
     </fold-data-table>
+
+    <!-- Contrôlé de bout en bout : la tranche vient de `paged()`, et le
+         paginator ne compte QUE ce que le filtre a laissé passer. -->
+    @if (visible().length > pageSize()) {
+      <fold-paginator
+        class="pager"
+        [currentPage]="clampedPage()"
+        [pageSize]="pageSize()"
+        [totalItems]="visible().length"
+        [pageSizeOptions]="pageSizes"
+        [labels]="paginatorLabels"
+        (pageChange)="page.set($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
+      />
+    }
   }
 </section>

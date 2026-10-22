@@ -9,9 +9,11 @@ import {
   FoldElementTitleComponent,
   FoldEmptyStateComponent,
   FoldInlineConfirmComponent,
+  FoldPaginatorComponent,
   FoldSearchComponent,
   FoldViewToggleComponent,
   type FoldBadgeVariant,
+  type FoldPaginatorLabels,
   type FoldTableColumn,
   type FoldTableEmpty,
   type FoldViewToggleOption,
@@ -39,6 +41,21 @@ import { CustomerAccessService } from './customer-access.service';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
+/** Combien de comptes par page — mêmes options que la liste « Comptes clients ». */
+const PAGE_SIZES: readonly number[] = [25, 50, 100];
+
+/** Le paginator parle anglais par défaut ; cet écran, non. */
+const PAGINATOR_LABELS: FoldPaginatorLabels = {
+  pageSize: 'Comptes par page',
+  perPage: 'par page',
+  nav: 'Pagination des comptes',
+  previous: 'Page précédente',
+  next: 'Page suivante',
+  empty: 'Aucun compte',
+  page: (page) => `Page ${page}`,
+  range: (start, end, total) => `${start}–${end} sur ${total}`,
+};
+
 /**
  * **Accès clients** — sur tous les comptes, qui a un détenteur et qui est entré.
  *
@@ -58,6 +75,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     FoldElementTitleComponent,
     FoldEmptyStateComponent,
     FoldInlineConfirmComponent,
+    FoldPaginatorComponent,
     FoldSearchComponent,
     FoldViewToggleComponent,
   ],
@@ -86,6 +104,27 @@ export class AccesClientsPage {
       ),
     ),
   );
+
+  protected readonly paginatorLabels = PAGINATOR_LABELS;
+  protected readonly pageSizes = PAGE_SIZES;
+  protected readonly page = signal(1);
+  protected readonly pageSize = signal(PAGE_SIZES[0] ?? 25);
+
+  /**
+   * La page réellement rendue : une relecture après relance peut réduire la
+   * liste sous la page courante, et l'écran ne doit pas tomber sur une page vide.
+   */
+  protected readonly clampedPage = computed(() => {
+    const pages = Math.max(1, Math.ceil(this.visible().length / this.pageSize()));
+    return Math.min(this.page(), pages);
+  });
+
+  /** La tranche affichée, prise dans le résultat FILTRÉ — ce que le paginator compte. */
+  protected readonly paged = computed(() => {
+    const size = this.pageSize();
+    const start = (this.clampedPage() - 1) * size;
+    return this.visible().slice(start, start + size);
+  });
 
   protected readonly tableTitle = computed(() => {
     const count = this.visible().length;
@@ -124,7 +163,19 @@ export class AccesClientsPage {
   protected onFilterChange(value: string): void {
     if (isAccessFilter(value)) {
       this.filter.set(value);
+      this.page.set(1);
     }
+  }
+
+  /** Chercher, c'est repartir du début : la page 3 d'un autre résultat n'a pas de sens. */
+  protected onSearchChange(term: string): void {
+    this.search.set(term);
+    this.page.set(1);
+  }
+
+  protected onPageSizeChange(size: number): void {
+    this.pageSize.set(size);
+    this.page.set(1);
   }
 
   protected open(row: CustomerAccessRowView): void {

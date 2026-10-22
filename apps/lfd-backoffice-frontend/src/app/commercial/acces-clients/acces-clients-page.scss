@@ -35,3 +35,7 @@
   color: var(--fold-color-text-secondary);
   font-size: var(--fold-text-sm);
 }
+
+.pager {
+  margin-top: calc(-1 * var(--fold-space-md));
+}
