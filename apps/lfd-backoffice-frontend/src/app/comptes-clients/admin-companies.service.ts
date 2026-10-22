@@ -109,7 +109,7 @@ export class AdminCompaniesService {
    * Ouvre un accès — au détenteur, ou à un collègue.
    *
    * **Idempotent sur l'adresse** : ré-inviter quelqu'un ne crée pas de doublon,
-   * ça lui renvoie un lien. C'est ce qui fait que « Renvoyer le lien » et
+   * ça lui renvoie l'e-mail d'accès. C'est ce qui fait que « Renvoyer l'e-mail d'accès » et
    * « Inviter » sont le même appel.
    */
   async inviteMember(

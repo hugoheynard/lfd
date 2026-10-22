@@ -47,6 +47,15 @@ export const commercialRoutes: Routes = [
           import('../comptes-clients/comptes-clients-page').then((m) => m.ComptesClientsPage),
       },
       {
+        // Sur TOUS les comptes : qui a un détenteur, qui est entré. Même droit
+        // que la liste des comptes, que la route serveur exige aussi.
+        path: 'acces-clients',
+        canActivate: [permissionGuard('b2b_companies:read')],
+        title: 'Accès clients — LFC B2B admin',
+        loadComponent: () =>
+          import('./acces-clients/acces-clients-page').then((m) => m.AccesClientsPage),
+      },
+      {
         path: 'prospects',
         canActivate: [permissionGuard('b2b_growth:read')],
         title: 'Prospects — LFC B2B admin',

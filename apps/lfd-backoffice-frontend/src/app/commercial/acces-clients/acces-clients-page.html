@@ -1,0 +1,92 @@
+<section class="page">
+  @if (state() === 'error') {
+    <fold-empty-state tone="alert" title="Impossible de lire les accès clients">
+      <button foldButton (click)="load()">Réessayer</button>
+    </fold-empty-state>
+  } @else {
+    <div class="toolbar">
+      <fold-view-toggle
+        ariaLabel="Filtrer les comptes par état de l'accès"
+        [options]="segments"
+        [value]="filter()"
+        (valueChange)="onFilterChange($event)"
+      />
+      <fold-search
+        class="search"
+        size="sm"
+        placeholder="Société, e-mail du détenteur…"
+        (searchChange)="search.set($event)"
+      />
+    </div>
+
+    <fold-data-table
+      caption="Accès clients"
+      toolbarSurface="accent"
+      hover
+      clickable
+      [columns]="columns"
+      [rows]="visible()"
+      [rowKey]="rowKey"
+      [loading]="state() === 'loading'"
+      [empty]="empty"
+      (rowClick)="open($event)"
+    >
+      <fold-element-title foldToolbar variant="bar" [title]="tableTitle()" />
+
+      <ng-template foldCell="company" let-row>
+        <span class="primary">{{ row.companyName }}</span>
+        @if (row.parent; as parent) {
+          <span class="secondary">Sous-compte de {{ parent.companyName }}</span>
+        }
+      </ng-template>
+
+      <ng-template foldCell="holder" let-row>
+        @if (row.holder; as holder) {
+          <span class="primary">{{ holder.firstName }} {{ holder.lastName }}</span>
+          <span class="secondary">{{ holder.email }}</span>
+        } @else {
+          <span class="secondary">Aucun</span>
+        }
+      </ng-template>
+
+      <ng-template foldCell="state" let-row>
+        <fold-badge [variant]="stateVariant(row)" [content]="stateLabel(row)" />
+        @if (activatedLabel(row); as activated) {
+          <span class="secondary">{{ activated }}</span>
+        } @else if (invitedLabel(row); as invited) {
+          <span class="secondary">{{ invited }}</span>
+        }
+      </ng-template>
+
+      <ng-template foldCell="members" let-row>
+        <span class="secondary">{{ membersLabel(row) }}</span>
+      </ng-template>
+
+      <!-- 🔴 `stopPropagation` : fold ne retient pas le clic d'un contrôle
+           interne, et la ligne ouvrirait la fiche par-dessus la confirmation. -->
+      <ng-template foldCell="action" let-row>
+        @if (canResend(row)) {
+          <span class="action" (click)="$event.stopPropagation()">
+            <fold-inline-confirm
+              intent="primary"
+              [message]="'Renvoyer l’e-mail d’accès à ' + row.holder.email + ' ?'"
+              [labels]="{ confirm: 'Renvoyer' }"
+              [loading]="pending() === row.companyId"
+              (confirmed)="resend(row)"
+            >
+              <button
+                foldButton
+                size="sm"
+                emphasis="soft"
+                icon="mail"
+                [disabled]="pending() !== null"
+              >
+                Renvoyer l'e-mail d'accès
+              </button>
+            </fold-inline-confirm>
+          </span>
+        }
+      </ng-template>
+    </fold-data-table>
+  }
+</section>

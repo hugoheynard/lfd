@@ -37,6 +37,11 @@ export type {
   PendingAccessView,
   PendingStaffAccessView,
 } from "./created.js";
+export type {
+  CustomerAccessState,
+  CustomerAccessHolderView,
+  CustomerAccessRowView,
+} from "./customer-access.js";
 export {
   weekdaySchema,
   deliverySlotSchema,

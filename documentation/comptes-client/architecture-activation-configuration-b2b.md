@@ -122,6 +122,10 @@ La liste charge ce qu'il faut pour ce calcul : `COMPANY_SELECT`
 facturation et d'un mandat actif (`addresses`, `mandates`), en plus de
 `kbisUploadedAt`, `kbisCertifiedAt` et `createdAt` (vérifié le 2026-10-20).
 
+## 3 bis. La page « Accès clients » (2026-10-22)
+
+**Commercial › Accès clients** (`/commercial/acces-clients`, droit `b2b_companies:read`, route `GET /admin/customer-access`) : une table de **toutes** les sociétés, sous-comptes compris, avec le détenteur et l'état de son accès (sans détenteur / aucun accès / invité / lien expiré / activé / désactivé), la date de première connexion (`users.first_login_at`, posée une seule fois par `CustomerPrincipalResolver.resolve` ; `null` pour les comptes entrés avant le 2026-10-22, affiché « date inconnue »), la dernière invitation émise et les autres membres. L'état vient de `personAccessState` (`company-contacts.projection.ts`), la même règle que la fiche. La relance « Renvoyer l'e-mail d'accès » est l'appel `inviteMember` de la fiche ; fabriquer un lien à copier reste le travail d'« Accès à remettre ».
+
 ## 4. À lire ensuite
 
 - [`../auth-inscription/architecture-compte-client-cycle-de-vie.md`](../auth-inscription/architecture-compte-client-cycle-de-vie.md) — ouverture, activation, suspension

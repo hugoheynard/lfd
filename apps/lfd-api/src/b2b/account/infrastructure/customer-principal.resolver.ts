@@ -25,6 +25,7 @@ interface ResolvedUser {
   readonly email: string;
   readonly status: UserStatus;
   readonly emailVerified: boolean;
+  readonly firstLoginAt: Date | null;
   readonly memberships: readonly ResolvedMembership[];
 }
 
@@ -90,7 +91,13 @@ export class CustomerPrincipalResolver extends PrincipalResolver {
    */
   async resolve(token: VerifiedToken): Promise<Principal> {
     const now = this.clock.now();
-    const user = (await this.findBySub(token.subject)) ?? (await this.provision(token));
+    const found = await this.findBySub(token.subject);
+    // Première entrée : un `sub` encore inconnu (self-signup, invité qui entre
+    // par code ou Google, fiche invité qui devient compte) ou un compte
+    // `invited`. Un compte déjà actif n'en est JAMAIS une — c'est ce qui laisse
+    // à `null` ceux qui sont entrés avant que la colonne existe.
+    const firstEntry = found === null || found.status === UserStatus.invited;
+    const user = found ?? (await this.provision(token));
 
     if (user.status === UserStatus.disabled) {
       throw new UnauthorizedException("Compte non actif.");
@@ -100,6 +107,9 @@ export class CustomerPrincipalResolver extends PrincipalResolver {
     // l'ancien `emailVerified` — et une exemption par adresse prouvée ne jouait
     // qu'à la requête SUIVANTE.
     const recorded = await this.record(await this.enter(user, now), token);
+    if (firstEntry) {
+      await this.stampFirstLogin(recorded, now);
+    }
 
     // `subject` vient du token ; `userId`/`email`/`memberships` de la BASE (autorité).
     return {
@@ -192,6 +202,22 @@ export class CustomerPrincipalResolver extends PrincipalResolver {
     await this.prisma.user.updateMany({
       where: { id: user.id, status: UserStatus.invited },
       data: { status: UserStatus.active },
+    });
+  }
+
+  /**
+   * Pose `firstLoginAt` à la première entrée **réussie** — après `enter`, qui
+   * peut refuser une invitation expirée. Conditionnée en base sur `null` :
+   * deux premières requêtes simultanées n'écrivent qu'une date, et rien ne la
+   * réécrit ensuite.
+   */
+  private async stampFirstLogin(user: ResolvedUser, now: Date): Promise<void> {
+    if (user.firstLoginAt !== null) {
+      return;
+    }
+    await this.prisma.user.updateMany({
+      where: { id: user.id, firstLoginAt: null },
+      data: { firstLoginAt: now },
     });
   }
 

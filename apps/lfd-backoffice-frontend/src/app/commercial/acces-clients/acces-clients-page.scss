@@ -1,0 +1,37 @@
+:host {
+  display: block;
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xl);
+  padding-bottom: var(--fold-space-2xl);
+  max-width: 78rem;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+}
+
+.toolbar .search {
+  flex: 0 1 22rem;
+}
+
+.primary,
+.secondary {
+  display: block;
+}
+
+.primary {
+  font-weight: 600;
+}
+
+.secondary {
+  color: var(--fold-color-text-secondary);
+  font-size: var(--fold-text-sm);
+}

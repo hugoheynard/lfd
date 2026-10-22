@@ -61,7 +61,7 @@ export function projectContacts(
   access: readonly AccessRow[],
   now: Date,
 ): readonly CompanyContactView[] {
-  const byEmail = new Map(access.map((row) => [key(row.email), row]));
+  const byEmail = new Map(access.map((row) => [accessKey(row.email), row]));
   const stateOf = (row: AccessRow | undefined): AccessState => accessState(row, now);
   return [
     ...holderCard(holder, byEmail, stateOf),
@@ -76,7 +76,7 @@ export function projectContacts(
       // Le deviner propagerait une valeur inventée qu'on ne saurait plus
       // distinguer d'une vraie.
       role: contact.role,
-      ...stateOf(byEmail.get(key(contact.email))),
+      ...stateOf(byEmail.get(accessKey(contact.email))),
     })),
   ];
 }
@@ -98,7 +98,7 @@ function holderCard(
   byEmail: ReadonlyMap<string, AccessRow>,
   stateOf: (row: AccessRow | undefined) => AccessState,
 ): readonly CompanyContactView[] {
-  if (key(holder.contactEmail) === "") {
+  if (accessKey(holder.contactEmail) === "") {
     return [];
   }
   return [
@@ -112,7 +112,7 @@ function holderCard(
       phone: holder.contactTelephone,
       // Constaté, jamais choisi : c'est l'adresse qui a ouvert le compte.
       role: "owner",
-      ...stateOf(byEmail.get(key(holder.contactEmail))),
+      ...stateOf(byEmail.get(accessKey(holder.contactEmail))),
     },
   ];
 }
@@ -142,26 +142,40 @@ function accessState(row: AccessRow | undefined, now: Date): AccessState {
   if (row === undefined) {
     return { access: "none", emailVerified: false };
   }
-  if (row.status === "disabled" || row.acceptedAt !== null) {
-    return { access: toAccess(row.status), emailVerified: row.emailVerified };
+  return { access: toAccess(personAccessState(row, now)), emailVerified: row.emailVerified };
+}
+
+/** L'état d'un rattachement, `disabled` compris — ce que la fiche replie sur `none`. */
+export type PersonAccessState = "invited" | "expired" | "active" | "disabled";
+
+/**
+ * L'état fin d'un rattachement, **seule** source de la règle : la fiche
+ * (`projectContacts`) et la page « Accès clients » la lisent toutes deux.
+ *
+ * Non accepté, il est `invited` tant que son invitation vit et `expired`
+ * ensuite — même pour une personne active ailleurs, que l'entrée ne laisse pas
+ * non plus ouvrir cette société.
+ */
+export function personAccessState(row: AccessRow, now: Date): PersonAccessState {
+  if (row.status === "disabled") {
+    return "disabled";
   }
-  const expired = isInvitationExpired(row.invitedAt, now);
-  return { access: expired ? "expired" : "invited", emailVerified: row.emailVerified };
+  if (row.acceptedAt !== null) {
+    return row.status === "active" ? "active" : "invited";
+  }
+  return isInvitationExpired(row.invitedAt, now) ? "expired" : "invited";
 }
 
 /**
  * Un compte **désactivé** se lit `none` : la question posée à l'écran est « cette
- * personne peut-elle entrer ? », et la réponse est non. Le distinguer visuellement
- * demanderait un 4e état pour un cas que le staff ne produit pas encore.
+ * personne peut-elle entrer ? », et la réponse est non. La page « Accès
+ * clients » le distingue, elle (`personAccessState`).
  */
-function toAccess(status: UserStatus): ContactAccess {
-  if (status === "active") {
-    return "active";
-  }
-  return status === "invited" ? "invited" : "none";
+function toAccess(state: PersonAccessState): ContactAccess {
+  return state === "disabled" ? "none" : state;
 }
 
 /** Clé de rapprochement — l'adresse ne se compare jamais telle quelle. */
-function key(email: string): string {
+export function accessKey(email: string): string {
   return email.trim().toLowerCase();
 }

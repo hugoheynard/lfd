@@ -80,7 +80,8 @@
         @if (card.access === 'none') {
           <fold-callout variant="info">
             Cette personne n'a pas d'accès à l'espace : seul son e-mail sert aux notifications et à
-            l'envoi de documents.
+            l'envoi de documents. Créer l'accès lui envoie un e-mail : elle se connecte ensuite avec
+            son adresse, par un code reçu par e-mail.
             <button
               actions
               foldButton
@@ -108,7 +109,7 @@
 
           @if (card.access === 'invited') {
             <fold-callout variant="warning">
-              Le lien est parti, le mot de passe n'est pas encore choisi.
+              L'e-mail d'accès est parti ; la personne ne s'est pas encore connectée.
               <!-- Renvoyer et inviter sont le MÊME appel : l'API est idempotente
                    sur l'adresse. Deux boutons pour un geste, ce serait deux
                    façons de se tromper. -->
@@ -120,7 +121,7 @@
                 icon="mail"
                 (click)="onInvite(card)"
               >
-                Renvoyer le lien
+                Renvoyer l'e-mail d'accès
               </button>
             </fold-callout>
           }

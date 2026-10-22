@@ -89,6 +89,7 @@ import { GetMyCompanyActivationHandler } from "./application/queries/get-my-comp
 import { AccountReader } from "./domain/ports/account.reader.js";
 import { AdminCompanyReader } from "./domain/ports/admin-company.reader.js";
 import { PendingAccessReader } from "./domain/ports/pending-access.reader.js";
+import { CustomerAccessOverviewReader } from "./domain/ports/customer-access-overview.reader.js";
 import { CompanyAddressReader } from "./domain/ports/company-address.reader.js";
 import { DeliveryDoorstepRuleReader } from "./domain/ports/delivery-doorstep-rule.reader.js";
 import { CompanyAddressRepository } from "./domain/ports/company-address.repository.js";
@@ -131,7 +132,9 @@ import {
 import { PrismaAccountReader } from "./infrastructure/prisma-account.reader.js";
 import { PrismaAdminCompanyReader } from "./infrastructure/prisma-admin-company.reader.js";
 import { PrismaPendingAccessReader } from "./infrastructure/prisma-pending-access.reader.js";
+import { PrismaCustomerAccessOverviewReader } from "./infrastructure/prisma-customer-access-overview.reader.js";
 import { ListPendingAccessHandler } from "./application/queries/list-pending-access.handler.js";
+import { ListCustomerAccessHandler } from "./application/queries/list-customer-access.handler.js";
 import { IssuePasswordLinkHandler } from "./application/commands/issue-password-link.handler.js";
 import { PrismaCompanyAddressReader } from "./infrastructure/prisma-company-address.reader.js";
 import { PrismaDeliveryDoorstepRuleReader } from "./infrastructure/prisma-delivery-doorstep-rule.reader.js";
@@ -175,6 +178,7 @@ import { AdminCompanyContactsController } from "./http/admin-company-contacts.co
 import { AdminCompanyPiecesController } from "./http/admin-company-pieces.controller.js";
 import { CompaniesController } from "./http/companies.controller.js";
 import { AdminAccessPendingController } from "./http/admin-access-pending.controller.js";
+import { AdminCustomerAccessController } from "./http/admin-customer-access.controller.js";
 import { AdminSupportController } from "./http/admin-support.controller.js";
 import { SupportController } from "./http/support.controller.js";
 import { ChangeCompanyStatusHandler } from "./application/commands/change-company-status.handler.js";
@@ -241,6 +245,7 @@ import {
     SupportController,
     AdminSupportController,
     AdminAccessPendingController,
+    AdminCustomerAccessController,
     AdminCompaniesController,
     AdminDirectDebitBlocksController,
     AdminCounterCustomersController,
@@ -365,6 +370,8 @@ import {
     { provide: PendingAccessReader, useClass: PrismaPendingAccessReader },
     { provide: InvitationRenewal, useClass: PrismaInvitationRenewal },
     ListPendingAccessHandler,
+    { provide: CustomerAccessOverviewReader, useClass: PrismaCustomerAccessOverviewReader },
+    ListCustomerAccessHandler,
     IssuePasswordLinkHandler,
     { provide: CustomerSheetReader, useClass: PrismaCustomerSheetReader },
     { provide: CompanyRepository, useClass: PrismaCompanyRepository },

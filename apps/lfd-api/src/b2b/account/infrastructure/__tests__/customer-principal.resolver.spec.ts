@@ -69,6 +69,7 @@ const activeUser: UserWithMemberships = {
   emailVerified: false,
   invitedBy: null,
   becameAccountAt: new Date(0),
+  firstLoginAt: null,
   createdAt: new Date(0),
   updatedAt: new Date(0),
   // Entrée il y a longtemps : accepté, il ouvre quel que soit l'âge de l'invitation.
@@ -120,9 +121,22 @@ interface ActivationArgs {
   data: { status: UserStatus };
 }
 
+/** Le tampon de la première entrée, conditionné sur son absence. */
+interface FirstLoginArgs {
+  where: { id: string; firstLoginAt: null };
+  data: { firstLoginAt: Date };
+}
+
+type UserUpdateManyArgs = ClaimArgs | ActivationArgs | FirstLoginArgs;
+
 /** La réécriture du `sub` se reconnaît à ce qu'elle écrit un `sub`. */
-function isClaim(args: ClaimArgs | ActivationArgs): args is ClaimArgs {
+function isClaim(args: UserUpdateManyArgs): args is ClaimArgs {
   return "auth0Sub" in args.data;
+}
+
+/** Le tampon se reconnaît à ce qu'il écrit `firstLoginAt`. */
+function isFirstLogin(args: UserUpdateManyArgs): args is FirstLoginArgs {
+  return "firstLoginAt" in args.data;
 }
 
 /** L'acceptation conditionnée des rattachements dont l'invitation vit. */
@@ -155,6 +169,7 @@ interface PrismaDouble {
   }[];
   readonly claimCalls: ClaimArgs[];
   readonly activationCalls: ActivationArgs[];
+  readonly firstLoginCalls: FirstLoginArgs[];
   readonly acceptCalls: AcceptArgs[];
   readonly updateCalls: {
     where: { id: string };
@@ -164,7 +179,7 @@ interface PrismaDouble {
     user: {
       findUnique: () => Promise<UserWithMemberships | null>;
       findMany: () => Promise<Holder[]>;
-      updateMany: (args: ClaimArgs | ActivationArgs) => Promise<{ count: number }>;
+      updateMany: (args: UserUpdateManyArgs) => Promise<{ count: number }>;
       create: (args: {
         data: { auth0Sub: string; email: string; status: UserStatus; becameAccountAt: Date };
       }) => Promise<unknown>;
@@ -194,6 +209,7 @@ function prismaDouble(
   const updateCalls: PrismaDouble["updateCalls"] = [];
   const claimCalls: ClaimArgs[] = [];
   const activationCalls: ActivationArgs[] = [];
+  const firstLoginCalls: FirstLoginArgs[] = [];
   const acceptCalls: AcceptArgs[] = [];
 
   return {
@@ -201,6 +217,7 @@ function prismaDouble(
     updateCalls,
     claimCalls,
     activationCalls,
+    firstLoginCalls,
     acceptCalls,
     prisma: {
       user: {
@@ -212,6 +229,10 @@ function prismaDouble(
           return Promise.resolve([...(options.holders ?? fromEmails)]);
         },
         updateMany: (args) => {
+          if (isFirstLogin(args)) {
+            firstLoginCalls.push(args);
+            return Promise.resolve({ count: 1 });
+          }
           if (!isClaim(args)) {
             activationCalls.push(args);
             return Promise.resolve({ count: 1 });
@@ -266,6 +287,55 @@ async function resolverWith(
 }
 
 describe("CustomerPrincipalResolver", () => {
+  describe("la date de première connexion", () => {
+    it("la pose à l'instant de l'horloge à la première entrée d'un invité", async () => {
+      const double = prismaDouble([invitedUser]);
+      await (await resolverWith(double)).resolve(token);
+
+      expect(double.firstLoginCalls).toEqual([
+        { where: { id: "user_1", firstLoginAt: null }, data: { firstLoginAt: NOW } },
+      ]);
+    });
+
+    it("la pose à la création d'un compte par un `sub` inconnu", async () => {
+      const double = prismaDouble([null, { ...activeUser, memberships: [] }]);
+      await (await resolverWith(double)).resolve(token);
+
+      expect(double.firstLoginCalls).toEqual([
+        { where: { id: "user_1", firstLoginAt: null }, data: { firstLoginAt: NOW } },
+      ]);
+    });
+
+    it("ne la réécrit pas à la connexion suivante", async () => {
+      const double = prismaDouble([{ ...activeUser, firstLoginAt: daysBefore(3) }]);
+      await (await resolverWith(double)).resolve(token);
+
+      expect(double.firstLoginCalls).toEqual([]);
+    });
+
+    /**
+     * Un compte entré avant que la colonne existe garde `null` : lui poser la
+     * date du jour inventerait une première connexion qui n'en est pas une.
+     */
+    it("ne l'invente pas pour un compte déjà actif sans date", async () => {
+      const double = prismaDouble([activeUser]);
+      await (await resolverWith(double)).resolve(token);
+
+      expect(double.firstLoginCalls).toEqual([]);
+    });
+
+    it("ne la pose pas quand l'entrée est refusée (invitation expirée)", async () => {
+      const expired = {
+        ...invitedUser,
+        memberships: [{ companyId: "company_1", role: CustomerRole.orders, ...EXPIRED }],
+      };
+      const double = prismaDouble([expired], { acceptCount: 0 });
+      await expect((await resolverWith(double)).resolve(token)).rejects.toThrow();
+
+      expect(double.firstLoginCalls).toEqual([]);
+    });
+  });
+
   describe("compte existant", () => {
     it("résout un Principal autoritaire depuis la base pour un compte actif", async () => {
       const resolver = await resolverWith(prismaDouble([activeUser]));

@@ -79,6 +79,17 @@ export const COMMERCIAL_VIEWS: readonly CommercialView[] = [
     description: 'Le parc, ceux qui commandent et ceux qui dorment.',
   },
   {
+    // À côté des comptes dont elle est une coupe : la même liste, lue par
+    // la seule question de l'accès du détenteur.
+    key: 'acces-clients',
+    label: 'Accès clients',
+    link: '/commercial/acces-clients',
+    icon: 'shield',
+    needs: 'b2b_companies:read',
+    description:
+      "Sur tous les comptes, qui a un détenteur et qui s'est déjà connecté. On relance d'ici l'e-mail d'accès d'un invité.",
+  },
+  {
     key: 'prospects',
     label: 'Prospects',
     link: '/commercial/prospects',

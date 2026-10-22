@@ -53,6 +53,8 @@ describe('carte contacts — état de l’accès', () => {
 
     expect(host.textContent).toContain("n'a pas d'accès");
     expect(host.textContent).toContain("Créer l'accès");
+    // La connexion se fait par code : l'aide le dit avant le clic.
+    expect(host.textContent).toContain('par un code reçu par e-mail');
     // Aucun tick : il n'y a rien à cocher.
     expect(host.querySelectorAll('.tick')).toHaveLength(0);
   });
@@ -65,7 +67,7 @@ describe('carte contacts — état de l’accès', () => {
     expect(ticks[0]?.classList.contains('is-done')).toBe(true);
     expect(ticks[1]?.classList.contains('is-done')).toBe(false);
     // `invited` est un état utile : il dit s'il faut renvoyer ou rappeler.
-    expect(host.textContent).toContain('Renvoyer le lien');
+    expect(host.textContent).toContain("Renvoyer l'e-mail d'accès");
   });
 
   it('coche les deux quand l’adresse a été prouvée', () => {
@@ -74,7 +76,7 @@ describe('carte contacts — état de l’accès', () => {
     const ticks = host.querySelectorAll('.tick');
     expect(ticks).toHaveLength(2);
     expect(Array.from(ticks).every((tick) => tick.classList.contains('is-done'))).toBe(true);
-    expect(host.textContent).not.toContain('Renvoyer le lien');
+    expect(host.textContent).not.toContain("Renvoyer l'e-mail d'accès");
   });
 
   it('ne dit RIEN quand la vue ignore l’accès', () => {

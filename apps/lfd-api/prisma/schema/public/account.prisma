@@ -420,6 +420,13 @@ model User {
   // Posé par le lot A du plan `comptabilite/fidelite/plan-bienvenue-et-invite-rattache.md`.
   becameAccountAt DateTime? @map("became_account_at") @db.Timestamptz(6)
 
+  // L'instant de la PREMIÈRE entrée réussie du client — posé une seule fois par
+  // `CustomerPrincipalResolver.resolve`, jamais réécrit. Distinct de
+  // `becameAccountAt` (devenu connectable ≠ s'est connecté). `null` = jamais
+  // entré, OU entré avant le 2026-10-22 : aucune reprise inventée, la page
+  // « Accès clients » dit alors « date inconnue ».
+  firstLoginAt DateTime? @map("first_login_at") @db.Timestamptz(3)
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
