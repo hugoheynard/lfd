@@ -6,6 +6,16 @@
 > documents, données d'exemple fixes, rien d'écrit). Rien n'est bâti ici ; ce
 > sont les points à concevoir avant un lot.
 
+## Le principe (Hugo, 2026-10-22)
+
+**« La planche doit être le reflet de la réalité, pour les couleurs et tout. »**
+Un document de la planche est rendu par le **même code**, avec les **mêmes
+réglages réels** qu'un vrai document : couleurs des sites lues aux Réglages,
+logos et mentions de l'entité, catalogue publié, frais et remises en vigueur,
+numérotation au vrai format. Seules les données qui désigneraient une vraie
+personne ou consommeraient un vrai numéro sont des exemples, marqués. Tout
+écart entre la planche et un vrai document est un défaut de la planche.
+
 ## 0. Ce qui existe (ouvert le 2026-10-22)
 
 - Cinq documents : bon pro, bon public, fiche d'atelier, feuille de tournée,
