@@ -1,7 +1,8 @@
 import type { CreditorSnapshot } from "../../creditor-snapshot.js";
 import type { BillableCompany } from "../../ports/billable-orders.reader.js";
 import type { DebtorMandate } from "../../ports/debtor-mandate.reader.js";
-import { auditCsv } from "../pain008-audit.js";
+import { TEST_ID, generated } from "../../entities/__tests__/collection-test-fixtures.js";
+import { auditCsv, isAuditCoherent } from "../pain008-audit.js";
 import { renderPain008 } from "../pain008.js";
 
 const CREDITOR: CreditorSnapshot = {
@@ -205,5 +206,27 @@ describe("auditCsv — ce qu'il CONTRÔLE", () => {
   it("ne s'effondre pas sur un fichier vide de transactions", () => {
     const xml = renderB2b([]);
     expect(auditCsv(xml)).toContain("COHÉRENT");
+  });
+});
+
+describe("le contrôle d'un prélèvement d'essai (plan `plan-prelevement-d-essai.md`)", () => {
+  it.each(["RCUR", "FRST"] as const)(
+    "relit un essai %s : une ligne, ESS-, COHÉRENT",
+    (sequence) => {
+      const xml = generated({ sequence, amountCents: 42 }).toPersistence().xml;
+      const csv = auditCsv(xml);
+
+      expect(csv).toContain(`"ESS-${TEST_ID}"`);
+      expect(csv).toContain("COHÉRENT");
+      expect(isAuditCoherent(xml)).toBe(true);
+    },
+  );
+
+  it("un total déclaré faux rend le verdict incohérent", () => {
+    const xml = generated({ amountCents: 42 }).toPersistence().xml;
+
+    expect(isAuditCoherent(xml.replace("<CtrlSum>0.42</CtrlSum>", "<CtrlSum>0.43</CtrlSum>"))).toBe(
+      false,
+    );
   });
 });

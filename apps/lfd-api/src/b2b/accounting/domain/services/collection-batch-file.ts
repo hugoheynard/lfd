@@ -70,6 +70,7 @@ export function renderBatchFile(input: BatchFileInput): BatchFile {
     };
   });
   const documentDebits = input.debits.map((debit, index): DocumentDebit => ({
+    sequence: sequenceTypeOf(debit.mandate.paymentType),
     endToEndId: ids.endToEndIdOf(index + 1),
     debtorName: debit.debtorName,
     amountCents: debit.amountCents,
@@ -82,6 +83,7 @@ export function renderBatchFile(input: BatchFileInput): BatchFile {
     scheme: input.scheme,
     messageId: ids.messageId,
     paymentInfoIdOf: ids.paymentInfoIdOf,
+    emptySequence: sequenceTypeOf(input.creditor.mandatePaymentType),
     createdAt: input.constitutedAt,
     requestedCollectionDay: input.requestedCollectionDay,
     banner: depositable ? null : draftBanner(input.unmandatedCompanies, lines.length === 0),

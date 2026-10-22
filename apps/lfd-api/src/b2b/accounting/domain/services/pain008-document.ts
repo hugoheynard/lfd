@@ -24,7 +24,21 @@ export const BIC_NOT_PROVIDED = "NOTPROVIDED";
 /** Ce que la norme accepte dans un texte SEPA : ni accent, ni symbole exotique. */
 const SEPA_ALLOWED = /[^A-Za-z0-9/\-?:().,'+ ]/gu;
 
+/** La séquence d'un LOT réel : `FRST` et `FNAL` y sont inexprimables. */
 export type SequenceType = "RCUR" | "OOFF";
+
+/**
+ * La séquence d'un **prélèvement d'essai** (plan `plan-prelevement-d-essai.md`,
+ * §4 et Q7, Hugo 2026-10-22) : `FRST` en plus, pour éprouver ce que la banque
+ * accepte. `FNAL` reste inexprimable — il peut faire clore la série du mandat.
+ */
+export type TestSequence = "RCUR" | "FRST" | "OOFF";
+
+/** Toute séquence que le rendu sait écrire dans `SeqTp`. */
+export type PaymentSequence = SequenceType | TestSequence;
+
+/** L'ordre des blocs `PmtInf` quand plusieurs séquences sont présentes. */
+const BLOCK_ORDER: readonly PaymentSequence[] = ["FRST", "RCUR", "OOFF"];
 
 /**
  * Exhaustive sur `MandatePaymentType` : un troisième type ne compile pas tant
@@ -52,8 +66,13 @@ export interface DocumentMandate {
   readonly paymentType: MandatePaymentType;
 }
 
-/** Une ligne du fichier : un débiteur, son montant, son mandat. */
-export interface DocumentDebit {
+/**
+ * Une ligne du fichier : un débiteur, son montant, son mandat — et sa
+ * séquence, donnée par l'appelant (§4 de vitruve) : le lot réel la tire de
+ * `sequenceTypeOf`, l'essai de son paramètre. Le rendu ne la déduit plus.
+ */
+export interface DocumentDebit<S extends PaymentSequence = SequenceType> {
+  readonly sequence: S;
   readonly endToEndId: string;
   readonly debtorName: string;
   readonly amountCents: number;
@@ -62,12 +81,17 @@ export interface DocumentDebit {
   readonly remittance: string;
 }
 
-export interface Pain008Document {
+export interface Pain008Document<S extends PaymentSequence = SequenceType> {
   readonly creditor: CreditorSnapshot;
   readonly scheme: SepaScheme;
   readonly messageId: string;
   /** `PmtInfId` d'un bloc, à partir de sa séquence. */
-  readonly paymentInfoIdOf: (sequence: SequenceType) => string;
+  readonly paymentInfoIdOf: (sequence: S) => string;
+  /**
+   * La séquence du bloc d'un fichier SANS ligne (il en garde un, cf.
+   * `paymentBlocks`) — ignorée dès qu'il y a une ligne.
+   */
+  readonly emptySequence: S;
   /** L'instant de fabrication du fichier — `CreDtTm`. */
   readonly createdAt: Date;
   /**
@@ -79,11 +103,13 @@ export interface Pain008Document {
   /** Le commentaire de tête, ou `null` pour un fichier déposable. */
   readonly banner: string | null;
   /** Dans l'ordre des rangs — `RCUR` d'abord, puis `OOFF`. */
-  readonly debits: readonly DocumentDebit[];
+  readonly debits: readonly DocumentDebit<S>[];
 }
 
 /** Rend le XML. Déterministe : mêmes entrées, même fichier. */
-export function renderPain008Document(document: Pain008Document): string {
+export function renderPain008Document<S extends PaymentSequence>(
+  document: Pain008Document<S>,
+): string {
   const { creditor, debits } = document;
 
   // 🔴 Le BIC du créancier est exigé ICI, et nulle part avant : le mandat n'en
@@ -115,33 +141,33 @@ export function renderPain008Document(document: Pain008Document): string {
 }
 
 /**
- * Un `PmtInf` par séquence présente, dans un ordre fixe (`RCUR` puis `OOFF`).
+ * Un `PmtInf` par séquence présente, dans un ordre fixe (`FRST`, `RCUR`,
+ * `OOFF`) — un lot réel n'a jamais de `FRST`, il garde donc `RCUR` puis `OOFF`.
  *
- * ⚠️ Un fichier SANS ligne garde un bloc, à la séquence du réglage de l'entité :
- * il n'est pas déposable (bandeau), mais il sert encore à relire notre bloc
- * créancier avec un conseiller.
+ * ⚠️ Un fichier SANS ligne garde un bloc, à `emptySequence` (le réglage de
+ * l'entité pour un lot) : il n'est pas déposable (bandeau), mais il sert encore
+ * à relire notre bloc créancier avec un conseiller.
  */
-function paymentBlocks(document: Pain008Document, creditorBic: string): readonly string[] {
+function paymentBlocks<S extends PaymentSequence>(
+  document: Pain008Document<S>,
+  creditorBic: string,
+): readonly string[] {
   const { debits } = document;
   if (debits.length === 0) {
-    return paymentBlock(
-      document,
-      creditorBic,
-      sequenceTypeOf(document.creditor.mandatePaymentType),
-      [],
-    );
+    return paymentBlock(document, creditorBic, document.emptySequence, []);
   }
-  return SEQUENCE_ORDER.flatMap((sequence) => {
-    const block = debits.filter((debit) => sequenceTypeOf(debit.mandate.paymentType) === sequence);
-    return block.length === 0 ? [] : paymentBlock(document, creditorBic, sequence, block);
+  return BLOCK_ORDER.flatMap((order) => {
+    const block = debits.filter((debit) => debit.sequence === order);
+    const first = block[0];
+    return first === undefined ? [] : paymentBlock(document, creditorBic, first.sequence, block);
   });
 }
 
-function paymentBlock(
-  document: Pain008Document,
+function paymentBlock<S extends PaymentSequence>(
+  document: Pain008Document<S>,
   creditorBic: string,
-  sequence: SequenceType,
-  debits: readonly DocumentDebit[],
+  sequence: S,
+  debits: readonly DocumentDebit<S>[],
 ): readonly string[] {
   const { creditor, scheme } = document;
   return [
@@ -171,7 +197,7 @@ function paymentBlock(
 }
 
 /** Une ligne = **un débiteur**, jamais une commande (décision de Hugo, 2026-09-10). */
-function transaction(debit: DocumentDebit): string {
+function transaction(debit: DocumentDebit<PaymentSequence>): string {
   const { mandate } = debit;
   return [
     `      <DrctDbtTxInf>`,
@@ -230,7 +256,7 @@ export function commentSafe(raw: string): string {
   return sepa(raw).replace(/-{2,}/gu, "-");
 }
 
-function sumOf(debits: readonly DocumentDebit[]): number {
+function sumOf(debits: readonly DocumentDebit<PaymentSequence>[]): number {
   return debits.reduce((sum, debit) => sum + debit.amountCents, 0);
 }
 

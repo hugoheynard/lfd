@@ -141,6 +141,7 @@ export function renderPain008(input: Pain008Input): string {
     scheme,
     messageId,
     paymentInfoIdOf: (sequence) => `${messageId}-${sequence}`,
+    emptySequence: sequenceTypeOf(input.creditor.mandatePaymentType),
     createdAt: input.createdAt,
     requestedCollectionDay: collectionDayOf(
       input.cycleEnd,
@@ -176,6 +177,7 @@ function rankedDebits(
     debits.filter((debit) => sequenceTypeOf(debit.mandate.paymentType) === sequence),
   );
   return ordered.map(({ line, mandate }, index) => ({
+    sequence: sequenceTypeOf(mandate.paymentType),
     endToEndId: `${endToEndPrefix}-${String(index + 1).padStart(3, "0")}`,
     debtorName: line.companyName,
     amountCents: line.totalCents,

@@ -64,6 +64,30 @@ export const comptabiliteRoutes: Routes = [
             (m) => m.PrelevementDuMoisPage,
           ),
       },
+      {
+        // LE PRÉLÈVEMENT D'ESSAI — un pain.008 d'un débit sur un de nos
+        // établissements. Sous `collection_test`, PAS `b2b_accounting` seul :
+        // la vue porte son garde. Les gestes demandent `collection_test:write`.
+        // Plan : documentation/comptabilite/prelevement/plan-prelevement-d-essai.md.
+        path: 'prelevement-d-essai',
+        canActivate: [permissionGuard('collection_test:read')],
+        title: "Prélèvement d'essai — LFC B2B admin",
+        loadComponent: () =>
+          import('./prelevement-d-essai/prelevement-d-essai-page').then(
+            (m) => m.PrelevementDEssaiPage,
+          ),
+      },
+      {
+        // NOS ÉTABLISSEMENTS — les sociétés à nous (Q1), et la décision écrite
+        // de pré-notification (Q6). Même garde que l'outil d'essai.
+        path: 'nos-etablissements',
+        canActivate: [permissionGuard('collection_test:read')],
+        title: 'Nos établissements — LFC B2B admin',
+        loadComponent: () =>
+          import('./nos-etablissements/nos-etablissements-page').then(
+            (m) => m.NosEtablissementsPage,
+          ),
+      },
       // L'ancienne adresse vit dans des favoris : remplacée le 2026-10-08 (PA4).
       { path: 'lots-de-prelevement', redirectTo: 'prelevement-du-mois' },
       {

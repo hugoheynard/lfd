@@ -4,6 +4,10 @@ import { BILLING_MODE_CONTROLLERS, BILLING_MODE_PROVIDERS } from "./billing-mode
 import { CARD_INVOICE_PROVIDERS } from "./card-invoice.providers.js";
 import { DELIVERY_DAY_PROVIDERS } from "./delivery-day.providers.js";
 import { MANDATE_BANK_EXPORT_PROVIDERS } from "./mandate-bank-export.providers.js";
+import {
+  COLLECTION_TEST_CONTROLLERS,
+  COLLECTION_TEST_PROVIDERS,
+} from "./collection-test.providers.js";
 import { COLLECTION_RETURN_PROVIDERS } from "./collection-return.providers.js";
 import { AdminCollectionReturnsController } from "./http/admin-collection-returns.controller.js";
 import { ISSUED_INVOICE_PROVIDERS } from "./issued-invoice.providers.js";
@@ -216,6 +220,7 @@ import { PrismaOrderRowsLock } from "./infrastructure/prisma-order-rows-lock.js"
     AdminIssuedInvoicesController,
     CompanyInvoicesController,
     ...BILLING_MODE_CONTROLLERS,
+    ...COLLECTION_TEST_CONTROLLERS,
   ],
   providers: [
     { provide: LegalEntityRepository, useClass: PrismaLegalEntityRepository },
@@ -276,6 +281,8 @@ import { PrismaOrderRowsLock } from "./infrastructure/prisma-order-rows-lock.js"
     ...BILLING_MODE_PROVIDERS,
     ...MANDATE_BANK_EXPORT_PROVIDERS,
     ...COLLECTION_RETURN_PROVIDERS,
+    // Le prélèvement d'essai et nos établissements (plan `plan-prelevement-d-essai.md`).
+    ...COLLECTION_TEST_PROVIDERS,
     // La constitution automatique (PA3).
     { provide: CollectionAutopilotRuns, useClass: PrismaCollectionAutopilotRuns },
     { provide: LastAutopilotRunReader, useClass: PrismaLastAutopilotRunReader },

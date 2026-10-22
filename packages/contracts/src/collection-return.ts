@@ -102,10 +102,17 @@ export type ResolveCollectionReturnPayload = z.infer<typeof resolveCollectionRet
 
 /**
  * Ce qu'un fichier de la banque dit d'une transaction, et ce qu'on en ferait
- * (R5b). `matched` seul s'enregistre à la confirmation.
+ * (R5b). `matched` et `collection_test` seuls s'enregistrent à la
+ * confirmation : le second rattache le retour à son prélèvement d'essai
+ * (`ESS-…`, plan `plan-prelevement-d-essai.md`) — jamais à un lot.
  */
 export type ImportedReturnStatusView =
-  "matched" | "unknown" | "amount_mismatch" | "already_returned" | "not_returnable";
+  | "matched"
+  | "collection_test"
+  | "unknown"
+  | "amount_mismatch"
+  | "already_returned"
+  | "not_returnable";
 
 export interface ImportedReturnView {
   readonly endToEndId: string;
@@ -119,6 +126,7 @@ export interface ImportedReturnView {
   /** Le montant de la ligne appariée ; `null` si inconnue. */
   readonly lineAmountCents: number | null;
   readonly debtorName: string | null;
+  /** « Lot … » pour une ligne de lot, « Essai ESS-… » pour un essai. */
   readonly batchLabel: string | null;
   /** Pourquoi elle ne s'enregistrerait pas, en mots ; `null` si appariée. */
   readonly problem: string | null;

@@ -1,0 +1,81 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Le prélèvement d'essai et nos établissements — plan
+// `documentation/comptabilite/prelevement/plan-prelevement-d-essai.md`.
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Propriétaire : `src/b2b/accounting/`. Aucune de ces tables ne touche une
+// facture, un bon, un lot ni un état d'encaissement.
+//
+// 🔴 Contraintes INVISIBLES ici — elles vivent dans la migration
+// `20261022200100_le_prelevement_d_essai` :
+//   · un retrait porte son instant ET son auteur, ou ni l'un ni l'autre ;
+//   · un essai : 1 ≤ montant ≤ 100 centimes, séquence RCUR | FRST | OOFF
+//     (jamais FNAL), références `ESS-…` de 35 caractères au plus ;
+//   · un retour porte tous ses champs ou aucun ; un remboursement aussi.
+
+/// Une société cliente déclarée « à nous » (Q1). Pas de ligne = pas à nous.
+/// Retirer ne supprime pas la ligne : on garde qui l'a posée et retirée.
+model OwnEstablishment {
+  /// Opaque, comme `collection_batch_line.debtor_company_id`.
+  companyId          String    @id @map("company_id")
+  /// La DERNIÈRE déclaration.
+  declaredAt         DateTime  @map("declared_at") @db.Timestamptz(3)
+  /// Identifiant staff LOCAL — jamais un `sub`.
+  declaredByStaffId  String    @map("declared_by_staff_id")
+  withdrawnAt        DateTime? @map("withdrawn_at") @db.Timestamptz(3)
+  withdrawnByStaffId String?   @map("withdrawn_by_staff_id")
+
+  @@map("own_establishment")
+  @@schema("public")
+}
+
+/// Un prélèvement d'essai : UN débit, son fichier gardé, sa trace.
+model CollectionTest {
+  /// ULID — il entre dans `MsgId`, `PmtInfId` et `EndToEndId` (`ESS-<ULID>`).
+  id String @id
+
+  /// L'entité émettrice (créancier du mandat) — opaque.
+  legalEntityId          String     @map("legal_entity_id")
+  debtorCompanyId        String     @map("debtor_company_id")
+  debtorName             String     @map("debtor_name")
+  mandateId              String     @map("mandate_id")
+  mandateReference       String     @map("mandate_reference")
+  scheme                 SepaScheme
+  /// `RCUR` | `FRST` | `OOFF` — CHECK en SQL.
+  sequence               String
+  amountCents            Int        @map("amount_cents")
+  /// `ReqdColltnDt`.
+  requestedCollectionDay DateTime   @map("requested_collection_day") @db.Date
+  /// `RmtInf/Ustrd`, déjà au jeu SEPA.
+  remittance             String
+
+  messageId  String @unique @map("message_id")
+  endToEndId String @unique @map("end_to_end_id")
+
+  createdAt        DateTime @map("created_at") @db.Timestamptz(3)
+  createdByStaffId String   @map("created_by_staff_id")
+
+  /// Le fichier tel qu'il a été rendu. Il porte l'IBAN du débiteur en clair,
+  /// comme `collection_batch.xml` — au registre RGPD.
+  xml        String
+  fileSha256 String @map("file_sha256")
+
+  /// Le retour de la banque, rattaché par `EndToEndId` (`ESS-…`).
+  returnKind              CollectionReturnKind?   @map("return_kind")
+  returnReasonCode        String?                 @map("return_reason_code")
+  returnReasonLabel       String?                 @map("return_reason_label")
+  returnedOn              DateTime?               @map("returned_on") @db.Date
+  returnAmountCents       Int?                    @map("return_amount_cents")
+  returnSource            CollectionReturnSource? @map("return_source")
+  returnRecordedAt        DateTime?               @map("return_recorded_at") @db.Timestamptz(3)
+  returnRecordedByStaffId String?                 @map("return_recorded_by_staff_id")
+
+  /// « Marqué remboursé » (Q4) : le jour du virement, et qui l'a dit quand.
+  refundedOn              DateTime? @map("refunded_on") @db.Date
+  refundRecordedAt        DateTime? @map("refund_recorded_at") @db.Timestamptz(3)
+  refundRecordedByStaffId String?   @map("refund_recorded_by_staff_id")
+
+  @@index([createdAt])
+  @@map("collection_test")
+  @@schema("public")
+}

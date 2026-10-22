@@ -6,6 +6,7 @@ import {
   ORDER_COLLECTION_STATE_LABELS,
   SEPA_SCHEME_LABELS,
   BILLING_RHYTHM_KIND_LABELS,
+  TEST_SEQUENCE_LABELS,
 } from '@lfd/contracts';
 
 import { domain, type ValueFamily } from './value-domain';
@@ -107,6 +108,9 @@ const VOUCHER_REINSTATEMENT = domain('restitution d’un bon de fidélité', {
   merged: 'Rendu, reliquat refondu dedans',
 });
 
+/** La séquence d'un prélèvement d'essai (`collection.test_generated`). */
+export const TEST_SEQUENCE = domain('séquence d’un prélèvement d’essai', TEST_SEQUENCE_LABELS);
+
 export const ACCOUNTING_VALUES: ValueFamily = {
   enums: [
     VOUCHER_REINSTATEMENT,
@@ -124,5 +128,6 @@ export const ACCOUNTING_VALUES: ValueFamily = {
     COLLECTION_RETURN_KIND,
     COLLECTION_RETURN_SOURCE,
     COLLECTION_RETURN_RESOLUTION,
+    TEST_SEQUENCE,
   ],
 };

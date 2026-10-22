@@ -102,10 +102,14 @@ export interface ToolGroup {
  *   `/pim/allergen-matrix*`), rangée avec `pim_catalog` (Hugo, 2026-10-20). Sa
  *   clé n'a pas de préfixe `pim_` — le contrat l'a nommée ainsi, et une valeur
  *   d'enum ne se renomme pas pour ranger un écran.
+ * - `collection_test` : le prélèvement d'essai vit dans la Comptabilité, avec
+ *   `b2b_accounting` (2026-10-22, plan `plan-prelevement-d-essai.md`) ; sa clé
+ *   n'a pas de préfixe d'outil.
  */
 const RESOURCE_TOOL_EXCEPTIONS: Readonly<Partial<Record<StaffResource, StaffTool>>> = {
   shop_bundles: 'lfc',
   allergen_matrix: 'pim',
+  collection_test: 'b2b',
 };
 
 /**

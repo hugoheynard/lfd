@@ -16,6 +16,7 @@ import { DELIVERY_TRANSFER_PHRASES } from './delivery-transfer-phrases';
 import { DELIVERY_ROUTING_PHRASES } from './delivery-routing-phrases';
 import { DELIVERY_SIMULATION_PHRASES } from './delivery-simulation-phrases';
 import { COLLECTION_RETURN_PHRASES } from './collection-return-phrases';
+import { COLLECTION_TEST_PHRASES } from './collection-test-phrases';
 import { HANDOVER_PROOF_PHRASES } from './handover-proof-phrases';
 import { INVOICE_PHRASES } from './invoice-phrases';
 import { PACKING_CONTAINER_PHRASES } from './packing-container-phrases';
@@ -192,6 +193,7 @@ export const PHRASES: Readonly<Record<JournalFactType, Phrase>> = {
   ...INVOICE_PHRASES,
   ...REFUND_PHRASES,
   ...COLLECTION_RETURN_PHRASES,
+  ...COLLECTION_TEST_PHRASES,
   ...LOYALTY_PHRASES,
   ...TEAM_PHRASES,
 };

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { billingRhythmKindSchema } from "../legal-entity.js";
 import { mandateStatusSchema } from "../payment-mandate.js";
 import { COLLECTION_FACTS } from "./collection.js";
+import { COLLECTION_TEST_FACTS } from "./collection-test.js";
 import { PAYMENT_REFUND_FACTS } from "./order-refunds.js";
 import {
   basisPoints,
@@ -372,6 +373,8 @@ export const ACCOUNTING_FACTS = {
 
   // Le lot de prélèvement figé (2026-10-05) — `collection.ts`.
   ...COLLECTION_FACTS,
+  // Le prélèvement d'essai et nos établissements (2026-10-22) — `collection-test.ts`.
+  ...COLLECTION_TEST_FACTS,
   /** Un remboursement Stripe qu'aucune commande ne porte (lot R1, A11). */
   ...PAYMENT_REFUND_FACTS,
 } as const satisfies JournalFactFamily;

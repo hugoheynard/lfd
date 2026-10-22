@@ -93,6 +93,18 @@ export const MANDATE_BANK_EXPORT_FACT_TYPES = {
 } as const satisfies Readonly<Record<string, JournalFactType>>;
 
 /**
+ * Les faits du prélèvement d'essai et de nos établissements (plan
+ * `plan-prelevement-d-essai.md`). Sujet : la société ; JAMAIS un IBAN ni une RUM.
+ */
+export const COLLECTION_TEST_FACT_TYPES = {
+  establishmentDeclared: "collection.own_establishment_declared",
+  establishmentWithdrawn: "collection.own_establishment_withdrawn",
+  generated: "collection.test_generated",
+  refunded: "collection.test_refunded",
+  returned: "collection.test_returned",
+} as const satisfies Readonly<Record<string, JournalFactType>>;
+
+/**
  * Les faits de l'arrêté de facturation (plan
  * `le-prelevement-suit-la-facture.md`) : émis avec la constitution
  * du lot, annulé avec lui.

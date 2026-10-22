@@ -759,6 +759,23 @@ export const COMPTABILITE_VIEWS: readonly WorkspaceView[] = [
     needs: 'b2b_accounting:read',
   },
   {
+    // Son propre droit : `collection_test`, la ressource la plus dangereuse du
+    // bloc (plan `plan-prelevement-d-essai.md`). Après le prélèvement réel.
+    key: 'prelevement-d-essai',
+    label: "Prélèvement d'essai",
+    link: '/comptabilite/prelevement-d-essai',
+    icon: 'receipt',
+    needs: 'collection_test:read',
+  },
+  {
+    // Les sociétés à nous, seules visées par l'essai — même droit (Q1).
+    key: 'nos-etablissements',
+    label: 'Nos établissements',
+    link: '/comptabilite/nos-etablissements',
+    icon: 'company',
+    needs: 'collection_test:read',
+  },
+  {
     key: 'liens-de-paiement',
     label: 'Liens de paiement',
     link: '/comptabilite/liens-de-paiement',

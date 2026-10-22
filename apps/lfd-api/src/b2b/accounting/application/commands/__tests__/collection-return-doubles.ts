@@ -18,6 +18,7 @@ import { RepresentCollectionReturnHandler } from "../represent-collection-return
 import { SettleCollectionReturnHandler } from "../settle-collection-return.handler.js";
 import { WriteOffCollectionReturnHandler } from "../write-off-collection-return.handler.js";
 import { FakeRecheck, MemoryOrderCollections, UlidSequence } from "./collection-doubles.js";
+import { MemoryCollectionTests, MemoryTestReturnTargets } from "./collection-test-doubles.js";
 
 /** Les retours en mémoire ; `save` crée ou réécrit, comme l'`upsert`. */
 export class MemoryCollectionReturns extends CollectionReturnRepository {
@@ -85,8 +86,10 @@ export function returnWorld(line: ReturnableLine = returnableLine()) {
   const clock = new FixedClock(RECORDED_AT);
   const uow = new DirectUnitOfWork();
   const ids = new UlidSequence();
+  const tests = new MemoryCollectionTests();
   return {
     returns,
+    tests,
     lines,
     orders,
     mandates,
@@ -106,6 +109,8 @@ export function returnWorld(line: ReturnableLine = returnableLine()) {
     confirm: new ConfirmCollectionReturnImportHandler(
       returns,
       lines,
+      new MemoryTestReturnTargets(tests),
+      tests,
       orders,
       ids,
       clock,

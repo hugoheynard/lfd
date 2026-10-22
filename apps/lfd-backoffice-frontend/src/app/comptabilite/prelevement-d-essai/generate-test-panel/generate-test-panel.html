@@ -1,0 +1,59 @@
+<fold-panel-header
+  title="Générer un prélèvement d'essai"
+  subtitle="Un fichier pain.008 d'un seul débit, sur un de nos établissements. Il se télécharge : l'outil ne le dépose pas."
+/>
+
+<div class="body">
+  <fold-listbox
+    label="Établissement débité"
+    [options]="debtorOptions()"
+    [value]="companyId()"
+    (valueChange)="companyId.set($event)"
+  />
+  @if (debtor(); as chosen) {
+    @if (chosen.mandate; as mandate) {
+      <fold-callout appearance="inset" variant="info">
+        Mandat {{ mandate.reference }} — schéma {{ mandate.scheme }}, compte ••••{{
+          mandate.ibanLast4
+        }}. Le schéma du fichier est celui du mandat.
+      </fold-callout>
+    }
+  }
+  <fold-input
+    label="Montant"
+    required
+    placeholder="1,00"
+    [hint]="'En euros, au plus ' + maxLabel() + '.'"
+    [(value)]="amount"
+  />
+  @if (amountInvalid()) {
+    <fold-callout appearance="inset" variant="warning">
+      Montant illisible ou nul : écrire par exemple « 0,50 ».
+    </fold-callout>
+  }
+  <fold-date
+    label="Échéance"
+    required
+    [hint]="'Au plus tôt le ' + earliestLabel() + ', d’après le calendrier des prélèvements.'"
+    [(value)]="collectionDay"
+  />
+  <fold-listbox label="Séquence" [options]="sequenceOptions()" [(value)]="sequence" />
+  <fold-input
+    label="Libellé"
+    optional
+    [placeholder]="defaultRemittance()"
+    hint="Ce que le relevé de l'établissement affichera. Vide : le libellé par défaut."
+    [(value)]="remittance"
+  />
+
+  @if (error(); as message) {
+    <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+  }
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="close()">Annuler</button>
+  <button foldButton [disabled]="!canSubmit()" [loading]="saving()" (click)="submit()">
+    Générer et télécharger
+  </button>
+</footer>

@@ -50,6 +50,7 @@
   "test/collection-batches.e2e-spec.ts": 9204,
   "test/collection-notices.e2e-spec.ts": 5000,
   "test/collection-returns.e2e-spec.ts": 9929,
+  "test/collection-tests.e2e-spec.ts": 10188,
   "test/collection-schedule.e2e-spec.ts": 4000,
   "test/commercial-settings-access.e2e-spec.ts": 9594,
   "test/company-access-guards.e2e-spec.ts": 5565,

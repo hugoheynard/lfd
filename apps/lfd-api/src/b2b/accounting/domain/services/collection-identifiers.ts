@@ -25,7 +25,10 @@ import type { SequenceType } from "./pain008-document.js";
  */
 
 /** Un ULID : 26 caractères Crockford base32 (sans I, L, O, U). */
-const ULID = /^[0-9A-HJKMNP-TV-Z]{26}$/u;
+export const ULID = /^[0-9A-HJKMNP-TV-Z]{26}$/u;
+
+/** La borne de `MsgId`, `PmtInfId` et `EndToEndId` dans `pain.008.001.02`. */
+export const SEPA_IDENTIFIER_MAX = 35;
 
 /** Le dernier rang exprimable. */
 export const MAX_LINE_RANK = 9_999;

@@ -1937,6 +1937,60 @@
       "conservation": "aucune-limite-decidee",
       "purge": null,
       "information": false
+    },
+    {
+      "colonne": "public.own_establishment.declared_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`declared_by_staff_id`) sur `own_establishment` — déclarer une société parmi nos établissements (plan-prelevement-d-essai.md).",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.own_establishment.withdrawn_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`withdrawn_by_staff_id`) sur `own_establishment` — la retirer de nos établissements (plan-prelevement-d-essai.md).",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.collection_test.created_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`created_by_staff_id`) sur `collection_test` — générer un prélèvement d'essai (plan-prelevement-d-essai.md).",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.collection_test.return_recorded_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`return_recorded_by_staff_id`) sur `collection_test` — rattacher le retour bancaire d'un essai (plan-prelevement-d-essai.md).",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.collection_test.refund_recorded_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`refund_recorded_by_staff_id`) sur `collection_test` — marquer un essai remboursé (plan-prelevement-d-essai.md).",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.collection_test.xml",
+      "personne": "tiers",
+      "categorie": "coordonnees-bancaires",
+      "finalite": "Le fichier pain.008 d'un prélèvement d'essai, gardé tel qu'il a été rendu : il porte en clair l'IBAN, le BIC et le nom de l'établissement débité — une société déclarée « à nous » (plan-prelevement-d-essai.md), qui peut être une entreprise individuelle. Gardé pour le retélécharger à l'identique et rapprocher un retour bancaire. Ne sort que sous `collection_test:write`.",
+      "conservation": "a-decider",
+      "purge": null,
+      "information": false
     }
   ],
   "exclusions": [

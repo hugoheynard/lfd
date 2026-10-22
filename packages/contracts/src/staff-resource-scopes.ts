@@ -141,6 +141,11 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
     write:
       "Bloquer ou débloquer le prélèvement d'un client au crédit. L'écran demande aussi Comptabilité en lecture.",
   },
+  collection_test: {
+    read: "Voir nos établissements et la liste des prélèvements d'essai. L'écran vit dans la Comptabilité, qui demande aussi son droit en lecture.",
+    write:
+      "Déclarer ou retirer un de nos établissements, générer et télécharger un fichier de prélèvement d'essai (il porte l'IBAN), marquer un essai remboursé.",
+  },
   lfc_price_limits: {
     read: "Voir les limites sous lesquelles un prix ne descend pas, pro et publiques. L'écran vit dans la Comptabilité, qui demande aussi son droit en lecture.",
     write:

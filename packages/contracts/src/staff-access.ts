@@ -247,6 +247,17 @@ export const staffResourceSchema = z.enum([
    */
   "b2b_deferred_payment_block",
   /**
+   * **Le prélèvement d'essai** — déclarer nos établissements, générer un
+   * fichier `pain.008` d'essai sur l'un d'eux, le télécharger, marquer un essai
+   * remboursé (2026-10-22,
+   * `documentation/comptabilite/prelevement/plan-prelevement-d-essai.md`).
+   *
+   * Distincte de `b2b_accounting` : c'est la ressource la plus dangereuse du
+   * bloc, elle fabrique un fichier de débit réel hors de tout lot. La graine ne
+   * la donne qu'à l'administrateur ; en production, elle s'accorde à l'écran.
+   */
+  "collection_test",
+  /**
    * **Les limites de prix** — poser, confirmer, retirer une limite, porte
    * dynamique comprise, pour la clientèle pro comme pour le public
    * (`documentation/comptabilite/prix/limites-de-prix.md`).
@@ -767,6 +778,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   b2b_payments: "Moyens de paiement",
   b2b_accounting: "Comptabilité",
   b2b_deferred_payment_block: "Blocage du prélèvement",
+  collection_test: "Prélèvement d'essai",
   lfc_price_limits: "Limites de prix",
   b2b_late_fee: "Surtaxe de retard",
   b2b_alerts: "Alertes",
@@ -898,6 +910,9 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     b2b_payments: "write",
     b2b_accounting: "write",
     b2b_deferred_payment_block: "write",
+    // L'administrateur seul (2026-10-22, plan du prélèvement d'essai) : en
+    // production, accordée à l'écran.
+    collection_test: "write",
     lfc_price_limits: "write",
     b2b_late_fee: "write",
     b2b_alerts: "write",

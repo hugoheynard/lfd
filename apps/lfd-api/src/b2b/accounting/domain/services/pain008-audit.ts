@@ -143,6 +143,18 @@ export function auditCsv(xml: string): string {
   return BOM + rows.join("\r\n") + "\r\n";
 }
 
+/**
+ * Le verdict du contrôle, sans le CSV : le fichier déclare-t-il exactement ce
+ * que ses lignes comptent et somment ? Le prélèvement d'essai le vérifie AVANT
+ * de garder son fichier (plan `plan-prelevement-d-essai.md`, §1) — la même
+ * relecture que le CSV, quelle que soit la séquence des blocs.
+ */
+export function isAuditCoherent(xml: string): boolean {
+  const lines = readLines(xml);
+  const summed = lines.reduce((total, line) => total + line.cents, 0);
+  return lines.length > 0 && declaredCents(xml) === summed && declaredNumber(xml) === lines.length;
+}
+
 function control(label: string, value: string): string {
   return ["", quoted(label), "", "", "", quoted(value)].join(SEPARATOR);
 }

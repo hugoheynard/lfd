@@ -1,0 +1,68 @@
+<fold-panel-header
+  title="Déclarer un de nos établissements"
+  subtitle="Seule une société déclarée ici peut recevoir un prélèvement d’essai."
+/>
+
+<fold-panel-body>
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Lecture des comptes clients…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Impossible de charger les comptes clients">
+        <button foldButton (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @default {
+      <fold-search
+        placeholder="Société, SIRET, propriétaire de l’espace…"
+        ariaLabel="Chercher la société à déclarer"
+        (searchChange)="query.set($event)"
+      />
+
+      @if (refusal(); as refusal) {
+        <fold-callout variant="alert" data-refusal>{{ refusal }}</fold-callout>
+      }
+
+      @if (query().trim() !== '') {
+        @if (results().length === 0) {
+          <fold-empty-state
+            title="Aucune société à déclarer"
+            subtitle="Les sociétés déjà déclarées ne sont pas proposées."
+          >
+            <fold-icon empty-icon name="search" />
+          </fold-empty-state>
+        } @else {
+          <ul class="results">
+            @for (company of results(); track company.id) {
+              <li class="result" data-candidate>
+                <span class="result-name">
+                  {{ nameOf(company) }}
+                  <span class="result-ref">{{ company.reference }}</span>
+                </span>
+                <fold-status-badge
+                  [status]="company.status"
+                  [label]="statusLabels[company.status]"
+                />
+                <button
+                  foldButton
+                  size="sm"
+                  emphasis="outline"
+                  [loading]="declaring() === company.id"
+                  [disabled]="declaring() !== null"
+                  (click)="declare(company)"
+                >
+                  Déclarer
+                </button>
+              </li>
+            }
+          </ul>
+        }
+      }
+    }
+  }
+</fold-panel-body>
+
+<fold-panel-footer>
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Fermer</button>
+</fold-panel-footer>

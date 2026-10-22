@@ -1,0 +1,24 @@
+<fold-panel-header title="Marquer l'essai remboursé" [subtitle]="subtitle()" />
+
+<div class="body">
+  <fold-date
+    label="Remboursé le"
+    required
+    hint="Le jour où le virement a été rendu à l'établissement."
+    [(value)]="refundedOn"
+  />
+  <fold-callout appearance="inset" variant="info">
+    Le traitement comptable d'un essai prélevé est une question au cabinet : ce geste ne crée aucune
+    pièce, il dit seulement que l'argent a été rendu.
+  </fold-callout>
+  @if (error(); as message) {
+    <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+  }
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="close()">Annuler</button>
+  <button foldButton [disabled]="!canSubmit()" [loading]="saving()" (click)="submit()">
+    Marquer remboursé
+  </button>
+</footer>

@@ -1,5 +1,10 @@
 # Plan — un prélèvement d'essai sur un compte client à nous
 
+> ✅ **Bâti le 2026-10-22** (lot unique, non commité à l'écriture de cette
+> ligne) selon §4 et §6 — voir §7 pour ce qui a été tranché en bâtissant et ce
+> qui reste ouvert. L'état est décrit dans
+> [`prelevement-sepa.md`](prelevement-sepa.md), §7 bis.
+
 > **Doc-first, 2026-10-22.** Demande de Hugo : « pouvoir faire un test de
 > prélèvement sur une entreprise à nous qui est un compte client actif ; un
 > outil pour générer le XML de prélèvement, avec éventuellement des petites
@@ -114,3 +119,55 @@ factures, aux bons, aux lots ni à l'état d'encaissement.
   sociétés (proposé), ou un avis envoyé à chaque essai ?
 - **Q7** — Séquences proposées : `RCUR`, `FRST`, et `OOFF` seulement sur un
   mandat ponctuel dédié aux essais ; **pas de `FNAL`** (proposé) ?
+
+## 6. Décisions (Hugo, 2026-10-22)
+
+- **Q1** — on déclare **nos établissements** (les sociétés à nous) dans une
+  **page spéciale de la Comptabilité**, pas dans la fiche « Informations » de la
+  société ; l'outil d'essai ne propose que celles-là.
+- **Q2** — plafond **1 €** par essai (Hugo, 2026-10-22 ; d'abord 10 €).
+- **Q4** — « je ne sais pas » : par défaut, un essai prélevé est **« à
+  rembourser »** dans la liste des essais, avec un geste « Marqué remboursé »
+  (date, auteur) ; le traitement comptable est une question au cabinet.
+- **Q6** — pré-notification : **une décision écrite** suffit pour nos propres
+  établissements (affichée sur la page de déclaration).
+- **Q7** — séquences `RCUR`, `FRST`, `OOFF` (seulement sur un mandat ponctuel non
+  utilisé par un lot réel) ; **pas de `FNAL`**.
+
+## 7. Bâti (2026-10-22)
+
+- **Nos établissements** : table `own_establishment` (pas de ligne = pas à
+  nous ; retirer garde la ligne), page Comptabilité › Nos établissements, faits
+  `collection.own_establishment_declared` / `_withdrawn`. La décision de
+  pré-notification (Q6) y est affichée, datée.
+- **Droit** `collection_test` (migration seule dans sa transaction, aucun
+  droit accordé ; graine : administrateur seul). Il garde les deux pages et
+  toutes leurs routes ; le fichier se télécharge sous `collection_test:write`.
+- **Générateur** : `DocumentDebit.sequence` donnée par l'appelant
+  (`sequenceTypeOf` pour le lot, `TestSequence` pour l'essai) ; un seul rendu.
+  Références `ESS-<ULID>` / `ESS-<ULID>-<séquence>` (≤ 35, testées). XSD ISO
+  `pain.008.001.02` recopié sous `apps/lfd-api/test/fixtures/pain008/` et joué
+  sur un lot réel et sur un essai.
+- **Échéance** : `collectionDayOf(maintenant, délai de pré-notification, N)` de
+  l'entité du mandat — le calendrier des lots, « comme si le cycle se
+  clôturait à l'instant ». Refus d'un jour plus tôt, et d'un jour fermé de
+  TARGET2.
+- **Plafond** : `MAX_COLLECTION_TEST_CENTS = 100` (1 €), tenu par l'agrégat et
+  par un CHECK en base.
+- **Q7** : « mandat ponctuel utilisé par un lot réel » = une ligne d'un lot
+  **non annulé** (constitué ou déposé), plus large que le « consommé » des
+  lots (déposé seulement).
+- **Q4** : « à rembourser » = échéance passée sans retour de la banque.
+  `refunded_and_returned` dit un remboursement suivi d'un retour.
+- **Retours** : une référence `ESS-…` n'est cherchée que parmi les essais
+  (statut d'import `collection_test`) ; elle ne touche ni ligne, ni commande.
+
+**Restés ouverts** (non tranchés par ce plan) :
+
+- un `OOFF` d'essai **consomme** le mandat ponctuel pour la banque, mais rien
+  ne l'interdit ensuite à un lot réel (§2 « ne marque pas le mandat ») ;
+- rien ne sait si un fichier d'essai a été **déposé** : un essai jamais déposé
+  passe « à rembourser » à son échéance comme un autre ;
+- la **durée de conservation** du fichier gardé (`collection_test.xml`, IBAN en
+  clair) : `a-decider` au registre RGPD ;
+- la question `FRST` reste à la banque (`question-banque.md` 3.7).

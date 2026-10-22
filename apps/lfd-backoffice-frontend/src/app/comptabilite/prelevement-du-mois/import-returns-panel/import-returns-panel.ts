@@ -35,6 +35,8 @@ const STATUS: Readonly<
   >
 > = {
   matched: { variant: 'success', label: 'Apparié' },
+  // Une référence `ESS-…` : rattachée à son prélèvement d'essai, jamais à un lot.
+  collection_test: { variant: 'success', label: 'Essai' },
   unknown: { variant: 'neutral', label: 'Inconnu' },
   amount_mismatch: { variant: 'warning', label: 'Montant différent' },
   already_returned: { variant: 'neutral', label: 'Déjà enregistré' },
@@ -76,8 +78,11 @@ export class ImportReturnsPanel {
   protected readonly busy = signal(false);
   protected readonly error = signal<string | null>(null);
 
+  /** Ce qui s'enregistre à la confirmation : les lignes de lot ET les essais. */
   protected readonly matched = computed(() =>
-    (this.preview()?.entries ?? []).filter((entry) => entry.status === 'matched'),
+    (this.preview()?.entries ?? []).filter(
+      (entry) => entry.status === 'matched' || entry.status === 'collection_test',
+    ),
   );
 
   protected async picked(files: readonly File[]): Promise<void> {
