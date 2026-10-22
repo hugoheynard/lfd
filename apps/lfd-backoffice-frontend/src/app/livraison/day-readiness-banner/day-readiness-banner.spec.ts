@@ -90,7 +90,7 @@ describe('DayReadinessBanner — le plan arrêté sur l’écran des tournées',
 
     const gap = element.querySelector('[data-readiness-gap]');
     expect(gap?.textContent).toContain('impossible de proposer les tournées');
-    expect(gap?.textContent).toContain('Réglages → Livraison → Véhicules');
+    expect(gap?.textContent).toContain('Réglages › Livraison › Véhicules');
     expect(element.querySelector('[data-readiness-propose]')).toBeNull();
   });
 

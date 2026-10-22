@@ -13,7 +13,7 @@ import { B2B_API_BASE } from '../../api/api-config';
 
 /**
  * **À quelles clientèles la livraison est proposée** — un réglage unique, B2B
- * et B2C, posé dans « E-commerce LFC → Réglages → Livraison ».
+ * et B2C, posé dans « E-commerce LFC → Réglages › Livraison ».
  *
  * Le serveur rend une vue même quand personne n'a rien réglé : ouverte aux deux,
  * `updatedAt` et `updatedBy` à `null`. Il n'y a donc pas de « réglage absent »

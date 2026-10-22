@@ -10,7 +10,7 @@ const AUDIENCE_NAMES: Readonly<Record<CustomerAudience, string>> = {
 
 /**
  * La boutique ne prend pas les commandes de cette clientèle (**409**) — le
- * staff l'a fermée dans « Réglages → Commandes → Ouverture du
+ * staff l'a fermée dans « Réglages › Commandes › Ouverture du
  * e-commerce ».
  *
  * Un GARDE : la boutique ne montre pas le bouton de commande à une clientèle

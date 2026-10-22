@@ -155,7 +155,7 @@ describe("le sélecteur d'acheminement de la saisie staff", () => {
       // nommant le réglage. Le parcours CLIENT refuse déjà sur un tel point.
       window: null,
       issue:
-        'Ce point n’a aucune heure d’ouverture déclarée — impossible de convenir d’un créneau (Réglages → Sites).',
+        'Ce point n’a aucune heure d’ouverture déclarée — impossible de convenir d’un créneau (Réglages › Sites).',
     });
   });
 

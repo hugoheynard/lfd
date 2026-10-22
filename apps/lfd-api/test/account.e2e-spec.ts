@@ -1,7 +1,7 @@
 /**
  * E2E de la chaîne **compte** : éditer son profil, déclarer une entreprise.
  *
- * Ce sont les deux écritures de « Réglages → Mon profil » et de « Mes
+ * Ce sont les deux écritures de « Réglages › Mon profil » et de « Mes
  * entreprises ». Elles traversent le bus CQRS, le domaine et le vrai SQL — donc
  * les contraintes, la transaction société+rattachement, et le refus d'un SIRET
  * déjà pris.

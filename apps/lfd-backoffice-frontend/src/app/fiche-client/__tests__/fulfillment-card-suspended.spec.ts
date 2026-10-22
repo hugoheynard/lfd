@@ -14,7 +14,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
  * ni que le réglage était devenu inerte.
  *
  * Ce cas se produit dès qu'un admin ferme la livraison aux pros, dans
- * « E-commerce LFC → Réglages → Livraison » : la constante `DELIVERY_SERVICE_OPEN`,
+ * « E-commerce LFC → Réglages › Livraison » : la constante `DELIVERY_SERVICE_OPEN`,
  * toujours à vrai, a laissé la place à ce réglage le 2026-09-15. La carte se
  * teste ici directement parce que ce chemin ne se voit qu'une fois la case
  * décochée.

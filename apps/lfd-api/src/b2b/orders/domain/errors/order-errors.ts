@@ -143,7 +143,7 @@ export class NoDeliveryZoneForPostalCodeError extends BusinessError {
 
 /**
  * La livraison n'est pas proposée à la clientèle de cette requête (**409**) —
- * l'admin l'a fermée dans « Réglages → Livraison ».
+ * l'admin l'a fermée dans « Réglages › Livraison ».
  *
  * Un GARDE : la boutique ne propose pas une livraison fermée, et ce refus
  * n'arrive que d'un écran resté ouvert ou d'un appel direct. Un seul message,

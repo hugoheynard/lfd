@@ -37,9 +37,9 @@ export interface PlanArrestedWords {
 /** Ce qui manque au socle, et où le régler — les mots des refus de « Proposer ». */
 const GAP_WORDS: Readonly<Record<CompositionGap, string>> = {
   no_measured_vehicle:
-    "aucun véhicule en service n'a ses cotes. Renseignez-les dans Réglages → Livraison → Véhicules",
+    "aucun véhicule en service n'a ses cotes. Renseignez-les dans Réglages › Livraison › Véhicules",
   no_active_bin_type:
-    "aucun type de bac n'est en service. Ajoutez-en un dans Réglages → Livraison → Bacs",
+    "aucun type de bac n'est en service. Ajoutez-en un dans Réglages › Livraison › Bacs",
 };
 
 function deliveries(count: number): string {

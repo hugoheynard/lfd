@@ -6,7 +6,7 @@ import { zonesLine } from '../livraison/vehicle-zones';
 
 /**
  * **Les véhicules en texte**, pour un agent — ce que la flotte
- * (Réglages → Livraison → Véhicules) montre : identité, chargement, froid,
+ * (Réglages › Livraison › Véhicules) montre : identité, chargement, froid,
  * énergie, zones, et surtout les AVERTISSEMENTS (`gaps`, 2026-10-14) que la
  * fiche affiche quand une donnée manque. Les phrases d'avertissement viennent
  * du serveur telles quelles : ce sont celles que lit le bureau.

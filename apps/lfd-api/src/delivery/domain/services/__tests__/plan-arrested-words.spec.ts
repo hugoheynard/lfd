@@ -41,7 +41,7 @@ describe("planArrestedWords — la cloche du plan arrêté", () => {
     });
 
     expect(words.body).toContain("Impossible de proposer les tournées");
-    expect(words.body).toContain("Réglages → Livraison → Véhicules");
+    expect(words.body).toContain("Réglages › Livraison › Véhicules");
   });
 
   it("sans type de bac en service, pareil, vers les bacs", () => {
@@ -52,6 +52,6 @@ describe("planArrestedWords — la cloche du plan arrêté", () => {
       gap: "no_active_bin_type",
     });
 
-    expect(words.body).toContain("Réglages → Livraison → Bacs");
+    expect(words.body).toContain("Réglages › Livraison › Bacs");
   });
 });

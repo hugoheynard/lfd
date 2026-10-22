@@ -7,7 +7,7 @@ import { B2B_API_BASE } from '../../api/api-config';
 
 /**
  * **À quelles clientèles la boutique prend des commandes** — un réglage
- * unique, posé dans « E-commerce LFC → Réglages → Ouverture de la boutique ».
+ * unique, posé dans « E-commerce LFC → Réglages › Ouverture de la boutique ».
  *
  * Le serveur rend une vue même quand personne n'a rien réglé : ouverte aux
  * deux, `updatedAt` et `updatedBy` à `null`. Doc :

@@ -10,7 +10,7 @@ import { B2B_API_BASE } from '../../api/api-config';
 
 /**
  * **L'annulation par les particuliers** — un réglage unique, posé dans
- * « E-commerce LFC → Réglages → Commandes » (doc
+ * « E-commerce LFC → Réglages › Commandes » (doc
  * `documentation/commandes/annulation/annulation-par-le-client.md`, C6.5).
  *
  * Le serveur rend une vue même quand personne n'a rien réglé : fermée, 24 h,

@@ -143,8 +143,8 @@ export class AcheminementCommande {
       return null;
     }
     return this.audience() === 'b2b'
-      ? 'La livraison n’est pas proposée aux pros (Réglages → Livraison → Zones de livraison).'
-      : 'Ce compte n’est pas actif : il suit les règles des particuliers, à qui la livraison n’est pas proposée (Réglages → Livraison → Zones de livraison).';
+      ? 'La livraison n’est pas proposée aux pros (Réglages › Livraison › Zones de livraison).'
+      : 'Ce compte n’est pas actif : il suit les règles des particuliers, à qui la livraison n’est pas proposée (Réglages › Livraison › Zones de livraison).';
   });
 
   protected readonly methods = computed<readonly FoldViewToggleOption[]>(() => [
@@ -296,7 +296,7 @@ export class AcheminementCommande {
    */
   private windowIssue(): string | null {
     if (this.slots().length === 0) {
-      return 'Ce point n’a aucune heure d’ouverture déclarée — impossible de convenir d’un créneau (Réglages → Sites).';
+      return 'Ce point n’a aucune heure d’ouverture déclarée — impossible de convenir d’un créneau (Réglages › Sites).';
     }
     return this.slotId() === '' ? 'Créneau de retrait à choisir.' : null;
   }
@@ -507,7 +507,7 @@ export class AcheminementCommande {
       return 'Choisissez le point de retrait : plusieurs sont ouverts à ce client.';
     }
     const who = this.audience() === 'b2b' ? 'aux professionnels' : 'aux particuliers';
-    return `Aucun point de retrait n’est ouvert ${who} : proposez la livraison, ou ouvrez le retrait d’un site à cette clientèle (Réglages → Sites).`;
+    return `Aucun point de retrait n’est ouvert ${who} : proposez la livraison, ou ouvrez le retrait d’un site à cette clientèle (Réglages › Sites).`;
   }
 
   private courierChoice(): FulfillmentChoice {

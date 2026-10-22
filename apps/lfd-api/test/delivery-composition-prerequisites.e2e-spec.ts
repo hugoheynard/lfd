@@ -56,7 +56,7 @@ describe("« Proposer » sans socle", () => {
     expect(refusal(refused)).toMatchObject({
       code: "delivery.no_measured_vehicle",
       message:
-        "Aucun véhicule en service n'a ses cotes — il manque la longueur, la largeur ou la hauteur utiles de « Kangoo » : renseignez-les dans Réglages → Livraison → Véhicules avant de proposer des tournées.",
+        "Aucun véhicule en service n'a ses cotes — il manque la longueur, la largeur ou la hauteur utiles de « Kangoo » : renseignez-les dans Réglages › Livraison › Véhicules avant de proposer des tournées.",
     });
   });
 
@@ -66,7 +66,7 @@ describe("« Proposer » sans socle", () => {
     const refused = await admin(ctx).get(`${PROPOSAL}?day=${DAY}`).expect(409);
 
     expect(refusal(refused)).toMatchObject({ code: "delivery.no_active_bin_type" });
-    expect(refusal(refused).message).toContain("Réglages → Livraison → Bacs");
+    expect(refusal(refused).message).toContain("Réglages › Livraison › Bacs");
   });
 
   it("avec un véhicule mesuré et un type de bac, « Proposer » répond", async () => {
@@ -114,7 +114,7 @@ describe("aucun geste ne défait le socle", () => {
     const refused = await admin(ctx).post(`${LOADING}/bins/${only}/archive`).expect(409);
 
     expect(refusal(refused).code).toBe("delivery.last_active_bin_type");
-    expect(refusal(refused).message).toContain("Réglages → Livraison → Bacs");
+    expect(refusal(refused).message).toContain("Réglages › Livraison › Bacs");
     expect(await ctx.prisma.deliveryBinType.count({ where: { archivedAt: null } })).toBe(1);
 
     await binTypeId(ctx, "Bac L e2e");

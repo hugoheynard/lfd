@@ -17,8 +17,8 @@ export class NoMeasuredVehicleError extends BusinessError {
     super(
       "delivery.no_measured_vehicle",
       unmeasuredNames.length === 0
-        ? "Aucun véhicule en service n'a ses cotes : renseignez la longueur, la largeur et la hauteur utiles d'un véhicule dans Réglages → Livraison → Véhicules avant de proposer des tournées."
-        : `Aucun véhicule en service n'a ses cotes — il manque la longueur, la largeur ou la hauteur utiles de ${unmeasuredNames.map((name) => `« ${name} »`).join(", ")} : renseignez-les dans Réglages → Livraison → Véhicules avant de proposer des tournées.`,
+        ? "Aucun véhicule en service n'a ses cotes : renseignez la longueur, la largeur et la hauteur utiles d'un véhicule dans Réglages › Livraison › Véhicules avant de proposer des tournées."
+        : `Aucun véhicule en service n'a ses cotes — il manque la longueur, la largeur ou la hauteur utiles de ${unmeasuredNames.map((name) => `« ${name} »`).join(", ")} : renseignez-les dans Réglages › Livraison › Véhicules avant de proposer des tournées.`,
     );
   }
 }
@@ -28,7 +28,7 @@ export class NoActiveBinTypeError extends BusinessError {
   constructor() {
     super(
       "delivery.no_active_bin_type",
-      "Aucun type de bac n'est en service : ajoutez-en un, ou réactivez-en un, dans Réglages → Livraison → Bacs avant de proposer des tournées.",
+      "Aucun type de bac n'est en service : ajoutez-en un, ou réactivez-en un, dans Réglages › Livraison › Bacs avant de proposer des tournées.",
     );
   }
 }
@@ -45,8 +45,8 @@ export class LastMeasuredVehicleError extends BusinessError {
     super(
       "delivery.last_measured_vehicle",
       gesture === "retire"
-        ? `Le véhicule « ${name} » est le dernier en service à avoir ses cotes : sans lui, les tournées ne peuvent plus être proposées. Renseignez d'abord les cotes d'un autre véhicule dans Réglages → Livraison → Véhicules, puis retirez celui-ci.`
-        : `Le véhicule « ${name} » est le dernier en service à avoir ses cotes : les effacer empêcherait de proposer des tournées. Renseignez d'abord celles d'un autre véhicule dans Réglages → Livraison → Véhicules.`,
+        ? `Le véhicule « ${name} » est le dernier en service à avoir ses cotes : sans lui, les tournées ne peuvent plus être proposées. Renseignez d'abord les cotes d'un autre véhicule dans Réglages › Livraison › Véhicules, puis retirez celui-ci.`
+        : `Le véhicule « ${name} » est le dernier en service à avoir ses cotes : les effacer empêcherait de proposer des tournées. Renseignez d'abord celles d'un autre véhicule dans Réglages › Livraison › Véhicules.`,
     );
   }
 }
@@ -56,7 +56,7 @@ export class LastActiveBinTypeError extends BusinessError {
   constructor(name: string) {
     super(
       "delivery.last_active_bin_type",
-      `Le type « ${name} » est le dernier bac en service : sans lui, les tournées ne peuvent plus être proposées. Ajoutez ou réactivez d'abord un autre type dans Réglages → Livraison → Bacs, puis archivez celui-ci.`,
+      `Le type « ${name} » est le dernier bac en service : sans lui, les tournées ne peuvent plus être proposées. Ajoutez ou réactivez d'abord un autre type dans Réglages › Livraison › Bacs, puis archivez celui-ci.`,
     );
   }
 }
@@ -71,7 +71,7 @@ export class DefaultContainerBinTypeArchiveError extends BusinessError {
   constructor(name: string) {
     super(
       "delivery.default_container_bin_type_archive",
-      `Le type « ${name} » est le contenant par défaut d'une commande dans le calcul des tournées. Choisissez un autre type, ou videz ce réglage, dans Réglages → Livraison → Point de départ (carte « Calcul des tournées »), puis archivez celui-ci.`,
+      `Le type « ${name} » est le contenant par défaut d'une commande dans le calcul des tournées. Choisissez un autre type, ou videz ce réglage, dans Réglages › Livraison › Point de départ (carte « Calcul des tournées »), puis archivez celui-ci.`,
     );
   }
 }
@@ -81,7 +81,7 @@ export class DefaultContainerBinTypeUnavailableError extends BusinessError {
   constructor(binTypeId: string) {
     super(
       "delivery.default_container_bin_type_unavailable",
-      `Le type de bac ${binTypeId} n'est pas en service (archivé, ou absent du catalogue) : il ne peut pas servir de contenant par défaut. Rechargez l'écran et choisissez un type en service, ou réactivez celui-ci dans Réglages → Livraison → Bacs.`,
+      `Le type de bac ${binTypeId} n'est pas en service (archivé, ou absent du catalogue) : il ne peut pas servir de contenant par défaut. Rechargez l'écran et choisissez un type en service, ou réactivez celui-ci dans Réglages › Livraison › Bacs.`,
     );
   }
 }
