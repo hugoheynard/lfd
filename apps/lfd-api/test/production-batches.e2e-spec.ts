@@ -142,6 +142,38 @@ describe("déclarer une fournée", () => {
   });
 });
 
+/**
+ * Régression : un identifiant de fournée qui n'était pas un ULID sortait en 500
+ * `internal.unexpected` — le `ZodError` d'un `.parse` écrit dans la route
+ * n'était pas catégorisé (fix 2026-10-22).
+ */
+describe("un chemin mal formé", () => {
+  it("🔴 un identifiant de fournée hors ULID est refusé en 400 qui nomme le paramètre", async () => {
+    await twoBagsOfTwelve();
+
+    const response = await ctx
+      .asSub(STAFF)
+      .put(`/admin/production/worksheet/${SERVICE_DAY}/lines/${CROISSANT}/batches/pas-un-ulid`)
+      .send({ quantity: 3, initials: "KA" });
+
+    expect(response.status).toBe(400);
+    expect(JSON.stringify(response.body)).toContain("batchId");
+    expect(await storedBatches(ctx)).toHaveLength(0);
+  });
+
+  it("🔴 un jour hors AAAA-MM-JJ est refusé en 400, à la déclaration comme à l'annulation", async () => {
+    const record = await ctx
+      .asSub(STAFF)
+      .put(`/admin/production/worksheet/demain/lines/${CROISSANT}/batches/${FIRST}`)
+      .send({ quantity: 3, initials: "KA" });
+    const cancel = await ctx
+      .asSub(STAFF)
+      .delete(`/admin/production/worksheet/demain/batches/${FIRST}`);
+
+    expect([record.status, cancel.status]).toEqual([400, 400]);
+  });
+});
+
 describe("annuler une fournée", () => {
   it("🔴 ses pièces déjà dans un sac : le colisage n'en rend rien, la fournée compte encore", async () => {
     const [first] = await twoBagsOfTwelve();

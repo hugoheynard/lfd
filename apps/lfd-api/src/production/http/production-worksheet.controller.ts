@@ -18,7 +18,7 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../platform/auth/staff.decorator.js";
-import { ZodBody, ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
+import { ZodBody, ZodParam, ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
 import { CancelBatchCommand } from "../application/commands/cancel-batch.command.js";
 import { RecordBatchCommand } from "../application/commands/record-batch.command.js";
 import { RemoveProductionContainerCommand } from "../application/commands/remove-production-container.command.js";
@@ -29,6 +29,16 @@ import { UnmarkWorksheetLineCommand } from "../application/commands/unmark-works
 import { ListProductionContainersQuery } from "../application/queries/list-production-containers.query.js";
 import { GetCurrentProductionWorksheetQuery } from "../application/queries/get-current-production-worksheet.query.js";
 import { GetProductionWorksheetQuery } from "../application/queries/get-production-worksheet.query.js";
+
+/**
+ * Le jour du chemin, validé dans sa FORME avant d'entrer.
+ *
+ * Le domaine le refuserait aussi — `ServiceDay.of` lève sur autre chose qu'un
+ * jour ISO — mais le message de la frontière nomme le paramètre. Par un pipe et
+ * non par un `.parse` dans la route : un `ZodError` nu sortait en 500
+ * (2026-10-22).
+ */
+const DAY = new ZodParam(productionWorksheetQuerySchema.shape.date, "date");
 
 /** Le code de retour d'un geste qui n'a rien à rendre — le client relit. */
 const NO_CONTENT = 204;
@@ -108,13 +118,13 @@ export class ProductionWorksheetController {
   @Put("worksheet/:date/lines/:sku/done")
   @HttpCode(NO_CONTENT)
   async mark(
-    @Param("date") date: string,
+    @Param("date", DAY) date: string,
     @Param("sku") sku: string,
     @Body(new ZodBody(markWorkshopLineSchema)) body: MarkWorkshopLine,
     @StaffUserId() staffUserId: string,
   ): Promise<void> {
     await this.commands.execute<MarkWorksheetLineCommand, void>(
-      new MarkWorksheetLineCommand(dayOf(date), sku, body.initials, staffUserId),
+      new MarkWorksheetLineCommand(date, sku, body.initials, staffUserId),
     );
   }
 
@@ -128,12 +138,12 @@ export class ProductionWorksheetController {
   @Delete("worksheet/:date/lines/:sku/done")
   @HttpCode(NO_CONTENT)
   async unmark(
-    @Param("date") date: string,
+    @Param("date", DAY) date: string,
     @Param("sku") sku: string,
     @StaffUserId() staffUserId: string,
   ): Promise<void> {
     await this.commands.execute<UnmarkWorksheetLineCommand, void>(
-      new UnmarkWorksheetLineCommand(dayOf(date), sku, staffUserId),
+      new UnmarkWorksheetLineCommand(date, sku, staffUserId),
     );
   }
 
@@ -148,21 +158,14 @@ export class ProductionWorksheetController {
   @Put("worksheet/:date/lines/:sku/batches/:batchId")
   @HttpCode(NO_CONTENT)
   async recordBatch(
-    @Param("date") date: string,
+    @Param("date", DAY) date: string,
     @Param("sku") sku: string,
-    @Param("batchId") batchId: string,
+    @Param("batchId", new ZodParam(workshopBatchIdSchema, "batchId")) batchId: string,
     @Body(new ZodBody(recordWorkshopBatchSchema)) body: RecordWorkshopBatch,
     @StaffUserId() staffUserId: string,
   ): Promise<void> {
     await this.commands.execute<RecordBatchCommand, void>(
-      new RecordBatchCommand(
-        dayOf(date),
-        sku,
-        workshopBatchIdSchema.parse(batchId),
-        body.quantity,
-        body.initials,
-        staffUserId,
-      ),
+      new RecordBatchCommand(date, sku, batchId, body.quantity, body.initials, staffUserId),
     );
   }
 
@@ -174,12 +177,12 @@ export class ProductionWorksheetController {
   @Delete("worksheet/:date/batches/:batchId")
   @HttpCode(NO_CONTENT)
   async cancelBatch(
-    @Param("date") date: string,
-    @Param("batchId") batchId: string,
+    @Param("date", DAY) date: string,
+    @Param("batchId", new ZodParam(workshopBatchRefSchema, "batchId")) batchId: string,
     @StaffUserId() staffUserId: string,
   ): Promise<void> {
     await this.commands.execute<CancelBatchCommand, void>(
-      new CancelBatchCommand(dayOf(date), workshopBatchRefSchema.parse(batchId), staffUserId),
+      new CancelBatchCommand(date, batchId, staffUserId),
     );
   }
 
@@ -196,11 +199,11 @@ export class ProductionWorksheetController {
    */
   @Post("worksheet/:date/retake")
   async retake(
-    @Param("date") date: string,
+    @Param("date", DAY) date: string,
     @StaffUserId() staffUserId: string,
   ): Promise<ProductionWorksheetRetake> {
     return this.commands.execute<RetakeProductionDayCommand, ProductionWorksheetRetake>(
-      new RetakeProductionDayCommand(dayOf(date), staffUserId),
+      new RetakeProductionDayCommand(date, staffUserId),
     );
   }
 
@@ -236,16 +239,4 @@ export class ProductionWorksheetController {
       new RemoveProductionContainerCommand(sku),
     );
   }
-}
-
-/**
- * Le jour du chemin, validé dans sa FORME avant d'entrer.
- *
- * Le domaine le refuserait aussi — `ServiceDay.of` lève sur autre chose qu'un
- * jour ISO — mais le message de la frontière nomme le paramètre, ce qui est ce
- * dont a besoin celui qui a tapé l'URL. Même geste que `productionBatchQuerySchema`
- * chez le contrôleur voisin.
- */
-function dayOf(date: string): string {
-  return productionWorksheetQuerySchema.parse({ date }).date;
 }

@@ -42,6 +42,25 @@ export class ZodQuery<T> implements PipeTransform<unknown, T> {
   }
 }
 
+/**
+ * Même validation, appliquée à un **paramètre de chemin** nommé.
+ *
+ * Existe parce qu'un `schema.parse(param)` écrit dans le corps d'une route lève
+ * un `ZodError` nu, que le filtre ne catégorise pas : un identifiant de fournée
+ * mal formé sortait en 500 `internal.unexpected` (corrigé le 2026-10-22). Le
+ * pipe le rend en 400 et nomme le paramètre fautif.
+ */
+export class ZodParam<T> implements PipeTransform<unknown, T> {
+  constructor(
+    private readonly schema: ZodType<T>,
+    private readonly name: string,
+  ) {}
+
+  transform(value: unknown): T {
+    return parseOrThrow(this.schema, value, this.name);
+  }
+}
+
 /** Valide, ou lève une erreur qui dit OÙ chercher. */
 function parseOrThrow<T>(schema: ZodType<T>, value: unknown, where: string): T {
   const result = schema.safeParse(value);
