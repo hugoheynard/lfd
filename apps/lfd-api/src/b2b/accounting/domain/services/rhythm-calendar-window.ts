@@ -1,7 +1,11 @@
 import { addDays, instantToLocal, localToInstant, weekdayOf } from "@lfd/contracts";
 
 import { BillingCycleBoundaryError } from "../errors/accounting-errors.js";
-import { collectionCalendar, type CollectionCalendarSettings } from "./collection-calendar.js";
+import {
+  collectionCalendar,
+  type CollectionCalendarSettings,
+  type LocalDeadline,
+} from "./collection-calendar.js";
 import { closureAfter, lastDayOf, type RhythmTimeline } from "./invoicing-closures.js";
 
 /** L'axe du tableau de bord : six semaines, de quoi voir l'échéance d'une clôture mensuelle. */
@@ -31,6 +35,8 @@ export interface RhythmPeriodMilestones {
   readonly invoicedOn: string;
   readonly noticeOn: string;
   readonly collectionDay: string;
+  /** La limite de dépôt du fichier ; `null` tant que le cut-off n'est pas réglé. */
+  readonly depositDeadline: LocalDeadline | null;
 }
 
 /** L'axe qui contient `now` : du lundi (Paris) de sa semaine, six semaines. */
@@ -77,6 +83,7 @@ export function rhythmPeriodsIn(
         invoicedOn,
         noticeOn: instantToLocal(calendar.plannedConstitutionAt).day,
         collectionDay: calendar.collectionDay,
+        depositDeadline: calendar.depositDeadline,
       });
     }
   }

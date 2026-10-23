@@ -3,6 +3,10 @@ import { instantToLocal, type BillingRhythmsCalendarView } from "@lfd/contracts"
 
 import { Clock } from "../../../../platform/time/clock.js";
 import { LegalEntityNotFoundError } from "../../domain/errors/accounting-errors.js";
+import {
+  ClosureBatchesReader,
+  type ClosureBatchRead,
+} from "../../domain/ports/closure-batches.reader.js";
 import { BillingModeDatesReader } from "../../domain/ports/billing-mode-dates.reader.js";
 import { LegalEntityReader } from "../../domain/ports/legal-entity.reader.js";
 import { PayerBillingModesReader } from "../../domain/ports/payer-billing-modes.reader.js";
@@ -41,6 +45,7 @@ export class GetBillingRhythmsCalendarHandler implements IQueryHandler<
     private readonly payerModes: PayerBillingModesReader,
     private readonly standings: PayerStandingsReader,
     private readonly mandates: CollectionMandatesReader,
+    private readonly batches: ClosureBatchesReader,
     private readonly clock: Clock,
   ) {}
 
@@ -63,24 +68,51 @@ export class GetBillingRhythmsCalendarHandler implements IQueryHandler<
       depositCutoff: entity.depositCutoff,
     };
     const window = rhythmCalendarWindowAt(now);
+    const lanes = LANE_ORDER.map((mode) => ({
+      mode,
+      periods: rhythmPeriodsIn(window, modes[mode], settings),
+    }));
+    const batchOf = batchIdsByClosure(
+      await this.batches.ofClosures(
+        entity.id,
+        lanes.flatMap((lane) => lane.periods.map((period) => period.closesAt)),
+      ),
+    );
     return {
       legalEntityId: entity.id,
       today: instantToLocal(now).day,
       startsOn: window.startsOn,
       endsOn: window.endsOn,
       preNotificationDays: entity.preNotificationDays,
-      rhythms: LANE_ORDER.map((mode) => {
+      rhythms: lanes.map(({ mode, periods }) => {
         const payerCount = counts.get(mode) ?? 0;
         return {
           mode,
           followed: mode === DEFAULT_BILLING_MODE || payerCount > 0,
           payerCount,
-          periods: rhythmPeriodsIn(window, modes[mode], settings).map((period) => ({
+          periods: periods.map((period) => ({
             ...period,
             closesAt: period.closesAt.toISOString(),
+            batchId: batchOf.get(period.closesAt.getTime()) ?? null,
           })),
         };
       }),
     };
   }
+}
+
+/**
+ * Le lot à ouvrir pour chaque clôture : le vivant (constitué ou déposé)
+ * d'abord, sinon le dernier annulé — une procédure abandonnée se relit.
+ */
+function batchIdsByClosure(reads: readonly ClosureBatchRead[]): ReadonlyMap<number, string> {
+  const chosen = new Map<number, ClosureBatchRead>();
+  for (const read of reads) {
+    const key = read.closesAt.getTime();
+    const current = chosen.get(key);
+    if (current === undefined || current.batch.status === "cancelled") {
+      chosen.set(key, read);
+    }
+  }
+  return new Map([...chosen].map(([key, read]) => [key, read.batch.batchId]));
 }

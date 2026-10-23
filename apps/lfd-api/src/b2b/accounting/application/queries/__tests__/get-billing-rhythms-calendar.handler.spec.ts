@@ -1,12 +1,17 @@
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { LegalEntityNotFoundError } from "../../../domain/errors/accounting-errors.js";
 import {
+  ClosureBatchesReader,
+  type ClosureBatchRead,
+} from "../../../domain/ports/closure-batches.reader.js";
+import {
   LegalEntityReader,
   type LegalEntityRecord,
 } from "../../../domain/ports/legal-entity.reader.js";
 import type { PayerStanding } from "../../../domain/ports/payer-standing.reader.js";
 import type { CollectionMandate } from "../../../domain/ports/collection-mandates.reader.js";
 import { paris } from "../../../domain/services/__tests__/billing-mode-fixtures.js";
+import { depositDeadlineOf } from "../../../domain/services/collection-calendar.js";
 import { toView } from "../../../infrastructure/legal-entity.mapper.js";
 import {
   ModeDatesStore,
@@ -21,12 +26,43 @@ import { GetBillingRhythmsCalendarHandler } from "../get-billing-rhythms-calenda
 import { GetBillingRhythmsCalendarQuery } from "../get-billing-rhythms-calendar.query.js";
 
 class OnlyLe1 extends LegalEntityReader {
+  constructor(private readonly overrides: Partial<LegalEntityRecord> = {}) {
+    super();
+  }
   list(): Promise<readonly LegalEntityRecord[]> {
     return Promise.resolve([]);
   }
   byId(id: string): Promise<LegalEntityRecord | null> {
-    return Promise.resolve(id === "le1" ? toView(declaredEntity(), true) : null);
+    return Promise.resolve(
+      id === "le1" ? { ...toView(declaredEntity(), true), ...this.overrides } : null,
+    );
   }
+}
+
+/** Les lots donnés, filtrés sur les clôtures demandées. */
+class StoredBatches extends ClosureBatchesReader {
+  constructor(private readonly reads: readonly ClosureBatchRead[] = []) {
+    super();
+  }
+  ofClosures(
+    _legalEntityId: string,
+    closures: readonly Date[],
+  ): Promise<readonly ClosureBatchRead[]> {
+    return Promise.resolve(
+      this.reads.filter((read) => closures.some((c) => c.getTime() === read.closesAt.getTime())),
+    );
+  }
+}
+
+function batchAt(
+  closesAt: Date,
+  batchId: string,
+  status: "constituted" | "deposited" | "cancelled",
+): ClosureBatchRead {
+  return {
+    closesAt,
+    batch: { batchId, scheme: "CORE", status, periodLabel: "", lineCount: 1, totalCents: 100 },
+  };
 }
 
 /** Par défaut, chaque compte a son mandat signé actif chez `le1`. */
@@ -34,14 +70,19 @@ function handler(
   payers = new PayerModesStore(),
   accounts: readonly PayerStanding[] = [],
   mandates: readonly CollectionMandate[] = accounts.map((a) => signedMandate("le1", a.companyId)),
+  extra: {
+    readonly entity?: Partial<LegalEntityRecord>;
+    readonly batches?: readonly ClosureBatchRead[];
+  } = {},
 ): GetBillingRhythmsCalendarHandler {
   const counting = countingOf(accounts, mandates);
   return new GetBillingRhythmsCalendarHandler(
-    new OnlyLe1(),
+    new OnlyLe1(extra.entity),
     new StoreModeDatesReader(new ModeDatesStore()),
     new StorePayerModesReader(payers),
     counting.standings,
     counting.mandates,
+    new StoredBatches(extra.batches),
     new FixedClock(paris("2026-10-08", "11:00")),
   );
 }
@@ -202,6 +243,53 @@ describe("GetBillingRhythmsCalendarHandler — les trois rythmes sur un axe", ()
     );
 
     expect(view.rhythms.map((lane) => lane.payerCount)).toEqual([0, 0, 0]);
+  });
+
+  it("chaque période sert sa limite de dépôt, calculée par le calendrier du lot", async () => {
+    const view = await handler(undefined, undefined, undefined, {
+      entity: { depositCutoff: { businessDaysBefore: 2, time: "16:00" } },
+    }).execute(new GetBillingRhythmsCalendarQuery("le1"));
+
+    const cutoff = { businessDaysBefore: 2, time: "16:00" };
+    const periods = view.rhythms.flatMap((lane) => lane.periods);
+    expect(periods.length).toBeGreaterThan(0);
+    for (const period of periods) {
+      expect(period.depositDeadline).toEqual(depositDeadlineOf(period.collectionDay, cutoff));
+      expect((period.depositDeadline?.day ?? "") < period.collectionDay).toBe(true);
+    }
+  });
+
+  it("limite de dépôt non réglée : `null`, jamais une valeur inventée", async () => {
+    const view = await handler(undefined, undefined, undefined, {
+      entity: { depositCutoff: null },
+    }).execute(new GetBillingRhythmsCalendarQuery("le1"));
+
+    for (const lane of view.rhythms) {
+      for (const period of lane.periods) {
+        expect(period.depositDeadline).toBeNull();
+      }
+    }
+  });
+
+  it("le lot de la clôture est servi — le vivant avant l'annulé ; aucun lot : `null`", async () => {
+    const first = await handler().execute(new GetBillingRhythmsCalendarQuery("le1"));
+    const monthly = first.rhythms.find((lane) => lane.mode === "monthly");
+    const [withBatch, withoutBatch] = monthly?.periods ?? [];
+    if (withBatch === undefined || withoutBatch === undefined) {
+      throw new TypeError("le mensuel devrait avoir deux périodes sur l'axe");
+    }
+    const closesAt = new Date(withBatch.closesAt);
+
+    const view = await handler(undefined, undefined, undefined, {
+      batches: [
+        batchAt(closesAt, "b_cancelled", "cancelled"),
+        batchAt(closesAt, "b_live", "constituted"),
+      ],
+    }).execute(new GetBillingRhythmsCalendarQuery("le1"));
+
+    const periods = view.rhythms.find((lane) => lane.mode === "monthly")?.periods ?? [];
+    expect(periods.find((p) => p.closesAt === withBatch.closesAt)?.batchId).toBe("b_live");
+    expect(periods.find((p) => p.closesAt === withoutBatch.closesAt)?.batchId).toBeNull();
   });
 
   it("une entité inconnue : 404 nommé", async () => {

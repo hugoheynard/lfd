@@ -1,4 +1,5 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { describe, expect, it } from 'vitest';
 
 import type { BillingRhythmsCalendarView } from '@lfd/contracts';
@@ -28,6 +29,8 @@ function calendar(over: Partial<BillingRhythmsCalendarView> = {}): BillingRhythm
             invoicedOn: '2026-10-11',
             noticeOn: '2026-10-12',
             collectionDay: '2026-10-26',
+            depositDeadline: { day: '2026-10-22', time: '16:00' },
+            batchId: 'b_weekly',
           },
         ],
       },
@@ -43,6 +46,8 @@ function calendar(over: Partial<BillingRhythmsCalendarView> = {}): BillingRhythm
             invoicedOn: '2026-09-30',
             noticeOn: '2026-10-01',
             collectionDay: '2026-10-15',
+            depositDeadline: { day: '2026-10-13', time: '16:00' },
+            batchId: null,
           },
           {
             closesAt: '2026-10-31T23:00:00.000Z',
@@ -50,6 +55,8 @@ function calendar(over: Partial<BillingRhythmsCalendarView> = {}): BillingRhythm
             noticeOn: '2026-11-01',
             // Hors de l'axe : la marque tombe, la phrase reste.
             collectionDay: '2026-11-16',
+            depositDeadline: { day: '2026-11-12', time: '16:00' },
+            batchId: null,
           },
         ],
       },
@@ -59,7 +66,7 @@ function calendar(over: Partial<BillingRhythmsCalendarView> = {}): BillingRhythm
 }
 
 async function render(view: BillingRhythmsCalendarView): Promise<ComponentFixture<RhythmLanes>> {
-  TestBed.configureTestingModule({ imports: [RhythmLanes] });
+  TestBed.configureTestingModule({ imports: [RhythmLanes], providers: [provideRouter([])] });
   const fixture = TestBed.createComponent(RhythmLanes);
   fixture.componentRef.setInput('calendar', view);
   await fixture.whenStable();
@@ -118,19 +125,48 @@ describe('RhythmLanes', () => {
     expect(await badgeOf(5)).toContain('Par défaut · 5 clients');
   });
 
-  it('pose les trois jalons aux jours servis, et date chacun en toutes lettres', async () => {
+  it('pose les quatre jalons aux jours servis, et date chacun en toutes lettres', async () => {
     const fixture = await render(calendar());
     const weekly = marks(fixture, 0);
 
-    expect(weekly.map((mark) => mark.dataset['kind'])).toEqual(['closure', 'notice', 'collection']);
-    // Clôture au bord du 12 (7 jours sur 42), échéance au milieu du 26 (21,5 / 42).
+    expect(weekly.map((mark) => mark.dataset['kind'])).toEqual([
+      'closure',
+      'notice',
+      'deposit',
+      'collection',
+    ]);
+    // Clôture au bord du 12 (7 jours sur 42), dépôt le 22 à 16h (17 + 2/3),
+    // échéance au milieu du 26 (21,5 / 42).
     expect(Number.parseFloat(weekly[0]?.style.left ?? '')).toBeCloseTo((7 / 42) * 100, 5);
-    expect(Number.parseFloat(weekly[2]?.style.left ?? '')).toBeCloseTo((21.5 / 42) * 100, 5);
+    expect(Number.parseFloat(weekly[2]?.style.left ?? '')).toBeCloseTo(
+      ((17 + 2 / 3) / 42) * 100,
+      5,
+    );
+    expect(Number.parseFloat(weekly[3]?.style.left ?? '')).toBeCloseTo((21.5 / 42) * 100, 5);
     expect(weekly[0]?.title).toBe(
       'Clôture le 12 octobre 2026 à 00h00 — factures du 11 octobre 2026',
     );
     expect(weekly[1]?.title).toBe('Avis de prélèvement le 12 octobre 2026');
-    expect(weekly[2]?.title).toBe('Prélèvement le 26 octobre 2026');
+    expect(weekly[2]?.title).toBe('Dépôt avant le 22 octobre 2026 à 16h00');
+    expect(weekly[3]?.title).toBe('Prélèvement le 26 octobre 2026');
+  });
+
+  it('sans limite de dépôt réglée : pas de marque de dépôt', async () => {
+    const base = calendar();
+    const fixture = await render(
+      calendar({
+        rhythms: base.rhythms.map((lane) => ({
+          ...lane,
+          periods: lane.periods.map((period) => ({ ...period, depositDeadline: null })),
+        })),
+      }),
+    );
+
+    expect(marks(fixture, 0).map((mark) => mark.dataset['kind'])).toEqual([
+      'closure',
+      'notice',
+      'collection',
+    ]);
   });
 
   it('ne pose pas une marque hors de l’axe, mais la phrase de la période la garde', async () => {
@@ -139,23 +175,61 @@ describe('RhythmLanes', () => {
 
     // Le 1er octobre (clôture et avis) est avant l'axe ; le 16 novembre, après.
     expect(monthly.map((mark) => mark.title)).toEqual([
+      'Dépôt avant le 13 octobre 2026 à 16h00',
       'Prélèvement le 15 octobre 2026',
       'Clôture le 1 novembre 2026 à 00h00 — factures du 31 octobre 2026',
       'Avis de prélèvement le 1 novembre 2026',
+      'Dépôt avant le 12 novembre 2026 à 16h00',
     ]);
     expect(root(fixture).textContent).toContain(
-      'Clôture le 1 novembre 2026, avis le 1 novembre 2026, prélèvement le 16 novembre 2026.',
+      'Clôture le 1 novembre 2026, avis le 1 novembre 2026, ' +
+        'dépôt avant le 12 novembre 2026 à 16h00, prélèvement le 16 novembre 2026.',
     );
   });
 
-  it('annonce le prochain prélèvement de chaque rythme, ou son absence', async () => {
+  it('annonce la prochaine procédure de chaque rythme, ou son absence', async () => {
     const fixture = await render(calendar());
-    const next = [...root(fixture).querySelectorAll('.lanes-next')].map((line) => line.textContent);
+    const next = [...root(fixture).querySelectorAll('.lanes-next')].map((line) =>
+      (line.textContent ?? '').replace(/\s+/g, ' ').trim(),
+    );
 
     expect(next).toEqual([
-      'Prochain prélèvement : 26 octobre 2026',
+      'Prochaine procédure : clôture 12 octobre 2026 · dépôt avant 22 octobre 2026 16h00 · ' +
+        'prélèvement 26 octobre 2026 · Ouvrir la procédure',
       'Aucun prélèvement sur la période affichée',
-      'Prochain prélèvement : 15 octobre 2026',
+      'Prochaine procédure : clôture 1 octobre 2026 · dépôt avant 13 octobre 2026 16h00 · ' +
+        'prélèvement 15 octobre 2026 · Ouvrir la procédure',
+    ]);
+  });
+
+  it('ouvre le lot s’il est constitué, sinon la procédure de l’entité', async () => {
+    const fixture = await render(calendar());
+    const links = [...root(fixture).querySelectorAll<HTMLAnchorElement>('.lanes-next a')];
+
+    expect(links.map((link) => link.getAttribute('href'))).toEqual([
+      '/comptabilite/procedure-de-prelevement?entite=le1&lot=b_weekly',
+      '/comptabilite/procedure-de-prelevement?entite=le1',
+    ]);
+  });
+
+  it('limite de dépôt non réglée : le dit, et renvoie aux réglages de l’entité', async () => {
+    const base = calendar();
+    const fixture = await render(
+      calendar({
+        rhythms: base.rhythms.map((lane) => ({
+          ...lane,
+          periods: lane.periods.map((period) => ({ ...period, depositDeadline: null })),
+        })),
+      }),
+    );
+    const weekly = root(fixture).querySelectorAll('.lanes-next')[0];
+
+    expect(weekly?.textContent).toContain('clôture 12 octobre 2026 · limite de dépôt non réglée');
+    expect(
+      [...(weekly?.querySelectorAll('a') ?? [])].map((link) => link.getAttribute('href')),
+    ).toEqual([
+      '/comptabilite/entites-juridiques/le1',
+      '/comptabilite/procedure-de-prelevement?entite=le1&lot=b_weekly',
     ]);
   });
 
@@ -175,6 +249,7 @@ describe('RhythmLanes', () => {
     expect(body).toContain('Délai de pré-notification réglé sur l’entité : 21 jours.');
     expect(body).toContain('Clôture — factures émises la veille à 23h55');
     expect(body).toContain('Avis de prélèvement (pré-notification)');
+    expect(body).toContain('Limite de dépôt du fichier à la banque');
     expect(body).toContain('Prélèvement — échéance');
   });
 

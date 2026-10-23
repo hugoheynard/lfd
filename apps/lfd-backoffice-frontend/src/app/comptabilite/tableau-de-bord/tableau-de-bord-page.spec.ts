@@ -117,6 +117,8 @@ function rhythmsCalendar(legalEntityId: string): BillingRhythmsCalendarView {
             invoicedOn: '2026-10-31',
             noticeOn: '2026-11-01',
             collectionDay: '2026-11-16',
+            depositDeadline: null,
+            batchId: null,
           },
         ],
       },

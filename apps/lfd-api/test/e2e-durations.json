@@ -393,5 +393,6 @@
   "test/company-standing-workspace.e2e-spec.ts": 7357,
   "test/pickups-before-s2-migration.e2e-spec.ts": 5137,
   "test/order-number.e2e-spec.ts": 17617,
-  "test/account-bank-exports.e2e-spec.ts": 12000
+  "test/account-bank-exports.e2e-spec.ts": 12000,
+  "test/billing-rhythms-deposit.e2e-spec.ts": 3000
 }

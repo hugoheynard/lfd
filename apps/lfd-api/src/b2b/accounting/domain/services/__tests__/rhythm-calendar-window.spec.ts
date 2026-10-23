@@ -37,6 +37,7 @@ describe("rhythmPeriodsIn — les jalons d'un rythme sur l'axe", () => {
         invoicedOn: "2026-09-30",
         noticeOn: "2026-10-01",
         collectionDay: "2026-10-15",
+        depositDeadline: null,
       },
       {
         closesAt: paris("2026-11-01"),
@@ -44,6 +45,7 @@ describe("rhythmPeriodsIn — les jalons d'un rythme sur l'axe", () => {
         noticeOn: "2026-11-01",
         // Le 15 novembre est un dimanche : reporté au lundi, comme le lot.
         collectionDay: "2026-11-16",
+        depositDeadline: null,
       },
     ]);
   });
@@ -67,5 +69,18 @@ describe("rhythmPeriodsIn — les jalons d'un rythme sur l'axe", () => {
     });
 
     expect(periods.find((p) => p.invoicedOn === "2026-10-31")?.collectionDay).toBe("2026-11-23");
+  });
+
+  it("cut-off réglé : la limite de dépôt de chaque période, en jours ouvrés avant l'échéance", () => {
+    const periods = rhythmPeriodsIn(WINDOW, ModeDatesTimeline.defaultOf("monthly"), {
+      ...SETTINGS,
+      depositCutoff: { businessDaysBefore: 2, time: "16:00" },
+    });
+
+    // Échéance jeudi 15 octobre → mardi 13 ; lundi 16 novembre → jeudi 12.
+    expect(periods.map((p) => p.depositDeadline)).toEqual([
+      { day: "2026-10-13", time: "16:00" },
+      { day: "2026-11-12", time: "16:00" },
+    ]);
   });
 });

@@ -128,8 +128,8 @@
   background: var(--fold-color-text);
 }
 
-/* Trois formes, pas trois couleurs seulement : trait (clôture), rond (avis),
-   losange (prélèvement). */
+/* Quatre formes, pas quatre couleurs seulement : trait (clôture), rond (avis),
+   carré creux (limite de dépôt), losange (prélèvement). */
 .lanes-mark {
   position: absolute;
   top: 50%;
@@ -157,6 +157,12 @@
   background: var(--fold-color-info-surface);
 }
 
+.lanes-mark[data-kind='deposit'] {
+  border: 2px solid var(--fold-color-warning-text);
+  border-radius: var(--fold-radius-xs);
+  background: var(--fold-color-warning-surface);
+}
+
 .lanes-mark[data-kind='collection'] {
   transform: translate(-50%, -50%) rotate(45deg);
   border-radius: var(--fold-radius-xs);
@@ -171,6 +177,10 @@
   font-size: var(--fold-text-2xs);
   font-variant-numeric: tabular-nums;
   color: var(--fold-color-text-muted);
+}
+
+.lanes-link {
+  color: var(--fold-color-primary);
 }
 
 /* La liste des périodes, pour qui ne voit pas la piste. */

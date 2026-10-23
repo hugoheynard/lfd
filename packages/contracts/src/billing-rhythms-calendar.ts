@@ -1,7 +1,7 @@
 import type { BillingRhythmKind } from "./legal-entity.js";
 
 /**
- * **Une période d'un rythme, et ses trois jalons** — calculés par le serveur
+ * **Une période d'un rythme, et ses quatre jalons** — calculés par le serveur
  * (`collectionCalendar`, la fonction du lot), jamais par l'écran : un second
  * calcul de TARGET2 côté front dirait tôt ou tard une autre date que le fichier.
  *
@@ -20,6 +20,18 @@ export interface BillingRhythmPeriodView {
   readonly noticeOn: string;
   /** L'échéance (`ReqdColltnDt`), jour ouvré TARGET2. */
   readonly collectionDay: string;
+  /**
+   * La limite de dépôt du fichier à la banque : k jours ouvrés TARGET2 avant
+   * l'échéance, à l'heure du portail (`depositDeadlineOf`). `null` tant que
+   * le cut-off n'est pas réglé sur l'entité — jamais une valeur inventée.
+   */
+  readonly depositDeadline: { readonly day: string; readonly time: string } | null;
+  /**
+   * Le lot de cette clôture s'il existe (le non annulé d'abord, sinon le
+   * dernier annulé) — l'écran ouvre sa procédure ; `null` s'il n'est pas
+   * encore constitué.
+   */
+  readonly batchId: string | null;
 }
 
 /** Un rythme de l'entité, et ses périodes qui touchent l'axe. */

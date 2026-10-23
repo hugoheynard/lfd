@@ -1,16 +1,22 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { FoldBadgeComponent } from 'fold-ng';
 import {
   BILLING_RHYTHM_KIND_LABELS,
   type BillingRhythmKind,
+  type BillingRhythmPeriodView,
   type BillingRhythmsCalendarView,
 } from '@lfd/contracts';
 
 const MS_PER_DAY = 86_400_000;
 const DAYS_PER_WEEK = 7;
+const MINUTES_PER_DAY = 1440;
+const MINUTES_PER_HOUR = 60;
+const PROCEDURE_ROUTE = '/comptabilite/procedure-de-prelevement';
+const ENTITY_ROUTE = '/comptabilite/entites-juridiques';
 
-/** Les trois jalons d'une période, dans l'ordre où ils arrivent. */
-export type RhythmMarkKind = 'closure' | 'notice' | 'collection';
+/** Les quatre jalons d'une période, dans l'ordre où ils arrivent. */
+export type RhythmMarkKind = 'closure' | 'notice' | 'deposit' | 'collection';
 
 /** Un jalon posé sur l'axe. */
 export interface RhythmMark {
@@ -27,6 +33,17 @@ export interface RhythmPeriodLine {
   readonly text: string;
 }
 
+/**
+ * La prochaine procédure d'un rythme : ses jalons en une phrase, et où l'ouvrir
+ * — le lot s'il est constitué, sinon la page de l'entité.
+ */
+export interface RhythmNextProcedure {
+  readonly text: string;
+  readonly procedureQuery: { readonly entite: string; readonly lot?: string };
+  /** Le lien vers les réglages de l'entité, quand la limite de dépôt n'y est pas réglée. */
+  readonly settingsLink: string | null;
+}
+
 /** Une barre : un rythme, ses marques et ses phrases. */
 export interface RhythmLane {
   readonly mode: BillingRhythmKind;
@@ -34,8 +51,8 @@ export interface RhythmLane {
   readonly followed: boolean;
   readonly followers: string;
   readonly marks: readonly RhythmMark[];
-  /** Le prochain prélèvement, en clair — `null` si aucun ne tombe d'ici la fin de l'axe. */
-  readonly next: string | null;
+  /** La prochaine procédure, en clair — `null` si aucun prélèvement ne tombe d'ici la fin de l'axe. */
+  readonly next: RhythmNextProcedure | null;
   readonly lines: readonly RhythmPeriodLine[];
 }
 
@@ -46,12 +63,14 @@ export const RHYTHM_MARK_LEGEND: readonly {
 }[] = [
   { kind: 'closure', label: 'Clôture — factures émises la veille à 23h55' },
   { kind: 'notice', label: 'Avis de prélèvement (pré-notification)' },
+  { kind: 'deposit', label: 'Limite de dépôt du fichier à la banque' },
   { kind: 'collection', label: 'Prélèvement — échéance' },
 ];
 
 /**
  * **Les trois rythmes de prélèvement sur un même axe** — hebdomadaire, deux
- * fois par mois, mensuel, chacun avec ses clôtures, ses avis et ses échéances.
+ * fois par mois, mensuel, chacun avec ses clôtures, ses avis, ses limites de
+ * dépôt et ses échéances.
  *
  * ## Rien n'est calculé ici
  *
@@ -63,14 +82,14 @@ export const RHYTHM_MARK_LEGEND: readonly {
  *
  * ## Une marque n'est jamais seulement une couleur
  *
- * Trois formes (trait, rond, losange), une légende qui les nomme, un survol
+ * Quatre formes (trait, rond, carré creux, losange), une légende qui les nomme, un survol
  * qui date chaque marque, et sous chaque barre la liste des périodes en
  * toutes lettres pour qui ne voit pas la piste.
  */
 @Component({
   selector: 'app-rhythm-lanes',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldBadgeComponent],
+  imports: [FoldBadgeComponent, RouterLink],
   templateUrl: './rhythm-lanes.html',
   styleUrl: './rhythm-lanes.scss',
 })
@@ -78,6 +97,7 @@ export class RhythmLanes {
   readonly calendar = input.required<BillingRhythmsCalendarView>();
 
   protected readonly legend = RHYTHM_MARK_LEGEND;
+  protected readonly procedureRoute = PROCEDURE_ROUTE;
 
   private readonly span = computed(() =>
     Math.max(1, daysBetween(this.calendar().startsOn, this.calendar().endsOn)),
@@ -131,6 +151,7 @@ export class RhythmLanes {
             percent: this.percentOf(period.noticeOn, 0.5),
             label: `Avis de prélèvement le ${longDay(period.noticeOn)}`,
           },
+          ...this.depositMarks(period),
           {
             key: `${period.closesAt}-collection`,
             kind: 'collection' as const,
@@ -139,19 +160,33 @@ export class RhythmLanes {
           },
         ].filter((mark) => mark.percent >= 0 && mark.percent <= 100),
       ),
-      next: nextCollectionOf(
-        lane.periods.map((period) => period.collectionDay),
-        this.calendar().today,
-      ),
+      next: nextProcedureOf(lane.periods, this.calendar()),
       lines: lane.periods.map((period) => ({
         key: period.closesAt,
         text:
           `Clôture le ${longDay(addDays(period.invoicedOn, 1))}, ` +
           `avis le ${longDay(period.noticeOn)}, ` +
+          depositClauseOf(period) +
           `prélèvement le ${longDay(period.collectionDay)}.`,
       })),
     })),
   );
+
+  /** Le dépôt, entre l'avis et le prélèvement — à son heure dans la journée. */
+  private depositMarks(period: BillingRhythmPeriodView): readonly RhythmMark[] {
+    const deadline = period.depositDeadline;
+    if (deadline === null) {
+      return [];
+    }
+    return [
+      {
+        key: `${period.closesAt}-deposit`,
+        kind: 'deposit',
+        percent: this.percentOf(deadline.day, minutesOf(deadline.time) / MINUTES_PER_DAY),
+        label: `Dépôt avant le ${longDay(deadline.day)} à ${hourOf(deadline.time)}`,
+      },
+    ];
+  }
 
   /** Un jour de l'axe en pourcentage ; `within` situe l'instant dans la journée. */
   private percentOf(day: string, within: number): number {
@@ -159,9 +194,37 @@ export class RhythmLanes {
   }
 }
 
-function nextCollectionOf(days: readonly string[], today: string): string | null {
-  const next = days.find((day) => day >= today);
-  return next === undefined ? null : `Prochain prélèvement : ${longDay(next)}`;
+function nextProcedureOf(
+  periods: readonly BillingRhythmPeriodView[],
+  calendar: BillingRhythmsCalendarView,
+): RhythmNextProcedure | null {
+  const next = periods.find((period) => period.collectionDay >= calendar.today);
+  if (next === undefined) {
+    return null;
+  }
+  const deposit =
+    next.depositDeadline === null
+      ? 'limite de dépôt non réglée'
+      : `dépôt avant ${longDay(next.depositDeadline.day)} ${hourOf(next.depositDeadline.time)}`;
+  const entite = calendar.legalEntityId;
+  return {
+    text:
+      `Prochaine procédure : clôture ${longDay(addDays(next.invoicedOn, 1))} · ` +
+      `${deposit} · prélèvement ${longDay(next.collectionDay)}`,
+    procedureQuery: next.batchId === null ? { entite } : { entite, lot: next.batchId },
+    settingsLink: next.depositDeadline === null ? `${ENTITY_ROUTE}/${entite}` : null,
+  };
+}
+
+/** « 16:00 » → minutes depuis minuit. */
+function minutesOf(time: string): number {
+  const [hours, minutes] = time.split(':').map(Number);
+  return (hours ?? 0) * MINUTES_PER_HOUR + (minutes ?? 0);
+}
+
+/** « 16:00 » → « 16h00 », la graphie des autres libellés. */
+function hourOf(time: string): string {
+  return time.replace(':', 'h');
 }
 
 function followersOf(mode: BillingRhythmKind, followed: boolean, count: number): string {
@@ -207,4 +270,12 @@ function longDay(day: string): string {
     year: 'numeric',
     timeZone: 'UTC',
   });
+}
+
+/** « dépôt avant le 13 octobre 2026 à 16h00, » — rien si la limite n'est pas réglée. */
+function depositClauseOf(period: BillingRhythmPeriodView): string {
+  const deadline = period.depositDeadline;
+  return deadline === null
+    ? ''
+    : `dépôt avant le ${longDay(deadline.day)} à ${hourOf(deadline.time)}, `;
 }
