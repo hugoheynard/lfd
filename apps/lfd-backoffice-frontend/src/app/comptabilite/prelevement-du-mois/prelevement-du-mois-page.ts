@@ -25,6 +25,7 @@ import { PermissionsStore } from '../../auth/permissions.store';
 import { NotifyService } from '../../notify.service';
 import { CollectionBatchGestures, type BatchDownload } from '../collection-batch-gestures';
 import { CollectionBatchesService } from '../collection-batches.service';
+import { isDeadBatch } from '../collection-batch-steps';
 import { longDay, sameClosure } from '../collection-month-wording';
 import { LegalEntitiesService } from '../legal-entities.service';
 import { day } from '../invoice-dossier-format';
@@ -190,8 +191,7 @@ export class PrelevementDuMoisPage {
       return false;
     }
     return (this.view()?.batches ?? []).some(
-      (batch) =>
-        batch.status !== 'cancelled' && sameClosure(batch.cycleClosesAt, entity.lastClosure),
+      (batch) => !isDeadBatch(batch) && sameClosure(batch.cycleClosesAt, entity.lastClosure),
     );
   });
 

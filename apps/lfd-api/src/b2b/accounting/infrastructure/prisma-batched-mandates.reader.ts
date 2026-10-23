@@ -2,8 +2,9 @@ import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { BatchedMandatesReader } from "../domain/ports/batched-mandates.reader.js";
+import { LIVE_BATCH_STATUS } from "./live-batch-status.js";
 
-/** Les mandats qu'une ligne d'un lot non annulé porte. */
+/** Les mandats qu'une ligne d'un lot vivant (ni annulé, ni rejeté) porte. */
 @Injectable()
 export class PrismaBatchedMandatesReader extends BatchedMandatesReader {
   constructor(private readonly prisma: PrismaService) {
@@ -15,7 +16,7 @@ export class PrismaBatchedMandatesReader extends BatchedMandatesReader {
       return new Set();
     }
     const rows = await this.prisma.collectionBatchLine.findMany({
-      where: { mandateId: { in: [...mandateIds] }, batch: { status: { not: "cancelled" } } },
+      where: { mandateId: { in: [...mandateIds] }, batch: { status: LIVE_BATCH_STATUS } },
       select: { mandateId: true },
       distinct: ["mandateId"],
     });

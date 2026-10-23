@@ -1,6 +1,8 @@
 import { CollectionBatch } from "../domain/entities/collection-batch.js";
 import { CollectionBatchNotFoundError } from "../domain/errors/collection-errors.js";
+import { BillingStatementCancelledEvent } from "../domain/events/billing-statement.events.js";
 import type { BatchEntity } from "../domain/events/collection.events.js";
+import type { CancelledStatement } from "../domain/ports/billing-statement.repository.js";
 import type { CollectionBatchRepository } from "../domain/ports/collection-batch.repository.js";
 import type { LegalEntityReader } from "../domain/ports/legal-entity.reader.js";
 
@@ -28,4 +30,32 @@ export async function batchEntity(
   const id = batch.toPersistence().legalEntityId;
   const view = await entities.byId(id);
   return { id, name: view?.name ?? id };
+}
+
+/** Le payeur et le montant d'un arrêté se relisent sur sa ligne : ils sont les siens. */
+export function statementCancelledEvents(
+  batch: CollectionBatch,
+  cancelled: readonly CancelledStatement[],
+  entity: BatchEntity,
+  at: Date,
+): readonly BillingStatementCancelledEvent[] {
+  return cancelled.flatMap(({ statementId, lineRank }) => {
+    const line = batch.lines.find((candidate) => candidate.rank === lineRank);
+    // Inatteignable : l'arrêté cite sa ligne par clé étrangère.
+    if (line === undefined) {
+      return [];
+    }
+    const payer = { id: line.debtorCompanyId, name: line.debtorName };
+    return [
+      new BillingStatementCancelledEvent(
+        statementId,
+        lineRank,
+        batch,
+        entity,
+        payer,
+        line.amountCents,
+        at,
+      ),
+    ];
+  });
 }

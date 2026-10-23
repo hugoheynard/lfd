@@ -29,10 +29,21 @@ export interface StoredBatchFile {
  * Un lot tel que la base le rend : la vue, sans les modes de ses clients —
  * qui demandent le calendrier — mais avec ce qu'il faut pour les calculer.
  */
-export type StoredBatchView = Omit<CollectionBatchView, "payerModes"> & {
+export type StoredBatchView = Omit<CollectionBatchView, "payerModes" | "rejection"> & {
   /** Une entrée par facture prélevée ; une par ligne d'arrêté (`invoiceId: null`). */
   readonly payerRefs: readonly LotPayerRef[];
+  /** Le rejet déclaré, avec la fiche de son auteur — nommée par l'application. */
+  readonly rejection: StoredBatchRejection | null;
 };
+
+/** Le rejet déclaré d'un lot, tel que la base le rend. */
+export interface StoredBatchRejection {
+  /** ISO. */
+  readonly at: string;
+  readonly reason: string;
+  /** Identifiant staff LOCAL. */
+  readonly byStaffId: string;
+}
 
 export abstract class CollectionBatchReader {
   /** Les lots d'une entité, le plus récent d'abord. */

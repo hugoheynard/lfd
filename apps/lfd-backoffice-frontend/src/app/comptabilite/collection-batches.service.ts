@@ -51,6 +51,16 @@ export class CollectionBatchesService {
     await firstValueFrom(this.http.post<void>(`${this.base}/batches/${batchId}/deposit`, {}));
   }
 
+  /** « La banque a rejeté ce fichier » : l'attestation cochée, le motif de l'accusé PSR1. */
+  async rejectedByBank(batchId: string, reason: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(`${this.base}/batches/${batchId}/rejected-by-bank`, {
+        attested: true,
+        reason,
+      }),
+    );
+  }
+
   async settleOtherwise(orderId: string, note: string): Promise<void> {
     await firstValueFrom(
       this.http.post<void>(`${this.base}/orders/${orderId}/settle-otherwise`, { note }),

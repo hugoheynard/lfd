@@ -208,6 +208,14 @@ export const COLLECTION_FACTS = {
   "collection.batch_cancelled": fact(payload(batch)),
   /** Déposé à la banque : ses commandes sont prélevées. */
   "collection.batch_deposited": fact(payload(batch)),
+  /**
+   * Déposé, puis son fichier ENTIER refusé par la banque (accusé PSR1) : ses
+   * commandes redeviennent à prélever, ses arrêtés sont annulés. `reason`
+   * est le motif recopié par l'équipe (plan `plan-lot-rejete-par-la-banque.md`).
+   */
+  "collection.batch_rejected_by_bank": fact(
+    payload({ ...batch, reason: z.string(), releasedOrderCount: count() }),
+  ),
   /** Son fichier de remise — fait d'IBAN en clair — a été téléchargé. */
   "collection.batch_downloaded": fact(payload(batch)),
   /** Une commande sort du prélèvement : réglée autrement, avec une note. */

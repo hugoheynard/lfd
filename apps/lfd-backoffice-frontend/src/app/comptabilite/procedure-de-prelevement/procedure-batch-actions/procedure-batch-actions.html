@@ -58,6 +58,20 @@
         Annuler le lot
       </button>
     }
+    @if (canWrite() && rejectable()) {
+      <button
+        foldButton
+        size="sm"
+        emphasis="outline"
+        intent="danger"
+        [disabled]="pending()"
+        title="Seulement si la banque a refusé le fichier entier (accusé PSR1), avant signature."
+        data-rejected-by-bank
+        (click)="gesture.emit('rejected-by-bank')"
+      >
+        La banque a rejeté ce fichier
+      </button>
+    }
   </div>
   <p class="pa-said" data-order-help>
     @if (closedReason(); as reason) {

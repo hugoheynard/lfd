@@ -22,6 +22,7 @@ export function procedureBatch(
     requestedCollectionDay: '2026-11-16',
     depositDeadline: { day: '2026-11-12', time: '13:45' },
     cancelledAt: null,
+    rejectedAt: null,
     ...over,
   };
 }

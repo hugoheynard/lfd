@@ -32,6 +32,7 @@ import {
 import { CollectionBatchReader } from "../../domain/ports/collection-batch.reader.js";
 import { InvoicePeriodsReader } from "../../domain/ports/invoice-periods.reader.js";
 import { GetBillingRhythmsCalendarQuery } from "./get-billing-rhythms-calendar.query.js";
+import { isDeadBatchStatus } from "../../domain/entities/collection-batch-status.js";
 
 /** L'ordre de l'écran : du plus fréquent au plus rare. */
 const LANE_ORDER: readonly BillingMode[] = ["weekly", "semimonthly", "monthly"];
@@ -141,7 +142,7 @@ function batchIdsByClosure(reads: readonly ClosureBatchRead[]): ReadonlyMap<numb
   for (const read of reads) {
     const key = read.closesAt.getTime();
     const current = chosen.get(key);
-    if (current === undefined || current.batch.status === "cancelled") {
+    if (current === undefined || isDeadBatchStatus(current.batch.status)) {
       chosen.set(key, read);
     }
   }

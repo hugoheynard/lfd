@@ -20,6 +20,7 @@ export function returnableLine(overrides: Partial<ReturnableLine> = {}): Returna
     debtorName: "Boulangerie du Port",
     regime: "invoices",
     requestedCollectionDay: "2026-10-15",
+    batchRejection: null,
     ...overrides,
   };
 }

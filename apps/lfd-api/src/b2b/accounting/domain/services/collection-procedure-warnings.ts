@@ -1,6 +1,7 @@
 import type { LocalMoment } from "@lfd/contracts";
 
 import { tightDepositMargin, type LocalDeadline } from "./collection-calendar.js";
+import type { CollectionBatchStatus } from "../entities/collection-batch-status.js";
 
 /**
  * **Les avertissements d'une procédure** — ceux que la page calculait déjà
@@ -35,7 +36,7 @@ export interface DepositToCome {
  * sa préparation : la même règle pour l'onglet 3 et pour la liste.
  */
 export function preparedDepositMargin(
-  status: "constituted" | "deposited" | "cancelled",
+  status: CollectionBatchStatus,
   constitutedDay: string,
   deadline: LocalDeadline | null,
 ): number | null {

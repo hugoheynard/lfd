@@ -43,6 +43,7 @@ function batchOf(lines: readonly CollectionBatchLineView[]): CollectionBatchView
     constitutedBy: 'staff',
     depositedAt: null,
     cancelledAt: null,
+    rejection: null,
     lastDownloadedAt: null,
     lineCount: lines.length,
     orderCount: 2,

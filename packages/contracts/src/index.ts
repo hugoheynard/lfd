@@ -288,10 +288,12 @@ export {
   COLLECTION_EXCLUSION_REASON_LABELS,
   ORDER_COLLECTION_STATE_LABELS,
   constituteBatchesPayloadSchema,
+  rejectBatchByBankPayloadSchema,
   settleOrderOtherwisePayloadSchema,
 } from "./collection-batch.js";
 export type {
   CollectionBatchAuthorView,
+  CollectionBatchRejectionView,
   CollectionBatchStatusView,
   ConstituteBatchesPayload,
   CollectionBatchLineView,
@@ -308,6 +310,7 @@ export type {
   CollectionPreviewView,
   ConstitutedBatchesView,
   OrderCollectionStateView,
+  RejectBatchByBankPayload,
   SettleOrderOtherwisePayload,
 } from "./collection-batch.js";
 export type {

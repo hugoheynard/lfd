@@ -5,6 +5,7 @@ import {
   RefundRequestOnB2bError,
   RepresentationRefusedError,
   ReturnableLineNotFoundError,
+  ReturnOnRejectedBatchError,
 } from "../../../domain/errors/collection-return-errors.js";
 import { RecordCollectionReturnCommand } from "../record-collection-return.command.js";
 import { RepresentCollectionReturnCommand } from "../represent-collection-return.command.js";
@@ -45,6 +46,31 @@ describe("saisir un retour bancaire (R5a)", () => {
     });
     expect(statesOf(w.orders)).toEqual(["returned", "returned"]);
     expect(w.events.factTypes()).toEqual(["collection.returned"]);
+  });
+
+  /**
+   * La course avec « La banque a rejeté ce fichier » (vitruve, 2026-10-23) :
+   * le retour verrouille le lot, PUIS relit sa ligne. Un rejet écrit pendant
+   * l'attente du verrou est vu, et refusé — jamais des commandes rendues à
+   * prélever puis marquées revenues.
+   */
+  it("relit la ligne sous le verrou du lot : un rejet écrit entre-temps est refusé", async () => {
+    const w = returnWorld();
+    const original = w.locks.lock.bind(w.locks);
+    w.locks.lock = async (batchId: string): Promise<void> => {
+      await original(batchId);
+      w.lines.lines = [
+        returnableLine({
+          batchStatus: "rejected_by_bank",
+          batchRejection: { at: new Date(0), reason: "PSR1" },
+        }),
+      ];
+    };
+
+    await expect(recorded(w)).rejects.toThrow(ReturnOnRejectedBatchError);
+    expect(w.locks.locked).toEqual(["lot_1"]);
+    expect(statesOf(w.orders)).toEqual(["collected", "collected"]);
+    expect(w.returns.saved.size).toBe(0);
   });
 
   it("un second retour sur la même ligne est refusé, sans rien changer", async () => {

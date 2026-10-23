@@ -3,6 +3,7 @@ import {
   DomainError,
   ResourceNotFoundError,
 } from "../../../../platform/shared/errors/app-error.js";
+import { parisLongDay } from "./collection-errors.js";
 
 /**
  * Les refus des **retours bancaires** (plan
@@ -58,6 +59,30 @@ export class ReturnOnUndepositedBatchError extends BusinessError {
     super(
       "accounting.collection_return.batch_not_deposited",
       `La ligne ${endToEndId} appartient à un lot ${batchStatus === "cancelled" ? "annulé" : "pas encore déposé"} : la banque n'a rien prélevé, il n'y a rien à rejeter. Vérifier la référence de la banque.`,
+    );
+  }
+}
+
+/**
+ * Un retour arrive sur une ligne d'un lot DÉCLARÉ rejeté par la banque : si
+ * la banque a réellement exécuté la remise, ses commandes, rendues à
+ * prélever, l'ont peut-être été une seconde fois par le lot reconstitué
+ * (plan `plan-lot-rejete-par-la-banque.md`, § 0.3). Le message dit le cas
+ * et le geste de sortie, qui se fait hors de l'outil.
+ */
+export class ReturnOnRejectedBatchError extends BusinessError {
+  constructor(
+    readonly endToEndId: string,
+    readonly debtorName: string,
+    readonly rejection: { readonly at: Date; readonly reason: string } | null,
+  ) {
+    const when =
+      rejection === null
+        ? ""
+        : ` le ${parisLongDay(rejection.at)} (motif : « ${rejection.reason} » ; l'auteur est au journal du lot)`;
+    super(
+      "accounting.collection_return.batch_rejected_by_bank",
+      `La ligne ${endToEndId} (${debtorName}) appartient à un lot déclaré rejeté par la banque${when}. Si la banque l'a en réalité exécuté, ${debtorName} a pu être débité deux fois : vérifier sur CENET ses débits de ce lot et du lot reconstitué, et rembourser le doublon par virement (procédure de prélèvement, § 4.7). Ce retour ne s'enregistre pas dans l'outil.`,
     );
   }
 }

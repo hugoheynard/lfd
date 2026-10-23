@@ -93,6 +93,19 @@
               Annuler
             </button>
           }
+          @if (rejectable()) {
+            <button
+              foldButton
+              size="sm"
+              emphasis="outline"
+              intent="danger"
+              [loading]="pending()"
+              data-rejected-by-bank
+              (click)="gesture.emit('rejected-by-bank')"
+            >
+              La banque a rejeté ce fichier
+            </button>
+          }
         }
       </div>
       @if (canWrite() && depositClosedReason(); as reason) {

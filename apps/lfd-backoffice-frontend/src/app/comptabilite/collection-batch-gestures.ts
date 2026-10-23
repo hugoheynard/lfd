@@ -1,9 +1,11 @@
 import { inject, Injectable, signal } from '@angular/core';
 import type { CollectionBatchView } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
+import { FoldPanelHostService } from 'fold-ng';
 
 import { NotifyService } from '../notify.service';
 import { saveBlob } from '../shared/download/save-blob';
+import { BatchRejectedByBankPanel } from './batch-rejected-by-bank-panel/batch-rejected-by-bank-panel';
 import { CollectionBatchesService } from './collection-batches.service';
 import type { PendingBatchGesture } from './prelevement-du-mois/pending-batch/pending-batch';
 
@@ -27,6 +29,7 @@ export interface BatchDownload {
 export class CollectionBatchGestures {
   private readonly api = inject(CollectionBatchesService);
   private readonly notify = inject(NotifyService);
+  private readonly panels = inject(FoldPanelHostService);
 
   /** La clé du geste en cours (`prepare`, l'id d'un lot…), ou `null`. */
   readonly pending = signal<string | null>(null);
@@ -72,6 +75,8 @@ export class CollectionBatchGestures {
         },
         reload,
       );
+    } else if (gesture === 'rejected-by-bank') {
+      await this.rejectedByBank(batch, reload);
     } else {
       await this.run(
         batch.id,
@@ -81,6 +86,24 @@ export class CollectionBatchGestures {
         },
         reload,
       );
+    }
+  }
+
+  /**
+   * « La banque a rejeté ce fichier » : le panneau recueille l'attestation et
+   * le motif, et porte l'appel ; l'hôte relit si le rejet est enregistré.
+   */
+  private async rejectedByBank(
+    batch: CollectionBatchView,
+    reload: () => Promise<void>,
+  ): Promise<void> {
+    const done = await this.panels.open<CollectionBatchView, boolean>(BatchRejectedByBankPanel, {
+      data: batch,
+      width: 'md',
+    }).closed;
+    if (done === true) {
+      this.notify.success('Fichier déclaré rejeté : ses bons redeviennent à prélever.');
+      await reload();
     }
   }
 

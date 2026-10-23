@@ -927,6 +927,24 @@
       "information": false
     },
     {
+      "colonne": "public.collection_batch.rejected_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a déclaré le fichier du lot rejeté par la banque (`rejected_by_staff_id`) sur `collection_batch` — même finalité que ses voisines (plan-lot-rejete-par-la-banque, Q6, Hugo 2026-10-23).",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.collection_batch.rejection_reason",
+      "personne": "staff",
+      "categorie": "contenu",
+      "finalite": "Le motif du rejet du fichier par la banque, recopié par le staff de l'accusé PSR1 : un texte libre, qui peut nommer une personne (plan-lot-rejete-par-la-banque, Q6, Hugo 2026-10-23).",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "public.mandate_bank_export.created_by_staff_id",
       "personne": "staff",
       "categorie": "auteur-geste",

@@ -5,6 +5,7 @@ import { CollectionNotice } from "../domain/entities/collection-notice.js";
 import { CycleNoticesReader } from "../domain/ports/cycle-notices.reader.js";
 import type { CycleNotice } from "../domain/services/collection-notice-plan.js";
 import { toNoticeState } from "./collection-notice.mapper.js";
+import { isDeadBatchStatus } from "../domain/entities/collection-batch-status.js";
 
 /** Les avis d'un cycle, avec l'état de leur lot — lus sous le verrou de l'entité. */
 @Injectable()
@@ -21,7 +22,7 @@ export class PrismaCycleNoticesReader extends CycleNoticesReader {
     });
     return rows.map(({ batch, ...row }) => ({
       notice: CollectionNotice.rehydrate(toNoticeState(row)),
-      batchLive: batch !== null && batch.status !== "cancelled",
+      batchLive: batch !== null && !isDeadBatchStatus(batch.status),
     }));
   }
 }

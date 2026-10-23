@@ -5,6 +5,7 @@ import { DomainEventPublisher } from "../../../../platform/events/domain-event-p
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { ImportEntryNotRecordableError } from "../../domain/errors/bank-return-file-errors.js";
+import { CollectionBatchLock } from "../../domain/ports/collection-batch-lock.js";
 import { CollectionReturnRepository } from "../../domain/ports/collection-return.repository.js";
 import { CollectionTestReturnTargetsReader } from "../../domain/ports/collection-test-return-targets.reader.js";
 import { CollectionTestRepository } from "../../domain/ports/collection-test.repository.js";
@@ -32,6 +33,7 @@ export class ConfirmCollectionReturnImportHandler implements ICommandHandler<
   readonly string[]
 > {
   constructor(
+    private readonly locks: CollectionBatchLock,
     private readonly returns: CollectionReturnRepository,
     private readonly lines: ReturnableLinesReader,
     private readonly testTargets: CollectionTestReturnTargetsReader,
@@ -61,6 +63,7 @@ export class ConfirmCollectionReturnImportHandler implements ICommandHandler<
         throw new ImportEntryNotRecordableError(missing, "elle n'est pas dans ce fichier");
       }
       const writers = {
+        locks: this.locks,
         returns: this.returns,
         lines: this.lines,
         orders: this.orders,

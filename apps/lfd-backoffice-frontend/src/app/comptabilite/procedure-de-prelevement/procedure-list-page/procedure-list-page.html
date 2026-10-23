@@ -63,6 +63,14 @@
 
         <ng-template foldCell="stage" let-row>
           <fold-badge radius="square" [variant]="stageVariant(row)" [content]="stageLabel(row)" />
+          @if (rejectedByBank(row); as rejected) {
+            <fold-badge
+              radius="square"
+              variant="alert"
+              [content]="rejected"
+              data-rejected-by-bank
+            />
+          }
         </ng-template>
 
         <ng-template foldCell="closure" let-row>{{ closureLabel(row) }}</ng-template>

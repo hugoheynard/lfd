@@ -1,3 +1,8 @@
+import {
+  isDeadBatchStatus,
+  type CollectionBatchStatus,
+} from "../entities/collection-batch-status.js";
+
 /**
  * **Le statut de règlement d'une facture, vu par le client** (plan
  * `documentation/comptabilite/facturation/plan-page-mes-factures.md`, §7.1).
@@ -28,7 +33,7 @@ export type InvoiceSettlementStatus =
   | "processing";
 
 /** L'état d'un lot tel que la ligne le voit. */
-export type DebitBatchStatus = "constituted" | "deposited" | "cancelled";
+export type DebitBatchStatus = CollectionBatchStatus;
 
 /** Ce que l'équipe a décidé du retour de la banque. */
 export type DebitReturnResolution = "pending" | "represented" | "settled_otherwise" | "written_off";
@@ -84,11 +89,11 @@ export function settlementOf(facts: InvoiceSettlementFacts): InvoiceSettlement |
     : settlement("collection_planned", facts.dueOn, 0);
 }
 
-/** La dernière ligne d'un lot non annulé ; à instant égal, le plus grand id (ULID). */
+/** La dernière ligne d'un lot vivant (ni annulé, ni rejeté par la banque) ; à instant égal, le plus grand id (ULID). */
 function latestLiveDebit(debits: readonly InvoiceDebitFact[]): InvoiceDebitFact | null {
   let latest: InvoiceDebitFact | null = null;
   for (const debit of debits) {
-    if (debit.batchStatus !== "cancelled" && (latest === null || isLater(debit, latest))) {
+    if (!isDeadBatchStatus(debit.batchStatus) && (latest === null || isLater(debit, latest))) {
       latest = debit;
     }
   }

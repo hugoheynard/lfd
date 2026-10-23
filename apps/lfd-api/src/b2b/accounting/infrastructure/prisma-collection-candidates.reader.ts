@@ -16,6 +16,7 @@ import {
   toFrozenInvoiceOrder,
 } from "./frozen-invoice-order.mapper.js";
 import { toOrderCollectionState } from "./order-collection.mapper.js";
+import { LIVE_BATCH_STATUS } from "./live-batch-status.js";
 
 /** Les états qu'une constitution reprend : l'absence de ligne compte comme `due`. */
 const OPEN_STATES = ["due", "excluded"] as const;
@@ -169,7 +170,7 @@ export class PrismaCollectionCandidatesReader extends CollectionCandidatesReader
 
   async previousClosure(legalEntityId: string, before: Date): Promise<Date | null> {
     const row = await this.prisma.collectionBatch.findFirst({
-      where: { legalEntityId, status: { not: "cancelled" }, cycleClosesAt: { lt: before } },
+      where: { legalEntityId, status: LIVE_BATCH_STATUS, cycleClosesAt: { lt: before } },
       orderBy: { cycleClosesAt: "desc" },
       select: { cycleClosesAt: true },
     });
@@ -208,7 +209,7 @@ export class PrismaCollectionCandidatesReader extends CollectionCandidatesReader
 
   async liveSchemes(legalEntityId: string, closesAt: Date): Promise<readonly SepaScheme[]> {
     const rows = await this.prisma.collectionBatch.findMany({
-      where: { legalEntityId, status: { not: "cancelled" }, cycleClosesAt: closesAt },
+      where: { legalEntityId, status: LIVE_BATCH_STATUS, cycleClosesAt: closesAt },
       select: { scheme: true },
     });
     return rows.map((row) => row.scheme);

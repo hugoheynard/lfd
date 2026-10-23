@@ -14,76 +14,31 @@ import {
 } from "../errors/collection-notice-errors.js";
 import type { BillingCycle } from "../services/billing-cycle.js";
 import type { ClosureSequence } from "../services/calendar-cycles.js";
-import type { SequenceType } from "../services/pain008-document.js";
 import type { SepaScheme } from "../value-objects/sepa-scheme.js";
+import {
+  BANK_REJECTION_REASON_MAX,
+  BankRejectionAfterCollectionDayError,
+  BatchNotDepositedError,
+  InvalidBankRejectionReasonError,
+  RejectedBatchHasReturnsError,
+} from "../errors/batch-bank-rejection-errors.js";
+import type { CollectionBatchLine } from "./collection-batch-line.js";
+import type {
+  BankRejectionStamp,
+  ConstitutionStamp,
+  StaffStamp,
+} from "./collection-batch-stamps.js";
+import type { CollectionBatchStatus } from "./collection-batch-status.js";
 import type { CollectionNoticeStatus } from "./collection-notice.js";
 
-export type CollectionBatchStatus = "constituted" | "deposited" | "cancelled";
-
-/**
- * Une ligne du fichier : UN débiteur, le mandat **figé** — IBAN compris — et
- * les commandes qu'elle prélève. Un futur rejet bancaire sur son `endToEndId`
- * sait ainsi quelles commandes il touche (plan §1).
- */
-export interface CollectionBatchLine {
-  readonly rank: number;
-  readonly endToEndId: string;
-  readonly mandateId: string;
-  readonly mandateReference: string;
-  readonly mandateSignedAt: Date;
-  /** Le payeur — la société débitée. */
-  readonly debtorCompanyId: string;
-  readonly debtorName: string;
-  /** En clair EN MÉMOIRE seulement : l'adaptateur le scelle à l'écriture. */
-  readonly debtorIban: string;
-  readonly debtorBic: string | null;
-  readonly sequence: SequenceType;
-  /** Le total TTC de la facture de ses bons, calculée en une fois (F2). */
-  readonly amountCents: number;
-  /**
-   * Σ des totaux de ses bons — l'écart `amountCents − ordersTotalCents` est
-   * celui de la LIGNE, jamais d'un bon. `null` pour une ligne d'un lot
-   * constitué avant F2 (2026-10-08) : la colonne n'existait pas, et on
-   * n'invente pas sa valeur (plan `le-prelevement-suit-la-facture.md`).
-   */
-  readonly ordersTotalCents: number | null;
-  readonly orderIds: readonly string[];
-  /**
-   * Les factures émises que la ligne encaisse (E4) — vide pour une ligne
-   * d'arrêté et pour les lots d'avant E4. Une facture d'un lot annulé
-   * redevient à prélever avec ses bons.
-   */
-  readonly invoices: readonly BatchLineInvoice[];
-  /** Dont commandes d'un cycle antérieur, reprises. */
-  readonly priorOrderCount: number;
-}
-
-/** Une facture encaissée par une ligne : son id, et le numéro que l'avis cite. */
-export interface BatchLineInvoice {
-  readonly invoiceId: string;
-  readonly number: string;
-}
-
-/** Un instant et la fiche staff (identifiant LOCAL, jamais un `sub`). */
-export interface StaffStamp {
-  readonly at: Date;
-  readonly staffId: string;
-}
-
-/**
- * Qui a préparé le lot : une fiche staff, ou l'automatisme (plan
- * `prelevement-automatique.md`, PA3). Deux formes, pas un identifiant
- * nullable : un lot `system` n'a pas de fiche à joindre à l'annuaire, et un
- * lot `staff` ne peut pas en manquer.
- */
-export type ConstitutionAuthor =
-  { readonly kind: "staff"; readonly staffId: string } | { readonly kind: "system" };
-
-/** L'instant de la constitution et son auteur. */
-export interface ConstitutionStamp {
-  readonly at: Date;
-  readonly by: ConstitutionAuthor;
-}
+export type { CollectionBatchStatus } from "./collection-batch-status.js";
+export type { BatchLineInvoice, CollectionBatchLine } from "./collection-batch-line.js";
+export type {
+  BankRejectionStamp,
+  ConstitutionAuthor,
+  ConstitutionStamp,
+  StaffStamp,
+} from "./collection-batch-stamps.js";
 
 export interface CollectionBatchState {
   readonly id: string;
@@ -94,6 +49,8 @@ export interface CollectionBatchState {
   readonly constituted: ConstitutionStamp;
   readonly deposited: StaffStamp | null;
   readonly cancelled: StaffStamp | null;
+  /** Posé ssi `rejected_by_bank` ; la trace du dépôt reste. */
+  readonly rejected: BankRejectionStamp | null;
   /** Q2 : une société nommée ici rend le lot indéposable. */
   readonly unmandatedCompanies: readonly string[];
   readonly lines: readonly CollectionBatchLine[];
@@ -188,6 +145,7 @@ export class CollectionBatch {
       constituted,
       deposited: null,
       cancelled: null,
+      rejected: null,
       unmandatedCompanies: [...input.unmandatedCompanies],
       lines: [...input.lines],
       xml: input.xml,
@@ -259,8 +217,47 @@ export class CollectionBatch {
   }
 
   /**
+   * **La banque a rejeté le fichier entier** (accusé PSR1), après « Marquer
+   * déposé » : `deposited → rejected_by_bank`, terminal. Ses commandes
+   * redeviennent à prélever (`OrderCollection.releaseRejected`) ; ce n'est
+   * pas une annulation, la trace du dépôt reste.
+   *
+   * @param today le jour de Paris — refusé à partir de l'échéance (Q3).
+   * @param returnedDebtors les payeurs dont la ligne a un retour enregistré.
+   * @throws {BatchNotDepositedError} le lot n'est pas déposé.
+   * @throws {InvalidBankRejectionReasonError} motif vide ou trop long.
+   * @throws {RejectedBatchHasReturnsError} une ligne est revenue : la remise est partie.
+   * @throws {BankRejectionAfterCollectionDayError} l'échéance est atteinte.
+   */
+  rejectByBank(
+    rejection: BankRejectionStamp,
+    today: string,
+    returnedDebtors: readonly string[],
+  ): void {
+    if (this.state.status !== "deposited") {
+      throw new BatchNotDepositedError(this.state.id, this.state.status);
+    }
+    const reason = rejection.reason.trim();
+    if (reason === "" || reason.length > BANK_REJECTION_REASON_MAX) {
+      throw new InvalidBankRejectionReasonError(reason.length);
+    }
+    if (returnedDebtors.length > 0) {
+      throw new RejectedBatchHasReturnsError(returnedDebtors);
+    }
+    const day = this.state.requestedCollectionDay;
+    if (day === null || day <= today) {
+      throw new BankRejectionAfterCollectionDayError(this.state.id, day);
+    }
+    this.state = {
+      ...this.state,
+      status: "rejected_by_bank",
+      rejected: { ...rejection, reason },
+    };
+  }
+
+  /**
    * Le fichier vient d'être servi. Tout état l'accepte : le fichier d'un lot
-   * déposé ou annulé se retélécharge (préfixe `ANNULE-`), seul « déposé »
+   * déposé, annulé ou rejeté se retélécharge (préfixe `ANNULE-` ou `REJETE-`), seul « déposé »
    * lit l'instant.
    */
   recordDownload(at: Date): void {

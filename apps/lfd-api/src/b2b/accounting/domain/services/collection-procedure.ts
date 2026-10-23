@@ -1,5 +1,9 @@
 import type { LocalDeadline } from "./collection-calendar.js";
 import { businessDaysAfter } from "./target2-calendar.js";
+import {
+  isDeadBatchStatus,
+  type CollectionBatchStatus,
+} from "../entities/collection-batch-status.js";
 
 /**
  * **L'état de la procédure de prélèvement** — les quatre onglets de la page,
@@ -23,7 +27,7 @@ export const RETURNS_WATCH_BUSINESS_DAYS = 5;
 export interface ProcedureBatch {
   readonly id: string;
   readonly scheme: "CORE" | "B2B";
-  readonly status: "constituted" | "deposited" | "cancelled";
+  readonly status: CollectionBatchStatus;
   /** ISO — exclusive. */
   readonly cycleClosesAt: string;
   readonly requestedCollectionDay: string | null;
@@ -58,7 +62,8 @@ export function mandatesState(
   return toExportCount > 0 ? "to_do" : "done";
 }
 
-export type FileReason = "no_batch" | "to_prepare" | "cancelled" | "to_deposit" | "deposited";
+export type FileReason =
+  "no_batch" | "to_prepare" | "cancelled" | "rejected_by_bank" | "to_deposit" | "deposited";
 
 /** Onglet 3 (§ 3.3), sans attestation ni verrou par débiteur (P2). */
 export function fileStatus(
@@ -70,8 +75,9 @@ export function fileStatus(
       ? { state: "to_do", reason: "to_prepare" }
       : { state: "done", reason: "no_batch" };
   }
-  if (followed.status === "cancelled") {
-    return { state: "to_do", reason: "cancelled" };
+  if (followed.status === "cancelled" || followed.status === "rejected_by_bank") {
+    // Un lot rejeté par la banque se prépare de nouveau, comme un lot annulé.
+    return { state: "to_do", reason: followed.status };
   }
   return followed.status === "constituted"
     ? { state: "to_do", reason: "to_deposit" }
@@ -179,7 +185,7 @@ export function followedAtClosure<T extends ProcedureBatch>(
   if (first !== null || toPrepare) {
     return first;
   }
-  return batches.find((batch) => batch.status !== "cancelled") ?? batches[0] ?? null;
+  return batches.find((batch) => !isDeadBatchStatus(batch.status)) ?? batches[0] ?? null;
 }
 
 /**
@@ -193,7 +199,7 @@ export function replacementOf(
   return (
     batches.find(
       (batch) =>
-        batch.status !== "cancelled" &&
+        !isDeadBatchStatus(batch.status) &&
         batch.scheme === cancelled.scheme &&
         batch.cycleClosesAt === cancelled.cycleClosesAt,
     ) ?? null

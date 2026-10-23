@@ -5,10 +5,11 @@ import {
   AutopilotCoverageReader,
   type AutopilotCoverage,
 } from "../domain/ports/autopilot-coverage.reader.js";
+import { LIVE_BATCH_STATUS } from "./live-batch-status.js";
 
 /**
  * Les tentatives (`collection_autopilot_run`), le dernier lot vivant
- * (`collection_batch`, hors `cancelled`) et le plancher (`collection_floor`)
+ * (`collection_batch`, hors lots morts) et le plancher (`collection_floor`)
  * d'une entité. Une entité tente au plus une clôture par semaine : la liste
  * des tentatives reste courte.
  */
@@ -27,7 +28,7 @@ export class PrismaAutopilotCoverageReader extends AutopilotCoverageReader {
         select: { cycleClosesAt: true },
       }),
       this.prisma.collectionBatch.findFirst({
-        where: { legalEntityId, status: { not: "cancelled" }, cycleClosesAt: { lte: before } },
+        where: { legalEntityId, status: LIVE_BATCH_STATUS, cycleClosesAt: { lte: before } },
         orderBy: { cycleClosesAt: "desc" },
         select: { cycleClosesAt: true },
       }),

@@ -67,4 +67,20 @@ describe('la carte du lot à déposer', () => {
     expect(button(fixture, 'Fichier')).toBeUndefined();
     expect(button(fixture, 'Annuler')).toBeUndefined();
   });
+
+  /** Plan `plan-lot-rejete-par-la-banque.md` § 7 : un lot déposé seulement. */
+  it('un lot déposé propose « La banque a rejeté ce fichier », et il émet le geste', async () => {
+    const fixture = await render(
+      collectionBatch({ status: 'deposited', lastDownloadedAt: DOWNLOADED_AT }),
+    );
+    const emitted: string[] = [];
+    fixture.componentInstance.gesture.subscribe((gesture) => emitted.push(gesture));
+
+    button(fixture, 'La banque a rejeté ce fichier')?.click();
+
+    expect(emitted).toEqual(['rejected-by-bank']);
+    expect(
+      button(await render(collectionBatch()), 'La banque a rejeté ce fichier'),
+    ).toBeUndefined();
+  });
 });

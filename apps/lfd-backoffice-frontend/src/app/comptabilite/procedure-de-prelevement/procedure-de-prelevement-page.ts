@@ -22,6 +22,7 @@ import {
 import { PermissionsStore } from '../../auth/permissions.store';
 import { CollectionBatchGestures } from '../collection-batch-gestures';
 import { CollectionBatchesService } from '../collection-batches.service';
+import { isDeadBatch } from '../collection-batch-steps';
 import { longDay } from '../collection-month-wording';
 import { CollectionProcedureService } from '../collection-procedure.service';
 import { AccountBankExportCard } from '../entites-juridiques/detail/account-bank-export-card/account-bank-export-card';
@@ -129,8 +130,7 @@ export class ProcedureDePrelevementPage {
     const view = this.view();
     const ids = new Set((view?.procedureBatches ?? []).map((batch) => batch.id));
     return this.batches().filter(
-      (batch) =>
-        ids.has(batch.id) && batch.id !== view?.followed?.id && batch.status !== 'cancelled',
+      (batch) => ids.has(batch.id) && batch.id !== view?.followed?.id && !isDeadBatch(batch),
     );
   });
   /** Le lot suivi, tel que « Prélèvement du mois » le lit — pour réutiliser ses cartes. */

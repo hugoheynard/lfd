@@ -90,4 +90,38 @@ describe('la barre d’actions du lot', () => {
     expect(node(fixture, '[data-cancel]')).toBeNull();
     expect(node(fixture, '[data-download-file]')).not.toBeNull();
   });
+
+  /** Plan `plan-lot-rejete-par-la-banque.md` : sur un lot déposé seulement. */
+  it('« La banque a rejeté ce fichier » sur un lot déposé, jamais avant ni sans le droit', async () => {
+    const deposited = await render(
+      collectionBatch({ status: 'deposited', lastDownloadedAt: DOWNLOADED_AT }),
+    );
+    const emitted = gestures(deposited);
+    node(deposited, '[data-rejected-by-bank]')?.click();
+    expect(emitted).toEqual(['rejected-by-bank']);
+
+    expect(node(await render(collectionBatch()), '[data-rejected-by-bank]')).toBeNull();
+    expect(
+      node(
+        await render(collectionBatch({ status: 'deposited' }), false),
+        '[data-rejected-by-bank]',
+      ),
+    ).toBeNull();
+    expect(
+      node(
+        await render(collectionBatch({ status: 'rejected_by_bank' })),
+        '[data-rejected-by-bank]',
+      ),
+    ).toBeNull();
+  });
+
+  it('un lot rejeté : « J’ai déposé » fermé, la raison invite à préparer de nouveau', async () => {
+    const fixture = await render(
+      collectionBatch({ status: 'rejected_by_bank', lastDownloadedAt: DOWNLOADED_AT }),
+    );
+
+    expect(node(fixture, '[data-deposit]')?.disabled).toBe(true);
+    expect(node(fixture, '[data-order-help]')?.textContent).toContain('préparer le lot de nouveau');
+    expect(node(fixture, '[data-cancel]')).toBeNull();
+  });
 });

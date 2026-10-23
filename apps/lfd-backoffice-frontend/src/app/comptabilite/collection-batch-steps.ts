@@ -23,10 +23,35 @@ export function cancellable(batch: CollectionBatchView): boolean {
   return batch.status === 'constituted';
 }
 
+/**
+ * Le lot est-il mort — annulé, ou rejeté par la banque ? Il ne couvre plus sa
+ * clôture : elle se prépare de nouveau (la règle `isDeadBatchStatus` du
+ * serveur, plan `plan-lot-rejete-par-la-banque.md`).
+ */
+export function isDeadBatch(batch: Pick<CollectionBatchView, 'status'>): boolean {
+  return batch.status === 'cancelled' || batch.status === 'rejected_by_bank';
+}
+
+/**
+ * « La banque a rejeté ce fichier » : un lot déposé seulement. Le serveur
+ * refuse en plus à partir de l'échéance et dès qu'une ligne a un retour.
+ */
+export function rejectableByBank(batch: CollectionBatchView): boolean {
+  return batch.status === 'deposited';
+}
+
+const CLOSED_STATUS: Readonly<
+  Record<Exclude<CollectionBatchView['status'], 'constituted'>, string>
+> = {
+  deposited: 'Lot déjà déposé.',
+  cancelled: 'Lot annulé.',
+  rejected_by_bank: 'Fichier rejeté par la banque : préparer le lot de nouveau.',
+};
+
 /** Pourquoi « J'ai déposé » est fermé, ou `null` s'il est ouvert. */
 export function depositClosedReason(batch: CollectionBatchView): string | null {
   if (batch.status !== 'constituted') {
-    return batch.status === 'deposited' ? 'Lot déjà déposé.' : 'Lot annulé.';
+    return CLOSED_STATUS[batch.status];
   }
   if (!batch.depositable) {
     return 'Lot non déposable : voir l’encadré du lot.';

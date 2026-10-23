@@ -125,6 +125,17 @@ export class OrderCollection {
     this.move({ state: "due", batchId: null, lineRank: null, exclusionReason: null }, at);
   }
 
+  /**
+   * `collected` → `due` : le fichier de son lot a été rejeté entier par la
+   * banque (PSR1) — rien n'a été prélevé. Une commande `returned` n'est pas
+   * concernée : son retour attend une décision humaine. La ligne du lot garde
+   * la liste de ses commandes ; c'est elle, la trace.
+   */
+  releaseRejected(at: Date): void {
+    this.assertIn(["collected"], "sortir d'un lot rejeté par la banque");
+    this.move({ state: "due", batchId: null, lineRank: null, exclusionReason: null }, at);
+  }
+
   /** `batched` → `collected` : son lot a été déposé. */
   collect(at: Date): void {
     this.assertIn(["batched"], "être prélevée");

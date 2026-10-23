@@ -5,6 +5,7 @@ import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 import {
   CollectionBatch,
+  type BankRejectionStamp,
   type CollectionBatchLine,
   type ConstitutionAuthor,
 } from "../domain/entities/collection-batch.js";
@@ -57,6 +58,7 @@ export class PrismaCollectionBatchRepository extends CollectionBatchRepository {
       },
       deposited: stamp(row.depositedAt, row.depositedByStaffId),
       cancelled: stamp(row.cancelledAt, row.cancelledByStaffId),
+      rejected: rejection(row.rejectedAt, row.rejectedByStaffId, row.rejectionReason),
       unmandatedCompanies: row.unmandatedCompanies,
       lines: row.lines.map((line) => ({
         rank: line.rank,
@@ -93,6 +95,9 @@ export class PrismaCollectionBatchRepository extends CollectionBatchRepository {
       depositedByStaffId: state.deposited?.staffId ?? null,
       cancelledAt: state.cancelled?.at ?? null,
       cancelledByStaffId: state.cancelled?.staffId ?? null,
+      rejectedAt: state.rejected?.at ?? null,
+      rejectedByStaffId: state.rejected?.staffId ?? null,
+      rejectionReason: state.rejected?.reason ?? null,
       lastDownloadedAt: state.lastDownloadedAt,
     };
     const exists = await this.prisma.collectionBatch.findUnique({
@@ -168,6 +173,15 @@ export class PrismaCollectionBatchRepository extends CollectionBatchRepository {
 
 function stamp(at: Date | null, staffId: string | null): { at: Date; staffId: string } | null {
   return at === null || staffId === null ? null : { at, staffId };
+}
+
+/** Le CHECK `collection_batch_rejected_is_signed` pose les trois ensemble. */
+function rejection(
+  at: Date | null,
+  staffId: string | null,
+  reason: string | null,
+): BankRejectionStamp | null {
+  return at === null || staffId === null || reason === null ? null : { at, staffId, reason };
 }
 
 /** `constituted_by` relu : le `CHECK` lie la fiche à `staff`, le domaine le revérifie. */

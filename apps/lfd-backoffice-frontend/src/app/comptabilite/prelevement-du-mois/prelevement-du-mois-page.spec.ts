@@ -55,6 +55,7 @@ function batch(over: Partial<CollectionBatchView> = {}): CollectionBatchView {
     constitutedBy: 'staff',
     depositedAt: null,
     cancelledAt: null,
+    rejection: null,
     // Téléchargé : le lot type est prêt à être dit déposé (2026-10-23).
     lastDownloadedAt: '2026-10-02T10:00:00.000Z',
     lineCount: 2,

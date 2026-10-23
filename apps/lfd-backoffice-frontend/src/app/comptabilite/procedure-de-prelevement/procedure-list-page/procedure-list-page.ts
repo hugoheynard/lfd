@@ -26,6 +26,7 @@ import {
   PROCEDURE_LIST_ROUTE,
   deadlineMissed,
   procedureRowTitle,
+  rejectedByBankLabel,
   rowClosureLabel,
   rowCollectionLabel,
   rowDeadlineLabel,
@@ -108,6 +109,7 @@ export class ProcedureListPage {
   protected readonly rowTitle = procedureRowTitle;
   protected readonly stageLabel = stageLabel;
   protected readonly stageVariant = stageVariant;
+  protected readonly rejectedByBank = rejectedByBankLabel;
   protected readonly deadlineLabel = rowDeadlineLabel;
   protected readonly deadlineMissed = deadlineMissed;
   protected readonly collectionLabel = rowCollectionLabel;

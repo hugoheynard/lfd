@@ -243,7 +243,7 @@ export class FixedEntities extends LegalEntityReader {
 /**
  * Les arrêtés, en mémoire. L'annulation rejoue la garde de la base : elle
  * lit le lot tel qu'ENREGISTRÉ (`batches`), et refuse s'il n'est plus
- * `constituted` — comme le déclencheur `billing_statement_immutable`.
+ * `constituted` ni `rejected_by_bank` — comme le déclencheur `billing_statement_immutable`.
  */
 export class MemoryStatements extends BillingStatementRepository {
   readonly inserted: BillingStatement[] = [];
@@ -264,7 +264,12 @@ export class MemoryStatements extends BillingStatementRepository {
     const active = this.inserted
       .map((statement) => statement.toPersistence())
       .filter((state) => state.batchId === batchId && !this.cancelledIds.has(state.id));
-    if (active.length > 0 && stored !== undefined && stored !== "constituted") {
+    if (
+      active.length > 0 &&
+      stored !== undefined &&
+      stored !== "constituted" &&
+      stored !== "rejected_by_bank"
+    ) {
       return Promise.reject(new BatchNotConstitutedError(batchId, stored));
     }
     this.steps.log.push(`cancel:statements:${batchId}`);

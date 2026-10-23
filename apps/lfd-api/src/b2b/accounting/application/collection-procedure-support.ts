@@ -25,6 +25,7 @@ import { procedureIdOf } from "../domain/services/collection-procedure-id.js";
 import type { InvoicingCalendar } from "../domain/services/invoicing-calendar.js";
 import { periodLabelOf } from "../domain/services/invoicing-closures.js";
 import { selectForBankExport } from "../domain/services/mandate-bank-export-selection.js";
+import { isDeadBatchStatus } from "../domain/entities/collection-batch-status.js";
 
 /** Ce que l'onglet 1 lit — les ports de la carte « Comptes à la banque ». */
 export interface ProcedureAccountReaders {
@@ -121,6 +122,7 @@ export function procedureBatchView(
     requestedCollectionDay: batch.requestedCollectionDay,
     depositDeadline: batch.depositDeadline,
     cancelledAt: batch.cancelledAt,
+    rejectedAt: batch.rejection?.at ?? null,
   };
 }
 
@@ -138,7 +140,8 @@ export function toPrepareOf(
   const closure = calendar.lastClosureAtOrBefore(now);
   const prepared = stored.some(
     (batch) =>
-      batch.status !== "cancelled" && new Date(batch.cycleClosesAt).getTime() === closure.getTime(),
+      !isDeadBatchStatus(batch.status) &&
+      new Date(batch.cycleClosesAt).getTime() === closure.getTime(),
   );
   if (prepared) {
     return null;

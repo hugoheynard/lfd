@@ -71,6 +71,8 @@ export const COLLECTION_FACT_TYPES = {
   batchConstituted: "collection.batch_constituted",
   batchCancelled: "collection.batch_cancelled",
   batchDeposited: "collection.batch_deposited",
+  /** Déposé, puis son fichier entier refusé par la banque (PSR1, 2026-10-23). */
+  batchRejectedByBank: "collection.batch_rejected_by_bank",
   /** Le fichier de remise — fait d'IBAN en clair — a été servi (2026-10-23). */
   batchDownloaded: "collection.batch_downloaded",
   orderSettledOtherwise: "collection.order_settled_otherwise",

@@ -63,6 +63,7 @@ const BATCH_STATE: Readonly<Record<MonthlyClosureBatchView['status'], string>> =
   constituted: 'préparé, à déposer',
   deposited: 'déposé',
   cancelled: 'annulé',
+  rejected_by_bank: 'rejeté par la banque, à préparer de nouveau',
 };
 
 /** « Lot du 1er au 4 octobre 2026 — B2B : préparé, à déposer, 2 ligne(s), 211,00 € ». */

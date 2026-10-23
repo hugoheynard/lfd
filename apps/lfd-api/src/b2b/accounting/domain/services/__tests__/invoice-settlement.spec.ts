@@ -119,6 +119,33 @@ describe("le statut de règlement d'une facture (§7.1)", () => {
     expect(settlementOf(facts({ debits: [deposited, cancelled] }))?.status).toBe("collected");
   });
 
+  /**
+   * Le lot rejeté par la banque n'a rien prélevé : « Mes factures » ne doit
+   * pas dire la facture prélevée (vitruve, 2026-10-23, bloquant c).
+   */
+  it("3. un lot rejeté par la banque ne règle pas la facture : elle reste à prélever", () => {
+    const rejected = debit({ batchId: "01R", batchStatus: "rejected_by_bank" });
+    expect(settlementOf(facts({ debits: [rejected] }))?.status).toBe("collection_planned");
+    const reconstituted = debit({
+      batchId: "01S",
+      batchStatus: "constituted",
+      constitutedAt: new Date("2026-11-02T08:00:00.000Z"),
+    });
+    expect(settlementOf(facts({ debits: [rejected, reconstituted] }))?.status).toBe(
+      "collection_planned",
+    );
+    const lateRejected = debit({
+      batchId: "01T",
+      batchStatus: "rejected_by_bank",
+      constitutedAt: new Date("2026-11-03T08:00:00.000Z"),
+    });
+    expect(
+      settlementOf(
+        facts({ debits: [debit({ batchId: "01A", batchStatus: "deposited" }), lateRejected] }),
+      )?.status,
+    ).toBe("collected");
+  });
+
   it("3. à instant égal, le lot d'id le plus grand l'emporte (ULID)", () => {
     const a = debit({ batchId: "01A", batchStatus: "deposited" });
     const b = debit({ batchId: "01B" });

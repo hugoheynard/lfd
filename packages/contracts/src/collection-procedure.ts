@@ -41,10 +41,12 @@ export interface CollectionProcedureMandatesView {
 /**
  * Pourquoi l'onglet 3 est dans son état : `no_batch` (rien à préparer ni à
  * déposer), `to_prepare` (la dernière clôture n'a pas de lot), `cancelled`
- * (le lot demandé a été annulé), `to_deposit`, `deposited`.
+ * (le lot demandé a été annulé), `rejected_by_bank` (son fichier a été
+ * rejeté par la banque après dépôt : à préparer de nouveau), `to_deposit`,
+ * `deposited`.
  */
 export type CollectionProcedureFileReasonView =
-  "no_batch" | "to_prepare" | "cancelled" | "to_deposit" | "deposited";
+  "no_batch" | "to_prepare" | "cancelled" | "rejected_by_bank" | "to_deposit" | "deposited";
 
 /** Onglet 3 — le fichier du lot suivi. */
 export interface CollectionProcedureFileView {
@@ -105,6 +107,8 @@ export interface CollectionProcedureBatchView {
   readonly requestedCollectionDay: string | null;
   readonly depositDeadline: LocalDeadlineView | null;
   readonly cancelledAt: string | null;
+  /** L'instant du rejet déclaré par la banque ; `null` sinon. */
+  readonly rejectedAt: string | null;
 }
 
 /** La dernière clôture du calendrier, sans lot préparé. */

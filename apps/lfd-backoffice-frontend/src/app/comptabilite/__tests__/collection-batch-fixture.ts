@@ -16,6 +16,7 @@ export function collectionBatch(over: Partial<CollectionBatchView> = {}): Collec
     constitutedBy: 'staff',
     depositedAt: null,
     cancelledAt: null,
+    rejection: null,
     lastDownloadedAt: null,
     lineCount: 2,
     orderCount: 5,

@@ -2,6 +2,7 @@ import {
   accountsState,
   arrivalStepOf,
   fileStatus,
+  followedAtClosure,
   followedBatchOf,
   mandatesState,
   openBatchesOf,
@@ -65,6 +66,13 @@ describe("onglet 3 — le fichier du lot suivi (P2 : sans attestation)", () => {
     expect(fileStatus(batch("c", { status: "cancelled" }), false)).toEqual({
       state: "to_do",
       reason: "cancelled",
+    });
+  });
+
+  it("rejeté par la banque : à préparer de nouveau, sous sa propre raison", () => {
+    expect(fileStatus(batch("r", { status: "rejected_by_bank" }), false)).toEqual({
+      state: "to_do",
+      reason: "rejected_by_bank",
     });
   });
 });
@@ -157,6 +165,20 @@ describe("le lot suivi (§ 4.3, Q4)", () => {
     const again = batch("again");
     expect(replacementOf(cancelled, [cancelled, other, again])?.id).toBe("again");
     expect(replacementOf(cancelled, [cancelled, other])).toBeNull();
+  });
+
+  it("un lot rejeté par la banque propose aussi le lot préparé de nouveau, jamais un autre rejeté", () => {
+    const rejected = batch("r", { status: "rejected_by_bank" });
+    const alsoRejected = batch("r2", { status: "rejected_by_bank" });
+    const again = batch("again");
+    expect(replacementOf(rejected, [alsoRejected, rejected])).toBeNull();
+    expect(replacementOf(rejected, [rejected, alsoRejected, again])?.id).toBe("again");
+  });
+
+  it("la clôture suit son lot vivant plutôt qu'un lot rejeté par la banque", () => {
+    const rejected = batch("r", { status: "rejected_by_bank" });
+    const again = batch("again");
+    expect(followedAtClosure([rejected, again], "2026-11-03", false)?.id).toBe("again");
   });
 });
 

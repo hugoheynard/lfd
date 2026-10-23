@@ -83,6 +83,27 @@
         }
       </fold-empty-state>
     }
+    @case ('rejected_by_bank') {
+      <fold-empty-state
+        title="La banque a rejeté ce fichier"
+        [subtitle]="rejectionSubtitle()"
+        data-rejected-by-bank
+      >
+        <fold-icon empty-icon name="x-circle" />
+        @if (view().replacementBatchId !== null) {
+          <p data-replacement>Le lot préparé de nouveau est montré ci-dessous.</p>
+        } @else if (canWrite()) {
+          <button
+            foldButton
+            icon="archive"
+            [loading]="pending() === 'prepare'"
+            (click)="prepare.emit()"
+          >
+            Préparer de nouveau
+          </button>
+        }
+      </fold-empty-state>
+    }
     @case ('to_deposit') {
       @if (batch(); as current) {
         <app-procedure-batch-actions
@@ -95,6 +116,14 @@
       }
     }
     @case ('deposited') {
+      @if (batch(); as current) {
+        <app-procedure-batch-actions
+          [batch]="current"
+          [canWrite]="canWrite()"
+          [pending]="pending() === current.id"
+          (gesture)="gesture.emit($event)"
+        />
+      }
       <fold-callout variant="success" data-deposited>
         Lot déposé. Signer la remise sur CENET si ce n’est pas fait, et lire les accusés PSR —
         l’outil ne peut pas le vérifier.

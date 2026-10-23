@@ -4,7 +4,10 @@ import {
   BatchFileTamperedError,
   CollectionBatchNotFoundError,
 } from "../../domain/errors/collection-errors.js";
-import { CollectionBatchReader } from "../../domain/ports/collection-batch.reader.js";
+import {
+  CollectionBatchReader,
+  type StoredBatchFile,
+} from "../../domain/ports/collection-batch.reader.js";
 import { sha256Of } from "../../domain/services/collection-batch-file.js";
 import { BillingModeDatesReader } from "../../domain/ports/billing-mode-dates.reader.js";
 import { PayerBillingModesReader } from "../../domain/ports/payer-billing-modes.reader.js";
@@ -67,7 +70,7 @@ export class ExportCollectionBatchFileHandler implements IQueryHandler<
       ),
       new Map(),
     );
-    const prefix = file.status === "cancelled" ? "ANNULE-" : file.depositable ? "" : "BROUILLON-";
+    const prefix = filePrefixOf(file.status, file.depositable);
     return {
       xml: file.xml,
       fileName: `${prefix}${collectionBatchFileName({
@@ -77,5 +80,22 @@ export class ExportCollectionBatchFileHandler implements IQueryHandler<
         debitCount: file.debitCount,
       })}`,
     };
+  }
+}
+
+/**
+ * Le préfixe du nom de fichier : un fichier mort ne doit pas pouvoir être
+ * redéposé par mégarde. Un lot rejeté par la banque n'est pas « annulé » —
+ * il a été déposé — d'où son propre préfixe.
+ */
+function filePrefixOf(status: StoredBatchFile["status"], depositable: boolean): string {
+  switch (status) {
+    case "cancelled":
+      return "ANNULE-";
+    case "rejected_by_bank":
+      return "REJETE-";
+    case "constituted":
+    case "deposited":
+      return depositable ? "" : "BROUILLON-";
   }
 }

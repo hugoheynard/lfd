@@ -6,6 +6,7 @@ import {
   RefundRequestOnB2bError,
   RepresentationRefusedError,
   ReturnAmountMismatchError,
+  ReturnOnRejectedBatchError,
   ReturnOnUndepositedBatchError,
 } from "../../errors/collection-return-errors.js";
 import { CollectionReturn } from "../collection-return.js";
@@ -35,6 +36,25 @@ describe("le retour bancaire d'une ligne de lot", () => {
 
     expect(() => CollectionReturn.record(rejectInput(), line, false)).toThrow(
       ReturnOnUndepositedBatchError,
+    );
+  });
+
+  /**
+   * Un retour sur un lot déclaré rejeté : le rejet était peut-être faux, et
+   * le payeur débité deux fois. Le message le dit au lieu de « pas encore
+   * déposé » (vitruve, 2026-10-23).
+   */
+  it("refuse une ligne d'un lot rejeté par la banque en disant le double débit possible", () => {
+    const line = returnableLine({
+      batchStatus: "rejected_by_bank",
+      batchRejection: { at: RECORDED_AT, reason: "PSR1 : fichier refusé" },
+    });
+
+    expect(() => CollectionReturn.record(rejectInput(), line, false)).toThrow(
+      ReturnOnRejectedBatchError,
+    );
+    expect(() => CollectionReturn.record(rejectInput(), line, false)).toThrow(
+      /déclaré rejeté par la banque le 12 octobre 2026.*débité deux fois.*rembourser le doublon/u,
     );
   });
 

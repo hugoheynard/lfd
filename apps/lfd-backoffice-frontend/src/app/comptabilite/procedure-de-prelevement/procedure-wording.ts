@@ -8,6 +8,7 @@ import type {
 } from '@lfd/contracts';
 import type { FoldIconName, FoldTabItem } from 'fold-ng';
 
+import { isDeadBatch } from '../collection-batch-steps';
 import { day } from '../invoice-dossier-format';
 
 /**
@@ -77,7 +78,7 @@ export function pageTitle(view: CollectionProcedureView | null): string {
   const code = view?.procedure?.code;
   const title = code === undefined ? PAGE_TITLE : `${PAGE_TITLE} ${code}`;
   const followed = view?.followed;
-  if (followed === undefined || followed === null || followed.status === 'cancelled') {
+  if (followed === undefined || followed === null || isDeadBatch(followed)) {
     return title;
   }
   const rhythms = rhythmsLabel(followed.payerModes);

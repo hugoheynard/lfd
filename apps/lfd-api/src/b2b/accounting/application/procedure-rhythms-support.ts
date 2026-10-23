@@ -5,6 +5,7 @@ import type { InvoicingCalendar } from "../domain/services/invoicing-calendar.js
 import { procedureRhythms } from "../domain/services/procedure-rhythms.js";
 import type { BillingMode } from "../domain/value-objects/billing-mode.js";
 import { readLotPayerModes } from "./lot-payer-modes-support.js";
+import { isDeadBatchStatus } from "../domain/entities/collection-batch-status.js";
 
 /** Les rythmes de la procédure close à cet instant. */
 export type ProcedureRhythmsOf = (closesAt: Date) => readonly BillingMode[];
@@ -22,7 +23,7 @@ export function lotModesByClosureDay(
   const live = new Map<string, Set<BillingMode>>();
   const cancelled = new Map<string, Set<BillingMode>>();
   stored.forEach((batch, index) => {
-    const into = batch.status === "cancelled" ? cancelled : live;
+    const into = isDeadBatchStatus(batch.status) ? cancelled : live;
     const day = closureDayOf(new Date(batch.cycleClosesAt));
     const known = into.get(day) ?? new Set<BillingMode>();
     (modes[index] ?? []).forEach((mode) => known.add(mode));

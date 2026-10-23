@@ -76,6 +76,16 @@ export class ProcedureFileStep {
     return margin === null ? null : tightDepositMarginSentence(margin);
   });
 
+  /** « Rejeté le 3 novembre 2026 par Claire Compta : motif. » — lu sur le lot du cycle. */
+  protected readonly rejectionSubtitle = computed(() => {
+    const rejection = this.batch()?.rejection ?? null;
+    if (rejection === null) {
+      return 'Ses bons redeviennent à prélever : préparer le lot de nouveau.';
+    }
+    const by = rejection.byName === null ? '' : ` par ${rejection.byName}`;
+    return `Déclaré rejeté le ${longDay(rejection.at)}${by} : « ${rejection.reason} ». Ses bons redeviennent à prélever.`;
+  });
+
   protected readonly deadline = deadlineLabel;
   protected readonly collectionDay = collectionDayLabel;
   protected readonly longDay = longDay;

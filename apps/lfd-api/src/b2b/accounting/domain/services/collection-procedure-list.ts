@@ -19,6 +19,7 @@ import {
   depositWarnings,
   type ProcedureWarning,
 } from "./collection-procedure-warnings.js";
+import { isDeadBatchStatus } from "../entities/collection-batch-status.js";
 
 /**
  * **La liste des procédures de prélèvement** (plan
@@ -134,7 +135,7 @@ function batchRow(input: ProcedureListInput, batches: readonly ListedBatch[]): P
   const missed = input.missed.find(
     (closure) => closureDayOf(closure.closesAt) === closureDayOf(closesAt),
   );
-  if (missed !== undefined && batches.every((batch) => batch.status === "cancelled")) {
+  if (missed !== undefined && batches.every((batch) => isDeadBatchStatus(batch.status))) {
     // Ses lots sont annulés et aucun autre ne la couvre : elle reste manquée.
     return { ...closureRow(input, missed, "missed"), batches, followed };
   }
@@ -142,7 +143,7 @@ function batchRow(input: ProcedureListInput, batches: readonly ListedBatch[]): P
   if (
     toPrepare !== null &&
     closureDayOf(toPrepare.closesAt) === closureDayOf(closesAt) &&
-    batches.every((batch) => batch.status === "cancelled")
+    batches.every((batch) => isDeadBatchStatus(batch.status))
   ) {
     // Tous ses lots sont annulés : la clôture est de nouveau « à préparer ».
     return { ...closureRow(input, toPrepare, "open"), batches, followed };

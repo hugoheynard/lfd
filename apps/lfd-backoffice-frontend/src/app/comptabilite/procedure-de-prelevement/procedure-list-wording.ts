@@ -45,6 +45,18 @@ export function stageVariant(row: CollectionProcedureRowView): FoldBadgeVariant 
   return row.phase === 'upcoming' ? 'neutral' : 'accent';
 }
 
+/**
+ * Le fichier d'un lot de la ligne a été rejeté par la banque, et aucun lot
+ * vivant ne l'a remplacé : la ligne invite à préparer de nouveau.
+ */
+export function rejectedByBankLabel(row: CollectionProcedureRowView): string | null {
+  const rejected = row.batches.some((batch) => batch.status === 'rejected_by_bank');
+  const live = row.batches.some(
+    (batch) => batch.status === 'constituted' || batch.status === 'deposited',
+  );
+  return rejected && !live ? 'Rejeté par la banque — préparer de nouveau' : null;
+}
+
 /** « Mensuel · période du 1er au 31 octobre 2026 » — comme le titre du détail. */
 export function procedureRowTitle(row: CollectionProcedureRowView): string {
   const rhythms = rhythmsLabel(row.modes);

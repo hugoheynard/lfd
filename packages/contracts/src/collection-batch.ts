@@ -8,13 +8,38 @@ import type { BillingRhythmKind } from "./legal-entity.js";
  * Montants en centimes.
  */
 
-export type CollectionBatchStatusView = "constituted" | "deposited" | "cancelled";
+/**
+ * `rejected_by_bank` : déposé, puis son fichier entier refusé par la banque
+ * (accusé PSR1) — terminal, pas plus vivant qu'un lot annulé (plan
+ * `documentation/comptabilite/prelevement/plan-lot-rejete-par-la-banque.md`).
+ */
+export type CollectionBatchStatusView =
+  "constituted" | "deposited" | "cancelled" | "rejected_by_bank";
 
 export const COLLECTION_BATCH_STATUS_LABELS: Readonly<Record<CollectionBatchStatusView, string>> = {
   constituted: "Constitué — à déposer",
   deposited: "Déposé",
   cancelled: "Annulé",
+  rejected_by_bank: "Rejeté par la banque",
 };
+
+/** Le rejet déclaré du fichier d'un lot : quand, pourquoi, par qui. */
+export interface CollectionBatchRejectionView {
+  /** ISO. */
+  readonly at: string;
+  /** Le motif recopié de l'accusé de la banque. */
+  readonly reason: string;
+  /** Prénom et nom de la fiche staff ; `null` si l'annuaire ne la connaît plus. */
+  readonly byName: string | null;
+}
+
+/** `POST …/batches/:id/rejected-by-bank` — l'attestation et le motif. */
+export const rejectBatchByBankPayloadSchema = z.object({
+  /** « La banque a rejeté ce fichier (accusé PSR1) — la remise n'a pas été signée. » */
+  attested: z.literal(true),
+  reason: z.string(),
+});
+export type RejectBatchByBankPayload = z.infer<typeof rejectBatchByBankPayloadSchema>;
 
 export type CollectionExclusionReasonView =
   | "no_mandate"
@@ -150,6 +175,8 @@ export interface CollectionBatchView {
   readonly constitutedBy: CollectionBatchAuthorView;
   readonly depositedAt: string | null;
   readonly cancelledAt: string | null;
+  /** Posé ssi `rejected_by_bank`. */
+  readonly rejection: CollectionBatchRejectionView | null;
   /**
    * Le dernier téléchargement du fichier ; `null` = jamais téléchargé, et
    * « J'ai déposé le fichier dans CENET » reste fermé (409 au serveur).

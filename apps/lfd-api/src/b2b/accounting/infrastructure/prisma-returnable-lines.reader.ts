@@ -3,7 +3,11 @@ import { Injectable } from "@nestjs/common";
 import type { Prisma } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
-import type { ReturnableLine, ReturnableLineRegime } from "../domain/entities/collection-return.js";
+import type {
+  BatchRejectionTrace,
+  ReturnableLine,
+  ReturnableLineRegime,
+} from "../domain/entities/collection-return.js";
 import { ReturnableLinesReader } from "../domain/ports/returnable-lines.reader.js";
 import type { SequenceType } from "../domain/services/pain008-document.js";
 
@@ -19,7 +23,14 @@ const LINE_SELECT = {
   debtorCompanyId: true,
   debtorName: true,
   batch: {
-    select: { status: true, scheme: true, cycleClosesAt: true, requestedCollectionDay: true },
+    select: {
+      status: true,
+      scheme: true,
+      cycleClosesAt: true,
+      requestedCollectionDay: true,
+      rejectedAt: true,
+      rejectionReason: true,
+    },
   },
   statement: { select: { id: true } },
   _count: { select: { invoices: true } },
@@ -77,7 +88,13 @@ function toLine(row: LineRow): ReturnableLine {
     debtorName: row.debtorName,
     regime: regimeOf(row),
     requestedCollectionDay: row.batch.requestedCollectionDay?.toISOString().slice(0, 10) ?? null,
+    batchRejection: rejectionOf(row.batch.rejectedAt, row.batch.rejectionReason),
   };
+}
+
+/** Posés ensemble par le CHECK `collection_batch_rejected_is_signed`. */
+function rejectionOf(at: Date | null, reason: string | null): BatchRejectionTrace | null {
+  return at === null || reason === null ? null : { at, reason };
 }
 
 function regimeOf(row: LineRow): ReturnableLineRegime {

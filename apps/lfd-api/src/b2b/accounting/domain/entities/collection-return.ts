@@ -5,6 +5,7 @@ import {
   RefundRequestOnB2bError,
   RepresentationRefusedError,
   ReturnAmountMismatchError,
+  ReturnOnRejectedBatchError,
   ReturnOnUndepositedBatchError,
   type RepresentationRefusal,
 } from "../errors/collection-return-errors.js";
@@ -41,6 +42,14 @@ export interface ReturnableLine {
   readonly regime: ReturnableLineRegime;
   /** L'échéance figée du lot (`AAAA-MM-JJ`), `null` pour un lot d'avant PA1. */
   readonly requestedCollectionDay: string | null;
+  /** Le rejet déclaré du fichier du lot, `null` s'il n'est pas `rejected_by_bank`. */
+  readonly batchRejection: BatchRejectionTrace | null;
+}
+
+/** Ce qu'un retour cite d'un lot déclaré rejeté par la banque. */
+export interface BatchRejectionTrace {
+  readonly at: Date;
+  readonly reason: string;
 }
 
 export interface CollectionReturnState {
@@ -96,6 +105,7 @@ export class CollectionReturn {
 
   /**
    * @param alreadyReturned la ligne a-t-elle déjà un retour ? (l'index unique le tient aussi)
+   * @throws {ReturnOnRejectedBatchError} lot déclaré rejeté par la banque : double débit possible.
    * @throws {ReturnOnUndepositedBatchError} lot non déposé.
    * @throws {LineAlreadyReturnedError} un retour existe déjà.
    * @throws {RefundRequestOnB2bError} remboursement sur un lot B2B.
@@ -108,6 +118,9 @@ export class CollectionReturn {
     line: ReturnableLine,
     alreadyReturned: boolean,
   ): CollectionReturn {
+    if (line.batchStatus === "rejected_by_bank") {
+      throw new ReturnOnRejectedBatchError(line.endToEndId, line.debtorName, line.batchRejection);
+    }
     if (line.batchStatus !== "deposited") {
       throw new ReturnOnUndepositedBatchError(line.endToEndId, line.batchStatus);
     }

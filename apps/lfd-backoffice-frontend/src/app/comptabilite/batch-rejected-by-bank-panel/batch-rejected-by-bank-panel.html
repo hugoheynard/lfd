@@ -1,0 +1,42 @@
+<fold-panel-header title="La banque a rejeté ce fichier" [subtitle]="subtitle()" />
+
+<div class="body">
+  <fold-callout appearance="inset" variant="warning">
+    Seulement si la banque a refusé le fichier ENTIER (accusé PSR1) et que la remise n’a pas été
+    signée. Ses bons redeviennent à prélever : préparez ensuite le lot de nouveau. Si la remise est
+    partie, ne déclarez rien ici — traitez les lignes revenues en retours.
+  </fold-callout>
+
+  <fold-checkbox
+    label="La banque a rejeté ce fichier (accusé PSR1) — la remise n’a pas été signée"
+    [checked]="attested()"
+    (checkedChange)="attested.set($event)"
+    data-attested
+  />
+
+  <fold-input
+    label="Motif donné par l’accusé de la banque"
+    placeholder="Schéma XML invalide, ICS inconnu…"
+    required
+    hint="Obligatoire, au plus 200 caractères : il va au journal."
+    [(value)]="reason"
+  />
+
+  @if (error(); as message) {
+    <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+  }
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="close()">Annuler</button>
+  <button
+    foldButton
+    intent="danger"
+    [disabled]="!canSubmit()"
+    [loading]="saving()"
+    data-confirm
+    (click)="submit()"
+  >
+    Déclarer le fichier rejeté
+  </button>
+</footer>

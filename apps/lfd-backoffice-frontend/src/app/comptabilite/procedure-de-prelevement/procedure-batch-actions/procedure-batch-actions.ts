@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import type { CollectionBatchView } from '@lfd/contracts';
 import { FoldButtonComponent, FoldInlineConfirmComponent } from 'fold-ng';
 
-import { cancellable, depositClosedReason } from '../../collection-batch-steps';
+import { cancellable, depositClosedReason, rejectableByBank } from '../../collection-batch-steps';
 import type { PendingBatchGesture } from '../../prelevement-du-mois/pending-batch/pending-batch';
 
 /**
@@ -10,7 +10,8 @@ import type { PendingBatchGesture } from '../../prelevement-du-mois/pending-batc
  * onglets Comptes et Mandats (Hugo, 2026-10-23) : télécharger, « J'ai déposé
  * le fichier dans CENET » (fermé tant que le fichier de CE lot n'a pas été
  * téléchargé), le contrôle CSV en second, « Annuler » en retrait et seulement
- * avant dépôt.
+ * avant dépôt ; « La banque a rejeté ce fichier » sur un lot déposé
+ * seulement (plan `plan-lot-rejete-par-la-banque.md`).
  *
  * Le dépôt et la signature se font sur CENET : l'outil ne les voit pas. D'où
  * l'aide d'une ligne qui rappelle l'ordre — « J'ai déposé » AVANT de signer.
@@ -31,4 +32,6 @@ export class ProcedureBatchActions {
 
   protected readonly closedReason = computed(() => depositClosedReason(this.batch()));
   protected readonly cancellable = computed(() => cancellable(this.batch()));
+  /** Un lot déposé dont la banque a refusé le fichier entier (PSR1). */
+  protected readonly rejectable = computed(() => rejectableByBank(this.batch()));
 }

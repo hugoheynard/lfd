@@ -86,6 +86,27 @@ export class CollectionBatchDepositedEvent implements JournaledEvent {
   }
 }
 
+/**
+ * Le fichier d'un lot déposé a été rejeté entier par la banque : ses
+ * commandes redeviennent à prélever. Le motif est celui que l'équipe a
+ * recopié de l'accusé PSR1.
+ */
+export class CollectionBatchRejectedByBankEvent implements JournaledEvent {
+  constructor(
+    readonly batch: CollectionBatch,
+    readonly entity: BatchEntity,
+    readonly at: Date,
+    readonly releasedOrderCount: number,
+  ) {}
+
+  journalFact(): JournalFact {
+    return batchFact(COLLECTION_FACT_TYPES.batchRejectedByBank, this.batch, this.entity, this.at, {
+      reason: this.batch.toPersistence().rejected?.reason ?? "",
+      releasedOrderCount: this.releasedOrderCount,
+    });
+  }
+}
+
 /** Le fichier de remise d'un lot a été téléchargé. */
 export class CollectionBatchDownloadedEvent implements JournaledEvent {
   constructor(

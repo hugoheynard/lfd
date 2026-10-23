@@ -9,6 +9,7 @@ import { PrismaService } from "../../../platform/database/prisma.service.js";
 import {
   CollectionBatchReader,
   type StoredBatchFile,
+  type StoredBatchRejection,
   type StoredBatchView,
 } from "../domain/ports/collection-batch.reader.js";
 import type { BatchCsvLine } from "../domain/services/collection-batch-csv.js";
@@ -37,6 +38,9 @@ export class PrismaCollectionBatchReader extends CollectionBatchReader {
         constitutedBy: true,
         depositedAt: true,
         cancelledAt: true,
+        rejectedAt: true,
+        rejectedByStaffId: true,
+        rejectionReason: true,
         lastDownloadedAt: true,
         unmandatedCompanies: true,
         requestedCollectionDay: true,
@@ -84,6 +88,7 @@ export class PrismaCollectionBatchReader extends CollectionBatchReader {
       constitutedBy: row.constitutedBy === "system" ? "system" : "staff",
       depositedAt: row.depositedAt?.toISOString() ?? null,
       cancelledAt: row.cancelledAt?.toISOString() ?? null,
+      rejection: storedRejection(row.rejectedAt, row.rejectedByStaffId, row.rejectionReason),
       lastDownloadedAt: row.lastDownloadedAt?.toISOString() ?? null,
       lineCount: row.lines.length,
       orderCount: row.lines.reduce((sum, line) => sum + line.orderCount, 0),
@@ -217,6 +222,17 @@ export class PrismaCollectionBatchReader extends CollectionBatchReader {
 }
 
 /** L'avis d'une ligne, tel que l'écran le lit. */
+/** Posés ensemble par le CHECK `collection_batch_rejected_is_signed`. */
+function storedRejection(
+  at: Date | null,
+  byStaffId: string | null,
+  reason: string | null,
+): StoredBatchRejection | null {
+  return at === null || byStaffId === null || reason === null
+    ? null
+    : { at: at.toISOString(), reason, byStaffId };
+}
+
 function lineNotice(
   notices: readonly {
     readonly lineRank: number | null;

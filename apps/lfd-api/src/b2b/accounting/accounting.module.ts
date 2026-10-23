@@ -35,6 +35,7 @@ import { PrismaCollectionNoticeRepository } from "./infrastructure/prisma-collec
 import { PrismaCycleNoticesReader } from "./infrastructure/prisma-cycle-notices.reader.js";
 import { PrismaPayerNoticeContactsReader } from "./infrastructure/prisma-payer-notice-contacts.reader.js";
 import { DepositCollectionBatchHandler } from "./application/commands/deposit-collection-batch.handler.js";
+import { RejectCollectionBatchByBankHandler } from "./application/commands/reject-collection-batch-by-bank.handler.js";
 import { SettleOrderOtherwiseHandler } from "./application/commands/settle-order-otherwise.handler.js";
 import { ExportCollectionBatchAuditHandler } from "./application/queries/export-collection-batch-audit.handler.js";
 import { ExportCollectionBatchFileHandler } from "./application/queries/export-collection-batch-file.handler.js";
@@ -56,6 +57,7 @@ import { CollectionBatchRepository } from "./domain/ports/collection-batch.repos
 import { CountedLotInputsReader } from "./domain/ports/counted-lot-inputs.reader.js";
 import { CollectionCandidatesReader } from "./domain/ports/collection-candidates.reader.js";
 import { CollectionLock } from "./domain/ports/collection-lock.js";
+import { CollectionBatchLock } from "./domain/ports/collection-batch-lock.js";
 import { InvoiceNumbering } from "./domain/ports/invoice-numbering.js";
 import { InvoiceReader } from "./domain/ports/invoice.reader.js";
 import { InvoiceRepository } from "./domain/ports/invoice.repository.js";
@@ -117,6 +119,7 @@ import { PrismaCollectionBatchReader } from "./infrastructure/prisma-collection-
 import { PrismaCollectionBatchRepository } from "./infrastructure/prisma-collection-batch.repository.js";
 import { PrismaCollectionCandidatesReader } from "./infrastructure/prisma-collection-candidates.reader.js";
 import { PrismaCollectionLock } from "./infrastructure/prisma-collection-lock.js";
+import { PrismaCollectionBatchLock } from "./infrastructure/prisma-collection-batch-lock.js";
 import {
   PrismaCancelledOrdersReader,
   PrismaOrderNumbersReader,
@@ -258,6 +261,7 @@ import { PrismaOrderRowsLock } from "./infrastructure/prisma-order-rows-lock.js"
     { provide: OrderCollectionRepository, useClass: PrismaOrderCollectionRepository },
     { provide: CollectionBatchReader, useClass: PrismaCollectionBatchReader },
     { provide: CollectionLock, useClass: PrismaCollectionLock },
+    { provide: CollectionBatchLock, useClass: PrismaCollectionBatchLock },
     // L'arrêté de facturation figé (plan `le-prelevement-suit-la-facture.md`).
     { provide: BillingStatementRepository, useClass: PrismaBillingStatementRepository },
     { provide: StatementBuyerReader, useClass: PrismaStatementBuyerReader },
@@ -320,6 +324,7 @@ import { PrismaOrderRowsLock } from "./infrastructure/prisma-order-rows-lock.js"
     CancelCollectionBatchHandler,
     RecordCollectionBatchDownloadHandler,
     DepositCollectionBatchHandler,
+    RejectCollectionBatchByBankHandler,
     SettleOrderOtherwiseHandler,
     GetCollectionCycleHandler,
     GetCollectionPreviewHandler,

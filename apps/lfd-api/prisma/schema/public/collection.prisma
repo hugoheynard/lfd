@@ -21,6 +21,10 @@ enum CollectionBatchStatus {
   constituted
   deposited
   cancelled
+  /// Déposé, puis son fichier entier refusé par la banque (PSR1) : TERMINAL,
+  /// et pas plus vivant qu'un lot annulé (migration
+  /// `20261024070100_le_lot_rejete_par_la_banque`).
+  rejected_by_bank
 
   @@schema("public")
 }
@@ -87,6 +91,12 @@ model CollectionBatch {
   depositedByStaffId   String?   @map("deposited_by_staff_id")
   cancelledAt          DateTime? @map("cancelled_at") @db.Timestamptz(3)
   cancelledByStaffId   String?   @map("cancelled_by_staff_id")
+  /// Le rejet du fichier par la banque : posés ensemble ssi `rejected_by_bank`
+  /// (CHECK `collection_batch_rejected_is_signed`). Identifiant staff LOCAL.
+  rejectedAt           DateTime? @map("rejected_at") @db.Timestamptz(3)
+  rejectedByStaffId    String?   @map("rejected_by_staff_id")
+  /// Le motif saisi par le staff — texte libre, au registre RGPD.
+  rejectionReason      String?   @map("rejection_reason")
 
   /// Les sociétés du cycle sans mandat prélevable : le lot n'est pas
   /// déposable tant qu'il en nomme une (Q2, interdiction gardée).

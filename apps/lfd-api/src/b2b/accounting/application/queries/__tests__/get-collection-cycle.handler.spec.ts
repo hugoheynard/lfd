@@ -3,6 +3,7 @@ import type { CollectionExclusionView } from "@lfd/contracts";
 import {
   CollectionBatchReader,
   type StoredBatchFile,
+  type StoredBatchRejection,
   type StoredBatchView,
 } from "../../../domain/ports/collection-batch.reader.js";
 import type { PayerModeSegments } from "../../../domain/ports/payer-billing-modes.reader.js";
@@ -14,6 +15,10 @@ import {
   FixedPayerModes,
 } from "../../commands/__tests__/monthly-invoice-doubles.js";
 import { FixedInvoicePeriods } from "../../services/__tests__/issued-invoice-doubles.js";
+import {
+  authorsKnownAs,
+  FixedStaffAuthorDirectory,
+} from "../../../../../staff/directory/domain/__tests__/fixed-staff-author-directory.js";
 import { GetCollectionCycleQuery } from "../collection-batch-queries.js";
 import { GetCollectionCycleHandler } from "../get-collection-cycle.handler.js";
 
@@ -25,7 +30,10 @@ import { GetCollectionCycleHandler } from "../get-collection-cycle.handler.js";
 
 const MONDAY = paris("2026-10-05");
 
-function stored(payerRefs: readonly LotPayerRef[]): StoredBatchView {
+function stored(
+  payerRefs: readonly LotPayerRef[],
+  rejection: StoredBatchRejection | null = null,
+): StoredBatchView {
   return {
     id: "b1",
     scheme: "B2B",
@@ -37,6 +45,7 @@ function stored(payerRefs: readonly LotPayerRef[]): StoredBatchView {
     constitutedBy: "staff",
     depositedAt: null,
     cancelledAt: null,
+    rejection,
     lastDownloadedAt: null,
     lineCount: 2,
     orderCount: 2,
@@ -80,14 +89,21 @@ const PERIODS = new Map([
   ["inv_week", { startsAt: paris("2026-09-28"), closesAt: MONDAY }],
 ]);
 
-async function payerModesOf(refs: readonly LotPayerRef[]) {
-  const handler = new GetCollectionCycleHandler(
-    new FixedBatches([stored(refs)]),
+function handlerOver(
+  batches: readonly StoredBatchView[],
+  authors = new FixedStaffAuthorDirectory(),
+): GetCollectionCycleHandler {
+  return new GetCollectionCycleHandler(
+    new FixedBatches(batches),
     new FixedModeDates(),
     new FixedPayerModes([WEEKLY]),
     new FixedInvoicePeriods(PERIODS),
+    authors,
   );
-  const view = await handler.execute(new GetCollectionCycleQuery("le_1"));
+}
+
+async function payerModesOf(refs: readonly LotPayerRef[]) {
+  const view = await handlerOver([stored(refs)]).execute(new GetCollectionCycleQuery("le_1"));
   return view.batches.map((batch) => batch.payerModes);
 }
 
@@ -111,5 +127,34 @@ describe("GetCollectionCycle — les modes des clients prélevés par chaque lot
     expect(await payerModesOf([{ payerCompanyId: "c_month", invoiceId: null }])).toEqual([
       ["monthly"],
     ]);
+  });
+});
+
+describe("GetCollectionCycle — le rejet déclaré par la banque", () => {
+  const REFS = [{ payerCompanyId: "c_week", invoiceId: "inv_week" }];
+
+  it("nomme l'auteur du rejet par l'annuaire, avec son motif et son instant", async () => {
+    const at = MONDAY.toISOString();
+    const authors = new FixedStaffAuthorDirectory(
+      authorsKnownAs({ firstName: "Claire", lastName: "Compta" }, "staff_compta"),
+    );
+    const view = await handlerOver(
+      [stored(REFS, { at, reason: "PSR1 : fichier refusé", byStaffId: "staff_compta" })],
+      authors,
+    ).execute(new GetCollectionCycleQuery("le_1"));
+    expect(view.batches[0]?.rejection).toEqual({
+      at,
+      reason: "PSR1 : fichier refusé",
+      byName: "Claire Compta",
+    });
+  });
+
+  it("un lot non rejeté n'a pas de rejet, et l'annuaire est lu une fois pour la vue", async () => {
+    const authors = new FixedStaffAuthorDirectory();
+    const view = await handlerOver([stored(REFS), stored(REFS)], authors).execute(
+      new GetCollectionCycleQuery("le_1"),
+    );
+    expect(view.batches.map((batch) => batch.rejection)).toEqual([null, null]);
+    expect(authors.asked).toHaveLength(1);
   });
 });

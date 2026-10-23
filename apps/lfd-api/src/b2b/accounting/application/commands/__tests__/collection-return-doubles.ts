@@ -10,6 +10,7 @@ import {
   RECORDED_AT,
   returnableLine,
 } from "../../../domain/entities/__tests__/collection-return-fixtures.js";
+import { CollectionBatchLock } from "../../../domain/ports/collection-batch-lock.js";
 import { CollectionReturnRepository } from "../../../domain/ports/collection-return.repository.js";
 import { ReturnableLinesReader } from "../../../domain/ports/returnable-lines.reader.js";
 import { ConfirmCollectionReturnImportHandler } from "../confirm-collection-return-import.handler.js";
@@ -61,6 +62,15 @@ export class FakeReturnableLines extends ReturnableLinesReader {
   }
 }
 
+/** Le verrou d'un lot : retient les lots verrouillés, dans l'ordre. */
+export class RecordingBatchLock extends CollectionBatchLock {
+  readonly locked: string[] = [];
+  lock(batchId: string): Promise<void> {
+    this.locked.push(batchId);
+    return Promise.resolve();
+  }
+}
+
 /** Deux commandes prélevées sur la ligne 1 du lot 1. */
 export function collectedOrders(line: ReturnableLine): OrderCollection[] {
   return ["o_1", "o_2"].map((orderId) => {
@@ -87,14 +97,25 @@ export function returnWorld(line: ReturnableLine = returnableLine()) {
   const uow = new DirectUnitOfWork();
   const ids = new UlidSequence();
   const tests = new MemoryCollectionTests();
+  const locks = new RecordingBatchLock();
   return {
+    locks,
     returns,
     tests,
     lines,
     orders,
     mandates,
     events,
-    record: new RecordCollectionReturnHandler(returns, lines, orders, ids, clock, events, uow),
+    record: new RecordCollectionReturnHandler(
+      locks,
+      returns,
+      lines,
+      orders,
+      ids,
+      clock,
+      events,
+      uow,
+    ),
     represent: new RepresentCollectionReturnHandler(
       returns,
       lines,
@@ -107,6 +128,7 @@ export function returnWorld(line: ReturnableLine = returnableLine()) {
     settle: new SettleCollectionReturnHandler(returns, lines, orders, clock, events, uow),
     writeOff: new WriteOffCollectionReturnHandler(returns, lines, orders, clock, events, uow),
     confirm: new ConfirmCollectionReturnImportHandler(
+      locks,
       returns,
       lines,
       new MemoryTestReturnTargets(tests),

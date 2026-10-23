@@ -9,6 +9,7 @@ import {
   ReturnableLineNotFoundError,
 } from "../domain/errors/collection-return-errors.js";
 import { CollectionReturnedEvent } from "../domain/events/collection-return.events.js";
+import type { CollectionBatchLock } from "../domain/ports/collection-batch-lock.js";
 import type { CollectionReturnRepository } from "../domain/ports/collection-return.repository.js";
 import type { OrderCollectionRepository } from "../domain/ports/order-collection.repository.js";
 import type { ReturnableLinesReader } from "../domain/ports/returnable-lines.reader.js";
@@ -20,6 +21,8 @@ import type { DomainEventPublisher } from "../../../platform/events/domain-event
  * règle. Rien ici n'ouvre de transaction ; l'appelant la tient.
  */
 export interface ReturnWriters {
+  /** Le verrou du lot, pris avant de relire la ligne : la course avec un rejet du fichier. */
+  readonly locks: CollectionBatchLock;
   readonly returns: CollectionReturnRepository;
   readonly lines: ReturnableLinesReader;
   readonly orders: OrderCollectionRepository;
@@ -40,11 +43,15 @@ export async function recordReturn(
   entry: ReturnEntry,
   identity: { readonly id: string; readonly recorded: StaffStamp },
 ): Promise<CollectionReturn> {
-  const already = await writers.lines.alreadyReturned([line.endToEndId]);
+  // Sous le verrou du lot, l'état relu est le dernier écrit : un rejet du
+  // fichier déclaré au même instant est vu, et refusé par l'agrégat.
+  await writers.locks.lock(line.batchId);
+  const current = (await writers.lines.lineOf(line.batchId, line.rank)) ?? line;
+  const already = await writers.lines.alreadyReturned([current.endToEndId]);
   const bankReturn = CollectionReturn.record(
     { ...entry, ...identity },
-    line,
-    already.has(line.endToEndId),
+    current,
+    already.has(current.endToEndId),
   );
   const orders = await writers.orders.ofLine(line.batchId, line.rank);
   for (const order of orders) {
@@ -53,7 +60,7 @@ export async function recordReturn(
   await writers.returns.save(bankReturn);
   await writers.orders.saveAll(orders);
   await writers.events.publishTraced(
-    new CollectionReturnedEvent(bankReturn, line, identity.recorded.at),
+    new CollectionReturnedEvent(bankReturn, current, identity.recorded.at),
   );
   return bankReturn;
 }

@@ -10,7 +10,7 @@ import {
   FoldFieldListComponent,
 } from 'fold-ng';
 
-import { cancellable, depositClosedReason } from '../../collection-batch-steps';
+import { cancellable, depositClosedReason, rejectableByBank } from '../../collection-batch-steps';
 import { DEPOSIT_UNKNOWN } from '../../collection-schedule-wording';
 import { unsentNoticePayers } from '../../collection-notice-wording';
 import { batchAuthorLabel } from '../../autopilot-run-wording';
@@ -19,7 +19,7 @@ import { BatchLines } from '../batch-lines/batch-lines';
 import { periodWithModes } from '../../collection-month-wording';
 
 /** Un geste sur le lot, que la page exécute — elle tient l'attente et les refus. */
-export type PendingBatchGesture = 'xml' | 'csv' | 'deposit' | 'cancel';
+export type PendingBatchGesture = 'xml' | 'csv' | 'deposit' | 'cancel' | 'rejected-by-bank';
 
 /**
  * **Le lot à traiter** — préparé, pas encore déposé : ses dates, ses
@@ -86,6 +86,8 @@ export class PendingBatch {
   protected readonly depositClosedReason = computed(() => depositClosedReason(this.batch()));
   /** « Annuler » : avant dépôt seulement — même règle que la procédure. */
   protected readonly cancellable = computed(() => cancellable(this.batch()));
+  /** « La banque a rejeté ce fichier » : un lot déposé seulement (PSR1). */
+  protected readonly rejectable = computed(() => rejectableByBank(this.batch()));
 
   protected readonly total = computed(() => euros(this.batch().totalCents));
 

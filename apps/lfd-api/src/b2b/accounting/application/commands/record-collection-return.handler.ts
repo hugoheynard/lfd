@@ -5,6 +5,7 @@ import { DomainEventPublisher } from "../../../../platform/events/domain-event-p
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { ReturnableLineNotFoundError } from "../../domain/errors/collection-return-errors.js";
+import { CollectionBatchLock } from "../../domain/ports/collection-batch-lock.js";
 import { CollectionReturnRepository } from "../../domain/ports/collection-return.repository.js";
 import { OrderCollectionRepository } from "../../domain/ports/order-collection.repository.js";
 import { ReturnableLinesReader } from "../../domain/ports/returnable-lines.reader.js";
@@ -23,6 +24,7 @@ export class RecordCollectionReturnHandler implements ICommandHandler<
   string
 > {
   constructor(
+    private readonly locks: CollectionBatchLock,
     private readonly returns: CollectionReturnRepository,
     private readonly lines: ReturnableLinesReader,
     private readonly orders: OrderCollectionRepository,
@@ -40,6 +42,7 @@ export class RecordCollectionReturnHandler implements ICommandHandler<
         throw new ReturnableLineNotFoundError(`${command.batchId} · ligne ${command.rank}`);
       }
       const writers = {
+        locks: this.locks,
         returns: this.returns,
         lines: this.lines,
         orders: this.orders,

@@ -60,6 +60,7 @@ import { readMissedProcedure } from "../missed-closures-support.js";
 import { readLotPayerModes } from "../lot-payer-modes-support.js";
 import { exportEntityOrFail } from "../mandate-bank-export-support.js";
 import { GetCollectionProcedureQuery } from "./collection-procedure-queries.js";
+import { isDeadBatchStatus } from "../../domain/entities/collection-batch-status.js";
 
 /**
  * **La procédure de prélèvement** (S1) : l'état des quatre onglets, calculé
@@ -140,7 +141,10 @@ export class GetCollectionProcedureHandler implements IQueryHandler<
     const storedById = new Map(stored.map((batch) => [batch.id, batch]));
     const file = fileStep(followed, toPrepare !== null, storedById, accounts, mandates);
     const returns = returnsStatus(followed, today);
-    const replacement = followed?.status === "cancelled" ? replacementOf(followed, batches) : null;
+    const replacement =
+      followed !== null && isDeadBatchStatus(followed.status)
+        ? replacementOf(followed, batches)
+        : null;
     const closureDay = procedureDayOf(query, followed, toPrepare);
     const ofClosure = closureDay === null ? [] : batchesOfClosure(stored, closureDay);
     return {

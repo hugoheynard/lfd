@@ -7,6 +7,7 @@ import { closureDayOf } from "../domain/services/collection-procedure-id.js";
 import type { InvoicingCalendar } from "../domain/services/invoicing-calendar.js";
 import { readLotsPayerModeCounts } from "./lot-payer-modes-support.js";
 import type { ProcedureRhythmsOf } from "./procedure-rhythms-support.js";
+import { isDeadBatchStatus } from "../domain/entities/collection-batch-status.js";
 
 /** Minuit à Paris : l'instant d'une clôture, depuis son jour. */
 const CLOSURE_TIME = "00:00";
@@ -34,7 +35,7 @@ export async function procedureIdentityOf(
 ): Promise<CollectionProcedureIdentityView> {
   const closesAt = localToInstant(closureDay, CLOSURE_TIME);
   const closureModes = closesAt === null ? [] : rhythmsOf(closesAt);
-  const live = ofClosure.filter((batch) => batch.status !== "cancelled");
+  const live = ofClosure.filter((batch) => !isDeadBatchStatus(batch.status));
   return {
     code: procedureCodeOfDay(closureDay, closureModes),
     closureDay,

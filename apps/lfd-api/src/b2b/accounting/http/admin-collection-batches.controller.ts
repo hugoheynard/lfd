@@ -1,10 +1,12 @@
 import {
   constituteBatchesPayloadSchema,
+  rejectBatchByBankPayloadSchema,
   settleOrderOtherwisePayloadSchema,
   type CollectionCycleView,
   type CollectionPreviewView,
   type ConstituteBatchesPayload,
   type ConstitutedBatchesView,
+  type RejectBatchByBankPayload,
   type SettleOrderOtherwisePayload,
 } from "@lfd/contracts";
 import { contentDispositionAttachment, sanitiseFileName } from "@lfd/storage";
@@ -29,6 +31,7 @@ import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { CancelCollectionBatchCommand } from "../application/commands/cancel-collection-batch.command.js";
 import { ConstituteCollectionBatchesCommand } from "../application/commands/constitute-collection-batches.command.js";
 import { DepositCollectionBatchCommand } from "../application/commands/deposit-collection-batch.command.js";
+import { RejectCollectionBatchByBankCommand } from "../application/commands/reject-collection-batch-by-bank.command.js";
 import { RecordCollectionBatchDownloadCommand } from "../application/commands/record-collection-batch-download.command.js";
 import { SettleOrderOtherwiseCommand } from "../application/commands/settle-order-otherwise.command.js";
 import {
@@ -104,6 +107,23 @@ export class AdminCollectionBatchesController {
   async deposit(@StaffUserId() staffUserId: string, @Param("id") id: string): Promise<void> {
     await this.commands.execute<DepositCollectionBatchCommand, void>(
       new DepositCollectionBatchCommand(id, staffUserId),
+    );
+  }
+
+  /**
+   * « La banque a rejeté ce fichier » (accusé PSR1) — un lot DÉPOSÉ seulement,
+   * avant son échéance, sans retour enregistré. L'attestation est exigée par
+   * la forme ; le motif est validé par l'agrégat. 409 nommant le cas sinon.
+   */
+  @Post("batches/:id/rejected-by-bank")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async rejectedByBank(
+    @StaffUserId() staffUserId: string,
+    @Param("id") id: string,
+    @Body(new ZodBody(rejectBatchByBankPayloadSchema)) payload: RejectBatchByBankPayload,
+  ): Promise<void> {
+    await this.commands.execute<RejectCollectionBatchByBankCommand, void>(
+      new RejectCollectionBatchByBankCommand(id, payload.reason, staffUserId),
     );
   }
 
