@@ -127,6 +127,13 @@ produits du catalogue publié, en sélection multiple.
   dans une catégorie remisée, ou réinclus dans une catégorie exclue. La table
   du §4.A.1 porte donc un sens (`exclude` | `include`), et une réinclusion
   n'est admise que sur un produit.
+  **Tenu par l'agrégat depuis le 2026-10-23** (Hugo) : `PickupDiscount.of`
+  refuse une règle de famille à contre-sens du mode (famille incluse en
+  `all_except`, exclue en `only`) par `PickupDiscountCategoryReinclusionError`
+  (400, `pickup.discount.category_against_scope`). La relecture en base
+  (`PickupDiscount.restore`) ne la refuse pas : une ligne d'avant ne bloque
+  pas le chargement du site, l'écran la signale toujours, et la prochaine
+  écriture de la remise la refusera.
 - **Deux modes de portée** (Hugo, 2026-10-22 : « tout sauf… ou ça plus
   ça ») : chaque remise est `all_except` (toutes les lignes sauf celles
   listées) ou `only` (aucune ligne sauf celles listées). Dans les deux, une

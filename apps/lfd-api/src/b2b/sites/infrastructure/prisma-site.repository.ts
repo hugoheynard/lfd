@@ -27,7 +27,7 @@ function toDomain(row: SiteRow): Site {
       pays: row.pays,
       opening: openingOf(row.opening),
       gps: gpsOf(row.gps),
-      discount: PickupDiscount.of(discountsOf(row)),
+      discount: PickupDiscount.restore(discountsOf(row)),
     },
     roles: {
       pickup: row.pickup,

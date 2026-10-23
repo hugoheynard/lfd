@@ -2,6 +2,7 @@ import type { AudiencePickupDiscount } from "@lfd/contracts";
 
 import { PickupDiscount } from "../pickup-discount.js";
 import {
+  PickupDiscountCategoryReinclusionError,
   PickupDiscountDuplicateRuleError,
   PickupDiscountScopeIncludesNothingError,
 } from "../pickup-errors.js";
@@ -76,5 +77,60 @@ describe("PickupDiscount", () => {
     expect(() => PickupDiscount.of({ b2b: twice, b2c: null })).toThrow(
       PickupDiscountDuplicateRuleError,
     );
+  });
+
+  describe("une famille ne va pas contre le mode (Q1, 2026-10-23)", () => {
+    it("refuse une famille incluse en « tous sauf », en nommant la sortie", () => {
+      const reversed: AudiencePickupDiscount = {
+        ...TEN_PERCENT,
+        categories: [{ categoryId: "c_pains", eligible: true }],
+      };
+      const attempt = (): PickupDiscount => PickupDiscount.of({ b2b: reversed, b2c: null });
+
+      expect(attempt).toThrow(PickupDiscountCategoryReinclusionError);
+      expect(attempt).toThrow(/remise des pros.*« c_pains ».*réincluez les produits/u);
+    });
+
+    it("refuse une famille exclue en « seulement »", () => {
+      const reversed: AudiencePickupDiscount = {
+        ...TEN_PERCENT,
+        scope: "only",
+        categories: [
+          { categoryId: "c_pains", eligible: true },
+          { categoryId: "c_boissons", eligible: false },
+        ],
+      };
+      const attempt = (): PickupDiscount => PickupDiscount.of({ b2b: null, b2c: reversed });
+
+      expect(attempt).toThrow(PickupDiscountCategoryReinclusionError);
+      expect(attempt).toThrow(/remise des particuliers.*« c_boissons ».*excluez les produits/u);
+    });
+
+    it("accepte un produit à contre-sens dans les deux modes", () => {
+      const allExcept: AudiencePickupDiscount = {
+        ...TEN_PERCENT,
+        products: [{ productId: "p_jus", eligible: true }],
+      };
+      const only: AudiencePickupDiscount = {
+        ...TEN_PERCENT,
+        scope: "only",
+        categories: [{ categoryId: "c_pains", eligible: true }],
+        products: [{ productId: "p_baguette", eligible: false }],
+      };
+
+      expect(PickupDiscount.of({ b2b: allExcept, b2c: only }).discounts).toEqual({
+        b2b: allExcept,
+        b2c: only,
+      });
+    });
+
+    it("relit sans refus une famille à contre-sens écrite avant la règle", () => {
+      const legacy: AudiencePickupDiscount = {
+        ...TEN_PERCENT,
+        categories: [{ categoryId: "c_pains", eligible: true }],
+      };
+
+      expect(PickupDiscount.restore({ b2b: legacy, b2c: null }).b2b).toEqual(legacy);
+    });
   });
 });

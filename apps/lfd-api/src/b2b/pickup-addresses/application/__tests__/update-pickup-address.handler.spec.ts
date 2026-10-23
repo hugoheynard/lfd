@@ -8,6 +8,7 @@ import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import {
   PickupAddressNotFoundError,
+  PickupDiscountCategoryReinclusionError,
   PickupDiscountDuplicateRuleError,
 } from "../../domain/pickup-errors.js";
 import { UpdatePickupAddressCommand } from "../update-pickup-address.command.js";
@@ -63,6 +64,19 @@ describe("UpdatePickupAddressHandler — les remises par clientèle", () => {
     await update(points, { ...FIELDS, discounts: { b2b: null, b2c: individual } });
 
     expect(points.written?.discount.discounts).toEqual({ b2b: null, b2c: individual });
+  });
+
+  it("refuse une famille incluse en « tous sauf », sans rien écrire (Q1)", async () => {
+    const points = new StoredPoints(PROS_ONLY);
+    const reversed: AudiencePickupDiscount = {
+      ...PRO_DISCOUNT,
+      categories: [{ categoryId: "c_pains", eligible: true }],
+    };
+
+    await expect(
+      update(points, { ...FIELDS, discounts: { b2b: reversed, b2c: null } }),
+    ).rejects.toBeInstanceOf(PickupDiscountCategoryReinclusionError);
+    expect(points.written).toBeNull();
   });
 
   it("refuse une règle en double, sans rien écrire", async () => {

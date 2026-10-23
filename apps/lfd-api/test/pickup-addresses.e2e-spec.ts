@@ -188,6 +188,30 @@ describe("points de retrait — une remise par clientèle", () => {
     expect((await only()).discounts.b2b).toEqual(PRO);
   });
 
+  it("refuse (400) une famille incluse en « tous sauf », et n'écrit rien", async () => {
+    const id = await createWith({ discounts: { b2b: PRO, b2c: null } });
+
+    const response = await staff()
+      .patch(`/admin/pickup-addresses/${id}`)
+      .send({
+        ...point("Labo Paris"),
+        discounts: {
+          b2b: {
+            ...PRO,
+            scope: "all_except",
+            categories: [{ categoryId: "c_pains", eligible: true }],
+          },
+          b2c: null,
+        },
+      })
+      .expect(400);
+
+    const body = response.body as { code?: string; message?: string };
+    expect(body.code).toBe("pickup.discount.category_against_scope");
+    expect(body.message).toMatch(/famille « c_pains ».*réincluez les produits voulus/u);
+    expect((await only()).discounts.b2b).toEqual(PRO);
+  });
+
   /**
    * La reprise sans effacement (V8) : la réduction d'avant est celle des pros
    * seulement si leur case était cochée. Un point d'avant le lot, dont la

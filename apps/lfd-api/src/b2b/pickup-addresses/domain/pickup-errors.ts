@@ -39,6 +39,26 @@ export class PickupDiscountDuplicateRuleError extends DomainError {
 }
 
 /**
+ * Une famille réglée à contre-sens du mode de la remise (**400**) : incluse
+ * en « tous les articles sauf », ou exclue en « seulement ». Seul un produit
+ * peut aller contre sa famille (Q1, Hugo 2026-10-23).
+ */
+export class PickupDiscountCategoryReinclusionError extends DomainError {
+  constructor(
+    readonly audienceLabel: string,
+    readonly scope: "all_except" | "only",
+    readonly categoryId: string,
+  ) {
+    super(
+      "pickup.discount.category_against_scope",
+      scope === "all_except"
+        ? `La remise ${audienceLabel} porte sur tous les articles sauf ceux exclus, et la famille « ${categoryId} » y est incluse : retirez cette règle de famille, ou réincluez les produits voulus un par un.`
+        : `La remise ${audienceLabel} ne porte que sur les articles choisis, et la famille « ${categoryId} » y est exclue : retirez cette règle de famille, ou excluez les produits voulus un par un.`,
+    );
+  }
+}
+
+/**
  * Les refus des **créneaux publics** — plan
  * `documentation/commandes/plan-creneaux-de-retrait.md`, D2 et D7.
  *
