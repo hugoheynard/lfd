@@ -119,8 +119,9 @@ export interface DraftOrderInput {
   /**
    * Le mode de TVA du port, lu au réglage par l'appelant (plan
    * `architecture-tva-des-frais-de-port.md`, V3). L'agrégat le passe au calcul et le
-   * fige : rien ne recalcule une commande passée, la commande garde donc le
-   * mode de sa passation par construction.
+   * fige. Une révision recalcule la TVA mais reprend ce mode-ci, figé à la
+   * passation (`OrderRevising`, plan de modification, M1, 2026-10-23) : la
+   * commande garde le mode de sa passation.
    */
   readonly deliveryVatMode: DeliveryVatMode;
   /**

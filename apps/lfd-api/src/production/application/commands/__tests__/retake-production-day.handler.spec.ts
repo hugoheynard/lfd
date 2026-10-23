@@ -18,6 +18,8 @@ import { RetakeProductionDayHandler } from "../retake-production-day.handler.js"
 import { InMemoryBatches, RecordingDayLock } from "../../__tests__/batch-doubles.js";
 import { RecordingDurable } from "../../__tests__/handoff-doubles.js";
 import { InMemoryWithdrawals } from "../../__tests__/withdrawal-doubles.js";
+import { FreshDayOrders } from "../../services/fresh-day-orders.js";
+import { SteppedRevisionNotices } from "../../__tests__/revision-notice-doubles.js";
 
 /** Deux instants recopiés, jamais comparés à l'horloge — exception étroite du §5. */
 const TIRAGE = new Date("2026-09-13T04:20:00.000Z");
@@ -100,7 +102,7 @@ function subject(
 ): RetakeProductionDayHandler {
   return new RetakeProductionDayHandler(
     days,
-    new Commerce(rows),
+    new FreshDayOrders(new Commerce(rows), new SteppedRevisionNotices()),
     new FixedClock(NOW),
     events,
     new DirectUnitOfWork(),

@@ -217,7 +217,9 @@ model Order {
   // `@lfd/contracts`. Figé comme les prix : le contact d'une adresse, ses heures
   // ou son exigence de signature peuvent changer demain, et un bon déjà imprimé
   // ne doit pas se mettre à dire autre chose que le papier parti en tournée.
-  // Ce qui bouge après la commande passe par un AVENANT.
+  // Ce qui bouge avant l'inscription au fournil passe par une RÉVISION de la
+  // commande (`revision`, historique dans `order_revision` — plan de
+  // modification, M1, 2026-10-23) ; il n'y a pas d'avenant.
   fulfillment Json?
 
   // Argent en centimes (snapshot au moment de la commande). Prix marchandises
@@ -369,6 +371,13 @@ model Order {
   cancelledByUser        User?   @relation("OrderCancelledByUser", fields: [cancelledByUserId], references: [id], onDelete: Restrict)
   cancellationReasonCode String? @map("cancellation_reason_code")
 
+  /// **La révision de la commande** (plan `documentation/commandes/plan-modifier-une-commande.md`,
+  /// M1) : `0` à la passation, `+1` à chaque modification. Toute écriture d'une
+  /// révision est conditionnée sur elle (R7), et la clé d'archive du bon la porte.
+  revision  Int       @default(0)
+  /// L'instant de la dernière révision, `NULL` tant qu'aucune : le bon le date.
+  revisedAt DateTime? @map("revised_at") @db.Timestamptz(6)
+
   createdAt DateTime @default(now()) @map("created_at") // = passée le
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -376,6 +385,7 @@ model Order {
   refunds            OrderRefund[]
   /// L'argent à rendre après une annulation (lot C4) — une demande au plus.
   refundRequest      OrderRefundRequest?
+  revisions          OrderRevisionEntry[]
   /// L'issue de sa facture carte (E5a), s'il y en a une.
   cardInvoiceOutcome CardInvoiceOutcome?
 
@@ -393,6 +403,40 @@ model Order {
   /// clé : la page suivante est une descente d'index, pas un tri de la table.
   @@index([createdAt(sort: Desc), id(sort: Desc)])
   @@map("orders")
+  @@schema("public")
+}
+
+/// **L'historique des révisions d'une commande** (plan
+/// `documentation/commandes/plan-modifier-une-commande.md`, M1, §9) : une
+/// ligne par modification, qui garde EN ENTIER la composition qu'elle a
+/// remplacée — lignes, acheminement, montants —, son auteur, sa date et
+/// l'écart de total. C'est elle seule qui fait foi du passé : les lignes de
+/// `order_lines` sont remplacées en bloc par la révision.
+///
+/// Les deux auteurs sont des identifiants sans clé étrangère, comme
+/// `orders.placed_by_staff_id` : une pièce de l'historique ne doit ni
+/// disparaître ni bloquer le jour où une fiche ou un compte s'en va.
+model OrderRevisionEntry {
+  id      String @id @default(cuid())
+  orderId String @map("order_id")
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  /// La révision REMPLACÉE : `0` pour la composition de la passation.
+  replacedRevision Int @map("replaced_revision")
+  /// La composition remplacée, telle qu'elle était écrite (colonnes de
+  /// `orders` qui changent et lignes complètes).
+  composition      Json
+  /// Ce que la révision a changé (`lines`, `date`, `method`…).
+  changes          String[]
+  totalBeforeCents Int      @map("total_before_cents")
+  totalAfterCents  Int      @map("total_after_cents")
+  /// `customer` ou `staff` — tenu par un CHECK.
+  revisedByKind    String   @map("revised_by_kind")
+  revisedByUserId  String?  @map("revised_by_user_id")
+  revisedByStaffId String?  @map("revised_by_staff_id")
+  revisedAt        DateTime @map("revised_at") @db.Timestamptz(6)
+
+  @@unique([orderId, replacedRevision])
+  @@map("order_revision")
   @@schema("public")
 }
 

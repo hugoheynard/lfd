@@ -32,6 +32,7 @@ import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/dir
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { RecordingDurable } from "./durable-doubles.js";
 import { RecordingRedemption } from "./voucher-doubles.js";
+import { AT_PLACEMENT } from "../../../domain/services/order-sheet.js";
 
 /** Un seul rôle, pour tout demandeur : membre (`orders`) ou étranger (`null`). */
 class OneRoleGuard extends OrderAccessReader {
@@ -144,6 +145,7 @@ function build(scenario: Scenario = {}) {
     loyaltyVoucherId: scenario.voucher ?? null,
     billedCustomer: null,
     buyerPhone: null,
+    revision: AT_PLACEMENT,
   });
   const vouchers = new RecordingRedemption();
   const durable = new RecordingDurable();

@@ -77,7 +77,7 @@ export class OrderPlacedMail {
     const client = this.origins.clientBaseUrl();
     const admin = this.origins.adminBaseUrl();
     const token = exposedHandoverToken(owned.view);
-    const sheet = clientSheetOf(owned.view, owned.billedCustomer, owned.buyerPhone);
+    const sheet = clientSheetOf(owned.view, owned.billedCustomer, owned.buyerPhone, owned.revision);
 
     await this.mailer.send({
       to: recipient.email,

@@ -69,7 +69,7 @@ export class SendPaymentExpiredMail implements DurableSubscriber {
       to: recipient.email,
       template: "customer.payment-expired",
       data: {
-        sheet: clientSheetOf(owned.view, owned.billedCustomer, owned.buyerPhone),
+        sheet: clientSheetOf(owned.view, owned.billedCustomer, owned.buyerPhone, owned.revision),
         locale: DEFAULT_MAIL_LOCALE,
       },
       idempotencyKey: `order.payment-expired:${event.orderId}`,

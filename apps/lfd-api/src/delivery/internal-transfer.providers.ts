@@ -3,6 +3,7 @@ import type { Provider, Type } from "@nestjs/common";
 import { DropTransferAtSiteHandler } from "./application/commands/drop-transfer-at-site.handler.js";
 import { AttachOnOrderPlaced } from "./application/handlers/attach-on-order-placed.handler.js";
 import { DetachOnOrderCancelled } from "./application/handlers/detach-on-order-cancelled.handler.js";
+import { ReconcileOnOrderRevised } from "./application/handlers/reconcile-on-order-revised.handler.js";
 import { TransferMembership } from "./application/transfer-membership.js";
 import { TransferReception } from "./application/transfer-reception.js";
 import { TransferArrivalStatus } from "./application/transfer-arrival-status.js";
@@ -64,6 +65,8 @@ export const INTERNAL_TRANSFER_PROVIDERS: readonly Provider[] = [
   TransferMembership,
   AttachOnOrderPlaced,
   DetachOnOrderCancelled,
+  // Une commande modifiée (plan de modification, M1, 2026-10-23) : la même réconciliation.
+  ReconcileOnOrderRevised,
   DropTransferAtSiteHandler,
   { provide: InternalTransferRepository, useClass: PrismaInternalTransferRepository },
   { provide: InternalTransfersReader, useClass: PrismaInternalTransfersReader },

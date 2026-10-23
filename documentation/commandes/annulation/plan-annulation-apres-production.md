@@ -30,7 +30,7 @@
    code, c'est un réglage.** Un particulier **peut** être livré quand
    `DeliveryAvailability.openToB2c` est vrai (`settings.prisma`,
    `delivery-window.ts:51` `WindowRequester = "individual"`,
-   `order-drafting.service.ts:477`, vérifié le 2026-10-13). C7 le traite donc
+   `order-composition.service.ts:279` — extrait d'`order-drafting.service.ts` le 2026-10-23 —, vérifié le 2026-10-13). C7 le traite donc
    par un refus (§3.1).
 5. Valeur posée au départ : « jusqu'à l'arrêt du plan de production ».
 6. « oui le staff suit » : pour une commande de particulier, le staff a la

@@ -551,3 +551,41 @@ describe('l’annulation par l’équipe (order.cancelled)', () => {
     expect(sentence(guest)).toBe('Un client invité a annulé sa commande ORD-7 — Jean Dupont');
   });
 });
+
+describe('la modification d’une commande (order.revised)', () => {
+  const byStaff = fact({
+    type: 'order.revised',
+    subjectType: 'user',
+    actorName: 'Système',
+    payload: {
+      subjectLabel: 'Jean Dupont',
+      orderId: 'ord_1',
+      orderNumber: 'ORD-7',
+      revision: 1,
+      revisedBy: { id: 'stf_1', name: 'Cécile Martin' },
+      changes: ['lines', 'date'],
+      totalBeforeCents: 2_110,
+      totalAfterCents: 3_165,
+    },
+  });
+
+  it('nomme la fiche qui a modifié, et garde les changements au détail', () => {
+    expect(sentence(byStaff)).toBe('Cécile Martin a modifié la commande ORD-7 — Jean Dupont');
+    expect(row(byStaff, 'Modifications')).toContain('Articles et quantités');
+    expect(row(byStaff, 'Total avant')).toBeDefined();
+    expect(row(byStaff, 'Total après')).toBeDefined();
+  });
+
+  it('dit « sa commande » quand c’est le client qui l’a modifiée', () => {
+    const byCustomer = {
+      ...byStaff,
+      payload: {
+        ...byStaff.payload,
+        revisedBy: null,
+        revisedByCustomer: { id: 'usr_1', name: 'Jean Dupont' },
+      },
+    };
+
+    expect(sentence(byCustomer)).toContain('Jean Dupont a modifié sa commande ORD-7');
+  });
+});

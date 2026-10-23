@@ -1,6 +1,12 @@
 import { Module } from "@nestjs/common";
 
 import { ProductionOrderWithdrawalDesk } from "./application/services/production-order-withdrawal.desk.js";
+import { ProductionOrderRevisionDesk } from "./application/services/production-order-revision.desk.js";
+import { FreshDayOrders } from "./application/services/fresh-day-orders.js";
+import { OrderRevisionNoticeLedger } from "./domain/ports/order-revision-notice.ledger.js";
+import { OrderRevisionNoticesReader } from "./domain/ports/order-revision-notices.reader.js";
+import { PrismaOrderRevisionNoticeLedger } from "./infrastructure/prisma-order-revision-notice.ledger.js";
+import { PrismaOrderRevisionNoticesReader } from "./infrastructure/prisma-order-revision-notices.reader.js";
 import { PlanStopRules } from "./application/services/plan-stop-rules.js";
 import { ProductionPlanAdmissionDesk } from "./application/services/production-plan-admission.desk.js";
 import { ProductionLaunchedResupplies } from "./application/services/production-launched-resupplies.js";
@@ -280,6 +286,13 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     PrismaOrderInscriptionReader,
     { provide: OrderInscriptionReader, useExisting: PrismaOrderInscriptionReader },
     ProductionOrderWithdrawalDesk,
+    // La modification d'une commande (plan `commandes/plan-modifier-une-commande.md`,
+    // §9.1) : les notes de révision, écrites par le guichet sous le verrou de
+    // la journée, relues par la clôture et le retirage (`FreshDayOrders`).
+    { provide: OrderRevisionNoticeLedger, useClass: PrismaOrderRevisionNoticeLedger },
+    { provide: OrderRevisionNoticesReader, useClass: PrismaOrderRevisionNoticesReader },
+    FreshDayOrders,
+    ProductionOrderRevisionDesk,
     // L'arrêt du plan comme limite (lot O3) : relié par `ProductionDeskFeedModule`.
     PrismaClosedPlansReader,
     { provide: ClosedPlansReader, useExisting: PrismaClosedPlansReader },
@@ -296,6 +309,7 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     ChannelQualityHeldOrdersReader,
     DayPlannedDestinationsReader,
     ProductionOrderWithdrawalDesk,
+    ProductionOrderRevisionDesk,
     PrismaOrderInscriptionReader,
     PrismaClosedPlansReader,
     ProductionPlanAdmissionDesk,

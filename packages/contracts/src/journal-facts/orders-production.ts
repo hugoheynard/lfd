@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { weekdaySchema } from "../address.js";
 import { CUSTOMER_CANCELLATION_REASON_CODES } from "../customer-cancellation.values.js";
+import { ORDER_REVISION_CHANGES } from "../order-revision.values.js";
 import { WINDOW_MODES } from "../delivery-availability.values.js";
 import { DELIVERY_BIN_FACTS } from "./delivery-bins.js";
 import { SITE_TABLE_FACTS } from "./site-tables.js";
@@ -400,6 +401,29 @@ export const ORDERS_PRODUCTION_FACTS = {
         })
         .nullable(),
       refund: z.object({ announcedCents: cents() }).nullable().optional(),
+    }),
+  ),
+  /**
+   * La commande a été **modifiée** avant son inscription au fournil (plan
+   * `documentation/commandes/plan-modifier-une-commande.md`, M1, 2026-10-23).
+   * Le sujet est le client ; `revision` la révision devenue courante (`1` à la
+   * première modification) ; `revisedBy` la fiche staff qui a modifié, sous
+   * son nom du moment, ou `null` quand c'est le client — alors cité en
+   * `revisedByCustomer` (ABSENT d'une modification par l'équipe) ; `changes`
+   * ce qui a changé ; les deux totaux TTC, en centimes, disent l'écart. La
+   * composition remplacée, elle, est dans l'historique de la commande.
+   */
+  "order.revised": fact(
+    payload({
+      subjectLabel: customerLabel(),
+      orderId: ref("order"),
+      orderNumber: z.string(),
+      revision: count(),
+      revisedBy: namedOrBare("staff_user").nullable(),
+      revisedByCustomer: namedOrBare("user").optional(),
+      changes: z.array(z.enum(ORDER_REVISION_CHANGES)),
+      totalBeforeCents: cents(),
+      totalAfterCents: cents(),
     }),
   ),
   "order.handed_over": fact(

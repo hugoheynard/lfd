@@ -6,10 +6,6 @@ import { DomainEventPublisher } from "../../../platform/events/domain-event-publ
 import { DurablePublisher } from "../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { StaffAuthorDirectory } from "../../../staff/directory/domain/staff-author-directory.js";
-import {
-  DayOrdersReader,
-  type ProducibleOrder,
-} from "../../channels/commerce/day-orders.reader.js";
 import { DayResuppliesReader } from "../../channels/commerce/day-resupplies.reader.js";
 import { PendingSettlementSweeper } from "../../channels/commerce/pending-settlement.sweeper.js";
 import { ProductionDayClosedEvent } from "../../channels/commerce/production-day-closed.event.js";
@@ -26,6 +22,7 @@ import { ProductionDayRepository } from "../../domain/ports/production-day.repos
 import { refuseCloseBeforeCutoff } from "../../domain/services/early-close.js";
 import { planStopOf } from "../../domain/services/latest-order-cutoff.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import { FreshDayOrders, type DayOrdersSnapshot } from "../services/fresh-day-orders.js";
 import { packingListFactsOf, resupplyListFactsOf } from "../services/packing-list-facts.js";
 import { PlanStopRules } from "../services/plan-stop-rules.js";
 import { CloseProductionDayCommand } from "./close-production-day.command.js";
@@ -126,7 +123,7 @@ export class CloseProductionDayHandler implements ICommandHandler<
 > {
   constructor(
     private readonly days: ProductionDayRepository,
-    private readonly orders: DayOrdersReader,
+    private readonly orders: FreshDayOrders,
     private readonly settlements: PendingSettlementSweeper,
     private readonly events: DomainEventPublisher,
     private readonly clock: Clock,
@@ -158,10 +155,12 @@ export class CloseProductionDayHandler implements ICommandHandler<
       return this.reannounce(day);
     }
     // Les commandes du commerce sont lues AVANT le verrou, comme au retirage :
-    // pas de lecture d'un autre bloc sous un verrou tenu.
-    const producible = await this.orders.producibleFor(day);
+    // pas de lecture d'un autre bloc sous un verrou tenu — sauf si une
+    // révision est passée entre-temps, et alors relues sous lui (§9.1 du plan
+    // de modification, `FreshDayOrders`).
+    const read = await this.orders.read(day);
     const signer = await this.signerOf(command);
-    return this.closeUnderLock(day, producible, signer);
+    return this.closeUnderLock(day, read, signer);
   }
 
   /**
@@ -197,7 +196,7 @@ export class CloseProductionDayHandler implements ICommandHandler<
    */
   private async closeUnderLock(
     day: ServiceDay,
-    producible: readonly ProducibleOrder[],
+    read: DayOrdersSnapshot,
     signer: PlanSigner | null,
   ): Promise<ProductionPlanClosure> {
     const automatic = signer?.kind === "automatic";
@@ -215,6 +214,7 @@ export class CloseProductionDayHandler implements ICommandHandler<
       // d'admission, donc ce qui est lu ici est définitif — rien ne s'y
       // ajoute ni ne s'en retire après l'arrêt.
       const resupplies = await this.resupplies.placedFor(day);
+      const producible = await this.orders.underLock(day, read);
       const now = this.clock.now();
       current.close(producible, withdrawn, now, signer, resupplies);
       await this.days.save(current);

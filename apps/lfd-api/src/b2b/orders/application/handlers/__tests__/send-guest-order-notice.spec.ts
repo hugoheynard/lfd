@@ -16,6 +16,7 @@ import { OneOrderReader, orderView } from "./payment-failure-doubles.js";
 import { OrderPaidFact } from "../../../domain/events/order-paid.fact.js";
 import { SendGuestOrderNoticeOnPaid } from "../send-guest-order-notice-on-paid.handler.js";
 import { SendGuestOrderNotice } from "../send-guest-order-notice.handler.js";
+import { AT_PLACEMENT } from "../../../domain/services/order-sheet.js";
 
 const PROPRIETAIRE: GuestOrderNotice = { email: "camille@exemple.fr", firstName: "Camille" };
 
@@ -35,6 +36,7 @@ const GUEST_ORDER: OwnedOrder = {
   loyaltyVoucherId: null,
   billedCustomer: null,
   buyerPhone: null,
+  revision: AT_PLACEMENT,
 };
 
 /** Ce qu'on prévient : à qui, avec quel gabarit, et quoi. */

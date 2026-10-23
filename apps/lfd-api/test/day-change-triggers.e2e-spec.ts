@@ -13,6 +13,18 @@
  * - **D2** : un déclencheur d'instruction écrit une ligne par journée touchée,
  *   pas une par ligne ;
  * - **le balayage** retire les traces de plus de sept jours, et elles seules.
+ *
+ * ⚠️ **`order_lines` n'a pas de déclencheur, et la raison a changé le
+ * 2026-10-23.** La migration `20260928140000_la_version_par_journee` le
+ * justifiait par « les lignes ne s'écrivent qu'à la création de la commande ».
+ * C'est faux depuis la modification d'une commande (plan
+ * `documentation/commandes/plan-modifier-une-commande.md`, M1) : une révision
+ * REMPLACE les lignes. La table reste hors surveillance parce que toute
+ * révision écrit aussi `orders` (au moins `revision`, dans la même
+ * transaction), dont le déclencheur marque l'ancien et le nouveau jour — ce
+ * qu'éprouve `test/order-revision.e2e-spec.ts` (« retrait → livraison un
+ * autre jour… les deux jours marqués »). Le `migration.sql` n'est pas
+ * réécrit : son empreinte est vérifiée par Prisma.
  */
 import { bootstrapE2e, daysAgo, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
@@ -41,6 +53,8 @@ const UNWATCHED: Readonly<Record<string, string>> = {
     "les pièces d'une remise à la porte (B1, 2026-10-01) : la remise clôt l'arrêt, qui fait déjà bouger la journée de la livraison ; son jour n'existe que dans une table d'un autre bloc (D3), comme `order_handover`",
   "production.order_withdrawal":
     "le retrait d'une commande annulée par l'équipe (plan d'annulation, C3.4, 2026-10-12) : écrit dans la transaction qui passe la commande `cancelled`, dont `orders` fait déjà bouger la journée du commerce ; aucun écran du fournil ne le lit, seuls la clôture et le retirage, sous le verrou",
+  "production.order_revision_notice":
+    "la note d'une modification de commande (plan de modification, §9.1, 2026-10-23) : écrite dans la transaction qui réécrit `orders`, dont le déclencheur fait déjà bouger l'ancien et le nouveau jour du commerce ; aucun écran du fournil ne la lit, seuls la clôture et le retirage, sous le verrou",
   "production.production_container": "un réglage par SKU, sans journée",
   // Les réglages du fournil (plan d'arrêt du plan, A1, 2026-10-06).
   "production.production_settings": "le réglage unique de l'arrêt du plan, sans journée",

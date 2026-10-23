@@ -1,43 +1,22 @@
 import {
   cartAdjustmentCents,
-  type BillingAddressPayload,
-  type CartAdjustment,
-  type CustomerAudience,
-  type FulfillmentMethod,
   type LateFeeAdjustment,
   type OrderLineInput as OrderLineRequest,
-  type PickupAddressView,
-  type PickupSnapshot,
   type SalesTermsDocument,
 } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { CartAdjustments } from "./cart-adjustments.service.js";
 import { CustomerAudiences } from "./customer-audiences.service.js";
-import { type DeliveryContact, type FulfillmentWindow, type WindowMode } from "@lfd/contracts";
-import {
-  type DeliveryDefaults,
-  DeliveryDefaultsReader,
-  NO_DELIVERY_DEFAULTS,
-} from "../../domain/ports/delivery-defaults.reader.js";
-import { windowFitsPickup } from "../../domain/services/agreed-fulfillment.js";
-import { agreeWithWindow, type WindowRequester } from "../../domain/services/delivery-window.js";
+import { DeliveryDefaultsReader } from "../../domain/ports/delivery-defaults.reader.js";
+import type { WindowRequester } from "../../domain/services/delivery-window.js";
 import { Order, type OrderSalesTerms, type OrderVoucher } from "../../domain/entities/order.js";
-import {
-  InvalidOrderFulfillmentError,
-  PickupClosedAtRequestedTimeError,
-} from "../../domain/errors/order-errors.js";
 import { ProductionPlanClosedError } from "../../domain/errors/production-plan-closed.error.js";
 import { OrderCutoffReader } from "../../domain/ports/order-cutoff.reader.js";
 import { OrderCutoffWaiverGate } from "../../domain/ports/order-cutoff-waiver.gate.js";
 import { OrderDeliveryVatReader } from "../../domain/ports/order-delivery-vat.reader.js";
 import { OrderLateFeeReader } from "../../domain/ports/order-late-fee.reader.js";
-import {
-  type OrderLineClassification,
-  OrderLineClassificationReader,
-} from "../../domain/ports/order-line-classification.reader.js";
-import type { PricedLine } from "../../domain/services/pickup-discount-eligibility.js";
-import type { OrderLineInput } from "../../domain/value-objects/order-line.js";
+import { OrderLineClassificationReader } from "../../domain/ports/order-line-classification.reader.js";
 import {
   OrderPayerReader,
   type OrderPayerStanding,
@@ -47,35 +26,17 @@ import { salesTermsOf } from "../../domain/services/sales-terms-of.js";
 import { orderPayerOf } from "../../domain/services/order-payer.js";
 import { orderPrincipalOf } from "../../domain/services/order-principal.js";
 import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
-import { ensureWithinOrderCutoff } from "../../domain/services/order-cutoff-guard.js";
 import { Clock } from "../../../../platform/time/clock.js";
+import { OrderComposition } from "./order-composition.service.js";
+import type { OrderContent } from "./order-content.js";
+import { OrderCutoffGate } from "./order-cutoff-gate.service.js";
 import { OrderOperations } from "./order-operations.service.js";
 import { OrderPlanGate } from "./order-plan-gate.service.js";
 import { OrderLinePricing, type ResolvedOrderLine } from "./order-line-pricing.service.js";
 import type { OrderParties } from "./order-parties.js";
 import type { OrderLocale } from "../../domain/value-objects/order-locale.js";
-import { lineTotalCents } from "@lfd/money";
 
-/** Ce qu'un panier demande, quelle que soit la porte par laquelle il arrive. */
-export interface OrderContent {
-  readonly fulfillmentMethod: FulfillmentMethod;
-  readonly deliveryAddress: BillingAddressPayload | null;
-  /** L'adresse du carnet dont elle vient, ou `null` si dictée à la volée. */
-  readonly deliveryAddressId: string | null;
-  readonly pickupAddressId: string | null;
-  readonly requestedDeliveryDate: string | null;
-  /**
-   * La tranche demandée — engagement, pas préférence. **Obligatoire à la
-   * passation** depuis le 2026-10-14 (`ensureWindowChosen`) : facultative ici
-   * seulement parce que le devis partage cette forme et n'a pas de tranche.
-   */
-  readonly requestedWindow?: FulfillmentWindow | null | undefined;
-  /** Qui reçoit, tel que l'écran l'affiche. `undefined` = prendre le réglage. */
-  readonly deliveryContact?: DeliveryContact | null | undefined;
-  readonly signatureRequired?: boolean | undefined;
-  readonly note: string;
-  readonly lines: readonly OrderLineRequest[];
-}
+export type { OrderContent } from "./order-content.js";
 
 /**
  * Une commande composée, et ce qu'il a fallu pour qu'elle passe.
@@ -86,32 +47,6 @@ export interface OrderContent {
 export interface DraftedOrder {
   readonly order: Order;
   readonly waiverUsed: string | null;
-}
-
-/** Acheminement résolu : les snapshots à figer et les deux ajustements de prix. */
-interface ResolvedFulfillment {
-  /**
-   * Le point de retrait **effectivement** retenu, ou `null` en coursier.
-   *
-   * Distinct de `content.pickupAddressId`, qui peut être nul en retrait quand le
-   * client n'a rien choisi : c'est alors le point par défaut qui sert, et c'est
-   * SA règle d'heure limite qui s'applique. Opposer celle du défaut plateforme
-   * refuserait — ou laisserait passer — au nom d'un point qui ne remet rien.
-   */
-  readonly pickupAddressId: string | null;
-  readonly deliveryZoneId: string | null;
-  readonly deliveryAddress: BillingAddressPayload | null;
-  readonly pickupAddress: PickupSnapshot | null;
-  readonly discountCents: number;
-  /** L'ajustement figé qui l'a produite (taux/montant du point), ou `null`. */
-  readonly discountAdjustment: CartAdjustment | null;
-  /** Les SKU que la remise de retrait ne couvre pas — vide en coursier. */
-  readonly ineligibleSkus: ReadonlySet<string>;
-  /** Le barème de zone qui a produit les frais, ou `null` en retrait. */
-  readonly deliveryFeeAdjustment: CartAdjustment | null;
-  readonly deliveryFeeCents: number;
-  /** Le mode créneau / échéance global, ou `null` en retrait (CA-D2). */
-  readonly globalWindowMode: WindowMode | null;
 }
 
 /**
@@ -125,29 +60,51 @@ interface ResolvedFulfillment {
  * de retrait, ou par oublier de déduire la zone du code postal — sur le chemin
  * qu'on teste le moins.
  *
+ * Le calcul lui-même (prix, remise, frais, éligibilité, acheminement convenu)
+ * vit depuis le 2026-10-23 dans {@link OrderComposition}, que la révision
+ * d'une commande partage (plan `plan-modifier-une-commande.md`, M1). Ce
+ * service garde ce qui n'appartient qu'à la PASSATION : le payeur, la journée
+ * ouverte, l'heure limite et sa dérogation, la surtaxe, les CGV, la langue.
+ * Il assemble ses deux collaborateurs à partir des mêmes ports qu'avant,
+ * pour que son contrat d'injection ne change pas.
+ *
  * Ce service ne décide **rien** : ni qui a le droit, ni comment on encaisse. Il
  * rend une commande dont le règlement n'est pas encore tranché, et `toPersistence`
  * refusera de la sérialiser tant qu'il ne l'est pas.
  */
 @Injectable()
 export class OrderDrafting {
+  private readonly composition: OrderComposition;
+  private readonly cutoffGate: OrderCutoffGate;
+
   constructor(
     private readonly linePricing: OrderLinePricing,
-    private readonly adjustments: CartAdjustments,
-    private readonly deliveryDefaults: DeliveryDefaultsReader,
-    private readonly cutoffs: OrderCutoffReader,
+    adjustments: CartAdjustments,
+    deliveryDefaults: DeliveryDefaultsReader,
+    cutoffs: OrderCutoffReader,
     private readonly clock: Clock,
-    private readonly catalog: ProductCatalogReader,
-    private readonly waivers: OrderCutoffWaiverGate,
+    catalog: ProductCatalogReader,
+    waivers: OrderCutoffWaiverGate,
     private readonly lateFees: OrderLateFeeReader,
-    private readonly audiences: CustomerAudiences,
+    audiences: CustomerAudiences,
     private readonly operations: OrderOperations,
     private readonly payers: OrderPayerReader,
-    private readonly deliveryVat: OrderDeliveryVatReader,
+    deliveryVat: OrderDeliveryVatReader,
     private readonly plans: OrderPlanGate,
     private readonly salesTerms: OrderSalesTermsReader,
-    private readonly classifications: OrderLineClassificationReader,
-  ) {}
+    classifications: OrderLineClassificationReader,
+  ) {
+    this.composition = new OrderComposition(
+      linePricing,
+      adjustments,
+      deliveryDefaults,
+      operations,
+      deliveryVat,
+      classifications,
+      audiences,
+    );
+    this.cutoffGate = new OrderCutoffGate(cutoffs, catalog, waivers, clock);
+  }
 
   /**
    * Compose la commande. Le règlement reste à décider par l'appelant.
@@ -185,98 +142,42 @@ export class OrderDrafting {
     // refusé ici, tôt et sans verrou ; `holdPlan` le reprend sous verrou. La
     // saisie de l'équipe passe, et sera reçue « hors plan » (§8.3).
     await this.ensureDayOpen(content.requestedDeliveryDate, parties);
-    const resolved = await this.linePricing.resolve(content.lines, parties, "checkout");
-    const lines = resolved.map((entry) => entry.line);
-    // Le sous-total est un MONTANT : arrondi au centime, une fois par ligne,
-    // par la même fonction que la ligne persistée. Deux arithmétiques ici
-    // feraient diverger le seuil de franco du total facturé — sur un centime,
-    // et seulement pour certains paniers.
-    const priced: readonly PricedLine[] = lines.map((line) => ({
-      sku: line.sku,
-      htCents: lineTotalCents(line.unitPriceMillicents, line.quantity),
-    }));
-    const subtotalCents = priced.reduce((sum, line) => sum + line.htCents, 0);
-    // Produit et famille, lus UNE fois et figés sur chaque ligne : ce qui dira
-    // demain pourquoi une ligne était exclue de la remise (plan des exclusions).
-    const known = await this.classifications.classify(priced.map((line) => line.sku));
-    // La clientèle, lue UNE fois : elle tarife l'acheminement et désigne les
-    // CGV que la commande porte (plan des CGV, C2″, C4′) — deux lectures
-    // pourraient diverger d'une validation de société entre les deux.
-    const audience = await this.audiences.of(parties.companyId);
-    const acheminement = await this.resolveFulfillment(content, priced, audience, {
-      companyId: parties.companyId,
-      known,
-    });
+    const resolved = await this.composition.resolve(content, parties, null);
     // APRÈS la résolution, et l'ordre est un choix : la règle qui s'applique est
     // celle du point EFFECTIVEMENT retenu, qu'on ne connaît qu'ici. Le coût est
     // de tarifer un panier qu'on refusera ensuite ; le prix de l'inverse serait
     // d'opposer la mauvaise règle, ce qui est un refus faux.
     const waiverUsed = await this.ensureNotTooLate(content, parties);
-    // APRÈS le délai de fabrication, et sans la dérogation : les deux gardes
-    // s'appliquent, c'est le plus tôt qui ferme, et l'équipe ne rouvre pas une
-    // opération close (D6 du plan des opérations datées).
-    await this.operations.ensure(content.lines, parties.companyId, content.requestedDeliveryDate);
+    // APRÈS le délai de fabrication, et sans la dérogation (D6 du plan des
+    // opérations datées) : c'est le premier geste d'`arrange`.
+    const arranged = await this.composition.arrange(
+      content,
+      parties,
+      resolved,
+      windowRequesterOf(parties),
+    );
     // La surtaxe ne se lit QUE si une dérogation a servi : une requête de plus
     // sur chaque commande, pour un réglage que la plupart des maisons n'ont pas,
     // se paierait sur toutes les commandes à l'heure.
-    const late = await this.lateFeeFor(waiverUsed, subtotalCents);
-    const defaults = await this.defaultsFor(content, parties);
-    // Lu sur TOUTE passation, retrait compris : le mode se fige sur la commande
-    // (V3), et `null` y est réservé aux commandes d'avant le réglage.
-    const deliveryVatMode = await this.deliveryVat.current();
-    const agreed = agreeWithWindow(
-      {
-        method: content.fulfillmentMethod,
-        window: content.requestedWindow,
-        contact: content.deliveryContact,
-        signatureRequired: content.signatureRequired,
-      },
-      defaults,
-      acheminement.globalWindowMode,
-      windowRequesterOf(parties),
-    );
+    const late = await this.lateFeeFor(waiverUsed, resolved.subtotalCents);
     const order = Order.draft({
-      agreed,
+      ...OrderComposition.draftOf(content, resolved, arranged),
       companyId: parties.companyId,
       billedCompanyId,
       principal,
       placedByUserId: parties.placedByUserId,
       placedByStaffId: parties.placedByStaffId,
-      fulfillment: {
-        method: content.fulfillmentMethod,
-        deliveryZoneId: acheminement.deliveryZoneId,
-        deliveryAddress: acheminement.deliveryAddress,
-        // 🔴 Jamais `content.deliveryAddressId` : celui-là vient du corps de la
-        // requête. Seul l'identifiant relu sous le mur de la société est lié —
-        // une adresse d'une autre maison retombe sur `null`, sans refus.
-        deliveryAddressId: defaults.bookAddressId,
-        pickupAddress: acheminement.pickupAddress,
-      },
-      requestedDeliveryDate: content.requestedDeliveryDate
-        ? new Date(content.requestedDeliveryDate)
-        : null,
-      note: content.note,
       // 🔴 Plus d'estampille de version (Q2, Hugo, 2026-10-17 — plan
-      // documentation/catalogue/catalogue-synchronise.md §6, X0). Faits du
-      // catalogue ouverts, plus aucune version ne se crée : lire la dernière
-      // posée aurait cité une livraison que les lignes n'ont pas vue. Les lignes
+      // documentation/catalogue/catalogue-synchronise.md §6, X0). Les lignes
       // portent leur snapshot (prix, nom, TVA) ; la colonne reste en base et
       // les commandes passées gardent la leur.
       catalogVersionId: null,
-      lines: lines.map((line) => classified(line, known, acheminement.ineligibleSkus)),
-      discountCents: acheminement.discountCents,
-      discountAdjustment: acheminement.discountAdjustment,
-      deliveryFeeAdjustment: acheminement.deliveryFeeAdjustment,
-      deliveryFeeCents: acheminement.deliveryFeeCents,
       // La surtaxe ne s'applique QUE si une dérogation a laissé passer : c'est
-      // elle qui atteste le retard, et une commande à l'heure n'a rien à
-      // rattraper. Sans réglage, elle vaut zéro — rattraper sans facturer est un
-      // choix valable.
+      // elle qui atteste le retard. Sans réglage, elle vaut zéro.
       lateFeeCents: late.cents,
       lateFeeAdjustment: late.frozen,
-      deliveryVatMode,
       voucher,
-      salesTerms: await this.salesTermsIn(salesTermsOf(audience)),
+      salesTerms: await this.salesTermsIn(salesTermsOf(resolved.audience)),
       locale,
     });
     return { order, waiverUsed };
@@ -322,12 +223,10 @@ export class OrderDrafting {
    * méthode-ci facturait le prix RÉSOLU : un commercial annonçait au téléphone
    * un prix que la commande contredisait ensuite.
    *
-   * Elle réutilise `resolveLines`, **la résolution qui facture**, et n'ajoute
-   * rien : une seconde arithmétique d'estimation aurait fini par diverger de la
-   * première, et l'écart se serait découvert devant le client. Elle s'arrête au
-   * sous-total HT, parce que remise de retrait, frais de zone et TVA dépendent
-   * d'un acheminement qu'une estimation ne connaît pas — les inventer donnerait
-   * un total que la validation contredirait.
+   * Elle réutilise la résolution qui facture, et n'ajoute rien : une seconde
+   * arithmétique d'estimation aurait fini par diverger de la première. Elle
+   * s'arrête au sous-total HT, parce que remise de retrait, frais de zone et
+   * TVA dépendent d'un acheminement qu'une estimation ne connaît pas.
    */
   async quote(
     parties: OrderParties,
@@ -346,10 +245,8 @@ export class OrderDrafting {
    *
    * `null` de dérogation ⇒ rien à facturer. Réglage absent ⇒ rien non plus :
    * rattraper sans facturer est un choix valable, et inventer un montant
-   * facturerait une décision que personne n'a prise.
-   *
-   * Le taux voyage avec le montant. Un montant sans son taux ne se justifie pas
-   * devant un comptable, et il ne se recalcule pas — le réglage aura changé.
+   * facturerait une décision que personne n'a prise. Le taux voyage avec le
+   * montant : un montant sans son taux ne se justifie pas devant un comptable.
    */
   private async lateFeeFor(
     waiverUsed: string | null,
@@ -369,18 +266,8 @@ export class OrderDrafting {
   }
 
   /**
-   * Oppose l'heure limite de commande, s'il y en a une à opposer.
-   *
-   * **Deux sources.** Chaque article peut porter la sienne, résolue par le
-   * référentiel sur son échelle ; celui qui n'en a pas retombe sur la règle du
-   * commerce. La garde arbitre : elle prend la décision la plus fermée parmi les
-   * lignes, parce qu'un panier ne se découpe pas.
-   *
-   * Les deux lectures ne se font que lorsqu'il y a une date à juger. Le
-   * catalogue est relu ici plutôt que repris de la résolution de prix : celle-ci
-   * rend des lignes tarifées, pas les articles, et lui faire porter la limite
-   * mêlerait deux sujets sur le chemin qui facture. Une lecture par clé primaire
-   * sur les SKU du panier est le bon prix pour cette séparation.
+   * Oppose l'heure limite de commande, s'il y en a une à opposer — avec la
+   * dérogation du client (cf. {@link OrderCutoffGate}).
    *
    * `requestedDeliveryDate` est obligatoire au contrat (`orderPayloadSchema`) ;
    * la garde typée couvre les appelants internes, pas une entrée HTTP.
@@ -392,73 +279,14 @@ export class OrderDrafting {
     if (content.requestedDeliveryDate === null) {
       return null;
     }
-    const skus = content.lines.map((line) => line.sku);
-    const [fallback, items, waiver] = await Promise.all([
-      this.cutoffs.list(),
-      // `pro` : la saisie par le staff exige une société (cf. `place-order-for-customer`).
-      this.catalog.resolveMany(skus, "pro"),
-      // Une commande sans entreprise n'a pas de dérogation possible : elle
-      // n'appartient à personne à qui on aurait pu en accorder une.
-      parties.companyId === null
-        ? Promise.resolve(null)
-        : this.waivers.openFor(parties.companyId, content.requestedDeliveryDate),
-    ]);
-    return ensureWithinOrderCutoff({
-      // Un SKU absent du catalogue n'a pas de limite propre : il retombe sur la
-      // règle du commerce. Il sera refusé plus loin pour ce qu'il est — inconnu
-      // —, et pas ici pour une heure.
-      lines: skus.map((sku) => ({ sku, limit: items.get(sku)?.orderTimeLimit ?? null })),
-      fallback,
-      fulfillmentDate: content.requestedDeliveryDate,
-      waiver,
-      now: this.clock.now(),
-    });
-  }
-
-  /**
-   * Les réglages qui **préremplissent** cette commande.
-   *
-   * En coursier ils viennent de l'adresse du carnet — et seulement si elle en
-   * vient : une adresse dictée à la volée n'a aucun réglage, donc tout ce que le
-   * client y met est un choix, pas une reprise.
-   *
-   * En retrait il n'y a **aucun défaut** : le point est partagé entre tous les
-   * clients, ses heures sont une contrainte d'ouverture et non une préférence de
-   * ce client-là. Ce que le client demande y est donc toujours un choix.
-   *
-   * **Sans société, aucun défaut non plus** : une adresse du carnet appartient
-   * toujours à une société, et une commande perso n'en a aucune à reprendre.
-   */
-  private async defaultsFor(
-    content: OrderContent,
-    parties: OrderParties,
-  ): Promise<DeliveryDefaults> {
-    if (
-      content.fulfillmentMethod === "pickup" ||
-      content.deliveryAddressId === null ||
-      parties.companyId === null
-    ) {
-      return NO_DELIVERY_DEFAULTS;
-    }
-    return this.deliveryDefaults.of(
-      content.deliveryAddressId,
-      parties.companyId,
+    return this.cutoffGate.ensure(
+      content.lines.map((line) => line.sku),
       content.requestedDeliveryDate,
+      parties.companyId,
+      { withWaiver: true },
     );
   }
 
-  /**
-   * Résout l'acheminement et ses deux ajustements (autoritaires, jamais envoyés
-   * par le client). **Retrait** : snapshot du point (choisi ou défaut) + sa remise.
-   * **Coursier** : adresse livrée figée + zone **déduite de son code postal**,
-   * dont on tire le frais.
-   *
-   * Les deux pour la **clientèle** de la société portée — le client pour
-   * lui-même comme l'équipe à sa place : B2B si elle est active, B2C sinon
-   * (plan `remise-et-livraison-par-clientele`, D1 et Q1).
-   *
-   * @throws {DeliveryClosedForAudienceError} la livraison est fermée à la clientèle.
-   */
   /** La société qui commande, lue à l'instant de la passation — `null` sans société. */
   private async standingOf(companyId: string | null): Promise<OrderPayerStanding | null> {
     if (companyId === null) {
@@ -471,133 +299,13 @@ export class OrderDrafting {
   private async salesTermsIn(document: SalesTermsDocument): Promise<OrderSalesTerms> {
     return { document, ...(await this.salesTerms.inForce(document)) };
   }
-
-  /**
-   * @throws {PickupClosedForAudienceError} retrait sur un site fermé à la
-   *   clientèle (`CartAdjustments.forPickup`) — avant toute règle d'heure.
-   * @throws {PickupChoiceRequiredError} aucun point choisi, et aucun ne s'impose
-   *   (`companyId` : la société dont on lit le point préféré).
-   */
-  private async resolveFulfillment(
-    content: OrderContent,
-    priced: readonly PricedLine[],
-    audience: CustomerAudience,
-    {
-      companyId,
-      known,
-    }: {
-      readonly companyId: string | null;
-      readonly known: ReadonlyMap<string, OrderLineClassification>;
-    },
-  ): Promise<ResolvedFulfillment> {
-    const subtotalCents = priced.reduce((sum, line) => sum + line.htCents, 0);
-    if (content.fulfillmentMethod === "pickup") {
-      // La remise vient du service PARTAGÉ avec le devis de la boutique : deux
-      // implémentations de « quelle remise s'applique » finiraient par annoncer
-      // un montant que la caisse contredit.
-      const retrait = await this.adjustments.forPickup(
-        content.pickupAddressId,
-        priced,
-        audience,
-        companyId,
-        known,
-      );
-      // La tranche demandée doit tenir dans l'une des fenêtres du point — jamais
-      // dans leur union : entre le créneau pro et l'ouverture publique il peut y
-      // avoir porte close, et l'accepter serait promettre une remise impossible.
-      //
-      // Ce contrôle-ci reste à la CAISSE : un devis n'a pas de tranche demandée,
-      // et le lui imposer refuserait un panier qu'on veut seulement chiffrer.
-      if (!windowFitsPickup(content.requestedWindow ?? null, retrait.point.opening)) {
-        throw new PickupClosedAtRequestedTimeError();
-      }
-      return {
-        pickupAddressId: retrait.point.id,
-        deliveryZoneId: null,
-        deliveryAddress: null,
-        pickupAddress: toSnapshot(retrait.point),
-        discountCents: retrait.discountCents,
-        discountAdjustment: retrait.discountAdjustment,
-        ineligibleSkus: retrait.ineligibleSkus,
-        // Un retrait n'a pas de frais de zone : pas de barème à figer.
-        deliveryFeeAdjustment: null,
-        deliveryFeeCents: 0,
-        globalWindowMode: null,
-      };
-    }
-
-    // Coursier — le schéma garantit l'adresse ; on garde une défense typée.
-    const address = content.deliveryAddress;
-    if (address === null) {
-      throw new InvalidOrderFulfillmentError("Adresse de livraison requise en coursier.");
-    }
-    // La zone se DÉDUIT du code postal livré : c'est une propriété de l'adresse,
-    // pas un choix. Personne ne peut donc annoncer un secteur moins cher que le
-    // sien — et le devis de la boutique le déduit par la même fonction.
-    const coursier = await this.adjustments.forDelivery(
-      address.codePostal,
-      subtotalCents,
-      audience,
-    );
-    return {
-      pickupAddressId: null,
-      deliveryZoneId: coursier.zone.id,
-      deliveryAddress: address,
-      pickupAddress: null,
-      discountCents: 0,
-      // Le coursier n'ouvre droit à aucune remise : c'est le retrait qui en porte une.
-      discountAdjustment: null,
-      ineligibleSkus: new Set(),
-      deliveryFeeCents: coursier.feeCents,
-      // Le barème de la zone, figé avec son montant : `zone.fee` est mutable, et
-      // une facture doit pouvoir dire « Val d'Isère, 20 € forfaitaires » plutôt
-      // que le seul chiffre.
-      deliveryFeeAdjustment: coursier.feeAdjustment,
-      globalWindowMode: coursier.globalWindowMode,
-    };
-  }
-}
-
-/**
- * Le point de retrait résolu, réduit à ses champs postaux — et à l'id du site
- * qui remet (lot S2). L'id est celui du point RÉSOLU : un client qui n'a rien
- * choisi est servi par le défaut, et c'est l'id du défaut qui est figé.
- */
-function toSnapshot(point: PickupAddressView): PickupSnapshot {
-  return {
-    siteId: point.id,
-    label: point.label,
-    ligne1: point.ligne1,
-    ligne2: point.ligne2,
-    codePostal: point.codePostal,
-    ville: point.ville,
-    pays: point.pays,
-  };
-}
-
-/**
- * La ligne, avec ce qui se fige d'elle pour la remise de retrait : son
- * rangement au catalogue et son éligibilité (R2 du plan des exclusions).
- */
-function classified(
-  line: OrderLineInput,
-  known: ReadonlyMap<string, OrderLineClassification>,
-  ineligible: ReadonlySet<string>,
-): OrderLineInput {
-  const where = known.get(line.sku);
-  return {
-    ...line,
-    pickupDiscountEligible: !ineligible.has(line.sku),
-    productId: where?.productId ?? null,
-    categoryId: where?.categoryId ?? null,
-  };
 }
 
 /**
  * Le pro ne demande qu'une fenêtre inscrite ; la saisie staff et le
  * particulier restent libres de l'heure (2026-10-12, à trancher par Hugo).
  */
-function windowRequesterOf(parties: OrderParties): WindowRequester {
+export function windowRequesterOf(parties: OrderParties): WindowRequester {
   if (parties.placedByStaffId !== null) {
     return "staff";
   }

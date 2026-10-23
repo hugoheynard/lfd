@@ -12,6 +12,7 @@ import {
 import { OrderReader, type OwnedOrder } from "../../../domain/ports/order.reader.js";
 import { OrderReadyMail } from "../../services/order-ready-mail.service.js";
 import { SendOrderReadyMail } from "../send-order-ready-mail.handler.js";
+import { AT_PLACEMENT } from "../../../domain/services/order-sheet.js";
 
 /**
  * Le courriel de mise à disposition. Ce qu'on éprouve ici est ce que l'abonné ne
@@ -180,6 +181,7 @@ function readerOf(order: OrderView | null): OrderReader {
           loyaltyVoucherId: null,
           billedCustomer: null,
           buyerPhone: null,
+          revision: AT_PLACEMENT,
         },
   );
 }

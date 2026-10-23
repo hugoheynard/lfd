@@ -167,6 +167,7 @@ import { PrismaLegalEntityLogoReader } from "./infrastructure/prisma-legal-entit
 import { PrismaLegalEntityReader } from "./infrastructure/prisma-legal-entity.reader.js";
 import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entity.repository.js";
 import { AccountOrderEngaging } from "./application/services/account-order-engaging.js";
+import { AccountOrderRevaluing } from "./application/services/account-order-revaluing.js";
 import { OrderEngagementReader } from "./domain/ports/order-engagement.reader.js";
 import { OrderRowsLock } from "./domain/ports/order-rows-lock.js";
 import { PrismaOrderEngagementReader } from "./infrastructure/prisma-order-engagement.reader.js";
@@ -254,6 +255,7 @@ import { PrismaOrderRowsLock } from "./infrastructure/prisma-order-rows-lock.js"
     { provide: OrderRowsLock, useClass: PrismaOrderRowsLock },
     { provide: OrderEngagementReader, useClass: PrismaOrderEngagementReader },
     AccountOrderEngaging,
+    AccountOrderRevaluing,
     { provide: OrderNumbersReader, useClass: PrismaOrderNumbersReader },
     // La facture émise (plan `facture-emise.md`).
     { provide: InvoiceNumbering, useClass: PrismaInvoiceNumbering },
@@ -343,6 +345,12 @@ import { PrismaOrderRowsLock } from "./infrastructure/prisma-order-rows-lock.js"
   // `FirstMandateLedger` sort pour la frappe, seule à savoir qu'un mandat naît.
   // `AccountOrderEngaging` sort pour la commande, qui le reçoit sous SES
   // tokens (`appBootstrap/account-order-engagement.module.ts`).
-  exports: [CreditorReader, LegalEntityLogoReader, FirstMandateLedger, AccountOrderEngaging],
+  exports: [
+    CreditorReader,
+    LegalEntityLogoReader,
+    FirstMandateLedger,
+    AccountOrderEngaging,
+    AccountOrderRevaluing,
+  ],
 })
 export class AccountingModule {}

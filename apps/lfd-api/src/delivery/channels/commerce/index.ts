@@ -59,6 +59,14 @@ export {
   CommerceOrderCancelledFact,
   CommerceOrderCancelledPayloadError,
 } from "./commerce-order-cancelled.fact.js";
+// « Commande modifiée », fait durable (plan de modification, M1, 2026-10-23) :
+// déclaré ici, écrit par le commerce à chaque révision — la commande qui
+// change d'acheminement est reprise comme à la passation.
+export {
+  COMMERCE_ORDER_REVISED,
+  CommerceOrderRevisedFact,
+  CommerceOrderRevisedPayloadError,
+} from "./commerce-order-revised.fact.js";
 export {
   DeliveryAddressPointsReader,
   type DeliveryOrderAddress,

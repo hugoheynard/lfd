@@ -35,6 +35,6 @@ export class GetOrderSheetHandler implements IQueryHandler<GetOrderSheetQuery, C
       owned.companyId === null ? null : await this.access.accessToOrder(query.actorUserId, owned);
 
     ensureOrderVisible(owned, query.actorUserId, role, query.orderId);
-    return clientSheetOf(owned.view, owned.billedCustomer, owned.buyerPhone);
+    return clientSheetOf(owned.view, owned.billedCustomer, owned.buyerPhone, owned.revision);
   }
 }

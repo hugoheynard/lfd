@@ -1,6 +1,4 @@
 import {
-  orderLineAllergensSchema,
-  type OrderLineAllergens,
   type BillingAddressPayload,
   billingAddressPayloadSchema,
   type CartAdjustment,
@@ -11,11 +9,6 @@ import {
   type LateFeeAdjustment,
   lateFeeAdjustmentSchema,
   type OrderLineView,
-  type OrderLinePricingTrace,
-  priceStepsSchema,
-  commitmentDecisionSchema,
-  rejectedRulesSchema,
-  floorDecisionSchema,
   type OrderStatus,
   type OrderView,
   type OrderRefundStatus,
@@ -35,6 +28,7 @@ import {
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { contactOf, pickupLabelOf, type HolderSide } from "./atelier-sheet-parts.js";
 import { fulfillmentOf } from "./order-fulfillment.parse.js";
+import { parseAllergens, parseTrace, type OrderLineRow } from "./order-line-row.js";
 import { settlementWhere } from "./plan-filter.js";
 import {
   OrderReader,
@@ -47,27 +41,6 @@ import { companyDisplayName, vatSharesSchema, type VatShareView } from "@lfd/con
 import { orderOriginOf } from "../domain/services/order-origin.js";
 import { pickupDiscountBaseOf } from "../domain/services/pickup-discount-base.js";
 import { settlementRegimeOf } from "../domain/services/settlement-regime.js";
-
-/** Une ligne de commande telle que Prisma la sélectionne. */
-interface OrderLineRow {
-  readonly sku: string;
-  readonly productNameSnapshot: string;
-  readonly unitPriceMillicents: number;
-  readonly vatRate: { toNumber(): number };
-  readonly quantity: number;
-  readonly lineTotalCents: number;
-  readonly unitPriceTtcCents: number | null;
-  readonly lineTotalTtcCents: number | null;
-  readonly basePriceMillicents: number | null;
-  readonly pricingSteps: Prisma.JsonValue | null;
-  readonly pricingFloored: boolean | null;
-  readonly pricingClampedToZero: boolean | null;
-  readonly pricingFloor: Prisma.JsonValue | null;
-  readonly allergens: Prisma.JsonValue | null;
-  readonly pricingCommitment: Prisma.JsonValue | null;
-  readonly pricingRejected: Prisma.JsonValue | null;
-  readonly pickupDiscountEligible: boolean;
-}
 
 /** Une commande telle que Prisma la sélectionne. */
 export interface OrderRow {
@@ -229,6 +202,8 @@ export class PrismaOrderReader extends OrderReader {
         stripePaymentIntentId: true,
         clientele: true,
         loyaltyVoucherId: true,
+        revision: true,
+        revisedAt: true,
         billedCompanyId: true,
         billedCompany: { select: { raisonSociale: true } },
         // Élargit la sélection commune : le bon nomme le site par son enseigne.
@@ -249,6 +224,7 @@ export class PrismaOrderReader extends OrderReader {
       loyaltyVoucherId: row.loyaltyVoucherId,
       billedCustomer: billedCustomerOf(row),
       buyerPhone: row.placedBy.phone.trim() === "" ? null : row.placedBy.phone,
+      revision: { revision: row.revision, revisedAt: row.revisedAt?.toISOString() ?? null },
     };
   }
 
@@ -328,6 +304,9 @@ export class PrismaOrderReader extends OrderReader {
         // `created_at` EST la date de passation — le schéma le dit en commentaire
         // sur la colonne. Il n'existe pas de `placed_at`.
         createdAt: true,
+        // La révision du bon (plan de modification, M1) : son numéro et son instant.
+        revision: true,
+        revisedAt: true,
         fulfillmentMethod: true,
         pickupAddress: true,
         deliveryAddressSnapshot: true,
@@ -396,8 +375,8 @@ export class PrismaOrderReader extends OrderReader {
       // L'instant de la RÉVISION, pas du tirage : deux impressions de la même
       // journée doivent porter la même date, sinon deux piles du même jour
       // paraissent dire deux choses.
-      issuedAt: row.createdAt.toISOString(),
-      revision: 0,
+      issuedAt: (row.revisedAt ?? row.createdAt).toISOString(),
+      revision: row.revision,
       lines: row.lines.map((line) => ({
         sku: line.sku,
         productName: line.productNameSnapshot,
@@ -418,6 +397,8 @@ interface ProductionRow {
   readonly note: string;
   readonly fromSubscriptionId: string | null;
   readonly placedByStaffId: string | null;
+  readonly revision: number;
+  readonly revisedAt: Date | null;
   readonly fulfillment: Prisma.JsonValue | null;
   readonly company:
     (HolderSide & { readonly raisonSociale: string; readonly enseigne: string }) | null;
@@ -625,66 +606,4 @@ function pickupDiscountBaseFieldOf(row: OrderRow): Pick<OrderView, "pickupDiscou
     })),
   );
   return base === null ? {} : { pickupDiscountBase: base };
-}
-
-/**
- * Les allergènes figés, **validés** plutôt que castés — et une forme illisible
- * rend `null`, jamais `[]`.
- *
- * C'est le même arbitrage que la trace de prix, avec un enjeu qui n'est pas le
- * même : une facture doit rester consultable même si l'explication de son prix
- * ne l'est plus. Ici, retomber sur une liste vide ferait AFFIRMER « aucun
- * allergène » sur une commande dont on ne sait plus rien — la seule affirmation
- * que ce dépôt ne doit jamais fabriquer.
- */
-function parseAllergens(value: Prisma.JsonValue | null): OrderLineAllergens | null {
-  if (value === null) {
-    return null;
-  }
-  const parsed = orderLineAllergensSchema.safeParse(value);
-  return parsed.success ? parsed.data : null;
-}
-
-/**
- * La trace, **validée** plutôt que castée.
- *
- * Elle a été écrite en JSON par une version du code ; elle est relue par une
- * autre, des mois plus tard. Zod est la seule barrière entre les deux — et une
- * trace illisible rend `null` (« on ne sait pas ») au lieu de lever : une
- * facture doit rester consultable même si l'explication de son prix ne l'est
- * plus. C'est l'inverse de l'arbitrage fait sur les RÈGLES, et pour une raison
- * nette : là-bas une donnée illisible ferait FACTURER un prix que personne n'a
- * décidé ; ici elle empêche seulement de commenter un prix déjà facturé.
- */
-function parseTrace(line: OrderLineRow): OrderLinePricingTrace | null {
-  if (line.basePriceMillicents === null || line.pricingFloored === null) {
-    return null;
-  }
-  const steps = priceStepsSchema.safeParse(line.pricingSteps);
-  if (!steps.success) {
-    return null;
-  }
-  return {
-    basePriceMillicents: line.basePriceMillicents,
-    steps: steps.data,
-    floored: line.pricingFloored,
-    // `null` traverse tel quel : « on ne sait pas » n'est pas « ça n'est pas
-    // arrivé », et le réduire à `false` affirmerait quelque chose sur les
-    // seules commandes qu'on ne peut plus vérifier.
-    clampedToZero: line.pricingClampedToZero,
-    // Une décision illisible rend `null` sans emporter le reste de la trace : le
-    // détail des étages reste consultable, on perd seulement le commentaire du
-    // plancher.
-    floorDecision: floorDecisionSchema.safeParse(line.pricingFloor).data ?? null,
-    // Même indulgence, même raison : l'engagement explique un palier, il ne le
-    // refait pas. Illisible, on perd l'explication, pas la commande.
-    commitment: commitmentDecisionSchema.safeParse(line.pricingCommitment).data ?? null,
-    // **Même indulgence, et il faut la dire** : une entrée illisible ne fait
-    // perdre que le commentaire, jamais la commande. `null` couvre donc deux
-    // cas — la ligne d'avant la colonne, et la valeur qu'on ne sait plus lire —
-    // et les deux se traitent pareil à l'écran : on se tait. Un `[]` de repli
-    // affirmerait « le moteur n'a écarté personne », ce qui est exactement la
-    // phrase qu'on ne doit pas fabriquer (R25).
-    rejected: rejectedRulesSchema.safeParse(line.pricingRejected).data ?? null,
-  };
 }

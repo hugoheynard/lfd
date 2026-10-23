@@ -6,7 +6,6 @@ import { DomainEventPublisher } from "../../../platform/events/domain-event-publ
 import { DurablePublisher } from "../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { StaffAuthorDirectory } from "../../../staff/directory/domain/staff-author-directory.js";
-import { DayOrdersReader } from "../../channels/commerce/day-orders.reader.js";
 import type { ProductionOrderSnapshot } from "../../domain/entities/production-day.js";
 import { ProductionDayRetakenEvent } from "../../channels/delivery/index.js";
 import { ProductionDayRetakenJournalEvent } from "../../domain/events/production-day.events.js";
@@ -16,6 +15,7 @@ import { ProductionDayLock } from "../../domain/ports/production-day.lock.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import { arrivalsBetween } from "../../domain/services/production-handoff.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import { FreshDayOrders } from "../services/fresh-day-orders.js";
 import { packingListFactsOf } from "../services/packing-list-facts.js";
 import { RetakeProductionDayCommand } from "./retake-production-day.command.js";
 
@@ -83,7 +83,7 @@ export class RetakeProductionDayHandler implements ICommandHandler<
 > {
   constructor(
     private readonly days: ProductionDayRepository,
-    private readonly orders: DayOrdersReader,
+    private readonly orders: FreshDayOrders,
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
@@ -96,7 +96,9 @@ export class RetakeProductionDayHandler implements ICommandHandler<
 
   async execute(command: RetakeProductionDayCommand): Promise<ProductionWorksheetRetake> {
     const day = ServiceDay.of(command.serviceDay);
-    const producible = await this.orders.producibleFor(day);
+    // Hors verrou, avec le repère des révisions : relues sous lui si une
+    // révision est passée entre-temps (§9.1 du plan de modification).
+    const read = await this.orders.read(day);
     // Hors du verrou, comme toute lecture d'un autre bloc : le nom est FIGÉ au
     // retirage, le dossier dit « complété par … » sans relire l'annuaire.
     const byName = (await this.authors.identify([command.staffUserId])).nameOf(command.staffUserId);
@@ -108,6 +110,7 @@ export class RetakeProductionDayHandler implements ICommandHandler<
       const before = locked.orders;
       // Sous le verrou, comme à la clôture (plan d'annulation, C3.4).
       const withdrawn = await this.withdrawals.withdrawnOn(day);
+      const producible = await this.orders.underLock(day, read);
       const now = this.clock.now();
       const absorbed = locked.retake(producible, withdrawn, now, command.staffUserId, byName);
       if (absorbed > 0) {

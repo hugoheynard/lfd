@@ -69,13 +69,13 @@ import type { StoredDocument } from "../../../platform/storage/document-store.js
  * L'action se déduit du verbe — `GET` demande `orders:read`, le `POST` demande
  * `orders:write`.
  *
- * **Une seule mutation d'une commande existante : l'annuler** (depuis le
+ * **Une mutation d'une commande existante ici : l'annuler** (depuis le
  * 2026-10-12, doc `documentation/commandes/annulation/annulation-par-le-staff.md`, C3),
  * tant que le fournil ne l'a pas inscrite, sous son droit à part
- * (`b2b_cancel_order:write`). La MODIFIER reste à venir avec les avenants
- * (cf. `architecture-commande-immuable-avenants.md`). Saisir une commande neuve
- * pour un client n'entre pas en contradiction avec cela : on ajoute un fait,
- * on n'en réécrit aucun.
+ * (`b2b_cancel_order:write`). La MODIFIER se fait depuis le 2026-10-23 par
+ * une route à part (`AdminOrderRevisionsController`, plan
+ * `plan-modifier-une-commande.md`, M1), qui garde la composition remplacée
+ * dans l'historique des révisions.
  */
 @Controller("admin/orders")
 // `b2b_orders` pour lire les commandes, le bon, la traçabilité et le rappel ;

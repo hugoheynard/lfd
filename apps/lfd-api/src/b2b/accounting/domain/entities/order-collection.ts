@@ -99,6 +99,17 @@ export class OrderCollection {
   }
 
   /**
+   * `due` ou `excluded` → même état, nouveau montant : sa commande au compte a
+   * été modifiée avant toute facture ni tout lot (plan
+   * `commandes/plan-modifier-une-commande.md`, M1, §9). Une ligne engagée ne se
+   * réévalue pas : le lot ou le prélèvement porte déjà l'ancien montant.
+   */
+  revalue(amountCents: number, at: Date): void {
+    this.assertIn(["due", "excluded"], "changer de montant avec sa commande");
+    this.state = { ...this.state, amountCents, updatedAt: at };
+  }
+
+  /**
    * `due` ou `excluded` → `cancelled` : sa commande a été annulée par l'équipe
    * (C5.4). Ferme la ligne pour de bon — c'est ce qui rend impossible, et non
    * seulement refusé par un contrôle, qu'un lot ou un règlement la reprenne.

@@ -129,6 +129,31 @@ function orderCancelled(fact: PhraseFact): Said {
 }
 
 /**
+ * La modification d'une commande (plan de modification, M1) : « Marie D. a
+ * modifié la commande ORD-7 », ou « Jean D. a modifié sa commande ORD-7 »
+ * quand c'est le client. Ce qui a changé et les deux totaux restent au détail.
+ */
+function orderRevised(fact: PhraseFact): Said {
+  const number = name(orDash(fact.payload['orderNumber']));
+  if (fact.payload['revisedBy'] === null) {
+    return said(
+      [
+        ...citePerson(fact.payload['revisedByCustomer'], 'Un client'),
+        text(' a modifié sa commande '),
+        number,
+      ],
+      ['orderNumber', 'revisedBy', 'revisedByCustomer'],
+    );
+  }
+  return staffGesture(
+    fact,
+    'revisedBy',
+    [text(' a modifié la commande '), number],
+    ['orderNumber'],
+  );
+}
+
+/**
  * L'annulation par le CLIENT (lot C6) : « Jean D. a annulé sa commande ORD-7 »,
  * ou « Un client invité a annulé sa commande ORD-7 ». `cancelledBy` est `null`
  * dans ce cas ; le motif choisi et le délai appliqué restent au détail.
@@ -412,6 +437,7 @@ export const ORDERS_PHRASES = {
   'order.ready': orderReady,
   'order.abandoned': orderAbandoned,
   'order.cancelled': orderCancelled,
+  'order.revised': orderRevised,
   'order.handed_over': orderHandedOver,
 
   'order_cutoff_waiver.granted': (fact) =>

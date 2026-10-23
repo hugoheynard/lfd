@@ -54,9 +54,11 @@ export interface SheetContact {
  * le contact contre le détenteur, le point nommé. Le fournil met en page, il
  * ne choisit rien. Aucun montant, comme le reste du port.
  *
- * Le numéro de révision n'y est pas : le commerce le vaut `0` sur toute
- * commande, le mécanisme d'avenant n'existe pas (vérifié le 2026-10-06 dans
- * `order-sheet.ts`, `REVISION_WITHOUT_AMENDMENTS`).
+ * Le numéro de révision n'y est pas : une commande inscrite au fournil ne se
+ * modifie plus — la modification s'arrête à l'inscription (plan
+ * `commandes/plan-modifier-une-commande.md`, R1 ; vérifié le 2026-10-23 dans
+ * `order-revising.service.ts`). Ce que le fournil fige est donc la dernière
+ * révision, et elle ne bouge plus.
  */
 export interface OrderSheetDetails {
   /** L'enseigne, `""` sans enseigne. */

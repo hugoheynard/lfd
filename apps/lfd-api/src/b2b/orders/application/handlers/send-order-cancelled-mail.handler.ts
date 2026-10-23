@@ -60,7 +60,7 @@ export class SendOrderCancelledMail implements DurableSubscriber {
       to: recipient.email,
       template: "customer.order-cancelled",
       data: {
-        sheet: clientSheetOf(owned.view, owned.billedCustomer, owned.buyerPhone),
+        sheet: clientSheetOf(owned.view, owned.billedCustomer, owned.buyerPhone, owned.revision),
         regime: event.regime,
         voucher:
           event.voucher === null

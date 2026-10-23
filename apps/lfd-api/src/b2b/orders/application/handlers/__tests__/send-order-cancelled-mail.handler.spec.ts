@@ -7,6 +7,7 @@ import {
   RecordingMailer,
   orderView,
 } from "./payment-failure-doubles.js";
+import { AT_PLACEMENT } from "../../../domain/services/order-sheet.js";
 
 /** Le courriel de l'annulation staff (doc `documentation/commandes/annulation/annulation-par-le-staff.md`, C3.5). */
 
@@ -21,6 +22,7 @@ function subscriber(email: string | null = "camille@example.test") {
     loyaltyVoucherId: "bon_1",
     billedCustomer: null,
     buyerPhone: null,
+    revision: AT_PLACEMENT,
   });
   return {
     mailer,

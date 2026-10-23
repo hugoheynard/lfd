@@ -9,6 +9,7 @@ import {
   type OrderRecipient,
 } from "../../../domain/ports/order-recipient.reader.js";
 import { OrderReader, type OwnedOrder } from "../../../domain/ports/order.reader.js";
+import { AT_PLACEMENT } from "../../../domain/services/order-sheet.js";
 
 /**
  * Les doublés de l'accusé de réception, partagés par l'abonné de passation
@@ -171,6 +172,7 @@ export function readerOf(order: OrderView | null): OrderReader {
           loyaltyVoucherId: null,
           billedCustomer: null,
           buyerPhone: null,
+          revision: AT_PLACEMENT,
         },
   );
 }

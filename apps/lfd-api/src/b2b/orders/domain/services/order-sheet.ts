@@ -42,25 +42,37 @@ import { frozenPickupDiscountBaseOf } from "./pickup-discount-base.js";
  */
 
 /**
- * L'instant du tirage — celui où la **révision est devenue vraie**, pas celui du
- * rendu.
- *
- * Tant qu'aucun avenant n'existe, c'est la passation. Le jour où le mécanisme
- * arrivera, ce sera la date du dernier avenant : la fonction changera ici, et
- * nulle part ailleurs.
+ * **La révision d'une commande, telle que le bon la date** (plan
+ * `documentation/commandes/plan-modifier-une-commande.md`, M1) : `0` et
+ * `revisedAt: null` à la passation, puis le numéro et l'instant de la dernière
+ * modification. Lue par l'appelant à côté de la vue (`OwnedOrder.revision`) :
+ * la vue de la commande ne la porte pas.
  */
-function issuedAtOf(order: OrderView): string {
-  return order.placedAt;
+export interface OrderRevisionStamp {
+  readonly revision: number;
+  /** ISO, ou `null` tant que la commande n'a pas été modifiée. */
+  readonly revisedAt: string | null;
 }
 
 /**
- * Le nombre d'avenants appliqués depuis la passation.
+ * La commande telle que passée. Le défaut des feuilles construites depuis une
+ * seule vue (spécimens, tests) ; tout lecteur d'une vraie commande passe la
+ * sienne.
  *
- * `0` sur toutes les commandes actuelles, et c'est **vrai** — aucune n'a
- * d'avenant, le mécanisme n'existe pas. Le champ existe avant lui pour qu'aucun
- * document en circulation ne soit muet le jour où il arrivera.
+ * ⚠️ Cette constante remplace `REVISION_WITHOUT_AMENDMENTS`, qui valait `0`
+ * sur toute commande, « le mécanisme d'avenant n'existe pas ». Le 2026-10-23,
+ * le plan de modification a tranché : pas d'avenants, des RÉVISIONS — la clé
+ * `r<n>` de l'archive désigne désormais une révision de la commande.
  */
-const REVISION_WITHOUT_AMENDMENTS = 0;
+export const AT_PLACEMENT: OrderRevisionStamp = { revision: 0, revisedAt: null };
+
+/**
+ * L'instant du tirage — celui où la **révision est devenue vraie**, pas celui
+ * du rendu : la passation, ou la dernière modification.
+ */
+function issuedAtOf(order: OrderView, stamp: OrderRevisionStamp): string {
+  return stamp.revisedAt ?? order.placedAt;
+}
 
 /**
  * L'adresse qui compte : celle de livraison en coursier, le point de retrait
@@ -203,7 +215,7 @@ export function sheetShowsTtc(sheet: { readonly lines: readonly ClientSheetLine[
 }
 
 /** Ce que toute feuille porte, quelle que soit son audience. */
-function commonOf(order: OrderView) {
+function commonOf(order: OrderView, stamp: OrderRevisionStamp) {
   return {
     orderId: order.id,
     reference: order.orderNumber,
@@ -212,8 +224,8 @@ function commonOf(order: OrderView) {
     fulfillment: fulfillmentOf(order),
     note: order.note,
     origin: order.origin,
-    issuedAt: issuedAtOf(order),
-    revision: REVISION_WITHOUT_AMENDMENTS,
+    issuedAt: issuedAtOf(order, stamp),
+    revision: stamp.revision,
   };
 }
 
@@ -224,9 +236,13 @@ function commonOf(order: OrderView) {
  * Une feuille oubliée sur un plan de travail ne doit pas raconter les prix
  * négociés à qui la ramasse, et celle d'une livraison voyage dans le carton.
  */
-export function atelierSheetOf(order: OrderView, customer: SheetCustomer): AtelierSheet {
+export function atelierSheetOf(
+  order: OrderView,
+  customer: SheetCustomer,
+  stamp: OrderRevisionStamp = AT_PLACEMENT,
+): AtelierSheet {
   return {
-    ...commonOf(order),
+    ...commonOf(order, stamp),
     audience: "atelier",
     customer,
     lines: order.lines.map(atelierLineOf),
@@ -284,10 +300,11 @@ export function clientSheetOf(
   order: OrderView,
   billedCustomer: SheetCustomer | null = null,
   buyerPhone: string | null = null,
+  stamp: OrderRevisionStamp = AT_PLACEMENT,
 ): ClientSheet {
   const variant = variantOf(order);
   return {
-    ...commonOf(order),
+    ...commonOf(order, stamp),
     audience: "client",
     customer: billedCustomer ?? clientCustomerOf(order),
     variant,
@@ -302,9 +319,13 @@ export function clientSheetOf(
  * client appelle en lisant sa feuille, le commercial lit la sienne et les deux
  * tombent juste — le vocabulaire diffère, jamais les montants.
  */
-export function staffSheetOf(order: OrderView, customer: SheetCustomer): StaffSheet {
+export function staffSheetOf(
+  order: OrderView,
+  customer: SheetCustomer,
+  stamp: OrderRevisionStamp = AT_PLACEMENT,
+): StaffSheet {
   return {
-    ...commonOf(order),
+    ...commonOf(order, stamp),
     audience: "staff",
     customer,
     lines: order.lines.map(staffLineOf),

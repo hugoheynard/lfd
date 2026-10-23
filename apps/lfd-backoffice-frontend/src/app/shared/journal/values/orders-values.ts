@@ -248,10 +248,28 @@ export const DELIVERY_VAT_MODE = domain('TVA de la livraison', {
   follows_goods: 'Au prorata des produits',
 });
 
+/**
+ * Ce qu'une modification de commande a changé (`order.revised`, plan
+ * `commandes/plan-modifier-une-commande.md`, M1) — les valeurs de
+ * `ORDER_REVISION_CHANGES`.
+ */
+export const ORDER_REVISION_CHANGE = domain('ce qu’une modification a changé', {
+  lines: 'Articles et quantités',
+  date: 'Jour',
+  method: 'Retrait ou livraison',
+  pickup_point: 'Point de retrait',
+  delivery_address: 'Adresse de livraison',
+  window: 'Créneau',
+  contact: 'Contact',
+  signature: 'Signature',
+  note: 'Note',
+});
+
 export const ORDERS_VALUES: ValueFamily = {
   enums: [
     WEEKDAY,
     HANDOVER_VIA,
+    ORDER_REVISION_CHANGE,
     INCIDENT_FAMILY,
     CLOSED_WITHOUT_HANDOVER_CAUSE,
     TRANSFER_UNPLACED_CAUSE,

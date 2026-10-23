@@ -44,6 +44,10 @@ import { CancelledOrderPaymentReader } from "./domain/ports/cancelled-order-paym
 import { PrismaCancelledOrderPaymentReader } from "./infrastructure/prisma-cancelled-order-payment.reader.js";
 import { ORDER_REFUND_CONTROLLERS, ORDER_REFUND_PROVIDERS } from "./order-refund.providers.js";
 import {
+  ORDER_REVISION_CONTROLLERS,
+  ORDER_REVISION_PROVIDERS,
+} from "./order-revision.providers.js";
+import {
   CUSTOMER_CANCELLATION_CONTROLLERS,
   CUSTOMER_CANCELLATION_PROVIDERS,
 } from "./customer-cancellation.providers.js";
@@ -267,6 +271,8 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
   controllers: [
     ...ORDER_REFUND_CONTROLLERS,
     ...CUSTOMER_CANCELLATION_CONTROLLERS,
+    // Modifier une commande (plan `plan-modifier-une-commande.md`, M1).
+    ...ORDER_REVISION_CONTROLLERS,
     OrdersController,
     MyShopCatalogueController,
     MyShopQuoteController,
@@ -333,6 +339,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // Lot C6 : le noyau, extrait du geste staff, partagé avec le client.
     OrderCancellation,
     ...CUSTOMER_CANCELLATION_PROVIDERS,
+    ...ORDER_REVISION_PROVIDERS,
     VoucherRestitutionRefusal,
     // Lot C5 : la règle d'annulation et l'engagement comptable — le port est
     // relié par `appBootstrap/account-order-engagement.module.ts`.

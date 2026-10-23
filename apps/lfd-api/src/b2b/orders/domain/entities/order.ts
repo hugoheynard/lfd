@@ -10,22 +10,25 @@ import type {
   SettlementRegime,
 } from "@lfd/contracts";
 
-import { EmptyOrderError, InvalidOrderPaymentError } from "../errors/order-errors.js";
-import {
-  BilledWithoutCompanyError,
-  PrincipalWithoutCompanyError,
-} from "../errors/order-payer-errors.js";
-import { StaffOrderLocaleError } from "../errors/order-locale-errors.js";
+import { InvalidOrderPaymentError } from "../errors/order-errors.js";
 import type { VatShare } from "@lfd/money";
 
 import {
   ensureDeliveryFeeMatches,
   ensureDiscountMatches,
+  ensureDraftable,
   ensureLateFeeMatches,
   ensurePickupDiscountOnlyOnPickup,
   voucherDiscountOf,
 } from "./order-amount-guards.js";
 import { clienteleOf, normalizeFulfillment } from "./order-fulfillment.js";
+import {
+  ensureChanged,
+  ensureRevisableSettlement,
+  revisionOf,
+  type OrderRevisionToSave,
+  type RevisableOrder,
+} from "./order-revision.js";
 import type {
   DraftOrderInput,
   OrderFulfillmentInput,
@@ -92,22 +95,7 @@ export class Order {
 
   /** Compose une commande : valide, fige les lignes et calcule tous les montants. */
   static draft(input: DraftOrderInput): Order {
-    if (input.lines.length === 0) {
-      throw new EmptyOrderError();
-    }
-    // L'image du CHECK `order_billed_needs_company` : refusé ici, avant la base.
-    if (input.companyId === null && input.billedCompanyId !== null) {
-      throw new BilledWithoutCompanyError();
-    }
-    if (input.companyId === null && input.principal !== null) {
-      throw new PrincipalWithoutCompanyError();
-    }
-    if (input.placedByStaffId !== null && input.locale !== null) {
-      throw new StaffOrderLocaleError();
-    }
-    if (input.discountCents < 0 || input.deliveryFeeCents < 0 || input.lateFeeCents < 0) {
-      throw new InvalidOrderPaymentError("Remise, frais et surtaxe doivent être positifs.");
-    }
+    ensureDraftable(input);
     const fulfillment = normalizeFulfillment(input.fulfillment, input.companyId);
     // 🔴 **L'audience est décidée UNE fois, ici** — le seul endroit qui la
     // connaisse au moment où elle est encore vraie. Chaque ligne scelle alors
@@ -185,6 +173,30 @@ export class Order {
       input.salesTerms,
       input.locale,
     );
+  }
+
+  /**
+   * **Une révision de la commande** (plan `plan-modifier-une-commande.md`, M1) :
+   * la nouvelle composition se calcule EXACTEMENT comme à la passation
+   * (`draft`), garde le règlement de la commande (au compte ou gratuit — M1
+   * refuse la carte), puis se juge contre la révision qu'elle corrige : prix
+   * figés tenus (R3), bon imputé couvert (R4), au moins un changement (R6).
+   *
+   * @throws {CardOrderNotRevisableError} la commande se règle par carte (lot M2).
+   * @throws {UnchangedOrderRevisionError} la modification ne change rien.
+   */
+  static revise(current: RevisableOrder, input: DraftOrderInput): OrderRevisionToSave {
+    const revision = Order.recompose(current, input);
+    ensureChanged(revision);
+    return revision;
+  }
+
+  /** La même recomposition, sans exiger de changement : ce que le devis de révision montre. */
+  static recompose(current: RevisableOrder, input: DraftOrderInput): OrderRevisionToSave {
+    ensureRevisableSettlement(current);
+    const revised = Order.draft(input);
+    revised.deferPayment();
+    return revisionOf(current, revised.toPersistence());
   }
 
   /**

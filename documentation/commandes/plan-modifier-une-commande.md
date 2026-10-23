@@ -184,12 +184,12 @@ le lot ZB de la facturation, pas une modification de commande.
 
 ## 7. Les lots
 
-| Lot    | Contenu                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Bloc             |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------- |
-| **M1** | Révision côté serveur, commandes **au compte et à total nul** (§9) : table d'historique (migration additive), `revision` sur `orders`, calcul de la passation extrait pour servir aussi la révision, `Order.revise()`, règles R1-R7, R3 des prix, garde du fournil sous le verrou de journée et relecture à la clôture, fait `order.revised` et libellés, livraison (détacher, rattacher, géocoder), encaissement au compte recalculé, bon r+1. Commande `ReviseOrder` (client et staff), devis de révision. | serveur          |
-| **M2** | **À concevoir** : l'argent d'une commande carte en plusieurs morceaux (§3, §9 points 2 à 5).                                                                                                                                                                                                                                                                                                                                                                                                                 | serveur          |
-| **M3** | Écrans client et staff (§6), historique.                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | fronts           |
-| **M4** | La demande après l'heure limite (§4) : type `order_change`, appliquer / refuser, courriels.                                                                                                                                                                                                                                                                                                                                                                                                                  | serveur + fronts |
+| Lot                                     | Contenu                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Bloc             |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------- |
+| **M1** ✅ _bâti le 2026-10-23, cf. §10_ | Révision côté serveur, commandes **au compte et à total nul** (§9) : table d'historique (migration additive), `revision` sur `orders`, calcul de la passation extrait pour servir aussi la révision, `Order.revise()`, règles R1-R7, R3 des prix, garde du fournil sous le verrou de journée et relecture à la clôture, fait `order.revised` et libellés, livraison (détacher, rattacher, géocoder), encaissement au compte recalculé, bon r+1. Commande `ReviseOrder` (client et staff), devis de révision. | serveur          |
+| **M2**                                  | **À concevoir** : l'argent d'une commande carte en plusieurs morceaux (§3, §9 points 2 à 5).                                                                                                                                                                                                                                                                                                                                                                                                                 | serveur          |
+| **M3**                                  | Écrans client et staff (§6), historique.                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | fronts           |
+| **M4**                                  | La demande après l'heure limite (§4) : type `order_change`, appliquer / refuser, courriels.                                                                                                                                                                                                                                                                                                                                                                                                                  | serveur + fronts |
 
 ## 8. Ce qui n'est pas fait ici
 
@@ -262,3 +262,73 @@ Les objections sérieuses, et leur réponse dans M1 :
 - **Le bon PDF** : la constante `REVISION_WITHOUT_AMENDMENTS` devient la
   révision de la commande ; la clé `r<n>` désigne désormais une révision.
   Choix assumé : il n'y aura pas d'avenants de commande.
+
+## 10. M1 bâti (2026-10-23) — ce qui existe, et où il s'écarte du texte
+
+Chemins sous `apps/lfd-api/src/` sauf mention.
+
+- **Migration** `20261023100000_la_revision_de_commande` (additive) :
+  `orders.revision` (défaut `0`), `orders.revised_at`, `public.order_revision`
+  (une ligne par modification : composition remplacée EN ENTIER, telle
+  qu'écrite, colonnes et lignes ; changements ; totaux avant/après ; auteur
+  client ou fiche staff, tenu par un CHECK) et `production.order_revision_notice`.
+- **Calcul partagé** : `b2b/orders/application/services/order-composition.service.ts`
+  (prix, remise de retrait, frais de zone, éligibilité, acheminement convenu)
+  et `order-cutoff-gate.service.ts` (heure limite), extraits d'`OrderDrafting`
+  sans changer la passation ; `OrderDrafting` garde son contrat d'injection.
+- **Agrégat** : `Order.revise()` / `Order.recompose()` (`domain/entities/order.ts`)
+  et les règles pures de `domain/entities/order-revision.ts` — M1 (carte
+  refusée), R3 (prix figés tenus), §9 bon imputé couvert, R6.
+  `domain/services/revised-lines.ts` trie les lignes figées et nouvelles (R3).
+- **Recomposition** : `application/services/order-revising.service.ts` — R1
+  (frontière `cancellationOf`, heure limite ancienne ET nouvelle date pour le
+  client, sans dérogation), R2 (payeur, principal, CGV, langue relus), R4,
+  R5. Geste : `ReviseOrderCommand`/`ReviseOrderHandler` ; devis :
+  `QuoteOrderRevisionQuery`/`…Handler`.
+- **Routes** : `POST /orders/:id/revisions` et `…/revisions/quote` (client,
+  mur de `GET /orders/:id`) ; `POST /admin/orders/:id/revisions` et
+  `…/revisions/quote` (équipe). Contrats : `packages/contracts/src/order-revision.ts`.
+- **Garde du fournil (§9.1)** : `production/channels/commerce/order-revision.desk.ts`
+  (déclaré et implémenté par le fournil, relié par `ProductionDeskFeedModule`),
+  `production/application/services/fresh-day-orders.ts` lu par la clôture ET
+  le retirage.
+- **Compte** : `AccountOrderRevaluation` (port de la commande) →
+  `b2b/accounting/application/services/account-order-revaluing.ts` →
+  `OrderCollection.revalue()` (ligne `due`/`excluded` seulement).
+- **Faits** : `order.revised` (journal, `OnOrderRevised`, libellés du
+  back-office) et `commerce.order_revised` (livraison :
+  `ReconcileOnOrderRevised` réutilise `TransferMembership`,
+  `LocateOnOrderRevised` réutilise `DayStopsLocator`, quand mode, date, point
+  ou adresse changent).
+- **Bon** : la révision de la commande et son instant (`OwnedOrder.revision`)
+  remplacent `REVISION_WITHOUT_AMENDMENTS` ; la clé `r<n>` suit.
+- **Tests** : domaine, application (doubles écrits à la main), et
+  `apps/lfd-api/test/order-revision.e2e-spec.ts` (lignes, prix figé / du jour,
+  retrait → livraison, refus carte, R7, heure limite client / équipe,
+  inscrite, mur, course avec la clôture, devis).
+
+Écarts et choix faits au bâti — à relire :
+
+1. **La garde du fournil compare un repère par journée**, pas la révision de
+   chaque commande : la clôture lit le plus grand numéro de note du jour
+   AVANT les commandes et le relit SOUS le verrou ; s'il a bougé, elle relit
+   les commandes. Même garantie, sans faire porter une révision à
+   `ProducibleOrder` (une quarantaine de suites du fournil le construisent).
+   Le retirage reçoit la même garde : il lit lui aussi avant son verrou.
+   La relecture est la seule lecture du commerce faite sous le verrou d'une
+   journée, et elle n'a lieu que dans ce cas.
+2. **Droit de l'équipe** : `b2b_place_order:write` (la saisie pour un client),
+   faute de droit nommé par le plan. Aucune migration de droit.
+3. **Surtaxe tardive** (R4, « inchangée ») : son ajustement figé est
+   réappliqué au nouveau sous-total — un pourcentage suit donc le panier ;
+   aucune surtaxe n'est créée ni retirée.
+4. **TVA du port** : recalculée selon le mode figé à la passation (V3), le
+   réglage du jour seulement pour une commande d'avant le réglage.
+5. **Refus ajoutés**, chacun avec sa phrase : une commande gratuite qui
+   deviendrait payante (une carte, donc M2) ; une commande au compte qui
+   tomberait à zéro (sa ligne d'encaissement ne sait se fermer que par
+   l'annulation) ; un déplacement vers une journée dont le plan est arrêté,
+   équipe comprise (pas de révision « hors plan »).
+6. **Non fait** : le courriel de modification avec le nouveau bon joint
+   (§5) — aucun lot ne le porte explicitement ; le bon r+1 se produit à la
+   demande.

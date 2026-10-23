@@ -2,10 +2,12 @@ import { Global, Module } from "@nestjs/common";
 
 import { AccountingModule } from "../b2b/accounting/accounting.module.js";
 import { AccountOrderEngaging } from "../b2b/accounting/application/services/account-order-engaging.js";
+import { AccountOrderRevaluing } from "../b2b/accounting/application/services/account-order-revaluing.js";
 import {
   AccountOrderEngagement,
   AccountOrderEngagementReader,
 } from "../b2b/orders/domain/ports/account-order-engagement.js";
+import { AccountOrderRevaluation } from "../b2b/orders/domain/ports/account-order-revaluation.js";
 
 /**
  * Le fil qui relie **l'annulation d'une commande au compte à la
@@ -16,6 +18,10 @@ import {
  * engagé, puis fermer la ligne d'encaissement — et la comptabilité y répond,
  * parce qu'elle possède `order_collection`. Deux tokens pour un seul
  * adaptateur (ISP) : l'aperçu du détail ne reçoit que la lecture.
+ *
+ * Depuis le 2026-10-23, un troisième token pour un second adaptateur : la
+ * modification d'une commande au compte recale le montant de sa ligne
+ * d'encaissement (`plan-modifier-une-commande.md`, M1).
  *
  * `@Global` pour la même raison que `LoyaltyVoucherModule` : le consommateur
  * est `orders`, et le câblage ne vit dans aucun des deux modules.
@@ -29,7 +35,8 @@ import {
   providers: [
     { provide: AccountOrderEngagement, useExisting: AccountOrderEngaging },
     { provide: AccountOrderEngagementReader, useExisting: AccountOrderEngaging },
+    { provide: AccountOrderRevaluation, useExisting: AccountOrderRevaluing },
   ],
-  exports: [AccountOrderEngagement, AccountOrderEngagementReader],
+  exports: [AccountOrderEngagement, AccountOrderEngagementReader, AccountOrderRevaluation],
 })
 export class AccountOrderEngagementModule {}

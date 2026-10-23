@@ -77,6 +77,10 @@ export {
 // elle est inscrite (affichage).
 export { OrderWithdrawalDesk, type OrderWithdrawalOutcome } from "./order-withdrawal.desk.js";
 export { OrderInscriptionReader } from "./order-inscription.reader.js";
+// La modification d'une commande (plan `commandes/plan-modifier-une-commande.md`,
+// §9.1, 2026-10-23) : le guichet que le fournil DÉCLARE et IMPLÉMENTE pour
+// noter une révision sous le verrou de chaque journée qu'elle touche.
+export { OrderRevisionDesk, type OrderRevisionOutcome } from "./order-revision.desk.js";
 // L'arrêt du plan devient une limite (lot O3 de
 // `documentation/commandes/plan-reglages-commandes.md`, 2026-10-14) : deux
 // ports que le fournil DÉCLARE et IMPLÉMENTE — lire les journées arrêtées

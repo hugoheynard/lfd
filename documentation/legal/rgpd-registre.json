@@ -1431,6 +1431,15 @@
       "information": false
     },
     {
+      "colonne": "public.order_revision.revised_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a modifié la commande (`revised_by_staff_id`) sur `order_revision` — plan de modification, M1.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "public.orders.ready_by",
       "personne": "staff",
       "categorie": "auteur-geste",

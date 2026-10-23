@@ -4,6 +4,7 @@ import { LearnArrestedPlan } from "./application/handlers/learn-arrested-plan.ha
 import { LearnRetakenPlan } from "./application/handlers/learn-retaken-plan.handler.js";
 import { ForgetReopenedPlan } from "./application/handlers/forget-reopened-plan.handler.js";
 import { LocateOnOrderPlaced } from "./application/handlers/locate-on-order-placed.handler.js";
+import { LocateOnOrderRevised } from "./application/handlers/locate-on-order-revised.handler.js";
 import { DayStopsLocator } from "./application/day-stops-locator.js";
 import { DeliveryStopsLocating } from "./application/delivery-stops-locating.js";
 import { PlanArrestedBell } from "./application/plan-arrested-bell.js";
@@ -36,6 +37,8 @@ export const DAY_READINESS_PROVIDERS: readonly Provider[] = [
   // CA0 : situer l'adresse dès la commande, et rattraper à l'arrêt du plan.
   DeliveryStopsLocating,
   LocateOnOrderPlaced,
+  // Une commande modifiée qui change d'acheminement est située comme à la passation (M1).
+  LocateOnOrderRevised,
   { provide: DayStopsLocator, useExisting: DeliveryStopsLocating },
   GetDeliveryDayReadinessHandler,
   // Le manque de flotte, affiché en permanence (2026-10-22).

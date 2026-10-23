@@ -98,7 +98,7 @@ export class GetOrderSheetPdfHandler implements IQueryHandler<
     ensureOrderVisible(owned, query.actorUserId, role, query.orderId);
 
     return this.archive.pdfOf(
-      clientSheetOf(owned.view, owned.billedCustomer, owned.buyerPhone),
+      clientSheetOf(owned.view, owned.billedCustomer, owned.buyerPhone, owned.revision),
       exposedHandoverToken(owned.view),
     );
   }

@@ -1,12 +1,14 @@
 import { Global, Module } from "@nestjs/common";
 
 import { ProductionOrderWithdrawalDesk } from "../production/application/services/production-order-withdrawal.desk.js";
+import { ProductionOrderRevisionDesk } from "../production/application/services/production-order-revision.desk.js";
 import { ProductionPlanAdmissionDesk } from "../production/application/services/production-plan-admission.desk.js";
 import { ProductionLaunchedResupplies } from "../production/application/services/production-launched-resupplies.js";
 import {
   ClosedPlansReader,
   LaunchedResupplies,
   OrderInscriptionReader,
+  OrderRevisionDesk,
   OrderWithdrawalDesk,
   PlanAdmissionDesk,
 } from "../production/channels/commerce/index.js";
@@ -36,6 +38,9 @@ import { ProductionModule } from "../production/production.module.js";
   imports: [ProductionModule],
   providers: [
     { provide: OrderWithdrawalDesk, useExisting: ProductionOrderWithdrawalDesk },
+    // La modification d'une commande (plan de modification, §9.1, 2026-10-23) :
+    // la révision est notée sous le verrou de chaque journée qu'elle touche.
+    { provide: OrderRevisionDesk, useExisting: ProductionOrderRevisionDesk },
     { provide: OrderInscriptionReader, useExisting: PrismaOrderInscriptionReader },
     // L'arrêt du plan comme limite (lot O3, 2026-10-14) : la boutique lit les
     // journées arrêtées, la passation s'y admet sous le verrou de la journée.
@@ -47,6 +52,7 @@ import { ProductionModule } from "../production/production.module.js";
   ],
   exports: [
     OrderWithdrawalDesk,
+    OrderRevisionDesk,
     OrderInscriptionReader,
     ClosedPlansReader,
     PlanAdmissionDesk,

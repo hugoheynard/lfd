@@ -21,6 +21,7 @@ import type { DurableSubscriber } from "../../../../../platform/outbox/durable-h
 import { DeliveryEnRouteMail } from "../../services/delivery-en-route-mail.service.js";
 import { MAIL_DELIVERY_EN_ROUTE, MailDeliveryEnRoute } from "../mail-delivery-en-route.handler.js";
 import { OneRecipientReader, orderView, RecordingMailer } from "./payment-failure-doubles.js";
+import { AT_PLACEMENT } from "../../../domain/services/order-sheet.js";
 
 /*
  * Le commerce entend le départ, fait durable (en-route.md ; plan-depart-durable.md,
@@ -77,6 +78,7 @@ class ManyOrdersReader extends OrderReader {
             loyaltyVoucherId: null,
             billedCustomer: null,
             buyerPhone: null,
+            revision: AT_PLACEMENT,
           },
     );
   }

@@ -113,8 +113,11 @@ que le client a en poche.
 - **Clé** : `orders/{orderId}/bon-de-commande-r{revision}-d{dessin}.pdf`
   (`orderSheetPdfKey`, `DRAWING_VERSION = 2`). La version de dessin est dans la
   clé : le dessin du 2026-10-09 a la sienne, les PDF déjà rangés restent
-  en stockage sous l'ancienne et ne sont plus relus. `revision` vaut toujours 0
-  (`REVISION_WITHOUT_AMENDMENTS`) : les avenants n'existent pas
+  en stockage sous l'ancienne et ne sont plus relus. `revision` est la
+  révision de la commande depuis le 2026-10-23 (`orders.revision`, `0` à la
+  passation, `+1` à chaque modification — [`plan-modifier-une-commande.md`](plan-modifier-une-commande.md), M1) :
+  une commande modifiée a un nouveau bon, l'ancien reste rangé sous sa clé.
+  Il n'y aura pas d'avenants
   ([`architecture-commande-immuable-avenants.md`](architecture-commande-immuable-avenants.md)).
 - **Qui range** : `OrderSheetArchive` (`application/services/order-sheet-archive.service.ts`)
   relit ou fabrique, partagé par la route client (`GET /orders/:id/bon.pdf`) et la

@@ -37,9 +37,10 @@ décrirait dans le runbook, sans outil.
 
 - **Clé** : `orders/{orderId}/bon-de-commande-r{revision}.pdf`
   (`orderSheetPdfKey`, `order-sheet-pdf.ts`). La révision est dans la clé pour
-  qu'un avenant ajoute une pièce au lieu d'écraser la précédente.
-- **La révision vaut toujours 0** (`REVISION_WITHOUT_AMENDMENTS`,
-  `order-sheet.ts`) : les avenants n'existent pas encore.
+  qu'une modification ajoute une pièce au lieu d'écraser la précédente.
+- **La révision est celle de la commande** (`orders.revision`, lue avec la vue
+  — `OwnedOrder.revision`) depuis le 2026-10-23 : `0` à la passation, `+1` à
+  chaque modification ([`plan-modifier-une-commande.md`](plan-modifier-une-commande.md), M1).
 - **Écrit au premier téléchargement**, jamais à la passation
   (`OrderSheetArchive.pdfOf`), et best-effort : un R2 en panne rend le PDF sans
   l'archiver.

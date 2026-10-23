@@ -747,6 +747,28 @@ model OrderWithdrawal {
   @@schema("production")
 }
 
+/// **Une révision de commande notée pour une journée** (plan
+/// `documentation/commandes/plan-modifier-une-commande.md`, §9.1, 2026-10-23).
+///
+/// Écrite sous le verrou de la journée par `OrderRevisionDesk`, dans la
+/// transaction du commerce qui modifie la commande — une ligne par journée
+/// touchée (l'ancienne et la nouvelle si la date change). La clôture et le
+/// retirage lisent le plus grand `id` du jour AVANT les commandes, puis SOUS le
+/// verrou : s'il a bougé, ils relisent les commandes. En ajout seul ; aucune
+/// clé étrangère, ni vers la journée ni vers `public.orders`.
+model OrderRevisionNotice {
+  id         Int      @id @default(autoincrement())
+  /// L'identifiant OPAQUE de la commande côté commerce.
+  orderId    String   @map("order_id")
+  serviceDay String   @map("service_day") @db.VarChar(10)
+  revision   Int
+  notedAt    DateTime @map("noted_at") @db.Timestamptz(6)
+
+  @@index([serviceDay, id])
+  @@map("order_revision_notice")
+  @@schema("production")
+}
+
 /// **Un réassort figé à l'arrêt du plan** (lot R3a du réassort,
 /// `documentation/reassort-boutiques/plan-reapprovisionnement.md` §13) : ce
 /// que le commerce a envoyé « pour demain » à un point, recopié sous le

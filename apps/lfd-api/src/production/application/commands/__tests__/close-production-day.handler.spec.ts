@@ -37,6 +37,8 @@ import {
 import { InMemoryWithdrawals } from "../../__tests__/withdrawal-doubles.js";
 import { CloseProductionDayCommand } from "../close-production-day.command.js";
 import { CloseProductionDayHandler } from "../close-production-day.handler.js";
+import { FreshDayOrders } from "../../services/fresh-day-orders.js";
+import { SteppedRevisionNotices } from "../../__tests__/revision-notice-doubles.js";
 
 const NOW = new Date("2026-09-07T18:00:00.000Z");
 const EARLIER = new Date("2026-09-07T17:00:00.000Z");
@@ -218,7 +220,7 @@ function subject(
     events,
     handler: new CloseProductionDayHandler(
       days,
-      commerce,
+      new FreshDayOrders(commerce, new SteppedRevisionNotices()),
       sweeper,
       events,
       new FixedClock(NOW),

@@ -11,6 +11,7 @@ import {
   RecordingMailer,
   orderView,
 } from "./payment-failure-doubles.js";
+import { AT_PLACEMENT } from "../../../domain/services/order-sheet.js";
 
 /**
  * **Le courriel suit la cause** (plan `architecture-abandon-du-reglement.md`, Q4, §9
@@ -40,6 +41,7 @@ function subscribers(email: string | null = "camille@example.test") {
     loyaltyVoucherId: null,
     billedCustomer: null,
     buyerPhone: null,
+    revision: AT_PLACEMENT,
   });
   const recipients = new OneRecipientReader(email);
   const all = [

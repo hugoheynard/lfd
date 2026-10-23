@@ -225,6 +225,8 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   // `documentation/commandes/annulation/annulation-par-le-staff.md`, C3.4) : écrit par le guichet du
   // fournil, relu par la clôture et le retirage sous le verrou.
   OrderWithdrawal: "production",
+  // La révision d'une commande notée sous le verrou de la journée (plan de modification, §9.1).
+  OrderRevisionNotice: "production",
   // Le contrôle qualité du superviseur (2026-09-28, plan `plan-controle-qualite.md`,
   // QC2) : un verdict par ligne, ses photos, et les dépôts qui attendent leur verdict.
   ProductionQualityCheck: "production",

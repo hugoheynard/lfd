@@ -1,6 +1,15 @@
 import { cartAdjustmentCents, discountCentsOf } from "@lfd/contracts";
 
-import { InvalidOrderPaymentError, MisplacedPickupDiscountError } from "../errors/order-errors.js";
+import {
+  EmptyOrderError,
+  InvalidOrderPaymentError,
+  MisplacedPickupDiscountError,
+} from "../errors/order-errors.js";
+import { StaffOrderLocaleError } from "../errors/order-locale-errors.js";
+import {
+  BilledWithoutCompanyError,
+  PrincipalWithoutCompanyError,
+} from "../errors/order-payer-errors.js";
 import {
   InvalidOrderVoucherError,
   VoucherNotForCompanyOrderError,
@@ -14,6 +23,34 @@ import type { DraftOrderInput, OrderFulfillmentInput, OrderVoucher } from "./ord
  * l'un produit l'autre. Sortis d'`order.ts` le 2026-09-27, quand le bon de
  * fidélité en a ajouté une quatrième — le fichier dépassait sa taille.
  */
+
+/**
+ * Le prologue de `Order.draft` — une composition cohérente avant tout calcul.
+ * Sorti d'`order.ts` le 2026-10-23, quand la révision y a ajouté sa méthode.
+ *
+ * @throws {EmptyOrderError} aucune ligne.
+ * @throws {BilledWithoutCompanyError} un payeur sans société (image du CHECK `order_billed_needs_company`).
+ * @throws {PrincipalWithoutCompanyError} un principal sans société.
+ * @throws {StaffOrderLocaleError} une langue sur une saisie du staff.
+ * @throws {InvalidOrderPaymentError} un terme négatif.
+ */
+export function ensureDraftable(input: DraftOrderInput): void {
+  if (input.lines.length === 0) {
+    throw new EmptyOrderError();
+  }
+  if (input.companyId === null && input.billedCompanyId !== null) {
+    throw new BilledWithoutCompanyError();
+  }
+  if (input.companyId === null && input.principal !== null) {
+    throw new PrincipalWithoutCompanyError();
+  }
+  if (input.placedByStaffId !== null && input.locale !== null) {
+    throw new StaffOrderLocaleError();
+  }
+  if (input.discountCents < 0 || input.deliveryFeeCents < 0 || input.lateFeeCents < 0) {
+    throw new InvalidOrderPaymentError("Remise, frais et surtaxe doivent être positifs.");
+  }
+}
 
 /**
  * La surtaxe correspond-elle à l'ajustement qui la prétend ?

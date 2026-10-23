@@ -7,6 +7,8 @@ import type {
   SheetCustomer,
 } from "@lfd/contracts";
 
+import type { OrderRevisionStamp } from "../services/order-sheet.js";
+
 /**
  * Une commande **avec de quoi la murer** : la vue, plus les deux colonnes qui
  * disent à qui elle appartient. Elles ne sont PAS dans `OrderView` — celle-ci
@@ -52,6 +54,8 @@ export interface OwnedOrder {
    * déclaré : jamais une valeur inventée.
    */
   readonly buyerPhone: string | null;
+  /** La révision courante et son instant — ce que le bon imprime (plan de modification, M1). */
+  readonly revision: OrderRevisionStamp;
 }
 
 /**

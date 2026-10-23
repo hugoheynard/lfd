@@ -33,6 +33,7 @@ import { GetAdminOrderHandler } from "../get-admin-order.handler.js";
 import { GetAdminOrderQuery } from "../get-admin-order.query.js";
 import { GetOrderHandler } from "../get-order.handler.js";
 import { GetOrderQuery } from "../get-order.query.js";
+import { AT_PLACEMENT } from "../../../domain/services/order-sheet.js";
 
 const VIEW: OrderView = { ...orderView(), id: "ord_1", orderNumber: "CMD-0001" };
 
@@ -66,6 +67,7 @@ function personal(placedByUserId: string): OwnedOrder {
     loyaltyVoucherId: null,
     billedCustomer: null,
     buyerPhone: null,
+    revision: AT_PLACEMENT,
     view: VIEW,
     companyId: null,
     placedByUserId,
@@ -79,6 +81,7 @@ function ofCompany(companyId: string): OwnedOrder {
     loyaltyVoucherId: null,
     billedCustomer: null,
     buyerPhone: null,
+    revision: AT_PLACEMENT,
     view: VIEW,
     companyId,
     placedByUserId: "usr_someone_else",

@@ -35,7 +35,7 @@ export class GetAdminOrderSheetPdfHandler implements IQueryHandler<
       throw new OrderNotFoundError(query.orderId);
     }
     return this.archive.pdfOf(
-      clientSheetOf(owned.view, owned.billedCustomer, owned.buyerPhone),
+      clientSheetOf(owned.view, owned.billedCustomer, owned.buyerPhone, owned.revision),
       exposedHandoverToken(owned.view),
     );
   }

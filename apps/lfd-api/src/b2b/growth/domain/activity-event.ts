@@ -71,6 +71,7 @@ export const ACTIVITY_TYPES = {
    * 2026-10-12.
    */
   orderCancelled: "order.cancelled",
+  orderRevised: "order.revised",
   /**
    * La commande a **changé de mains**. Le fait le plus important du lot : c'est
    * lui qu'on cherchera le jour où un client dit n'avoir rien reçu.
