@@ -137,11 +137,33 @@ export interface CompanyView {
   readonly fulfillmentPreference: FulfillmentPreferenceView;
 }
 
+/**
+ * Un site que la personne atteint **par héritage seul** : détentrice ou
+ * administratrice ACCEPTÉE de son principal, principal actif, site non
+ * suspendu (plan `documentation/comptes-client/plan-entrer-dans-ses-sites.md`,
+ * R1, R5). Le sélecteur l'affiche « via » son principal ; y entrer DÉCLARE la
+ * société (en-tête d'espace de travail) — il ne sert jamais d'office (R4).
+ */
+export interface ReachableSiteView {
+  readonly companyId: string;
+  /** L'enseigne du site, sa raison sociale à défaut. */
+  readonly name: string;
+  /** Le principal par lequel on l'atteint. */
+  readonly via: { readonly companyId: string; readonly name: string };
+}
+
 /** Ce que `GET /me` renvoie : qui je suis, et quelles entreprises sont les miennes. */
 export interface AccountView {
   readonly profile: ProfileView;
   /** Possiblement vide — c'est l'état qui déclenche l'empty state côté front. */
   readonly companies: readonly CompanyView[];
+  /**
+   * Les sites atteints par héritage seul — jamais une société de
+   * {@link companies} (S6, 2026-10-23). Toujours envoyé par le serveur ;
+   * optionnel tant que le sélecteur de la boutique (lot suivant) ne le lit
+   * pas, pour ne pas casser ses doublures d'ici là.
+   */
+  readonly reachableSites?: readonly ReachableSiteView[];
   /** Préférences d'affichage persistées (vue catalogue…), toujours présentes. */
   readonly navPrefs: NavPreferences;
 }

@@ -189,6 +189,21 @@ interface PrismaDouble {
       }) => Promise<unknown>;
     };
     membership: { updateMany: (args: AcceptArgs) => Promise<{ count: number }> };
+    /** Les sites atteints par héritage (S6) : la requête partagée les lit ici. */
+    company: { findMany: () => Promise<readonly ReachableRow[]> };
+  };
+}
+
+/** Une ligne de site atteignable, telle que `readReachableSites` la sélectionne. */
+interface ReachableRow {
+  readonly id: string;
+  readonly enseigne: string;
+  readonly raisonSociale: string;
+  readonly parentCompany: {
+    readonly id: string;
+    readonly enseigne: string;
+    readonly raisonSociale: string;
+    readonly memberships: readonly { readonly role: CustomerRole }[];
   };
 }
 
@@ -202,6 +217,8 @@ function prismaDouble(
     claimCounts?: readonly number[];
     /** Rattachements acceptés par l'écriture conditionnée — 0 : aucune invitation ne vit. */
     acceptCount?: number;
+    /** Les sites que la base rend comme atteignables par héritage (S6). */
+    reachable?: readonly ReachableRow[];
   } = {},
 ): PrismaDouble {
   let index = 0;
@@ -260,6 +277,7 @@ function prismaDouble(
           return Promise.resolve({ count: options.acceptCount ?? 1 });
         },
       },
+      company: { findMany: () => Promise.resolve(options.reachable ?? []) },
     },
   };
 }
@@ -346,6 +364,7 @@ describe("CustomerPrincipalResolver", () => {
         email: "jean@client.fr",
         emailProven: false,
         memberships: [{ companyId: "company_1", role: CustomerRole.orders }],
+        reachableCompanyIds: [],
         scopes: ["read:orders"],
       });
     });
@@ -503,6 +522,43 @@ describe("CustomerPrincipalResolver", () => {
           { companyId: "company_2", role: CustomerRole.orders },
         ],
       });
+    });
+  });
+
+  /**
+   * S6 (`plan-entrer-dans-ses-sites.md`, R4) : les sites atteints par
+   * héritage sont portés À CÔTÉ des rattachements, jamais parmi eux — sans
+   * quoi « le seul rattachement sert d'office » compterait un site.
+   */
+  describe("les sites atteignables (S6)", () => {
+    it("les porte à part, sans toucher aux rattachements propres", async () => {
+      const resolver = await resolverWith(
+        prismaDouble([activeUser], {
+          reachable: [
+            {
+              id: "site_1",
+              enseigne: "Le Chalet",
+              raisonSociale: "",
+              parentCompany: {
+                id: "company_1",
+                enseigne: "Hip",
+                raisonSociale: "",
+                memberships: [{ role: CustomerRole.owner }],
+              },
+            },
+          ],
+        }),
+      );
+      const principal = await resolver.resolve(token);
+      expect(principal.reachableCompanyIds).toEqual(["site_1"]);
+      expect(principal.memberships.map((membership) => membership.companyId)).toEqual([
+        "company_1",
+      ]);
+    });
+
+    it("aucun site atteignable : une liste vide", async () => {
+      const resolver = await resolverWith(prismaDouble([activeUser]));
+      await expect(resolver.resolve(token)).resolves.toMatchObject({ reachableCompanyIds: [] });
     });
   });
 

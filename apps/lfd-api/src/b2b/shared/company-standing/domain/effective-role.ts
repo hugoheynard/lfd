@@ -1,20 +1,20 @@
-import type { CompanyRole } from "../value-objects/company-role.js";
+import type { StandingRole } from "./standing-role.js";
 
 /**
  * Les rôles du principal qui ouvrent ses sous-comptes (sous-comptes §3).
  * `orders` et `billing` du principal ne donnent rien sur un sous-compte : ils
  * n'administrent pas le principal lui-même.
  */
-export const INHERITING_PARENT_ROLES: readonly CompanyRole[] = ["owner", "admin"];
+export const INHERITING_PARENT_ROLES: readonly StandingRole[] = ["owner", "admin"];
 
-const INHERITING_ROLES: ReadonlySet<CompanyRole> = new Set<CompanyRole>(INHERITING_PARENT_ROLES);
+const INHERITING_ROLES: ReadonlySet<StandingRole> = new Set<StandingRole>(INHERITING_PARENT_ROLES);
 
 /**
  * Le plafond d'un rôle hérité : un `owner` du principal est `admin` dans le
  * sous-compte, et les gestes réservés au détenteur (transfert, second
  * détenteur) lui restent fermés.
  */
-const INHERITED_CEILING: CompanyRole = "admin";
+const INHERITED_CEILING: StandingRole = "admin";
 
 /**
  * **Le rôle effectif d'une personne dans une société X** — LA règle du §3,
@@ -32,24 +32,21 @@ const INHERITED_CEILING: CompanyRole = "admin";
  * sur le principal ni sur ses frères — l'appelant ne passe `roleInParent` que
  * pour le principal de X, et rien pour ses enfants.
  *
- * 🔴 Branchée sur UNE voie seulement (lot C1 de
- * `documentation/comptes-client/plan-commandes-des-sites.md`, §7.1, 2026-10-21) :
- * les gestes sur une commande EXISTANTE d'un site (`OrderAccessReader`, le mur
- * d'annulation, la liste agrégée). Ni `resolveCompany` (l'espace de travail),
- * ni `MembershipReader.roleOf`, ni `OrderGuardReader.roleOf` (passation, devis)
- * ne la lisent — vérifié le 2026-10-21 —, et commander pour un site reste hors
- * périmètre (R8). Les appelants ne passent `roleInParent` que d'une
- * membership du principal ACCEPTÉE, principal `active` (§7.2) : la condition
- * n'est pas ici, elle est dans la requête de l'adaptateur.
+ * 🔴 Lue par UNE requête seulement depuis S6 (2026-10-23,
+ * `documentation/comptes-client/plan-entrer-dans-ses-sites.md`, R1) :
+ * `readCompanyStanding` de ce dossier, qui porte les conditions (membership
+ * propre qui ouvre ; au principal : acceptée, principal `active`, site lié et
+ * non suspendu). Aucun lecteur de rôle ne l'appelle en direct —
+ * `lint:company-role-readers` le tient.
  *
  * @param ownRole la membership de la personne dans X, ou `null`.
  * @param roleInParent sa membership dans le principal de X, ou `null` si X
  *   n'a pas de principal ou qu'elle n'y est pas membre.
  */
 export function effectiveRole(
-  ownRole: CompanyRole | null,
-  roleInParent: CompanyRole | null,
-): CompanyRole | null {
+  ownRole: StandingRole | null,
+  roleInParent: StandingRole | null,
+): StandingRole | null {
   const inherited =
     roleInParent !== null && INHERITING_ROLES.has(roleInParent) ? INHERITED_CEILING : null;
   if (ownRole === null || inherited === null) {
@@ -59,4 +56,4 @@ export function effectiveRole(
 }
 
 /** Du plus large au plus étroit : `owner` > `admin` > `orders` = `billing`. */
-const RANK: Readonly<Record<CompanyRole, number>> = { owner: 3, admin: 2, orders: 1, billing: 1 };
+const RANK: Readonly<Record<StandingRole, number>> = { owner: 3, admin: 2, orders: 1, billing: 1 };

@@ -2,10 +2,16 @@ import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { Clock } from "../../../platform/time/clock.js";
-import { openingMembership } from "../../shared/membership-opening/opening-membership.js";
+import { billingReadingRole } from "../../shared/company-standing/domain/company-standing.js";
+import { readCompanyStanding } from "../../shared/company-standing/infrastructure/read-company-standing.js";
 import { UnpaidAccessReader, type UnpaidAccessRole } from "../domain/ports/unpaid-access.reader.js";
 
-/** Le rôle du rattachement, et rien d'autre. */
+/**
+ * Le rôle qui ouvre la LECTURE des factures et des impayés : la membership
+ * propre, ou le détenteur du principal dans ses sites (S6, Q1) — un `admin`
+ * hérité n'y lit rien. Toutes les routes de ce port sont des lectures
+ * (vérifié le 2026-10-23).
+ */
 @Injectable()
 export class PrismaUnpaidAccessReader extends UnpaidAccessReader {
   constructor(
@@ -16,15 +22,8 @@ export class PrismaUnpaidAccessReader extends UnpaidAccessReader {
   }
 
   async roleOf(userId: string, companyId: string): Promise<UnpaidAccessRole | null> {
-    const membership = await this.prisma.membership.findFirst({
-      where: {
-        userId,
-        companyId,
-        // Seul un rattachement qui OUVRE compte (§8.1 bis, 2026-10-10).
-        ...openingMembership(this.clock.now()),
-      },
-      select: { role: true },
-    });
-    return membership?.role ?? null;
+    return billingReadingRole(
+      await readCompanyStanding(this.prisma, this.clock.now(), userId, companyId),
+    );
   }
 }

@@ -20,11 +20,11 @@ describe("aucun rattachement", () => {
   it("n'agit pour personne", () => {
     // Le parcours par défaut de la boutique : on visite, on commande à titre
     // personnel. Ce n'est pas un trou à combler.
-    expect(resolveCompany([], null)).toBeNull();
+    expect(resolveCompany([], [], null)).toBeNull();
   });
 
   it("ignore une société déclarée quand la personne n'appartient à rien", () => {
-    expect(resolveCompany([], "co_autre")).toBeNull();
+    expect(resolveCompany([], [], "co_autre")).toBeNull();
   });
 });
 
@@ -33,14 +33,14 @@ describe("un seul rattachement", () => {
     // Ce n'est PAS le raccourci que `principal.ts` interdit : il n'y a aucun
     // choix à faire. « La première de plusieurs » et « la seule » ne se
     // ressemblent que dans le code.
-    expect(resolveCompany([membership("co_1")], null)).toBe("co_1");
+    expect(resolveCompany([membership("co_1")], [], null)).toBe("co_1");
   });
 
   it("agit pour celui-là même si la déclaration en nomme un autre", () => {
     // La déclaration n'a aucune autorité : elle sert à départager, pas à
     // désigner. Une personne rattachée à une seule maison ne peut pas agir pour
     // une autre en changeant un en-tête.
-    expect(resolveCompany([membership("co_1")], "co_2")).toBe("co_1");
+    expect(resolveCompany([membership("co_1")], [], "co_2")).toBe("co_1");
   });
 });
 
@@ -51,22 +51,22 @@ describe("plusieurs rattachements", () => {
     // Le cœur du sujet. Retomber sur « la première » servirait le tarif d'une
     // maison à quelqu'un qui en regarde une autre — et personne ne s'en
     // apercevrait, puisque le prix rendu serait parfaitement plausible.
-    expect(resolveCompany(both, null)).toBeNull();
+    expect(resolveCompany(both, [], null)).toBeNull();
   });
 
   it("agit pour celle qui est déclarée", () => {
-    expect(resolveCompany(both, "co_2")).toBe("co_2");
+    expect(resolveCompany(both, [], "co_2")).toBe("co_2");
   });
 
   it("🔴 ignore une déclaration qui ne correspond à aucun rattachement", () => {
     // L'en-tête vient du réseau : il est confronté aux rattachements avant de
     // servir à quoi que ce soit. Sans cette confrontation, il suffirait de le
     // réécrire pour lire la mercuriale d'un concurrent.
-    expect(resolveCompany(both, "co_du_concurrent")).toBeNull();
+    expect(resolveCompany(both, [], "co_du_concurrent")).toBeNull();
   });
 
   it("ne se laisse pas prendre par une déclaration vide", () => {
-    expect(resolveCompany(both, "")).toBeNull();
+    expect(resolveCompany(both, [], "")).toBeNull();
   });
 });
 
@@ -75,20 +75,56 @@ describe("« perso » déclaré", () => {
   // elle, l'espace perso était inexprimable pour qui a exactement une société.
 
   it("n'agit pour personne quand la personne n'appartient à rien", () => {
-    expect(resolveCompany([], PERSONAL_WORKSPACE)).toBeNull();
+    expect(resolveCompany([], [], PERSONAL_WORKSPACE)).toBeNull();
   });
 
   it("🔴 n'agit pour personne même avec UNE seule société", () => {
-    expect(resolveCompany([membership("co_1")], PERSONAL_WORKSPACE)).toBeNull();
+    expect(resolveCompany([membership("co_1")], [], PERSONAL_WORKSPACE)).toBeNull();
   });
 
   it("n'agit pour personne avec plusieurs sociétés", () => {
-    expect(resolveCompany([membership("co_1"), membership("co_2")], PERSONAL_WORKSPACE)).toBeNull();
+    expect(
+      resolveCompany([membership("co_1"), membership("co_2")], [], PERSONAL_WORKSPACE),
+    ).toBeNull();
   });
 
   it("reste distinct d'une société étrangère déclarée, toujours ignorée", () => {
     // Une valeur qui n'est ni « perso » ni un rattachement ne change rien : la
     // seule société reste servie.
-    expect(resolveCompany([membership("co_1")], "co_etrangere")).toBe("co_1");
+    expect(resolveCompany([membership("co_1")], [], "co_etrangere")).toBe("co_1");
+  });
+});
+
+/**
+ * Les sites atteints par héritage (S6, `plan-entrer-dans-ses-sites.md`, R4) :
+ * déclarés, ils servent ; jamais d'office. Le prix servi sans en-tête ne
+ * change pas pour un principal qui atteint aussi des sites.
+ */
+describe("resolveCompany — un site atteignable (S6)", () => {
+  it("🔴 sans déclaration, le seul rattachement PROPRE reste servi", () => {
+    expect(resolveCompany([membership("co_principal")], ["co_site"], null)).toBe("co_principal");
+  });
+
+  it("sans rattachement propre, un site atteignable ne sert jamais d'office", () => {
+    expect(resolveCompany([], ["co_site"], null)).toBeNull();
+  });
+
+  it("déclaré, le site atteignable est servi — un rattachement propre ou plusieurs", () => {
+    expect(resolveCompany([membership("co_principal")], ["co_site"], "co_site")).toBe("co_site");
+    expect(resolveCompany([], ["co_site"], "co_site")).toBe("co_site");
+    expect(resolveCompany([membership("co_1"), membership("co_2")], ["co_site"], "co_site")).toBe(
+      "co_site",
+    );
+  });
+
+  it("un site NON atteignable déclaré reste ignoré, comme une société étrangère", () => {
+    expect(resolveCompany([membership("co_principal")], ["co_site"], "co_frere")).toBe(
+      "co_principal",
+    );
+    expect(resolveCompany([], ["co_site"], "co_frere")).toBeNull();
+  });
+
+  it("« perso » déclaré l'emporte, sites atteignables compris", () => {
+    expect(resolveCompany([], ["co_site"], PERSONAL_WORKSPACE)).toBeNull();
   });
 });

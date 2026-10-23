@@ -297,6 +297,8 @@
   "test/shop-catalogue-pro.e2e-spec.ts": 6500,
   "test/shop-featured.e2e-spec.ts": 12315,
   "test/shop-copy.e2e-spec.ts": 8102,
+  "test/mail-copy.e2e-spec.ts": 6000,
+  "test/mail-copy-preview.e2e-spec.ts": 5000,
   "test/shop-order.e2e-spec.ts": 5551,
   "test/shop-quote.e2e-spec.ts": 6182,
   "test/shop-state-carry-over-migration.e2e-spec.ts": 3000,
@@ -383,5 +385,8 @@
   "test/resupply-asap-village-flow.e2e-spec.ts": 8000,
   "test/pickup-discount-exclusions.e2e-spec.ts": 7484,
   "test/order-revision.e2e-spec.ts": 11959,
-  "test/order-revision-views.e2e-spec.ts": 15998
+  "test/order-revision-views.e2e-spec.ts": 15998,
+  "test/company-standing-readers.e2e-spec.ts": 21402,
+  "test/company-standing-workspace.e2e-spec.ts": 7357,
+  "test/pickups-before-s2-migration.e2e-spec.ts": 5137
 }

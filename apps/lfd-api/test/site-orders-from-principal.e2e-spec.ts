@@ -297,8 +297,14 @@ describe("la liste agrégée du principal (§2, §7.5, §7.6)", () => {
   });
 });
 
-describe("commander pour un site reste fermé (§7.1, R8)", () => {
-  it("le devis au nom d'un site par l'owner du principal : 404", async () => {
+/**
+ * Ce bloc disait « commander pour un site reste fermé (§7.1, R8) » jusqu'au
+ * 2026-10-23 : S6 l'ouvre (`plan-entrer-dans-ses-sites.md`, R1, R5) — une
+ * commande passée depuis un site est la commande du site. Les deux tests
+ * sont retournés, pas affaiblis : ils prouvent désormais l'ouverture.
+ */
+describe("commander pour un site, depuis le principal (S6, R5)", () => {
+  it("le devis au nom d'un site par l'owner du principal : 200", async () => {
     const g = await group();
     const boss = await principalMember(g, CustomerRole.owner);
 
@@ -306,15 +312,15 @@ describe("commander pour un site reste fermé (§7.1, R8)", () => {
       .asSub(boss.sub)
       .post("/orders/quote")
       .send({ companyId: g.site, lines: [{ sku: "VIE-001", quantity: 6 }] })
-      .expect(404);
+      .expect(200);
   });
 
   /**
-   * La passation prend sa société de l'espace de travail, résolu parmi les
-   * rattachements PROPRES (`resolveCompany`) : déclarer le site ne la pose
-   * jamais sur le site, quelle que soit l'issue de la requête.
+   * La passation prend sa société de l'espace de travail : depuis S6, un site
+   * atteint par héritage DÉCLARÉ est servi (`resolveCompany`, R4) — la
+   * commande est posée sur le site, pas sur le principal.
    */
-  it("la passation en déclarant le site : aucune commande n'est posée sur le site", async () => {
+  it("la passation en déclarant le site : la commande est posée sur le site", async () => {
     const g = await group();
     const boss = await principalMember(g, CustomerRole.owner);
     await member(boss.id, await company(), { role: CustomerRole.owner }); // deux espaces
@@ -343,9 +349,11 @@ describe("commander pour un site reste fermé (§7.1, R8)", () => {
         requestedWindow: { start: "07:00", end: "08:00" },
         note: "",
         lines: [{ sku: "VIE-001", quantity: 3 }],
-      });
+      })
+      .expect(201);
 
-    expect(await ctx.prisma.order.count({ where: { companyId: g.site } })).toBe(0);
+    expect(await ctx.prisma.order.count({ where: { companyId: g.site } })).toBe(1);
+    expect(await ctx.prisma.order.count({ where: { companyId: g.principal } })).toBe(0);
   });
 });
 
@@ -408,7 +416,12 @@ describe("l'annulation par le compte principal (§7.2, §7.7, §7.9)", () => {
     expect(cancelledMails()[0]?.data).toMatchObject({ author: { kind: "member" } });
   });
 
-  it("site suspendu : l'owner du principal le lit, mais n'annule pas (404)", async () => {
+  /**
+   * Disait « le lit, mais n'annule pas » jusqu'au 2026-10-23 : S6 ferme
+   * l'héritage sur un site suspendu (R1, « site non suspendu »). Plus strict,
+   * pas affaibli — et remonté à Hugo, la règle contredisant C1 §7.7.
+   */
+  it("site suspendu : l'owner du principal ne le lit plus, et n'annule pas (404)", async () => {
     const g = await group();
     const orderId = await accountOrder(g.site, g.siteOwner);
     const boss = await principalMember(g, CustomerRole.owner);
@@ -417,7 +430,7 @@ describe("l'annulation par le compte principal (§7.2, §7.7, §7.9)", () => {
       data: { status: CompanyStatus.suspended },
     });
 
-    await detail(boss, orderId).expect(200);
+    await detail(boss, orderId).expect(404);
     await customerCancel(boss.sub, orderId).expect(404);
     expect((await ctx.prisma.order.findUniqueOrThrow({ where: { id: orderId } })).status).toBe(
       OrderStatus.placed,

@@ -2,7 +2,8 @@ import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { Clock } from "../../../platform/time/clock.js";
-import { openingMembership } from "../../shared/membership-opening/opening-membership.js";
+import { standingRole } from "../../shared/company-standing/domain/company-standing.js";
+import { readCompanyStanding } from "../../shared/company-standing/infrastructure/read-company-standing.js";
 import {
   OrderGuardReader,
   type AccountSettlementStanding,
@@ -20,17 +21,14 @@ export class PrismaOrderGuardReader extends OrderGuardReader {
     super();
   }
 
+  /**
+   * Le rôle EFFECTIF (S6, R1) : l'`owner` ou l'`admin` du principal passe et
+   * chiffre au nom d'un site, plafonné à `admin` (R2, R5).
+   */
   async roleOf(userId: string, companyId: string): Promise<OrderRole | null> {
-    const membership = await this.prisma.membership.findFirst({
-      where: {
-        userId,
-        companyId,
-        // Seul un rattachement qui OUVRE compte (§8.1 bis, 2026-10-10).
-        ...openingMembership(this.clock.now()),
-      },
-      select: { role: true },
-    });
-    return membership?.role ?? null;
+    return standingRole(
+      await readCompanyStanding(this.prisma, this.clock.now(), userId, companyId),
+    );
   }
 
   async companyStatusOf(companyId: string): Promise<OrderCompanyStatus | null> {

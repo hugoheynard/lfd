@@ -69,6 +69,17 @@ export interface Principal {
   readonly emailProven: boolean;
   /** Sociétés auxquelles la personne est rattachée — possiblement aucune. */
   readonly memberships: readonly PrincipalMembership[];
+  /**
+   * Sociétés que la personne atteint SANS y être rattachée — les sites d'un
+   * principal dont elle est détentrice ou administratrice (S6,
+   * `plan-entrer-dans-ses-sites.md`). Calculées par l'adaptateur du port
+   * {@link PrincipalResolver} : cette couche ne sait pas ce qu'est un site.
+   *
+   * Elles ne servent JAMAIS d'office (R4) : seule une déclaration d'espace de
+   * travail y entre (`resolveCompany`). Le rôle de chacune est relu au geste
+   * par la requête partagée du commerce, jamais lu ici.
+   */
+  readonly reachableCompanyIds: readonly string[];
   /** Scopes accordés par le token. */
   readonly scopes: readonly string[];
 }

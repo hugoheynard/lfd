@@ -34,6 +34,8 @@ import { AttachMandateProofHandler } from "./application/commands/attach-mandate
 import { RevokeMandateHandler } from "./application/commands/revoke-mandate.handler.js";
 import { GetCompanyMandateHandler } from "./application/queries/get-company-mandate.handler.js";
 import { PrismaBankAccountGuardReader } from "./infrastructure/prisma-bank-account-guard.reader.js";
+import { BankAccountReadingGuard } from "./domain/ports/bank-account-reading-guard.js";
+import { PrismaBankAccountReadingGuard } from "./infrastructure/prisma-bank-account-reading-guard.js";
 import { PrismaCompanyBankAccountRepository } from "./infrastructure/prisma-company-bank-account.repository.js";
 import { MandateDebtorReader } from "./domain/ports/mandate-debtor.reader.js";
 import { PrismaMandateDebtorReader } from "./infrastructure/prisma-mandate-debtor.reader.js";
@@ -122,6 +124,7 @@ import { StripeCheckoutGateway } from "./infrastructure/stripe-checkout-gateway.
       useClass: PrismaCompanyBankAccountRepository,
     },
     { provide: BankAccountGuardReader, useClass: PrismaBankAccountGuardReader },
+    { provide: BankAccountReadingGuard, useClass: PrismaBankAccountReadingGuard },
     { provide: CustomerMandateGate, useClass: FeatureAccessCustomerMandateGate },
     // Les liens de paiement libres (plan liens de paiement §2b). Le réglage du
     // plafond : une ligne, deux ports (lecture / écriture) sur le même adaptateur.

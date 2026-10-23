@@ -30,6 +30,7 @@ import {
   BankAccountGuardReader,
   type BankAccountRole,
 } from "../../domain/ports/bank-account-guard.reader.js";
+import { BankAccountReadingGuard } from "../../domain/ports/bank-account-reading-guard.js";
 import { CompanyBankAccountRepository } from "../../domain/ports/company-bank-account.repository.js";
 import { CustomerMandateGate } from "../../domain/ports/customer-mandate-gate.js";
 import {
@@ -303,6 +304,21 @@ export class InMemoryBankAccounts extends CompanyBankAccountRepository {
 
 /** Le mur : rend le rôle qu'on lui donne, et marque sa lecture. */
 export class FixedGuard extends BankAccountGuardReader {
+  constructor(
+    private readonly steps: Steps,
+    private readonly role: BankAccountRole | null,
+  ) {
+    super();
+  }
+
+  roleOf(): Promise<BankAccountRole | null> {
+    this.steps.log.push("guard");
+    return Promise.resolve(this.role);
+  }
+}
+
+/** Le mur de LECTURE (S6, Q1) : rend le rôle qu'on lui donne, et marque sa lecture. */
+export class FixedReadingGuard extends BankAccountReadingGuard {
   constructor(
     private readonly steps: Steps,
     private readonly role: BankAccountRole | null,

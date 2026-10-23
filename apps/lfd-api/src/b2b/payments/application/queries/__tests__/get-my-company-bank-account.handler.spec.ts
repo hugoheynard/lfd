@@ -15,10 +15,8 @@ import {
   BankAccountCompanyNotFoundError,
   BankAccountRoleRequiredError,
 } from "../../../domain/errors/bank-account-errors.js";
-import {
-  BankAccountGuardReader,
-  type BankAccountRole,
-} from "../../../domain/ports/bank-account-guard.reader.js";
+import type { BankAccountRole } from "../../../domain/ports/bank-account-guard.reader.js";
+import { BankAccountReadingGuard } from "../../../domain/ports/bank-account-reading-guard.js";
 import { CompanyBankAccountRepository } from "../../../domain/ports/company-bank-account.repository.js";
 import { MandateOptions } from "../../../domain/value-objects/mandate-options.js";
 import { recordCompanyBankAccount } from "../../commands/record-company-bank-account.js";
@@ -39,7 +37,7 @@ const PAYLOAD: SetCompanyBankAccountPayload = {
   countryCode: "FR",
 };
 
-class FixedGuard extends BankAccountGuardReader {
+class FixedGuard extends BankAccountReadingGuard {
   constructor(private readonly role: BankAccountRole | null) {
     super();
   }

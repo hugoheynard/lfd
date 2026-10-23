@@ -6,7 +6,7 @@ import {
 import type { BankAccountRole } from "../../../domain/ports/bank-account-guard.reader.js";
 import {
   FixedDebtors,
-  FixedGuard,
+  FixedReadingGuard,
   InMemoryMandates,
   Steps,
 } from "../../__tests__/payment-doubles.js";
@@ -18,7 +18,7 @@ function read(role: BankAccountRole | null, billedTo: { companyId: string; name:
   const debtors = new FixedDebtors(new InMemoryMandates(steps));
   debtors.billedTo = billedTo;
   return new GetMyCompanyBilledToHandler(
-    new FixedGuard(steps, role),
+    new FixedReadingGuard(steps, role),
     debtors,
     new FixedClock(new Date("2026-09-15T09:00:00.000Z")),
   ).execute(new GetMyCompanyBilledToQuery("usr_1", "cmp_1"));

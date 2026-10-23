@@ -79,7 +79,12 @@
 >   (`apps/lfd-api/src/platform/mailer/copy/mail-copy-manifest.json` — chaque
 >   texte, ses variables permises et obligatoires) est généré depuis le
 >   dictionnaire, et un texte changé sans `pnpm mail-copy:digest` le fait
->   mentir. C'est la
+>   mentir. Et **48** le même jour avec `lint:company-role-readers` : le rôle
+>   d'une personne dans une société — propre, ou hérité du principal par ses
+>   sites — ne se lit que par la requête partagée `readCompanyStanding`
+>   (`apps/lfd-api/src/b2b/shared/company-standing/`) ; une dizaine de
+>   lecteurs en recopiaient chacun la condition, et chaque copie oubliée
+>   était une fuite entre frères. C'est la
 >   **seule** correction faite dans le corps, parce qu'un chiffre faux se vérifie
 >   en une commande et trompe tout de suite ;
 > - le dossier **`documentation/pricing/`** (ouvert le 2026-09-06) et le dossier
@@ -1239,7 +1244,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 47 portes du dépôt, d'un coup
+pnpm lint:gates         # les 48 portes du dépôt, d'un coup
 pnpm lint:no-direct-env # gate repo : aucun accès direct à process.env
 ```
 

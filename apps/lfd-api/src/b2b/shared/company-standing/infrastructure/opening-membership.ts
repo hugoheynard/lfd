@@ -1,5 +1,5 @@
-import type { Prisma } from "../../../platform/database/client/client.js";
-import { oldestLiveInvitation } from "../../../platform/shared/invitation/invitation-expiry.js";
+import type { Prisma } from "../../../../platform/database/client/client.js";
+import { oldestLiveInvitation } from "../../../../platform/shared/invitation/invitation-expiry.js";
 
 /**
  * **Un rattachement OUVRE-t-il sa société ?** — la même règle que

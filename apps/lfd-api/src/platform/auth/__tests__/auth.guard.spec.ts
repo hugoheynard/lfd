@@ -20,6 +20,7 @@ const principal: Principal = {
   email: "jean@client.fr",
   emailProven: false,
   memberships: [{ companyId: "company_1", role: CustomerRole.orders }],
+  reachableCompanyIds: [],
   scopes: ["read:orders"],
 };
 

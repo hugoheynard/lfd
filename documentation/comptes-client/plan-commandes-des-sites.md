@@ -27,7 +27,7 @@
 - **L'annulation** a son propre mur : `PrismaCancellingMemberReader.mayCancelFor`
   (membership acceptée, société active, « sans héritage vers les sites »).
 - **La règle d'héritage existe, débranchée** :
-  `b2b/account/domain/services/effective-role.ts` — seuls `owner` et `admin`
+  `b2b/shared/company-standing/domain/effective-role.ts` (déplacée là par S6, 2026-10-23) — seuls `owner` et `admin`
   du principal héritent, plafonnés à `admin` dans le site ; un rôle propre
   plus haut l'emporte (MAX) ; jamais dans l'autre sens. « PAS ENCORE
   BRANCHÉE (S6) ». Décidée par Hugo le 2026-10-05.

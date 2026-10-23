@@ -30,15 +30,25 @@ import type { PrincipalMembership } from "./principal.js";
  *   pas. Une société déclarée à laquelle la personne n'appartient pas est
  *   ignorée, jamais servie.
  *
+ * - **une société atteignable déclarée** (S6, `plan-entrer-dans-ses-sites.md`,
+ *   R4) — un site d'un principal dont la personne est détentrice ou
+ *   administratrice. Servi SEULEMENT s'il est déclaré : « le seul
+ *   rattachement » ne compte que les rattachements PROPRES, et le prix servi
+ *   sans en-tête ne change pas pour qui atteint aussi des sites.
+ *
  * Pure : elle ne lit ni en-tête ni base, elle reçoit ce qui a déjà été vérifié.
  * C'est ce qui permet d'énumérer ses cas au lieu de monter une requête HTTP.
  */
 export function resolveCompany(
   memberships: readonly PrincipalMembership[],
+  reachableCompanyIds: readonly string[],
   declared: string | null,
 ): string | null {
   if (declared === PERSONAL_WORKSPACE) {
     return null;
+  }
+  if (declared !== null && reachableCompanyIds.includes(declared)) {
+    return declared;
   }
   const [only, ...rest] = memberships;
   if (only === undefined) {

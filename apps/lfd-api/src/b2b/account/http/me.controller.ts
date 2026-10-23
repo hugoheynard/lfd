@@ -127,7 +127,12 @@ export class MeController {
     await this.commands.execute<UpdateNavPreferencesCommand, void>(
       new UpdateNavPreferencesCommand(
         user.userId,
-        user.memberships.map((membership) => membership.companyId),
+        // Les sites atteints par héritage sont des espaces de travail
+        // légitimes (S6, R5) : le sélecteur peut en retenir un.
+        [
+          ...user.memberships.map((membership) => membership.companyId),
+          ...user.reachableCompanyIds,
+        ],
         toNavPreferencesPatch(payload),
       ),
     );

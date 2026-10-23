@@ -2,17 +2,16 @@ import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { Clock } from "../../../platform/time/clock.js";
-import { effectiveRole } from "../../account/domain/services/effective-role.js";
-import { openingMembership } from "../../shared/membership-opening/opening-membership.js";
+import { standingRole } from "../../shared/company-standing/domain/company-standing.js";
+import { readCompanyStanding } from "../../shared/company-standing/infrastructure/read-company-standing.js";
 import { type AccessedOrder, OrderAccessReader } from "../domain/ports/order-access.reader.js";
 import type { OrderRole } from "../domain/ports/order-guard.reader.js";
 
 /**
- * Le rôle effectif dans la société d'une commande, en UNE lecture : la
- * membership propre (celle qui ouvre, `openingMembership`, comme `roleOf`) et
- * celle du principal ACTUEL — acceptée, principal `active` (§7.2 du plan
- * `plan-commandes-des-sites.md`). Une invitation non acceptée au principal
- * n'ouvre rien sur ses sites.
+ * Le rôle effectif dans la société d'une commande — la requête partagée
+ * (S6, R1), dont ce lecteur était la première copie (C1, §7.2) : membership
+ * propre qui ouvre, ou héritage du principal ACTUEL (acceptée, principal
+ * `active`, site non suspendu).
  */
 @Injectable()
 export class PrismaOrderAccessReader extends OrderAccessReader {
@@ -27,30 +26,8 @@ export class PrismaOrderAccessReader extends OrderAccessReader {
     if (order.companyId === null) {
       return null;
     }
-    const company = await this.prisma.company.findUnique({
-      where: { id: order.companyId },
-      select: {
-        memberships: {
-          where: { userId, ...openingMembership(this.clock.now()) },
-          select: { role: true },
-        },
-        parentCompany: {
-          select: {
-            status: true,
-            memberships: {
-              where: { userId, acceptedAt: { not: null } },
-              select: { role: true },
-            },
-          },
-        },
-      },
-    });
-    if (company === null) {
-      return null;
-    }
-    const parent = company.parentCompany;
-    const roleInParent =
-      parent !== null && parent.status === "active" ? (parent.memberships[0]?.role ?? null) : null;
-    return effectiveRole(company.memberships[0]?.role ?? null, roleInParent);
+    return standingRole(
+      await readCompanyStanding(this.prisma, this.clock.now(), userId, order.companyId),
+    );
   }
 }

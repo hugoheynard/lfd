@@ -1,7 +1,7 @@
 import type { CustomerBankAccountView } from "@lfd/contracts";
 import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 
-import { BankAccountGuardReader } from "../../domain/ports/bank-account-guard.reader.js";
+import { BankAccountReadingGuard } from "../../domain/ports/bank-account-reading-guard.js";
 import { CompanyBankAccountRepository } from "../../domain/ports/company-bank-account.repository.js";
 import { ensureBankAccountAccess } from "../../domain/services/bank-account-access.js";
 import { customerBankAccountView } from "./customer-bank-account-view.js";
@@ -22,7 +22,7 @@ export class GetMyCompanyBankAccountHandler implements IQueryHandler<
   CustomerBankAccountView | null
 > {
   constructor(
-    private readonly guard: BankAccountGuardReader,
+    private readonly guard: BankAccountReadingGuard,
     private readonly accounts: CompanyBankAccountRepository,
   ) {}
 

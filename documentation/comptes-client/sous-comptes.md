@@ -26,7 +26,7 @@ ses déclinaisons ».
 | S4-0 | ✅ bâti             | migration `20261005140000_le_lot_de_prelevement_fige` ; `collection_batch`, `order_collection` ; e2e `collection-batches`                      |
 | S4   | ✅ pour l'essentiel | migration `20261005200000_le_payeur_des_sous_comptes` ; payeur copié, trois formes, impayés détachés ; e2e `sub-account-billing` — reste au §6 |
 | S5   | 🟡 à faire          | l'aspect `contacts` se suit (période écrite), mais **aucune lecture** ne combine les contacts                                                  |
-| S6   | 🟡 à faire          | `src/platform/auth/resolve-company.ts` ignore les sous-comptes ; la règle de rôle effectif n'est lue par personne (§3)                         |
+| S6   | 🟡 serveur bâti     | 2026-10-23 : une requête de rôle effectif (`readCompanyStanding`), lue par tous les lecteurs du mur ; sélecteur boutique à faire (§3)          |
 
 Le socle sur lequel tout repose, inchangé :
 
@@ -319,46 +319,34 @@ Toutes dans `orderPayerOf`, donc aux entrées du §2.3 :
 sous-comptes ; un sous-compte ne voit **que lui-même** ; un contact du
 principal peut être partagé avec un sous-compte.
 
-**Ce qui est bâti.** La règle est écrite une fois, en fonction pure :
-`effectiveRole` (`src/b2b/account/domain/services/effective-role.ts`), testée
-(`__tests__/effective-role.spec.ts`) :
+**Ce qui est bâti (S6 serveur, 2026-10-23).** La règle est écrite une fois,
+en fonction pure — `effectiveRole`
+(`src/b2b/shared/company-standing/domain/effective-role.ts`, déplacée depuis
+`b2b/account/` le 2026-10-23) :
 
 ```
 rôle effectif dans X =
-    rôle de membership(X)                       s'il existe
-  | min(rôle de membership(P), admin)           si X.parent = P et ce rôle ∈ {owner, admin}
+    max(rôle de membership(X),
+        min(rôle de membership(P), admin)   si X.parent = P, ce rôle ∈ {owner, admin},
+                                             membership(P) acceptée, P active,
+                                             X non suspendu)
   | aucun
 ```
 
-🔴 **Mais aucun code de production ne l'importe** (vérifié le 2026-10-20 :
-seul son spec la cite). Le mur a toujours ses **deux** voies, et aucune ne
-connaît les sous-comptes :
+Le mur n'avait pas **deux** voies, comme ce paragraphe l'a dit jusqu'au
+2026-10-23, mais **une dizaine** : `resolveCompany`, puis un lecteur de rôle
+par contexte, chacun avec sa copie de la condition. Ils lisent tous, depuis S6,
+**la même requête** — `readCompanyStanding`
+(`src/b2b/shared/company-standing/infrastructure/read-company-standing.ts`) —
+et `lint:company-role-readers` refuse un lecteur de plus. La conception et ses
+décisions (Q1 : le détenteur du principal lit la facturation du site ; Q2 :
+les courriels « aux membres » d'un site restent ceux de ses memberships
+propres) sont dans [`plan-entrer-dans-ses-sites.md`](plan-entrer-dans-ses-sites.md),
+qui remplace la conception « À faire — S6 » écrite ici auparavant.
 
-1. `resolveCompany` (`src/platform/auth/resolve-company.ts`, appelé par le
-   garde d'authentification) retient la société déclarée si elle figure dans
-   `principal.memberships` ;
-2. `MembershipReader.roleOf(userId, companyId)`
-   (`b2b/account/domain/ports/membership.reader.ts`), relu par les gestes
-   client de `src/b2b`.
-
-Aujourd'hui, donc, un owner du principal **n'entre pas** dans un sous-compte
-côté plateforme ; seul le staff gère les sites.
-
-🟡 **À faire — S6**, conception décidée :
-
-- les deux voies lisent `effectiveRole` ; le plafond `admin` ferme à l'owner
-  hérité les gestes réservés à l'owner (transfert, second détenteur) ;
-- jamais dans l'autre sens : une membership dans un sous-compte ne donne rien
-  sur le principal ni sur ses frères ;
-- le sélecteur de société liste memberships **et** sous-comptes
-  atteignables ; la branche « un seul rattachement sert d'office » est
-  réécrite ;
-- détacher coupe l'accès à la requête suivante (le principal est relu en
-  base à chaque requête, sans cache — T7) ;
-- écran « qui a accès » d'un sous-compte : ses memberships, plus « via
-  _Principal_ » en lecture ; un admin hérité invite dans le sous-compte, et
-  l'invité reçoit une membership **du sous-compte** ;
-- le rôle `admin` hérité ne donne pas le geste rattacher / détacher (§4).
+Côté boutique, le sélecteur qui DÉCLARE un site reste à bâtir ; le serveur
+sert déjà la liste (`GET /me`, `reachableSites`) et admet un site atteint
+déclaré par l'en-tête d'espace de travail.
 
 🔴 **Aucune route client ne résout vers le principal.** La résolution sert
 aux lectures serveur (prix, payeur, prélèvement), jamais à répondre « mes
@@ -472,16 +460,16 @@ de l'ancien. Rattacher et détacher, chacun en sa propre écriture, passent.
 
 ## 6. Les lots
 
-| Lot      | Contenu                                                                                                                                                                                                                                                                                  | État                                                                                                                                                                                  |
-| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **S1**   | migration §5 ; `Company` porte son parent ; `company_follows` et ses ports ; gestes staff sous le verrou ; e2e `sub-accounts`                                                                                                                                                            | ✅                                                                                                                                                                                    |
-| **S2**   | écrans admin §4                                                                                                                                                                                                                                                                          | ✅ (badge des commandes non confirmé)                                                                                                                                                 |
-| **S3**   | `pricingCompanyId` résolu à la date ; Q6 bâtie ; e2e `sub-account-pricing`                                                                                                                                                                                                               | ✅                                                                                                                                                                                    |
-| **A1**   | agrégation des commandes, son propre plan ([`../commandes/plan-agregation-des-commandes.md`](../commandes/plan-agregation-des-commandes.md))                                                                                                                                             | hors de cette doc                                                                                                                                                                     |
-| **S4-0** | lot de prélèvement figé, état d'encaissement par commande                                                                                                                                                                                                                                | ✅                                                                                                                                                                                    |
-| **S4**   | `billing` : trois formes, frappe sur l'identité résolue, mandat à la date de clôture, impayés détachés, checklist §2.1 bis, payeur copié, garde « payeur suspendu », routes client §3 ; e2e `sub-account-billing`, `cycle-statements-payer`                                              | ✅ pour l'essentiel ; 🟡 brouillon de cycle encore par société (§2.1 ter) ; 🟡 entrée « abonnements » non retrouvée (§2.3) ; 🟡 aucun écran client des impayés détachés (§2.1 quater) |
-| **S5**   | `contacts` : lecture combinée — la période s'écrit, aucun lecteur ne la lit                                                                                                                                                                                                              | 🟡 à faire                                                                                                                                                                            |
-| **S6**   | côté client : `effectiveRole` dans les deux voies du mur, sélecteur, e2e (le principal agit dans un sous-compte ; un sous-compte ne voit ni le principal ni ses frères ; détacher coupe) — la part COMMANDES : [`plan-commandes-des-sites.md`](plan-commandes-des-sites.md) (2026-10-21) | 🟡 à faire                                                                                                                                                                            |
+| Lot      | Contenu                                                                                                                                                                                                                                                                                                                                                                     | État                                                                                                                                                                                  |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **S1**   | migration §5 ; `Company` porte son parent ; `company_follows` et ses ports ; gestes staff sous le verrou ; e2e `sub-accounts`                                                                                                                                                                                                                                               | ✅                                                                                                                                                                                    |
+| **S2**   | écrans admin §4                                                                                                                                                                                                                                                                                                                                                             | ✅ (badge des commandes non confirmé)                                                                                                                                                 |
+| **S3**   | `pricingCompanyId` résolu à la date ; Q6 bâtie ; e2e `sub-account-pricing`                                                                                                                                                                                                                                                                                                  | ✅                                                                                                                                                                                    |
+| **A1**   | agrégation des commandes, son propre plan ([`../commandes/plan-agregation-des-commandes.md`](../commandes/plan-agregation-des-commandes.md))                                                                                                                                                                                                                                | hors de cette doc                                                                                                                                                                     |
+| **S4-0** | lot de prélèvement figé, état d'encaissement par commande                                                                                                                                                                                                                                                                                                                   | ✅                                                                                                                                                                                    |
+| **S4**   | `billing` : trois formes, frappe sur l'identité résolue, mandat à la date de clôture, impayés détachés, checklist §2.1 bis, payeur copié, garde « payeur suspendu », routes client §3 ; e2e `sub-account-billing`, `cycle-statements-payer`                                                                                                                                 | ✅ pour l'essentiel ; 🟡 brouillon de cycle encore par société (§2.1 ter) ; 🟡 entrée « abonnements » non retrouvée (§2.3) ; 🟡 aucun écran client des impayés détachés (§2.1 quater) |
+| **S5**   | `contacts` : lecture combinée — la période s'écrit, aucun lecteur ne la lit                                                                                                                                                                                                                                                                                                 | 🟡 à faire                                                                                                                                                                            |
+| **S6**   | côté client : une requête de rôle effectif pour tous les lecteurs du mur, sélecteur, e2e (le principal agit dans un sous-compte ; un sous-compte ne voit ni le principal ni ses frères ; détacher coupe) — [`plan-entrer-dans-ses-sites.md`](plan-entrer-dans-ses-sites.md) ; la part COMMANDES : [`plan-commandes-des-sites.md`](plan-commandes-des-sites.md) (2026-10-21) | 🟡 serveur bâti le 2026-10-23, sélecteur à faire                                                                                                                                      |
 
 🔴 **Condition de mise en service** (inchangée) : aucun vrai site ne s'ouvre
 avant que S4 soit en ligne en production.
@@ -502,7 +490,7 @@ une migration de données.
   (`billing` suivi) et l'entité qui règle seule. Un seul modèle.
 - **Q2 — Qui voit quoi côté client ?** Le principal voit ses sous-comptes ;
   un sous-compte ne voit que lui-même ; un contact peut être partagé (§3,
-  S6 à faire).
+  S6 serveur bâti le 2026-10-23).
 - **Q3 — Payer pour une autre entité.** Non : identité facturée et
   prélèvement forment un seul aspect `billing`.
 - **Q4 — Principal suspendu** : bloque les sous-comptes qui le suivent en

@@ -2,7 +2,8 @@ import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { Clock } from "../../../platform/time/clock.js";
-import { openingMembership } from "../../shared/membership-opening/opening-membership.js";
+import { openingMembership } from "../../shared/company-standing/infrastructure/opening-membership.js";
+import { readReachableSites } from "../../shared/company-standing/infrastructure/read-company-standing.js";
 import {
   AccountReader,
   type AccountView,
@@ -153,7 +154,15 @@ export class PrismaAccountReader extends AccountReader {
           : null,
     }));
 
+    // Les sites atteints par héritage seul, pour le sélecteur (S6, R5) : la
+    // requête partagée, qui exclut d'elle-même les sociétés déjà listées.
+    const reachable = await readReachableSites(this.prisma, this.clock.now(), userId);
     return {
+      reachableSites: reachable.map(({ companyId, name, via }) => ({
+        companyId,
+        name,
+        via: { companyId: via.companyId, name: via.name },
+      })),
       profile: {
         userId: row.id,
         firstName: row.firstName,

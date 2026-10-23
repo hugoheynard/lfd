@@ -2,7 +2,7 @@ import type { CustomerBilledToView } from "@lfd/contracts";
 import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../../platform/time/clock.js";
-import { BankAccountGuardReader } from "../../domain/ports/bank-account-guard.reader.js";
+import { BankAccountReadingGuard } from "../../domain/ports/bank-account-reading-guard.js";
 import { MandateDebtorReader } from "../../domain/ports/mandate-debtor.reader.js";
 import { ensureBankAccountAccess } from "../../domain/services/bank-account-access.js";
 import { GetMyCompanyBilledToQuery } from "./get-my-company-billed-to.query.js";
@@ -22,7 +22,7 @@ export class GetMyCompanyBilledToHandler implements IQueryHandler<
   CustomerBilledToView
 > {
   constructor(
-    private readonly guard: BankAccountGuardReader,
+    private readonly guard: BankAccountReadingGuard,
     private readonly debtors: MandateDebtorReader,
     private readonly clock: Clock,
   ) {}

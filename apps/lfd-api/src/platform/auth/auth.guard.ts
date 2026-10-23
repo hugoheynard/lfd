@@ -84,7 +84,13 @@ export class AuthGuard implements CanActivate {
       return;
     }
     attachActor({ type: "customer", id: principal.userId });
-    attachCompany(resolveCompany(principal.memberships, declaredCompany(request)));
+    attachCompany(
+      resolveCompany(
+        principal.memberships,
+        principal.reachableCompanyIds,
+        declaredCompany(request),
+      ),
+    );
   }
 
   /** Vérifie la signature puis résout le client local. */

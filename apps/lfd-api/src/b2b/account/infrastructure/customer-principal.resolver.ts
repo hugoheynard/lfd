@@ -12,6 +12,7 @@ import { MembershipAcceptance } from "./membership-acceptance.js";
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { InvitationExpiredError } from "../domain/errors/invitation-errors.js";
+import { readReachableSites } from "../../shared/company-standing/infrastructure/read-company-standing.js";
 import {
   awaitsAcceptance,
   canEnter,
@@ -122,6 +123,11 @@ export class CustomerPrincipalResolver extends PrincipalResolver {
       memberships: recorded.memberships
         .filter((membership) => opensCompany(membership, now))
         .map(({ companyId, role }) => ({ companyId, role })),
+      // Les sites atteints par héritage (S6) : la requête partagée, relue à
+      // chaque requête — détacher ou suspendre coupe à la suivante (R6).
+      reachableCompanyIds: (await readReachableSites(this.prisma, now, recorded.id)).map(
+        (site) => site.companyId,
+      ),
       scopes: token.scopes,
     };
   }

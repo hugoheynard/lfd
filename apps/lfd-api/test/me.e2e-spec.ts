@@ -268,6 +268,8 @@ describe("GET /me — le cycle se joue en base", () => {
       companies: [],
       // Préférences de navigation (bag nav_prefs) : défaut sans choix explicite.
       navPrefs: { catalogueView: null, workspace: null },
+      // Les sites où il entre par son principal (S6) : aucun ici.
+      reachableSites: [],
     });
   });
 

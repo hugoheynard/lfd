@@ -1,6 +1,6 @@
 import { effectiveRole } from "../effective-role.js";
 
-/** La règle du §3 de sous-comptes — écrite, éprouvée, pas encore branchée (S6). */
+/** La règle du §3 de sous-comptes, lue par la requête partagée depuis S6. */
 describe("effectiveRole — le rôle effectif dans une société", () => {
   it("prend le plus large de la membership propre et du rôle hérité", () => {
     // Un owner du principal qui a aussi `orders` dans le sous-compte y reste admin.
