@@ -81,7 +81,7 @@ le type élargi : `tsc` refuse tout `switch` incomplet.
   enregistré en même temps prend le même verrou avant de lire le statut du lot.
 - **Rejet déclaré à tort.** Un retour qui arrive sur un lot
   `rejected_by_bank` reçoit `ReturnOnRejectedBatchError` : « ce lot a été
-  déclaré rejeté par la banque le … ; s'il a été exécuté, il y a un double
+  déclaré rejeté par la banque par … le … ; s'il a été exécuté, il y a un double
   débit : rembourser … ». La procédure (§ 7, runbook) décrit le geste de
   sortie, hors outil (procédure § 4.7).
 - **Q1 retirée.** Le lot réel est toujours `RCUR` ou `OOFF` (réponse 20 de la
@@ -97,8 +97,14 @@ le type élargi : `tsc` refuse tout `switch` incomplet.
   directement `rejected_by_bank` (le déclencheur de transition ne voit que les
   `UPDATE`).
 - Le message d'un retour sur un lot rejeté donne la date et le motif du rejet ;
-  l'auteur est renvoyé au journal du lot (la comptabilité ne lit pas
-  l'annuaire au moment du retour).
+  ~~l'auteur est renvoyé au journal du lot~~ **et nomme qui l'a déclaré**
+  (décision de Hugo, 2026-10-23) : les handlers de saisie et de confirmation
+  d'import lisent `StaffAuthorDirectory` au refus seulement, jamais sur le
+  chemin d'un retour qui s'enregistre ; une référence que l'annuaire ne
+  reconnaît plus se dit « un membre de l'équipe ». ⚠️ Un import refuse
+  d'ordinaire en amont, à l'appariement (`ImportEntryNotRecordableError`,
+  statut `not_returnable` de l'aperçu) : ce message-là ne nomme pas
+  l'auteur — seule la course sous le verrou passe par le refus nommé.
 - Route : `POST admin/accounting/collection/batches/:id/rejected-by-bank`,
   corps `{ attested: true, reason }`.
 

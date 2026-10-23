@@ -30,6 +30,7 @@ const LINE_SELECT = {
       requestedCollectionDay: true,
       rejectedAt: true,
       rejectionReason: true,
+      rejectedByStaffId: true,
     },
   },
   statement: { select: { id: true } },
@@ -88,13 +89,21 @@ function toLine(row: LineRow): ReturnableLine {
     debtorName: row.debtorName,
     regime: regimeOf(row),
     requestedCollectionDay: row.batch.requestedCollectionDay?.toISOString().slice(0, 10) ?? null,
-    batchRejection: rejectionOf(row.batch.rejectedAt, row.batch.rejectionReason),
+    batchRejection: rejectionOf(
+      row.batch.rejectedAt,
+      row.batch.rejectedByStaffId,
+      row.batch.rejectionReason,
+    ),
   };
 }
 
 /** Posés ensemble par le CHECK `collection_batch_rejected_is_signed`. */
-function rejectionOf(at: Date | null, reason: string | null): BatchRejectionTrace | null {
-  return at === null || reason === null ? null : { at, reason };
+function rejectionOf(
+  at: Date | null,
+  byStaffId: string | null,
+  reason: string | null,
+): BatchRejectionTrace | null {
+  return at === null || byStaffId === null || reason === null ? null : { at, reason, byStaffId };
 }
 
 function regimeOf(row: LineRow): ReturnableLineRegime {

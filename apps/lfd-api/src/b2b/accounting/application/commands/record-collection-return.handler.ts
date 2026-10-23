@@ -4,12 +4,13 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { Clock } from "../../../../platform/time/clock.js";
+import { StaffAuthorDirectory } from "../../../../staff/directory/domain/staff-author-directory.js";
 import { ReturnableLineNotFoundError } from "../../domain/errors/collection-return-errors.js";
 import { CollectionBatchLock } from "../../domain/ports/collection-batch-lock.js";
 import { CollectionReturnRepository } from "../../domain/ports/collection-return.repository.js";
 import { OrderCollectionRepository } from "../../domain/ports/order-collection.repository.js";
 import { ReturnableLinesReader } from "../../domain/ports/returnable-lines.reader.js";
-import { recordReturn } from "../collection-return-support.js";
+import { nameRejectionAuthor, recordReturn } from "../collection-return-support.js";
 import { RecordCollectionReturnCommand } from "./record-collection-return.command.js";
 
 /**
@@ -32,37 +33,42 @@ export class RecordCollectionReturnHandler implements ICommandHandler<
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly authors: StaffAuthorDirectory,
   ) {}
 
   async execute(command: RecordCollectionReturnCommand): Promise<string> {
     const at = this.clock.now();
-    return this.uow.run(async () => {
-      const line = await this.lines.lineOf(command.batchId, command.rank);
-      if (line === null) {
-        throw new ReturnableLineNotFoundError(`${command.batchId} · ligne ${command.rank}`);
-      }
-      const writers = {
-        locks: this.locks,
-        returns: this.returns,
-        lines: this.lines,
-        orders: this.orders,
-        events: this.events,
-      };
-      const bankReturn = await recordReturn(
-        writers,
-        line,
-        {
-          kind: command.kind,
-          reasonCode: command.reasonCode,
-          reasonLabel: command.reasonLabel,
-          returnedOn: command.returnedOn,
-          amountCents: line.amountCents,
-          feeCents: command.feeCents,
-          source: "manual",
-        },
-        { id: this.ids.next(), recorded: { at, staffId: command.staffUserId } },
-      );
-      return bankReturn.id;
-    });
+    try {
+      return await this.uow.run(async () => {
+        const line = await this.lines.lineOf(command.batchId, command.rank);
+        if (line === null) {
+          throw new ReturnableLineNotFoundError(`${command.batchId} · ligne ${command.rank}`);
+        }
+        const writers = {
+          locks: this.locks,
+          returns: this.returns,
+          lines: this.lines,
+          orders: this.orders,
+          events: this.events,
+        };
+        const bankReturn = await recordReturn(
+          writers,
+          line,
+          {
+            kind: command.kind,
+            reasonCode: command.reasonCode,
+            reasonLabel: command.reasonLabel,
+            returnedOn: command.returnedOn,
+            amountCents: line.amountCents,
+            feeCents: command.feeCents,
+            source: "manual",
+          },
+          { id: this.ids.next(), recorded: { at, staffId: command.staffUserId } },
+        );
+        return bankReturn.id;
+      });
+    } catch (error) {
+      throw await nameRejectionAuthor(error, this.authors);
+    }
   }
 }

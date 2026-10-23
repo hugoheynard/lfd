@@ -7,6 +7,7 @@ import {
 import {
   CollectionReturnNotFoundError,
   ReturnableLineNotFoundError,
+  ReturnOnRejectedBatchError,
 } from "../domain/errors/collection-return-errors.js";
 import { CollectionReturnedEvent } from "../domain/events/collection-return.events.js";
 import type { CollectionBatchLock } from "../domain/ports/collection-batch-lock.js";
@@ -14,6 +15,10 @@ import type { CollectionReturnRepository } from "../domain/ports/collection-retu
 import type { OrderCollectionRepository } from "../domain/ports/order-collection.repository.js";
 import type { ReturnableLinesReader } from "../domain/ports/returnable-lines.reader.js";
 import type { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
+import type { StaffAuthorDirectory } from "../../../staff/directory/domain/staff-author-directory.js";
+
+/** Le nom dit quand l'annuaire ne reconnaît plus la référence du rejet. */
+const UNKNOWN_REJECTION_AUTHOR = "un membre de l'équipe";
 
 /**
  * Ce que l'enregistrement d'un retour écrit — partagé par la saisie à la main
@@ -81,4 +86,22 @@ export async function loadReturnWithLine(
     throw new ReturnableLineNotFoundError(bankReturn.endToEndId);
   }
   return { bankReturn, line };
+}
+
+/**
+ * Le refus d'un retour sur un lot rejeté par la banque **nomme qui a déclaré
+ * le rejet** (décision de Hugo, 2026-10-23) : l'annuaire n'est lu qu'ici, au
+ * refus, jamais sur le chemin d'un retour qui s'enregistre. Toute autre
+ * erreur repart telle quelle.
+ */
+export async function nameRejectionAuthor(
+  error: unknown,
+  authors: StaffAuthorDirectory,
+): Promise<unknown> {
+  if (!(error instanceof ReturnOnRejectedBatchError) || error.rejection === null) {
+    return error;
+  }
+  const byStaffId = error.rejection.byStaffId;
+  const name = (await authors.identify([byStaffId])).nameOf(byStaffId);
+  return error.declaredBy(name ?? UNKNOWN_REJECTION_AUTHOR);
 }

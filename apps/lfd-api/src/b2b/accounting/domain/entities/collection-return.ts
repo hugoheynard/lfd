@@ -50,6 +50,8 @@ export interface ReturnableLine {
 export interface BatchRejectionTrace {
   readonly at: Date;
   readonly reason: string;
+  /** La référence staff de qui l'a déclaré — nommée par le handler, au refus seulement. */
+  readonly byStaffId: string;
 }
 
 export interface CollectionReturnState {

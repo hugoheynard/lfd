@@ -47,7 +47,11 @@ describe("le retour bancaire d'une ligne de lot", () => {
   it("refuse une ligne d'un lot rejeté par la banque en disant le double débit possible", () => {
     const line = returnableLine({
       batchStatus: "rejected_by_bank",
-      batchRejection: { at: RECORDED_AT, reason: "PSR1 : fichier refusé" },
+      batchRejection: {
+        at: RECORDED_AT,
+        reason: "PSR1 : fichier refusé",
+        byStaffId: "staff_compta",
+      },
     });
 
     expect(() => CollectionReturn.record(rejectInput(), line, false)).toThrow(

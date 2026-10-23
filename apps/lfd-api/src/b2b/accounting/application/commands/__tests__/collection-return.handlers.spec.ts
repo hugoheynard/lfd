@@ -62,7 +62,7 @@ describe("saisir un retour bancaire (R5a)", () => {
       w.lines.lines = [
         returnableLine({
           batchStatus: "rejected_by_bank",
-          batchRejection: { at: new Date(0), reason: "PSR1" },
+          batchRejection: { at: new Date(0), reason: "PSR1", byStaffId: "staff_compta" },
         }),
       ];
     };

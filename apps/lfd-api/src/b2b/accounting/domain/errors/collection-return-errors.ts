@@ -3,6 +3,7 @@ import {
   DomainError,
   ResourceNotFoundError,
 } from "../../../../platform/shared/errors/app-error.js";
+import type { BatchRejectionTrace } from "../entities/collection-return.js";
 import { parisLongDay } from "./collection-errors.js";
 
 /**
@@ -74,17 +75,29 @@ export class ReturnOnRejectedBatchError extends BusinessError {
   constructor(
     readonly endToEndId: string,
     readonly debtorName: string,
-    readonly rejection: { readonly at: Date; readonly reason: string } | null,
+    readonly rejection: BatchRejectionTrace | null,
+    /** Qui a déclaré le rejet, résolu par le handler au moment du refus ; `null` tant qu'il ne l'a pas fait. */
+    readonly declaredByName: string | null = null,
   ) {
-    const when =
-      rejection === null
-        ? ""
-        : ` le ${parisLongDay(rejection.at)} (motif : « ${rejection.reason} » ; l'auteur est au journal du lot)`;
     super(
       "accounting.collection_return.batch_rejected_by_bank",
-      `La ligne ${endToEndId} (${debtorName}) appartient à un lot déclaré rejeté par la banque${when}. Si la banque l'a en réalité exécuté, ${debtorName} a pu être débité deux fois : vérifier sur CENET ses débits de ce lot et du lot reconstitué, et rembourser le doublon par virement (procédure de prélèvement, § 4.7). Ce retour ne s'enregistre pas dans l'outil.`,
+      `La ligne ${endToEndId} (${debtorName}) appartient à un lot déclaré rejeté par la banque${rejectionClause(rejection, declaredByName)}. Si la banque l'a en réalité exécuté, ${debtorName} a pu être débité deux fois : vérifier sur CENET ses débits de ce lot et du lot reconstitué, et rembourser le doublon par virement (procédure de prélèvement, § 4.7). Ce retour ne s'enregistre pas dans l'outil.`,
     );
   }
+
+  /** Le même refus, qui nomme la personne qui a déclaré le rejet. */
+  declaredBy(name: string): ReturnOnRejectedBatchError {
+    return new ReturnOnRejectedBatchError(this.endToEndId, this.debtorName, this.rejection, name);
+  }
+}
+
+function rejectionClause(rejection: BatchRejectionTrace | null, byName: string | null): string {
+  if (rejection === null) {
+    return "";
+  }
+  const by = byName === null ? "" : ` par ${byName}`;
+  const author = byName === null ? " ; l'auteur est au journal du lot" : "";
+  return `${by} le ${parisLongDay(rejection.at)} (motif : « ${rejection.reason} »${author})`;
 }
 
 /** Un débit ne se rejette qu'une fois : la ligne a déjà son retour. */

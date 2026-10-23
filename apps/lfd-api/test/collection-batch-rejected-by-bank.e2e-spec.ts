@@ -233,7 +233,11 @@ describe("« La banque a rejeté ce fichier »", () => {
     expect(batch.status).toBe("deposited");
   });
 
-  it("un retour sur un lot rejeté : 409 qui dit le double débit possible", async () => {
+  it("un retour sur un lot rejeté : 409 qui dit le double débit possible et qui a déclaré le rejet", async () => {
+    await ctx.prisma.staffUser.update({
+      where: { auth0Id: "staff-e2e" },
+      data: { firstName: "Claire", lastName: "Compta" },
+    });
     const entityId = await setUpEntity(staff);
     await invoicedPayer(ctx, staff, entityId, closesAt);
     await issueMonthlyInvoice(entityId);
@@ -254,6 +258,7 @@ describe("« La banque a rejeté ce fichier »", () => {
     const message = JSON.stringify(refused.body);
     expect(message).toContain("déclaré rejeté par la banque");
     expect(message).toContain("débité deux fois");
+    expect(message).toContain("par Claire Compta le");
     expect(await ctx.prisma.collectionReturn.count()).toBe(0);
   });
 });

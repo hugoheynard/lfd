@@ -18,6 +18,7 @@ import { RecordCollectionReturnHandler } from "../record-collection-return.handl
 import { RepresentCollectionReturnHandler } from "../represent-collection-return.handler.js";
 import { SettleCollectionReturnHandler } from "../settle-collection-return.handler.js";
 import { WriteOffCollectionReturnHandler } from "../write-off-collection-return.handler.js";
+import { FixedStaffAuthorDirectory } from "../../../../../staff/directory/domain/__tests__/fixed-staff-author-directory.js";
 import { FakeRecheck, MemoryOrderCollections, UlidSequence } from "./collection-doubles.js";
 import { MemoryCollectionTests, MemoryTestReturnTargets } from "./collection-test-doubles.js";
 
@@ -82,7 +83,10 @@ export function collectedOrders(line: ReturnableLine): OrderCollection[] {
 }
 
 /** Le monde des retours : une ligne déposée, ses commandes prélevées, un mandat actif. */
-export function returnWorld(line: ReturnableLine = returnableLine()) {
+export function returnWorld(
+  line: ReturnableLine = returnableLine(),
+  authors: FixedStaffAuthorDirectory = new FixedStaffAuthorDirectory(),
+) {
   const returns = new MemoryCollectionReturns();
   const lines = new FakeReturnableLines(returns);
   lines.lines = [line];
@@ -115,6 +119,7 @@ export function returnWorld(line: ReturnableLine = returnableLine()) {
       clock,
       events,
       uow,
+      authors,
     ),
     represent: new RepresentCollectionReturnHandler(
       returns,
@@ -138,7 +143,9 @@ export function returnWorld(line: ReturnableLine = returnableLine()) {
       clock,
       events,
       uow,
+      authors,
     ),
+    authors,
   };
 }
 

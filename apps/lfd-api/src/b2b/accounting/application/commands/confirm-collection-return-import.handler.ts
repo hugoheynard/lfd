@@ -4,6 +4,7 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { Clock } from "../../../../platform/time/clock.js";
+import { StaffAuthorDirectory } from "../../../../staff/directory/domain/staff-author-directory.js";
 import { ImportEntryNotRecordableError } from "../../domain/errors/bank-return-file-errors.js";
 import { CollectionBatchLock } from "../../domain/ports/collection-batch-lock.js";
 import { CollectionReturnRepository } from "../../domain/ports/collection-return.repository.js";
@@ -11,9 +12,9 @@ import { CollectionTestReturnTargetsReader } from "../../domain/ports/collection
 import { CollectionTestRepository } from "../../domain/ports/collection-test.repository.js";
 import { OrderCollectionRepository } from "../../domain/ports/order-collection.repository.js";
 import { ReturnableLinesReader } from "../../domain/ports/returnable-lines.reader.js";
-import { readBankReturnFile } from "../../domain/services/bank-return-file.js";
+import { readBankReturnFile, type BankReturnFile } from "../../domain/services/bank-return-file.js";
 import { classifyReturns, returnEntryOf } from "../collection-return-import-support.js";
-import { recordReturn } from "../collection-return-support.js";
+import { nameRejectionAuthor, recordReturn } from "../collection-return-support.js";
 import { attachTestReturn } from "../collection-test-return-support.js";
 import { ConfirmCollectionReturnImportCommand } from "./confirm-collection-return-import.command.js";
 
@@ -43,55 +44,63 @@ export class ConfirmCollectionReturnImportHandler implements ICommandHandler<
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly authors: StaffAuthorDirectory,
   ) {}
 
   async execute(command: ConfirmCollectionReturnImportCommand): Promise<readonly string[]> {
     const file = readBankReturnFile(command.xml);
     const at = this.clock.now();
+    try {
+      return await this.uow.run(() => this.confirm(command, file, at));
+    } catch (error) {
+      throw await nameRejectionAuthor(error, this.authors);
+    }
+  }
+
+  private async confirm(
+    command: ConfirmCollectionReturnImportCommand,
+    file: BankReturnFile,
+    at: Date,
+  ): Promise<readonly string[]> {
     const retained = new Set(command.endToEndIds);
-    return this.uow.run(async () => {
-      const classified = await classifyReturns(
-        { lines: this.lines, tests: this.testTargets },
-        file,
-        at,
-      );
-      const chosen = classified.filter((item) => retained.has(item.entry.endToEndId));
-      const missing = [...retained].find(
-        (id) => !classified.some((item) => item.entry.endToEndId === id),
-      );
-      if (missing !== undefined) {
-        throw new ImportEntryNotRecordableError(missing, "elle n'est pas dans ce fichier");
+    const classified = await classifyReturns(
+      { lines: this.lines, tests: this.testTargets },
+      file,
+      at,
+    );
+    const chosen = classified.filter((item) => retained.has(item.entry.endToEndId));
+    const missing = [...retained].find(
+      (id) => !classified.some((item) => item.entry.endToEndId === id),
+    );
+    if (missing !== undefined) {
+      throw new ImportEntryNotRecordableError(missing, "elle n'est pas dans ce fichier");
+    }
+    const writers = {
+      locks: this.locks,
+      returns: this.returns,
+      lines: this.lines,
+      orders: this.orders,
+      events: this.events,
+    };
+    const recorded: string[] = [];
+    const stamp = { at, staffId: command.staffUserId };
+    for (const item of chosen) {
+      if (item.status === "collection_test") {
+        const tests = { tests: this.tests, events: this.events };
+        recorded.push(await attachTestReturn(tests, item, file.format, stamp));
+        continue;
       }
-      const writers = {
-        locks: this.locks,
-        returns: this.returns,
-        lines: this.lines,
-        orders: this.orders,
-        events: this.events,
-      };
-      const recorded: string[] = [];
-      const stamp = { at, staffId: command.staffUserId };
-      for (const item of chosen) {
-        if (item.status === "collection_test") {
-          const tests = { tests: this.tests, events: this.events };
-          recorded.push(await attachTestReturn(tests, item, file.format, stamp));
-          continue;
-        }
-        if (item.status !== "matched" || item.line === null) {
-          throw new ImportEntryNotRecordableError(
-            item.entry.endToEndId,
-            item.problem ?? item.status,
-          );
-        }
-        const bankReturn = await recordReturn(
-          writers,
-          item.line,
-          returnEntryOf(item.entry, item.reason, file.format),
-          { id: this.ids.next(), recorded: stamp },
-        );
-        recorded.push(bankReturn.id);
+      if (item.status !== "matched" || item.line === null) {
+        throw new ImportEntryNotRecordableError(item.entry.endToEndId, item.problem ?? item.status);
       }
-      return recorded;
-    });
+      const bankReturn = await recordReturn(
+        writers,
+        item.line,
+        returnEntryOf(item.entry, item.reason, file.format),
+        { id: this.ids.next(), recorded: stamp },
+      );
+      recorded.push(bankReturn.id);
+    }
+    return recorded;
   }
 }
