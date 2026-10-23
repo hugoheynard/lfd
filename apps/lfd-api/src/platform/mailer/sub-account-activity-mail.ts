@@ -52,6 +52,7 @@ export function renderSubAccountActivityMail(
       fill(copy.subject, { site: data.siteName, title, order: data.orderNumber }),
     ),
     html: shell({
+      kicker: copy.kicker,
       title,
       body: fill(data.enteredByTeam ? copy.bodyEnteredByTeam : copy.body, {
         site: data.siteName,

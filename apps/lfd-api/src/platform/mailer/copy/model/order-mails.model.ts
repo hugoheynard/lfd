@@ -106,6 +106,8 @@ export interface OrderReadyCopy {
  * fausse coûte plus qu'aucune heure. Ni nom ni téléphone du livreur.
  */
 export interface DeliveryEnRouteCopy {
+  /** Le sous-titre du bandeau d'en-tête, sous l'enseigne — rendu en capitales. */
+  readonly kicker: string;
   readonly subject: string;
   readonly title: string;
   /** « Votre livreur est parti, il arrive dans la journée. » */
@@ -122,6 +124,8 @@ export interface DeliveryEnRouteCopy {
  * la commande : le lecteur n'est pas forcément celui qui a commandé.
  */
 export interface OrderPlacedWithYourEmailCopy {
+  /** Le sous-titre du bandeau d'en-tête, sous l'enseigne — rendu en capitales. */
+  readonly kicker: string;
   readonly subject: string;
   /** `{firstName}`. */
   readonly title: string;

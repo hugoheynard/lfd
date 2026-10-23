@@ -193,7 +193,7 @@ export const FAMILY_TITLES: Readonly<Record<MailFamily, string>> = {
 /** Les parties d'un e-mail qu'on reconnaît à la tête de leur chemin. */
 const PATH_HEADS: Readonly<Record<string, string>> = {
   subject: 'Objet',
-  kicker: 'Sur-titre',
+  kicker: 'Titre header',
   title: 'Titre',
   intro: 'Introduction',
   greeting: 'Salutation',

@@ -1,6 +1,5 @@
 import type { ClientSheet, ContentLocale } from "@lfd/contracts";
 import {
-  renderLayout,
   sanitiseSubject,
   type LayoutInput,
   type LayoutRow,
@@ -8,6 +7,7 @@ import {
 } from "@lfd/mailer";
 
 import { SELF_SERVICE_PASSWORD_TICKET_TTL_SECONDS } from "../identity/auth0-identity.gateway.js";
+import { renderLayoutWithLogo, withMailLogo } from "./mail-logo.js";
 import { DEFAULT_MAIL_LOCALE, fill, fillNamed, mailCopyOf } from "./copy/mail-copy.js";
 import type { MailCopy, OrderSettlementCopy } from "./copy/mail-copy.model.js";
 import {
@@ -418,6 +418,8 @@ export interface MailBranding {
   readonly supportEmail: string;
   /** Racine du back-office, pour les liens de retour. */
   readonly backOfficeUrl: string;
+  /** L'URL publique de la face de l'enseigne. Absente ⇒ le repli système. */
+  readonly brandFontUrl?: string;
 }
 
 /**
@@ -553,14 +555,29 @@ function selfServiceLinkValidity(locale: ContentLocale): string {
 const CUSTOMER_BRAND = "La Folie Coffee";
 const STAFF_BRAND = "La Folie Douce";
 
+/** La police de l'enseigne, si la marque en connaît l'URL. */
+function fontOf(brand: MailBranding): { readonly brandFontUrl?: string } {
+  return brand.brandFontUrl === undefined ? {} : { brandFontUrl: brand.brandFontUrl };
+}
+
 export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails> {
   /** La coquille d'un courriel adressé à un CLIENT — l'enseigne qu'il connaît. */
   const customerMail = (input: Omit<LayoutInput, "brand" | "supportEmail">): string =>
-    renderLayout({ ...input, brand: CUSTOMER_BRAND, supportEmail: brand.supportEmail });
+    renderLayoutWithLogo({
+      ...input,
+      ...fontOf(brand),
+      brand: CUSTOMER_BRAND,
+      supportEmail: brand.supportEmail,
+    });
 
   /** La coquille d'un courriel adressé à l'ÉQUIPE — la maison. */
   const staffMail = (input: Omit<LayoutInput, "brand" | "supportEmail">): string =>
-    renderLayout({ ...input, brand: STAFF_BRAND, supportEmail: brand.supportEmail });
+    renderLayoutWithLogo({
+      ...input,
+      ...fontOf(brand),
+      brand: STAFF_BRAND,
+      supportEmail: brand.supportEmail,
+    });
 
   /**
    * Les textes des e-mails qui ne portent pas de langue — l'équipe, et ceux
@@ -570,7 +587,9 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
    */
   const local = (): MailCopy => mailCopyOf(DEFAULT_MAIL_LOCALE);
 
-  return {
+  // Le logo d'en-tête : sa balise vient de \`renderLayoutWithLogo\`, sa pièce
+  // jointe de \`withMailLogo\` — posée ICI une fois pour les 28 e-mails.
+  return withMailLogo({
     "customer.order-ready": (data) => {
       const copy = mailCopyOf(data.locale)["customer.order-ready"];
       const pickup = data.sheet.fulfillment.method === "pickup";
@@ -579,6 +598,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
       return {
         subject: sanitiseSubject(fill(copy.subject, { ref: data.sheet.reference })),
         html: customerMail({
+          kicker: copy.kicker,
           title: pickup ? copy.titlePickup : copy.titleDelivery,
           body: `${pickup ? copy.introPickup : copy.introDelivery}\n\n${data.sheet.reference}`,
           // Deux lignes et pas un décompte : où, et combien de pièces. Ce
@@ -635,6 +655,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
       return {
         subject: sanitiseSubject(fill(copy.subject, { ref: data.sheet.reference })),
         html: customerMail({
+          kicker: copy.kicker,
           title: copy.title[settlement],
           body: `${copy.intro}\n\n${data.sheet.reference}`,
           rows: recapRows(data.sheet, data.locale, settlement),
@@ -690,7 +711,8 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
       const copy = local()["ops.deploy-check"];
       return {
         subject: sanitiseSubject(fill(copy.subject, { revision: data.revision })),
-        html: renderLayout({
+        html: renderLayoutWithLogo({
+          kicker: copy.kicker,
           title: copy.title,
           body: detailsBody(
             [
@@ -708,7 +730,8 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
       const names = { company: data.companyName, rule: data.ruleLabel };
       return {
         subject: sanitiseSubject(fill(copy.subject, names)),
-        html: renderLayout({
+        html: renderLayoutWithLogo({
+          kicker: copy.kicker,
           title: fill(copy.title, names),
           body: detailsBody(
             [
@@ -726,6 +749,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
       return {
         subject: sanitiseSubject(fill(copy.subject, { ref: data.sheet.reference })),
         html: customerMail({
+          kicker: copy.kicker,
           title: copy.title,
           // La conséquence SUIT la cause, dans le corps et pas dans un encadré :
           // c'est la phrase qui dit quoi faire, et un client qui ne lit qu'un
@@ -746,6 +770,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
       return {
         subject: sanitiseSubject(fill(copy.subject, { ref: data.sheet.reference })),
         html: customerMail({
+          kicker: copy.kicker,
           title: copy.title,
           body: `${copy.intro}\n\n${copy.consequence}\n\n${data.sheet.reference}`,
           rows: [
@@ -761,6 +786,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
       return {
         subject: sanitiseSubject(fill(copy.subject, { ref: data.reference })),
         html: customerMail({
+          kicker: copy.kicker,
           title: copy.title,
           body: `${fill(copy.intro, { ref: data.reference })}\n\n${copy.howToPay}`,
           rows: [{ label: copy.amountLabel, value: money(data.totalCents, DEFAULT_MAIL_LOCALE) }],
@@ -775,6 +801,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
       return {
         subject: sanitiseSubject(copy.subject),
         html: staffMail({
+          kicker: copy.kicker,
           title: fillNamed(copy.title, copy.titleWithoutName, data.firstName),
           body: `${copy.opened}\n\n${copy.choosePassword}`,
           cta: { label: copy.cta, url: data.passwordSetupUrl },
@@ -787,6 +814,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
       return {
         subject: sanitiseSubject(copy.subject),
         html: customerMail({
+          kicker: copy.kicker,
           title: fillNamed(copy.title, copy.titleWithoutName, data.firstName),
           body: `${copy.intro}\n\n${copy.ifItIsYou}`,
           footer: copy.footer,
@@ -799,6 +827,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
       return {
         subject: sanitiseSubject(fill(copy.subject, method)),
         html: customerMail({
+          kicker: copy.kicker,
           title: fillNamed(copy.title, copy.titleWithoutName, data.firstName),
           body: `${fill(copy.linked, method)}\n\n${copy.sameAccount}`,
           footer: copy.footer,
@@ -811,6 +840,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
       return {
         subject: sanitiseSubject(copy.subject),
         html: customerMail({
+          kicker: copy.kicker,
           title: copy.title,
           // Ce qu'on SAIT, et rien de plus : un lien est parti, il expire, il
           // faut le suivre pour choisir. Ce qu'il advient du mot de passe actuel
@@ -828,6 +858,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
       return {
         subject: sanitiseSubject(fill(copy.subject, company)),
         html: customerMail({
+          kicker: copy.kicker,
           title: fillNamed(copy.title, copy.titleWithoutName, data.firstName),
           body: `${fill(copy.attached, company)}\n\n${copy.nothingToCreate}`,
           footer: copy.footer,
@@ -842,6 +873,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
       return {
         subject: sanitiseSubject(fill(copy.subject, { ...document, ref: data.reference })),
         html: customerMail({
+          kicker: copy.kicker,
           title: fill(copy.title, document),
           body: `${copy.greeting}\n\n${fill(copy.intro, { ...document, company: data.companyName })}`,
           rows: [
@@ -866,7 +898,8 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
         subject: sanitiseSubject(
           fill(copy.subject, { contact: data.contactName, when: data.when }),
         ),
-        html: renderLayout({
+        html: renderLayoutWithLogo({
+          kicker: copy.kicker,
           title: copy.title,
           body: detailsBody(
             [
@@ -889,7 +922,8 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
         subject: sanitiseSubject(
           fill(copy.subject, { contact: data.contactName, purpose: data.purposeLabel }),
         ),
-        html: renderLayout({
+        html: renderLayoutWithLogo({
+          kicker: copy.kicker,
           title: copy.title,
           body: detailsBody(
             [
@@ -913,6 +947,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
       return {
         subject: sanitiseSubject(copy.subject),
         html: staffMail({
+          kicker: copy.kicker,
           title: fillNamed(copy.title, copy.titleWithoutName, data.firstName),
           body: `${copy.issued}\n\n${copy.linkRules}`,
           cta: { label: copy.cta, url: data.passwordSetupUrl },
@@ -924,6 +959,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
       return {
         subject: sanitiseSubject(copy.subject),
         html: staffMail({
+          kicker: copy.kicker,
           title: fillNamed(copy.title, copy.titleWithoutName, data.firstName),
           body: `${copy.suspended}\n\n${copy.whatRemains}`,
           // Pas de bouton : proposer « se connecter » à quelqu'un dont la porte est
@@ -937,11 +973,12 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
       return {
         subject: sanitiseSubject(copy.subject),
         html: staffMail({
+          kicker: copy.kicker,
           title: fillNamed(copy.title, copy.titleWithoutName, data.firstName),
           body: `${copy.restored}\n\n${copy.howToSignIn}`,
           cta: { label: copy.cta, url: data.backOfficeUrl },
         }),
       };
     },
-  };
+  });
 }

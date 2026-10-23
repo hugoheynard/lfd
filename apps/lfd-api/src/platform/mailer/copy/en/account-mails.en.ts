@@ -3,6 +3,7 @@ import type { AccountMailsCopy } from "../model/account-mails.model.js";
 /** La famille « compte client », en anglais. Traduction du français, pas une variante. */
 export const ACCOUNT_MAILS_EN: AccountMailsCopy = {
   "customer.access-opened": {
+    kicker: "Access granted",
     subject: "Your access to the {company} business area",
     title: "Welcome, {firstName}",
     titleWithoutName: "Welcome",
@@ -23,6 +24,7 @@ export const ACCOUNT_MAILS_EN: AccountMailsCopy = {
       "with this address, the access stays unused.",
   },
   "customer.company-attached": {
+    kicker: "Company linked",
     subject: "{company} has been added to your business area",
     title: "Hello, {firstName}",
     titleWithoutName: "Hello",
@@ -35,6 +37,7 @@ export const ACCOUNT_MAILS_EN: AccountMailsCopy = {
     footer: "Not expecting this link? Reply to this email and we will remove it.",
   },
   "customer.login-method-linked": {
+    kicker: "Sign-in method added",
     subject: "A {method} sign-in has been added to your account",
     title: "Hello, {firstName}",
     titleWithoutName: "Hello",
@@ -47,6 +50,7 @@ export const ACCOUNT_MAILS_EN: AccountMailsCopy = {
       "we will remove this sign-in method and look into what happened.",
   },
   "customer.password-reset": {
+    kicker: "Password",
     subject: "Your link to change your password",
     title: "Change your password",
     requested: "You have just asked to change the password of your La Folie Coffee account.",
@@ -61,6 +65,7 @@ export const ACCOUNT_MAILS_EN: AccountMailsCopy = {
       "email: we will look into what happened.",
   },
   "customer.sub-account-activity": {
+    kicker: "Site activity",
     title: {
       placed: "Order placed by one of your sites",
       cancelled: "Order cancelled at one of your sites",
@@ -85,6 +90,7 @@ export const ACCOUNT_MAILS_EN: AccountMailsCopy = {
       "To stop receiving it, write to us: we set these notices role by role.",
   },
   "customer.sub-account-gesture": {
+    kicker: "Your account",
     title: {
       problem_reported: "Problem reported by one of your sites",
       delivery_address_added: "Delivery address added at one of your sites",

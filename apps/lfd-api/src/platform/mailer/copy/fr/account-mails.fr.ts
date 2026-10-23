@@ -7,6 +7,7 @@ import type { AccountMailsCopy } from "../model/account-mails.model.js";
  */
 export const ACCOUNT_MAILS_FR: AccountMailsCopy = {
   "customer.access-opened": {
+    kicker: "Accès ouvert",
     subject: "Votre accès à l'espace pro {company}",
     title: "Bienvenue, {firstName}",
     titleWithoutName: "Bienvenue",
@@ -27,6 +28,7 @@ export const ACCOUNT_MAILS_FR: AccountMailsCopy = {
       "avec cette adresse, l'accès reste inutilisé.",
   },
   "customer.company-attached": {
+    kicker: "Société rattachée",
     subject: "{company} a été ajoutée à votre espace pro",
     title: "Bonjour, {firstName}",
     titleWithoutName: "Bonjour",
@@ -39,6 +41,7 @@ export const ACCOUNT_MAILS_FR: AccountMailsCopy = {
     footer: "Vous n'attendiez pas ce rattachement ? Répondez à cet e-mail, nous le retirerons.",
   },
   "customer.login-method-linked": {
+    kicker: "Connexion ajoutée",
     subject: "Une connexion {method} a été ajoutée à votre compte",
     title: "Bonjour, {firstName}",
     titleWithoutName: "Bonjour",
@@ -51,6 +54,7 @@ export const ACCOUNT_MAILS_FR: AccountMailsCopy = {
       "nous retirerons cette méthode de connexion et regarderons ce qui s'est passé.",
   },
   "customer.password-reset": {
+    kicker: "Mot de passe",
     subject: "Votre lien pour changer de mot de passe",
     title: "Changer votre mot de passe",
     requested: "Vous venez de demander à changer le mot de passe de votre compte La Folie Coffee.",
@@ -65,6 +69,7 @@ export const ACCOUNT_MAILS_FR: AccountMailsCopy = {
       "e-mail : nous regarderons ce qui s'est passé.",
   },
   "customer.sub-account-activity": {
+    kicker: "Activité d'un site",
     title: {
       placed: "Commande passée par un de vos sites",
       cancelled: "Commande annulée sur un de vos sites",
@@ -89,6 +94,7 @@ export const ACCOUNT_MAILS_FR: AccountMailsCopy = {
       "Pour ne plus le recevoir, écrivez-nous : nous réglons ces avis rôle par rôle.",
   },
   "customer.sub-account-gesture": {
+    kicker: "Votre compte",
     title: {
       problem_reported: "Problème signalé par un de vos sites",
       delivery_address_added: "Adresse de livraison ajoutée sur un de vos sites",

@@ -66,6 +66,7 @@ export function renderInvoiceIssuedMail(
   return {
     subject: sanitiseSubject(fill(copy.subject, { title, seller: data.sellerName })),
     html: shell({
+      kicker: copy.kicker,
       title,
       body: bodyOf(data, copy),
       rows: rowsOf(data, copy),

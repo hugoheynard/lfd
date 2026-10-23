@@ -7,6 +7,7 @@ import type { TeamMailsCopy } from "../model/team-mails.model.js";
  */
 export const TEAM_MAILS_FR: TeamMailsCopy = {
   "staff.appointment-booked": {
+    kicker: "Rendez-vous",
     subject: "Nouveau rendez-vous — {contact} · {when}",
     title: "Un rendez-vous vient d'être pris",
     contactLabel: "Contact",
@@ -17,6 +18,7 @@ export const TEAM_MAILS_FR: TeamMailsCopy = {
     footer: "Alerte interne LFC — envoyée à l'équipe commerciale.",
   },
   "staff.account-alert": {
+    kicker: "Alerte compte",
     subject: "Alerte — {company} · {rule}",
     title: "{rule} sur {company}",
     accountLabel: "Compte",
@@ -24,6 +26,7 @@ export const TEAM_MAILS_FR: TeamMailsCopy = {
     cta: "Ouvrir le compte",
   },
   "staff.invited": {
+    kicker: "Invitation",
     subject: "Votre accès au back-office La Folie Douce",
     title: "Bienvenue dans l'équipe, {firstName}",
     titleWithoutName: "Bienvenue dans l'équipe",
@@ -36,6 +39,7 @@ export const TEAM_MAILS_FR: TeamMailsCopy = {
       "Vous n'attendiez pas cet e-mail ? Ignorez-le : sans mot de passe choisi, aucun accès n'est ouvert.",
   },
   "staff.password-reset": {
+    kicker: "Mot de passe",
     subject: "Votre lien de mot de passe — back-office La Folie Douce",
     title: "Nouveau mot de passe, {firstName}",
     titleWithoutName: "Nouveau mot de passe",
@@ -50,6 +54,7 @@ export const TEAM_MAILS_FR: TeamMailsCopy = {
     cta: "Choisir un nouveau mot de passe",
   },
   "staff.access-suspended": {
+    kicker: "Accès suspendu",
     subject: "Votre accès au back-office est suspendu",
     title: "Accès suspendu, {firstName}",
     titleWithoutName: "Accès suspendu",
@@ -60,6 +65,7 @@ export const TEAM_MAILS_FR: TeamMailsCopy = {
     footer: "Cet e-mail vous prévient d'un changement d'accès. Il ne demande aucune action.",
   },
   "staff.access-restored": {
+    kicker: "Accès rétabli",
     subject: "Votre accès au back-office est rétabli",
     title: "Accès rétabli, {firstName}",
     titleWithoutName: "Accès rétabli",
@@ -70,6 +76,7 @@ export const TEAM_MAILS_FR: TeamMailsCopy = {
     cta: "Ouvrir le back-office",
   },
   "staff.production-dossier": {
+    kicker: "Dossier de production",
     subject: "Dossier de production — plan du {day}",
     subjectCompleted: "Dossier de production complété — plan du {day}",
     greeting: "Bonjour {firstName},",
@@ -109,6 +116,7 @@ export const TEAM_MAILS_FR: TeamMailsCopy = {
       "demandez à l'équipe de vous retirer des destinataires (Production › Réglages).",
   },
   "staff.support-requested": {
+    kicker: "Demande d'aide",
     subject: "Demande de contact — {contact} · {purpose}",
     title: "Un client demande à être contacté",
     contactLabel: "Contact",
@@ -118,6 +126,7 @@ export const TEAM_MAILS_FR: TeamMailsCopy = {
     footer: "Alerte interne LFC — envoyée à l'équipe commerciale.",
   },
   "staff.customer-request": {
+    kicker: "Demande client",
     subject: "{form} — {reason} · {author}",
     subjectWithOrder: "{form} — {reason} · {order} · {author}",
     urgentSubject: "[Urgent] {subject}",
@@ -136,6 +145,7 @@ export const TEAM_MAILS_FR: TeamMailsCopy = {
       "Répondre à ce courriel écrit directement à son auteur. La demande est rangée au back-office, sous Commercial › Demandes clients.",
   },
   "ops.deploy-check": {
+    kicker: "Contrôle de déploiement",
     subject: "[LFC] Courrier opérationnel — {revision}",
     title: "Le courrier sortant fonctionne",
     revisionLabel: "Révision",
@@ -149,6 +159,7 @@ export const TEAM_MAILS_FR: TeamMailsCopy = {
       "S'il cesse d'arriver, le canal e-mail est tombé — même si rien d'autre ne le dit.",
   },
   "agency.vitrine-notice": {
+    kicker: "Annonce vitrine",
     footer:
       "Vous recevez ce message comme contact d'un abonné au webhook de la vitrine de La Folie Douce.",
   },

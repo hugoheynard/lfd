@@ -52,6 +52,7 @@ export const ORDER_MAILS_IT: OrderMailsCopy = {
     qrAlt: "Il suo codice di ritiro — {ref}",
   },
   "customer.delivery-en-route": {
+    kicker: "Consegna in arrivo",
     subject: "La sua consegna è in viaggio",
     title: "La sua consegna è in viaggio.",
     intro: "Il suo corriere è partito, arriverà in giornata.",
@@ -61,6 +62,7 @@ export const ORDER_MAILS_IT: OrderMailsCopy = {
     footer: "Le Labo · route de la Balme, Val d'Isère — 7 – 19",
   },
   "customer.order-placed-with-your-email": {
+    kicker: "Ordine effettuato",
     subject: "È appena stato effettuato un ordine con il suo indirizzo",
     title: "Buongiorno, {firstName}",
     titleWithoutName: "Buongiorno",

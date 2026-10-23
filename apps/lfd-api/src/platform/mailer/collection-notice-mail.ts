@@ -59,6 +59,7 @@ export function renderCollectionNoticeMail(
       fill(copy.subject, { title, creditor: data.creditorName, day: data.collectionDay }),
     ),
     html: shell({
+      kicker: copy.kicker,
       title,
       body: bodyOf(data, copy),
       rows: rowsOf(data, copy),

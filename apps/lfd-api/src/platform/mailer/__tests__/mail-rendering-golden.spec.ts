@@ -19,7 +19,13 @@ import {
  * Une empreinte qui change n'est pas à « mettre à jour » par réflexe : elle
  * dit qu'un e-mail réellement envoyé a changé. Si c'est voulu (un texte
  * reformulé), on la régénère dans le même commit que la phrase, et le diff de
- * l'objet en clair le montre à la relecture.
+ * l'objet en clair le montre à la relecture. *
+ * **Régénérées le 2026-10-23** pour le nouveau bandeau d'en-tête des 28
+ * e-mails (logo couleur sur pavé blanc, enseigne dans la face Chunk, sous-titre
+ * `kicker` du dictionnaire) : vérifié avant de régénérer que, pour chaque cas,
+ * l'objet était identique, que le HTML ne différait que par ce bandeau (un
+ * bandeau neuf pour les quatre e-mails qui n'en avaient pas), et que les
+ * pièces jointes ne gagnaient que le logo, en dernier.
  */
 
 const REGISTRY = b2bMailTemplates({

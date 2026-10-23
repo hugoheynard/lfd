@@ -1,4 +1,5 @@
 import { b2bMailTemplates } from "../mail-templates.js";
+import { MAIL_LOGO_ATTACHMENT } from "../mail-logo.js";
 
 /*
  * L'avis de prélèvement (prelevement-automatique.md, PA2) : le minimum
@@ -45,7 +46,7 @@ describe("le courriel « avis de prélèvement »", () => {
     ]) {
       expect(rendered.html).toContain(expected);
     }
-    expect(rendered.attachments).toBeUndefined();
+    expect(rendered.attachments).toEqual([MAIL_LOGO_ATTACHMENT]); // le logo d'en-tête, et rien d'autre
   });
 
   it("un rectificatif dit qu'il remplace le précédent, et ce que celui-ci annonçait", () => {

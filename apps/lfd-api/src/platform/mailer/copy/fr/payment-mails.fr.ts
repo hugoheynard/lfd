@@ -30,6 +30,7 @@ export const PAYMENT_MAILS_FR: PaymentMailsCopy = {
       "Un doute ou une erreur ? Appelez le fournil — Le Labo · route de la Balme, Val d'Isère.",
   },
   "customer.order-payment-link": {
+    kicker: "Règlement attendu",
     subject: "Votre commande {ref} reste à régler",
     title: "Votre commande attend son règlement",
     intro: "Le règlement de votre commande {ref} ne nous est pas encore parvenu.",
@@ -41,6 +42,7 @@ export const PAYMENT_MAILS_FR: PaymentMailsCopy = {
       "Un doute ? Répondez à cet e-mail.",
   },
   "customer.order-cancelled": {
+    kicker: "Commande annulée",
     subject: "Commande {ref} annulée",
     title: "Votre commande a été annulée.",
     intro: "Votre commande {ref} pour le {day} a été annulée par notre équipe.",

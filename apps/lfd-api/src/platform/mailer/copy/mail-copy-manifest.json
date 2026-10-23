@@ -230,6 +230,11 @@
       }
     },
     "customer.delivery-en-route": {
+      "kicker": {
+        "variables": [],
+        "required": [],
+        "fr": "Livraison en route"
+      },
       "subject": {
         "variables": [],
         "required": [],
@@ -267,6 +272,11 @@
       }
     },
     "customer.order-placed-with-your-email": {
+      "kicker": {
+        "variables": [],
+        "required": [],
+        "fr": "Commande passée"
+      },
       "subject": {
         "variables": [],
         "required": [],
@@ -390,6 +400,11 @@
       }
     },
     "customer.order-payment-link": {
+      "kicker": {
+        "variables": [],
+        "required": [],
+        "fr": "Règlement attendu"
+      },
       "subject": {
         "variables": [
           "ref"
@@ -435,6 +450,11 @@
       }
     },
     "customer.order-cancelled": {
+      "kicker": {
+        "variables": [],
+        "required": [],
+        "fr": "Commande annulée"
+      },
       "subject": {
         "variables": [
           "ref"
@@ -605,6 +625,11 @@
       }
     },
     "customer.invoice-issued": {
+      "kicker": {
+        "variables": [],
+        "required": [],
+        "fr": "Votre facture"
+      },
       "title": {
         "variables": [
           "number"
@@ -708,6 +733,11 @@
       }
     },
     "customer.collection-notice": {
+      "kicker": {
+        "variables": [],
+        "required": [],
+        "fr": "Avis de prélèvement"
+      },
       "title.notice": {
         "variables": [],
         "required": [],
@@ -890,6 +920,11 @@
       }
     },
     "customer.mandate-to-sign": {
+      "kicker": {
+        "variables": [],
+        "required": [],
+        "fr": "Mandat à signer"
+      },
       "scheme.CORE.documentName": {
         "variables": [],
         "required": [],
@@ -963,6 +998,11 @@
       }
     },
     "customer.access-opened": {
+      "kicker": {
+        "variables": [],
+        "required": [],
+        "fr": "Accès ouvert"
+      },
       "subject": {
         "variables": [
           "company"
@@ -1031,6 +1071,11 @@
       }
     },
     "customer.company-attached": {
+      "kicker": {
+        "variables": [],
+        "required": [],
+        "fr": "Société rattachée"
+      },
       "subject": {
         "variables": [
           "company"
@@ -1075,6 +1120,11 @@
       }
     },
     "customer.login-method-linked": {
+      "kicker": {
+        "variables": [],
+        "required": [],
+        "fr": "Connexion ajoutée"
+      },
       "subject": {
         "variables": [
           "method"
@@ -1119,6 +1169,11 @@
       }
     },
     "customer.password-reset": {
+      "kicker": {
+        "variables": [],
+        "required": [],
+        "fr": "Mot de passe"
+      },
       "subject": {
         "variables": [],
         "required": [],
@@ -1173,6 +1228,11 @@
       }
     },
     "customer.sub-account-activity": {
+      "kicker": {
+        "variables": [],
+        "required": [],
+        "fr": "Activité d'un site"
+      },
       "title.placed": {
         "variables": [],
         "required": [],
@@ -1279,6 +1339,11 @@
       }
     },
     "customer.sub-account-gesture": {
+      "kicker": {
+        "variables": [],
+        "required": [],
+        "fr": "Votre compte"
+      },
       "title.problem_reported": {
         "variables": [],
         "required": [],
@@ -1523,6 +1588,11 @@
       }
     },
     "staff.appointment-booked": {
+      "kicker": {
+        "variables": [],
+        "required": [],
+        "fr": "Rendez-vous"
+      },
       "subject": {
         "variables": [
           "contact",
@@ -1571,6 +1641,11 @@
       }
     },
     "staff.account-alert": {
+      "kicker": {
+        "variables": [],
+        "required": [],
+        "fr": "Alerte compte"
+      },
       "subject": {
         "variables": [
           "company",
@@ -1610,6 +1685,11 @@
       }
     },
     "staff.invited": {
+      "kicker": {
+        "variables": [],
+        "required": [],
+        "fr": "Invitation"
+      },
       "subject": {
         "variables": [],
         "required": [],
@@ -1651,6 +1731,11 @@
       }
     },
     "staff.password-reset": {
+      "kicker": {
+        "variables": [],
+        "required": [],
+        "fr": "Mot de passe"
+      },
       "subject": {
         "variables": [],
         "required": [],
@@ -1687,6 +1772,11 @@
       }
     },
     "staff.access-suspended": {
+      "kicker": {
+        "variables": [],
+        "required": [],
+        "fr": "Accès suspendu"
+      },
       "subject": {
         "variables": [],
         "required": [],
@@ -1723,6 +1813,11 @@
       }
     },
     "staff.access-restored": {
+      "kicker": {
+        "variables": [],
+        "required": [],
+        "fr": "Accès rétabli"
+      },
       "subject": {
         "variables": [],
         "required": [],
@@ -1759,6 +1854,11 @@
       }
     },
     "staff.production-dossier": {
+      "kicker": {
+        "variables": [],
+        "required": [],
+        "fr": "Dossier de production"
+      },
       "subject": {
         "variables": [
           "day"
@@ -2006,6 +2106,11 @@
       }
     },
     "staff.support-requested": {
+      "kicker": {
+        "variables": [],
+        "required": [],
+        "fr": "Demande d'aide"
+      },
       "subject": {
         "variables": [
           "contact",
@@ -2049,6 +2154,11 @@
       }
     },
     "staff.customer-request": {
+      "kicker": {
+        "variables": [],
+        "required": [],
+        "fr": "Demande client"
+      },
       "subject": {
         "variables": [
           "form",
@@ -2156,6 +2266,11 @@
       }
     },
     "ops.deploy-check": {
+      "kicker": {
+        "variables": [],
+        "required": [],
+        "fr": "Contrôle de déploiement"
+      },
       "subject": {
         "variables": [
           "revision"
@@ -2192,6 +2307,11 @@
       }
     },
     "agency.vitrine-notice": {
+      "kicker": {
+        "variables": [],
+        "required": [],
+        "fr": "Annonce vitrine"
+      },
       "footer": {
         "variables": [],
         "required": [],

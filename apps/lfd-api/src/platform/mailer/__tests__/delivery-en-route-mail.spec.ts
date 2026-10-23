@@ -1,4 +1,5 @@
 import { b2bMailTemplates } from "../mail-templates.js";
+import { MAIL_LOGO_ATTACHMENT } from "../mail-logo.js";
 
 /*
  * Le gabarit « votre livraison est en route » (en-route.md, PL3-D4) :
@@ -36,7 +37,7 @@ describe("le courriel « votre livraison est en route »", () => {
     const rendered = render();
 
     expect(rendered.html).not.toMatch(/\d{1,2} ?h ?\d{2}/u);
-    expect(rendered.attachments).toBeUndefined();
+    expect(rendered.attachments).toEqual([MAIL_LOGO_ATTACHMENT]); // le logo d'en-tête, et rien d'autre
   });
 
   it("sans adresse ni lien : ni ligne d'adresse, ni bouton", () => {

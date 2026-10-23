@@ -49,6 +49,7 @@ export function renderCustomerAccessOpenedMail(
     return {
       subject,
       html: shell({
+        kicker: copy.kicker,
         title,
         body: `${opened}\n\n${copy.choosePassword}`,
         cta: { label: copy.choosePasswordCta, url: data.passwordSetupUrl },
@@ -59,6 +60,7 @@ export function renderCustomerAccessOpenedMail(
   return {
     subject,
     html: shell({
+      kicker: copy.kicker,
       title,
       body: `${opened}\n\n${fill(copy.signInWithCode, { email: data.email })}`,
       cta: { label: copy.signInCta, url: data.signInUrl },

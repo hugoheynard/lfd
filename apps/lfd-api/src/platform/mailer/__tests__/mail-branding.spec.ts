@@ -1,3 +1,5 @@
+import { AppConfig } from "../../config/app-config.js";
+import { mailBrandingOf } from "../mail-branding.js";
 import { b2bMailTemplates } from "../mail-templates.js";
 
 /**
@@ -95,5 +97,32 @@ describe("Les courriels se présentent sous la marque de leur destinataire", () 
     expect(mail.html).toContain(expectedBrand("customer.password-reset"));
     expect(mail.html).not.toContain(forbiddenBrand("customer.password-reset"));
     expect(mail.subject).toBe("Votre lien pour changer de mot de passe");
+  });
+});
+
+/** Une config qui ne lit pas l'environnement : seules les racines comptent. */
+class ShopConfig extends AppConfig {
+  constructor(private readonly shop: string | null) {
+    super();
+  }
+
+  override clientBaseUrl(): string | null {
+    return this.shop;
+  }
+
+  override bootstrapAdminEmail(): string {
+    return "admin@lfc.test";
+  }
+}
+
+describe("la face de l'enseigne", () => {
+  it("pointe vers la copie NON hachée que sert la boutique", () => {
+    expect(mailBrandingOf(new ShopConfig("https://shop.test/pro/")).brandFontUrl).toBe(
+      "https://shop.test/pro/brand/fonts/chunk-400.woff2",
+    );
+  });
+
+  it("sans racine de boutique, pas d'URL inventée : le repli système", () => {
+    expect(mailBrandingOf(new ShopConfig(null))).not.toHaveProperty("brandFontUrl");
   });
 });

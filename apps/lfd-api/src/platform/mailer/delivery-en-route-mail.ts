@@ -38,6 +38,7 @@ export function renderDeliveryEnRouteMail(
   return {
     subject: sanitiseSubject(copy.subject),
     html: shell({
+      kicker: copy.kicker,
       title: copy.title,
       body: `${copy.intro}\n\n${data.reference}`,
       rows: [

@@ -1,4 +1,5 @@
 import { b2bMailTemplates } from "../mail-templates.js";
+import { MAIL_LOGO_ATTACHMENT } from "../mail-logo.js";
 
 /*
  * « Votre facture FA-… » (facture-emise.md) : numéro,
@@ -47,7 +48,7 @@ describe("le courriel « votre facture »", () => {
       expect(rendered.html).toContain(expected);
     }
     // Rendu en échec : l'e-mail part sans pièce, et ne l'annonce pas.
-    expect(rendered.attachments).toBeUndefined();
+    expect(rendered.attachments).toEqual([MAIL_LOGO_ATTACHMENT]); // le logo d'en-tête, et rien d'autre
     expect(rendered.html).not.toContain("jointe");
   });
 
@@ -62,6 +63,7 @@ describe("le courriel « votre facture »", () => {
         contentBase64: "JVBERi0=",
         contentType: "application/pdf",
       },
+      MAIL_LOGO_ATTACHMENT,
     ]);
     expect(rendered.html).toContain("format PDF Factur-X");
   });

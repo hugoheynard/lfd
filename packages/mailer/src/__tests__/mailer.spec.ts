@@ -100,6 +100,40 @@ describe("le rendu", () => {
     expect(alone).not.toContain("Seul");
     expect(hostile).not.toContain("Piège");
   });
+
+  it("pose le logo en tête, par cid:, avec ses dimensions en attributs et son alt échappé", () => {
+    const html = renderLayout({
+      title: "T",
+      body: "b",
+      brand: "Enseigne",
+      logo: { contentId: "logo-1", alt: 'La "Folie"', widthPx: 80, heightPx: 71 },
+    });
+    expect(html).toContain(
+      '<img src="cid:logo-1" alt="La &quot;Folie&quot;" width="80" height="71"',
+    );
+    expect(html.indexOf("cid:logo-1")).toBeLessThan(html.indexOf("Enseigne"));
+  });
+
+  it("pose l'enseigne dans sa face, avec le repli EN LIGNE, et le sous-titre échappé", () => {
+    const html = renderLayout({ title: "T", body: "b", brand: "Enseigne", kicker: "<Payé>" });
+    expect(html).toContain("font-family:'Chunk','Arial Black',Impact,sans-serif");
+    expect(html).toContain("&lt;Payé&gt;");
+    expect(html.indexOf("Enseigne")).toBeLessThan(html.indexOf("&lt;Payé&gt;"));
+  });
+
+  it("déclare la police dans le <head> seulement pour une URL https", () => {
+    const url = "https://shop.test/brand/fonts/chunk-400.woff2";
+    expect(renderLayout({ title: "T", body: "b", brandFontUrl: url })).toContain(
+      `@font-face{font-family:'Chunk';font-style:normal;font-weight:400;src:url('${url}') format('woff2');}`,
+    );
+    expect(renderLayout({ title: "T", body: "b", brandFontUrl: "http://x/f.woff2" })).not.toContain(
+      "<head>",
+    );
+  });
+
+  it("ne pose aucune image sans logo", () => {
+    expect(renderLayout({ title: "T", body: "b" })).not.toContain("<img");
+  });
 });
 
 describe("le mode à blanc", () => {

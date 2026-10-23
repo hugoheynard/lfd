@@ -3,6 +3,7 @@ import type { AccountMailsCopy } from "../model/account-mails.model.js";
 /** La famille « compte client », en italien. Traduction du français, pas une variante. */
 export const ACCOUNT_MAILS_IT: AccountMailsCopy = {
   "customer.access-opened": {
+    kicker: "Accesso attivato",
     subject: "Il suo accesso all'area professionale {company}",
     title: "Benvenuto, {firstName}",
     titleWithoutName: "Benvenuto",
@@ -23,6 +24,7 @@ export const ACCOUNT_MAILS_IT: AccountMailsCopy = {
       "con questo indirizzo, l'accesso resta inutilizzato.",
   },
   "customer.company-attached": {
+    kicker: "Azienda collegata",
     subject: "{company} è stata aggiunta alla sua area professionale",
     title: "Buongiorno, {firstName}",
     titleWithoutName: "Buongiorno",
@@ -35,6 +37,7 @@ export const ACCOUNT_MAILS_IT: AccountMailsCopy = {
     footer: "Non si aspettava questo collegamento? Risponda a questa e-mail, lo rimuoveremo.",
   },
   "customer.login-method-linked": {
+    kicker: "Accesso aggiunto",
     subject: "Un accesso {method} è stato aggiunto al suo account",
     title: "Buongiorno, {firstName}",
     titleWithoutName: "Buongiorno",
@@ -47,6 +50,7 @@ export const ACCOUNT_MAILS_IT: AccountMailsCopy = {
       "rimuoveremo questo metodo di accesso e verificheremo cosa è successo.",
   },
   "customer.password-reset": {
+    kicker: "Password",
     subject: "Il suo link per cambiare password",
     title: "Cambiare la sua password",
     requested: "Ha appena chiesto di cambiare la password del suo account La Folie Coffee.",
@@ -61,6 +65,7 @@ export const ACCOUNT_MAILS_IT: AccountMailsCopy = {
       "e-mail: verificheremo cosa è successo.",
   },
   "customer.sub-account-activity": {
+    kicker: "Attività di un punto vendita",
     title: {
       placed: "Ordine effettuato da uno dei suoi siti",
       cancelled: "Ordine annullato su uno dei suoi siti",
@@ -85,6 +90,7 @@ export const ACCOUNT_MAILS_IT: AccountMailsCopy = {
       "Per non riceverlo più, ci scriva: regoliamo questi avvisi ruolo per ruolo.",
   },
   "customer.sub-account-gesture": {
+    kicker: "Il suo account",
     title: {
       problem_reported: "Problema segnalato da uno dei suoi siti",
       delivery_address_added: "Indirizzo di consegna aggiunto su uno dei suoi siti",

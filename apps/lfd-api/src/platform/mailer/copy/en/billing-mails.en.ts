@@ -3,6 +3,7 @@ import type { BillingMailsCopy } from "../model/billing-mails.model.js";
 /** La famille « facturation et prélèvement », en anglais. Traduction du français, pas une variante. */
 export const BILLING_MAILS_EN: BillingMailsCopy = {
   "customer.invoice-issued": {
+    kicker: "Your invoice",
     title: "Your invoice {number}",
     subject: "{title} — {seller}",
     greeting: "Hello,",
@@ -23,6 +24,7 @@ export const BILLING_MAILS_EN: BillingMailsCopy = {
       "This invoice is available at any time in your customer area, under “My invoices”. For any question, reply to this message.",
   },
   "customer.collection-notice": {
+    kicker: "Direct debit notice",
     title: {
       notice: "Direct debit notice",
       correction: "Corrected direct debit notice",
@@ -58,6 +60,7 @@ export const BILLING_MAILS_EN: BillingMailsCopy = {
       "For any question, reply to this message before the debit date.",
   },
   "customer.mandate-to-sign": {
+    kicker: "Mandate to sign",
     scheme: {
       CORE: {
         documentName: "SEPA direct debit mandate",

@@ -26,6 +26,7 @@ export const PAYMENT_MAILS_IT: PaymentMailsCopy = {
     footer: "Un dubbio o un errore? Ci chiami — Le Labo · route de la Balme, Val d'Isère.",
   },
   "customer.order-payment-link": {
+    kicker: "Pagamento in attesa",
     subject: "Il suo ordine {ref} è ancora da saldare",
     title: "Il suo ordine attende il pagamento",
     intro: "Il pagamento del suo ordine {ref} non ci è ancora pervenuto.",
@@ -37,6 +38,7 @@ export const PAYMENT_MAILS_IT: PaymentMailsCopy = {
       "Un dubbio? Risponda a questa e-mail.",
   },
   "customer.order-cancelled": {
+    kicker: "Ordine annullato",
     subject: "Ordine {ref} annullato",
     title: "Il suo ordine è stato annullato.",
     intro: "Il suo ordine {ref} per {day} è stato annullato dal nostro team.",

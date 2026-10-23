@@ -15,6 +15,8 @@ export type CollectionNoticeKind = "notice" | "correction" | "cancellation";
  * comptabilité, en français : seuls les mots du gabarit se traduisent ici.
  */
 export interface InvoiceIssuedCopy {
+  /** Le sous-titre du bandeau d'en-tête, sous l'enseigne — rendu en capitales. */
+  readonly kicker: string;
   /** `{number}` — « Votre facture FA-LFD-2026-000001 ». */
   readonly title: string;
   /** `{title}`, `{seller}`. */
@@ -42,6 +44,8 @@ export interface InvoiceIssuedCopy {
  * toutes lettres.
  */
 export interface CollectionNoticeCopy {
+  /** Le sous-titre du bandeau d'en-tête, sous l'enseigne — rendu en capitales. */
+  readonly kicker: string;
   /** Le titre, qui est aussi le début de l'objet, selon ce que l'avis annonce. */
   readonly title: Readonly<Record<CollectionNoticeKind, string>>;
   /** `{title}`, `{creditor}`, `{day}`. */
@@ -92,6 +96,8 @@ export interface MandateSchemeCopy {
  * papier qui fait foi.
  */
 export interface MandateToSignCopy {
+  /** Le sous-titre du bandeau d'en-tête, sous l'enseigne — rendu en capitales. */
+  readonly kicker: string;
   readonly scheme: Readonly<Record<MandateMailScheme, MandateSchemeCopy>>;
   /** `{document}`, `{ref}` (la RUM). */
   readonly subject: string;

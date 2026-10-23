@@ -8,6 +8,7 @@ import type { BillingMailsCopy } from "../model/billing-mails.model.js";
  */
 export const BILLING_MAILS_FR: BillingMailsCopy = {
   "customer.invoice-issued": {
+    kicker: "Votre facture",
     title: "Votre facture {number}",
     subject: "{title} — {seller}",
     greeting: "Bonjour,",
@@ -28,6 +29,7 @@ export const BILLING_MAILS_FR: BillingMailsCopy = {
       "Cette facture est consultable à tout moment dans votre espace client, rubrique « Mes factures ». Pour toute question, répondez à ce message.",
   },
   "customer.collection-notice": {
+    kicker: "Avis de prélèvement",
     title: {
       notice: "Avis de prélèvement",
       correction: "Avis de prélèvement rectifié",
@@ -63,6 +65,7 @@ export const BILLING_MAILS_FR: BillingMailsCopy = {
       "Pour toute question, répondez à ce message avant la date du prélèvement.",
   },
   "customer.mandate-to-sign": {
+    kicker: "Mandat à signer",
     scheme: {
       // CORE : ni « interentreprises », ni « aucun remboursement », ni
       // consigne de déclaration — la banque d'un débiteur CORE n'en exige aucune.

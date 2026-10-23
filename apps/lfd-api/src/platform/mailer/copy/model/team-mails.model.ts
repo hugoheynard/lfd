@@ -10,6 +10,8 @@
 
 /** **Un rendez-vous vient d'être pris.** */
 export interface AppointmentBookedCopy {
+  /** Le sous-titre du bandeau d'en-tête, sous l'enseigne — rendu en capitales. */
+  readonly kicker: string;
   /** `{contact}`, `{when}`. */
   readonly subject: string;
   readonly title: string;
@@ -23,6 +25,8 @@ export interface AppointmentBookedCopy {
 
 /** **Une alerte s'est déclenchée sur un compte.** */
 export interface AccountAlertCopy {
+  /** Le sous-titre du bandeau d'en-tête, sous l'enseigne — rendu en capitales. */
+  readonly kicker: string;
   /** `{company}`, `{rule}`. */
   readonly subject: string;
   /** `{rule}`, `{company}`. */
@@ -34,6 +38,8 @@ export interface AccountAlertCopy {
 
 /** **Le contrôle de mise en service** — son arrivée est l'information. */
 export interface DeployCheckCopy {
+  /** Le sous-titre du bandeau d'en-tête, sous l'enseigne — rendu en capitales. */
+  readonly kicker: string;
   /** `{revision}`. */
   readonly subject: string;
   readonly title: string;
@@ -45,6 +51,8 @@ export interface DeployCheckCopy {
 
 /** **Un accès au back-office vient d'être ouvert.** */
 export interface StaffInvitedCopy {
+  /** Le sous-titre du bandeau d'en-tête, sous l'enseigne — rendu en capitales. */
+  readonly kicker: string;
   readonly subject: string;
   /** `{firstName}`. */
   readonly title: string;
@@ -57,6 +65,8 @@ export interface StaffInvitedCopy {
 
 /** **Un lien de mot de passe pour quelqu'un déjà entré.** */
 export interface StaffPasswordResetCopy {
+  /** Le sous-titre du bandeau d'en-tête, sous l'enseigne — rendu en capitales. */
+  readonly kicker: string;
   readonly subject: string;
   /** `{firstName}`. */
   readonly title: string;
@@ -68,6 +78,8 @@ export interface StaffPasswordResetCopy {
 
 /** **L'accès est suspendu** — elle l'apprend par nous, pas par un refus. */
 export interface StaffAccessSuspendedCopy {
+  /** Le sous-titre du bandeau d'en-tête, sous l'enseigne — rendu en capitales. */
+  readonly kicker: string;
   readonly subject: string;
   /** `{firstName}`. */
   readonly title: string;
@@ -79,6 +91,8 @@ export interface StaffAccessSuspendedCopy {
 
 /** **L'accès est rouvert.** */
 export interface StaffAccessRestoredCopy {
+  /** Le sous-titre du bandeau d'en-tête, sous l'enseigne — rendu en capitales. */
+  readonly kicker: string;
   readonly subject: string;
   /** `{firstName}`. */
   readonly title: string;
@@ -93,6 +107,8 @@ export interface StaffAccessRestoredCopy {
  * singulier jusqu'à un, au pluriel au-delà ; une part à zéro se tait.
  */
 export interface ProductionDossierCopy {
+  /** Le sous-titre du bandeau d'en-tête, sous l'enseigne — rendu en capitales. */
+  readonly kicker: string;
   /** `{day}` — l'objet, qui est aussi le titre. */
   readonly subject: string;
   /** `{day}` — après un retirage. */
@@ -140,6 +156,8 @@ export interface ProductionDossierCopy {
 
 /** **Un client demande à être rappelé ou écrit.** */
 export interface SupportRequestedCopy {
+  /** Le sous-titre du bandeau d'en-tête, sous l'enseigne — rendu en capitales. */
+  readonly kicker: string;
   /** `{contact}`, `{purpose}`. */
   readonly subject: string;
   readonly title: string;
@@ -152,6 +170,8 @@ export interface SupportRequestedCopy {
 
 /** **Une demande client** (« Nous écrire », « Signaler un problème »). */
 export interface CustomerRequestCopy {
+  /** Le sous-titre du bandeau d'en-tête, sous l'enseigne — rendu en capitales. */
+  readonly kicker: string;
   /** `{form}`, `{reason}`, `{author}`. */
   readonly subject: string;
   /** `{form}`, `{reason}`, `{order}`, `{author}`. */
@@ -176,6 +196,8 @@ export interface CustomerRequestCopy {
 
 /** **L'annonce à l'agence de la vitrine** — l'objet et le message sont saisis au back-office. */
 export interface VitrineNoticeCopy {
+  /** Le sous-titre du bandeau d'en-tête, sous l'enseigne — rendu en capitales. */
+  readonly kicker: string;
   readonly footer: string;
 }
 

@@ -51,6 +51,7 @@ export const ORDER_MAILS_EN: OrderMailsCopy = {
     qrAlt: "Your pickup code — {ref}",
   },
   "customer.delivery-en-route": {
+    kicker: "Delivery on its way",
     subject: "Your delivery is on its way",
     title: "Your delivery is on its way.",
     intro: "Your driver has left and will arrive during the day.",
@@ -60,6 +61,7 @@ export const ORDER_MAILS_EN: OrderMailsCopy = {
     footer: "Le Labo · route de la Balme, Val d'Isère — 7 am – 7 pm",
   },
   "customer.order-placed-with-your-email": {
+    kicker: "Order placed",
     subject: "An order has just been placed with your address",
     title: "Hello, {firstName}",
     titleWithoutName: "Hello",

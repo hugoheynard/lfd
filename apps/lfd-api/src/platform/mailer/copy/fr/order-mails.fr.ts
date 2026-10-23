@@ -56,6 +56,7 @@ export const ORDER_MAILS_FR: OrderMailsCopy = {
     qrAlt: "Votre code de retrait — {ref}",
   },
   "customer.delivery-en-route": {
+    kicker: "Livraison en route",
     subject: "Votre livraison est en route",
     title: "Votre livraison est en route.",
     intro: "Votre livreur est parti, il arrive dans la journée.",
@@ -65,6 +66,7 @@ export const ORDER_MAILS_FR: OrderMailsCopy = {
     footer: "Le Labo · route de la Balme, Val d'Isère — 7 h – 19 h",
   },
   "customer.order-placed-with-your-email": {
+    kicker: "Commande passée",
     subject: "Une commande vient d'être passée avec votre adresse",
     title: "Bonjour, {firstName}",
     titleWithoutName: "Bonjour",

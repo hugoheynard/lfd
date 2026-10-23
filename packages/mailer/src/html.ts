@@ -1,3 +1,9 @@
+import { htmlEscape } from "./escape.js";
+import { renderFontHead, renderLayoutHeader, type LayoutLogo } from "./layout-header.js";
+
+export { htmlEscape } from "./escape.js";
+export type { LayoutLogo } from "./layout-header.js";
+
 /**
  * Les primitives de rendu partagées par tous les gabarits : échapper, assainir
  * un objet d'e-mail, et poser la coquille commune.
@@ -7,22 +13,6 @@
  * un objet d'e-mail qui laisse passer un retour à la ligne, une mise en page qui
  * dérive d'un e-mail à l'autre.
  */
-
-/**
- * Échappement HTML minimal pour tout texte interpolé dans un gabarit.
- *
- * **Portée** : nœuds de texte et valeurs d'attributs **entre guillemets**. Ne
- * pas s'en servir pour un attribut non quoté, une chaîne JS ou du CSS — ces
- * contextes ont leurs propres règles.
- */
-export function htmlEscape(value: string): string {
-  return value
-    .replace(/&/gu, "&amp;")
-    .replace(/</gu, "&lt;")
-    .replace(/>/gu, "&gt;")
-    .replace(/"/gu, "&quot;")
-    .replace(/'/gu, "&#39;");
-}
 
 /**
  * Assainit une chaîne destinée à l'en-tête `Subject:`.
@@ -119,6 +109,19 @@ export interface LayoutInput {
    * utile pour les messages purement techniques, qui n'ont personne à rassurer.
    */
   readonly brand?: string;
+  /**
+   * Le sous-titre du bandeau, sous l'enseigne (« Commande confirmée ») — en
+   * capitales par le style, pour que le dictionnaire garde une casse normale.
+   */
+  readonly kicker?: string;
+  /**
+   * L'URL PUBLIQUE et stable du woff2 de la face de l'enseigne (Chunk). Posée
+   * ⇒ un `@font-face` dans le `<head>`. Gmail ignore `<style>` et les
+   * polices web : il affiche le repli système gras, écrit aussi en ligne.
+   */
+  readonly brandFontUrl?: string;
+  /** Le logo, à gauche DANS le bandeau, sur un pavé blanc. Absent ⇒ pas de logo. */
+  readonly logo?: LayoutLogo;
   /** Le récapitulatif, sous le corps. Vide ou absent ⇒ aucun bloc rendu. */
   readonly rows?: readonly LayoutRow[];
   /** L'image en ligne, sous le récapitulatif. */
@@ -148,8 +151,11 @@ const BRAND = {
  * La **coquille commune** : un seul gabarit visuel pour toute la suite, pour
  * qu'un e-mail transactionnel n'ait à décider que de ses mots.
  *
- * CSS en ligne uniquement (Gmail retire les `<style>`), aucune image, aucune
- * police externe — les trois contraintes qui font qu'un e-mail s'affiche partout.
+ * CSS en ligne uniquement (Gmail retire les `<style>`), aucune image DISTANTE,
+ * aucune police externe — les trois contraintes qui font qu'un e-mail s'affiche
+ * partout. Les images (logo, QR) voyagent en pièce jointe en ligne et sont
+ * citées par `cid:` (cette phrase disait « aucune image » jusqu'au 2026-10-23,
+ * date où le logo est entré en en-tête).
  * **Tout est échappé ici** : un gabarit appelant n'a jamais à y penser.
  */
 export function renderLayout(input: LayoutInput): string {
@@ -209,15 +215,10 @@ export function renderLayout(input: LayoutInput): string {
           </p>
         </td></tr>`;
 
-  const header =
-    input.brand === undefined
-      ? ""
-      : `<tr><td style="background:${BRAND.navyDeep};padding:18px 32px;border-radius:${BRAND.radius} ${BRAND.radius} 0 0;">
-          <span style="color:#ffffff;font-size:15px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;">${htmlEscape(input.brand)}</span>
-        </td></tr>`;
+  const header = renderLayoutHeader(input, { band: BRAND.navyDeep, radius: BRAND.radius });
 
   return `<!doctype html>
-<html lang="fr">
+<html lang="fr">${renderFontHead(input.brandFontUrl)}
   <body style="margin:0;padding:24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:${BRAND.ink};background:${BRAND.ivory};">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid ${BRAND.border};border-radius:${BRAND.radius};">
       ${header}

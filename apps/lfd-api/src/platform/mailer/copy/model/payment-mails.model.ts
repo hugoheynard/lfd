@@ -59,6 +59,8 @@ export interface PaymentExpiredCopy {
  * ici, c'est l'équipe qui a agi.
  */
 export interface OrderCancelledCopy {
+  /** Le sous-titre du bandeau d'en-tête, sous l'enseigne — rendu en capitales. */
+  readonly kicker: string;
   /** Objet du message. `{ref}` = le numéro de commande. */
   readonly subject: string;
   readonly title: string;
@@ -107,6 +109,8 @@ export interface OrderCancelledCopy {
  * comptabilité. Une question : combien, et où payer.
  */
 export interface OrderPaymentLinkCopy {
+  /** Le sous-titre du bandeau d'en-tête, sous l'enseigne — rendu en capitales. */
+  readonly kicker: string;
   /** `{ref}`. */
   readonly subject: string;
   readonly title: string;

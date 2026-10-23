@@ -3,6 +3,7 @@ import type { BillingMailsCopy } from "../model/billing-mails.model.js";
 /** La famille « facturation et prélèvement », en italien. Traduction du français, pas une variante. */
 export const BILLING_MAILS_IT: BillingMailsCopy = {
   "customer.invoice-issued": {
+    kicker: "La sua fattura",
     title: "La sua fattura {number}",
     subject: "{title} — {seller}",
     greeting: "Buongiorno,",
@@ -23,6 +24,7 @@ export const BILLING_MAILS_IT: BillingMailsCopy = {
       "Questa fattura è consultabile in qualsiasi momento nella sua area clienti, sezione «Le mie fatture». Per qualsiasi domanda, risponda a questo messaggio.",
   },
   "customer.collection-notice": {
+    kicker: "Avviso di addebito",
     title: {
       notice: "Avviso di addebito diretto",
       correction: "Avviso di addebito diretto rettificato",
@@ -57,6 +59,7 @@ export const BILLING_MAILS_IT: BillingMailsCopy = {
       "Per qualsiasi domanda, risponda a questo messaggio prima della data dell'addebito.",
   },
   "customer.mandate-to-sign": {
+    kicker: "Mandato da firmare",
     scheme: {
       CORE: {
         documentName: "mandato di addebito diretto SEPA",

@@ -124,6 +124,7 @@ export function renderProductionDossierMail(
   return {
     subject: sanitiseSubject(productionDossierSubject(data)),
     html: shell({
+      kicker: copyOf().kicker,
       title: productionDossierSubject(data),
       body: productionDossierBody(data),
       footer: copyOf().footer,

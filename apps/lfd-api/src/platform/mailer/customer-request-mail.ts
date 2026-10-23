@@ -72,6 +72,7 @@ export function renderCustomerRequestMail(
   return {
     subject: sanitiseSubject(subjectOf(data, copy)),
     html: shell({
+      kicker: copy.kicker,
       title: fill(copy.title, { form: data.formLabel }),
       body: message === "" ? lines : `${lines}\n\n« ${message} »`,
       cta: {

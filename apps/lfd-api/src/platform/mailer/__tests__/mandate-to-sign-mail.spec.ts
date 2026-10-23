@@ -1,5 +1,6 @@
 import { b2bMailTemplates } from "../mail-templates.js";
 import type { MandateMailScheme } from "../mandate-to-sign-wording.js";
+import { MAIL_LOGO_ATTACHMENT } from "../mail-logo.js";
 
 /**
  * Le courriel qui porte le mandat à signer. Il doit dire le MÊME schéma que le
@@ -70,6 +71,7 @@ describe("customer.mandate-to-sign — le vocabulaire interentreprises", () => {
   it("joint le PDF du mandat", () => {
     expect(render("B2B").attachments).toEqual([
       { filename: `mandat-${RUM}.pdf`, contentBase64: "JVBERi0=", contentType: "application/pdf" },
+      MAIL_LOGO_ATTACHMENT,
     ]);
   });
 });

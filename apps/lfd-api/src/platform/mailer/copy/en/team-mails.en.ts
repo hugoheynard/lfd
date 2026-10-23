@@ -3,6 +3,7 @@ import type { TeamMailsCopy } from "../model/team-mails.model.js";
 /** La famille « équipe », en anglais. Traduction du français, pas une variante. */
 export const TEAM_MAILS_EN: TeamMailsCopy = {
   "staff.appointment-booked": {
+    kicker: "Appointment",
     subject: "New appointment — {contact} · {when}",
     title: "An appointment has just been booked",
     contactLabel: "Contact",
@@ -13,6 +14,7 @@ export const TEAM_MAILS_EN: TeamMailsCopy = {
     footer: "LFC internal alert — sent to the sales team.",
   },
   "staff.account-alert": {
+    kicker: "Account alert",
     subject: "Alert — {company} · {rule}",
     title: "{rule} on {company}",
     accountLabel: "Account",
@@ -20,6 +22,7 @@ export const TEAM_MAILS_EN: TeamMailsCopy = {
     cta: "Open the account",
   },
   "staff.invited": {
+    kicker: "Invitation",
     subject: "Your access to the La Folie Douce back office",
     title: "Welcome to the team, {firstName}",
     titleWithoutName: "Welcome to the team",
@@ -31,6 +34,7 @@ export const TEAM_MAILS_EN: TeamMailsCopy = {
     footer: "Not expecting this email? Ignore it: without a chosen password, no access is opened.",
   },
   "staff.password-reset": {
+    kicker: "Password",
     subject: "Your password link — La Folie Douce back office",
     title: "New password, {firstName}",
     titleWithoutName: "New password",
@@ -41,6 +45,7 @@ export const TEAM_MAILS_EN: TeamMailsCopy = {
     cta: "Choose a new password",
   },
   "staff.access-suspended": {
+    kicker: "Access suspended",
     subject: "Your back-office access is suspended",
     title: "Access suspended, {firstName}",
     titleWithoutName: "Access suspended",
@@ -51,6 +56,7 @@ export const TEAM_MAILS_EN: TeamMailsCopy = {
     footer: "This email informs you of an access change. It requires no action.",
   },
   "staff.access-restored": {
+    kicker: "Access restored",
     subject: "Your back-office access is restored",
     title: "Access restored, {firstName}",
     titleWithoutName: "Access restored",
@@ -61,6 +67,7 @@ export const TEAM_MAILS_EN: TeamMailsCopy = {
     cta: "Open the back office",
   },
   "staff.production-dossier": {
+    kicker: "Production file",
     subject: "Production file — plan for {day}",
     subjectCompleted: "Production file completed — plan for {day}",
     greeting: "Hello {firstName},",
@@ -98,6 +105,7 @@ export const TEAM_MAILS_EN: TeamMailsCopy = {
       "ask the team to remove you from the recipients (Production › Settings).",
   },
   "staff.support-requested": {
+    kicker: "Support request",
     subject: "Contact request — {contact} · {purpose}",
     title: "A customer asks to be contacted",
     contactLabel: "Contact",
@@ -107,6 +115,7 @@ export const TEAM_MAILS_EN: TeamMailsCopy = {
     footer: "LFC internal alert — sent to the sales team.",
   },
   "staff.customer-request": {
+    kicker: "Customer request",
     subject: "{form} — {reason} · {author}",
     subjectWithOrder: "{form} — {reason} · {order} · {author}",
     urgentSubject: "[Urgent] {subject}",
@@ -125,6 +134,7 @@ export const TEAM_MAILS_EN: TeamMailsCopy = {
       "Replying to this email writes directly to its author. The request is filed in the back office, under Sales › Customer requests.",
   },
   "ops.deploy-check": {
+    kicker: "Deployment check",
     subject: "[LFC] Mail operational — {revision}",
     title: "Outgoing mail works",
     revisionLabel: "Revision",
@@ -138,6 +148,7 @@ export const TEAM_MAILS_EN: TeamMailsCopy = {
       "If it stops arriving, the email channel is down — even if nothing else says so.",
   },
   "agency.vitrine-notice": {
+    kicker: "Showcase notice",
     footer:
       "You are receiving this message as the contact of a subscriber to the La Folie Douce showcase webhook.",
   },

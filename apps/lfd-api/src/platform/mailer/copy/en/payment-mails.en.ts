@@ -28,6 +28,7 @@ export const PAYMENT_MAILS_EN: PaymentMailsCopy = {
       "Unsure, or think this is a mistake? Call us — Le Labo · route de la Balme, Val d'Isère.",
   },
   "customer.order-payment-link": {
+    kicker: "Payment due",
     subject: "Your order {ref} is still to be paid",
     title: "Your order is awaiting payment",
     intro: "We have not yet received the payment for your order {ref}.",
@@ -39,6 +40,7 @@ export const PAYMENT_MAILS_EN: PaymentMailsCopy = {
       "Any doubt? Reply to this email.",
   },
   "customer.order-cancelled": {
+    kicker: "Order cancelled",
     subject: "Order {ref} cancelled",
     title: "Your order has been cancelled.",
     intro: "Your order {ref} for {day} has been cancelled by our team.",

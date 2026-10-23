@@ -1,5 +1,6 @@
 import type { ClientSheet } from "@lfd/contracts";
 
+import { MAIL_LOGO_ATTACHMENT } from "../mail-logo.js";
 import { b2bMailTemplates } from "../mail-templates.js";
 
 /**
@@ -94,7 +95,7 @@ describe("le courriel de confirmation", () => {
     // Google verrait passer le jeton.
     const rendered = render();
 
-    expect(rendered.attachments).toHaveLength(1);
+    expect(rendered.attachments).toHaveLength(2); // + le logo, en dernier
     expect(rendered.attachments?.[0]?.contentId).toBe("qr-retrait");
     expect(rendered.attachments?.[0]?.contentType).toBe("image/png");
     expect(rendered.html).toContain('src="cid:qr-retrait"');
@@ -120,8 +121,8 @@ describe("le courriel de confirmation", () => {
   it("ne joint RIEN sur une livraison — il n'y a pas de comptoir", () => {
     const rendered = render({ handoverToken: null, handoverUrl: "" });
 
-    expect(rendered.attachments).toBeUndefined();
-    expect(rendered.html).not.toContain("cid:");
+    expect(rendered.attachments).toEqual([MAIL_LOGO_ATTACHMENT]); // le logo d'en-tête, et rien d'autre
+    expect(rendered.html).not.toContain("cid:qr-retrait");
   });
 
   it("joint le BON DE COMMANDE en PDF, à part du QR en ligne", () => {
@@ -129,7 +130,7 @@ describe("le courriel de confirmation", () => {
       document: { fileName: "bon-de-commande-ORD-4812.pdf", pdfBase64: "JVBERi0=" },
     });
 
-    expect(rendered.attachments).toHaveLength(2);
+    expect(rendered.attachments).toHaveLength(3); // + le logo, en dernier
     const pdf = rendered.attachments?.[1];
     expect(pdf?.filename).toBe("bon-de-commande-ORD-4812.pdf");
     expect(pdf?.contentType).toBe("application/pdf");
@@ -144,7 +145,7 @@ describe("le courriel de confirmation", () => {
       document: { fileName: "bon-de-commande-ORD-4812.pdf", pdfBase64: "JVBERi0=" },
     });
 
-    expect(rendered.attachments).toHaveLength(1);
+    expect(rendered.attachments).toHaveLength(2); // + le logo, en dernier
     expect(rendered.attachments?.[0]?.contentType).toBe("application/pdf");
   });
 
@@ -172,7 +173,7 @@ describe("le courriel de confirmation", () => {
     const it = render({ locale: "it" });
 
     expect(it.subject).toContain("Il suo ordine");
-    expect(it.attachments).toHaveLength(1);
+    expect(it.attachments).toHaveLength(2); // + le logo
   });
 
   it("ne transporte AUCUN nom d'étage ni SKU — la feuille n'en portait pas", () => {
@@ -294,7 +295,7 @@ describe("le courriel « votre commande est prête »", () => {
     // le téléphone à la main devant un comptoir.
     const rendered = renderReady();
 
-    expect(rendered.attachments).toHaveLength(1);
+    expect(rendered.attachments).toHaveLength(2); // + le logo, en dernier
     expect(rendered.html).toContain('src="cid:qr-retrait"');
   });
 
@@ -308,7 +309,7 @@ describe("le courriel « votre commande est prête »", () => {
     });
 
     expect(rendered.html).toContain("Votre commande part vers vous");
-    expect(rendered.attachments).toBeUndefined();
+    expect(rendered.attachments).toEqual([MAIL_LOGO_ATTACHMENT]); // le logo d'en-tête, et rien d'autre
   });
 
   it("porte le numéro dans son objet, dans les trois langues", () => {

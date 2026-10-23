@@ -46,6 +46,7 @@ export function renderSubAccountGestureMail(
         : fill(copy.subjectWithReference, { site, title, reference: data.reference }),
     ),
     html: shell({
+      kicker: copy.kicker,
       title,
       body: bodyOf(data, copy),
       rows: rowsOf(data, copy),

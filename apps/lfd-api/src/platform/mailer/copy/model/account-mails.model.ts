@@ -31,6 +31,8 @@ export type SubAccountGestureKind =
  * boutique n'a pas d'origine connue.
  */
 export interface CustomerAccessOpenedCopy {
+  /** Le sous-titre du bandeau d'en-tête, sous l'enseigne — rendu en capitales. */
+  readonly kicker: string;
   /** `{company}`. */
   readonly subject: string;
   /** `{firstName}`. */
@@ -50,6 +52,8 @@ export interface CustomerAccessOpenedCopy {
 
 /** **Une société de plus dans un espace existant.** */
 export interface CompanyAttachedCopy {
+  /** Le sous-titre du bandeau d'en-tête, sous l'enseigne — rendu en capitales. */
+  readonly kicker: string;
   /** `{company}`. */
   readonly subject: string;
   /** `{firstName}`. */
@@ -63,6 +67,8 @@ export interface CompanyAttachedCopy {
 
 /** **Une méthode de connexion a été ajoutée** — la seule alerte d'une porte de plus. */
 export interface LoginMethodLinkedCopy {
+  /** Le sous-titre du bandeau d'en-tête, sous l'enseigne — rendu en capitales. */
+  readonly kicker: string;
   /** `{method}` — « Google », « Facebook ». */
   readonly subject: string;
   /** `{firstName}`. */
@@ -79,6 +85,8 @@ export interface LoginMethodLinkedCopy {
  * dit rien du mot de passe actuel ni des sessions : rien de cela n'est vérifié.
  */
 export interface CustomerPasswordResetCopy {
+  /** Le sous-titre du bandeau d'en-tête, sous l'enseigne — rendu en capitales. */
+  readonly kicker: string;
   readonly subject: string;
   readonly title: string;
   readonly requested: string;
@@ -97,6 +105,8 @@ export interface CustomerPasswordResetCopy {
  * site, jamais la personne.
  */
 export interface SubAccountActivityCopy {
+  /** Le sous-titre du bandeau d'en-tête, sous l'enseigne — rendu en capitales. */
+  readonly kicker: string;
   /** Le titre, qui est aussi le cœur de l'objet. */
   readonly title: Readonly<Record<SubAccountActivityKind, string>>;
   /** Ce que le site a fait, glissé dans la phrase du corps. */
@@ -116,6 +126,8 @@ export interface SubAccountActivityCopy {
 
 /** **« Un de vos sites a… »** pour un geste hors commande (N4). */
 export interface SubAccountGestureCopy {
+  /** Le sous-titre du bandeau d'en-tête, sous l'enseigne — rendu en capitales. */
+  readonly kicker: string;
   readonly title: Readonly<Record<SubAccountGestureKind, string>>;
   readonly action: Readonly<Record<SubAccountGestureKind, string>>;
   /** `{site}`, `{title}`. */

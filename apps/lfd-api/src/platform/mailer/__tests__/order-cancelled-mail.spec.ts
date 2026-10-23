@@ -1,6 +1,7 @@
 import type { ClientSheet } from "@lfd/contracts";
 
 import { b2bMailTemplates } from "../mail-templates.js";
+import { MAIL_LOGO_ATTACHMENT } from "../mail-logo.js";
 
 /**
  * « Votre commande a été annulée par notre équipe » (doc
@@ -182,7 +183,7 @@ describe("le courriel « commande annulée par l'équipe »", () => {
   it("ne porte ni QR ni lien de retrait", () => {
     const rendered = mail({ sheet: sheet(), regime: "due", voucher: null, locale: "fr" });
 
-    expect(rendered.attachments).toBeUndefined();
+    expect(rendered.attachments).toEqual([MAIL_LOGO_ATTACHMENT]); // le logo d'en-tête, et rien d'autre
     expect(rendered.html).not.toContain("/retrait/");
   });
 
