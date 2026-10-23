@@ -33,6 +33,7 @@ const PREVIEW: CollectionPreviewView = {
   lines: [],
   totalCents: 0,
   ordersTotalCents: 0,
+  gapCents: 0,
   payerModes: ['monthly'],
   exclusions: [
     {
@@ -49,6 +50,7 @@ const PREVIEW: CollectionPreviewView = {
 
 async function render(
   drafts: Partial<ComptabiliteDashboardService>,
+  preview: CollectionPreviewView = PREVIEW,
 ): Promise<ComponentFixture<MonthPreview>> {
   TestBed.configureTestingModule({
     imports: [MonthPreview],
@@ -56,7 +58,7 @@ async function render(
   });
   const fixture = TestBed.createComponent(MonthPreview);
   fixture.componentRef.setInput('entity', ENTITY);
-  fixture.componentRef.setInput('preview', PREVIEW);
+  fixture.componentRef.setInput('preview', preview);
   fixture.detectChanges();
   await fixture.whenStable();
   return fixture;
@@ -70,6 +72,17 @@ describe('MonthPreview', () => {
     expect(host.querySelector('[data-unbillable]')?.textContent).toContain('CMD-7 (Café du Quai)');
     expect(host.querySelector('[data-preview-exclusions]')?.textContent).toContain('CMD-7');
     expect(host.querySelector('[data-empty]')).toBeNull();
+  });
+
+  /**
+   * L'écart est servi par le serveur (`gapCents`) : l'écran ne soustrait plus
+   * deux montants (revue du 2026-10-24). Un écart volontairement distinct de
+   * la soustraction prouve qu'il lit le champ.
+   */
+  it("affiche l'écart que sert le serveur, sans le recalculer", async () => {
+    const host = (await render({}, { ...PREVIEW, gapCents: -7 })).nativeElement as HTMLElement;
+
+    expect(host.querySelector('[data-preview-gap]')?.textContent).toContain('−0,07');
   });
 
   it('un téléchargement refusé le dit', async () => {

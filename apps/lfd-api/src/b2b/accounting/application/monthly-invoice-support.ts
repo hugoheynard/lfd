@@ -6,6 +6,7 @@ import type { BillingFollow } from "../domain/ports/statement-billing.reader.js"
 import type { StatementBuyerReader } from "../domain/ports/statement-buyer.reader.js";
 import type { PayerOrders } from "../domain/services/monthly-invoicing.js";
 import type { CollectionFormName } from "../domain/value-objects/collection-form.js";
+import { unique } from "./unique-ids.js";
 
 /**
  * Ce que la facture du mois lit UNE fois pour tous ses payeurs — jamais une
@@ -58,8 +59,4 @@ export async function readMonthlyContext(
   ]);
   const deliveredOn = new Map(orders.map((order) => [order.orderId, order.deliveredOn]));
   return { follows, buyers, names, mandates, collectionForms, deliveredOn };
-}
-
-export function unique(ids: readonly string[]): readonly string[] {
-  return [...new Set(ids)];
 }

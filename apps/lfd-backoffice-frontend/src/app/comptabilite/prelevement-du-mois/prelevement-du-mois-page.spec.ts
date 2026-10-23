@@ -89,6 +89,7 @@ const OPEN_PREVIEW: CollectionPreviewView = {
   ],
   totalCents: 22,
   ordersTotalCents: 24,
+  gapCents: -2,
   exclusions: [],
   unmandatedCompanies: [],
   payerModes: ['monthly'],
@@ -383,7 +384,13 @@ describe('PrelevementDuMoisPage', () => {
 
   it('un aperçu vide dit pourquoi', async () => {
     const api = new FakeApi();
-    api.previewView = { ...OPEN_PREVIEW, lines: [], totalCents: 0, ordersTotalCents: 0 };
+    api.previewView = {
+      ...OPEN_PREVIEW,
+      lines: [],
+      totalCents: 0,
+      ordersTotalCents: 0,
+      gapCents: 0,
+    };
     const fixture = await render(api);
 
     expect(host(fixture).querySelector('[data-empty]')?.textContent).toContain(

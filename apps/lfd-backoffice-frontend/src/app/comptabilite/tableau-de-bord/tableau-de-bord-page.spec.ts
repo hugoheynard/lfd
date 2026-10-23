@@ -175,6 +175,7 @@ class FakeBatches {
     lines: [],
     totalCents: 123_456,
     ordersTotalCents: 123_460,
+    gapCents: -4,
     exclusions: [],
     unmandatedCompanies: [],
     payerModes: ['monthly'],

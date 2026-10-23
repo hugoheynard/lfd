@@ -8,6 +8,24 @@
  * `collection_batch_transition`) : deux gestes simultanés lisaient tous deux
  * un lot `constituted`, le dernier écrit gagnait, et les commandes restaient
  * dans l'état de l'autre.
+ *
+ * **Prouvé rouge le 2026-10-24.** Retirés temporairement, ensemble, la prise
+ * de verrou de `DepositCollectionBatchHandler` (`this.lock.lock(batchId)`) et
+ * la condition `status: loaded` du `updateMany` de
+ * `PrismaCollectionBatchRepository.save`, puis remis à l'identique (`git diff`
+ * vide sur les deux fichiers). Sous cette mutation :
+ * - « exactement un réussit » rougit : `[204, 204]` reçu au lieu de
+ *   `[204, 409]` — le dépôt et l'annulation passent tous les deux ;
+ * - « un lot chargé puis changé… » rougit : `save` se résout au lieu de lever
+ *   `CollectionBatchChangedConcurrentlyError` ;
+ * - « le fichier d'un lot annulé se retélécharge » reste vert (il ne dépend
+ *   d'aucun des deux).
+ * Côté handler, `collection-batch-concurrency.handlers.spec.ts` rougit sur
+ * « le dépôt prend le verrou du lot AVANT de le lire » (premier pas
+ * `save:batch:deposited` au lieu de `lock:batch:…`) ; son test du 409 reste
+ * vert, puisqu'il joue l'écriture conditionnelle du double en mémoire, pas
+ * celle de Prisma. La course est réelle : un passage sans mutation peut
+ * sérialiser par hasard, d'où le second test, déterministe.
  */
 import { CollectionBatchChangedConcurrentlyError } from "../src/b2b/accounting/domain/errors/collection-errors.js";
 import { CollectionBatchRepository } from "../src/b2b/accounting/domain/ports/collection-batch.repository.js";

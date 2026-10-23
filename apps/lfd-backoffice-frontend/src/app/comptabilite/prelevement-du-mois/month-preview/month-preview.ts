@@ -162,7 +162,7 @@ export class MonthPreview {
       : {
           billed: euros(view.totalCents),
           orders: euros(view.ordersTotalCents),
-          gap: signedEuros(view.totalCents - view.ordersTotalCents),
+          gap: signedEuros(view.gapCents),
           payers: view.lines.length,
         };
   });

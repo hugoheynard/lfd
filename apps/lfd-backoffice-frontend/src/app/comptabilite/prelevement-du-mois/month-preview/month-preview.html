@@ -34,7 +34,7 @@
             ><span class="mp-amount">{{ sums.orders }}</span></fold-field
           >
           <fold-field label="Écart"
-            ><span class="mp-amount">{{ sums.gap }}</span></fold-field
+            ><span class="mp-amount" data-preview-gap>{{ sums.gap }}</span></fold-field
           >
           <fold-field label="Payeurs">{{ sums.payers }}</fold-field>
           @if (clients() !== '') {

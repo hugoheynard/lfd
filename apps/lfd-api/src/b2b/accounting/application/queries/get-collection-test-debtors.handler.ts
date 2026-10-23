@@ -16,11 +16,9 @@ import {
   DEFAULT_TEST_REMITTANCE,
   earliestTestCollectionDay,
 } from "../../domain/services/collection-test-file.js";
+import { Iban } from "../../domain/value-objects/iban.js";
 import { testDebtorVerdictOf } from "../collection-test-support.js";
 import { GetCollectionTestDebtorsQuery } from "./collection-test-queries.js";
-
-/** Les quatre derniers caractères d'un IBAN — jamais plus. */
-const IBAN_TAIL = 4;
 
 /**
  * **L'outil d'essai** : chacun de nos établissements, avec le mandat sous
@@ -112,6 +110,6 @@ function mandateView(mandate: TestMandate): CollectionTestDebtorView["mandate"] 
     reference: mandate.reference,
     scheme: mandate.scheme,
     paymentType: mandate.paymentType,
-    ibanLast4: mandate.iban.slice(-IBAN_TAIL),
+    ibanLast4: Iban.create(mandate.iban).last4(),
   };
 }

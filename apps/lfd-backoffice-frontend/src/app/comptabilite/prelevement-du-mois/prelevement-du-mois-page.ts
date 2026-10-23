@@ -28,18 +28,19 @@ import { CollectionBatchesService } from '../collection-batches.service';
 import { isDeadBatch } from '../collection-batch-steps';
 import { longDay, sameClosure } from '../collection-month-wording';
 import { LegalEntitiesService } from '../legal-entities.service';
-import { day } from '../invoice-dossier-format';
 import { MonthlyInvoicesService } from '../monthly-invoices.service';
 import { BankReturns } from './bank-returns/bank-returns';
 import { BatchHistory } from './batch-history/batch-history';
 import { ExcludedOrders } from './excluded-orders/excluded-orders';
 import { CardInvoiceSignals } from './card-invoice-signals/card-invoice-signals';
 import { UnconfirmedDeliveries } from './unconfirmed-deliveries/unconfirmed-deliveries';
-import { MonthInvoices, periodLastDay } from './month-invoices/month-invoices';
+import { MonthInvoices } from './month-invoices/month-invoices';
 import { MonthPreview } from './month-preview/month-preview';
 import { MonthSchedule } from './month-schedule/month-schedule';
 import { PendingBatch, type PendingBatchGesture } from './pending-batch/pending-batch';
 import { SettlePanel } from './settle-panel/settle-panel';
+import { closuresInOrder } from './closures-in-order';
+import { issuedInvoicesSentence } from './issued-invoices-sentence';
 
 /**
  * **Comptabilité › Prélèvement du mois** (plan
@@ -138,20 +139,13 @@ export class PrelevementDuMoisPage {
 
   protected readonly prepareLabel = computed(() => `Préparer le lot ${this.lotName()}`);
 
-  /**
-   * Les clôtures du mois (M4c), la clôture du lot à préparer en tête, puis
-   * les autres dans l'ordre du calendrier.
-   */
-  protected readonly closures = computed(() => {
-    const all = this.invoices()?.closures ?? [];
-    const entity = this.entity();
-    const isToPrepare = (closesAt: string): boolean =>
-      entity !== null && sameClosure(closesAt, entity.lastClosurePeriod.closesAt);
-    return [
-      ...all.filter((closure) => isToPrepare(closure.periodClosesAt)),
-      ...all.filter((closure) => !isToPrepare(closure.periodClosesAt)),
-    ].map((closure) => ({ closure, toPrepare: isToPrepare(closure.periodClosesAt) }));
-  });
+  /** Les clôtures du mois, celle du lot à préparer en tête (`closuresInOrder`). */
+  protected readonly closures = computed(() =>
+    closuresInOrder(
+      this.invoices()?.closures ?? [],
+      this.entity()?.lastClosurePeriod.closesAt ?? null,
+    ),
+  );
 
   /** Pourquoi il n'y a aucun lot à déposer — jamais un vide muet. */
   protected readonly nothingToProcess = computed(() => {
@@ -254,16 +248,7 @@ export class PrelevementDuMoisPage {
     if (entityId !== null) {
       await this.act('invoices', async () => {
         const report = await this.invoicesApi.issue({ legalEntityId: entityId, periodClosesAt });
-        const lastDay = periodLastDay(periodClosesAt);
-        const late = report.issued.find((issued) => issued.issuedOn > lastDay);
-        this.notify.success(
-          (late === undefined ? '' : `Émise(s) en retard, le ${day(late.issuedOn)} — `) +
-            `${String(report.issued.length)} facture(s) émise(s), ` +
-            `${String(report.blocked.length)} facture(s) signalée(s)` +
-            (report.alreadyInvoiced > 0
-              ? `, ${String(report.alreadyInvoiced)} déjà émise(s) pour cette période.`
-              : '.'),
-        );
+        this.notify.success(issuedInvoicesSentence(report, periodClosesAt));
       });
     }
   }

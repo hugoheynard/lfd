@@ -127,6 +127,7 @@ function toView(read: ReadAssembly): Omit<CollectionPreviewOpenView, "payerModes
     lines,
     totalCents: sum(lines.map((line) => line.amountCents)),
     ordersTotalCents: sum(lines.map((line) => line.ordersTotalCents)),
+    gapCents: sum(lines.map((line) => line.amountCents - line.ordersTotalCents)),
     exclusions,
     unmandatedCompanies: read.assembly.unmandatedCompanies,
   };

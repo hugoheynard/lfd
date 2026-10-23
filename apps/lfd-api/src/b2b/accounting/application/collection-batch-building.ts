@@ -28,12 +28,15 @@ export function buildBatches(input: BuildInput): readonly CollectionBatch[] {
   // UNE échéance pour tous les lots du cycle, tirée du calendrier et jamais
   // plus tôt que le préavis compté depuis aujourd'hui (D4) : le XML la porte,
   // le lot la fige, l'avis l'annonce — les trois ne peuvent pas diverger.
-  const { day: requestedCollectionDay, postponedFrom } = frozenCollectionDay(
+  const { day, postponedFrom } = frozenCollectionDay(
     read.cycle.closesAt,
     input.at,
     input.creditor.preNotificationDays,
     input.creditor.collectionDaysAfterClosure,
   );
+  // Le jour se valide AVANT tout rendu : le XML ne consomme qu'une valeur que
+  // le value object a déjà acceptée (revue du 2026-10-24).
+  const requestedCollectionDay = CollectionDay.of(day);
   return [...read.assembly.debits.entries()].map(([scheme, debits]) => {
     const id = input.nextId();
     const file = renderBatchFile({
@@ -44,7 +47,7 @@ export function buildBatches(input: BuildInput): readonly CollectionBatch[] {
       constitutedAt: input.at,
       debits,
       unmandatedCompanies: read.assembly.unmandatedCompanies,
-      requestedCollectionDay,
+      requestedCollectionDay: requestedCollectionDay.value,
     });
     return CollectionBatch.constitute({
       id,
@@ -58,7 +61,7 @@ export function buildBatches(input: BuildInput): readonly CollectionBatch[] {
       lines: file.lines,
       xml: file.xml,
       fileSha256: file.sha256,
-      requestedCollectionDay: CollectionDay.of(requestedCollectionDay),
+      requestedCollectionDay,
       postponedFromDay: postponedFrom,
     });
   });

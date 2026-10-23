@@ -11,9 +11,7 @@ import type {
 } from "../../domain/ports/mandates-for-bank-export.reader.js";
 import { nameOf } from "../../domain/services/collection-debit-drafts.js";
 import { accountFingerprint } from "../../domain/services/account-fingerprint.js";
-
-/** Les quatre derniers caractères d'un IBAN : tout ce que l'écran en montre. */
-const IBAN_TAIL_LENGTH = 4;
+import { Iban } from "../../domain/value-objects/iban.js";
 
 /**
  * **Les lignes du tableau des mandats** (Hugo, 2026-10-23, aligné sur les
@@ -40,7 +38,7 @@ export function mandateBankRows(
         mandateId: mandate.mandateId,
         reference: mandate.reference,
         debtorName: nameOf(mandate.debtorCompanyId, names),
-        ibanLast4: mandate.iban.slice(-IBAN_TAIL_LENGTH),
+        ibanLast4: Iban.create(mandate.iban).last4(),
         standing: standingOf(own, now),
       };
     }),

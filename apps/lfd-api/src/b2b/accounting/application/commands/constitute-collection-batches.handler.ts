@@ -30,6 +30,7 @@ import {
 import { readAssembly, type ReadAssembly } from "../collection-constitution-support.js";
 import { noticesOf } from "../collection-notice-support.js";
 import { ConstituteCollectionBatchesCommand } from "./constitute-collection-batches.command.js";
+import { unique } from "../unique-ids.js";
 
 /**
  * **Constitue les lots** d'une entité pour le dernier cycle clos — à la
@@ -217,5 +218,5 @@ interface Constitution {
 
 /** Les sociétés débitées par les lignes de ces lots. */
 function payersOf(batches: readonly CollectionBatch[]): readonly string[] {
-  return [...new Set(batches.flatMap((batch) => batch.lines.map((line) => line.debtorCompanyId)))];
+  return unique(batches.flatMap((batch) => batch.lines.map((line) => line.debtorCompanyId)));
 }

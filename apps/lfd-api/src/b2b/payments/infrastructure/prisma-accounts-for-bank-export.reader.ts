@@ -6,6 +6,7 @@ import {
   type AccountForBankExport,
   type AccountsForBankExport,
 } from "../../accounting/domain/ports/accounts-for-bank-export.reader.js";
+import { Iban } from "../../accounting/domain/value-objects/iban.js";
 import { bankExportBicOf } from "../../accounting/domain/services/bank-export-bic.js";
 import { FieldCipher } from "../../../platform/crypto/field-cipher.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
@@ -26,9 +27,6 @@ const ACCOUNT_COLUMNS = {
   createdAt: true,
   company: { select: { raisonSociale: true, enseigne: true, siren: true } },
 } as const;
-
-/** Un IBAN commence par le code pays ISO 3166-1 alpha-2 de sa banque. */
-const IBAN_COUNTRY_LENGTH = 2;
 
 /**
  * Les comptes que débitent les mandats actifs d'une entité émettrice, pour
@@ -76,7 +74,7 @@ export class PrismaAccountsForBankExportReader extends AccountsForBankExportRead
         excluded.push({
           ...named,
           holder: row.holder,
-          ibanCountry: iban.slice(0, IBAN_COUNTRY_LENGTH),
+          ibanCountry: Iban.create(iban).countryCode(),
           reason: exclusion,
         });
         continue;

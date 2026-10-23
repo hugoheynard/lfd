@@ -27,6 +27,7 @@ import {
   readInvoicingCalendar,
   type InvoicingCalendarReaders,
 } from "./invoicing-calendar-support.js";
+import { unique } from "./unique-ids.js";
 
 /**
  * La première moitié de la constitution d'un lot, sortie du handler pour
@@ -226,8 +227,4 @@ async function readCycle(
   const target = cycleOf(at, calendar, null).closesAt;
   const previousClosure = await readers.cycle.previousClosure(legalEntityId, target);
   return { calendar, previousClosure, cycle: cycleOf(at, calendar, previousClosure) };
-}
-
-function unique(ids: readonly string[]): readonly string[] {
-  return [...new Set(ids)];
 }

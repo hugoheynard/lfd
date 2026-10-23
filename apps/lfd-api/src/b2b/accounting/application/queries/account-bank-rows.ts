@@ -7,9 +7,7 @@ import type {
   AccountBankExportSelection,
   FingerprintedAccount,
 } from "../../domain/services/account-bank-export-selection.js";
-
-/** Un IBAN commence par le code pays de sa banque. */
-const IBAN_COUNTRY_LENGTH = 2;
+import { Iban } from "../../domain/value-objects/iban.js";
 
 /**
  * **Les lignes du tableau de la carte** : chaque compte débité, une fois,
@@ -58,7 +56,7 @@ export function accountBankRows(
       companyName: entry.account.companyName,
       tradeName: entry.account.tradeName,
       holder: entry.account.holder,
-      ibanCountry: entry.account.iban.slice(0, IBAN_COUNTRY_LENGTH),
+      ibanCountry: Iban.create(entry.account.iban).countryCode(),
       ibanLast4: entry.account.ibanLast4,
       bic: entry.account.bic,
       standing: standingOf(entry),

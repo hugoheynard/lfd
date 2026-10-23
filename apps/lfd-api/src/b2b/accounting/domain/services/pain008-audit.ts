@@ -4,6 +4,8 @@ import {
   csvEuros as euros,
   csvQuoted as quoted,
 } from "../../../../platform/csv/csv-cells.js";
+import { InvalidIbanError } from "../errors/accounting-errors.js";
+import { Iban } from "../value-objects/iban.js";
 
 /**
  * **Le contrôle du lot** — un CSV lu DEPUIS le fichier XML, jamais à côté.
@@ -79,31 +81,47 @@ interface AuditedLine {
  * rien. Qui doit lire l'IBAN entier ouvre la fiche du client, où le mur tenant
  * et les rôles s'appliquent — ce qu'un fichier posé sur un bureau ne fait plus.
  *
- * ⚠️ Ce qui n'a pas la FORME d'un IBAN ressort tel quel. Le lot écrivait
- * `IBAN-INCONNU` pour une société sans mandat ; depuis le 2026-09-15 il ne
- * l'écrit plus (la société sort du fichier et son bandeau la nomme), mais la
- * règle tient pour tout ce qui ne ressemble pas à un compte. Un masque
- * appliqué à tout rendrait `••••ONNU`, c'est-à-dire un compte d'apparence
- * normale là où le fichier hurle qu'il n'en a pas. Masquer une sentinelle la
- * déguise en donnée.
+ * Le masque est celui du value object (`Iban.masked()`), le même que tout
+ * écran : un audit qui recopiait sa propre règle en avait une seconde.
+ *
+ * ⚠️ Ce qui n'est pas un IBAN valide n'est ni masqué ni recopié : la cellule
+ * le dit invalide, et le contrôle nomme la ligne (`invalidAccounts`) — l'audit
+ * lit un fichier, il ne refuse pas de le lire.
+ * Le lot écrivait `IBAN-INCONNU` pour une société sans mandat ; depuis le
+ * 2026-09-15 il ne l'écrit plus, mais la règle tient. Un masque appliqué à
+ * tout rendrait `••••ONNU`, c'est-à-dire un compte d'apparence normale là où
+ * le fichier hurle qu'il n'en a pas. Masquer une sentinelle la déguise en
+ * donnée.
  */
 function maskedIban(iban: string): string {
-  const trimmed = iban.trim();
-  if (!IBAN_SHAPE.test(trimmed)) {
-    return trimmed;
-  }
-  return `••••${trimmed.slice(-MASKED_IBAN_TAIL)}`;
+  return validIban(iban)?.masked() ?? INVALID_ACCOUNT;
 }
 
-/** Quatre, comme partout ailleurs dans le dépôt (`last4`, `creditorAccountLast4`). */
-const MASKED_IBAN_TAIL = 4;
-
 /**
- * La forme d'un IBAN, pas sa validité : deux lettres de pays, deux chiffres de
- * clé, puis au moins dix caractères. On ne valide pas ici — le domaine l'a fait
- * avant que la valeur entre en base —, on distingue un compte d'une sentinelle.
+ * Ce que la cellule montre d'un compte qui n'est pas un IBAN valide. Jamais la
+ * valeur brute : un IBAN à la clé fausse est presque toujours un vrai compte
+ * mal recopié, et l'écrire en clair défait le masque.
  */
-const IBAN_SHAPE = /^[A-Z]{2}\d{2}[A-Z0-9]{10,}$/i;
+const INVALID_ACCOUNT = "🔴 IBAN invalide";
+
+/** L'IBAN s'il en est un — `null` sinon : un constat d'audit, pas une exception. */
+function validIban(raw: string): Iban | null {
+  try {
+    return Iban.create(raw.trim());
+  } catch (error) {
+    if (error instanceof InvalidIbanError) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+/** Les lignes dont le compte n'est pas un IBAN valide, nommées par leur référence. */
+function invalidAccounts(lines: readonly AuditedLine[]): readonly string[] {
+  return lines
+    .filter((line) => validIban(line.iban) === null)
+    .map((line) => `Compte de la ligne ${line.endToEndId}`);
+}
 
 /** Rend le CSV de contrôle d'un `pain.008`. */
 export function auditCsv(xml: string): string {
@@ -138,11 +156,15 @@ export function auditCsv(xml: string): string {
     control("Lignes comptées", String(lines.length)),
     control("Nombre déclaré par le fichier (NbOfTxs)", String(declaredCount)),
     ...unreadable.map((finding) => control("🔴 Montant illisible", finding)),
+    ...invalidAccounts(lines).map((finding) => control(INVALID_ACCOUNT, finding)),
     // Le verdict en toutes lettres : on ne demande pas à un lecteur pressé de
     // comparer deux nombres au milieu d'un tableau.
     control(
       "Verdict",
-      unreadable.length === 0 && declaredSum === summed && declaredCount === lines.length
+      unreadable.length === 0 &&
+        invalidAccounts(lines).length === 0 &&
+        declaredSum === summed &&
+        declaredCount === lines.length
         ? "COHÉRENT"
         : "🔴 INCOHÉRENT — ne pas déposer",
     ),
@@ -155,13 +177,15 @@ export function auditCsv(xml: string): string {
  * que ses lignes comptent et somment ? Le prélèvement d'essai le vérifie AVANT
  * de garder son fichier (plan `plan-prelevement-d-essai.md`, §1) — la même
  * relecture que le CSV, quelle que soit la séquence des blocs. Un montant
- * illisible rend le fichier incohérent.
+ * illisible ou un IBAN invalide (la banque rejetterait la ligne) rend le
+ * fichier incohérent (décidé le 2026-10-24).
  */
 export function isAuditCoherent(xml: string): boolean {
   const lines = readLines(xml);
   return (
     lines.length > 0 &&
     unreadableAmounts(xml, lines).length === 0 &&
+    invalidAccounts(lines).length === 0 &&
     declaredCents(xml) === sumOf(lines) &&
     declaredNumber(xml) === lines.length
   );

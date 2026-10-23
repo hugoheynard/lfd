@@ -87,6 +87,7 @@ describe("l'aperçu du mois", () => {
     expect(view.totalCents).toBe(batch?.totalCents);
     expect(view.lines.map((line) => line.orderCount).sort()).toEqual([1, 2]);
     expect(view.ordersTotalCents).toBe(3_000);
+    expect(view.gapCents).toBe(view.totalCents - view.ordersTotalCents);
   });
 
   it("n'écrit rien et ne verrouille rien", async () => {

@@ -271,6 +271,11 @@ export interface CollectionPreviewOpenView {
   readonly lines: readonly CollectionPreviewLineView[];
   readonly totalCents: number;
   readonly ordersTotalCents: number;
+  /**
+   * L'écart `totalCents − ordersTotalCents`, signé, calculé par le serveur :
+   * l'écran ne refait pas d'arithmétique sur l'argent (revue du 2026-10-24).
+   */
+  readonly gapCents: number;
   /** Les bons qui seraient écartés, et pourquoi. */
   readonly exclusions: readonly CollectionExclusionView[];
   /** Les payeurs sans mandat — ils rendraient le lot non déposable. */

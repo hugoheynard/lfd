@@ -57,7 +57,8 @@ import {
   type PayerIssue,
 } from "../monthly-invoice-issuance.js";
 import { readInvoicingCalendar } from "../invoicing-calendar-support.js";
-import { readMonthlyContext, unique } from "../monthly-invoice-support.js";
+import { readMonthlyContext } from "../monthly-invoice-support.js";
+import { unique } from "../unique-ids.js";
 import { InvoiceIssuer } from "../services/invoice-issuer.js";
 import { IssueMonthlyInvoicesCommand } from "./issue-monthly-invoices.command.js";
 

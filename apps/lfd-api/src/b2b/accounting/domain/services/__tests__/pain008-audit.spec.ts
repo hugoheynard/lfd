@@ -1,3 +1,4 @@
+import { Iban } from "../../value-objects/iban.js";
 import type { CreditorSnapshot } from "../../creditor-snapshot.js";
 import type { BillableCompany } from "../../ports/billable-orders.reader.js";
 import type { DebtorMandate } from "../../ports/debtor-mandate.reader.js";
@@ -53,7 +54,7 @@ const MANDATES = new Map<string, DebtorMandate>([
     "c2",
     {
       reference: "RUM-C2",
-      iban: "FR7612548029980123456789161",
+      iban: "FR7912548029980123456789161", // clé valide : un IBAN invalide rend l'audit incohérent (2026-10-24)
       bic: null,
       scheme: "B2B",
       paymentType: "one_off",
@@ -92,7 +93,7 @@ describe("auditCsv — ce qu'il lit dans le fichier", () => {
    */
   it("lit l'IBAN du DÉBITEUR, jamais celui du créancier", () => {
     const csv = auditCsv(XML);
-    expect(csv).toContain(`"••••${DEBTOR_IBAN.slice(-4)}"`);
+    expect(csv).toContain(`"${Iban.create(DEBTOR_IBAN).masked()}"`);
     expect(csv).not.toContain(`••••${CREDITOR.creditorIban.slice(-4)}`);
   });
 
@@ -110,11 +111,50 @@ describe("auditCsv — ce qu'il lit dans le fichier", () => {
   /**
    * Le pendant du précédent : une sentinelle masquée deviendrait `••••ONNU`,
    * c'est-à-dire un compte d'apparence normale là où le fichier dit qu'il n'en
-   * a pas. Le masque ne s'applique qu'à ce qui a la forme d'un IBAN.
+   * a pas. Le masque ne s'applique qu'à un IBAN valide ; le reste est dit
+   * invalide (depuis le 2026-10-24 : la valeur brute n'est plus recopiée).
    */
-  it("ne masque PAS la sentinelle du lot non branché", () => {
+  it("ne masque PAS la sentinelle du lot non branché : il la dit invalide", () => {
     const sentinel = XML.replace(`<IBAN>${DEBTOR_IBAN}</IBAN>`, "<IBAN>IBAN-INCONNU</IBAN>");
-    expect(auditCsv(sentinel)).toContain('"IBAN-INCONNU"');
+    const csv = auditCsv(sentinel);
+    expect(csv).not.toContain("••••ONNU");
+    expect(csv).toContain(';"🔴 IBAN invalide";"RUM-C1"');
+  });
+
+  /** Le masque est celui du value object — une seule règle pour tout écran et tout fichier. */
+  it("masque comme Iban.masked(), pas avec une règle à lui", () => {
+    expect(auditCsv(XML)).toContain(`"${Iban.create(DEBTOR_IBAN).masked()}"`);
+  });
+
+  /**
+   * L'audit lit un fichier : un compte qui n'est pas un IBAN valide (clé
+   * fausse, sentinelle) est un CONSTAT nommé, jamais une exception qui
+   * empêcherait de lire le reste.
+   */
+  it("nomme un IBAN invalide en constat, sans lever", () => {
+    const wrongKey = DEBTOR_IBAN.slice(0, -1) + (DEBTOR_IBAN.endsWith("3") ? "4" : "3");
+    const csv = auditCsv(XML.replace(`<IBAN>${DEBTOR_IBAN}</IBAN>`, `<IBAN>${wrongKey}</IBAN>`));
+    expect(csv).toContain('"🔴 IBAN invalide"');
+  });
+
+  /** Décidé le 2026-10-24 : la banque rejetterait la ligne, le fichier ne se dépose pas. */
+  it("un IBAN invalide rend le fichier incohérent", () => {
+    const wrongKey = DEBTOR_IBAN.slice(0, -1) + (DEBTOR_IBAN.endsWith("3") ? "4" : "3");
+    const xml = XML.replace(`<IBAN>${DEBTOR_IBAN}</IBAN>`, `<IBAN>${wrongKey}</IBAN>`);
+    expect(auditCsv(xml)).toContain("INCOHÉRENT — ne pas déposer");
+    expect(isAuditCoherent(xml)).toBe(false);
+    expect(isAuditCoherent(XML)).toBe(true);
+  });
+
+  it("ne signale pas une ligne dont l'IBAN est valide", () => {
+    expect(auditCsv(XML)).not.toContain("Compte de la ligne 20260930-B2B-001");
+  });
+
+  /** Une clé fausse est presque toujours un vrai compte mal recopié : jamais en clair. */
+  it("ne recopie jamais en clair un IBAN invalide", () => {
+    const wrongKey = DEBTOR_IBAN.slice(0, -1) + (DEBTOR_IBAN.endsWith("3") ? "4" : "3");
+    const csv = auditCsv(XML.replace(`<IBAN>${DEBTOR_IBAN}</IBAN>`, `<IBAN>${wrongKey}</IBAN>`));
+    expect(csv).not.toContain(wrongKey);
   });
 
   /**
