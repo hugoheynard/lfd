@@ -15,7 +15,7 @@ import { AccountBankExportCard } from './account-bank-export-card';
  * Ce que la carte tient : le tableau de chaque compte débité (IBAN masqué,
  * BIC, état — écartés compris) avec les deux gestes « importé dans CENET » et
  * « signalé par la banque » sur les seuls comptes à exporter, « Préparer » inactif sans rien à exporter,
- * préparer puis télécharger, « Marquer importé » et « Abandonner » sur le seul
+ * préparer puis télécharger, « J'ai déposé le fichier dans CENET » et « Abandonner » sur le seul
  * export en attente, et le refus du serveur lu même en `Blob`.
  */
 
@@ -96,6 +96,7 @@ function row(
   return {
     bankAccountId,
     companyName,
+    tradeName: null,
     holder: `Titulaire ${companyName}`,
     ibanCountry: 'FR',
     ibanLast4: '0143',
@@ -134,6 +135,7 @@ const VIEW: AccountBankExportsView = {
       id: 'exp_new',
       createdAt: '2026-10-09T09:00:00.000Z',
       accountCount: 1,
+      lastDownloadedAt: null,
       importedAt: null,
       abandonedAt: null,
     },
@@ -141,6 +143,7 @@ const VIEW: AccountBankExportsView = {
       id: 'exp_old',
       createdAt: '2026-10-01T09:00:00.000Z',
       accountCount: 1,
+      lastDownloadedAt: '2026-10-01T10:00:00.000Z',
       importedAt: '2026-10-02T09:00:00.000Z',
       abandonedAt: null,
     },
@@ -148,6 +151,7 @@ const VIEW: AccountBankExportsView = {
       id: 'exp_ko',
       createdAt: '2026-09-01T09:00:00.000Z',
       accountCount: 1,
+      lastDownloadedAt: null,
       importedAt: null,
       abandonedAt: '2026-09-02T09:00:00.000Z',
     },
@@ -168,6 +172,13 @@ class FakeService {
   }
   file(entityId: string, exportId: string): Promise<Blob> {
     this.calls.push(`file:${entityId}:${exportId}`);
+    // Comme le serveur : le téléchargement se garde sur l'export.
+    this.view = {
+      ...this.view,
+      exports: this.view.exports.map((item) =>
+        item.id === exportId ? { ...item, lastDownloadedAt: '2026-10-09T10:00:00.000Z' } : item,
+      ),
+    };
     return this.fileError === null
       ? Promise.resolve(new Blob(['I;x'], { type: 'text/csv' }))
       : Promise.reject(this.fileError);
@@ -214,6 +225,92 @@ beforeEach(() => {
   service = new FakeService();
   vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:x');
   vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+});
+
+const CENET = "J'ai déposé le fichier dans CENET";
+
+function figure(fixture: ComponentFixture<AccountBankExportCard>, filter: string) {
+  const node = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(
+    `[data-figure="${filter}"]`,
+  );
+  if (node === null) throw new TypeError(`chiffre ${filter} absent`);
+  return node;
+}
+
+function companyCells(fixture: ComponentFixture<AccountBankExportCard>): string[] {
+  // Une ligne de la cellule par élément, jointes par « | ».
+  return [...(fixture.nativeElement as HTMLElement).querySelectorAll('.ab-company')].map((node) =>
+    [...node.children]
+      .map((line) => (line.textContent ?? '').replace(/\s+/g, ' ').trim())
+      .join(' | '),
+  );
+}
+
+describe('la colonne « Société »', () => {
+  it('enseigne en gras, raison sociale dessous, titulaire identique tu', async () => {
+    service.view = {
+      ...VIEW,
+      accounts: [
+        {
+          ...row('rib_a', 'SAS Les Tommeuses', { kind: 'to_export' }),
+          tradeName: 'Fromagerie Tom',
+          holder: 'sas les  tommeuses',
+        },
+      ],
+    };
+    const fixture = await render();
+    const cell = (fixture.nativeElement as HTMLElement).querySelector('.ab-company');
+    expect(cell?.querySelector('strong')?.textContent).toBe('Fromagerie Tom');
+    expect(companyCells(fixture)).toEqual(['Fromagerie Tom | SAS Les Tommeuses']);
+  });
+
+  it('sans enseigne : la raison sociale une seule fois', async () => {
+    service.view = {
+      ...VIEW,
+      accounts: [
+        {
+          ...row('rib_a', 'SAS Les Tommeuses', { kind: 'to_export' }),
+          holder: 'SAS Les Tommeuses',
+        },
+      ],
+    };
+    const fixture = await render();
+    expect(companyCells(fixture)).toEqual(['SAS Les Tommeuses']);
+  });
+
+  it('nomme le titulaire du RIB quand il diffère', async () => {
+    const fixture = await render();
+    expect(companyCells(fixture)[0]).toBe('Café A | Titulaire du RIB : Titulaire Café A');
+  });
+});
+
+describe('les chiffres clés', () => {
+  it('montrent les trois comptes, ton d’action sur « à exporter » non nul, zéro atténué', async () => {
+    service.view = { ...VIEW, inFlightCount: 0 };
+    const fixture = await render();
+    expect(figure(fixture, 'to_export').textContent).toContain('1');
+    expect(figure(fixture, 'to_export').classList).toContain('ab-figure--action');
+    expect(figure(fixture, 'in_flight').classList).toContain('ab-figure--zero');
+    expect(figure(fixture, 'known').textContent).toContain('connus de la banque');
+  });
+
+  it('filtrent le tableau au clic, et le re-clic rend tout', async () => {
+    const fixture = await render();
+    const known = figure(fixture, 'known');
+    known.click();
+    fixture.detectChanges();
+    expect(known.getAttribute('aria-pressed')).toBe('true');
+    expect(companyCells(fixture).map((cell) => cell.split(' | ')[0])).toEqual([
+      'Comptoir C',
+      'Dépôt D',
+      'Épicerie E',
+    ]);
+    expect(text(fixture)).toContain('recliquer le chiffre');
+    known.click();
+    fixture.detectChanges();
+    expect(known.getAttribute('aria-pressed')).toBe('false');
+    expect(companyCells(fixture)).toHaveLength(VIEW.accounts.length);
+  });
 });
 
 describe('la carte « Comptes à la banque »', () => {
@@ -274,11 +371,39 @@ describe('la carte « Comptes à la banque »', () => {
 
   it('marquer et abandonner ne s’offrent que sur l’export en attente ; l’abandonné ne se télécharge plus', async () => {
     const fixture = await render();
-    expect(buttons(fixture, 'Marquer importé')).toHaveLength(1);
+    expect(buttons(fixture, CENET)).toHaveLength(1);
     expect(buttons(fixture, 'Abandonner')).toHaveLength(1);
-    expect(buttons(fixture, 'Télécharger')).toHaveLength(2);
+    expect(buttons(fixture, 'Télécharger le fichier des comptes')).toHaveLength(1);
+    expect(buttons(fixture, 'Télécharger')).toHaveLength(1);
     expect(text(fixture)).toContain('en attente de la banque');
     expect(text(fixture)).toContain('abandonné le 2 septembre 2026');
+  });
+
+  it('« déposé dans CENET » est muet tant que le fichier n’a pas été téléchargé, puis s’ouvre', async () => {
+    const fixture = await render();
+    const before = buttons(fixture, CENET)[0];
+    expect(before?.disabled).toBe(true);
+    expect(before?.title).toBe("Téléchargez d'abord le fichier");
+    expect(text(fixture)).toContain("Téléchargez d'abord le fichier.");
+
+    buttons(fixture, 'Télécharger le fichier des comptes')[0]?.click();
+    await vi.waitFor(() => {
+      fixture.detectChanges();
+      expect(buttons(fixture, CENET)[0]?.disabled).toBe(false);
+    });
+    expect(service.calls).toContain('file:le1:exp_new');
+  });
+
+  it('un rechargement garde l’état : déjà téléchargé, le geste est ouvert d’emblée', async () => {
+    service.view = {
+      ...VIEW,
+      exports: VIEW.exports.map((item) =>
+        item.id === 'exp_new' ? { ...item, lastDownloadedAt: '2026-10-09T10:00:00.000Z' } : item,
+      ),
+    };
+    const fixture = await render();
+    expect(buttons(fixture, CENET)[0]?.disabled).toBe(false);
+    expect(text(fixture)).not.toContain("Téléchargez d'abord le fichier.");
   });
 
   it('lit le refus du serveur même quand il arrive en Blob', async () => {

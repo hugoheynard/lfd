@@ -12,9 +12,10 @@ import { RecordAccountBankExportDownloadCommand } from "./record-account-bank-ex
 
 /**
  * **Le téléchargement au journal** (doc `prerequis-export-ribs.md` § 2.3) :
- * qui, quand, combien de comptes — jamais un IBAN. Rien ne change sur
- * l'export : l'agrégat ne fait que refuser un export abandonné, que la
- * route du fichier a déjà calculé — le refus empêche alors de le servir.
+ * qui, quand, combien de comptes — jamais un IBAN. L'export garde l'instant
+ * du dernier téléchargement (ce qui ouvre « marquer importé ») ; l'agrégat
+ * refuse un export abandonné, que la route du fichier a déjà calculé — le
+ * refus empêche alors de le servir.
  */
 @CommandHandler(RecordAccountBankExportDownloadCommand)
 export class RecordAccountBankExportDownloadHandler implements ICommandHandler<
@@ -34,7 +35,8 @@ export class RecordAccountBankExportDownloadHandler implements ICommandHandler<
     const entity = await exportEntityOrFail(this.entities, command.legalEntityId);
     await this.uow.run(async () => {
       const bankExport = await accountExportOrFail(this.exports, entity.id, command.exportId);
-      bankExport.assertDownloadable();
+      bankExport.recordDownload(at);
+      await this.exports.save(bankExport);
       await this.events.publishTraced(
         new AccountBankExportEvent("downloaded", bankExport, journalEntity(entity), at),
       );

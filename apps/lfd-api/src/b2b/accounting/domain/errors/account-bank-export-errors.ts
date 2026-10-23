@@ -121,3 +121,13 @@ export class AccountNotDebitedByEntityError extends ResourceNotFoundError {
     );
   }
 }
+
+/** « Importé » demandé sur un export dont personne n'a téléchargé le fichier. */
+export class AccountBankExportNeverDownloadedError extends BusinessError {
+  constructor() {
+    super(
+      "accounting.account_bank_export.never_downloaded",
+      "Le fichier de cet export n'a jamais été téléchargé : la banque ne peut pas l'avoir importé. Télécharger le fichier, le déposer dans CENET, puis le marquer importé.",
+    );
+  }
+}

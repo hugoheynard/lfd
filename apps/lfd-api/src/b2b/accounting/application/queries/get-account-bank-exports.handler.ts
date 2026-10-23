@@ -63,6 +63,7 @@ export class GetAccountBankExportsHandler implements IQueryHandler<
         id: row.id,
         createdAt: row.createdAt.toISOString(),
         accountCount: row.accountCount,
+        lastDownloadedAt: row.lastDownloadedAt?.toISOString() ?? null,
         importedAt: row.importedAt?.toISOString() ?? null,
         abandonedAt: row.abandonedAt?.toISOString() ?? null,
       })),

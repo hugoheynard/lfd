@@ -16,6 +16,7 @@ export function debitedAccount(
     bankAccountId: `rib_${id}`,
     companyId: `cmp_${id}`,
     companyName: `Société ${id}`,
+    tradeName: null,
     siren: "552100554",
     holder: `Titulaire ${id}`,
     addressLine1: "1 rue du Test",

@@ -33,6 +33,10 @@ model AccountBankExport {
   createdByStaffId String   @map("created_by_staff_id")
   accountCount     Int      @map("account_count")
 
+  /// Le dernier téléchargement du fichier. NULL = jamais téléchargé, et alors
+  /// « Marquer importé » est refusé.
+  lastDownloadedAt DateTime? @map("last_downloaded_at") @db.Timestamptz(3)
+
   /// Posé par « Marquer importé », une seule fois. NULL = pas importé.
   importedAt        DateTime? @map("imported_at") @db.Timestamptz(3)
   importedByStaffId String?   @map("imported_by_staff_id")

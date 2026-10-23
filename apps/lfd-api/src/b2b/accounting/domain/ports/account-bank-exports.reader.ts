@@ -12,6 +12,8 @@ export interface AccountBankExportRecord {
   readonly id: string;
   readonly createdAt: Date;
   readonly accountCount: number;
+  /** `null` tant que le fichier n'a jamais été téléchargé. */
+  readonly lastDownloadedAt: Date | null;
   readonly importedAt: Date | null;
   readonly abandonedAt: Date | null;
 }

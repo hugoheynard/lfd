@@ -7,6 +7,7 @@ import {
 } from "../../../domain/services/__tests__/account-for-bank-export.fixture.js";
 import { DeclareBankAccountKnownCommand } from "../../commands/declare-bank-account-known.command.js";
 import { MarkAccountBankExportImportedCommand } from "../../commands/mark-account-bank-export-imported.command.js";
+import { RecordAccountBankExportDownloadCommand } from "../../commands/record-account-bank-export-download.command.js";
 import { AbandonAccountBankExportCommand } from "../../commands/abandon-account-bank-export.command.js";
 import { ExportAccountsForBankCommand } from "../../commands/export-accounts-for-bank.command.js";
 import { accountExportWorld } from "../../commands/__tests__/account-bank-export-doubles.js";
@@ -40,6 +41,7 @@ describe("la carte « Comptes à la banque »", () => {
       {
         bankAccountId: "rib_x",
         companyName: "Sans Bic",
+        tradeName: "Le Sans Bic",
         holder: "Titulaire x",
         ibanCountry: "FR",
         ibanLast4: "0143",
@@ -70,6 +72,7 @@ describe("la carte « Comptes à la banque »", () => {
     const w = world();
     w.accounts.exportable = [debitedAccount("a"), debitedAccount("b", { iban: IBAN_B })];
     const id = await w.prepare.execute(new ExportAccountsForBankCommand("le1", "s"));
+    await w.download.execute(new RecordAccountBankExportDownloadCommand("le1", id, "s"));
     await w.markImported.execute(new MarkAccountBankExportImportedCommand("le1", id, "s"));
     w.accounts.exportable = [
       debitedAccount("a"),

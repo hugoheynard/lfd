@@ -21,16 +21,68 @@
         <button foldButton (click)="load()">Réessayer</button>
       </fold-empty-state>
     } @else if (view(); as view) {
-      <fold-field-list>
-        <fold-field label="À exporter">{{ accounts(view.toExport.length) }}</fold-field>
-        <fold-field label="En attente de la banque">{{ accounts(view.inFlightCount) }}</fold-field>
-        <fold-field label="Connus de la banque">{{ accounts(view.knownCount) }}</fold-field>
-      </fold-field-list>
+      <div class="ab-figures" role="group" aria-label="Filtrer les comptes">
+        @for (figure of figures(view); track figure.filter) {
+          <button
+            type="button"
+            class="ab-figure"
+            [class.ab-figure--action]="figure.filter === 'to_export' && figure.count > 0"
+            [class.ab-figure--zero]="figure.count === 0"
+            [attr.aria-pressed]="filter() === figure.filter"
+            [attr.data-figure]="figure.filter"
+            (click)="toggle(figure.filter)"
+          >
+            <span class="ab-figure-count">{{ figure.count }}</span>
+            <span class="ab-figure-label">{{ figure.label }}</span>
+          </button>
+        }
+      </div>
+      @for (item of openExports(view); track item.id) {
+        <div class="ab-row ab-open" [attr.data-open-export]="item.id">
+          <span>Export du {{ day(item.createdAt) }} — {{ accounts(item.accountCount) }}</span>
+          <span class="ab-actions">
+            <button foldButton icon="download" [disabled]="busy()" (click)="downloadFile(item)">
+              Télécharger le fichier des comptes
+            </button>
+            @if (item.lastDownloadedAt === null) {
+              <button
+                foldButton
+                emphasis="soft"
+                disabled
+                title="Téléchargez d'abord le fichier"
+                [attr.aria-describedby]="'ab-first-' + item.id"
+              >
+                J'ai déposé le fichier dans CENET
+              </button>
+              <span class="ab-said" [id]="'ab-first-' + item.id"
+                >Téléchargez d'abord le fichier.</span
+              >
+            } @else {
+              <fold-inline-confirm
+                intent="primary"
+                [labels]="{ confirm: 'La banque l’a importé' }"
+                (confirmed)="markImported(item)"
+              >
+                <button foldButton emphasis="outline" [disabled]="busy()">
+                  J'ai déposé le fichier dans CENET
+                </button>
+              </fold-inline-confirm>
+            }
+          </span>
+        </div>
+      }
+
+      @if (filter(); as active) {
+        <p class="ab-said" data-filter-said>
+          Seuls les comptes «&nbsp;{{ filterLabels[active] }}&nbsp;» sont montrés — recliquer le
+          chiffre pour tout voir.
+        </p>
+      }
 
       <fold-data-table
         caption="Les comptes débités par les mandats de l'entité"
         [columns]="columns"
-        [rows]="view.accounts"
+        [rows]="shown(view)"
         [rowKey]="rowKey"
         [rowTone]="toneOf"
         [empty]="{ title: 'Aucun compte débité', subtitle: 'Aucun mandat actif de l’entité.' }"
@@ -38,8 +90,14 @@
       >
         <ng-template foldCell="company" let-row>
           <span class="ab-company">
-            <span>{{ row.companyName }}</span>
-            <span class="ab-holder">{{ row.holder }}</span>
+            @let names = namesOf(row);
+            <strong>{{ names.headline }}</strong>
+            @if (names.legalName; as legalName) {
+              <span class="ab-holder">{{ legalName }}</span>
+            }
+            @if (names.holder; as holder) {
+              <span class="ab-holder">Titulaire du RIB&nbsp;: {{ holder }}</span>
+            }
           </span>
         </ng-template>
         <ng-template foldCell="iban" let-row>{{ maskedIban(row) }}</ng-template>
@@ -99,7 +157,7 @@
                 {{ stateOf(item) }}
               </span>
               <span class="ab-actions">
-                @if (item.abandonedAt === null) {
+                @if (item.abandonedAt === null && !isOpen(item)) {
                   <button
                     foldButton
                     emphasis="outline"
@@ -111,15 +169,6 @@
                   </button>
                 }
                 @if (isOpen(item)) {
-                  <fold-inline-confirm
-                    intent="primary"
-                    [labels]="{ confirm: 'La banque l’a importé' }"
-                    (confirmed)="markImported(item)"
-                  >
-                    <button foldButton emphasis="outline" [disabled]="busy()">
-                      Marquer importé
-                    </button>
-                  </fold-inline-confirm>
                   <fold-inline-confirm
                     intent="danger"
                     [labels]="{ confirm: 'La banque l’a rejeté' }"

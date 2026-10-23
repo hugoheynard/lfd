@@ -10,6 +10,8 @@ export interface AccountForBankExport {
   readonly companyId: string;
   /** Sa raison sociale — pour NOMMER le compte à l'écran et dans un refus. */
   readonly companyName: string;
+  /** Son enseigne, `null` si elle n'en déclare pas — l'écran la montre d'abord. */
+  readonly tradeName: string | null;
   /** Son SIREN, `null` s'il n'est pas connu. */
   readonly siren: string | null;
   readonly holder: string;
@@ -36,6 +38,7 @@ export type AccountExclusionReason = "no_bic";
 export interface AccountExcludedFromBankExport {
   readonly bankAccountId: string;
   readonly companyName: string;
+  readonly tradeName: string | null;
   readonly holder: string;
   /** Les deux lettres de pays de l'IBAN — rien d'autre n'en sort. */
   readonly ibanCountry: string;

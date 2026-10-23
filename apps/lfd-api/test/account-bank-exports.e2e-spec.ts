@@ -113,9 +113,10 @@ async function debtor(
   name: string,
   iban = DEBTOR_IBAN,
   withoutBic = false,
+  enseigne = "",
 ): Promise<Debtor> {
   seq += 1;
-  const company = await createCompany(ctx.prisma, { raisonSociale: name });
+  const company = await createCompany(ctx.prisma, { raisonSociale: name, enseigne });
   await staff()
     .put(`/admin/companies/${company.id}/bank-account`)
     .send({
@@ -168,9 +169,11 @@ describe("l'export des comptes destinataires pour la banque", () => {
     await debtor(entityId, "Café de l'Isère");
 
     const exportId = await prepare(entityId);
+    expect((await card(entityId)).exports[0]?.lastDownloadedAt).toBeNull();
     const file = await staff()
       .get(`${exportsOf(entityId)}/${exportId}/file.csv`)
       .expect(200);
+    expect((await card(entityId)).exports[0]?.lastDownloadedAt).toEqual(expect.any(String));
 
     expect(file.headers["cache-control"]).toBe("no-store");
     expect(file.headers["content-type"]).toMatch(/^text\/csv; charset=iso-8859-1/u);
@@ -191,6 +194,43 @@ describe("l'export des comptes destinataires pour la banque", () => {
     const imported = await card(entityId);
     expect(imported).toMatchObject({ toExport: [], inFlightCount: 0, knownCount: 1 });
     expect(imported.accounts[0]?.standing).toMatchObject({ kind: "imported" });
+  });
+
+  it("refuse (409) de marquer importé un export jamais téléchargé, puis l'accepte après", async () => {
+    const entityId = await entity();
+    await debtor(entityId, "Jamais tiré");
+    const exportId = await prepare(entityId);
+
+    const refused = await staff()
+      .post(`${exportsOf(entityId)}/${exportId}/imported`)
+      .expect(409);
+    expect(JSON.stringify(refused.body)).toContain("jamais été téléchargé");
+    expect((await card(entityId)).exports[0]?.importedAt).toBeNull();
+
+    await staff()
+      .get(`${exportsOf(entityId)}/${exportId}/file.csv`)
+      .expect(200);
+    await staff()
+      .post(`${exportsOf(entityId)}/${exportId}/imported`)
+      .expect(204);
+  });
+
+  it("sert l'enseigne à côté de la raison sociale, sans toucher au fichier", async () => {
+    const entityId = await entity();
+    await debtor(entityId, "SAS Les Tommeuses", DEBTOR_IBAN, false, "Fromagerie Tom");
+    await debtor(entityId, "Sans enseigne", OTHER_IBAN);
+
+    const view = await card(entityId);
+    expect(view.accounts.map((row) => [row.companyName, row.tradeName])).toEqual([
+      ["SAS Les Tommeuses", "Fromagerie Tom"],
+      ["Sans enseigne", null],
+    ]);
+    const exportId = await prepare(entityId);
+    const file = await staff()
+      .get(`${exportsOf(entityId)}/${exportId}/file.csv`)
+      .expect(200);
+    expect(file.text).toContain("I;SAS Les Tommeuses titulaire;");
+    expect(file.text).not.toContain("Fromagerie Tom");
   });
 
   it("n'exporte que les nouveaux : un second export ne reprend pas les comptes en vol", async () => {

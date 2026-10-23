@@ -7,6 +7,7 @@ import {
 import {
   AccountAlreadyKnownToBankError,
   AccountBankExportClosedError,
+  AccountBankExportNeverDownloadedError,
   AccountBankExportTooLargeError,
   DuplicateAccountInBankExportError,
   NoAccountToExportError,
@@ -60,6 +61,7 @@ describe("un export des comptes (§ 2.3)", () => {
 
   it("se marque importé une fois, puis ne s'abandonne plus", () => {
     const bankExport = AccountBankExport.export(input([FP_A]));
+    bankExport.recordDownload(AT);
     bankExport.markImported({ at: AT, staffId: "staff_2" });
     expect(bankExport.toPersistence().imported).toEqual({ at: AT, staffId: "staff_2" });
     expect(() => bankExport.markImported({ at: AT, staffId: "staff_3" })).toThrow(
@@ -69,6 +71,17 @@ describe("un export des comptes (§ 2.3)", () => {
       AccountBankExportClosedError,
     );
     expect(() => bankExport.assertDownloadable()).not.toThrow();
+  });
+
+  it("ne se marque pas importé tant que son fichier n'a pas été téléchargé", () => {
+    const bankExport = AccountBankExport.export(input([FP_A]));
+    expect(bankExport.toPersistence().lastDownloadedAt).toBeNull();
+    expect(() => bankExport.markImported({ at: AT, staffId: "staff_2" })).toThrow(
+      AccountBankExportNeverDownloadedError,
+    );
+    bankExport.recordDownload(AT);
+    expect(bankExport.toPersistence().lastDownloadedAt).toEqual(AT);
+    expect(() => bankExport.markImported({ at: AT, staffId: "staff_2" })).not.toThrow();
   });
 
   it("s'abandonne une fois, puis ne se marque plus importé ni ne se télécharge", () => {

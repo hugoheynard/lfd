@@ -1,5 +1,6 @@
 import {
   AccountBankExportClosedError,
+  AccountBankExportNeverDownloadedError,
   AccountBankExportTooLargeError,
   DuplicateAccountInBankExportError,
   NoAccountToExportError,
@@ -14,6 +15,8 @@ export interface AccountBankExportState {
   readonly legalEntityId: string;
   readonly created: StaffStamp;
   readonly lines: readonly ExportedAccountLine[];
+  /** `null` tant que le fichier n'a jamais été téléchargé. */
+  readonly lastDownloadedAt: Date | null;
   /** `null` tant que personne n'a dit « la banque l'a importé ». */
   readonly imported: StaffStamp | null;
   /** `null` tant que personne n'a dit « la banque l'a rejeté, on l'abandonne ». */
@@ -38,7 +41,9 @@ export interface ExportAccountsInput {
  *   seule fois** — un compte en double fait rejeter tout l'import ;
  * - un export se clôt **une fois**, importé OU abandonné : un export importé
  *   ne s'abandonne pas (ses comptes sont chez la banque, les renvoyer ferait
- *   tout rejeter), un export abandonné ne s'importe pas.
+ *   tout rejeter), un export abandonné ne s'importe pas ;
+ * - un export ne se marque importé qu'une fois son fichier **téléchargé** :
+ *   la banque ne peut pas avoir importé un fichier que personne n'a tiré.
  */
 export class AccountBankExport {
   private constructor(private state: AccountBankExportState) {}
@@ -65,6 +70,7 @@ export class AccountBankExport {
     return new AccountBankExport({
       ...input,
       lines: [...input.lines],
+      lastDownloadedAt: null,
       imported: null,
       abandoned: null,
     });
@@ -82,9 +88,15 @@ export class AccountBankExport {
     return this.state.lines.length;
   }
 
-  /** @throws {AccountBankExportClosedError} */
+  /**
+   * @throws {AccountBankExportClosedError}
+   * @throws {AccountBankExportNeverDownloadedError}
+   */
   markImported(stamp: StaffStamp): void {
     this.assertOpen();
+    if (this.state.lastDownloadedAt === null) {
+      throw new AccountBankExportNeverDownloadedError();
+    }
     this.state = { ...this.state, imported: stamp };
   }
 
@@ -104,6 +116,17 @@ export class AccountBankExport {
     if (this.state.abandoned !== null) {
       throw new AccountBankExportClosedError("abandoned", this.state.abandoned.at);
     }
+  }
+
+  /**
+   * Le fichier vient d'être servi : l'instant se garde, pour que « marquer
+   * importé » s'ouvre — rechargement de page compris.
+   *
+   * @throws {AccountBankExportClosedError}
+   */
+  recordDownload(at: Date): void {
+    this.assertDownloadable();
+    this.state = { ...this.state, lastDownloadedAt: at };
   }
 
   toPersistence(): AccountBankExportState {

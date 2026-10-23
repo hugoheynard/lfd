@@ -146,6 +146,10 @@ describe("la procédure de prélèvement — la lecture d'état", () => {
     ).exportId;
     expect((await procedure(entityId)).accounts.state).toBe("waiting");
 
+    // « Importé » ne se dit que d'un fichier téléchargé (règle de l'agrégat).
+    await staff()
+      .get(`${exportsOf(entityId, "account")}/${accountExport}/file.csv`)
+      .expect(200);
     await staff()
       .post(`${exportsOf(entityId, "account")}/${accountExport}/imported`)
       .expect(204);

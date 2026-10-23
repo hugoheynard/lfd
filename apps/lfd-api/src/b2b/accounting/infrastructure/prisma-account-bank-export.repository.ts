@@ -11,8 +11,8 @@ import {
 
 /**
  * Adaptateur d'écriture de l'export des comptes. Les LIGNES s'écrivent à la
- * création et jamais ensuite ; un `save` ultérieur ne pose que « importé » ou
- * « abandonné ». Aucun IBAN ne passe ici : une ligne n'en porte que l'empreinte.
+ * création et jamais ensuite ; un `save` ultérieur ne pose que le dernier
+ * téléchargement, « importé » ou « abandonné ». Aucun IBAN ne passe ici : une ligne n'en porte que l'empreinte.
  */
 @Injectable()
 export class PrismaAccountBankExportRepository extends AccountBankExportRepository {
@@ -37,6 +37,7 @@ export class PrismaAccountBankExportRepository extends AccountBankExportReposito
         companyId: line.companyId,
         accountFingerprint: line.accountFingerprint,
       })),
+      lastDownloadedAt: row.lastDownloadedAt,
       imported: stampOf(row.importedAt, row.importedByStaffId),
       abandoned: stampOf(row.abandonedAt, row.abandonedByStaffId),
     });
@@ -45,6 +46,7 @@ export class PrismaAccountBankExportRepository extends AccountBankExportReposito
   async save(bankExport: AccountBankExport): Promise<void> {
     const state = bankExport.toPersistence();
     const closed = {
+      lastDownloadedAt: state.lastDownloadedAt,
       importedAt: state.imported?.at ?? null,
       importedByStaffId: state.imported?.staffId ?? null,
       abandonedAt: state.abandoned?.at ?? null,

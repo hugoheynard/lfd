@@ -33,6 +33,8 @@ export type AccountBankStandingView =
 export interface AccountBankRowView {
   readonly bankAccountId: string;
   readonly companyName: string;
+  /** L'enseigne de la société, `null` si elle n'en déclare pas. */
+  readonly tradeName: string | null;
   /** Le titulaire du RIB, tel que la banque du client le connaît. */
   readonly holder: string;
   /** Les deux lettres de pays de l'IBAN. */
@@ -60,6 +62,8 @@ export interface AccountBankExportSummaryView {
   readonly id: string;
   readonly createdAt: string;
   readonly accountCount: number;
+  /** `null` tant que le fichier n'a jamais été téléchargé — « marquer importé » est alors refusé. */
+  readonly lastDownloadedAt: string | null;
   readonly importedAt: string | null;
   readonly abandonedAt: string | null;
 }

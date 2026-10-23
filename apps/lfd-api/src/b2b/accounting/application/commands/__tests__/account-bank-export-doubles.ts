@@ -106,6 +106,7 @@ export class MemoryAccountExportsReader extends AccountBankExportsReader {
           id: state.id,
           createdAt: state.created.at,
           accountCount: state.lines.length,
+          lastDownloadedAt: state.lastDownloadedAt,
           importedAt: state.imported?.at ?? null,
           abandonedAt: state.abandoned?.at ?? null,
         })),

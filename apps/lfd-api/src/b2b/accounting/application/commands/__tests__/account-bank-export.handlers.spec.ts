@@ -2,6 +2,7 @@ import { LegalEntityNotFoundError } from "../../../domain/errors/accounting-erro
 import {
   AccountAlreadyKnownToBankError,
   AccountBankExportClosedError,
+  AccountBankExportNeverDownloadedError,
   AccountBankExportNotFoundError,
   AccountNotDebitedByEntityError,
   NoAccountToExportError,
@@ -71,6 +72,7 @@ describe("préparer un export des comptes", () => {
     await w.abandon.execute(new AbandonAccountBankExportCommand("le1", first, "staff_2"));
 
     const second = await w.prepare.execute(prepare());
+    await w.download.execute(new RecordAccountBankExportDownloadCommand("le1", second, "s"));
     await w.markImported.execute(new MarkAccountBankExportImportedCommand("le1", second, "s"));
 
     await expect(w.prepare.execute(prepare())).rejects.toThrow(NoAccountToExportError);
@@ -80,6 +82,7 @@ describe("préparer un export des comptes", () => {
     const w = accountExportWorld();
     w.accounts.exportable = [debitedAccount("a")];
     const first = await w.prepare.execute(prepare());
+    await w.download.execute(new RecordAccountBankExportDownloadCommand("le1", first, "s"));
     await w.markImported.execute(new MarkAccountBankExportImportedCommand("le1", first, "s"));
     w.entities.record = { ...entityRecord(), id: "le2" };
 
@@ -128,6 +131,7 @@ describe("marquer importé, abandonner, télécharger", () => {
 
   it("marque importé une fois, avec auteur et fait", async () => {
     const { w, id } = await prepared();
+    await w.download.execute(new RecordAccountBankExportDownloadCommand("le1", id, "s"));
     await w.markImported.execute(new MarkAccountBankExportImportedCommand("le1", id, "staff_2"));
 
     expect(w.exports.rows.get(id)?.toPersistence().imported).toEqual({
@@ -139,12 +143,29 @@ describe("marquer importé, abandonner, télécharger", () => {
     ).rejects.toThrow(AccountBankExportClosedError);
     expect(w.events.factTypes()).toEqual([
       "account_bank_export.created",
+      "account_bank_export.downloaded",
       "account_bank_export.imported",
     ]);
   });
 
+  it("refuse (409) de marquer importé un export jamais téléchargé, sans rien écrire", async () => {
+    const { w, id } = await prepared();
+    await expect(
+      w.markImported.execute(new MarkAccountBankExportImportedCommand("le1", id, "s")),
+    ).rejects.toThrow(AccountBankExportNeverDownloadedError);
+    expect(w.exports.rows.get(id)?.toPersistence().imported).toBeNull();
+    expect(w.events.factTypes()).toEqual(["account_bank_export.created"]);
+  });
+
+  it("garde l'instant du téléchargement sur l'export", async () => {
+    const { w, id } = await prepared();
+    await w.download.execute(new RecordAccountBankExportDownloadCommand("le1", id, "s"));
+    expect(w.exports.rows.get(id)?.toPersistence().lastDownloadedAt).toEqual(NOW);
+  });
+
   it("n'abandonne pas un export importé", async () => {
     const { w, id } = await prepared();
+    await w.download.execute(new RecordAccountBankExportDownloadCommand("le1", id, "s"));
     await w.markImported.execute(new MarkAccountBankExportImportedCommand("le1", id, "s"));
     await expect(
       w.abandon.execute(new AbandonAccountBankExportCommand("le1", id, "s")),

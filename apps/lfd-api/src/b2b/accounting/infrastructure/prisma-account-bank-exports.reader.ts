@@ -52,6 +52,7 @@ export class PrismaAccountBankExportsReader extends AccountBankExportsReader {
         id: true,
         createdAt: true,
         accountCount: true,
+        lastDownloadedAt: true,
         importedAt: true,
         abandonedAt: true,
       },

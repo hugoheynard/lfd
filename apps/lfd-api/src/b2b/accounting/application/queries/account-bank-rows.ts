@@ -45,6 +45,7 @@ export function accountBankRows(
     .map((entry) => ({
       bankAccountId: entry.account.bankAccountId,
       companyName: entry.account.companyName,
+      tradeName: entry.account.tradeName,
       holder: entry.account.holder,
       ibanCountry: entry.account.iban.slice(0, IBAN_COUNTRY_LENGTH),
       ibanLast4: entry.account.ibanLast4,
@@ -56,6 +57,7 @@ export function accountBankRows(
     ...excluded.map((account) => ({
       bankAccountId: account.bankAccountId,
       companyName: account.companyName,
+      tradeName: account.tradeName,
       holder: account.holder,
       ibanCountry: account.ibanCountry,
       ibanLast4: account.ibanLast4,

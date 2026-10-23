@@ -23,7 +23,7 @@ const ACCOUNT_COLUMNS = {
   ibanLast4: true,
   bic: true,
   createdAt: true,
-  company: { select: { raisonSociale: true, siren: true } },
+  company: { select: { raisonSociale: true, enseigne: true, siren: true } },
 } as const;
 
 /** Un IBAN commence par le code pays ISO 3166-1 alpha-2 de sa banque. */
@@ -66,6 +66,7 @@ export class PrismaAccountsForBankExportReader extends AccountsForBankExportRead
       const named = {
         bankAccountId: row.id,
         companyName: row.company.raisonSociale,
+        tradeName: row.company.enseigne.trim() === "" ? null : row.company.enseigne.trim(),
         ibanLast4: row.ibanLast4,
       };
       const iban = this.cipher.open(row.ibanSealed);

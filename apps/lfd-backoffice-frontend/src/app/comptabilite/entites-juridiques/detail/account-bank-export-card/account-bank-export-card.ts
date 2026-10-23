@@ -21,8 +21,6 @@ import {
   FoldDataTableCellDirective,
   FoldDataTableComponent,
   FoldEmptyStateComponent,
-  FoldFieldComponent,
-  FoldFieldListComponent,
   FoldInlineConfirmComponent,
   FoldPageSectionComponent,
   type FoldTableColumn,
@@ -37,8 +35,37 @@ import {
   accountStandingLabel,
   KNOWN_REASON_GESTURES,
 } from '../../../account-bank-export-wording';
+import { accountBankNames } from './account-bank-names';
 import { AccountBankExportsService } from '../../../account-bank-exports.service';
 import { parisDayLabel } from '../../../mandate-bank-export-wording';
+
+/** Ce que filtre un chiffre clé : « connus » réunit importés et déclarés. */
+type AccountBankFilter = 'to_export' | 'in_flight' | 'known';
+
+interface AccountBankFigure {
+  readonly filter: AccountBankFilter;
+  readonly count: number;
+  readonly label: string;
+}
+
+const FILTER_LABELS: Readonly<Record<AccountBankFilter, string>> = {
+  to_export: 'à exporter',
+  in_flight: 'en attente de la banque',
+  known: 'connus de la banque',
+};
+
+function filterOf(row: AccountBankRowView): AccountBankFilter | null {
+  switch (row.standing.kind) {
+    case 'to_export':
+    case 'in_flight':
+      return row.standing.kind;
+    case 'imported':
+    case 'declared':
+      return 'known';
+    case 'excluded':
+      return null;
+  }
+}
 
 /**
  * **Comptes à la banque** — préparer, télécharger, marquer importé ou
@@ -66,8 +93,6 @@ import { parisDayLabel } from '../../../mandate-bank-export-wording';
     FoldDataTableCellDirective,
     FoldDataTableComponent,
     FoldEmptyStateComponent,
-    FoldFieldComponent,
-    FoldFieldListComponent,
     FoldInlineConfirmComponent,
     FoldPageSectionComponent,
   ],
@@ -90,6 +115,10 @@ export class AccountBankExportCard {
   protected readonly loadError = signal<string | null>(null);
   protected readonly actionError = signal<string | null>(null);
   protected readonly busy = signal(false);
+
+  protected readonly filter = signal<AccountBankFilter | null>(null);
+  protected readonly filterLabels = FILTER_LABELS;
+  protected readonly namesOf = accountBankNames;
 
   protected readonly gestures = KNOWN_REASON_GESTURES;
   /** L'ordre des deux gestes sur la ligne : le plus courant d'abord. */
@@ -128,9 +157,34 @@ export class AccountBankExportCard {
     }
   }
 
+  protected figures(view: AccountBankExportsView): readonly AccountBankFigure[] {
+    return [
+      { filter: 'to_export', count: view.toExport.length, label: FILTER_LABELS.to_export },
+      { filter: 'in_flight', count: view.inFlightCount, label: FILTER_LABELS.in_flight },
+      { filter: 'known', count: view.knownCount, label: FILTER_LABELS.known },
+    ];
+  }
+
+  /** Un clic filtre ; le même clic sur le chiffre actif rend tout le tableau. */
+  protected toggle(filter: AccountBankFilter): void {
+    this.filter.update((active) => (active === filter ? null : filter));
+  }
+
+  protected shown(view: AccountBankExportsView): readonly AccountBankRowView[] {
+    const active = this.filter();
+    return active === null
+      ? view.accounts
+      : view.accounts.filter((row) => filterOf(row) === active);
+  }
+
   /** Les comptes qui attendront l'export d'après (200 au plus par fichier). */
   protected leftOver(view: AccountBankExportsView): number {
     return Math.max(0, view.toExport.length - view.maxPerExport);
+  }
+
+  /** Les exports ni importés ni abandonnés : leurs deux gestes passent au-dessus du tableau. */
+  protected openExports(view: AccountBankExportsView): readonly AccountBankExportSummaryView[] {
+    return view.exports.filter((item) => this.isOpen(item));
   }
 
   protected isOpen(item: AccountBankExportSummaryView): boolean {
