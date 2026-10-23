@@ -3,6 +3,25 @@
 **État : 📐 doc-first.** Rien de ce document n'est codé. Il tranche deux
 questions liées, avant qu'un écran ne fige la mauvaise réponse.
 
+> **Décisions de Hugo, 2026-10-23** (« on peut annuler mais pas modifier ») :
+>
+> 1. **Qui** : le client seul jusqu'à l'heure limite ; le staff à tout moment
+>    avant la préparation.
+> 2. **Quoi** : tout — quantités, articles ajoutés ou retirés, date, créneau,
+>    point de retrait, passage retrait ↔ livraison.
+> 3. **Prix** : une ligne déjà présente garde le prix de la commande
+>    d'origine ; une ligne nouvelle prend le prix du jour.
+>
+> 4. **Ce que voit le client** : une seule commande, corrigée ; les avenants
+>    restent la mécanique interne (historique, règlement, facture).
+> 5. **Après l'heure limite**, le client peut encore **demander** une
+>    modification ; c'est le **staff commercial** qui accepte ou refuse.
+> 6. **Un article retiré d'une commande payée par carte** est remboursé **à la
+>    remise** de la commande, pas au moment du retrait.
+>
+> Le reste de ce document date du 2026-08 et sera revu contre le code avant
+> d'écrire le plan.
+
 ---
 
 ## Les deux décisions
