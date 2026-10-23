@@ -4,7 +4,12 @@ import type { CreditorSnapshot } from "../creditor-snapshot.js";
 import type { MandatePaymentType } from "../value-objects/mandate-defaults.js";
 import type { SepaScheme } from "../value-objects/sepa-scheme.js";
 import { CreditorBicMissingError } from "../errors/accounting-errors.js";
+import { SepaIdentifierTooLongError } from "../errors/collection-errors.js";
 import { periodTagOf } from "./invoicing-closures.js";
+import { SEPA_MAX140_TEXT, SEPA_MAX35_TEXT, SEPA_NAME_MAX, sepa, sepaText } from "./sepa-text.js";
+
+/** Réexporté : les lecteurs historiques l'importent d'ici. */
+export { sepa };
 
 /**
  * **Le corps d'un `pain.008`**, quels que soient ses identifiants.
@@ -20,9 +25,6 @@ import { periodTagOf } from "./invoicing-closures.js";
 
 /** Ce qu'on écrit dans `DbtrAgt` quand le BIC du débiteur est inconnu. */
 export const BIC_NOT_PROVIDED = "NOTPROVIDED";
-
-/** Ce que la norme accepte dans un texte SEPA : ni accent, ni symbole exotique. */
-const SEPA_ALLOWED = /[^A-Za-z0-9/\-?:().,'+ ]/gu;
 
 /** La séquence d'un LOT réel : `FRST` et `FNAL` y sont inexprimables. */
 export type SequenceType = "RCUR" | "OOFF";
@@ -77,7 +79,7 @@ export interface DocumentDebit<S extends PaymentSequence = SequenceType> {
   readonly debtorName: string;
   readonly amountCents: number;
   readonly mandate: DocumentMandate;
-  /** Le texte de `RmtInf`, avant passage au jeu SEPA et coupe à 140. */
+  /** Le texte de `RmtInf`, avant passage au jeu SEPA et coupe à `SEPA_MAX140_TEXT`. */
   readonly remittance: string;
 }
 
@@ -126,12 +128,12 @@ export function renderPain008Document<S extends PaymentSequence>(
     `<Document xmlns="urn:iso:std:iso:20022:tech:xsd:pain.008.001.02">`,
     `  <CstmrDrctDbtInitn>`,
     `    <GrpHdr>`,
-    `      <MsgId>${document.messageId}</MsgId>`,
+    `      <MsgId>${identifier(document.messageId, "MsgId", "en-tête")}</MsgId>`,
     // Sans décalage horaire : beaucoup de banques françaises refusent l'offset.
     `      <CreDtTm>${localDateTime(document.createdAt)}</CreDtTm>`,
     `      <NbOfTxs>${String(debits.length)}</NbOfTxs>`,
     `      <CtrlSum>${euros(sumOf(debits))}</CtrlSum>`,
-    `      <InitgPty><Nm>${sepa(creditor.name)}</Nm></InitgPty>`,
+    `      <InitgPty><Nm>${sepaText(creditor.name, SEPA_NAME_MAX)}</Nm></InitgPty>`,
     `    </GrpHdr>`,
     ...paymentBlocks(document, creditorBic),
     `  </CstmrDrctDbtInitn>`,
@@ -172,7 +174,7 @@ function paymentBlock<S extends PaymentSequence>(
   const { creditor, scheme } = document;
   return [
     `    <PmtInf>`,
-    `      <PmtInfId>${document.paymentInfoIdOf(sequence)}</PmtInfId>`,
+    `      <PmtInfId>${identifier(document.paymentInfoIdOf(sequence), "PmtInfId", `bloc ${sequence}`)}</PmtInfId>`,
     `      <PmtMtd>DD</PmtMtd>`,
     `      <NbOfTxs>${String(debits.length)}</NbOfTxs>`,
     `      <CtrlSum>${euros(sumOf(debits))}</CtrlSum>`,
@@ -183,7 +185,7 @@ function paymentBlock<S extends PaymentSequence>(
     `        <SeqTp>${sequence}</SeqTp>`,
     `      </PmtTpInf>`,
     `      <ReqdColltnDt>${document.requestedCollectionDay}</ReqdColltnDt>`,
-    `      <Cdtr><Nm>${sepa(creditor.name)}</Nm></Cdtr>`,
+    `      <Cdtr><Nm>${sepaText(creditor.name, SEPA_NAME_MAX)}</Nm></Cdtr>`,
     `      <CdtrAcct><Id><IBAN>${creditor.creditorIban}</IBAN></Id></CdtrAcct>`,
     `      <CdtrAgt><FinInstnId><BIC>${creditorBic}</BIC></FinInstnId></CdtrAgt>`,
     `      <ChrgBr>SLEV</ChrgBr>`,
@@ -199,22 +201,23 @@ function paymentBlock<S extends PaymentSequence>(
 /** Une ligne = **un débiteur**, jamais une commande (décision de Hugo, 2026-09-10). */
 function transaction(debit: DocumentDebit<PaymentSequence>): string {
   const { mandate } = debit;
+  const line = `débiteur « ${sepa(debit.debtorName)} »`;
   return [
     `      <DrctDbtTxInf>`,
-    `        <PmtId><EndToEndId>${debit.endToEndId}</EndToEndId></PmtId>`,
+    `        <PmtId><EndToEndId>${identifier(debit.endToEndId, "EndToEndId", line)}</EndToEndId></PmtId>`,
     `        <InstdAmt Ccy="EUR">${euros(debit.amountCents)}</InstdAmt>`,
     `        <DrctDbtTx><MndtRltdInf>`,
-    `          <MndtId>${mandate.reference}</MndtId>`,
+    `          <MndtId>${identifier(mandate.reference, "MndtId", line)}</MndtId>`,
     // Le jour du PAPIER, en heure de Paris : minuit local vaut 22h ou 23h UTC
     // la veille, et un jour lu en UTC daterait le consentement d'un jour trop tôt.
     `          <DtOfSgntr>${localDay(mandate.signedAt)}</DtOfSgntr>`,
     `          <AmdmntInd>false</AmdmntInd>`,
     `        </MndtRltdInf></DrctDbtTx>`,
     `        <DbtrAgt><FinInstnId>${debtorAgent(mandate.bic)}</FinInstnId></DbtrAgt>`,
-    `        <Dbtr><Nm>${sepa(debit.debtorName)}</Nm></Dbtr>`,
+    `        <Dbtr><Nm>${sepaText(debit.debtorName, SEPA_NAME_MAX)}</Nm></Dbtr>`,
     `        <DbtrAcct><Id><IBAN>${mandate.iban}</IBAN></Id></DbtrAcct>`,
     // 140 caractères au maximum : les commandes se résument, elles ne se listent pas.
-    `        <RmtInf><Ustrd>${sepa(debit.remittance).slice(0, 140)}</Ustrd></RmtInf>`,
+    `        <RmtInf><Ustrd>${sepaText(debit.remittance, SEPA_MAX140_TEXT)}</Ustrd></RmtInf>`,
     `      </DrctDbtTxInf>`,
   ].join("\n");
 }
@@ -226,6 +229,17 @@ function transaction(debit: DocumentDebit<PaymentSequence>): string {
  */
 function debtorAgent(bic: string | null): string {
   return bic === null ? `<Othr><Id>${BIC_NOT_PROVIDED}</Id></Othr>` : `<BIC>${bic}</BIC>`;
+}
+
+/**
+ * Un identifiant ne se COUPE jamais : la banque rapproche un rejet par lui, et
+ * une RUM tronquée désignerait un autre mandat. Au-delà de `Max35Text`, refus.
+ */
+function identifier(value: string, field: string, line: string): string {
+  if (value.length > SEPA_MAX35_TEXT) {
+    throw new SepaIdentifierTooLongError(field, value, line, SEPA_MAX35_TEXT);
+  }
+  return value;
 }
 
 /** « du 1 au 30 » : la période d'un cycle, dernier jour COMPRIS. */
@@ -285,18 +299,4 @@ function euros(cents: number): string {
   const sign = cents < 0 ? "-" : "";
   const absolute = Math.abs(cents);
   return `${sign}${String(Math.trunc(absolute / 100))}.${String(absolute % 100).padStart(2, "0")}`;
-}
-
-/**
- * Le jeu restreint SEPA — et l'échappement XML par la même occasion. Les accents
- * sont décomposés puis retirés (« Isère » → « Isere »), le reste hors du jeu
- * devient une espace, jamais rien.
- */
-export function sepa(raw: string): string {
-  return raw
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/gu, "")
-    .replace(SEPA_ALLOWED, " ")
-    .replace(/\s+/gu, " ")
-    .trim();
 }

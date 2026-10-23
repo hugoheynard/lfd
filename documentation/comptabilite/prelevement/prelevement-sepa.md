@@ -367,6 +367,28 @@ ligne sur son relevé et nous payons **un** frais d'opération. Les trente se
 résument dans `RmtInf/Ustrd`, borné à 140 caractères — donc « Commandes du … au
 … », pas une liste.
 
+### Les bornes du texte — au 2026-10-23
+
+Tout texte libre passe par **une** règle, `sepaText(valeur, borne)`
+(`apps/lfd-api/src/b2b/accounting/domain/services/sepa-text.ts`) : jeu SEPA
+d'abord (`sepa()`, qui retire aussi `&`, `<`, `>` — rien à échapper ensuite),
+puis coupe à la borne, sans espace final.
+
+| Champ                                       | Borne                            | Traitement                                                                   |
+| ------------------------------------------- | -------------------------------- | ---------------------------------------------------------------------------- |
+| `InitgPty/Nm`, `Cdtr/Nm`, `Dbtr/Nm`         | 70 (`SEPA_NAME_MAX`, guides EPC) | coupé (décision de Hugo, 2026-10-23)                                         |
+| `RmtInf/Ustrd`                              | 140 (`Max140Text`)               | coupé                                                                        |
+| `MsgId`, `PmtInfId`, `EndToEndId`, `MndtId` | 35 (`Max35Text`)                 | **jamais coupé** : refus `SepaIdentifierTooLongError`, qui nomme le débiteur |
+
+⚠️ Le XSD ISO du dépôt type `Nm` en `Max140Text` (pas `Max70Text`) : un nom de
+120 caractères le passe, c'est la banque qui applique 70. `MsgId`, `PmtInfId`,
+`EndToEndId` sont bornés par construction (26 à 35 caractères,
+`collection-identifiers.ts`, `collection-test-identifiers.ts`, vérifié le
+2026-10-23) ; la RUM l'est à sa frappe (`Rum`, 35) — le refus au rendu ne
+garde que contre une donnée en base hors de ces chemins. L'export des mandats
+(CSV) coupe le nom à 70 par la même règle (décision de Hugo, 2026-10-23) :
+le débiteur porte un seul nom dans les deux fichiers.
+
 ### Ce qu'on sait remplir — au 2026-09-12 au soir
 
 | Champ XML                                          | Source                                                                                                               | État |

@@ -214,3 +214,17 @@ export class SettlementNoteRequiredError extends DomainError {
     );
   }
 }
+
+/**
+ * Un identifiant du `pain.008` dépasse `Max35Text`. Il n'est jamais coupé : une
+ * RUM ou un `EndToEndId` tronqué désignerait une autre ligne pour la banque.
+ */
+export class SepaIdentifierTooLongError extends BusinessError {
+  constructor(field: string, value: string, line: string, limit: number) {
+    super(
+      "accounting.collection.sepa_identifier_too_long",
+      `${field} « ${value} » (${line}) fait ${String(value.length)} caractères, ${String(limit)} au plus : ` +
+        "le fichier de prélèvement ne peut pas être produit. Corriger la référence à la source (mandat ou lot) avant de le régénérer.",
+    );
+  }
+}

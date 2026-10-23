@@ -1,9 +1,6 @@
 import type { MandatePaymentType } from "../value-objects/mandate-defaults.js";
 import type { SepaScheme } from "../value-objects/sepa-scheme.js";
-import {
-  BankExportDebtorNameTooLongError,
-  BankExportTooManyMandatesError,
-} from "../errors/mandate-bank-export-errors.js";
+import { BankExportTooManyMandatesError } from "../errors/mandate-bank-export-errors.js";
 import {
   MANDATE_ALREADY_ISSUED_CELL,
   MANDATE_MIGRATED_CELL,
@@ -11,7 +8,7 @@ import {
   paymentSequenceCell,
   signatureDateCell,
 } from "./mandate-bank-export-values.js";
-import { sepa } from "./pain008-document.js";
+import { SEPA_NAME_MAX, sepa, sepaText } from "./sepa-text.js";
 
 /**
  * **Le fichier d'import des mandats** pour le portail de la banque (plan
@@ -29,12 +26,12 @@ import { sepa } from "./pain008-document.js";
 export const BANK_IMPORT_COLUMN_COUNT = 18;
 
 /**
- * Le nom du débiteur, colonne C : 140 caractères au plus (réponse 11 de la
- * banque). Au-delà, la ligne est REFUSÉE, jamais coupée : un nom tronqué en
- * silence est un débiteur que la banque connaît sous un autre nom que le
- * `pain.008`, qui l'écrit entier.
+ * Le nom du débiteur, colonne C : coupé à 70 par la même règle que le
+ * `Dbtr/Nm` du `pain.008` (`sepaText`, `SEPA_NAME_MAX`). La banque accepte 140
+ * ici (réponse 11), mais le prélèvement porte 70 : Hugo a tranché le
+ * 2026-10-23 pour que le débiteur ait le même nom dans les deux fichiers.
  */
-export const DEBTOR_NAME_MAX_LENGTH = 140;
+export const DEBTOR_NAME_MAX_LENGTH = SEPA_NAME_MAX;
 
 /** Lignes par fichier d'import (réponse 12 de la banque). */
 export const BANK_IMPORT_MAX_ROWS = 200;
@@ -69,19 +66,10 @@ export interface MandateBankRow {
  * Le fichier entier : une ligne par mandat, CRLF après chacune, rien d'autre.
  *
  * @throws {BankExportTooManyMandatesError} plus de 200 lignes.
- * @throws {BankExportDebtorNameTooLongError} un nom au-delà de 140, nommé par
- *   la RUM de chaque mandat en cause.
  */
 export function renderMandateBankCsv(rows: readonly MandateBankRow[]): string {
   if (rows.length > BANK_IMPORT_MAX_ROWS) {
     throw new BankExportTooManyMandatesError(rows.length, BANK_IMPORT_MAX_ROWS);
-  }
-  const tooLong = rows.filter((row) => bankCell(row.debtorName).length > DEBTOR_NAME_MAX_LENGTH);
-  if (tooLong.length > 0) {
-    throw new BankExportDebtorNameTooLongError(
-      tooLong.map((row) => row.reference),
-      DEBTOR_NAME_MAX_LENGTH,
-    );
   }
   return rows.map((row) => line(cellsOf(row))).join("");
 }
@@ -91,7 +79,7 @@ function cellsOf(row: MandateBankRow): readonly string[] {
   const filled = [
     row.reference,
     row.ics,
-    row.debtorName,
+    sepaText(row.debtorName, DEBTOR_NAME_MAX_LENGTH),
     row.iban,
     row.bic,
     signatureDateCell(row.signedAt),

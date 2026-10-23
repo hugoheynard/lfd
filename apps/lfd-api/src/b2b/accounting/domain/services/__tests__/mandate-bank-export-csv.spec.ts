@@ -1,7 +1,5 @@
-import {
-  BankExportDebtorNameTooLongError,
-  BankExportTooManyMandatesError,
-} from "../../errors/mandate-bank-export-errors.js";
+import { SEPA_NAME_MAX, sepaText } from "../sepa-text.js";
+import { BankExportTooManyMandatesError } from "../../errors/mandate-bank-export-errors.js";
 import { bankCell, renderMandateBankCsv, type MandateBankRow } from "../mandate-bank-export-csv.js";
 import {
   debitNatureCell,
@@ -86,16 +84,20 @@ describe("le fichier", () => {
     expect(/^[\x20-\x7E\r\n]*$/u.test(csv)).toBe(true);
   });
 
-  /** Régression : le nom était coupé à 70 en silence, le pain.008 l'écrit entier (2026-10-23). */
-  it("écrit le nom entier jusqu'à 140 caractères, sans le couper à 70", () => {
-    const csv = renderMandateBankCsv([{ ...ROW, debtorName: "A".repeat(140) }]);
-    expect(csv.split(";")[2]).toBe("A".repeat(140));
+  /**
+   * Régression : le nom s'écrivait entier jusqu'à 140 ici et coupé à 70 dans le
+   * pain.008 — deux noms pour un même débiteur (décision de Hugo, 2026-10-23).
+   */
+  it("coupe le nom à 70 comme le pain.008, sans espace final", () => {
+    const name = `${"A".repeat(69)} ${"B".repeat(30)}`;
+    const csv = renderMandateBankCsv([{ ...ROW, debtorName: name }]);
+    expect(csv.split(";")[2]).toBe(sepaText(name, SEPA_NAME_MAX));
+    expect(csv.split(";")[2]).toBe("A".repeat(69));
   });
 
-  it("refuse un nom au-delà de 140 plutôt que le couper, en nommant le mandat", () => {
-    const long = { ...ROW, reference: "RUM-LONG", debtorName: "A".repeat(141) };
-    expect(() => renderMandateBankCsv([ROW, long])).toThrow(BankExportDebtorNameTooLongError);
-    expect(() => renderMandateBankCsv([ROW, long])).toThrow(/RUM-LONG/u);
+  it("ne refuse plus un nom long : il est coupé", () => {
+    const csv = renderMandateBankCsv([{ ...ROW, debtorName: "A".repeat(141) }]);
+    expect(csv.split(";")[2]).toBe("A".repeat(70));
   });
 
   it("un `;` ou un guillemet dans un nom ne décale pas la ligne", () => {

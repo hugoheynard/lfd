@@ -59,26 +59,26 @@ G `RECURRENT`, H `CORE`, K `O`, L `N`, le reste vide.
 Légende de la dernière colonne : **DIT** = réponse de la banque, **MONTRE** =
 le modèle, **SUPPOSÉ** = notre hypothèse, à confirmer.
 
-| Col. | Intitulé                              | Oblig.  | Source chez nous                                            | Ce qu'on écrit (transformation)                                   | Fondement                                    |
-| ---- | ------------------------------------- | ------- | ----------------------------------------------------------- | ----------------------------------------------------------------- | -------------------------------------------- |
-| A    | Référence unique du mandat            | oui     | la RUM du mandat                                            | telle quelle, cellule sûre (`bankCell`)                           | MONTRE                                       |
-| B    | Numéro d'identifiant créancier        | oui     | l'ICS de l'entité émettrice                                 | tel quel ; une entité sans ICS ne prépare pas d'export (409)      | MONTRE                                       |
-| C    | Nom débiteur                          | oui     | raison sociale de la société débitrice, celle du `pain.008` | ASCII SEPA, **entier** ; au-delà de 140, la ligne est **refusée** | DIT (11)                                     |
-| D    | IBAN débiteur                         | oui     | le compte descellé du mandat                                | sans espaces                                                      | MONTRE                                       |
-| E    | BIC débiteur                          | oui     | le BIC du mandat (sans BIC : écarté)                        | tel quel                                                          | MONTRE                                       |
-| F    | Date de signature                     | oui     | `accepted_at`                                               | jour **de Paris** (`localDay`), `AAAAMMJJ`                        | DIT (10), MONTRE                             |
-| G    | Séquence de paiement                  | oui     | type de paiement du mandat                                  | `RECURRENT` / `PONCTUEL`                                          | DIT (10), MONTRE                             |
-| H    | Nature du prélèvement                 | oui     | schéma figé du mandat                                       | `CORE` / `B2B`                                                    | DIT (10)                                     |
-| I    | Référence du contrat sous-jacent      | non     | —                                                           | vide                                                              | MONTRE                                       |
-| J    | Montant par défaut                    | non     | —                                                           | vide (nos montants varient)                                       | MONTRE                                       |
-| K    | Mandat déjà émis                      | **oui** | —                                                           | **`O`** pour tous nos mandats                                     | MONTRE (exemple), **SUPPOSÉ** le sens (Q-B2) |
-| L    | Mandat migré                          | **oui** | —                                                           | **`N`** pour tous nos mandats                                     | MONTRE (exemple), **SUPPOSÉ** le sens (Q-B2) |
-| M    | Ancien numéro d'identifiant créancier | non     | —                                                           | vide                                                              | DIT (14) : modification / reprise            |
-| N    | Ancien IBAN débiteur                  | non     | —                                                           | vide                                                              | idem                                         |
-| O    | Ancien BIC débiteur                   | non     | —                                                           | vide                                                              | idem                                         |
-| P    | Liste de mandat                       | non     | —                                                           | vide                                                              | sens inconnu (Q-B3)                          |
-| Q    | Ancienne Référence Unique du Mandat   | non     | —                                                           | vide                                                              | idem M                                       |
-| R    | Migration code intervenant initial    | non     | —                                                           | vide                                                              | sens inconnu (Q-B3)                          |
+| Col. | Intitulé                              | Oblig.  | Source chez nous                                            | Ce qu'on écrit (transformation)                                               | Fondement                                    |
+| ---- | ------------------------------------- | ------- | ----------------------------------------------------------- | ----------------------------------------------------------------------------- | -------------------------------------------- |
+| A    | Référence unique du mandat            | oui     | la RUM du mandat                                            | telle quelle, cellule sûre (`bankCell`)                                       | MONTRE                                       |
+| B    | Numéro d'identifiant créancier        | oui     | l'ICS de l'entité émettrice                                 | tel quel ; une entité sans ICS ne prépare pas d'export (409)                  | MONTRE                                       |
+| C    | Nom débiteur                          | oui     | raison sociale de la société débitrice, celle du `pain.008` | ASCII SEPA, **coupé à 70** comme le `pain.008` (décision de Hugo, 2026-10-23) | DIT (11)                                     |
+| D    | IBAN débiteur                         | oui     | le compte descellé du mandat                                | sans espaces                                                                  | MONTRE                                       |
+| E    | BIC débiteur                          | oui     | le BIC du mandat (sans BIC : écarté)                        | tel quel                                                                      | MONTRE                                       |
+| F    | Date de signature                     | oui     | `accepted_at`                                               | jour **de Paris** (`localDay`), `AAAAMMJJ`                                    | DIT (10), MONTRE                             |
+| G    | Séquence de paiement                  | oui     | type de paiement du mandat                                  | `RECURRENT` / `PONCTUEL`                                                      | DIT (10), MONTRE                             |
+| H    | Nature du prélèvement                 | oui     | schéma figé du mandat                                       | `CORE` / `B2B`                                                                | DIT (10)                                     |
+| I    | Référence du contrat sous-jacent      | non     | —                                                           | vide                                                                          | MONTRE                                       |
+| J    | Montant par défaut                    | non     | —                                                           | vide (nos montants varient)                                                   | MONTRE                                       |
+| K    | Mandat déjà émis                      | **oui** | —                                                           | **`O`** pour tous nos mandats                                                 | MONTRE (exemple), **SUPPOSÉ** le sens (Q-B2) |
+| L    | Mandat migré                          | **oui** | —                                                           | **`N`** pour tous nos mandats                                                 | MONTRE (exemple), **SUPPOSÉ** le sens (Q-B2) |
+| M    | Ancien numéro d'identifiant créancier | non     | —                                                           | vide                                                                          | DIT (14) : modification / reprise            |
+| N    | Ancien IBAN débiteur                  | non     | —                                                           | vide                                                                          | idem                                         |
+| O    | Ancien BIC débiteur                   | non     | —                                                           | vide                                                                          | idem                                         |
+| P    | Liste de mandat                       | non     | —                                                           | vide                                                                          | sens inconnu (Q-B3)                          |
+| Q    | Ancienne Référence Unique du Mandat   | non     | —                                                           | vide                                                                          | idem M                                       |
+| R    | Migration code intervenant initial    | non     | —                                                           | vide                                                                          | sens inconnu (Q-B3)                          |
 
 Forme du fichier : ASCII, `;` après **chaque** cellule (y compris la
 dernière), CRLF, sans en-tête. Chaque cellule passe par `sepa()` puis perd tout
@@ -100,13 +100,11 @@ n'ont pas eu de réponse explicite : la vérification CENET le dira.
   refuse un export de plus de 200 (`domain/entities/mandate-bank-export.ts:51`),
   le rendu aussi (`domain/services/mandate-bank-export-csv.ts:75`). Même avec
   « tous », un export porte 200 mandats.
-- **Nom ≤ 140** (réponse 11) : **refus**, pas troncature. Le rendu refuse le
-  fichier en nommant la RUM de chaque mandat en cause
-  (`domain/services/mandate-bank-export-csv.ts:79-85`,
-  `BankExportDebtorNameTooLongError`) ; le geste est de raccourcir la raison
-  sociale sur la fiche de la société. Jusqu'au 2026-10-23, le nom était coupé
-  à 70 en silence alors que le `pain.008` l'écrit entier : la banque aurait
-  connu le débiteur sous deux noms.
+- **Nom coupé à 70** (décision de Hugo, 2026-10-23) : la banque accepte 140
+  (réponse 11), mais le `pain.008` porte 70 ; la colonne C est coupée par la
+  même règle que le `Dbtr/Nm` (`sepaText(…, SEPA_NAME_MAX)`,
+  `domain/services/sepa-text.ts`), pour que le débiteur ait un seul nom chez la
+  banque. Le refus au-delà de 140, bâti le matin même, est retiré.
 - **Compte rendu lu avant de marquer importé** (réponse 13) : « marquer
   importé » marque l'export **entier**. Consigne tant que le marquage partiel
   n'existe pas : un import avec des lignes en erreur **ne se marque pas** ; on
@@ -136,8 +134,7 @@ celle des lignes sont dans `domain/services/mandate-bank-export-csv.ts:29-40`.
 - **D11** — K = `O` et L = `N` pour tous nos mandats, **en attendant Q-B2**.
   Le code les écrit déjà (constantes nommées) ; une autre réponse se corrige en
   une ligne.
-- **Nom > 140 : refus** de la ligne plutôt que troncature (bâti). À revoir si
-  une société réelle dépasse — c'est peu probable.
+- **Nom coupé à 70** dans les deux fichiers (tranché par Hugo le 2026-10-23).
 - **> 200 mandats : découpage** en exports successifs (bâti), plutôt qu'un
   refus qui obligerait à choisir à la main.
 - **D9** — changement de compte : nouveau mandat ou M–R (inchangé, voir
