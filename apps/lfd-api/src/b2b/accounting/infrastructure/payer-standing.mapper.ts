@@ -2,6 +2,9 @@ import { companyDisplayName } from "@lfd/contracts";
 
 import type { PayerStanding } from "../domain/ports/payer-standing.reader.js";
 
+/** `CompanyStatus` (`prisma/schema/public/account.prisma`) : le seul statut qui commande. */
+const ACTIVE_COMPANY = "active";
+
 /**
  * Le compte et ses périodes `billing` (`company_follows`) qui couvrent `at` —
  * la borne `[)` de la contrainte d'exclusion. Partagé par la lecture d'UN
@@ -12,6 +15,7 @@ export function payerStandingSelect(at: Date) {
     id: true,
     raisonSociale: true,
     enseigne: true,
+    status: true,
     follows: {
       where: {
         aspect: "billing" as const,
@@ -37,6 +41,7 @@ interface NamedRow {
 /** La ligne lue par `payerStandingSelect`. */
 export interface PayerStandingRow extends NamedRow {
   readonly id: string;
+  readonly status: string;
   readonly follows: readonly {
     readonly companyId: string;
     readonly parentId: string;
@@ -50,6 +55,7 @@ export function payerStandingOf(row: PayerStandingRow): PayerStanding {
   return {
     companyId: row.id,
     name: companyDisplayName(row),
+    active: row.status === ACTIVE_COMPANY,
     follows: row.follows.map((follow) => ({
       companyId: follow.companyId,
       payerId: follow.parentId,

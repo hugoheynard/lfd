@@ -5,7 +5,7 @@ import {
   type LegalEntityRecord,
 } from "../../../domain/ports/legal-entity.reader.js";
 import type { PayerStanding } from "../../../domain/ports/payer-standing.reader.js";
-import { PayerStandingsReader } from "../../../domain/ports/payer-standings.reader.js";
+import type { CollectionMandate } from "../../../domain/ports/collection-mandates.reader.js";
 import { paris } from "../../../domain/services/__tests__/billing-mode-fixtures.js";
 import { toView } from "../../../infrastructure/legal-entity.mapper.js";
 import {
@@ -16,6 +16,7 @@ import {
   StorePayerModesReader,
 } from "../../commands/__tests__/billing-mode-doubles.js";
 import { declaredEntity } from "../../commands/__tests__/mandate-setting-doubles.js";
+import { activePayer, countingOf, signedMandate } from "./counted-payers-doubles.js";
 import { GetBillingRhythmsCalendarHandler } from "../get-billing-rhythms-calendar.handler.js";
 import { GetBillingRhythmsCalendarQuery } from "../get-billing-rhythms-calendar.query.js";
 
@@ -28,24 +29,19 @@ class OnlyLe1 extends LegalEntityReader {
   }
 }
 
-class FixedAccounts extends PayerStandingsReader {
-  constructor(private readonly accounts: readonly PayerStanding[]) {
-    super();
-  }
-  allAt(): Promise<readonly PayerStanding[]> {
-    return Promise.resolve(this.accounts);
-  }
-}
-
+/** Par défaut, chaque compte a son mandat signé actif chez `le1`. */
 function handler(
   payers = new PayerModesStore(),
   accounts: readonly PayerStanding[] = [],
+  mandates: readonly CollectionMandate[] = accounts.map((a) => signedMandate("le1", a.companyId)),
 ): GetBillingRhythmsCalendarHandler {
+  const counting = countingOf(accounts, mandates);
   return new GetBillingRhythmsCalendarHandler(
     new OnlyLe1(),
     new StoreModeDatesReader(new ModeDatesStore()),
     new StorePayerModesReader(payers),
-    new FixedAccounts(accounts),
+    counting.standings,
+    counting.mandates,
     new FixedClock(paris("2026-10-08", "11:00")),
   );
 }
@@ -102,7 +98,9 @@ describe("GetBillingRhythmsCalendarHandler — les trois rythmes sur un axe", ()
       cancelledByStaffId: null,
     });
 
-    const view = await handler(payers).execute(new GetBillingRhythmsCalendarQuery("le1"));
+    const view = await handler(payers, [PAYER, activePayer("other-payer")]).execute(
+      new GetBillingRhythmsCalendarQuery("le1"),
+    );
 
     expect(view.rhythms.find((lane) => lane.mode === "weekly")).toMatchObject({
       followed: true,
@@ -134,6 +132,7 @@ describe("GetBillingRhythmsCalendarHandler — les trois rythmes sur un axe", ()
     const site: PayerStanding = {
       companyId: "cmp_site",
       name: "Le Site",
+      active: true,
       follows: [
         {
           companyId: "cmp_site",
@@ -146,8 +145,8 @@ describe("GetBillingRhythmsCalendarHandler — les trois rythmes sur un axe", ()
     };
     const accounts: readonly PayerStanding[] = [
       PAYER,
-      { companyId: "cmp_default", name: "Par Défaut", follows: [] },
-      { companyId: "cmp_other", name: "Autre", follows: [] },
+      activePayer("cmp_default"),
+      activePayer("cmp_other"),
       site,
     ];
 
@@ -159,6 +158,50 @@ describe("GetBillingRhythmsCalendarHandler — les trois rythmes sur un axe", ()
       ["semimonthly", 0],
       ["monthly", 2],
     ]);
+  });
+
+  /** Régression : le tableau de bord comptait tout payeur, quel que soit son statut (2026-10-23). */
+  it("une société désactivée comptait comme client", async () => {
+    const accounts = [activePayer("cmp_on"), activePayer("cmp_off", { active: false })];
+
+    const view = await handler(new PayerModesStore(), accounts).execute(
+      new GetBillingRhythmsCalendarQuery("le1"),
+    );
+
+    expect(view.rhythms.find((lane) => lane.mode === "monthly")?.payerCount).toBe(1);
+  });
+
+  /** Régression : un payeur sans mandat signé actif chez l'entité comptait au mensuel (2026-10-23). */
+  it("un client sans mandat signé comptait au mensuel", async () => {
+    const accounts = ["cmp_signed", "cmp_none", "cmp_elsewhere"].map((id) => activePayer(id));
+    const mandates = [signedMandate("le1", "cmp_signed"), signedMandate("le2", "cmp_elsewhere")];
+
+    const view = await handler(new PayerModesStore(), accounts, mandates).execute(
+      new GetBillingRhythmsCalendarQuery("le1"),
+    );
+
+    expect(view.rhythms.find((lane) => lane.mode === "monthly")?.payerCount).toBe(1);
+  });
+
+  it("un payeur hebdomadaire sans mandat chez l'entité ne compte pas à l'hebdomadaire", async () => {
+    const payers = new PayerModesStore();
+    payers.rows.push({
+      id: "pm_x",
+      legalEntityId: "le1",
+      payerCompanyId: PAYER.companyId,
+      effectiveFrom: paris("2026-10-01"),
+      mode: "weekly",
+      createdAt: paris("2026-09-20"),
+      createdByStaffId: "s",
+      cancelledAt: null,
+      cancelledByStaffId: null,
+    });
+
+    const view = await handler(payers, [PAYER], []).execute(
+      new GetBillingRhythmsCalendarQuery("le1"),
+    );
+
+    expect(view.rhythms.map((lane) => lane.payerCount)).toEqual([0, 0, 0]);
   });
 
   it("une entité inconnue : 404 nommé", async () => {

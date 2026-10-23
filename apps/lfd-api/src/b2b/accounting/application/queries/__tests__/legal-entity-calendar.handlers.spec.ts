@@ -17,6 +17,8 @@ import {
   StoreModeDatesReader,
   StorePayerModesReader,
 } from "../../commands/__tests__/billing-mode-doubles.js";
+import type { CountedPayersReaders } from "../../counted-payers-support.js";
+import { activePayer, clientsOf, countingOf, signedMandate } from "./counted-payers-doubles.js";
 import { GetLegalEntityHandler } from "../get-legal-entity.handler.js";
 import { ListLegalEntitiesHandler } from "../list-legal-entities.handler.js";
 import { GetLegalEntityQuery } from "../legal-entity-queries.js";
@@ -27,6 +29,9 @@ import { GetLegalEntityQuery } from "../legal-entity-queries.js";
  * FIXE, jamais le mur.
  */
 const NOW = new Date("2026-10-08T09:00:00.000Z");
+
+/** Les payeurs des cas ci-dessous, tous comptés (actifs, mandat signé chez `le1`). */
+const CLIENTS = clientsOf("le1", ["cmp_1"]);
 
 /** La vue vient du VRAI mapper : un doublé écrit à la main dériverait de la vue servie. */
 class OneEntity extends LegalEntityReader {
@@ -71,13 +76,19 @@ class Modes {
   readonly payers = new PayerModesStore();
 }
 
-function handlerWith(modes = new Modes(), now: Date = NOW): GetLegalEntityHandler {
+function handlerWith(
+  modes = new Modes(),
+  now: Date = NOW,
+  counting: CountedPayersReaders = CLIENTS,
+): GetLegalEntityHandler {
   return new GetLegalEntityHandler(
     new OneEntity(record()),
     new NoClosure(),
     new NoRun(),
     new StoreModeDatesReader(modes.dates),
     new StorePayerModesReader(modes.payers),
+    counting.standings,
+    counting.mandates,
     new FixedClock(now),
   );
 }
@@ -100,6 +111,8 @@ describe("la fiche d'une entité porte le calendrier de son cycle en cours", () 
       new NoRun(),
       new StoreModeDatesReader(new ModeDatesStore()),
       new StorePayerModesReader(new PayerModesStore()),
+      CLIENTS.standings,
+      CLIENTS.mandates,
       new FixedClock(NOW),
     );
 
@@ -111,6 +124,8 @@ describe("la fiche d'une entité porte le calendrier de son cycle en cours", () 
       // 1er novembre + 14 = dimanche 15 → lundi 16 ; deux jours ouvrés avant : jeudi 12.
       collectionDay: "2026-11-16",
       depositDeadline: { day: "2026-11-12", time: "16:00" },
+      // préparé le 1er novembre, neuf jours ouvrés avant la limite : rien à avertir.
+      tightDepositMargin: null,
     });
     expect(view.depositCutoff).toEqual({ businessDaysBefore: 2, time: "16:00" });
   });
@@ -124,6 +139,8 @@ describe("la fiche d'une entité porte le calendrier de son cycle en cours", () 
       new NoRun(),
       new StoreModeDatesReader(new ModeDatesStore()),
       new StorePayerModesReader(new PayerModesStore()),
+      CLIENTS.standings,
+      CLIENTS.mandates,
       clock,
     ).execute();
     const one = await new GetLegalEntityHandler(
@@ -132,6 +149,8 @@ describe("la fiche d'une entité porte le calendrier de son cycle en cours", () 
       new NoRun(),
       new StoreModeDatesReader(new ModeDatesStore()),
       new StorePayerModesReader(new PayerModesStore()),
+      CLIENTS.standings,
+      CLIENTS.mandates,
       clock,
     ).execute(new GetLegalEntityQuery("le1"));
 
@@ -145,6 +164,8 @@ describe("la fiche d'une entité porte le calendrier de son cycle en cours", () 
       new OneRun(),
       new StoreModeDatesReader(new ModeDatesStore()),
       new StorePayerModesReader(new PayerModesStore()),
+      CLIENTS.standings,
+      CLIENTS.mandates,
       new FixedClock(NOW),
     );
 
@@ -165,6 +186,8 @@ describe("la fiche d'une entité porte le calendrier de son cycle en cours", () 
       new NoRun(),
       new StoreModeDatesReader(new ModeDatesStore()),
       new StorePayerModesReader(new PayerModesStore()),
+      CLIENTS.standings,
+      CLIENTS.mandates,
       new FixedClock(NOW),
     ).execute(new GetLegalEntityQuery("le1"));
 
@@ -223,7 +246,9 @@ const STAMP = {
 
 describe("la fiche porte les dates des trois modes et la dernière clôture (M1, §16)", () => {
   it("rien de réglé : les trois défauts, aucun programmé, aucun verrou, aucun payeur", async () => {
-    const view = await handlerWith().execute(new GetLegalEntityQuery("le1"));
+    const view = await handlerWith(new Modes(), NOW, clientsOf("le1", [])).execute(
+      new GetLegalEntityQuery("le1"),
+    );
 
     expect(
       view.billingModes.map((mode) => ({
@@ -299,6 +324,74 @@ describe("la fiche porte les dates des trois modes et la dernière clôture (M1,
     expect(view.billingModes.map((mode) => mode.payerCount)).toEqual([0, 0, 1]);
     // Jeudi 8 octobre : le dernier lundi atteint est le 5 octobre.
     expect(view.lastClosure).toBe("2026-10-04T22:00:00.000Z");
+  });
+
+  /**
+   * Régression : la fiche ne comptait au mensuel que les payeurs ayant choisi
+   * un mode, et comptait un choix PROGRAMMÉ comme suivi — le tableau de bord
+   * des rythmes annonçait un autre nombre (2026-10-23).
+   */
+  it("la fiche compte comme le tableau de bord : défaut au mensuel, programmé pas encore", async () => {
+    const modes = new Modes();
+    modes.payers.rows.push({
+      ...STAMP,
+      id: "p1",
+      legalEntityId: "le1",
+      payerCompanyId: "cmp_later",
+      effectiveFrom: new Date("2026-10-31T23:00:00.000Z"),
+      mode: "weekly",
+    });
+
+    const view = await handlerWith(
+      modes,
+      NOW,
+      clientsOf("le1", ["cmp_default", "cmp_later"]),
+    ).execute(new GetLegalEntityQuery("le1"));
+
+    expect(view.billingModes.map((mode) => [mode.mode, mode.payerCount])).toEqual([
+      ["monthly", 2],
+      ["semimonthly", 0],
+      ["weekly", 0],
+    ]);
+  });
+
+  /** Régression : la fiche comptait un payeur hebdomadaire désactivé (2026-10-23). */
+  it("une société désactivée comptait comme client", async () => {
+    const modes = new Modes();
+    modes.payers.rows.push({
+      ...STAMP,
+      id: "p1",
+      legalEntityId: "le1",
+      payerCompanyId: "cmp_1",
+      effectiveFrom: new Date("2026-09-30T22:00:00.000Z"),
+      mode: "weekly",
+    });
+    const off = countingOf(
+      [activePayer("cmp_1", { active: false })],
+      [signedMandate("le1", "cmp_1")],
+    );
+
+    const view = await handlerWith(modes, NOW, off).execute(new GetLegalEntityQuery("le1"));
+
+    expect(view.billingModes.map((mode) => mode.payerCount)).toEqual([0, 0, 0]);
+  });
+
+  /** Régression : la fiche comptait un payeur sans mandat signé actif chez l'entité (2026-10-23). */
+  it("un client sans mandat signé ne compte pas sur la fiche", async () => {
+    const modes = new Modes();
+    modes.payers.rows.push({
+      ...STAMP,
+      id: "p1",
+      legalEntityId: "le1",
+      payerCompanyId: "cmp_1",
+      effectiveFrom: new Date("2026-09-30T22:00:00.000Z"),
+      mode: "weekly",
+    });
+    const unsigned = countingOf([activePayer("cmp_1")], []);
+
+    const view = await handlerWith(modes, NOW, unsigned).execute(new GetLegalEntityQuery("le1"));
+
+    expect(view.billingModes.map((mode) => mode.payerCount)).toEqual([0, 0, 0]);
   });
 
   it("la période du lot à préparer : du 1er (clôture du mensuel) au lundi 5, sans modes : ceux du lot sont ceux de ses clients (M4c)", async () => {

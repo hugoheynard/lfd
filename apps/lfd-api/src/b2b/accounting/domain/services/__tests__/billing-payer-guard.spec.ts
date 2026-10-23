@@ -6,7 +6,7 @@ import { requireBillingPayer } from "../billing-payer-guard.js";
 import { paris } from "./billing-mode-fixtures.js";
 
 const AT = paris("2026-10-08");
-const SITE = { companyId: "site", name: "Site Annexe", follows: [] };
+const SITE = { companyId: "site", name: "Site Annexe", active: true, follows: [] };
 const follow = (validTo: Date | null) => ({
   companyId: "site",
   payerId: "group",

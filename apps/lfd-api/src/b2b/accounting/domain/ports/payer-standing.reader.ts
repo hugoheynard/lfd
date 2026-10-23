@@ -4,6 +4,8 @@ import type { BillingFollow } from "./statement-billing.reader.js";
 export interface PayerStanding {
   readonly companyId: string;
   readonly name: string;
+  /** La société est au statut `active` (ni en attente, ni suspendue, ni résiliée). */
+  readonly active: boolean;
   /** Les périodes `billing` où ce compte est le SITE, qui couvrent l'instant. */
   readonly follows: readonly BillingFollow[];
 }

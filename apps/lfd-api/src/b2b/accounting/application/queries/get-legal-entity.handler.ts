@@ -5,6 +5,8 @@ import { Clock } from "../../../../platform/time/clock.js";
 import { LegalEntityNotFoundError } from "../../domain/errors/accounting-errors.js";
 import { BillingModeDatesReader } from "../../domain/ports/billing-mode-dates.reader.js";
 import { PayerBillingModesReader } from "../../domain/ports/payer-billing-modes.reader.js";
+import { CollectionMandatesReader } from "../../domain/ports/collection-mandates.reader.js";
+import { PayerStandingsReader } from "../../domain/ports/payer-standings.reader.js";
 import { LastAutopilotRunReader } from "../../domain/ports/last-autopilot-run.reader.js";
 import { LegalEntityReader } from "../../domain/ports/legal-entity.reader.js";
 import { RecordedClosureReader } from "../../domain/ports/recorded-closure.reader.js";
@@ -27,6 +29,8 @@ export class GetLegalEntityHandler implements IQueryHandler<GetLegalEntityQuery,
     private readonly autopilotRuns: LastAutopilotRunReader,
     private readonly modeDates: BillingModeDatesReader,
     private readonly payerModes: PayerBillingModesReader,
+    private readonly standings: PayerStandingsReader,
+    private readonly mandates: CollectionMandatesReader,
     private readonly clock: Clock,
   ) {}
 
@@ -41,6 +45,7 @@ export class GetLegalEntityHandler implements IQueryHandler<GetLegalEntityQuery,
         closures: this.closures,
         autopilotRuns: this.autopilotRuns,
         modes: { modeDates: this.modeDates, payerModes: this.payerModes },
+        counting: { standings: this.standings, mandates: this.mandates },
       },
       this.clock.now(),
     );

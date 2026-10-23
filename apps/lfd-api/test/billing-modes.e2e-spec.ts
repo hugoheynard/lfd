@@ -87,6 +87,40 @@ async function modeOf(id: string, mode: string): Promise<LegalEntityView["billin
   return found;
 }
 
+/** Le RIB que le mandat débite : sans compte recopié, aucun mandat ne prélève. */
+const DEBTOR_RIB = {
+  iban: "FR7630004000031234567890143",
+  bic: "BNPAFRPP",
+  holder: "Client e2e",
+  line1: "1 rue du Test",
+  line2: "",
+  postalCode: "73000",
+  city: "Chambéry",
+  countryCode: "FR",
+};
+
+let rumSeq = 0;
+
+/**
+ * Un mandat B2B actif et signé de cette société chez l'entité, sur son RIB —
+ * celui que la constitution du lot prendrait. Écrit comme `collection-batches`.
+ */
+async function mandated(entityId: string, companyId: string): Promise<void> {
+  rumSeq += 1;
+  await staff().put(`/admin/companies/${companyId}/bank-account`).send(DEBTOR_RIB).expect(204);
+  await ctx.prisma.paymentMandate.create({
+    data: {
+      companyId,
+      creditorId: entityId,
+      reference: `RUM-MODES-${String(rumSeq)}`,
+      status: "active",
+      acceptedAt: new Date(daysAgo(30)),
+      scheme: "B2B",
+      paymentType: "recurrent",
+    },
+  });
+}
+
 /** La prochaine clôture du mensuel au 1er — la prise d'effet de tout premier changement. */
 function nextMonthlyClosure(): string {
   return nextClosureAfter(new Date(daysAgo(0)), BillingRhythm.default()).toISOString();
@@ -214,6 +248,7 @@ describe("le mode d'un payeur", () => {
   it("se lit mensuel par défaut, puis se programme à sa prochaine clôture, et se journalise", async () => {
     const id = await declare();
     const payer = await createCompany(ctx.prisma, { raisonSociale: "Le Bistrot SAS" });
+    await mandated(id, payer.id);
     const effectiveAt = nextMonthlyClosure();
 
     const before = jsonBody<PayerBillingModeView>(
@@ -235,7 +270,9 @@ describe("le mode d'un payeur", () => {
       changeLockedUntil: effectiveAt,
     });
     expect(after.upcomingClosures[0]?.closesAt).toBe(effectiveAt);
-    expect((await modeOf(id, "weekly")).payerCount).toBe(1);
+    // Programmé, pas encore en vigueur : il compte au mensuel, comme au tableau de bord.
+    expect((await modeOf(id, "weekly")).payerCount).toBe(0);
+    expect((await modeOf(id, "monthly")).payerCount).toBe(1);
     const facts = await ctx.prisma.activityEvent.findMany({
       where: { subjectId: payer.id, type: "payer.billing_mode_changed" },
       select: { payload: true },
@@ -321,8 +358,9 @@ describe("le calendrier des trois rythmes", () => {
    */
   it("le mensuel ne comptait pas les clients au mode par défaut", async () => {
     const id = await declare();
-    await createCompany(ctx.prisma, { raisonSociale: "Sans Choix SAS" });
-    await createCompany(ctx.prisma, { raisonSociale: "Sans Choix Non Plus SAS" });
+    for (const raisonSociale of ["Sans Choix SAS", "Sans Choix Non Plus SAS"]) {
+      await mandated(id, (await createCompany(ctx.prisma, { raisonSociale })).id);
+    }
 
     const view = jsonBody<BillingRhythmsCalendarView>(
       await staff().get(`${BASE}/${id}/billing-modes/calendar`).expect(200),
@@ -333,6 +371,77 @@ describe("le calendrier des trois rythmes", () => {
       ["semimonthly", 0],
       ["monthly", 2],
     ]);
+  });
+
+  /** Régression : un compte suspendu, mandat signé compris, comptait au mensuel (2026-10-23). */
+  it("une société désactivée comptait comme client", async () => {
+    const id = await declare();
+    const on = await createCompany(ctx.prisma, { raisonSociale: "Active SAS" });
+    const off = await createCompany(ctx.prisma, { raisonSociale: "Suspendue SAS" });
+    await mandated(id, on.id);
+    await mandated(id, off.id);
+    await ctx.prisma.company.update({ where: { id: off.id }, data: { status: "suspended" } });
+
+    const view = jsonBody<BillingRhythmsCalendarView>(
+      await staff().get(`${BASE}/${id}/billing-modes/calendar`).expect(200),
+    );
+
+    expect(view.rhythms.find((lane) => lane.mode === "monthly")?.payerCount).toBe(1);
+  });
+
+  /** Régression : tout compte comptait au mensuel, mandat ou pas (2026-10-23). */
+  it("un client sans mandat signé comptait au mensuel", async () => {
+    const id = await declare();
+    const signed = await createCompany(ctx.prisma, { raisonSociale: "Mandatée SAS" });
+    await createCompany(ctx.prisma, { raisonSociale: "Sans Mandat SAS" });
+    await mandated(id, signed.id);
+
+    const view = jsonBody<BillingRhythmsCalendarView>(
+      await staff().get(`${BASE}/${id}/billing-modes/calendar`).expect(200),
+    );
+
+    expect(view.rhythms.find((lane) => lane.mode === "monthly")?.payerCount).toBe(1);
+  });
+
+  /** Régression : la fiche et le tableau de bord annonçaient deux nombres (2026-10-23). */
+  it("la fiche et le calendrier rendent le même nombre par rythme", async () => {
+    const id = await declare();
+    const ids: string[] = [];
+    for (const raisonSociale of ["Défaut SAS", "Programmé SAS", "Sans Mandat SAS"]) {
+      ids.push((await createCompany(ctx.prisma, { raisonSociale })).id);
+    }
+    const [byDefault, scheduled, unmandated] = ids;
+    await mandated(id, byDefault ?? "");
+    await mandated(id, scheduled ?? "");
+    for (const payer of [scheduled, unmandated]) {
+      await staff()
+        .put(`${BASE}/${id}/payers/${payer ?? ""}/billing-mode`)
+        .send({ mode: "weekly" })
+        .expect(204);
+    }
+
+    const calendar = jsonBody<BillingRhythmsCalendarView>(
+      await staff().get(`${BASE}/${id}/billing-modes/calendar`).expect(200),
+    );
+    const sheet = await read(id);
+
+    const fromCalendar = new Map(calendar.rhythms.map((lane) => [lane.mode, lane.payerCount]));
+    const fromSheet = new Map(sheet.billingModes.map((mode) => [mode.mode, mode.payerCount]));
+    expect(fromSheet).toEqual(fromCalendar);
+    // L'hebdomadaire programmé ne compte pas encore ; le sans-mandat jamais.
+    expect(fromSheet.get("monthly")).toBe(2);
+    expect(fromSheet.get("weekly")).toBe(0);
+  });
+
+  it("la fiche compte les mêmes clients : un hebdomadaire sans mandat n'y compte pas", async () => {
+    const id = await declare();
+    const payer = await createCompany(ctx.prisma, { raisonSociale: "Sans Mandat SAS" });
+    await staff()
+      .put(`${BASE}/${id}/payers/${payer.id}/billing-mode`)
+      .send({ mode: "weekly" })
+      .expect(204);
+
+    expect((await modeOf(id, "weekly")).payerCount).toBe(0);
   });
 
   it("refuse une entité inconnue en 404", async () => {

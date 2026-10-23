@@ -36,6 +36,7 @@ const NOW = paris("2026-10-08", "11:00");
 const SITE = {
   companyId: "cmp_site",
   name: "Site Annexe",
+  active: true,
   follows: [
     {
       companyId: "cmp_site",

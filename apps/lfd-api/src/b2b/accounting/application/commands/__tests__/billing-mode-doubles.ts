@@ -175,4 +175,9 @@ export class FixedStandings extends PayerStandingReader {
 }
 
 /** Un payeur qui règle seul. */
-export const PAYER: PayerStanding = { companyId: "cmp_payer", name: "Le Bistrot", follows: [] };
+export const PAYER: PayerStanding = {
+  companyId: "cmp_payer",
+  name: "Le Bistrot",
+  active: true,
+  follows: [],
+};

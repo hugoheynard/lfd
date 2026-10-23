@@ -1,4 +1,4 @@
-import type { CollectionCalendarView, LegalEntityView } from "@lfd/contracts";
+import { instantToLocal, type CollectionCalendarView, type LegalEntityView } from "@lfd/contracts";
 
 import type { LastAutopilotRunReader } from "../domain/ports/last-autopilot-run.reader.js";
 import type { LegalEntityRecord } from "../domain/ports/legal-entity.reader.js";
@@ -6,9 +6,11 @@ import type { RecordedClosureReader } from "../domain/ports/recorded-closure.rea
 import { calendarCycleAt } from "../domain/services/calendar-cycles.js";
 import { InvoicingCalendar } from "../domain/services/invoicing-calendar.js";
 import { entityBillingModes } from "./billing-modes-view-support.js";
+import { countedPayerIdsOf, type CountedPayersReaders } from "./counted-payers-support.js";
 import type { InvoicingCalendarReaders } from "./invoicing-calendar-support.js";
 import {
   collectionCalendar,
+  tightDepositMargin,
   type CollectionCalendar,
 } from "../domain/services/collection-calendar.js";
 
@@ -17,6 +19,7 @@ export interface EntityViewReaders {
   readonly closures: RecordedClosureReader;
   readonly autopilotRuns: LastAutopilotRunReader;
   readonly modes: InvoicingCalendarReaders;
+  readonly counting: CountedPayersReaders;
 }
 
 /**
@@ -39,9 +42,10 @@ export async function withNextCollection(
   readers: EntityViewReaders,
   now: Date,
 ): Promise<LegalEntityView> {
-  const [modes, payers] = await Promise.all([
+  const [modes, payers, countedIds] = await Promise.all([
     readers.modes.modeDates.timelinesOf(record.id),
     readers.modes.payerModes.segmentsOf(record.id),
+    countedPayerIdsOf(readers.counting, record.id, now),
   ]);
   const invoicing = InvoicingCalendar.of(modes, payers);
   const cycle = calendarCycleAt(now, invoicing, await readers.closures.lastClosure(record.id));
@@ -54,7 +58,7 @@ export async function withNextCollection(
   const run = await readers.autopilotRuns.lastOf(record.id);
   return {
     ...record,
-    ...entityBillingModes(modes, payers, invoicing, now),
+    ...entityBillingModes(modes, payers, countedIds, invoicing, now),
     nextCollection: calendarView(calendar),
     lastAutopilotRun:
       run === null
@@ -75,5 +79,9 @@ export function calendarView(calendar: CollectionCalendar): CollectionCalendarVi
     plannedConstitutionAt: calendar.plannedConstitutionAt.toISOString(),
     collectionDay: calendar.collectionDay,
     depositDeadline: calendar.depositDeadline,
+    tightDepositMargin: tightDepositMargin(
+      instantToLocal(calendar.plannedConstitutionAt).day,
+      calendar.depositDeadline,
+    ),
   };
 }
