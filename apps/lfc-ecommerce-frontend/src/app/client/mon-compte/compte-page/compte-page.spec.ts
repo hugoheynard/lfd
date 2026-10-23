@@ -6,6 +6,7 @@ import type {
   CompanyView,
   CustomerBankAccountView,
   GateLevel,
+  MintBlocker,
 } from '@lfd/contracts';
 import { FoldPanelHostService } from 'fold-ng';
 import { afterEach, vi } from 'vitest';
@@ -35,6 +36,10 @@ interface Situation {
   readonly bank?: CustomerBankAccountView | null;
   /** Le verdict d'activation lu — aucun par défaut, comme une lecture en échec. */
   readonly gate?: ActivationGate | null;
+  /** Les mentions qui empêchent de générer le mandat — aucune par défaut. */
+  readonly mintBlockers?: readonly MintBlocker[];
+  /** Un site atteint par héritage (S6), où l'espace est entré — aucun par défaut. */
+  readonly site?: CompanyView;
 }
 
 /** Un RIB enregistré, sans IBAN : la lecture n'en rend que `last4`. */
@@ -62,6 +67,8 @@ function boot(
     mandate = 'closed',
     bank = null,
     gate = null,
+    mintBlockers = [],
+    site,
   }: Situation = {},
 ): ComponentFixture<ComptePage> {
   loads = 0;
@@ -80,7 +87,17 @@ function boot(
           account: () => ({
             profile: PROFILE,
             companies,
-            navPrefs: { catalogueView: null, workspace: null },
+            reachableSites:
+              site === undefined
+                ? []
+                : [
+                    {
+                      company: site,
+                      via: { companyId: 'cmp_principal', name: 'Maison mère' },
+                      canReadBilling: true,
+                    },
+                  ],
+            navPrefs: { catalogueView: null, workspace: site?.id ?? null },
           }),
           load: (): void => {
             loads += 1;
@@ -114,7 +131,7 @@ function boot(
           status: signal('ready'),
           mandate: signal(null),
           issuerScheme: signal(null),
-          mintBlockers: signal([]),
+          mintBlockers: signal(mintBlockers),
           ensure: (): void => undefined,
           reload: (): Promise<void> => Promise.resolve(),
         },
@@ -409,6 +426,27 @@ describe('ComptePage', () => {
       checklist: [{ piece: 'kbis', blocking: false, done: true }],
     };
     const COPY = FR.account.completion;
+
+    /**
+     * Régression S6 : dans un site atteint, le rôle vaut `admin` (plafonné) et
+     * le RIB ne s'y gère pas ; la synthèse ne doit pas y réclamer le RIB ni les
+     * mentions du mandat, même drapeau ouvert, RIB lu et mentions manquantes.
+     */
+    it('dans un site atteint, ne réclame ni le RIB ni les mentions du mandat', () => {
+      const situation = {
+        mandate: 'open',
+        bank: RIB,
+        mintBlockers: ['holder_legal_form_missing', 'siren_missing'],
+      } as const;
+      fixture = boot([TOMMEUSES], situation);
+      const steps = (): string =>
+        el().querySelector('lfd-company-activation-checklist')?.textContent ?? '';
+      expect(steps()).toContain(COPY.items.bank.title);
+
+      fixture = boot([], { ...situation, site: { ...asRole('admin'), id: 'cmp_site' } });
+      expect(steps()).not.toContain(COPY.items.bank.title);
+      expect(steps()).not.toContain(COPY.items.identity.title);
+    });
 
     it('ne montre aucune synthèse sans verdict lu', () => {
       expect(el().querySelector('lfd-company-activation-checklist')).toBeNull();

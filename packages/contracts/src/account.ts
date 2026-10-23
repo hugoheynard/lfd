@@ -145,11 +145,23 @@ export interface CompanyView {
  * société (en-tête d'espace de travail) — il ne sert jamais d'office (R4).
  */
 export interface ReachableSiteView {
-  readonly companyId: string;
-  /** L'enseigne du site, sa raison sociale à défaut. */
-  readonly name: string;
-  /** Le principal par lequel on l'atteint. */
+  /**
+   * La fiche COMPLÈTE du site, de même forme qu'une société de
+   * {@link AccountView.companies} : la boutique y entre comme dans une
+   * société propre. Son `role` est le rôle EFFECTIF de la personne —
+   * `admin` pour un détenteur du principal, plafonné (R2).
+   */
+  readonly company: CompanyView;
+  /** Le principal par lequel on l'atteint ; `name` = enseigne, raison sociale à défaut. */
   readonly via: { readonly companyId: string; readonly name: string };
+  /**
+   * Lit-elle les factures, les impayés et le compte bancaire du site ? Vrai
+   * pour le détenteur du principal, faux pour un `admin` hérité (Q1, Hugo,
+   * 2026-10-23). Le `role` de {@link company} ne suffit pas à le dire : il
+   * vaut `admin` dans les deux cas. Les gestes sur la facturation restent
+   * ceux de `role`.
+   */
+  readonly canReadBilling: boolean;
 }
 
 /** Ce que `GET /me` renvoie : qui je suis, et quelles entreprises sont les miennes. */
@@ -159,11 +171,10 @@ export interface AccountView {
   readonly companies: readonly CompanyView[];
   /**
    * Les sites atteints par héritage seul — jamais une société de
-   * {@link companies} (S6, 2026-10-23). Toujours envoyé par le serveur ;
-   * optionnel tant que le sélecteur de la boutique (lot suivant) ne le lit
-   * pas, pour ne pas casser ses doublures d'ici là.
+   * {@link companies} (S6, 2026-10-23). Possiblement vide : c'est le cas de
+   * qui ne détient ni n'administre aucun principal.
    */
-  readonly reachableSites?: readonly ReachableSiteView[];
+  readonly reachableSites: readonly ReachableSiteView[];
   /** Préférences d'affichage persistées (vue catalogue…), toujours présentes. */
   readonly navPrefs: NavPreferences;
 }

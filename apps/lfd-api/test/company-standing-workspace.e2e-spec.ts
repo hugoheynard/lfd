@@ -128,8 +128,35 @@ describe("GET /me — les sites atteignables du sélecteur (R5)", () => {
     const f = await family();
     const view = await me(f.heir);
     expect(view.companies.map((c) => c.id)).toEqual([f.principal]);
-    expect(view.reachableSites?.map((s) => s.companyId).sort()).toEqual([f.site, f.sibling].sort());
+    expect(view.reachableSites?.map((s) => s.company.id).sort()).toEqual(
+      [f.site, f.sibling].sort(),
+    );
     expect(view.reachableSites?.every((s) => s.via.companyId === f.principal)).toBe(true);
+  });
+
+  it("🔴 chaque site est servi en fiche COMPLÈTE, au rôle effectif admin, pas owner (R2)", async () => {
+    const f = await family();
+    const view = await me(f.heir);
+    const site = view.reachableSites.find((s) => s.company.id === f.site);
+    expect(site?.company).toMatchObject({ id: f.site, role: CustomerRole.admin, status: "active" });
+    expect(site?.company.primaryContact).toBeDefined();
+    expect(site?.company.fulfillmentPreference).toBeDefined();
+    // Même forme qu'une société propre : aucune clé en plus ni en moins.
+    expect(Object.keys(site?.company ?? {}).sort()).toEqual(
+      Object.keys(view.companies[0] ?? {}).sort(),
+    );
+  });
+
+  it("🔴 la facturation se lit pour le détenteur du principal, pas pour son admin (Q1)", async () => {
+    const f = await family();
+    const owner = await me(f.heir);
+    const admin = await me(f.adminHeir);
+    expect(owner.reachableSites.map((s) => s.canReadBilling)).toEqual([true, true]);
+    expect(admin.reachableSites.map((s) => s.company.role)).toEqual([
+      CustomerRole.admin,
+      CustomerRole.admin,
+    ]);
+    expect(admin.reachableSites.map((s) => s.canReadBilling)).toEqual([false, false]);
   });
 
   it("🔴 un membre de site ne voit ni son principal ni son frère", async () => {
@@ -153,6 +180,6 @@ describe("GET /me — les sites atteignables du sélecteur (R5)", () => {
     await member(f.heir.id, f.site, { role: CustomerRole.orders });
     const view = await me(f.heir);
     expect(view.companies.map((c) => c.id).sort()).toEqual([f.principal, f.site].sort());
-    expect(view.reachableSites?.map((s) => s.companyId)).toEqual([f.sibling]);
+    expect(view.reachableSites?.map((s) => s.company.id)).toEqual([f.sibling]);
   });
 });

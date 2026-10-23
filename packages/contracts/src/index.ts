@@ -26,6 +26,7 @@ export type {
   KbisView,
   CompanyView,
   AccountView,
+  ReachableSiteView,
 } from "./account.js";
 export type { LoginMethodView, LoginMethodsView } from "./login-method.js";
 export type {

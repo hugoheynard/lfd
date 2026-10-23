@@ -382,6 +382,16 @@
   font-weight: var(--fold-weight-extrabold);
 }
 
+.space-titles {
+  display: flex;
+  flex-direction: column;
+}
+
+.space-via {
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
 .space-current {
   margin: 0;
   font-size: var(--fold-text-sm);

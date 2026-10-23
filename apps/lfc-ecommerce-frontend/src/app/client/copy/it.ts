@@ -48,6 +48,8 @@ export const IT: ClientCopy = {
     workspaceKindPro: 'Pro',
     workspaceKindPersonal: 'Personale',
     workspacePersonalNote: 'Ordini a suo nome',
+    workspaceKindSite: 'Sede',
+    workspaceVia: 'tramite {name}',
     workspaceRolePro: 'Account pro',
     notificationsClose: 'Chiudi',
     notificationsCount: '{unread} non lette · {total} in totale',

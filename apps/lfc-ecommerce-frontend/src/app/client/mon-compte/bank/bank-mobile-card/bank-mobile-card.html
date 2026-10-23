@@ -17,6 +17,9 @@
   }
   @default {
     <p class="line">{{ line() }}</p>
-    <app-card-foot [label]="action()" (pressed)="open()" />
+    <!-- Un site atteint se lit, il ne se gère pas (S6, R2). -->
+    @if (client.managesBank()) {
+      <app-card-foot [label]="action()" (pressed)="open()" />
+    }
   }
 }

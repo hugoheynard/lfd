@@ -108,10 +108,7 @@ export class InvoicesPage {
 
   protected readonly copy = computed(() => this.t().account.invoices);
   private readonly companyId = computed(() => this.client.company()?.id ?? null);
-  protected readonly allowed = computed(() => {
-    const role = this.client.company()?.role;
-    return role !== undefined && INVOICE_ROLES.has(role);
-  });
+  protected readonly allowed = computed(() => this.client.readsBilling(INVOICE_ROLES));
 
   protected readonly status = signal<ReadStatus>('loading');
   protected readonly refreshing = signal(false);

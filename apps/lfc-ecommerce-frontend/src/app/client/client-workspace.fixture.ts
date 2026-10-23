@@ -1,18 +1,27 @@
 import { computed, signal, type WritableSignal } from '@angular/core';
-import { PERSONAL_WORKSPACE, type CompanyView } from '@lfd/contracts';
+import { PERSONAL_WORKSPACE, type CompanyView, type ReachableSiteView } from '@lfd/contracts';
 
 import { ClientWorkspace, type WorkspaceOption } from './client-workspace.service';
 
 /** Ce que les suites lisent de l'espace — les signaux publics, et le choix. */
 type WorkspaceSurface = Pick<
   ClientWorkspace,
-  'current' | 'company' | 'isPersonal' | 'hasChoice' | 'options' | 'choose'
+  | 'current'
+  | 'company'
+  | 'isPersonal'
+  | 'hasChoice'
+  | 'options'
+  | 'choose'
+  | 'reachableSite'
+  | 'siteBillingReadable'
 >;
 
 /** Une doublure pilotable : `current` s'écrit, le reste en dérive comme dans le vrai service. */
 export interface WorkspaceDouble extends WorkspaceSurface {
   readonly current: WritableSignal<string | null>;
   readonly companies: WritableSignal<readonly CompanyView[]>;
+  /** Les sites atteints par héritage (S6), proposés après les sociétés. */
+  readonly sites: WritableSignal<readonly ReachableSiteView[]>;
   readonly chosen: string[];
 }
 
@@ -31,18 +40,29 @@ export function workspaceDouble(
 ): WorkspaceDouble {
   const current$ = signal<string | null>(current);
   const companies$ = signal<readonly CompanyView[]>(companies);
+  const sites$ = signal<readonly ReachableSiteView[]>([]);
   const chosen: string[] = [];
   return {
     current: current$,
     companies: companies$,
+    sites: sites$,
     chosen,
     company: computed(() => companies$().find((c) => c.id === current$()) ?? null),
     isPersonal: computed(() => current$() === PERSONAL_WORKSPACE),
     hasChoice: computed(() => companies$().length > 0),
     options: computed<readonly WorkspaceOption[]>(() => [
-      { value: PERSONAL_WORKSPACE, company: null },
-      ...companies$().map((company) => ({ value: company.id, company })),
+      { value: PERSONAL_WORKSPACE, company: null, via: null },
+      ...companies$().map((company) => ({ value: company.id, company, via: null })),
+      ...sites$().map((site) => ({
+        value: site.company.id,
+        company: site.company,
+        via: site.via.name,
+      })),
     ]),
+    // La résolution des sites (S6) est éprouvée contre le vrai service ; la
+    // doublure ne fait que les proposer.
+    reachableSite: computed(() => null),
+    siteBillingReadable: computed(() => null),
     choose: (workspace: string): void => {
       chosen.push(workspace);
       current$.set(workspace);

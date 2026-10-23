@@ -4,7 +4,7 @@
 > « À faire — S6 » de [`sous-comptes.md`](sous-comptes.md) §3, contredite par
 > `vitruve` le même jour (3 bloquants, 6 sérieux) : **ce plan la remplace**.
 > Frontière de sécurité (mur tenant, résolution d'accès). **Lot serveur
-> bâti le 2026-10-23** (non commité à l'écriture, §5) ; lot boutique à faire.
+> bâti le 2026-10-23** (non commité à l'écriture, §5) ; lot boutique bâti le même jour (§6, non commité à l'écriture).
 
 ## 0. Ce qui existe (ouvert le 2026-10-23)
 
@@ -117,3 +117,43 @@ boutique, et les e2e. Un lot serveur, puis un lot boutique.
   l'héritier (R1).
 - **Ouvert** : un site suspendu ferme l'héritage, lecture comprise — C1
   (§7.7 de `plan-commandes-des-sites.md`) le laissait lire. À confirmer.
+
+## 6. Lot boutique (2026-10-23) — arrêté sur un manque du contrat
+
+- **Fait** : `ReachableSiteView` sort du baril de `@lfd/contracts`, et
+  `AccountView.reachableSites` est **obligatoire** (doublures de la boutique
+  et de l'aperçu adaptées).
+- **Bloqué — le sélecteur n'est pas bâti.** Toute la boutique lit la société
+  de l'espace comme une `CompanyView` complète (`ClientWorkspace.company()`,
+  vérifié le 2026-10-23 : une soixantaine de lectures) — statut (audience et
+  prix HT/TTC), rôle (factures, gestes), conditions de règlement et
+  prélèvement suspendu (« au compte »), préférence d'acheminement, KBIS,
+  contacts. Un site atteint n'est servi que comme `{ companyId, name, via }` :
+  y entrer rendrait un espace ni perso ni pro, où les écrans afficheraient le
+  prix public et cacheraient « au compte ». Les inventer côté front est exclu.
+  **À trancher par Hugo** : `GET /me` sert pour chaque site atteint une
+  `CompanyView` (rôle = rôle **effectif**, Q1 comprise), par exemple
+  `reachableSites: { company: CompanyView; via }[]` — un ajout serveur, puis
+  le sélecteur.
+- **Levé le 2026-10-23** (décision du coordinateur, non commité à l'écriture) :
+  `ReachableSiteView` = `{ company: CompanyView; via: { companyId, name };
+canReadBilling: boolean }`. `company` a la forme exacte d'une société de
+  `companies` (même sélection et même mapper,
+  `apps/lfd-api/src/b2b/account/infrastructure/company-view.mapper.ts`), son `role` est le rôle
+  **effectif** (`standingRole` : `admin`, plafonné), et `canReadBilling` porte
+  Q1 (`billingReadingRole` : vrai pour le détenteur du principal seul) — le
+  `role` ne peut pas le dire, il vaut `admin` dans les deux cas. Les deux sont
+  calculés dans `readReachableSites`, les fiches lues en une requête par lot.
+  E2e : `test/company-standing-workspace.e2e-spec.ts`. **Reste** : rien côté contrat.
+- **Lot boutique bâti le 2026-10-23** (non commité à l'écriture) :
+  `ClientWorkspace` propose le perso, les sociétés propres, puis les sites
+  (`WorkspaceOption.via`) ; un site mémorisé est l'espace, déclaré par
+  l'intercepteur existant, et sa `CompanyView` est la société de l'espace
+  pour toute la boutique (prix, « au compte », commandes, Mon compte). Un
+  site absent du `/me` suivant fait retomber l'espace sur la règle par
+  défaut, qui ne lit que les sociétés propres (R4). Les deux menus le
+  disent : pastille « Site » et « via <principal> ». La facturation d'un
+  site se lit par `canReadBilling` (`ClientCompany.readsBilling` : factures,
+  carte RIB) ; le RIB et le mandat ne s'y gèrent jamais
+  (`ClientCompany.managesBank`, par le rôle). Textes `chrome.workspaceKindSite`
+  et `chrome.workspaceVia` (fr/en/it), glossaire du back-office.

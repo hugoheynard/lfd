@@ -37,6 +37,7 @@ function boot(companies: readonly CompanyView[]): ComponentFixture<AccountCard> 
           account: () => ({
             profile: null,
             companies,
+            reachableSites: [],
             navPrefs: { catalogueView: null, workspace: null },
           }),
         },

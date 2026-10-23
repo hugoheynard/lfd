@@ -28,7 +28,12 @@
             [attr.aria-pressed]="space.current"
             (click)="choose(space.value)"
           >
-            <span class="space-label">{{ space.label }}</span>
+            <span class="space-titles">
+              <span class="space-label">{{ space.label }}</span>
+              @if (space.via; as via) {
+                <span class="space-via">{{ t().chrome.workspaceVia.replace('{name}', via) }}</span>
+              }
+            </span>
             @if (space.current) {
               <fold-icon name="check" />
             }

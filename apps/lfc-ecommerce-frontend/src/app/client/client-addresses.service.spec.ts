@@ -34,7 +34,11 @@ function bootWith(companies: readonly { id: string }[]): HttpTestingController {
         useValue: {
           companies: () => companies,
           // Le compte relu : une société seule est l'espace, et c'est son carnet qui se lit.
-          account: () => ({ companies, navPrefs: { catalogueView: null, workspace: null } }),
+          account: () => ({
+            companies,
+            reachableSites: [],
+            navPrefs: { catalogueView: null, workspace: null },
+          }),
         },
       },
     ],

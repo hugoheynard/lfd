@@ -90,7 +90,12 @@ export function accountWith(
       account: () =>
         profile === null
           ? null
-          : { profile, companies, navPrefs: { catalogueView: null, workspace: null } },
+          : {
+              profile,
+              companies,
+              reachableSites: [],
+              navPrefs: { catalogueView: null, workspace: null },
+            },
     },
   };
 }

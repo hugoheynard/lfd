@@ -17,6 +17,7 @@ import {
 } from '../../client-workspace.service';
 import { ClientWorkspaceSwitch } from '../../client-workspace-switch.service';
 import { ClientCopyService } from '../../copy/client-copy.service';
+import type { ClientCopy } from '../../copy/client-copy.model';
 import { ClientNav, type NavItem } from '../../nav/client-nav.service';
 
 /** Une carte d'espace, telle que le panneau la dessine. */
@@ -138,9 +139,9 @@ export class AccountMenu {
         return {
           ...entry,
           initials: workspaceInitials(entry.label),
-          kind: company === null ? copy.workspaceKindPersonal : copy.workspaceKindPro,
+          kind: spaceKind(company !== null, entry.via, copy),
           pro: company !== null,
-          note: company === null ? copy.workspacePersonalNote : company.raisonSociale,
+          note: spaceNote(company?.raisonSociale ?? null, entry.via, copy),
         };
       },
     );
@@ -184,4 +185,34 @@ export class AccountMenu {
     this.open.set(false);
     this.auth.logout();
   }
+}
+
+/** La pastille d'une carte d'espace : perso, pro, ou site atteint par héritage (S6). */
+function spaceKind(
+  pro: boolean,
+  via: string | null,
+  copy: Pick<
+    ClientCopy['chrome'],
+    'workspaceKindPersonal' | 'workspaceKindPro' | 'workspaceKindSite'
+  >,
+): string {
+  if (via !== null) {
+    return copy.workspaceKindSite;
+  }
+  return pro ? copy.workspaceKindPro : copy.workspaceKindPersonal;
+}
+
+/**
+ * La note d'une carte d'espace : « via » le principal pour un site atteint
+ * (R5), la raison sociale pour une société propre, le libellé du perso sinon.
+ */
+function spaceNote(
+  raisonSociale: string | null,
+  via: string | null,
+  copy: Pick<ClientCopy['chrome'], 'workspacePersonalNote' | 'workspaceVia'>,
+): string {
+  if (via !== null) {
+    return copy.workspaceVia.replace('{name}', via);
+  }
+  return raisonSociale ?? copy.workspacePersonalNote;
 }

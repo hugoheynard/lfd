@@ -17,7 +17,12 @@ const MAISON_A: CompanyView = { ...TOMMEUSES, id: 'cmp_a', enseigne: 'Maison A' 
 const MAISON_B: CompanyView = { ...TOMMEUSES, id: 'cmp_b', enseigne: '', raisonSociale: 'SAS B' };
 
 function account(companies: readonly CompanyView[], workspace: string | null = null): Account {
-  return { profile: PROFILE, companies, navPrefs: { catalogueView: null, workspace } };
+  return {
+    profile: PROFILE,
+    companies,
+    reachableSites: [],
+    navPrefs: { catalogueView: null, workspace },
+  };
 }
 
 const setWorkspace = vi.fn();
@@ -177,5 +182,66 @@ describe('ClientWorkspace.choose — la préférence écrite', () => {
     expect(workspace.current()).toBe('cmp_b');
     second?.flush(account([MAISON_A, MAISON_B], 'cmp_b'));
     expect(workspace.current()).toBe('cmp_b');
+  });
+});
+
+describe('ClientWorkspace — les sites atteints par héritage (S6, R4 R5)', () => {
+  const SITE: CompanyView = {
+    ...TOMMEUSES,
+    id: 'cmp_site',
+    enseigne: 'Site Daille',
+    role: 'admin',
+  };
+  const reachable = (canReadBilling: boolean) => ({
+    company: SITE,
+    via: { companyId: 'cmp_a', name: 'Maison A' },
+    canReadBilling,
+  });
+  const withSite = (workspace: string | null, canReadBilling = true): Account => ({
+    ...account([MAISON_A], workspace),
+    reachableSites: [reachable(canReadBilling)],
+  });
+
+  it('liste le perso, les sociétés propres, PUIS les sites, chacun « via » son principal', () => {
+    const workspace = resolve(withSite(null));
+    expect(workspace.options().map((o) => [o.value, o.via])).toEqual([
+      [PERSONAL_WORKSPACE, null],
+      ['cmp_a', null],
+      ['cmp_site', 'Maison A'],
+    ]);
+  });
+
+  /** R4 : un site ne sert jamais d'office, il se choisit. */
+  it('sans préférence, un site n’est jamais l’espace par défaut', () => {
+    const workspace = resolve({ ...withSite(null), companies: [] });
+    expect(workspace.current()).toBe(PERSONAL_WORKSPACE);
+    expect(workspace.hasChoice()).toBe(true);
+  });
+
+  it('un site choisi est l’espace, et sa fiche est la société de l’espace', () => {
+    const workspace = resolve(withSite('cmp_site'));
+    expect(workspace.current()).toBe('cmp_site');
+    expect(workspace.company()).toBe(SITE);
+    expect(workspace.siteBillingReadable()).toBe(true);
+  });
+
+  it('se laisse choisir comme une société propre', () => {
+    resolve(withSite(null)).choose('cmp_site');
+    expect(setWorkspace).toHaveBeenCalledWith('cmp_site');
+  });
+
+  /** Q1 : un admin hérité ne lit pas la facturation du site, quel que soit son rôle. */
+  it('la lecture de la facturation suit `canReadBilling`, pas le rôle', () => {
+    expect(resolve(withSite('cmp_site', false)).siteBillingReadable()).toBe(false);
+  });
+
+  it('dans une société propre, la facturation n’est pas l’affaire du site', () => {
+    expect(resolve(withSite('cmp_a')).siteBillingReadable()).toBeNull();
+  });
+
+  it('un site détaché disparaît, et l’espace retombe sur la société propre', () => {
+    const workspace = resolve({ ...withSite('cmp_site'), reachableSites: [] });
+    expect(workspace.current()).toBe('cmp_a');
+    expect(workspace.options().some((o) => o.value === 'cmp_site')).toBe(false);
   });
 });

@@ -119,10 +119,12 @@ export const GLOSSARY_T_W: Readonly<Record<string, string>> = {
   workspaceCurrentPersonal: 'Espace actuel — perso',
   workspaceKindPersonal: 'Type d’espace — perso',
   workspaceKindPro: 'Type d’espace — pro',
+  workspaceKindSite: 'Type d’espace — site atteint par son principal',
   workspacePersonal: 'Espace perso',
   workspacePersonalNote: 'Espace perso — note',
   workspaceRolePro: 'Espace — compte pro',
   workspaceSection: 'Mes espaces',
+  workspaceVia: 'Site atteint — via son principal',
   write: 'Bouton « écrire »',
   writeFailed: 'Enregistrement échoué',
 };

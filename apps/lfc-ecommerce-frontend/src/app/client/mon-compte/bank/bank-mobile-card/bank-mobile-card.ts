@@ -54,7 +54,7 @@ export class BankMobileCard {
   protected readonly t = inject(ClientCopyService).t;
   protected readonly accounts = inject(ClientBankAccount);
   private readonly mandates = inject(ClientMandate);
-  private readonly client = inject(ClientCompany);
+  protected readonly client = inject(ClientCompany);
   private readonly panels = inject(FoldPanelHostService);
 
   private readonly companyId = computed(() => this.client.company()?.id ?? null);

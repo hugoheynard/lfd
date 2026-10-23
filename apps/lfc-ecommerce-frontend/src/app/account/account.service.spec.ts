@@ -268,7 +268,12 @@ describe('AccountService — l’espace à la connexion', () => {
   }
 
   function me(workspace: string | null): object {
-    return { profile: {}, companies: [COMPANY], navPrefs: { catalogueView: null, workspace } };
+    return {
+      profile: {},
+      companies: [COMPANY],
+      reachableSites: [],
+      navPrefs: { catalogueView: null, workspace },
+    };
   }
 
   it('au retour d’une connexion, un perso mémorisé cède la place à la société', () => {

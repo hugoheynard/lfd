@@ -14,7 +14,11 @@ function boot(status: AccountStatus, companies: readonly CompanyView[]): ClientC
         useValue: {
           status: signal(status).asReadonly(),
           companies: () => companies,
-          account: () => ({ companies, navPrefs: { catalogueView: null, workspace: null } }),
+          account: () => ({
+            companies,
+            reachableSites: [],
+            navPrefs: { catalogueView: null, workspace: null },
+          }),
         },
       },
     ],
@@ -42,5 +46,46 @@ describe('ClientCompany.dossier', () => {
   it('suit le statut de la société', () => {
     expect(boot('ready', [company('pending')]).dossier()).toBe('pending');
     expect(boot('ready', [company('active')]).dossier()).toBe('active');
+  });
+});
+
+/** S6, Q1 : dans un site atteint, la facturation se lit par `canReadBilling`, et ne se gère jamais. */
+describe('ClientCompany — facturation d’un site atteint', () => {
+  const SITE = { ...company('active'), id: 'cmp_site', role: 'admin' } as CompanyView;
+
+  function bootSite(canReadBilling: boolean): ClientCompany {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        {
+          provide: AccountService,
+          useValue: {
+            status: signal<AccountStatus>('ready').asReadonly(),
+            companies: () => [],
+            account: () => ({
+              companies: [],
+              reachableSites: [
+                { company: SITE, via: { companyId: 'cmp_p', name: 'Principal' }, canReadBilling },
+              ],
+              navPrefs: { catalogueView: null, workspace: 'cmp_site' },
+            }),
+          },
+        },
+      ],
+    });
+    return TestBed.inject(ClientCompany);
+  }
+
+  const ROLES = new Set(['owner', 'billing', 'admin'] as const);
+
+  it('le détenteur du principal lit, sans gérer le RIB', () => {
+    const client = bootSite(true);
+    expect(client.company()).toBe(SITE);
+    expect(client.readsBilling(ROLES)).toBe(true);
+    expect(client.managesBank()).toBe(false);
+  });
+
+  it('un admin hérité ne lit pas, même si son rôle l’ouvrirait ailleurs', () => {
+    expect(bootSite(false).readsBilling(ROLES)).toBe(false);
   });
 });

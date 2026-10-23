@@ -18,6 +18,7 @@ const PROFILE = {
 export const DEMO_PERSON: AccountView = {
   profile: PROFILE,
   companies: [],
+  reachableSites: [],
   navPrefs: { catalogueView: null, workspace: PERSONAL_WORKSPACE },
 };
 
@@ -62,6 +63,7 @@ const DEMO_COMPANY: CompanyView = {
 export const DEMO_PRO: AccountView = {
   profile: PROFILE,
   companies: [DEMO_COMPANY],
+  reachableSites: [],
   navPrefs: { catalogueView: null, workspace: DEMO_COMPANY_ID },
 };
 

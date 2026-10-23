@@ -1,5 +1,5 @@
 import { computed, inject, Injectable } from '@angular/core';
-import type { CompanyStatus, CompanyView } from '@lfd/contracts';
+import type { CompanyMemberRole, CompanyStatus, CompanyView } from '@lfd/contracts';
 
 import { directDebitSuspended, settlesOnAccount } from '../account/settles-on-account';
 import { AccountService } from '../account/account.service';
@@ -7,6 +7,9 @@ import { ClientWorkspace, companyName } from './client-workspace.service';
 
 /** L'état d'un dossier client : à compléter, ou le statut de sa société. */
 export type DossierState = 'incomplete' | CompanyStatus;
+
+/** Les rôles qui GÈRENT le compte bancaire d'une société — le mur de l'API. */
+const BANK_ROLES: ReadonlySet<CompanyMemberRole> = new Set(['owner', 'billing']);
 
 /**
  * **La société du client**, telle que notre base la porte (`GET /me`).
@@ -78,4 +81,35 @@ export class ClientCompany {
 
   /** Le mensuel est accordé, mais son prélèvement est suspendu par la comptabilité. */
   readonly directDebitSuspended = computed(() => directDebitSuspended(this.company()));
+
+  /**
+   * L'espace est-il un site atteint par héritage (S6) ? Les écrans y lisent la
+   * fiche du site comme celle d'une société propre ; seule la facturation
+   * diffère, cf. {@link readsBilling}.
+   */
+  readonly isReachableSite = computed(() => this.workspace.reachableSite() !== null);
+
+  /**
+   * La facturation (factures, impayés, RIB) se LIT-elle ici ? Dans un site
+   * atteint, `canReadBilling` tranche seul — le rôle y vaut `admin` pour le
+   * détenteur du principal comme pour un admin hérité (Q1, 2026-10-23). Dans
+   * une société propre, ce sont les rôles que l'écran nomme.
+   */
+  readsBilling(roles: ReadonlySet<CompanyMemberRole>): boolean {
+    const site = this.workspace.siteBillingReadable();
+    if (site !== null) {
+      return site;
+    }
+    const role = this.company()?.role;
+    return role !== undefined && roles.has(role);
+  }
+
+  /**
+   * Le RIB se MODIFIE-t-il ici ? Toujours le rôle, site compris : un site
+   * atteint se lit, il ne se gère pas (`admin` plafonné, R2).
+   */
+  readonly managesBank = computed(() => {
+    const role = this.company()?.role;
+    return role !== undefined && BANK_ROLES.has(role);
+  });
 }

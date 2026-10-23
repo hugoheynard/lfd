@@ -1,3 +1,4 @@
+import type { ReachableSiteView } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
@@ -8,22 +9,9 @@ import {
   AccountReader,
   type AccountView,
   type CompanyView,
-  type ContactView,
 } from "../domain/ports/account.reader.js";
-import type { CustomerRole } from "../../../platform/database/client/client.js";
 import { parseNavPreferences } from "../domain/value-objects/nav-preferences.js";
-import { requiresVatNumber } from "../domain/value-objects/vat-liability.js";
-
-/** Une ligne de contact additionnel telle que Prisma la sélectionne. */
-interface ContactRow {
-  readonly id: string;
-  readonly prenom: string;
-  readonly nom: string;
-  readonly fonction: string;
-  readonly email: string;
-  readonly telephone: string;
-  readonly role: CustomerRole | null;
-}
+import { COMPANY_VIEW_SELECT, toCompanyView } from "./company-view.mapper.js";
 
 /**
  * Lecture du compte en **une** requête : la personne, ses rattachements, et la
@@ -58,50 +46,7 @@ export class PrismaAccountReader extends AccountReader {
           // expirée ne liste pas sa société (§8.1 bis, 2026-10-10).
           where: openingMembership(this.clock.now()),
           orderBy: { createdAt: "asc" },
-          select: {
-            role: true,
-            company: {
-              select: {
-                id: true,
-                reference: true,
-                raisonSociale: true,
-                enseigne: true,
-                formeJuridique: true,
-                siret: true,
-                siren: true,
-                vatNumber: true,
-                status: true,
-                grantedTerms: true,
-                requestedTerm: true,
-                directDebitBlockedAt: true,
-                preferredFulfillmentMethod: true,
-                preferredPickupAddressId: true,
-                preferredDeliveryAddressId: true,
-                deliverySignatureRequired: true,
-                kbisFileName: true,
-                kbisUploadedAt: true,
-                kbisCertifiedAt: true,
-                // Contact principal, aplati sur la société.
-                contactPrenom: true,
-                contactNom: true,
-                contactFonction: true,
-                contactEmail: true,
-                contactTelephone: true,
-                contacts: {
-                  orderBy: { createdAt: "asc" },
-                  select: {
-                    id: true,
-                    prenom: true,
-                    nom: true,
-                    fonction: true,
-                    email: true,
-                    telephone: true,
-                    role: true,
-                  },
-                },
-              },
-            },
-          },
+          select: { role: true, company: { select: COMPANY_VIEW_SELECT } },
         },
       },
     });
@@ -109,60 +54,12 @@ export class PrismaAccountReader extends AccountReader {
       return null;
     }
 
-    const companies: CompanyView[] = row.memberships.map(({ role, company }) => ({
-      id: company.id,
-      reference: company.reference,
-      raisonSociale: company.raisonSociale,
-      enseigne: company.enseigne,
-      formeJuridique: company.formeJuridique,
-      siret: company.siret,
-      siren: company.siren,
-      vatNumber: company.vatNumber,
-      vatNumberRequired: requiresVatNumber(company.formeJuridique),
-      status: company.status,
-      grantedTerms: company.grantedTerms,
-      requestedTerm: company.requestedTerm,
-      directDebitBlocked: company.directDebitBlockedAt !== null,
-      fulfillmentPreference: {
-        method: company.preferredFulfillmentMethod,
-        pickupAddressId: company.preferredPickupAddressId,
-        deliveryAddressId: company.preferredDeliveryAddressId,
-        signatureRequired: company.deliverySignatureRequired,
-      },
-      role,
-      // Le contact principal EST le détenteur : son rôle n'est pas choisi, il
-      // est constaté — d'où `null` ici plutôt qu'une valeur à maintenir.
-      primaryContact: {
-        id: null,
-        role: null,
-        firstName: company.contactPrenom,
-        lastName: company.contactNom,
-        fonction: company.contactFonction,
-        email: company.contactEmail,
-        phone: company.contactTelephone,
-      },
-      contacts: company.contacts.map(toContactView),
-      // KBIS présent seulement si un fichier a été déposé ; certifié = ce
-      // fichier a été validé par le staff (indépendant de status).
-      kbis:
-        company.kbisFileName !== null && company.kbisUploadedAt !== null
-          ? {
-              fileName: company.kbisFileName,
-              uploadedAt: company.kbisUploadedAt.toISOString(),
-              certified: company.kbisCertifiedAt !== null,
-            }
-          : null,
-    }));
-
-    // Les sites atteints par héritage seul, pour le sélecteur (S6, R5) : la
-    // requête partagée, qui exclut d'elle-même les sociétés déjà listées.
-    const reachable = await readReachableSites(this.prisma, this.clock.now(), userId);
+    const companies: CompanyView[] = row.memberships.map(({ role, company }) =>
+      toCompanyView(role, company),
+    );
+    const reachableSites = await this.readReachableSites(userId);
     return {
-      reachableSites: reachable.map(({ companyId, name, via }) => ({
-        companyId,
-        name,
-        via: { companyId: via.companyId, name: via.name },
-      })),
+      reachableSites,
       profile: {
         userId: row.id,
         firstName: row.firstName,
@@ -174,17 +71,35 @@ export class PrismaAccountReader extends AccountReader {
       navPrefs: parseNavPreferences(row.navPrefs),
     };
   }
-}
 
-/** Une ligne de contact additionnel → la vue (renommage prenom→firstName, etc.). */
-function toContactView(row: ContactRow): ContactView {
-  return {
-    id: row.id,
-    firstName: row.prenom,
-    lastName: row.nom,
-    fonction: row.fonction,
-    email: row.email,
-    phone: row.telephone,
-    role: row.role,
-  };
+  /**
+   * Les sites atteints par héritage seul, chacun en `CompanyView` COMPLÈTE
+   * au rôle effectif (S6, plan §6) : la requête partagée dit lesquels et à
+   * quel rôle, UNE lecture par lot rend leurs fiches — pas une par site.
+   * L'ordre est celui de la requête partagée (principal, puis nom).
+   */
+  private async readReachableSites(userId: string): Promise<ReachableSiteView[]> {
+    const reachable = await readReachableSites(this.prisma, this.clock.now(), userId);
+    if (reachable.length === 0) {
+      return [];
+    }
+    const rows = await this.prisma.company.findMany({
+      where: { id: { in: reachable.map((site) => site.companyId) } },
+      select: COMPANY_VIEW_SELECT,
+    });
+    const byId = new Map(rows.map((company) => [company.id, company]));
+    return reachable.flatMap(({ companyId, via, role, readsBilling }) => {
+      const company = byId.get(companyId);
+      // Absente entre les deux lectures : pas de société inventée.
+      return company === undefined
+        ? []
+        : [
+            {
+              company: toCompanyView(role, company),
+              via: { companyId: via.companyId, name: via.name },
+              canReadBilling: readsBilling,
+            },
+          ];
+    });
+  }
 }

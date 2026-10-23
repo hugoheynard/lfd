@@ -1,5 +1,5 @@
 import { computed, inject, Injectable } from '@angular/core';
-import type { CompanyView } from '@lfd/contracts';
+import type { CompanyView, ReachableSiteView } from '@lfd/contracts';
 // Par le sous-chemin sans zod : ce service est chargé au démarrage, par
 // l'intercepteur (déploiement échoué le 2026-09-15 sur le budget du bundle).
 import { PERSONAL_WORKSPACE } from '@lfd/contracts/workspace';
@@ -13,6 +13,11 @@ export interface WorkspaceOption {
   readonly value: string;
   /** La société, `null` pour le perso. */
   readonly company: CompanyView | null;
+  /**
+   * Le nom du principal par lequel on atteint ce SITE, `null` pour le perso
+   * et pour une société propre (S6, `plan-entrer-dans-ses-sites.md` R5).
+   */
+  readonly via: string | null;
 }
 
 /**
@@ -62,7 +67,14 @@ export class ClientWorkspace {
     if (account === null) {
       return null;
     }
-    const ids = account.companies.map((company) => company.id);
+    // Une société propre OU un site atteint (S6) : y être entré se mémorise
+    // comme le reste. Un site détaché quitte `reachableSites` au `/me`
+    // suivant, et l'espace retombe sur la règle par défaut — jamais sur un
+    // site, que rien ne sert d'office (R4).
+    const ids = [
+      ...account.companies.map((company) => company.id),
+      ...account.reachableSites.map((site) => site.company.id),
+    ];
     // `?? null` : un serveur d'avant le lot A rend un sac sans `workspace`.
     const preferred = account.navPrefs.workspace ?? null;
     if (preferred === PERSONAL_WORKSPACE || (preferred !== null && ids.includes(preferred))) {
@@ -74,8 +86,33 @@ export class ClientWorkspace {
   /** La société de l'espace courant — `null` en perso comme avant `/me`. */
   readonly company = computed<CompanyView | null>(() => {
     const current = this.current();
-    return this.account.companies().find((company) => company.id === current) ?? null;
+    return (
+      this.account.companies().find((company) => company.id === current) ??
+      this.reachableSite()?.company ??
+      null
+    );
   });
+
+  /** Le site atteint par héritage où l'on travaille, `null` ailleurs. */
+  readonly reachableSite = computed<ReachableSiteView | null>(() => {
+    const current = this.current();
+    return this.reachableSites().find((site) => site.company.id === current) ?? null;
+  });
+
+  /**
+   * La facturation de l'espace (factures, impayés, compte bancaire) se
+   * LIT-elle ? Dans une société propre, c'est son rôle qui le dit (`roleAllows`,
+   * appelé par l'écran) — ce signal rend alors `null`. Dans un site atteint,
+   * le rôle vaut `admin` pour le détenteur comme pour un admin hérité : seul
+   * `canReadBilling` les distingue (Q1, Hugo, 2026-10-23).
+   */
+  readonly siteBillingReadable = computed<boolean | null>(
+    () => this.reachableSite()?.canReadBilling ?? null,
+  );
+
+  private readonly reachableSites = computed<readonly ReachableSiteView[]>(
+    () => this.account.account()?.reachableSites ?? [],
+  );
 
   /** Vrai en perso, une fois l'espace connu. */
   readonly isPersonal = computed(() => this.current() === PERSONAL_WORKSPACE);
@@ -85,12 +122,22 @@ export class ClientWorkspace {
    * qui n'en a aucune n'a qu'un espace, et un sélecteur à une entrée ne sert à
    * rien.
    */
-  readonly hasChoice = computed(() => this.account.companies().length > 0);
+  readonly hasChoice = computed(
+    () => this.account.companies().length > 0 || this.reachableSites().length > 0,
+  );
 
-  /** Les espaces proposés, le perso en tête puis les sociétés dans l'ordre de `/me`. */
+  /**
+   * Les espaces proposés : le perso en tête, les sociétés propres, puis les
+   * sites atteints par héritage, chacun dans l'ordre de `/me` (R5).
+   */
   readonly options = computed<readonly WorkspaceOption[]>(() => [
-    { value: PERSONAL_WORKSPACE, company: null },
-    ...this.account.companies().map((company) => ({ value: company.id, company })),
+    { value: PERSONAL_WORKSPACE, company: null, via: null },
+    ...this.account.companies().map((company) => ({ value: company.id, company, via: null })),
+    ...this.reachableSites().map((site) => ({
+      value: site.company.id,
+      company: site.company,
+      via: site.via.name,
+    })),
   ]);
 
   /**
@@ -135,6 +182,8 @@ export function workspaceInitials(label: string): string {
 export interface WorkspaceEntry {
   readonly value: string;
   readonly label: string;
+  /** Le principal d'un site atteint, `null` ailleurs (cf. {@link WorkspaceOption.via}). */
+  readonly via: string | null;
   /** L'espace courant — marqué, jamais caché : on doit voir où l'on est. */
   readonly current: boolean;
 }
@@ -152,6 +201,7 @@ export function workspaceEntries(
   return options.map((option) => ({
     value: option.value,
     label: option.company === null ? personalLabel : companyName(option.company),
+    via: option.via,
     current: option.value === current,
   }));
 }

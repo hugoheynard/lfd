@@ -230,6 +230,27 @@ describe('AccountMenu — les espaces', () => {
     ]);
   });
 
+  /** S6, R5 : un site atteint se range après les sociétés, « via » son principal. */
+  it('un site atteint suit les sociétés, pastille « Site » et note « via »', () => {
+    const fixture = boot(true, PROFILE, [MAISON_A]);
+    wire.workspace.sites.set([
+      {
+        company: { ...MAISON_B, id: 'cmp_site', enseigne: 'Site Daille' },
+        via: { companyId: MAISON_A.id, name: 'Chalet Marmotte' },
+        canReadBilling: true,
+      },
+    ]);
+    const panel = openPanel(fixture);
+
+    expect(texts(panel, '.space-name')).toEqual([
+      FR.chrome.workspacePersonal,
+      'Chalet Marmotte',
+      'Site Daille',
+    ]);
+    expect(texts(panel, '.space-kind')[2]).toBe(FR.chrome.workspaceKindSite);
+    expect(texts(panel, '.space-note')[2]).toBe('via Chalet Marmotte');
+  });
+
   it('marque l’espace courant, et lui seul', () => {
     const panel = openPanel(boot(true, PROFILE, [MAISON_A, MAISON_B], 'cmp_a'));
 

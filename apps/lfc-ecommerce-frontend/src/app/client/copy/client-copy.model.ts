@@ -82,6 +82,13 @@ export interface ClientCopy {
      * comme un espace incomplet.
      */
     readonly workspacePersonalNote: string;
+    /**
+     * La pastille d'un SITE atteint par héritage (S6) : on y entre par son
+     * principal, pas par un rattachement à soi.
+     */
+    readonly workspaceKindSite: string;
+    /** La note d'un site atteint : le principal par lequel on y entre. `{name}` = le principal. */
+    readonly workspaceVia: string;
     /** La seconde ligne du déclencheur d'identité, quand on travaille pour une société. */
     readonly workspaceRolePro: string;
 

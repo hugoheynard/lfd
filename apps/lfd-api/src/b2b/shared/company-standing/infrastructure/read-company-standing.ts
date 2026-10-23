@@ -2,10 +2,12 @@ import { companyDisplayName } from "@lfd/contracts";
 
 import type { Prisma } from "../../../../platform/database/client/client.js";
 import type { PrismaService } from "../../../../platform/database/prisma.service.js";
-import type {
-  CompanyStanding,
-  StandingCompanyStatus,
-  StandingPrincipal,
+import {
+  billingReadingRole,
+  standingRole,
+  type CompanyStanding,
+  type StandingCompanyStatus,
+  type StandingPrincipal,
 } from "../domain/company-standing.js";
 import type { StandingRole } from "../domain/standing-role.js";
 import { INHERITING_PARENT_ROLES } from "../domain/effective-role.js";
@@ -138,6 +140,13 @@ export interface ReachableSite {
   readonly companyId: string;
   readonly name: string;
   readonly via: StandingPrincipal;
+  /** Le rôle EFFECTIF de la personne dans le site ({@link standingRole}) : `admin`, plafonné. */
+  readonly role: StandingRole;
+  /**
+   * Lit-elle factures, impayés et compte bancaire du site ? Oui pour le
+   * détenteur du principal seulement ({@link billingReadingRole}, Q1).
+   */
+  readonly readsBilling: boolean;
 }
 
 /**
@@ -157,6 +166,7 @@ export async function readReachableSites(
     },
     select: {
       id: true,
+      status: true,
       enseigne: true,
       raisonSociale: true,
       parentCompany: {
@@ -176,12 +186,21 @@ export async function readReachableSites(
     if (parent === null || role === undefined || !INHERITING_PARENT_ROLES.includes(role)) {
       return [];
     }
+    const via: StandingPrincipal = { companyId: parent.id, name: companyDisplayName(parent), role };
+    // Atteint par héritage SEUL : aucune membership propre, par la requête même.
+    const standing: CompanyStanding = {
+      companyStatus: row.status,
+      own: null,
+      ownAccepted: false,
+      via,
+    };
+    const effective = standingRole(standing);
+    if (effective === null) {
+      return [];
+    }
+    const readsBilling = billingReadingRole(standing) !== null;
     return [
-      {
-        companyId: row.id,
-        name: companyDisplayName(row),
-        via: { companyId: parent.id, name: companyDisplayName(parent), role },
-      },
+      { companyId: row.id, name: companyDisplayName(row), via, role: effective, readsBilling },
     ];
   });
 }

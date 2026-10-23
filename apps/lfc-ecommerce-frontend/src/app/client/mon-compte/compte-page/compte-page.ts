@@ -208,10 +208,7 @@ export class ComptePage {
   protected readonly company = this.client.company;
 
   /** Le RIB ne se montre qu'au détenteur et au rôle comptable de la société. */
-  protected readonly showsBank = computed(() => {
-    const role = this.company()?.role;
-    return role !== undefined && BANK_ROLES.has(role);
-  });
+  protected readonly showsBank = computed(() => this.client.readsBilling(BANK_ROLES));
 
   private readonly bank = inject(ClientBankAccount);
 
@@ -230,7 +227,9 @@ export class ComptePage {
    */
   protected readonly showsMandate = computed(
     () =>
-      this.showsBank() && this.bank.account() !== null && this.access.customerMandate() === 'open',
+      this.client.managesBank() &&
+      this.bank.account() !== null &&
+      this.access.customerMandate() === 'open',
   );
 
   private readonly document = inject(DOCUMENT);
