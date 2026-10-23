@@ -104,12 +104,7 @@ le niveau de signature eIDAS.
 **6. Modèle d'import des RIB** : en **pièce jointe** du mail. _Reçu et rangé le 2026-10-23,
 confronté au § 2 bis._
 
-- _Code_ : aucun export des RIB n'existe (aucun fichier `*rib*export*` sous
-  `apps/lfd-api/src/b2b/accounting/`, 2026-10-23 ; l'export ne connaît que les mandats,
-  `apps/lfd-api/src/b2b/accounting/domain/services/mandate-bank-export-csv.ts:54`).
-- 🔴 **Bloquant** : sans les RIB importés, l'import des mandats ne passe pas
-  (réponse du 2026-10-08). Modèle reçu le 2026-10-23 (§ 2 bis). En attendant, la saisie
-  à la main dans CENET reste possible pour les premiers clients.
+- Détail et suite : [`prerequis-export-ribs.md`](prerequis-export-ribs.md) (2026-10-23).
 
 **7. Rattachement** : l'IBAN est lié à la RUM.
 
@@ -121,11 +116,7 @@ confronté au § 2 bis._
 **8. Nouveaux seulement.** Importer **uniquement les nouveaux RIB** : un RIB
 déjà connu fait **rejeter l'import entier**. **200 lignes** au plus.
 
-- _Code_ : rien (pas d'export des RIB).
-- 🔴 avec la réponse 6 : l'export des RIB, quand il sera bâti, ne sort que les
-  RIB jamais importés, par fichiers de 200 au plus. Le mécanisme « déjà importé
-  sous ce compte » des mandats (`apps/lfd-api/src/b2b/accounting/domain/services/mandate-bank-export-selection.ts:33-46`,
-  par empreinte de l'IBAN) est le modèle à recopier.
+- Détail et suite : [`prerequis-export-ribs.md`](prerequis-export-ribs.md) § 2 (2026-10-23).
 
 **9. Changement de compte.** Faire signer un **nouveau mandat** d'abord, puis
 actualiser l'IBAN dans notre logiciel pour les fichiers suivants.
@@ -420,41 +411,9 @@ Ce que ça veut dire :
 
 ### Le modèle des comptes destinataires (le « fichier des RIB »)
 
-Le fichier reçu : **ISO-8859-1**, fin de ligne **CRLF**, séparateur `;`,
-**16 colonnes**, une ligne d'en-tête suivie de lignes de consignes (pas de
-ligne d'exemple). Consignes : A = `R` pour RIB, `I` pour IBAN ; K = BBAN ou
-IBAN **sans espace** ; L = BIC obligatoire **seulement hors SEPA** ; une
-consigne « Colonne D, E, F, G : » **coupée**, sans texte.
-
-Aucun code n'existe (§ 2, réponse 6). **Spec proposée pour l'export à
-bâtir** — à faire valider par la banque sur les points marqués ❓ :
-
-| Col. | Intitulé                             | Ce que nous écririons                                                                                                                                                                |
-| ---- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| A    | Type format                          | `I` (IBAN) — tous nos comptes ont un IBAN                                                                                                                                            |
-| B    | Nom                                  | le nom du débiteur, **le même** que la colonne C des mandats et le `Dbtr/Nm` du `pain.008` ; longueur max ❓                                                                         |
-| C    | Siren                                | le SIREN de la société (`Company.siren`, nullable : `apps/lfd-api/src/b2b/account/domain/entities/company.ts:326`) ; vide s'il manque ❓                                             |
-| D–G  | Adresse 1 à 4                        | l'adresse de facturation, une ligne par colonne (la facture en porte déjà les lignes : `apps/lfd-api/src/b2b/accounting/domain/entities/invoice-parties.ts:92`) ; consigne coupée ❓ |
-| H    | Code Pays Dest                       | `FR` (pays de l'adresse) ❓ sens exact                                                                                                                                               |
-| I    | Code Pays Iban                       | les 2 premiers caractères de l'IBAN (`FR`)                                                                                                                                           |
-| J    | Clé Iban                             | les caractères 3 et 4 de l'IBAN                                                                                                                                                      |
-| K    | BBAN/RIB                             | le reste de l'IBAN (le BBAN, 23 caractères pour la France), sans espace ❓ ou l'IBAN entier, la consigne dit « BBAN/IBAN »                                                           |
-| L    | Bic                                  | **toujours** le BIC du mandat, même en zone SEPA — décision de Hugo, 2026-10-23 (« dans le doute on mettra le bic ») ; nous l'avons toujours (E des mandats)                         |
-| M    | Nom liste                            | ❓ sens inconnu — vide                                                                                                                                                               |
-| N    | Type identifiant banque bénéficiaire | vide (hors SEPA)                                                                                                                                                                     |
-| O    | ABA/BSB/INS                          | vide (hors SEPA)                                                                                                                                                                     |
-| P    | NIF                                  | vide ❓                                                                                                                                                                              |
-
-Règles de fichier : **Latin-1** (pas l'ASCII du fichier des mandats — à
-confirmer qu'un nom translittéré par `sepa()` reste acceptable), CRLF, `;`
-séparateur ; en-tête **❓** (le modèle en a une, la consigne « sans en-tête »
-n'est écrite que pour les mandats) ; nouveaux seulement, 200 lignes (réponse 8).
-Le fichier **porte l'IBAN en clair** : même frontière de sécurité que l'export
-des mandats (recalculé à chaque téléchargement, jamais rangé).
-
-⚠️ **Aucune colonne pour la RUM**, alors que la réponse 7 dit « l'IBAN est lié
-à la RUM ». Le lien se fait donc probablement à l'import des mandats, par
-l'IBAN de la colonne D — mais c'est une déduction, pas une réponse (Q-B5).
+> Déplacé le 2026-10-23 dans [`prerequis-export-ribs.md`](prerequis-export-ribs.md),
+> la référence du sujet : modèle colonne par colonne, sources, règles, questions,
+> option retenue (notre export) et contradiction de `vitruve`.
 
 ---
 
@@ -472,7 +431,7 @@ l'IBAN de la colonne D — mais c'est une déduction, pas une réponse (Q-B5).
      (après la réponse à Q-B2) ;
    - **18 colonnes** (ajouter R) ;
    - les specs de l'export suivent.
-4. **Bâtir l'export des comptes destinataires** selon la spec du § 2 bis
+4. **Bâtir l'export des comptes destinataires** selon [`prerequis-export-ribs.md`](prerequis-export-ribs.md)
    (Latin-1, CRLF, type `I`, IBAN découpé, nouveaux seulement, 200 lignes),
    après les réponses Q-B1, Q-B4, Q-B5 — ou, pour les tout premiers clients,
    saisir les comptes à la main dans CENET. _Pièces jointes reçues le

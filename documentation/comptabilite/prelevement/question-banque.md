@@ -55,40 +55,8 @@ aujourd'hui sans la réponse**, et **ce qu'elle débloque**.
 
 ### 1. L'import des RIB destinataires
 
-**1.1 Le modèle du fichier.**
-
-- _Besoin_ : produire depuis notre outil le fichier d'import des RIB, comme
-  nous le faisons déjà pour les mandats.
-- _Pourquoi_ : votre service EDI nous dit de l'importer AVANT les mandats,
-  mais nous n'avons pas son modèle.
-- _Nous demandons_ : le modèle (nom, colonnes obligatoires et facultatives,
-  ordre, longueurs), le séparateur, l'encodage (ASCII, Latin-1, UTF-8 ?), la
-  présence ou non d'un en-tête et d'un `;` final, le format de l'IBAN (avec ou
-  sans espaces) et si le **BIC** est obligatoire.
-- _Aujourd'hui_ : rien n'est bâti ; on ne peut pas faire l'import complet.
-- _Débloque_ : l'export des RIB.
-
-**1.2 Pourquoi les RIB avant les mandats ?** Le mandat porte déjà l'IBAN et
-le BIC (colonnes D et E). L'import des RIB crée-t-il un « bénéficiaire » ou
-« tiers » dans le portail, auquel le mandat se rattache ? Par quelle clé :
-l'IBAN, le nom, un identifiant que nous choisissons ?
-
-- _Pourquoi_ : si le rattachement se fait par le nom, un client renommé casse
-  le lien ; si c'est par un identifiant à nous, nous devons le fournir et le
-  garder stable.
-
-**1.3 Fichier complet ou seulement les nouveaux ?** Quand nous ajoutons des
-clients, faut-il envoyer **seulement les nouveaux RIB**, ou peut-on renvoyer
-**toute la liste** ?
-
-- Si on renvoie toute la liste : les RIB déjà connus sont-ils **ignorés**,
-  **mis à jour**, ou **créés en double** ? L'import est-il refusé en entier ?
-- _Pourquoi_ : nous savons faire les deux, mais un doublon chez vous ferait
-  peut-être prélever deux fois ou refuser l'import.
-
-**1.4 Un client qui change de compte.** Nouveau RIB pour un tiers existant :
-on importe la nouvelle ligne et l'ancienne est remplacée ? Ou il faut
-supprimer l'ancienne à la main ?
+> Posées le 2026-10-08, répondues le 2026-10-23 (réponses 6 à 9). Questions,
+> réponses et suite rassemblées dans [`prerequis-export-ribs.md`](prerequis-export-ribs.md).
 
 ### 2. L'import des mandats (modèle `ModeleImportMandats` reçu)
 
