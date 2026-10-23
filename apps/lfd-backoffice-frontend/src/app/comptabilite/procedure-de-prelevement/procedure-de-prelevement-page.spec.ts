@@ -1,6 +1,6 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { provideRouter } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import type {
   AccountBankExportsView,
   CollectionCycleView,
@@ -16,7 +16,7 @@ import { NotifyService } from '../../notify.service';
 import { procedureBatch, procedureView } from '../__tests__/collection-procedure-fixture';
 import { AccountBankExportsService } from '../account-bank-exports.service';
 import { CollectionBatchesService } from '../collection-batches.service';
-import { CollectionProcedureService } from '../collection-procedure.service';
+import { CollectionProcedureService, type ProcedureAddress } from '../collection-procedure.service';
 import { AccountBankExportCard } from '../entites-juridiques/detail/account-bank-export-card/account-bank-export-card';
 import { LegalEntitiesService } from '../legal-entities.service';
 import { MandateBankExportsService } from '../mandate-bank-exports.service';
@@ -67,11 +67,21 @@ const MANDATES: MandateBankExportsView = {
 class FakeProcedure {
   view: CollectionProcedureView = procedureView();
   reads = 0;
-  read(): Promise<CollectionProcedureView> {
+  readonly asked: { readonly address: ProcedureAddress; readonly batchId: string | null }[] = [];
+  read(address: ProcedureAddress, batchId: string | null): Promise<CollectionProcedureView> {
     this.reads += 1;
+    this.asked.push({ address, batchId });
     return Promise.resolve(this.view);
   }
 }
+
+/** L'adresse du détail : la procédure d'octobre, sur le lot `b1`. */
+const ROUTE = {
+  snapshot: {
+    paramMap: convertToParamMap({ id: 'le1~2026-11-01' }),
+    queryParamMap: convertToParamMap({ lot: 'b1' }),
+  },
+};
 
 let procedure: FakeProcedure;
 
@@ -81,6 +91,7 @@ async function render(): Promise<ComponentFixture<ProcedureDePrelevementPage>> {
     imports: [ProcedureDePrelevementPage],
     providers: [
       provideRouter([]),
+      { provide: ActivatedRoute, useValue: ROUTE },
       { provide: CollectionProcedureService, useValue: procedure },
       {
         provide: CollectionBatchesService,
@@ -191,5 +202,20 @@ describe('la page « Procédure de prélèvement »', () => {
     const lots = query(fixture, '[data-open-batches]')?.textContent ?? '';
     expect(lots).toContain('B2B · Mensuel · période du 1er au 31 octobre 2026');
     expect(lots).toContain('CORE · Hebdomadaire · période du 1er au 31 octobre 2026');
+  });
+
+  it('lit la procédure de l’adresse, sur le lot de l’adresse', async () => {
+    await render();
+    expect(procedure.asked[0]).toEqual({
+      address: { procedureId: 'le1~2026-11-01' },
+      batchId: 'b1',
+    });
+  });
+
+  it('« ← Toutes les procédures » ramène à la table', async () => {
+    const fixture = await render();
+    const back = query(fixture, '[data-back-to-list] a') ?? query(fixture, '[data-back-to-list]');
+    expect(back?.textContent).toContain('Toutes les procédures');
+    expect(back?.getAttribute('href')).toBe('/comptabilite/procedure-de-prelevement');
   });
 });

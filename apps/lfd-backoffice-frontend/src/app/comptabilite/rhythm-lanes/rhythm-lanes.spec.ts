@@ -31,6 +31,7 @@ function calendar(over: Partial<BillingRhythmsCalendarView> = {}): BillingRhythm
             collectionDay: '2026-10-26',
             depositDeadline: { day: '2026-10-22', time: '16:00' },
             batchId: 'b_weekly',
+            procedureId: 'le1~2026-10-12',
           },
         ],
       },
@@ -48,6 +49,7 @@ function calendar(over: Partial<BillingRhythmsCalendarView> = {}): BillingRhythm
             collectionDay: '2026-10-15',
             depositDeadline: { day: '2026-10-13', time: '16:00' },
             batchId: null,
+            procedureId: 'le1~2026-10-01',
           },
           {
             closesAt: '2026-10-31T23:00:00.000Z',
@@ -57,6 +59,7 @@ function calendar(over: Partial<BillingRhythmsCalendarView> = {}): BillingRhythm
             collectionDay: '2026-11-16',
             depositDeadline: { day: '2026-11-12', time: '16:00' },
             batchId: null,
+            procedureId: 'le1~2026-11-01',
           },
         ],
       },
@@ -202,13 +205,13 @@ describe('RhythmLanes', () => {
     ]);
   });
 
-  it('ouvre le lot s’il est constitué, sinon la procédure de l’entité', async () => {
+  it('ouvre la procédure de la clôture, sur son lot s’il est constitué', async () => {
     const fixture = await render(calendar());
     const links = [...root(fixture).querySelectorAll<HTMLAnchorElement>('.lanes-next a')];
 
     expect(links.map((link) => link.getAttribute('href'))).toEqual([
-      '/comptabilite/procedure-de-prelevement?entite=le1&lot=b_weekly',
-      '/comptabilite/procedure-de-prelevement?entite=le1',
+      '/comptabilite/procedure-de-prelevement/le1~2026-10-12?lot=b_weekly',
+      '/comptabilite/procedure-de-prelevement/le1~2026-10-01',
     ]);
   });
 
@@ -229,7 +232,7 @@ describe('RhythmLanes', () => {
       [...(weekly?.querySelectorAll('a') ?? [])].map((link) => link.getAttribute('href')),
     ).toEqual([
       '/comptabilite/entites-juridiques/le1',
-      '/comptabilite/procedure-de-prelevement?entite=le1&lot=b_weekly',
+      '/comptabilite/procedure-de-prelevement/le1~2026-10-12?lot=b_weekly',
     ]);
   });
 

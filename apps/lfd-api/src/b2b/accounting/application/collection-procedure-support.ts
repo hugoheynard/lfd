@@ -3,6 +3,7 @@ import type {
   CollectionProcedureAccountsView,
   CollectionProcedureBatchView,
   CollectionProcedureMandatesView,
+  CollectionProcedureToPrepareView,
 } from "@lfd/contracts";
 
 import type { KnownAccountFingerprintsReader } from "../domain/ports/account-bank-exports.reader.js";
@@ -20,6 +21,7 @@ import {
   mandatesState,
   type ProcedureBatch,
 } from "../domain/services/collection-procedure.js";
+import { procedureIdOf } from "../domain/services/collection-procedure-id.js";
 import type { InvoicingCalendar } from "../domain/services/invoicing-calendar.js";
 import { periodLabelOf } from "../domain/services/invoicing-closures.js";
 import { selectForBankExport } from "../domain/services/mandate-bank-export-selection.js";
@@ -105,11 +107,13 @@ export async function procedureBatchesOf(
 
 /** Le lot tel que la tête de la page le liste. */
 export function procedureBatchView(
+  legalEntityId: string,
   batch: StoredBatchView,
   payerModes: readonly BillingRhythmKind[],
 ): CollectionProcedureBatchView {
   return {
     id: batch.id,
+    procedureId: procedureIdOf(legalEntityId, new Date(batch.cycleClosesAt)),
     scheme: batch.scheme,
     periodLabel: batch.periodLabel,
     payerModes,
@@ -126,10 +130,11 @@ export function procedureBatchView(
  * (`alreadyPrepared`) — un lot annulé ne compte pas.
  */
 export function toPrepareOf(
+  legalEntityId: string,
   calendar: InvoicingCalendar,
   stored: readonly StoredBatchView[],
   now: Date,
-): { readonly closesAt: string; readonly periodLabel: string } | null {
+): CollectionProcedureToPrepareView | null {
   const closure = calendar.lastClosureAtOrBefore(now);
   const prepared = stored.some(
     (batch) =>
@@ -139,6 +144,7 @@ export function toPrepareOf(
     return null;
   }
   return {
+    procedureId: procedureIdOf(legalEntityId, closure),
     closesAt: closure.toISOString(),
     periodLabel: periodLabelOf(calendar.cycleClosedAt(closure)),
   };

@@ -12,13 +12,14 @@ import { LegalEntityReader } from "../../domain/ports/legal-entity.reader.js";
 import { PayerBillingModesReader } from "../../domain/ports/payer-billing-modes.reader.js";
 import { CollectionMandatesReader } from "../../domain/ports/collection-mandates.reader.js";
 import { PayerStandingsReader } from "../../domain/ports/payer-standings.reader.js";
-import { payerCountsAt } from "../../domain/services/rhythm-payer-counts.js";
-import type { CollectionCalendarSettings } from "../../domain/services/collection-calendar.js";
+import { isRhythmFollowed, payerCountsAt } from "../../domain/services/rhythm-payer-counts.js";
+import { procedureIdOf } from "../../domain/services/collection-procedure-id.js";
+import { collectionSettingsOf } from "../collection-calendar-settings-support.js";
 import {
   rhythmCalendarWindowAt,
   rhythmPeriodsIn,
 } from "../../domain/services/rhythm-calendar-window.js";
-import { DEFAULT_BILLING_MODE, type BillingMode } from "../../domain/value-objects/billing-mode.js";
+import type { BillingMode } from "../../domain/value-objects/billing-mode.js";
 import { countedPayerIdsOf } from "../counted-payers-support.js";
 import { GetBillingRhythmsCalendarQuery } from "./get-billing-rhythms-calendar.query.js";
 
@@ -61,12 +62,7 @@ export class GetBillingRhythmsCalendarHandler implements IQueryHandler<
       countedPayerIdsOf({ standings: this.standings, mandates: this.mandates }, entity.id, now),
     ]);
     const counts = payerCountsAt(modes, chosen, payerIds, now);
-    const settings: CollectionCalendarSettings = {
-      preNotificationDays: entity.preNotificationDays,
-      collectionDaysAfterClosure: entity.collectionDaysAfterClosure,
-      autoCollectionDelayHours: entity.autoCollectionDelayHours,
-      depositCutoff: entity.depositCutoff,
-    };
+    const settings = collectionSettingsOf(entity);
     const window = rhythmCalendarWindowAt(now);
     const lanes = LANE_ORDER.map((mode) => ({
       mode,
@@ -88,12 +84,13 @@ export class GetBillingRhythmsCalendarHandler implements IQueryHandler<
         const payerCount = counts.get(mode) ?? 0;
         return {
           mode,
-          followed: mode === DEFAULT_BILLING_MODE || payerCount > 0,
+          followed: isRhythmFollowed(mode, payerCount),
           payerCount,
           periods: periods.map((period) => ({
             ...period,
             closesAt: period.closesAt.toISOString(),
             batchId: batchOf.get(period.closesAt.getTime()) ?? null,
+            procedureId: procedureIdOf(entity.id, period.closesAt),
           })),
         };
       }),

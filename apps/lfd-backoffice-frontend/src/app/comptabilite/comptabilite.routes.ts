@@ -53,11 +53,23 @@ export const comptabiliteRoutes: Routes = [
           ),
       },
       {
-        // LA PROCÉDURE DE PRÉLÈVEMENT — le fil d'un lot, en quatre onglets qui
-        // se déverrouillent ; leur état est relu au serveur, jamais stocké.
-        // Les gestes demandent `b2b_accounting:write`.
-        // Plan : documentation/comptabilite/prelevement/plan-page-procedure-de-prelevement.md (P2).
+        // LES PROCÉDURES DE PRÉLÈVEMENT — une ligne par clôture : ouvertes, à
+        // venir, closes récentes. `?entite=&lot=` (les anciennes adresses)
+        // redirige vers le détail du lot.
+        // Plan : documentation/comptabilite/prelevement/plan-page-procedure-de-prelevement.md (§ 11).
         path: 'procedure-de-prelevement',
+        title: 'Procédure de prélèvement — LFC B2B admin',
+        loadComponent: () =>
+          import('./procedure-de-prelevement/procedure-list-page/procedure-list-page').then(
+            (m) => m.ProcedureListPage,
+          ),
+      },
+      {
+        // UNE PROCÉDURE — le fil d'une clôture, en quatre onglets qui se
+        // déverrouillent ; leur état est relu au serveur, jamais stocké.
+        // `:id` = entité × clôture. Les gestes demandent `b2b_accounting:write`.
+        // Plan : documentation/comptabilite/prelevement/plan-page-procedure-de-prelevement.md (P2, § 11).
+        path: 'procedure-de-prelevement/:id',
         title: 'Procédure de prélèvement — LFC B2B admin',
         loadComponent: () =>
           import('./procedure-de-prelevement/procedure-de-prelevement-page').then(

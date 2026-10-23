@@ -119,6 +119,7 @@ function rhythmsCalendar(legalEntityId: string): BillingRhythmsCalendarView {
             collectionDay: '2026-11-16',
             depositDeadline: null,
             batchId: null,
+            procedureId: 'le1~2026-11-01',
           },
         ],
       },

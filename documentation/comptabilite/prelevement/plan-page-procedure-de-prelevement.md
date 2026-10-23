@@ -10,6 +10,9 @@
 > mandats — si pas de nouveaux éléments, dire "aucune action à mener" et bouton
 > suivant —, 3 générer le fichier de prélèvement, 4 contrôle pain.002 ».
 >
+> **§ 11 bâti le 2026-10-23** (non commité à l'écriture) : l'arrivée de la
+> page est une **table de toutes les procédures**, chacune ouvre son détail.
+>
 > Toutes les citations `fichier:ligne` ont été **ouvertes le 2026-10-23**.
 >
 > La page est l'écran de la procédure écrite
@@ -478,3 +481,59 @@ ci-dessous. Non vérifié par lui : les renvois aux autres docs,
 | URL épinglée sur un lot annulé                                                                                                      | SÉRIEUX  | **corrigée** : la page le dit et propose le lot re-préparé (§ 2)                                                |
 | P2 dépend de P1 sans l'imposer                                                                                                      | SÉRIEUX  | **corrigée** : prérequis dur (§ 8)                                                                              |
 | Mineurs : `fold-timeline` est un « stepper » ; cartes sans sortie, entrée `LegalEntityView` ; ligne `:344` ; sélecteur conditionnel | MINEUR   | corrigés (§ 3.1, § 3.2, § 5, § 2)                                                                               |
+
+## 11. La table des procédures (bâtie le 2026-10-23)
+
+Demande de Hugo, ce jour-là : « l'arrivée de Procédure de prélèvement devrait
+être une table avec toutes les procédures ; au clic, un détail avec le
+backlink pour revenir à la table ; cette table aurait l'état actuel de la
+procédure et les warnings ».
+
+**Une procédure = une clôture d'une entité.** Elle porte ses lots (un par
+schéma, CORE et B2B) quand ils existent. Son identifiant est
+`<entité>~<AAAA-MM-JJ>` — le jour (Paris) de la clôture
+(`procedureIdOf` / `parseProcedureId`, domaine de la comptabilité).
+**Pas l'identifiant du lot** : une procédure existe avant son lot (à venir, à
+préparer) et peut en porter deux ; l'adresse d'un détail ne change pas quand
+le lot est préparé.
+
+**La table** — `GET admin/accounting/collection-procedures?legalEntityId=&includeClosed=`
+(`ListCollectionProceduresHandler`, sous `b2b_accounting`), calcul pur dans
+`procedureRowsOf` (domaine) :
+
+| Ligne      | Quand                                                                                                                                                            |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `open`     | un lot à déposer, un lot déposé encore suivi (§ 3.4), ou la dernière clôture sans lot vivant                                                                     |
+| `upcoming` | la prochaine clôture de chaque rythme **suivi** (`isRhythmFollowed`, la règle du tableau de bord des rythmes) ; deux rythmes qui closent ensemble font une ligne |
+| `closed`   | tout est déposé et la fenêtre des retours close, ou la procédure abandonnée (lots annulés) ; listées sur « Afficher les closes », trois derniers mois (92 jours) |
+
+L'**étape** d'une ligne est l'onglet que le détail ouvrirait — les mêmes
+`fileStatus`, `returnsStatus` et `arrivalStepOf` que S1, rien de recopié ;
+à venir, le fichier est « en attente » et l'étape est celle des onglets de
+l'entité. Les **avertissements** : limite dépassée sans dépôt, limite non
+réglée, marge < 2 jours ouvrés (la même `tightDepositMargin`, factorisée dans
+`depositWarnings` et relue par l'onglet 3), comptes et
+mandats de l'entité à exporter, débiteurs du lot sans mandat
+(`unmandatedCompanies`), retours en suspens.
+
+**Tri** : ce qui reste à déposer d'abord, la limite la plus proche en tête ;
+puis les déposées suivies, l'échéance la plus proche en tête ; les closes à la
+fin, la plus récente d'abord. Les déposées ne sont pas classées par leur
+limite — passée par définition, elle les ferait remonter devant un dépôt à
+faire (la même priorité que Q4).
+
+**Le détail** est la page des § 1-5, sur
+`/comptabilite/procedure-de-prelevement/:id` (`?lot=` épingle un lot), avec
+« ← Toutes les procédures » (`fold-back-link`) en tête. S1 accepte
+`procedureId` : le lot suivi est celui de **cette** clôture
+(`followedAtClosure`), et « Préparer » n'est proposé que si cette clôture est
+la dernière. Le sélecteur d'entité est passé sur la table.
+
+**Les anciennes adresses** `?entite=&lot=` mènent au détail du lot qu'elles
+désignent (redirection sur la table). Le tableau de bord des rythmes ouvre
+directement le détail : `BillingRhythmPeriodView.procedureId`.
+
+**Pas dans la table** : une clôture plus ancienne que la dernière, restée
+sans lot. `missed-closures.ts` n'est lu que par l'automatisme
+(`run-collection-autopilot.handler.ts`, vérifié le 2026-10-23) ; aucun écran
+ne la liste. Question ouverte pour Hugo : faut-il une ligne « manquée » ?

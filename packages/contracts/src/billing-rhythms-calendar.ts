@@ -32,6 +32,8 @@ export interface BillingRhythmPeriodView {
    * encore constitué.
    */
   readonly batchId: string | null;
+  /** La procédure (entité × clôture) de cette période — l'adresse de son détail. */
+  readonly procedureId: string;
 }
 
 /** Un rythme de l'entité, et ses périodes qui touchent l'axe. */

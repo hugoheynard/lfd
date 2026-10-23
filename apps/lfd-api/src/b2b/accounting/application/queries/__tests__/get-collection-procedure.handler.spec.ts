@@ -1,17 +1,7 @@
-import { addDays, instantToLocal, type CollectionExclusionView } from "@lfd/contracts";
+import { addDays } from "@lfd/contracts";
 
 import { CollectionBatchNotFoundError } from "../../../domain/errors/collection-errors.js";
-import {
-  CollectionBatchReader,
-  type StoredBatchFile,
-  type StoredBatchView,
-} from "../../../domain/ports/collection-batch.reader.js";
-import {
-  CollectionReturnsReader,
-  type CollectionReturnRow,
-} from "../../../domain/ports/collection-returns.reader.js";
 import { debitedAccount } from "../../../domain/services/__tests__/account-for-bank-export.fixture.js";
-import type { BatchCsvLine } from "../../../domain/services/collection-batch-csv.js";
 import { ExportAccountsForBankCommand } from "../../commands/export-accounts-for-bank.command.js";
 import { ExportMandatesForBankCommand } from "../../commands/export-mandates-for-bank.command.js";
 import { NOW, accountExportWorld } from "../../commands/__tests__/account-bank-export-doubles.js";
@@ -24,6 +14,13 @@ import {
   FixedPayerModes,
 } from "../../commands/__tests__/monthly-invoice-doubles.js";
 import { FixedInvoicePeriods } from "../../services/__tests__/issued-invoice-doubles.js";
+import {
+  FixedBatches,
+  LAST_CLOSURE,
+  PendingReturns,
+  TODAY,
+  stored,
+} from "./collection-procedure-doubles.js";
 import { GetCollectionProcedureQuery } from "../collection-procedure-queries.js";
 import { GetCollectionProcedureHandler } from "../get-collection-procedure.handler.js";
 
@@ -33,91 +30,6 @@ import { GetCollectionProcedureHandler } from "../get-collection-procedure.handl
  * sont RELATIFS à l'horloge fixe : la règle du § 4.3 les compare à
  * aujourd'hui.
  */
-
-const TODAY = instantToLocal(NOW).day;
-/** La dernière clôture mensuelle avant `NOW` (le 1er du mois, minuit de Paris). */
-const LAST_CLOSURE = "2026-09-30T22:00:00.000Z";
-
-function stored(id: string, over: Partial<StoredBatchView> = {}): StoredBatchView {
-  return {
-    id,
-    scheme: "B2B",
-    cycleStartsAt: "2026-08-31T22:00:00.000Z",
-    cycleClosesAt: LAST_CLOSURE,
-    periodLabel: "du 1er au 30 septembre 2026",
-    status: "constituted",
-    constitutedAt: NOW.toISOString(),
-    constitutedBy: "staff",
-    depositedAt: null,
-    cancelledAt: null,
-    lineCount: 1,
-    orderCount: 1,
-    totalCents: 10_000,
-    unmandatedCompanies: [],
-    depositable: true,
-    requestedCollectionDay: addDays(TODAY, 10),
-    postponedFromDay: null,
-    depositDeadline: { day: addDays(TODAY, 6), time: "13:45" },
-    lines: [],
-    payerRefs: [],
-    ...over,
-  };
-}
-
-class FixedBatches extends CollectionBatchReader {
-  batches: StoredBatchView[] = [];
-  list(): Promise<readonly StoredBatchView[]> {
-    return Promise.resolve(this.batches);
-  }
-  exclusions(): Promise<readonly CollectionExclusionView[]> {
-    return Promise.resolve([]);
-  }
-  file(): Promise<StoredBatchFile | null> {
-    return Promise.resolve(null);
-  }
-  auditLines(): Promise<readonly BatchCsvLine[]> {
-    return Promise.resolve([]);
-  }
-}
-
-class PendingReturns extends CollectionReturnsReader {
-  readonly pending = new Map<string, number>();
-  ofBatch(batchId: string): Promise<readonly CollectionReturnRow[]> {
-    const count = this.pending.get(batchId) ?? 0;
-    return Promise.resolve(
-      Array.from({ length: count }, (_, index) => pendingReturn(batchId, index)),
-    );
-  }
-  ofPayer(): Promise<readonly CollectionReturnRow[]> {
-    return Promise.resolve([]);
-  }
-}
-
-function pendingReturn(batchId: string, index: number): CollectionReturnRow {
-  return {
-    id: `ret_${String(index)}`,
-    endToEndId: `e2e_${String(index)}`,
-    batchId,
-    lineRank: 1,
-    scheme: "B2B",
-    cycleClosesAt: new Date(LAST_CLOSURE),
-    debtorCompanyId: "cmp",
-    debtorName: "Café",
-    mandateId: "m1",
-    mandateReference: "RUM-m1",
-    kind: "reject",
-    reasonCode: "AM04",
-    reasonLabel: null,
-    returnedOn: TODAY,
-    amountCents: 10_000,
-    feeCents: null,
-    source: "manual",
-    recordedAt: NOW,
-    resolution: "pending",
-    resolutionNote: null,
-    resolvedAt: null,
-  };
-}
 
 function world() {
   const accounts = accountExportWorld();
@@ -138,8 +50,8 @@ function world() {
     new FixedInvoicePeriods(new Map()),
     accounts.clock,
   );
-  const read = (batchId: string | null = null) =>
-    handler.execute(new GetCollectionProcedureQuery("le1", batchId));
+  const read = (batchId: string | null = null, closureDay: string | null = null) =>
+    handler.execute(new GetCollectionProcedureQuery("le1", batchId, closureDay));
   return { accounts, mandates, batches, returns, read };
 }
 
@@ -272,5 +184,35 @@ describe("la procédure de prélèvement — la lecture d'état", () => {
     const w = world();
 
     await expect(w.read("ailleurs")).rejects.toThrow(CollectionBatchNotFoundError);
+  });
+
+  it("ouverte depuis la liste : suit le lot de SA clôture, et nomme sa procédure", async () => {
+    const w = world();
+    w.batches.batches = [
+      stored("old", {
+        cycleClosesAt: "2026-08-31T22:00:00.000Z",
+        status: "deposited",
+        depositedAt: NOW.toISOString(),
+        requestedCollectionDay: addDays(TODAY, -40),
+      }),
+      stored("current"),
+    ];
+
+    const view = await w.read(null, "2026-09-01");
+
+    expect(view.followed).toMatchObject({ id: "old", procedureId: "le1~2026-09-01" });
+    expect(view.file.reason).toBe("deposited");
+  });
+
+  it("une procédure à venir ne propose pas de préparer la dernière clôture", async () => {
+    const w = world();
+
+    const latest = await w.read();
+    const upcoming = await w.read(null, "2026-11-01");
+
+    expect(latest.toPrepare).toMatchObject({ procedureId: "le1~2026-10-01" });
+    expect(upcoming.toPrepare).toBeNull();
+    expect(upcoming.followed).toBeNull();
+    expect(upcoming.file.reason).toBe("no_batch");
   });
 });

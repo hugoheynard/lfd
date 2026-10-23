@@ -1,7 +1,9 @@
 import type { Provider, Type } from "@nestjs/common";
 
 import { GetCollectionProcedureHandler } from "./application/queries/get-collection-procedure.handler.js";
+import { ListCollectionProceduresHandler } from "./application/queries/list-collection-procedures.handler.js";
 import { AdminCollectionProcedureController } from "./http/admin-collection-procedure.controller.js";
+import { AdminCollectionProceduresController } from "./http/admin-collection-procedures.controller.js";
 
 /**
  * La lecture d'état de la page « Procédure de prélèvement » (plan
@@ -9,8 +11,12 @@ import { AdminCollectionProcedureController } from "./http/admin-collection-proc
  * déjà la taille d'un fichier. Elle ne déclare aucun port : elle lit ceux des
  * cartes des exports, des lots et des retours.
  */
-export const COLLECTION_PROCEDURE_PROVIDERS: readonly Provider[] = [GetCollectionProcedureHandler];
+export const COLLECTION_PROCEDURE_PROVIDERS: readonly Provider[] = [
+  GetCollectionProcedureHandler,
+  ListCollectionProceduresHandler,
+];
 
 export const COLLECTION_PROCEDURE_CONTROLLERS: readonly Type[] = [
   AdminCollectionProcedureController,
+  AdminCollectionProceduresController,
 ];

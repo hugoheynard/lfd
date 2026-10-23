@@ -35,11 +35,14 @@ export interface RhythmPeriodLine {
 
 /**
  * La prochaine procédure d'un rythme : ses jalons en une phrase, et où l'ouvrir
- * — le lot s'il est constitué, sinon la page de l'entité.
+ * — la procédure de sa clôture, sur son lot s'il est constitué.
  */
 export interface RhythmNextProcedure {
   readonly text: string;
-  readonly procedureQuery: { readonly entite: string; readonly lot?: string };
+  /** Le détail de la procédure de cette clôture (entité × clôture). */
+  readonly procedureLink: string;
+  /** Son lot, s'il est constitué — le détail le suit. */
+  readonly procedureQuery: { readonly lot?: string };
   /** Le lien vers les réglages de l'entité, quand la limite de dépôt n'y est pas réglée. */
   readonly settingsLink: string | null;
 }
@@ -97,7 +100,6 @@ export class RhythmLanes {
   readonly calendar = input.required<BillingRhythmsCalendarView>();
 
   protected readonly legend = RHYTHM_MARK_LEGEND;
-  protected readonly procedureRoute = PROCEDURE_ROUTE;
 
   private readonly span = computed(() =>
     Math.max(1, daysBetween(this.calendar().startsOn, this.calendar().endsOn)),
@@ -211,7 +213,8 @@ function nextProcedureOf(
     text:
       `Prochaine procédure : clôture ${longDay(addDays(next.invoicedOn, 1))} · ` +
       `${deposit} · prélèvement ${longDay(next.collectionDay)}`,
-    procedureQuery: next.batchId === null ? { entite } : { entite, lot: next.batchId },
+    procedureLink: `${PROCEDURE_ROUTE}/${next.procedureId}`,
+    procedureQuery: next.batchId === null ? {} : { lot: next.batchId },
     settingsLink: next.depositDeadline === null ? `${ENTITY_ROUTE}/${entite}` : null,
   };
 }

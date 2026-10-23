@@ -228,3 +228,13 @@ export class SepaIdentifierTooLongError extends BusinessError {
     );
   }
 }
+
+/** Une adresse de procédure qui ne désigne ni une entité ni une clôture lisibles. */
+export class CollectionProcedureNotFoundError extends ResourceNotFoundError {
+  constructor(readonly procedureId: string) {
+    super(
+      "accounting.collection.procedure_not_found",
+      `Procédure de prélèvement introuvable : ${procedureId}. Repartez de la liste « Procédure de prélèvement ».`,
+    );
+  }
+}

@@ -58,7 +58,10 @@
               · <a class="lanes-link" [routerLink]="settings">Régler la limite de dépôt</a>
             }
             ·
-            <a class="lanes-link" [routerLink]="procedureRoute" [queryParams]="next.procedureQuery"
+            <a
+              class="lanes-link"
+              [routerLink]="next.procedureLink"
+              [queryParams]="next.procedureQuery"
               >Ouvrir la procédure</a
             >
           </span>

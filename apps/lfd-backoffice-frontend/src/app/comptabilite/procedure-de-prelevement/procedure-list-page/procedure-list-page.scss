@@ -1,0 +1,23 @@
+.pl-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+}
+
+.pl-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--fold-space-lg);
+}
+
+.pl-late {
+  color: var(--fold-color-alert-text);
+  font-weight: var(--fold-weight-semibold);
+}
+
+.pl-warnings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+}

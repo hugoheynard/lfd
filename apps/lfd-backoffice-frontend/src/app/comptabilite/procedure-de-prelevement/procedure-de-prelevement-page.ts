@@ -8,11 +8,11 @@ import type {
 } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
+  FoldBackLinkComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldEmptyStateComponent,
   FoldIconComponent,
-  FoldListboxComponent,
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
   FoldTabPanelComponent,
@@ -30,6 +30,7 @@ import { LegalEntitiesService } from '../legal-entities.service';
 import type { PendingBatchGesture } from '../prelevement-du-mois/pending-batch/pending-batch';
 import { ProcedureFileStep } from './procedure-file-step/procedure-file-step';
 import { ProcedureReturnsStep } from './procedure-returns-step/procedure-returns-step';
+import { PROCEDURE_LIST_ROUTE } from './procedure-list-wording';
 import {
   LOCK_REASONS,
   STEP_ORDER,
@@ -45,13 +46,17 @@ import {
  * lot P2) — la procédure écrite (`procedure-de-prelevement.md`), rendue
  * suivable en quatre onglets : comptes, mandats, fichier, retours.
  *
+ * Le DÉTAIL d'une procédure (§ 11, Hugo 2026-10-23) : on y arrive depuis la
+ * table de toutes les procédures, et « ← Toutes les procédures » y ramène.
+ *
  * ## La mémoire est lue, pas tenue
  *
  * L'état des onglets vient du serveur à chaque lecture (S1) ; rien n'est
  * stocké, et l'onglet n'est pas dans l'adresse — un lien vers un onglet
- * verrouillé ouvrirait un mensonge. Seuls l'entité (`entite`) et le lot
- * (`lot`) y sont. Après chaque geste d'une carte (`changed`) ou d'un lot,
- * l'état est relu ; l'onglet ouvert ne change qu'à l'arrivée.
+ * verrouillé ouvrirait un mensonge. Seuls la procédure (`:id`, entité ×
+ * clôture) et le lot (`lot`) y sont. Après chaque geste d'une carte
+ * (`changed`) ou d'un lot, l'état est relu ; l'onglet ouvert ne change qu'à
+ * l'arrivée.
  *
  * Un onglet verrouillé reste sélectionnable et dit pourquoi (Q6, option A).
  */
@@ -60,11 +65,11 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     AccountBankExportCard,
+    FoldBackLinkComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldEmptyStateComponent,
     FoldIconComponent,
-    FoldListboxComponent,
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
     FoldTabPanelComponent,
@@ -86,10 +91,10 @@ export class ProcedureDePrelevementPage {
   private readonly router = inject(Router);
   protected readonly gestures = inject(CollectionBatchGestures);
 
+  protected readonly listRoute = PROCEDURE_LIST_ROUTE;
   protected readonly entities = signal<readonly LegalEntityView[]>([]);
-  protected readonly entityId = signal<string | null>(
-    this.route.snapshot.queryParamMap.get('entite'),
-  );
+  /** La procédure de l'adresse (entité × clôture) — l'identifiant que la table donne. */
+  private readonly procedureId = signal(this.route.snapshot.paramMap.get('id') ?? '');
   /** Le lot de l'adresse ; `null` = celui que le serveur choisit (§ 4.3). */
   private readonly lot = signal<string | null>(this.route.snapshot.queryParamMap.get('lot'));
   protected readonly view = signal<CollectionProcedureView | null>(null);
@@ -99,11 +104,9 @@ export class ProcedureDePrelevementPage {
   protected readonly loadError = signal<string | null>(null);
 
   protected readonly canWrite = computed(() => this.permissions.can('b2b_accounting:write'));
+  protected readonly entityId = computed(() => this.view()?.legalEntityId ?? null);
   protected readonly entity = computed(
     () => this.entities().find((entity) => entity.id === this.entityId()) ?? null,
-  );
-  protected readonly entityOptions = computed(() =>
-    this.entities().map((entity) => ({ value: entity.id, label: entity.name })),
   );
   protected readonly title = computed(() => pageTitle(this.view()));
   protected readonly tabs = computed(() => {
@@ -133,10 +136,7 @@ export class ProcedureDePrelevementPage {
     this.loading.set(true);
     this.loadError.set(null);
     try {
-      const living = (await this.entitiesApi.list()).filter((entity) => entity.archivedAt === null);
-      this.entities.set(living);
-      const known = living.some((entity) => entity.id === this.entityId());
-      this.entityId.set(known ? this.entityId() : (living[0]?.id ?? null));
+      this.entities.set(await this.entitiesApi.list());
       await this.refresh();
       this.tab.set(this.view()?.arrivalStep ?? 'accounts');
     } catch (caught) {
@@ -148,29 +148,25 @@ export class ProcedureDePrelevementPage {
 
   /** Relit l'état et les lots sans changer d'onglet — après chaque geste. */
   protected async refresh(): Promise<void> {
-    const entityId = this.entityId();
-    if (entityId === null) {
-      this.view.set(null);
-      this.batches.set([]);
-      return;
-    }
-    const [view, cycle] = await Promise.all([
-      this.procedureApi.read(entityId, this.lot()),
-      this.batchesApi.cycle(entityId),
-    ]);
+    const view = await this.procedureApi.read({ procedureId: this.procedureId() }, this.lot());
+    const cycle = await this.batchesApi.cycle(view.legalEntityId);
     this.view.set(view);
     this.batches.set(cycle.batches);
   }
 
-  protected async choose(entityId: string | null): Promise<void> {
-    this.entityId.set(entityId);
-    await this.pin(null);
+  /** Revenir au lot que la règle choisit pour cette procédure. */
+  protected async followDefault(): Promise<void> {
+    await this.pin(this.procedureId(), null);
     await this.load();
   }
 
-  /** Suivre un autre lot : il entre dans l'adresse, et la page relit. */
+  /**
+   * Suivre un autre lot : sa procédure et lui entrent dans l'adresse, et la
+   * page relit — un lot d'une autre clôture est une autre procédure.
+   */
   protected async follow(batchId: string): Promise<void> {
-    await this.pin(batchId);
+    const lot = this.view()?.openBatches.find((batch) => batch.id === batchId);
+    await this.pin(lot?.procedureId ?? this.procedureId(), batchId);
     await this.load();
   }
 
@@ -213,11 +209,11 @@ export class ProcedureDePrelevementPage {
     this.tab.set(key);
   }
 
-  private async pin(batchId: string | null): Promise<void> {
+  private async pin(procedureId: string, batchId: string | null): Promise<void> {
+    this.procedureId.set(procedureId);
     this.lot.set(batchId);
-    await this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: { entite: this.entityId(), lot: batchId },
+    await this.router.navigate([PROCEDURE_LIST_ROUTE, procedureId], {
+      queryParams: batchId === null ? {} : { lot: batchId },
       replaceUrl: true,
     });
   }

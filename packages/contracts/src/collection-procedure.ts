@@ -89,6 +89,8 @@ export interface CollectionProcedureReturnsView {
 /** Un lot, tel que la tête de la page le liste. */
 export interface CollectionProcedureBatchView {
   readonly id: string;
+  /** La procédure (entité × clôture) que ce lot porte — l'adresse de son détail. */
+  readonly procedureId: string;
   readonly scheme: "CORE" | "B2B";
   /** « du 1er au 31 octobre 2026 » — la période que ferme la clôture du lot, écrite par le serveur. */
   readonly periodLabel: string;
@@ -107,6 +109,8 @@ export interface CollectionProcedureBatchView {
 
 /** La dernière clôture du calendrier, sans lot préparé. */
 export interface CollectionProcedureToPrepareView {
+  /** La procédure (entité × clôture) de cette clôture. */
+  readonly procedureId: string;
   /** ISO — exclusive. */
   readonly closesAt: string;
   readonly periodLabel: string;

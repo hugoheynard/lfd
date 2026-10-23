@@ -136,10 +136,10 @@ function byUrgency(left: ProcedureBatch, right: ProcedureBatch): number {
  * Les lots ouverts (Q4) : à déposer d'abord, la limite la plus proche en tête
  * — une limite ne se rattrape pas —, puis les déposés encore suivis.
  */
-export function openBatchesOf(
-  batches: readonly ProcedureBatch[],
+export function openBatchesOf<T extends ProcedureBatch>(
+  batches: readonly T[],
   today: string,
-): readonly ProcedureBatch[] {
+): readonly T[] {
   return [
     ...batches.filter((batch) => batch.status === "constituted").sort(byUrgency),
     ...batches.filter((batch) => stillWatched(batch, today)).sort(byUrgency),
@@ -152,16 +152,34 @@ export function openBatchesOf(
  * aucun — l'onglet 3 propose de le préparer ; sinon le déposé le plus urgent
  * encore suivi. Le dépôt passe avant le suivi des retours.
  */
-export function followedBatchOf(
-  batches: readonly ProcedureBatch[],
+export function followedBatchOf<T extends ProcedureBatch>(
+  batches: readonly T[],
   today: string,
   toPrepare: boolean,
-): ProcedureBatch | null {
+): T | null {
   const first = openBatchesOf(batches, today)[0] ?? null;
   if (first?.status === "constituted") {
     return first;
   }
   return toPrepare ? null : first;
+}
+
+/**
+ * Le lot suivi d'UNE clôture (la procédure de la liste, § 11) : la règle du
+ * § 4.3 sur ses seuls lots ; une procédure close ou abandonnée se relit sur
+ * son lot vivant, sinon sur son dernier annulé. `batches` : le plus récent
+ * d'abord, comme `CollectionBatchReader.list`.
+ */
+export function followedAtClosure<T extends ProcedureBatch>(
+  batches: readonly T[],
+  today: string,
+  toPrepare: boolean,
+): T | null {
+  const first = followedBatchOf(batches, today, toPrepare);
+  if (first !== null || toPrepare) {
+    return first;
+  }
+  return batches.find((batch) => batch.status !== "cancelled") ?? batches[0] ?? null;
 }
 
 /**

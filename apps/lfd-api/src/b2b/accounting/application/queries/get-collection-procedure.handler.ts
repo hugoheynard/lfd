@@ -5,6 +5,7 @@ import {
   type CollectionProcedureView,
   type CollectionProcedureAccountsView,
   type CollectionProcedureBatchView,
+  type CollectionProcedureToPrepareView,
 } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
@@ -26,10 +27,12 @@ import {
 import { MandatesForBankExportReader } from "../../domain/ports/mandates-for-bank-export.reader.js";
 import { InvoicePeriodsReader } from "../../domain/ports/invoice-periods.reader.js";
 import { PayerBillingModesReader } from "../../domain/ports/payer-billing-modes.reader.js";
-import { tightDepositMargin } from "../../domain/services/collection-calendar.js";
+import { closureDayOf } from "../../domain/services/collection-procedure-id.js";
+import { preparedDepositMargin } from "../../domain/services/collection-procedure-warnings.js";
 import {
   arrivalStepOf,
   fileStatus,
+  followedAtClosure,
   followedBatchOf,
   openBatchesOf,
   replacementOf,
@@ -105,13 +108,13 @@ export class GetCollectionProcedureHandler implements IQueryHandler<
         })),
       ),
     ]);
-    const toPrepare = toPrepareOf(calendar, stored, now);
-    const followed =
-      query.batchId === null
-        ? followedBatchOf(batches, today, toPrepare !== null)
-        : requestedBatch(batches, query.batchId);
+    const toPrepare = pinnedToPrepare(toPrepareOf(entity.id, calendar, stored, now), query);
+    const followed = followedOf(query, batches, today, toPrepare !== null);
     const views = new Map(
-      stored.map((batch, index) => [batch.id, procedureBatchView(batch, modes[index] ?? [])]),
+      stored.map((batch, index) => [
+        batch.id,
+        procedureBatchView(entity.id, batch, modes[index] ?? []),
+      ]),
     );
     const storedById = new Map(stored.map((batch) => [batch.id, batch]));
     const file = fileStep(followed, toPrepare !== null, storedById, accounts, mandates);
@@ -135,6 +138,39 @@ export class GetCollectionProcedureHandler implements IQueryHandler<
       }),
     };
   }
+}
+
+/**
+ * La clôture à préparer, seulement si c'est celle de la procédure ouverte :
+ * « Préparer » ne prépare que la dernière clôture, et une procédure à venir
+ * n'a rien à préparer encore.
+ */
+function pinnedToPrepare(
+  toPrepare: CollectionProcedureToPrepareView | null,
+  query: GetCollectionProcedureQuery,
+): CollectionProcedureToPrepareView | null {
+  if (toPrepare === null || query.closureDay === null) {
+    return toPrepare;
+  }
+  return closureDayOf(new Date(toPrepare.closesAt)) === query.closureDay ? toPrepare : null;
+}
+
+/** Le lot de l'adresse ; sinon celui de la clôture ouverte ; sinon la règle du § 4.3. */
+function followedOf(
+  query: GetCollectionProcedureQuery,
+  batches: readonly ProcedureBatch[],
+  today: string,
+  toPrepare: boolean,
+): ProcedureBatch | null {
+  if (query.batchId !== null) {
+    return requestedBatch(batches, query.batchId);
+  }
+  const day = query.closureDay;
+  if (day === null) {
+    return followedBatchOf(batches, today, toPrepare);
+  }
+  const ofClosure = batches.filter((batch) => closureDayOf(new Date(batch.cycleClosesAt)) === day);
+  return followedAtClosure(ofClosure, today, toPrepare);
 }
 
 /** Le lot de l'adresse, ou un 404 qui le nomme — un lot d'une autre entité n'existe pas ici. */
@@ -175,11 +211,12 @@ function fileStep(
     excludedMandateCount: mandates.excludedCount,
     excludedAccountCount: accounts.excludedCount,
     tightDepositMargin:
-      stored?.status === "constituted"
-        ? tightDepositMargin(
+      stored === undefined
+        ? null
+        : preparedDepositMargin(
+            stored.status,
             instantToLocal(new Date(stored.constitutedAt)).day,
             stored.depositDeadline,
-          )
-        : null,
+          ),
   };
 }

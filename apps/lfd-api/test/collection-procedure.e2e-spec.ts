@@ -10,7 +10,11 @@
  * ⚠️ Mandats écrits par Prisma : même dette que `mandate-bank-exports.e2e-spec.ts`,
  * dont la mise en place est reprise. Aucune date absolue.
  */
-import type { AccountBankExportCreatedView, CollectionProcedureView } from "@lfd/contracts";
+import type {
+  AccountBankExportCreatedView,
+  CollectionProcedureListView,
+  CollectionProcedureView,
+} from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
@@ -187,5 +191,47 @@ describe("la procédure de prélèvement — la lecture d'état", () => {
 
     await staff().get(procedureOf("le_inconnue")).expect(404);
     await staff().get(procedureOf(entityId, "lot_inconnu")).expect(404);
+  });
+});
+
+describe("la procédure de prélèvement — la liste des procédures", () => {
+  function listOf(entityId: string, includeClosed = false): string {
+    const closed = includeClosed ? "&includeClosed=true" : "";
+    return `/admin/accounting/collection-procedures?legalEntityId=${entityId}${closed}`;
+  }
+
+  it("liste la clôture à préparer et la prochaine du mensuel, et ouvre chacune par son id", async () => {
+    const entityId = await entity("552100554");
+    await mandated(entityId, "Café de l'Isère");
+
+    const list = jsonBody<CollectionProcedureListView>(
+      await staff().get(listOf(entityId, true)).expect(200),
+    );
+
+    expect(list.rows.map((row) => row.phase)).toEqual(["open", "upcoming"]);
+    expect(list.rows.every((row) => row.id.startsWith(`${entityId}~`))).toBe(true);
+    expect(list.rows[0]).toMatchObject({ stage: "accounts", followedBatchId: null });
+    expect(list.rows[0]?.warnings).toContainEqual({ code: "accounts_to_export", count: 1 });
+
+    const [open, upcoming] = list.rows;
+    const opened = jsonBody<CollectionProcedureView>(
+      await staff()
+        .get(`/admin/accounting/collection-procedure?procedureId=${open?.id ?? ""}`)
+        .expect(200),
+    );
+    expect(opened.toPrepare?.procedureId).toBe(open?.id);
+    const ahead = jsonBody<CollectionProcedureView>(
+      await staff()
+        .get(`/admin/accounting/collection-procedure?procedureId=${upcoming?.id ?? ""}`)
+        .expect(200),
+    );
+    expect(ahead.toPrepare).toBeNull();
+  });
+
+  it("refuse (404) une entité inconnue, et une adresse de procédure illisible", async () => {
+    await staff().get(listOf("le_inconnue")).expect(404);
+    await staff()
+      .get("/admin/accounting/collection-procedure?procedureId=n_importe_quoi")
+      .expect(404);
   });
 });

@@ -1,0 +1,86 @@
+<fold-page-layout [title]="title" separator>
+  <p description>
+    Une ligne par clôture&nbsp;: les procédures ouvertes et la prochaine de chaque rythme, la limite
+    de dépôt la plus proche d’abord. Ouvrir une ligne pour la suivre onglet par onglet.
+  </p>
+
+  @if (loading()) {
+    <fold-loading message="Lecture des procédures…" />
+  } @else if (loadError(); as message) {
+    <fold-empty-state
+      tone="alert"
+      title="Impossible de lire les procédures de prélèvement"
+      [subtitle]="message"
+    >
+      <button foldButton (click)="load()">Réessayer</button>
+    </fold-empty-state>
+  } @else if (entityId() !== null) {
+    <div class="pl-stack">
+      <div class="pl-filters">
+        @if (entityOptions().length > 1) {
+          <fold-listbox
+            label="Entité émettrice"
+            [options]="entityOptions()"
+            [value]="entityId()"
+            (valueChange)="choose($event)"
+          />
+        }
+        <fold-checkbox
+          label="Afficher les closes"
+          hint="Les procédures closes des trois derniers mois, à la fin de la table."
+          [checked]="includeClosed()"
+          (checkedChange)="showClosed($event)"
+          data-show-closed
+        />
+      </div>
+
+      <fold-data-table
+        caption="Procédures de prélèvement"
+        narrowLayout="cards"
+        hover
+        clickable
+        [columns]="columns"
+        [rows]="rows()"
+        [rowKey]="rowKey"
+        [rowTone]="rowTone"
+        [empty]="nothing"
+        (rowClick)="open($event)"
+      >
+        <ng-template foldCell="period" let-row>
+          <span data-row-title>{{ rowTitle(row) }}</span>
+        </ng-template>
+
+        <ng-template foldCell="stage" let-row>
+          <fold-badge radius="square" [variant]="stageVariant(row)" [content]="stageLabel(row)" />
+        </ng-template>
+
+        <ng-template foldCell="closure" let-row>{{ closureLabel(row) }}</ng-template>
+
+        <ng-template foldCell="deadline" let-row>
+          <span [class.pl-late]="deadlineMissed(row)" data-deadline>{{ deadlineLabel(row) }}</span>
+        </ng-template>
+
+        <ng-template foldCell="collection" let-row>{{ collectionLabel(row) }}</ng-template>
+
+        <ng-template foldCell="warnings" let-row>
+          <span class="pl-warnings">
+            @for (warning of row.warnings; track warning.code) {
+              <fold-badge
+                radius="square"
+                [variant]="warningVariant(warning)"
+                [content]="warningText(warning)"
+              />
+            }
+          </span>
+        </ng-template>
+      </fold-data-table>
+    </div>
+  } @else {
+    <fold-empty-state
+      title="Aucune entité émettrice"
+      subtitle="La procédure se suit sous une entité juridique qui peut encaisser."
+    >
+      <fold-icon empty-icon name="banknote" />
+    </fold-empty-state>
+  }
+</fold-page-layout>

@@ -34,3 +34,12 @@ export function payerCountsAt(
   ).length;
   return counts.set(DEFAULT_BILLING_MODE, monthly);
 }
+
+/**
+ * Un rythme est SUIVI s'il a des clients — le mensuel toujours : c'est celui
+ * de quiconque n'a rien choisi. La règle du tableau de bord des rythmes et de
+ * la liste des procédures (« la prochaine clôture de chaque rythme suivi »).
+ */
+export function isRhythmFollowed(mode: BillingMode, payerCount: number): boolean {
+  return mode === DEFAULT_BILLING_MODE || payerCount > 0;
+}

@@ -190,6 +190,15 @@ export type {
   CollectionProcedureToPrepareView,
   CollectionProcedureView,
 } from "./collection-procedure.js";
+export type {
+  CollectionProcedureListBatchView,
+  CollectionProcedureListView,
+  CollectionProcedurePhaseView,
+  CollectionProcedureRowView,
+  CollectionProcedureStageView,
+  CollectionProcedureWarningCodeView,
+  CollectionProcedureWarningView,
+} from "./collection-procedure-list.js";
 export { exportMandatesForBankPayloadSchema } from "./mandate-bank-export.js";
 export type {
   ExportMandatesForBankPayload,
