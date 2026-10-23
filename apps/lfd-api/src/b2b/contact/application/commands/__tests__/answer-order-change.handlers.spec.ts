@@ -18,7 +18,12 @@ import { ApplyOrderChangeHandler } from "../apply-order-change.handler.js";
 import { RefuseOrderChangeCommand } from "../refuse-order-change.command.js";
 import { RefuseOrderChangeHandler } from "../refuse-order-change.handler.js";
 import { Directory, MemoryRequests } from "./contact-doubles.js";
-import { RecordingApplier, RevisionRefused } from "./order-change-doubles.js";
+import {
+  APPLIED_PREVIOUS_TOTAL_CENTS,
+  APPLIED_TOTAL_CENTS,
+  RecordingApplier,
+  RevisionRefused,
+} from "./order-change-doubles.js";
 
 const STAFF = { name: "Camille Durand", role: "commercial" };
 
@@ -68,6 +73,20 @@ describe("ApplyOrderChangeHandler", () => {
     expect(requests.saved[0]?.toPersistence().handling?.by.name).toBe("Camille Durand");
     expect(events.factTypes()).toEqual(["order.change_applied"]);
     expect(events.traced[0]).toBeInstanceOf(OrderChangeAppliedEvent);
+  });
+
+  it("le fait publié porte les totaux de la révision appliquée, tels qu'elle les rend", async () => {
+    const events = new RecordingPublisher();
+    await applying(new MemoryRequests([orderChange()]), new RecordingApplier(), events).execute(
+      new ApplyOrderChangeCommand("q1", "staff_1"),
+    );
+    const applied = events.traced[0];
+    expect(applied).toBeInstanceOf(OrderChangeAppliedEvent);
+    expect(applied instanceof OrderChangeAppliedEvent ? applied.applied : null).toEqual({
+      revision: 2,
+      totalCents: APPLIED_TOTAL_CENTS,
+      previousTotalCents: APPLIED_PREVIOUS_TOTAL_CENTS,
+    });
   });
 
   it("la révision refusée (inscrite entre-temps…) : rien enregistré, la demande reste en attente", async () => {

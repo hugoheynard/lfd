@@ -14,6 +14,14 @@ export interface OrderChangeAppliedCopy {
   readonly title: string;
   /** `{ref}`. */
   readonly intro: string;
+  /** Le libellé du nouveau total TTC, lu sur la révision appliquée. */
+  readonly totalLabel: string;
+  /** Le total a monté. `{amount}` = l'écart, `{previous}` = l'ancien total. */
+  readonly moreToPay: string;
+  /** Le total a baissé. `{amount}`, `{previous}`. */
+  readonly lessToPay: string;
+  /** Le total n'a pas bougé. */
+  readonly sameTotal: string;
   /** Où relire la commande à jour. */
   readonly where: string;
   readonly footer: string;

@@ -2357,6 +2357,38 @@
         ],
         "fr": "Nous avons modifié votre commande {ref} comme vous nous l'avez demandé."
       },
+      "totalLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Nouveau total TTC"
+      },
+      "moreToPay": {
+        "variables": [
+          "amount",
+          "previous"
+        ],
+        "required": [
+          "amount",
+          "previous"
+        ],
+        "fr": "Soit {amount} de plus qu'avant : le total était de {previous}."
+      },
+      "lessToPay": {
+        "variables": [
+          "amount",
+          "previous"
+        ],
+        "required": [
+          "amount",
+          "previous"
+        ],
+        "fr": "Soit {amount} de moins qu'avant : le total était de {previous}."
+      },
+      "sameTotal": {
+        "variables": [],
+        "required": [],
+        "fr": "Le total reste le même qu'avant."
+      },
       "where": {
         "variables": [],
         "required": [],

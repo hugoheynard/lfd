@@ -8,7 +8,12 @@ export const ORDER_CHANGE_SPECIMENS: Readonly<
 > = {
   "customer.order-change-applied": {
     family: "order",
-    data: (locale) => ({ reference: REFERENCE, locale }),
+    data: (locale) => ({
+      reference: REFERENCE,
+      totalCents: 4250,
+      previousTotalCents: 3800,
+      locale,
+    }),
   },
   "customer.order-change-refused": {
     family: "order",

@@ -26,14 +26,15 @@ class RecordingMailer implements B2bMailer {
 }
 
 const SUBJECT = { requestId: "q1", order: ORDER, baseRevision: 1 };
+const APPLIED = { revision: 2, totalCents: 4250, previousTotalCents: 3800 };
 
 /** Les deux réponses partent à l'auteur de la demande (M4) ; un échec d'envoi ne remonte pas. */
 describe("les courriels de réponse à une demande de modification", () => {
-  it("appliquée : au client, la référence de la commande", async () => {
+  it("appliquée : au client, la référence et les totaux de la révision appliquée", async () => {
     const mailer = new RecordingMailer();
     const work = new BackgroundWork();
     new MailOrderChangeApplied(mailer, work).handle(
-      new OrderChangeAppliedEvent(orderChange(), SUBJECT, 2),
+      new OrderChangeAppliedEvent(orderChange(), SUBJECT, APPLIED),
     );
     await work.whenIdle();
     expect(mailer.sent).toEqual([
@@ -41,7 +42,7 @@ describe("les courriels de réponse à une demande de modification", () => {
         to: "jean@exemple.fr",
         template: "customer.order-change-applied",
         idempotencyKey: "order-change-applied:q1",
-        data: { reference: "CMD-0001", locale: "fr" },
+        data: { reference: "CMD-0001", totalCents: 4250, previousTotalCents: 3800, locale: "fr" },
       },
     ]);
   });
@@ -65,7 +66,7 @@ describe("les courriels de réponse à une demande de modification", () => {
     mailer.refusal = new Error("resend");
     const work = new BackgroundWork();
     new MailOrderChangeApplied(mailer, work).handle(
-      new OrderChangeAppliedEvent(orderChange(), SUBJECT, 2),
+      new OrderChangeAppliedEvent(orderChange(), SUBJECT, APPLIED),
     );
     await expect(work.whenIdle()).resolves.toBeUndefined();
   });

@@ -13,7 +13,10 @@ import {
   type ChangeableOrder,
   ChangeableOrderReader,
 } from "../../../domain/ports/changeable-order.reader.js";
-import { OrderChangeApplier } from "../../../domain/ports/order-change.applier.js";
+import {
+  type AppliedOrderChange,
+  OrderChangeApplier,
+} from "../../../domain/ports/order-change.applier.js";
 import { OrderChangeQuoter } from "../../../domain/ports/order-change.quoter.js";
 import { OrderChangeRequestReader } from "../../../domain/ports/order-change-request.reader.js";
 import { RequestReasonReader } from "../../../domain/ports/request-reason.reader.js";
@@ -71,6 +74,10 @@ export class RevisionRefused extends BusinessError {
   }
 }
 
+/** Les totaux que la révision doublée rend : 42,50 € après, 38,00 € avant. */
+export const APPLIED_TOTAL_CENTS = 4250;
+export const APPLIED_PREVIOUS_TOTAL_CENTS = 3800;
+
 /** La révision, notée ; `refuse` la fait refuser comme la règle des commandes. */
 export class RecordingApplier extends OrderChangeApplier {
   readonly applied: {
@@ -92,13 +99,17 @@ export class RecordingApplier extends OrderChangeApplier {
     staffUserId: string,
     baseRevision: number,
     change: RequestedOrderChange,
-  ): Promise<number> {
+  ): Promise<AppliedOrderChange> {
     this.log.push(`revise ${orderId}@${String(baseRevision)}`);
     if (this.refuse) {
       return Promise.reject(new RevisionRefused());
     }
     this.applied.push({ orderId, staffUserId, baseRevision, change });
-    return Promise.resolve(baseRevision + 1);
+    return Promise.resolve({
+      revision: baseRevision + 1,
+      totalCents: APPLIED_TOTAL_CENTS,
+      previousTotalCents: APPLIED_PREVIOUS_TOTAL_CENTS,
+    });
   }
 }
 

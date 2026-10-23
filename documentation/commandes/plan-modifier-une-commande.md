@@ -541,7 +541,7 @@ pour le serveur.
    l'équipe recalcule à l'application. La boutique montre le nouveau total et
    l'écart dans `change-request-card/`, marqués indicatifs
    (`orders.revision.request.requestQuoteIndicative`, fr/en/it). Le courriel
-   de réponse, lui, ne porte toujours pas de montant.
+   « appliquée » porte le total définitif — point 4.
 3. **Mise en service** : sans motif `order_change` actif, la demande est
    refusée avec une phrase qui dit à l'équipe quoi créer (Demandes clients ›
    Motifs › « Demander une modification »). Aucun motif n'est semé par
@@ -551,3 +551,16 @@ pour le serveur.
    demande) : textes fr/en/it en famille à part (`copy/*/order-change-mails.*.ts`),
    rendu `order-change-answer-mail.ts`, sections, exemples, empreintes de
    rendu (cas neufs) — le registre compte désormais 30 e-mails.
+   **Montant, 2026-10-23, décision de Hugo** : `customer.order-change-applied`
+   porte le nouveau total TTC (ligne « Nouveau total TTC ») et l'écart avec
+   l'ancien, dit en plus / en moins / inchangé (`moreToPay`, `lessToPay`,
+   `sameTotal`, variables `{amount}` `{previous}`). Les deux totaux sont
+   ceux de la révision appliquée (`ReviseOrderResult.totalCents` /
+   `previousTotalCents`, soit `total_after_cents` / `total_before_cents` de
+   l'entrée de révision), rendus par `OrderChangeApplier.apply` et portés par
+   `OrderChangeAppliedEvent.applied` — jamais recalculés à côté. C'est ce qui
+   rend vraie la promesse de la boutique (`requestSendNote` : « le nouveau
+   total vous est confirmé par e-mail »). Empreinte du seul cas `only`
+   régénérée, deux cas neufs (`lower`, `unchanged`) ; l'e2e
+   `order-change-request` affirme que le courriel parti porte les totaux de
+   l'entrée de révision.

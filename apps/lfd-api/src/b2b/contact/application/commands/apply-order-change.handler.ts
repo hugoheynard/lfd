@@ -50,22 +50,22 @@ export class ApplyOrderChangeHandler implements ICommandHandler<ApplyOrderChange
       if (pending.change === null) {
         throw new OrderChangeUnreadableError(request.id);
       }
-      const revision = await this.applier.apply(
+      const applied = await this.applier.apply(
         pending.order.id,
         command.staffUserId,
         pending.baseRevision,
         pending.change,
       );
-      request.recordChangeApplied(revision, author, this.clock.now());
+      request.recordChangeApplied(applied.revision, author, this.clock.now());
       await this.requests.save(request);
       await this.events.publishTraced(
         new OrderChangeAppliedEvent(
           request,
           { requestId: request.id, order: pending.order, baseRevision: pending.baseRevision },
-          revision,
+          applied,
         ),
       );
-      return revision;
+      return applied.revision;
     });
   }
 }

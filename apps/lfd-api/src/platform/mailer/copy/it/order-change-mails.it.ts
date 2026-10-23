@@ -7,6 +7,10 @@ export const ORDER_CHANGE_MAILS_IT: OrderChangeMailsCopy = {
     subject: "Ordine {ref} modificato su tua richiesta",
     title: "La tua modifica è fatta.",
     intro: "Abbiamo modificato il tuo ordine {ref} come ci hai chiesto.",
+    totalLabel: "Nuovo totale IVA inclusa",
+    moreToPay: "Cioè {amount} in più di prima: il totale era {previous}.",
+    lessToPay: "Cioè {amount} in meno di prima: il totale era {previous}.",
+    sameTotal: "Il totale resta lo stesso di prima.",
     where: "L'ordine aggiornato si legge nel tuo spazio, alla voce I miei ordini.",
     footer:
       "Un dubbio o un errore? Chiama il laboratorio — Le Labo · route de la Balme, Val d'Isère.",

@@ -7,6 +7,10 @@ export const ORDER_CHANGE_MAILS_FR: OrderChangeMailsCopy = {
     subject: "Commande {ref} modifiée à votre demande",
     title: "Votre modification est faite.",
     intro: "Nous avons modifié votre commande {ref} comme vous nous l'avez demandé.",
+    totalLabel: "Nouveau total TTC",
+    moreToPay: "Soit {amount} de plus qu'avant : le total était de {previous}.",
+    lessToPay: "Soit {amount} de moins qu'avant : le total était de {previous}.",
+    sameTotal: "Le total reste le même qu'avant.",
     where: "La commande à jour se lit dans votre espace, rubrique Mes commandes.",
     footer:
       "Un doute ou une erreur ? Appelez le fournil — Le Labo · route de la Balme, Val d'Isère.",

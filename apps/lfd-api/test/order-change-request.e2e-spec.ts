@@ -316,6 +316,18 @@ describe("la boîte des demandes — l'équipe répond", () => {
     const order = await ctx.prisma.order.findUniqueOrThrow({ where: { id: s.orderId } });
     expect(order.revision).toBe(1);
     expect(await ctx.prisma.orderRevisionEntry.count({ where: { orderId: s.orderId } })).toBe(1);
+
+    // Le courriel au client porte le total de la révision appliquée, et l'écart (2026-10-23).
+    await ctx.drain();
+    const entry = await ctx.prisma.orderRevisionEntry.findFirstOrThrow({
+      where: { orderId: s.orderId },
+    });
+    const appliedMail = sentMails.find((m) => m.template === "customer.order-change-applied");
+    expect(appliedMail?.data).toMatchObject({
+      totalCents: entry.totalAfterCents,
+      previousTotalCents: entry.totalBeforeCents,
+    });
+    expect(entry.totalAfterCents - entry.totalBeforeCents).toBe(quote.differenceCents);
     const row = await ctx.prisma.customerRequest.findUniqueOrThrow({ where: { id } });
     expect(row).toMatchObject({ changeAppliedRevision: 1, changeRefusal: null });
     expect(row.handledAt).not.toBeNull();

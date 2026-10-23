@@ -6,7 +6,10 @@ import {
   type ReviseOrderResult,
 } from "../../orders/application/commands/revise-order.command.js";
 import type { RequestedOrderChange } from "../domain/customer-request-details.js";
-import { OrderChangeApplier } from "../domain/ports/order-change.applier.js";
+import {
+  type AppliedOrderChange,
+  OrderChangeApplier,
+} from "../domain/ports/order-change.applier.js";
 
 /**
  * Appliquer une modification demandée, c'est **la** modification d'une
@@ -25,7 +28,7 @@ export class BusOrderChangeApplier extends OrderChangeApplier {
     staffUserId: string,
     baseRevision: number,
     change: RequestedOrderChange,
-  ): Promise<number> {
+  ): Promise<AppliedOrderChange> {
     const result = await this.commands.execute<ReviseOrderCommand, ReviseOrderResult>(
       new ReviseOrderCommand(
         orderId,
@@ -34,6 +37,10 @@ export class BusOrderChangeApplier extends OrderChangeApplier {
         change,
       ),
     );
-    return result.revision;
+    return {
+      revision: result.revision,
+      totalCents: result.totalCents,
+      previousTotalCents: result.previousTotalCents,
+    };
   }
 }

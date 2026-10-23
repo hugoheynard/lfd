@@ -458,7 +458,17 @@
   "customer.order-change-applied": {
     "only": {
       "subject": "Commande ORD-4812 modifiée à votre demande",
-      "htmlSha256": "9011682c78d8b8d7c71344dbf757e4c5d5ce4c042b35f5a1fce8ad7452555294",
+      "htmlSha256": "0b7a12f4bd4ccd142a9b25632424b02b03073980e725bdb8f993a27a4ff79ea6",
+      "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
+    },
+    "lower": {
+      "subject": "Commande ORD-4812 modifiée à votre demande",
+      "htmlSha256": "662e1f586e34516fa022f23a0bb977b2930d6b1433a36575006a6907bdc4beab",
+      "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
+    },
+    "unchanged": {
+      "subject": "Commande ORD-4812 modifiée à votre demande",
+      "htmlSha256": "36020b81b6ca7e7e5752c2574f399e35cd6fdd396067fceb1166a57775515a03",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     }
   },

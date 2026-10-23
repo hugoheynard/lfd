@@ -14,7 +14,8 @@ export const ORDER_CHANGE_MAIL_LAYOUTS: Readonly<
     header: KICKER,
     sections: [
       { id: "title", texts: texts("title") },
-      { id: "body", texts: texts("intro", "where") },
+      { id: "body", texts: texts("intro", "moreToPay", "lessToPay", "sameTotal", "where") },
+      { id: "summary", texts: texts("totalLabel") },
       { id: "footer", texts: texts("footer") },
     ],
   },

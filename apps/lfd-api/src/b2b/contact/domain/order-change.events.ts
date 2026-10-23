@@ -3,6 +3,7 @@ import type { JournalFactType } from "@lfd/contracts/journal-facts";
 import type { JournalFact, JournaledEvent } from "../../../platform/journal/journal-fact.js";
 import type { CustomerRequest } from "./customer-request.js";
 import type { ReportedOrderRef } from "./customer-request-details.js";
+import type { AppliedOrderChange } from "./ports/order-change.applier.js";
 
 /**
  * **Les faits de la demande de modification** (plan
@@ -65,18 +66,23 @@ abstract class OrderChangeAnsweredEvent implements JournaledEvent {
   abstract journalFact(): JournalFact;
 }
 
-/** La modification a été appliquée : `revision` est celle qu'elle a produite. */
+/**
+ * La modification a été appliquée : `applied` est la révision qu'elle a
+ * produite, avec ses totaux avant / après — lus sur elle, pas recalculés.
+ */
 export class OrderChangeAppliedEvent extends OrderChangeAnsweredEvent {
   constructor(
     request: CustomerRequest,
     subject: ChangeSubject,
-    readonly revision: number,
+    readonly applied: AppliedOrderChange,
   ) {
     super(request, subject);
   }
 
   journalFact(): JournalFact {
-    return changeFact(ORDER_CHANGE_FACTS.applied, this.subject, { revision: this.revision });
+    return changeFact(ORDER_CHANGE_FACTS.applied, this.subject, {
+      revision: this.applied.revision,
+    });
   }
 }
 

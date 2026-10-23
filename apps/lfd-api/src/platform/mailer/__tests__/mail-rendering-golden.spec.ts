@@ -38,6 +38,12 @@ import {
  * **Complétées le 2026-10-23 (M4 de la modification de commande)** : deux
  * e-mails neufs, `customer.order-change-applied` et `-refused`, leurs
  * empreintes ajoutées sans toucher aux existantes.
+ *
+ * **Régénérée le 2026-10-23 pour le SEUL `customer.order-change-applied`**,
+ * qui porte désormais le nouveau total TTC et l'écart (plan de modification,
+ * §14) : son cas `only` change d'empreinte, objet et pièces jointes
+ * identiques ; deux cas neufs (`lower`, `unchanged`) parcourent les autres
+ * branches de l'écart. Aucun autre cas n'a bougé.
  */
 
 const REGISTRY = b2bMailTemplates({
