@@ -3,9 +3,8 @@
 > Écrit le **2026-10-23**, le jour où la Caisse d'Épargne (CERA) a répondu aux
 > 31 questions du texte envoyé ([`question-banque.md`](question-banque.md),
 > « Le texte à envoyer »). Les réponses sont reprises ici **d'après le résumé
-> fidèle de leur mail collé par Hugo** ; le mail lui-même et ses deux pièces
-> jointes (modèle d'import des RIB, modèle des mandats à jour) ne sont **pas**
-> dans le dépôt.
+> fidèle de leur mail collé par Hugo** ; le mail n'est pas dans le dépôt, ses
+> deux pièces jointes y sont depuis le 2026-10-23 ([`modeles-banque/`](modeles-banque/), § 2 bis).
 >
 > Chaque « le code fait » cite un fichier et une ligne **ouverts le
 > 2026-10-23**, sous `apps/lfd-api/src/b2b/accounting/` (abrégé `apps/lfd-api/src/b2b/accounting/`).
@@ -102,14 +101,14 @@ le niveau de signature eIDAS.
 
 ### Étape 3 — L'import des RIB destinataires
 
-**6. Modèle d'import des RIB** : en **pièce jointe** du mail. **Pas encore dans
-le dépôt.**
+**6. Modèle d'import des RIB** : en **pièce jointe** du mail. _Reçu et rangé le 2026-10-23,
+confronté au § 2 bis._
 
 - _Code_ : aucun export des RIB n'existe (aucun fichier `*rib*export*` sous
   `apps/lfd-api/src/b2b/accounting/`, 2026-10-23 ; l'export ne connaît que les mandats,
   `apps/lfd-api/src/b2b/accounting/domain/services/mandate-bank-export-csv.ts:54`).
 - 🔴 **Bloquant** : sans les RIB importés, l'import des mandats ne passe pas
-  (réponse du 2026-10-08). **Attend la pièce jointe.** En attendant, la saisie
+  (réponse du 2026-10-08). Modèle reçu le 2026-10-23 (§ 2 bis). En attendant, la saisie
   à la main dans CENET reste possible pour les premiers clients.
 
 **7. Rattachement** : l'IBAN est lié à la RUM.
@@ -201,7 +200,8 @@ erreur, et le tableau des lignes en erreur avec leur motif.
   `taken_over`) ; la révocation n'est pas déclarée.
 - 🔴 **Bloquant, petit** : vérifier sur le modèle reçu le nombre exact de
   colonnes ; si c'est 18, en écrire 18 (un fichier à 17 cellules pourrait être
-  refusé). **Attend la pièce jointe.**
+  refusé). _Tranché le 2026-10-23 par le modèle : 18 colonnes, K et L
+  obligatoires — § 2 bis._
 - 🟡 **À faire** : remplir M–R pour un mandat modifié / révoqué / repris, selon
   le modèle. Pas avant la première remise : aucun de ces cas n'existe encore.
 
@@ -361,6 +361,101 @@ montant retourné et les frais sont **deux écritures distinctes**.
 - 🟡 **Décision D7** : imputation **unitaire** (une écriture par impayé, qui
   colle à notre modèle et au rapprochement par ligne) ou globale.
 
+## 2 bis. Les deux modèles reçus, colonne par colonne
+
+> Pièces jointes du mail, fournies par Hugo et rangées le 2026-10-23 sous
+> [`modeles-banque/`](modeles-banque/) :
+> [`modele-import-mandats-cenet-remises.xlsx`](modeles-banque/modele-import-mandats-cenet-remises.xlsx)
+> et [`modele-comptes-destinataires-2026.csv`](modeles-banque/modele-comptes-destinataires-2026.csv).
+> Ouverts le 2026-10-23 : les couleurs de cellules et le format de F lus dans
+> le XML du classeur, le CSV décodé en ISO-8859-1.
+
+### Le modèle des mandats — 18 colonnes, A à R
+
+Consignes de la feuille : « enregistrer en CSV sans la ligne d'en-tête »,
+« se connecter sur l'interface du client pour importer le fichier »,
+« colonnes en jaune obligatoires ». **Jaunes : A à H, K et L.** Le code écrit
+**17** cellules (`apps/lfd-api/src/b2b/accounting/domain/services/mandate-bank-export-csv.ts:22`), A à H
+remplies, le reste vide (l. 58-72).
+
+| Col. | Intitulé du modèle                    | Oblig.  | Exemple du modèle  | Le code écrit                 | Verdict                                        |
+| ---- | ------------------------------------- | ------- | ------------------ | ----------------------------- | ---------------------------------------------- |
+| A    | Référence unique du mandat            | oui     | —                  | la RUM                        | ✔ juste                                        |
+| B    | Numéro d'identifiant créancier        | oui     | —                  | l'ICS de l'entité             | ✔ juste                                        |
+| C    | Nom débiteur                          | oui     | —                  | nom du `pain.008`, coupé à 70 | ✔ juste (≤ 140, réponse 11)                    |
+| D    | IBAN débiteur                         | oui     | —                  | IBAN sans espaces             | ✔ juste                                        |
+| E    | BIC débiteur                          | oui     | —                  | BIC (mandat sans BIC écarté)  | ✔ juste                                        |
+| F    | Date de signature                     | oui     | cellule `yyyymmdd` | `JJ/MM/AAAA`                  | 🔴 **faux** → `AAAAMMJJ`                       |
+| G    | Séquence de paiement                  | oui     | `RECURRENT`        | `RCUR` / `OOFF`               | 🔴 **faux** → `RECURRENT` / `PONCTUEL`         |
+| H    | Nature du prélèvement                 | oui     | `CORE`             | `CORE` / `B2B`                | ✔ juste (`B2B` d'après le mail, pas l'exemple) |
+| I    | Référence du contrat sous-jacent      | non     | —                  | vide                          | ⚪ rien                                        |
+| J    | Montant par défaut                    | non     | —                  | vide                          | ⚪ rien (montants variables)                   |
+| K    | Mandat déjà émis                      | **oui** | `O`                | **vide**                      | 🔴 **manquant**                                |
+| L    | Mandat migré                          | **oui** | `N`                | **vide**                      | 🔴 **manquant**                                |
+| M    | Ancien numéro d'identifiant créancier | non     | —                  | vide                          | 🟡 reprise d'un autre créancier                |
+| N    | Ancien IBAN débiteur                  | non     | —                  | vide                          | 🟡 changement de compte                        |
+| O    | Ancien BIC débiteur                   | non     | —                  | vide                          | 🟡 changement de compte                        |
+| P    | Liste de mandat                       | non     | —                  | vide                          | ❓ sens inconnu                                |
+| Q    | Ancienne Référence Unique du Mandat   | non     | —                  | vide                          | 🟡 changement de RUM / reprise                 |
+| R    | Migration code intervenant initial    | non     | —                  | **absente** (17 colonnes)     | 🔴 colonne à ajouter, vide                     |
+
+Ce que ça veut dire :
+
+- **K et L sont obligatoires et vides chez nous** : notre fichier actuel
+  serait refusé, même F et G corrigés. Valeurs supposées `O`/`N` (oui/non)
+  d'après les exemples. Pour nos mandats : **K = `O`** si « déjà émis » veut
+  dire « signé par le débiteur hors de la banque » (c'est notre cas : le
+  mandat est signé chez nous avant l'import) ; **L = `N`** pour un mandat
+  frappé par nous, **`O`** pour un mandat repris d'un autre créancier — ceux-là
+  sont aujourd'hui écartés de l'export (`taken_over`,
+  `apps/lfd-api/src/b2b/accounting/domain/ports/mandates-for-bank-export.reader.ts:26`). Le sens de K est
+  **à confirmer** (question Q-B2).
+- **18 colonnes, pas 17** : ajouter R vide.
+- **Réponse 14 contre le modèle** : la banque dit « colonnes M à R » pour un
+  mandat modifié, révoqué ou repris ; mais **P « Liste de mandat »** n'est pas
+  une donnée de modification, et rien dans M–R ne dit « révoqué ». Question
+  Q-B3.
+- La référence d'un mandat qui change de compte (réponse 9 : nouveau mandat)
+  remplirait au plus Q (ancienne RUM) — à confirmer avec D9.
+
+### Le modèle des comptes destinataires (le « fichier des RIB »)
+
+Le fichier reçu : **ISO-8859-1**, fin de ligne **CRLF**, séparateur `;`,
+**16 colonnes**, une ligne d'en-tête suivie de lignes de consignes (pas de
+ligne d'exemple). Consignes : A = `R` pour RIB, `I` pour IBAN ; K = BBAN ou
+IBAN **sans espace** ; L = BIC obligatoire **seulement hors SEPA** ; une
+consigne « Colonne D, E, F, G : » **coupée**, sans texte.
+
+Aucun code n'existe (§ 2, réponse 6). **Spec proposée pour l'export à
+bâtir** — à faire valider par la banque sur les points marqués ❓ :
+
+| Col. | Intitulé                             | Ce que nous écririons                                                                                                                                                                |
+| ---- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| A    | Type format                          | `I` (IBAN) — tous nos comptes ont un IBAN                                                                                                                                            |
+| B    | Nom                                  | le nom du débiteur, **le même** que la colonne C des mandats et le `Dbtr/Nm` du `pain.008` ; longueur max ❓                                                                         |
+| C    | Siren                                | le SIREN de la société (`Company.siren`, nullable : `apps/lfd-api/src/b2b/account/domain/entities/company.ts:326`) ; vide s'il manque ❓                                             |
+| D–G  | Adresse 1 à 4                        | l'adresse de facturation, une ligne par colonne (la facture en porte déjà les lignes : `apps/lfd-api/src/b2b/accounting/domain/entities/invoice-parties.ts:92`) ; consigne coupée ❓ |
+| H    | Code Pays Dest                       | `FR` (pays de l'adresse) ❓ sens exact                                                                                                                                               |
+| I    | Code Pays Iban                       | les 2 premiers caractères de l'IBAN (`FR`)                                                                                                                                           |
+| J    | Clé Iban                             | les caractères 3 et 4 de l'IBAN                                                                                                                                                      |
+| K    | BBAN/RIB                             | le reste de l'IBAN (le BBAN, 23 caractères pour la France), sans espace ❓ ou l'IBAN entier, la consigne dit « BBAN/IBAN »                                                           |
+| L    | Bic                                  | **toujours** le BIC du mandat, même en zone SEPA — décision de Hugo, 2026-10-23 (« dans le doute on mettra le bic ») ; nous l'avons toujours (E des mandats)                         |
+| M    | Nom liste                            | ❓ sens inconnu — vide                                                                                                                                                               |
+| N    | Type identifiant banque bénéficiaire | vide (hors SEPA)                                                                                                                                                                     |
+| O    | ABA/BSB/INS                          | vide (hors SEPA)                                                                                                                                                                     |
+| P    | NIF                                  | vide ❓                                                                                                                                                                              |
+
+Règles de fichier : **Latin-1** (pas l'ASCII du fichier des mandats — à
+confirmer qu'un nom translittéré par `sepa()` reste acceptable), CRLF, `;`
+séparateur ; en-tête **❓** (le modèle en a une, la consigne « sans en-tête »
+n'est écrite que pour les mandats) ; nouveaux seulement, 200 lignes (réponse 8).
+Le fichier **porte l'IBAN en clair** : même frontière de sécurité que l'export
+des mandats (recalculé à chaque téléchargement, jamais rangé).
+
+⚠️ **Aucune colonne pour la RUM**, alors que la réponse 7 dit « l'IBAN est lié
+à la RUM ». Le lien se fait donc probablement à l'import des mandats, par
+l'IBAN de la colonne D — mais c'est une déduction, pas une réponse (Q-B5).
+
 ---
 
 ## 3. La liste à faire, dans l'ordre
@@ -371,15 +466,17 @@ montant retourné et les frais sont **deux écritures distinctes**.
    retour paramétrés (réponse 1). _Hors code._
 2. **Communiquer les plafonds** unitaire, par remise, mensuel (réponse 2, D1).
    _Hors code._
-3. **Corriger F et G** de l'export des mandats : `AAAAMMJJ`,
-   `RECURRENT`/`PONCTUEL` (réponse 10) — `mandate-bank-export-values.ts` et ses
-   specs. _Code, petit._
-4. **Recevoir les deux pièces jointes** (modèle RIB, modèle mandats), puis :
-   - vérifier le **nombre de colonnes** du modèle des mandats (17 ou 18 ?
-     réponse 14) et les colonnes obligatoires (réponse 11) ;
-   - **bâtir l'export des RIB** (nouveaux seulement, 200 lignes, réponses 6
-     et 8) — ou, pour les tout premiers clients, saisir les RIB à la main
-     dans CENET.
+3. **Rendre l'export des mandats conforme au modèle** (§ 2 bis) — _code, petit_ :
+   - F `AAAAMMJJ`, G `RECURRENT`/`PONCTUEL` (`mandate-bank-export-values.ts`) ;
+   - **K et L, obligatoires, aujourd'hui vides** : `O` et `N` pour nos mandats
+     (après la réponse à Q-B2) ;
+   - **18 colonnes** (ajouter R) ;
+   - les specs de l'export suivent.
+4. **Bâtir l'export des comptes destinataires** selon la spec du § 2 bis
+   (Latin-1, CRLF, type `I`, IBAN découpé, nouveaux seulement, 200 lignes),
+   après les réponses Q-B1, Q-B4, Q-B5 — ou, pour les tout premiers clients,
+   saisir les comptes à la main dans CENET. _Pièces jointes reçues le
+   2026-10-23._
 5. **Trancher la limite de dépôt** (D4, contradiction J-2 / J-1) et la
    renseigner sur l'entité. _Réglage._
 6. **Tester par mail** un fichier d'essai et un brouillon de lot (réponse 23).
@@ -408,18 +505,21 @@ Réponses 7, 11 (en-tête, longueur), 17, 18, 19, 20 (lot réel), 21 (lot réel)
 
 ## 4. Les décisions pour Hugo
 
-| #   | Décision                                                                                                                                               | Réponse | Proposition                                                                   |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------- | ----------------------------------------------------------------------------- |
-| D1  | Les **plafonds** à communiquer : unitaire, par remise, cumul mensuel                                                                                   | 2       | à chiffrer depuis le plus gros client et le chiffre mensuel prévu, avec marge |
-| D2  | **Passer en `pain.008.001.08`**, et quand                                                                                                              | 16      | pas avant la première remise ; avant 2027                                     |
-| D3  | **`FRST`** : le retirer de l'essai, ou le garder                                                                                                       | 20      | le retirer : il ne teste plus une exigence                                    |
-| D4  | **Limite de dépôt** : J-2 (réponse 3) ou J-1 avant 13 h 45 en B2B, 14 h 45 en CORE (réponse 22) — **contradiction à faire lever par la banque**        | 3, 22   | renseigner 2 jours ouvrés, 13:45 en attendant                                 |
-| D5  | **PSR2** : positif + négatif, ou négatif seul                                                                                                          | 24      | positif + négatif au début                                                    |
-| D6  | Retours en **`pain.002` ou `camt.054`**                                                                                                                | 30      | celui que la banque recommande ; l'import lit les deux                        |
-| D7  | Imputation des impayés **unitaire ou globale**                                                                                                         | 31      | unitaire                                                                      |
-| D8  | Convention **CORE** dès maintenant, ou B2B seule                                                                                                       | 1       | B2B seule                                                                     |
-| D9  | Changement de compte : **nouveau mandat** (réponse 9) ou **modification en colonnes M–R** (réponse 14) — les deux réponses ne disent pas la même chose | 9, 14   | nouveau mandat, comme la banque le dit en 9                                   |
-| D10 | **Un fichier par échéance** (réponse 18) : déjà le cas ; confirmer qu'un cycle n'aura jamais deux échéances                                            | 18      | confirmer                                                                     |
+| #   | Décision                                                                                                                                                                                                 | Réponse | Proposition                                                                   |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | ----------------------------------------------------------------------------- |
+| D1  | Les **plafonds** à communiquer : unitaire, par remise, cumul mensuel                                                                                                                                     | 2       | à chiffrer depuis le plus gros client et le chiffre mensuel prévu, avec marge |
+| D2  | **Passer en `pain.008.001.08`**, et quand                                                                                                                                                                | 16      | pas avant la première remise ; avant 2027                                     |
+| D3  | **`FRST`** : le retirer de l'essai, ou le garder                                                                                                                                                         | 20      | le retirer : il ne teste plus une exigence                                    |
+| D4  | **Limite de dépôt** : J-2 (réponse 3) ou J-1 avant 13 h 45 en B2B, 14 h 45 en CORE (réponse 22) — **contradiction à faire lever par la banque**                                                          | 3, 22   | renseigner 2 jours ouvrés, 13:45 en attendant                                 |
+| D5  | **PSR2** : positif + négatif, ou négatif seul                                                                                                                                                            | 24      | positif + négatif au début                                                    |
+| D6  | Retours en **`pain.002` ou `camt.054`**                                                                                                                                                                  | 30      | celui que la banque recommande ; l'import lit les deux                        |
+| D7  | Imputation des impayés **unitaire ou globale**                                                                                                                                                           | 31      | unitaire                                                                      |
+| D8  | Convention **CORE** dès maintenant, ou B2B seule                                                                                                                                                         | 1       | B2B seule                                                                     |
+| D9  | Changement de compte : **nouveau mandat** (réponse 9) ou **modification en colonnes M–R** (réponse 14) — les deux réponses ne disent pas la même chose                                                   | 9, 14   | nouveau mandat, comme la banque le dit en 9                                   |
+| D11 | **K « Mandat déjà émis »** : `O` pour tous nos mandats (signés chez nous avant l'import) ?                                                                                                               | modèle  | `O`, sous réserve de Q-B2                                                     |
+| D12 | **Adresse et SIREN** dans le fichier des comptes : les renseigner (facturation, SIREN de la société) ou laisser vide si facultatif                                                                       | modèle  | les renseigner quand on les a                                                 |
+| D13 | ✅ **Tranchée le 2026-10-23 (Hugo)** : la colonne **L (BIC)** du fichier des comptes est **toujours renseignée**, même en zone SEPA où la banque la dit facultative — « dans le doute on mettra le bic » | modèle  | —                                                                             |
+| D10 | **Un fichier par échéance** (réponse 18) : déjà le cas ; confirmer qu'un cycle n'aura jamais deux échéances                                                                                              | 18      | confirmer                                                                     |
 
 ## 5. Ce qui reste sans réponse — à reposer
 
@@ -436,12 +536,35 @@ Réponses 7, 11 (en-tête, longueur), 17, 18, 19, 20 (lot réel), 21 (lot réel)
 - Le **deuxième envoi** ([`question-banque-v2.md`](question-banque-v2.md)) n'a
   pas de réponse.
 
-## 6. Ce qui attend les pièces jointes
+## 5 bis. Les nouvelles questions à poser à la banque (après les modèles)
+
+- **Q-B1** — La consigne « Colonne D, E, F, G : » du modèle des comptes est
+  coupée : que dit-elle (adresse obligatoire ? longueur ?) ?
+- **Q-B2** — Les valeurs de **K** (« Mandat déjà émis ») et **L** (« Mandat
+  migré ») : `O`/`N` ? Que veut dire « déjà émis » pour un mandat signé par
+  notre client avant l'import ?
+- **Q-B3** — Votre réponse dit « colonnes M à R » pour un mandat modifié,
+  révoqué ou repris ; que met-on dans **P** (« Liste de mandat ») et dans
+  **R** ? Comment déclare-t-on une **révocation**, qu'aucune colonne ne nomme ?
+- **Q-B4** — Le fichier des comptes : quelles colonnes sont **obligatoires** ?
+  Avec ou **sans la ligne d'en-tête** ? En type `I`, K porte-t-il le **BBAN**
+  (I et J à part) ou l'**IBAN entier** ? Longueur du nom ? Que sont « Nom
+  liste » et « NIF » ?
+- **Q-B5** — Comment un compte importé **rejoint-il sa RUM**, puisque le
+  fichier des comptes n'a pas de colonne RUM : par l'IBAN de la colonne D des
+  mandats ?
+- **Q-B6** — Le fichier des comptes est en ISO-8859-1 : un nom **sans
+  accents** (comme dans le fichier des mandats) est-il accepté ?
+
+## 6. Ce qui attendait les pièces jointes
+
+> ✅ **Reçues le 2026-10-23** et confrontées au code au § 2 bis. Ce qui suit
+> est l'état d'avant, gardé pour la trace.
 
 - Le **modèle d'import des RIB** (réponse 6) : tout l'export des RIB.
 - Le **modèle des mandats** à jour : le nombre de colonnes (M–R → au moins 18)
   et les colonnes « en jaune » (réponses 11 et 14).
 
-À leur arrivée : les ranger sous `documentation/comptabilite/prelevement/`
+À leur arrivée (fait le 2026-10-23, [`modeles-banque/`](modeles-banque/)) : les ranger sous `documentation/comptabilite/prelevement/`
 (sans IBAN réel), et mettre à jour ce document et
 [`../mandat/export-des-mandats-pour-la-banque.md`](../mandat/export-des-mandats-pour-la-banque.md).

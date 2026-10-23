@@ -5,7 +5,9 @@
 > `PONCTUEL` (le code écrit `RCUR` / `OOFF`) ; H est juste. Nom ≤ 140
 > (70 tient). Seulement les nouveaux, 200 lignes au plus ; les RIB d'abord, un
 > RIB déjà connu fait rejeter tout l'import des RIB. Modifié / révoqué / repris :
-> colonnes **M à R** — le modèle a donc au moins 18 colonnes, le code en écrit 17. Détail et liste à faire :
+> colonnes **M à R**. Le modèle reçu le même jour a **18 colonnes** (le code en
+> écrit 17) et rend **K et L obligatoires** (le code les laisse vides) :
+> confrontation colonne par colonne au § 2 bis. Détail et liste à faire :
 > [`../prelevement/reponses-de-la-banque.md`](../prelevement/reponses-de-la-banque.md).
 
 > Doc d'état, écrite le 2026-10-09 à partir du code. Elle remplace le plan

@@ -1,0 +1,9 @@
+Type format;Nom;Siren;Adresse 1;Adresse 2;Adresse 3;Adresse 4;Code Pays Dest;Code Pays Iban;Clé Iban;BBAN/RIB;Bic;Nom liste;Type identifiant banque bénéficiaire;ABA/BSB/INS;NIF
+colonne A : R pour RIB;;;;;;;;;;;;;;;
+Colonne A : I pour IBAN;;;;;;;;;;;;;;;
+Colonne K : BBAN/IBAN sans espace;;;;;;;;;;;;;;;
+Colonne L : BIC obligatoire pour les pays hors SEPA;;;;;;;;;;;;;;;
+Colonne D, E, F, G : ;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;
