@@ -186,6 +186,16 @@ export type {
   MandateBankExportSummaryView,
   MandateBankExportsView,
 } from "./mandate-bank-export.js";
+export { declareBankAccountKnownPayloadSchema } from "./account-bank-export.js";
+export type {
+  AccountBankAccountView,
+  AccountBankExcludedView,
+  AccountBankExclusionReasonView,
+  AccountBankExportCreatedView,
+  AccountBankExportSummaryView,
+  AccountBankExportsView,
+  DeclareBankAccountKnownPayload,
+} from "./account-bank-export.js";
 export {
   COLLECTION_RETURN_KIND_LABELS,
   COLLECTION_RETURN_RESOLUTION_LABELS,
@@ -413,6 +423,11 @@ export type {
   SetInvoicePaymentTermsPayload,
   SetInvoicePrefixPayload,
 } from "./legal-entity.js";
+export type {
+  BillingRhythmPeriodView,
+  BillingRhythmLaneView,
+  BillingRhythmsCalendarView,
+} from "./billing-rhythms-calendar.js";
 export {
   fulfillmentPreferencePayloadSchema,
   NO_FULFILLMENT_PREFERENCE,

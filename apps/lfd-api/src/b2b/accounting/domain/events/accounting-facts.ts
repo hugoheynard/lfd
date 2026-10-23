@@ -93,6 +93,21 @@ export const MANDATE_BANK_EXPORT_FACT_TYPES = {
 } as const satisfies Readonly<Record<string, JournalFactType>>;
 
 /**
+ * Les faits de l'export des comptes destinataires (doc
+ * `prerequis-export-ribs.md` § 2.3, § 2.6). Sujet : l'entité depuis laquelle
+ * le geste est fait ; charge : un nombre de comptes, ou la société d'un
+ * compte. JAMAIS un IBAN. Le téléchargement est un fait à lui : le fichier
+ * n'est fait QUE d'IBAN en clair.
+ */
+export const ACCOUNT_BANK_EXPORT_FACT_TYPES = {
+  created: "account_bank_export.created",
+  downloaded: "account_bank_export.downloaded",
+  imported: "account_bank_export.imported",
+  abandoned: "account_bank_export.abandoned",
+  knownDeclared: "account_bank_export.account_known_declared",
+} as const satisfies Readonly<Record<string, JournalFactType>>;
+
+/**
  * Les faits du prélèvement d'essai et de nos établissements (plan
  * `plan-prelevement-d-essai.md`). Sujet : la société ; JAMAIS un IBAN ni une RUM.
  */

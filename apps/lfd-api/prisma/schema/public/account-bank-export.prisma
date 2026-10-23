@@ -1,0 +1,90 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// L'export des comptes destinataires pour le portail de la banque — doc
+// `documentation/comptabilite/prelevement/prerequis-export-ribs.md`.
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Propriétaire : `src/b2b/accounting/`. Un export fige quels comptes sont
+// partis, par qui, et ce que la banque en a dit (importé, ou rejeté et
+// abandonné). Le fichier CSV n'est PAS stocké : il n'est fait que d'IBAN en
+// clair, et se recalcule à chaque téléchargement.
+//
+// 🔴 Aucun IBAN ni BIC ici, ni scellé ni en clair : une ligne garde
+// l'EMPREINTE SHA-256 (hex) de l'IBAN normalisé — de quoi dire « la banque a
+// déjà ce compte », jamais de quoi le débiter.
+//
+// « Déjà connu » se lit sur TOUTES les entités (portée de l'abonnement, R7) :
+// `entity` ne dit que depuis quelle fiche le geste a été fait.
+//
+// Contraintes INVISIBLES ici — dans la migration
+// `20261023235000_l_export_des_comptes_pour_la_banque` : au moins un compte,
+// 200 au plus ; importé et abandonné portent chacun instant ET auteur, et
+// jamais les deux ; l'empreinte est 64 caractères hexadécimaux.
+
+/// Un export : des comptes figés à l'instant du geste.
+model AccountBankExport {
+  /// ULID.
+  id String @id
+
+  legalEntityId String      @map("legal_entity_id")
+  legalEntity   LegalEntity @relation(fields: [legalEntityId], references: [id], onDelete: Restrict)
+
+  createdAt        DateTime @map("created_at") @db.Timestamptz(3)
+  /// Identifiant staff LOCAL — jamais un `sub`.
+  createdByStaffId String   @map("created_by_staff_id")
+  accountCount     Int      @map("account_count")
+
+  /// Posé par « Marquer importé », une seule fois. NULL = pas importé.
+  importedAt        DateTime? @map("imported_at") @db.Timestamptz(3)
+  importedByStaffId String?   @map("imported_by_staff_id")
+
+  /// Posé par « Abandonner » (la banque l'a rejeté), une seule fois.
+  abandonedAt        DateTime? @map("abandoned_at") @db.Timestamptz(3)
+  abandonedByStaffId String?   @map("abandoned_by_staff_id")
+
+  lines AccountBankExportLine[]
+
+  @@index([legalEntityId, createdAt])
+  @@map("account_bank_export")
+  @@schema("public")
+}
+
+/// Un compte de l'export, par l'empreinte de son IBAN.
+model AccountBankExportLine {
+  exportId String            @map("export_id")
+  export   AccountBankExport @relation(fields: [exportId], references: [id], onDelete: Restrict)
+
+  /// SHA-256 hex de l'IBAN normalisé — jamais l'IBAN. Une fois par export.
+  accountFingerprint String @map("account_fingerprint")
+  /// Opaques, comme `mandate_bank_export_line.mandate_id` : pas de clé
+  /// étrangère — un RIB remplacé ne fait pas disparaître ce qui est parti.
+  bankAccountId      String @map("bank_account_id")
+  companyId          String @map("company_id")
+
+  @@id([exportId, accountFingerprint])
+  @@index([accountFingerprint])
+  @@map("account_bank_export_line")
+  @@schema("public")
+}
+
+/// Un compte que la banque a reçu SANS notre fichier — saisi à la main dans
+/// CENET, ou importé depuis le fichier que CENET produit (§ 2.6). Ne change
+/// plus après sa pose.
+model KnownBankAccount {
+  /// ULID.
+  id String @id
+
+  /// SHA-256 hex de l'IBAN normalisé. Une empreinte se déclare une fois.
+  accountFingerprint String @unique @map("account_fingerprint")
+  bankAccountId      String @map("bank_account_id")
+  companyId          String @map("company_id")
+
+  legalEntityId String      @map("legal_entity_id")
+  legalEntity   LegalEntity @relation(fields: [legalEntityId], references: [id], onDelete: Restrict)
+
+  declaredAt        DateTime @map("declared_at") @db.Timestamptz(3)
+  /// Identifiant staff LOCAL — jamais un `sub`.
+  declaredByStaffId String   @map("declared_by_staff_id")
+
+  @@map("known_bank_account")
+  @@schema("public")
+}

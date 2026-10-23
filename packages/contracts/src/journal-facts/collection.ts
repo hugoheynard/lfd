@@ -157,6 +157,17 @@ const mandateBankExport = {
 };
 
 /**
+ * L'export des comptes destinataires pour le portail de la banque (doc
+ * `prerequis-export-ribs.md` § 2.3). Sujet : `legal_entity`, nommé par sa
+ * raison sociale. Jamais un IBAN : le nombre de comptes, et l'auteur de la
+ * ligne.
+ */
+const accountBankExport = {
+  subjectLabel: subjectLabel(),
+  accountCount: count(),
+};
+
+/**
  * Le retour bancaire d'une ligne de lot (plan
  * `documentation/comptabilite/prelevement/retours-bancaires.md`).
  * Sujet : la société PAYEUSE (`company`), nommée par sa raison sociale — le
@@ -290,4 +301,16 @@ export const COLLECTION_FACTS = {
   "mandate_bank_export.created": fact(payload(mandateBankExport)),
   /** Le staff a dit que la banque a importé l'export : ses mandats ne ressortiront plus. */
   "mandate_bank_export.imported": fact(payload(mandateBankExport)),
+  /** Un export des comptes destinataires est préparé : il est « en vol ». */
+  "account_bank_export.created": fact(payload(accountBankExport)),
+  /** Son fichier — fait d'IBAN en clair — a été téléchargé. */
+  "account_bank_export.downloaded": fact(payload(accountBankExport)),
+  /** Le staff a dit que la banque l'a importé : ses comptes ne ressortiront plus. */
+  "account_bank_export.imported": fact(payload(accountBankExport)),
+  /** La banque l'a rejeté : ses comptes redeviennent « à exporter ». */
+  "account_bank_export.abandoned": fact(payload(accountBankExport)),
+  /** Un compte est déclaré connu de la banque sans fichier (saisi dans CENET). */
+  "account_bank_export.account_known_declared": fact(
+    payload({ subjectLabel: subjectLabel(), company: named("company") }),
+  ),
 } as const;

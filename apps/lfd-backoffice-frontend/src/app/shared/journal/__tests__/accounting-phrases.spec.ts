@@ -585,6 +585,29 @@ describe('l’export des mandats pour la banque', () => {
   });
 });
 
+describe('l’export des comptes destinataires pour la banque', () => {
+  it('dit l’entité et le nombre de comptes, jamais un IBAN', () => {
+    const exported = { subjectLabel: ENTITY, accountCount: 2 };
+    expect(sentence(entity('account_bank_export.downloaded', exported))).toContain(
+      'a téléchargé le fichier des comptes destinataires de l’entité émettrice « La Folie Douce SAS » : 2 comptes',
+    );
+    expect(sentence(entity('account_bank_export.abandoned', exported))).toContain(
+      'a abandonné l’export des comptes destinataires',
+    );
+  });
+
+  it('nomme le client du compte déclaré connu', () => {
+    const said = sentence(
+      entity('account_bank_export.account_known_declared', {
+        subjectLabel: ENTITY,
+        company: { id: 'cmp_1', name: 'Café A' },
+      }),
+    );
+    expect(said).toContain('a déclaré connu de la banque');
+    expect(said).toContain('compte du client « Café A »');
+  });
+});
+
 describe('la facture du mois — passage automatique et payeur signalé (2026-10-10)', () => {
   it('dit le mois, l’issue et les deux nombres, l’auteur étant le système', () => {
     const said = sentence({

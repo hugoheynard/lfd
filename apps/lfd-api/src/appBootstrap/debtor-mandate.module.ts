@@ -3,12 +3,14 @@ import { Global, Module } from "@nestjs/common";
 import { DebtorMandateReader } from "../b2b/accounting/domain/ports/debtor-mandate.reader.js";
 import { CollectionMandatesReader } from "../b2b/accounting/domain/ports/collection-mandates.reader.js";
 import { MandateRecheckReader } from "../b2b/accounting/domain/ports/mandate-recheck.reader.js";
+import { AccountsForBankExportReader } from "../b2b/accounting/domain/ports/accounts-for-bank-export.reader.js";
 import { MandatesForBankExportReader } from "../b2b/accounting/domain/ports/mandates-for-bank-export.reader.js";
 import {
   PrismaCollectionMandatesReader,
   PrismaMandateRecheckReader,
 } from "../b2b/payments/infrastructure/prisma-collection-mandates.reader.js";
 import { PrismaDebtorMandateReader } from "../b2b/payments/infrastructure/prisma-debtor-mandate.reader.js";
+import { PrismaAccountsForBankExportReader } from "../b2b/payments/infrastructure/prisma-accounts-for-bank-export.reader.js";
 import { PrismaMandatesForBankExportReader } from "../b2b/payments/infrastructure/prisma-mandates-for-bank-export.reader.js";
 
 /**
@@ -38,6 +40,11 @@ import { PrismaMandatesForBankExportReader } from "../b2b/payments/infrastructur
  * clair, pour la même raison : le fichier d'import des mandats de la banque
  * (`export-des-mandats-pour-la-banque.md`) les porte par construction. Il
  * n'est servi que sous l'écriture comptable, et n'est rangé nulle part.
+ *
+ * Depuis le 2026-10-23, le troisième, pour la même raison encore : le fichier
+ * des comptes destinataires de la banque (`prerequis-export-ribs.md`) n'est
+ * fait que d'IBAN. Même droit, même absence de rangement, et chaque
+ * téléchargement est journalisé.
  */
 @Global()
 @Module({
@@ -46,12 +53,14 @@ import { PrismaMandatesForBankExportReader } from "../b2b/payments/infrastructur
     { provide: CollectionMandatesReader, useClass: PrismaCollectionMandatesReader },
     { provide: MandateRecheckReader, useClass: PrismaMandateRecheckReader },
     { provide: MandatesForBankExportReader, useClass: PrismaMandatesForBankExportReader },
+    { provide: AccountsForBankExportReader, useClass: PrismaAccountsForBankExportReader },
   ],
   exports: [
     DebtorMandateReader,
     CollectionMandatesReader,
     MandateRecheckReader,
     MandatesForBankExportReader,
+    AccountsForBankExportReader,
   ],
 })
 export class DebtorMandateModule {}

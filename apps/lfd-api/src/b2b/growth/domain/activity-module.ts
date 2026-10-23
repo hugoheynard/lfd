@@ -218,6 +218,9 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     // L'export des mandats pour le portail de la banque, préparé et marqué
     // importé sous `b2b_accounting` (plan `export-des-mandats-pour-la-banque.md`, 2026-10-09).
     "mandate_bank_export.",
+    // L'export des comptes destinataires pour la banque, et « déjà connu »
+    // (doc `prerequis-export-ribs.md`, 2026-10-23).
+    "account_bank_export.",
   ],
   // Le fonds d'images : un bloc à lui depuis le 2026-09-23, avec son droit
   // (`media_library`). Rangé sous `pim` jusqu'au 2026-10-10.

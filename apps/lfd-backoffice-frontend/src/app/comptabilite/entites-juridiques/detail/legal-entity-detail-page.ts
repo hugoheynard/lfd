@@ -40,6 +40,7 @@ import { BillingModesCard } from './billing-modes-card/billing-modes-card';
 import { CollectionSettingsCard } from './collection-settings-card/collection-settings-card';
 import { InvoicePrefixCard } from './invoice-prefix-card/invoice-prefix-card';
 import { InvoiceTermsCard } from './invoice-terms-card/invoice-terms-card';
+import { AccountBankExportCard } from './account-bank-export-card/account-bank-export-card';
 import { MandateBankExportCard } from './mandate-bank-export-card/mandate-bank-export-card';
 import { legalEntityStateLabel, legalEntityStateVariant } from '../../legal-entity-state';
 import { MandatePanel, type MandatePanelData } from './mandate-panel/mandate-panel';
@@ -110,6 +111,7 @@ const MANDATE_FILE_NAME = 'mandat-sepa-exemple.pdf';
     CollectionSettingsCard,
     InvoicePrefixCard,
     InvoiceTermsCard,
+    AccountBankExportCard,
     MandateBankExportCard,
     FoldLoadingStateComponent,
     FoldNumberInputComponent,

@@ -512,6 +512,11 @@ function mandateCount(fact: PhraseFact): Segment[] {
   return count === null ? [] : [text(' : '), count];
 }
 
+function accountCount(fact: PhraseFact): Segment[] {
+  const count = countOf(fact.payload['accountCount'], 'compte', 'comptes');
+  return count === null ? [] : [text(' : '), count];
+}
+
 export const ACCOUNTING_PHRASES = {
   'legal_entity.declared': onEntity(
     'a déclaré',
@@ -666,6 +671,36 @@ export const ACCOUNTING_PHRASES = {
     'de',
     mandateCount,
     ['mandateCount'],
+  ),
+  'account_bank_export.created': onEntity(
+    'a préparé l’export des comptes destinataires pour la banque',
+    'de',
+    accountCount,
+    ['accountCount'],
+  ),
+  'account_bank_export.downloaded': onEntity(
+    'a téléchargé le fichier des comptes destinataires',
+    'de',
+    accountCount,
+    ['accountCount'],
+  ),
+  'account_bank_export.imported': onEntity(
+    'a marqué importé à la banque l’export des comptes destinataires',
+    'de',
+    accountCount,
+    ['accountCount'],
+  ),
+  'account_bank_export.abandoned': onEntity(
+    'a abandonné l’export des comptes destinataires',
+    'de',
+    accountCount,
+    ['accountCount'],
+  ),
+  'account_bank_export.account_known_declared': onEntity(
+    'a déclaré connu de la banque, sans fichier, un compte débité par les mandats',
+    'de',
+    (fact) => [text(' : compte '), ...cite(OF_CLIENT, fact.payload['company'])],
+    ['company'],
   ),
   'collection.order_settled_otherwise': (fact) => {
     const number = subjectLabelOf(fact);

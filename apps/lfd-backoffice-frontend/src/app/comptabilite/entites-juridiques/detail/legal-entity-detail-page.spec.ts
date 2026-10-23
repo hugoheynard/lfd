@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { DeclareLegalEntityPayload, LegalEntityView } from '@lfd/contracts';
 
 import { LegalEntitiesService } from '../../legal-entities.service';
+import { AccountBankExportsService } from '../../account-bank-exports.service';
 import { MandateBankExportsService } from '../../mandate-bank-exports.service';
 import { LegalEntityDetailPage } from './legal-entity-detail-page';
 import { MandatePanel, type MandatePanelData } from './mandate-panel/mandate-panel';
@@ -181,6 +182,22 @@ async function render(
     providers: [
       { provide: LegalEntitiesService, useValue: api },
       { provide: FoldPanelHostService, useValue: panels },
+      // La carte « Comptes à la banque » aussi, pour la même raison.
+      {
+        provide: AccountBankExportsService,
+        useValue: {
+          of: () =>
+            Promise.resolve({
+              debitedCount: 0,
+              toExport: [],
+              inFlightCount: 0,
+              knownCount: 0,
+              maxPerExport: 200,
+              excluded: [],
+              exports: [],
+            }),
+        },
+      },
       // La carte « Mandats à la banque » lit elle-même : rien à exporter ici,
       // ce n'est pas le sujet de cette suite (elle a la sienne).
       {

@@ -1,0 +1,132 @@
+<fold-page-section
+  title="Comptes à la banque"
+  description="Le fichier des comptes destinataires que le portail de la banque importe AVANT celui des mandats : un mandat dont le compte lui est inconnu ne s'importe pas."
+  separator
+>
+  <div class="ab-stack">
+    <!-- Ce que la banque a dit, avant le bouton : un seul compte qu'elle
+         connaît déjà fait rejeter tout le fichier (réponse 8). -->
+    <fold-callout appearance="inset" variant="info">
+      Nouveaux comptes seulement&nbsp;: un compte que la banque connaît déjà fait rejeter tout
+      l'import. Un compte saisi à la main dans le portail se déclare «&nbsp;déjà connu&nbsp;».
+    </fold-callout>
+
+    @if (actionError(); as message) {
+      <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+    }
+
+    @if (loadError(); as message) {
+      <fold-empty-state tone="alert" title="Comptes illisibles" [subtitle]="message">
+        <button foldButton (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    } @else if (view(); as view) {
+      <fold-field-list>
+        <fold-field label="À exporter">{{ accounts(view.toExport.length) }}</fold-field>
+        <fold-field label="En attente de la banque">{{ accounts(view.inFlightCount) }}</fold-field>
+        <fold-field label="Connus de la banque">{{ accounts(view.knownCount) }}</fold-field>
+      </fold-field-list>
+
+      @if (view.excluded.length > 0) {
+        <fold-callout appearance="inset" variant="warning">
+          <strong>{{ accounts(view.excluded.length) }} hors du fichier&nbsp;:</strong>
+          <ul class="ab-list">
+            @for (excluded of view.excluded; track excluded.bankAccountId) {
+              <li>
+                {{ excluded.companyName }} (…{{ excluded.ibanLast4 }})&nbsp;:
+                {{ reasonLabels[excluded.reason] }}
+              </li>
+            }
+          </ul>
+        </fold-callout>
+      }
+
+      @if (view.toExport.length > 0) {
+        <ul class="ab-rows">
+          @for (account of view.toExport; track account.bankAccountId) {
+            <li class="ab-row">
+              <span>{{ account.companyName }} — compte …{{ account.ibanLast4 }}</span>
+              <fold-inline-confirm
+                intent="warning"
+                [labels]="{ confirm: 'Il est déjà dans le portail' }"
+                (confirmed)="declareKnown(account)"
+              >
+                <button foldButton emphasis="outline" [disabled]="busy()">
+                  Déjà connu de la banque
+                </button>
+              </fold-inline-confirm>
+            </li>
+          }
+        </ul>
+      }
+
+      @if (leftOver(view) > 0) {
+        <p class="ab-said">
+          Un fichier porte {{ accounts(view.maxPerExport) }} au plus&nbsp;:
+          {{ accounts(leftOver(view)) }} attendront l'export suivant.
+        </p>
+      }
+
+      <div class="ab-row">
+        <button
+          foldButton
+          icon="download"
+          [disabled]="busy() || view.toExport.length === 0"
+          [loading]="busy()"
+          (click)="prepare()"
+        >
+          Préparer l'export des comptes
+        </button>
+      </div>
+
+      <p class="ab-said">
+        Télécharger ne vaut pas import&nbsp;: un compte reste «&nbsp;en attente&nbsp;» tant que
+        l'export n'est pas marqué importé. Si la banque rejette le fichier, l'abandonner&nbsp;: ses
+        comptes redeviennent à exporter.
+      </p>
+
+      @if (view.exports.length > 0) {
+        <ul class="ab-rows">
+          @for (item of view.exports; track item.id) {
+            <li class="ab-row">
+              <span>
+                Préparé le {{ day(item.createdAt) }} — {{ accounts(item.accountCount) }} —
+                {{ stateOf(item) }}
+              </span>
+              <span class="ab-actions">
+                @if (item.abandonedAt === null) {
+                  <button
+                    foldButton
+                    emphasis="outline"
+                    icon="download"
+                    [disabled]="busy()"
+                    (click)="downloadFile(item)"
+                  >
+                    Télécharger
+                  </button>
+                }
+                @if (isOpen(item)) {
+                  <fold-inline-confirm
+                    intent="primary"
+                    [labels]="{ confirm: 'La banque l’a importé' }"
+                    (confirmed)="markImported(item)"
+                  >
+                    <button foldButton emphasis="outline" [disabled]="busy()">
+                      Marquer importé
+                    </button>
+                  </fold-inline-confirm>
+                  <fold-inline-confirm
+                    intent="danger"
+                    [labels]="{ confirm: 'La banque l’a rejeté' }"
+                    (confirmed)="abandon(item)"
+                  >
+                    <button foldButton emphasis="outline" [disabled]="busy()">Abandonner</button>
+                  </fold-inline-confirm>
+                }
+              </span>
+            </li>
+          }
+        </ul>
+      }
+    }
+  </div>
+</fold-page-section>

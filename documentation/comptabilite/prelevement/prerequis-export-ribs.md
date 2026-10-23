@@ -1,7 +1,9 @@
 # Prérequis de l'export des RIB — le fichier des comptes destinataires
 
-> **Doc-first**, écrite le **2026-10-23** à la demande de Hugo (« et si on
-> commençait par l'export des comptes… »). **Rien n'est bâti.** Ce document est
+> **Bâti le 2026-10-23** (Hugo : « R1 oui, lance l'export des RIB, on
+> documente nos choix faits en l'absence d'info »). Écrit doc-first le même
+> jour ; l'état réel du code est au **§ 8**, et les valeurs choisies faute de
+> réponse de la banque au **§ 7** — à relire dès qu'elle répond. Ce document est
 > la **référence du sujet RIB côté banque** : il rassemble les questions posées,
 > les réponses reçues, le modèle, la décision sur le BIC, ce que le code sait
 > déjà des RIB et le lien avec l'export des mandats.
@@ -164,8 +166,8 @@ Sous `apps/lfd-api/src/b2b/accounting/` :
 | `domain/events/mandate-bank-export.events.ts:16-29`              | fait au journal : sujet l'entité, `mandateCount`, jamais d'IBAN                                                                              |
 | back-office                                                      | carte « Mandats à la banque » sur la fiche de l'entité (`apps/lfd-backoffice-frontend/src/app/comptabilite/mandate-bank-exports.service.ts`) |
 
-**Ce qui n'existe pas** : aucun export des RIB (aucun fichier `*rib*export*`
-ni `*account*export*` sous `b2b/accounting/`, 2026-10-23).
+**Ce qui n'existait pas** à l'écriture : aucun export des RIB. Il existe
+depuis le 2026-10-23 — § 8.
 
 ---
 
@@ -358,7 +360,7 @@ construction.
 | #   | Décision                                                                                           | Proposition                                                                 |
 | --- | -------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
 | —   | ✅ **Option B** (notre export), A en filet de contrôle — Hugo, 2026-10-23                          | tranché                                                                     |
-| R1  | Bâtir avant les réponses Q-B1/Q-B4, sur les hypothèses du § 3 ?                                    | oui                                                                         |
+| R1  | ✅ Bâtir avant les réponses Q-B1/Q-B4, sur les hypothèses du § 3 — **Hugo, 2026-10-23 : oui**      | tranché                                                                     |
 | R2  | Saisie manuelle (lot 0) d'un compte à prélever avant le lot 1                                      | seulement si nécessaire, et déclaré « déjà connu » ensuite                  |
 | R3  | Accents : translittérer par `sepa()` ou garder le Latin-1                                          | `sepa()` : un seul nom partout                                              |
 | R4  | Adresse et SIREN renseignés quand on les a (D12)                                                   | oui                                                                         |
@@ -367,6 +369,13 @@ construction.
 | R7  | Portée de « déjà importé » : globale (abonnement) ou par entité                                    | globale (§ 2.1), jusqu'à la réponse Q-B9                                    |
 | R8  | Journaliser chaque téléchargement, ici **et** sur l'export des mandats                             | oui                                                                         |
 | —   | ✅ BIC toujours renseigné (D13, Hugo, 2026-10-23)                                                  | tranché                                                                     |
+
+**R2 à R7 : bâtis selon la proposition** (consigne de Hugo du 2026-10-23 :
+« pour R2–R8, retenir la proposition du doc et l'écrire »). R8 est bâti pour
+les **comptes** ; le volet **mandats** (journaliser le téléchargement de
+l'export des mandats) n'est **pas fait** — laissé pour après, un autre lot
+modifiant ces fichiers le même jour. Le § 2.4 (avertir sur la carte des
+mandats) n'est pas fait non plus, pour la même raison.
 
 ---
 
@@ -387,3 +396,75 @@ Passé sur la première version de ce document. Tout ce qu'il a soulevé est
 
 Non vérifié par lui, et ouvert ici le 2026-10-23 : les champs titulaire et
 adresse de `company_bank_accounts` (`accounting.prisma:298-311`), confirmés.
+
+---
+
+## 7. Choix faits en l'absence de réponse de la banque
+
+Bâti le 2026-10-23 sur R1. Chaque ligne est une **valeur** que la banque n'a
+pas dite ; elle vit dans **une** constante ou fonction nommée, dont le JSDoc
+daté renvoie ici. Sauf mention, le fichier est
+`apps/lfd-api/src/b2b/accounting/domain/services/account-bank-export-values.ts`.
+
+| Colonne / règle               | Choix                                                                     | Question | Coût si faux                                                                        | Où le changer                                                                                                                   |
+| ----------------------------- | ------------------------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| B — source du nom             | le **titulaire** du RIB (`holder`), pas la raison sociale                 | Q-B5, R6 | **accepté mais faux** si la banque rattache par le nom : pas de remise réelle avant | `accountBankCsvOf` (`apps/lfd-api/src/b2b/accounting/application/account-bank-export-support.ts`)                               |
+| B — longueur                  | 140 après `sepa()` ; au-delà **refus** nommant la société, jamais coupé   | Q-B4d    | import refusé si la borne est plus courte                                           | `ACCOUNT_HOLDER_MAX_LENGTH` (= `SEPA_MAX140_TEXT`)                                                                              |
+| Accents                       | translittérés par `sepa()` (ASCII) ; `&`, `°`, `_` → espace               | Q-B6, R3 | aucun refus attendu ; un nom moins joli                                             | `bankCell` (`mandate-bank-export-csv.ts`, partagé)                                                                              |
+| En-tête                       | **aucune**                                                                | Q-B4b    | première ligne perdue, ou import refusé                                             | `ACCOUNT_FILE_HEADER`                                                                                                           |
+| C — SIREN                     | celui de la société du RIB, vide s'il manque                              | R4       | refus si obligatoire                                                                | `PrismaAccountsForBankExportReader` (`payments`)                                                                                |
+| D, E, F — adresse             | rue / complément / « code postal ville », non coupées                     | Q-B1, R4 | refus si une longueur est bornée : couper                                           | `cityLineCell` ; `cellsOf` (`apps/lfd-api/src/b2b/accounting/domain/services/account-bank-export-csv.ts`)                       |
+| G — adresse 4                 | vide                                                                      | Q-B1     | refus si obligatoire                                                                | `ADDRESS_LINE_4_CELL`                                                                                                           |
+| H — pays dest.                | pays de l'**adresse** du titulaire                                        | Q-B7     | valeur fausse sans refus probable (FR des deux côtés)                               | `cellsOf` (`apps/lfd-api/src/b2b/accounting/domain/services/account-bank-export-csv.ts`)                                        |
+| I, J, K — IBAN                | pays / clé / **BBAN seul**                                                | Q-B4c    | le plus souvent refus ; au pire **accepté mais faux** : pas de remise réelle avant  | `ibanCells`                                                                                                                     |
+| M — nom liste                 | vide                                                                      | Q-B4e    | refus si obligatoire                                                                | `LIST_NAME_CELL`                                                                                                                |
+| N, O — identifiants hors SEPA | vides                                                                     | Q-B4g    | aucun en zone SEPA                                                                  | `BANK_IDENTIFIER_TYPE_CELL`, `ABA_BSB_INS_CELL`                                                                                 |
+| P — NIF                       | vide                                                                      | Q-B4f    | refus si obligatoire                                                                | `TAX_IDENTIFIER_CELL`                                                                                                           |
+| Portée de « déjà connu »      | **tout l'abonnement**, toutes entités confondues                          | Q-B9, R7 | un compte oublié pour une seconde entité, signalé par la vérification CENET         | `PrismaKnownAccountFingerprintsReader` (`apps/lfd-api/src/b2b/accounting/infrastructure/prisma-account-bank-exports.reader.ts`) |
+| Comptes candidats             | ceux que désigne un mandat **actif** de l'entité ; pas les mandats repris | —        | un compte de mandat repris manquant : la vérification CENET le signale              | `PrismaAccountsForBankExportReader` (`payments`)                                                                                |
+| Un compte = une ligne         | dédoublonné par empreinte d'IBAN, le RIB le plus ancien                   | R5       | refus si la banque veut une ligne par mandat                                        | `fingerprintedAccounts` (`apps/lfd-api/src/b2b/accounting/domain/services/account-bank-export-selection.ts`)                    |
+| Encodage HTTP                 | `text/csv; charset=iso-8859-1`, octets ASCII                              | —        | aucun : l'ASCII est du Latin-1                                                      | `AdminAccountBankExportsController.file`                                                                                        |
+
+Les deux lignes marquées « accepté mais faux » (Q-B4c, Q-B5) conditionnent
+la **première remise réelle**, pas la construction (§ 3).
+
+## 8. Ce qui est bâti (2026-10-23)
+
+```mermaid
+flowchart LR
+  P["Préparer<br/>POST …/account-exports"] --> E["account_bank_export<br/>+ lignes : empreinte"]
+  E --> F["Télécharger<br/>GET …/file.csv<br/>(b2b_accounting:write)"]
+  F --> J["journal : downloaded"]
+  E --> I["Marquer importé"]
+  E --> A["Abandonner<br/>(rejeté par la banque)"]
+  K["Déjà connu<br/>POST …/known-accounts"] --> KB["known_bank_account"]
+```
+
+- **Domaine** (`apps/lfd-api/src/b2b/accounting/domain/`) : l'agrégat
+  `AccountBankExport` (≥ 1, ≤ 200, chaque empreinte une fois, clos une fois :
+  importé **ou** abandonné ; un abandonné ne se télécharge plus) ;
+  `KnownBankAccount` (refuse une empreinte connue ou en vol) ; la sélection
+  « à exporter » (ni importée, ni en vol, ni déclarée) ; le rendu
+  `renderAccountBankCsv` (16 colonnes, `;` séparateur sans terminateur, CRLF).
+- **Lecture des RIB** : `AccountsForBankExportReader`, déclaré par la
+  comptabilité, implémenté par `payments` (descelle), relié dans
+  `appBootstrap/debtor-mandate.module.ts`. Compte sans BIC : écarté et nommé.
+- **Tables** (migration `20261023235000_l_export_des_comptes_pour_la_banque`,
+  additive) : `account_bank_export`, `account_bank_export_line`,
+  `known_bank_account` — empreintes seulement, jamais d'IBAN ; auteurs au
+  registre RGPD.
+- **Routes** sous `admin/accounting/legal-entities/:id/account-exports` :
+  lecture sous `b2b_accounting`, tout le reste — fichier compris — sous
+  `b2b_accounting:write`. Le fichier est recalculé, `no-store`, en pièce
+  jointe, refusé (409) si un RIB a changé ; il est calculé **puis** journalisé.
+- **Faits** : `account_bank_export.created`, `.downloaded`, `.imported`,
+  `.abandoned`, `.account_known_declared` — sujet l'entité, jamais un IBAN.
+- **Écran** : carte « Comptes à la banque » sur la fiche de l'entité,
+  au-dessus de « Mandats à la banque » : à exporter (nommés, avec « Déjà connu
+  de la banque »), en attente, connus, écartés, exports passés avec
+  Télécharger / Marquer importé / Abandonner.
+
+**Reste à faire** : avertir sur la carte des mandats quand un compte n'est
+pas importé (§ 2.4) ; journaliser le téléchargement de l'export des
+mandats (R8, volet mandats) ; deux préparations simultanées ne sont pas
+sérialisées (même trou que l'export des mandats).

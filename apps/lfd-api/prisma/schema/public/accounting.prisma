@@ -230,6 +230,8 @@ model LegalEntity {
   // Les exports des mandats pour le portail de la banque (plan
   // `export-des-mandats-pour-la-banque.md`). Côté inverse obligatoire.
   mandateBankExports     MandateBankExport[]
+  accountBankExports     AccountBankExport[]
+  knownBankAccounts      KnownBankAccount[]
   // Les dates des modes et le mode des payeurs (M1, `plan-rythme-de-facturation.md`).
   billingModeDates       BillingModeDates[]
   payerBillingModes      PayerBillingMode[]

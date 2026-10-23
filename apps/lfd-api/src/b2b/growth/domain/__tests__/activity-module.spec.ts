@@ -160,12 +160,16 @@ describe("moduleOf — la comptabilité", () => {
     // L'export des mandats pour la banque (M1, 2026-10-09).
     ["mandate_bank_export.created", "comptabilite"],
     ["mandate_bank_export.imported", "comptabilite"],
+    // L'export des comptes destinataires pour la banque (2026-10-23).
+    ["account_bank_export.created", "comptabilite"],
+    ["account_bank_export.downloaded", "comptabilite"],
+    ["account_bank_export.account_known_declared", "comptabilite"],
     ["payer.billing_mode_changed", "comptabilite"],
   ])("%s se range sous %s", (type, module) => {
     expect(moduleOf(type)).toBe(module);
   });
 
-  it("le filtre du module ne ramène que ses douze préfixes", () => {
+  it("le filtre du module ne ramène que ses treize préfixes", () => {
     expect(prefixesOf("comptabilite")).toEqual([
       "legal_entity.",
       "payment_mandate.",
@@ -179,6 +183,7 @@ describe("moduleOf — la comptabilité", () => {
       "billing_statement.",
       "invoice.",
       "mandate_bank_export.",
+      "account_bank_export.",
     ]);
   });
 

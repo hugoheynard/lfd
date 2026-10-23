@@ -5,6 +5,10 @@ import { CARD_INVOICE_PROVIDERS } from "./card-invoice.providers.js";
 import { DELIVERY_DAY_PROVIDERS } from "./delivery-day.providers.js";
 import { MANDATE_BANK_EXPORT_PROVIDERS } from "./mandate-bank-export.providers.js";
 import {
+  ACCOUNT_BANK_EXPORT_CONTROLLERS,
+  ACCOUNT_BANK_EXPORT_PROVIDERS,
+} from "./account-bank-export.providers.js";
+import {
   COLLECTION_TEST_CONTROLLERS,
   COLLECTION_TEST_PROVIDERS,
 } from "./collection-test.providers.js";
@@ -225,6 +229,7 @@ import { PrismaOrderRowsLock } from "./infrastructure/prisma-order-rows-lock.js"
     CompanyInvoicesController,
     ...BILLING_MODE_CONTROLLERS,
     ...COLLECTION_TEST_CONTROLLERS,
+    ...ACCOUNT_BANK_EXPORT_CONTROLLERS,
   ],
   providers: [
     { provide: LegalEntityRepository, useClass: PrismaLegalEntityRepository },
@@ -285,6 +290,7 @@ import { PrismaOrderRowsLock } from "./infrastructure/prisma-order-rows-lock.js"
     ...DELIVERY_DAY_PROVIDERS,
     ...BILLING_MODE_PROVIDERS,
     ...MANDATE_BANK_EXPORT_PROVIDERS,
+    ...ACCOUNT_BANK_EXPORT_PROVIDERS,
     ...COLLECTION_RETURN_PROVIDERS,
     // Le prélèvement d'essai et nos établissements (plan `plan-prelevement-d-essai.md`).
     ...COLLECTION_TEST_PROVIDERS,

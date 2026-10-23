@@ -392,5 +392,6 @@
   "test/company-standing-readers.e2e-spec.ts": 21402,
   "test/company-standing-workspace.e2e-spec.ts": 7357,
   "test/pickups-before-s2-migration.e2e-spec.ts": 5137,
-  "test/order-number.e2e-spec.ts": 17617
+  "test/order-number.e2e-spec.ts": 17617,
+  "test/account-bank-exports.e2e-spec.ts": 12000
 }
