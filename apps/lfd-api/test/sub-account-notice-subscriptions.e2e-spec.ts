@@ -200,7 +200,7 @@ describe("un panier récurrent créé dans l'espace d'un site", () => {
 
 /** Le trou du mur : une personne qui a quitté la société gardait la main sur le panier du site. */
 describe("le mur du rattachement actuel", () => {
-  it("un ancien membre du site est refusé, nommément ; un membre actuel passe", async () => {
+  it("un ancien membre du site garde la main par le principal (S6), puis est refusé, nommément, sans rattachement", async () => {
     const s = await noticeScene(ctx);
     const id = await create(s);
     const housekeeper = await ctx.prisma.user.findUniqueOrThrow({
@@ -218,10 +218,20 @@ describe("le mur du rattachement actuel", () => {
     await ctx.prisma.membership.deleteMany({
       where: { userId: housekeeper.id, companyId: s.site },
     });
-    const refused = await ctx
+    // S6 (2026-10-23) : elle reste administratrice du PRINCIPAL, et l'admin d'un
+    // principal entre dans ses sites — elle garde donc la main par lui.
+    await ctx
       .asSub(s.housekeeper)
       .patch(`/subscriptions/${id}/status`)
       .send({ status: "active" })
+      .expect(204);
+
+    // Plus aucun rattachement, ni au site ni au principal : refusée, nommément.
+    await ctx.prisma.membership.deleteMany({ where: { userId: housekeeper.id } });
+    const refused = await ctx
+      .asSub(s.housekeeper)
+      .patch(`/subscriptions/${id}/status`)
+      .send({ status: "paused" })
       .expect(403);
     expect(JSON.stringify(refused.body)).toContain(
       "Vous n'êtes plus membre de Chalet Gentiane : cet abonnement ne se gère plus depuis votre compte.",
