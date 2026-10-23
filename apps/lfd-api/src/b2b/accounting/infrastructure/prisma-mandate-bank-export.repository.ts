@@ -6,7 +6,8 @@ import { MandateBankExportRepository } from "../domain/ports/mandate-bank-export
 
 /**
  * Adaptateur d'écriture de l'export des mandats. Les LIGNES s'écrivent à la
- * création et jamais ensuite ; un `save` ultérieur ne pose que « importé ».
+ * création et jamais ensuite ; un `save` ultérieur ne pose que « importé » ou
+ * « abandonné ».
  * Aucun IBAN ne passe ici : une ligne n'en porte que l'empreinte.
  */
 @Injectable()
@@ -36,21 +37,27 @@ export class PrismaMandateBankExportRepository extends MandateBankExportReposito
         row.importedAt === null || row.importedByStaffId === null
           ? null
           : { at: row.importedAt, staffId: row.importedByStaffId },
+      abandoned:
+        row.abandonedAt === null || row.abandonedByStaffId === null
+          ? null
+          : { at: row.abandonedAt, staffId: row.abandonedByStaffId },
     });
   }
 
   async save(bankExport: MandateBankExport): Promise<void> {
     const state = bankExport.toPersistence();
-    const imported = {
+    const closed = {
       importedAt: state.imported?.at ?? null,
       importedByStaffId: state.imported?.staffId ?? null,
+      abandonedAt: state.abandoned?.at ?? null,
+      abandonedByStaffId: state.abandoned?.staffId ?? null,
     };
     const exists = await this.prisma.mandateBankExport.findFirst({
       where: { id: state.id, legalEntityId: state.legalEntityId },
       select: { id: true },
     });
     if (exists !== null) {
-      await this.prisma.mandateBankExport.update({ where: { id: state.id }, data: imported });
+      await this.prisma.mandateBankExport.update({ where: { id: state.id }, data: closed });
       return;
     }
     await this.prisma.mandateBankExport.create({
@@ -60,7 +67,7 @@ export class PrismaMandateBankExportRepository extends MandateBankExportReposito
         createdAt: state.created.at,
         createdByStaffId: state.created.staffId,
         mandateCount: state.lines.length,
-        ...imported,
+        ...closed,
       },
     });
     await this.prisma.mandateBankExportLine.createMany({

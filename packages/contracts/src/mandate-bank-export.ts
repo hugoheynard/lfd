@@ -17,12 +17,17 @@ export interface MandateBankExcludedView {
   readonly reason: MandateBankExclusionReasonView;
 }
 
-/** Un export préparé. `importedAt` : `null` tant que personne ne l'a marqué. */
+/**
+ * Un export préparé. `importedAt` / `abandonedAt` : `null` tant que personne
+ * ne l'a marqué ; jamais les deux à la fois (un export se clôt une fois).
+ */
 export interface MandateBankExportSummaryView {
   readonly id: string;
   readonly createdAt: string;
   readonly mandateCount: number;
   readonly importedAt: string | null;
+  /** La banque l'a rejeté (ajouté le 2026-10-23, lot P1). */
+  readonly abandonedAt: string | null;
 }
 
 /** La carte « Mandats à la banque ». */

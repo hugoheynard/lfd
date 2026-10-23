@@ -301,6 +301,10 @@ export const COLLECTION_FACTS = {
   "mandate_bank_export.created": fact(payload(mandateBankExport)),
   /** Le staff a dit que la banque a importé l'export : ses mandats ne ressortiront plus. */
   "mandate_bank_export.imported": fact(payload(mandateBankExport)),
+  /** Son fichier — fait d'IBAN en clair — a été téléchargé. */
+  "mandate_bank_export.downloaded": fact(payload(mandateBankExport)),
+  /** La banque l'a rejeté : il est clos, ses mandats restent « à exporter ». */
+  "mandate_bank_export.abandoned": fact(payload(mandateBankExport)),
   /** Un export des comptes destinataires est préparé : il est « en vol ». */
   "account_bank_export.created": fact(payload(accountBankExport)),
   /** Son fichier — fait d'IBAN en clair — a été téléchargé. */

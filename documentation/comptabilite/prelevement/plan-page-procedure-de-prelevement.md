@@ -1,6 +1,8 @@
 # Plan — la page « Procédure de prélèvement »
 
-> 📝 **Doc-first, écrit le 2026-10-23.** Rien n'est bâti. Demande de Hugo, ce
+> 📝 **Doc-first, écrit le 2026-10-23.** Seul **P1** est bâti (2026-10-23, non
+> commité à l'écriture de cette ligne — § 8) ; la page elle-même ne l'est pas.
+> Questions du § 9 **tranchées** le même jour. Demande de Hugo, ce
 > jour-là : « dans comptabilité on doit avoir une page procédure de
 > prélèvement, en gros des onglets qui se déverrouillent au fur et à mesure
 > comme un wizard mais avec de la mémoire. 1 export des RIB, 2 export des
@@ -37,7 +39,7 @@ onglet « à faire », recalculé.
 | des comptes destinataires sont à exporter                           | `AccountBankExportsView.toExport` (`packages/contracts/src/account-bank-export.ts:40`)                                                                                       |
 | un export de comptes est en vol (préparé, ni importé, ni abandonné) | `inFlightCount` (`:42`), `exports[].importedAt` / `abandonedAt` (`:31-32`)                                                                                                   |
 | des mandats sont à exporter                                         | `MandateBankExportsView.toExportCount` (`packages/contracts/src/mandate-bank-export.ts:33`)                                                                                  |
-| un export de mandats attend « Marquer importé »                     | `exports[].importedAt === null` (`:25`)                                                                                                                                      |
+| un export de mandats attend « Marquer importé »                     | `exports[].importedAt === null && abandonedAt === null` (`:28`, `:30` — `abandonedAt` depuis P1)                                                                             |
 | le lot de la clôture existe, son état                               | `CollectionCycleView.batches` (`packages/contracts/src/collection-batch.ts:190`) ; `status`, `depositedAt`, `cancelledAt`, `depositable`, `unmandatedCompanies` (`:143-158`) |
 | l'échéance et la limite de dépôt                                    | `requestedCollectionDay`, `depositDeadline` (`:165`, `:178`)                                                                                                                 |
 | les avis du lot                                                     | `lines[].notice` (`:116`)                                                                                                                                                    |
@@ -175,11 +177,11 @@ ne sait pas dire « ce mandat-ci a son compte importé » (reste à faire de
 carte des mandats quand un compte n'est pas importé »). Le verrou entier est
 plus strict que la règle de la banque, jamais plus lâche.
 
-⚠️ **Un export de mandats ne s'abandonne pas** — l'agrégat des comptes a
-`abandoned`, celui des mandats non (`packages/contracts/src/mandate-bank-export.ts:21-26` :
-`importedAt` seul). Un export rejeté par CENET resterait donc « en attente »
-pour toujours et **bloquerait l'onglet 3**. Il faut « Abandonner » côté mandats
-avant de bâtir la page (S3, § 7).
+~~⚠️ **Un export de mandats ne s'abandonne pas**~~ — **bâti le 2026-10-23
+(P1, § 8)** : l'agrégat `MandateBankExport` se clôt une fois, importé **ou**
+abandonné, et `MandateBankExportSummaryView` porte `abandonedAt`. Un export
+rejeté par CENET n'est donc plus « en attente » pour toujours : « en attente »
+se lit désormais `importedAt === null && abandonedAt === null`.
 
 **Réutilise** `app-mandate-bank-export-card` (`…/mandate-bank-export-card.ts:63`,
 entrée `entity`, hébergée aussi par `legal-entity-detail-page.html:344`),
@@ -373,7 +375,7 @@ relance du client (§ 3.9).
 | --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | S1  | **Une lecture d'état de la procédure** : `GET admin/accounting/collection-procedure?legalEntityId=` → l'état calculé de chaque onglet, le lot suivi, les autres lots ouverts, les attestations. Une query, un handler, qui lit les trois lecteurs existants | l'état des onglets ne se calcule pas à l'écran à partir de quatre appels : la règle de déverrouillage est du métier, elle vit côté serveur et se teste une fois |
 | S2  | **Par ligne de lot : compte importé, mandat importé** (sous l'empreinte actuelle)                                                                                                                                                                           | le verrou de l'onglet 3 par débiteur du lot (§ 3.3) ; c'est aussi l'avertissement « mandat non importé » que la procédure dit manquant (§ 1, § 2.4, § 5)        |
-| S3  | **« Abandonner » un export de mandats**                                                                                                                                                                                                                     | sinon un export rejeté bloque l'onglet 2 pour toujours (§ 3.2)                                                                                                  |
+| S3  | ~~**« Abandonner » un export de mandats**~~ — bâti le 2026-10-23 (P1)                                                                                                                                                                                       | sinon un export rejeté bloque l'onglet 2 pour toujours (§ 3.2)                                                                                                  |
 | S4  | **Les attestations** : tables `collection_batch_attestation` et `bank_return_check` (migration additive), commandes `AttestCollectionBatch`, `RecordBankReturnCheck`, faits au journal ; la confirmation d'import pose son `bank_return_check` (`imported`) | § 1.2                                                                                                                                                           |
 | S5  | Les gestes de « Prélèvement du mois » sortis de la page vers un service partagé (front)                                                                                                                                                                     | deux hôtes, une logique (§ 3.3)                                                                                                                                 |
 
@@ -382,8 +384,17 @@ procédure par lot. S1 est une lecture ; elle n'écrit rien (CQRS).
 
 ## 8. Découpage
 
-1. **P1** — S3 (abandonner un export de mandats), seul : un manque de l'outil
-   indépendamment de la page.
+1. ~~**P1** — S3 (abandonner un export de mandats), seul : un manque de l'outil
+   indépendamment de la page.~~ **Bâti le 2026-10-23** (non commité à
+   l'écriture) : `AbandonMandateBankExport` (`POST …/mandate-exports/:exportId/abandoned`),
+   fait `mandate_bank_export.abandoned`, bouton « Abandonner » sur la carte
+   « Mandats à la banque », migration additive
+   `20261024000000_l_abandon_d_un_export_des_mandats` (`abandoned_at`,
+   `abandoned_by_staff_id`, clos une fois). Avec lui, le volet mandats de R8
+   ([`prerequis-export-ribs.md`](prerequis-export-ribs.md) § 5) : chaque
+   téléchargement du fichier des mandats est journalisé
+   (`mandate_bank_export.downloaded`), et un export abandonné ne se
+   télécharge plus.
 2. **P2** — 🔴 **exige P1** (sans « Abandonner », un export de mandats
    rejeté fige l'onglet 2 et masque l'onglet 3). S1 sans attestations ni S2 : la page, les quatre onglets, cartes
    réutilisées, verrou de l'onglet 3 en **avertissement**. Utile tout de suite.
@@ -391,6 +402,27 @@ procédure par lot. S1 est une lecture ; elle n'écrit rien (CQRS).
 4. **P4** — S2 : le verrou de l'onglet 3 par débiteur du lot.
 
 ## 9. Questions pour Hugo
+
+> ✅ **Tranchées par Hugo le 2026-10-23** : « ok pour tout ». Chaque
+> proposition du plan est retenue :
+>
+> - **Q1** — attestations **nommées** (l'auteur est une personne, donc une
+>   colonne au registre RGPD, `documentation/legal/rgpd-registre.json`) ;
+> - **Q2** — l'onglet 3 se verrouille **par débiteur du lot** (P4) ;
+> - **Q3** — **N = 5 jours ouvrés** après l'échéance ;
+> - **Q4** — **un** lot suivi, et **tous les lots ouverts listés en tête** ;
+> - **Q5** — « PSR lus » **facultatif** ;
+> - **Q6** — **option A** : onglet verrouillé sélectionnable, avec son
+>   explication.
+>
+> ⚠️ **Avertissement décidé le même jour (à bâtir en P2).** Quand le délai de
+> pré-notification de l'entité laisse **moins de 2 jours ouvrés** avant la
+> limite de dépôt — B2B : 13 h 45 à J-1 selon la banque, contradiction J-2
+> non tranchée ([`reponses-de-la-banque.md`](reponses-de-la-banque.md),
+> étape 6) —, l'écran le dit **sur la carte des réglages du prélèvement de
+> l'entité** ET **sur l'onglet 3**. Il avertit, il ne refuse pas.
+
+Le texte des questions, tel que posé :
 
 - **Q1** — Les **attestations** (« Contrôle CSV relu », « signée », « PSR
   lus », « retours contrôlés ») : les veux-tu notées par une personne nommée

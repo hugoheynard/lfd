@@ -16,7 +16,8 @@
 // Contraintes INVISIBLES ici — dans la migration
 // `20261009100000_l_export_des_mandats_pour_la_banque` : un export compte au
 // moins un mandat ; « importé » porte son instant ET son auteur, ou aucun des
-// deux ; l'empreinte est 64 caractères hexadécimaux.
+// deux ; « abandonné » de même, et jamais avec « importé » (migration
+// `20261024000000_l_abandon_d_un_export_des_mandats`) ; l'empreinte est 64 caractères hexadécimaux.
 
 /// Un export : les mandats d'une entité émettrice, figés à l'instant du geste.
 model MandateBankExport {
@@ -34,6 +35,11 @@ model MandateBankExport {
   /// Posé par « Marquer importé », une seule fois. NULL = pas encore importé.
   importedAt        DateTime? @map("imported_at") @db.Timestamptz(3)
   importedByStaffId String?   @map("imported_by_staff_id")
+
+  /// Posé par « Abandonner » (la banque l'a rejeté), une seule fois — jamais
+  /// avec « importé » (`mandate_bank_export_closed_once`).
+  abandonedAt        DateTime? @map("abandoned_at") @db.Timestamptz(3)
+  abandonedByStaffId String?   @map("abandoned_by_staff_id")
 
   lines MandateBankExportLine[]
 

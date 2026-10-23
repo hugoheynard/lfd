@@ -63,3 +63,42 @@ export class MandateBankExportImportedEvent implements JournaledEvent {
     );
   }
 }
+
+/**
+ * Le fichier de l'export a été téléchargé (R8, `prerequis-export-ribs.md`) :
+ * il porte les IBAN en clair, chaque sortie est donc tracée.
+ */
+export class MandateBankExportDownloadedEvent implements JournaledEvent {
+  constructor(
+    readonly bankExport: MandateBankExport,
+    readonly entity: ExportEntity,
+    readonly at: Date,
+  ) {}
+
+  journalFact(): JournalFact {
+    return exportFact(
+      MANDATE_BANK_EXPORT_FACT_TYPES.downloaded,
+      this.bankExport,
+      this.entity,
+      this.at,
+    );
+  }
+}
+
+/** La banque a rejeté l'export : quelqu'un l'a abandonné. */
+export class MandateBankExportAbandonedEvent implements JournaledEvent {
+  constructor(
+    readonly bankExport: MandateBankExport,
+    readonly entity: ExportEntity,
+    readonly at: Date,
+  ) {}
+
+  journalFact(): JournalFact {
+    return exportFact(
+      MANDATE_BANK_EXPORT_FACT_TYPES.abandoned,
+      this.bankExport,
+      this.entity,
+      this.at,
+    );
+  }
+}

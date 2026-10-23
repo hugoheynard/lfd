@@ -51,4 +51,11 @@ export class MandateBankExportsService {
       this.http.post<void>(`${this.base}/${entityId}/mandate-exports/${exportId}/imported`, {}),
     );
   }
+
+  /** La banque l'a rejeté : il cesse d'être en attente, ses mandats restent à exporter. */
+  async abandon(entityId: string, exportId: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(`${this.base}/${entityId}/mandate-exports/${exportId}/abandoned`, {}),
+    );
+  }
 }

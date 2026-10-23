@@ -372,9 +372,9 @@ construction.
 
 **R2 à R7 : bâtis selon la proposition** (consigne de Hugo du 2026-10-23 :
 « pour R2–R8, retenir la proposition du doc et l'écrire »). R8 est bâti pour
-les **comptes** ; le volet **mandats** (journaliser le téléchargement de
-l'export des mandats) n'est **pas fait** — laissé pour après, un autre lot
-modifiant ces fichiers le même jour. Le § 2.4 (avertir sur la carte des
+les **comptes** ; le volet **mandats** l'est aussi depuis le 2026-10-23, avec
+le lot P1 de [`plan-page-procedure-de-prelevement.md`](plan-page-procedure-de-prelevement.md)
+§ 8 : fait `mandate_bank_export.downloaded`, calculé puis journalisé comme ici. Le § 2.4 (avertir sur la carte des
 mandats) n'est pas fait non plus, pour la même raison.
 
 ---
@@ -465,6 +465,5 @@ flowchart LR
   Télécharger / Marquer importé / Abandonner.
 
 **Reste à faire** : avertir sur la carte des mandats quand un compte n'est
-pas importé (§ 2.4) ; journaliser le téléchargement de l'export des
-mandats (R8, volet mandats) ; deux préparations simultanées ne sont pas
+pas importé (§ 2.4) ; deux préparations simultanées ne sont pas
 sérialisées (même trou que l'export des mandats).

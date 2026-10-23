@@ -1,5 +1,6 @@
 import {
   BankExportAlreadyImportedError,
+  MandateBankExportAbandonedError,
   BankExportTooManyMandatesError,
   DuplicateMandateInBankExportError,
   NothingToExportToBankError,
@@ -15,6 +16,8 @@ export interface MandateBankExportState {
   readonly lines: readonly ExportedMandateLine[];
   /** `null` tant que personne n'a dit « la banque l'a importé ». */
   readonly imported: StaffStamp | null;
+  /** `null` tant que personne n'a dit « la banque l'a rejeté, on l'abandonne ». */
+  readonly abandoned: StaffStamp | null;
 }
 
 export interface ExportMandatesInput {
@@ -33,8 +36,10 @@ export interface ExportMandatesInput {
  *
  * - un export porte **au moins un** mandat, **200 au plus** (la banque n'en
  *   importe pas davantage par fichier), et chacun **une seule fois** ;
- * - « importé » se marque **une fois** : un téléchargement n'est pas un import,
- *   et un second marquage effacerait qui l'a dit le premier.
+ * - un export se clôt **une fois**, importé OU abandonné : un téléchargement
+ *   n'est pas un import, un second marquage effacerait qui l'a dit le premier,
+ *   un export importé ne s'abandonne pas (ses mandats sont chez la banque) et
+ *   un export abandonné ne s'importe ni ne se télécharge plus.
  */
 export class MandateBankExport {
   private constructor(private state: MandateBankExportState) {}
@@ -58,7 +63,12 @@ export class MandateBankExport {
       }
       seen.add(line.mandateId);
     }
-    return new MandateBankExport({ ...input, lines: [...input.lines], imported: null });
+    return new MandateBankExport({
+      ...input,
+      lines: [...input.lines],
+      imported: null,
+      abandoned: null,
+    });
   }
 
   static rehydrate(state: MandateBankExportState): MandateBankExport {
@@ -73,15 +83,48 @@ export class MandateBankExport {
     return this.state.lines.length;
   }
 
-  /** @throws {BankExportAlreadyImportedError} */
+  /**
+   * @throws {BankExportAlreadyImportedError}
+   * @throws {MandateBankExportAbandonedError}
+   */
   markImported(stamp: StaffStamp): void {
-    if (this.state.imported !== null) {
-      throw new BankExportAlreadyImportedError(this.state.imported.at);
-    }
+    this.assertOpen();
     this.state = { ...this.state, imported: stamp };
+  }
+
+  /**
+   * La banque a rejeté l'export (plan `plan-page-procedure-de-prelevement.md`,
+   * S3) : il cesse d'être « en attente ». Ses mandats n'ont jamais compté
+   * pour importés — ils restent « à exporter » sans autre geste.
+   *
+   * @throws {BankExportAlreadyImportedError}
+   * @throws {MandateBankExportAbandonedError}
+   */
+  abandon(stamp: StaffStamp): void {
+    this.assertOpen();
+    this.state = { ...this.state, abandoned: stamp };
+  }
+
+  /**
+   * Un export abandonné ne se télécharge plus : ses mandats partiront dans un
+   * nouvel export, et deux fichiers les porteraient deux fois.
+   *
+   * @throws {MandateBankExportAbandonedError}
+   */
+  assertDownloadable(): void {
+    if (this.state.abandoned !== null) {
+      throw new MandateBankExportAbandonedError(this.state.abandoned.at);
+    }
   }
 
   toPersistence(): MandateBankExportState {
     return this.state;
+  }
+
+  private assertOpen(): void {
+    if (this.state.imported !== null) {
+      throw new BankExportAlreadyImportedError(this.state.imported.at);
+    }
+    this.assertDownloadable();
   }
 }

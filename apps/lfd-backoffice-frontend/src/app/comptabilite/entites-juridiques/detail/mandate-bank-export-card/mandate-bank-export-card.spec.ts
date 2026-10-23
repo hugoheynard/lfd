@@ -1,6 +1,8 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import type { LegalEntityView, MandateBankExportsView } from '@lfd/contracts';
+import { FoldInlineConfirmComponent } from 'fold-ng';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { MandateBankExportsService } from '../../../mandate-bank-exports.service';
@@ -9,7 +11,8 @@ import { MandateBankExportCard } from './mandate-bank-export-card';
 /**
  * Ce que la carte tient : les écartés NOMMÉS avec leur sortie, « Préparer »
  * inactif quand il n'y a rien à exporter (sauf « tous »), préparer puis
- * télécharger, « Marquer importé » seulement sur un export qui ne l'est pas,
+ * télécharger, « Marquer importé » et « Abandonner » seulement sur un export
+ * ni importé ni abandonné, un export abandonné qui ne se télécharge plus,
  * et le refus du serveur lu même quand il arrive en `Blob`.
  */
 
@@ -91,12 +94,21 @@ const VIEW: MandateBankExportsView = {
       createdAt: '2026-10-09T09:00:00.000Z',
       mandateCount: 1,
       importedAt: null,
+      abandonedAt: null,
     },
     {
       id: 'exp_old',
       createdAt: '2026-10-01T09:00:00.000Z',
       mandateCount: 1,
       importedAt: '2026-10-02T09:00:00.000Z',
+      abandonedAt: null,
+    },
+    {
+      id: 'exp_ko',
+      createdAt: '2026-09-01T09:00:00.000Z',
+      mandateCount: 1,
+      importedAt: null,
+      abandonedAt: '2026-09-02T09:00:00.000Z',
     },
   ],
 };
@@ -121,6 +133,10 @@ class FakeService {
   }
   markImported(entityId: string, exportId: string): Promise<void> {
     this.calls.push(`imported:${entityId}:${exportId}`);
+    return Promise.resolve();
+  }
+  abandon(entityId: string, exportId: string): Promise<void> {
+    this.calls.push(`abandon:${entityId}:${exportId}`);
     return Promise.resolve();
   }
 }
@@ -150,6 +166,15 @@ function button(
   return [
     ...(fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('button'),
   ].find((node) => (node.textContent ?? '').trim() === label);
+}
+
+function buttons(
+  fixture: ComponentFixture<MandateBankExportCard>,
+  label: string,
+): HTMLButtonElement[] {
+  return [
+    ...(fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('button'),
+  ].filter((node) => (node.textContent ?? '').trim() === label);
 }
 
 async function settle(fixture: ComponentFixture<MandateBankExportCard>): Promise<void> {
@@ -193,14 +218,23 @@ describe('la carte « Mandats à la banque »', () => {
     expect(text(fixture)).toContain("Attribuer d'abord l'identifiant créancier (ICS)");
   });
 
-  it('« Marquer importé » n’apparaît que sur l’export qui ne l’est pas', async () => {
+  it('« Marquer importé » et « Abandonner » ne s’offrent que sur l’export en attente ; l’abandonné ne se télécharge plus', async () => {
     const fixture = await render();
-    const marks = [...(fixture.nativeElement as HTMLElement).querySelectorAll('button')].filter(
-      (node) => (node.textContent ?? '').trim() === 'Marquer importé',
-    );
-    expect(marks).toHaveLength(1);
+    expect(buttons(fixture, 'Marquer importé')).toHaveLength(1);
+    expect(buttons(fixture, 'Abandonner')).toHaveLength(1);
+    expect(buttons(fixture, 'Télécharger')).toHaveLength(2);
     expect(text(fixture)).toContain('pas encore importé');
     expect(text(fixture)).toContain('importé le 2 octobre 2026');
+    expect(text(fixture)).toContain('abandonné le 2 septembre 2026');
+  });
+
+  it('« Abandonner », confirmé, abandonne l’export en attente et relit la carte', async () => {
+    const fixture = await render();
+    const confirms = fixture.debugElement.queryAll(By.directive(FoldInlineConfirmComponent));
+    // Le second du seul export ouvert : « La banque l’a rejeté ».
+    confirms.at(-1)?.triggerEventHandler('confirmed', '');
+    await settle(fixture);
+    expect(service.calls).toEqual(['of', 'abandon:le1:exp_new', 'of']);
   });
 
   it('lit le refus du serveur même quand il arrive en Blob (409 sur le fichier)', async () => {

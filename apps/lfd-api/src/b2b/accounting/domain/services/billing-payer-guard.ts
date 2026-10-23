@@ -26,3 +26,12 @@ export function requireBillingPayer(
   }
   return { id: standing.companyId, name: standing.name };
 }
+
+/**
+ * Le critère de `requireBillingPayer`, sans refus : le compte ne suit aucun
+ * autre compte en `billing` à `at` — il est facturé en son nom.
+ */
+export function isBillingPayerAt(standing: PayerStanding, at: Date): boolean {
+  const follow = billingFollowAt(standing.companyId, at, standing.follows);
+  return follow === null || follow.payerId === standing.companyId;
+}

@@ -56,6 +56,7 @@ export class GetMandateBankExportsHandler implements IQueryHandler<
         createdAt: row.createdAt.toISOString(),
         mandateCount: row.mandateCount,
         importedAt: row.importedAt?.toISOString() ?? null,
+        abandonedAt: row.abandonedAt?.toISOString() ?? null,
       })),
     };
   }

@@ -315,6 +315,26 @@ describe("le calendrier des trois rythmes", () => {
     }
   });
 
+  /**
+   * Régression : le mensuel ne comptait que les payeurs ayant CHOISI un mode,
+   * jamais ceux qui l'ont par défaut (2026-10-23).
+   */
+  it("le mensuel ne comptait pas les clients au mode par défaut", async () => {
+    const id = await declare();
+    await createCompany(ctx.prisma, { raisonSociale: "Sans Choix SAS" });
+    await createCompany(ctx.prisma, { raisonSociale: "Sans Choix Non Plus SAS" });
+
+    const view = jsonBody<BillingRhythmsCalendarView>(
+      await staff().get(`${BASE}/${id}/billing-modes/calendar`).expect(200),
+    );
+
+    expect(view.rhythms.map((lane) => [lane.mode, lane.payerCount])).toEqual([
+      ["weekly", 0],
+      ["semimonthly", 0],
+      ["monthly", 2],
+    ]);
+  });
+
   it("refuse une entité inconnue en 404", async () => {
     await staff().get(`${BASE}/inconnue/billing-modes/calendar`).expect(404);
   });

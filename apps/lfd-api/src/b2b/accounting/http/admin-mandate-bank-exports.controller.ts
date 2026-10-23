@@ -22,8 +22,10 @@ import type { Response } from "express";
 import { AdminSurface, RequirePermission } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
+import { AbandonMandateBankExportCommand } from "../application/commands/abandon-mandate-bank-export.command.js";
 import { ExportMandatesForBankCommand } from "../application/commands/export-mandates-for-bank.command.js";
 import { MarkMandateBankExportImportedCommand } from "../application/commands/mark-mandate-bank-export-imported.command.js";
+import { RecordMandateBankExportDownloadCommand } from "../application/commands/record-mandate-bank-export-download.command.js";
 import type { MandateBankFile } from "../application/queries/export-mandate-bank-file.handler.js";
 import {
   ExportMandateBankFileQuery,
@@ -68,18 +70,26 @@ export class AdminMandateBankExportsController {
     return { exportId };
   }
 
-  /** Le fichier, recalculé ; 409 si un compte ne correspond plus. */
+  /**
+   * Le fichier, recalculé ; 409 si un compte ne correspond plus ou si l'export
+   * est abandonné. Calculé D'ABORD, journalisé ENSUITE (R8) : un refus n'est
+   * pas un téléchargement, et un fichier qu'on n'a pas pu journaliser ne part pas.
+   */
   @Get(":id/mandate-exports/:exportId/file.csv")
   @RequirePermission("b2b_accounting:write")
   @Header("Content-Type", "text/csv; charset=us-ascii")
   @Header("Cache-Control", "no-store")
   async file(
+    @StaffUserId() staffUserId: string,
     @Param("id") id: string,
     @Param("exportId") exportId: string,
     @Res({ passthrough: true }) response: Response,
   ): Promise<string> {
     const file = await this.queries.execute<ExportMandateBankFileQuery, MandateBankFile>(
       new ExportMandateBankFileQuery(id, exportId),
+    );
+    await this.commands.execute<RecordMandateBankExportDownloadCommand, void>(
+      new RecordMandateBankExportDownloadCommand(id, exportId, staffUserId),
     );
     response.setHeader(
       "Content-Disposition",
@@ -98,6 +108,19 @@ export class AdminMandateBankExportsController {
   ): Promise<void> {
     await this.commands.execute<MarkMandateBankExportImportedCommand, void>(
       new MarkMandateBankExportImportedCommand(id, exportId, staffUserId),
+    );
+  }
+
+  /** La banque l'a rejeté : il cesse d'être en attente ; 409 s'il est déjà clos. */
+  @Post(":id/mandate-exports/:exportId/abandoned")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async abandoned(
+    @StaffUserId() staffUserId: string,
+    @Param("id") id: string,
+    @Param("exportId") exportId: string,
+  ): Promise<void> {
+    await this.commands.execute<AbandonMandateBankExportCommand, void>(
+      new AbandonMandateBankExportCommand(id, exportId, staffUserId),
     );
   }
 }

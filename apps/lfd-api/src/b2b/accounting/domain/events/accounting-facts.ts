@@ -90,6 +90,9 @@ export const COLLECTION_FACT_TYPES = {
 export const MANDATE_BANK_EXPORT_FACT_TYPES = {
   created: "mandate_bank_export.created",
   imported: "mandate_bank_export.imported",
+  /** Le fichier — fait d'IBAN en clair — a été servi (R8, `prerequis-export-ribs.md`). */
+  downloaded: "mandate_bank_export.downloaded",
+  abandoned: "mandate_bank_export.abandoned",
 } as const satisfies Readonly<Record<string, JournalFactType>>;
 
 /**

@@ -19,13 +19,14 @@ import {
 import { saveBlob } from '../../../../shared/download/save-blob';
 import {
   MANDATE_BANK_EXCLUSION_LABELS,
+  mandateExportStateLabel,
   mandatesLabel,
   parisDayLabel,
 } from '../../../mandate-bank-export-wording';
 import { MandateBankExportsService } from '../../../mandate-bank-exports.service';
 
 /**
- * **Mandats à la banque** — préparer, télécharger et marquer importé le
+ * **Mandats à la banque** — préparer, télécharger, marquer importé ou abandonner le
  * fichier d'import des mandats du portail de la banque (plan
  * `export-des-mandats-pour-la-banque.md`).
  *
@@ -34,7 +35,9 @@ import { MandateBankExportsService } from '../../../mandate-bank-exports.service
  * Préparer FIGE un export ; télécharger le RECALCULE (le serveur refuse si un
  * compte a changé depuis) ; marquer importé est ce qui retire ses mandats de
  * « à exporter ». Un fichier téléchargé n'est pas un fichier importé : la
- * carte ne déduit rien d'un clic sur « Télécharger ».
+ * carte ne déduit rien d'un clic sur « Télécharger ». Abandonner clôt un
+ * export que la banque a rejeté : sans lui, il restait « en attente » pour
+ * toujours (plan `plan-page-procedure-de-prelevement.md`, S3).
  *
  * ## Les écartés sont nommés, pas tus
  *
@@ -72,6 +75,7 @@ export class MandateBankExportCard {
   protected readonly reasonLabels = MANDATE_BANK_EXCLUSION_LABELS;
   protected readonly mandates = mandatesLabel;
   protected readonly day = parisDayLabel;
+  protected readonly stateOf = mandateExportStateLabel;
 
   constructor() {
     effect(() => {
@@ -104,6 +108,15 @@ export class MandateBankExportCard {
   protected async markImported(item: MandateBankExportSummaryView): Promise<void> {
     const entityId = this.entity().id;
     await this.run(() => this.service.markImported(entityId, item.id));
+  }
+
+  protected isOpen(item: MandateBankExportSummaryView): boolean {
+    return item.importedAt === null && item.abandonedAt === null;
+  }
+
+  protected async abandon(item: MandateBankExportSummaryView): Promise<void> {
+    const entityId = this.entity().id;
+    await this.run(() => this.service.abandon(entityId, item.id));
   }
 
   private async download(exportId: string): Promise<void> {

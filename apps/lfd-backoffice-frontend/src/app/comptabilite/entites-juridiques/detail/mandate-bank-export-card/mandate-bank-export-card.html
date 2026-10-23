@@ -67,7 +67,8 @@
       <p class="mb-said">
         Télécharger ne vaut pas import&nbsp;: un mandat reste «&nbsp;à exporter&nbsp;» tant que
         l'export qui le porte n'est pas marqué importé. Un mandat révoqué après import n'est pas
-        signalé à la banque&nbsp;: il n'entre plus dans aucun lot, elle ne le débitera donc pas.
+        signalé à la banque&nbsp;: il n'entre plus dans aucun lot, elle ne le débitera donc pas. Si
+        la banque rejette le fichier, l'abandonner&nbsp;: ses mandats restent à exporter.
       </p>
 
       @if (view.exports.length > 0) {
@@ -76,23 +77,21 @@
             <li class="mb-export">
               <span>
                 Préparé le {{ day(item.createdAt) }} — {{ mandates(item.mandateCount) }} —
-                {{
-                  item.importedAt === null
-                    ? 'pas encore importé'
-                    : 'importé le ' + day(item.importedAt)
-                }}
+                {{ stateOf(item) }}
               </span>
               <span class="mb-actions">
-                <button
-                  foldButton
-                  emphasis="outline"
-                  icon="download"
-                  [disabled]="busy()"
-                  (click)="downloadFile(item)"
-                >
-                  Télécharger
-                </button>
-                @if (item.importedAt === null) {
+                @if (item.abandonedAt === null) {
+                  <button
+                    foldButton
+                    emphasis="outline"
+                    icon="download"
+                    [disabled]="busy()"
+                    (click)="downloadFile(item)"
+                  >
+                    Télécharger
+                  </button>
+                }
+                @if (isOpen(item)) {
                   <fold-inline-confirm
                     intent="primary"
                     [labels]="{ confirm: 'La banque l’a importé' }"
@@ -101,6 +100,13 @@
                     <button foldButton emphasis="outline" [disabled]="busy()">
                       Marquer importé
                     </button>
+                  </fold-inline-confirm>
+                  <fold-inline-confirm
+                    intent="danger"
+                    [labels]="{ confirm: 'La banque l’a rejeté' }"
+                    (confirmed)="abandon(item)"
+                  >
+                    <button foldButton emphasis="outline" [disabled]="busy()">Abandonner</button>
                   </fold-inline-confirm>
                 }
               </span>

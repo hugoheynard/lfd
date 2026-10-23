@@ -220,6 +220,9 @@ describe("l'export des mandats pour la banque", () => {
     await asReader()
       .post(`${exportsOf(entityId)}/${exportId}/imported`)
       .expect(403);
+    await asReader()
+      .post(`${exportsOf(entityId)}/${exportId}/abandoned`)
+      .expect(403);
   });
 
   it("l'export d'une autre entité n'existe pas sous celle-ci (404)", async () => {
@@ -234,6 +237,43 @@ describe("l'export des mandats pour la banque", () => {
     await staff()
       .post(`${exportsOf(other)}/${exportId}/imported`)
       .expect(404);
+    await staff()
+      .post(`${exportsOf(other)}/${exportId}/abandoned`)
+      .expect(404);
+  });
+
+  it("abandonné, un export se clôt : ni fichier ni import, et ses mandats repartent", async () => {
+    const entityId = await entity("552100554");
+    await mandated(entityId, "Client");
+    const rejected = await prepare(entityId);
+
+    await staff()
+      .post(`${exportsOf(entityId)}/${rejected}/abandoned`)
+      .expect(204);
+    await staff()
+      .post(`${exportsOf(entityId)}/${rejected}/abandoned`)
+      .expect(409);
+    await staff()
+      .post(`${exportsOf(entityId)}/${rejected}/imported`)
+      .expect(409);
+    await staff()
+      .get(`${exportsOf(entityId)}/${rejected}/file.csv`)
+      .expect(409);
+
+    const card = jsonBody<MandateBankExportsView>(
+      await staff().get(exportsOf(entityId)).expect(200),
+    );
+    expect(card).toMatchObject({ toExportCount: 1, importedCount: 0 });
+    expect(card.exports[0]).toMatchObject({ id: rejected, importedAt: null });
+    expect(card.exports[0]?.abandonedAt).not.toBeNull();
+
+    const second = await prepare(entityId);
+    await staff()
+      .post(`${exportsOf(entityId)}/${second}/imported`)
+      .expect(204);
+    await staff()
+      .post(`${exportsOf(entityId)}/${second}/abandoned`)
+      .expect(409);
   });
 
   it("refuse (409) le fichier d'un mandat révoqué depuis l'export", async () => {
@@ -251,13 +291,15 @@ describe("l'export des mandats pour la banque", () => {
     expect(refused.text).toContain(rum);
   });
 
-  it("n'écrit aucun IBAN au journal", async () => {
+  it("journalise chaque téléchargement (R8), sans jamais un IBAN", async () => {
     const entityId = await entity("552100554");
     await mandated(entityId, "Client");
     const exportId = await prepare(entityId);
-    await staff()
-      .get(`${exportsOf(entityId)}/${exportId}/file.csv`)
-      .expect(200);
+    for (let round = 0; round < 2; round += 1) {
+      await staff()
+        .get(`${exportsOf(entityId)}/${exportId}/file.csv`)
+        .expect(200);
+    }
     await staff()
       .post(`${exportsOf(entityId)}/${exportId}/imported`)
       .expect(204);
@@ -266,10 +308,14 @@ describe("l'export des mandats pour la banque", () => {
       where: { type: { startsWith: "mandate_bank_export." } },
       orderBy: { occurredAt: "asc" },
     });
-    expect(journal.map((row) => row.type)).toEqual([
-      "mandate_bank_export.created",
-      "mandate_bank_export.imported",
-    ]);
+    expect(journal.map((row) => row.type).sort()).toEqual(
+      [
+        "mandate_bank_export.created",
+        "mandate_bank_export.downloaded",
+        "mandate_bank_export.downloaded",
+        "mandate_bank_export.imported",
+      ].sort(),
+    );
     expect(JSON.stringify(journal)).not.toContain(DEBTOR_IBAN);
     expect(JSON.stringify(journal)).not.toContain(DEBTOR_IBAN.slice(4, 14));
   });

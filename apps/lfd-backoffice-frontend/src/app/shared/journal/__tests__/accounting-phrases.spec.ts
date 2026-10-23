@@ -583,6 +583,15 @@ describe('l’export des mandats pour la banque', () => {
       sentence(entity('mandate_bank_export.imported', { ...exported, mandateCount: 1 })),
     ).toMatch(/: 1 mandat$/u);
   });
+
+  it('dit le téléchargement et l’abandon, avec le nombre de mandats', () => {
+    expect(sentence(entity('mandate_bank_export.downloaded', exported))).toContain(
+      'a téléchargé le fichier des mandats pour la banque de l’entité émettrice « La Folie Douce SAS » : 3 mandats',
+    );
+    expect(sentence(entity('mandate_bank_export.abandoned', exported))).toContain(
+      'a abandonné l’export des mandats pour la banque de l’entité émettrice',
+    );
+  });
 });
 
 describe('l’export des comptes destinataires pour la banque', () => {

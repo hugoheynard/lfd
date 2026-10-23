@@ -41,6 +41,16 @@ export class BankExportAlreadyImportedError extends BusinessError {
   }
 }
 
+/** L'export a été abandonné : la banque l'avait rejeté. */
+export class MandateBankExportAbandonedError extends BusinessError {
+  constructor(readonly abandonedAt: Date) {
+    super(
+      "accounting.mandate_bank_export.already_abandoned",
+      `Cet export a été abandonné (le ${abandonedAt.toISOString()}) : il ne se télécharge plus et ne se marque plus importé, ses mandats sont redevenus « à exporter ». Préparer un nouvel export.`,
+    );
+  }
+}
+
 /** L'entité n'a pas d'ICS : la colonne B, obligatoire, serait vide. */
 export class BankExportWithoutCreditorIdentifierError extends BusinessError {
   constructor(readonly entityName: string) {

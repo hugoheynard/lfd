@@ -2,6 +2,7 @@ import {
   BankExportAlreadyImportedError,
   BankExportTooManyMandatesError,
   DuplicateMandateInBankExportError,
+  MandateBankExportAbandonedError,
   NothingToExportToBankError,
 } from "../../errors/mandate-bank-export-errors.js";
 import { MandateBankExport } from "../mandate-bank-export.js";
@@ -68,5 +69,40 @@ describe("un export des mandats pour la banque", () => {
       BankExportAlreadyImportedError,
     );
     expect(bankExport.toPersistence().imported).toEqual(first);
+  });
+});
+
+describe("abandonner un export des mandats (S3, P1)", () => {
+  const LATER = { at: new Date("2026-10-10T08:00:00.000Z"), staffId: "staff_2" };
+
+  it("s'abandonne une fois, avec son instant et son auteur, et ne se télécharge plus", () => {
+    const bankExport = exported();
+    bankExport.abandon(LATER);
+    expect(bankExport.toPersistence().abandoned).toEqual(LATER);
+    expect(() => bankExport.assertDownloadable()).toThrow(MandateBankExportAbandonedError);
+  });
+
+  it("un export abandonné ne s'importe pas, ni ne s'abandonne deux fois", () => {
+    const bankExport = exported();
+    bankExport.abandon(LATER);
+    expect(() => bankExport.markImported(LATER)).toThrow(MandateBankExportAbandonedError);
+    expect(() => bankExport.abandon({ ...LATER, staffId: "staff_3" })).toThrow(
+      MandateBankExportAbandonedError,
+    );
+    expect(bankExport.toPersistence()).toMatchObject({ imported: null, abandoned: LATER });
+  });
+
+  it("un export importé ne s'abandonne pas : ses mandats sont chez la banque", () => {
+    const bankExport = exported();
+    bankExport.markImported(LATER);
+    expect(() => bankExport.abandon(LATER)).toThrow(BankExportAlreadyImportedError);
+    expect(bankExport.toPersistence().abandoned).toBeNull();
+  });
+
+  it("un export ouvert ou importé se télécharge", () => {
+    const bankExport = exported();
+    expect(() => bankExport.assertDownloadable()).not.toThrow();
+    bankExport.markImported(LATER);
+    expect(() => bankExport.assertDownloadable()).not.toThrow();
   });
 });

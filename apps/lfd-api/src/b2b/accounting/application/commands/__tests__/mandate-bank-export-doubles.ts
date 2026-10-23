@@ -11,6 +11,7 @@ import {
   ImportedMandateAccountsReader,
   MandateBankExportsReader,
   type ExportedMandateLine,
+  type MandateBankExportFile,
   type MandateBankExportRecord,
 } from "../../../domain/ports/mandate-bank-exports.reader.js";
 import {
@@ -21,8 +22,10 @@ import {
 } from "../../../domain/ports/mandates-for-bank-export.reader.js";
 import { CreditorIdentifier } from "../../../domain/value-objects/creditor-identifier.js";
 import { toView } from "../../../infrastructure/legal-entity.mapper.js";
+import { AbandonMandateBankExportHandler } from "../abandon-mandate-bank-export.handler.js";
 import { ExportMandatesForBankHandler } from "../export-mandates-for-bank.handler.js";
 import { MarkMandateBankExportImportedHandler } from "../mark-mandate-bank-export-imported.handler.js";
+import { RecordMandateBankExportDownloadHandler } from "../record-mandate-bank-export-download.handler.js";
 import { FakeCandidates, Steps, UlidSequence } from "./collection-doubles.js";
 import { declaredEntity } from "./mandate-setting-doubles.js";
 
@@ -122,19 +125,21 @@ export class MemoryExportsReader extends MandateBankExportsReader {
           createdAt: state.created.at,
           mandateCount: state.lines.length,
           importedAt: state.imported?.at ?? null,
+          abandonedAt: state.abandoned?.at ?? null,
         })),
     );
   }
-  async linesOf(
-    legalEntityId: string,
-    exportId: string,
-  ): Promise<readonly ExportedMandateLine[] | null> {
+  async fileOf(legalEntityId: string, exportId: string): Promise<MandateBankExportFile | null> {
     const found = await this.exports.load(legalEntityId, exportId);
-    return found?.toPersistence().lines ?? null;
+    if (found === null) {
+      return null;
+    }
+    const state = found.toPersistence();
+    return { lines: state.lines, abandonedAt: state.abandoned?.at ?? null };
   }
 }
 
-/** Les deux commandes branchées sur les mêmes doublés. */
+/** Les commandes branchées sur les mêmes doublés. */
 export function bankExportWorld() {
   const exports = new MemoryExports();
   const w = {
@@ -164,5 +169,19 @@ export function bankExportWorld() {
     w.events,
     new DirectUnitOfWork(),
   );
-  return { ...w, exportCommand, markImported };
+  const abandon = new AbandonMandateBankExportHandler(
+    w.entities,
+    w.exports,
+    w.clock,
+    w.events,
+    new DirectUnitOfWork(),
+  );
+  const recordDownload = new RecordMandateBankExportDownloadHandler(
+    w.entities,
+    w.exports,
+    w.clock,
+    w.events,
+    new DirectUnitOfWork(),
+  );
+  return { ...w, exportCommand, markImported, abandon, recordDownload };
 }

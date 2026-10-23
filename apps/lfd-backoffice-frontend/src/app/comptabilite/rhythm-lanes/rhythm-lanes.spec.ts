@@ -96,7 +96,26 @@ describe('RhythmLanes', () => {
     ]);
     expect(root(fixture).textContent).toContain('2 clients');
     expect(root(fixture).textContent).toContain('Aucun client');
-    expect(root(fixture).textContent).toContain('Par défaut');
+    expect(root(fixture).textContent).toContain('Par défaut · 0 client');
+  });
+
+  it('le mensuel dit aussi combien de clients le suivent, au bon nombre', async () => {
+    const badgeOf = async (payerCount: number): Promise<string> => {
+      const base = calendar();
+      const fixture = await render(
+        calendar({
+          rhythms: base.rhythms.map((lane) =>
+            lane.mode === 'monthly' ? { ...lane, payerCount } : lane,
+          ),
+        }),
+      );
+      TestBed.resetTestingModule();
+      return root(fixture).querySelectorAll('.lanes-name')[2]?.textContent ?? '';
+    };
+
+    expect(await badgeOf(1)).toContain('Par défaut · 1 client');
+    expect(await badgeOf(1)).not.toContain('1 clients');
+    expect(await badgeOf(5)).toContain('Par défaut · 5 clients');
   });
 
   it('pose les trois jalons aux jours servis, et date chacun en toutes lettres', async () => {

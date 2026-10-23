@@ -11,6 +11,13 @@ export interface MandateBankExportRecord {
   readonly createdAt: Date;
   readonly mandateCount: number;
   readonly importedAt: Date | null;
+  readonly abandonedAt: Date | null;
+}
+
+/** Ce qu'il faut pour servir le fichier d'un export : ses lignes, et s'il est abandonné. */
+export interface MandateBankExportFile {
+  readonly lines: readonly ExportedMandateLine[];
+  readonly abandonedAt: Date | null;
 }
 
 /**
@@ -25,9 +32,6 @@ export abstract class ImportedMandateAccountsReader {
 export abstract class MandateBankExportsReader {
   /** Les exports de l'entité, le plus récent d'abord. */
   abstract list(legalEntityId: string): Promise<readonly MandateBankExportRecord[]>;
-  /** Les lignes d'un export de CETTE entité, ou `null` s'il ne lui appartient pas. */
-  abstract linesOf(
-    legalEntityId: string,
-    exportId: string,
-  ): Promise<readonly ExportedMandateLine[] | null>;
+  /** Le fichier d'un export de CETTE entité, ou `null` s'il ne lui appartient pas. */
+  abstract fileOf(legalEntityId: string, exportId: string): Promise<MandateBankExportFile | null>;
 }

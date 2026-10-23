@@ -461,6 +461,20 @@ Ce que ça veut dire :
   vérification avant import.
 - `pain.008.001.08` quand Hugo le décide (réponse 16).
 - `FRST` dans l'essai (D3).
+- **Clause CGV et mandat : pré-notification réduite à 3 jours** (Hugo,
+  2026-10-23). _Hors code, à faire relire par un juriste._ Brouillon :
+
+  > « Pré-notification des prélèvements. Chaque prélèvement SEPA est précédé
+  > d'une information adressée au client par courriel, au moins trois (3)
+  > jours calendaires avant sa date d'échéance, indiquant le montant, la date
+  > d'échéance, la référence unique du mandat (RUM), l'identifiant créancier
+  > SEPA (ICS) et les factures concernées. Le client accepte expressément ce
+  > délai, qui remplace le délai de quatorze (14) jours prévu par défaut par
+  > les règles SEPA. »
+  - ❓ **Question ouverte** : les mandats **déjà signés** — suffit-il de
+    notifier la modification des CGV, ou faut-il les faire re-signer ?
+  - Le réglage à 3 jours se fait **à l'écran**, sur la carte des réglages du
+    prélèvement de l'entité — pas par une migration ni un défaut de code.
 
 ### ⚪ Rien — le code tient déjà la réponse
 

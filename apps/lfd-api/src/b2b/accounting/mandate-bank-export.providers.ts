@@ -1,7 +1,9 @@
 import type { Provider } from "@nestjs/common";
 
+import { AbandonMandateBankExportHandler } from "./application/commands/abandon-mandate-bank-export.handler.js";
 import { ExportMandatesForBankHandler } from "./application/commands/export-mandates-for-bank.handler.js";
 import { MarkMandateBankExportImportedHandler } from "./application/commands/mark-mandate-bank-export-imported.handler.js";
+import { RecordMandateBankExportDownloadHandler } from "./application/commands/record-mandate-bank-export-download.handler.js";
 import { ExportMandateBankFileHandler } from "./application/queries/export-mandate-bank-file.handler.js";
 import { GetMandateBankExportsHandler } from "./application/queries/get-mandate-bank-exports.handler.js";
 import { MandateBankExportRepository } from "./domain/ports/mandate-bank-export.repository.js";
@@ -28,6 +30,8 @@ export const MANDATE_BANK_EXPORT_PROVIDERS: readonly Provider[] = [
   { provide: MandateBankExportsReader, useClass: PrismaMandateBankExportsReader },
   ExportMandatesForBankHandler,
   MarkMandateBankExportImportedHandler,
+  AbandonMandateBankExportHandler,
+  RecordMandateBankExportDownloadHandler,
   ExportMandateBankFileHandler,
   GetMandateBankExportsHandler,
 ];

@@ -11,12 +11,14 @@ import { BillingModeDatesRepository } from "./domain/ports/billing-mode-dates.re
 import { PayerBillingModeRepository } from "./domain/ports/payer-billing-mode.repository.js";
 import { PayerBillingModesReader } from "./domain/ports/payer-billing-modes.reader.js";
 import { PayerStandingReader } from "./domain/ports/payer-standing.reader.js";
+import { PayerStandingsReader } from "./domain/ports/payer-standings.reader.js";
 import { AdminBillingModesController } from "./http/admin-billing-modes.controller.js";
 import { PrismaBillingModeDatesReader } from "./infrastructure/prisma-billing-mode-dates.reader.js";
 import { PrismaBillingModeDatesRepository } from "./infrastructure/prisma-billing-mode-dates.repository.js";
 import { PrismaPayerBillingModeRepository } from "./infrastructure/prisma-payer-billing-mode.repository.js";
 import { PrismaPayerBillingModesReader } from "./infrastructure/prisma-payer-billing-modes.reader.js";
 import { PrismaPayerStandingReader } from "./infrastructure/prisma-payer-standing.reader.js";
+import { PrismaPayerStandingsReader } from "./infrastructure/prisma-payer-standings.reader.js";
 
 /**
  * Les providers du lot M1 (plan `plan-rythme-de-facturation.md`, §16) : les
@@ -31,6 +33,7 @@ export const BILLING_MODE_PROVIDERS: readonly Provider[] = [
   { provide: PayerBillingModeRepository, useClass: PrismaPayerBillingModeRepository },
   { provide: PayerBillingModesReader, useClass: PrismaPayerBillingModesReader },
   { provide: PayerStandingReader, useClass: PrismaPayerStandingReader },
+  { provide: PayerStandingsReader, useClass: PrismaPayerStandingsReader },
   ScheduleBillingModeDatesHandler,
   CancelBillingModeDatesHandler,
   SetPayerBillingModeHandler,

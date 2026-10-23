@@ -1,7 +1,10 @@
+import type { MandateBankExport } from "../domain/entities/mandate-bank-export.js";
 import { LegalEntityNotFoundError } from "../domain/errors/accounting-errors.js";
+import { MandateBankExportNotFoundError } from "../domain/errors/mandate-bank-export-errors.js";
 import type { ExportEntity } from "../domain/events/mandate-bank-export.events.js";
 import type { CollectionCandidatesReader } from "../domain/ports/collection-candidates.reader.js";
 import type { LegalEntityReader, LegalEntityRecord } from "../domain/ports/legal-entity.reader.js";
+import type { MandateBankExportRepository } from "../domain/ports/mandate-bank-export.repository.js";
 import type { MandateForBankExport } from "../domain/ports/mandates-for-bank-export.reader.js";
 import { nameOf } from "../domain/services/collection-debit-drafts.js";
 import { renderMandateBankCsv } from "../domain/services/mandate-bank-export-csv.js";
@@ -16,6 +19,22 @@ export async function exportEntityOrFail(
     throw new LegalEntityNotFoundError(legalEntityId);
   }
   return entity;
+}
+
+/**
+ * L'export de CETTE entité, ou un 404 qui le nomme : un export d'une autre
+ * entité n'existe pas pour elle. @throws {MandateBankExportNotFoundError}
+ */
+export async function mandateExportOrFail(
+  exports: MandateBankExportRepository,
+  legalEntityId: string,
+  exportId: string,
+): Promise<MandateBankExport> {
+  const found = await exports.load(legalEntityId, exportId);
+  if (found === null) {
+    throw new MandateBankExportNotFoundError(exportId);
+  }
+  return found;
 }
 
 /** L'entité telle que le journal la cite. */

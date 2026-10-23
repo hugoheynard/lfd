@@ -1,4 +1,4 @@
-import type { MandateBankExclusionReasonView } from '@lfd/contracts';
+import type { MandateBankExclusionReasonView, MandateBankExportSummaryView } from '@lfd/contracts';
 
 /**
  * Les mots de la carte « Mandats à la banque ». Ici plutôt qu'en valeur du
@@ -29,4 +29,15 @@ export function parisDayLabel(iso: string): string {
 /** « 1 mandat », « 3 mandats ». */
 export function mandatesLabel(count: number): string {
   return `${String(count)} mandat${count > 1 ? 's' : ''}`;
+}
+
+/** Où en est un export : importé, abandonné, ou pas encore importé. */
+export function mandateExportStateLabel(item: MandateBankExportSummaryView): string {
+  if (item.importedAt !== null) {
+    return `importé le ${parisDayLabel(item.importedAt)}`;
+  }
+  if (item.abandonedAt !== null) {
+    return `abandonné le ${parisDayLabel(item.abandonedAt)}`;
+  }
+  return 'pas encore importé';
 }

@@ -1,7 +1,9 @@
 import {
   BankExportOutdatedError,
+  MandateBankExportAbandonedError,
   MandateBankExportNotFoundError,
 } from "../../../domain/errors/mandate-bank-export-errors.js";
+import { AbandonMandateBankExportCommand } from "../../commands/abandon-mandate-bank-export.command.js";
 import { ExportMandatesForBankCommand } from "../../commands/export-mandates-for-bank.command.js";
 import { MarkMandateBankExportImportedCommand } from "../../commands/mark-mandate-bank-export-imported.command.js";
 import {
@@ -56,6 +58,19 @@ describe("le fichier d'un export", () => {
 
     await expect(w.file.execute(new ExportMandateBankFileQuery("le1", id))).rejects.toThrow(
       BankExportOutdatedError,
+    );
+  });
+
+  it("refuse (409) le fichier d'un export abandonné", async () => {
+    const w = withQueries();
+    w.mandates.exportable = [bankMandate("m1")];
+    const id = await w.exportCommand.execute(
+      new ExportMandatesForBankCommand("le1", false, "staff_1"),
+    );
+    await w.abandon.execute(new AbandonMandateBankExportCommand("le1", id, "staff_2"));
+
+    await expect(w.file.execute(new ExportMandateBankFileQuery("le1", id))).rejects.toThrow(
+      MandateBankExportAbandonedError,
     );
   });
 

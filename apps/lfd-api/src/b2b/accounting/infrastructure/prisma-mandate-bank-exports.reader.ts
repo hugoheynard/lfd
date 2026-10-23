@@ -5,6 +5,7 @@ import {
   ImportedMandateAccountsReader,
   MandateBankExportsReader,
   type ExportedMandateLine,
+  type MandateBankExportFile,
   type MandateBankExportRecord,
 } from "../domain/ports/mandate-bank-exports.reader.js";
 
@@ -36,18 +37,21 @@ export class PrismaMandateBankExportsReader extends MandateBankExportsReader {
     return this.prisma.mandateBankExport.findMany({
       where: { legalEntityId },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      select: { id: true, createdAt: true, mandateCount: true, importedAt: true },
+      select: {
+        id: true,
+        createdAt: true,
+        mandateCount: true,
+        importedAt: true,
+        abandonedAt: true,
+      },
     });
   }
 
-  async linesOf(
-    legalEntityId: string,
-    exportId: string,
-  ): Promise<readonly ExportedMandateLine[] | null> {
+  async fileOf(legalEntityId: string, exportId: string): Promise<MandateBankExportFile | null> {
     const row = await this.prisma.mandateBankExport.findFirst({
       where: { id: exportId, legalEntityId },
-      select: { lines: { orderBy: { rum: "asc" }, select: LINE_COLUMNS } },
+      select: { abandonedAt: true, lines: { orderBy: { rum: "asc" }, select: LINE_COLUMNS } },
     });
-    return row?.lines ?? null;
+    return row === null ? null : { lines: row.lines, abandonedAt: row.abandonedAt };
   }
 }

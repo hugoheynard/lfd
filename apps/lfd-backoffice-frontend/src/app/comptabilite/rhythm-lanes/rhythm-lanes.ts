@@ -166,13 +166,13 @@ function nextCollectionOf(days: readonly string[], today: string): string | null
 
 function followersOf(mode: BillingRhythmKind, followed: boolean, count: number): string {
   if (mode === 'monthly') {
-    return count > 0
-      ? `Par défaut, et choisi par ${String(count)} client${count > 1 ? 's' : ''}`
-      : 'Par défaut';
+    return `Par défaut · ${clientsOf(count)}`;
   }
-  if (!followed) {
-    return 'Aucun client';
-  }
+  return followed ? clientsOf(count) : 'Aucun client';
+}
+
+/** « 0 client », « 1 client », « 3 clients ». */
+function clientsOf(count: number): string {
   return `${String(count)} client${count > 1 ? 's' : ''}`;
 }
 

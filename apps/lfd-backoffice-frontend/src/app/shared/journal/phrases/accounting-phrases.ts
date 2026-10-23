@@ -672,6 +672,18 @@ export const ACCOUNTING_PHRASES = {
     mandateCount,
     ['mandateCount'],
   ),
+  'mandate_bank_export.downloaded': onEntity(
+    'a téléchargé le fichier des mandats pour la banque',
+    'de',
+    mandateCount,
+    ['mandateCount'],
+  ),
+  'mandate_bank_export.abandoned': onEntity(
+    'a abandonné l’export des mandats pour la banque',
+    'de',
+    mandateCount,
+    ['mandateCount'],
+  ),
   'account_bank_export.created': onEntity(
     'a préparé l’export des comptes destinataires pour la banque',
     'de',
