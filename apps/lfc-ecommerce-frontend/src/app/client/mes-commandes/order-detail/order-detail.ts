@@ -2,7 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, output } f
 import { RouterLink } from '@angular/router';
 import { FoldButtonComponent } from 'fold-ng';
 
-import { ClientCopyService } from '../../copy/client-copy.service';
+import { ClientCopyService, fill } from '../../copy/client-copy.service';
+import { discountLabel } from '../../shop/pickup-discount';
 import { OrderCancelSection } from '../../order-cancellation/order-cancel-section/order-cancel-section';
 import { formatCents } from '../../format-money';
 import { isFulfilled, type HistoryOrder, type OrderPayment } from '../order-rows';
@@ -83,6 +84,32 @@ export class OrderDetail {
   protected readonly voucherAmount = computed(() => {
     const cents = this.order().voucherDiscountCents;
     return cents > 0 ? formatCents(cents) : null;
+  });
+
+  /**
+   * « −10 % sur 12,40 € TTC éligibles » et les articles hors remise — `null`
+   * quand la remise couvrait toute la commande : la ligne n'a alors rien à
+   * dire que le total ne dise. Le tiroir ne liste pas les lignes ; la marque
+   * du panier y devient donc la liste des articles non concernés.
+   */
+  protected readonly pickupDiscount = computed(() => {
+    const discount = this.order().pickupDiscount;
+    if (discount === undefined) {
+      return null;
+    }
+    const t = this.t();
+    const price = formatCents(discount.eligibleCents);
+    const base = discount.eligiblePretax
+      ? fill(t.shop.priceHt, { price })
+      : fill(t.shop.priceTtc, { price });
+    const value =
+      discount.adjustment === null
+        ? formatCents(discount.discountCents)
+        : discountLabel(discount.adjustment);
+    return {
+      value: fill(t.orders.detailPickupDiscountValue, { value, base }),
+      excluded: discount.excludedNames.join(', '),
+    };
   });
 
   /**

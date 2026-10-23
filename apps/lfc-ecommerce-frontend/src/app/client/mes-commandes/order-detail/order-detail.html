@@ -39,6 +39,20 @@
     }
     <!-- La part HT du bon, figée à la commande : les totaux disent déjà le TTC
          payé (plan des points, E2.3). -->
+    <!-- La remise de retrait ne couvrait pas tout : son assiette, et ce
+         qu'elle laissait de côté (plan remise retrait, lot C). -->
+    @if (pickupDiscount(); as discount) {
+      <div class="fact" data-pickup-discount>
+        <dt>{{ t().orders.detailPickupDiscount }}</dt>
+        <dd>{{ discount.value }}</dd>
+      </div>
+      @if (discount.excluded !== '') {
+        <div class="fact" data-pickup-excluded>
+          <dt>{{ t().orders.detailPickupExcluded }}</dt>
+          <dd>{{ discount.excluded }}</dd>
+        </div>
+      }
+    }
     @if (voucherAmount(); as amount) {
       <div class="fact">
         <dt>{{ t().cart.voucherHtLine }}</dt>

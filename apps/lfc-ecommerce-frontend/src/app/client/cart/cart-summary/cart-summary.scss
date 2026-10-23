@@ -147,3 +147,10 @@
   font-weight: var(--fold-weight-regular);
   color: var(--lfc-color-text-subtle);
 }
+
+/* Le renvoi des lignes hors remise de retrait : une note, pas une alerte. */
+.excluded-note {
+  margin: 0;
+  font-size: var(--lfc-text-note);
+  color: var(--lfc-color-text-subtle);
+}

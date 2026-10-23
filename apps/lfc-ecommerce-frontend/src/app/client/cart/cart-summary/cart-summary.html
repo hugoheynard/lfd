@@ -9,6 +9,7 @@
           [line]="line"
           [totalHtCents]="totalOf(line.product.sku)?.ht ?? null"
           [totalTtcCents]="totalOf(line.product.sku)?.ttc ?? null"
+          [excluded]="excludedSkus().has(line.product.sku)"
           (quantityChange)="cart.setQuantity(line.product.sku, $event)"
           (dropped)="cart.drop(line.product.sku)"
         ></li>
@@ -102,6 +103,11 @@
   <!-- Au compte, le HT seul : la mention dit où sont la TVA et le TTC (F5). -->
   @if (onAccount()) {
     <p class="points">{{ t().cart.pretaxNote }}</p>
+  }
+
+  <!-- Le renvoi de la marque `*`, une fois, et seulement si une ligne montrée la porte. -->
+  @if (excludedNoteShown()) {
+    <p class="excluded-note">{{ t().cart.excludedNote }}</p>
   }
 
   <!-- Discrète, SOUS le total : ce n'est pas un montant, c'est une promesse. -->

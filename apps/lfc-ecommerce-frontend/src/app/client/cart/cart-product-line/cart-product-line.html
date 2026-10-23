@@ -1,5 +1,11 @@
 <span class="what">
-  <span class="name">{{ name() }}</span>
+  <!-- La marque `*` d'une ligne hors remise de retrait, renvoyée sous le décompte. -->
+  <span class="name"
+    >{{ name() }}
+    @if (excluded()) {
+      <span class="excluded" aria-hidden="true">*</span>
+    }
+  </span>
   <span class="unit">{{ unit() }}</span>
   @if (madeToOrder(); as limit) {
     <span class="made-to-order" data-made-to-order>{{ limit }}</span>

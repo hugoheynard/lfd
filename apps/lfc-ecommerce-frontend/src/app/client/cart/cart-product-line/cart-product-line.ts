@@ -42,7 +42,7 @@ import { type CartLine } from '../cart-total';
   imports: [FoldIconComponent, FoldNumberInputComponent],
   // Le stepper n'expose pas de nom accessible : c'est la LIGNE qu'on nomme, et
   // le produit se lit alors avant la quantité comme avant la corbeille.
-  host: { role: 'group', '[attr.aria-label]': 'name()' },
+  host: { role: 'group', '[attr.aria-label]': 'groupLabel()' },
   templateUrl: './cart-product-line.html',
   styleUrl: './cart-product-line.scss',
 })
@@ -69,6 +69,18 @@ export class CartProductLine {
   private readonly basis = inject(ShopPriceBasis);
 
   protected readonly name = computed(() => this.line().product.name);
+
+  /**
+   * Vrai quand la remise de retrait ne couvre pas cette ligne — le devis le
+   * dit (`pickupDiscountBase.excludedSkus`), la ligne ne le calcule pas. Une
+   * marque `*`, expliquée UNE fois sous le décompte par le parent.
+   */
+  readonly excluded = input(false);
+
+  /** Le nom du groupe : celui du produit, et l'exclusion qu'un `*` ne dit pas à voix haute. */
+  protected readonly groupLabel = computed(() =>
+    this.excluded() ? fill(this.t().cart.excludedLineAria, { name: this.name() }) : this.name(),
+  );
 
   protected readonly quantity = computed(() => this.line().quantity);
 

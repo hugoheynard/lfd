@@ -2,6 +2,7 @@ import type {
   CompanyOrderAuthorView,
   CompanyOrderSiteView,
   CustomerOrderView,
+  CartAdjustment,
   FulfillmentWindow,
 } from '@lfd/contracts';
 import { isSettled } from '@lfd/contracts/shop-values';
@@ -194,6 +195,11 @@ export interface HistoryOrder {
   readonly pretax: boolean;
   /** La part HT du bon de fidélité imputée, en centimes ; `0` sans bon. */
   readonly voucherDiscountCents: number;
+  /**
+   * La remise de retrait quand une ligne en était exclue — absente sinon,
+   * comme `pickupDiscountBase` dans la commande relue.
+   */
+  readonly pickupDiscount?: HistoryPickupDiscount;
   readonly status: OrderRowStatus;
   readonly payment: OrderPayment;
   readonly refund: OrderRefund;
@@ -207,6 +213,23 @@ export interface HistoryOrder {
   readonly site: string | null;
   /** « passée par Prénom N. » / « par l'équipe » ; vide quand la liste ne le dit pas. */
   readonly author: string;
+}
+
+/**
+ * **La remise de retrait d'une commande qui excluait des lignes**, figée à la
+ * passation (plan `remise-retrait-par-clientele-et-exclusions`, lot C).
+ */
+export interface HistoryPickupDiscount {
+  /** L'ajustement appliqué ; `null` sur une commande qui ne l'a pas gardé. */
+  readonly adjustment: CartAdjustment | null;
+  /** La remise, HT, en centimes — le repli quand l'ajustement manque. */
+  readonly discountCents: number;
+  /** L'assiette, en centimes, dans l'unité de {@link eligiblePretax}. */
+  readonly eligibleCents: number;
+  /** Vrai quand l'assiette est HT : pro au compte, ou TTC non scellé. */
+  readonly eligiblePretax: boolean;
+  /** Les articles que la remise ne couvrait pas, dans l'ordre des lignes. */
+  readonly excludedNames: readonly string[];
 }
 
 /** Ce que les libellés du domaine ne portent pas : les mots de l'écran. */
@@ -345,6 +368,7 @@ export function historyRowOf(order: RowSource, org: string, copy: RowCopy): Hist
     total: amountOf(order) / 100,
     pretax: order.settlement === 'account',
     voucherDiscountCents: order.voucherDiscountCents,
+    ...pickupDiscountOf(order),
     status: statusOf(order),
     // Le régime calculé au serveur, pas une recopie du critère (F5) : `account`
     // = portée au compte, facturée en fin de mois ; `free` (total nul) gardait
@@ -355,6 +379,31 @@ export function historyRowOf(order: RowSource, org: string, copy: RowCopy): Hist
     org,
     site: order.site?.name ?? null,
     author: authorOf(order.author ?? null, copy),
+  };
+}
+
+/**
+ * L'assiette dans l'unité du total de la ligne (`amountOf`) : HT au compte,
+ * TTC sinon — et HT quand le TTC n'a pas été scellé, ce que l'écran dit.
+ */
+function pickupDiscountOf(order: RowSource): { pickupDiscount?: HistoryPickupDiscount } {
+  const base = order.pickupDiscountBase;
+  if (base === undefined) {
+    return {};
+  }
+  const pretax = order.settlement === 'account' || base.eligibleTtcCents === null;
+  return {
+    pickupDiscount: {
+      adjustment: order.discountAdjustment,
+      discountCents: order.discountCents,
+      eligibleCents: pretax
+        ? base.eligibleHtCents
+        : (base.eligibleTtcCents ?? base.eligibleHtCents),
+      eligiblePretax: pretax,
+      excludedNames: order.lines
+        .filter((line) => line.pickupDiscountEligible === false)
+        .map((line) => line.productName),
+    },
   };
 }
 

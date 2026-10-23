@@ -573,6 +573,12 @@ export interface ClientCopy {
     readonly subtotal: string;
     /** `{at}` porte le complément du lieu, `{pct}` la remise. */
     readonly discount: string;
+    /** La remise quand une ligne en est exclue : `{at}`, `{value}`, `{base}` (assiette, mention comprise). */
+    readonly discountOnBase: string;
+    /** Le renvoi de la marque `*` posée sur une ligne exclue de la remise. */
+    readonly excludedNote: string;
+    /** Le nom accessible d'une ligne exclue : `{name}`. */
+    readonly excludedLineAria: string;
     readonly fee: string;
     /**
      * Sous la ligne de livraison : à quel taux le port est taxé (plan
@@ -846,6 +852,8 @@ export interface ClientCopy {
     readonly readyFrom: string;
     /** `{value}` est remplacé par la remise du point : « 10 % » ou « 2,00 € ». */
     readonly discountTag: string;
+    /** `{value}` : la remise d'un point qui ne couvre qu'une partie du catalogue. */
+    readonly discountTagSelection: string;
     /**
      * La ligne d'un point SANS remise pour un pro (société active) : il y paie
      * le tarif pro, rien de moins.

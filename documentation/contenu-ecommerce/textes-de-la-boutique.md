@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1517 textes
+## Sommaire — 1524 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -24,13 +24,13 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 36 |
 | [Choix du lieu — la maison](#espace-housepicker) | `housePicker` | 8 |
 | [Choix du lieu et de l’heure — le dialogue commun](#espace-dialog) | `dialog` | 1 |
-| [Choix du lieu — le retrait](#espace-pickupdialog) | `pickupDialog` | 10 |
+| [Choix du lieu — le retrait](#espace-pickupdialog) | `pickupDialog` | 11 |
 | [Choix du lieu — l’adresse de livraison](#espace-addressdialog) | `addressDialog` | 24 |
 | [Choix du lieu — la saisie d’une adresse de livraison](#espace-deliveryaddress) | `deliveryAddress` | 38 |
 | [Choix de l’heure — le sélecteur de créneau](#espace-slotpicker) | `slotPicker` | 19 |
 | [Choix de l’heure — l’étape du créneau](#espace-slotstep) | `slotStep` | 11 |
 | [Choix de l’heure — le rappel téléphonique](#espace-rappel) | `rappel` | 12 |
-| [Panier, connexion et saisie invité](#espace-cart) | `cart` | 54 |
+| [Panier, connexion et saisie invité](#espace-cart) | `cart` | 57 |
 | [Règlement](#espace-pay) | `pay` | 21 |
 | [Confirmation](#espace-done) | `done` | 28 |
 | [Confirmation — le QR de retrait](#espace-qr) | `qr` | 8 |
@@ -38,7 +38,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le cadre — bandeaux, installation, erreurs générales](#espace-chrome) | `chrome` | 39 |
 | [La navigation](#espace-nav) | `nav` | 24 |
 | [La colonne d’accompagnement](#espace-aside) | `aside` | 4 |
-| [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 165 |
+| [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 168 |
 | [Annuler une commande — Mes commandes et la page invité](#espace-ordercancel) | `orderCancel` | 54 |
 | [Fidélité](#espace-loyalty) | `loyalty` | 38 |
 | [Mon compte (factures comprises)](#espace-account) | `account` | 525 |
@@ -47,7 +47,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
-| **Total** | | **1517** |
+| **Total** | | **1524** |
 
 ## Le parcours de commande
 
@@ -494,7 +494,7 @@ Source : `fr.ts · en.ts · it.ts` · 1 textes.
 
 ### Choix du lieu — le retrait — `pickupDialog`
 
-Source : `fr.ts · en.ts · it.ts` · 10 textes.
+Source : `fr.ts · en.ts · it.ts` · 11 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -505,6 +505,7 @@ Source : `fr.ts · en.ts · it.ts` · 10 textes.
 | `pickupDialog.habit` | votre habitude | your usual | la sua abitudine |  |
 | `pickupDialog.readyFrom` | Prêt dès {time} | Ready from {time} | Pronto dalle {time} | `{time}` |
 | `pickupDialog.discountTag` | −{value} sur tout | −{value} on everything | −{value} su tutto | `{value}` |
+| `pickupDialog.discountTagSelection` | −{value} sur une sélection | −{value} on selected items | −{value} su una selezione | `{value}` |
 | `pickupDialog.proPrice` | Prix pro | Trade price | Prezzo pro |  |
 | `pickupDialog.shopPrice` | Prix boutique | Shop price | Prezzo bottega |  |
 | `pickupDialog.cta` | Choisir mon heure | Pick my time | Scegliere l’ora |  |
@@ -662,7 +663,7 @@ Source : `fr.ts · en.ts · it.ts` · 12 textes.
 
 ### Panier, connexion et saisie invité — `cart`
 
-Source : `fr.ts · en.ts · it.ts` · 54 textes.
+Source : `fr.ts · en.ts · it.ts` · 57 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -677,6 +678,9 @@ Source : `fr.ts · en.ts · it.ts` · 54 textes.
 | `cart.changeService` | Modifier | Change | Modifica |  |
 | `cart.subtotal` | Sous-total HT | Subtotal excl. VAT | Subtotale IVA escl. |  |
 | `cart.discount` | Remise retrait {at} −{value} | Collection discount {at} −{value} | Sconto ritiro {at} −{value} | `{at}` `{value}` |
+| `cart.discountOnBase` | Remise retrait {at} −{value} sur {base} éligibles | Collection discount {at} −{value} on {base} eligible | Sconto ritiro {at} −{value} su {base} idonei | `{at}` `{value}` `{base}` |
+| `cart.excludedNote` | * Non concerné par la remise retrait. | * Not covered by the collection discount. | * Non coperto dallo sconto ritiro. |  |
+| `cart.excludedLineAria` | {name}, non concerné par la remise retrait | {name}, not covered by the collection discount | {name}, non coperto dallo sconto ritiro | `{name}` |
 | `cart.fee` | Coursier | Courier | Corriere |  |
 | `cart.feeVatStandard` | TVA de la livraison : 20 % | Delivery VAT: 20% | IVA sulla consegna: 20 % |  |
 | `cart.feeVatProrata` | TVA de la livraison : au prorata des produits | Delivery VAT: in proportion to the products | IVA sulla consegna: in proporzione ai prodotti |  |
@@ -905,7 +909,7 @@ Source : `fr.ts · en.ts · it.ts` · 4 textes.
 
 ### Mes commandes (récapitulatif compris) — `orders`
 
-Source : `screens/orders.copy.ts · screens/order-summary.copy.ts` · 165 textes.
+Source : `screens/orders.copy.ts · screens/order-summary.copy.ts` · 168 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -1030,6 +1034,9 @@ Source : `screens/orders.copy.ts · screens/order-summary.copy.ts` · 165 textes
 | `orders.payRefusedNote` | votre banque a refusé la carte | your bank declined the card | la tua banca ha rifiutato la carta |  |
 | `orders.settle` | Régler | Pay | Paga |  |
 | `orders.detailRefund` | Remboursement | Refund | Rimborso |  |
+| `orders.detailPickupDiscount` | Remise retrait | Collection discount | Sconto ritiro |  |
+| `orders.detailPickupDiscountValue` | −{value} sur {base} éligibles | −{value} on {base} eligible | −{value} su {base} idonei | `{value}` `{base}` |
+| `orders.detailPickupExcluded` | Non concernés par la remise retrait | Not covered by the collection discount | Non coperti dallo sconto ritiro |  |
 | `orders.refundedFull` | Remboursée | Refunded | Rimborsato |  |
 | `orders.refundedPartial` | Remboursée en partie ({amount}) | Partly refunded ({amount}) | Rimborsato in parte ({amount}) | `{amount}` |
 | `orders.detailHead` | Le détail | The detail | Il dettaglio |  |

@@ -299,4 +299,34 @@ describe('le site et l’auteur d’une commande (plan des commandes des sites, 
   it('ne fabrique aucun auteur quand la liste n’en porte pas (perso)', () => {
     expect(historyRowOf(ORDER, '', COPY).author).toBe('');
   });
+
+  /** Plan remise retrait par clientèle, lot C : l'assiette dans l'unité du total. */
+  it('rend l’assiette de la remise de retrait et les articles exclus, absente sinon', () => {
+    expect(historyRowOf(ORDER, '', COPY).pickupDiscount).toBeUndefined();
+
+    const excluding: CustomerOrderView = {
+      ...ORDER,
+      discountCents: 50,
+      discountAdjustment: { mode: 'percent', bp: 1000 },
+      pickupDiscountBase: {
+        eligibleHtCents: 500,
+        eligibleTtcCents: 528,
+        excludedSkus: ['PAI-001'],
+      },
+      lines: [
+        { ...ORDER.lines[0]!, productName: 'Croissant' },
+        { ...ORDER.lines[1]!, productName: 'Tasse', pickupDiscountEligible: false },
+      ],
+    };
+    expect(historyRowOf(excluding, '', COPY).pickupDiscount).toEqual({
+      adjustment: { mode: 'percent', bp: 1000 },
+      discountCents: 50,
+      eligibleCents: 500,
+      eligiblePretax: true,
+      excludedNames: ['Tasse'],
+    });
+    expect(
+      historyRowOf({ ...excluding, settlement: 'paid' }, '', COPY).pickupDiscount,
+    ).toMatchObject({ eligibleCents: 528, eligiblePretax: false });
+  });
 });

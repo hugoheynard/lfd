@@ -1,4 +1,9 @@
-import type { CartAdjustment, CustomerAudience, PickupAddressView } from '@lfd/contracts';
+import type {
+  AudiencePickupDiscount,
+  CartAdjustment,
+  CustomerAudience,
+  PickupAddressView,
+} from '@lfd/contracts';
 import { pickupDiscountFor } from '@lfd/contracts/shop-values';
 
 import { fill } from '../copy/client-copy.service';
@@ -23,8 +28,8 @@ import { formatCents, formatRate } from '../format-money';
  *
  * ⚠️ Depuis le 2026-10-22, chaque clientèle a SA remise, avec des familles ou
  * des produits exclus (plan `plan-remise-retrait-par-clientele-et-exclusions.md`).
- * La boutique n'annonce encore que la réduction ; « sur les articles
- * éligibles » est le lot C du plan.
+ * L'étiquette le dit (« sur une sélection », {@link coversSelection}) ; le
+ * panier dit l'assiette chiffrée que le devis rend (lot C, 2026-10-23).
  */
 export function pickupAdjustmentFor(
   point: PickupAddressView,
@@ -43,6 +48,8 @@ export interface PickupOffer {
 /** Les trois libellés dont l'étiquette est faite. */
 export interface PickupOfferCopy {
   readonly discountTag: string;
+  /** La même étiquette quand la remise ne couvre qu'une partie du catalogue. */
+  readonly discountTagSelection: string;
   readonly proPrice: string;
   readonly shopPrice: string;
 }
@@ -60,11 +67,25 @@ export function pickupOffer(
   audience: CustomerAudience,
   copy: PickupOfferCopy,
 ): PickupOffer {
-  const discount = pickupAdjustmentFor(point, audience);
+  const discount = pickupDiscountFor(point, audience);
   if (discount === null) {
     return { label: audience === 'b2b' ? copy.proPrice : copy.shopPrice, hasOffer: false };
   }
-  return { label: fill(copy.discountTag, { value: discountLabel(discount) }), hasOffer: true };
+  const tag = coversSelection(discount) ? copy.discountTagSelection : copy.discountTag;
+  return { label: fill(tag, { value: discountLabel(discount.adjustment) }), hasOffer: true };
+}
+
+/**
+ * Vrai quand la remise ne couvre pas TOUT le catalogue : mode `only`, ou au
+ * moins une règle qui exclut. « Sur tout » serait alors une promesse que le
+ * panier démentirait. En `all_except`, une règle qui réinclut ne retire rien
+ * qu'une autre règle n'ait déjà exclu : seules les exclusions comptent.
+ */
+export function coversSelection(discount: AudiencePickupDiscount): boolean {
+  if (discount.scope === 'only') {
+    return true;
+  }
+  return [...discount.categories, ...discount.products].some((rule) => !rule.eligible);
 }
 
 /** Un ajustement, tel qu'il se lit : « 10 % » ou « 2,00 € ». */

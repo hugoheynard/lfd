@@ -23,6 +23,7 @@ import { OrderContextStore } from '../../order-context.store';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { VoucherChoice } from '../voucher-choice.service';
 import { SHOP_TIME_ZONE } from '../../shop-time-zone';
+import { ShopPriceBasis } from '../../shop/shop-price-basis.service';
 
 /**
  * Le décompte du panier : les lignes, la relance, la remise, la TVA, le total.
@@ -64,6 +65,8 @@ export class CartSummary implements OnInit {
   private readonly locale = inject(ClientLocale);
   private readonly workspace = inject(ClientWorkspace);
   protected readonly voucher = inject(VoucherChoice);
+  /** L'assiette des lignes (TTC ou HT) : l'assiette éligible se dit dans la même. */
+  private readonly basis = inject(ShopPriceBasis);
 
   /**
    * **Un pro au compte ne lit que le HT** (F5, plan
@@ -148,8 +151,47 @@ export class CartSummary implements OnInit {
       adjustment.mode === 'percent'
         ? formatRate(adjustment.bp / 100)
         : formatCents(adjustment.cents);
-    return fill(this.t().cart.discount, { at: choice.at, value });
+    const base = this.eligibleBase();
+    return base === null
+      ? fill(this.t().cart.discount, { at: choice.at, value })
+      : fill(this.t().cart.discountOnBase, { at: choice.at, value, base });
   });
+
+  /**
+   * « 12,40 € TTC » — l'assiette de la remise quand une ligne en est exclue,
+   * `null` sinon (le devis n'envoie `pickupDiscountBase` qu'alors).
+   *
+   * Dans l'assiette des LIGNES (`ShopPriceBasis`), mention comprise : c'est en
+   * additionnant les lignes sans `*` qu'un client la vérifie. Le TTC manquant
+   * (jamais au devis, cf. le contrat) retombe sur le HT, et le dit.
+   */
+  private readonly eligibleBase = computed(() => {
+    const base = this.totals().pickupDiscountBase;
+    if (base === undefined) {
+      return null;
+    }
+    const shop = this.t().shop;
+    return this.basis.showsTtc() && base.eligibleTtcCents !== null
+      ? fill(shop.priceTtc, { price: formatCents(base.eligibleTtcCents) })
+      : fill(shop.priceHt, { price: formatCents(base.eligibleHtCents) });
+  });
+
+  /**
+   * Les SKU que la remise de retrait ne couvre pas — vide sans exclusion, et
+   * vide quand la ligne de remise ne s'affiche pas : une marque sans la remise
+   * qu'elle qualifie ne renverrait à rien.
+   */
+  protected readonly excludedSkus = computed<ReadonlySet<string>>(() =>
+    this.discountLabel() === null
+      ? new Set()
+      : new Set(this.totals().pickupDiscountBase?.excludedSkus ?? []),
+  );
+
+  /** Le renvoi de la marque, seulement si une ligne montrée la porte. */
+  protected readonly excludedNoteShown = computed(
+    () =>
+      this.linesShown() && this.lines().some((line) => this.excludedSkus().has(line.product.sku)),
+  );
 
   protected readonly feeLabel = computed(() => {
     const fee = this.totals().deliveryFeeCents;

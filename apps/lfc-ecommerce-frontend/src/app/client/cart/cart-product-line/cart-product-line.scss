@@ -74,6 +74,12 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* La marque d'une ligne hors remise : discrète, expliquée sous le décompte. */
+.excluded {
+  color: var(--lfc-color-text-subtle);
+  font-weight: var(--fold-weight-regular);
+}
+
 /* La limite propre de l'article, sous son prix. */
 .made-to-order {
   font-size: var(--fold-text-xs);

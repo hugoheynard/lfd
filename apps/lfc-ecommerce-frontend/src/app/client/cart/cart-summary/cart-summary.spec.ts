@@ -34,6 +34,7 @@ import { ShopCatalogue } from '../../shop/shop-catalogue.store';
 import { Router } from '@angular/router';
 
 import { PieceRequest } from '../../shop/piece-request.service';
+import { OrderContextStore } from '../../order-context.store';
 import { CartSummary } from './cart-summary';
 
 describe('CartSummary', () => {
@@ -694,5 +695,118 @@ describe('CartSummary — la carte de suggestion (RS2)', () => {
     expect(card()?.textContent).toContain('Notre conseil');
     // « Vous aimerez aussi » est le défaut de la FICHE, pas du panier (Hugo, 2026-10-18).
     expect(card()?.textContent).not.toContain('Vous aimerez aussi');
+  });
+});
+
+/**
+ * Plan `remise-retrait-par-clientele-et-exclusions`, lot C : quand une ligne
+ * est exclue, la remise dit son assiette et la ligne porte une marque.
+ */
+describe('CartSummary — une remise de retrait sur une partie du panier', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const BASE_VIEW: MyShopQuoteView = {
+    lines: [],
+    subtotalHtCents: 410,
+    discountCents: 25,
+    discountAdjustment: { mode: 'percent', bp: 1000 },
+    voucherDiscountCents: 0,
+    deliveryFeeCents: 0,
+    deliveryVatMode: 'standard',
+    vat: [],
+    totalCents: 406,
+    loyaltyPointsToEarn: null,
+    voucherTotalEffectCents: 0,
+  };
+
+  function quoted(view: MyShopQuoteView, space = workspaceDouble()): HTMLElement {
+    localStorage.clear();
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      imports: [CartSummary],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideWorkspace(space),
+        provideRecognised(),
+      ],
+    });
+    hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
+    TestBed.inject(OrderContextStore).choice.set({
+      mode: 'pickup',
+      place: 'Le Labo',
+      at: 'au Labo',
+      address: 'Route de la Balme',
+      pickupAddressId: 'pick_labo',
+      slot: '7 h – 8 h',
+      window: { start: '07:00', end: '08:00' },
+      date: new Date().toISOString().slice(0, 10),
+    });
+    const cart = TestBed.inject(ClientCart);
+    cart.add('VIE-001');
+    cart.add('VIE-002');
+    const fixture = TestBed.createComponent(CartSummary);
+    fixture.detectChanges();
+    TestBed.tick();
+    vi.advanceTimersByTime(400);
+    TestBed.tick();
+    TestBed.inject(HttpTestingController)
+      .match((r) => r.url.includes('/shop/quote'))
+      .forEach((request) => request.flush(view));
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  const saved = (el: HTMLElement): string =>
+    el.querySelector('.row.saved dt')?.textContent?.replace(/\s+/gu, ' ').trim() ?? '';
+
+  it('dit l’assiette TTC à un particulier, marque la ligne exclue et l’explique une fois', () => {
+    const el = quoted({
+      ...BASE_VIEW,
+      pickupDiscountBase: {
+        eligibleHtCents: 250,
+        eligibleTtcCents: 264,
+        excludedSkus: ['VIE-002'],
+      },
+    });
+
+    expect(saved(el)).toBe(`Remise retrait au Labo −10 % sur ${formatCents(264)} TTC éligibles`);
+    const lines = [...el.querySelectorAll('.lines > li')];
+    expect(lines).toHaveLength(2);
+    expect(lines.map((line) => line.querySelector('.excluded') !== null)).toEqual([false, true]);
+    expect(lines[1]?.getAttribute('aria-label')).toBe(
+      'Pain au chocolat, non concerné par la remise retrait',
+    );
+    expect(el.querySelectorAll('.excluded-note')).toHaveLength(1);
+  });
+
+  it('dit l’assiette HT à un pro', () => {
+    const el = quoted(
+      {
+        ...BASE_VIEW,
+        pickupDiscountBase: {
+          eligibleHtCents: 250,
+          eligibleTtcCents: 264,
+          excludedSkus: ['VIE-002'],
+        },
+      },
+      workspaceDouble(TOMMEUSES.id, [TOMMEUSES]),
+    );
+
+    expect(saved(el)).toBe(`Remise retrait au Labo −10 % sur ${formatCents(250)} HT éligibles`);
+  });
+
+  it('sans exclusion, ni assiette, ni marque, ni renvoi', () => {
+    const el = quoted(BASE_VIEW);
+
+    expect(saved(el)).toBe('Remise retrait au Labo −10 %');
+    expect(el.querySelector('.excluded')).toBeNull();
+    expect(el.querySelector('.excluded-note')).toBeNull();
   });
 });

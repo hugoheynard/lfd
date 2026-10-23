@@ -2387,6 +2387,13 @@
           "variables": ["value"]
         },
         {
+          "key": "pickupDialog.discountTagSelection",
+          "fr": "−{value} sur une sélection",
+          "en": "−{value} on selected items",
+          "it": "−{value} su una selezione",
+          "variables": ["value"]
+        },
+        {
           "key": "pickupDialog.proPrice",
           "fr": "Prix pro",
           "en": "Trade price",
@@ -3253,6 +3260,27 @@
           "en": "Collection discount {at} −{value}",
           "it": "Sconto ritiro {at} −{value}",
           "variables": ["at", "value"]
+        },
+        {
+          "key": "cart.discountOnBase",
+          "fr": "Remise retrait {at} −{value} sur {base} éligibles",
+          "en": "Collection discount {at} −{value} on {base} eligible",
+          "it": "Sconto ritiro {at} −{value} su {base} idonei",
+          "variables": ["at", "value", "base"]
+        },
+        {
+          "key": "cart.excludedNote",
+          "fr": "* Non concerné par la remise retrait.",
+          "en": "* Not covered by the collection discount.",
+          "it": "* Non coperto dallo sconto ritiro.",
+          "variables": []
+        },
+        {
+          "key": "cart.excludedLineAria",
+          "fr": "{name}, non concerné par la remise retrait",
+          "en": "{name}, not covered by the collection discount",
+          "it": "{name}, non coperto dallo sconto ritiro",
+          "variables": ["name"]
         },
         { "key": "cart.fee", "fr": "Coursier", "en": "Courier", "it": "Corriere", "variables": [] },
         {
@@ -5235,6 +5263,27 @@
           "fr": "Remboursement",
           "en": "Refund",
           "it": "Rimborso",
+          "variables": []
+        },
+        {
+          "key": "orders.detailPickupDiscount",
+          "fr": "Remise retrait",
+          "en": "Collection discount",
+          "it": "Sconto ritiro",
+          "variables": []
+        },
+        {
+          "key": "orders.detailPickupDiscountValue",
+          "fr": "−{value} sur {base} éligibles",
+          "en": "−{value} on {base} eligible",
+          "it": "−{value} su {base} idonei",
+          "variables": ["value", "base"]
+        },
+        {
+          "key": "orders.detailPickupExcluded",
+          "fr": "Non concernés par la remise retrait",
+          "en": "Not covered by the collection discount",
+          "it": "Non coperti dallo sconto ritiro",
           "variables": []
         },
         {

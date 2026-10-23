@@ -136,4 +136,25 @@ describe('OrderDetail', () => {
     fixture.detectChanges();
     expect(el().textContent).toContain(FR.cart.voucherHtLine);
   });
+
+  /** Plan remise retrait par clientèle, lot C : l'assiette et les articles hors remise. */
+  it('dit l’assiette de la remise de retrait et ce qu’elle ne couvrait pas', () => {
+    expect(el().querySelector('[data-pickup-discount]')).toBeNull();
+
+    fixture.componentRef.setInput('order', {
+      ...ROWS[0]!,
+      pickupDiscount: {
+        adjustment: { mode: 'percent', bp: 1000 },
+        discountCents: 50,
+        eligibleCents: 528,
+        eligiblePretax: false,
+        excludedNames: ['Tasse', 'Torchon'],
+      },
+    });
+    fixture.detectChanges();
+    const text = (selector: string): string =>
+      el().querySelector(selector)?.textContent?.replace(/\s+/gu, ' ').trim() ?? '';
+    expect(text('[data-pickup-discount] dd')).toBe('−10 % sur 5,28 € TTC éligibles');
+    expect(text('[data-pickup-excluded] dd')).toBe('Tasse, Torchon');
+  });
 });

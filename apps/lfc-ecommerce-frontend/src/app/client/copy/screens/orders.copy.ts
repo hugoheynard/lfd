@@ -131,6 +131,12 @@ export interface OrdersCopy {
   readonly settle: string;
   /** L'intitulé de la ligne « Remboursement » — absente sans remboursement. */
   readonly detailRefund: string;
+  /** L'intitulé de la remise de retrait quand une ligne en était exclue. */
+  readonly detailPickupDiscount: string;
+  /** `{value}` la remise, `{base}` son assiette mention comprise. */
+  readonly detailPickupDiscountValue: string;
+  /** L'intitulé des articles que la remise ne couvrait pas. */
+  readonly detailPickupExcluded: string;
   /** Le cumul des remboursements réussis atteint le total. */
   readonly refundedFull: string;
   /** `{amount}` est remplacé par le cumul remboursé : « 12,50 € ». */
@@ -262,6 +268,9 @@ export const ORDERS_FR: OrdersCopy = {
   payRefusedNote: 'votre banque a refusé la carte',
   settle: 'Régler',
   detailRefund: 'Remboursement',
+  detailPickupDiscount: 'Remise retrait',
+  detailPickupDiscountValue: '−{value} sur {base} éligibles',
+  detailPickupExcluded: 'Non concernés par la remise retrait',
   refundedFull: 'Remboursée',
   refundedPartial: 'Remboursée en partie ({amount})',
   detailHead: 'Le détail',
@@ -373,6 +382,9 @@ export const ORDERS_EN: OrdersCopy = {
   payRefusedNote: 'your bank declined the card',
   settle: 'Pay',
   detailRefund: 'Refund',
+  detailPickupDiscount: 'Collection discount',
+  detailPickupDiscountValue: '−{value} on {base} eligible',
+  detailPickupExcluded: 'Not covered by the collection discount',
   refundedFull: 'Refunded',
   refundedPartial: 'Partly refunded ({amount})',
   detailHead: 'The detail',
@@ -484,6 +496,9 @@ export const ORDERS_IT: OrdersCopy = {
   payRefusedNote: 'la tua banca ha rifiutato la carta',
   settle: 'Paga',
   detailRefund: 'Rimborso',
+  detailPickupDiscount: 'Sconto ritiro',
+  detailPickupDiscountValue: '−{value} su {base} idonei',
+  detailPickupExcluded: 'Non coperti dallo sconto ritiro',
   refundedFull: 'Rimborsato',
   refundedPartial: 'Rimborsato in parte ({amount})',
   detailHead: 'Il dettaglio',

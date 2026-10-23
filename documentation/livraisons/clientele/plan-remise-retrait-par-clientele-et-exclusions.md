@@ -135,6 +135,20 @@ false` (`OrderLineView`, `CustomerOrderLineView`, `ClientSheetLine`), absent
 > pro, TTC au public), un astérisque sur la ligne exclue, et « * Non concerné
 > par la remise retrait. » au pied ; la tasse du bon public de la planche est
 > exclue pour le montrer.
+>
+> **Front de la boutique bâti le 2026-10-23 (non commité à l'écriture).** Le
+> panier (`cart-summary`) écrit « Remise retrait au Labo −10 % sur X €
+> éligibles » dans l'assiette de ses lignes (`ShopPriceBasis` : TTC au
+> particulier, HT au pro), pose un `*` sur la ligne exclue (`cart-product-line`,
+> nom accessible « …, non concerné par la remise retrait ») et le renvoi une
+> fois sous le décompte. Le tiroir d'une commande (`order-detail`) ne liste pas
+> ses lignes : il dit la remise et son assiette (HT au compte, TTC sinon), puis
+> « Non concernés par la remise retrait : … » avec les noms des lignes
+> exclues. L'étiquette d'un point (`pickupOffer`) dit « −X sur une sélection »
+> quand la remise de la clientèle est en mode `only` ou porte une règle qui
+> exclut ; `bestPickupDiscount` reste inchangé, ses phrases ne disent pas
+> « sur tout ». Bundle initial cloudflare : +2,9 ko (1,350 → 1,353 Mo), au-delà
+> du budget de la configuration avant comme après.
 
 ## 5. Décisions (Hugo, 2026-10-22)
 
