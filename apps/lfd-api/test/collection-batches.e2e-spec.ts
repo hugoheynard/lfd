@@ -21,6 +21,7 @@ import type {
   ConstitutedBatchesView,
 } from "@lfd/contracts";
 
+import { CollectionCalendarReader } from "../src/b2b/accounting/domain/ports/collection-calendar.reader.js";
 import { CollectionCandidatesReader } from "../src/b2b/accounting/domain/ports/collection-candidates.reader.js";
 import { cycleAt, cycleToConstitute } from "../src/b2b/accounting/domain/services/billing-cycle.js";
 import {
@@ -291,7 +292,7 @@ describe("les bons que la constitution lit (F1)", () => {
       },
     });
     const reader = ctx.app.get(CollectionCandidatesReader);
-    const floor = await reader.floor();
+    const floor = await ctx.app.get(CollectionCalendarReader).floor();
 
     const from = floor ?? closesAt;
     const orders = await reader.collectableOrders(
@@ -683,7 +684,7 @@ describe("le prélèvement suit la facture (F2)", () => {
     await orderOf(port, 3, HALF_CENT_BON);
     await orderOf(quai);
     const reader = ctx.app.get(CollectionCandidatesReader);
-    const from = (await reader.floor()) ?? closesAt;
+    const from = (await ctx.app.get(CollectionCalendarReader).floor()) ?? closesAt;
     const read = await reader.collectableOrders(
       from,
       closesAt,

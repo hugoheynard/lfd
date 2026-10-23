@@ -9,16 +9,13 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 import { Clock } from "../../../../platform/time/clock.js";
 import { LegalEntityNotFoundError } from "../../domain/errors/accounting-errors.js";
 import { CollectionNotYetOpenError } from "../../domain/errors/collection-errors.js";
-import { BillingModeDatesReader } from "../../domain/ports/billing-mode-dates.reader.js";
-import { CollectionCandidatesReader } from "../../domain/ports/collection-candidates.reader.js";
-import { CollectionMandatesReader } from "../../domain/ports/collection-mandates.reader.js";
 import { InvoicePeriodsReader } from "../../domain/ports/invoice-periods.reader.js";
 import { LegalEntityReader } from "../../domain/ports/legal-entity.reader.js";
-import { PayerBillingModesReader } from "../../domain/ports/payer-billing-modes.reader.js";
 import { calendarCycleAt } from "../../domain/services/calendar-cycles.js";
 import type { DebitDraft } from "../../domain/services/collection-assembly.js";
 import type { LotPayerRef } from "../../domain/services/lot-payer-modes.js";
 import { readLotPayerModes } from "../lot-payer-modes-support.js";
+import { CollectionAssemblyReaders } from "../collection-constitution-ports.js";
 import { readAssembly, type ReadAssembly } from "../collection-constitution-support.js";
 import { GetCollectionPreviewQuery } from "./collection-batch-queries.js";
 
@@ -53,10 +50,7 @@ export class GetCollectionPreviewHandler implements IQueryHandler<
 > {
   constructor(
     private readonly entities: LegalEntityReader,
-    private readonly candidates: CollectionCandidatesReader,
-    private readonly mandates: CollectionMandatesReader,
-    private readonly modeDates: BillingModeDatesReader,
-    private readonly payerModes: PayerBillingModesReader,
+    private readonly readers: CollectionAssemblyReaders,
     private readonly periods: InvoicePeriodsReader,
     private readonly clock: Clock,
   ) {}
@@ -68,13 +62,9 @@ export class GetCollectionPreviewHandler implements IQueryHandler<
     }
     try {
       const read = await readAssembly(
-        {
-          candidates: this.candidates,
-          mandates: this.mandates,
-          calendar: { modeDates: this.modeDates, payerModes: this.payerModes },
-          // L'aperçu ne verrouille rien (C5.3) : il lit l'état du moment.
-          rows: null,
-        },
+        this.readers,
+        // L'aperçu ne verrouille rien (C5.3) : il lit l'état du moment.
+        null,
         query.legalEntityId,
         this.clock.now(),
         { cycleOf: calendarCycleAt, simulateUninvoiced: true, lockRows: false },

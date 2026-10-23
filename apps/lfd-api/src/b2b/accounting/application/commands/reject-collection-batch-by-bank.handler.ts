@@ -13,10 +13,11 @@ import { LegalEntityReader } from "../../domain/ports/legal-entity.reader.js";
 import { OrderCollectionRepository } from "../../domain/ports/order-collection.repository.js";
 import { ReturnableLinesReader } from "../../domain/ports/returnable-lines.reader.js";
 import {
-  batchEntity,
-  loadBatchOrFail,
-  statementCancelledEvents,
-} from "../collection-batch-support.js";
+  releaseBatch,
+  saveReleaseAndPublish,
+  type BatchReleasePorts,
+} from "../collection-batch-release.js";
+import { loadBatchOrFail } from "../collection-batch-support.js";
 import { RejectCollectionBatchByBankCommand } from "./reject-collection-batch-by-bank.command.js";
 
 /**
@@ -64,20 +65,22 @@ export class RejectCollectionBatchByBankHandler implements ICommandHandler<
         returned,
       );
       await this.batches.save(batch);
-      const cancelled = await this.statements.cancelForBatch(batch.id);
-      const released = await this.orders.ofBatch(batch.id);
-      for (const order of released) {
-        order.releaseRejected(at);
-      }
-      await this.orders.saveAll(released);
-      const entity = await batchEntity(this.entities, batch);
-      await this.events.publishTraced(
-        new CollectionBatchRejectedByBankEvent(batch, entity, at, released.length),
+      const ports = this.releasePorts();
+      const release = await releaseBatch(ports, batch, "releaseRejected", at);
+      await saveReleaseAndPublish(
+        ports,
+        batch,
+        release,
+        (entity) =>
+          new CollectionBatchRejectedByBankEvent(batch, entity, at, release.released.length),
+        at,
       );
-      for (const event of statementCancelledEvents(batch, cancelled, entity, at)) {
-        await this.events.publishTraced(event);
-      }
     });
+  }
+
+  private releasePorts(): BatchReleasePorts {
+    const { statements, orders, entities, events } = this;
+    return { statements, orders, entities, events };
   }
 
   /** Les payeurs dont la ligne a un retour enregistré — lus sous le verrou. */

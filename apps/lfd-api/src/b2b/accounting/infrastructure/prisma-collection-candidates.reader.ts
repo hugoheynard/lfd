@@ -5,6 +5,8 @@ import {
   CollectionCandidatesReader,
   type CollectableOrder,
 } from "../domain/ports/collection-candidates.reader.js";
+import type { CollectionCalendarReader } from "../domain/ports/collection-calendar.reader.js";
+import type { CountedLotInputsReader } from "../domain/ports/counted-lot-inputs.reader.js";
 import { COMMERCIAL_INVOICE } from "../domain/entities/invoice.types.js";
 import type { BillingFollow } from "../domain/ports/statement-billing.reader.js";
 import type { CollectableInvoice } from "../domain/services/collection-assembly.js";
@@ -22,7 +24,8 @@ import { LIVE_BATCH_STATUS } from "./live-batch-status.js";
 const OPEN_STATES = ["due", "excluded"] as const;
 
 /**
- * Ce que lit la constitution d'un lot. Le critère de l'assiette est celui de
+ * Ce que lit la constitution d'un lot — trois ports (candidats, calendrier,
+ * sites et mandats consommés), un seul adaptateur lié par `useExisting`. Le critère de l'assiette est celui de
  * `billable-order-criterion.ts` — écrit une fois, partagé avec l'aperçu et le
  * relevé.
  *
@@ -30,7 +33,10 @@ const OPEN_STATES = ["due", "excluded"] as const;
  * opaque) : deux lectures, jointes en mémoire.
  */
 @Injectable()
-export class PrismaCollectionCandidatesReader extends CollectionCandidatesReader {
+export class PrismaCollectionCandidatesReader
+  extends CollectionCandidatesReader
+  implements CollectionCalendarReader, CountedLotInputsReader
+{
   constructor(private readonly prisma: PrismaService) {
     super();
   }

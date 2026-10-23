@@ -9,11 +9,8 @@ import { CollectionBatchLock } from "../../domain/ports/collection-batch-lock.js
 import { CollectionBatchRepository } from "../../domain/ports/collection-batch.repository.js";
 import { LegalEntityReader } from "../../domain/ports/legal-entity.reader.js";
 import { OrderCollectionRepository } from "../../domain/ports/order-collection.repository.js";
-import {
-  batchEntity,
-  loadBatchOrFail,
-  statementCancelledEvents,
-} from "../collection-batch-support.js";
+import { releaseBatch, saveReleaseAndPublish } from "../collection-batch-release.js";
+import { loadBatchOrFail } from "../collection-batch-support.js";
 import { CancelCollectionBatchCommand } from "./cancel-collection-batch.command.js";
 
 /**
@@ -54,18 +51,23 @@ export class CancelCollectionBatchHandler implements ICommandHandler<
       await this.lock.lock(command.batchId);
       const batch = await loadBatchOrFail(this.batches, command.batchId);
       batch.cancel({ at, staffId: command.staffUserId });
-      const cancelled = await this.statements.cancelForBatch(batch.id);
-      const released = await this.orders.ofBatch(batch.id);
-      for (const order of released) {
-        order.release(at);
-      }
+      const ports = {
+        statements: this.statements,
+        orders: this.orders,
+        entities: this.entities,
+        events: this.events,
+      };
+      const release = await releaseBatch(ports, batch, "release", at);
+      // Le lot s'écrit APRÈS la libération (arrêtés annulés tant qu'il est
+      // encore `constituted` en base), avec son écriture conditionnelle.
       await this.batches.save(batch);
-      await this.orders.saveAll(released);
-      const entity = await batchEntity(this.entities, batch);
-      await this.events.publishTraced(new CollectionBatchCancelledEvent(batch, entity, at));
-      for (const event of statementCancelledEvents(batch, cancelled, entity, at)) {
-        await this.events.publishTraced(event);
-      }
+      await saveReleaseAndPublish(
+        ports,
+        batch,
+        release,
+        (entity) => new CollectionBatchCancelledEvent(batch, entity, at),
+        at,
+      );
     });
   }
 }

@@ -13,12 +13,9 @@ import {
   order,
 } from "../../../domain/services/__tests__/collection-fixtures.js";
 import { ConstituteCollectionBatchesCommand } from "../../commands/constitute-collection-batches.command.js";
-import { world } from "../../commands/__tests__/collection-world.js";
+import { assemblyReaders, world } from "../../commands/__tests__/collection-world.js";
 import { entityRecord } from "../../commands/__tests__/mandate-bank-export-doubles.js";
-import {
-  FixedModeDates,
-  FixedPayerModes,
-} from "../../commands/__tests__/monthly-invoice-doubles.js";
+import { FixedPayerModes } from "../../commands/__tests__/monthly-invoice-doubles.js";
 import { paris } from "../../../domain/services/__tests__/billing-mode-fixtures.js";
 import { FixedInvoicePeriods } from "../../services/__tests__/issued-invoice-doubles.js";
 import { GetCollectionPreviewQuery } from "../collection-batch-queries.js";
@@ -43,10 +40,7 @@ function previewWorld() {
   const w = world();
   const preview = new GetCollectionPreviewHandler(
     new EntityOfTheWorld(),
-    w.candidates,
-    w.mandates,
-    new FixedModeDates(),
-    w.payerModes,
+    assemblyReaders(w, w.payerModes),
     new FixedInvoicePeriods(new Map()),
     w.clock,
   );
@@ -165,10 +159,7 @@ describe("l'aperçu du mois", () => {
     ]);
     const preview = new GetCollectionPreviewHandler(
       new EntityOfTheWorld(),
-      w.candidates,
-      w.mandates,
-      new FixedModeDates(),
-      weekly,
+      assemblyReaders(w, weekly),
       new FixedInvoicePeriods(new Map()),
       w.clock,
     );

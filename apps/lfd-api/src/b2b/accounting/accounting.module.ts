@@ -23,6 +23,11 @@ import { Module } from "@nestjs/common";
 
 import { CancelCollectionBatchHandler } from "./application/commands/cancel-collection-batch.handler.js";
 import { RecordCollectionBatchDownloadHandler } from "./application/commands/record-collection-batch-download.handler.js";
+import {
+  CollectionAssemblyReaders,
+  ConstitutionNoticeReaders,
+  ConstitutionWriters,
+} from "./application/collection-constitution-ports.js";
 import { ConstituteCollectionBatchesHandler } from "./application/commands/constitute-collection-batches.handler.js";
 import { SendCollectionNotice } from "./application/handlers/send-collection-notice.handler.js";
 import { CollectionNoticeSender } from "./application/services/collection-notice-sender.js";
@@ -55,6 +60,7 @@ import { CancelledOrdersReader } from "./domain/ports/cancelled-orders.reader.js
 import { CollectionBatchReader } from "./domain/ports/collection-batch.reader.js";
 import { CollectionBatchRepository } from "./domain/ports/collection-batch.repository.js";
 import { CountedLotInputsReader } from "./domain/ports/counted-lot-inputs.reader.js";
+import { CollectionCalendarReader } from "./domain/ports/collection-calendar.reader.js";
 import { CollectionCandidatesReader } from "./domain/ports/collection-candidates.reader.js";
 import { CollectionLock } from "./domain/ports/collection-lock.js";
 import { CollectionBatchLock } from "./domain/ports/collection-batch-lock.js";
@@ -256,6 +262,7 @@ import { PrismaOrderRowsLock } from "./infrastructure/prisma-order-rows-lock.js"
     { provide: CollectionCandidatesReader, useClass: PrismaCollectionCandidatesReader },
     // Le compte des clients rejoue le lot avec SES lectures (prelevement-sepa § 12 bis).
     { provide: CountedLotInputsReader, useExisting: CollectionCandidatesReader },
+    { provide: CollectionCalendarReader, useExisting: CollectionCandidatesReader },
     { provide: RecordedClosureReader, useClass: PrismaRecordedClosureReader },
     { provide: CollectionBatchRepository, useClass: PrismaCollectionBatchRepository },
     { provide: OrderCollectionRepository, useClass: PrismaOrderCollectionRepository },
@@ -321,6 +328,9 @@ import { PrismaOrderRowsLock } from "./infrastructure/prisma-order-rows-lock.js"
     GetDetachedUnpaidOrdersHandler,
     GetMyDetachedUnpaidOrdersHandler,
     ConstituteCollectionBatchesHandler,
+    CollectionAssemblyReaders,
+    ConstitutionNoticeReaders,
+    ConstitutionWriters,
     CancelCollectionBatchHandler,
     RecordCollectionBatchDownloadHandler,
     DepositCollectionBatchHandler,
