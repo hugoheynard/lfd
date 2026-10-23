@@ -86,6 +86,28 @@ une route profonde** (ex. `/boutique`) → la page s'affiche (grâce à
 
 ---
 
+## Les Pages Functions
+
+Pages sert une Function AVANT les fichiers statiques et `_redirects`.
+`wrangler pages deploy` les prend dans `./functions` du répertoire courant (le
+workflow se place dans le dossier de l'app).
+
+| Route                      | Fichier                                | Ce qu'elle fait                                                                                                                                                      |
+| -------------------------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/confidentialite`         | `functions/confidentialite.ts`         | la politique en HTML complet, sans JavaScript                                                                                                                        |
+| `/suppression-des-donnees` | `functions/suppression-des-donnees.ts` | la même page (adresse donnée à Meta)                                                                                                                                 |
+| `/boutique/article/<sku>`  | `functions/boutique/article/[sku].ts`  | l'`index.html` avec titre, description, canonique et Open Graph de l'article ; 404 + `noindex` s'il est absent ; intact si l'API ne répond pas en 1,5 s (2026-10-23) |
+
+**Aucune variable d'environnement Pages à créer.** Les Functions lisent
+l'origine de l'API dans `src/app/auth/auth.env.generated.ts` (`apiBaseUrl`),
+que `pnpm config:auth` produit au build depuis la variable de dépôt
+`LFD_API_URL` — déjà posée pour la boutique elle-même. Wrangler embarque ce
+fichier au déploiement : il doit exister à ce moment-là.
+
+`env.ASSETS` (l'`index.html` statique) est fourni par Pages sans réglage.
+
+---
+
 ## Domaine personnalisé (optionnel)
 
 Projet Pages → onglet **Custom domains** → **Set up a custom domain** → saisir le

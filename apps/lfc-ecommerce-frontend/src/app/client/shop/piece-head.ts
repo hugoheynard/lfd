@@ -19,6 +19,7 @@ const PIECE_TAGS = [
   'property="og:description"',
   'property="og:url"',
   'property="og:image"',
+  'name="twitter:card"',
 ] as const;
 
 /**
@@ -29,6 +30,11 @@ const PIECE_TAGS = [
  * Posé par {@link PieceAddress} à l'ouverture, retiré à la fermeture : la
  * grille garde son titre et n'hérite pas de la description d'un article.
  * L'origine est celle du document — la boutique n'en connaît pas d'autre.
+ *
+ * Sur Cloudflare, la Pages Function `functions/boutique/article/[sku].ts` a
+ * déjà posé ces balises dans l'`index.html` (`piece-page.render.ts`) : chacune
+ * est retrouvée par son sélecteur et mise à jour, le `<title>` est remplacé —
+ * jamais doublées.
  */
 @Injectable()
 export class PieceHead {
@@ -46,6 +52,10 @@ export class PieceHead {
     this.put({ property: 'og:title', content: item.name });
     this.put({ property: 'og:description', content: item.note ?? item.name });
     this.put({ property: 'og:url', content: url });
+    this.put({
+      name: 'twitter:card',
+      content: item.image === null ? 'summary' : 'summary_large_image',
+    });
     if (item.image === null) {
       this.meta.removeTag('property="og:image"');
     } else {

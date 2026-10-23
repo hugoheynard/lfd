@@ -329,9 +329,29 @@ une fiche depuis la grille y navigue (rayon et `#pro` gardés), le retour du
 navigateur rend la grille, et un SKU absent du catalogue du visiteur (retiré,
 ou réservé à l'autre clientèle) affiche « Cet article n'est plus disponible »
 avec un lien vers la boutique. La page pose titre, description, canonique et
-Open Graph **dans le navigateur** : la boutique est servie en SPA statique,
-sans rendu serveur — un robot qui n'exécute pas JavaScript ne les voit pas, et
-l'article absent répond 200, pas 404.
+Open Graph **dans le navigateur**.
+
+**Avant le JavaScript aussi (2026-10-23).** La boutique reste une SPA statique
+sur Cloudflare Pages, mais `/boutique/article/<sku>` passe par une Pages
+Function (`apps/lfc-ecommerce-frontend/functions/boutique/article/[sku].ts`,
+rendu pur dans
+`apps/lfc-ecommerce-frontend/src/app/client/shop/piece-page/piece-page.render.ts`). Elle lit
+`GET /shop/catalogue` **anonyme** (ni jeton, ni `?audience=` : un article
+réservé aux pros n'y est pas, et il est refusé une seconde fois au rendu), puis
+sert l'`index.html` statique :
+
+| Cas                                           | Statut | Ce qui change dans le `<head>`                                                                                        | `cache-control`                                    |
+| --------------------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| article public                                | 200    | `<title>` « nom — La Folie Coffee », description (note, ou nom), canonique absolue, `og:*`, `twitter:card` — échappés | `public, max-age=300, stale-while-revalidate=3600` |
+| absent, retiré, pro, SKU mal encodé           | 404    | `<meta name="robots" content="noindex">`                                                                              | `public, max-age=60`                               |
+| API en erreur, injoignable ou lente (> 1,5 s) | 200    | rien : l'`index.html` intact                                                                                          | `no-store`                                         |
+
+L'origine de l'API est `apiBaseUrl` du fichier généré depuis la variable de
+dépôt `LFD_API_URL`, comme `/confidentialite` ; l'origine de la canonique est
+celle de la requête. `PieceHead` réécrit ensuite les mêmes balises par leur
+sélecteur — il les met à jour, n'en ajoute pas (éprouvé par
+`apps/lfc-ecommerce-frontend/src/app/client/shop/piece-page/piece-head.injected.spec.ts`). Rien de tout ça n'entre dans le
+bundle de la boutique.
 
 L'empreinte d'un article est calculée **sans** origine : changer
 `CLIENT_BASE_URL` ne renotifie pas le catalogue (le SKU, lui, est déjà dans
