@@ -1,0 +1,25 @@
+<!-- 🔴 Inactifs tant que l'entité ne peut pas encaisser : le serveur refuse en
+     409 plutôt que d'imprimer des cases vides sur un document qu'on fait
+     signer. « Voir » d'abord, et en emphase : le geste courant est de
+     CONTRÔLER la fiche à l'écran, pas d'accumuler des PDF. -->
+<div class="sm-actions">
+  <button
+    foldButton
+    icon="eye"
+    [disabled]="!entity().canCollect || busy()"
+    [loading]="loading()"
+    (click)="view()"
+  >
+    Voir le mandat SEPA
+  </button>
+  <button
+    foldButton
+    emphasis="outline"
+    icon="download"
+    [disabled]="!entity().canCollect || busy()"
+    [loading]="loading()"
+    (click)="download()"
+  >
+    Télécharger
+  </button>
+</div>

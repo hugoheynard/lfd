@@ -53,6 +53,12 @@ export interface UpcomingClosureView {
   readonly periodLabel: string;
   /** `AAAA-MM-JJ` — le jour où sa facture s'émet : la veille de la clôture. */
   readonly invoicedOn: string;
+  /**
+   * La durée de la période, en jours locaux de Paris (1 = un seul jour). Comptée
+   * par le serveur, sur le même calendrier que `periodLabel` : l'écran qui
+   * avertit d'une première période trop courte ne refait pas le compte.
+   */
+  readonly periodDays: number;
 }
 
 /**

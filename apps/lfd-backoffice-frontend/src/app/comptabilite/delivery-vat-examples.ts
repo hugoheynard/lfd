@@ -1,4 +1,4 @@
-import { type VatExtra, type VatLine, ventilateVat } from '@lfd/money';
+import { splitOrderByRate, type VatExtra, type VatLine, ventilateVat } from '@lfd/money';
 
 /** La part d'un taux dans le calcul : produits, livraison, base, TVA. */
 export interface DeliveryVatRateRow {
@@ -81,12 +81,16 @@ export function deliveryVatExamples(): readonly DeliveryVatExample[] {
 }
 
 function outcomeOf(lines: readonly VatLine[], delivery: VatExtra): DeliveryVatOutcome {
-  const result = ventilateVat({ lines, discountCents: 0, extras: [delivery] });
+  const input = { lines, discountCents: 0, extras: [delivery] };
+  const result = ventilateVat(input);
+  // La part de port de chaque taux, telle que la facture la découpe : aucune
+  // répartition n'est refaite ici.
+  const deliveryShares = splitOrderByRate(input).extras[0] ?? [];
   const goodsHt = lines.reduce((sum, line) => sum + line.htCents, 0);
   const rates = [
     ...new Set([
       ...lines.map((line) => line.vatRate),
-      ...('vatRate' in delivery ? [delivery.vatRate] : []),
+      ...deliveryShares.map((share) => share.vatRate),
     ]),
   ].sort((a, b) => a - b);
   const rows = rates.map((rate): DeliveryVatRateRow => {
@@ -94,11 +98,7 @@ function outcomeOf(lines: readonly VatLine[], delivery: VatExtra): DeliveryVatOu
       .filter((line) => line.vatRate === rate)
       .reduce((sum, line) => sum + line.htCents, 0);
     const deliveryHtCents =
-      'vatRate' in delivery
-        ? delivery.vatRate === rate
-          ? delivery.htCents
-          : 0
-        : Math.round((delivery.htCents * goodsHtCents) / goodsHt);
+      deliveryShares.find((share) => share.vatRate === rate)?.amountCents ?? 0;
     return {
       rate,
       goodsHtCents,

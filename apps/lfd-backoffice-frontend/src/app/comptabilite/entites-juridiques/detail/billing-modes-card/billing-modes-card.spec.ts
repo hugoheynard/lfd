@@ -17,7 +17,12 @@ const MODES: LegalEntityView['billingModes'] = [
     scheduled: { days: [15], effectiveAt: NOV_1 },
     changeLockedUntil: NOV_1,
     upcomingClosures: [
-      { closesAt: NOV_1, periodLabel: 'du 1er au 31 octobre 2026', invoicedOn: '2026-10-31' },
+      {
+        closesAt: NOV_1,
+        periodLabel: 'du 1er au 31 octobre 2026',
+        invoicedOn: '2026-10-31',
+        periodDays: 31,
+      },
     ],
     payerCount: 0,
   },

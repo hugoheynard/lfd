@@ -1,0 +1,31 @@
+/* La pile de la carte : l'écart vient du gap, aucun bloc ne pose sa marge. */
+.ca-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+/* La prose porte le POURQUOI : encre secondaire, pour ne pas disputer la
+   lecture aux valeurs. */
+.ca-said {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+  margin: 0;
+}
+
+.ca-account {
+  font-family: var(--fold-font-mono);
+  margin: 0;
+}
+
+/* Des champs sur une ligne ; en dessous de 18rem chacun, ils s'empilent. */
+.ca-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--fold-space-sm);
+  flex-wrap: wrap;
+}
+
+.ca-row fold-input {
+  flex: 1 1 18rem;
+}

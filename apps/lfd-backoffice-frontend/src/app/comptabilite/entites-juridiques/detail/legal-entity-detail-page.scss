@@ -17,13 +17,6 @@
   white-space: nowrap;
 }
 
-/* Voir, puis télécharger — deux gestes sur une ligne, dans l'en-tête. */
-.ej-mandate-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--fold-space-sm);
-}
-
 /* La prose explicative des trois réglages : elle porte le POURQUOI, qui se lit
    une fois puis s'ignore. Encre secondaire, donc, pour qu'elle ne dispute pas
    la lecture aux valeurs. */
@@ -39,11 +32,6 @@
   font-family: var(--fold-font-mono);
   font-size: var(--fold-text-lg);
   margin: 0 0 var(--fold-space-sm);
-}
-
-.ej-account {
-  font-family: var(--fold-font-mono);
-  margin: 0 0 var(--fold-space-md);
 }
 
 /* Un champ et son action sur une ligne : le champ prend la place, le bouton la

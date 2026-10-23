@@ -315,6 +315,24 @@ describe('TableauDeBordPage', () => {
     expect(api.rhythmsAskedFor).toHaveLength(1);
   });
 
+  /**
+   * Régression : une lecture ratée posait un callout AU-DESSUS de quatre cartes
+   * vides, sans geste de sortie. L'état d'échec de chargement est l'état vide
+   * d'alerte de fold, avec « Réessayer » (fix 2026-10-23).
+   */
+  it('une lecture ratée montre l’état d’échec et propose de relire', async () => {
+    const api = new FakeDashboard();
+    api.customers = (): Promise<CustomerPortfolioView> =>
+      Promise.reject(new Error('comptes indisponibles'));
+
+    const { fixture } = await render(api);
+    const host = fixture.nativeElement as HTMLElement;
+
+    expect(host.querySelector('fold-empty-state[tone="alert"]')).not.toBeNull();
+    expect(text(fixture)).toContain('Réessayer');
+    expect(text(fixture)).not.toContain('Comptes clients');
+  });
+
   it('🔴 des rythmes illisibles coûtent leur bande, pas le tableau de bord', async () => {
     const api = new FakeDashboard();
     api.rhythmsFails = true;

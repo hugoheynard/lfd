@@ -14,6 +14,7 @@ import {
   lastDayOf,
   MAX_CLOSURES_PER_PASS,
   parsePeriodClosure,
+  periodDaysOf,
   periodLabelOf,
   periodMonthOf,
   previousClosureOf,
@@ -239,5 +240,23 @@ describe("parsePeriodClosure", () => {
   it("lit un instant ISO, refuse le reste", () => {
     expect(parsePeriodClosure(OCT_1.toISOString())).toEqual(OCT_1);
     expect(() => parsePeriodClosure("pas une date")).toThrow(InvalidPeriodClosureError);
+  });
+});
+
+describe("la durée d'une période, en jours locaux", () => {
+  it("compte les jours de la seconde quinzaine de septembre : 15", () => {
+    expect(periodDaysOf(invoicedPeriodOf(OCT_1, SEMIMONTHLY))).toBe(15);
+  });
+
+  it("ne se laisse pas fausser par le passage à l'heure d'hiver (octobre : 31 jours, 745 heures)", () => {
+    const octoberStart = OCT_1;
+    const novemberFirst = new Date("2026-10-31T23:00:00.000Z");
+    expect(periodDaysOf({ startsAt: octoberStart, closesAt: novemberFirst })).toBe(31);
+  });
+
+  it("une période d'un seul jour vaut 1", () => {
+    expect(periodDaysOf({ startsAt: OCT_1, closesAt: new Date("2026-10-01T22:00:00.000Z") })).toBe(
+      1,
+    );
   });
 });

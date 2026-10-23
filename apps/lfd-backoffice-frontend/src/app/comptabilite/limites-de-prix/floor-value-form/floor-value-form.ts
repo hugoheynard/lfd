@@ -17,6 +17,7 @@ import {
 } from 'fold-ng';
 
 import { formatEuros } from '@lfd/catalog-ui';
+import { fractionByBasisPoints, fromCents, roundToCents } from '@lfd/money';
 
 import {
   doorLabel,
@@ -112,7 +113,10 @@ export class FloorValueForm {
     if (canonical === null || value === null || this.mode() !== 'percent') {
       return null;
     }
-    return formatEuros(Math.round((canonical * value) / MAX_PERCENT));
+    // La fraction du serveur (`resolve-price.ts`, `floorValue`), sur les points
+    // de base qui partiront : l'aperçu ne peut pas arrondir autrement que le prix.
+    const bp = magnitudeToWire(value, 'percent');
+    return formatEuros(roundToCents(fractionByBasisPoints(fromCents(canonical), bp)));
   });
 
   protected readonly overHundred = computed(

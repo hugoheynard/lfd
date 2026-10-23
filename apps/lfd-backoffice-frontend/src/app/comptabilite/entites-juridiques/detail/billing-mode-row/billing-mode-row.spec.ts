@@ -21,21 +21,29 @@ const NOV_1 = '2026-10-31T23:00:00.000Z';
 const NOV_2 = '2026-11-01T23:00:00.000Z';
 
 const CLOSURES: readonly UpcomingClosureView[] = [
-  { closesAt: NOV_1, periodLabel: 'du 1er au 31 octobre 2026', invoicedOn: '2026-10-31' },
+  {
+    closesAt: NOV_1,
+    periodLabel: 'du 1er au 31 octobre 2026',
+    invoicedOn: '2026-10-31',
+    periodDays: 31,
+  },
   {
     closesAt: '2026-11-30T23:00:00.000Z',
     periodLabel: 'du 1er au 30 novembre 2026',
     invoicedOn: '2026-11-30',
+    periodDays: 30,
   },
   {
     closesAt: '2026-12-31T23:00:00.000Z',
     periodLabel: 'du 1er au 31 décembre 2026',
     invoicedOn: '2026-12-31',
+    periodDays: 31,
   },
   {
     closesAt: '2027-01-31T23:00:00.000Z',
     periodLabel: 'du 1er au 31 janvier 2027',
     invoicedOn: '2027-01-31',
+    periodDays: 31,
   },
 ];
 
@@ -210,8 +218,18 @@ describe('BillingModeRow — les dates d’un mode de l’entité', () => {
       modeView('monthly', {
         ...PENDING,
         upcomingClosures: [
-          { closesAt: NOV_1, periodLabel: 'du 1er au 31 octobre 2026', invoicedOn: '2026-10-31' },
-          { closesAt: NOV_2, periodLabel: 'du 1er au 1er novembre 2026', invoicedOn: '2026-11-01' },
+          {
+            closesAt: NOV_1,
+            periodLabel: 'du 1er au 31 octobre 2026',
+            invoicedOn: '2026-10-31',
+            periodDays: 31,
+          },
+          {
+            closesAt: NOV_2,
+            periodLabel: 'du 1er au 1er novembre 2026',
+            invoicedOn: '2026-11-01',
+            periodDays: 1,
+          },
         ],
       }),
     );

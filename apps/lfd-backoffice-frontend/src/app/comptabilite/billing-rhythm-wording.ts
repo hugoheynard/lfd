@@ -39,8 +39,6 @@ export const LAST_CLOSING_DAY_OF_MONTH = 28;
 /** Une période plus courte que ce nombre de jours se signale (§6, bascule). */
 export const SHORT_PERIOD_DAYS = 3;
 
-const MS_PER_DAY = 86_400_000;
-
 /**
  * Le mode d'un client, tel que le choix à trois le dit (plan §16.9, M4b) : le
  * mensuel porte « par défaut », parce qu'un client qui n'a rien choisi l'est.
@@ -149,7 +147,8 @@ export function shortPeriodWarning(
   if (first === undefined) {
     return null;
   }
-  const days = Math.round((new Date(first.closesAt).getTime() - effectiveAt) / MS_PER_DAY);
+  // La durée vient du serveur, comptée en jours de Paris sur son calendrier.
+  const days = first.periodDays;
   if (days >= SHORT_PERIOD_DAYS) {
     return null;
   }

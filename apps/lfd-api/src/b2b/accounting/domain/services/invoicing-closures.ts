@@ -218,6 +218,25 @@ export function periodLabelOf(period: BillingCycle): string {
   return `du ${dayName(first.day)} au ${lastText}`;
 }
 
+/**
+ * La durée d'une période en jours locaux de Paris, de son premier jour à la
+ * veille de sa clôture inclus : `1` pour une période d'un seul jour. Comptée sur
+ * les jours, pas sur les heures, pour qu'un changement d'heure ne la fausse pas.
+ */
+export function periodDaysOf(period: BillingCycle): number {
+  return (
+    dayIndex(instantToLocal(period.closesAt).day) - dayIndex(instantToLocal(period.startsAt).day)
+  );
+}
+
+/** Le rang d'un jour `AAAA-MM-JJ` dans le calendrier — seule la différence compte. */
+function dayIndex(day: string): number {
+  const { year, month, day: dayOfMonth } = splitDay(day);
+  return Date.UTC(year, month - 1, dayOfMonth) / MS_PER_DAY;
+}
+
+const MS_PER_DAY = 86_400_000;
+
 function splitDay(day: string): {
   readonly year: number;
   readonly month: number;

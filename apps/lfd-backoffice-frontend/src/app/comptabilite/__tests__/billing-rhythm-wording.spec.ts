@@ -43,6 +43,7 @@ describe('les mots du rythme de facturation', () => {
           closesAt: '2026-10-31T23:00:00.000Z',
           periodLabel: 'du 1er au 31 octobre 2026',
           invoicedOn: '2026-10-31',
+          periodDays: 31,
         },
       ]),
     ).toBe('à la clôture du 1er novembre 2026');
@@ -65,11 +66,17 @@ describe('les mots du rythme de facturation', () => {
   it('signale une première période très courte, pas une période normale', () => {
     const effectiveAt = '2026-10-31T23:00:00.000Z';
     const short = [
-      { closesAt: effectiveAt, periodLabel: 'du 1er au 31 octobre 2026', invoicedOn: '2026-10-31' },
+      {
+        closesAt: effectiveAt,
+        periodLabel: 'du 1er au 31 octobre 2026',
+        invoicedOn: '2026-10-31',
+        periodDays: 31,
+      },
       {
         closesAt: '2026-11-01T23:00:00.000Z',
         periodLabel: 'du 1er au 1er novembre 2026',
         invoicedOn: '2026-11-01',
+        periodDays: 1,
       },
     ];
     const normal = [
@@ -77,6 +84,7 @@ describe('les mots du rythme de facturation', () => {
         closesAt: '2026-11-15T23:00:00.000Z',
         periodLabel: 'du 1er au 15 novembre 2026',
         invoicedOn: '2026-11-15',
+        periodDays: 15,
       },
     ];
 

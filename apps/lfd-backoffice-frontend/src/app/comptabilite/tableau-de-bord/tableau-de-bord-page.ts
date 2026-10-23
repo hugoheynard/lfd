@@ -13,6 +13,7 @@ import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
+  FoldEmptyStateComponent,
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
   FoldPageSectionComponent,
@@ -79,6 +80,7 @@ import { RhythmLanes } from '../rhythm-lanes/rhythm-lanes';
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCardComponent,
+    FoldEmptyStateComponent,
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
     FoldPageSectionComponent,
@@ -99,7 +101,10 @@ export class TableauDeBordPage {
   protected readonly rhythms = signal<BillingRhythmsCalendarView | null>(null);
   protected readonly loading = signal(true);
   protected readonly busy = signal(false);
+  /** L'échec d'un GESTE (l'export) : le tableau de bord reste à l'écran. */
   protected readonly error = signal<string | null>(null);
+  /** L'échec de la LECTURE : il n'y a rien à montrer, l'écran le dit et propose de relire. */
+  protected readonly loadError = signal<string | null>(null);
   /**
    * L'échec des rythmes a son propre message, et il est **partiel** : la bande
    * disparaît, le reste du tableau de bord tient. Le fondre dans `error` aurait
@@ -183,6 +188,7 @@ export class TableauDeBordPage {
   protected async load(): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
+    this.loadError.set(null);
     this.rhythmsError.set(null);
     try {
       // Ensemble : aucune ne dépend d'une autre, et les enchaîner tripleraient
@@ -198,7 +204,7 @@ export class TableauDeBordPage {
       // Les deux dépendent de l'émetteur, pas l'une de l'autre.
       await Promise.all([this.loadPreview(), this.loadRhythms()]);
     } catch (caught) {
-      this.error.set(httpErrorMessage(caught, 'Tableau de bord illisible.'));
+      this.loadError.set(httpErrorMessage(caught, 'Tableau de bord illisible.'));
     } finally {
       this.loading.set(false);
     }

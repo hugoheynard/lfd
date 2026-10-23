@@ -239,7 +239,7 @@ const mandateButtons = (
   fixture: ComponentFixture<LegalEntityDetailPage>,
 ): { readonly view: HTMLButtonElement; readonly download: HTMLButtonElement } => {
   const buttons = (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>(
-    '.ej-mandate-actions button',
+    'app-sample-mandate-actions button',
   );
   const [view, download] = [...buttons];
   if (view === undefined || download === undefined || buttons.length !== 2) {

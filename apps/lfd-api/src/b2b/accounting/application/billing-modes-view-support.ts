@@ -10,6 +10,7 @@ import type { InvoicingCalendar } from "../domain/services/invoicing-calendar.js
 import { upcomingClosures } from "../domain/services/entity-closures.js";
 import {
   lastDayOf,
+  periodDaysOf,
   periodLabelOf,
   previousClosureOf,
   type RhythmTimeline,
@@ -115,9 +116,13 @@ function modeView(
 }
 
 function upcomingViews(now: Date, timeline: RhythmTimeline): readonly UpcomingClosureView[] {
-  return upcomingClosures(now, timeline, UPCOMING_CLOSURES_SHOWN).map((closesAt) => ({
-    closesAt: closesAt.toISOString(),
-    periodLabel: periodLabelOf({ startsAt: previousClosureOf(closesAt, timeline), closesAt }),
-    invoicedOn: lastDayOf(closesAt),
-  }));
+  return upcomingClosures(now, timeline, UPCOMING_CLOSURES_SHOWN).map((closesAt) => {
+    const period = { startsAt: previousClosureOf(closesAt, timeline), closesAt };
+    return {
+      closesAt: closesAt.toISOString(),
+      periodLabel: periodLabelOf(period),
+      invoicedOn: lastDayOf(closesAt),
+      periodDays: periodDaysOf(period),
+    };
+  });
 }
