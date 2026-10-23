@@ -1,0 +1,16 @@
+@if (allowed()) {
+  @if (blocker() === null) {
+    <a foldButton size="sm" emphasis="outline" [routerLink]="link()" data-revise-trigger>
+      Modifier la commande
+    </a>
+  } @else {
+    <button foldButton size="sm" emphasis="outline" disabled data-revise-trigger>
+      Modifier la commande
+    </button>
+    @if (saysWhy()) {
+      <fold-callout appearance="inset" variant="info" data-revise-blocked>{{
+        blocker()
+      }}</fold-callout>
+    }
+  }
+}

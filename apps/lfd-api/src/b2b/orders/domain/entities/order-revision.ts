@@ -18,6 +18,7 @@ import {
   RevisionRequiresPaymentError,
   UnchangedOrderRevisionError,
 } from "../errors/order-revision-errors.js";
+import { isCardSettlement } from "../services/order-revisability.js";
 import { settlementRegimeOf } from "../services/settlement-regime.js";
 import type { OrderLineSnapshot } from "../value-objects/order-line.js";
 import type { RefundPosition } from "./order-refund.js";
@@ -124,8 +125,7 @@ export interface OrderRevisionToSave {
  * @throws {CardOrderNotRevisableError} règlement par carte attendu ou encaissé.
  */
 export function ensureRevisableSettlement(order: RevisableOrder): void {
-  const regime = settlementRegimeOf(order.paymentStatus, order.totalCents);
-  if (regime === "due" || regime === "paid") {
+  if (isCardSettlement(order.paymentStatus, order.totalCents)) {
     throw new CardOrderNotRevisableError(order.orderId);
   }
 }

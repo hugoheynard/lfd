@@ -28,6 +28,7 @@ import {
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { contactOf, pickupLabelOf, type HolderSide } from "./atelier-sheet-parts.js";
 import { fulfillmentOf } from "./order-fulfillment.parse.js";
+import { siteIdOf } from "./pickup-site.parse.js";
 import { parseAllergens, parseTrace, type OrderLineRow } from "./order-line-row.js";
 import { settlementWhere } from "./plan-filter.js";
 import {
@@ -496,6 +497,9 @@ export function toOrderView(row: OrderRow): OrderView {
     deliveryAddressId: row.deliveryAddressId,
     deliveryAddress: parseAddress(row.deliveryAddressSnapshot),
     pickupAddress: parseAddress(row.pickupAddress),
+    // Le point est l'id du site figé avec son adresse (lot S2) — `null` en
+    // livraison et avant le lot, jamais rapproché par l'adresse.
+    pickupAddressId: siteIdOf(row.pickupAddress),
     fulfillment: fulfillmentOf(row.fulfillment),
     note: row.note,
     subtotalCents: row.subtotalCents,

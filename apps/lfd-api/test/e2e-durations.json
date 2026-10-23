@@ -382,5 +382,6 @@
   "test/resupply-asap-transfer.e2e-spec.ts": 12000,
   "test/resupply-asap-village-flow.e2e-spec.ts": 8000,
   "test/pickup-discount-exclusions.e2e-spec.ts": 7484,
-  "test/order-revision.e2e-spec.ts": 11959
+  "test/order-revision.e2e-spec.ts": 11959,
+  "test/order-revision-views.e2e-spec.ts": 15998
 }

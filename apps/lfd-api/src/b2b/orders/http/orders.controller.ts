@@ -44,6 +44,8 @@ import {
   type PlaceOrderResult,
 } from "../application/commands/place-order.command.js";
 import { GetOrderCancellabilityQuery } from "../application/queries/get-order-cancellability.query.js";
+import type { CustomerRevisionStanding } from "../application/queries/get-order-revisability.handler.js";
+import { GetOrderRevisabilityQuery } from "../application/queries/get-order-revisability.query.js";
 import { GetOrderPaymentQuery } from "../application/queries/get-order-payment.query.js";
 import { GetOrderQuery } from "../application/queries/get-order.query.js";
 import { GetOrderSheetQuery } from "../application/queries/get-order-sheet.query.js";
@@ -156,7 +158,8 @@ export class OrdersController {
    *
    * Lot C6 (C6.8) : porte aussi `cancellability` — si CE client peut l'annuler
    * maintenant, ou pourquoi pas. Lue APRÈS la commande : son mur de
-   * visibilité a déjà répondu `404` à un étranger.
+   * visibilité a déjà répondu `404` à un étranger. Depuis le 2026-10-23, de
+   * même `revisability` et `revision` (plan de modification, §6).
    */
   @Get(":id")
   async one(
@@ -170,7 +173,11 @@ export class OrdersController {
       GetOrderCancellabilityQuery,
       OrderCancellability
     >(new GetOrderCancellabilityQuery(user.userId, id));
-    return { ...order, cancellability };
+    const { revisability, revision } = await this.queries.execute<
+      GetOrderRevisabilityQuery,
+      CustomerRevisionStanding
+    >(new GetOrderRevisabilityQuery(user.userId, id));
+    return { ...order, cancellability, revisability, revision };
   }
 
   /**

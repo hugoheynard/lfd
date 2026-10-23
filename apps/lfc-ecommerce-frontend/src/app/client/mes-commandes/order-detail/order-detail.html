@@ -88,6 +88,10 @@
   <button foldButton block size="sm" emphasis="soft" type="button">
     {{ t().orders.reorder }}
   </button>
+  <!-- La modification par le client (plan modifier une commande, M3, §6), à
+       côté de l'annulation : le bouton quand le serveur la dit possible, sinon
+       pourquoi — relue au serveur à l'ouverture du tiroir. -->
+  <app-order-revise-section [orderId]="order().id" />
   <!-- L'annulation par le client (C6.8) : le bouton quand elle est possible,
        sinon pourquoi — relue au serveur à l'ouverture du tiroir. -->
   <app-order-cancel-section

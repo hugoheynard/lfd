@@ -8,7 +8,7 @@ import { FoldPanelHostService } from 'fold-ng';
 
 import { ClientAudience } from '../client-audience.service';
 import { formatHour } from '../format-hour';
-import { OrderContextStore } from '../order-context.store';
+import { OrderContextStore, type ServiceChoice } from '../order-context.store';
 import { DeliveryAddressDialog } from './delivery-address-dialog/delivery-address-dialog';
 import { ServicePoints } from './pickup-points.store';
 import { ServiceModeDialog } from './service-mode-dialog/service-mode-dialog';
@@ -116,17 +116,27 @@ export class OrderDoors {
    * l'un ni l'autre, rien ne s'ouvre et l'on rend `false`.
    */
   async choose(): Promise<boolean> {
+    return this.write(await this.askChoice());
+  }
+
+  /**
+   * **La même question, sans écrire la réponse** — pour un écran qui compose
+   * un acheminement à lui (la modification d'une commande passée, plan
+   * `plan-modifier-une-commande.md`, M3) et ne doit pas toucher au choix de la
+   * boutique. `null` : rien n'a été choisi.
+   */
+  async askChoice(): Promise<ServiceChoice | null> {
     if (!this.pickupOpen()) {
-      return this.delivery(null);
+      return this.askDelivery(null);
     }
     if (!this.deliveryOpen()) {
-      return this.pickup(null);
+      return this.askPickup(null);
     }
     const mode = await ServiceModeDialog.open(this.panels).closed;
     if (mode === undefined) {
-      return false;
+      return null;
     }
-    return mode === 'delivery' ? this.delivery(null) : this.pickup(null);
+    return mode === 'delivery' ? this.askDelivery(null) : this.askPickup(null);
   }
 
   /**
@@ -143,15 +153,25 @@ export class OrderDoors {
    * l'enregistrer à moitié ferait croire la question répondue.
    */
   async pickup(currentId: string | null = null): Promise<boolean> {
+    return this.write(await this.askPickup(currentId));
+  }
+
+  /** {@link pickup}, sans écrire la réponse. */
+  async askPickup(currentId: string | null): Promise<ServiceChoice | null> {
     // Fermée, elle ne s'ouvre pas — comme celle du coursier.
     if (!this.pickupOpen()) {
-      return false;
+      return null;
     }
     const point = await PublicHousePickerDialog.open(this.panels, { currentId }).closed;
     if (point === undefined) {
-      return false;
+      return null;
     }
-    return this.pickTime(point.id, point.label || point.ville, `${point.ligne1}, ${point.ville}`);
+    return this.pickTime(
+      point.id,
+      point.label || point.ville,
+      `${point.ligne1}, ${point.ville}`,
+      this.order.choice(),
+    );
   }
 
   /**
@@ -162,7 +182,18 @@ export class OrderDoors {
    * drapeau sur la même.
    */
   async time(pickupAddressId: string, place: string, address: string): Promise<boolean> {
-    return this.pickTime(pickupAddressId, place, address);
+    return this.write(await this.pickTime(pickupAddressId, place, address, this.order.choice()));
+  }
+
+  /**
+   * {@link time}, sans écrire la réponse — `current` est le choix dont
+   * l'heure se marque « Votre choix ».
+   */
+  askTime(current: ServiceChoice & { readonly mode: 'pickup' }): Promise<ServiceChoice | null> {
+    if (current.pickupAddressId === null) {
+      return Promise.resolve(null);
+    }
+    return this.pickTime(current.pickupAddressId, current.place, current.address, current);
   }
 
   /**
@@ -180,8 +211,16 @@ export class OrderDoors {
     currentId: string | null = null,
     currentDate: string | null = null,
   ): Promise<boolean> {
+    return this.write(await this.askDelivery(currentId, currentDate));
+  }
+
+  /** {@link delivery}, sans écrire la réponse. */
+  async askDelivery(
+    currentId: string | null,
+    currentDate: string | null = null,
+  ): Promise<ServiceChoice | null> {
     if (!this.deliveryOpen()) {
-      return false;
+      return null;
     }
     const choice = await DeliveryAddressDialog.open(this.panels, {
       currentId,
@@ -194,7 +233,12 @@ export class OrderDoors {
       // de carnet du tout, et sans elle il ne peut pas se faire livrer.
       allowFreeEntry: this.audience() !== 'b2b',
     }).closed;
-    if (choice === undefined) {
+    return choice ?? null;
+  }
+
+  /** Écrit un choix pris ; `false` quand il n'y en a pas — fermer n'est pas choisir. */
+  private write(choice: ServiceChoice | null): boolean {
+    if (choice === null) {
       return false;
     }
     this.order.choice.set(choice);
@@ -205,8 +249,10 @@ export class OrderDoors {
    * Le créneau retenu à CE point, pour que le dialogue le marque « Votre
    * choix » — `null` ailleurs : une heure du Labo n'existe pas au Village.
    */
-  private currentAt(pickupAddressId: string): { day: string; time: string } | null {
-    const choice = this.order.choice();
+  private currentAt(
+    pickupAddressId: string,
+    choice: ServiceChoice | null,
+  ): { day: string; time: string } | null {
     const time = choice?.mode === 'pickup' ? choice.window?.start : undefined;
     return choice?.mode === 'pickup' &&
       choice.pickupAddressId === pickupAddressId &&
@@ -228,7 +274,8 @@ export class OrderDoors {
     pickupAddressId: string,
     place: string,
     address: string,
-  ): Promise<boolean> {
+    current: ServiceChoice | null,
+  ): Promise<ServiceChoice | null> {
     const slot = await SlotPickerDialog.open(this.panels, {
       pickupAddressId,
       place,
@@ -236,12 +283,12 @@ export class OrderDoors {
       // journée demandable ici, et le dialogue le dit plutôt que d'en inventer.
       firstDay: this.points.nextDayFor(pickupAddressId),
       lastDay: this.points.lastDay(),
-      current: this.currentAt(pickupAddressId),
+      current: this.currentAt(pickupAddressId, current),
     }).closed;
     if (slot === undefined) {
-      return false;
+      return null;
     }
-    this.order.choice.set({
+    return {
       mode: 'pickup',
       place,
       // Le complément (« au Labo ») n'a pas de source serveur : il se dérive du
@@ -256,7 +303,6 @@ export class OrderDoors {
       // connaît pas.
       window: { start: slot.time, end: instantToLocal(new Date(slot.endAt)).time },
       date: slot.day,
-    });
-    return true;
+    };
   }
 }

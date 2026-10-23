@@ -34,6 +34,15 @@ import { GetAdminOrderQuery } from "../get-admin-order.query.js";
 import { GetOrderHandler } from "../get-order.handler.js";
 import { GetOrderQuery } from "../get-order.query.js";
 import { AT_PLACEMENT } from "../../../domain/services/order-sheet.js";
+import type { RevisableOrder } from "../../../domain/entities/order-revision.js";
+import { OrderRevisabilityReading } from "../../services/order-revisability-reading.js";
+import {
+  FixedEngagements,
+  FixedRevisableOrders,
+  NOW,
+  placedOrder,
+  revisingAt,
+} from "../../commands/__tests__/revision-scene.js";
 
 const VIEW: OrderView = { ...orderView(), id: "ord_1", orderNumber: "CMD-0001" };
 
@@ -224,6 +233,7 @@ function adminHandler(
   others: Readonly<Record<string, CancellationSubject>> = {},
   engagement: AccountEngagement | null = { kind: "free" },
   refunds: RefundStore = new RefundStore(),
+  revisable: RevisableOrder | null = PLACED,
 ): GetAdminOrderHandler {
   const subjects = new FixedSubjects(subject, others);
   const inscriptions = new FixedInscription(inscribedDay);
@@ -242,8 +252,20 @@ function adminHandler(
       new FixedWallClock(VOUCHER_EXPIRES),
     ),
     new FixedClock(VOUCHER_EXPIRES),
+    new OrderRevisabilityReading(
+      new FixedRevisableOrders(revisable),
+      inscriptions,
+      revisingAt(new FixedClock(NOW), { engagements: new FixedEngagements(engagement) }),
+    ),
   );
 }
+
+/** La commande telle que la modification la lit — par la recomposition de la scène. */
+let PLACED: RevisableOrder;
+
+beforeAll(async () => {
+  PLACED = await placedOrder({ revision: 2 });
+});
 
 describe("GetAdminOrderHandler", () => {
   it("rend la commande avec sa clientèle, la personne et la société, sans demander de rôle", async () => {
@@ -259,6 +281,49 @@ describe("GetAdminOrderHandler", () => {
       placedBy: { customer: CUSTOMER, company: COMPANY, staffName: null },
       cancellability: { cancellable: true, voucher: null, refund: null },
       refund: null,
+      revisability: { revisable: true },
+      revision: 2,
+    });
+  });
+
+  describe("la modification par l'équipe (plan de modification, §6)", () => {
+    const owner = { customer: CUSTOMER, company: COMPANY, placedByStaffId: null };
+
+    it("une commande inscrite au fournil se grise, avec la phrase du geste", async () => {
+      const view = await adminHandler(
+        ofCompany("cmp_1"),
+        owner,
+        directory(),
+        cancellationSubject(),
+        "2026-11-10",
+      ).execute(new GetAdminOrderQuery("ord_1"));
+
+      expect(view.revisability).toEqual({
+        revisable: false,
+        reason: expect.stringContaining("Le fournil a déjà inscrit cette commande") as string,
+      });
+    });
+
+    it("une commande payable par carte se grise : c'est le lot M2", async () => {
+      const card = await placedOrder({ paymentStatus: "paid", stripePaymentIntentId: "pi_1" });
+
+      const view = await adminHandler(
+        ofCompany("cmp_1"),
+        owner,
+        directory(),
+        cancellationSubject(),
+        null,
+        undefined,
+        {},
+        { kind: "free" },
+        new RefundStore(),
+        card,
+      ).execute(new GetAdminOrderQuery("ord_1"));
+
+      expect(view.revisability).toEqual({
+        revisable: false,
+        reason: expect.stringContaining("Commande réglée par carte") as string,
+      });
     });
   });
 

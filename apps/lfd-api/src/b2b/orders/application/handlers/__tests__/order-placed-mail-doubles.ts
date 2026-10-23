@@ -36,6 +36,7 @@ export function view(overrides: Partial<OrderView> = {}): OrderView {
       ville: "Val",
       pays: "France",
     },
+    pickupAddressId: "site_labo",
     fulfillment: {
       window: { value: null, source: "default" },
       contact: { value: null, source: "default" },

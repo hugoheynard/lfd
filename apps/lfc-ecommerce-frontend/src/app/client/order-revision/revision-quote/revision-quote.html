@@ -1,0 +1,14 @@
+<dl class="totals">
+  <div class="row">
+    <dt>{{ c().totalPrevious }}</dt>
+    <dd>{{ previous() }} {{ c().taxIncluded }}</dd>
+  </div>
+  <div class="row strong">
+    <dt>{{ c().totalNew }}</dt>
+    <dd data-total>{{ total() }} {{ c().taxIncluded }}</dd>
+  </div>
+  <div class="row">
+    <dt>{{ c().differenceLabel }}</dt>
+    <dd data-difference>{{ difference() }}</dd>
+  </div>
+</dl>

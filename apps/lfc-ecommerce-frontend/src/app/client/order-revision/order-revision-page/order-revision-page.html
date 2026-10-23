@@ -1,0 +1,181 @@
+<ng-template clientBanner>
+  <app-client-banner-block [kicker]="kicker()" [title]="c().reviseTitle" [lead]="c().reviseLead" />
+</ng-template>
+
+<div class="page">
+  @switch (state().kind) {
+    @case ('loading') {
+      <fold-loading [message]="c().loadingOrder" />
+    }
+    @case ('failed') {
+      <fold-empty-state tone="alert" [title]="c().loadFailedTitle" subtitle="">
+        <button foldButton size="sm" type="button" (click)="load()">{{ c().reloadCta }}</button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      <fold-card padding="md">
+        <fold-element-title variant="title" [title]="c().linesTitle" />
+        <div class="body">
+          @if (lines().length === 0) {
+            <fold-callout variant="alert" data-no-lines>{{ c().noLinesNote }}</fold-callout>
+          }
+          <ul class="lines">
+            @for (line of lines(); track line.sku) {
+              <li class="line" role="group" [attr.aria-label]="line.name" data-line>
+                <span class="what">
+                  <span class="name">{{ line.name }}</span>
+                  @if (line.price !== '') {
+                    <span class="price">{{ line.price }}</span>
+                  }
+                </span>
+                <span class="sum">{{ line.total }}</span>
+                <fold-number-input
+                  size="sm"
+                  align="center"
+                  spinner="plusminus"
+                  controls="inside"
+                  integer
+                  [min]="1"
+                  [step]="1"
+                  [value]="line.quantity"
+                  (valueChange)="setQuantity(line.sku, $event)"
+                />
+                <fold-button-icon
+                  icon="bin"
+                  size="sm"
+                  [tooltip]="line.removeAria"
+                  (clicked)="drop(line.sku)"
+                />
+              </li>
+            }
+          </ul>
+          <fold-combobox
+            clearOnSelect
+            [label]="c().addLabel"
+            [placeholder]="c().addPlaceholder"
+            [emptyText]="c().addNone"
+            [options]="addable()"
+            (selectionChange)="add($event)"
+          />
+        </div>
+      </fold-card>
+
+      <fold-card padding="md">
+        <fold-element-title variant="title" [title]="c().serviceTitle">
+          <button
+            titleAction
+            foldButton
+            size="sm"
+            emphasis="soft"
+            type="button"
+            data-change-service
+            (click)="changeService()"
+          >
+            {{ c().changeServiceCta }}
+          </button>
+        </fold-element-title>
+        <div class="body">
+          @if (service(); as said) {
+            <p class="fact">{{ said.what }}</p>
+            <p class="fact">{{ said.when }}</p>
+            @if (said.pickupMissing) {
+              <fold-callout variant="alert" data-pickup-missing>{{
+                c().pickupToChoose
+              }}</fold-callout>
+            }
+            @if (said.timeChangeable) {
+              <button
+                foldButton
+                size="sm"
+                emphasis="outline"
+                intent="neutral"
+                type="button"
+                (click)="changeTime()"
+              >
+                {{ c().changeTimeCta }}
+              </button>
+            }
+          }
+        </div>
+      </fold-card>
+
+      <fold-card padding="md">
+        <fold-element-title variant="title" [title]="c().quoteTitle" />
+        <div class="body">
+          @switch (quote().kind) {
+            @case ('loading') {
+              <fold-loading size="sm" [message]="c().quotingMessage" />
+            }
+            @case ('failed') {
+              <fold-callout variant="alert" data-quote-failed>
+                {{ c().quoteFailedNote }}
+                <button
+                  actions
+                  foldButton
+                  size="sm"
+                  emphasis="outline"
+                  intent="neutral"
+                  type="button"
+                  (click)="retryQuote()"
+                >
+                  {{ c().reloadCta }}
+                </button>
+              </fold-callout>
+            }
+          }
+          @if (quote(); as current) {
+            @if (current.kind === 'refused') {
+              <fold-callout variant="alert" announce data-quote-refused>{{
+                current.message
+              }}</fold-callout>
+            }
+            @if (current.kind === 'ready') {
+              <app-revision-quote [quote]="current.quote" />
+            }
+          }
+          @if (unchanged()) {
+            <p class="fact" data-unchanged>{{ c().unchangedNote }}</p>
+          }
+          @if (submitRefusal(); as refusal) {
+            <fold-callout variant="alert" announce data-submit-refused>
+              {{ refusal.message }}
+              @if (refusal.stale) {
+                <button
+                  actions
+                  foldButton
+                  size="sm"
+                  emphasis="outline"
+                  intent="neutral"
+                  type="button"
+                  data-reload
+                  (click)="load()"
+                >
+                  {{ c().reloadCta }}
+                </button>
+              }
+            </fold-callout>
+          }
+          <div class="acts">
+            <button
+              foldButton
+              type="button"
+              data-submit
+              [disabled]="!canSubmit()"
+              (click)="submit()"
+            >
+              {{ submitting() ? c().submittingCta : c().submitCta }}
+            </button>
+            <a
+              foldButton
+              emphasis="soft"
+              intent="neutral"
+              [routerLink]="['/mes-commandes', orderId()]"
+            >
+              {{ c().backToOrders }}
+            </a>
+          </div>
+        </div>
+      </fold-card>
+    }
+  }
+</div>

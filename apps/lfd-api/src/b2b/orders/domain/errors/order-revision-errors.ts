@@ -5,6 +5,11 @@ import {
 } from "../../../../platform/shared/errors/app-error.js";
 import type { CancellationBlock } from "../services/order-cancellation.js";
 import { voucherEuros } from "../services/order-cancellation-voucher.js";
+import {
+  CARD_SETTLED_REVISION_REFUSAL,
+  NO_SALES_TERMS_REVISION_REFUSAL,
+  type StandingRevisionBlock,
+} from "../services/order-revisability.js";
 import { revisionRefusalOf } from "../services/order-revision-refusal.js";
 
 /**
@@ -16,10 +21,7 @@ import { revisionRefusalOf } from "../services/order-revision-refusal.js";
 /** §9 : M1 ne modifie pas une commande payable par carte — c'est le lot M2. */
 export class CardOrderNotRevisableError extends BusinessError {
   constructor(readonly orderId: string) {
-    super(
-      "orders.revise.card_settled",
-      "Commande réglée par carte : annulez-la et recommandez, ou demandez au commerce.",
-    );
+    super("orders.revise.card_settled", CARD_SETTLED_REVISION_REFUSAL);
   }
 }
 
@@ -123,10 +125,21 @@ export class FrozenLinePriceChangedError extends DomainError {
 /** Une commande d'avant les CGV figées n'a pas de quoi être recomposée. */
 export class OrderWithoutSalesTermsError extends TechnicalError {
   constructor(readonly orderId: string) {
-    super(
-      "orders.revise.no_sales_terms",
-      "Cette commande ne porte pas les conditions de vente de sa passation : elle ne peut pas être modifiée. " +
-        "Annulez-la et recommandez, ou signalez-le à l'équipe technique.",
-    );
+    super("orders.revise.no_sales_terms", NO_SALES_TERMS_REVISION_REFUSAL);
+  }
+}
+
+/** Le refus du geste pour un blocage commun (R1, §9) — le verdict des vues, levé. */
+export function standingRevisionErrorOf(
+  orderId: string,
+  block: StandingRevisionBlock,
+): OrderNotRevisableError | CardOrderNotRevisableError | OrderWithoutSalesTermsError {
+  switch (block.kind) {
+    case "order":
+      return new OrderNotRevisableError(orderId, block.block);
+    case "card_settled":
+      return new CardOrderNotRevisableError(orderId);
+    case "without_sales_terms":
+      return new OrderWithoutSalesTermsError(orderId);
   }
 }

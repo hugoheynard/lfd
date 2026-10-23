@@ -31,6 +31,7 @@ export const LIVE_PICKUP: CustomerOrderView = {
     ville: "Val d'Isère",
     pays: 'France',
   },
+  pickupAddressId: 'pa_labo',
   fulfillment: {
     window: { value: { start: '7:00', end: '8:00' }, source: 'override' },
     contact: { value: null, source: 'default' },

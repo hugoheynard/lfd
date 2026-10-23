@@ -1,4 +1,5 @@
 import type { CustomerOrderView, OrderStatus } from "./order.js";
+import type { OrderRevisability } from "./order-revision.values.js";
 
 /**
  * **L'annulation par le client**, sans zod (doc
@@ -131,7 +132,14 @@ export const DEFAULT_CUSTOMER_CANCELLATION_SETTINGS: CustomerCancellationSetting
 /** La borne du délai, tenue aussi par un CHECK en base : une semaine au plus. */
 export const CUSTOMER_CANCELLATION_MAX_HOURS_BEFORE = 168;
 
-/** `GET /orders/:id` côté client : la commande, et si elle s'annule (C6.8). */
+/**
+ * `GET /orders/:id` côté client : la commande, si elle s'annule (C6.8), et
+ * depuis le 2026-10-23 si elle se modifie et sa révision courante (plan
+ * `documentation/commandes/plan-modifier-une-commande.md`, §6).
+ */
 export type CustomerOrderDetailView = CustomerOrderView & {
   readonly cancellability: OrderCancellability;
+  readonly revisability: OrderRevisability;
+  /** La révision courante : `0` à la passation, `+1` à chaque modification. */
+  readonly revision: number;
 };

@@ -5047,6 +5047,335 @@
           "variables": []
         },
         {
+          "key": "orders.revision.reviseAction",
+          "fr": "Modifier ma commande",
+          "en": "Change my order",
+          "it": "Modifica il mio ordine",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.reviseCardNote",
+          "fr": "Commande réglée par carte : pour la modifier, annulez-la et recommandez, ou demandez-nous.",
+          "en": "Order paid by card: to change it, cancel it and order again, or ask us.",
+          "it": "Ordine pagato con carta: per modificarlo, annullalo e ordina di nuovo, oppure chiedi a noi.",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.reviseUntil",
+          "fr": "Modifiable jusqu’au {when}.",
+          "en": "Can be changed until {when}.",
+          "it": "Modificabile fino al {when}.",
+          "variables": ["when"]
+        },
+        {
+          "key": "orders.revision.reviseWhen",
+          "fr": "{day} à {time}",
+          "en": "{day} at {time}",
+          "it": "{day} alle {time}",
+          "variables": ["day", "time"]
+        },
+        {
+          "key": "orders.revision.refusedInPreparation",
+          "fr": "Votre commande est déjà en préparation : elle ne se modifie plus.",
+          "en": "Your order is already being prepared: it can no longer be changed.",
+          "it": "Il tuo ordine è già in preparazione: non si può più modificare.",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.refusedTooLate",
+          "fr": "L’heure limite est passée : la commande ne se modifie plus en ligne. Contactez-nous.",
+          "en": "The deadline has passed: the order can no longer be changed online. Contact us.",
+          "it": "L’orario limite è passato: l’ordine non si può più modificare online. Contattaci.",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.refusedTooLateUntil",
+          "fr": "L’heure limite est passée : il était possible de la modifier jusqu’au {when}. Contactez-nous.",
+          "en": "The deadline has passed: the order could be changed until {when}. Contact us.",
+          "it": "L’orario limite è passato: era possibile modificarlo fino al {when}. Contattaci.",
+          "variables": ["when"]
+        },
+        {
+          "key": "orders.revision.refusedAccounting",
+          "fr": "Cette commande est déjà facturée : elle ne se modifie plus en ligne. Contactez-nous.",
+          "en": "This order has already been invoiced: it can no longer be changed online. Contact us.",
+          "it": "Questo ordine è già stato fatturato: non si può più modificare online. Contattaci.",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.refusedPaymentInProgress",
+          "fr": "Un remboursement est en cours sur cette commande : réessayez dans quelques minutes.",
+          "en": "A refund is in progress on this order: try again in a few minutes.",
+          "it": "Un rimborso è in corso su questo ordine: riprova tra qualche minuto.",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.refusedUnavailable",
+          "fr": "Cette commande ne peut pas être modifiée en ligne. Contactez-nous.",
+          "en": "This order cannot be changed online. Contact us.",
+          "it": "Questo ordine non si può modificare online. Contattaci.",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.reviseKicker",
+          "fr": "Commande {reference}",
+          "en": "Order {reference}",
+          "it": "Ordine {reference}",
+          "variables": ["reference"]
+        },
+        {
+          "key": "orders.revision.reviseTitle",
+          "fr": "Modifier ma commande",
+          "en": "Change my order",
+          "it": "Modifica il mio ordine",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.reviseLead",
+          "fr": "Changez les articles, les quantités, le jour ou le mode. Le nouveau total s’affiche avant de valider.",
+          "en": "Change the items, the quantities, the day or the mode. The new total shows before you confirm.",
+          "it": "Cambia gli articoli, le quantità, il giorno o la modalità. Il nuovo totale appare prima di confermare.",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.loadingOrder",
+          "fr": "Lecture de la commande…",
+          "en": "Reading the order…",
+          "it": "Lettura dell’ordine…",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.loadFailedTitle",
+          "fr": "La commande n’a pas pu être lue.",
+          "en": "The order could not be read.",
+          "it": "Non è stato possibile leggere l’ordine.",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.reloadCta",
+          "fr": "Recharger",
+          "en": "Reload",
+          "it": "Ricarica",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.backToOrders",
+          "fr": "Retour à mes commandes",
+          "en": "Back to my orders",
+          "it": "Torna ai miei ordini",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.linesTitle",
+          "fr": "Les articles",
+          "en": "Items",
+          "it": "Gli articoli",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.addLabel",
+          "fr": "Ajouter un article",
+          "en": "Add an item",
+          "it": "Aggiungi un articolo",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.addPlaceholder",
+          "fr": "Chercher dans la boutique",
+          "en": "Search the shop",
+          "it": "Cerca nel negozio",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.addNone",
+          "fr": "Aucun article",
+          "en": "No item",
+          "it": "Nessun articolo",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.priceKept",
+          "fr": "prix d’origine",
+          "en": "original price",
+          "it": "prezzo originale",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.priceToday",
+          "fr": "prix du jour",
+          "en": "today’s price",
+          "it": "prezzo del giorno",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.removeAria",
+          "fr": "Retirer {name}",
+          "en": "Remove {name}",
+          "it": "Rimuovi {name}",
+          "variables": ["name"]
+        },
+        {
+          "key": "orders.revision.noLinesNote",
+          "fr": "Une commande garde au moins un article : pour tout retirer, annulez-la depuis Mes commandes.",
+          "en": "An order keeps at least one item: to remove everything, cancel it from My orders.",
+          "it": "Un ordine conserva almeno un articolo: per togliere tutto, annullalo da I miei ordini.",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.serviceTitle",
+          "fr": "Retrait ou livraison",
+          "en": "Pickup or delivery",
+          "it": "Ritiro o consegna",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.servicePickup",
+          "fr": "Retrait — {place}",
+          "en": "Pickup — {place}",
+          "it": "Ritiro — {place}",
+          "variables": ["place"]
+        },
+        {
+          "key": "orders.revision.serviceDelivery",
+          "fr": "Livraison — {address}",
+          "en": "Delivery — {address}",
+          "it": "Consegna — {address}",
+          "variables": ["address"]
+        },
+        {
+          "key": "orders.revision.serviceWhen",
+          "fr": "{day}, {slot}",
+          "en": "{day}, {slot}",
+          "it": "{day}, {slot}",
+          "variables": ["day", "slot"]
+        },
+        {
+          "key": "orders.revision.pickupToChoose",
+          "fr": "Choisissez le point de retrait : la commande ne nous a pas permis de le retrouver.",
+          "en": "Choose the pickup point: we could not find it from the order.",
+          "it": "Scegli il punto di ritiro: non siamo riusciti a ritrovarlo dall’ordine.",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.changeServiceCta",
+          "fr": "Changer",
+          "en": "Change",
+          "it": "Cambia",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.changeTimeCta",
+          "fr": "Changer l’heure",
+          "en": "Change the time",
+          "it": "Cambia l’orario",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.quoteTitle",
+          "fr": "Le nouveau total",
+          "en": "The new total",
+          "it": "Il nuovo totale",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.quotingMessage",
+          "fr": "Calcul du nouveau total…",
+          "en": "Working out the new total…",
+          "it": "Calcolo del nuovo totale…",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.quoteFailedNote",
+          "fr": "Le nouveau total n’a pas pu être calculé. Réessayez dans un instant.",
+          "en": "The new total could not be worked out. Try again in a moment.",
+          "it": "Non è stato possibile calcolare il nuovo totale. Riprova tra un attimo.",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.totalNew",
+          "fr": "Nouveau total",
+          "en": "New total",
+          "it": "Nuovo totale",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.totalPrevious",
+          "fr": "Total actuel",
+          "en": "Current total",
+          "it": "Totale attuale",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.differenceLabel",
+          "fr": "Écart",
+          "en": "Difference",
+          "it": "Differenza",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.differenceMore",
+          "fr": "+ {amount}",
+          "en": "+ {amount}",
+          "it": "+ {amount}",
+          "variables": ["amount"]
+        },
+        {
+          "key": "orders.revision.differenceLess",
+          "fr": "− {amount}",
+          "en": "− {amount}",
+          "it": "− {amount}",
+          "variables": ["amount"]
+        },
+        {
+          "key": "orders.revision.differenceNone",
+          "fr": "Aucun écart",
+          "en": "No difference",
+          "it": "Nessuna differenza",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.taxIncluded",
+          "fr": "TTC",
+          "en": "incl. VAT",
+          "it": "IVA inclusa",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.unchangedNote",
+          "fr": "Rien n’a encore changé.",
+          "en": "Nothing has changed yet.",
+          "it": "Non è ancora cambiato nulla.",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.submitCta",
+          "fr": "Valider la modification",
+          "en": "Confirm the change",
+          "it": "Conferma la modifica",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.submittingCta",
+          "fr": "Envoi…",
+          "en": "Sending…",
+          "it": "Invio…",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.revisionRefused",
+          "fr": "La modification n’a pas pu être enregistrée.",
+          "en": "The change could not be saved.",
+          "it": "Non è stato possibile registrare la modifica.",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.revisedToast",
+          "fr": "Votre commande est modifiée.",
+          "en": "Your order has been changed.",
+          "it": "Il tuo ordine è stato modificato.",
+          "variables": []
+        },
+        {
           "key": "orders.authorCustomer",
           "fr": "passée par {name}",
           "en": "placed by {name}",

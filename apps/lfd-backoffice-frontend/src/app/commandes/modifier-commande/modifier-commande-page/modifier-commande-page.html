@@ -1,0 +1,149 @@
+<fold-page-layout [title]="title()">
+  <fold-back-link icon="arrow-back" label="La commande" [routerLink]="back()" />
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Chargement de la commande…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Impossible d'ouvrir la modification">
+        <button foldButton (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @default {
+      <div class="mc-columns">
+        <app-source-produits
+          class="mc-col"
+          [kind]="source()"
+          [catalogue]="catalogue()"
+          [habits]="habits()"
+          [orders]="[]"
+          [cart]="cart"
+          (kindChange)="source.set($event)"
+          (add)="onAdd($event)"
+          (addAll)="onAddAll($event)"
+        />
+
+        <div class="mc-col mc-side">
+          <fold-card>
+            <fold-element-title
+              cardHeader
+              variant="title"
+              title="La commande voulue"
+              subtitle="Une ligne déjà présente garde son prix ; une ligne ajoutée prend le prix du jour."
+            />
+            <div class="mc-stack">
+              @if (cart.isEmpty()) {
+                <fold-callout variant="warning">Le panier est vide.</fold-callout>
+              } @else {
+                <ul class="mc-lines">
+                  @for (line of cart.pricedLines(); track line.sku) {
+                    <li>
+                      <lfd-cart-row
+                        [name]="line.name"
+                        [unitPriceMillicents]="line.unitPriceMillicents"
+                        [canonicalPriceMillicents]="line.canonicalPriceMillicents"
+                        [quantity]="line.quantity"
+                        (quantityChange)="cart.setQuantity(line.sku, $event)"
+                        (remove)="cart.remove(line.sku)"
+                      />
+                    </li>
+                  }
+                </ul>
+              }
+
+              <app-acheminement-commande
+                [pickups]="pickups()"
+                [addresses]="addresses()"
+                [zones]="zones()"
+                [deliveryAvailability]="deliveryAvailability()"
+                [audience]="audience()"
+                [preferredPickupId]="preferredPickupId()"
+                [draft]="draft"
+                [canKeepAddress]="false"
+                (choiceChange)="fulfillment.set($event)"
+              />
+
+              <fold-date
+                [label]="dateLabel()"
+                [value]="draft.requestedDate()"
+                (valueChange)="draft.requestedDate.set($event)"
+              />
+
+              <fold-textarea
+                label="Note"
+                [rows]="2"
+                [value]="draft.note()"
+                (valueChange)="draft.note.set($event)"
+              />
+            </div>
+          </fold-card>
+
+          <fold-card>
+            <fold-element-title cardHeader variant="title" title="Devis de la modification" />
+            <div class="mc-stack">
+              @for (blocker of blockers(); track blocker) {
+                <fold-callout variant="warning">{{ blocker }}</fold-callout>
+              }
+
+              @if (quote(); as q) {
+                <fold-field-list>
+                  <fold-field label="Total actuel">{{ cents(q.previousTotalCents) }}</fold-field>
+                  <fold-field label="Nouveau total">{{ cents(q.totalCents) }}</fold-field>
+                  <fold-field label="Écart">{{ difference() }}</fold-field>
+                  <fold-field label="Ce qui change" [empty]="changes().length === 0">
+                    @for (change of changes(); track change.key; let last = $last) {
+                      {{ change.label }}{{ last ? '' : ' · ' }}
+                    }
+                  </fold-field>
+                </fold-field-list>
+              } @else if (blockers().length === 0) {
+                <fold-callout variant="info" data-quote-needed>
+                  Calculez le devis : le nouveau total et l'écart s'affichent avant de valider.
+                </fold-callout>
+              }
+
+              @if (refusal(); as message) {
+                <fold-callout variant="alert" announce data-revise-refusal>
+                  {{ message }}
+                  @if (stale()) {
+                    <div actions>
+                      <button foldButton size="sm" emphasis="outline" (click)="load()">
+                        Relire la commande (la saisie sera perdue)
+                      </button>
+                    </div>
+                  }
+                </fold-callout>
+              }
+
+              <div class="mc-actions">
+                @if (quote() === null) {
+                  <button
+                    foldButton
+                    [disabled]="content() === null || quoting() || stale()"
+                    (click)="askQuote()"
+                    data-quote
+                  >
+                    {{ quoting() ? 'Calcul…' : 'Calculer le devis' }}
+                  </button>
+                } @else {
+                  <button
+                    foldButton
+                    [disabled]="submitting() || stale()"
+                    (click)="validate()"
+                    data-validate
+                  >
+                    {{ submitting() ? 'Envoi…' : 'Valider la modification' }}
+                  </button>
+                }
+                <a foldButton emphasis="outline" intent="neutral" [routerLink]="back()">
+                  Abandonner
+                </a>
+              </div>
+            </div>
+          </fold-card>
+        </div>
+      </div>
+    }
+  }
+</fold-page-layout>

@@ -711,7 +711,7 @@ function payloadOf(
   settlement: OrderSettlement | null,
   locale: LocaleCode,
 ): PlaceOrderPayload {
-  const content = {
+  return {
     // 🔴 **Plus de `companyId` ici, et ce n'est plus au navigateur d'en parler.**
     //
     // Il envoyait `null` — « zéro friction : la commande appartient au client,
@@ -732,9 +732,21 @@ function payloadOf(
     // commande la garde, la personne non. Elle sert à estimer le profil de
     // séjour, en agrégé seulement.
     locale,
-    requestedDeliveryDate: service.date,
     note: '',
     lines: lines.map((line) => ({ sku: line.product.sku, quantity: line.quantity })),
+    ...serviceContentOf(service),
+  };
+}
+
+/**
+ * **L'acheminement d'un choix de service**, en champs du panier
+ * (`orderContentShape`) — partagé par la passation et par la modification
+ * d'une commande (plan `plan-modifier-une-commande.md`, M3), pour que les
+ * deux ne divergent pas sur un champ.
+ */
+export function serviceContentOf(service: ServiceChoice) {
+  const common = {
+    requestedDeliveryDate: service.date,
     // L'adresse du CARNET choisie, que le serveur confirme sous le mur de la
     // société. Régression : elle partait à `null` en dur pour toutes les
     // commandes, et la feuille de route ne reliait aucune livraison de la
@@ -744,14 +756,14 @@ function payloadOf(
   };
   if (service.mode === 'pickup') {
     return {
-      ...content,
+      ...common,
       fulfillmentMethod: 'pickup' as const,
       pickupAddressId: service.pickupAddressId,
       deliveryAddress: null,
     };
   }
   return {
-    ...content,
+    ...common,
     fulfillmentMethod: 'delivery' as const,
     pickupAddressId: null,
     deliveryAddress: service.deliveryAddress,

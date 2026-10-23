@@ -187,8 +187,8 @@ le lot ZB de la facturation, pas une modification de commande.
 | Lot                                     | Contenu                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Bloc             |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------- |
 | **M1** ✅ _bâti le 2026-10-23, cf. §10_ | Révision côté serveur, commandes **au compte et à total nul** (§9) : table d'historique (migration additive), `revision` sur `orders`, calcul de la passation extrait pour servir aussi la révision, `Order.revise()`, règles R1-R7, R3 des prix, garde du fournil sous le verrou de journée et relecture à la clôture, fait `order.revised` et libellés, livraison (détacher, rattacher, géocoder), encaissement au compte recalculé, bon r+1. Commande `ReviseOrder` (client et staff), devis de révision. | serveur          |
-| **M2**                                  | **À concevoir** : l'argent d'une commande carte en plusieurs morceaux (§3, §9 points 2 à 5).                                                                                                                                                                                                                                                                                                                                                                                                                 | serveur          |
-| **M3**                                  | Écrans client et staff (§6), historique.                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | fronts           |
+| **M2**                                  | **À concevoir** : l'argent d'une commande carte, [`plan-modifier-une-commande-payee-par-carte.md`](plan-modifier-une-commande-payee-par-carte.md), contredit le 2026-10-23, en attente d'une décision de Hugo.                                                                                                                                                                                                                                                                                               | serveur          |
+| **M3**                                  | Écrans client et staff (§6), historique — back-office bâti le 2026-10-23, cf. §11 ; boutique bâtie le 2026-10-23, cf. §12 ; modificabilité, point et historique le 2026-10-23, cf. §13.                                                                                                                                                                                                                                                                                                                      | fronts           |
 | **M4**                                  | La demande après l'heure limite (§4) : type `order_change`, appliquer / refuser, courriels.                                                                                                                                                                                                                                                                                                                                                                                                                  | serveur + fronts |
 
 ## 8. Ce qui n'est pas fait ici
@@ -332,3 +332,134 @@ Chemins sous `apps/lfd-api/src/` sauf mention.
 6. **Non fait** : le courriel de modification avec le nouveau bon joint
    (§5) — aucun lot ne le porte explicitement ; le bon r+1 se produit à la
    demande.
+
+## 11. M3, back-office bâti (2026-10-23) — ce qui existe, et ce qui manque
+
+Chemins sous `apps/lfd-backoffice-frontend/src/app/commandes/`. Non commité à
+l'écriture de ces lignes.
+
+- **Fiche commande** : `order-revise-action/` pose « Modifier la commande » à
+  côté d'« Annuler » (`order-view.html`, slot `actions`). Absent sans
+  `b2b_place_order:write` ; ouvert à la même condition que l'annulation
+  (`cancellability`) ; désactivé sinon, la raison écrite seulement si le
+  bouton d'annulation (absent sans son droit) ne l'écrit pas déjà.
+- **Parcours** : route `commandes/:orderId/modifier` (pleine page, garde
+  `b2b_place_order:write`), `modifier-commande/modifier-commande-page/`. Il
+  réutilise la saisie par l'équipe — `SourceProduits`, `CartStore`,
+  `DraftStore`, `AcheminementCommande`, `lfd-cart-row` —, préremplie par
+  `apps/lfd-backoffice-frontend/src/app/commandes/modifier-commande/revision-draft.ts` (lignes au prix figé, mode, point,
+  adresse, date, créneau, note). Sans interlocuteur ni règlement (R2).
+- **Devis puis validation** : « Calculer le devis » (`…/revisions/quote`)
+  montre total actuel, nouveau total, écart signé et ce qui change ; tout
+  changement de la saisie efface le devis ; « Valider » envoie
+  `expectedRevision` = la révision du devis. `409 stale_revision` : la phrase
+  du serveur et « Relire la commande » ; tout autre refus : sa phrase. Après
+  validation, retour à la fiche, qui se relit.
+- **Contact et signature** ne se saisissent pas : renvoyés quand la commande
+  les porte en `override`, omis sinon (le réglage se relit).
+- **Historique** : déjà là. Le fait `order.revised` (auteur, instant,
+  changements, totaux avant/après) s'affiche dans la carte « Historique » de
+  la fiche (`order-history-card`), avec ses libellés posés en M1. Aucune
+  route ne sert la **composition remplacée** (`public.order_revision`) : la
+  montrer demanderait une lecture serveur (`GET /admin/orders/:id/revisions`)
+  et son contrat — non inventés ici.
+
+Ce qui manque côté serveur, relevé au bâti — les trois points sont faits le
+2026-10-23 (§13), comme l'historique des compositions remplacées :
+
+1. `OrderView` ne porte pas l'**identifiant du point de retrait**, seulement
+   son adresse figée : le préremplissage le rapproche par rue + code postal.
+   Point introuvable ⇒ présélection de la saisie, et le devis le dit
+   (« Point de retrait » parmi les changements).
+2. `AdminOrderView` ne porte pas la **révision courante** : l'écran la tient
+   du devis, ce qui suffit à R7.
+3. Les commandes réglées par carte ouvrent le parcours (même condition que
+   l'annulation, §6) et le serveur les refuse au devis (§9, M1) avec sa
+   phrase. Un `revisability` sur la vue permettrait de griser le bouton.
+
+## 12. M3, boutique bâtie (2026-10-23) — ce qui existe, et ce qui manque
+
+Chemins sous `apps/lfc-ecommerce-frontend/src/app/client/`.
+
+- **Le tiroir** de « Mes commandes » (`mes-commandes/order-detail`) porte
+  `order-revision/order-revise-section`, au-dessus de l'annulation : le lien
+  « Modifier ma commande » pour une commande reçue (`placed`) au compte ou à
+  total nul ; pour une commande carte, la phrase « annulez-la et recommandez,
+  ou demandez-nous » à la place du bouton (choix : dire pourquoi plutôt que
+  cacher).
+- **L'écran** `/mes-commandes/modifier/:id` (`order-revision/order-revision-page`,
+  chargé à la demande) : les lignes (quantité, corbeille, « prix d'origine »
+  / « prix du jour » selon le devis), l'ajout d'un article de la boutique
+  (`fold-combobox` en ajouteur), le retrait ou la livraison par les MÊMES
+  dialogues que la boutique — `OrderDoors.askChoice` / `askTime` rendent un
+  choix sans écrire celui du panier —, puis le devis (`revision-quote` :
+  nouveau total TTC, total actuel, écart « + X € » / « − X € »). Chaque
+  changement redemande le devis ; « Valider » envoie la révision du dernier
+  devis ; un 409 `orders.revise.stale_revision` propose de recharger ; tout
+  refus se dit par la phrase du serveur. Après validation, retour au tiroir de
+  la commande, relu au serveur.
+- **Le panier envoyé** (`apps/lfc-ecommerce-frontend/src/app/client/order-revision/revision-draft.ts`) réutilise
+  `serviceContentOf` (extrait de la passation, `client-orders.service.ts`) ;
+  la note, le contact et la signature figés repartent tels quels tant que le
+  mode et l'adresse livrée ne changent pas (R6).
+- **Textes** : `orders.revision.*` (fr/en/it) dans `copy/screens/orders.copy.ts`,
+  libellés au glossaire du back-office (`apps/lfd-backoffice-frontend/src/app/textes-boutique/rules/glossary/glossary-order-revision.ts`).
+
+Ce que la vue client ne dit pas, et que l'écran contourne — les points 1 et 2
+sont faits le 2026-10-23 (§13) :
+
+1. **`CustomerOrderView` ne dit pas si la commande se modifie** (ni
+   `revisability` comme `cancellability`, ni `revision`). Le bouton du tiroir
+   est donc une indication (statut reçu + régime) ; l'heure limite,
+   l'inscription au plan et la comptabilité ne se disent qu'à l'ouverture de
+   l'écran, par le refus du premier devis.
+2. **`CustomerOrderView` ne porte pas `pickupAddressId`**, seulement l'adresse
+   figée du point. L'écran retrouve le point parmi ceux servis par son adresse
+   exacte, s'il est seul ; sinon il demande de le choisir. Un champ
+   `pickupAddressId` dans la vue client supprimerait ce rapprochement.
+3. **« Demander une modification » après l'heure limite** (§6) appartient à M4 :
+   l'écran affiche le refus du devis, sans bouton de demande.
+
+## 13. Suite de M3 (2026-10-23) — la vue dit si la commande se modifie, l'historique se lit
+
+Ce qui manquait aux §11 et §12, bâti le 2026-10-23 (non commité à l'écriture
+de ces lignes). Chemins sous `apps/lfd-api/src/b2b/orders/` pour le serveur.
+
+- **Modificabilité, par la règle du geste** : `domain/services/order-revisability.ts`
+  (pur) — la frontière commune (`standingBlockOf` : blocage de l'annulation,
+  carte, CGV figées) que `OrderRevising.ensureRevisable` lève désormais, puis
+  pour le client l'arrêt du plan et l'heure limite de la date actuelle
+  (`OrderCutoffGate.decide`, la même `decideStrictestOrderCutoff` que le
+  refus, sans dérogation). `OrderRevising.revisabilityOf` l'assemble ;
+  `application/services/order-revisability-reading.ts` y ajoute le jour
+  d'inscription lu au fournil (`OrderInscriptionReader`).
+- **Vues** : `CustomerOrderDetailView.revisability` (`OrderRevisability` :
+  `revisable` + `until`, ou un code `ORDER_REVISION_REFUSALS` et l'échéance
+  passée pour `too_late`) et `.revision`, par `GetOrderRevisabilityQuery`
+  derrière `RevisionWall` ; `AdminOrderView.revisability`
+  (`AdminOrderRevisability` : la phrase du serveur) et `.revision`.
+- **`pickupAddressId`** sur `OrderView` et `CustomerOrderView` : le `siteId`
+  figé dans le snapshot du point depuis le lot S2 (`siteIdOf`) — il existait
+  déjà en base. `null` en livraison et pour une commande d'avant S2. Les deux
+  `revision-draft.ts` le reprennent ; plus aucun rapprochement du point par
+  l'adresse (l'adresse livrée du back-office se rapproche encore du carnet).
+- **Historique** : `GET /admin/orders/:id/revisions` (`b2b_orders:read`, le
+  droit de la fiche), `ListOrderRevisionsQuery`, port de lecture
+  `OrderRevisionHistoryReader` (séparé du port d'écriture), adaptateur
+  `infrastructure/prisma-order-revision-history.reader.ts` (composition
+  validée par zod, `null` si illisible ; client nommé par sa fiche, équipe par
+  l'annuaire du staff). Contrat : `packages/contracts/src/order-revision-history.ts`.
+- **Boutique** : `order-revise-section` relit `GET /orders/:id` à l'ouverture
+  du tiroir et dit le bouton (avec « Modifiable jusqu'au … »), ou la phrase du
+  code (`order-revision/revision-wording.ts`, textes `orders.revision.refused*`).
+- **Back-office** : `order-revise-action` lit `revisability` (bouton grisé
+  avec la raison ; tue quand l'annulation, bloquée elle aussi, la dit déjà) ;
+  carte `commandes/order-revisions-card/` « Versions précédentes », posée
+  quand `revision > 0`, la composition remplacée dans un `fold-disclosure`.
+- **Tests** : domaine (`order-revisability.spec.ts`), application
+  (`get-order-revisability`, `list-order-revisions`, détail staff), e2e
+  `apps/lfd-api/test/order-revision-views.e2e-spec.ts`, specs des composants.
+
+Reste : « Demander une modification » après l'heure limite (M4) ; le tiroir
+de la boutique lit `GET /orders/:id` deux fois (annulation et modification),
+une lecture partagée l'éviterait.

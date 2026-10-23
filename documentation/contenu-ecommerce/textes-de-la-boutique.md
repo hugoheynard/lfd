@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1524 textes
+## Sommaire — 1571 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -38,7 +38,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le cadre — bandeaux, installation, erreurs générales](#espace-chrome) | `chrome` | 39 |
 | [La navigation](#espace-nav) | `nav` | 24 |
 | [La colonne d’accompagnement](#espace-aside) | `aside` | 4 |
-| [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 168 |
+| [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 215 |
 | [Annuler une commande — Mes commandes et la page invité](#espace-ordercancel) | `orderCancel` | 54 |
 | [Fidélité](#espace-loyalty) | `loyalty` | 38 |
 | [Mon compte (factures comprises)](#espace-account) | `account` | 525 |
@@ -47,7 +47,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
-| **Total** | | **1524** |
+| **Total** | | **1571** |
 
 ## Le parcours de commande
 
@@ -909,7 +909,7 @@ Source : `fr.ts · en.ts · it.ts` · 4 textes.
 
 ### Mes commandes (récapitulatif compris) — `orders`
 
-Source : `screens/orders.copy.ts · screens/order-summary.copy.ts` · 168 textes.
+Source : `screens/orders.copy.ts · screens/order-summary.copy.ts` · 215 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -1001,6 +1001,53 @@ Source : `screens/orders.copy.ts · screens/order-summary.copy.ts` · 168 textes
 | `orders.summary.gapDelivery` | livraison | delivery | consegna |  |
 | `orders.summary.gapLateFee` | surtaxes de commande tardive | late order surcharges | maggiorazioni per ordine tardivo |  |
 | `orders.summary.gapCapped` | remise plafonnée au montant des articles | discount capped at the items amount | sconto limitato all’importo degli articoli |  |
+| `orders.revision.reviseAction` | Modifier ma commande | Change my order | Modifica il mio ordine |  |
+| `orders.revision.reviseCardNote` | Commande réglée par carte : pour la modifier, annulez-la et recommandez, ou demandez-nous. | Order paid by card: to change it, cancel it and order again, or ask us. | Ordine pagato con carta: per modificarlo, annullalo e ordina di nuovo, oppure chiedi a noi. |  |
+| `orders.revision.reviseUntil` | Modifiable jusqu’au {when}. | Can be changed until {when}. | Modificabile fino al {when}. | `{when}` |
+| `orders.revision.reviseWhen` | {day} à {time} | {day} at {time} | {day} alle {time} | `{day}` `{time}` |
+| `orders.revision.refusedInPreparation` | Votre commande est déjà en préparation : elle ne se modifie plus. | Your order is already being prepared: it can no longer be changed. | Il tuo ordine è già in preparazione: non si può più modificare. |  |
+| `orders.revision.refusedTooLate` | L’heure limite est passée : la commande ne se modifie plus en ligne. Contactez-nous. | The deadline has passed: the order can no longer be changed online. Contact us. | L’orario limite è passato: l’ordine non si può più modificare online. Contattaci. |  |
+| `orders.revision.refusedTooLateUntil` | L’heure limite est passée : il était possible de la modifier jusqu’au {when}. Contactez-nous. | The deadline has passed: the order could be changed until {when}. Contact us. | L’orario limite è passato: era possibile modificarlo fino al {when}. Contattaci. | `{when}` |
+| `orders.revision.refusedAccounting` | Cette commande est déjà facturée : elle ne se modifie plus en ligne. Contactez-nous. | This order has already been invoiced: it can no longer be changed online. Contact us. | Questo ordine è già stato fatturato: non si può più modificare online. Contattaci. |  |
+| `orders.revision.refusedPaymentInProgress` | Un remboursement est en cours sur cette commande : réessayez dans quelques minutes. | A refund is in progress on this order: try again in a few minutes. | Un rimborso è in corso su questo ordine: riprova tra qualche minuto. |  |
+| `orders.revision.refusedUnavailable` | Cette commande ne peut pas être modifiée en ligne. Contactez-nous. | This order cannot be changed online. Contact us. | Questo ordine non si può modificare online. Contattaci. |  |
+| `orders.revision.reviseKicker` | Commande {reference} | Order {reference} | Ordine {reference} | `{reference}` |
+| `orders.revision.reviseTitle` | Modifier ma commande | Change my order | Modifica il mio ordine |  |
+| `orders.revision.reviseLead` | Changez les articles, les quantités, le jour ou le mode. Le nouveau total s’affiche avant de valider. | Change the items, the quantities, the day or the mode. The new total shows before you confirm. | Cambia gli articoli, le quantità, il giorno o la modalità. Il nuovo totale appare prima di confermare. |  |
+| `orders.revision.loadingOrder` | Lecture de la commande… | Reading the order… | Lettura dell’ordine… |  |
+| `orders.revision.loadFailedTitle` | La commande n’a pas pu être lue. | The order could not be read. | Non è stato possibile leggere l’ordine. |  |
+| `orders.revision.reloadCta` | Recharger | Reload | Ricarica |  |
+| `orders.revision.backToOrders` | Retour à mes commandes | Back to my orders | Torna ai miei ordini |  |
+| `orders.revision.linesTitle` | Les articles | Items | Gli articoli |  |
+| `orders.revision.addLabel` | Ajouter un article | Add an item | Aggiungi un articolo |  |
+| `orders.revision.addPlaceholder` | Chercher dans la boutique | Search the shop | Cerca nel negozio |  |
+| `orders.revision.addNone` | Aucun article | No item | Nessun articolo |  |
+| `orders.revision.priceKept` | prix d’origine | original price | prezzo originale |  |
+| `orders.revision.priceToday` | prix du jour | today’s price | prezzo del giorno |  |
+| `orders.revision.removeAria` | Retirer {name} | Remove {name} | Rimuovi {name} | `{name}` |
+| `orders.revision.noLinesNote` | Une commande garde au moins un article : pour tout retirer, annulez-la depuis Mes commandes. | An order keeps at least one item: to remove everything, cancel it from My orders. | Un ordine conserva almeno un articolo: per togliere tutto, annullalo da I miei ordini. |  |
+| `orders.revision.serviceTitle` | Retrait ou livraison | Pickup or delivery | Ritiro o consegna |  |
+| `orders.revision.servicePickup` | Retrait — {place} | Pickup — {place} | Ritiro — {place} | `{place}` |
+| `orders.revision.serviceDelivery` | Livraison — {address} | Delivery — {address} | Consegna — {address} | `{address}` |
+| `orders.revision.serviceWhen` | {day}, {slot} | {day}, {slot} | {day}, {slot} | `{day}` `{slot}` |
+| `orders.revision.pickupToChoose` | Choisissez le point de retrait : la commande ne nous a pas permis de le retrouver. | Choose the pickup point: we could not find it from the order. | Scegli il punto di ritiro: non siamo riusciti a ritrovarlo dall’ordine. |  |
+| `orders.revision.changeServiceCta` | Changer | Change | Cambia |  |
+| `orders.revision.changeTimeCta` | Changer l’heure | Change the time | Cambia l’orario |  |
+| `orders.revision.quoteTitle` | Le nouveau total | The new total | Il nuovo totale |  |
+| `orders.revision.quotingMessage` | Calcul du nouveau total… | Working out the new total… | Calcolo del nuovo totale… |  |
+| `orders.revision.quoteFailedNote` | Le nouveau total n’a pas pu être calculé. Réessayez dans un instant. | The new total could not be worked out. Try again in a moment. | Non è stato possibile calcolare il nuovo totale. Riprova tra un attimo. |  |
+| `orders.revision.totalNew` | Nouveau total | New total | Nuovo totale |  |
+| `orders.revision.totalPrevious` | Total actuel | Current total | Totale attuale |  |
+| `orders.revision.differenceLabel` | Écart | Difference | Differenza |  |
+| `orders.revision.differenceMore` | + {amount} | + {amount} | + {amount} | `{amount}` |
+| `orders.revision.differenceLess` | − {amount} | − {amount} | − {amount} | `{amount}` |
+| `orders.revision.differenceNone` | Aucun écart | No difference | Nessuna differenza |  |
+| `orders.revision.taxIncluded` | TTC | incl. VAT | IVA inclusa |  |
+| `orders.revision.unchangedNote` | Rien n’a encore changé. | Nothing has changed yet. | Non è ancora cambiato nulla. |  |
+| `orders.revision.submitCta` | Valider la modification | Confirm the change | Conferma la modifica |  |
+| `orders.revision.submittingCta` | Envoi… | Sending… | Invio… |  |
+| `orders.revision.revisionRefused` | La modification n’a pas pu être enregistrée. | The change could not be saved. | Non è stato possibile registrare la modifica. |  |
+| `orders.revision.revisedToast` | Votre commande est modifiée. | Your order has been changed. | Il tuo ordine è stato modificato. |  |
 | `orders.authorCustomer` | passée par {name} | placed by {name} | effettuato da {name} | `{name}` |
 | `orders.authorTeam` | par l’équipe | by our team | dal nostro team |  |
 | `orders.detailSite` | Site | Site | Sede |  |

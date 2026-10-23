@@ -321,6 +321,18 @@ export const routes: Routes = [
           import('./client/mes-commandes/retrait-page/retrait-page').then((m) => m.RetraitPage),
       },
       {
+        // MODIFIER UNE COMMANDE PASSÉE (plan `plan-modifier-une-commande.md`,
+        // M3) : une page et non un panneau — elle compose un panier entier,
+        // ouvre les dialogues de retrait, et doit survivre à un rechargement.
+        path: 'mes-commandes/modifier/:id',
+        title: 'Modifier ma commande — La Folie Coffee',
+        canActivate: [authenticatedGuard],
+        loadComponent: () =>
+          import('./client/order-revision/order-revision-page/order-revision-page').then(
+            (m) => m.OrderRevisionPage,
+          ),
+      },
+      {
         // L'ANNULATION DE L'INVITÉ (doc `annulation-par-le-client.md`,
         // C6.4) : le lien de son courriel de confirmation. Sans garde — un
         // invité n'a pas de compte. Le jeton est dans le FRAGMENT

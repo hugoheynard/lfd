@@ -24,9 +24,17 @@
         (lineSelected)="explain($event)"
         (documentAsked)="onDocument($event)"
       >
-        <!-- Le seul geste staff sur une commande passée : l'annuler, tant
+        <!-- L'autre geste staff sur une commande passée : l'annuler, tant
              qu'elle n'est pas au compte à produire (annulation-par-le-staff.md,
              C3.8). Absent sans le droit, désactivé avec la raison sinon. -->
+        <!-- Modifier (plan de modification, M3, §6) : ce que le serveur dit de la
+             modification, avec sa raison quand elle est bloquée. -->
+        <app-order-revise-action
+          actions
+          [orderId]="o.id"
+          [revisability]="o.revisability"
+          [cancellability]="o.cancellability"
+        />
         <app-order-cancel
           actions
           [orderId]="o.id"
@@ -52,6 +60,10 @@
 
       <!-- Les faits du journal qui touchent la commande, le plus récent d'abord. -->
       <app-order-history-card [orderId]="o.id" />
+      <!-- Les versions qu'une modification a remplacées (plan de modification, §6). -->
+      @if (o.revision > 0) {
+        <app-order-revisions-card [orderId]="o.id" />
+      }
     }
   }
 }

@@ -68,6 +68,7 @@ function order(overrides: Partial<OrderView> = {}): OrderView {
       codePostal: "73150",
       ville: "Val d'Isère",
     },
+    pickupAddressId: "site_labo",
     fulfillment: {
       window: { value: null, source: "default" },
       contact: { value: null, source: "default" },

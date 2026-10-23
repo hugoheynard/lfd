@@ -33,6 +33,7 @@ export function orderView(
     deliveryAddressId: null,
     deliveryAddress: null,
     pickupAddress: null,
+    pickupAddressId: null,
     fulfillment: {
       window: { value: null, source: "default" },
       contact: { value: null, source: "default" },

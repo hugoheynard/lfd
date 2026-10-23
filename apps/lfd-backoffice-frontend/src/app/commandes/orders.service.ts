@@ -15,6 +15,11 @@ import type {
   OrderQuoteView,
   AdminOrderView,
   AdminCancelOrderPayload,
+  OrderRevisedResponse,
+  OrderRevisionEntryView,
+  OrderRevisionPayload,
+  OrderRevisionQuotePayload,
+  OrderRevisionQuoteView,
 } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../api/api-config';
@@ -72,6 +77,19 @@ export class AdminOrdersService {
     return firstValueFrom(
       this.http.get<OrderSalesTermsResponse>(
         `${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}/sales-terms`,
+      ),
+    );
+  }
+
+  /**
+   * **Les versions précédentes** (plan `plan-modifier-une-commande.md`, §6) :
+   * chaque modification, la plus récente en tête, avec la composition qu'elle
+   * a remplacée.
+   */
+  async revisions(id: string): Promise<readonly OrderRevisionEntryView[]> {
+    return firstValueFrom(
+      this.http.get<OrderRevisionEntryView[]>(
+        `${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}/revisions`,
       ),
     );
   }
@@ -214,6 +232,38 @@ export class AdminOrdersService {
   async quote(payload: OrderQuotePayload): Promise<OrderQuoteView> {
     return firstValueFrom(
       this.http.post<OrderQuoteView>(`${B2B_API_BASE}/admin/orders/quote`, payload),
+    );
+  }
+
+  /**
+   * **Le devis d'une modification** (plan `plan-modifier-une-commande.md`,
+   * M1) : la commande telle qu'elle serait, l'écart avec la révision
+   * courante, et le numéro de révision à renvoyer tel quel à la validation.
+   * Les refus (`409 orders.revise.*`) portent leur phrase.
+   */
+  async quoteRevision(
+    id: string,
+    payload: OrderRevisionQuotePayload,
+  ): Promise<OrderRevisionQuoteView> {
+    return firstValueFrom(
+      this.http.post<OrderRevisionQuoteView>(
+        `${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}/revisions/quote`,
+        payload,
+      ),
+    );
+  }
+
+  /**
+   * **Modifie la commande.** `expectedRevision` est celle du devis : si la
+   * commande a bougé entre-temps, le serveur refuse (`409
+   * orders.revise.stale_revision`) plutôt que d'écraser. L'écran relit ensuite.
+   */
+  async revise(id: string, payload: OrderRevisionPayload): Promise<OrderRevisedResponse> {
+    return firstValueFrom(
+      this.http.post<OrderRevisedResponse>(
+        `${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}/revisions`,
+        payload,
+      ),
     );
   }
 }

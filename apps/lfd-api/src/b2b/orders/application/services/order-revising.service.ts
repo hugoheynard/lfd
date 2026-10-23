@@ -3,19 +3,24 @@ import { Injectable } from "@nestjs/common";
 
 import { Order, type DraftOrderInput } from "../../domain/entities/order.js";
 import {
-  ensureRevisableSettlement,
   type OrderRevisionToSave,
   type RevisableOrder,
   type RevisionActor,
 } from "../../domain/entities/order-revision.js";
 import {
-  OrderNotRevisableError,
   OrderWithoutSalesTermsError,
   RevisionIntoClosedDayError,
+  standingRevisionErrorOf,
 } from "../../domain/errors/order-revision-errors.js";
 import { ProductionPlanClosedError } from "../../domain/errors/production-plan-closed.error.js";
 import type { WindowRequester } from "../../domain/services/delivery-window.js";
 import { cancellationOf } from "../../domain/services/order-cancellation.js";
+import {
+  revisabilityOf,
+  standingBlockOf,
+  type RevisionVerdict,
+  type StandingRevisionBlock,
+} from "../../domain/services/order-revisability.js";
 import { OrderLocale } from "../../domain/value-objects/order-locale.js";
 import { CancellationRule } from "./cancellation-rule.js";
 import { OrderComposition, type ComposedDraft } from "./order-composition.service.js";
@@ -58,17 +63,57 @@ export class OrderRevising {
    * fournil, sous le verrou de la journée.
    *
    * Puis M1 : une commande payable par carte ne se modifie pas (§9) —
-   * l'agrégat le refuse aussi, mais après une recomposition inutile.
+   * l'agrégat le refuse aussi, mais après une recomposition inutile. Puis les
+   * CGV figées, sans lesquelles rien ne se recompose.
    *
    * @throws {OrderNotRevisableError} la commande ne se modifie plus.
    * @throws {CardOrderNotRevisableError} la commande se règle par carte.
+   * @throws {OrderWithoutSalesTermsError} une commande d'avant les CGV figées.
    */
   async ensureRevisable(order: RevisableOrder): Promise<void> {
-    const decision = cancellationOf(await this.rule.stateOf(subjectOf(order), null));
-    if (!decision.cancellable) {
-      throw new OrderNotRevisableError(order.orderId, decision.block);
+    const block = await this.standingOf(order, null);
+    if (block !== null) {
+      throw standingRevisionErrorOf(order.orderId, block);
     }
-    ensureRevisableSettlement(order);
+  }
+
+  /**
+   * **Ce que les vues disent de la modification** (§6) — la MÊME règle que le
+   * geste, sans verrou : la frontière commune ({@link ensureRevisable}, avec
+   * le jour d'inscription lu au fournil), puis pour le client l'arrêt du plan
+   * et l'heure limite de la date actuelle, décidés comme {@link compose} les
+   * oppose. Une indication : le `POST` relit tout.
+   */
+  async revisabilityOf(
+    order: RevisableOrder,
+    actorKind: RevisionActor["kind"],
+    inscribedDay: string | null,
+  ): Promise<RevisionVerdict> {
+    const standing = await this.standingOf(order, inscribedDay);
+    if (standing !== null || actorKind === "staff" || order.serviceDay === null) {
+      return revisabilityOf({ standing, planClosedDay: null, cutoff: null });
+    }
+    const day = order.serviceDay;
+    const [closed, cutoff] = await Promise.all([
+      this.plans.isClosed(day),
+      this.cutoffs.decide(
+        order.lines.map((line) => line.sku),
+        day,
+      ),
+    ]);
+    return revisabilityOf({ standing, planClosedDay: closed ? day : null, cutoff });
+  }
+
+  private async standingOf(
+    order: RevisableOrder,
+    inscribedDay: string | null,
+  ): Promise<StandingRevisionBlock | null> {
+    const decision = cancellationOf(await this.rule.stateOf(subjectOf(order), inscribedDay));
+    return standingBlockOf(decision, {
+      paymentStatus: order.paymentStatus,
+      totalCents: order.totalCents,
+      hasSalesTerms: order.salesTerms !== null,
+    });
   }
 
   /**

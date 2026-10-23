@@ -1,10 +1,15 @@
+import type { OrderCutoffDecision } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { OrderCutoffReader } from "../../domain/ports/order-cutoff.reader.js";
 import { OrderCutoffWaiverGate } from "../../domain/ports/order-cutoff-waiver.gate.js";
-import { ensureWithinOrderCutoff } from "../../domain/services/order-cutoff-guard.js";
+import {
+  decideStrictestOrderCutoff,
+  ensureWithinOrderCutoff,
+  type LineOrderLimit,
+} from "../../domain/services/order-cutoff-guard.js";
 
 /**
  * **L'heure limite opposée à un panier** — extraite d'`OrderDrafting` le
@@ -54,14 +59,42 @@ export class OrderCutoffGate {
         : this.waivers.openFor(companyId, fulfillmentDate),
     ]);
     return ensureWithinOrderCutoff({
-      // Un SKU absent du catalogue n'a pas de limite propre : il retombe sur la
-      // règle du commerce. Il sera refusé plus loin pour ce qu'il est — inconnu
-      // —, et pas ici pour une heure.
-      lines: skus.map((sku) => ({ sku, limit: items.get(sku)?.orderTimeLimit ?? null })),
+      lines: limitsOf(skus, items),
       fallback,
       fulfillmentDate,
       waiver,
       now: this.clock.now(),
     });
   }
+
+  /**
+   * La MÊME décision, sans refuser : ce que la vue d'une commande dit de sa
+   * modification (« jusqu'à quand », ou « trop tard » — plan
+   * `documentation/commandes/plan-modifier-une-commande.md`, §6). Aucune
+   * dérogation : la révision n'en dépense pas.
+   */
+  async decide(skus: readonly string[], fulfillmentDate: string): Promise<OrderCutoffDecision> {
+    const [fallback, items] = await Promise.all([
+      this.cutoffs.list(),
+      this.catalog.resolveMany(skus, "pro"),
+    ]);
+    return decideStrictestOrderCutoff({
+      lines: limitsOf(skus, items),
+      fallback,
+      fulfillmentDate,
+      now: this.clock.now(),
+    });
+  }
+}
+
+/**
+ * Un SKU absent du catalogue n'a pas de limite propre : il retombe sur la
+ * règle du commerce. Il sera refusé plus loin pour ce qu'il est — inconnu —,
+ * et pas ici pour une heure.
+ */
+function limitsOf(
+  skus: readonly string[],
+  items: ReadonlyMap<string, { readonly orderTimeLimit: LineOrderLimit["limit"] }>,
+): LineOrderLimit[] {
+  return skus.map((sku) => ({ sku, limit: items.get(sku)?.orderTimeLimit ?? null }));
 }

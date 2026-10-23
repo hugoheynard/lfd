@@ -1,0 +1,69 @@
+<fold-card data-order-revisions>
+  <fold-element-title cardHeader variant="title" icon="undo" title="Versions précédentes" />
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Lecture des versions précédentes…" />
+    }
+    @case ('error') {
+      <fold-empty-state
+        tone="alert"
+        title="Les versions précédentes de cette commande n’ont pas pu être lues."
+        data-order-revisions-error
+      >
+        <button foldButton (click)="retry()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @default {
+      @if (rows().length === 0) {
+        <fold-empty-state
+          title="Cette commande n’a jamais été modifiée."
+          data-order-revisions-empty
+        >
+          <fold-icon empty-icon name="undo" [size]="40" />
+        </fold-empty-state>
+      } @else {
+        <ol class="or-list">
+          @for (row of rows(); track row.key) {
+            <li class="or-row" data-order-revision>
+              <span class="or-title">{{ row.title }}</span>
+              <p class="or-meta">{{ row.meta }}</p>
+              <p class="or-meta">
+                <span class="or-strong">{{ row.difference }}</span>
+                @if (row.changes) {
+                  <span> — {{ row.changes }}</span>
+                }
+              </p>
+              @if (row.replaced; as replaced) {
+                <fold-disclosure [attr.data-order-revision-detail]="row.key">
+                  <span summary>Voir la composition remplacée</span>
+                  <p class="or-meta">{{ replaced.route }}</p>
+                  <p class="or-meta">{{ replaced.when }}</p>
+                  @if (replaced.note; as note) {
+                    <p class="or-meta">Note : {{ note }}</p>
+                  }
+                  <ul class="or-lines">
+                    @for (line of replaced.lines; track line.sku) {
+                      <li class="or-line" data-order-revision-line>
+                        <span class="or-qty">{{ line.quantity }} ×</span>
+                        <span class="or-name">{{ line.name }}</span>
+                        <span class="or-price">{{ line.unitPrice }} · TVA {{ line.vat }}</span>
+                        <span class="or-total">{{ line.total }}</span>
+                      </li>
+                    }
+                  </ul>
+                  <p class="or-meta">
+                    Total de cette version : <span class="or-strong">{{ replaced.total }}</span>
+                  </p>
+                </fold-disclosure>
+              } @else {
+                <fold-callout appearance="inset" variant="info" data-order-revision-unreadable>
+                  La composition remplacée n’a pas pu être relue.
+                </fold-callout>
+              }
+            </li>
+          }
+        </ol>
+      }
+    }
+  }
+</fold-card>

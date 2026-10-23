@@ -20,7 +20,9 @@ import {
 import { NotifyService } from '../../notify.service';
 import { HandoverProofCard } from '../handover-proof-card/handover-proof-card';
 import { OrderCancelComponent } from '../order-cancel/order-cancel';
+import { OrderReviseAction } from '../order-revise-action/order-revise-action';
 import { OrderHistoryCard } from '../order-history-card/order-history-card';
+import { OrderRevisionsCard } from '../order-revisions-card/order-revisions-card';
 import { OrderSalesTermsCard } from '../order-sales-terms-card/order-sales-terms-card';
 import { OrderInvoicesCard } from '../order-invoices-card/order-invoices-card';
 import { OrderRefundBanner } from '../order-refund-banner/order-refund-banner';
@@ -58,8 +60,10 @@ type LoadState = 'loading' | 'ready' | 'error';
     FoldEmptyStateComponent,
     HandoverProofCard,
     OrderCancelComponent,
+    OrderReviseAction,
     OrderDetail,
     OrderHistoryCard,
+    OrderRevisionsCard,
     OrderSalesTermsCard,
     OrderInvoicesCard,
     OrderRefundBanner,

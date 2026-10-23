@@ -5,6 +5,7 @@ import { FoldButtonComponent } from 'fold-ng';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { discountLabel } from '../../shop/pickup-discount';
 import { OrderCancelSection } from '../../order-cancellation/order-cancel-section/order-cancel-section';
+import { OrderReviseSection } from '../../order-revision/order-revise-section/order-revise-section';
 import { formatCents } from '../../format-money';
 import { isFulfilled, type HistoryOrder, type OrderPayment } from '../order-rows';
 
@@ -28,7 +29,7 @@ const STARS = [1, 2, 3, 4, 5] as const;
 @Component({
   selector: 'app-order-detail',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldButtonComponent, OrderCancelSection, RouterLink],
+  imports: [FoldButtonComponent, OrderCancelSection, OrderReviseSection, RouterLink],
   templateUrl: './order-detail.html',
   styleUrl: './order-detail.scss',
 })

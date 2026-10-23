@@ -1,0 +1,53 @@
+.or-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.or-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  padding: var(--fold-space-sm) 0;
+  border-top: 1px solid var(--fold-color-border-subtle);
+}
+
+.or-title,
+.or-strong {
+  color: var(--fold-color-text);
+  font-weight: var(--fold-weight-semibold);
+}
+
+.or-meta {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+.or-lines {
+  list-style: none;
+  margin: var(--fold-space-xs) 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.or-line {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: var(--fold-space-sm);
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text);
+}
+
+.or-price {
+  color: var(--fold-color-text-muted);
+}
+
+.or-qty,
+.or-total {
+  font-variant-numeric: tabular-nums;
+}

@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import type { OrderView } from "./order.js";
 import type { OrderClientele } from "./order-handover.js";
+import type { AdminOrderRevisability } from "./order-revision.values.js";
 
 /**
  * **Le détail staff d'une commande** — `GET /admin/orders/:id`.
@@ -35,6 +36,15 @@ export interface AdminOrderView extends OrderView {
    * `null` quand aucun remboursement n'a été demandé.
    */
   readonly refund: AdminOrderRefund | null;
+  /**
+   * **Peut-on la modifier, et sinon pourquoi** (plan
+   * `documentation/commandes/plan-modifier-une-commande.md`, R1, §6) — la
+   * règle de l'équipe, par la même recomposition que
+   * `POST /admin/orders/:id/revisions`, sans verrou : c'est un affichage.
+   */
+  readonly revisability: AdminOrderRevisability;
+  /** La révision courante : `0` à la passation, `+1` à chaque modification. */
+  readonly revision: number;
 }
 
 /**

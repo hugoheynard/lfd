@@ -1,0 +1,24 @@
+@switch (offer().kind) {
+  @case ('revise') {
+    <div class="revise">
+      <a
+        foldButton
+        block
+        size="sm"
+        emphasis="outline"
+        intent="neutral"
+        icon="edit"
+        data-revise
+        [routerLink]="['/mes-commandes', 'modifier', orderId()]"
+      >
+        {{ c().reviseAction }}
+      </a>
+      @if (untilSaid(); as said) {
+        <p class="note" data-until>{{ said }}</p>
+      }
+    </div>
+  }
+  @case ('refused') {
+    <p class="note" data-refusal>{{ refusalSaid() }}</p>
+  }
+}

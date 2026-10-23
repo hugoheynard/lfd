@@ -344,6 +344,19 @@ export const routes: Routes = [
       import('./commandes/commande-page/commande-page').then((m) => m.AdminCommandePage),
   },
   {
+    // Modifier une commande passée (plan `plan-modifier-une-commande.md`, M3).
+    // PLEINE PAGE comme la saisie dont elle reprend le parcours, et sous le
+    // droit des routes de révision. Une seule route pour les deux cadres : le
+    // retour mène au dossier du compte quand la commande en a un.
+    path: 'commandes/:orderId/modifier',
+    canActivate: [permissionGuard('b2b_place_order:write')],
+    title: 'Modifier la commande — LFC B2B admin',
+    loadComponent: () =>
+      import('./commandes/modifier-commande/modifier-commande-page/modifier-commande-page').then(
+        (m) => m.ModifierCommandePage,
+      ),
+  },
+  {
     // PLEINE PAGE, hors de la coquille à onglets de la fiche : on y saisit une
     // commande pendant dix minutes, avec le client en ligne, et les trois
     // colonnes réclament toute la largeur. Des onglets à côté inviteraient à en

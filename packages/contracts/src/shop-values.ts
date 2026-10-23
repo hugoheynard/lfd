@@ -33,6 +33,11 @@ export {
   type OrderCancellability,
 } from "./customer-cancellation.values.js";
 export {
+  ORDER_REVISION_REFUSALS,
+  type OrderRevisability,
+  type OrderRevisionRefusal,
+} from "./order-revision.values.js";
+export {
   DEFAULT_ORDER_OPENING,
   ORDERS_CLOSED_FOR_AUDIENCE,
   ordersOpenTo,

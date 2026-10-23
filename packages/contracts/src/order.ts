@@ -646,6 +646,13 @@ export interface OrderView {
   /** Adresse de retrait **figée** au moment de la commande, ou `null` en livraison. */
   readonly pickupAddress: BillingAddressPayload | null;
   /**
+   * L'identifiant du point de retrait de la commande (le `siteId` figé avec
+   * son adresse, lot S2), ou `null` : livraison, ou commande d'avant le lot.
+   * Ce que la modification renvoie en `pickupAddressId` (plan
+   * `documentation/commandes/plan-modifier-une-commande.md`, M3).
+   */
+  readonly pickupAddressId: string | null;
+  /**
    * Ce qui a été **convenu** pour l'acheminement, figé à la commande, chaque
    * valeur avec sa provenance : la tranche horaire demandée, qui reçoit, et si
    * une signature est exigée.
@@ -944,6 +951,8 @@ export interface CustomerOrderView {
   readonly deliveryAddressId: string | null;
   readonly deliveryAddress: BillingAddressPayload | null;
   readonly pickupAddress: BillingAddressPayload | null;
+  /** Cf. {@link OrderView.pickupAddressId}. */
+  readonly pickupAddressId: string | null;
   readonly fulfillment: OrderFulfillment;
   readonly note: string;
   readonly subtotalCents: number;
@@ -1006,6 +1015,7 @@ export function toCustomerOrder(view: OrderView): CustomerOrderView {
     deliveryAddressId: view.deliveryAddressId,
     deliveryAddress: view.deliveryAddress,
     pickupAddress: view.pickupAddress,
+    pickupAddressId: view.pickupAddressId,
     fulfillment: view.fulfillment,
     note: view.note,
     subtotalCents: view.subtotalCents,

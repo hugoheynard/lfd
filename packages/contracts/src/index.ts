@@ -988,7 +988,20 @@ export {
 } from "./order.js";
 export { exposedHandoverToken, isSettled } from "./order-settlement.values.js";
 // Modifier une commande passée (plan `commandes/plan-modifier-une-commande.md`, M1).
-export { ORDER_REVISION_CHANGES, type OrderRevisionChange } from "./order-revision.values.js";
+export {
+  ORDER_REVISION_CHANGES,
+  ORDER_REVISION_REFUSALS,
+  type AdminOrderRevisability,
+  type OrderRevisability,
+  type OrderRevisionChange,
+  type OrderRevisionRefusal,
+} from "./order-revision.values.js";
+export type {
+  OrderRevisionAuthorView,
+  OrderRevisionEntryView,
+  ReplacedCompositionView,
+  ReplacedLineView,
+} from "./order-revision-history.js";
 export { orderRevisionPayloadSchema, orderRevisionQuotePayloadSchema } from "./order-revision.js";
 export type {
   OrderRevisedResponse,

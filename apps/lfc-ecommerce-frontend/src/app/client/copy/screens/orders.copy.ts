@@ -6,6 +6,253 @@ import {
 } from './order-summary.copy';
 
 /**
+ * **Modifier une commande passée** — le bouton du tiroir et l'écran de
+ * modification (plan `documentation/commandes/plan-modifier-une-commande.md`,
+ * M3). Rangé ici plutôt que dans un fichier d'écran à lui : un nouveau fichier
+ * de `screens/` est une ligne de plus au recueil (`dev-toolbox/shop-copy/spaces.mjs`),
+ * et ces textes appartiennent à « Mes commandes ».
+ *
+ * Les refus du serveur ne sont PAS ici : ils se disent par leur message, que
+ * le serveur écrit pour le client (`orders.revise.*`).
+ */
+export interface OrderReviseCopy {
+  /** Le bouton du tiroir, à côté d'« Annuler ». */
+  readonly reviseAction: string;
+  /** Ce que dit le tiroir d'une commande réglée par carte, à la place du bouton. */
+  readonly reviseCardNote: string;
+  /** Sous le bouton : `{when}` reçoit l'heure limite (« 14/10 à 18:00 »). */
+  readonly reviseUntil: string;
+  /** La mise en forme de l'heure limite : `{day}` et `{time}`. */
+  readonly reviseWhen: string;
+  /** Le fournil l'a déjà comptée (ou le plan du jour est arrêté). */
+  readonly refusedInPreparation: string;
+  /** L'heure limite est passée, sans échéance connue. */
+  readonly refusedTooLate: string;
+  /** L'heure limite est passée : `{when}` reçoit celle qui l'est. */
+  readonly refusedTooLateUntil: string;
+  /** Déjà facturée ou prélevée. */
+  readonly refusedAccounting: string;
+  /** Un remboursement attend son issue. */
+  readonly refusedPaymentInProgress: string;
+  /** Tout autre refus : la boutique propose de nous contacter. */
+  readonly refusedUnavailable: string;
+  /** `{reference}` reçoit le numéro de la commande. */
+  readonly reviseKicker: string;
+  readonly reviseTitle: string;
+  readonly reviseLead: string;
+  readonly loadingOrder: string;
+  readonly loadFailedTitle: string;
+  readonly reloadCta: string;
+  readonly backToOrders: string;
+  readonly linesTitle: string;
+  readonly addLabel: string;
+  readonly addPlaceholder: string;
+  readonly addNone: string;
+  /** Une ligne déjà dans la commande : elle garde son prix. */
+  readonly priceKept: string;
+  /** Une ligne ajoutée : au prix du jour. */
+  readonly priceToday: string;
+  /** `{name}` reçoit le nom de l'article. */
+  readonly removeAria: string;
+  readonly noLinesNote: string;
+  readonly serviceTitle: string;
+  /** `{place}` reçoit le nom du point de retrait. */
+  readonly servicePickup: string;
+  /** `{address}` reçoit l'adresse livrée. */
+  readonly serviceDelivery: string;
+  /** `{day}` et `{slot}` : « demain, 7 h – 8 h ». */
+  readonly serviceWhen: string;
+  readonly pickupToChoose: string;
+  readonly changeServiceCta: string;
+  readonly changeTimeCta: string;
+  readonly quoteTitle: string;
+  readonly quotingMessage: string;
+  readonly quoteFailedNote: string;
+  readonly totalNew: string;
+  readonly totalPrevious: string;
+  readonly differenceLabel: string;
+  /** `{amount}` reçoit l'écart mis en forme. */
+  readonly differenceMore: string;
+  /** `{amount}` reçoit l'écart mis en forme. */
+  readonly differenceLess: string;
+  readonly differenceNone: string;
+  readonly taxIncluded: string;
+  readonly unchangedNote: string;
+  readonly submitCta: string;
+  readonly submittingCta: string;
+  /** Le repli d'un refus dont le serveur n'a pas dit la phrase. */
+  readonly revisionRefused: string;
+  readonly revisedToast: string;
+}
+
+const ORDER_REVISE_FR: OrderReviseCopy = {
+  reviseAction: 'Modifier ma commande',
+  reviseCardNote:
+    'Commande réglée par carte : pour la modifier, annulez-la et recommandez, ou demandez-nous.',
+  reviseUntil: 'Modifiable jusqu’au {when}.',
+  reviseWhen: '{day} à {time}',
+  refusedInPreparation: 'Votre commande est déjà en préparation : elle ne se modifie plus.',
+  refusedTooLate:
+    'L’heure limite est passée : la commande ne se modifie plus en ligne. Contactez-nous.',
+  refusedTooLateUntil:
+    'L’heure limite est passée : il était possible de la modifier jusqu’au {when}. Contactez-nous.',
+  refusedAccounting:
+    'Cette commande est déjà facturée : elle ne se modifie plus en ligne. Contactez-nous.',
+  refusedPaymentInProgress:
+    'Un remboursement est en cours sur cette commande : réessayez dans quelques minutes.',
+  refusedUnavailable: 'Cette commande ne peut pas être modifiée en ligne. Contactez-nous.',
+  reviseKicker: 'Commande {reference}',
+  reviseTitle: 'Modifier ma commande',
+  reviseLead:
+    'Changez les articles, les quantités, le jour ou le mode. Le nouveau total s’affiche avant de valider.',
+  loadingOrder: 'Lecture de la commande…',
+  loadFailedTitle: 'La commande n’a pas pu être lue.',
+  reloadCta: 'Recharger',
+  backToOrders: 'Retour à mes commandes',
+  linesTitle: 'Les articles',
+  addLabel: 'Ajouter un article',
+  addPlaceholder: 'Chercher dans la boutique',
+  addNone: 'Aucun article',
+  priceKept: 'prix d’origine',
+  priceToday: 'prix du jour',
+  removeAria: 'Retirer {name}',
+  noLinesNote:
+    'Une commande garde au moins un article : pour tout retirer, annulez-la depuis Mes commandes.',
+  serviceTitle: 'Retrait ou livraison',
+  servicePickup: 'Retrait — {place}',
+  serviceDelivery: 'Livraison — {address}',
+  serviceWhen: '{day}, {slot}',
+  pickupToChoose:
+    'Choisissez le point de retrait : la commande ne nous a pas permis de le retrouver.',
+  changeServiceCta: 'Changer',
+  changeTimeCta: 'Changer l’heure',
+  quoteTitle: 'Le nouveau total',
+  quotingMessage: 'Calcul du nouveau total…',
+  quoteFailedNote: 'Le nouveau total n’a pas pu être calculé. Réessayez dans un instant.',
+  totalNew: 'Nouveau total',
+  totalPrevious: 'Total actuel',
+  differenceLabel: 'Écart',
+  differenceMore: '+ {amount}',
+  differenceLess: '− {amount}',
+  differenceNone: 'Aucun écart',
+  taxIncluded: 'TTC',
+  unchangedNote: 'Rien n’a encore changé.',
+  submitCta: 'Valider la modification',
+  submittingCta: 'Envoi…',
+  revisionRefused: 'La modification n’a pas pu être enregistrée.',
+  revisedToast: 'Votre commande est modifiée.',
+};
+
+const ORDER_REVISE_EN: OrderReviseCopy = {
+  reviseAction: 'Change my order',
+  reviseCardNote: 'Order paid by card: to change it, cancel it and order again, or ask us.',
+  reviseUntil: 'Can be changed until {when}.',
+  reviseWhen: '{day} at {time}',
+  refusedInPreparation: 'Your order is already being prepared: it can no longer be changed.',
+  refusedTooLate: 'The deadline has passed: the order can no longer be changed online. Contact us.',
+  refusedTooLateUntil:
+    'The deadline has passed: the order could be changed until {when}. Contact us.',
+  refusedAccounting:
+    'This order has already been invoiced: it can no longer be changed online. Contact us.',
+  refusedPaymentInProgress: 'A refund is in progress on this order: try again in a few minutes.',
+  refusedUnavailable: 'This order cannot be changed online. Contact us.',
+  reviseKicker: 'Order {reference}',
+  reviseTitle: 'Change my order',
+  reviseLead:
+    'Change the items, the quantities, the day or the mode. The new total shows before you confirm.',
+  loadingOrder: 'Reading the order…',
+  loadFailedTitle: 'The order could not be read.',
+  reloadCta: 'Reload',
+  backToOrders: 'Back to my orders',
+  linesTitle: 'Items',
+  addLabel: 'Add an item',
+  addPlaceholder: 'Search the shop',
+  addNone: 'No item',
+  priceKept: 'original price',
+  priceToday: 'today’s price',
+  removeAria: 'Remove {name}',
+  noLinesNote: 'An order keeps at least one item: to remove everything, cancel it from My orders.',
+  serviceTitle: 'Pickup or delivery',
+  servicePickup: 'Pickup — {place}',
+  serviceDelivery: 'Delivery — {address}',
+  serviceWhen: '{day}, {slot}',
+  pickupToChoose: 'Choose the pickup point: we could not find it from the order.',
+  changeServiceCta: 'Change',
+  changeTimeCta: 'Change the time',
+  quoteTitle: 'The new total',
+  quotingMessage: 'Working out the new total…',
+  quoteFailedNote: 'The new total could not be worked out. Try again in a moment.',
+  totalNew: 'New total',
+  totalPrevious: 'Current total',
+  differenceLabel: 'Difference',
+  differenceMore: '+ {amount}',
+  differenceLess: '− {amount}',
+  differenceNone: 'No difference',
+  taxIncluded: 'incl. VAT',
+  unchangedNote: 'Nothing has changed yet.',
+  submitCta: 'Confirm the change',
+  submittingCta: 'Sending…',
+  revisionRefused: 'The change could not be saved.',
+  revisedToast: 'Your order has been changed.',
+};
+
+const ORDER_REVISE_IT: OrderReviseCopy = {
+  reviseAction: 'Modifica il mio ordine',
+  reviseCardNote:
+    'Ordine pagato con carta: per modificarlo, annullalo e ordina di nuovo, oppure chiedi a noi.',
+  reviseUntil: 'Modificabile fino al {when}.',
+  reviseWhen: '{day} alle {time}',
+  refusedInPreparation: 'Il tuo ordine è già in preparazione: non si può più modificare.',
+  refusedTooLate:
+    'L’orario limite è passato: l’ordine non si può più modificare online. Contattaci.',
+  refusedTooLateUntil:
+    'L’orario limite è passato: era possibile modificarlo fino al {when}. Contattaci.',
+  refusedAccounting:
+    'Questo ordine è già stato fatturato: non si può più modificare online. Contattaci.',
+  refusedPaymentInProgress: 'Un rimborso è in corso su questo ordine: riprova tra qualche minuto.',
+  refusedUnavailable: 'Questo ordine non si può modificare online. Contattaci.',
+  reviseKicker: 'Ordine {reference}',
+  reviseTitle: 'Modifica il mio ordine',
+  reviseLead:
+    'Cambia gli articoli, le quantità, il giorno o la modalità. Il nuovo totale appare prima di confermare.',
+  loadingOrder: 'Lettura dell’ordine…',
+  loadFailedTitle: 'Non è stato possibile leggere l’ordine.',
+  reloadCta: 'Ricarica',
+  backToOrders: 'Torna ai miei ordini',
+  linesTitle: 'Gli articoli',
+  addLabel: 'Aggiungi un articolo',
+  addPlaceholder: 'Cerca nel negozio',
+  addNone: 'Nessun articolo',
+  priceKept: 'prezzo originale',
+  priceToday: 'prezzo del giorno',
+  removeAria: 'Rimuovi {name}',
+  noLinesNote:
+    'Un ordine conserva almeno un articolo: per togliere tutto, annullalo da I miei ordini.',
+  serviceTitle: 'Ritiro o consegna',
+  servicePickup: 'Ritiro — {place}',
+  serviceDelivery: 'Consegna — {address}',
+  serviceWhen: '{day}, {slot}',
+  pickupToChoose: 'Scegli il punto di ritiro: non siamo riusciti a ritrovarlo dall’ordine.',
+  changeServiceCta: 'Cambia',
+  changeTimeCta: 'Cambia l’orario',
+  quoteTitle: 'Il nuovo totale',
+  quotingMessage: 'Calcolo del nuovo totale…',
+  quoteFailedNote: 'Non è stato possibile calcolare il nuovo totale. Riprova tra un attimo.',
+  totalNew: 'Nuovo totale',
+  totalPrevious: 'Totale attuale',
+  differenceLabel: 'Differenza',
+  differenceMore: '+ {amount}',
+  differenceLess: '− {amount}',
+  differenceNone: 'Nessuna differenza',
+  taxIncluded: 'IVA inclusa',
+  unchangedNote: 'Non è ancora cambiato nulla.',
+  submitCta: 'Conferma la modifica',
+  submittingCta: 'Invio…',
+  revisionRefused: 'Non è stato possibile registrare la modifica.',
+  revisedToast: 'Il tuo ordine è stato modificato.',
+};
+
+/**
  * Ce que dit `/mes-commandes`, dans les trois langues.
  *
  * L'interface et ses trois dictionnaires vivent dans le MÊME fichier, et c'est
@@ -71,6 +318,8 @@ export interface OrdersCopy {
   readonly filterAllSites: string;
   /** Le filtre de jours, la sélection et le récapitulatif (lot R3). */
   readonly summary: OrderSummaryCopy;
+  /** Modifier une commande passée (M3). */
+  readonly revision: OrderReviseCopy;
   /** `{name}` est remplacé par « Prénom N. », l'auteur figé de la commande. */
   readonly authorCustomer: string;
   /** La commande a été saisie par l'équipe de la maison. */
@@ -235,6 +484,7 @@ export const ORDERS_FR: OrdersCopy = {
   filterSite: 'Site',
   filterAllSites: 'Tous les sites',
   summary: ORDER_SUMMARY_FR,
+  revision: ORDER_REVISE_FR,
   authorCustomer: 'passée par {name}',
   authorTeam: 'par l’équipe',
   detailSite: 'Site',
@@ -349,6 +599,7 @@ export const ORDERS_EN: OrdersCopy = {
   filterSite: 'Site',
   filterAllSites: 'All sites',
   summary: ORDER_SUMMARY_EN,
+  revision: ORDER_REVISE_EN,
   authorCustomer: 'placed by {name}',
   authorTeam: 'by our team',
   detailSite: 'Site',
@@ -463,6 +714,7 @@ export const ORDERS_IT: OrdersCopy = {
   filterSite: 'Sede',
   filterAllSites: 'Tutte le sedi',
   summary: ORDER_SUMMARY_IT,
+  revision: ORDER_REVISE_IT,
   authorCustomer: 'effettuato da {name}',
   authorTeam: 'dal nostro team',
   detailSite: 'Sede',

@@ -3,6 +3,7 @@ import { provideRouter } from '@angular/router';
 
 import { FR } from '../../copy/fr';
 import { OrderCancellationGateway } from '../../order-cancellation/order-cancellation.gateway';
+import { OrderRevisionGateway } from '../../order-revision/order-revision.gateway';
 import { ROWS } from '../order-rows.fixture';
 import { OrderDetail } from './order-detail';
 
@@ -22,6 +23,8 @@ describe('OrderDetail', () => {
           provide: OrderCancellationGateway,
           useValue: { cancellability: () => Promise.resolve(null) },
         },
+        // La modification aussi (plan de modification, §6).
+        { provide: OrderRevisionGateway, useValue: { order: () => Promise.resolve(null) } },
       ],
     });
     fixture = TestBed.createComponent(OrderDetail);

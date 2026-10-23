@@ -24,6 +24,7 @@ import { cancellationRefundSentenceOf } from "../../domain/services/order-cancel
 import { settlementRegimeOf } from "../../domain/services/settlement-regime.js";
 import type { CancellationSubject } from "../../domain/ports/cancellation-subject.reader.js";
 import { AdminOrderRefundView } from "../services/admin-order-refund-view.js";
+import { OrderRevisabilityReading } from "../services/order-revisability-reading.js";
 import { CancellationRule } from "../services/cancellation-rule.js";
 import { VoucherRestitutionRefusal } from "../services/voucher-restitution-refusal.js";
 import { GetAdminOrderQuery } from "./get-admin-order.query.js";
@@ -43,6 +44,10 @@ import { GetAdminOrderQuery } from "./get-admin-order.query.js";
  * Lot C3b (C3b.7) : quand la règle de commande laisse passer et que la
  * commande porte un bon, l'aperçu de la restitution dit ce que deviendra le
  * bon (`voucher`, avec sa phrase) — ou en fait le refus des cas 5 et 6.
+ *
+ * Depuis le 2026-10-23 (plan `documentation/commandes/plan-modifier-une-commande.md`,
+ * §6), il dit aussi si l'équipe peut la modifier, par la règle du geste, et
+ * sa révision courante.
  */
 @QueryHandler(GetAdminOrderQuery)
 export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, AdminOrderView> {
@@ -57,16 +62,18 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
     private readonly rule: CancellationRule,
     private readonly refunds: AdminOrderRefundView,
     private readonly clock: Clock,
+    private readonly revisions: OrderRevisabilityReading,
   ) {}
 
   async execute(query: GetAdminOrderQuery): Promise<AdminOrderView> {
-    const [owned, author, cancellability, refund] = await Promise.all([
+    const [owned, author, cancellability, refund, revision] = await Promise.all([
       this.orders.findById(query.orderId),
       this.authors.authorOf(query.orderId),
       this.cancellabilityOf(query.orderId),
       this.refunds.of(query.orderId),
+      this.revisions.forStaff(query.orderId),
     ]);
-    if (owned === null || author === null || cancellability === null) {
+    if (owned === null || author === null || cancellability === null || revision === null) {
       throw new OrderNotFoundError(query.orderId);
     }
     const staffAuthors = await this.staff.identify([author.placedByStaffId]);
@@ -80,6 +87,8 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
       },
       cancellability,
       refund,
+      revisability: revision.revisability,
+      revision: revision.revision,
     };
   }
 
