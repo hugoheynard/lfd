@@ -1,0 +1,20 @@
+.pp-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+}
+
+.pp-lots {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pp-lot {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}

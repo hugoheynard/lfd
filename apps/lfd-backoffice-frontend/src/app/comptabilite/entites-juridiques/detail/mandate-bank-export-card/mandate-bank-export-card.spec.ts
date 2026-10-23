@@ -63,6 +63,7 @@ const BASE_ENTITY: LegalEntityView = {
     plannedConstitutionAt: '2026-11-01T00:00:00.000Z',
     collectionDay: '2026-11-16',
     depositDeadline: null,
+    tightDepositMargin: null,
   },
   mandateContractDescription: '',
   mandatePaymentType: 'recurrent',
@@ -204,6 +205,15 @@ describe('la carte « Mandats à la banque »', () => {
     button(fixture, "Préparer l'export")?.click();
     await settle(fixture);
     expect(service.calls).toEqual(['of', 'prepare:le1:false', 'file:le1:exp_created', 'of']);
+  });
+
+  it('émet `changed` après le geste, une fois la carte relue', async () => {
+    const fixture = await render();
+    let count = 0;
+    fixture.componentInstance.changed.subscribe(() => (count += 1));
+    button(fixture, "Préparer l'export")?.click();
+    await fixture.whenStable();
+    expect(count).toBe(1);
   });
 
   it('rien à exporter : « Préparer » est inactif, sauf en cochant « tous »', async () => {

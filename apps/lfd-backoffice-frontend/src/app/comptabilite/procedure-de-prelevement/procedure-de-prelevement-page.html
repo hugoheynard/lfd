@@ -1,0 +1,131 @@
+<fold-page-layout [title]="title()" separator>
+  <p description>
+    @if (view()?.followed; as lot) {
+      Lot suivi&nbsp;: {{ lot.scheme }} · {{ shortLabel(lot) }} · {{ deadline(lot) }}.
+    } @else if (entity(); as current) {
+      Prochaine clôture le {{ longDay(current.nextCollection.closesAt) }}.
+    } @else {
+      La procédure écrite, onglet par onglet&nbsp;: comptes, mandats, fichier, retours.
+    }
+  </p>
+
+  @if (loading()) {
+    <fold-loading message="Lecture de la procédure…" />
+  } @else if (loadError(); as message) {
+    <fold-empty-state
+      tone="alert"
+      title="Impossible de lire la procédure de prélèvement"
+      [subtitle]="message"
+    >
+      <button foldButton (click)="load()">Réessayer</button>
+      @if (entityId(); as id) {
+        <button foldButton emphasis="outline" (click)="choose(id)">Suivre le lot par défaut</button>
+      }
+    </fold-empty-state>
+  } @else if (entity(); as current) {
+    <div class="pp-stack">
+      @if (entityOptions().length > 1) {
+        <fold-listbox
+          label="Entité émettrice"
+          [options]="entityOptions()"
+          [value]="entityId()"
+          (valueChange)="choose($event)"
+        />
+      }
+
+      @if (view(); as state) {
+        <!-- Q4 : tous les lots ouverts, la limite de dépôt la plus proche d'abord ; jamais repliés. -->
+        @if (state.openBatches.length > 1) {
+          <ul class="pp-lots" aria-label="Lots ouverts" data-open-batches>
+            @for (lot of state.openBatches; track lot.id) {
+              <li class="pp-lot">
+                <span>
+                  {{ lot.scheme }} · {{ shortLabel(lot) }} ·
+                  {{ lot.status === 'constituted' ? deadline(lot) : 'déposé, retours suivis' }}
+                </span>
+                @if (lot.id !== state.followed?.id) {
+                  <button foldButton emphasis="soft" size="sm" (click)="follow(lot.id)">
+                    Suivre
+                  </button>
+                }
+              </li>
+            }
+          </ul>
+        }
+
+        <fold-tabs
+          #bar="foldTabs"
+          size="comfortable"
+          activeStyle="fill"
+          background="surface"
+          [tabs]="tabs()"
+          [(activeKey)]="tab"
+        />
+
+        <fold-tab-panel [tabs]="bar" [key]="tab()">
+          <div class="pp-stack">
+            @if (stepState() === 'locked') {
+              @if (lockReason(); as lock) {
+                <fold-callout variant="neutral" icon="lock" data-locked>
+                  {{ lock.text }}
+                  <button actions foldButton emphasis="outline" (click)="goTo(lock.go)">
+                    Aller à l’onglet
+                  </button>
+                </fold-callout>
+              }
+            } @else if (stepState() === 'done') {
+              <fold-callout variant="success" data-nothing-to-do>
+                Aucune action à mener.
+                @if (hasNext()) {
+                  <button actions foldButton (click)="next()" data-next>Suivant</button>
+                }
+              </fold-callout>
+            }
+
+            @if (gestures.actionError(); as message) {
+              <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+            }
+
+            @switch (tab()) {
+              @case ('accounts') {
+                <app-account-bank-export-card [entity]="current" (changed)="onCardChanged()" />
+              }
+              @case ('mandates') {
+                @if (stepState() !== 'locked') {
+                  <app-mandate-bank-export-card [entity]="current" (changed)="onCardChanged()" />
+                }
+              }
+              @case ('file') {
+                <app-procedure-file-step
+                  [view]="state"
+                  [batch]="followedBatch()"
+                  [canWrite]="canWrite()"
+                  [pending]="gestures.pending()"
+                  (gesture)="onGesture($event)"
+                  (prepare)="prepare()"
+                  (follow)="follow($event)"
+                />
+              }
+              @case ('returns') {
+                @if (stepState() !== 'locked') {
+                  <app-procedure-returns-step
+                    [returns]="state.returns"
+                    [batch]="followedBatch()"
+                    [canWrite]="canWrite()"
+                  />
+                }
+              }
+            }
+          </div>
+        </fold-tab-panel>
+      }
+    </div>
+  } @else {
+    <fold-empty-state
+      title="Aucune entité émettrice"
+      subtitle="La procédure se suit sous une entité juridique qui peut encaisser."
+    >
+      <fold-icon empty-icon name="banknote" />
+    </fold-empty-state>
+  }
+</fold-page-layout>

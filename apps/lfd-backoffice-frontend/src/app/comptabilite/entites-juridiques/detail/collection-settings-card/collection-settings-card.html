@@ -9,6 +9,13 @@
     <section class="cs-block" aria-labelledby="cs-calendar-title">
       <h3 id="cs-calendar-title" class="cs-heading">Le calendrier de la prochaine clôture</h3>
       <app-collection-calendar [calendar]="entity().nextCollection" />
+      <!-- Un avertissement, jamais un refus (Hugo, 2026-10-23). `@let` : 0 est un compte. -->
+      @let margin = entity().nextCollection.tightDepositMargin;
+      @if (margin !== null) {
+        <fold-callout variant="warning" data-tight-margin>{{
+          marginSentence(margin)
+        }}</fold-callout>
+      }
     </section>
 
     <section class="cs-block" aria-labelledby="cs-auto-title">

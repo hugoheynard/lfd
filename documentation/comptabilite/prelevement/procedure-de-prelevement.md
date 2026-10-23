@@ -7,8 +7,18 @@
 > le mécanisme (les docs d'état le font) : elle dit **qui fait quoi, quand, où,
 > et ce qu'on vérifie**. Contredite par `vitruve` le même jour (§ 7).
 >
-> Son écran est planifié dans [`plan-page-procedure-de-prelevement.md`](plan-page-procedure-de-prelevement.md)
-> (doc-first, 2026-10-23) : une page à onglets qui suit ces étapes.
+> **Son écran existe depuis le 2026-10-23 (lot P2, non commité à l'écriture
+> de cette ligne)** : Comptabilité › **Procédure de prélèvement**
+> (`/comptabilite/procedure-de-prelevement?entite=…&lot=…`), quatre onglets
+> — 1 Comptes (§ 1), 2 Mandats (§ 1), 3 Fichier (§ 2.2 à § 2.9), 4 Retours
+> (§ 3) — dont l'état est relu au serveur à chaque affichage
+> (`GET admin/accounting/collection-procedure`), jamais stocké. Le titre dit
+> le lot suivi (rythme et période), les lots ouverts sont listés en tête, la
+> limite de dépôt la plus proche d'abord. Ce qu'il ne fait **pas encore** : les
+> attestations hors outil — contrôle CSV relu, remise signée, PSR lus, retours
+> contrôlés (P3) — et le verrou de l'onglet 3 par débiteur du lot (P4) ; d'ici
+> là, l'onglet 3 **avertit** des mandats non importés de l'entité, il ne
+> bloque pas. Plan : [`plan-page-procedure-de-prelevement.md`](plan-page-procedure-de-prelevement.md).
 >
 > 🔴 **Aujourd'hui, aucune remise ne peut partir** : le contrat CENET REMISES
 > n'est pas signé ([`reponses-de-la-banque.md`](reponses-de-la-banque.md) § 3).
@@ -414,19 +424,19 @@ pour tenir le préavis.
 
 ## 5. Ce qui manque dans l'outil, en un coup d'œil
 
-| Manque                                                                                                      | Effet sur la procédure                                 | Référence                                                       |
-| ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | --------------------------------------------------------------- |
-| ~~Export des mandats non conforme~~ — corrigé le 2026-10-23 ; reste K et L à confirmer (Q-B2)               | 🟡 vérification CENET avant le premier import          | [`prerequis-export-mandats.md`](prerequis-export-mandats.md)    |
-| ~~Export des comptes destinataires~~ — bâti le 2026-10-23 (`5a7e9c6f4`) ; valeurs à confirmer par la banque | 🟡 vérification CENET avant le premier import          | [`prerequis-export-ribs.md`](prerequis-export-ribs.md) § 7, § 8 |
-| Limite de dépôt non renseignée (D4)                                                                         | aucune date limite affichée                            | § 0.4                                                           |
-| « Marquer importé sauf les RUM en erreur » ; borne de 200 lignes                                            | un import partiel oblige à tout ré-exporter            | réponses 12, 13                                                 |
-| Avertissement plafond, mandat non importé                                                                   | contrôles à la main au § 2.4                           | réponses 2, 15                                                  |
-| Lien entre une remise CENET et le lot (signature, PSR)                                                      | « Marquer déposé » reste une déclaration humaine       | réponse 24                                                      |
-| « Annuler » ouvert sur un lot dont la remise est signée ; pas de « dé-déposer »                             | règle écrite seulement (§ 2.7), risque de double débit | `collection-batch.ts:196-199`                                   |
-| Alerte d'un lot préparé et jamais déposé                                                                    | un oubli ne se voit pas                                | § 2.7                                                           |
-| Échéance repoussée pour une limite de dépôt passée                                                          | contrôle à la main                                     | § 4.1                                                           |
-| Import des retours jamais éprouvé ; rejet de lot entier non lu                                              | vérifier chaque import à la main la première fois      | [`retours-bancaires.md`](retours-bancaires.md)                  |
-| Remboursement d'un prélèvement à tort, frais refacturés, écriture de perte                                  | hors outil                                             | § 3, § 4.2                                                      |
+| Manque                                                                                                                                                                                                | Effet sur la procédure                                 | Référence                                                       |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | --------------------------------------------------------------- |
+| ~~Export des mandats non conforme~~ — corrigé le 2026-10-23 ; reste K et L à confirmer (Q-B2)                                                                                                         | 🟡 vérification CENET avant le premier import          | [`prerequis-export-mandats.md`](prerequis-export-mandats.md)    |
+| ~~Export des comptes destinataires~~ — bâti le 2026-10-23 (`5a7e9c6f4`) ; valeurs à confirmer par la banque                                                                                           | 🟡 vérification CENET avant le premier import          | [`prerequis-export-ribs.md`](prerequis-export-ribs.md) § 7, § 8 |
+| Limite de dépôt non renseignée (D4)                                                                                                                                                                   | aucune date limite affichée                            | § 0.4                                                           |
+| « Marquer importé sauf les RUM en erreur » ; borne de 200 lignes                                                                                                                                      | un import partiel oblige à tout ré-exporter            | réponses 12, 13                                                 |
+| Avertissement plafond, mandat non importé                                                                                                                                                             | contrôles à la main au § 2.4                           | réponses 2, 15                                                  |
+| Lien entre une remise CENET et le lot (signature, PSR)                                                                                                                                                | « Marquer déposé » reste une déclaration humaine       | réponse 24                                                      |
+| « Annuler » ouvert sur un lot dont la remise est signée ; pas de « dé-déposer »                                                                                                                       | règle écrite seulement (§ 2.7), risque de double débit | `collection-batch.ts:196-199`                                   |
+| Alerte d'un lot préparé et jamais déposé — en partie : la page « Procédure de prélèvement » liste en tête tout lot non déposé, limite la plus proche d'abord (P2, 2026-10-23) ; aucune alerte poussée | un oubli ne se voit que sur la page                    | § 2.7                                                           |
+| Échéance repoussée pour une limite de dépôt passée                                                                                                                                                    | contrôle à la main                                     | § 4.1                                                           |
+| Import des retours jamais éprouvé ; rejet de lot entier non lu                                                                                                                                        | vérifier chaque import à la main la première fois      | [`retours-bancaires.md`](retours-bancaires.md)                  |
+| Remboursement d'un prélèvement à tort, frais refacturés, écriture de perte                                                                                                                            | hors outil                                             | § 3, § 4.2                                                      |
 
 ---
 

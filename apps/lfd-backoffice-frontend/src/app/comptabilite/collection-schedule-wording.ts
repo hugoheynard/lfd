@@ -106,3 +106,18 @@ export function depositExample(businessDays: number | null, time: string): strin
     'Rien n’est bloqué : c’est un rappel.'
   );
 }
+
+/**
+ * L'avertissement « moins de 2 jours ouvrés avant la limite de dépôt » (Hugo,
+ * 2026-10-23, plan `plan-page-procedure-de-prelevement.md` § 9) — le même sur
+ * la carte des réglages et sur l'onglet 3 de la procédure. Le compte vient du
+ * serveur (`tightDepositMargin`) : seul lui connaît les jours ouvrés bancaires.
+ */
+export function tightDepositMarginSentence(margin: number): string {
+  const left = margin === 0 ? 'il ne reste aucun jour ouvré' : 'il ne reste qu’un jour ouvré';
+  return (
+    `Entre la préparation du lot et la limite de dépôt à la banque, ${left} : moins de deux ` +
+    'pour relire le contrôle, déposer le fichier et le signer. Rien n’est refusé — allongez ' +
+    'l’écart entre la clôture et le prélèvement si vous le pouvez.'
+  );
+}

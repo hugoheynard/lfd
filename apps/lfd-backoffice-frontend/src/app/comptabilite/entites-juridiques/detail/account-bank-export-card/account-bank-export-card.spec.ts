@@ -60,6 +60,7 @@ const BASE_ENTITY: LegalEntityView = {
     plannedConstitutionAt: '2026-11-01T00:00:00.000Z',
     collectionDay: '2026-11-16',
     depositDeadline: null,
+    tightDepositMargin: null,
   },
   mandateContractDescription: '',
   mandatePaymentType: 'recurrent',
@@ -191,6 +192,15 @@ describe('la carte « Comptes à la banque »', () => {
     buttons(fixture, "Préparer l'export des comptes")[0]?.click();
     await fixture.whenStable();
     expect(service.calls).toEqual(['of', 'prepare:le1', 'file:le1:exp_created', 'of']);
+  });
+
+  it('émet `changed` après le geste, une fois la carte relue — la procédure recalcule ses onglets', async () => {
+    const fixture = await render();
+    const seen: string[] = [];
+    fixture.componentInstance.changed.subscribe(() => seen.push([...service.calls].pop() ?? ''));
+    buttons(fixture, "Préparer l'export des comptes")[0]?.click();
+    await fixture.whenStable();
+    expect(seen).toEqual(['of']);
   });
 
   it('rien à exporter : « Préparer » est inactif', async () => {

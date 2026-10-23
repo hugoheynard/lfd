@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  effect,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
 import type {
   LegalEntityView,
   MandateBankExportSummaryView,
@@ -64,6 +72,13 @@ export class MandateBankExportCard {
   private readonly service = inject(MandateBankExportsService);
 
   readonly entity = input.required<LegalEntityView>();
+
+  /**
+   * Après chaque geste, réussi ou refusé, une fois la carte relue : l'hôte
+   * qui calcule un état à partir des mandats (la page « Procédure de
+   * prélèvement ») le relit. La fiche de l'entité ne l'écoute pas.
+   */
+  readonly changed = output();
 
   protected readonly view = signal<MandateBankExportsView | null>(null);
   protected readonly loadError = signal<string | null>(null);
@@ -135,6 +150,7 @@ export class MandateBankExportCard {
     } finally {
       await this.load();
       this.busy.set(false);
+      this.changed.emit();
     }
   }
 }

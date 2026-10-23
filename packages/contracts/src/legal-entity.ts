@@ -138,6 +138,15 @@ export interface CollectionCalendarView {
   readonly collectionDay: string;
   /** `null` = cut-off « à renseigner ». */
   readonly depositDeadline: LocalDeadlineView | null;
+  /**
+   * Jours ouvrés TARGET2 entre la constitution prévue et la limite de dépôt,
+   * quand il y en a MOINS de deux (Hugo, 2026-10-23, plan
+   * `plan-page-procedure-de-prelevement.md` § 9) : le délai de
+   * pré-notification laisse trop peu de temps pour contrôler et déposer.
+   * `null` sinon, ou si la limite n'est pas renseignée. L'écran avertit, il
+   * ne refuse rien.
+   */
+  readonly tightDepositMargin: number | null;
 }
 
 /**

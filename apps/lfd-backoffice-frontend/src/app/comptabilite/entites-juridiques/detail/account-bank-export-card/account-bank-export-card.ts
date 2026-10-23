@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  effect,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
 import type {
   AccountBankAccountView,
   AccountBankExportSummaryView,
@@ -60,6 +68,13 @@ export class AccountBankExportCard {
   private readonly service = inject(AccountBankExportsService);
 
   readonly entity = input.required<LegalEntityView>();
+
+  /**
+   * Après chaque geste, réussi ou refusé, une fois la carte relue : l'hôte
+   * qui calcule un état à partir des comptes (la page « Procédure de
+   * prélèvement ») le relit. La fiche de l'entité ne l'écoute pas.
+   */
+  readonly changed = output();
 
   protected readonly view = signal<AccountBankExportsView | null>(null);
   protected readonly loadError = signal<string | null>(null);
@@ -138,6 +153,7 @@ export class AccountBankExportCard {
     } finally {
       await this.load();
       this.busy.set(false);
+      this.changed.emit();
     }
   }
 }

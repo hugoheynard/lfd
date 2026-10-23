@@ -177,6 +177,19 @@ export {
   INVOICE_PREFIX_MAX_LENGTH,
 } from "./legal-entity.js";
 export type { BillingCycleView } from "./billing-cycle.js";
+export type {
+  CollectionProcedureAccountsView,
+  CollectionProcedureBatchView,
+  CollectionProcedureFileReasonView,
+  CollectionProcedureFileView,
+  CollectionProcedureMandatesView,
+  CollectionProcedureReturnsReasonView,
+  CollectionProcedureReturnsView,
+  CollectionProcedureStepKeyView,
+  CollectionProcedureStepStateView,
+  CollectionProcedureToPrepareView,
+  CollectionProcedureView,
+} from "./collection-procedure.js";
 export { exportMandatesForBankPayloadSchema } from "./mandate-bank-export.js";
 export type {
   ExportMandatesForBankPayload,

@@ -1,7 +1,11 @@
 import { addDays, instantToLocal } from "@lfd/contracts";
 
 import type { DepositCutoff } from "../value-objects/collection-schedule.js";
-import { businessDaysBefore, onOrAfterBusinessDay } from "./target2-calendar.js";
+import {
+  businessDaysBefore,
+  isTarget2BusinessDay,
+  onOrAfterBusinessDay,
+} from "./target2-calendar.js";
 
 const HOUR_MS = 3_600_000;
 
@@ -117,4 +121,35 @@ export function frozenCollectionDay(
     return { day: calendarDay, postponedFrom: null };
   }
   return { day: onOrAfterBusinessDay(earliest), postponedFrom: calendarDay };
+}
+
+/**
+ * Le moins de jours ouvrés qu'on laisse entre la préparation d'un lot et sa
+ * limite de dépôt sans avertir (Hugo, 2026-10-23, plan
+ * `plan-page-procedure-de-prelevement.md` § 9) : relire le contrôle, déposer,
+ * signer — et la limite elle-même reste incertaine (J-1 ou J-2,
+ * `reponses-de-la-banque.md`, étape 6).
+ */
+export const DEPOSIT_MARGIN_MIN_BUSINESS_DAYS = 2;
+
+/**
+ * Les jours ouvrés TARGET2 entre `fromDay` (exclu) et le jour de la limite
+ * (inclus), quand il y en a MOINS de {@link DEPOSIT_MARGIN_MIN_BUSINESS_DAYS} ;
+ * `null` sinon, ou sans limite renseignée — on n'avertit pas sur une valeur
+ * qu'on n'a pas.
+ */
+export function tightDepositMargin(fromDay: string, deadline: LocalDeadline | null): number | null {
+  if (deadline === null) {
+    return null;
+  }
+  let margin = 0;
+  for (let day = addDays(fromDay, 1); day <= deadline.day; day = addDays(day, 1)) {
+    if (isTarget2BusinessDay(day)) {
+      margin += 1;
+    }
+    if (margin >= DEPOSIT_MARGIN_MIN_BUSINESS_DAYS) {
+      return null;
+    }
+  }
+  return margin;
 }

@@ -763,6 +763,15 @@ export const COMPTABILITE_VIEWS: readonly WorkspaceView[] = [
     needs: 'b2b_accounting:read',
   },
   {
+    // Au-dessus de « Prélèvement du mois » : le fil d'un lot, quand l'autre
+    // est la vue d'ensemble du mois (plan `plan-page-procedure-de-prelevement.md`).
+    key: 'procedure-de-prelevement',
+    label: 'Procédure de prélèvement',
+    link: '/comptabilite/procedure-de-prelevement',
+    icon: 'timeline',
+    needs: 'b2b_accounting:read',
+  },
+  {
     key: 'prelevement-du-mois',
     label: 'Prélèvement du mois',
     link: '/comptabilite/prelevement-du-mois',

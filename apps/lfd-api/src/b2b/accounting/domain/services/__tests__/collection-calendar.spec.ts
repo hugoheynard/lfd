@@ -2,6 +2,7 @@ import {
   collectionCalendar,
   collectionDayOf,
   frozenCollectionDay,
+  tightDepositMargin,
 } from "../collection-calendar.js";
 
 /**
@@ -125,5 +126,31 @@ describe("frozenCollectionDay — l'échéance figée sur le lot (D4)", () => {
       day: "2026-12-28",
       postponedFrom: "2026-12-24",
     });
+  });
+});
+
+describe("tightDepositMargin — l'avertissement « moins de 2 jours ouvrés » (Hugo, 2026-10-23)", () => {
+  const AT = "13:45";
+
+  it("aucune limite renseignée : aucun avertissement, on ne calcule rien à la place de l'entité", () => {
+    expect(tightDepositMargin("2026-11-02", null)).toBeNull();
+  });
+
+  it("deux jours ouvrés ou plus : rien à dire", () => {
+    // lundi 2 → mercredi 4 : mardi, mercredi.
+    expect(tightDepositMargin("2026-11-02", { day: "2026-11-04", time: AT })).toBeNull();
+  });
+
+  it("un seul jour ouvré : l'avertissement le compte", () => {
+    expect(tightDepositMargin("2026-11-02", { day: "2026-11-03", time: AT })).toBe(1);
+  });
+
+  it("le week-end ne compte pas : vendredi → lundi = un jour ouvré", () => {
+    expect(tightDepositMargin("2026-11-06", { day: "2026-11-09", time: AT })).toBe(1);
+  });
+
+  it("la limite le jour même, ou déjà passée : zéro", () => {
+    expect(tightDepositMargin("2026-11-04", { day: "2026-11-04", time: AT })).toBe(0);
+    expect(tightDepositMargin("2026-11-05", { day: "2026-11-04", time: AT })).toBe(0);
   });
 });

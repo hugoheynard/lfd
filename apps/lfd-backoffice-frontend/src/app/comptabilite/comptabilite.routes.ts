@@ -53,6 +53,18 @@ export const comptabiliteRoutes: Routes = [
           ),
       },
       {
+        // LA PROCÉDURE DE PRÉLÈVEMENT — le fil d'un lot, en quatre onglets qui
+        // se déverrouillent ; leur état est relu au serveur, jamais stocké.
+        // Les gestes demandent `b2b_accounting:write`.
+        // Plan : documentation/comptabilite/prelevement/plan-page-procedure-de-prelevement.md (P2).
+        path: 'procedure-de-prelevement',
+        title: 'Procédure de prélèvement — LFC B2B admin',
+        loadComponent: () =>
+          import('./procedure-de-prelevement/procedure-de-prelevement-page').then(
+            (m) => m.ProcedureDePrelevementPage,
+          ),
+      },
+      {
         // LE MOIS DU PRÉLÈVEMENT, de haut en bas : son calendrier, l'aperçu de
         // ce qui sera prélevé, le lot à déposer, l'historique. Les gestes
         // demandent `b2b_accounting:write`.

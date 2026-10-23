@@ -1,0 +1,10 @@
+<div class="pr-stack">
+  @if (sentence() !== '') {
+    <fold-callout [variant]="returns().state === 'done' ? 'success' : 'info'" data-returns-sentence>
+      {{ sentence() }}
+    </fold-callout>
+  }
+  @if (batches().length > 0) {
+    <app-bank-returns [batches]="batches()" [canWrite]="canWrite()" />
+  }
+</div>

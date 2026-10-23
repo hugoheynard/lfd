@@ -1,0 +1,10 @@
+.pf-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.pf-deadline {
+  margin: 0;
+  font-size: var(--fold-text-lg);
+}

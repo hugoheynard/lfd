@@ -1,7 +1,8 @@
 # Plan — la page « Procédure de prélèvement »
 
-> 📝 **Doc-first, écrit le 2026-10-23.** Seul **P1** est bâti (2026-10-23, non
-> commité à l'écriture de cette ligne — § 8) ; la page elle-même ne l'est pas.
+> 📝 **Doc-first, écrit le 2026-10-23.** **P1** et **P2** sont bâtis
+> (2026-10-23 — § 8) : la page existe, sans attestations (P3) ni verrou par
+> débiteur du lot (P4).
 > Questions du § 9 **tranchées** le même jour. Demande de Hugo, ce
 > jour-là : « dans comptabilité on doit avoir une page procédure de
 > prélèvement, en gros des onglets qui se déverrouillent au fur et à mesure
@@ -395,9 +396,28 @@ procédure par lot. S1 est une lecture ; elle n'écrit rien (CQRS).
    téléchargement du fichier des mandats est journalisé
    (`mandate_bank_export.downloaded`), et un export abandonné ne se
    télécharge plus.
-2. **P2** — 🔴 **exige P1** (sans « Abandonner », un export de mandats
+2. ~~**P2** — 🔴 **exige P1** (sans « Abandonner », un export de mandats
    rejeté fige l'onglet 2 et masque l'onglet 3). S1 sans attestations ni S2 : la page, les quatre onglets, cartes
-   réutilisées, verrou de l'onglet 3 en **avertissement**. Utile tout de suite.
+   réutilisées, verrou de l'onglet 3 en **avertissement**. Utile tout de suite.~~
+   **Bâti le 2026-10-23** (non commité à l'écriture) : S1
+   `GET admin/accounting/collection-procedure?legalEntityId=&batchId=`
+   (`GetCollectionProcedureHandler`, état pur dans
+   `apps/lfd-api/src/b2b/accounting/domain/services/collection-procedure.ts`), S5 (`CollectionBatchGestures`,
+   partagé avec « Prélèvement du mois »), sortie `changed` des deux cartes
+   d'export, la page et son entrée de menu, l'avertissement « moins de 2 jours
+   ouvrés » (`tightDepositMargin`) sur la carte « Prélèvement automatique » et
+   l'onglet 3. **Écarts assumés jusqu'à P3**, faute d'attestation : l'onglet 3
+   est « fait » au **dépôt** (sans la signature attestée) ; l'onglet 4 est « à
+   faire » chaque jour de [échéance, échéance + 5 jours ouvrés] (le contrôle
+   quotidien ne s'atteste pas encore), puis « fait » sans retour en suspens.
+   **Titre de la page** (Hugo, 2026-10-23) : « Procédure de prélèvement —
+   <rythme> — période du … au … », rythme et période lus au serveur
+   (`payerModes`, `periodLabel` du lot) ; **une clôture qui réunit plusieurs
+   rythmes** dans un même lot — une fin de mois commune au mensuel et au
+   « deux fois par mois » — les nomme tous, mensuel d'abord (« Mensuel et deux
+   fois par mois ») ; sans lot ouvert, « Procédure de prélèvement » et la
+   prochaine clôture en sous-titre. Les lots ouverts en tête portent le même
+   libellé court (rythme · période).
 3. **P3** — S4 : les attestations, l'onglet 3 complet, l'onglet 4.
 4. **P4** — S2 : le verrou de l'onglet 3 par débiteur du lot.
 

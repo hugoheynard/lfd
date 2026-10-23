@@ -52,6 +52,7 @@ function entity(over: Partial<LegalEntityView> = {}): LegalEntityView {
       plannedConstitutionAt: '2026-11-01T00:00:00.000Z',
       collectionDay: '2026-11-16',
       depositDeadline: null,
+      tightDepositMargin: null,
     },
     mandateContractDescription: '',
     mandatePaymentType: 'recurrent',
@@ -211,10 +212,32 @@ describe('CollectionSettingsCard — le prélèvement automatique', () => {
         plannedConstitutionAt: '2026-11-01T00:00:00.000Z',
         collectionDay: '2026-11-16',
         depositDeadline: { day: '2026-11-12', time: '16:00' },
+        tightDepositMargin: null,
       },
     });
 
     expect(text(fixture)).toContain('avant le 12 nov. 2026 à 16:00');
+  });
+
+  it('avertit quand le serveur compte moins de deux jours ouvrés avant la limite — 0 compris', () => {
+    const tight = (margin: number | null) =>
+      boot({
+        nextCollection: {
+          closesAt: '2026-10-31T23:00:00.000Z',
+          plannedConstitutionAt: '2026-11-01T00:00:00.000Z',
+          collectionDay: '2026-11-03',
+          depositDeadline: { day: '2026-11-02', time: '13:45' },
+          tightDepositMargin: margin,
+        },
+      });
+    const warned = (margin: number | null) =>
+      (tight(margin).nativeElement as HTMLElement).querySelector('[data-tight-margin]');
+
+    expect(warned(0)?.textContent).toContain('il ne reste aucun jour ouvré');
+    TestBed.resetTestingModule();
+    expect(warned(1)?.textContent).toContain('il ne reste qu’un jour ouvré');
+    TestBed.resetTestingModule();
+    expect(warned(null)).toBeNull();
   });
 
   it('enregistre le calendrier saisi, cut-off compris', async () => {

@@ -32,6 +32,7 @@ import {
   daysTooShort,
   delayExample,
   depositExample,
+  tightDepositMarginSentence,
 } from '../../../collection-schedule-wording';
 import { LegalEntitiesService } from '../../../legal-entities.service';
 
@@ -91,6 +92,7 @@ export class CollectionSettingsCard {
   protected readonly maxDays = COLLECTION_DAYS_MAX;
   protected readonly minCutoff = DEPOSIT_CUTOFF_MIN_BUSINESS_DAYS;
   protected readonly maxCutoff = DEPOSIT_CUTOFF_MAX_BUSINESS_DAYS;
+  protected readonly marginSentence = tightDepositMarginSentence;
 
   protected readonly delayDraft = signal<number | null>(null);
   /** Vide = l'échéance suit le délai de pré-notification. */

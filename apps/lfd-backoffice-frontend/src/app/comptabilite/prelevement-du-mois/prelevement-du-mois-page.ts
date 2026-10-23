@@ -23,14 +23,14 @@ import { httpErrorMessage } from '@lfd/endpoints';
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { NotifyService } from '../../notify.service';
-import { saveBlob } from '../../shared/download/save-blob';
+import { CollectionBatchGestures, type BatchDownload } from '../collection-batch-gestures';
 import { CollectionBatchesService } from '../collection-batches.service';
 import { longDay, sameClosure } from '../collection-month-wording';
 import { LegalEntitiesService } from '../legal-entities.service';
 import { day } from '../invoice-dossier-format';
 import { MonthlyInvoicesService } from '../monthly-invoices.service';
 import { BankReturns } from './bank-returns/bank-returns';
-import { BatchHistory, type HistoryDownload } from './batch-history/batch-history';
+import { BatchHistory } from './batch-history/batch-history';
 import { ExcludedOrders } from './excluded-orders/excluded-orders';
 import { CardInvoiceSignals } from './card-invoice-signals/card-invoice-signals';
 import { UnconfirmedDeliveries } from './unconfirmed-deliveries/unconfirmed-deliveries';
@@ -91,6 +91,7 @@ import { SettlePanel } from './settle-panel/settle-panel';
     MonthSchedule,
     PendingBatch,
   ],
+  providers: [CollectionBatchGestures],
   templateUrl: './prelevement-du-mois-page.html',
   styleUrl: './prelevement-du-mois-page.scss',
 })
@@ -99,6 +100,7 @@ export class PrelevementDuMoisPage {
   private readonly entitiesApi = inject(LegalEntitiesService);
   private readonly invoicesApi = inject(MonthlyInvoicesService);
   private readonly notify = inject(NotifyService);
+  private readonly gestures = inject(CollectionBatchGestures);
   private readonly panels = inject(FoldPanelHostService);
   private readonly permissions = inject(PermissionsStore);
 
@@ -111,8 +113,8 @@ export class PrelevementDuMoisPage {
   protected readonly invoicesError = signal<string | null>(null);
   protected readonly loading = signal(true);
   protected readonly loadError = signal<string | null>(null);
-  protected readonly actionError = signal<string | null>(null);
-  protected readonly pending = signal<string | null>(null);
+  protected readonly actionError = this.gestures.actionError;
+  protected readonly pending = this.gestures.pending;
 
   protected readonly canWrite = computed(() => this.permissions.can('b2b_accounting:write'));
 
@@ -274,14 +276,12 @@ export class PrelevementDuMoisPage {
   protected async prepare(): Promise<void> {
     const entityId = this.entityId();
     if (entityId !== null) {
-      await this.act('prepare', async () => {
-        const { batchIds } = await this.api.constitute(entityId);
-        this.notify.success(
-          batchIds.length === 0
-            ? 'Aucun lot préparé : les bons écartés sont listés plus bas.'
-            : `Lot ${this.lotName()} préparé.`,
-        );
-      });
+      await this.gestures.prepare(
+        entityId,
+        this.lotName(),
+        'Aucun lot préparé : les bons écartés sont listés plus bas.',
+        () => this.load(),
+      );
     }
   }
 
@@ -289,29 +289,11 @@ export class PrelevementDuMoisPage {
     batch: CollectionBatchView,
     gesture: PendingBatchGesture,
   ): Promise<void> {
-    if (gesture === 'xml' || gesture === 'csv') {
-      await this.download({ batch, kind: gesture });
-    } else if (gesture === 'deposit') {
-      await this.act(batch.id, async () => {
-        await this.api.deposit(batch.id);
-        this.notify.success('Lot marqué déposé.');
-      });
-    } else {
-      await this.act(batch.id, async () => {
-        await this.api.cancel(batch.id);
-        this.notify.success('Lot annulé : ses bons repassent à prélever.');
-      });
-    }
+    await this.gestures.onGesture(batch, gesture, () => this.load());
   }
 
-  protected async download({ batch, kind }: HistoryDownload): Promise<void> {
-    this.actionError.set(null);
-    try {
-      const file = kind === 'xml' ? await this.api.file(batch.id) : await this.api.audit(batch.id);
-      saveBlob(file.blob, file.fileName ?? `lot-${batch.id}.${kind}`);
-    } catch (caught) {
-      this.actionError.set(httpErrorMessage(caught, 'Téléchargement impossible.'));
-    }
+  protected async download(download: BatchDownload): Promise<void> {
+    await this.gestures.download(download);
   }
 
   protected async settle(row: CollectionExclusionView): Promise<void> {
@@ -324,17 +306,8 @@ export class PrelevementDuMoisPage {
     }
   }
 
-  /** Un geste : son refus s'affiche avec les mots du serveur, puis on relit. */
+  /** Un geste de la page elle-même (émettre) : la même mécanique que ceux d'un lot. */
   private async act(key: string, gesture: () => Promise<void>): Promise<void> {
-    this.pending.set(key);
-    this.actionError.set(null);
-    try {
-      await gesture();
-      await this.load();
-    } catch (caught) {
-      this.actionError.set(httpErrorMessage(caught, 'Le geste a été refusé.'));
-    } finally {
-      this.pending.set(null);
-    }
+    await this.gestures.run(key, gesture, () => this.load());
   }
 }

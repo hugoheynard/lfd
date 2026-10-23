@@ -21,6 +21,7 @@ const ENTITY: Partial<LegalEntityView> = {
     plannedConstitutionAt: '2026-11-01T00:00:00.000Z',
     collectionDay: '2026-11-16',
     depositDeadline: null,
+    tightDepositMargin: null,
   },
 };
 

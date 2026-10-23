@@ -1,0 +1,99 @@
+<div class="pf-stack">
+  @if (followed(); as lot) {
+    @if (lot.status === 'constituted') {
+      <p class="pf-deadline" data-deadline>
+        <strong>{{ deadline(lot) }}</strong> · {{ collectionDay(lot) }}
+      </p>
+      @if (lot.depositDeadline === null) {
+        <fold-callout variant="alert">
+          La limite de dépôt de l’entité n’est pas renseignée&nbsp;: en attendant, déposer au plus
+          tard deux jours ouvrés avant l’échéance, avant 13 h 45.
+        </fold-callout>
+      }
+    }
+  }
+
+  @if (marginWarning(); as sentence) {
+    <fold-callout variant="warning" data-tight-margin>{{ sentence }}</fold-callout>
+  }
+
+  @if (file().mandatesNotImportedCount > 0 || file().excludedMandateCount > 0) {
+    <!-- P2 : un avertissement, pas un verrou — S2 (P4) dira lesquels sont du lot. -->
+    <fold-callout variant="warning" data-unimported>
+      {{ file().mandatesNotImportedCount }} mandat(s) de l’entité ne sont pas importés à la banque,
+      {{ file().excludedMandateCount }} écarté(s) de l’export — vérifier qu’aucun n’est d’un
+      débiteur de ce lot. Un tel débiteur passerait le dépôt et la signature, puis reviendrait en
+      rejet le jour de l’échéance.
+    </fold-callout>
+  }
+  @if (file().excludedAccountCount > 0) {
+    <fold-callout variant="warning" data-excluded-accounts>
+      {{ file().excludedAccountCount }} compte(s) de l’entité sans BIC ne sont pas à la
+      banque&nbsp;: s’il est d’un débiteur de ce lot, sa ligne ne sera pas prélevable.
+    </fold-callout>
+  }
+
+  @switch (file().reason) {
+    @case ('to_prepare') {
+      <fold-empty-state
+        title="Le lot de la dernière clôture n’est pas préparé"
+        [subtitle]="'Période ' + (view().toPrepare?.periodLabel ?? '') + '.'"
+      >
+        <fold-icon empty-icon name="archive" />
+        @if (canWrite()) {
+          <button
+            foldButton
+            icon="archive"
+            [loading]="pending() === 'prepare'"
+            (click)="prepare.emit()"
+          >
+            Préparer le lot
+          </button>
+        }
+      </fold-empty-state>
+    }
+    @case ('cancelled') {
+      <fold-empty-state
+        title="Ce lot a été annulé"
+        [subtitle]="'Annulé le ' + longDay(followed()?.cancelledAt ?? '') + '.'"
+      >
+        <fold-icon empty-icon name="x-circle" />
+        @if (view().replacementBatchId; as replacement) {
+          <button foldButton (click)="follow.emit(replacement)" data-replacement>
+            Suivre le lot préparé de nouveau
+          </button>
+        } @else if (canWrite()) {
+          <button
+            foldButton
+            icon="archive"
+            [loading]="pending() === 'prepare'"
+            (click)="prepare.emit()"
+          >
+            Préparer le lot
+          </button>
+        }
+      </fold-empty-state>
+    }
+    @case ('to_deposit') {
+      @if (batch(); as current) {
+        <app-pending-batch
+          [batch]="current"
+          [canWrite]="canWrite()"
+          [pending]="pending() === current.id"
+          (gesture)="gesture.emit($event)"
+        />
+      }
+      <fold-callout variant="info">
+        Télécharger le fichier, le déposer sur CENET, puis «&nbsp;Marquer déposé&nbsp;» — et
+        seulement ensuite signer la remise sur CENET. Le dépôt et la signature se font sur le
+        portail de la banque&nbsp;: l’outil ne peut pas les vérifier.
+      </fold-callout>
+    }
+    @case ('deposited') {
+      <fold-callout variant="success" data-deposited>
+        Lot déposé. Signer la remise sur CENET si ce n’est pas fait, et lire les accusés PSR —
+        l’outil ne peut pas le vérifier.
+      </fold-callout>
+    }
+  }
+</div>

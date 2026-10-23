@@ -103,6 +103,8 @@ describe("le calendrier de prélèvement de l'entité", () => {
       plannedConstitutionAt: expected.plannedConstitutionAt.toISOString(),
       collectionDay: expected.collectionDay,
       depositDeadline: null,
+      // Sans limite renseignée, aucun avertissement : on ne calcule rien à la place de l'entité.
+      tightDepositMargin: null,
     });
   });
 
