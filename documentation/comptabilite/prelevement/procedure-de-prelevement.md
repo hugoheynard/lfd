@@ -7,6 +7,9 @@
 > le mécanisme (les docs d'état le font) : elle dit **qui fait quoi, quand, où,
 > et ce qu'on vérifie**. Contredite par `vitruve` le même jour (§ 7).
 >
+> Son écran est planifié dans [`plan-page-procedure-de-prelevement.md`](plan-page-procedure-de-prelevement.md)
+> (doc-first, 2026-10-23) : une page à onglets qui suit ces étapes.
+>
 > 🔴 **Aujourd'hui, aucune remise ne peut partir** : le contrat CENET REMISES
 > n'est pas signé, et l'export des comptes destinataires n'est pas encore bâti
 > ([`reponses-de-la-banque.md`](reponses-de-la-banque.md) § 3). L'export des

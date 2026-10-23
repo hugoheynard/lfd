@@ -1,0 +1,428 @@
+# Plan — la page « Procédure de prélèvement »
+
+> 📝 **Doc-first, écrit le 2026-10-23.** Rien n'est bâti. Demande de Hugo, ce
+> jour-là : « dans comptabilité on doit avoir une page procédure de
+> prélèvement, en gros des onglets qui se déverrouillent au fur et à mesure
+> comme un wizard mais avec de la mémoire. 1 export des RIB, 2 export des
+> mandats — si pas de nouveaux éléments, dire "aucune action à mener" et bouton
+> suivant —, 3 générer le fichier de prélèvement, 4 contrôle pain.002 ».
+>
+> Toutes les citations `fichier:ligne` ont été **ouvertes le 2026-10-23**.
+>
+> La page est l'écran de la procédure écrite
+> ([`procedure-de-prelevement.md`](procedure-de-prelevement.md)) : elle ne
+> remplace pas la procédure, elle la rend **suivable**. Contredit par `vitruve`
+> (§ 10).
+
+## 1. Le principe : la mémoire est lue, pas tenue
+
+Un wizard « avec de la mémoire » se bâtit d'ordinaire en stockant l'étape
+atteinte. Ici, ce serait la faute : **l'étape stockée mentirait** dès qu'un
+fait change ailleurs — un client signe un mandat à 15 h, un lot est annulé
+depuis « Prélèvement du mois », un export est marqué importé depuis la fiche
+de l'entité. Le wizard dirait « étape 3 » alors que l'étape 1 a redevenu à
+faire, et c'est exactement le cas que Hugo nomme.
+
+**La règle du plan** : l'état de chaque onglet est **calculé** à chaque
+lecture depuis les objets que l'outil possède déjà (exports, lots, retours).
+On ne note que ce qui **n'existe nulle part** dans l'outil — des gestes faits
+hors de lui (CENET) dont la procédure exige qu'on les atteste. Il n'y a **pas**
+de colonne « étape courante » : l'onglet ouvert à l'arrivée est le premier
+onglet « à faire », recalculé.
+
+### 1.1 Ce qui se dérive
+
+| Fait                                                                | Lu dans                                                                                                                                                                      |
+| ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| des comptes destinataires sont à exporter                           | `AccountBankExportsView.toExport` (`packages/contracts/src/account-bank-export.ts:40`)                                                                                       |
+| un export de comptes est en vol (préparé, ni importé, ni abandonné) | `inFlightCount` (`:42`), `exports[].importedAt` / `abandonedAt` (`:31-32`)                                                                                                   |
+| des mandats sont à exporter                                         | `MandateBankExportsView.toExportCount` (`packages/contracts/src/mandate-bank-export.ts:33`)                                                                                  |
+| un export de mandats attend « Marquer importé »                     | `exports[].importedAt === null` (`:25`)                                                                                                                                      |
+| le lot de la clôture existe, son état                               | `CollectionCycleView.batches` (`packages/contracts/src/collection-batch.ts:190`) ; `status`, `depositedAt`, `cancelledAt`, `depositable`, `unmandatedCompanies` (`:143-158`) |
+| l'échéance et la limite de dépôt                                    | `requestedCollectionDay`, `depositDeadline` (`:165`, `:178`)                                                                                                                 |
+| les avis du lot                                                     | `lines[].notice` (`:116`)                                                                                                                                                    |
+| les retours enregistrés et leur résolution                          | `BatchCollectionReturnsView.returns[].resolution` (`packages/contracts/src/collection-return.ts:66`)                                                                         |
+
+### 1.2 Ce qui doit être noté — et rien d'autre
+
+Quatre attestations, toutes **par lot**, toutes des gestes hors de l'outil que
+rien ne peut constater :
+
+| Attestation                          | Pourquoi aucune donnée ne la porte                                                                                                                                                                                                                                                                     |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **« Contrôle CSV relu »**            | le téléchargement de `audit.csv` n'écrit rien (une requête, `apps/lfd-api/src/b2b/accounting/http/admin-collection-batches.controller.ts:133`) ; et avoir téléchargé n'est pas avoir relu                                                                                                              |
+| **« Remise signée sur CENET »**      | la signature est sur le portail (procédure § 2.8) ; l'outil ne connaît que « Marquer déposé », qui la **précède** (§ 2.7)                                                                                                                                                                              |
+| **« Accusés PSR lus »**              | les PSR ne sont que sur CENET (procédure § 2.9, réponse 24)                                                                                                                                                                                                                                            |
+| **« Retours contrôlés jusqu'au … »** | un import qui ne trouve **aucun** impayé n'écrit rien : la confirmation ne rend que les retours enregistrés (`CollectionReturnImportResultView.recordedIds`, `packages/contracts/src/collection-return.ts:149`), et aucune table ne garde les fichiers importés. Or « aucun impayé » est le cas normal |
+
+Ce qui **n'est pas** noté, alors que la demande y fait penser :
+
+- **« Aucune action à mener »** sur les onglets 1 et 2 : c'est `toExport` vide
+  et rien en vol. Le constater, c'est le lire ; le noter créerait un second
+  avis qui mentirait au prochain mandat signé.
+- **« Le compte rendu CENET a été lu »** pour les exports : il l'est déjà, par
+  « Marquer importé », dont la procédure fait la condition (§ 1.6 : « seulement
+  si le compte rendu ne porte aucune erreur »). Une seconde case doublerait le
+  même geste.
+- **« Fichier téléchargé »** : utile au journal (R8, déjà au reste à faire de
+  [`prerequis-export-ribs.md`](prerequis-export-ribs.md) § 8), inutile à
+  l'enchaînement — « Marquer déposé » le suppose.
+
+**Où les noter** : une table `collection_batch_attestation` (schéma `public`,
+bloc `b2b/accounting`), une ligne par lot et par attestation — `batch_id`,
+`kind` (`audit_reviewed`, `remittance_signed`, `psr_read`), `attested_at`,
+`attested_by_staff_id` (au registre RGPD, `lint:rgpd-staff`), `note`
+facultative. Les retours contrôlés n'y vont pas : ce n'est pas un fait du
+lot, c'est un fait **du jour** et de l'entité (un fichier d'impayés est
+quotidien et mêle les lots, § 6). Table distincte
+`bank_return_check(legal_entity_id, checked_through_day, checked_at, by,
+outcome)` — `outcome` = `no_return` | `imported`. Chaque attestation émet un
+fait au journal (sujet : l'entité, jamais un IBAN). Aucune ligne ne
+s'efface : une attestation fausse se **retire** par une ligne de plus, `kind`
+identique et `withdrawn = true`, note obligatoire. **La dernière ligne par
+(lot, kind) fait foi** — c'est la seule règle de lecture, et S1 la tient.
+
+Une attestation n'est **jamais** une condition d'un geste du domaine :
+« Marquer déposé » reste gardé par sa relecture (`apps/lfd-api/src/b2b/accounting/domain/entities/collection-batch.ts:212`),
+pas par « Contrôle CSV relu ». Les attestations ne gouvernent que l'écran.
+Sinon, un oubli de case bloquerait un dépôt avant la limite.
+
+## 2. La granularité
+
+Trois mailles, pas une, parce que les quatre étapes n'ont pas le même sujet :
+
+| Onglet    | Sujet                                  | Pourquoi                                                                                                                                                                                |
+| --------- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1 Comptes | **l'entité**                           | un compte s'importe une fois, quel que soit le lot (prérequis-export-ribs § 8) ; il n'a pas d'échéance                                                                                  |
+| 2 Mandats | **l'entité**                           | idem (`prerequis-export-mandats.md:90-94`)                                                                                                                                              |
+| 3 Fichier | **le lot** = entité × schéma × clôture | un lot est un fichier, une échéance (procédure § 2, `apps/lfd-api/src/b2b/accounting/domain/services/pain008-document.ts:185`) ; « un fichier par schéma et par échéance » (réponse 18) |
+| 4 Retours | **l'entité et le jour**                | un fichier d'impayés est quotidien et peut porter des lignes de plusieurs lots (retours-bancaires.md:3-6)                                                                               |
+
+**Les trois rythmes d'un même mois** ne sont pas trois procédures : ce sont
+jusqu'à cinq clôtures (procédure § 2), donc jusqu'à cinq lots par schéma. La
+page choisit **un lot** comme fil des onglets 3 et 4, par défaut **le lot
+non déposé dont la limite de dépôt est la plus proche** (cf. § 4.3), et les autres lots ouverts sont
+listés en tête de l'onglet 3 avec leur état. Le sélecteur d'entité (affiché seulement s'il y a plus d'une entité) reprend
+celui de « Prélèvement du mois » (`apps/lfd-backoffice-frontend/src/app/comptabilite/prelevement-du-mois/prelevement-du-mois-page.html:20-27`).
+
+Adresse : `/comptabilite/procedure-de-prelevement?entite=:id&lot=:batchId` —
+l'onglet n'est **pas** dans l'URL : il est calculé (§ 1). Un lien direct vers
+un onglet verrouillé ouvrirait un mensonge. Un `lot=` qui désigne un lot
+`cancelled` affiche « Ce lot a été annulé le … » et propose le lot de la même
+entité, du même schéma et de la même clôture s'il a été préparé de nouveau
+(sinon « Préparer le lot ») — la page ne suit jamais un lot mort en silence.
+
+## 3. Les onglets et leurs états
+
+Chaque onglet a l'un de quatre états, calculés :
+
+- **verrouillé** — un onglet antérieur est à faire, et celui-ci en dépend ;
+- **à faire** — un geste est attendu, nommé ;
+- **en attente** — un geste a été fait hors de l'outil, l'outil attend son
+  constat (« Marquer importé », un retour) ;
+- **fait** — « Aucune action à mener », bouton « Suivant ».
+
+```mermaid
+stateDiagram-v2
+  direction LR
+  state "1 Comptes" as C
+  state "2 Mandats" as M
+  state "3 Fichier (le lot)" as F
+  state "4 Retours" as R
+  [*] --> C
+  C --> M: rien à exporter, rien en vol
+  M --> F: rien à exporter, rien en attente (débiteurs DU LOT)
+  F --> R: lot déposé (dérivé seul)
+  R --> [*]: échéance passée, retours contrôlés, aucun retour en suspens
+  M --> C: un compte redevient à exporter
+  F --> M: un débiteur du lot sans mandat importé
+```
+
+### 3.1 Onglet 1 — Les comptes à la banque
+
+| État       | Condition (dérivée)                    | Ce que l'onglet montre                                                                                    |
+| ---------- | -------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| à faire    | `toExport.length > 0`                  | les comptes nommés, « Préparer l'export », puis Télécharger                                               |
+| en attente | `toExport` vide, `inFlightCount > 0`   | l'export en vol : « Marquer importé » (compte rendu sans erreur) ou « Abandonner » (rejeté par la banque) |
+| fait       | `toExport` vide, `inFlightCount === 0` | « Aucune action à mener » ; les écartés (sans BIC) restent nommés, avec leur effet sur l'onglet 3         |
+
+Un compte **écarté** (`excluded`, sans BIC) ne rend pas l'onglet « à faire » :
+aucun geste de l'onglet ne le résout. Il remonte sur l'onglet 3 s'il est d'un
+débiteur du lot (il ne sera alors pas prélevable, § 3.3).
+
+**Réutilise** la carte `app-account-bank-export-card` telle quelle
+(`apps/lfd-backoffice-frontend/src/app/comptabilite/entites-juridiques/detail/account-bank-export-card/account-bank-export-card.ts:62`,
+une seule entrée `entity: LegalEntityView` — la page charge donc l'entité
+complète), incluse dans le panneau : elle porte déjà la lecture, les quatre
+gestes et le « Déjà connu de la banque ». Elle reste aussi
+sur la fiche de l'entité (`legal-entity-detail-page.html:340`) — **un seul
+composant, deux hôtes**, pas de copie. Ce qui manque à la carte — une
+**modification**, pas un réemploi tel quel : elle n'a aucune sortie
+aujourd'hui ; émettre un `changed` après chaque geste, pour que la page recalcule les états des onglets.
+
+### 3.2 Onglet 2 — Les mandats à la banque
+
+| État       | Condition (dérivée)                             | Ce que l'onglet montre                                                                                                             |
+| ---------- | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| verrouillé | onglet 1 « à faire » ou « en attente »          | « Importer d'abord les comptes » : la banque refuse un mandat dont le compte lui est inconnu (`prerequis-export-mandats.md:20-23`) |
+| à faire    | `toExportCount > 0` et aucun export non importé | « Préparer l'export », Télécharger, la consigne « vérifier puis importer »                                                         |
+| en attente | un export `importedAt === null`                 | « Marquer importé » — seulement si le compte rendu ne porte aucune erreur                                                          |
+| fait       | `toExportCount === 0`                           | « Aucune action à mener » ; les **écartés** restent nommés, en alerte s'ils sont d'un débiteur du lot suivi                        |
+
+Le verrou sur l'onglet 1 est **entier** (toute l'entité), en v1 : le serveur
+ne sait pas dire « ce mandat-ci a son compte importé » (reste à faire de
+[`prerequis-export-ribs.md`](prerequis-export-ribs.md) § 8 : « avertir sur la
+carte des mandats quand un compte n'est pas importé »). Le verrou entier est
+plus strict que la règle de la banque, jamais plus lâche.
+
+⚠️ **Un export de mandats ne s'abandonne pas** — l'agrégat des comptes a
+`abandoned`, celui des mandats non (`packages/contracts/src/mandate-bank-export.ts:21-26` :
+`importedAt` seul). Un export rejeté par CENET resterait donc « en attente »
+pour toujours et **bloquerait l'onglet 3**. Il faut « Abandonner » côté mandats
+avant de bâtir la page (S3, § 7).
+
+**Réutilise** `app-mandate-bank-export-card` (`…/mandate-bank-export-card.ts:63`,
+entrée `entity`, hébergée aussi par `legal-entity-detail-page.html:344`),
+même règle que l'onglet 1, même sortie `changed` à ajouter.
+
+### 3.3 Onglet 3 — Le fichier de prélèvement (un lot)
+
+Verrouillé tant que l'onglet 2 n'est pas « fait » **pour les débiteurs du
+lot**. C'est le point qui sépare ce wizard d'un wizard naïf : un nouveau client
+qui signe pendant qu'un lot attend son dépôt **ne doit pas** bloquer le dépôt
+de ce lot, où il n'est pas — sinon la page ferait manquer une limite de dépôt
+pour une raison sans rapport. Il faut pour ça une lecture serveur (S2, § 7) :
+pour chaque ligne du lot, « compte importé » et « mandat importé ». En
+attendant S2, la page **n'a pas de quoi** tenir ce verrou : elle avertit
+(bandeau sur l'onglet 3 « 2 mandats de l'entité ne sont pas importés —
+vérifier qu'aucun n'est d'un débiteur de ce lot ») et ne verrouille pas.
+
+🔴 **Le risque, nommé** : « Marquer déposé » ne relit **pas** l'import chez
+CENET (sa relecture porte sur les sociétés sans mandat, les avis, les
+mandats révoqués, l'IBAN et les commandes, `collection-batch.ts:212-233`), et
+la banque ne contrôle rien au dépôt (réponse 15). Un débiteur du lot dont le
+mandat n'est pas importé — ou est écarté (`excluded`) — passe le dépôt, la
+signature, puis revient **en rejet le jour J**. Jusqu'à P4, le bandeau est la
+seule défense : c'est un rejet après signature, pas un inconfort.
+
+Sous-étapes, dans l'ordre de la procédure (§ 2.2 à § 2.9), chacune avec son
+état dérivé ou attesté :
+
+| #   | Sous-étape                           | État                                                                                    | Source                                      |
+| --- | ------------------------------------ | --------------------------------------------------------------------------------------- | ------------------------------------------- |
+| a   | Factures émises                      | dérivé — la clôture du lot a ses factures                                               | `app-month-invoices`                        |
+| b   | Lot préparé                          | dérivé — un lot `constituted` pour la clôture ; sinon « Préparer le lot »               | `CollectionCycleView`                       |
+| c   | Avis tous `envoyé`                   | dérivé — `lines[].notice`                                                               | idem                                        |
+| d   | Contrôle CSV relu                    | **attesté** (`audit_reviewed`)                                                          | § 1.2                                       |
+| e   | Fichier téléchargé, déposé sur CENET | **non suivi** — consigne seule, avec l'échéance et la limite de dépôt affichées en tête | `requestedCollectionDay`, `depositDeadline` |
+| f   | « Marquer déposé »                   | dérivé — `status === 'deposited'`                                                       | `depositedAt`                               |
+| g   | Remise signée sur CENET              | **attesté** (`remittance_signed`), ouvert seulement si f est fait                       | § 1.2                                       |
+| h   | Accusés PSR lus                      | **attesté** (`psr_read`), facultatif pour passer à l'onglet 4                           | § 1.2                                       |
+
+**L'ordre f avant g est imposé par l'écran** : la case « signée » n'apparaît
+qu'une fois le lot déposé. C'est l'ordre que `vitruve` a fait corriger dans la
+procédure (§ 2.7, objection BLOQUANT du § 7) — la page le rend matériel.
+
+**L'heure limite** est en tête de l'onglet, en grand, avec le compte à
+rebours ; si `depositDeadline` est `null` (limite non renseignée, procédure
+§ 0.4), l'onglet le dit en alerte et donne la consigne provisoire (J-2 ouvré,
+13 h 45) — il ne calcule **rien** à la place de l'entité.
+
+**Réutilise** `app-pending-batch` (`apps/lfd-backoffice-frontend/src/app/comptabilite/prelevement-du-mois/pending-batch/pending-batch.ts:49-53` :
+`batch`, `canWrite`, `pending`, sortie `gesture`) pour b à f, `app-excluded-orders`
+pour les exclusions, et les gestes de la page « Prélèvement du mois »
+(préparer, annuler, déposer). Ces gestes vivent aujourd'hui **dans la page**
+(`prelevement-du-mois-page.ts`) ; ils se déplacent dans un service partagé des
+deux pages — c'est un déplacement, pas une copie.
+
+**Fait** : lot déposé et signature attestée. Un lot `cancelled` ne fait pas
+« fait » : il renvoie à b (préparer de nouveau).
+
+### 3.4 Onglet 4 — Le contrôle des retours
+
+Verrouillé tant que le lot n'est pas déposé (un retour exige un lot déposé,
+`apps/lfd-api/src/b2b/accounting/domain/entities/collection-return.ts:111-112`) — **et seulement par
+là** : l'attestation de signature n'y entre pas, sinon une case oubliée
+fermerait l'import des impayés d'un lot réellement débité.
+
+| État       | Condition                                                                                                   |
+| ---------- | ----------------------------------------------------------------------------------------------------------- |
+| en attente | l'échéance n'est pas passée : « rien à contrôler avant le … » (impayés quotidiens, après l'échéance)        |
+| à faire    | échéance passée et **aucun contrôle attesté** couvrant les jours depuis l'échéance ; ou un retour `pending` |
+| fait       | contrôles attestés jusqu'à **échéance + N jours**, et aucun retour du lot en `pending`                      |
+
+**Couverture** : un `bank_return_check` du jour J couvre **tous** les lots de
+l'entité déposés dont l'échéance est ≤ J, les deux schémas compris (un
+fichier d'impayés est quotidien et mêle les lots). Un lot est couvert
+jusqu'à échéance + N si **chaque jour ouvré** de [échéance, échéance + N] a
+son contrôle : S1 calcule les jours manquants et l'onglet les **nomme** (« pas
+de contrôle le 19 et le 20 ») — un trou ne se lisse pas en « fait ».
+
+N = la fenêtre au-delà de laquelle on cesse de suivre le lot sur cette page
+(question Q3) ; un retour plus tardif (contestation CORE, 13 mois) arrive
+quand même par l'import et la cloche `collection.returned`
+(`retours-bancaires.md:95-96`), et rouvre l'onglet.
+
+Gestes : « Importer un fichier de la banque » (déjà là,
+`apps/lfd-backoffice-frontend/src/app/comptabilite/prelevement-du-mois/bank-returns/bank-returns.html:4`, panneau
+`import-returns-panel`), puis « Contrôle fait : aucun impayé » ou, après un
+import, l'attestation `imported` (posée par la confirmation d'import elle-même,
+pas par une case — S4). ⚠️ La confirmation exige au moins une transaction
+(`endToEndIds.min(1)`, `packages/contracts/src/collection-return.ts:142`) : un fichier lu
+qui ne retient **aucune** ligne ne se confirme pas et n'écrit rien. Ce jour-là
+— le cas normal — c'est la case « Contrôle fait : aucun impayé » qui le
+couvre. Les retours du lot et leurs trois gestes
+(re-présenter, régler autrement, perte) viennent de `app-bank-returns`
+(`bank-returns.ts:77-78`, entrées `batches`, `canWrite`), **inclus**, pas
+recopiés.
+
+## 4. Quand un onglet antérieur redevient « à faire »
+
+### 4.1 Le cas
+
+Un client signe un mandat le lendemain de la préparation du lot. L'onglet 1
+repasse « à faire », l'onglet 2 aussi. Le lot, lui, ne le contient pas.
+
+### 4.2 La règle
+
+- L'onglet **redevient « à faire »** — il ne garde pas « fait » par mémoire.
+- Les onglets suivants **ne se reverrouillent pas** si le changement ne
+  touche pas le lot choisi (§ 3.3, après S2) : un dépôt en cours ne s'arrête
+  pas pour un client qui n'y est pas.
+- La barre d'onglets porte un **badge** sur l'onglet redevenu à faire
+  (`FoldTabItem.badge`, le nombre de comptes ou de mandats), et l'onglet 3
+  affiche « Un nouveau client attend son import — il entrera au lot
+  suivant ».
+- Si le changement **touche** le lot (un débiteur du lot dont le mandat n'est
+  plus importé sous son compte, après un changement d'IBAN), l'onglet 3 se
+  reverrouille **avant** dépôt — et « Marquer déposé » refuse de toute façon
+  (IBAN changé, `DepositRecheckFailedError`, `collection-batch.ts:232`).
+  **Après** dépôt, rien ne se reverrouille : on ne dé-dépose pas (procédure
+  § 2.8).
+
+### 4.3 Quel lot la page suit
+
+Dans cet ordre, le premier qui existe :
+
+1. le lot **non déposé** (`constituted`, ou clôture passée sans lot) dont la
+   **limite de dépôt** est la plus proche — à limite inconnue, l'échéance la
+   plus proche (`depositDeadline`, `requestedCollectionDay`,
+   `packages/contracts/src/collection-batch.ts:165`, `:178`) ;
+2. le lot déposé le plus ancien dont l'onglet 3 ou 4 n'est pas « fait ».
+
+Le dépôt passe **avant** le suivi des retours : une limite ne se rattrape pas,
+un contrôle d'impayés se fait le lendemain. Tous les lots ouverts restent
+listés en tête, avec leur limite, et un lot non déposé ne se cache jamais
+derrière un repli « autres lots ▸ » — c'est l'oubli que la procédure dit
+invisible (« ⛔ Rien ne signale un lot préparé depuis longtemps sans être
+déposé », § 2.7).
+
+## 5. L'écran
+
+```
+Procédure de prélèvement              [Entité ▾]
+Lot suivi : B2B · du 1er au 4 nov. · échéance 18 nov. · déposer avant 14 nov. 13:45
+           (autres lots ouverts : 2 ▸)
+┌────────────┬────────────┬────────────────┬──────────────┐
+│ 1 Comptes ✓│ 2 Mandats 2│ 3 Fichier 🔒   │ 4 Retours 🔒 │
+└────────────┴────────────┴────────────────┴──────────────┘
+[ panneau de l'onglet : la carte réutilisée, ou « Aucune action à mener » + Suivant ]
+```
+
+**fold-ng** : `fold-tabs` + `fold-tab-panel` existent
+(`apps/lfd-backoffice-frontend/node_modules/fold-ng/types/fold-ng.d.ts:8709`,
+`:8809`), avec `badge` et `icon` par onglet (`FoldTabItem`, `:8657-8666`).
+**Ils n'ont pas d'onglet désactivé** : `FoldTabItem` n'a que `key`, `label`,
+`icon`, `badge`. Deux voies :
+
+- **(A, retenue)** l'onglet verrouillé reste **sélectionnable** et son panneau
+  dit pourquoi (« Importer d'abord les mandats — onglet 2 », bouton vers
+  l'onglet) avec l'icône cadenas. C'est plus honnête qu'un onglet gris : on
+  voit ce qui attend, et le clavier ARIA n'a pas de trou.
+- (B) ajouter `disabled` à `FoldTabItem` dans fold-ng — une évolution de la
+  bibliothèque, hors de ce dépôt, pour un seul usage.
+
+fold-ng n'a pas de wizard verrouillable ; `fold-timeline` se décrit en
+« progress stepper » horizontal (`apps/lfd-backoffice-frontend/node_modules/fold-ng/types/fold-ng.d.ts:7420`, nœuds `:7374`) — un
+affichage, sans panneaux ni verrou, qui pourrait au mieux résumer les
+sous-étapes de l'onglet 3 ; les sous-étapes de
+l'onglet 3 sont une liste (`fold-data-table` ou liste de lignes à coche, cf.
+`app-pending-batch`), pas un composant neuf.
+
+« Suivant » est un `foldButton` qui écrit `activeKey` ; il n'existe que sur un
+onglet « fait ».
+
+Menu : Comptabilité › **Procédure de prélèvement**, au-dessus de
+« Prélèvement du mois ». Les deux pages coexistent : « Prélèvement du mois »
+reste la vue d'ensemble du mois (aperçu, toutes les clôtures, historique) ;
+la procédure est le **fil d'un lot**. Droits : lecture sous `b2b_accounting`,
+gestes et attestations sous `b2b_accounting:write` (comme les gestes
+réutilisés).
+
+## 6. Ce qui reste à la main, dit sur la page
+
+La page ne fait pas croire que l'outil tient ce qu'il ne tient pas. Chaque
+sous-étape attestée ou non suivie porte la mention « sur CENET, l'outil ne
+peut pas le vérifier ». Restent hors de la page : le contrat et la limite de
+dépôt (procédure § 0), le crédit global et le relevé SDD (§ 3.1-3.2), la
+relance du client (§ 3.9).
+
+## 7. Ce qui manque côté serveur
+
+| #   | Manque                                                                                                                                                                                                                                                      | Pourquoi                                                                                                                                                        |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| S1  | **Une lecture d'état de la procédure** : `GET admin/accounting/collection-procedure?legalEntityId=` → l'état calculé de chaque onglet, le lot suivi, les autres lots ouverts, les attestations. Une query, un handler, qui lit les trois lecteurs existants | l'état des onglets ne se calcule pas à l'écran à partir de quatre appels : la règle de déverrouillage est du métier, elle vit côté serveur et se teste une fois |
+| S2  | **Par ligne de lot : compte importé, mandat importé** (sous l'empreinte actuelle)                                                                                                                                                                           | le verrou de l'onglet 3 par débiteur du lot (§ 3.3) ; c'est aussi l'avertissement « mandat non importé » que la procédure dit manquant (§ 1, § 2.4, § 5)        |
+| S3  | **« Abandonner » un export de mandats**                                                                                                                                                                                                                     | sinon un export rejeté bloque l'onglet 2 pour toujours (§ 3.2)                                                                                                  |
+| S4  | **Les attestations** : tables `collection_batch_attestation` et `bank_return_check` (migration additive), commandes `AttestCollectionBatch`, `RecordBankReturnCheck`, faits au journal ; la confirmation d'import pose son `bank_return_check` (`imported`) | § 1.2                                                                                                                                                           |
+| S5  | Les gestes de « Prélèvement du mois » sortis de la page vers un service partagé (front)                                                                                                                                                                     | deux hôtes, une logique (§ 3.3)                                                                                                                                 |
+
+Ce qui n'est **pas** demandé : stocker l'onglet courant, ni un état de
+procédure par lot. S1 est une lecture ; elle n'écrit rien (CQRS).
+
+## 8. Découpage
+
+1. **P1** — S3 (abandonner un export de mandats), seul : un manque de l'outil
+   indépendamment de la page.
+2. **P2** — 🔴 **exige P1** (sans « Abandonner », un export de mandats
+   rejeté fige l'onglet 2 et masque l'onglet 3). S1 sans attestations ni S2 : la page, les quatre onglets, cartes
+   réutilisées, verrou de l'onglet 3 en **avertissement**. Utile tout de suite.
+3. **P3** — S4 : les attestations, l'onglet 3 complet, l'onglet 4.
+4. **P4** — S2 : le verrou de l'onglet 3 par débiteur du lot.
+
+## 9. Questions pour Hugo
+
+- **Q1** — Les **attestations** (« Contrôle CSV relu », « signée », « PSR
+  lus », « retours contrôlés ») : les veux-tu notées par une personne nommée
+  (registre RGPD) — ou seulement datées ? Le plan propose nommées.
+- **Q2** — L'onglet 3 verrouillé **par débiteur du lot** (P4) plutôt que par
+  entité : d'accord que la page laisse déposer un lot pendant qu'un nouveau
+  client, absent du lot, attend son import ?
+- **Q3** — **N** de l'onglet 4 : combien de jours après l'échéance suit-on un
+  lot sur la page ? Proposition : 5 jours ouvrés (rejets et retours
+  interbancaires usuels) ; au-delà, la cloche suffit.
+- **Q4** — Le lot suivi : un à la fois, le plus ancien non clos (§ 4.3) — ou
+  tous les lots ouverts côte à côte ?
+- **Q5** — « PSR lus » est-il une condition de « fait » de l'onglet 3, ou
+  facultatif ? Le plan le met facultatif tant que la banque n'a pas dit quand
+  PSR1 arrive (procédure § 2.9).
+- **Q6** — Onglet verrouillé **sélectionnable** avec explication (A), ou
+  ajouter un état désactivé à fold-ng (B) ?
+
+## 10. La contradiction de `vitruve`
+
+Passé le 2026-10-23. Citations vérifiées exactes, sauf celles corrigées
+ci-dessous. Non vérifié par lui : les renvois aux autres docs,
+`app-month-invoices`, le registre RGPD.
+
+| Objection                                                                                                                           | Rang     | Suite                                                                                                           |
+| ----------------------------------------------------------------------------------------------------------------------------------- | -------- | --------------------------------------------------------------------------------------------------------------- |
+| Suivre « le plus ancien lot non clos » laisse un lot plus récent manquer sa limite de dépôt pendant qu'on suit des retours          | BLOQUANT | **corrigée** : le lot non déposé à la limite la plus proche d'abord, puis les retours (§ 4.3, § 2)              |
+| Le diagramme verrouillait l'onglet 4 sur la signature attestée, le § 3.4 sur le dépôt seul                                          | BLOQUANT | **corrigée** : dépôt seul ; une attestation ne ferme jamais l'import des impayés (§ 3, § 3.4)                   |
+| L'attestation `imported` par la confirmation n'existe pas pour un fichier sans impayé (`min(1)`) ; trous non détectés               | SÉRIEUX  | **corrigée** : la case « aucun impayé » couvre ce jour ; les jours manquants sont nommés (§ 3.4)                |
+| Contrôle par jour, « fait » par lot : règle de couverture absente                                                                   | SÉRIEUX  | **corrigée** : un contrôle de J couvre tous les lots déposés d'échéance ≤ J, deux schémas (§ 3.4)               |
+| Onglet 2 « fait » malgré un mandat écarté ou non importé d'un débiteur du lot → rejet après signature                               | SÉRIEUX  | **assumée jusqu'à P4**, risque nommé (§ 3.3) ; écartés en alerte (§ 3.2)                                        |
+| Attestations indéfaisables, laquelle fait foi                                                                                       | SÉRIEUX  | **corrigée** : retrait par une ligne `withdrawn`, la dernière par (lot, kind) fait foi (§ 1.2) ; à valider (Q1) |
+| URL épinglée sur un lot annulé                                                                                                      | SÉRIEUX  | **corrigée** : la page le dit et propose le lot re-préparé (§ 2)                                                |
+| P2 dépend de P1 sans l'imposer                                                                                                      | SÉRIEUX  | **corrigée** : prérequis dur (§ 8)                                                                              |
+| Mineurs : `fold-timeline` est un « stepper » ; cartes sans sortie, entrée `LegalEntityView` ; ligne `:344` ; sélecteur conditionnel | MINEUR   | corrigés (§ 3.1, § 3.2, § 5, § 2)                                                                               |
