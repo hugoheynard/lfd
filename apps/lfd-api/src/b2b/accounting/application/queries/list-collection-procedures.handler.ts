@@ -17,6 +17,7 @@ import {
   type StoredBatchView,
 } from "../../domain/ports/collection-batch.reader.js";
 import { CollectionMandatesReader } from "../../domain/ports/collection-mandates.reader.js";
+import { CountedLotInputsReader } from "../../domain/ports/counted-lot-inputs.reader.js";
 import { CollectionReturnsReader } from "../../domain/ports/collection-returns.reader.js";
 import { InvoicePeriodsReader } from "../../domain/ports/invoice-periods.reader.js";
 import { LegalEntityReader } from "../../domain/ports/legal-entity.reader.js";
@@ -86,6 +87,7 @@ export class ListCollectionProceduresHandler implements IQueryHandler<
     private readonly periods: InvoicePeriodsReader,
     private readonly standings: PayerStandingsReader,
     private readonly collectionMandates: CollectionMandatesReader,
+    private readonly lotInputs: CountedLotInputsReader,
     private readonly coverage: AutopilotCoverageReader,
     private readonly clock: Clock,
   ) {}
@@ -99,7 +101,7 @@ export class ListCollectionProceduresHandler implements IQueryHandler<
       this.batches.list(entity.id),
       readBillingDates({ modeDates: this.modeDates, payerModes: this.payerModes }, entity.id),
       countedPayerIdsOf(
-        { standings: this.standings, mandates: this.collectionMandates },
+        { standings: this.standings, mandates: this.collectionMandates, lot: this.lotInputs },
         entity.id,
         now,
       ),

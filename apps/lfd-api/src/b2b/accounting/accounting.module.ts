@@ -52,6 +52,7 @@ import { PrismaStatementBuyerReader } from "./infrastructure/prisma-statement-bu
 import { CancelledOrdersReader } from "./domain/ports/cancelled-orders.reader.js";
 import { CollectionBatchReader } from "./domain/ports/collection-batch.reader.js";
 import { CollectionBatchRepository } from "./domain/ports/collection-batch.repository.js";
+import { CountedLotInputsReader } from "./domain/ports/counted-lot-inputs.reader.js";
 import { CollectionCandidatesReader } from "./domain/ports/collection-candidates.reader.js";
 import { CollectionLock } from "./domain/ports/collection-lock.js";
 import { InvoiceNumbering } from "./domain/ports/invoice-numbering.js";
@@ -249,6 +250,8 @@ import { PrismaOrderRowsLock } from "./infrastructure/prisma-order-rows-lock.js"
     { provide: FirstMandateLedger, useClass: PrismaFirstMandateLedger },
     // Le lot de prélèvement figé (plan `lot-de-prelevement-fige.md`).
     { provide: CollectionCandidatesReader, useClass: PrismaCollectionCandidatesReader },
+    // Le compte des clients rejoue le lot avec SES lectures (prelevement-sepa § 12 bis).
+    { provide: CountedLotInputsReader, useExisting: CollectionCandidatesReader },
     { provide: RecordedClosureReader, useClass: PrismaRecordedClosureReader },
     { provide: CollectionBatchRepository, useClass: PrismaCollectionBatchRepository },
     { provide: OrderCollectionRepository, useClass: PrismaOrderCollectionRepository },

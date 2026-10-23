@@ -88,6 +88,7 @@ function handler(
     new StorePayerModesReader(payers),
     counting.standings,
     counting.mandates,
+    counting.lot,
     new StoredBatches(extra.batches),
     stored,
     new FixedInvoicePeriods(new Map()),

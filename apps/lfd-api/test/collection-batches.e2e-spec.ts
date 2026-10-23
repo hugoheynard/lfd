@@ -549,6 +549,26 @@ describe("le lot figé", () => {
       .expect(409);
   });
 
+  /**
+   * Verrou (décision 1 de Hugo, 2026-10-23) : une société suspendue reste
+   * prélevée pour ses dettes. Le compte des clients l'écarte de l'AFFICHAGE
+   * (`countedPayerIdsAt`) ; le lot, lui, ne lit pas le statut.
+   */
+  it("une société suspendue avec un mandat actif est prélevée pour ses factures dues", async () => {
+    const entity = await collectingEntity();
+    const port = await client("Boulangerie du Port");
+    await mandated(entity, port);
+    const placed = await orderOf(port);
+    await ctx.prisma.company.update({ where: { id: port }, data: { status: "suspended" } });
+
+    const [batchId] = await constitute(entity);
+    await staff()
+      .post(`${BASE}/batches/${batchId ?? ""}/deposit`)
+      .expect(204);
+
+    expect(await stateOf(placed.id)).toBe("collected");
+  });
+
   it("la commande validée APRÈS la constitution, même datée avant la clôture, attend le lot suivant", async () => {
     const entity = await collectingEntity();
     const port = await client("Boulangerie du Port");

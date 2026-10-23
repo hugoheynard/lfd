@@ -11,6 +11,7 @@ import { BillingModeDatesReader } from "../../domain/ports/billing-mode-dates.re
 import { LegalEntityReader } from "../../domain/ports/legal-entity.reader.js";
 import { PayerBillingModesReader } from "../../domain/ports/payer-billing-modes.reader.js";
 import { CollectionMandatesReader } from "../../domain/ports/collection-mandates.reader.js";
+import { CountedLotInputsReader } from "../../domain/ports/counted-lot-inputs.reader.js";
 import { PayerStandingsReader } from "../../domain/ports/payer-standings.reader.js";
 import { isRhythmFollowed, payerCountsAt } from "../../domain/services/rhythm-payer-counts.js";
 import { procedureCodeOf } from "../../domain/services/collection-procedure-code.js";
@@ -55,6 +56,7 @@ export class GetBillingRhythmsCalendarHandler implements IQueryHandler<
     private readonly payerModes: PayerBillingModesReader,
     private readonly standings: PayerStandingsReader,
     private readonly mandates: CollectionMandatesReader,
+    private readonly lotInputs: CountedLotInputsReader,
     private readonly batches: ClosureBatchesReader,
     private readonly storedBatches: CollectionBatchReader,
     private readonly periods: InvoicePeriodsReader,
@@ -70,7 +72,11 @@ export class GetBillingRhythmsCalendarHandler implements IQueryHandler<
     const [modes, chosen, payerIds, stored] = await Promise.all([
       this.modeDates.timelinesOf(entity.id),
       this.payerModes.segmentsOf(entity.id),
-      countedPayerIdsOf({ standings: this.standings, mandates: this.mandates }, entity.id, now),
+      countedPayerIdsOf(
+        { standings: this.standings, mandates: this.mandates, lot: this.lotInputs },
+        entity.id,
+        now,
+      ),
       this.storedBatches.list(entity.id),
     ]);
     const counts = payerCountsAt(modes, chosen, payerIds, now);

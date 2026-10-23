@@ -64,6 +64,7 @@ function world(payerModes: PayerBillingModesReader = new FixedPayerModes(), paye
     new FixedInvoicePeriods(new Map()),
     counting.standings,
     counting.mandates,
+    counting.lot,
     coverage,
     accounts.clock,
   );

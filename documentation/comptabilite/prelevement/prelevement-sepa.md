@@ -782,6 +782,78 @@ devrait commencer par là, pas par le code.
 
 ---
 
+## 12 bis. « Prélevable » — le compte rejoue le jugement du lot (2026-10-23, BÂTI)
+
+> État : **bâti le 2026-10-23, non commité à l'écriture**. La première
+> version de cette note (un port `collectibleMandateAt` partagé par le lot et
+> le compte) a été contredite par `vitruve` et **abandonnée** ; ce qui suit
+> est la conception retenue.
+
+**Le constat** (lu le 2026-10-23). Le compte par rythme (C,
+`domain/services/counted-payers.ts`) et la constitution du lot (L,
+`collection-constitution-support.ts` → `collection-verdict.ts`) ne disaient
+pas la même chose : C passait `follows: []`, des formes vides et aucun mandat
+consommé — il comptait un payeur dont le seul mandat est ponctuel et déjà
+déposé, que L écarte (`one_off_consumed`).
+
+**Les objections de `vitruve` à la première version, et leur réponse.**
+
+- _BLOQUANT — un port `Mandate | null` changerait QUI est débité._
+  `judgeMandate` rend cinq sorties d'exclusion ou de renvoi (`payer_detached`,
+  `no_mandate` qui nomme `answerable` — le SITE en formes 2 et 3 —,
+  `ambiguous_creditor`, `elsewhere`, `one_off_consumed`) et leur **ordre**
+  compte (un bon détaché ET sans mandat est `payer_detached`). Les réduire à
+  `null` perd le nom et l'ordre. → **Réponse : on ne touche ni au lot, ni à
+  `judgeMandate`.** C'est le compte qui appelle `judgeMandate` tel quel, sur
+  un bon fictif que le payeur passerait lui-même à l'instant compté, et ne
+  retient que le verdict `debit`. Aucune extraction n'a été nécessaire ; une
+  table des sorties (`apps/lfd-api/src/b2b/accounting/domain/services/__tests__/collection-verdict.spec.ts`, paramétrée) verrouille
+  désormais le jugement que les deux partagent.
+- _La facture du mois doit rester hors du port._ `monthly-invoicing.ts`
+  appelle `effectiveMandateOf`, qui fige le moyen de paiement annoncé
+  (BG-16) : ni le ponctuel consommé, ni le détachement, ni le schéma pris n'y
+  entrent, parce qu'ils décident du LOT et pas de ce que la facture imprime.
+  → **Hors du sujet, inchangée.** Le compte a cessé d'appeler
+  `effectiveMandateOf` ; la facture est désormais sa seule lectrice hors du
+  lot.
+- _Deux sources « consommé »._ `CollectionCandidatesReader.consumedMandates`
+  (ligne dans un lot **déposé**, `prisma-collection-candidates.reader.ts`) et
+  `BatchedMandatesReader` (plus large, pour le prélèvement test). → **Le
+  compte lit la première, celle de la constitution** : le port étroit
+  `CountedLotInputsReader` (formes + consommés) est lié en `useExisting` à
+  `CollectionCandidatesReader` dans `accounting.module.ts` — même adaptateur,
+  pas une seconde lecture.
+
+**La règle bâtie.** Un payeur compte, à `at`, s'il est société **active**
+(décision d'affichage de Hugo) ∧ **facturé en son nom** (`isBillingPayerAt`)
+∧ `judgeMandate` rend `debit` chez l'entité, avec les MÊMES entrées que le
+lot : mandats actifs (`CollectionMandatesReader`), rattachements réels
+(`standing.follows`), formes de prélèvement réelles, ponctuels consommés de
+la constitution. Seul écart, assumé : `liveSchemes` vide — un schéma déjà pris
+par un lot vivant renvoie un bon au lot suivant, il ne fait pas d'un client un
+non-client. Sur un bon que le payeur passe lui-même, la forme n'est pas
+consultée par `effectiveMandates` (elle ne joue que si payeur ≠ société) :
+elle est passée quand même, pour que le compte ne dépende pas de cette
+lecture du code.
+
+**Décision 1 (Hugo) — on prélève ce qu'une société doit, suspendue ou non.**
+L ne filtre aucun statut de société. Verrouillé par l'e2e
+`collection-batches` « une société suspendue avec un mandat actif est
+prélevée pour ses factures dues ». Le compte, lui, ne la compte pas : c'est
+un affichage.
+
+**Décision 2 (Hugo) — un port unique « prélevable » : remplacée** par la
+règle ci-dessus (une seule règle, celle du lot, rejouée — pas un port
+nouveau). E et M (exports bancaires) gardent leur logique : ils décrivent ce
+que la BANQUE doit connaître, pas ce qu'on débite ce mois-ci.
+
+**Décision 3 (Hugo) — le RIB d'un mandat sans compte désigné : caduque.**
+`company_bank_accounts.company_id` est **unique**
+(`prisma/schema/public/accounting.prisma:297`) : une société a au plus un
+RIB. La question n'a d'objet que pour les mandats d'avant S4 sans compte
+désigné, et même là il n'y a qu'une ligne à prendre. Rien à bâtir ; à
+reprendre seulement si la contrainte d'unicité est un jour levée.
+
 ## 13. Ce que ce document n'a PAS vérifié
 
 - **Tout le droit SEPA cité ici** vient de la norme telle que les documents

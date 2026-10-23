@@ -1,5 +1,7 @@
 import type { CollectionMandate } from "../../../domain/ports/collection-mandates.reader.js";
 import type { PayerStanding } from "../../../domain/ports/payer-standing.reader.js";
+import { CountedLotInputsReader } from "../../../domain/ports/counted-lot-inputs.reader.js";
+import type { CollectionFormName } from "../../../domain/value-objects/collection-form.js";
 import { PayerStandingsReader } from "../../../domain/ports/payer-standings.reader.js";
 import { mandate } from "../../../domain/services/__tests__/collection-fixtures.js";
 import type { CountedPayersReaders } from "../../counted-payers-support.js";
@@ -12,6 +14,22 @@ export class AllStandings extends PayerStandingsReader {
   }
   allAt(): Promise<readonly PayerStanding[]> {
     return Promise.resolve(this.accounts);
+  }
+}
+
+/** Les entrées du lot rejouées par le compte : formes et mandats consommés donnés. */
+export class FixedLotInputs extends CountedLotInputsReader {
+  constructor(
+    private readonly forms: ReadonlyMap<string, CollectionFormName> = new Map(),
+    private readonly consumed: ReadonlySet<string> = new Set(),
+  ) {
+    super();
+  }
+  collectionFormsAt(): Promise<ReadonlyMap<string, CollectionFormName>> {
+    return Promise.resolve(this.forms);
+  }
+  consumedMandates(ids: readonly string[]): Promise<ReadonlySet<string>> {
+    return Promise.resolve(new Set(ids.filter((id) => this.consumed.has(id))));
   }
 }
 
@@ -35,7 +53,7 @@ export function countingOf(
 ): CountedPayersReaders {
   const fake = new FakeMandates();
   fake.mandates = [...mandates];
-  return { standings: new AllStandings(accounts), mandates: fake };
+  return { standings: new AllStandings(accounts), mandates: fake, lot: new FixedLotInputs() };
 }
 
 /** Des clients qui comptent tous : actifs, payeurs, chacun son mandat signé chez l'entité. */

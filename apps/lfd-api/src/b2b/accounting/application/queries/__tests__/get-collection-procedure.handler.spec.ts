@@ -55,6 +55,7 @@ function world() {
     coverage,
     counting.standings,
     counting.mandates,
+    counting.lot,
     accounts.clock,
   );
   const read = (batchId: string | null = null, closureDay: string | null = null) =>

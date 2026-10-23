@@ -89,6 +89,7 @@ function handlerWith(
     new StorePayerModesReader(modes.payers),
     counting.standings,
     counting.mandates,
+    counting.lot,
     new FixedClock(now),
   );
 }
@@ -113,6 +114,7 @@ describe("la fiche d'une entité porte le calendrier de son cycle en cours", () 
       new StorePayerModesReader(new PayerModesStore()),
       CLIENTS.standings,
       CLIENTS.mandates,
+      CLIENTS.lot,
       new FixedClock(NOW),
     );
 
@@ -141,6 +143,7 @@ describe("la fiche d'une entité porte le calendrier de son cycle en cours", () 
       new StorePayerModesReader(new PayerModesStore()),
       CLIENTS.standings,
       CLIENTS.mandates,
+      CLIENTS.lot,
       clock,
     ).execute();
     const one = await new GetLegalEntityHandler(
@@ -151,6 +154,7 @@ describe("la fiche d'une entité porte le calendrier de son cycle en cours", () 
       new StorePayerModesReader(new PayerModesStore()),
       CLIENTS.standings,
       CLIENTS.mandates,
+      CLIENTS.lot,
       clock,
     ).execute(new GetLegalEntityQuery("le1"));
 
@@ -166,6 +170,7 @@ describe("la fiche d'une entité porte le calendrier de son cycle en cours", () 
       new StorePayerModesReader(new PayerModesStore()),
       CLIENTS.standings,
       CLIENTS.mandates,
+      CLIENTS.lot,
       new FixedClock(NOW),
     );
 
@@ -188,6 +193,7 @@ describe("la fiche d'une entité porte le calendrier de son cycle en cours", () 
       new StorePayerModesReader(new PayerModesStore()),
       CLIENTS.standings,
       CLIENTS.mandates,
+      CLIENTS.lot,
       new FixedClock(NOW),
     ).execute(new GetLegalEntityQuery("le1"));
 
