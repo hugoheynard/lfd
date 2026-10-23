@@ -13,9 +13,9 @@ import { OrdersListPage } from './orders-list-page';
 
 /**
  * Ce que ces cas tiennent : l'URL est la SEULE source des filtres (un filtre
- * posé s'y écrit, une adresse partagée les rend), « Charger plus » renvoie le
- * curseur tel quel et ajoute sous ce qui est là, son échec n'efface rien, et
- * ouvrir une commande dit au détail qu'on vient d'ici.
+ * posé s'y écrit, une adresse partagée les rend), la page numérotée vit dans
+ * l'adresse à côté d'eux et un filtre ramène à la première, et ouvrir une
+ * commande dit au détail qu'on vient d'ici.
  */
 
 @Component({ template: '' })
@@ -51,7 +51,7 @@ class FakeOrders {
 
   async list(filters: Partial<AdminOrdersQuery> = {}): Promise<AdminOrdersPage> {
     this.calls.push(filters);
-    const next = this.pages.shift() ?? { rows: [], nextCursor: null };
+    const next = this.pages.shift() ?? { rows: [], nextCursor: null, total: 0 };
     if (next instanceof Error) {
       throw next;
     }
@@ -105,6 +105,7 @@ describe('OrdersListPage — la liste de toutes les commandes', () => {
       method: 'delivery',
       placedFrom: '2026-10-01',
       q: 'port',
+      page: 1,
       limit: 50,
     });
   });
@@ -112,7 +113,7 @@ describe('OrdersListPage — la liste de toutes les commandes', () => {
   it("jette une valeur inconnue au lieu de l'envoyer au serveur", async () => {
     const orders = new FakeOrders();
     await open('/commandes?status=nimporte&placedTo=hier', orders);
-    expect(orders.calls.at(-1)).toEqual({ limit: 50 });
+    expect(orders.calls.at(-1)).toEqual({ page: 1, limit: 50 });
   });
 
   it("écrit un filtre posé dans l'adresse, et recharge", async () => {
@@ -123,7 +124,12 @@ describe('OrdersListPage — la liste de toutes les commandes', () => {
     const url = TestBed.inject(Router).url;
     expect(url).toContain('clientele=public');
     expect(url).toContain('method=pickup');
-    expect(orders.calls.at(-1)).toEqual({ clientele: 'public', method: 'pickup', limit: 50 });
+    expect(orders.calls.at(-1)).toEqual({
+      clientele: 'public',
+      method: 'pickup',
+      page: 1,
+      limit: 50,
+    });
   });
 
   it("« Tous » retire le filtre de l'adresse", async () => {
@@ -139,35 +145,66 @@ describe('OrdersListPage — la liste de toutes les commandes', () => {
     const harness = await open('/commandes', orders);
     emit(harness, 'q', 'searchChange', 'léa martin');
     await settle(harness);
-    expect(orders.calls.at(-1)).toEqual({ q: 'léa martin', limit: 50 });
+    expect(orders.calls.at(-1)).toEqual({ q: 'léa martin', page: 1, limit: 50 });
     emit(harness, 'q', 'searchChange', '');
     await settle(harness);
     expect(TestBed.inject(Router).url).toBe('/commandes');
   });
 
-  it('« Charger plus » renvoie le curseur avec les filtres, et ajoute sous la liste', async () => {
+  it('pagine par numéro : la page vient de l’adresse et part au serveur', async () => {
     const orders = new FakeOrders();
-    orders.pages.push(
-      { rows: [row('a')], nextCursor: 'c1' },
-      { rows: [row('b')], nextCursor: null },
-    );
-    const harness = await open('/commandes?clientele=pro', orders);
-    (root(harness).querySelector('[data-load-more]') as HTMLButtonElement).click();
-    await settle(harness);
-    expect(orders.calls.at(-1)).toEqual({ clientele: 'pro', cursor: 'c1', limit: 50 });
-    expect(root(harness).textContent).toContain('CMD-a');
-    expect(root(harness).textContent).toContain('CMD-b');
-    expect(root(harness).querySelector('[data-load-more]')).toBeNull();
+    orders.pages.push({ rows: [row('a')], nextCursor: null, total: 120 });
+    const harness = await open('/commandes?clientele=pro&page=3', orders);
+    expect(orders.calls.at(-1)).toEqual({ clientele: 'pro', page: 3, limit: 50 });
+    expect(root(harness).querySelector('fold-paginator')).not.toBeNull();
+    expect(root(harness).textContent).toContain('101–120 sur 120');
   });
 
-  it('un « Charger plus » en échec laisse la liste et le dit dans un callout', async () => {
+  it('changer de page l’écrit dans l’adresse, filtres conservés', async () => {
     const orders = new FakeOrders();
-    orders.pages.push({ rows: [row('a')], nextCursor: 'c1' }, new Error('réseau'));
-    const harness = await open('/commandes', orders);
-    (root(harness).querySelector('[data-load-more]') as HTMLButtonElement).click();
+    orders.pages.push(
+      { rows: [row('a')], nextCursor: null, total: 120 },
+      { rows: [row('b')], nextCursor: null, total: 120 },
+    );
+    const harness = await open('/commandes?method=pickup', orders);
+    const pager = harness.fixture.debugElement.query(By.css('fold-paginator'));
+    (pager.componentInstance as { pageChange: { emit(page: number): void } }).pageChange.emit(2);
     await settle(harness);
+    const url = TestBed.inject(Router).url;
+    expect(url).toContain('method=pickup');
+    expect(url).toContain('page=2');
+    expect(orders.calls.at(-1)).toEqual({ method: 'pickup', page: 2, limit: 50 });
+    expect(root(harness).textContent).toContain('CMD-b');
+  });
+
+  it('un filtre posé ramène à la page 1', async () => {
+    const orders = new FakeOrders();
+    orders.pages.push({ rows: [row('a')], nextCursor: null, total: 120 });
+    const harness = await open('/commandes?page=2', orders);
+    emit(harness, 'status', 'selectionChange', 'placed');
+    await settle(harness);
+    expect(TestBed.inject(Router).url).not.toContain('page=');
+    expect(orders.calls.at(-1)).toEqual({ status: 'placed', page: 1, limit: 50 });
+  });
+
+  it('ne montre pas de paginateur quand tout tient en une page', async () => {
+    const orders = new FakeOrders();
+    orders.pages.push({ rows: [row('a')], nextCursor: null, total: 1 });
+    const harness = await open('/commandes', orders);
     expect(root(harness).textContent).toContain('CMD-a');
-    expect(root(harness).querySelector('fold-callout[data-more-error]')).not.toBeNull();
+    expect(root(harness).querySelector('fold-paginator')).toBeNull();
+  });
+
+  it('une page au-delà de la liste se recale sur la dernière', async () => {
+    const orders = new FakeOrders();
+    orders.pages.push(
+      { rows: [], nextCursor: null, total: 60 },
+      { rows: [row('z')], nextCursor: null, total: 60 },
+    );
+    const harness = await open('/commandes?page=9', orders);
+    expect(TestBed.inject(Router).url).toBe('/commandes?page=2');
+    expect(orders.calls.at(-1)).toEqual({ page: 2, limit: 50 });
+    expect(root(harness).textContent).toContain('CMD-z');
   });
 
   it('un premier chargement en échec est un état vide en alerte, avec Réessayer', async () => {
@@ -179,7 +216,7 @@ describe('OrdersListPage — la liste de toutes les commandes', () => {
 
   it('ouvre une commande en disant au détail qu’on vient de la liste', async () => {
     const orders = new FakeOrders();
-    orders.pages.push({ rows: [row('a')], nextCursor: null });
+    orders.pages.push({ rows: [row('a')], nextCursor: null, total: 1 });
     const harness = await open('/commandes?clientele=pro', orders);
     const table = harness.fixture.debugElement.query(By.css('app-orders-table'));
     (table.componentInstance as { opened: { emit(r: AdminOrderRow): void } }).opened.emit(row('a'));

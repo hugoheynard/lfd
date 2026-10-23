@@ -118,6 +118,12 @@ export interface AdminOrderRow {
 export interface AdminOrdersPage {
   readonly rows: readonly AdminOrderRow[];
   readonly nextCursor: string | null;
+  /**
+   * Combien de commandes répondent aux filtres, toutes pages confondues — ce
+   * que compte un paginateur numéroté (`page`). Le curseur n'y entre pas : le
+   * total est celui de la liste, pas de ce qui reste après la page lue.
+   */
+  readonly total: number;
 }
 
 /** Le filtre de clientèle — les deux valeurs de {@link OrderClientele}. */
@@ -143,44 +149,55 @@ const SEARCH_MAX_LENGTH = 100;
  * Paris : `placedTo=2026-10-12` couvre la journée entière du 12, minuit de
  * Paris compris, jamais minuit UTC.
  */
-export const adminOrdersQuerySchema = z.object({
-  /** Restreint à une entreprise. Absent = toutes, entreprises et personnelles. */
-  companyId: z.string().trim().min(1).optional(),
-  /**
-   * Avec `companyId` : ajoute les commandes de ses sous-comptes ACTUELS
-   * (`parent_company_id`). Une vue de suivi, pas d'argent : le payeur à date,
-   * c'est le relevé de cycle. Sans `companyId`, sans effet.
-   */
-  withSubAccounts: z
-    .enum(["true", "false"])
-    .transform((value) => value === "true")
-    .optional(),
-  /** Restreint à un état d'avancement. */
-  status: orderStatusSchema.optional(),
-  /** Restreint à un état du règlement. */
-  paymentStatus: paymentStatusSchema.optional(),
-  /**
-   * `pro` ou `public`. Une commande d'avant la distinction (`clientele` nul en
-   * base) ne répond à AUCUN des deux : on ne devine pas après coup qui elle
-   * servait.
-   */
-  clientele: adminOrderClienteleSchema.optional(),
-  /** Retrait ou livraison. */
-  method: fulfillmentMethodSchema.optional(),
-  /** Jour de passation, à l'heure de Paris — bornes incluses. */
-  placedFrom: parisDaySchema.optional(),
-  placedTo: parisDaySchema.optional(),
-  /** Jour de retrait ou de livraison — bornes incluses. */
-  fulfillmentFrom: parisDaySchema.optional(),
-  fulfillmentTo: parisDaySchema.optional(),
-  /**
-   * Référence de commande, raison sociale, enseigne, prénom ou nom du client —
-   * sans égard à la casse. Plusieurs mots se cumulent : chacun doit se trouver
-   * dans l'un de ces champs (« léa martin »).
-   */
-  q: z.string().trim().min(1).max(SEARCH_MAX_LENGTH).optional(),
-  /** Le `nextCursor` de la page précédente, tel quel. */
-  cursor: z.string().trim().min(1).optional(),
-  limit: z.coerce.number().int().min(1).max(200).default(50),
-});
+export const adminOrdersQuerySchema = z
+  .object({
+    /** Restreint à une entreprise. Absent = toutes, entreprises et personnelles. */
+    companyId: z.string().trim().min(1).optional(),
+    /**
+     * Avec `companyId` : ajoute les commandes de ses sous-comptes ACTUELS
+     * (`parent_company_id`). Une vue de suivi, pas d'argent : le payeur à date,
+     * c'est le relevé de cycle. Sans `companyId`, sans effet.
+     */
+    withSubAccounts: z
+      .enum(["true", "false"])
+      .transform((value) => value === "true")
+      .optional(),
+    /** Restreint à un état d'avancement. */
+    status: orderStatusSchema.optional(),
+    /** Restreint à un état du règlement. */
+    paymentStatus: paymentStatusSchema.optional(),
+    /**
+     * `pro` ou `public`. Une commande d'avant la distinction (`clientele` nul en
+     * base) ne répond à AUCUN des deux : on ne devine pas après coup qui elle
+     * servait.
+     */
+    clientele: adminOrderClienteleSchema.optional(),
+    /** Retrait ou livraison. */
+    method: fulfillmentMethodSchema.optional(),
+    /** Jour de passation, à l'heure de Paris — bornes incluses. */
+    placedFrom: parisDaySchema.optional(),
+    placedTo: parisDaySchema.optional(),
+    /** Jour de retrait ou de livraison — bornes incluses. */
+    fulfillmentFrom: parisDaySchema.optional(),
+    fulfillmentTo: parisDaySchema.optional(),
+    /**
+     * Référence de commande, raison sociale, enseigne, prénom ou nom du client —
+     * sans égard à la casse. Plusieurs mots se cumulent : chacun doit se trouver
+     * dans l'un de ces champs (« léa martin »).
+     */
+    q: z.string().trim().min(1).max(SEARCH_MAX_LENGTH).optional(),
+    /** Le `nextCursor` de la page précédente, tel quel. */
+    cursor: z.string().trim().min(1).optional(),
+    /**
+     * Le numéro de page, à partir de 1 — pagination **numérotée** (2026-10-23,
+     * la liste du back-office) : saute `(page - 1) × limit` lignes. Exclusif du
+     * `cursor` : deux façons de dire où l'on est se contrediraient.
+     */
+    page: z.coerce.number().int().min(1).optional(),
+    limit: z.coerce.number().int().min(1).max(200).default(50),
+  })
+  .refine((query) => query.page === undefined || query.cursor === undefined, {
+    message: "`page` et `cursor` ne se combinent pas : choisir l'un ou l'autre",
+    path: ["page"],
+  });
 export type AdminOrdersQuery = z.infer<typeof adminOrdersQuerySchema>;

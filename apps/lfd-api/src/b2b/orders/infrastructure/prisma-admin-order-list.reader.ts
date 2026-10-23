@@ -38,10 +38,12 @@ const ADMIN_ROW_SELECT = {
 type AdminRow = Prisma.OrderGetPayload<{ select: typeof ADMIN_ROW_SELECT }>;
 
 /**
- * La liste staff, par **pagination par clé** (`createdAt desc, id desc`) : une
- * page lit `limit + 1` lignes strictement après le curseur, et la ligne en trop
- * ne sert qu'à dire qu'il en reste. Pas d'`OFFSET` — une commande passée entre
- * deux pages décalerait tout.
+ * La liste staff, ordonnée `createdAt desc, id desc`, en **deux paginations** :
+ * par clé (une page lit `limit + 1` lignes strictement après le curseur, la
+ * ligne en trop ne sert qu'à dire qu'il en reste), ou **numérotée** (`skip`,
+ * depuis le 2026-10-23 : l'écran de la liste se feuillette par numéro, comme
+ * Comptes clients). La seconde accepte qu'une commande passée entre deux pages
+ * décale d'une ligne : c'est le prix d'un « page 4 sur 12 ».
  *
  * Une seule requête, avec les deux jointures qui nomment le client : la société
  * si elle existe, la personne sinon (`placedBy`, le `User` du commerce — même
@@ -56,15 +58,23 @@ export class PrismaAdminOrderListReader extends AdminOrderListReader {
   }
 
   async page(criteria: AdminOrderListCriteria): Promise<AdminOrderListSlice> {
-    const rows = await this.prisma.order.findMany({
-      where: { AND: whereOf(criteria) },
-      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      take: criteria.limit + 1,
-      select: ADMIN_ROW_SELECT,
-    });
+    const filters = whereOf(criteria);
+    // Une seule photographie : la page et son total ne doivent pas se lire
+    // de part et d'autre d'une commande qui arrive.
+    const [rows, total] = await this.prisma.$transaction([
+      this.prisma.order.findMany({
+        where: { AND: [...filters, ...afterWhere(criteria)] },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        skip: criteria.skip,
+        take: criteria.limit + 1,
+        select: ADMIN_ROW_SELECT,
+      }),
+      this.prisma.order.count({ where: { AND: filters } }),
+    ]);
     return {
       rows: rows.slice(0, criteria.limit).map(toAdminRow),
       hasMore: rows.length > criteria.limit,
+      total,
     };
   }
 }
@@ -89,13 +99,16 @@ function whereOf(criteria: AdminOrderListCriteria): Prisma.OrderWhereInput[] {
   if (criteria.fulfillmentTo !== null) {
     clauses.push({ requestedDeliveryDate: { lte: dateColumnOf(criteria.fulfillmentTo) } });
   }
-  if (criteria.after !== null) {
-    const { placedAt, orderId } = criteria.after;
-    clauses.push({
-      OR: [{ createdAt: { lt: placedAt } }, { createdAt: placedAt, id: { lt: orderId } }],
-    });
-  }
   return clauses;
+}
+
+/** Strictement après le curseur — hors du total, qui compte toute la liste. */
+function afterWhere(criteria: AdminOrderListCriteria): Prisma.OrderWhereInput[] {
+  if (criteria.after === null) {
+    return [];
+  }
+  const { placedAt, orderId } = criteria.after;
+  return [{ OR: [{ createdAt: { lt: placedAt } }, { createdAt: placedAt, id: { lt: orderId } }] }];
 }
 
 /**

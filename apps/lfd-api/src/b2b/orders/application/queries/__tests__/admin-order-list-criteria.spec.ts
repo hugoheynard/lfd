@@ -64,7 +64,12 @@ describe("adminOrderListCriteriaOf", () => {
       placedBefore: null,
       searchTerms: [],
       after: null,
+      skip: 0,
       limit: 50,
     });
+  });
+
+  it("saute les pages précédentes : la page 3 de 50 commence à la 101ᵉ", () => {
+    expect(criteriaOf({ page: "3" })).toMatchObject({ skip: 100, limit: 50 });
   });
 });

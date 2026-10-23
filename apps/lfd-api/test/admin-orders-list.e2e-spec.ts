@@ -195,6 +195,52 @@ describe("GET /admin/orders — pagination", () => {
   });
 });
 
+describe("GET /admin/orders — pages numérotées", () => {
+  it("feuillette par numéro, et le total compte toute la liste", async () => {
+    const scene = await seedScene();
+
+    const first = await list("?limit=2&page=1");
+    const second = await list("?limit=2&page=2");
+    const beyond = await list("?limit=2&page=3");
+
+    expect([first.total, second.total, beyond.total]).toEqual([3, 3, 3]);
+    expect(first.rows).toHaveLength(2);
+    expect(numbersOf([...first.rows, ...second.rows])).toEqual(
+      [scene.pro, scene.publicPickup, scene.delivery].sort(),
+    );
+    expect(beyond.rows).toEqual([]);
+  });
+
+  it("ne compte que ce que les filtres laissent passer", async () => {
+    const scene = await seedScene();
+
+    const solo = await list("?q=martin&limit=1&page=2");
+
+    expect(solo.total).toBe(2);
+    expect(solo.rows).toHaveLength(1);
+    expect([scene.publicPickup, scene.delivery]).toContain(solo.rows[0]?.orderNumber);
+    expect((await list("?clientele=pro&method=pickup&page=1")).total).toBe(1);
+  });
+
+  it("le total ignore le curseur : c'est celui de la liste", async () => {
+    await seedScene();
+
+    const first = await list("?limit=1");
+    const next = await list(`?limit=1&cursor=${first.nextCursor ?? ""}`);
+
+    expect([first.total, next.total]).toEqual([3, 3]);
+  });
+
+  it("refuse en 400 une page posée avec un curseur", async () => {
+    await seedScene();
+    const first = await list("?limit=1");
+    await ctx
+      .asSub(E2E_STAFF_SUB)
+      .get(`/admin/orders?page=2&cursor=${first.nextCursor ?? ""}`)
+      .expect(400);
+  });
+});
+
 describe("GET /admin/orders — filtres", () => {
   it("filtre par clientèle, et l'historique sans clientèle ne répond à aucune", async () => {
     const scene = await seedScene();

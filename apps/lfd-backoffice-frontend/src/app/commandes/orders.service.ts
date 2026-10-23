@@ -38,7 +38,8 @@ export class AdminOrdersService {
 
   /**
    * Une page de commandes, la plus récente en tête. Filtres optionnels ;
-   * `nextCursor` se renvoie en `cursor` pour la page suivante.
+   * `page` pour une page numérotée (avec `total`), ou `nextCursor` renvoyé en
+   * `cursor` pour la suivante.
    */
   async list(filters: Partial<AdminOrdersQuery> = {}): Promise<AdminOrdersPage> {
     const params = new URLSearchParams();

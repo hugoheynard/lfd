@@ -243,6 +243,7 @@ const ROUTES: readonly (readonly [RegExp, object | null])[] = [
         },
       ],
       nextCursor: null,
+      total: 1,
     },
   ],
   [

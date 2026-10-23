@@ -60,6 +60,7 @@ describe("ListAdminOrdersHandler", () => {
     const reader = new SlicedReader({
       rows: [rowOf("b", LATEST), rowOf("a", EARLIER)],
       hasMore: true,
+      total: 7,
     });
 
     const page = await new ListAdminOrdersHandler(reader).execute(queryOf({ limit: "2" }));
@@ -70,7 +71,7 @@ describe("ListAdminOrdersHandler", () => {
   });
 
   it("ne rend pas de curseur sur la dernière page", async () => {
-    const reader = new SlicedReader({ rows: [rowOf("a", EARLIER)], hasMore: false });
+    const reader = new SlicedReader({ rows: [rowOf("a", EARLIER)], hasMore: false, total: 0 });
 
     const page = await new ListAdminOrdersHandler(reader).execute(queryOf({}));
 
@@ -78,7 +79,7 @@ describe("ListAdminOrdersHandler", () => {
   });
 
   it("transmet au lecteur le curseur reçu, relu", async () => {
-    const reader = new SlicedReader({ rows: [], hasMore: false });
+    const reader = new SlicedReader({ rows: [], hasMore: false, total: 0 });
     const token = AdminOrderCursor.after(new Date(EARLIER), "a").encode();
 
     await new ListAdminOrdersHandler(reader).execute(
@@ -93,11 +94,19 @@ describe("ListAdminOrdersHandler", () => {
   });
 
   it("refuse un curseur illisible sans interroger le lecteur", async () => {
-    const reader = new SlicedReader({ rows: [], hasMore: false });
+    const reader = new SlicedReader({ rows: [], hasMore: false, total: 0 });
 
     await expect(
       new ListAdminOrdersHandler(reader).execute(queryOf({ cursor: "bricole" })),
     ).rejects.toBeInstanceOf(InvalidAdminOrderCursorError);
     expect(reader.received).toHaveLength(0);
+  });
+
+  it("rend le total du lecteur, celui qui numérote les pages", async () => {
+    const reader = new SlicedReader({ rows: [rowOf("a", EARLIER)], hasMore: false, total: 51 });
+
+    const page = await new ListAdminOrdersHandler(reader).execute(queryOf({ page: "2" }));
+
+    expect(page.total).toBe(51);
   });
 });

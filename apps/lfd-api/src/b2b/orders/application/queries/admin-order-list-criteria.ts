@@ -37,6 +37,7 @@ export function adminOrderListCriteriaOf(query: AdminOrdersQuery): AdminOrderLis
       query.fulfillmentTo === undefined ? null : existingDay("fulfillmentTo", query.fulfillmentTo),
     searchTerms: searchTermsOf(query.q),
     after: query.cursor === undefined ? null : AdminOrderCursor.decode(query.cursor),
+    skip: query.page === undefined ? 0 : (query.page - 1) * query.limit,
     limit: query.limit,
   };
 }

@@ -32,13 +32,19 @@ export interface AdminOrderListCriteria {
   readonly searchTerms: readonly string[];
   /** Reprendre strictement après cette ligne ; `null` = première page. */
   readonly after: AdminOrderCursor | null;
+  /** Lignes sautées avant la page — `(page - 1) × limit` ; 0 avec un curseur. */
+  readonly skip: number;
   readonly limit: number;
 }
 
-/** Une page lue : au plus `limit` lignes, et s'il en reste au-delà. */
+/**
+ * Une page lue : au plus `limit` lignes, s'il en reste au-delà, et combien de
+ * commandes répondent aux filtres (curseur et saut exclus).
+ */
 export interface AdminOrderListSlice {
   readonly rows: readonly AdminOrderRow[];
   readonly hasMore: boolean;
+  readonly total: number;
 }
 
 /**

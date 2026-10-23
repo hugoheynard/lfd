@@ -12,13 +12,14 @@ import { ActivatedRoute, Router } from '@angular/router';
 import type { AdminOrderRow } from '@lfd/contracts';
 import {
   FoldButtonComponent,
-  FoldCalloutComponent,
   FoldDateComponent,
   FoldEmptyStateComponent,
   FoldListboxComponent,
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
+  FoldPaginatorComponent,
   FoldSearchComponent,
+  type FoldPaginatorLabels,
   type FoldTableEmpty,
 } from 'fold-ng';
 
@@ -43,10 +44,27 @@ import { AdminOrdersService } from '../orders.service';
 import { OrdersTable } from '../orders-table/orders-table';
 
 type LoadState = 'loading' | 'ready' | 'error';
-type MoreState = 'idle' | 'loading' | 'error';
 
 /** Une page de la liste : assez pour une semaine ordinaire, pas toute la table. */
 export const ORDER_LIST_PAGE_SIZE = 50;
+
+/** Le paginator parle anglais par défaut ; cet écran, non. */
+const PAGINATOR_LABELS: FoldPaginatorLabels = {
+  pageSize: 'Commandes par page',
+  perPage: 'par page',
+  nav: 'Pagination des commandes',
+  previous: 'Page précédente',
+  next: 'Page suivante',
+  empty: 'Aucune commande',
+  page: (page) => `Page ${page}`,
+  range: (start, end, total) => `${start}–${end} sur ${total}`,
+};
+
+/** Le numéro de page de l'adresse ; tout ce qui n'est pas un entier ≥ 1 vaut 1. */
+function pageOf(raw: string | undefined): number {
+  const page = Number(raw);
+  return Number.isInteger(page) && page >= 1 ? page : 1;
+}
 
 /** Les filtres-jours, ceux que porte un `fold-date`. */
 type DayKey = 'placedFrom' | 'placedTo' | 'fulfillmentFrom' | 'fulfillmentTo';
@@ -68,20 +86,23 @@ function sameFilters(left: OrderListFilters, right: OrderListFilters): boolean {
  * recharge. Un filtre changé RÉÉCRIT l'adresse (`replaceUrl`) au lieu d'empiler
  * une entrée d'historique par frappe.
  *
- * « Charger plus » renvoie le `nextCursor` tel quel ; son échec n'efface rien de
- * ce qui est déjà à l'écran (un `fold-callout`, pas un écran d'erreur).
+ * Pages **numérotées** de 50 (2026-10-23, comme Comptes clients) : le numéro
+ * vit dans l'adresse (`page`, absent = 1), à côté des filtres, pour qu'un
+ * retour depuis le détail retombe sur la même page. Un filtre réécrit
+ * l'adresse sans `page` : il ramène donc à la première. Le total vient du
+ * serveur, qui ne compte que ce que les filtres laissent passer.
  */
 @Component({
   selector: 'app-orders-list-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldButtonComponent,
-    FoldCalloutComponent,
     FoldDateComponent,
     FoldEmptyStateComponent,
     FoldListboxComponent,
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
+    FoldPaginatorComponent,
     FoldSearchComponent,
     OrdersTable,
   ],
@@ -99,6 +120,8 @@ export class OrdersListPage {
   readonly fulfillmentFrom = input<string>();
   readonly fulfillmentTo = input<string>();
   readonly q = input<string>();
+  /** Le numéro de page, `1` quand il est absent ou illisible. */
+  readonly page = input<string>();
 
   private readonly orders = inject(AdminOrdersService);
   private readonly router = inject(Router);
@@ -122,10 +145,17 @@ export class OrdersListPage {
     { equal: sameFilters },
   );
 
+  protected readonly currentPage = computed(() => pageOf(this.page()));
+
   protected readonly state = signal<LoadState>('loading');
-  protected readonly more = signal<MoreState>('idle');
   protected readonly rows = signal<readonly AdminOrderRow[]>([]);
-  protected readonly nextCursor = signal<string | null>(null);
+  /** Combien de commandes répondent aux filtres, toutes pages confondues. */
+  protected readonly total = signal(0);
+
+  protected readonly pageSize = ORDER_LIST_PAGE_SIZE;
+  /** Taille fixe : pas de sélecteur. */
+  protected readonly pageSizes: readonly number[] = [];
+  protected readonly paginatorLabels = PAGINATOR_LABELS;
 
   protected readonly ANY = ANY;
   protected readonly clienteleChoices = CLIENTELE_CHOICES;
@@ -156,24 +186,35 @@ export class OrdersListPage {
     void this.palette.refresh();
     effect(() => {
       const filters = this.filters();
-      untracked(() => void this.load(filters));
+      const page = this.currentPage();
+      untracked(() => void this.load(filters, page));
     });
   }
 
-  protected async load(filters: OrderListFilters = this.filters()): Promise<void> {
+  protected async load(
+    filters: OrderListFilters = this.filters(),
+    page: number = this.currentPage(),
+  ): Promise<void> {
     const generation = ++this.generation;
     this.state.set('loading');
-    this.more.set('idle');
     try {
-      const page = await this.orders.list({
+      const result = await this.orders.list({
         ...filtersToQuery(filters),
+        page,
         limit: ORDER_LIST_PAGE_SIZE,
       });
       if (generation !== this.generation) {
         return;
       }
-      this.rows.set(page.rows);
-      this.nextCursor.set(page.nextCursor);
+      const lastPage = Math.max(1, Math.ceil(result.total / ORDER_LIST_PAGE_SIZE));
+      // Une adresse gardée après que la liste a rétréci : on recale sur la
+      // dernière page plutôt que d'afficher un vide qui n'en est pas un.
+      if (result.rows.length === 0 && page > lastPage) {
+        this.goToPage(lastPage);
+        return;
+      }
+      this.rows.set(result.rows);
+      this.total.set(result.total);
       this.state.set('ready');
     } catch {
       if (generation === this.generation) {
@@ -182,31 +223,13 @@ export class OrdersListPage {
     }
   }
 
-  /** La page suivante, ajoutée sous la précédente. Un échec laisse tout en place. */
-  protected async loadMore(): Promise<void> {
-    const cursor = this.nextCursor();
-    if (cursor === null || this.more() === 'loading') {
-      return;
-    }
-    const generation = this.generation;
-    this.more.set('loading');
-    try {
-      const page = await this.orders.list({
-        ...filtersToQuery(this.filters()),
-        cursor,
-        limit: ORDER_LIST_PAGE_SIZE,
-      });
-      if (generation !== this.generation) {
-        return;
-      }
-      this.rows.update((rows) => [...rows, ...page.rows]);
-      this.nextCursor.set(page.nextCursor);
-      this.more.set('idle');
-    } catch {
-      if (generation === this.generation) {
-        this.more.set('error');
-      }
-    }
+  /** Écrit la page dans l'adresse, filtres conservés ; la page 1 n'y figure pas. */
+  protected goToPage(page: number): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { ...filtersToParams(this.filters()), page: page > 1 ? page : null },
+      replaceUrl: true,
+    });
   }
 
   protected choice<K extends ChoiceKey>(key: K): Choice<NonNullable<OrderListFilters[K]>> {
@@ -232,7 +255,10 @@ export class OrdersListPage {
     this.apply(NO_FILTERS);
   }
 
-  /** Écrit les filtres dans l'adresse ; la page se recharge en la relisant. */
+  /**
+   * Écrit les filtres dans l'adresse ; la page se recharge en la relisant.
+   * Sans `page` : un autre filtre, c'est repartir de la première.
+   */
   private apply(change: Partial<OrderListFilters>): void {
     void this.router.navigate([], {
       relativeTo: this.route,

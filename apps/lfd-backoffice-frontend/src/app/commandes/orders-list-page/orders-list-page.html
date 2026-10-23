@@ -122,22 +122,15 @@
         />
       }
 
-      @if (more() === 'error') {
-        <fold-callout variant="alert" data-more-error>
-          La suite de la liste n'a pas pu être lue — ce qui est affiché reste juste.
-          <button foldButton size="sm" emphasis="outline" (click)="loadMore()">Réessayer</button>
-        </fold-callout>
-      } @else if (nextCursor() !== null) {
-        <button
-          foldButton
-          class="ol-more"
-          emphasis="outline"
-          [loading]="more() === 'loading'"
-          (click)="loadMore()"
-          data-load-more
-        >
-          Charger plus
-        </button>
+      @if (total() > pageSize) {
+        <fold-paginator
+          [currentPage]="currentPage()"
+          [pageSize]="pageSize"
+          [totalItems]="total()"
+          [pageSizeOptions]="pageSizes"
+          [labels]="paginatorLabels"
+          (pageChange)="goToPage($event)"
+        />
       }
     }
   }

@@ -29,4 +29,10 @@ describe("adminOrdersQuerySchema", () => {
   it("refuse une recherche vide", () => {
     expect(adminOrdersQuerySchema.safeParse({ q: "   " }).success).toBe(false);
   });
+
+  it("prend un numéro de page, mais jamais avec un curseur", () => {
+    expect(adminOrdersQuerySchema.parse({ page: "2" })).toMatchObject({ page: 2 });
+    expect(adminOrdersQuerySchema.safeParse({ page: "0" }).success).toBe(false);
+    expect(adminOrdersQuerySchema.safeParse({ page: "2", cursor: "abc" }).success).toBe(false);
+  });
 });

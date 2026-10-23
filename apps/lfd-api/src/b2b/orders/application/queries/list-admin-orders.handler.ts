@@ -27,6 +27,7 @@ export class ListAdminOrdersHandler implements IQueryHandler<
         slice.hasMore && last !== undefined
           ? AdminOrderCursor.after(new Date(last.placedAt), last.id).encode()
           : null,
+      total: slice.total,
     };
   }
 }
