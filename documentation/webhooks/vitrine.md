@@ -338,7 +338,12 @@ rendu pur dans
 `apps/lfc-ecommerce-frontend/src/app/client/shop/piece-page/piece-page.render.ts`). Elle lit
 `GET /shop/catalogue` **anonyme** (ni jeton, ni `?audience=` : un article
 réservé aux pros n'y est pas, et il est refusé une seconde fois au rendu), puis
-sert l'`index.html` statique :
+sert l'`index.html` statique (l'origine de la canonique et d'`og:url` est
+`ZONE_CLIENT_FRONT` de `@lfd/endpoints`, `https://lafoliecoffee.info` — pas
+celle de la requête, qui derrière la passerelle est `*.pages.dev` ; l'image
+d'aperçu est `image`, sinon `thumbnail`, avec `og:image:width/height` et un
+`og:image:alt` qui retombe sur le nom quand la médiathèque a replié l'alt sur
+l'URL — corrigé le 2026-10-23) :
 
 | Cas                                           | Statut | Ce qui change dans le `<head>`                                                                                        | `cache-control`                                    |
 | --------------------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |

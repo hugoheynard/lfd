@@ -40,7 +40,15 @@ export interface PublicPiece {
   readonly sku: string;
   readonly name: string;
   readonly note: string | null;
-  readonly imageUrl: string | null;
+  readonly image: PieceImage | null;
+}
+
+/** L'image de l'aperçu : dimensions si la médiathèque les connaît, alt jamais une URL. */
+export interface PieceImage {
+  readonly url: string;
+  readonly alt: string;
+  readonly width: number | null;
+  readonly height: number | null;
 }
 
 /** Échappe pour un contenu de balise ET une valeur d'attribut entre guillemets. */
@@ -62,16 +70,45 @@ export function findPublicPiece(payload: unknown, sku: string): PublicPiece | nu
     return null;
   }
   const note = raw['note'];
-  const image = raw['image'];
+  const name = raw['name'];
   return {
     sku,
-    name: raw['name'],
+    name,
     note: typeof note === 'string' && note.trim() !== '' ? note : null,
-    imageUrl: isRecord(image) && typeof image['url'] === 'string' ? image['url'] : null,
+    image: pieceImage(raw['image'], name) ?? pieceImage(raw['thumbnail'], name),
   };
 }
 
-/** L'`index.html` avec l'en-tête d'une fiche ; `origin` = celle de la requête. */
+/**
+ * L'image d'une vue publique `{ url, alt, width, height }`. La vue publique
+ * sert souvent `image: null` et la seule `thumbnail` (constaté en production
+ * le 2026-10-23 sur `P-BDMCRD`) : l'appelant replie sur elle.
+ *
+ * L'alt : la médiathèque replie une alternative absente sur l'URL ; on prend
+ * alors le nom de l'article — même règle que le flux vitrine (§7 bis).
+ */
+function pieceImage(value: unknown, name: string): PieceImage | null {
+  if (!isRecord(value) || typeof value['url'] !== 'string' || value['url'] === '') {
+    return null;
+  }
+  const alt = value['alt'];
+  return {
+    url: value['url'],
+    alt: typeof alt === 'string' && alt.trim() !== '' && !/^https?:\/\//.test(alt) ? alt : name,
+    width: positiveInteger(value['width']),
+    height: positiveInteger(value['height']),
+  };
+}
+
+function positiveInteger(value: unknown): number | null {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0 ? value : null;
+}
+
+/**
+ * L'`index.html` avec l'en-tête d'une fiche. `origin` = l'origine PUBLIQUE de
+ * la boutique (`ZONE_CLIENT_FRONT`), jamais celle de la requête : derrière la
+ * passerelle, la Function voit l'hôte `*.pages.dev`.
+ */
 export function renderPieceHead(indexHtml: string, piece: PublicPiece, origin: string): string {
   const url = productUrl(origin, piece.sku) ?? origin;
   const description = piece.note ?? piece.name;
@@ -82,12 +119,23 @@ export function renderPieceHead(indexHtml: string, piece: PublicPiece, origin: s
     `<meta property="og:title" content="${escapeHtml(piece.name)}" />`,
     `<meta property="og:description" content="${escapeHtml(description)}" />`,
     `<meta property="og:url" content="${escapeHtml(url)}" />`,
-    ...(piece.imageUrl === null
-      ? []
-      : [`<meta property="og:image" content="${escapeHtml(absolute(piece.imageUrl, origin))}" />`]),
-    `<meta name="twitter:card" content="${piece.imageUrl === null ? 'summary' : 'summary_large_image'}" />`,
+    ...(piece.image === null ? [] : imageTags(piece.image, origin)),
+    `<meta name="twitter:card" content="${piece.image === null ? 'summary' : 'summary_large_image'}" />`,
   ];
   return injectHead(withTitle(indexHtml, `${piece.name}${TITLE_SUFFIX}`), tags);
+}
+
+function imageTags(image: PieceImage, origin: string): readonly string[] {
+  return [
+    `<meta property="og:image" content="${escapeHtml(absolute(image.url, origin))}" />`,
+    ...(image.width === null
+      ? []
+      : [`<meta property="og:image:width" content="${image.width}" />`]),
+    ...(image.height === null
+      ? []
+      : [`<meta property="og:image:height" content="${image.height}" />`]),
+    `<meta property="og:image:alt" content="${escapeHtml(image.alt)}" />`,
+  ];
 }
 
 /** L'`index.html` d'un article absent : à ne pas indexer. */

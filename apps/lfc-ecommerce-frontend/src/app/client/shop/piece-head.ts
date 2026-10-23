@@ -3,6 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { Meta, Title } from '@angular/platform-browser';
 import { productUrl, SHOP_PATH } from '@lfd/contracts/product-path';
 import type { ShopItemView } from '@lfd/contracts';
+import { ZONE_CLIENT_FRONT } from '@lfd/endpoints';
 
 /** Le titre de la boutique — celui que sa route déclare. */
 const SHOP_TITLE = 'Boutique — La Folie Coffee';
@@ -11,6 +12,17 @@ const SHOP_TITLE = 'Boutique — La Folie Coffee';
 const TITLE_SUFFIX = ' — La Folie Coffee';
 
 /** Les balises qu'une fiche pose, et que la grille retire. */
+/**
+ * Posées par la Pages Function seule (`piece-page.render.ts`) : elles décrivent
+ * l'article du premier chargement, et sont retirées dès qu'on en ouvre un
+ * autre plutôt que de survivre à côté de son image.
+ */
+const ROBOT_ONLY_IMAGE_TAGS = [
+  'property="og:image:width"',
+  'property="og:image:height"',
+  'property="og:image:alt"',
+] as const;
+
 const PIECE_TAGS = [
   'name="description"',
   'name="robots"',
@@ -19,6 +31,7 @@ const PIECE_TAGS = [
   'property="og:description"',
   'property="og:url"',
   'property="og:image"',
+  ...ROBOT_ONLY_IMAGE_TAGS,
   'name="twitter:card"',
 ] as const;
 
@@ -29,7 +42,9 @@ const PIECE_TAGS = [
  *
  * Posé par {@link PieceAddress} à l'ouverture, retiré à la fermeture : la
  * grille garde son titre et n'hérite pas de la description d'un article.
- * L'origine est celle du document — la boutique n'en connaît pas d'autre.
+ * L'origine est l'origine PUBLIQUE (`ZONE_CLIENT_FRONT`), comme dans la Pages
+ * Function : une fiche ouverte sur `*.pages.dev` ou en local déclare quand même
+ * l'adresse de la boutique pour canonique.
  *
  * Sur Cloudflare, la Pages Function `functions/boutique/article/[sku].ts` a
  * déjà posé ces balises dans l'`index.html` (`piece-page.render.ts`) : chacune
@@ -44,9 +59,12 @@ export class PieceHead {
 
   /** La fiche d'un article en vente. */
   show(item: ShopItemView): void {
-    const url = productUrl(this.document.location.origin, item.sku) ?? this.absolute(SHOP_PATH);
+    const url = productUrl(ZONE_CLIENT_FRONT, item.sku) ?? this.absolute(SHOP_PATH);
     this.title.setTitle(`${item.name}${TITLE_SUFFIX}`);
     this.meta.removeTag('name="robots"');
+    for (const selector of ROBOT_ONLY_IMAGE_TAGS) {
+      this.meta.removeTag(selector);
+    }
     this.put({ name: 'description', content: item.note ?? item.name });
     this.put({ property: 'og:type', content: 'product' });
     this.put({ property: 'og:title', content: item.name });
@@ -100,6 +118,6 @@ export class PieceHead {
     if (/^https?:\/\//.test(path)) {
       return path;
     }
-    return `${this.document.location.origin}${path}`;
+    return `${ZONE_CLIENT_FRONT}${path}`;
   }
 }

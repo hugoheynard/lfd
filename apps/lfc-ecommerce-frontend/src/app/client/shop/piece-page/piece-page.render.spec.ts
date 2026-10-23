@@ -5,9 +5,11 @@ import {
   MISSING_CACHE_CONTROL,
   onRequestGet,
 } from '../../../../../functions/boutique/article/[sku]';
+import { ZONE_CLIENT_FRONT } from '@lfd/endpoints';
 import { escapeHtml, findPublicPiece, renderPieceHead } from './piece-page.render';
 
-const ORIGIN = 'https://boutique.example';
+/** L'hôte que voit la Function derrière la passerelle — jamais celui qu'elle déclare. */
+const ORIGIN = 'https://lfc-ecommerce.pages.dev';
 
 const INDEX_HTML =
   '<!doctype html><html><head>\n    <title>La Folie Coffee — B2B</title>\n  </head><body><app-root></app-root></body></html>';
@@ -75,12 +77,16 @@ describe('GET /boutique/article/<sku>', () => {
     expect(html).toContain('<title>Pain au levain — La Folie Coffee</title>');
     expect(html.match(/<title>/g)).toHaveLength(1);
     expect(html).toContain('<meta name="description" content="Croûte épaisse" />');
-    expect(html).toContain(`<link rel="canonical" href="${ORIGIN}/boutique/article/PAIN-1" />`);
+    expect(html).toContain(
+      `<link rel="canonical" href="${ZONE_CLIENT_FRONT}/boutique/article/PAIN-1" />`,
+    );
     expect(html).toContain('<meta property="og:type" content="product" />');
     expect(html).toContain(
-      `<meta property="og:url" content="${ORIGIN}/boutique/article/PAIN-1" />`,
+      `<meta property="og:url" content="${ZONE_CLIENT_FRONT}/boutique/article/PAIN-1" />`,
     );
-    expect(html).toContain(`<meta property="og:image" content="${ORIGIN}/media/levain.jpg" />`);
+    expect(html).toContain(
+      `<meta property="og:image" content="${ZONE_CLIENT_FRONT}/media/levain.jpg" />`,
+    );
     expect(html).toContain('<meta name="twitter:card" content="summary_large_image" />');
     expect(html.indexOf('og:title')).toBeLessThan(html.indexOf('</head>'));
     expect(html).not.toContain('noindex');
@@ -167,7 +173,7 @@ describe('GET /boutique/article/<sku>', () => {
 
     expect(response.status).toBe(200);
     expect(html).toContain(
-      `<link rel="canonical" href="${ORIGIN}/boutique/article/CAF%C3%89%201%2F2" />`,
+      `<link rel="canonical" href="${ZONE_CLIENT_FRONT}/boutique/article/CAF%C3%89%201%2F2" />`,
     );
   });
 
@@ -191,10 +197,59 @@ describe('findPublicPiece / renderPieceHead', () => {
   it('sans visuel : ni og:image, carte twitter simple', () => {
     const html = renderPieceHead(
       INDEX_HTML,
-      { sku: 'A', name: 'A', note: null, imageUrl: null },
-      ORIGIN,
+      { sku: 'A', name: 'A', note: null, image: null },
+      ZONE_CLIENT_FRONT,
     );
     expect(html).not.toContain('og:image');
     expect(html).toContain('<meta name="twitter:card" content="summary" />');
+  });
+
+  /** Extrait réel de `GET /shop/catalogue` en production (2026-10-23). */
+  const REAL_ITEM = {
+    sku: 'P-BDMCRD',
+    name: 'Pain sans blé 300 g',
+    note: 'Farine de riz et sarrasin. Produit dans un atelier utilisant des farines de blé.',
+    image: null,
+    thumbnail: {
+      url: 'https://media.lafoliecoffee.info/images/fe06e845ca842bd671edbf7d454a1a14930e9d1c09928b34940044d60d32de23.jpg',
+      alt: 'https://media.lafoliecoffee.info/images/fe06e845ca842bd671edbf7d454a1a14930e9d1c09928b34940044d60d32de23.jpg',
+      width: 736,
+      height: 920,
+      focal: null,
+    },
+    unitPriceMillicents: 1232227,
+    unitPriceTtcCents: 1300,
+    vatRatePercent: 5.5,
+    shelfId: '01a031fe-c498-719e-928b-979fd76b699a',
+    isFeatured: false,
+    audience: 'both',
+  };
+
+  /** Régression : `image: null` + `thumbnail` en production, et aucun og:image n'était posé. */
+  it('og:image depuis la vignette quand image est nulle, dimensions, alt = nom (pas l’URL)', () => {
+    const piece = findPublicPiece(catalogue(REAL_ITEM), 'P-BDMCRD');
+    if (piece === null) {
+      throw new Error('article réel introuvable dans la fixture');
+    }
+    const html = renderPieceHead(INDEX_HTML, piece, ZONE_CLIENT_FRONT);
+    expect(html).toContain(`<meta property="og:image" content="${REAL_ITEM.thumbnail.url}" />`);
+    expect(html).toContain('<meta property="og:image:width" content="736" />');
+    expect(html).toContain('<meta property="og:image:height" content="920" />');
+    expect(html).toContain('<meta property="og:image:alt" content="Pain sans blé 300 g" />');
+    expect(html).toContain('<meta name="twitter:card" content="summary_large_image" />');
+  });
+
+  /** Régression : derrière la passerelle, la canonique valait l'hôte pages.dev. */
+  it('canonique et og:url sur l’origine publique malgré une requête sur pages.dev', async () => {
+    useApi(new FakeApi(() => json(catalogue(REAL_ITEM))));
+    const html = await (await onRequestGet(context('/boutique/article/P-BDMCRD'))).text();
+    expect(ZONE_CLIENT_FRONT).toBe('https://lafoliecoffee.info');
+    expect(html).toContain(
+      '<link rel="canonical" href="https://lafoliecoffee.info/boutique/article/P-BDMCRD" />',
+    );
+    expect(html).toContain(
+      '<meta property="og:url" content="https://lafoliecoffee.info/boutique/article/P-BDMCRD" />',
+    );
+    expect(html).not.toContain('pages.dev');
   });
 });

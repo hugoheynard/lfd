@@ -17,10 +17,18 @@
  * de dépôt `LFD_API_URL`, comme `functions/confidentialite.ts` — une seule
  * source, pas une variable Pages de plus.
  *
+ * **L'origine publique** (canonique, `og:url`) : `ZONE_CLIENT_FRONT` de
+ * `@lfd/endpoints`, la même que le CORS de l'API et la passerelle. Pas celle
+ * de la requête : la passerelle relaie vers Pages, et la Function voit
+ * `lfc-ecommerce.pages.dev` (constaté en production le 2026-10-23) ; la
+ * passerelle ne pose aucun `X-Forwarded-Host` (vérifié le 2026-10-23).
+ * L'origine de la requête ne sert plus qu'à lire l'`index.html` par `ASSETS`.
+ *
  * 🔴 **Anonyme, toujours** : ni jeton, ni cookie, ni `?audience=` relayés. Un
  * article réservé aux pros n'est pas servi par cette route, ses balises ne
  * peuvent pas fuiter.
  */
+import { ZONE_CLIENT_FRONT } from '@lfd/endpoints';
 import { AUTH_ENV } from '../../../src/app/auth/auth.env.generated';
 import {
   findPublicPiece,
@@ -65,7 +73,7 @@ export async function onRequestGet(context: PieceFunctionContext): Promise<Respo
   if (reading.piece === null) {
     return page(renderMissingPieceHead(html), 404, MISSING_CACHE_CONTROL);
   }
-  return page(renderPieceHead(html, reading.piece, origin), 200, FOUND_CACHE_CONTROL);
+  return page(renderPieceHead(html, reading.piece, ZONE_CLIENT_FRONT), 200, FOUND_CACHE_CONTROL);
 }
 
 async function readPiece(sku: string): Promise<CatalogueReading> {

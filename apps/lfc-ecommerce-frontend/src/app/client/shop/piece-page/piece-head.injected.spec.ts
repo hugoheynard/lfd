@@ -1,5 +1,6 @@
 import { DOCUMENT } from '@angular/common';
 import { TestBed } from '@angular/core/testing';
+import { ZONE_CLIENT_FRONT } from '@lfd/endpoints';
 
 import { PieceHead } from '../piece-head';
 import { TEST_ITEMS } from '../shop-catalogue.fixture';
@@ -32,11 +33,16 @@ describe('PieceHead sur un en-tête déjà posé par la Function', () => {
     if (croissant === undefined || painAuChocolat === undefined) {
       throw new Error('fixture vide');
     }
-    const origin = TestBed.inject(DOCUMENT).location.origin;
+    const origin = ZONE_CLIENT_FRONT;
     const document = pose(
       renderPieceHead(
         '<html><head><title>x</title></head><body></body></html>',
-        { sku: croissant.sku, name: croissant.name, note: croissant.note, imageUrl: '/a.jpg' },
+        {
+          sku: croissant.sku,
+          name: croissant.name,
+          note: croissant.note,
+          image: { url: '/a.jpg', alt: 'a', width: 10, height: 10 },
+        },
         origin,
       ),
     );
@@ -59,6 +65,7 @@ describe('PieceHead sur un en-tête déjà posé par la Function', () => {
     );
     // Le pain au chocolat n'a pas de visuel : l'image du croissant ne survit pas.
     expect(count(document, 'meta[property="og:image"]')).toBe(0);
+    expect(count(document, 'meta[property^="og:image:"]')).toBe(0);
   });
 
   it('un seul noindex quand l’app constate elle aussi l’absence', () => {
