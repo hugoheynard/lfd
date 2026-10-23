@@ -5,17 +5,16 @@ import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 import {
   CollectionBatch,
-  type BankRejectionStamp,
   type CollectionBatchLine,
   type CollectionBatchState,
   type ConstitutionAuthor,
 } from "../domain/entities/collection-batch.js";
 import { CollectionBatchChangedConcurrentlyError } from "../domain/errors/collection-errors.js";
 import type { CollectionBatchStatus } from "../domain/entities/collection-batch-status.js";
+import { Bic } from "../domain/value-objects/bic.js";
+import { Iban } from "../domain/value-objects/iban.js";
 import { CollectionBatchRepository } from "../domain/ports/collection-batch.repository.js";
-import type { SequenceType } from "../domain/services/pain008-document.js";
-
-const SEQUENCES: readonly SequenceType[] = ["RCUR", "OOFF"];
+import { bankRejectionFromRow, sequenceFromRow } from "./collection-batch-row.mapper.js";
 
 /**
  * Adaptateur d'écriture du lot. Les LIGNES et le FICHIER sont écrits à la
@@ -70,7 +69,7 @@ export class PrismaCollectionBatchRepository extends CollectionBatchRepository {
       },
       deposited: stamp(row.depositedAt, row.depositedByStaffId),
       cancelled: stamp(row.cancelledAt, row.cancelledByStaffId),
-      rejected: rejection(row.rejectedAt, row.rejectedByStaffId, row.rejectionReason),
+      rejected: bankRejectionFromRow(row.rejectedAt, row.rejectedByStaffId, row.rejectionReason),
       unmandatedCompanies: row.unmandatedCompanies,
       lines: row.lines.map((line) => ({
         rank: line.rank,
@@ -80,9 +79,10 @@ export class PrismaCollectionBatchRepository extends CollectionBatchRepository {
         mandateSignedAt: line.mandateSignedAt,
         debtorCompanyId: line.debtorCompanyId,
         debtorName: line.debtorName,
-        debtorIban: this.cipher.open(line.debtorIbanSealed),
-        debtorBic: line.debtorBic,
-        sequence: sequenceOf(line.sequence),
+        // Descellé ici, revalidé par le value object : le domaine ne voit jamais de chaîne nue.
+        debtorIban: Iban.create(this.cipher.open(line.debtorIbanSealed)),
+        debtorBic: line.debtorBic === null ? null : Bic.fromStored(line.debtorBic),
+        sequence: sequenceFromRow(line.sequence),
         amountCents: line.amountCents,
         ordersTotalCents: line.ordersTotalCents,
         orderIds: line.orders.map((order) => order.orderId),
@@ -178,9 +178,9 @@ export class PrismaCollectionBatchRepository extends CollectionBatchRepository {
       mandateSignedAt: line.mandateSignedAt,
       debtorCompanyId: line.debtorCompanyId,
       debtorName: line.debtorName,
-      debtorIbanSealed: this.cipher.seal(line.debtorIban),
-      debtorIbanLast4: line.debtorIban.slice(-4),
-      debtorBic: line.debtorBic,
+      debtorIbanSealed: this.cipher.seal(line.debtorIban.value),
+      debtorIbanLast4: line.debtorIban.last4(),
+      debtorBic: line.debtorBic?.value ?? null,
       sequence: line.sequence,
       amountCents: line.amountCents,
       ordersTotalCents: line.ordersTotalCents,
@@ -209,15 +209,6 @@ function stamp(at: Date | null, staffId: string | null): { at: Date; staffId: st
   return at === null || staffId === null ? null : { at, staffId };
 }
 
-/** Le CHECK `collection_batch_rejected_is_signed` pose les trois ensemble. */
-function rejection(
-  at: Date | null,
-  staffId: string | null,
-  reason: string | null,
-): BankRejectionStamp | null {
-  return at === null || staffId === null || reason === null ? null : { at, staffId, reason };
-}
-
 /** `constituted_by` relu : le `CHECK` lie la fiche à `staff`, le domaine le revérifie. */
 function authorOf(kind: string, staffId: string | null): ConstitutionAuthor {
   if (kind === "system" && staffId === null) {
@@ -227,25 +218,6 @@ function authorOf(kind: string, staffId: string | null): ConstitutionAuthor {
     return { kind: "staff", staffId };
   }
   throw new CorruptBatchAuthorError(kind);
-}
-
-/** La base le tient par `CHECK` ; une autre valeur est une ligne corrompue. */
-function sequenceOf(raw: string): SequenceType {
-  const found = SEQUENCES.find((sequence) => sequence === raw);
-  if (found === undefined) {
-    throw new CorruptBatchLineError(raw);
-  }
-  return found;
-}
-
-/** Inatteignable tant que le `CHECK` existe ; on refuse plutôt que deviner une séquence. */
-class CorruptBatchLineError extends TechnicalError {
-  constructor(raw: string) {
-    super(
-      "accounting.collection.corrupt_line",
-      `Une ligne de lot porte la séquence « ${raw} », ni RCUR ni OOFF : la contrainte collection_batch_line_sequence a été levée. Prévenir la technique.`,
-    );
-  }
 }
 
 /** Inatteignable tant que `collection_batch_constituted_by_author` existe. */

@@ -83,6 +83,23 @@ export function judgeMandate(order: JudgedOrder, context: VerdictContext): Verdi
 }
 
 /**
+ * **Ce payeur est-il débité chez cette entité à `at` ?** — le jugement EXACT
+ * du lot (`judgeMandate`), rejoué sur un bon que le payeur passerait lui-même
+ * à cet instant, facturé en son nom. Le compte des clients le lit (2026-10-23)
+ * pour ne pas fabriquer lui-même ce bon.
+ *
+ * `liveSchemes` est vide : un schéma déjà pris par un lot vivant renvoie un
+ * bon au lot suivant, il ne fait pas d'un payeur un non-débité.
+ */
+export function isDebitedHereAt(
+  companyId: string,
+  context: Omit<VerdictContext, "liveSchemes">,
+): boolean {
+  const order: JudgedOrder = { companyId, placedAt: context.at, billedCompanyId: companyId };
+  return judgeMandate(order, { ...context, liveSchemes: [] }).kind === "debit";
+}
+
+/**
  * Le mandat EFFECTIF d'un bon chez cette entité — `null` s'il n'y en a pas
  * exactement un. Ce que la facture du mois fige (BG-16) : ni le schéma déjà
  * pris, ni le mandat ponctuel consommé, ni le détachement n'y entrent — ils

@@ -1,4 +1,6 @@
-import type { SequenceType } from "../services/pain008-document.js";
+import type { SequenceType } from "../services/sepa-sequence.js";
+import type { Bic } from "../value-objects/bic.js";
+import type { Iban } from "../value-objects/iban.js";
 
 /**
  * Une ligne du fichier : UN débiteur, le mandat **figé** — IBAN compris — et
@@ -15,8 +17,9 @@ export interface CollectionBatchLine {
   readonly debtorCompanyId: string;
   readonly debtorName: string;
   /** En clair EN MÉMOIRE seulement : l'adaptateur le scelle à l'écriture. */
-  readonly debtorIban: string;
-  readonly debtorBic: string | null;
+  readonly debtorIban: Iban;
+  /** `null` : le RIB n'en porte pas, le fichier a écrit `NOTPROVIDED`. */
+  readonly debtorBic: Bic | null;
   readonly sequence: SequenceType;
   /** Le total TTC de la facture de ses bons, calculée en une fois (F2). */
   readonly amountCents: number;

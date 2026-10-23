@@ -2,14 +2,13 @@ import { Injectable } from "@nestjs/common";
 
 import type { Prisma } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
-import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
-import type {
-  BatchRejectionTrace,
-  ReturnableLine,
-  ReturnableLineRegime,
+import {
+  returnableLineRegimeOf,
+  type BatchRejectionTrace,
+  type ReturnableLine,
 } from "../domain/entities/collection-return.js";
 import { ReturnableLinesReader } from "../domain/ports/returnable-lines.reader.js";
-import type { SequenceType } from "../domain/services/pain008-document.js";
+import { bankRejectionFromRow, sequenceFromRow } from "./collection-batch-row.mapper.js";
 
 /** Ce qu'on lit d'une ligne : JAMAIS `debtorIbanSealed`. */
 const LINE_SELECT = {
@@ -84,10 +83,10 @@ function toLine(row: LineRow): ReturnableLine {
     amountCents: row.amountCents,
     mandateId: row.mandateId,
     mandateReference: row.mandateReference,
-    sequence: sequenceOf(row.sequence),
+    sequence: sequenceFromRow(row.sequence),
     debtorCompanyId: row.debtorCompanyId,
     debtorName: row.debtorName,
-    regime: regimeOf(row),
+    regime: returnableLineRegimeOf(row._count.invoices, row.statement !== null),
     requestedCollectionDay: row.batch.requestedCollectionDay?.toISOString().slice(0, 10) ?? null,
     batchRejection: rejectionOf(
       row.batch.rejectedAt,
@@ -97,35 +96,12 @@ function toLine(row: LineRow): ReturnableLine {
   };
 }
 
-/** Posés ensemble par le CHECK `collection_batch_rejected_is_signed`. */
+/** Le rejet tel qu'un retour le cite : qui l'a déclaré, et pourquoi. */
 function rejectionOf(
   at: Date | null,
   byStaffId: string | null,
   reason: string | null,
 ): BatchRejectionTrace | null {
-  return at === null || byStaffId === null || reason === null ? null : { at, reason, byStaffId };
-}
-
-function regimeOf(row: LineRow): ReturnableLineRegime {
-  if (row._count.invoices > 0) {
-    return "invoices";
-  }
-  return row.statement === null ? "legacy" : "statement";
-}
-
-/** Inatteignable tant que le CHECK `collection_batch_line_sequence` existe. */
-function sequenceOf(raw: string): SequenceType {
-  if (raw === "RCUR" || raw === "OOFF") {
-    return raw;
-  }
-  throw new UnknownLineSequenceError(raw);
-}
-
-class UnknownLineSequenceError extends TechnicalError {
-  constructor(raw: string) {
-    super(
-      "accounting.collection_return.unknown_sequence",
-      `Séquence de ligne inconnue « ${raw} » : le CHECK collection_batch_line_sequence n'admet que RCUR et OOFF.`,
-    );
-  }
+  const stamp = bankRejectionFromRow(at, byStaffId, reason);
+  return stamp === null ? null : { at: stamp.at, reason: stamp.reason, byStaffId: stamp.staffId };
 }

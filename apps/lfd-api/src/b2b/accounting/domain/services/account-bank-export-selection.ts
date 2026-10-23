@@ -21,6 +21,35 @@ export interface AccountBankExportSelection {
   readonly known: readonly FingerprintedAccount[];
 }
 
+/** Une ligne d'export non abandonnée et non rejetée, et où en est son export. */
+export interface ExportedFingerprint {
+  readonly accountFingerprint: string;
+  readonly importedAt: Date | null;
+  readonly lastDownloadedAt: Date | null;
+}
+
+/**
+ * **Ce que la banque a, ou va avoir** : une ligne d'un export importé rend son
+ * compte connu, celle d'un export pas encore importé le met en vol — et en vol
+ * « téléchargé » si le fichier est déjà sorti. Les comptes déclarés « déjà
+ * connu » le sont d'emblée. Sorti de l'adaptateur le 2026-10-23.
+ */
+export function knownAccountFingerprintsOf(
+  lines: readonly ExportedFingerprint[],
+  declared: readonly string[],
+): KnownAccountFingerprints {
+  const known = new Set(declared);
+  const inFlight = new Set<string>();
+  const inDownloadedExport = new Set<string>();
+  for (const line of lines) {
+    (line.importedAt === null ? inFlight : known).add(line.accountFingerprint);
+    if (line.importedAt === null && line.lastDownloadedAt !== null) {
+      inDownloadedExport.add(line.accountFingerprint);
+    }
+  }
+  return { known, inFlight, inDownloadedExport };
+}
+
 /**
  * Une empreinte par compte, et un compte par empreinte (R5) : deux RIB au même
  * IBAN — un site qui l'a ressaisi — ne font qu'une ligne, le plus ancien.

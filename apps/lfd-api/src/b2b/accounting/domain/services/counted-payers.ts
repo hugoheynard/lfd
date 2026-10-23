@@ -2,7 +2,7 @@ import type { CollectionMandate } from "../ports/collection-mandates.reader.js";
 import type { PayerStanding } from "../ports/payer-standing.reader.js";
 import type { CollectionFormName } from "../value-objects/collection-form.js";
 import { isBillingPayerAt } from "./billing-payer-guard.js";
-import { judgeMandate } from "./collection-verdict.js";
+import { isDebitedHereAt } from "./collection-verdict.js";
 
 /** Les entrées du lot que le compte rejoue — les mêmes sources que la constitution. */
 export interface CountingLotInputs {
@@ -20,12 +20,8 @@ export interface CountingLotInputs {
  * - **actif** — la société au statut `active` (décision d'AFFICHAGE : le lot,
  *   lui, prélève une société suspendue pour ses dettes) ;
  * - **facturé en son nom** — `isBillingPayerAt` ;
- * - **débité chez CETTE entité** — `judgeMandate`, le jugement EXACT du lot,
- *   sur un bon qu'il passerait lui-même à `at` : rendu `debit`. Le lot n'est
- *   pas touché ; c'est le compte qui le rejoue (note § 12 bis).
- *
- * `liveSchemes` est vide : un schéma déjà pris par un lot vivant renvoie un
- * bon au lot suivant, il ne fait pas d'un client un non-client.
+ * - **débité chez CETTE entité** — `isDebitedHereAt`, le jugement EXACT du
+ *   lot. Le lot n'est pas touché ; c'est le compte qui le rejoue (note § 12 bis).
  */
 export function countedPayerIdsAt(
   legalEntityId: string,
@@ -39,18 +35,14 @@ export function countedPayerIdsAt(
         (standing) =>
           standing.active &&
           isBillingPayerAt(standing, at) &&
-          judgeMandate(
-            { companyId: standing.companyId, placedAt: at, billedCompanyId: standing.companyId },
-            {
-              legalEntityId,
-              at,
-              follows: standing.follows,
-              mandates: inputs.mandates,
-              collectionForms: inputs.collectionForms,
-              consumedMandates: inputs.consumedMandates,
-              liveSchemes: [],
-            },
-          ).kind === "debit",
+          isDebitedHereAt(standing.companyId, {
+            legalEntityId,
+            at,
+            follows: standing.follows,
+            mandates: inputs.mandates,
+            collectionForms: inputs.collectionForms,
+            consumedMandates: inputs.consumedMandates,
+          }),
       )
       .map((standing) => standing.companyId),
   );

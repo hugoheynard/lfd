@@ -13,6 +13,7 @@ import { BillingRhythm } from "../../value-objects/billing-rhythm.js";
 import { BillingRhythmSetting } from "../../value-objects/billing-rhythm-setting.js";
 import { defaultModes, paris } from "../../services/__tests__/billing-mode-fixtures.js";
 import { InvoicingCalendar } from "../../services/invoicing-calendar.js";
+import { Iban } from "../../value-objects/iban.js";
 import { CollectionBatch, type ConstituteBatchInput } from "../collection-batch.js";
 
 const SEPTEMBER = {
@@ -46,7 +47,7 @@ function input(overrides: Partial<ConstituteBatchInput> = {}): ConstituteBatchIn
         mandateSignedAt: new Date("2026-08-01T10:00:00.000Z"),
         debtorCompanyId: "c1",
         debtorName: "Port",
-        debtorIban: "FR7630004000031234567890143",
+        debtorIban: Iban.create("FR7630004000031234567890143"),
         debtorBic: null,
         sequence: "RCUR",
         amountCents: 1_000,

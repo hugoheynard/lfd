@@ -11,6 +11,7 @@ import { CollectionBatchLock } from "../../domain/ports/collection-batch-lock.js
 import { CollectionBatchRepository } from "../../domain/ports/collection-batch.repository.js";
 import { LegalEntityReader } from "../../domain/ports/legal-entity.reader.js";
 import { MandateRecheckReader } from "../../domain/ports/mandate-recheck.reader.js";
+import { depositRecheckProblems } from "../../domain/services/deposit-recheck.js";
 import { OrderCollectionRepository } from "../../domain/ports/order-collection.repository.js";
 import { batchEntity, loadBatchOrFail } from "../collection-batch-support.js";
 import { DepositCollectionBatchCommand } from "./deposit-collection-batch.command.js";
@@ -72,23 +73,11 @@ export class DepositCollectionBatchHandler implements ICommandHandler<
     });
   }
 
-  /** Ce qui a changé depuis la constitution, en phrases qui nomment. */
+  /** Ce qui a changé depuis la constitution — le monde relu, jugé par le domaine. */
   private async recheck(batch: CollectionBatch): Promise<readonly string[]> {
     const { lines } = batch;
-    const now = await this.mandates.currentOf(lines.map((line) => line.mandateId));
-    const mandateProblems = lines.flatMap((line) => {
-      const current = now.get(line.mandateId);
-      if (current?.active !== true) {
-        return [`le mandat ${line.mandateReference} de ${line.debtorName} n'est plus actif`];
-      }
-      return current.iban === line.debtorIban
-        ? []
-        : [`le compte de ${line.debtorName} a changé depuis la constitution`];
-    });
+    const mandates = await this.mandates.currentOf(lines.map((line) => line.mandateId));
     const cancelled = await this.cancelled.cancelledAmong(lines.flatMap((line) => line.orderIds));
-    return [
-      ...mandateProblems,
-      ...cancelled.map((orderNumber) => `la commande ${orderNumber} a été annulée`),
-    ];
+    return depositRecheckProblems(lines, mandates, cancelled);
   }
 }

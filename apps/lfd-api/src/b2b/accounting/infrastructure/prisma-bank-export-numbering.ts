@@ -47,7 +47,21 @@ function partOf(
   return row === null ? null : { part: partFromRow(row) };
 }
 
-const LAST_PART_SELECT = { partRank: true, partCount: true } as const;
+/**
+ * La requête du dernier export non abandonné d'une entité — la même pour les
+ * comptes et les mandats, qui ne diffèrent que par leur table.
+ */
+function lastPartQuery(legalEntityId: string): {
+  readonly where: { readonly legalEntityId: string; readonly abandonedAt: null };
+  orderBy: [{ readonly createdAt: "desc" }, { readonly id: "desc" }];
+  readonly select: { readonly partRank: true; readonly partCount: true };
+} {
+  return {
+    where: { legalEntityId, abandonedAt: null },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    select: { partRank: true, partCount: true },
+  };
+}
 
 @Injectable()
 export class PrismaAccountBankExportNumbering extends AccountBankExportNumbering {
@@ -60,12 +74,7 @@ export class PrismaAccountBankExportNumbering extends AccountBankExportNumbering
   }
 
   async lastPart(legalEntityId: string): Promise<PreviousExportPart | null> {
-    const row = await this.prisma.accountBankExport.findFirst({
-      where: { legalEntityId, abandonedAt: null },
-      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      select: LAST_PART_SELECT,
-    });
-    return partOf(row);
+    return partOf(await this.prisma.accountBankExport.findFirst(lastPartQuery(legalEntityId)));
   }
 }
 
@@ -80,11 +89,6 @@ export class PrismaMandateBankExportNumbering extends MandateBankExportNumbering
   }
 
   async lastPart(legalEntityId: string): Promise<PreviousExportPart | null> {
-    const row = await this.prisma.mandateBankExport.findFirst({
-      where: { legalEntityId, abandonedAt: null },
-      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      select: LAST_PART_SELECT,
-    });
-    return partOf(row);
+    return partOf(await this.prisma.mandateBankExport.findFirst(lastPartQuery(legalEntityId)));
   }
 }

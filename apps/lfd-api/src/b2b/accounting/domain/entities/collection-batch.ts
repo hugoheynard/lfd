@@ -22,6 +22,7 @@ import {
   InvalidBankRejectionReasonError,
   RejectedBatchHasReturnsError,
 } from "../errors/batch-bank-rejection-errors.js";
+import { isBatchDepositable } from "./collection-batch-depositability.js";
 import type { CollectionBatchLine } from "./collection-batch-line.js";
 import type {
   BankRejectionStamp,
@@ -266,7 +267,7 @@ export class CollectionBatch {
 
   /** Le lot partirait-il tel quel ? Une ligne au moins, aucune société sans mandat. */
   get depositable(): boolean {
-    return this.state.lines.length > 0 && this.state.unmandatedCompanies.length === 0;
+    return isBatchDepositable(this.state.lines.length, this.state.unmandatedCompanies);
   }
 
   get id(): string {

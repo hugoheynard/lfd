@@ -6,6 +6,7 @@ import type {
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { isBatchDepositable } from "../domain/entities/collection-batch-depositability.js";
 import {
   CollectionBatchReader,
   type StoredBatchFile,
@@ -16,6 +17,7 @@ import type { BatchCsvLine } from "../domain/services/collection-batch-csv.js";
 import { depositDeadlineOf } from "../domain/services/collection-calendar.js";
 import { periodLabelOf } from "../domain/services/invoicing-closures.js";
 import type { LotPayerRef } from "../domain/services/lot-payer-modes.js";
+import { bankRejectionFromRow } from "./collection-batch-row.mapper.js";
 
 /** Lecture des lots — jamais le fichier dans la liste, il est lourd. */
 @Injectable()
@@ -94,7 +96,7 @@ export class PrismaCollectionBatchReader extends CollectionBatchReader {
       orderCount: row.lines.reduce((sum, line) => sum + line.orderCount, 0),
       totalCents: row.lines.reduce((sum, line) => sum + line.amountCents, 0),
       unmandatedCompanies: row.unmandatedCompanies,
-      depositable: row.lines.length > 0 && row.unmandatedCompanies.length === 0,
+      depositable: isBatchDepositable(row.lines.length, row.unmandatedCompanies),
       ...batchCalendar(row.requestedCollectionDay, row.legalEntity),
       postponedFromDay: row.postponedFromDay?.toISOString().slice(0, 10) ?? null,
       payerRefs: row.lines.flatMap((line): readonly LotPayerRef[] =>
@@ -184,7 +186,7 @@ export class PrismaCollectionBatchReader extends CollectionBatchReader {
       collectionDay: row.requestedCollectionDay?.toISOString().slice(0, 10) ?? null,
       debitCount: row._count.lines,
       cycleClosesAt: row.cycleClosesAt,
-      depositable: row._count.lines > 0 && row.unmandatedCompanies.length === 0,
+      depositable: isBatchDepositable(row._count.lines, row.unmandatedCompanies),
       status: row.status,
       xml: row.xml,
       fileSha256: row.fileSha256,
@@ -221,17 +223,19 @@ export class PrismaCollectionBatchReader extends CollectionBatchReader {
   }
 }
 
-/** L'avis d'une ligne, tel que l'écran le lit. */
-/** Posés ensemble par le CHECK `collection_batch_rejected_is_signed`. */
+/** Le rejet tel que l'écran le lit. */
 function storedRejection(
   at: Date | null,
   byStaffId: string | null,
   reason: string | null,
 ): StoredBatchRejection | null {
-  return at === null || byStaffId === null || reason === null
+  const stamp = bankRejectionFromRow(at, byStaffId, reason);
+  return stamp === null
     ? null
-    : { at: at.toISOString(), reason, byStaffId };
+    : { at: stamp.at.toISOString(), reason: stamp.reason, byStaffId: stamp.staffId };
 }
+
+/** L'avis d'une ligne, tel que l'écran le lit. */
 
 function lineNotice(
   notices: readonly {

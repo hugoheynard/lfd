@@ -53,6 +53,18 @@ export class Bic {
     );
   }
 
+  /**
+   * Relit un BIC rangé en base. La chaîne vide est l'**absence** — un RIB
+   * repris sans BIC — et rend `null` : le lot écrit alors `NOTPROVIDED`, et
+   * les exports pour la banque écartent le compte (`no_bic`). Toute autre
+   * valeur repasse par {@link create}, qui la revalide et la normalise.
+   *
+   * @throws {InvalidBicError} une valeur rangée qui n'est pas un BIC.
+   */
+  static fromStored(raw: string): Bic | null {
+    return raw === "" ? null : Bic.create(raw);
+  }
+
   /** Le pays de l'établissement, en ISO 3166-1 alpha-2. */
   countryCode(): string {
     return this.value.slice(4, 6);

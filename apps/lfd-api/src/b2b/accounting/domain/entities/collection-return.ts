@@ -24,6 +24,20 @@ export type CollectionReturnResolution =
  */
 export type ReturnableLineRegime = "invoices" | "statement" | "legacy";
 
+/**
+ * Le régime d'une ligne, lu sur ce qu'elle a figé : une facture au moins
+ * l'emporte, un arrêté sinon, rien avant F3.
+ */
+export function returnableLineRegimeOf(
+  invoiceCount: number,
+  hasStatement: boolean,
+): ReturnableLineRegime {
+  if (invoiceCount > 0) {
+    return "invoices";
+  }
+  return hasStatement ? "statement" : "legacy";
+}
+
 /** La ligne de lot qu'un retour vise, telle que le lot l'a figée. Jamais d'IBAN. */
 export interface ReturnableLine {
   readonly batchId: string;

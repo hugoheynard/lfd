@@ -87,6 +87,12 @@ export class PrismaMandateBankLinesReader extends MandateBankLinesReader {
   }
 
   async linesOf(legalEntityId: string): Promise<readonly MandateBankLineStanding[]> {
+    // SANS `NOT_REJECTED`, voulu : le port rend `correctedAs` et `correctedAt`,
+    // et c'est `mandateBankRows` qui écarte les lignes rejetées (le même test
+    // que `NOT_REJECTED`) tout en lisant `reported_by_bank` sur les autres
+    // — vérifié le 2026-10-23 dans `application/queries/mandate-bank-rows.ts`,
+    // seul lecteur du port. Filtrer ici ne changerait rien, et cacherait au
+    // port une valeur que son contrat annonce.
     const rows = await this.prisma.mandateBankExportLine.findMany({
       where: { export: { legalEntityId, abandonedAt: null } },
       select: {

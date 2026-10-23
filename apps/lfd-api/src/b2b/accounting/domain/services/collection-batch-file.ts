@@ -2,6 +2,9 @@ import { createHash } from "node:crypto";
 
 import type { CreditorSnapshot } from "../creditor-snapshot.js";
 import type { CollectionBatchLine } from "../entities/collection-batch.js";
+import { isBatchDepositable } from "../entities/collection-batch-depositability.js";
+import { Bic } from "../value-objects/bic.js";
+import { Iban } from "../value-objects/iban.js";
 import type { SepaScheme } from "../value-objects/sepa-scheme.js";
 import type { BillingCycle } from "./billing-cycle.js";
 import type { DebitDraft } from "./collection-assembly.js";
@@ -56,8 +59,8 @@ export function renderBatchFile(input: BatchFileInput): BatchFile {
       mandateSignedAt: debit.mandate.signedAt,
       debtorCompanyId: debit.payerId,
       debtorName: debit.debtorName,
-      debtorIban: debit.mandate.iban,
-      debtorBic: debit.mandate.bic,
+      debtorIban: Iban.create(debit.mandate.iban),
+      debtorBic: debit.mandate.bic === null ? null : Bic.create(debit.mandate.bic),
       sequence: sequenceTypeOf(debit.mandate.paymentType),
       amountCents: debit.amountCents,
       ordersTotalCents: debit.ordersTotalCents,
@@ -77,7 +80,7 @@ export function renderBatchFile(input: BatchFileInput): BatchFile {
     mandate: debit.mandate,
     remittance: remittanceOf(period, debit),
   }));
-  const depositable = lines.length > 0 && input.unmandatedCompanies.length === 0;
+  const depositable = isBatchDepositable(lines.length, input.unmandatedCompanies);
   const xml = renderPain008Document({
     creditor: input.creditor,
     scheme: input.scheme,

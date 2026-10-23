@@ -6,6 +6,8 @@ import {
   type MandateForBankExport,
   type MandatesForBankExport,
 } from "../../accounting/domain/ports/mandates-for-bank-export.reader.js";
+import type { Bic } from "../../accounting/domain/value-objects/bic.js";
+import { bankExportBicOf } from "../../accounting/domain/services/bank-export-bic.js";
 import { FieldCipher } from "../../../platform/crypto/field-cipher.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
@@ -56,9 +58,9 @@ export class PrismaMandatesForBankExportReader extends MandatesForBankExportRead
       const debtorCompanyId = mandate.debtorCompanyId ?? mandate.companyId;
       const named = { mandateId: mandate.id, reference: mandate.reference, debtorCompanyId };
       const account = mandate.creditorId === null ? undefined : accountOf(mandate);
-      const reason = exclusionOf(mandate.creditorId, account);
-      if (reason !== null || account === undefined) {
-        excluded.push({ ...named, reason: reason ?? "no_account" });
+      const candidate = exportableAccountOf(mandate.creditorId, account);
+      if (candidate.kind === "excluded") {
+        excluded.push({ ...named, reason: candidate.reason });
         continue;
       }
       if (mandate.acceptedAt === null) {
@@ -66,8 +68,8 @@ export class PrismaMandatesForBankExportReader extends MandatesForBankExportRead
       }
       exportable.push({
         ...named,
-        iban: this.cipher.open(account.ibanSealed),
-        bic: account.bic,
+        iban: this.cipher.open(candidate.account.ibanSealed),
+        bic: candidate.bic.value,
         signedAt: mandate.acceptedAt,
         scheme: mandate.scheme,
         paymentType: mandate.paymentType,
@@ -77,17 +79,25 @@ export class PrismaMandatesForBankExportReader extends MandatesForBankExportRead
   }
 }
 
-function exclusionOf(
+/** Le compte qu'un mandat fait partir à la banque, ou pourquoi il est écarté. */
+type ExportableAccount =
+  | { readonly kind: "exportable"; readonly account: DebitedAccountRow; readonly bic: Bic }
+  | { readonly kind: "excluded"; readonly reason: MandateExcludedFromBankExport["reason"] };
+
+function exportableAccountOf(
   creditorId: string | null,
   account: DebitedAccountRow | undefined,
-): MandateExcludedFromBankExport["reason"] | null {
+): ExportableAccount {
   if (creditorId === null) {
-    return "taken_over";
+    return { kind: "excluded", reason: "taken_over" };
   }
   if (account === undefined) {
-    return "no_account";
+    return { kind: "excluded", reason: "no_account" };
   }
-  return account.bic === "" ? "no_bic" : null;
+  const { bic, exclusion } = bankExportBicOf(account.bic);
+  return exclusion === null
+    ? { kind: "exportable", account, bic }
+    : { kind: "excluded", reason: exclusion };
 }
 
 /** Inatteignable tant que `payment_mandates_active_is_signed` existe. */

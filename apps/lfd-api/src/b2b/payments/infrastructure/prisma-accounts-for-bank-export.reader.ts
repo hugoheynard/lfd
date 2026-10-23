@@ -6,6 +6,7 @@ import {
   type AccountForBankExport,
   type AccountsForBankExport,
 } from "../../accounting/domain/ports/accounts-for-bank-export.reader.js";
+import { bankExportBicOf } from "../../accounting/domain/services/bank-export-bic.js";
 import { FieldCipher } from "../../../platform/crypto/field-cipher.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { debitedAccounts } from "./mandate-accounts.js";
@@ -70,12 +71,13 @@ export class PrismaAccountsForBankExportReader extends AccountsForBankExportRead
         ibanLast4: row.ibanLast4,
       };
       const iban = this.cipher.open(row.ibanSealed);
-      if (row.bic === "") {
+      const { bic, exclusion } = bankExportBicOf(row.bic);
+      if (exclusion !== null) {
         excluded.push({
           ...named,
           holder: row.holder,
           ibanCountry: iban.slice(0, IBAN_COUNTRY_LENGTH),
-          reason: "no_bic",
+          reason: exclusion,
         });
         continue;
       }
@@ -90,7 +92,7 @@ export class PrismaAccountsForBankExportReader extends AccountsForBankExportRead
         city: row.city,
         countryCode: row.countryCode,
         iban,
-        bic: row.bic,
+        bic: bic.value,
         recordedAt: row.createdAt,
       });
     }

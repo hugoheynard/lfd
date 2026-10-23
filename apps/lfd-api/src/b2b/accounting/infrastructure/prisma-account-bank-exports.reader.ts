@@ -10,6 +10,7 @@ import {
   type AccountBankExportRecord,
   type KnownAccountFingerprints,
 } from "../domain/ports/account-bank-exports.reader.js";
+import { knownAccountFingerprintsOf } from "../domain/services/account-bank-export-selection.js";
 import { NOT_REJECTED } from "./bank-line-correction.mapper.js";
 
 /**
@@ -34,16 +35,10 @@ export class PrismaKnownAccountFingerprintsReader extends KnownAccountFingerprin
       }),
       this.prisma.knownBankAccount.findMany({ select: { accountFingerprint: true } }),
     ]);
-    const known = new Set(declared.map((row) => row.accountFingerprint));
-    const inFlight = new Set<string>();
-    const inDownloadedExport = new Set<string>();
-    for (const line of lines) {
-      (line.export.importedAt === null ? inFlight : known).add(line.accountFingerprint);
-      if (line.export.importedAt === null && line.export.lastDownloadedAt !== null) {
-        inDownloadedExport.add(line.accountFingerprint);
-      }
-    }
-    return { known, inFlight, inDownloadedExport };
+    return knownAccountFingerprintsOf(
+      lines.map((line) => ({ accountFingerprint: line.accountFingerprint, ...line.export })),
+      declared.map((row) => row.accountFingerprint),
+    );
   }
 }
 

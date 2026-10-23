@@ -4,6 +4,7 @@ import {
   DebtorMandateReader,
   type DebtorMandate,
 } from "../../accounting/domain/ports/debtor-mandate.reader.js";
+import { Bic } from "../../accounting/domain/value-objects/bic.js";
 import { FieldCipher } from "../../../platform/crypto/field-cipher.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
@@ -58,8 +59,8 @@ export class PrismaDebtorMandateReader extends DebtorMandateReader {
       found.set(mandate.companyId, {
         reference: mandate.reference,
         iban: this.cipher.open(account.ibanSealed),
-        // Chaîne vide = absent : le lot écrit alors `NOTPROVIDED`, pas un BIC vide.
-        bic: account.bic === "" ? null : account.bic,
+        // Absent (`fromStored`) : le lot écrit alors `NOTPROVIDED`, pas un BIC vide.
+        bic: Bic.fromStored(account.bic)?.value ?? null,
         scheme: mandate.scheme,
         paymentType: mandate.paymentType,
         signedAt: signedAtOf(mandate),

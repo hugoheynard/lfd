@@ -103,6 +103,22 @@ describe("constituer, annuler, déposer un lot", () => {
     ).rejects.toThrow(DepositRecheckFailedError);
   });
 
+  it("le dépôt relit le compte : un IBAN changé depuis la constitution refuse et nomme", async () => {
+    const w = world();
+    w.candidates.orders = [order("c_port")];
+    w.mandates.mandates = [mandate("c_port")];
+    const [id] = await w.constitute.execute(
+      new ConstituteCollectionBatchesCommand(ENTITY_ID, STAFF_AUTHOR),
+    );
+    w.recheck.now = new Map([["m_c_port", { active: true, iban: "FR1420041010050500013M02606" }]]);
+    sendAllQueued(w.noticeStore, w.clock.now());
+
+    await w.download.execute(new RecordCollectionBatchDownloadCommand(id ?? "", "staff_1"));
+    await expect(
+      w.deposit.execute(new DepositCollectionBatchCommand(id ?? "", "staff_1")),
+    ).rejects.toThrow(/le compte de .* a changé depuis la constitution/u);
+  });
+
   it("le dépôt passe les commandes `collected` quand rien n'a bougé", async () => {
     const w = world();
     const placed = order("c_port");

@@ -8,6 +8,7 @@ import {
   MandateRecheckReader,
   type MandateNow,
 } from "../../accounting/domain/ports/mandate-recheck.reader.js";
+import { Bic } from "../../accounting/domain/value-objects/bic.js";
 import { FieldCipher } from "../../../platform/crypto/field-cipher.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
@@ -64,7 +65,7 @@ export class PrismaCollectionMandatesReader extends CollectionMandatesReader {
           creditorId: mandate.creditorId,
           reference: mandate.reference,
           iban: this.cipher.open(account.ibanSealed),
-          bic: account.bic === "" ? null : account.bic,
+          bic: Bic.fromStored(account.bic)?.value ?? null,
           scheme: mandate.scheme,
           paymentType: mandate.paymentType,
           signedAt: mandate.acceptedAt,

@@ -8,6 +8,7 @@ import {
 import { DepositedBatchNotCancellableError } from "../../errors/collection-errors.js";
 import { BillingRhythmSetting } from "../../value-objects/billing-rhythm-setting.js";
 import { InvoicingCalendar } from "../../services/invoicing-calendar.js";
+import { Iban } from "../../value-objects/iban.js";
 import { CollectionBatch, type ConstituteBatchInput } from "../collection-batch.js";
 import { DEAD_BATCH_STATUSES, isDeadBatchStatus } from "../collection-batch-status.js";
 import { OrderCollection } from "../order-collection.js";
@@ -49,7 +50,7 @@ function input(overrides: Partial<ConstituteBatchInput> = {}): ConstituteBatchIn
         mandateSignedAt: new Date("2026-08-01T10:00:00.000Z"),
         debtorCompanyId: "c1",
         debtorName: "Port",
-        debtorIban: "FR7630004000031234567890143",
+        debtorIban: Iban.create("FR7630004000031234567890143"),
         debtorBic: null,
         sequence: "RCUR",
         amountCents: 1_000,
