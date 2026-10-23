@@ -41,9 +41,7 @@ describe("le fichier d'un export", () => {
   it("se recalcule depuis les mandats : ICS de l'entité, nom du débiteur du pain.008", async () => {
     const w = withQueries();
     w.mandates.exportable = [bankMandate("m1")];
-    const id = await w.exportCommand.execute(
-      new ExportMandatesForBankCommand("le1", false, "staff_1"),
-    );
+    const id = await w.exportCommand.execute(new ExportMandatesForBankCommand("le1", "staff_1"));
 
     const file = await w.file.execute(new ExportMandateBankFileQuery("le1", id));
 
@@ -59,9 +57,7 @@ describe("le fichier d'un export", () => {
   it("refuse (409) un fichier dont un compte ne correspond plus à l'empreinte", async () => {
     const w = withQueries();
     w.mandates.exportable = [bankMandate("m1")];
-    const id = await w.exportCommand.execute(
-      new ExportMandatesForBankCommand("le1", false, "staff_1"),
-    );
+    const id = await w.exportCommand.execute(new ExportMandatesForBankCommand("le1", "staff_1"));
     w.mandates.exportable = [bankMandate("m1", IBAN_B)];
 
     await expect(w.file.execute(new ExportMandateBankFileQuery("le1", id))).rejects.toThrow(
@@ -72,9 +68,7 @@ describe("le fichier d'un export", () => {
   it("refuse (409) le fichier d'un export abandonné", async () => {
     const w = withQueries();
     w.mandates.exportable = [bankMandate("m1")];
-    const id = await w.exportCommand.execute(
-      new ExportMandatesForBankCommand("le1", false, "staff_1"),
-    );
+    const id = await w.exportCommand.execute(new ExportMandatesForBankCommand("le1", "staff_1"));
     await w.abandon.execute(new AbandonMandateBankExportCommand("le1", id, "staff_2"));
 
     await expect(w.file.execute(new ExportMandateBankFileQuery("le1", id))).rejects.toThrow(
@@ -97,9 +91,7 @@ describe("la carte « Mandats à la banque »", () => {
     w.mandates.excluded = [
       { mandateId: "m3", reference: "RUM-m3", debtorCompanyId: "cmp_m3", reason: "no_bic" },
     ];
-    const id = await w.exportCommand.execute(
-      new ExportMandatesForBankCommand("le1", false, "staff_1"),
-    );
+    const id = await w.exportCommand.execute(new ExportMandatesForBankCommand("le1", "staff_1"));
     await w.recordDownload.execute(new RecordMandateBankExportDownloadCommand("le1", id, "s"));
     await w.markImported.execute(new MarkMandateBankExportImportedCommand("le1", id, "s"));
     w.mandates.exportable = [...w.mandates.exportable, bankMandate("m4")];
@@ -109,10 +101,32 @@ describe("la carte « Mandats à la banque »", () => {
     expect(card).toMatchObject({
       exportableCount: 3,
       toExportCount: 1,
+      inFlightCount: 0,
       importedCount: 2,
       excluded: [{ reference: "RUM-m3", debtorName: "Société cmp_m3", reason: "no_bic" }],
       exports: [{ id, mandateCount: 2 }],
     });
     expect(JSON.stringify(card)).not.toContain(IBAN_A);
+  });
+
+  /**
+   * Régression (2026-10-23) : « à exporter » comptait aussi un mandat d'un
+   * export ouvert, que sa ligne disait pourtant « en export ».
+   */
+  it("compte un mandat d'un export ouvert en attente de la banque, pas à exporter", async () => {
+    const w = withQueries();
+    w.mandates.exportable = [bankMandate("m1")];
+    const id = await w.exportCommand.execute(new ExportMandatesForBankCommand("le1", "staff_1"));
+    w.mandates.exportable = [...w.mandates.exportable, bankMandate("m2")];
+
+    const card = await w.card.execute(new GetMandateBankExportsQuery("le1"));
+
+    expect(card).toMatchObject({ toExportCount: 1, inFlightCount: 1, importedCount: 0 });
+    const kinds = card.mandates.map((row) => [row.mandateId, row.standing.kind]);
+    expect(kinds).toEqual([
+      ["m1", "in_flight"],
+      ["m2", "to_export"],
+    ]);
+    expect(card.exports).toMatchObject([{ id, importedAt: null }]);
   });
 });

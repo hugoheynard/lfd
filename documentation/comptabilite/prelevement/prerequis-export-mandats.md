@@ -94,17 +94,36 @@ n'ont pas eu de réponse explicite : la vérification CENET le dira.
 
 - **Nouveaux seulement** (réponse 12) : un mandat est « à exporter » s'il n'a
   aucune ligne d'un export **marqué importé** sous l'empreinte de son compte
-  actuel (`domain/services/mandate-bank-export-selection.ts:33-46`). « Tous les
-  mandats actifs » existe pour un renvoi complet, à n'utiliser qu'à la demande
-  de la banque.
+  actuel (`domain/services/mandate-bank-export-selection.ts:33-46`). Sur la
+  carte, un mandat d'un export ouvert (ni déposé, ni abandonné) est « en
+  attente de la banque », pas « à exporter ». La carte compte exactement ses lignes : « À
+  exporter » et « En attente de la banque » se lisent sur l'état de chaque
+  mandat (`application/queries/get-mandate-bank-exports.handler.ts`, champs
+  `toExportCount` / `inFlightCount`), comme la carte des comptes (Hugo,
+  2026-10-23 ; jusque-là, « à exporter » comptait aussi les mandats en export).
+  ⚠️ La **préparation**, elle, ne les écarte pas encore (vérifié le
+  2026-10-23) : un second export préparé pendant qu'un premier est ouvert
+  reprendrait ses mandats. L'écran ne le permet pas — il ne propose de
+  préparer que sans export ouvert —, mais le serveur l'accepte.
+- **Pas de renvoi complet** (Hugo, 2026-10-23) : la case « Tous les mandats
+  actifs, y compris ceux déjà importés » et le champ `all` de
+  `POST /admin/legal-entities/:id/mandate-exports` sont **retirés**. La banque
+  rejette l'import entier dès qu'un seul mandat lui est déjà connu (réponse 12) : la case ne pouvait produire qu'un fichier refusé. Le corps attendu est
+  désormais `{}`, strict — un `all` envoyé est refusé (400).
+  **Le geste de sortie**, si la banque perd ou réinitialise ses mandats :
+  dans les 30 jours après le dépôt, « Rejeté par la banque » sur chaque ligne
+  concernée la remet « à exporter », et le fichier suivant la porte ; un
+  export jamais déposé s'abandonne (« Abandonner ») et ses mandats restent à
+  exporter. **Au-delà des 30 jours, aucun geste n'existe** pour refaire
+  sortir un mandat déjà importé (non décidé au 2026-10-23 — à trancher le
+  jour où le cas se présente, plutôt qu'à rouvrir un renvoi complet).
 - **200 lignes au plus** (réponse 12) : **découpage**, pas refus. Préparer un
   export prend les 200 premiers mandats à exporter, dans l'ordre des RUM
   (`apps/lfd-api/src/b2b/payments/infrastructure/prisma-mandates-for-bank-export.reader.ts:48`),
   et les suivants restent « à exporter » pour l'export d'après
-  (`application/commands/export-mandates-for-bank.handler.ts:60`). L'agrégat
+  (`application/commands/export-mandates-for-bank.handler.ts:68-69`). L'agrégat
   refuse un export de plus de 200 (`domain/entities/mandate-bank-export.ts:51`),
-  le rendu aussi (`domain/services/mandate-bank-export-csv.ts:75`). Même avec
-  « tous », un export porte 200 mandats.
+  le rendu aussi (`domain/services/mandate-bank-export-csv.ts:75`).
 - **Nom coupé à 70** (décision de Hugo, 2026-10-23) : la banque accepte 140
   (réponse 11), mais le `pain.008` porte 70 ; la colonne C est coupée par la
   même règle que le `Dbtr/Nm` (`sepaText(…, SEPA_NAME_MAX)`,

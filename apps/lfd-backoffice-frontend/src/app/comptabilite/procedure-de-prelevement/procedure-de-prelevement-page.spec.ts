@@ -60,6 +60,7 @@ const ACCOUNTS: AccountBankExportsView = {
 const MANDATES: MandateBankExportsView = {
   exportableCount: 2,
   toExportCount: 2,
+  inFlightCount: 0,
   importedCount: 0,
   excluded: [],
   mandates: [],

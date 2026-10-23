@@ -209,6 +209,7 @@ async function render(
             Promise.resolve({
               exportableCount: 0,
               toExportCount: 0,
+              inFlightCount: 0,
               importedCount: 0,
               excluded: [],
               exports: [],

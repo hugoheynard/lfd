@@ -137,8 +137,8 @@ async function mandated(entityId: string, name: string, withoutBic = false): Pro
   return mandate.reference;
 }
 
-async function prepare(entityId: string, all = false): Promise<string> {
-  const response = await staff().post(exportsOf(entityId)).send({ all }).expect(201);
+async function prepare(entityId: string): Promise<string> {
+  const response = await staff().post(exportsOf(entityId)).send({}).expect(201);
   return jsonBody<MandateBankExportCreatedView>(response).exportId;
 }
 
@@ -168,7 +168,7 @@ describe("l'export des mandats pour la banque", () => {
     await staff()
       .post(`${exportsOf(entityId)}/${exportId}/imported`)
       .expect(409);
-    await staff().post(exportsOf(entityId)).send({ all: false }).expect(409);
+    await staff().post(exportsOf(entityId)).send({}).expect(409);
 
     const card = jsonBody<MandateBankExportsView>(
       await staff().get(exportsOf(entityId)).expect(200),
@@ -196,6 +196,31 @@ describe("l'export des mandats pour la banque", () => {
     expect(card.exports).toHaveLength(1);
     expect(card.exports[0]?.id).toBe(exportId);
     expect(card.exports[0]?.lastDownloadedAt).not.toBeNull();
+  });
+
+  /**
+   * Régression (2026-10-23) : « à exporter » comptait aussi le mandat d'un
+   * export ouvert, que sa ligne disait « en export ».
+   */
+  it("un mandat d'un export ouvert est en attente de la banque, plus à exporter", async () => {
+    const entityId = await entity("552100554");
+    await mandated(entityId, "En vol");
+    await prepare(entityId);
+    await mandated(entityId, "Après coup");
+
+    const card = jsonBody<MandateBankExportsView>(
+      await staff().get(exportsOf(entityId)).expect(200),
+    );
+    expect(card).toMatchObject({ toExportCount: 1, inFlightCount: 1, importedCount: 0 });
+    expect(card.mandates.filter((row) => row.standing.kind === "to_export")).toHaveLength(1);
+  });
+
+  /** Hugo, 2026-10-23 : la banque rejette l'import entier si un mandat lui est connu. */
+  it("refuse (400) l'option « tous » : elle n'existe plus", async () => {
+    const entityId = await entity("552100554");
+    await mandated(entityId, "Tous");
+    await staff().post(exportsOf(entityId)).send({ all: true }).expect(400);
+    await staff().post(exportsOf(entityId)).send({ all: false }).expect(400);
   });
 
   /** Hugo, 2026-10-23 : la banque ne peut pas avoir importé un fichier que personne n'a tiré. */
@@ -313,7 +338,7 @@ describe("l'export des mandats pour la banque", () => {
     await asReader()
       .get(`${exportsOf(entityId)}/${exportId}/file.csv`)
       .expect(403);
-    await asReader().post(exportsOf(entityId)).send({ all: true }).expect(403);
+    await asReader().post(exportsOf(entityId)).send({}).expect(403);
     await asReader()
       .post(`${exportsOf(entityId)}/${exportId}/imported`)
       .expect(403);

@@ -13,9 +13,7 @@ import { NOW, bankExportWorld, bankMandate, entityRecord } from "./mandate-bank-
 async function prepared() {
   const w = bankExportWorld();
   w.mandates.exportable = [bankMandate("m1")];
-  const id = await w.exportCommand.execute(
-    new ExportMandatesForBankCommand("le1", false, "staff_1"),
-  );
+  const id = await w.exportCommand.execute(new ExportMandatesForBankCommand("le1", "staff_1"));
   return { w, id };
 }
 
@@ -40,7 +38,7 @@ describe("abandonner un export des mandats (S3)", () => {
     await w.abandon.execute(new AbandonMandateBankExportCommand("le1", id, "staff_2"));
 
     const second = await w.exportCommand.execute(
-      new ExportMandatesForBankCommand("le1", false, "staff_1"),
+      new ExportMandatesForBankCommand("le1", "staff_1"),
     );
 
     expect(w.exports.rows.get(second)?.mandateCount).toBe(1);

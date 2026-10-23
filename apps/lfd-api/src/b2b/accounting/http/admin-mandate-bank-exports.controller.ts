@@ -61,15 +61,20 @@ export class AdminMandateBankExportsController {
     );
   }
 
-  /** Fige un export ; 409 s'il n'y a rien à exporter. */
+  /**
+   * Fige un export des mandats « à exporter » ; 409 s'il n'y en a pas. Le
+   * corps est `{}`, validé strict : l'ancien `all` (renvoi complet, retiré le
+   * 2026-10-23) est refusé (400) plutôt qu'ignoré, pour qu'un client périmé
+   * n'obtienne pas en silence autre chose que ce qu'il a demandé.
+   */
   @Post(":id/mandate-exports")
   async export(
     @StaffUserId() staffUserId: string,
     @Param("id") id: string,
-    @Body(new ZodBody(exportMandatesForBankPayloadSchema)) payload: ExportMandatesForBankPayload,
+    @Body(new ZodBody(exportMandatesForBankPayloadSchema)) _payload: ExportMandatesForBankPayload,
   ): Promise<MandateBankExportCreatedView> {
     const exportId = await this.commands.execute<ExportMandatesForBankCommand, string>(
-      new ExportMandatesForBankCommand(id, payload.all, staffUserId),
+      new ExportMandatesForBankCommand(id, staffUserId),
     );
     return { exportId };
   }

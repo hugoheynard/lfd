@@ -71,8 +71,14 @@ export interface MandateBankRowView {
 export interface MandateBankExportsView {
   /** Mandats actifs exportables (hors écartés). */
   readonly exportableCount: number;
-  /** Dont pas encore importés sous leur compte actuel. */
+  /**
+   * Les lignes « à exporter » du tableau : ni importées sous leur compte
+   * actuel, ni dans un export ouvert (corrigé le 2026-10-23 — il comptait
+   * aussi les mandats en export).
+   */
   readonly toExportCount: number;
+  /** « En attente de la banque » : dans un export ouvert (ajouté le 2026-10-23). */
+  readonly inFlightCount: number;
   /** Dont déjà importés sous leur compte actuel. */
   readonly importedCount: number;
   readonly excluded: readonly MandateBankExcludedView[];
@@ -83,12 +89,12 @@ export interface MandateBankExportsView {
 }
 
 /**
- * Préparer un export. `all` : tous les mandats actifs exportables, y compris
- * ceux que la banque a déjà ; sinon, seulement ceux « à exporter ».
+ * Préparer un export : seulement les mandats « à exporter ». L'option `all`
+ * (réexporter tout) est RETIRÉE le 2026-10-23 : la banque rejette l'import
+ * entier dès qu'un mandat lui est déjà connu (réponse 12). Le corps est vide,
+ * et strict — un `all` envoyé est refusé (400).
  */
-export const exportMandatesForBankPayloadSchema = z.strictObject({
-  all: z.boolean(),
-});
+export const exportMandatesForBankPayloadSchema = z.strictObject({});
 export type ExportMandatesForBankPayload = z.infer<typeof exportMandatesForBankPayloadSchema>;
 
 export interface MandateBankExportCreatedView {

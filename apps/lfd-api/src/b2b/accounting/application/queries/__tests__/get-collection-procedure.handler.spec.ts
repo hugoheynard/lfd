@@ -89,7 +89,7 @@ describe("la procédure de prélèvement — la lecture d'état", () => {
   it("un export de mandats non importé : l'onglet 2 attend « Marquer importé »", async () => {
     const w = world();
     w.mandates.mandates.exportable = [bankMandate("m1")];
-    await w.mandates.exportCommand.execute(new ExportMandatesForBankCommand("le1", false, "s"));
+    await w.mandates.exportCommand.execute(new ExportMandatesForBankCommand("le1", "s"));
 
     const view = await w.read();
 

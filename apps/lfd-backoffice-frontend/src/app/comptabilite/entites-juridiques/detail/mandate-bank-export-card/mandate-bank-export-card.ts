@@ -17,7 +17,6 @@ import { httpErrorMessage } from '@lfd/endpoints';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
-  FoldCheckboxComponent,
   FoldDataTableCellDirective,
   FoldDataTableComponent,
   FoldEmptyStateComponent,
@@ -77,7 +76,6 @@ const MAX_PER_EXPORT = 200;
   imports: [
     FoldButtonComponent,
     FoldCalloutComponent,
-    FoldCheckboxComponent,
     FoldDataTableCellDirective,
     FoldDataTableComponent,
     FoldEmptyStateComponent,
@@ -106,8 +104,6 @@ export class MandateBankExportCard {
   protected readonly loadError = signal<string | null>(null);
   protected readonly actionError = signal<string | null>(null);
   protected readonly busy = signal(false);
-  /** « Tous les mandats actifs », y compris ceux que la banque a déjà. */
-  protected readonly all = signal(false);
 
   protected readonly mandates = mandatesLabel;
   protected readonly pendingHint = BANK_REPORT_PENDING_HINT;
@@ -147,9 +143,13 @@ export class MandateBankExportCard {
       .sort((left, right) => left.createdAt.localeCompare(right.createdAt));
   }
 
-  /** Ce que le prochain fichier portera : « à exporter », ou tous avec la case. */
+  /**
+   * Ce que le prochain fichier portera : les lignes « à exporter », plafonnées.
+   * Pas d'option « tous » (retirée le 2026-10-23) : la banque rejette l'import
+   * entier dès qu'un mandat lui est déjà connu (réponse 12).
+   */
   protected nextExportSize(view: MandateBankExportsView): number {
-    return Math.min(this.all() ? view.exportableCount : view.toExportCount, MAX_PER_EXPORT);
+    return Math.min(view.toExportCount, MAX_PER_EXPORT);
   }
 
   protected downloadLabel(item: MandateBankExportSummaryView): string {
@@ -168,18 +168,16 @@ export class MandateBankExportCard {
 
   /**
    * « EXM-4 · Fichier 1 sur 2 — 200 mandats. Les 12 suivants… » — « à
-   * exporter » compte aussi les mandats en vol : on les retire.
+   * exporter » ne compte plus les mandats en vol (2026-10-23), comme les comptes.
    */
   protected partSentence(view: MandateBankExportsView, item: MandateBankExportSummaryView): string {
-    const inFlight = this.openExports(view).reduce((sum, open) => sum + open.mandateCount, 0);
-    return exportPartSentence(item, item.mandateCount, view.toExportCount - inFlight, MANDATE_NOUN);
+    return exportPartSentence(item, item.mandateCount, view.toExportCount, MANDATE_NOUN);
   }
 
   protected async prepare(): Promise<void> {
     const entityId = this.entity().id;
     await this.run(async () => {
-      const exportId = await this.service.prepare(entityId, this.all());
-      this.all.set(false);
+      const exportId = await this.service.prepare(entityId);
       await this.download(exportId);
     });
   }

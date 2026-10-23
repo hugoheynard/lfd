@@ -32,12 +32,10 @@ export class MandateBankExportsService {
     );
   }
 
-  /** Fige un export, et rend son id. `all` : y compris ce que la banque a déjà. */
-  async prepare(entityId: string, all: boolean): Promise<string> {
+  /** Fige un export des mandats « à exporter », et rend son id. */
+  async prepare(entityId: string): Promise<string> {
     const created = await firstValueFrom(
-      this.http.post<MandateBankExportCreatedView>(`${this.base}/${entityId}/mandate-exports`, {
-        all,
-      }),
+      this.http.post<MandateBankExportCreatedView>(`${this.base}/${entityId}/mandate-exports`, {}),
     );
     return created.exportId;
   }

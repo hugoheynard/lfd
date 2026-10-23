@@ -1,4 +1,4 @@
-import type { MandateBankExportsView } from "@lfd/contracts";
+import type { MandateBankExportsView, MandateBankStandingView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { mandateExportFileNameOf } from "../bank-export-naming-support.js";
@@ -50,16 +50,23 @@ export class GetMandateBankExportsHandler implements IQueryHandler<
     const names = await this.candidates.companyNames([
       ...new Set([...exportable, ...excluded].map((mandate) => mandate.debtorCompanyId)),
     ]);
+    const rows = mandateBankRows(exportable, excluded, lines, names, this.clock.now());
+    // Les compteurs se lisent sur les lignes du tableau, pas sur la sélection :
+    // un mandat d'un export ouvert y est « en export », il n'est plus « à
+    // exporter » (Hugo, 2026-10-23, aligné sur la carte des comptes).
+    const countOf = (kind: MandateBankStandingView["kind"]): number =>
+      rows.filter((row) => row.standing.kind === kind).length;
     return {
       exportableCount: exportable.length,
-      toExportCount: selection.toExport.length,
+      toExportCount: countOf("to_export"),
+      inFlightCount: countOf("in_flight"),
       importedCount: selection.alreadyImported.length,
       excluded: excluded.map((mandate) => ({
         reference: mandate.reference,
         debtorName: nameOf(mandate.debtorCompanyId, names),
         reason: mandate.reason,
       })),
-      mandates: mandateBankRows(exportable, excluded, lines, names, this.clock.now()),
+      mandates: rows,
       exports: exports.map((row) => ({
         id: row.id,
         reference: row.reference,

@@ -8,7 +8,7 @@ import { RejectMandateAtBankCommand } from "../reject-mandate-at-bank.command.js
 import { ReportMandateKnownToBankCommand } from "../report-mandate-known-to-bank.command.js";
 import { NOW, bankExportWorld, bankMandate } from "./mandate-bank-export-doubles.js";
 
-const prepare = () => new ExportMandatesForBankCommand("le1", false, "staff_1");
+const prepare = () => new ExportMandatesForBankCommand("le1", "staff_1");
 
 /** Un export d'un mandat (m1), téléchargé puis — si demandé — déposé. */
 async function exported(deposit: boolean) {

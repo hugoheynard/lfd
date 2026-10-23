@@ -24,9 +24,7 @@ describe("préparer un export des mandats pour la banque", () => {
     const w = bankExportWorld();
     w.mandates.exportable = [bankMandate("m1"), bankMandate("m2")];
 
-    const id = await w.exportCommand.execute(
-      new ExportMandatesForBankCommand("le1", false, "staff_1"),
-    );
+    const id = await w.exportCommand.execute(new ExportMandatesForBankCommand("le1", "staff_1"));
 
     const state = w.exports.rows.get(id)?.toPersistence();
     expect(state?.created).toEqual({ at: NOW, staffId: "staff_1" });
@@ -61,13 +59,11 @@ describe("préparer un export des mandats pour la banque", () => {
       bankMandate(`m${String(rank).padStart(3, "0")}`),
     );
 
-    const first = await w.exportCommand.execute(
-      new ExportMandatesForBankCommand("le1", false, "staff_1"),
-    );
+    const first = await w.exportCommand.execute(new ExportMandatesForBankCommand("le1", "staff_1"));
     await w.recordDownload.execute(new RecordMandateBankExportDownloadCommand("le1", first, "s"));
     await w.markImported.execute(new MarkMandateBankExportImportedCommand("le1", first, "s"));
     const second = await w.exportCommand.execute(
-      new ExportMandatesForBankCommand("le1", false, "staff_1"),
+      new ExportMandatesForBankCommand("le1", "staff_1"),
     );
 
     expect(w.exports.rows.get(first)?.mandateCount).toBe(200);
@@ -79,31 +75,25 @@ describe("préparer un export des mandats pour la banque", () => {
     ).toEqual(["m200"]);
   });
 
-  it("ne reprend pas un mandat déjà importé sous son compte, sauf avec « tous »", async () => {
+  it("ne reprend pas un mandat déjà importé sous son compte", async () => {
     const w = bankExportWorld();
     w.mandates.exportable = [bankMandate("m1")];
-    const first = await w.exportCommand.execute(
-      new ExportMandatesForBankCommand("le1", false, "staff_1"),
-    );
+    const first = await w.exportCommand.execute(new ExportMandatesForBankCommand("le1", "staff_1"));
     await w.recordDownload.execute(new RecordMandateBankExportDownloadCommand("le1", first, "s"));
     await w.markImported.execute(new MarkMandateBankExportImportedCommand("le1", first, "s"));
 
     await expect(
-      w.exportCommand.execute(new ExportMandatesForBankCommand("le1", false, "staff_1")),
+      w.exportCommand.execute(new ExportMandatesForBankCommand("le1", "staff_1")),
     ).rejects.toThrow(NothingToExportToBankError);
-    const all = await w.exportCommand.execute(
-      new ExportMandatesForBankCommand("le1", true, "staff_1"),
-    );
-    expect(w.exports.rows.get(all)?.mandateCount).toBe(1);
   });
 
   it("un export téléchargé mais pas marqué importé ne retire rien", async () => {
     const w = bankExportWorld();
     w.mandates.exportable = [bankMandate("m1")];
-    await w.exportCommand.execute(new ExportMandatesForBankCommand("le1", false, "staff_1"));
+    await w.exportCommand.execute(new ExportMandatesForBankCommand("le1", "staff_1"));
 
     const second = await w.exportCommand.execute(
-      new ExportMandatesForBankCommand("le1", false, "staff_1"),
+      new ExportMandatesForBankCommand("le1", "staff_1"),
     );
     expect(w.exports.rows.get(second)?.mandateCount).toBe(1);
   });
@@ -111,15 +101,13 @@ describe("préparer un export des mandats pour la banque", () => {
   it("un compte changé après import refait sortir le mandat", async () => {
     const w = bankExportWorld();
     w.mandates.exportable = [bankMandate("m1")];
-    const first = await w.exportCommand.execute(
-      new ExportMandatesForBankCommand("le1", false, "staff_1"),
-    );
+    const first = await w.exportCommand.execute(new ExportMandatesForBankCommand("le1", "staff_1"));
     await w.recordDownload.execute(new RecordMandateBankExportDownloadCommand("le1", first, "s"));
     await w.markImported.execute(new MarkMandateBankExportImportedCommand("le1", first, "s"));
     w.mandates.exportable = [bankMandate("m1", IBAN_B)];
 
     const second = await w.exportCommand.execute(
-      new ExportMandatesForBankCommand("le1", false, "staff_1"),
+      new ExportMandatesForBankCommand("le1", "staff_1"),
     );
     expect(w.exports.rows.get(second)?.toPersistence().lines[0]?.accountFingerprint).toBe(
       accountFingerprint(IBAN_B),
@@ -132,7 +120,7 @@ describe("préparer un export des mandats pour la banque", () => {
     w.mandates.exportable = [bankMandate("m1")];
 
     await expect(
-      w.exportCommand.execute(new ExportMandatesForBankCommand("le1", false, "staff_1")),
+      w.exportCommand.execute(new ExportMandatesForBankCommand("le1", "staff_1")),
     ).rejects.toThrow(BankExportWithoutCreditorIdentifierError);
     expect(w.exports.rows.size).toBe(0);
     expect(w.events.factTypes()).toEqual([]);
@@ -141,7 +129,7 @@ describe("préparer un export des mandats pour la banque", () => {
   it("une entité inconnue est un 404", async () => {
     const w = bankExportWorld();
     await expect(
-      w.exportCommand.execute(new ExportMandatesForBankCommand("autre", false, "staff_1")),
+      w.exportCommand.execute(new ExportMandatesForBankCommand("autre", "staff_1")),
     ).rejects.toThrow(LegalEntityNotFoundError);
   });
 });
@@ -151,9 +139,7 @@ describe("marquer un export importé", () => {
   it("refuse (409) un export dont le fichier n'a jamais été téléchargé, sans rien écrire", async () => {
     const w = bankExportWorld();
     w.mandates.exportable = [bankMandate("m1")];
-    const id = await w.exportCommand.execute(
-      new ExportMandatesForBankCommand("le1", false, "staff_1"),
-    );
+    const id = await w.exportCommand.execute(new ExportMandatesForBankCommand("le1", "staff_1"));
 
     await expect(
       w.markImported.execute(new MarkMandateBankExportImportedCommand("le1", id, "staff_2")),
@@ -165,9 +151,7 @@ describe("marquer un export importé", () => {
   it("pose l'instant et l'auteur, et le journalise", async () => {
     const w = bankExportWorld();
     w.mandates.exportable = [bankMandate("m1")];
-    const id = await w.exportCommand.execute(
-      new ExportMandatesForBankCommand("le1", false, "staff_1"),
-    );
+    const id = await w.exportCommand.execute(new ExportMandatesForBankCommand("le1", "staff_1"));
 
     await w.recordDownload.execute(new RecordMandateBankExportDownloadCommand("le1", id, "s"));
     await w.markImported.execute(new MarkMandateBankExportImportedCommand("le1", id, "staff_2"));
@@ -186,9 +170,7 @@ describe("marquer un export importé", () => {
   it("refuse un second marquage", async () => {
     const w = bankExportWorld();
     w.mandates.exportable = [bankMandate("m1")];
-    const id = await w.exportCommand.execute(
-      new ExportMandatesForBankCommand("le1", false, "staff_1"),
-    );
+    const id = await w.exportCommand.execute(new ExportMandatesForBankCommand("le1", "staff_1"));
     await w.recordDownload.execute(new RecordMandateBankExportDownloadCommand("le1", id, "s"));
     await w.markImported.execute(new MarkMandateBankExportImportedCommand("le1", id, "staff_2"));
 
@@ -200,9 +182,7 @@ describe("marquer un export importé", () => {
   it("un export d'une autre entité n'existe pas pour celle-ci", async () => {
     const w = bankExportWorld();
     w.mandates.exportable = [bankMandate("m1")];
-    const id = await w.exportCommand.execute(
-      new ExportMandatesForBankCommand("le1", false, "staff_1"),
-    );
+    const id = await w.exportCommand.execute(new ExportMandatesForBankCommand("le1", "staff_1"));
     const other = { ...entityRecord(), id: "le2" };
     w.entities.record = other;
 

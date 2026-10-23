@@ -104,6 +104,7 @@ function row(
 const VIEW: MandateBankExportsView = {
   exportableCount: 4,
   toExportCount: 2,
+  inFlightCount: 1,
   importedCount: 2,
   excluded: [{ reference: 'RUM-x', debtorName: 'Repris', reason: 'taken_over' }],
   mandates: [
@@ -160,8 +161,8 @@ class FakeService {
     this.calls.push('of');
     return Promise.resolve(this.view);
   }
-  prepare(entityId: string, all: boolean): Promise<string> {
-    this.calls.push(`prepare:${entityId}:${String(all)}`);
+  prepare(entityId: string): Promise<string> {
+    this.calls.push(`prepare:${entityId}`);
     return Promise.resolve('exp_created');
   }
   file(entityId: string, exportId: string): Promise<NamedBlob> {
@@ -270,7 +271,7 @@ describe('la carte « Mandats à la banque »', () => {
     const fixture = await render(noOpen());
     buttons(fixture, 'Télécharger le fichier des mandats (2 mandats)')[0]?.click();
     await fixture.whenStable();
-    expect(service.calls).toEqual(['of', 'prepare:le1:false', 'file:le1:exp_created', 'of']);
+    expect(service.calls).toEqual(['of', 'prepare:le1', 'file:le1:exp_created', 'of']);
   });
 
   it('émet `changed` après le geste, une fois la carte relue', async () => {
@@ -282,18 +283,28 @@ describe('la carte « Mandats à la banque »', () => {
     expect(seen).toEqual(['of']);
   });
 
-  it('rien à exporter : le bouton est inactif, sauf en cochant « tous »', async () => {
+  /** Hugo, 2026-10-23 : la banque rejette tout l'import si un mandat lui est connu. */
+  it('rien à exporter : le bouton est inactif, et aucune case « tous » ne le rouvre', async () => {
     const fixture = await render(noOpen({ toExportCount: 0 }));
     expect(buttons(fixture, 'Télécharger le fichier des mandats (0 mandat)')[0]?.disabled).toBe(
       true,
     );
-    (fixture.nativeElement as HTMLElement)
-      .querySelector<HTMLInputElement>('input[type="checkbox"]')
-      ?.click();
-    fixture.detectChanges();
-    expect(buttons(fixture, 'Télécharger le fichier des mandats (4 mandats)')[0]?.disabled).toBe(
-      false,
-    );
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('input[type="checkbox"]'),
+    ).toBeNull();
+  });
+
+  it('le bouton porte le nombre « à exporter », plafonné à 200', async () => {
+    const fixture = await render(noOpen({ toExportCount: 212 }));
+    expect(buttons(fixture, 'Télécharger le fichier des mandats (200 mandats)')).toHaveLength(1);
+  });
+
+  it('montre « à exporter » et « en attente de la banque » tels que servis', async () => {
+    const fixture = await render(VIEW);
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('En attente de la banque');
+    expect(text).toMatch(/À exporter\s*2 mandats/u);
+    expect(text).toMatch(/En attente de la banque\s*1 mandat(?!s)/u);
   });
 
   it('sans ICS, le bouton est inactif et la carte dit pourquoi', async () => {
@@ -401,14 +412,15 @@ describe('le découpage en fichiers, sur la carte des mandats', () => {
     }
     const fixture = await render({
       ...VIEW,
-      toExportCount: 212,
+      toExportCount: 12,
+      inFlightCount: 200,
       exports: [
         { ...open, reference: 'EXM-4', part: { rank: 1, count: 2 }, mandateCount: 200 },
         ...rest,
       ],
     });
     const part = (fixture.nativeElement as HTMLElement).querySelector('[data-part]');
-    // « À exporter » compte les 200 en vol : 12 attendent le fichier 2.
+    // « À exporter » ne compte plus les 200 en vol : les 12 attendent le fichier 2.
     expect(part?.textContent?.trim()).toBe(
       'EXM-4 · Fichier 1 sur 2 — 200 mandats. Les 12 suivants partiront dans le fichier 2, une fois celui-ci déposé dans CENET.',
     );

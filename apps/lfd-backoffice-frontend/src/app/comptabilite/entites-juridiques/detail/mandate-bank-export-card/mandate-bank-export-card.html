@@ -23,6 +23,7 @@
     } @else if (view(); as view) {
       <fold-field-list>
         <fold-field label="À exporter">{{ mandates(view.toExportCount) }}</fold-field>
+        <fold-field label="En attente de la banque">{{ mandates(view.inFlightCount) }}</fold-field>
         <fold-field label="Déjà importés">{{ mandates(view.importedCount) }}</fold-field>
       </fold-field-list>
 
@@ -103,11 +104,6 @@
           >
             Télécharger le fichier des mandats ({{ mandates(nextExportSize(view)) }})
           </button>
-          <fold-checkbox
-            label="Tous les mandats actifs, y compris ceux déjà importés"
-            [checked]="all()"
-            (checkedChange)="all.set($event)"
-          />
         </div>
       }
 

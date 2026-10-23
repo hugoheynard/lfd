@@ -19,7 +19,6 @@ import {
 } from "../../domain/services/bank-export-reference.js";
 import { BANK_IMPORT_MAX_ROWS } from "../../domain/services/mandate-bank-export-csv.js";
 import {
-  fingerprinted,
   selectForBankExport,
   type FingerprintedMandate,
 } from "../../domain/services/mandate-bank-export-selection.js";
@@ -96,9 +95,6 @@ export class ExportMandatesForBankHandler implements ICommandHandler<
     command: ExportMandatesForBankCommand,
   ): Promise<readonly FingerprintedMandate[]> {
     const { exportable } = await this.mandates.activeOf(command.legalEntityId);
-    if (command.all) {
-      return fingerprinted(exportable);
-    }
     const imported = await this.imported.of(command.legalEntityId);
     return selectForBankExport(exportable, imported).toExport;
   }
