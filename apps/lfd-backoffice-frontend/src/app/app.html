@@ -372,6 +372,16 @@
               [active]="copyRla.isActive"
               (click)="mobileNavOpen.set(false)"
             ></a>
+            <a
+              fold-menu-item
+              icon="mail"
+              label="Textes des e-mails"
+              routerLink="/textes-emails"
+              routerLinkActive
+              #mailCopyRla="routerLinkActive"
+              [active]="mailCopyRla.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
           }
           @if (canSeeSettings()) {
             <!-- Parti de l'espace E-commerce le 2026-10-15 (Hugo), sous le
@@ -1065,6 +1075,16 @@
               routerLinkActive
               #copyTile="routerLinkActive"
               [active]="copyTile.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+            <a
+              fold-nav-tile
+              icon="mail"
+              label="Textes des e-mails"
+              routerLink="/textes-emails"
+              routerLinkActive
+              #mailCopyTile="routerLinkActive"
+              [active]="mailCopyTile.isActive"
               (click)="mobileNavOpen.set(false)"
             ></a>
           }

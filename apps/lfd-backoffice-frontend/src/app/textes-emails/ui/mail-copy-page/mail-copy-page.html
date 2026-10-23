@@ -1,0 +1,88 @@
+<fold-page-layout icon="mail" title="Textes des e-mails">
+  <p description>
+    Reformuler ce que disent les e-mails, en trois langues, le français en référence. Chaque frappe
+    est gardée en brouillon ; rien ne change dans les e-mails envoyés avant « Publier ». Les données
+    — numéro, montant, date — restent des variables entre accolades.
+  </p>
+
+  @switch (store.status()) {
+    @case ('loading') {
+      <fold-loading message="Lecture des textes des e-mails…" />
+    }
+    @case ('failed') {
+      <fold-empty-state
+        tone="alert"
+        title="Les textes des e-mails n’ont pas pu être lus"
+        [subtitle]="store.loadError() ?? ''"
+      >
+        <button foldButton type="button" (click)="store.load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      @if (store.loadError(); as error) {
+        <fold-callout variant="alert">{{ error }}</fold-callout>
+      }
+      @if (store.pendingCount() > 0) {
+        <fold-callout variant="warning">
+          {{ pendingLabel(store.pendingCount()) }} — les e-mails partent avec les textes publiés
+          tant qu’elles ne le sont pas.
+          @if (store.canWrite()) {
+            <div actions>
+              <fold-inline-confirm
+                intent="primary"
+                message="Les prochains e-mails partiront avec ces textes."
+                (confirmed)="publish()"
+              >
+                <button foldButton icon="publish" type="button" [loading]="store.publishing()">
+                  Publier
+                </button>
+              </fold-inline-confirm>
+            </div>
+          }
+        </fold-callout>
+      }
+
+      @if (store.current(); as mail) {
+        <div class="mc-columns">
+          <app-mail-list />
+          <div class="mc-main">
+            <div class="mc-texts">
+              <div [attr.title]="'Clé technique : ' + mail.mail">
+                <fold-element-title variant="title" [title]="title()" [subtitle]="whoAndWhen()" />
+              </div>
+              @if (!mail.followsLocale) {
+                <fold-callout variant="info">
+                  Cet e-mail part toujours en français. Ses textes anglais et italiens sont prêts
+                  pour le jour où la langue du destinataire sera connue.
+                </fold-callout>
+              }
+              @for (text of mail.texts; track text.path) {
+                <app-mail-text-editor [text]="text" [followsLocale]="mail.followsLocale" />
+              }
+              @if (store.orphans().length > 0) {
+                <fold-page-section
+                  title="Textes que le code ne connaît plus"
+                  description="Ils ne partent plus dans aucun e-mail. « Rétablir » les efface au prochain « Publier »."
+                >
+                  <div class="mc-texts">
+                    @for (text of store.orphans(); track text.mail + text.path) {
+                      <app-mail-text-editor [text]="text" [orphan]="true" />
+                    }
+                  </div>
+                </fold-page-section>
+              }
+            </div>
+            <app-mail-preview [mail]="mail" />
+          </div>
+        </div>
+      } @else {
+        <fold-empty-state
+          title="Aucun e-mail"
+          subtitle="Le serveur n’a déclaré aucun e-mail à piloter."
+        >
+          <fold-icon empty-icon name="mail" />
+        </fold-empty-state>
+      }
+    }
+  }
+</fold-page-layout>

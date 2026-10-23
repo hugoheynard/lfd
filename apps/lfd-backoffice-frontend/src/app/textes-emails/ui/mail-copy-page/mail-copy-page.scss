@@ -1,0 +1,29 @@
+// La liste des e-mails, puis l'e-mail ouvert ; empilés en mobile.
+.mc-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--fold-space-lg);
+  align-items: start;
+
+  @media (min-width: 1000px) {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+}
+
+// Les textes, puis l'aperçu — à côté sur un grand écran.
+.mc-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--fold-space-lg);
+  align-items: start;
+
+  @media (min-width: 1600px) {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  }
+}
+
+.mc-texts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}

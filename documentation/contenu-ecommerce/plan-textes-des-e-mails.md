@@ -61,11 +61,11 @@
 
 ## 2. Les lots
 
-| Lot                                   | Contenu                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **E1** ✅ bâti le 2026-10-23 (§2 bis) | Sortir des gabarits **tous** les textes des 28 e-mails vers le dictionnaire, en trois langues (le français est la vérité ; l'anglais et l'italien reprennent l'existant, sinon une traduction marquée à relire). Aucun changement de rendu : chaque e-mail rend les mêmes octets en français avant et après (tests de non-régression par gabarit). Un manifeste des clés (e-mail, clé, variables permises, texte par défaut) généré depuis le dictionnaire, tenu par une porte comme `lint:shop-copy-digest`. |
-| **E2** ✅ bâti le 2026-10-23 (§2 ter) | Le serveur : entrées en brouillon et publiées (migration additive, sur le modèle de `shop_copy_entries`), le texte effectif (défaut + publié), validation des variables (C5), routes admin (lister, modifier, rétablir, publier), aperçu d'un e-mail avec données d'exemple (C6), essai envoyé au staff connecté, fait de journal et ses libellés.                                                                                                                                                            |
-| **E3**                                | L'écran du back-office (C3, C4, C8) : la liste, l'éditeur à trois langues, l'aperçu, « M'envoyer un essai », « Publier », sur le modèle de `textes-boutique/`.                                                                                                                                                                                                                                                                                                                                                |
+| Lot                                      | Contenu                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **E1** ✅ bâti le 2026-10-23 (§2 bis)    | Sortir des gabarits **tous** les textes des 28 e-mails vers le dictionnaire, en trois langues (le français est la vérité ; l'anglais et l'italien reprennent l'existant, sinon une traduction marquée à relire). Aucun changement de rendu : chaque e-mail rend les mêmes octets en français avant et après (tests de non-régression par gabarit). Un manifeste des clés (e-mail, clé, variables permises, texte par défaut) généré depuis le dictionnaire, tenu par une porte comme `lint:shop-copy-digest`. |
+| **E2** ✅ bâti le 2026-10-23 (§2 ter)    | Le serveur : entrées en brouillon et publiées (migration additive, sur le modèle de `shop_copy_entries`), le texte effectif (défaut + publié), validation des variables (C5), routes admin (lister, modifier, rétablir, publier), aperçu d'un e-mail avec données d'exemple (C6), essai envoyé au staff connecté, fait de journal et ses libellés.                                                                                                                                                            |
+| **E3** ✅ bâti le 2026-10-23 (§2 quater) | L'écran du back-office (C3, C4, C8) : la liste, l'éditeur à trois langues, l'aperçu, « M'envoyer un essai », « Publier », sur le modèle de `textes-boutique/`.                                                                                                                                                                                                                                                                                                                                                |
 
 ## 2 bis. E1 — bâti le 2026-10-23 (non commité à l'écriture)
 
@@ -151,7 +151,31 @@ anglais et en italien :
   (`followsLocale: false`, 21 sur 28) part toujours en français : son
   aperçu en anglais ou en italien montre donc le français, comme l'envoi.
 
-## 3. Ce qui n'est pas fait ici
+## 2 quater. E3 — bâti le 2026-10-23 (non commité à l'écriture)
+
+- **L'écran** `apps/lfd-backoffice-frontend/src/app/textes-emails/`, rangé comme
+  `textes-boutique/` (`data/`, `rules/`, `state/`, `ui/`) et lui empruntant ses
+  langues et la hauteur des champs (`textes-boutique/rules/copy-text.ts`). Route
+  `/textes-emails` sous `b2b_storefront:read` ; écrire, publier et s'envoyer un
+  essai demandent `:write`. Entrée « Textes des e-mails » dans Communication,
+  au rail ET aux tuiles.
+- **La liste** range par destinataire (Clients, Équipe, Agence) puis par
+  moment ; chaque e-mail a un intitulé et une ligne « qui / quand » écrits
+  dans `rules/mail-labels.ts` (une clé inconnue s'affiche telle quelle).
+- **Un texte** montre ses trois langues côte à côte, l'état (brouillon,
+  publié), « Rétablir », le texte du code quand il diffère, la traduction en
+  retard (C4), et ses variables en boutons qui s'insèrent au curseur du
+  dernier champ touché — les obligatoires marquées. La validation des
+  variables n'est PAS doublée côté écran : le refus `400` du serveur
+  s'affiche tel quel sous le champ, qui garde la frappe.
+- **L'aperçu** : objet, pièces jointes nommées, corps dans une
+  `<iframe srcdoc sandbox="">` ; langue et source (brouillon / publié) au
+  choix, relu à chaque écriture acceptée. « M'envoyer un essai » envoie
+  d'abord la frappe en attente. Un e-mail `followsLocale: false` le dit à
+  côté des langues de l'aperçu, sous ses champs EN/IT et en tête de l'e-mail.
+- **« Publier »** dans un bandeau « N modifications en attente », qui
+  n'apparaît que s'il y en a. Pas d'historique des publications : E2 n'a pas
+  de route pour le lire (le journal porte `mail_copy.published`).
 
 - La **mise en page** des e-mails (couleurs, logo, ordre des blocs) : c'est
   le gabarit, pas le texte.

@@ -252,6 +252,18 @@ export const routes: Routes = [
       import('./textes-boutique/ui/shop-copy-page/shop-copy-page').then((m) => m.ShopCopyPage),
   },
   {
+    // **Textes des e-mails** — reformuler ce que disent les 28 e-mails, en
+    // trois langues (plan-textes-des-e-mails.md, C7, C8). Même métier et même
+    // droit que les textes de la boutique, donc à côté d'eux :
+    // `b2b_storefront:read` pour voir, `:write` (lu par l'écran) pour écrire,
+    // publier et s'envoyer un essai.
+    path: 'textes-emails',
+    canActivate: [permissionGuard('b2b_storefront:read')],
+    title: 'Textes des e-mails — LFC B2B admin',
+    loadComponent: () =>
+      import('./textes-emails/ui/mail-copy-page/mail-copy-page').then((m) => m.MailCopyPage),
+  },
+  {
     // **Pied de page** — le pied de page de l'app cliente. Parti de l'espace
     // E-commerce (`/b2b/contenu/app-footer`) pour la section Communication le
     // 2026-10-15 (Hugo), au premier niveau comme ses voisines. Droit

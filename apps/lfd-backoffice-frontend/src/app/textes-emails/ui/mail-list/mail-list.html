@@ -1,0 +1,24 @@
+<div class="ml-list">
+  @for (group of store.groups(); track group.audience) {
+    <fold-page-section [title]="group.title" [icon]="icons[group.audience]">
+      <fold-menu level="tertiary" [navLabel]="'E-mails — ' + group.title" [expanded]="true">
+        @for (family of group.families; track family.family) {
+          <fold-menu-separator [label]="family.title" />
+          @for (mail of family.mails; track mail.mail) {
+            <button
+              fold-menu-item
+              type="button"
+              icon="mail"
+              [label]="title(mail)"
+              [attr.title]="'Clé technique : ' + mail.mail"
+              [active]="store.current()?.mail === mail.mail"
+              [badge]="badge(mail)"
+              badgeTone="warning"
+              (click)="store.selectedMail.set(mail.mail)"
+            ></button>
+          }
+        }
+      </fold-menu>
+    </fold-page-section>
+  }
+</div>

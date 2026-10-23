@@ -1,0 +1,73 @@
+<fold-page-section
+  title="Aperçu"
+  description="Le vrai gabarit, avec des données d’exemple. Rien n’est envoyé."
+>
+  <div class="mp-column">
+    <div class="mp-toolbar">
+      <fold-view-toggle
+        size="sm"
+        ariaLabel="Langue de l’aperçu"
+        [options]="localeOptions"
+        [value]="locale()"
+        (valueChange)="setLocale($event)"
+      />
+      @if (alwaysFrench()) {
+        <span class="mp-muted">Part toujours en français</span>
+      }
+      <fold-view-toggle
+        size="sm"
+        ariaLabel="Textes de l’aperçu"
+        [options]="sourceOptions"
+        [value]="source()"
+        (valueChange)="setSource($event)"
+      />
+      @if (store.canWrite()) {
+        <button
+          foldButton
+          size="sm"
+          emphasis="outline"
+          intent="neutral"
+          icon="mail"
+          type="button"
+          [loading]="sending()"
+          (click)="sendTrial()"
+        >
+          M’envoyer un essai
+        </button>
+      }
+    </div>
+
+    @switch (status()) {
+      @case ('loading') {
+        <fold-loading message="L’aperçu se rend…" />
+      }
+      @case ('failed') {
+        <fold-empty-state
+          tone="alert"
+          title="L’aperçu n’a pas pu être rendu"
+          [subtitle]="error() ?? ''"
+        >
+          <button foldButton type="button" (click)="reload()">Réessayer</button>
+        </fold-empty-state>
+      }
+      @case ('ready') {
+        @if (error(); as message) {
+          <fold-callout variant="alert">{{ message }}</fold-callout>
+        }
+        @if (preview(); as view) {
+          <p class="mp-subject"><span class="mp-muted">Objet :</span> {{ view.subject }}</p>
+          @if (attachments().length > 0) {
+            <p class="mp-muted">
+              <fold-icon name="download" size="sm" />
+              Pièces jointes :
+              @for (attachment of attachments(); track attachment.filename; let last = $last) {
+                {{ attachment.filename }}{{ last ? '' : ', ' }}
+              }
+            </p>
+          }
+          <iframe class="mp-frame" title="Aperçu de l’e-mail" sandbox="" [srcdoc]="body()"></iframe>
+        }
+      }
+    }
+  </div>
+</fold-page-section>

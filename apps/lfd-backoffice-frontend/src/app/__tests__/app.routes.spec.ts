@@ -212,6 +212,9 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // **Textes de la boutique** — même métier et même mur que la vitrine
   // (`@AdminSurface("b2b_storefront")`, plan-textes-de-la-boutique.md, §7).
   'textes-boutique': 'b2b_storefront:read',
+  // **Textes des e-mails** — même métier et même mur
+  // (`@AdminSurface("b2b_storefront")`, plan-textes-des-e-mails.md, C7).
+  'textes-emails': 'b2b_storefront:read',
 
   // **Pied de page** et **Contact** — partis de l'espace E-commerce pour la
   // section Communication le 2026-10-15 (Hugo), chacun sous le droit qu'il y

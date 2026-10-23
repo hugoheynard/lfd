@@ -132,6 +132,18 @@ describe('App — Communication', () => {
     expect(host.querySelector(rail('/vitrine'))).toBeNull();
   });
 
+  it('montre « Textes des e-mails » sous b2b_storefront:read, dans les deux arbres', () => {
+    const entry = render(['b2b_storefront:read']).querySelector(rail('/textes-emails'));
+    expect(entry?.getAttribute('label')).toBe('Textes des e-mails');
+    expect(entry?.closest('fold-menu-section')?.getAttribute('label')).toBe('Communication');
+    expect(
+      render(['b2b_storefront:read'], true)
+        .querySelector(tile('/textes-emails'))
+        ?.getAttribute('label'),
+    ).toBe('Textes des e-mails');
+    expect(render(['b2b_settings:read']).querySelector(rail('/textes-emails'))).toBeNull();
+  });
+
   it('reste fermée sans aucun de ses droits', () => {
     expect(render(['b2b_orders:read', 'pim_catalog:read']).querySelector(SECTION)).toBeNull();
   });
