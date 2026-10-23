@@ -140,9 +140,13 @@ export type PickupAddressPayload = z.infer<typeof pickupAddressPayloadSchema>;
  * l'identifiant du site qui remet (lot S2, `documentation/sites/sites.md` §7).
  *
  * `siteId` est **facultatif pour de bon** : les commandes passées avant le
- * lot n'en portent pas, et rien ne les rattrape (Q-S2 : un rattrapage par
- * libellé serait irréversible). Tout lecteur doit donc tolérer son absence —
- * le comptoir retombe alors sur le libellé, l'échéance sur l'ancien calcul.
+ * lot n'en portaient pas. Q-S2 disait « jamais rattrapé » ; révisé par Hugo le
+ * 2026-10-23 : la migration `20261023200000_les_retraits_d_avant_s2_rattaches`
+ * rattache les seules commandes MORTES dont le snapshot correspond à un site
+ * unique, et leur pose `siteIdBackfilled: true` (réversible par ce marqueur ;
+ * le schéma, non strict, l'ignore). Les vivantes et les ambiguës restent sans
+ * site : tout lecteur doit donc toujours tolérer son absence — le comptoir
+ * retombe alors sur le libellé, l'échéance sur l'ancien calcul.
  */
 export const pickupSnapshotSchema = billingAddressPayloadSchema.extend({
   siteId: z.string().min(1).optional(),

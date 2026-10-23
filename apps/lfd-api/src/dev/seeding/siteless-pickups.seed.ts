@@ -12,6 +12,12 @@ import type { PrismaClient } from "../../platform/database/client/client.js";
  * octobre — la coupe des clients les épargnait, leur acheteur étant membre du
  * client gardé.
  *
+ * Depuis le 2026-10-23, la migration
+ * `20261023200000_les_retraits_d_avant_s2_rattaches` rattache celles qui sont
+ * mortes et correspondent à un site unique : ce retrait ne touche plus que
+ * les vivantes et les ambiguës (les rattachées portent `siteId` et sont
+ * épargnées par construction).
+ *
  * Avec elles partent ce qui les désigne dans le commerce : remboursements et
  * demandes de remboursement, issue de facture carte (clés `Restrict`), alertes
  * de compte, clés de passation, demandes client, écritures de points. Leurs
