@@ -83,17 +83,30 @@ async function mount(
 }
 
 describe('SitesPage', () => {
-  it('dit la remise AVEC sa clientèle', async () => {
-    const fixture = await mount([LABO]);
-
-    expect(fixture.componentInstance['discountLabel'](LABO)).toMatch(/^− .+ · B2B$/);
-  });
-
-  it('ne dit pas de clientèle quand la remise vise les deux', async () => {
-    const both = { ...LABO, discounts: { b2b: EIGHT_EUROS, b2c: EIGHT_EUROS } };
+  it('dit la remise de chaque clientèle, avec SA réduction', async () => {
+    const both = {
+      ...LABO,
+      discounts: {
+        b2b: EIGHT_EUROS,
+        b2c: {
+          ...EIGHT_EUROS,
+          scope: 'only',
+          categories: [{ categoryId: 'pain', eligible: true }],
+        },
+      },
+    } as const;
     const fixture = await mount([both]);
 
-    expect(fixture.componentInstance['discountLabel'](both)).not.toContain('·');
+    expect(fixture.componentInstance['discountBadges'](both)).toEqual([
+      expect.stringMatching(/^Pros − /),
+      expect.stringMatching(/^Particuliers − .+ sur une sélection$/),
+    ]);
+  });
+
+  it('ne dit rien d’une clientèle sans remise', async () => {
+    const fixture = await mount([LABO]);
+
+    expect(fixture.componentInstance['discountBadges'](LABO)).toHaveLength(1);
   });
 
   it('dit l’absence de point par un état vide fold', async () => {

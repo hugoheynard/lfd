@@ -305,8 +305,22 @@ de détail et une `fold-card` par sujet :
   (`reglages/sites/site-color.ts`), le serveur reste l'autorité.
 - **Paramétrage du retrait** (site qui remet seulement), trois sous-cartes
   `surface="sunken"` : heures de retrait, créneaux publics (+ fermetures),
-  réduction de retrait. Créneaux absents à la création et sur un site
-  archivé.
+  réductions de retrait. Créneaux absents à la création et sur un site
+  archivé. Les réductions (lot B du plan
+  [`plan-remise-retrait-par-clientele-et-exclusions.md`](../livraisons/clientele/plan-remise-retrait-par-clientele-et-exclusions.md),
+  2026-10-23) sont **deux cartes**, « Pros » et « Particuliers », chacune
+  avec son « Enregistrer » qui renvoie l'autre clientèle telle qu'enregistrée :
+  la réduction (% ou €, ou aucune), le mode (`fold-choice-row` « Tout,
+  sauf… » / « Seulement… » — en changer vide les règles), puis trois
+  `fold-multiselect` sur le catalogue publié (`GET admin/catalog/published`,
+  lu une fois pour les deux) : les familles du mode, les produits du mode, et
+  les produits **qui contredisent leur famille** (réinclus dans une famille
+  exclue, ou exclus d'une famille incluse). Une famille retirée, une fiche
+  archivée ou disparue, ou une règle de famille à contre-sens du mode
+  s'affiche en `fold-callout` d'alerte, avec « Retirer » (V9). Les refus du
+  serveur (« seulement » sans inclusion, règle en double) s'affichent par
+  leur message. La liste des sites porte une pastille par clientèle remisée
+  (« Pros − 10 % », « … sur une sélection » quand des règles existent).
 - **Archivage** dans la `fold-danger-zone`.
 
 Chaque carte enregistre ce qu'elle montre (Hugo, 2026-10-13) ; celles qui

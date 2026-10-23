@@ -1,0 +1,95 @@
+<fold-card surface="sunken" padding="md">
+  <div class="body">
+    <fold-element-title variant="title" [title]="title()" subtitle="Réduction de retrait">
+      @if (!readOnly()) {
+        <button
+          foldButton
+          titleAction
+          size="sm"
+          [disabled]="!canSave()"
+          [loading]="saving()"
+          (click)="save()"
+        >
+          Enregistrer
+        </button>
+      }
+    </fold-element-title>
+
+    @if (refusal(); as message) {
+      <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+    } @else if (dirty()) {
+      <fold-callout variant="info">Modifiée, pas encore enregistrée.</fold-callout>
+    }
+
+    <lfd-price-alteration-field
+      label="Réduction"
+      lockedDirection="decrease"
+      noneLabel="Aucune réduction"
+      [value]="alteration()"
+      (valueChange)="setDiscount($event)"
+    />
+
+    @if (hasDiscount()) {
+      <fold-fieldset
+        legend="Ce que couvre la réduction"
+        hint="Un produit réglé ici l'emporte toujours sur sa famille."
+      >
+        <div class="rules">
+          <fold-choice-row
+            ariaLabel="Mode de portée"
+            [options]="scopes"
+            [activeKey]="draft().scope"
+            (selected)="setScope($event)"
+          />
+
+          @for (rule of stray(); track rule.kind + rule.id) {
+            <fold-callout variant="alert">
+              {{ rule.message }}
+              @if (!readOnly()) {
+                <button
+                  foldButton
+                  actions
+                  size="sm"
+                  emphasis="soft"
+                  type="button"
+                  (click)="remove(rule)"
+                >
+                  Retirer
+                </button>
+              }
+            </fold-callout>
+          }
+
+          <fold-multiselect
+            searchable
+            [label]="wording().families"
+            placeholder="Aucune famille"
+            [disabled]="readOnly()"
+            [options]="familyOptions()"
+            [value]="families()"
+            (valueChange)="setFamilies($event)"
+          />
+          <fold-multiselect
+            searchable
+            [label]="wording().products"
+            placeholder="Aucun produit"
+            [disabled]="readOnly()"
+            [options]="productOptions()"
+            [value]="products()"
+            (valueChange)="setProducts($event, false)"
+          />
+          <fold-multiselect
+            searchable
+            [label]="wording().contradicting"
+            hint="Le produit contredit sa famille : sa règle l'emporte."
+            placeholder="Aucun produit"
+            [disabled]="readOnly()"
+            [options]="contradictingOptions()"
+            [value]="contradicting()"
+            (valueChange)="setProducts($event, true)"
+          />
+        </div>
+      </fold-fieldset>
+    }
+  </div>
+</fold-card>

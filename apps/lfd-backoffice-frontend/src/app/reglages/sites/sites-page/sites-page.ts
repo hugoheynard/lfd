@@ -4,7 +4,6 @@ import type { SiteView } from '@lfd/contracts';
 import { AddressView } from '@lfd/b2b-ui/address';
 import { HoursView } from '@lfd/b2b-ui/hours';
 import { postalFrom } from '@lfd/b2b-ui/company';
-import { formatAdjustmentValue } from '@lfd/b2b-ui/pricing';
 import type { PostalAddress } from '@lfd/b2b-ui/address';
 import {
   FoldBadgeComponent,
@@ -19,12 +18,11 @@ import {
 } from 'fold-ng';
 
 import { DeliveryAvailabilityService } from '../../../b2b/reglages/delivery-availability.service';
-import { discountAudienceSuffix } from '../../../b2b/reglages/pickup-discount-audience';
 import { openingRows } from '../../../b2b/reglages/pickup-opening.model';
 import { type DeliveryOpenness, pickupGaps } from '../pickup-coverage';
 import { roleLabels } from '../site-role-labels';
 import { SITES_PATH } from '../sites-path';
-import { singleDiscountOf } from '../site-discount-bridge';
+import { discountBadges } from '../pickup-discount-rules';
 import { SitesService } from '../sites.service';
 
 export { roleLabels } from '../site-role-labels';
@@ -98,16 +96,11 @@ export class SitesPage {
   protected readonly hours = openingRows;
 
   /**
-   * « − 10 % · B2B » : la remise ET à qui elle va. Sans la clientèle, une remise
-   * fermée aux particuliers se lirait comme offerte à tous.
+   * « Pros − 10 % », « Particuliers − 2,00 € sur une sélection » : une pastille
+   * par clientèle remisée, chacune avec SA réduction.
    */
-  protected discountLabel(point: SiteView): string {
-    const { discount, audiences } = singleDiscountOf(point.discounts);
-    if (discount === null) {
-      return '';
-    }
-    return `− ${formatAdjustmentValue(discount)}${discountAudienceSuffix(audiences)}`;
-  }
+  protected readonly discountBadges = (point: SiteView): string[] =>
+    discountBadges(point.discounts);
 
   /**
    * L'adresse à afficher. Un point sans nom d'usage prend celui de sa ville :

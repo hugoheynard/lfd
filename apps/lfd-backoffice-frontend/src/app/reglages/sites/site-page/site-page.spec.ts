@@ -17,7 +17,9 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { NotifyService } from '../../../notify.service';
 import { SITES_PATH } from '../sites-path';
+import { AudienceDiscountCard } from './audience-discount-card/audience-discount-card';
 import { SiteDiscountCard } from './site-discount-card/site-discount-card';
+import { CatalogueService } from '../../../b2b/catalogue/catalogue.service';
 import { SiteHoursCard } from './site-hours-card/site-hours-card';
 import { SiteIdentityCard } from './site-identity-card/site-identity-card';
 import { SitesService } from '../sites.service';
@@ -136,6 +138,12 @@ async function mount(
     providers: [
       provideRouter([]),
       { provide: SitesService, useValue: pickups },
+      {
+        provide: CatalogueService,
+        useValue: {
+          published: () => Promise.resolve({ shelves: [], entries: [], pendingReview: [] }),
+        },
+      },
       // La carte des couleurs lit l'ouverture de la livraison (route publique).
       {
         provide: DeliveryAvailabilityService,
@@ -151,12 +159,11 @@ async function mount(
   fixture.detectChanges();
   await fixture.whenStable();
   fixture.detectChanges();
+  // La carte des réductions lit le catalogue publié après l'arrivée du site.
+  await fixture.whenStable();
+  fixture.detectChanges();
   return { fixture, pickups, router: TestBed.inject(Router) };
 }
-
-/** Les cases natives des deux clientèles, B2B puis B2C. */
-const audienceBoxes = (fixture: ComponentFixture<SitePage>): HTMLInputElement[] =>
-  Array.from(fixture.nativeElement.querySelectorAll('fold-fieldset fold-checkbox input'));
 
 describe('SitePage — le chargement', () => {
   it('lit le site par sa route unitaire', async () => {
@@ -209,7 +216,7 @@ describe('SitePage — les cartes selon les rôles', () => {
       'Paramétrage du retrait',
       'Heures de retrait',
       'Créneaux publics de retrait',
-      'Réduction de retrait sur ce site',
+      'Réductions de retrait sur ce site',
     ].map((label) => text.indexOf(label));
 
     expect(order.every((at) => at >= 0)).toBe(true);
@@ -245,41 +252,48 @@ function identity(fixture: ComponentFixture<SitePage>): SiteIdentityCard {
   return fixture.debugElement.query(By.directive(SiteIdentityCard)).componentInstance;
 }
 
-/** La sous-carte de la réduction, montée par la page. */
-function discountCard(fixture: ComponentFixture<SitePage>): SiteDiscountCard {
-  return fixture.debugElement.query(By.directive(SiteDiscountCard)).componentInstance;
+/** La carte d'une clientèle, montée par la page : Pros, puis Particuliers. */
+function audienceCard(fixture: ComponentFixture<SitePage>, index: number): AudienceDiscountCard {
+  return fixture.debugElement.queryAll(By.directive(AudienceDiscountCard))[index]
+    ?.componentInstance;
 }
 
 /**
- * La réduction a SA sauvegarde (Hugo, 2026-10-13) : ses cas vivent dans la
- * sous-carte, et la page renvoie la réduction ENREGISTRÉE.
+ * Chaque clientèle a SA réduction et SA sauvegarde (lot B du plan des
+ * exclusions) : ses cas vivent dans `AudienceDiscountCard`, la page vérifie
+ * le branchement.
  */
-describe('SitePage — la réduction, une sous-carte à elle', () => {
-  it('enregistrer l’adresse renvoie la réduction ENREGISTRÉE, pas un brouillon', async () => {
+describe('SitePage — les réductions, une carte par clientèle', () => {
+  it('enregistrer l’adresse n’envoie pas les remises, même modifiées', async () => {
     const { fixture, pickups } = await mount('pick_1');
-    discountCard(fixture)['setAudience']('b2c', true);
+    audienceCard(fixture, 1)['setDiscount']({ mode: 'percent', bp: 500, direction: 'decrease' });
     identity(fixture)['draft'].update((d) => ({ ...d, label: 'Laboratoire bis' }));
 
     await identity(fixture)['save']();
 
-    // Depuis le 2026-10-22, l'adresse n'envoie plus les remises : absentes,
-    // elles restent celles du serveur — ni le brouillon, ni un écrasement.
     expect(pickups.updated[0]?.label).toBe('Laboratoire bis');
     expect(pickups.updated[0] && 'discounts' in pickups.updated[0]).toBe(false);
   });
 
-  it('modifier la réduction n’enregistre qu’elle, sur le lieu ENREGISTRÉ', async () => {
+  it('montre deux cartes, Pros puis Particuliers', async () => {
+    const { fixture } = await mount('pick_1');
+
+    expect(fixture.debugElement.queryAll(By.directive(AudienceDiscountCard))).toHaveLength(2);
+    expect(fixture.nativeElement.textContent).toContain('Particuliers');
+  });
+
+  it('retirer la réduction des pros n’enregistre qu’elle, sur le lieu ENREGISTRÉ', async () => {
     const { fixture, pickups } = await mount('pick_1');
     identity(fixture)['draft'].update((d) => ({ ...d, ligne1: 'brouillon de la page' }));
-    const card = discountCard(fixture);
-    card['setAudience']('b2c', true);
+    const card = audienceCard(fixture, 0);
+    card['setDiscount'](null);
 
     await card['save']();
 
     expect(pickups.updated).toHaveLength(1);
     expect(pickups.updated[0]).toMatchObject({
       ligne1: LABO.ligne1,
-      discounts: { b2b: EIGHT_EUROS, b2c: EIGHT_EUROS },
+      discounts: { b2b: null, b2c: null },
     });
     expect(pickups.updated[0] && 'gps' in pickups.updated[0]).toBe(false);
   });
@@ -293,56 +307,6 @@ describe('SitePage — la réduction, une sous-carte à elle', () => {
 
     expect(pickups.created[0]).toMatchObject({ discounts: { b2b: null, b2c: null } });
     expect(fixture.debugElement.query(By.directive(SiteDiscountCard))).toBeNull();
-  });
-
-  it('grise les cases tant qu’il n’y a pas de réduction', async () => {
-    const { fixture } = await mount('pick_1', [
-      { ...LABO, discounts: { b2b: null, b2c: null } },
-      VILLAGE,
-    ]);
-
-    expect(audienceBoxes(fixture).map((box) => box.disabled)).toEqual([true, true]);
-  });
-
-  it('les rend cochables dès qu’une réduction existe', async () => {
-    const { fixture } = await mount('pick_1');
-
-    expect(audienceBoxes(fixture).map((box) => box.disabled)).toEqual([false, false]);
-  });
-
-  /**
-   * Depuis le 2026-10-22, une clientèle sans remise vaut `null` côté serveur :
-   * retirer la réduction la retire aux deux. Les cases d'avant ne se gardent
-   * plus — la carte par clientèle est le lot B du plan des exclusions.
-   */
-  it('retirer la réduction la retire aux deux clientèles', async () => {
-    const { fixture, pickups } = await mount('pick_1');
-    const card = discountCard(fixture);
-    card['setDiscount'](null);
-
-    await card['save']();
-
-    expect(pickups.updated[0]).toMatchObject({ discounts: { b2b: null, b2c: null } });
-  });
-
-  it('refuse d’envoyer une réduction qui ne vise personne, et le dit DANS la sous-carte', async () => {
-    const { fixture, pickups } = await mount('pick_1');
-    const card = discountCard(fixture);
-    card['setAudience']('b2b', false);
-    fixture.detectChanges();
-
-    await card['save']();
-
-    expect(pickups.updated).toEqual([]);
-    expect(fixture.nativeElement.textContent).toContain('Cochez au moins une clientèle');
-  });
-
-  it('dit « modifiée, pas encore enregistrée » dans la sous-carte', async () => {
-    const { fixture } = await mount('pick_1');
-    discountCard(fixture)['setAudience']('b2c', true);
-    fixture.detectChanges();
-
-    expect(fixture.nativeElement.textContent).toContain('Modifiée, pas encore enregistrée.');
   });
 });
 

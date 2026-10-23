@@ -1,0 +1,6 @@
+.body,
+.rules {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}

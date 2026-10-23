@@ -103,7 +103,11 @@ l'appeler (corrigé après `vitruve`, 2026-10-22).
    restent d'accord avec elle. Le Factur-X garde une remise par taux (BT-92),
    qui est désormais juste.
 
-### B — back-office
+### ~~B — back-office~~ — bâti le 2026-10-23 (non commité à l'écriture)
+
+> Décrit au présent dans [`sites.md`](../../sites/sites.md), « Paramétrage du
+> retrait ». Le pont `site-discount-bridge.ts` est retiré. Non bâti : le
+> nombre d'articles que chaque règle couvre aujourd'hui (seconde moitié de V9).
 
 La page du point de retrait montre deux cartes, « Pros » et « Particuliers ».
 Chacune a sa réduction et ses exclusions, choisies parmi les catégories et les
