@@ -2,7 +2,7 @@
  * **Le schéma de données servi à l'agence du site vitrine**, en tableaux.
  *
  * Recopié des types de `packages/contracts/src/vitrine.ts` et
- * `packages/contracts/src/shop-catalogue.ts` (relus le 2026-10-18). Ce n'est
+ * `packages/contracts/src/shop-catalogue.ts` (relus le 2026-10-18 ; champs de l’agence ajoutés le 2026-10-23). Ce n'est
  * pas une source : un champ ajouté au contrat n'apparaît ici que si quelqu'un
  * l'y écrit. Les valeurs de `type` sont celles du fil JSON, pas de TypeScript.
  */
@@ -140,6 +140,20 @@ export const VITRINE_ENTITIES: readonly VitrineEntity[] = [
           'Prix d’une pièce TOUTES TAXES COMPRISES, en CENTIMES (1 € = 100). Calculé par nos soins avec les arrondis de la caisse : à afficher tel quel au particulier, sans le recalculer.',
       },
       {
+        field: 'unitPriceTTC',
+        type: 'chaîne',
+        presence: ALWAYS,
+        description:
+          'unitPriceTtcCents écrit en euros, virgule et deux décimales : « 13,00 ». Le même prix, prêt à afficher.',
+      },
+      {
+        field: 'unitPriceHT',
+        type: 'chaîne',
+        presence: ALWAYS,
+        description:
+          'unitPriceMillicents arrondi au centime le plus proche (la moitié vers le haut), écrit « 12,32 ». Indicatif : le hors taxe exact reste unitPriceMillicents.',
+      },
+      {
         field: 'catalogPriceMillicents',
         type: 'entier',
         presence: OPTIONAL,
@@ -157,6 +171,12 @@ export const VITRINE_ENTITIES: readonly VitrineEntity[] = [
         type: 'chaîne',
         presence: ALWAYS,
         description: 'Le rayon de l’article (Rayon.id).',
+      },
+      {
+        field: 'shelfName',
+        type: 'chaîne',
+        presence: ALWAYS,
+        description: 'Le nom de ce rayon, dans la langue demandée — le même que Rayon.name.',
       },
       {
         field: 'isFeatured',
@@ -196,7 +216,8 @@ export const VITRINE_ENTITIES: readonly VitrineEntity[] = [
         field: 'alt',
         type: 'chaîne',
         presence: ALWAYS,
-        description: 'Le texte alternatif — en français, quelle que soit la langue demandée.',
+        description:
+          'Le texte alternatif — en français, quelle que soit la langue demandée. Le nom de l’article quand la photothèque n’en a pas d’écrit ; jamais une URL.',
       },
       {
         field: 'width',
@@ -215,6 +236,13 @@ export const VITRINE_ENTITIES: readonly VitrineEntity[] = [
         type: 'Point focal',
         presence: OPTIONAL,
         description: 'Le point autour duquel recadrer. Absent ou null : recadrez au centre.',
+      },
+      {
+        field: 'focale',
+        type: 'chaîne',
+        presence: ALWAYS,
+        description:
+          'Vignette (thumbnail) seulement : le même point focal en « x,y », deux décimales (« 0.50,0.30 »). Chaîne vide sans point focal : recadrez au centre.',
       },
     ],
   },

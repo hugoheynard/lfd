@@ -10,6 +10,7 @@ import {
   type VitrineCatalogueView,
   type VitrineItemView,
   type VitrineTextsView,
+  type VitrineThumbnailView,
 } from "@lfd/contracts";
 
 import {
@@ -50,6 +51,16 @@ const image = objectOf<ShopImageView>({
   focal: optional(focal),
 });
 
+/** La vignette de l'agence : `focale` toujours présente, vide sans point focal. */
+const thumbnail = objectOf<VitrineThumbnailView>({
+  url: required(xmlString),
+  alt: required(xmlString),
+  width: optional(xmlInteger),
+  height: optional(xmlInteger),
+  focal: optional(focal),
+  focale: required(xmlString),
+});
+
 /** Ce qui est multilingue dans le JSON le reste : `<name><fr>…</fr><en>…</en></name>`. */
 const operationText = objectOf<ShopOperationText>({
   fr: required(xmlString),
@@ -73,12 +84,15 @@ export const VITRINE_ITEM_SHAPE: XmlObjectShape = objectOf<VitrineItemView>({
   name: required(xmlString),
   note: optional(xmlString),
   image: optional(image),
-  thumbnail: optional(image),
+  thumbnail: optional(thumbnail),
   unitPriceMillicents: required(xmlInteger),
   unitPriceTtcCents: required(xmlInteger),
+  unitPriceTTC: required(xmlString),
+  unitPriceHT: required(xmlString),
   catalogPriceMillicents: optional(xmlInteger),
   vatRatePercent: required(xmlDecimal),
   shelfId: required(xmlString),
+  shelfName: required(xmlString),
   isFeatured: optional(xmlBoolean),
   audience: required(oneOf(["public", "pro", "both"])),
   operation: optional(itemOperation),

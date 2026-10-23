@@ -39,14 +39,13 @@ beforeEach(async () => {
   await ctx.prisma.catalogCategory.deleteMany();
 });
 
-async function aSubscriberWithACatalogue(): Promise<string> {
-  await deliverAsFacts(
-    ctx,
-    snapshotOf([
-      { sku: "VIE-001", priceMillicents: 140_000 },
-      { sku: "VIE-002", priceMillicents: 160_000 },
-    ]),
-  );
+async function aSubscriberWithACatalogue(
+  skus: Parameters<typeof snapshotOf>[0] = [
+    { sku: "VIE-001", priceMillicents: 140_000 },
+    { sku: "VIE-002", priceMillicents: 160_000 },
+  ],
+): Promise<string> {
+  await deliverAsFacts(ctx, snapshotOf(skus));
   const credentials = jsonBody<VitrineCredentialsView>(
     await ctx
       .asSub(E2E_STAFF_SUB)
@@ -78,6 +77,13 @@ function read(path: string, key: string, accept?: string): Test {
 }
 
 const bodyText = (response: Response): string => String(response.body);
+
+/** 13,00 € TTC à 5,5 % : 12,3222… € HT, servi 12,32. */
+const TTC_13_EUROS = {
+  ttcCents: 1300,
+  vatRatePercent: 5.5,
+  htMillicents: 1_232_227,
+} as const;
 
 function elementNames(xml: string): readonly string[] {
   return [...new Set([...xml.matchAll(/<([A-Za-z][A-Za-z0-9]*)[\s>/]/g)].map((m) => m[1] ?? ""))];
@@ -125,6 +131,49 @@ describe("la vitrine en XML", () => {
     expect(texts.match(/<text key="/g)).toHaveLength(Object.keys(json.texts).length);
     expect(texts).toContain('<text key="product.bestSeller">');
     await expectDeclaredBySchema(texts);
+  });
+
+  /**
+   * Les champs demandés par l'agence le 2026-10-23, et la régression du
+   * `<alt>` : la médiathèque replie une alternative absente sur l'URL, et
+   * l'agence la recevait comme texte alternatif.
+   */
+  it("sert les prix en euros, le nom du rayon, la focale, et jamais une URL en alt", async () => {
+    const url = "https://media.e2e.test/vignette.jpg";
+    const key = await aSubscriberWithACatalogue([
+      { sku: "VIE-001", priceMillicents: 140_000 },
+      {
+        sku: "VIE-003",
+        priceMillicents: 1_232_227,
+        publicPrice: TTC_13_EUROS,
+        thumbnail: { url, alt: url, width: 800, height: 600, focal: { x: 0.5, y: 0.3 } },
+      },
+    ]);
+    const json = jsonBody<VitrineCatalogueView>(
+      await ctx.http().get("/vitrine/catalogue").set("x-vitrine-key", key).expect(200),
+    );
+    const served = json.items.find((entry) => entry.sku === "VIE-003");
+    const shelf = json.shelves.find((entry) => entry.id === served?.shelfId);
+    expect(served).toMatchObject({
+      unitPriceTtcCents: 1300,
+      unitPriceTTC: "13,00",
+      unitPriceHT: "12,32",
+      shelfName: shelf?.name,
+      thumbnail: { alt: "Produit VIE-003", focale: "0.50,0.30" },
+    });
+
+    const xml = bodyText(await read("/vitrine/articles/VIE-003?format=xml", key).expect(200));
+    expect(xml).toContain("<alt>Produit VIE-003</alt>");
+    expect(xml).not.toContain(`<alt>${url}</alt>`);
+    expect(xml).toContain("<focale>0.50,0.30</focale>");
+    expect(xml).toContain("<unitPriceHT>12,32</unitPriceHT>");
+    expect(xml).toContain("<unitPriceTTC>13,00</unitPriceTTC>");
+    expect(xml).toContain(`<shelfName>${shelf?.name ?? ""}</shelfName>`);
+    await expectDeclaredBySchema(xml);
+
+    const plain = bodyText(await read("/vitrine/articles/VIE-001?format=xml", key).expect(200));
+    expect(plain).toContain("<shelfName>");
+    expect(plain).not.toContain("<thumbnail>");
   });
 
   it("?format=json l'emporte sur l'en-tête, et reste le défaut", async () => {

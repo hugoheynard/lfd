@@ -16,11 +16,25 @@ const SERVER_ITEM_XML = `<?xml version="1.0" encoding="UTF-8"?>
       <y>0.4</y>
     </focal>
   </image>
+  <thumbnail>
+    <url>https://…/croissant-vignette.jpg</url>
+    <alt>Croissant au beurre</alt>
+    <width>800</width>
+    <height>600</height>
+    <focal>
+      <x>0.5</x>
+      <y>0.3</y>
+    </focal>
+    <focale>0.50,0.30</focale>
+  </thumbnail>
   <unitPriceMillicents>120000</unitPriceMillicents>
   <unitPriceTtcCents>127</unitPriceTtcCents>
+  <unitPriceTTC>1,27</unitPriceTTC>
+  <unitPriceHT>1,20</unitPriceHT>
   <catalogPriceMillicents>135000</catalogPriceMillicents>
   <vatRatePercent>5.5</vatRatePercent>
   <shelfId>cat_viennoiseries</shelfId>
+  <shelfName>Viennoiseries</shelfName>
   <isFeatured>true</isFeatured>
   <audience>both</audience>
 </item>
@@ -65,6 +79,6 @@ describe('toVitrineXml', () => {
 
   it("l'exemple XML du guide est dérivé de l'exemple JSON", () => {
     expect(SAMPLE_ITEM_XML).toContain(`<sku>${SAMPLE_ITEM.sku}</sku>`);
-    expect(SAMPLE_ITEM_XML).not.toContain('<thumbnail');
+    expect(SAMPLE_ITEM_XML).not.toContain('<operation');
   });
 });

@@ -1,7 +1,12 @@
 import { z } from "zod";
 
 import type { ContentLocale } from "./platform-content.js";
-import type { ShopItemView, ShopOperationView, ShopShelfView } from "./shop-catalogue.js";
+import type {
+  ShopImageView,
+  ShopItemView,
+  ShopOperationView,
+  ShopShelfView,
+} from "./shop-catalogue.js";
 
 /**
  * ── Le webhook de la VITRINE ─────────────────────────────────────────────────
@@ -56,9 +61,35 @@ export const VITRINE_DELIVERY_HEADER = "vitrine-delivery";
  * `isFeatured` n'est présent que si l'abonné reçoit les « Incontournables »,
  * et `operation` que s'il reçoit les opérations.
  */
-export type VitrineItemView = Omit<ShopItemView, "isFeatured" | "operation"> & {
+export type VitrineItemView = Omit<ShopItemView, "isFeatured" | "operation" | "thumbnail"> & {
   readonly isFeatured?: boolean;
   readonly operation?: ShopItemView["operation"];
+  readonly thumbnail: VitrineThumbnailView | null;
+  /**
+   * Le prix TTC servi (`unitPriceTtcCents`), écrit en euros à la française :
+   * « 13,00 ». Demandé par l'agence (2026-10-23) ; les noms sont les siens.
+   */
+  readonly unitPriceTTC: string;
+  /**
+   * Le prix HT servi (`unitPriceMillicents`) arrondi au centime par la règle
+   * d'affichage du dépôt (`unitPriceCents` de `@lfd/money` : au plus proche,
+   * la moitié s'éloignant de zéro), écrit « 12,32 ». Indicatif : le prix qui
+   * se facture reste en millicentimes.
+   */
+  readonly unitPriceHT: string;
+  /** Le nom du rayon `shelfId`, dans la langue lue — celui de `shelves`. */
+  readonly shelfName: string;
+};
+
+/**
+ * La vignette telle que la vitrine la reçoit : celle de la boutique, plus
+ * `focale` — le point focal en texte `"x,y"`, deux fractions de 0 à 1 à deux
+ * décimales depuis le coin haut gauche (« 0.50,0.30 »), ou `""` quand la
+ * médiathèque n'en a pas posé (recadrer au centre). `focal` reste servi tel
+ * quel, en `{ x, y }`, pour qui le lit déjà.
+ */
+export type VitrineThumbnailView = ShopImageView & {
+  readonly focale: string;
 };
 
 /** La vue de l'agence, dans une langue. Un ensemble décoché est vide. */

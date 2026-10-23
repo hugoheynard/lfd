@@ -45,7 +45,9 @@ article : `sku`, `name`, `note`, `image`, `thumbnail`, `unitPriceMillicents`
 (HT public résolu), `unitPriceTtcCents`, `catalogPriceMillicents` (l'étiquette
 avant promotion, seulement si une promotion baisse le prix), `vatRatePercent`,
 `shelfId`, `audience` (`public` ou `both`), `isFeatured` (mise en avant
-**publique**), `operation`. Sont exclus : l'audience `pro`, les masqués au
+**publique**), `operation` — et, depuis le 2026-10-23, les champs propres à
+l'agence (§7 bis) : `unitPriceTTC`, `unitPriceHT`, `shelfName`, `focale` dans
+la vignette. Sont exclus : l'audience `pro`, les masqués au
 public, les arrivées non validées, le prix pro, la mise en avant pro, les
 opérations réservées aux pros. L'e2e l'éprouve **sur `/vitrine` elle-même**.
 
@@ -289,6 +291,81 @@ autres en copie, clé Resend `vitrine-notice:<annonce>:<abonné>`.
   d'un fournisseur qui a accepté avant de couper la réponse — le reprendre
   au-delà de la fenêtre de dédoublonnage de Resend enverrait deux fois. Pour
   réécrire à un refusé : une nouvelle annonce.
+
+## 7 bis. Les champs demandés par l'agence (2026-10-23)
+
+L'agence lit le flux XML et a demandé des champs **ajoutés** — rien n'est
+retiré ni renommé, elle lit déjà les autres. Ils sont dans le JSON aussi,
+sous les mêmes noms (décision 4 : même ressource, mêmes noms ; les noms sont
+ceux de l'agence). Calculés par `vitrineItemOf`
+(`apps/lfd-api/src/b2b/vitrine/domain/services/vitrine-item.ts`), dans la vue
+de l'abonné et non dans la vue publique de la boutique.
+
+| Élément         | Valeur                                                                                                                                                                                                                                                                              |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `unitPriceTTC`  | `unitPriceTtcCents` écrit en euros, virgule, deux décimales : `13,00`. Aucun recalcul.                                                                                                                                                                                              |
+| `unitPriceHT`   | `unitPriceMillicents` arrondi au centime par `unitPriceCents` de `@lfd/money` (« tel qu'un écran l'affiche » : au plus proche, la moitié s'éloignant de zéro), écrit `12,32`. Indicatif.                                                                                            |
+| `shelfName`     | Le nom du rayon `shelfId`, lu dans les `shelves` de la même vue — donc dans la langue demandée. Vide si le rayon n'est pas dans la vue (jamais inventé).                                                                                                                            |
+| `focale`        | Dans `<thumbnail>` seulement : le point focal de la médiathèque en `x,y`, deux fractions de 0 à 1 à deux décimales, depuis le coin haut gauche (`0.50,0.30`). **Élément vide** sans point focal : recadrer au centre. `<focal><x/><y/></focal>` reste servi.                        |
+| `alt` (corrigé) | Le texte alternatif de la médiathèque ; le **nom de l'article** quand il n'y en a pas d'écrit. La médiathèque replie une alternative absente sur l'URL (pour qu'elle se voie au staff), et ce repli arrivait jusqu'à `<alt>` : c'était un bug, corrigé pour `image` et `thumbnail`. |
+
+**Pas d'`URLProduct`** : la fiche d'un article n'a pas d'adresse dans la
+boutique (`apps/lfc-ecommerce-frontend`, vérifié le 2026-10-23). Elle s'ouvre
+dans `/boutique` par un état de la page (`PieceRequest`, `openPiece`), sans
+segment ni paramètre ; seul le rayon a une adresse (`/boutique?<rayon>`). En
+servir une serait inventer une route. À décider : donner une adresse à la
+fiche côté boutique, puis la servir ici.
+
+Effet sur le balayage : les empreintes d'article portent ces champs, donc le
+premier balayage après le déploiement notifie **tous** les articles une fois
+— ce qui invite justement l'agence à tout relire.
+
+Un article complet, tel que `GET /vitrine/articles/VIE-001?format=xml` le
+rend (valeurs inventées, forme exacte — c'est l'exemple du guide, éprouvé à
+l'octet par `http/xml/__tests__/vitrine-xml.spec.ts`) :
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<item>
+  <sku>VIE-001</sku>
+  <name>Croissant au beurre</name>
+  <note>Beurre AOP Charentes-Poitou</note>
+  <image>
+    <url>https://…/croissant.jpg</url>
+    <alt>Croissant doré sur une planche</alt>
+    <width>1600</width>
+    <height>1200</height>
+    <focal>
+      <x>0.5</x>
+      <y>0.4</y>
+    </focal>
+  </image>
+  <thumbnail>
+    <url>https://…/croissant-vignette.jpg</url>
+    <alt>Croissant au beurre</alt>
+    <width>800</width>
+    <height>600</height>
+    <focal>
+      <x>0.5</x>
+      <y>0.3</y>
+    </focal>
+    <focale>0.50,0.30</focale>
+  </thumbnail>
+  <unitPriceMillicents>120000</unitPriceMillicents>
+  <unitPriceTtcCents>127</unitPriceTtcCents>
+  <unitPriceTTC>1,27</unitPriceTTC>
+  <unitPriceHT>1,20</unitPriceHT>
+  <catalogPriceMillicents>135000</catalogPriceMillicents>
+  <vatRatePercent>5.5</vatRatePercent>
+  <shelfId>cat_viennoiseries</shelfId>
+  <shelfName>Viennoiseries</shelfName>
+  <isFeatured>true</isFeatured>
+  <audience>both</audience>
+</item>
+```
+
+Sans point focal, la vignette porte `<focale></focale>` et pas de `<focal>`.
+Tout texte est échappé (`&` → `&amp;`, `<` → `&lt;`, `>`, `"`, `'`).
 
 ## 8. Ce qui reste — la recette avec l'agence
 

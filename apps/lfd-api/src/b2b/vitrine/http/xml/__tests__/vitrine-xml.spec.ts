@@ -20,12 +20,22 @@ const GUIDE_ITEM: VitrineItemView = {
     height: 1200,
     focal: { x: 0.5, y: 0.4 },
   },
-  thumbnail: null,
+  thumbnail: {
+    url: "https://…/croissant-vignette.jpg",
+    alt: "Croissant au beurre",
+    width: 800,
+    height: 600,
+    focal: { x: 0.5, y: 0.3 },
+    focale: "0.50,0.30",
+  },
   unitPriceMillicents: 120000,
   unitPriceTtcCents: 127,
+  unitPriceTTC: "1,27",
+  unitPriceHT: "1,20",
   catalogPriceMillicents: 135000,
   vatRatePercent: 5.5,
   shelfId: "cat_viennoiseries",
+  shelfName: "Viennoiseries",
   isFeatured: true,
   audience: "both",
 };
@@ -45,11 +55,25 @@ const GUIDE_ITEM_XML = `<?xml version="1.0" encoding="UTF-8"?>
       <y>0.4</y>
     </focal>
   </image>
+  <thumbnail>
+    <url>https://…/croissant-vignette.jpg</url>
+    <alt>Croissant au beurre</alt>
+    <width>800</width>
+    <height>600</height>
+    <focal>
+      <x>0.5</x>
+      <y>0.3</y>
+    </focal>
+    <focale>0.50,0.30</focale>
+  </thumbnail>
   <unitPriceMillicents>120000</unitPriceMillicents>
   <unitPriceTtcCents>127</unitPriceTtcCents>
+  <unitPriceTTC>1,27</unitPriceTTC>
+  <unitPriceHT>1,20</unitPriceHT>
   <catalogPriceMillicents>135000</catalogPriceMillicents>
   <vatRatePercent>5.5</vatRatePercent>
   <shelfId>cat_viennoiseries</shelfId>
+  <shelfName>Viennoiseries</shelfName>
   <isFeatured>true</isFeatured>
   <audience>both</audience>
 </item>
@@ -63,10 +87,24 @@ describe("le XML de la vitrine", () => {
   });
 
   it("ne produit aucun élément pour null ni pour un champ absent", () => {
-    const xml = item({ ...GUIDE_ITEM, note: null });
+    const xml = item({ ...GUIDE_ITEM, note: null, thumbnail: null });
     expect(xml).not.toContain("<note");
     expect(xml).not.toContain("<thumbnail");
     expect(xml).not.toContain("<operation");
+  });
+
+  it("rend la focale vide quand la médiathèque n'a pas posé de point focal", () => {
+    const thumbnail = { url: "u", alt: "a", width: null, height: null, focal: null, focale: "" };
+    const xml = item({ ...GUIDE_ITEM, thumbnail });
+    expect(xml).toContain(
+      "<thumbnail>\n    <url>u</url>\n    <alt>a</alt>\n    <focale></focale>\n  </thumbnail>",
+    );
+  });
+
+  it("échappe le nom du rayon et le nom de l'article", () => {
+    const xml = item({ ...GUIDE_ITEM, name: "Pain & <sel>", shelfName: "Pains & co" });
+    expect(xml).toContain("<name>Pain &amp; &lt;sel&gt;</name>");
+    expect(xml).toContain("<shelfName>Pains &amp; co</shelfName>");
   });
 
   it("garde le multilingue en éléments par langue, et les tableaux au pluriel", () => {
