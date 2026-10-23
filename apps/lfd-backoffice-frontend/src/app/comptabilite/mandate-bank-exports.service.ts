@@ -1,6 +1,10 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import type { MandateBankExportCreatedView, MandateBankExportsView } from '@lfd/contracts';
+import type {
+  MandateBankExportCreatedView,
+  MandateBankExportsView,
+  RejectMandateAtBankPayload,
+} from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../api/api-config';
@@ -57,5 +61,29 @@ export class MandateBankExportsService {
     await firstValueFrom(
       this.http.post<void>(`${this.base}/${entityId}/mandate-exports/${exportId}/abandoned`, {}),
     );
+  }
+
+  /** Le compte rendu CENET d'un export déposé : la banque avait déjà ce mandat. */
+  async reportKnown(entityId: string, exportId: string, mandateId: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(`${this.lineOf(entityId, exportId, mandateId)}/reported-known`, {}),
+    );
+  }
+
+  /** Le compte rendu CENET d'un export déposé : ce mandat est en erreur, il repart. */
+  async reject(
+    entityId: string,
+    exportId: string,
+    mandateId: string,
+    reason: string,
+  ): Promise<void> {
+    const payload: RejectMandateAtBankPayload = { reason };
+    await firstValueFrom(
+      this.http.post<void>(`${this.lineOf(entityId, exportId, mandateId)}/rejected`, payload),
+    );
+  }
+
+  private lineOf(entityId: string, exportId: string, mandateId: string): string {
+    return `${this.base}/${entityId}/mandate-exports/${exportId}/mandates/${mandateId}`;
   }
 }

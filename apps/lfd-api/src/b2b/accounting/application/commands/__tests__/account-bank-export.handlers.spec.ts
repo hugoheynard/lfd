@@ -5,7 +5,7 @@ import {
   AccountBankExportNeverDownloadedError,
   AccountBankExportNotFoundError,
   AccountInFlightNotEnterableError,
-  AccountNotInDownloadedExportError,
+  AccountReportedOnlyAfterDepositError,
   AccountNotDebitedByEntityError,
   NoAccountToExportError,
 } from "../../../domain/errors/account-bank-export-errors.js";
@@ -41,11 +41,13 @@ describe("préparer un export des comptes", () => {
         bankAccountId: "rib_a",
         companyId: "cmp_a",
         accountFingerprint: accountFingerprint(IBAN_A),
+        correction: null,
       },
       {
         bankAccountId: "rib_b",
         companyId: "cmp_b",
         accountFingerprint: accountFingerprint(IBAN_B),
+        correction: null,
       },
     ]);
     expect(w.accounts.asked).toEqual(["le1"]);
@@ -221,26 +223,6 @@ describe("déclarer un compte connu de la banque, et pourquoi", () => {
     await expect(w.prepare.execute(prepare())).rejects.toThrow(NoAccountToExportError);
   });
 
-  it("range et journalise « signalé par la banque » pour un compte d'un export téléchargé, sans toucher l'export", async () => {
-    const w = accountExportWorld();
-    w.accounts.exportable = [debitedAccount("a")];
-    const id = await w.prepare.execute(prepare());
-    await w.download.execute(new RecordAccountBankExportDownloadCommand("le1", id, "s"));
-    const exportBefore = w.exports.rows.get(id)?.toPersistence();
-
-    await w.declareKnown.execute(
-      new DeclareBankAccountKnownCommand("le1", "rib_a", "reported_by_bank", "staff_1"),
-    );
-
-    expect(w.declared.rows[0]?.toPersistence().reason).toBe("reported_by_bank");
-    expect(w.events.traced.at(-1)?.journalFact().payload).toMatchObject({
-      reason: "reported_by_bank",
-    });
-    expect(w.exports.rows.get(id)?.toPersistence()).toEqual(exportBefore);
-    await w.markImported.execute(new MarkAccountBankExportImportedCommand("le1", id, "s"));
-    await expect(w.prepare.execute(prepare())).rejects.toThrow(NoAccountToExportError);
-  });
-
   it("refuse (409) « saisi dans CENET » pour un compte en vol, sans rien écrire", async () => {
     const w = accountExportWorld();
     w.accounts.exportable = [debitedAccount("a", { companyName: "Café A" })];
@@ -254,17 +236,17 @@ describe("déclarer un compte connu de la banque, et pourquoi", () => {
     expect(w.declared.rows).toHaveLength(0);
   });
 
-  it("refuse (409) « signalé par la banque » hors d'un export téléchargé", async () => {
+  it("refuse (409) « signalé par la banque » en déclaration libre, avant comme après téléchargement", async () => {
     const w = accountExportWorld();
     w.accounts.exportable = [debitedAccount("a")];
     const reported = new DeclareBankAccountKnownCommand("le1", "rib_a", "reported_by_bank", "s");
 
     await expect(w.declareKnown.execute(reported)).rejects.toThrow(
-      AccountNotInDownloadedExportError,
+      AccountReportedOnlyAfterDepositError,
     );
     await w.prepare.execute(prepare());
     await expect(w.declareKnown.execute(reported)).rejects.toThrow(
-      AccountNotInDownloadedExportError,
+      AccountReportedOnlyAfterDepositError,
     );
     expect(w.declared.rows).toHaveLength(0);
   });

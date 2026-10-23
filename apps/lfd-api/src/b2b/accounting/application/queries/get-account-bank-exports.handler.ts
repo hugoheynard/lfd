@@ -1,6 +1,7 @@
 import type { AccountBankExportsView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
+import { Clock } from "../../../../platform/time/clock.js";
 import {
   AccountBankExportsReader,
   KnownAccountFingerprintsReader,
@@ -31,6 +32,7 @@ export class GetAccountBankExportsHandler implements IQueryHandler<
     private readonly fingerprints: KnownAccountFingerprintsReader,
     private readonly exports: AccountBankExportsReader,
     private readonly stamps: KnownAccountStampsReader,
+    private readonly clock: Clock,
   ) {}
 
   async execute(query: GetAccountBankExportsQuery): Promise<AccountBankExportsView> {
@@ -58,7 +60,13 @@ export class GetAccountBankExportsHandler implements IQueryHandler<
         ibanLast4,
         reason,
       })),
-      accounts: accountBankRows(selection, excluded, stamps, fingerprints.inDownloadedExport),
+      accounts: accountBankRows(
+        selection,
+        excluded,
+        stamps,
+        fingerprints.inDownloadedExport,
+        this.clock.now(),
+      ),
       exports: exports.map((row) => ({
         id: row.id,
         createdAt: row.createdAt.toISOString(),

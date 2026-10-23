@@ -1,4 +1,4 @@
-import type { MandateBankExclusionReasonView, MandateBankExportSummaryView } from '@lfd/contracts';
+import type { MandateBankExclusionReasonView, MandateBankStandingView } from '@lfd/contracts';
 
 /**
  * Les mots de la carte « Mandats à la banque ». Ici plutôt qu'en valeur du
@@ -31,13 +31,34 @@ export function mandatesLabel(count: number): string {
   return `${String(count)} mandat${count > 1 ? 's' : ''}`;
 }
 
-/** Où en est un export : importé, abandonné, ou pas encore importé. */
-export function mandateExportStateLabel(item: MandateBankExportSummaryView): string {
-  if (item.importedAt !== null) {
-    return `importé le ${parisDayLabel(item.importedAt)}`;
+/** Où en est un mandat, en une ligne de la colonne « État » (2026-10-23). */
+export function mandateStandingLabel(standing: MandateBankStandingView): string {
+  switch (standing.kind) {
+    case 'to_export':
+      return 'à exporter';
+    case 'in_flight':
+      return 'en export';
+    case 'imported':
+      return `importé le ${parisDayLabel(standing.at)}`;
+    case 'reported_by_bank':
+      return `signalé par la banque le ${parisDayLabel(standing.at)}`;
+    case 'excluded':
+      return `écarté : ${MANDATE_BANK_EXCLUSION_LABELS[standing.reason]}`;
   }
-  if (item.abandonedAt !== null) {
-    return `abandonné le ${parisDayLabel(item.abandonedAt)}`;
+}
+
+/**
+ * Les gestes du compte rendu CENET sur un mandat (Hugo, 2026-10-23) : grisés
+ * dans un export pas encore déposé, ouverts dans un export déposé encore
+ * corrigeable, absents ailleurs. L'export qu'ils visent vient avec.
+ */
+export function mandateReportOf(
+  standing: MandateBankStandingView,
+): { readonly state: 'pending' | 'open'; readonly exportId: string } | null {
+  if (standing.kind === 'in_flight') {
+    return { state: 'pending', exportId: standing.exportId };
   }
-  return 'pas encore importé';
+  return standing.kind === 'imported' && standing.correctable
+    ? { state: 'open', exportId: standing.exportId }
+    : null;
 }

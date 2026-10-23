@@ -306,6 +306,21 @@ export const COLLECTION_FACTS = {
   "mandate_bank_export.downloaded": fact(payload(mandateBankExport)),
   /** La banque l'a rejeté : il est clos, ses mandats restent « à exporter ». */
   "mandate_bank_export.abandoned": fact(payload(mandateBankExport)),
+  /**
+   * Après le dépôt, le compte rendu d'import CENET dit que la banque avait
+   * déjà ce mandat : il reste tenu pour importé (Hugo, 2026-10-23).
+   */
+  "mandate_bank_export.mandate_reported_known": fact(
+    payload({ subjectLabel: subjectLabel(), rum: z.string().min(1) }),
+  ),
+  /** Le compte rendu d'import met ce mandat en erreur : il redevient « à exporter ». */
+  "mandate_bank_export.mandate_rejected": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      rum: z.string().min(1),
+      rejectionReason: z.string().min(1),
+    }),
+  ),
   /** Un export des comptes destinataires est préparé : il est « en vol ». */
   "account_bank_export.created": fact(payload(accountBankExport)),
   /** Son fichier — fait d'IBAN en clair — a été téléchargé. */
@@ -324,6 +339,21 @@ export const COLLECTION_FACTS = {
       subjectLabel: subjectLabel(),
       company: named("company"),
       reason: z.enum(KNOWN_BANK_ACCOUNT_REASON_VALUES).optional(),
+    }),
+  ),
+  /**
+   * Après le dépôt, le compte rendu d'import CENET dit que la banque avait
+   * déjà ce compte : il reste tenu pour connu (Hugo, 2026-10-23).
+   */
+  "account_bank_export.account_reported_known": fact(
+    payload({ subjectLabel: subjectLabel(), company: named("company") }),
+  ),
+  /** Le compte rendu d'import met ce compte en erreur : il redevient « à exporter ». */
+  "account_bank_export.account_rejected": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      company: named("company"),
+      rejectionReason: z.string().min(1),
     }),
   ),
 } as const;

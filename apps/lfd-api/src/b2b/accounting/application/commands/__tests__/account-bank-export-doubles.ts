@@ -27,7 +27,9 @@ import { DeclareBankAccountKnownHandler } from "../declare-bank-account-known.ha
 import { ExportAccountsForBankHandler } from "../export-accounts-for-bank.handler.js";
 import { MarkAccountBankExportImportedHandler } from "../mark-account-bank-export-imported.handler.js";
 import { RecordAccountBankExportDownloadHandler } from "../record-account-bank-export-download.handler.js";
-import { UlidSequence } from "./collection-doubles.js";
+import { RejectBankAccountHandler } from "../reject-bank-account.handler.js";
+import { ReportBankAccountKnownHandler } from "../report-bank-account-known.handler.js";
+import { FakeCandidates, Steps, UlidSequence } from "./collection-doubles.js";
 import { OneEntity, entityRecord } from "./mandate-bank-export-doubles.js";
 
 /**
@@ -87,6 +89,9 @@ export class MemoryFingerprints extends KnownAccountFingerprintsReader {
         continue;
       }
       for (const line of state.lines) {
+        if (line.correction?.kind === "rejected") {
+          continue;
+        }
         (state.imported === null ? inFlight : known).add(line.accountFingerprint);
         if (state.imported === null && state.lastDownloadedAt !== null) {
           inDownloadedExport.add(line.accountFingerprint);
@@ -142,10 +147,14 @@ export class MemoryStamps extends KnownAccountStampsReader {
         const imported = state.abandoned === null ? state.imported : null;
         return imported === null
           ? []
-          : state.lines.map((line): [string, KnownAccountStamp] => [
-              line.accountFingerprint,
-              { kind: "imported", at: imported.at },
-            ]);
+          : state.lines
+              .filter((line) => line.correction?.kind !== "rejected")
+              .map((line): [string, KnownAccountStamp] => [
+                line.accountFingerprint,
+                line.correction === null
+                  ? { kind: "imported", at: imported.at, exportId: state.id }
+                  : { kind: "declared", reason: "reported_by_bank", at: line.correction.stamp.at },
+              ]);
       }),
       ...this.declared.rows.map((row): [string, KnownAccountStamp] => {
         const state = row.toPersistence();
@@ -211,6 +220,22 @@ export function accountExportWorld() {
     download: new RecordAccountBankExportDownloadHandler(
       gesture.entities,
       gesture.exports,
+      gesture.clock,
+      gesture.events,
+      gesture.uow,
+    ),
+    reportKnown: new ReportBankAccountKnownHandler(
+      gesture.entities,
+      gesture.exports,
+      new FakeCandidates(new Steps()),
+      gesture.clock,
+      gesture.events,
+      gesture.uow,
+    ),
+    reject: new RejectBankAccountHandler(
+      gesture.entities,
+      gesture.exports,
+      new FakeCandidates(new Steps()),
       gesture.clock,
       gesture.events,
       gesture.uow,

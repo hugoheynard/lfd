@@ -96,3 +96,13 @@ export class MandateBankExportNotFoundError extends ResourceNotFoundError {
     );
   }
 }
+
+/** « Importé » demandé sur un export dont personne n'a téléchargé le fichier. */
+export class MandateBankExportNeverDownloadedError extends BusinessError {
+  constructor() {
+    super(
+      "accounting.mandate_bank_export.never_downloaded",
+      "Le fichier de cet export des mandats n'a jamais été téléchargé : la banque ne peut pas l'avoir importé. Télécharger le fichier, le déposer dans CENET, puis le marquer importé.",
+    );
+  }
+}

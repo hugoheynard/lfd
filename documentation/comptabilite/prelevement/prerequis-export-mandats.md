@@ -25,14 +25,13 @@ importer** (réponse 10). Le sujet des RIB a sa propre référence :
 
 ```mermaid
 flowchart LR
-  R["import des RIB<br/>(prerequis-export-ribs.md)"] --> P["Préparer un export des mandats<br/>200 au plus"]
-  P --> F["Télécharger le CSV"]
+  R["import des RIB<br/>(prerequis-export-ribs.md)"] --> F["Télécharger le fichier des mandats<br/>(prépare l'export s'il n'y en a pas d'ouvert)<br/>200 au plus"]
   F --> V["CENET : vérifier le fichier<br/>compte rendu d'anomalies<br/>+ comptes inconnus"]
   V -->|anomalie| C["corriger, ré-exporter"]
   V -->|propre| I["Importer"]
   I --> CR["lire le compte rendu d'import"]
-  CR -->|0 ligne en erreur| M["Marquer importé"]
-  CR -->|lignes en erreur| C
+  CR --> M["J'ai déposé le fichier dans CENET<br/>(marquer importé)"]
+  M --> L["par ligne : signalé connu<br/>ou rejeté (motif) → à exporter"]
 ```
 
 ## 2. Ce que la banque a dit (2026-10-23)
@@ -105,10 +104,31 @@ n'ont pas eu de réponse explicite : la vérification CENET le dira.
   même règle que le `Dbtr/Nm` (`sepaText(…, SEPA_NAME_MAX)`,
   `domain/services/sepa-text.ts`), pour que le débiteur ait un seul nom chez la
   banque. Le refus au-delà de 140, bâti le matin même, est retiré.
-- **Compte rendu lu avant de marquer importé** (réponse 13) : « marquer
-  importé » marque l'export **entier**. Consigne tant que le marquage partiel
-  n'existe pas : un import avec des lignes en erreur **ne se marque pas** ; on
-  corrige et on ré-exporte.
+- **Le dépôt, puis le compte rendu ligne par ligne** (réponse 13 ; Hugo,
+  2026-10-23) : « J'ai déposé le fichier dans CENET » (le geste « marquer
+  importé ») marque l'export entier, et **se refuse (409) tant que son fichier
+  n'a jamais été téléchargé** — `mandate_bank_export.last_downloaded_at`
+  (migration additive `20261024030000_le_telechargement_d_un_export_des_mandats`),
+  posé par `MandateBankExport.recordDownload` à chaque téléchargement. Ensuite,
+  chaque mandat de l'export reçoit au plus **une** correction tirée du compte
+  rendu, pendant 30 jours après le dépôt (même règle et même fenêtre que les
+  comptes, [`prerequis-export-ribs.md`](prerequis-export-ribs.md) § 2.6) :
+  « Signalé comme connu par la banque » (`reported_by_bank` : il reste
+  importé, fait `mandate_bank_export.mandate_reported_known`) ou « Rejeté par
+  la banque » (`rejected` + motif obligatoire : il redevient « à exporter » et
+  part dans le prochain fichier, fait `mandate_bank_export.mandate_rejected`).
+  Avant le dépôt, les deux gestes sont visibles mais grisés (« Disponible
+  après le dépôt dans CENET ») et le serveur les refuse (409). L'agrégat porte
+  la règle (`MandateBankExport.reportKnownByBank` / `rejectMandate`) ; les
+  colonnes sont sur `mandate_bank_export_line` (migration
+  `20261024040000_le_compte_rendu_d_import_cenet_par_ligne`).
+- **L'écran** (2026-10-23, aligné sur la carte des comptes) : un tableau des
+  mandats actifs (débiteur, RUM, quatre derniers de l'IBAN, état — écartés
+  compris) et, au-dessus, une barre : « Télécharger le fichier des mandats
+  (N mandats) » prépare **puis** télécharge d'un clic s'il n'y a pas d'export
+  ouvert, sinon redonne le fichier de CET export (« Télécharger à nouveau le
+  fichier ») ; « J'ai déposé le fichier dans CENET » ; « Abandonner »,
+  discret. Plus d'historique ni de paragraphe.
 - **Toujours vérifier dans CENET avant l'import réel** (réponse 10) : c'est la
   seule vérification du format que nous aurons, la banque ne contrôle rien au
   dépôt d'une remise (réponse 15).
@@ -139,5 +159,6 @@ celle des lignes sont dans `domain/services/mandate-bank-export-csv.ts:29-40`.
   refus qui obligerait à choisir à la main.
 - **D9** — changement de compte : nouveau mandat ou M–R (inchangé, voir
   [`reponses-de-la-banque.md`](reponses-de-la-banque.md) § 4).
-- **Marquage partiel** (réponse 13) : pouvoir marquer importé **sauf** les RUM
-  en erreur — non bâti ; d'ici là, la consigne du § 5.
+- **Marquage partiel** (réponse 13) : bâti le 2026-10-23 sous une autre
+  forme — on marque l'export déposé, puis on rejette, ligne par ligne, les RUM
+  que le compte rendu met en erreur (§ 5).

@@ -25,9 +25,40 @@ export interface MandateBankExportSummaryView {
   readonly id: string;
   readonly createdAt: string;
   readonly mandateCount: number;
+  /** `null` tant que le fichier n'a jamais été téléchargé (ajouté le 2026-10-23). */
+  readonly lastDownloadedAt: string | null;
   readonly importedAt: string | null;
   /** La banque l'a rejeté (ajouté le 2026-10-23, lot P1). */
   readonly abandonedAt: string | null;
+}
+
+/**
+ * Où en est un mandat actif (ajouté le 2026-10-23, aligné sur les comptes) :
+ * à exporter, dans un export ouvert (`downloaded` : son fichier a été tiré),
+ * importé par un export déposé (`correctable` : le compte rendu CENET peut
+ * encore s'y reporter), signalé connu par la banque, ou écarté.
+ */
+export type MandateBankStandingView =
+  | { readonly kind: "to_export" }
+  | { readonly kind: "in_flight"; readonly exportId: string; readonly downloaded: boolean }
+  | {
+      readonly kind: "imported";
+      readonly at: string;
+      readonly exportId: string;
+      readonly correctable: boolean;
+    }
+  | { readonly kind: "reported_by_bank"; readonly at: string }
+  | { readonly kind: "excluded"; readonly reason: MandateBankExclusionReasonView };
+
+/** Une ligne du tableau des mandats. L'IBAN ne s'y montre que par ses quatre derniers. */
+export interface MandateBankRowView {
+  readonly mandateId: string;
+  /** La RUM. */
+  readonly reference: string;
+  readonly debtorName: string;
+  /** `null` pour un mandat écarté sans compte. */
+  readonly ibanLast4: string | null;
+  readonly standing: MandateBankStandingView;
 }
 
 /** La carte « Mandats à la banque ». */
@@ -39,6 +70,8 @@ export interface MandateBankExportsView {
   /** Dont déjà importés sous leur compte actuel. */
   readonly importedCount: number;
   readonly excluded: readonly MandateBankExcludedView[];
+  /** Tous les mandats actifs, écartés à la fin (ajouté le 2026-10-23). */
+  readonly mandates: readonly MandateBankRowView[];
   /** Le plus récent d'abord. */
   readonly exports: readonly MandateBankExportSummaryView[];
 }
@@ -55,3 +88,11 @@ export type ExportMandatesForBankPayload = z.infer<typeof exportMandatesForBankP
 export interface MandateBankExportCreatedView {
   readonly exportId: string;
 }
+
+/**
+ * « Rejeté par la banque », d'après le compte rendu d'import d'un export
+ * déposé : le motif recopié. La forme seulement — le domaine refuse un motif
+ * vide ou trop long (2026-10-23).
+ */
+export const rejectMandateAtBankPayloadSchema = z.strictObject({ reason: z.string() });
+export type RejectMandateAtBankPayload = z.infer<typeof rejectMandateAtBankPayloadSchema>;

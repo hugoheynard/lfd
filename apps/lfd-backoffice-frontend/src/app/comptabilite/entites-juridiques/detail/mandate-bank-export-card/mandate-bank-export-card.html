@@ -7,7 +7,9 @@
     <!-- L'ordre de la banque, dit avant le bouton : ses RIB destinataires
          s'importent AVANT les mandats (modèle reçu le 2026-10-08). -->
     <fold-callout appearance="inset" variant="info">
-      Importer d'abord les RIB destinataires (modèle attendu de la banque), puis ce fichier.
+      Importer d'abord les RIB destinataires (modèle attendu de la banque), puis ce fichier. Une
+      fois le fichier déposé dans CENET, son compte rendu d'import se reporte mandat par
+      mandat&nbsp;: déjà connu, ou rejeté.
     </fold-callout>
 
     @if (actionError(); as message) {
@@ -24,22 +26,6 @@
         <fold-field label="Déjà importés">{{ mandates(view.importedCount) }}</fold-field>
       </fold-field-list>
 
-      <!-- Nommés, pas comptés : chacun a sa sortie, et elle n'est pas la
-           même pour tous. -->
-      @if (view.excluded.length > 0) {
-        <fold-callout appearance="inset" variant="warning">
-          <strong>{{ mandates(view.excluded.length) }} hors du fichier&nbsp;:</strong>
-          <ul class="mb-list">
-            @for (excluded of view.excluded; track excluded.reference) {
-              <li>
-                {{ excluded.reference }} — {{ excluded.debtorName }}&nbsp;:
-                {{ reasonLabels[excluded.reason] }}
-              </li>
-            }
-          </ul>
-        </fold-callout>
-      }
-
       @if (entity().ics === '') {
         <p class="mb-said">
           Attribuer d'abord l'identifiant créancier (ICS)&nbsp;: la banque l'exige pour chaque
@@ -47,73 +33,145 @@
         </p>
       }
 
-      <div class="mb-row">
-        <fold-checkbox
-          label="Tous les mandats actifs, y compris ceux déjà importés"
-          [checked]="all()"
-          (checkedChange)="all.set($event)"
-        />
-        <button
-          foldButton
-          icon="download"
-          [disabled]="busy() || entity().ics === '' || (!all() && view.toExportCount === 0)"
-          [loading]="busy()"
-          (click)="prepare()"
-        >
-          Préparer l'export
-        </button>
-      </div>
-
-      <p class="mb-said">
-        Télécharger ne vaut pas import&nbsp;: un mandat reste «&nbsp;à exporter&nbsp;» tant que
-        l'export qui le porte n'est pas marqué importé. Un mandat révoqué après import n'est pas
-        signalé à la banque&nbsp;: il n'entre plus dans aucun lot, elle ne le débitera donc pas. Si
-        la banque rejette le fichier, l'abandonner&nbsp;: ses mandats restent à exporter.
-      </p>
-
-      @if (view.exports.length > 0) {
-        <ul class="mb-exports">
-          @for (item of view.exports; track item.id) {
-            <li class="mb-export">
-              <span>
-                Préparé le {{ day(item.createdAt) }} — {{ mandates(item.mandateCount) }} —
-                {{ stateOf(item) }}
-              </span>
-              <span class="mb-actions">
-                @if (item.abandonedAt === null) {
-                  <button
-                    foldButton
-                    emphasis="outline"
-                    icon="download"
-                    [disabled]="busy()"
-                    (click)="downloadFile(item)"
-                  >
-                    Télécharger
-                  </button>
-                }
-                @if (isOpen(item)) {
-                  <fold-inline-confirm
-                    intent="primary"
-                    [labels]="{ confirm: 'La banque l’a importé' }"
-                    (confirmed)="markImported(item)"
-                  >
-                    <button foldButton emphasis="outline" [disabled]="busy()">
-                      Marquer importé
-                    </button>
-                  </fold-inline-confirm>
-                  <fold-inline-confirm
-                    intent="danger"
-                    [labels]="{ confirm: 'La banque l’a rejeté' }"
-                    (confirmed)="abandon(item)"
-                  >
-                    <button foldButton emphasis="outline" [disabled]="busy()">Abandonner</button>
-                  </fold-inline-confirm>
-                }
-              </span>
-            </li>
+      <!-- Une seule barre d'actions, au-dessus du tableau : l'export ouvert le plus
+           ancien, sinon la préparation — même trio que la carte des comptes. -->
+      @let opened = openExports(view);
+      @if (opened[0]; as item) {
+        <div class="mb-row" data-action-bar [attr.data-open-export]="item.id">
+          <span class="mb-actions">
+            <button
+              foldButton
+              icon="download"
+              [disabled]="busy()"
+              [loading]="busy()"
+              data-download
+              (click)="downloadFile(item)"
+            >
+              {{ downloadLabel(item) }}
+            </button>
+            @if (item.lastDownloadedAt === null) {
+              <button foldButton emphasis="soft" disabled title="Téléchargez d'abord le fichier">
+                J'ai déposé le fichier dans CENET
+              </button>
+              <span class="mb-said">Téléchargez d'abord le fichier.</span>
+            } @else {
+              <fold-inline-confirm
+                intent="primary"
+                [labels]="{ confirm: 'La banque l’a importé' }"
+                (confirmed)="markImported(item)"
+              >
+                <button
+                  foldButton
+                  emphasis="outline"
+                  [disabled]="busy()"
+                  title="Télécharger ne vaut pas import : les mandats restent « à exporter » tant que l'export n'est pas dit déposé."
+                >
+                  J'ai déposé le fichier dans CENET
+                </button>
+              </fold-inline-confirm>
+            }
+            <fold-inline-confirm
+              intent="danger"
+              [labels]="{ confirm: 'La banque l’a rejeté' }"
+              (confirmed)="abandon(item)"
+            >
+              <button
+                foldButton
+                emphasis="soft"
+                size="sm"
+                [disabled]="busy()"
+                title="Si la banque rejette le fichier : ses mandats restent à exporter."
+              >
+                Abandonner
+              </button>
+            </fold-inline-confirm>
+          </span>
+          @if (opened.length > 1) {
+            <span class="mb-said" data-other-open>{{ otherOpenLabel(opened.length - 1) }}</span>
           }
-        </ul>
+        </div>
+      } @else {
+        <div class="mb-row" data-action-bar>
+          <button
+            foldButton
+            icon="download"
+            [disabled]="busy() || entity().ics === '' || nextExportSize(view) === 0"
+            [loading]="busy()"
+            data-download
+            (click)="prepare()"
+          >
+            Télécharger le fichier des mandats ({{ mandates(nextExportSize(view)) }})
+          </button>
+          <fold-checkbox
+            label="Tous les mandats actifs, y compris ceux déjà importés"
+            [checked]="all()"
+            (checkedChange)="all.set($event)"
+          />
+        </div>
       }
+
+      <fold-data-table
+        caption="Les mandats actifs de l'entité"
+        [columns]="columns"
+        [rows]="view.mandates"
+        [rowKey]="rowKey"
+        [rowTone]="toneOf"
+        [empty]="{ title: 'Aucun mandat actif', subtitle: 'Aucun mandat ne désigne cette entité.' }"
+        mobileLayout="auto-cards"
+      >
+        <ng-template foldCell="mandate" let-row>
+          <span class="mb-mandate">
+            <strong>{{ row.debtorName }}</strong>
+            <span class="mb-said">{{ row.reference }}</span>
+          </span>
+        </ng-template>
+        <ng-template foldCell="iban" let-row>{{ maskedIban(row) }}</ng-template>
+        <ng-template foldCell="standing" let-row>{{ standingOf(row) }}</ng-template>
+        <ng-template foldCell="actions" let-row>
+          @let report = reportOf(row);
+          @if (report?.state === 'pending') {
+            <span class="mb-actions" data-report="pending">
+              <button foldButton emphasis="soft" size="sm" disabled [title]="pendingHint">
+                Signalé comme connu par la banque
+              </button>
+              <button foldButton emphasis="soft" size="sm" disabled [title]="pendingHint">
+                Rejeté par la banque
+              </button>
+              <span class="mb-said">{{ pendingHint }}</span>
+            </span>
+          } @else if (report?.state === 'open') {
+            <span class="mb-actions" data-report="open">
+              <fold-inline-confirm
+                intent="warning"
+                message="Le compte rendu d’import CENET dit que la banque l’a déjà : il reste tenu pour importé, et ne repartira pas."
+                [labels]="{ confirm: 'Confirmer' }"
+                (confirmed)="reportKnown(row)"
+              >
+                <button
+                  foldButton
+                  emphasis="soft"
+                  size="sm"
+                  [disabled]="busy()"
+                  data-gesture="reported_by_bank"
+                >
+                  Signalé comme connu par la banque
+                </button>
+              </fold-inline-confirm>
+              <button
+                foldButton
+                emphasis="soft"
+                intent="danger"
+                size="sm"
+                [disabled]="busy()"
+                data-gesture="rejected"
+                (click)="reject(row)"
+              >
+                Rejeté par la banque
+              </button>
+            </span>
+          }
+        </ng-template>
+      </fold-data-table>
     }
   </div>
 </fold-page-section>

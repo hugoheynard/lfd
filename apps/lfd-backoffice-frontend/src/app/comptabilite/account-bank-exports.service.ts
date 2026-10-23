@@ -5,6 +5,7 @@ import type {
   AccountBankExportsView,
   DeclareBankAccountKnownPayload,
   KnownBankAccountReasonView,
+  RejectBankAccountPayload,
 } from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
 
@@ -61,7 +62,27 @@ export class AccountBankExportsService {
     );
   }
 
-  /** Le compte est déjà chez la banque, sans notre fichier — saisi dans CENET, ou signalé par elle. */
+  /** Le compte rendu CENET d'un export déposé : la banque avait déjà ce compte. */
+  async reportKnown(entityId: string, exportId: string, bankAccountId: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(`${this.lineOf(entityId, exportId, bankAccountId)}/reported-known`, {}),
+    );
+  }
+
+  /** Le compte rendu CENET d'un export déposé : ce compte est en erreur, il repart. */
+  async reject(
+    entityId: string,
+    exportId: string,
+    bankAccountId: string,
+    reason: string,
+  ): Promise<void> {
+    const payload: RejectBankAccountPayload = { reason };
+    await firstValueFrom(
+      this.http.post<void>(`${this.lineOf(entityId, exportId, bankAccountId)}/rejected`, payload),
+    );
+  }
+
+  /** Le compte est déjà chez la banque, sans notre fichier — saisi à la main dans CENET. */
   async declareKnown(
     entityId: string,
     bankAccountId: string,
@@ -71,5 +92,9 @@ export class AccountBankExportsService {
     await firstValueFrom(
       this.http.post<void>(`${this.base}/${entityId}/account-exports/known-accounts`, payload),
     );
+  }
+
+  private lineOf(entityId: string, exportId: string, bankAccountId: string): string {
+    return `${this.base}/${entityId}/account-exports/${exportId}/accounts/${bankAccountId}`;
   }
 }

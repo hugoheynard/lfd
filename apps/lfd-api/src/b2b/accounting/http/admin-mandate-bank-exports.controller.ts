@@ -1,8 +1,10 @@
 import {
   exportMandatesForBankPayloadSchema,
+  rejectMandateAtBankPayloadSchema,
   type ExportMandatesForBankPayload,
   type MandateBankExportCreatedView,
   type MandateBankExportsView,
+  type RejectMandateAtBankPayload,
 } from "@lfd/contracts";
 import { contentDispositionAttachment, sanitiseFileName } from "@lfd/storage";
 import {
@@ -25,6 +27,8 @@ import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { AbandonMandateBankExportCommand } from "../application/commands/abandon-mandate-bank-export.command.js";
 import { ExportMandatesForBankCommand } from "../application/commands/export-mandates-for-bank.command.js";
 import { MarkMandateBankExportImportedCommand } from "../application/commands/mark-mandate-bank-export-imported.command.js";
+import { RejectMandateAtBankCommand } from "../application/commands/reject-mandate-at-bank.command.js";
+import { ReportMandateKnownToBankCommand } from "../application/commands/report-mandate-known-to-bank.command.js";
 import { RecordMandateBankExportDownloadCommand } from "../application/commands/record-mandate-bank-export-download.command.js";
 import type { MandateBankFile } from "../application/queries/export-mandate-bank-file.handler.js";
 import {
@@ -108,6 +112,35 @@ export class AdminMandateBankExportsController {
   ): Promise<void> {
     await this.commands.execute<MarkMandateBankExportImportedCommand, void>(
       new MarkMandateBankExportImportedCommand(id, exportId, staffUserId),
+    );
+  }
+
+  /** Compte rendu CENET : la banque avait déjà ce mandat ; 409 avant le dépôt ou déjà corrigé. */
+  @Post(":id/mandate-exports/:exportId/mandates/:mandateId/reported-known")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async reportedKnown(
+    @StaffUserId() staffUserId: string,
+    @Param("id") id: string,
+    @Param("exportId") exportId: string,
+    @Param("mandateId") mandateId: string,
+  ): Promise<void> {
+    await this.commands.execute<ReportMandateKnownToBankCommand, void>(
+      new ReportMandateKnownToBankCommand(id, exportId, mandateId, staffUserId),
+    );
+  }
+
+  /** Compte rendu CENET : ce mandat est en erreur, il redevient à exporter ; 409 avant le dépôt. */
+  @Post(":id/mandate-exports/:exportId/mandates/:mandateId/rejected")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async rejected(
+    @StaffUserId() staffUserId: string,
+    @Param("id") id: string,
+    @Param("exportId") exportId: string,
+    @Param("mandateId") mandateId: string,
+    @Body(new ZodBody(rejectMandateAtBankPayloadSchema)) payload: RejectMandateAtBankPayload,
+  ): Promise<void> {
+    await this.commands.execute<RejectMandateAtBankCommand, void>(
+      new RejectMandateAtBankCommand(id, exportId, mandateId, payload.reason, staffUserId),
     );
   }
 

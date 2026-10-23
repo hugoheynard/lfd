@@ -4,6 +4,8 @@ import { AbandonAccountBankExportHandler } from "./application/commands/abandon-
 import { DeclareBankAccountKnownHandler } from "./application/commands/declare-bank-account-known.handler.js";
 import { ExportAccountsForBankHandler } from "./application/commands/export-accounts-for-bank.handler.js";
 import { MarkAccountBankExportImportedHandler } from "./application/commands/mark-account-bank-export-imported.handler.js";
+import { RejectBankAccountHandler } from "./application/commands/reject-bank-account.handler.js";
+import { ReportBankAccountKnownHandler } from "./application/commands/report-bank-account-known.handler.js";
 import { RecordAccountBankExportDownloadHandler } from "./application/commands/record-account-bank-export-download.handler.js";
 import { ExportAccountBankFileHandler } from "./application/queries/export-account-bank-file.handler.js";
 import { GetAccountBankExportsHandler } from "./application/queries/get-account-bank-exports.handler.js";
@@ -45,6 +47,8 @@ export const ACCOUNT_BANK_EXPORT_PROVIDERS: readonly Provider[] = [
   AbandonAccountBankExportHandler,
   RecordAccountBankExportDownloadHandler,
   DeclareBankAccountKnownHandler,
+  ReportBankAccountKnownHandler,
+  RejectBankAccountHandler,
   ExportAccountBankFileHandler,
   GetAccountBankExportsHandler,
 ];

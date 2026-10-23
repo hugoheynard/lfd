@@ -12,20 +12,6 @@
   max-width: 65ch;
 }
 
-.ab-list {
-  margin: 0;
-  padding-inline-start: var(--fold-space-lg);
-}
-
-.ab-rows {
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-sm);
-  margin: 0;
-  padding-inline-start: 0;
-  list-style: none;
-}
-
 .ab-row,
 .ab-actions {
   display: flex;

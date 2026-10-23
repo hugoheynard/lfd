@@ -309,169 +309,43 @@ son titulaire, l'IBAN masqué (pays et quatre derniers), le BIC et son état :
 à exporter, en export, importé le …, saisi dans CENET le …, signalé par la
 banque le …, écarté (et pourquoi).
 
-**Un geste par état (Hugo, 2026-10-23, le même jour).** « Signalé par la
-banque », on ne peut pas le savoir avant d'avoir déposé le fichier dans
-CENET : c'est le compte rendu d'import qui le dit. Les deux gestes ne vivent
-donc pas sur la même ligne :
+**Le compte rendu CENET, ligne par ligne (Hugo, 2026-10-23, en fin de
+journée — remplace la règle « signalé dès le téléchargement » écrite le matin
+même).** « Signalé par la banque », on ne le sait qu'**après le dépôt** :
+c'est le compte rendu d'import qui le dit. Le geste quitte donc la
+déclaration libre et devient, avec son pendant « rejeté », une **correction
+de la ligne d'un export déposé** :
 
-| État du compte                               | Seul geste offert                          | Refusé côté serveur (409, dans `KnownBankAccount.declare`)          |
-| -------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------- |
-| à exporter                                   | « Importé dans CENET directement »         | `reported_by_bank` : le compte n'est dans aucun export téléchargé   |
-| en export, fichier **pas encore** téléchargé | aucun (« téléchargez le fichier d'abord ») | `entered_in_cenet` (il part avec son fichier) et `reported_by_bank` |
-| en export, fichier téléchargé                | « Signalé comme connu par la banque »      | `entered_in_cenet` : le compte est en vol                           |
-| importé, connu, écarté                       | aucun                                      | les deux : déjà connu (ou non débité)                               |
+| État du compte                           | Gestes de la ligne                                                                                                          | Refusé côté serveur                                                                             |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| à exporter                               | « Importé dans CENET directement »                                                                                          | `reported_by_bank` en déclaration libre (409, `AccountReportedOnlyAfterDepositError`), toujours |
+| en export (téléchargé ou non)            | « Signalé comme connu par la banque », « Rejeté par la banque » — **grisés**, avec « Disponible après le dépôt dans CENET » | les deux (409, `BankExportNotDepositedError`) ; `entered_in_cenet` (il part avec son fichier)   |
+| importé, dans la fenêtre du compte rendu | les deux, **ouverts**                                                                                                       | une seconde correction (409) ; un motif vide ou > 200 caractères (400)                          |
+| importé hors fenêtre, connu, écarté      | aucun                                                                                                                       | hors fenêtre (409, `BankReportWindowClosedError`)                                               |
 
-« Téléchargé » se lit sur l'export (`last_downloaded_at` non nul, ni importé
-ni abandonné) ; le port des empreintes le rend en `inDownloadedExport`, et la
-ligne du tableau en `in_flight.downloaded`. Signaler un compte en export
-**ne touche pas l'export** — on ne réécrit pas un fichier déposé. Le compte
-passe « connu » tout de suite (une empreinte connue l'emporte sur une
-empreinte en vol) ; quand l'export est marqué importé ensuite, il reste
-« signalé par la banque le … » (la carte garde le plus ancien tampon, et la
-déclaration précède l'import) et ne ressort jamais « à exporter ». Le
-journal porte le fait `account_known_declared` (`reported_by_bank`) puis
-l'import de l'export, rien de plus.
-
-### 2.5 Le changement de compte (réponse 9)
-
-Nouveau mandat d'abord (DIT). Le nouvel IBAN a une nouvelle empreinte : il
-ressort « à exporter » tout seul, dans les deux exports. L'ancien compte
-reste chez la banque — on ne sait pas le retirer par fichier (aucune
-colonne de suppression). Lié à D9.
-
----
-
-## 3. Ce qui manque pour faire exactement ce qu'il faut
-
-Les questions à reposer (numérotation de reponses-de-la-banque.md § 5 bis),
-avec l'hypothèse par défaut **si on bâtit avant la réponse** et ce que coûte
-l'erreur. Le coût est **le plus souvent** un import refusé en entier, sans
-débit, puis une correction de rendu. **Pas toujours** : la banque ne contrôle
-rien au dépôt d'une remise (réponse 15). Un fichier **accepté mais faux** — un
-compte rattaché au mauvais titulaire (Q-B5), un K mal interprété mais
-syntaxiquement valide (Q-B4c) — ne se verrait qu'au débit (vitruve,
-objection 6). Pour ces deux-là, on bâtit, mais on ne dépose pas de remise
-réelle avant la réponse ou un essai concluant.
-
-| #     | Question                                                                                                                                                                                                     | Hypothèse par défaut                            | Si elle est fausse                                                                                                  |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| Q-B1  | Que dit la consigne coupée « Colonne D, E, F, G : » ?                                                                                                                                                        | adresse facultative, 4 lignes libres            | si obligatoire : écarter les sociétés sans adresse ; si longueur bornée : couper                                    |
-| Q-B4a | (confirmation seulement — les consignes ont répondu, réponse 6) B, I, J sont-elles exigées en type `I` ?                                                                                                     | A, B, I, J, K, L remplies                       | import refusé ; ajouter la colonne                                                                                  |
-| Q-B4b | Avec ou sans ligne d'en-tête ?                                                                                                                                                                               | **sans**                                        | la première ligne serait perdue ou l'import refusé                                                                  |
-| Q-B4c | En type `I`, K = BBAN seul, ou IBAN entier ?                                                                                                                                                                 | **BBAN seul** (I et J portent déjà pays et clé) | le plus souvent refus ; mais un IBAN reconstruit valide et faux ne se verrait qu'au débit                           |
-| Q-B4d | Confirmer que les 140 caractères de la réponse 11 valent pour B                                                                                                                                              | 140                                             | refus si la borne est plus courte ; couper                                                                          |
-| Q-B4e | « Nom liste » (M) ?                                                                                                                                                                                          | vide                                            | si obligatoire : refus ; si c'est un regroupement, une constante                                                    |
-| Q-B4f | NIF (P) ?                                                                                                                                                                                                    | vide                                            | idem                                                                                                                |
-| Q-B4g | Type identifiant banque (N), ABA/BSB/INS (O) ?                                                                                                                                                               | vides (hors SEPA)                               | aucun en zone SEPA                                                                                                  |
-| Q-B5  | Comment un compte rejoint-il sa RUM, sans colonne RUM ?                                                                                                                                                      | par l'IBAN de la colonne D des mandats          | si c'est par le nom : B (titulaire) ≠ C des mandats (raison sociale) casse le lien — **accepté mais faux**, voir R6 |
-| Q-B6  | Un nom sans accents est-il accepté (Latin-1 permis) ?                                                                                                                                                        | oui ; on translittère par `sepa()`              | aucun refus attendu ; au pire un nom moins joli                                                                     |
-| Q-B7  | (nouvelle) H « Code Pays Dest » : pays de l'adresse ou de la banque ?                                                                                                                                        | pays de l'adresse                               | valeur fausse sans refus probable : FR des deux côtés pour nos clients                                              |
-| Q-B9  | (nouvelle) L'annuaire des comptes est-il propre à l'**abonnement** CENET ou à chaque **ICS** ?                                                                                                               | abonnement (portée globale, § 2.1)              | par entité alors qu'on suppose global : un compte oublié, signalé par la vérification CENET                         |
-| Q-B8  | (nouvelle) Confirmer le parcours de l'option A : le fichier des comptes inconnus que CENET rend à la vérification des mandats s'importe-t-il tel quel ? Quel format, quel nom et quelle adresse y figurent ? | oui (option A)                                  | on bâtit l'option B                                                                                                 |
-| Q-B10 | (nouvelle) Le référentiel des comptes a-t-il un autre usage que de faire passer l'import des mandats, pour un créancier qui dépose des fichiers (réponse 15) ?                                               | non                                             | si oui : il faut le tenir à jour à chaque changement de compte                                                      |
-
-**Réponse courte à « a-t-on toutes les infos ? »** — **non**, mais assez pour
-bâtir : la forme (encodage, séparateur, 16 colonnes, nouveaux seulement,
-200 lignes, nom ≤ 140) est MONTRÉE ou DITE ; ce qui manque porte sur des
-**valeurs** de cellules, corrigeables en une ligne de rendu. Deux réponses
-(Q-B4c, Q-B5) conditionnent la **première remise réelle**, pas la
-construction.
-
----
-
-## 4. Lots proposés
-
-0. **Facultatif, en attendant** : saisir à la main dans CENET un compte qui
-   doit être prélevé avant le lot 1 — à déclarer « déjà connu » (§ 2.6) dès
-   que le geste existe.
-1. **Domaine** : rendu pur (`renderAccountBankCsv` : ASCII via `sepa()`,
-   découpage IBAN, CRLF, sans `;` final, sans en-tête), agrégat
-   `AccountBankExport` (≥ 1, ≤ 200, chaque empreinte une fois, importé ou
-   abandonné une fois), sélection par empreinte (importés + en vol + déclarés
-   connus), déclaration « déjà connu ». Tests aux trois niveaux.
-2. **Lecture et écriture** : port déclaré par la comptabilité, implémenté par
-   `payments` (qui descelle), comme `MandatesForBankExportReader` ; tables
-   `account_bank_export(_line)` (empreinte seulement), migration additive,
-   registre RGPD ; routes sous `admin/accounting/legal-entities/:id/account-exports`,
-   fichier sous `b2b_accounting:write`, `no-store`,
-   `text/csv; charset=iso-8859-1`, pièce jointe.
-3. **Écran** : carte « Comptes à la banque » au-dessus de « Mandats à la
-   banque », même gestes ; avertissement § 2.4 sur la carte des mandats.
-
----
-
-## 5. Décisions pour Hugo
-
-| #   | Décision                                                                                           | Proposition                                                                 |
-| --- | -------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| —   | ✅ **Option B** (notre export), A en filet de contrôle — Hugo, 2026-10-23                          | tranché                                                                     |
-| R1  | ✅ Bâtir avant les réponses Q-B1/Q-B4, sur les hypothèses du § 3 — **Hugo, 2026-10-23 : oui**      | tranché                                                                     |
-| R2  | Saisie manuelle (lot 0) d'un compte à prélever avant le lot 1                                      | seulement si nécessaire, et déclaré « déjà connu » ensuite                  |
-| R3  | Accents : translittérer par `sepa()` ou garder le Latin-1                                          | `sepa()` : un seul nom partout                                              |
-| R4  | Adresse et SIREN renseignés quand on les a (D12)                                                   | oui                                                                         |
-| R5  | Un compte = une ligne, même s'il porte plusieurs mandats ou sites                                  | oui                                                                         |
-| R6  | Colonne B : le **titulaire** du RIB (`holder`) ou la **raison sociale** (C des mandats, `Dbtr/Nm`) | titulaire, si Q-B5 répond « par l'IBAN » ; raison sociale si « par le nom » |
-| R7  | Portée de « déjà importé » : globale (abonnement) ou par entité                                    | globale (§ 2.1), jusqu'à la réponse Q-B9                                    |
-| R8  | Journaliser chaque téléchargement, ici **et** sur l'export des mandats                             | oui                                                                         |
-| —   | ✅ BIC toujours renseigné (D13, Hugo, 2026-10-23)                                                  | tranché                                                                     |
-
-**R2 à R7 : bâtis selon la proposition** (consigne de Hugo du 2026-10-23 :
-« pour R2–R8, retenir la proposition du doc et l'écrire »). R8 est bâti pour
-les **comptes** ; le volet **mandats** l'est aussi depuis le 2026-10-23, avec
-le lot P1 de [`plan-page-procedure-de-prelevement.md`](plan-page-procedure-de-prelevement.md)
-§ 8 : fait `mandate_bank_export.downloaded`, calculé puis journalisé comme ici. Le § 2.4 (avertir sur la carte des
-mandats) n'est pas fait non plus, pour la même raison.
-
----
-
-## 6. Contradiction de `vitruve` (2026-10-23)
-
-Passé sur la première version de ce document. Tout ce qu'il a soulevé est
-**corrigé dans le corps**, sauf ce qui est dit assumé.
-
-| Gravité  | Objection                                                                                                      | Suite                                                                                    |
-| -------- | -------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| BLOQUANT | 1. Un compte saisi à la main dans CENET (lot 0) ressort « à exporter » et fait rejeter tout le fichier suivant | corrigé : geste « déjà connu de la banque » (§ 2.6), préalable au lot 0 si un lot 1 suit |
-| BLOQUANT | 2. Portée par entité alors que l'annuaire CENET est sans doute par abonnement                                  | corrigé : portée globale par défaut (§ 2.1), question Q-B9, décision R7                  |
-| SÉRIEUX  | 3. Deux exports préparés avant le premier marquage sortent les mêmes comptes (et les mêmes 200)                | corrigé : les exports en vol comptent ; geste « abandonner » (§ 2.1, § 2.3)              |
-| SÉRIEUX  | 4. Le téléchargement des IBAN en clair n'est pas journalisé ; droit de la préparation non dit                  | corrigé : fait `downloaded`, droits listés (§ 2.3) ; la lacune des mandats → R8          |
-| SÉRIEUX  | 5. B et D–H pris à la société, alors que le RIB porte titulaire et adresse, et `countryCode` en alpha-2        | corrigé : source = `company_bank_accounts` (§ 1) ; titulaire ou raison sociale → R6      |
-| SÉRIEUX  | 6. « Import refusé, borné » faux quand le fichier est accepté mais faux (réponse 15)                           | corrigé : § 3 ; pas de remise réelle avant Q-B4c / Q-B5 ou un essai                      |
-| MINEUR   | `sepa()` rend de l'ASCII ; il altère `&`, `°`, `_` ; BIC vide à écarter                                        | corrigé (§ 1, § 1.1)                                                                     |
-
-Non vérifié par lui, et ouvert ici le 2026-10-23 : les champs titulaire et
-adresse de `company_bank_accounts` (`accounting.prisma:298-311`), confirmés.
-
----
-
-## 7. Choix faits en l'absence de réponse de la banque
-
-Bâti le 2026-10-23 sur R1. Chaque ligne est une **valeur** que la banque n'a
-pas dite ; elle vit dans **une** constante ou fonction nommée, dont le JSDoc
-daté renvoie ici. Sauf mention, le fichier est
-`apps/lfd-api/src/b2b/accounting/domain/services/account-bank-export-values.ts`.
-
-| Colonne / règle               | Choix                                                                     | Question | Coût si faux                                                                        | Où le changer                                                                                                                   |
-| ----------------------------- | ------------------------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| B — source du nom             | le **titulaire** du RIB (`holder`), pas la raison sociale                 | Q-B5, R6 | **accepté mais faux** si la banque rattache par le nom : pas de remise réelle avant | `accountBankCsvOf` (`apps/lfd-api/src/b2b/accounting/application/account-bank-export-support.ts`)                               |
-| B — longueur                  | 140 après `sepa()` ; au-delà **refus** nommant la société, jamais coupé   | Q-B4d    | import refusé si la borne est plus courte                                           | `ACCOUNT_HOLDER_MAX_LENGTH` (= `SEPA_MAX140_TEXT`)                                                                              |
-| Accents                       | translittérés par `sepa()` (ASCII) ; `&`, `°`, `_` → espace               | Q-B6, R3 | aucun refus attendu ; un nom moins joli                                             | `bankCell` (`mandate-bank-export-csv.ts`, partagé)                                                                              |
-| En-tête                       | **aucune**                                                                | Q-B4b    | première ligne perdue, ou import refusé                                             | `ACCOUNT_FILE_HEADER`                                                                                                           |
-| C — SIREN                     | celui de la société du RIB, vide s'il manque                              | R4       | refus si obligatoire                                                                | `PrismaAccountsForBankExportReader` (`payments`)                                                                                |
-| D, E, F — adresse             | rue / complément / « code postal ville », non coupées                     | Q-B1, R4 | refus si une longueur est bornée : couper                                           | `cityLineCell` ; `cellsOf` (`apps/lfd-api/src/b2b/accounting/domain/services/account-bank-export-csv.ts`)                       |
-| G — adresse 4                 | vide                                                                      | Q-B1     | refus si obligatoire                                                                | `ADDRESS_LINE_4_CELL`                                                                                                           |
-| H — pays dest.                | pays de l'**adresse** du titulaire                                        | Q-B7     | valeur fausse sans refus probable (FR des deux côtés)                               | `cellsOf` (`apps/lfd-api/src/b2b/accounting/domain/services/account-bank-export-csv.ts`)                                        |
-| I, J, K — IBAN                | pays / clé / **BBAN seul**                                                | Q-B4c    | le plus souvent refus ; au pire **accepté mais faux** : pas de remise réelle avant  | `ibanCells`                                                                                                                     |
-| M — nom liste                 | vide                                                                      | Q-B4e    | refus si obligatoire                                                                | `LIST_NAME_CELL`                                                                                                                |
-| N, O — identifiants hors SEPA | vides                                                                     | Q-B4g    | aucun en zone SEPA                                                                  | `BANK_IDENTIFIER_TYPE_CELL`, `ABA_BSB_INS_CELL`                                                                                 |
-| P — NIF                       | vide                                                                      | Q-B4f    | refus si obligatoire                                                                | `TAX_IDENTIFIER_CELL`                                                                                                           |
-| Portée de « déjà connu »      | **tout l'abonnement**, toutes entités confondues                          | Q-B9, R7 | un compte oublié pour une seconde entité, signalé par la vérification CENET         | `PrismaKnownAccountFingerprintsReader` (`apps/lfd-api/src/b2b/accounting/infrastructure/prisma-account-bank-exports.reader.ts`) |
-| Comptes candidats             | ceux que désigne un mandat **actif** de l'entité ; pas les mandats repris | —        | un compte de mandat repris manquant : la vérification CENET le signale              | `PrismaAccountsForBankExportReader` (`payments`)                                                                                |
-| Un compte = une ligne         | dédoublonné par empreinte d'IBAN, le RIB le plus ancien                   | R5       | refus si la banque veut une ligne par mandat                                        | `fingerprintedAccounts` (`apps/lfd-api/src/b2b/accounting/domain/services/account-bank-export-selection.ts`)                    |
-| Encodage HTTP                 | `text/csv; charset=iso-8859-1`, octets ASCII                              | —        | aucun : l'ASCII est du Latin-1                                                      | `AdminAccountBankExportsController.file`                                                                                        |
-
-Les deux lignes marquées « accepté mais faux » (Q-B4c, Q-B5) conditionnent
-la **première remise réelle**, pas la construction (§ 3).
+- **« Signalé comme connu par la banque »** pose `reported_by_bank` sur la
+  ligne : le compte reste connu, et la carte le dit « signalé par la banque
+  le … ». Fait `account_bank_export.account_reported_known` (la société).
+- **« Rejeté par la banque »** (ligne en erreur au compte rendu) pose
+  `rejected` et le **motif saisi** (obligatoire, 200 caractères au plus, dans
+  un panneau) : la ligne ne compte plus pour connue, le compte redevient « à
+  exporter » et le prochain export le reprend. Fait
+  `account_bank_export.account_rejected` (la société, `rejectionReason`).
+- **Une correction par ligne** ; la première fait foi.
+- **La fenêtre : 30 jours après le dépôt** (`BANK_REPORT_WINDOW_DAYS`,
+  `apps/lfd-api/src/b2b/accounting/domain/entities/bank-line-correction.ts`). Choisie plutôt que « tant que
+  l'export est le dernier déposé » : deux fichiers déposés le même jour se
+  fermeraient l'un l'autre avant qu'on ait lu le premier compte rendu, et la
+  règle demanderait à l'agrégat de lire les autres exports.
+- **L'agrégat porte la règle** : `AccountBankExport.reportKnownByBank` /
+  `rejectAccount` ; routes `POST …/account-exports/:exportId/accounts/:bankAccountId/reported-known`
+  et `…/rejected` (`{ reason }`). Les colonnes `corrected_as`, `corrected_at`,
+  `corrected_by_staff_id`, `rejection_reason` de `account_bank_export_line`
+  (migration additive `20261024040000_le_compte_rendu_d_import_cenet_par_ligne`,
+  trois CHECK) ; la ligne du tableau dit de quel export vient un compte importé
+  et s'il se corrige encore (`imported.exportId`, `imported.correctable`).
+- Les déclarations `reported_by_bank` d'avant ce changement restent lues
+  telles quelles.
 
 ## 8. Ce qui est bâti (2026-10-23)
 
@@ -483,6 +357,8 @@ flowchart LR
   E --> I["Marquer importé"]
   E --> A["Abandonner<br/>(rejeté par la banque)"]
   K["Déjà connu<br/>POST …/known-accounts"] --> KB["known_bank_account"]
+  I --> C["Compte rendu CENET, par ligne<br/>signalé connu · rejeté (motif)"]
+  C -->|rejeté| P
 ```
 
 - **Domaine** (`apps/lfd-api/src/b2b/accounting/domain/`) : l'agrégat
@@ -503,11 +379,20 @@ flowchart LR
   `b2b_accounting:write`. Le fichier est recalculé, `no-store`, en pièce
   jointe, refusé (409) si un RIB a changé ; il est calculé **puis** journalisé.
 - **Faits** : `account_bank_export.created`, `.downloaded`, `.imported`,
-  `.abandoned`, `.account_known_declared` — sujet l'entité, jamais un IBAN.
-- **Écran** : carte « Comptes à la banque » sur la fiche de l'entité,
-  au-dessus de « Mandats à la banque » : à exporter (nommés, avec « Déjà connu
-  de la banque »), en attente, connus, écartés, exports passés avec
-  Télécharger / Marquer importé / Abandonner.
+  `.abandoned`, `.account_known_declared`, `.account_reported_known`,
+  `.account_rejected` — sujet l'entité, jamais un IBAN.
+- **Écran** (2026-10-23) : carte « Comptes à la banque » sur la fiche de
+  l'entité, au-dessus de « Mandats à la banque » : trois chiffres qui
+  filtrent, puis **une barre d'actions** au-dessus du tableau — un seul
+  bouton « Télécharger le fichier des comptes (N comptes) » qui, sans export
+  ouvert, **prépare puis télécharge** (l'écran enchaîne `POST` puis `GET` :
+  si le téléchargement échoue, l'export reste ouvert et le même bouton,
+  devenu « Télécharger à nouveau le fichier », redonne le fichier de CET
+  export, jamais un neuf) ; « J'ai déposé le fichier dans CENET » (le geste
+  « marquer importé », muet tant que le fichier n'a pas été téléchargé — le
+  serveur le refuse aussi) ; « Abandonner », discret, confirmé. Plus
+  d'historique des exports ni de paragraphe sous le tableau ; les gestes de
+  chaque ligne sont au § 2.6.
 
 **Reste à faire** : avertir sur la carte des mandats quand un compte n'est
 pas importé (§ 2.4) ; deux préparations simultanées ne sont pas

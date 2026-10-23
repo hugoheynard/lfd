@@ -43,7 +43,8 @@ export abstract class KnownAccountFingerprintsReader {
 
 /** Depuis quand, et pourquoi, la banque connaît une empreinte. */
 export type KnownAccountStamp =
-  | { readonly kind: "imported"; readonly at: Date }
+  /** `exportId` : l'export déposé dont le compte rendu se reporte sur ce compte. */
+  | { readonly kind: "imported"; readonly at: Date; readonly exportId: string }
   | { readonly kind: "declared"; readonly reason: KnownBankAccountReason; readonly at: Date };
 
 /**

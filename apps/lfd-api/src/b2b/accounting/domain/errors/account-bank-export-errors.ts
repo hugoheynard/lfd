@@ -103,12 +103,16 @@ export class AccountInFlightNotEnterableError extends BusinessError {
   }
 }
 
-/** Signalé par la banque : refusé hors d'un export téléchargé, seul à avoir un compte rendu d'import. */
-export class AccountNotInDownloadedExportError extends BusinessError {
+/**
+ * « Signalé par la banque » demandé comme déclaration libre : il se dit sur la
+ * ligne d'un export DÉPOSÉ, d'après son compte rendu d'import (Hugo,
+ * 2026-10-23) — avant le dépôt, aucun compte rendu n'existe.
+ */
+export class AccountReportedOnlyAfterDepositError extends BusinessError {
   constructor(readonly companyName: string) {
     super(
-      "accounting.account_bank_export.not_in_downloaded_export",
-      `Le compte de « ${companyName} » n'est dans aucun export téléchargé : la banque ne peut l'avoir signalé connu que dans le compte rendu d'import d'un fichier déposé. Préparer et télécharger l'export, le déposer dans CENET, puis lire son compte rendu — ou, si le compte a été saisi à la main dans CENET, le déclarer comme tel.`,
+      "accounting.account_bank_export.reported_only_after_deposit",
+      `Le compte de « ${companyName} » ne peut être signalé connu par la banque qu'après le dépôt du fichier dans CENET : c'est le compte rendu d'import qui le dit. Télécharger le fichier, le déposer, cliquer « J'ai déposé le fichier dans CENET », puis utiliser « Signalé comme connu par la banque » sur la ligne du compte.`,
     );
   }
 }

@@ -1,5 +1,6 @@
 import type { AccountBankRowView, AccountBankStandingView } from "@lfd/contracts";
 
+import { isCorrectable } from "../../domain/entities/bank-line-correction.js";
 import type { KnownAccountStamp } from "../../domain/ports/account-bank-exports.reader.js";
 import type { AccountExcludedFromBankExport } from "../../domain/ports/accounts-for-bank-export.reader.js";
 import type {
@@ -17,13 +18,15 @@ const IBAN_COUNTRY_LENGTH = 2;
  * lectures) se lit « en vol » plutôt que d'inventer une date : il ne l'est
  * pas, mais il n'est pas non plus à exporter, et la relecture le corrige.
  * Un compte en vol dit si son export a été téléchargé : avant, aucun geste
- * n'a de sens sur lui (doc § 2.6).
+ * n'a de sens sur lui (doc § 2.6). Un compte importé dit de quel export, et
+ * si le compte rendu CENET peut encore s'y reporter (Hugo, 2026-10-23).
  */
 export function accountBankRows(
   selection: AccountBankExportSelection,
   excluded: readonly AccountExcludedFromBankExport[],
   stamps: ReadonlyMap<string, KnownAccountStamp>,
   inDownloadedExport: ReadonlySet<string>,
+  now: Date,
 ): readonly AccountBankRowView[] {
   const toExport = new Set(selection.toExport);
   const inFlight = new Set(selection.inFlight);
@@ -36,7 +39,12 @@ export function accountBankRows(
       return { kind: "in_flight", downloaded: inDownloadedExport.has(entry.fingerprint) };
     }
     return stamp.kind === "imported"
-      ? { kind: "imported", at: stamp.at.toISOString() }
+      ? {
+          kind: "imported",
+          at: stamp.at.toISOString(),
+          exportId: stamp.exportId,
+          correctable: isCorrectable(stamp.at, null, now),
+        }
       : { kind: "declared", reason: stamp.reason, at: stamp.at.toISOString() };
   };
   const debited = [...selection.toExport, ...selection.inFlight, ...selection.known]

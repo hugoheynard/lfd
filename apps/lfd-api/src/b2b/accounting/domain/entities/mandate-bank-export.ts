@@ -1,19 +1,39 @@
 import {
   BankExportAlreadyImportedError,
   MandateBankExportAbandonedError,
+  MandateBankExportNeverDownloadedError,
   BankExportTooManyMandatesError,
   DuplicateMandateInBankExportError,
   NothingToExportToBankError,
 } from "../errors/mandate-bank-export-errors.js";
+import { BankLineNotInExportError } from "../errors/bank-report-errors.js";
 import type { ExportedMandateLine } from "../ports/mandate-bank-exports.reader.js";
 import { BANK_IMPORT_MAX_ROWS } from "../services/mandate-bank-export-csv.js";
+import {
+  assertCorrectable,
+  BANK_LINE_CORRECTIONS,
+  rejectionReason,
+  type BankLineCorrection,
+} from "./bank-line-correction.js";
 import type { StaffStamp } from "./collection-batch.js";
+
+/** Une ligne de l'export, et ce que le compte rendu CENET en a dit. */
+/** Une ligne qui vient de recevoir sa correction. */
+export type CorrectedMandateExportLine = MandateExportLine & {
+  readonly correction: BankLineCorrection;
+};
+
+export interface MandateExportLine extends ExportedMandateLine {
+  readonly correction: BankLineCorrection | null;
+}
 
 export interface MandateBankExportState {
   readonly id: string;
   readonly legalEntityId: string;
   readonly created: StaffStamp;
-  readonly lines: readonly ExportedMandateLine[];
+  readonly lines: readonly MandateExportLine[];
+  /** `null` tant que le fichier n'a jamais été téléchargé. */
+  readonly lastDownloadedAt: Date | null;
   /** `null` tant que personne n'a dit « la banque l'a importé ». */
   readonly imported: StaffStamp | null;
   /** `null` tant que personne n'a dit « la banque l'a rejeté, on l'abandonne ». */
@@ -32,14 +52,19 @@ export interface ExportMandatesInput {
  * avec l'empreinte du compte sous lequel ils partent (plan
  * `export-des-mandats-pour-la-banque.md`).
  *
- * Deux invariants, et rien d'autre ne les garde :
+ * Les invariants, et rien d'autre ne les garde :
  *
  * - un export porte **au moins un** mandat, **200 au plus** (la banque n'en
  *   importe pas davantage par fichier), et chacun **une seule fois** ;
  * - un export se clôt **une fois**, importé OU abandonné : un téléchargement
  *   n'est pas un import, un second marquage effacerait qui l'a dit le premier,
  *   un export importé ne s'abandonne pas (ses mandats sont chez la banque) et
- *   un export abandonné ne s'importe ni ne se télécharge plus.
+ *   un export abandonné ne s'importe ni ne se télécharge plus ;
+ * - un export ne se marque importé qu'une fois son fichier **téléchargé** :
+ *   la banque ne peut pas avoir importé un fichier que personne n'a tiré ;
+ * - une ligne ne se corrige d'après le compte rendu CENET (« signalé connu »,
+ *   « rejeté ») qu'une fois l'export DÉPOSÉ, une seule fois, dans la fenêtre
+ *   du compte rendu (`bank-line-correction.ts`).
  */
 export class MandateBankExport {
   private constructor(private state: MandateBankExportState) {}
@@ -65,7 +90,8 @@ export class MandateBankExport {
     }
     return new MandateBankExport({
       ...input,
-      lines: [...input.lines],
+      lines: input.lines.map((line) => ({ ...line, correction: null })),
+      lastDownloadedAt: null,
       imported: null,
       abandoned: null,
     });
@@ -86,9 +112,13 @@ export class MandateBankExport {
   /**
    * @throws {BankExportAlreadyImportedError}
    * @throws {MandateBankExportAbandonedError}
+   * @throws {MandateBankExportNeverDownloadedError}
    */
   markImported(stamp: StaffStamp): void {
     this.assertOpen();
+    if (this.state.lastDownloadedAt === null) {
+      throw new MandateBankExportNeverDownloadedError();
+    }
     this.state = { ...this.state, imported: stamp };
   }
 
@@ -117,8 +147,69 @@ export class MandateBankExport {
     }
   }
 
+  /**
+   * Le fichier vient d'être servi : l'instant se garde, pour que « marquer
+   * importé » s'ouvre — rechargement de page compris.
+   *
+   * @throws {MandateBankExportAbandonedError}
+   */
+  recordDownload(at: Date): void {
+    this.assertDownloadable();
+    this.state = { ...this.state, lastDownloadedAt: at };
+  }
+
+  /**
+   * Le compte rendu d'import dit que la banque avait déjà ce mandat : il
+   * reste tenu pour importé, avec la raison `reported_by_bank`.
+   *
+   * @throws {MandateBankExportAbandonedError} @throws {BankLineNotInExportError}
+   * @throws {BankExportNotDepositedError} @throws {BankReportWindowClosedError}
+   * @throws {BankLineAlreadyCorrectedError}
+   */
+  reportKnownByBank(mandateId: string, stamp: StaffStamp): CorrectedMandateExportLine {
+    return this.correct(mandateId, stamp, {
+      kind: BANK_LINE_CORRECTIONS.reportedByBank,
+      stamp,
+      rejectionReason: null,
+    });
+  }
+
+  /**
+   * Le compte rendu d'import met ce mandat en erreur : il ne compte plus pour
+   * importé, et redevient « à exporter » pour le prochain fichier.
+   *
+   * @throws {BankRejectionReasonError} et les refus de `reportKnownByBank`.
+   */
+  rejectMandate(mandateId: string, stamp: StaffStamp, reason: string): CorrectedMandateExportLine {
+    const motive = rejectionReason(reason);
+    return this.correct(mandateId, stamp, {
+      kind: BANK_LINE_CORRECTIONS.rejected,
+      stamp,
+      rejectionReason: motive,
+    });
+  }
+
   toPersistence(): MandateBankExportState {
     return this.state;
+  }
+
+  private correct(
+    mandateId: string,
+    stamp: StaffStamp,
+    correction: BankLineCorrection,
+  ): CorrectedMandateExportLine {
+    this.assertDownloadable();
+    const line = this.state.lines.find((row) => row.mandateId === mandateId);
+    if (line === undefined) {
+      throw new BankLineNotInExportError("mandate", mandateId);
+    }
+    assertCorrectable("mandate", this.state.imported, line.correction, stamp.at);
+    const corrected = { ...line, correction };
+    this.state = {
+      ...this.state,
+      lines: this.state.lines.map((row) => (row === line ? corrected : row)),
+    };
+    return corrected;
   }
 
   private assertOpen(): void {

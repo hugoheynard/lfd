@@ -20,24 +20,11 @@
   flex-wrap: wrap;
 }
 
-.mb-list,
-.mb-exports {
-  margin: 0;
-  padding-inline-start: var(--fold-space-lg);
+.mb-row {
+  justify-content: space-between;
 }
 
-.mb-exports {
+.mb-mandate {
   display: flex;
   flex-direction: column;
-  gap: var(--fold-space-sm);
-  list-style: none;
-  padding-inline-start: 0;
-}
-
-.mb-export {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--fold-space-sm);
-  flex-wrap: wrap;
 }

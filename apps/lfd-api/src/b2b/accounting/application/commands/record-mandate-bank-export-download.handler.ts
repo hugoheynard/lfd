@@ -15,8 +15,9 @@ import { RecordMandateBankExportDownloadCommand } from "./record-mandate-bank-ex
 
 /**
  * **Le téléchargement au journal** (R8) : qui, quand, combien de mandats —
- * jamais un IBAN ni une RUM. Rien ne change sur l'export : l'agrégat ne fait
- * que refuser un export abandonné, et le refus empêche alors de le servir.
+ * jamais un IBAN ni une RUM. L'export garde l'instant du dernier
+ * téléchargement (ce qui ouvre « marquer importé ») ; l'agrégat refuse un
+ * export abandonné, et le refus empêche alors de le servir.
  */
 @CommandHandler(RecordMandateBankExportDownloadCommand)
 export class RecordMandateBankExportDownloadHandler implements ICommandHandler<
@@ -36,7 +37,8 @@ export class RecordMandateBankExportDownloadHandler implements ICommandHandler<
     const entity = await exportEntityOrFail(this.entities, command.legalEntityId);
     await this.uow.run(async () => {
       const bankExport = await mandateExportOrFail(this.exports, entity.id, command.exportId);
-      bankExport.assertDownloadable();
+      bankExport.recordDownload(at);
+      await this.exports.save(bankExport);
       await this.events.publishTraced(
         new MandateBankExportDownloadedEvent(bankExport, journalEntity(entity), at),
       );

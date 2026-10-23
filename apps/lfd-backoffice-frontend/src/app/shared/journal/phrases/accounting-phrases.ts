@@ -734,6 +734,50 @@ export const ACCOUNTING_PHRASES = {
     ],
     ['company', 'reason'],
   ),
+  'account_bank_export.account_reported_known': onEntity(
+    'a reporté le compte rendu CENET d’un export des comptes',
+    'de',
+    (fact) => [
+      text(' : compte '),
+      ...cite(OF_CLIENT, fact.payload['company']),
+      text(', signalé comme déjà connu par la banque'),
+    ],
+    ['company'],
+  ),
+  'account_bank_export.account_rejected': onEntity(
+    'a reporté le compte rendu CENET d’un export des comptes',
+    'de',
+    (fact) => [
+      text(' : compte '),
+      ...cite(OF_CLIENT, fact.payload['company']),
+      text(', rejeté par la banque — « '),
+      name(optional(fact.payload['rejectionReason']) ?? '—'),
+      text(' » ; il repart dans le prochain fichier'),
+    ],
+    ['company', 'rejectionReason'],
+  ),
+  'mandate_bank_export.mandate_reported_known': onEntity(
+    'a reporté le compte rendu CENET d’un export des mandats',
+    'de',
+    (fact) => [
+      text(' : mandat « '),
+      name(optional(fact.payload['rum']) ?? '—'),
+      text(' », signalé comme déjà connu par la banque'),
+    ],
+    ['rum'],
+  ),
+  'mandate_bank_export.mandate_rejected': onEntity(
+    'a reporté le compte rendu CENET d’un export des mandats',
+    'de',
+    (fact) => [
+      text(' : mandat « '),
+      name(optional(fact.payload['rum']) ?? '—'),
+      text(' », rejeté par la banque — « '),
+      name(optional(fact.payload['rejectionReason']) ?? '—'),
+      text(' » ; il repart dans le prochain fichier'),
+    ],
+    ['rum', 'rejectionReason'],
+  ),
   'collection.order_settled_otherwise': (fact) => {
     const number = subjectLabelOf(fact);
     return byActor(

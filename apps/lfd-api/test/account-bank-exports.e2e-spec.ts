@@ -332,56 +332,105 @@ describe("l'export des comptes destinataires pour la banque", () => {
     expect(journal[0]?.payload).toMatchObject({ reason: "entered_in_cenet" });
   });
 
-  it("« signalé par la banque » vaut pour un compte d'un export téléchargé, et le reste une fois l'export importé", async () => {
+  it("télécharger d'un clic : préparer puis tirer le fichier ; re-télécharger sert le même export", async () => {
+    const entityId = await entity();
+    await debtor(entityId, "Un clic");
+    const exportId = await prepare(entityId);
+    const first = await staff()
+      .get(`${exportsOf(entityId)}/${exportId}/file.csv`)
+      .expect(200);
+    const again = await staff()
+      .get(`${exportsOf(entityId)}/${exportId}/file.csv`)
+      .expect(200);
+
+    expect(again.text).toBe(first.text);
+    const view = await card(entityId);
+    expect(view.exports).toHaveLength(1);
+    expect(view.exports[0]?.id).toBe(exportId);
+    expect(view.exports[0]?.lastDownloadedAt).not.toBeNull();
+  });
+
+  /** Hugo, 2026-10-23 : le compte rendu d'import n'existe qu'après le dépôt dans CENET. */
+  it("« signalé par la banque » : refusé avant le dépôt, posé sur la ligne après", async () => {
     const entityId = await entity();
     const { bankAccountId } = await debtor(entityId, "Déjà chez la banque");
-    const known = (reason: string) =>
-      staff()
-        .post(`${exportsOf(entityId)}/known-accounts`)
-        .send({ bankAccountId, reason });
-
-    // Hors de tout export, puis dans un export pas encore téléchargé : refusé.
-    const outside = await known("reported_by_bank").expect(409);
-    expect(JSON.stringify(outside.body)).toContain("aucun export téléchargé");
+    const lineOf = (exportId: string) =>
+      `${exportsOf(entityId)}/${exportId}/accounts/${bankAccountId}`;
     const exportId = await prepare(entityId);
-    expect((await card(entityId)).accounts[0]?.standing).toEqual({
-      kind: "in_flight",
-      downloaded: false,
-    });
-    await known("reported_by_bank").expect(409);
-    // En vol, il ne se saisit pas à la main.
-    const entered = await known("entered_in_cenet").expect(409);
-    expect(JSON.stringify(entered.body)).toContain("pas encore marqué importé");
-
     await staff()
       .get(`${exportsOf(entityId)}/${exportId}/file.csv`)
       .expect(200);
-    expect((await card(entityId)).accounts[0]?.standing).toEqual({
-      kind: "in_flight",
-      downloaded: true,
-    });
-    await known("reported_by_bank").expect(204);
-    const reported = await card(entityId);
-    expect(reported).toMatchObject({ toExport: [], inFlightCount: 0, knownCount: 1 });
-    expect(reported.exports[0]).toMatchObject({ accountCount: 1, importedAt: null });
+
+    const early = await staff()
+      .post(`${lineOf(exportId)}/reported-known`)
+      .expect(409);
+    expect(JSON.stringify(early.body)).toContain("Disponible après le dépôt dans CENET");
+    const free = await staff()
+      .post(`${exportsOf(entityId)}/known-accounts`)
+      .send({ bankAccountId, reason: "reported_by_bank" })
+      .expect(409);
+    expect(JSON.stringify(free.body)).toContain("qu'après le dépôt du fichier dans CENET");
 
     await staff()
       .post(`${exportsOf(entityId)}/${exportId}/imported`)
       .expect(204);
+    expect((await card(entityId)).accounts[0]?.standing).toMatchObject({
+      kind: "imported",
+      exportId,
+      correctable: true,
+    });
+    await staff()
+      .post(`${lineOf(exportId)}/reported-known`)
+      .expect(204);
+    await staff()
+      .post(`${lineOf(exportId)}/rejected`)
+      .send({ reason: "trop tard" })
+      .expect(409);
+
     const view = await card(entityId);
-    expect(view).toMatchObject({ toExport: [], inFlightCount: 0, knownCount: 1 });
+    expect(view).toMatchObject({ toExport: [], knownCount: 1 });
     expect(view.accounts[0]?.standing).toMatchObject({
       kind: "declared",
       reason: "reported_by_bank",
     });
     await staff().post(exportsOf(entityId)).expect(409);
     const journal = await ctx.prisma.activityEvent.findMany({
-      where: { type: "account_bank_export.account_known_declared" },
+      where: { type: "account_bank_export.account_reported_known" },
       select: { payload: true },
     });
     expect(journal).toHaveLength(1);
-    expect(journal[0]?.payload).toMatchObject({ reason: "reported_by_bank" });
     expect(JSON.stringify(journal)).not.toContain(DEBTOR_IBAN);
+  });
+
+  it("« rejeté par la banque » après le dépôt : le compte redevient à exporter, et l'export suivant le reprend", async () => {
+    const entityId = await entity();
+    const { bankAccountId } = await debtor(entityId, "Ligne en erreur");
+    const exportId = await prepare(entityId);
+    await staff()
+      .get(`${exportsOf(entityId)}/${exportId}/file.csv`)
+      .expect(200);
+    await staff()
+      .post(`${exportsOf(entityId)}/${exportId}/imported`)
+      .expect(204);
+    const line = `${exportsOf(entityId)}/${exportId}/accounts/${bankAccountId}/rejected`;
+
+    await staff().post(line).send({ reason: "   " }).expect(400);
+    await staff().post(line).send({ reason: "BIC refusé par CENET" }).expect(204);
+
+    const view = await card(entityId);
+    expect(view.accounts[0]?.standing).toEqual({ kind: "to_export" });
+    expect(view.toExport).toHaveLength(1);
+    const next = await prepare(entityId);
+    expect(next).not.toBe(exportId);
+    const journal = await ctx.prisma.activityEvent.findMany({
+      where: { type: "account_bank_export.account_rejected" },
+      select: { payload: true },
+    });
+    expect(journal[0]?.payload).toMatchObject({ rejectionReason: "BIC refusé par CENET" });
+    await expect(
+      ctx.prisma
+        .$executeRaw`UPDATE "public"."account_bank_export_line" SET "rejection_reason" = NULL WHERE "export_id" = ${exportId}`,
+    ).rejects.toThrow(/account_bank_export_line_rejection_reason/u);
   });
 
   it("refuse en base une raison inconnue (CHECK)", async () => {

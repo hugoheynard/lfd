@@ -1,9 +1,13 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
-import { AccountBankExport } from "../domain/entities/account-bank-export.js";
+import {
+  AccountBankExport,
+  type AccountBankExportState,
+} from "../domain/entities/account-bank-export.js";
 import type { KnownBankAccount } from "../domain/entities/known-bank-account.js";
 import type { StaffStamp } from "../domain/entities/collection-batch.js";
+import { correctionFromRow, correctionToRow } from "./bank-line-correction.mapper.js";
 import {
   AccountBankExportRepository,
   KnownBankAccountRepository,
@@ -11,8 +15,8 @@ import {
 
 /**
  * Adaptateur d'écriture de l'export des comptes. Les LIGNES s'écrivent à la
- * création et jamais ensuite ; un `save` ultérieur ne pose que le dernier
- * téléchargement, « importé » ou « abandonné ». Aucun IBAN ne passe ici : une ligne n'en porte que l'empreinte.
+ * création ; un `save` ultérieur ne pose que le dernier téléchargement,
+ * « importé », « abandonné », et la correction CENET de chaque ligne. Aucun IBAN ne passe ici : une ligne n'en porte que l'empreinte.
  */
 @Injectable()
 export class PrismaAccountBankExportRepository extends AccountBankExportRepository {
@@ -36,6 +40,7 @@ export class PrismaAccountBankExportRepository extends AccountBankExportReposito
         bankAccountId: line.bankAccountId,
         companyId: line.companyId,
         accountFingerprint: line.accountFingerprint,
+        correction: correctionFromRow(line),
       })),
       lastDownloadedAt: row.lastDownloadedAt,
       imported: stampOf(row.importedAt, row.importedByStaffId),
@@ -58,6 +63,7 @@ export class PrismaAccountBankExportRepository extends AccountBankExportReposito
     });
     if (exists !== null) {
       await this.prisma.accountBankExport.update({ where: { id: state.id }, data: closed });
+      await this.saveCorrections(state.id, state.lines);
       return;
     }
     await this.prisma.accountBankExport.create({
@@ -71,8 +77,27 @@ export class PrismaAccountBankExportRepository extends AccountBankExportReposito
       },
     });
     await this.prisma.accountBankExportLine.createMany({
-      data: state.lines.map((line) => ({ exportId: state.id, ...line })),
+      data: state.lines.map(({ correction, ...line }) => ({
+        exportId: state.id,
+        ...line,
+        ...correctionToRow(correction),
+      })),
     });
+  }
+
+  /** Les corrections du compte rendu CENET — seules les lignes qui en portent une. */
+  private async saveCorrections(
+    exportId: string,
+    lines: AccountBankExportState["lines"],
+  ): Promise<void> {
+    for (const line of lines.filter((row) => row.correction !== null)) {
+      await this.prisma.accountBankExportLine.update({
+        where: {
+          exportId_accountFingerprint: { exportId, accountFingerprint: line.accountFingerprint },
+        },
+        data: correctionToRow(line.correction),
+      });
+    }
   }
 }
 

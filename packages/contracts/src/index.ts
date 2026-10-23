@@ -188,6 +188,7 @@ export type {
   CollectionProcedureStepKeyView,
   CollectionProcedureStepStateView,
   CollectionProcedureToPrepareView,
+  CollectionProcedureMissedView,
   CollectionProcedureView,
 } from "./collection-procedure.js";
 export type {
@@ -199,7 +200,10 @@ export type {
   CollectionProcedureWarningCodeView,
   CollectionProcedureWarningView,
 } from "./collection-procedure-list.js";
-export { exportMandatesForBankPayloadSchema } from "./mandate-bank-export.js";
+export {
+  exportMandatesForBankPayloadSchema,
+  rejectMandateAtBankPayloadSchema,
+} from "./mandate-bank-export.js";
 export type {
   ExportMandatesForBankPayload,
   MandateBankExcludedView,
@@ -207,10 +211,14 @@ export type {
   MandateBankExportCreatedView,
   MandateBankExportSummaryView,
   MandateBankExportsView,
+  MandateBankRowView,
+  MandateBankStandingView,
+  RejectMandateAtBankPayload,
 } from "./mandate-bank-export.js";
 export {
   declareBankAccountKnownPayloadSchema,
   KNOWN_BANK_ACCOUNT_REASON_VALUES,
+  rejectBankAccountPayloadSchema,
 } from "./account-bank-export.js";
 export type {
   AccountBankAccountView,
@@ -223,6 +231,7 @@ export type {
   AccountBankExportSummaryView,
   AccountBankExportsView,
   DeclareBankAccountKnownPayload,
+  RejectBankAccountPayload,
 } from "./account-bank-export.js";
 export {
   COLLECTION_RETURN_KIND_LABELS,

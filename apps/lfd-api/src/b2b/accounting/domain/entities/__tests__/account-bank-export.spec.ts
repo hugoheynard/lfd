@@ -7,7 +7,7 @@ import {
 import {
   AccountAlreadyKnownToBankError,
   AccountInFlightNotEnterableError,
-  AccountNotInDownloadedExportError,
+  AccountReportedOnlyAfterDepositError,
   AccountBankExportClosedError,
   AccountBankExportNeverDownloadedError,
   AccountBankExportTooLargeError,
@@ -150,18 +150,13 @@ describe("« connu de la banque » (§ 2.6)", () => {
     expect(() => KnownBankAccount.declare(declaration, inExport(true))).toThrow(/Café A/u);
   });
 
-  it("« signalé par la banque » : accepté pour un compte d'un export téléchargé", () => {
-    const state = KnownBankAccount.declare(reported, inExport(true)).toPersistence();
-    expect(state.reason).toBe("reported_by_bank");
-  });
-
-  it("« signalé par la banque » est refusé hors d'un export téléchargé", () => {
-    expect(() => KnownBankAccount.declare(reported, none)).toThrow(
-      AccountNotInDownloadedExportError,
-    );
-    expect(() => KnownBankAccount.declare(reported, inExport(false))).toThrow(
-      AccountNotInDownloadedExportError,
-    );
+  /** Hugo, 2026-10-23 : le compte rendu n'existe qu'après le dépôt — ce geste vit sur la ligne. */
+  it("« signalé par la banque » ne se déclare plus librement, téléchargé ou non", () => {
+    for (const fingerprints of [none, inExport(false), inExport(true)]) {
+      expect(() => KnownBankAccount.declare(reported, fingerprints)).toThrow(
+        AccountReportedOnlyAfterDepositError,
+      );
+    }
   });
 
   it("refuse, pour les deux raisons, un compte déjà connu", () => {

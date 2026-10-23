@@ -7,6 +7,7 @@ import {
 } from "../../../domain/services/__tests__/account-for-bank-export.fixture.js";
 import { DeclareBankAccountKnownCommand } from "../../commands/declare-bank-account-known.command.js";
 import { MarkAccountBankExportImportedCommand } from "../../commands/mark-account-bank-export-imported.command.js";
+import { ReportBankAccountKnownCommand } from "../../commands/report-bank-account-known.command.js";
 import { RecordAccountBankExportDownloadCommand } from "../../commands/record-account-bank-export-download.command.js";
 import { AbandonAccountBankExportCommand } from "../../commands/abandon-account-bank-export.command.js";
 import { ExportAccountsForBankCommand } from "../../commands/export-accounts-for-bank.command.js";
@@ -28,6 +29,7 @@ function world() {
       w.fingerprints,
       w.reader,
       w.stamps,
+      w.clock,
     ),
     file: new ExportAccountBankFileHandler(w.entities, w.reader, w.accounts),
   };
@@ -77,27 +79,21 @@ describe("la carte « Comptes à la banque »", () => {
     expect(view.accounts[0]?.standing).toEqual({ kind: "in_flight", downloaded: true });
   });
 
-  it("signalé par la banque dans un export téléchargé, puis l'export importé : reste « signalé »", async () => {
+  /** Hugo, 2026-10-23 : « signalé » se dit après le dépôt, sur la ligne de l'export déposé. */
+  it("déposé, puis un compte signalé connu par le compte rendu : il se lit « signalé »", async () => {
     const w = world();
     w.accounts.exportable = [debitedAccount("a"), debitedAccount("b", { iban: IBAN_B })];
     const id = await w.prepare.execute(new ExportAccountsForBankCommand("le1", "s"));
     await w.download.execute(new RecordAccountBankExportDownloadCommand("le1", id, "s"));
-    const reportedAt = w.clock.now().toISOString();
-    await w.declareKnown.execute(
-      new DeclareBankAccountKnownCommand("le1", "rib_b", "reported_by_bank", "s"),
-    );
-    const between = await w.card.execute(new GetAccountBankExportsQuery("le1"));
-    expect(between.accounts.map((row) => row.standing)).toEqual([
-      { kind: "in_flight", downloaded: true },
-      { kind: "declared", reason: "reported_by_bank", at: reportedAt },
-    ]);
-
-    w.clock.advanceMs(60_000);
     await w.markImported.execute(new MarkAccountBankExportImportedCommand("le1", id, "s"));
+    const importedAt = w.clock.now().toISOString();
+    w.clock.advanceMs(60_000);
+    await w.reportKnown.execute(new ReportBankAccountKnownCommand("le1", id, "rib_b", "s"));
+
     const view = await w.card.execute(new GetAccountBankExportsQuery("le1"));
     expect(view.accounts.map((row) => row.standing)).toEqual([
-      { kind: "imported", at: w.clock.now().toISOString() },
-      { kind: "declared", reason: "reported_by_bank", at: reportedAt },
+      { kind: "imported", at: importedAt, exportId: id, correctable: true },
+      { kind: "declared", reason: "reported_by_bank", at: w.clock.now().toISOString() },
     ]);
     expect(view).toMatchObject({ toExport: [], inFlightCount: 0, knownCount: 2 });
   });
@@ -119,8 +115,8 @@ describe("la carte « Comptes à la banque »", () => {
 
     const view = await w.card.execute(new GetAccountBankExportsQuery("le1"));
     expect(view.accounts.map((row) => row.standing)).toEqual([
-      { kind: "imported", at: w.clock.now().toISOString() },
-      { kind: "imported", at: w.clock.now().toISOString() },
+      { kind: "imported", at: w.clock.now().toISOString(), exportId: id, correctable: true },
+      { kind: "imported", at: w.clock.now().toISOString(), exportId: id, correctable: true },
       { kind: "declared", reason: "entered_in_cenet", at: w.clock.now().toISOString() },
     ]);
     expect(view.accounts[0]).toMatchObject({ ibanCountry: IBAN_A.slice(0, 2), bic: "BNPAFRPPXXX" });

@@ -23,6 +23,7 @@ import {
   FoldEmptyStateComponent,
   FoldInlineConfirmComponent,
   FoldPageSectionComponent,
+  FoldPanelHostService,
   type FoldTableColumn,
   type FoldTableTone,
 } from 'fold-ng';
@@ -30,43 +31,27 @@ import {
 import { blobRefusalMessage } from '../../../../shared/download/blob-refusal';
 import { saveBlob } from '../../../../shared/download/save-blob';
 import {
-  accountExportStateLabel,
   accountsLabel,
   accountStandingLabel,
+  BANK_REPORT_PENDING_HINT,
   KNOWN_REASON_GESTURES,
   knownGestureOf,
+  reportGesturesOf,
+  type BankReportGestures,
 } from '../../../account-bank-export-wording';
+import {
+  BankRejectionPanel,
+  type BankRejectionPanelData,
+} from '../../../bank-rejection-panel/bank-rejection-panel';
 import { accountBankNames } from './account-bank-names';
+import {
+  FILTER_LABELS,
+  filterOf,
+  type AccountBankFigure,
+  type AccountBankFilter,
+} from './account-bank-filter';
 import { AccountBankExportsService } from '../../../account-bank-exports.service';
 import { parisDayLabel } from '../../../mandate-bank-export-wording';
-
-/** Ce que filtre un chiffre clé : « connus » réunit importés et déclarés. */
-type AccountBankFilter = 'to_export' | 'in_flight' | 'known';
-
-interface AccountBankFigure {
-  readonly filter: AccountBankFilter;
-  readonly count: number;
-  readonly label: string;
-}
-
-const FILTER_LABELS: Readonly<Record<AccountBankFilter, string>> = {
-  to_export: 'à exporter',
-  in_flight: 'en attente de la banque',
-  known: 'connus de la banque',
-};
-
-function filterOf(row: AccountBankRowView): AccountBankFilter | null {
-  switch (row.standing.kind) {
-    case 'to_export':
-    case 'in_flight':
-      return row.standing.kind;
-    case 'imported':
-    case 'declared':
-      return 'known';
-    case 'excluded':
-      return null;
-  }
-}
 
 /**
  * **Comptes à la banque** — préparer, télécharger, marquer importé ou
@@ -76,14 +61,22 @@ function filterOf(row: AccountBankRowView): AccountBankFilter | null {
  * ## Pourquoi « nouveaux seulement » se voit
  *
  * Un seul compte que la banque connaît déjà fait rejeter TOUT l'import
- * (réponse 8). Le tableau montre donc chaque compte débité et où il en est,
- * et propose deux gestes sur chaque compte à exporter : « importé dans CENET
- * directement » (saisi à la main) et « signalé comme connu par la banque »
- * (le compte rendu d'import le dit). Les deux le retirent du fichier ; la
- * raison reste écrite, sur la ligne et au journal.
+ * (réponse 8). Le tableau montre donc chaque compte débité et où il en est.
+ * Un compte à exporter se dit « importé dans CENET directement » (saisi à la
+ * main). Une fois le fichier DÉPOSÉ, chaque compte de l'export reçoit le
+ * compte rendu d'import CENET : « signalé comme connu par la banque » ou
+ * « rejeté par la banque » (motif saisi, le compte repart) — avant le dépôt,
+ * ces deux gestes sont visibles mais grisés (Hugo, 2026-10-23).
  *
- * Un fichier téléchargé n'est pas un fichier importé : la carte ne déduit
- * rien d'un clic sur « Télécharger ».
+ * ## Un seul bouton pour le fichier
+ *
+ * « Télécharger » prépare l'export S'IL N'Y EN A PAS d'ouvert, puis tire son
+ * fichier ; l'écran enchaîne les deux appels. Préparer est une écriture
+ * (`POST`), le fichier une lecture journalisée (`GET`) : les garder séparés
+ * laisse, si le téléchargement échoue, un export ouvert que le même bouton
+ * re-télécharge — jamais un export perdu ni un second créé. Un fichier
+ * téléchargé n'est pas un fichier déposé : « J'ai déposé le fichier dans
+ * CENET » reste un geste à part.
  */
 @Component({
   selector: 'app-account-bank-export-card',
@@ -102,6 +95,7 @@ function filterOf(row: AccountBankRowView): AccountBankFilter | null {
 })
 export class AccountBankExportCard {
   private readonly service = inject(AccountBankExportsService);
+  private readonly panels = inject(FoldPanelHostService);
 
   readonly entity = input.required<LegalEntityView>();
 
@@ -122,6 +116,7 @@ export class AccountBankExportCard {
   protected readonly namesOf = accountBankNames;
 
   protected readonly gestures = KNOWN_REASON_GESTURES;
+  protected readonly pendingHint = BANK_REPORT_PENDING_HINT;
   protected readonly standingOf = (row: AccountBankRowView): string =>
     accountStandingLabel(row.standing);
   protected readonly rowKey = (row: AccountBankRowView): string => row.bankAccountId;
@@ -136,7 +131,6 @@ export class AccountBankExportCard {
   ];
   protected readonly accounts = accountsLabel;
   protected readonly day = parisDayLabel;
-  protected readonly stateOf = accountExportStateLabel;
 
   constructor() {
     effect(() => {
@@ -178,13 +172,23 @@ export class AccountBankExportCard {
     return Math.max(0, view.toExport.length - view.maxPerExport);
   }
 
-  /** Les exports ni importés ni abandonnés : leurs deux gestes passent au-dessus du tableau. */
+  /**
+   * Les exports ni importés ni abandonnés, le plus ancien d'abord : la barre
+   * d'actions traite le premier et ne fait que compter les autres.
+   */
   protected openExports(view: AccountBankExportsView): readonly AccountBankExportSummaryView[] {
-    return view.exports.filter((item) => this.isOpen(item));
+    return view.exports
+      .filter((item) => item.importedAt === null && item.abandonedAt === null)
+      .sort((left, right) => left.createdAt.localeCompare(right.createdAt));
   }
 
-  protected isOpen(item: AccountBankExportSummaryView): boolean {
-    return item.importedAt === null && item.abandonedAt === null;
+  /** Ce que le prochain fichier portera : la file, bornée par fichier. */
+  protected nextExportSize(view: AccountBankExportsView): number {
+    return Math.min(view.toExport.length, view.maxPerExport);
+  }
+
+  protected otherOpenLabel(count: number): string {
+    return count === 1 ? '1 autre export ouvert' : `${count} autres exports ouverts`;
   }
 
   protected async prepare(): Promise<void> {
@@ -218,9 +222,46 @@ export class AccountBankExportCard {
     return knownGestureOf(row.standing);
   }
 
-  /** En export, fichier pas encore téléchargé : aucun geste n'a encore de sens. */
-  protected awaitsDownload(row: AccountBankRowView): boolean {
-    return row.standing.kind === 'in_flight' && !row.standing.downloaded;
+  /** Les gestes du compte rendu CENET : grisés avant le dépôt, ouverts après. */
+  protected reportOf(row: AccountBankRowView): BankReportGestures {
+    return reportGesturesOf(row.standing);
+  }
+
+  /**
+   * Le bouton unique de la barre : un export ouvert jamais téléchargé se
+   * télécharge (un échec après la préparation en laisse un) ; déjà
+   * téléchargé, il se télécharge à nouveau — le même export, jamais un neuf.
+   */
+  protected downloadLabel(item: AccountBankExportSummaryView): string {
+    return item.lastDownloadedAt === null
+      ? `Télécharger le fichier des comptes (${accountsLabel(item.accountCount)})`
+      : 'Télécharger à nouveau le fichier';
+  }
+
+  protected async reportKnown(row: AccountBankRowView): Promise<void> {
+    const exportId = row.standing.kind === 'imported' ? row.standing.exportId : null;
+    if (exportId === null) {
+      return;
+    }
+    const entityId = this.entity().id;
+    await this.run(() => this.service.reportKnown(entityId, exportId, row.bankAccountId));
+  }
+
+  /** Le motif se saisit dans un panneau ; fermé sans motif, rien ne part. */
+  protected async reject(row: AccountBankRowView): Promise<void> {
+    const exportId = row.standing.kind === 'imported' ? row.standing.exportId : null;
+    if (exportId === null) {
+      return;
+    }
+    const reason = await this.panels.open<BankRejectionPanelData, string>(BankRejectionPanel, {
+      data: { subject: `${accountBankNames(row).headline} — ${this.maskedIban(row)}` },
+      width: 'md',
+    }).closed;
+    if (reason === undefined) {
+      return;
+    }
+    const entityId = this.entity().id;
+    await this.run(() => this.service.reject(entityId, exportId, row.bankAccountId, reason));
   }
 
   protected async declareKnown(

@@ -1,9 +1,12 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { NOT_REJECTED } from "./bank-line-correction.mapper.js";
 import {
   ImportedMandateAccountsReader,
   MandateBankExportsReader,
+  MandateBankLinesReader,
+  type MandateBankLineStanding,
   type ExportedMandateLine,
   type MandateBankExportFile,
   type MandateBankExportRecord,
@@ -20,7 +23,7 @@ export class PrismaImportedMandateAccountsReader extends ImportedMandateAccounts
 
   of(legalEntityId: string): Promise<readonly ExportedMandateLine[]> {
     return this.prisma.mandateBankExportLine.findMany({
-      where: { export: { legalEntityId, importedAt: { not: null } } },
+      where: { export: { legalEntityId, importedAt: { not: null } }, ...NOT_REJECTED },
       select: LINE_COLUMNS,
     });
   }
@@ -41,6 +44,7 @@ export class PrismaMandateBankExportsReader extends MandateBankExportsReader {
         id: true,
         createdAt: true,
         mandateCount: true,
+        lastDownloadedAt: true,
         importedAt: true,
         abandonedAt: true,
       },
@@ -53,5 +57,28 @@ export class PrismaMandateBankExportsReader extends MandateBankExportsReader {
       select: { abandonedAt: true, lines: { orderBy: { rum: "asc" }, select: LINE_COLUMNS } },
     });
     return row === null ? null : { lines: row.lines, abandonedAt: row.abandonedAt };
+  }
+}
+
+/** Les lignes des exports non abandonnés d'une entité — l'entité dans le `where`. */
+@Injectable()
+export class PrismaMandateBankLinesReader extends MandateBankLinesReader {
+  constructor(private readonly prisma: PrismaService) {
+    super();
+  }
+
+  async linesOf(legalEntityId: string): Promise<readonly MandateBankLineStanding[]> {
+    const rows = await this.prisma.mandateBankExportLine.findMany({
+      where: { export: { legalEntityId, abandonedAt: null } },
+      select: {
+        mandateId: true,
+        accountFingerprint: true,
+        exportId: true,
+        correctedAs: true,
+        correctedAt: true,
+        export: { select: { lastDownloadedAt: true, importedAt: true } },
+      },
+    });
+    return rows.map(({ export: bankExport, ...line }) => ({ ...line, ...bankExport }));
   }
 }

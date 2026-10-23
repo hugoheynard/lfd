@@ -1,7 +1,7 @@
 import {
   AccountAlreadyKnownToBankError,
   AccountInFlightNotEnterableError,
-  AccountNotInDownloadedExportError,
+  AccountReportedOnlyAfterDepositError,
   UnknownKnownAccountReasonError,
 } from "../errors/account-bank-export-errors.js";
 import type { KnownAccountFingerprints } from "../ports/account-bank-exports.reader.js";
@@ -63,17 +63,17 @@ export interface DeclareKnownBankAccountInput extends KnownBankAccountState {
  * Les invariants (Hugo 2026-10-23) : une empreinte déjà connue — importée ou
  * déclarée — ne se déclare pas (aussi tenu en base : une déclaration par
  * empreinte). « Saisi dans CENET » ne vaut que pour un compte À EXPORTER : en
- * vol, il part avec son fichier. « Signalé par la banque » ne vaut que pour un
- * compte d'un export DÉJÀ TÉLÉCHARGÉ : c'est le compte rendu d'import de ce
- * fichier qui le dit. L'export n'est pas touché ; marqué importé ensuite, le
- * compte reste « signalé », son tampon étant le plus ancien.
+ * vol, il part avec son fichier. « Signalé par la banque » ne se déclare plus
+ * ici depuis le 2026-10-23 (Hugo) : il se dit sur la LIGNE d'un export
+ * déposé, d'après son compte rendu (`AccountBankExport.reportKnownByBank`).
+ * La valeur reste lisible : des déclarations l'ont portée avant.
  */
 export class KnownBankAccount {
   private constructor(private readonly state: KnownBankAccountState) {}
 
   /**
    * @throws {AccountAlreadyKnownToBankError} @throws {UnknownKnownAccountReasonError}
-   * @throws {AccountInFlightNotEnterableError} @throws {AccountNotInDownloadedExportError}
+   * @throws {AccountInFlightNotEnterableError} @throws {AccountReportedOnlyAfterDepositError}
    */
   static declare(
     input: DeclareKnownBankAccountInput,
@@ -90,11 +90,8 @@ export class KnownBankAccount {
     ) {
       throw new AccountInFlightNotEnterableError(input.companyName);
     }
-    if (
-      reason === KNOWN_BANK_ACCOUNT_REASONS.reportedByBank &&
-      !fingerprints.inDownloadedExport.has(fingerprint)
-    ) {
-      throw new AccountNotInDownloadedExportError(input.companyName);
+    if (reason === KNOWN_BANK_ACCOUNT_REASONS.reportedByBank) {
+      throw new AccountReportedOnlyAfterDepositError(input.companyName);
     }
     return new KnownBankAccount({
       id: input.id,

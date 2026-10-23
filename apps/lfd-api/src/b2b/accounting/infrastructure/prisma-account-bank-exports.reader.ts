@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+
 import {
   AccountBankExportsReader,
   KnownAccountFingerprintsReader,
@@ -8,6 +9,7 @@ import {
   type AccountBankExportRecord,
   type KnownAccountFingerprints,
 } from "../domain/ports/account-bank-exports.reader.js";
+import { NOT_REJECTED } from "./bank-line-correction.mapper.js";
 
 /**
  * Ce que la banque a, ou va avoir — **sans filtre d'entité, exprès** : la
@@ -23,7 +25,7 @@ export class PrismaKnownAccountFingerprintsReader extends KnownAccountFingerprin
   async all(): Promise<KnownAccountFingerprints> {
     const [lines, declared] = await Promise.all([
       this.prisma.accountBankExportLine.findMany({
-        where: { export: { abandonedAt: null } },
+        where: { export: { abandonedAt: null }, ...NOT_REJECTED },
         select: {
           accountFingerprint: true,
           export: { select: { importedAt: true, lastDownloadedAt: true } },

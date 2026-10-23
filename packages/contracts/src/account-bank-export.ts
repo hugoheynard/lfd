@@ -29,7 +29,18 @@ export type AccountBankStandingView =
    * compte rendu d'import CENET peut le dire « déjà connu » (doc § 2.6).
    */
   | { readonly kind: "in_flight"; readonly downloaded: boolean }
-  | { readonly kind: "imported"; readonly at: string }
+  /**
+   * `exportId` : l'export déposé dont le compte rendu CENET se reporte sur ce
+   * compte ; `correctable` : « signalé connu » et « rejeté » y sont encore
+   * possibles (fenêtre du compte rendu, aucune correction posée). Ajoutés le
+   * 2026-10-23.
+   */
+  | {
+      readonly kind: "imported";
+      readonly at: string;
+      readonly exportId: string;
+      readonly correctable: boolean;
+    }
   | { readonly kind: "declared"; readonly reason: KnownBankAccountReasonView; readonly at: string }
   | { readonly kind: "excluded"; readonly reason: AccountBankExclusionReasonView };
 
@@ -100,4 +111,12 @@ export const declareBankAccountKnownPayloadSchema = z.strictObject({
   bankAccountId: z.string().min(1),
   reason: z.enum(KNOWN_BANK_ACCOUNT_REASON_VALUES),
 });
+/**
+ * « Rejeté par la banque », d'après le compte rendu d'import d'un export
+ * déposé : le motif recopié. La forme seulement — le domaine refuse un motif
+ * vide ou trop long (2026-10-23).
+ */
+export const rejectBankAccountPayloadSchema = z.strictObject({ reason: z.string() });
+export type RejectBankAccountPayload = z.infer<typeof rejectBankAccountPayloadSchema>;
+
 export type DeclareBankAccountKnownPayload = z.infer<typeof declareBankAccountKnownPayloadSchema>;

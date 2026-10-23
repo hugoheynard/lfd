@@ -5,16 +5,33 @@ import {
   DuplicateAccountInBankExportError,
   NoAccountToExportError,
 } from "../errors/account-bank-export-errors.js";
+import { BankLineNotInExportError } from "../errors/bank-report-errors.js";
 import type { ExportedAccountLine } from "../ports/account-bank-exports.reader.js";
 import { ACCOUNT_IMPORT_MAX_ROWS } from "../services/account-bank-export-values.js";
+import {
+  assertCorrectable,
+  BANK_LINE_CORRECTIONS,
+  rejectionReason,
+  type BankLineCorrection,
+} from "./bank-line-correction.js";
 import type { StaffStamp } from "./collection-batch.js";
+
+/** Une ligne de l'export, et ce que le compte rendu CENET en a dit. */
+/** Une ligne qui vient de recevoir sa correction. */
+export type CorrectedAccountExportLine = AccountExportLine & {
+  readonly correction: BankLineCorrection;
+};
+
+export interface AccountExportLine extends ExportedAccountLine {
+  readonly correction: BankLineCorrection | null;
+}
 
 export interface AccountBankExportState {
   readonly id: string;
   /** L'entité depuis laquelle il est préparé — sa fiche porte la carte. */
   readonly legalEntityId: string;
   readonly created: StaffStamp;
-  readonly lines: readonly ExportedAccountLine[];
+  readonly lines: readonly AccountExportLine[];
   /** `null` tant que le fichier n'a jamais été téléchargé. */
   readonly lastDownloadedAt: Date | null;
   /** `null` tant que personne n'a dit « la banque l'a importé ». */
@@ -43,7 +60,10 @@ export interface ExportAccountsInput {
  *   ne s'abandonne pas (ses comptes sont chez la banque, les renvoyer ferait
  *   tout rejeter), un export abandonné ne s'importe pas ;
  * - un export ne se marque importé qu'une fois son fichier **téléchargé** :
- *   la banque ne peut pas avoir importé un fichier que personne n'a tiré.
+ *   la banque ne peut pas avoir importé un fichier que personne n'a tiré ;
+ * - une ligne ne se corrige d'après le compte rendu CENET (« signalé connu »,
+ *   « rejeté ») qu'une fois l'export DÉPOSÉ, une seule fois, dans la fenêtre
+ *   du compte rendu (`bank-line-correction.ts`).
  */
 export class AccountBankExport {
   private constructor(private state: AccountBankExportState) {}
@@ -69,7 +89,7 @@ export class AccountBankExport {
     }
     return new AccountBankExport({
       ...input,
-      lines: [...input.lines],
+      lines: input.lines.map((line) => ({ ...line, correction: null })),
       lastDownloadedAt: null,
       imported: null,
       abandoned: null,
@@ -129,8 +149,62 @@ export class AccountBankExport {
     this.state = { ...this.state, lastDownloadedAt: at };
   }
 
+  /**
+   * Le compte rendu d'import dit que la banque avait déjà ce compte : il reste
+   * tenu pour connu, avec la raison `reported_by_bank`.
+   *
+   * @throws {AccountBankExportClosedError} @throws {BankLineNotInExportError}
+   * @throws {BankExportNotDepositedError} @throws {BankReportWindowClosedError}
+   * @throws {BankLineAlreadyCorrectedError}
+   */
+  reportKnownByBank(bankAccountId: string, stamp: StaffStamp): CorrectedAccountExportLine {
+    return this.correct(bankAccountId, stamp, {
+      kind: BANK_LINE_CORRECTIONS.reportedByBank,
+      stamp,
+      rejectionReason: null,
+    });
+  }
+
+  /**
+   * Le compte rendu d'import met ce compte en erreur : il ne compte plus pour
+   * connu, et redevient « à exporter » pour le prochain fichier.
+   *
+   * @throws {BankRejectionReasonError} et les refus de `reportKnownByBank`.
+   */
+  rejectAccount(
+    bankAccountId: string,
+    stamp: StaffStamp,
+    reason: string,
+  ): CorrectedAccountExportLine {
+    const motive = rejectionReason(reason);
+    return this.correct(bankAccountId, stamp, {
+      kind: BANK_LINE_CORRECTIONS.rejected,
+      stamp,
+      rejectionReason: motive,
+    });
+  }
+
   toPersistence(): AccountBankExportState {
     return this.state;
+  }
+
+  private correct(
+    bankAccountId: string,
+    stamp: StaffStamp,
+    correction: BankLineCorrection,
+  ): CorrectedAccountExportLine {
+    this.assertDownloadable();
+    const line = this.state.lines.find((row) => row.bankAccountId === bankAccountId);
+    if (line === undefined) {
+      throw new BankLineNotInExportError("account", bankAccountId);
+    }
+    assertCorrectable("account", this.state.imported, line.correction, stamp.at);
+    const corrected = { ...line, correction };
+    this.state = {
+      ...this.state,
+      lines: this.state.lines.map((row) => (row === line ? corrected : row)),
+    };
+    return corrected;
   }
 
   private assertOpen(): void {

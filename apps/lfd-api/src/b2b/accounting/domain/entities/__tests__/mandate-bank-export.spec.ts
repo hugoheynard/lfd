@@ -3,6 +3,7 @@ import {
   BankExportTooManyMandatesError,
   DuplicateMandateInBankExportError,
   MandateBankExportAbandonedError,
+  MandateBankExportNeverDownloadedError,
   NothingToExportToBankError,
 } from "../../errors/mandate-bank-export-errors.js";
 import { MandateBankExport } from "../mandate-bank-export.js";
@@ -57,6 +58,7 @@ describe("un export des mandats pour la banque", () => {
   it("se marque importé une fois, avec son instant et son auteur", () => {
     const bankExport = exported();
     const stamp = { at: new Date("2026-10-10T08:00:00.000Z"), staffId: "staff_2" };
+    bankExport.recordDownload(stamp.at);
     bankExport.markImported(stamp);
     expect(bankExport.toPersistence().imported).toEqual(stamp);
   });
@@ -64,11 +66,37 @@ describe("un export des mandats pour la banque", () => {
   it("refuse un second marquage, et garde le premier", () => {
     const bankExport = exported();
     const first = { at: new Date("2026-10-10T08:00:00.000Z"), staffId: "staff_2" };
+    bankExport.recordDownload(first.at);
     bankExport.markImported(first);
     expect(() => bankExport.markImported({ ...first, staffId: "staff_3" })).toThrow(
       BankExportAlreadyImportedError,
     );
     expect(bankExport.toPersistence().imported).toEqual(first);
+  });
+});
+
+describe("le téléchargement d'un export des mandats", () => {
+  const AT = new Date("2026-10-10T08:00:00.000Z");
+
+  it("naît jamais téléchargé, et garde l'instant du dernier téléchargement", () => {
+    const bankExport = exported();
+    expect(bankExport.toPersistence().lastDownloadedAt).toBeNull();
+    bankExport.recordDownload(AT);
+    expect(bankExport.toPersistence().lastDownloadedAt).toEqual(AT);
+  });
+
+  it("refuse « importé » tant que le fichier n'a jamais été téléchargé", () => {
+    const bankExport = exported();
+    expect(() => bankExport.markImported({ at: AT, staffId: "staff_2" })).toThrow(
+      MandateBankExportNeverDownloadedError,
+    );
+    expect(bankExport.toPersistence().imported).toBeNull();
+  });
+
+  it("un export abandonné ne se télécharge plus", () => {
+    const bankExport = exported();
+    bankExport.abandon({ at: AT, staffId: "staff_2" });
+    expect(() => bankExport.recordDownload(AT)).toThrow(MandateBankExportAbandonedError);
   });
 });
 
@@ -94,6 +122,7 @@ describe("abandonner un export des mandats (S3, P1)", () => {
 
   it("un export importé ne s'abandonne pas : ses mandats sont chez la banque", () => {
     const bankExport = exported();
+    bankExport.recordDownload(LATER.at);
     bankExport.markImported(LATER);
     expect(() => bankExport.abandon(LATER)).toThrow(BankExportAlreadyImportedError);
     expect(bankExport.toPersistence().abandoned).toBeNull();
@@ -102,6 +131,7 @@ describe("abandonner un export des mandats (S3, P1)", () => {
   it("un export ouvert ou importé se télécharge", () => {
     const bankExport = exported();
     expect(() => bankExport.assertDownloadable()).not.toThrow();
+    bankExport.recordDownload(LATER.at);
     bankExport.markImported(LATER);
     expect(() => bankExport.assertDownloadable()).not.toThrow();
   });

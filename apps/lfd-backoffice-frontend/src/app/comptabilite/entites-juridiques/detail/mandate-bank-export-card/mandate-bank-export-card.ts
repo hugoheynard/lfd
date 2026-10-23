@@ -11,46 +11,62 @@ import type {
   LegalEntityView,
   MandateBankExportSummaryView,
   MandateBankExportsView,
+  MandateBankRowView,
 } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCheckboxComponent,
+  FoldDataTableCellDirective,
+  FoldDataTableComponent,
   FoldEmptyStateComponent,
   FoldFieldComponent,
   FoldFieldListComponent,
   FoldInlineConfirmComponent,
   FoldPageSectionComponent,
+  FoldPanelHostService,
+  type FoldTableColumn,
+  type FoldTableTone,
 } from 'fold-ng';
 
+import { blobRefusalMessage } from '../../../../shared/download/blob-refusal';
 import { saveBlob } from '../../../../shared/download/save-blob';
+import { BANK_REPORT_PENDING_HINT } from '../../../account-bank-export-wording';
 import {
-  MANDATE_BANK_EXCLUSION_LABELS,
-  mandateExportStateLabel,
+  BankRejectionPanel,
+  type BankRejectionPanelData,
+} from '../../../bank-rejection-panel/bank-rejection-panel';
+import {
+  mandateReportOf,
   mandatesLabel,
-  parisDayLabel,
+  mandateStandingLabel,
 } from '../../../mandate-bank-export-wording';
 import { MandateBankExportsService } from '../../../mandate-bank-exports.service';
 
+/** Ce que la banque importe au plus par fichier (réponse 12) — le serveur coupe au-delà. */
+const MAX_PER_EXPORT = 200;
+
 /**
- * **Mandats à la banque** — préparer, télécharger, marquer importé ou abandonner le
- * fichier d'import des mandats du portail de la banque (plan
- * `export-des-mandats-pour-la-banque.md`).
+ * **Mandats à la banque** — télécharger, déposer ou abandonner le fichier
+ * d'import des mandats du portail de la banque, et reporter son compte rendu
+ * (plan `export-des-mandats-pour-la-banque.md`, doc
+ * `prerequis-export-mandats.md`). Alignée sur la carte des comptes le
+ * 2026-10-23 (Hugo).
  *
- * ## Trois gestes, et aucun ne se confond avec un autre
+ * ## Un seul bouton pour le fichier
  *
- * Préparer FIGE un export ; télécharger le RECALCULE (le serveur refuse si un
- * compte a changé depuis) ; marquer importé est ce qui retire ses mandats de
- * « à exporter ». Un fichier téléchargé n'est pas un fichier importé : la
- * carte ne déduit rien d'un clic sur « Télécharger ». Abandonner clôt un
- * export que la banque a rejeté : sans lui, il restait « en attente » pour
- * toujours (plan `plan-page-procedure-de-prelevement.md`, S3).
+ * « Télécharger » prépare l'export S'IL N'Y EN A PAS d'ouvert, puis tire son
+ * fichier ; l'écran enchaîne les deux appels. Un échec du téléchargement
+ * laisse un export ouvert, que le même bouton re-télécharge — jamais un
+ * second. « J'ai déposé le fichier dans CENET » s'ouvre une fois le fichier
+ * tiré ; le serveur le refuse avant.
  *
- * ## Les écartés sont nommés, pas tus
+ * ## Le compte rendu, ligne par ligne
  *
- * Mandat repris d'un autre créancier, sans RIB recopié, ou sans BIC : la
- * phrase vient du code de la raison, la sortie avec elle.
+ * Après le dépôt, chaque mandat de l'export reçoit « signalé comme connu par
+ * la banque » ou « rejeté par la banque » (motif saisi, le mandat repart).
+ * Avant, les deux gestes sont visibles mais grisés.
  */
 @Component({
   selector: 'app-mandate-bank-export-card',
@@ -59,6 +75,8 @@ import { MandateBankExportsService } from '../../../mandate-bank-exports.service
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCheckboxComponent,
+    FoldDataTableCellDirective,
+    FoldDataTableComponent,
     FoldEmptyStateComponent,
     FoldFieldComponent,
     FoldFieldListComponent,
@@ -70,6 +88,7 @@ import { MandateBankExportsService } from '../../../mandate-bank-exports.service
 })
 export class MandateBankExportCard {
   private readonly service = inject(MandateBankExportsService);
+  private readonly panels = inject(FoldPanelHostService);
 
   readonly entity = input.required<LegalEntityView>();
 
@@ -87,10 +106,21 @@ export class MandateBankExportCard {
   /** « Tous les mandats actifs », y compris ceux que la banque a déjà. */
   protected readonly all = signal(false);
 
-  protected readonly reasonLabels = MANDATE_BANK_EXCLUSION_LABELS;
   protected readonly mandates = mandatesLabel;
-  protected readonly day = parisDayLabel;
-  protected readonly stateOf = mandateExportStateLabel;
+  protected readonly pendingHint = BANK_REPORT_PENDING_HINT;
+  protected readonly reportOf = (row: MandateBankRowView): ReturnType<typeof mandateReportOf> =>
+    mandateReportOf(row.standing);
+  protected readonly standingOf = (row: MandateBankRowView): string =>
+    mandateStandingLabel(row.standing);
+  protected readonly rowKey = (row: MandateBankRowView): string => row.mandateId;
+  protected readonly toneOf = (row: MandateBankRowView): FoldTableTone =>
+    row.standing.kind === 'excluded' ? 'warning' : null;
+  protected readonly columns: readonly FoldTableColumn<MandateBankRowView>[] = [
+    { key: 'mandate', label: 'Débiteur (RUM)' },
+    { key: 'iban', label: 'IBAN' },
+    { key: 'standing', label: 'État' },
+    { key: 'actions', label: 'Actions', align: 'right' },
+  ];
 
   constructor() {
     effect(() => {
@@ -105,6 +135,32 @@ export class MandateBankExportCard {
     } catch (error: unknown) {
       this.loadError.set(httpErrorMessage(error));
     }
+  }
+
+  /** Les exports ni importés ni abandonnés, le plus ancien d'abord. */
+  protected openExports(view: MandateBankExportsView): readonly MandateBankExportSummaryView[] {
+    return view.exports
+      .filter((item) => item.importedAt === null && item.abandonedAt === null)
+      .sort((left, right) => left.createdAt.localeCompare(right.createdAt));
+  }
+
+  /** Ce que le prochain fichier portera : « à exporter », ou tous avec la case. */
+  protected nextExportSize(view: MandateBankExportsView): number {
+    return Math.min(this.all() ? view.exportableCount : view.toExportCount, MAX_PER_EXPORT);
+  }
+
+  protected downloadLabel(item: MandateBankExportSummaryView): string {
+    return item.lastDownloadedAt === null
+      ? `Télécharger le fichier des mandats (${mandatesLabel(item.mandateCount)})`
+      : 'Télécharger à nouveau le fichier';
+  }
+
+  protected otherOpenLabel(count: number): string {
+    return count === 1 ? '1 autre export ouvert' : `${String(count)} autres exports ouverts`;
+  }
+
+  protected maskedIban(row: MandateBankRowView): string {
+    return row.ibanLast4 === null ? '—' : `•••• ${row.ibanLast4}`;
   }
 
   protected async prepare(): Promise<void> {
@@ -125,13 +181,35 @@ export class MandateBankExportCard {
     await this.run(() => this.service.markImported(entityId, item.id));
   }
 
-  protected isOpen(item: MandateBankExportSummaryView): boolean {
-    return item.importedAt === null && item.abandonedAt === null;
-  }
-
   protected async abandon(item: MandateBankExportSummaryView): Promise<void> {
     const entityId = this.entity().id;
     await this.run(() => this.service.abandon(entityId, item.id));
+  }
+
+  protected async reportKnown(row: MandateBankRowView): Promise<void> {
+    const report = mandateReportOf(row.standing);
+    if (report?.state !== 'open') {
+      return;
+    }
+    const entityId = this.entity().id;
+    await this.run(() => this.service.reportKnown(entityId, report.exportId, row.mandateId));
+  }
+
+  /** Le motif se saisit dans un panneau ; fermé sans motif, rien ne part. */
+  protected async reject(row: MandateBankRowView): Promise<void> {
+    const report = mandateReportOf(row.standing);
+    if (report?.state !== 'open') {
+      return;
+    }
+    const reason = await this.panels.open<BankRejectionPanelData, string>(BankRejectionPanel, {
+      data: { subject: `${row.debtorName} — ${row.reference}` },
+      width: 'md',
+    }).closed;
+    if (reason === undefined) {
+      return;
+    }
+    const entityId = this.entity().id;
+    await this.run(() => this.service.reject(entityId, report.exportId, row.mandateId, reason));
   }
 
   private async download(exportId: string): Promise<void> {
@@ -146,45 +224,11 @@ export class MandateBankExportCard {
     try {
       await action();
     } catch (error: unknown) {
-      this.actionError.set(await refusalOf(error));
+      this.actionError.set(await blobRefusalMessage(error));
     } finally {
       await this.load();
       this.busy.set(false);
       this.changed.emit();
     }
   }
-}
-
-/**
- * Le refus du serveur, même quand la réponse attendue était un FICHIER : un
- * 409 sur `file.csv` arrive en `Blob`, et `httpErrorMessage` n'y lirait rien —
- * or c'est ce message qui nomme les RUM dont le compte a changé.
- */
-async function refusalOf(error: unknown): Promise<string> {
-  if (typeof error === 'object' && error !== null && 'error' in error) {
-    const body = error.error;
-    if (body instanceof Blob) {
-      try {
-        const parsed: unknown = JSON.parse(await textOf(body));
-        return httpErrorMessage({ error: parsed });
-      } catch {
-        return httpErrorMessage(error);
-      }
-    }
-  }
-  return httpErrorMessage(error);
-}
-
-/** `FileReader` plutôt que `Blob.text()` : le second manque à jsdom, où la suite tourne. */
-function textOf(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      resolve(typeof reader.result === 'string' ? reader.result : '');
-    };
-    reader.onerror = () => {
-      reject(new Error('Réponse illisible.'));
-    };
-    reader.readAsText(blob);
-  });
 }

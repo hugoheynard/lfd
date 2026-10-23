@@ -1,0 +1,18 @@
+<fold-panel-header title="Rejeté par la banque" [subtitle]="data()?.subject ?? ''" />
+
+<div class="body">
+  <fold-input
+    label="Motif donné par le compte rendu d'import CENET"
+    placeholder="BIC invalide, RUM déjà présente…"
+    required
+    hint="Obligatoire, au plus 200 caractères : il va au journal. La ligne repart dans le prochain fichier."
+    [(value)]="reason"
+  />
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="close()">Annuler</button>
+  <button foldButton intent="danger" [disabled]="!canSubmit()" (click)="submit()">
+    Rejeté par la banque
+  </button>
+</footer>

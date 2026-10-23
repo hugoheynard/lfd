@@ -93,6 +93,9 @@ export const MANDATE_BANK_EXPORT_FACT_TYPES = {
   /** Le fichier — fait d'IBAN en clair — a été servi (R8, `prerequis-export-ribs.md`). */
   downloaded: "mandate_bank_export.downloaded",
   abandoned: "mandate_bank_export.abandoned",
+  /** Le compte rendu CENET d'un export déposé, ligne par ligne (Hugo, 2026-10-23). */
+  reportedKnown: "mandate_bank_export.mandate_reported_known",
+  rejected: "mandate_bank_export.mandate_rejected",
 } as const satisfies Readonly<Record<string, JournalFactType>>;
 
 /**
@@ -108,6 +111,9 @@ export const ACCOUNT_BANK_EXPORT_FACT_TYPES = {
   imported: "account_bank_export.imported",
   abandoned: "account_bank_export.abandoned",
   knownDeclared: "account_bank_export.account_known_declared",
+  /** Le compte rendu CENET d'un export déposé, ligne par ligne (Hugo, 2026-10-23). */
+  reportedKnown: "account_bank_export.account_reported_known",
+  rejected: "account_bank_export.account_rejected",
 } as const satisfies Readonly<Record<string, JournalFactType>>;
 
 /**

@@ -1,6 +1,5 @@
 import type {
   AccountBankExclusionReasonView,
-  AccountBankExportSummaryView,
   AccountBankStandingView,
   KnownBankAccountReasonView,
 } from '@lfd/contracts';
@@ -23,17 +22,6 @@ export function accountsLabel(count: number): string {
   return `${String(count)} compte${count > 1 ? 's' : ''}`;
 }
 
-/** Où en est un export : importé, abandonné, ou en attente de la banque. */
-export function accountExportStateLabel(item: AccountBankExportSummaryView): string {
-  if (item.importedAt !== null) {
-    return `importé le ${parisDayLabel(item.importedAt)}`;
-  }
-  if (item.abandonedAt !== null) {
-    return `abandonné le ${parisDayLabel(item.abandonedAt)}`;
-  }
-  return 'en attente de la banque';
-}
-
 /**
  * Les deux gestes qui retirent un compte de l'export (doc
  * `prerequis-export-ribs.md` § 2.6) : le bouton, et la phrase de la
@@ -50,23 +38,36 @@ export const KNOWN_REASON_GESTURES: Readonly<
   reported_by_bank: {
     button: 'Signalé comme connu par la banque',
     confirm:
-      'Le compte rendu d’import CENET dit qu’il existe déjà : il sera tenu pour connu de la banque. Le fichier déposé reste tel quel.',
+      'Le compte rendu d’import CENET dit qu’il existe déjà : il reste tenu pour connu de la banque, et ne repartira pas.',
   },
 };
 
 /**
- * **Le seul geste d'une ligne, selon où en est le compte** (doc § 2.6, Hugo
- * 2026-10-23) : « saisi dans CENET » sur un compte à exporter ; « signalé par
- * la banque » sur un compte d'un export DÉJÀ téléchargé, puisque seul le
- * compte rendu d'import le dit ; rien ailleurs. Le serveur refuse les autres.
+ * **« Saisi dans CENET »**, le seul geste d'un compte à exporter (doc § 2.6).
+ * « Signalé par la banque » n'est plus une déclaration libre depuis le
+ * 2026-10-23 : il se dit sur la ligne d'un export déposé (`reportGesturesOf`).
  */
 export function knownGestureOf(
   standing: AccountBankStandingView,
 ): KnownBankAccountReasonView | null {
-  if (standing.kind === 'to_export') {
-    return 'entered_in_cenet';
+  return standing.kind === 'to_export' ? 'entered_in_cenet' : null;
+}
+
+/**
+ * **Les gestes du compte rendu CENET sur une ligne** (Hugo, 2026-10-23) :
+ * `pending` — dans un export pas encore déposé, visibles mais grisés ;
+ * `open` — dans un export déposé, encore corrigeable ; `null` ailleurs.
+ */
+export type BankReportGestures = 'pending' | 'open' | null;
+
+/** L'aide des gestes grisés : ce qui les ouvrira. */
+export const BANK_REPORT_PENDING_HINT = 'Disponible après le dépôt dans CENET';
+
+export function reportGesturesOf(standing: AccountBankStandingView): BankReportGestures {
+  if (standing.kind === 'in_flight') {
+    return 'pending';
   }
-  return standing.kind === 'in_flight' && standing.downloaded ? 'reported_by_bank' : null;
+  return standing.kind === 'imported' && standing.correctable ? 'open' : null;
 }
 
 /** Où en est un compte, en une ligne de la colonne « État ». */

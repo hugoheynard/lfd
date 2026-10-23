@@ -9,8 +9,8 @@
     <fold-callout appearance="inset" variant="info">
       Nouveaux comptes seulement&nbsp;: un compte que la banque connaît déjà fait rejeter tout
       l'import. Un compte saisi à la main dans CENET se retire de l'export par le geste de sa
-      ligne&nbsp;; un compte que le compte rendu d'import dit déjà connu se signale sur sa ligne,
-      une fois le fichier téléchargé.
+      ligne&nbsp;; une fois le fichier déposé dans CENET, son compte rendu d'import se reporte ligne
+      par ligne&nbsp;: déjà connu, ou rejeté.
     </fold-callout>
 
     @if (actionError(); as message) {
@@ -38,12 +38,21 @@
           </button>
         }
       </div>
-      @for (item of openExports(view); track item.id) {
-        <div class="ab-row ab-open" [attr.data-open-export]="item.id">
-          <span>Export du {{ day(item.createdAt) }} — {{ accounts(item.accountCount) }}</span>
+      <!-- Une seule barre d'actions, au-dessus du tableau : l'export ouvert le plus
+           ancien, sinon la préparation, sinon rien — les chiffres disent déjà « 0 ». -->
+      @let opened = openExports(view);
+      @if (opened[0]; as item) {
+        <div class="ab-row" data-action-bar [attr.data-open-export]="item.id">
           <span class="ab-actions">
-            <button foldButton icon="download" [disabled]="busy()" (click)="downloadFile(item)">
-              Télécharger le fichier des comptes
+            <button
+              foldButton
+              icon="download"
+              [disabled]="busy()"
+              [loading]="busy()"
+              data-download
+              (click)="downloadFile(item)"
+            >
+              {{ downloadLabel(item) }}
             </button>
             @if (item.lastDownloadedAt === null) {
               <button
@@ -64,12 +73,56 @@
                 [labels]="{ confirm: 'La banque l’a importé' }"
                 (confirmed)="markImported(item)"
               >
-                <button foldButton emphasis="outline" [disabled]="busy()">
+                <button
+                  foldButton
+                  emphasis="outline"
+                  [disabled]="busy()"
+                  title="Télécharger ne vaut pas import : les comptes restent « en attente » tant que l'export n'est pas marqué importé."
+                >
                   J'ai déposé le fichier dans CENET
                 </button>
               </fold-inline-confirm>
             }
+            <fold-inline-confirm
+              intent="danger"
+              [labels]="{ confirm: 'La banque l’a rejeté' }"
+              (confirmed)="abandon(item)"
+            >
+              <button
+                foldButton
+                emphasis="soft"
+                size="sm"
+                [disabled]="busy()"
+                title="Si la banque rejette le fichier : ses comptes redeviennent à exporter."
+              >
+                Abandonner
+              </button>
+            </fold-inline-confirm>
           </span>
+          @if (opened.length > 1) {
+            <span class="ab-said" data-other-open>
+              {{ otherOpenLabel(opened.length - 1) }}
+            </span>
+          }
+        </div>
+      } @else if (view.toExport.length > 0) {
+        <div class="ab-row" data-action-bar>
+          <button
+            foldButton
+            icon="download"
+            [disabled]="busy()"
+            [loading]="busy()"
+            data-download
+            (click)="prepare()"
+          >
+            Télécharger le fichier des comptes ({{ accounts(nextExportSize(view)) }})
+          </button>
+          @if (leftOver(view) > 0) {
+            <span class="ab-said">
+              Un fichier porte {{ accounts(view.maxPerExport) }} au plus&nbsp;:
+              {{ accounts(leftOver(view)) }} attendront l'export suivant.
+            </span>
+          }
         </div>
       }
 
@@ -122,71 +175,51 @@
                 {{ gestures[reason].button }}
               </button>
             </fold-inline-confirm>
-          } @else if (awaitsDownload(row)) {
-            <span class="ab-said" data-awaits-download>Téléchargez le fichier d'abord.</span>
+          }
+          @let report = reportOf(row);
+          @if (report === 'pending') {
+            <span class="ab-actions" data-report="pending">
+              <button foldButton emphasis="soft" size="sm" disabled [title]="pendingHint">
+                Signalé comme connu par la banque
+              </button>
+              <button foldButton emphasis="soft" size="sm" disabled [title]="pendingHint">
+                Rejeté par la banque
+              </button>
+              <span class="ab-said">{{ pendingHint }}</span>
+            </span>
+          } @else if (report === 'open') {
+            <span class="ab-actions" data-report="open">
+              <fold-inline-confirm
+                intent="warning"
+                [message]="gestures.reported_by_bank.confirm"
+                [labels]="{ confirm: 'Confirmer' }"
+                (confirmed)="reportKnown(row)"
+              >
+                <button
+                  foldButton
+                  emphasis="soft"
+                  size="sm"
+                  [disabled]="busy()"
+                  data-gesture="reported_by_bank"
+                >
+                  Signalé comme connu par la banque
+                </button>
+              </fold-inline-confirm>
+              <button
+                foldButton
+                emphasis="soft"
+                intent="danger"
+                size="sm"
+                [disabled]="busy()"
+                data-gesture="rejected"
+                (click)="reject(row)"
+              >
+                Rejeté par la banque
+              </button>
+            </span>
           }
         </ng-template>
       </fold-data-table>
-
-      @if (leftOver(view) > 0) {
-        <p class="ab-said">
-          Un fichier porte {{ accounts(view.maxPerExport) }} au plus&nbsp;:
-          {{ accounts(leftOver(view)) }} attendront l'export suivant.
-        </p>
-      }
-
-      <div class="ab-row">
-        <button
-          foldButton
-          icon="download"
-          [disabled]="busy() || view.toExport.length === 0"
-          [loading]="busy()"
-          (click)="prepare()"
-        >
-          Préparer l'export des comptes
-        </button>
-      </div>
-
-      <p class="ab-said">
-        Télécharger ne vaut pas import&nbsp;: un compte reste «&nbsp;en attente&nbsp;» tant que
-        l'export n'est pas marqué importé. Si la banque rejette le fichier, l'abandonner&nbsp;: ses
-        comptes redeviennent à exporter.
-      </p>
-
-      @if (view.exports.length > 0) {
-        <ul class="ab-rows">
-          @for (item of view.exports; track item.id) {
-            <li class="ab-row">
-              <span>
-                Préparé le {{ day(item.createdAt) }} — {{ accounts(item.accountCount) }} —
-                {{ stateOf(item) }}
-              </span>
-              <span class="ab-actions">
-                @if (item.abandonedAt === null && !isOpen(item)) {
-                  <button
-                    foldButton
-                    emphasis="outline"
-                    icon="download"
-                    [disabled]="busy()"
-                    (click)="downloadFile(item)"
-                  >
-                    Télécharger
-                  </button>
-                }
-                @if (isOpen(item)) {
-                  <fold-inline-confirm
-                    intent="danger"
-                    [labels]="{ confirm: 'La banque l’a rejeté' }"
-                    (confirmed)="abandon(item)"
-                  >
-                    <button foldButton emphasis="outline" [disabled]="busy()">Abandonner</button>
-                  </fold-inline-confirm>
-                }
-              </span>
-            </li>
-          }
-        </ul>
-      }
     }
   </div>
 </fold-page-section>

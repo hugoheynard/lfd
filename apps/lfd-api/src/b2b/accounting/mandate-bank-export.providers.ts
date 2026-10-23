@@ -3,6 +3,8 @@ import type { Provider } from "@nestjs/common";
 import { AbandonMandateBankExportHandler } from "./application/commands/abandon-mandate-bank-export.handler.js";
 import { ExportMandatesForBankHandler } from "./application/commands/export-mandates-for-bank.handler.js";
 import { MarkMandateBankExportImportedHandler } from "./application/commands/mark-mandate-bank-export-imported.handler.js";
+import { RejectMandateAtBankHandler } from "./application/commands/reject-mandate-at-bank.handler.js";
+import { ReportMandateKnownToBankHandler } from "./application/commands/report-mandate-known-to-bank.handler.js";
 import { RecordMandateBankExportDownloadHandler } from "./application/commands/record-mandate-bank-export-download.handler.js";
 import { ExportMandateBankFileHandler } from "./application/queries/export-mandate-bank-file.handler.js";
 import { GetMandateBankExportsHandler } from "./application/queries/get-mandate-bank-exports.handler.js";
@@ -10,11 +12,13 @@ import { MandateBankExportRepository } from "./domain/ports/mandate-bank-export.
 import {
   ImportedMandateAccountsReader,
   MandateBankExportsReader,
+  MandateBankLinesReader,
 } from "./domain/ports/mandate-bank-exports.reader.js";
 import { PrismaMandateBankExportRepository } from "./infrastructure/prisma-mandate-bank-export.repository.js";
 import {
   PrismaImportedMandateAccountsReader,
   PrismaMandateBankExportsReader,
+  PrismaMandateBankLinesReader,
 } from "./infrastructure/prisma-mandate-bank-exports.reader.js";
 
 /**
@@ -28,10 +32,13 @@ export const MANDATE_BANK_EXPORT_PROVIDERS: readonly Provider[] = [
   { provide: MandateBankExportRepository, useClass: PrismaMandateBankExportRepository },
   { provide: ImportedMandateAccountsReader, useClass: PrismaImportedMandateAccountsReader },
   { provide: MandateBankExportsReader, useClass: PrismaMandateBankExportsReader },
+  { provide: MandateBankLinesReader, useClass: PrismaMandateBankLinesReader },
   ExportMandatesForBankHandler,
   MarkMandateBankExportImportedHandler,
   AbandonMandateBankExportHandler,
   RecordMandateBankExportDownloadHandler,
+  ReportMandateKnownToBankHandler,
+  RejectMandateAtBankHandler,
   ExportMandateBankFileHandler,
   GetMandateBankExportsHandler,
 ];

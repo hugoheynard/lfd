@@ -20,7 +20,8 @@ import { DeclareBankAccountKnownCommand } from "./declare-bank-account-known.com
  * vitruve objection 1) : pose l'empreinte du compte sans fichier, avec sa
  * raison, son auteur et un fait au journal qui la dit. Le compte doit être débité par un mandat actif de
  * l'entité de la route — c'est le mur ; l'entité refuse une empreinte déjà
- * connue ou en vol.
+ * connue, « saisi dans CENET » sur un compte en vol, et « signalé par la
+ * banque » hors d'un export téléchargé.
  */
 @CommandHandler(DeclareBankAccountKnownCommand)
 export class DeclareBankAccountKnownHandler implements ICommandHandler<

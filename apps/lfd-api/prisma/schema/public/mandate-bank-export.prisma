@@ -41,6 +41,11 @@ model MandateBankExport {
   abandonedAt        DateTime? @map("abandoned_at") @db.Timestamptz(3)
   abandonedByStaffId String?   @map("abandoned_by_staff_id")
 
+  /// L'instant du dernier téléchargement du fichier. NULL = jamais
+  /// téléchargé — « Marquer importé » est alors refusé (migration
+  /// `20261024030000_le_telechargement_d_un_export_des_mandats`).
+  lastDownloadedAt DateTime? @map("last_downloaded_at") @db.Timestamptz(3)
+
   lines MandateBankExportLine[]
 
   @@index([legalEntityId, createdAt])
@@ -59,6 +64,17 @@ model MandateBankExportLine {
   rum                String
   /// SHA-256 hex de l'IBAN normalisé — jamais l'IBAN.
   accountFingerprint String @map("account_fingerprint")
+
+  /// Ce que le compte rendu d'import CENET a dit de cette ligne, une fois
+  /// l'export déposé (`reported_by_bank` : la banque l'avait déjà ;
+  /// `rejected` : ligne en erreur, à renvoyer). NULL = rien de signalé. Les
+  /// quatre colonnes vont ensemble — CHECK dans la migration
+  /// `20261024040000_le_compte_rendu_d_import_cenet_par_ligne`.
+  correctedAs        String?   @map("corrected_as")
+  correctedAt        DateTime? @map("corrected_at") @db.Timestamptz(3)
+  correctedByStaffId String?   @map("corrected_by_staff_id")
+  /// Le motif du rejet, tel que saisi d'après le compte rendu. Rejet seulement.
+  rejectionReason    String?   @map("rejection_reason")
 
   @@id([exportId, mandateId])
   @@index([mandateId])

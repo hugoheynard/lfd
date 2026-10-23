@@ -1,8 +1,10 @@
 import {
   declareBankAccountKnownPayloadSchema,
+  rejectBankAccountPayloadSchema,
   type AccountBankExportCreatedView,
   type AccountBankExportsView,
   type DeclareBankAccountKnownPayload,
+  type RejectBankAccountPayload,
 } from "@lfd/contracts";
 import { contentDispositionAttachment, sanitiseFileName } from "@lfd/storage";
 import {
@@ -27,6 +29,8 @@ import { AbandonAccountBankExportCommand } from "../application/commands/abandon
 import { DeclareBankAccountKnownCommand } from "../application/commands/declare-bank-account-known.command.js";
 import { ExportAccountsForBankCommand } from "../application/commands/export-accounts-for-bank.command.js";
 import { MarkAccountBankExportImportedCommand } from "../application/commands/mark-account-bank-export-imported.command.js";
+import { RejectBankAccountCommand } from "../application/commands/reject-bank-account.command.js";
+import { ReportBankAccountKnownCommand } from "../application/commands/report-bank-account-known.command.js";
 import { RecordAccountBankExportDownloadCommand } from "../application/commands/record-account-bank-export-download.command.js";
 import {
   ExportAccountBankFileQuery,
@@ -126,6 +130,35 @@ export class AdminAccountBankExportsController {
   ): Promise<void> {
     await this.commands.execute<MarkAccountBankExportImportedCommand, void>(
       new MarkAccountBankExportImportedCommand(id, exportId, staffUserId),
+    );
+  }
+
+  /** Compte rendu CENET : la banque avait déjà ce compte ; 409 avant le dépôt ou déjà corrigé. */
+  @Post(":id/account-exports/:exportId/accounts/:bankAccountId/reported-known")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async reportedKnown(
+    @StaffUserId() staffUserId: string,
+    @Param("id") id: string,
+    @Param("exportId") exportId: string,
+    @Param("bankAccountId") bankAccountId: string,
+  ): Promise<void> {
+    await this.commands.execute<ReportBankAccountKnownCommand, void>(
+      new ReportBankAccountKnownCommand(id, exportId, bankAccountId, staffUserId),
+    );
+  }
+
+  /** Compte rendu CENET : ce compte est en erreur, il redevient à exporter ; 409 avant le dépôt. */
+  @Post(":id/account-exports/:exportId/accounts/:bankAccountId/rejected")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async rejected(
+    @StaffUserId() staffUserId: string,
+    @Param("id") id: string,
+    @Param("exportId") exportId: string,
+    @Param("bankAccountId") bankAccountId: string,
+    @Body(new ZodBody(rejectBankAccountPayloadSchema)) payload: RejectBankAccountPayload,
+  ): Promise<void> {
+    await this.commands.execute<RejectBankAccountCommand, void>(
+      new RejectBankAccountCommand(id, exportId, bankAccountId, payload.reason, staffUserId),
     );
   }
 

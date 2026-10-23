@@ -1,5 +1,10 @@
 import type { JournalFact, JournaledEvent } from "../../../../platform/journal/journal-fact.js";
 import type { MandateBankExport } from "../entities/mandate-bank-export.js";
+import {
+  BANK_LINE_CORRECTIONS,
+  type BankLineCorrection,
+} from "../entities/bank-line-correction.js";
+import type { ExportedMandateLine } from "../ports/mandate-bank-exports.reader.js";
 import { MANDATE_BANK_EXPORT_FACT_TYPES } from "./accounting-facts.js";
 
 /** L'entité émettrice de l'export, avec son nom du moment. */
@@ -100,5 +105,35 @@ export class MandateBankExportAbandonedEvent implements JournaledEvent {
       this.entity,
       this.at,
     );
+  }
+}
+
+/**
+ * Le compte rendu d'import CENET, reporté sur un mandat d'un export déposé :
+ * « signalé connu » ou « rejeté », avec le motif du rejet. La RUM, jamais
+ * l'IBAN.
+ */
+export class MandateBankLineCorrectedEvent implements JournaledEvent {
+  constructor(
+    readonly line: ExportedMandateLine,
+    readonly correction: BankLineCorrection,
+    readonly entity: ExportEntity,
+  ) {}
+
+  journalFact(): JournalFact {
+    const rejected = this.correction.kind === BANK_LINE_CORRECTIONS.rejected;
+    return {
+      type: rejected
+        ? MANDATE_BANK_EXPORT_FACT_TYPES.rejected
+        : MANDATE_BANK_EXPORT_FACT_TYPES.reportedKnown,
+      subjectType: "legal_entity",
+      subjectId: this.entity.id,
+      occurredAt: this.correction.stamp.at,
+      payload: {
+        subjectLabel: this.entity.name,
+        rum: this.line.rum,
+        ...(rejected ? { rejectionReason: this.correction.rejectionReason } : {}),
+      },
+    };
   }
 }

@@ -13,6 +13,8 @@ import {
   type ExportedMandateLine,
   type MandateBankExportFile,
   type MandateBankExportRecord,
+  MandateBankLinesReader,
+  type MandateBankLineStanding,
 } from "../../../domain/ports/mandate-bank-exports.reader.js";
 import {
   MandatesForBankExportReader,
@@ -26,6 +28,8 @@ import { AbandonMandateBankExportHandler } from "../abandon-mandate-bank-export.
 import { ExportMandatesForBankHandler } from "../export-mandates-for-bank.handler.js";
 import { MarkMandateBankExportImportedHandler } from "../mark-mandate-bank-export-imported.handler.js";
 import { RecordMandateBankExportDownloadHandler } from "../record-mandate-bank-export-download.handler.js";
+import { RejectMandateAtBankHandler } from "../reject-mandate-at-bank.handler.js";
+import { ReportMandateKnownToBankHandler } from "../report-mandate-known-to-bank.handler.js";
 import { FakeCandidates, Steps, UlidSequence } from "./collection-doubles.js";
 import { declaredEntity } from "./mandate-setting-doubles.js";
 
@@ -106,7 +110,7 @@ export class MemoryImported extends ImportedMandateAccountsReader {
       [...this.exports.rows.values()]
         .map((row) => row.toPersistence())
         .filter((state) => state.legalEntityId === legalEntityId && state.imported !== null)
-        .flatMap((state) => state.lines),
+        .flatMap((state) => state.lines.filter((line) => line.correction?.kind !== "rejected")),
     );
   }
 }
@@ -124,6 +128,7 @@ export class MemoryExportsReader extends MandateBankExportsReader {
           id: state.id,
           createdAt: state.created.at,
           mandateCount: state.lines.length,
+          lastDownloadedAt: state.lastDownloadedAt,
           importedAt: state.imported?.at ?? null,
           abandonedAt: state.abandoned?.at ?? null,
         })),
@@ -139,6 +144,31 @@ export class MemoryExportsReader extends MandateBankExportsReader {
   }
 }
 
+/** Les lignes des exports non abandonnés, lues des mêmes doublés. */
+export class MemoryLines extends MandateBankLinesReader {
+  constructor(private readonly exports: MemoryExports) {
+    super();
+  }
+  linesOf(legalEntityId: string): Promise<readonly MandateBankLineStanding[]> {
+    return Promise.resolve(
+      [...this.exports.rows.values()]
+        .map((row) => row.toPersistence())
+        .filter((state) => state.legalEntityId === legalEntityId && state.abandoned === null)
+        .flatMap((state) =>
+          state.lines.map((line) => ({
+            mandateId: line.mandateId,
+            accountFingerprint: line.accountFingerprint,
+            exportId: state.id,
+            lastDownloadedAt: state.lastDownloadedAt,
+            importedAt: state.imported?.at ?? null,
+            correctedAs: line.correction?.kind ?? null,
+            correctedAt: line.correction?.stamp.at ?? null,
+          })),
+        ),
+    );
+  }
+}
+
 /** Les commandes branchées sur les mêmes doublés. */
 export function bankExportWorld() {
   const exports = new MemoryExports();
@@ -148,6 +178,7 @@ export function bankExportWorld() {
     exports,
     imported: new MemoryImported(exports),
     reader: new MemoryExportsReader(exports),
+    lines: new MemoryLines(exports),
     candidates: new FakeCandidates(new Steps()),
     events: new RecordingPublisher(),
     clock: new FixedClock(NOW),
@@ -183,5 +214,8 @@ export function bankExportWorld() {
     w.events,
     new DirectUnitOfWork(),
   );
-  return { ...w, exportCommand, markImported, abandon, recordDownload };
+  const gesture = [w.entities, w.exports, w.clock, w.events, new DirectUnitOfWork()] as const;
+  const reportKnown = new ReportMandateKnownToBankHandler(...gesture);
+  const reject = new RejectMandateAtBankHandler(...gesture);
+  return { ...w, exportCommand, markImported, abandon, recordDownload, reportKnown, reject };
 }

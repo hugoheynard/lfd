@@ -633,6 +633,45 @@ describe('l’export des comptes destinataires pour la banque', () => {
   });
 });
 
+describe('le compte rendu CENET, ligne par ligne (2026-10-23)', () => {
+  it('dit le compte signalé connu et le compte rejeté avec son motif', () => {
+    const company = { id: 'cmp_1', name: 'Café A' };
+    expect(
+      sentence(
+        entity('account_bank_export.account_reported_known', { subjectLabel: ENTITY, company }),
+      ),
+    ).toContain('compte du client « Café A », signalé comme déjà connu par la banque');
+    const rejected = sentence(
+      entity('account_bank_export.account_rejected', {
+        subjectLabel: ENTITY,
+        company,
+        rejectionReason: 'BIC refusé',
+      }),
+    );
+    expect(rejected).toContain('rejeté par la banque — « BIC refusé »');
+    expect(rejected).toContain('prochain fichier');
+  });
+
+  it('dit le mandat par sa RUM, jamais un IBAN', () => {
+    const rejected = sentence(
+      entity('mandate_bank_export.mandate_rejected', {
+        subjectLabel: ENTITY,
+        rum: 'RUM-1',
+        rejectionReason: 'RUM en double',
+      }),
+    );
+    expect(rejected).toContain('mandat « RUM-1 », rejeté par la banque — « RUM en double »');
+    expect(
+      sentence(
+        entity('mandate_bank_export.mandate_reported_known', {
+          subjectLabel: ENTITY,
+          rum: 'RUM-1',
+        }),
+      ),
+    ).toContain('signalé comme déjà connu par la banque');
+  });
+});
+
 describe('la facture du mois — passage automatique et payeur signalé (2026-10-10)', () => {
   it('dit le mois, l’issue et les deux nombres, l’auteur étant le système', () => {
     const said = sentence({

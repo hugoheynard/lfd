@@ -5,6 +5,7 @@ import {
 } from "../../../domain/errors/mandate-bank-export-errors.js";
 import { AbandonMandateBankExportCommand } from "../../commands/abandon-mandate-bank-export.command.js";
 import { ExportMandatesForBankCommand } from "../../commands/export-mandates-for-bank.command.js";
+import { RecordMandateBankExportDownloadCommand } from "../../commands/record-mandate-bank-export-download.command.js";
 import { MarkMandateBankExportImportedCommand } from "../../commands/mark-mandate-bank-export-imported.command.js";
 import {
   IBAN_A,
@@ -28,6 +29,8 @@ function withQueries() {
     w.imported,
     w.reader,
     w.candidates,
+    w.lines,
+    w.clock,
   );
   return { ...w, file, card };
 }
@@ -92,6 +95,7 @@ describe("la carte « Mandats à la banque »", () => {
     const id = await w.exportCommand.execute(
       new ExportMandatesForBankCommand("le1", false, "staff_1"),
     );
+    await w.recordDownload.execute(new RecordMandateBankExportDownloadCommand("le1", id, "s"));
     await w.markImported.execute(new MarkMandateBankExportImportedCommand("le1", id, "s"));
     w.mandates.exportable = [...w.mandates.exportable, bankMandate("m4")];
 

@@ -48,6 +48,7 @@ describe("abandonner un export des mandats (S3)", () => {
 
   it("refuse d'abandonner un export importé, sans rien journaliser", async () => {
     const { w, id } = await prepared();
+    await w.recordDownload.execute(new RecordMandateBankExportDownloadCommand("le1", id, "s"));
     await w.markImported.execute(new MarkMandateBankExportImportedCommand("le1", id, "staff_2"));
 
     await expect(
@@ -76,9 +77,8 @@ describe("abandonner un export des mandats (S3)", () => {
 });
 
 describe("journaliser le téléchargement du fichier des mandats (R8)", () => {
-  it("inscrit un fait par téléchargement, sans toucher à l'export", async () => {
+  it("inscrit un fait par téléchargement, et l'export garde l'instant du dernier", async () => {
     const { w, id } = await prepared();
-    const before = w.exports.rows.get(id)?.toPersistence();
 
     await w.recordDownload.execute(new RecordMandateBankExportDownloadCommand("le1", id, "s"));
     await w.recordDownload.execute(new RecordMandateBankExportDownloadCommand("le1", id, "s"));
@@ -88,7 +88,7 @@ describe("journaliser le téléchargement du fichier des mandats (R8)", () => {
       "mandate_bank_export.downloaded",
       "mandate_bank_export.downloaded",
     ]);
-    expect(w.exports.rows.get(id)?.toPersistence()).toEqual(before);
+    expect(w.exports.rows.get(id)?.toPersistence().lastDownloadedAt).toEqual(NOW);
   });
 
   it("refuse un export abandonné : le fichier ne part pas", async () => {

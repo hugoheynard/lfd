@@ -1,13 +1,18 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
-import { MandateBankExport } from "../domain/entities/mandate-bank-export.js";
+import {
+  MandateBankExport,
+  type MandateBankExportState,
+} from "../domain/entities/mandate-bank-export.js";
 import { MandateBankExportRepository } from "../domain/ports/mandate-bank-export.repository.js";
+import { correctionFromRow, correctionToRow } from "./bank-line-correction.mapper.js";
 
 /**
  * Adaptateur d'écriture de l'export des mandats. Les LIGNES s'écrivent à la
- * création et jamais ensuite ; un `save` ultérieur ne pose que « importé » ou
- * « abandonné ».
+ * création et jamais ensuite ; un `save` ultérieur ne pose que le dernier
+ * téléchargement, « importé », « abandonné », et la correction CENET de
+ * chaque ligne.
  * Aucun IBAN ne passe ici : une ligne n'en porte que l'empreinte.
  */
 @Injectable()
@@ -32,7 +37,9 @@ export class PrismaMandateBankExportRepository extends MandateBankExportReposito
         mandateId: line.mandateId,
         rum: line.rum,
         accountFingerprint: line.accountFingerprint,
+        correction: correctionFromRow(line),
       })),
+      lastDownloadedAt: row.lastDownloadedAt,
       imported:
         row.importedAt === null || row.importedByStaffId === null
           ? null
@@ -47,6 +54,7 @@ export class PrismaMandateBankExportRepository extends MandateBankExportReposito
   async save(bankExport: MandateBankExport): Promise<void> {
     const state = bankExport.toPersistence();
     const closed = {
+      lastDownloadedAt: state.lastDownloadedAt,
       importedAt: state.imported?.at ?? null,
       importedByStaffId: state.imported?.staffId ?? null,
       abandonedAt: state.abandoned?.at ?? null,
@@ -58,6 +66,7 @@ export class PrismaMandateBankExportRepository extends MandateBankExportReposito
     });
     if (exists !== null) {
       await this.prisma.mandateBankExport.update({ where: { id: state.id }, data: closed });
+      await this.saveCorrections(state.id, state.lines);
       return;
     }
     await this.prisma.mandateBankExport.create({
@@ -76,7 +85,21 @@ export class PrismaMandateBankExportRepository extends MandateBankExportReposito
         mandateId: line.mandateId,
         rum: line.rum,
         accountFingerprint: line.accountFingerprint,
+        ...correctionToRow(line.correction),
       })),
     });
+  }
+
+  /** Les corrections du compte rendu CENET — seules les lignes qui en portent une. */
+  private async saveCorrections(
+    exportId: string,
+    lines: MandateBankExportState["lines"],
+  ): Promise<void> {
+    for (const line of lines.filter((row) => row.correction !== null)) {
+      await this.prisma.mandateBankExportLine.update({
+        where: { exportId_mandateId: { exportId, mandateId: line.mandateId } },
+        data: correctionToRow(line.correction),
+      });
+    }
   }
 }
