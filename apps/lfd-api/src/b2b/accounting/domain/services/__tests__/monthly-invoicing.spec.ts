@@ -113,7 +113,7 @@ describe("planMonthlyInvoices — une facture par payeur légal et par mandat (E
 
     expect(
       invoices.map((i) => [i.payerId, i.mandate?.reference, i.billable.map((o) => o.orderId)]),
-    ).toEqual([["c_principal", "RUM-c_principal", [chalet.orderId, principal.orderId]]]);
+    ).toEqual([["c_principal", "RUM-c-principal", [chalet.orderId, principal.orderId]]]);
   });
 
   it("des bons sur deux mandats : deux factures, au même payeur légal", () => {
@@ -127,7 +127,7 @@ describe("planMonthlyInvoices — une facture par payeur légal et par mandat (E
       invoices.map((i) => [i.payerId, i.mandate?.reference, i.billable.map((o) => o.orderId)]),
     ).toEqual([
       ["c_principal", "RUM-chalet", [chalet.orderId, chaletAgain.orderId]],
-      ["c_principal", "RUM-c_principal", [principal.orderId]],
+      ["c_principal", "RUM-c-principal", [principal.orderId]],
     ]);
   });
 
@@ -180,7 +180,7 @@ describe("planMonthlyInvoices — une facture par payeur légal et par mandat (E
     const { invoices } = plan([good, broken], TWO_MANDATES);
 
     expect(invoices.map((i) => [i.mandate?.reference, i.billable.length, i.unbillable])).toEqual([
-      ["RUM-c_principal", 1, []],
+      ["RUM-c-principal", 1, []],
       ["RUM-chalet", 0, [broken]],
     ]);
   });
@@ -199,7 +199,7 @@ describe("invoicePaymentMeansOf — le moyen de paiement figé (BG-16)", () => {
   it("prélèvement SEPA, sous le mandat de la facture", () => {
     expect(invoicePaymentMeansOf(mandate("c_principal"))).toEqual({
       code: "59",
-      mandateReference: "RUM-c_principal",
+      mandateReference: "RUM-c-principal",
     });
   });
 

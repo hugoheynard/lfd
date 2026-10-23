@@ -62,7 +62,7 @@ describe("constituer, annuler, déposer un lot", () => {
     );
 
     const state = w.batches.saved.get(id ?? "")?.toPersistence();
-    expect(state?.requestedCollectionDay).toBe("2026-10-15");
+    expect(state?.requestedCollectionDay?.value).toBe("2026-10-15");
     expect(state?.xml).toContain("<ReqdColltnDt>2026-10-15</ReqdColltnDt>");
   });
 

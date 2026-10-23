@@ -4,6 +4,7 @@ import { OrderCollection } from "../domain/entities/order-collection.js";
 import type { CollectableOrder } from "../domain/ports/collection-candidates.reader.js";
 import { renderBatchFile } from "../domain/services/collection-batch-file.js";
 import { frozenCollectionDay } from "../domain/services/collection-calendar.js";
+import { CollectionDay } from "../domain/value-objects/collection-day.js";
 import type { ReadAssembly } from "./collection-constitution-support.js";
 
 /**
@@ -57,7 +58,7 @@ export function buildBatches(input: BuildInput): readonly CollectionBatch[] {
       lines: file.lines,
       xml: file.xml,
       fileSha256: file.sha256,
-      requestedCollectionDay,
+      requestedCollectionDay: CollectionDay.of(requestedCollectionDay),
       postponedFromDay: postponedFrom,
     });
   });

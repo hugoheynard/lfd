@@ -31,7 +31,7 @@ seul paramètre du rendu, donc impossibles à découpler.
 
 | Étape    | Où                                                                                                                                                  |
 | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Frappe   | `Rum.mint` — [`rum.ts`](../../../apps/lfd-api/src/b2b/payments/domain/value-objects/rum.ts), appelé par `mint-mandate-support.ts`                   |
+| Frappe   | `Rum.mint` — [`rum.ts`](../../../apps/lfd-api/src/b2b/accounting/domain/value-objects/rum.ts), appelé par `mint-mandate-support.ts`                 |
 | Routes   | `POST /admin/companies/:companyId/mandate` (staff), `POST /companies/:companyId/mandate` (client)                                                   |
 | Stockage | `payment_mandates.reference`, sur un mandat à l'état `draft`                                                                                        |
 | Unicité  | une RUM par créancier (`payment_mandates_reference_unique_per_creditor`) ; un seul brouillon par société (`payment_mandates_one_draft_per_company`) |

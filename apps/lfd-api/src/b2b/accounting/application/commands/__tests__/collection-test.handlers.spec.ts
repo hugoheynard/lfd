@@ -130,7 +130,7 @@ describe("générer un prélèvement d'essai", () => {
       payload: { sequence: "FRST", amountCents: 100, legalEntity: { id: "le_1" } },
     });
     expect(JSON.stringify(fact)).not.toContain(DEBTOR_IBAN);
-    expect(JSON.stringify(fact)).not.toContain(`RUM-${OUR_COMPANY}`);
+    expect(JSON.stringify(fact)).not.toContain(`RUM-${OUR_COMPANY.replaceAll("_", "-")}`);
   });
 
   it("OOFF sur un mandat récurrent est refusé", async () => {
@@ -182,7 +182,7 @@ describe("l'outil d'essai et la liste « Essais »", () => {
         companyId: OUR_COMPANY,
         companyName: "Folie Douce Val",
         mandate: {
-          reference: `RUM-${OUR_COMPANY}`,
+          reference: `RUM-${OUR_COMPANY.replaceAll("_", "-")}`,
           scheme: "B2B",
           paymentType: "recurrent",
           ibanLast4: "0143",

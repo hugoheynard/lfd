@@ -58,9 +58,9 @@ describe("l'avis de prélèvement, à la constitution", () => {
         recipient: { email: "compta@c_port.test", source: "billing_contact" },
         terms: {
           amountCents: statement?.totalTtcCents,
-          collectionDay: batch?.requestedCollectionDay,
+          collectionDay: batch?.requestedCollectionDay?.value,
         },
-        mandateReference: "RUM-c_port",
+        mandateReference: "RUM-c-port",
         line: {
           batchId,
           lineRank: 1,
@@ -93,10 +93,8 @@ describe("l'avis de prélèvement, à la constitution", () => {
     const batchId = await constitute(w);
 
     const batch = w.batches.saved.get(batchId)?.toPersistence();
-    expect(batch).toMatchObject({
-      requestedCollectionDay: "2026-10-16",
-      postponedFromDay: "2026-10-15",
-    });
+    expect(batch?.requestedCollectionDay?.value).toBe("2026-10-16");
+    expect(batch?.postponedFromDay).toBe("2026-10-15");
     expect(batch?.xml).toContain("<ReqdColltnDt>2026-10-16</ReqdColltnDt>");
     expect(noticesOf(w)[0]?.terms.collectionDay).toBe("2026-10-16");
   });

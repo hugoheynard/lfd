@@ -284,3 +284,17 @@ export class CollectionBatchChangedConcurrentlyError extends BusinessError {
     );
   }
 }
+
+/**
+ * Une échéance de prélèvement qui n'est pas un jour du calendrier. Levée à la
+ * relecture d'un lot ou à sa constitution : l'échéance sort du calendrier
+ * TARGET2, une forme fausse signale donc une donnée abîmée, pas une saisie.
+ */
+export class InvalidCollectionDayError extends DomainError {
+  constructor(readonly raw: string) {
+    super(
+      "accounting.collection.invalid_day",
+      `L'échéance de prélèvement « ${raw} » n'est pas un jour du calendrier (AAAA-MM-JJ). Prévenir la technique : le lot ne peut pas partir avec une date de prélèvement fausse.`,
+    );
+  }
+}

@@ -13,7 +13,7 @@ import type { MandateActorChannel } from "../domain/events/payment-mandate-facts
 import { MandateMintedEvent } from "../domain/events/payment-mandate.events.js";
 import type { PaymentMandateRepository } from "../domain/payment-mandate.repository.js";
 import type { CompanyBankAccountRepository } from "../domain/ports/company-bank-account.repository.js";
-import { Rum } from "../domain/value-objects/rum.js";
+import { Rum } from "../../accounting/domain/value-objects/rum.js";
 import type { MandateDebtorReader } from "../domain/ports/mandate-debtor.reader.js";
 import type { MandateDebtorSnapshot } from "../domain/entities/payment-mandate.js";
 import { readMintReadiness } from "./mint-readiness.js";

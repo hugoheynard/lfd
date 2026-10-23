@@ -1,6 +1,7 @@
 import type { SequenceType } from "../services/sepa-sequence.js";
 import type { Bic } from "../value-objects/bic.js";
 import type { Iban } from "../value-objects/iban.js";
+import type { Rum } from "../value-objects/rum.js";
 
 /**
  * Une ligne du fichier : UN débiteur, le mandat **figé** — IBAN compris — et
@@ -11,7 +12,8 @@ export interface CollectionBatchLine {
   readonly rank: number;
   readonly endToEndId: string;
   readonly mandateId: string;
-  readonly mandateReference: string;
+  /** La RUM figée du mandat, revalidée à la relecture comme l'IBAN. */
+  readonly mandateReference: Rum;
   readonly mandateSignedAt: Date;
   /** Le payeur — la société débitée. */
   readonly debtorCompanyId: string;

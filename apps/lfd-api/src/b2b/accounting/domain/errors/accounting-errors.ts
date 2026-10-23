@@ -53,6 +53,25 @@ export class InvalidBicError extends DomainError {
   }
 }
 
+/**
+ * La RUM est mal formée — **400**.
+ *
+ * Le code reste `payments.rum.invalid` : c'est une valeur déjà servie, le
+ * déplacement du value object (2026-10-23) n'en change pas le sens.
+ *
+ * Levée à la relecture d'une référence venue de la base ou d'un import : la RUM
+ * que nous frappons est correcte par construction, donc une RUM invalide signale
+ * une donnée abîmée, pas une saisie.
+ */
+export class InvalidRumError extends DomainError {
+  constructor(
+    readonly raw: string,
+    readonly reason: string,
+  ) {
+    super("payments.rum.invalid", `Référence de mandat « ${raw} » : ${reason}`);
+  }
+}
+
 export class InvalidCreditorIdentifierError extends DomainError {
   constructor(
     readonly raw: string,

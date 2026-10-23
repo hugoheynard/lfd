@@ -1,4 +1,4 @@
-import { InvalidRumError } from "../../errors/mandate-errors.js";
+import { InvalidRumError } from "../../errors/accounting-errors.js";
 import { Rum, RUM_EPC_MAX_LENGTH, RUM_PREFIX, RUM_PRINTED_MAX_LENGTH } from "../rum.js";
 
 /** Une référence société telle que `referenceFrom` en rend. */

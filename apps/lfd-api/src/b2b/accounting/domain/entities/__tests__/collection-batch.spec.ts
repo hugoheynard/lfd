@@ -14,6 +14,8 @@ import { BillingRhythmSetting } from "../../value-objects/billing-rhythm-setting
 import { defaultModes, paris } from "../../services/__tests__/billing-mode-fixtures.js";
 import { InvoicingCalendar } from "../../services/invoicing-calendar.js";
 import { Iban } from "../../value-objects/iban.js";
+import { CollectionDay } from "../../value-objects/collection-day.js";
+import { Rum } from "../../value-objects/rum.js";
 import { CollectionBatch, type ConstituteBatchInput } from "../collection-batch.js";
 
 const SEPTEMBER = {
@@ -36,14 +38,14 @@ function input(overrides: Partial<ConstituteBatchInput> = {}): ConstituteBatchIn
     calendar: InvoicingCalendar.following(BillingRhythmSetting.initial()),
     constituted: CONSTITUTED,
     unmandatedCompanies: [],
-    requestedCollectionDay: "2026-10-15",
+    requestedCollectionDay: CollectionDay.of("2026-10-15"),
     postponedFromDay: null,
     lines: [
       {
         rank: 1,
         endToEndId: "X-0001",
         mandateId: "m1",
-        mandateReference: "RUM-1",
+        mandateReference: Rum.create("RUM-1"),
         mandateSignedAt: new Date("2026-08-01T10:00:00.000Z"),
         debtorCompanyId: "c1",
         debtorName: "Port",

@@ -120,7 +120,7 @@ juridiques. Ouvert à l'écran le 2026-09-12, il fonctionne.
 ### La RUM
 
 Frappée à chaque mandat par `Rum.mint`
-(`src/b2b/payments/domain/value-objects/rum.ts`) — sa forme et ses bornes sont
+(`src/b2b/accounting/domain/value-objects/rum.ts`) — sa forme et ses bornes sont
 dans [`mandat/rum.md`](mandat/rum.md).
 
 ## Ce qui n'est pas ici

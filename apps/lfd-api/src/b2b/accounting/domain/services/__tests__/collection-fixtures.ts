@@ -97,7 +97,8 @@ export function mandate(
     companyId,
     debtorCompanyId: companyId,
     creditorId: ENTITY_ID,
-    reference: `RUM-${companyId}`,
+    // Le jeu SEPA d'une RUM refuse « _ » : le lot revalide la référence (Rum).
+    reference: `RUM-${companyId.replaceAll("_", "-")}`,
     iban: "FR7630004000031234567890143",
     bic: null,
     scheme: "B2B",

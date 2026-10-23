@@ -1,4 +1,4 @@
-import { InvalidRumError } from "../errors/mandate-errors.js";
+import { InvalidRumError } from "../errors/accounting-errors.js";
 
 /**
  * La borne de la **norme EPC**. Elle ne vaut qu'en **relecture** : c'est ce

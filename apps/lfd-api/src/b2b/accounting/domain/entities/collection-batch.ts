@@ -14,6 +14,7 @@ import {
 } from "../errors/collection-notice-errors.js";
 import type { BillingCycle } from "../services/billing-cycle.js";
 import type { ClosureSequence } from "../services/calendar-cycles.js";
+import { CollectionDay } from "../value-objects/collection-day.js";
 import type { SepaScheme } from "../value-objects/sepa-scheme.js";
 import {
   BANK_REJECTION_REASON_MAX,
@@ -64,7 +65,7 @@ export interface CollectionBatchState {
    * l'échéance d'un lot = l'annuler et le reconstituer, jamais un report en
    * place (plan `prelevement-automatique.md`, PA1).
    */
-  readonly requestedCollectionDay: string | null;
+  readonly requestedCollectionDay: CollectionDay | null;
   /**
    * L'échéance du calendrier (clôture + N) quand une constitution tardive l'a
    * repoussée pour tenir le préavis (D4) ; `null` sinon, et avant PA2.
@@ -97,7 +98,7 @@ export interface ConstituteBatchInput {
   readonly xml: string;
   readonly fileSha256: string;
   /** L'échéance que le XML porte, sortie du même calendrier. */
-  readonly requestedCollectionDay: string;
+  readonly requestedCollectionDay: CollectionDay;
   readonly postponedFromDay: string | null;
 }
 
@@ -246,8 +247,8 @@ export class CollectionBatch {
       throw new RejectedBatchHasReturnsError(returnedDebtors);
     }
     const day = this.state.requestedCollectionDay;
-    if (day === null || day <= today) {
-      throw new BankRejectionAfterCollectionDayError(this.state.id, day);
+    if (day === null || !day.isAfter(CollectionDay.of(today))) {
+      throw new BankRejectionAfterCollectionDayError(this.state.id, day?.value ?? null);
     }
     this.state = {
       ...this.state,

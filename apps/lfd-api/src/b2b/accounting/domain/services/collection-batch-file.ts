@@ -5,6 +5,7 @@ import type { CollectionBatchLine } from "../entities/collection-batch.js";
 import { isBatchDepositable } from "../entities/collection-batch-depositability.js";
 import { Bic } from "../value-objects/bic.js";
 import { Iban } from "../value-objects/iban.js";
+import { Rum } from "../value-objects/rum.js";
 import type { SepaScheme } from "../value-objects/sepa-scheme.js";
 import type { BillingCycle } from "./billing-cycle.js";
 import type { DebitDraft } from "./collection-assembly.js";
@@ -55,7 +56,7 @@ export function renderBatchFile(input: BatchFileInput): BatchFile {
       rank,
       endToEndId: ids.endToEndIdOf(rank),
       mandateId: debit.mandate.mandateId,
-      mandateReference: debit.mandate.reference,
+      mandateReference: Rum.create(debit.mandate.reference),
       mandateSignedAt: debit.mandate.signedAt,
       debtorCompanyId: debit.payerId,
       debtorName: debit.debtorName,

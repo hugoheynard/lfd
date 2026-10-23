@@ -182,7 +182,7 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
     expect(state?.issuedOn).toBe("2026-09-30");
     // Clôture le 1er octobre + 14 jours de pré-notification : le jeudi 15.
     expect(state?.dueOn).toBe("2026-10-15");
-    expect(state?.paymentMeans).toEqual({ code: "59", mandateReference: "RUM-c_port" });
+    expect(state?.paymentMeans).toEqual({ code: "59", mandateReference: "RUM-c-port" });
     expect(h.outcomes.rows.get(PORT)?.invoiceId).toBe(state?.id);
   });
 
@@ -314,7 +314,7 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
     expect(states.map((state) => state.buyer.companyId)).toEqual(["c_principal", "c_principal"]);
     expect(states.map((state) => mandateReferenceOf(state.paymentMeans))).toEqual([
       "RUM-chalet",
-      "RUM-c_principal",
+      "RUM-c-principal",
     ]);
     expect(states.map((state) => state.orders.map((order) => order.reference))).toEqual([
       [chalet.orderNumber, chaletAgain.orderNumber],
@@ -337,7 +337,7 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
     await h.run();
 
     expect(h.invoices.inserted.map((invoice) => invoice.toState().paymentMeans)).toEqual([
-      { code: "59", mandateReference: "RUM-c_port" },
+      { code: "59", mandateReference: "RUM-c-port" },
       null,
     ]);
     expect(h.outcomes.rows.get(invoiceGroupKey("c_quai", null))?.invoiceId).not.toBeNull();

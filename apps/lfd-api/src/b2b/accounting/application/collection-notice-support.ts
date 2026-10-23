@@ -51,7 +51,7 @@ export async function noticesOf(
     ]),
   ];
   const contacts = await readers.contacts.contactsOf(debtors);
-  const collectionDay = input.batches[0]?.toPersistence().requestedCollectionDay ?? null;
+  const collectionDay = input.batches[0]?.toPersistence().requestedCollectionDay?.value ?? null;
   if (collectionDay === null) {
     // Aucun lot (tout écarté, ou plus rien à prélever) : rien à annoncer, mais
     // les promesses d'un lot annulé s'annulent quand même (PA2, § 7 comblé
@@ -103,7 +103,7 @@ function noticeLinesOf(
           debtorCompanyId: line.debtorCompanyId,
           debtorName: line.debtorName,
           amountCents: line.amountCents,
-          mandateReference: line.mandateReference,
+          mandateReference: line.mandateReference.value,
         },
       ];
     }),

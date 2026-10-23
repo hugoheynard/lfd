@@ -1,5 +1,6 @@
 import type { CollectionBatchLine } from "../../entities/collection-batch-line.js";
 import { Iban } from "../../value-objects/iban.js";
+import { Rum } from "../../value-objects/rum.js";
 import { depositRecheckProblems } from "../deposit-recheck.js";
 
 const FROZEN_IBAN = "FR7630004000031234567890143";
@@ -9,7 +10,7 @@ const LINE: CollectionBatchLine = {
   rank: 1,
   endToEndId: "E2E-1",
   mandateId: "m1",
-  mandateReference: "RUM-1",
+  mandateReference: Rum.create("RUM-1"),
   mandateSignedAt: new Date("2026-08-01T10:00:00.000Z"),
   debtorCompanyId: "c1",
   debtorName: "Port",

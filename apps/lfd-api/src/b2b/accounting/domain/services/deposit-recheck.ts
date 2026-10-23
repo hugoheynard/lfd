@@ -18,7 +18,7 @@ export function depositRecheckProblems(
   const mandateProblems = lines.flatMap((line) => {
     const current = mandates.get(line.mandateId);
     if (current?.active !== true) {
-      return [`le mandat ${line.mandateReference} de ${line.debtorName} n'est plus actif`];
+      return [`le mandat ${line.mandateReference.value} de ${line.debtorName} n'est plus actif`];
     }
     return current.iban === line.debtorIban.value
       ? []

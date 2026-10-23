@@ -9,6 +9,8 @@ import { DepositedBatchNotCancellableError } from "../../errors/collection-error
 import { BillingRhythmSetting } from "../../value-objects/billing-rhythm-setting.js";
 import { InvoicingCalendar } from "../../services/invoicing-calendar.js";
 import { Iban } from "../../value-objects/iban.js";
+import { CollectionDay } from "../../value-objects/collection-day.js";
+import { Rum } from "../../value-objects/rum.js";
 import { CollectionBatch, type ConstituteBatchInput } from "../collection-batch.js";
 import { DEAD_BATCH_STATUSES, isDeadBatchStatus } from "../collection-batch-status.js";
 import { OrderCollection } from "../order-collection.js";
@@ -39,14 +41,14 @@ function input(overrides: Partial<ConstituteBatchInput> = {}): ConstituteBatchIn
     calendar: InvoicingCalendar.following(BillingRhythmSetting.initial()),
     constituted: { at: AFTER_CLOSE, by: { kind: "staff", staffId: "staff_1" } },
     unmandatedCompanies: [],
-    requestedCollectionDay: COLLECTION_DAY,
+    requestedCollectionDay: CollectionDay.of(COLLECTION_DAY),
     postponedFromDay: null,
     lines: [
       {
         rank: 1,
         endToEndId: "X-0001",
         mandateId: "m1",
-        mandateReference: "RUM-1",
+        mandateReference: Rum.create("RUM-1"),
         mandateSignedAt: new Date("2026-08-01T10:00:00.000Z"),
         debtorCompanyId: "c1",
         debtorName: "Port",

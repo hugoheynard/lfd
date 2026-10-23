@@ -12,7 +12,9 @@ import {
 import { CollectionBatchChangedConcurrentlyError } from "../domain/errors/collection-errors.js";
 import type { CollectionBatchStatus } from "../domain/entities/collection-batch-status.js";
 import { Bic } from "../domain/value-objects/bic.js";
+import { CollectionDay } from "../domain/value-objects/collection-day.js";
 import { Iban } from "../domain/value-objects/iban.js";
+import { Rum } from "../domain/value-objects/rum.js";
 import { CollectionBatchRepository } from "../domain/ports/collection-batch.repository.js";
 import { bankRejectionFromRow, sequenceFromRow } from "./collection-batch-row.mapper.js";
 
@@ -75,7 +77,7 @@ export class PrismaCollectionBatchRepository extends CollectionBatchRepository {
         rank: line.rank,
         endToEndId: line.endToEndId,
         mandateId: line.mandateId,
-        mandateReference: line.mandateReference,
+        mandateReference: Rum.create(line.mandateReference),
         mandateSignedAt: line.mandateSignedAt,
         debtorCompanyId: line.debtorCompanyId,
         debtorName: line.debtorName,
@@ -93,7 +95,10 @@ export class PrismaCollectionBatchRepository extends CollectionBatchRepository {
       })),
       xml: row.xml,
       fileSha256: row.fileSha256,
-      requestedCollectionDay: row.requestedCollectionDay?.toISOString().slice(0, 10) ?? null,
+      requestedCollectionDay:
+        row.requestedCollectionDay === null
+          ? null
+          : CollectionDay.of(row.requestedCollectionDay.toISOString().slice(0, 10)),
       postponedFromDay: row.postponedFromDay?.toISOString().slice(0, 10) ?? null,
       lastDownloadedAt: row.lastDownloadedAt,
     });
@@ -144,7 +149,7 @@ export class PrismaCollectionBatchRepository extends CollectionBatchRepository {
         requestedCollectionDay:
           state.requestedCollectionDay === null
             ? null
-            : new Date(`${state.requestedCollectionDay}T00:00:00.000Z`),
+            : new Date(`${state.requestedCollectionDay.value}T00:00:00.000Z`),
         postponedFromDay:
           state.postponedFromDay === null
             ? null
@@ -174,7 +179,7 @@ export class PrismaCollectionBatchRepository extends CollectionBatchRepository {
       rank: line.rank,
       endToEndId: line.endToEndId,
       mandateId: line.mandateId,
-      mandateReference: line.mandateReference,
+      mandateReference: line.mandateReference.value,
       mandateSignedAt: line.mandateSignedAt,
       debtorCompanyId: line.debtorCompanyId,
       debtorName: line.debtorName,
