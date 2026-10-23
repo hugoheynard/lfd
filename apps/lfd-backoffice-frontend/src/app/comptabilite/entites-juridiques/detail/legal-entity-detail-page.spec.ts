@@ -212,6 +212,7 @@ async function render(
               importedCount: 0,
               excluded: [],
               exports: [],
+              mandates: [],
             }),
         },
       },
