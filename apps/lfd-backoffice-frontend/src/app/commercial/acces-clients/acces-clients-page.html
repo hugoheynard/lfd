@@ -44,6 +44,9 @@
         @if (row.holder; as holder) {
           <span class="primary">{{ holder.firstName }} {{ holder.lastName }}</span>
           <span class="secondary">{{ holder.email }}</span>
+          @if (row.holderInheritedFrom; as from) {
+            <span class="secondary">Détenteur du principal : {{ from.companyName }}</span>
+          }
         } @else {
           <span class="secondary">Aucun</span>
         }

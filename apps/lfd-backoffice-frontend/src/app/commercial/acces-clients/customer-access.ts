@@ -88,9 +88,18 @@ export function sortRows(rows: readonly CustomerAccessRowView[]): readonly Custo
   );
 }
 
-/** Une relance n'a de sens que pour un détenteur invité, ou dont le lien a expiré. */
+/**
+ * Une relance n'a de sens que pour un détenteur invité, ou dont le lien a expiré.
+ * Jamais sur un détenteur hérité du principal : relancer depuis le site
+ * l'inviterait dans le SITE, alors que son accès vit sur le principal — on le
+ * relance depuis la ligne du principal.
+ */
 export function canResend(row: CustomerAccessRowView): boolean {
-  return row.holder !== null && (row.state === 'invited' || row.state === 'expired');
+  return (
+    row.holder !== null &&
+    row.holderInheritedFrom === null &&
+    (row.state === 'invited' || row.state === 'expired')
+  );
 }
 
 /**
@@ -99,7 +108,7 @@ export function canResend(row: CustomerAccessRowView): boolean {
  * jamais choisi, comme la fiche l'envoie.
  */
 export function resendPayload(row: CustomerAccessRowView): InviteCompanyMemberPayload | null {
-  if (row.holder === null) {
+  if (row.holder === null || row.holderInheritedFrom !== null) {
     return null;
   }
   const { email, firstName, lastName, phone } = row.holder;

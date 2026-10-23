@@ -17,6 +17,7 @@ function row(over: Partial<CustomerAccessRowView> = {}): CustomerAccessRowView {
     companyId: 'c1',
     companyName: 'Le Comptoir',
     parent: null,
+    holderInheritedFrom: null,
     holder: { firstName: 'Camille', lastName: 'Durand', email: 'camille@test.fr', phone: '' },
     state: 'invited',
     activatedAt: null,
@@ -107,6 +108,27 @@ describe('page « Accès clients »', () => {
     expect(text.indexOf('Bravo')).toBeLessThan(text.indexOf('Alpha'));
     expect(text).toContain('Sans détenteur');
     expect(text).toContain('Activé (date inconnue)');
+  });
+
+  /**
+   * Régression (2026-10-23) : « HIP HIDEOUTS CHALET RIVE GAUCHE » apparaissait
+   * sans détenteur alors que son principal en a un.
+   */
+  it('un sous-compte sans détenteur propre montre celui du principal', async () => {
+    const access = new FakeAccess();
+    access.rows = [
+      row({
+        companyName: 'HIP HIDEOUTS CHALET RIVE GAUCHE',
+        state: 'invited',
+        parent: { companyId: 'p', companyName: 'HIP HIDEOUTS' },
+        holderInheritedFrom: { companyId: 'p', companyName: 'HIP HIDEOUTS' },
+      }),
+    ];
+    const host = (await render(access)).nativeElement as HTMLElement;
+
+    expect(host.textContent).toContain('camille@test.fr');
+    expect(host.textContent).toContain('Détenteur du principal : HIP HIDEOUTS');
+    expect(host.textContent).not.toContain("Renvoyer l'e-mail d'accès");
   });
 
   it('propose la relance à un invité, et pas à un activé', async () => {

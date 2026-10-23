@@ -59,8 +59,29 @@ async function staffWith(key: string, grants: readonly RoleGrant[]): Promise<str
 }
 
 describe("GET /admin/customer-access", () => {
-  it("rend une société sans détenteur, sous-compte compris avec son principal", async () => {
+  it("rend une société sans détenteur", async () => {
+    const company = await createCompany(ctx.prisma, { enseigne: "Seule" });
+    await ctx.prisma.company.update({ where: { id: company.id }, data: { contactEmail: "" } });
+
+    expect(await rowOf(company.id)).toMatchObject({
+      holder: null,
+      holderInheritedFrom: null,
+      state: "no_holder",
+    });
+  });
+
+  /**
+   * Régression (2026-10-23) : « HIP HIDEOUTS CHALET RIVE GAUCHE » apparaissait
+   * sans détenteur alors que son principal en a un.
+   */
+  it("un sous-compte sans détenteur propre montre celui du principal", async () => {
     const parent = await createCompany(ctx.prisma, { enseigne: "Groupe" });
+    const holder = await createUser(ctx.prisma, {
+      auth0Sub: "auth0|principal",
+      email: parent.contactEmail,
+      status: UserStatus.invited,
+    });
+    await attachTo(ctx.prisma, holder.id, parent.id, CustomerRole.owner);
     const child = await createCompany(ctx.prisma, { enseigne: "Antenne" });
     await ctx.prisma.company.update({
       where: { id: child.id },
@@ -68,11 +89,48 @@ describe("GET /admin/customer-access", () => {
     });
 
     expect(await rowOf(child.id)).toMatchObject({
-      holder: null,
-      state: "no_holder",
+      holder: { email: parent.contactEmail },
+      holderInheritedFrom: { companyId: parent.id, companyName: "Groupe" },
+      state: "invited",
       parent: { companyId: parent.id, companyName: "Groupe" },
     });
-    expect(await rowOf(parent.id)).toMatchObject({ parent: null, state: "none" });
+    expect(await rowOf(parent.id)).toMatchObject({
+      parent: null,
+      holderInheritedFrom: null,
+      state: "invited",
+    });
+  });
+
+  it("un sous-compte qui suit les contacts montre le détenteur du principal", async () => {
+    const parent = await createCompany(ctx.prisma, { enseigne: "Groupe" });
+    const child = await createCompany(ctx.prisma, { enseigne: "Antenne" });
+    await ctx.prisma.company.update({
+      where: { id: child.id },
+      data: { parentCompanyId: parent.id, contactEmail: "site@test.fr" },
+    });
+    await ctx.prisma.companyFollow.create({
+      data: { companyId: child.id, parentId: parent.id, aspect: "contacts", validFrom: daysAgo(1) },
+    });
+
+    expect(await rowOf(child.id)).toMatchObject({
+      holder: { email: parent.contactEmail },
+      holderInheritedFrom: { companyId: parent.id },
+      state: "none",
+    });
+  });
+
+  it("un sous-compte avec son détenteur et sans suivi garde le sien", async () => {
+    const parent = await createCompany(ctx.prisma, { enseigne: "Groupe" });
+    const child = await createCompany(ctx.prisma, { enseigne: "Antenne" });
+    await ctx.prisma.company.update({
+      where: { id: child.id },
+      data: { parentCompanyId: parent.id, contactEmail: "site@test.fr" },
+    });
+
+    expect(await rowOf(child.id)).toMatchObject({
+      holder: { email: "site@test.fr" },
+      holderInheritedFrom: null,
+    });
   });
 
   it("dit `invited` d'un détenteur invité qui n'est pas encore entré", async () => {

@@ -39,6 +39,7 @@ function company(overrides: Partial<CustomerAccessCompanyRow> = {}): CustomerAcc
     contactTelephone: "06",
     parentCompany: null,
     memberships: [],
+    contactsFollowedFrom: [],
     ...overrides,
   };
 }
@@ -124,10 +125,79 @@ describe("toCustomerAccessRow", () => {
 
   it("nomme le principal d'un sous-compte par son nom d'usage", () => {
     const row = toCustomerAccessRow(
-      company({ parentCompany: { id: "p1", enseigne: "", raisonSociale: "Groupe SAS" } }),
+      company({
+        parentCompany: {
+          ...company({ id: "p1", raisonSociale: "Groupe SAS" }),
+          enseigne: "",
+        },
+      }),
       NOW,
     );
 
     expect(row.parent).toEqual({ companyId: "p1", companyName: "Groupe SAS" });
+  });
+
+  describe("un sous-compte", () => {
+    const parent = {
+      id: "p1",
+      enseigne: "HIP HIDEOUTS",
+      raisonSociale: "Hip SAS",
+      contactPrenom: "Paul",
+      contactNom: "Martin",
+      contactEmail: "paul@hip.fr",
+      contactTelephone: "07",
+      memberships: [member("Paul@hip.fr", { ...ACTIVE, firstLoginAt: daysBefore(29) }, ENTERED)],
+    };
+
+    /**
+     * Régression (2026-10-23) : « HIP HIDEOUTS CHALET RIVE GAUCHE » apparaissait
+     * sans détenteur alors que son principal en a un.
+     */
+    it("un sous-compte sans détenteur propre montre celui du principal", () => {
+      const row = toCustomerAccessRow(
+        company({ contactEmail: "", parentCompany: parent, memberships: [member("x@hip.fr")] }),
+        NOW,
+      );
+
+      expect(row).toMatchObject({
+        holder: { firstName: "Paul", email: "paul@hip.fr" },
+        holderInheritedFrom: { companyId: "p1", companyName: "HIP HIDEOUTS" },
+        state: "active",
+        activatedAt: daysBefore(29).toISOString(),
+        otherMembers: 1,
+      });
+    });
+
+    it("qui suit les contacts montre le détenteur du principal, même avec le sien", () => {
+      const row = toCustomerAccessRow(
+        company({ parentCompany: parent, contactsFollowedFrom: ["p1"] }),
+        NOW,
+      );
+
+      expect(row).toMatchObject({
+        holder: { email: "paul@hip.fr" },
+        holderInheritedFrom: { companyId: "p1" },
+        state: "active",
+      });
+    });
+
+    it("avec son propre détenteur et sans suivi garde le sien", () => {
+      const row = toCustomerAccessRow(company({ parentCompany: parent }), NOW);
+
+      expect(row).toMatchObject({
+        holder: { email: "camille@test.fr" },
+        holderInheritedFrom: null,
+        state: "none",
+      });
+    });
+
+    it("dit `no_holder` si ni lui ni son principal n'ont de détenteur", () => {
+      const row = toCustomerAccessRow(
+        company({ contactEmail: "", parentCompany: { ...parent, contactEmail: "" } }),
+        NOW,
+      );
+
+      expect(row).toMatchObject({ holder: null, state: "no_holder" });
+    });
   });
 });

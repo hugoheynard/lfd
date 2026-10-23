@@ -31,6 +31,17 @@ export interface CustomerAccessRowView {
   readonly parent: { readonly companyId: string; readonly companyName: string } | null;
   /** `null` = aucun détenteur ; l'état vaut alors `no_holder`. */
   readonly holder: CustomerAccessHolderView | null;
+  /**
+   * Renseigné quand le détenteur montré est celui du PRINCIPAL : le
+   * sous-compte suit ses contacts (aspect `contacts` en cours), ou n'a pas de
+   * contact propre. `holder`, `state`, `activatedAt` et `lastInvitedAt` sont
+   * alors ceux de cette personne sur les rattachements du principal — et c'est
+   * depuis la ligne du principal qu'on la relance. `null` sinon.
+   */
+  readonly holderInheritedFrom: {
+    readonly companyId: string;
+    readonly companyName: string;
+  } | null;
   readonly state: CustomerAccessState;
   /**
    * La première connexion du détenteur (`users.first_login_at`), ISO. `null`

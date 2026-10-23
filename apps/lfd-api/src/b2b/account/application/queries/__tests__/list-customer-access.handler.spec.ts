@@ -20,6 +20,7 @@ const WITHOUT_HOLDER: CustomerAccessRowView = {
   companyName: "Le Comptoir",
   parent: null,
   holder: null,
+  holderInheritedFrom: null,
   state: "no_holder",
   activatedAt: null,
   lastInvitedAt: null,

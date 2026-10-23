@@ -17,6 +17,7 @@ function row(over: Partial<CustomerAccessRowView> = {}): CustomerAccessRowView {
     companyId: 'c1',
     companyName: 'Le Comptoir',
     parent: null,
+    holderInheritedFrom: null,
     holder: { firstName: 'Camille', lastName: 'Durand', email: 'camille@test.fr', phone: '06' },
     state: 'invited',
     activatedAt: null,
@@ -58,6 +59,8 @@ describe('accès clients — logique de la table', () => {
     expect(canResend(row({ state: 'expired' }))).toBe(true);
     expect(canResend(row({ state: 'active' }))).toBe(false);
     expect(canResend(row({ state: 'no_holder', holder: null }))).toBe(false);
+    const inherited = { companyId: 'p', companyName: 'Groupe' };
+    expect(canResend(row({ state: 'invited', holderInheritedFrom: inherited }))).toBe(false);
   });
 
   it('relance le détenteur en `owner`, avec son profil tel quel', () => {
