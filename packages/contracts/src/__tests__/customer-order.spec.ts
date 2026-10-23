@@ -169,6 +169,29 @@ describe("toCustomerOrder", () => {
     expect(order.totalCents).toBe(2_278);
     expect(order.lines[0]?.lineTotalCents).toBe(2_160);
   });
+
+  it("laisse passer l'assiette de la remise de retrait et la marque d'une ligne exclue (lot C)", () => {
+    const base = { eligibleHtCents: 1_000, eligibleTtcCents: null, excludedSkus: ["TAS"] };
+    const firstLine = STAFF_ORDER.lines[0];
+    if (firstLine === undefined) {
+      throw new Error("la commande de référence a une ligne");
+    }
+    const order = toCustomerOrder({
+      ...STAFF_ORDER,
+      pickupDiscountBase: base,
+      lines: [{ ...firstLine, pickupDiscountEligible: false }],
+    });
+
+    expect(order.pickupDiscountBase).toEqual(base);
+    expect(order.lines[0]?.pickupDiscountEligible).toBe(false);
+  });
+
+  it("n'ajoute aucune clé quand rien n'est exclu", () => {
+    const order = toCustomerOrder(STAFF_ORDER);
+
+    expect(order).not.toHaveProperty("pickupDiscountBase");
+    expect(order.lines[0]).not.toHaveProperty("pickupDiscountEligible");
+  });
 });
 
 /**

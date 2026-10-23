@@ -12,6 +12,7 @@ import {
   fulfillmentMethodSchema,
   type OrderOrigin,
   orderOriginSchema,
+  type PickupDiscountBaseView,
   type VatShareView,
   vatSharesSchema,
 } from "./order.js";
@@ -167,6 +168,14 @@ export const sheetMoneySchema = z.object({
   totalCents: z.number().int(),
   currency: z.string().min(1),
   settlement: settlementRegimeSchema,
+  /** Cf. {@link SheetMoney.pickupDiscountBase} — absente d'une feuille sans exclusion. */
+  pickupDiscountBase: z
+    .object({
+      eligibleHtCents: z.number().int(),
+      eligibleTtcCents: z.number().int().nullable(),
+      excludedSkus: z.array(z.string().min(1)),
+    })
+    .optional(),
 });
 export interface SheetMoney {
   readonly subtotalCents: number;
@@ -198,6 +207,12 @@ export interface SheetMoney {
   readonly currency: string;
   /** Le régime de règlement — figé à la passation, cf. `settlementRegimeSchema`. */
   readonly settlement: SettlementRegime;
+  /**
+   * L'assiette de la remise de retrait, **lue sur les lignes figées** de la
+   * commande — présente seulement quand une remise s'applique et qu'une ligne
+   * en est exclue. Le bon en tire « sur X € éligibles ».
+   */
+  readonly pickupDiscountBase?: PickupDiscountBaseView;
 }
 
 /**
@@ -240,6 +255,8 @@ export const clientSheetLineSchema = z.object({
   unitPriceTtcCents: z.number().int().nullable(),
   lineTotalTtcCents: z.number().int().nullable(),
   priceLabels: z.array(z.string().min(1)),
+  /** Cf. {@link ClientSheetLine.pickupDiscountEligible}. */
+  pickupDiscountEligible: z.literal(false).optional(),
 });
 export interface ClientSheetLine {
   readonly productName: string;
@@ -272,6 +289,11 @@ export interface ClientSheetLine {
   /** Le total de la ligne taxe comprise — `null` aux mêmes deux conditions. */
   readonly lineTotalTtcCents: number | null;
   readonly priceLabels: readonly string[];
+  /**
+   * `false` quand la remise de retrait ne couvrait pas la ligne (figé à la
+   * passation) — le bon la marque d'un astérisque. Absent sinon.
+   */
+  readonly pickupDiscountEligible?: false;
 }
 
 /**

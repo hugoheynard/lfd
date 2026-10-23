@@ -482,6 +482,13 @@ export interface OrderLineView {
    * l'affirmation la plus dangereuse que ce dépôt puisse produire.
    */
   readonly allergens: OrderLineAllergens | null;
+  /**
+   * `false` quand la remise de retrait ne couvrait pas cette ligne — **figé à
+   * la passation** (`order_lines.pickup_discount_eligible`), jamais relu sur
+   * la règle du jour. Absent quand elle était couverte, et sur toute commande
+   * d'avant le drapeau, qui l'étaient toutes.
+   */
+  readonly pickupDiscountEligible?: false;
 }
 
 /** Une mention d'étiquette telle qu'elle a été **dite au client**, ce jour-là. */
@@ -593,6 +600,28 @@ export const vatShareSchema = z.object({
 export const vatSharesSchema = z.array(vatShareSchema);
 export type VatShareView = z.infer<typeof vatShareSchema>;
 
+/**
+ * **L'assiette de la remise de retrait**, quand elle ne couvre pas tout le
+ * panier (plan `livraisons/clientele/plan-remise-retrait-par-clientele-et-exclusions.md`,
+ * lot C) : de quoi écrire « remise retrait sur X € éligibles ».
+ *
+ * Servie **seulement** quand une remise de retrait s'applique ET qu'au moins
+ * une ligne en est exclue ; absente sinon — un panier entièrement couvert n'a
+ * rien de neuf à dire. Montants en centimes, déjà arrondis par ligne : ce sont
+ * des sommes de totaux de ligne, jamais une ventilation.
+ */
+export interface PickupDiscountBaseView {
+  /** La somme HT des lignes couvertes — l'assiette sur laquelle la remise a été calculée. */
+  readonly eligibleHtCents: number;
+  /**
+   * La somme TTC des mêmes lignes, celle qu'un particulier lit. `null` quand
+   * une ligne couverte n'a pas de TTC scellé (commande pro, ou antérieure à R3).
+   */
+  readonly eligibleTtcCents: number | null;
+  /** Les SKU que la remise ne couvre pas, dans l'ordre des lignes. */
+  readonly excludedSkus: readonly string[];
+}
+
 export interface OrderView {
   readonly id: string;
   readonly orderNumber: string;
@@ -646,6 +675,12 @@ export interface OrderView {
    * snapshot).
    */
   readonly discountAdjustment: CartAdjustment | null;
+  /**
+   * L'assiette de la remise de retrait, calculée sur les lignes **figées** —
+   * présente seulement quand une remise s'applique et qu'une ligne en est
+   * exclue. Cf. {@link PickupDiscountBaseView}.
+   */
+  readonly pickupDiscountBase?: PickupDiscountBaseView;
   /** Frais de livraison (zone) ajouté, HT, en centimes. `0` si aucun. */
   readonly deliveryFeeCents: number;
   /**
@@ -877,6 +912,8 @@ export interface CustomerOrderLineView {
   readonly pricing: CustomerOrderLinePricingTrace | null;
   /** Ce qui était déclaré au moment de commander — cf. {@link OrderLineView.allergens}. */
   readonly allergens: OrderLineAllergens | null;
+  /** Cf. {@link OrderLineView.pickupDiscountEligible}. */
+  readonly pickupDiscountEligible?: false;
 }
 
 /**
@@ -912,6 +949,8 @@ export interface CustomerOrderView {
   readonly subtotalCents: number;
   readonly discountCents: number;
   readonly discountAdjustment: CartAdjustment | null;
+  /** Cf. {@link OrderView.pickupDiscountBase}. */
+  readonly pickupDiscountBase?: PickupDiscountBaseView;
   readonly voucherDiscountCents: number;
   readonly deliveryFeeCents: number;
   readonly deliveryFeeAdjustment: CartAdjustment | null;
@@ -972,6 +1011,9 @@ export function toCustomerOrder(view: OrderView): CustomerOrderView {
     subtotalCents: view.subtotalCents,
     discountCents: view.discountCents,
     discountAdjustment: view.discountAdjustment,
+    ...(view.pickupDiscountBase === undefined
+      ? {}
+      : { pickupDiscountBase: view.pickupDiscountBase }),
     voucherDiscountCents: view.voucherDiscountCents,
     deliveryFeeCents: view.deliveryFeeCents,
     deliveryFeeAdjustment: view.deliveryFeeAdjustment,
@@ -1005,6 +1047,7 @@ export function toCustomerOrder(view: OrderView): CustomerOrderView {
               floored: line.pricing.floored,
             },
       allergens: line.allergens,
+      ...(line.pickupDiscountEligible === false ? { pickupDiscountEligible: false as const } : {}),
     })),
     // Pas de QR tant que la commande n'est pas réglée — cf. `exposedHandoverToken`.
     handoverToken: exposedHandoverToken(view),

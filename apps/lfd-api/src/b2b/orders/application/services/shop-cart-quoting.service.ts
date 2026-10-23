@@ -22,6 +22,7 @@ import { LoyaltyVoucherQuoteReader } from "../../domain/ports/loyalty-voucher-qu
 import { OrderDeliveryVatReader } from "../../domain/ports/order-delivery-vat.reader.js";
 import { deliveryExtraOf } from "../../domain/services/vat.js";
 import { voucherImputationCents } from "../../domain/services/voucher-imputation.js";
+import { pickupDiscountBaseOf } from "../../domain/services/pickup-discount-base.js";
 import type { PricedLine } from "../../domain/services/pickup-discount-eligibility.js";
 import { voucherTotalEffectCents } from "../../domain/services/voucher-total-effect.js";
 
@@ -164,6 +165,17 @@ export class ShopCartQuoting {
           : [deliveryExtraOf(terms.deliveryFeeCents, deliveryVatMode)],
     };
     const ventilated = ventilateVat(ventilation);
+    // « Remise retrait sur X € éligibles » : la clé n'existe que si une ligne
+    // est exclue d'une remise qui s'applique (lot C).
+    const base = pickupDiscountBaseOf(
+      terms.discountAdjustment !== null,
+      lines.map((line) => ({
+        sku: line.sku,
+        lineTotalCents: line.lineTotalCents,
+        lineTotalTtcCents: line.lineTotalTtcCents,
+        eligible: !terms.ineligibleSkus.has(line.sku),
+      })),
+    );
 
     const view: ShopQuoteView = {
       lines,
@@ -171,6 +183,7 @@ export class ShopCartQuoting {
       // `ventilated.discountCents` porte la somme des deux : on les rend à part.
       discountCents: terms.discountCents,
       discountAdjustment: terms.discountAdjustment,
+      ...(base === null ? {} : { pickupDiscountBase: base }),
       voucherDiscountCents,
       deliveryFeeCents: terms.deliveryFeeCents,
       deliveryVatMode,

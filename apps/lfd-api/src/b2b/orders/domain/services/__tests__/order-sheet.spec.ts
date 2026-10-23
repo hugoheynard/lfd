@@ -311,3 +311,36 @@ describe("le bon pro ou public", () => {
     },
   );
 });
+
+describe("la remise de retrait sur ses seules lignes éligibles (lot C)", () => {
+  const excluded = line({ sku: "TAS", lineTotalCents: 1_250, pickupDiscountEligible: false });
+
+  it("marque la ligne exclue et dit l'assiette, relue sur les lignes FIGÉES", () => {
+    const sheet = clientSheetOf(order({ discountCents: 84, lines: [line(), excluded] }));
+
+    expect(sheet.lines.map((l) => l.pickupDiscountEligible)).toEqual([undefined, false]);
+    expect(sheet.money.pickupDiscountBase).toEqual({
+      eligibleHtCents: 840,
+      eligibleTtcCents: null,
+      excludedSkus: ["TAS"],
+    });
+  });
+
+  it("ignore l'assiette que la vue porterait : la feuille ne lit que ses lignes", () => {
+    const sheet = clientSheetOf(
+      order({
+        discountCents: 84,
+        lines: [line(), excluded],
+        pickupDiscountBase: { eligibleHtCents: 1, eligibleTtcCents: 1, excludedSkus: [] },
+      }),
+    );
+
+    expect(sheet.money.pickupDiscountBase?.eligibleHtCents).toBe(840);
+  });
+
+  it("n'en dit rien sans remise — la clé est absente", () => {
+    const sheet = clientSheetOf(order({ discountCents: 0, lines: [line(), excluded] }));
+
+    expect(sheet.money).not.toHaveProperty("pickupDiscountBase");
+  });
+});

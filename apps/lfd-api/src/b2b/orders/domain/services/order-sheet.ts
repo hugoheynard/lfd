@@ -13,6 +13,8 @@ import type {
   StaffSheetLine,
 } from "@lfd/contracts";
 
+import { frozenPickupDiscountBaseOf } from "./pickup-discount-base.js";
+
 /**
  * **La projection d'une commande en bon de commande**, par audience.
  *
@@ -105,6 +107,8 @@ function moneyOf(order: OrderView): SheetMoney {
     // Calculé UNE fois par le lecteur (`settlementRegimeOf`), et relu ici :
     // la fiche, la vue et les écrans disent le même régime (F5).
     settlement: order.settlement,
+    // Recalculé depuis les lignes FIGÉES plutôt que recopié de la vue (lot C).
+    ...frozenPickupDiscountBaseOf(order),
   };
 }
 
@@ -153,6 +157,7 @@ function clientLineOf(line: OrderLineView): ClientSheetLine {
     unitPriceTtcCents: line.unitPriceTtcCents,
     lineTotalTtcCents: line.lineTotalTtcCents,
     priceLabels: priceLabelsOf(line),
+    ...(line.pickupDiscountEligible === false ? { pickupDiscountEligible: false as const } : {}),
   };
 }
 

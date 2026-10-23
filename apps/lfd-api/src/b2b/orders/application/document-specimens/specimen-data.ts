@@ -11,6 +11,8 @@ import {
 import { millicentsFromCents } from "@lfd/money";
 
 import { Order, type DraftOrderInput, type OrderToPlace } from "../../domain/entities/order.js";
+import { frozenPickupDiscountBaseOf } from "../../domain/services/pickup-discount-base.js";
+import { eligibleSubtotalCents } from "../../domain/services/pickup-discount-eligibility.js";
 import { settlementRegimeOf } from "../../domain/services/settlement-regime.js";
 import type { OrderLineInput } from "../../domain/value-objects/order-line.js";
 
@@ -69,6 +71,15 @@ const LINES: readonly OrderLineInput[] = [
   line("EXEMPLE-TAS", "Tasse La Folie Coffee", 1250, 20, 2),
 ];
 
+/**
+ * Le panier du bon public : le même, la tasse **hors remise de retrait** —
+ * c'est elle qui montre « sur X € éligibles » et l'astérisque (lot C du plan
+ * des exclusions). Le drapeau est celui qu'une passation aurait figé.
+ */
+const PUBLIC_LINES: readonly OrderLineInput[] = LINES.map((input) =>
+  input.sku === "EXEMPLE-TAS" ? { ...input, pickupDiscountEligible: false } : input,
+);
+
 /** La remise du point (5 %), et le barème d'une zone de livraison. */
 const DISCOUNT: CartAdjustment = { mode: "percent", bp: 500 };
 const DELIVERY_FEE_CENTS = 1_500;
@@ -100,8 +111,8 @@ function line(
  * sont refusés par l'agrégat (V5 du plan
  * `plan-remise-retrait-par-clientele-et-exclusions.md`, 2026-10-22).
  *
- * La remise se calcule sur le sous-total que l'agrégat rend : un premier
- * brouillon sans remise le donne, le second porte la remise que
+ * La remise se calcule sur l'assiette des lignes éligibles, relue sur le
+ * brouillon sans remise que l'agrégat rend, le second porte la remise que
  * `discountCentsOf` en déduit — exactement la garde que l'agrégat refait.
  */
 function specimenOrder(variant: SheetVariant, requestedFor: Date): Order {
@@ -109,10 +120,17 @@ function specimenOrder(variant: SheetVariant, requestedFor: Date): Order {
     return Order.draft(proInput(requestedFor));
   }
   const base = publicInput(requestedFor);
-  const subtotalCents = Order.draft(base).earningAmounts.subtotalCents;
+  // Sérialiser demande un règlement décidé ; celui du brouillon n'est lu nulle part.
+  const draft = Order.draft(base);
+  draft.payByCard("specimen-draft");
+  const drafted = draft.toPersistence().lines;
+  const eligibleCents = eligibleSubtotalCents(
+    drafted.map((snapshot) => ({ sku: snapshot.sku, htCents: snapshot.lineTotalCents })),
+    new Set(drafted.filter((snapshot) => !snapshot.pickupDiscountEligible).map((s) => s.sku)),
+  );
   return Order.draft({
     ...base,
-    discountCents: discountCentsOf(DISCOUNT, subtotalCents),
+    discountCents: discountCentsOf(DISCOUNT, eligibleCents),
     discountAdjustment: DISCOUNT,
   });
 }
@@ -177,6 +195,7 @@ function proInput(requestedFor: Date): DraftOrderInput {
 function publicInput(requestedFor: Date): DraftOrderInput {
   return {
     ...common(requestedFor),
+    lines: PUBLIC_LINES,
     companyId: null,
     billedCompanyId: null,
     fulfillment: {
@@ -261,6 +280,7 @@ function sheetOf(
       unitPriceTtcCents: snapshot.unitPriceTtcCents,
       lineTotalTtcCents: snapshot.lineTotalTtcCents,
       priceLabels: [],
+      ...(snapshot.pickupDiscountEligible ? {} : { pickupDiscountEligible: false as const }),
     })),
     money: {
       subtotalCents: state.subtotalCents,
@@ -274,6 +294,15 @@ function sheetOf(
       totalCents: state.totalCents,
       currency: "EUR",
       settlement,
+      ...frozenPickupDiscountBaseOf({
+        discountCents: state.discountCents,
+        lines: state.lines.map((snapshot) => ({
+          sku: snapshot.sku,
+          lineTotalCents: snapshot.lineTotalCents,
+          lineTotalTtcCents: snapshot.lineTotalTtcCents,
+          ...(snapshot.pickupDiscountEligible ? {} : { pickupDiscountEligible: false as const }),
+        })),
+      }),
     },
   };
 }

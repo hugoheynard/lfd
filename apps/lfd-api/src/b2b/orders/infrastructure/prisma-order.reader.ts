@@ -45,6 +45,7 @@ import {
 import { companyDisplayName, vatSharesSchema, type VatShareView } from "@lfd/contracts";
 
 import { orderOriginOf } from "../domain/services/order-origin.js";
+import { pickupDiscountBaseOf } from "../domain/services/pickup-discount-base.js";
 import { settlementRegimeOf } from "../domain/services/settlement-regime.js";
 
 /** Une ligne de commande telle que Prisma la sélectionne. */
@@ -65,6 +66,7 @@ interface OrderLineRow {
   readonly allergens: Prisma.JsonValue | null;
   readonly pricingCommitment: Prisma.JsonValue | null;
   readonly pricingRejected: Prisma.JsonValue | null;
+  readonly pickupDiscountEligible: boolean;
 }
 
 /** Une commande telle que Prisma la sélectionne. */
@@ -173,6 +175,7 @@ export const ORDER_SELECT = {
       pricingCommitment: true,
       pricingRejected: true,
       allergens: true,
+      pickupDiscountEligible: true,
     },
   },
   // Les remboursements Stripe constatés (lot R1), dans l'ordre du constat.
@@ -517,6 +520,7 @@ export function toOrderView(row: OrderRow): OrderView {
     subtotalCents: row.subtotalCents,
     discountCents: row.discountCents,
     discountAdjustment: parseAdjustment(row.discountAdjustment),
+    ...pickupDiscountBaseFieldOf(row),
     voucherDiscountCents: row.voucherDiscountCents,
     // Même indulgence, même barrière : un barème illisible rend `null` — la
     // facture perd le libellé de ses frais, pas son montant.
@@ -601,7 +605,26 @@ function toLineView(line: OrderLineRow): OrderLineView {
     lineTotalTtcCents: line.lineTotalTtcCents,
     pricing: parseTrace(line),
     allergens: parseAllergens(line.allergens),
+    ...(line.pickupDiscountEligible ? {} : { pickupDiscountEligible: false as const }),
   };
+}
+
+/**
+ * « Remise retrait sur X € éligibles », lue sur les lignes **figées** — le
+ * drapeau posé à la passation, jamais la règle du jour (lot C). Absente sans
+ * remise ou sans ligne exclue.
+ */
+function pickupDiscountBaseFieldOf(row: OrderRow): Pick<OrderView, "pickupDiscountBase"> {
+  const base = pickupDiscountBaseOf(
+    row.discountCents > 0,
+    row.lines.map((line) => ({
+      sku: line.sku,
+      lineTotalCents: line.lineTotalCents,
+      lineTotalTtcCents: line.lineTotalTtcCents,
+      eligible: line.pickupDiscountEligible,
+    })),
+  );
+  return base === null ? {} : { pickupDiscountBase: base };
 }
 
 /**

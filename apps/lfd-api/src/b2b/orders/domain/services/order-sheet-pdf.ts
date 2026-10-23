@@ -22,7 +22,11 @@ import {
 import { sheetShowsTtc } from "./order-sheet.js";
 import { header } from "./order-sheet-pdf-header.js";
 import { money, unitPrice } from "./order-sheet-pdf-format.js";
-import { PRETAX_ONLY_NOTE, totalRows } from "./order-sheet-pdf-totals.js";
+import {
+  PICKUP_DISCOUNT_EXCLUDED_NOTE,
+  PRETAX_ONLY_NOTE,
+  totalRows,
+} from "./order-sheet-pdf-totals.js";
 
 /**
  * **Le bon de commande en PDF** — l'exemplaire qu'on tend au client.
@@ -224,7 +228,9 @@ function articleRow(
   put(doc, String(line.quantity), CONTENT_LEFT, y - 1.2 * MM, { size: 14, bold: true });
   // Le nom est BORNÉ à sa colonne ; sans SKU, la colonne s'étend jusqu'au prix.
   const nameRight = showsSku(sheet) ? X_SKU_RIGHT - COL_SKU : X_SKU_RIGHT - 2 * MM;
-  put(doc, line.productName, X_NAME, y, { size: 11.5, width: nameRight - X_NAME });
+  // L'astérisque d'une ligne hors remise de retrait, expliqué au pied (lot C).
+  const name = line.pickupDiscountEligible === false ? `${line.productName} *` : line.productName;
+  put(doc, name, X_NAME, y, { size: 11.5, width: nameRight - X_NAME });
   if (showsSku(sheet)) {
     putRight(doc, line.sku, X_SKU_RIGHT, y + 0.8 * MM, 8.5);
   }
@@ -323,6 +329,10 @@ function footer(doc: Doc, sheet: ClientSheet, top: number): void {
   let y = top + 4 * MM;
   rule(doc, y, 1);
   y += 3 * MM;
+  if (sheet.lines.some((line) => line.pickupDiscountEligible === false)) {
+    put(doc, PICKUP_DISCOUNT_EXCLUDED_NOTE, CONTENT_LEFT, y, { size: 9 });
+    y += 4 * MM;
+  }
   put(doc, "Ce n'est pas une facture.", CONTENT_LEFT, y, { size: 9, bold: true });
   y += 4 * MM;
   if (sheet.variant === "public") {

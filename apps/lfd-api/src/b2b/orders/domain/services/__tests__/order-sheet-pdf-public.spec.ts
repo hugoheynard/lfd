@@ -150,3 +150,47 @@ describe("le QR de retrait", () => {
     expect(first.equals(second)).toBe(true);
   });
 });
+
+describe("une ligne hors remise de retrait (lot C)", () => {
+  const MUG = {
+    ...LINE,
+    sku: "TAS",
+    productName: "Tasse",
+    quantity: 1,
+    unitPriceMillicents: 1_250_000,
+    vatRate: 20,
+    lineTotalCents: 1_250,
+    unitPriceTtcCents: 1_500,
+    lineTotalTtcCents: 1_500,
+    pickupDiscountEligible: false as const,
+  };
+
+  it("marque la ligne d'un astérisque, l'explique au pied, et dit l'assiette", async () => {
+    const printed = await text(
+      publicSheet({
+        lines: [SEALED, MUG],
+        money: {
+          ...publicSheet().money,
+          discountCents: 1_184,
+          totalCents: 12_491 + 1_500 - 1_249,
+          pickupDiscountBase: {
+            eligibleHtCents: 11_840,
+            eligibleTtcCents: 12_491,
+            excludedSkus: ["TAS"],
+          },
+        },
+      }),
+    );
+
+    expect(printed).toContain("Tasse *");
+    expect(printed).toContain("Non concerné par la remise retrait.");
+    expect(printed).toMatch(/Remise retrait sur 124,91.{0,3}éligibles/u);
+  });
+
+  it("sans ligne exclue, ni astérisque ni mention", async () => {
+    const printed = await text(publicSheet());
+
+    expect(printed).not.toContain("Non concerné par la remise retrait");
+    expect(printed).not.toContain("éligibles");
+  });
+});

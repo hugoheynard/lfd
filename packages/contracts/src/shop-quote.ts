@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import type { CartAdjustment } from "./cart-adjustment.js";
 import type { DeliveryVatMode } from "./order-delivery-vat.js";
-import { orderQuantitySchema } from "./order.js";
+import { orderQuantitySchema, type PickupDiscountBaseView } from "./order.js";
 
 /**
  * **Ce que le panier de la boutique coûte**, demandé au serveur avant de
@@ -156,6 +156,15 @@ export interface ShopQuoteView {
    * d'API, et empêché de la traduire.
    */
   readonly discountAdjustment: CartAdjustment | null;
+  /**
+   * L'assiette de la remise de retrait — **absente** sauf quand une remise
+   * s'applique et qu'une ligne en est exclue (« remise retrait sur X €
+   * éligibles »). `discountCents` est calculé sur `eligibleHtCents` : la
+   * remise est un montant hors taxe, comme le reste du devis.
+   * `eligibleTtcCents` y est toujours un nombre (le devis scelle un TTC par
+   * ligne). Cf. {@link PickupDiscountBaseView}.
+   */
+  readonly pickupDiscountBase?: PickupDiscountBaseView;
   /**
    * La part du **bon de fidélité** imputée, HT, positive. Zéro sans bon. Elle
    * s'impute après la remise, sur les marchandises seules, comme à la commande.

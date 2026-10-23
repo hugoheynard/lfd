@@ -119,6 +119,23 @@ produits du catalogue publié, en sélection multiple.
   exclue.
 - Le bon porte la même mention.
 
+> **Partie serveur bâtie le 2026-10-23 (non commitée à l'écriture).** Le front
+> de la boutique reste à faire. Contrat (`@lfd/contracts`), tout facultatif :
+> `PickupDiscountBaseView { eligibleHtCents, eligibleTtcCents, excludedSkus }`,
+> servi en `pickupDiscountBase` sur `ShopQuoteView` (devis), `OrderView` /
+> `CustomerOrderView` (commande relue) et `SheetMoney` (bon) — **absent** sans
+> remise ou sans ligne exclue. Une ligne exclue porte `pickupDiscountEligible:
+false` (`OrderLineView`, `CustomerOrderLineView`, `ClientSheetLine`), absent
+> sinon. La remise est hors taxe : `eligibleHtCents` est son assiette ;
+> `eligibleTtcCents` est la somme des TTC de ligne, `null` sans TTC scellé
+> (commande pro). Un seul calcul, `pickupDiscountBaseOf`
+> (`apps/lfd-api/src/b2b/orders/domain/services/pickup-discount-base.ts`), sur
+> `eligibleSubtotalCents` du lot A ; la commande et le bon le refont sur les
+> lignes **figées**. Le bon écrit « Remise retrait sur X € éligibles » (HT au
+> pro, TTC au public), un astérisque sur la ligne exclue, et « * Non concerné
+> par la remise retrait. » au pied ; la tasse du bon public de la planche est
+> exclue pour le montrer.
+
 ## 5. Décisions (Hugo, 2026-10-22)
 
 - **Q1 — oui, on peut réinclure un produit** dans une catégorie exclue (« c'est

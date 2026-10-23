@@ -27,6 +27,28 @@ export interface TotalRow {
 export const PRETAX_ONLY_NOTE = "TVA et TTC sur la facture du mois.";
 
 /**
+ * La mention qui explique l'astérisque d'une ligne exclue de la remise de
+ * retrait — écrite une fois, au pied du bon (lot C).
+ */
+export const PICKUP_DISCOUNT_EXCLUDED_NOTE = "* Non concerné par la remise retrait.";
+
+/**
+ * Le libellé de la remise : « Remise » tout court quand elle couvre tout le
+ * bon, « Remise retrait sur X € éligibles » quand une ligne en est exclue.
+ * X est l'assiette FIGÉE, dans la convention du bon : HT pour le pro, TTC
+ * pour le public quand ses lignes en portent un.
+ */
+function discountLabel(totals: SheetMoney, ttc: boolean): string {
+  const base = totals.pickupDiscountBase;
+  if (base === undefined) {
+    return "Remise";
+  }
+  const cents =
+    ttc && base.eligibleTtcCents !== null ? base.eligibleTtcCents : base.eligibleHtCents;
+  return `Remise retrait sur ${money(cents)} éligibles`;
+}
+
+/**
  * Les gestes entre les articles et le total — remise, bon, livraison,
  * surtaxe —, chacun seulement s'il a eu lieu. Communs aux deux bons.
  */
@@ -34,7 +56,7 @@ function adjustmentRows(totals: SheetMoney): readonly TotalRow[] {
   return [
     ...(totals.discountCents === 0
       ? []
-      : [{ label: "Remise", value: money(-totals.discountCents) }]),
+      : [{ label: discountLabel(totals, false), value: money(-totals.discountCents) }]),
     // Le bon de fidélité, après la remise et sur sa propre ligne (plan des points, C7).
     ...(totals.voucherDiscountCents === 0
       ? []
@@ -116,9 +138,9 @@ interface Gesture {
 }
 
 /** Les gestes qui ont eu lieu, signés comme ils pèsent sur le total. */
-function gesturesOf(totals: SheetMoney): readonly Gesture[] {
+function gesturesOf(totals: SheetMoney, ttc: boolean): readonly Gesture[] {
   return [
-    { label: "Remise", pretaxCents: -totals.discountCents },
+    { label: discountLabel(totals, ttc), pretaxCents: -totals.discountCents },
     { label: "Bon de fidélité", pretaxCents: -totals.voucherDiscountCents },
     { label: "Livraison", pretaxCents: totals.deliveryFeeCents },
     { label: "Surtaxe de commande tardive", pretaxCents: totals.lateFeeCents },
@@ -139,7 +161,7 @@ function gesturesOf(totals: SheetMoney): readonly Gesture[] {
  * honnête n'existe, ils restent en HT et le disent.
  */
 function taxedGestureRows(sheet: ClientSheet): readonly TotalRow[] {
-  const gestures = gesturesOf(sheet.money);
+  const gestures = gesturesOf(sheet.money, sheetShowsTtc(sheet));
   const pretaxSum = gestures.reduce((sum, gesture) => sum + gesture.pretaxCents, 0);
   if (gestures.length === 0) {
     return [];

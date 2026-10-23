@@ -10,7 +10,13 @@
  */
 import { randomUUID } from "node:crypto";
 
-import type { CreatedPickupResponse, PlacedOrderResponse, ShopQuoteView } from "@lfd/contracts";
+import type {
+  ClientSheet,
+  CreatedPickupResponse,
+  CustomerOrderView,
+  PlacedOrderResponse,
+  ShopQuoteView,
+} from "@lfd/contracts";
 
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
@@ -153,9 +159,16 @@ describe("la remise de retrait, une famille exclue", () => {
         .send({ lines, fulfillment: { method: "pickup", pickupAddressId: point } })
         .expect(200),
     );
-    const eligible = quote.lines.find((line) => line.sku === croissant.sku)?.lineTotalCents ?? 0;
+    const eligibleLine = quote.lines.find((line) => line.sku === croissant.sku);
+    const eligible = eligibleLine?.lineTotalCents ?? 0;
     expect(eligible).toBeGreaterThan(0);
     expect(quote.discountCents).toBe(Math.round(eligible / 10));
+    // Lot C : « remise retrait sur X € éligibles », X étant l'assiette même de la remise.
+    expect(quote.pickupDiscountBase).toEqual({
+      eligibleHtCents: eligible,
+      eligibleTtcCents: eligibleLine?.lineTotalTtcCents,
+      excludedSkus: [other.sku],
+    });
 
     const placed = jsonBody<PlacedOrderResponse>(
       await ctx
@@ -199,5 +212,26 @@ describe("la remise de retrait, une famille exclue", () => {
           categoryId,
         })),
     );
+
+    // Lot C : la commande relue et son bon disent la même assiette, depuis
+    // les lignes FIGÉES — HT sur une commande pro, sans TTC scellé.
+    const expectedBase = {
+      eligibleHtCents: eligible,
+      eligibleTtcCents: null,
+      excludedSkus: [other.sku],
+    };
+    const view = jsonBody<CustomerOrderView>(
+      await ctx.asSub(ACTIVE).get(`/orders/${placed.id}`).expect(200),
+    );
+    expect(view.pickupDiscountBase).toEqual(expectedBase);
+    expect(view.lines.find((line) => line.sku === other.sku)?.pickupDiscountEligible).toBe(false);
+    expect(view.lines.find((line) => line.sku === croissant.sku)).not.toHaveProperty(
+      "pickupDiscountEligible",
+    );
+    const sheet = jsonBody<ClientSheet>(
+      await ctx.asSub(ACTIVE).get(`/orders/${placed.id}/bon`).expect(200),
+    );
+    expect(sheet.money.pickupDiscountBase).toEqual(expectedBase);
+    expect(sheet.lines.find((line) => line.sku === other.sku)?.pickupDiscountEligible).toBe(false);
   });
 });

@@ -79,3 +79,31 @@ describe("le pied du bon public", () => {
     expect(rows.map((row) => row.label)).toContain("Livraison (HT)");
   });
 });
+
+describe("la remise de retrait sur ses lignes éligibles (lot C)", () => {
+  const BASE = { eligibleHtCents: 10_000, eligibleTtcCents: 10_550, excludedSkus: ["TAS"] };
+
+  it("bon public : « sur X € éligibles » en TTC, et la colonne retombe toujours", () => {
+    const rows = totalRows(
+      publicSheet({ discountCents: 1_184, totalCents: 11_242, pickupDiscountBase: BASE }),
+    );
+
+    const label = rows[1]?.label ?? "";
+    expect(label).toMatch(/^Remise retrait sur 105,50\s€ éligibles$/u);
+    columnAddsUp(rows);
+  });
+
+  it("bon pro : l'assiette en HT, même quand un TTC existe", () => {
+    const rows = totalRows(sheet({ money: { ...sheet().money, pickupDiscountBase: BASE } }));
+
+    expect(rows.map((row) => row.label)).toContainEqual(
+      expect.stringMatching(/^Remise retrait sur 100,00\s€ éligibles$/u),
+    );
+  });
+
+  it("sans ligne exclue, la remise garde son libellé court", () => {
+    const rows = totalRows(sheet());
+
+    expect(rows.map((row) => row.label)).toContain("Remise");
+  });
+});

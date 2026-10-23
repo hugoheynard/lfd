@@ -200,6 +200,8 @@ describe("le devis de la vitrine", () => {
       { rate: 10, amountCents: 108 },
     ]);
     expect(view.totalCents).toBe(2_327);
+    // Rien d'exclu : l'assiette n'a rien de neuf à dire, la clé est absente (lot C).
+    expect(view).not.toHaveProperty("pickupDiscountBase");
   });
 
   /**
