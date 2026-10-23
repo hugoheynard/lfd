@@ -53,6 +53,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // La liste de TOUTES les commandes (plan-page-commandes.md, C2).
   commandes: 'b2b_orders:read',
   'commandes/:orderId': 'b2b_orders:read',
+  'commandes/:orderId/modifier': 'b2b_place_order:write',
   'comptes-clients/:id/nouvelle-commande': 'b2b_place_order:write',
   // Cible du QR de colisage imprimé sur la fiche d'atelier — c'est une VALEUR
   // encodée dans du papier en circulation, pas un choix d'arborescence, d'où le
