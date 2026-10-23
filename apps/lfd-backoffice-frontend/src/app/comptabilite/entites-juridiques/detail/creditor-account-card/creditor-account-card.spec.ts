@@ -12,8 +12,8 @@ import { CreditorAccountCard } from './creditor-account-card';
  *
  * - le geste se **décrit** et remonte (`saved`), avec le RIB recopié, nettoyé,
  *   et le pays en majuscules ;
- * - 🔴 **l'IBAN se vide à chaque relecture** de l'entité, et le reste de la
- *   recopie se reprend de ce que le serveur a rendu.
+ * - 🔴 **l'IBAN ne se vide qu'après un succès** ; une relecture de la fiche ne
+ *   touche jamais une saisie en cours, et un échec la garde.
  */
 
 function entity(over: Partial<LegalEntityView> = {}): LegalEntityView {
@@ -85,7 +85,10 @@ interface Wire {
   saved: { action: () => Promise<unknown>; said: string }[];
 }
 
-function boot(row: LegalEntityView): {
+function boot(
+  row: LegalEntityView,
+  fail = false,
+): {
   fixture: ComponentFixture<CreditorAccountCard>;
   wire: Wire;
 } {
@@ -99,7 +102,7 @@ function boot(row: LegalEntityView): {
         useValue: {
           setCreditorAccount: (id: string, payload: SetCreditorAccountPayload): Promise<void> => {
             wire.writes.push({ id, payload });
-            return Promise.resolve();
+            return fail ? Promise.reject(new Error('refusé')) : Promise.resolve();
           },
         },
       },
@@ -178,7 +181,11 @@ describe('CreditorAccountCard', () => {
     expect(wire.saved).toEqual([]);
   });
 
-  it('vide l’IBAN et reprend la recopie à chaque relecture de l’entité', () => {
+  /**
+   * Régression : la fiche se relit après le geste de n'importe quelle autre
+   * carte, et chaque relecture vidait l'IBAN — une saisie en cours disparaissait.
+   */
+  it('une relecture de la fiche effaçait l’IBAN en cours de saisie', () => {
     const { fixture } = boot(entity(RECORDED));
     field(fixture, 'IBAN').value.set('FR1420041010050500013M02606');
     field(fixture, 'BIC').value.set('AUTREBIC');
@@ -187,7 +194,46 @@ describe('CreditorAccountCard', () => {
     fixture.componentRef.setInput('entity', entity({ ...RECORDED, creditorBic: 'NOUVBIC' }));
     fixture.detectChanges();
 
-    expect(field(fixture, 'IBAN').value()).toBe('');
+    expect(field(fixture, 'IBAN').value()).toBe('FR1420041010050500013M02606');
+    expect(field(fixture, 'BIC').value()).toBe('AUTREBIC');
+  });
+
+  it('reprend la recopie de la fiche relue tant que rien n’est saisi', () => {
+    const { fixture } = boot(entity(RECORDED));
+
+    fixture.componentRef.setInput('entity', entity({ ...RECORDED, creditorBic: 'NOUVBIC' }));
+    fixture.detectChanges();
+
     expect(field(fixture, 'BIC').value()).toBe('NOUVBIC');
+  });
+
+  it('un succès vide l’IBAN et rend la carte aux relectures', async () => {
+    const { fixture, wire } = boot(entity(RECORDED));
+    field(fixture, 'IBAN').value.set('FR1420041010050500013M02606');
+    fixture.detectChanges();
+
+    saveButton(fixture).click();
+    await wire.saved[0]?.action();
+    fixture.detectChanges();
+    expect(field(fixture, 'IBAN').value()).toBe('');
+
+    fixture.componentRef.setInput('entity', entity({ ...RECORDED, creditorBic: 'NOUVBIC' }));
+    fixture.detectChanges();
+    expect(field(fixture, 'BIC').value()).toBe('NOUVBIC');
+  });
+
+  it('un échec garde la saisie', async () => {
+    const { fixture, wire } = boot(entity(RECORDED), true);
+    field(fixture, 'IBAN').value.set('FR1420041010050500013M02606');
+    field(fixture, 'BIC').value.set('AUTREBIC');
+    fixture.detectChanges();
+
+    saveButton(fixture).click();
+    await expect(wire.saved[0]?.action()).rejects.toThrow('refusé');
+    fixture.componentRef.setInput('entity', entity({ ...RECORDED }));
+    fixture.detectChanges();
+
+    expect(field(fixture, 'IBAN').value()).toBe('FR1420041010050500013M02606');
+    expect(field(fixture, 'BIC').value()).toBe('AUTREBIC');
   });
 });

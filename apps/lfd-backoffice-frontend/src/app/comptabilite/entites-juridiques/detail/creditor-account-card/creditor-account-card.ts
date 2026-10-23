@@ -7,6 +7,7 @@ import {
   input,
   output,
   signal,
+  untracked,
 } from '@angular/core';
 import type { LegalEntityView } from '@lfd/contracts';
 import {
@@ -26,10 +27,12 @@ import { LegalEntitiesService } from '../../../legal-entities.service';
  * (`saved`) : la page détient l'état occupé, le message d'erreur et la relecture.
  *
  * 🔴 **L'IBAN ne revient jamais du serveur.** Le champ est vide à l'ouverture
- * et se vide à chaque relecture de l'entité : le laisser à l'écran le ferait
- * traîner sur un poste de back-office ouvert des heures. Les autres champs, eux,
- * se reprennent de la fiche relue — les effacer donnerait l'impression d'avoir
- * perdu ce qu'on vient d'enregistrer.
+ * et se vide après un enregistrement RÉUSSI — pas avant : la fiche se relit
+ * après le geste de n'importe quelle autre carte, et vider à la relecture
+ * effaçait une saisie en cours (décision Hugo, 2026-10-23). Un échec garde
+ * la saisie. Les autres champs se reprennent de la fiche relue tant que
+ * personne n'a commencé à les modifier ; dès la première frappe, la saisie
+ * prime jusqu'au prochain succès.
  */
 @Component({
   selector: 'app-creditor-account-card',
@@ -61,6 +64,9 @@ export class CreditorAccountCard {
   protected readonly cityDraft = signal('');
   protected readonly countryDraft = signal('FR');
 
+  /** Une frappe dans la carte : la relecture de la fiche ne la touche plus. */
+  private readonly editing = signal(false);
+
   /**
    * Le RIB se recopie en entier, donc le bouton attend TOUT — sauf le
    * complément d'adresse, qui est facultatif sur un vrai RIB.
@@ -77,11 +83,20 @@ export class CreditorAccountCard {
   );
 
   constructor() {
-    // Chaque fiche relue (après n'importe quel geste de la page) repose la
-    // recopie telle que le serveur l'a rendue.
+    // Une fiche relue repose la recopie telle que le serveur l'a rendue —
+    // sauf pendant une saisie, qu'elle n'écrase jamais. L'IBAN n'en dépend pas.
     effect(() => {
-      this.fillDrafts(this.entity());
+      const entity = this.entity();
+      if (!untracked(this.editing)) {
+        this.fillDrafts(entity);
+      }
     });
+  }
+
+  /** Pose une frappe et fige la saisie contre les relectures. */
+  protected edit(draft: { set(value: string): void }, value: string): void {
+    draft.set(value);
+    this.editing.set(true);
   }
 
   protected save(): void {
@@ -100,13 +115,18 @@ export class CreditorAccountCard {
       countryCode: this.countryDraft().trim().toUpperCase(),
     };
     this.saved.emit({
-      action: () => this.api.setCreditorAccount(id, payload),
+      // Le vidage suit le succès : un rejet laisse tout à l'écran.
+      action: async () => {
+        await this.api.setCreditorAccount(id, payload);
+        this.ibanDraft.set('');
+        this.editing.set(false);
+        this.fillDrafts(this.entity());
+      },
       said: 'Compte enregistré.',
     });
   }
 
   private fillDrafts(entity: LegalEntityView): void {
-    this.ibanDraft.set('');
     this.bicDraft.set(entity.creditorBic);
     this.holderDraft.set(entity.creditorAccountHolder);
     this.line1Draft.set(entity.creditorAccountLine1);

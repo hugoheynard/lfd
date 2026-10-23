@@ -38,7 +38,7 @@
     </p>
 
     <!-- 🔴 L'IBAN est toujours vide à l'ouverture, même quand un compte
-       existe : il ne revient d'aucune route. Tout le reste se réaffiche —
+       existe : il ne revient d'aucune route, et ne se vide qu'après un succès. Tout le reste se réaffiche —
        rien de cela n'est un secret, et le relire est justement ce qu'on
        veut avant d'imprimer un mandat. -->
     <div class="ca-row">
@@ -47,7 +47,7 @@
         placeholder="Crazeativity"
         [disabled]="entity().creditorIdentityFrozen"
         [value]="holderDraft()"
-        (valueChange)="holderDraft.set($event)"
+        (valueChange)="edit(holderDraft, $event)"
       />
     </div>
     <div class="ca-row">
@@ -56,14 +56,14 @@
         placeholder="Route de la Balme"
         [disabled]="entity().creditorIdentityFrozen"
         [value]="line1Draft()"
-        (valueChange)="line1Draft.set($event)"
+        (valueChange)="edit(line1Draft, $event)"
       />
       <fold-input
         label="Complément"
         placeholder="Bâtiment, étage…"
         [disabled]="entity().creditorIdentityFrozen"
         [value]="line2Draft()"
-        (valueChange)="line2Draft.set($event)"
+        (valueChange)="edit(line2Draft, $event)"
       />
     </div>
     <div class="ca-row">
@@ -72,21 +72,21 @@
         placeholder="73150"
         [disabled]="entity().creditorIdentityFrozen"
         [value]="postalCodeDraft()"
-        (valueChange)="postalCodeDraft.set($event)"
+        (valueChange)="edit(postalCodeDraft, $event)"
       />
       <fold-input
         label="Ville"
         placeholder="Val d’Isère"
         [disabled]="entity().creditorIdentityFrozen"
         [value]="cityDraft()"
-        (valueChange)="cityDraft.set($event)"
+        (valueChange)="edit(cityDraft, $event)"
       />
       <fold-input
         label="Pays"
         placeholder="FR"
         [disabled]="entity().creditorIdentityFrozen"
         [value]="countryDraft()"
-        (valueChange)="countryDraft.set($event)"
+        (valueChange)="edit(countryDraft, $event)"
       />
     </div>
     <div class="ca-row">
@@ -95,14 +95,14 @@
         placeholder="FR14 2004 1010 0505 0001 3M02 606"
         hint="Saisi une fois. Il ne sera plus jamais réaffiché."
         [value]="ibanDraft()"
-        (valueChange)="ibanDraft.set($event)"
+        (valueChange)="edit(ibanDraft, $event)"
       />
       <fold-input
         label="BIC"
         placeholder="CEPAFRPP751"
         hint="Sur le même RIB que l'IBAN."
         [value]="bicDraft()"
-        (valueChange)="bicDraft.set($event)"
+        (valueChange)="edit(bicDraft, $event)"
       />
     </div>
     <div class="ca-row">
