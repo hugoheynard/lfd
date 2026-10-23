@@ -3,7 +3,7 @@
     "paidPickup": {
       "subject": "Votre commande ORD-4812 — La Folie Coffee",
       "htmlSha256": "9d7726bfa40c1eef69f4882e1d663e49bab0e388bed3fe187cf54bddd3d12df6",
-      "attachmentsSha256": "a7e2b68369626b42e7f88d5d3cc4cc487b420b943dbdd81105da18af7554184b"
+      "attachmentsSha256": "b46263acb6cc967a0dfd095db6c66712ef8968faea9f0952d2e23037502ac2a3"
     },
     "dueDelivery": {
       "subject": "Votre commande ORD-4812 — La Folie Coffee",
@@ -13,7 +13,7 @@
     "account": {
       "subject": "Votre commande ORD-4812 — La Folie Coffee",
       "htmlSha256": "6c676619345a65b24173adf76373a43b11943197cc4f7fee07e2a02903a1f27e",
-      "attachmentsSha256": "49144e4605060cd1a36a1dca9a868332bc0cd984b12d6e9b24d2e69e602aaa47"
+      "attachmentsSha256": "9bcce3a25121f291e7a571fc6f6b1b6d8bead4e5061a7399cb64503e95b463ad"
     },
     "free": {
       "subject": "Votre commande ORD-4812 — La Folie Coffee",
@@ -25,45 +25,11 @@
     "pickup": {
       "subject": "Votre commande ORD-4812 est prête",
       "htmlSha256": "2f784b000aea051f9f5dd16c54a82031f03a5332a7afe1d9052d937a20e1bd36",
-      "attachmentsSha256": "49144e4605060cd1a36a1dca9a868332bc0cd984b12d6e9b24d2e69e602aaa47"
+      "attachmentsSha256": "9bcce3a25121f291e7a571fc6f6b1b6d8bead4e5061a7399cb64503e95b463ad"
     },
     "delivery": {
       "subject": "Votre commande ORD-4812 est prête",
       "htmlSha256": "3681f7ff4787cb01db0188702e7576d5a266669ecf0be8f29aa7af377e2c0a33",
-      "attachmentsSha256": null
-    }
-  },
-  "customer.collection-notice": {
-    "statement": {
-      "subject": "Avis de prélèvement — CRAZEATIVITY · jeudi 15 octobre 2026",
-      "htmlSha256": "db0eaed259e62bbefc07e21b142177ba191c6f6c95d4ba67ee03c92c8cbb9f2f",
-      "attachmentsSha256": null
-    },
-    "oneInvoice": {
-      "subject": "Avis de prélèvement — CRAZEATIVITY · jeudi 15 octobre 2026",
-      "htmlSha256": "5e7ad848d2dfd98135f73834be5d33149b5c1023e6d2b22d7b6bdda6f16f67f3",
-      "attachmentsSha256": null
-    },
-    "correctionRepresented": {
-      "subject": "Avis de prélèvement rectifié — CRAZEATIVITY · jeudi 15 octobre 2026",
-      "htmlSha256": "c697626fa92ae4b956ac506f4fd90be2a5718f69b5a5178927c8cbd3a940fbb5",
-      "attachmentsSha256": null
-    },
-    "cancellation": {
-      "subject": "Prélèvement annulé — CRAZEATIVITY · jeudi 15 octobre 2026",
-      "htmlSha256": "fe4030bdeec615cd59388a4302d65955dcef5f73f9f1179b86dd1e414397d6a3",
-      "attachmentsSha256": null
-    }
-  },
-  "customer.invoice-issued": {
-    "full": {
-      "subject": "Votre facture FA-LFD-2026-000001 — CRAZEATIVITY",
-      "htmlSha256": "9687bf81c4516f84cb2b154ba62ca327de5a6d56f0a3e52ad0eb1d64b8897bd8",
-      "attachmentsSha256": "bfbf83fac962fea82fa139e45330427b2f36ad35c152d96050fc2b514bcc91f7"
-    },
-    "bare": {
-      "subject": "Votre facture FA-LFD-2026-000001 — CRAZEATIVITY",
-      "htmlSha256": "7e48bdb3bdd5eb236cc705a08adc665055281f5883b3c4278ffb4d46daac69f4",
       "attachmentsSha256": null
     }
   },
@@ -138,6 +104,59 @@
       "subject": "Commande ORD-4812 annulée",
       "htmlSha256": "cdb250204da214d15b87ea3b00242c4f9dd6be213caeffe78fc40fe41b69fded",
       "attachmentsSha256": null
+    }
+  },
+  "customer.order-payment-link": {
+    "only": {
+      "subject": "Votre commande ORD-4812 reste à régler",
+      "htmlSha256": "ab7adc5426d6ac6ce1ee894a89dbf05c56058f225f77aae87c84a7cbdecc60ef",
+      "attachmentsSha256": null
+    }
+  },
+  "customer.collection-notice": {
+    "statement": {
+      "subject": "Avis de prélèvement — CRAZEATIVITY · jeudi 15 octobre 2026",
+      "htmlSha256": "db0eaed259e62bbefc07e21b142177ba191c6f6c95d4ba67ee03c92c8cbb9f2f",
+      "attachmentsSha256": null
+    },
+    "oneInvoice": {
+      "subject": "Avis de prélèvement — CRAZEATIVITY · jeudi 15 octobre 2026",
+      "htmlSha256": "5e7ad848d2dfd98135f73834be5d33149b5c1023e6d2b22d7b6bdda6f16f67f3",
+      "attachmentsSha256": null
+    },
+    "correctionRepresented": {
+      "subject": "Avis de prélèvement rectifié — CRAZEATIVITY · jeudi 15 octobre 2026",
+      "htmlSha256": "c697626fa92ae4b956ac506f4fd90be2a5718f69b5a5178927c8cbd3a940fbb5",
+      "attachmentsSha256": null
+    },
+    "cancellation": {
+      "subject": "Prélèvement annulé — CRAZEATIVITY · jeudi 15 octobre 2026",
+      "htmlSha256": "fe4030bdeec615cd59388a4302d65955dcef5f73f9f1179b86dd1e414397d6a3",
+      "attachmentsSha256": null
+    }
+  },
+  "customer.invoice-issued": {
+    "full": {
+      "subject": "Votre facture FA-LFD-2026-000001 — CRAZEATIVITY",
+      "htmlSha256": "9687bf81c4516f84cb2b154ba62ca327de5a6d56f0a3e52ad0eb1d64b8897bd8",
+      "attachmentsSha256": "376a07f56957bdf21ba8ad411b01eeeabc39fb091329a9b1346c200ab8fab883"
+    },
+    "bare": {
+      "subject": "Votre facture FA-LFD-2026-000001 — CRAZEATIVITY",
+      "htmlSha256": "7e48bdb3bdd5eb236cc705a08adc665055281f5883b3c4278ffb4d46daac69f4",
+      "attachmentsSha256": null
+    }
+  },
+  "customer.mandate-to-sign": {
+    "core": {
+      "subject": "Votre mandat de prélèvement SEPA — RUM-1",
+      "htmlSha256": "1dfca84caf5939d451110733f0e092c5677ff8996b21d4e77fc5363b1cfc769c",
+      "attachmentsSha256": "2821edc9d8427a141add65301dade29b875e3604fd87e3e57d34d7811ef17562"
+    },
+    "b2b": {
+      "subject": "Votre mandat de prélèvement SEPA interentreprises — RUM-1",
+      "htmlSha256": "4e51fa279c2406b6651b813f1fc6c38e144983b8721fd06b41c35a5163673f01",
+      "attachmentsSha256": "2821edc9d8427a141add65301dade29b875e3604fd87e3e57d34d7811ef17562"
     }
   },
   "customer.sub-account-activity": {
@@ -249,44 +268,6 @@
       "attachmentsSha256": null
     }
   },
-  "customer.order-payment-link": {
-    "only": {
-      "subject": "Votre commande ORD-4812 reste à régler",
-      "htmlSha256": "ab7adc5426d6ac6ce1ee894a89dbf05c56058f225f77aae87c84a7cbdecc60ef",
-      "attachmentsSha256": null
-    }
-  },
-  "customer.mandate-to-sign": {
-    "core": {
-      "subject": "Votre mandat de prélèvement SEPA — RUM-1",
-      "htmlSha256": "1dfca84caf5939d451110733f0e092c5677ff8996b21d4e77fc5363b1cfc769c",
-      "attachmentsSha256": "3d63231840f30ebb74d25d3227076fbcfbc6683548500143786ef9d57c44796b"
-    },
-    "b2b": {
-      "subject": "Votre mandat de prélèvement SEPA interentreprises — RUM-1",
-      "htmlSha256": "4e51fa279c2406b6651b813f1fc6c38e144983b8721fd06b41c35a5163673f01",
-      "attachmentsSha256": "3d63231840f30ebb74d25d3227076fbcfbc6683548500143786ef9d57c44796b"
-    }
-  },
-  "staff.appointment-booked": {
-    "only": {
-      "subject": "Nouveau rendez-vous — Jeanne Martin · mardi 13 octobre à 10:00",
-      "htmlSha256": "7c10f9eff50cabba41dc50e0d42e5f989d1c69d866ec44f64f58418ee7df789b",
-      "attachmentsSha256": null
-    },
-    "noMessage": {
-      "subject": "Nouveau rendez-vous — Jeanne Martin · mardi 13 octobre à 10:00",
-      "htmlSha256": "87c7c05d25751a340f71e907e35e445862d386127aaa306f294280b810f2109b",
-      "attachmentsSha256": null
-    }
-  },
-  "staff.account-alert": {
-    "only": {
-      "subject": "Alerte — Hôtel des Trois Ponts · Chute de volume",
-      "htmlSha256": "1f53f592ae7e360e6566f1a4948bdb0b37c9c643daf54fb9ea3bcdfe33a714cf",
-      "attachmentsSha256": null
-    }
-  },
   "customer.access-opened": {
     "code": {
       "subject": "Votre accès à l'espace pro Hôtel des Trois Ponts",
@@ -339,6 +320,25 @@
     "only": {
       "subject": "Votre lien pour changer de mot de passe",
       "htmlSha256": "098bc3364bcc1aada075585761e10d035d4ad54f3ba0ba66ac33d440b471c00c",
+      "attachmentsSha256": null
+    }
+  },
+  "staff.appointment-booked": {
+    "only": {
+      "subject": "Nouveau rendez-vous — Jeanne Martin · mardi 13 octobre à 10:00",
+      "htmlSha256": "7c10f9eff50cabba41dc50e0d42e5f989d1c69d866ec44f64f58418ee7df789b",
+      "attachmentsSha256": null
+    },
+    "noMessage": {
+      "subject": "Nouveau rendez-vous — Jeanne Martin · mardi 13 octobre à 10:00",
+      "htmlSha256": "87c7c05d25751a340f71e907e35e445862d386127aaa306f294280b810f2109b",
+      "attachmentsSha256": null
+    }
+  },
+  "staff.account-alert": {
+    "only": {
+      "subject": "Alerte — Hôtel des Trois Ponts · Chute de volume",
+      "htmlSha256": "1f53f592ae7e360e6566f1a4948bdb0b37c9c643daf54fb9ea3bcdfe33a714cf",
       "attachmentsSha256": null
     }
   },
@@ -401,32 +401,32 @@
     "arrested": {
       "subject": "Dossier de production — plan du mercredi 7 octobre 2026",
       "htmlSha256": "6a3eb46117453ace5ce85f4dbd028647f61f53af2a05cb766da7a6fd174bd95f",
-      "attachmentsSha256": "04299dd6422f6e93f2725829737bae7e4739921bfa7babec80c12058e790a717"
+      "attachmentsSha256": "2f91357832450bcc78c255a6891eb783962e0d4d18d4026310aa3f72e5ec29d7"
     },
     "completedAnonymous": {
       "subject": "Dossier de production complété — plan du mercredi 7 octobre 2026",
       "htmlSha256": "d239cbbae281ba175cc0afc86738352e66412920c53fc72a9a5a9088a025501e",
-      "attachmentsSha256": "04299dd6422f6e93f2725829737bae7e4739921bfa7babec80c12058e790a717"
+      "attachmentsSha256": "2f91357832450bcc78c255a6891eb783962e0d4d18d4026310aa3f72e5ec29d7"
     },
     "resupplies": {
       "subject": "Dossier de production — plan du mercredi 7 octobre 2026",
       "htmlSha256": "ec00c9d67984f4583d95a727c862e3f162c1e76c9cb4015cd54c2fe98f9bc4ad",
-      "attachmentsSha256": "04299dd6422f6e93f2725829737bae7e4739921bfa7babec80c12058e790a717"
+      "attachmentsSha256": "2f91357832450bcc78c255a6891eb783962e0d4d18d4026310aa3f72e5ec29d7"
     },
     "resuppliesSplit": {
       "subject": "Dossier de production — plan du mercredi 7 octobre 2026",
       "htmlSha256": "ec8227d125de3e5a0d4eba2ae37685eaba511379331967640a4e1d4953a5d7e1",
-      "attachmentsSha256": "04299dd6422f6e93f2725829737bae7e4739921bfa7babec80c12058e790a717"
+      "attachmentsSha256": "2f91357832450bcc78c255a6891eb783962e0d4d18d4026310aa3f72e5ec29d7"
     },
     "noSplit": {
       "subject": "Dossier de production — plan du mercredi 7 octobre 2026",
       "htmlSha256": "ed0ce8707d905fdff0c4b7923ff3bd2f807ab21dde3049f8227f2bd5466fc68b",
-      "attachmentsSha256": "04299dd6422f6e93f2725829737bae7e4739921bfa7babec80c12058e790a717"
+      "attachmentsSha256": "2f91357832450bcc78c255a6891eb783962e0d4d18d4026310aa3f72e5ec29d7"
     },
     "deliveryOnly": {
       "subject": "Dossier de production complété — plan du mercredi 7 octobre 2026",
       "htmlSha256": "748bf3cff9721cbc15ade26d82383a1d94024a199738cce56b968e8520b9dcc7",
-      "attachmentsSha256": "04299dd6422f6e93f2725829737bae7e4739921bfa7babec80c12058e790a717"
+      "attachmentsSha256": "2f91357832450bcc78c255a6891eb783962e0d4d18d4026310aa3f72e5ec29d7"
     }
   },
   "staff.support-requested": {
