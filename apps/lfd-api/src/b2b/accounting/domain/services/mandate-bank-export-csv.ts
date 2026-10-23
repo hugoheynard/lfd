@@ -1,6 +1,12 @@
 import type { MandatePaymentType } from "../value-objects/mandate-defaults.js";
 import type { SepaScheme } from "../value-objects/sepa-scheme.js";
 import {
+  BankExportDebtorNameTooLongError,
+  BankExportTooManyMandatesError,
+} from "../errors/mandate-bank-export-errors.js";
+import {
+  MANDATE_ALREADY_ISSUED_CELL,
+  MANDATE_MIGRATED_CELL,
   debitNatureCell,
   paymentSequenceCell,
   signatureDateCell,
@@ -11,18 +17,27 @@ import { sepa } from "./pain008-document.js";
  * **Le fichier d'import des mandats** pour le portail de la banque (plan
  * `export-des-mandats-pour-la-banque.md`).
  *
- * Le modèle (`ModeleImportMandats`) : ASCII, `;` séparateur ET terminateur de
- * chaque cellule, fin de ligne CRLF, 17 colonnes dont A à H obligatoires, et
- * **sans ligne d'en-tête** — « enlever la ligne d'en-tête » dit la banque.
+ * Le modèle (`modele-import-mandats-cenet-remises.xlsx`) : ASCII, `;`
+ * séparateur ET terminateur de chaque cellule, fin de ligne CRLF, 18 colonnes
+ * dont A à H, K et L obligatoires, et **sans ligne d'en-tête** — « enregistrer
+ * en CSV sans la ligne d'en-tête » dit la feuille. 200 lignes au plus.
  *
  * Déterministe : aucune horloge lue ici.
  */
 
-/** Le nombre de colonnes du modèle, de A à Q. */
-export const BANK_IMPORT_COLUMN_COUNT = 17;
+/** Le nombre de colonnes du modèle, de A à R. */
+export const BANK_IMPORT_COLUMN_COUNT = 18;
 
-/** Le nom du débiteur, colonne C : 70 caractères au plus (le `Nm` SEPA). */
-export const DEBTOR_NAME_MAX_LENGTH = 70;
+/**
+ * Le nom du débiteur, colonne C : 140 caractères au plus (réponse 11 de la
+ * banque). Au-delà, la ligne est REFUSÉE, jamais coupée : un nom tronqué en
+ * silence est un débiteur que la banque connaît sous un autre nom que le
+ * `pain.008`, qui l'écrit entier.
+ */
+export const DEBTOR_NAME_MAX_LENGTH = 140;
+
+/** Lignes par fichier d'import (réponse 12 de la banque). */
+export const BANK_IMPORT_MAX_ROWS = 200;
 
 const CELL_TERMINATOR = ";";
 const LINE_END = "\r\n";
@@ -50,22 +65,42 @@ export interface MandateBankRow {
   readonly scheme: SepaScheme;
 }
 
-/** Le fichier entier : une ligne par mandat, CRLF après chacune, rien d'autre. */
+/**
+ * Le fichier entier : une ligne par mandat, CRLF après chacune, rien d'autre.
+ *
+ * @throws {BankExportTooManyMandatesError} plus de 200 lignes.
+ * @throws {BankExportDebtorNameTooLongError} un nom au-delà de 140, nommé par
+ *   la RUM de chaque mandat en cause.
+ */
 export function renderMandateBankCsv(rows: readonly MandateBankRow[]): string {
+  if (rows.length > BANK_IMPORT_MAX_ROWS) {
+    throw new BankExportTooManyMandatesError(rows.length, BANK_IMPORT_MAX_ROWS);
+  }
+  const tooLong = rows.filter((row) => bankCell(row.debtorName).length > DEBTOR_NAME_MAX_LENGTH);
+  if (tooLong.length > 0) {
+    throw new BankExportDebtorNameTooLongError(
+      tooLong.map((row) => row.reference),
+      DEBTOR_NAME_MAX_LENGTH,
+    );
+  }
   return rows.map((row) => line(cellsOf(row))).join("");
 }
 
-/** A à H, puis I à Q vides. */
+/** A à H, I et J vides, K et L, puis M à R vides. */
 function cellsOf(row: MandateBankRow): readonly string[] {
   const filled = [
     row.reference,
     row.ics,
-    sepa(row.debtorName).slice(0, DEBTOR_NAME_MAX_LENGTH),
+    row.debtorName,
     row.iban,
     row.bic,
     signatureDateCell(row.signedAt),
     paymentSequenceCell(row.paymentType),
     debitNatureCell(row.scheme),
+    "",
+    "",
+    MANDATE_ALREADY_ISSUED_CELL,
+    MANDATE_MIGRATED_CELL,
   ];
   const empty = Array.from({ length: BANK_IMPORT_COLUMN_COUNT - filled.length }, () => "");
   return [...filled, ...empty];

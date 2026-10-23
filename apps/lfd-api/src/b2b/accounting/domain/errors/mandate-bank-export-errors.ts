@@ -64,6 +64,36 @@ export class BankExportOutdatedError extends BusinessError {
   }
 }
 
+/**
+ * Un nom de débiteur dépasse ce que la banque accepte en colonne C : la ligne
+ * est refusée plutôt que coupée, pour que la banque ne connaisse pas le
+ * débiteur sous un autre nom que celui du prélèvement.
+ */
+export class BankExportDebtorNameTooLongError extends BusinessError {
+  constructor(
+    readonly references: readonly string[],
+    readonly maxLength: number,
+  ) {
+    super(
+      "accounting.mandate_bank_export.debtor_name_too_long",
+      `Le nom du débiteur dépasse ${maxLength} caractères, la limite de la banque, pour le mandat ${references.join(", ")}. Raccourcir la raison sociale de la société débitrice sur sa fiche, puis télécharger le fichier à nouveau.`,
+    );
+  }
+}
+
+/** Plus de lignes que la banque n'en importe en un fichier. */
+export class BankExportTooManyMandatesError extends DomainError {
+  constructor(
+    readonly count: number,
+    readonly maxRows: number,
+  ) {
+    super(
+      "accounting.mandate_bank_export.too_many_mandates",
+      `Un fichier d'import des mandats porte ${maxRows} mandats au plus, et celui-ci en porterait ${count}. Préparer l'export à nouveau : il prend les ${maxRows} premiers, les suivants partent dans l'export d'après.`,
+    );
+  }
+}
+
 /** L'export n'existe pas, ou pas pour cette entité. */
 export class MandateBankExportNotFoundError extends ResourceNotFoundError {
   constructor(readonly exportId: string) {

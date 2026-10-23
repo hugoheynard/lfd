@@ -1,14 +1,11 @@
 # L'export des mandats pour le portail de la banque
 
-> 🔴 **2026-10-23 — la banque a répondu, et deux colonnes sont fausses.** F
-> attend `AAAAMMJJ` (le code écrit `JJ/MM/AAAA`), G attend `RECURRENT` /
-> `PONCTUEL` (le code écrit `RCUR` / `OOFF`) ; H est juste. Nom ≤ 140
-> (70 tient). Seulement les nouveaux, 200 lignes au plus ; les RIB d'abord, un
-> RIB déjà connu fait rejeter tout l'import des RIB. Modifié / révoqué / repris :
-> colonnes **M à R**. Le modèle reçu le même jour a **18 colonnes** (le code en
-> écrit 17) et rend **K et L obligatoires** (le code les laisse vides) :
-> confrontation colonne par colonne au § 2 bis. Détail et liste à faire :
-> [`../prelevement/reponses-de-la-banque.md`](../prelevement/reponses-de-la-banque.md).
+> 🔴 **2026-10-23 — conforme au modèle de la banque.** La banque a répondu et
+> envoyé son modèle ; l'export a été corrigé le même jour : F en `AAAAMMJJ`,
+> G `RECURRENT` / `PONCTUEL`, K `O` et L `N` (supposés, Q-B2), **18
+> colonnes**, nom entier jusqu'à 140 puis refusé, 200 mandats par export. Le
+> sujet entier (questions, réponses, modèle, hypothèses) :
+> [`../prelevement/prerequis-export-mandats.md`](../prelevement/prerequis-export-mandats.md).
 
 > Doc d'état, écrite le 2026-10-09 à partir du code. Elle remplace le plan
 > « L'export des mandats pour le portail de la banque » (supprimé ; il reste dans
@@ -21,25 +18,28 @@ l'absence d'Hugo sont dans [`../arbitrages-en-absence.md`](../arbitrages-en-abse
 
 ## Le fichier
 
-ASCII, `;` séparateur **et** terminateur de ligne, CRLF, sans en-tête, 17
-colonnes (`domain/services/mandate-bank-export-csv.ts`) :
+ASCII, `;` séparateur **et** terminateur de chaque cellule, CRLF, sans
+en-tête, **18 colonnes**, **200 lignes au plus**
+(`domain/services/mandate-bank-export-csv.ts`, revu le 2026-10-23) :
 
-| Col | Ce qu'on écrit                                                                      |
-| --- | ----------------------------------------------------------------------------------- |
-| A   | RUM du mandat                                                                       |
-| B   | ICS de l'entité émettrice                                                           |
-| C   | nom du débiteur, celui du `pain.008` (`Dbtr/Nm`), coupé à 70                        |
-| D   | IBAN en clair, descellé, sans espaces                                               |
-| E   | BIC                                                                                 |
-| F   | jour Europe/Paris de `accepted_at`, `JJ/MM/AAAA` (`localDay`, celle de `DtOfSgntr`) |
-| G   | `RCUR` / `OOFF`                                                                     |
-| H   | `CORE` / `B2B` (schéma figé du mandat)                                              |
-| I–Q | vides                                                                               |
+| Col | Ce qu'on écrit                                                                    |
+| --- | --------------------------------------------------------------------------------- |
+| A   | RUM du mandat                                                                     |
+| B   | ICS de l'entité émettrice                                                         |
+| C   | nom du débiteur, celui du `pain.008` (`Dbtr/Nm`), entier ; > 140 : fichier refusé |
+| D   | IBAN en clair, descellé, sans espaces                                             |
+| E   | BIC                                                                               |
+| F   | jour Europe/Paris de `accepted_at`, `AAAAMMJJ` (`localDay`, celle de `DtOfSgntr`) |
+| G   | `RECURRENT` / `PONCTUEL`                                                          |
+| H   | `CORE` / `B2B` (schéma figé du mandat)                                            |
+| I–J | vides                                                                             |
+| K   | `O` (« mandat déjà émis » — supposé, Q-B2)                                        |
+| L   | `N` (« mandat migré » — supposé, Q-B2)                                            |
+| M–R | vides                                                                             |
 
-Les valeurs de F, G et H étaient **supposées** jusqu'au 2026-10-23 (F et G
-démenties ce jour-là, voir le bandeau) (questions posées à la banque :
-[`../prelevement/question-banque.md`](../prelevement/question-banque.md)) et
-s'écrivent en un seul endroit, `mandate-bank-export-values.ts`. Chaque cellule
+F, G et H sont celles que la banque a dites le 2026-10-23 ; K et L sont
+supposées d'après l'exemple du modèle. Les cinq s'écrivent en un seul endroit,
+`mandate-bank-export-values.ts`. Chaque cellule
 passe par `sepa()` (translittération ASCII de `pain008-document.ts`) puis perd
 tout `+ - = @` de tête (injection de formule).
 
@@ -57,7 +57,9 @@ flowchart LR
   `mandate_bank_export` (entité, auteur, instant, nombre, « importé » par qui et
   quand) et `mandate_bank_export_line` (mandat, RUM, **empreinte SHA-256 de
   l'IBAN**, `account-fingerprint.ts`). Aucun IBAN ni BIC en base. Une entité
-  sans ICS ne peut pas préparer d'export (409).
+  sans ICS ne peut pas préparer d'export (409). Un export porte **200 mandats
+  au plus** (l'agrégat le refuse au-delà) : préparer prend les 200 premiers
+  dans l'ordre des RUM, les suivants restent « à exporter ».
 - **Le fichier est recalculé** depuis les mandats de l'export et refusé (409)
   si l'empreinte d'un compte ne correspond plus, ou si un mandat est devenu
   inexportable (révoqué, RIB retiré, BIC vidé). Servi en
@@ -95,6 +97,6 @@ flowchart LR
 
 - **Les RIB destinataires** : la banque demande de les importer avant les
   mandats ; son modèle n'est pas reçu, rien n'est bâti.
-- **Les colonnes L/M** (mandats repris d'un autre créancier) : à voir avec la
-  banque (A17).
-- **F, G, H** à confirmer par la banque (A15).
+- **K et L** à confirmer (Q-B2) ; **M–R** et la révocation (Q-B3) ; les
+  mandats repris restent écartés.
+- **Marquer importé sauf les lignes en erreur** du compte rendu (réponse 13).

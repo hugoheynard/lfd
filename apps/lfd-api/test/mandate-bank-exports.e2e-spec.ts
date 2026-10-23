@@ -155,7 +155,7 @@ describe("l'export des mandats pour la banque", () => {
     expect(file.headers["cache-control"]).toBe("no-store");
     expect(file.headers["content-disposition"]).toMatch(/^attachment;/u);
     expect(file.text).toBe(
-      `${rum};${ICS};Cafe de l'Isere;${DEBTOR_IBAN};BNPAFRPPXXX;${signatureDateCell(new Date(SIGNED_AT))};RCUR;B2B;;;;;;;;;;\r\n`,
+      `${rum};${ICS};Cafe de l'Isere;${DEBTOR_IBAN};BNPAFRPPXXX;${signatureDateCell(new Date(SIGNED_AT))};RECURRENT;B2B;;;O;N;;;;;;;\r\n`,
     );
 
     await staff()

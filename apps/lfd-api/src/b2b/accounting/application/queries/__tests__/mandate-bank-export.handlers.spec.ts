@@ -41,7 +41,7 @@ describe("le fichier d'un export", () => {
     const file = await w.file.execute(new ExportMandateBankFileQuery("le1", id));
 
     expect(file.csv).toBe(
-      `RUM-m1;FR72ZZZ123456;Societe cmp m1;${IBAN_A};BNPAFRPP;15/09/2026;RCUR;B2B;;;;;;;;;;\r\n`,
+      `RUM-m1;FR72ZZZ123456;Societe cmp m1;${IBAN_A};BNPAFRPP;20260915;RECURRENT;B2B;;;O;N;;;;;;;\r\n`,
     );
     expect(file.fileName).toBe(`mandats-banque-552100554-${id}.csv`);
   });

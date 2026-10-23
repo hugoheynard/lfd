@@ -43,6 +43,29 @@ describe("préparer un export des mandats pour la banque", () => {
     expect(JSON.stringify(fact)).not.toContain(IBAN_A);
   });
 
+  it("au-delà de 200 mandats à exporter, prend les 200 premiers et laisse les autres pour l'export d'après", async () => {
+    const w = bankExportWorld();
+    w.mandates.exportable = Array.from({ length: 201 }, (_, rank) =>
+      bankMandate(`m${String(rank).padStart(3, "0")}`),
+    );
+
+    const first = await w.exportCommand.execute(
+      new ExportMandatesForBankCommand("le1", false, "staff_1"),
+    );
+    await w.markImported.execute(new MarkMandateBankExportImportedCommand("le1", first, "s"));
+    const second = await w.exportCommand.execute(
+      new ExportMandatesForBankCommand("le1", false, "staff_1"),
+    );
+
+    expect(w.exports.rows.get(first)?.mandateCount).toBe(200);
+    expect(
+      w.exports.rows
+        .get(second)
+        ?.toPersistence()
+        .lines.map((line) => line.mandateId),
+    ).toEqual(["m200"]);
+  });
+
   it("ne reprend pas un mandat déjà importé sous son compte, sauf avec « tous »", async () => {
     const w = bankExportWorld();
     w.mandates.exportable = [bankMandate("m1")];

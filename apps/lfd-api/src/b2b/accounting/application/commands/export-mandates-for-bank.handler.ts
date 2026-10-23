@@ -11,6 +11,7 @@ import { LegalEntityReader } from "../../domain/ports/legal-entity.reader.js";
 import { MandateBankExportRepository } from "../../domain/ports/mandate-bank-export.repository.js";
 import { ImportedMandateAccountsReader } from "../../domain/ports/mandate-bank-exports.reader.js";
 import { MandatesForBankExportReader } from "../../domain/ports/mandates-for-bank-export.reader.js";
+import { BANK_IMPORT_MAX_ROWS } from "../../domain/services/mandate-bank-export-csv.js";
 import {
   fingerprinted,
   selectForBankExport,
@@ -27,6 +28,11 @@ import { ExportMandatesForBankCommand } from "./export-mandates-for-bank.command
  *
  * L'ICS est exigé ICI : la colonne B est obligatoire, et un export qu'on ne
  * pourrait pas télécharger ne doit pas exister.
+ *
+ * La banque n'importe que 200 lignes par fichier (réponse 12) : l'export
+ * prend les 200 premiers mandats dans l'ordre du lecteur, et les suivants
+ * restent « à exporter » pour l'export d'après — découper plutôt que refuser,
+ * puisque rien n'est faux dans le 201ᵉ.
  */
 @CommandHandler(ExportMandatesForBankCommand)
 export class ExportMandatesForBankHandler implements ICommandHandler<
@@ -51,7 +57,7 @@ export class ExportMandatesForBankHandler implements ICommandHandler<
       throw new BankExportWithoutCreditorIdentifierError(entity.name);
     }
     return this.uow.run(async () => {
-      const chosen = await this.chosen(command);
+      const chosen = (await this.chosen(command)).slice(0, BANK_IMPORT_MAX_ROWS);
       const bankExport = MandateBankExport.export({
         id: this.ids.next(),
         legalEntityId: entity.id,

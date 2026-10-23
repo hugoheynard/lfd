@@ -1,9 +1,11 @@
 import {
   BankExportAlreadyImportedError,
+  BankExportTooManyMandatesError,
   DuplicateMandateInBankExportError,
   NothingToExportToBankError,
 } from "../errors/mandate-bank-export-errors.js";
 import type { ExportedMandateLine } from "../ports/mandate-bank-exports.reader.js";
+import { BANK_IMPORT_MAX_ROWS } from "../services/mandate-bank-export-csv.js";
 import type { StaffStamp } from "./collection-batch.js";
 
 export interface MandateBankExportState {
@@ -29,17 +31,25 @@ export interface ExportMandatesInput {
  *
  * Deux invariants, et rien d'autre ne les garde :
  *
- * - un export porte **au moins un** mandat, et chacun **une seule fois** ;
+ * - un export porte **au moins un** mandat, **200 au plus** (la banque n'en
+ *   importe pas davantage par fichier), et chacun **une seule fois** ;
  * - « importé » se marque **une fois** : un téléchargement n'est pas un import,
  *   et un second marquage effacerait qui l'a dit le premier.
  */
 export class MandateBankExport {
   private constructor(private state: MandateBankExportState) {}
 
-  /** @throws {NothingToExportToBankError} @throws {DuplicateMandateInBankExportError} */
+  /**
+   * @throws {NothingToExportToBankError}
+   * @throws {BankExportTooManyMandatesError}
+   * @throws {DuplicateMandateInBankExportError}
+   */
   static export(input: ExportMandatesInput): MandateBankExport {
     if (input.lines.length === 0) {
       throw new NothingToExportToBankError();
+    }
+    if (input.lines.length > BANK_IMPORT_MAX_ROWS) {
+      throw new BankExportTooManyMandatesError(input.lines.length, BANK_IMPORT_MAX_ROWS);
     }
     const seen = new Set<string>();
     for (const line of input.lines) {

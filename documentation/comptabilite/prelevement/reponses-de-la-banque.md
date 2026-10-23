@@ -134,6 +134,13 @@ actualiser l'IBAN dans notre logiciel pour les fichiers suivants.
 
 ### Étape 4 — L'import des mandats
 
+> **2026-10-23, après correctif** : l'export des mandats suit le modèle (F en
+> `AAAAMMJJ`, G `RECURRENT`/`PONCTUEL`, K `O`, L `N`, 18 colonnes, 200 lignes,
+> nom ≤ 140) — détail et hypothèses dans
+> [`prerequis-export-mandats.md`](prerequis-export-mandats.md). Les constats
+> « faux » et les numéros de ligne ci-dessous décrivent le code AVANT ce
+> correctif.
+
 **10. Valeurs.** Colonne **F** : date `AAAAMMJJ`. **G** : `RECURRENT` /
 `PONCTUEL`. **H** : `CORE` / `B2B`. Avant l'import, CENET permet de **vérifier
 le fichier** (compte rendu d'anomalies, et fichier des comptes à importer si

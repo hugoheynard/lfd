@@ -58,7 +58,7 @@ async function world(declared = true) {
 }
 
 describe("exporter le mandat d'un établissement pour la banque", () => {
-  it("rend UNE ligne, au format de l'export des mandats (A à H, 17 cellules, CRLF)", async () => {
+  it("rend UNE ligne, au format de l'export des mandats (18 cellules, K et L remplies, CRLF)", async () => {
     const w = await world();
 
     const file = await w.run();
@@ -68,7 +68,7 @@ describe("exporter le mandat d'un établissement pour la banque", () => {
     expect(lines[1]).toBe("");
     expect(lines[0]).toMatch(
       new RegExp(
-        `^RUM-NOUS;FR72ZZZ123456;[^;]+;${IBAN_A};BNPAFRPP;15/09/2026;RCUR;B2B;(;){9}$`,
+        `^RUM-NOUS;FR72ZZZ123456;[^;]+;${IBAN_A};BNPAFRPP;20260915;RECURRENT;B2B;;;O;N;(;){6}$`,
         "u",
       ),
     );

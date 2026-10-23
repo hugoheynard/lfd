@@ -1,5 +1,6 @@
 import {
   BankExportAlreadyImportedError,
+  BankExportTooManyMandatesError,
   DuplicateMandateInBankExportError,
   NothingToExportToBankError,
 } from "../../errors/mandate-bank-export-errors.js";
@@ -28,6 +29,17 @@ describe("un export des mandats pour la banque", () => {
     expect(() =>
       MandateBankExport.export({ id: "e", legalEntityId: "le1", created: CREATED, lines: [] }),
     ).toThrow(NothingToExportToBankError);
+  });
+
+  it("refuse plus de 200 mandats : la banque rejetterait le fichier d'import", () => {
+    const lines = Array.from({ length: 201 }, (_, rank) => ({
+      ...LINE,
+      mandateId: `m${rank}`,
+      rum: `RUM-${rank}`,
+    }));
+    expect(() =>
+      MandateBankExport.export({ id: "e", legalEntityId: "le1", created: CREATED, lines }),
+    ).toThrow(BankExportTooManyMandatesError);
   });
 
   it("refuse un même mandat deux fois", () => {
