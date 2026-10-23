@@ -1,5 +1,13 @@
 # Prélèvement SEPA — l'état des lieux, l'objectif, et ce qui manque
 
+> 📬 **2026-10-23 — la banque a répondu** ([`reponses-de-la-banque.md`](reponses-de-la-banque.md)). Ce qui rend des
+> phrases ci-dessous caduques : `pain.008.001.02` est accepté ; `FRST` n'est
+> plus exigé (tout en `RCUR`) ; la banque ne fournit pas de guide propre (règles
+> CFONB) ; après un changement de compte elle demande un **nouveau mandat**,
+> pas l'amendement CFONB (§ séquence) ; dépôt CORE J-1 avant 14 h 45, B2B
+> avant 13 h 45 (ou J-2, contradiction ouverte). Les « 8 questions » plus bas
+> sont donc répondues, sauf la signature électronique (eIDAS).
+
 > **Document unique, écrit le 2026-09-12, et remis à jour le soir même.** La
 > tranche du RIB client a livré dans la journée ce que plusieurs de ses lignes
 > donnaient pour absent : le chiffrement au champ, le coffre du RIB, le BIC
@@ -416,7 +424,8 @@ déguiserait en compte.
 la frappe, avec un `PmtInf` par séquence présente. `FRST` n'est jamais écrit.
 Le CFONB impose `FRST` et `OrgnlDbtrAgt = SMNDA` après un changement de banque
 du débiteur : ni l'un ni l'autre n'est écrit, l'amendement est **différé jusqu'à
-la réponse de la banque** (`../mandat/restes-du-mandat.md`), et l'historique des
+la réponse de la banque** (répondue le 2026-10-23 : nouveau mandat plutôt
+qu'amendement, et plus de `FRST` — [`reponses-de-la-banque.md`](reponses-de-la-banque.md)) (`../mandat/restes-du-mandat.md`), et l'historique des
 changements de compte que la norme exige n'est pas conservé.
 
 ### Les pièges qui font rejeter un fichier

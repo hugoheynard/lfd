@@ -1,5 +1,11 @@
 # Plan — un prélèvement d'essai sur un compte client à nous
 
+> 📬 **2026-10-23** : Q7 a sa réponse — la banque n'exige plus `FRST`, tout
+> peut partir en `RCUR` (garder `FRST` dans l'essai est la décision D3 de
+> [`reponses-de-la-banque.md`](reponses-de-la-banque.md)). L'hypothèse « J + 2 jours ouvrés » tient : la banque dit
+> « au plus tard J-2 » et, ailleurs, J-1 avant 13 h 45 en B2B. Le test se fait
+> **en envoyant le fichier par mail** à la banque.
+
 > ✅ **Bâti le 2026-10-22** (lot unique, non commité à l'écriture de cette
 > ligne) selon §4 et §6 — voir §7 pour ce qui a été tranché en bâtissant et ce
 > qui reste ouvert. L'état est décrit dans
@@ -188,8 +194,9 @@ factures, aux bons, aux lots ni à l'état d'encaissement.
   passe « à rembourser » à son échéance comme un autre ;
 - la **durée de conservation** du fichier gardé (`collection_test.xml`, IBAN en
   clair) : `a-decider` au registre RGPD ;
-- la question `FRST` reste à la banque (`question-banque.md` 3.7) ;
-- le délai de J + 2 jours ouvrés reste une hypothèse (`question-banque.md` 3.4) ;
+- la question `FRST` est répondue (2026-10-23 : plus exigée) ;
+- le délai de J + 2 jours ouvrés est compatible avec la réponse du 2026-10-23
+  (J-2, ou J-1 avant 13 h 45 en B2B — contradiction ouverte) ;
 - un mandat importé à la banque depuis l'essai réapparaît dans l'export groupé
   de l'entité (rien ne le sait) : la banque le recevra deux fois si on
   l'exporte aussi par là ;

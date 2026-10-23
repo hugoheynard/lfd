@@ -1,5 +1,10 @@
 # Le prélèvement automatique
 
+> 📬 **2026-10-23** : la limite de dépôt a une réponse — CORE à J-1 avant
+> 14 h 45, B2B avant 13 h 45, mais aussi « au plus tard J-2 » ; à trancher
+> (décision D4 de [`reponses-de-la-banque.md`](reponses-de-la-banque.md)) avant de renseigner le réglage. `FRST` n'est
+> plus exigé.
+
 > **Doc d'état**, écrite le 2026-10-08 à partir du code des lots PA1 à PA4,
 > bâtis ce jour-là. Elle remplace le plan « prélèvement automatique »
 > (supprimé ; il reste dans l'historique git, et trois `migration.sql`
@@ -155,7 +160,8 @@ datés) ; l'historique replié. Le tableau de bord n'en garde qu'un résumé.
   suivant s'il n'a jamais été tenté.
 - **Préalables hors code** : la clause CGV et mandat pour prélever avant le
   15 (délai de pré-notification réduit) ; le cut-off du portail de la Caisse
-  d'Épargne ; FRST/RCUR et les mandats ponctuels
+  d'Épargne (répondu le 2026-10-23, contradiction J-2 / J-1 ouverte) ; FRST/RCUR
+  (répondu : `RCUR` suffit) et les mandats ponctuels
   ([`prelevement-sepa.md`](prelevement-sepa.md),
   questions 3 et 4).
 - **PA5, les retours bancaires** : **bâti le 2026-10-09** (R5a, R5b —

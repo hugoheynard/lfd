@@ -1,5 +1,12 @@
 # Le lot de prélèvement figé
 
+> 📬 **2026-10-23** : la banque confirme la forme du lot — un fichier par
+> schéma **et par échéance**, crédit global, `RCUR` sans `FRST`, doublons
+> contrôlés sur `MsgId` + nombre + montant pendant 10 à 15 jours, redépôt en
+> changeant l'heure de création (chez nous : annuler puis reconstituer). Une
+> remise s'annule sur CENET tant qu'elle n'est pas signée, jamais une seule
+> ligne. Détail : [`reponses-de-la-banque.md`](reponses-de-la-banque.md).
+
 > Doc d'état, écrite le 2026-10-09 à partir du code. Elle remplace le plan
 > « Le lot de prélèvement figé » (supprimé ; il reste dans l'historique git, et
 > des migration.sql le citent encore).

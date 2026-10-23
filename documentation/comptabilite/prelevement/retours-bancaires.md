@@ -1,5 +1,10 @@
 # Les retours bancaires d'un prélèvement
 
+> 📬 **2026-10-23** : la banque fournit des fichiers d'impayés **quotidiens**
+> en `pain.002` ou `camt.054`, téléchargeables ; imputation unitaire ou
+> globale au choix ; montant et frais en deux écritures. L'import reste à
+> éprouver sur un vrai fichier. Détail : [`reponses-de-la-banque.md`](reponses-de-la-banque.md), réponses 30–31.
+
 > Doc d'état, écrite le 2026-10-09 à partir du code. Elle remplace le plan
 > « Les retours bancaires d'un prélèvement (PA5) » (supprimé ; il reste dans
 > l'historique git, et des migration.sql le citent encore).
@@ -95,7 +100,8 @@ import/confirm` (écriture, multipart pour l'import).
 
 ## Ce qui reste ouvert
 
-- **Le format réel de la Caisse d'Épargne** n'est pas connu
+- **Le format réel de la Caisse d'Épargne** n'est pas connu en détail (la
+  banque a confirmé `pain.002` / `camt.054` le 2026-10-23, sans exemple)
   ([`question-banque.md`](question-banque.md)) : la lecture est écrite d'après la
   norme, à éprouver sur un vrai fichier. Un rejet du lot entier (`PmtInfSts`,
   sans `TxInfAndSts`) n'est pas lu.

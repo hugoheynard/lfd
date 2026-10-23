@@ -1,5 +1,12 @@
 # Les questions à la Caisse d'Épargne
 
+> ✅ **Répondu le 2026-10-23** (Caisse d'Épargne, CERA) : les 31 questions du
+> texte envoyé ont une réponse, sauf la clause CGV/re-signature (3), le niveau
+> eIDAS (5) et la liste des motifs de rejet (26, « pas de liste »). Les
+> réponses 3 (« J-2 ») et 22 (« J-1 avant 13 h 45 / 14 h 45 ») se contredisent
+> en apparence. Ce qu'elles veulent dire, l'écart avec le code et la liste à
+> faire : [`reponses-de-la-banque.md`](reponses-de-la-banque.md). Les questions ci-dessous ne sont pas réécrites.
+
 > Rassemblées le 2026-10-08 (Hugo), **réécrites le 2026-10-12** pour être
 > envoyées telles quelles. Sources : [`prelevement-sepa.md`](prelevement-sepa.md)
 > §§ 7, 8, 12 ; [`lot-de-prelevement-fige.md`](lot-de-prelevement-fige.md) ;
@@ -371,6 +378,7 @@ Les codes reçus sont déjà rangés dans `collection_return.reason_code`
 >    un jour prélever aussi en **CORE**, faudrait-il une démarche ou un avenant ?
 > 2. Avons-nous un **plafond** (par remise, par jour ou par mois) ? Que se
 >    passe-t-il si une remise le dépasse ?
+>    _Réponse du 2026-10-23 : plafonds internes (unitaire, remise, mensuel) que NOUS communiquons ; dépassement = appel du service EDI ([détail](reponses-de-la-banque.md))._
 >
 > **Étape 2 — Les mandats signés par nos clients**
 >
@@ -402,6 +410,7 @@ Les codes reçus sont déjà rangés dans `collection_return.reason_code`
 >    cas, les RIB déjà connus sont-ils ignorés, mis à jour ou créés en
 >    double ?
 > 9. Un client qui **change de compte** : comment remplacer son RIB ?
+>    _Réponse du 2026-10-23 : modèle en pièce jointe, pas encore dans le dépôt ([détail](reponses-de-la-banque.md))._
 >
 > **Étape 4 — L'import des mandats** (modèle `ModeleImportMandats` reçu)
 >
@@ -423,6 +432,7 @@ Les codes reçus sont déjà rangés dans `collection_return.reason_code`
 >     mandat **repris d'un ancien créancier** ?
 > 15. Un débit présenté sous une RUM **pas encore importée** est-il rejeté —
 >     seul, ou avec toute la remise ?
+>     _Réponse du 2026-10-23 : F `AAAAMMJJ`, G `RECURRENT`/`PONCTUEL`, H `CORE`/`B2B` ; vérification du fichier possible dans CENET ([détail](reponses-de-la-banque.md))._
 >
 > **Étape 5 — La préparation de la remise**
 >
@@ -439,6 +449,8 @@ Les codes reçus sont déjà rangés dans `collection_return.reason_code`
 >     un changement de banque du client ?
 > 21. Contrôlez-vous les **doublons** (identifiant de fichier `MsgId`,
 >     identifiant de débit) ? Sur quelle durée ?
+>     _Réponse du 2026-10-23 : `.02` encore accepté (bascule reportée à 2027) ; `.08` compatible, adresse structurée ([détail](reponses-de-la-banque.md))._
+>     _Réponse du 2026-10-23 : plus besoin de `FRST`, tout en `RCUR` ([détail](reponses-de-la-banque.md))._
 >
 > **Étape 6 — Le dépôt**
 >
@@ -448,6 +460,7 @@ Les codes reçus sont déjà rangés dans `collection_return.reason_code`
 >     dépôt à blanc contrôlé sans exécution) ?
 > 24. Comment savoir que la remise est **reçue**, puis **acceptée** (accusé sur
 >     le portail, e-mail, fichier) ? Sous quel délai ?
+>     _Réponse du 2026-10-23 : CORE à J-1 avant 14 h 45, B2B avant 13 h 45 — contredit en apparence le « J-2 » de la réponse 3 ([détail](reponses-de-la-banque.md))._
 >
 > **Étape 7 — Le rejet d'un fichier ou d'une remise**
 >

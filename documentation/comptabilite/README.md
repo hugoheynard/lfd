@@ -11,7 +11,8 @@ propre droit staff (`b2b_accounting`) et son propre espace dans le back-office.
 
 > **État des moyens de paiement au 2026-10-14 (Hugo).**
 >
-> - **Prélèvement** : la banque (Caisse d'Épargne) n'a encore répondu à
+> - **Prélèvement** : _2026-10-23 — la banque a répondu aux 31 questions :
+>   [`prelevement/reponses-de-la-banque.md`](prelevement/reponses-de-la-banque.md)._ Avant cette date, elle n'avait répondu à
 >   **aucune** de nos 31 questions sur le prélèvement
 >   ([`prelevement/question-banque.md`](prelevement/question-banque.md),
 >   [`prelevement/question-banque-v2.md`](prelevement/question-banque-v2.md)).
@@ -46,6 +47,7 @@ plans, ses docs d'état et ses todos (les todos vivent **ici** et non dans
 | [`prelevement/lot-de-prelevement-fige.md`](prelevement/lot-de-prelevement-fige.md)           | ✅ doc d'état — le lot figé : un pain.008 stocké par entité, schéma et cycle, identifiants SEPA par lot, état par commande, constituer, annuler, marquer déposé avec relecture, réglée autrement         |
 | [`prelevement/plan-prelevement-d-essai.md`](prelevement/plan-prelevement-d-essai.md)         | 📝 doc-first (2026-10-22) — un prélèvement d'essai sur une société à nous : pain.008 d'un débiteur, échéance et séquence au choix, hors lots réels ; contredit par vitruve, questions Q1–Q7              |
 | [`prelevement/blocage-et-liens-de-paiement.md`](prelevement/blocage-et-liens-de-paiement.md) | ✅ doc d'état — bloquer le prélèvement d'un client (carte forcée, crédit gardé) ; liens de paiement des commandes et liens libres Stripe                                                                 |
+| [`prelevement/reponses-de-la-banque.md`](prelevement/reponses-de-la-banque.md)               | ✅ les réponses de la banque (2026-10-23) : ce qu'elles veulent dire, l'écart avec le code, la liste à faire et les décisions                                                                            |
 | [`prelevement/question-banque.md`](prelevement/question-banque.md)                           | ❓ les questions à la banque, prêtes à envoyer ; et ce que chaque réponse débloque                                                                                                                       |
 | [`prelevement/question-banque-v2.md`](prelevement/question-banque-v2.md)                     | ❓ deuxième envoi : le mandat B2B d'un entrepreneur individuel sur un compte de particulier (2026-10-12)                                                                                                 |
 | [`prelevement/retours-bancaires.md`](prelevement/retours-bancaires.md)                       | ✅ doc d'état — les rejets, retours et contestations d'une ligne de lot : saisie ou import pain.002 / camt.054, la commande `returned` attend un geste (re-présenter, régler autrement, passer en perte) |

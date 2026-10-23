@@ -1,5 +1,9 @@
 # La RUM — la référence unique de mandat
 
+> 📬 **2026-10-23** : pour la banque, **l'IBAN est lié à la RUM** ; un client
+> qui change de compte signe un **nouveau mandat**
+> ([`../prelevement/reponses-de-la-banque.md`](../prelevement/reponses-de-la-banque.md), réponses 7 et 9).
+
 La **RUM** est la chaîne qui désigne un mandat de prélèvement. Le débiteur la
 déclare à sa banque avec notre ICS, elle est imprimée sur le papier qu'il signe,
 et chaque prélèvement la porte jusqu'à son relevé.

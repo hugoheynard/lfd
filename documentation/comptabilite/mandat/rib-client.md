@@ -1,5 +1,9 @@
 # Le RIB, côté client
 
+> 📬 **2026-10-23** : côté banque, les RIB s'importent **avant** les mandats,
+> nouveaux seulement, 200 lignes ; un changement de compte demande un nouveau
+> mandat d'abord ([`../prelevement/reponses-de-la-banque.md`](../prelevement/reponses-de-la-banque.md), réponses 6–9).
+
 > **Doc d'état**, écrite le 2026-10-08 à partir du code (relu ce jour-là). Elle
 > remplace le plan du 2026-09-14 (« plan RIB client », supprimé ; il reste
 > dans l'historique git). Construit sans `vitruve`, à la demande de Hugo ; la

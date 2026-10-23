@@ -1,5 +1,13 @@
 # L'export des mandats pour le portail de la banque
 
+> 🔴 **2026-10-23 — la banque a répondu, et deux colonnes sont fausses.** F
+> attend `AAAAMMJJ` (le code écrit `JJ/MM/AAAA`), G attend `RECURRENT` /
+> `PONCTUEL` (le code écrit `RCUR` / `OOFF`) ; H est juste. Nom ≤ 140
+> (70 tient). Seulement les nouveaux, 200 lignes au plus ; les RIB d'abord, un
+> RIB déjà connu fait rejeter tout l'import des RIB. Modifié / révoqué / repris :
+> colonnes **M à R** — le modèle a donc au moins 18 colonnes, le code en écrit 17. Détail et liste à faire :
+> [`../prelevement/reponses-de-la-banque.md`](../prelevement/reponses-de-la-banque.md).
+
 > Doc d'état, écrite le 2026-10-09 à partir du code. Elle remplace le plan
 > « L'export des mandats pour le portail de la banque » (supprimé ; il reste dans
 > l'historique git, et des migration.sql le citent encore).
@@ -26,7 +34,8 @@ colonnes (`domain/services/mandate-bank-export-csv.ts`) :
 | H   | `CORE` / `B2B` (schéma figé du mandat)                                              |
 | I–Q | vides                                                                               |
 
-Les valeurs de F, G et H sont **supposées** (questions posées à la banque :
+Les valeurs de F, G et H étaient **supposées** jusqu'au 2026-10-23 (F et G
+démenties ce jour-là, voir le bandeau) (questions posées à la banque :
 [`../prelevement/question-banque.md`](../prelevement/question-banque.md)) et
 s'écrivent en un seul endroit, `mandate-bank-export-values.ts`. Chaque cellule
 passe par `sepa()` (translittération ASCII de `pain008-document.ts`) puis perd
