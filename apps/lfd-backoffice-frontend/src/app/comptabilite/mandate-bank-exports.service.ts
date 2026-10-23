@@ -8,6 +8,8 @@ import type {
 import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../api/api-config';
+import { attachmentFileName } from '../shared/download/content-disposition';
+import type { NamedBlob } from './comptabilite-dashboard.service';
 
 /**
  * **Les mandats à la banque** — l'export du fichier d'import des mandats du
@@ -41,12 +43,21 @@ export class MandateBankExportsService {
   }
 
   /** Le fichier, recalculé par le serveur — 409 si un compte a changé depuis. */
-  async file(entityId: string, exportId: string): Promise<Blob> {
-    return firstValueFrom(
+  async file(entityId: string, exportId: string): Promise<NamedBlob> {
+    const response = await firstValueFrom(
       this.http.get(`${this.base}/${entityId}/mandate-exports/${exportId}/file.csv`, {
         responseType: 'blob',
+        observe: 'response',
       }),
     );
+    if (response.body === null) {
+      throw new Error('Le fichier est arrivé sans contenu.');
+    }
+    // Le nom vient du serveur, figé par export (`CENET-EXC-12-…`, 2026-10-23).
+    return {
+      blob: response.body,
+      fileName: attachmentFileName(response.headers.get('Content-Disposition')),
+    };
   }
 
   /** La banque l'a importé : ses mandats ne ressortiront que si leur compte change. */

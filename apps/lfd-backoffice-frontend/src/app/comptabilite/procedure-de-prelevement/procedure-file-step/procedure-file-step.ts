@@ -21,9 +21,18 @@ import { collectionDayLabel, deadlineLabel } from '../procedure-wording';
  * `app-pending-batch` pour les gestes du lot ; ne verrouille rien sur l'onglet
  * 2 : sans S2 (P4), il AVERTIT des mandats non importés de l'entité.
  *
+ * Une procédure porte jusqu'à deux lots (CORE et B2B) : tous sont montrés
+ * ici, sans « suivre » (2026-10-23).
+ *
  * L'heure limite est en tête ; les gestes faits sur CENET (dépôt, signature)
  * sont dits comme tels — l'outil ne peut pas les vérifier.
  */
+/** Un geste sur un autre lot de la procédure que le lot suivi. */
+export interface OtherBatchGesture {
+  readonly batchId: string;
+  readonly gesture: PendingBatchGesture;
+}
+
 @Component({
   selector: 'app-procedure-file-step',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -44,10 +53,12 @@ export class ProcedureFileStep {
   readonly canWrite = input(false);
   readonly pending = input<string | null>(null);
 
+  /** Les autres lots vivants de la procédure (l'autre schéma, le lot préparé de nouveau). */
+  readonly others = input<readonly CollectionBatchView[]>([]);
+
   readonly gesture = output<PendingBatchGesture>();
+  readonly otherGesture = output<OtherBatchGesture>();
   readonly prepare = output();
-  /** Suivre un autre lot — celui préparé de nouveau après une annulation. */
-  readonly follow = output<string>();
 
   protected readonly followed = computed(() => this.view().followed);
   protected readonly file = computed(() => this.view().file);

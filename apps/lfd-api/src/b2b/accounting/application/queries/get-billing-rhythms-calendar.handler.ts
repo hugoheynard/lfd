@@ -13,7 +13,9 @@ import { PayerBillingModesReader } from "../../domain/ports/payer-billing-modes.
 import { CollectionMandatesReader } from "../../domain/ports/collection-mandates.reader.js";
 import { PayerStandingsReader } from "../../domain/ports/payer-standings.reader.js";
 import { isRhythmFollowed, payerCountsAt } from "../../domain/services/rhythm-payer-counts.js";
+import { procedureCodeOf } from "../../domain/services/collection-procedure-code.js";
 import { procedureIdOf } from "../../domain/services/collection-procedure-id.js";
+import { InvoicingCalendar } from "../../domain/services/invoicing-calendar.js";
 import { collectionSettingsOf } from "../collection-calendar-settings-support.js";
 import {
   rhythmCalendarWindowAt,
@@ -62,6 +64,7 @@ export class GetBillingRhythmsCalendarHandler implements IQueryHandler<
       countedPayerIdsOf({ standings: this.standings, mandates: this.mandates }, entity.id, now),
     ]);
     const counts = payerCountsAt(modes, chosen, payerIds, now);
+    const calendar = InvoicingCalendar.of(modes, chosen);
     const settings = collectionSettingsOf(entity);
     const window = rhythmCalendarWindowAt(now);
     const lanes = LANE_ORDER.map((mode) => ({
@@ -91,11 +94,21 @@ export class GetBillingRhythmsCalendarHandler implements IQueryHandler<
             closesAt: period.closesAt.toISOString(),
             batchId: batchOf.get(period.closesAt.getTime()) ?? null,
             procedureId: procedureIdOf(entity.id, period.closesAt),
+            ...procedureNaming(calendar, period.closesAt),
           })),
         };
       }),
     };
   }
+}
+
+/** Le code et les rythmes de la clôture — la règle de la table des procédures. */
+function procedureNaming(
+  calendar: InvoicingCalendar,
+  closesAt: Date,
+): { readonly procedureCode: string; readonly closureModes: readonly BillingMode[] } {
+  const closureModes = calendar.modesClosingAt(closesAt);
+  return { procedureCode: procedureCodeOf(closesAt, closureModes), closureModes };
 }
 
 /**

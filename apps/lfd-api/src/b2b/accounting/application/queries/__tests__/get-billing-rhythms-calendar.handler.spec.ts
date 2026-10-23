@@ -292,6 +292,37 @@ describe("GetBillingRhythmsCalendarHandler — les trois rythmes sur un axe", ()
     expect(periods.find((p) => p.closesAt === withoutBatch.closesAt)?.batchId).toBeNull();
   });
 
+  it("chaque période porte le code de sa procédure ; le 1er réunit deux rythmes (mutualisée)", async () => {
+    const payers = new PayerModesStore();
+    payers.rows.push({
+      id: "p1",
+      legalEntityId: "le1",
+      payerCompanyId: PAYER.companyId,
+      effectiveFrom: paris("2026-10-01"),
+      mode: "semimonthly",
+      createdAt: paris("2026-09-20"),
+      createdByStaffId: "s",
+      cancelledAt: null,
+      cancelledByStaffId: null,
+    });
+
+    const view = await handler(payers, [PAYER]).execute(new GetBillingRhythmsCalendarQuery("le1"));
+
+    const semimonthly = view.rhythms.find((lane) => lane.mode === "semimonthly");
+    const monthly = view.rhythms.find((lane) => lane.mode === "monthly");
+    const first = paris("2026-11-01").toISOString();
+    const sixteenth = paris("2026-10-16").toISOString();
+    expect(semimonthly?.periods.find((p) => p.closesAt === first)).toMatchObject({
+      procedureCode: "PRL-261101-BM",
+      closureModes: ["monthly", "semimonthly"],
+    });
+    expect(monthly?.periods.find((p) => p.closesAt === first)?.procedureCode).toBe("PRL-261101-BM");
+    expect(semimonthly?.periods.find((p) => p.closesAt === sixteenth)).toMatchObject({
+      procedureCode: "PRL-261016-B",
+      closureModes: ["semimonthly"],
+    });
+  });
+
   it("une entité inconnue : 404 nommé", async () => {
     await expect(
       handler().execute(new GetBillingRhythmsCalendarQuery("nope")),

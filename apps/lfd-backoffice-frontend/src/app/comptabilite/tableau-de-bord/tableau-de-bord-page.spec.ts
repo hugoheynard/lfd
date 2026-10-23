@@ -120,6 +120,8 @@ function rhythmsCalendar(legalEntityId: string): BillingRhythmsCalendarView {
             depositDeadline: null,
             batchId: null,
             procedureId: 'le1~2026-11-01',
+            procedureCode: 'PRL-261101-M',
+            closureModes: ['monthly'],
           },
         ],
       },

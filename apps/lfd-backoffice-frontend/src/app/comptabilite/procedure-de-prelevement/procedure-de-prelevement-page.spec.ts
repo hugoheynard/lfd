@@ -143,17 +143,18 @@ beforeEach(() => {
 });
 
 describe('la page « Procédure de prélèvement »', () => {
-  it('le titre dit le rythme et la période du lot suivi', async () => {
+  it('le titre dit le code de la procédure, le rythme et la période du lot suivi', async () => {
     const fixture = await render();
     expect(text(fixture)).toContain(
-      'Procédure de prélèvement — Mensuel — période du 1er au 31 octobre 2026',
+      'Procédure de prélèvement PRL-261101-M — Mensuel — période du 1er au 31 octobre 2026',
     );
   });
 
   it('sans lot ouvert : le seul nom de la page, et la prochaine clôture', async () => {
     procedure.view = procedureView({ followed: null, openBatches: [] });
     const fixture = await render();
-    expect(text(fixture)).not.toContain('Procédure de prélèvement —');
+    expect(text(fixture)).not.toContain('PRL-261101-M —');
+    expect(text(fixture)).toContain('Procédure de prélèvement PRL-261101-M');
     expect(text(fixture)).toContain('Prochaine clôture le');
   });
 
@@ -197,13 +198,35 @@ describe('la page « Procédure de prélèvement »', () => {
     expect(fixture.debugElement.query(By.directive(AccountBankExportCard))).not.toBeNull();
   });
 
-  it('liste tous les lots ouverts en tête, chacun avec son libellé court', async () => {
+  it('ne liste plus les lots ouverts en tête : la table des procédures fait ce choix', async () => {
     const core = procedureBatch({ id: 'b2', scheme: 'CORE', payerModes: ['weekly'] });
     procedure.view = procedureView({ openBatches: [procedureBatch(), core] });
     const fixture = await render();
-    const lots = query(fixture, '[data-open-batches]')?.textContent ?? '';
-    expect(lots).toContain('B2B · Mensuel · période du 1er au 31 octobre 2026');
-    expect(lots).toContain('CORE · Hebdomadaire · période du 1er au 31 octobre 2026');
+    expect(query(fixture, '[data-open-batches]')).toBeNull();
+    expect(fixture.nativeElement.textContent).not.toContain('Suivre');
+  });
+
+  it('une clôture mutualisée : un encadré dit les rythmes réunis et leurs clients', async () => {
+    procedure.view = procedureView({
+      procedure: {
+        code: 'PRL-261102-HM',
+        closureDay: '2026-11-02',
+        closureModes: ['monthly', 'weekly'],
+        payerCounts: [
+          { mode: 'monthly', count: 12 },
+          { mode: 'weekly', count: 3 },
+        ],
+      },
+    });
+    const fixture = await render();
+    const callout = query(fixture, '[data-pooled]')?.textContent ?? '';
+    expect(callout).toContain('hebdomadaire + mensuel : une seule clôture, un seul lot');
+    expect(callout).toContain('3 hebdomadaires, 12 mensuels');
+  });
+
+  it('une clôture d’un seul rythme : pas d’encadré de mutualisation', async () => {
+    const fixture = await render();
+    expect(query(fixture, '[data-pooled]')).toBeNull();
   });
 
   it('lit la procédure de l’adresse, sur le lot de l’adresse', async () => {

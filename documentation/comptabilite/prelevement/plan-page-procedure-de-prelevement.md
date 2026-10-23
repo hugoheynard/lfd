@@ -553,3 +553,26 @@ dernière clôture (vérifié le 2026-10-23). Le détail d'une manquée
 que la période n'a jamais été préparée et renvoie à la dernière clôture,
 dont le lot reprend ses commandes (le geste que nomme déjà
 `missedClosuresMessage`), par « Ouvrir la dernière clôture ».
+
+### 11.1 Le code, la mutualisation, et la fin de « Suivre » (2026-10-23)
+
+Décisions de Hugo, bâties le même jour (non commitées à l'écriture) :
+
+- **Le code court** `PRL-<AAMMJJ>-<rythmes>` de chaque procédure — colonne
+  « Code » de la table, titre du détail, barres du tableau de bord. Règle et
+  exemples : [`procedure-de-prelevement.md`](procedure-de-prelevement.md)
+  § 4 bis.
+- **Le détail ne montre que SA procédure.** La liste des lots ouverts en tête
+  et son bouton « Suivre » sont retirés (la décision Q4 « tous les lots
+  ouverts listés en tête » est remplacée : la table fait ce choix). Une
+  procédure qui porte deux lots (CORE et B2B) les montre tous les deux sous
+  l'onglet 3 (`CollectionProcedureView.procedureBatches`), sans « suivre » ;
+  le lot préparé de nouveau après une annulation y apparaît aussi, à la place
+  de « Suivre le lot préparé de nouveau ». `openBatches` reste servi, plus lu
+  par l'écran. Les anciennes adresses `?lot=` restent redirigées vers la
+  procédure du lot.
+- **La mutualisation** : une clôture que plusieurs rythmes partagent porte un
+  badge « Mutualisée » dans la table, un encadré dans le détail (les rythmes
+  réunis et leurs clients, lus des factures des lots —
+  `CollectionProcedureView.procedure.payerCounts`), et un repère sur la marque
+  de clôture des barres du tableau de bord.

@@ -35,7 +35,11 @@ export class AccountBankExportEvent implements JournaledEvent {
       subjectType: "legal_entity",
       subjectId: this.entity.id,
       occurredAt: this.at,
-      payload: { subjectLabel: this.entity.name, accountCount: this.bankExport.accountCount },
+      payload: {
+        subjectLabel: this.entity.name,
+        accountCount: this.bankExport.accountCount,
+        reference: this.bankExport.reference,
+      },
     };
   }
 }

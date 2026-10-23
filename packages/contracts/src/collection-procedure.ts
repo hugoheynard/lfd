@@ -131,9 +131,38 @@ export interface CollectionProcedureMissedView {
   readonly latestPeriodLabel: string;
 }
 
+/** Les clients d'un rythme parmi ceux que les lots de la procédure prélèvent. */
+export interface CollectionProcedurePayerCountView {
+  readonly mode: BillingRhythmKind;
+  readonly count: number;
+}
+
+/** La procédure elle-même : sa clôture, son code, ses rythmes (ajouté le 2026-10-23). */
+export interface CollectionProcedureIdentityView {
+  /** `PRL-<AAMMJJ>-<rythmes>`. */
+  readonly code: string;
+  /** `AAAA-MM-JJ` — le jour (Paris) de la clôture. */
+  readonly closureDay: string;
+  /** Les rythmes qui closent ce jour-là ; deux ou plus : clôture mutualisée. */
+  readonly closureModes: readonly BillingRhythmKind[];
+  /**
+   * Les clients prélevés par rythme, lus des factures des lots non annulés
+   * de la clôture (le mode sous lequel chacun a clos SA période) ; `null`
+   * tant qu'aucun lot n'est préparé.
+   */
+  readonly payerCounts: readonly CollectionProcedurePayerCountView[] | null;
+}
+
 /** `GET admin/accounting/collection-procedure?legalEntityId=&batchId=`. */
 export interface CollectionProcedureView {
   readonly legalEntityId: string;
+  /** La procédure ouverte ; `null` quand l'entité n'a aucune clôture à montrer. */
+  readonly procedure: CollectionProcedureIdentityView | null;
+  /**
+   * Les lots de CETTE procédure (CORE et B2B), annulés compris, la limite de
+   * dépôt la plus proche d'abord — l'onglet 3 les montre tous (2026-10-23).
+   */
+  readonly procedureBatches: readonly CollectionProcedureBatchView[];
   /** Le lot que suivent les onglets 3 et 4 (§ 4.3), ou celui de l'adresse. */
   readonly followed: CollectionProcedureBatchView | null;
   /**

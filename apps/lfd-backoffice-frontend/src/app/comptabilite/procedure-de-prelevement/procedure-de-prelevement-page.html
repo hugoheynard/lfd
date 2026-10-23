@@ -49,23 +49,14 @@
           </fold-callout>
         }
 
-        <!-- Q4 : tous les lots ouverts, la limite de dépôt la plus proche d'abord ; jamais repliés. -->
-        @if (state.openBatches.length > 1) {
-          <ul class="pp-lots" aria-label="Lots ouverts" data-open-batches>
-            @for (lot of state.openBatches; track lot.id) {
-              <li class="pp-lot">
-                <span>
-                  {{ lot.scheme }} · {{ shortLabel(lot) }} ·
-                  {{ lot.status === 'constituted' ? deadline(lot) : 'déposé, retours suivis' }}
-                </span>
-                @if (lot.id !== state.followed?.id) {
-                  <button foldButton emphasis="soft" size="sm" (click)="follow(lot.id)">
-                    Suivre
-                  </button>
-                }
-              </li>
-            }
-          </ul>
+        <!-- Le détail ne montre que SA procédure (2026-10-23) : choisir un autre lot,
+             c'est ouvrir une autre ligne de la table. -->
+        @if (state.procedure; as procedure) {
+          @if (pooled(procedure.closureModes)) {
+            <fold-callout appearance="inset" variant="neutral" icon="calendar" data-pooled>
+              {{ pooledSentence(procedure) }}
+            </fold-callout>
+          }
         }
 
         <fold-tabs
@@ -115,11 +106,12 @@
                 <app-procedure-file-step
                   [view]="state"
                   [batch]="followedBatch()"
+                  [others]="otherBatches()"
                   [canWrite]="canWrite()"
                   [pending]="gestures.pending()"
                   (gesture)="onGesture($event)"
+                  (otherGesture)="onOtherGesture($event)"
                   (prepare)="prepare()"
-                  (follow)="follow($event)"
                 />
               }
               @case ('returns') {

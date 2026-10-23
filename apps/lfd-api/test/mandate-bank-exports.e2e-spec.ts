@@ -154,6 +154,10 @@ describe("l'export des mandats pour la banque", () => {
 
     expect(file.headers["cache-control"]).toBe("no-store");
     expect(file.headers["content-disposition"]).toMatch(/^attachment;/u);
+    // Le numéro court EXM, figé à la préparation, et le nom explicite (2026-10-23).
+    expect(file.headers["content-disposition"]).toMatch(
+      /filename="?CENET-EXM-1-mandats-1-sur-1-1-mandat-\d{4}-\d{2}-\d{2}\.csv/u,
+    );
     expect(file.text).toBe(
       `${rum};${ICS};Cafe de l'Isere;${DEBTOR_IBAN};BNPAFRPPXXX;${signatureDateCell(new Date(SIGNED_AT))};RECURRENT;B2B;;;O;N;;;;;;;\r\n`,
     );
@@ -414,5 +418,28 @@ describe("l'export des mandats pour la banque", () => {
     );
     expect(JSON.stringify(journal)).not.toContain(DEBTOR_IBAN);
     expect(JSON.stringify(journal)).not.toContain(DEBTOR_IBAN.slice(4, 14));
+    // Chaque fait cite l'export par son numéro court.
+    for (const row of journal) {
+      expect(row.payload).toMatchObject({ reference: "EXM-1" });
+    }
+  });
+
+  it("le numéro EXM ne repart pas à zéro d'une entité à l'autre, et reste figé", async () => {
+    const first = await entity("552100554");
+    await mandated(first, "Client un");
+    const second = await entity("732829320", OTHER_ICS);
+    await mandated(second, "Client deux");
+
+    await prepare(first);
+    await prepare(second);
+
+    const rows = await ctx.prisma.mandateBankExport.findMany({
+      orderBy: { reference: "asc" },
+      select: { legalEntityId: true, reference: true, partRank: true, partCount: true },
+    });
+    expect(rows).toEqual([
+      { legalEntityId: first, reference: "EXM-1", partRank: 1, partCount: 1 },
+      { legalEntityId: second, reference: "EXM-2", partRank: 1, partCount: 1 },
+    ]);
   });
 });

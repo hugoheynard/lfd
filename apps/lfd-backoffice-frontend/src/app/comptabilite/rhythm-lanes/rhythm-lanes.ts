@@ -8,6 +8,8 @@ import {
   type BillingRhythmsCalendarView,
 } from '@lfd/contracts';
 
+import { isPooled, pooledTitle } from '../procedure-de-prelevement/procedure-wording';
+
 const MS_PER_DAY = 86_400_000;
 const DAYS_PER_WEEK = 7;
 const MINUTES_PER_DAY = 1440;
@@ -25,6 +27,8 @@ export interface RhythmMark {
   readonly percent: number;
   /** Ce que dit le survol : le jalon et sa date, en toutes lettres. */
   readonly label: string;
+  /** Une clôture que d'autres rythmes partagent ce jour-là — un seul lot (2026-10-23). */
+  readonly pooled?: boolean;
 }
 
 /** Une période dite en une phrase — ce qu'un lecteur d'écran lit à la place des marques. */
@@ -140,13 +144,7 @@ export class RhythmLanes {
       followers: followersOf(lane.mode, lane.followed, lane.payerCount),
       marks: lane.periods.flatMap((period) =>
         [
-          {
-            key: `${period.closesAt}-closure`,
-            kind: 'closure' as const,
-            // La clôture est le minuit qui ouvre son jour : le bord gauche du jour.
-            percent: this.percentOf(addDays(period.invoicedOn, 1), 0),
-            label: `Clôture le ${longDay(addDays(period.invoicedOn, 1))} à 00h00 — factures du ${longDay(period.invoicedOn)}`,
-          },
+          this.closureMark(period),
           {
             key: `${period.closesAt}-notice`,
             kind: 'notice' as const,
@@ -166,13 +164,28 @@ export class RhythmLanes {
       lines: lane.periods.map((period) => ({
         key: period.closesAt,
         text:
-          `Clôture le ${longDay(addDays(period.invoicedOn, 1))}, ` +
+          `${period.procedureCode} — clôture le ${longDay(addDays(period.invoicedOn, 1))}${pooledClause(period)}, ` +
           `avis le ${longDay(period.noticeOn)}, ` +
           depositClauseOf(period) +
           `prélèvement le ${longDay(period.collectionDay)}.`,
       })),
     })),
   );
+
+  /**
+   * La clôture est le minuit qui ouvre son jour : le bord gauche du jour.
+   * Mutualisée, elle le dit au survol et porte un repère (`data-pooled`).
+   */
+  private closureMark(period: BillingRhythmPeriodView): RhythmMark {
+    const day = addDays(period.invoicedOn, 1);
+    return {
+      key: `${period.closesAt}-closure`,
+      kind: 'closure',
+      percent: this.percentOf(day, 0),
+      label: `${period.procedureCode} — clôture le ${longDay(day)} à 00h00 — factures du ${longDay(period.invoicedOn)}${pooledClause(period)}`,
+      pooled: isPooled(period.closureModes),
+    };
+  }
 
   /** Le dépôt, entre l'avis et le prélèvement — à son heure dans la journée. */
   private depositMarks(period: BillingRhythmPeriodView): readonly RhythmMark[] {
@@ -211,12 +224,17 @@ function nextProcedureOf(
   const entite = calendar.legalEntityId;
   return {
     text:
-      `Prochaine procédure : clôture ${longDay(addDays(next.invoicedOn, 1))} · ` +
+      `Prochaine procédure ${next.procedureCode} : clôture ${longDay(addDays(next.invoicedOn, 1))} · ` +
       `${deposit} · prélèvement ${longDay(next.collectionDay)}`,
     procedureLink: `${PROCEDURE_ROUTE}/${next.procedureId}`,
     procedureQuery: next.batchId === null ? {} : { lot: next.batchId },
     settingsLink: next.depositDeadline === null ? `${ENTITY_ROUTE}/${entite}` : null,
   };
+}
+
+/** « — mutualisée : hebdomadaire + mensuel : une seule clôture, un seul lot » ; rien sinon. */
+function pooledClause(period: BillingRhythmPeriodView): string {
+  return isPooled(period.closureModes) ? ` — mutualisée : ${pooledTitle(period.closureModes)}` : '';
 }
 
 /** « 16:00 » → minutes depuis minuit. */

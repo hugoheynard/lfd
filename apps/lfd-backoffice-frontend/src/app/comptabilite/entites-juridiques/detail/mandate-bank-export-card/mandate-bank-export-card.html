@@ -86,6 +86,7 @@
               </button>
             </fold-inline-confirm>
           </span>
+          <span class="mb-said" data-part>{{ partSentence(view, item) }}</span>
           @if (opened.length > 1) {
             <span class="mb-said" data-other-open>{{ otherOpenLabel(opened.length - 1) }}</span>
           }

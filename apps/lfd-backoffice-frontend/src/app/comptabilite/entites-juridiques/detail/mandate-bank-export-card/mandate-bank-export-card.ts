@@ -32,6 +32,9 @@ import {
 
 import { blobRefusalMessage } from '../../../../shared/download/blob-refusal';
 import { saveBlob } from '../../../../shared/download/save-blob';
+import { exportPartSentence } from '../../../bank-export-part-wording';
+
+const MANDATE_NOUN = ['mandat', 'mandats'] as const;
 import { BANK_REPORT_PENDING_HINT } from '../../../account-bank-export-wording';
 import {
   BankRejectionPanel,
@@ -163,6 +166,15 @@ export class MandateBankExportCard {
     return row.ibanLast4 === null ? '—' : `•••• ${row.ibanLast4}`;
   }
 
+  /**
+   * « EXM-4 · Fichier 1 sur 2 — 200 mandats. Les 12 suivants… » — « à
+   * exporter » compte aussi les mandats en vol : on les retire.
+   */
+  protected partSentence(view: MandateBankExportsView, item: MandateBankExportSummaryView): string {
+    const inFlight = this.openExports(view).reduce((sum, open) => sum + open.mandateCount, 0);
+    return exportPartSentence(item, item.mandateCount, view.toExportCount - inFlight, MANDATE_NOUN);
+  }
+
   protected async prepare(): Promise<void> {
     const entityId = this.entity().id;
     await this.run(async () => {
@@ -212,9 +224,10 @@ export class MandateBankExportCard {
     await this.run(() => this.service.reject(entityId, report.exportId, row.mandateId, reason));
   }
 
+  /** Le nom vient du serveur, figé par export ; le repli ne sert que s'il manque. */
   private async download(exportId: string): Promise<void> {
-    const blob = await this.service.file(this.entity().id, exportId);
-    saveBlob(blob, `mandats-banque-${this.entity().siren}-${exportId}.csv`);
+    const file = await this.service.file(this.entity().id, exportId);
+    saveBlob(file.blob, file.fileName ?? 'mandats-banque.csv');
   }
 
   /** Un geste, puis la carte relue — même après un refus, qui peut venir d'un état périmé. */

@@ -30,6 +30,9 @@ import {
 
 import { blobRefusalMessage } from '../../../../shared/download/blob-refusal';
 import { saveBlob } from '../../../../shared/download/save-blob';
+import { exportPartSentence } from '../../../bank-export-part-wording';
+
+const ACCOUNT_NOUN = ['compte', 'comptes'] as const;
 import {
   accountsLabel,
   accountStandingLabel,
@@ -187,6 +190,11 @@ export class AccountBankExportCard {
     return Math.min(view.toExport.length, view.maxPerExport);
   }
 
+  /** « EXC-12 · Fichier 1 sur 2 — 200 comptes. Les 37 suivants… » */
+  protected partSentence(view: AccountBankExportsView, item: AccountBankExportSummaryView): string {
+    return exportPartSentence(item, item.accountCount, view.toExport.length, ACCOUNT_NOUN);
+  }
+
   protected otherOpenLabel(count: number): string {
     return count === 1 ? '1 autre export ouvert' : `${count} autres exports ouverts`;
   }
@@ -272,9 +280,10 @@ export class AccountBankExportCard {
     await this.run(() => this.service.declareKnown(entityId, row.bankAccountId, reason));
   }
 
+  /** Le nom vient du serveur, figé par export ; le repli ne sert que s'il manque. */
   private async download(exportId: string): Promise<void> {
-    const blob = await this.service.file(this.entity().id, exportId);
-    saveBlob(blob, `comptes-banque-${this.entity().siren}-${exportId}.csv`);
+    const file = await this.service.file(this.entity().id, exportId);
+    saveBlob(file.blob, file.fileName ?? 'comptes-banque.csv');
   }
 
   /** Un geste, puis la carte relue — même après un refus, qui peut venir d'un état périmé. */

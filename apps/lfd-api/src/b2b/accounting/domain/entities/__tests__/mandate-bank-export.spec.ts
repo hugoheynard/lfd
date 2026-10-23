@@ -15,6 +15,8 @@ function exported(): MandateBankExport {
   return MandateBankExport.export({
     id: "exp_1",
     legalEntityId: "le1",
+    reference: "EXM-1",
+    part: { rank: 1, count: 1 },
     created: CREATED,
     lines: [LINE, { ...LINE, mandateId: "m2", rum: "RUM-2" }],
   });
@@ -29,7 +31,14 @@ describe("un export des mandats pour la banque", () => {
 
   it("refuse un export vide", () => {
     expect(() =>
-      MandateBankExport.export({ id: "e", legalEntityId: "le1", created: CREATED, lines: [] }),
+      MandateBankExport.export({
+        id: "e",
+        legalEntityId: "le1",
+        reference: "EXM-1",
+        part: { rank: 1, count: 1 },
+        created: CREATED,
+        lines: [],
+      }),
     ).toThrow(NothingToExportToBankError);
   });
 
@@ -40,7 +49,14 @@ describe("un export des mandats pour la banque", () => {
       rum: `RUM-${rank}`,
     }));
     expect(() =>
-      MandateBankExport.export({ id: "e", legalEntityId: "le1", created: CREATED, lines }),
+      MandateBankExport.export({
+        id: "e",
+        legalEntityId: "le1",
+        reference: "EXM-1",
+        part: { rank: 1, count: 1 },
+        created: CREATED,
+        lines,
+      }),
     ).toThrow(BankExportTooManyMandatesError);
   });
 
@@ -49,6 +65,8 @@ describe("un export des mandats pour la banque", () => {
       MandateBankExport.export({
         id: "e",
         legalEntityId: "le1",
+        reference: "EXM-1",
+        part: { rank: 1, count: 1 },
         created: CREATED,
         lines: [LINE, LINE],
       }),

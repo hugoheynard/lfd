@@ -155,6 +155,8 @@ const autopilotRun = {
 const mandateBankExport = {
   subjectLabel: subjectLabel(),
   mandateCount: count(),
+  /** `EXC-<n>` / `EXM-<n>` — absent des faits d'avant le 2026-10-23. */
+  reference: z.string().min(1).optional(),
 };
 
 /**
@@ -166,6 +168,8 @@ const mandateBankExport = {
 const accountBankExport = {
   subjectLabel: subjectLabel(),
   accountCount: count(),
+  /** `EXC-<n>` / `EXM-<n>` — absent des faits d'avant le 2026-10-23. */
+  reference: z.string().min(1).optional(),
 };
 
 /**

@@ -116,6 +116,24 @@ describe("préparer un export des comptes", () => {
     ).toEqual(["rib_200"]);
   });
 
+  it("numérote EXC-<n> au compteur global et fige le rang « k sur N » de chaque fichier", async () => {
+    const w = accountExportWorld();
+    w.accounts.exportable = Array.from({ length: ACCOUNT_IMPORT_MAX_ROWS + 37 }, (_, index) =>
+      debitedAccount(String(index).padStart(3, "0"), { iban: `${IBAN_DE}${String(index)}` }),
+    );
+
+    const first = w.exports.rows.get(await w.prepare.execute(prepare()))?.toPersistence();
+    const second = w.exports.rows.get(await w.prepare.execute(prepare()))?.toPersistence();
+
+    expect(first).toMatchObject({ reference: "EXC-1", part: { rank: 1, count: 2 } });
+    expect(second).toMatchObject({ reference: "EXC-2", part: { rank: 2, count: 2 } });
+    expect(second?.lines).toHaveLength(37);
+    // Une série terminée : le fichier suivant recommence à 1, le compteur continue.
+    w.accounts.exportable = [...w.accounts.exportable, debitedAccount("new", { iban: IBAN_B })];
+    const fourth = w.exports.rows.get(await w.prepare.execute(prepare()))?.toPersistence();
+    expect(fourth).toMatchObject({ reference: "EXC-3", part: { rank: 1, count: 1 } });
+  });
+
   it("une entité inconnue est un 404, sans rien écrire", async () => {
     const w = accountExportWorld();
     await expect(w.prepare.execute(new ExportAccountsForBankCommand("autre", "s"))).rejects.toThrow(

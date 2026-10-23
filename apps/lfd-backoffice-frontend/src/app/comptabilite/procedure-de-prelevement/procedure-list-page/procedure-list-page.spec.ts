@@ -43,6 +43,8 @@ class FakeProcedures {
       procedureRow({
         id: 'le1~2026-12-01',
         closureDay: '2026-12-01',
+        code: 'PRL-261201-BM',
+        closureModes: ['monthly', 'semimonthly'],
         periodLabel: 'du 1er au 30 novembre 2026',
         phase: 'upcoming',
         stage: 'file',
@@ -118,6 +120,24 @@ beforeEach(() => {
 });
 
 describe('la table « Procédure de prélèvement »', () => {
+  it('chaque ligne porte le code court de sa procédure', async () => {
+    const fixture = await render();
+    const codes = [...root(fixture).querySelectorAll('[data-code]')].map((node) =>
+      node.textContent?.trim(),
+    );
+    expect(codes).toEqual(['PRL-261101-M', 'PRL-261201-BM']);
+  });
+
+  it('« Mutualisée » à côté du rythme quand une clôture réunit plusieurs rythmes', async () => {
+    const fixture = await render();
+    const badges = [...root(fixture).querySelectorAll('[data-pooled]')];
+    expect(badges).toHaveLength(1);
+    expect(badges[0]?.textContent).toContain('Mutualisée');
+    expect(badges[0]?.getAttribute('title')).toBe(
+      'deux fois par mois + mensuel : une seule clôture, un seul lot',
+    );
+  });
+
   it('une ligne par procédure, dans l’ordre du serveur, titrée comme le détail', async () => {
     const fixture = await render();
     const titles = [...root(fixture).querySelectorAll('[data-row-title]')].map((node) =>

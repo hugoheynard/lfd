@@ -34,6 +34,13 @@ export interface BillingRhythmPeriodView {
   readonly batchId: string | null;
   /** La procédure (entité × clôture) de cette période — l'adresse de son détail. */
   readonly procedureId: string;
+  /** Le code court de la procédure, `PRL-<AAMMJJ>-<rythmes>` (ajouté le 2026-10-23). */
+  readonly procedureCode: string;
+  /**
+   * Les rythmes qui closent à cet instant, mensuel d'abord. Deux ou plus :
+   * la clôture est MUTUALISÉE — une seule clôture, un seul lot.
+   */
+  readonly closureModes: readonly BillingRhythmKind[];
 }
 
 /** Un rythme de l'entité, et ses périodes qui touchent l'axe. */

@@ -1,6 +1,7 @@
 import type {
   BillingRhythmKind,
   CollectionProcedureBatchView,
+  CollectionProcedureIdentityView,
   CollectionProcedureStepKeyView,
   CollectionProcedureStepStateView,
   CollectionProcedureView,
@@ -68,17 +69,20 @@ export function batchShortLabel(batch: CollectionProcedureBatchView): string {
 }
 
 /**
- * Le titre de la page : le contexte du lot suivi, ou le seul nom de la page
- * quand aucun lot n'est ouvert (Hugo, 2026-10-23).
+ * Le titre de la page : le code court de la procédure (`PRL-261031-M`), puis
+ * le contexte du lot suivi, ou le seul nom quand aucun lot n'est ouvert
+ * (Hugo, 2026-10-23).
  */
 export function pageTitle(view: CollectionProcedureView | null): string {
+  const code = view?.procedure?.code;
+  const title = code === undefined ? PAGE_TITLE : `${PAGE_TITLE} ${code}`;
   const followed = view?.followed;
   if (followed === undefined || followed === null || followed.status === 'cancelled') {
-    return PAGE_TITLE;
+    return title;
   }
   const rhythms = rhythmsLabel(followed.payerModes);
   const period = `période ${followed.periodLabel}`;
-  return rhythms === '' ? `${PAGE_TITLE} — ${period}` : `${PAGE_TITLE} — ${rhythms} — ${period}`;
+  return rhythms === '' ? `${title} — ${period}` : `${title} — ${rhythms} — ${period}`;
 }
 
 /** La barre d'onglets : l'état en icône, le nombre en attente en badge (§ 4.2). */
@@ -135,3 +139,54 @@ export const LOCK_REASONS: Readonly<
     go: 'file',
   },
 };
+
+/**
+ * **La mutualisation** (Hugo, 2026-10-23) : le hasard des dates fait clore
+ * plusieurs rythmes le même jour — une seule clôture, un seul lot. Lue des
+ * rythmes que le serveur sert (`closureModes`), jamais recalculée ici.
+ */
+const POOLED_ORDER: readonly BillingRhythmKind[] = ['weekly', 'semimonthly', 'monthly'];
+
+const RHYTHM_PLURALS: Readonly<Record<BillingRhythmKind, readonly [string, string]>> = {
+  weekly: ['hebdomadaire', 'hebdomadaires'],
+  semimonthly: ['facturé deux fois par mois', 'facturés deux fois par mois'],
+  monthly: ['mensuel', 'mensuels'],
+};
+
+export const POOLED_BADGE = 'Mutualisée';
+
+export function isPooled(modes: readonly BillingRhythmKind[]): boolean {
+  return new Set(modes).size > 1;
+}
+
+/** « hebdomadaire + mensuel : une seule clôture, un seul lot » — le titre du badge. */
+export function pooledTitle(modes: readonly BillingRhythmKind[]): string {
+  const words = POOLED_ORDER.filter((mode) => modes.includes(mode)).map(
+    (mode) => RHYTHM_WORDS[mode],
+  );
+  return `${words.join(' + ')} : une seule clôture, un seul lot`;
+}
+
+/**
+ * La phrase de l'encadré du détail : quels rythmes sont réunis, et combien de
+ * clients de chacun le lot prélève — lus des factures du lot ; sans lot, on
+ * le dit plutôt que d'inventer un compte.
+ */
+export function pooledSentence(procedure: CollectionProcedureIdentityView): string {
+  const head = `Clôture mutualisée — ${pooledTitle(procedure.closureModes)}.`;
+  const counts = procedure.payerCounts;
+  if (counts === null) {
+    return `${head} Le nombre de clients de chaque rythme se lira une fois le lot préparé.`;
+  }
+  const parts = POOLED_ORDER.flatMap((mode) => {
+    const found = counts.find((count) => count.mode === mode);
+    if (found === undefined) {
+      return [];
+    }
+    const [one, many] = RHYTHM_PLURALS[mode];
+    return [`${String(found.count)} ${found.count > 1 ? many : one}`];
+  });
+  return parts.length === 0
+    ? `${head} Aucun client prélevé par ses lots.`
+    : `${head} Clients prélevés : ${parts.join(', ')}.`;
+}

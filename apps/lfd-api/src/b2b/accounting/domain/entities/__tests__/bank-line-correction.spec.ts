@@ -21,6 +21,8 @@ function accounts(): AccountBankExport {
   return AccountBankExport.export({
     id: "abe_1",
     legalEntityId: "le1",
+    reference: "EXC-1",
+    part: { rank: 1, count: 1 },
     created: CREATED,
     lines: [
       { bankAccountId: "rib_a", companyId: "cmp_a", accountFingerprint: FP },
@@ -40,6 +42,8 @@ function mandates(): MandateBankExport {
   return MandateBankExport.export({
     id: "mbe_1",
     legalEntityId: "le1",
+    reference: "EXM-1",
+    part: { rank: 1, count: 1 },
     created: CREATED,
     lines: [{ mandateId: "m1", rum: "RUM-1", accountFingerprint: FP }],
   });

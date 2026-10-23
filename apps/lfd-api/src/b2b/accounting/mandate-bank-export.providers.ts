@@ -1,5 +1,7 @@
 import type { Provider } from "@nestjs/common";
 
+import { MandateBankExportNumbering } from "./domain/ports/bank-export-numbering.js";
+import { PrismaMandateBankExportNumbering } from "./infrastructure/prisma-bank-export-numbering.js";
 import { AbandonMandateBankExportHandler } from "./application/commands/abandon-mandate-bank-export.handler.js";
 import { ExportMandatesForBankHandler } from "./application/commands/export-mandates-for-bank.handler.js";
 import { MarkMandateBankExportImportedHandler } from "./application/commands/mark-mandate-bank-export-imported.handler.js";
@@ -29,6 +31,7 @@ import {
  * `appBootstrap/debtor-mandate.module.ts` le relie.
  */
 export const MANDATE_BANK_EXPORT_PROVIDERS: readonly Provider[] = [
+  { provide: MandateBankExportNumbering, useClass: PrismaMandateBankExportNumbering },
   { provide: MandateBankExportRepository, useClass: PrismaMandateBankExportRepository },
   { provide: ImportedMandateAccountsReader, useClass: PrismaImportedMandateAccountsReader },
   { provide: MandateBankExportsReader, useClass: PrismaMandateBankExportsReader },

@@ -64,7 +64,9 @@ flowchart LR
   si l'empreinte d'un compte ne correspond plus, ou si un mandat est devenu
   inexportable (révoqué, RIB retiré, BIC vidé). Servi en
   `text/csv; charset=us-ascii`, `Cache-Control: no-store`, `attachment`, nommé
-  `mandats-banque-<SIREN>-<id>.csv`.
+  `CENET-EXM-<n>-mandats-<k>-sur-<N>-<nombre>-mandats-<AAAA-MM-JJ>.csv` depuis
+  le 2026-10-23 (avant : `mandats-banque-<SIREN>-<id>.csv`) — cf.
+  [`../prelevement/procedure-de-prelevement.md`](../prelevement/procedure-de-prelevement.md) § 4 bis.
 - **« Déjà importé » se lit par l'empreinte** : un mandat est « à exporter »
   s'il n'a aucune ligne d'un export **importé** portant l'empreinte de son
   compte actuel. Un changement de compte le fait ressortir.

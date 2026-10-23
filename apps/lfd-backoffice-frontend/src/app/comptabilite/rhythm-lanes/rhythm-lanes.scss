@@ -151,6 +151,20 @@
   background: var(--fold-color-text-secondary);
 }
 
+/* Une clôture mutualisée (plusieurs rythmes, un seul lot) : le trait est
+   coiffé d'un rond plein, sur chaque barre qui la partage. */
+.lanes-mark[data-kind='closure'][data-pooled]::after {
+  content: '';
+  position: absolute;
+  top: -0.35rem;
+  left: 50%;
+  width: 0.45rem;
+  height: 0.45rem;
+  transform: translateX(-50%);
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-primary);
+}
+
 .lanes-mark[data-kind='notice'] {
   border: 2px solid var(--fold-color-info);
   border-radius: var(--fold-radius-pill);

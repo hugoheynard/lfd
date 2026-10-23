@@ -1,3 +1,4 @@
+import type { ExportPart } from "../services/bank-export-reference.js";
 import type { KnownBankAccountReason } from "../entities/known-bank-account.js";
 
 /** Un compte parti dans un export : la société, le RIB, et l'empreinte de l'IBAN. */
@@ -10,6 +11,10 @@ export interface ExportedAccountLine {
 /** Un export, tel que l'écran le liste. */
 export interface AccountBankExportRecord {
   readonly id: string;
+  /** `EXC-<n>`, figé à la préparation. */
+  readonly reference: string;
+  /** Le rang dans la série ; `null` avant la numérotation. */
+  readonly part: ExportPart | null;
   readonly createdAt: Date;
   readonly accountCount: number;
   /** `null` tant que le fichier n'a jamais été téléchargé. */
@@ -62,6 +67,11 @@ export abstract class KnownAccountStampsReader {
 
 /** Les lignes d'un export, et quand il a été abandonné (`null` s'il ne l'est pas). */
 export interface AccountBankExportFile {
+  /** Ce qui nomme le fichier — figé à la préparation. */
+  readonly reference: string;
+  readonly part: ExportPart | null;
+  readonly createdAt: Date;
+  readonly accountCount: number;
   readonly lines: readonly ExportedAccountLine[];
   readonly abandonedAt: Date | null;
 }

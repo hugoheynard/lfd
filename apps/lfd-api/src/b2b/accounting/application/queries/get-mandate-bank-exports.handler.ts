@@ -1,6 +1,7 @@
 import type { MandateBankExportsView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
+import { mandateExportFileNameOf } from "../bank-export-naming-support.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { CollectionCandidatesReader } from "../../domain/ports/collection-candidates.reader.js";
 import { LegalEntityReader } from "../../domain/ports/legal-entity.reader.js";
@@ -61,6 +62,9 @@ export class GetMandateBankExportsHandler implements IQueryHandler<
       mandates: mandateBankRows(exportable, excluded, lines, names, this.clock.now()),
       exports: exports.map((row) => ({
         id: row.id,
+        reference: row.reference,
+        part: row.part,
+        fileName: mandateExportFileNameOf(row),
         createdAt: row.createdAt.toISOString(),
         mandateCount: row.mandateCount,
         lastDownloadedAt: row.lastDownloadedAt?.toISOString() ?? null,

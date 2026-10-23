@@ -1,4 +1,5 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
+import { MemoryAccountNumbering } from "./bank-export-numbering-doubles.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { AccountBankExport } from "../../../domain/entities/account-bank-export.js";
@@ -113,6 +114,8 @@ export class MemoryAccountExportsReader extends AccountBankExportsReader {
         .filter((state) => state.legalEntityId === legalEntityId)
         .map((state) => ({
           id: state.id,
+          reference: state.reference,
+          part: state.part,
           createdAt: state.created.at,
           accountCount: state.lines.length,
           lastDownloadedAt: state.lastDownloadedAt,
@@ -127,7 +130,14 @@ export class MemoryAccountExportsReader extends AccountBankExportsReader {
       return null;
     }
     const state = found.toPersistence();
-    return { lines: state.lines, abandonedAt: state.abandoned?.at ?? null };
+    return {
+      lines: state.lines,
+      abandonedAt: state.abandoned?.at ?? null,
+      reference: state.reference,
+      part: state.part,
+      createdAt: state.created.at,
+      accountCount: state.lines.length,
+    };
   }
 }
 
@@ -198,6 +208,7 @@ export function accountExportWorld() {
       w.accounts,
       w.fingerprints,
       exports,
+      new MemoryAccountNumbering(exports),
       new UlidSequence(),
       w.clock,
       w.events,

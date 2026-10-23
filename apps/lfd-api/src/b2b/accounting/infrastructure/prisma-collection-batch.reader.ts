@@ -154,8 +154,10 @@ export class PrismaCollectionBatchReader extends CollectionBatchReader {
       where: { id: batchId },
       select: {
         id: true,
+        legalEntityId: true,
         scheme: true,
         cycleClosesAt: true,
+        requestedCollectionDay: true,
         status: true,
         unmandatedCompanies: true,
         xml: true,
@@ -169,8 +171,11 @@ export class PrismaCollectionBatchReader extends CollectionBatchReader {
     }
     return {
       batchId: row.id,
+      legalEntityId: row.legalEntityId,
       scheme: row.scheme,
       creditorSiren: row.legalEntity.siren,
+      collectionDay: row.requestedCollectionDay?.toISOString().slice(0, 10) ?? null,
+      debitCount: row._count.lines,
       cycleClosesAt: row.cycleClosesAt,
       depositable: row._count.lines > 0 && row.unmandatedCompanies.length === 0,
       status: row.status,

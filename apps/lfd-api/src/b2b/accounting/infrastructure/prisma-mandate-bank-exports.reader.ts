@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { NAMING_COLUMNS, namingFromRow } from "./bank-export-naming.mapper.js";
 import { NOT_REJECTED } from "./bank-line-correction.mapper.js";
 import {
   ImportedMandateAccountsReader,
@@ -36,12 +37,13 @@ export class PrismaMandateBankExportsReader extends MandateBankExportsReader {
     super();
   }
 
-  list(legalEntityId: string): Promise<readonly MandateBankExportRecord[]> {
-    return this.prisma.mandateBankExport.findMany({
+  async list(legalEntityId: string): Promise<readonly MandateBankExportRecord[]> {
+    const rows = await this.prisma.mandateBankExport.findMany({
       where: { legalEntityId },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       select: {
         id: true,
+        ...NAMING_COLUMNS,
         createdAt: true,
         mandateCount: true,
         lastDownloadedAt: true,
@@ -49,14 +51,21 @@ export class PrismaMandateBankExportsReader extends MandateBankExportsReader {
         abandonedAt: true,
       },
     });
+    return rows.map(namingFromRow);
   }
 
   async fileOf(legalEntityId: string, exportId: string): Promise<MandateBankExportFile | null> {
     const row = await this.prisma.mandateBankExport.findFirst({
       where: { id: exportId, legalEntityId },
-      select: { abandonedAt: true, lines: { orderBy: { rum: "asc" }, select: LINE_COLUMNS } },
+      select: {
+        abandonedAt: true,
+        createdAt: true,
+        mandateCount: true,
+        ...NAMING_COLUMNS,
+        lines: { orderBy: { rum: "asc" }, select: LINE_COLUMNS },
+      },
     });
-    return row === null ? null : { lines: row.lines, abandonedAt: row.abandonedAt };
+    return row === null ? null : namingFromRow(row);
   }
 }
 

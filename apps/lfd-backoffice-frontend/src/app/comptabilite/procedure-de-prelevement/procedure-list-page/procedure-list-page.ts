@@ -35,9 +35,10 @@ import {
   warningText,
   warningVariant,
 } from '../procedure-list-wording';
-import { PAGE_TITLE } from '../procedure-wording';
+import { PAGE_TITLE, POOLED_BADGE, isPooled, pooledTitle } from '../procedure-wording';
 
 const COLUMNS: readonly FoldTableColumn<CollectionProcedureRowView>[] = [
+  { key: 'code', label: 'Code' },
   { key: 'period', label: 'Rythme · période' },
   { key: 'stage', label: 'Étape en cours' },
   { key: 'closure', label: 'Clôture' },
@@ -85,6 +86,9 @@ export class ProcedureListPage {
 
   protected readonly title = PAGE_TITLE;
   protected readonly columns = COLUMNS;
+  protected readonly pooled = isPooled;
+  protected readonly pooledTitle = pooledTitle;
+  protected readonly pooledBadge = POOLED_BADGE;
   protected readonly entities = signal<readonly LegalEntityView[]>([]);
   protected readonly entityId = signal<string | null>(
     this.route.snapshot.queryParamMap.get('entite'),

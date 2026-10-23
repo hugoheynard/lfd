@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { NAMING_COLUMNS, namingFromRow } from "./bank-export-naming.mapper.js";
 
 import {
   AccountBankExportsReader,
@@ -53,12 +54,13 @@ export class PrismaAccountBankExportsReader extends AccountBankExportsReader {
     super();
   }
 
-  list(legalEntityId: string): Promise<readonly AccountBankExportRecord[]> {
-    return this.prisma.accountBankExport.findMany({
+  async list(legalEntityId: string): Promise<readonly AccountBankExportRecord[]> {
+    const rows = await this.prisma.accountBankExport.findMany({
       where: { legalEntityId },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       select: {
         id: true,
+        ...NAMING_COLUMNS,
         createdAt: true,
         accountCount: true,
         lastDownloadedAt: true,
@@ -66,6 +68,7 @@ export class PrismaAccountBankExportsReader extends AccountBankExportsReader {
         abandonedAt: true,
       },
     });
+    return rows.map(namingFromRow);
   }
 
   async fileOf(legalEntityId: string, exportId: string): Promise<AccountBankExportFile | null> {
@@ -73,12 +76,15 @@ export class PrismaAccountBankExportsReader extends AccountBankExportsReader {
       where: { id: exportId, legalEntityId },
       select: {
         abandonedAt: true,
+        createdAt: true,
+        accountCount: true,
+        ...NAMING_COLUMNS,
         lines: {
           orderBy: { accountFingerprint: "asc" },
           select: { bankAccountId: true, companyId: true, accountFingerprint: true },
         },
       },
     });
-    return row === null ? null : { lines: row.lines, abandonedAt: row.abandonedAt };
+    return row === null ? null : namingFromRow(row);
   }
 }

@@ -14,6 +14,7 @@ import {
   rejectionReason,
   type BankLineCorrection,
 } from "./bank-line-correction.js";
+import type { ExportPart } from "../services/bank-export-reference.js";
 import type { StaffStamp } from "./collection-batch.js";
 
 /** Une ligne de l'export, et ce que le compte rendu CENET en a dit. */
@@ -28,6 +29,10 @@ export interface AccountExportLine extends ExportedAccountLine {
 
 export interface AccountBankExportState {
   readonly id: string;
+  /** `EXC-<n>` — attribué à la préparation, figé. */
+  readonly reference: string;
+  /** Le rang dans la série ; `null` pour un export d'avant la numérotation. */
+  readonly part: ExportPart | null;
   /** L'entité depuis laquelle il est préparé — sa fiche porte la carte. */
   readonly legalEntityId: string;
   readonly created: StaffStamp;
@@ -42,6 +47,8 @@ export interface AccountBankExportState {
 
 export interface ExportAccountsInput {
   readonly id: string;
+  readonly reference: string;
+  readonly part: ExportPart;
   readonly legalEntityId: string;
   readonly created: StaffStamp;
   readonly lines: readonly ExportedAccountLine[];
@@ -102,6 +109,10 @@ export class AccountBankExport {
 
   get id(): string {
     return this.state.id;
+  }
+
+  get reference(): string {
+    return this.state.reference;
   }
 
   get accountCount(): number {

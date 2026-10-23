@@ -45,6 +45,16 @@ model AccountBankExport {
   abandonedAt        DateTime? @map("abandoned_at") @db.Timestamptz(3)
   abandonedByStaffId String?   @map("abandoned_by_staff_id")
 
+  /// Le numéro court, `EXC-<n>` — attribué à la préparation par le compteur
+  /// global `bank_export_counter`, figé, jamais réattribué (migration
+  /// `20261024050000_les_numeros_courts_des_exports_bancaires`).
+  reference String @unique
+  /// Le rang du fichier dans sa série (« 1 sur 2 ») et le nombre de fichiers
+  /// prévus, figés à la préparation. NULL ensemble : export d'avant la
+  /// migration, dont la file n'a pas été gardée.
+  partRank  Int?   @map("part_rank")
+  partCount Int?   @map("part_count")
+
   lines AccountBankExportLine[]
 
   @@index([legalEntityId, createdAt])
@@ -104,5 +114,16 @@ model KnownBankAccount {
   reason            String   @default("entered_in_cenet")
 
   @@map("known_bank_account")
+  @@schema("public")
+}
+
+/// Le compteur des numéros courts d'export, un par sorte (`accounts` → EXC,
+/// `mandates` → EXM). Il ne recule ni ne se supprime (déclencheur
+/// `bank_export_counter_forward`), et ne repart jamais à zéro.
+model BankExportCounter {
+  kind     String @id
+  lastRank Int    @map("last_rank")
+
+  @@map("bank_export_counter")
   @@schema("public")
 }

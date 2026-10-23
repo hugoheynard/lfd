@@ -1,4 +1,5 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
+import { MemoryMandateNumbering } from "./bank-export-numbering-doubles.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { MandateBankExport } from "../../../domain/entities/mandate-bank-export.js";
@@ -126,6 +127,8 @@ export class MemoryExportsReader extends MandateBankExportsReader {
         .filter((state) => state.legalEntityId === legalEntityId)
         .map((state) => ({
           id: state.id,
+          reference: state.reference,
+          part: state.part,
           createdAt: state.created.at,
           mandateCount: state.lines.length,
           lastDownloadedAt: state.lastDownloadedAt,
@@ -140,7 +143,14 @@ export class MemoryExportsReader extends MandateBankExportsReader {
       return null;
     }
     const state = found.toPersistence();
-    return { lines: state.lines, abandonedAt: state.abandoned?.at ?? null };
+    return {
+      lines: state.lines,
+      abandonedAt: state.abandoned?.at ?? null,
+      reference: state.reference,
+      part: state.part,
+      createdAt: state.created.at,
+      mandateCount: state.lines.length,
+    };
   }
 }
 
@@ -188,6 +198,7 @@ export function bankExportWorld() {
     w.mandates,
     w.imported,
     w.exports,
+    new MemoryMandateNumbering(w.exports),
     new UlidSequence(),
     w.clock,
     w.events,

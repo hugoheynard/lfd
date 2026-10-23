@@ -8,9 +8,15 @@ import { MandateBankExport } from "../../domain/entities/mandate-bank-export.js"
 import { BankExportWithoutCreditorIdentifierError } from "../../domain/errors/mandate-bank-export-errors.js";
 import { MandateBankExportCreatedEvent } from "../../domain/events/mandate-bank-export.events.js";
 import { LegalEntityReader } from "../../domain/ports/legal-entity.reader.js";
+import { MandateBankExportNumbering } from "../../domain/ports/bank-export-numbering.js";
 import { MandateBankExportRepository } from "../../domain/ports/mandate-bank-export.repository.js";
 import { ImportedMandateAccountsReader } from "../../domain/ports/mandate-bank-exports.reader.js";
 import { MandatesForBankExportReader } from "../../domain/ports/mandates-for-bank-export.reader.js";
+import {
+  BANK_EXPORT_PREFIXES,
+  bankExportReferenceOf,
+  exportPartOf,
+} from "../../domain/services/bank-export-reference.js";
 import { BANK_IMPORT_MAX_ROWS } from "../../domain/services/mandate-bank-export-csv.js";
 import {
   fingerprinted,
@@ -32,7 +38,9 @@ import { ExportMandatesForBankCommand } from "./export-mandates-for-bank.command
  * La banque n'importe que 200 lignes par fichier (réponse 12) : l'export
  * prend les 200 premiers mandats dans l'ordre du lecteur, et les suivants
  * restent « à exporter » pour l'export d'après — découper plutôt que refuser,
- * puisque rien n'est faux dans le 201ᵉ.
+ * puisque rien n'est faux dans le 201ᵉ. Le numéro `EXM-<n>` et le rang
+ * « k sur N » se prennent ici, dans la transaction, et se figent avec
+ * l'export (doc `procedure-de-prelevement.md`, « Les identifiants courts »).
  */
 @CommandHandler(ExportMandatesForBankCommand)
 export class ExportMandatesForBankHandler implements ICommandHandler<
@@ -44,6 +52,7 @@ export class ExportMandatesForBankHandler implements ICommandHandler<
     private readonly mandates: MandatesForBankExportReader,
     private readonly imported: ImportedMandateAccountsReader,
     private readonly exports: MandateBankExportRepository,
+    private readonly numbering: MandateBankExportNumbering,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
@@ -57,9 +66,16 @@ export class ExportMandatesForBankHandler implements ICommandHandler<
       throw new BankExportWithoutCreditorIdentifierError(entity.name);
     }
     return this.uow.run(async () => {
-      const chosen = (await this.chosen(command)).slice(0, BANK_IMPORT_MAX_ROWS);
+      const queue = await this.chosen(command);
+      const chosen = queue.slice(0, BANK_IMPORT_MAX_ROWS);
+      const previous = await this.numbering.lastPart(entity.id);
       const bankExport = MandateBankExport.export({
         id: this.ids.next(),
+        reference: bankExportReferenceOf(
+          BANK_EXPORT_PREFIXES.mandates,
+          await this.numbering.nextRank(),
+        ),
+        part: exportPartOf(previous, queue.length, BANK_IMPORT_MAX_ROWS),
         legalEntityId: entity.id,
         created: { at, staffId: command.staffUserId },
         lines: chosen.map(({ mandate, fingerprint }) => ({

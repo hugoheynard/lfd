@@ -15,6 +15,7 @@ import {
   rejectionReason,
   type BankLineCorrection,
 } from "./bank-line-correction.js";
+import type { ExportPart } from "../services/bank-export-reference.js";
 import type { StaffStamp } from "./collection-batch.js";
 
 /** Une ligne de l'export, et ce que le compte rendu CENET en a dit. */
@@ -29,6 +30,10 @@ export interface MandateExportLine extends ExportedMandateLine {
 
 export interface MandateBankExportState {
   readonly id: string;
+  /** `EXM-<n>` — attribué à la préparation, figé. */
+  readonly reference: string;
+  /** Le rang dans la série ; `null` pour un export d'avant la numérotation. */
+  readonly part: ExportPart | null;
   readonly legalEntityId: string;
   readonly created: StaffStamp;
   readonly lines: readonly MandateExportLine[];
@@ -42,6 +47,8 @@ export interface MandateBankExportState {
 
 export interface ExportMandatesInput {
   readonly id: string;
+  readonly reference: string;
+  readonly part: ExportPart;
   readonly legalEntityId: string;
   readonly created: StaffStamp;
   readonly lines: readonly ExportedMandateLine[];
@@ -103,6 +110,10 @@ export class MandateBankExport {
 
   get id(): string {
     return this.state.id;
+  }
+
+  get reference(): string {
+    return this.state.reference;
   }
 
   get mandateCount(): number {

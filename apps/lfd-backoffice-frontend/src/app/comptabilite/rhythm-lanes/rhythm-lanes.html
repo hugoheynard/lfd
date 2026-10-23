@@ -46,6 +46,7 @@
             <span
               class="lanes-mark"
               [attr.data-kind]="mark.kind"
+              [attr.data-pooled]="mark.pooled ? '' : null"
               [style.left.%]="mark.percent"
               [attr.title]="mark.label"
             ></span>

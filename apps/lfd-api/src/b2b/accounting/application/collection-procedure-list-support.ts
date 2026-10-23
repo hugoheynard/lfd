@@ -15,6 +15,7 @@ import type {
   ListedBatch,
   ProcedureRow,
 } from "../domain/services/collection-procedure-list.js";
+import { procedureCodeOf } from "../domain/services/collection-procedure-code.js";
 import { closureDayOf } from "../domain/services/collection-procedure-id.js";
 import type { InvoicingCalendar } from "../domain/services/invoicing-calendar.js";
 import { closureAfter, periodLabelOf } from "../domain/services/invoicing-closures.js";
@@ -82,11 +83,13 @@ export function upcomingClosures(
   );
 }
 
-/** Une ligne, telle que l'écran la lit. */
+/** Une ligne, telle que l'écran la lit — son code vient des rythmes du CALENDRIER à cet instant. */
 export function procedureRowView(
   legalEntityId: string,
   row: ProcedureRow,
+  calendar: InvoicingCalendar,
 ): CollectionProcedureRowView {
+  const closureModes = calendar.modesClosingAt(row.closesAt);
   return {
     id: row.id,
     legalEntityId,
@@ -94,6 +97,8 @@ export function procedureRowView(
     closureDay: closureDayOf(row.closesAt),
     periodLabel: row.periodLabel,
     modes: row.modes,
+    code: procedureCodeOf(row.closesAt, closureModes),
+    closureModes,
     phase: row.phase,
     stage: row.stage,
     batches: row.batches.map((batch) => ({

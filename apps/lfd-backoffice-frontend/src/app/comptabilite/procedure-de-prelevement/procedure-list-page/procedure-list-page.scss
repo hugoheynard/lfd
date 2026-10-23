@@ -21,3 +21,12 @@
   flex-wrap: wrap;
   gap: var(--fold-space-xs);
 }
+
+.pl-code {
+  font-family: var(--fold-font-mono);
+  white-space: nowrap;
+}
+
+.pl-pooled {
+  margin-inline-start: var(--fold-space-xs);
+}

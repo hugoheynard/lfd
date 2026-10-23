@@ -47,8 +47,18 @@
         [empty]="nothing"
         (rowClick)="open($event)"
       >
+        <ng-template foldCell="code" let-row>
+          <code class="pl-code" data-code>{{ row.code }}</code>
+        </ng-template>
+
         <ng-template foldCell="period" let-row>
           <span data-row-title>{{ rowTitle(row) }}</span>
+          @if (pooled(row.closureModes)) {
+            <!-- Une même clôture réunit plusieurs rythmes : un seul lot (2026-10-23). -->
+            <span class="pl-pooled" [title]="pooledTitle(row.closureModes)" data-pooled>
+              <fold-badge radius="square" variant="info" [content]="pooledBadge" />
+            </span>
+          }
         </ng-template>
 
         <ng-template foldCell="stage" let-row>

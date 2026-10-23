@@ -1,4 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import type { NamedBlob } from '../../../comptabilite-dashboard.service';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import type {
   LegalEntityView,
@@ -123,6 +124,9 @@ const VIEW: MandateBankExportsView = {
   exports: [
     {
       id: 'exp_new',
+      reference: 'EXM-1',
+      part: { rank: 1, count: 1 },
+      fileName: 'CENET-EXM-1.csv',
       createdAt: '2026-10-09T09:00:00.000Z',
       mandateCount: 1,
       lastDownloadedAt: null,
@@ -131,6 +135,9 @@ const VIEW: MandateBankExportsView = {
     },
     {
       id: 'exp_old',
+      reference: 'EXM-2',
+      part: { rank: 1, count: 1 },
+      fileName: 'CENET-EXM-2.csv',
       createdAt: '2026-10-01T09:00:00.000Z',
       mandateCount: 1,
       lastDownloadedAt: '2026-10-01T10:00:00.000Z',
@@ -157,7 +164,7 @@ class FakeService {
     this.calls.push(`prepare:${entityId}:${String(all)}`);
     return Promise.resolve('exp_created');
   }
-  file(entityId: string, exportId: string): Promise<Blob> {
+  file(entityId: string, exportId: string): Promise<NamedBlob> {
     this.calls.push(`file:${entityId}:${exportId}`);
     // Comme le serveur : le téléchargement se garde sur l'export.
     this.view = {
@@ -167,7 +174,10 @@ class FakeService {
       ),
     };
     return this.fileError === null
-      ? Promise.resolve(new Blob(['RUM;x'], { type: 'text/csv' }))
+      ? Promise.resolve({
+          blob: new Blob(['RUM;x'], { type: 'text/csv' }),
+          fileName: 'CENET-EXM-1.csv',
+        })
       : Promise.reject(this.fileError);
   }
   markImported(entityId: string, exportId: string): Promise<void> {
@@ -380,5 +390,27 @@ describe('la carte « Mandats à la banque »', () => {
       fixture.detectChanges();
       expect(text(fixture)).toContain('Le fichier ne correspond plus : RUM-m2');
     });
+  });
+});
+
+describe('le découpage en fichiers, sur la carte des mandats', () => {
+  it('dit le numéro, le rang et ceux qui attendent le fichier suivant', async () => {
+    const [open, ...rest] = VIEW.exports;
+    if (open === undefined) {
+      throw new TypeError('fixture sans export ouvert');
+    }
+    const fixture = await render({
+      ...VIEW,
+      toExportCount: 212,
+      exports: [
+        { ...open, reference: 'EXM-4', part: { rank: 1, count: 2 }, mandateCount: 200 },
+        ...rest,
+      ],
+    });
+    const part = (fixture.nativeElement as HTMLElement).querySelector('[data-part]');
+    // « À exporter » compte les 200 en vol : 12 attendent le fichier 2.
+    expect(part?.textContent?.trim()).toBe(
+      'EXM-4 · Fichier 1 sur 2 — 200 mandats. Les 12 suivants partiront dans le fichier 2, une fois celui-ci déposé dans CENET.',
+    );
   });
 });

@@ -27,6 +27,8 @@ function input(fingerprints: readonly string[]): ExportAccountsInput {
   return {
     id: "exp_1",
     legalEntityId: "le1",
+    reference: "EXC-1",
+    part: { rank: 1, count: 1 },
     created: { at: AT, staffId: "staff_1" },
     lines: fingerprints.map((fingerprint, index) => ({
       bankAccountId: `rib_${String(index)}`,

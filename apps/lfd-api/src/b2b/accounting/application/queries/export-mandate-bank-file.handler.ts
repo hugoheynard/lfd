@@ -1,5 +1,6 @@
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
+import { mandateExportFileNameOf } from "../bank-export-naming-support.js";
 import {
   MandateBankExportAbandonedError,
   MandateBankExportNotFoundError,
@@ -53,6 +54,6 @@ export class ExportMandateBankFileHandler implements IQueryHandler<
     const { exportable } = await this.mandates.activeOf(entity.id);
     const mandates = currentMandatesOf(file.lines, exportable);
     const csv = await mandateBankCsvOf(this.candidates, entity, mandates);
-    return { csv, fileName: `mandats-banque-${entity.siren}-${query.exportId}.csv` };
+    return { csv, fileName: mandateExportFileNameOf(file) };
   }
 }

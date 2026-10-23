@@ -1,4 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import type { NamedBlob } from '../../../comptabilite-dashboard.service';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import type {
   AccountBankExportsView,
@@ -143,6 +144,9 @@ const VIEW: AccountBankExportsView = {
   exports: [
     {
       id: 'exp_new',
+      reference: 'EXC-1',
+      part: { rank: 1, count: 1 },
+      fileName: 'CENET-EXC-1.csv',
       createdAt: '2026-10-09T09:00:00.000Z',
       accountCount: 1,
       lastDownloadedAt: null,
@@ -151,6 +155,9 @@ const VIEW: AccountBankExportsView = {
     },
     {
       id: 'exp_old',
+      reference: 'EXC-2',
+      part: { rank: 1, count: 1 },
+      fileName: 'CENET-EXC-2.csv',
       createdAt: '2026-10-01T09:00:00.000Z',
       accountCount: 1,
       lastDownloadedAt: '2026-10-01T10:00:00.000Z',
@@ -159,6 +166,9 @@ const VIEW: AccountBankExportsView = {
     },
     {
       id: 'exp_ko',
+      reference: 'EXC-3',
+      part: { rank: 1, count: 1 },
+      fileName: 'CENET-EXC-3.csv',
       createdAt: '2026-09-01T09:00:00.000Z',
       accountCount: 1,
       lastDownloadedAt: null,
@@ -180,7 +190,7 @@ class FakeService {
     this.calls.push(`prepare:${entityId}`);
     return Promise.resolve('exp_created');
   }
-  file(entityId: string, exportId: string): Promise<Blob> {
+  file(entityId: string, exportId: string): Promise<NamedBlob> {
     this.calls.push(`file:${entityId}:${exportId}`);
     // Comme le serveur : le téléchargement se garde sur l'export.
     this.view = {
@@ -195,7 +205,10 @@ class FakeService {
       ),
     };
     return this.fileError === null
-      ? Promise.resolve(new Blob(['I;x'], { type: 'text/csv' }))
+      ? Promise.resolve({
+          blob: new Blob(['I;x'], { type: 'text/csv' }),
+          fileName: 'CENET-EXC-1.csv',
+        })
       : Promise.reject(this.fileError);
   }
   markImported(entityId: string, exportId: string): Promise<void> {
@@ -521,6 +534,9 @@ describe('la carte « Comptes à la banque »', () => {
         ...VIEW.exports,
         {
           id: 'exp_first',
+          reference: 'EXC-4',
+          part: { rank: 1, count: 1 },
+          fileName: 'CENET-EXC-4.csv',
           createdAt: '2026-10-08T09:00:00.000Z',
           accountCount: 1,
           lastDownloadedAt: null,
@@ -588,5 +604,42 @@ describe('la carte « Comptes à la banque »', () => {
       fixture.detectChanges();
       expect(text(fixture)).toContain('Le fichier ne correspond plus : Café A');
     });
+  });
+});
+
+describe('le découpage en fichiers, sur la carte des comptes', () => {
+  it('« Fichier 1 sur 2 — 200 comptes », puis ceux qui partiront dans le fichier 2', async () => {
+    const [open, ...rest] = VIEW.exports;
+    if (open === undefined) {
+      throw new TypeError('fixture sans export ouvert');
+    }
+    const fixture = await render({
+      ...VIEW,
+      exports: [
+        { ...open, reference: 'EXC-12', part: { rank: 1, count: 2 }, accountCount: 200 },
+        ...rest,
+      ],
+    });
+    const part = (fixture.nativeElement as HTMLElement).querySelector('[data-part]');
+    expect(part?.textContent?.trim()).toBe(
+      'EXC-12 · Fichier 1 sur 2 — 200 comptes. Le suivant partira dans le fichier 2, une fois celui-ci déposé dans CENET.',
+    );
+  });
+
+  it('le dernier fichier de la série ne dit que lui', async () => {
+    const [open, ...rest] = VIEW.exports;
+    if (open === undefined) {
+      throw new TypeError('fixture sans export ouvert');
+    }
+    const fixture = await render({
+      ...VIEW,
+      toExport: [],
+      exports: [
+        { ...open, reference: 'EXC-13', part: { rank: 2, count: 2 }, accountCount: 37 },
+        ...rest,
+      ],
+    });
+    expect(text(fixture)).toContain('EXC-13 · Fichier 2 sur 2 — 37 comptes.');
+    expect(text(fixture)).not.toContain('suivant');
   });
 });

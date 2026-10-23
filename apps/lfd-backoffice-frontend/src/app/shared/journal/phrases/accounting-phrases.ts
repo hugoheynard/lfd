@@ -524,13 +524,23 @@ function autopilotIssue(fact: PhraseFact): Segment[] {
  * charge ne les porte pas.
  */
 function mandateCount(fact: PhraseFact): Segment[] {
-  const count = countOf(fact.payload['mandateCount'], 'mandat', 'mandats');
-  return count === null ? [] : [text(' : '), count];
+  return exportTally(fact, countOf(fact.payload['mandateCount'], 'mandat', 'mandats'));
 }
 
 function accountCount(fact: PhraseFact): Segment[] {
-  const count = countOf(fact.payload['accountCount'], 'compte', 'comptes');
-  return count === null ? [] : [text(' : '), count];
+  return exportTally(fact, countOf(fact.payload['accountCount'], 'compte', 'comptes'));
+}
+
+/**
+ * « : EXC-12, 200 comptes » — le numéro court de l'export d'abord, quand le
+ * fait le porte (depuis le 2026-10-23 ; les faits d'avant n'ont que le compte).
+ */
+function exportTally(fact: PhraseFact, count: Segment | null): Segment[] {
+  const reference = optional(fact.payload['reference']);
+  const head: Segment[] = reference === null ? [] : [name(reference)];
+  const tail: Segment[] = count === null ? [] : [count];
+  const parts = [...head, ...(head.length > 0 && tail.length > 0 ? [text(', ')] : []), ...tail];
+  return parts.length === 0 ? [] : [text(' : '), ...parts];
 }
 
 export const ACCOUNTING_PHRASES = {
@@ -680,49 +690,49 @@ export const ACCOUNTING_PHRASES = {
     'a préparé l’export des mandats pour la banque',
     'de',
     mandateCount,
-    ['mandateCount'],
+    ['mandateCount', 'reference'],
   ),
   'mandate_bank_export.imported': onEntity(
     'a marqué importé à la banque l’export des mandats',
     'de',
     mandateCount,
-    ['mandateCount'],
+    ['mandateCount', 'reference'],
   ),
   'mandate_bank_export.downloaded': onEntity(
     'a téléchargé le fichier des mandats pour la banque',
     'de',
     mandateCount,
-    ['mandateCount'],
+    ['mandateCount', 'reference'],
   ),
   'mandate_bank_export.abandoned': onEntity(
     'a abandonné l’export des mandats pour la banque',
     'de',
     mandateCount,
-    ['mandateCount'],
+    ['mandateCount', 'reference'],
   ),
   'account_bank_export.created': onEntity(
     'a préparé l’export des comptes destinataires pour la banque',
     'de',
     accountCount,
-    ['accountCount'],
+    ['accountCount', 'reference'],
   ),
   'account_bank_export.downloaded': onEntity(
     'a téléchargé le fichier des comptes destinataires',
     'de',
     accountCount,
-    ['accountCount'],
+    ['accountCount', 'reference'],
   ),
   'account_bank_export.imported': onEntity(
     'a marqué importé à la banque l’export des comptes destinataires',
     'de',
     accountCount,
-    ['accountCount'],
+    ['accountCount', 'reference'],
   ),
   'account_bank_export.abandoned': onEntity(
     'a abandonné l’export des comptes destinataires',
     'de',
     accountCount,
-    ['accountCount'],
+    ['accountCount', 'reference'],
   ),
   'account_bank_export.account_known_declared': onEntity(
     'a déclaré connu de la banque, sans fichier, un compte débité par les mandats',

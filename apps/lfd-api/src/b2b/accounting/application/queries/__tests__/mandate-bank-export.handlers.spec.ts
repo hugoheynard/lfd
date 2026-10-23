@@ -1,3 +1,4 @@
+import { instantToLocal } from "@lfd/contracts";
 import {
   BankExportOutdatedError,
   MandateBankExportAbandonedError,
@@ -10,6 +11,7 @@ import { MarkMandateBankExportImportedCommand } from "../../commands/mark-mandat
 import {
   IBAN_A,
   IBAN_B,
+  NOW,
   bankExportWorld,
   bankMandate,
 } from "../../commands/__tests__/mandate-bank-export-doubles.js";
@@ -48,7 +50,10 @@ describe("le fichier d'un export", () => {
     expect(file.csv).toBe(
       `RUM-m1;FR72ZZZ123456;Societe cmp m1;${IBAN_A};BNPAFRPP;20260915;RECURRENT;B2B;;;O;N;;;;;;;\r\n`,
     );
-    expect(file.fileName).toBe(`mandats-banque-552100554-${id}.csv`);
+    // Le nom est figé à la préparation : numéro, rang dans la série, nombre, jour (Paris).
+    expect(file.fileName).toBe(
+      `CENET-EXM-1-mandats-1-sur-1-1-mandat-${instantToLocal(NOW).day}.csv`,
+    );
   });
 
   it("refuse (409) un fichier dont un compte ne correspond plus à l'empreinte", async () => {

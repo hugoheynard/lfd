@@ -444,6 +444,11 @@ describe("le lot figé", () => {
     expect(messageIdOf(first.text)).toBe(batchId);
     expect(first.text).toContain(`<EndToEndId>${batchId ?? ""}-0001</EndToEndId>`);
     expect(first.headers["content-disposition"]).not.toContain("BROUILLON");
+    // Le nom dit la procédure (PRL-AAMMJJ-rythmes), le schéma, l'échéance et le nombre de débits.
+    expect(first.headers["content-disposition"]).toMatch(
+      /filename="?CENET-PRL-\d{6}-[BHM]+-(CORE|B2B)(-echeance-\d{4}-\d{2}-\d{2})?-1-debit\.xml/u,
+    );
+    expect(second.headers["content-disposition"]).toBe(first.headers["content-disposition"]);
     const csv = await staff()
       .get(`${BASE}/batches/${batchId ?? ""}/audit.csv`)
       .expect(200);

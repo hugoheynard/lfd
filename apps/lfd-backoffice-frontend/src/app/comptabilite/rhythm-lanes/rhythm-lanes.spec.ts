@@ -32,6 +32,8 @@ function calendar(over: Partial<BillingRhythmsCalendarView> = {}): BillingRhythm
             depositDeadline: { day: '2026-10-22', time: '16:00' },
             batchId: 'b_weekly',
             procedureId: 'le1~2026-10-12',
+            procedureCode: 'PRL-261012-H',
+            closureModes: ['weekly'],
           },
         ],
       },
@@ -50,6 +52,8 @@ function calendar(over: Partial<BillingRhythmsCalendarView> = {}): BillingRhythm
             depositDeadline: { day: '2026-10-13', time: '16:00' },
             batchId: null,
             procedureId: 'le1~2026-10-01',
+            procedureCode: 'PRL-261001-M',
+            closureModes: ['monthly'],
           },
           {
             closesAt: '2026-10-31T23:00:00.000Z',
@@ -60,6 +64,9 @@ function calendar(over: Partial<BillingRhythmsCalendarView> = {}): BillingRhythm
             depositDeadline: { day: '2026-11-12', time: '16:00' },
             batchId: null,
             procedureId: 'le1~2026-11-01',
+            // Le « deux fois par mois » clôt le même jour : mutualisée.
+            procedureCode: 'PRL-261101-BM',
+            closureModes: ['monthly', 'semimonthly'],
           },
         ],
       },
@@ -147,11 +154,22 @@ describe('RhythmLanes', () => {
     );
     expect(Number.parseFloat(weekly[3]?.style.left ?? '')).toBeCloseTo((21.5 / 42) * 100, 5);
     expect(weekly[0]?.title).toBe(
-      'Clôture le 12 octobre 2026 à 00h00 — factures du 11 octobre 2026',
+      'PRL-261012-H — clôture le 12 octobre 2026 à 00h00 — factures du 11 octobre 2026',
     );
     expect(weekly[1]?.title).toBe('Avis de prélèvement le 12 octobre 2026');
     expect(weekly[2]?.title).toBe('Dépôt avant le 22 octobre 2026 à 16h00');
     expect(weekly[3]?.title).toBe('Prélèvement le 26 octobre 2026');
+  });
+
+  it('une clôture mutualisée porte un repère ; les autres non', async () => {
+    const fixture = await render(calendar());
+    const pooled = [...root(fixture).querySelectorAll<HTMLElement>('.lanes-mark[data-pooled]')];
+
+    expect(pooled.map((mark) => mark.title)).toEqual([
+      'PRL-261101-BM — clôture le 1 novembre 2026 à 00h00 — factures du 31 octobre 2026' +
+        ' — mutualisée : deux fois par mois + mensuel : une seule clôture, un seul lot',
+    ]);
+    expect(marks(fixture, 0).some((mark) => mark.dataset['pooled'] !== undefined)).toBe(false);
   });
 
   it('sans limite de dépôt réglée : pas de marque de dépôt', async () => {
@@ -180,12 +198,14 @@ describe('RhythmLanes', () => {
     expect(monthly.map((mark) => mark.title)).toEqual([
       'Dépôt avant le 13 octobre 2026 à 16h00',
       'Prélèvement le 15 octobre 2026',
-      'Clôture le 1 novembre 2026 à 00h00 — factures du 31 octobre 2026',
+      'PRL-261101-BM — clôture le 1 novembre 2026 à 00h00 — factures du 31 octobre 2026' +
+        ' — mutualisée : deux fois par mois + mensuel : une seule clôture, un seul lot',
       'Avis de prélèvement le 1 novembre 2026',
       'Dépôt avant le 12 novembre 2026 à 16h00',
     ]);
     expect(root(fixture).textContent).toContain(
-      'Clôture le 1 novembre 2026, avis le 1 novembre 2026, ' +
+      'PRL-261101-BM — clôture le 1 novembre 2026 — mutualisée : deux fois par mois + mensuel : une seule clôture, un seul lot' +
+        ', avis le 1 novembre 2026, ' +
         'dépôt avant le 12 novembre 2026 à 16h00, prélèvement le 16 novembre 2026.',
     );
   });
@@ -197,10 +217,10 @@ describe('RhythmLanes', () => {
     );
 
     expect(next).toEqual([
-      'Prochaine procédure : clôture 12 octobre 2026 · dépôt avant 22 octobre 2026 16h00 · ' +
+      'Prochaine procédure PRL-261012-H : clôture 12 octobre 2026 · dépôt avant 22 octobre 2026 16h00 · ' +
         'prélèvement 26 octobre 2026 · Ouvrir la procédure',
       'Aucun prélèvement sur la période affichée',
-      'Prochaine procédure : clôture 1 octobre 2026 · dépôt avant 13 octobre 2026 16h00 · ' +
+      'Prochaine procédure PRL-261001-M : clôture 1 octobre 2026 · dépôt avant 13 octobre 2026 16h00 · ' +
         'prélèvement 15 octobre 2026 · Ouvrir la procédure',
     ]);
   });

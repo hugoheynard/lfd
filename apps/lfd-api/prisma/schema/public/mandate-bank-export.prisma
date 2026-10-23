@@ -46,6 +46,16 @@ model MandateBankExport {
   /// `20261024030000_le_telechargement_d_un_export_des_mandats`).
   lastDownloadedAt DateTime? @map("last_downloaded_at") @db.Timestamptz(3)
 
+  /// Le numéro court, `EXM-<n>` — attribué à la préparation par le compteur
+  /// global `bank_export_counter`, figé, jamais réattribué (migration
+  /// `20261024050000_les_numeros_courts_des_exports_bancaires`).
+  reference String @unique
+  /// Le rang du fichier dans sa série (« 1 sur 2 ») et le nombre de fichiers
+  /// prévus, figés à la préparation. NULL ensemble : export d'avant la
+  /// migration, dont la file n'a pas été gardée.
+  partRank  Int?   @map("part_rank")
+  partCount Int?   @map("part_count")
+
   lines MandateBankExportLine[]
 
   @@index([legalEntityId, createdAt])

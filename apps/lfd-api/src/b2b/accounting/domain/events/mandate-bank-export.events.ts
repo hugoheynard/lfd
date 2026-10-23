@@ -29,7 +29,11 @@ function exportFact(
     subjectType: "legal_entity",
     subjectId: entity.id,
     occurredAt: at,
-    payload: { subjectLabel: entity.name, mandateCount: bankExport.mandateCount },
+    payload: {
+      subjectLabel: entity.name,
+      mandateCount: bankExport.mandateCount,
+      reference: bankExport.reference,
+    },
   };
 }
 

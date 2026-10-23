@@ -7,7 +7,12 @@ import type { SepaScheme } from "../value-objects/sepa-scheme.js";
 /** Ce qui nomme le fichier d'un lot, et ce qu'il faut pour le relire. */
 export interface StoredBatchFile {
   readonly batchId: string;
+  readonly legalEntityId: string;
   readonly scheme: SepaScheme;
+  /** `AAAA-MM-JJ` — l'échéance demandée ; `null` pour un lot d'avant le 2026-10-08. */
+  readonly collectionDay: string | null;
+  /** Le nombre de débits (lignes) du fichier. */
+  readonly debitCount: number;
   readonly creditorSiren: string;
   readonly cycleClosesAt: Date;
   readonly depositable: boolean;

@@ -1,3 +1,4 @@
+import { instantToLocal } from "@lfd/contracts";
 import { AccountBankExportClosedError } from "../../../domain/errors/account-bank-export-errors.js";
 import {
   IBAN_A,
@@ -11,7 +12,7 @@ import { ReportBankAccountKnownCommand } from "../../commands/report-bank-accoun
 import { RecordAccountBankExportDownloadCommand } from "../../commands/record-account-bank-export-download.command.js";
 import { AbandonAccountBankExportCommand } from "../../commands/abandon-account-bank-export.command.js";
 import { ExportAccountsForBankCommand } from "../../commands/export-accounts-for-bank.command.js";
-import { accountExportWorld } from "../../commands/__tests__/account-bank-export-doubles.js";
+import { NOW, accountExportWorld } from "../../commands/__tests__/account-bank-export-doubles.js";
 import {
   ExportAccountBankFileQuery,
   GetAccountBankExportsQuery,
@@ -131,7 +132,9 @@ describe("le fichier d'un export des comptes", () => {
 
     const file = await w.file.execute(new ExportAccountBankFileQuery("le1", id));
     expect(file.csv.startsWith("I;Titulaire a;552100554;")).toBe(true);
-    expect(file.fileName).toContain(id);
+    expect(file.fileName).toBe(
+      `CENET-EXC-1-comptes-1-sur-1-1-compte-${instantToLocal(NOW).day}.csv`,
+    );
 
     await w.abandon.execute(new AbandonAccountBankExportCommand("le1", id, "s"));
     await expect(w.file.execute(new ExportAccountBankFileQuery("le1", id))).rejects.toThrow(

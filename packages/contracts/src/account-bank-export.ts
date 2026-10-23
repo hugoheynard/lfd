@@ -75,6 +75,12 @@ export interface AccountBankExcludedView extends AccountBankAccountView {
 /** Un export préparé. Importé, abandonné, ou ni l'un ni l'autre (« en vol »). */
 export interface AccountBankExportSummaryView {
   readonly id: string;
+  /** Le numéro court, `EXC-<n>` — attribué à la préparation, figé (ajouté le 2026-10-23). */
+  readonly reference: string;
+  /** « Fichier k sur N », figé à la préparation ; `null` pour un export d'avant la numérotation. */
+  readonly part: { readonly rank: number; readonly count: number } | null;
+  /** Le nom du fichier téléchargé, figé : un second téléchargement redonne le même. */
+  readonly fileName: string;
   readonly createdAt: string;
   readonly accountCount: number;
   /** `null` tant que le fichier n'a jamais été téléchargé — « marquer importé » est alors refusé. */

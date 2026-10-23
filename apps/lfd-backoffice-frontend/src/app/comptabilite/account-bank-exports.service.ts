@@ -10,6 +10,8 @@ import type {
 import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../api/api-config';
+import { attachmentFileName } from '../shared/download/content-disposition';
+import type { NamedBlob } from './comptabilite-dashboard.service';
 
 /**
  * **Les comptes à la banque** — l'export du fichier des comptes destinataires
@@ -40,12 +42,21 @@ export class AccountBankExportsService {
   }
 
   /** Le fichier, recalculé par le serveur et journalisé — 409 si un RIB a changé depuis. */
-  async file(entityId: string, exportId: string): Promise<Blob> {
-    return firstValueFrom(
+  async file(entityId: string, exportId: string): Promise<NamedBlob> {
+    const response = await firstValueFrom(
       this.http.get(`${this.base}/${entityId}/account-exports/${exportId}/file.csv`, {
         responseType: 'blob',
+        observe: 'response',
       }),
     );
+    if (response.body === null) {
+      throw new Error('Le fichier est arrivé sans contenu.');
+    }
+    // Le nom vient du serveur, figé par export (`CENET-EXC-12-…`, 2026-10-23).
+    return {
+      blob: response.body,
+      fileName: attachmentFileName(response.headers.get('Content-Disposition')),
+    };
   }
 
   /** La banque l'a importé : ses comptes ne ressortiront plus. */

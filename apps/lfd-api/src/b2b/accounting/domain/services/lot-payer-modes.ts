@@ -47,3 +47,25 @@ export function lotPayerModes(
   );
   return BILLING_MODES.filter((mode) => modes.has(mode));
 }
+
+/**
+ * **Combien de clients de chaque rythme un lot prélève** — même règle que
+ * {@link lotPayerModes} (le mode sous lequel le payeur a clos SA période),
+ * chaque payeur compté une fois par mode. Sert à dire d'une clôture
+ * mutualisée « 3 hebdomadaires, 12 mensuels ». Ordre de `BILLING_MODES` ; un
+ * mode sans client n'y est pas.
+ */
+export function lotPayerModeCounts(
+  calendar: InvoicingCalendar,
+  periods: readonly LotPayerPeriod[],
+): readonly { readonly mode: BillingMode; readonly count: number }[] {
+  const payers = new Map<BillingMode, Set<string>>();
+  for (const period of periods) {
+    const mode = calendar.payerModeClosingAt(period.payerCompanyId, period.periodClosesAt);
+    payers.set(mode, (payers.get(mode) ?? new Set()).add(period.payerCompanyId));
+  }
+  return BILLING_MODES.flatMap((mode) => {
+    const count = payers.get(mode)?.size ?? 0;
+    return count === 0 ? [] : [{ mode, count }];
+  });
+}

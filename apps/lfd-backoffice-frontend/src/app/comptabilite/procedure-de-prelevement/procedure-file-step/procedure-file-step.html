@@ -58,10 +58,8 @@
         [subtitle]="'Annulé le ' + longDay(followed()?.cancelledAt ?? '') + '.'"
       >
         <fold-icon empty-icon name="x-circle" />
-        @if (view().replacementBatchId; as replacement) {
-          <button foldButton (click)="follow.emit(replacement)" data-replacement>
-            Suivre le lot préparé de nouveau
-          </button>
+        @if (view().replacementBatchId !== null) {
+          <p data-replacement>Le lot préparé de nouveau est montré ci-dessous.</p>
         } @else if (canWrite()) {
           <button
             foldButton
@@ -94,6 +92,23 @@
         Lot déposé. Signer la remise sur CENET si ce n’est pas fait, et lire les accusés PSR —
         l’outil ne peut pas le vérifier.
       </fold-callout>
+    }
+  }
+
+  @for (other of others(); track other.id) {
+    @if (other.status === 'deposited') {
+      <fold-callout variant="success" data-other-batch [attr.data-batch]="other.id">
+        Lot {{ other.scheme }} de la même procédure, déposé.
+      </fold-callout>
+    } @else {
+      <app-pending-batch
+        data-other-batch
+        [attr.data-batch]="other.id"
+        [batch]="other"
+        [canWrite]="canWrite()"
+        [pending]="pending() === other.id"
+        (gesture)="otherGesture.emit({ batchId: other.id, gesture: $event })"
+      />
     }
   }
 </div>

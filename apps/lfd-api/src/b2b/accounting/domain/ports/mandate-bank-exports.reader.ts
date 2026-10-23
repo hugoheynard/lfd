@@ -1,3 +1,4 @@
+import type { ExportPart } from "../services/bank-export-reference.js";
 /** Un mandat parti dans un export, et l'empreinte du compte sous lequel il est parti. */
 export interface ExportedMandateLine {
   readonly mandateId: string;
@@ -8,6 +9,10 @@ export interface ExportedMandateLine {
 /** Un export, tel que l'écran le liste. */
 export interface MandateBankExportRecord {
   readonly id: string;
+  /** `EXM-<n>`, figé à la préparation. */
+  readonly reference: string;
+  /** Le rang dans la série ; `null` avant la numérotation. */
+  readonly part: ExportPart | null;
   readonly createdAt: Date;
   readonly mandateCount: number;
   readonly lastDownloadedAt: Date | null;
@@ -17,6 +22,11 @@ export interface MandateBankExportRecord {
 
 /** Ce qu'il faut pour servir le fichier d'un export : ses lignes, et s'il est abandonné. */
 export interface MandateBankExportFile {
+  /** Ce qui nomme le fichier — figé à la préparation. */
+  readonly reference: string;
+  readonly part: ExportPart | null;
+  readonly createdAt: Date;
+  readonly mandateCount: number;
   readonly lines: readonly ExportedMandateLine[];
   readonly abandonedAt: Date | null;
 }

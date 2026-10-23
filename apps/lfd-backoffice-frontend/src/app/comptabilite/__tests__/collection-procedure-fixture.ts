@@ -31,6 +31,13 @@ export function procedureView(
 ): CollectionProcedureView {
   return {
     legalEntityId: 'le1',
+    procedure: {
+      code: 'PRL-261101-M',
+      closureDay: '2026-11-01',
+      closureModes: ['monthly'],
+      payerCounts: [{ mode: 'monthly', count: 1 }],
+    },
+    procedureBatches: [procedureBatch()],
     followed: procedureBatch(),
     replacementBatchId: null,
     toPrepare: null,
@@ -68,6 +75,8 @@ export function procedureRow(
     closureDay: '2026-11-01',
     periodLabel: 'du 1er au 31 octobre 2026',
     modes: ['monthly'],
+    code: 'PRL-261101-M',
+    closureModes: ['monthly'],
     phase: 'open',
     stage: 'file',
     batches: [{ id: 'b1', scheme: 'B2B', status: 'constituted' }],

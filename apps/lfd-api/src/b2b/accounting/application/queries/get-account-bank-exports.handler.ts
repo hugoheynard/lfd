@@ -1,6 +1,7 @@
 import type { AccountBankExportsView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
+import { accountExportFileNameOf } from "../bank-export-naming-support.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import {
   AccountBankExportsReader,
@@ -69,6 +70,9 @@ export class GetAccountBankExportsHandler implements IQueryHandler<
       ),
       exports: exports.map((row) => ({
         id: row.id,
+        reference: row.reference,
+        part: row.part,
+        fileName: accountExportFileNameOf(row),
         createdAt: row.createdAt.toISOString(),
         accountCount: row.accountCount,
         lastDownloadedAt: row.lastDownloadedAt?.toISOString() ?? null,

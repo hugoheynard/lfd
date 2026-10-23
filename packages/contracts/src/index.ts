@@ -190,6 +190,8 @@ export type {
   CollectionProcedureToPrepareView,
   CollectionProcedureMissedView,
   CollectionProcedureView,
+  CollectionProcedureIdentityView,
+  CollectionProcedurePayerCountView,
 } from "./collection-procedure.js";
 export type {
   CollectionProcedureListBatchView,

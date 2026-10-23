@@ -16,6 +16,12 @@
 > **DIT** (la banque l'a écrit), **MONTRÉ** (le modèle le porte),
 > **SUPPOSÉ** (notre lecture, à confirmer).
 
+> **Numéro et nom de fichier (2026-10-23).** Chaque export porte un numéro
+> court `EXC-<n>` (compteur global, figé à la préparation) et son rang dans la
+> série (« fichier 1 sur 2 ») ; le fichier se télécharge sous
+> `CENET-EXC-12-comptes-1-sur-2-200-comptes-AAAA-MM-JJ.csv`. Les règles, et ce
+> que la migration a fait aux exports déjà préparés : [`procedure-de-prelevement.md`](procedure-de-prelevement.md) § 4 bis.
+
 ---
 
 ## Avant tout : deux parcours, et peut-être rien à bâtir

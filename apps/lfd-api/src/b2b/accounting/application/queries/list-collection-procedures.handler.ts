@@ -133,7 +133,7 @@ export class ListCollectionProceduresHandler implements IQueryHandler<
       legalEntityId: entity.id,
       today: local.day,
       closedSince,
-      rows: rows.map((row) => procedureRowView(entity.id, row)),
+      rows: rows.map((row) => procedureRowView(entity.id, row, calendar)),
     };
   }
 

@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { partFromRow, partToRow } from "./bank-export-naming.mapper.js";
 import {
   MandateBankExport,
   type MandateBankExportState,
@@ -31,6 +32,8 @@ export class PrismaMandateBankExportRepository extends MandateBankExportReposito
     }
     return MandateBankExport.rehydrate({
       id: row.id,
+      reference: row.reference,
+      part: partFromRow(row),
       legalEntityId: row.legalEntityId,
       created: { at: row.createdAt, staffId: row.createdByStaffId },
       lines: row.lines.map((line) => ({
@@ -72,6 +75,8 @@ export class PrismaMandateBankExportRepository extends MandateBankExportReposito
     await this.prisma.mandateBankExport.create({
       data: {
         id: state.id,
+        reference: state.reference,
+        ...partToRow(state.part),
         legalEntityId: state.legalEntityId,
         createdAt: state.created.at,
         createdByStaffId: state.created.staffId,

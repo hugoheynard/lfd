@@ -15,6 +15,12 @@
 > ([`../mandat/export-des-mandats-pour-la-banque.md`](../mandat/export-des-mandats-pour-la-banque.md))
 > et la RUM ([`../mandat/rum.md`](../mandat/rum.md)).
 
+> **Numéro et nom de fichier (2026-10-23).** Chaque export porte un numéro
+> court `EXM-<n>` (compteur global, figé à la préparation) et son rang dans la
+> série ; le fichier se télécharge sous
+> `CENET-EXM-4-mandats-1-sur-1-12-mandats-AAAA-MM-JJ.csv` (il s'appelait
+> `mandats-banque-<SIREN>-<id>.csv`). Règles : [`procedure-de-prelevement.md`](procedure-de-prelevement.md) § 4 bis.
+
 ## 1. L'ordre : les RIB d'abord, les mandats ensuite
 
 La banque importe **d'abord les comptes destinataires** (les RIB), **puis les

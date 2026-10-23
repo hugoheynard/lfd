@@ -1,5 +1,6 @@
 import { InvoicingCalendar } from "../invoicing-calendar.js";
-import { lotPayerModes } from "../lot-payer-modes.js";
+import { lotPayerModeCounts, lotPayerModes } from "../lot-payer-modes.js";
+import { isPooledClosure, procedureCodeOf } from "../collection-procedure-code.js";
 import { defaultModes, paris } from "./billing-mode-fixtures.js";
 
 /**
@@ -41,5 +42,40 @@ describe("lotPayerModes — les modes des clients prélevés, pas ceux qui close
 
   it("un lot vide : aucun mode", () => {
     expect(lotPayerModes(calendar, [])).toEqual([]);
+  });
+});
+
+describe("lotPayerModeCounts — combien de clients de chaque rythme", () => {
+  it("compte chaque payeur une fois par mode", () => {
+    expect(
+      lotPayerModeCounts(calendar, [
+        { payerCompanyId: "c_month", periodClosesAt: paris("2026-10-01") },
+        { payerCompanyId: "c_other", periodClosesAt: paris("2026-10-01") },
+        { payerCompanyId: "c_week", periodClosesAt: paris("2026-10-05") },
+        { payerCompanyId: "c_week", periodClosesAt: paris("2026-10-05") },
+      ]),
+    ).toEqual([
+      { mode: "monthly", count: 2 },
+      { mode: "weekly", count: 1 },
+    ]);
+  });
+
+  it("un lot vide : aucun compte", () => {
+    expect(lotPayerModeCounts(calendar, [])).toEqual([]);
+  });
+});
+
+describe("la clôture mutualisée — plusieurs rythmes closent le même jour", () => {
+  it("le lundi 1er février 2027 : l'hebdomadaire et le mensuel, un seul code", () => {
+    const modes = calendar.modesClosingAt(paris("2027-02-01"));
+    expect(modes).toEqual(["monthly", "weekly"]);
+    expect(isPooledClosure(modes)).toBe(true);
+    expect(procedureCodeOf(paris("2027-02-01"), modes)).toBe("PRL-270201-HM");
+  });
+
+  it("un lundi ordinaire : l'hebdomadaire seul, pas mutualisée", () => {
+    const modes = calendar.modesClosingAt(paris("2026-10-05"));
+    expect(modes).toEqual(["weekly"]);
+    expect(isPooledClosure(modes)).toBe(false);
   });
 });

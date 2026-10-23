@@ -245,6 +245,8 @@ un retour, ou un remboursement hors de l'outil, la défait.
 ### 2.5 Télécharger le fichier `pain.008` — ✅
 
 - Bouton **« Fichier »** (`GET batches/:id/file.xml`, `:116`) : le XML stocké,
+  sous le nom `CENET-PRL-<AAMMJJ>-<rythmes>-<schéma>-echeance-<jour>-<n>-debits.xml`
+  (§ 4 bis, 2026-10-23),
   pas re-rendu ; l'empreinte est vérifiée au téléchargement. Droit d'**écriture**
   exigé (IBAN en clair) : le bouton s'affiche aussi en lecture seule
   (`pending-batch.html:54`), et l'API refuse alors.
@@ -421,6 +423,113 @@ Si l'automatisme a manqué une clôture, il se **suspend** et l'écran le dit, a
 le geste « Préparer le lot » ([`prelevement-automatique.md`](prelevement-automatique.md)
 § 5). ✅ Le lot manuel couvre les clôtures manquées ; l'échéance est repoussée
 pour tenir le préavis.
+
+---
+
+## 4 bis. Les identifiants courts et les noms de fichiers (Hugo, 2026-10-23)
+
+Trois sortes d'objets se citent au téléphone, se cherchent dans CENET et se
+rangent sur un bureau : la **procédure**, l'**export** d'annuaire (comptes ou
+mandats) et la **remise** `pain.008`. Chacun a désormais un nom court et un nom
+de fichier qui dit ce qu'il porte.
+
+### Le code d'une procédure — `PRL-<AAMMJJ>-<rythmes>`
+
+| Exemple         | Ce qu'il dit                                                                      |
+| --------------- | --------------------------------------------------------------------------------- |
+| `PRL-261101-M`  | la clôture du 1er novembre 2026 (Paris), mensuelle                                |
+| `PRL-261102-H`  | la clôture hebdomadaire du lundi 2 novembre 2026                                  |
+| `PRL-261031-BM` | une clôture **mutualisée** : le « deux fois par mois » et le mensuel, un seul lot |
+| `PRL-270201-HM` | le lundi 1er février 2027 : l'hebdomadaire et le mensuel tombent le même jour     |
+
+- **Calculé, jamais rangé ni compté** : `procedureCodeOf`
+  (`apps/lfd-api/src/b2b/accounting/domain/services/collection-procedure-code.ts`),
+  depuis le jour de clôture et les **rythmes du calendrier qui closent à cet
+  instant** (`InvoicingCalendar.modesClosingAt`). `H` hebdomadaire, `B` deux
+  fois par mois, `M` mensuel ; plusieurs lettres **triées** (`B` < `H` < `M`).
+  Une clôture sans rythme connu n'a pas de lettre (`PRL-261101`) — on n'invente
+  pas un mensuel.
+- **Unique tant qu'il n'y a qu'une entité émettrice.** Une seconde entité
+  produirait le même code le même jour : il faudra alors lui ajouter l'entité.
+  Il ne la porte pas aujourd'hui, délibérément.
+- Servi dans les vues : ligne de la table (`CollectionProcedureRowView.code`),
+  détail (`CollectionProcedureView.procedure.code`), période du tableau de bord
+  des rythmes (`BillingRhythmPeriodView.procedureCode`). Affiché dans le titre
+  du détail, en colonne « Code » de la table, sur les marques et la phrase
+  « Prochaine procédure » des barres du tableau de bord.
+- ⚠️ Les rythmes du **code** (ceux du calendrier) ne sont pas ceux de la
+  colonne « Rythme · période » (`modes`, ceux des **clients du lot**) : un lot
+  qui rattrape une facture mensuelle un lundi dit « hebdomadaires et mensuels »
+  sans que sa clôture soit mutualisée.
+
+**Mutualisée** : deux rythmes ou plus closent le même jour (`isPooledClosure`).
+La table porte un badge « Mutualisée » à côté du rythme (survol :
+« hebdomadaire + mensuel : une seule clôture, un seul lot ») ; le détail, un
+encadré qui dit les rythmes réunis et combien de clients de chacun ses lots
+non annulés prélèvent — lus des factures du lot (`lotPayerModeCounts`, le mode
+sous lequel chaque payeur a clos **sa** période) ; sans lot préparé, il dit
+que le compte se lira une fois le lot préparé. Sur le tableau de bord, la
+marque de clôture commune porte un repère (`data-pooled`) sur chaque barre
+concernée.
+
+### Le numéro d'un export — `EXC-<n>` et `EXM-<n>`
+
+- `EXC` pour les **comptes destinataires**, `EXM` pour les **mandats**. Un
+  compteur **global** par sorte (`bank_export_counter`), toutes entités
+  confondues, qui ne repart jamais à zéro (déclencheur
+  `bank_export_counter_forward` : ni recul, ni suppression).
+- Attribué à la **préparation**, dans la transaction (`INSERT … ON CONFLICT DO
+UPDATE … RETURNING`, comme `ORD-<n>`), et **figé** sur l'export
+  (`reference`, unique). Un échec après coup laisse un trou, sans conséquence.
+- Affiché sur les cartes « Comptes à la banque » et « Mandats à la banque »,
+  et cité par le journal (`reference` dans la charge des faits
+  `account_bank_export.*` / `mandate_bank_export.*` ; absent des faits
+  d'avant).
+- La migration `20261024050000_les_numeros_courts_des_exports_bancaires` a
+  numéroté les exports **déjà préparés** par ordre de création (`created_at`,
+  puis `id`), toutes entités confondues, et posé chaque compteur au nombre
+  d'exports existants. Leur rang « k sur N » reste vide : la file au moment de
+  leur préparation n'a pas été gardée.
+
+### « Fichier k sur N »
+
+Le portail n'importe que 200 lignes par fichier ; une file plus longue part en
+plusieurs fichiers, déposés l'un après l'autre. À la préparation
+(`exportPartOf`, `apps/lfd-api/src/b2b/accounting/domain/services/bank-export-reference.ts`) :
+
+- **k** = k' + 1 si le dernier export **non abandonné** de l'entité était le
+  fichier k' d'une série de N' > k' fichiers ; sinon 1 ;
+- **N** = (k − 1) + ⌈file ÷ 200⌉, où _file_ est le nombre de lignes à exporter
+  au moment de la préparation, **avant** la coupe à 200 (celles de ce fichier
+  comprises, celles d'un export en vol exclues).
+
+237 comptes à exporter : `EXC-12` est « 1 sur 2 » ; une fois déposé, il en
+reste 37, et `EXC-13` est « 2 sur 2 ». Un abandon rend ses lignes à la file :
+le fichier qui les reprend reprend son rang. Des lignes arrivées entre deux
+fichiers allongent la série ; N est figé fichier par fichier.
+
+Les cartes le disent : « EXC-12 · Fichier 1 sur 2 — 200 comptes. Les 37
+suivants partiront dans le fichier 2, une fois celui-ci déposé dans CENET. »,
+puis « EXC-13 · Fichier 2 sur 2 — 37 comptes. ».
+
+### Les noms des fichiers
+
+ASCII, sans espace, **figés par export** (un second téléchargement redonne le
+même nom), servis en `Content-Disposition`
+(`apps/lfd-api/src/b2b/accounting/domain/services/bank-file-names.ts`). La date est
+celle de la **préparation**, à Paris.
+
+| Fichier               | Nom                                                        |
+| --------------------- | ---------------------------------------------------------- |
+| comptes destinataires | `CENET-EXC-12-comptes-1-sur-2-200-comptes-2026-10-23.csv`  |
+| mandats               | `CENET-EXM-4-mandats-1-sur-1-12-mandats-2026-10-23.csv`    |
+| remise `pain.008`     | `CENET-PRL-261031-M-B2B-echeance-2026-11-05-14-debits.xml` |
+
+- Un seul compte ou débit : au singulier (`1-compte`, `1-debit`).
+- Un export d'avant la numérotation : pas de segment `k-sur-N`.
+- Une remise : un fichier par schéma et par échéance ; elle garde ses préfixes
+  d'état, `BROUILLON-` (indéposable) et `ANNULE-` ; un lot d'avant le
+  2026-10-08 n'a pas d'échéance gardée, donc pas de segment `echeance-…`.
 
 ---
 

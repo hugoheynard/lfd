@@ -227,6 +227,22 @@ describe("la procédure de prélèvement — la liste des procédures", () => {
         .expect(200),
     );
     expect(ahead.toPrepare).toBeNull();
+    // Le code court se calcule du jour de clôture et des rythmes ; le détail dit le même.
+    for (const [row, view] of [
+      [open, opened],
+      [upcoming, ahead],
+    ] as const) {
+      const day = (row?.closureDay ?? "").slice(2).replaceAll("-", "");
+      expect(row?.code).toBe(`PRL-${day}-M`);
+      expect(row?.closureModes).toEqual(["monthly"]);
+      expect(view.procedure).toMatchObject({
+        code: row?.code,
+        closureDay: row?.closureDay,
+        closureModes: ["monthly"],
+        payerCounts: null,
+      });
+      expect(view.procedureBatches).toEqual([]);
+    }
   });
 
   /**

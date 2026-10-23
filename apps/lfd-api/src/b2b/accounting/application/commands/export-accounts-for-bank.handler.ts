@@ -8,9 +8,15 @@ import { AccountBankExport } from "../../domain/entities/account-bank-export.js"
 import { AccountBankExportEvent } from "../../domain/events/account-bank-export.events.js";
 import { AccountBankExportRepository } from "../../domain/ports/account-bank-export.repository.js";
 import { KnownAccountFingerprintsReader } from "../../domain/ports/account-bank-exports.reader.js";
+import { AccountBankExportNumbering } from "../../domain/ports/bank-export-numbering.js";
 import { AccountsForBankExportReader } from "../../domain/ports/accounts-for-bank-export.reader.js";
 import { LegalEntityReader } from "../../domain/ports/legal-entity.reader.js";
 import { selectAccountsForBankExport } from "../../domain/services/account-bank-export-selection.js";
+import {
+  BANK_EXPORT_PREFIXES,
+  bankExportReferenceOf,
+  exportPartOf,
+} from "../../domain/services/bank-export-reference.js";
 import { ACCOUNT_IMPORT_MAX_ROWS } from "../../domain/services/account-bank-export-values.js";
 import { exportEntityOrFail, journalEntity } from "../mandate-bank-export-support.js";
 import { ExportAccountsForBankCommand } from "./export-accounts-for-bank.command.js";
@@ -25,6 +31,10 @@ import { ExportAccountsForBankCommand } from "./export-accounts-for-bank.command
  * vol ou déclaré connu depuis une autre entité ne repart pas. Les 200
  * premiers dans l'ordre de dépôt partent, les suivants attendent l'export
  * d'après (§ 2.2) — découper plutôt que refuser.
+ *
+ * Le numéro `EXC-<n>` et le rang « k sur N » se prennent ici, dans la
+ * transaction, et se figent avec l'export (doc `procedure-de-prelevement.md`,
+ * « Les identifiants courts et les noms de fichiers »).
  */
 @CommandHandler(ExportAccountsForBankCommand)
 export class ExportAccountsForBankHandler implements ICommandHandler<
@@ -36,6 +46,7 @@ export class ExportAccountsForBankHandler implements ICommandHandler<
     private readonly accounts: AccountsForBankExportReader,
     private readonly fingerprints: KnownAccountFingerprintsReader,
     private readonly exports: AccountBankExportRepository,
+    private readonly numbering: AccountBankExportNumbering,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
@@ -50,12 +61,16 @@ export class ExportAccountsForBankHandler implements ICommandHandler<
         this.accounts.debitedBy(entity.id),
         this.fingerprints.all(),
       ]);
-      const chosen = selectAccountsForBankExport(exportable, fingerprints).toExport.slice(
-        0,
-        ACCOUNT_IMPORT_MAX_ROWS,
-      );
+      const queue = selectAccountsForBankExport(exportable, fingerprints).toExport;
+      const chosen = queue.slice(0, ACCOUNT_IMPORT_MAX_ROWS);
+      const previous = await this.numbering.lastPart(entity.id);
       const bankExport = AccountBankExport.export({
         id: this.ids.next(),
+        reference: bankExportReferenceOf(
+          BANK_EXPORT_PREFIXES.accounts,
+          await this.numbering.nextRank(),
+        ),
+        part: exportPartOf(previous, queue.length, ACCOUNT_IMPORT_MAX_ROWS),
         legalEntityId: entity.id,
         created: { at, staffId: command.staffUserId },
         lines: chosen.map(({ account, fingerprint }) => ({

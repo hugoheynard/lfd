@@ -274,6 +274,25 @@ describe("l'export des comptes destinataires pour la banque", () => {
     expect(file.text.split("\r\n")).toHaveLength(201);
     expect(await card(entityId)).toMatchObject({ inFlightCount: 200 });
     expect((await card(entityId)).toExport).toHaveLength(1);
+    // Le numéro court et le rang dans la série, figés à la préparation (2026-10-23).
+    expect((await card(entityId)).exports[0]).toMatchObject({
+      reference: "EXC-1",
+      part: { rank: 1, count: 2 },
+    });
+    expect(file.headers["content-disposition"]).toMatch(
+      /filename="?CENET-EXC-1-comptes-1-sur-2-200-comptes-\d{4}-\d{2}-\d{2}\.csv/u,
+    );
+
+    await staff()
+      .post(`${exportsOf(entityId)}/${first}/imported`)
+      .expect(204);
+    const second = await prepare(entityId);
+    const last = await staff()
+      .get(`${exportsOf(entityId)}/${second}/file.csv`)
+      .expect(200);
+    expect(last.headers["content-disposition"]).toMatch(
+      /filename="?CENET-EXC-2-comptes-2-sur-2-1-compte-\d{4}-\d{2}-\d{2}\.csv/u,
+    );
   });
 
   it("nomme un compte sans BIC et ne l'exporte pas", async () => {
@@ -344,6 +363,8 @@ describe("l'export des comptes destinataires pour la banque", () => {
       .expect(200);
 
     expect(again.text).toBe(first.text);
+    // Un nom FIGÉ par export : le re-téléchargement redonne le même.
+    expect(again.headers["content-disposition"]).toBe(first.headers["content-disposition"]);
     const view = await card(entityId);
     expect(view.exports).toHaveLength(1);
     expect(view.exports[0]?.id).toBe(exportId);

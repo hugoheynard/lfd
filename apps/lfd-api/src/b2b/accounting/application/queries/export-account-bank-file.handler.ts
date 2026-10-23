@@ -1,5 +1,6 @@
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
+import { accountExportFileNameOf } from "../bank-export-naming-support.js";
 import {
   AccountBankExportClosedError,
   AccountBankExportNotFoundError,
@@ -47,6 +48,6 @@ export class ExportAccountBankFileHandler implements IQueryHandler<
     }
     const { exportable } = await this.accounts.debitedBy(entity.id);
     const csv = accountBankCsvOf(currentAccountsOf(file.lines, exportable));
-    return { csv, fileName: `comptes-banque-${entity.siren}-${query.exportId}.csv` };
+    return { csv, fileName: accountExportFileNameOf(file) };
   }
 }

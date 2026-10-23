@@ -414,6 +414,13 @@ ne porte pas de BIC.
 
 ### Ce qui sort aujourd'hui
 
+> **Le nom du fichier (2026-10-23).** Une remise se télécharge sous
+> `CENET-PRL-261031-M-B2B-echeance-2026-11-05-14-debits.xml` — le code de la
+> procédure, le schéma, l'échéance et le nombre de débits ; un fichier par
+> schéma et échéance, préfixé `BROUILLON-` ou `ANNULE-` selon son état. Elle
+> s'appelait `prelevement-<schéma>-<SIREN>-<AAAAMM>-<lot>.xml`. Règles :
+> [`procedure-de-prelevement.md`](procedure-de-prelevement.md) § 4 bis.
+
 Le bandeau `BROUILLON — CE FICHIER NE PEUT PAS ETRE DEPOSE.` et le préfixe
 `BROUILLON-` du `MsgId` sont **conditionnels** depuis le 2026-09-12 : ils
 tombent quand **chaque** ligne porte son mandat, et une seule ligne incomplète

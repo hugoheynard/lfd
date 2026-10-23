@@ -47,6 +47,7 @@ import {
   readMandatesStep,
   toPrepareOf,
 } from "../collection-procedure-support.js";
+import { batchesOfClosure, procedureIdentityOf } from "../collection-procedure-identity-support.js";
 import { readInvoicingCalendar } from "../invoicing-calendar-support.js";
 import { readMissedProcedure } from "../missed-closures-support.js";
 import { readLotPayerModes } from "../lot-payer-modes-support.js";
@@ -124,8 +125,18 @@ export class GetCollectionProcedureHandler implements IQueryHandler<
     const file = fileStep(followed, toPrepare !== null, storedById, accounts, mandates);
     const returns = returnsStatus(followed, today);
     const replacement = followed?.status === "cancelled" ? replacementOf(followed, batches) : null;
+    const closureDay = procedureDayOf(query, followed, toPrepare);
+    const ofClosure = closureDay === null ? [] : batchesOfClosure(stored, closureDay);
     return {
       legalEntityId: entity.id,
+      procedure:
+        closureDay === null
+          ? null
+          : await procedureIdentityOf(this.periods, calendar, closureDay, ofClosure),
+      procedureBatches: viewsOf(
+        views,
+        batches.filter((batch) => ofClosure.some((row) => row.id === batch.id)),
+      ),
       followed: viewsOf(views, followed === null ? [] : [followed])[0] ?? null,
       replacementBatchId: replacement?.id ?? null,
       toPrepare,
@@ -158,6 +169,21 @@ function pinnedToPrepare(
     return toPrepare;
   }
   return closureDayOf(new Date(toPrepare.closesAt)) === query.closureDay ? toPrepare : null;
+}
+
+/** Le jour de la procédure ouverte : celui de l'adresse, sinon du lot suivi, sinon de la clôture à préparer. */
+function procedureDayOf(
+  query: GetCollectionProcedureQuery,
+  followed: ProcedureBatch | null,
+  toPrepare: CollectionProcedureToPrepareView | null,
+): string | null {
+  if (query.closureDay !== null) {
+    return query.closureDay;
+  }
+  if (followed !== null) {
+    return closureDayOf(new Date(followed.cycleClosesAt));
+  }
+  return toPrepare === null ? null : closureDayOf(new Date(toPrepare.closesAt));
 }
 
 /** Le lot de l'adresse ; sinon celui de la clôture ouverte ; sinon la règle du § 4.3. */
