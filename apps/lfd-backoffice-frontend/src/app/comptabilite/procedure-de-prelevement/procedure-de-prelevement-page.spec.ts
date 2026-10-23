@@ -1,6 +1,7 @@
+import { vi } from 'vitest';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
+import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import type {
   AccountBankExportsView,
   CollectionCycleView,
@@ -61,6 +62,7 @@ const MANDATES: MandateBankExportsView = {
   toExportCount: 2,
   importedCount: 0,
   excluded: [],
+  mandates: [],
   exports: [],
 };
 
@@ -210,6 +212,39 @@ describe('la page « Procédure de prélèvement »', () => {
       address: { procedureId: 'le1~2026-11-01' },
       batchId: 'b1',
     });
+  });
+
+  it('une clôture manquée : le dit, et ouvre la dernière clôture dont le lot la reprend', async () => {
+    procedure.view = procedureView({
+      followed: null,
+      openBatches: [],
+      missed: {
+        closesAt: '2026-08-31T22:00:00.000Z',
+        periodLabel: 'du 1er au 31 août 2026',
+        latestProcedureId: 'le1~2026-10-01',
+        latestPeriodLabel: 'du 1er au 30 septembre 2026',
+      },
+    });
+    const fixture = await render();
+    const router = TestBed.inject(Router);
+    router.navigate = (): Promise<boolean> => Promise.resolve(true);
+    const callout = query(fixture, '[data-missed]')?.textContent ?? '';
+    expect(callout).toContain('la période du 1er au 31 août 2026 n’a jamais été préparée');
+    expect(callout).toContain('période du 1er au 30 septembre 2026');
+
+    click(fixture, '[data-open-latest]');
+    // Le geste enchaîne navigation puis relecture : on attend la relecture.
+    await vi.waitFor(() =>
+      expect(procedure.asked.at(-1)).toEqual({
+        address: { procedureId: 'le1~2026-10-01' },
+        batchId: null,
+      }),
+    );
+  });
+
+  it('sans clôture manquée : aucun avertissement de clôture manquée', async () => {
+    const fixture = await render();
+    expect(query(fixture, '[data-missed]')).toBeNull();
   });
 
   it('« ← Toutes les procédures » ramène à la table', async () => {

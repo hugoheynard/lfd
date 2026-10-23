@@ -34,6 +34,7 @@ export function procedureView(
     followed: procedureBatch(),
     replacementBatchId: null,
     toPrepare: null,
+    missed: null,
     openBatches: [procedureBatch()],
     accounts: { state: 'done', toExportCount: 0, inFlightCount: 0, excludedCount: 0 },
     mandates: { state: 'to_do', toExportCount: 2, awaitingImport: false, excludedCount: 0 },

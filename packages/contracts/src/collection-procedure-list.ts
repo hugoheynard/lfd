@@ -16,9 +16,11 @@ import type { BillingRhythmKind, LocalDeadlineView } from "./legal-entity.js";
  * `open` : un lot à déposer, un lot déposé encore suivi, ou la dernière
  * clôture sans lot ; `upcoming` : la prochaine clôture d'un rythme suivi ;
  * `closed` : tout est déposé et la fenêtre des retours est close, ou la
- * procédure a été abandonnée (lots annulés).
+ * procédure a été abandonnée (lots annulés) ; `missed` : une clôture passée,
+ * plus ancienne que la dernière, que l'automatisme n'a jamais tentée et
+ * qu'aucun lot ne couvre — la table la met en tête (Hugo, 2026-10-23).
  */
-export type CollectionProcedurePhaseView = "open" | "upcoming" | "closed";
+export type CollectionProcedurePhaseView = "open" | "upcoming" | "closed" | "missed";
 
 /** L'étape en cours : l'onglet qui attend un geste, ou `closed`. */
 export type CollectionProcedureStageView = "accounts" | "mandates" | "file" | "returns" | "closed";
@@ -31,7 +33,8 @@ export type CollectionProcedureStageView = "accounts" | "mandates" | "file" | "r
  * - `tight_deposit_margin` — moins de deux jours ouvrés avant la limite ;
  * - `accounts_to_export` / `mandates_to_export` — de l'ENTITÉ (P4 absent) ;
  * - `unmandated_debtors` — des débiteurs du lot sans mandat : il ne se dépose pas ;
- * - `pending_returns` — des retours attendent leur geste.
+ * - `pending_returns` — des retours attendent leur geste ;
+ * - `missed_closure` — la clôture n'a jamais été préparée (phase `missed`).
  */
 export type CollectionProcedureWarningCodeView =
   | "deadline_passed"
@@ -40,7 +43,8 @@ export type CollectionProcedureWarningCodeView =
   | "accounts_to_export"
   | "mandates_to_export"
   | "unmandated_debtors"
-  | "pending_returns";
+  | "pending_returns"
+  | "missed_closure";
 
 export interface CollectionProcedureWarningView {
   readonly code: CollectionProcedureWarningCodeView;
@@ -81,7 +85,7 @@ export interface CollectionProcedureRowView {
   readonly warnings: readonly CollectionProcedureWarningView[];
 }
 
-/** La table : ouvertes et à venir par limite de dépôt, les déposées suivies ensuite, les closes à la fin. */
+/** La table : les manquées d'abord, puis ouvertes et à venir par limite de dépôt, les déposées suivies ensuite, les closes à la fin. */
 export interface CollectionProcedureListView {
   readonly legalEntityId: string;
   /** `AAAA-MM-JJ` — aujourd'hui, à Paris. */

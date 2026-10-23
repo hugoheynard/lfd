@@ -16,6 +16,7 @@ import {
 import { FixedInvoicePeriods } from "../../services/__tests__/issued-invoice-doubles.js";
 import {
   FixedBatches,
+  FixedCoverage,
   LAST_CLOSURE,
   PendingReturns,
   TODAY,
@@ -36,6 +37,7 @@ function world() {
   const mandates = bankExportWorld();
   const batches = new FixedBatches();
   const returns = new PendingReturns();
+  const coverage = new FixedCoverage();
   const handler = new GetCollectionProcedureHandler(
     accounts.entities,
     accounts.accounts,
@@ -48,11 +50,12 @@ function world() {
     new FixedModeDates(),
     new FixedPayerModes(),
     new FixedInvoicePeriods(new Map()),
+    coverage,
     accounts.clock,
   );
   const read = (batchId: string | null = null, closureDay: string | null = null) =>
     handler.execute(new GetCollectionProcedureQuery("le1", batchId, closureDay));
-  return { accounts, mandates, batches, returns, read };
+  return { accounts, mandates, batches, returns, coverage, read };
 }
 
 describe("la procédure de prélèvement — la lecture d'état", () => {
@@ -214,5 +217,23 @@ describe("la procédure de prélèvement — la lecture d'état", () => {
     expect(upcoming.toPrepare).toBeNull();
     expect(upcoming.followed).toBeNull();
     expect(upcoming.file.reason).toBe("no_batch");
+  });
+
+  it("une clôture manquée : le détail la nomme et renvoie au lot de la dernière clôture", async () => {
+    const w = world();
+    w.coverage.attempted = [new Date("2026-07-31T22:00:00.000Z")];
+
+    const missed = await w.read(null, "2026-09-01");
+    const latest = await w.read(null, "2026-10-01");
+
+    expect(missed.missed).toEqual({
+      closesAt: "2026-08-31T22:00:00.000Z",
+      periodLabel: "du 1er au 31 août 2026",
+      latestProcedureId: "le1~2026-10-01",
+      latestPeriodLabel: "du 1er au 30 septembre 2026",
+    });
+    expect(missed.toPrepare).toBeNull();
+    expect(latest.missed).toBeNull();
+    expect(latest.toPrepare).toMatchObject({ procedureId: "le1~2026-10-01" });
   });
 });

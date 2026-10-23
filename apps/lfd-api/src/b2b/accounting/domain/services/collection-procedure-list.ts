@@ -13,6 +13,7 @@ import {
   type ProcedureStepState,
 } from "./collection-procedure.js";
 import { closureDayOf, procedureIdOf } from "./collection-procedure-id.js";
+import { missedRow } from "./collection-procedure-missed-row.js";
 import {
   countedWarning,
   depositWarnings,
@@ -29,7 +30,12 @@ import {
  * lot suivi celui de la règle du § 4.3 (`openBatchesOf`). Pur.
  */
 
-export type ProcedurePhase = "open" | "upcoming" | "closed";
+/**
+ * `missed` : une clôture passée, plus ancienne que la dernière, que
+ * l'automatisme n'a jamais tentée et qu'aucun lot ne couvre
+ * (`missedClosures`, R4b — Hugo, 2026-10-23 : la table la montre en tête).
+ */
+export type ProcedurePhase = "open" | "upcoming" | "closed" | "missed";
 export type ProcedureStage = ProcedureStepKey | "closed";
 
 /** Un lot tel que la liste le lit : la procédure, plus de quoi avertir. */
@@ -64,6 +70,8 @@ export interface ProcedureListInput {
   readonly batches: readonly ListedBatch[];
   /** La dernière clôture, si aucun lot vivant ne la porte (`toPrepareOf`). */
   readonly toPrepare: ClosureToCome | null;
+  /** Les clôtures manquées (`missedClosures`), la plus ancienne d'abord. */
+  readonly missed: readonly ClosureToCome[];
   /** La prochaine clôture de chaque rythme suivi. */
   readonly upcoming: readonly ClosureToCome[];
   /** `AAAA-MM-JJ` — les closes d'avant ne sont pas listées ; `null` = aucune close. */
@@ -90,6 +98,7 @@ export function procedureRowsOf(input: ProcedureListInput): readonly ProcedureRo
   const rows = [...groups.values()].map((batches) => batchRow(input, batches));
   const known = new Set(rows.map((row) => row.id));
   const toCome = [
+    ...input.missed.map((closure) => ({ closure, phase: "missed" as const })),
     ...(input.toPrepare === null ? [] : [{ closure: input.toPrepare, phase: "open" as const }]),
     ...input.upcoming.map((closure) => ({ closure, phase: "upcoming" as const })),
   ];
@@ -122,6 +131,13 @@ function batchRow(input: ProcedureListInput, batches: readonly ListedBatch[]): P
   const today = input.now.day;
   const followed = followedAtClosure(batches, today, false);
   const closesAt = new Date(batches[0]?.cycleClosesAt ?? 0);
+  const missed = input.missed.find(
+    (closure) => closureDayOf(closure.closesAt) === closureDayOf(closesAt),
+  );
+  if (missed !== undefined && batches.every((batch) => batch.status === "cancelled")) {
+    // Ses lots sont annulés et aucun autre ne la couvre : elle reste manquée.
+    return { ...closureRow(input, missed, "missed"), batches, followed };
+  }
   const toPrepare = input.toPrepare;
   if (
     toPrepare !== null &&
@@ -174,8 +190,11 @@ function batchWarnings(
 function closureRow(
   input: ProcedureListInput,
   closure: ClosureToCome,
-  phase: "open" | "upcoming",
+  phase: "open" | "upcoming" | "missed",
 ): ProcedureRow {
+  if (phase === "missed") {
+    return missedRow(input.legalEntityId, closure);
+  }
   const deposit =
     phase === "open"
       ? depositWarnings({ fromDay: input.now.day, deadline: closure.depositDeadline }, input.now)
@@ -234,7 +253,8 @@ function modesOf(batches: readonly ListedBatch[]): readonly BillingMode[] {
 }
 
 /**
- * L'ordre de la table : d'abord ce qui reste à déposer (ouvertes non
+ * L'ordre de la table : d'abord les clôtures manquées, la plus ancienne en
+ * tête (Hugo, 2026-10-23) ; puis ce qui reste à déposer (ouvertes non
  * déposées et à venir), la limite la plus proche en tête — une limite ne se
  * rattrape pas ; puis les déposées encore suivies, l'échéance la plus proche
  * en tête ; les closes à la fin, la plus récente d'abord. Même priorité que
@@ -251,11 +271,15 @@ function byUrgency(left: ProcedureRow, right: ProcedureRow): number {
   return urgencyKey(left).localeCompare(urgencyKey(right));
 }
 
+const RANK_MISSED = -1;
 const RANK_TO_DEPOSIT = 0;
 const RANK_DEPOSITED = 1;
 const RANK_CLOSED = 2;
 
 function rankOf(row: ProcedureRow): number {
+  if (row.phase === "missed") {
+    return RANK_MISSED;
+  }
   if (row.phase === "closed") {
     return RANK_CLOSED;
   }

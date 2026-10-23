@@ -32,6 +32,23 @@
   } @else if (entity(); as current) {
     <div class="pp-stack">
       @if (view(); as state) {
+        @if (state.missed; as missed) {
+          <fold-callout variant="alert" icon="alert" data-missed>
+            Clôture manquée&nbsp;: la période {{ missed.periodLabel }} n’a jamais été préparée, ni
+            par l’automatisme ni à la main. Son lot ne se prépare pas pour elle seule&nbsp;:
+            préparez celui de la dernière clôture (période {{ missed.latestPeriodLabel }}), qui
+            reprend les commandes de cette période.
+            <button
+              actions
+              foldButton
+              (click)="openLatest(missed.latestProcedureId)"
+              data-open-latest
+            >
+              Ouvrir la dernière clôture
+            </button>
+          </fold-callout>
+        }
+
         <!-- Q4 : tous les lots ouverts, la limite de dépôt la plus proche d'abord ; jamais repliés. -->
         @if (state.openBatches.length > 1) {
           <ul class="pp-lots" aria-label="Lots ouverts" data-open-batches>

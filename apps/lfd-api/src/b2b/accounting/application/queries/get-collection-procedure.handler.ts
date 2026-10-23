@@ -13,6 +13,7 @@ import { Clock } from "../../../../platform/time/clock.js";
 import { CollectionBatchNotFoundError } from "../../domain/errors/collection-errors.js";
 import { KnownAccountFingerprintsReader } from "../../domain/ports/account-bank-exports.reader.js";
 import { AccountsForBankExportReader } from "../../domain/ports/accounts-for-bank-export.reader.js";
+import { AutopilotCoverageReader } from "../../domain/ports/autopilot-coverage.reader.js";
 import { BillingModeDatesReader } from "../../domain/ports/billing-mode-dates.reader.js";
 import {
   CollectionBatchReader,
@@ -47,6 +48,7 @@ import {
   toPrepareOf,
 } from "../collection-procedure-support.js";
 import { readInvoicingCalendar } from "../invoicing-calendar-support.js";
+import { readMissedProcedure } from "../missed-closures-support.js";
 import { readLotPayerModes } from "../lot-payer-modes-support.js";
 import { exportEntityOrFail } from "../mandate-bank-export-support.js";
 import { GetCollectionProcedureQuery } from "./collection-procedure-queries.js";
@@ -77,6 +79,7 @@ export class GetCollectionProcedureHandler implements IQueryHandler<
     private readonly modeDates: BillingModeDatesReader,
     private readonly payerModes: PayerBillingModesReader,
     private readonly periods: InvoicePeriodsReader,
+    private readonly coverage: AutopilotCoverageReader,
     private readonly clock: Clock,
   ) {}
 
@@ -97,7 +100,7 @@ export class GetCollectionProcedureHandler implements IQueryHandler<
       this.batches.list(entity.id),
       readInvoicingCalendar({ modeDates: this.modeDates, payerModes: this.payerModes }, entity.id),
     ]);
-    const [batches, modes] = await Promise.all([
+    const [batches, modes, missed] = await Promise.all([
       procedureBatchesOf(this.returns, stored),
       readLotPayerModes(
         this.periods,
@@ -107,6 +110,7 @@ export class GetCollectionProcedureHandler implements IQueryHandler<
           closesAt: new Date(batch.cycleClosesAt),
         })),
       ),
+      readMissedProcedure(this.coverage, entity.id, calendar, query.closureDay, now),
     ]);
     const toPrepare = pinnedToPrepare(toPrepareOf(entity.id, calendar, stored, now), query);
     const followed = followedOf(query, batches, today, toPrepare !== null);
@@ -125,6 +129,7 @@ export class GetCollectionProcedureHandler implements IQueryHandler<
       followed: viewsOf(views, followed === null ? [] : [followed])[0] ?? null,
       replacementBatchId: replacement?.id ?? null,
       toPrepare,
+      missed,
       openBatches: viewsOf(views, openBatchesOf(batches, today)),
       accounts,
       mandates,

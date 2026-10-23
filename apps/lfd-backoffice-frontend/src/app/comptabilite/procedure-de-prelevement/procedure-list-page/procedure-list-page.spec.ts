@@ -142,6 +142,34 @@ describe('la table « Procédure de prélèvement »', () => {
     expect(deadlines[1]?.classList.contains('pl-late')).toBe(false);
   });
 
+  it('une clôture manquée : en tête, « Manquée » en alerte, et ce qu’il faut faire', async () => {
+    procedures.list = {
+      ...procedures.list,
+      rows: [
+        procedureRow({
+          id: 'le1~2026-09-01',
+          closureDay: '2026-09-01',
+          periodLabel: 'du 1er au 31 août 2026',
+          phase: 'missed',
+          stage: 'file',
+          batches: [],
+          followedBatchId: null,
+          warnings: [{ code: 'missed_closure', count: null }],
+        }),
+        ...procedures.list.rows,
+      ],
+    };
+    const fixture = await render();
+    const first = root(fixture).querySelector<HTMLElement>('tbody tr');
+    expect(first?.textContent).toContain('Manquée');
+    expect(first?.textContent).toContain('Jamais préparée — préparer la dernière clôture');
+    first?.click();
+    await fixture.whenStable();
+    expect(navigations.at(-1)).toEqual([
+      ['/comptabilite/procedure-de-prelevement', 'le1~2026-09-01'],
+    ]);
+  });
+
   it('une ligne ouvre le détail de sa procédure', async () => {
     const fixture = await render();
     const row = root(fixture).querySelector<HTMLElement>('tbody tr');

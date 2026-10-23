@@ -170,6 +170,12 @@ export class ProcedureDePrelevementPage {
     await this.load();
   }
 
+  /** Une clôture manquée renvoie à la dernière, dont le lot la reprend. */
+  protected async openLatest(procedureId: string): Promise<void> {
+    await this.pin(procedureId, null);
+    await this.load();
+  }
+
   protected async prepare(): Promise<void> {
     const entityId = this.entityId();
     if (entityId !== null) {

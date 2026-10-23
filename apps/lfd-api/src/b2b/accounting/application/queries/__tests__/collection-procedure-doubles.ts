@@ -1,6 +1,10 @@
 import { addDays, instantToLocal, type CollectionExclusionView } from "@lfd/contracts";
 
 import {
+  AutopilotCoverageReader,
+  type AutopilotCoverage,
+} from "../../../domain/ports/autopilot-coverage.reader.js";
+import {
   CollectionBatchReader,
   type StoredBatchFile,
   type StoredBatchView,
@@ -100,4 +104,20 @@ function pendingReturn(batchId: string, index: number): CollectionReturnRow {
     resolutionNote: null,
     resolvedAt: null,
   };
+}
+
+/**
+ * La couverture de l'automatisme : sans tentative, rien n'est manqué. Les
+ * tentatives sont des clôtures, comparées au calendrier de l'horloge fixe.
+ */
+export class FixedCoverage extends AutopilotCoverageReader {
+  attempted: Date[] = [];
+  lastLiveBatchClosesAt: Date | null = null;
+  coverageOf(_legalEntityId: string, before: Date): Promise<AutopilotCoverage> {
+    return Promise.resolve({
+      floorAt: null,
+      attemptedClosures: this.attempted.filter((closure) => closure < before),
+      lastLiveBatchClosesAt: this.lastLiveBatchClosesAt,
+    });
+  }
 }

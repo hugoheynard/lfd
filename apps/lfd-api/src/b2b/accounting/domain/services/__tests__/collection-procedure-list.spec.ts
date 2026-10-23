@@ -56,6 +56,7 @@ function input(over: Partial<ProcedureListInput> = {}): ProcedureListInput {
     accounts: { state: "done", toExportCount: 0 },
     mandates: { state: "done", toExportCount: 0 },
     batches: [],
+    missed: [],
     toPrepare: null,
     upcoming: [],
     closedSince: null,

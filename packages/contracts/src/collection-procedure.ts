@@ -116,6 +116,21 @@ export interface CollectionProcedureToPrepareView {
   readonly periodLabel: string;
 }
 
+/**
+ * La clôture de l'adresse est **manquée** (R4b) : jamais tentée par
+ * l'automatisme, couverte par aucun lot. Son lot ne se prépare pas pour
+ * elle : « Préparer » ne prépare que la dernière clôture, et ce lot-là
+ * reprend les commandes de la période manquée.
+ */
+export interface CollectionProcedureMissedView {
+  /** ISO — la clôture manquée (exclusive). */
+  readonly closesAt: string;
+  readonly periodLabel: string;
+  /** La procédure de la dernière clôture, celle dont le lot se prépare. */
+  readonly latestProcedureId: string;
+  readonly latestPeriodLabel: string;
+}
+
 /** `GET admin/accounting/collection-procedure?legalEntityId=&batchId=`. */
 export interface CollectionProcedureView {
   readonly legalEntityId: string;
@@ -127,6 +142,8 @@ export interface CollectionProcedureView {
    */
   readonly replacementBatchId: string | null;
   readonly toPrepare: CollectionProcedureToPrepareView | null;
+  /** La clôture de l'adresse est manquée ; `null` sinon. */
+  readonly missed: CollectionProcedureMissedView | null;
   /** Tous les lots ouverts, la limite de dépôt la plus proche d'abord (Q4). */
   readonly openBatches: readonly CollectionProcedureBatchView[];
   readonly accounts: CollectionProcedureAccountsView;

@@ -25,14 +25,20 @@ const STAGE_LABELS: Readonly<Record<CollectionProcedureStageView, string>> = {
   closed: 'Close',
 };
 
-/** L'étape, et « à venir » quand la clôture n'est pas encore passée. */
+/** L'étape, « Manquée » pour une clôture jamais préparée, et « à venir » avant la clôture. */
 export function stageLabel(row: CollectionProcedureRowView): string {
+  if (row.phase === 'missed') {
+    return 'Manquée';
+  }
   const label = STAGE_LABELS[row.stage];
   return row.phase === 'upcoming' ? `${label} · à venir` : label;
 }
 
-/** Le ton du badge d'étape : à faire, à venir, close. */
+/** Le ton du badge d'étape : manquée, à faire, à venir, close. */
 export function stageVariant(row: CollectionProcedureRowView): FoldBadgeVariant {
+  if (row.phase === 'missed') {
+    return 'alert';
+  }
   if (row.phase === 'closed') {
     return 'success';
   }
@@ -69,7 +75,7 @@ export function deadlineMissed(row: CollectionProcedureRowView): boolean {
 
 /** La ligne entière prend le ton de son avertissement le plus grave. */
 export function rowTone(row: CollectionProcedureRowView): FoldTableTone {
-  if (deadlineMissed(row)) {
+  if (row.phase === 'missed' || deadlineMissed(row)) {
     return 'alert';
   }
   return row.warnings.length > 0 ? 'warning' : null;
@@ -99,10 +105,14 @@ export function warningText(warning: CollectionProcedureWarningView): string {
       return plural(count, 'débiteur sans mandat', 'débiteurs sans mandat');
     case 'pending_returns':
       return plural(count, 'retour en suspens', 'retours en suspens');
+    case 'missed_closure':
+      return 'Jamais préparée — préparer la dernière clôture, qui la reprend';
   }
 }
 
-/** Le ton d'un avertissement : une limite dépassée est une alerte, le reste une mise en garde. */
+/** Le ton d'un avertissement : une limite dépassée ou une clôture manquée est une alerte. */
 export function warningVariant(warning: CollectionProcedureWarningView): FoldBadgeVariant {
-  return warning.code === 'deadline_passed' ? 'alert' : 'warning';
+  return warning.code === 'deadline_passed' || warning.code === 'missed_closure'
+    ? 'alert'
+    : 'warning';
 }

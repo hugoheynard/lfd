@@ -15,7 +15,8 @@ export type ProcedureWarningCode =
   | "accounts_to_export"
   | "mandates_to_export"
   | "unmandated_debtors"
-  | "pending_returns";
+  | "pending_returns"
+  | "missed_closure";
 
 export interface ProcedureWarning {
   readonly code: ProcedureWarningCode;

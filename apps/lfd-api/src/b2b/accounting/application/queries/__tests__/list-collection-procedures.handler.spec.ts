@@ -15,10 +15,20 @@ import {
   weeklySince2026,
 } from "../../commands/__tests__/monthly-invoice-doubles.js";
 import { FixedInvoicePeriods } from "../../services/__tests__/issued-invoice-doubles.js";
-import { FixedBatches, PendingReturns, TODAY, stored } from "./collection-procedure-doubles.js";
+import {
+  FixedBatches,
+  FixedCoverage,
+  PendingReturns,
+  LAST_CLOSURE,
+  TODAY,
+  stored,
+} from "./collection-procedure-doubles.js";
 import { activePayer, countingOf, signedMandate } from "./counted-payers-doubles.js";
 import { ListCollectionProceduresQuery } from "../collection-procedure-queries.js";
 import { ListCollectionProceduresHandler } from "../list-collection-procedures.handler.js";
+
+/** La clôture du 1er août : la dernière que l'automatisme a tentée. */
+const AUG_CLOSURE = "2026-07-31T22:00:00.000Z";
 
 /**
  * La liste des procédures (§ 11) : une ligne par clôture, calculée par les
@@ -34,6 +44,7 @@ function world(payerModes: PayerBillingModesReader = new FixedPayerModes(), paye
   const mandates = bankExportWorld();
   const batches = new FixedBatches();
   const returns = new PendingReturns();
+  const coverage = new FixedCoverage();
   const entity = new OneEntity({ ...entityRecord(), depositCutoff: CUTOFF });
   const counting = countingOf(
     payers.map((id) => activePayer(id)),
@@ -53,12 +64,13 @@ function world(payerModes: PayerBillingModesReader = new FixedPayerModes(), paye
     new FixedInvoicePeriods(new Map()),
     counting.standings,
     counting.mandates,
+    coverage,
     accounts.clock,
   );
   const id = entity.record.id;
   const list = (includeClosed = false, entityId = id): Promise<CollectionProcedureListView> =>
     handler.execute(new ListCollectionProceduresQuery(entityId, includeClosed));
-  return { id, entity, mandates, batches, returns, list };
+  return { id, entity, mandates, batches, returns, coverage, list };
 }
 
 describe("ListCollectionProceduresHandler — la liste des procédures", () => {
@@ -150,6 +162,31 @@ describe("ListCollectionProceduresHandler — la liste des procédures", () => {
     const upcoming = view.rows.filter((row) => row.phase === "upcoming");
 
     expect(upcoming.map((row) => row.modes)).toEqual([["weekly"], ["monthly"]]);
+  });
+
+  it("une clôture jamais tentée ni couverte par un lot : manquée, en tête de table", async () => {
+    const w = world();
+    w.coverage.attempted = [new Date(AUG_CLOSURE)];
+
+    const view = await w.list();
+
+    expect(view.rows.map((row) => [row.id, row.phase])).toEqual([
+      [`${w.id}~2026-09-01`, "missed"],
+      [`${w.id}~2026-10-01`, "open"],
+      [`${w.id}~2026-11-01`, "upcoming"],
+    ]);
+    expect(view.rows[0]?.warnings).toEqual([{ code: "missed_closure", count: null }]);
+  });
+
+  it("un lot vivant sur la dernière clôture la couvre : plus rien de manqué", async () => {
+    const w = world();
+    w.coverage.attempted = [new Date(AUG_CLOSURE)];
+    w.coverage.lastLiveBatchClosesAt = new Date(LAST_CLOSURE);
+    w.batches.batches = [stored("b1")];
+
+    const view = await w.list();
+
+    expect(view.rows.some((row) => row.phase === "missed")).toBe(false);
   });
 
   it("refuse (404) une entité inconnue", async () => {

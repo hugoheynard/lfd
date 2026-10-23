@@ -10,6 +10,7 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 import { Clock } from "../../../../platform/time/clock.js";
 import { KnownAccountFingerprintsReader } from "../../domain/ports/account-bank-exports.reader.js";
 import { AccountsForBankExportReader } from "../../domain/ports/accounts-for-bank-export.reader.js";
+import { AutopilotCoverageReader } from "../../domain/ports/autopilot-coverage.reader.js";
 import { BillingModeDatesReader } from "../../domain/ports/billing-mode-dates.reader.js";
 import {
   CollectionBatchReader,
@@ -48,6 +49,7 @@ import {
 } from "../collection-procedure-support.js";
 import { countedPayerIdsOf } from "../counted-payers-support.js";
 import { readBillingDates } from "../invoicing-calendar-support.js";
+import { missedClosuresToCome } from "../missed-closures-support.js";
 import { readLotPayerModes } from "../lot-payer-modes-support.js";
 import { exportEntityOrFail } from "../mandate-bank-export-support.js";
 import { ListCollectionProceduresQuery } from "./collection-procedure-queries.js";
@@ -58,7 +60,7 @@ export const CLOSED_PROCEDURES_LOOKBACK_DAYS = 92;
 /**
  * **La liste des procédures de prélèvement** (plan
  * `plan-page-procedure-de-prelevement.md`, § 11) : une ligne par clôture —
- * ouvertes, prochaine clôture de chaque rythme suivi, closes récentes.
+ * manquées, ouvertes, prochaine clôture de chaque rythme suivi, closes récentes.
  *
  * Les mêmes lectures que la procédure (onglets 1 et 2, lots et retours,
  * clôture à préparer), le même suivi des rythmes que leur tableau de bord ;
@@ -83,6 +85,7 @@ export class ListCollectionProceduresHandler implements IQueryHandler<
     private readonly periods: InvoicePeriodsReader,
     private readonly standings: PayerStandingsReader,
     private readonly collectionMandates: CollectionMandatesReader,
+    private readonly coverage: AutopilotCoverageReader,
     private readonly clock: Clock,
   ) {}
 
@@ -101,8 +104,11 @@ export class ListCollectionProceduresHandler implements IQueryHandler<
       ),
     ]);
     const calendar = InvoicingCalendar.of(dates.modes, dates.payers);
-    const batches = await this.readBatches(stored, calendar);
     const settings = collectionSettingsOf(entity);
+    const [batches, missed] = await Promise.all([
+      this.readBatches(stored, calendar),
+      missedClosuresToCome(this.coverage, entity.id, calendar, settings, now),
+    ]);
     const counts = payerCountsAt(dates.modes, dates.payers, payerIds, now);
     const followed = BILLING_MODES.filter((mode) => isRhythmFollowed(mode, counts.get(mode) ?? 0));
     const toPrepare = toPrepareOf(entity.id, calendar, stored, now);
@@ -115,6 +121,7 @@ export class ListCollectionProceduresHandler implements IQueryHandler<
       now: local,
       ...steps,
       batches,
+      missed,
       toPrepare:
         toPrepareAt === null
           ? null

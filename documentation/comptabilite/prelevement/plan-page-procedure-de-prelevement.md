@@ -533,7 +533,23 @@ la dernière. Le sélecteur d'entité est passé sur la table.
 désignent (redirection sur la table). Le tableau de bord des rythmes ouvre
 directement le détail : `BillingRhythmPeriodView.procedureId`.
 
-**Pas dans la table** : une clôture plus ancienne que la dernière, restée
-sans lot. `missed-closures.ts` n'est lu que par l'automatisme
-(`run-collection-autopilot.handler.ts`, vérifié le 2026-10-23) ; aucun écran
-ne la liste. Question ouverte pour Hugo : faut-il une ligne « manquée » ?
+**Les clôtures manquées** (Hugo, 2026-10-23 — bâties le même jour, non
+commitées) : une ligne `missed`, en **tête** de table, la plus ancienne
+d'abord, badge « Manquée » en alerte et l'avertissement `missed_closure`.
+La règle n'est pas refaite : `missedClosures` (R4b), lue par
+`readMissedClosures` (`application/missed-closures-support.ts`) avec
+`current` = la dernière clôture passée et le même `AutopilotCoverageReader`
+que l'automatisme. Conséquences de cette règle, assumées telles quelles :
+une entité dont l'automatisme n'a jamais tenté une clôture n'a rien de
+manqué ; un lot vivant sur la dernière clôture couvre toutes les
+précédentes ; « avait des factures à prélever » se lit comme « clôture du
+calendrier de la facture » (un rythme sans payeur ne clôt pas), sans compter
+les factures. Une manquée dont les lots ont été annulés reste manquée.
+
+**Préparer le lot d'une clôture ancienne n'est pas un geste** :
+`ConstituteCollectionBatchesCommand` ne prend que l'entité et prépare la
+dernière clôture (vérifié le 2026-10-23). Le détail d'une manquée
+(`CollectionProcedureView.missed`) ne propose donc pas « Préparer » : il dit
+que la période n'a jamais été préparée et renvoie à la dernière clôture,
+dont le lot reprend ses commandes (le geste que nomme déjà
+`missedClosuresMessage`), par « Ouvrir la dernière clôture ».
