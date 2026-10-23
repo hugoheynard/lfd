@@ -1,6 +1,8 @@
 import { contentLocales } from "@lfd/contracts";
 
-import { fill, MAIL_COPY, mailCopyOf } from "../mail-copy.js";
+import { b2bMailTemplates } from "../../mail-templates.js";
+import { fill, fillNamed, MAIL_COPY, mailCopyOf } from "../mail-copy.js";
+import { MAIL_COPY_VARIABLES } from "../mail-copy.variables.js";
 
 /**
  * Le type garantit qu'aucune **clé** ne manque : `MailCopyBook` est un `Record`
@@ -72,6 +74,51 @@ describe("le dictionnaire des e-mails", () => {
   });
 });
 
+describe("le dictionnaire, rangé par e-mail (E1)", () => {
+  const registryKeys = Object.keys(
+    b2bMailTemplates({ supportEmail: "admin@lfc.test", backOfficeUrl: "" }),
+  ).sort();
+
+  it("a une section par clé du registre, et aucune autre", () => {
+    // Une section orpheline serait un texte que l'écran proposerait d'éditer
+    // pour un e-mail qui ne part plus ; une clé sans section, un e-mail dont
+    // le texte serait resté dans son gabarit.
+    expect(Object.keys(mailCopyOf("fr")).sort()).toEqual(registryKeys);
+    expect(Object.keys(MAIL_COPY_VARIABLES).sort()).toEqual(registryKeys);
+  });
+
+  it.each([...contentLocales])(
+    "n'emploie en %s que des variables que le gabarit fournit",
+    (locale) => {
+      // Une variable inconnue part telle quelle chez le client : « {refe} ».
+      const unknown = Object.entries(mailCopyOf(locale)).flatMap(([key, section]) => {
+        const allowed = MAIL_COPY_VARIABLES[key as keyof typeof MAIL_COPY_VARIABLES];
+        return leaves(section)
+          .flatMap(([path, text]) => placeholders(text).map((name) => [key, path, name]))
+          .filter(([, path, name]) => !(allowed[path ?? ""] ?? []).includes(name ?? ""));
+      });
+
+      expect(unknown).toEqual([]);
+    },
+  );
+
+  it("ne déclare de variables que pour des textes qui existent", () => {
+    const paths = new Map(
+      Object.entries(mailCopyOf("fr")).map(([key, section]) => [
+        key,
+        new Set(leaves(section).map(([path]) => path)),
+      ]),
+    );
+    const stale = Object.entries(MAIL_COPY_VARIABLES).flatMap(([key, declared]) =>
+      Object.keys(declared)
+        .filter((path) => !(paths.get(key)?.has(path) ?? false))
+        .map((path) => `${key} › ${path}`),
+    );
+
+    expect(stale).toEqual([]);
+  });
+});
+
 describe("l'interpolation", () => {
   it("remplace la clé par sa valeur", () => {
     expect(fill("Votre commande {ref}", { ref: "ORD-42" })).toBe("Votre commande ORD-42");
@@ -82,6 +129,11 @@ describe("l'interpolation", () => {
     // finie et personne ne remarque le trou, alors que « {ref} » saute aux yeux
     // dès le premier envoi de contrôle.
     expect(fill("Votre commande {ref}", {})).toBe("Votre commande {ref}");
+  });
+
+  it("prend la forme sans prénom quand il est vide", () => {
+    expect(fillNamed("Bonjour, {firstName}", "Bonjour", "Paul")).toBe("Bonjour, Paul");
+    expect(fillNamed("Bonjour, {firstName}", "Bonjour", "")).toBe("Bonjour");
   });
 
   it("n'interprète rien d'autre qu'une clé simple", () => {

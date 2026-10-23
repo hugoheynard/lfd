@@ -33,251 +33,39 @@ import type { ContentLocale } from "@lfd/contracts";
  * c'est un refactor du registre entier, pas de ce lot.
  */
 
-/** Les trois régimes de règlement, tels que le client les lit. */
-export interface OrderSettlementCopy {
-  /** Déjà réglée par carte. */
-  readonly paid: string;
-  /** Enregistrée, mais il reste à payer. */
-  readonly due: string;
-  /** Portée au compte, rien à encaisser maintenant. */
-  readonly account: string;
-}
+import type { AccountMailsCopy } from "./model/account-mails.model.js";
+import type { BillingMailsCopy } from "./model/billing-mails.model.js";
+import type { OrderMailsCopy } from "./model/order-mails.model.js";
+import type { PaymentMailsCopy } from "./model/payment-mails.model.js";
+import type { TeamMailsCopy } from "./model/team-mails.model.js";
 
-/** Ce que dit le courriel de confirmation d'une commande. */
-export interface OrderPlacedCopy {
-  /** Objet du message. `{ref}` = le numéro de commande. */
-  readonly subject: string;
-  /** Sur-titre de l'en-tête, en capitales. */
-  readonly kicker: string;
-  /** Titre, selon ce que la commande doit encore. */
-  readonly title: OrderSettlementCopy;
-  readonly intro: string;
-  /** Libellé de la ligne de total, selon le même régime. */
-  readonly totalLabel: OrderSettlementCopy;
-  readonly recapPickup: string;
-  readonly recapDelivery: string;
-  readonly recapContent: string;
-  /** `{count}` = le nombre de pièces. */
-  readonly recapPieces: string;
-  readonly recapDiscount: string;
-  /** La ligne du bon de fidélité, distincte de la remise (plan des points, C7). */
-  readonly recapVoucher: string;
-  readonly recapVat: string;
-  /**
-   * Le total d'un pro **au compte**, hors taxe (F5, plan
-   * `bons-et-facture-concordants`) : la TVA se calcule une fois sur le mois,
-   * et un TTC par bon contredirait la facture de quelques centimes.
-   */
-  readonly totalPretax: string;
-  /** La ligne qui dit où sont la TVA et le TTC : libellé, puis valeur. */
-  readonly recapTaxLater: string;
-  readonly recapTaxLaterValue: string;
-  /**
-   * Le bloc du QR de retrait. Il est **dans le corps** et non en pièce jointe :
-   * c'est la seule chose qu'on vient chercher debout devant un comptoir, et un
-   * PDF à ouvrir sur un téléphone, la main sur la porte, ne se scanne pas.
-   */
-  readonly qrTitle: string;
-  readonly qrLine: string;
-  readonly cta: string;
-  /** Ce que le client fait s'il veut changer quelque chose. */
-  readonly changeNote: string;
-  /** Lot C6 : le lien « gérer ou annuler ma commande » (invité : la page d'annulation). */
-  readonly manageLink: string;
-  readonly footer: string;
-}
+export type * from "./model/account-mails.model.js";
+export type * from "./model/billing-mails.model.js";
+export type * from "./model/order-mails.model.js";
+export type * from "./model/payment-mails.model.js";
+export type * from "./model/team-mails.model.js";
 
 /**
- * Ce que dit le courriel de **mise à disposition** — celui qui part quand
- * l'atelier scanne le QR de colisage.
+ * Tout ce qu'un e-mail sait dire, dans une langue — **une section par clé du
+ * registre** (`B2bMails`, `mail-templates.ts`), depuis le 2026-10-23 (plan
+ * `documentation/contenu-ecommerce/plan-textes-des-e-mails.md`, E1).
  *
- * Il répond à **une** question et pas deux : où et quand venir la chercher. Le
- * récapitulatif des montants était le travail de la confirmation ; le répéter
- * ici ferait relire un décompte à quelqu'un qui met son manteau.
+ * Objet, titre, paragraphes, libellés, boutons, pied, textes alternatifs :
+ * tout ce qu'un destinataire lit est ici, et rien n'est resté dans les
+ * gabarits. Les DONNÉES (numéro, montant, jour, nom) sont des variables
+ * `{nom}` que le texte place où il veut ; `mail-copy.variables.ts` dit
+ * lesquelles chaque texte peut porter. Ce qui reste au gabarit est la mise
+ * en page : l'ordre des blocs, les sauts de paragraphe, la forme
+ * « Libellé : valeur » des e-mails internes, les séparateurs d'une liste.
  *
- * Deux titres et deux chapeaux, parce qu'un retrait et une livraison ne
- * demandent pas la même chose au client : l'un doit se déplacer, l'autre doit
- * être là.
+ * Rangé par famille (commande, paiement, facturation, compte, équipe) pour
+ * tenir chaque fichier sous 300 lignes ; un futur écran les lit par clé.
  */
-export interface OrderReadyCopy {
-  /** Objet du message. `{ref}` = le numéro de commande. */
-  readonly subject: string;
-  readonly kicker: string;
-  readonly titlePickup: string;
-  readonly titleDelivery: string;
-  readonly introPickup: string;
-  readonly introDelivery: string;
-  /** Le point de retrait, ou l'adresse servie. */
-  readonly whereLabel: string;
-  readonly contentLabel: string;
-  /** `{count}` = le nombre de pièces. */
-  readonly piecesLabel: string;
-  /**
-   * Le QR, **à nouveau**. Il était déjà dans la confirmation, et le répéter
-   * n'est pas une redite : c'est MAINTENANT qu'on s'en sert, et personne ne
-   * remonte un fil de courriels le téléphone à la main devant un comptoir.
-   */
-  readonly qrTitle: string;
-  readonly qrLine: string;
-  readonly cta: string;
-  readonly footer: string;
-}
-
-/**
- * Ce que dit le courriel d'un **paiement refusé**.
- *
- * 🔴 Le seul courriel du parcours qui annonce une **mauvaise** nouvelle, et il
- * doit donc faire trois choses qu'aucun autre ne fait : dire sans détour que le
- * paiement n'est pas passé, dire ce que devient la commande, et donner le geste
- * de sortie. Une formule feutrée ferait relire deux fois pour comprendre qu'il
- * faut agir.
- */
-export interface PaymentFailedCopy {
-  /** Objet du message. `{ref}` = le numéro de commande. */
-  readonly subject: string;
-  /** Sur-titre de l'en-tête, en capitales. */
-  readonly kicker: string;
-  readonly title: string;
-  /** Ce qui s'est passé, en une phrase. */
-  readonly intro: string;
-  /**
-   * 🔴 Ce que devient la commande. La phrase la plus importante du message :
-   * sans elle, le client ne sait pas s'il doit repasser commande, attendre, ou
-   * se présenter au comptoir.
-   */
-  readonly consequence: string;
-  /** Le libellé de la ligne de montant. */
-  readonly amountLabel: string;
-  /** Le geste de sortie — reprendre le règlement. */
-  readonly cta: string;
-  /** Le recours, quand le bouton ne mène nulle part. */
-  readonly footer: string;
-}
-
-/**
- * Ce que dit le courriel d'un **paiement arrivé trop tard** : la clôture de la
- * journée a annulé la commande. Mêmes trois devoirs que le refus — ce qui
- * s'est passé, ce que devient la commande, et « rien n'a été débité » — mais
- * sans geste de reprise : il n'y a plus rien à régler.
- */
-export interface PaymentExpiredCopy {
-  /** Objet du message. `{ref}` = le numéro de commande. */
-  readonly subject: string;
-  readonly kicker: string;
-  readonly title: string;
-  readonly intro: string;
-  /** 🔴 La commande est annulée, et rien n'a été débité. */
-  readonly consequence: string;
-  readonly amountLabel: string;
-  readonly footer: string;
-}
-
-/**
- * Ce que dit le courriel de **départ en livraison** — celui qui part quand la
- * tournée quitte le dépôt (`documentation/livraisons/livreur/en-route.md`, PL3-D4).
- *
- * 🔴 **Aucune heure.** On n'a pas d'estimation fiable par arrêt : une heure
- * fausse coûte plus qu'aucune heure. Ni nom ni téléphone du livreur.
- */
-export interface DeliveryEnRouteCopy {
-  readonly subject: string;
-  readonly title: string;
-  /** « Votre livreur est parti, il arrive dans la journée. » */
-  readonly intro: string;
-  readonly referenceLabel: string;
-  readonly addressLabel: string;
-  readonly cta: string;
-  readonly footer: string;
-}
-
-/**
- * **« Votre facture FA-… »** (plan `facture-emise.md` ;
- * rangé au dictionnaire le 2026-10-09, suite (c)). Les valeurs — dates,
- * période, montant, moyen de paiement — arrivent déjà mises en forme par la
- * comptabilité, en français : seuls les mots du gabarit se traduisent ici.
- */
-export interface InvoiceIssuedCopy {
-  /** `{number}` — « Votre facture FA-LFD-2026-000001 ». */
-  readonly title: string;
-  /** `{title}`, `{seller}`. */
-  readonly subject: string;
-  readonly greeting: string;
-  /** `{seller}`, `{number}`, `{buyer}`, `{period}` (la clause, ou vide), `{total}`. */
-  readonly intro: string;
-  /** `{period}` — « pour les commandes du 5 au 11 octobre 2026 », précédée d’une espace. */
-  readonly periodClause: string;
-  readonly attachedNote: string;
-  readonly invoiceLabel: string;
-  readonly dateLabel: string;
-  readonly periodLabel: string;
-  readonly addressedToLabel: string;
-  readonly dueLabel: string;
-  readonly paymentLabel: string;
-  readonly totalLabel: string;
-  readonly cta: string;
-  readonly footer: string;
-}
-
-/**
- * **« Votre commande a été annulée par notre équipe »** (doc
- * `documentation/commandes/annulation/annulation-par-le-staff.md`, C3.5). Ni QR, ni
- * motif : le motif est interne. Distinct de l'abandon et de l'expiration —
- * ici, c'est l'équipe qui a agi.
- */
-export interface OrderCancelledCopy {
-  /** Objet du message. `{ref}` = le numéro de commande. */
-  readonly subject: string;
-  readonly title: string;
-  /** `{ref}`, `{day}` — le jour de retrait ou de livraison, en lettres. */
-  readonly intro: string;
-  /** Sans jour de service connu. `{ref}`. */
-  readonly introWithoutDay: string;
-  /** Lot C6 : le client a annulé lui-même. `{ref}`, `{day}`. */
-  readonly introBySelf: string;
-  /** Le même, sans jour. `{ref}`. */
-  readonly introBySelfWithoutDay: string;
-  /** Lot C6 : un autre membre de la société a annulé. `{name}`, `{company}`, `{ref}`, `{day}`. */
-  readonly introByMember: string;
-  /** Le même, sans jour. `{name}`, `{company}`, `{ref}`. */
-  readonly introByMemberWithoutDay: string;
-  /**
-   * Lot C1 des sous-comptes (§7.9) : un membre du compte PRINCIPAL a annulé la
-   * commande du site. `{name}`, `{principal}` (son enseigne), `{ref}`, `{day}`.
-   */
-  readonly introByPrincipal: string;
-  /** Le même, sans jour. `{name}`, `{principal}`, `{ref}`. */
-  readonly introByPrincipalWithoutDay: string;
-  /** Total nul : rien à facturer. */
-  readonly nothingBilled: string;
-  /** Carte non payée, fermée chez Stripe : rien n'a été prélevé. */
-  readonly nothingCharged: string;
-  /** Au compte, ni facturée ni prélevée (lot C5). */
-  readonly nothingInvoiced: string;
-  /** Lot C4 : `{amount}` le reste payé par carte, rendu sur la même carte. */
-  readonly refundToCard: string;
-  /** Lot C4 : le paiement a déjà été rendu en entier — rien ne part. */
-  readonly alreadyRefunded: string;
-  /** Le bon de fidélité utilisé est rendu (lot C3b). `{value}`, `{day}` — sa date limite. */
-  readonly voucherReturned: string;
-  /**
-   * Le bon retrouve sa valeur, son reliquat refondu dedans (lot C3b).
-   * `{value}`, `{day}`, `{remainder}`. Un bon échu n'a pas de phrase : le
-   * courriel se tait sur lui (Q2).
-   */
-  readonly voucherMerged: string;
-  readonly footer: string;
-}
-
-/** Tout ce qu'un e-mail sait dire, dans une langue. */
-export interface MailCopy {
-  readonly orderPlaced: OrderPlacedCopy;
-  readonly orderReady: OrderReadyCopy;
-  readonly deliveryEnRoute: DeliveryEnRouteCopy;
-  readonly paymentFailed: PaymentFailedCopy;
-  readonly paymentExpired: PaymentExpiredCopy;
-  readonly orderCancelled: OrderCancelledCopy;
-  readonly invoiceIssued: InvoiceIssuedCopy;
-}
+export type MailCopy = OrderMailsCopy &
+  PaymentMailsCopy &
+  BillingMailsCopy &
+  AccountMailsCopy &
+  TeamMailsCopy;
 
 /**
  * Les trois langues. `Record` **exhaustif par construction** : une langue

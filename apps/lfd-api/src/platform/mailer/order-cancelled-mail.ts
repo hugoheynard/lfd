@@ -62,7 +62,7 @@ export function renderOrderCancelledMail(
   data: OrderCancelledMailData,
   shell: OrderCancelledShell,
 ): RenderedMail {
-  const copy = mailCopyOf(data.locale).orderCancelled;
+  const copy = mailCopyOf(data.locale)["customer.order-cancelled"];
   return {
     subject: sanitiseSubject(fill(copy.subject, { ref: data.sheet.reference })),
     html: shell({ title: copy.title, body: bodyOf(data, copy), footer: copy.footer }),

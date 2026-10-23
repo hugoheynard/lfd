@@ -1,134 +1,20 @@
+import { ACCOUNT_MAILS_EN } from "./en/account-mails.en.js";
+import { BILLING_MAILS_EN } from "./en/billing-mails.en.js";
+import { ORDER_MAILS_EN } from "./en/order-mails.en.js";
+import { PAYMENT_MAILS_EN } from "./en/payment-mails.en.js";
+import { TEAM_MAILS_EN } from "./en/team-mails.en.js";
 import type { MailCopy } from "./mail-copy.model.js";
 
 /**
  * L'anglais. Traduction de {@link MAIL_FR}, pas une variante : si une phrase
  * française change de sens, celle-ci doit changer avec elle.
+ *
+ * Rangée par famille d'e-mails (`./en/`), une section par clé du registre.
  */
 export const MAIL_EN: MailCopy = {
-  orderPlaced: {
-    subject: "Your order {ref} — La Folie Coffee",
-    kicker: "Confirmed",
-    title: {
-      paid: "All settled.",
-      due: "Order recorded.",
-      account: "Order recorded.",
-    },
-    intro: "Your order joins tomorrow morning's bake.",
-    totalLabel: {
-      paid: "Paid online",
-      due: "Left to pay",
-      account: "Charged to your account",
-    },
-    recapPickup: "Pickup",
-    recapDelivery: "Delivery",
-    recapContent: "Contents",
-    recapPieces: "{count} items",
-    recapDiscount: "Discount",
-    recapVoucher: "Loyalty voucher",
-    recapVat: "incl. VAT",
-    totalPretax: "Charged to your account, excl. VAT",
-    recapTaxLater: "VAT and total incl. VAT",
-    recapTaxLaterValue: "on the monthly invoice",
-    qrTitle: "Your pickup code",
-    qrLine: "Show this code at the counter. The team's scan is what records the handover.",
-    cta: "View my order",
-    changeNote: "Need a change? Call the bakehouse — a placed order goes straight into production.",
-    manageLink: "Manage or cancel my order",
-    footer: "Le Labo · route de la Balme, Val d'Isère — 7 am – 7 pm",
-  },
-  orderReady: {
-    subject: "Your order {ref} is ready",
-    kicker: "Ready",
-    titlePickup: "It's ready.",
-    titleDelivery: "Ready to go.",
-    introPickup: "Your order is waiting at the counter.",
-    introDelivery: "Your order is on its way to you.",
-    whereLabel: "Pick up at",
-    contentLabel: "Contents",
-    piecesLabel: "{count} items",
-    qrTitle: "Your pickup code",
-    qrLine: "Show this code at the counter. The team's scan is what records the handover.",
-    cta: "View my order",
-    footer: "Le Labo · route de la Balme, Val d'Isère — 7 am – 7 pm",
-  },
-  deliveryEnRoute: {
-    subject: "Your delivery is on its way",
-    title: "Your delivery is on its way.",
-    intro: "Your driver has left and will arrive during the day.",
-    referenceLabel: "Order",
-    addressLabel: "Delivered to",
-    cta: "View my order",
-    footer: "Le Labo · route de la Balme, Val d'Isère — 7 am – 7 pm",
-  },
-  paymentFailed: {
-    subject: "Payment declined — your order {ref}",
-    kicker: "Payment declined",
-    title: "Your payment did not go through.",
-    intro: "Your bank declined the payment for this order.",
-    consequence:
-      "Your order will not go into production, and nothing is waiting for you at the counter. " +
-      "Resume the payment below to bring it back.",
-    amountLabel: "Amount due",
-    cta: "Resume payment",
-    footer:
-      "Unsure, or think this is a mistake? Call us — Le Labo · route de la Balme, Val d'Isère.",
-  },
-  paymentExpired: {
-    subject: "Order {ref} cancelled — payment not completed",
-    kicker: "Order cancelled",
-    title: "Your payment did not go through in time.",
-    intro: "The payment for this order was not completed before the batch was prepared.",
-    consequence:
-      "Your order has therefore been cancelled, and nothing has been charged. " +
-      "If you still need it, please place a new order.",
-    amountLabel: "Amount not charged",
-    footer:
-      "Unsure, or think this is a mistake? Call us — Le Labo · route de la Balme, Val d'Isère.",
-  },
-  orderCancelled: {
-    subject: "Order {ref} cancelled",
-    title: "Your order has been cancelled.",
-    intro: "Your order {ref} for {day} has been cancelled by our team.",
-    introWithoutDay: "Your order {ref} has been cancelled by our team.",
-    introBySelf: "You cancelled your order {ref} for {day}.",
-    introBySelfWithoutDay: "You cancelled your order {ref}.",
-    introByMember: "{name} cancelled order {ref} for {company}, due {day}.",
-    introByMemberWithoutDay: "{name} cancelled order {ref} for {company}.",
-    introByPrincipal:
-      "Order {ref}, due {day}, was cancelled by {name}, from the main account {principal}.",
-    introByPrincipalWithoutDay:
-      "Order {ref} was cancelled by {name}, from the main account {principal}.",
-    nothingBilled: "You will not be charged anything for this order.",
-    nothingCharged: "No payment has been taken.",
-    nothingInvoiced: "Nothing will be invoiced or debited for this order.",
-    refundToCard:
-      "The amount of {amount} paid by card and not already refunded to you will be refunded to the same card. Depending on your bank, it appears within 5 to 10 business days.",
-    alreadyRefunded: "The payment for this order has already been refunded to you.",
-    voucherReturned:
-      "Your loyalty voucher of {value} has been returned to you: you can use it on a future order until {day}.",
-    voucherMerged:
-      "Your loyalty voucher is back to its value of {value}, valid until {day}. The {remainder} voucher you were given as the remainder is replaced by this one.",
-    footer:
-      "Unsure, or think this is a mistake? Call us — Le Labo · route de la Balme, Val d'Isère.",
-  },
-  invoiceIssued: {
-    title: "Your invoice {number}",
-    subject: "{title} — {seller}",
-    greeting: "Hello,",
-    intro:
-      "{seller} has issued invoice {number} addressed to {buyer}{period}, for {total} including VAT.",
-    periodClause: " for the orders {period}",
-    attachedNote:
-      "It is attached to this message as a Factur-X PDF: your accounting software can read its data.",
-    invoiceLabel: "Invoice",
-    dateLabel: "Date",
-    periodLabel: "Period",
-    addressedToLabel: "Addressed to",
-    dueLabel: "Due date",
-    paymentLabel: "Payment",
-    totalLabel: "Total incl. VAT",
-    cta: "See my invoices",
-    footer:
-      "This invoice is available at any time in your customer area, under “My invoices”. For any question, reply to this message.",
-  },
+  ...ORDER_MAILS_EN,
+  ...PAYMENT_MAILS_EN,
+  ...BILLING_MAILS_EN,
+  ...ACCOUNT_MAILS_EN,
+  ...TEAM_MAILS_EN,
 };

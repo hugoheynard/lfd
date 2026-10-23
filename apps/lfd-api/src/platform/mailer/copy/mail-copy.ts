@@ -39,3 +39,12 @@ export function mailCopyOf(locale: ContentLocale): MailCopy {
 export function fill(template: string, values: Readonly<Record<string, string>>): string {
   return template.replace(/\{(\w+)\}/gu, (whole, key: string) => values[key] ?? whole);
 }
+
+/**
+ * La forme avec prénom (`{firstName}`), ou celle sans quand on ne le connaît
+ * pas. Deux textes plutôt qu'une virgule ôtée par le code : la ponctuation
+ * d'une salutation n'est pas la même dans toutes les langues.
+ */
+export function fillNamed(named: string, anonymous: string, firstName: string): string {
+  return firstName === "" ? anonymous : fill(named, { firstName });
+}

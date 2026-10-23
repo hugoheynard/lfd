@@ -1,0 +1,458 @@
+{
+  "customer.order-placed": {
+    "paidPickup": {
+      "subject": "Votre commande ORD-4812 — La Folie Coffee",
+      "htmlSha256": "9d7726bfa40c1eef69f4882e1d663e49bab0e388bed3fe187cf54bddd3d12df6",
+      "attachmentsSha256": "a7e2b68369626b42e7f88d5d3cc4cc487b420b943dbdd81105da18af7554184b"
+    },
+    "dueDelivery": {
+      "subject": "Votre commande ORD-4812 — La Folie Coffee",
+      "htmlSha256": "5d8bb3b79ed6b770c1bda45fae30932dc0e430a00e8433454b1489f4b6d5bef3",
+      "attachmentsSha256": null
+    },
+    "account": {
+      "subject": "Votre commande ORD-4812 — La Folie Coffee",
+      "htmlSha256": "6c676619345a65b24173adf76373a43b11943197cc4f7fee07e2a02903a1f27e",
+      "attachmentsSha256": "49144e4605060cd1a36a1dca9a868332bc0cd984b12d6e9b24d2e69e602aaa47"
+    },
+    "free": {
+      "subject": "Votre commande ORD-4812 — La Folie Coffee",
+      "htmlSha256": "32ac60418f9e58c2bf6c3285bc69648b253d908429bdb8529dceb37531c51661",
+      "attachmentsSha256": null
+    }
+  },
+  "customer.order-ready": {
+    "pickup": {
+      "subject": "Votre commande ORD-4812 est prête",
+      "htmlSha256": "2f784b000aea051f9f5dd16c54a82031f03a5332a7afe1d9052d937a20e1bd36",
+      "attachmentsSha256": "49144e4605060cd1a36a1dca9a868332bc0cd984b12d6e9b24d2e69e602aaa47"
+    },
+    "delivery": {
+      "subject": "Votre commande ORD-4812 est prête",
+      "htmlSha256": "3681f7ff4787cb01db0188702e7576d5a266669ecf0be8f29aa7af377e2c0a33",
+      "attachmentsSha256": null
+    }
+  },
+  "customer.collection-notice": {
+    "statement": {
+      "subject": "Avis de prélèvement — CRAZEATIVITY · jeudi 15 octobre 2026",
+      "htmlSha256": "db0eaed259e62bbefc07e21b142177ba191c6f6c95d4ba67ee03c92c8cbb9f2f",
+      "attachmentsSha256": null
+    },
+    "oneInvoice": {
+      "subject": "Avis de prélèvement — CRAZEATIVITY · jeudi 15 octobre 2026",
+      "htmlSha256": "5e7ad848d2dfd98135f73834be5d33149b5c1023e6d2b22d7b6bdda6f16f67f3",
+      "attachmentsSha256": null
+    },
+    "correctionRepresented": {
+      "subject": "Avis de prélèvement rectifié — CRAZEATIVITY · jeudi 15 octobre 2026",
+      "htmlSha256": "c697626fa92ae4b956ac506f4fd90be2a5718f69b5a5178927c8cbd3a940fbb5",
+      "attachmentsSha256": null
+    },
+    "cancellation": {
+      "subject": "Prélèvement annulé — CRAZEATIVITY · jeudi 15 octobre 2026",
+      "htmlSha256": "fe4030bdeec615cd59388a4302d65955dcef5f73f9f1179b86dd1e414397d6a3",
+      "attachmentsSha256": null
+    }
+  },
+  "customer.invoice-issued": {
+    "full": {
+      "subject": "Votre facture FA-LFD-2026-000001 — CRAZEATIVITY",
+      "htmlSha256": "9687bf81c4516f84cb2b154ba62ca327de5a6d56f0a3e52ad0eb1d64b8897bd8",
+      "attachmentsSha256": "bfbf83fac962fea82fa139e45330427b2f36ad35c152d96050fc2b514bcc91f7"
+    },
+    "bare": {
+      "subject": "Votre facture FA-LFD-2026-000001 — CRAZEATIVITY",
+      "htmlSha256": "7e48bdb3bdd5eb236cc705a08adc665055281f5883b3c4278ffb4d46daac69f4",
+      "attachmentsSha256": null
+    }
+  },
+  "customer.delivery-en-route": {
+    "full": {
+      "subject": "Votre livraison est en route",
+      "htmlSha256": "23c7c5db9eee28b2a86bc7a762e9cb3397ac70cf4e5cb49462107faf81e5b89b",
+      "attachmentsSha256": null
+    },
+    "bare": {
+      "subject": "Votre livraison est en route",
+      "htmlSha256": "8cf4450f07ca5e29f6f69b3f03f4240f0de221fc54a63ad303291638b401720b",
+      "attachmentsSha256": null
+    }
+  },
+  "customer.payment-failed": {
+    "withLink": {
+      "subject": "Paiement refusé — votre commande ORD-4812",
+      "htmlSha256": "870936315ebaeb53f58a9a73116fb3ed6143a39daca2e6793e900c63cba4b72d",
+      "attachmentsSha256": null
+    },
+    "withoutLink": {
+      "subject": "Paiement refusé — votre commande ORD-4812",
+      "htmlSha256": "5f5e8b5a4b94ba89b87a2a4a94464938a28dd2fc1b7aed4915a7a6320b7a4308",
+      "attachmentsSha256": null
+    }
+  },
+  "customer.payment-expired": {
+    "only": {
+      "subject": "Commande ORD-4812 annulée — paiement non abouti",
+      "htmlSha256": "42e74ec24a3e55be4b31942eb8af7dec0ea8350f3f15ca48bebd4c353019c33d",
+      "attachmentsSha256": null
+    }
+  },
+  "customer.order-cancelled": {
+    "teamPaid": {
+      "subject": "Commande ORD-4812 annulée",
+      "htmlSha256": "d8ce1e65236f8b8f5f850d8e1b9ab53e062f13d6a6fec0ceefd2687f461ef178",
+      "attachmentsSha256": null
+    },
+    "teamAlreadyRefunded": {
+      "subject": "Commande ORD-4812 annulée",
+      "htmlSha256": "c4f8fd72cf7160013ac46b87e7c9ec47466cb4adf7c3e6ed20fb6261654cfb0a",
+      "attachmentsSha256": null
+    },
+    "selfFree": {
+      "subject": "Commande ORD-4812 annulée",
+      "htmlSha256": "4411ed9574853a0fb4ddc7501c063291fa87ce19f9106f5e771d01f9496192c8",
+      "attachmentsSha256": null
+    },
+    "selfDueNoDay": {
+      "subject": "Commande ORD-4812 annulée",
+      "htmlSha256": "ec935d1492a54ae01ddf0e8a3a93094fffa6d259e3edccf6ceafae730e946b47",
+      "attachmentsSha256": null
+    },
+    "memberAccount": {
+      "subject": "Commande ORD-4812 annulée",
+      "htmlSha256": "c616bff53d11c7170c556a366c3a9a8fc3b3570d926f2b3b6076b309d7fb67b1",
+      "attachmentsSha256": null
+    },
+    "memberNoDay": {
+      "subject": "Commande ORD-4812 annulée",
+      "htmlSha256": "28b85eeb9713e9db6698287fa753a41fb90b97f2e345c9b1c4bfb113f79596b4",
+      "attachmentsSha256": null
+    },
+    "principalMerged": {
+      "subject": "Commande ORD-4812 annulée",
+      "htmlSha256": "b389a921ffb05be117f73f019d999ee6d147c65293c1446babc2e85297f3b128",
+      "attachmentsSha256": null
+    },
+    "principalNoDayLapsed": {
+      "subject": "Commande ORD-4812 annulée",
+      "htmlSha256": "cdb250204da214d15b87ea3b00242c4f9dd6be213caeffe78fc40fe41b69fded",
+      "attachmentsSha256": null
+    }
+  },
+  "customer.sub-account-activity": {
+    "placed": {
+      "subject": "Chalet Gentiane — Commande passée par un de vos sites (ORD-1)",
+      "htmlSha256": "cddbbcc219ab081e4140a785b57ca76b2a911a1dc4743e9a5fc13c7c4cb76ef1",
+      "attachmentsSha256": null
+    },
+    "cancelledByTeam": {
+      "subject": "Chalet Gentiane — Commande annulée sur un de vos sites (ORD-1)",
+      "htmlSha256": "bf7384c3967cbe27e835afe351e9c88aae1fdf04ab0b410b0a57d4d44f618ca6",
+      "attachmentsSha256": null
+    },
+    "abandoned": {
+      "subject": "Chalet — Règlement abandonné sur un de vos sites (ORD-2)",
+      "htmlSha256": "0846815cfbb53bdff5f871ef853f55f7c543877ad17278a42aa0b325594ec6db",
+      "attachmentsSha256": null
+    },
+    "paymentFailed": {
+      "subject": "Chalet — Paiement échoué sur un de vos sites (ORD-3)",
+      "htmlSha256": "c6d3967cf91ac1530b75759e4f3cf63476e2f9a13350190936fbb7056a6aafb5",
+      "attachmentsSha256": null
+    }
+  },
+  "customer.sub-account-gesture": {
+    "problem": {
+      "subject": "Chalet — Problème signalé par un de vos sites (ORD-1)",
+      "htmlSha256": "7a8a9a2ffcf402ed5606bf063e3ac4e533e9dc8452698cf109332ab364ba00c6",
+      "attachmentsSha256": null
+    },
+    "problemByTeam": {
+      "subject": "Chalet — Problème signalé par un de vos sites (ORD-1)",
+      "htmlSha256": "e3d84ed2f0a6b7435b00ca5e957b677f6923af97b74d4d13f0266fa3e6fecedf",
+      "attachmentsSha256": null
+    },
+    "contactWithReference": {
+      "subject": "Chalet — Contact ajouté sur un de vos sites (X-9)",
+      "htmlSha256": "02fc56ded2fcc05a320a59474db9d8c73a2711388d6d82db082a0b192365e515",
+      "attachmentsSha256": null
+    },
+    "delivery_address_added": {
+      "subject": "Chalet — Adresse de livraison ajoutée sur un de vos sites",
+      "htmlSha256": "328b94117ac3370a9df7f2c6b3585993b8f4973d23fd1dd2c18e17613d94c7ba",
+      "attachmentsSha256": null
+    },
+    "delivery_address_updated": {
+      "subject": "Chalet — Adresse de livraison modifiée sur un de vos sites",
+      "htmlSha256": "4e944469c8dca73e2b34dc2d60c5e2533551d1b00cb0eebbe0e9d68f34c57072",
+      "attachmentsSha256": null
+    },
+    "delivery_address_removed": {
+      "subject": "Chalet — Adresse de livraison retirée sur un de vos sites",
+      "htmlSha256": "56dc6d4cb2b8a689720ca4067fe1e68d9ae32e624b754b5bf829221b56b12e6a",
+      "attachmentsSha256": null
+    },
+    "default_delivery_set": {
+      "subject": "Chalet — Adresse de livraison par défaut changée sur un de vos sites",
+      "htmlSha256": "20894e6f23003d241140de8e1735ad30b9ad072b34ed4a5d09b08de6642abbde",
+      "attachmentsSha256": null
+    },
+    "contact_added": {
+      "subject": "Chalet — Contact ajouté sur un de vos sites",
+      "htmlSha256": "06a8f488fec06d46cad9160f82b2f9bb45b24c53480bcc7add47e0c5a4269b0a",
+      "attachmentsSha256": null
+    },
+    "contact_updated": {
+      "subject": "Chalet — Contact modifié sur un de vos sites",
+      "htmlSha256": "748301f07a8bbe4c287bd083105c5d933e312f92987de61f92b97e9b973276bb",
+      "attachmentsSha256": null
+    },
+    "contact_removed": {
+      "subject": "Chalet — Contact retiré sur un de vos sites",
+      "htmlSha256": "a7d9380814358c6c206f00cc843e2919885a9ac1078d49b632bc4b0bc290200f",
+      "attachmentsSha256": null
+    },
+    "primary_contact_changed": {
+      "subject": "Chalet — Contact principal changé sur un de vos sites",
+      "htmlSha256": "15e4aa996d263c6568d67ce9e50bbd2a3b9282f657f804546b66c1237a0afa8d",
+      "attachmentsSha256": null
+    },
+    "bank_account_changed": {
+      "subject": "Chalet — Nouveau RIB sur un de vos sites",
+      "htmlSha256": "6b071e3c6c1a5b9a1b08f5a9051de2fa16caba3c74699cdc7c399b22aea8b842",
+      "attachmentsSha256": null
+    },
+    "mandate_proof_attached": {
+      "subject": "Chalet — Preuve de mandat déposée sur un de vos sites",
+      "htmlSha256": "6ece48d89e120fef5cf90f7a6792c747b9163e18b82186b1eae0773baa6ba2b6",
+      "attachmentsSha256": null
+    },
+    "subscription_created": {
+      "subject": "Chalet — Panier récurrent créé sur un de vos sites",
+      "htmlSha256": "e6c741f2cebec021ff9e0ea7a11f6587b28f019122b858aeb49392cb1c9402de",
+      "attachmentsSha256": null
+    },
+    "subscription_paused": {
+      "subject": "Chalet — Panier récurrent mis en pause sur un de vos sites",
+      "htmlSha256": "e8654379751b280ff9b2f91105cbe0fd4d7eb0765e0612f6a924c747ffff8463",
+      "attachmentsSha256": null
+    },
+    "subscription_resumed": {
+      "subject": "Chalet — Panier récurrent repris sur un de vos sites",
+      "htmlSha256": "7e8cef3ab993bc355da82072ba56f452d8c12ee69416d208450d0073b3fe1370",
+      "attachmentsSha256": null
+    },
+    "subscription_stopped": {
+      "subject": "Chalet — Panier récurrent arrêté sur un de vos sites",
+      "htmlSha256": "2e480ae5158ec94fd8110011efe171a898601eeab1a45c01536734f5b65f3490",
+      "attachmentsSha256": null
+    }
+  },
+  "customer.order-payment-link": {
+    "only": {
+      "subject": "Votre commande ORD-4812 reste à régler",
+      "htmlSha256": "ab7adc5426d6ac6ce1ee894a89dbf05c56058f225f77aae87c84a7cbdecc60ef",
+      "attachmentsSha256": null
+    }
+  },
+  "customer.mandate-to-sign": {
+    "core": {
+      "subject": "Votre mandat de prélèvement SEPA — RUM-1",
+      "htmlSha256": "1dfca84caf5939d451110733f0e092c5677ff8996b21d4e77fc5363b1cfc769c",
+      "attachmentsSha256": "3d63231840f30ebb74d25d3227076fbcfbc6683548500143786ef9d57c44796b"
+    },
+    "b2b": {
+      "subject": "Votre mandat de prélèvement SEPA interentreprises — RUM-1",
+      "htmlSha256": "4e51fa279c2406b6651b813f1fc6c38e144983b8721fd06b41c35a5163673f01",
+      "attachmentsSha256": "3d63231840f30ebb74d25d3227076fbcfbc6683548500143786ef9d57c44796b"
+    }
+  },
+  "staff.appointment-booked": {
+    "only": {
+      "subject": "Nouveau rendez-vous — Jeanne Martin · mardi 13 octobre à 10:00",
+      "htmlSha256": "7c10f9eff50cabba41dc50e0d42e5f989d1c69d866ec44f64f58418ee7df789b",
+      "attachmentsSha256": null
+    },
+    "noMessage": {
+      "subject": "Nouveau rendez-vous — Jeanne Martin · mardi 13 octobre à 10:00",
+      "htmlSha256": "87c7c05d25751a340f71e907e35e445862d386127aaa306f294280b810f2109b",
+      "attachmentsSha256": null
+    }
+  },
+  "staff.account-alert": {
+    "only": {
+      "subject": "Alerte — Hôtel des Trois Ponts · Chute de volume",
+      "htmlSha256": "1f53f592ae7e360e6566f1a4948bdb0b37c9c643daf54fb9ea3bcdfe33a714cf",
+      "attachmentsSha256": null
+    }
+  },
+  "customer.access-opened": {
+    "code": {
+      "subject": "Votre accès à l'espace pro Hôtel des Trois Ponts",
+      "htmlSha256": "90cad379470fe15764c6e4453eaa58655776c1ba36938ba206d44704eca662d6",
+      "attachmentsSha256": null
+    },
+    "passwordOnly": {
+      "subject": "Votre accès à l'espace pro Hôtel des Trois Ponts",
+      "htmlSha256": "e51615fe86e3b4b89772aee9465c249991e72ac379dc239149ac3be49cfeb561",
+      "attachmentsSha256": null
+    }
+  },
+  "customer.company-attached": {
+    "named": {
+      "subject": "Refuge du Col a été ajoutée à votre espace pro",
+      "htmlSha256": "ffd06f18c9f0180a7f0f31fbe3988fecae0a641d25e11444035ae8d8933529f6",
+      "attachmentsSha256": null
+    },
+    "anonymous": {
+      "subject": "Refuge du Col a été ajoutée à votre espace pro",
+      "htmlSha256": "4e6637e0a6fe882d4658e74aa54b7199c7553ad2e3534fdbb2027ba664704bf0",
+      "attachmentsSha256": null
+    }
+  },
+  "customer.order-placed-with-your-email": {
+    "named": {
+      "subject": "Une commande vient d'être passée avec votre adresse",
+      "htmlSha256": "4cf323f2713579ab10a24eb254a678bcbb08f4a4c976020a3aa991ced1a36338",
+      "attachmentsSha256": null
+    },
+    "anonymous": {
+      "subject": "Une commande vient d'être passée avec votre adresse",
+      "htmlSha256": "8a1772429d36f0827ea858d2b6d1b26049147e95d5301a9c1e8533b3468a49ee",
+      "attachmentsSha256": null
+    }
+  },
+  "customer.login-method-linked": {
+    "named": {
+      "subject": "Une connexion Google a été ajoutée à votre compte",
+      "htmlSha256": "f71f20098c370ace92b38f540bd52b6a0f4d55a4c41ddea3e833d7ccb59c99b7",
+      "attachmentsSha256": null
+    },
+    "anonymous": {
+      "subject": "Une connexion Facebook a été ajoutée à votre compte",
+      "htmlSha256": "3688e43d5d7ddf4b505b9753828e2f82dd3614efaacaa2c5d2ab1988044be252",
+      "attachmentsSha256": null
+    }
+  },
+  "customer.password-reset": {
+    "only": {
+      "subject": "Votre lien pour changer de mot de passe",
+      "htmlSha256": "098bc3364bcc1aada075585761e10d035d4ad54f3ba0ba66ac33d440b471c00c",
+      "attachmentsSha256": null
+    }
+  },
+  "staff.invited": {
+    "named": {
+      "subject": "Votre accès au back-office La Folie Douce",
+      "htmlSha256": "56bf7cd22179bcb76fb005b0b165cf8785b245826c77d004e105927ab156018d",
+      "attachmentsSha256": null
+    },
+    "anonymous": {
+      "subject": "Votre accès au back-office La Folie Douce",
+      "htmlSha256": "72bba739dcfcaee34a40de7521d8e3c62b666f22f2dd0948eda2d7355fa4b08d",
+      "attachmentsSha256": null
+    }
+  },
+  "ops.deploy-check": {
+    "only": {
+      "subject": "[LFC] Courrier opérationnel — abc1234",
+      "htmlSha256": "4e77dbcf9b94935f2feb5e6d0b46111807bead1583838600d5ce3ddca705ee3c",
+      "attachmentsSha256": null
+    }
+  },
+  "staff.password-reset": {
+    "named": {
+      "subject": "Votre lien de mot de passe — back-office La Folie Douce",
+      "htmlSha256": "b23eedc4d8a1b6feaeab118d727edd27c24db1cc545444d6cc81e56a1944eff4",
+      "attachmentsSha256": null
+    },
+    "anonymous": {
+      "subject": "Votre lien de mot de passe — back-office La Folie Douce",
+      "htmlSha256": "52538602131fd1019a75bb3b4a532de5de67869f1a30072de75491a6f5c92ac1",
+      "attachmentsSha256": null
+    }
+  },
+  "staff.access-suspended": {
+    "named": {
+      "subject": "Votre accès au back-office est suspendu",
+      "htmlSha256": "0df02031e29b88d2e17e4e820617f399efeef5684ff0e72ecd7c9d0a952a934b",
+      "attachmentsSha256": null
+    },
+    "anonymous": {
+      "subject": "Votre accès au back-office est suspendu",
+      "htmlSha256": "c3c67fff941a5e98d35d36ddf839db8ced631c766898d77c261a3c9ead8229ba",
+      "attachmentsSha256": null
+    }
+  },
+  "staff.access-restored": {
+    "named": {
+      "subject": "Votre accès au back-office est rétabli",
+      "htmlSha256": "1ccb5c9253213c92b0fa2447276d43b79e9de30840615fb12531869971a465df",
+      "attachmentsSha256": null
+    },
+    "anonymous": {
+      "subject": "Votre accès au back-office est rétabli",
+      "htmlSha256": "7c88d5b49ef5ffe4146b5e0b475b29c911976a7d4d3783c21e424c458fd179ee",
+      "attachmentsSha256": null
+    }
+  },
+  "staff.production-dossier": {
+    "arrested": {
+      "subject": "Dossier de production — plan du mercredi 7 octobre 2026",
+      "htmlSha256": "6a3eb46117453ace5ce85f4dbd028647f61f53af2a05cb766da7a6fd174bd95f",
+      "attachmentsSha256": "04299dd6422f6e93f2725829737bae7e4739921bfa7babec80c12058e790a717"
+    },
+    "completedAnonymous": {
+      "subject": "Dossier de production complété — plan du mercredi 7 octobre 2026",
+      "htmlSha256": "d239cbbae281ba175cc0afc86738352e66412920c53fc72a9a5a9088a025501e",
+      "attachmentsSha256": "04299dd6422f6e93f2725829737bae7e4739921bfa7babec80c12058e790a717"
+    },
+    "resupplies": {
+      "subject": "Dossier de production — plan du mercredi 7 octobre 2026",
+      "htmlSha256": "ec00c9d67984f4583d95a727c862e3f162c1e76c9cb4015cd54c2fe98f9bc4ad",
+      "attachmentsSha256": "04299dd6422f6e93f2725829737bae7e4739921bfa7babec80c12058e790a717"
+    },
+    "resuppliesSplit": {
+      "subject": "Dossier de production — plan du mercredi 7 octobre 2026",
+      "htmlSha256": "ec8227d125de3e5a0d4eba2ae37685eaba511379331967640a4e1d4953a5d7e1",
+      "attachmentsSha256": "04299dd6422f6e93f2725829737bae7e4739921bfa7babec80c12058e790a717"
+    },
+    "noSplit": {
+      "subject": "Dossier de production — plan du mercredi 7 octobre 2026",
+      "htmlSha256": "ed0ce8707d905fdff0c4b7923ff3bd2f807ab21dde3049f8227f2bd5466fc68b",
+      "attachmentsSha256": "04299dd6422f6e93f2725829737bae7e4739921bfa7babec80c12058e790a717"
+    },
+    "deliveryOnly": {
+      "subject": "Dossier de production complété — plan du mercredi 7 octobre 2026",
+      "htmlSha256": "748bf3cff9721cbc15ade26d82383a1d94024a199738cce56b968e8520b9dcc7",
+      "attachmentsSha256": "04299dd6422f6e93f2725829737bae7e4739921bfa7babec80c12058e790a717"
+    }
+  },
+  "staff.support-requested": {
+    "only": {
+      "subject": "Demande de contact — Jeanne Martin · Facturation",
+      "htmlSha256": "6d21b2daa4e50201b26cef48558df4478af3ade63692ef042204eb5c75695006",
+      "attachmentsSha256": null
+    }
+  },
+  "staff.customer-request": {
+    "urgent": {
+      "subject": "[Urgent] Signaler un problème — Produit abîmé · ORD-4812 · Jeanne Martin",
+      "htmlSha256": "e8228d94a10012d26851fd800fc4dc50f5c3bc93df9f85f4bfb7879565115164",
+      "attachmentsSha256": null
+    },
+    "plain": {
+      "subject": "Signaler un problème — Produit abîmé · Jeanne Martin",
+      "htmlSha256": "4cdc6d117d2ee691aa2e337b0c0bdfa4201008675ab78d03ff90c90bf0a6a668",
+      "attachmentsSha256": null
+    }
+  },
+  "agency.vitrine-notice": {
+    "only": {
+      "subject": "Nouveautés de la semaine",
+      "htmlSha256": "dc19453eef5a3a698b33736f17734bab99f7205fce6225fa93a1522fa3e2d0d0",
+      "attachmentsSha256": null
+    }
+  }
+}

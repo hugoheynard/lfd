@@ -61,7 +61,7 @@ export function renderInvoiceIssuedMail(
   data: InvoiceIssuedMailData,
   shell: InvoiceShell,
 ): RenderedMail {
-  const copy = mailCopyOf(data.locale).invoiceIssued;
+  const copy = mailCopyOf(data.locale)["customer.invoice-issued"];
   const title = fill(copy.title, { number: data.invoiceNumber });
   return {
     subject: sanitiseSubject(fill(copy.subject, { title, seller: data.sellerName })),

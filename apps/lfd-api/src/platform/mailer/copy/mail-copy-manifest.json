@@ -1,0 +1,2202 @@
+{
+  "$comment": "Généré par `pnpm mail-copy:digest` depuis apps/lfd-api/src/platform/mailer/copy/ — ne pas éditer à la main.",
+  "mails": {
+    "customer.order-placed": {
+      "subject": {
+        "variables": [
+          "ref"
+        ],
+        "required": [
+          "ref"
+        ],
+        "fr": "Votre commande {ref} — La Folie Coffee"
+      },
+      "kicker": {
+        "variables": [],
+        "required": [],
+        "fr": "Confirmée"
+      },
+      "title.paid": {
+        "variables": [],
+        "required": [],
+        "fr": "C'est réglé."
+      },
+      "title.due": {
+        "variables": [],
+        "required": [],
+        "fr": "Commande enregistrée."
+      },
+      "title.account": {
+        "variables": [],
+        "required": [],
+        "fr": "Commande enregistrée."
+      },
+      "intro": {
+        "variables": [],
+        "required": [],
+        "fr": "Votre commande entre dans la fournée de demain matin."
+      },
+      "totalLabel.paid": {
+        "variables": [],
+        "required": [],
+        "fr": "Réglé en ligne"
+      },
+      "totalLabel.due": {
+        "variables": [],
+        "required": [],
+        "fr": "Reste à régler"
+      },
+      "totalLabel.account": {
+        "variables": [],
+        "required": [],
+        "fr": "Porté à votre compte"
+      },
+      "recapPickup": {
+        "variables": [],
+        "required": [],
+        "fr": "Retrait"
+      },
+      "recapDelivery": {
+        "variables": [],
+        "required": [],
+        "fr": "Livraison"
+      },
+      "recapContent": {
+        "variables": [],
+        "required": [],
+        "fr": "Contenu"
+      },
+      "recapPieces": {
+        "variables": [
+          "count"
+        ],
+        "required": [
+          "count"
+        ],
+        "fr": "{count} pièces"
+      },
+      "recapDiscount": {
+        "variables": [],
+        "required": [],
+        "fr": "Remise"
+      },
+      "recapVoucher": {
+        "variables": [],
+        "required": [],
+        "fr": "Bon de fidélité"
+      },
+      "recapVat": {
+        "variables": [],
+        "required": [],
+        "fr": "dont TVA"
+      },
+      "totalPretax": {
+        "variables": [],
+        "required": [],
+        "fr": "Porté à votre compte, HT"
+      },
+      "recapTaxLater": {
+        "variables": [],
+        "required": [],
+        "fr": "TVA et TTC"
+      },
+      "recapTaxLaterValue": {
+        "variables": [],
+        "required": [],
+        "fr": "sur la facture du mois"
+      },
+      "qrTitle": {
+        "variables": [],
+        "required": [],
+        "fr": "Votre code de retrait"
+      },
+      "qrLine": {
+        "variables": [],
+        "required": [],
+        "fr": "Présentez ce code au comptoir. C'est le scan de l'équipe qui atteste la remise."
+      },
+      "cta": {
+        "variables": [],
+        "required": [],
+        "fr": "Voir ma commande"
+      },
+      "changeNote": {
+        "variables": [],
+        "required": [],
+        "fr": "Un changement ? Appelez le fournil — une commande passée entre en fabrication."
+      },
+      "manageLink": {
+        "variables": [],
+        "required": [],
+        "fr": "Gérer ou annuler ma commande"
+      },
+      "footer": {
+        "variables": [],
+        "required": [],
+        "fr": "Le Labo · route de la Balme, Val d'Isère — 7 h – 19 h"
+      },
+      "qrAlt": {
+        "variables": [
+          "ref"
+        ],
+        "required": [
+          "ref"
+        ],
+        "fr": "Votre code de retrait — {ref}"
+      }
+    },
+    "customer.order-ready": {
+      "subject": {
+        "variables": [
+          "ref"
+        ],
+        "required": [
+          "ref"
+        ],
+        "fr": "Votre commande {ref} est prête"
+      },
+      "kicker": {
+        "variables": [],
+        "required": [],
+        "fr": "Prête"
+      },
+      "titlePickup": {
+        "variables": [],
+        "required": [],
+        "fr": "C'est prêt."
+      },
+      "titleDelivery": {
+        "variables": [],
+        "required": [],
+        "fr": "C'est prêt à partir."
+      },
+      "introPickup": {
+        "variables": [],
+        "required": [],
+        "fr": "Votre commande vous attend au comptoir."
+      },
+      "introDelivery": {
+        "variables": [],
+        "required": [],
+        "fr": "Votre commande part vers vous."
+      },
+      "whereLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "À retirer"
+      },
+      "contentLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Contenu"
+      },
+      "piecesLabel": {
+        "variables": [
+          "count"
+        ],
+        "required": [
+          "count"
+        ],
+        "fr": "{count} pièces"
+      },
+      "qrTitle": {
+        "variables": [],
+        "required": [],
+        "fr": "Votre code de retrait"
+      },
+      "qrLine": {
+        "variables": [],
+        "required": [],
+        "fr": "Présentez ce code au comptoir. C'est le scan de l'équipe qui atteste la remise."
+      },
+      "cta": {
+        "variables": [],
+        "required": [],
+        "fr": "Voir ma commande"
+      },
+      "footer": {
+        "variables": [],
+        "required": [],
+        "fr": "Le Labo · route de la Balme, Val d'Isère — 7 h – 19 h"
+      },
+      "qrAlt": {
+        "variables": [
+          "ref"
+        ],
+        "required": [
+          "ref"
+        ],
+        "fr": "Votre code de retrait — {ref}"
+      }
+    },
+    "customer.delivery-en-route": {
+      "subject": {
+        "variables": [],
+        "required": [],
+        "fr": "Votre livraison est en route"
+      },
+      "title": {
+        "variables": [],
+        "required": [],
+        "fr": "Votre livraison est en route."
+      },
+      "intro": {
+        "variables": [],
+        "required": [],
+        "fr": "Votre livreur est parti, il arrive dans la journée."
+      },
+      "referenceLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Commande"
+      },
+      "addressLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Livrée à"
+      },
+      "cta": {
+        "variables": [],
+        "required": [],
+        "fr": "Voir ma commande"
+      },
+      "footer": {
+        "variables": [],
+        "required": [],
+        "fr": "Le Labo · route de la Balme, Val d'Isère — 7 h – 19 h"
+      }
+    },
+    "customer.order-placed-with-your-email": {
+      "subject": {
+        "variables": [],
+        "required": [],
+        "fr": "Une commande vient d'être passée avec votre adresse"
+      },
+      "title": {
+        "variables": [
+          "firstName"
+        ],
+        "required": [
+          "firstName"
+        ],
+        "fr": "Bonjour, {firstName}"
+      },
+      "titleWithoutName": {
+        "variables": [],
+        "required": [],
+        "fr": "Bonjour"
+      },
+      "intro": {
+        "variables": [],
+        "required": [],
+        "fr": "Une commande vient d'être passée sur notre boutique en indiquant votre adresse e-mail, sans passer par votre compte."
+      },
+      "ifItIsYou": {
+        "variables": [],
+        "required": [],
+        "fr": "Si c'est vous, il n'y a rien à faire : la confirmation et le code de retrait sont partis à cette même adresse."
+      },
+      "footer": {
+        "variables": [],
+        "required": [],
+        "fr": "Si ce n'est pas vous, quelqu'un a sans doute tapé votre adresse par erreur. Aucun accès à votre compte n'a été ouvert, et rien n'a été modifié. Répondez à cet e-mail si vous voulez qu'on regarde."
+      }
+    },
+    "customer.payment-failed": {
+      "subject": {
+        "variables": [
+          "ref"
+        ],
+        "required": [
+          "ref"
+        ],
+        "fr": "Paiement refusé — votre commande {ref}"
+      },
+      "kicker": {
+        "variables": [],
+        "required": [],
+        "fr": "Paiement refusé"
+      },
+      "title": {
+        "variables": [],
+        "required": [],
+        "fr": "Votre paiement n'est pas passé."
+      },
+      "intro": {
+        "variables": [],
+        "required": [],
+        "fr": "Votre banque a refusé le règlement de cette commande."
+      },
+      "consequence": {
+        "variables": [],
+        "required": [],
+        "fr": "Votre commande n'entre donc pas en fabrication, et rien ne vous attend au comptoir. Reprenez le règlement ci-dessous pour la relancer."
+      },
+      "amountLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Montant à régler"
+      },
+      "cta": {
+        "variables": [],
+        "required": [],
+        "fr": "Reprendre le règlement"
+      },
+      "footer": {
+        "variables": [],
+        "required": [],
+        "fr": "Un doute ou une erreur ? Appelez le fournil — Le Labo · route de la Balme, Val d'Isère."
+      }
+    },
+    "customer.payment-expired": {
+      "subject": {
+        "variables": [
+          "ref"
+        ],
+        "required": [
+          "ref"
+        ],
+        "fr": "Commande {ref} annulée — paiement non abouti"
+      },
+      "kicker": {
+        "variables": [],
+        "required": [],
+        "fr": "Commande annulée"
+      },
+      "title": {
+        "variables": [],
+        "required": [],
+        "fr": "Votre paiement n'a pas abouti à temps."
+      },
+      "intro": {
+        "variables": [],
+        "required": [],
+        "fr": "Le règlement de cette commande n'a pas abouti avant la préparation de la fournée."
+      },
+      "consequence": {
+        "variables": [],
+        "required": [],
+        "fr": "Votre commande est donc annulée, et rien n'a été débité. Si vous en avez toujours besoin, passez une nouvelle commande."
+      },
+      "amountLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Montant non débité"
+      },
+      "footer": {
+        "variables": [],
+        "required": [],
+        "fr": "Un doute ou une erreur ? Appelez le fournil — Le Labo · route de la Balme, Val d'Isère."
+      }
+    },
+    "customer.order-payment-link": {
+      "subject": {
+        "variables": [
+          "ref"
+        ],
+        "required": [
+          "ref"
+        ],
+        "fr": "Votre commande {ref} reste à régler"
+      },
+      "title": {
+        "variables": [],
+        "required": [],
+        "fr": "Votre commande attend son règlement"
+      },
+      "intro": {
+        "variables": [
+          "ref"
+        ],
+        "required": [
+          "ref"
+        ],
+        "fr": "Le règlement de votre commande {ref} ne nous est pas encore parvenu."
+      },
+      "howToPay": {
+        "variables": [],
+        "required": [],
+        "fr": "Vous pouvez la régler par carte depuis votre espace, en suivant le lien ci-dessous."
+      },
+      "amountLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Montant à régler"
+      },
+      "cta": {
+        "variables": [],
+        "required": [],
+        "fr": "Régler ma commande"
+      },
+      "footer": {
+        "variables": [],
+        "required": [],
+        "fr": "Déjà réglée ? Les deux messages se sont croisés : ignorez celui-ci. Un doute ? Répondez à cet e-mail."
+      }
+    },
+    "customer.order-cancelled": {
+      "subject": {
+        "variables": [
+          "ref"
+        ],
+        "required": [
+          "ref"
+        ],
+        "fr": "Commande {ref} annulée"
+      },
+      "title": {
+        "variables": [],
+        "required": [],
+        "fr": "Votre commande a été annulée."
+      },
+      "intro": {
+        "variables": [
+          "ref",
+          "day"
+        ],
+        "required": [
+          "ref",
+          "day"
+        ],
+        "fr": "Votre commande {ref} pour le {day} a été annulée par notre équipe."
+      },
+      "introWithoutDay": {
+        "variables": [
+          "ref"
+        ],
+        "required": [
+          "ref"
+        ],
+        "fr": "Votre commande {ref} a été annulée par notre équipe."
+      },
+      "introBySelf": {
+        "variables": [
+          "ref",
+          "day"
+        ],
+        "required": [
+          "ref",
+          "day"
+        ],
+        "fr": "Vous avez annulé votre commande {ref} pour le {day}."
+      },
+      "introBySelfWithoutDay": {
+        "variables": [
+          "ref"
+        ],
+        "required": [
+          "ref"
+        ],
+        "fr": "Vous avez annulé votre commande {ref}."
+      },
+      "introByMember": {
+        "variables": [
+          "name",
+          "company",
+          "ref",
+          "day"
+        ],
+        "required": [
+          "name",
+          "ref",
+          "company",
+          "day"
+        ],
+        "fr": "{name} a annulé la commande {ref} de {company} pour le {day}."
+      },
+      "introByMemberWithoutDay": {
+        "variables": [
+          "name",
+          "company",
+          "ref"
+        ],
+        "required": [
+          "name",
+          "ref",
+          "company"
+        ],
+        "fr": "{name} a annulé la commande {ref} de {company}."
+      },
+      "introByPrincipal": {
+        "variables": [
+          "name",
+          "principal",
+          "ref",
+          "day"
+        ],
+        "required": [
+          "ref",
+          "day",
+          "name",
+          "principal"
+        ],
+        "fr": "La commande {ref} pour le {day} a été annulée par {name}, du compte principal {principal}."
+      },
+      "introByPrincipalWithoutDay": {
+        "variables": [
+          "name",
+          "principal",
+          "ref"
+        ],
+        "required": [
+          "ref",
+          "name",
+          "principal"
+        ],
+        "fr": "La commande {ref} a été annulée par {name}, du compte principal {principal}."
+      },
+      "nothingBilled": {
+        "variables": [],
+        "required": [],
+        "fr": "Rien ne vous sera facturé pour cette commande."
+      },
+      "nothingCharged": {
+        "variables": [],
+        "required": [],
+        "fr": "Aucun paiement n'a été prélevé."
+      },
+      "nothingInvoiced": {
+        "variables": [],
+        "required": [],
+        "fr": "Rien ne sera facturé ni prélevé pour cette commande."
+      },
+      "refundToCard": {
+        "variables": [
+          "amount"
+        ],
+        "required": [
+          "amount"
+        ],
+        "fr": "Le montant de {amount} payé par carte, qui ne vous a pas déjà été remboursé, vous sera remboursé sur cette même carte. Selon votre banque, il apparaît sous 5 à 10 jours ouvrés."
+      },
+      "alreadyRefunded": {
+        "variables": [],
+        "required": [],
+        "fr": "Le paiement de cette commande vous a déjà été remboursé."
+      },
+      "voucherReturned": {
+        "variables": [
+          "value",
+          "day"
+        ],
+        "required": [
+          "value",
+          "day"
+        ],
+        "fr": "Votre bon de fidélité de {value} vous est rendu : vous pourrez l'utiliser sur une prochaine commande jusqu'au {day}."
+      },
+      "voucherMerged": {
+        "variables": [
+          "value",
+          "day",
+          "remainder"
+        ],
+        "required": [
+          "value",
+          "day",
+          "remainder"
+        ],
+        "fr": "Votre bon de fidélité retrouve sa valeur de {value}, valable jusqu'au {day}. Le bon de {remainder} qui vous avait été remis en reliquat est remplacé par celui-ci."
+      },
+      "footer": {
+        "variables": [],
+        "required": [],
+        "fr": "Un doute ou une erreur ? Appelez le fournil — Le Labo · route de la Balme, Val d'Isère."
+      }
+    },
+    "customer.invoice-issued": {
+      "title": {
+        "variables": [
+          "number"
+        ],
+        "required": [
+          "number"
+        ],
+        "fr": "Votre facture {number}"
+      },
+      "subject": {
+        "variables": [
+          "title",
+          "seller"
+        ],
+        "required": [
+          "title",
+          "seller"
+        ],
+        "fr": "{title} — {seller}"
+      },
+      "greeting": {
+        "variables": [],
+        "required": [],
+        "fr": "Bonjour,"
+      },
+      "intro": {
+        "variables": [
+          "seller",
+          "number",
+          "buyer",
+          "period",
+          "total"
+        ],
+        "required": [
+          "seller",
+          "number",
+          "buyer",
+          "period",
+          "total"
+        ],
+        "fr": "{seller} a émis la facture {number} adressée à {buyer}{period}, d'un montant de {total} TTC."
+      },
+      "periodClause": {
+        "variables": [
+          "period"
+        ],
+        "required": [
+          "period"
+        ],
+        "fr": " pour les commandes {period}"
+      },
+      "attachedNote": {
+        "variables": [],
+        "required": [],
+        "fr": "Elle est jointe à ce message au format PDF Factur-X : votre logiciel comptable peut en lire les données."
+      },
+      "invoiceLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Facture"
+      },
+      "dateLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Date"
+      },
+      "periodLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Période"
+      },
+      "addressedToLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Adressée à"
+      },
+      "dueLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Échéance"
+      },
+      "paymentLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Règlement"
+      },
+      "totalLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Total TTC"
+      },
+      "cta": {
+        "variables": [],
+        "required": [],
+        "fr": "Voir mes factures"
+      },
+      "footer": {
+        "variables": [],
+        "required": [],
+        "fr": "Cette facture est consultable à tout moment dans votre espace client, rubrique « Mes factures ». Pour toute question, répondez à ce message."
+      }
+    },
+    "customer.collection-notice": {
+      "title.notice": {
+        "variables": [],
+        "required": [],
+        "fr": "Avis de prélèvement"
+      },
+      "title.correction": {
+        "variables": [],
+        "required": [],
+        "fr": "Avis de prélèvement rectifié"
+      },
+      "title.cancellation": {
+        "variables": [],
+        "required": [],
+        "fr": "Prélèvement annulé"
+      },
+      "subject": {
+        "variables": [
+          "title",
+          "creditor",
+          "day"
+        ],
+        "required": [
+          "title",
+          "creditor",
+          "day"
+        ],
+        "fr": "{title} — {creditor} · {day}"
+      },
+      "greeting": {
+        "variables": [],
+        "required": [],
+        "fr": "Bonjour,"
+      },
+      "cancelled": {
+        "variables": [
+          "amount",
+          "day",
+          "debtor"
+        ],
+        "required": [
+          "amount",
+          "day",
+          "debtor"
+        ],
+        "fr": "Le prélèvement de {amount} que nous vous avions annoncé pour le {day} sur le compte de {debtor} n'aura pas lieu. Aucune somme ne sera débitée à cette date."
+      },
+      "correctionLead": {
+        "variables": [],
+        "required": [],
+        "fr": "Cet avis remplace le précédent."
+      },
+      "representationLead": {
+        "variables": [
+          "day"
+        ],
+        "required": [
+          "day"
+        ],
+        "fr": "Il s'agit d'une nouvelle présentation du prélèvement rejeté du {day}."
+      },
+      "announced": {
+        "variables": [
+          "creditor",
+          "amount",
+          "debtor",
+          "day",
+          "pieces"
+        ],
+        "required": [
+          "creditor",
+          "amount",
+          "debtor",
+          "day",
+          "pieces"
+        ],
+        "fr": "{creditor} prélèvera {amount} sur le compte de {debtor} le {day}, au titre {pieces}."
+      },
+      "piecesStatement": {
+        "variables": [
+          "statement"
+        ],
+        "required": [
+          "statement"
+        ],
+        "fr": "de l'arrêté de facturation {statement}"
+      },
+      "piecesOneInvoice": {
+        "variables": [
+          "number"
+        ],
+        "required": [
+          "number"
+        ],
+        "fr": "de la facture {number}"
+      },
+      "piecesInvoices": {
+        "variables": [
+          "numbers"
+        ],
+        "required": [
+          "numbers"
+        ],
+        "fr": "des factures {numbers}"
+      },
+      "creditorLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Créancier"
+      },
+      "creditorIdentifierLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Identifiant créancier (ICS)"
+      },
+      "mandateReferenceLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Référence du mandat (RUM)"
+      },
+      "cancelledAmountLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Montant annulé"
+      },
+      "announcedDayLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Date annoncée"
+      },
+      "previousLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Annoncé précédemment"
+      },
+      "previousValue": {
+        "variables": [
+          "amount",
+          "day"
+        ],
+        "required": [
+          "amount",
+          "day"
+        ],
+        "fr": "{amount} le {day}"
+      },
+      "collectionDayLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Date du prélèvement"
+      },
+      "representationLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Nouvelle présentation du rejet du"
+      },
+      "statementLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Arrêté de facturation"
+      },
+      "invoiceLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Facture"
+      },
+      "invoicesLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Factures"
+      },
+      "amountLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Montant"
+      },
+      "footer": {
+        "variables": [],
+        "required": [],
+        "fr": "Ce prélèvement SEPA est effectué au titre du mandat référencé ci-dessus. Pour toute question, répondez à ce message avant la date du prélèvement."
+      }
+    },
+    "customer.mandate-to-sign": {
+      "scheme.CORE.documentName": {
+        "variables": [],
+        "required": [],
+        "fr": "mandat de prélèvement SEPA"
+      },
+      "scheme.CORE.footer": {
+        "variables": [],
+        "required": [],
+        "fr": "Ce mandat relève du schéma SEPA CORE. Vous bénéficiez du droit d'être remboursé par votre banque selon les conditions décrites dans la convention que vous avez passée avec elle : une demande de remboursement doit être présentée dans les 8 semaines suivant la date de débit de votre compte pour un prélèvement autorisé."
+      },
+      "scheme.B2B.documentName": {
+        "variables": [],
+        "required": [],
+        "fr": "mandat de prélèvement SEPA interentreprises"
+      },
+      "scheme.B2B.footer": {
+        "variables": [],
+        "required": [],
+        "fr": "Important : ce mandat relève du schéma SEPA interentreprises (B2B). Il est destiné uniquement à des transactions interentreprises et ne donne droit à aucun remboursement une fois votre compte débité. Avant le premier prélèvement, déclarez-le à votre banque avec la référence du mandat et l'identifiant du créancier ci-dessus — sans cette déclaration, votre banque refusera le prélèvement."
+      },
+      "subject": {
+        "variables": [
+          "document",
+          "ref"
+        ],
+        "required": [
+          "document",
+          "ref"
+        ],
+        "fr": "Votre {document} — {ref}"
+      },
+      "title": {
+        "variables": [
+          "document"
+        ],
+        "required": [
+          "document"
+        ],
+        "fr": "Votre {document} à signer"
+      },
+      "greeting": {
+        "variables": [],
+        "required": [],
+        "fr": "Bonjour,"
+      },
+      "intro": {
+        "variables": [
+          "document",
+          "company"
+        ],
+        "required": [
+          "document",
+          "company"
+        ],
+        "fr": "Vous trouverez en pièce jointe le {document} établi pour {company}. Il est prérempli : il ne vous reste qu'à le dater, le signer, et nous le renvoyer scanné ou photographié."
+      },
+      "mandateReferenceLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Référence du mandat (RUM)"
+      },
+      "creditorIdentifierLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Identifiant créancier (ICS)"
+      },
+      "creditorLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Créancier"
+      }
+    },
+    "customer.access-opened": {
+      "subject": {
+        "variables": [
+          "company"
+        ],
+        "required": [
+          "company"
+        ],
+        "fr": "Votre accès à l'espace pro {company}"
+      },
+      "title": {
+        "variables": [
+          "firstName"
+        ],
+        "required": [
+          "firstName"
+        ],
+        "fr": "Bienvenue, {firstName}"
+      },
+      "titleWithoutName": {
+        "variables": [],
+        "required": [],
+        "fr": "Bienvenue"
+      },
+      "opened": {
+        "variables": [
+          "company"
+        ],
+        "required": [
+          "company"
+        ],
+        "fr": "Un accès à l'espace professionnel de {company} vient d'être ouvert à votre nom par l'équipe La Folie Coffee."
+      },
+      "choosePassword": {
+        "variables": [],
+        "required": [],
+        "fr": "Il ne reste qu'à choisir votre mot de passe. Le lien ci-dessous est valable 7 jours ; passé ce délai, demandez-nous simplement de vous en renvoyer un."
+      },
+      "choosePasswordCta": {
+        "variables": [],
+        "required": [],
+        "fr": "Choisir mon mot de passe"
+      },
+      "signInWithCode": {
+        "variables": [
+          "email"
+        ],
+        "required": [
+          "email"
+        ],
+        "fr": "Connectez-vous avec votre adresse {email} : vous recevrez un code par e-mail, à taper sur l'écran de connexion. Aucun mot de passe à retenir."
+      },
+      "signInCta": {
+        "variables": [],
+        "required": [],
+        "fr": "Me connecter"
+      },
+      "passwordLink": {
+        "variables": [],
+        "required": [],
+        "fr": "Ou choisissez un mot de passe (lien valable 7 jours)"
+      },
+      "footer": {
+        "variables": [],
+        "required": [],
+        "fr": "Vous n'attendiez pas cet e-mail ? Ignorez-le : tant que personne ne se connecte avec cette adresse, l'accès reste inutilisé."
+      }
+    },
+    "customer.company-attached": {
+      "subject": {
+        "variables": [
+          "company"
+        ],
+        "required": [
+          "company"
+        ],
+        "fr": "{company} a été ajoutée à votre espace pro"
+      },
+      "title": {
+        "variables": [
+          "firstName"
+        ],
+        "required": [
+          "firstName"
+        ],
+        "fr": "Bonjour, {firstName}"
+      },
+      "titleWithoutName": {
+        "variables": [],
+        "required": [],
+        "fr": "Bonjour"
+      },
+      "attached": {
+        "variables": [
+          "company"
+        ],
+        "required": [
+          "company"
+        ],
+        "fr": "L'établissement {company} vient d'être rattaché à votre espace professionnel par l'équipe La Folie Coffee."
+      },
+      "nothingToCreate": {
+        "variables": [],
+        "required": [],
+        "fr": "Vous le retrouverez à votre prochaine connexion, avec vos identifiants habituels — rien de nouveau à créer."
+      },
+      "footer": {
+        "variables": [],
+        "required": [],
+        "fr": "Vous n'attendiez pas ce rattachement ? Répondez à cet e-mail, nous le retirerons."
+      }
+    },
+    "customer.login-method-linked": {
+      "subject": {
+        "variables": [
+          "method"
+        ],
+        "required": [
+          "method"
+        ],
+        "fr": "Une connexion {method} a été ajoutée à votre compte"
+      },
+      "title": {
+        "variables": [
+          "firstName"
+        ],
+        "required": [
+          "firstName"
+        ],
+        "fr": "Bonjour, {firstName}"
+      },
+      "titleWithoutName": {
+        "variables": [],
+        "required": [],
+        "fr": "Bonjour"
+      },
+      "linked": {
+        "variables": [
+          "method"
+        ],
+        "required": [
+          "method"
+        ],
+        "fr": "Vous pouvez désormais vous connecter à votre compte La Folie Coffee avec {method}, en plus de votre méthode habituelle."
+      },
+      "sameAccount": {
+        "variables": [],
+        "required": [],
+        "fr": "C'est le même compte : mêmes commandes, mêmes informations."
+      },
+      "footer": {
+        "variables": [],
+        "required": [],
+        "fr": "Vous n'avez pas fait cette manipulation ? Répondez à cet e-mail : nous retirerons cette méthode de connexion et regarderons ce qui s'est passé."
+      }
+    },
+    "customer.password-reset": {
+      "subject": {
+        "variables": [],
+        "required": [],
+        "fr": "Votre lien pour changer de mot de passe"
+      },
+      "title": {
+        "variables": [],
+        "required": [],
+        "fr": "Changer votre mot de passe"
+      },
+      "requested": {
+        "variables": [],
+        "required": [],
+        "fr": "Vous venez de demander à changer le mot de passe de votre compte La Folie Coffee."
+      },
+      "linkRules": {
+        "variables": [
+          "validity"
+        ],
+        "required": [
+          "validity"
+        ],
+        "fr": "Le lien ci-dessous est à usage unique et expire dans {validity}. Il faut le suivre pour choisir votre nouveau mot de passe."
+      },
+      "validityOneHour": {
+        "variables": [
+          "count"
+        ],
+        "required": [
+          "count"
+        ],
+        "fr": "{count} heure"
+      },
+      "validityHours": {
+        "variables": [
+          "count"
+        ],
+        "required": [
+          "count"
+        ],
+        "fr": "{count} heures"
+      },
+      "cta": {
+        "variables": [],
+        "required": [],
+        "fr": "Choisir un nouveau mot de passe"
+      },
+      "footer": {
+        "variables": [],
+        "required": [],
+        "fr": "Vous n'avez pas fait cette demande ? Ne suivez pas ce lien et répondez à cet e-mail : nous regarderons ce qui s'est passé."
+      }
+    },
+    "customer.sub-account-activity": {
+      "title.placed": {
+        "variables": [],
+        "required": [],
+        "fr": "Commande passée par un de vos sites"
+      },
+      "title.cancelled": {
+        "variables": [],
+        "required": [],
+        "fr": "Commande annulée sur un de vos sites"
+      },
+      "title.abandoned": {
+        "variables": [],
+        "required": [],
+        "fr": "Règlement abandonné sur un de vos sites"
+      },
+      "title.payment_failed": {
+        "variables": [],
+        "required": [],
+        "fr": "Paiement échoué sur un de vos sites"
+      },
+      "action.placed": {
+        "variables": [],
+        "required": [],
+        "fr": "a passé la commande"
+      },
+      "action.cancelled": {
+        "variables": [],
+        "required": [],
+        "fr": "a vu sa commande annulée"
+      },
+      "action.abandoned": {
+        "variables": [],
+        "required": [],
+        "fr": "a abandonné le règlement de la commande"
+      },
+      "action.payment_failed": {
+        "variables": [],
+        "required": [],
+        "fr": "n'a pas pu régler la commande"
+      },
+      "subject": {
+        "variables": [
+          "site",
+          "title",
+          "order"
+        ],
+        "required": [
+          "site",
+          "title",
+          "order"
+        ],
+        "fr": "{site} — {title} ({order})"
+      },
+      "body": {
+        "variables": [
+          "site",
+          "action",
+          "order"
+        ],
+        "required": [
+          "site",
+          "action",
+          "order"
+        ],
+        "fr": "Votre site {site} {action} {order}."
+      },
+      "bodyEnteredByTeam": {
+        "variables": [
+          "site",
+          "action",
+          "order"
+        ],
+        "required": [
+          "site",
+          "action",
+          "order"
+        ],
+        "fr": "Votre site {site} {action} {order} (commande saisie par notre équipe)."
+      },
+      "siteLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Site"
+      },
+      "orderLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Commande"
+      },
+      "dayLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Pour le"
+      },
+      "totalLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Montant TTC"
+      },
+      "footer": {
+        "variables": [],
+        "required": [],
+        "fr": "Vous recevez ce message parce que ce site est rattaché à votre compte. Pour ne plus le recevoir, écrivez-nous : nous réglons ces avis rôle par rôle."
+      }
+    },
+    "customer.sub-account-gesture": {
+      "title.problem_reported": {
+        "variables": [],
+        "required": [],
+        "fr": "Problème signalé par un de vos sites"
+      },
+      "title.delivery_address_added": {
+        "variables": [],
+        "required": [],
+        "fr": "Adresse de livraison ajoutée sur un de vos sites"
+      },
+      "title.delivery_address_updated": {
+        "variables": [],
+        "required": [],
+        "fr": "Adresse de livraison modifiée sur un de vos sites"
+      },
+      "title.delivery_address_removed": {
+        "variables": [],
+        "required": [],
+        "fr": "Adresse de livraison retirée sur un de vos sites"
+      },
+      "title.default_delivery_set": {
+        "variables": [],
+        "required": [],
+        "fr": "Adresse de livraison par défaut changée sur un de vos sites"
+      },
+      "title.contact_added": {
+        "variables": [],
+        "required": [],
+        "fr": "Contact ajouté sur un de vos sites"
+      },
+      "title.contact_updated": {
+        "variables": [],
+        "required": [],
+        "fr": "Contact modifié sur un de vos sites"
+      },
+      "title.contact_removed": {
+        "variables": [],
+        "required": [],
+        "fr": "Contact retiré sur un de vos sites"
+      },
+      "title.primary_contact_changed": {
+        "variables": [],
+        "required": [],
+        "fr": "Contact principal changé sur un de vos sites"
+      },
+      "title.bank_account_changed": {
+        "variables": [],
+        "required": [],
+        "fr": "Nouveau RIB sur un de vos sites"
+      },
+      "title.mandate_proof_attached": {
+        "variables": [],
+        "required": [],
+        "fr": "Preuve de mandat déposée sur un de vos sites"
+      },
+      "title.subscription_created": {
+        "variables": [],
+        "required": [],
+        "fr": "Panier récurrent créé sur un de vos sites"
+      },
+      "title.subscription_paused": {
+        "variables": [],
+        "required": [],
+        "fr": "Panier récurrent mis en pause sur un de vos sites"
+      },
+      "title.subscription_resumed": {
+        "variables": [],
+        "required": [],
+        "fr": "Panier récurrent repris sur un de vos sites"
+      },
+      "title.subscription_stopped": {
+        "variables": [],
+        "required": [],
+        "fr": "Panier récurrent arrêté sur un de vos sites"
+      },
+      "action.problem_reported": {
+        "variables": [],
+        "required": [],
+        "fr": "a signalé un problème sur la commande"
+      },
+      "action.delivery_address_added": {
+        "variables": [],
+        "required": [],
+        "fr": "a ajouté une adresse de livraison"
+      },
+      "action.delivery_address_updated": {
+        "variables": [],
+        "required": [],
+        "fr": "a modifié une adresse de livraison"
+      },
+      "action.delivery_address_removed": {
+        "variables": [],
+        "required": [],
+        "fr": "a retiré une adresse de livraison"
+      },
+      "action.default_delivery_set": {
+        "variables": [],
+        "required": [],
+        "fr": "a changé son adresse de livraison par défaut"
+      },
+      "action.contact_added": {
+        "variables": [],
+        "required": [],
+        "fr": "a ajouté un contact"
+      },
+      "action.contact_updated": {
+        "variables": [],
+        "required": [],
+        "fr": "a modifié un contact"
+      },
+      "action.contact_removed": {
+        "variables": [],
+        "required": [],
+        "fr": "a retiré un contact"
+      },
+      "action.primary_contact_changed": {
+        "variables": [],
+        "required": [],
+        "fr": "a changé son contact principal"
+      },
+      "action.bank_account_changed": {
+        "variables": [],
+        "required": [],
+        "fr": "a enregistré un nouveau RIB"
+      },
+      "action.mandate_proof_attached": {
+        "variables": [],
+        "required": [],
+        "fr": "a déposé une preuve de mandat"
+      },
+      "action.subscription_created": {
+        "variables": [],
+        "required": [],
+        "fr": "a créé un panier récurrent"
+      },
+      "action.subscription_paused": {
+        "variables": [],
+        "required": [],
+        "fr": "a mis en pause un panier récurrent"
+      },
+      "action.subscription_resumed": {
+        "variables": [],
+        "required": [],
+        "fr": "a repris un panier récurrent"
+      },
+      "action.subscription_stopped": {
+        "variables": [],
+        "required": [],
+        "fr": "a arrêté un panier récurrent"
+      },
+      "subject": {
+        "variables": [
+          "site",
+          "title"
+        ],
+        "required": [
+          "site",
+          "title"
+        ],
+        "fr": "{site} — {title}"
+      },
+      "subjectWithReference": {
+        "variables": [
+          "site",
+          "title",
+          "reference"
+        ],
+        "required": [
+          "site",
+          "title",
+          "reference"
+        ],
+        "fr": "{site} — {title} ({reference})"
+      },
+      "body": {
+        "variables": [
+          "site",
+          "action"
+        ],
+        "required": [
+          "site",
+          "action"
+        ],
+        "fr": "Votre site {site} {action}."
+      },
+      "bodyWithReference": {
+        "variables": [
+          "site",
+          "action",
+          "reference"
+        ],
+        "required": [
+          "site",
+          "action",
+          "reference"
+        ],
+        "fr": "Votre site {site} {action} {reference}."
+      },
+      "bodyByTeam": {
+        "variables": [
+          "site",
+          "action"
+        ],
+        "required": [
+          "site",
+          "action"
+        ],
+        "fr": "Votre site {site} {action} (fait par notre équipe)."
+      },
+      "bodyWithReferenceByTeam": {
+        "variables": [
+          "site",
+          "action",
+          "reference"
+        ],
+        "required": [
+          "site",
+          "action",
+          "reference"
+        ],
+        "fr": "Votre site {site} {action} {reference} (fait par notre équipe)."
+      },
+      "siteLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Site"
+      },
+      "referenceLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Référence"
+      },
+      "referenceLabelOf.problem_reported": {
+        "variables": [],
+        "required": [],
+        "fr": "Commande"
+      },
+      "footer": {
+        "variables": [],
+        "required": [],
+        "fr": "Vous recevez ce message parce que ce site est rattaché à votre compte. Pour ne plus le recevoir, écrivez-nous : nous réglons ces avis rôle par rôle."
+      }
+    },
+    "staff.appointment-booked": {
+      "subject": {
+        "variables": [
+          "contact",
+          "when"
+        ],
+        "required": [
+          "contact",
+          "when"
+        ],
+        "fr": "Nouveau rendez-vous — {contact} · {when}"
+      },
+      "title": {
+        "variables": [],
+        "required": [],
+        "fr": "Un rendez-vous vient d'être pris"
+      },
+      "contactLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Contact"
+      },
+      "whenLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Quand"
+      },
+      "purposeLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Motif"
+      },
+      "channelLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Canal"
+      },
+      "cta": {
+        "variables": [],
+        "required": [],
+        "fr": "Ouvrir le rendez-vous"
+      },
+      "footer": {
+        "variables": [],
+        "required": [],
+        "fr": "Alerte interne LFC — envoyée à l'équipe commerciale."
+      }
+    },
+    "staff.account-alert": {
+      "subject": {
+        "variables": [
+          "company",
+          "rule"
+        ],
+        "required": [
+          "company",
+          "rule"
+        ],
+        "fr": "Alerte — {company} · {rule}"
+      },
+      "title": {
+        "variables": [
+          "rule",
+          "company"
+        ],
+        "required": [
+          "rule",
+          "company"
+        ],
+        "fr": "{rule} sur {company}"
+      },
+      "accountLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Compte"
+      },
+      "orderLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Commande"
+      },
+      "cta": {
+        "variables": [],
+        "required": [],
+        "fr": "Ouvrir le compte"
+      }
+    },
+    "staff.invited": {
+      "subject": {
+        "variables": [],
+        "required": [],
+        "fr": "Votre accès au back-office La Folie Douce"
+      },
+      "title": {
+        "variables": [
+          "firstName"
+        ],
+        "required": [
+          "firstName"
+        ],
+        "fr": "Bienvenue dans l'équipe, {firstName}"
+      },
+      "titleWithoutName": {
+        "variables": [],
+        "required": [],
+        "fr": "Bienvenue dans l'équipe"
+      },
+      "opened": {
+        "variables": [],
+        "required": [],
+        "fr": "Un accès au back-office vient d'être ouvert à votre nom."
+      },
+      "choosePassword": {
+        "variables": [],
+        "required": [],
+        "fr": "Il ne reste qu'à choisir votre mot de passe. Le lien ci-dessous est valable 7 jours ; passé ce délai, demandez à un administrateur de vous en renvoyer un."
+      },
+      "cta": {
+        "variables": [],
+        "required": [],
+        "fr": "Choisir mon mot de passe"
+      },
+      "footer": {
+        "variables": [],
+        "required": [],
+        "fr": "Vous n'attendiez pas cet e-mail ? Ignorez-le : sans mot de passe choisi, aucun accès n'est ouvert."
+      }
+    },
+    "staff.password-reset": {
+      "subject": {
+        "variables": [],
+        "required": [],
+        "fr": "Votre lien de mot de passe — back-office La Folie Douce"
+      },
+      "title": {
+        "variables": [
+          "firstName"
+        ],
+        "required": [
+          "firstName"
+        ],
+        "fr": "Nouveau mot de passe, {firstName}"
+      },
+      "titleWithoutName": {
+        "variables": [],
+        "required": [],
+        "fr": "Nouveau mot de passe"
+      },
+      "issued": {
+        "variables": [],
+        "required": [],
+        "fr": "Un lien de changement de mot de passe vient d'être émis pour votre accès au back-office."
+      },
+      "linkRules": {
+        "variables": [],
+        "required": [],
+        "fr": "Il est valable 7 jours et à usage unique. Si vous ne l'avez pas demandé, votre mot de passe actuel reste valable : il suffit d'ignorer ce message."
+      },
+      "cta": {
+        "variables": [],
+        "required": [],
+        "fr": "Choisir un nouveau mot de passe"
+      }
+    },
+    "staff.access-suspended": {
+      "subject": {
+        "variables": [],
+        "required": [],
+        "fr": "Votre accès au back-office est suspendu"
+      },
+      "title": {
+        "variables": [
+          "firstName"
+        ],
+        "required": [
+          "firstName"
+        ],
+        "fr": "Accès suspendu, {firstName}"
+      },
+      "titleWithoutName": {
+        "variables": [],
+        "required": [],
+        "fr": "Accès suspendu"
+      },
+      "suspended": {
+        "variables": [],
+        "required": [],
+        "fr": "Votre accès au back-office La Folie Douce a été suspendu."
+      },
+      "whatRemains": {
+        "variables": [],
+        "required": [],
+        "fr": "Vos identifiants restent valables : rien n'a été supprimé, et un administrateur peut rouvrir l'accès à tout moment. En attendant, la connexion sera refusée."
+      },
+      "footer": {
+        "variables": [],
+        "required": [],
+        "fr": "Cet e-mail vous prévient d'un changement d'accès. Il ne demande aucune action."
+      }
+    },
+    "staff.access-restored": {
+      "subject": {
+        "variables": [],
+        "required": [],
+        "fr": "Votre accès au back-office est rétabli"
+      },
+      "title": {
+        "variables": [
+          "firstName"
+        ],
+        "required": [
+          "firstName"
+        ],
+        "fr": "Accès rétabli, {firstName}"
+      },
+      "titleWithoutName": {
+        "variables": [],
+        "required": [],
+        "fr": "Accès rétabli"
+      },
+      "restored": {
+        "variables": [],
+        "required": [],
+        "fr": "Votre accès au back-office La Folie Douce est de nouveau ouvert."
+      },
+      "howToSignIn": {
+        "variables": [],
+        "required": [],
+        "fr": "Connectez-vous avec votre mot de passe habituel. Si vous ne l'avez plus, demandez un lien à un administrateur."
+      },
+      "cta": {
+        "variables": [],
+        "required": [],
+        "fr": "Ouvrir le back-office"
+      }
+    },
+    "staff.production-dossier": {
+      "subject": {
+        "variables": [
+          "day"
+        ],
+        "required": [
+          "day"
+        ],
+        "fr": "Dossier de production — plan du {day}"
+      },
+      "subjectCompleted": {
+        "variables": [
+          "day"
+        ],
+        "required": [
+          "day"
+        ],
+        "fr": "Dossier de production complété — plan du {day}"
+      },
+      "greeting": {
+        "variables": [
+          "firstName"
+        ],
+        "required": [
+          "firstName"
+        ],
+        "fr": "Bonjour {firstName},"
+      },
+      "greetingWithoutName": {
+        "variables": [],
+        "required": [],
+        "fr": "Bonjour,"
+      },
+      "arrested": {
+        "variables": [
+          "day",
+          "by",
+          "at"
+        ],
+        "required": [
+          "day",
+          "by",
+          "at"
+        ],
+        "fr": "Le plan de production du {day} a été arrêté {by} le {at}."
+      },
+      "arrestedWithoutAuthor": {
+        "variables": [
+          "day",
+          "at"
+        ],
+        "required": [
+          "day",
+          "at"
+        ],
+        "fr": "Le plan de production du {day} a été arrêté le {at}."
+      },
+      "completed": {
+        "variables": [
+          "day",
+          "by",
+          "at"
+        ],
+        "required": [
+          "day",
+          "by",
+          "at"
+        ],
+        "fr": "Le plan du {day} a été complété {by} le {at} : de nouvelles commandes ont été ajoutées à la fournée."
+      },
+      "completedWithoutAuthor": {
+        "variables": [
+          "day",
+          "at"
+        ],
+        "required": [
+          "day",
+          "at"
+        ],
+        "fr": "Le plan du {day} a été complété le {at} : de nouvelles commandes ont été ajoutées à la fournée."
+      },
+      "attachment": {
+        "variables": [],
+        "required": [],
+        "fr": "Vous trouverez en pièce jointe le dossier à imprimer : un récapitulatif de ce qu'il faut fabriquer, puis un bon par commande."
+      },
+      "attachmentWithResupplies": {
+        "variables": [],
+        "required": [],
+        "fr": "Vous trouverez en pièce jointe le dossier à imprimer : un récapitulatif de ce qu'il faut fabriquer, puis un bon par commande et par réassort."
+      },
+      "figures": {
+        "variables": [
+          "figures"
+        ],
+        "required": [
+          "figures"
+        ],
+        "fr": "En chiffres : {figures}."
+      },
+      "figuresPlain": {
+        "variables": [
+          "orders",
+          "pieces"
+        ],
+        "required": [
+          "orders",
+          "pieces"
+        ],
+        "fr": "{orders} et {pieces}"
+      },
+      "figuresSplit": {
+        "variables": [
+          "orders",
+          "split",
+          "pieces"
+        ],
+        "required": [
+          "orders",
+          "split",
+          "pieces"
+        ],
+        "fr": "{orders} — {split} — et {pieces}"
+      },
+      "figuresWithResupplies": {
+        "variables": [
+          "head",
+          "resupplies",
+          "share"
+        ],
+        "required": [
+          "head",
+          "resupplies",
+          "share"
+        ],
+        "fr": "{head} — {resupplies} et {share}"
+      },
+      "ordersWithSplit": {
+        "variables": [
+          "orders",
+          "split"
+        ],
+        "required": [
+          "orders",
+          "split"
+        ],
+        "fr": "{orders} — {split}"
+      },
+      "pickupShare": {
+        "variables": [
+          "count"
+        ],
+        "required": [
+          "count"
+        ],
+        "fr": "{count} en retrait"
+      },
+      "deliveryShare": {
+        "variables": [
+          "count"
+        ],
+        "required": [
+          "count"
+        ],
+        "fr": "{count} en livraison"
+      },
+      "resupplyPieceShare": {
+        "variables": [
+          "pieces",
+          "count"
+        ],
+        "required": [
+          "pieces",
+          "count"
+        ],
+        "fr": "{pieces} dont {count} de réassort"
+      },
+      "orderOne": {
+        "variables": [
+          "count"
+        ],
+        "required": [
+          "count"
+        ],
+        "fr": "{count} commande"
+      },
+      "orderMany": {
+        "variables": [
+          "count"
+        ],
+        "required": [
+          "count"
+        ],
+        "fr": "{count} commandes"
+      },
+      "pieceOne": {
+        "variables": [
+          "count"
+        ],
+        "required": [
+          "count"
+        ],
+        "fr": "{count} pièce"
+      },
+      "pieceMany": {
+        "variables": [
+          "count"
+        ],
+        "required": [
+          "count"
+        ],
+        "fr": "{count} pièces"
+      },
+      "resupplyOne": {
+        "variables": [
+          "count"
+        ],
+        "required": [
+          "count"
+        ],
+        "fr": "{count} réassort"
+      },
+      "resupplyMany": {
+        "variables": [
+          "count"
+        ],
+        "required": [
+          "count"
+        ],
+        "fr": "{count} réassorts"
+      },
+      "replacesPrevious": {
+        "variables": [],
+        "required": [],
+        "fr": "Ce dossier remplace le précédent."
+      },
+      "signature": {
+        "variables": [],
+        "required": [],
+        "fr": "La Folie Coffee — Fournil"
+      },
+      "footer": {
+        "variables": [],
+        "required": [],
+        "fr": "Cet e-mail part automatiquement à chaque arrêt du plan. Pour ne plus le recevoir, demandez à l'équipe de vous retirer des destinataires (Production › Réglages)."
+      }
+    },
+    "staff.support-requested": {
+      "subject": {
+        "variables": [
+          "contact",
+          "purpose"
+        ],
+        "required": [
+          "contact",
+          "purpose"
+        ],
+        "fr": "Demande de contact — {contact} · {purpose}"
+      },
+      "title": {
+        "variables": [],
+        "required": [],
+        "fr": "Un client demande à être contacté"
+      },
+      "contactLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Contact"
+      },
+      "purposeLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Motif"
+      },
+      "availabilityLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Disponibilité"
+      },
+      "phoneLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Téléphone"
+      },
+      "footer": {
+        "variables": [],
+        "required": [],
+        "fr": "Alerte interne LFC — envoyée à l'équipe commerciale."
+      }
+    },
+    "staff.customer-request": {
+      "subject": {
+        "variables": [
+          "form",
+          "reason",
+          "author"
+        ],
+        "required": [
+          "form",
+          "reason",
+          "author"
+        ],
+        "fr": "{form} — {reason} · {author}"
+      },
+      "subjectWithOrder": {
+        "variables": [
+          "form",
+          "reason",
+          "order",
+          "author"
+        ],
+        "required": [
+          "form",
+          "reason",
+          "order",
+          "author"
+        ],
+        "fr": "{form} — {reason} · {order} · {author}"
+      },
+      "urgentSubject": {
+        "variables": [
+          "subject"
+        ],
+        "required": [
+          "subject"
+        ],
+        "fr": "[Urgent] {subject}"
+      },
+      "title": {
+        "variables": [
+          "form"
+        ],
+        "required": [
+          "form"
+        ],
+        "fr": "Une demande est arrivée par « {form} »"
+      },
+      "reasonLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Motif"
+      },
+      "orderLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Commande"
+      },
+      "photosLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Photos"
+      },
+      "photosValue": {
+        "variables": [
+          "count"
+        ],
+        "required": [
+          "count"
+        ],
+        "fr": "{count} — à voir au back-office"
+      },
+      "fromLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "De"
+      },
+      "emailLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "E-mail"
+      },
+      "phoneLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Téléphone"
+      },
+      "originLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Depuis"
+      },
+      "clientLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Client"
+      },
+      "cta": {
+        "variables": [],
+        "required": [],
+        "fr": "Ouvrir la demande"
+      },
+      "footer": {
+        "variables": [],
+        "required": [],
+        "fr": "Répondre à ce courriel écrit directement à son auteur. La demande est rangée au back-office, sous Commercial › Demandes clients."
+      }
+    },
+    "ops.deploy-check": {
+      "subject": {
+        "variables": [
+          "revision"
+        ],
+        "required": [
+          "revision"
+        ],
+        "fr": "[LFC] Courrier opérationnel — {revision}"
+      },
+      "title": {
+        "variables": [],
+        "required": [],
+        "fr": "Le courrier sortant fonctionne"
+      },
+      "revisionLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Révision"
+      },
+      "senderLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Expéditeur"
+      },
+      "message": {
+        "variables": [],
+        "required": [],
+        "fr": "Cet e-mail est parti du backend déployé. Sa seule présence ici prouve que la clé Resend atteint le container, que l'expéditeur est sur un domaine vérifié, et que le message est délivré."
+      },
+      "footer": {
+        "variables": [],
+        "required": [],
+        "fr": "Message automatique de contrôle, envoyé à chaque déploiement. S'il cesse d'arriver, le canal e-mail est tombé — même si rien d'autre ne le dit."
+      }
+    },
+    "agency.vitrine-notice": {
+      "footer": {
+        "variables": [],
+        "required": [],
+        "fr": "Vous recevez ce message comme contact d'un abonné au webhook de la vitrine de La Folie Douce."
+      }
+    }
+  }
+}

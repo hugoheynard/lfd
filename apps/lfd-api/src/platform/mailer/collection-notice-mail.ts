@@ -1,7 +1,10 @@
 import { sanitiseSubject, type LayoutInput, type LayoutRow, type RenderedMail } from "@lfd/mailer";
 
+import { DEFAULT_MAIL_LOCALE, fill, mailCopyOf } from "./copy/mail-copy.js";
+import type { CollectionNoticeCopy, CollectionNoticeKind } from "./copy/mail-copy.model.js";
+
 /** Ce que l'avis annonce — le gabarit choisit ses mots en fonction. */
-export type CollectionNoticeMailKind = "notice" | "correction" | "cancellation";
+export type CollectionNoticeMailKind = CollectionNoticeKind;
 
 /**
  * Les données de l'**avis de prélèvement** (pré-notification SEPA, plan
@@ -37,84 +40,91 @@ export interface CollectionNoticeMailData {
 /** La coquille client, prêtée par le registre. */
 export type NoticeShell = (input: Omit<LayoutInput, "brand" | "supportEmail">) => string;
 
-const TITLES: Readonly<Record<CollectionNoticeMailKind, string>> = {
-  notice: "Avis de prélèvement",
-  correction: "Avis de prélèvement rectifié",
-  cancellation: "Prélèvement annulé",
-};
-
 /**
  * Le rendu, à part de `mail-templates.ts` : le registre n'en garde qu'une
- * ligne. Sobre, en français : un montant, une date, les deux références que
- * le payeur rapprochera de son relevé (RUM, ICS), et celle de la pièce
- * réglée — ses factures (E4), ou l'arrêté d'un lot d'avant.
+ * ligne. Sobre : un montant, une date, les deux références que le payeur
+ * rapprochera de son relevé (RUM, ICS), et celle de la pièce réglée — ses
+ * factures (E4), ou l'arrêté d'un lot d'avant. Les mots viennent du
+ * dictionnaire (`customer.collection-notice`), dans la langue de repli : rien
+ * ne porte encore la langue d'un payeur.
  */
 export function renderCollectionNoticeMail(
   data: CollectionNoticeMailData,
   shell: NoticeShell,
 ): RenderedMail {
+  const copy = mailCopyOf(DEFAULT_MAIL_LOCALE)["customer.collection-notice"];
+  const title = copy.title[data.kind];
   return {
-    subject: sanitiseSubject(`${TITLES[data.kind]} — ${data.creditorName} · ${data.collectionDay}`),
+    subject: sanitiseSubject(
+      fill(copy.subject, { title, creditor: data.creditorName, day: data.collectionDay }),
+    ),
     html: shell({
-      title: TITLES[data.kind],
-      body: bodyOf(data),
-      rows: rowsOf(data),
-      footer:
-        "Ce prélèvement SEPA est effectué au titre du mandat référencé ci-dessus. " +
-        "Pour toute question, répondez à ce message avant la date du prélèvement.",
+      title,
+      body: bodyOf(data, copy),
+      rows: rowsOf(data, copy),
+      footer: copy.footer,
     }),
   };
 }
 
-function bodyOf(data: CollectionNoticeMailData): string {
-  const head = `Bonjour,\n\n`;
+function bodyOf(data: CollectionNoticeMailData, copy: CollectionNoticeCopy): string {
   if (data.kind === "cancellation") {
-    return (
-      `${head}Le prélèvement de ${data.amount} que nous vous avions annoncé pour le ` +
-      `${data.collectionDay} sur le compte de ${data.debtorName} n'aura pas lieu. ` +
-      `Aucune somme ne sera débitée à cette date.`
-    );
+    const cancelled = fill(copy.cancelled, {
+      amount: data.amount,
+      day: data.collectionDay,
+      debtor: data.debtorName,
+    });
+    return `${copy.greeting}\n\n${cancelled}`;
   }
-  const intro = data.kind === "correction" ? `Cet avis remplace le précédent. ` : "";
-  const again =
-    data.representedRejectionDay === null
-      ? ""
-      : `Il s'agit d'une nouvelle présentation du prélèvement rejeté du ${data.representedRejectionDay}. `;
-  return (
-    `${head}${intro}${again}${data.creditorName} prélèvera ${data.amount} sur le compte de ` +
-    `${data.debtorName} le ${data.collectionDay}, au titre ${settledPieces(data)}.`
-  );
+  const announced = fill(copy.announced, {
+    creditor: data.creditorName,
+    amount: data.amount,
+    debtor: data.debtorName,
+    day: data.collectionDay,
+    pieces: settledPieces(data, copy),
+  });
+  const sentences = [
+    ...(data.kind === "correction" ? [copy.correctionLead] : []),
+    ...(data.representedRejectionDay === null
+      ? []
+      : [fill(copy.representationLead, { day: data.representedRejectionDay })]),
+    announced,
+  ];
+  return `${copy.greeting}\n\n${sentences.join(" ")}`;
 }
 
 /** Ce que le prélèvement règle : des factures émises (E4), ou l'arrêté d'avant. */
-function settledPieces(data: CollectionNoticeMailData): string {
+function settledPieces(data: CollectionNoticeMailData, copy: CollectionNoticeCopy): string {
   const numbers = data.invoiceNumbers;
   if (numbers.length === 0) {
-    return `de l'arrêté de facturation ${data.statementReference}`;
+    return fill(copy.piecesStatement, { statement: data.statementReference });
   }
   return numbers.length === 1
-    ? `de la facture ${numbers.join("")}`
-    : `des factures ${numbers.join(", ")}`;
+    ? fill(copy.piecesOneInvoice, { number: numbers.join("") })
+    : fill(copy.piecesInvoices, { numbers: numbers.join(", ") });
 }
 
-function pieceRow(data: CollectionNoticeMailData): LayoutRow {
+function pieceRow(data: CollectionNoticeMailData, copy: CollectionNoticeCopy): LayoutRow {
   const numbers = data.invoiceNumbers;
   if (numbers.length === 0) {
-    return { label: "Arrêté de facturation", value: data.statementReference };
+    return { label: copy.statementLabel, value: data.statementReference };
   }
-  return { label: numbers.length === 1 ? "Facture" : "Factures", value: numbers.join(", ") };
+  return {
+    label: numbers.length === 1 ? copy.invoiceLabel : copy.invoicesLabel,
+    value: numbers.join(", "),
+  };
 }
 
-function rowsOf(data: CollectionNoticeMailData): readonly LayoutRow[] {
+function rowsOf(data: CollectionNoticeMailData, copy: CollectionNoticeCopy): readonly LayoutRow[] {
   const references: LayoutRow[] = [
-    { label: "Créancier", value: data.creditorName },
-    { label: "Identifiant créancier (ICS)", value: data.creditorIdentifier },
-    { label: "Référence du mandat (RUM)", value: data.mandateReference },
+    { label: copy.creditorLabel, value: data.creditorName },
+    { label: copy.creditorIdentifierLabel, value: data.creditorIdentifier },
+    { label: copy.mandateReferenceLabel, value: data.mandateReference },
   ];
   if (data.kind === "cancellation") {
     return [
-      { label: "Montant annulé", value: data.amount },
-      { label: "Date annoncée", value: data.collectionDay },
+      { label: copy.cancelledAmountLabel, value: data.amount },
+      { label: copy.announcedDayLabel, value: data.collectionDay },
       ...references,
     ];
   }
@@ -123,16 +133,19 @@ function rowsOf(data: CollectionNoticeMailData): readonly LayoutRow[] {
       ? []
       : [
           {
-            label: "Annoncé précédemment",
-            value: `${data.previous.amount} le ${data.previous.collectionDay}`,
+            label: copy.previousLabel,
+            value: fill(copy.previousValue, {
+              amount: data.previous.amount,
+              day: data.previous.collectionDay,
+            }),
           },
         ]),
-    { label: "Date du prélèvement", value: data.collectionDay },
+    { label: copy.collectionDayLabel, value: data.collectionDay },
     ...(data.representedRejectionDay === null
       ? []
-      : [{ label: "Nouvelle présentation du rejet du", value: data.representedRejectionDay }]),
+      : [{ label: copy.representationLabel, value: data.representedRejectionDay }]),
     ...references,
-    pieceRow(data),
-    { label: "Montant", value: data.amount, strong: true },
+    pieceRow(data, copy),
+    { label: copy.amountLabel, value: data.amount, strong: true },
   ];
 }

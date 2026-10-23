@@ -1,5 +1,8 @@
 import { sanitiseSubject, type LayoutInput, type RenderedMail } from "@lfd/mailer";
 
+import { DEFAULT_MAIL_LOCALE, fill, mailCopyOf } from "./copy/mail-copy.js";
+import type { CustomerRequestCopy } from "./copy/mail-copy.model.js";
+
 /**
  * Les données du courriel d'une **demande client** (`demandes-clients.md`,
  * §3.2). Destinataire : l'adresse du motif ; `Reply-To` : l'auteur — c'est
@@ -47,35 +50,45 @@ export function renderCustomerRequestMail(
   shell: StaffShell,
   backOfficeUrl: string,
 ): RenderedMail {
+  const copy = mailCopyOf(DEFAULT_MAIL_LOCALE)["staff.customer-request"];
   const details: readonly (readonly [string, string])[] = [
-    ["Motif", data.reasonLabel],
-    ["Commande", data.orderNumber],
-    ["Photos", data.photoCount === 0 ? "" : `${String(data.photoCount)} — à voir au back-office`],
-    ["De", data.authorName],
-    ["E-mail", data.authorEmail],
-    ["Téléphone", data.authorPhone],
-    ["Depuis", data.originLabel],
-    ["Client", data.clientLabel],
+    [copy.reasonLabel, data.reasonLabel],
+    [copy.orderLabel, data.orderNumber],
+    [
+      copy.photosLabel,
+      data.photoCount === 0 ? "" : fill(copy.photosValue, { count: String(data.photoCount) }),
+    ],
+    [copy.fromLabel, data.authorName],
+    [copy.emailLabel, data.authorEmail],
+    [copy.phoneLabel, data.authorPhone],
+    [copy.originLabel, data.originLabel],
+    [copy.clientLabel, data.clientLabel],
   ];
   const lines = details
     .filter(([, value]) => value.trim() !== "")
     .map(([label, value]) => `${label} : ${value}`)
     .join("\n");
   const message = data.message.trim();
-  const reference = data.orderNumber === "" ? "" : ` · ${data.orderNumber}`;
   return {
-    subject: sanitiseSubject(
-      `${data.urgent ? "[Urgent] " : ""}${data.formLabel} — ${data.reasonLabel}${reference} · ${data.authorName}`,
-    ),
+    subject: sanitiseSubject(subjectOf(data, copy)),
     html: shell({
-      title: `Une demande est arrivée par « ${data.formLabel} »`,
+      title: fill(copy.title, { form: data.formLabel }),
       body: message === "" ? lines : `${lines}\n\n« ${message} »`,
       cta: {
-        label: "Ouvrir la demande",
+        label: copy.cta,
         url: `${backOfficeUrl}/commercial/demandes?demande=${encodeURIComponent(data.requestId)}`,
       },
-      footer:
-        "Répondre à ce courriel écrit directement à son auteur. La demande est rangée au back-office, sous Commercial › Demandes clients.",
+      footer: copy.footer,
     }),
   };
+}
+
+/** L'objet : le formulaire, le motif, la commande s'il y en a une, l'auteur — et l'urgence devant. */
+function subjectOf(data: CustomerRequestMailData, copy: CustomerRequestCopy): string {
+  const names = { form: data.formLabel, reason: data.reasonLabel, author: data.authorName };
+  const subject =
+    data.orderNumber === ""
+      ? fill(copy.subject, names)
+      : fill(copy.subjectWithOrder, { ...names, order: data.orderNumber });
+  return data.urgent ? fill(copy.urgentSubject, { subject }) : subject;
 }

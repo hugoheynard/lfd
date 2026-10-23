@@ -8,7 +8,7 @@ import {
 } from "@lfd/mailer";
 
 import { SELF_SERVICE_PASSWORD_TICKET_TTL_SECONDS } from "../identity/auth0-identity.gateway.js";
-import { fill, mailCopyOf } from "./copy/mail-copy.js";
+import { DEFAULT_MAIL_LOCALE, fill, fillNamed, mailCopyOf } from "./copy/mail-copy.js";
 import type { OrderSettlementCopy } from "./copy/mail-copy.model.js";
 import {
   renderCollectionNoticeMail,
@@ -32,7 +32,7 @@ import {
   renderProductionDossierMail,
   type ProductionDossierMailData,
 } from "./production-dossier-mail.js";
-import { MANDATE_TO_SIGN_WORDING, type MandateMailScheme } from "./mandate-to-sign-wording.js";
+import type { MandateMailScheme } from "./mandate-to-sign-wording.js";
 import { type OrderSheetMailDocument, withAttachments } from "./order-sheet-mail-document.js";
 import { qrPng } from "./qr-image.js";
 import { renderVitrineNoticeMail, type VitrineNoticeMailData } from "./vitrine-notice-mail.js";
@@ -451,7 +451,7 @@ function recapRows(
   locale: ContentLocale,
   settlement: keyof OrderSettlementCopy,
 ): readonly LayoutRow[] {
-  const copy = mailCopyOf(locale).orderPlaced;
+  const copy = mailCopyOf(locale)["customer.order-placed"];
   const pieces = sheet.lines.reduce((sum, line) => sum + line.quantity, 0);
   return [
     {
@@ -490,7 +490,7 @@ function recapRows(
  * de TTC : la facture du mois les calcule une fois, sur tous les bons.
  */
 function pretaxTotalRows(sheet: ClientSheet, locale: ContentLocale): readonly LayoutRow[] {
-  const copy = mailCopyOf(locale).orderPlaced;
+  const copy = mailCopyOf(locale)["customer.order-placed"];
   return [
     {
       label: copy.totalPretax,
@@ -517,16 +517,23 @@ function settlementCopyKeyOf(sheet: ClientSheet): keyof OrderSettlementCopy {
  * image par message, et un identifiant tiré au sort rendrait le rendu
  * non-déterministe pour rien.
  */
+const QR_CONTENT_ID = "qr-retrait";
+
 /**
  * « 1 heure », dérivé du TTL réellement demandé au fournisseur plutôt qu'écrit
  * à la main : une durée annoncée qui ne serait plus celle du ticket ferait
- * chercher un lien encore valable qui ne l'est plus, ou l'inverse.
+ * chercher un lien encore valable qui ne l'est plus, ou l'inverse. Les mots
+ * viennent du dictionnaire ; le compte et l'accord, d'ici.
  */
-const SELF_SERVICE_LINK_VALIDITY = `${Math.round(SELF_SERVICE_PASSWORD_TICKET_TTL_SECONDS / 3600)} heure${
-  SELF_SERVICE_PASSWORD_TICKET_TTL_SECONDS >= 2 * 3600 ? "s" : ""
-}`;
-
-const QR_CONTENT_ID = "qr-retrait";
+function selfServiceLinkValidity(locale: ContentLocale): string {
+  const copy = mailCopyOf(locale)["customer.password-reset"];
+  const hours = String(Math.round(SELF_SERVICE_PASSWORD_TICKET_TTL_SECONDS / 3600));
+  const form =
+    SELF_SERVICE_PASSWORD_TICKET_TTL_SECONDS >= 2 * 3600
+      ? copy.validityHours
+      : copy.validityOneHour;
+  return fill(form, { count: hours });
+}
 
 /**
  * **Deux marques, deux publics** (Hugo, 2026-09-22 : « remplacer La Folie Douce
@@ -555,9 +562,15 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
   const staffMail = (input: Omit<LayoutInput, "brand" | "supportEmail">): string =>
     renderLayout({ ...input, brand: STAFF_BRAND, supportEmail: brand.supportEmail });
 
+  /**
+   * Les textes des e-mails qui ne portent pas de langue — l'équipe, et ceux
+   * partis d'un geste du back-office : ils s'écrivent dans la langue de repli.
+   */
+  const local = mailCopyOf(DEFAULT_MAIL_LOCALE);
+
   return {
     "customer.order-ready": (data) => {
-      const copy = mailCopyOf(data.locale).orderReady;
+      const copy = mailCopyOf(data.locale)["customer.order-ready"];
       const pickup = data.sheet.fulfillment.method === "pickup";
       const showQr = data.handoverToken !== null && data.handoverUrl !== "";
       const pieces = data.sheet.lines.reduce((sum, line) => sum + line.quantity, 0);
@@ -584,7 +597,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
             ? {
                 image: {
                   contentId: QR_CONTENT_ID,
-                  alt: `${copy.qrTitle} — ${data.sheet.reference}`,
+                  alt: fill(copy.qrAlt, { ref: data.sheet.reference }),
                   sizePx: 180,
                   caption: `${copy.qrLine}\n${data.sheet.reference}`,
                 },
@@ -614,7 +627,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
     "customer.sub-account-activity": (data) => renderSubAccountActivityMail(data, customerMail),
     "customer.sub-account-gesture": (data) => renderSubAccountGestureMail(data, customerMail),
     "customer.order-placed": (data) => {
-      const copy = mailCopyOf(data.locale).orderPlaced;
+      const copy = mailCopyOf(data.locale)["customer.order-placed"];
       const settlement = settlementCopyKeyOf(data.sheet);
       const showQr = data.handoverToken !== null && data.handoverUrl !== "";
       return {
@@ -632,7 +645,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
             ? {
                 image: {
                   contentId: QR_CONTENT_ID,
-                  alt: `${copy.qrTitle} — ${data.sheet.reference}`,
+                  alt: fill(copy.qrAlt, { ref: data.sheet.reference }),
                   sizePx: 180,
                   caption: `${copy.qrLine}\n${data.sheet.reference}`,
                 },
@@ -671,40 +684,43 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
         ]),
       };
     },
-    "ops.deploy-check": (data) => ({
-      subject: sanitiseSubject(`[LFC] Courrier opérationnel — ${data.revision}`),
-      html: renderLayout({
-        title: "Le courrier sortant fonctionne",
-        body: detailsBody(
-          [
-            ["Révision", data.revision],
-            ["Expéditeur", data.fromAddress],
-          ],
-          "Cet e-mail est parti du backend déployé. Sa seule présence ici prouve que " +
-            "la clé Resend atteint le container, que l'expéditeur est sur un domaine " +
-            "vérifié, et que le message est délivré.",
-        ),
-        footer:
-          "Message automatique de contrôle, envoyé à chaque déploiement. " +
-          "S'il cesse d'arriver, le canal e-mail est tombé — même si rien d'autre ne le dit.",
-      }),
-    }),
-    "staff.account-alert": (data) => ({
-      subject: sanitiseSubject(`Alerte — ${data.companyName} · ${data.ruleLabel}`),
-      html: renderLayout({
-        title: `${data.ruleLabel} sur ${data.companyName}`,
-        body: detailsBody(
-          [
-            ["Compte", data.companyName],
-            ["Commande", data.orderNumber],
-          ],
-          data.findings.join("\n"),
-        ),
-        cta: { label: "Ouvrir le compte", url: data.accountUrl },
-      }),
-    }),
+    "ops.deploy-check": (data) => {
+      const copy = local["ops.deploy-check"];
+      return {
+        subject: sanitiseSubject(fill(copy.subject, { revision: data.revision })),
+        html: renderLayout({
+          title: copy.title,
+          body: detailsBody(
+            [
+              [copy.revisionLabel, data.revision],
+              [copy.senderLabel, data.fromAddress],
+            ],
+            copy.message,
+          ),
+          footer: copy.footer,
+        }),
+      };
+    },
+    "staff.account-alert": (data) => {
+      const copy = local["staff.account-alert"];
+      const names = { company: data.companyName, rule: data.ruleLabel };
+      return {
+        subject: sanitiseSubject(fill(copy.subject, names)),
+        html: renderLayout({
+          title: fill(copy.title, names),
+          body: detailsBody(
+            [
+              [copy.accountLabel, data.companyName],
+              [copy.orderLabel, data.orderNumber],
+            ],
+            data.findings.join("\n"),
+          ),
+          cta: { label: copy.cta, url: data.accountUrl },
+        }),
+      };
+    },
     "customer.payment-failed": (data) => {
-      const copy = mailCopyOf(data.locale).paymentFailed;
+      const copy = mailCopyOf(data.locale)["customer.payment-failed"];
       return {
         subject: sanitiseSubject(fill(copy.subject, { ref: data.sheet.reference })),
         html: customerMail({
@@ -724,7 +740,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
       };
     },
     "customer.payment-expired": (data) => {
-      const copy = mailCopyOf(data.locale).paymentExpired;
+      const copy = mailCopyOf(data.locale)["customer.payment-expired"];
       return {
         subject: sanitiseSubject(fill(copy.subject, { ref: data.sheet.reference })),
         html: customerMail({
@@ -737,107 +753,99 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
         }),
       };
     },
-    "customer.order-payment-link": (data) => ({
-      subject: sanitiseSubject(`Votre commande ${data.reference} reste à régler`),
-      html: customerMail({
-        title: "Votre commande attend son règlement",
-        body:
-          `Le règlement de votre commande ${data.reference} ne nous est pas encore parvenu.\n\n` +
-          "Vous pouvez la régler par carte depuis votre espace, en suivant le lien ci-dessous.",
-        rows: [{ label: "Montant à régler", value: money(data.totalCents, "fr") }],
-        cta: { label: "Régler ma commande", url: data.settleUrl },
-        footer:
-          "Déjà réglée ? Les deux messages se sont croisés : ignorez celui-ci. " +
-          "Un doute ? Répondez à cet e-mail.",
-      }),
-    }),
-    "customer.access-opened": (data) => renderCustomerAccessOpenedMail(data, customerMail),
-    "staff.invited": (data) => ({
-      subject: sanitiseSubject("Votre accès au back-office La Folie Douce"),
-      html: staffMail({
-        title: `Bienvenue dans l'équipe${data.firstName === "" ? "" : `, ${data.firstName}`}`,
-        body:
-          "Un accès au back-office vient d'être ouvert à votre nom.\n\n" +
-          "Il ne reste qu'à choisir votre mot de passe. Le lien ci-dessous est valable 7 jours ; " +
-          "passé ce délai, demandez à un administrateur de vous en renvoyer un.",
-        cta: { label: "Choisir mon mot de passe", url: data.passwordSetupUrl },
-        footer:
-          "Vous n'attendiez pas cet e-mail ? Ignorez-le : sans mot de passe choisi, aucun accès n'est ouvert.",
-      }),
-    }),
-    "customer.order-placed-with-your-email": (data) => ({
-      subject: sanitiseSubject("Une commande vient d'être passée avec votre adresse"),
-      html: customerMail({
-        title: `Bonjour${data.firstName === "" ? "" : `, ${data.firstName}`}`,
-        body:
-          "Une commande vient d'être passée sur notre boutique en indiquant votre adresse " +
-          "e-mail, sans passer par votre compte.\n\n" +
-          "Si c'est vous, il n'y a rien à faire : la confirmation et le code de retrait sont " +
-          "partis à cette même adresse.",
-        footer:
-          "Si ce n'est pas vous, quelqu'un a sans doute tapé votre adresse par erreur. " +
-          "Aucun accès à votre compte n'a été ouvert, et rien n'a été modifié. " +
-          "Répondez à cet e-mail si vous voulez qu'on regarde.",
-      }),
-    }),
-    "customer.login-method-linked": (data) => ({
-      subject: sanitiseSubject(`Une connexion ${data.methodLabel} a été ajoutée à votre compte`),
-      html: customerMail({
-        title: `Bonjour${data.firstName === "" ? "" : `, ${data.firstName}`}`,
-        body:
-          `Vous pouvez désormais vous connecter à votre compte La Folie Coffee avec ` +
-          `${data.methodLabel}, en plus de votre méthode habituelle.\n\n` +
-          "C'est le même compte : mêmes commandes, mêmes informations.",
-        footer:
-          "Vous n'avez pas fait cette manipulation ? Répondez à cet e-mail : " +
-          "nous retirerons cette méthode de connexion et regarderons ce qui s'est passé.",
-      }),
-    }),
-    "customer.password-reset": (data) => ({
-      subject: sanitiseSubject("Votre lien pour changer de mot de passe"),
-      html: customerMail({
-        title: "Changer votre mot de passe",
-        // Ce qu'on SAIT, et rien de plus : un lien est parti, il expire, il
-        // faut le suivre pour choisir. Ce qu'il advient du mot de passe actuel
-        // et des sessions ouvertes n'est vérifié nulle part — cf. le JSDoc du
-        // gabarit dans la carte, plus haut.
-        body:
-          "Vous venez de demander à changer le mot de passe de votre compte La Folie Coffee.\n\n" +
-          `Le lien ci-dessous est à usage unique et expire dans ${SELF_SERVICE_LINK_VALIDITY}. ` +
-          "Il faut le suivre pour choisir votre nouveau mot de passe.",
-        cta: { label: "Choisir un nouveau mot de passe", url: data.passwordSetupUrl },
-        footer:
-          "Vous n'avez pas fait cette demande ? Ne suivez pas ce lien et répondez à cet " +
-          "e-mail : nous regarderons ce qui s'est passé.",
-      }),
-    }),
-    "customer.company-attached": (data) => ({
-      subject: sanitiseSubject(`${data.companyName} a été ajoutée à votre espace pro`),
-      html: customerMail({
-        title: `Bonjour${data.firstName === "" ? "" : `, ${data.firstName}`}`,
-        body:
-          `L'établissement ${data.companyName} vient d'être rattaché à votre espace professionnel ` +
-          "par l'équipe La Folie Coffee.\n\n" +
-          "Vous le retrouverez à votre prochaine connexion, avec vos identifiants habituels — " +
-          "rien de nouveau à créer.",
-        footer: "Vous n'attendiez pas ce rattachement ? Répondez à cet e-mail, nous le retirerons.",
-      }),
-    }),
-    "customer.mandate-to-sign": (data) => {
-      // Le texte qui dépend du schéma vit dans `mandate-to-sign-wording.ts`.
-      const wording = MANDATE_TO_SIGN_WORDING[data.scheme];
+    "customer.order-payment-link": (data) => {
+      // Pas de locale : la comptabilité écrit en français (cf. `B2bMails`).
+      const copy = local["customer.order-payment-link"];
       return {
-        subject: sanitiseSubject(`Votre ${wording.documentName} — ${data.reference}`),
+        subject: sanitiseSubject(fill(copy.subject, { ref: data.reference })),
         html: customerMail({
-          title: `Votre ${wording.documentName} à signer`,
-          body:
-            `Bonjour,\n\nVous trouverez en pièce jointe le ${wording.documentName} ` +
-            `établi pour ${data.companyName}. Il est prérempli : il ne vous ` +
-            `reste qu'à le dater, le signer, et nous le renvoyer scanné ou photographié.`,
+          title: copy.title,
+          body: `${fill(copy.intro, { ref: data.reference })}\n\n${copy.howToPay}`,
+          rows: [{ label: copy.amountLabel, value: money(data.totalCents, DEFAULT_MAIL_LOCALE) }],
+          cta: { label: copy.cta, url: data.settleUrl },
+          footer: copy.footer,
+        }),
+      };
+    },
+    "customer.access-opened": (data) => renderCustomerAccessOpenedMail(data, customerMail),
+    "staff.invited": (data) => {
+      const copy = local["staff.invited"];
+      return {
+        subject: sanitiseSubject(copy.subject),
+        html: staffMail({
+          title: fillNamed(copy.title, copy.titleWithoutName, data.firstName),
+          body: `${copy.opened}\n\n${copy.choosePassword}`,
+          cta: { label: copy.cta, url: data.passwordSetupUrl },
+          footer: copy.footer,
+        }),
+      };
+    },
+    "customer.order-placed-with-your-email": (data) => {
+      const copy = local["customer.order-placed-with-your-email"];
+      return {
+        subject: sanitiseSubject(copy.subject),
+        html: customerMail({
+          title: fillNamed(copy.title, copy.titleWithoutName, data.firstName),
+          body: `${copy.intro}\n\n${copy.ifItIsYou}`,
+          footer: copy.footer,
+        }),
+      };
+    },
+    "customer.login-method-linked": (data) => {
+      const copy = local["customer.login-method-linked"];
+      const method = { method: data.methodLabel };
+      return {
+        subject: sanitiseSubject(fill(copy.subject, method)),
+        html: customerMail({
+          title: fillNamed(copy.title, copy.titleWithoutName, data.firstName),
+          body: `${fill(copy.linked, method)}\n\n${copy.sameAccount}`,
+          footer: copy.footer,
+        }),
+      };
+    },
+    "customer.password-reset": (data) => {
+      const copy = local["customer.password-reset"];
+      const validity = selfServiceLinkValidity(DEFAULT_MAIL_LOCALE);
+      return {
+        subject: sanitiseSubject(copy.subject),
+        html: customerMail({
+          title: copy.title,
+          // Ce qu'on SAIT, et rien de plus : un lien est parti, il expire, il
+          // faut le suivre pour choisir. Ce qu'il advient du mot de passe actuel
+          // et des sessions ouvertes n'est vérifié nulle part — cf. le JSDoc du
+          // gabarit dans la carte, plus haut.
+          body: `${copy.requested}\n\n${fill(copy.linkRules, { validity })}`,
+          cta: { label: copy.cta, url: data.passwordSetupUrl },
+          footer: copy.footer,
+        }),
+      };
+    },
+    "customer.company-attached": (data) => {
+      const copy = local["customer.company-attached"];
+      const company = { company: data.companyName };
+      return {
+        subject: sanitiseSubject(fill(copy.subject, company)),
+        html: customerMail({
+          title: fillNamed(copy.title, copy.titleWithoutName, data.firstName),
+          body: `${fill(copy.attached, company)}\n\n${copy.nothingToCreate}`,
+          footer: copy.footer,
+        }),
+      };
+    },
+    "customer.mandate-to-sign": (data) => {
+      // Le texte qui dépend du schéma est indexé par lui, au dictionnaire.
+      const copy = local["customer.mandate-to-sign"];
+      const wording = copy.scheme[data.scheme];
+      const document = { document: wording.documentName };
+      return {
+        subject: sanitiseSubject(fill(copy.subject, { ...document, ref: data.reference })),
+        html: customerMail({
+          title: fill(copy.title, document),
+          body: `${copy.greeting}\n\n${fill(copy.intro, { ...document, company: data.companyName })}`,
           rows: [
-            { label: "Référence du mandat (RUM)", value: data.reference },
-            { label: "Identifiant créancier (ICS)", value: data.creditorIdentifier },
-            { label: "Créancier", value: data.creditorName },
+            { label: copy.mandateReferenceLabel, value: data.reference },
+            { label: copy.creditorIdentifierLabel, value: data.creditorIdentifier },
+            { label: copy.creditorLabel, value: data.creditorName },
           ],
           footer: wording.footer,
         }),
@@ -850,79 +858,88 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
         ],
       };
     },
-    "staff.appointment-booked": (data) => ({
-      subject: sanitiseSubject(`Nouveau rendez-vous — ${data.contactName} · ${data.when}`),
-      html: renderLayout({
-        title: "Un rendez-vous vient d'être pris",
-        body: detailsBody(
-          [
-            ["Contact", data.contactName],
-            ["Quand", data.when],
-            ["Motif", data.purposeLabel],
-            ["Canal", data.channelLabel],
-          ],
-          data.message,
+    "staff.appointment-booked": (data) => {
+      const copy = local["staff.appointment-booked"];
+      return {
+        subject: sanitiseSubject(
+          fill(copy.subject, { contact: data.contactName, when: data.when }),
         ),
-        cta: { label: "Ouvrir le rendez-vous", url: data.appointmentUrl },
-        footer: "Alerte interne LFC — envoyée à l'équipe commerciale.",
-      }),
-    }),
+        html: renderLayout({
+          title: copy.title,
+          body: detailsBody(
+            [
+              [copy.contactLabel, data.contactName],
+              [copy.whenLabel, data.when],
+              [copy.purposeLabel, data.purposeLabel],
+              [copy.channelLabel, data.channelLabel],
+            ],
+            data.message,
+          ),
+          cta: { label: copy.cta, url: data.appointmentUrl },
+          footer: copy.footer,
+        }),
+      };
+    },
 
-    "staff.support-requested": (data) => ({
-      subject: sanitiseSubject(`Demande de contact — ${data.contactName} · ${data.purposeLabel}`),
-      html: renderLayout({
-        title: "Un client demande à être contacté",
-        body: detailsBody(
-          [
-            ["Contact", data.contactName],
-            ["Motif", data.purposeLabel],
-            ["Disponibilité", data.availability],
-            ["Téléphone", data.phoneNumber],
-          ],
-          data.message,
+    "staff.support-requested": (data) => {
+      const copy = local["staff.support-requested"];
+      return {
+        subject: sanitiseSubject(
+          fill(copy.subject, { contact: data.contactName, purpose: data.purposeLabel }),
         ),
-        footer: "Alerte interne LFC — envoyée à l'équipe commerciale.",
-      }),
-    }),
+        html: renderLayout({
+          title: copy.title,
+          body: detailsBody(
+            [
+              [copy.contactLabel, data.contactName],
+              [copy.purposeLabel, data.purposeLabel],
+              [copy.availabilityLabel, data.availability],
+              [copy.phoneLabel, data.phoneNumber],
+            ],
+            data.message,
+          ),
+          footer: copy.footer,
+        }),
+      };
+    },
     "staff.production-dossier": (data) => renderProductionDossierMail(data, staffMail),
     "agency.vitrine-notice": (data) => renderVitrineNoticeMail(data, staffMail),
     "staff.customer-request": (data) =>
       renderCustomerRequestMail(data, staffMail, brand.backOfficeUrl),
-    "staff.password-reset": (data) => ({
-      subject: sanitiseSubject("Votre lien de mot de passe — back-office La Folie Douce"),
-      html: staffMail({
-        title: `Nouveau mot de passe${data.firstName === "" ? "" : `, ${data.firstName}`}`,
-        body:
-          "Un lien de changement de mot de passe vient d'être émis pour votre accès au " +
-          "back-office.\n\n" +
-          "Il est valable 7 jours et à usage unique. Si vous ne l'avez pas demandé, votre " +
-          "mot de passe actuel reste valable : il suffit d'ignorer ce message.",
-        cta: { label: "Choisir un nouveau mot de passe", url: data.passwordSetupUrl },
-      }),
-    }),
-    "staff.access-suspended": (data) => ({
-      subject: sanitiseSubject("Votre accès au back-office est suspendu"),
-      html: staffMail({
-        title: `Accès suspendu${data.firstName === "" ? "" : `, ${data.firstName}`}`,
-        body:
-          "Votre accès au back-office La Folie Douce a été suspendu.\n\n" +
-          "Vos identifiants restent valables : rien n'a été supprimé, et un administrateur " +
-          "peut rouvrir l'accès à tout moment. En attendant, la connexion sera refusée.",
-        // Pas de bouton : proposer « se connecter » à quelqu'un dont la porte est
-        // fermée l'enverrait se heurter à un refus, ce qu'il vient de lire.
-        footer: "Cet e-mail vous prévient d'un changement d'accès. Il ne demande aucune action.",
-      }),
-    }),
-    "staff.access-restored": (data) => ({
-      subject: sanitiseSubject("Votre accès au back-office est rétabli"),
-      html: staffMail({
-        title: `Accès rétabli${data.firstName === "" ? "" : `, ${data.firstName}`}`,
-        body:
-          "Votre accès au back-office La Folie Douce est de nouveau ouvert.\n\n" +
-          "Connectez-vous avec votre mot de passe habituel. Si vous ne l'avez plus, " +
-          "demandez un lien à un administrateur.",
-        cta: { label: "Ouvrir le back-office", url: data.backOfficeUrl },
-      }),
-    }),
+    "staff.password-reset": (data) => {
+      const copy = local["staff.password-reset"];
+      return {
+        subject: sanitiseSubject(copy.subject),
+        html: staffMail({
+          title: fillNamed(copy.title, copy.titleWithoutName, data.firstName),
+          body: `${copy.issued}\n\n${copy.linkRules}`,
+          cta: { label: copy.cta, url: data.passwordSetupUrl },
+        }),
+      };
+    },
+    "staff.access-suspended": (data) => {
+      const copy = local["staff.access-suspended"];
+      return {
+        subject: sanitiseSubject(copy.subject),
+        html: staffMail({
+          title: fillNamed(copy.title, copy.titleWithoutName, data.firstName),
+          body: `${copy.suspended}\n\n${copy.whatRemains}`,
+          // Pas de bouton : proposer « se connecter » à quelqu'un dont la porte est
+          // fermée l'enverrait se heurter à un refus, ce qu'il vient de lire.
+          footer: copy.footer,
+        }),
+      };
+    },
+    "staff.access-restored": (data) => {
+      const copy = local["staff.access-restored"];
+      return {
+        subject: sanitiseSubject(copy.subject),
+        html: staffMail({
+          title: fillNamed(copy.title, copy.titleWithoutName, data.firstName),
+          body: `${copy.restored}\n\n${copy.howToSignIn}`,
+          cta: { label: copy.cta, url: data.backOfficeUrl },
+        }),
+      };
+    },
   };
 }

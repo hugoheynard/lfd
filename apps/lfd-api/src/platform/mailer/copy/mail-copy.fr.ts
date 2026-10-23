@@ -1,138 +1,20 @@
+import { ACCOUNT_MAILS_FR } from "./fr/account-mails.fr.js";
+import { BILLING_MAILS_FR } from "./fr/billing-mails.fr.js";
+import { ORDER_MAILS_FR } from "./fr/order-mails.fr.js";
+import { PAYMENT_MAILS_FR } from "./fr/payment-mails.fr.js";
+import { TEAM_MAILS_FR } from "./fr/team-mails.fr.js";
 import type { MailCopy } from "./mail-copy.model.js";
 
 /**
  * La langue de référence — celle que la maquette écrit, et celle dont les deux
- * autres sont la traduction. Les phrases sont reprises **mot pour mot** de
- * l'écran de confirmation : un courriel qui recompose l'information fait douter
- * qu'il parle de la même commande.
+ * autres sont la traduction.
+ *
+ * Rangée par famille d'e-mails (`./fr/`), une section par clé du registre.
  */
 export const MAIL_FR: MailCopy = {
-  orderPlaced: {
-    subject: "Votre commande {ref} — La Folie Coffee",
-    kicker: "Confirmée",
-    title: {
-      paid: "C'est réglé.",
-      due: "Commande enregistrée.",
-      account: "Commande enregistrée.",
-    },
-    intro: "Votre commande entre dans la fournée de demain matin.",
-    totalLabel: {
-      paid: "Réglé en ligne",
-      due: "Reste à régler",
-      account: "Porté à votre compte",
-    },
-    recapPickup: "Retrait",
-    recapDelivery: "Livraison",
-    recapContent: "Contenu",
-    recapPieces: "{count} pièces",
-    recapDiscount: "Remise",
-    recapVoucher: "Bon de fidélité",
-    recapVat: "dont TVA",
-    totalPretax: "Porté à votre compte, HT",
-    recapTaxLater: "TVA et TTC",
-    recapTaxLaterValue: "sur la facture du mois",
-    qrTitle: "Votre code de retrait",
-    qrLine: "Présentez ce code au comptoir. C'est le scan de l'équipe qui atteste la remise.",
-    cta: "Voir ma commande",
-    changeNote: "Un changement ? Appelez le fournil — une commande passée entre en fabrication.",
-    manageLink: "Gérer ou annuler ma commande",
-    footer: "Le Labo · route de la Balme, Val d'Isère — 7 h – 19 h",
-  },
-  orderReady: {
-    subject: "Votre commande {ref} est prête",
-    kicker: "Prête",
-    titlePickup: "C'est prêt.",
-    titleDelivery: "C'est prêt à partir.",
-    introPickup: "Votre commande vous attend au comptoir.",
-    introDelivery: "Votre commande part vers vous.",
-    whereLabel: "À retirer",
-    contentLabel: "Contenu",
-    piecesLabel: "{count} pièces",
-    qrTitle: "Votre code de retrait",
-    qrLine: "Présentez ce code au comptoir. C'est le scan de l'équipe qui atteste la remise.",
-    cta: "Voir ma commande",
-    footer: "Le Labo · route de la Balme, Val d'Isère — 7 h – 19 h",
-  },
-  deliveryEnRoute: {
-    subject: "Votre livraison est en route",
-    title: "Votre livraison est en route.",
-    intro: "Votre livreur est parti, il arrive dans la journée.",
-    referenceLabel: "Commande",
-    addressLabel: "Livrée à",
-    cta: "Voir ma commande",
-    footer: "Le Labo · route de la Balme, Val d'Isère — 7 h – 19 h",
-  },
-  paymentFailed: {
-    subject: "Paiement refusé — votre commande {ref}",
-    kicker: "Paiement refusé",
-    title: "Votre paiement n'est pas passé.",
-    intro: "Votre banque a refusé le règlement de cette commande.",
-    // 🔴 La phrase qui décide : sans elle, on ne sait pas s'il faut repasser
-    // commande, attendre, ou se présenter au comptoir.
-    consequence:
-      "Votre commande n'entre donc pas en fabrication, et rien ne vous attend au comptoir. " +
-      "Reprenez le règlement ci-dessous pour la relancer.",
-    amountLabel: "Montant à régler",
-    cta: "Reprendre le règlement",
-    footer:
-      "Un doute ou une erreur ? Appelez le fournil — Le Labo · route de la Balme, Val d'Isère.",
-  },
-  paymentExpired: {
-    subject: "Commande {ref} annulée — paiement non abouti",
-    kicker: "Commande annulée",
-    title: "Votre paiement n'a pas abouti à temps.",
-    intro: "Le règlement de cette commande n'a pas abouti avant la préparation de la fournée.",
-    consequence:
-      "Votre commande est donc annulée, et rien n'a été débité. " +
-      "Si vous en avez toujours besoin, passez une nouvelle commande.",
-    amountLabel: "Montant non débité",
-    footer:
-      "Un doute ou une erreur ? Appelez le fournil — Le Labo · route de la Balme, Val d'Isère.",
-  },
-  orderCancelled: {
-    subject: "Commande {ref} annulée",
-    title: "Votre commande a été annulée.",
-    intro: "Votre commande {ref} pour le {day} a été annulée par notre équipe.",
-    introWithoutDay: "Votre commande {ref} a été annulée par notre équipe.",
-    introBySelf: "Vous avez annulé votre commande {ref} pour le {day}.",
-    introBySelfWithoutDay: "Vous avez annulé votre commande {ref}.",
-    introByMember: "{name} a annulé la commande {ref} de {company} pour le {day}.",
-    introByMemberWithoutDay: "{name} a annulé la commande {ref} de {company}.",
-    introByPrincipal:
-      "La commande {ref} pour le {day} a été annulée par {name}, du compte principal {principal}.",
-    introByPrincipalWithoutDay:
-      "La commande {ref} a été annulée par {name}, du compte principal {principal}.",
-    nothingBilled: "Rien ne vous sera facturé pour cette commande.",
-    nothingCharged: "Aucun paiement n'a été prélevé.",
-    nothingInvoiced: "Rien ne sera facturé ni prélevé pour cette commande.",
-    refundToCard:
-      "Le montant de {amount} payé par carte, qui ne vous a pas déjà été remboursé, vous sera remboursé sur cette même carte. Selon votre banque, il apparaît sous 5 à 10 jours ouvrés.",
-    alreadyRefunded: "Le paiement de cette commande vous a déjà été remboursé.",
-    voucherReturned:
-      "Votre bon de fidélité de {value} vous est rendu : vous pourrez l'utiliser sur une prochaine commande jusqu'au {day}.",
-    voucherMerged:
-      "Votre bon de fidélité retrouve sa valeur de {value}, valable jusqu'au {day}. Le bon de {remainder} qui vous avait été remis en reliquat est remplacé par celui-ci.",
-    footer:
-      "Un doute ou une erreur ? Appelez le fournil — Le Labo · route de la Balme, Val d'Isère.",
-  },
-  invoiceIssued: {
-    title: "Votre facture {number}",
-    subject: "{title} — {seller}",
-    greeting: "Bonjour,",
-    intro:
-      "{seller} a émis la facture {number} adressée à {buyer}{period}, d'un montant de {total} TTC.",
-    periodClause: " pour les commandes {period}",
-    attachedNote:
-      "Elle est jointe à ce message au format PDF Factur-X : votre logiciel comptable peut en lire les données.",
-    invoiceLabel: "Facture",
-    dateLabel: "Date",
-    periodLabel: "Période",
-    addressedToLabel: "Adressée à",
-    dueLabel: "Échéance",
-    paymentLabel: "Règlement",
-    totalLabel: "Total TTC",
-    cta: "Voir mes factures",
-    footer:
-      "Cette facture est consultable à tout moment dans votre espace client, rubrique « Mes factures ». Pour toute question, répondez à ce message.",
-  },
+  ...ORDER_MAILS_FR,
+  ...PAYMENT_MAILS_FR,
+  ...BILLING_MAILS_FR,
+  ...ACCOUNT_MAILS_FR,
+  ...TEAM_MAILS_FR,
 };

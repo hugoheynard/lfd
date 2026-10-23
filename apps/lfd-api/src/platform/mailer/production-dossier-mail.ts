@@ -1,5 +1,8 @@
 import { sanitiseSubject, type LayoutInput, type RenderedMail } from "@lfd/mailer";
 
+import { DEFAULT_MAIL_LOCALE, fill, mailCopyOf } from "./copy/mail-copy.js";
+import type { ProductionDossierCopy } from "./copy/mail-copy.model.js";
+
 /**
  * Les données du courriel **« Dossier de production »** (doc
  * `documentation/production/dossier-prod-du-jour.md`, « L'envoi par e-mail »).
@@ -40,15 +43,14 @@ export interface ProductionDossierMailData {
 /** La coquille de l'équipe, prêtée par le registre : la maison y est déjà posée. */
 export type StaffShell = (input: Omit<LayoutInput, "brand" | "supportEmail">) => string;
 
-const SIGNATURE = "La Folie Coffee — Fournil";
+/** Les mots du dossier, dans la langue de repli : l'équipe lit le français. */
+function copyOf(): ProductionDossierCopy {
+  return mailCopyOf(DEFAULT_MAIL_LOCALE)["staff.production-dossier"];
+}
 
-const FOOTER =
-  "Cet e-mail part automatiquement à chaque arrêt du plan. Pour ne plus le recevoir, " +
-  "demandez à l'équipe de vous retirer des destinataires (Production › Réglages).";
-
-/** « 1 commande », « 3 commandes ». */
-function counted(count: number, word: string): string {
-  return `${String(count)} ${word}${count > 1 ? "s" : ""}`;
+/** « 1 commande », « 3 commandes » — le singulier jusqu'à un. */
+function counted(count: number, one: string, many: string): string {
+  return fill(count > 1 ? many : one, { count: String(count) });
 }
 
 /**
@@ -56,14 +58,18 @@ function counted(count: number, word: string): string {
  * « Dossier de production complété — … » après un retirage.
  */
 export function productionDossierSubject(data: ProductionDossierMailData): string {
-  const head = data.completed ? "Dossier de production complété" : "Dossier de production";
-  return `${head} — plan du ${data.dayLabel}`;
+  const copy = copyOf();
+  return fill(data.completed ? copy.subjectCompleted : copy.subject, { day: data.dayLabel });
 }
 
 /** « arrêté par Marie Dupont le … à 20:00 » — sans auteur quand on ne le sait pas. */
-function when(verb: string, data: ProductionDossierMailData): string {
-  const by = data.arrestedBy === "" ? "" : ` ${data.arrestedBy}`;
-  return `${verb}${by} le ${data.arrestedAtLabel}`;
+function what(data: ProductionDossierMailData, copy: ProductionDossierCopy): string {
+  const values = { day: data.dayLabel, by: data.arrestedBy, at: data.arrestedAtLabel };
+  const anonymous = data.arrestedBy === "";
+  if (data.completed) {
+    return fill(anonymous ? copy.completedWithoutAuthor : copy.completed, values);
+  }
+  return fill(anonymous ? copy.arrestedWithoutAuthor : copy.arrested, values);
 }
 
 /**
@@ -71,39 +77,41 @@ function when(verb: string, data: ProductionDossierMailData): string {
  * zéro se tait. Avec des réassorts, comme l'en-tête du PDF : « … — 1 réassort
  * et 58 pièces dont 18 de réassort ».
  */
-function figures(data: ProductionDossierMailData): string {
+function figures(data: ProductionDossierMailData, copy: ProductionDossierCopy): string {
   const split = [
-    data.pickupCount > 0 ? `${String(data.pickupCount)} en retrait` : "",
-    data.deliveryCount > 0 ? `${String(data.deliveryCount)} en livraison` : "",
+    data.pickupCount > 0 ? fill(copy.pickupShare, { count: String(data.pickupCount) }) : "",
+    data.deliveryCount > 0 ? fill(copy.deliveryShare, { count: String(data.deliveryCount) }) : "",
   ]
     .filter((part) => part !== "")
     .join(", ");
-  const orders = counted(data.orderCount, "commande");
-  const pieces = counted(data.pieceCount, "pièce");
+  const orders = counted(data.orderCount, copy.orderOne, copy.orderMany);
+  const pieces = counted(data.pieceCount, copy.pieceOne, copy.pieceMany);
   if (data.resupplyCount > 0) {
-    const resupplies = counted(data.resupplyCount, "réassort");
-    const share = `${pieces} dont ${String(data.resupplyPieceCount)} de réassort`;
-    const head = split === "" ? orders : `${orders} — ${split}`;
-    return `${head} — ${resupplies} et ${share}`;
+    const resupplies = counted(data.resupplyCount, copy.resupplyOne, copy.resupplyMany);
+    const share = fill(copy.resupplyPieceShare, {
+      pieces,
+      count: String(data.resupplyPieceCount),
+    });
+    const head = split === "" ? orders : fill(copy.ordersWithSplit, { orders, split });
+    return fill(copy.figuresWithResupplies, { head, resupplies, share });
   }
-  return split === "" ? `${orders} et ${pieces}` : `${orders} — ${split} — et ${pieces}`;
+  return split === ""
+    ? fill(copy.figuresPlain, { orders, pieces })
+    : fill(copy.figuresSplit, { orders, split, pieces });
 }
 
 /** Le corps, en texte : la coquille en fait le HTML, retours à la ligne compris. */
 export function productionDossierBody(data: ProductionDossierMailData): string {
-  const hello = data.firstName === "" ? "Bonjour," : `Bonjour ${data.firstName},`;
-  const what = data.completed
-    ? `Le plan du ${data.dayLabel} a été ${when("complété", data)} : ` +
-      "de nouvelles commandes ont été ajoutées à la fournée."
-    : `Le plan de production du ${data.dayLabel} a été ${when("arrêté", data)}.`;
+  const copy = copyOf();
   const paragraphs = [
-    hello,
-    what,
-    "Vous trouverez en pièce jointe le dossier à imprimer : un récapitulatif de ce " +
-      `qu'il faut fabriquer, puis un bon par commande${data.resupplyCount > 0 ? " et par réassort" : ""}.`,
-    `En chiffres : ${figures(data)}.`,
-    ...(data.completed ? ["Ce dossier remplace le précédent."] : []),
-    SIGNATURE,
+    data.firstName === ""
+      ? copy.greetingWithoutName
+      : fill(copy.greeting, { firstName: data.firstName }),
+    what(data, copy),
+    data.resupplyCount > 0 ? copy.attachmentWithResupplies : copy.attachment,
+    fill(copy.figures, { figures: figures(data, copy) }),
+    ...(data.completed ? [copy.replacesPrevious] : []),
+    copy.signature,
   ];
   return paragraphs.join("\n\n");
 }
@@ -118,7 +126,7 @@ export function renderProductionDossierMail(
     html: shell({
       title: productionDossierSubject(data),
       body: productionDossierBody(data),
-      footer: FOOTER,
+      footer: copyOf().footer,
     }),
     attachments: [
       { filename: data.fileName, contentBase64: data.pdfBase64, contentType: "application/pdf" },

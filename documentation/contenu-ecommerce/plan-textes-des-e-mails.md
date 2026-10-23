@@ -61,11 +61,57 @@
 
 ## 2. Les lots
 
-| Lot    | Contenu                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **E1** | Sortir des gabarits **tous** les textes des 28 e-mails vers le dictionnaire, en trois langues (le français est la vérité ; l'anglais et l'italien reprennent l'existant, sinon une traduction marquée à relire). Aucun changement de rendu : chaque e-mail rend les mêmes octets en français avant et après (tests de non-régression par gabarit). Un manifeste des clés (e-mail, clé, variables permises, texte par défaut) généré depuis le dictionnaire, tenu par une porte comme `lint:shop-copy-digest`. |
-| **E2** | Le serveur : entrées en brouillon et publiées (migration additive, sur le modèle de `shop_copy_entries`), le texte effectif (défaut + publié), validation des variables (C5), routes admin (lister, modifier, rétablir, publier), aperçu d'un e-mail avec données d'exemple (C6), essai envoyé au staff connecté, fait de journal et ses libellés.                                                                                                                                                            |
-| **E3** | L'écran du back-office (C3, C4, C8) : la liste, l'éditeur à trois langues, l'aperçu, « M'envoyer un essai », « Publier », sur le modèle de `textes-boutique/`.                                                                                                                                                                                                                                                                                                                                                |
+| Lot                                   | Contenu                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **E1** ✅ bâti le 2026-10-23 (§2 bis) | Sortir des gabarits **tous** les textes des 28 e-mails vers le dictionnaire, en trois langues (le français est la vérité ; l'anglais et l'italien reprennent l'existant, sinon une traduction marquée à relire). Aucun changement de rendu : chaque e-mail rend les mêmes octets en français avant et après (tests de non-régression par gabarit). Un manifeste des clés (e-mail, clé, variables permises, texte par défaut) généré depuis le dictionnaire, tenu par une porte comme `lint:shop-copy-digest`. |
+| **E2**                                | Le serveur : entrées en brouillon et publiées (migration additive, sur le modèle de `shop_copy_entries`), le texte effectif (défaut + publié), validation des variables (C5), routes admin (lister, modifier, rétablir, publier), aperçu d'un e-mail avec données d'exemple (C6), essai envoyé au staff connecté, fait de journal et ses libellés.                                                                                                                                                            |
+| **E3**                                | L'écran du back-office (C3, C4, C8) : la liste, l'éditeur à trois langues, l'aperçu, « M'envoyer un essai », « Publier », sur le modèle de `textes-boutique/`.                                                                                                                                                                                                                                                                                                                                                |
+
+## 2 bis. E1 — bâti le 2026-10-23 (non commité à l'écriture)
+
+- **Le dictionnaire est rangé par e-mail** : `MailCopy` a une section par clé
+  du registre (`mailCopyOf(locale)["customer.order-placed"]`…), découpé en
+  cinq familles (`copy/model/` : commande, paiement, facturation, compte,
+  équipe) et autant de fichiers par langue (`copy/fr/`, `copy/en/`,
+  `copy/it/`). Les 28 gabarits ne portent plus de texte ; ce qui leur reste
+  est de la mise en page (ordre des blocs, sauts de paragraphe, forme
+  « Libellé : valeur » des e-mails internes, guillemets autour d'un message
+  saisi, séparateurs de liste). `mandate-to-sign-wording.ts` ne garde que
+  son type.
+- **Les variables permises** sont déclarées dans `apps/lfd-api/src/platform/mailer/copy/mail-copy.variables.ts`
+  (ce que le gabarit passe à `fill`) ; les **obligatoires** sont celles du
+  texte français par défaut. `mail-copy.spec.ts` refuse une variable non
+  déclarée, dans les trois langues.
+- **Le manifeste** `apps/lfd-api/src/platform/mailer/copy/mail-copy-manifest.json`
+  (e-mail → clé → variables permises, obligatoires → texte français) est
+  généré par `pnpm mail-copy:digest` ; `lint:mail-copy-digest` (47ᵉ porte)
+  refuse qu'il retarde. 325 textes, 28 e-mails.
+- **Aucun octet changé** : `apps/lfd-api/src/platform/mailer/__tests__/mail-rendering-golden.spec.ts` compare
+  81 cas (chaque branche de chaque e-mail, en français) aux empreintes
+  capturées AVANT le déménagement (`apps/lfd-api/src/platform/mailer/__tests__/rendering-golden/mail-rendering.golden.json` :
+  objet en clair, SHA-256 du HTML et des pièces jointes).
+
+### Traductions neuves à relire (anglais et italien)
+
+Reprises de l'existant : confirmation, mise à disposition, livraison en
+route, paiement refusé, paiement expiré, annulation, facture émise. Le texte
+alternatif du QR (`qrAlt`) reprend le titre déjà traduit.
+
+**Écrites le 2026-10-23, à relire** — toutes les sections suivantes, en
+anglais et en italien :
+
+- `customer.order-placed-with-your-email`, `customer.order-payment-link` ;
+- `customer.collection-notice`, `customer.mandate-to-sign` (dont les deux
+  pieds de schéma CORE et B2B — mentions SEPA, à relire avec le formulaire
+  traduit s'il existe ; « UMR » en anglais pour la RUM) ;
+- `customer.access-opened`, `customer.company-attached`,
+  `customer.login-method-linked`, `customer.password-reset` ;
+- `customer.sub-account-activity`, `customer.sub-account-gesture` (les
+  `action` sont des fragments glissés dans « Your site {site} {action}… » :
+  l'ordre des mots y est contraint) ;
+- les onze e-mails de l'équipe : `staff.*`, `ops.deploy-check`,
+  `agency.vitrine-notice` (« Benvenuto » au masculin générique en italien,
+  comme le reste du dictionnaire au vouvoiement « Lei »).
 
 ## 3. Ce qui n'est pas fait ici
 

@@ -74,7 +74,12 @@
 >   migrations appliquées le portent encore. Et **46** depuis le 2026-10-22
 >   avec `lint:pdf-specimens` : tout PDF que le système produit a son exemple
 >   sur la planche des documents ; ceux qui n'en ont pas encore sont une
->   dette comptée qui ne peut que décroître. C'est la
+>   dette comptée qui ne peut que décroître. Et **47** depuis le 2026-10-23
+>   avec `lint:mail-copy-digest` : le manifeste des textes des e-mails
+>   (`apps/lfd-api/src/platform/mailer/copy/mail-copy-manifest.json` — chaque
+>   texte, ses variables permises et obligatoires) est généré depuis le
+>   dictionnaire, et un texte changé sans `pnpm mail-copy:digest` le fait
+>   mentir. C'est la
 >   **seule** correction faite dans le corps, parce qu'un chiffre faux se vérifie
 >   en une commande et trompe tout de suite ;
 > - le dossier **`documentation/pricing/`** (ouvert le 2026-09-06) et le dossier
@@ -1234,7 +1239,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 46 portes du dépôt, d'un coup
+pnpm lint:gates         # les 47 portes du dépôt, d'un coup
 pnpm lint:no-direct-env # gate repo : aucun accès direct à process.env
 ```
 

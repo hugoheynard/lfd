@@ -1,5 +1,6 @@
 import { sanitiseSubject, type RenderedMail } from "@lfd/mailer";
 
+import { DEFAULT_MAIL_LOCALE, fill, fillNamed, mailCopyOf } from "./copy/mail-copy.js";
 import type { CustomerShell } from "./delivery-en-route-mail.js";
 
 /**
@@ -21,10 +22,6 @@ export interface CustomerAccessOpenedMailData {
   readonly passwordSetupUrl: string;
 }
 
-const FOOTER =
-  "Vous n'attendiez pas cet e-mail ? Ignorez-le : tant que personne ne se connecte " +
-  "avec cette adresse, l'accès reste inutilisé.";
-
 /**
  * Le rendu. 🔴 **Le code e-mail d'abord** (Hugo, 2026-10-09) : l'invitation
  * disait « choisissez votre mot de passe » ; elle dit désormais « connectez-vous
@@ -43,22 +40,19 @@ export function renderCustomerAccessOpenedMail(
   data: CustomerAccessOpenedMailData,
   shell: CustomerShell,
 ): RenderedMail {
-  const opened =
-    `Un accès à l'espace professionnel de ${data.companyName} vient d'être ouvert à votre nom ` +
-    "par l'équipe La Folie Coffee.";
-  const title = `Bienvenue${data.firstName === "" ? "" : `, ${data.firstName}`}`;
-  const subject = sanitiseSubject(`Votre accès à l'espace pro ${data.companyName}`);
+  const copy = mailCopyOf(DEFAULT_MAIL_LOCALE)["customer.access-opened"];
+  const company = { company: data.companyName };
+  const opened = fill(copy.opened, company);
+  const title = fillNamed(copy.title, copy.titleWithoutName, data.firstName);
+  const subject = sanitiseSubject(fill(copy.subject, company));
   if (data.signInUrl === null) {
     return {
       subject,
       html: shell({
         title,
-        body:
-          `${opened}\n\n` +
-          "Il ne reste qu'à choisir votre mot de passe. Le lien ci-dessous est valable 7 jours ; " +
-          "passé ce délai, demandez-nous simplement de vous en renvoyer un.",
-        cta: { label: "Choisir mon mot de passe", url: data.passwordSetupUrl },
-        footer: FOOTER,
+        body: `${opened}\n\n${copy.choosePassword}`,
+        cta: { label: copy.choosePasswordCta, url: data.passwordSetupUrl },
+        footer: copy.footer,
       }),
     };
   }
@@ -66,16 +60,10 @@ export function renderCustomerAccessOpenedMail(
     subject,
     html: shell({
       title,
-      body:
-        `${opened}\n\n` +
-        `Connectez-vous avec votre adresse ${data.email} : vous recevrez un code par e-mail, ` +
-        "à taper sur l'écran de connexion. Aucun mot de passe à retenir.",
-      cta: { label: "Me connecter", url: data.signInUrl },
-      secondaryLink: {
-        label: "Ou choisissez un mot de passe (lien valable 7 jours)",
-        url: data.passwordSetupUrl,
-      },
-      footer: FOOTER,
+      body: `${opened}\n\n${fill(copy.signInWithCode, { email: data.email })}`,
+      cta: { label: copy.signInCta, url: data.signInUrl },
+      secondaryLink: { label: copy.passwordLink, url: data.passwordSetupUrl },
+      footer: copy.footer,
     }),
   };
 }

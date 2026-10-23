@@ -1,5 +1,6 @@
 import { sanitiseSubject, type RenderedMail } from "@lfd/mailer";
 
+import { DEFAULT_MAIL_LOCALE, mailCopyOf } from "./copy/mail-copy.js";
 import type { StaffShell } from "./customer-request-mail.js";
 
 /** Une annonce aux abonnés de la vitrine — texte brut, écrit au back-office. */
@@ -25,8 +26,7 @@ export function renderVitrineNoticeMail(
     html: shell({
       title: data.subject,
       body: data.message,
-      footer:
-        "Vous recevez ce message comme contact d'un abonné au webhook de la vitrine de La Folie Douce.",
+      footer: mailCopyOf(DEFAULT_MAIL_LOCALE)["agency.vitrine-notice"].footer,
     }),
   };
 }

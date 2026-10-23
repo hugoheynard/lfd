@@ -33,7 +33,7 @@ export function renderDeliveryEnRouteMail(
   data: DeliveryEnRouteMailData,
   shell: CustomerShell,
 ): RenderedMail {
-  const copy = mailCopyOf(data.locale).deliveryEnRoute;
+  const copy = mailCopyOf(data.locale)["customer.delivery-en-route"];
   const address = data.addressLines.filter((line) => line !== "").join(", ");
   return {
     subject: sanitiseSubject(copy.subject),

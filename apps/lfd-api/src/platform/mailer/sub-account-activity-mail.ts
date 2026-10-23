@@ -1,11 +1,14 @@
 import { sanitiseSubject, type LayoutInput, type LayoutRow, type RenderedMail } from "@lfd/mailer";
 
+import { DEFAULT_MAIL_LOCALE, fill, mailCopyOf } from "./copy/mail-copy.js";
+import type { SubAccountActivityCopy, SubAccountActivityKind } from "./copy/mail-copy.model.js";
+
 /**
  * Ce que le site a fait — un mot par ligne du courriel, pas par clé du
  * tableau : « annulée » et « abandonnée » partagent la clé `order_cancelled`
  * (`plan-notifications-sous-comptes.md`, §1) mais ne se disent pas pareil.
  */
-export type SubAccountActivity = "placed" | "cancelled" | "abandoned" | "payment_failed";
+export type SubAccountActivity = SubAccountActivityKind;
 
 /**
  * Les données de l'avis **« un de vos sites a… »** (plan
@@ -34,56 +37,45 @@ export type SubAccountActivityShell = (
   input: Omit<LayoutInput, "brand" | "supportEmail">,
 ) => string;
 
-const VERB: Readonly<Record<SubAccountActivity, string>> = {
-  placed: "a passé la commande",
-  cancelled: "a vu sa commande annulée",
-  abandoned: "a abandonné le règlement de la commande",
-  payment_failed: "n'a pas pu régler la commande",
-};
-
-const TITLE: Readonly<Record<SubAccountActivity, string>> = {
-  placed: "Commande passée par un de vos sites",
-  cancelled: "Commande annulée sur un de vos sites",
-  abandoned: "Règlement abandonné sur un de vos sites",
-  payment_failed: "Paiement échoué sur un de vos sites",
-};
-
 /**
- * Le rendu. Français seul : aucune langue n'est encore choisie pour un
- * client, et ce courriel n'a pas d'entrée au dictionnaire des autres
- * (`mail-copy.*`), comme `customer.order-payment-link`.
+ * Le rendu. Langue de repli seule : aucune langue n'est encore choisie pour
+ * un client. Les mots viennent du dictionnaire (`customer.sub-account-activity`).
  */
 export function renderSubAccountActivityMail(
   data: SubAccountActivityMailData,
   shell: SubAccountActivityShell,
 ): RenderedMail {
+  const copy = mailCopyOf(DEFAULT_MAIL_LOCALE)["customer.sub-account-activity"];
+  const title = copy.title[data.activity];
   return {
-    subject: sanitiseSubject(`${data.siteName} — ${TITLE[data.activity]} (${data.orderNumber})`),
+    subject: sanitiseSubject(
+      fill(copy.subject, { site: data.siteName, title, order: data.orderNumber }),
+    ),
     html: shell({
-      title: TITLE[data.activity],
-      body: bodyOf(data),
-      rows: rowsOf(data),
-      footer:
-        "Vous recevez ce message parce que ce site est rattaché à votre compte. " +
-        "Pour ne plus le recevoir, écrivez-nous : nous réglons ces avis rôle par rôle.",
+      title,
+      body: fill(data.enteredByTeam ? copy.bodyEnteredByTeam : copy.body, {
+        site: data.siteName,
+        action: copy.action[data.activity],
+        order: data.orderNumber,
+      }),
+      rows: rowsOf(data, copy),
+      footer: copy.footer,
     }),
   };
 }
 
-function bodyOf(data: SubAccountActivityMailData): string {
-  const team = data.enteredByTeam ? " (commande saisie par notre équipe)" : "";
-  return `Votre site ${data.siteName} ${VERB[data.activity]} ${data.orderNumber}${team}.`;
-}
-
-function rowsOf(data: SubAccountActivityMailData): readonly LayoutRow[] {
+function rowsOf(
+  data: SubAccountActivityMailData,
+  copy: SubAccountActivityCopy,
+): readonly LayoutRow[] {
   const day = dayInWords(data.requestedFor);
   return [
-    { label: "Site", value: data.siteName },
-    { label: "Commande", value: data.orderNumber },
-    ...(day === null ? [] : [{ label: "Pour le", value: day }]),
+    { label: copy.siteLabel, value: data.siteName },
+    { label: copy.orderLabel, value: data.orderNumber },
+    ...(day === null ? [] : [{ label: copy.dayLabel, value: day }]),
     ...(data.totalCents === null
       ? []
-      : [{ label: "Montant TTC", value: euros(data.totalCents), strong: true }]),
+      : [{ label: copy.totalLabel, value: euros(data.totalCents), strong: true }]),
   ];
 }
 
