@@ -17,6 +17,59 @@
 > « rien trouvé par recherche », pas « prouvé absent ». La version du
 > 2026-10-07 est dans l'historique git.
 
+## 0. Le point du 2026-10-23 (Hugo : « on a ouvert plein de sujets ces trois derniers jours »)
+
+> Fait le 2026-10-23 à partir de `git log` depuis le 2026-10-21 et des
+> rapports des lots ; `main` = `2189a2340`. Les sections suivantes gardent
+> leur état d'avant, sauf le §2 (« En cours »), mis à jour.
+
+### En production (déployé les 2026-10-22 et 23)
+
+| Chantier                            | Ce qui est livré                                                                                                                                                                                                                                         | Doc                                                                       |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| **Réassort des boutiques**          | R1 à R4 : demande au comptoir, envoi du fournil, réception en un geste, réassort du soir dans le plan, Village par le colisage et le transfert, « au plus tôt » (lancé, parti, arrivé), onglet Stock de la Supervision, fiches de poste, bon de réassort | `reassort-boutiques/`                                                     |
+| **Limites de commande**             | une seule heure limite générale, limite par produit, dite avant de choisir                                                                                                                                                                               | `limites-de-commande/`                                                    |
+| **Factures et relevé**              | P1-P3 (Mes factures, zip, total dû), ZA (préfixe par entité, numérotation en base), ZL (bon facturé au mois de sa livraison), relevé = facture, Factur-X éprouvé contre les règles françaises, remises ventilées bon par bon                             | `comptabilite/facturation/`                                               |
+| **Prélèvement d'essai**             | sur nos établissements, ≤ 1 €, J+2 ouvrés, export du mandat                                                                                                                                                                                              | `comptabilite/prelevement/`                                               |
+| **Sous-comptes**                    | le principal voit et agit sur les commandes de ses sites                                                                                                                                                                                                 | `comptes-client/sous-comptes.md`                                          |
+| **Récapitulatif de commandes**      | filtre par date, PDF et tableur                                                                                                                                                                                                                          | `commandes/`                                                              |
+| **Accès clients**                   | page Commercial, première connexion, pagination                                                                                                                                                                                                          | `comptes-client/`                                                         |
+| **Remise de retrait par clientèle** | lots A et B : une remise pros, une particuliers, « tout sauf » / « seulement », familles et produits, refus hors retrait                                                                                                                                 | `livraisons/clientele/plan-remise-retrait-par-clientele-et-exclusions.md` |
+| **Planche des documents**           | les 11 PDF du serveur ont leur exemple ; porte `lint:pdf-specimens` jusqu'à la vignette                                                                                                                                                                  | `comptabilite/planche-des-documents.md`                                   |
+| **Couleurs sur les papiers**        | pastille par commande (atelier, dossier, transfert), camembert du compte à produire, teinte du réassort réglée sur le site                                                                                                                               | `comptabilite/plan-planche-des-documents-v2.md`                           |
+| **Correctifs**                      | RIB et mandat revenus sur la fiche client, sommaire de Mon compte, XSD validés sans binaire en CI                                                                                                                                                        | —                                                                         |
+
+### Sur `dev`, pas encore déployé
+
+- **Remise de retrait, lot C** : « sur X € éligibles » au devis, au bon, au panier et dans Mes commandes (`f6c2e4ac9`, `623cbd31d`).
+- **Modifier une commande, M1** : la révision côté serveur, commandes au compte et à total nul (`21aae837c`).
+
+### En cours (arbre de travail, non commité)
+
+- **Modifier une commande, M3** : écrans client (« Modifier ma commande ») et staff (« Modifier la commande »), bâtis.
+- **Modifier une commande, suite serveur** : « modifiable ? » exact, point de retrait sur la commande, historique des versions — en cours.
+- **Textes des e-mails, E1** : tous les textes des 28 e-mails au dictionnaire, rendu inchangé — en cours. Puis E2 (serveur) et E3 (écran Communication). Plan : `contenu-ecommerce/plan-textes-des-e-mails.md`.
+
+### Ouverts, en attente
+
+| Sujet                                              | État                                                                                                            | Qui                                           |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| **Modifier une commande payée par carte** (M2)     | remplacement sous le même numéro, contredit (5 bloquants, pistes écrites) — **plus tard**, décidé le 2026-10-23 | Hugo                                          |
+| **Modifier, la demande après l'heure limite** (M4) | plan écrit, non bâti                                                                                            | —                                             |
+| **Courriel « votre commande a été modifiée »**     | non assigné                                                                                                     | —                                             |
+| **Planche v2**                                     | Q1, Q3, Q4 (documents B2B/B2C, ordre des ajouts, scénario mémorisé)                                             | Hugo                                          |
+| **Prélèvement d'essai**                            | exclure des vrais lots un mandat ponctuel déjà essayé, « Non déposé », conservation 10 ans                      | Hugo                                          |
+| **Avoirs (ZB)**                                    | mis de côté                                                                                                     | —                                             |
+| **Bundle de la boutique**                          | 1,37 Mo au premier chargement, refus du build à 1,40 Mo                                                         | à traiter avant le prochain gros lot boutique |
+
+### Les gestes de Hugo qui restent dus
+
+- Accorder `collection_test` et `production_resupply` à l'écran.
+- Préfixe de facture de l'entité (avant la première facture, le 31 octobre).
+- Déclarer sa société dans « Nos établissements » ; RIB et mandat au portail de la banque.
+- Régler les remises de retrait et les teintes de réassort des sites.
+- Les 65 sociétés sans adresse de facturation (§1), avant la facture du 31.
+
 ## 1. Les échéances
 
 | Quand           | Quoi                                                                                                                                                                                                                         | Qui                         | Doc                                                                                      |
@@ -114,7 +167,7 @@ pastille « Format » sur une fiche.
 
 ## 2. En cours
 
-Aucun lot.
+Voir le §0 (2026-10-23).
 
 ## 3. Prêts à bâtir, sans décision à prendre
 
