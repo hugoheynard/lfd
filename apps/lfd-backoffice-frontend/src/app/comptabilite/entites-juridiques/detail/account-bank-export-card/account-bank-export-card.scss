@@ -37,3 +37,13 @@
 .ab-row {
   justify-content: space-between;
 }
+
+.ab-company {
+  display: flex;
+  flex-direction: column;
+}
+
+.ab-holder {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}

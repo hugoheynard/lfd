@@ -1,4 +1,9 @@
-import type { AccountBankExclusionReasonView, AccountBankExportSummaryView } from '@lfd/contracts';
+import type {
+  AccountBankExclusionReasonView,
+  AccountBankExportSummaryView,
+  AccountBankStandingView,
+  KnownBankAccountReasonView,
+} from '@lfd/contracts';
 
 import { parisDayLabel } from './mandate-bank-export-wording';
 
@@ -27,4 +32,42 @@ export function accountExportStateLabel(item: AccountBankExportSummaryView): str
     return `abandonné le ${parisDayLabel(item.abandonedAt)}`;
   }
   return 'en attente de la banque';
+}
+
+/**
+ * Les deux gestes qui retirent un compte de l'export (doc
+ * `prerequis-export-ribs.md` § 2.6) : le bouton, et la phrase de la
+ * confirmation qui dit ce qu'on atteste.
+ */
+export const KNOWN_REASON_GESTURES: Readonly<
+  Record<KnownBankAccountReasonView, { readonly button: string; readonly confirm: string }>
+> = {
+  entered_in_cenet: {
+    button: 'Importé dans CENET directement',
+    confirm:
+      'Vous l’avez saisi à la main dans CENET : il ne partira plus dans le fichier des comptes.',
+  },
+  reported_by_bank: {
+    button: 'Signalé comme connu par la banque',
+    confirm:
+      'Le compte rendu d’import CENET (ou la banque) dit qu’il existe déjà : il ne partira plus dans le fichier des comptes.',
+  },
+};
+
+/** Où en est un compte, en une ligne de la colonne « État ». */
+export function accountStandingLabel(standing: AccountBankStandingView): string {
+  switch (standing.kind) {
+    case 'to_export':
+      return 'à exporter';
+    case 'in_flight':
+      return 'en export';
+    case 'imported':
+      return `importé le ${parisDayLabel(standing.at)}`;
+    case 'declared':
+      return standing.reason === 'entered_in_cenet'
+        ? `saisi dans CENET le ${parisDayLabel(standing.at)}`
+        : `signalé par la banque le ${parisDayLabel(standing.at)}`;
+    case 'excluded':
+      return `écarté : ${ACCOUNT_BANK_EXCLUSION_LABELS[standing.reason]}`;
+  }
 }

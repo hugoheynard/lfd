@@ -199,9 +199,15 @@ export type {
   MandateBankExportSummaryView,
   MandateBankExportsView,
 } from "./mandate-bank-export.js";
-export { declareBankAccountKnownPayloadSchema } from "./account-bank-export.js";
+export {
+  declareBankAccountKnownPayloadSchema,
+  KNOWN_BANK_ACCOUNT_REASON_VALUES,
+} from "./account-bank-export.js";
 export type {
   AccountBankAccountView,
+  AccountBankRowView,
+  AccountBankStandingView,
+  KnownBankAccountReasonView,
   AccountBankExcludedView,
   AccountBankExclusionReasonView,
   AccountBankExportCreatedView,
@@ -2540,6 +2546,7 @@ export {
   type VitrineDeliveryView,
   type VitrineElementKeys,
   type VitrineItemView,
+  type VitrineThumbnailView,
   type VitrineNotification,
   type VitrineSubscriberState,
   type VitrineSubscriberView,

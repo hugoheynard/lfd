@@ -26,6 +26,9 @@ const ACCOUNT_COLUMNS = {
   company: { select: { raisonSociale: true, siren: true } },
 } as const;
 
+/** Un IBAN commence par le code pays ISO 3166-1 alpha-2 de sa banque. */
+const IBAN_COUNTRY_LENGTH = 2;
+
 /**
  * Les comptes que débitent les mandats actifs d'une entité émettrice, pour
  * la banque (doc `prerequis-export-ribs.md` § 4, lot 2). Rangé côté
@@ -65,8 +68,14 @@ export class PrismaAccountsForBankExportReader extends AccountsForBankExportRead
         companyName: row.company.raisonSociale,
         ibanLast4: row.ibanLast4,
       };
+      const iban = this.cipher.open(row.ibanSealed);
       if (row.bic === "") {
-        excluded.push({ ...named, reason: "no_bic" });
+        excluded.push({
+          ...named,
+          holder: row.holder,
+          ibanCountry: iban.slice(0, IBAN_COUNTRY_LENGTH),
+          reason: "no_bic",
+        });
         continue;
       }
       exportable.push({
@@ -79,7 +88,7 @@ export class PrismaAccountsForBankExportReader extends AccountsForBankExportRead
         postalCode: row.postalCode,
         city: row.city,
         countryCode: row.countryCode,
-        iban: this.cipher.open(row.ibanSealed),
+        iban,
         bic: row.bic,
         recordedAt: row.createdAt,
       });

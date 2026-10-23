@@ -1,3 +1,5 @@
+import type { KnownBankAccountReason } from "../entities/known-bank-account.js";
+
 /** Un compte parti dans un export : la société, le RIB, et l'empreinte de l'IBAN. */
 export interface ExportedAccountLine {
   readonly bankAccountId: string;
@@ -29,6 +31,24 @@ export interface KnownAccountFingerprints {
  */
 export abstract class KnownAccountFingerprintsReader {
   abstract all(): Promise<KnownAccountFingerprints>;
+}
+
+/** Depuis quand, et pourquoi, la banque connaît une empreinte. */
+export type KnownAccountStamp =
+  | { readonly kind: "imported"; readonly at: Date }
+  | { readonly kind: "declared"; readonly reason: KnownBankAccountReason; readonly at: Date };
+
+/**
+ * **Depuis quand la banque connaît ces comptes** — pour la carte seule, qui
+ * dit « importé le … », « saisi dans CENET le … » ou « signalé par la banque
+ * le … ». Un port à part : la préparation et la déclaration n'ont besoin que
+ * des empreintes. Même portée que les empreintes : tout l'abonnement.
+ */
+export abstract class KnownAccountStampsReader {
+  /** Le plus ancien tampon de chaque empreinte connue ; une empreinte inconnue n'y est pas. */
+  abstract stampsOf(
+    fingerprints: readonly string[],
+  ): Promise<ReadonlyMap<string, KnownAccountStamp>>;
 }
 
 /** Les lignes d'un export, et quand il a été abandonné (`null` s'il ne l'est pas). */

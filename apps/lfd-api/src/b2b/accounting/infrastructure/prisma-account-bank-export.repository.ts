@@ -92,6 +92,7 @@ export class PrismaKnownBankAccountRepository extends KnownBankAccountRepository
         legalEntityId: state.legalEntityId,
         declaredAt: state.declared.at,
         declaredByStaffId: state.declared.staffId,
+        reason: state.reason,
       },
     });
   }

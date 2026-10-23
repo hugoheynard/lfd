@@ -72,7 +72,7 @@ export class AdminAccountBankExportsController {
     return { exportId };
   }
 
-  /** Un compte saisi dans CENET sans notre fichier ; 409 s'il est déjà connu ou en vol. */
+  /** Un compte connu de la banque sans notre fichier, et pourquoi ; 409 s'il est déjà connu ou en vol. */
   @Post(":id/account-exports/known-accounts")
   @HttpCode(HttpStatus.NO_CONTENT)
   async declareKnown(
@@ -82,7 +82,7 @@ export class AdminAccountBankExportsController {
     payload: DeclareBankAccountKnownPayload,
   ): Promise<void> {
     await this.commands.execute<DeclareBankAccountKnownCommand, string>(
-      new DeclareBankAccountKnownCommand(id, payload.bankAccountId, staffUserId),
+      new DeclareBankAccountKnownCommand(id, payload.bankAccountId, payload.reason, staffUserId),
     );
   }
 

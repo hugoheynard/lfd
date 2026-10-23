@@ -195,6 +195,7 @@ async function render(
               knownCount: 0,
               maxPerExport: 200,
               excluded: [],
+              accounts: [],
               exports: [],
             }),
         },

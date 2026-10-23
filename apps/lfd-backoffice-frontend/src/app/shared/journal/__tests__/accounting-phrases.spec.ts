@@ -614,6 +614,22 @@ describe('l’export des comptes destinataires pour la banque', () => {
     );
     expect(said).toContain('a déclaré connu de la banque');
     expect(said).toContain('compte du client « Café A »');
+    expect(said).not.toContain('CENET');
+  });
+
+  it('dit pourquoi la banque connaît le compte', () => {
+    const declared = (reason: string): string =>
+      sentence(
+        entity('account_bank_export.account_known_declared', {
+          subjectLabel: ENTITY,
+          company: { id: 'cmp_1', name: 'Café A' },
+          reason,
+        }),
+      );
+    expect(declared('entered_in_cenet')).toContain('« Café A », saisi à la main dans CENET');
+    expect(declared('reported_by_bank')).toContain(
+      '« Café A », signalé comme déjà connu par la banque',
+    );
   });
 });
 

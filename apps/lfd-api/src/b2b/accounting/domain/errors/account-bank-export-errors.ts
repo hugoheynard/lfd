@@ -92,6 +92,16 @@ export class AccountAlreadyKnownToBankError extends BusinessError {
   }
 }
 
+/** Une raison de « connu de la banque » qui n'est ni saisie CENET, ni signalement. */
+export class UnknownKnownAccountReasonError extends DomainError {
+  constructor(readonly reason: string) {
+    super(
+      "accounting.account_bank_export.unknown_known_reason",
+      `« ${reason} » n'est pas une raison connue : un compte est soit saisi dans CENET, soit signalé comme connu par la banque. Choisir l'un des deux boutons.`,
+    );
+  }
+}
+
 /** L'export n'existe pas, ou pas pour cette entité. */
 export class AccountBankExportNotFoundError extends ResourceNotFoundError {
   constructor(readonly exportId: string) {

@@ -188,7 +188,9 @@ describe("l'export des comptes destinataires pour la banque", () => {
       .post(`${exportsOf(entityId)}/${exportId}/imported`)
       .expect(409);
     await staff().post(exportsOf(entityId)).expect(409);
-    expect(await card(entityId)).toMatchObject({ toExport: [], inFlightCount: 0, knownCount: 1 });
+    const imported = await card(entityId);
+    expect(imported).toMatchObject({ toExport: [], inFlightCount: 0, knownCount: 1 });
+    expect(imported.accounts[0]?.standing).toMatchObject({ kind: "imported" });
   });
 
   it("n'exporte que les nouveaux : un second export ne reprend pas les comptes en vol", async () => {
@@ -251,20 +253,79 @@ describe("l'export des comptes destinataires pour la banque", () => {
     expect(file.text).not.toContain("Sans Bic");
   });
 
-  it("« déjà connu » retire le compte de l'export, une seule fois", async () => {
+  it("« saisi dans CENET » retire le compte de l'export, une seule fois, et le dit", async () => {
     const entityId = await entity();
     const { bankAccountId } = await debtor(entityId, "Saisi à la main");
 
     await staff()
       .post(`${exportsOf(entityId)}/known-accounts`)
       .send({ bankAccountId })
+      .expect(400);
+    await staff()
+      .post(`${exportsOf(entityId)}/known-accounts`)
+      .send({ bankAccountId, reason: "entered_in_cenet" })
       .expect(204);
     await staff()
       .post(`${exportsOf(entityId)}/known-accounts`)
-      .send({ bankAccountId })
+      .send({ bankAccountId, reason: "reported_by_bank" })
       .expect(409);
     await staff().post(exportsOf(entityId)).expect(409);
-    expect(await card(entityId)).toMatchObject({ toExport: [], knownCount: 1 });
+
+    const view = await card(entityId);
+    expect(view).toMatchObject({ toExport: [], knownCount: 1 });
+    expect(view.accounts).toHaveLength(1);
+    expect(view.accounts[0]).toMatchObject({
+      bankAccountId,
+      companyName: "Saisi à la main",
+      ibanCountry: "FR",
+      ibanLast4: DEBTOR_IBAN.slice(-4),
+      bic: "BNPAFRPPXXX",
+      standing: { kind: "declared", reason: "entered_in_cenet" },
+    });
+    const stored = await ctx.prisma.knownBankAccount.findMany({ select: { reason: true } });
+    expect(stored).toEqual([{ reason: "entered_in_cenet" }]);
+    const journal = await ctx.prisma.activityEvent.findMany({
+      where: { type: "account_bank_export.account_known_declared" },
+      select: { payload: true },
+    });
+    expect(journal).toHaveLength(1);
+    expect(journal[0]?.payload).toMatchObject({ reason: "entered_in_cenet" });
+  });
+
+  it("« signalé par la banque » retire le compte, et se range avec sa raison", async () => {
+    const entityId = await entity();
+    const { bankAccountId } = await debtor(entityId, "Déjà chez la banque");
+
+    await staff()
+      .post(`${exportsOf(entityId)}/known-accounts`)
+      .send({ bankAccountId, reason: "reported_by_bank" })
+      .expect(204);
+
+    const view = await card(entityId);
+    expect(view.accounts[0]?.standing).toMatchObject({
+      kind: "declared",
+      reason: "reported_by_bank",
+    });
+    const journal = await ctx.prisma.activityEvent.findMany({
+      where: { type: "account_bank_export.account_known_declared" },
+      select: { payload: true },
+    });
+    expect(journal).toHaveLength(1);
+    expect(journal[0]?.payload).toMatchObject({ reason: "reported_by_bank" });
+    expect(JSON.stringify(journal)).not.toContain(DEBTOR_IBAN);
+  });
+
+  it("refuse en base une raison inconnue (CHECK)", async () => {
+    const entityId = await entity();
+    const { bankAccountId } = await debtor(entityId, "Client");
+    await staff()
+      .post(`${exportsOf(entityId)}/known-accounts`)
+      .send({ bankAccountId, reason: "entered_in_cenet" })
+      .expect(204);
+    await expect(
+      ctx.prisma
+        .$executeRaw`UPDATE "public"."known_bank_account" SET "reason" = 'other' WHERE "bank_account_id" = ${bankAccountId}`,
+    ).rejects.toThrow(/known_bank_account_reason_known/u);
   });
 
   it("refuse le fichier et les gestes avec la seule lecture comptable (403)", async () => {
@@ -299,7 +360,7 @@ describe("l'export des comptes destinataires pour la banque", () => {
       .expect(403);
     await asReader()
       .post(`${exportsOf(entityId)}/known-accounts`)
-      .send({ bankAccountId })
+      .send({ bankAccountId, reason: "entered_in_cenet" })
       .expect(403);
   });
 

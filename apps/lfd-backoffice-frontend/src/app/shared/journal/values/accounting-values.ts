@@ -111,6 +111,12 @@ const VOUCHER_REINSTATEMENT = domain('restitution d’un bon de fidélité', {
 /** La séquence d'un prélèvement d'essai (`collection.test_generated`). */
 export const TEST_SEQUENCE = domain('séquence d’un prélèvement d’essai', TEST_SEQUENCE_LABELS);
 
+/** Pourquoi la banque connaît un compte sans notre fichier (doc `prerequis-export-ribs.md` § 2.6). */
+const KNOWN_BANK_ACCOUNT_REASON = domain('raison d’un compte connu de la banque', {
+  entered_in_cenet: 'Saisi à la main dans CENET',
+  reported_by_bank: 'Signalé comme déjà connu par la banque',
+});
+
 export const ACCOUNTING_VALUES: ValueFamily = {
   enums: [
     VOUCHER_REINSTATEMENT,
@@ -129,5 +135,6 @@ export const ACCOUNTING_VALUES: ValueFamily = {
     COLLECTION_RETURN_SOURCE,
     COLLECTION_RETURN_RESOLUTION,
     TEST_SEQUENCE,
+    KNOWN_BANK_ACCOUNT_REASON,
   ],
 };

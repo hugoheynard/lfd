@@ -8,7 +8,8 @@
          connaît déjà fait rejeter tout le fichier (réponse 8). -->
     <fold-callout appearance="inset" variant="info">
       Nouveaux comptes seulement&nbsp;: un compte que la banque connaît déjà fait rejeter tout
-      l'import. Un compte saisi à la main dans le portail se déclare «&nbsp;déjà connu&nbsp;».
+      l'import. Un compte saisi à la main dans CENET, ou que la banque signale comme connu, se
+      retire de l'export par le geste de sa ligne.
     </fold-callout>
 
     @if (actionError(); as message) {
@@ -26,38 +27,43 @@
         <fold-field label="Connus de la banque">{{ accounts(view.knownCount) }}</fold-field>
       </fold-field-list>
 
-      @if (view.excluded.length > 0) {
-        <fold-callout appearance="inset" variant="warning">
-          <strong>{{ accounts(view.excluded.length) }} hors du fichier&nbsp;:</strong>
-          <ul class="ab-list">
-            @for (excluded of view.excluded; track excluded.bankAccountId) {
-              <li>
-                {{ excluded.companyName }} (…{{ excluded.ibanLast4 }})&nbsp;:
-                {{ reasonLabels[excluded.reason] }}
-              </li>
-            }
-          </ul>
-        </fold-callout>
-      }
-
-      @if (view.toExport.length > 0) {
-        <ul class="ab-rows">
-          @for (account of view.toExport; track account.bankAccountId) {
-            <li class="ab-row">
-              <span>{{ account.companyName }} — compte …{{ account.ibanLast4 }}</span>
-              <fold-inline-confirm
-                intent="warning"
-                [labels]="{ confirm: 'Il est déjà dans le portail' }"
-                (confirmed)="declareKnown(account)"
-              >
-                <button foldButton emphasis="outline" [disabled]="busy()">
-                  Déjà connu de la banque
-                </button>
-              </fold-inline-confirm>
-            </li>
+      <fold-data-table
+        caption="Les comptes débités par les mandats de l'entité"
+        [columns]="columns"
+        [rows]="view.accounts"
+        [rowKey]="rowKey"
+        [rowTone]="toneOf"
+        [empty]="{ title: 'Aucun compte débité', subtitle: 'Aucun mandat actif de l’entité.' }"
+        mobileLayout="auto-cards"
+      >
+        <ng-template foldCell="company" let-row>
+          <span class="ab-company">
+            <span>{{ row.companyName }}</span>
+            <span class="ab-holder">{{ row.holder }}</span>
+          </span>
+        </ng-template>
+        <ng-template foldCell="iban" let-row>{{ maskedIban(row) }}</ng-template>
+        <ng-template foldCell="bic" let-row>{{ row.bic ?? '—' }}</ng-template>
+        <ng-template foldCell="standing" let-row>{{ standingOf(row) }}</ng-template>
+        <ng-template foldCell="actions" let-row>
+          @if (canDeclare(row)) {
+            <span class="ab-actions">
+              @for (reason of reasons; track reason) {
+                <fold-inline-confirm
+                  intent="warning"
+                  [message]="gestures[reason].confirm"
+                  [labels]="{ confirm: 'Retirer de l’export' }"
+                  (confirmed)="declareKnown(row, reason)"
+                >
+                  <button foldButton emphasis="soft" size="sm" [disabled]="busy()">
+                    {{ gestures[reason].button }}
+                  </button>
+                </fold-inline-confirm>
+              }
+            </span>
           }
-        </ul>
-      }
+        </ng-template>
+      </fold-data-table>
 
       @if (leftOver(view) > 0) {
         <p class="ab-said">

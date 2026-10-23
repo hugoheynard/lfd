@@ -175,12 +175,14 @@ describe("marquer importé, abandonner, télécharger", () => {
   });
 });
 
-describe("déclarer un compte « déjà connu de la banque »", () => {
+describe("déclarer un compte connu de la banque, et pourquoi", () => {
   it("pose l'empreinte, le journalise, et le compte ne part plus", async () => {
     const w = accountExportWorld();
     w.accounts.exportable = [debitedAccount("a", { companyName: "Café A" })];
 
-    await w.declareKnown.execute(new DeclareBankAccountKnownCommand("le1", "rib_a", "staff_1"));
+    await w.declareKnown.execute(
+      new DeclareBankAccountKnownCommand("le1", "rib_a", "entered_in_cenet", "staff_1"),
+    );
 
     expect(w.declared.rows.map((row) => row.toPersistence().accountFingerprint)).toEqual([
       accountFingerprint(IBAN_A),
@@ -189,10 +191,23 @@ describe("déclarer un compte « déjà connu de la banque »", () => {
     expect(fact).toMatchObject({
       type: "account_bank_export.account_known_declared",
       subjectId: "le1",
-      payload: { company: { id: "cmp_a", name: "Café A" } },
+      payload: { company: { id: "cmp_a", name: "Café A" }, reason: "entered_in_cenet" },
     });
+    expect(w.declared.rows[0]?.toPersistence().reason).toBe("entered_in_cenet");
     expect(JSON.stringify(fact)).not.toContain(IBAN_A);
     await expect(w.prepare.execute(prepare())).rejects.toThrow(NoAccountToExportError);
+  });
+
+  it("range et journalise « signalé par la banque »", async () => {
+    const w = accountExportWorld();
+    w.accounts.exportable = [debitedAccount("a")];
+
+    await w.declareKnown.execute(
+      new DeclareBankAccountKnownCommand("le1", "rib_a", "reported_by_bank", "staff_1"),
+    );
+
+    expect(w.declared.rows[0]?.toPersistence().reason).toBe("reported_by_bank");
+    expect(w.events.traced[0]?.journalFact().payload).toMatchObject({ reason: "reported_by_bank" });
   });
 
   it("refuse un compte en vol, ou déjà déclaré", async () => {
@@ -201,14 +216,18 @@ describe("déclarer un compte « déjà connu de la banque »", () => {
     await w.prepare.execute(prepare());
 
     await expect(
-      w.declareKnown.execute(new DeclareBankAccountKnownCommand("le1", "rib_a", "s")),
+      w.declareKnown.execute(
+        new DeclareBankAccountKnownCommand("le1", "rib_a", "reported_by_bank", "s"),
+      ),
     ).rejects.toThrow(AccountAlreadyKnownToBankError);
   });
 
   it("refuse un compte que l'entité ne débite pas", async () => {
     const w = accountExportWorld();
     await expect(
-      w.declareKnown.execute(new DeclareBankAccountKnownCommand("le1", "rib_x", "s")),
+      w.declareKnown.execute(
+        new DeclareBankAccountKnownCommand("le1", "rib_x", "entered_in_cenet", "s"),
+      ),
     ).rejects.toThrow(AccountNotDebitedByEntityError);
     expect(w.declared.rows).toHaveLength(0);
   });

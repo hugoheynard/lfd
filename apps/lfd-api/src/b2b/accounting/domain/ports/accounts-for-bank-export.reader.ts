@@ -36,6 +36,9 @@ export type AccountExclusionReason = "no_bic";
 export interface AccountExcludedFromBankExport {
   readonly bankAccountId: string;
   readonly companyName: string;
+  readonly holder: string;
+  /** Les deux lettres de pays de l'IBAN — rien d'autre n'en sort. */
+  readonly ibanCountry: string;
   readonly ibanLast4: string;
   readonly reason: AccountExclusionReason;
 }

@@ -1,11 +1,16 @@
 import { AccountBankExport, type ExportAccountsInput } from "../account-bank-export.js";
-import { KnownBankAccount } from "../known-bank-account.js";
+import {
+  KNOWN_BANK_ACCOUNT_REASONS,
+  KnownBankAccount,
+  knownBankAccountReason,
+} from "../known-bank-account.js";
 import {
   AccountAlreadyKnownToBankError,
   AccountBankExportClosedError,
   AccountBankExportTooLargeError,
   DuplicateAccountInBankExportError,
   NoAccountToExportError,
+  UnknownKnownAccountReasonError,
 } from "../../errors/account-bank-export-errors.js";
 import { accountFingerprint } from "../../services/account-fingerprint.js";
 import { ACCOUNT_IMPORT_MAX_ROWS } from "../../services/account-bank-export-values.js";
@@ -79,8 +84,9 @@ describe("un export des comptes (§ 2.3)", () => {
   });
 });
 
-describe("« déjà connu de la banque » (§ 2.6)", () => {
+describe("« connu de la banque » (§ 2.6)", () => {
   const declaration = {
+    reason: KNOWN_BANK_ACCOUNT_REASONS.enteredInCenet,
     id: "kba_1",
     legalEntityId: "le1",
     bankAccountId: "rib_a",
@@ -102,7 +108,21 @@ describe("« déjà connu de la banque » (§ 2.6)", () => {
       companyId: "cmp_a",
       accountFingerprint: FP_A,
       declared: { at: AT, staffId: "staff_1" },
+      reason: "entered_in_cenet",
     });
+  });
+
+  it("refuse une raison qui n'est aucun des deux gestes", () => {
+    expect(() => knownBankAccountReason("already_known")).toThrow(UnknownKnownAccountReasonError);
+    expect(knownBankAccountReason("reported_by_bank")).toBe("reported_by_bank");
+  });
+
+  it("porte la raison « signalé par la banque »", () => {
+    const state = KnownBankAccount.declare(
+      { ...declaration, reason: KNOWN_BANK_ACCOUNT_REASONS.reportedByBank },
+      { known: new Set(), inFlight: new Set() },
+    ).toPersistence();
+    expect(state.reason).toBe("reported_by_bank");
   });
 
   it("refuse un compte déjà connu, ou dans un export en vol", () => {

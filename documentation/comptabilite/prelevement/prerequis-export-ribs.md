@@ -283,9 +283,32 @@ Un compte saisi **à la main** dans CENET (lot 0), ou importé depuis le
 fichier que CENET produit lui-même à la vérification des mandats (réponse 10),
 n'a pas d'export marqué importé : il ressortirait « à exporter » et ferait
 rejeter **tout** le fichier suivant (réponse 8 ; vitruve, objection 1). D'où
-un geste par compte, « Déjà connu de la banque », qui pose son empreinte sans
-fichier, avec auteur et fait au journal. Il est **préalable** au lot 0 dès
-qu'un lot 1 doit suivre.
+un geste par compte, qui pose son empreinte sans fichier, avec auteur et fait
+au journal. Il est **préalable** au lot 0 dès qu'un lot 1 doit suivre.
+
+**Deux boutons, une raison (Hugo, 2026-10-23).** Le geste unique « Déjà connu
+de la banque » est devenu deux actions secondaires de la ligne du compte, dans
+le tableau de la carte « Comptes à la banque ». Les deux retirent le compte de
+l'export ; elles disent pourquoi :
+
+| Bouton                                | Raison (valeur rangée) | Ce qu'on atteste                                                    | État affiché sur la ligne      |
+| ------------------------------------- | ---------------------- | ------------------------------------------------------------------- | ------------------------------ |
+| « Importé dans CENET directement »    | `entered_in_cenet`     | nous l'avons saisi à la main dans CENET                             | « saisi dans CENET le … »      |
+| « Signalé comme connu par la banque » | `reported_by_bank`     | le compte rendu d'import CENET (ou la banque) dit qu'il existe déjà | « signalé par la banque le … » |
+
+Une seule commande (`DeclareBankAccountKnownCommand`, champ `reason`) ; la
+raison est rangée dans `known_bank_account.reason` (NOT NULL, CHECK sur les
+deux valeurs ; migration `20261024010000`, les déclarations antérieures y
+valent `entered_in_cenet`) et portée par le fait
+`account_bank_export.account_known_declared` (`reason`, absent des faits
+d'avant le 2026-10-23 — la phrase du journal n'en invente pas). Chaque bouton
+demande une confirmation qui dit en une phrase ce qu'on atteste.
+
+Le tableau montre chaque compte débité — écartés compris — avec sa société et
+son titulaire, l'IBAN masqué (pays et quatre derniers), le BIC et son état :
+à exporter, en export, importé le …, saisi dans CENET le …, signalé par la
+banque le …, écarté (et pourquoi). Les deux gestes ne s'offrent que sur un
+compte à exporter.
 
 ### 2.5 Le changement de compte (réponse 9)
 

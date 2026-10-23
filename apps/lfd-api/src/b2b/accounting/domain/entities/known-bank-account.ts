@@ -1,6 +1,38 @@
-import { AccountAlreadyKnownToBankError } from "../errors/account-bank-export-errors.js";
+import {
+  AccountAlreadyKnownToBankError,
+  UnknownKnownAccountReasonError,
+} from "../errors/account-bank-export-errors.js";
 import type { KnownAccountFingerprints } from "../ports/account-bank-exports.reader.js";
 import type { StaffStamp } from "./collection-batch.js";
+
+/**
+ * **Pourquoi la banque connaît un compte sans notre fichier** (doc
+ * `prerequis-export-ribs.md` § 2.6, Hugo 2026-10-23). Des VALEURS : rangées en
+ * base (CHECK) et dans le journal, elles ne se renomment pas.
+ */
+export const KNOWN_BANK_ACCOUNT_REASONS = {
+  /** Nous l'avons saisi à la main dans CENET. */
+  enteredInCenet: "entered_in_cenet",
+  /** Le compte rendu d'import CENET, ou la banque, dit qu'il existe déjà. */
+  reportedByBank: "reported_by_bank",
+} as const;
+
+export type KnownBankAccountReason =
+  (typeof KNOWN_BANK_ACCOUNT_REASONS)[keyof typeof KNOWN_BANK_ACCOUNT_REASONS];
+
+const REASONS: ReadonlySet<string> = new Set(Object.values(KNOWN_BANK_ACCOUNT_REASONS));
+
+/** @throws {UnknownKnownAccountReasonError} */
+export function knownBankAccountReason(value: string): KnownBankAccountReason {
+  if (!isKnownBankAccountReason(value)) {
+    throw new UnknownKnownAccountReasonError(value);
+  }
+  return value;
+}
+
+function isKnownBankAccountReason(value: string): value is KnownBankAccountReason {
+  return REASONS.has(value);
+}
 
 export interface KnownBankAccountState {
   readonly id: string;
@@ -11,6 +43,7 @@ export interface KnownBankAccountState {
   /** SHA-256 hex de l'IBAN normalisé — jamais l'IBAN. */
   readonly accountFingerprint: string;
   readonly declared: StaffStamp;
+  readonly reason: KnownBankAccountReason;
 }
 
 export interface DeclareKnownBankAccountInput extends KnownBankAccountState {
@@ -19,10 +52,10 @@ export interface DeclareKnownBankAccountInput extends KnownBankAccountState {
 }
 
 /**
- * **« Déjà connu de la banque »** — un compte que la banque a reçu sans notre
- * fichier : saisi à la main dans CENET, ou importé depuis le fichier que CENET
- * produit à la vérification des mandats (doc `prerequis-export-ribs.md`
- * § 2.6). Sans cette déclaration, il ressortirait « à exporter » et ferait
+ * **« Connu de la banque »** — un compte que la banque a reçu sans notre
+ * fichier, et pourquoi : saisi à la main dans CENET, ou signalé comme déjà
+ * connu par le compte rendu d'import ou la banque (doc
+ * `prerequis-export-ribs.md` § 2.6). Sans cette déclaration, il ressortirait « à exporter » et ferait
  * rejeter TOUT le fichier suivant (réponse 8).
  *
  * L'invariant : une empreinte déjà connue — importée, déclarée, ou dans un
@@ -32,7 +65,7 @@ export interface DeclareKnownBankAccountInput extends KnownBankAccountState {
 export class KnownBankAccount {
   private constructor(private readonly state: KnownBankAccountState) {}
 
-  /** @throws {AccountAlreadyKnownToBankError} */
+  /** @throws {AccountAlreadyKnownToBankError} @throws {UnknownKnownAccountReasonError} */
   static declare(
     input: DeclareKnownBankAccountInput,
     fingerprints: KnownAccountFingerprints,
@@ -48,6 +81,7 @@ export class KnownBankAccount {
       companyId: input.companyId,
       accountFingerprint: fingerprint,
       declared: input.declared,
+      reason: knownBankAccountReason(input.reason),
     });
   }
 

@@ -76,6 +76,22 @@ function onEntity(
 const nothing = (): Segment[] => [];
 
 /**
+ * Pourquoi la banque connaît le compte (doc `prerequis-export-ribs.md` § 2.6).
+ * Un fait d'avant le 2026-10-23 n'en porte pas : le geste était unique, et la
+ * phrase n'en invente pas.
+ */
+const KNOWN_REASONS: Readonly<Record<string, string>> = {
+  entered_in_cenet: ', saisi à la main dans CENET',
+  reported_by_bank: ', signalé comme déjà connu par la banque',
+};
+
+function knownReason(fact: PhraseFact): Segment[] {
+  const reason = fact.payload['reason'];
+  const said = typeof reason === 'string' ? KNOWN_REASONS[reason] : undefined;
+  return said === undefined ? [] : [text(said)];
+}
+
+/**
  * « : échéance à la clôture + 20 jours, constitution 2 h après la clôture,
  * dépôt au plus tard 2 jours ouvrés avant à 16:00 ». Plan
  * `prelevement-automatique.md`, PA1. Une échéance nulle suit le préavis ;
@@ -711,8 +727,12 @@ export const ACCOUNTING_PHRASES = {
   'account_bank_export.account_known_declared': onEntity(
     'a déclaré connu de la banque, sans fichier, un compte débité par les mandats',
     'de',
-    (fact) => [text(' : compte '), ...cite(OF_CLIENT, fact.payload['company'])],
-    ['company'],
+    (fact) => [
+      text(' : compte '),
+      ...cite(OF_CLIENT, fact.payload['company']),
+      ...knownReason(fact),
+    ],
+    ['company', 'reason'],
   ),
   'collection.order_settled_otherwise': (fact) => {
     const number = subjectLabelOf(fact);

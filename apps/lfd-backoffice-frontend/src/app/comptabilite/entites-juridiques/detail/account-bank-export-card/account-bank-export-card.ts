@@ -8,28 +8,34 @@ import {
   signal,
 } from '@angular/core';
 import type {
-  AccountBankAccountView,
   AccountBankExportSummaryView,
   AccountBankExportsView,
+  AccountBankRowView,
+  KnownBankAccountReasonView,
   LegalEntityView,
 } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
+  FoldDataTableCellDirective,
+  FoldDataTableComponent,
   FoldEmptyStateComponent,
   FoldFieldComponent,
   FoldFieldListComponent,
   FoldInlineConfirmComponent,
   FoldPageSectionComponent,
+  type FoldTableColumn,
+  type FoldTableTone,
 } from 'fold-ng';
 
 import { blobRefusalMessage } from '../../../../shared/download/blob-refusal';
 import { saveBlob } from '../../../../shared/download/save-blob';
 import {
-  ACCOUNT_BANK_EXCLUSION_LABELS,
   accountExportStateLabel,
   accountsLabel,
+  accountStandingLabel,
+  KNOWN_REASON_GESTURES,
 } from '../../../account-bank-export-wording';
 import { AccountBankExportsService } from '../../../account-bank-exports.service';
 import { parisDayLabel } from '../../../mandate-bank-export-wording';
@@ -42,9 +48,11 @@ import { parisDayLabel } from '../../../mandate-bank-export-wording';
  * ## Pourquoi « nouveaux seulement » se voit
  *
  * Un seul compte que la banque connaît déjà fait rejeter TOUT l'import
- * (réponse 8). La carte montre donc ce qui est en vol (préparé, pas encore
- * dit importé), et propose « déjà connu » sur chaque compte à exporter : un
- * compte saisi à la main dans CENET doit être déclaré, sinon il repartirait.
+ * (réponse 8). Le tableau montre donc chaque compte débité et où il en est,
+ * et propose deux gestes sur chaque compte à exporter : « importé dans CENET
+ * directement » (saisi à la main) et « signalé comme connu par la banque »
+ * (le compte rendu d'import le dit). Les deux le retirent du fichier ; la
+ * raison reste écrite, sur la ligne et au journal.
  *
  * Un fichier téléchargé n'est pas un fichier importé : la carte ne déduit
  * rien d'un clic sur « Télécharger ».
@@ -55,6 +63,8 @@ import { parisDayLabel } from '../../../mandate-bank-export-wording';
   imports: [
     FoldButtonComponent,
     FoldCalloutComponent,
+    FoldDataTableCellDirective,
+    FoldDataTableComponent,
     FoldEmptyStateComponent,
     FoldFieldComponent,
     FoldFieldListComponent,
@@ -81,7 +91,24 @@ export class AccountBankExportCard {
   protected readonly actionError = signal<string | null>(null);
   protected readonly busy = signal(false);
 
-  protected readonly reasonLabels = ACCOUNT_BANK_EXCLUSION_LABELS;
+  protected readonly gestures = KNOWN_REASON_GESTURES;
+  /** L'ordre des deux gestes sur la ligne : le plus courant d'abord. */
+  protected readonly reasons: readonly KnownBankAccountReasonView[] = [
+    'entered_in_cenet',
+    'reported_by_bank',
+  ];
+  protected readonly standingOf = (row: AccountBankRowView): string =>
+    accountStandingLabel(row.standing);
+  protected readonly rowKey = (row: AccountBankRowView): string => row.bankAccountId;
+  protected readonly toneOf = (row: AccountBankRowView): FoldTableTone =>
+    row.standing.kind === 'excluded' ? 'warning' : null;
+  protected readonly columns: readonly FoldTableColumn<AccountBankRowView>[] = [
+    { key: 'company', label: 'Société (titulaire)' },
+    { key: 'iban', label: 'IBAN' },
+    { key: 'bic', label: 'BIC' },
+    { key: 'standing', label: 'État' },
+    { key: 'actions', label: 'Actions', align: 'right' },
+  ];
   protected readonly accounts = accountsLabel;
   protected readonly day = parisDayLabel;
   protected readonly stateOf = accountExportStateLabel;
@@ -132,9 +159,21 @@ export class AccountBankExportCard {
     await this.run(() => this.service.abandon(entityId, item.id));
   }
 
-  protected async declareKnown(account: AccountBankAccountView): Promise<void> {
+  /** « FR •••• 0143 » — le pays et les quatre derniers, rien d'autre. */
+  protected maskedIban(row: AccountBankRowView): string {
+    return `${row.ibanCountry} •••• ${row.ibanLast4}`;
+  }
+
+  protected canDeclare(row: AccountBankRowView): boolean {
+    return row.standing.kind === 'to_export';
+  }
+
+  protected async declareKnown(
+    row: AccountBankRowView,
+    reason: KnownBankAccountReasonView,
+  ): Promise<void> {
     const entityId = this.entity().id;
-    await this.run(() => this.service.declareKnown(entityId, account.bankAccountId));
+    await this.run(() => this.service.declareKnown(entityId, row.bankAccountId, reason));
   }
 
   private async download(exportId: string): Promise<void> {

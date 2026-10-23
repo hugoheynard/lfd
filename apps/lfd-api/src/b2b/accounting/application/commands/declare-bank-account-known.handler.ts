@@ -16,9 +16,9 @@ import { exportEntityOrFail, journalEntity } from "../mandate-bank-export-suppor
 import { DeclareBankAccountKnownCommand } from "./declare-bank-account-known.command.js";
 
 /**
- * **« Déjà connu de la banque »** (doc `prerequis-export-ribs.md` § 2.6,
- * vitruve objection 1) : pose l'empreinte du compte sans fichier, avec auteur
- * et fait au journal. Le compte doit être débité par un mandat actif de
+ * **« Connu de la banque »** (doc `prerequis-export-ribs.md` § 2.6,
+ * vitruve objection 1) : pose l'empreinte du compte sans fichier, avec sa
+ * raison, son auteur et un fait au journal qui la dit. Le compte doit être débité par un mandat actif de
  * l'entité de la route — c'est le mur ; l'entité refuse une empreinte déjà
  * connue ou en vol.
  */
@@ -59,6 +59,7 @@ export class DeclareBankAccountKnownHandler implements ICommandHandler<
           companyName: account.companyName,
           accountFingerprint: accountFingerprint(account.iban),
           declared: { at, staffId: command.staffUserId },
+          reason: command.reason,
         },
         fingerprints,
       );

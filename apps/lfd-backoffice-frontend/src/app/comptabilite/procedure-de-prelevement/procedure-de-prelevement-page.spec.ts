@@ -52,6 +52,7 @@ const ACCOUNTS: AccountBankExportsView = {
   knownCount: 0,
   maxPerExport: 200,
   excluded: [],
+  accounts: [],
   exports: [],
 };
 

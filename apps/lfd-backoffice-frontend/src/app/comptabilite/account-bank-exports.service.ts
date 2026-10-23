@@ -4,6 +4,7 @@ import type {
   AccountBankExportCreatedView,
   AccountBankExportsView,
   DeclareBankAccountKnownPayload,
+  KnownBankAccountReasonView,
 } from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
 
@@ -60,9 +61,13 @@ export class AccountBankExportsService {
     );
   }
 
-  /** Le compte est déjà chez la banque, sans notre fichier (saisi dans CENET). */
-  async declareKnown(entityId: string, bankAccountId: string): Promise<void> {
-    const payload: DeclareBankAccountKnownPayload = { bankAccountId };
+  /** Le compte est déjà chez la banque, sans notre fichier — saisi dans CENET, ou signalé par elle. */
+  async declareKnown(
+    entityId: string,
+    bankAccountId: string,
+    reason: KnownBankAccountReasonView,
+  ): Promise<void> {
+    const payload: DeclareBankAccountKnownPayload = { bankAccountId, reason };
     await firstValueFrom(
       this.http.post<void>(`${this.base}/${entityId}/account-exports/known-accounts`, payload),
     );

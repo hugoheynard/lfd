@@ -35,7 +35,7 @@ export class AccountBankExportEvent implements JournaledEvent {
   }
 }
 
-/** Un compte est déclaré « déjà connu de la banque », sans fichier. */
+/** Un compte est déclaré connu de la banque, sans fichier — avec sa raison. */
 export class BankAccountDeclaredKnownEvent implements JournaledEvent {
   constructor(
     readonly account: KnownBankAccountState,
@@ -52,6 +52,7 @@ export class BankAccountDeclaredKnownEvent implements JournaledEvent {
       payload: {
         subjectLabel: this.entity.name,
         company: { id: this.account.companyId, name: this.companyName },
+        reason: this.account.reason,
       },
     };
   }

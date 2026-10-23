@@ -84,6 +84,9 @@ model KnownBankAccount {
   declaredAt        DateTime @map("declared_at") @db.Timestamptz(3)
   /// Identifiant staff LOCAL — jamais un `sub`.
   declaredByStaffId String   @map("declared_by_staff_id")
+  /// Pourquoi la banque le connaît : `entered_in_cenet` (saisi à la main dans
+  /// CENET) ou `reported_by_bank` (le compte rendu d'import le dit). CHECK en base.
+  reason            String   @default("entered_in_cenet")
 
   @@map("known_bank_account")
   @@schema("public")

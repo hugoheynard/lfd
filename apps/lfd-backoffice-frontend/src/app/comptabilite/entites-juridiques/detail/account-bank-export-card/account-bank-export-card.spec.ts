@@ -1,14 +1,20 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
-import type { AccountBankExportsView, LegalEntityView } from '@lfd/contracts';
+import type {
+  AccountBankExportsView,
+  AccountBankRowView,
+  AccountBankStandingView,
+  LegalEntityView,
+} from '@lfd/contracts';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AccountBankExportsService } from '../../../account-bank-exports.service';
 import { AccountBankExportCard } from './account-bank-export-card';
 
 /**
- * Ce que la carte tient : les comptes à exporter NOMMÉS avec « déjà connu »,
- * les écartés avec leur sortie, « Préparer » inactif sans rien à exporter,
+ * Ce que la carte tient : le tableau de chaque compte débité (IBAN masqué,
+ * BIC, état — écartés compris) avec les deux gestes « importé dans CENET » et
+ * « signalé par la banque » sur les seuls comptes à exporter, « Préparer » inactif sans rien à exporter,
  * préparer puis télécharger, « Marquer importé » et « Abandonner » sur le seul
  * export en attente, et le refus du serveur lu même en `Blob`.
  */
@@ -81,6 +87,23 @@ const BASE_ENTITY: LegalEntityView = {
   invoicePrefixFrozen: false,
 };
 
+// Les dates ne sont comparées qu'au texte qu'elles produisent, jamais à l'horloge.
+function row(
+  bankAccountId: string,
+  companyName: string,
+  standing: AccountBankStandingView,
+): AccountBankRowView {
+  return {
+    bankAccountId,
+    companyName,
+    holder: `Titulaire ${companyName}`,
+    ibanCountry: 'FR',
+    ibanLast4: '0143',
+    bic: 'BNPAFRPPXXX',
+    standing,
+  };
+}
+
 const VIEW: AccountBankExportsView = {
   debitedCount: 3,
   toExport: [{ bankAccountId: 'rib_a', companyName: 'Café A', ibanLast4: '0143' }],
@@ -89,6 +112,22 @@ const VIEW: AccountBankExportsView = {
   maxPerExport: 200,
   excluded: [
     { bankAccountId: 'rib_x', companyName: 'Sans Bic', ibanLast4: '2606', reason: 'no_bic' },
+  ],
+  accounts: [
+    row('rib_a', 'Café A', { kind: 'to_export' }),
+    row('rib_b', 'Bistrot B', { kind: 'in_flight' }),
+    row('rib_c', 'Comptoir C', {
+      kind: 'declared',
+      reason: 'entered_in_cenet',
+      at: '2026-10-05T09:00:00.000Z',
+    }),
+    row('rib_d', 'Dépôt D', {
+      kind: 'declared',
+      reason: 'reported_by_bank',
+      at: '2026-10-06T09:00:00.000Z',
+    }),
+    row('rib_e', 'Épicerie E', { kind: 'imported', at: '2026-10-02T09:00:00.000Z' }),
+    { ...row('rib_x', 'Sans Bic', { kind: 'excluded', reason: 'no_bic' }), bic: null },
   ],
   exports: [
     {
@@ -141,8 +180,8 @@ class FakeService {
     this.calls.push(`abandon:${entityId}:${exportId}`);
     return Promise.resolve();
   }
-  declareKnown(entityId: string, bankAccountId: string): Promise<void> {
-    this.calls.push(`known:${entityId}:${bankAccountId}`);
+  declareKnown(entityId: string, bankAccountId: string, reason: string): Promise<void> {
+    this.calls.push(`known:${entityId}:${bankAccountId}:${reason}`);
     return Promise.resolve();
   }
 }
@@ -178,13 +217,37 @@ beforeEach(() => {
 });
 
 describe('la carte « Comptes à la banque »', () => {
-  it('nomme les comptes à exporter et les écartés, sans IBAN', async () => {
+  it('tabule chaque compte, IBAN masqué, avec son état — écartés compris', async () => {
     const fixture = await render();
     const said = text(fixture);
-    expect(said).toContain('Café A — compte …0143');
-    expect(said).toContain('Sans Bic (…2606)');
-    expect(said).toContain('RIB sans BIC — compléter le BIC du client');
-    expect(buttons(fixture, 'Déjà connu de la banque')).toHaveLength(1);
+    expect(said).toContain('Titulaire Café A');
+    expect(said).toContain('FR •••• 0143');
+    expect(said).toContain('BNPAFRPPXXX');
+    expect(said).toContain('à exporter');
+    expect(said).toContain('en export');
+    expect(said).toContain('saisi dans CENET le 5 octobre 2026');
+    expect(said).toContain('signalé par la banque le 6 octobre 2026');
+    expect(said).toContain('importé le 2 octobre 2026');
+    expect(said).toContain('écarté : RIB sans BIC — compléter le BIC du client');
+  });
+
+  it('n’offre les deux gestes que sur le compte à exporter', async () => {
+    const fixture = await render();
+    expect(buttons(fixture, 'Importé dans CENET directement')).toHaveLength(1);
+    expect(buttons(fixture, 'Signalé comme connu par la banque')).toHaveLength(1);
+  });
+
+  it.each([
+    ['Importé dans CENET directement', 'entered_in_cenet', 'saisi à la main dans CENET'],
+    ['Signalé comme connu par la banque', 'reported_by_bank', 'compte rendu d’import CENET'],
+  ])('« %s » explique, puis déclare avec sa raison', async (label, reason, explained) => {
+    const fixture = await render();
+    buttons(fixture, label)[0]?.click();
+    fixture.detectChanges();
+    expect(text(fixture)).toContain(explained);
+    buttons(fixture, 'Retirer de l’export')[0]?.click();
+    await fixture.whenStable();
+    expect(service.calls).toEqual(['of', `known:le1:rib_a:${reason}`, 'of']);
   });
 
   it('« Préparer » prépare puis télécharge, et relit la carte', async () => {

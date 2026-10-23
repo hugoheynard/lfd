@@ -14,6 +14,7 @@ import {
 import {
   AccountBankExportsReader,
   KnownAccountFingerprintsReader,
+  KnownAccountStampsReader,
 } from "./domain/ports/account-bank-exports.reader.js";
 import { AdminAccountBankExportsController } from "./http/admin-account-bank-exports.controller.js";
 import {
@@ -24,6 +25,7 @@ import {
   PrismaAccountBankExportsReader,
   PrismaKnownAccountFingerprintsReader,
 } from "./infrastructure/prisma-account-bank-exports.reader.js";
+import { PrismaKnownAccountStampsReader } from "./infrastructure/prisma-known-account-stamps.reader.js";
 
 /**
  * L'export des comptes destinataires pour la banque (doc
@@ -36,6 +38,7 @@ export const ACCOUNT_BANK_EXPORT_PROVIDERS: readonly Provider[] = [
   { provide: AccountBankExportRepository, useClass: PrismaAccountBankExportRepository },
   { provide: KnownBankAccountRepository, useClass: PrismaKnownBankAccountRepository },
   { provide: KnownAccountFingerprintsReader, useClass: PrismaKnownAccountFingerprintsReader },
+  { provide: KnownAccountStampsReader, useClass: PrismaKnownAccountStampsReader },
   { provide: AccountBankExportsReader, useClass: PrismaAccountBankExportsReader },
   ExportAccountsForBankHandler,
   MarkAccountBankExportImportedHandler,

@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { KNOWN_BANK_ACCOUNT_REASON_VALUES } from "../account-bank-export.js";
 import { cents, count, day, fact, instant, named, payload, subjectLabel } from "./fact.js";
 
 /**
@@ -313,8 +314,16 @@ export const COLLECTION_FACTS = {
   "account_bank_export.imported": fact(payload(accountBankExport)),
   /** La banque l'a rejeté : ses comptes redeviennent « à exporter ». */
   "account_bank_export.abandoned": fact(payload(accountBankExport)),
-  /** Un compte est déclaré connu de la banque sans fichier (saisi dans CENET). */
+  /**
+   * Un compte est déclaré connu de la banque sans fichier, et pourquoi : saisi
+   * dans CENET, ou signalé par la banque. Sans `reason` avant le 2026-10-23 —
+   * le geste était alors unique, et le fait ne le disait pas.
+   */
   "account_bank_export.account_known_declared": fact(
-    payload({ subjectLabel: subjectLabel(), company: named("company") }),
+    payload({
+      subjectLabel: subjectLabel(),
+      company: named("company"),
+      reason: z.enum(KNOWN_BANK_ACCOUNT_REASON_VALUES).optional(),
+    }),
   ),
 } as const;

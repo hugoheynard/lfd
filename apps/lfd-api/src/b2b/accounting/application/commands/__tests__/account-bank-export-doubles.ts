@@ -10,6 +10,8 @@ import {
 import {
   AccountBankExportsReader,
   KnownAccountFingerprintsReader,
+  KnownAccountStampsReader,
+  type KnownAccountStamp,
   type AccountBankExportFile,
   type AccountBankExportRecord,
   type KnownAccountFingerprints,
@@ -119,6 +121,46 @@ export class MemoryAccountExportsReader extends AccountBankExportsReader {
   }
 }
 
+/** Les tampons, lus des mêmes doublés que les empreintes : le plus ancien gagne. */
+export class MemoryStamps extends KnownAccountStampsReader {
+  constructor(
+    private readonly exports: MemoryAccountExports,
+    private readonly declared: MemoryKnownAccounts,
+  ) {
+    super();
+  }
+  stampsOf(fingerprints: readonly string[]): Promise<ReadonlyMap<string, KnownAccountStamp>> {
+    const wanted = new Set(fingerprints);
+    const all: [string, KnownAccountStamp][] = [
+      ...[...this.exports.rows.values()].flatMap((row) => {
+        const state = row.toPersistence();
+        const imported = state.abandoned === null ? state.imported : null;
+        return imported === null
+          ? []
+          : state.lines.map((line): [string, KnownAccountStamp] => [
+              line.accountFingerprint,
+              { kind: "imported", at: imported.at },
+            ]);
+      }),
+      ...this.declared.rows.map((row): [string, KnownAccountStamp] => {
+        const state = row.toPersistence();
+        return [
+          state.accountFingerprint,
+          { kind: "declared", reason: state.reason, at: state.declared.at },
+        ];
+      }),
+    ];
+    const stamps = new Map<string, KnownAccountStamp>();
+    for (const [fingerprint, stamp] of all) {
+      const held = stamps.get(fingerprint);
+      if (wanted.has(fingerprint) && (held === undefined || stamp.at < held.at)) {
+        stamps.set(fingerprint, stamp);
+      }
+    }
+    return Promise.resolve(stamps);
+  }
+}
+
 /** Les cinq commandes branchées sur les mêmes doublés. */
 export function accountExportWorld() {
   const exports = new MemoryAccountExports();
@@ -130,6 +172,7 @@ export function accountExportWorld() {
     declared,
     fingerprints: new MemoryFingerprints(exports, declared),
     reader: new MemoryAccountExportsReader(exports),
+    stamps: new MemoryStamps(exports, declared),
     events: new RecordingPublisher(),
     clock: new FixedClock(NOW),
   };
