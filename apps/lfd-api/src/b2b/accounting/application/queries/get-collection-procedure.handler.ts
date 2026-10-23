@@ -22,7 +22,7 @@ import {
 import { CollectionReturnsReader } from "../../domain/ports/collection-returns.reader.js";
 import { LegalEntityReader } from "../../domain/ports/legal-entity.reader.js";
 import {
-  ImportedMandateAccountsReader,
+  KnownMandateAccountsReader,
   MandateBankExportsReader,
 } from "../../domain/ports/mandate-bank-exports.reader.js";
 import { MandatesForBankExportReader } from "../../domain/ports/mandates-for-bank-export.reader.js";
@@ -80,7 +80,7 @@ export class GetCollectionProcedureHandler implements IQueryHandler<
     private readonly accounts: AccountsForBankExportReader,
     private readonly fingerprints: KnownAccountFingerprintsReader,
     private readonly mandates: MandatesForBankExportReader,
-    private readonly imported: ImportedMandateAccountsReader,
+    private readonly known: KnownMandateAccountsReader,
     private readonly exports: MandateBankExportsReader,
     private readonly batches: CollectionBatchReader,
     private readonly returns: CollectionReturnsReader,
@@ -104,7 +104,7 @@ export class GetCollectionProcedureHandler implements IQueryHandler<
     );
     const [mandates, stored, dates, payerIds] = await Promise.all([
       readMandatesStep(
-        { mandates: this.mandates, imported: this.imported, exports: this.exports },
+        { mandates: this.mandates, known: this.known, exports: this.exports },
         entity.id,
         accounts,
       ),

@@ -28,7 +28,7 @@ function withQueries() {
   const card = new GetMandateBankExportsHandler(
     w.entities,
     w.mandates,
-    w.imported,
+    w.known,
     w.reader,
     w.candidates,
     w.lines,

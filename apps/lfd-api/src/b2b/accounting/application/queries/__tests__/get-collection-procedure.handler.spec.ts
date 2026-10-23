@@ -45,7 +45,7 @@ function world() {
     accounts.accounts,
     accounts.fingerprints,
     mandates.mandates,
-    mandates.imported,
+    mandates.known,
     mandates.reader,
     batches,
     returns,

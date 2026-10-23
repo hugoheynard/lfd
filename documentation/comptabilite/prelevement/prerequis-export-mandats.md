@@ -93,30 +93,35 @@ n'ont pas eu de réponse explicite : la vérification CENET le dira.
 ## 5. Les règles, et où le code les tient
 
 - **Nouveaux seulement** (réponse 12) : un mandat est « à exporter » s'il n'a
-  aucune ligne d'un export **marqué importé** sous l'empreinte de son compte
-  actuel (`domain/services/mandate-bank-export-selection.ts:33-46`). Sur la
-  carte, un mandat d'un export ouvert (ni déposé, ni abandonné) est « en
-  attente de la banque », pas « à exporter ». La carte compte exactement ses lignes : « À
-  exporter » et « En attente de la banque » se lisent sur l'état de chaque
-  mandat (`application/queries/get-mandate-bank-exports.handler.ts`, champs
-  `toExportCount` / `inFlightCount`), comme la carte des comptes (Hugo,
-  2026-10-23 ; jusque-là, « à exporter » comptait aussi les mandats en export).
-  ⚠️ La **préparation**, elle, ne les écarte pas encore (vérifié le
-  2026-10-23) : un second export préparé pendant qu'un premier est ouvert
-  reprendrait ses mandats. L'écran ne le permet pas — il ne propose de
-  préparer que sans export ouvert —, mais le serveur l'accepte.
+  aucune ligne, sous l'empreinte de son compte actuel, ni d'un export
+  **marqué importé**, ni d'un export **ouvert** (ni importé, ni abandonné)
+  (`domain/services/mandate-bank-export-selection.ts:41-60`). Sur la carte, un
+  mandat d'un export ouvert est « en attente de la banque », pas « à
+  exporter » ; « À exporter » et « En attente de la banque » se lisent sur
+  l'état de chaque mandat (`application/queries/get-mandate-bank-exports.handler.ts`,
+  `toExportCount` / `inFlightCount`), comme la carte des comptes.
+  **La préparation les écarte aussi depuis le 2026-10-23** (Hugo, aligné sur
+  les comptes) : deux exports n'ont jamais un mandat commun, et quand tous
+  les mandats exportables sont en vol, importés ou écartés, la préparation
+  est refusée (409 `accounting.mandate_bank_export.nothing_to_export`). La
+  procédure de prélèvement (étape « mandats »,
+  `application/collection-procedure-support.ts`) lit la même sélection.
+  Jusque-là, un second export préparé pendant qu'un premier était ouvert
+  reprenait ses mandats, et la banque l'aurait rejeté en entier.
 - **Pas de renvoi complet** (Hugo, 2026-10-23) : la case « Tous les mandats
   actifs, y compris ceux déjà importés » et le champ `all` de
   `POST /admin/legal-entities/:id/mandate-exports` sont **retirés**. La banque
   rejette l'import entier dès qu'un seul mandat lui est déjà connu (réponse 12) : la case ne pouvait produire qu'un fichier refusé. Le corps attendu est
   désormais `{}`, strict — un `all` envoyé est refusé (400).
-  **Le geste de sortie**, si la banque perd ou réinitialise ses mandats :
-  dans les 30 jours après le dépôt, « Rejeté par la banque » sur chaque ligne
-  concernée la remet « à exporter », et le fichier suivant la porte ; un
-  export jamais déposé s'abandonne (« Abandonner ») et ses mandats restent à
-  exporter. **Au-delà des 30 jours, aucun geste n'existe** pour refaire
-  sortir un mandat déjà importé (non décidé au 2026-10-23 — à trancher le
-  jour où le cas se présente, plutôt qu'à rouvrir un renvoi complet).
+  **Si la banque vide son référentiel CENET — NON DÉCIDÉ** (Hugo,
+  2026-10-23) : il n'y a pas de geste complet. Dans les 30 jours après le
+  dépôt, « Rejeté par la banque » sur chaque ligne concernée la remet « à
+  exporter », et le fichier suivant la porte ; un export jamais déposé
+  s'abandonne (« Abandonner ») et ses mandats redeviennent à exporter.
+  **Au-delà des 30 jours, rien** : aucun geste ne refait sortir un mandat
+  déjà importé. C'est délibéré — on attendra que le cas se présente plutôt
+  que de bâtir un geste dangereux (un renvoi complet produirait un fichier
+  que la banque rejette en entier dès qu'un mandat lui est connu).
 - **200 lignes au plus** (réponse 12) : **découpage**, pas refus. Préparer un
   export prend les 200 premiers mandats à exporter, dans l'ordre des RUM
   (`apps/lfd-api/src/b2b/payments/infrastructure/prisma-mandates-for-bank-export.reader.ts:48`),
@@ -171,7 +176,7 @@ celle des lignes sont dans `domain/services/mandate-bank-export-csv.ts:29-40`.
 | Sens et valeurs de **L** « Mandat migré »                                                         | `N` : aucun mandat exporté n'est repris d'un autre créancier — les repris sont **écartés** de l'export (`domain/ports/mandates-for-bank-export.reader.ts:26`, `taken_over`) | Q-B2      |
 | **M–R** contre la réponse 14 : P « Liste de mandat » et R ne sont pas des données de modification | toutes vides ; aucun mandat modifié ou repris n'est exporté aujourd'hui                                                                                                     | Q-B3      |
 | **Révocation** : aucune colonne ne la nomme                                                       | non déclarée à la banque ; un mandat révoqué n'entre plus dans aucun lot                                                                                                    | Q-B3      |
-| **Changement de compte** : nouveau mandat (réponse 9) ou modification en M–R (réponse 14)         | le mandat ressort comme un mandat à importer, sans colonne « ancien IBAN » (`domain/services/mandate-bank-export-selection.ts:25-29`)                                       | D9        |
+| **Changement de compte** : nouveau mandat (réponse 9) ou modification en M–R (réponse 14)         | le mandat ressort comme un mandat à importer, sans colonne « ancien IBAN » (`domain/services/mandate-bank-export-selection.ts:30-40`)                                       | D9        |
 | Encodage, `;` final, CRLF                                                                         | ASCII, `;` final, CRLF — la vérification CENET tranchera                                                                                                                    | —         |
 
 ## 7. Décisions pour Hugo
@@ -184,6 +189,9 @@ celle des lignes sont dans `domain/services/mandate-bank-export-csv.ts:29-40`.
   refus qui obligerait à choisir à la main.
 - **D9** — changement de compte : nouveau mandat ou M–R (inchangé, voir
   [`reponses-de-la-banque.md`](reponses-de-la-banque.md) § 4).
+- **Référentiel CENET vidé par la banque** : **non décidé** (Hugo,
+  2026-10-23) — « Rejeté par la banque » ligne par ligne dans les 30 jours,
+  rien au-delà ; à trancher le jour où le cas se présente (§ 5).
 - **Marquage partiel** (réponse 13) : bâti le 2026-10-23 sous une autre
   forme — on marque l'export déposé, puis on rejette, ligne par ligne, les RUM
   que le compte rendu met en erreur (§ 5).

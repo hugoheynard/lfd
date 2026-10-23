@@ -215,6 +215,32 @@ describe("l'export des mandats pour la banque", () => {
     expect(card.mandates.filter((row) => row.standing.kind === "to_export")).toHaveLength(1);
   });
 
+  /**
+   * Hugo, 2026-10-23, aligné sur les comptes : un mandat d'un export ouvert
+   * ne part pas dans un second — la banque rejetterait le second en entier.
+   */
+  it("deux préparations n'ont jamais un mandat commun ; tout en vol, la suivante est refusée (409)", async () => {
+    const entityId = await entity("552100554");
+    const first = await mandated(entityId, "Premier");
+    const firstExport = await prepare(entityId);
+    const second = await mandated(entityId, "Second");
+    const secondExport = await prepare(entityId);
+
+    const rumsOf = async (exportId: string): Promise<readonly string[]> => {
+      const file = await staff()
+        .get(`${exportsOf(entityId)}/${exportId}/file.csv`)
+        .expect(200);
+      return file.text
+        .split("\r\n")
+        .filter((row) => row !== "")
+        .map((row) => row.split(";")[0] ?? "");
+    };
+    expect(await rumsOf(firstExport)).toEqual([first]);
+    expect(await rumsOf(secondExport)).toEqual([second]);
+    const refused = await staff().post(exportsOf(entityId)).send({}).expect(409);
+    expect(refused.text).toContain("dans un export pas encore importé");
+  });
+
   /** Hugo, 2026-10-23 : la banque rejette l'import entier si un mandat lui est connu. */
   it("refuse (400) l'option « tous » : elle n'existe plus", async () => {
     const entityId = await entity("552100554");

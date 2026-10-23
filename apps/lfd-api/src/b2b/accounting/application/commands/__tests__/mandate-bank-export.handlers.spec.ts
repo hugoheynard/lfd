@@ -7,6 +7,7 @@ import {
   NothingToExportToBankError,
 } from "../../../domain/errors/mandate-bank-export-errors.js";
 import { accountFingerprint } from "../../../domain/services/account-fingerprint.js";
+import { AbandonMandateBankExportCommand } from "../abandon-mandate-bank-export.command.js";
 import { ExportMandatesForBankCommand } from "../export-mandates-for-bank.command.js";
 import { RecordMandateBankExportDownloadCommand } from "../record-mandate-bank-export-download.command.js";
 import { MarkMandateBankExportImportedCommand } from "../mark-mandate-bank-export-imported.command.js";
@@ -87,10 +88,45 @@ describe("préparer un export des mandats pour la banque", () => {
     ).rejects.toThrow(NothingToExportToBankError);
   });
 
-  it("un export téléchargé mais pas marqué importé ne retire rien", async () => {
+  /**
+   * Remplace « un export téléchargé mais pas marqué importé ne retire rien » :
+   * règle changée par décision de Hugo (2026-10-23), alignée sur les comptes —
+   * un mandat d'un export ouvert ne part pas dans un second.
+   */
+  it("un mandat d'un export ouvert ne part pas dans un nouvel export : seuls les autres", async () => {
     const w = bankExportWorld();
     w.mandates.exportable = [bankMandate("m1")];
     await w.exportCommand.execute(new ExportMandatesForBankCommand("le1", "staff_1"));
+    w.mandates.exportable = [bankMandate("m1"), bankMandate("m2")];
+
+    const second = await w.exportCommand.execute(
+      new ExportMandatesForBankCommand("le1", "staff_1"),
+    );
+    expect(
+      w.exports.rows
+        .get(second)
+        ?.toPersistence()
+        .lines.map((l) => l.mandateId),
+    ).toEqual(["m2"]);
+  });
+
+  it("refuse la préparation quand tous les mandats sont dans un export ouvert", async () => {
+    const w = bankExportWorld();
+    w.mandates.exportable = [bankMandate("m1")];
+    const first = await w.exportCommand.execute(new ExportMandatesForBankCommand("le1", "staff_1"));
+    await w.recordDownload.execute(new RecordMandateBankExportDownloadCommand("le1", first, "s"));
+
+    await expect(
+      w.exportCommand.execute(new ExportMandatesForBankCommand("le1", "staff_1")),
+    ).rejects.toThrow(NothingToExportToBankError);
+    expect(w.exports.rows.size).toBe(1);
+  });
+
+  it("un export abandonné rend ses mandats « à exporter »", async () => {
+    const w = bankExportWorld();
+    w.mandates.exportable = [bankMandate("m1")];
+    const first = await w.exportCommand.execute(new ExportMandatesForBankCommand("le1", "staff_1"));
+    await w.abandon.execute(new AbandonMandateBankExportCommand("le1", first, "s"));
 
     const second = await w.exportCommand.execute(
       new ExportMandatesForBankCommand("le1", "staff_1"),

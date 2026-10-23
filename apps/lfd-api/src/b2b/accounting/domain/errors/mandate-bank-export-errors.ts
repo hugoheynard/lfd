@@ -11,12 +11,12 @@ import {
  * porte d'IBAN — un message part au client HTTP tel quel.
  */
 
-/** Rien à exporter : tous les mandats actifs sont déjà importés, ou écartés. */
+/** Rien à exporter : chaque mandat actif est importé, en vol, ou écarté. */
 export class NothingToExportToBankError extends BusinessError {
   constructor() {
     super(
       "accounting.mandate_bank_export.nothing_to_export",
-      "Aucun mandat à exporter : tous les mandats actifs de l'entité sont déjà importés à la banque, ou écartés (voir la liste). Pour renvoyer tous les mandats actifs, cocher « tous les mandats actifs ».",
+      "Aucun mandat à exporter : chaque mandat actif de l'entité est déjà importé à la banque, dans un export pas encore importé, ou écarté (voir la liste). Un export en attente se marque importé, ou s'abandonne si la banque l'a rejeté.",
     );
   }
 }

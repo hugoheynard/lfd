@@ -55,7 +55,7 @@ function world(payerModes: PayerBillingModesReader = new FixedPayerModes(), paye
     accounts.accounts,
     accounts.fingerprints,
     mandates.mandates,
-    mandates.imported,
+    mandates.known,
     mandates.reader,
     batches,
     returns,

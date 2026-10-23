@@ -11,7 +11,7 @@ import type { AccountsForBankExportReader } from "../domain/ports/accounts-for-b
 import type { StoredBatchView } from "../domain/ports/collection-batch.reader.js";
 import type { CollectionReturnsReader } from "../domain/ports/collection-returns.reader.js";
 import type {
-  ImportedMandateAccountsReader,
+  KnownMandateAccountsReader,
   MandateBankExportsReader,
 } from "../domain/ports/mandate-bank-exports.reader.js";
 import type { MandatesForBankExportReader } from "../domain/ports/mandates-for-bank-export.reader.js";
@@ -35,7 +35,7 @@ export interface ProcedureAccountReaders {
 /** Ce que l'onglet 2 lit — les ports de la carte « Mandats à la banque ». */
 export interface ProcedureMandateReaders {
   readonly mandates: MandatesForBankExportReader;
-  readonly imported: ImportedMandateAccountsReader;
+  readonly known: KnownMandateAccountsReader;
   readonly exports: MandateBankExportsReader;
 }
 
@@ -66,12 +66,12 @@ export async function readMandatesStep(
   legalEntityId: string,
   accounts: CollectionProcedureAccountsView,
 ): Promise<CollectionProcedureMandatesView> {
-  const [{ exportable, excluded }, imported, exports] = await Promise.all([
+  const [{ exportable, excluded }, known, exports] = await Promise.all([
     readers.mandates.activeOf(legalEntityId),
-    readers.imported.of(legalEntityId),
+    readers.known.of(legalEntityId),
     readers.exports.list(legalEntityId),
   ]);
-  const toExportCount = selectForBankExport(exportable, imported).toExport.length;
+  const toExportCount = selectForBankExport(exportable, known).toExport.length;
   const awaitingImport = exports.some((row) => row.importedAt === null && row.abandonedAt === null);
   return {
     state: mandatesState(accounts.state, toExportCount, awaitingImport),

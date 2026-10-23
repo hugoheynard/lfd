@@ -12,13 +12,13 @@ import { ExportMandateBankFileHandler } from "./application/queries/export-manda
 import { GetMandateBankExportsHandler } from "./application/queries/get-mandate-bank-exports.handler.js";
 import { MandateBankExportRepository } from "./domain/ports/mandate-bank-export.repository.js";
 import {
-  ImportedMandateAccountsReader,
+  KnownMandateAccountsReader,
   MandateBankExportsReader,
   MandateBankLinesReader,
 } from "./domain/ports/mandate-bank-exports.reader.js";
 import { PrismaMandateBankExportRepository } from "./infrastructure/prisma-mandate-bank-export.repository.js";
 import {
-  PrismaImportedMandateAccountsReader,
+  PrismaKnownMandateAccountsReader,
   PrismaMandateBankExportsReader,
   PrismaMandateBankLinesReader,
 } from "./infrastructure/prisma-mandate-bank-exports.reader.js";
@@ -33,7 +33,7 @@ import {
 export const MANDATE_BANK_EXPORT_PROVIDERS: readonly Provider[] = [
   { provide: MandateBankExportNumbering, useClass: PrismaMandateBankExportNumbering },
   { provide: MandateBankExportRepository, useClass: PrismaMandateBankExportRepository },
-  { provide: ImportedMandateAccountsReader, useClass: PrismaImportedMandateAccountsReader },
+  { provide: KnownMandateAccountsReader, useClass: PrismaKnownMandateAccountsReader },
   { provide: MandateBankExportsReader, useClass: PrismaMandateBankExportsReader },
   { provide: MandateBankLinesReader, useClass: PrismaMandateBankLinesReader },
   ExportMandatesForBankHandler,

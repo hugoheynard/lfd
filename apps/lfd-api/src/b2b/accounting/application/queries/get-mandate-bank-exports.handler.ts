@@ -6,7 +6,7 @@ import { Clock } from "../../../../platform/time/clock.js";
 import { CollectionCandidatesReader } from "../../domain/ports/collection-candidates.reader.js";
 import { LegalEntityReader } from "../../domain/ports/legal-entity.reader.js";
 import {
-  ImportedMandateAccountsReader,
+  KnownMandateAccountsReader,
   MandateBankExportsReader,
   MandateBankLinesReader,
 } from "../../domain/ports/mandate-bank-exports.reader.js";
@@ -31,7 +31,7 @@ export class GetMandateBankExportsHandler implements IQueryHandler<
   constructor(
     private readonly entities: LegalEntityReader,
     private readonly mandates: MandatesForBankExportReader,
-    private readonly imported: ImportedMandateAccountsReader,
+    private readonly known: KnownMandateAccountsReader,
     private readonly exports: MandateBankExportsReader,
     private readonly candidates: CollectionCandidatesReader,
     private readonly lines: MandateBankLinesReader,
@@ -40,13 +40,13 @@ export class GetMandateBankExportsHandler implements IQueryHandler<
 
   async execute(query: GetMandateBankExportsQuery): Promise<MandateBankExportsView> {
     const entity = await exportEntityOrFail(this.entities, query.legalEntityId);
-    const [{ exportable, excluded }, imported, exports, lines] = await Promise.all([
+    const [{ exportable, excluded }, known, exports, lines] = await Promise.all([
       this.mandates.activeOf(entity.id),
-      this.imported.of(entity.id),
+      this.known.of(entity.id),
       this.exports.list(entity.id),
       this.lines.linesOf(entity.id),
     ]);
-    const selection = selectForBankExport(exportable, imported);
+    const selection = selectForBankExport(exportable, known);
     const names = await this.candidates.companyNames([
       ...new Set([...exportable, ...excluded].map((mandate) => mandate.debtorCompanyId)),
     ]);

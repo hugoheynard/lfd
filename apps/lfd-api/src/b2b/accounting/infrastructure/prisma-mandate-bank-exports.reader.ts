@@ -4,29 +4,39 @@ import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { NAMING_COLUMNS, namingFromRow } from "./bank-export-naming.mapper.js";
 import { NOT_REJECTED } from "./bank-line-correction.mapper.js";
 import {
-  ImportedMandateAccountsReader,
+  KnownMandateAccountsReader,
   MandateBankExportsReader,
   MandateBankLinesReader,
+  type KnownMandateLines,
   type MandateBankLineStanding,
-  type ExportedMandateLine,
   type MandateBankExportFile,
   type MandateBankExportRecord,
 } from "../domain/ports/mandate-bank-exports.reader.js";
 
 const LINE_COLUMNS = { mandateId: true, rum: true, accountFingerprint: true } as const;
 
-/** Les lignes des exports MARQUÉS importés d'une entité — ce que la banque a. */
+/**
+ * Les lignes des exports importés, et celles des exports ouverts (ni
+ * importés, ni abandonnés) d'une entité — l'entité dans chaque `where`.
+ */
 @Injectable()
-export class PrismaImportedMandateAccountsReader extends ImportedMandateAccountsReader {
+export class PrismaKnownMandateAccountsReader extends KnownMandateAccountsReader {
   constructor(private readonly prisma: PrismaService) {
     super();
   }
 
-  of(legalEntityId: string): Promise<readonly ExportedMandateLine[]> {
-    return this.prisma.mandateBankExportLine.findMany({
-      where: { export: { legalEntityId, importedAt: { not: null } }, ...NOT_REJECTED },
-      select: LINE_COLUMNS,
-    });
+  async of(legalEntityId: string): Promise<KnownMandateLines> {
+    const [imported, inFlight] = await Promise.all([
+      this.prisma.mandateBankExportLine.findMany({
+        where: { export: { legalEntityId, importedAt: { not: null } }, ...NOT_REJECTED },
+        select: LINE_COLUMNS,
+      }),
+      this.prisma.mandateBankExportLine.findMany({
+        where: { export: { legalEntityId, importedAt: null, abandonedAt: null }, ...NOT_REJECTED },
+        select: LINE_COLUMNS,
+      }),
+    ]);
+    return { imported, inFlight };
   }
 }
 

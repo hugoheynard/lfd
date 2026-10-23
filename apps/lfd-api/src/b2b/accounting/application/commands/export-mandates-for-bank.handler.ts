@@ -10,7 +10,7 @@ import { MandateBankExportCreatedEvent } from "../../domain/events/mandate-bank-
 import { LegalEntityReader } from "../../domain/ports/legal-entity.reader.js";
 import { MandateBankExportNumbering } from "../../domain/ports/bank-export-numbering.js";
 import { MandateBankExportRepository } from "../../domain/ports/mandate-bank-export.repository.js";
-import { ImportedMandateAccountsReader } from "../../domain/ports/mandate-bank-exports.reader.js";
+import { KnownMandateAccountsReader } from "../../domain/ports/mandate-bank-exports.reader.js";
 import { MandatesForBankExportReader } from "../../domain/ports/mandates-for-bank-export.reader.js";
 import {
   BANK_EXPORT_PREFIXES,
@@ -49,7 +49,7 @@ export class ExportMandatesForBankHandler implements ICommandHandler<
   constructor(
     private readonly entities: LegalEntityReader,
     private readonly mandates: MandatesForBankExportReader,
-    private readonly imported: ImportedMandateAccountsReader,
+    private readonly known: KnownMandateAccountsReader,
     private readonly exports: MandateBankExportRepository,
     private readonly numbering: MandateBankExportNumbering,
     private readonly ids: IdGenerator,
@@ -95,7 +95,7 @@ export class ExportMandatesForBankHandler implements ICommandHandler<
     command: ExportMandatesForBankCommand,
   ): Promise<readonly FingerprintedMandate[]> {
     const { exportable } = await this.mandates.activeOf(command.legalEntityId);
-    const imported = await this.imported.of(command.legalEntityId);
-    return selectForBankExport(exportable, imported).toExport;
+    const known = await this.known.of(command.legalEntityId);
+    return selectForBankExport(exportable, known).toExport;
   }
 }

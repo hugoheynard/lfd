@@ -9,9 +9,10 @@ import {
 } from "../../../domain/ports/legal-entity.reader.js";
 import { MandateBankExportRepository } from "../../../domain/ports/mandate-bank-export.repository.js";
 import {
-  ImportedMandateAccountsReader,
+  KnownMandateAccountsReader,
   MandateBankExportsReader,
   type ExportedMandateLine,
+  type KnownMandateLines,
   type MandateBankExportFile,
   type MandateBankExportRecord,
   MandateBankLinesReader,
@@ -102,17 +103,22 @@ export class MemoryExports extends MandateBankExportRepository {
   }
 }
 
-export class MemoryImported extends ImportedMandateAccountsReader {
+export class MemoryKnown extends KnownMandateAccountsReader {
   constructor(private readonly exports: MemoryExports) {
     super();
   }
-  of(legalEntityId: string): Promise<readonly ExportedMandateLine[]> {
-    return Promise.resolve(
-      [...this.exports.rows.values()]
-        .map((row) => row.toPersistence())
-        .filter((state) => state.legalEntityId === legalEntityId && state.imported !== null)
-        .flatMap((state) => state.lines.filter((line) => line.correction?.kind !== "rejected")),
-    );
+  of(legalEntityId: string): Promise<KnownMandateLines> {
+    const states = [...this.exports.rows.values()]
+      .map((row) => row.toPersistence())
+      .filter((state) => state.legalEntityId === legalEntityId);
+    const linesOf = (kept: typeof states): readonly ExportedMandateLine[] =>
+      kept.flatMap((state) => state.lines.filter((line) => line.correction?.kind !== "rejected"));
+    return Promise.resolve({
+      imported: linesOf(states.filter((state) => state.imported !== null)),
+      inFlight: linesOf(
+        states.filter((state) => state.imported === null && state.abandoned === null),
+      ),
+    });
   }
 }
 
@@ -186,7 +192,7 @@ export function bankExportWorld() {
     entities: new OneEntity(entityRecord()),
     mandates: new FakeBankMandates(),
     exports,
-    imported: new MemoryImported(exports),
+    known: new MemoryKnown(exports),
     reader: new MemoryExportsReader(exports),
     lines: new MemoryLines(exports),
     candidates: new FakeCandidates(new Steps()),
@@ -196,7 +202,7 @@ export function bankExportWorld() {
   const exportCommand = new ExportMandatesForBankHandler(
     w.entities,
     w.mandates,
-    w.imported,
+    w.known,
     w.exports,
     new MemoryMandateNumbering(w.exports),
     new UlidSequence(),
