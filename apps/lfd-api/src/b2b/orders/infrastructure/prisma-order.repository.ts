@@ -8,7 +8,7 @@ import {
   Prisma,
 } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
-import { IdGenerator } from "../../../platform/id/id-generator.js";
+import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 import { SecretGenerator } from "../../../platform/secret/secret-generator.js";
 import { Clock } from "../../../platform/time/clock.js";
 import type { Order } from "../domain/entities/order.js";
@@ -17,6 +17,7 @@ import {
   type AbandonedSettlement,
   type PlacedOrder,
 } from "../domain/ports/order.repository.js";
+import { formatOrderNumber } from "../domain/services/order-number.js";
 import { issuesHandoverToken, type HandoverVia } from "../domain/services/handover.js";
 import { toFulfillmentJson } from "./order-json.js";
 import { orderLineDataOf } from "./order-line.data.js";
@@ -32,6 +33,16 @@ const SALES_TERMS_ROW_KEYS: Readonly<Record<SalesTermsDocument, string>> = {
   salesTerms: "sales-terms",
   salesTermsPro: "sales-terms-pro",
 };
+
+/** Le compteur n'a rendu aucune ligne — impossible sur un `INSERT … RETURNING`. */
+class OrderNumberCounterSilentError extends TechnicalError {
+  constructor() {
+    super(
+      "orders.order_number.counter_silent",
+      "Le compteur des numéros de commande n'a rendu aucun rang : la commande n'est pas passée. Prévenir l'équipe technique.",
+    );
+  }
+}
 
 /** Adaptateur Prisma des commandes. */
 /**
@@ -50,23 +61,32 @@ export class PrismaOrderRepository extends OrderRepository {
   constructor(
     private readonly prisma: PrismaService,
     private readonly clock: Clock,
-    private readonly ids: IdGenerator,
     private readonly secrets: SecretGenerator,
   ) {
     super();
   }
 
   /**
-   * Numéro humain d'une commande — `ORD-<horodatage base36>-<suffixe ULID>`.
-   * L'horodatage vient du `Clock` (temps métier de la requête) et le suffixe des
-   * 4 derniers caractères d'un ULID (composante aléatoire, sans `Math.random`).
-   * La colonne `order_number` est `@unique` : un doublon échouerait plutôt que de
-   * passer en silence. (Le vrai identifiant reste le `cuid`.)
+   * Numéro humain d'une commande — `ORD-<n>`, le rang suivant du compteur
+   * unique de la plateforme (plan `commandes/plan-numero-de-commande-court.md`).
+   * `INSERT … ON CONFLICT DO UPDATE … RETURNING`, comme le compteur des
+   * factures : la ligne reste verrouillée jusqu'au COMMIT de la passation, une
+   * passation concurrente attend puis prend le rang suivant. Un échec après
+   * coup laisse un trou, sans conséquence : une commande n'est pas une pièce
+   * comptable. `order_number` reste `@unique`. (Le vrai identifiant est le `cuid`.)
    */
-  private generateOrderNumber(): string {
-    const stamp = this.clock.now().getTime().toString(36).toUpperCase();
-    const suffix = this.ids.next().slice(-4);
-    return `ORD-${stamp}-${suffix}`;
+  private async nextOrderNumber(): Promise<string> {
+    const rows = await this.prisma.$queryRaw<{ last_rank: number }[]>`
+      INSERT INTO "order_number_counter" ("singleton", "last_rank")
+      VALUES (TRUE, 1)
+      ON CONFLICT ("singleton")
+      DO UPDATE SET "last_rank" = "order_number_counter"."last_rank" + 1
+      RETURNING "last_rank"`;
+    const rank = rows[0]?.last_rank;
+    if (rank === undefined) {
+      throw new OrderNumberCounterSilentError();
+    }
+    return formatOrderNumber(rank);
   }
 
   async place(order: Order): Promise<PlacedOrder> {
@@ -75,7 +95,7 @@ export class PrismaOrderRepository extends OrderRepository {
     const state = order.toPersistence();
     return this.prisma.order.create({
       data: {
-        orderNumber: this.generateOrderNumber(),
+        orderNumber: await this.nextOrderNumber(),
         // Le jeton de remise naît ici, au même endroit et pour la même raison que
         // le numéro : c'est une valeur générée à l'écriture, que l'agrégat n'a
         // aucun moyen de produire sans dépendre d'une source d'aléa.

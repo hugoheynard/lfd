@@ -15,7 +15,9 @@ export class PrismaCancelledOrdersReader extends CancelledOrdersReader {
     const rows = await this.prisma.order.findMany({
       where: { id: { in: [...orderIds] }, status: "cancelled" },
       select: { orderNumber: true },
-      orderBy: { orderNumber: "asc" },
+      // Par passation, pas par numéro : en chaîne, `ORD-10` passerait avant
+      // `ORD-9`, et les anciens numéros se mêleraient aux nouveaux (2026-10-23).
+      orderBy: [{ createdAt: "asc" }, { orderNumber: "asc" }],
     });
     return rows.map((row) => row.orderNumber);
   }

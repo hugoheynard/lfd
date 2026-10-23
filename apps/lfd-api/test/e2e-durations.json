@@ -388,5 +388,6 @@
   "test/order-revision-views.e2e-spec.ts": 15998,
   "test/company-standing-readers.e2e-spec.ts": 21402,
   "test/company-standing-workspace.e2e-spec.ts": 7357,
-  "test/pickups-before-s2-migration.e2e-spec.ts": 5137
+  "test/pickups-before-s2-migration.e2e-spec.ts": 5137,
+  "test/order-number.e2e-spec.ts": 17617
 }

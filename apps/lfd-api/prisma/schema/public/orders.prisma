@@ -941,3 +941,14 @@ model ShopCart {
   @@map("shop_carts")
   @@schema("public")
 }
+
+/// Le dernier rang de numéro de commande attribué (`ORD-<n>`) — UNE ligne pour
+/// toute la plateforme, jamais remise à zéro. Pris dans la transaction de la
+/// passation (`20261023210000_le_numero_de_commande_court`).
+model OrderNumberCounter {
+  singleton Boolean @id @default(true)
+  lastRank  Int     @map("last_rank")
+
+  @@map("order_number_counter")
+  @@schema("public")
+}

@@ -52,7 +52,7 @@ export class OrderHandedOverEvent implements DurableEvent {
   constructor(
     /** L'identifiant opaque de la commande — la clé du fait, rien d'autre. */
     readonly orderId: string,
-    /** La référence lisible, `ORD-…`. */
+    /** La référence lisible, `ORD-1042`. */
     readonly reference: string,
     /** L'instant du retrait D'ORIGINE, jamais celui d'une réannonce. */
     readonly handedOverAt: Date,

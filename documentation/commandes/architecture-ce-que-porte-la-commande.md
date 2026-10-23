@@ -97,12 +97,12 @@ par défaut (règle 4 du [`README.md`](README.md)).
 
 ### 3.1 Identité
 
-| Colonne       | Ce qu'elle dit                                | Défini par                                                                                | `NULL` |
-| ------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------- | ------ |
-| `id`          | le vrai identifiant                           | la base (`cuid`)                                                                          | —      |
-| `orderNumber` | la **référence humaine**, imprimée sur le bon | l'adaptateur : `ORD-` + l'instant en base 36 + les 4 derniers caractères d'un identifiant | —      |
-| `createdAt`   | **passée le**                                 | la base                                                                                   | —      |
-| `updatedAt`   | dernière écriture, quelle qu'elle soit        | Prisma                                                                                    | —      |
+| Colonne       | Ce qu'elle dit                                | Défini par                                                                                                                                                                   | `NULL` |
+| ------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| `id`          | le vrai identifiant                           | la base (`cuid`)                                                                                                                                                             | —      |
+| `orderNumber` | la **référence humaine**, imprimée sur le bon | l'adaptateur : `ORD-<n>`, le rang suivant du compteur unique `order_number_counter` (depuis le 2026-10-23 ; les commandes antérieures gardent leur `ORD-<base 36>-<4 car.>`) | —      |
+| `createdAt`   | **passée le**                                 | la base                                                                                                                                                                      | —      |
+| `updatedAt`   | dernière écriture, quelle qu'elle soit        | Prisma                                                                                                                                                                       | —      |
 
 ⚠️ Le numéro est **public** : il est imprimé en clair. C'est pour ça qu'il ne
 sert jamais de preuve au retrait (§3.8), et qu'il suffit au colisage, qui est un

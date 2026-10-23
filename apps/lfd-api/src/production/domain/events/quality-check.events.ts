@@ -64,7 +64,7 @@ export class QualityCheckedJournalEvent implements JournaledEvent {
   }
 }
 
-/** Une commande retenue, sous sa référence du moment (`ORD-…`). */
+/** Une commande retenue, sous sa référence du moment (`ORD-1042`). */
 export interface HeldOrder {
   readonly id: string;
   readonly reference: string;

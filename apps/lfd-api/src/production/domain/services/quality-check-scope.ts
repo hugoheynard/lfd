@@ -29,7 +29,7 @@ export type QualityTargetRequest =
 /** La cible résolue, et le nom sous lequel le journal la dira. */
 export interface ScopedQualityTarget {
   readonly target: QualityCheckTargetInput;
-  /** Le SKU d'une ligne, la référence `ORD-…` d'une commande. */
+  /** Le SKU d'une ligne, la référence `ORD-1042` d'une commande. */
   readonly label: string;
 }
 
