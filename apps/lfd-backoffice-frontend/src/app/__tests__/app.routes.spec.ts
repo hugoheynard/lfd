@@ -77,6 +77,8 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'comptabilite/blocages-prelevement': null,
   'comptabilite/liens-de-paiement': null,
   'comptabilite/prelevement-du-mois': null,
+  'comptabilite/procedure-de-prelevement': null,
+  'comptabilite/procedure-de-prelevement/:id': null,
   'comptabilite/arretes-de-facturation/:id': null,
   'comptabilite/factures/:id': null,
   'comptabilite/limites-de-prix': 'lfc_price_limits:read',

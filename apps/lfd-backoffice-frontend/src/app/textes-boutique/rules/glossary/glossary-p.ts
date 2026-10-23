@@ -59,6 +59,8 @@ export const GLOSSARY_P: Readonly<Record<string, string>> = {
   pickupUpTo: 'Retrait — remise jusqu’à',
   pieceMany: 'Pièces — plusieurs',
   pieceOne: 'Pièces — une seule',
+  pieceUnavailable: 'Article indisponible — fiche ouverte par une adresse',
+  pieceUnavailableBack: 'Article indisponible — retour à la boutique',
   pieces: 'Nombre d’articles',
   piecesUnit: 'Unité « pièces »',
   pills: 'Pastilles',
