@@ -41,6 +41,12 @@ export const SHOP_COPY_LOCALE = domain('langue d’un texte de la boutique', {
   it: 'Italien',
 });
 
+/** Les textes avec lesquels un essai d'e-mail est parti (`mail_copy.trial_sent`). */
+export const MAIL_COPY_SOURCE = domain('textes d’un essai d’e-mail', {
+  draft: 'Brouillons',
+  published: 'Textes publiés',
+});
+
 /** Ce qui déclenche une suggestion décidée (`staff_suggestion.*`, 2026-10-18). */
 export const SUGGESTION_TRIGGER = domain('déclencheur d’une suggestion', {
   everywhere: 'Partout',
@@ -68,6 +74,7 @@ export const COMMERCE_VALUES: ValueFamily = {
     APPOINTMENT_CHANNEL,
     PLAY,
     SHOP_COPY_LOCALE,
+    MAIL_COPY_SOURCE,
     SUGGESTION_TRIGGER,
     SUGGESTION_PLACEMENT,
     SUGGESTION_ORDER,

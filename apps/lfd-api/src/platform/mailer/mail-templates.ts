@@ -9,7 +9,7 @@ import {
 
 import { SELF_SERVICE_PASSWORD_TICKET_TTL_SECONDS } from "../identity/auth0-identity.gateway.js";
 import { DEFAULT_MAIL_LOCALE, fill, fillNamed, mailCopyOf } from "./copy/mail-copy.js";
-import type { OrderSettlementCopy } from "./copy/mail-copy.model.js";
+import type { MailCopy, OrderSettlementCopy } from "./copy/mail-copy.model.js";
 import {
   renderCollectionNoticeMail,
   type CollectionNoticeMailData,
@@ -565,8 +565,10 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
   /**
    * Les textes des e-mails qui ne portent pas de langue — l'équipe, et ceux
    * partis d'un geste du back-office : ils s'écrivent dans la langue de repli.
+   * Relus À CHAQUE rendu, jamais gardés à la construction du registre : le
+   * texte effectif dépend du périmètre de remplacement de l'envoi (C2).
    */
-  const local = mailCopyOf(DEFAULT_MAIL_LOCALE);
+  const local = (): MailCopy => mailCopyOf(DEFAULT_MAIL_LOCALE);
 
   return {
     "customer.order-ready": (data) => {
@@ -685,7 +687,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
       };
     },
     "ops.deploy-check": (data) => {
-      const copy = local["ops.deploy-check"];
+      const copy = local()["ops.deploy-check"];
       return {
         subject: sanitiseSubject(fill(copy.subject, { revision: data.revision })),
         html: renderLayout({
@@ -702,7 +704,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
       };
     },
     "staff.account-alert": (data) => {
-      const copy = local["staff.account-alert"];
+      const copy = local()["staff.account-alert"];
       const names = { company: data.companyName, rule: data.ruleLabel };
       return {
         subject: sanitiseSubject(fill(copy.subject, names)),
@@ -755,7 +757,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
     },
     "customer.order-payment-link": (data) => {
       // Pas de locale : la comptabilité écrit en français (cf. `B2bMails`).
-      const copy = local["customer.order-payment-link"];
+      const copy = local()["customer.order-payment-link"];
       return {
         subject: sanitiseSubject(fill(copy.subject, { ref: data.reference })),
         html: customerMail({
@@ -769,7 +771,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
     },
     "customer.access-opened": (data) => renderCustomerAccessOpenedMail(data, customerMail),
     "staff.invited": (data) => {
-      const copy = local["staff.invited"];
+      const copy = local()["staff.invited"];
       return {
         subject: sanitiseSubject(copy.subject),
         html: staffMail({
@@ -781,7 +783,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
       };
     },
     "customer.order-placed-with-your-email": (data) => {
-      const copy = local["customer.order-placed-with-your-email"];
+      const copy = local()["customer.order-placed-with-your-email"];
       return {
         subject: sanitiseSubject(copy.subject),
         html: customerMail({
@@ -792,7 +794,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
       };
     },
     "customer.login-method-linked": (data) => {
-      const copy = local["customer.login-method-linked"];
+      const copy = local()["customer.login-method-linked"];
       const method = { method: data.methodLabel };
       return {
         subject: sanitiseSubject(fill(copy.subject, method)),
@@ -804,7 +806,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
       };
     },
     "customer.password-reset": (data) => {
-      const copy = local["customer.password-reset"];
+      const copy = local()["customer.password-reset"];
       const validity = selfServiceLinkValidity(DEFAULT_MAIL_LOCALE);
       return {
         subject: sanitiseSubject(copy.subject),
@@ -821,7 +823,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
       };
     },
     "customer.company-attached": (data) => {
-      const copy = local["customer.company-attached"];
+      const copy = local()["customer.company-attached"];
       const company = { company: data.companyName };
       return {
         subject: sanitiseSubject(fill(copy.subject, company)),
@@ -834,7 +836,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
     },
     "customer.mandate-to-sign": (data) => {
       // Le texte qui dépend du schéma est indexé par lui, au dictionnaire.
-      const copy = local["customer.mandate-to-sign"];
+      const copy = local()["customer.mandate-to-sign"];
       const wording = copy.scheme[data.scheme];
       const document = { document: wording.documentName };
       return {
@@ -859,7 +861,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
       };
     },
     "staff.appointment-booked": (data) => {
-      const copy = local["staff.appointment-booked"];
+      const copy = local()["staff.appointment-booked"];
       return {
         subject: sanitiseSubject(
           fill(copy.subject, { contact: data.contactName, when: data.when }),
@@ -882,7 +884,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
     },
 
     "staff.support-requested": (data) => {
-      const copy = local["staff.support-requested"];
+      const copy = local()["staff.support-requested"];
       return {
         subject: sanitiseSubject(
           fill(copy.subject, { contact: data.contactName, purpose: data.purposeLabel }),
@@ -907,7 +909,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
     "staff.customer-request": (data) =>
       renderCustomerRequestMail(data, staffMail, brand.backOfficeUrl),
     "staff.password-reset": (data) => {
-      const copy = local["staff.password-reset"];
+      const copy = local()["staff.password-reset"];
       return {
         subject: sanitiseSubject(copy.subject),
         html: staffMail({
@@ -918,7 +920,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
       };
     },
     "staff.access-suspended": (data) => {
-      const copy = local["staff.access-suspended"];
+      const copy = local()["staff.access-suspended"];
       return {
         subject: sanitiseSubject(copy.subject),
         html: staffMail({
@@ -931,7 +933,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
       };
     },
     "staff.access-restored": (data) => {
-      const copy = local["staff.access-restored"];
+      const copy = local()["staff.access-restored"];
       return {
         subject: sanitiseSubject(copy.subject),
         html: staffMail({

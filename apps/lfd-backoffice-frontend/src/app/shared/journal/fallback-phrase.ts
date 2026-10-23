@@ -99,6 +99,7 @@ const SUBJECT_NOUNS: Readonly<Record<string, string>> = {
   ladder: 'le barème de volume',
   lead: 'le prospect',
   legal_entity: 'l’entité juridique',
+  mail_copy: 'les textes des e-mails',
   mercuriale: 'la mercuriale',
   operation: 'l’opération',
   order_cutoff: 'l’heure limite',

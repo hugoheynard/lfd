@@ -130,3 +130,67 @@ describe('les textes de la boutique publiés', () => {
     );
   });
 });
+
+/**
+ * **Les textes des e-mails** (`mail_copy.*`, `plan-textes-des-e-mails.md`,
+ * C3, C6) : la publication compte comme celle de la boutique ; l'essai dit
+ * quel e-mail, dans quelle langue, avec quels textes.
+ */
+function mailFact(type: string, subjectId: string, payload: Record<string, unknown>): FactInput {
+  return {
+    type,
+    payload,
+    subjectType: 'mail_copy',
+    subjectId,
+    actorName: 'Colette Martin',
+    actorType: 'staff',
+  };
+}
+
+describe('les textes des e-mails', () => {
+  it('publiés : dit la version et compte les textes modifiés et rendus', () => {
+    const rendered = renderFact(
+      mailFact('mail_copy.published', 'mail', {
+        subjectLabel: 'Textes des e-mails',
+        version: 2,
+        changes: [
+          {
+            mail: 'customer.order-placed',
+            path: 'subject',
+            locale: 'fr',
+            before: null,
+            after: 'Merci {ref}',
+          },
+          {
+            mail: 'customer.order-placed',
+            path: 'intro',
+            locale: 'fr',
+            before: 'Avant',
+            after: null,
+          },
+        ],
+      }),
+    );
+
+    expect(rendered.sentence).toBe(
+      'Colette Martin a publié les textes des e-mails (version 2) : 1 texte modifié, 1 texte rendu à l’original',
+    );
+    expect(rendered.detail).toEqual([]);
+  });
+
+  it('un essai : l’e-mail, la langue et la source, sans détail restant', () => {
+    const rendered = renderFact(
+      mailFact('mail_copy.trial_sent', 'customer.order-placed', {
+        subjectLabel: 'customer.order-placed',
+        mail: 'customer.order-placed',
+        locale: 'en',
+        source: 'draft',
+      }),
+    );
+
+    expect(rendered.sentence).toBe(
+      'Colette Martin s’est envoyé un essai de l’e-mail customer.order-placed, en anglais, avec les brouillons',
+    );
+    expect(rendered.detail).toEqual([]);
+  });
+});

@@ -14,7 +14,9 @@ import { ResendWebhookChecker } from "./webhook/resend-webhook.checker.js";
 import { ResendWebhookController } from "./webhook/resend-webhook.controller.js";
 import { mailBrandingOf } from "./mail-branding.js";
 import { b2bMailTemplates, type B2bMails } from "./mail-templates.js";
-import { MAILER, type B2bMailer } from "./mailer.tokens.js";
+import { MAIL_TRANSPORT, MAILER, type B2bMailer } from "./mailer.tokens.js";
+import { EffectiveCopyMailer } from "./effective-copy/effective-copy-mailer.js";
+import { PublishedMailCopyReader } from "./effective-copy/published-mail-copy.reader.js";
 
 // Ré-exportés pour que les appelants existants continuent d'écrire
 // `from "…/mailer.module.js"` — cf. mailer.tokens.ts pour la raison du fichier.
@@ -41,22 +43,11 @@ export type { B2bMailer };
     ResendWebhookChecker,
     ReceiveResendEventHandler,
     {
-      provide: MAILER,
-      inject: [AppConfig, MailJournal, Clock, BackgroundWork, AfterCommit],
-      useFactory: (
-        config: AppConfig,
-        journal: MailJournal,
-        clock: Clock,
-        work: BackgroundWork,
-        afterCommit: AfterCommit,
-      ): B2bMailer => {
+      provide: MAIL_TRANSPORT,
+      inject: [AppConfig],
+      useFactory: (config: AppConfig): B2bMailer => {
         const mailer = config.mailerConfig();
-        // Le journal ENVELOPPE le mailer : `@lfd/mailer` est partagé et ne
-        // connaît ni Nest, ni Prisma, ni l'idée qu'une app tienne un registre.
-        // C'est l'app qui décide de garder une trace — et sans elle, le webhook
-        // Resend serait muet d'avance : il donne un identifiant fournisseur
-        // auquel rien, de notre côté, ne correspondrait.
-        const inner = createMailer<B2bMails>({
+        return createMailer<B2bMails>({
           apiKey: mailer.apiKey,
           // La marque est construite ICI, pas déclarée dans les gabarits :
           // l'adresse de recours est l'admin RACINE, la seule que le domaine
@@ -67,7 +58,41 @@ export type { B2bMailer };
           replyTo: mailer.replyTo,
           logger: nestLogger(),
         });
-        return new JournalingMailer(inner, journal, clock, work, afterCommit);
+      },
+    },
+    {
+      provide: MAILER,
+      inject: [
+        MAIL_TRANSPORT,
+        { token: PublishedMailCopyReader, optional: true },
+        MailJournal,
+        Clock,
+        BackgroundWork,
+        AfterCommit,
+      ],
+      useFactory: (
+        transport: B2bMailer,
+        published: PublishedMailCopyReader | undefined,
+        journal: MailJournal,
+        clock: Clock,
+        work: BackgroundWork,
+        afterCommit: AfterCommit,
+      ): B2bMailer => {
+        // Le texte effectif d'abord (le publié, sinon le code), puis le
+        // journal par-dessus. Le port du publié est relié par `appBootstrap/`
+        // (`MailCopySourceModule`) ; absent — un module de test qui ne monte
+        // pas le contexte des textes —, les e-mails partent avec le code.
+        const effective = new EffectiveCopyMailer(
+          transport,
+          published ?? null,
+          new Logger("Mailer"),
+        );
+        // Le journal ENVELOPPE le mailer : `@lfd/mailer` est partagé et ne
+        // connaît ni Nest, ni Prisma, ni l'idée qu'une app tienne un registre.
+        // C'est l'app qui décide de garder une trace — et sans elle, le webhook
+        // Resend serait muet d'avance : il donne un identifiant fournisseur
+        // auquel rien, de notre côté, ne correspondrait.
+        return new JournalingMailer(effective, journal, clock, work, afterCommit);
       },
     },
   ],

@@ -195,6 +195,45 @@ export const COMMERCE_FACTS = {
   ),
 
   /**
+   * **Les textes des e-mails publiés** (`plan-textes-des-e-mails.md`, C3) : UN
+   * fait par « Publier », qui porte pour chaque texte la valeur envoyée AVANT
+   * et APRÈS — de quoi relire, et annuler à la main. `null` = le texte du code.
+   *
+   * `subjectLabel` : « Textes des e-mails » — il n'y a qu'un jeu publié.
+   */
+  "mail_copy.published": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      version: count(),
+      changes: z.array(
+        payload({
+          mail: z.string().min(1),
+          path: z.string().min(1),
+          locale: z.enum(["fr", "en", "it"]),
+          before: z.string().nullable(),
+          after: z.string().nullable(),
+        }),
+      ),
+    }),
+  ),
+
+  /**
+   * **Un essai d'e-mail est parti** (`plan-textes-des-e-mails.md`, C6) — à la
+   * seule adresse de la personne qui l'a demandé, auteur du fait. `source` :
+   * rendu avec les brouillons, ou avec ce qui part aujourd'hui.
+   *
+   * `subjectLabel` : la clé de l'e-mail au registre (`customer.order-placed`).
+   */
+  "mail_copy.trial_sent": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      mail: z.string().min(1),
+      locale: z.enum(["fr", "en", "it"]),
+      source: z.enum(["draft", "published"]),
+    }),
+  ),
+
+  /**
    * Un prospect saisi à la main. L'e-mail en est sorti le 2026-09-19 (lot B) :
    * une coordonnée n'a rien à faire au journal, et le lead la garde sur sa
    * propre ligne. `subjectLabel` : son enseigne — la même que `businessName`.

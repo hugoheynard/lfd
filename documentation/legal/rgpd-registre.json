@@ -1530,6 +1530,33 @@
       "information": false
     },
     {
+      "colonne": "public.mail_copy_entries.draft_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`draft_by`) sur `mail_copy_entries`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.mail_copy_entries.published_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`published_by`) sur `mail_copy_entries`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.mail_copy_publication.published_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`published_by`) sur `mail_copy_publication`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "public.platform_content.updated_by",
       "personne": "staff",
       "categorie": "auteur-geste",

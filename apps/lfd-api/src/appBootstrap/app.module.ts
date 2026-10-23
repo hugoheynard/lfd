@@ -20,6 +20,7 @@ import { FeatureAccessModule } from "../b2b/feature-access/feature-access.module
 import { PlatformContentModule } from "../b2b/content/content.module.js";
 import { VitrineModule } from "../b2b/vitrine/vitrine.module.js";
 import { ShopCopyModule } from "../b2b/shop-copy/shop-copy.module.js";
+import { MailCopyModule } from "../b2b/mail-copy/mail-copy.module.js";
 import { GrowthModule } from "../b2b/growth/growth.module.js";
 import { OrdersModule } from "../b2b/orders/orders.module.js";
 import { PricerModule } from "../b2b/pricing/pricer.module.js";
@@ -78,6 +79,7 @@ import { IdentityModule } from "../platform/identity/identity.module.js";
 import { LoggingModule } from "../platform/logging/logging.module.js";
 import { StartupModule } from "../platform/startup/startup.module.js";
 import { MailerModule } from "../platform/mailer/mailer.module.js";
+import { MailCopySourceModule } from "./mail-copy-source.module.js";
 import { DatabaseModule } from "../platform/database/database.module.js";
 import { SecurityModule } from "../platform/security/security.module.js";
 import { APP_GUARD } from "@nestjs/core";
@@ -143,6 +145,10 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     FeatureAccessModule,
     PlatformContentModule,
     ShopCopyModule,
+    // Les textes des e-mails, et leur publié relié au mailer (plan des textes
+    // des e-mails, E2) : le port est au mailer, le cache au contexte.
+    MailCopyModule,
+    MailCopySourceModule,
     VitrineModule,
     // Annuaire back-office (isolé, source de vérité locale).
     StaffUsersModule,

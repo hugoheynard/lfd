@@ -4,6 +4,7 @@ import { MAIL_EN } from "./mail-copy.en.js";
 import { MAIL_FR } from "./mail-copy.fr.js";
 import { MAIL_IT } from "./mail-copy.it.js";
 import type { MailCopy, MailCopyBook } from "./mail-copy.model.js";
+import { activeMailCopyOverlay, overlaidMailCopy } from "./mail-copy-overlay.js";
 
 /**
  * Le dictionnaire des e-mails, dans les trois langues.
@@ -26,9 +27,18 @@ export const MAIL_COPY: MailCopyBook = { fr: MAIL_FR, en: MAIL_EN, it: MAIL_IT }
  */
 export const DEFAULT_MAIL_LOCALE: ContentLocale = "fr";
 
-/** Les textes d'une langue. Jamais d'accès direct au `Record` chez l'appelant. */
+/**
+ * Les textes EFFECTIFS d'une langue — ceux du code, remplacés par les textes
+ * publiés (ou, pour un aperçu, par les brouillons) quand un périmètre de
+ * remplacement est ouvert (`withMailCopyOverlay`, plan
+ * `plan-textes-des-e-mails.md`, C2). Jamais d'accès direct au `Record` chez
+ * l'appelant.
+ */
 export function mailCopyOf(locale: ContentLocale): MailCopy {
-  return MAIL_COPY[locale];
+  const overlay = activeMailCopyOverlay();
+  return overlay === undefined
+    ? MAIL_COPY[locale]
+    : overlaidMailCopy(MAIL_COPY[locale], overlay, locale);
 }
 
 /**

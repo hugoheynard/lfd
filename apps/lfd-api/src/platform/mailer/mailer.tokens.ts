@@ -19,3 +19,14 @@ export const MAILER = Symbol("MAILER");
 
 /** Le type qu'un appelant écrit : le mailer, chargé de la carte de cette app. */
 export type B2bMailer = Mailer<B2bMails>;
+
+/**
+ * Jeton du **transport** : le mailer de `@lfd/mailer` (à blanc ou Resend),
+ * qui rend le gabarit et l'envoie — SOUS le texte effectif et le journal.
+ *
+ * Séparé de {@link MAILER} pour qu'un e2e puisse doubler l'envoi en gardant
+ * tout ce qui le précède : le texte publié appliqué au rendu (plan
+ * `plan-textes-des-e-mails.md`, E2) ne s'éprouve qu'à travers lui. Personne
+ * d'autre ne l'injecte.
+ */
+export const MAIL_TRANSPORT = Symbol("MAIL_TRANSPORT");

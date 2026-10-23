@@ -1,0 +1,74 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Les textes des e-mails — des REMPLACEMENTS du texte du code
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Plan : documentation/contenu-ecommerce/plan-textes-des-e-mails.md (C2, C3,
+// C5, lot E2). Écrites et lues par `b2b/mail-copy` seul ; le mailer
+// (`platform/`) ne lit le publié que par un port relié dans `appBootstrap/`.
+// Le dictionnaire du code (`platform/mailer/copy/`) reste la source de chaque
+// texte : une base vide envoie les e-mails d'aujourd'hui.
+//
+// 🔴 Les CHECK (forme du brouillon, langues admises, version positive) vivent
+// dans la migration `20261023180000_les_textes_des_e_mails` : Prisma ne sait
+// pas les dire.
+
+/// Le brouillon d'un texte d'e-mail : rien à publier, un remplacement, ou le
+/// retour au texte du code. Même découpe que `ShopCopyDraftState`.
+enum MailCopyDraftState {
+  unchanged
+  set
+  reset
+
+  @@schema("public")
+}
+
+/// **Un texte d'un e-mail dans une langue** — e-mail du registre, chemin dans
+/// sa section du dictionnaire, langue.
+///
+/// Jamais supprimé : publier un `reset` met `published_text` à NULL, la ligne
+/// reste, et son auteur avec elle.
+model MailCopyEntry {
+  /// La clé du registre (`customer.order-placed`). Chaîne OPAQUE : elle peut
+  /// ne plus exister dans le code (orpheline), et c'est montré, pas refusé.
+  mail   String
+  /// Le chemin du texte dans la section (`subject`, `title.paid`).
+  path   String
+  /// `fr`, `en` ou `it` (CHECK).
+  locale String
+
+  /// Monte à chaque écriture du brouillon : le verrou entre deux rédacteurs.
+  revision Int
+
+  draftState MailCopyDraftState @default(unchanged) @map("draft_state")
+  /// Présent si et seulement si `draft_state = 'set'` (CHECK).
+  draftText  String?            @map("draft_text")
+  /// Le dernier geste de brouillon. GARDÉ après publication : il nourrit
+  /// l'avertissement « le français a changé depuis » (C4).
+  draftAt    DateTime?          @map("draft_at")
+  /// L'identifiant INTERNE de la fiche staff — jamais un `sub` Auth0.
+  draftBy    String?            @map("draft_by")
+
+  /// Ce que l'e-mail envoie. NULL = le texte du code.
+  publishedText String?   @map("published_text")
+  publishedAt   DateTime? @map("published_at")
+  publishedBy   String?   @map("published_by")
+
+  @@id([mail, path, locale])
+  @@map("mail_copy_entries")
+  @@schema("public")
+}
+
+/// **La version publiée des textes des e-mails**, en une ligne : `key = 'mail'`.
+/// Elle monte à chaque « Publier » et sert d'estampille au cache du mailer.
+/// Pas de ligne semée : absente, la version est 0.
+model MailCopyPublication {
+  /// Toujours `'mail'` : il n'y a qu'un jeu de textes publiés.
+  key         String   @id
+  version     Int
+  publishedAt DateTime @map("published_at")
+  /// L'identifiant INTERNE de la fiche staff — jamais un `sub` Auth0.
+  publishedBy String   @map("published_by")
+
+  @@map("mail_copy_publication")
+  @@schema("public")
+}

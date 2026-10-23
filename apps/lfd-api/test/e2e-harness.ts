@@ -44,6 +44,7 @@ import { PrismaService } from "../src/platform/database/prisma.service.js";
 import { AppErrorFilter } from "../src/platform/shared/http/app-error.filter.js";
 import type { VerifiedToken } from "../src/platform/auth/principal.js";
 import { PricingMaterialsCache } from "../src/b2b/pricing/infrastructure/pricing-materials.cache.js";
+import { CachedPublishedMailCopyReader } from "../src/b2b/mail-copy/infrastructure/cached-published-mail-copy.reader.js";
 import { CachedPublishedShopCopyReader } from "../src/b2b/shop-copy/infrastructure/cached-published-shop-copy.reader.js";
 import { StaffAccessResolver } from "../src/platform/auth/staff-access.resolver.js";
 import { prismaSchemaSource } from "../src/platform/database/prisma-schema-source.js";
@@ -258,6 +259,8 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
         // le `TRUNCATE` fait revenir la version à 0, et une langue gardée sous
         // l'ancienne serait resservie à la suite suivante.
         app.get(CachedPublishedShopCopyReader).forget();
+        // Les textes d'e-mails publiés, pour la même raison.
+        app.get(CachedPublishedMailCopyReader).forget();
         await resetStorage();
       }),
     // 🔴 On draine avant de FERMER, pour la même raison qu'avant de vider — et

@@ -123,6 +123,14 @@ const STOREFRONT_ZONE = "storefront";
 const SHOP_COPY_ZONE = "shop-copy";
 
 /**
+ * **Les textes des e-mails** (2026-10-23,
+ * `documentation/contenu-ecommerce/plan-textes-des-e-mails.md`, E2) : même
+ * règle que la boutique — « Publier » et l'essai se tracent, les brouillons se
+ * déclarent `@sans-journal`.
+ */
+const MAIL_COPY_ZONE = "mail-copy";
+
+/**
  * La tarification, elle, est tenue par le COMPILATEUR : ses dépôts d'écriture
  * exigent un `PricingAct` en paramètre, et un acte non fourni ne compile pas.
  * C'est plus fort que cette porte, et ça couvre règles, limites et barèmes.
@@ -516,6 +524,10 @@ const ZONES = [
   },
   {
     root: join(SRC, "b2b", SHOP_COPY_ZONE),
+    audit: (source, index, params, handler) => auditTraced(source, index, params, handler),
+  },
+  {
+    root: join(SRC, "b2b", MAIL_COPY_ZONE),
     audit: (source, index, params, handler) => auditTraced(source, index, params, handler),
   },
   ...SETTINGS_ZONES.map((zone) => ({

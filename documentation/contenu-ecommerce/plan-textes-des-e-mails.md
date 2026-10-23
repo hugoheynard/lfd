@@ -64,7 +64,7 @@
 | Lot                                   | Contenu                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **E1** ✅ bâti le 2026-10-23 (§2 bis) | Sortir des gabarits **tous** les textes des 28 e-mails vers le dictionnaire, en trois langues (le français est la vérité ; l'anglais et l'italien reprennent l'existant, sinon une traduction marquée à relire). Aucun changement de rendu : chaque e-mail rend les mêmes octets en français avant et après (tests de non-régression par gabarit). Un manifeste des clés (e-mail, clé, variables permises, texte par défaut) généré depuis le dictionnaire, tenu par une porte comme `lint:shop-copy-digest`. |
-| **E2**                                | Le serveur : entrées en brouillon et publiées (migration additive, sur le modèle de `shop_copy_entries`), le texte effectif (défaut + publié), validation des variables (C5), routes admin (lister, modifier, rétablir, publier), aperçu d'un e-mail avec données d'exemple (C6), essai envoyé au staff connecté, fait de journal et ses libellés.                                                                                                                                                            |
+| **E2** ✅ bâti le 2026-10-23 (§2 ter) | Le serveur : entrées en brouillon et publiées (migration additive, sur le modèle de `shop_copy_entries`), le texte effectif (défaut + publié), validation des variables (C5), routes admin (lister, modifier, rétablir, publier), aperçu d'un e-mail avec données d'exemple (C6), essai envoyé au staff connecté, fait de journal et ses libellés.                                                                                                                                                            |
 | **E3**                                | L'écran du back-office (C3, C4, C8) : la liste, l'éditeur à trois langues, l'aperçu, « M'envoyer un essai », « Publier », sur le modèle de `textes-boutique/`.                                                                                                                                                                                                                                                                                                                                                |
 
 ## 2 bis. E1 — bâti le 2026-10-23 (non commité à l'écriture)
@@ -112,6 +112,44 @@ anglais et en italien :
 - les onze e-mails de l'équipe : `staff.*`, `ops.deploy-check`,
   `agency.vitrine-notice` (« Benvenuto » au masculin générique en italien,
   comme le reste du dictionnaire au vouvoiement « Lei »).
+
+## 2 ter. E2 — bâti le 2026-10-23 (non commité à l'écriture)
+
+- **Le stockage** est un contexte du commerce, `apps/lfd-api/src/b2b/mail-copy/`,
+  sur le modèle de `b2b/shop-copy/` : `mail_copy_entries` (une ligne par
+  e-mail, chemin, langue ; brouillon à trois états, révision) et
+  `mail_copy_publication` (une ligne, la version), migration additive
+  `20261023180000_les_textes_des_e_mails`, aucun droit accordé.
+- **Le texte effectif** : les gabarits lisent toujours `mailCopyOf(locale)` ;
+  il rend le dictionnaire du code, remplacé par les textes d'un périmètre
+  ouvert (`apps/lfd-api/src/platform/mailer/copy/mail-copy-overlay.ts`). Le mailer (`MAILER`) est désormais
+  `JournalingMailer(EffectiveCopyMailer(MAIL_TRANSPORT))` : il ouvre le
+  périmètre du publié avant chaque envoi. Le publié se lit par le port
+  `PublishedMailCopyReader`, que le mailer déclare (`platform/`) et que
+  `apps/lfd-api/src/appBootstrap/mail-copy-source.module.ts` relie au cache du contexte
+  (relu au plus toutes les 15 s, oublié à « Publier »). Lecture en échec :
+  l'e-mail part avec le texte du code, et l'API le journalise. Seuls les
+  textes que le code connaît, et dont les variables tiennent encore, sont
+  appliqués.
+- **C5** : vide, variable obligatoire perdue ou variable inconnue → `400`,
+  le message liste les variables permises.
+- **L'aperçu et l'essai** rendent le vrai gabarit sur un exemple par e-mail
+  (`platform/mailer/specimens/`, tout ce qui nomme quelqu'un dit
+  « EXEMPLE », liens vers `exemple.invalid`). L'aperçu incruste les images
+  `cid:` ; l'essai part par le vrai mailer à l'adresse de la fiche de
+  l'appelant, jamais à une adresse de la requête.
+- **Les routes**, sous `b2b_storefront` : `GET /admin/mail-copy`,
+  `PUT /admin/mail-copy/drafts`, `POST /admin/mail-copy/resets`,
+  `POST /admin/mail-copy/publications`,
+  `GET /admin/mail-copy/previews?mail=&locale=&source=draft|published`,
+  `POST /admin/mail-copy/trials` ; contrats dans
+  `packages/contracts/src/mail-copy.ts`.
+- **Le journal** : `mail_copy.published` (avant/après de chaque texte) et
+  `mail_copy.trial_sent` (e-mail, langue, source), phrases au back-office
+  dans `shared/journal/phrases/storefront-phrases.ts`.
+- ⚠️ Un e-mail dont les données ne portent pas de langue
+  (`followsLocale: false`, 21 sur 28) part toujours en français : son
+  aperçu en anglais ou en italien montre donc le français, comme l'envoi.
 
 ## 3. Ce qui n'est pas fait ici
 

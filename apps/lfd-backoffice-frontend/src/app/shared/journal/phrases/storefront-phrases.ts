@@ -96,7 +96,75 @@ const shopCopyPublished: Phrase = (fact) => {
   );
 };
 
+/**
+ * **Les textes des e-mails publiés** (`mail_copy.published`,
+ * `documentation/contenu-ecommerce/plan-textes-des-e-mails.md`, C3).
+ *
+ * « Colette Martin a publié les textes des e-mails (version 3) : 2 textes
+ * modifiés, 1 texte rendu à l'original ». Même forme que la boutique : la
+ * charge porte chaque texte avant et après, la phrase les COMPTE.
+ */
+const mailCopyPublished: Phrase = (fact) => {
+  const version = typeof fact.payload['version'] === 'number' ? fact.payload['version'] : null;
+  const { rewritten, restored } = publishedChanges(fact.payload['changes']);
+  const parts = [
+    rewritten === 0 ? null : countOf(rewritten, 'texte modifié', 'textes modifiés'),
+    restored === 0
+      ? null
+      : countOf(restored, 'texte rendu à l’original', 'textes rendus à l’original'),
+  ].flatMap((part) => (part === null ? [] : [part]));
+  const listed = parts.flatMap((part, index) => (index === 0 ? [part] : [text(', '), part]));
+  return byActor(
+    fact,
+    [
+      text('a publié les textes des e-mails'),
+      ...(version === null ? [] : [text(' (version '), value(String(version)), text(')')]),
+      ...(listed.length === 0
+        ? [text(', sans rien changer aux envois')]
+        : [text(' : '), ...listed]),
+    ],
+    PUBLISHED_KEYS,
+  );
+};
+
+const TRIAL_KEYS = ['subjectLabel', 'mail', 'locale', 'source'];
+
+/** La langue d'un essai, en toutes lettres. */
+const TRIAL_LOCALES: Readonly<Record<string, string>> = {
+  fr: 'en français',
+  en: 'en anglais',
+  it: 'en italien',
+};
+
+/**
+ * **Un essai d'e-mail envoyé** (`mail_copy.trial_sent`, C6) — à l'auteur
+ * lui-même, et à lui seul.
+ *
+ * « Colette Martin s'est envoyé un essai de l'e-mail customer.order-placed,
+ * en anglais, avec les brouillons ». La clé du registre est le seul nom
+ * qu'un e-mail porte côté serveur : elle est citée comme une valeur.
+ */
+const mailCopyTrialSent: Phrase = (fact) => {
+  const mail = typeof fact.payload['mail'] === 'string' ? fact.payload['mail'] : null;
+  const locale = typeof fact.payload['locale'] === 'string' ? fact.payload['locale'] : '';
+  const source =
+    fact.payload['source'] === 'published' ? 'avec les textes publiés' : 'avec les brouillons';
+  const said = TRIAL_LOCALES[locale];
+  return byActor(
+    fact,
+    [
+      text('s’est envoyé un essai de l’e-mail'),
+      ...(mail === null ? [] : [text(' '), value(mail)]),
+      ...(said === undefined ? [] : [text(`, ${said}`)]),
+      text(`, ${source}`),
+    ],
+    TRIAL_KEYS,
+  );
+};
+
 export const STOREFRONT_PHRASES = {
   'storefront.saved': saved,
   'shop_copy.published': shopCopyPublished,
+  'mail_copy.published': mailCopyPublished,
+  'mail_copy.trial_sent': mailCopyTrialSent,
 } as const satisfies Partial<Record<JournalFactType, Phrase>>;

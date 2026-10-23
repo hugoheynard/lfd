@@ -2271,6 +2271,31 @@ export type {
   ShopCopyPublishedView,
   ShopCopyHistoryQuery,
 } from "./shop-copy.js";
+export {
+  MAIL_COPY_DRAFT_STATES,
+  MAIL_COPY_SOURCES,
+  mailCopyDraftPayloadSchema,
+  mailCopyResetPayloadSchema,
+  mailCopyPreviewQuerySchema,
+  mailCopyTrialPayloadSchema,
+} from "./mail-copy.js";
+export type {
+  MailCopyDraftPayload,
+  MailCopyResetPayload,
+  MailCopySource,
+  MailCopyPreviewQuery,
+  MailCopyTrialPayload,
+  MailCopyDraftState,
+  MailAudience,
+  MailFamily,
+  MailCopyLocaleView,
+  MailCopyTextView,
+  MailCopyMailView,
+  MailCopyAdminView,
+  MailCopyPublishedView,
+  MailCopyPreviewAttachmentView,
+  MailCopyPreviewView,
+} from "./mail-copy.js";
 export type {
   InternalTransferManifestView,
   TransferManifestItemView,
