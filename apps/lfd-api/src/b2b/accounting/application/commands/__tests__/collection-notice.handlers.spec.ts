@@ -9,6 +9,7 @@ import {
 import { CancelCollectionBatchCommand } from "../cancel-collection-batch.command.js";
 import { ConstituteCollectionBatchesCommand } from "../constitute-collection-batches.command.js";
 import { DepositCollectionBatchCommand } from "../deposit-collection-batch.command.js";
+import { RecordCollectionBatchDownloadCommand } from "../record-collection-batch-download.command.js";
 import { world } from "./collection-world.js";
 import { sendAllQueued } from "./notice-doubles.js";
 
@@ -133,6 +134,7 @@ describe("« Marquer déposé » exige les avis envoyés", () => {
     const batchId = await constitute(w);
     w.recheck.now = new Map([["m_c_port", { active: true, iban: mandate("c_port").iban }]]);
 
+    await w.download.execute(new RecordCollectionBatchDownloadCommand(batchId, "staff_1"));
     const refusal = w.deposit.execute(new DepositCollectionBatchCommand(batchId, "staff_1"));
 
     await expect(refusal).rejects.toThrow(CollectionNoticesNotSentError);
@@ -140,6 +142,7 @@ describe("« Marquer déposé » exige les avis envoyés", () => {
     expect(w.batches.saved.get(batchId)?.status).toBe("constituted");
 
     sendAllQueued(w.noticeStore, w.clock.now());
+    await w.download.execute(new RecordCollectionBatchDownloadCommand(batchId, "staff_1"));
     await w.deposit.execute(new DepositCollectionBatchCommand(batchId, "staff_1"));
     expect(w.batches.saved.get(batchId)?.status).toBe("deposited");
   });
@@ -152,6 +155,7 @@ describe("« Marquer déposé » exige les avis envoyés", () => {
     const batchId = await constitute(w);
     w.recheck.now = new Map([["m_c_port", { active: true, iban: mandate("c_port").iban }]]);
 
+    await w.download.execute(new RecordCollectionBatchDownloadCommand(batchId, "staff_1"));
     await expect(
       w.deposit.execute(new DepositCollectionBatchCommand(batchId, "staff_1")),
     ).rejects.toThrow(/Société c_port \(aucune adresse.*renseigner un contact de facturation/u);
@@ -173,6 +177,7 @@ describe("annuler puis reconstituer : un avis parti se corrige", () => {
     expect(noticesOf(w)[1]).toMatchObject({ kind: "unchanged", status: "sent" });
     expect(w.durable.facts).toHaveLength(0);
     w.recheck.now = new Map([["m_c_port", { active: true, iban: mandate("c_port").iban }]]);
+    await w.download.execute(new RecordCollectionBatchDownloadCommand(second, "staff_1"));
     await w.deposit.execute(new DepositCollectionBatchCommand(second, "staff_1"));
     expect(w.batches.saved.get(second)?.status).toBe("deposited");
   });

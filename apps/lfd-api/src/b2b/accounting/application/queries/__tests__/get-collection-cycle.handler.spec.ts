@@ -37,6 +37,7 @@ function stored(payerRefs: readonly LotPayerRef[]): StoredBatchView {
     constitutedBy: "staff",
     depositedAt: null,
     cancelledAt: null,
+    lastDownloadedAt: null,
     lineCount: 2,
     orderCount: 2,
     totalCents: 21_100,

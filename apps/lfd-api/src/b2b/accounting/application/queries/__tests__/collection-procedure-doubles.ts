@@ -37,6 +37,7 @@ export function stored(id: string, over: Partial<StoredBatchView> = {}): StoredB
     constitutedBy: "staff",
     depositedAt: null,
     cancelledAt: null,
+    lastDownloadedAt: null,
     lineCount: 1,
     orderCount: 1,
     totalCents: 10_000,

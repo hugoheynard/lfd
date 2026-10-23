@@ -10,6 +10,7 @@ import {
   FoldFieldListComponent,
 } from 'fold-ng';
 
+import { cancellable, depositClosedReason } from '../../collection-batch-steps';
 import { DEPOSIT_UNKNOWN } from '../../collection-schedule-wording';
 import { unsentNoticePayers } from '../../collection-notice-wording';
 import { batchAuthorLabel } from '../../autopilot-run-wording';
@@ -49,6 +50,11 @@ export class PendingBatch {
   readonly batch = input.required<CollectionBatchView>();
   readonly canWrite = input(false);
   readonly pending = input(false);
+  /**
+   * La rangée de gestes en pied de carte. L'onglet « Fichier » de la
+   * procédure la remplace par sa barre au-dessus (2026-10-23).
+   */
+  readonly actions = input(true);
 
   readonly gesture = output<PendingBatchGesture>();
 
@@ -75,6 +81,11 @@ export class PendingBatch {
     const deadline = this.batch().depositDeadline;
     return deadline === null ? DEPOSIT_UNKNOWN : `avant le ${day(deadline.day)} à ${deadline.time}`;
   });
+
+  /** Pourquoi « Marquer déposé » est fermé (non déposable, fichier jamais téléchargé). */
+  protected readonly depositClosedReason = computed(() => depositClosedReason(this.batch()));
+  /** « Annuler » : avant dépôt seulement — même règle que la procédure. */
+  protected readonly cancellable = computed(() => cancellable(this.batch()));
 
   protected readonly total = computed(() => euros(this.batch().totalCents));
 

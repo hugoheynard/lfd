@@ -150,6 +150,11 @@ export interface CollectionBatchView {
   readonly constitutedBy: CollectionBatchAuthorView;
   readonly depositedAt: string | null;
   readonly cancelledAt: string | null;
+  /**
+   * Le dernier téléchargement du fichier ; `null` = jamais téléchargé, et
+   * « J'ai déposé le fichier dans CENET » reste fermé (409 au serveur).
+   */
+  readonly lastDownloadedAt: string | null;
   readonly lineCount: number;
   readonly orderCount: number;
   readonly totalCents: number;

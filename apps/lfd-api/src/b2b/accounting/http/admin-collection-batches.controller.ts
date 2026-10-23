@@ -29,6 +29,7 @@ import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { CancelCollectionBatchCommand } from "../application/commands/cancel-collection-batch.command.js";
 import { ConstituteCollectionBatchesCommand } from "../application/commands/constitute-collection-batches.command.js";
 import { DepositCollectionBatchCommand } from "../application/commands/deposit-collection-batch.command.js";
+import { RecordCollectionBatchDownloadCommand } from "../application/commands/record-collection-batch-download.command.js";
 import { SettleOrderOtherwiseCommand } from "../application/commands/settle-order-otherwise.command.js";
 import {
   ExportCollectionBatchAuditQuery,
@@ -112,16 +113,23 @@ export class AdminCollectionBatchesController {
    * 🔴 **Écriture comptable exigée, pas la lecture** que le verbe donnerait :
    * le fichier porte les IBAN des débiteurs en clair. Resserré le 2026-10-09
    * sur décision d'Hugo (arbitrage A16), comme l'export des mandats.
+   *
+   * Le téléchargement s'inscrit APRÈS le calcul (un refus n'en est pas un) :
+   * il ouvre « J'ai déposé le fichier dans CENET » (2026-10-23).
    */
   @Get("batches/:id/file.xml")
   @RequirePermission("b2b_accounting:write")
   @Header("Content-Type", "application/xml; charset=utf-8")
   async file(
+    @StaffUserId() staffUserId: string,
     @Param("id") id: string,
     @Res({ passthrough: true }) response: Response,
   ): Promise<string> {
     const file = await this.queries.execute<ExportCollectionBatchFileQuery, CollectionBatchFile>(
       new ExportCollectionBatchFileQuery(id),
+    );
+    await this.commands.execute<RecordCollectionBatchDownloadCommand, void>(
+      new RecordCollectionBatchDownloadCommand(id, staffUserId),
     );
     response.setHeader(
       "Content-Disposition",

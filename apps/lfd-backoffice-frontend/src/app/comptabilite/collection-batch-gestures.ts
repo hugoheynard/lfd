@@ -59,7 +59,10 @@ export class CollectionBatchGestures {
     reload: () => Promise<void>,
   ): Promise<void> {
     if (gesture === 'xml' || gesture === 'csv') {
-      await this.download({ batch, kind: gesture });
+      // Le fichier XML téléchargé ouvre « J'ai déposé » : l'hôte relit pour le voir.
+      if ((await this.download({ batch, kind: gesture })) && gesture === 'xml') {
+        await reload();
+      }
     } else if (gesture === 'deposit') {
       await this.run(
         batch.id,
@@ -81,13 +84,16 @@ export class CollectionBatchGestures {
     }
   }
 
-  async download({ batch, kind }: BatchDownload): Promise<void> {
+  /** Rend `true` si le fichier est parti, `false` si le refus s'affiche. */
+  async download({ batch, kind }: BatchDownload): Promise<boolean> {
     this.actionError.set(null);
     try {
       const file = kind === 'xml' ? await this.api.file(batch.id) : await this.api.audit(batch.id);
       saveBlob(file.blob, file.fileName ?? `lot-${batch.id}.${kind}`);
+      return true;
     } catch (caught) {
       this.actionError.set(httpErrorMessage(caught, 'Téléchargement impossible.'));
+      return false;
     }
   }
 

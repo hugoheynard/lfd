@@ -1,6 +1,8 @@
 import {
   BatchHasUnmandatedCompaniesError,
+  BatchNeverDownloadedError,
   BatchNotConstitutedError,
+  DepositedBatchNotCancellableError,
   ClosureNotAfterPreviousError,
   CycleNotClosedError,
   DepositRecheckFailedError,
@@ -110,6 +112,12 @@ export interface CollectionBatchState {
    * repoussée pour tenir le préavis (D4) ; `null` sinon, et avant PA2.
    */
   readonly postponedFromDay: string | null;
+  /**
+   * L'instant du dernier téléchargement du fichier ; `null` = jamais
+   * téléchargé, et « J'ai déposé le fichier » est alors refusé (Hugo,
+   * 2026-10-23 — même modèle que les exports des mandats).
+   */
+  readonly lastDownloadedAt: Date | null;
 }
 
 export interface ConstituteBatchInput {
@@ -186,6 +194,7 @@ export class CollectionBatch {
       fileSha256: input.fileSha256,
       requestedCollectionDay: input.requestedCollectionDay,
       postponedFromDay: input.postponedFromDay,
+      lastDownloadedAt: null,
     });
   }
 
@@ -194,8 +203,19 @@ export class CollectionBatch {
     return new CollectionBatch(state);
   }
 
-  /** Avant dépôt seulement. Ses commandes repassent `due` (`OrderCollection.release`). */
+  /**
+   * Avant dépôt seulement. Ses commandes repassent `due` (`OrderCollection.release`).
+   * Un lot déposé ne s'annule pas : sa remise a pu être signée, et ses
+   * commandes repassées à prélever partiraient une seconde fois (doc
+   * `procedure-de-prelevement.md` § 7).
+   *
+   * @throws {DepositedBatchNotCancellableError} le lot est déposé.
+   * @throws {BatchNotConstitutedError} le lot est déjà annulé.
+   */
   cancel(stamp: StaffStamp): void {
+    if (this.state.status === "deposited") {
+      throw new DepositedBatchNotCancellableError(this.state.id);
+    }
     this.assertConstituted();
     this.state = { ...this.state, status: "cancelled", cancelled: stamp };
   }
@@ -208,6 +228,7 @@ export class CollectionBatch {
    * @param notices l'état de l'avis de chaque ligne, par rang (PA2) : toutes
    *        `sent`, sinon refus en nommant les payeurs. Une ligne sans avis
    *        (lot d'avant PA2) n'a pas été pré-notifiée : refus aussi.
+   * @throws {BatchNeverDownloadedError} le fichier n'a jamais été téléchargé.
    */
   markDeposited(
     stamp: StaffStamp,
@@ -217,6 +238,9 @@ export class CollectionBatch {
     this.assertConstituted();
     if (this.state.unmandatedCompanies.length > 0) {
       throw new BatchHasUnmandatedCompaniesError(this.state.unmandatedCompanies);
+    }
+    if (this.state.lastDownloadedAt === null) {
+      throw new BatchNeverDownloadedError(this.state.id);
     }
     const unsent = this.state.lines.flatMap((line): UnsentNotice[] => {
       const status = notices.get(line.rank);
@@ -232,6 +256,15 @@ export class CollectionBatch {
       throw new DepositRecheckFailedError(problems);
     }
     this.state = { ...this.state, status: "deposited", deposited: stamp };
+  }
+
+  /**
+   * Le fichier vient d'être servi. Tout état l'accepte : le fichier d'un lot
+   * déposé ou annulé se retélécharge (préfixe `ANNULE-`), seul « déposé »
+   * lit l'instant.
+   */
+  recordDownload(at: Date): void {
+    this.state = { ...this.state, lastDownloadedAt: at };
   }
 
   /** Le lot partirait-il tel quel ? Une ligne au moins, aucune société sans mandat. */

@@ -283,6 +283,7 @@ describe("l'arrêté de facturation (F3)", () => {
     await expect(
       ctx.prisma.billingStatementOrder.deleteMany({ where: { statementId: id } }),
     ).rejects.toThrow(/billing_statement_order_immutable/u);
+    await staff().get(`${BASE}/batches/${batchId}/file.xml`).expect(200);
     await staff().post(`${BASE}/batches/${batchId}/deposit`).expect(204);
     await staff().post(`${BASE}/batches/${batchId}/cancel`).expect(409);
     await expect(

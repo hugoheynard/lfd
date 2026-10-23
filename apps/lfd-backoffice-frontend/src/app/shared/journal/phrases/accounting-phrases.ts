@@ -672,6 +672,7 @@ export const ACCOUNTING_PHRASES = {
   'collection.batch_constituted': onBatch('a constitué', notDepositable),
   'collection.batch_cancelled': onBatch('a annulé'),
   'collection.batch_deposited': onBatch('a marqué déposé'),
+  'collection.batch_downloaded': onBatch('a téléchargé le fichier de remise :'),
   'billing_statement.issued': onStatement('a émis'),
   'billing_statement.cancelled': onStatement('a annulé'),
   'collection.notice_queued': onNotice('a mis en file'),

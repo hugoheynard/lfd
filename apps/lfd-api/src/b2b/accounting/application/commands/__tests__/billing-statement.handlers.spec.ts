@@ -1,4 +1,7 @@
-import { BatchNotConstitutedError } from "../../../domain/errors/collection-errors.js";
+import {
+  BatchNotConstitutedError,
+  DepositedBatchNotCancellableError,
+} from "../../../domain/errors/collection-errors.js";
 import {
   ENTITY_ID,
   STAFF_AUTHOR,
@@ -8,6 +11,7 @@ import {
 import { CancelCollectionBatchCommand } from "../cancel-collection-batch.command.js";
 import { ConstituteCollectionBatchesCommand } from "../constitute-collection-batches.command.js";
 import { DepositCollectionBatchCommand } from "../deposit-collection-batch.command.js";
+import { RecordCollectionBatchDownloadCommand } from "../record-collection-batch-download.command.js";
 import { world } from "./collection-world.js";
 import { sendAllQueued } from "./notice-doubles.js";
 
@@ -94,11 +98,12 @@ describe("l'arrêté de facturation", () => {
     const batchId = await constituted(w);
     w.recheck.now = new Map([["m_c_port", { active: true, iban: mandate("c_port").iban }]]);
     sendAllQueued(w.noticeStore, w.clock.now());
+    await w.download.execute(new RecordCollectionBatchDownloadCommand(batchId, "staff_1"));
     await w.deposit.execute(new DepositCollectionBatchCommand(batchId, "staff_1"));
 
     await expect(
       w.cancel.execute(new CancelCollectionBatchCommand(batchId, "staff_1")),
-    ).rejects.toThrow(BatchNotConstitutedError);
+    ).rejects.toThrow(DepositedBatchNotCancellableError);
     expect(w.statements.cancelledIds.size).toBe(0);
     await expect(w.statements.cancelForBatch(batchId)).rejects.toThrow(BatchNotConstitutedError);
   });

@@ -92,6 +92,7 @@ async function depositedLine(entityId: string): Promise<{ batchId: string; e2e: 
   await staff().post(`${COLLECTION}/batches`).send({ legalEntityId: entityId }).expect(201);
   await ctx.drain();
   const line = await ctx.prisma.collectionBatchLine.findFirstOrThrow();
+  await staff().get(`${COLLECTION}/batches/${line.batchId}/file.xml`).expect(200);
   await staff().post(`${COLLECTION}/batches/${line.batchId}/deposit`).expect(204);
   return { batchId: line.batchId, e2e: line.endToEndId };
 }
@@ -225,6 +226,7 @@ describe("les retours bancaires (R5a)", () => {
       include: { statement: true },
     });
     expect(line.statement).not.toBeNull();
+    await staff().get(`${COLLECTION}/batches/${line.batchId}/file.xml`).expect(200);
     await staff().post(`${COLLECTION}/batches/${line.batchId}/deposit`).expect(204);
     const returnId = await signal(line.batchId);
 

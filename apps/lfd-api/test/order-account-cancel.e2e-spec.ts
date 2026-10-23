@@ -133,6 +133,7 @@ describe("annuler une commande au compte : les refus nommés (C5.6)", () => {
     const entityId = await entity();
     const placed = await accountOrder(await payer(entityId));
     const batchId = await batchedUnderStatement(entityId);
+    await staff().get(`${COLLECTION}/batches/${batchId}/file.xml`).expect(200);
     await staff().post(`${COLLECTION}/batches/${batchId}/deposit`).expect(204);
 
     const refused = await cancelRequest(placed.id).expect(409);
@@ -145,6 +146,7 @@ describe("annuler une commande au compte : les refus nommés (C5.6)", () => {
     const entityId = await entity();
     const placed = await accountOrder(await payer(entityId));
     const batchId = await batchedUnderStatement(entityId);
+    await staff().get(`${COLLECTION}/batches/${batchId}/file.xml`).expect(200);
     await staff().post(`${COLLECTION}/batches/${batchId}/deposit`).expect(204);
     const returned = await staff()
       .post(`/admin/accounting/collection-returns/batches/${batchId}/lines/1`)

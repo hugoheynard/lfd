@@ -131,6 +131,7 @@ describe("« Mes factures » : le statut suit le prélèvement (§7.1)", () => {
       date: day,
     });
 
+    await staff().get(`${COLLECTION}/batches/${batch.id}/file.xml`).expect(200);
     await staff().post(`${COLLECTION}/batches/${batch.id}/deposit`).expect(204);
     const deposited = await list(compta, companyId);
     expect(deposited.invoices[0]?.settlement).toMatchObject({ status: "collected", date: day });

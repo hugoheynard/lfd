@@ -211,7 +211,7 @@ ce que la banque exige (« un fichier par schéma et par échéance », réponse
   `envoyé`. **Tout autre état bloque le dépôt** — `échec`, `impossible`, mais
   aussi `en attente` (l'envoi n'a pas encore abouti : recharger la page,
   `pending-batch/pending-batch.html:40-45`)
-  (`CollectionNoticesNotSentError`, `apps/lfd-api/src/b2b/accounting/domain/entities/collection-batch.ts:229`).
+  (`CollectionNoticesNotSentError`, `apps/lfd-api/src/b2b/accounting/domain/entities/collection-batch.ts:253`).
   Il n'y a **pas de bouton « renvoyer »** : corriger le contact, puis annuler et
   préparer de nouveau (§ 2.4).
 
@@ -225,7 +225,7 @@ Qui : la comptabilité. Où : Prélèvement du mois › le lot à traiter.
   échéance.
 - Relire les **exclusions** (sans mandat, payeur détaché, mandat ponctuel déjà
   débité, créancier ambigu…) et les **sociétés sans mandat** : elles bloquent
-  le dépôt (`BatchHasUnmandatedCompaniesError`, `collection-batch.ts:219`).
+  le dépôt (`BatchHasUnmandatedCompaniesError`, `collection-batch.ts:240`).
   Pour une commande à sortir du prélèvement : « Marquer réglée » (réglée
   autrement, avec une note ; `POST orders/:orderId/settle-otherwise`,
   `http/admin-collection-batches.controller.ts:150`).
@@ -244,7 +244,7 @@ un retour, ou un remboursement hors de l'outil, la défait.
 
 ### 2.5 Télécharger le fichier `pain.008` — ✅
 
-- Bouton **« Fichier »** (`GET batches/:id/file.xml`, `:116`) : le XML stocké,
+- Bouton **« Fichier »** (`GET batches/:id/file.xml`, `:120`) : le XML stocké,
   sous le nom `CENET-PRL-<AAMMJJ>-<rythmes>-<schéma>-echeance-<jour>-<n>-debits.xml`
   (§ 4 bis, 2026-10-23),
   pas re-rendu ; l'empreinte est vérifiée au téléchargement. Droit d'**écriture**
@@ -257,18 +257,30 @@ un retour, ou un remboursement hors de l'outil, la défait.
   plus.
 - Ranger le fichier téléchargé dans un dossier local hors du dépôt, et le
   supprimer après dépôt : il porte des IBAN en clair. ✋
+- **Le téléchargement est gardé** (2026-10-23) : le lot retient l'instant du
+  dernier téléchargement (`collection_batch.last_downloaded_at`, migration
+  `20261024060000_le_telechargement_d_un_lot_de_prelevement`) et le journal
+  inscrit chaque téléchargement (`collection.batch_downloaded`). Un lot dont
+  le fichier n'a jamais été téléchargé ne se marque pas déposé (§ 2.7). Un lot
+  préparé avant cette date se télécharge une fois de plus — un clic.
+- Sur la page « Procédure de prélèvement », onglet **Fichier** (2026-10-23) :
+  une barre au-dessus de la carte du lot, comme les onglets Comptes et
+  Mandats — « Télécharger le fichier de remise », « J'ai déposé le fichier
+  dans CENET » (= « Marquer déposé »), « Contrôle CSV », « Annuler le lot »
+  en retrait. Sans limite de dépôt réglée sur l'entité, l'onglet ne propose
+  plus de délai : il dit que la limite n'est pas réglée et mène à la fiche
+  de l'entité (« Régler la limite de dépôt »).
 
 ### 2.6 Déposer sur CENET avant la limite — ✋
 
 - **Quand** : avant la **date limite de dépôt** affichée par le calendrier du
   lot (si elle est renseignée, § 0.4). Repères de la banque, non conciliés :
   **B2B avant 13 h 45, CORE avant 14 h 45, à J-1** de l'échéance (réponse 22) —
-  **ou J-2** (réponse 3). En attendant D4, **déposer à J-2 ouvré au plus tard,
-  avant 13 h 45**, ce qui respecte les deux. Tant que la limite n'est pas
-  renseignée, l'outil ne la calcule pas : lire l'**échéance** du lot (calendrier
-  du lot, ou `ReqdColltnDt` du fichier) et compter J-2 ouvré à la main. Mieux :
-  renseigner dès maintenant 2 jours / 13:45 sur l'entité (§ 0.4) — c'est la
-  consigne même de cette procédure.
+  **ou J-2** (réponse 3). **D4 tranchée par Hugo le 2026-10-23 : J-3 ouvrés,
+  avant 13 h 45**, plus prudent que les deux. C'est un réglage de l'entité
+  (§ 0.4) : tant qu'il n'est pas renseigné, l'outil ne calcule ni n'affiche de
+  limite, et l'onglet « Fichier » renvoie au réglage au lieu de proposer un
+  délai.
 - **Où** : CENET REMISES, service « remises » (aller), convention du **schéma
   du lot** (B2B ou CORE).
 - **Vérifier** à l'écran CENET avant de signer : nombre d'opérations et montant
@@ -287,10 +299,13 @@ fait donc le geste de l'outil **pendant que la remise est encore annulable**.
 - **Quand** : remise déposée sur CENET, contrôlée (§ 2.6), **pas encore
   signée**, et sans PSR1.
 - Bouton « Marquer déposé » (`POST batches/:id/deposit`,
-  `http/admin-collection-batches.controller.ts:101` ;
-  `CollectionBatch.markDeposited`, `collection-batch.ts:212`). Il relit tout et
+  `http/admin-collection-batches.controller.ts:102` ;
+  `CollectionBatch.markDeposited`, `collection-batch.ts:233`). Il relit tout et
   **refuse en nommant le cas** : société sans mandat, avis pas `envoyé`, mandat
-  révoqué, IBAN changé, commande annulée (`DepositRecheckFailedError`, `:232`).
+  révoqué, IBAN changé, commande annulée (`DepositRecheckFailedError`, `:256`).
+- Refusé aussi, depuis le 2026-10-23, tant que le fichier de **ce** lot n'a
+  jamais été téléchargé (`BatchNeverDownloadedError`, 409) : l'écran garde
+  le bouton fermé et dit « Téléchargez d'abord le fichier de remise ».
 - **S'il refuse** : annuler la remise **sur CENET** (non signée, donc possible),
   puis « Annuler » le lot, corriger, préparer de nouveau (§ 4.1).
 - **S'il accepte** : le lot est `déposé`, « Annuler » disparaît ; passer à 2.8.
@@ -299,10 +314,16 @@ fait donc le geste de l'outil **pendant que la remise est encore annulable**.
   reste ouvert (règle ci-dessous). ⛔ Rien ne signale un lot préparé depuis
   longtemps sans être déposé.
 
+Un lot **déposé** ne s'annule pas : le domaine le refusait déjà
+(`cancel()` exige l'état constitué), et depuis le 2026-10-23 le refus nomme le
+cas (`DepositedBatchNotCancellableError`, 409 : « l'annuler ferait prélever
+deux fois si la remise est signée ») ; aucun des deux écrans ne propose
+« Annuler » sur un lot déposé.
+
 🔴 **Règle : ne jamais cliquer « Annuler » sur un lot dont la remise est signée
 chez la banque.** L'outil ne le sait pas et ne l'empêche pas (`cancel()` n'exige
-que l'état constitué, `collection-batch.ts:196-199` ; bouton sans confirmation,
-`pending-batch.html:69-78`) : les commandes redeviendraient dues et le lot
+que l'état constitué, `collection-batch.ts:215-219` ; bouton sans confirmation,
+`pending-batch.html:84-95`, `procedure-batch-actions.html:47-60`) : les commandes redeviendraient dues et le lot
 suivant les **prélèverait une seconde fois**. L'ordre ci-dessus rend le cas
 impossible en temps normal ; il redevient possible si l'on signe avant d'avoir
 marqué déposé.
@@ -315,7 +336,9 @@ marqué déposé.
 - ⚠️ La façon de signer (qui, quel moyen) dépend du contrat CENET REMISES,
   pas encore signé : **non documenté**.
 - ⛔ Si la signature échoue, ou si un PSR1 arrive **après** « Marquer
-  déposé », l'outil n'a pas de geste pour dé-déposer un lot. Ne pas annuler
+  déposé », l'outil n'a pas de geste pour dé-déposer un lot (vérifié le
+  2026-10-23 : « Annuler » est refusé en 409 sur un lot déposé, et aucune
+  autre transition ne quitte `deposited`) — **à trancher par Hugo**. Ne pas annuler
   le lot (règle ci-dessus) ; remonter à Hugo avant tout redépôt (même `MsgId` :
   risque de doublon, § 4.3).
 
@@ -558,26 +581,26 @@ celle de la **préparation**, à Paris.
 
 ## 5. Ce qui manque dans l'outil, en un coup d'œil
 
-| Manque                                                                                                                                                                                                | Effet sur la procédure                                 | Référence                                                       |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | --------------------------------------------------------------- |
-| ~~Export des mandats non conforme~~ — corrigé le 2026-10-23 ; reste K et L à confirmer (Q-B2)                                                                                                         | 🟡 vérification CENET avant le premier import          | [`prerequis-export-mandats.md`](prerequis-export-mandats.md)    |
-| ~~Export des comptes destinataires~~ — bâti le 2026-10-23 (`5a7e9c6f4`) ; valeurs à confirmer par la banque                                                                                           | 🟡 vérification CENET avant le premier import          | [`prerequis-export-ribs.md`](prerequis-export-ribs.md) § 7, § 8 |
-| Limite de dépôt non renseignée (D4)                                                                                                                                                                   | aucune date limite affichée                            | § 0.4                                                           |
-| ~~« Marquer importé sauf les RUM en erreur »~~ — bâti le 2026-10-23 (rejet par ligne après dépôt) ; borne de 200 lignes                                                                               | un import partiel oblige à tout ré-exporter            | réponses 12, 13                                                 |
-| Avertissement plafond, mandat non importé                                                                                                                                                             | contrôles à la main au § 2.4                           | réponses 2, 15                                                  |
-| Lien entre une remise CENET et le lot (signature, PSR)                                                                                                                                                | « Marquer déposé » reste une déclaration humaine       | réponse 24                                                      |
-| « Annuler » ouvert sur un lot dont la remise est signée ; pas de « dé-déposer »                                                                                                                       | règle écrite seulement (§ 2.7), risque de double débit | `collection-batch.ts:196-199`                                   |
-| Alerte d'un lot préparé et jamais déposé — en partie : la page « Procédure de prélèvement » liste en tête tout lot non déposé, limite la plus proche d'abord (P2, 2026-10-23) ; aucune alerte poussée | un oubli ne se voit que sur la page                    | § 2.7                                                           |
-| Échéance repoussée pour une limite de dépôt passée                                                                                                                                                    | contrôle à la main                                     | § 4.1                                                           |
-| Import des retours jamais éprouvé ; rejet de lot entier non lu                                                                                                                                        | vérifier chaque import à la main la première fois      | [`retours-bancaires.md`](retours-bancaires.md)                  |
-| Remboursement d'un prélèvement à tort, frais refacturés, écriture de perte                                                                                                                            | hors outil                                             | § 3, § 4.2                                                      |
+| Manque                                                                                                                                                                                                | Effet sur la procédure                                                                                             | Référence                                                       |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------- |
+| ~~Export des mandats non conforme~~ — corrigé le 2026-10-23 ; reste K et L à confirmer (Q-B2)                                                                                                         | 🟡 vérification CENET avant le premier import                                                                      | [`prerequis-export-mandats.md`](prerequis-export-mandats.md)    |
+| ~~Export des comptes destinataires~~ — bâti le 2026-10-23 (`5a7e9c6f4`) ; valeurs à confirmer par la banque                                                                                           | 🟡 vérification CENET avant le premier import                                                                      | [`prerequis-export-ribs.md`](prerequis-export-ribs.md) § 7, § 8 |
+| Limite de dépôt non renseignée (D4)                                                                                                                                                                   | aucune date limite affichée                                                                                        | § 0.4                                                           |
+| ~~« Marquer importé sauf les RUM en erreur »~~ — bâti le 2026-10-23 (rejet par ligne après dépôt) ; borne de 200 lignes                                                                               | un import partiel oblige à tout ré-exporter                                                                        | réponses 12, 13                                                 |
+| Avertissement plafond, mandat non importé                                                                                                                                                             | contrôles à la main au § 2.4                                                                                       | réponses 2, 15                                                  |
+| Lien entre une remise CENET et le lot (signature, PSR)                                                                                                                                                | « Marquer déposé » reste une déclaration humaine                                                                   | réponse 24                                                      |
+| « Annuler » ouvert sur un lot **préparé** dont la remise est signée (oubli de « Marquer déposé ») ; pas de « dé-déposer » un lot déposé dont le fichier est rejeté (PSR1)                             | règle écrite seulement (§ 2.7, § 2.8), risque de double débit ; un lot déposé, lui, est refusé en 409 (2026-10-23) | `CollectionBatch.cancel`                                        |
+| Alerte d'un lot préparé et jamais déposé — en partie : la page « Procédure de prélèvement » liste en tête tout lot non déposé, limite la plus proche d'abord (P2, 2026-10-23) ; aucune alerte poussée | un oubli ne se voit que sur la page                                                                                | § 2.7                                                           |
+| Échéance repoussée pour une limite de dépôt passée                                                                                                                                                    | contrôle à la main                                                                                                 | § 4.1                                                           |
+| Import des retours jamais éprouvé ; rejet de lot entier non lu                                                                                                                                        | vérifier chaque import à la main la première fois                                                                  | [`retours-bancaires.md`](retours-bancaires.md)                  |
+| Remboursement d'un prélèvement à tort, frais refacturés, écriture de perte                                                                                                                            | hors outil                                                                                                         | § 3, § 4.2                                                      |
 
 ---
 
 ## 6. Ce qui n'est pas tranché
 
-- **J-1 ou J-2** pour la limite de dépôt (D4) — consigne provisoire : J-2 ouvré,
-  avant 13 h 45.
+- ~~J-1 ou J-2 pour la limite de dépôt (D4)~~ — tranché le 2026-10-23 :
+  J-3 ouvrés, 13 h 45 (réglage de l'entité).
 - **Clause CGV / mandat** pour pré-notifier à moins de 14 jours.
 - Changement de compte d'un client : nouvelle RUM ou colonnes M–R (D9).
 - Valeur de K « Mandat déjà émis » (Q-B2).
@@ -588,15 +611,15 @@ celle de la **préparation**, à Paris.
 `vitruve` a vérifié routes, lignes, libellés et crons : justes, à une ligne
 près. Ses objections portaient sur l'ordre des gestes.
 
-| Objection                                                                                                                                   | Rang     | Suite                                                                                                                                                             |
-| ------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Signer avant « Marquer déposé » : si l'outil refuse, aucune issue (retour impossible sur un lot non déposé, `collection-return.ts:111-112`) | BLOQUANT | **corrigée** : « Marquer déposé » avant la signature, refus → annuler sur CENET (§ 2.7) ; PSR1 ou signature ratée après coup **assumé** comme manque (§ 2.8, § 5) |
-| « Annuler » possible sur une remise signée → double prélèvement                                                                             | BLOQUANT | **corrigée** par l'ordre (un lot déposé n'est plus annulable) et une règle écrite ; **assumée** côté outil : rien ne l'empêche, inscrit au § 5                    |
-| Oubli de « Marquer déposé » sous-estimé ; pas d'alerte                                                                                      | SÉRIEUX  | corrigée (§ 2.7, § 5)                                                                                                                                             |
-| Cron 23h55 qui passe deux fois                                                                                                              | SÉRIEUX  | corrigée (§ 2.1)                                                                                                                                                  |
-| Consigne J-2 que rien ne fournit                                                                                                            | SÉRIEUX  | corrigée : où lire l'échéance, renseigner 2 j / 13:45 tout de suite (§ 2.6)                                                                                       |
-| Avis `en attente` bloque aussi le dépôt                                                                                                     | SÉRIEUX  | corrigée (§ 2.3)                                                                                                                                                  |
-| Redépôt tardif : échéance non recalculée pour la limite                                                                                     | SÉRIEUX  | corrigée (§ 4.1), manque au § 5                                                                                                                                   |
+| Objection                                                                                                                                   | Rang     | Suite                                                                                                                                                                                                                                                                                        |
+| ------------------------------------------------------------------------------------------------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Signer avant « Marquer déposé » : si l'outil refuse, aucune issue (retour impossible sur un lot non déposé, `collection-return.ts:111-112`) | BLOQUANT | **corrigée** : « Marquer déposé » avant la signature, refus → annuler sur CENET (§ 2.7) ; PSR1 ou signature ratée après coup **assumé** comme manque (§ 2.8, § 5)                                                                                                                            |
+| « Annuler » possible sur une remise signée → double prélèvement                                                                             | BLOQUANT | **corrigée** par l'ordre (un lot déposé n'est plus annulable) et une règle écrite ; **assumée** côté outil pour un lot préparé, inscrit au § 5. 2026-10-23 : un lot déposé est refusé en 409 avec un message qui nomme le double prélèvement, et « J'ai déposé » exige le fichier téléchargé |
+| Oubli de « Marquer déposé » sous-estimé ; pas d'alerte                                                                                      | SÉRIEUX  | corrigée (§ 2.7, § 5)                                                                                                                                                                                                                                                                        |
+| Cron 23h55 qui passe deux fois                                                                                                              | SÉRIEUX  | corrigée (§ 2.1)                                                                                                                                                                                                                                                                             |
+| Consigne J-2 que rien ne fournit                                                                                                            | SÉRIEUX  | corrigée : où lire l'échéance, renseigner 2 j / 13:45 tout de suite (§ 2.6)                                                                                                                                                                                                                  |
+| Avis `en attente` bloque aussi le dépôt                                                                                                     | SÉRIEUX  | corrigée (§ 2.3)                                                                                                                                                                                                                                                                             |
+| Redépôt tardif : échéance non recalculée pour la limite                                                                                     | SÉRIEUX  | corrigée (§ 4.1), manque au § 5                                                                                                                                                                                                                                                              |
 
 Non vérifié par `vitruve` : les numéros de réponses de la banque, le compte
 « cinq remises par mois », l'envoi du rectificatif à l'annulation.

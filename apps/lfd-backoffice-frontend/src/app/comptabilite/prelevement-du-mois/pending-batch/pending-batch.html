@@ -50,34 +50,54 @@
       <app-batch-lines [batch]="batch()" />
     }
 
-    <div class="pb-actions">
-      <button foldButton size="sm" emphasis="outline" icon="download" (click)="gesture.emit('xml')">
-        Fichier
-      </button>
-      <button foldButton size="sm" emphasis="outline" icon="download" (click)="gesture.emit('csv')">
-        Contrôle CSV
-      </button>
-      @if (canWrite()) {
+    @if (actions()) {
+      <div class="pb-actions">
         <button
           foldButton
           size="sm"
-          [disabled]="!batch().depositable"
-          [loading]="pending()"
-          (click)="gesture.emit('deposit')"
+          emphasis="outline"
+          icon="download"
+          (click)="gesture.emit('xml')"
         >
-          Marquer déposé
+          Fichier
         </button>
         <button
           foldButton
           size="sm"
           emphasis="outline"
-          intent="neutral"
-          [loading]="pending()"
-          (click)="gesture.emit('cancel')"
+          icon="download"
+          (click)="gesture.emit('csv')"
         >
-          Annuler
+          Contrôle CSV
         </button>
+        @if (canWrite()) {
+          <button
+            foldButton
+            size="sm"
+            [disabled]="depositClosedReason() !== null"
+            [title]="depositClosedReason() ?? ''"
+            [loading]="pending()"
+            (click)="gesture.emit('deposit')"
+          >
+            Marquer déposé
+          </button>
+          @if (cancellable()) {
+            <button
+              foldButton
+              size="sm"
+              emphasis="outline"
+              intent="neutral"
+              [loading]="pending()"
+              (click)="gesture.emit('cancel')"
+            >
+              Annuler
+            </button>
+          }
+        }
+      </div>
+      @if (canWrite() && depositClosedReason(); as reason) {
+        <p class="pb-said" data-deposit-closed>{{ reason }}</p>
       }
-    </div>
+    }
   </div>
 </fold-card>

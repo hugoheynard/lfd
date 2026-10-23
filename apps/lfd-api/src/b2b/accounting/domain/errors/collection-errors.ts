@@ -129,6 +129,33 @@ export class BatchNotConstitutedError extends BusinessError {
   }
 }
 
+/**
+ * « Annuler » sur un lot déposé. Le refus existait déjà (seul un lot
+ * constitué s'annule) ; il nomme désormais ce qu'il évite et la sortie que
+ * la procédure donne (doc `procedure-de-prelevement.md` § 2.8, § 7).
+ */
+export class DepositedBatchNotCancellableError extends BusinessError {
+  constructor(readonly batchId: string) {
+    super(
+      "accounting.collection.deposited_batch_not_cancellable",
+      `Ce lot (${batchId}) est déposé : l'annuler ferait prélever deux fois si la remise est signée, car ses commandes repasseraient dans le lot suivant. Si la banque a rejeté le fichier (accusé PSR1) après « J'ai déposé », l'outil n'a pas encore de geste pour le dé-déposer : ne rien redéposer et prévenir Hugo (procédure de prélèvement, § 2.8).`,
+    );
+  }
+}
+
+/**
+ * « J'ai déposé le fichier dans CENET » sur un lot dont personne n'a
+ * téléchargé le fichier : ce qui a été déposé n'est pas ce fichier-là.
+ */
+export class BatchNeverDownloadedError extends BusinessError {
+  constructor(readonly batchId: string) {
+    super(
+      "accounting.collection.batch_never_downloaded",
+      `Le fichier du lot ${batchId} n'a jamais été téléchargé : il ne peut pas avoir été déposé dans CENET. Télécharger le fichier de remise, le déposer, puis marquer le lot déposé.`,
+    );
+  }
+}
+
 /** Q2 : une société sans mandat rend le lot indéposable, et on la nomme. */
 export class BatchHasUnmandatedCompaniesError extends BusinessError {
   constructor(readonly companies: readonly string[]) {

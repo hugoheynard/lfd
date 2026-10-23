@@ -1,7 +1,9 @@
 import {
   BatchHasUnmandatedCompaniesError,
+  BatchNeverDownloadedError,
   BatchNotConstitutedError,
   ClosureNotAfterPreviousError,
+  DepositedBatchNotCancellableError,
   CycleNotClosedError,
   DepositRecheckFailedError,
   FirstClosureOffRhythmError,
@@ -58,6 +60,13 @@ function input(overrides: Partial<ConstituteBatchInput> = {}): ConstituteBatchIn
     fileSha256: "0".repeat(64),
     ...overrides,
   };
+}
+
+/** Un lot dont le fichier a été téléchargé — ce que le dépôt exige depuis le 2026-10-23. */
+function downloadedBatch(): CollectionBatch {
+  const batch = CollectionBatch.constitute(input());
+  batch.recordDownload(AFTER_CLOSE);
+  return batch;
 }
 
 describe("le lot de prélèvement", () => {
@@ -128,7 +137,7 @@ describe("le lot de prélèvement", () => {
   });
 
   it("s'annule une fois, et un lot annulé ne se dépose pas", () => {
-    const batch = CollectionBatch.constitute(input());
+    const batch = downloadedBatch();
 
     batch.cancel(STAMP);
 
@@ -145,7 +154,7 @@ describe("le lot de prélèvement", () => {
   });
 
   it("refuse le dépôt quand la relecture a trouvé un écart, et le nomme", () => {
-    const batch = CollectionBatch.constitute(input());
+    const batch = downloadedBatch();
 
     expect(() =>
       batch.markDeposited(STAMP, ["le mandat RUM-1 de Port n'est plus actif"], SENT),
@@ -161,7 +170,7 @@ describe("le lot de prélèvement", () => {
     ["failed", "envoi de l'avis refusé"],
     ["unsendable", "aucune adresse"],
   ] as const)("refuse le dépôt quand l'avis est « %s », et nomme le payeur", (status, words) => {
-    const batch = CollectionBatch.constitute(input());
+    const batch = downloadedBatch();
 
     const refusal = () => batch.markDeposited(STAMP, [], new Map([[1, status]]));
 
@@ -171,10 +180,45 @@ describe("le lot de prélèvement", () => {
   });
 
   it("refuse le dépôt d'une ligne sans avis (lot d'avant les avis)", () => {
-    const batch = CollectionBatch.constitute(input());
+    const batch = downloadedBatch();
 
     expect(() => batch.markDeposited(STAMP, [], new Map())).toThrow(
       "Port (aucun avis (lot préparé avant les avis))",
     );
+  });
+
+  it("refuse « J'ai déposé » sur un lot dont le fichier n'a jamais été téléchargé", () => {
+    const batch = CollectionBatch.constitute(input());
+
+    expect(() => batch.markDeposited(STAMP, [], SENT)).toThrow(BatchNeverDownloadedError);
+    expect(batch.status).toBe("constituted");
+    batch.recordDownload(AFTER_CLOSE);
+    batch.markDeposited(STAMP, [], SENT);
+    expect(batch.status).toBe("deposited");
+    expect(batch.toPersistence().lastDownloadedAt).toEqual(AFTER_CLOSE);
+  });
+
+  /**
+   * Un lot déposé ne s'annule pas : sa remise a pu être signée, et ses
+   * commandes repassées à prélever partiraient une seconde fois (§ 7).
+   */
+  it("refuse l'annulation d'un lot déposé, qui reste déposé", () => {
+    const batch = downloadedBatch();
+    batch.markDeposited(STAMP, [], SENT);
+
+    expect(() => batch.cancel(STAMP)).toThrow(DepositedBatchNotCancellableError);
+    expect(() => batch.cancel(STAMP)).toThrow("l'annuler ferait prélever deux fois");
+    expect(batch.status).toBe("deposited");
+  });
+
+  it("garde le téléchargement d'un lot déposé ou annulé, sans changer son état", () => {
+    const batch = downloadedBatch();
+    batch.cancel(STAMP);
+    const later = new Date(AFTER_CLOSE.getTime() + 60_000);
+
+    batch.recordDownload(later);
+
+    expect(batch.status).toBe("cancelled");
+    expect(batch.toPersistence().lastDownloadedAt).toEqual(later);
   });
 });

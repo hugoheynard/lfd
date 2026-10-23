@@ -55,6 +55,8 @@ function batch(over: Partial<CollectionBatchView> = {}): CollectionBatchView {
     constitutedBy: 'staff',
     depositedAt: null,
     cancelledAt: null,
+    // Téléchargé : le lot type est prêt à être dit déposé (2026-10-23).
+    lastDownloadedAt: '2026-10-02T10:00:00.000Z',
     lineCount: 2,
     orderCount: 5,
     totalCents: 123_400,
@@ -478,6 +480,19 @@ describe('PrelevementDuMoisPage', () => {
     await settle(fixture);
 
     expect(api.deposited).toEqual(['b1']);
+  });
+
+  /** « Marquer déposé » ne se dit pas d'un fichier jamais téléchargé (2026-10-23). */
+  it('fichier jamais téléchargé : « Marquer déposé » est fermé et dit pourquoi', async () => {
+    const api = new FakeApi();
+    api.view = { batches: [batch({ lastDownloadedAt: null })], exclusions: [] };
+    const fixture = await render(api);
+
+    expect(button(fixture, 'Marquer déposé')?.disabled).toBe(true);
+    expect(host(fixture).querySelector('[data-deposit-closed]')?.textContent).toContain(
+      'Téléchargez d’abord le fichier de remise.',
+    );
+    expect(button(fixture, 'Annuler')).toBeDefined();
   });
 
   /** PA2 : D4 a repoussé l'échéance — l'écran dit de quelle date, et pourquoi. */

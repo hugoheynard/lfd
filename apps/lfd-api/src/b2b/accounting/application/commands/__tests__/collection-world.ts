@@ -6,6 +6,7 @@ import type { PayerModeSegments } from "../../../domain/ports/payer-billing-mode
 import { CancelCollectionBatchHandler } from "../cancel-collection-batch.handler.js";
 import { ConstituteCollectionBatchesHandler } from "../constitute-collection-batches.handler.js";
 import { DepositCollectionBatchHandler } from "../deposit-collection-batch.handler.js";
+import { RecordCollectionBatchDownloadHandler } from "../record-collection-batch-download.handler.js";
 import {
   FakeCancelled,
   FakeCandidates,
@@ -108,5 +109,12 @@ export function world(payers: readonly PayerModeSegments[] = []) {
     w.events,
     new DirectUnitOfWork(),
   );
-  return { ...w, constitute, cancel, deposit };
+  const download = new RecordCollectionBatchDownloadHandler(
+    w.batches,
+    new FixedEntities(),
+    w.clock,
+    w.events,
+    new DirectUnitOfWork(),
+  );
+  return { ...w, constitute, cancel, deposit, download };
 }

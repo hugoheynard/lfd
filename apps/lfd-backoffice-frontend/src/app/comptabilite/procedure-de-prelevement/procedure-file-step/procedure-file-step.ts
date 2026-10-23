@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import type { CollectionBatchView, CollectionProcedureView } from '@lfd/contracts';
 import {
   FoldButtonComponent,
@@ -13,6 +14,7 @@ import {
   PendingBatch,
   type PendingBatchGesture,
 } from '../../prelevement-du-mois/pending-batch/pending-batch';
+import { ProcedureBatchActions } from '../procedure-batch-actions/procedure-batch-actions';
 import { collectionDayLabel, deadlineLabel } from '../procedure-wording';
 
 /**
@@ -25,7 +27,11 @@ import { collectionDayLabel, deadlineLabel } from '../procedure-wording';
  * ici, sans « suivre » (2026-10-23).
  *
  * L'heure limite est en tête ; les gestes faits sur CENET (dépôt, signature)
- * sont dits comme tels — l'outil ne peut pas les vérifier.
+ * sont dits comme tels — l'outil ne peut pas les vérifier. Depuis le
+ * 2026-10-23, les gestes de chaque lot sont dans une barre AU-DESSUS de sa
+ * carte (`app-procedure-batch-actions`), comme les onglets Comptes et
+ * Mandats ; sans limite de dépôt réglée, aucun délai n'est proposé — un lien
+ * mène au réglage de l'entité.
  */
 /** Un geste sur un autre lot de la procédure que le lot suivi. */
 export interface OtherBatchGesture {
@@ -42,6 +48,8 @@ export interface OtherBatchGesture {
     FoldEmptyStateComponent,
     FoldIconComponent,
     PendingBatch,
+    ProcedureBatchActions,
+    RouterLink,
   ],
   templateUrl: './procedure-file-step.html',
   styleUrl: './procedure-file-step.scss',

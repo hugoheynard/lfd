@@ -22,6 +22,7 @@ import { ISSUED_INVOICE_PROVIDERS } from "./issued-invoice.providers.js";
 import { Module } from "@nestjs/common";
 
 import { CancelCollectionBatchHandler } from "./application/commands/cancel-collection-batch.handler.js";
+import { RecordCollectionBatchDownloadHandler } from "./application/commands/record-collection-batch-download.handler.js";
 import { ConstituteCollectionBatchesHandler } from "./application/commands/constitute-collection-batches.handler.js";
 import { SendCollectionNotice } from "./application/handlers/send-collection-notice.handler.js";
 import { CollectionNoticeSender } from "./application/services/collection-notice-sender.js";
@@ -317,6 +318,7 @@ import { PrismaOrderRowsLock } from "./infrastructure/prisma-order-rows-lock.js"
     GetMyDetachedUnpaidOrdersHandler,
     ConstituteCollectionBatchesHandler,
     CancelCollectionBatchHandler,
+    RecordCollectionBatchDownloadHandler,
     DepositCollectionBatchHandler,
     SettleOrderOtherwiseHandler,
     GetCollectionCycleHandler,

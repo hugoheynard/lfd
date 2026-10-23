@@ -105,6 +105,11 @@ model CollectionBatch {
   /// NULL sinon, et pour les lots d'avant.
   postponedFromDay       DateTime? @map("postponed_from_day") @db.Date
 
+  /// L'instant du dernier téléchargement du fichier. NULL = jamais
+  /// téléchargé — « J'ai déposé le fichier dans CENET » est alors refusé
+  /// (migration `20261024060000_le_telechargement_d_un_lot_de_prelevement`).
+  lastDownloadedAt DateTime? @map("last_downloaded_at") @db.Timestamptz(3)
+
   lines   CollectionBatchLine[]
   notices CollectionNotice[]
 

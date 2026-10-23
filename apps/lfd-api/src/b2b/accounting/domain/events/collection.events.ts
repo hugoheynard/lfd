@@ -86,6 +86,19 @@ export class CollectionBatchDepositedEvent implements JournaledEvent {
   }
 }
 
+/** Le fichier de remise d'un lot a été téléchargé. */
+export class CollectionBatchDownloadedEvent implements JournaledEvent {
+  constructor(
+    readonly batch: CollectionBatch,
+    readonly entity: BatchEntity,
+    readonly at: Date,
+  ) {}
+
+  journalFact(): JournalFact {
+    return batchFact(COLLECTION_FACT_TYPES.batchDownloaded, this.batch, this.entity, this.at, {});
+  }
+}
+
 /** Une commande est sortie du prélèvement : réglée autrement. */
 export class OrderSettledOtherwiseEvent implements JournaledEvent {
   constructor(

@@ -208,6 +208,8 @@ export const COLLECTION_FACTS = {
   "collection.batch_cancelled": fact(payload(batch)),
   /** Déposé à la banque : ses commandes sont prélevées. */
   "collection.batch_deposited": fact(payload(batch)),
+  /** Son fichier de remise — fait d'IBAN en clair — a été téléchargé. */
+  "collection.batch_downloaded": fact(payload(batch)),
   /** Une commande sort du prélèvement : réglée autrement, avec une note. */
   "collection.order_settled_otherwise": fact(
     payload({

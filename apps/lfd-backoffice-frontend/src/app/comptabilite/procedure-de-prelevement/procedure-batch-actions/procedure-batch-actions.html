@@ -1,0 +1,69 @@
+<div class="pa-stack" data-action-bar [attr.data-batch]="batch().id">
+  <div class="pa-row">
+    <span class="pa-actions">
+      <button
+        foldButton
+        icon="download"
+        [loading]="pending()"
+        data-download-file
+        (click)="gesture.emit('xml')"
+      >
+        Télécharger le fichier de remise
+      </button>
+      @if (canWrite()) {
+        @if (closedReason(); as reason) {
+          <button foldButton emphasis="soft" disabled [title]="reason" data-deposit>
+            J'ai déposé le fichier dans CENET
+          </button>
+        } @else {
+          <fold-inline-confirm
+            intent="primary"
+            [labels]="{ confirm: 'Déposé, pas encore signé' }"
+            (confirmed)="gesture.emit('deposit')"
+          >
+            <button
+              foldButton
+              emphasis="outline"
+              [disabled]="pending()"
+              title="À dire avant de signer la remise sur CENET : l'outil relit le lot et peut encore refuser."
+              data-deposit
+            >
+              J'ai déposé le fichier dans CENET
+            </button>
+          </fold-inline-confirm>
+        }
+      }
+      <button
+        foldButton
+        emphasis="outline"
+        icon="download"
+        [disabled]="pending()"
+        data-audit
+        (click)="gesture.emit('csv')"
+      >
+        Contrôle CSV
+      </button>
+    </span>
+    @if (canWrite() && cancellable()) {
+      <button
+        foldButton
+        size="sm"
+        emphasis="soft"
+        intent="neutral"
+        [disabled]="pending()"
+        title="Avant dépôt seulement : ses bons repassent à prélever."
+        data-cancel
+        (click)="gesture.emit('cancel')"
+      >
+        Annuler le lot
+      </button>
+    }
+  </div>
+  <p class="pa-said" data-order-help>
+    @if (closedReason(); as reason) {
+      {{ reason }}
+    }
+    Télécharger, déposer dans CENET, dire «&nbsp;J'ai déposé&nbsp;», puis seulement signer sur
+    CENET.
+  </p>
+</div>

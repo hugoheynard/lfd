@@ -71,6 +71,8 @@ export const COLLECTION_FACT_TYPES = {
   batchConstituted: "collection.batch_constituted",
   batchCancelled: "collection.batch_cancelled",
   batchDeposited: "collection.batch_deposited",
+  /** Le fichier de remise — fait d'IBAN en clair — a été servi (2026-10-23). */
+  batchDownloaded: "collection.batch_downloaded",
   orderSettledOtherwise: "collection.order_settled_otherwise",
   noticeQueued: "collection.notice_queued",
   noticeUnsendable: "collection.notice_unsendable",

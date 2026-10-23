@@ -58,6 +58,7 @@ async function rejectedLine(entityId: string): Promise<void> {
   await constituteRequest(entityId).expect(201);
   await ctx.drain();
   const batch = await ctx.prisma.collectionBatch.findFirstOrThrow();
+  await staff().get(`${COLLECTION}/batches/${batch.id}/file.xml`).expect(200);
   await staff().post(`${COLLECTION}/batches/${batch.id}/deposit`).expect(204);
   await staff()
     .post(`/admin/accounting/collection-returns/batches/${batch.id}/lines/1`)

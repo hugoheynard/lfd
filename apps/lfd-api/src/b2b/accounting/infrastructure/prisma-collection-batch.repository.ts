@@ -81,6 +81,7 @@ export class PrismaCollectionBatchRepository extends CollectionBatchRepository {
       fileSha256: row.fileSha256,
       requestedCollectionDay: row.requestedCollectionDay?.toISOString().slice(0, 10) ?? null,
       postponedFromDay: row.postponedFromDay?.toISOString().slice(0, 10) ?? null,
+      lastDownloadedAt: row.lastDownloadedAt,
     });
   }
 
@@ -92,6 +93,7 @@ export class PrismaCollectionBatchRepository extends CollectionBatchRepository {
       depositedByStaffId: state.deposited?.staffId ?? null,
       cancelledAt: state.cancelled?.at ?? null,
       cancelledByStaffId: state.cancelled?.staffId ?? null,
+      lastDownloadedAt: state.lastDownloadedAt,
     };
     const exists = await this.prisma.collectionBatch.findUnique({
       where: { id: state.id },

@@ -366,6 +366,9 @@ describe('le lot de prélèvement figé', () => {
     expect(sentence(ofBatch('collection.batch_deposited', batch))).toContain(
       'a marqué déposé le lot',
     );
+    expect(sentence(ofBatch('collection.batch_downloaded', batch))).toContain(
+      'a téléchargé le fichier de remise : le lot',
+    );
   });
 
   it('dit la commande réglée autrement, avec sa note', () => {

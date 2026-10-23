@@ -273,6 +273,7 @@ describe("« Marquer déposé » exige les avis envoyés", () => {
     expect(sentMails).toHaveLength(0);
     const [batch] = (await cycle(entity)).batches;
     expect(batch?.lines[0]?.notice).toMatchObject({ status: "unsendable", recipientEmail: null });
+    await staff().get(`${BASE}/batches/${batchId}/file.xml`).expect(200);
     const refused = await staff().post(`${BASE}/batches/${batchId}/deposit`).expect(409);
     expect(refused.text).toContain("Boulangerie du Port (aucune adresse");
   });
@@ -291,6 +292,7 @@ describe("« Marquer déposé » exige les avis envoyés", () => {
       status: "failed",
       failure: "adresse en liste de suppression",
     });
+    await staff().get(`${BASE}/batches/${batchId}/file.xml`).expect(200);
     const refused = await staff().post(`${BASE}/batches/${batchId}/deposit`).expect(409);
     expect(refused.text).toContain("Boulangerie du Port (envoi de l");
   });
@@ -303,6 +305,7 @@ describe("« Marquer déposé » exige les avis envoyés", () => {
 
     const batchId = await constitute(entity);
 
+    await staff().get(`${BASE}/batches/${batchId}/file.xml`).expect(200);
     await staff().post(`${BASE}/batches/${batchId}/deposit`).expect(204);
   });
 });
@@ -328,6 +331,7 @@ describe("annuler puis reconstituer : un avis parti se corrige", () => {
     });
     expect(correction).toMatchObject({ kind: "correction", status: "sent", amountCents: 21_100 });
     expect(correction.previousAmountCents).toBe(10_550);
+    await staff().get(`${BASE}/batches/${second}/file.xml`).expect(200);
     await staff().post(`${BASE}/batches/${second}/deposit`).expect(204);
   });
 
@@ -344,6 +348,7 @@ describe("annuler puis reconstituer : un avis parti se corrige", () => {
     expect(sentMails).toHaveLength(1);
     const [batch] = (await cycle(entity)).batches;
     expect(batch?.lines[0]?.notice).toMatchObject({ kind: "unchanged", status: "sent" });
+    await staff().get(`${BASE}/batches/${second}/file.xml`).expect(200);
     await staff().post(`${BASE}/batches/${second}/deposit`).expect(204);
   });
 

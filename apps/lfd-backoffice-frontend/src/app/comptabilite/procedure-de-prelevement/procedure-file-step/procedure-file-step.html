@@ -5,9 +5,20 @@
         <strong>{{ deadline(lot) }}</strong> · {{ collectionDay(lot) }}
       </p>
       @if (lot.depositDeadline === null) {
-        <fold-callout variant="alert">
-          La limite de dépôt de l’entité n’est pas renseignée&nbsp;: en attendant, déposer au plus
-          tard deux jours ouvrés avant l’échéance, avant 13 h 45.
+        <!-- Aucun délai proposé (Hugo, 2026-10-23) : la limite est un réglage de l'entité. -->
+        <fold-callout variant="alert" data-deadline-unset>
+          La limite de dépôt de l’entité n’est pas réglée&nbsp;: l’outil ne peut pas dire jusqu’à
+          quand déposer ce fichier.
+          <a
+            actions
+            foldButton
+            emphasis="outline"
+            icon="settings"
+            [routerLink]="['/comptabilite/entites-juridiques', view().legalEntityId]"
+            data-deadline-settings
+          >
+            Régler la limite de dépôt
+          </a>
         </fold-callout>
       }
     }
@@ -74,18 +85,14 @@
     }
     @case ('to_deposit') {
       @if (batch(); as current) {
-        <app-pending-batch
+        <app-procedure-batch-actions
           [batch]="current"
           [canWrite]="canWrite()"
           [pending]="pending() === current.id"
           (gesture)="gesture.emit($event)"
         />
+        <app-pending-batch [batch]="current" [actions]="false" />
       }
-      <fold-callout variant="info">
-        Télécharger le fichier, le déposer sur CENET, puis «&nbsp;Marquer déposé&nbsp;» — et
-        seulement ensuite signer la remise sur CENET. Le dépôt et la signature se font sur le
-        portail de la banque&nbsp;: l’outil ne peut pas les vérifier.
-      </fold-callout>
     }
     @case ('deposited') {
       <fold-callout variant="success" data-deposited>
@@ -101,7 +108,7 @@
         Lot {{ other.scheme }} de la même procédure, déposé.
       </fold-callout>
     } @else {
-      <app-pending-batch
+      <app-procedure-batch-actions
         data-other-batch
         [attr.data-batch]="other.id"
         [batch]="other"
@@ -109,6 +116,7 @@
         [pending]="pending() === other.id"
         (gesture)="otherGesture.emit({ batchId: other.id, gesture: $event })"
       />
+      <app-pending-batch [batch]="other" [actions]="false" />
     }
   }
 </div>

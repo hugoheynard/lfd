@@ -524,6 +524,9 @@ describe("le lot figé", () => {
       where: { id: mandateId },
       data: { status: "revoked" },
     });
+    await staff()
+      .get(`${BASE}/batches/${batchId ?? ""}/file.xml`)
+      .expect(200);
     const refused = await staff()
       .post(`${BASE}/batches/${batchId ?? ""}/deposit`)
       .expect(409);
@@ -539,6 +542,9 @@ describe("le lot figé", () => {
     const [batchId] = await constitute(entity);
 
     await staff()
+      .get(`${BASE}/batches/${batchId ?? ""}/file.xml`)
+      .expect(200);
+    await staff()
       .post(`${BASE}/batches/${batchId ?? ""}/deposit`)
       .expect(204);
 
@@ -547,6 +553,54 @@ describe("le lot figé", () => {
       .post(`${BASE}/orders/${placed.id}/settle-otherwise`)
       .send({ note: "virement" })
       .expect(409);
+  });
+
+  /** « J'ai déposé » ne se dit pas d'un fichier que personne n'a téléchargé (2026-10-23). */
+  it("refuse le dépôt d'un lot jamais téléchargé ; le téléchargement l'ouvre et s'inscrit", async () => {
+    const entity = await collectingEntity();
+    const port = await client("Boulangerie du Port");
+    await mandated(entity, port);
+    await orderOf(port);
+    const [batchId] = await constitute(entity);
+
+    const refused = await staff()
+      .post(`${BASE}/batches/${batchId ?? ""}/deposit`)
+      .expect(409);
+    expect(refused.text).toContain("n'a jamais été téléchargé");
+    expect((await cycle(entity)).batches[0]?.lastDownloadedAt).toBeNull();
+
+    await staff()
+      .get(`${BASE}/batches/${batchId ?? ""}/file.xml`)
+      .expect(200);
+    expect((await cycle(entity)).batches[0]?.lastDownloadedAt).not.toBeNull();
+    const facts = await ctx.prisma.activityEvent.findMany({
+      where: { subjectId: batchId ?? "", type: "collection.batch_downloaded" },
+    });
+    expect(facts).toHaveLength(1);
+    await staff()
+      .post(`${BASE}/batches/${batchId ?? ""}/deposit`)
+      .expect(204);
+  });
+
+  it("refuse d'annuler un lot déposé, en nommant le double prélèvement", async () => {
+    const entity = await collectingEntity();
+    const port = await client("Boulangerie du Port");
+    await mandated(entity, port);
+    const placed = await orderOf(port);
+    const [batchId] = await constitute(entity);
+    await staff()
+      .get(`${BASE}/batches/${batchId ?? ""}/file.xml`)
+      .expect(200);
+    await staff()
+      .post(`${BASE}/batches/${batchId ?? ""}/deposit`)
+      .expect(204);
+
+    const refused = await staff()
+      .post(`${BASE}/batches/${batchId ?? ""}/cancel`)
+      .expect(409);
+
+    expect(refused.text).toContain("ferait prélever deux fois");
+    expect(await stateOf(placed.id)).toBe("collected");
   });
 
   /**
@@ -562,6 +616,9 @@ describe("le lot figé", () => {
     await ctx.prisma.company.update({ where: { id: port }, data: { status: "suspended" } });
 
     const [batchId] = await constitute(entity);
+    await staff()
+      .get(`${BASE}/batches/${batchId ?? ""}/file.xml`)
+      .expect(200);
     await staff()
       .post(`${BASE}/batches/${batchId ?? ""}/deposit`)
       .expect(204);

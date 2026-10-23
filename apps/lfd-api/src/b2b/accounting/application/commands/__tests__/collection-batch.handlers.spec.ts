@@ -1,7 +1,9 @@
 import { CancelCollectionBatchCommand } from "../cancel-collection-batch.command.js";
 import { ConstituteCollectionBatchesCommand } from "../constitute-collection-batches.command.js";
 import { DepositCollectionBatchCommand } from "../deposit-collection-batch.command.js";
+import { RecordCollectionBatchDownloadCommand } from "../record-collection-batch-download.command.js";
 import {
+  BatchNeverDownloadedError,
   CollectionFloorMissingError,
   CollectionNotYetOpenError,
   DepositRecheckFailedError,
@@ -95,6 +97,7 @@ describe("constituer, annuler, déposer un lot", () => {
     w.recheck.now = new Map([["m_c_port", { active: false, iban: null }]]);
     sendAllQueued(w.noticeStore, w.clock.now());
 
+    await w.download.execute(new RecordCollectionBatchDownloadCommand(id ?? "", "staff_1"));
     await expect(
       w.deposit.execute(new DepositCollectionBatchCommand(id ?? "", "staff_1")),
     ).rejects.toThrow(DepositRecheckFailedError);
@@ -111,6 +114,7 @@ describe("constituer, annuler, déposer un lot", () => {
     w.recheck.now = new Map([["m_c_port", { active: true, iban: mandate("c_port").iban }]]);
     sendAllQueued(w.noticeStore, w.clock.now());
 
+    await w.download.execute(new RecordCollectionBatchDownloadCommand(id ?? "", "staff_1"));
     await w.deposit.execute(new DepositCollectionBatchCommand(id ?? "", "staff_1"));
 
     expect(w.orders.saved.get(placed.orderId)?.stateName).toBe("collected");
@@ -118,8 +122,32 @@ describe("constituer, annuler, déposer un lot", () => {
       "collection.batch_constituted",
       "billing_statement.issued",
       "collection.notice_queued",
+      "collection.batch_downloaded",
       "collection.batch_deposited",
     ]);
+  });
+
+  /** « J'ai déposé » ne se dit pas d'un fichier que personne n'a téléchargé (2026-10-23). */
+  it("refuse le dépôt d'un lot jamais téléchargé, et le téléchargement l'ouvre", async () => {
+    const w = world();
+    const placed = order("c_port");
+    w.candidates.orders = [placed];
+    w.mandates.mandates = [mandate("c_port")];
+    const [id] = await w.constitute.execute(
+      new ConstituteCollectionBatchesCommand(ENTITY_ID, STAFF_AUTHOR),
+    );
+    w.recheck.now = new Map([["m_c_port", { active: true, iban: mandate("c_port").iban }]]);
+    sendAllQueued(w.noticeStore, w.clock.now());
+
+    await expect(
+      w.deposit.execute(new DepositCollectionBatchCommand(id ?? "", "staff_1")),
+    ).rejects.toThrow(BatchNeverDownloadedError);
+    expect(w.orders.saved.get(placed.orderId)?.stateName).not.toBe("collected");
+
+    await w.download.execute(new RecordCollectionBatchDownloadCommand(id ?? "", "staff_1"));
+    expect(w.batches.saved.get(id ?? "")?.toPersistence().lastDownloadedAt).toEqual(w.clock.now());
+    await w.deposit.execute(new DepositCollectionBatchCommand(id ?? "", "staff_1"));
+    expect(w.orders.saved.get(placed.orderId)?.stateName).toBe("collected");
   });
 
   it("le dépôt refuse une commande annulée après la constitution", async () => {
@@ -133,6 +161,7 @@ describe("constituer, annuler, déposer un lot", () => {
     w.cancelled.numbers = ["CMD-X"];
     sendAllQueued(w.noticeStore, w.clock.now());
 
+    await w.download.execute(new RecordCollectionBatchDownloadCommand(id ?? "", "staff_1"));
     await expect(
       w.deposit.execute(new DepositCollectionBatchCommand(id ?? "", "staff_1")),
     ).rejects.toThrow(/CMD-X a été annulée/u);

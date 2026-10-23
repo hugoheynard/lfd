@@ -2,6 +2,7 @@ import { FollowParentCommand } from "../../b2b/account/application/commands/foll
 import { StopFollowingParentCommand } from "../../b2b/account/application/commands/stop-following-parent.command.js";
 import { ConstituteCollectionBatchesCommand } from "../../b2b/accounting/application/commands/constitute-collection-batches.command.js";
 import { DepositCollectionBatchCommand } from "../../b2b/accounting/application/commands/deposit-collection-batch.command.js";
+import { RecordCollectionBatchDownloadCommand } from "../../b2b/accounting/application/commands/record-collection-batch-download.command.js";
 import { IssueMonthlyInvoicesCommand } from "../../b2b/accounting/application/commands/issue-monthly-invoices.command.js";
 import { invoicingMomentOf } from "../../b2b/accounting/domain/services/invoicing-closures.js";
 import { handOverAtCounter } from "./invoice-handovers.seed.js";
@@ -95,6 +96,10 @@ async function collectWeek(
   }
   const at = new Date(week.closesAt.getTime() + DEPOSIT_DELAY_MS);
   for (const batchId of batchIds) {
+    // « J'ai déposé » exige le fichier téléchargé (2026-10-23) : le semis fait le geste.
+    await asStaff(at, () =>
+      context.commands.execute(new RecordCollectionBatchDownloadCommand(batchId, actors.staffId)),
+    );
     await asStaff(at, () =>
       context.commands.execute(new DepositCollectionBatchCommand(batchId, actors.staffId)),
     );
