@@ -1,10 +1,109 @@
 <div class="pr-stack">
+  @if (canWrite() && batches().length > 0) {
+    <div class="pr-bar" data-action-bar>
+      <div class="pr-row">
+        <span class="pr-actions">
+          <button foldButton icon="upload" (click)="importFile()" data-import-returns>
+            Importer le fichier de rejets de la banque
+          </button>
+          <button foldButton emphasis="outline" (click)="signalByHand()" data-signal-by-hand>
+            Signaler un retour à la main
+          </button>
+        </span>
+        @if (returns().todayCheck === null) {
+          <button
+            foldButton
+            emphasis="outline"
+            icon="check"
+            [loading]="checking() === returns().today"
+            (click)="attest(null)"
+            data-attest-today
+          >
+            Retours contrôlés pour aujourd’hui
+          </button>
+        }
+      </div>
+      <p class="pr-said">
+        Le fichier du jour, pain.002 (rejets) ou camt.054 (retours), se télécharge sur le portail de
+        la banque. Un jour sans impayé n’écrit rien ici&nbsp;: «&nbsp;Retours contrôlés&nbsp;» le
+        note, l’outil ne peut pas le constater seul.
+      </p>
+    </div>
+  }
+
+  @if (figures().length > 0) {
+    <dl class="pr-figures" data-return-figures>
+      @for (figure of figures(); track figure.key) {
+        <div
+          class="pr-figure"
+          [class.pr-figure--action]="figure.action"
+          [class.pr-figure--zero]="figure.count === 0"
+          [attr.data-figure]="figure.key"
+        >
+          <dt class="pr-figure-label">{{ figure.label }}</dt>
+          <dd class="pr-figure-count">{{ figure.count }}</dd>
+        </div>
+      }
+    </dl>
+  }
+
+  @if (checkError(); as message) {
+    <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+  }
+
+  @if (returns().todayCheck; as check) {
+    <fold-callout variant="success" icon="check" data-today-check>
+      Retours contrôlés pour aujourd’hui, {{ checkedLabel(check) }}.
+      @if (canWrite()) {
+        <button
+          actions
+          foldButton
+          size="sm"
+          emphasis="outline"
+          intent="neutral"
+          (click)="withdraw(check.day)"
+          data-withdraw-check
+        >
+          Retirer
+        </button>
+      }
+    </fold-callout>
+  }
+
   @if (sentence() !== '') {
     <fold-callout [variant]="returns().state === 'done' ? 'success' : 'info'" data-returns-sentence>
       {{ sentence() }}
     </fold-callout>
   }
+
+  @if (pastMissing().length > 0) {
+    <fold-callout variant="warning" data-missing-days>
+      Pas de contrôle noté le {{ pastMissingList() }}. Relire le fichier de ce jour sur le portail
+      de la banque, l’importer s’il porte des impayés, puis noter le contrôle.
+      @if (canWrite()) {
+        @for (missing of pastMissing(); track missing) {
+          <button
+            actions
+            foldButton
+            size="sm"
+            emphasis="outline"
+            [loading]="checking() === missing"
+            (click)="attest(missing)"
+            [attr.data-attest-day]="missing"
+          >
+            Contrôlé le {{ day(missing) }}
+          </button>
+        }
+      }
+    </fold-callout>
+  }
+
   @if (batches().length > 0) {
-    <app-bank-returns [batches]="batches()" [canWrite]="canWrite()" />
+    <app-bank-returns
+      [batches]="batches()"
+      [canWrite]="canWrite()"
+      [actions]="false"
+      (changed)="changed.emit()"
+    />
   }
 </div>

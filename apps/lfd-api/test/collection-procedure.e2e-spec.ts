@@ -195,6 +195,79 @@ describe("la procédure de prélèvement — la lecture d'état", () => {
   });
 });
 
+describe("« Retours contrôlés » — l'attestation du contrôle quotidien (P3)", () => {
+  const CHECKS = "/admin/accounting/bank-return-checks";
+
+  it("se pose une fois, se retire par une ligne de plus, et la procédure lit la dernière", async () => {
+    const entityId = await entity("552100554");
+
+    await staff().post(CHECKS).send({ legalEntityId: entityId }).expect(201);
+    const attested = await procedure(entityId);
+    expect(attested.returns.todayCheck).toMatchObject({ day: attested.returns.today });
+    await staff().post(CHECKS).send({ legalEntityId: entityId }).expect(409);
+
+    const today = attested.returns.today;
+    await staff()
+      .post(`${CHECKS}/withdrawn`)
+      .send({ legalEntityId: entityId, day: today, note: "   " })
+      .expect(400);
+    await staff()
+      .post(`${CHECKS}/withdrawn`)
+      .send({ legalEntityId: entityId, day: today, note: "fichier de la veille" })
+      .expect(201);
+
+    expect((await procedure(entityId)).returns.todayCheck).toBeNull();
+    expect(
+      (await ctx.prisma.bankReturnCheck.findMany({ orderBy: { checkedAt: "asc" } })).map((row) => [
+        row.withdrawn,
+        row.note,
+      ]),
+    ).toEqual([
+      [false, null],
+      [true, "fichier de la veille"],
+    ]);
+  });
+
+  /** Ce que seule la base prouve : le registre refuse qu'on modifie ou efface une ligne. */
+  it("la base refuse de modifier ou d'effacer une attestation", async () => {
+    const entityId = await entity("552100554");
+    await staff().post(CHECKS).send({ legalEntityId: entityId }).expect(201);
+
+    await expect(ctx.prisma.bankReturnCheck.deleteMany({})).rejects.toThrow(/append_only/u);
+    await expect(
+      ctx.prisma.bankReturnCheck.updateMany({ data: { withdrawn: true, note: "x" } }),
+    ).rejects.toThrow(/append_only/u);
+  });
+
+  it("refuse un jour à venir (400) et une entité inconnue (404)", async () => {
+    const entityId = await entity("552100554");
+    const tomorrow = daysAgo(-2).slice(0, 10);
+
+    await staff().post(CHECKS).send({ legalEntityId: entityId, day: tomorrow }).expect(400);
+    await staff().post(CHECKS).send({ legalEntityId: "le_inconnue" }).expect(404);
+  });
+
+  it("refuse l'attestation à la seule lecture comptable (403)", async () => {
+    const entityId = await entity("552100554");
+    const reader = await ctx.prisma.staffUser.create({
+      data: {
+        firstName: "Test",
+        lastName: "lecture",
+        email: "lecture@lfc.test",
+        role: "communication",
+        status: "active",
+        auth0Id: "staff-lecture",
+      },
+    });
+    await ctx.prisma.staffPermissionOverride.create({
+      data: { staffUserId: reader.id, resource: "b2b_accounting", action: "read", effect: "allow" },
+    });
+
+    await ctx.asSub("staff-lecture").post(CHECKS).send({ legalEntityId: entityId }).expect(403);
+    expect(await ctx.prisma.bankReturnCheck.count()).toBe(0);
+  });
+});
+
 describe("la procédure de prélèvement — la liste des procédures", () => {
   function listOf(entityId: string, includeClosed = false): string {
     const closed = includeClosed ? "&includeClosed=true" : "";

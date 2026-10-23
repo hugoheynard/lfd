@@ -1,4 +1,5 @@
 import type { LocalDeadline } from "./collection-calendar.js";
+import { missingCheckDays } from "./bank-return-checks.js";
 import { businessDaysAfter } from "./target2-calendar.js";
 import {
   isDeadBatchStatus,
@@ -11,10 +12,12 @@ import {
  * `documentation/comptabilite/prelevement/plan-page-procedure-de-prelevement.md`,
  * § 1 et § 3). Pur : le jour de Paris est donné, rien n'est lu ni stocké.
  *
- * Ce qui n'y est pas encore, et c'est voulu : les attestations (P3) — l'onglet
- * 3 est donc « fait » au dépôt, sans la signature attestée — et le verrou de
- * l'onglet 3 par débiteur du lot (P4) — l'onglet 3 ne se verrouille pas sur
- * l'onglet 2, il avertit.
+ * Ce qui n'y est pas encore, et c'est voulu : les attestations du LOT (P3,
+ * `collection_batch_attestation`) — l'onglet 3 est donc « fait » au dépôt,
+ * sans la signature attestée — et le verrou de l'onglet 3 par débiteur du lot
+ * (P4) — l'onglet 3 ne se verrouille pas sur l'onglet 2, il avertit. Les
+ * attestations « Retours contrôlés » (entité × jour) y sont depuis le
+ * 2026-10-23 : l'onglet 4 les lit.
  */
 
 /** Les quatre états d'un onglet (§ 3). */
@@ -33,6 +36,12 @@ export interface ProcedureBatch {
   readonly requestedCollectionDay: string | null;
   readonly depositDeadline: LocalDeadline | null;
   readonly pendingReturnCount: number;
+  /**
+   * Les jours attestés « Retours contrôlés » de l'ENTITÉ du lot — la
+   * dernière ligne de chaque jour faisant foi (`checkedDaysOf`). Un contrôle
+   * du jour J couvre tous les lots de l'entité (§ 3.4).
+   */
+  readonly checkedDays: ReadonlySet<string>;
 }
 
 /** Onglet 1 (§ 3.1) : à exporter, sinon en vol, sinon fait. */
@@ -85,37 +94,57 @@ export function fileStatus(
 }
 
 export type ReturnsReason =
-  "not_deposited" | "before_collection_day" | "pending_returns" | "watching" | "watch_over";
+  | "not_deposited"
+  | "before_collection_day"
+  | "pending_returns"
+  | "watching"
+  | "unchecked_days"
+  | "watch_over";
 
 export interface ReturnsStatus {
   readonly state: ProcedureStepState;
   readonly reason: ReturnsReason;
   readonly watchUntilDay: string | null;
+  /**
+   * Les jours ouvrés de [échéance, min(aujourd'hui, échéance + N)] sans
+   * contrôle attesté — nommés par l'onglet ; vide hors fenêtre commencée.
+   */
+  readonly missingCheckDays: readonly string[];
 }
 
 /**
  * Onglet 4 (§ 3.4) : verrouillé par le DÉPÔT seul — jamais par une
  * attestation, qui fermerait l'import des impayés d'un lot réellement débité.
- * Sans le contrôle quotidien attesté (P3), la fenêtre [échéance, échéance + N]
- * est « à faire » chaque jour ; un retour en suspens la rouvre après.
+ * « Fait » quand la fenêtre [échéance, échéance + N] est passée, qu'aucun
+ * retour n'attend, ET que chaque jour ouvré de la fenêtre est attesté ; un
+ * trou se nomme, il ne se lisse pas. Dans la fenêtre, l'onglet est « à faire »
+ * tant qu'un jour arrivé manque, « en attente » du jour ouvré suivant sinon.
  */
 export function returnsStatus(followed: ProcedureBatch | null, today: string): ReturnsStatus {
   if (followed?.status !== "deposited") {
-    return { state: "locked", reason: "not_deposited", watchUntilDay: null };
+    return { state: "locked", reason: "not_deposited", watchUntilDay: null, missingCheckDays: [] };
   }
   const collectionDay = followed.requestedCollectionDay;
   const watchUntilDay =
     collectionDay === null ? null : businessDaysAfter(collectionDay, RETURNS_WATCH_BUSINESS_DAYS);
+  const missing =
+    collectionDay === null || watchUntilDay === null
+      ? []
+      : missingCheckDays(collectionDay, watchUntilDay, today, followed.checkedDays);
+  const base = { watchUntilDay, missingCheckDays: missing };
   if (followed.pendingReturnCount > 0) {
-    return { state: "to_do", reason: "pending_returns", watchUntilDay };
+    return { state: "to_do", reason: "pending_returns", ...base };
   }
   if (collectionDay !== null && today < collectionDay) {
-    return { state: "waiting", reason: "before_collection_day", watchUntilDay };
+    return { state: "waiting", reason: "before_collection_day", ...base };
   }
   if (watchUntilDay !== null && today <= watchUntilDay) {
-    return { state: "to_do", reason: "watching", watchUntilDay };
+    return { state: missing.length > 0 ? "to_do" : "waiting", reason: "watching", ...base };
   }
-  return { state: "done", reason: "watch_over", watchUntilDay };
+  if (missing.length > 0) {
+    return { state: "to_do", reason: "unchecked_days", ...base };
+  }
+  return { state: "done", reason: "watch_over", ...base };
 }
 
 /** Un lot déposé dont l'onglet 4 n'est pas fait — encore suivi. */

@@ -85,10 +85,13 @@ export async function readMandatesStep(
 /**
  * Les lots de l'entité, chacun avec ses retours en suspens. Seuls les lots
  * DÉPOSÉS en ont : un retour exige un lot déposé (`collection-return.ts`).
+ * `checkedDays` : les jours « Retours contrôlés » de l'entité — un contrôle
+ * du jour couvre tous ses lots (plan § 3.4).
  */
 export async function procedureBatchesOf(
   returns: CollectionReturnsReader,
   stored: readonly StoredBatchView[],
+  checkedDays: ReadonlySet<string>,
 ): Promise<readonly ProcedureBatch[]> {
   return Promise.all(
     stored.map(async (batch): Promise<ProcedureBatch> => {
@@ -101,6 +104,7 @@ export async function procedureBatchesOf(
         requestedCollectionDay: batch.requestedCollectionDay,
         depositDeadline: batch.depositDeadline,
         pendingReturnCount: rows.filter((row) => row.resolution === "pending").length,
+        checkedDays,
       };
     }),
   );

@@ -972,6 +972,15 @@
       "information": false
     },
     {
+      "colonne": "public.bank_return_check.checked_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a attesté (ou retiré) « Retours contrôlés » pour une entité et un jour (`checked_by_staff_id`) sur `bank_return_check`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "public.account_bank_export.created_by_staff_id",
       "personne": "staff",
       "categorie": "auteur-geste",

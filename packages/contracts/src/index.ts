@@ -192,6 +192,14 @@ export type {
   CollectionProcedureView,
   CollectionProcedureIdentityView,
   CollectionProcedurePayerCountView,
+  CollectionProcedureReturnFiguresView,
+  BankReturnCheckView,
+  AttestBankReturnCheckPayload,
+  WithdrawBankReturnCheckPayload,
+} from "./collection-procedure.js";
+export {
+  attestBankReturnCheckPayloadSchema,
+  withdrawBankReturnCheckPayloadSchema,
 } from "./collection-procedure.js";
 export type {
   CollectionProcedureListBatchView,
@@ -249,6 +257,9 @@ export type {
   CollectionReturnGesturesView,
   CollectionReturnImportPreviewView,
   CollectionReturnImportResultView,
+  CollectionReturnImportReportView,
+  ImportReportEntryView,
+  SetAsideImportReportEntryView,
   CollectionReturnKindView,
   CollectionReturnResolutionView,
   CollectionReturnSourceView,

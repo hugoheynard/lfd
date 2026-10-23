@@ -15,6 +15,7 @@
 import type {
   BatchCollectionReturnsView,
   CollectionReturnImportPreviewView,
+  CollectionReturnImportResultView,
   CollectionReturnView,
 } from "@lfd/contracts";
 
@@ -299,6 +300,39 @@ describe("l'import d'un fichier de la banque (R5b)", () => {
       await upload("preview", xml).expect(200),
     );
     expect(again.entries[0]?.status).toBe("already_returned");
+  });
+
+  it("la confirmation rend son compte rendu : lues, enregistrées, introuvables avec leur RUM", async () => {
+    const entityId = await setUpEntity(staff);
+    await invoicedPayer(ctx, staff, entityId, closesAt);
+    const { e2e } = await depositedLine(entityId);
+    const line = await ctx.prisma.collectionBatchLine.findFirstOrThrow();
+    const amount = (line.amountCents / 100).toFixed(2);
+    const xml = pain002(daysAgo(1).slice(0, 10), [
+      { endToEndId: e2e, amount, code: "AC04" },
+      { endToEndId: "INCONNU-1", amount: "1.00", code: "AM04", mandate: "RUM-PERDUE" },
+    ]);
+
+    const result = jsonBody<CollectionReturnImportResultView>(
+      await upload("confirm", xml, [e2e]).expect(201),
+    );
+
+    expect(result.recordedIds).toHaveLength(1);
+    expect(result.report).toMatchObject({
+      format: "pain002",
+      readCount: 2,
+      recordedCount: 1,
+      alreadyRecordedCount: 0,
+      notFound: [
+        {
+          endToEndId: "INCONNU-1",
+          mandateReference: "RUM-PERDUE",
+          amountCents: 100,
+          returnedOn: daysAgo(1).slice(0, 10),
+        },
+      ],
+      setAside: [],
+    });
   });
 
   it("camt.054 : un montant différent est signalé et ne se confirme pas", async () => {

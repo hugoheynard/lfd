@@ -10,6 +10,10 @@ import {
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../../platform/time/clock.js";
+import { StaffAuthorDirectory } from "../../../../staff/directory/domain/staff-author-directory.js";
+import { BankReturnChecksReader } from "../../domain/ports/bank-return-checks.reader.js";
+import { checkedDaysOf } from "../../domain/services/bank-return-checks.js";
+import { readReturnsStep } from "../collection-procedure-returns-support.js";
 import { CollectionBatchNotFoundError } from "../../domain/errors/collection-errors.js";
 import { KnownAccountFingerprintsReader } from "../../domain/ports/account-bank-exports.reader.js";
 import { AccountsForBankExportReader } from "../../domain/ports/accounts-for-bank-export.reader.js";
@@ -42,7 +46,6 @@ import {
   followedBatchOf,
   openBatchesOf,
   replacementOf,
-  returnsStatus,
   type ProcedureBatch,
 } from "../../domain/services/collection-procedure.js";
 import {
@@ -93,6 +96,8 @@ export class GetCollectionProcedureHandler implements IQueryHandler<
     private readonly collectionMandates: CollectionMandatesReader,
     private readonly lotInputs: CountedLotInputsReader,
     private readonly clock: Clock,
+    private readonly checks: BankReturnChecksReader,
+    private readonly authors: StaffAuthorDirectory,
   ) {}
 
   async execute(query: GetCollectionProcedureQuery): Promise<CollectionProcedureView> {
@@ -103,7 +108,7 @@ export class GetCollectionProcedureHandler implements IQueryHandler<
       { accounts: this.accounts, fingerprints: this.fingerprints },
       entity.id,
     );
-    const [mandates, stored, dates, payerIds] = await Promise.all([
+    const [mandates, stored, dates, payerIds, checks] = await Promise.all([
       readMandatesStep(
         { mandates: this.mandates, known: this.known, exports: this.exports },
         entity.id,
@@ -116,10 +121,11 @@ export class GetCollectionProcedureHandler implements IQueryHandler<
         entity.id,
         now,
       ),
+      this.checks.ofEntity(entity.id),
     ]);
     const calendar = InvoicingCalendar.of(dates.modes, dates.payers);
     const [batches, modes, missed] = await Promise.all([
-      procedureBatchesOf(this.returns, stored),
+      procedureBatchesOf(this.returns, stored, checkedDaysOf(checks)),
       readLotPayerModes(
         this.periods,
         calendar,
@@ -140,7 +146,15 @@ export class GetCollectionProcedureHandler implements IQueryHandler<
     );
     const storedById = new Map(stored.map((batch) => [batch.id, batch]));
     const file = fileStep(followed, toPrepare !== null, storedById, accounts, mandates);
-    const returns = returnsStatus(followed, today);
+    const returns = await readReturnsStep(
+      { returns: this.returns, authors: this.authors },
+      {
+        followed,
+        lineCount: followed === null ? null : (storedById.get(followed.id)?.lines.length ?? 0),
+        checks,
+        today,
+      },
+    );
     const replacement =
       followed !== null && isDeadBatchStatus(followed.status)
         ? replacementOf(followed, batches)
@@ -175,7 +189,7 @@ export class GetCollectionProcedureHandler implements IQueryHandler<
       accounts,
       mandates,
       file,
-      returns: { ...returns, pendingReturnCount: followed?.pendingReturnCount ?? 0 },
+      returns,
       arrivalStep: arrivalStepOf({
         accounts: accounts.state,
         mandates: mandates.state,

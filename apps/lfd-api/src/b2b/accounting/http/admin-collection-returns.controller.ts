@@ -157,12 +157,11 @@ export class AdminCollectionReturnsController {
     const fields = new ZodBody(confirmCollectionReturnImportFieldsSchema).transform({
       endToEndIds: jsonField(rawIds),
     });
-    const recordedIds = await this.commands.execute<
+    return this.commands.execute<
       ConfirmCollectionReturnImportCommand,
-      readonly string[]
+      CollectionReturnImportResultView
     >(
       new ConfirmCollectionReturnImportCommand(bankFileText(file), fields.endToEndIds, staffUserId),
     );
-    return { recordedIds };
   }
 }

@@ -17,6 +17,12 @@ export interface BankFileEntry {
   readonly returnedOn: string;
   /** Ce que la banque dit du montant, en centimes. */
   readonly amountCents: number;
+  /**
+   * La RUM que la banque rappelle (`MndtId`), si elle la rappelle — pour
+   * qu'une transaction introuvable se cherche ; `null` sinon. N'entre dans
+   * aucun appariement : seul l'`EndToEndId` apparie.
+   */
+  readonly mandateReference: string | null;
 }
 
 export interface BankReturnFile {
@@ -86,6 +92,7 @@ function pain002Entries(report: XmlElement): readonly BankFileEntry[] {
           at(tx, "OrgnlTxRef", "Amt", "InstdAmt") ?? at(tx, "OrgnlInstdAmt"),
           "OrgnlTxRef/Amt/InstdAmt",
         ),
+        mandateReference: textAt(tx, "OrgnlTxRef", "MndtRltdInf", "MndtId"),
       })),
   );
 }
@@ -123,6 +130,7 @@ function camt054Entry(
     ...reason,
     returnedOn: dayOf(booked, "BookgDt/Dt"),
     amountCents: amountOf(amount, "AmtDtls/TxAmt/Amt"),
+    mandateReference: textAt(tx, "Refs", "MndtId") ?? textAt(tx, "RltdRefs", "MndtId"),
   };
 }
 

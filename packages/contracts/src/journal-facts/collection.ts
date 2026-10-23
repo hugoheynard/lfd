@@ -344,6 +344,16 @@ export const COLLECTION_FACTS = {
   /** La banque l'a rejeté : ses comptes redeviennent « à exporter ». */
   "account_bank_export.abandoned": fact(payload(accountBankExport)),
   /**
+   * Le staff a noté que les retours de la banque de ce jour ont été
+   * contrôlés, qu'il y en ait eu ou non (plan
+   * `plan-page-procedure-de-prelevement.md` § 1.2, P3). Sujet : l'entité.
+   */
+  "bank_return_check.attested": fact(payload({ subjectLabel: subjectLabel(), day: day() })),
+  /** Une attestation fausse retirée — par une ligne de plus, avec sa raison. */
+  "bank_return_check.withdrawn": fact(
+    payload({ subjectLabel: subjectLabel(), day: day(), note: z.string().min(1) }),
+  ),
+  /**
    * Un compte est déclaré connu de la banque sans fichier, et pourquoi : saisi
    * dans CENET, ou signalé par la banque. Sans `reason` avant le 2026-10-23 —
    * le geste était alors unique, et le fait ne le disait pas.

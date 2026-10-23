@@ -1,4 +1,5 @@
 import { addDays } from "@lfd/contracts";
+import { EVERY_DAY_CHECKED } from "./bank-return-check-fixtures.js";
 
 import {
   procedureRowsOf,
@@ -37,6 +38,7 @@ function cancelled(id: string, closesAt: Date): ListedBatch {
     requestedCollectionDay: null,
     depositDeadline: null,
     pendingReturnCount: 0,
+    checkedDays: EVERY_DAY_CHECKED,
     constitutedDay: addDays(TODAY, -40),
     unmandatedCount: 0,
     periodLabel: "période",

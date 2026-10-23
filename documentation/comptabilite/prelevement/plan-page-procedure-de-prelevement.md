@@ -1,8 +1,9 @@
 # Plan — la page « Procédure de prélèvement »
 
 > 📝 **Doc-first, écrit le 2026-10-23.** **P1** et **P2** sont bâtis
-> (2026-10-23 — § 8) : la page existe, sans attestations (P3) ni verrou par
-> débiteur du lot (P4).
+> (2026-10-23 — § 8) : la page existe, sans attestations du lot ni verrou par
+> débiteur du lot (P4). **P3, partie retours** (« Retours contrôlés »,
+> onglet 4) bâtie le même jour (§ 8).
 > Questions du § 9 **tranchées** le même jour. Demande de Hugo, ce
 > jour-là : « dans comptabilité on doit avoir une page procédure de
 > prélèvement, en gros des onglets qui se déverrouillent au fur et à mesure
@@ -422,6 +423,41 @@ procédure par lot. S1 est une lecture ; elle n'écrit rien (CQRS).
    prochaine clôture en sous-titre. Les lots ouverts en tête portent le même
    libellé court (rythme · période).
 3. **P3** — S4 : les attestations, l'onglet 3 complet, l'onglet 4.
+   **Partie retours bâtie le 2026-10-23** (non commitée à l'écriture), avec
+   quatre corrections de Hugo du même jour :
+   - **« Retours contrôlés »** : table `bank_return_check` (migration additive
+     `20261024080000_le_controle_des_retours_de_la_banque` — entité, jour de
+     Paris, auteur au registre RGPD, instant ; un retrait est une ligne
+     `withdrawn` de plus avec sa note, la base refuse UPDATE et DELETE par
+     déclencheur ; la dernière ligne d'un jour fait foi,
+     `apps/lfd-api/src/b2b/accounting/domain/services/bank-return-checks.ts`).
+     Gestes `POST admin/accounting/bank-return-checks` et `…/withdrawn`, faits
+     `bank_return_check.attested` / `.withdrawn` (sujet : l'entité). **Écarts
+     au § 1.2** : pas de colonne `outcome` (la liste de Hugo ne la porte pas),
+     et la confirmation d'import **ne pose pas** d'attestation `imported` —
+     le geste est « Retours contrôlés pour aujourd'hui », fait après l'import
+     comme un jour sans impayé. Un jour PASSÉ s'atteste encore (rattrapage,
+     bouton par jour manquant) ; un jour à venir est refusé.
+   - **Onglet 4** : « fait » quand échéance + 5 jours ouvrés est passée, qu'aucun
+     retour n'attend, ET que chaque jour ouvré de la fenêtre est attesté ; les
+     jours manquants sont nommés (`missingCheckDays`), raison
+     `unchecked_days` après la fenêtre. Un lot à trou reste parmi les lots
+     ouverts. Aucune attestation ne conditionne un geste du domaine.
+   - **Barre d'actions au-dessus** de l'onglet : « Importer le fichier de
+     rejets de la banque », puis « Signaler un retour à la main » (choix de la
+     ligne) ; `app-bank-returns` prend `actions` (comme `app-pending-batch`) et
+     perd son bouton d'en-tête dans l'onglet.
+   - **Compte rendu d'import** : la confirmation rend `report` (lues,
+     enregistrées, déjà enregistrées, introuvables avec `EndToEndId`, RUM
+     lue dans le fichier — `MndtId` — et montant, écartées avec leur raison),
+     montré dans le panneau d'import des deux pages. Ce qui s'enregistre ne
+     change pas.
+   - **Chiffres clés** en tête : lignes du lot, retours en attente de décision,
+     re-présentés, réglés autrement, passés en perte.
+
+   Reste de P3 : `collection_batch_attestation` (CSV relu, remise signée, PSR
+   lus) et l'onglet 3 complet.
+
 4. **P4** — S2 : le verrou de l'onglet 3 par débiteur du lot.
 
 ## 9. Questions pour Hugo

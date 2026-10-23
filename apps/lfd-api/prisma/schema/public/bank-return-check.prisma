@@ -1,0 +1,34 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// « Retours contrôlés » — l'attestation du contrôle quotidien des retours de
+// la banque (plan `documentation/comptabilite/prelevement/plan-page-procedure-de-prelevement.md`
+// § 1.2, P3).
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Propriétaire : `src/b2b/accounting/`. Un REGISTRE D'AJOUTS : aucune ligne ne
+// se modifie ni ne s'efface (déclencheur `bank_return_check_append_only`) ; la
+// dernière ligne d'un (entité, jour) fait foi. Contraintes INVISIBLES ici —
+// dans la migration `20261024080000_le_controle_des_retours_de_la_banque` :
+// un retrait porte sa note, une attestation n'en porte pas.
+
+/// Une attestation « retours contrôlés » d'une entité pour un jour, ou son retrait.
+model BankReturnCheck {
+  /// ULID.
+  id String @id
+
+  legalEntityId String      @map("legal_entity_id")
+  legalEntity   LegalEntity @relation(fields: [legalEntityId], references: [id], onDelete: Restrict)
+
+  /// Le jour de Paris contrôlé.
+  day              DateTime @db.Date
+  checkedAt        DateTime @map("checked_at") @db.Timestamptz(3)
+  /// Identifiant staff LOCAL — jamais un `sub`.
+  checkedByStaffId String   @map("checked_by_staff_id")
+  /// `true` : la ligne RETIRE l'attestation du jour.
+  withdrawn        Boolean  @default(false)
+  /// La raison d'un retrait ; `null` pour une attestation.
+  note             String?
+
+  @@index([legalEntityId, day])
+  @@map("bank_return_check")
+  @@schema("public")
+}

@@ -1,0 +1,26 @@
+<fold-panel-header
+  title="Signaler un retour à la main"
+  subtitle="Quand la banque a dit le retour sans fichier, ou que l’import ne l’a pas trouvé."
+/>
+
+<div class="body">
+  @if (options().length > 0) {
+    <fold-listbox
+      label="Ligne du lot"
+      placeholder="Le débiteur dont la ligne est revenue"
+      [options]="options()"
+      [(value)]="rank"
+    />
+  } @else {
+    <fold-callout appearance="inset" variant="info">
+      Chaque ligne du lot a déjà son retour enregistré.
+    </fold-callout>
+  }
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="close()">Annuler</button>
+  <button foldButton [disabled]="rank() === null" (click)="next()" data-choose-line>
+    Continuer
+  </button>
+</footer>

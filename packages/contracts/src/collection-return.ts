@@ -145,6 +145,41 @@ export type ConfirmCollectionReturnImportFields = z.infer<
   typeof confirmCollectionReturnImportFieldsSchema
 >;
 
+/** Une transaction du fichier, telle que le compte rendu la nomme pour qu'on la cherche. */
+export interface ImportReportEntryView {
+  readonly endToEndId: string;
+  /** La RUM que la banque rappelle ; `null` si le fichier ne la porte pas. */
+  readonly mandateReference: string | null;
+  readonly amountCents: number;
+  readonly returnedOn: string;
+}
+
+/** Une transaction lue, rapprochée ou non, qui n'a pas été enregistrée — et pourquoi. */
+export interface SetAsideImportReportEntryView extends ImportReportEntryView {
+  readonly problem: string;
+}
+
+/**
+ * **Le compte rendu d'un import** (Hugo, 2026-10-23) : ce que le fichier
+ * portait et ce qu'il est devenu. `readCount` = `recordedCount` +
+ * `alreadyRecordedCount` + `notFound.length` + `setAside.length`.
+ */
+export interface CollectionReturnImportReportView {
+  readonly format: "pain002" | "camt054";
+  /** Les transactions de retour lues dans le fichier. */
+  readonly readCount: number;
+  /** Rapprochées d'une ligne de lot (ou d'un essai) et enregistrées. */
+  readonly recordedCount: number;
+  /** Déjà enregistrées avant cet import : le doublon est ignoré. */
+  readonly alreadyRecordedCount: number;
+  /** Aucune ligne de lot ni aucun essai ne porte cet `EndToEndId`. */
+  readonly notFound: readonly ImportReportEntryView[];
+  /** Rapprochées mais non enregistrées : montant différent, refusée par la règle, ou non retenue. */
+  readonly setAside: readonly SetAsideImportReportEntryView[];
+}
+
 export interface CollectionReturnImportResultView {
   readonly recordedIds: readonly string[];
+  /** Ajouté le 2026-10-23 : le compte rendu de l'import. */
+  readonly report: CollectionReturnImportReportView;
 }

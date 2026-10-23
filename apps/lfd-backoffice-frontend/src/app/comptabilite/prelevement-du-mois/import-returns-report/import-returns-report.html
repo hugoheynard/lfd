@@ -1,0 +1,49 @@
+<div class="ir-stack" data-import-report>
+  <dl class="ir-figures">
+    @for (figure of figures(); track figure.key) {
+      <div class="ir-figure" [attr.data-report-figure]="figure.key">
+        <dt class="ir-figure-label">{{ figure.label }}</dt>
+        <dd class="ir-figure-count">{{ figure.count }}</dd>
+      </div>
+    }
+  </dl>
+
+  @if (report().notFound.length > 0) {
+    <fold-callout appearance="inset" variant="warning" data-report-not-found>
+      Aucune ligne de nos lots ni aucun prélèvement d’essai ne porte ces références&nbsp;: les
+      chercher sur le portail de la banque, puis signaler le retour à la main sur sa ligne s’il est
+      bien de nous.
+    </fold-callout>
+    <fold-data-table
+      caption="Transactions introuvables"
+      narrowLayout="cards"
+      zebra
+      [columns]="notFoundColumns"
+      [rows]="report().notFound"
+      [rowKey]="rowKey"
+    >
+      <ng-template foldCell="endToEndId" let-row>{{ row.endToEndId }}</ng-template>
+      <ng-template foldCell="rum" let-row>{{ rumOf(row) }}</ng-template>
+      <ng-template foldCell="amount" let-row>{{ amountOf(row) }}</ng-template>
+      <ng-template foldCell="day" let-row>{{ dayOf(row) }}</ng-template>
+    </fold-data-table>
+  }
+
+  @if (report().setAside.length > 0) {
+    <fold-data-table
+      caption="Transactions écartées"
+      narrowLayout="cards"
+      zebra
+      [columns]="setAsideColumns"
+      [rows]="report().setAside"
+      [rowKey]="rowKey"
+      data-report-set-aside
+    >
+      <ng-template foldCell="endToEndId" let-row>{{ row.endToEndId }}</ng-template>
+      <ng-template foldCell="rum" let-row>{{ rumOf(row) }}</ng-template>
+      <ng-template foldCell="amount" let-row>{{ amountOf(row) }}</ng-template>
+      <ng-template foldCell="day" let-row>{{ dayOf(row) }}</ng-template>
+      <ng-template foldCell="problem" let-row>{{ problemOf(row) }}</ng-template>
+    </fold-data-table>
+  }
+</div>

@@ -10,6 +10,7 @@ import {
   returnsStatus,
   type ProcedureBatch,
 } from "../collection-procedure.js";
+import { EVERY_DAY_CHECKED, NO_DAY_CHECKED } from "./bank-return-check-fixtures.js";
 
 /**
  * L'état des onglets de la procédure (plan
@@ -26,6 +27,7 @@ function batch(id: string, over: Partial<ProcedureBatch> = {}): ProcedureBatch {
     requestedCollectionDay: "2026-11-16",
     depositDeadline: { day: "2026-11-12", time: "13:45" },
     pendingReturnCount: 0,
+    checkedDays: EVERY_DAY_CHECKED,
     ...over,
   };
 }
@@ -88,16 +90,19 @@ describe("onglet 4 — les retours (N = 5 jours ouvrés, Q3)", () => {
       state: "waiting",
       reason: "before_collection_day",
       watchUntilDay: "2026-11-23",
+      missingCheckDays: [],
     });
   });
 
   it("de l'échéance à échéance + 5 jours ouvrés (week-end sauté) : contrôle quotidien", () => {
+    const unchecked = batch("u", { status: "deposited", checkedDays: NO_DAY_CHECKED });
     expect(returnsStatus(DEPOSITED, "2026-11-16").reason).toBe("watching");
-    expect(returnsStatus(DEPOSITED, "2026-11-23").state).toBe("to_do");
+    expect(returnsStatus(unchecked, "2026-11-23").state).toBe("to_do");
     expect(returnsStatus(DEPOSITED, "2026-11-24")).toEqual({
       state: "done",
       reason: "watch_over",
       watchUntilDay: "2026-11-23",
+      missingCheckDays: [],
     });
   });
 
@@ -115,7 +120,66 @@ describe("onglet 4 — les retours (N = 5 jours ouvrés, Q3)", () => {
       state: "done",
       reason: "watch_over",
       watchUntilDay: null,
+      missingCheckDays: [],
     });
+  });
+});
+
+describe("onglet 4 — les contrôles attestés « Retours contrôlés » (P3)", () => {
+  // Échéance lundi 16 novembre ; fenêtre jusqu'au lundi 23 (5 jours ouvrés).
+  const checkedOn = (...days: string[]): ProcedureBatch =>
+    batch("dep", { status: "deposited", checkedDays: new Set(days) });
+
+  it("dans la fenêtre, les jours arrivés sans contrôle sont nommés, aujourd'hui compris", () => {
+    expect(returnsStatus(checkedOn("2026-11-16"), "2026-11-18")).toEqual({
+      state: "to_do",
+      reason: "watching",
+      watchUntilDay: "2026-11-23",
+      missingCheckDays: ["2026-11-17", "2026-11-18"],
+    });
+  });
+
+  it("dans la fenêtre, chaque jour arrivé attesté : en attente du jour ouvré suivant", () => {
+    const status = returnsStatus(checkedOn("2026-11-16", "2026-11-17"), "2026-11-17");
+    expect(status).toMatchObject({ state: "waiting", reason: "watching", missingCheckDays: [] });
+  });
+
+  it("le week-end n'est jamais demandé", () => {
+    expect(returnsStatus(checkedOn(), "2026-11-22").missingCheckDays).toEqual([
+      "2026-11-16",
+      "2026-11-17",
+      "2026-11-18",
+      "2026-11-19",
+      "2026-11-20",
+    ]);
+  });
+
+  it("fenêtre passée avec un trou : à faire, le trou nommé — il ne se lisse pas en « fait »", () => {
+    const holed = checkedOn("2026-11-16", "2026-11-17", "2026-11-18", "2026-11-20", "2026-11-23");
+    expect(returnsStatus(holed, "2026-11-30")).toEqual({
+      state: "to_do",
+      reason: "unchecked_days",
+      watchUntilDay: "2026-11-23",
+      missingCheckDays: ["2026-11-19"],
+    });
+  });
+
+  it("fenêtre passée, chaque jour ouvré attesté, aucun retour : fait", () => {
+    const all = checkedOn(
+      "2026-11-16",
+      "2026-11-17",
+      "2026-11-18",
+      "2026-11-19",
+      "2026-11-20",
+      "2026-11-23",
+    );
+    expect(returnsStatus(all, "2026-11-30").state).toBe("done");
+  });
+
+  it("un lot dont la fenêtre a un trou reste parmi les lots ouverts", () => {
+    expect(openBatchesOf([checkedOn("2026-11-16")], "2026-11-30").map((b) => b.id)).toEqual([
+      "dep",
+    ]);
   });
 });
 

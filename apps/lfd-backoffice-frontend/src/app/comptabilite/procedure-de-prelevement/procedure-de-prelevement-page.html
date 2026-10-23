@@ -118,8 +118,10 @@
                 @if (stepState() !== 'locked') {
                   <app-procedure-returns-step
                     [returns]="state.returns"
+                    [legalEntityId]="state.legalEntityId"
                     [batch]="followedBatch()"
                     [canWrite]="canWrite()"
+                    (changed)="onCardChanged()"
                   />
                 }
               }

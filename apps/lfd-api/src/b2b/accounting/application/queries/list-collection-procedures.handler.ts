@@ -19,6 +19,8 @@ import {
 import { CollectionMandatesReader } from "../../domain/ports/collection-mandates.reader.js";
 import { CountedLotInputsReader } from "../../domain/ports/counted-lot-inputs.reader.js";
 import { CollectionReturnsReader } from "../../domain/ports/collection-returns.reader.js";
+import { BankReturnChecksReader } from "../../domain/ports/bank-return-checks.reader.js";
+import { checkedDaysOf } from "../../domain/services/bank-return-checks.js";
 import { InvoicePeriodsReader } from "../../domain/ports/invoice-periods.reader.js";
 import { LegalEntityReader } from "../../domain/ports/legal-entity.reader.js";
 import {
@@ -90,6 +92,7 @@ export class ListCollectionProceduresHandler implements IQueryHandler<
     private readonly lotInputs: CountedLotInputsReader,
     private readonly coverage: AutopilotCoverageReader,
     private readonly clock: Clock,
+    private readonly checks: BankReturnChecksReader,
   ) {}
 
   async execute(query: ListCollectionProceduresQuery): Promise<CollectionProcedureListView> {
@@ -109,7 +112,7 @@ export class ListCollectionProceduresHandler implements IQueryHandler<
     const calendar = InvoicingCalendar.of(dates.modes, dates.payers);
     const settings = collectionSettingsOf(entity);
     const [{ batches, modes }, missed] = await Promise.all([
-      this.readBatches(stored, calendar),
+      this.readBatches(entity.id, stored, calendar),
       missedClosuresToCome(this.coverage, entity.id, calendar, settings, now),
     ]);
     const counts = payerCountsAt(dates.modes, dates.payers, payerIds, now);
@@ -160,14 +163,16 @@ export class ListCollectionProceduresHandler implements IQueryHandler<
 
   /** Les lots, leurs retours en suspens et les modes de leurs clients. */
   private async readBatches(
+    legalEntityId: string,
     stored: readonly StoredBatchView[],
     calendar: InvoicingCalendar,
   ): Promise<{
     readonly batches: readonly ListedBatch[];
     readonly modes: readonly (readonly BillingMode[])[];
   }> {
+    const checkedDays = checkedDaysOf(await this.checks.ofEntity(legalEntityId));
     const [batches, modes] = await Promise.all([
-      procedureBatchesOf(this.returns, stored),
+      procedureBatchesOf(this.returns, stored, checkedDays),
       readLotPayerModes(
         this.periods,
         calendar,

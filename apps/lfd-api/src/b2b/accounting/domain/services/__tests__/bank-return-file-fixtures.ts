@@ -12,6 +12,8 @@ export interface FixtureTransaction {
   readonly code?: string;
   readonly proprietary?: string;
   readonly additional?: string;
+  /** La RUM que la banque rappelle (`MndtId`). */
+  readonly mandate?: string;
 }
 
 /** Un rapport de statut `pain.002.001.03` : chaque transaction rejetée (`RJCT`). */
@@ -31,6 +33,7 @@ export function pain002(day: string, transactions: readonly FixtureTransaction[]
         <OrgnlTxRef>
           <Amt><InstdAmt Ccy="EUR">${tx.amount}</InstdAmt></Amt>
           <ReqdColltnDt>${day}</ReqdColltnDt>
+          ${tx.mandate === undefined ? "" : `<MndtRltdInf><MndtId>${tx.mandate}</MndtId></MndtRltdInf>`}
         </OrgnlTxRef>
       </TxInfAndSts>`,
     )
@@ -74,7 +77,7 @@ export function camt054(day: string, transactions: readonly FixtureTransaction[]
         <BkTxCd><Domn><Cd>PMNT</Cd><Fmly><Cd>RDDT</Cd><SubFmlyCd>UPDD</SubFmlyCd></Fmly></Domn></BkTxCd>
         <NtryDtls>
           <TxDtls>
-            <Refs><EndToEndId>${tx.endToEndId}</EndToEndId></Refs>
+            <Refs><EndToEndId>${tx.endToEndId}</EndToEndId>${tx.mandate === undefined ? "" : `<MndtId>${tx.mandate}</MndtId>`}</Refs>
             <AmtDtls><TxAmt><Amt Ccy="EUR">${tx.amount}</Amt></TxAmt></AmtDtls>
             <RtrInf>
               <Rsn>${reason(tx)}</Rsn>

@@ -162,3 +162,13 @@ export const INVOICE_FACT_TYPES = {
   /** Un payeur n'est pas facturé ce mois-ci : la raison, jamais un montant. */
   signalled: "invoice.signalled",
 } as const satisfies Readonly<Record<string, JournalFactType>>;
+
+/**
+ * Les faits de l'attestation « Retours contrôlés » (plan
+ * `plan-page-procedure-de-prelevement.md` § 1.2, P3). Sujet : l'entité ;
+ * charge : le jour (et la raison d'un retrait). Jamais un IBAN.
+ */
+export const BANK_RETURN_CHECK_FACT_TYPES = {
+  attested: "bank_return_check.attested",
+  withdrawn: "bank_return_check.withdrawn",
+} as const satisfies Readonly<Record<string, JournalFactType>>;

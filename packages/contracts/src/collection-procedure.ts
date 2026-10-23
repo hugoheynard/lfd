@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 import type { CollectionBatchStatusView } from "./collection-batch.js";
 import type { BillingRhythmKind, LocalDeadlineView } from "./legal-entity.js";
 
@@ -8,8 +10,8 @@ import type { BillingRhythmKind, LocalDeadlineView } from "./legal-entity.js";
  *
  * L'état de chaque onglet est CALCULÉ par le serveur à chaque lecture depuis
  * les exports, les lots et les retours : rien n'est stocké, pas même l'onglet
- * courant (§ 1). Les attestations (P3) et le verrou par débiteur du lot (P4)
- * n'y sont pas encore.
+ * courant (§ 1). Les attestations « Retours contrôlés » (P3) y sont depuis
+ * le 2026-10-23 ; celles du lot et le verrou par débiteur (P4) pas encore.
  */
 
 /** L'état d'un onglet (§ 3). Une VALEUR : stable. */
@@ -74,10 +76,40 @@ export interface CollectionProcedureFileView {
  * Pourquoi l'onglet 4 est dans son état : `not_deposited` (verrouillé),
  * `before_collection_day` (rien à contrôler avant l'échéance),
  * `pending_returns` (un retour attend son geste), `watching` (contrôle
- * quotidien jusqu'à `watchUntilDay`), `watch_over` (fenêtre close).
+ * quotidien jusqu'à `watchUntilDay`), `unchecked_days` (fenêtre passée, mais
+ * des jours sans contrôle attesté — `missingCheckDays`), `watch_over`
+ * (fenêtre close, chaque jour attesté).
  */
 export type CollectionProcedureReturnsReasonView =
-  "not_deposited" | "before_collection_day" | "pending_returns" | "watching" | "watch_over";
+  | "not_deposited"
+  | "before_collection_day"
+  | "pending_returns"
+  | "watching"
+  | "unchecked_days"
+  | "watch_over";
+
+/**
+ * L'attestation « Retours contrôlés » qui fait foi pour un jour (plan
+ * `plan-page-procedure-de-prelevement.md` § 1.2, P3) — la dernière ligne du
+ * jour, si ce n'est pas un retrait.
+ */
+export interface BankReturnCheckView {
+  /** `AAAA-MM-JJ`, jour de Paris. */
+  readonly day: string;
+  /** ISO — l'instant du geste. */
+  readonly at: string;
+  /** « Prénom Nom » ; `null` si la fiche ne le dit plus. */
+  readonly byName: string | null;
+}
+
+/** Les chiffres clés de l'onglet 4, sur le lot suivi. */
+export interface CollectionProcedureReturnFiguresView {
+  readonly lineCount: number;
+  readonly pendingCount: number;
+  readonly representedCount: number;
+  readonly settledOtherwiseCount: number;
+  readonly writtenOffCount: number;
+}
 
 /** Onglet 4 — le contrôle des retours du lot suivi. */
 export interface CollectionProcedureReturnsView {
@@ -86,7 +118,33 @@ export interface CollectionProcedureReturnsView {
   readonly pendingReturnCount: number;
   /** `AAAA-MM-JJ` — échéance + 5 jours ouvrés (Q3) ; `null` sans échéance figée. */
   readonly watchUntilDay: string | null;
+  /**
+   * Les jours ouvrés de la fenêtre déjà arrivés (aujourd'hui compris) sans
+   * contrôle attesté, du plus ancien au plus récent — l'onglet les nomme.
+   */
+  readonly missingCheckDays: readonly string[];
+  /** `AAAA-MM-JJ` — aujourd'hui à Paris, le jour du geste « pour aujourd'hui ». */
+  readonly today: string;
+  /** L'attestation d'aujourd'hui qui fait foi ; `null` s'il n'y en a pas. */
+  readonly todayCheck: BankReturnCheckView | null;
+  /** `null` sans lot suivi déposé. */
+  readonly figures: CollectionProcedureReturnFiguresView | null;
 }
+
+/** `POST admin/accounting/bank-return-checks` — `day` absent : aujourd'hui. */
+export const attestBankReturnCheckPayloadSchema = z.object({
+  legalEntityId: z.string().min(1),
+  day: z.iso.date().optional(),
+});
+export type AttestBankReturnCheckPayload = z.infer<typeof attestBankReturnCheckPayloadSchema>;
+
+/** `POST admin/accounting/bank-return-checks/withdrawn` — une note dit pourquoi. */
+export const withdrawBankReturnCheckPayloadSchema = z.object({
+  legalEntityId: z.string().min(1),
+  day: z.iso.date(),
+  note: z.string().trim().min(1).max(500),
+});
+export type WithdrawBankReturnCheckPayload = z.infer<typeof withdrawBankReturnCheckPayloadSchema>;
 
 /** Un lot, tel que la tête de la page le liste. */
 export interface CollectionProcedureBatchView {

@@ -232,6 +232,8 @@ model LegalEntity {
   mandateBankExports     MandateBankExport[]
   accountBankExports     AccountBankExport[]
   knownBankAccounts      KnownBankAccount[]
+  // « Retours contrôlés » (P3, `plan-page-procedure-de-prelevement.md`).
+  bankReturnChecks       BankReturnCheck[]
   // Les dates des modes et le mode des payeurs (M1, `plan-rythme-de-facturation.md`).
   billingModeDates       BillingModeDates[]
   payerBillingModes      PayerBillingMode[]

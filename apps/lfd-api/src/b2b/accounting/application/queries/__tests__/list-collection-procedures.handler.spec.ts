@@ -17,6 +17,7 @@ import {
 import { FixedInvoicePeriods } from "../../services/__tests__/issued-invoice-doubles.js";
 import {
   FixedBatches,
+  FixedBankReturnChecks,
   FixedCoverage,
   PendingReturns,
   LAST_CLOSURE,
@@ -45,6 +46,7 @@ function world(payerModes: PayerBillingModesReader = new FixedPayerModes(), paye
   const batches = new FixedBatches();
   const returns = new PendingReturns();
   const coverage = new FixedCoverage();
+  const checks = new FixedBankReturnChecks();
   const entity = new OneEntity({ ...entityRecord(), depositCutoff: CUTOFF });
   const counting = countingOf(
     payers.map((id) => activePayer(id)),
@@ -67,11 +69,12 @@ function world(payerModes: PayerBillingModesReader = new FixedPayerModes(), paye
     counting.lot,
     coverage,
     accounts.clock,
+    checks,
   );
   const id = entity.record.id;
   const list = (includeClosed = false, entityId = id): Promise<CollectionProcedureListView> =>
     handler.execute(new ListCollectionProceduresQuery(entityId, includeClosed));
-  return { id, entity, mandates, batches, returns, coverage, list };
+  return { id, entity, mandates, batches, returns, coverage, checks, list };
 }
 
 describe("ListCollectionProceduresHandler — la liste des procédures", () => {
@@ -140,6 +143,8 @@ describe("ListCollectionProceduresHandler — la liste des procédures", () => {
       }),
     ];
     w.returns.pending.set("watched", 2);
+    // La fenêtre du lot clos est attestée jour après jour : sans quoi il resterait suivi (P3).
+    w.checks.attest(...Array.from({ length: 12 }, (_, index) => addDays(TODAY, -40 + index)));
 
     const open = await w.list();
     const all = await w.list(true);
@@ -154,6 +159,22 @@ describe("ListCollectionProceduresHandler — la liste des procédures", () => {
       stage: "closed",
       warnings: [],
     });
+  });
+
+  it("un lot déposé dont la fenêtre a un jour sans contrôle attesté reste ouvert (P3)", async () => {
+    const w = world();
+    w.batches.batches = [
+      stored("holed", {
+        cycleClosesAt: "2026-08-31T22:00:00.000Z",
+        status: "deposited",
+        depositedAt: NOW.toISOString(),
+        requestedCollectionDay: addDays(TODAY, -40),
+      }),
+    ];
+
+    const open = await w.list();
+
+    expect(open.rows.map((row) => row.id)).toContain(`${w.id}~2026-09-01`);
   });
 
   it("un rythme suivi a sa prochaine clôture ; un rythme sans client n'en a pas", async () => {

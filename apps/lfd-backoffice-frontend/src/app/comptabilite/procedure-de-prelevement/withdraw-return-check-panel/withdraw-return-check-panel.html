@@ -1,0 +1,32 @@
+<fold-panel-header title="Retirer « Retours contrôlés »" [subtitle]="subtitle()" />
+
+<div class="body">
+  <fold-callout appearance="inset" variant="info">
+    Rien ne s’efface&nbsp;: le retrait s’ajoute au registre, avec son auteur et sa raison, et le
+    jour redevient «&nbsp;à contrôler&nbsp;».
+  </fold-callout>
+  <fold-input
+    label="Pourquoi retirer ce contrôle"
+    required
+    hint="Une phrase : par exemple « fichier de la veille, pas celui du jour »."
+    [(value)]="note"
+  />
+
+  @if (error(); as message) {
+    <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+  }
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="close()">Annuler</button>
+  <button
+    foldButton
+    intent="danger"
+    [disabled]="!canSubmit()"
+    [loading]="saving()"
+    (click)="submit()"
+    data-confirm-withdraw
+  >
+    Retirer le contrôle
+  </button>
+</footer>

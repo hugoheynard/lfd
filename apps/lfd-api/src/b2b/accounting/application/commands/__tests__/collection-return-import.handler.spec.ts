@@ -21,7 +21,7 @@ describe("confirmer un import de retours (R5b)", () => {
   it("enregistre la transaction appariée, source pain002, et ses commandes passent returned", async () => {
     const w = returnWorld();
 
-    const ids = await w.confirm.execute(
+    const { recordedIds: ids } = await w.confirm.execute(
       new ConfirmCollectionReturnImportCommand(FILE, ["E2E-LOT1-1"], "staff_1"),
     );
 
@@ -62,6 +62,34 @@ describe("confirmer un import de retours (R5b)", () => {
     await expect(
       w.confirm.execute(new ConfirmCollectionReturnImportCommand(file, ["E2E-LOT1-1"], "s")),
     ).rejects.toThrow(/interentreprises/u);
+  });
+
+  it("rend le compte rendu : lues, enregistrées, introuvables avec leur RUM et leur montant", async () => {
+    const w = returnWorld();
+    const file = pain002("2026-10-16", [
+      { endToEndId: "E2E-LOT1-1", amount: "123.45", code: "MS02" },
+      { endToEndId: "E2E-INCONNU", amount: "10.00", code: "AM04", mandate: "RUM-PERDUE" },
+    ]);
+
+    const { report } = await w.confirm.execute(
+      new ConfirmCollectionReturnImportCommand(file, ["E2E-LOT1-1"], "staff_1"),
+    );
+
+    expect(report).toEqual({
+      format: "pain002",
+      readCount: 2,
+      recordedCount: 1,
+      alreadyRecordedCount: 0,
+      notFound: [
+        {
+          endToEndId: "E2E-INCONNU",
+          mandateReference: "RUM-PERDUE",
+          amountCents: 1_000,
+          returnedOn: "2026-10-16",
+        },
+      ],
+      setAside: [],
+    });
   });
 
   it("une référence absente du fichier refuse", async () => {
@@ -111,7 +139,7 @@ describe("un retour sur un prélèvement d'essai (ESS-, plan `plan-prelevement-d
   it("la confirmation le pose sur l'essai, et ne touche ni lot, ni ligne, ni commande", async () => {
     const { w, test } = withTest();
 
-    const ids = await w.confirm.execute(
+    const { recordedIds: ids } = await w.confirm.execute(
       new ConfirmCollectionReturnImportCommand(MIXED, [ESSAI], "staff_1"),
     );
 

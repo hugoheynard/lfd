@@ -167,12 +167,15 @@ describe("moduleOf — la comptabilité", () => {
     ["account_bank_export.created", "comptabilite"],
     ["account_bank_export.downloaded", "comptabilite"],
     ["account_bank_export.account_known_declared", "comptabilite"],
+    // « Retours contrôlés » (P3, 2026-10-23).
+    ["bank_return_check.attested", "comptabilite"],
+    ["bank_return_check.withdrawn", "comptabilite"],
     ["payer.billing_mode_changed", "comptabilite"],
   ])("%s se range sous %s", (type, module) => {
     expect(moduleOf(type)).toBe(module);
   });
 
-  it("le filtre du module ne ramène que ses treize préfixes", () => {
+  it("le filtre du module ne ramène que ses quatorze préfixes", () => {
     expect(prefixesOf("comptabilite")).toEqual([
       "legal_entity.",
       "payment_mandate.",
@@ -187,6 +190,7 @@ describe("moduleOf — la comptabilité", () => {
       "invoice.",
       "mandate_bank_export.",
       "account_bank_export.",
+      "bank_return_check.",
     ]);
   });
 

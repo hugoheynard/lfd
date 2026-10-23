@@ -221,6 +221,9 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     // L'export des comptes destinataires pour la banque, et « déjà connu »
     // (doc `prerequis-export-ribs.md`, 2026-10-23).
     "account_bank_export.",
+    // « Retours contrôlés » : le contrôle quotidien des retours de la banque
+    // (plan `plan-page-procedure-de-prelevement.md` § 1.2, P3, 2026-10-23).
+    "bank_return_check.",
   ],
   // Le fonds d'images : un bloc à lui depuis le 2026-09-23, avec son droit
   // (`media_library`). Rangé sous `pim` jusqu'au 2026-10-10.

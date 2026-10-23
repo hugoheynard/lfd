@@ -5,6 +5,7 @@ import {
   effect,
   inject,
   input,
+  output,
   signal,
 } from '@angular/core';
 import type {
@@ -29,6 +30,10 @@ import { httpErrorMessage } from '@lfd/endpoints';
 
 import { CollectionReturnsService } from '../../collection-returns.service';
 import { euros } from '../../invoice-dossier-format';
+import {
+  ChooseReturnLinePanel,
+  type ChooseReturnLinePanelData,
+} from '../choose-return-line-panel/choose-return-line-panel';
 import { ImportReturnsPanel } from '../import-returns-panel/import-returns-panel';
 import {
   ResolveReturnPanel,
@@ -51,6 +56,11 @@ const COLUMNS: readonly FoldTableColumn[] = [
  * celles qui n'en ont pas, la liste des retours et leurs gestes, et l'import
  * d'un fichier de la banque. Un seul lot lu à la fois : l'écran ne multiplie
  * pas les appels par le nombre de lots passés.
+ *
+ * `actions` à `false` (l'onglet « Retours » de la procédure, 2026-10-23) :
+ * l'en-tête de section n'a plus son bouton d'import — l'hôte porte la barre
+ * d'actions au-dessus et appelle `importFile()` / `signalByChoice()`, comme
+ * `app-pending-batch`. `changed` dit à l'hôte de relire après chaque geste.
  */
 @Component({
   selector: 'app-bank-returns',
@@ -76,6 +86,11 @@ export class BankReturns {
   /** Les lots déposés, le plus récent d'abord. */
   readonly batches = input.required<readonly CollectionBatchView[]>();
   readonly canWrite = input(false);
+  /** Le bouton d'import dans l'en-tête de section ; `false` quand l'hôte porte la barre. */
+  readonly actions = input(true);
+
+  /** Un geste a abouti : retour signalé, importé, re-présenté, réglé ou perdu. */
+  readonly changed = output();
 
   protected readonly columns = COLUMNS;
   protected readonly rowKey = (row: CollectionBatchLineView): string => String(row.rank);
@@ -137,7 +152,22 @@ export class BankReturns {
     );
   }
 
-  protected async importFile(): Promise<void> {
+  /** « Signaler un retour à la main » : choisir la ligne, puis la saisie habituelle. */
+  async signalByChoice(): Promise<void> {
+    const data: ChooseReturnLinePanelData = {
+      lines: (this.batch()?.lines ?? []).filter((line) => !this.hasReturn(line)),
+    };
+    const rank = await this.panels.open<ChooseReturnLinePanelData, number>(ChooseReturnLinePanel, {
+      data,
+      width: 'md',
+    }).closed;
+    const line = data.lines.find((candidate) => candidate.rank === rank);
+    if (line !== undefined) {
+      await this.signalReturn(line);
+    }
+  }
+
+  async importFile(): Promise<void> {
     await this.afterPanel(
       this.panels.open<undefined, boolean>(ImportReturnsPanel, { data: undefined, width: 'lg' })
         .closed,
@@ -158,6 +188,7 @@ export class BankReturns {
     try {
       await this.api.represent(item.id);
       await this.load(item.batchId);
+      this.changed.emit();
     } catch (caught) {
       this.error.set(httpErrorMessage(caught, 'Le retour n’a pas pu être re-présenté.'));
     } finally {
@@ -169,6 +200,7 @@ export class BankReturns {
     const batch = this.batch();
     if ((await closed) === true && batch !== null) {
       await this.load(batch.id);
+      this.changed.emit();
     }
   }
 

@@ -597,6 +597,18 @@ describe('l’export des mandats pour la banque', () => {
   });
 });
 
+describe('« Retours contrôlés » (P3)', () => {
+  it('dit l’entité et le jour ; un retrait dit sa raison', () => {
+    const day = { subjectLabel: ENTITY, day: '2026-11-16' };
+    expect(sentence(entity('bank_return_check.attested', day))).toContain(
+      'a noté contrôlés les retours de la banque de l’entité émettrice « La Folie Douce SAS » pour le',
+    );
+    expect(
+      sentence(entity('bank_return_check.withdrawn', { ...day, note: 'fichier de la veille' })),
+    ).toContain('fichier de la veille');
+  });
+});
+
 describe('l’export des comptes destinataires pour la banque', () => {
   it('dit l’entité et le nombre de comptes, jamais un IBAN', () => {
     const exported = { subjectLabel: ENTITY, accountCount: 2 };

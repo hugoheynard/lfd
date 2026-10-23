@@ -1,3 +1,4 @@
+import type { CollectionReturnImportResultView } from "@lfd/contracts";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
@@ -14,6 +15,7 @@ import { OrderCollectionRepository } from "../../domain/ports/order-collection.r
 import { ReturnableLinesReader } from "../../domain/ports/returnable-lines.reader.js";
 import { readBankReturnFile, type BankReturnFile } from "../../domain/services/bank-return-file.js";
 import { classifyReturns, returnEntryOf } from "../collection-return-import-support.js";
+import { importReportOf } from "../collection-return-import-report.js";
 import { nameRejectionAuthor, recordReturn } from "../collection-return-support.js";
 import { attachTestReturn } from "../collection-test-return-support.js";
 import { ConfirmCollectionReturnImportCommand } from "./confirm-collection-return-import.command.js";
@@ -27,11 +29,16 @@ import { ConfirmCollectionReturnImportCommand } from "./confirm-collection-retur
  *
  * Une transaction `ESS-…` retenue est rattachée à son prélèvement d'essai
  * (`attachTestReturn`) — jamais à un lot (plan `plan-prelevement-d-essai.md`).
+ *
+ * Rend les retours enregistrés ET le compte rendu du fichier (Hugo,
+ * 2026-10-23) : lues, enregistrées, déjà enregistrées, introuvables, écartées.
+ * Le compte rendu relit le classement de la confirmation ; il n'en change
+ * rien.
  */
 @CommandHandler(ConfirmCollectionReturnImportCommand)
 export class ConfirmCollectionReturnImportHandler implements ICommandHandler<
   ConfirmCollectionReturnImportCommand,
-  readonly string[]
+  CollectionReturnImportResultView
 > {
   constructor(
     private readonly locks: CollectionBatchLock,
@@ -47,7 +54,9 @@ export class ConfirmCollectionReturnImportHandler implements ICommandHandler<
     private readonly authors: StaffAuthorDirectory,
   ) {}
 
-  async execute(command: ConfirmCollectionReturnImportCommand): Promise<readonly string[]> {
+  async execute(
+    command: ConfirmCollectionReturnImportCommand,
+  ): Promise<CollectionReturnImportResultView> {
     const file = readBankReturnFile(command.xml);
     const at = this.clock.now();
     try {
@@ -61,7 +70,7 @@ export class ConfirmCollectionReturnImportHandler implements ICommandHandler<
     command: ConfirmCollectionReturnImportCommand,
     file: BankReturnFile,
     at: Date,
-  ): Promise<readonly string[]> {
+  ): Promise<CollectionReturnImportResultView> {
     const retained = new Set(command.endToEndIds);
     const classified = await classifyReturns(
       { lines: this.lines, tests: this.testTargets },
@@ -101,6 +110,6 @@ export class ConfirmCollectionReturnImportHandler implements ICommandHandler<
       );
       recorded.push(bankReturn.id);
     }
-    return recorded;
+    return { recordedIds: recorded, report: importReportOf(file.format, classified, retained) };
   }
 }

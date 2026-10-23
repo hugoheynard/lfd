@@ -16,6 +16,7 @@ import {
 import { FixedInvoicePeriods } from "../../services/__tests__/issued-invoice-doubles.js";
 import {
   FixedBatches,
+  FixedBankReturnChecks,
   FixedCoverage,
   LAST_CLOSURE,
   PendingReturns,
@@ -23,6 +24,10 @@ import {
   stored,
 } from "./collection-procedure-doubles.js";
 import { countingOf } from "./counted-payers-doubles.js";
+import {
+  FixedStaffAuthorDirectory,
+  authorsKnownAs,
+} from "../../../../../staff/directory/domain/__tests__/fixed-staff-author-directory.js";
 import { GetCollectionProcedureQuery } from "../collection-procedure-queries.js";
 import { GetCollectionProcedureHandler } from "../get-collection-procedure.handler.js";
 
@@ -40,6 +45,7 @@ function world() {
   const returns = new PendingReturns();
   const coverage = new FixedCoverage();
   const counting = countingOf([], []);
+  const checks = new FixedBankReturnChecks();
   const handler = new GetCollectionProcedureHandler(
     accounts.entities,
     accounts.accounts,
@@ -57,10 +63,14 @@ function world() {
     counting.mandates,
     counting.lot,
     accounts.clock,
+    checks,
+    new FixedStaffAuthorDirectory(
+      authorsKnownAs({ firstName: "Claire", lastName: "Compta" }, "staff_1"),
+    ),
   );
   const read = (batchId: string | null = null, closureDay: string | null = null) =>
     handler.execute(new GetCollectionProcedureQuery("le1", batchId, closureDay));
-  return { accounts, mandates, batches, returns, coverage, read };
+  return { accounts, mandates, batches, returns, coverage, checks, read };
 }
 
 describe("la procédure de prélèvement — la lecture d'état", () => {
@@ -170,6 +180,55 @@ describe("la procédure de prélèvement — la lecture d'état", () => {
       state: "to_do",
       reason: "pending_returns",
       pendingReturnCount: 1,
+    });
+  });
+
+  it("onglet 4 : les jours de la fenêtre sans contrôle sont nommés, celui d'aujourd'hui dit qui l'a fait", async () => {
+    const w = world();
+    const collectionDay = addDays(TODAY, -2);
+    w.batches.batches = [
+      stored("dep", {
+        status: "deposited",
+        depositedAt: NOW.toISOString(),
+        requestedCollectionDay: collectionDay,
+      }),
+    ];
+    w.checks.attest(TODAY);
+
+    const view = await w.read();
+
+    expect(view.returns.today).toBe(TODAY);
+    expect(view.returns.todayCheck).toEqual({
+      day: TODAY,
+      at: NOW.toISOString(),
+      byName: "Claire Compta",
+    });
+    expect(view.returns.missingCheckDays).not.toContain(TODAY);
+    expect(view.returns.missingCheckDays[0]).toBe(collectionDay);
+    expect(view.returns).toMatchObject({ state: "to_do", reason: "watching" });
+  });
+
+  it("onglet 4 : chaque jour arrivé attesté, aucun retour — en attente, et ses chiffres clés", async () => {
+    const w = world();
+    const collectionDay = addDays(TODAY, -2);
+    w.batches.batches = [
+      stored("dep", {
+        status: "deposited",
+        depositedAt: NOW.toISOString(),
+        requestedCollectionDay: collectionDay,
+      }),
+    ];
+    w.checks.attest(collectionDay, addDays(TODAY, -1), TODAY);
+
+    const view = await w.read();
+
+    expect(view.returns).toMatchObject({ state: "waiting", missingCheckDays: [] });
+    expect(view.returns.figures).toEqual({
+      lineCount: 0,
+      pendingCount: 0,
+      representedCount: 0,
+      settledOtherwiseCount: 0,
+      writtenOffCount: 0,
     });
   });
 

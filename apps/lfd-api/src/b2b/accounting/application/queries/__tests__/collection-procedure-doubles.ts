@@ -14,6 +14,8 @@ import {
   type CollectionReturnRow,
 } from "../../../domain/ports/collection-returns.reader.js";
 import type { BatchCsvLine } from "../../../domain/services/collection-batch-csv.js";
+import { BankReturnChecksReader } from "../../../domain/ports/bank-return-checks.reader.js";
+import type { BankReturnCheckLine } from "../../../domain/services/bank-return-checks.js";
 import { NOW } from "../../commands/__tests__/account-bank-export-doubles.js";
 
 /**
@@ -121,5 +123,20 @@ export class FixedCoverage extends AutopilotCoverageReader {
       attemptedClosures: this.attempted.filter((closure) => closure < before),
       lastLiveBatchClosesAt: this.lastLiveBatchClosesAt,
     });
+  }
+}
+
+/** Les lignes « Retours contrôlés » de l'entité, écrites à la main. */
+export class FixedBankReturnChecks extends BankReturnChecksReader {
+  lines: BankReturnCheckLine[] = [];
+  ofEntity(): Promise<readonly BankReturnCheckLine[]> {
+    return Promise.resolve(this.lines);
+  }
+
+  /** Atteste ces jours, au nom de `staff_1`. */
+  attest(...days: readonly string[]): void {
+    for (const day of days) {
+      this.lines.push({ id: `chk_${day}`, day, at: NOW, staffId: "staff_1", withdrawn: false });
+    }
   }
 }

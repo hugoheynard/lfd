@@ -735,6 +735,24 @@ export const ACCOUNTING_PHRASES = {
     accountCount,
     ['accountCount', 'reference'],
   ),
+  // « Retours contrôlés » (plan `plan-page-procedure-de-prelevement.md` § 1.2, P3).
+  'bank_return_check.attested': onEntity(
+    'a noté contrôlés les retours de la banque',
+    'de',
+    (fact) => [text(' pour le '), inUnit('day', fact.payload['day'])],
+    ['day'],
+  ),
+  'bank_return_check.withdrawn': onEntity(
+    'a retiré le contrôle des retours de la banque',
+    'de',
+    (fact) => [
+      text(' du '),
+      inUnit('day', fact.payload['day']),
+      text(' : '),
+      name(optional(fact.payload['note']) ?? '—'),
+    ],
+    ['day', 'note'],
+  ),
   'account_bank_export.account_known_declared': onEntity(
     'a déclaré connu de la banque, sans fichier, un compte débité par les mandats',
     'de',

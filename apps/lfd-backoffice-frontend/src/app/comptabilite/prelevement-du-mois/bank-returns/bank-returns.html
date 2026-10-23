@@ -1,5 +1,5 @@
 <fold-page-section title="Les retours de la banque" stack>
-  @if (canWrite()) {
+  @if (canWrite() && actions()) {
     <button sectionActions foldButton emphasis="outline" icon="upload" (click)="importFile()">
       Importer un fichier de la banque
     </button>

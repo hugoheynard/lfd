@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import type {
   CollectionReturnImportPreviewView,
+  CollectionReturnImportReportView,
   ImportedReturnStatusView,
   ImportedReturnView,
 } from '@lfd/contracts';
@@ -20,6 +21,7 @@ import { httpErrorMessage } from '@lfd/endpoints';
 
 import { CollectionReturnsService } from '../../collection-returns.service';
 import { day, euros } from '../../invoice-dossier-format';
+import { ImportReturnsReport } from '../import-returns-report/import-returns-report';
 
 const COLUMNS: readonly FoldTableColumn[] = [
   { key: 'status', label: 'Appariement' },
@@ -47,6 +49,11 @@ const STATUS: Readonly<
  * **Importer un fichier de la banque** (plan `retours-bancaires.md`) : un `pain.002` ou un `camt.054`. L'aperçu dit ce que chaque
  * transaction deviendrait ; seules les appariées s'enregistrent, et seulement
  * quand le staff confirme. Le serveur relit le fichier à la confirmation.
+ *
+ * Après la confirmation, le panneau ne se ferme pas : il montre le compte
+ * rendu de l'import (Hugo, 2026-10-23) — lues, enregistrées, déjà
+ * enregistrées, introuvables — et se ferme sur « Fermer », qui fait relire
+ * l'hôte.
  */
 @Component({
   selector: 'app-import-returns-panel',
@@ -59,6 +66,7 @@ const STATUS: Readonly<
     FoldDataTableComponent,
     FoldFileDropzoneComponent,
     FoldPanelHeaderComponent,
+    ImportReturnsReport,
   ],
   templateUrl: './import-returns-panel.html',
   styleUrl: './import-returns-panel.scss',
@@ -77,6 +85,8 @@ export class ImportReturnsPanel {
   protected readonly preview = signal<CollectionReturnImportPreviewView | null>(null);
   protected readonly busy = signal(false);
   protected readonly error = signal<string | null>(null);
+  /** Le compte rendu de l'import confirmé ; `null` avant. */
+  protected readonly report = signal<CollectionReturnImportReportView | null>(null);
 
   /** Ce qui s'enregistre à la confirmation : les lignes de lot ET les essais. */
   protected readonly matched = computed(() =>
@@ -105,8 +115,7 @@ export class ImportReturnsPanel {
       return;
     }
     await this.run(async () => {
-      await this.api.confirmImport(file, ids);
-      this.ref.close(true);
+      this.report.set((await this.api.confirmImport(file, ids)).report);
     }, 'Les retours n’ont pas pu être enregistrés.');
   }
 
@@ -125,8 +134,13 @@ export class ImportReturnsPanel {
     return day(row.returnedOn);
   }
 
+  /** Après un import confirmé, l'hôte relit ; avant, rien n'a changé. */
   protected close(): void {
-    this.ref.close();
+    if (this.report() === null) {
+      this.ref.close();
+    } else {
+      this.ref.close(true);
+    }
   }
 
   private async run(work: () => Promise<void>, fallback: string): Promise<void> {

@@ -21,6 +21,7 @@ describe("la lecture d'un fichier de retours de la banque (R5b)", () => {
           reasonLabel: null,
           returnedOn: "2026-10-16",
           amountCents: 12_345,
+          mandateReference: null,
         },
         {
           endToEndId: "E2E-2",
@@ -29,6 +30,7 @@ describe("la lecture d'un fichier de retours de la banque (R5b)", () => {
           reasonLabel: "Pas de mandat",
           returnedOn: "2026-10-16",
           amountCents: 100_000,
+          mandateReference: null,
         },
       ],
     });
@@ -48,6 +50,18 @@ describe("la lecture d'un fichier de retours de la banque (R5b)", () => {
       expect.objectContaining({ endToEndId: "E2E-4", kind: "refund_request", reasonCode: "MD06" }),
     ]);
     expect(file.entries[0]?.returnedOn).toBe("2026-10-20");
+  });
+
+  it("lit la RUM que la banque rappelle (MndtId), dans les deux formats", () => {
+    const rejected = readBankReturnFile(
+      pain002("2026-10-16", [{ endToEndId: "E2E-6", amount: "1.00", mandate: "RUM-0001" }]),
+    );
+    const returned = readBankReturnFile(
+      camt054("2026-10-20", [{ endToEndId: "E2E-7", amount: "1.00", mandate: "RUM-0002" }]),
+    );
+
+    expect(rejected.entries[0]?.mandateReference).toBe("RUM-0001");
+    expect(returned.entries[0]?.mandateReference).toBe("RUM-0002");
   });
 
   it("un motif propriétaire devient « autre » avec ses mots", () => {
