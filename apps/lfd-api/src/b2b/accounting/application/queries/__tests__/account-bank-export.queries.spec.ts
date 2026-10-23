@@ -64,8 +64,42 @@ describe("la carte « Comptes à la banque »", () => {
     await w.prepare.execute(new ExportAccountsForBankCommand("le1", "s"));
     const after = await w.card.execute(new GetAccountBankExportsQuery("le1"));
     expect(after).toMatchObject({ toExport: [], inFlightCount: 1, knownCount: 0, debitedCount: 1 });
-    expect(after.accounts[0]?.standing).toEqual({ kind: "in_flight" });
+    expect(after.accounts[0]?.standing).toEqual({ kind: "in_flight", downloaded: false });
     expect(JSON.stringify(after)).not.toContain(IBAN_A);
+  });
+
+  it("dit d'un compte en vol si son export a été téléchargé", async () => {
+    const w = world();
+    w.accounts.exportable = [debitedAccount("a")];
+    const id = await w.prepare.execute(new ExportAccountsForBankCommand("le1", "s"));
+    await w.download.execute(new RecordAccountBankExportDownloadCommand("le1", id, "s"));
+    const view = await w.card.execute(new GetAccountBankExportsQuery("le1"));
+    expect(view.accounts[0]?.standing).toEqual({ kind: "in_flight", downloaded: true });
+  });
+
+  it("signalé par la banque dans un export téléchargé, puis l'export importé : reste « signalé »", async () => {
+    const w = world();
+    w.accounts.exportable = [debitedAccount("a"), debitedAccount("b", { iban: IBAN_B })];
+    const id = await w.prepare.execute(new ExportAccountsForBankCommand("le1", "s"));
+    await w.download.execute(new RecordAccountBankExportDownloadCommand("le1", id, "s"));
+    const reportedAt = w.clock.now().toISOString();
+    await w.declareKnown.execute(
+      new DeclareBankAccountKnownCommand("le1", "rib_b", "reported_by_bank", "s"),
+    );
+    const between = await w.card.execute(new GetAccountBankExportsQuery("le1"));
+    expect(between.accounts.map((row) => row.standing)).toEqual([
+      { kind: "in_flight", downloaded: true },
+      { kind: "declared", reason: "reported_by_bank", at: reportedAt },
+    ]);
+
+    w.clock.advanceMs(60_000);
+    await w.markImported.execute(new MarkAccountBankExportImportedCommand("le1", id, "s"));
+    const view = await w.card.execute(new GetAccountBankExportsQuery("le1"));
+    expect(view.accounts.map((row) => row.standing)).toEqual([
+      { kind: "imported", at: w.clock.now().toISOString() },
+      { kind: "declared", reason: "reported_by_bank", at: reportedAt },
+    ]);
+    expect(view).toMatchObject({ toExport: [], inFlightCount: 0, knownCount: 2 });
   });
 
   it("dit pour chaque compte connu depuis quand et pourquoi", async () => {
@@ -80,14 +114,14 @@ describe("la carte « Comptes à la banque »", () => {
       debitedAccount("c", { iban: IBAN_DE }),
     ];
     await w.declareKnown.execute(
-      new DeclareBankAccountKnownCommand("le1", "rib_c", "reported_by_bank", "s"),
+      new DeclareBankAccountKnownCommand("le1", "rib_c", "entered_in_cenet", "s"),
     );
 
     const view = await w.card.execute(new GetAccountBankExportsQuery("le1"));
     expect(view.accounts.map((row) => row.standing)).toEqual([
       { kind: "imported", at: w.clock.now().toISOString() },
       { kind: "imported", at: w.clock.now().toISOString() },
-      { kind: "declared", reason: "reported_by_bank", at: w.clock.now().toISOString() },
+      { kind: "declared", reason: "entered_in_cenet", at: w.clock.now().toISOString() },
     ]);
     expect(view.accounts[0]).toMatchObject({ ibanCountry: IBAN_A.slice(0, 2), bic: "BNPAFRPPXXX" });
   });

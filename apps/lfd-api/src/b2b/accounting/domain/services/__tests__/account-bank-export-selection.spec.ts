@@ -8,7 +8,11 @@ import {
 import { accountFingerprint } from "../account-fingerprint.js";
 import { IBAN_A, IBAN_B, IBAN_DE, debitedAccount } from "./account-for-bank-export.fixture.js";
 
-const NOTHING: KnownAccountFingerprints = { known: new Set(), inFlight: new Set() };
+const NOTHING: KnownAccountFingerprints = {
+  known: new Set(),
+  inFlight: new Set(),
+  inDownloadedExport: new Set(),
+};
 
 describe("un compte = une ligne (R5)", () => {
   it("deux RIB au même IBAN ne font qu'une ligne : le plus ancien", () => {
@@ -42,15 +46,20 @@ describe("« à exporter » (§ 2.1)", () => {
     const selection = selectAccountsForBankExport([a, b, de], {
       known: new Set([accountFingerprint(IBAN_A)]),
       inFlight: new Set([accountFingerprint(IBAN_B)]),
+      inDownloadedExport: new Set(),
     });
     expect(selection.toExport.map((entry) => entry.account.bankAccountId)).toEqual(["rib_de"]);
     expect(selection.inFlight.map((entry) => entry.account.bankAccountId)).toEqual(["rib_b"]);
     expect(selection.known.map((entry) => entry.account.bankAccountId)).toEqual(["rib_a"]);
   });
 
-  it("un compte connu ET en vol (réimporté) se compte connu, une fois", () => {
+  it("un compte connu ET en vol (réimporté, ou signalé par la banque dans un export téléchargé) se compte connu, une fois", () => {
     const both = new Set([accountFingerprint(IBAN_A)]);
-    const selection = selectAccountsForBankExport([a], { known: both, inFlight: both });
+    const selection = selectAccountsForBankExport([a], {
+      known: both,
+      inFlight: both,
+      inDownloadedExport: both,
+    });
     expect(selection.known).toHaveLength(1);
     expect(selection.inFlight).toHaveLength(0);
   });
@@ -59,6 +68,7 @@ describe("« à exporter » (§ 2.1)", () => {
     const selection = selectAccountsForBankExport([b], {
       known: new Set([accountFingerprint(IBAN_A)]),
       inFlight: new Set(),
+      inDownloadedExport: new Set(),
     });
     expect(selection.toExport).toHaveLength(1);
   });

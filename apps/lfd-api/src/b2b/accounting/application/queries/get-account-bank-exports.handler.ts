@@ -58,7 +58,7 @@ export class GetAccountBankExportsHandler implements IQueryHandler<
         ibanLast4,
         reason,
       })),
-      accounts: accountBankRows(selection, excluded, stamps),
+      accounts: accountBankRows(selection, excluded, stamps, fingerprints.inDownloadedExport),
       exports: exports.map((row) => ({
         id: row.id,
         createdAt: row.createdAt.toISOString(),

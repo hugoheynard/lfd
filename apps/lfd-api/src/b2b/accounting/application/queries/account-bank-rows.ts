@@ -16,11 +16,14 @@ const IBAN_COUNTRY_LENGTH = 2;
  * connu sans tampon (sa déclaration ou son import a disparu entre deux
  * lectures) se lit « en vol » plutôt que d'inventer une date : il ne l'est
  * pas, mais il n'est pas non plus à exporter, et la relecture le corrige.
+ * Un compte en vol dit si son export a été téléchargé : avant, aucun geste
+ * n'a de sens sur lui (doc § 2.6).
  */
 export function accountBankRows(
   selection: AccountBankExportSelection,
   excluded: readonly AccountExcludedFromBankExport[],
   stamps: ReadonlyMap<string, KnownAccountStamp>,
+  inDownloadedExport: ReadonlySet<string>,
 ): readonly AccountBankRowView[] {
   const toExport = new Set(selection.toExport);
   const inFlight = new Set(selection.inFlight);
@@ -30,7 +33,7 @@ export function accountBankRows(
     }
     const stamp = stamps.get(entry.fingerprint);
     if (inFlight.has(entry) || stamp === undefined) {
-      return { kind: "in_flight" };
+      return { kind: "in_flight", downloaded: inDownloadedExport.has(entry.fingerprint) };
     }
     return stamp.kind === "imported"
       ? { kind: "imported", at: stamp.at.toISOString() }

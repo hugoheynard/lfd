@@ -24,7 +24,11 @@ export type KnownBankAccountReasonView = (typeof KNOWN_BANK_ACCOUNT_REASON_VALUE
  */
 export type AccountBankStandingView =
   | { readonly kind: "to_export" }
-  | { readonly kind: "in_flight" }
+  /**
+   * `downloaded` : l'export qui le porte a déjà été téléchargé — seul alors le
+   * compte rendu d'import CENET peut le dire « déjà connu » (doc § 2.6).
+   */
+  | { readonly kind: "in_flight"; readonly downloaded: boolean }
   | { readonly kind: "imported"; readonly at: string }
   | { readonly kind: "declared"; readonly reason: KnownBankAccountReasonView; readonly at: string }
   | { readonly kind: "excluded"; readonly reason: AccountBankExclusionReasonView };

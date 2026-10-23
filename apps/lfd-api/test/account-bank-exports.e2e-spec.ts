@@ -332,20 +332,49 @@ describe("l'export des comptes destinataires pour la banque", () => {
     expect(journal[0]?.payload).toMatchObject({ reason: "entered_in_cenet" });
   });
 
-  it("« signalé par la banque » retire le compte, et se range avec sa raison", async () => {
+  it("« signalé par la banque » vaut pour un compte d'un export téléchargé, et le reste une fois l'export importé", async () => {
     const entityId = await entity();
     const { bankAccountId } = await debtor(entityId, "Déjà chez la banque");
+    const known = (reason: string) =>
+      staff()
+        .post(`${exportsOf(entityId)}/known-accounts`)
+        .send({ bankAccountId, reason });
+
+    // Hors de tout export, puis dans un export pas encore téléchargé : refusé.
+    const outside = await known("reported_by_bank").expect(409);
+    expect(JSON.stringify(outside.body)).toContain("aucun export téléchargé");
+    const exportId = await prepare(entityId);
+    expect((await card(entityId)).accounts[0]?.standing).toEqual({
+      kind: "in_flight",
+      downloaded: false,
+    });
+    await known("reported_by_bank").expect(409);
+    // En vol, il ne se saisit pas à la main.
+    const entered = await known("entered_in_cenet").expect(409);
+    expect(JSON.stringify(entered.body)).toContain("pas encore marqué importé");
 
     await staff()
-      .post(`${exportsOf(entityId)}/known-accounts`)
-      .send({ bankAccountId, reason: "reported_by_bank" })
-      .expect(204);
+      .get(`${exportsOf(entityId)}/${exportId}/file.csv`)
+      .expect(200);
+    expect((await card(entityId)).accounts[0]?.standing).toEqual({
+      kind: "in_flight",
+      downloaded: true,
+    });
+    await known("reported_by_bank").expect(204);
+    const reported = await card(entityId);
+    expect(reported).toMatchObject({ toExport: [], inFlightCount: 0, knownCount: 1 });
+    expect(reported.exports[0]).toMatchObject({ accountCount: 1, importedAt: null });
 
+    await staff()
+      .post(`${exportsOf(entityId)}/${exportId}/imported`)
+      .expect(204);
     const view = await card(entityId);
+    expect(view).toMatchObject({ toExport: [], inFlightCount: 0, knownCount: 1 });
     expect(view.accounts[0]?.standing).toMatchObject({
       kind: "declared",
       reason: "reported_by_bank",
     });
+    await staff().post(exportsOf(entityId)).expect(409);
     const journal = await ctx.prisma.activityEvent.findMany({
       where: { type: "account_bank_export.account_known_declared" },
       select: { payload: true },

@@ -34,6 +34,7 @@ import {
   accountsLabel,
   accountStandingLabel,
   KNOWN_REASON_GESTURES,
+  knownGestureOf,
 } from '../../../account-bank-export-wording';
 import { accountBankNames } from './account-bank-names';
 import { AccountBankExportsService } from '../../../account-bank-exports.service';
@@ -121,11 +122,6 @@ export class AccountBankExportCard {
   protected readonly namesOf = accountBankNames;
 
   protected readonly gestures = KNOWN_REASON_GESTURES;
-  /** L'ordre des deux gestes sur la ligne : le plus courant d'abord. */
-  protected readonly reasons: readonly KnownBankAccountReasonView[] = [
-    'entered_in_cenet',
-    'reported_by_bank',
-  ];
   protected readonly standingOf = (row: AccountBankRowView): string =>
     accountStandingLabel(row.standing);
   protected readonly rowKey = (row: AccountBankRowView): string => row.bankAccountId;
@@ -218,8 +214,13 @@ export class AccountBankExportCard {
     return `${row.ibanCountry} •••• ${row.ibanLast4}`;
   }
 
-  protected canDeclare(row: AccountBankRowView): boolean {
-    return row.standing.kind === 'to_export';
+  protected gestureOf(row: AccountBankRowView): KnownBankAccountReasonView | null {
+    return knownGestureOf(row.standing);
+  }
+
+  /** En export, fichier pas encore téléchargé : aucun geste n'a encore de sens. */
+  protected awaitsDownload(row: AccountBankRowView): boolean {
+    return row.standing.kind === 'in_flight' && !row.standing.downloaded;
   }
 
   protected async declareKnown(

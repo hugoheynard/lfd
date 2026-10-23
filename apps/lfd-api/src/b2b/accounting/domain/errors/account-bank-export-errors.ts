@@ -87,12 +87,32 @@ export class AccountAlreadyKnownToBankError extends BusinessError {
   constructor(readonly companyName: string) {
     super(
       "accounting.account_bank_export.already_known",
-      `Le compte de « ${companyName} » est déjà connu de la banque, ou dans un export pas encore importé. Rien à déclarer : s'il est dans un export que la banque a rejeté, abandonner cet export d'abord.`,
+      `Le compte de « ${companyName} » est déjà connu de la banque — importé par un export, ou déjà déclaré. Rien à déclarer.`,
     );
   }
 }
 
 /** Une raison de « connu de la banque » qui n'est ni saisie CENET, ni signalement. */
+/** Saisi dans CENET : refusé pour un compte déjà dans un export pas encore importé. */
+export class AccountInFlightNotEnterableError extends BusinessError {
+  constructor(readonly companyName: string) {
+    super(
+      "accounting.account_bank_export.in_flight_not_enterable",
+      `Le compte de « ${companyName} » est dans un export pas encore marqué importé : il part avec ce fichier, il ne se saisit pas à la main dans CENET. Déposer le fichier puis le marquer importé ; si le compte rendu d'import dit ce compte déjà connu, le signaler comme tel.`,
+    );
+  }
+}
+
+/** Signalé par la banque : refusé hors d'un export téléchargé, seul à avoir un compte rendu d'import. */
+export class AccountNotInDownloadedExportError extends BusinessError {
+  constructor(readonly companyName: string) {
+    super(
+      "accounting.account_bank_export.not_in_downloaded_export",
+      `Le compte de « ${companyName} » n'est dans aucun export téléchargé : la banque ne peut l'avoir signalé connu que dans le compte rendu d'import d'un fichier déposé. Préparer et télécharger l'export, le déposer dans CENET, puis lire son compte rendu — ou, si le compte a été saisi à la main dans CENET, le déclarer comme tel.`,
+    );
+  }
+}
+
 export class UnknownKnownAccountReasonError extends DomainError {
   constructor(readonly reason: string) {
     super(

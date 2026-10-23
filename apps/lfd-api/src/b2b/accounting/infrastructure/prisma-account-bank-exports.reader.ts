@@ -24,16 +24,23 @@ export class PrismaKnownAccountFingerprintsReader extends KnownAccountFingerprin
     const [lines, declared] = await Promise.all([
       this.prisma.accountBankExportLine.findMany({
         where: { export: { abandonedAt: null } },
-        select: { accountFingerprint: true, export: { select: { importedAt: true } } },
+        select: {
+          accountFingerprint: true,
+          export: { select: { importedAt: true, lastDownloadedAt: true } },
+        },
       }),
       this.prisma.knownBankAccount.findMany({ select: { accountFingerprint: true } }),
     ]);
     const known = new Set(declared.map((row) => row.accountFingerprint));
     const inFlight = new Set<string>();
+    const inDownloadedExport = new Set<string>();
     for (const line of lines) {
       (line.export.importedAt === null ? inFlight : known).add(line.accountFingerprint);
+      if (line.export.importedAt === null && line.export.lastDownloadedAt !== null) {
+        inDownloadedExport.add(line.accountFingerprint);
+      }
     }
-    return { known, inFlight };
+    return { known, inFlight, inDownloadedExport };
   }
 }
 

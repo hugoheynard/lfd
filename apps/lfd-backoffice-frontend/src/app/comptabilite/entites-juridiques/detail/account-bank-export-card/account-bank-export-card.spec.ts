@@ -116,7 +116,7 @@ const VIEW: AccountBankExportsView = {
   ],
   accounts: [
     row('rib_a', 'Café A', { kind: 'to_export' }),
-    row('rib_b', 'Bistrot B', { kind: 'in_flight' }),
+    row('rib_b', 'Bistrot B', { kind: 'in_flight', downloaded: false }),
     row('rib_c', 'Comptoir C', {
       kind: 'declared',
       reason: 'entered_in_cenet',
@@ -177,6 +177,11 @@ class FakeService {
       ...this.view,
       exports: this.view.exports.map((item) =>
         item.id === exportId ? { ...item, lastDownloadedAt: '2026-10-09T10:00:00.000Z' } : item,
+      ),
+      accounts: this.view.accounts.map((line) =>
+        line.standing.kind === 'in_flight'
+          ? { ...line, standing: { kind: 'in_flight', downloaded: true } }
+          : line,
       ),
     };
     return this.fileError === null
@@ -328,23 +333,59 @@ describe('la carte « Comptes à la banque »', () => {
     expect(said).toContain('écarté : RIB sans BIC — compléter le BIC du client');
   });
 
-  it('n’offre les deux gestes que sur le compte à exporter', async () => {
+  const gestures = (fixture: ComponentFixture<AccountBankExportCard>): string[] =>
+    [
+      ...(fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>(
+        '[data-gesture]',
+      ),
+    ].map(
+      (node) =>
+        `${node.closest('tr')?.textContent?.includes('Café A') === true ? 'a' : 'b'}:${node.dataset['gesture'] ?? ''}`,
+    );
+
+  it('un seul geste par état : « importé dans CENET » sur l’à-exporter, rien sur l’en-export avant téléchargement, connu ni écarté', async () => {
     const fixture = await render();
     expect(buttons(fixture, 'Importé dans CENET directement')).toHaveLength(1);
-    expect(buttons(fixture, 'Signalé comme connu par la banque')).toHaveLength(1);
+    expect(buttons(fixture, 'Signalé comme connu par la banque')).toHaveLength(0);
+    expect(gestures(fixture)).toEqual(['a:entered_in_cenet']);
+    expect(text(fixture)).toContain("Téléchargez le fichier d'abord.");
+  });
+
+  it('le fichier téléchargé, l’en-export n’offre que « signalé comme connu par la banque »', async () => {
+    const fixture = await render();
+    buttons(fixture, 'Télécharger le fichier des comptes')[0]?.click();
+    await vi.waitFor(() => {
+      fixture.detectChanges();
+      expect(buttons(fixture, 'Signalé comme connu par la banque')).toHaveLength(1);
+    });
+    expect(gestures(fixture)).toEqual(['a:entered_in_cenet', 'b:reported_by_bank']);
+    expect(text(fixture)).not.toContain("Téléchargez le fichier d'abord.");
   });
 
   it.each([
-    ['Importé dans CENET directement', 'entered_in_cenet', 'saisi à la main dans CENET'],
-    ['Signalé comme connu par la banque', 'reported_by_bank', 'compte rendu d’import CENET'],
-  ])('« %s » explique, puis déclare avec sa raison', async (label, reason, explained) => {
+    ['Importé dans CENET directement', 'rib_a', 'entered_in_cenet', 'saisi à la main dans CENET'],
+    [
+      'Signalé comme connu par la banque',
+      'rib_b',
+      'reported_by_bank',
+      'compte rendu d’import CENET',
+    ],
+  ])('« %s » explique, puis déclare avec sa raison', async (label, rib, reason, explained) => {
+    service.view = {
+      ...VIEW,
+      accounts: VIEW.accounts.map((line) =>
+        line.standing.kind === 'in_flight'
+          ? { ...line, standing: { kind: 'in_flight', downloaded: true } }
+          : line,
+      ),
+    };
     const fixture = await render();
     buttons(fixture, label)[0]?.click();
     fixture.detectChanges();
     expect(text(fixture)).toContain(explained);
-    buttons(fixture, 'Retirer de l’export')[0]?.click();
+    buttons(fixture, 'Confirmer')[0]?.click();
     await fixture.whenStable();
-    expect(service.calls).toEqual(['of', `known:le1:rib_a:${reason}`, 'of']);
+    expect(service.calls).toEqual(['of', `known:le1:${rib}:${reason}`, 'of']);
   });
 
   it('« Préparer » prépare puis télécharge, et relit la carte', async () => {

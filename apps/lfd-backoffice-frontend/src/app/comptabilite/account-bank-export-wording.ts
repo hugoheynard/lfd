@@ -50,9 +50,24 @@ export const KNOWN_REASON_GESTURES: Readonly<
   reported_by_bank: {
     button: 'Signalé comme connu par la banque',
     confirm:
-      'Le compte rendu d’import CENET (ou la banque) dit qu’il existe déjà : il ne partira plus dans le fichier des comptes.',
+      'Le compte rendu d’import CENET dit qu’il existe déjà : il sera tenu pour connu de la banque. Le fichier déposé reste tel quel.',
   },
 };
+
+/**
+ * **Le seul geste d'une ligne, selon où en est le compte** (doc § 2.6, Hugo
+ * 2026-10-23) : « saisi dans CENET » sur un compte à exporter ; « signalé par
+ * la banque » sur un compte d'un export DÉJÀ téléchargé, puisque seul le
+ * compte rendu d'import le dit ; rien ailleurs. Le serveur refuse les autres.
+ */
+export function knownGestureOf(
+  standing: AccountBankStandingView,
+): KnownBankAccountReasonView | null {
+  if (standing.kind === 'to_export') {
+    return 'entered_in_cenet';
+  }
+  return standing.kind === 'in_flight' && standing.downloaded ? 'reported_by_bank' : null;
+}
 
 /** Où en est un compte, en une ligne de la colonne « État ». */
 export function accountStandingLabel(standing: AccountBankStandingView): string {

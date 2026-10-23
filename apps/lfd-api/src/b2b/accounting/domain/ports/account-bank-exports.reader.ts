@@ -24,6 +24,12 @@ export interface KnownAccountFingerprints {
   readonly known: ReadonlySet<string>;
   /** Lignes d'un export préparé, ni importé ni abandonné. */
   readonly inFlight: ReadonlySet<string>;
+  /**
+   * Parmi `inFlight`, celles d'un export déjà téléchargé : seul le compte
+   * rendu d'import CENET d'un fichier déposé peut dire qu'un compte y était
+   * déjà connu (doc § 2.6, Hugo 2026-10-23).
+   */
+  readonly inDownloadedExport: ReadonlySet<string>;
 }
 
 /**

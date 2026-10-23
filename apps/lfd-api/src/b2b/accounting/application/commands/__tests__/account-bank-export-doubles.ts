@@ -80,6 +80,7 @@ export class MemoryFingerprints extends KnownAccountFingerprintsReader {
   all(): Promise<KnownAccountFingerprints> {
     const known = new Set(this.declared.rows.map((row) => row.toPersistence().accountFingerprint));
     const inFlight = new Set<string>();
+    const inDownloadedExport = new Set<string>();
     for (const row of this.exports.rows.values()) {
       const state = row.toPersistence();
       if (state.abandoned !== null) {
@@ -87,9 +88,12 @@ export class MemoryFingerprints extends KnownAccountFingerprintsReader {
       }
       for (const line of state.lines) {
         (state.imported === null ? inFlight : known).add(line.accountFingerprint);
+        if (state.imported === null && state.lastDownloadedAt !== null) {
+          inDownloadedExport.add(line.accountFingerprint);
+        }
       }
     }
-    return Promise.resolve({ known, inFlight });
+    return Promise.resolve({ known, inFlight, inDownloadedExport });
   }
 }
 

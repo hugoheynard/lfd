@@ -1,5 +1,7 @@
 import {
   AccountAlreadyKnownToBankError,
+  AccountInFlightNotEnterableError,
+  AccountNotInDownloadedExportError,
   UnknownKnownAccountReasonError,
 } from "../errors/account-bank-export-errors.js";
 import type { KnownAccountFingerprints } from "../ports/account-bank-exports.reader.js";
@@ -58,21 +60,41 @@ export interface DeclareKnownBankAccountInput extends KnownBankAccountState {
  * `prerequis-export-ribs.md` § 2.6). Sans cette déclaration, il ressortirait « à exporter » et ferait
  * rejeter TOUT le fichier suivant (réponse 8).
  *
- * L'invariant : une empreinte déjà connue — importée, déclarée, ou dans un
- * export en vol — ne se déclare pas. Le second cas est aussi tenu en base
- * (une empreinte déclarée une seule fois).
+ * Les invariants (Hugo 2026-10-23) : une empreinte déjà connue — importée ou
+ * déclarée — ne se déclare pas (aussi tenu en base : une déclaration par
+ * empreinte). « Saisi dans CENET » ne vaut que pour un compte À EXPORTER : en
+ * vol, il part avec son fichier. « Signalé par la banque » ne vaut que pour un
+ * compte d'un export DÉJÀ TÉLÉCHARGÉ : c'est le compte rendu d'import de ce
+ * fichier qui le dit. L'export n'est pas touché ; marqué importé ensuite, le
+ * compte reste « signalé », son tampon étant le plus ancien.
  */
 export class KnownBankAccount {
   private constructor(private readonly state: KnownBankAccountState) {}
 
-  /** @throws {AccountAlreadyKnownToBankError} @throws {UnknownKnownAccountReasonError} */
+  /**
+   * @throws {AccountAlreadyKnownToBankError} @throws {UnknownKnownAccountReasonError}
+   * @throws {AccountInFlightNotEnterableError} @throws {AccountNotInDownloadedExportError}
+   */
   static declare(
     input: DeclareKnownBankAccountInput,
     fingerprints: KnownAccountFingerprints,
   ): KnownBankAccount {
     const fingerprint = input.accountFingerprint;
-    if (fingerprints.known.has(fingerprint) || fingerprints.inFlight.has(fingerprint)) {
+    const reason = knownBankAccountReason(input.reason);
+    if (fingerprints.known.has(fingerprint)) {
       throw new AccountAlreadyKnownToBankError(input.companyName);
+    }
+    if (
+      reason === KNOWN_BANK_ACCOUNT_REASONS.enteredInCenet &&
+      fingerprints.inFlight.has(fingerprint)
+    ) {
+      throw new AccountInFlightNotEnterableError(input.companyName);
+    }
+    if (
+      reason === KNOWN_BANK_ACCOUNT_REASONS.reportedByBank &&
+      !fingerprints.inDownloadedExport.has(fingerprint)
+    ) {
+      throw new AccountNotInDownloadedExportError(input.companyName);
     }
     return new KnownBankAccount({
       id: input.id,
@@ -81,7 +103,7 @@ export class KnownBankAccount {
       companyId: input.companyId,
       accountFingerprint: fingerprint,
       declared: input.declared,
-      reason: knownBankAccountReason(input.reason),
+      reason,
     });
   }
 

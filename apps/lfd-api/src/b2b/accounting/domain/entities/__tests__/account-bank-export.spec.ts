@@ -6,6 +6,8 @@ import {
 } from "../known-bank-account.js";
 import {
   AccountAlreadyKnownToBankError,
+  AccountInFlightNotEnterableError,
+  AccountNotInDownloadedExportError,
   AccountBankExportClosedError,
   AccountBankExportNeverDownloadedError,
   AccountBankExportTooLargeError,
@@ -109,11 +111,20 @@ describe("« connu de la banque » (§ 2.6)", () => {
     declared: { at: AT, staffId: "staff_1" },
   };
 
-  it("pose l'empreinte, sans le nom de la société", () => {
-    const state = KnownBankAccount.declare(declaration, {
-      known: new Set(),
-      inFlight: new Set(),
-    }).toPersistence();
+  const none = {
+    known: new Set<string>(),
+    inFlight: new Set<string>(),
+    inDownloadedExport: new Set<string>(),
+  };
+  const inExport = (downloaded: boolean) => ({
+    known: new Set<string>(),
+    inFlight: new Set([FP_A]),
+    inDownloadedExport: new Set(downloaded ? [FP_A] : []),
+  });
+  const reported = { ...declaration, reason: KNOWN_BANK_ACCOUNT_REASONS.reportedByBank };
+
+  it("« saisi dans CENET » : pose l'empreinte d'un compte à exporter, sans le nom de la société", () => {
+    const state = KnownBankAccount.declare(declaration, none).toPersistence();
     expect(state).toEqual({
       id: "kba_1",
       legalEntityId: "le1",
@@ -130,20 +141,34 @@ describe("« connu de la banque » (§ 2.6)", () => {
     expect(knownBankAccountReason("reported_by_bank")).toBe("reported_by_bank");
   });
 
-  it("porte la raison « signalé par la banque »", () => {
-    const state = KnownBankAccount.declare(
-      { ...declaration, reason: KNOWN_BANK_ACCOUNT_REASONS.reportedByBank },
-      { known: new Set(), inFlight: new Set() },
-    ).toPersistence();
+  it("« saisi dans CENET » est refusé pour un compte en vol, téléchargé ou non", () => {
+    for (const downloaded of [false, true]) {
+      expect(() => KnownBankAccount.declare(declaration, inExport(downloaded))).toThrow(
+        AccountInFlightNotEnterableError,
+      );
+    }
+    expect(() => KnownBankAccount.declare(declaration, inExport(true))).toThrow(/Café A/u);
+  });
+
+  it("« signalé par la banque » : accepté pour un compte d'un export téléchargé", () => {
+    const state = KnownBankAccount.declare(reported, inExport(true)).toPersistence();
     expect(state.reason).toBe("reported_by_bank");
   });
 
-  it("refuse un compte déjà connu, ou dans un export en vol", () => {
-    expect(() =>
-      KnownBankAccount.declare(declaration, { known: new Set([FP_A]), inFlight: new Set() }),
-    ).toThrow(AccountAlreadyKnownToBankError);
-    expect(() =>
-      KnownBankAccount.declare(declaration, { known: new Set(), inFlight: new Set([FP_A]) }),
-    ).toThrow(/Café A/u);
+  it("« signalé par la banque » est refusé hors d'un export téléchargé", () => {
+    expect(() => KnownBankAccount.declare(reported, none)).toThrow(
+      AccountNotInDownloadedExportError,
+    );
+    expect(() => KnownBankAccount.declare(reported, inExport(false))).toThrow(
+      AccountNotInDownloadedExportError,
+    );
+  });
+
+  it("refuse, pour les deux raisons, un compte déjà connu", () => {
+    const known = { ...none, known: new Set([FP_A]) };
+    expect(() => KnownBankAccount.declare(declaration, known)).toThrow(
+      AccountAlreadyKnownToBankError,
+    );
+    expect(() => KnownBankAccount.declare(reported, known)).toThrow(AccountAlreadyKnownToBankError);
   });
 });

@@ -307,8 +307,30 @@ demande une confirmation qui dit en une phrase ce qu'on atteste.
 Le tableau montre chaque compte débité — écartés compris — avec sa société et
 son titulaire, l'IBAN masqué (pays et quatre derniers), le BIC et son état :
 à exporter, en export, importé le …, saisi dans CENET le …, signalé par la
-banque le …, écarté (et pourquoi). Les deux gestes ne s'offrent que sur un
-compte à exporter.
+banque le …, écarté (et pourquoi).
+
+**Un geste par état (Hugo, 2026-10-23, le même jour).** « Signalé par la
+banque », on ne peut pas le savoir avant d'avoir déposé le fichier dans
+CENET : c'est le compte rendu d'import qui le dit. Les deux gestes ne vivent
+donc pas sur la même ligne :
+
+| État du compte                               | Seul geste offert                          | Refusé côté serveur (409, dans `KnownBankAccount.declare`)          |
+| -------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------- |
+| à exporter                                   | « Importé dans CENET directement »         | `reported_by_bank` : le compte n'est dans aucun export téléchargé   |
+| en export, fichier **pas encore** téléchargé | aucun (« téléchargez le fichier d'abord ») | `entered_in_cenet` (il part avec son fichier) et `reported_by_bank` |
+| en export, fichier téléchargé                | « Signalé comme connu par la banque »      | `entered_in_cenet` : le compte est en vol                           |
+| importé, connu, écarté                       | aucun                                      | les deux : déjà connu (ou non débité)                               |
+
+« Téléchargé » se lit sur l'export (`last_downloaded_at` non nul, ni importé
+ni abandonné) ; le port des empreintes le rend en `inDownloadedExport`, et la
+ligne du tableau en `in_flight.downloaded`. Signaler un compte en export
+**ne touche pas l'export** — on ne réécrit pas un fichier déposé. Le compte
+passe « connu » tout de suite (une empreinte connue l'emporte sur une
+empreinte en vol) ; quand l'export est marqué importé ensuite, il reste
+« signalé par la banque le … » (la carte garde le plus ancien tampon, et la
+déclaration précède l'import) et ne ressort jamais « à exporter ». Le
+journal porte le fait `account_known_declared` (`reported_by_bank`) puis
+l'import de l'export, rien de plus.
 
 ### 2.5 Le changement de compte (réponse 9)
 

@@ -8,8 +8,9 @@
          connaît déjà fait rejeter tout le fichier (réponse 8). -->
     <fold-callout appearance="inset" variant="info">
       Nouveaux comptes seulement&nbsp;: un compte que la banque connaît déjà fait rejeter tout
-      l'import. Un compte saisi à la main dans CENET, ou que la banque signale comme connu, se
-      retire de l'export par le geste de sa ligne.
+      l'import. Un compte saisi à la main dans CENET se retire de l'export par le geste de sa
+      ligne&nbsp;; un compte que le compte rendu d'import dit déjà connu se signale sur sa ligne,
+      une fois le fichier téléchargé.
     </fold-callout>
 
     @if (actionError(); as message) {
@@ -104,21 +105,25 @@
         <ng-template foldCell="bic" let-row>{{ row.bic ?? '—' }}</ng-template>
         <ng-template foldCell="standing" let-row>{{ standingOf(row) }}</ng-template>
         <ng-template foldCell="actions" let-row>
-          @if (canDeclare(row)) {
-            <span class="ab-actions">
-              @for (reason of reasons; track reason) {
-                <fold-inline-confirm
-                  intent="warning"
-                  [message]="gestures[reason].confirm"
-                  [labels]="{ confirm: 'Retirer de l’export' }"
-                  (confirmed)="declareKnown(row, reason)"
-                >
-                  <button foldButton emphasis="soft" size="sm" [disabled]="busy()">
-                    {{ gestures[reason].button }}
-                  </button>
-                </fold-inline-confirm>
-              }
-            </span>
+          @if (gestureOf(row); as reason) {
+            <fold-inline-confirm
+              intent="warning"
+              [message]="gestures[reason].confirm"
+              [labels]="{ confirm: 'Confirmer' }"
+              (confirmed)="declareKnown(row, reason)"
+            >
+              <button
+                foldButton
+                emphasis="soft"
+                size="sm"
+                [disabled]="busy()"
+                [attr.data-gesture]="reason"
+              >
+                {{ gestures[reason].button }}
+              </button>
+            </fold-inline-confirm>
+          } @else if (awaitsDownload(row)) {
+            <span class="ab-said" data-awaits-download>Téléchargez le fichier d'abord.</span>
           }
         </ng-template>
       </fold-data-table>
