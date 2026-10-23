@@ -444,11 +444,29 @@ de fichier qui dit ce qu'il porte.
 
 - **Calculé, jamais rangé ni compté** : `procedureCodeOf`
   (`apps/lfd-api/src/b2b/accounting/domain/services/collection-procedure-code.ts`),
-  depuis le jour de clôture et les **rythmes du calendrier qui closent à cet
-  instant** (`InvoicingCalendar.modesClosingAt`). `H` hebdomadaire, `B` deux
-  fois par mois, `M` mensuel ; plusieurs lettres **triées** (`B` < `H` < `M`).
-  Une clôture sans rythme connu n'a pas de lettre (`PRL-261101`) — on n'invente
+  depuis le jour de clôture et les **rythmes de la procédure**
+  (`procedureRhythms`, ci-dessous). `H` hebdomadaire, `B` deux fois par mois,
+  `M` mensuel ; plusieurs lettres **triées** (`B` < `H` < `M`). Une clôture
+  sans rythme qui ait un client n'a pas de lettre (`PRL-261101`) — on n'invente
   pas un mensuel.
+- 🔴 **Un rythme ne compte que s'il a au moins un client** (décision de Hugo,
+  2026-10-23). Avant, le code prenait les rythmes que le calendrier clôt ce
+  jour-là (`InvoicingCalendar.modesClosingAt`), et un lundi 1er devenait
+  « `HM` / Mutualisée » sans aucun client mensuel. Une seule fonction,
+  `procedureRhythms`
+  (`apps/lfd-api/src/b2b/accounting/domain/services/procedure-rhythms.ts`),
+  liée aux lots et aux clients par `procedureRhythmsOf`
+  (`apps/lfd-api/src/b2b/accounting/application/procedure-rhythms-support.ts`), sert la table, le détail, le
+  tableau de bord des rythmes et le nom des fichiers `pain.008` :
+  - **un lot existe** pour la clôture : les rythmes des clients **du lot**
+    (`lotPayerModes`, réunis sur les lots vivants CORE et B2B ; à défaut de
+    lot vivant, sur les lots annulés) ;
+  - **sinon** (procédure à venir, manquée, sans lot) : les rythmes qui closent
+    ce jour-là **et** ont au moins un client compté — le même compte que les
+    barres du tableau de bord (`countedPayerIdsAt` + `payerCountsAt` : société
+    active, facturée en son nom, mandat signé actif chez l'entité), pris
+    aujourd'hui ;
+  - **aucun** : code sans lettre, jamais « Mutualisée ».
 - **Unique tant qu'il n'y a qu'une entité émettrice.** Une seconde entité
   produirait le même code le même jour : il faudra alors lui ajouter l'entité.
   Il ne la porte pas aujourd'hui, délibérément.
@@ -457,12 +475,17 @@ de fichier qui dit ce qu'il porte.
   des rythmes (`BillingRhythmPeriodView.procedureCode`). Affiché dans le titre
   du détail, en colonne « Code » de la table, sur les marques et la phrase
   « Prochaine procédure » des barres du tableau de bord.
-- ⚠️ Les rythmes du **code** (ceux du calendrier) ne sont pas ceux de la
-  colonne « Rythme · période » (`modes`, ceux des **clients du lot**) : un lot
-  qui rattrape une facture mensuelle un lundi dit « hebdomadaires et mensuels »
-  sans que sa clôture soit mutualisée.
+- ⚠️ Depuis le 2026-10-23, quand un lot existe, les rythmes du **code** sont
+  ceux de la colonne « Rythme · période » (les **clients du lot**) : un lot qui
+  rattrape une facture mensuelle un lundi dit « hebdomadaires et mensuels » et
+  sa procédure est `-HM`, mutualisée.
+- ⚠️ **Nom d'un fichier déjà téléchargé** : il se recalcule à chaque
+  téléchargement. Pour un lot préparé avant le 2026-10-23, il ne change que si
+  les rythmes de ses clients diffèrent de ceux du calendrier ce jour-là (un
+  `-HM` sans client mensuel devient `-H`). Le XML, lui, ne change pas.
 
-**Mutualisée** : deux rythmes ou plus closent le même jour (`isPooledClosure`).
+**Mutualisée** : deux rythmes ou plus **qui ont des clients** closent le même
+jour (`isPooledClosure` sur `procedureRhythms`).
 La table porte un badge « Mutualisée » à côté du rythme (survol :
 « hebdomadaire + mensuel : une seule clôture, un seul lot ») ; le détail, un
 encadré qui dit les rythmes réunis et combien de clients de chacun ses lots

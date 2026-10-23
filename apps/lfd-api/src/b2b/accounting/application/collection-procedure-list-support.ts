@@ -20,6 +20,7 @@ import { closureDayOf } from "../domain/services/collection-procedure-id.js";
 import type { InvoicingCalendar } from "../domain/services/invoicing-calendar.js";
 import { closureAfter, periodLabelOf } from "../domain/services/invoicing-closures.js";
 import type { ModeTimelines } from "../domain/services/payer-timeline.js";
+import type { ProcedureRhythmsOf } from "./procedure-rhythms-support.js";
 import { BILLING_MODES, type BillingMode } from "../domain/value-objects/billing-mode.js";
 
 /** Les lots tels que la liste les lit : ceux de la procédure, plus de quoi avertir. */
@@ -83,13 +84,16 @@ export function upcomingClosures(
   );
 }
 
-/** Une ligne, telle que l'écran la lit — son code vient des rythmes du CALENDRIER à cet instant. */
+/**
+ * Une ligne, telle que l'écran la lit — son code et « mutualisée » viennent
+ * des rythmes qui ont des clients (`procedureRhythms`, Hugo 2026-10-23).
+ */
 export function procedureRowView(
   legalEntityId: string,
   row: ProcedureRow,
-  calendar: InvoicingCalendar,
+  rhythmsOf: ProcedureRhythmsOf,
 ): CollectionProcedureRowView {
-  const closureModes = calendar.modesClosingAt(row.closesAt);
+  const closureModes = rhythmsOf(row.closesAt);
   return {
     id: row.id,
     legalEntityId,

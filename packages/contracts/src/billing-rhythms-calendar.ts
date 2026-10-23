@@ -37,8 +37,10 @@ export interface BillingRhythmPeriodView {
   /** Le code court de la procédure, `PRL-<AAMMJJ>-<rythmes>` (ajouté le 2026-10-23). */
   readonly procedureCode: string;
   /**
-   * Les rythmes qui closent à cet instant, mensuel d'abord. Deux ou plus :
-   * la clôture est MUTUALISÉE — une seule clôture, un seul lot.
+   * Les rythmes de la procédure — ceux du code — qui ont au moins un client
+   * (`procedureRhythms`, Hugo 2026-10-23) : ceux des clients du lot s'il en
+   * existe un, sinon ceux qui closent ce jour-là ET ont un client compté. Deux
+   * ou plus : la clôture est MUTUALISÉE (un seul lot). Mensuel d'abord.
    */
   readonly closureModes: readonly BillingRhythmKind[];
 }

@@ -23,6 +23,13 @@ import {
 } from "../../domain/services/rhythm-calendar-window.js";
 import type { BillingMode } from "../../domain/value-objects/billing-mode.js";
 import { countedPayerIdsOf } from "../counted-payers-support.js";
+import {
+  procedureRhythmsOf,
+  readLotModesByClosureDay,
+  type ProcedureRhythmsOf,
+} from "../procedure-rhythms-support.js";
+import { CollectionBatchReader } from "../../domain/ports/collection-batch.reader.js";
+import { InvoicePeriodsReader } from "../../domain/ports/invoice-periods.reader.js";
 import { GetBillingRhythmsCalendarQuery } from "./get-billing-rhythms-calendar.query.js";
 
 /** L'ordre de l'écran : du plus fréquent au plus rare. */
@@ -49,6 +56,8 @@ export class GetBillingRhythmsCalendarHandler implements IQueryHandler<
     private readonly standings: PayerStandingsReader,
     private readonly mandates: CollectionMandatesReader,
     private readonly batches: ClosureBatchesReader,
+    private readonly storedBatches: CollectionBatchReader,
+    private readonly periods: InvoicePeriodsReader,
     private readonly clock: Clock,
   ) {}
 
@@ -58,13 +67,19 @@ export class GetBillingRhythmsCalendarHandler implements IQueryHandler<
       throw new LegalEntityNotFoundError(query.legalEntityId);
     }
     const now = this.clock.now();
-    const [modes, chosen, payerIds] = await Promise.all([
+    const [modes, chosen, payerIds, stored] = await Promise.all([
       this.modeDates.timelinesOf(entity.id),
       this.payerModes.segmentsOf(entity.id),
       countedPayerIdsOf({ standings: this.standings, mandates: this.mandates }, entity.id, now),
+      this.storedBatches.list(entity.id),
     ]);
     const counts = payerCountsAt(modes, chosen, payerIds, now);
     const calendar = InvoicingCalendar.of(modes, chosen);
+    const rhythmsOf = procedureRhythmsOf(
+      calendar,
+      await readLotModesByClosureDay(this.periods, calendar, stored),
+      counts,
+    );
     const settings = collectionSettingsOf(entity);
     const window = rhythmCalendarWindowAt(now);
     const lanes = LANE_ORDER.map((mode) => ({
@@ -94,7 +109,7 @@ export class GetBillingRhythmsCalendarHandler implements IQueryHandler<
             closesAt: period.closesAt.toISOString(),
             batchId: batchOf.get(period.closesAt.getTime()) ?? null,
             procedureId: procedureIdOf(entity.id, period.closesAt),
-            ...procedureNaming(calendar, period.closesAt),
+            ...procedureNaming(rhythmsOf, period.closesAt),
           })),
         };
       }),
@@ -104,10 +119,10 @@ export class GetBillingRhythmsCalendarHandler implements IQueryHandler<
 
 /** Le code et les rythmes de la clôture — la règle de la table des procédures. */
 function procedureNaming(
-  calendar: InvoicingCalendar,
+  rhythmsOf: ProcedureRhythmsOf,
   closesAt: Date,
 ): { readonly procedureCode: string; readonly closureModes: readonly BillingMode[] } {
-  const closureModes = calendar.modesClosingAt(closesAt);
+  const closureModes = rhythmsOf(closesAt);
   return { procedureCode: procedureCodeOf(closesAt, closureModes), closureModes };
 }
 

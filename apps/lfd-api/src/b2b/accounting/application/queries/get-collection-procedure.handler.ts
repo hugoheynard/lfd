@@ -28,6 +28,10 @@ import {
 import { MandatesForBankExportReader } from "../../domain/ports/mandates-for-bank-export.reader.js";
 import { InvoicePeriodsReader } from "../../domain/ports/invoice-periods.reader.js";
 import { PayerBillingModesReader } from "../../domain/ports/payer-billing-modes.reader.js";
+import { CollectionMandatesReader } from "../../domain/ports/collection-mandates.reader.js";
+import { PayerStandingsReader } from "../../domain/ports/payer-standings.reader.js";
+import { InvoicingCalendar } from "../../domain/services/invoicing-calendar.js";
+import { payerCountsAt } from "../../domain/services/rhythm-payer-counts.js";
 import { closureDayOf } from "../../domain/services/collection-procedure-id.js";
 import { preparedDepositMargin } from "../../domain/services/collection-procedure-warnings.js";
 import {
@@ -48,7 +52,9 @@ import {
   toPrepareOf,
 } from "../collection-procedure-support.js";
 import { batchesOfClosure, procedureIdentityOf } from "../collection-procedure-identity-support.js";
-import { readInvoicingCalendar } from "../invoicing-calendar-support.js";
+import { countedPayerIdsOf } from "../counted-payers-support.js";
+import { readBillingDates } from "../invoicing-calendar-support.js";
+import { lotModesByClosureDay, procedureRhythmsOf } from "../procedure-rhythms-support.js";
 import { readMissedProcedure } from "../missed-closures-support.js";
 import { readLotPayerModes } from "../lot-payer-modes-support.js";
 import { exportEntityOrFail } from "../mandate-bank-export-support.js";
@@ -81,6 +87,8 @@ export class GetCollectionProcedureHandler implements IQueryHandler<
     private readonly payerModes: PayerBillingModesReader,
     private readonly periods: InvoicePeriodsReader,
     private readonly coverage: AutopilotCoverageReader,
+    private readonly standings: PayerStandingsReader,
+    private readonly collectionMandates: CollectionMandatesReader,
     private readonly clock: Clock,
   ) {}
 
@@ -92,15 +100,21 @@ export class GetCollectionProcedureHandler implements IQueryHandler<
       { accounts: this.accounts, fingerprints: this.fingerprints },
       entity.id,
     );
-    const [mandates, stored, calendar] = await Promise.all([
+    const [mandates, stored, dates, payerIds] = await Promise.all([
       readMandatesStep(
         { mandates: this.mandates, imported: this.imported, exports: this.exports },
         entity.id,
         accounts,
       ),
       this.batches.list(entity.id),
-      readInvoicingCalendar({ modeDates: this.modeDates, payerModes: this.payerModes }, entity.id),
+      readBillingDates({ modeDates: this.modeDates, payerModes: this.payerModes }, entity.id),
+      countedPayerIdsOf(
+        { standings: this.standings, mandates: this.collectionMandates },
+        entity.id,
+        now,
+      ),
     ]);
+    const calendar = InvoicingCalendar.of(dates.modes, dates.payers);
     const [batches, modes, missed] = await Promise.all([
       procedureBatchesOf(this.returns, stored),
       readLotPayerModes(
@@ -132,7 +146,17 @@ export class GetCollectionProcedureHandler implements IQueryHandler<
       procedure:
         closureDay === null
           ? null
-          : await procedureIdentityOf(this.periods, calendar, closureDay, ofClosure),
+          : await procedureIdentityOf(
+              this.periods,
+              calendar,
+              closureDay,
+              ofClosure,
+              procedureRhythmsOf(
+                calendar,
+                lotModesByClosureDay(stored, modes),
+                payerCountsAt(dates.modes, dates.payers, payerIds, now),
+              ),
+            ),
       procedureBatches: viewsOf(
         views,
         batches.filter((batch) => ofClosure.some((row) => row.id === batch.id)),

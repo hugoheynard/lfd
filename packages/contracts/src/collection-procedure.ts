@@ -143,7 +143,7 @@ export interface CollectionProcedureIdentityView {
   readonly code: string;
   /** `AAAA-MM-JJ` — le jour (Paris) de la clôture. */
   readonly closureDay: string;
-  /** Les rythmes qui closent ce jour-là ; deux ou plus : clôture mutualisée. */
+  /** Les rythmes de la procédure qui ont des clients (`procedureRhythms`) ; deux ou plus : mutualisée. */
   readonly closureModes: readonly BillingRhythmKind[];
   /**
    * Les clients prélevés par rythme, lus des factures des lots non annulés

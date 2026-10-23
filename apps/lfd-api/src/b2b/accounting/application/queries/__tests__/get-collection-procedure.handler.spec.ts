@@ -22,6 +22,7 @@ import {
   TODAY,
   stored,
 } from "./collection-procedure-doubles.js";
+import { countingOf } from "./counted-payers-doubles.js";
 import { GetCollectionProcedureQuery } from "../collection-procedure-queries.js";
 import { GetCollectionProcedureHandler } from "../get-collection-procedure.handler.js";
 
@@ -38,6 +39,7 @@ function world() {
   const batches = new FixedBatches();
   const returns = new PendingReturns();
   const coverage = new FixedCoverage();
+  const counting = countingOf([], []);
   const handler = new GetCollectionProcedureHandler(
     accounts.entities,
     accounts.accounts,
@@ -51,6 +53,8 @@ function world() {
     new FixedPayerModes(),
     new FixedInvoicePeriods(new Map()),
     coverage,
+    counting.standings,
+    counting.mandates,
     accounts.clock,
   );
   const read = (batchId: string | null = null, closureDay: string | null = null) =>
@@ -235,5 +239,23 @@ describe("la procédure de prélèvement — la lecture d'état", () => {
     expect(missed.toPrepare).toBeNull();
     expect(latest.missed).toBeNull();
     expect(latest.toPrepare).toMatchObject({ procedureId: "le1~2026-10-01" });
+  });
+
+  /** Hugo, 2026-10-23 : le code et « mutualisée » ne lisent que les rythmes qui ont des clients. */
+  it("la procédure d'un lot : son code vient des clients du lot", async () => {
+    const w = world();
+    w.batches.batches = [stored("b1", { payerRefs: [{ payerCompanyId: "c1", invoiceId: null }] })];
+
+    const view = await w.read("b1");
+
+    expect(view.procedure).toMatchObject({ code: "PRL-261001-M", closureModes: ["monthly"] });
+  });
+
+  it("une procédure sans lot ni client : un code sans lettre", async () => {
+    const w = world();
+
+    const view = await w.read(null, "2026-11-01");
+
+    expect(view.procedure).toMatchObject({ code: "PRL-261101", closureModes: [] });
   });
 });

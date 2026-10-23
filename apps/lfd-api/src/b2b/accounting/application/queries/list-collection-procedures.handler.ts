@@ -33,7 +33,7 @@ import {
 } from "../../domain/services/collection-procedure-list.js";
 import { InvoicingCalendar } from "../../domain/services/invoicing-calendar.js";
 import { isRhythmFollowed, payerCountsAt } from "../../domain/services/rhythm-payer-counts.js";
-import { BILLING_MODES } from "../../domain/value-objects/billing-mode.js";
+import { BILLING_MODES, type BillingMode } from "../../domain/value-objects/billing-mode.js";
 import { collectionSettingsOf } from "../collection-calendar-settings-support.js";
 import {
   closureToCome,
@@ -51,6 +51,7 @@ import { countedPayerIdsOf } from "../counted-payers-support.js";
 import { readBillingDates } from "../invoicing-calendar-support.js";
 import { missedClosuresToCome } from "../missed-closures-support.js";
 import { readLotPayerModes } from "../lot-payer-modes-support.js";
+import { lotModesByClosureDay, procedureRhythmsOf } from "../procedure-rhythms-support.js";
 import { exportEntityOrFail } from "../mandate-bank-export-support.js";
 import { ListCollectionProceduresQuery } from "./collection-procedure-queries.js";
 
@@ -105,11 +106,12 @@ export class ListCollectionProceduresHandler implements IQueryHandler<
     ]);
     const calendar = InvoicingCalendar.of(dates.modes, dates.payers);
     const settings = collectionSettingsOf(entity);
-    const [batches, missed] = await Promise.all([
+    const [{ batches, modes }, missed] = await Promise.all([
       this.readBatches(stored, calendar),
       missedClosuresToCome(this.coverage, entity.id, calendar, settings, now),
     ]);
     const counts = payerCountsAt(dates.modes, dates.payers, payerIds, now);
+    const rhythmsOf = procedureRhythmsOf(calendar, lotModesByClosureDay(stored, modes), counts);
     const followed = BILLING_MODES.filter((mode) => isRhythmFollowed(mode, counts.get(mode) ?? 0));
     const toPrepare = toPrepareOf(entity.id, calendar, stored, now);
     const toPrepareAt = toPrepare === null ? null : new Date(toPrepare.closesAt);
@@ -133,7 +135,7 @@ export class ListCollectionProceduresHandler implements IQueryHandler<
       legalEntityId: entity.id,
       today: local.day,
       closedSince,
-      rows: rows.map((row) => procedureRowView(entity.id, row, calendar)),
+      rows: rows.map((row) => procedureRowView(entity.id, row, rhythmsOf)),
     };
   }
 
@@ -158,7 +160,10 @@ export class ListCollectionProceduresHandler implements IQueryHandler<
   private async readBatches(
     stored: readonly StoredBatchView[],
     calendar: InvoicingCalendar,
-  ): Promise<readonly ListedBatch[]> {
+  ): Promise<{
+    readonly batches: readonly ListedBatch[];
+    readonly modes: readonly (readonly BillingMode[])[];
+  }> {
     const [batches, modes] = await Promise.all([
       procedureBatchesOf(this.returns, stored),
       readLotPayerModes(
@@ -170,6 +175,6 @@ export class ListCollectionProceduresHandler implements IQueryHandler<
         })),
       ),
     ]);
-    return listedBatchesOf(stored, batches, modes);
+    return { batches: listedBatchesOf(stored, batches, modes), modes };
   }
 }

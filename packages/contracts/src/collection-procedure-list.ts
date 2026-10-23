@@ -75,9 +75,10 @@ export interface CollectionProcedureRowView {
   /** Le code court, `PRL-<AAMMJJ>-<rythmes>` — calculé, jamais rangé (ajouté le 2026-10-23). */
   readonly code: string;
   /**
-   * Les rythmes dont le CALENDRIER clôt à cet instant — ceux du code. Deux ou
-   * plus : la clôture est mutualisée (un seul lot). Diffère de `modes`, qui
-   * dit les rythmes des clients du lot (un rattrapage y ajoute le sien).
+   * Les rythmes de la procédure — ceux du code — qui ont au moins un client
+   * (`procedureRhythms`, Hugo 2026-10-23) : ceux des clients du lot s'il en
+   * existe un, sinon ceux qui closent ce jour-là ET ont un client compté. Deux
+   * ou plus : la clôture est MUTUALISÉE (un seul lot).
    */
   readonly closureModes: readonly BillingRhythmKind[];
   readonly phase: CollectionProcedurePhaseView;

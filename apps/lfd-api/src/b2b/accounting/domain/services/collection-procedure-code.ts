@@ -15,8 +15,9 @@ import { closureDayOf } from "./collection-procedure-id.js";
  * aujourd'hui, délibérément : un préfixe qui ne distingue rien se lit mal.
  *
  * Les lettres sont TRIÉES (`B` < `H` < `M`), pour qu'une même clôture n'ait
- * qu'une écriture ; une clôture dont aucun rythme n'est connu n'en porte pas
- * (`PRL-261031`) — on n'invente pas un mensuel.
+ * qu'une écriture ; une clôture dont aucun rythme n'a de client n'en porte pas
+ * (`PRL-261031`) — on n'invente pas un mensuel. Les rythmes viennent de
+ * `procedureRhythms`.
  */
 const PREFIX = "PRL";
 
@@ -41,7 +42,8 @@ export function procedureCodeOfDay(closureDay: string, modes: readonly BillingMo
 /**
  * **Une clôture mutualisée** : le hasard des dates fait clore plusieurs
  * rythmes le même jour (l'hebdomadaire du lundi et le mensuel du 1er) — une
- * seule clôture, un seul lot, et un code à plusieurs lettres.
+ * seule clôture, un seul lot, et un code à plusieurs lettres. Ne reçoit que
+ * des rythmes qui ont des clients (`procedureRhythms`, Hugo 2026-10-23).
  */
 export function isPooledClosure(closureModes: readonly BillingMode[]): boolean {
   return new Set(closureModes).size > 1;

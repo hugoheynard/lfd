@@ -194,4 +194,25 @@ describe("ListCollectionProceduresHandler — la liste des procédures", () => {
 
     await expect(w.list(false, "ailleurs")).rejects.toThrow(LegalEntityNotFoundError);
   });
+
+  /** Hugo, 2026-10-23 : le code ne porte que les rythmes qui ont des clients. */
+  it("le code d'une ligne : les rythmes de son lot, et sans lettre faute de client", async () => {
+    const w = world();
+    w.batches.batches = [stored("b1", { payerRefs: [{ payerCompanyId: "c1", invoiceId: null }] })];
+
+    const view = await w.list();
+
+    expect(view.rows.map((row) => [row.code, row.closureModes])).toEqual([
+      ["PRL-261001-M", ["monthly"]],
+      ["PRL-261101", []],
+    ]);
+  });
+
+  it("une clôture à venir : les rythmes qui y closent ET ont des clients", async () => {
+    const w = world(new FixedPayerModes(), ["c1"]);
+
+    const view = await w.list();
+
+    expect(view.rows.at(-1)).toMatchObject({ code: "PRL-261101-M", closureModes: ["monthly"] });
+  });
 });

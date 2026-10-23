@@ -10,7 +10,9 @@ import { BillingModeDatesReader } from "../../domain/ports/billing-mode-dates.re
 import { PayerBillingModesReader } from "../../domain/ports/payer-billing-modes.reader.js";
 import { collectionBatchFileName } from "../../domain/services/bank-file-names.js";
 import { procedureCodeOf } from "../../domain/services/collection-procedure-code.js";
+import { InvoicePeriodsReader } from "../../domain/ports/invoice-periods.reader.js";
 import { readInvoicingCalendar } from "../invoicing-calendar-support.js";
+import { procedureRhythmsOf, readLotModesByClosureDay } from "../procedure-rhythms-support.js";
 import { ExportCollectionBatchFileQuery } from "./collection-batch-queries.js";
 
 export interface CollectionBatchFile {
@@ -38,6 +40,7 @@ export class ExportCollectionBatchFileHandler implements IQueryHandler<
     private readonly batches: CollectionBatchReader,
     private readonly modeDates: BillingModeDatesReader,
     private readonly payerModes: PayerBillingModesReader,
+    private readonly periods: InvoicePeriodsReader,
   ) {}
 
   async execute(query: ExportCollectionBatchFileQuery): Promise<CollectionBatchFile> {
@@ -53,11 +56,22 @@ export class ExportCollectionBatchFileHandler implements IQueryHandler<
       file.legalEntityId,
     );
     const closesAt = file.cycleClosesAt;
+    // Le lot existe : ses rythmes sont ceux de ses clients (et de ses frères
+    // de la même clôture) — aucun compte de clients n'est lu.
+    const rhythmsOf = procedureRhythmsOf(
+      calendar,
+      await readLotModesByClosureDay(
+        this.periods,
+        calendar,
+        await this.batches.list(file.legalEntityId),
+      ),
+      new Map(),
+    );
     const prefix = file.status === "cancelled" ? "ANNULE-" : file.depositable ? "" : "BROUILLON-";
     return {
       xml: file.xml,
       fileName: `${prefix}${collectionBatchFileName({
-        procedureCode: procedureCodeOf(closesAt, calendar.modesClosingAt(closesAt)),
+        procedureCode: procedureCodeOf(closesAt, rhythmsOf(closesAt)),
         scheme: file.scheme,
         collectionDay: file.collectionDay,
         debitCount: file.debitCount,

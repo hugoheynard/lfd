@@ -22,6 +22,9 @@ import {
 } from "../../commands/__tests__/billing-mode-doubles.js";
 import { declaredEntity } from "../../commands/__tests__/mandate-setting-doubles.js";
 import { activePayer, countingOf, signedMandate } from "./counted-payers-doubles.js";
+import type { StoredBatchView } from "../../../domain/ports/collection-batch.reader.js";
+import { FixedInvoicePeriods } from "../../services/__tests__/issued-invoice-doubles.js";
+import { FixedBatches, stored as storedBatch } from "./collection-procedure-doubles.js";
 import { GetBillingRhythmsCalendarHandler } from "../get-billing-rhythms-calendar.handler.js";
 import { GetBillingRhythmsCalendarQuery } from "../get-billing-rhythms-calendar.query.js";
 
@@ -73,9 +76,12 @@ function handler(
   extra: {
     readonly entity?: Partial<LegalEntityRecord>;
     readonly batches?: readonly ClosureBatchRead[];
+    readonly stored?: readonly StoredBatchView[];
   } = {},
 ): GetBillingRhythmsCalendarHandler {
   const counting = countingOf(accounts, mandates);
+  const stored = new FixedBatches();
+  stored.batches = [...(extra.stored ?? [])];
   return new GetBillingRhythmsCalendarHandler(
     new OnlyLe1(extra.entity),
     new StoreModeDatesReader(new ModeDatesStore()),
@@ -83,6 +89,8 @@ function handler(
     counting.standings,
     counting.mandates,
     new StoredBatches(extra.batches),
+    stored,
+    new FixedInvoicePeriods(new Map()),
     new FixedClock(paris("2026-10-08", "11:00")),
   );
 }
@@ -292,34 +300,69 @@ describe("GetBillingRhythmsCalendarHandler — les trois rythmes sur un axe", ()
     expect(periods.find((p) => p.closesAt === withoutBatch.closesAt)?.batchId).toBeNull();
   });
 
-  it("chaque période porte le code de sa procédure ; le 1er réunit deux rythmes (mutualisée)", async () => {
-    const payers = new PayerModesStore();
-    payers.rows.push({
-      id: "p1",
-      legalEntityId: "le1",
-      payerCompanyId: PAYER.companyId,
-      effectiveFrom: paris("2026-10-01"),
-      mode: "semimonthly",
-      createdAt: paris("2026-09-20"),
-      createdByStaffId: "s",
-      cancelledAt: null,
-      cancelledByStaffId: null,
-    });
-
-    const view = await handler(payers, [PAYER]).execute(new GetBillingRhythmsCalendarQuery("le1"));
+  it("chaque période porte le code de sa procédure ; le 1er réunit deux rythmes qui ont des clients (mutualisée)", async () => {
+    const view = await handler(semimonthlyPayer(), [PAYER, activePayer("monthly-client")]).execute(
+      new GetBillingRhythmsCalendarQuery("le1"),
+    );
 
     const semimonthly = view.rhythms.find((lane) => lane.mode === "semimonthly");
     const monthly = view.rhythms.find((lane) => lane.mode === "monthly");
-    const first = paris("2026-11-01").toISOString();
-    const sixteenth = paris("2026-10-16").toISOString();
-    expect(semimonthly?.periods.find((p) => p.closesAt === first)).toMatchObject({
+    expect(semimonthly?.periods.find((p) => p.closesAt === FIRST)).toMatchObject({
       procedureCode: "PRL-261101-BM",
       closureModes: ["monthly", "semimonthly"],
     });
-    expect(monthly?.periods.find((p) => p.closesAt === first)?.procedureCode).toBe("PRL-261101-BM");
-    expect(semimonthly?.periods.find((p) => p.closesAt === sixteenth)).toMatchObject({
+    expect(monthly?.periods.find((p) => p.closesAt === FIRST)?.procedureCode).toBe("PRL-261101-BM");
+    expect(semimonthly?.periods.find((p) => p.closesAt === SIXTEENTH)).toMatchObject({
       procedureCode: "PRL-261016-B",
       closureModes: ["semimonthly"],
+    });
+  });
+
+  /**
+   * Hugo, 2026-10-23 : le 1er était « BM / mutualisée » parce que le
+   * calendrier y clôt le mensuel, même sans aucun client mensuel.
+   */
+  it("le 1er sans client mensuel : le code ne porte que le rythme qui a des clients, pas mutualisé", async () => {
+    const view = await handler(semimonthlyPayer(), [PAYER]).execute(
+      new GetBillingRhythmsCalendarQuery("le1"),
+    );
+
+    const monthly = view.rhythms.find((lane) => lane.mode === "monthly");
+    expect(monthly?.periods.find((p) => p.closesAt === FIRST)).toMatchObject({
+      procedureCode: "PRL-261101-B",
+      closureModes: ["semimonthly"],
+    });
+  });
+
+  it("aucun client : le code n'a pas de lettre", async () => {
+    const view = await handler().execute(new GetBillingRhythmsCalendarQuery("le1"));
+
+    const monthly = view.rhythms.find((lane) => lane.mode === "monthly");
+    expect(monthly?.periods.find((p) => p.closesAt === FIRST)).toMatchObject({
+      procedureCode: "PRL-261101",
+      closureModes: [],
+    });
+  });
+
+  it("un lot existe : ses clients font les rythmes, pas le compte d'aujourd'hui", async () => {
+    const view = await handler(
+      semimonthlyPayer(),
+      [PAYER, activePayer("monthly-client")],
+      undefined,
+      {
+        stored: [
+          storedBatch("b1", {
+            cycleClosesAt: FIRST,
+            payerRefs: [{ payerCompanyId: "monthly-client", invoiceId: null }],
+          }),
+        ],
+      },
+    ).execute(new GetBillingRhythmsCalendarQuery("le1"));
+
+    const monthly = view.rhythms.find((lane) => lane.mode === "monthly");
+    expect(monthly?.periods.find((p) => p.closesAt === FIRST)).toMatchObject({
+      procedureCode: "PRL-261101-M",
+      closureModes: ["monthly"],
     });
   });
 
@@ -329,3 +372,23 @@ describe("GetBillingRhythmsCalendarHandler — les trois rythmes sur un axe", ()
     ).rejects.toBeInstanceOf(LegalEntityNotFoundError);
   });
 });
+
+const FIRST = paris("2026-11-01").toISOString();
+const SIXTEENTH = paris("2026-10-16").toISOString();
+
+/** `PAYER` en « deux fois par mois » depuis le 1er octobre. */
+function semimonthlyPayer(): PayerModesStore {
+  const payers = new PayerModesStore();
+  payers.rows.push({
+    id: "p1",
+    legalEntityId: "le1",
+    payerCompanyId: PAYER.companyId,
+    effectiveFrom: paris("2026-10-01"),
+    mode: "semimonthly",
+    createdAt: paris("2026-09-20"),
+    createdByStaffId: "s",
+    cancelledAt: null,
+    cancelledByStaffId: null,
+  });
+  return payers;
+}

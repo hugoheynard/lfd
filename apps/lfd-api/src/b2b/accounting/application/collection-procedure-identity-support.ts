@@ -6,6 +6,7 @@ import { procedureCodeOfDay } from "../domain/services/collection-procedure-code
 import { closureDayOf } from "../domain/services/collection-procedure-id.js";
 import type { InvoicingCalendar } from "../domain/services/invoicing-calendar.js";
 import { readLotsPayerModeCounts } from "./lot-payer-modes-support.js";
+import type { ProcedureRhythmsOf } from "./procedure-rhythms-support.js";
 
 /** Minuit à Paris : l'instant d'une clôture, depuis son jour. */
 const CLOSURE_TIME = "00:00";
@@ -19,19 +20,20 @@ export function batchesOfClosure(
 }
 
 /**
- * **La procédure ouverte** (2026-10-23) : son code, les rythmes qui closent ce
- * jour-là — deux ou plus, elle est mutualisée — et combien de clients de
- * chacun ses lots non annulés prélèvent, lus de leurs factures. Rien de
- * compté sans lot : `payerCounts` reste `null`.
+ * **La procédure ouverte** (2026-10-23) : son code, ses rythmes — ceux qui
+ * ont des clients (`procedureRhythms`) ; deux ou plus, elle est mutualisée —
+ * et combien de clients de chacun ses lots non annulés prélèvent, lus de
+ * leurs factures. Rien de compté sans lot : `payerCounts` reste `null`.
  */
 export async function procedureIdentityOf(
   periods: InvoicePeriodsReader,
   calendar: InvoicingCalendar,
   closureDay: string,
   ofClosure: readonly StoredBatchView[],
+  rhythmsOf: ProcedureRhythmsOf,
 ): Promise<CollectionProcedureIdentityView> {
   const closesAt = localToInstant(closureDay, CLOSURE_TIME);
-  const closureModes = closesAt === null ? [] : calendar.modesClosingAt(closesAt);
+  const closureModes = closesAt === null ? [] : rhythmsOf(closesAt);
   const live = ofClosure.filter((batch) => batch.status !== "cancelled");
   return {
     code: procedureCodeOfDay(closureDay, closureModes),
