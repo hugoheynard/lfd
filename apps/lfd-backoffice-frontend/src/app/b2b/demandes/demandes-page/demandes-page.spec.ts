@@ -43,12 +43,22 @@ function request(
     handledAt: over.handledAt ?? null,
     handledBy: null,
     anonymizedAt: null,
-    details:
-      kind === 'contact'
-        ? { kind: 'contact' }
-        : { kind: 'order_problem', orderId: 'o_1', orderNumber: 'C-0001', photos: [] },
+    details: DETAILS_OF[kind],
   };
 }
+
+const DETAILS_OF: Readonly<Record<RequestKind, CustomerRequestView['details']>> = {
+  contact: { kind: 'contact' },
+  order_problem: { kind: 'order_problem', orderId: 'o_1', orderNumber: 'C-0001', photos: [] },
+  order_change: {
+    kind: 'order_change',
+    orderId: 'o_1',
+    orderNumber: 'C-0001',
+    baseRevision: 0,
+    change: null,
+    decision: { kind: 'refused', reason: 'Trop tard.' },
+  },
+};
 
 class FakeRequests {
   readonly reads: { status: CustomerRequestStatus; kind: RequestKind | undefined }[] = [];
@@ -177,6 +187,28 @@ describe('DemandesPage', () => {
 
     expect(fixture.componentInstance['status']()).toBe('handled');
     expect(host(fixture).querySelector('[data-request="old"]')).not.toBeNull();
+  });
+
+  it('une demande de modification ne se marque pas traitée : elle attend une réponse', async () => {
+    const api = new FakeRequests();
+    api.pending = [request('m1', { kind: 'order_change' })];
+    const fixture = await mount(api);
+    expect(host(fixture).querySelector('[data-request="m1"]')).not.toBeNull();
+    expect(host(fixture).querySelector('button[data-handle]')).toBeNull();
+  });
+
+  it('une réponse donnée dans les détails fait relire la liste et le compteur', async () => {
+    const api = new FakeRequests();
+    api.pending = [request('m1', { kind: 'order_change' })];
+    const fixture = await mount(api);
+    api.pending = [];
+    TestBed.inject(CustomerRequestsInbox).noteAnswered();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(api.reads).toHaveLength(2);
+    expect(TestBed.inject(CustomerRequestsInbox).pendingCount()).toBe(0);
   });
 
   it('sans le droit d’écrire : pas de « Marquer traité »', async () => {

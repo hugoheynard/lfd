@@ -4226,6 +4226,20 @@
           "variables": []
         },
         {
+          "key": "chrome.workspaceKindSite",
+          "fr": "Site",
+          "en": "Site",
+          "it": "Sede",
+          "variables": []
+        },
+        {
+          "key": "chrome.workspaceVia",
+          "fr": "via {name}",
+          "en": "via {name}",
+          "it": "tramite {name}",
+          "variables": ["name"]
+        },
+        {
           "key": "chrome.workspaceRolePro",
           "fr": "Compte pro",
           "en": "Pro account",
@@ -4481,7 +4495,7 @@
     {
       "space": "orders",
       "title": "Mes commandes (récapitulatif compris)",
-      "source": "screens/orders.copy.ts · screens/order-summary.copy.ts",
+      "source": "screens/orders.copy.ts · screens/order-summary.copy.ts · screens/order-change-request.copy.ts",
       "journey": false,
       "entries": [
         {
@@ -5373,6 +5387,125 @@
           "fr": "Votre commande est modifiée.",
           "en": "Your order has been changed.",
           "it": "Il tuo ordine è stato modificato.",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.request.requestAction",
+          "fr": "Demander une modification",
+          "en": "Request a change",
+          "it": "Chiedi una modifica",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.request.requestNote",
+          "fr": "L’heure limite ({when}) est passée : vous pouvez encore nous demander une modification, notre équipe vous répond par e-mail.",
+          "en": "The deadline ({when}) has passed: you can still ask us for a change, our team will reply by email.",
+          "it": "L’orario limite ({when}) è passato: puoi ancora chiederci una modifica, il nostro team ti risponde via e-mail.",
+          "variables": ["when"]
+        },
+        {
+          "key": "orders.revision.request.requestNoteWithoutWhen",
+          "fr": "L’heure limite est passée : vous pouvez encore nous demander une modification, notre équipe vous répond par e-mail.",
+          "en": "The deadline has passed: you can still ask us for a change, our team will reply by email.",
+          "it": "L’orario limite è passato: puoi ancora chiederci una modifica, il nostro team ti risponde via e-mail.",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.request.requestPendingNote",
+          "fr": "Modification demandée — en attente de notre réponse.",
+          "en": "Change requested — awaiting our reply.",
+          "it": "Modifica richiesta — in attesa della nostra risposta.",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.request.requestAppliedNote",
+          "fr": "Votre demande de modification a été acceptée : la commande ci-dessus est à jour.",
+          "en": "Your change request was accepted: the order above is up to date.",
+          "it": "La tua richiesta di modifica è stata accettata: l’ordine qui sopra è aggiornato.",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.request.requestRefusedNote",
+          "fr": "Votre demande de modification n’a pas pu être acceptée : « {reason} »",
+          "en": "Your change request could not be accepted: “{reason}”",
+          "it": "La tua richiesta di modifica non è stata accettata: «{reason}»",
+          "variables": ["reason"]
+        },
+        {
+          "key": "orders.revision.request.requestTitle",
+          "fr": "Demander une modification",
+          "en": "Request a change",
+          "it": "Chiedi una modifica",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.request.requestLead",
+          "fr": "L’heure limite est passée : composez la commande voulue, notre équipe l’examine et vous répond par e-mail.",
+          "en": "The deadline has passed: put together the order you want, our team will review it and reply by email.",
+          "it": "L’orario limite è passato: componi l’ordine che desideri, il nostro team lo esamina e ti risponde via e-mail.",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.request.requestSendTitle",
+          "fr": "Votre demande",
+          "en": "Your request",
+          "it": "La tua richiesta",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.request.requestSendNote",
+          "fr": "Rien ne change tant que notre équipe n’a pas répondu. Si elle accepte, le nouveau total vous est confirmé par e-mail.",
+          "en": "Nothing changes until our team has replied. If they accept, the new total is confirmed by email.",
+          "it": "Nulla cambia finché il nostro team non ha risposto. Se accetta, il nuovo totale ti viene confermato via e-mail.",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.request.requestQuoteIndicative",
+          "fr": "Montant indicatif, sous réserve d’acceptation par notre équipe ; le montant appliqué peut différer si les prix changent d’ici là.",
+          "en": "Indicative amount, subject to acceptance by our team; the amount applied may differ if prices change in the meantime.",
+          "it": "Importo indicativo, soggetto all’accettazione del nostro team; l’importo applicato può variare se nel frattempo i prezzi cambiano.",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.request.requestMessageLabel",
+          "fr": "Un mot pour notre équipe (facultatif)",
+          "en": "A word for our team (optional)",
+          "it": "Una parola per il nostro team (facoltativa)",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.request.requestMessagePlaceholder",
+          "fr": "Par exemple : une personne de plus au déjeuner.",
+          "en": "For example: one more person at lunch.",
+          "it": "Per esempio: una persona in più a pranzo.",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.request.requestSubmitCta",
+          "fr": "Demander cette modification",
+          "en": "Request this change",
+          "it": "Chiedi questa modifica",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.request.requestSubmittingCta",
+          "fr": "Envoi…",
+          "en": "Sending…",
+          "it": "Invio…",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.request.requestRefused",
+          "fr": "La demande n’a pas pu être envoyée.",
+          "en": "The request could not be sent.",
+          "it": "Non è stato possibile inviare la richiesta.",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.request.requestSentToast",
+          "fr": "Demande envoyée : nous vous répondons par e-mail.",
+          "en": "Request sent: we will reply by email.",
+          "it": "Richiesta inviata: ti rispondiamo via e-mail.",
           "variables": []
         },
         {

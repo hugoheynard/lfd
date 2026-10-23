@@ -44,7 +44,7 @@
       @for (request of shown(); track request.id) {
         <app-customer-request-card
           [request]="request"
-          [canHandle]="status() === 'pending' && canWrite()"
+          [canHandle]="canMarkHandled(request)"
           [busy]="busyId() !== null"
           [handling]="busyId() === request.id"
           (handle)="markHandled(request)"

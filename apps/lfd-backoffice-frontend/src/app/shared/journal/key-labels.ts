@@ -47,6 +47,8 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   backfilled: 'Reprise après coup',
   bankAccountId: 'RIB',
   baseUrl: 'Adresse du site',
+  // La demande de modification d'une commande (plan de modification, M4).
+  baseRevision: 'Révision demandée sur',
   batch: 'Lot de prélèvement',
   before: 'Avant',
   blast: 'Portée',
@@ -253,6 +255,7 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   reasonCode: 'Motif choisi',
   recurrence: 'Récurrence',
   reference: 'Référence',
+  requestId: 'Demande client',
   // Lot C4 : ce que l'annulation d'une payée a promis de rendre (`order.cancelled`).
   refund: 'Remboursement promis',
   regime: 'Ce qui était dû',

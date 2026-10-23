@@ -1,0 +1,75 @@
+<fold-card padding="md">
+  <fold-element-title variant="title" [title]="r().requestSendTitle" />
+  <div class="body">
+    @switch (quote().kind) {
+      @case ('loading') {
+        <fold-loading size="sm" [message]="c().quotingMessage" />
+      }
+      @case ('failed') {
+        <fold-callout variant="alert" data-quote-failed>
+          {{ c().quoteFailedNote }}
+          <button
+            actions
+            foldButton
+            size="sm"
+            emphasis="outline"
+            intent="neutral"
+            type="button"
+            (click)="retryQuote.emit()"
+          >
+            {{ c().reloadCta }}
+          </button>
+        </fold-callout>
+      }
+    }
+    @if (quote(); as current) {
+      @if (current.kind === 'refused') {
+        <fold-callout variant="alert" announce data-quote-refused>{{
+          current.message
+        }}</fold-callout>
+      }
+      @if (current.kind === 'ready') {
+        <app-revision-quote [quote]="current.quote" />
+        <p class="fact" data-quote-indicative>{{ r().requestQuoteIndicative }}</p>
+      }
+    }
+    <fold-callout variant="info" data-request-explained>{{ r().requestSendNote }}</fold-callout>
+    @if (!changed()) {
+      <p class="fact" data-unchanged>{{ c().unchangedNote }}</p>
+    }
+    <fold-textarea
+      [label]="r().requestMessageLabel"
+      [placeholder]="r().requestMessagePlaceholder"
+      [rows]="3"
+      [value]="message()"
+      (valueChange)="message.set($event)"
+    />
+    @if (refusal(); as said) {
+      <fold-callout variant="alert" announce data-request-refused>
+        {{ said.message }}
+        @if (said.stale) {
+          <button
+            actions
+            foldButton
+            size="sm"
+            emphasis="outline"
+            intent="neutral"
+            type="button"
+            data-reload
+            (click)="reload.emit()"
+          >
+            {{ c().reloadCta }}
+          </button>
+        }
+      </fold-callout>
+    }
+    <div class="acts">
+      <button foldButton type="button" data-request-submit [disabled]="!canSend()" (click)="send()">
+        {{ sending() ? r().requestSubmittingCta : r().requestSubmitCta }}
+      </button>
+      <a foldButton emphasis="soft" intent="neutral" [routerLink]="['/mes-commandes', orderId()]">
+        {{ c().backToOrders }}
+      </a>
+    </div>
+  </div>
+</fold-card>

@@ -4,6 +4,14 @@ import type { OrderRevisionQuoteView } from '@lfd/contracts';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { formatCents } from '../../format-money';
 
+/** Le devis tel que l'écran le tient : en vol, rendu, refusé (avec la phrase du serveur) ou en panne. */
+export type QuoteState =
+  | { readonly kind: 'idle' }
+  | { readonly kind: 'loading' }
+  | { readonly kind: 'ready'; readonly quote: OrderRevisionQuoteView }
+  | { readonly kind: 'refused'; readonly message: string }
+  | { readonly kind: 'failed' };
+
 /** L'écart dit avec son signe : « + 4,20 € », « − 3,10 € », ou « Aucun écart ». */
 export function differenceLabel(
   differenceCents: number,

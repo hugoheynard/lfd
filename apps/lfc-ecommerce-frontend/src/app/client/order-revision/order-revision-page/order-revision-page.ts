@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import type { CustomerOrderDetailView, OrderRevisionQuoteView } from '@lfd/contracts';
+import type { CustomerOrderDetailView } from '@lfd/contracts';
 import { instantToLocal } from '@lfd/contracts';
 import {
   FoldButtonComponent,
@@ -45,7 +45,8 @@ import {
   withoutLine,
   withQuantity,
 } from '../revision-draft';
-import { RevisionQuote } from '../revision-quote/revision-quote';
+import { ChangeRequestCard } from '../change-request-card/change-request-card';
+import { RevisionQuote, type QuoteState } from '../revision-quote/revision-quote';
 
 /** Le délai de calme après le dernier geste avant de redemander le devis. */
 const QUOTE_DELAY_MS = 300;
@@ -54,13 +55,6 @@ type PageState =
   | { readonly kind: 'loading' }
   | { readonly kind: 'failed' }
   | { readonly kind: 'ready'; readonly order: CustomerOrderDetailView };
-
-type QuoteState =
-  | { readonly kind: 'idle' }
-  | { readonly kind: 'loading' }
-  | { readonly kind: 'ready'; readonly quote: OrderRevisionQuoteView }
-  | { readonly kind: 'refused'; readonly message: string }
-  | { readonly kind: 'failed' };
 
 /** Un refus de la validation : sa phrase, et s'il faut recharger (R7). */
 interface SubmitRefusal {
@@ -81,11 +75,17 @@ interface SubmitRefusal {
  * Le choix du retrait ou de la livraison passe par les MÊMES dialogues que la
  * boutique (`OrderDoors.ask*`), qui rendent un choix sans écrire celui du
  * panier : modifier une commande ne touche pas à la commande suivante.
+ *
+ * **L'heure limite passée** (M4), la page devient une DEMANDE : même
+ * composition, un devis INDICATIF (`changeQuote`, §14 — décision de Hugo du
+ * 2026-10-23), et « Demander cette modification » à la place de « Valider »
+ * (`ChangeRequestCard`). C'est le serveur qui le dit, par `revisability`.
  */
 @Component({
   selector: 'app-order-revision-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    ChangeRequestCard,
     ClientBannerBlock,
     ClientBannerOutlet,
     FoldButtonComponent,
@@ -126,6 +126,34 @@ export class OrderRevisionPage {
   protected readonly submitting = signal(false);
   protected readonly submitRefusal = signal<SubmitRefusal | null>(null);
 
+  /** L'heure limite est passée, la commande pas au plan : on demande au lieu de modifier (M4). */
+  protected readonly requesting = computed(() => {
+    const state = this.state();
+    if (state.kind !== 'ready') {
+      return false;
+    }
+    const { revisability } = state.order;
+    return !revisability.revisable && revisability.code === 'too_late';
+  });
+
+  /** La commande telle qu'elle était au chargement, pour savoir s'il y a quelque chose à demander. */
+  private readonly initial = signal<string | null>(null);
+  protected readonly changed = computed(() => {
+    const content = this.content();
+    return content !== null && JSON.stringify(content) !== this.initial();
+  });
+  protected readonly revision = computed(() => {
+    const state = this.state();
+    return state.kind === 'ready' ? state.order.revision : 0;
+  });
+
+  protected readonly bannerTitle = computed(() =>
+    this.requesting() ? this.c().request.requestTitle : this.c().reviseTitle,
+  );
+  protected readonly bannerLead = computed(() =>
+    this.requesting() ? this.c().request.requestLead : this.c().reviseLead,
+  );
+
   protected readonly kicker = computed(() => {
     const state = this.state();
     return state.kind === 'ready'
@@ -134,7 +162,7 @@ export class OrderRevisionPage {
   });
 
   /** Ce que le devis et la révision recevront ; `null` tant qu'il manque quelque chose. */
-  private readonly content = computed(() => {
+  protected readonly content = computed(() => {
     const state = this.state();
     return state.kind === 'ready' ? contentOf(this.draft(), state.order) : null;
   });
@@ -225,6 +253,8 @@ export class OrderRevisionPage {
     });
     effect(() => {
       const content = this.content();
+      // Le mode compte aussi : une demande a son propre devis, indicatif.
+      this.requesting();
       untracked(() => {
         this.scheduleQuote(content === null);
       });
@@ -244,7 +274,9 @@ export class OrderRevisionPage {
       this.state.set({ kind: 'failed' });
       return;
     }
-    this.draft.set(draftOf(order, this.points.pickups()));
+    const draft = draftOf(order, this.points.pickups());
+    this.draft.set(draft);
+    this.initial.set(JSON.stringify(contentOf(draft, order)));
     this.state.set({ kind: 'ready', order });
   }
 
@@ -330,7 +362,9 @@ export class OrderRevisionPage {
     if (content === null) {
       return;
     }
-    const outcome = await this.gateway.quote(this.orderId(), content);
+    const outcome = this.requesting()
+      ? await this.gateway.changeQuote(this.orderId(), content)
+      : await this.gateway.quote(this.orderId(), content);
     if (sequence !== this.sequence) {
       return;
     }

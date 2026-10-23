@@ -1,5 +1,5 @@
 // Types par le sous-chemin sans zod (budget `cloudflare`).
-import type { OrderRevisability } from '@lfd/contracts/shop-values';
+import type { OrderChangeRequestStatusView, OrderRevisability } from '@lfd/contracts/shop-values';
 
 import type { LocaleCode } from '../client-locale.service';
 import { fill } from '../copy/client-copy.service';
@@ -13,6 +13,8 @@ import { SHOP_TIME_ZONE } from '../shop-time-zone';
  */
 export type ReviseOffer =
   | { readonly kind: 'revise'; readonly until: string | null }
+  /** L'heure limite est passée, la commande pas encore au plan : on DEMANDE (M4). */
+  | { readonly kind: 'request'; readonly note: string }
   | { readonly kind: 'refused'; readonly sentence: string }
   | { readonly kind: 'none' };
 
@@ -43,11 +45,13 @@ export function reviseOfferOf(
     case 'card_settled':
       return refused(copy.reviseCardNote);
     case 'too_late':
-      return refused(
-        until === null
-          ? copy.refusedTooLate
-          : fill(copy.refusedTooLateUntil, { when: whenOf(until, locale, copy) }),
-      );
+      return {
+        kind: 'request',
+        note:
+          until === null
+            ? copy.request.requestNoteWithoutWhen
+            : fill(copy.request.requestNote, { when: whenOf(until, locale, copy) }),
+      };
     case 'in_preparation':
       return refused(copy.refusedInPreparation);
     case 'accounting':
@@ -80,4 +84,25 @@ function whenOf(iso: string, locale: LocaleCode, copy: OrderReviseCopy): string 
     timeZone: SHOP_TIME_ZONE,
   }).format(instant);
   return fill(copy.reviseWhen, { day, time });
+}
+
+/**
+ * Ce que le tiroir dit de la dernière demande de modification (M4) : en
+ * attente, acceptée, ou refusée avec notre mot ; rien sans demande.
+ */
+export function changeRequestNoteOf(
+  request: OrderChangeRequestStatusView | null,
+  copy: OrderReviseCopy,
+): string | null {
+  if (request === null) {
+    return null;
+  }
+  switch (request.status) {
+    case 'pending':
+      return copy.request.requestPendingNote;
+    case 'applied':
+      return copy.request.requestAppliedNote;
+    case 'refused':
+      return fill(copy.request.requestRefusedNote, { reason: request.refusalReason ?? '' });
+  }
 }

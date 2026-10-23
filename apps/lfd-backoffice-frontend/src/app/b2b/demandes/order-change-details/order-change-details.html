@@ -1,0 +1,139 @@
+<div class="ocd">
+  <fold-field-list>
+    <fold-field
+      label="Commande"
+      placeholder="Effacée à l'anonymisation"
+      [empty]="details().orderId === null"
+    >
+      @if (details().orderId; as orderId) {
+        <a [routerLink]="['/commandes', orderId]" data-order-link>
+          {{ details().orderNumber ?? 'Voir la commande' }}
+        </a>
+      }
+    </fold-field>
+  </fold-field-list>
+
+  @if (details().decision; as decision) {
+    @if (decision.kind === 'applied') {
+      <fold-callout variant="success" data-applied>
+        Modification appliquée : la commande est passée en révision {{ decision.revision }}.
+      </fold-callout>
+    } @else {
+      <fold-callout variant="neutral" data-refused>
+        Modification refusée{{ decision.reason === '' ? '.' : ' : « ' + decision.reason + ' »' }}
+      </fold-callout>
+    }
+  } @else if (pending()) {
+    @switch (quote().kind) {
+      @case ('loading') {
+        <fold-loading message="Calcul de l'écart…" />
+      }
+      @case ('refused') {
+        <fold-callout variant="warning" data-quote-refusal>
+          {{ quoteRefusal() }} « Appliquer » est impossible : refusez la demande avec un mot au
+          client.
+        </fold-callout>
+      }
+      @case ('ready') {
+        @if (ready(); as q) {
+          @if (stale()) {
+            <fold-callout variant="warning" data-stale>
+              La commande a été modifiée depuis la demande : « Appliquer » sera refusé. Refusez la
+              demande en invitant le client à la renouveler.
+            </fold-callout>
+          }
+          <fold-field-list>
+            <fold-field label="Total actuel">{{ cents(q.previousTotalCents) }}</fold-field>
+            <fold-field label="Total demandé">{{ cents(q.totalCents) }}</fold-field>
+            <fold-field label="Écart" data-difference>{{ difference() }}</fold-field>
+            <fold-field label="Ce qui change" [empty]="changes().length === 0">
+              @for (change of changes(); track change; let last = $last) {
+                {{ change }}{{ last ? '' : ' · ' }}
+              }
+            </fold-field>
+            <fold-field label="Lignes demandées" [empty]="q.lines.length === 0">
+              <ul class="ocd-lines">
+                @for (line of q.lines; track line.sku) {
+                  <li data-line>
+                    {{ line.quantity }} × {{ line.productName }} —
+                    {{ cents(line.lineTotalCents) }} HT
+                    {{ line.priceFrozen ? '(prix d’origine)' : '(prix du jour)' }}
+                  </li>
+                }
+              </ul>
+            </fold-field>
+          </fold-field-list>
+        }
+      }
+    }
+
+    @if (error(); as message) {
+      <fold-callout variant="alert" announce data-answer-error>{{ message }}</fold-callout>
+    }
+
+    @if (canWrite()) {
+      @if (refusing()) {
+        <fold-textarea
+          label="Mot au client"
+          required
+          [rows]="3"
+          placeholder="La fournée est déjà lancée ; nous pouvons ajouter ces articles à votre prochaine commande."
+          [hint]="'Envoyé au client par e-mail. Au plus ' + maxLength + ' caractères.'"
+          [(value)]="reason"
+          data-refusal-reason
+        />
+      }
+      <div class="ocd-actions">
+        @if (refusing()) {
+          <button
+            foldButton
+            size="sm"
+            emphasis="outline"
+            intent="neutral"
+            type="button"
+            [disabled]="busy() !== null"
+            (click)="refusing.set(false)"
+          >
+            Annuler
+          </button>
+          <button
+            foldButton
+            size="sm"
+            intent="danger"
+            type="button"
+            [disabled]="busy() !== null || reason().trim() === ''"
+            [loading]="busy() === 'refuse'"
+            (click)="refuse()"
+            data-confirm-refuse
+          >
+            Refuser et prévenir le client
+          </button>
+        } @else {
+          <button
+            foldButton
+            size="sm"
+            emphasis="outline"
+            type="button"
+            [disabled]="busy() !== null"
+            (click)="refusing.set(true)"
+            data-refuse
+          >
+            Refuser…
+          </button>
+          <button
+            foldButton
+            size="sm"
+            icon="check"
+            type="button"
+            [disabled]="busy() !== null || ready() === null || stale()"
+            [loading]="busy() === 'apply'"
+            (click)="apply()"
+            data-apply
+          >
+            Appliquer
+          </button>
+        }
+      </div>
+    }
+  }
+</div>

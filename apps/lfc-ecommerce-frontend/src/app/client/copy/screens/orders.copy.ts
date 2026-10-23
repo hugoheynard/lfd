@@ -1,4 +1,10 @@
 import {
+  ORDER_CHANGE_REQUEST_EN,
+  ORDER_CHANGE_REQUEST_FR,
+  ORDER_CHANGE_REQUEST_IT,
+  type OrderChangeRequestCopy,
+} from './order-change-request.copy';
+import {
   ORDER_SUMMARY_EN,
   ORDER_SUMMARY_FR,
   ORDER_SUMMARY_IT,
@@ -83,6 +89,8 @@ export interface OrderReviseCopy {
   /** Le repli d'un refus dont le serveur n'a pas dit la phrase. */
   readonly revisionRefused: string;
   readonly revisedToast: string;
+  /** Après l'heure limite : demander plutôt que modifier (M4). */
+  readonly request: OrderChangeRequestCopy;
 }
 
 const ORDER_REVISE_FR: OrderReviseCopy = {
@@ -141,6 +149,7 @@ const ORDER_REVISE_FR: OrderReviseCopy = {
   submittingCta: 'Envoi…',
   revisionRefused: 'La modification n’a pas pu être enregistrée.',
   revisedToast: 'Votre commande est modifiée.',
+  request: ORDER_CHANGE_REQUEST_FR,
 };
 
 const ORDER_REVISE_EN: OrderReviseCopy = {
@@ -194,6 +203,7 @@ const ORDER_REVISE_EN: OrderReviseCopy = {
   submittingCta: 'Sending…',
   revisionRefused: 'The change could not be saved.',
   revisedToast: 'Your order has been changed.',
+  request: ORDER_CHANGE_REQUEST_EN,
 };
 
 const ORDER_REVISE_IT: OrderReviseCopy = {
@@ -250,6 +260,7 @@ const ORDER_REVISE_IT: OrderReviseCopy = {
   submittingCta: 'Invio…',
   revisionRefused: 'Non è stato possibile registrare la modifica.',
   revisedToast: 'Il tuo ordine è stato modificato.',
+  request: ORDER_CHANGE_REQUEST_IT,
 };
 
 /**

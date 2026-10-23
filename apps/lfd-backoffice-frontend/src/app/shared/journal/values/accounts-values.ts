@@ -178,6 +178,7 @@ function pick(
 export const CUSTOMER_REQUEST_KIND = domain('type de demande client', {
   contact: 'Contact',
   order_problem: 'Problème de commande',
+  order_change: 'Demande de modification',
 });
 
 export const ACCOUNTS_VALUES: ValueFamily = {

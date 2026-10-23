@@ -1,3 +1,6 @@
+@if (requestSaid(); as said) {
+  <p class="note" data-change-request>{{ said }}</p>
+}
 @switch (offer().kind) {
   @case ('revise') {
     <div class="revise">
@@ -17,6 +20,25 @@
         <p class="note" data-until>{{ said }}</p>
       }
     </div>
+  }
+  @case ('request') {
+    @if (!requestPending()) {
+      <div class="revise">
+        <a
+          foldButton
+          block
+          size="sm"
+          emphasis="outline"
+          intent="neutral"
+          icon="edit"
+          data-request-change
+          [routerLink]="['/mes-commandes', 'modifier', orderId()]"
+        >
+          {{ c().request.requestAction }}
+        </a>
+        <p class="note" data-request-note>{{ requestNote() }}</p>
+      </div>
+    }
   }
   @case ('refused') {
     <p class="note" data-refusal>{{ refusalSaid() }}</p>

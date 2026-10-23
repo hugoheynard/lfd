@@ -13,6 +13,13 @@ import { CustomerRequestsService } from './customer-requests.service';
 export class CustomerRequestsInbox {
   private readonly api = inject(CustomerRequestsService);
 
+  /**
+   * Monte à chaque réponse à une demande de modification (« Appliquer »,
+   * « Refuser ») : les détails répondent eux-mêmes, et la boîte, qui ne les
+   * connaît pas, relit sa liste en le voyant monter.
+   */
+  readonly answered = signal(0);
+
   /** `null` tant que le compte n'a pas été lu, ou si la lecture a échoué : pas de pastille. */
   readonly pendingCount = signal<number | null>(null);
 
@@ -23,6 +30,11 @@ export class CustomerRequestsInbox {
     } catch {
       this.pendingCount.set(null);
     }
+  }
+
+  /** Une demande vient de recevoir sa réponse : la boîte relit. */
+  noteAnswered(): void {
+    this.answered.update((count) => count + 1);
   }
 
   /** La liste à traiter, TOUS types, vient d'être lue ailleurs : son compte suffit. */

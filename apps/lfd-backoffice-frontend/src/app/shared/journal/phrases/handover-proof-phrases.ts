@@ -22,7 +22,7 @@ import { HANDOVER_PROOF_ERASURE_CAUSE } from '../values/orders-values';
  * pièce avait été prise, ce qu'elle contenait et pourquoi elle est partie.
  */
 
-/** « de la commande ORD-0001 » — « d'une commande » quand le commerce ne la connaît plus. */
+/** « de la commande ORD-1 » — « d'une commande » quand le commerce ne la connaît plus. */
 function theOrder(fact: PhraseFact): Segment[] {
   const label = subjectLabelOf(fact);
   return label === null

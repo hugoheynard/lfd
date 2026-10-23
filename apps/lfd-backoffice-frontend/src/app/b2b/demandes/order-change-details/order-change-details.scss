@@ -1,0 +1,16 @@
+.ocd {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.ocd-lines {
+  margin: 0;
+  padding-inline-start: var(--fold-space-md);
+}
+
+.ocd-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--fold-space-sm);
+}

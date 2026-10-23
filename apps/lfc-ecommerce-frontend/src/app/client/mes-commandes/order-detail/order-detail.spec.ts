@@ -24,7 +24,13 @@ describe('OrderDetail', () => {
           useValue: { cancellability: () => Promise.resolve(null) },
         },
         // La modification aussi (plan de modification, §6).
-        { provide: OrderRevisionGateway, useValue: { order: () => Promise.resolve(null) } },
+        {
+          provide: OrderRevisionGateway,
+          useValue: {
+            order: () => Promise.resolve(null),
+            changeRequest: () => Promise.resolve(null),
+          },
+        },
       ],
     });
     fixture = TestBed.createComponent(OrderDetail);

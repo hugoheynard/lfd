@@ -25,7 +25,7 @@ import {
 /** Sans article : la préposition change (« dans le », « du »), le nom reste. */
 const CONTAINER: Noun = { the: '', a: 'un contenant' };
 
-/** « de la commande ORD-0001 » — « d'une commande » sans numéro. */
+/** « de la commande ORD-1 » — « d'une commande » sans numéro. */
 function theOrder(fact: PhraseFact): Segment[] {
   const label = subjectLabelOf(fact);
   return label === null

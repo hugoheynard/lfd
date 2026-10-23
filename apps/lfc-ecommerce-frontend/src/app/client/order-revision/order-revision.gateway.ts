@@ -1,7 +1,11 @@
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import type {
+  CreatedIdResponse,
   CustomerOrderDetailView,
+  OrderChangeRequestPayload,
+  OrderChangeRequestStatusResponse,
+  OrderChangeRequestStatusView,
   OrderRevisedResponse,
   OrderRevisionPayload,
   OrderRevisionQuotePayload,
@@ -31,6 +35,9 @@ export type RevisionOutcome<T> =
 
 /** Le refus d'une révision dépassée (R7) : la commande a changé ailleurs. */
 export const STALE_REVISION = 'orders.revise.stale_revision';
+
+/** Le refus d'une demande composée sur une commande qui a changé depuis (M4). */
+export const STALE_CHANGE_REQUEST = 'contact.order_change.stale_revision';
 
 /**
  * **Modifier une commande passée**, côté réseau (plan
@@ -67,12 +74,57 @@ export class OrderRevisionGateway {
     return this.post<OrderRevisionQuoteView>(`${this.url(orderId)}/revisions/quote`, payload);
   }
 
+  /**
+   * `POST /orders/:id/revisions/change-request-quote` — après l'heure limite,
+   * ce que la DEMANDE coûterait (M4, §14) : un devis indicatif, que l'équipe
+   * recalculera en l'appliquant.
+   */
+  changeQuote(
+    orderId: string,
+    payload: OrderRevisionQuotePayload,
+  ): Promise<RevisionOutcome<OrderRevisionQuoteView>> {
+    return this.post<OrderRevisionQuoteView>(
+      `${this.url(orderId)}/revisions/change-request-quote`,
+      payload,
+    );
+  }
+
   /** `POST /orders/:id/revisions` — la modification, avec la révision qu'elle corrige. */
   revise(
     orderId: string,
     payload: OrderRevisionPayload,
   ): Promise<RevisionOutcome<OrderRevisedResponse>> {
     return this.post<OrderRevisedResponse>(`${this.url(orderId)}/revisions`, payload);
+  }
+
+  /**
+   * `POST /me/orders/:id/change-request` — après l'heure limite, DEMANDER la
+   * modification (M4) : la commande voulue, la révision sur laquelle elle a
+   * été composée, et un mot facultatif.
+   */
+  requestChange(
+    orderId: string,
+    payload: OrderChangeRequestPayload,
+  ): Promise<RevisionOutcome<CreatedIdResponse>> {
+    return this.post<CreatedIdResponse>(`${this.meUrl(orderId)}/change-request`, payload);
+  }
+
+  /** `GET /me/orders/:id/change-request` — la dernière demande ; `null` sans demande ou en échec. */
+  async changeRequest(orderId: string): Promise<OrderChangeRequestStatusView | null> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<OrderChangeRequestStatusResponse>(`${this.meUrl(orderId)}/change-request`, {
+          headers: await this.bearer(),
+        }),
+      );
+      return response.request;
+    } catch {
+      return null;
+    }
+  }
+
+  private meUrl(orderId: string): string {
+    return `${this.base}/me/orders/${encodeURIComponent(orderId)}`;
   }
 
   private async post<T>(url: string, body: object): Promise<RevisionOutcome<T>> {

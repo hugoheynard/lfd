@@ -31,7 +31,7 @@ function verdictOf(raw: unknown): Segment {
 }
 
 /**
- * « la ligne VIE-001 (16 comptés) » ou « la commande ORD-0002 » : la cible par
+ * « la ligne VIE-001 (16 comptés) » ou « la commande ORD-2 » : la cible par
  * le nom que le fournil lui donne, le libellé du sujet à défaut.
  */
 function target(fact: PhraseFact): Segment[] {
@@ -66,7 +66,7 @@ const checked: Phrase = (fact) => {
   );
 };
 
-/** « ORD-0001, ORD-0002 » — les commandes retenues sous leur référence du moment. */
+/** « ORD-1, ORD-2 » — les commandes retenues sous leur référence du moment. */
 function heldOrders(fact: PhraseFact): Segment[] {
   const held = entries(fact.payload['heldOrders']).map(
     (order) => optional(order['name']) ?? optional(order['id']) ?? '—',

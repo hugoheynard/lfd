@@ -1,6 +1,7 @@
 import type { Type } from '@angular/core';
 import type { RequestKind } from '@lfd/contracts';
 
+import { OrderChangeDetails } from './order-change-details/order-change-details';
 import { OrderProblemDetails } from './order-problem-details/order-problem-details';
 
 /**
@@ -14,4 +15,5 @@ import { OrderProblemDetails } from './order-problem-details/order-problem-detai
  */
 export const REQUEST_DETAILS_COMPONENTS: Readonly<Partial<Record<RequestKind, Type<unknown>>>> = {
   order_problem: OrderProblemDetails,
+  order_change: OrderChangeDetails,
 };

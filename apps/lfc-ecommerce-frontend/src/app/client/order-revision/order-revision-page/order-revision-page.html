@@ -1,5 +1,5 @@
 <ng-template clientBanner>
-  <app-client-banner-block [kicker]="kicker()" [title]="c().reviseTitle" [lead]="c().reviseLead" />
+  <app-client-banner-block [kicker]="kicker()" [title]="bannerTitle()" [lead]="bannerLead()" />
 </ng-template>
 
 <div class="page">
@@ -99,83 +99,95 @@
         </div>
       </fold-card>
 
-      <fold-card padding="md">
-        <fold-element-title variant="title" [title]="c().quoteTitle" />
-        <div class="body">
-          @switch (quote().kind) {
-            @case ('loading') {
-              <fold-loading size="sm" [message]="c().quotingMessage" />
+      @if (requesting()) {
+        <app-change-request-card
+          [orderId]="orderId()"
+          [content]="content()"
+          [revision]="revision()"
+          [changed]="changed()"
+          [quote]="quote()"
+          (reload)="load()"
+          (retryQuote)="retryQuote()"
+        />
+      } @else {
+        <fold-card padding="md">
+          <fold-element-title variant="title" [title]="c().quoteTitle" />
+          <div class="body">
+            @switch (quote().kind) {
+              @case ('loading') {
+                <fold-loading size="sm" [message]="c().quotingMessage" />
+              }
+              @case ('failed') {
+                <fold-callout variant="alert" data-quote-failed>
+                  {{ c().quoteFailedNote }}
+                  <button
+                    actions
+                    foldButton
+                    size="sm"
+                    emphasis="outline"
+                    intent="neutral"
+                    type="button"
+                    (click)="retryQuote()"
+                  >
+                    {{ c().reloadCta }}
+                  </button>
+                </fold-callout>
+              }
             }
-            @case ('failed') {
-              <fold-callout variant="alert" data-quote-failed>
-                {{ c().quoteFailedNote }}
-                <button
-                  actions
-                  foldButton
-                  size="sm"
-                  emphasis="outline"
-                  intent="neutral"
-                  type="button"
-                  (click)="retryQuote()"
-                >
-                  {{ c().reloadCta }}
-                </button>
+            @if (quote(); as current) {
+              @if (current.kind === 'refused') {
+                <fold-callout variant="alert" announce data-quote-refused>{{
+                  current.message
+                }}</fold-callout>
+              }
+              @if (current.kind === 'ready') {
+                <app-revision-quote [quote]="current.quote" />
+              }
+            }
+            @if (unchanged()) {
+              <p class="fact" data-unchanged>{{ c().unchangedNote }}</p>
+            }
+            @if (submitRefusal(); as refusal) {
+              <fold-callout variant="alert" announce data-submit-refused>
+                {{ refusal.message }}
+                @if (refusal.stale) {
+                  <button
+                    actions
+                    foldButton
+                    size="sm"
+                    emphasis="outline"
+                    intent="neutral"
+                    type="button"
+                    data-reload
+                    (click)="load()"
+                  >
+                    {{ c().reloadCta }}
+                  </button>
+                }
               </fold-callout>
             }
-          }
-          @if (quote(); as current) {
-            @if (current.kind === 'refused') {
-              <fold-callout variant="alert" announce data-quote-refused>{{
-                current.message
-              }}</fold-callout>
-            }
-            @if (current.kind === 'ready') {
-              <app-revision-quote [quote]="current.quote" />
-            }
-          }
-          @if (unchanged()) {
-            <p class="fact" data-unchanged>{{ c().unchangedNote }}</p>
-          }
-          @if (submitRefusal(); as refusal) {
-            <fold-callout variant="alert" announce data-submit-refused>
-              {{ refusal.message }}
-              @if (refusal.stale) {
-                <button
-                  actions
-                  foldButton
-                  size="sm"
-                  emphasis="outline"
-                  intent="neutral"
-                  type="button"
-                  data-reload
-                  (click)="load()"
-                >
-                  {{ c().reloadCta }}
-                </button>
-              }
-            </fold-callout>
-          }
-          <div class="acts">
-            <button
-              foldButton
-              type="button"
-              data-submit
-              [disabled]="!canSubmit()"
-              (click)="submit()"
-            >
-              {{ submitting() ? c().submittingCta : c().submitCta }}
-            </button>
-            <a
-              foldButton
-              emphasis="soft"
-              intent="neutral"
-              [routerLink]="['/mes-commandes', orderId()]"
-            >
-              {{ c().backToOrders }}
-            </a>
+            <div class="acts">
+              <button
+                foldButton
+                type="button"
+                data-submit
+                [disabled]="!canSubmit()"
+                (click)="submit()"
+              >
+                {{ submitting() ? c().submittingCta : c().submitCta }}
+              </button>
+              <a
+                foldButton
+                emphasis="soft"
+                intent="neutral"
+                [routerLink]="['/mes-commandes', orderId()]"
+              >
+                {{ c().backToOrders }}
+              </a>
+            </div>
           </div>
-        </div>
-      </fold-card>
+        </fold-card>
+      }
     }
   }
 </div>

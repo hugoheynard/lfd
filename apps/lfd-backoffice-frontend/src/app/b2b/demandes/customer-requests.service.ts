@@ -1,6 +1,13 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import type { CustomerRequestStatus, CustomerRequestView, RequestKind } from '@lfd/contracts';
+import type {
+  CustomerRequestStatus,
+  CustomerRequestView,
+  OrderChangeAppliedResponse,
+  OrderChangeRefusalPayload,
+  OrderRevisionQuoteView,
+  RequestKind,
+} from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../../api/api-config';
@@ -29,6 +36,32 @@ export class CustomerRequestsService {
     return firstValueFrom(
       this.http.post<void>(`${this.base}/${encodeURIComponent(id)}/handled`, null),
     );
+  }
+
+  /**
+   * Le devis d'une demande de modification en attente — l'écart entre la
+   * commande et la commande demandée. `409` avec la phrase de la règle quand
+   * elle ne se modifie plus (inscrite au plan, carte…).
+   */
+  orderChangeQuote(id: string): Promise<OrderRevisionQuoteView> {
+    return firstValueFrom(this.http.get<OrderRevisionQuoteView>(`${this.orderChange(id)}/quote`));
+  }
+
+  /** Applique la modification demandée : une révision au nom de l'équipe. Rend la révision produite. */
+  applyOrderChange(id: string): Promise<OrderChangeAppliedResponse> {
+    return firstValueFrom(
+      this.http.post<OrderChangeAppliedResponse>(`${this.orderChange(id)}/apply`, null),
+    );
+  }
+
+  /** Refuse la modification demandée, avec le mot adressé au client. */
+  refuseOrderChange(id: string, reason: string): Promise<void> {
+    const body: OrderChangeRefusalPayload = { reason };
+    return firstValueFrom(this.http.post<void>(`${this.orderChange(id)}/refuse`, body));
+  }
+
+  private orderChange(id: string): string {
+    return `${this.base}/${encodeURIComponent(id)}/order-change`;
   }
 
   photo(requestId: string, photoId: string): Promise<Blob> {

@@ -3,11 +3,13 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   ElementRef,
   inject,
   Injector,
   input,
   signal,
+  untracked,
 } from '@angular/core';
 import type {
   CustomerRequestStatus,
@@ -31,7 +33,7 @@ import { NotifyService } from '../../../notify.service';
 import { CustomerRequestCard } from '../customer-request-card/customer-request-card';
 import { CustomerRequestsInbox } from '../customer-requests-inbox.store';
 import { CustomerRequestsService } from '../customer-requests.service';
-import { REQUEST_KIND_LABELS } from '../request-kinds';
+import { REQUEST_KIND_LABELS, REQUEST_KIND_MARKED_HANDLED } from '../request-kinds';
 
 type LoadState = 'loading' | 'ready' | 'error';
 type KindFilter = RequestKind | 'all';
@@ -45,6 +47,7 @@ const KINDS: readonly FoldViewToggleOption[] = [
   { value: 'all', label: 'Tous' },
   { value: 'contact', label: REQUEST_KIND_LABELS.contact },
   { value: 'order_problem', label: REQUEST_KIND_LABELS.order_problem },
+  { value: 'order_change', label: REQUEST_KIND_LABELS.order_change },
 ];
 const PRIORITIES: readonly FoldViewToggleOption[] = [
   { value: 'all', label: 'Toutes' },
@@ -121,6 +124,22 @@ export class DemandesPage {
 
   constructor() {
     void this.openOnTarget();
+    // Une demande de modification a reçu sa réponse dans ses détails : la
+    // liste relit, et le compteur du menu avec elle.
+    let seen = untracked(() => this.inbox.answered());
+    effect(() => {
+      const answered = this.inbox.answered();
+      if (answered === seen) return;
+      seen = answered;
+      untracked(() => void this.reloadAfterAnswer());
+    });
+  }
+
+  /** « Marquer traité » est proposé : à traiter, droit d'écrire, et un type qui se traite ainsi. */
+  protected canMarkHandled(request: CustomerRequestView): boolean {
+    return (
+      this.status() === 'pending' && this.canWrite() && REQUEST_KIND_MARKED_HANDLED[request.kind]
+    );
   }
 
   protected selectStatus(value: string): void {
@@ -131,7 +150,7 @@ export class DemandesPage {
   }
 
   protected selectKind(value: string): void {
-    const kind = pick(value, ['all', 'contact', 'order_problem'] as const);
+    const kind = pick(value, ['all', 'contact', 'order_problem', 'order_change'] as const);
     if (kind === undefined) return;
     this.kind.set(kind);
     void this.load();
@@ -167,6 +186,15 @@ export class DemandesPage {
       this.refusal.set(httpErrorMessage(error, "La demande n'a pas pu être marquée traitée."));
     } finally {
       this.busyId.set(null);
+    }
+  }
+
+  private async reloadAfterAnswer(): Promise<void> {
+    try {
+      this.show(await this.read());
+      if (this.kind() !== 'all') void this.inbox.refresh();
+    } catch {
+      this.state.set('error');
     }
   }
 

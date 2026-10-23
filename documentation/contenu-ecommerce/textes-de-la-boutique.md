@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1571 textes
+## Sommaire — 1590 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -35,10 +35,10 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Confirmation](#espace-done) | `done` | 28 |
 | [Confirmation — le QR de retrait](#espace-qr) | `qr` | 8 |
 | **Le reste de la boutique** | | |
-| [Le cadre — bandeaux, installation, erreurs générales](#espace-chrome) | `chrome` | 39 |
+| [Le cadre — bandeaux, installation, erreurs générales](#espace-chrome) | `chrome` | 41 |
 | [La navigation](#espace-nav) | `nav` | 24 |
 | [La colonne d’accompagnement](#espace-aside) | `aside` | 4 |
-| [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 215 |
+| [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 232 |
 | [Annuler une commande — Mes commandes et la page invité](#espace-ordercancel) | `orderCancel` | 54 |
 | [Fidélité](#espace-loyalty) | `loyalty` | 38 |
 | [Mon compte (factures comprises)](#espace-account) | `account` | 525 |
@@ -47,7 +47,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
-| **Total** | | **1571** |
+| **Total** | | **1590** |
 
 ## Le parcours de commande
 
@@ -815,7 +815,7 @@ Source : `fr.ts · en.ts · it.ts` · 8 textes.
 
 ### Le cadre — bandeaux, installation, erreurs générales — `chrome`
 
-Source : `fr.ts · en.ts · it.ts` · 39 textes.
+Source : `fr.ts · en.ts · it.ts` · 41 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -852,6 +852,8 @@ Source : `fr.ts · en.ts · it.ts` · 39 textes.
 | `chrome.workspaceKindPro` | Pro | Pro | Pro |  |
 | `chrome.workspaceKindPersonal` | Perso | Personal | Personale |  |
 | `chrome.workspacePersonalNote` | Vos commandes à votre nom | Orders in your own name | Ordini a suo nome |  |
+| `chrome.workspaceKindSite` | Site | Site | Sede |  |
+| `chrome.workspaceVia` | via {name} | via {name} | tramite {name} | `{name}` |
 | `chrome.workspaceRolePro` | Compte pro | Pro account | Account pro |  |
 | `chrome.notificationsClose` | Fermer | Close | Chiudi |  |
 | `chrome.notificationsCount` | {unread} non lues · {total} au total | {unread} unread · {total} in total | {unread} non lette · {total} in totale | `{unread}` `{total}` |
@@ -909,7 +911,7 @@ Source : `fr.ts · en.ts · it.ts` · 4 textes.
 
 ### Mes commandes (récapitulatif compris) — `orders`
 
-Source : `screens/orders.copy.ts · screens/order-summary.copy.ts` · 215 textes.
+Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/order-change-request.copy.ts` · 232 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -1048,6 +1050,23 @@ Source : `screens/orders.copy.ts · screens/order-summary.copy.ts` · 215 textes
 | `orders.revision.submittingCta` | Envoi… | Sending… | Invio… |  |
 | `orders.revision.revisionRefused` | La modification n’a pas pu être enregistrée. | The change could not be saved. | Non è stato possibile registrare la modifica. |  |
 | `orders.revision.revisedToast` | Votre commande est modifiée. | Your order has been changed. | Il tuo ordine è stato modificato. |  |
+| `orders.revision.request.requestAction` | Demander une modification | Request a change | Chiedi una modifica |  |
+| `orders.revision.request.requestNote` | L’heure limite ({when}) est passée : vous pouvez encore nous demander une modification, notre équipe vous répond par e-mail. | The deadline ({when}) has passed: you can still ask us for a change, our team will reply by email. | L’orario limite ({when}) è passato: puoi ancora chiederci una modifica, il nostro team ti risponde via e-mail. | `{when}` |
+| `orders.revision.request.requestNoteWithoutWhen` | L’heure limite est passée : vous pouvez encore nous demander une modification, notre équipe vous répond par e-mail. | The deadline has passed: you can still ask us for a change, our team will reply by email. | L’orario limite è passato: puoi ancora chiederci una modifica, il nostro team ti risponde via e-mail. |  |
+| `orders.revision.request.requestPendingNote` | Modification demandée — en attente de notre réponse. | Change requested — awaiting our reply. | Modifica richiesta — in attesa della nostra risposta. |  |
+| `orders.revision.request.requestAppliedNote` | Votre demande de modification a été acceptée : la commande ci-dessus est à jour. | Your change request was accepted: the order above is up to date. | La tua richiesta di modifica è stata accettata: l’ordine qui sopra è aggiornato. |  |
+| `orders.revision.request.requestRefusedNote` | Votre demande de modification n’a pas pu être acceptée : « {reason} » | Your change request could not be accepted: “{reason}” | La tua richiesta di modifica non è stata accettata: «{reason}» | `{reason}` |
+| `orders.revision.request.requestTitle` | Demander une modification | Request a change | Chiedi una modifica |  |
+| `orders.revision.request.requestLead` | L’heure limite est passée : composez la commande voulue, notre équipe l’examine et vous répond par e-mail. | The deadline has passed: put together the order you want, our team will review it and reply by email. | L’orario limite è passato: componi l’ordine che desideri, il nostro team lo esamina e ti risponde via e-mail. |  |
+| `orders.revision.request.requestSendTitle` | Votre demande | Your request | La tua richiesta |  |
+| `orders.revision.request.requestSendNote` | Rien ne change tant que notre équipe n’a pas répondu. Si elle accepte, le nouveau total vous est confirmé par e-mail. | Nothing changes until our team has replied. If they accept, the new total is confirmed by email. | Nulla cambia finché il nostro team non ha risposto. Se accetta, il nuovo totale ti viene confermato via e-mail. |  |
+| `orders.revision.request.requestQuoteIndicative` | Montant indicatif, sous réserve d’acceptation par notre équipe ; le montant appliqué peut différer si les prix changent d’ici là. | Indicative amount, subject to acceptance by our team; the amount applied may differ if prices change in the meantime. | Importo indicativo, soggetto all’accettazione del nostro team; l’importo applicato può variare se nel frattempo i prezzi cambiano. |  |
+| `orders.revision.request.requestMessageLabel` | Un mot pour notre équipe (facultatif) | A word for our team (optional) | Una parola per il nostro team (facoltativa) |  |
+| `orders.revision.request.requestMessagePlaceholder` | Par exemple : une personne de plus au déjeuner. | For example: one more person at lunch. | Per esempio: una persona in più a pranzo. |  |
+| `orders.revision.request.requestSubmitCta` | Demander cette modification | Request this change | Chiedi questa modifica |  |
+| `orders.revision.request.requestSubmittingCta` | Envoi… | Sending… | Invio… |  |
+| `orders.revision.request.requestRefused` | La demande n’a pas pu être envoyée. | The request could not be sent. | Non è stato possibile inviare la richiesta. |  |
+| `orders.revision.request.requestSentToast` | Demande envoyée : nous vous répondons par e-mail. | Request sent: we will reply by email. | Richiesta inviata: ti rispondiamo via e-mail. |  |
 | `orders.authorCustomer` | passée par {name} | placed by {name} | effettuato da {name} | `{name}` |
 | `orders.authorTeam` | par l’équipe | by our team | dal nostro team |  |
 | `orders.detailSite` | Site | Site | Sede |  |

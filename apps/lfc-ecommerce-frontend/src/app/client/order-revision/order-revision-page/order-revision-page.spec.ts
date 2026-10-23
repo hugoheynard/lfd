@@ -1,7 +1,11 @@
 import { signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
-import type { OrderRevisionQuoteView, PickupAddressView } from '@lfd/contracts';
+import type {
+  CustomerOrderDetailView,
+  OrderRevisionQuoteView,
+  PickupAddressView,
+} from '@lfd/contracts';
 import { By } from '@angular/platform-browser';
 import { FoldNumberInputComponent } from 'fold-ng';
 import { of } from 'rxjs';
@@ -9,12 +13,14 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { NotifyService } from '../../../notify.service';
 import { LIVE_PICKUP } from '../../mes-commandes/order-view.fixture';
+import { ChangeRequestCard } from '../change-request-card/change-request-card';
 import { OrderDoors } from '../../shop/order-doors';
 import { ServicePoints } from '../../shop/pickup-points.store';
 import { ShopCatalogue } from '../../shop/shop-catalogue.store';
 import {
   OrderRevisionGateway,
   type RevisionOutcome,
+  STALE_CHANGE_REQUEST,
   STALE_REVISION,
 } from '../order-revision.gateway';
 import { OrderRevisionPage } from './order-revision-page';
@@ -58,8 +64,22 @@ function quoteOf(changes: OrderRevisionQuoteView['changes']): OrderRevisionQuote
   };
 }
 
+/** La commande telle que `GET /orders/:id` la rend : modifiable, en révision 3. */
+const REVISABLE: CustomerOrderDetailView = {
+  ...LIVE_PICKUP,
+  cancellability: { cancellable: false, code: 'too_late', until: null },
+  revisability: { revisable: true, until: null },
+  revision: 3,
+};
+
+/** L'heure limite passée, pas encore au plan : on DEMANDE (M4). */
+const TOO_LATE: CustomerOrderDetailView = {
+  ...REVISABLE,
+  revisability: { revisable: false, code: 'too_late', until: null },
+};
+
 interface Doubles {
-  readonly order?: typeof LIVE_PICKUP | null;
+  readonly order?: CustomerOrderDetailView | null;
   readonly quote?: (payload: {
     lines: readonly { quantity: number }[];
   }) => RevisionOutcome<OrderRevisionQuoteView>;
@@ -69,13 +89,21 @@ interface Doubles {
     totalCents: number;
     previousTotalCents: number;
   }>;
+  readonly requestChange?: RevisionOutcome<{ id: string }>;
+  readonly changeQuote?: RevisionOutcome<OrderRevisionQuoteView>;
 }
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 350));
 
 async function mount(doubles: Doubles = {}) {
   const gateway = {
-    order: vi.fn(() => Promise.resolve(doubles.order === undefined ? LIVE_PICKUP : doubles.order)),
+    order: vi.fn(() => Promise.resolve(doubles.order === undefined ? REVISABLE : doubles.order)),
+    requestChange: vi.fn(() =>
+      Promise.resolve(doubles.requestChange ?? { kind: 'ok' as const, value: { id: 'cr_1' } }),
+    ),
+    changeQuote: vi.fn(() =>
+      Promise.resolve(doubles.changeQuote ?? { kind: 'ok' as const, value: quoteOf(['lines']) }),
+    ),
     quote: vi.fn((_id: string, payload: { lines: readonly { quantity: number }[] }) =>
       Promise.resolve(doubles.quote?.(payload) ?? { kind: 'ok' as const, value: quoteOf([]) }),
     ),
@@ -188,6 +216,72 @@ describe('OrderRevisionPage', () => {
     });
     expect(el.querySelector('[data-quote-refused]')?.textContent).toContain('réglée par carte');
     expect(el.querySelector<HTMLButtonElement>('[data-submit]')?.disabled).toBe(true);
+  });
+
+  it('l’heure limite passée : un devis INDICATIF, « Demander cette modification » une fois quelque chose changé', async () => {
+    const { fixture, el, gateway, navigate, success } = await mount({ order: TOO_LATE });
+    // Décision de Hugo (2026-10-23) : le client voit le nouveau total de sa demande.
+    expect(gateway.quote).not.toHaveBeenCalled();
+    expect(gateway.changeQuote).toHaveBeenCalledWith('ord_9', expect.objectContaining({}));
+    expect(el.querySelector('[data-total]')).not.toBeNull();
+    expect(el.querySelector('[data-quote-indicative]')?.textContent).toContain('sous réserve');
+    expect(el.querySelector('[data-request-explained]')).not.toBeNull();
+    expect(el.querySelector('[data-submit]')).toBeNull();
+    const submit = () => el.querySelector<HTMLButtonElement>('[data-request-submit]');
+    expect(submit()?.disabled).toBe(true);
+
+    const input = fixture.debugElement.query(By.directive(FoldNumberInputComponent));
+    (input.componentInstance as FoldNumberInputComponent).value.set(3);
+    await settle();
+    fixture.detectChanges();
+    expect(gateway.quote).not.toHaveBeenCalled();
+    submit()?.click();
+    await fixture.whenStable();
+
+    expect(gateway.requestChange).toHaveBeenCalledWith(
+      'ord_9',
+      expect.objectContaining({
+        change: expect.objectContaining({
+          expectedRevision: 3,
+          lines: [{ sku: 'VIE-001', quantity: 3 }],
+        }),
+        message: '',
+      }),
+    );
+    expect(success).toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledWith(['/mes-commandes', 'ord_9']);
+  });
+
+  it('l’heure limite passée : le refus du devis de la demande se dit par la phrase du serveur', async () => {
+    const { el } = await mount({
+      order: TOO_LATE,
+      changeQuote: {
+        kind: 'refused',
+        refusal: { code: 'orders.revise.card_settled', message: 'Commande réglée par carte.' },
+      },
+    });
+    expect(el.querySelector('[data-quote-refused]')?.textContent).toContain('réglée par carte');
+    expect(el.querySelector('[data-quote-indicative]')).toBeNull();
+  });
+
+  it('une demande composée sur une commande changée depuis : la phrase, et recharger', async () => {
+    const { fixture, el } = await mount({
+      order: TOO_LATE,
+      requestChange: {
+        kind: 'refused',
+        refusal: { code: STALE_CHANGE_REQUEST, message: 'La commande a été modifiée entre-temps.' },
+      },
+    });
+    expect(fixture.debugElement.query(By.directive(ChangeRequestCard))).not.toBeNull();
+    const input = fixture.debugElement.query(By.directive(FoldNumberInputComponent));
+    (input.componentInstance as FoldNumberInputComponent).value.set(3);
+    await settle();
+    fixture.detectChanges();
+    el.querySelector<HTMLButtonElement>('[data-request-submit]')?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(el.querySelector('[data-request-refused]')?.textContent).toContain('entre-temps');
+    expect(el.querySelector('[data-reload]')).not.toBeNull();
   });
 
   it('dit l’échec de lecture de la commande', async () => {

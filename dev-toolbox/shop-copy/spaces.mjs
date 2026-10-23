@@ -102,7 +102,7 @@ export const OTHER_SPACES = [
     kind: "dictionary",
     space: "orders",
     title: "Mes commandes (récapitulatif compris)",
-    file: "screens/orders.copy.ts · screens/order-summary.copy.ts",
+    file: "screens/orders.copy.ts · screens/order-summary.copy.ts · screens/order-change-request.copy.ts",
   },
   {
     kind: "screen",
@@ -156,6 +156,7 @@ export const GRAFTED_SCREEN_FILES = {
   "screens/account-invoices.copy.ts": "account.invoices",
   "screens/orders.copy.ts": "orders",
   "screens/order-summary.copy.ts": "orders.summary",
+  "screens/order-change-request.copy.ts": "orders.revision.request",
   "screens/loyalty.copy.ts": "loyalty",
   "screens/delivery-procedure.fr.ts": "deliveryProcedure",
   "screens/delivery-procedure.en.ts": "deliveryProcedure",
