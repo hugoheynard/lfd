@@ -63,6 +63,7 @@ export const GLOSSARY_ORDER_REVISION: Readonly<Record<string, string>> = {
   requestLead: 'Introduction de l’écran en mode demande',
   requestSendTitle: 'Carte « Votre demande » — titre',
   requestSendNote: 'Carte « Votre demande » — ce qui se passe ensuite',
+  requestQuoteIndicative: 'Nouveau total — montant indicatif en mode demande',
   requestMessageLabel: 'Mot à l’équipe — libellé',
   requestMessagePlaceholder: 'Mot à l’équipe — exemple dans le champ',
   requestSubmitCta: 'Bouton « Demander cette modification »',

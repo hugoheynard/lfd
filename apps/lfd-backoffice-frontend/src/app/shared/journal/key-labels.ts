@@ -189,6 +189,8 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   lng: 'Longitude',
   linkedUserId: 'Personne rapprochée',
   mayContain: 'Traces possibles',
+  // Les textes des e-mails publiés (`mail_copy.published`, E4).
+  mail: 'E-mail',
   media: 'Visuels',
   method: 'Mode',
   mode: 'Mode',
@@ -282,6 +284,8 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   score: 'Score',
   seoDescription: 'Description pour les moteurs de recherche',
   seoTitle: 'Titre pour les moteurs de recherche',
+  // L'ordre des sections de chaque e-mail (`mail_copy.published`, E4, S3).
+  sectionOrders: 'Ordre des sections',
   // La série d'une image de la médiathèque (L3, 2026-10-10).
   series: 'Série',
   serviceDay: 'Journée de service',
