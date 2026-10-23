@@ -387,10 +387,11 @@ describe("le mandat de l'établissement pour la banque", () => {
       DEBTOR_IBAN,
       expect.stringMatching(/^BNPAFRPP/u),
       signatureDateCell(new Date(SIGNED_AT)),
-      "RCUR",
+      "RECURRENT",
       "B2B",
     ]);
-    expect(file.text.endsWith(";;;;;;;;;;\r\n")).toBe(true);
+    // I et J vides, K « O », L « N », M à R vides (modèle CENET, 18 colonnes).
+    expect(file.text.endsWith("B2B;;;O;N;;;;;;;\r\n")).toBe(true);
     expect(await ctx.prisma.mandateBankExport.count()).toBe(0);
   });
 
