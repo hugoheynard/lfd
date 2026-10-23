@@ -8,7 +8,7 @@
  * annulation une fois le lot déposé.
  *
  * ⚠️ Commandes et mandats écrits par Prisma : même dette que
- * `collection-batches.e2e-spec.ts`, dont ce fichier reprend la mise en place
+ * `collection-batch-scene.ts`, dont ce fichier reprend la mise en place
  * (ce dernier dépasse déjà 300 lignes).
  *
  * Aucune date absolue : la clôture est le dernier 1er du mois atteint, calculé

@@ -10,7 +10,7 @@
  * jamais deux débits vivants pour une même commande.
  *
  * ⚠️ Commandes, mandats, plancher : écrits par Prisma, même dette que
- * `collection-returns.e2e-spec.ts`, dont la scène est reprise. Aucune date
+ * `collection-returns-scene.ts`, dont la scène est reprise. Aucune date
  * absolue : le mois est le PRÉCÉDENT du jour du test, l'horloge FIXE est
  * posée relativement à lui.
  */

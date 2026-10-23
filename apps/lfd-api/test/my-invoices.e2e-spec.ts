@@ -9,7 +9,7 @@
  * non-membre 404).
  *
  * ⚠️ Mandat, bons et membres écrits par Prisma : même dette que
- * `collection-returns.e2e-spec.ts`, dont la scène est reprise. Aucune date
+ * `collection-returns-scene.ts`, dont la scène est reprise. Aucune date
  * absolue : le mois est le PRÉCÉDENT du jour du test.
  */
 import type { MyIssuedInvoicesView } from "@lfd/contracts";

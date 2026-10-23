@@ -498,7 +498,7 @@ dans la graine ; en production, accordé à l'écran).
   `ESS-<ULID>-<séquence>` (`PmtInfId`). Contrôlé par `isAuditCoherent` avant
   d'être gardé (`collection_test.xml`, empreinte vérifiée au téléchargement).
 - **Ce qu'il ne touche pas** : aucune facture, aucun bon, aucun lot, aucun état
-  d'encaissement — prouvé par l'e2e `apps/lfd-api/test/collection-tests.e2e-spec.ts`.
+  d'encaissement — prouvé par l'e2e `apps/lfd-api/test/collection-test-generate.e2e-spec.ts`.
 - **Après** : « à rembourser » une fois l'échéance passée sans retour, jusqu'au
   geste « Marqué remboursé » (jour, auteur). Un retour bancaire `ESS-…` importé
   (`pain.002` / `camt.054`) se rattache à son essai, jamais à un lot.

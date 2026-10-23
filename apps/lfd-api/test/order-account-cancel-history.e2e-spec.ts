@@ -6,7 +6,7 @@
  * relevés.
  *
  * ⚠️ La re-présentation d'une ligne SOUS ARRÊTÉ est refusée par le geste
- * (`collection-returns.e2e-spec.ts`, « une ligne sous arrêté ne se
+ * (`collection-return-represent.e2e-spec.ts`, « une ligne sous arrêté ne se
  * re-présente pas », vérifié le 2026-10-12) : la commande re-présentée est
  * ici produite par l'agrégat (`OrderCollection.represent`), seul chemin qui
  * mène à l'état que la condition 5 garde.

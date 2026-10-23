@@ -11,7 +11,7 @@ import { randomUUID } from "node:crypto";
  * client d'un site ne rendent ni l'IBAN ni le mandat du principal.
  *
  * ⚠️ Sociétés, suivis, mandats actifs et commandes du lot écrits par Prisma :
- * même dette que `collection-batches.e2e-spec.ts` (un mandat actif exige une
+ * même dette que `collection-batch-scene.ts` (un mandat actif exige une
  * pièce et une signature qu'aucun e2e n'a à rejouer ici). Les passations, la
  * forme de prélèvement, le détachement et les lectures passent par HTTP.
  *

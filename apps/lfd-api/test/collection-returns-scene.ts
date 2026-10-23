@@ -1,5 +1,5 @@
 /**
- * La scène des retours bancaires (e2e `collection-returns.e2e-spec.ts`) :
+ * La scène des retours bancaires (e2e `collection-return-*.e2e-spec.ts`) :
  * une entité émettrice complète, un payeur au compte sous mandat B2B actif
  * avec un bon du mois, et des fiches staff aux droits choisis.
  *
@@ -7,10 +7,16 @@
  * `monthly-invoices.e2e-spec.ts`, faute de chemin public pour les poser.
  */
 import { CustomerRole } from "../src/platform/database/client/client.js";
-import { jsonBody, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { addBillingAddress, attachTo, createCompany, createUser, handOver } from "./factories.js";
+import { invoicingMomentOf } from "../src/b2b/accounting/domain/services/invoicing-closures.js";
+import { StatementMonth } from "../src/b2b/accounting/domain/value-objects/statement-month.js";
+import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
+import { Clock } from "../src/platform/time/clock.js";
+import { FixedClock } from "../src/platform/time/fixed-clock.js";
+import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 
-const DAY_MS = 24 * 60 * 60 * 1000;
+export const DAY_MS = 24 * 60 * 60 * 1000;
 const ENTITIES = "/admin/accounting/legal-entities";
 const RIB = {
   iban: "FR7630004000031234567890143",
@@ -144,4 +150,99 @@ export async function readerStaff(
       data: { staffUserId: member.id, resource: "b2b_accounting", action, effect: "allow" },
     });
   }
+}
+
+export const HOUR_MS = 60 * 60 * 1000;
+export const COLLECTION = "/admin/accounting/collection";
+export const RETURNS = "/admin/accounting/collection-returns";
+
+/** Le jeton porteur EST le `sub` : le 403 de la seule lecture se joue en base. */
+export const stubAdminVerifier = {
+  verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
+    Promise.resolve({ subject: token, scopes: [] }),
+};
+export const recordingMailer = {
+  enabled: true,
+  send: (): Promise<{ providerId: null }> => Promise.resolve({ providerId: null }),
+};
+
+export const clock = new FixedClock(new Date());
+export let ctx: E2eContext;
+export let month: StatementMonth;
+export let closesAt: Date;
+export let nextClosesAt: Date;
+
+export function staff(): ReturnType<E2eContext["asSub"]> {
+  return ctx.asSub("staff-e2e");
+}
+
+/** Facture du mois, lot du 1er, avis partis, lot déposé : rend le lot et sa ligne. */
+export async function depositedLine(entityId: string): Promise<{ batchId: string; e2e: string }> {
+  await staff()
+    .post("/admin/accounting/monthly-invoices")
+    .send({ legalEntityId: entityId, periodClosesAt: closesAt.toISOString() })
+    .expect(200);
+  clock.set(new Date(closesAt.getTime() + 2 * HOUR_MS));
+  await staff().post(`${COLLECTION}/batches`).send({ legalEntityId: entityId }).expect(201);
+  await ctx.drain();
+  const line = await ctx.prisma.collectionBatchLine.findFirstOrThrow();
+  await staff().get(`${COLLECTION}/batches/${line.batchId}/file.xml`).expect(200);
+  await staff().post(`${COLLECTION}/batches/${line.batchId}/deposit`).expect(204);
+  return { batchId: line.batchId, e2e: line.endToEndId };
+}
+
+export async function signal(
+  batchId: string,
+  kind = "reject",
+  reasonCode = "AM04",
+): Promise<string> {
+  const response = await staff()
+    .post(`${RETURNS}/batches/${batchId}/lines/1`)
+    .send({
+      kind,
+      reasonCode,
+      reasonLabel: null,
+      returnedOn: daysAgo(1).slice(0, 10),
+      feeCents: 750,
+    })
+    .expect(201);
+  return jsonBody<{ id: string }>(response).id;
+}
+
+/** Le mois suivant clos : le lot du 1er. */
+export async function nextMonthConstitution(entityId: string, expected: 201 | 409): Promise<void> {
+  clock.set(new Date(nextClosesAt.getTime() + 2 * HOUR_MS));
+  await staff().post(`${COLLECTION}/batches`).send({ legalEntityId: entityId }).expect(expected);
+  await ctx.drain();
+}
+
+/**
+ * Pose la scène pour la suite qui l'appelle : boot, remise à zéro, fermeture.
+ * À appeler une fois, au niveau du module de la suite.
+ */
+export function useCollectionReturnScene(): void {
+  beforeAll(async () => {
+    ctx = await bootstrapE2e({
+      overrides: [
+        { token: AdminTokenVerifier, value: stubAdminVerifier },
+        { token: MAILER, value: recordingMailer },
+        { token: Clock, value: clock },
+      ],
+    });
+  });
+  afterAll(async () => {
+    await ctx.close();
+  });
+  beforeEach(async () => {
+    await ctx.reset();
+    month = StatementMonth.containing(new Date(daysAgo(0))).previous();
+    closesAt = month.cycle().closesAt;
+    nextClosesAt = StatementMonth.containing(new Date(closesAt.getTime() + DAY_MS)).cycle()
+      .closesAt;
+    // Le dernier jour, 23h57 à Paris : la facture du mois est due (E4b).
+    clock.set(new Date(invoicingMomentOf(closesAt).getTime() + 2 * 60 * 1000));
+    const startsAt = month.cycle().startsAt;
+    await ctx.prisma.collectionFloor.create({ data: { id: true, floorAt: startsAt } });
+    await ctx.prisma.invoicingFloor.create({ data: { id: true, floorAt: startsAt } });
+  });
 }

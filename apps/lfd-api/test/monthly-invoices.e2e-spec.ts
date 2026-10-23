@@ -11,7 +11,7 @@
  * 🔴 Aucun courriel ne part : le mailer est un double qui enregistre.
  *
  * ⚠️ Commandes, mandats, plancher : écrits par Prisma, même dette que
- * `collection-autopilot.e2e-spec.ts`. Aucune date absolue : le mois est le
+ * `collection-autopilot-scene.ts`. Aucune date absolue : le mois est le
  * PRÉCÉDENT du jour du test, ses instants sortent du domaine, et l'horloge
  * FIXE est posée relativement à eux.
  */
