@@ -9,7 +9,7 @@
 ## 0. Ce qui existe (ouvert le 2026-10-23)
 
 - La règle est écrite et testée, jamais importée :
-  `b2b/account/domain/services/effective-role.ts` — rôle effectif dans X =
+  `b2b/shared/company-standing/domain/effective-role.ts` (à l'époque sous `b2b/account/domain/services/`) — rôle effectif dans X =
   membership(X), sinon min(membership(P), admin) si X.parent = P et ce rôle ∈
   {owner, admin}, sinon aucun ; le cumul se fait par MAX.
 - **Le mur n'a pas deux voies mais une dizaine** : `resolveCompany`
