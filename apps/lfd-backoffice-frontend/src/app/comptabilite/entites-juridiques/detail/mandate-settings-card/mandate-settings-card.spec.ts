@@ -211,3 +211,43 @@ describe('MandateSettingsCard — le schéma du mandat', () => {
     expect(shownScheme(fixture)).toBe('CORE');
   });
 });
+
+/**
+ * Régression : le chargement de la vignette lisait `logoPreview` dans l'effet,
+ * qui en dépendait donc ; chaque vignette chargée relançait le chargement, en
+ * boucle (production, 2026-10-23 : des dizaines de GET du logo par seconde,
+ * puis une erreur CORS quand la passerelle a refusé).
+ */
+describe('MandateSettingsCard — la vignette du logo', () => {
+  it('ne demande le logo qu’une fois par entité', async () => {
+    let calls = 0;
+    const original = URL.createObjectURL;
+    URL.createObjectURL = (): string => `blob:logo-${String(calls)}`;
+    URL.revokeObjectURL = (): void => undefined;
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      imports: [MandateSettingsCard],
+      providers: [
+        {
+          provide: LegalEntitiesService,
+          useValue: {
+            logo: (): Promise<Blob> => {
+              calls += 1;
+              return Promise.resolve(new Blob(['png']));
+            },
+          },
+        },
+        { provide: FoldPanelHostService, useValue: { open: () => undefined } },
+      ],
+    });
+    const fixture = TestBed.createComponent(MandateSettingsCard);
+    fixture.componentRef.setInput('entity', entity({ hasLogo: true }));
+    fixture.detectChanges();
+    for (let round = 0; round < 5; round += 1) {
+      await settle(fixture);
+    }
+
+    expect(calls).toBe(1);
+    URL.createObjectURL = original;
+  });
+});

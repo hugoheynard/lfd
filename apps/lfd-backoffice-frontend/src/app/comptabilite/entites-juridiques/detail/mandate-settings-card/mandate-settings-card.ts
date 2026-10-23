@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   effect,
+  untracked,
   inject,
   input,
   output,
@@ -124,7 +125,11 @@ export class MandateSettingsCard {
       this.schemeDraft.set(current.mandateScheme);
       this.descriptionDraft.set(current.mandateContractDescription);
       this.paymentTypeDraft.set(current.mandatePaymentType);
-      void this.loadLogo(current);
+      // `untracked` : `loadLogo` lit et écrit `logoPreview`. Lu dans l'effet,
+      // il en devenait une dépendance, et chaque vignette chargée relançait
+      // le chargement — en boucle, jusqu'au refus de la passerelle (production,
+      // 2026-10-23 : des dizaines de GET du logo par seconde, puis une erreur CORS).
+      untracked(() => void this.loadLogo(current));
     });
   }
 
