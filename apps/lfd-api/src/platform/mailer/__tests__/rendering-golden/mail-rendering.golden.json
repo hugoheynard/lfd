@@ -2,7 +2,7 @@
   "customer.order-placed": {
     "paidPickup": {
       "subject": "Votre commande ORD-4812 — La Folie Coffee",
-      "htmlSha256": "8a14d421c00f1ff9844517b21aae4f3f6a3820df23089d4201e565d9d415b3f1",
+      "htmlSha256": "361b4e38d069696728d272572426f7edeae5daa69ee17153052b679681f8b3f0",
       "attachmentsSha256": "ea20c3e64d47c52ba8964f390c3b82184978177c98c44687d80dc79ef37b724d"
     },
     "dueDelivery": {
@@ -12,19 +12,19 @@
     },
     "account": {
       "subject": "Votre commande ORD-4812 — La Folie Coffee",
-      "htmlSha256": "49459188b62d508bc6731c72dbde09cf5e63d8d1fcca1a0ffde71200f4f70176",
+      "htmlSha256": "1b7aefa697fd4f6fec6e1c53168b2afd3d61a0f56237efbde454cf83c82826fb",
       "attachmentsSha256": "4ed8d0c0f72da35145b273e7ed226c309e4b3eb021722537cdc72fef82d2207f"
     },
     "free": {
       "subject": "Votre commande ORD-4812 — La Folie Coffee",
-      "htmlSha256": "e2d440f39774ee06fa63e84d3a2297fdc6b36ca4ba5c9879505bed8341c25e54",
+      "htmlSha256": "7276444b5abf6d6a44bd0c47dff5097a388060845289638977fec518d2bb3af0",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     }
   },
   "customer.order-ready": {
     "pickup": {
       "subject": "Votre commande ORD-4812 est prête",
-      "htmlSha256": "8379833fcb8db90cf901c55d7a2341b920c35352b750bbe890eaa6e8f840492f",
+      "htmlSha256": "3ab76ea606b0094c358ec51cdd40a8e32b278b07f1a970ec8e44e56ac03327cc",
       "attachmentsSha256": "4ed8d0c0f72da35145b273e7ed226c309e4b3eb021722537cdc72fef82d2207f"
     },
     "delivery": {
@@ -452,6 +452,20 @@
     "only": {
       "subject": "Nouveautés de la semaine",
       "htmlSha256": "49d9d43aaaf4f9bb2774eb08ca3f55957c124f46713eca705310a1dac3f9c75e",
+      "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
+    }
+  },
+  "customer.order-change-applied": {
+    "only": {
+      "subject": "Commande ORD-4812 modifiée à votre demande",
+      "htmlSha256": "9011682c78d8b8d7c71344dbf757e4c5d5ce4c042b35f5a1fce8ad7452555294",
+      "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
+    }
+  },
+  "customer.order-change-refused": {
+    "withReason": {
+      "subject": "Commande ORD-4812 : modification impossible",
+      "htmlSha256": "682acb41f8f6308cc640ba7ea61f98de6498cbf2c5115b7a7fea319255e5f22f",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     }
   }

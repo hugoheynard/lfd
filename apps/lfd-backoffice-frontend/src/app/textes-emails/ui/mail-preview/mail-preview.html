@@ -65,7 +65,15 @@
               }
             </p>
           }
-          <iframe class="mp-frame" title="Aperçu de l’e-mail" sandbox="" [srcdoc]="body()"></iframe>
+          <p class="mp-muted">Cliquez un élément de l’aperçu pour retrouver sa carte.</p>
+          <iframe
+            #frame
+            class="mp-frame"
+            title="Aperçu de l’e-mail"
+            sandbox="allow-same-origin"
+            [srcdoc]="body()"
+            (load)="wire(frame)"
+          ></iframe>
         }
       }
     }

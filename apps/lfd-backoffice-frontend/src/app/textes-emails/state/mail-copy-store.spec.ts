@@ -1,11 +1,12 @@
 import { TestBed } from '@angular/core/testing';
+import { HttpErrorResponse } from '@angular/common/http';
 import type { StaffPermission } from '@lfd/contracts';
 import { describe, expect, it, vi } from 'vitest';
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { NotifyService } from '../../notify.service';
 import { MailCopyService } from '../data/mail-copy.service';
-import { mailAdminView, mailTextView, mailView } from '../mail-copy.testing';
+import { mailAdminView, mailTextView, mailView, sectionView } from '../mail-copy.testing';
 import { MailCopyStore } from './mail-copy-store';
 
 function setup(permissions: readonly StaffPermission[] = ['b2b_storefront:write']) {
@@ -19,13 +20,20 @@ function setup(permissions: readonly StaffPermission[] = ['b2b_storefront:write'
                 locales: { fr: { draftState: 'set', draftText: 'B' } },
               }),
             ]),
-            mailView('staff.invited', [], { audience: 'team', family: 'team' }),
+            mailView('staff.invited', [], {
+              audience: 'team',
+              family: 'team',
+              sections: [sectionView('cta', 'Bouton', 0), sectionView('title', 'Titre', 1)],
+              sectionOrder: { draftState: 'set', draft: ['cta', 'title'], revision: 5 },
+            }),
           ],
           [mailTextView('customer.gone', 'title', 'X', { locales: { en: { draftState: 'set' } } })],
         ),
       ),
     ),
     publish: vi.fn(() => Promise.resolve({ version: 4 })),
+    saveSectionOrder: vi.fn((): Promise<void> => Promise.resolve()),
+    resetSectionOrder: vi.fn((): Promise<void> => Promise.resolve()),
   };
   const notify = { error: vi.fn(), success: vi.fn() };
   TestBed.configureTestingModule({
@@ -46,7 +54,8 @@ describe('MailCopyStore', () => {
   it('compte ce qui attend « Publier », orphelins compris', async () => {
     const { store } = setup();
     await store.load();
-    expect(store.pendingCount()).toBe(2);
+    // Deux langues de textes, plus l'ordre de sections en brouillon de `staff.invited`.
+    expect(store.pendingCount()).toBe(3);
   });
 
   it('ouvre le premier e-mail, puis celui qu’on choisit', async () => {
@@ -78,5 +87,38 @@ describe('MailCopyStore', () => {
     await store.load();
     await store.publish();
     expect(api.publish).not.toHaveBeenCalled();
+  });
+
+  it('un ordre déplacé entre-temps (409) relit et prévient', async () => {
+    const { api, store } = setup();
+    await store.load();
+    api.saveSectionOrder.mockRejectedValueOnce(new HttpErrorResponse({ status: 409 }));
+    await store.moveSection('staff.invited', 'title', -1);
+    expect(api.saveSectionOrder).toHaveBeenCalledWith({
+      mail: 'staff.invited',
+      order: ['title', 'cta'],
+      expectedRevision: 5,
+    });
+    expect(api.load).toHaveBeenCalledTimes(2);
+    expect(store.orderRefusal()).toContain('Quelqu’un a déplacé ces sections');
+  });
+
+  it('« Rétablir l’ordre » renvoie la révision lue, puis relit', async () => {
+    const { api, store } = setup();
+    await store.load();
+    await store.resetSectionOrder('staff.invited');
+    expect(api.resetSectionOrder).toHaveBeenCalledWith({
+      mail: 'staff.invited',
+      expectedRevision: 5,
+    });
+    expect(api.load).toHaveBeenCalledTimes(2);
+  });
+
+  it('ouvrir un autre e-mail oublie la carte désignée', async () => {
+    const { store } = setup();
+    await store.load();
+    store.spot.set({ card: 'section:title', path: null });
+    store.open('staff.invited');
+    expect(store.spot()).toBeNull();
   });
 });

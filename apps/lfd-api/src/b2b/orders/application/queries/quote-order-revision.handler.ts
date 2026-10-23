@@ -1,8 +1,8 @@
 import type { OrderRevisionQuoteView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
-import type { OrderRevisionToSave, RevisableOrder } from "../../domain/entities/order-revision.js";
 import { OrderRevising } from "../services/order-revising.service.js";
+import { quoteViewOf } from "../services/revision-quote-view.js";
 import { RevisionWall } from "../services/revision-wall.js";
 import { QuoteOrderRevisionQuery } from "./quote-order-revision.query.js";
 
@@ -33,34 +33,4 @@ export class QuoteOrderRevisionHandler implements IQueryHandler<
     });
     return quoteViewOf(current, revision);
   }
-}
-
-function quoteViewOf(
-  current: RevisableOrder,
-  revision: OrderRevisionToSave,
-): OrderRevisionQuoteView {
-  const { state } = revision;
-  const previous = new Set(current.lines.map((line) => line.sku));
-  return {
-    revision: current.revision,
-    lines: state.lines.map((line) => ({
-      sku: line.sku,
-      productName: line.productName,
-      quantity: line.quantity,
-      unitPriceMillicents: line.unitPriceMillicents,
-      vatRate: line.vatRate,
-      lineTotalCents: line.lineTotalCents,
-      priceFrozen: previous.has(line.sku),
-    })),
-    subtotalCents: state.subtotalCents,
-    discountCents: state.discountCents,
-    deliveryFeeCents: state.deliveryFeeCents,
-    lateFeeCents: state.lateFeeCents,
-    voucherDiscountCents: state.voucherDiscountCents,
-    vatCents: state.vatCents,
-    totalCents: state.totalCents,
-    previousTotalCents: current.totalCents,
-    differenceCents: state.totalCents - current.totalCents,
-    changes: revision.changes,
-  };
 }

@@ -17,6 +17,8 @@ export interface MailCopyEntryRow {
   readonly publishedText: string | null;
   readonly publishedAt: Date | null;
   readonly publishedBy: string | null;
+  readonly draftDefaultText: string | null;
+  readonly publishedDefaultText: string | null;
 }
 
 /** La langue d'une ligne. La base la tient (CHECK) ; on la relit quand même. */
@@ -52,6 +54,8 @@ export function toState(row: MailCopyEntryRow): MailCopyEntryState | null {
       row.publishedAt === null || row.publishedBy === null
         ? null
         : { at: row.publishedAt, staffId: row.publishedBy },
+    draftDefault: row.draftDefaultText,
+    publishedDefault: row.publishedDefaultText,
   };
 }
 
@@ -76,5 +80,7 @@ export function toColumns(
     publishedText: state.publishedText,
     publishedAt: state.published?.at ?? null,
     publishedBy: state.published?.staffId ?? null,
+    draftDefaultText: state.draftDefault,
+    publishedDefaultText: state.publishedDefault,
   };
 }

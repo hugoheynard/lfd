@@ -3,6 +3,8 @@ import {
   mailCopyPreviewQuerySchema,
   mailCopyResetPayloadSchema,
   mailCopyTrialPayloadSchema,
+  mailSectionOrderDraftPayloadSchema,
+  mailSectionOrderResetPayloadSchema,
   type MailCopyAdminView,
   type MailCopyDraftPayload,
   type MailCopyPreviewQuery,
@@ -10,6 +12,8 @@ import {
   type MailCopyPublishedView,
   type MailCopyResetPayload,
   type MailCopyTrialPayload,
+  type MailSectionOrderDraftPayload,
+  type MailSectionOrderResetPayload,
 } from "@lfd/contracts";
 import { Body, Controller, Get, HttpCode, Post, Put, Query } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
@@ -19,7 +23,9 @@ import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody, ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
 import { PublishMailCopyCommand } from "../application/commands/publish-mail-copy.command.js";
 import { ResetMailCopyDraftCommand } from "../application/commands/reset-mail-copy-draft.command.js";
+import { ResetMailSectionOrderDraftCommand } from "../application/commands/reset-mail-section-order-draft.command.js";
 import { SaveMailCopyDraftCommand } from "../application/commands/save-mail-copy-draft.command.js";
+import { SaveMailSectionOrderDraftCommand } from "../application/commands/save-mail-section-order-draft.command.js";
 import { SendMailCopyTrialCommand } from "../application/commands/send-mail-copy-trial.command.js";
 import { GetMailCopyAdminQuery } from "../application/queries/get-mail-copy-admin.query.js";
 import { GetMailCopyPreviewQuery } from "../application/queries/get-mail-copy-preview.query.js";
@@ -82,6 +88,39 @@ export class AdminMailCopyController {
         payload.expectedRevision,
         staffUserId,
       ),
+    );
+  }
+
+  /**
+   * Pose en brouillon l'ordre des sections d'un e-mail (E4), sur la révision
+   * lue — `409` si quelqu'un l'a déplacé entre-temps, `400` si l'ordre oublie,
+   * double ou invente une section, ou nomme l'en-tête ou le recours.
+   */
+  @Put("section-orders")
+  @HttpCode(204)
+  async saveSectionOrder(
+    @Body(new ZodBody(mailSectionOrderDraftPayloadSchema)) payload: MailSectionOrderDraftPayload,
+    @StaffUserId() staffUserId: string,
+  ): Promise<void> {
+    await this.commands.execute<SaveMailSectionOrderDraftCommand, void>(
+      new SaveMailSectionOrderDraftCommand(
+        payload.mail,
+        payload.order,
+        payload.expectedRevision,
+        staffUserId,
+      ),
+    );
+  }
+
+  /** « Rétablir l'ordre d'origine » — appliqué au prochain « Publier », pas avant. */
+  @Post("section-order-resets")
+  @HttpCode(204)
+  async resetSectionOrder(
+    @Body(new ZodBody(mailSectionOrderResetPayloadSchema)) payload: MailSectionOrderResetPayload,
+    @StaffUserId() staffUserId: string,
+  ): Promise<void> {
+    await this.commands.execute<ResetMailSectionOrderDraftCommand, void>(
+      new ResetMailSectionOrderDraftCommand(payload.mail, payload.expectedRevision, staffUserId),
     );
   }
 

@@ -108,4 +108,25 @@ describe('MailTextEditor — un texte, trois langues côte à côte', () => {
     expect(element.textContent).not.toContain('Rétablir');
     expect(element.textContent).toContain('Variables permises');
   });
+
+  it('le texte d’origine changé depuis la modification : badge, avertissement, l’ancien et le nouveau', async () => {
+    const drifted = mailTextView(MAIL, 'subject', 'Votre commande {ref}', {
+      locales: {
+        en: {
+          publishedText: 'Order {ref}',
+          defaultChangedSince: { previousDefault: 'Commande {ref}' },
+        },
+      },
+    });
+    const { element } = await render(drifted);
+    const en = element.querySelector('[data-locale="en"]');
+    expect(en?.textContent).toContain('Texte d’origine changé');
+    expect(en?.textContent).toContain('Le texte d’origine a changé depuis votre modification');
+    expect(en?.querySelector('s')?.textContent).toBe('Commande {ref}');
+    expect(en?.textContent).toContain('Maintenant : Votre commande {ref}');
+    expect(en?.textContent).toContain('Rétablir');
+    expect(element.querySelector('[data-locale="fr"]')?.textContent).not.toContain(
+      'Texte d’origine changé',
+    );
+  });
 });

@@ -42,6 +42,14 @@
         </fold-callout>
       }
 
+      @if (store.defaultChangedCount() > 0) {
+        <fold-callout variant="warning">
+          {{ defaultChangedLabel(store.defaultChangedCount()) }} : le texte d’origine a changé
+          depuis votre modification. Relisez-les — chaque carte concernée porte le badge « Texte
+          d’origine changé ».
+        </fold-callout>
+      }
+
       @if (store.current(); as mail) {
         <div class="mc-columns">
           <app-mail-list />
@@ -56,8 +64,66 @@
                   pour le jour où la langue du destinataire sera connue.
                 </fold-callout>
               }
-              @for (text of mail.texts; track text.path) {
-                <app-mail-text-editor [text]="text" [followsLocale]="mail.followsLocale" />
+              <app-mail-section-card [mail]="mail" frame="subject" />
+              <app-mail-section-card [mail]="mail" frame="header" />
+
+              <fold-page-section
+                title="Sections"
+                description="Dans l’ordre où l’e-mail les montre après « Publier ». Une section absente d’un envoi est sautée."
+              >
+                <div class="mc-texts">
+                  @if (orderChanged() || store.orderRefusal()) {
+                    <div class="mc-order">
+                      @if (orderChanged()) {
+                        <fold-badge variant="warning" content="Ordre modifié" />
+                      }
+                      @if (store.canWrite() && canResetOrder()) {
+                        <button
+                          foldButton
+                          size="sm"
+                          emphasis="soft"
+                          intent="neutral"
+                          icon="undo"
+                          type="button"
+                          [loading]="store.moving()"
+                          (click)="store.resetSectionOrder(mail.mail)"
+                        >
+                          Rétablir l’ordre
+                        </button>
+                      }
+                    </div>
+                  }
+                  @if (store.orderRefusal(); as refusal) {
+                    <fold-callout variant="alert">{{ refusal }}</fold-callout>
+                  }
+                  @for (
+                    section of mail.sections;
+                    track section.id;
+                    let index = $index, count = $count
+                  ) {
+                    <app-mail-section-card
+                      [mail]="mail"
+                      [section]="section"
+                      [index]="index"
+                      [count]="count"
+                    />
+                  }
+                </div>
+              </fold-page-section>
+
+              @if (unplaced().length > 0) {
+                <fold-page-section
+                  title="Autres textes"
+                  description="Des textes de cet e-mail qu’aucune section n’affiche en clair — le texte de remplacement d’une image."
+                >
+                  <div class="mc-texts">
+                    @for (text of unplaced(); track text.path) {
+                      <fold-card>
+                        <app-mail-text-editor [text]="text" [followsLocale]="mail.followsLocale" />
+                      </fold-card>
+                    }
+                  </div>
+                </fold-page-section>
               }
               @if (store.orphans().length > 0) {
                 <fold-page-section
@@ -66,7 +132,9 @@
                 >
                   <div class="mc-texts">
                     @for (text of store.orphans(); track text.mail + text.path) {
-                      <app-mail-text-editor [text]="text" [orphan]="true" />
+                      <fold-card>
+                        <app-mail-text-editor [text]="text" [orphan]="true" />
+                      </fold-card>
                     }
                   </div>
                 </fold-page-section>

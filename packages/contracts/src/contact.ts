@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { CONTACT_BOUNDS } from "./contact.values.js";
+import { orderRevisionPayloadSchema } from "./order-revision.js";
 
 /**
  * Contrat de fil des **demandes clients** (`documentation/demandes-client/demandes-clients.md`) :
@@ -30,6 +31,11 @@ export {
   type CustomerRequestPhotoView,
   type CustomerRequestStatus,
   type CustomerRequestView,
+  type OrderChangeAppliedResponse,
+  type OrderChangeDecisionView,
+  type OrderChangeDetailsView,
+  type OrderChangeRequestStatusResponse,
+  type OrderChangeRequestStatusView,
   type OrderProblemDetailsView,
   type PublicContactPhoneView,
   type PublicContactSettingsView,
@@ -44,7 +50,7 @@ const bounded = (max: number) => z.string().max(max);
 const localized = (max: number) =>
   z.object({ fr: bounded(max), en: bounded(max), it: bounded(max) }).strict();
 
-const requestKindSchema = z.enum(["contact", "order_problem"]);
+const requestKindSchema = z.enum(["contact", "order_problem", "order_change"]);
 
 /**
  * `POST /admin/request-reasons` et `PUT /admin/request-reasons/:id` — le motif
@@ -140,3 +146,28 @@ export const orderProblemPayloadSchema = z
   })
   .strict();
 export type OrderProblemPayload = z.infer<typeof orderProblemPayloadSchema>;
+
+/**
+ * `POST /me/orders/:id/change-request` — **demander une modification** après
+ * l'heure limite (plan `documentation/commandes/plan-modifier-une-commande.md`,
+ * M4). `change` est EXACTEMENT le corps d'une révision
+ * (`orderRevisionPayloadSchema`) : la commande voulue, entière, et la révision
+ * sur laquelle le client a composé — c'est elle que le commerce appliquera.
+ * Le mot est facultatif ; nom et e-mail sont pris au compte.
+ */
+export const orderChangeRequestPayloadSchema = z
+  .object({
+    change: orderRevisionPayloadSchema,
+    message: bounded(CONTACT_BOUNDS.message).default(""),
+  })
+  .strict();
+export type OrderChangeRequestPayload = z.infer<typeof orderChangeRequestPayloadSchema>;
+
+/**
+ * `POST /admin/customer-requests/:id/order-change/refuse` — le mot adressé au
+ * client. Le domaine refuse un mot vide : un refus sans raison ne se lit pas.
+ */
+export const orderChangeRefusalPayloadSchema = z
+  .object({ reason: bounded(CONTACT_BOUNDS.changeRefusal) })
+  .strict();
+export type OrderChangeRefusalPayload = z.infer<typeof orderChangeRefusalPayloadSchema>;

@@ -5,6 +5,8 @@ import { MAIL_FR } from "./mail-copy.fr.js";
 import { MAIL_IT } from "./mail-copy.it.js";
 import type { MailCopy, MailCopyBook } from "./mail-copy.model.js";
 import { activeMailCopyOverlay, overlaidMailCopy } from "./mail-copy-overlay.js";
+import { activeMailLayout } from "../sections/mail-layout-scope.js";
+import { markedCopy } from "../sections/mail-text-markers.js";
 
 /**
  * Le dictionnaire des e-mails, dans les trois langues.
@@ -32,13 +34,31 @@ export const DEFAULT_MAIL_LOCALE: ContentLocale = "fr";
  * publiés (ou, pour un aperçu, par les brouillons) quand un périmètre de
  * remplacement est ouvert (`withMailCopyOverlay`, plan
  * `plan-textes-des-e-mails.md`, C2). Jamais d'accès direct au `Record` chez
- * l'appelant.
+ * l'appelant. Dans un aperçu repéré (E4, S4), chaque texte porte son repère.
  */
 export function mailCopyOf(locale: ContentLocale): MailCopy {
   const overlay = activeMailCopyOverlay();
-  return overlay === undefined
-    ? MAIL_COPY[locale]
-    : overlaidMailCopy(MAIL_COPY[locale], overlay, locale);
+  const copy =
+    overlay === undefined
+      ? MAIL_COPY[locale]
+      : overlaidMailCopy(MAIL_COPY[locale], overlay, locale);
+  return activeMailLayout()?.markers === true ? markedOnce(copy) : copy;
+}
+
+const marked = new WeakMap<MailCopy, MailCopy>();
+
+/**
+ * Le dictionnaire aux textes repérés — dans un périmètre d'APERÇU seulement
+ * (plan `plan-textes-des-e-mails.md`, E4, S4 ; `sections/mail-text-markers.ts`).
+ */
+function markedOnce(copy: MailCopy): MailCopy {
+  const known = marked.get(copy);
+  if (known !== undefined) {
+    return known;
+  }
+  const fresh = markedCopy(copy);
+  marked.set(copy, fresh);
+  return fresh;
 }
 
 /**

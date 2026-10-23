@@ -15,9 +15,18 @@ describe("une publication des textes des e-mails", () => {
 
     expect(release.expectedVersion).toBe(4);
     expect(release.version).toBe(5);
-    expect(changes).toEqual([
-      { mail: SUBJECT.mail, path: SUBJECT.path, locale: "fr", before: null, after: "Merci {ref}" },
-    ]);
+    expect(changes).toEqual({
+      texts: [
+        {
+          mail: SUBJECT.mail,
+          path: SUBJECT.path,
+          locale: "fr",
+          before: null,
+          after: "Merci {ref}",
+        },
+      ],
+      sectionOrders: [],
+    });
   });
 
   it("refuse sans brouillon publiable — une orpheline seule n'en est pas un", () => {
@@ -33,6 +42,8 @@ describe("une publication des textes des e-mails", () => {
       drafted: stamp(AT),
       publishedText: null,
       published: null,
+      draftDefault: null,
+      publishedDefault: null,
     });
     const release = MailCopyRelease.of(0, [orphan]);
     expect(() => release.publish(MANIFEST, stamp(AT))).toThrow(NothingToPublishError);

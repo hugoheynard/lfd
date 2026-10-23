@@ -1,10 +1,12 @@
 import { Injectable } from "@nestjs/common";
 
+import { Prisma } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import type { CustomerRequest } from "../domain/customer-request.js";
 import { CustomerRequestRepository } from "../domain/ports/customer-request.repository.js";
 import {
+  changeColumnsOf,
   orderColumnsOf,
   PHOTOS_BY_POSITION,
   photosOf,
@@ -34,6 +36,16 @@ export class PrismaCustomerRequestRepository extends CustomerRequestRepository {
     return row === null ? null : toDomain(row);
   }
 
+  async lockForAnswer(id: string): Promise<CustomerRequest | null> {
+    // Le verrou d'abord, la lecture ensuite : sous `FOR UPDATE`, une seconde
+    // réponse attend la première, puis la lit traitée.
+    const locked = await this.prisma.$queryRaw<{ id: string }[]>`
+      SELECT "id" FROM "public"."customer_request"
+      WHERE "id" = ${id}
+      FOR UPDATE`;
+    return locked.length === 0 ? null : this.load(id);
+  }
+
   async save(request: CustomerRequest): Promise<void> {
     const state = request.toPersistence();
     const mutable = {
@@ -44,6 +56,7 @@ export class PrismaCustomerRequestRepository extends CustomerRequestRepository {
       userId: state.userId,
       companyId: state.companyId,
       ...orderColumnsOf(state.details),
+      ...changeWriteOf(state.details),
       handledAt: state.handling?.at ?? null,
       handledByStaffId: state.handling?.by.staffUserId ?? null,
       handledByName: state.handling?.by.name ?? null,
@@ -85,4 +98,13 @@ export class PrismaCustomerRequestRepository extends CustomerRequestRepository {
       }
     });
   }
+}
+
+/** Les colonnes de la demande de modification, à l'écriture : `DbNull` est l'ABSENCE, pas un `null` JSON. */
+function changeWriteOf(details: Parameters<typeof changeColumnsOf>[0]) {
+  const columns = changeColumnsOf(details);
+  return {
+    ...columns,
+    changeContent: columns.changeContent === null ? Prisma.DbNull : columns.changeContent,
+  };
 }

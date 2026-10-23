@@ -8,6 +8,7 @@ import {
 
 import { SELF_SERVICE_PASSWORD_TICKET_TTL_SECONDS } from "../identity/auth0-identity.gateway.js";
 import { renderLayoutWithLogo, withMailLogo } from "./mail-logo.js";
+import { withRenderedMailKey } from "./sections/mail-layout-scope.js";
 import { DEFAULT_MAIL_LOCALE, fill, fillNamed, mailCopyOf } from "./copy/mail-copy.js";
 import type { MailCopy, OrderSettlementCopy } from "./copy/mail-copy.model.js";
 import {
@@ -25,6 +26,12 @@ import {
 import { renderInvoiceIssuedMail, type InvoiceIssuedMailData } from "./invoice-issued-mail.js";
 import { renderOrderCancelledMail, type OrderCancelledMailData } from "./order-cancelled-mail.js";
 import {
+  renderOrderChangeAppliedMail,
+  renderOrderChangeRefusedMail,
+  type OrderChangeAppliedMailData,
+  type OrderChangeRefusedMailData,
+} from "./order-change-answer-mail.js";
+import {
   renderDeliveryEnRouteMail,
   type DeliveryEnRouteMailData,
 } from "./delivery-en-route-mail.js";
@@ -34,6 +41,7 @@ import {
 } from "./production-dossier-mail.js";
 import type { MandateMailScheme } from "./mandate-to-sign-wording.js";
 import { type OrderSheetMailDocument, withAttachments } from "./order-sheet-mail-document.js";
+import { pickupItinerary, type PickupPoint } from "./pickup-itinerary.js";
 import { qrPng } from "./qr-image.js";
 import { renderVitrineNoticeMail, type VitrineNoticeMailData } from "./vitrine-notice-mail.js";
 import {
@@ -84,6 +92,8 @@ export interface B2bMails {
     readonly orderUrl: string;
     readonly handoverUrl: string;
     readonly locale: ContentLocale;
+    /** Le point GPS du site de retrait, s'il est connu — l'itinéraire (E4, S7). */
+    readonly pickupPoint?: PickupPoint | null;
   };
   /**
    * **L'avis de prélèvement** (pré-notification SEPA) — premier avis,
@@ -134,6 +144,13 @@ export interface B2bMails {
    * le client. Cf. `order-cancelled-mail.ts`.
    */
   "customer.order-cancelled": OrderCancelledMailData;
+  /**
+   * **La demande de modification est appliquée / refusée** (plan
+   * `documentation/commandes/plan-modifier-une-commande.md`, M4).
+   * Destinataire : l'auteur de la demande. Cf. `order-change-answer-mail.ts`.
+   */
+  "customer.order-change-applied": OrderChangeAppliedMailData;
+  "customer.order-change-refused": OrderChangeRefusedMailData;
   /**
    * **Un de vos sites a agi** — l'avis au principal (plan
    * `documentation/comptes-client/plan-notifications-sous-comptes.md`, N2).
@@ -191,6 +208,8 @@ export interface B2bMails {
     readonly document: OrderSheetMailDocument | null;
     /** ⚠️ Rien ne choisit encore : l'appelant passe `fr`. Cf. `mail-copy.ts`. */
     readonly locale: ContentLocale;
+    /** Le point GPS du site de retrait, s'il est connu — l'itinéraire (E4, S7). */
+    readonly pickupPoint?: PickupPoint | null;
   };
   /**
    * **Le mandat de prélèvement à signer.** Destinataire : le client.
@@ -560,6 +579,15 @@ function fontOf(brand: MailBranding): { readonly brandFontUrl?: string } {
   return brand.brandFontUrl === undefined ? {} : { brandFontUrl: brand.brandFontUrl };
 }
 
+/**
+ * Le logo d'en-tête joint à chaque e-mail, et chaque rendu qui sait QUEL
+ * e-mail il rend : la coquille en lit l'ordre de ses sections (plan
+ * `plan-textes-des-e-mails.md`, E4).
+ */
+function framedRegistry(registry: TemplateRegistry<B2bMails>): TemplateRegistry<B2bMails> {
+  return withMailLogo(withRenderedMailKey(registry));
+}
+
 export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails> {
   /** La coquille d'un courriel adressé à un CLIENT — l'enseigne qu'il connaît. */
   const customerMail = (input: Omit<LayoutInput, "brand" | "supportEmail">): string =>
@@ -588,8 +616,9 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
   const local = (): MailCopy => mailCopyOf(DEFAULT_MAIL_LOCALE);
 
   // Le logo d'en-tête : sa balise vient de \`renderLayoutWithLogo\`, sa pièce
-  // jointe de \`withMailLogo\` — posée ICI une fois pour les 28 e-mails.
-  return withMailLogo({
+  // jointe de \`withMailLogo\` — posée ICI une fois pour les 30 e-mails. Et
+  // chaque rendu sait quel e-mail il rend (E4) : cf. `framedRegistry`.
+  return framedRegistry({
     "customer.order-ready": (data) => {
       const copy = mailCopyOf(data.locale)["customer.order-ready"];
       const pickup = data.sheet.fulfillment.method === "pickup";
@@ -625,6 +654,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
                 },
               }
             : {}),
+          ...pickupItinerary(data.sheet, data.pickupPoint, copy.itinerary),
           ...(data.orderUrl === "" ? {} : { cta: { label: copy.cta, url: data.orderUrl } }),
           footer: copy.footer,
         }),
@@ -646,6 +676,8 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
     "customer.collection-notice": (data) => renderCollectionNoticeMail(data, customerMail),
     "customer.invoice-issued": (data) => renderInvoiceIssuedMail(data, customerMail),
     "customer.order-cancelled": (data) => renderOrderCancelledMail(data, customerMail),
+    "customer.order-change-applied": (data) => renderOrderChangeAppliedMail(data, customerMail),
+    "customer.order-change-refused": (data) => renderOrderChangeRefusedMail(data, customerMail),
     "customer.sub-account-activity": (data) => renderSubAccountActivityMail(data, customerMail),
     "customer.sub-account-gesture": (data) => renderSubAccountGestureMail(data, customerMail),
     "customer.order-placed": (data) => {
@@ -674,6 +706,8 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
                 },
               }
             : {}),
+          // L'itinéraire vers le point de retrait (E4, S7) — rien pour une livraison.
+          ...pickupItinerary(data.sheet, data.pickupPoint, copy.itinerary),
           // Pas de bouton quand l'origine de l'app cliente n'est pas connue :
           // un lien relatif est inerte dans une boîte mail, et un bouton qui ne
           // mène nulle part coûte plus qu'une absence de bouton.

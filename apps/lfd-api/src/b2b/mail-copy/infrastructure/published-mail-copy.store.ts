@@ -1,4 +1,5 @@
 import type { MailCopyEntryState } from "../domain/mail-copy-entry.js";
+import type { MailSectionOrderState } from "../domain/mail-section-order.js";
 
 /**
  * Les deux lectures que le cache du publié fait en base — séparées parce
@@ -10,4 +11,6 @@ export abstract class PublishedMailCopyStore {
   abstract version(): Promise<number>;
   /** Les lignes qui portent un texte publié, toutes langues. */
   abstract published(): Promise<readonly MailCopyEntryState[]>;
+  /** Les ordres de sections qui portent un ordre publié (E4). */
+  abstract publishedSectionOrders(): Promise<readonly MailSectionOrderState[]>;
 }

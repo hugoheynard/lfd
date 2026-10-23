@@ -8,7 +8,7 @@ const REGISTRY = b2bMailTemplates({
 });
 
 describe("les e-mails d'exemple de l'aperçu (C6)", () => {
-  it("couvrent les 28 e-mails du registre", () => {
+  it("couvrent les 30 e-mails du registre", () => {
     expect([...mailKeys()].sort()).toEqual(Object.keys(REGISTRY).sort());
     expect(isMailKey("pas.un.mail")).toBe(false);
   });

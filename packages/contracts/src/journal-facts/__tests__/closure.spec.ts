@@ -131,6 +131,16 @@ const BARE_REFS: Readonly<Record<string, string>> = {
   "order.revised:revisedBy": "une fiche staff que l'annuaire ne nomme pas se cite par son id",
   "order.revised:revisedByCustomer": "un client que l'annuaire ne nomme pas se cite par son id",
   "order.ready:readyBy": "une fiche staff que l'annuaire ne nomme pas se cite par son id",
+  // La demande de modification après l'heure limite (plan de modification, M4, 2026-10-23).
+  "order.change_requested:orderId": "voisine son nom figé (`orderNumber`)",
+  "order.change_requested:requestId":
+    "la demande s'anonymise : on ne recopie au journal ni son auteur ni son texte",
+  "order.change_applied:orderId": "voisine son nom figé (`orderNumber`)",
+  "order.change_applied:requestId":
+    "la demande s'anonymise : on ne recopie au journal ni son auteur ni son texte",
+  "order.change_refused:orderId": "voisine son nom figé (`orderNumber`)",
+  "order.change_refused:requestId":
+    "la demande s'anonymise : on ne recopie au journal ni son auteur ni son texte",
   "order.handed_over:orderId": "voisine son nom figé (`orderNumber`)",
   "order.handed_over:handedOverBy":
     "une fiche staff que l'annuaire ne nomme pas se cite par son id",

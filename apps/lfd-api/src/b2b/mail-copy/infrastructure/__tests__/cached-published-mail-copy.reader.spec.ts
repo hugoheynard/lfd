@@ -1,6 +1,7 @@
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
-import { MANIFEST, SUBJECT, stamp } from "../../domain/__tests__/mail-copy-fixtures.js";
+import { MANIFEST, QR_FIRST, SUBJECT, stamp } from "../../domain/__tests__/mail-copy-fixtures.js";
 import type { MailCopyEntryState } from "../../domain/mail-copy-entry.js";
+import type { MailSectionOrderState } from "../../domain/mail-section-order.js";
 import {
   CachedPublishedMailCopyReader,
   MAIL_COPY_VERSION_RECHECK_MS,
@@ -17,6 +18,8 @@ function published(locale: "fr" | "en", text: string, path = SUBJECT.path): Mail
     drafted: null,
     publishedText: text,
     published: stamp(new Date(0)),
+    draftDefault: null,
+    publishedDefault: null,
   };
 }
 
@@ -36,6 +39,25 @@ class CountingStore extends PublishedMailCopyStore {
     this.textReads += 1;
     return Promise.resolve([...this.rows]);
   }
+
+  orderReads = 0;
+  orders: MailSectionOrderState[] = [];
+
+  publishedSectionOrders(): Promise<readonly MailSectionOrderState[]> {
+    this.orderReads += 1;
+    return Promise.resolve([...this.orders]);
+  }
+}
+
+function publishedOrder(mail: string, order: readonly string[]): MailSectionOrderState {
+  return {
+    mail,
+    revision: 1,
+    draft: { state: "unchanged" },
+    drafted: null,
+    publishedOrder: order,
+    published: stamp(new Date(0)),
+  };
 }
 
 function setup() {
@@ -87,5 +109,26 @@ describe("les textes d'e-mails publiés, gardés en mémoire", () => {
     cache.forget();
     await cache.read();
     expect([store.versionReads, store.textReads]).toEqual([2, 2]);
+  });
+});
+
+describe("l'ordre publié des sections, gardé en mémoire (E4)", () => {
+  it("rend les ordres qui tiennent encore, par la même version que les textes", async () => {
+    const { store, cache } = setup();
+    store.orders = [
+      publishedOrder(SUBJECT.mail, QR_FIRST),
+      publishedOrder(SUBJECT.mail.replace("placed", "ready"), ["title"]),
+    ];
+    const first = await cache.sectionOrders();
+    expect(first).toEqual({ [SUBJECT.mail]: [...QR_FIRST] });
+    expect(await cache.sectionOrders()).toBe(first);
+    expect([store.versionReads, store.orderReads]).toEqual([1, 1]);
+  });
+
+  /** Une section retirée du code depuis la publication : l'ordre du code, pas un ordre à trous. */
+  it("écarte un ordre qui ne range plus exactement les sections du code", async () => {
+    const { store, cache } = setup();
+    store.orders = [publishedOrder(SUBJECT.mail, ["image", "title", "footer"])];
+    expect(await cache.sectionOrders()).toEqual({});
   });
 });

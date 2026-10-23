@@ -23,6 +23,15 @@
 Le compteur du menu « Demandes clients » et la cloche disent les demandes à
 traiter, tous types.
 
+**Depuis le 2026-10-23, un troisième type : `order_change`** — la demande de
+modification d'une commande après l'heure limite (plan
+[`plan-modifier-une-commande.md`](../commandes/plan-modifier-une-commande.md),
+§4 et §14). Le client la compose depuis « Modifier ma commande » ; elle porte
+la commande voulue, et l'équipe y répond par « Appliquer » (une révision de la
+commande au nom de l'équipe) ou « Refuser » avec un mot — jamais par « Marquer
+traité ». Une seule en attente par commande ; son motif est le premier motif
+`order_change` actif pour le public (onglet « Demander une modification »).
+
 ## 2. Le modèle
 
 Une **demande** a une **enveloppe** commune (auteur, motif et priorité figés,
@@ -111,6 +120,8 @@ la priorité, la cloche, le compteur et l'anonymisation ne bougent pas.
 | `POST /me/orders/:orderId/problems`                                                             | client, débit par compte                                              |
 | `GET                                                                                            | POST /admin/request-reasons?kind=`, `PUT …/:id`, `POST …/:id/archive` | `b2b_contact`                  |
 | `GET /admin/customer-requests?status=&kind=`, `POST …/:id/handled`, `GET …/:id/photos/:photoId` | `b2b_contact`                                                         |
+| `POST`, `GET /me/orders/:orderId/change-request` (2026-10-23)                                   | client, débit par compte                                              |
+| `GET /admin/customer-requests/:id/order-change/quote`, `POST …/apply`, `POST …/refuse`          | `b2b_contact`                                                         |
 | `GET                                                                                            | PUT /admin/contact/settings`, `GET                                    | POST /admin/contact/phones`, … | `b2b_contact` |
 
 Back-office : `/commercial/demandes` depuis le 2026-10-17 (Hugo), une vue du

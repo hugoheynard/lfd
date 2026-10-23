@@ -5,7 +5,14 @@ import { describe, expect, it, vi } from 'vitest';
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { NotifyService } from '../../../notify.service';
 import { MailCopyService } from '../../data/mail-copy.service';
-import { mailAdminView, mailTextView, mailView, previewView } from '../../mail-copy.testing';
+import {
+  mailAdminView,
+  mailTextView,
+  mailView,
+  previewView,
+  sectionText,
+  sectionView,
+} from '../../mail-copy.testing';
 import { MailCopyPage } from './mail-copy-page';
 
 const PENDING = mailView('customer.order-placed', [
@@ -83,5 +90,24 @@ describe('MailCopyPage — Textes des e-mails', () => {
   it('aucun e-mail : l’état vide fold', async () => {
     const element = await render(() => Promise.resolve(mailAdminView([])));
     expect(element.querySelector('fold-empty-state')?.textContent).toContain('Aucun e-mail');
+  });
+
+  it('les cadres en tête, puis une carte par section dans l’ordre du brouillon', async () => {
+    const key = 'customer.order-placed';
+    const mail = mailView(key, [mailTextView(key, 'subject', 'Commande {ref}')], {
+      frames: { subject: [sectionText('subject')], header: [] },
+      sections: [
+        sectionView('summary', 'Récapitulatif', 0, [], 'system'),
+        sectionView('title', 'Titre', 1),
+      ],
+      sectionOrder: { draftState: 'set', draft: ['summary', 'title'] },
+    });
+    const element = await render(() => Promise.resolve(mailAdminView([mail])));
+    const cards = [...element.querySelectorAll('[data-card]')].map((card) =>
+      card.getAttribute('data-card'),
+    );
+    expect(cards).toEqual(['frame:subject', 'frame:header', 'section:summary', 'section:title']);
+    expect(element.textContent).toContain('Ordre modifié');
+    expect(element.textContent).toContain('Rétablir l’ordre');
   });
 });

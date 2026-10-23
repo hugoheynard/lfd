@@ -8,15 +8,19 @@ import {
   MailCopyPublishedMeanwhileError,
 } from "../domain/mail-copy-errors.js";
 import { MailCopyRelease } from "../domain/mail-copy-release.js";
+import { MailSectionOrder } from "../domain/mail-section-order.js";
+import { MailSectionOrderChangedError } from "../domain/mail-copy-errors.js";
 import { MAIL_COPY_PUBLICATION_KEY, toColumns, toStates } from "./mail-copy-rows.js";
+import { toOrderColumns, toOrderState } from "./mail-section-order-rows.js";
 
 /**
  * Adaptateur Prisma de « Publier ». Deux verrous, tous deux en base :
  *
  * - la **version** : posée sur `version = chargée` (ou créée si 0) — deux
  *   publications simultanées, la seconde n'écrit rien ;
- * - chaque **texte** : réécrit sur `revision = chargée` — un brouillon écrit
- *   pendant la publication n'est pas effacé par elle.
+ * - chaque **texte** et chaque **ordre de sections** (E4) : réécrit sur
+ *   `revision = chargée` — un brouillon écrit pendant la publication n'est
+ *   pas effacé par elle.
  */
 @Injectable()
 export class PrismaMailCopyReleaseRepository extends MailCopyReleaseRepository {
@@ -25,15 +29,20 @@ export class PrismaMailCopyReleaseRepository extends MailCopyReleaseRepository {
   }
 
   async load(): Promise<MailCopyRelease> {
-    const [publication, rows] = await Promise.all([
+    const [publication, rows, orderRows] = await Promise.all([
       this.prisma.mailCopyPublication.findUnique({ where: { key: MAIL_COPY_PUBLICATION_KEY } }),
       this.prisma.mailCopyEntry.findMany({
         where: { draftState: { not: "unchanged" } },
         orderBy: [{ mail: "asc" }, { path: "asc" }, { locale: "asc" }],
       }),
+      this.prisma.mailSectionOrderEntry.findMany({
+        where: { draftState: { not: "unchanged" } },
+        orderBy: { mail: "asc" },
+      }),
     ]);
     const entries = toStates(rows).map((state) => MailCopyEntry.reconstitute(state));
-    return MailCopyRelease.of(publication?.version ?? 0, entries);
+    const orders = orderRows.map((row) => MailSectionOrder.reconstitute(toOrderState(row)));
+    return MailCopyRelease.of(publication?.version ?? 0, entries, orders);
   }
 
   async save(release: MailCopyRelease, stamp: MailCopyStamp): Promise<void> {
@@ -51,6 +60,20 @@ export class PrismaMailCopyReleaseRepository extends MailCopyReleaseRepository {
       });
       if (written.count === 0) {
         throw new MailCopyChangedError(state.mail, state.path, state.locale);
+      }
+    }
+    await this.saveSectionOrders(release);
+  }
+
+  private async saveSectionOrders(release: MailCopyRelease): Promise<void> {
+    for (const order of release.sectionOrders) {
+      const state = order.snapshot();
+      const written = await this.prisma.mailSectionOrderEntry.updateMany({
+        where: { mail: state.mail, revision: state.revision },
+        data: toOrderColumns(state),
+      });
+      if (written.count === 0) {
+        throw new MailSectionOrderChangedError(state.mail);
       }
     }
   }

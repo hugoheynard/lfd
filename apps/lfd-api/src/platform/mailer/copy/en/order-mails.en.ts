@@ -33,6 +33,7 @@ export const ORDER_MAILS_EN: OrderMailsCopy = {
     manageLink: "Manage or cancel my order",
     footer: "Le Labo · route de la Balme, Val d'Isère — 7 am – 7 pm",
     qrAlt: "Your pickup code — {ref}",
+    itinerary: "Directions to the shop",
   },
   "customer.order-ready": {
     subject: "Your order {ref} is ready",
@@ -49,6 +50,7 @@ export const ORDER_MAILS_EN: OrderMailsCopy = {
     cta: "View my order",
     footer: "Le Labo · route de la Balme, Val d'Isère — 7 am – 7 pm",
     qrAlt: "Your pickup code — {ref}",
+    itinerary: "Directions to the shop",
   },
   "customer.delivery-en-route": {
     kicker: "Delivery on its way",

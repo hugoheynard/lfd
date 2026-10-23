@@ -7,6 +7,8 @@ import {
   type TemplateRegistry,
 } from "@lfd/mailer";
 
+import { layoutOptionsOfRenderedMail } from "./sections/mail-layout-scope.js";
+
 /**
  * **Le logo couleur de La Folie Coffee**, en tête de tous les e-mails
  * (décision de Hugo, 2026-10-23).
@@ -55,9 +57,14 @@ export const MAIL_LOGO_ATTACHMENT: MailAttachment = {
   contentType: "image/jpeg",
 };
 
-/** La coquille commune, logo compris — pour que la balise et la pièce jointe ne divergent pas. */
+/**
+ * La coquille commune, logo compris — pour que la balise et la pièce jointe ne
+ * divergent pas —, avec l'ordre des sections et les repères de l'aperçu de
+ * l'e-mail en cours de rendu (plan `plan-textes-des-e-mails.md`, E4). Sans
+ * ordre ni aperçu, l'entrée de la coquille est celle d'avant les sections.
+ */
 export function renderLayoutWithLogo(input: LayoutInput): string {
-  return renderLayout({ ...input, logo: MAIL_LOGO });
+  return renderLayout({ ...input, logo: MAIL_LOGO, ...layoutOptionsOfRenderedMail() });
 }
 
 /**

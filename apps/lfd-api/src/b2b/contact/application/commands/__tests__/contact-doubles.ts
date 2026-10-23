@@ -62,6 +62,11 @@ export class MemoryRequests extends CustomerRequestRepository {
     return Promise.resolve(this.byId.get(id) ?? null);
   }
 
+  lockForAnswer(id: string): Promise<CustomerRequest | null> {
+    this.log.push(`lock ${id}`);
+    return this.load(id);
+  }
+
   save(request: CustomerRequest): Promise<void> {
     this.byId.set(request.id, request);
     this.saved.push(request);

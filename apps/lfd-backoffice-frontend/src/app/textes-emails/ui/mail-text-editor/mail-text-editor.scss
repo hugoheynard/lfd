@@ -4,6 +4,13 @@
   gap: var(--fold-space-sm);
 }
 
+// Le texte désigné dans l'aperçu : un liseré, sans décaler ses voisins.
+.te-spotted {
+  outline: 2px solid var(--fold-color-primary);
+  outline-offset: var(--fold-space-xs);
+  border-radius: var(--fold-radius-sm);
+}
+
 // Les trois langues côte à côte au bureau, empilées en mobile.
 .te-locales {
   display: grid;
@@ -16,6 +23,12 @@
 }
 
 .te-locale {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.te-change {
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-xs);

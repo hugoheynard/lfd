@@ -49,7 +49,7 @@ export class NothingToPublishError extends BusinessError {
   constructor() {
     super(
       "MAIL_COPY_NOTHING_TO_PUBLISH",
-      "Aucun texte d'e-mail n'attend d'être publié : modifiez ou rétablissez au moins un texte avant de publier.",
+      "Aucun texte ni ordre de sections d'e-mail n'attend d'être publié : modifiez ou rétablissez au moins un texte, ou déplacez une section, avant de publier.",
     );
   }
 }
@@ -70,6 +70,26 @@ export class TrialRecipientMissingError extends BusinessError {
     super(
       "MAIL_COPY_TRIAL_NO_ADDRESS",
       "L'essai ne peut pas partir : votre fiche d'équipe n'a pas d'adresse e-mail active. Faites compléter votre fiche dans l'annuaire, puis renvoyez l'essai.",
+    );
+  }
+}
+
+/** L'ordre proposé pour les sections d'un e-mail ne les range pas toutes, une fois chacune (E4). */
+export class InvalidMailSectionOrderError extends DomainError {
+  constructor(mail: string, reason: string) {
+    super(
+      "MAIL_SECTION_ORDER_INVALID",
+      `L'ordre des sections de l'e-mail « ${mail} » ne peut pas être enregistré : ${reason}`,
+    );
+  }
+}
+
+/** Quelqu'un a déplacé les sections de cet e-mail depuis que l'écran les a lues. */
+export class MailSectionOrderChangedError extends BusinessError {
+  constructor(mail: string) {
+    super(
+      "MAIL_SECTION_ORDER_CHANGED",
+      `L'ordre des sections de l'e-mail « ${mail} » a été modifié par quelqu'un d'autre pendant que vous l'aviez ouvert. Rechargez l'écran pour voir son ordre, puis refaites votre déplacement.`,
     );
   }
 }

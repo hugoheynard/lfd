@@ -8,6 +8,7 @@ import {
 } from "../../domain/ports/mail-copy-admin.reader.js";
 import { MailCopyReleaseRepository } from "../../domain/ports/mail-copy-release.repository.js";
 import { MailCopyRepository } from "../../domain/ports/mail-copy.repository.js";
+import { MailSectionOrderRepository } from "../../domain/ports/mail-section-order.repository.js";
 import {
   MailSpecimenRenderer,
   MailTrialSender,
@@ -18,10 +19,12 @@ import { MailCopyEntry, type MailCopyEntryState } from "../../domain/mail-copy-e
 import {
   MailCopyChangedError,
   MailCopyPublishedMeanwhileError,
+  MailSectionOrderChangedError,
 } from "../../domain/mail-copy-errors.js";
 import type { MailCopyLocale } from "../../domain/mail-copy-locale.js";
 import { MailCopyRelease } from "../../domain/mail-copy-release.js";
 import type { MailTextsByMail } from "../../domain/mail-copy-texts.js";
+import { MailSectionOrder, type MailSectionOrderState } from "../../domain/mail-section-order.js";
 
 const idOf = (mail: string, path: string, locale: string): string => `${mail}|${path}|${locale}`;
 
@@ -31,6 +34,8 @@ const idOf = (mail: string, path: string, locale: string): string => `${mail}|${
  */
 export class InMemoryMailCopy extends MailCopyRepository {
   readonly rows = new Map<string, MailCopyEntryState>();
+  /** Les ordres de sections, par e-mail — même base, même version (E4). */
+  readonly orders = new Map<string, MailSectionOrderState>();
   version = 0;
 
   load(mail: string, path: string, locale: MailCopyLocale): Promise<MailCopyEntry> {
@@ -69,7 +74,10 @@ export class InMemoryReleases extends MailCopyReleaseRepository {
     const pending = [...this.texts.rows.values()]
       .filter((state) => state.draft.state !== "unchanged")
       .map((state) => MailCopyEntry.reconstitute(state));
-    return Promise.resolve(MailCopyRelease.of(this.texts.version, pending));
+    const orders = [...this.texts.orders.values()]
+      .filter((state) => state.draft.state !== "unchanged")
+      .map((state) => MailSectionOrder.reconstitute(state));
+    return Promise.resolve(MailCopyRelease.of(this.texts.version, pending, orders));
   }
 
   save(release: MailCopyRelease): Promise<void> {
@@ -81,6 +89,32 @@ export class InMemoryReleases extends MailCopyReleaseRepository {
       const state = entry.snapshot();
       this.texts.rows.set(idOf(state.mail, state.path, state.locale), state);
     }
+    for (const order of release.sectionOrders) {
+      this.texts.orders.set(order.mail, order.snapshot());
+    }
+    return Promise.resolve();
+  }
+}
+
+/** L'ordre des sections en mémoire, avec le MÊME verrou que l'adaptateur. */
+export class InMemorySectionOrders extends MailSectionOrderRepository {
+  constructor(private readonly texts: InMemoryMailCopy) {
+    super();
+  }
+
+  load(mail: string): Promise<MailSectionOrder> {
+    const state = this.texts.orders.get(mail);
+    return Promise.resolve(
+      state === undefined ? MailSectionOrder.untouched(mail) : MailSectionOrder.reconstitute(state),
+    );
+  }
+
+  save(order: MailSectionOrder): Promise<void> {
+    const state = order.snapshot();
+    if ((this.texts.orders.get(state.mail)?.revision ?? 0) !== state.revision - 1) {
+      return Promise.reject(new MailSectionOrderChangedError(state.mail));
+    }
+    this.texts.orders.set(state.mail, state);
     return Promise.resolve();
   }
 }
@@ -98,6 +132,10 @@ export class InMemoryAdminReader extends MailCopyAdminReader {
   publication(): Promise<MailCopyPublicationState> {
     return Promise.resolve({ version: this.texts.version, publishedAt: null, publishedBy: null });
   }
+
+  sectionOrders(): Promise<readonly MailSectionOrderState[]> {
+    return Promise.resolve([...this.texts.orders.values()]);
+  }
 }
 
 /** Un cache qui se souvient d'avoir été oublié. */
@@ -110,25 +148,46 @@ export class RecordingCache extends PublishedMailCopyCache {
 
 /** Un rendu qui écrit, en guise d'objet, les textes qu'il a reçus. */
 export class RecordingRenderer extends MailSpecimenRenderer {
-  readonly calls: { mail: string; locale: MailCopyLocale; texts: MailTextsByMail }[] = [];
+  readonly calls: {
+    mail: string;
+    locale: MailCopyLocale;
+    texts: MailTextsByMail;
+    order: readonly string[] | null;
+  }[] = [];
 
-  render(mail: string, locale: MailCopyLocale, texts: MailTextsByMail): MailSpecimenRendering {
-    this.calls.push({ mail, locale, texts });
+  render(
+    mail: string,
+    locale: MailCopyLocale,
+    texts: MailTextsByMail,
+    order: readonly string[] | null,
+  ): MailSpecimenRendering {
+    this.calls.push({ mail, locale, texts, order });
     return { subject: JSON.stringify(texts), html: "<p>exemple</p>", attachments: [] };
   }
 }
 
 /** Un envoi d'essai qui garde ce qu'on lui demande, et peut échouer. */
 export class RecordingTrialSender extends MailTrialSender {
-  readonly sent: { to: string; mail: string; locale: MailCopyLocale; texts: MailTextsByMail }[] =
-    [];
+  readonly sent: {
+    to: string;
+    mail: string;
+    locale: MailCopyLocale;
+    texts: MailTextsByMail;
+    order: readonly string[] | null;
+  }[] = [];
   failure: Error | null = null;
 
-  send(to: string, mail: string, locale: MailCopyLocale, texts: MailTextsByMail): Promise<void> {
+  send(
+    to: string,
+    mail: string,
+    locale: MailCopyLocale,
+    texts: MailTextsByMail,
+    order: readonly string[] | null,
+  ): Promise<void> {
     if (this.failure !== null) {
       return Promise.reject(this.failure);
     }
-    this.sent.push({ to, mail, locale, texts });
+    this.sent.push({ to, mail, locale, texts, order });
     return Promise.resolve();
   }
 }

@@ -137,6 +137,8 @@ export const MAIL_COPY_VARIABLES: MailCopyVariables = {
     title: ["form"],
     photosValue: ["count"],
   },
+  "customer.order-change-applied": { subject: ["ref"], intro: ["ref"] },
+  "customer.order-change-refused": { subject: ["ref"], intro: ["ref"] },
   "ops.deploy-check": { subject: ["revision"] },
   "agency.vitrine-notice": {},
 };

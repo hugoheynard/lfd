@@ -1,10 +1,11 @@
 import { CUSTOMER_CASES } from "./customer-cases.js";
 import type { MailCases } from "./mail-cases.type.js";
+import { ORDER_CHANGE_CASES } from "./order-change-cases.js";
 import { ORDER_CASES } from "./order-cases.js";
 import { TEAM_CASES } from "./team-cases.js";
 
 /**
- * **Les données d'exemple des 28 e-mails**, une liste de cas par clé du
+ * **Les données d'exemple des 30 e-mails**, une liste de cas par clé du
  * registre, choisis pour passer par CHAQUE branche du texte : avec et sans
  * prénom, avec et sans lien, chaque régime, chaque geste.
  *
@@ -15,4 +16,9 @@ import { TEAM_CASES } from "./team-cases.js";
  * Les dates y sont des données mises en forme, jamais comparées à l'horloge :
  * aucun gabarit ne lit le temps.
  */
-export const MAIL_CASES: MailCases = { ...ORDER_CASES, ...CUSTOMER_CASES, ...TEAM_CASES };
+export const MAIL_CASES: MailCases = {
+  ...ORDER_CASES,
+  ...CUSTOMER_CASES,
+  ...TEAM_CASES,
+  ...ORDER_CHANGE_CASES,
+};

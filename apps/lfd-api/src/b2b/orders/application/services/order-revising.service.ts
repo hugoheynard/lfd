@@ -119,13 +119,19 @@ export class OrderRevising {
   /**
    * La commande telle qu'elle serait. `requireChange` : la modification exige
    * un changement (R6) ; le devis, non — il montre aussi le panier intact.
+   *
+   * `rulesOf` : les règles de qui s'appliquent, par défaut celles de l'auteur.
+   * Le devis d'une DEMANDE (M4, décision de Hugo du 2026-10-23) chiffre la
+   * commande voulue par le client avec les règles de l'équipe, parce que
+   * c'est l'équipe qui l'appliquera (`ReviseOrderCommand` en son nom).
    */
   async compose(
     order: RevisableOrder,
     content: OrderContent,
-    actor: RevisionActor,
-    { requireChange }: { readonly requireChange: boolean },
+    author: RevisionActor,
+    options: { readonly requireChange: boolean; readonly rulesOf?: RevisionActor["kind"] },
   ): Promise<OrderRevisionToSave> {
+    const actor = options.rulesOf ?? author.kind;
     await this.ensureDayOpen(order, content.requestedDeliveryDate, actor);
     const parties: OrderParties = {
       companyId: order.companyId,
@@ -144,7 +150,7 @@ export class OrderRevising {
       deliveryVatMode: arranged.deliveryVatMode,
       subtotalCents: resolved.subtotalCents,
     });
-    return requireChange ? Order.revise(order, input) : Order.recompose(order, input);
+    return options.requireChange ? Order.revise(order, input) : Order.recompose(order, input);
   }
 
   /**
@@ -174,7 +180,7 @@ export class OrderRevising {
   private async ensureDayOpen(
     order: RevisableOrder,
     day: string | null,
-    actor: RevisionActor,
+    actor: RevisionActor["kind"],
   ): Promise<void> {
     const closed = await this.plans.isClosed(day);
     if (day !== order.serviceDay) {
@@ -184,7 +190,7 @@ export class OrderRevising {
       await this.plans.ensureNotTooSoon(day);
       return;
     }
-    if (closed && actor.kind === "customer") {
+    if (closed && actor === "customer") {
       throw new ProductionPlanClosedError(day ?? "");
     }
   }
@@ -197,9 +203,9 @@ export class OrderRevising {
   private async ensureBeforeCutoff(
     order: RevisableOrder,
     content: OrderContent,
-    actor: RevisionActor,
+    actor: RevisionActor["kind"],
   ): Promise<void> {
-    if (actor.kind === "staff") {
+    if (actor === "staff") {
       return;
     }
     const skus = [
@@ -275,8 +281,8 @@ function subjectOf(order: RevisableOrder) {
 }
 
 /** Qui demande une tranche : l'équipe est libre de l'heure, le client selon sa clientèle. */
-function requesterOf(order: RevisableOrder, actor: RevisionActor): WindowRequester {
-  if (actor.kind === "staff") {
+function requesterOf(order: RevisableOrder, actor: RevisionActor["kind"]): WindowRequester {
+  if (actor === "staff") {
     return "staff";
   }
   return order.companyId === null ? "individual" : "pro";

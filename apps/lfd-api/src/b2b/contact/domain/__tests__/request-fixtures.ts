@@ -73,3 +73,28 @@ export function contactRequest(overrides: Partial<RequestReception> = {}): Custo
     ...overrides,
   });
 }
+
+/** La composition demandée : le corps d'une révision, sans la révision portée. */
+export const CHANGE = {
+  fulfillmentMethod: "pickup",
+  deliveryAddress: null,
+  deliveryAddressId: null,
+  pickupAddressId: "p1",
+  requestedDeliveryDate: "2030-01-02",
+  requestedWindow: null,
+  note: "",
+  lines: [{ sku: "SKU-1", quantity: 3 }],
+} as const satisfies Parameters<typeof CustomerRequest.orderChange>[0]["change"];
+
+/** Une demande de modification, composée sur la révision 1. */
+export function orderChange(overrides: Partial<RequestReception> = {}): CustomerRequest {
+  return CustomerRequest.orderChange({
+    ...RECEPTION,
+    reason: { id: "r_change", labelFr: "Modifier ma commande", priority: "medium" },
+    body: "",
+    ...overrides,
+    order: ORDER,
+    baseRevision: 1,
+    change: CHANGE,
+  });
+}

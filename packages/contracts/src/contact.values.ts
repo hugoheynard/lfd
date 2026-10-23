@@ -1,4 +1,5 @@
 import type { CustomerAudience } from "./customer-audience.js";
+import type { OrderRevisionQuotePayload } from "./order-revision.js";
 
 /**
  * **Les demandes clients** — motifs, demandes, carte de contact et numéros,
@@ -21,9 +22,9 @@ export const CONTACT_AUDIENCES: readonly ContactAudience[] = ["b2b", "b2c", "bot
  * devis) est une valeur de plus, un onglet de motifs de plus, et une variante
  * de plus de {@link CustomerRequestDetailsView}.
  */
-export type RequestKind = "contact" | "order_problem";
+export type RequestKind = "contact" | "order_problem" | "order_change";
 
-export const REQUEST_KINDS: readonly RequestKind[] = ["contact", "order_problem"];
+export const REQUEST_KINDS: readonly RequestKind[] = ["contact", "order_problem", "order_change"];
 
 /**
  * **La priorité d'un motif**, à usage interne (Hugo, 2026-10-09) : elle trie
@@ -54,6 +55,8 @@ export const CONTACT_BOUNDS = {
   cardTitle: 120,
   cardBody: 400,
   phoneLabel: 80,
+  /** Le mot du commerce qui refuse une demande de modification de commande. */
+  changeRefusal: 1000,
 } as const;
 
 /**
@@ -175,8 +178,61 @@ export interface OrderProblemDetailsView {
   readonly photos: readonly CustomerRequestPhotoView[];
 }
 
+/**
+ * La réponse du commerce à une demande de modification (plan
+ * `documentation/commandes/plan-modifier-une-commande.md`, M4) : appliquée —
+ * la révision qu'elle a produite —, ou refusée avec un mot.
+ */
+export type OrderChangeDecisionView =
+  | { readonly kind: "applied"; readonly revision: number }
+  | { readonly kind: "refused"; readonly reason: string };
+
+/**
+ * Les détails d'une **demande de modification de commande** (M4) : la
+ * commande, la révision sur laquelle le client a composé, la composition
+ * demandée — la même forme que le corps d'une révision — et la réponse.
+ * Anonymisée : commande et composition à `null`.
+ */
+export interface OrderChangeDetailsView {
+  readonly kind: "order_change";
+  readonly orderId: string | null;
+  readonly orderNumber: string | null;
+  readonly baseRevision: number;
+  /** `null` une fois anonymisée, ou illisible en base. */
+  readonly change: OrderRevisionQuotePayload | null;
+  /** `null` tant que le commerce n'a pas répondu. */
+  readonly decision: OrderChangeDecisionView | null;
+}
+
 /** Les détails PROPRES au type, discriminés par `kind`. Un type neuf = une variante de plus. */
-export type CustomerRequestDetailsView = ContactRequestDetailsView | OrderProblemDetailsView;
+export type CustomerRequestDetailsView =
+  ContactRequestDetailsView | OrderProblemDetailsView | OrderChangeDetailsView;
+
+/**
+ * **Où en est la demande de modification d'une commande**, côté client
+ * (`GET /me/orders/:id/change-request`, M4) : la plus récente, ou `null`.
+ * `pending` tant que le commerce n'a pas répondu.
+ */
+export interface OrderChangeRequestStatusView {
+  readonly id: string;
+  readonly status: "pending" | "applied" | "refused";
+  /** Instant ISO 8601. */
+  readonly requestedAt: string;
+  /** Instant ISO 8601 de la réponse ; `null` en attente. */
+  readonly answeredAt: string | null;
+  /** Le mot du commerce, pour un refus ; `null` sinon. */
+  readonly refusalReason: string | null;
+}
+
+/** Ce que rend « Appliquer » : la révision que la modification a produite. */
+export interface OrderChangeAppliedResponse {
+  readonly revision: number;
+}
+
+/** Ce que sert `GET /me/orders/:id/change-request` : la dernière demande, s'il y en a une. */
+export interface OrderChangeRequestStatusResponse {
+  readonly request: OrderChangeRequestStatusView | null;
+}
 
 /**
  * Une demande reçue, au back-office (`GET /admin/customer-requests?status=&kind=`) :

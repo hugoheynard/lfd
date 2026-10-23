@@ -2,7 +2,8 @@ import type { Mailer, MailReceipt, SendMailArgs } from "@lfd/mailer";
 
 import { mailCopyOf } from "../../copy/mail-copy.js";
 import { withMailCopyOverlay, type MailCopyOverlay } from "../../copy/mail-copy-overlay.js";
-import type { B2bMails } from "../../mail-templates.js";
+import { b2bMailTemplates, type B2bMails } from "../../mail-templates.js";
+import type { MailSectionOrders } from "../../sections/mail-layout-scope.js";
 import { EffectiveCopyMailer, type EffectiveCopyLog } from "../effective-copy-mailer.js";
 import { PublishedMailCopyReader } from "../published-mail-copy.reader.js";
 
@@ -19,7 +20,10 @@ class SubjectReadingTransport implements Mailer<B2bMails> {
 
 class StaticPublished extends PublishedMailCopyReader {
   reads = 0;
-  constructor(private readonly overlay: MailCopyOverlay | Error) {
+  constructor(
+    private readonly overlay: MailCopyOverlay | Error,
+    private readonly orders: MailSectionOrders | Error = {},
+  ) {
     super();
   }
   read(): Promise<MailCopyOverlay> {
@@ -28,7 +32,33 @@ class StaticPublished extends PublishedMailCopyReader {
       ? Promise.reject(this.overlay)
       : Promise.resolve(this.overlay);
   }
+  sectionOrders(): Promise<MailSectionOrders> {
+    return this.orders instanceof Error
+      ? Promise.reject(this.orders)
+      : Promise.resolve(this.orders);
+  }
 }
+
+/** Un transport qui REND l'e-mail par le vrai registre, au moment de l'envoi. */
+class RenderingTransport implements Mailer<B2bMails> {
+  readonly enabled = false;
+  readonly html: string[] = [];
+  private readonly registry = b2bMailTemplates({
+    supportEmail: "admin@lfc.test",
+    backOfficeUrl: "https://bo.lfc.test",
+  });
+
+  send<K extends keyof B2bMails>(args: SendMailArgs<B2bMails, K>): Promise<MailReceipt> {
+    const render: (data: B2bMails[K]) => { readonly html: string } = this.registry[args.template];
+    this.html.push(render(args.data).html);
+    return Promise.resolve({ providerId: null });
+  }
+}
+
+/** Le pied d'abord, le titre ensuite : l'ordre publié se lit à leur place dans le HTML. */
+const FOOTER_FIRST: MailSectionOrders = {
+  "customer.password-reset": ["footer", "title", "body", "cta"],
+};
 
 class RecordingLog implements EffectiveCopyLog {
   readonly warnings: string[] = [];
@@ -88,5 +118,35 @@ describe("le mailer du texte effectif (C2)", () => {
     );
     expect(transport.subjects).toEqual(["Brouillon {ref}"]);
     expect(published.reads).toBe(0);
+  });
+
+  it("rend dans l'ordre des sections publié (E4, S3)", async () => {
+    const transport = new RenderingTransport();
+    await new EffectiveCopyMailer(
+      transport,
+      new StaticPublished({}, FOOTER_FIRST),
+      new RecordingLog(),
+    ).send(ARGS);
+    const html = transport.html[0] ?? "";
+    expect(html.indexOf('<p style="margin:24px 0 0;line-height:1.5;font-size:13px')).toBeLessThan(
+      html.indexOf("<h1"),
+    );
+    expect(html).not.toContain("data-mail-section");
+  });
+
+  /** L'ordre illisible n'empêche ni l'envoi ni les textes publiés : l'ordre du code, et un mot. */
+  it("se replie sur l'ordre du code quand l'ordre publié est illisible, et le dit", async () => {
+    const transport = new RenderingTransport();
+    const log = new RecordingLog();
+    await new EffectiveCopyMailer(
+      transport,
+      new StaticPublished({}, new Error("base injoignable")),
+      log,
+    ).send(ARGS);
+    const html = transport.html[0] ?? "";
+    expect(html.indexOf("<h1")).toBeLessThan(html.indexOf("font-size:13px;color"));
+    expect(log.warnings).toEqual([
+      expect.stringContaining("« customer.password-reset » part dans l'ordre du code"),
+    ]);
   });
 });

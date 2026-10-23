@@ -13,6 +13,8 @@ function state(partial: Partial<MailCopyEntryState>): MailCopyEntryState {
     drafted: null,
     publishedText: null,
     published: null,
+    draftDefault: null,
+    publishedDefault: null,
     ...partial,
   };
 }

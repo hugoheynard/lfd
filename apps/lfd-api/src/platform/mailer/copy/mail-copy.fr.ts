@@ -1,5 +1,6 @@
 import { ACCOUNT_MAILS_FR } from "./fr/account-mails.fr.js";
 import { BILLING_MAILS_FR } from "./fr/billing-mails.fr.js";
+import { ORDER_CHANGE_MAILS_FR } from "./fr/order-change-mails.fr.js";
 import { ORDER_MAILS_FR } from "./fr/order-mails.fr.js";
 import { PAYMENT_MAILS_FR } from "./fr/payment-mails.fr.js";
 import { TEAM_MAILS_FR } from "./fr/team-mails.fr.js";
@@ -17,4 +18,5 @@ export const MAIL_FR: MailCopy = {
   ...BILLING_MAILS_FR,
   ...ACCOUNT_MAILS_FR,
   ...TEAM_MAILS_FR,
+  ...ORDER_CHANGE_MAILS_FR,
 };

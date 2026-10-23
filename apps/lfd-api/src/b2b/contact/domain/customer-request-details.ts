@@ -1,4 +1,4 @@
-import type { RequestKind } from "@lfd/contracts";
+import type { OrderRevisionQuotePayload, RequestKind } from "@lfd/contracts";
 
 /**
  * Une photo jointe, telle que la demande la garde : sa clé de stockage et ce
@@ -33,13 +33,39 @@ export interface OrderProblemDetails {
 }
 
 /**
+ * La composition demandée — le corps d'une révision de commande, sans la
+ * révision portée (plan `documentation/commandes/plan-modifier-une-commande.md`,
+ * M4). La demande ne la juge pas : c'est la révision qui la jugera, au moment
+ * où le commerce l'applique.
+ */
+export type RequestedOrderChange = OrderRevisionQuotePayload;
+
+/** La réponse du commerce : appliquée (la révision produite), ou refusée avec un mot. */
+export type OrderChangeDecision =
+  | { readonly kind: "applied"; readonly revision: number }
+  | { readonly kind: "refused"; readonly reason: string };
+
+/**
+ * « Demander une modification » (M4) : la commande, la révision sur laquelle
+ * le client a composé, la composition demandée — vidées à l'anonymisation —,
+ * et la réponse.
+ */
+export interface OrderChangeDetails {
+  readonly kind: "order_change";
+  readonly order: ReportedOrderRef | null;
+  readonly baseRevision: number;
+  readonly change: RequestedOrderChange | null;
+  readonly decision: OrderChangeDecision | null;
+}
+
+/**
  * **Les détails PROPRES au type d'une demande**, en union discriminée
  * (`demandes-clients.md`, précision du 2026-10-09). L'enveloppe
  * (`CustomerRequest`) ne les lit que par les fonctions ci-dessous : un type
  * neuf (`QuoteDetails`, `AppointmentDetails`) est une variante de plus et une
  * entrée de plus dans {@link DETAIL_RULES} — que le compilateur exige.
  */
-export type CustomerRequestDetails = ContactDetails | OrderProblemDetails;
+export type CustomerRequestDetails = ContactDetails | OrderProblemDetails | OrderChangeDetails;
 
 /** Un détail qui admet des photos : il porte une liste `photos`. */
 export type PhotoBearingDetails = Extract<CustomerRequestDetails, { readonly photos: unknown }>;
@@ -58,6 +84,20 @@ const DETAIL_RULES: { readonly [K in RequestKind]: DetailRule<DetailsOf<K>> } = 
     anonymize: (details, at) => ({
       details: { ...details, order: null, photos: details.photos.map((p) => purged(p, at)) },
       purge: details.photos.filter((p) => p.purgedAt === null).map((p) => p.storageKey),
+    }),
+  },
+  // La composition porte une adresse et une note ; le mot d'un refus peut
+  // nommer quelqu'un. La révision de départ et la NATURE de la réponse restent.
+  order_change: {
+    anonymize: (details) => ({
+      details: {
+        ...details,
+        order: null,
+        change: null,
+        decision:
+          details.decision?.kind === "refused" ? { kind: "refused", reason: "" } : details.decision,
+      },
+      purge: [],
     }),
   },
 };

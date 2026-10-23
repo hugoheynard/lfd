@@ -3,6 +3,7 @@ import type { Provider, Type } from "@nestjs/common";
 import { ReviseOrderHandler } from "./application/commands/revise-order.handler.js";
 import { GetOrderRevisabilityHandler } from "./application/queries/get-order-revisability.handler.js";
 import { ListOrderRevisionsHandler } from "./application/queries/list-order-revisions.handler.js";
+import { QuoteOrderChangeRequestHandler } from "./application/queries/quote-order-change-request.handler.js";
 import { QuoteOrderRevisionHandler } from "./application/queries/quote-order-revision.handler.js";
 import { OrderComposition } from "./application/services/order-composition.service.js";
 import { OrderCutoffGate } from "./application/services/order-cutoff-gate.service.js";
@@ -35,6 +36,7 @@ export const ORDER_REVISION_PROVIDERS: readonly Provider[] = [
   RevisionWall,
   ReviseOrderHandler,
   QuoteOrderRevisionHandler,
+  QuoteOrderChangeRequestHandler,
   OrderRevisabilityReading,
   GetOrderRevisabilityHandler,
   ListOrderRevisionsHandler,

@@ -198,6 +198,7 @@ export const COMMERCE_FACTS = {
    * **Les textes des e-mails publiés** (`plan-textes-des-e-mails.md`, C3) : UN
    * fait par « Publier », qui porte pour chaque texte la valeur envoyée AVANT
    * et APRÈS — de quoi relire, et annuler à la main. `null` = le texte du code.
+   * Depuis E4, l'ordre des sections de chaque e-mail déplacé aussi.
    *
    * `subjectLabel` : « Textes des e-mails » — il n'y a qu'un jeu publié.
    */
@@ -214,6 +215,19 @@ export const COMMERCE_FACTS = {
           after: z.string().nullable(),
         }),
       ),
+      /**
+       * L'ordre des sections de chaque e-mail déplacé (E4, S3) — `null` :
+       * l'ordre du code. Absent des faits d'avant E4.
+       */
+      sectionOrders: z
+        .array(
+          payload({
+            mail: z.string().min(1),
+            before: z.array(z.string()).nullable(),
+            after: z.array(z.string()).nullable(),
+          }),
+        )
+        .optional(),
     }),
   ),
 

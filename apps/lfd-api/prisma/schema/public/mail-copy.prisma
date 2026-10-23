@@ -53,6 +53,14 @@ model MailCopyEntry {
   publishedAt   DateTime? @map("published_at")
   publishedBy   String?   @map("published_by")
 
+  /// Le texte du code (même langue) au moment du brouillon, tenu tant que le
+  /// brouillon remplace. NULL = rien à comparer, ou inconnu (ligne antérieure
+  /// à `20261023233000`) : pas de signal « le texte d'origine a changé ».
+  draftDefaultText     String? @map("draft_default_text")
+  /// Le texte du code au moment où le publié a été mis en service. NULL = pas
+  /// de remplacement publié, ou inconnu.
+  publishedDefaultText String? @map("published_default_text")
+
   @@id([mail, path, locale])
   @@map("mail_copy_entries")
   @@schema("public")
@@ -70,5 +78,36 @@ model MailCopyPublication {
   publishedBy String   @map("published_by")
 
   @@map("mail_copy_publication")
+  @@schema("public")
+}
+
+/// **L'ordre des sections d'un e-mail** (plan, E4, S2 et S3) — une ligne par
+/// e-mail du registre dont on a déplacé les sections. Même cycle qu'un texte :
+/// brouillon à trois états, révision, publié par le même « Publier » (même
+/// version, `mail_copy_publication`). Sans ligne, ou `published_order` vide :
+/// l'ordre du code.
+///
+/// Jamais supprimé : publier un `reset` vide `published_order`, la ligne reste.
+model MailSectionOrderEntry {
+  /// La clé du registre. Chaîne OPAQUE, comme pour un texte.
+  mail String @id
+
+  /// Monte à chaque écriture du brouillon : le verrou entre deux rédacteurs.
+  revision Int
+
+  draftState MailCopyDraftState @default(unchanged) @map("draft_state")
+  /// Les identifiants des sections, dans l'ordre. Non vide si et seulement si
+  /// `draft_state = 'set'` (CHECK).
+  draftOrder String[]           @default([]) @map("draft_order")
+  draftAt    DateTime?          @map("draft_at")
+  /// L'identifiant INTERNE de la fiche staff — jamais un `sub` Auth0.
+  draftBy    String?            @map("draft_by")
+
+  /// L'ordre envoyé. VIDE = l'ordre du code.
+  publishedOrder String[]  @default([]) @map("published_order")
+  publishedAt    DateTime? @map("published_at")
+  publishedBy    String?   @map("published_by")
+
+  @@map("mail_section_orders")
   @@schema("public")
 }

@@ -568,7 +568,10 @@ export const ACCOUNTS_AND_CARTS_FACTS = {
    * à douze mois, et un nom recopié au journal y survivrait.
    */
   "customer_request.handled": fact(
-    payload({ subjectLabel: subjectLabel(), kind: z.enum(["contact", "order_problem"]) }),
+    payload({
+      subjectLabel: subjectLabel(),
+      kind: z.enum(["contact", "order_problem", "order_change"]),
+    }),
   ),
 
   /** Le sujet est la clé de la fonctionnalité ; son libellé, celui du catalogue fermé. */

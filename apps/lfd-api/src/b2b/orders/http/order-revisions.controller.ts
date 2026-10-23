@@ -16,6 +16,7 @@ import {
   ReviseOrderCommand,
   type ReviseOrderResult,
 } from "../application/commands/revise-order.command.js";
+import { QuoteOrderChangeRequestQuery } from "../application/queries/quote-order-change-request.query.js";
 import { QuoteOrderRevisionQuery } from "../application/queries/quote-order-revision.query.js";
 
 /**
@@ -49,6 +50,23 @@ export class OrderRevisionsController {
   ): Promise<OrderRevisionQuoteView> {
     return this.queries.execute<QuoteOrderRevisionQuery, OrderRevisionQuoteView>(
       new QuoteOrderRevisionQuery(id, { kind: "customer", userId: user.userId }, payload),
+    );
+  }
+
+  /**
+   * **Ce que la DEMANDE coûterait** (M4, §14) — après l'heure limite
+   * seulement : un devis indicatif, aux règles de l'équipe qui l'appliquera.
+   * `409` hors de ce cas, `404` hors mur. Ne mute rien.
+   */
+  @Post(":id/revisions/change-request-quote")
+  @HttpCode(HttpStatus.OK)
+  async quoteChangeRequest(
+    @CurrentUser() user: Principal,
+    @Param("id") id: string,
+    @Body(new ZodBody(orderRevisionQuotePayloadSchema)) payload: OrderRevisionQuotePayload,
+  ): Promise<OrderRevisionQuoteView> {
+    return this.queries.execute<QuoteOrderChangeRequestQuery, OrderRevisionQuoteView>(
+      new QuoteOrderChangeRequestQuery(id, user.userId, payload),
     );
   }
 

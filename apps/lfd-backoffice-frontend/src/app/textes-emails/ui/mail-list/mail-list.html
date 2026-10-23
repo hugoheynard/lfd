@@ -14,7 +14,7 @@
               [active]="store.current()?.mail === mail.mail"
               [badge]="badge(mail)"
               badgeTone="warning"
-              (click)="store.selectedMail.set(mail.mail)"
+              (click)="store.open(mail.mail)"
             ></button>
           }
         }

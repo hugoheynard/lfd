@@ -88,6 +88,8 @@ export class MailDraftWriter {
       this.store.patch(text.mail, text.path, locale, {
         draftState: view.publishedText === null ? 'unchanged' : 'reset',
         draftText: null,
+        // « Rétablir » oublie le texte d'origine noté : plus de signal.
+        defaultChangedSince: null,
         revision: view.revision + 1,
       });
     });
@@ -120,6 +122,8 @@ export class MailDraftWriter {
     this.store.patch(mail, path, locale, {
       draftState: 'set',
       draftText: value,
+      // Le brouillon note le texte d'origine d'aujourd'hui : le signal tombe.
+      defaultChangedSince: null,
       revision: view.revision + 1,
     });
     if (this.typed().get(id) === value) {

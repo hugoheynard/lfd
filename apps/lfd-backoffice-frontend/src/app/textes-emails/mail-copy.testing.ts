@@ -7,6 +7,10 @@ import type {
   MailCopyPreviewView,
   MailCopyTextView,
   MailFamily,
+  MailSectionNature,
+  MailSectionOrderView,
+  MailSectionTextView,
+  MailSectionView,
 } from '@lfd/contracts';
 
 /** Une langue jamais touchée : le texte du code, révision 0. */
@@ -22,6 +26,7 @@ export function mailLocaleView(
     revision: 0,
     draftAt: null,
     draftBy: null,
+    defaultChangedSince: null,
     ...overrides,
   };
 }
@@ -59,8 +64,12 @@ export function mailView(
     readonly audience?: MailAudience;
     readonly family?: MailFamily;
     readonly followsLocale?: boolean;
+    readonly frames?: MailCopyMailView['frames'];
+    readonly sections?: readonly MailSectionView[];
+    readonly sectionOrder?: Partial<MailSectionOrderView>;
   } = {},
 ): MailCopyMailView {
+  const sections = overrides.sections ?? [];
   return {
     mail,
     audience: overrides.audience ?? 'customer',
@@ -68,6 +77,42 @@ export function mailView(
     followsLocale: overrides.followsLocale ?? true,
     pendingCount: 0,
     texts,
+    frames: overrides.frames ?? { subject: [], header: [] },
+    sections,
+    sectionOrder: {
+      draftState: 'unchanged',
+      revision: 0,
+      default: sections.map((section) => section.id),
+      published: null,
+      draft: null,
+      draftAt: null,
+      draftBy: null,
+      ...overrides.sectionOrder,
+    },
+  };
+}
+
+/** Un texte rangé dans une carte ; `variant` : quand il s'affiche. */
+export function sectionText(path: string, variant: string | null = null): MailSectionTextView {
+  return { path, variant };
+}
+
+/** Une section à sa place par défaut partout. */
+export function sectionView(
+  id: string,
+  label: string,
+  position: number,
+  texts: readonly MailSectionTextView[] = [],
+  nature: MailSectionNature = 'text',
+): MailSectionView {
+  return {
+    id,
+    label,
+    nature,
+    texts,
+    defaultPosition: position,
+    publishedPosition: position,
+    draftPosition: position,
   };
 }
 
@@ -75,7 +120,15 @@ export function mailAdminView(
   mails: readonly MailCopyMailView[],
   orphans: readonly MailCopyTextView[] = [],
 ): MailCopyAdminView {
-  return { version: 3, publishedAt: null, publishedBy: null, pendingCount: 0, mails, orphans };
+  return {
+    version: 3,
+    publishedAt: null,
+    publishedBy: null,
+    pendingCount: 0,
+    defaultChangedCount: 0,
+    mails,
+    orphans,
+  };
 }
 
 export function previewView(overrides: Partial<MailCopyPreviewView> = {}): MailCopyPreviewView {

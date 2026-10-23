@@ -5,12 +5,38 @@ import { describe, expect, it, vi } from 'vitest';
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { NotifyService } from '../../../notify.service';
 import { MailCopyService } from '../../data/mail-copy.service';
-import { mailAdminView, mailView, previewView } from '../../mail-copy.testing';
+import {
+  mailAdminView,
+  mailTextView,
+  mailView,
+  previewView,
+  sectionText,
+  sectionView,
+} from '../../mail-copy.testing';
 import { MailCopyStore } from '../../state/mail-copy-store';
 import { MailDraftWriter } from '../../state/mail-draft-writer';
 import { MailPreview } from './mail-preview';
 
-const MAIL = mailView('customer.order-placed', [], { followsLocale: false });
+const MAIL = mailView(
+  'customer.order-placed',
+  [mailTextView('customer.order-placed', 'title.due', 'À régler')],
+  {
+    followsLocale: false,
+    sections: [
+      sectionView('title', 'Titre', 0, [sectionText('title.due', 'Commande à régler')]),
+      sectionView('summary', 'Récapitulatif', 1, [], 'system'),
+    ],
+  },
+);
+
+/** Un aperçu repéré comme le serveur le rend (E4a, S4), dans un document à part. */
+function markedDocument(): Document {
+  const doc = document.implementation.createHTMLDocument('aperçu');
+  doc.body.innerHTML =
+    '<div data-mail-section="title"><h1><span data-mail-text="title.due" data-mail-text-of="customer.order-placed">À régler</span></h1></div>' +
+    '<div data-mail-section="summary"><a href="https://exemple.invalid">Total</a></div>';
+  return doc;
+}
 
 async function render(permissions: readonly StaffPermission[] = ['b2b_storefront:write']) {
   const api = {
@@ -56,7 +82,8 @@ describe('MailPreview — le vrai gabarit, des données d’exemple', () => {
     expect(api.preview).toHaveBeenCalledWith('customer.order-placed', 'fr', 'draft');
     expect(element.textContent).toContain('Commande EXEMPLE-1 reçue');
     const frame = element.querySelector('iframe');
-    expect(frame?.getAttribute('sandbox')).toBe('');
+    // Même origine pour lire ses clics, et JAMAIS de script : le HTML reste inerte.
+    expect(frame?.getAttribute('sandbox')).toBe('allow-same-origin');
     expect(frame?.getAttribute('srcdoc')).toContain('Bonjour EXEMPLE');
     expect(element.textContent).toContain('mandat.pdf');
     expect(element.textContent).not.toContain('logo.png');
@@ -88,5 +115,38 @@ describe('MailPreview — le vrai gabarit, des données d’exemple', () => {
   it('pas d’essai sans le droit d’écrire', async () => {
     const { element } = await render(['b2b_storefront:read']);
     expect(element.textContent).not.toContain('M’envoyer un essai');
+  });
+
+  it('un clic dans l’aperçu désigne la carte de sa section et son texte, sans suivre le lien', async () => {
+    const { fixture } = await render();
+    const doc = markedDocument();
+    fixture.componentInstance.wire({ contentDocument: doc });
+    const store = TestBed.inject(MailCopyStore);
+
+    doc
+      .querySelector('[data-mail-text]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(store.spot()).toEqual({ card: 'section:title', path: 'title.due' });
+
+    const link = new MouseEvent('click', { bubbles: true, cancelable: true });
+    doc.querySelector('a')?.dispatchEvent(link);
+    expect(store.spot()).toEqual({ card: 'section:summary', path: null });
+    expect(link.defaultPrevented).toBe(true);
+  });
+
+  it('la carte survolée encadre sa section dans l’aperçu', async () => {
+    const { fixture } = await render();
+    const doc = markedDocument();
+    fixture.componentInstance.wire({ contentDocument: doc });
+    const store = TestBed.inject(MailCopyStore);
+
+    store.hoveredSection.set('summary');
+    await fixture.whenStable();
+    expect(
+      doc.querySelector('[data-mail-section="summary"]')?.hasAttribute('data-lfd-hovered'),
+    ).toBe(true);
+    store.hoveredSection.set(null);
+    await fixture.whenStable();
+    expect(doc.querySelector('[data-lfd-hovered]')).toBeNull();
   });
 });

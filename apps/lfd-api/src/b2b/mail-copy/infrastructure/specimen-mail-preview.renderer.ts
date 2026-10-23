@@ -1,9 +1,13 @@
-import type { RenderedMail, TemplateRegistry } from "@lfd/mailer";
+import { isLayoutSectionId, type RenderedMail, type TemplateRegistry } from "@lfd/mailer";
 import { Injectable } from "@nestjs/common";
 
 import { AppConfig } from "../../../platform/config/app-config.js";
 import { mailBrandingOf } from "../../../platform/mailer/mail-branding.js";
 import { b2bMailTemplates, type B2bMails } from "../../../platform/mailer/mail-templates.js";
+import {
+  revealTextMarkers,
+  stripTextMarkers,
+} from "../../../platform/mailer/sections/mail-text-markers.js";
 import {
   isMailKey,
   renderMailSpecimen,
@@ -24,6 +28,12 @@ import type { MailTextsByMail } from "../domain/mail-copy-texts.js";
  * Les images du corps partent en pièce jointe `cid:` — qu'un navigateur ne
  * sait pas afficher : l'aperçu les incruste en `data:`, et le HTML envoyé,
  * lui, n'est pas touché.
+ *
+ * L'aperçu est REPÉRÉ (E4, S4) : chaque section rendue est dans un
+ * `<div data-mail-section="…">`, chaque texte du dictionnaire dans un
+ * `<span data-mail-text="<chemin>" data-mail-text-of="<e-mail>">`. Ces
+ * repères n'existent que dans ce périmètre : l'essai et l'envoi ne les
+ * ouvrent jamais.
  */
 @Injectable()
 export class SpecimenMailPreviewRenderer extends MailSpecimenRenderer {
@@ -34,16 +44,27 @@ export class SpecimenMailPreviewRenderer extends MailSpecimenRenderer {
     this.registry = b2bMailTemplates(mailBrandingOf(config));
   }
 
-  render(mail: string, locale: MailCopyLocale, texts: MailTextsByMail): MailSpecimenRendering {
+  render(
+    mail: string,
+    locale: MailCopyLocale,
+    texts: MailTextsByMail,
+    order: readonly string[] | null,
+  ): MailSpecimenRendering {
     if (!isMailKey(mail)) {
       throw new UnknownMailError(mail);
     }
-    const rendered = renderMailSpecimen(this.registry, mail, locale, { [locale]: texts });
+    const rendered = renderMailSpecimen(
+      this.registry,
+      mail,
+      locale,
+      { [locale]: texts },
+      { orders: order === null ? {} : { [mail]: order.filter(isLayoutSectionId) }, markers: true },
+    );
     return {
-      subject: rendered.subject,
-      html: withInlineImages(rendered),
+      subject: stripTextMarkers(rendered.subject),
+      html: revealTextMarkers(withInlineImages(rendered)),
       attachments: (rendered.attachments ?? []).map((attachment) => ({
-        filename: attachment.filename,
+        filename: stripTextMarkers(attachment.filename),
         contentType: attachment.contentType ?? null,
         inline: attachment.contentId !== undefined,
       })),

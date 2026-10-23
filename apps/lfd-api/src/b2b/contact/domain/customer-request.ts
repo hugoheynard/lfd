@@ -14,7 +14,10 @@ import {
   bearsPhotos,
   requestPhotoKey,
   type CustomerRequestDetails,
+  type OrderChangeDecision,
+  type OrderChangeDetails,
   type ReportedOrderRef,
+  type RequestedOrderChange,
   type RequestPhotoRef,
 } from "./customer-request-details.js";
 import {
@@ -24,6 +27,12 @@ import {
   RequestPhotosNotAllowedError,
   TooManyRequestPhotosError,
 } from "./errors/contact-errors.js";
+import {
+  NotAnOrderChangeRequestError,
+  OrderChangeErasedError,
+  OrderChangeNeedsDecisionError,
+  OrderChangeRefusalReasonMissingError,
+} from "./errors/order-change-errors.js";
 import type { RequestPhoto } from "./request-photo.js";
 
 /** Qui écrit : saisi par le visiteur, pris au compte pour un client connecté. */
@@ -105,6 +114,33 @@ export class CustomerRequest {
     );
   }
 
+  /**
+   * Une demande de modification, l'heure limite passée (plan
+   * `documentation/commandes/plan-modifier-une-commande.md`, M4) : la
+   * commande, la révision sur laquelle le client a composé, la composition
+   * voulue. Le mot est facultatif. Que la commande soit bien « trop tard »
+   * est la règle de la commande, jugée par le handler avant d'arriver ici.
+   */
+  static orderChange(
+    input: RequestReception & {
+      readonly order: ReportedOrderRef;
+      readonly baseRevision: number;
+      readonly change: RequestedOrderChange;
+    },
+  ): CustomerRequest {
+    return CustomerRequest.receive(
+      input,
+      {
+        kind: "order_change",
+        order: input.order,
+        baseRevision: input.baseRevision,
+        change: input.change,
+        decision: null,
+      },
+      false,
+    );
+  }
+
   /** Réhydrate depuis la base. Une demande anonymisée a ses champs vides : pas de revalidation. */
   static rehydrate(state: CustomerRequestState): CustomerRequest {
     return new CustomerRequest(state);
@@ -173,12 +209,81 @@ export class CustomerRequest {
     return ref;
   }
 
-  /** @throws {CustomerRequestAlreadyHandledError} elle l'est déjà. */
+  /**
+   * @throws {OrderChangeNeedsDecisionError} une demande de modification : elle
+   *   se traite par une réponse, que le client attend.
+   * @throws {CustomerRequestAlreadyHandledError} elle l'est déjà.
+   */
   markHandled(by: StaffTrace, at: Date): void {
+    if (this.state.details.kind === "order_change") {
+      throw new OrderChangeNeedsDecisionError(this.state.id);
+    }
+    this.ensureUnhandled();
+    this.state = { ...this.state, handling: { at, by } };
+  }
+
+  /**
+   * Ce que le commerce s'apprête à appliquer : la commande, la révision de
+   * départ, la composition. Refuse ce qui ne se décide plus.
+   *
+   * @throws {NotAnOrderChangeRequestError} autre type de demande.
+   * @throws {CustomerRequestAlreadyHandledError} déjà répondue.
+   * @throws {OrderChangeErasedError} anonymisée : plus rien à appliquer.
+   */
+  pendingOrderChange(): {
+    readonly order: ReportedOrderRef;
+    readonly baseRevision: number;
+    readonly change: RequestedOrderChange | null;
+  } {
+    const details = this.orderChangeDetails();
+    this.ensureUnhandled();
+    if (this.state.anonymizedAt !== null || details.order === null) {
+      throw new OrderChangeErasedError(this.state.id);
+    }
+    return { order: details.order, baseRevision: details.baseRevision, change: details.change };
+  }
+
+  /** La modification a été appliquée : `revision` est celle qu'elle a produite. */
+  recordChangeApplied(revision: number, by: StaffTrace, at: Date): void {
+    this.answer({ kind: "applied", revision }, by, at);
+  }
+
+  /**
+   * Rend le mot tel qu'il est gardé (rogné).
+   * @throws {OrderChangeRefusalReasonMissingError} un refus sans mot.
+   */
+  refuseChange(reason: string, by: StaffTrace, at: Date): string {
+    const said = boundedText("Motif du refus", reason, CONTACT_BOUNDS.changeRefusal);
+    if (said === "") {
+      throw new OrderChangeRefusalReasonMissingError();
+    }
+    this.answer({ kind: "refused", reason: said }, by, at);
+    return said;
+  }
+
+  private answer(decision: OrderChangeDecision, by: StaffTrace, at: Date): void {
+    const details = this.orderChangeDetails();
+    this.pendingOrderChange();
+    this.state = {
+      ...this.state,
+      handling: { at, by },
+      details: { ...details, decision },
+    };
+  }
+
+  private orderChangeDetails(): OrderChangeDetails {
+    const { details } = this.state;
+    if (details.kind !== "order_change") {
+      throw new NotAnOrderChangeRequestError(this.state.id);
+    }
+    return details;
+  }
+
+  /** @throws {CustomerRequestAlreadyHandledError} elle l'est déjà. */
+  private ensureUnhandled(): void {
     if (this.state.handling !== null) {
       throw new CustomerRequestAlreadyHandledError(this.state.id, this.state.handling.by.name);
     }
-    this.state = { ...this.state, handling: { at, by } };
   }
 
   /**
@@ -218,6 +323,10 @@ export class CustomerRequest {
 
   get author(): RequestAuthor {
     return this.state.author;
+  }
+
+  get receivedAt(): Date {
+    return this.state.receivedAt;
   }
 
   get details(): CustomerRequestDetails {

@@ -189,7 +189,7 @@ le lot ZB de la facturation, pas une modification de commande.
 | **M1** ✅ _bâti le 2026-10-23, cf. §10_ | Révision côté serveur, commandes **au compte et à total nul** (§9) : table d'historique (migration additive), `revision` sur `orders`, calcul de la passation extrait pour servir aussi la révision, `Order.revise()`, règles R1-R7, R3 des prix, garde du fournil sous le verrou de journée et relecture à la clôture, fait `order.revised` et libellés, livraison (détacher, rattacher, géocoder), encaissement au compte recalculé, bon r+1. Commande `ReviseOrder` (client et staff), devis de révision. | serveur          |
 | **M2**                                  | **À concevoir** : l'argent d'une commande carte, [`plan-modifier-une-commande-payee-par-carte.md`](plan-modifier-une-commande-payee-par-carte.md), contredit le 2026-10-23, en attente d'une décision de Hugo.                                                                                                                                                                                                                                                                                               | serveur          |
 | **M3**                                  | Écrans client et staff (§6), historique — back-office bâti le 2026-10-23, cf. §11 ; boutique bâtie le 2026-10-23, cf. §12 ; modificabilité, point et historique le 2026-10-23, cf. §13.                                                                                                                                                                                                                                                                                                                      | fronts           |
-| **M4**                                  | La demande après l'heure limite (§4) : type `order_change`, appliquer / refuser, courriels.                                                                                                                                                                                                                                                                                                                                                                                                                  | serveur + fronts |
+| **M4** ✅ _bâti le 2026-10-23, cf. §14_ | La demande après l'heure limite (§4) : type `order_change`, appliquer / refuser, courriels.                                                                                                                                                                                                                                                                                                                                                                                                                  | serveur + fronts |
 
 ## 8. Ce qui n'est pas fait ici
 
@@ -460,6 +460,94 @@ de ces lignes). Chemins sous `apps/lfd-api/src/b2b/orders/` pour le serveur.
   (`get-order-revisability`, `list-order-revisions`, détail staff), e2e
   `apps/lfd-api/test/order-revision-views.e2e-spec.ts`, specs des composants.
 
-Reste : « Demander une modification » après l'heure limite (M4) ; le tiroir
-de la boutique lit `GET /orders/:id` deux fois (annulation et modification),
-une lecture partagée l'éviterait.
+Reste : le tiroir de la boutique lit `GET /orders/:id` deux fois (annulation
+et modification), une lecture partagée l'éviterait. « Demander une
+modification » après l'heure limite : bâti, §14.
+
+## 14. M4 bâti (2026-10-23) — la demande après l'heure limite
+
+Non commité à l'écriture de ces lignes. Chemins sous `apps/lfd-api/src/b2b/contact/`
+pour le serveur.
+
+- **Migrations** (additives) : `20261023220000_la_demande_de_modification_type`
+  (la valeur `order_change` de `RequestKind`, seule : une valeur d'enum ne
+  s'emploie pas dans la transaction qui l'ajoute) et
+  `20261023220100_la_demande_de_modification` — `customer_request.change_base_revision`,
+  `change_content` (JSON, le corps d'une révision), `change_applied_revision`,
+  `change_refusal` ; deux CHECK (colonnes réservées au type, forme et réponse
+  unique) ; un index unique partiel : **une seule demande en attente par
+  commande**. Registre RGPD : `change_content` et `change_refusal` purgés à
+  l'anonymisation, les deux révisions en exclusion.
+- **Contrat** : `orderChangeRequestPayloadSchema` = `{ change, message }`, où
+  `change` est **exactement** `orderRevisionPayloadSchema` (la commande voulue
+  et la révision sur laquelle elle a été composée) ; la composition rangée se
+  relit par `orderRevisionQuotePayloadSchema` (illisible → `null`, « Appliquer »
+  refuse). `OrderChangeDetailsView`, `OrderChangeRequestStatusView`,
+  `orderChangeRefusalPayloadSchema` (`packages/contracts/src/contact*.ts`).
+- **Agrégat** : `CustomerRequest.orderChange()`, `pendingOrderChange()`,
+  `recordChangeApplied()`, `refuseChange()` (mot obligatoire) ;
+  `markHandled()` **refuse** une demande de modification — le client attend
+  une réponse. Anonymisée : commande, composition et mot du refus vidés.
+- **Demander** (`POST /me/orders/:id/change-request`, débit 3 / 10 min par
+  compte) : `RequestOrderChangeHandler` — mur et règle de la commande par
+  `ChangeableOrderReader` (adaptateur : la règle d'accès du signalement + la
+  requête `GetOrderRevisabilityQuery` par le bus) ; **seul `too_late` est
+  admis** (modifiable → « utilisez Modifier ma commande » ; close → « nous
+  écrire ») ; révision vue = révision courante ; une seule en attente ; le
+  motif est le premier motif `order_change` proposé à ce public, par rang.
+  Fait `order.change_requested`, courriel à l'équipe et cloche comme toute
+  demande. Lecture : `GET /me/orders/:id/change-request` (la dernière).
+- **Répondre** (`/admin/customer-requests/:id/order-change/{quote,apply,refuse}`,
+  `b2b_contact`) : le devis est `QuoteOrderRevisionQuery` au nom de l'équipe ;
+  **appliquer est `ReviseOrderCommand` au nom de l'équipe** (port
+  `OrderChangeApplier`, par le bus), sur la révision de départ — elle rejuge
+  tout (inscrite, R7, carte…) et son refus remonte avec sa phrase, la demande
+  restant en attente. Faits `order.change_applied` / `order.change_refused`,
+  libellés du journal (`contact-phrases.ts`).
+- **Boutique** : le tiroir (`order-revise-section`) propose « Demander une
+  modification » après l'heure limite, dit « en attente », puis la réponse ;
+  l'écran de modification, en mode demande, ne demande pas de devis et envoie
+  par `change-request-card/`. Textes `orders.revision.request.*`
+  (`apps/lfc-ecommerce-frontend/src/app/client/copy/screens/order-change-request.copy.ts`).
+- **Back-office** : un onglet de motifs « Demander une modification » (par
+  `REQUEST_KINDS`), un filtre de type, `demandes/order-change-details/` (l'écart
+  du devis, la phrase du refus à la place quand la commande ne se modifie
+  plus, « Appliquer » / « Refuser… » avec un mot) ; « Marquer traité » n'est
+  pas proposé à ce type.
+- **Tests** : domaine (`apps/lfd-api/src/b2b/contact/domain/__tests__/order-change-request.spec.ts`), application (demander,
+  appliquer, refuser, lectures — doubles écrits à la main), e2e
+  `apps/lfd-api/test/order-change-request.e2e-spec.ts`, specs des composants.
+
+Écarts et choix faits au bâti — à relire :
+
+1. **Une seule transaction pour « Appliquer »** : la ligne de la demande est
+   verrouillée, la révision (qui rejoint l'unité de travail) et la réponse
+   partent ensemble. La recomposition de la révision tient donc la
+   transaction le temps de ses lectures — un geste rare, à la main ; en
+   échange, jamais de commande modifiée sous une demande « en attente ».
+2. ~~**Pas de devis côté client** après l'heure limite.~~ **Revu le
+   2026-10-23, décision de Hugo : « oui montre le nouveau total au client ».**
+   `POST /orders/:id/revisions/change-request-quote` (`QuoteOrderChangeRequestQuery`,
+   `apps/lfd-api/src/b2b/orders/application/queries/`) : le mur du client
+   (`RevisionWall`, hors mur → `404`), puis LA règle de la modification lue
+   pour le client — la même que `ChangeableOrderReader` réduit pour
+   `RequestOrderChange` : seul `past_cutoff` (« trop tard ») est admis ;
+   encore modifiable ou au plan → `409` `orders.change_quote.*`, blocage
+   commun (carte, engagée, inscrite…) → l'erreur du geste, avec sa phrase.
+   Puis la MÊME recomposition (`OrderRevising.compose`, option `rulesOf:
+"staff"`) : prix d'origine pour une ligne déjà présente, prix du jour pour
+   une nouvelle, aux règles de l'équipe parce que c'est elle qui appliquera.
+   Rien n'est écrit, et **la demande ne range toujours aucun montant** :
+   l'équipe recalcule à l'application. La boutique montre le nouveau total et
+   l'écart dans `change-request-card/`, marqués indicatifs
+   (`orders.revision.request.requestQuoteIndicative`, fr/en/it). Le courriel
+   de réponse, lui, ne porte toujours pas de montant.
+3. **Mise en service** : sans motif `order_change` actif, la demande est
+   refusée avec une phrase qui dit à l'équipe quoi créer (Demandes clients ›
+   Motifs › « Demander une modification »). Aucun motif n'est semé par
+   migration (son adresse de destination est un choix).
+4. **Les courriels** au client (`customer.order-change-applied` /
+   `…-refused`, langue de repli, abonnés en mémoire comme le courriel d'une
+   demande) : textes fr/en/it en famille à part (`copy/*/order-change-mails.*.ts`),
+   rendu `order-change-answer-mail.ts`, sections, exemples, empreintes de
+   rendu (cas neufs) — le registre compte désormais 30 e-mails.

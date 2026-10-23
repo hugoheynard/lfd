@@ -52,6 +52,12 @@ export interface OrderPlacedCopy {
   readonly qrLine: string;
   /** Le texte alternatif de l'image du QR. `{ref}` — lu quand les images sont bloquées. */
   readonly qrAlt: string;
+  /**
+   * Le libellé du bouton « Itinéraire » d'une commande EN RETRAIT (plan
+   * `plan-textes-des-e-mails.md`, E4, S7). Le lien, lui, vient des données :
+   * le point GPS du site, sinon son adresse figée dans la commande.
+   */
+  readonly itinerary: string;
   readonly cta: string;
   /** Ce que le client fait s'il veut changer quelque chose. */
   readonly changeNote: string;
@@ -94,6 +100,12 @@ export interface OrderReadyCopy {
   readonly qrLine: string;
   /** Le texte alternatif de l'image du QR. `{ref}` — lu quand les images sont bloquées. */
   readonly qrAlt: string;
+  /**
+   * Le libellé du bouton « Itinéraire » d'une commande EN RETRAIT (plan
+   * `plan-textes-des-e-mails.md`, E4, S7). Le lien, lui, vient des données :
+   * le point GPS du site, sinon son adresse figée dans la commande.
+   */
+  readonly itinerary: string;
   readonly cta: string;
   readonly footer: string;
 }

@@ -1,5 +1,6 @@
 import type {
   MailCopyAdminView,
+  MailCopyDefaultChangeView,
   MailCopyLocaleView,
   MailCopyMailView,
   MailCopyTextView,
@@ -15,21 +16,27 @@ import {
   type MailCopyManifestEntry,
   type MailDescription,
 } from "../domain/mail-copy-manifest.js";
+import { defaultChangedSince } from "../domain/mail-copy-default-drift.js";
 import { staleMailTranslations } from "../domain/mail-copy-staleness.js";
+import type { MailSectionOrderState } from "../domain/mail-section-order.js";
+import { mailSectionsAdminView } from "./mail-section-admin-view.js";
 
 type Rows = ReadonlyMap<string, ReadonlyMap<MailCopyLocale, MailCopyEntryState>>;
 
 /**
  * Assemble l'écran des textes des e-mails : chaque e-mail du registre, dans
- * l'ordre où l'écran les range, avec chacun de ses textes en trois langues ;
- * puis les orphelines — les lignes dont le texte a quitté le code.
+ * l'ordre où l'écran les range, avec chacun de ses textes en trois langues et
+ * ses sections ordonnées (E4) ; puis les orphelines — les lignes dont le texte
+ * a quitté le code.
  */
 export function mailCopyAdminView(
   manifest: MailCopyManifest,
   states: readonly MailCopyEntryState[],
   publication: MailCopyPublicationState,
+  orders: readonly MailSectionOrderState[] = [],
 ): MailCopyAdminView {
   const rows = byText(states);
+  const orderOf = new Map(orders.map((order) => [order.mail, order]));
   const orphans = [...rows.entries()]
     .filter(([, locales]) => {
       const any = [...locales.values()][0];
@@ -40,17 +47,28 @@ export function mailCopyAdminView(
       const any = [...locales.values()][0];
       return any === undefined ? [] : [textView(any.mail, any.path, null, rows)];
     });
+  const mails = manifest
+    .mails()
+    .map((mail) => mailView(mail, manifest, rows, orderOf.get(mail.mail) ?? null));
   return {
     version: publication.version,
     publishedAt: publication.publishedAt?.toISOString() ?? null,
     publishedBy: publication.publishedBy,
-    pendingCount: states.filter((state) => state.draft.state !== "unchanged").length,
-    mails: manifest.mails().map((mail) => mailView(mail, manifest, rows)),
+    pendingCount:
+      states.filter((state) => state.draft.state !== "unchanged").length +
+      orders.filter((order) => order.draft.state !== "unchanged").length,
+    defaultChangedCount: countDefaultChanges(mails),
+    mails,
     orphans,
   };
 }
 
-function mailView(mail: MailDescription, manifest: MailCopyManifest, rows: Rows): MailCopyMailView {
+function mailView(
+  mail: MailDescription,
+  manifest: MailCopyManifest,
+  rows: Rows,
+  order: MailSectionOrderState | null,
+): MailCopyMailView {
   const texts = manifest
     .textsOf(mail.mail)
     .map((entry) => textView(entry.mail, entry.path, entry, rows));
@@ -60,14 +78,26 @@ function mailView(mail: MailDescription, manifest: MailCopyManifest, rows: Rows)
       MAIL_COPY_LOCALES.filter((locale) => text.locales[locale].draftState !== "unchanged").length,
     0,
   );
+  const layout = mailSectionsAdminView(mail.mail, manifest, order);
   return {
     mail: mail.mail,
     audience: audienceOf(mail.mail),
     family: mail.family,
     followsLocale: mail.followsLocale,
-    pendingCount,
+    pendingCount: pendingCount + layout.pendingCount,
     texts,
+    frames: layout.frames,
+    sections: layout.sections,
+    sectionOrder: layout.sectionOrder,
   };
+}
+
+/** Les textes, toutes langues, dont le texte du code a changé depuis leur modification. */
+function countDefaultChanges(mails: readonly MailCopyMailView[]): number {
+  return mails
+    .flatMap((mail) => mail.texts)
+    .flatMap((text) => MAIL_COPY_LOCALES.map((locale) => text.locales[locale]))
+    .filter((locale) => locale.defaultChangedSince !== null).length;
 }
 
 function byText(states: readonly MailCopyEntryState[]): Rows {
@@ -114,5 +144,10 @@ function localeView(fallback: string | null, state: MailCopyEntryState | null): 
     revision: state?.revision ?? 0,
     draftAt: state?.drafted?.at.toISOString() ?? null,
     draftBy: state?.drafted?.staffId ?? null,
+    defaultChangedSince: previousDefaultView(defaultChangedSince(state, fallback)),
   };
+}
+
+function previousDefaultView(previousDefault: string | null): MailCopyDefaultChangeView | null {
+  return previousDefault === null ? null : { previousDefault };
 }

@@ -20,6 +20,8 @@ function state(partial: Partial<MailCopyEntryState>): MailCopyEntryState {
     drafted: null,
     publishedText: null,
     published: null,
+    draftDefault: null,
+    publishedDefault: null,
     ...partial,
   };
 }
@@ -48,8 +50,10 @@ describe("l'écran des textes des e-mails", () => {
       revision: 0,
       draftAt: null,
       draftBy: null,
+      defaultChangedSince: null,
     });
     expect(view.pendingCount).toBe(0);
+    expect(view.defaultChangedCount).toBe(0);
   });
 
   it("compte ce qui attend, signale le français changé, et montre les orphelines à part", () => {
@@ -76,5 +80,34 @@ describe("l'écran des textes des e-mails", () => {
       variables: [],
     });
     expect(view.orphans[0]?.locales.fr).toMatchObject({ default: null, publishedText: "ancien" });
+  });
+
+  it("signale par texte et par langue le texte du code changé depuis la modification, et les compte", () => {
+    const view = mailCopyAdminView(
+      MANIFEST,
+      [
+        state({
+          draft: { state: "set", text: "Merci {ref}" },
+          draftDefault: "Votre commande {ref} (ancien)",
+        }),
+        state({
+          locale: "en",
+          publishedText: "Thanks {ref}",
+          publishedDefault: "Your order {ref}",
+        }),
+        state({ locale: "it", publishedText: "Grazie {ref}", publishedDefault: null }),
+        state({ path: "retire.du.code", publishedText: "ancien", publishedDefault: "plus vieux" }),
+      ],
+      NONE,
+    );
+
+    const locales = view.mails[0]?.texts[0]?.locales;
+    expect(locales?.fr.defaultChangedSince).toEqual({
+      previousDefault: "Votre commande {ref} (ancien)",
+    });
+    expect(locales?.en.defaultChangedSince).toBeNull();
+    expect(locales?.it.defaultChangedSince).toBeNull();
+    expect(view.orphans[0]?.locales.fr.defaultChangedSince).toBeNull();
+    expect(view.defaultChangedCount).toBe(1);
   });
 });

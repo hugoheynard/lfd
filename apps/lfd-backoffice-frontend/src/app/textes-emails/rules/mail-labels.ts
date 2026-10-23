@@ -55,6 +55,16 @@ const MAIL_LABELS: Readonly<Record<string, MailLabel>> = {
     recipient: 'Le client',
     moment: 'quand sa commande est annulée',
   },
+  'customer.order-change-applied': {
+    title: 'Modification demandée — appliquée',
+    recipient: 'Le client qui l’a demandée',
+    moment: 'quand l’équipe applique sa demande de modification',
+  },
+  'customer.order-change-refused': {
+    title: 'Modification demandée — refusée',
+    recipient: 'Le client qui l’a demandée',
+    moment: 'quand l’équipe refuse sa demande de modification, avec son mot',
+  },
   'customer.invoice-issued': {
     title: 'Facture émise',
     recipient: 'La facturation du payeur et des sous-comptes',

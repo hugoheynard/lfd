@@ -12,15 +12,19 @@ export interface MailSpecimenAttachment {
 /** Un e-mail d'exemple rendu, prêt à montrer. */
 export interface MailSpecimenRendering {
   readonly subject: string;
-  /** Le HTML tel qu'il partirait — images du corps incrustées pour être vues. */
+  /**
+   * Le HTML tel qu'il partirait — images du corps incrustées pour être vues,
+   * et un repère neutre par section et par texte (E4, S4), que l'e-mail
+   * envoyé n'a jamais.
+   */
   readonly html: string;
   readonly attachments: readonly MailSpecimenAttachment[];
 }
 
 /**
  * Port de **l'aperçu** (C6) : le VRAI gabarit d'un e-mail, rendu avec ses
- * données d'exemple et ces textes à la place de ceux du code. N'écrit rien,
- * n'envoie rien.
+ * données d'exemple, ces textes à la place de ceux du code et cet ordre de
+ * sections (`null` : celui du code, E4). N'écrit rien, n'envoie rien.
  */
 export abstract class MailSpecimenRenderer {
   /** @throws {UnknownMailError} l'e-mail n'est pas au registre. */
@@ -28,12 +32,13 @@ export abstract class MailSpecimenRenderer {
     mail: string,
     locale: MailCopyLocale,
     texts: MailTextsByMail,
+    order: readonly string[] | null,
   ): MailSpecimenRendering;
 }
 
 /**
  * Port de **l'essai** (C6) : envoie l'exemple d'un e-mail, rendu avec ces
- * textes, à UNE adresse. Un port distinct de l'aperçu (ISP) : rendre et
+ * textes et cet ordre de sections (`null` : celui du code), à UNE adresse. Un port distinct de l'aperçu (ISP) : rendre et
  * envoyer sont deux gestes, et le second seul a un effet hors de l'API.
  */
 export abstract class MailTrialSender {
@@ -43,5 +48,6 @@ export abstract class MailTrialSender {
     mail: string,
     locale: MailCopyLocale,
     texts: MailTextsByMail,
+    order: readonly string[] | null,
   ): Promise<void>;
 }

@@ -2,6 +2,21 @@ import { Module } from "@nestjs/common";
 
 import { AccountModule } from "../account/account.module.js";
 import { OrdersModule } from "../orders/orders.module.js";
+import { ApplyOrderChangeHandler } from "./application/commands/apply-order-change.handler.js";
+import { RefuseOrderChangeHandler } from "./application/commands/refuse-order-change.handler.js";
+import { RequestOrderChangeHandler } from "./application/commands/request-order-change.handler.js";
+import { GetMyOrderChangeRequestHandler } from "./application/queries/get-my-order-change-request.handler.js";
+import { QuoteOrderChangeHandler } from "./application/queries/quote-order-change.handler.js";
+import { ChangeableOrderReader } from "./domain/ports/changeable-order.reader.js";
+import { OrderChangeApplier } from "./domain/ports/order-change.applier.js";
+import { OrderChangeQuoter } from "./domain/ports/order-change.quoter.js";
+import { OrderChangeRequestReader } from "./domain/ports/order-change-request.reader.js";
+import { AdminOrderChangeRequestsController } from "./http/admin-order-change-requests.controller.js";
+import { MyOrderChangeRequestsController } from "./http/my-order-change-requests.controller.js";
+import { BusOrderChangeApplier } from "./infrastructure/bus-order-change.applier.js";
+import { BusOrderChangeQuoter } from "./infrastructure/bus-order-change.quoter.js";
+import { OrderChangeableOrderReader } from "./infrastructure/order-changeable-order.reader.js";
+import { PrismaOrderChangeRequestReader } from "./infrastructure/prisma-order-change-request.reader.js";
 import { AnonymizeCustomerRequestsHandler } from "./application/commands/anonymize-customer-requests.handler.js";
 import { ArchiveContactPhoneHandler } from "./application/commands/archive-contact-phone.handler.js";
 import { ArchiveRequestReasonHandler } from "./application/commands/archive-request-reason.handler.js";
@@ -13,6 +28,8 @@ import { ReviseContactPhoneHandler } from "./application/commands/revise-contact
 import { ReviseRequestReasonHandler } from "./application/commands/revise-request-reason.handler.js";
 import { SendContactMessageHandler } from "./application/commands/send-contact-message.handler.js";
 import { UpdateContactSettingsHandler } from "./application/commands/update-contact-settings.handler.js";
+import { MailOrderChangeApplied } from "./application/handlers/mail-order-change-applied.handler.js";
+import { MailOrderChangeRefused } from "./application/handlers/mail-order-change-refused.handler.js";
 import { MailCustomerRequest } from "./application/handlers/mail-customer-request.handler.js";
 import { RingCustomerRequestReceived } from "./application/handlers/ring-customer-request-received.handler.js";
 import { GetContactSettingsHandler } from "./application/queries/get-contact-settings.handler.js";
@@ -66,7 +83,7 @@ import {
 
 /**
  * **Les demandes clients** — motifs par formulaire, demandes (« Nous écrire »,
- * « Signaler un problème ») et leurs photos, la carte de contact et ses
+ * « Signaler un problème », « Demander une modification ») et leurs photos, la carte de contact et ses
  * numéros (`documentation/demandes-client/demandes-clients.md`).
  *
  * Importe `AccountModule` pour le `StaffDirectory` (l'auteur figé d'un geste),
@@ -85,6 +102,8 @@ import {
     ContactMessagesController,
     MyContactMessagesController,
     MyOrderProblemsController,
+    MyOrderChangeRequestsController,
+    AdminOrderChangeRequestsController,
     ContactAnonymizationSweepController,
   ],
   providers: [
@@ -101,6 +120,17 @@ import {
     { provide: ContactSenderAudience, useClass: PrismaContactSenderAudience },
     { provide: ContactPhoneRepository, useClass: PrismaContactPhoneRepository },
     { provide: ContactPhoneReader, useClass: PrismaContactPhoneReader },
+    // La demande de modification (M4) : la commande et sa révision, par les
+    // règles et le bus des commandes.
+    { provide: ChangeableOrderReader, useClass: OrderChangeableOrderReader },
+    { provide: OrderChangeRequestReader, useClass: PrismaOrderChangeRequestReader },
+    { provide: OrderChangeApplier, useClass: BusOrderChangeApplier },
+    { provide: OrderChangeQuoter, useClass: BusOrderChangeQuoter },
+    RequestOrderChangeHandler,
+    ApplyOrderChangeHandler,
+    RefuseOrderChangeHandler,
+    GetMyOrderChangeRequestHandler,
+    QuoteOrderChangeHandler,
     CreateRequestReasonHandler,
     ReviseRequestReasonHandler,
     ArchiveRequestReasonHandler,
@@ -120,6 +150,8 @@ import {
     GetContactSettingsHandler,
     GetPublicContactSettingsHandler,
     MailCustomerRequest,
+    MailOrderChangeApplied,
+    MailOrderChangeRefused,
     RingCustomerRequestReceived,
   ],
 })

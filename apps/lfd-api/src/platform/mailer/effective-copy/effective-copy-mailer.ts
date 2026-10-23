@@ -6,6 +6,12 @@ import {
   withMailCopyOverlay,
   type MailCopyOverlay,
 } from "../copy/mail-copy-overlay.js";
+import {
+  activeMailLayout,
+  NO_MAIL_LAYOUT,
+  withMailLayout,
+  type MailLayoutScope,
+} from "../sections/mail-layout-scope.js";
 import type { PublishedMailCopyReader } from "./published-mail-copy.reader.js";
 
 /** Ce que le mailer dit quand il se replie sur le texte du code. */
@@ -27,6 +33,9 @@ export interface EffectiveCopyLog {
  * Un périmètre déjà ouvert l'emporte : l'essai envoyé depuis l'écran
  * (« M'envoyer un essai », C6) choisit lui-même ses textes — les brouillons —,
  * et le publié ne doit pas les écraser.
+ *
+ * L'ordre des sections (E4, S3) suit la même règle, lu à part : un ordre
+ * illisible fait partir l'e-mail dans l'ordre du code, avec ses textes publiés.
  */
 export class EffectiveCopyMailer<M extends TemplateMap> implements Mailer<M> {
   constructor(
@@ -40,11 +49,27 @@ export class EffectiveCopyMailer<M extends TemplateMap> implements Mailer<M> {
   }
 
   async send<K extends keyof M>(args: SendMailArgs<M, K>): Promise<MailReceipt> {
-    if (activeMailCopyOverlay() !== undefined) {
-      return this.inner.send(args);
+    const template = String(args.template);
+    const overlay =
+      activeMailCopyOverlay() === undefined ? await this.publishedOrCode(template) : null;
+    const layout = activeMailLayout() === undefined ? await this.layoutOrCode(template) : null;
+    const withLayout = (): Promise<MailReceipt> =>
+      layout === null ? this.inner.send(args) : withMailLayout(layout, () => this.inner.send(args));
+    return overlay === null ? withLayout() : withMailCopyOverlay(overlay, withLayout);
+  }
+
+  private async layoutOrCode(template: string): Promise<MailLayoutScope> {
+    if (this.published === null) {
+      return NO_MAIL_LAYOUT;
     }
-    const overlay = await this.publishedOrCode(String(args.template));
-    return withMailCopyOverlay(overlay, () => this.inner.send(args));
+    try {
+      return { orders: await this.published.sectionOrders(), markers: false };
+    } catch (error: unknown) {
+      this.log.warn(
+        `Ordre des sections d'e-mails publié illisible : « ${template} » part dans l'ordre du code. Cause : ${String(error)}`,
+      );
+      return NO_MAIL_LAYOUT;
+    }
   }
 
   private async publishedOrCode(template: string): Promise<MailCopyOverlay> {

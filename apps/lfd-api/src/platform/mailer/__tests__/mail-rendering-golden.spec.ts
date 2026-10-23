@@ -9,7 +9,7 @@ import {
 } from "./rendering-golden/mail-rendering.fingerprint.js";
 
 /**
- * **Non-régression du rendu des 28 e-mails, en français.**
+ * **Non-régression du rendu des 30 e-mails, en français.**
  *
  * Les empreintes de `mail-rendering.golden.json` ont été capturées le
  * 2026-10-23 AVANT que les textes quittent les gabarits pour le dictionnaire
@@ -26,6 +26,18 @@ import {
  * l'objet était identique, que le HTML ne différait que par ce bandeau (un
  * bandeau neuf pour les quatre e-mails qui n'en avaient pas), et que les
  * pièces jointes ne gagnaient que le logo, en dernier.
+ *
+ * **Régénérées le 2026-10-23 (E4, S7)** pour les QUATRE cas d'une commande en
+ * retrait (`customer.order-placed` paidPickup, account, free ;
+ * `customer.order-ready` pickup), qui gagnent le bouton « Itinéraire vers la
+ * boutique » : vérifié avant de régénérer que l'objet et les pièces jointes
+ * étaient identiques, et que le HTML, ce seul bouton ôté, rendait l'empreinte
+ * d'avant. Les 77 autres cas n'ont pas bougé — le rendu par sections, dans
+ * l'ordre par défaut, est le rendu d'avant à l'octet.
+ *
+ * **Complétées le 2026-10-23 (M4 de la modification de commande)** : deux
+ * e-mails neufs, `customer.order-change-applied` et `-refused`, leurs
+ * empreintes ajoutées sans toucher aux existantes.
  */
 
 const REGISTRY = b2bMailTemplates({
@@ -52,10 +64,10 @@ function casesOf<K extends keyof B2bMails>(key: K): readonly (readonly [string, 
 
 const KEYS = Object.keys(MAIL_CASES) as readonly (keyof B2bMails)[];
 
-it("couvre les 28 e-mails du registre, sans en oublier un", () => {
+it("couvre les 30 e-mails du registre, sans en oublier un", () => {
   expect([...KEYS].sort()).toEqual(Object.keys(REGISTRY).sort());
   expect(Object.keys(GOLDEN).sort()).toEqual(Object.keys(REGISTRY).sort());
-  expect(KEYS).toHaveLength(28);
+  expect(KEYS).toHaveLength(30);
 });
 
 describe.each(KEYS)("le rendu de « %s »", (key) => {

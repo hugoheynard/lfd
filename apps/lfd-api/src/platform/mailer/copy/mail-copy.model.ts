@@ -35,12 +35,14 @@ import type { ContentLocale } from "@lfd/contracts";
 
 import type { AccountMailsCopy } from "./model/account-mails.model.js";
 import type { BillingMailsCopy } from "./model/billing-mails.model.js";
+import type { OrderChangeMailsCopy } from "./model/order-change-mails.model.js";
 import type { OrderMailsCopy } from "./model/order-mails.model.js";
 import type { PaymentMailsCopy } from "./model/payment-mails.model.js";
 import type { TeamMailsCopy } from "./model/team-mails.model.js";
 
 export type * from "./model/account-mails.model.js";
 export type * from "./model/billing-mails.model.js";
+export type * from "./model/order-change-mails.model.js";
 export type * from "./model/order-mails.model.js";
 export type * from "./model/payment-mails.model.js";
 export type * from "./model/team-mails.model.js";
@@ -65,7 +67,8 @@ export type MailCopy = OrderMailsCopy &
   PaymentMailsCopy &
   BillingMailsCopy &
   AccountMailsCopy &
-  TeamMailsCopy;
+  TeamMailsCopy &
+  OrderChangeMailsCopy;
 
 /**
  * Les trois langues. `Record` **exhaustif par construction** : une langue

@@ -8,13 +8,14 @@ import { MailTrialSender } from "../../domain/ports/mail-specimen.renderer.js";
 import { TrialRecipientMissingError, UnknownMailError } from "../../domain/mail-copy-errors.js";
 import { MailCopyManifest } from "../../domain/mail-copy-manifest.js";
 import { replacementTexts } from "../../domain/mail-copy-texts.js";
+import { replacementSectionOrders } from "../../domain/mail-section-orders.js";
 import { MailCopyTrialSentEvent } from "../../domain/mail-copy.events.js";
 import { SendMailCopyTrialCommand } from "./send-mail-copy-trial.command.js";
 
 /**
  * Envoie l'aperçu d'un e-mail — son vrai gabarit, ses données d'exemple, les
- * textes de la source demandée — à l'adresse de la fiche de la personne
- * connectée, et à elle seule (C6). L'adresse ne vient JAMAIS de la requête :
+ * textes et l'ordre des sections de la source demandée — à l'adresse de la
+ * fiche de la personne connectée, et à elle seule (C6). L'adresse ne vient JAMAIS de la requête :
  * un essai ne peut pas devenir un envoi à un tiers.
  *
  * L'envoi part avant le fait : un e-mail parti est parti, et un fait écrit
@@ -42,9 +43,14 @@ export class SendMailCopyTrialHandler implements ICommandHandler<SendMailCopyTri
       throw new UnknownMailError(command.mail);
     }
     const to = await this.recipientOf(command.staffUserId);
-    const states = await this.reader.entries();
+    const [states, orders] = await Promise.all([
+      this.reader.entries(),
+      this.reader.sectionOrders(),
+    ]);
     const texts = replacementTexts(states, this.manifest, command.locale, command.source);
-    await this.sender.send(to, command.mail, command.locale, texts);
+    const order =
+      replacementSectionOrders(orders, this.manifest, command.source)[command.mail] ?? null;
+    await this.sender.send(to, command.mail, command.locale, texts, order);
     await this.uow.run(() =>
       this.events.publishTraced(
         new MailCopyTrialSentEvent(command.mail, command.locale, command.source),

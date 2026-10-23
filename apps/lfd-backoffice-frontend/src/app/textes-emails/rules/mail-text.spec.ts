@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
 import { mailLocaleView, mailTextView } from '../mail-copy.testing';
-import { canResetTo, insertVariable, pendingIn, stateOf, upcomingText } from './mail-text';
+import {
+  canResetTo,
+  defaultChangedIn,
+  insertVariable,
+  pendingIn,
+  stateOf,
+  upcomingText,
+} from './mail-text';
 
 describe('upcomingText — ce que l’e-mail dira après « Publier »', () => {
   it('le brouillon, le code s’il est rétabli, sinon le publié, sinon le code', () => {
@@ -48,5 +55,17 @@ describe('insertVariable — au curseur', () => {
 
   it('borne une position hors du texte', () => {
     expect(insertVariable('A', 'n', 99, 99)).toEqual({ text: 'A{n}', caret: 4 });
+  });
+});
+
+describe('defaultChangedIn', () => {
+  it('compte les langues qui portent le signal, et elles seules', () => {
+    const drift = { defaultChangedSince: { previousDefault: 'Avant' } };
+    expect(
+      defaultChangedIn([
+        mailTextView('m', 'a', 'A', { locales: { fr: drift, it: drift } }),
+        mailTextView('m', 'b', 'B'),
+      ]),
+    ).toBe(2);
   });
 });

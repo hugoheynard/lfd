@@ -12,6 +12,7 @@ import { DELIVERY_ROUND_FACTS } from "./delivery-rounds.js";
 import { DELIVERY_TRANSFER_FACTS } from "./delivery-transfers.js";
 import { DELIVERY_ROUTING_FACTS } from "./delivery-routing.js";
 import { HANDOVER_PROOF_FACTS } from "./handover-proofs.js";
+import { ORDER_CHANGE_REQUEST_FACTS } from "./order-change-requests.js";
 import { ORDER_REFUND_FACTS } from "./order-refunds.js";
 import { PACKING_CONTAINER_FACTS } from "./packing-containers.js";
 import { PRODUCTION_SETTINGS_FACTS } from "./production-settings.js";
@@ -647,6 +648,8 @@ export const ORDERS_PRODUCTION_FACTS = {
   ...HANDOVER_PROOF_FACTS,
   /** **Les remboursements Stripe constatés** (lot R1) — même famille. */
   ...ORDER_REFUND_FACTS,
+  /** **Les demandes de modification** après l'heure limite (plan de modification, M4). */
+  ...ORDER_CHANGE_REQUEST_FACTS,
   ...PACKING_CONTAINER_FACTS,
   /** **Les réglages du fournil** (arrêt du plan, jours fermés) — même famille. */
   ...PRODUCTION_SETTINGS_FACTS,

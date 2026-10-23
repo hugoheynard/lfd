@@ -3,6 +3,7 @@ import {
   Component,
   computed,
   effect,
+  ElementRef,
   inject,
   input,
   signal,
@@ -30,6 +31,7 @@ import {
 import { NotifyService } from '../../../notify.service';
 import { COPY_LOCALES, LOCALE_LABELS } from '../../../textes-boutique/rules/copy-text';
 import { MailCopyService } from '../../data/mail-copy.service';
+import { locateInPreview } from '../../rules/mail-sections';
 import { MailCopyStore } from '../../state/mail-copy-store';
 import { MailDraftWriter } from '../../state/mail-draft-writer';
 
@@ -48,6 +50,10 @@ function isLocale(value: string): value is ContentLocale {
   return (COPY_LOCALES as readonly string[]).includes(value);
 }
 
+/** L'attribut posé sur la section survolée dans l'écran, et la feuille qui l'encadre. */
+const HOVER_ATTRIBUTE = 'data-lfd-hovered';
+const HOVER_STYLE_ID = 'lfd-preview-hover';
+
 function isSource(value: string): value is MailCopySource {
   return value === 'draft' || value === 'published';
 }
@@ -55,7 +61,8 @@ function isSource(value: string): value is MailCopySource {
 /**
  * **L'aperçu d'un e-mail** (C6) : son vrai gabarit, rendu par le serveur
  * avec des données d'exemple — l'objet, puis le corps dans un cadre isolé
- * (`srcdoc`, `sandbox` vide : ni script, ni même origine). La langue et la
+ * (`srcdoc`, `sandbox="allow-same-origin"` : AUCUN script — le HTML du serveur
+ * reste inerte, liens, formulaires et fenêtres compris). La langue et la
  * source — les brouillons, ou ce qui part aujourd'hui — se choisissent ;
  * l'aperçu des brouillons se relit à chaque écriture acceptée.
  *
@@ -110,6 +117,10 @@ export class MailPreview {
   /** Un e-mail qui part toujours en français : son aperçu étranger montre le français. */
   protected readonly alwaysFrench = computed(() => !this.mail().followsLocale);
 
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  /** Le document du cadre, une fois chargé : on y écoute les clics, on y encadre la section survolée. */
+  private readonly frameDocument = signal<Document | null>(null);
+
   private request = 0;
 
   constructor() {
@@ -122,6 +133,74 @@ export class MailPreview {
       }
       untracked(() => void this.load(mail, locale, source));
     });
+    // S4 — la carte survolée encadre sa section dans l'aperçu.
+    effect(() => {
+      const doc = this.frameDocument();
+      const hovered = this.store.hoveredSection();
+      if (doc === null) {
+        return;
+      }
+      for (const element of doc.querySelectorAll(`[${HOVER_ATTRIBUTE}]`)) {
+        element.removeAttribute(HOVER_ATTRIBUTE);
+      }
+      if (hovered !== null) {
+        [...doc.querySelectorAll('[data-mail-section]')]
+          .find((element) => element.getAttribute('data-mail-section') === hovered)
+          ?.setAttribute(HOVER_ATTRIBUTE, '');
+      }
+    });
+  }
+
+  /**
+   * Le cadre a chargé un aperçu (S4). Pourquoi `allow-same-origin` sans
+   * `allow-scripts`, plutôt qu'un `postMessage` : un message demanderait un
+   * script DANS le cadre, donc d'autoriser les scripts du HTML rendu ; ici
+   * rien ne s'y exécute, et c'est l'écran qui lit le document du cadre. Les
+   * deux drapeaux ENSEMBLE seraient le danger (un script de même origine
+   * peut ôter son propre sandbox) — `allow-scripts` ne doit jamais y entrer.
+   */
+  wire(frame: Pick<HTMLIFrameElement, 'contentDocument'>): void {
+    const doc = frame.contentDocument;
+    if (doc === null || doc.body === null) {
+      this.frameDocument.set(null);
+      return;
+    }
+    this.addHoverStyle(doc);
+    doc.addEventListener('click', (event) => this.pick(event));
+    this.frameDocument.set(doc);
+  }
+
+  /** Un clic dans l'aperçu désigne la carte de sa section, et son texte s'il en a un. */
+  private pick(event: MouseEvent): void {
+    // Un lien de l'aperçu mène à une adresse d'exemple : on désigne, on ne navigue pas.
+    event.preventDefault();
+    const target = event.target instanceof Element ? event.target : null;
+    const text = target?.closest('[data-mail-text]') ?? null;
+    const section = target?.closest('[data-mail-section]') ?? null;
+    this.store.spot.set(
+      locateInPreview(
+        this.mail(),
+        section?.getAttribute('data-mail-section') ?? null,
+        text?.getAttribute('data-mail-text') ?? null,
+        text?.getAttribute('data-mail-text-of') ?? null,
+      ),
+    );
+  }
+
+  /** La couleur de l'encadré est le token fold de l'écran, lu ici : le cadre ne voit pas nos variables. */
+  private addHoverStyle(doc: Document): void {
+    if (doc.getElementById(HOVER_STYLE_ID) !== null) {
+      return;
+    }
+    const color = getComputedStyle(this.host.nativeElement)
+      .getPropertyValue('--fold-color-primary')
+      .trim();
+    const style = doc.createElement('style');
+    style.id = HOVER_STYLE_ID;
+    style.textContent =
+      `[${HOVER_ATTRIBUTE}] { outline: 2px dashed ${color || 'currentColor'}; outline-offset: 2px; }` +
+      ' [data-mail-section], [data-mail-text] { cursor: pointer; }';
+    doc.head.append(style);
   }
 
   protected setLocale(value: string): void {

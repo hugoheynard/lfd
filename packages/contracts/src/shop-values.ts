@@ -51,6 +51,8 @@ export {
   DEFAULT_CONTACT_SETTINGS,
   type ContactCardText,
   type ContactLocalizedText,
+  type OrderChangeRequestStatusResponse,
+  type OrderChangeRequestStatusView,
   type PublicContactPhoneView,
   type PublicContactSettingsView,
   type PublicRequestReasonView,

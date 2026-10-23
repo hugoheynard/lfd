@@ -27,8 +27,22 @@ export {
   MailerSendError,
 } from "./errors.js";
 export type { MailerErrorCategory } from "./errors.js";
-export { htmlEscape, renderLayout, sanitiseSubject } from "./html.js";
-export type { LayoutImage, LayoutInput, LayoutLogo, LayoutRow, MailCta } from "./html.js";
+export {
+  effectiveSectionOrder,
+  htmlEscape,
+  isLayoutSectionId,
+  LAYOUT_SECTIONS,
+  renderLayout,
+  sanitiseSubject,
+} from "./html.js";
+export type {
+  LayoutImage,
+  LayoutInput,
+  LayoutLogo,
+  LayoutRow,
+  LayoutSectionId,
+  MailCta,
+} from "./html.js";
 export { isValidReplyTo, validReplyTo } from "./reply-to.js";
 export { createResendMailer, ResendMailer } from "./resend-mailer.js";
 export type { ResendLike, ResendMailerDeps } from "./resend-mailer.js";

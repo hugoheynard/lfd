@@ -8,6 +8,8 @@ import type {
   MailCopyPublishedView,
   MailCopyResetPayload,
   MailCopySource,
+  MailSectionOrderDraftPayload,
+  MailSectionOrderResetPayload,
 } from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
 
@@ -39,6 +41,16 @@ export class MailCopyService {
   /** « Rétablir le texte d'origine », appliqué au prochain « Publier ». */
   async reset(payload: MailCopyResetPayload): Promise<void> {
     await firstValueFrom(this.http.post<void>(`${BASE}/resets`, payload));
+  }
+
+  /** L'ordre des sections en brouillon (E4) — `400` ordre invalide, `409` si quelqu'un l'a déplacé entre-temps. */
+  async saveSectionOrder(payload: MailSectionOrderDraftPayload): Promise<void> {
+    await firstValueFrom(this.http.put<void>(`${BASE}/section-orders`, payload));
+  }
+
+  /** « Rétablir l'ordre » : celui du code, appliqué au prochain « Publier ». */
+  async resetSectionOrder(payload: MailSectionOrderResetPayload): Promise<void> {
+    await firstValueFrom(this.http.post<void>(`${BASE}/section-order-resets`, payload));
   }
 
   publish(): Promise<MailCopyPublishedView> {

@@ -1,4 +1,5 @@
 import type { MailCopyLocale } from "./mail-copy-locale.js";
+import type { MailLayoutDescription } from "./mail-section-layout.js";
 
 /** Un texte d'un e-mail, tel que le code le déclare. */
 export interface MailCopyManifestEntry {
@@ -45,20 +46,33 @@ export function audienceOf(mail: string): MailAudience {
  */
 export class MailCopyManifest {
   private readonly byId: ReadonlyMap<string, MailCopyManifestEntry>;
+  private readonly layouts: ReadonlyMap<string, MailLayoutDescription>;
 
   private constructor(
     private readonly ordered: readonly MailCopyManifestEntry[],
     private readonly described: readonly MailDescription[],
+    layouts: readonly MailLayoutDescription[],
   ) {
     this.byId = new Map(ordered.map((entry) => [idOf(entry.mail, entry.path), entry]));
+    this.layouts = new Map(layouts.map((layout) => [layout.mail, layout]));
   }
 
-  /** `mails` : chaque e-mail du registre, dans l'ordre où l'écran les range. */
+  /**
+   * `mails` : chaque e-mail du registre, dans l'ordre où l'écran les range.
+   * `layouts` : leurs sections déclarées (E4) — un e-mail sans déclaration
+   * n'a pas d'ordre réglable.
+   */
   static of(
     entries: readonly MailCopyManifestEntry[],
     mails: readonly MailDescription[],
+    layouts: readonly MailLayoutDescription[] = [],
   ): MailCopyManifest {
-    return new MailCopyManifest(entries, mails);
+    return new MailCopyManifest(entries, mails, layouts);
+  }
+
+  /** Les sections déclarées d'un e-mail, ou `null` s'il n'en déclare pas. */
+  layoutOf(mail: string): MailLayoutDescription | null {
+    return this.layouts.get(mail) ?? null;
   }
 
   entry(mail: string, path: string): MailCopyManifestEntry | null {

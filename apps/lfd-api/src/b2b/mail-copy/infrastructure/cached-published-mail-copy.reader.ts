@@ -1,12 +1,15 @@
+import { isLayoutSectionId } from "@lfd/mailer";
 import { Injectable } from "@nestjs/common";
 
 import type { MailCopyOverlay } from "../../../platform/mailer/copy/mail-copy-overlay.js";
 import { PublishedMailCopyReader } from "../../../platform/mailer/effective-copy/published-mail-copy.reader.js";
+import type { MailSectionOrders } from "../../../platform/mailer/sections/mail-layout-scope.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { PublishedMailCopyCache } from "../domain/ports/published-mail-copy.cache.js";
 import { MAIL_COPY_LOCALES } from "../domain/mail-copy-locale.js";
 import { MailCopyManifest } from "../domain/mail-copy-manifest.js";
 import { replacementTexts } from "../domain/mail-copy-texts.js";
+import { replacementSectionOrders } from "../domain/mail-section-orders.js";
 import { PublishedMailCopyStore } from "./published-mail-copy.store.js";
 
 /**
@@ -38,7 +41,9 @@ interface Stamp {
  *
  * Ce qui en sort est filtré contre le dictionnaire de CE code
  * (`replacementTexts`) : une orpheline, ou un texte qui a perdu une variable
- * devenue obligatoire, n'est jamais envoyé — le défaut part à sa place.
+ * devenue obligatoire, n'est jamais envoyé — le défaut part à sa place. De
+ * même un ordre de sections que les sections de ce code ne permettent plus
+ * (`replacementSectionOrders`) : l'ordre du code part à sa place.
  *
  * ⚠️ Le harnais e2e appelle `forget()` à chaque remise à zéro : un `TRUNCATE`
  * fait revenir la version en arrière.
@@ -51,6 +56,8 @@ export class CachedPublishedMailCopyReader
   private stamp: Stamp | null = null;
   private pendingStamp: Promise<number> | null = null;
   private cached: { readonly version: number; readonly overlay: MailCopyOverlay } | null = null;
+  private cachedOrders: { readonly version: number; readonly orders: MailSectionOrders } | null =
+    null;
 
   constructor(
     private readonly store: PublishedMailCopyStore,
@@ -76,9 +83,29 @@ export class CachedPublishedMailCopyReader
     return overlay;
   }
 
+  /**
+   * L'ordre publié des sections (E4, S3), par la même version que les textes —
+   * gardé à part : une table illisible ne doit pas emporter l'autre.
+   */
+  async sectionOrders(): Promise<MailSectionOrders> {
+    const version = await this.currentVersion();
+    if (this.cachedOrders !== null && this.cachedOrders.version === version) {
+      return this.cachedOrders.orders;
+    }
+    const states = await this.store.publishedSectionOrders();
+    const orders = Object.fromEntries(
+      Object.entries(replacementSectionOrders(states, this.manifest, "published")).map(
+        ([mail, order]) => [mail, order.filter(isLayoutSectionId)],
+      ),
+    );
+    this.cachedOrders = { version, orders };
+    return orders;
+  }
+
   forget(): void {
     this.stamp = null;
     this.cached = null;
+    this.cachedOrders = null;
   }
 
   private async currentVersion(): Promise<number> {

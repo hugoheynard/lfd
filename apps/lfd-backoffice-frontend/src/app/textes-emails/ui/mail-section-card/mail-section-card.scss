@@ -1,0 +1,21 @@
+// Le cadre de la carte désignée dans l'aperçu ; arrondi comme la carte fold.
+.sc-frame {
+  border-radius: var(--fold-radius-lg);
+}
+
+.sc-spotted {
+  outline: 2px solid var(--fold-color-primary);
+  outline-offset: 2px;
+}
+
+.sc-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.sc-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}

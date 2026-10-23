@@ -18,10 +18,11 @@ export class GetMailCopyAdminHandler implements IQueryHandler<
   ) {}
 
   async execute(): Promise<MailCopyAdminView> {
-    const [entries, publication] = await Promise.all([
+    const [entries, publication, orders] = await Promise.all([
       this.reader.entries(),
       this.reader.publication(),
+      this.reader.sectionOrders(),
     ]);
-    return mailCopyAdminView(this.manifest, entries, publication);
+    return mailCopyAdminView(this.manifest, entries, publication, orders);
   }
 }

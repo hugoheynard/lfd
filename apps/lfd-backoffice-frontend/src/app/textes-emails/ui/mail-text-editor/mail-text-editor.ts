@@ -14,7 +14,6 @@ import {
   FoldBadgeComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
-  FoldCardComponent,
   FoldElementTitleComponent,
   FoldTextareaComponent,
 } from 'fold-ng';
@@ -44,6 +43,8 @@ export interface LocaleColumn {
   /** Le texte du code, seulement quand le champ montre autre chose. */
   readonly original: string | null;
   readonly canReset: boolean;
+  /** Le texte d'origine a changé depuis la modification (§2 quinquies) : l'ancien et l'actuel. */
+  readonly defaultChange: { readonly previous: string; readonly current: string } | null;
 }
 
 /** Une variable du texte, et si le texte peut s'en passer. */
@@ -53,7 +54,8 @@ export interface VariableChip {
 }
 
 /**
- * **Un texte d'un e-mail, ses trois langues côte à côte** (C4) — le français
+ * **Un texte d'un e-mail, ses trois langues côte à côte** (C4), posé dans la
+ * carte qui le range (E4, S6) — le français
  * en référence. Chaque champ part en brouillon au fil de la frappe ; dessous,
  * l'état, le refus du serveur tel quel (C5), l'avertissement quand le
  * français a changé depuis la traduction, le texte du code et « Rétablir ».
@@ -68,7 +70,6 @@ export interface VariableChip {
     FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
-    FoldCardComponent,
     FoldElementTitleComponent,
     FoldTextareaComponent,
   ],
@@ -79,6 +80,14 @@ export class MailTextEditor {
   readonly text = input.required<MailCopyTextView>();
   /** `false` : l'e-mail part toujours en français, quelle que soit la langue. */
   readonly followsLocale = input(true);
+  /**
+   * Son nom dans la carte qui le range (S6) : la variante, ou rien quand il
+   * est seul. Absent, le nom de son chemin — un texte hors carte de section.
+   * Le chemin technique ne s'affiche qu'au survol.
+   */
+  readonly heading = input<string | null | undefined>(undefined);
+  /** Désigné par un clic dans l'aperçu (S4) : mis en évidence dans sa carte. */
+  readonly spotted = input(false);
   /** Un texte que le code ne connaît plus : lu, et seulement rétabli. */
   readonly orphan = input(false);
 
@@ -91,7 +100,10 @@ export class MailTextEditor {
   protected readonly active = signal<ContentLocale>('fr');
   protected readonly activeLabel = computed(() => LOCALE_LABELS[this.active()].toLowerCase());
 
-  protected readonly title = computed(() => pathLabel(this.text().path));
+  protected readonly title = computed(() => {
+    const heading = this.heading();
+    return heading === undefined ? pathLabel(this.text().path) : heading;
+  });
   protected readonly readOnly = computed(() => !this.store.canWrite() || this.orphan());
   protected readonly conflict = computed(() => this.writer.conflicts().has(textKey(this.text())));
 
@@ -123,6 +135,10 @@ export class MailTextEditor {
         refusal: this.writer.refusalOf(text, locale),
         original: view.default !== null && view.default !== shown ? view.default : null,
         canReset: canResetTo(view, shown),
+        defaultChange:
+          view.defaultChangedSince === null
+            ? null
+            : { previous: view.defaultChangedSince.previousDefault, current: view.default ?? '' },
       };
     });
   });

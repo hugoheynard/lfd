@@ -36,6 +36,8 @@ function world(contacts = [COLETTE]) {
     drafted: stamp(AT),
     publishedText: "Publié {ref}",
     published: stamp(AT),
+    draftDefault: null,
+    publishedDefault: null,
   });
   const reader = new InMemoryAdminReader(texts);
   const renderer = new RecordingRenderer();
@@ -94,6 +96,7 @@ describe("« M'envoyer un essai » (C6)", () => {
         mail: SUBJECT.mail,
         locale: "fr",
         texts: { [SUBJECT.mail]: { subject: "Brouillon {ref}" } },
+        order: null,
       },
     ]);
     expect(w.events.factTypes()).toEqual(["mail_copy.trial_sent"]);

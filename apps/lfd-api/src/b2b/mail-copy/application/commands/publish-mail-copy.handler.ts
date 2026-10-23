@@ -10,8 +10,8 @@ import { MailCopyPublishedEvent } from "../../domain/mail-copy.events.js";
 import { PublishMailCopyCommand } from "./publish-mail-copy.command.js";
 
 /**
- * Publie tous les brouillons, en une transaction : version, textes et fait au
- * journal partent ensemble, ou rien ne part. Rend la version posée — un
+ * Publie tous les brouillons, en une transaction : version, textes, ordres des
+ * sections (E4) et fait au journal partent ensemble, ou rien ne part. Rend la version posée — un
  * identifiant, pas un modèle de lecture.
  *
  * Le cache du publié de CETTE instance est oublié **après** la validation :
@@ -33,14 +33,17 @@ export class PublishMailCopyHandler implements ICommandHandler<PublishMailCopyCo
    * @throws {NothingToPublishError} aucun brouillon n'attend.
    * @throws {MailCopyPublishedMeanwhileError} une autre publication l'a précédée.
    * @throws {MailCopyChangedError} un brouillon a été réécrit pendant la publication.
+   * @throws {MailSectionOrderChangedError} un ordre a été déplacé pendant la publication.
    */
   async execute(command: PublishMailCopyCommand): Promise<number> {
     const stamp = { at: this.clock.now(), staffId: command.staffUserId };
     const version = await this.uow.run(async () => {
       const release = await this.releases.load();
-      const changes = release.publish(this.manifest, stamp);
+      const publication = release.publish(this.manifest, stamp);
       await this.releases.save(release, stamp);
-      await this.events.publishTraced(new MailCopyPublishedEvent(release.version, changes));
+      await this.events.publishTraced(
+        new MailCopyPublishedEvent(release.version, publication.texts, publication.sectionOrders),
+      );
       return release.version;
     });
     this.cache.forget();

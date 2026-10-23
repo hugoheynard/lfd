@@ -32,6 +32,9 @@ enum RequestPriority {
 enum RequestKind {
   contact
   order_problem
+  /// Une demande de modification de commande après l'heure limite (plan
+  /// `documentation/commandes/plan-modifier-une-commande.md`, M4).
+  order_change
 
   @@schema("public")
 }
@@ -114,6 +117,18 @@ model CustomerRequest {
   /// étrangère) et son numéro figé. NULL pour `contact`, et après anonymisation.
   orderId     String? @map("order_id")
   orderNumber String? @map("order_number")
+
+  /// `order_change` (M4) : la révision sur laquelle le client a composé.
+  /// NULL pour les autres types.
+  changeBaseRevision    Int?    @map("change_base_revision")
+  /// `order_change` : la composition demandée — le corps d'une révision
+  /// (`orderRevisionQuotePayloadSchema`), relu par ce même schéma. NULL pour
+  /// les autres types, et après anonymisation.
+  changeContent         Json?   @map("change_content")
+  /// `order_change` appliquée : la révision produite. NULL sinon.
+  changeAppliedRevision Int?    @map("change_applied_revision")
+  /// `order_change` refusée : le mot adressé au client. NULL sinon.
+  changeRefusal         String? @map("change_refusal")
 
   receivedAt DateTime @map("received_at")
 

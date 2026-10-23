@@ -26,6 +26,11 @@ const PRESENTATIONS: {
     orderNumber: details.order?.number ?? "",
     photoCount: details.photos.filter((photo) => photo.purgedAt === null).length,
   }),
+  order_change: (details) => ({
+    formLabel: "Demander une modification",
+    orderNumber: details.order?.number ?? "",
+    photoCount: 0,
+  }),
 };
 
 /** La présentation de ces détails. */

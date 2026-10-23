@@ -1,13 +1,16 @@
-import type {
-  CustomerAudience,
-  CustomerRequestDetailsView,
-  CustomerRequestView,
-  RequestKind,
+import {
+  type CustomerAudience,
+  type CustomerRequestDetailsView,
+  type CustomerRequestView,
+  orderRevisionQuotePayloadSchema,
+  type RequestKind,
 } from "@lfd/contracts";
 
 import { CustomerRequest } from "../domain/customer-request.js";
 import type {
   CustomerRequestDetails,
+  OrderChangeDecision,
+  RequestedOrderChange,
   RequestPhotoRef,
 } from "../domain/customer-request-details.js";
 import { ContactAudienceUnreadableError } from "./contact-audience-unreadable.error.js";
@@ -39,6 +42,11 @@ export interface RequestRow {
   readonly companyId: string | null;
   readonly orderId: string | null;
   readonly orderNumber: string | null;
+  readonly changeBaseRevision: number | null;
+  /** Du JSON, relu par le schéma d'une révision : jamais casté. */
+  readonly changeContent: unknown;
+  readonly changeAppliedRevision: number | null;
+  readonly changeRefusal: string | null;
   readonly receivedAt: Date;
   readonly handledAt: Date | null;
   readonly handledByStaffId: string | null;
@@ -60,11 +68,15 @@ const DETAILS_FROM_ROW: { readonly [K in RequestKind]: (row: RequestRow) => Deta
   contact: () => ({ kind: "contact" }),
   order_problem: (row) => ({
     kind: "order_problem",
-    order:
-      row.orderId === null || row.orderNumber === null
-        ? null
-        : { id: row.orderId, number: row.orderNumber },
+    order: orderRefOf(row),
     photos: row.photos.map((photo): RequestPhotoRef => ({ ...photo })),
+  }),
+  order_change: (row) => ({
+    kind: "order_change",
+    order: orderRefOf(row),
+    baseRevision: row.changeBaseRevision ?? 0,
+    change: changeOf(row.changeContent),
+    decision: decisionOf(row),
   }),
 };
 
@@ -81,7 +93,41 @@ const DETAILS_VIEW: {
       .filter((photo) => photo.purgedAt === null)
       .map((photo) => ({ id: photo.id, position: photo.position })),
   }),
+  order_change: (details) => ({
+    kind: "order_change",
+    orderId: details.order?.id ?? null,
+    orderNumber: details.order?.number ?? null,
+    baseRevision: details.baseRevision,
+    change: details.change,
+    decision: details.decision,
+  }),
 };
+
+function orderRefOf(row: RequestRow): { readonly id: string; readonly number: string } | null {
+  return row.orderId === null || row.orderNumber === null
+    ? null
+    : { id: row.orderId, number: row.orderNumber };
+}
+
+/**
+ * La composition rangée, relue par LE schéma d'une révision : une forme
+ * inattendue rend `null` — « Appliquer » refuse alors — plutôt qu'une
+ * composition inventée.
+ */
+function changeOf(value: unknown): RequestedOrderChange | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  const parsed = orderRevisionQuotePayloadSchema.safeParse(value);
+  return parsed.success ? parsed.data : null;
+}
+
+function decisionOf(row: RequestRow): OrderChangeDecision | null {
+  if (row.changeAppliedRevision !== null) {
+    return { kind: "applied", revision: row.changeAppliedRevision };
+  }
+  return row.changeRefusal === null ? null : { kind: "refused", reason: row.changeRefusal };
+}
 
 /** Une demande est écrite depuis un espace, jamais depuis « les deux » : la base l'a mal gardée. */
 function audienceOfRow(row: RequestRow): CustomerAudience {
@@ -164,4 +210,28 @@ export function orderColumnsOf(details: CustomerRequestDetails): {
 /** Les photos des détails, `[]` pour un type qui n'en porte pas. */
 export function photosOf(details: CustomerRequestDetails): readonly RequestPhotoRef[] {
   return "photos" in details ? details.photos : [];
+}
+
+/** Les colonnes de la demande de modification : `NULL` pour les autres types. */
+export function changeColumnsOf(details: CustomerRequestDetails): {
+  readonly changeBaseRevision: number | null;
+  readonly changeContent: RequestedOrderChange | null;
+  readonly changeAppliedRevision: number | null;
+  readonly changeRefusal: string | null;
+} {
+  if (details.kind !== "order_change") {
+    return {
+      changeBaseRevision: null,
+      changeContent: null,
+      changeAppliedRevision: null,
+      changeRefusal: null,
+    };
+  }
+  const { decision } = details;
+  return {
+    changeBaseRevision: details.baseRevision,
+    changeContent: details.change,
+    changeAppliedRevision: decision?.kind === "applied" ? decision.revision : null,
+    changeRefusal: decision?.kind === "refused" ? decision.reason : null,
+  };
 }

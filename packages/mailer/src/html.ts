@@ -1,8 +1,15 @@
 import { htmlEscape } from "./escape.js";
 import { renderFontHead, renderLayoutHeader, type LayoutLogo } from "./layout-header.js";
+import { effectiveSectionOrder, joinSections, type LayoutSectionId } from "./layout-sections.js";
 
 export { htmlEscape } from "./escape.js";
 export type { LayoutLogo } from "./layout-header.js";
+export {
+  effectiveSectionOrder,
+  isLayoutSectionId,
+  LAYOUT_SECTIONS,
+  type LayoutSectionId,
+} from "./layout-sections.js";
 
 /**
  * Les primitives de rendu partagées par tous les gabarits : échapper, assainir
@@ -126,6 +133,23 @@ export interface LayoutInput {
   readonly rows?: readonly LayoutRow[];
   /** L'image en ligne, sous le récapitulatif. */
   readonly image?: LayoutImage;
+  /**
+   * L'itinéraire vers le point de retrait (plan `plan-textes-des-e-mails.md`,
+   * S7) : un bouton secondaire, encadré plutôt que plein, pour ne pas
+   * disputer sa place à l'action principale.
+   */
+  readonly itinerary?: MailCta;
+  /**
+   * L'ordre des sections du corps (S2). Absent : l'ordre par défaut, celui
+   * d'avant les sections, à l'octet près. Une section qu'il ne nomme pas
+   * suit, dans l'ordre par défaut (`effectiveSectionOrder`).
+   */
+  readonly sections?: readonly LayoutSectionId[];
+  /**
+   * Un `<div data-mail-section="…">` neutre autour de chaque section rendue —
+   * pour l'aperçu de l'écran (S4), JAMAIS pour un e-mail envoyé.
+   */
+  readonly markSections?: boolean;
 }
 
 /**
@@ -196,6 +220,11 @@ export function renderLayout(input: LayoutInput): string {
           ${input.image.caption === undefined ? "" : `<span style="display:block;margin:10px 0 0;font-size:13px;color:${BRAND.muted};line-height:1.5;">${htmlEscape(input.image.caption)}</span>`}
         </p>`;
 
+  const itinerary =
+    input.itinerary !== undefined && isRenderableUrl(input.itinerary.url)
+      ? `<p style="margin:20px 0 4px;"><a href="${htmlEscape(input.itinerary.url)}" style="display:inline-block;padding:11px 20px;border:1px solid ${BRAND.navy};color:${BRAND.navy};text-decoration:none;border-radius:${BRAND.radius};font-weight:600;font-size:14px;">${htmlEscape(input.itinerary.label)}</a></p>`
+      : "";
+
   const footer =
     input.footer === undefined
       ? ""
@@ -223,13 +252,20 @@ export function renderLayout(input: LayoutInput): string {
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid ${BRAND.border};border-radius:${BRAND.radius};">
       ${header}
       <tr><td style="padding:32px 32px 8px;">
-        <h1 style="margin:0 0 16px;font-size:20px;line-height:1.3;color:${BRAND.ink};">${htmlEscape(input.title)}</h1>
-        <p style="margin:0;line-height:1.6;white-space:pre-line;">${htmlEscape(input.body)}</p>
-        ${rows}
-        ${image}
-        ${cta}
-        ${secondary}
-        ${footer}
+        ${joinSections(
+          {
+            title: `<h1 style="margin:0 0 16px;font-size:20px;line-height:1.3;color:${BRAND.ink};">${htmlEscape(input.title)}</h1>`,
+            body: `<p style="margin:0;line-height:1.6;white-space:pre-line;">${htmlEscape(input.body)}</p>`,
+            summary: rows,
+            image,
+            itinerary,
+            cta,
+            secondaryLink: secondary,
+            footer,
+          },
+          effectiveSectionOrder(input.sections),
+          input.markSections === true,
+        )}
       </td></tr>
       ${support}
     </table>

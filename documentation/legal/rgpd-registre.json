@@ -1557,6 +1557,24 @@
       "information": false
     },
     {
+      "colonne": "public.mail_section_orders.draft_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`draft_by`) sur `mail_section_orders`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.mail_section_orders.published_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`published_by`) sur `mail_section_orders`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "public.platform_content.updated_by",
       "personne": "staff",
       "categorie": "auteur-geste",
@@ -1915,6 +1933,28 @@
       "information": false
     },
     {
+      "colonne": "public.customer_request.change_content",
+      "personne": "contact",
+      "categorie": "contenu",
+      "finalite": "La commande voulue d'une demande de modification après l'heure limite (articles, jour, point ou adresse livrée, note) : le commerce l'applique ou la refuse (plan de modification de commande, M4, 2026-10-23). Vidée 12 mois après le traitement, ou après la réception d'une demande jamais traitée, comme le reste de la demande.",
+      "conservation": {
+        "jours": 365
+      },
+      "purge": "apps/lfd-api/src/b2b/contact/application/commands/anonymize-customer-requests.handler.ts",
+      "information": false
+    },
+    {
+      "colonne": "public.customer_request.change_refusal",
+      "personne": "contact",
+      "categorie": "contenu",
+      "finalite": "Le mot du commerce qui refuse une demande de modification, envoyé au client et relu sur sa commande (M4, 2026-10-23) ; il peut nommer la personne. Vidé à l'anonymisation, 12 mois après le traitement.",
+      "conservation": {
+        "jours": 365
+      },
+      "purge": "apps/lfd-api/src/b2b/contact/application/commands/anonymize-customer-requests.handler.ts",
+      "information": false
+    },
+    {
       "colonne": "public.customer_request_photo.storage_key",
       "personne": "contact",
       "categorie": "contenu",
@@ -2129,6 +2169,14 @@
     {
       "colonne": "public.customer_request.photos",
       "raison": "Pas une colonne : le champ de relation Prisma vers `customer_request_photo`, dont chaque colonne est au registre ou exclue ici (la porte lit le schéma Prisma ligne à ligne, relu le 2026-10-09)."
+    },
+    {
+      "colonne": "public.customer_request.change_base_revision",
+      "raison": "Un NUMÉRO de révision de commande (0, 1, 2…) sur lequel la demande a été composée : il ne désigne ni la commande ni la personne sans `order_id`, vidé à l'anonymisation (M4, 2026-10-23)."
+    },
+    {
+      "colonne": "public.customer_request.change_applied_revision",
+      "raison": "Le numéro de révision qu'une demande appliquée a produit : voir `change_base_revision`."
     }
   ]
 }

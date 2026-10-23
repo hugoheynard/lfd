@@ -1,112 +1,129 @@
-<fold-card>
-  <div class="te-body">
-    <div [attr.title]="'Chemin technique : ' + text().path">
-      <fold-element-title
-        variant="title"
-        [title]="title()"
-        [subtitle]="
-          orphan()
-            ? 'Le code ne connaît plus ce texte — ' + text().mail + ' · ' + text().path
-            : text().path
-        "
-      />
-    </div>
+<div
+  class="te-body"
+  [class.te-spotted]="spotted()"
+  [attr.data-text-path]="text().path"
+  [attr.title]="'Chemin technique : ' + text().path"
+>
+  @if (title(); as heading) {
+    <fold-element-title
+      [variant]="orphan() ? 'title' : 'bar'"
+      [title]="heading"
+      [subtitle]="
+        orphan()
+          ? 'Le code ne connaît plus ce texte — ' + text().mail + ' · ' + text().path
+          : undefined
+      "
+    />
+  }
 
-    @if (conflict()) {
-      <fold-callout variant="alert">
-        Quelqu’un a modifié ce texte pendant que vous l’éditiez. Sa version est rechargée ; refaites
-        votre modification si elle tient toujours.
-      </fold-callout>
-    }
+  @if (conflict()) {
+    <fold-callout variant="alert">
+      Quelqu’un a modifié ce texte pendant que vous l’éditiez. Sa version est rechargée ; refaites
+      votre modification si elle tient toujours.
+    </fold-callout>
+  }
 
-    <div class="te-locales">
-      @for (column of columns(); track column.locale) {
-        <div
-          class="te-locale"
-          [attr.data-locale]="column.locale"
-          (focusin)="active.set(column.locale)"
-        >
-          <fold-textarea
-            [label]="column.label"
-            [hint]="column.hint"
-            [rows]="column.rows"
-            [readOnly]="readOnly()"
-            [value]="column.shown"
-            (valueChange)="edit(column.locale, $event)"
-          />
-          @if (column.state; as state) {
-            <div class="te-line">
-              <fold-badge [variant]="state.variant" [content]="state.label" />
-            </div>
-          }
-          @if (column.refusal; as refusal) {
-            <fold-callout variant="alert">{{ refusal }}</fold-callout>
-          }
-          @if (column.stale) {
-            <fold-callout variant="warning">
-              Traduction en retard : le français a changé depuis.
-            </fold-callout>
-          }
-          @if (column.original; as original) {
-            <p class="te-muted">Texte d’origine : {{ original }}</p>
-          }
-          @if (store.canWrite() && column.canReset) {
-            <div class="te-line">
-              <button
-                foldButton
-                size="sm"
-                emphasis="soft"
-                intent="neutral"
-                icon="undo"
-                type="button"
-                (click)="reset(column.locale)"
+  <div class="te-locales">
+    @for (column of columns(); track column.locale) {
+      <div
+        class="te-locale"
+        [attr.data-locale]="column.locale"
+        (focusin)="active.set(column.locale)"
+      >
+        <fold-textarea
+          [label]="column.label"
+          [hint]="column.hint"
+          [rows]="column.rows"
+          [readOnly]="readOnly()"
+          [value]="column.shown"
+          (valueChange)="edit(column.locale, $event)"
+        />
+        @if (column.state; as state) {
+          <div class="te-line">
+            <fold-badge [variant]="state.variant" [content]="state.label" />
+          </div>
+        }
+        @if (column.refusal; as refusal) {
+          <fold-callout variant="alert">{{ refusal }}</fold-callout>
+        }
+        @if (column.stale) {
+          <fold-callout variant="warning">
+            Traduction en retard : le français a changé depuis.
+          </fold-callout>
+        }
+        @if (column.defaultChange; as change) {
+          <div class="te-line">
+            <fold-badge variant="warning" content="Texte d’origine changé" />
+          </div>
+          <fold-callout variant="warning">
+            Le texte d’origine a changé depuis votre modification. Gardez votre version en la
+            republiant, ou « Rétablir » pour adopter le nouveau texte d’origine.
+            <div class="te-change">
+              <span class="te-muted"
+                >Avant : <s>{{ change.previous }}</s></span
               >
-                Rétablir
-              </button>
+              <span class="te-muted">Maintenant : {{ change.current }}</span>
             </div>
-          }
-        </div>
-      }
-    </div>
-
-    @if (chips().length > 0 && !orphan()) {
-      <div class="te-line">
-        <span class="te-muted">
-          @if (readOnly()) {
-            Variables permises :
-          } @else {
-            Insérer dans le champ {{ activeLabel() }} :
-          }
-        </span>
-        @for (chip of chips(); track chip.name) {
-          @if (readOnly()) {
-            <fold-badge
-              [variant]="chip.required ? 'accent' : 'neutral'"
-              [content]="'{' + chip.name + '}'"
-            />
-          } @else {
+          </fold-callout>
+        } @else if (column.original; as original) {
+          <p class="te-muted">Texte d’origine : {{ original }}</p>
+        }
+        @if (store.canWrite() && column.canReset) {
+          <div class="te-line">
             <button
               foldButton
               size="sm"
+              emphasis="soft"
+              intent="neutral"
+              icon="undo"
               type="button"
-              [emphasis]="chip.required ? 'solid' : 'outline'"
-              [intent]="chip.required ? 'primary' : 'neutral'"
-              [attr.aria-label]="
-                'Insérer {' + chip.name + '}' + (chip.required ? ', obligatoire' : '')
-              "
-              (click)="insert(chip.name)"
+              (click)="reset(column.locale)"
             >
-              {{ '{' + chip.name + '}' }}
+              Rétablir
             </button>
-          }
+          </div>
         }
       </div>
-      @if (required().length > 0) {
-        <p class="te-muted">
-          Obligatoire{{ required().length > 1 ? 's' : '' }} dans chaque langue :
-          {{ required().join(', ') }}.
-        </p>
-      }
     }
   </div>
-</fold-card>
+
+  @if (chips().length > 0 && !orphan()) {
+    <div class="te-line">
+      <span class="te-muted">
+        @if (readOnly()) {
+          Variables permises :
+        } @else {
+          Insérer dans le champ {{ activeLabel() }} :
+        }
+      </span>
+      @for (chip of chips(); track chip.name) {
+        @if (readOnly()) {
+          <fold-badge
+            [variant]="chip.required ? 'accent' : 'neutral'"
+            [content]="'{' + chip.name + '}'"
+          />
+        } @else {
+          <button
+            foldButton
+            size="sm"
+            type="button"
+            [emphasis]="chip.required ? 'solid' : 'outline'"
+            [intent]="chip.required ? 'primary' : 'neutral'"
+            [attr.aria-label]="
+              'Insérer {' + chip.name + '}' + (chip.required ? ', obligatoire' : '')
+            "
+            (click)="insert(chip.name)"
+          >
+            {{ '{' + chip.name + '}' }}
+          </button>
+        }
+      }
+    </div>
+    @if (required().length > 0) {
+      <p class="te-muted">
+        Obligatoire{{ required().length > 1 ? 's' : '' }} dans chaque langue :
+        {{ required().join(', ') }}.
+      </p>
+    }
+  }
+</div>

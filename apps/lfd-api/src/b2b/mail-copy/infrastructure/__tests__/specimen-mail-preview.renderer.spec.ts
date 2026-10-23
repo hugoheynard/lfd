@@ -23,7 +23,7 @@ describe("l'aperçu d'un e-mail", () => {
   const renderer = new SpecimenMailPreviewRenderer(new PreviewAppConfig());
 
   it.each(mailKeys())("%s : le logo est incrusté, et listé comme pièce en ligne", (mail) => {
-    const preview = renderer.render(mail, "fr", {});
+    const preview = renderer.render(mail, "fr", {}, null);
 
     expect(preview.html).not.toContain("cid:lfc-logo");
     expect(preview.html).toContain(
@@ -34,5 +34,41 @@ describe("l'aperçu d'un e-mail", () => {
       contentType: "image/jpeg",
       inline: true,
     });
+  });
+});
+
+describe("l'aperçu repéré (E4, S4)", () => {
+  const renderer = new SpecimenMailPreviewRenderer(new PreviewAppConfig());
+
+  it("pose un repère par section et par texte, et garde l'objet sans repère", () => {
+    const preview = renderer.render("customer.order-placed", "fr", {}, null);
+
+    expect(preview.html).toContain('<div data-mail-section="title">');
+    expect(preview.html).toContain('<div data-mail-section="image">');
+    expect(preview.html).toContain('<div data-mail-section="itinerary">');
+    expect(preview.html).toContain(
+      '<span data-mail-text="title.paid" data-mail-text-of="customer.order-placed">',
+    );
+    expect(preview.html).toContain('<span data-mail-text="kicker"');
+    expect(preview.html).not.toMatch(/[-]/u);
+    expect(preview.subject).toBe("Votre commande EXEMPLE-0001 — La Folie Coffee");
+  });
+
+  it("rend les sections dans l'ordre donné, l'en-tête et le recours à leur place", () => {
+    const preview = renderer.render("customer.order-placed", "fr", {}, [
+      "footer",
+      "cta",
+      "secondaryLink",
+      "image",
+      "itinerary",
+      "summary",
+      "body",
+      "title",
+    ]);
+    const at = (id: string): number => preview.html.indexOf(`data-mail-section="${id}"`);
+    expect(at("footer")).toBeLessThan(at("cta"));
+    expect(at("summary")).toBeLessThan(at("title"));
+    expect(preview.html.indexOf('data-mail-text="kicker"')).toBeLessThan(at("footer"));
+    expect(at("title")).toBeLessThan(preview.html.indexOf("admin@lfc.test"));
   });
 });

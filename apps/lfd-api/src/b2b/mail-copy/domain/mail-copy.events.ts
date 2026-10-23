@@ -3,6 +3,7 @@ import type { JournalFactType } from "@lfd/contracts/journal-facts";
 import type { JournalFact, JournaledEvent } from "../../../platform/journal/journal-fact.js";
 import type { MailCopyChange } from "./mail-copy-entry.js";
 import type { MailCopyLocale, MailCopySource } from "./mail-copy-locale.js";
+import type { MailSectionOrderChange } from "./mail-section-order.js";
 
 export const MAIL_COPY_FACTS = {
   published: "mail_copy.published",
@@ -18,7 +19,8 @@ export const MAIL_COPY_SUBJECT = "mail";
  *
  * Il porte, pour chaque texte qui change, la valeur envoyée AVANT et APRÈS :
  * c'est la seule trace de ce que les e-mails disaient la veille, et de quoi
- * les y remettre à la main.
+ * les y remettre à la main. Même chose pour l'ordre des sections de chaque
+ * e-mail déplacé (E4) — `null` : l'ordre du code.
  *
  * ⚠️ Son préfixe `mail_copy.` est rangé côté serveur
  * (`growth/domain/activity-module.ts`) ; sa phrase au back-office vit dans
@@ -28,6 +30,7 @@ export class MailCopyPublishedEvent implements JournaledEvent {
   constructor(
     readonly version: number,
     readonly changes: readonly MailCopyChange[],
+    readonly sectionOrders: readonly MailSectionOrderChange[] = [],
   ) {}
 
   journalFact(): JournalFact {
@@ -45,6 +48,17 @@ export class MailCopyPublishedEvent implements JournaledEvent {
           before: change.before,
           after: change.after,
         })),
+        // Absent quand aucun ordre ne change : le fait d'une publication de
+        // textes seuls reste celui d'avant E4.
+        ...(this.sectionOrders.length === 0
+          ? {}
+          : {
+              sectionOrders: this.sectionOrders.map((change) => ({
+                mail: change.mail,
+                before: change.before === null ? null : [...change.before],
+                after: change.after === null ? null : [...change.after],
+              })),
+            }),
       },
     };
   }

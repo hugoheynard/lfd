@@ -68,3 +68,14 @@ export function insertVariable(
   const to = Math.max(from, Math.min(end, text.length));
   return { text: text.slice(0, from) + token + text.slice(to), caret: from + token.length };
 }
+
+/**
+ * Combien de langues portent le signal « le texte d'origine a changé depuis
+ * votre modification » (§2 quinquies) — recompté au fil des retouches, comme
+ * `pendingIn`.
+ */
+export function defaultChangedIn(texts: readonly MailCopyTextView[]): number {
+  return texts
+    .flatMap((text) => COPY_LOCALES.map((locale) => text.locales[locale]))
+    .filter((view) => view.defaultChangedSince !== null).length;
+}

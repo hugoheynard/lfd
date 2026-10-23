@@ -1,0 +1,62 @@
+<div
+  class="sc-frame"
+  [class.sc-spotted]="spotted()"
+  [attr.data-card]="key()"
+  (mouseenter)="hover(true)"
+  (mouseleave)="hover(false)"
+  (focusin)="hover(true)"
+  (focusout)="hover(false)"
+>
+  <fold-card>
+    <div class="sc-body">
+      <fold-element-title variant="title" [title]="title()" [subtitle]="subtitle()">
+        @if (section() !== null || defaultChanged() > 0) {
+          <div titleAction class="sc-actions">
+            @if (defaultChanged() > 0) {
+              <fold-badge variant="warning" content="Texte d’origine changé" />
+            }
+            @if (section(); as current) {
+              <fold-badge
+                [variant]="system() ? 'info' : 'neutral'"
+                [content]="system() ? 'Système' : 'Texte'"
+              />
+              @if (store.canWrite()) {
+                <button
+                  foldButton
+                  size="sm"
+                  emphasis="soft"
+                  intent="neutral"
+                  icon="chevron-up"
+                  type="button"
+                  [disabled]="index() === 0 || store.moving()"
+                  [attr.aria-label]="'Monter la section « ' + current.label + ' »'"
+                  (click)="move(-1)"
+                ></button>
+                <button
+                  foldButton
+                  size="sm"
+                  emphasis="soft"
+                  intent="neutral"
+                  icon="chevron-down"
+                  type="button"
+                  [disabled]="index() === count() - 1 || store.moving()"
+                  [attr.aria-label]="'Descendre la section « ' + current.label + ' »'"
+                  (click)="move(1)"
+                ></button>
+              }
+            }
+          </div>
+        }
+      </fold-element-title>
+
+      @for (text of texts(); track text.view.path) {
+        <app-mail-text-editor
+          [text]="text.view"
+          [heading]="text.heading"
+          [spotted]="spottedPath() === text.view.path"
+          [followsLocale]="mail().followsLocale"
+        />
+      }
+    </div>
+  </fold-card>
+</div>

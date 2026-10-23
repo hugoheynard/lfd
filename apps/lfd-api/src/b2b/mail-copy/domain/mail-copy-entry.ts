@@ -35,6 +35,14 @@ export interface MailCopyEntryState {
   readonly drafted: MailCopyStamp | null;
   readonly publishedText: string | null;
   readonly published: MailCopyStamp | null;
+  /**
+   * Le texte du code (même langue) au moment du brouillon — tenu tant que le
+   * brouillon REMPLACE, `null` sinon. `null` aussi pour une ligne écrite avant
+   * qu'on le note : inconnu, donc aucun signal (cf. `mail-copy-default-drift.ts`).
+   */
+  readonly draftDefault: string | null;
+  /** Le texte du code au moment de la publication du texte en service ; `null` si inconnu ou sans remplacement. */
+  readonly publishedDefault: string | null;
 }
 
 const UNCHANGED: MailCopyDraft = { state: "unchanged" };
@@ -61,6 +69,8 @@ export class MailCopyEntry {
       drafted: null,
       publishedText: null,
       published: null,
+      draftDefault: null,
+      publishedDefault: null,
     });
   }
 
@@ -102,7 +112,11 @@ export class MailCopyEntry {
     if (entry === null) {
       throw new UnknownMailTextError(this.state.mail, this.state.path);
     }
-    this.touch({ state: "set", text: validMailText(entry, text) }, stamp);
+    this.touch(
+      { state: "set", text: validMailText(entry, text) },
+      stamp,
+      entry.defaults[this.locale],
+    );
   }
 
   /**
@@ -114,12 +128,16 @@ export class MailCopyEntry {
    */
   reset(expectedRevision: number, stamp: MailCopyStamp): void {
     this.assertRevision(expectedRevision);
-    this.touch(this.state.publishedText === null ? UNCHANGED : { state: "reset" }, stamp);
+    this.touch(this.state.publishedText === null ? UNCHANGED : { state: "reset" }, stamp, null);
   }
 
   /**
    * Applique le brouillon au publié. Rend le changement envoyé, ou `null` si
    * rien ne change dans les e-mails (brouillon égal au publié, orpheline).
+   *
+   * Le texte du code COURANT est noté avec le publié (décision de Hugo,
+   * 2026-10-23 : publier vaut relecture) — un « défaut changé depuis » vu sur
+   * le brouillon disparaît donc à la publication.
    *
    * 🔴 Une orpheline en `set` n'est JAMAIS publiée : son texte n'existe plus
    * dans le code, l'appliquer ne changerait aucun e-mail. Son brouillon reste.
@@ -130,7 +148,15 @@ export class MailCopyEntry {
       return null;
     }
     const after = draft.state === "set" ? draft.text : null;
-    this.state = { ...this.state, draft: UNCHANGED, publishedText: after, published: stamp };
+    const currentDefault = manifest.entry(this.mail, this.path)?.defaults[this.locale] ?? null;
+    this.state = {
+      ...this.state,
+      draft: UNCHANGED,
+      draftDefault: null,
+      publishedText: after,
+      publishedDefault: after === null ? null : currentDefault,
+      published: stamp,
+    };
     return after === publishedText
       ? null
       : { mail: this.mail, path: this.path, locale: this.locale, before: publishedText, after };
@@ -141,8 +167,14 @@ export class MailCopyEntry {
     return manifest.knows(this.state.mail, this.state.path);
   }
 
-  private touch(draft: MailCopyDraft, stamp: MailCopyStamp): void {
-    this.state = { ...this.state, draft, drafted: stamp, revision: this.state.revision + 1 };
+  private touch(draft: MailCopyDraft, stamp: MailCopyStamp, draftDefault: string | null): void {
+    this.state = {
+      ...this.state,
+      draft,
+      draftDefault,
+      drafted: stamp,
+      revision: this.state.revision + 1,
+    };
   }
 
   private assertRevision(expected: number): void {
