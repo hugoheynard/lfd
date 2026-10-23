@@ -4,7 +4,11 @@ import {
 } from "../../../domain/errors/vitrine-errors.js";
 import { VitrineContents } from "../../../domain/vitrine-contents.js";
 import { catalogue, item } from "../../../domain/__tests__/vitrine-fixtures.js";
-import { KeyedSubscribers, StaticShowcase } from "../../commands/__tests__/vitrine-doubles.js";
+import {
+  FixedShopOrigin,
+  KeyedSubscribers,
+  StaticShowcase,
+} from "../../commands/__tests__/vitrine-doubles.js";
 import { ReadVitrineArticleHandler } from "../read-vitrine-article.handler.js";
 import { ReadVitrineArticleQuery } from "../read-vitrine-article.query.js";
 import { ReadVitrineCatalogueHandler } from "../read-vitrine-catalogue.handler.js";
@@ -20,6 +24,7 @@ describe("les lectures de l'agence", () => {
     const view = await new ReadVitrineCatalogueHandler(
       KeyedSubscribers.of(KEY, VitrineContents.of(["catalogue"])),
       shop,
+      new FixedShopOrigin(),
     ).execute(new ReadVitrineCatalogueQuery(KEY, "it"));
     expect(view.language).toBe("it");
     expect(view.operations).toEqual([]);
@@ -32,6 +37,7 @@ describe("les lectures de l'agence", () => {
       const handler = new ReadVitrineCatalogueHandler(
         KeyedSubscribers.of(KEY, VitrineContents.of(["catalogue"])),
         new StaticShowcase(),
+        new FixedShopOrigin(),
       );
       await expect(handler.execute(new ReadVitrineCatalogueQuery(key, "fr"))).rejects.toThrow(
         VitrineReadKeyRefusedError,
@@ -44,11 +50,13 @@ describe("les lectures de l'agence", () => {
       new ReadVitrineCatalogueHandler(
         KeyedSubscribers.of(KEY, VitrineContents.of(["catalogue"]), active),
         new StaticShowcase(),
+        new FixedShopOrigin(),
       ).execute(new ReadVitrineCatalogueQuery(KEY, "fr"));
     const cut = await read(false).catch((error: unknown) => error);
     const unknown = await new ReadVitrineCatalogueHandler(
       KeyedSubscribers.of(KEY, VitrineContents.of(["catalogue"])),
       new StaticShowcase(),
+      new FixedShopOrigin(),
     )
       .execute(new ReadVitrineCatalogueQuery("vtrkey_INCONNUE", "fr"))
       .catch((error: unknown) => error);
@@ -63,6 +71,7 @@ describe("les lectures de l'agence", () => {
     const handler = new ReadVitrineArticleHandler(
       KeyedSubscribers.of(KEY, VitrineContents.of(["catalogue"])),
       shop,
+      new FixedShopOrigin(),
     );
     expect((await handler.execute(new ReadVitrineArticleQuery(KEY, "PUB-01", "fr"))).sku).toBe(
       "PUB-01",
@@ -82,5 +91,18 @@ describe("les lectures de l'agence", () => {
       "product.bestSeller": "Incontournable",
     });
     expect((await read(VitrineContents.of(["catalogue"]))).texts).toEqual({});
+  });
+
+  it("donne à chaque article l'adresse absolue de sa fiche, vide sans origine", async () => {
+    const read = (origin: string | null) =>
+      new ReadVitrineArticleHandler(
+        KeyedSubscribers.of(KEY, VitrineContents.of(["catalogue"])),
+        new StaticShowcase(),
+        new FixedShopOrigin(origin),
+      ).execute(new ReadVitrineArticleQuery(KEY, "CRO-01", "fr"));
+    expect((await read("https://boutique.example")).URLProduct).toBe(
+      "https://boutique.example/boutique/article/CRO-01",
+    );
+    expect((await read(null)).URLProduct).toBe("");
   });
 });

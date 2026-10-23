@@ -179,6 +179,13 @@ export const VITRINE_ENTITIES: readonly VitrineEntity[] = [
         description: 'Le nom de ce rayon, dans la langue demandée — le même que Rayon.name.',
       },
       {
+        field: 'URLProduct',
+        type: 'chaîne',
+        presence: ALWAYS,
+        description:
+          'L’adresse absolue de la fiche de l’article à la boutique, https://…/boutique/article/<sku> — à mettre derrière « Commander », dans un partage ou un e-mail. Stable : elle ne change pas quand le nom change. Vide si l’adresse de la boutique n’est pas encore configurée chez nous.',
+      },
+      {
         field: 'isFeatured',
         type: 'booléen',
         presence: OPTIONAL,

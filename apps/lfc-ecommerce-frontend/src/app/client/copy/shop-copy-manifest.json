@@ -1512,6 +1512,20 @@
           "variables": []
         },
         {
+          "key": "shop.pieceUnavailable",
+          "fr": "Cet article n’est plus disponible",
+          "en": "This item is no longer available",
+          "it": "Questo articolo non è più disponibile",
+          "variables": []
+        },
+        {
+          "key": "shop.pieceUnavailableBack",
+          "fr": "Voir la boutique",
+          "en": "See the shop",
+          "it": "Vedi la bottega",
+          "variables": []
+        },
+        {
           "key": "shop.searchPlaceholder",
           "fr": "Chercher une baguette, un éclair…",
           "en": "Look for a baguette, an éclair…",

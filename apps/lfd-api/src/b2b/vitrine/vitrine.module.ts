@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 
+import { AppConfig } from "../../platform/config/app-config.js";
 import { OutboundModule } from "../../platform/outbound/outbound.module.js";
 import { CreateVitrineSubscriberHandler } from "./application/commands/create-vitrine-subscriber.handler.js";
 import { ResendVitrineDeliveryHandler } from "./application/commands/resend-vitrine-delivery.handler.js";
@@ -29,6 +30,7 @@ import { VitrineFingerprintStore } from "./domain/ports/vitrine-fingerprint.stor
 import { VitrineNoticeMailRenderer } from "./domain/ports/vitrine-notice-mail.renderer.js";
 import { VitrineNoticeReader } from "./domain/ports/vitrine-notice.reader.js";
 import { VitrineNoticeRepository } from "./domain/ports/vitrine-notice.repository.js";
+import { VitrineShopOrigin } from "./domain/ports/vitrine-shop-origin.js";
 import { VitrineShowcaseSource } from "./domain/ports/vitrine-showcase.source.js";
 import { VitrineSubscriberReader } from "./domain/ports/vitrine-subscriber.reader.js";
 import { VitrineSubscriberRepository } from "./domain/ports/vitrine-subscriber.repository.js";
@@ -59,6 +61,13 @@ import { PrismaVitrineSweepLease } from "./infrastructure/prisma-vitrine-sweep.l
   imports: [OutboundModule],
   controllers: [VitrineController, AdminVitrineController, VitrineSweepController],
   providers: [
+    {
+      provide: VitrineShopOrigin,
+      inject: [AppConfig],
+      useFactory: (config: AppConfig): VitrineShopOrigin => ({
+        clientBaseUrl: () => config.clientBaseUrl(),
+      }),
+    },
     { provide: VitrineSubscriberRepository, useClass: PrismaVitrineSubscriberRepository },
     { provide: VitrineSubscriberReader, useClass: PrismaVitrineSubscriberReader },
     { provide: VitrineDeliveryRepository, useClass: PrismaVitrineDeliveryRepository },

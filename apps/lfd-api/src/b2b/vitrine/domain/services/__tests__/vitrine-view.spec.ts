@@ -6,7 +6,7 @@ const ALL = VitrineContents.of(["catalogue", "operations", "texts", "featured"])
 
 describe("la vue d'un abonné", () => {
   it("toutes cases cochées, c'est la vue publique — la mise en avant comprise", () => {
-    const view = vitrineCatalogueOf(catalogue(), ALL, "en");
+    const view = vitrineCatalogueOf(catalogue(), ALL, "en", null);
     expect(view.language).toBe("en");
     expect(view.items.map((entry) => [entry.sku, entry.isFeatured])).toEqual([
       ["CRO-01", true],
@@ -20,6 +20,7 @@ describe("la vue d'un abonné", () => {
       catalogue(),
       VitrineContents.of(["catalogue", "operations"]),
       "fr",
+      null,
     );
     expect(view.items.every((entry) => !("isFeatured" in entry))).toBe(true);
   });
@@ -28,11 +29,21 @@ describe("la vue d'un abonné", () => {
     const withOperation = catalogue({
       items: [item("GAL-01", { operation: { key: "galette", state: "open" } })],
     });
-    const noOperations = vitrineCatalogueOf(withOperation, VitrineContents.of(["catalogue"]), "fr");
+    const noOperations = vitrineCatalogueOf(
+      withOperation,
+      VitrineContents.of(["catalogue"]),
+      "fr",
+      null,
+    );
     expect(noOperations.operations).toEqual([]);
     expect(noOperations.items[0]).not.toHaveProperty("operation");
 
-    const noCatalogue = vitrineCatalogueOf(withOperation, VitrineContents.of(["operations"]), "fr");
+    const noCatalogue = vitrineCatalogueOf(
+      withOperation,
+      VitrineContents.of(["operations"]),
+      "fr",
+      null,
+    );
     expect(noCatalogue).toMatchObject({ items: [], shelves: [] });
     expect(noCatalogue.operations).toHaveLength(1);
   });
@@ -41,7 +52,7 @@ describe("la vue d'un abonné", () => {
     const leaked = catalogue({
       items: [item("PRO-01", { audience: "pro" }), item("BOTH-01", { audience: "both" })],
     });
-    expect(vitrineCatalogueOf(leaked, ALL, "fr").items.map((entry) => entry.sku)).toEqual([
+    expect(vitrineCatalogueOf(leaked, ALL, "fr", null).items.map((entry) => entry.sku)).toEqual([
       "BOTH-01",
     ]);
   });

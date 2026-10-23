@@ -93,6 +93,7 @@ export const VITRINE_ITEM_SHAPE: XmlObjectShape = objectOf<VitrineItemView>({
   vatRatePercent: required(xmlDecimal),
   shelfId: required(xmlString),
   shelfName: required(xmlString),
+  URLProduct: required(xmlString),
   isFeatured: optional(xmlBoolean),
   audience: required(oneOf(["public", "pro", "both"])),
   operation: optional(itemOperation),

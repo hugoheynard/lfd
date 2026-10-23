@@ -8,6 +8,8 @@ import {
   workspaceHomeGuard,
 } from './client/client-workspace.guard';
 import { ClientShell } from './client/shell/client-shell';
+import { PRODUCT_SEGMENT } from '@lfd/contracts/product-path';
+import { PIECE_SKU_PARAM } from './client/shop/piece-route';
 import { noProVisitGuard } from './client/shop/pro-visit.guard';
 import { FEATURE_DASHBOARD, FEATURE_PRO_SPACE } from './feature-flags';
 
@@ -284,6 +286,14 @@ export const routes: Routes = [
         path: 'boutique',
         title: 'Boutique — La Folie Coffee',
         loadComponent: () => import('./client/shop/shop-page/shop-page').then((m) => m.ShopPage),
+        // LA FICHE D'UN ARTICLE a son adresse, stable pour toujours (Hugo,
+        // 2026-10-23) : `/boutique/article/<sku>`. Un enfant SANS composant :
+        // la boutique reste montée derrière la fiche, et le retour du
+        // navigateur rend la grille telle qu'on l'a laissée. Cf. `PieceAddress`.
+        children: [
+          { path: '', children: [] },
+          { path: `${PRODUCT_SEGMENT}/:${PIECE_SKU_PARAM}`, children: [] },
+        ],
       },
       {
         // LE RÈGLEMENT, et il porte l'identifiant de la commande. Elle EXISTE

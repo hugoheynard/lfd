@@ -388,6 +388,9 @@ export interface ClientCopy {
     readonly loadFailedTitle: string;
     readonly loadFailedHint: string;
     readonly loadRetry: string;
+    /** L'adresse d'une fiche nomme un article absent du catalogue du visiteur (2026-10-23). */
+    readonly pieceUnavailable: string;
+    readonly pieceUnavailableBack: string;
     readonly searchPlaceholder: string;
     readonly clearSearch: string;
     readonly allShelves: string;

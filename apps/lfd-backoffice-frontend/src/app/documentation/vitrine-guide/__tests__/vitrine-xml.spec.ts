@@ -35,6 +35,7 @@ const SERVER_ITEM_XML = `<?xml version="1.0" encoding="UTF-8"?>
   <vatRatePercent>5.5</vatRatePercent>
   <shelfId>cat_viennoiseries</shelfId>
   <shelfName>Viennoiseries</shelfName>
+  <URLProduct>https://…/boutique/article/VIE-001</URLProduct>
   <isFeatured>true</isFeatured>
   <audience>both</audience>
 </item>

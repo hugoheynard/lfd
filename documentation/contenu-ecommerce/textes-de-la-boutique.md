@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1590 textes
+## Sommaire — 1592 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -19,7 +19,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Accueil — la carte d'événement](#espace-event) | `event` | 5 |
 | [Connexion et création de compte](#espace-signup) | `signup` | 24 |
 | [Commander — l'écran d'entrée de la commande](#espace-commande) | `commande` | 39 |
-| [Rayon / boutique](#espace-shop) | `shop` | 59 |
+| [Rayon / boutique](#espace-shop) | `shop` | 61 |
 | [Rayon — la fiche produit](#espace-product) | `product` | 19 |
 | [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 36 |
 | [Choix du lieu — la maison](#espace-housepicker) | `housePicker` | 8 |
@@ -47,7 +47,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
-| **Total** | | **1590** |
+| **Total** | | **1592** |
 
 ## Le parcours de commande
 
@@ -326,7 +326,7 @@ Source : `fr.ts · en.ts · it.ts` · 39 textes.
 
 ### Rayon / boutique — `shop`
 
-Source : `fr.ts · en.ts · it.ts` · 59 textes.
+Source : `fr.ts · en.ts · it.ts` · 61 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -338,6 +338,8 @@ Source : `fr.ts · en.ts · it.ts` · 59 textes.
 | `shop.loadFailedTitle` | La boutique n’a pas pu se charger | The shop could not load | La bottega non si è caricata |  |
 | `shop.loadFailedHint` | Le réseau n’a pas répondu. Rien n’est perdu : votre panier vous attend. | The network did not answer. Nothing is lost — your basket is waiting. | La rete non ha risposto. Niente è perduto: il carrello ti aspetta. |  |
 | `shop.loadRetry` | Réessayer | Try again | Riprova |  |
+| `shop.pieceUnavailable` | Cet article n’est plus disponible | This item is no longer available | Questo articolo non è più disponibile |  |
+| `shop.pieceUnavailableBack` | Voir la boutique | See the shop | Vedi la bottega |  |
 | `shop.searchPlaceholder` | Chercher une baguette, un éclair… | Look for a baguette, an éclair… | Cerca una baguette, un éclair… |  |
 | `shop.clearSearch` | Effacer la recherche | Clear the search | Cancella la ricerca |  |
 | `shop.allShelves` | Tout | Everything | Tutto |  |

@@ -46,8 +46,8 @@ article : `sku`, `name`, `note`, `image`, `thumbnail`, `unitPriceMillicents`
 avant promotion, seulement si une promotion baisse le prix), `vatRatePercent`,
 `shelfId`, `audience` (`public` ou `both`), `isFeatured` (mise en avant
 **publique**), `operation` — et, depuis le 2026-10-23, les champs propres à
-l'agence (§7 bis) : `unitPriceTTC`, `unitPriceHT`, `shelfName`, `focale` dans
-la vignette. Sont exclus : l'audience `pro`, les masqués au
+l'agence (§7 bis) : `unitPriceTTC`, `unitPriceHT`, `shelfName`, `URLProduct`,
+`focale` dans la vignette. Sont exclus : l'audience `pro`, les masqués au
 public, les arrivées non validées, le prix pro, la mise en avant pro, les
 opérations réservées aux pros. L'e2e l'éprouve **sur `/vitrine` elle-même**.
 
@@ -309,12 +309,33 @@ de l'abonné et non dans la vue publique de la boutique.
 | `focale`        | Dans `<thumbnail>` seulement : le point focal de la médiathèque en `x,y`, deux fractions de 0 à 1 à deux décimales, depuis le coin haut gauche (`0.50,0.30`). **Élément vide** sans point focal : recadrer au centre. `<focal><x/><y/></focal>` reste servi.                        |
 | `alt` (corrigé) | Le texte alternatif de la médiathèque ; le **nom de l'article** quand il n'y en a pas d'écrit. La médiathèque replie une alternative absente sur l'URL (pour qu'elle se voie au staff), et ce repli arrivait jusqu'à `<alt>` : c'était un bug, corrigé pour `image` et `thumbnail`. |
 
-**Pas d'`URLProduct`** : la fiche d'un article n'a pas d'adresse dans la
-boutique (`apps/lfc-ecommerce-frontend`, vérifié le 2026-10-23). Elle s'ouvre
-dans `/boutique` par un état de la page (`PieceRequest`, `openPiece`), sans
-segment ni paramètre ; seul le rayon a une adresse (`/boutique?<rayon>`). En
-servir une serait inventer une route. À décider : donner une adresse à la
-fiche côté boutique, puis la servir ici.
+### `URLProduct` — l'adresse de la fiche (2026-10-23)
+
+| Élément      | Valeur                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `URLProduct` | L'adresse **absolue** de la fiche à la boutique : `${CLIENT_BASE_URL}/boutique/article/<sku encodé>`. Construite par `productUrl` (`packages/contracts/src/product-path.ts`), la même fonction que la boutique déclare canonique. **Élément vide** quand `CLIENT_BASE_URL` n'est pas configurée (jamais une adresse inventée ni relative). L'origine arrive par le port étroit `VitrineShopOrigin`, relié à `AppConfig` dans `vitrine.module.ts`. |
+
+L'adresse est **stable pour toujours** (Hugo, 2026-10-23) : la clé est le
+SKU, aucun nom n'y entre, et un article renommé garde son lien. Pas de slug,
+donc pas de redirection à tenir ; on en ajoutera « un autre moment » si le
+référencement le demande.
+
+Ce que l'adresse permet, au-delà de l'agence : **partager un article** (le
+lien ouvre la fiche, la boutique derrière elle) et **le mettre dans un
+e-mail** — une annonce, une suggestion. Côté boutique, `/boutique/article/<sku>`
+est une route enfant de `/boutique` (`PieceAddress`,
+`apps/lfc-ecommerce-frontend/src/app/client/shop/piece-address.ts`) : ouvrir
+une fiche depuis la grille y navigue (rayon et `#pro` gardés), le retour du
+navigateur rend la grille, et un SKU absent du catalogue du visiteur (retiré,
+ou réservé à l'autre clientèle) affiche « Cet article n'est plus disponible »
+avec un lien vers la boutique. La page pose titre, description, canonique et
+Open Graph **dans le navigateur** : la boutique est servie en SPA statique,
+sans rendu serveur — un robot qui n'exécute pas JavaScript ne les voit pas, et
+l'article absent répond 200, pas 404.
+
+L'empreinte d'un article est calculée **sans** origine : changer
+`CLIENT_BASE_URL` ne renotifie pas le catalogue (le SKU, lui, est déjà dans
+l'empreinte). L'ajout du champ change toutes les empreintes une fois.
 
 Effet sur le balayage : les empreintes d'article portent ces champs, donc le
 premier balayage après le déploiement notifie **tous** les articles une fois

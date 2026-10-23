@@ -79,6 +79,15 @@ export type VitrineItemView = Omit<ShopItemView, "isFeatured" | "operation" | "t
   readonly unitPriceHT: string;
   /** Le nom du rayon `shelfId`, dans la langue lue — celui de `shelves`. */
   readonly shelfName: string;
+  /**
+   * L'adresse ABSOLUE de la fiche à la boutique,
+   * `https://<boutique>/boutique/article/<sku encodé>` (`productUrl`, la même
+   * fonction que la boutique) — à mettre derrière « Commander », dans un
+   * partage ou un e-mail. Stable pour toujours : la clé est le SKU. `""`
+   * quand l'origine de la boutique n'est pas configurée : jamais inventée.
+   * Le nom est celui de l'agence, en JSON comme en XML.
+   */
+  readonly URLProduct: string;
 };
 
 /**

@@ -228,6 +228,8 @@ export const EN: ClientCopy = {
     loadFailedTitle: 'The shop could not load',
     loadFailedHint: 'The network did not answer. Nothing is lost — your basket is waiting.',
     loadRetry: 'Try again',
+    pieceUnavailable: 'This item is no longer available',
+    pieceUnavailableBack: 'See the shop',
     searchPlaceholder: 'Look for a baguette, an éclair…',
     clearSearch: 'Clear the search',
     allShelves: 'Everything',

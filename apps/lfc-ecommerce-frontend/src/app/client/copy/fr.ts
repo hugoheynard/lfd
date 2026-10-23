@@ -223,6 +223,8 @@ export const FR: ClientCopy = {
     loadFailedTitle: 'La boutique n’a pas pu se charger',
     loadFailedHint: 'Le réseau n’a pas répondu. Rien n’est perdu : votre panier vous attend.',
     loadRetry: 'Réessayer',
+    pieceUnavailable: 'Cet article n’est plus disponible',
+    pieceUnavailableBack: 'Voir la boutique',
     searchPlaceholder: 'Chercher une baguette, un éclair…',
     clearSearch: 'Effacer la recherche',
     allShelves: 'Tout',

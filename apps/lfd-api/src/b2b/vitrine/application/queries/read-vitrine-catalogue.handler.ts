@@ -1,6 +1,7 @@
 import type { VitrineCatalogueView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
+import { VitrineShopOrigin } from "../../domain/ports/vitrine-shop-origin.js";
 import { VitrineShowcaseSource } from "../../domain/ports/vitrine-showcase.source.js";
 import { VitrineSubscriberReader } from "../../domain/ports/vitrine-subscriber.reader.js";
 import { vitrineCatalogueOf } from "../../domain/services/vitrine-view.js";
@@ -20,6 +21,7 @@ export class ReadVitrineCatalogueHandler implements IQueryHandler<
   constructor(
     private readonly subscribers: VitrineSubscriberReader,
     private readonly showcase: VitrineShowcaseSource,
+    private readonly origin: VitrineShopOrigin,
   ) {}
 
   async execute(query: ReadVitrineCatalogueQuery): Promise<VitrineCatalogueView> {
@@ -28,6 +30,7 @@ export class ReadVitrineCatalogueHandler implements IQueryHandler<
       await this.showcase.catalogue(query.language),
       contents,
       query.language,
+      this.origin.clientBaseUrl(),
     );
   }
 }

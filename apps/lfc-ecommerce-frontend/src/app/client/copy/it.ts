@@ -231,6 +231,8 @@ export const IT: ClientCopy = {
     loadFailedTitle: 'La bottega non si è caricata',
     loadFailedHint: 'La rete non ha risposto. Niente è perduto: il carrello ti aspetta.',
     loadRetry: 'Riprova',
+    pieceUnavailable: 'Questo articolo non è più disponibile',
+    pieceUnavailableBack: 'Vedi la bottega',
     searchPlaceholder: 'Cerca una baguette, un éclair…',
     clearSearch: 'Cancella la ricerca',
     allShelves: 'Tutto',

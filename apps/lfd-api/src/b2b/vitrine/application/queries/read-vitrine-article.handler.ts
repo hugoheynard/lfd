@@ -2,6 +2,7 @@ import type { VitrineItemView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { VitrineArticleNotFoundError } from "../../domain/errors/vitrine-errors.js";
+import { VitrineShopOrigin } from "../../domain/ports/vitrine-shop-origin.js";
 import { VitrineShowcaseSource } from "../../domain/ports/vitrine-showcase.source.js";
 import { VitrineSubscriberReader } from "../../domain/ports/vitrine-subscriber.reader.js";
 import { vitrineCatalogueOf } from "../../domain/services/vitrine-view.js";
@@ -21,6 +22,7 @@ export class ReadVitrineArticleHandler implements IQueryHandler<
   constructor(
     private readonly subscribers: VitrineSubscriberReader,
     private readonly showcase: VitrineShowcaseSource,
+    private readonly origin: VitrineShopOrigin,
   ) {}
 
   async execute(query: ReadVitrineArticleQuery): Promise<VitrineItemView> {
@@ -29,6 +31,7 @@ export class ReadVitrineArticleHandler implements IQueryHandler<
       await this.showcase.catalogue(query.language),
       contents,
       query.language,
+      this.origin.clientBaseUrl(),
     );
     const item = view.items.find((candidate) => candidate.sku === query.sku);
     if (item === undefined) {

@@ -7,7 +7,7 @@ import type {
 } from "@lfd/contracts";
 
 import type { VitrineContents } from "../vitrine-contents.js";
-import { vitrineItemOf } from "./vitrine-item.js";
+import { vitrineItemOf, type VitrineItemContext } from "./vitrine-item.js";
 
 /**
  * **La vue d'un abonné** : la vue PUBLIQUE de la boutique, moins les ensembles
@@ -22,6 +22,7 @@ export function vitrineCatalogueOf(
   view: ShopCatalogueView,
   contents: VitrineContents,
   language: ContentLocale,
+  shopOrigin: string | null,
 ): VitrineCatalogueView {
   const catalogue = contents.has("catalogue");
   const shelfNames = new Map(view.shelves.map((shelf) => [shelf.id, shelf.name]));
@@ -31,7 +32,7 @@ export function vitrineCatalogueOf(
     items: catalogue
       ? view.items
           .filter((item) => item.audience !== "pro")
-          .map((item) => itemFor(item, shelfNames, contents))
+          .map((item) => itemFor(item, { shelfNames, shopOrigin }, contents))
       : [],
     operations: contents.has("operations") ? view.operations : [],
   };
@@ -41,16 +42,16 @@ export function vitrineCatalogueOf(
  * Un article, sans `isFeatured` si l'abonné ne reçoit pas les
  * « Incontournables », sans `operation` s'il ne reçoit pas les opérations :
  * une case décochée retire l'ensemble, jusqu'au renvoi qui y mène. Les champs
- * propres à l'agence (prix en euros, rayon, focale) : `vitrineItemOf`.
+ * propres à l'agence (prix en euros, rayon, focale, adresse de la fiche) : `vitrineItemOf`.
  */
 function itemFor(
   item: ShopItemView,
-  shelfNames: ReadonlyMap<string, string>,
+  context: VitrineItemContext,
   contents: VitrineContents,
 ): VitrineItemView {
   const { isFeatured, operation, ...rest } = item;
   return {
-    ...vitrineItemOf(rest, shelfNames),
+    ...vitrineItemOf(rest, context),
     ...(contents.has("featured") ? { isFeatured } : {}),
     ...(contents.has("operations") && operation !== undefined ? { operation } : {}),
   };

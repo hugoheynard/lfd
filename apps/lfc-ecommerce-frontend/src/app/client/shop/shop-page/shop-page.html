@@ -72,17 +72,26 @@
       </fold-empty-state>
     }
     @case ('ready') {
-      <!-- L'ENCART d'un rayon d'opération : pendant l'annonce, il EST le rayon,
+      <!-- L'ADRESSE D'UNE FICHE nomme un article que ce visiteur ne peut pas
+           voir (retiré, ou d'une autre clientèle) : on le dit, et le seul
+           geste est de revenir à la boutique (2026-10-23). -->
+      @if (pieceAddress.missing()) {
+        <fold-empty-state class="grid" [title]="t().shop.pieceUnavailable">
+          <button foldButton type="button" (click)="pieceAddress.close()">
+            {{ t().shop.pieceUnavailableBack }}
+          </button>
+        </fold-empty-state>
+      } @else if (shop.operationNotice(); as operation) {
+        <!-- L'ENCART d'un rayon d'opération : pendant l'annonce, il EST le rayon,
            même sans article — la grille vide n'ajoute alors rien qu'un « vide »
            qui contredirait l'annonce. -->
-      @if (shop.operationNotice(); as operation) {
         <div class="grid shelf">
           <app-operation-notice [operation]="operation" />
           @if (shop.products().length > 0) {
             <app-shelf-grid
               [products]="shop.products()"
               [page]="page()"
-              (opened)="openPiece.set($event)"
+              (opened)="pieceAddress.show($event)"
               (shelfOpened)="shop.browse($event)"
             />
           }
@@ -92,7 +101,7 @@
           class="grid"
           [products]="shop.products()"
           [page]="page()"
-          (opened)="openPiece.set($event)"
+          (opened)="pieceAddress.show($event)"
           (shelfOpened)="shop.browse($event)"
         />
       }
@@ -121,6 +130,6 @@
 <app-product-sheet
   [product]="piece()"
   [quantity]="pieceQuantity()"
-  (closed)="openPiece.set(null)"
+  (closed)="pieceAddress.close()"
   (quantitySet)="setPieceQuantity($event)"
 />

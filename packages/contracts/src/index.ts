@@ -2625,3 +2625,6 @@ export type {
   DayStockResupplyView,
   DayStockSiteView,
 } from "./day-stock-overview.js";
+
+/** L'adresse d'une fiche article — partagée par la boutique et le flux de la vitrine. */
+export { PRODUCT_SEGMENT, productPath, productUrl, SHOP_PATH } from "./product-path.js";

@@ -1,8 +1,9 @@
-import type {
-  ShopImageView,
-  ShopItemView,
-  VitrineItemView,
-  VitrineThumbnailView,
+import {
+  productUrl,
+  type ShopImageView,
+  type ShopItemView,
+  type VitrineItemView,
+  type VitrineThumbnailView,
 } from "@lfd/contracts";
 import { unitPriceCents } from "@lfd/money";
 
@@ -52,17 +53,26 @@ function thumbnailFor(image: ShopImageView | null, itemName: string): VitrineThu
   return image === null ? null : { ...image, alt: altOf(image, itemName), focale: focaleOf(image) };
 }
 
+/** Ce qu'un article emprunte au reste du flux : les rayons, l'origine de la boutique. */
+export interface VitrineItemContext {
+  readonly shelfNames: ReadonlyMap<string, string>;
+  /** `null` = origine non configurée : `URLProduct` est servie vide. */
+  readonly shopOrigin: string | null;
+}
+
 /**
  * Les champs que l'agence lit en plus de la vue de la boutique (2026-10-23) :
- * les prix écrits en euros, le nom du rayon, la focale de la vignette, et un
- * `alt` qui n'est jamais une URL. Rien n'est retiré : `isFeatured` et
+ * les prix écrits en euros, le nom du rayon, la focale de la vignette, un
+ * `alt` qui n'est jamais une URL, et l'adresse absolue de la fiche
+ * (`URLProduct`, construite par `productUrl`, la même que la boutique sert). Rien n'est retiré : `isFeatured` et
  * `operation` se décident à côté, selon les cases de l'abonné.
  *
- * Un rayon absent de `shelves` rend un nom vide plutôt qu'un nom inventé.
+ * Un rayon absent de `shelves` rend un nom vide plutôt qu'un nom inventé ;
+ * une origine absente, une adresse vide plutôt qu'une adresse relative.
  */
 export function vitrineItemOf(
   item: Omit<ShopItemView, "isFeatured" | "operation">,
-  shelfNames: ReadonlyMap<string, string>,
+  context: VitrineItemContext,
 ): Omit<VitrineItemView, "isFeatured" | "operation"> {
   return {
     ...item,
@@ -70,6 +80,7 @@ export function vitrineItemOf(
     thumbnail: thumbnailFor(item.thumbnail, item.name),
     unitPriceTTC: euroText(item.unitPriceTtcCents),
     unitPriceHT: euroText(unitPriceCents(item.unitPriceMillicents)),
-    shelfName: shelfNames.get(item.shelfId) ?? "",
+    shelfName: context.shelfNames.get(item.shelfId) ?? "",
+    URLProduct: productUrl(context.shopOrigin, item.sku) ?? "",
   };
 }

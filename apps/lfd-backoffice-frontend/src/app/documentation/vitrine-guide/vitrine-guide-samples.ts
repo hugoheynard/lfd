@@ -41,6 +41,7 @@ export const SAMPLE_ITEM: VitrineItemView = {
   vatRatePercent: 5.5,
   shelfId: 'cat_viennoiseries',
   shelfName: 'Viennoiseries',
+  URLProduct: 'https://…/boutique/article/VIE-001',
   isFeatured: true,
   audience: 'both',
 };

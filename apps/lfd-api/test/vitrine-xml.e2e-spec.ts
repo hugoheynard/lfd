@@ -17,15 +17,25 @@ import type {
 } from "@lfd/contracts";
 import type { Response, Test } from "supertest";
 
+import { VitrineShopOrigin } from "../src/b2b/vitrine/domain/ports/vitrine-shop-origin.js";
 import { deliverAsFacts } from "./catalog-facts-delivery.js";
 import { snapshotOf } from "./catalog-ingest-fixtures.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 
+/** L'origine de la boutique, réglable par cas — `null` : non configurée. */
+const SHOP_ORIGIN = "https://boutique.e2e.test";
+let shopOrigin: string | null = SHOP_ORIGIN;
+
 let ctx: E2eContext;
 
 beforeAll(async () => {
-  ctx = await bootstrapE2e({ overrides: [ADMIN_VERIFIER_OVERRIDE] });
+  ctx = await bootstrapE2e({
+    overrides: [
+      ADMIN_VERIFIER_OVERRIDE,
+      { token: VitrineShopOrigin, value: { clientBaseUrl: () => shopOrigin } },
+    ],
+  });
 });
 
 afterAll(async () => {
@@ -33,6 +43,7 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
+  shopOrigin = SHOP_ORIGIN;
   await ctx.reset();
   await ctx.prisma.catalogPriceHistory.deleteMany();
   await ctx.prisma.catalogItem.deleteMany();
@@ -174,6 +185,27 @@ describe("la vitrine en XML", () => {
     const plain = bodyText(await read("/vitrine/articles/VIE-001?format=xml", key).expect(200));
     expect(plain).toContain("<shelfName>");
     expect(plain).not.toContain("<thumbnail>");
+  });
+
+  /**
+   * L'adresse de la fiche (Hugo, 2026-10-23) : absolue, la même en JSON et en
+   * XML, au XSD ; vide — et non inventée — sans origine configurée.
+   */
+  it("sert URLProduct, l'adresse absolue de la fiche, vide sans origine", async () => {
+    const key = await aSubscriberWithACatalogue();
+    const expected = `${SHOP_ORIGIN}/boutique/article/VIE-001`;
+    const json = jsonBody<VitrineCatalogueView>(
+      await ctx.http().get("/vitrine/catalogue").set("x-vitrine-key", key).expect(200),
+    );
+    expect(json.items.find((entry) => entry.sku === "VIE-001")?.URLProduct).toBe(expected);
+
+    const xml = bodyText(await read("/vitrine/articles/VIE-001?format=xml", key).expect(200));
+    expect(xml).toContain(`<URLProduct>${expected}</URLProduct>`);
+    await expectDeclaredBySchema(xml);
+
+    shopOrigin = null;
+    const bare = bodyText(await read("/vitrine/articles/VIE-001?format=xml", key).expect(200));
+    expect(bare).toContain("<URLProduct></URLProduct>");
   });
 
   it("?format=json l'emporte sur l'en-tête, et reste le défaut", async () => {

@@ -37,6 +37,11 @@
       "types": "./src/journal-facts/index.ts",
       "import": "./dist/journal-facts/index.js",
       "require": "./dist/journal-facts/index.js"
+    },
+    "./product-path": {
+      "types": "./src/product-path.ts",
+      "import": "./dist/product-path.js",
+      "require": "./dist/product-path.js"
     }
   },
   "private": true,

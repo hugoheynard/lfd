@@ -5,7 +5,7 @@ import { VitrineContents } from "../../vitrine-contents.js";
 import { altOf, euroText, focaleOf, vitrineItemOf } from "../vitrine-item.js";
 import { vitrineCatalogueOf } from "../vitrine-view.js";
 
-const SHELVES = new Map([["viennoiseries", "Viennoiseries"]]);
+const SHELVES = { shelfNames: new Map([["viennoiseries", "Viennoiseries"]]), shopOrigin: null };
 
 function image(overrides: Partial<ShopImageView> = {}): ShopImageView {
   return {
@@ -54,6 +54,7 @@ describe("le rayon de l'agence", () => {
       catalogue({ shelves: [{ id: "viennoiseries", name: "Pastries", position: 1 }] }),
       VitrineContents.of(["catalogue"]),
       "en",
+      null,
     );
     expect(view.items.map((entry) => entry.shelfName)).toEqual(["Pastries", "Pastries"]);
   });
@@ -103,5 +104,24 @@ describe("le texte alternatif", () => {
 
   it("remplace une alternative vide par le nom de l'article", () => {
     expect(altOf(image({ alt: "  " }), "Pain")).toBe("Pain");
+  });
+});
+
+describe("l'adresse de la fiche (URLProduct)", () => {
+  const at = (shopOrigin: string | null, sku = "CRO-01"): string =>
+    vitrineItemOf(item(sku), { ...SHELVES, shopOrigin }).URLProduct;
+
+  it("est absolue : l'origine de la boutique, puis /boutique/article/<sku>", () => {
+    expect(at("https://boutique.example")).toBe("https://boutique.example/boutique/article/CRO-01");
+  });
+
+  it("encode le SKU", () => {
+    expect(at("https://boutique.example", "A/B C")).toBe(
+      "https://boutique.example/boutique/article/A%2FB%20C",
+    );
+  });
+
+  it("est vide quand l'origine n'est pas configurée : jamais inventée", () => {
+    expect(at(null)).toBe("");
   });
 });

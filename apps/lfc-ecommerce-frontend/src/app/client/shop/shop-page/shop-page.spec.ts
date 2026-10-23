@@ -32,6 +32,12 @@ import { Shop } from '../shop.service';
 import { FEATURED_SHELF } from '../shelves';
 import { ShopPage } from './shop-page';
 
+/**
+ * La route d'une fiche (`/boutique/article/<sku>`) : ouvrir une tuile y
+ * navigue, et une suite sans elle verrait l'ouverture échouer (2026-10-23).
+ */
+const PIECE_ROUTES = [{ path: 'boutique', children: [{ path: 'article/:sku', children: [] }] }];
+
 // `matchMedia` pour TOUS les cas du fichier : « Régler » ouvre le panier par
 // `dialogSide()`, qui le lit au clic ; un cas qui ne le simulait pas laissait
 // une erreur non gérée, qui fait sortir la suite en échec (CI de X2, 2026-10-17).
@@ -70,7 +76,7 @@ describe('ShopPage', () => {
     TestBed.configureTestingModule({
       imports: [ShopPage],
       providers: [
-        provideRouter([]),
+        provideRouter(PIECE_ROUTES),
         provideHttpClient(),
         provideHttpClientTesting(),
         // Une personne reconnue (le contournement d'Auth0 des suites), en perso :
@@ -415,7 +421,7 @@ describe('ShopPage — la barre du bas, sans compte', () => {
     TestBed.configureTestingModule({
       imports: [ShopPage],
       providers: [
-        provideRouter([]),
+        provideRouter(PIECE_ROUTES),
         provideHttpClient(),
         provideHttpClientTesting(),
         {
@@ -488,7 +494,7 @@ describe('ShopPage — Régler, connecté', () => {
     TestBed.configureTestingModule({
       imports: [ShopPage],
       providers: [
-        provideRouter([]),
+        provideRouter(PIECE_ROUTES),
         provideHttpClient(),
         provideHttpClientTesting(),
         {
@@ -548,7 +554,16 @@ describe('ShopPage — la visite pro par #pro', () => {
     localStorage.clear();
     TestBed.configureTestingModule({
       providers: [
-        provideRouter([{ path: 'boutique', component: ShopPage }]),
+        provideRouter([
+          {
+            path: 'boutique',
+            component: ShopPage,
+            children: [
+              { path: '', children: [] },
+              { path: 'article/:sku', children: [] },
+            ],
+          },
+        ]),
         provideHttpClient(),
         provideHttpClientTesting(),
         {
@@ -644,8 +659,32 @@ describe('ShopPage — la visite pro par #pro', () => {
     TestBed.inject(PieceRequest).open(TEST_ITEMS[0]?.sku ?? '');
     await harness.fixture.whenStable();
 
-    expect(TestBed.inject(Router).url).toBe('/boutique#pro');
+    // Depuis le 2026-10-23, la fiche a son adresse : `#pro` la suit.
+    expect(TestBed.inject(Router).url).toBe(`/boutique/article/${TEST_ITEMS[0]?.sku ?? ''}#pro`);
     expect(TestBed.inject(ProVisit).active()).toBe(true);
+  });
+
+  it('arriver sur /boutique/article/<sku> ouvre la fiche par-dessus la grille', async () => {
+    const item = TEST_ITEMS[0];
+    const page = await arrive(`/boutique/article/${item?.sku ?? ''}`);
+
+    expect(page.querySelector('app-product-sheet')?.textContent).toContain(item?.name ?? '-');
+    expect(page.querySelectorAll('app-product-tile').length).toBeGreaterThan(0);
+  });
+
+  it('un article absent dit « plus disponible » et mène à la boutique', async () => {
+    const page = await arrive('/boutique/article/INCONNU-404');
+
+    expect(page.querySelector('fold-empty-state')?.textContent).toContain(FR.shop.pieceUnavailable);
+    expect(page.querySelector('app-product-tile')).toBeNull();
+    Array.from(page.querySelectorAll('button'))
+      .find((b) => b.textContent?.trim() === FR.shop.pieceUnavailableBack)
+      ?.click();
+    await harness.fixture.whenStable();
+    harness.detectChanges();
+
+    expect(TestBed.inject(Router).url).toBe('/boutique');
+    expect(page.querySelectorAll('app-product-tile').length).toBeGreaterThan(0);
   });
 
   it('« Voir les prix TTC » retire #pro de l’adresse', async () => {

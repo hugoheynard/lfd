@@ -17,6 +17,7 @@ import { FixedSecretGenerator } from "../../../../../platform/secret/fixed-secre
 import { VitrineDeliveryReader } from "../../../domain/ports/vitrine-delivery.reader.js";
 import { VitrineDeliveryRepository } from "../../../domain/ports/vitrine-delivery.repository.js";
 import { VitrineFingerprintStore } from "../../../domain/ports/vitrine-fingerprint.store.js";
+import { VitrineShopOrigin } from "../../../domain/ports/vitrine-shop-origin.js";
 import { VitrineShowcaseSource } from "../../../domain/ports/vitrine-showcase.source.js";
 import {
   type VitrineReadKeyHolder,
@@ -206,5 +207,16 @@ export class MemorySweepLease extends VitrineSweepLease {
       this.releases += 1;
     }
     return Promise.resolve();
+  }
+}
+
+/** L'origine de la boutique, fixée — `null` : non configurée. */
+export class FixedShopOrigin extends VitrineShopOrigin {
+  constructor(private readonly origin: string | null = "https://boutique.example") {
+    super();
+  }
+
+  clientBaseUrl(): string | null {
+    return this.origin;
   }
 }

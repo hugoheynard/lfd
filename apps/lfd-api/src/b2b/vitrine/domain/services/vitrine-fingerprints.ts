@@ -46,8 +46,10 @@ export function vitrinePrintsFor(
   showcase: VitrineShowcase,
   contents: VitrineContents,
 ): readonly VitrineElementPrint[] {
+  // Sans origine : `URLProduct` se déduit du SKU, déjà dans l'empreinte, et
+  // changer l'origine configurée ne doit pas notifier tout le catalogue.
   const views = VITRINE_LANGUAGES.map((language) =>
-    vitrineCatalogueOf(showcase.catalogues[language], contents, language),
+    vitrineCatalogueOf(showcase.catalogues[language], contents, language, null),
   );
   const prints = new Map<string, { kind: VitrineElementKind; key: string; parts: unknown[] }>();
   const collect = (kind: VitrineElementKind, key: string, part: unknown): void => {

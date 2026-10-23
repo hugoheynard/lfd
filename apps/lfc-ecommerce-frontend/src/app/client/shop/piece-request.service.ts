@@ -41,7 +41,9 @@ export class PieceRequest {
     this.asked.set({ id: this.count, sku });
     // `#pro` compris : une fiche demandée depuis la boutique en visite pro ne
     // renavigue pas — ce qui effacerait le fragment, et la visite avec lui.
-    if (this.router.url.split(/[?#]/)[0] !== SHOP) {
+    // Une fiche déjà ouverte (`/boutique/<slug>/<sku>`) est encore la boutique.
+    const path = this.router.url.split(/[?#]/)[0] ?? '';
+    if (path !== SHOP && !path.startsWith(`${SHOP}/`)) {
       void this.router.navigate([SHOP]);
     }
   }

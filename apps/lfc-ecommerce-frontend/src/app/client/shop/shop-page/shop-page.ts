@@ -5,7 +5,6 @@ import {
   DestroyRef,
   effect,
   inject,
-  signal,
   untracked,
 } from '@angular/core';
 import {
@@ -27,6 +26,8 @@ import { Shop } from '../shop.service';
 import { ShopStorefront } from '../storefront/shop-storefront.store';
 import { ShopStore } from '../shop.store';
 import { ShelfAddress } from '../shelf-address';
+import { PieceAddress } from '../piece-address';
+import { PieceHead } from '../piece-head';
 import { FEATURED_SHELF } from '../shelves';
 import { CartFulfillmentDays } from '../cart-fulfillment-days.service';
 import { OrderBar } from '../order-bar/order-bar';
@@ -88,7 +89,7 @@ import { ShelfNav } from './shelf-nav/shelf-nav';
    * parcouru — défendable, mais c'est un choix de produit, pas une conséquence
    * de la découpe. Cf. {@link ShopStore}.
    */
-  providers: [ShopStore, Shop, ShelfAddress],
+  providers: [ShopStore, Shop, ShelfAddress, PieceAddress, PieceHead],
 })
 export class ShopPage {
   protected readonly chrome = inject(ClientChrome);
@@ -132,8 +133,9 @@ export class ShopPage {
     return state?.status === 'ready' ? state.page : null;
   });
 
-  /** La pièce dont la fiche est ouverte. */
-  protected readonly openPiece = signal<string | null>(null);
+  /** La pièce dont la fiche est ouverte — son adresse est `/boutique/article/<sku>`. */
+  protected readonly pieceAddress = inject(PieceAddress);
+  protected readonly openPiece = this.pieceAddress.open;
 
   /** Le tiroir du panier. Fermé en arrivant : on vient voir le rayon. */
 
@@ -184,7 +186,7 @@ export class ShopPage {
     if (entering && this.cart.quantityOf(id) > 0) {
       this.entries.entered(id);
     }
-    this.openPiece.set(null);
+    this.pieceAddress.close();
   }
 
   constructor() {
@@ -196,7 +198,7 @@ export class ShopPage {
       pieces.latest();
       const sku = untracked(() => pieces.take());
       if (sku !== null) {
-        this.openPiece.set(sku);
+        this.pieceAddress.show(sku);
       }
     });
     // La vue d'une fiche est comptée, anonymement, à son ouverture (R5 bis).
