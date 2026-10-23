@@ -37,13 +37,13 @@
     </p>
 
     <!--
-      Le cycle. Sa panne est PARTIELLE : la bande perd sa barre, le tableau de
-      bord reste à l'écran — il ne dépend pas d'elle.
+      Les trois rythmes de prélèvement. Leur panne est PARTIELLE : la bande perd
+      ses barres, le tableau de bord reste à l'écran — il ne dépend pas d'elles.
     -->
-    @if (cycleError(); as message) {
+    @if (rhythmsError(); as message) {
       <fold-callout appearance="inset" variant="alert">{{ message }}</fold-callout>
-    } @else if (cycle(); as window) {
-      <app-cycle-bar [cycle]="window" />
+    } @else if (rhythms(); as calendar) {
+      <app-rhythm-lanes [calendar]="calendar" />
     }
 
     @if (!loading()) {

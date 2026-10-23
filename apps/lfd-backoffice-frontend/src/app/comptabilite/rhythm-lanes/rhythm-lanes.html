@@ -1,0 +1,71 @@
+<!--
+  Les trois rythmes sur un même axe. Les dates viennent toutes du serveur ;
+  la piste ne fait que les poser, et la liste sous chaque barre les dit.
+-->
+<section class="lanes" aria-labelledby="rhythm-lanes-title">
+  <div class="lanes-head">
+    <span class="lanes-eyebrow" id="rhythm-lanes-title">Rythmes de prélèvement</span>
+    <span class="lanes-axis">{{ axisLabel() }}</span>
+  </div>
+
+  <ul class="lanes-legend">
+    @for (item of legend; track item.kind) {
+      <li class="lanes-legend-item">
+        <span class="lanes-mark is-legend" [attr.data-kind]="item.kind" aria-hidden="true"></span>
+        {{ item.label }}
+      </li>
+    }
+    <li class="lanes-legend-item">
+      <span class="lanes-today-swatch" aria-hidden="true"></span>
+      {{ todayLabel() }}
+    </li>
+  </ul>
+
+  <div class="lanes-grid">
+    <!-- La graduation : les lundis, sous le même axe que les barres. -->
+    <span aria-hidden="true"></span>
+    <div class="lanes-ruler" aria-hidden="true">
+      @for (week of weeks(); track week.day) {
+        <span class="lanes-week" [style.left.%]="week.percent">{{ week.label }}</span>
+      }
+    </div>
+
+    @for (lane of lanes(); track lane.mode) {
+      <div class="lanes-name" [class.is-followed]="lane.followed">
+        <strong>{{ lane.title }}</strong>
+        <fold-badge [content]="lane.followers" [variant]="lane.followed ? 'accent' : 'neutral'" />
+      </div>
+
+      <div class="lanes-row">
+        <div class="lanes-track" [class.is-followed]="lane.followed" aria-hidden="true">
+          @for (week of weeks(); track week.day) {
+            <span class="lanes-tick" [style.left.%]="week.percent"></span>
+          }
+          <span class="lanes-today" [style.left.%]="todayPercent()"></span>
+          @for (mark of lane.marks; track mark.key) {
+            <span
+              class="lanes-mark"
+              [attr.data-kind]="mark.kind"
+              [style.left.%]="mark.percent"
+              [attr.title]="mark.label"
+            ></span>
+          }
+        </div>
+        <span class="lanes-next">{{
+          lane.next ?? 'Aucun prélèvement sur la période affichée'
+        }}</span>
+        <ul class="lanes-sr" [attr.aria-label]="lane.title">
+          @for (line of lane.lines; track line.key) {
+            <li>{{ line.text }}</li>
+          }
+        </ul>
+      </div>
+    }
+  </div>
+
+  <p class="lanes-note">
+    {{ noticeSentence() }} Le prélèvement ne tombe jamais avant la fin de ce délai, puis sur un jour
+    ouvré bancaire. Le rythme d’un client se choisit sur sa fiche ; les dates de chaque rythme, sur
+    l’entité juridique.
+  </p>
+</section>

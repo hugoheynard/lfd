@@ -1,0 +1,191 @@
+/* Le vocabulaire de l'ancienne barre du cycle et de la frise tarifaire : une
+   piste creuse, des lundis en traits fins. Trois pistes au lieu d'une. */
+.lanes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.lanes-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+}
+
+.lanes-eyebrow {
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-semibold);
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
+  color: var(--fold-color-text-muted);
+}
+
+.lanes-axis {
+  font-size: var(--fold-text-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text);
+}
+
+.lanes-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs) var(--fold-space-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fold-text-2xs);
+  color: var(--fold-color-text-muted);
+}
+
+.lanes-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}
+
+/* Deux colonnes : le nom du rythme, sa piste. La graduation occupe la
+   première ligne, au-dessus des pistes, sur le même axe. */
+.lanes-grid {
+  display: grid;
+  grid-template-columns: minmax(9rem, max-content) 1fr;
+  align-items: start;
+  gap: var(--fold-space-xs) var(--fold-space-sm);
+}
+
+.lanes-ruler {
+  position: relative;
+  height: 1rem;
+}
+
+.lanes-week {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  font-size: var(--fold-text-2xs);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--fold-color-text-faded);
+}
+
+.lanes-name {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--fold-space-xs);
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+/* Le rythme suivi par des clients est en pleine encre ; les autres restent en
+   sourdine, présents mais éteints. */
+.lanes-name.is-followed {
+  color: var(--fold-color-text);
+}
+
+.lanes-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.lanes-track {
+  position: relative;
+  height: 1.5rem;
+  border: 1px solid var(--fold-color-border-subtle);
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-surface-sunken);
+  opacity: 0.6;
+}
+
+.lanes-track.is-followed {
+  border-color: var(--fold-color-primary-border);
+  opacity: 1;
+}
+
+.lanes-tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: 1px dashed var(--fold-color-border);
+}
+
+/* Aujourd'hui traverse chaque piste au même endroit : une seule verticale. */
+.lanes-today {
+  position: absolute;
+  top: -0.2rem;
+  bottom: -0.2rem;
+  width: 2px;
+  transform: translateX(-50%);
+  background: var(--fold-color-text);
+}
+
+.lanes-today-swatch {
+  display: inline-block;
+  width: 2px;
+  height: 0.8rem;
+  background: var(--fold-color-text);
+}
+
+/* Trois formes, pas trois couleurs seulement : trait (clôture), rond (avis),
+   losange (prélèvement). */
+.lanes-mark {
+  position: absolute;
+  top: 50%;
+  width: 0.6rem;
+  height: 0.6rem;
+  transform: translate(-50%, -50%);
+}
+
+.lanes-mark.is-legend {
+  position: static;
+  display: inline-block;
+  transform: none;
+}
+
+.lanes-mark[data-kind='closure'] {
+  width: 3px;
+  height: 1rem;
+  border-radius: var(--fold-radius-xs);
+  background: var(--fold-color-text-secondary);
+}
+
+.lanes-mark[data-kind='notice'] {
+  border: 2px solid var(--fold-color-info);
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-info-surface);
+}
+
+.lanes-mark[data-kind='collection'] {
+  transform: translate(-50%, -50%) rotate(45deg);
+  border-radius: var(--fold-radius-xs);
+  background: var(--fold-color-primary);
+}
+
+.lanes-mark.is-legend[data-kind='collection'] {
+  transform: rotate(45deg);
+}
+
+.lanes-next {
+  font-size: var(--fold-text-2xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text-muted);
+}
+
+/* La liste des périodes, pour qui ne voit pas la piste. */
+.lanes-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.lanes-note {
+  margin: 0;
+  font-size: var(--fold-text-2xs);
+  color: var(--fold-color-text-muted);
+}

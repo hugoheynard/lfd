@@ -3,6 +3,7 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import {
   setBillingModeDatesPayloadSchema,
   setPayerBillingModePayloadSchema,
+  type BillingRhythmsCalendarView,
   type PayerBillingModeView,
   type SetBillingModeDatesPayload,
   type SetPayerBillingModePayload,
@@ -15,6 +16,7 @@ import { CancelBillingModeDatesCommand } from "../application/commands/cancel-bi
 import { CancelPayerBillingModeCommand } from "../application/commands/cancel-payer-billing-mode.command.js";
 import { ScheduleBillingModeDatesCommand } from "../application/commands/schedule-billing-mode-dates.command.js";
 import { SetPayerBillingModeCommand } from "../application/commands/set-payer-billing-mode.command.js";
+import { GetBillingRhythmsCalendarQuery } from "../application/queries/get-billing-rhythms-calendar.query.js";
 import { GetPayerBillingModeQuery } from "../application/queries/get-payer-billing-mode.query.js";
 
 /**
@@ -59,6 +61,17 @@ export class AdminBillingModesController {
     @Param("mode") mode: string,
   ): Promise<void> {
     await this.commands.execute(new CancelBillingModeDatesCommand(id, mode, staffUserId));
+  }
+
+  /**
+   * Les trois rythmes sur six semaines : clôtures, avis et échéances, calculés
+   * par le calendrier du lot. Lecture seule ; 404 si l'entité n'existe pas.
+   */
+  @Get(":id/billing-modes/calendar")
+  async rhythmsCalendar(@Param("id") id: string): Promise<BillingRhythmsCalendarView> {
+    return this.queries.execute<GetBillingRhythmsCalendarQuery, BillingRhythmsCalendarView>(
+      new GetBillingRhythmsCalendarQuery(id),
+    );
   }
 
   /** Le mode d'un payeur, ses dates programmées et ses trois prochaines clôtures. */

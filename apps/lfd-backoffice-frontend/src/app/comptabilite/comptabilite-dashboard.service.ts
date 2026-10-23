@@ -3,7 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import type {
-  BillingCycleView,
+  BillingRhythmsCalendarView,
   CatalogSummaryView,
   CustomerPortfolioView,
   SepaScheme,
@@ -51,20 +51,17 @@ export class ComptabiliteDashboardService {
   }
 
   /**
-   * Le cycle de prélèvement en cours — **deux instants**, et rien d'autre.
+   * Les trois rythmes de prélèvement d'une entité sur six semaines — clôtures,
+   * avis et échéances, tous calculés par le serveur avec le calendrier du lot.
    *
-   * Ni progression, ni jours restants, ni montant : le premier couple est un
-   * calcul de présentation que l'écran refait avec son horloge (`CycleBar`), et
-   * le montant n'existe pas au niveau du cycle — il se reconstitue par tentative
-   * de prélèvement.
-   *
-   * Une troisième lecture pour le tableau de bord, et elle ne rejoint pas les
-   * deux autres dans un `Promise.all` : une panne du cycle ne doit pas emporter
-   * le portefeuille et le catalogue, qui n'en dépendent pas.
+   * Lue après les entités (il lui faut l'émetteur), et hors du `Promise.all` :
+   * sa panne coûte la bande, pas le portefeuille ni le catalogue.
    */
-  async billingCycle(): Promise<BillingCycleView> {
+  async rhythmsCalendar(legalEntityId: string): Promise<BillingRhythmsCalendarView> {
     return firstValueFrom(
-      this.http.get<BillingCycleView>(`${B2B_API_BASE}/admin/accounting/billing-cycle/current`),
+      this.http.get<BillingRhythmsCalendarView>(
+        `${B2B_API_BASE}/admin/accounting/legal-entities/${encodeURIComponent(legalEntityId)}/billing-modes/calendar`,
+      ),
     );
   }
 

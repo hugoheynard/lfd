@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import type {
-  BillingCycleView,
+  BillingRhythmsCalendarView,
   CatalogSummaryView,
   CollectionPreviewView,
   CustomerPortfolioView,
@@ -25,9 +25,9 @@ import { saveBlob } from '../../shared/download/save-blob';
 import { CollectionBatchesService } from '../collection-batches.service';
 import { longDay } from '../collection-month-wording';
 import { ComptabiliteDashboardService, type NamedBlob } from '../comptabilite-dashboard.service';
-import { CycleBar } from '../cycle-bar/cycle-bar';
 import { day, euros } from '../invoice-dossier-format';
 import { LegalEntitiesService } from '../legal-entities.service';
+import { RhythmLanes } from '../rhythm-lanes/rhythm-lanes';
 
 /**
  * **Le tableau de bord de la comptabilité** — la porte de l'espace.
@@ -56,7 +56,7 @@ import { LegalEntitiesService } from '../legal-entities.service';
  *
  * ## La bande de tête, sur le chrome
  *
- * Titre, chiffres et cycle de prélèvement vivent dans une `fold-page-section`
+ * Titre, chiffres et rythmes de prélèvement vivent dans une `fold-page-section`
  * `bleed` posée sur `foldSurface="chrome"` — la même partition que la
  * tarification et le catalogue : le **verdict** sur le fond sombre, l'**établi**
  * sur le papier. Aucun fond n'est peint à la main : c'est le thème `navi` qui
@@ -64,18 +64,17 @@ import { LegalEntitiesService } from '../legal-entities.service';
  *
  * ## Quatre lectures, jamais une par ligne
  *
- * Portefeuille, catalogue, entités, cycle : quatre requêtes au chargement,
- * lancées ensemble. Aucune ne dépend d'une autre, et aucune ne se répète par
- * élément affiché — c'est le facteur qu'un tableau de bord attrape le plus
- * facilement. Le cycle est le seul dont l'échec est **partiel** : il coûte sa
- * bande, pas la page.
+ * Portefeuille, catalogue et entités : trois requêtes lancées ensemble ; puis,
+ * l'émetteur connu, l'aperçu et les rythmes de prélèvement, ensemble aussi.
+ * Aucune ne se répète par élément affiché — c'est le facteur qu'un tableau de
+ * bord attrape le plus facilement. Aperçu et rythmes ont un échec **partiel** :
+ * il coûte leur phrase ou leur bande, pas la page.
  */
 @Component({
   selector: 'app-tableau-de-bord-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     RouterLink,
-    CycleBar,
     FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
@@ -84,6 +83,7 @@ import { LegalEntitiesService } from '../legal-entities.service';
     FoldPageLayoutComponent,
     FoldPageSectionComponent,
     FoldSurfaceDirective,
+    RhythmLanes,
   ],
   templateUrl: './tableau-de-bord-page.html',
   styleUrl: './tableau-de-bord-page.scss',
@@ -96,16 +96,16 @@ export class TableauDeBordPage {
   protected readonly customers = signal<CustomerPortfolioView | null>(null);
   protected readonly catalog = signal<CatalogSummaryView | null>(null);
   protected readonly entities = signal<readonly LegalEntityView[]>([]);
-  protected readonly cycle = signal<BillingCycleView | null>(null);
+  protected readonly rhythms = signal<BillingRhythmsCalendarView | null>(null);
   protected readonly loading = signal(true);
   protected readonly busy = signal(false);
   protected readonly error = signal<string | null>(null);
   /**
-   * L'échec du cycle a son propre message, et il est **partiel** : la barre
+   * L'échec des rythmes a son propre message, et il est **partiel** : la bande
    * disparaît, le reste du tableau de bord tient. Le fondre dans `error` aurait
    * fait passer une bande manquante pour un tableau de bord illisible.
    */
-  protected readonly cycleError = signal<string | null>(null);
+  protected readonly rhythmsError = signal<string | null>(null);
   protected readonly preview = signal<CollectionPreviewView | null>(null);
   protected readonly previewError = signal<string | null>(null);
 
@@ -183,19 +183,7 @@ export class TableauDeBordPage {
   protected async load(): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
-    this.cycleError.set(null);
-    // Lancé avec les trois autres, mais **hors** du `Promise.all` : le cycle
-    // n'est pas une condition du tableau de bord, et une 500 sur lui ne doit pas
-    // effacer le portefeuille et le catalogue.
-    const cycle = this.api.billingCycle().then(
-      (view) => {
-        this.cycle.set(view);
-      },
-      (caught: unknown) => {
-        this.cycle.set(null);
-        this.cycleError.set(httpErrorMessage(caught, 'Cycle de prélèvement illisible.'));
-      },
-    );
+    this.rhythmsError.set(null);
     try {
       // Ensemble : aucune ne dépend d'une autre, et les enchaîner tripleraient
       // l'attente pour rien.
@@ -207,13 +195,11 @@ export class TableauDeBordPage {
       this.customers.set(customers);
       this.catalog.set(catalog);
       this.entities.set(entities);
-      await this.loadPreview();
+      // Les deux dépendent de l'émetteur, pas l'une de l'autre.
+      await Promise.all([this.loadPreview(), this.loadRhythms()]);
     } catch (caught) {
       this.error.set(httpErrorMessage(caught, 'Tableau de bord illisible.'));
     } finally {
-      // Attendu ici plutôt qu'ignoré : la page ne quitte son état de chargement
-      // qu'une fois la bande fixée, sinon elle apparaît puis se complète.
-      await cycle;
       this.loading.set(false);
     }
   }
@@ -221,6 +207,25 @@ export class TableauDeBordPage {
   /** L'échéance du mois en cours, datée par le serveur (jour ouvré bancaire). */
   protected collectionDay(issuer: LegalEntityView): string {
     return day(issuer.nextCollection.collectionDay);
+  }
+
+  /**
+   * Les rythmes de l'émetteur prêt, sinon de la première entité vivante : le
+   * délai de pré-notification est un réglage d'entité, et sans entité il n'y a
+   * aucune date à poser. Son échec ne coûte que la bande.
+   */
+  private async loadRhythms(): Promise<void> {
+    this.rhythms.set(null);
+    const entity =
+      this.issuer() ?? this.entities().find((candidate) => candidate.archivedAt === null) ?? null;
+    if (entity === null) {
+      return;
+    }
+    try {
+      this.rhythms.set(await this.api.rhythmsCalendar(entity.id));
+    } catch (caught) {
+      this.rhythmsError.set(httpErrorMessage(caught, 'Rythmes de prélèvement illisibles.'));
+    }
   }
 
   /** L'aperçu de l'émetteur prêt — son échec ne coûte que sa phrase. */

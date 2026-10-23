@@ -3,7 +3,7 @@ import { provideRouter } from '@angular/router';
 import { describe, expect, it } from 'vitest';
 
 import type {
-  BillingCycleView,
+  BillingRhythmsCalendarView,
   CatalogSummaryView,
   CollectionPreviewView,
   CustomerPortfolioView,
@@ -95,24 +95,46 @@ function entity(over: Partial<LegalEntityView> = {}): LegalEntityView {
   };
 }
 
-/**
- * Un cycle d'été : minuit à Paris s'écrit `T22:00:00Z`. Ces instants sont le
- * sujet du test et ne sont comparés qu'entre eux — jamais à l'horloge.
- */
-function cycle(): BillingCycleView {
-  return { startsAt: '2026-08-31T22:00:00.000Z', closesAt: '2026-09-30T22:00:00.000Z' };
+/** Un calendrier tel que le serveur le rend — l'écran ne recalcule aucune date. */
+function rhythmsCalendar(legalEntityId: string): BillingRhythmsCalendarView {
+  return {
+    legalEntityId,
+    today: '2026-10-08',
+    startsOn: '2026-10-05',
+    endsOn: '2026-11-16',
+    preNotificationDays: 14,
+    rhythms: [
+      { mode: 'weekly', followed: false, payerCount: 0, periods: [] },
+      { mode: 'semimonthly', followed: false, payerCount: 0, periods: [] },
+      {
+        mode: 'monthly',
+        followed: true,
+        payerCount: 0,
+        periods: [
+          {
+            closesAt: '2026-10-31T23:00:00.000Z',
+            invoicedOn: '2026-10-31',
+            noticeOn: '2026-11-01',
+            collectionDay: '2026-11-16',
+          },
+        ],
+      },
+    ],
+  };
 }
 
 class FakeDashboard {
   customersValue = portfolio();
   catalogValue = catalog();
-  cycleValue: BillingCycleView | null = cycle();
+  rhythmsFails = false;
+  readonly rhythmsAskedFor: string[] = [];
   readonly downloaded: string[] = [];
 
-  billingCycle(): Promise<BillingCycleView> {
-    return this.cycleValue === null
-      ? Promise.reject(new Error('cycle indisponible'))
-      : Promise.resolve(this.cycleValue);
+  rhythmsCalendar(legalEntityId: string): Promise<BillingRhythmsCalendarView> {
+    this.rhythmsAskedFor.push(legalEntityId);
+    return this.rhythmsFails
+      ? Promise.reject(new Error('rythmes indisponibles'))
+      : Promise.resolve(rhythmsCalendar(legalEntityId));
   }
 
   customers(): Promise<CustomerPortfolioView> {
@@ -274,25 +296,27 @@ describe('TableauDeBordPage', () => {
     expect(text(fixture)).not.toContain('Aucun émetteur');
   });
 
-  it('porte la barre du cycle, bornes rendues en heure locale', async () => {
-    const { fixture } = await render();
+  it('porte les trois rythmes de prélèvement, lus pour l’entité affichée', async () => {
+    const api = new FakeDashboard();
+    const { fixture } = await render(api);
     const body = text(fixture);
 
-    expect(body).toContain('Cycle de prélèvement');
-    // Les bornes du cycle d'été : minuit à Paris, jamais les composantes UTC.
-    expect(body).toContain('1 septembre 2026');
-    expect(body).toContain('1 octobre 2026');
-    expect(body).not.toContain('30 septembre 2026');
+    expect(body).toContain('Rythmes de prélèvement');
+    expect(body).toContain('Hebdomadaire');
+    expect(body).toContain('Deux fois par mois');
+    expect(body).toContain('Mensuel');
+    expect(body).toContain('16 novembre 2026');
+    expect(api.rhythmsAskedFor).toHaveLength(1);
   });
 
-  it('🔴 un cycle illisible coûte sa bande, pas le tableau de bord', async () => {
+  it('🔴 des rythmes illisibles coûtent leur bande, pas le tableau de bord', async () => {
     const api = new FakeDashboard();
-    api.cycleValue = null;
+    api.rhythmsFails = true;
 
     const { fixture } = await render(api);
     const body = text(fixture);
 
-    expect(body).toContain('Cycle de prélèvement illisible.');
+    expect(body).toContain('Rythmes de prélèvement illisibles.');
     // Le reste tient : c'est tout l'objet d'un échec PARTIEL.
     expect(body).toContain('Clients actifs');
     expect(body).toContain('Comptes clients');

@@ -13,7 +13,11 @@
  * Aucune date absolue : la prise d'effet attendue est calculée par le domaine
  * depuis l'instant présent.
  */
-import type { LegalEntityView, PayerBillingModeView } from "@lfd/contracts";
+import type {
+  BillingRhythmsCalendarView,
+  LegalEntityView,
+  PayerBillingModeView,
+} from "@lfd/contracts";
 
 import { nextClosureAfter } from "../src/b2b/accounting/domain/services/billing-cycle.js";
 import { BillingRhythm } from "../src/b2b/accounting/domain/value-objects/billing-rhythm.js";
@@ -288,6 +292,31 @@ describe("le mode d'un payeur", () => {
       .put(`${BASE}/${id}/payers/cmp_inconnu/billing-mode`)
       .send({ mode: "weekly" })
       .expect(404);
+  });
+});
+
+describe("le calendrier des trois rythmes", () => {
+  it("rend les trois rythmes sur l'axe, leurs jalons dans l'ordre, et la prochaine clôture mensuelle", async () => {
+    const id = await declare();
+
+    const view = jsonBody<BillingRhythmsCalendarView>(
+      await staff().get(`${BASE}/${id}/billing-modes/calendar`).expect(200),
+    );
+
+    expect(view.legalEntityId).toBe(id);
+    expect(view.rhythms.map((lane) => lane.mode)).toEqual(["weekly", "semimonthly", "monthly"]);
+    expect(view.today >= view.startsOn && view.today < view.endsOn).toBe(true);
+    const monthly = view.rhythms.find((lane) => lane.mode === "monthly");
+    expect(monthly?.followed).toBe(true);
+    expect(monthly?.periods.map((period) => period.closesAt)).toContain(nextMonthlyClosure());
+    for (const period of view.rhythms.flatMap((lane) => lane.periods)) {
+      expect(period.invoicedOn < period.noticeOn).toBe(true);
+      expect(period.noticeOn < period.collectionDay).toBe(true);
+    }
+  });
+
+  it("refuse une entité inconnue en 404", async () => {
+    await staff().get(`${BASE}/inconnue/billing-modes/calendar`).expect(404);
   });
 });
 
