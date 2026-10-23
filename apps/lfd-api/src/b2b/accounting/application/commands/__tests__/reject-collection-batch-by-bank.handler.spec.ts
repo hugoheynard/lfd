@@ -147,7 +147,7 @@ describe("RejectCollectionBatchByBankHandler", () => {
 
   it("refuse à partir du jour d'échéance (Q3)", async () => {
     const w = await depositedWorld();
-    const day = w.batches.saved.get(w.batchId)?.toPersistence().requestedCollectionDay ?? "";
+    const day = w.batches.saved.get(w.batchId)?.toPersistence().requestedCollectionDay?.value ?? "";
     w.clock.set(new Date(`${day}T08:00:00.000Z`));
 
     await expect(
