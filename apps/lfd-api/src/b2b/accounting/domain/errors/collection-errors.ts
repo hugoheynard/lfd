@@ -265,3 +265,22 @@ export class CollectionProcedureNotFoundError extends ResourceNotFoundError {
     );
   }
 }
+
+/**
+ * Le lot n'était plus dans l'état chargé au moment de l'écrire : un autre
+ * geste (dépôt, annulation, rejet) l'a fait changer entre-temps. L'écriture
+ * conditionnelle du dépôt refuse plutôt que d'écraser — sans elle, un dépôt et
+ * une annulation simultanés laissaient le dernier gagner, et les commandes
+ * dans l'état de l'autre.
+ */
+export class CollectionBatchChangedConcurrentlyError extends BusinessError {
+  constructor(
+    readonly batchId: string,
+    readonly expectedStatus: string,
+  ) {
+    super(
+      "accounting.collection.batch_changed_concurrently",
+      `Le lot ${batchId} a changé d'état pendant le geste (il n'est plus « ${expectedStatus} ») : rien n'a été enregistré. Relisez le lot, puis refaites le geste s'il a encore lieu d'être.`,
+    );
+  }
+}

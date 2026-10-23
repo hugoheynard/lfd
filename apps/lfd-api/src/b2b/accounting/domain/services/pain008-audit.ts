@@ -59,8 +59,10 @@ interface AuditedLine {
   readonly mandate: string;
   /** `LclInstrm` du bloc qui porte la ligne — `CORE` ou `B2B`. */
   readonly scheme: string;
-  /** En centimes, reconverti depuis le texte du fichier. */
-  readonly cents: number;
+  /** En centimes, reconverti depuis le texte du fichier ; `null` s'il est illisible. */
+  readonly cents: number | null;
+  /** Le texte de `InstdAmt` tel que le fichier l'écrit — cité quand il est illisible. */
+  readonly rawAmount: string;
 }
 
 /**
@@ -106,9 +108,10 @@ const IBAN_SHAPE = /^[A-Z]{2}\d{2}[A-Z0-9]{10,}$/i;
 /** Rend le CSV de contrôle d'un `pain.008`. */
 export function auditCsv(xml: string): string {
   const lines = readLines(xml);
-  const summed = lines.reduce((total, line) => total + line.cents, 0);
+  const summed = sumOf(lines);
   const declaredSum = declaredCents(xml);
   const declaredCount = declaredNumber(xml);
+  const unreadable = unreadableAmounts(xml, lines);
 
   const rows = [
     HEADERS.join(SEPARATOR),
@@ -119,7 +122,7 @@ export function auditCsv(xml: string): string {
         quoted(line.debtor),
         quoted(maskedIban(line.iban)),
         quoted(line.mandate),
-        euros(line.cents),
+        line.cents === null ? quoted(illegible(line.rawAmount)) : euros(line.cents),
         quoted(line.scheme),
       ].join(SEPARATOR),
     ),
@@ -127,15 +130,19 @@ export function auditCsv(xml: string): string {
     // cesse alors de les trier ensemble, ce qui mélangerait les deux natures.
     "",
     control("Somme des lignes", euros(summed)),
-    control("Total déclaré par le fichier (CtrlSum)", euros(declaredSum)),
-    control("Écart", euros(declaredSum - summed)),
+    control(
+      "Total déclaré par le fichier (CtrlSum)",
+      declaredSum === null ? illegible(tag(xml, "CtrlSum")) : euros(declaredSum),
+    ),
+    control("Écart", declaredSum === null ? "—" : euros(declaredSum - summed)),
     control("Lignes comptées", String(lines.length)),
     control("Nombre déclaré par le fichier (NbOfTxs)", String(declaredCount)),
+    ...unreadable.map((finding) => control("🔴 Montant illisible", finding)),
     // Le verdict en toutes lettres : on ne demande pas à un lecteur pressé de
     // comparer deux nombres au milieu d'un tableau.
     control(
       "Verdict",
-      declaredSum === summed && declaredCount === lines.length
+      unreadable.length === 0 && declaredSum === summed && declaredCount === lines.length
         ? "COHÉRENT"
         : "🔴 INCOHÉRENT — ne pas déposer",
     ),
@@ -147,12 +154,40 @@ export function auditCsv(xml: string): string {
  * Le verdict du contrôle, sans le CSV : le fichier déclare-t-il exactement ce
  * que ses lignes comptent et somment ? Le prélèvement d'essai le vérifie AVANT
  * de garder son fichier (plan `plan-prelevement-d-essai.md`, §1) — la même
- * relecture que le CSV, quelle que soit la séquence des blocs.
+ * relecture que le CSV, quelle que soit la séquence des blocs. Un montant
+ * illisible rend le fichier incohérent.
  */
 export function isAuditCoherent(xml: string): boolean {
   const lines = readLines(xml);
-  const summed = lines.reduce((total, line) => total + line.cents, 0);
-  return lines.length > 0 && declaredCents(xml) === summed && declaredNumber(xml) === lines.length;
+  return (
+    lines.length > 0 &&
+    unreadableAmounts(xml, lines).length === 0 &&
+    declaredCents(xml) === sumOf(lines) &&
+    declaredNumber(xml) === lines.length
+  );
+}
+
+function sumOf(lines: readonly AuditedLine[]): number {
+  return lines.reduce((total, line) => total + (line.cents ?? 0), 0);
+}
+
+/**
+ * Les montants que le contrôle n'a pas su lire, chacun nommé par son champ et
+ * sa valeur. Régression (2026-10-23) : un montant mal formé valait 0 en
+ * silence — une ligne illisible disparaissait de la somme, et un `CtrlSum`
+ * illisible face à un lot vide passait pour cohérent.
+ */
+function unreadableAmounts(xml: string, lines: readonly AuditedLine[]): readonly string[] {
+  const fromLines = lines
+    .filter((line) => line.cents === null)
+    .map((line) => `InstdAmt de la ligne ${line.endToEndId} : « ${line.rawAmount} »`);
+  return declaredCents(xml) === null
+    ? [...fromLines, `CtrlSum : « ${tag(xml, "CtrlSum")} »`]
+    : fromLines;
+}
+
+function illegible(raw: string): string {
+  return `ILLISIBLE « ${raw} »`;
 }
 
 function control(label: string, value: string): string {
@@ -181,13 +216,14 @@ function readLines(xml: string): readonly AuditedLine[] {
         mandate: tag(line, "MndtId"),
         scheme,
         cents: centsOf(tag(line, "InstdAmt")),
+        rawAmount: tag(line, "InstdAmt"),
       };
     });
   });
 }
 
 /** `<CtrlSum>` du **groupe**, c'est-à-dire le premier : c'est celui du message. */
-function declaredCents(xml: string): number {
+function declaredCents(xml: string): number | null {
   return centsOf(tag(xml, "CtrlSum"));
 }
 
@@ -211,11 +247,14 @@ function tag(xml: string, name: string, nested = false): string {
  * Passe par les chiffres du texte plutôt que par `Number` × 100 : le flottant
  * transformerait `1516.48` en `151647.99999999999`, et un centime d'écart est
  * exactement ce que ce fichier existe pour détecter.
+ *
+ * `null` pour un texte qui n'a pas la forme d'un montant : le compter 0
+ * effacerait la ligne de la somme sans le dire (cf. `unreadableAmounts`).
  */
-function centsOf(amount: string): number {
+function centsOf(amount: string): number | null {
   const matched = /^(-?)(\d+)(?:\.(\d{1,2}))?$/u.exec(amount);
   if (matched === null) {
-    return 0;
+    return null;
   }
   const sign = matched[1] === "-" ? -1 : 1;
   const units = Number(matched[2]);

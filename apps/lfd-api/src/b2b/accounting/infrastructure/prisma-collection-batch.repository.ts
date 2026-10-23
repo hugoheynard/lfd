@@ -7,8 +7,11 @@ import {
   CollectionBatch,
   type BankRejectionStamp,
   type CollectionBatchLine,
+  type CollectionBatchState,
   type ConstitutionAuthor,
 } from "../domain/entities/collection-batch.js";
+import { CollectionBatchChangedConcurrentlyError } from "../domain/errors/collection-errors.js";
+import type { CollectionBatchStatus } from "../domain/entities/collection-batch-status.js";
 import { CollectionBatchRepository } from "../domain/ports/collection-batch.repository.js";
 import type { SequenceType } from "../domain/services/pain008-document.js";
 
@@ -20,6 +23,12 @@ const SEQUENCES: readonly SequenceType[] = ["RCUR", "OOFF"];
  * ses tampons (qui, quand). L'IBAN de chaque ligne est scellé ici, comme celui
  * de `company_bank_accounts` ; il ne sort en clair que dans le XML stocké, qui
  * le porte par construction.
+ *
+ * Un lot déjà en base s'écrit **sous condition** : `WHERE id AND status = <statut
+ * chargé>`. Zéro ligne touchée veut dire qu'un autre geste l'a fait changer
+ * entre la lecture et l'écriture — refusé, jamais écrasé. Le statut chargé est
+ * gardé ici, par agrégat, et pas dans le domaine : c'est une affaire de
+ * persistance, pas une règle du lot.
  */
 @Injectable()
 export class PrismaCollectionBatchRepository extends CollectionBatchRepository {
@@ -29,6 +38,9 @@ export class PrismaCollectionBatchRepository extends CollectionBatchRepository {
   ) {
     super();
   }
+
+  /** Le statut lu en base pour chaque agrégat rendu par `load` (ou écrit par `save`). */
+  private readonly persistedStatus = new WeakMap<CollectionBatch, CollectionBatchStatus>();
 
   async load(batchId: string): Promise<CollectionBatch | null> {
     const row = await this.prisma.collectionBatch.findUnique({
@@ -46,7 +58,7 @@ export class PrismaCollectionBatchRepository extends CollectionBatchRepository {
     if (row === null) {
       return null;
     }
-    return CollectionBatch.rehydrate({
+    const batch = CollectionBatch.rehydrate({
       id: row.id,
       legalEntityId: row.legalEntityId,
       scheme: row.scheme,
@@ -85,29 +97,35 @@ export class PrismaCollectionBatchRepository extends CollectionBatchRepository {
       postponedFromDay: row.postponedFromDay?.toISOString().slice(0, 10) ?? null,
       lastDownloadedAt: row.lastDownloadedAt,
     });
+    this.persistedStatus.set(batch, row.status);
+    return batch;
   }
 
   async save(batch: CollectionBatch): Promise<void> {
     const state = batch.toPersistence();
-    const mutable = {
-      status: state.status,
-      depositedAt: state.deposited?.at ?? null,
-      depositedByStaffId: state.deposited?.staffId ?? null,
-      cancelledAt: state.cancelled?.at ?? null,
-      cancelledByStaffId: state.cancelled?.staffId ?? null,
-      rejectedAt: state.rejected?.at ?? null,
-      rejectedByStaffId: state.rejected?.staffId ?? null,
-      rejectionReason: state.rejected?.reason ?? null,
-      lastDownloadedAt: state.lastDownloadedAt,
-    };
-    const exists = await this.prisma.collectionBatch.findUnique({
-      where: { id: state.id },
-      select: { id: true },
-    });
-    if (exists !== null) {
-      await this.prisma.collectionBatch.update({ where: { id: state.id }, data: mutable });
+    const mutable = mutableColumns(state);
+    const loaded = this.persistedStatus.get(batch);
+    if (loaded !== undefined) {
+      const { count } = await this.prisma.collectionBatch.updateMany({
+        where: { id: state.id, status: loaded },
+        data: mutable,
+      });
+      if (count === 0) {
+        throw new CollectionBatchChangedConcurrentlyError(state.id, loaded);
+      }
+      this.persistedStatus.set(batch, state.status);
       return;
     }
+    await this.create(batch);
+  }
+
+  /**
+   * Un lot qui n'a pas été chargé est un lot NEUF. S'il existait déjà, la clé
+   * primaire refuse : on n'écrase pas un lot qu'on n'a pas lu.
+   */
+  private async create(batch: CollectionBatch): Promise<void> {
+    const state = batch.toPersistence();
+    const mutable = mutableColumns(state);
     await this.prisma.collectionBatch.create({
       data: {
         id: state.id,
@@ -147,6 +165,7 @@ export class PrismaCollectionBatchRepository extends CollectionBatchRepository {
         })),
       ),
     });
+    this.persistedStatus.set(batch, state.status);
   }
 
   private lineColumns(batchId: string, line: CollectionBatchLine) {
@@ -169,6 +188,21 @@ export class PrismaCollectionBatchRepository extends CollectionBatchRepository {
       priorOrderCount: line.priorOrderCount,
     };
   }
+}
+
+/** L'état et ses tampons : les seules colonnes qu'un `save` réécrit. */
+function mutableColumns(state: CollectionBatchState) {
+  return {
+    status: state.status,
+    depositedAt: state.deposited?.at ?? null,
+    depositedByStaffId: state.deposited?.staffId ?? null,
+    cancelledAt: state.cancelled?.at ?? null,
+    cancelledByStaffId: state.cancelled?.staffId ?? null,
+    rejectedAt: state.rejected?.at ?? null,
+    rejectedByStaffId: state.rejected?.staffId ?? null,
+    rejectionReason: state.rejected?.reason ?? null,
+    lastDownloadedAt: state.lastDownloadedAt,
+  };
 }
 
 function stamp(at: Date | null, staffId: string | null): { at: Date; staffId: string } | null {

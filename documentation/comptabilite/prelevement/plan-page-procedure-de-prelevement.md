@@ -162,7 +162,7 @@ débiteur du lot (il ne sera alors pas prélevable, § 3.3).
 une seule entrée `entity: LegalEntityView` — la page charge donc l'entité
 complète), incluse dans le panneau : elle porte déjà la lecture, les quatre
 gestes et le « Déjà connu de la banque ». Elle reste aussi
-sur la fiche de l'entité (`legal-entity-detail-page.html:340`) — **un seul
+sur la fiche de l'entité (`legal-entity-detail-page.html:205`) — **un seul
 composant, deux hôtes**, pas de copie. Ce qui manque à la carte — une
 **modification**, pas un réemploi tel quel : elle n'a aucune sortie
 aujourd'hui ; émettre un `changed` après chaque geste, pour que la page recalcule les états des onglets.
@@ -189,7 +189,7 @@ rejeté par CENET n'est donc plus « en attente » pour toujours : « en attente
 se lit désormais `importedAt === null && abandonedAt === null`.
 
 **Réutilise** `app-mandate-bank-export-card` (`…/mandate-bank-export-card.ts:63`,
-entrée `entity`, hébergée aussi par `legal-entity-detail-page.html:344`),
+entrée `entity`, hébergée aussi par `legal-entity-detail-page.html:209`),
 même règle que l'onglet 1, même sortie `changed` à ajouter.
 
 ### 3.3 Onglet 3 — Le fichier de prélèvement (un lot)

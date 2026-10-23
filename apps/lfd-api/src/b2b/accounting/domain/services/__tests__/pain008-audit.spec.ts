@@ -230,3 +230,42 @@ describe("le contrôle d'un prélèvement d'essai (plan `plan-prelevement-d-essa
     );
   });
 });
+
+describe("auditCsv — un montant illisible", () => {
+  /**
+   * Régression (2026-10-23) : `centsOf` rendait 0 pour un montant mal formé.
+   * La ligne disparaissait de la somme sans un mot, et un `CtrlSum` illisible
+   * devant un lot dont les lignes l'étaient aussi se lisait « COHÉRENT ».
+   */
+  it("nomme le champ et la valeur d'un InstdAmt illisible, et refuse le dépôt", () => {
+    const abime = XML.replace(
+      '<InstdAmt Ccy="EUR">1516.48</InstdAmt>',
+      '<InstdAmt Ccy="EUR">1516,48</InstdAmt>',
+    );
+    const csv = auditCsv(abime);
+
+    expect(csv).toMatch(/"🔴 Montant illisible";;;;"InstdAmt de la ligne [^"]+ : « 1516,48 »"/u);
+    expect(csv).toContain("ILLISIBLE « 1516,48 »");
+    expect(csv).toContain("ne pas déposer");
+    expect(isAuditCoherent(abime)).toBe(false);
+  });
+
+  it("nomme un CtrlSum illisible, même quand rien ne somme", () => {
+    const abime = XML.replace("<CtrlSum>1936.98</CtrlSum>", "<CtrlSum>abc</CtrlSum>");
+    const csv = auditCsv(abime);
+
+    expect(csv).toContain("CtrlSum : « abc »");
+    expect(csv).toContain("INCOHÉRENT");
+    expect(isAuditCoherent(abime)).toBe(false);
+  });
+
+  it("un lot dont TOUS les montants sont illisibles n'est pas cohérent à zéro", () => {
+    const tout = XML.replace(
+      /<InstdAmt Ccy="EUR">[^<]*<\/InstdAmt>/gu,
+      '<InstdAmt Ccy="EUR">x</InstdAmt>',
+    ).replace("<CtrlSum>1936.98</CtrlSum>", "<CtrlSum>y</CtrlSum>");
+
+    expect(isAuditCoherent(tout)).toBe(false);
+    expect(auditCsv(tout)).toContain("INCOHÉRENT");
+  });
+});

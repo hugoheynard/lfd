@@ -5,6 +5,7 @@ import { DomainEventPublisher } from "../../../../platform/events/domain-event-p
 import { Clock } from "../../../../platform/time/clock.js";
 import { CollectionBatchCancelledEvent } from "../../domain/events/collection.events.js";
 import { BillingStatementRepository } from "../../domain/ports/billing-statement.repository.js";
+import { CollectionBatchLock } from "../../domain/ports/collection-batch-lock.js";
 import { CollectionBatchRepository } from "../../domain/ports/collection-batch.repository.js";
 import { LegalEntityReader } from "../../domain/ports/legal-entity.reader.js";
 import { OrderCollectionRepository } from "../../domain/ports/order-collection.repository.js";
@@ -25,6 +26,9 @@ import { CancelCollectionBatchCommand } from "./cancel-collection-batch.command.
  * `batch.cancel()`, qui refuse un lot déposé, et AVANT l'écriture du lot :
  * la base n'accepte l'annulation d'un arrêté que si son lot est encore
  * `constituted` en base. La reconstitution en figera de nouveaux.
+ *
+ * Sous le verrou du lot, pris avant toute lecture (revue du 2026-10-23) : un
+ * dépôt simultané attend, puis lit le lot annulé et refuse.
  */
 @CommandHandler(CancelCollectionBatchCommand)
 export class CancelCollectionBatchHandler implements ICommandHandler<
@@ -32,6 +36,7 @@ export class CancelCollectionBatchHandler implements ICommandHandler<
   void
 > {
   constructor(
+    private readonly lock: CollectionBatchLock,
     private readonly batches: CollectionBatchRepository,
     private readonly orders: OrderCollectionRepository,
     private readonly statements: BillingStatementRepository,
@@ -44,6 +49,9 @@ export class CancelCollectionBatchHandler implements ICommandHandler<
   async execute(command: CancelCollectionBatchCommand): Promise<void> {
     const at = this.clock.now();
     await this.uow.run(async () => {
+      // Le verrou AVANT la lecture, comme le rejet : un dépôt et une annulation
+      // simultanés se sérialisent, et le second lit ce que le premier a écrit.
+      await this.lock.lock(command.batchId);
       const batch = await loadBatchOrFail(this.batches, command.batchId);
       batch.cancel({ at, staffId: command.staffUserId });
       const cancelled = await this.statements.cancelForBatch(batch.id);

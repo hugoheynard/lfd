@@ -20,12 +20,16 @@ import {
 import { StatementBuyerReader } from "../../../domain/ports/statement-buyer.reader.js";
 import { CancelledOrdersReader } from "../../../domain/ports/cancelled-orders.reader.js";
 import { CollectionBatchRepository } from "../../../domain/ports/collection-batch.repository.js";
+import type { CollectionCalendarReader } from "../../../domain/ports/collection-calendar.reader.js";
+import type { CountedLotInputsReader } from "../../../domain/ports/counted-lot-inputs.reader.js";
 import {
   CollectionCandidatesReader,
   type CollectableOrder,
 } from "../../../domain/ports/collection-candidates.reader.js";
 import { OrderRowsLock } from "../../../domain/ports/order-rows-lock.js";
 import { CollectionLock } from "../../../domain/ports/collection-lock.js";
+import { CollectionBatchLock } from "../../../domain/ports/collection-batch-lock.js";
+import { CollectionBatchChangedConcurrentlyError } from "../../../domain/errors/collection-errors.js";
 import {
   CollectionMandatesReader,
   type CollectionMandate,
@@ -71,7 +75,11 @@ export class FixedCreditors extends CreditorReader {
   }
 }
 
-export class FakeCandidates extends CollectionCandidatesReader {
+/** Joue les trois ports de l'adaptateur Prisma : candidats, calendrier, sites. */
+export class FakeCandidates
+  extends CollectionCandidatesReader
+  implements CollectionCalendarReader, CountedLotInputsReader
+{
   floorAt: Date | null = new Date("2026-08-01T00:00:00.000Z");
   orders: CollectableOrder[] = [];
   follows: BillingFollow[] = [];
@@ -149,17 +157,34 @@ export class FakeMandates extends CollectionMandatesReader {
   }
 }
 
+/**
+ * Le lot en mémoire, avec l'écriture CONDITIONNELLE de l'adaptateur Prisma :
+ * un lot chargé ne s'écrit que si son statut enregistré n'a pas bougé depuis
+ * le chargement. Un test simule un geste concurrent en réécrivant
+ * `storedStatus` entre les deux.
+ */
 export class MemoryBatches extends CollectionBatchRepository {
   readonly saved = new Map<string, CollectionBatch>();
+  private readonly loadedStatus = new WeakMap<CollectionBatch, CollectionBatchStatus>();
   constructor(private readonly steps: Steps) {
     super();
   }
   load(batchId: string): Promise<CollectionBatch | null> {
-    return Promise.resolve(this.saved.get(batchId) ?? null);
+    const batch = this.saved.get(batchId) ?? null;
+    const stored = this.storedStatus.get(batchId);
+    if (batch !== null && stored !== undefined) {
+      this.loadedStatus.set(batch, stored);
+    }
+    return Promise.resolve(batch);
   }
   /** Le statut tel qu'ENREGISTRÉ — l'agrégat en mémoire peut l'avoir devancé. */
   readonly storedStatus = new Map<string, CollectionBatchStatus>();
   save(batch: CollectionBatch): Promise<void> {
+    const loaded = this.loadedStatus.get(batch);
+    if (loaded !== undefined && this.storedStatus.get(batch.id) !== loaded) {
+      return Promise.reject(new CollectionBatchChangedConcurrentlyError(batch.id, loaded));
+    }
+    this.loadedStatus.set(batch, batch.status);
     this.steps.log.push(`save:batch:${batch.status}`);
     this.saved.set(batch.id, batch);
     this.storedStatus.set(batch.id, batch.status);
@@ -192,6 +217,17 @@ export class MemoryOrderCollections extends OrderCollectionRepository {
     for (const collection of collections) {
       this.saved.set(collection.orderId, collection);
     }
+    return Promise.resolve();
+  }
+}
+
+/** Le verrou d'UN lot, journalisé dans les mêmes pas que les écritures. */
+export class StepBatchLock extends CollectionBatchLock {
+  constructor(private readonly steps: Steps) {
+    super();
+  }
+  lock(batchId: string): Promise<void> {
+    this.steps.log.push(`lock:batch:${batchId}`);
     return Promise.resolve();
   }
 }

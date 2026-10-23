@@ -7,6 +7,7 @@ import type { CollectionBatch } from "../../domain/entities/collection-batch.js"
 import { CollectionBatchDepositedEvent } from "../../domain/events/collection.events.js";
 import { BatchNoticeStatesReader } from "../../domain/ports/batch-notice-states.reader.js";
 import { CancelledOrdersReader } from "../../domain/ports/cancelled-orders.reader.js";
+import { CollectionBatchLock } from "../../domain/ports/collection-batch-lock.js";
 import { CollectionBatchRepository } from "../../domain/ports/collection-batch.repository.js";
 import { LegalEntityReader } from "../../domain/ports/legal-entity.reader.js";
 import { MandateRecheckReader } from "../../domain/ports/mandate-recheck.reader.js";
@@ -27,6 +28,10 @@ import { DepositCollectionBatchCommand } from "./deposit-collection-batch.comman
  * ne suffit pas, le refus nomme les payeurs en défaut.
  *
  * Après : le lot est `deposited`, ses commandes `collected`.
+ *
+ * Sous le verrou du lot (revue du 2026-10-23) : sans lui, une annulation
+ * simultanée lisait le même lot `constituted`, et la dernière écriture
+ * gagnait — un lot annulé dont les commandes étaient `collected`.
  */
 @CommandHandler(DepositCollectionBatchCommand)
 export class DepositCollectionBatchHandler implements ICommandHandler<
@@ -34,6 +39,7 @@ export class DepositCollectionBatchHandler implements ICommandHandler<
   void
 > {
   constructor(
+    private readonly lock: CollectionBatchLock,
     private readonly batches: CollectionBatchRepository,
     private readonly orders: OrderCollectionRepository,
     private readonly mandates: MandateRecheckReader,
@@ -48,6 +54,9 @@ export class DepositCollectionBatchHandler implements ICommandHandler<
   async execute(command: DepositCollectionBatchCommand): Promise<void> {
     const at = this.clock.now();
     await this.uow.run(async () => {
+      // Le verrou AVANT la lecture, comme le rejet : un dépôt et une annulation
+      // simultanés se sérialisent, et le second lit ce que le premier a écrit.
+      await this.lock.lock(command.batchId);
       const batch = await loadBatchOrFail(this.batches, command.batchId);
       const problems = await this.recheck(batch);
       const notices = await this.notices.ofBatch(batch.id);

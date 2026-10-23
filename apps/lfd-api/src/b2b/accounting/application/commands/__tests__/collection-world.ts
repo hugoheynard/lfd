@@ -2,7 +2,15 @@ import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/dir
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { CREDITOR } from "../../../domain/services/__tests__/collection-fixtures.js";
-import type { PayerModeSegments } from "../../../domain/ports/payer-billing-modes.reader.js";
+import type {
+  PayerBillingModesReader,
+  PayerModeSegments,
+} from "../../../domain/ports/payer-billing-modes.reader.js";
+import {
+  CollectionAssemblyReaders,
+  ConstitutionNoticeReaders,
+  ConstitutionWriters,
+} from "../../collection-constitution-ports.js";
 import { CancelCollectionBatchHandler } from "../cancel-collection-batch.handler.js";
 import { ConstituteCollectionBatchesHandler } from "../constitute-collection-batches.handler.js";
 import { DepositCollectionBatchHandler } from "../deposit-collection-batch.handler.js";
@@ -20,6 +28,7 @@ import {
   MemoryStatements,
   RecordingLock,
   RecordingRowsLock,
+  StepBatchLock,
   Steps,
   UlidSequence,
 } from "./collection-doubles.js";
@@ -69,19 +78,20 @@ export function world(payers: readonly PayerModeSegments[] = []) {
   };
   const constitute = new ConstituteCollectionBatchesHandler(
     new FixedCreditors(CREDITOR),
-    w.candidates,
-    w.mandates,
-    new FixedModeDates(),
-    w.payerModes,
-    w.batches,
-    w.orders,
-    w.statements,
-    new FixedBuyers(),
-    new MemoryNotices(noticeStore),
-    new MemoryCycleNotices(noticeStore, batches),
-    w.contacts,
-    w.rejections,
-    w.durable,
+    assemblyReaders(w, w.payerModes),
+    new ConstitutionNoticeReaders(
+      new MemoryCycleNotices(noticeStore, batches),
+      w.contacts,
+      w.rejections,
+      new FixedBuyers(),
+    ),
+    new ConstitutionWriters(
+      w.batches,
+      w.statements,
+      w.orders,
+      new MemoryNotices(noticeStore),
+      w.durable,
+    ),
     new RecordingLock(steps),
     new RecordingRowsLock(steps),
     new UlidSequence(),
@@ -90,6 +100,7 @@ export function world(payers: readonly PayerModeSegments[] = []) {
     new DirectUnitOfWork(),
   );
   const cancel = new CancelCollectionBatchHandler(
+    new StepBatchLock(steps),
     w.batches,
     w.orders,
     w.statements,
@@ -99,6 +110,7 @@ export function world(payers: readonly PayerModeSegments[] = []) {
     new DirectUnitOfWork(),
   );
   const deposit = new DepositCollectionBatchHandler(
+    new StepBatchLock(steps),
     w.batches,
     w.orders,
     w.recheck,
@@ -110,6 +122,7 @@ export function world(payers: readonly PayerModeSegments[] = []) {
     new DirectUnitOfWork(),
   );
   const download = new RecordCollectionBatchDownloadHandler(
+    new StepBatchLock(steps),
     w.batches,
     new FixedEntities(),
     w.clock,
@@ -117,4 +130,22 @@ export function world(payers: readonly PayerModeSegments[] = []) {
     new DirectUnitOfWork(),
   );
   return { ...w, constitute, cancel, deposit, download };
+}
+
+/**
+ * Les lectures de l'assemblage sur les doublés du monde : `FakeCandidates`
+ * joue les trois ports que l'adaptateur Prisma implémente (`useExisting`).
+ */
+export function assemblyReaders(
+  w: { readonly candidates: FakeCandidates; readonly mandates: FakeMandates },
+  payerModes: PayerBillingModesReader,
+): CollectionAssemblyReaders {
+  return new CollectionAssemblyReaders(
+    w.candidates,
+    w.candidates,
+    w.candidates,
+    w.mandates,
+    new FixedModeDates(),
+    payerModes,
+  );
 }

@@ -473,6 +473,33 @@ donc partie, et le lot reconstitué a débité les mêmes bons une seconde fois.
 4. L'auteur et le motif du rejet sont au journal du lot
    (`collection.batch_rejected_by_bank`).
 
+### 4.8 « Le lot a changé d'état pendant le geste » (2026-10-23)
+
+Symptôme : « Marquer déposé », « Annuler » ou un téléchargement rend un 409 qui
+dit que le lot « a changé d'état pendant le geste ». Deux personnes (ou deux
+onglets) ont agi sur le même lot au même instant ; rien n'a été enregistré
+pour ce geste-là.
+
+1. **Relire le lot** : l'autre geste, lui, est passé (déposé, annulé ou rejeté).
+2. Ne refaire le geste que s'il a encore lieu d'être — un lot déposé ne
+   s'annule pas (§ 4.2), un lot annulé se reconstitue (§ 2.4). ✋
+
+Pourquoi c'est sûr (revue qualité, 2026-10-23) : jusque-là, ni le dépôt ni
+l'annulation ne prenaient le verrou du lot, et aucune contrainte en base ne
+refusait `deposited ↔ cancelled` (le déclencheur `collection_batch_transition`
+ne tient que `rejected_by_bank`). Deux gestes simultanés pouvaient donc tous
+deux réussir : le dernier écrit gagnait, et les commandes restaient dans l'état
+de l'autre. Désormais le dépôt, l'annulation, le rejet et le téléchargement
+prennent le verrou du lot avant de le lire, et le lot ne s'écrit que s'il est
+encore dans l'état lu (`CollectionBatchChangedConcurrentlyError`,
+`infrastructure/prisma-collection-batch.repository.ts`). Éprouvé par
+`apps/lfd-api/test/collection-batch-race.e2e-spec.ts`.
+
+Même jour : le **contrôle CSV** (§ 2.4) ne compte plus 0 un montant illisible
+du fichier. Il écrit « ILLISIBLE « … » » dans la colonne, ajoute une ligne
+« 🔴 Montant illisible » qui nomme le champ (`InstdAmt` de telle ligne, ou
+`CtrlSum`) et sa valeur, et rend le verdict « INCOHÉRENT — ne pas déposer ».
+
 ---
 
 ## 4 bis. Les identifiants courts et les noms de fichiers (Hugo, 2026-10-23)
