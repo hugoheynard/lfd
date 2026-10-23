@@ -339,7 +339,7 @@ par section avec badge, monter / descendre, clic aperçu → carte, survol carte
   le chemin technique n'est plus qu'au survol (`title`). Un texte qu'aucune
   carte ne range (le `alt` du QR) reste éditable sous « Autres textes ».
 - **Monter / descendre** : deux boutons fold par carte (fold n'a pas de
-  glisser-déposer, vérifié dans `fold-ng.d.ts` le 2026-10-23), désactivés aux
+  glisser-déposer, vérifié dans les déclarations de types de fold-ng le 2026-10-23), désactivés aux
   bords. Chaque geste écrit en brouillon avec la révision lue puis relit ;
   `400` affiché tel quel au-dessus des sections, `409` relit et le dit au même
   endroit. Badge « Ordre modifié » et « Rétablir l'ordre » ; l'ordre en
