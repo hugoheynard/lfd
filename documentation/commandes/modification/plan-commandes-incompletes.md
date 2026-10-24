@@ -117,10 +117,10 @@ sequenceDiagram
   Col->>Col: une ligne ne se remplit pas
   Col->>Com: fait « manque signalé » (quantités au bac)
   Com->>Com: l'origine « décision attendue »
-  Dec->>Com: décide : ça part ; suite oui/non (+ date)
+  Dec->>Com: décide : ça part, suite oui/non (+ date)
   Com->>Com: révision `shortfall` au livré (M1, sans e-mail)
   Com->>Col: ShortfallDesk : fermer avec ces quantités
-  Col->>Col: seal accepte ; pièces non mises → rendues à la réserve
+  Col->>Col: seal accepte, pièces non mises → rendues à la réserve
   Col->>Com: bac fermé (fait existant) → l'origine ready
   Com->>Prod: si suite : ajout tardif au jour choisi
   Note over Dec: e-mail : un geste à part, rédigé, envoyé ou non

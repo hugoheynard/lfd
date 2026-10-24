@@ -207,3 +207,144 @@ commandes du comptoir et à 0 €, l'unicité SQL des arrêts.
 - **Q-E4 — oui** : les BL se numérotent `BL-1042-1`, `BL-1042-2`.
 - **Q-E5 — oui** : une commande remise sans être passée au colisage reçoit un BL plein au retrait.
 - Lot E1 : [`plan-e1-bon-de-livraison-prevu.md`](plan-e1-bon-de-livraison-prevu.md) — BL prévu à l'arrêt du plan (idée de Hugo, 2026-10-24).
+
+## 10. BL chiffré ou non chiffré (Hugo, 2026-10-24)
+
+« On doit avoir la logique chiffré / non chiffré selon le BL. » Puis : « on ne
+le règle pas : c'est colisage / livraison non chiffré, client service
+facturation chiffré. »
+
+**Ce n'est pas un réglage : c'est le lecteur qui décide.**
+
+| Qui lit le BL                                                                                   | Rendu                                   |
+| ----------------------------------------------------------------------------------------------- | --------------------------------------- |
+| le colisage, le livreur, la personne qui réceptionne (le papier qui voyage avec la marchandise) | **non chiffré** : articles et quantités |
+| le client dans son espace, son service facturation, la comptabilité                             | **chiffré** : prix, totaux              |
+
+- **Un choix de rendu, jamais de données** : le BL porte toujours ses prix en
+  base (E1 les recopie), parce que la facture se calcule sur eux (E4). Les deux
+  rendus sont **le même BL**.
+- **Où il s'applique** : lot E5 (le PDF du BL et ses écrans) ; la facture
+  reste toujours chiffrée.
+- **Aujourd'hui, rien n'existe** (recherché le 2026-10-24 : aucune notion de
+  ce genre dans `apps/lfd-api/src`, `packages/`, `documentation/`).
+
+**La forme : celle du bon de commande, sans en inventer une** (Hugo,
+2026-10-24 : « on a déjà cette logique sur le bon de commande, dont tu dois
+t'inspirer »). [`bon-et-pieces/architecture-bon-de-commande.md`](bon-et-pieces/architecture-bon-de-commande.md)
+§ 1 sépare deux axes, **l'audience** (qui lit : décide ce qu'il y a dedans) et
+**le format** (texte, PDF, courriel : décide comment c'est rendu), et garantit
+qu'aucun prix ne descend au fournil par le **type** : `AtelierSheet` n'a aucun
+champ monétaire (union discriminée, pas un `money?`), et il n'y a pas
+d'aiguilleur `orderSheetOf(order, audience)`. Le BL suit la même règle, en E5 :
+
+- trois projections serveur nommées sur le modèle de `clientSheetOf` /
+  `staffSheetOf` / `atelierSheetOf` : un BL **client** (chiffré, variantes pro
+  et public comme le bon), un BL **équipe**, et un BL **de transport** pour le
+  colisage, le livreur et la personne qui réceptionne — **sans aucun champ
+  monétaire dans son type** ;
+- jamais d'option `withPrices` : ce serait une règle d'audience déguisée en
+  option de rendu, ce que le bon de commande a déjà écarté.
+
+⚠️ `architecture-bon-de-commande.md` affirme qu'« il n'existe pas de bon de
+livraison » : vrai aujourd'hui, faux après E5. Le lot E5 corrige la phrase.
+
+## 11. Après le BL : ce qui manque pour un parcours « au niveau » (Hugo, 2026-10-24)
+
+Évaluation faite le 2026-10-24 sur [`parcours-complet.md`](parcours-complet.md)
+(relu contre le code le même jour). Le chemin heureux est tenu ; les chemins
+d'écart sont pauvres. Hugo : « ajoute-les au plan-cadre dans cet ordre, note
+tout ». Chacun aura son plan ; ceux qui touchent l'argent passent par
+`vitruve`.
+
+### 11.1 Terminer le BL — lots E1 à E9 (ce document)
+
+La racine du manque, du reliquat et du litige. En cours : E1 en construction
+le 2026-10-24.
+
+### 11.2 Les gestes après l'arrêt du plan — lots A1, A2 (argent : `vitruve`)
+
+**Le constat.** Une commande `confirmed` ne s'annule ni ne se modifie plus,
+pour personne : `cancellationOf` refuse « inscribed » dès que `status !==
+"placed"` (`b2b/orders/domain/services/order-cancellation.ts`), et la révision
+M1 refuse une commande inscrite au fournil (`standingBlockOf`,
+`order-revisability.ts` ; `noteAtBakery`, `revise-order.handler.ts`). La seule
+issue est de rouvrir toute la journée. Un client qui appelle à 7 h pour annuler
+n'a pas de réponse. Le plan C7
+([`annulation/plan-annulation-apres-production.md`](annulation/plan-annulation-apres-production.md))
+ne vise que les particuliers, et n'est pas bâti.
+
+**Ce qu'il faut.**
+
+- **A1 — annuler après l'arrêt, par décision** : un geste de l'équipe, sous
+  une permission (même forme que la décision de départ incomplet), tracé
+  avec auteur et motif. Conséquences à écrire au plan : le fournil (la
+  production déjà faite ne disparaît pas), le colisage (bac à vider), la
+  tournée (arrêt retiré), le BL prévu (annulé), l'argent (remboursement carte,
+  ligne au compte).
+- **A2 — modifier après l'arrêt, par décision** : une révision de l'équipe
+  qui contourne la frontière de l'annulation et le guichet `inscribed`, avec
+  les mêmes conséquences, et une règle d'argent nommée (les montants fixes du
+  panier ne bougent pas, cf. Q-I2).
+
+### 11.3 La réception avec réserve et l'avoir — lots R1, R2 (argent : `vitruve`)
+
+**Le constat.** Le retrait (`handover/`) et la livraison (`delivery/`) n'ont
+ni manquant ni réserve à la remise ; il n'existe ni avoir partiel ni litige
+(inventaire du 2026-10-24, `commandes-incompletes.md` § 2, G4 reporté par
+Hugo le même jour).
+
+**Ce qu'il faut.**
+
+- **R1 — réception avec réserve** : à la remise (comptoir ou porte), déclarer
+  par ligne un manquant, un produit abîmé, un refus ; la réserve se porte sur
+  le **BL** remis (il ne change pas : la réserve s'y ajoute).
+- **R2 — l'avoir** : une réserve acceptée produit un **avoir** (381) sur la
+  facture qui porte le BL, ou une déduction avant émission si la facture n'est
+  pas encore partie ; Factur-X et le prélèvement suivent.
+
+### 11.4 Nommer la vente hors plan, nettoyer les statuts morts — lots H1, H2
+
+**Le constat.**
+
+- `markReady` admet une commande `placed`, et le retrait la remet sans
+  qu'elle soit passée par l'arrêt du plan
+  (`b2b/orders/infrastructure/prisma-order.repository.ts`, `markReady` :
+  `status notIn [cancelled, draft, fulfilled]` ; `handover/domain/services/handover.ts`,
+  `handoverBlocker`). C'est voulu pour le comptoir, mais ce n'est ni nommé
+  ni tracé comme une exception.
+- `OrderStatus.draft` et `OrderStatus.in_production` existent dans l'énuméré
+  (`prisma/schema/public/orders.prisma`) et ne sont écrits par aucun chemin
+  (les brouillons vivent dans `order_drafts`).
+- Un pro dont le paiement par carte échoue garde une commande `placed` jusqu'au
+  balayage à l'arrêt du plan ; un particulier est annulé tout de suite
+  (`prisma-order.repository.ts`, abandon). Défendable, jamais écrit comme une
+  décision.
+
+**Ce qu'il faut.**
+
+- **H1 — la vente hors plan, nommée** : un chemin explicite (« remise sans
+  plan »), tracé au journal, que la Supervision et la facture distinguent ;
+  il rejoint la règle Q-E5 (BL plein au retrait).
+- **H2 — le nettoyage** : retirer `draft` et `in_production` de l'énuméré
+  (migration de valeur d'énuméré : `lecteur-de-migrations`) ; écrire en doc
+  d'état la décision sur l'abandon de carte pro, ou l'aligner sur le
+  particulier si Hugo le décide.
+
+### 11.5 L'ordre
+
+| Rang | Chantier             | Lots   | Pourquoi à ce rang                                                                                            |
+| ---- | -------------------- | ------ | ------------------------------------------------------------------------------------------------------------- |
+| 1    | Le BL                | E1–E9  | tous les suivants s'y appuient (une réserve porte sur un BL, une annulation après l'arrêt annule un BL prévu) |
+| 2    | Gestes après l'arrêt | A1, A2 | le cas le plus fréquent en vrai : le client qui appelle trop tard                                             |
+| 3    | Réserve et avoir     | R1, R2 | indispensable dès les premiers clients pros                                                                   |
+| 4    | Hors plan, nettoyage | H1, H2 | petits, mais rendent les états lisibles                                                                       |
+
+### 11.6 Les questions qui viendront (pour mémoire, pas encore posées)
+
+- A1 : qui peut annuler après l'arrêt, et jusqu'à quand (avant le départ ?
+  avant la remise ?) ; la production faite est-elle facturée au client ?
+- R1 : qui déclare une réserve à la porte (le livreur, le client sur le
+  téléphone du livreur ?) ; une réserve sans photo est-elle recevable ?
+- R2 : avoir automatique sur réserve acceptée, ou décision de l'équipe ?
+- H2 : la carte pro s'aligne-t-elle sur le particulier ?
