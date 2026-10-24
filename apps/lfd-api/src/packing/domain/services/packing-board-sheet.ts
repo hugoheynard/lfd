@@ -68,6 +68,19 @@ export function canDeclareReady(order: BoardOrder): boolean {
 }
 
 /**
+ * **La règle de « Il manque »** (lot E6a) — celle de `PackingSheet.reportShortfall` :
+ * un bac ouvert, `listed`, dont une ligne due n'est pas entièrement répartie.
+ */
+export function canReportShortfall(order: BoardOrder): boolean {
+  const allocatedOf = allocationOf(order);
+  return (
+    order.containerMode === "listed" &&
+    order.packed === null &&
+    order.lines.some((line) => allocatedOf(line) < line.quantity)
+  );
+}
+
+/**
  * Une fiche du poste, dans la forme de `PackingSheet` — compteurs, contenants
  * et colonne « À répartir » compris, tous calculés ici : l'écran n'additionne
  * rien.
@@ -97,6 +110,8 @@ export function sheetOf(order: BoardOrder, context: SheetContext): PackingSheet 
     // comptent avant que leur ligne soit cochée (bug du 2026-10-05).
     packedPieces: order.lines.reduce((sum, line) => sum + allocatedOf(line), 0),
     canDeclareReady: canDeclareReady(order),
+    canReportShortfall: canReportShortfall(order),
+    shortfallReportedAt: order.shortfallReportedAt?.toISOString() ?? null,
     coldOutsideIsotherm: coldOutsideIsotherm(order, context.cold),
     packedAt: order.packed?.at.toISOString() ?? null,
     packedBy: order.packed?.by ?? null,

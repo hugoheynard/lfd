@@ -9,6 +9,8 @@ import {
   PackedOrderSealedError,
   PackingLineNotFoundError,
 } from "../errors/packing-station-errors.js";
+import { NothingShortError } from "../errors/packing-shortfall-errors.js";
+import { type ShortfallLine, shortfallOf } from "../services/shortfall.js";
 import {
   type ContainerLine,
   type ContainerMark,
@@ -64,6 +66,7 @@ export class PackingSheet {
     readonly containerMode: ContainerMode,
     containerList: readonly PackingContainerState[],
     readonly fulfillmentMethod: "pickup" | "delivery",
+    private shortfallValue: Date | null,
   ) {
     this.contents = OrderContents.of(reference, containerList);
   }
@@ -79,6 +82,7 @@ export class PackingSheet {
       snapshot.containerMode,
       snapshot.containerList,
       snapshot.fulfillmentMethod,
+      snapshot.shortfallReportedAt ?? null,
     );
   }
 
@@ -130,7 +134,31 @@ export class PackingSheet {
     }
     this.assertAllAllocated();
     this.packedValue = mark;
+    // Fermé complet : un manque signalé n'a plus lieu d'être (E6a).
+    this.shortfallValue = null;
     return { mark, fresh: true };
+  }
+
+  /**
+   * **« Il manque »** (lot E6a, `commandes/plan-e6-le-depart-incomplet.md` § 3) :
+   * fige ce qui est au bac, ligne par ligne. Un second signalement remplace le
+   * premier ; le bac reste ouvert, rien d'autre n'est bloqué.
+   *
+   * @throws {PackedOrderSealedError} @throws {ContainersCountedError}
+   * @throws {NothingShortError} chaque ligne due est entièrement répartie.
+   */
+  reportShortfall(at: Date): readonly ShortfallLine[] {
+    this.assertListedAndOpen();
+    const lines = shortfallOf(this.linesValue, (sku) => this.contents.allocatedOf(sku));
+    if (lines === null) {
+      throw new NothingShortError(this.reference);
+    }
+    this.shortfallValue = at;
+    return lines;
+  }
+
+  get shortfallReportedAt(): Date | null {
+    return this.shortfallValue;
   }
 
   /**
@@ -173,6 +201,7 @@ export class PackingSheet {
       containerMode: this.containerMode,
       containerList: this.contents.containers,
       fulfillmentMethod: this.fulfillmentMethod,
+      shortfallReportedAt: this.shortfallValue,
     };
   }
 

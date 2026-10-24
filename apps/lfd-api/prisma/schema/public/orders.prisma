@@ -313,6 +313,15 @@ model Order {
   readyAt DateTime? @map("ready_at")
   readyBy String?   @map("ready_by")
 
+  // Le MANQUE signalé au colisage (lot E6a, plan-e6-le-depart-incomplet.md § 3) :
+  // le snapshot du fait `packing.shortfall_reported`, jamais une lecture du
+  // colisage. Non nul = « décision attendue ». Les quantités au bac par article
+  // (jsonb `[{ sku, due, packed }]`), remplacées d'un bloc. `shortfallClearedAt`
+  // : le dernier effacement, pour qu'un fait plus ancien ne ressuscite rien.
+  shortfallReportedAt DateTime? @map("shortfall_reported_at") @db.Timestamptz(6)
+  shortfallLines      Json?     @map("shortfall_lines")
+  shortfallClearedAt  DateTime? @map("shortfall_cleared_at") @db.Timestamptz(6)
+
   // Remise en main propre. `handoverToken` est un secret ALÉATOIRE, pas le
   // numéro de commande : celui-ci est imprimé sur le bon, donc public, donc sans
   // valeur de preuve. Émis à la passation pour les DEUX acheminements.

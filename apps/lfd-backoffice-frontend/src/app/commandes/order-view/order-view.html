@@ -43,6 +43,9 @@
         />
       </lfd-order-detail>
 
+      <!-- Le manque signalé au colisage (E6a) : rien sans signalement en vigueur. -->
+      <app-order-shortfall-banner [shortfall]="o.shortfall" [lines]="o.lines" />
+
       <!-- L'argent à rendre d'une commande annulée (C4.9) : rien sans demande. -->
       <app-order-refund-banner [orderId]="o.id" [refund]="o.refund" (retried)="load()" />
 

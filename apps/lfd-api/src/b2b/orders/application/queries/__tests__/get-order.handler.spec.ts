@@ -30,6 +30,10 @@ import { FixedWallClock } from "../../../../../platform/time/fixed-wall-clock.js
 import { AdminOrderRefundView } from "../../services/admin-order-refund-view.js";
 import { InMemoryRefundReader, RefundStore } from "../../commands/__tests__/refund-doubles.js";
 import { GetAdminOrderHandler } from "../get-admin-order.handler.js";
+import {
+  OrderShortfallReader,
+  type OrderShortfallReading,
+} from "../../../domain/ports/order-shortfall.reader.js";
 import { GetAdminOrderQuery } from "../get-admin-order.query.js";
 import { GetOrderHandler } from "../get-order.handler.js";
 import { GetOrderQuery } from "../get-order.query.js";
@@ -198,6 +202,17 @@ class FixedInscription extends OrderInscriptionReader {
   }
 }
 
+/** Le manque signalé doublé : celui qu'on lui donne, pour toute commande. */
+class FixedShortfall extends OrderShortfallReader {
+  constructor(private readonly reading: OrderShortfallReading | null) {
+    super();
+  }
+
+  of(): Promise<OrderShortfallReading | null> {
+    return Promise.resolve(this.reading);
+  }
+}
+
 /** L'aperçu de la fidélité doublé : rend l'issue qu'on lui donne, et note le bon demandé. */
 class FixedRestitutionPreview extends VoucherRestitutionPreview {
   readonly asked: string[] = [];
@@ -234,6 +249,7 @@ function adminHandler(
   engagement: AccountEngagement | null = { kind: "free" },
   refunds: RefundStore = new RefundStore(),
   revisable: RevisableOrder | null = PLACED,
+  shortfall: OrderShortfallReading | null = null,
 ): GetAdminOrderHandler {
   const subjects = new FixedSubjects(subject, others);
   const inscriptions = new FixedInscription(inscribedDay);
@@ -257,6 +273,7 @@ function adminHandler(
       inscriptions,
       revisingAt(new FixedClock(NOW), { engagements: new FixedEngagements(engagement) }),
     ),
+    new FixedShortfall(shortfall),
   );
 }
 
@@ -283,6 +300,28 @@ describe("GetAdminOrderHandler", () => {
       refund: null,
       revisability: { revisable: true },
       revision: 2,
+      shortfall: null,
+    });
+  });
+
+  it("dit le manque signalé au colisage, en vigueur — « décision attendue » (E6a)", async () => {
+    const view = await adminHandler(
+      ofCompany("cmp_1"),
+      { customer: CUSTOMER, company: COMPANY, placedByStaffId: null },
+      directory(),
+      cancellationSubject(),
+      null,
+      new FixedRestitutionPreview({ kind: "already" }),
+      {},
+      { kind: "free" },
+      new RefundStore(),
+      PLACED,
+      { reportedAt: NOW, lines: [{ sku: "CRO", due: 12, packed: 9 }] },
+    ).execute(new GetAdminOrderQuery("ord_1"));
+
+    expect(view.shortfall).toEqual({
+      reportedAt: NOW.toISOString(),
+      lines: [{ sku: "CRO", due: 12, packed: 9 }],
     });
   });
 

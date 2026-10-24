@@ -42,6 +42,7 @@ const DAY: DaySupervisionView = {
   date: DATE,
   asOf: '2026-09-25T07:42:00.000Z',
   flow: [],
+  awaitingDecision: [],
   late: [
     {
       orderId: 'o-late',
@@ -124,6 +125,8 @@ function packingView(closedAt: string | null = 'x'): ProductionPackingView {
               pieces: 12,
               packedPieces: 0,
               canDeclareReady: false,
+              canReportShortfall: false,
+              shortfallReportedAt: null,
               coldOutsideIsotherm: [],
               packedAt: null,
               packedBy: null,
@@ -383,6 +386,29 @@ describe('SupervisionPage', () => {
     expect(
       column(fixture, 'packing')?.querySelector(`[data-reference="${reference}"]`),
     ).not.toBeNull();
+  });
+
+  it('dit les commandes au manque signalé — « décision attendue » (E6a)', async () => {
+    const shortfall = {
+      orderId: 'o-short',
+      reference: 'SHORT',
+      customerName: 'Hôtel du Parc',
+      fulfillmentMethod: 'delivery' as const,
+      reportedAt: '2026-09-25T06:00:00.000Z',
+    };
+    const fixture = await mount({
+      day: () => Promise.resolve({ ...DAY, awaitingDecision: [shortfall] }),
+    });
+
+    expect(
+      root(fixture).querySelector('.masthead [data-awaiting-decision]')?.textContent,
+    ).toContain('Manque signalé — décision attendue : SHORT (Hôtel du Parc).');
+  });
+
+  it('ne dit rien du manque quand aucune commande n’en porte', async () => {
+    const fixture = await mount();
+
+    expect(root(fixture).querySelector('[data-awaiting-decision]')).toBeNull();
   });
 
   it('montre les renvois à qui peut ouvrir les postes', async () => {

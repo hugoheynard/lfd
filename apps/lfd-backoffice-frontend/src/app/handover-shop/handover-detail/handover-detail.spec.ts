@@ -160,6 +160,8 @@ function sheet(reference: string, overrides: Partial<PackingSheet> = {}): Packin
     remainingLines: lines.length,
     pieces: lines.length,
     packedPieces: 0,
+    canReportShortfall: false,
+    shortfallReportedAt: null,
     canDeclareReady: false,
     coldOutsideIsotherm: [],
     packedAt: null,

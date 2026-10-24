@@ -83,6 +83,14 @@ import { CancellationRule } from "./application/services/cancellation-rule.js";
 import { SendOrderCancelledMail } from "./application/handlers/send-order-cancelled-mail.handler.js";
 import { CancellationSubjectReader } from "./domain/ports/cancellation-subject.reader.js";
 import { OrderCancellationRepository } from "./domain/ports/order-cancellation.repository.js";
+import { OrderShortfallRepository } from "./domain/ports/order-shortfall.repository.js";
+import { OrderShortfallReader } from "./domain/ports/order-shortfall.reader.js";
+import { PrismaOrderShortfallReader } from "./infrastructure/prisma-order-shortfall.reader.js";
+import { PrismaOrderShortfallRepository } from "./infrastructure/prisma-order-shortfall.repository.js";
+import { RecordOrderShortfallHandler } from "./application/commands/record-order-shortfall.handler.js";
+import { ClearOrderShortfallHandler } from "./application/commands/clear-order-shortfall.handler.js";
+import { OnPackingShortfallReported } from "./application/handlers/on-packing-shortfall-reported.handler.js";
+import { OnPackingShortfallCleared } from "./application/handlers/on-packing-shortfall-cleared.handler.js";
 import { PrismaCancellationSubjectReader } from "./infrastructure/prisma-cancellation-subject.reader.js";
 import { PrismaOrderCancellationRepository } from "./infrastructure/prisma-order-cancellation.repository.js";
 import { ConfirmOrderPaymentHandler } from "./application/commands/confirm-order-payment.handler.js";
@@ -357,6 +365,8 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     SendOrderCancelledMail,
     { provide: CancellationSubjectReader, useClass: PrismaCancellationSubjectReader },
     { provide: OrderCancellationRepository, useClass: PrismaOrderCancellationRepository },
+    { provide: OrderShortfallRepository, useClass: PrismaOrderShortfallRepository },
+    { provide: OrderShortfallReader, useClass: PrismaOrderShortfallReader },
     ListCompanyOrdersHandler,
     SummarizeCompanyOrdersHandler,
     ExportCompanyOrderSummaryPdfHandler,
@@ -500,6 +510,10 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
       }),
     },
     MarkOrderReadyHandler,
+    RecordOrderShortfallHandler,
+    ClearOrderShortfallHandler,
+    OnPackingShortfallReported,
+    OnPackingShortfallCleared,
     MarkOrderFulfilledHandler,
     ListAdminOrdersHandler,
     GetAdminOrderHistoryHandler,

@@ -158,6 +158,12 @@
       </fold-callout>
     }
 
+    @if (shortfall.failed(); as reason) {
+      <fold-callout variant="alert" class="co-note">
+        Le manque n'a pas pu être signalé — rien n'a été annoncé au commerce. {{ reason }}
+      </fold-callout>
+    }
+
     <!-- Le refus du serveur, tel quel : un bac chargé, une tournée partie. -->
     @if (gestures.reopenFailed(); as reason) {
       <fold-callout variant="alert" class="co-note co-reopen-failed">
@@ -284,9 +290,11 @@
             [searching]="searching()"
             [closing]="gestures.closing()"
             [reopening]="gestures.reopening()"
+            [reportingShortfall]="shortfall.reporting()"
             [readyLabel]="readyLabel()"
             (declareReady)="declareCurrent()"
             (reopen)="reopenCurrent()"
+            (reportShortfall)="shortfall.report($event)"
           />
 
           <app-packing-resources

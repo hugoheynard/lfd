@@ -15,6 +15,8 @@ export interface SupervisedOrder {
   readonly status: OrderStatus;
   /** Le créneau convenu et sa provenance, `null` s'il n'y en a pas. */
   readonly window: HandoverQueueWindow | null;
+  /** Le manque signalé au colisage en vigueur (E6a), `null` = aucun. */
+  readonly shortfallReportedAt: Date | null;
 }
 
 /**

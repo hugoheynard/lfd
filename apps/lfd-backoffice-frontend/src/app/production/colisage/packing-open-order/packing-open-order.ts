@@ -22,7 +22,7 @@ import { PackingLine } from '../packing-line/packing-line';
  * calcul. Les chiffres (`packedLines`, `lineCount`, `remainingLines`,
  * `containers`) et la règle (`canDeclareReady`) viennent du serveur par la
  * commande ; l'orchestrateur `Colisage` y ajoute ce que lui seul sait — ce qui
- * est en vol. Le composant émet deux gestes, et c'est `Colisage` qui les écrit
+ * est en vol. Le composant émet trois gestes — « Il manque » compris (E6a) —, et c'est `Colisage` qui les écrit
  * puis relit. Découpé du poste le 2026-09-14.
  *
  * 🔴 **Une commande `counted` est en lecture seule** (`colisage.md`
@@ -79,6 +79,12 @@ export class PackingOpenOrder {
 
   /** « Rouvrir » demandé — le rangement seulement, la commande reste prête. */
   readonly reopen = output<void>();
+
+  /** Un signalement « Il manque » en vol (E6a). */
+  readonly reportingShortfall = input(false);
+
+  /** « Il manque » (E6a) : la commande à signaler — `Colisage` l'écrit puis relit. */
+  readonly reportShortfall = output<PackingSheet>();
 
   /**
    * La commande tient-elle ses contenants dans la colonne (K2b) ? Sinon, elle

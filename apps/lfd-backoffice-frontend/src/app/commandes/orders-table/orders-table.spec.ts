@@ -17,6 +17,7 @@ function row(over: Partial<AdminOrderRow> = {}): AdminOrderRow {
     placedAt: '2026-10-12T08:00:00.000Z',
     status: 'placed',
     offPlan: false,
+    shortfallReportedAt: null,
     paymentStatus: 'paid',
     fulfillmentMethod: 'delivery',
     fulfillmentDay: '2026-10-14',
@@ -170,5 +171,21 @@ describe('OrdersTable', () => {
     );
     expect(fixture.componentInstance['rowTone'](row({ offPlan: true }))).toBe('alert');
     expect(fixture.componentInstance['rowTone'](row())).toBeNull();
+  });
+
+  /** Lot E6a : le colisage a signalé un manque, la commande attend une décision. */
+  it('montre « Manque signalé — décision attendue » à côté de l’avancement', () => {
+    const fixture = render([row({ shortfallReportedAt: '2026-10-12T05:00:00.000Z' })], true);
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(el.querySelector('[data-shortfall]')?.textContent).toContain(
+      'Manque signalé — décision attendue',
+    );
+  });
+
+  it('ne dit rien du manque sans signalement', () => {
+    const el = render([row()], true).nativeElement as HTMLElement;
+
+    expect(el.querySelector('[data-shortfall]')).toBeNull();
   });
 });

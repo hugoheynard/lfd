@@ -1,5 +1,13 @@
 # Plan E6 — le départ incomplet, du colisage à la facture
 
+> 🟡 **E6a bâti le 2026-10-25** (migration `20261025090000_le_manque_signale`) :
+> « Il manque » au poste de colisage, faits `packing.shortfall_reported` /
+> `packing.shortfall_cleared`, agrégat `OrderShortfall` (le fait le plus
+> récent gagne), « Manque signalé — décision attendue » dans la page Commandes
+> et la Supervision. **E6b + E6c attendent Hugo** (§ 8, § 10). Limite notée
+> par le bâtisseur : une décision prise en E6b devra aussi lever la marque côté
+> colisage.
+
 > **Doc-first, 2026-10-24 (nuit).** Lot E6 du plan-cadre
 > [`plan-commande-bon-de-livraison-facture.md`](plan-commande-bon-de-livraison-facture.md),
 > fusionné avec E4b ([`plan-e4b-la-facture-lit-les-bons.md`](plan-e4b-la-facture-lit-les-bons.md) § 6).
@@ -188,3 +196,115 @@ d'arrondi de TVA ; la facture somme les BL, qui sont ce qui a été livré.
   partiront **ensemble** : une décision sans la facture qui la suit
   produirait un BL partiel facturé en entier.
 - **E6d** (l'e-mail à la main) suit E6b.
+
+## 9. E6c réécrit (2026-10-25, nuit) — l'emporte sur le § 5
+
+### 9.1 Ce qui a été rouvert
+
+- `Order.draft` (`b2b/orders/domain/entities/order.ts`) calcule les termes par
+  les gardes de `entities/order-amount-guards.ts` : `ensureDiscountMatches`
+  (`discountCentsOf` sur l'assiette **éligible** à la remise de retrait,
+  borné par le panier), `ensureLateFeeMatches` et `ensureDeliveryFeeMatches`
+  (`cartAdjustmentCents` sur le **sous-total**, non borné pour les frais),
+  `ensurePickupDiscountOnlyOnPickup`, `voucherDiscountOf` (bon refusé sur une
+  commande de société : `VoucherNotForCompanyOrderError`), puis
+  `computeOrderTotals` (`domain/services/vat.ts`).
+- Les ajustements figés de la commande (`discountAdjustment`,
+  `deliveryFeeAdjustment`, `lateFeeAdjustment`) sont des `CartAdjustment` :
+  pourcentage **ou** montant fixe.
+
+### 9.2 La règle — _décidée par l'assistant_, fidèle à Q-I2 de Hugo
+
+**Un BL partiel se recompose comme une commande** : on **réapplique les
+ajustements figés de la commande** à ses lignes livrées, par **les mêmes
+fonctions** que `Order.draft` (extraites, jamais recopiées), puis
+`computeOrderTotals`.
+
+- un ajustement en **pourcentage** se recalcule sur ce qui part ;
+- un ajustement en **montant fixe** reste entier (la remise fixe déjà bornée
+  par `discountCentsOf` à l'assiette éligible du BL) ;
+- **le bon de fidélité** n'existe pas sur une commande de société, et E6 ne
+  vise que les commandes au compte (§ 7) : il n'y a pas de cas.
+
+C'est exactement Q-I2 (« la remise en % suit le livré ; les montants fixes —
+remise fixe, port, surtaxe — restent entiers »), et une remise, un port ou une
+surtaxe **en pourcentage** suit le livré pour la même raison qu'une remise en
+pourcentage : c'est la règle que la commande a figée, appliquée à ce qui part.
+
+**Le BL de reliquat (E7)** : ajustements en pourcentage réappliqués ; montants
+fixes, port et surtaxe à **zéro** (Q-I2 : « la suite n'a ni frais de port ni
+surtaxe ») — dit en E7.
+
+### 9.3 La facture — la commande soldée
+
+- `Order.settle(notesRemises)`, méthode de l'agrégat, pose **une fois** les
+  montants facturables (`billable_subtotal_cents`, `billable_discount_cents`,
+  `billable_delivery_fee_cents`, `billable_late_fee_cents`, `billable_vat_cents`,
+  `billable_vat_shares`, `billable_total_cents`) = Σ des BL remis, et
+  `settled_on`. Un déclencheur les fige une fois posés (modèle
+  `orders_received_on_frozen`). Une commande à un BL complet : recopie exacte.
+- **Écrivain unique** : le suivi d'E2 au BL remis (commande soldée), et le
+  réconciliateur pour l'existant. Trois temps de déploiement : colonnes
+  nullables + écriture ; rattrapage et contrôle à zéro écart ; bascule des
+  lecteurs.
+- **La bascule** : les deux critères (`billableOrderWhere`, `billableSinceWhere`)
+  lisent `settled_on` et `billable_total_cents > 0` ; la couture, le relevé,
+  le prélèvement (`prisma-collection-candidates.reader.ts`), l'encaissement
+  (`order_collection.amount_cents` à sa création), les impayés, la procédure
+  et les bons à constater lisent `billable_*` ; le contrôle de cohérence
+  recompose sur les lignes des BL et compare à `billable_total_cents`. La
+  liste est **recomptée au plan de bâti** sur tout `b2b/accounting`.
+- **Factur-X** : une commande partielle porte ses lignes livrées, sa remise,
+  son port tels que recomposés — la forme ne change pas.
+- **Irréversible** dès la première facture émise sur `billable_*` : dit au
+  runbook, déploiement d'E6b + E6c seul, sur ordre de Hugo.
+
+### 9.4 Ce qui reste ouvert pour le plan de bâti d'E6b
+
+`ShortfallDesk` face à la fiche réécrite par le fournil (`on-packing-list-drawn`,
+`on-production-day-reopened`), l'ordre des verrous commande / fiche, une
+décision qui arrive sur une fiche scellée, la pièce qui arrive après la
+décision.
+
+## 10. Seconde contradiction d'E6c (2026-10-25, nuit) — E6c attend Hugo
+
+`vitruve` sur le § 9 : **deux bloquants**, et une réinterprétation de Hugo
+que l'assistant ne peut pas trancher seul. **E6c n'est pas bâti ; E6b non
+plus** (§ 8 : ils partent ensemble).
+
+**BLOQUANTS à résoudre dans le plan de bâti :**
+
+1. **L'assiette éligible d'un BL** : `delivery_note_line.pickup_discount_eligible`
+   est nullable (BL d'avant E4a), la ligne de commande non
+   (`orders.prisma`, `Boolean @default(true)`). _Proposé_ : relire le drapeau
+   sur la ligne de commande, jamais sur le BL.
+2. **La fabrique du BL partiel n'est pas nommée** : les `ensure*` de
+   `order-amount-guards.ts` **vérifient**, ils ne calculent pas ; seules
+   `cartAdjustmentCents`, `discountCentsOf` et `computeOrderTotals` calculent.
+   Il faut une fabrique nommée qui calcule chaque terme, puis passe les mêmes
+   gardes, avec `deliveryVatMode` et `lateFeeAdjustment.vatRatePercent` de la
+   commande (sinon `MissingLateFeeVatRateError`, une 500 au solde).
+
+**SÉRIEUX, notés pour le plan de bâti** : les invariants de la commande
+soldée (annulée avec BL remis ; commande carte ; CHECK tout ou rien sur
+`billable_*` ; déclencheur qui refuse aussi NOT NULL → NULL) ; `settled_on`
+face aux deux critères et à « Bons à constater » ; une commande au compte à BL
+valorisé 0 € qui sortirait en silence (garder `totalCents > 0` **et** un refus
+nommé) ; le **recensement** (61 fichiers de `b2b/accounting` lisent un total,
+dont les avoirs `refund-credit-note.ts` et « Mes factures ») ; l'encaissement
+constitué avant le solde (exclure les commandes non soldées des candidats) ;
+le contrôle de cohérence circulaire (garder la comparaison à `totalCents` pour
+les commandes à un BL complet) ; `settled_on` figé dès le premier prélèvement
+constitué ; le verbe (`settle` désigne déjà le RÈGLEMENT ici).
+
+**Questions pour Hugo (demain)** :
+
+- **Q-E6-1.** Q-I2 dit : « la remise en % suit le livré ; les montants fixes —
+  remise fixe, port, surtaxe — restent entiers ». Un **port ou une surtaxe en
+  pourcentage** (le barème le permet) : suit-il le livré, ou reste-t-il
+  entier ? (L'assistant l'avait étendu « suit le livré » : c'est une décision
+  nouvelle, qui revient à Hugo.)
+- **Q-E6-2.** Une **remise fixe** plus grande que ce qui part : plafonnée au
+  BL (le code existant borne déjà au panier), ou reportée ?
+- **Q-E6-3.** Une commande partielle se **facture au mois de son solde**
+  (`settled_on`) : d'accord ?

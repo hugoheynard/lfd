@@ -47,6 +47,7 @@ function late(orders: readonly Partial<LateOrder>[], asOf: string): DaySupervisi
     date: DAY,
     asOf,
     flow: [],
+    awaitingDecision: [],
     undated: 0,
     late: orders.map((order) => ({
       orderId: 'o',

@@ -28,6 +28,7 @@ const ORDER_SELECT = {
   packedBy: true,
   containerCount: true,
   containerMode: true,
+  shortfallReportedAt: true,
   containers: CONTAINER_SELECT,
   lines: {
     select: {
@@ -98,6 +99,7 @@ interface OrderRow {
   readonly packedBy: string | null;
   readonly containerCount: number;
   readonly containerMode: string;
+  readonly shortfallReportedAt: Date | null;
   readonly containers: Parameters<typeof containerOf>[0][];
   readonly lines: readonly {
     readonly sku: string;
@@ -141,6 +143,7 @@ function boardOrderOf(row: OrderRow, liveBins: ReadonlySet<string>): BoardOrder 
           : { at: line.packedAt, by: line.packedBy, initials: line.packedInitials },
     })),
     containerList: live.map((container) => boardContainerOf(container, all)),
+    shortfallReportedAt: row.shortfallReportedAt,
   };
 }
 

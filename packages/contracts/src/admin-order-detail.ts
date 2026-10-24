@@ -45,6 +45,24 @@ export interface AdminOrderView extends OrderView {
   readonly revisability: AdminOrderRevisability;
   /** La révision courante : `0` à la passation, `+1` à chaque modification. */
   readonly revision: number;
+  /**
+   * **Manque signalé — décision attendue** (lot E6a,
+   * `documentation/commandes/plan-e6-le-depart-incomplet.md` § 3) : ce que le
+   * colisage a figé au signalement en vigueur ; `null` = aucun manque signalé.
+   */
+  readonly shortfall: AdminOrderShortfall | null;
+}
+
+/** Le manque signalé : l'instant ISO, et, par article, la quantité due et celle au bac. */
+export interface AdminOrderShortfall {
+  readonly reportedAt: string;
+  readonly lines: readonly AdminOrderShortfallLine[];
+}
+
+export interface AdminOrderShortfallLine {
+  readonly sku: string;
+  readonly due: number;
+  readonly packed: number;
 }
 
 /**

@@ -30,6 +30,7 @@ import { PrismaPackingSheetRepository } from "./infrastructure/prisma-packing-sh
 import { PrismaPackingStockRepository } from "./infrastructure/prisma-packing-stock.repository.js";
 import { GetPackingBoardHandler } from "./application/board/get-packing-board.handler.js";
 import { ClosePackingOrderHandler } from "./application/station/close-packing-order.handler.js";
+import { ReportPackingShortfallHandler } from "./application/station/report-packing-shortfall.handler.js";
 import { ReopenPackingOrderHandler } from "./application/station/reopen-packing-order.handler.js";
 import { PackingBoardReader } from "./domain/ports/packing-board.reader.js";
 import { PackingBoardController } from "./http/packing-board.controller.js";
@@ -120,6 +121,7 @@ import { PackingResuppliesController } from "./http/packing-resupplies.controlle
     // Le poste servi par le colisage (K3a).
     GetPackingBoardHandler,
     ClosePackingOrderHandler,
+    ReportPackingShortfallHandler,
     ReopenPackingOrderHandler,
     { provide: PackingBoardReader, useClass: PrismaPackingBoardReader },
     PrismaPackedOrdersReader,

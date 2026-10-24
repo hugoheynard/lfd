@@ -18,6 +18,7 @@ const ADMIN_ROW_SELECT = {
   orderNumber: true,
   status: true,
   placedOffPlan: true,
+  shortfallReportedAt: true,
   paymentStatus: true,
   fulfillmentMethod: true,
   requestedDeliveryDate: true,
@@ -160,6 +161,7 @@ function toAdminRow(row: AdminRow): AdminOrderRow {
     // Hors plan TANT QUE le fournil ne l'a pas reprise : le retirage la passe
     // `confirmed`, et c'est ce que l'écart du fournil sait déjà compter (§8.3).
     offPlan: row.placedOffPlan && row.status === "placed",
+    shortfallReportedAt: row.shortfallReportedAt?.toISOString() ?? null,
     paymentStatus: row.paymentStatus,
     fulfillmentMethod: row.fulfillmentMethod,
     fulfillmentDay:

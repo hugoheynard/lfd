@@ -45,7 +45,14 @@ const CYCLE = 60_000;
 
 /** Un jour lu il y a `ageMs` : l'instant de lecture est RELATIF à l'horloge du test. */
 function view(date: string, now: number, ageMs: number): DaySupervisionView {
-  return { date, asOf: new Date(now - ageMs).toISOString(), flow: [], late: [], undated: 0 };
+  return {
+    date,
+    asOf: new Date(now - ageMs).toISOString(),
+    flow: [],
+    late: [],
+    awaitingDecision: [],
+    undated: 0,
+  };
 }
 
 describe('dayDiff', () => {

@@ -66,6 +66,8 @@ const SHEET: PackingSheet = {
   remainingLines: 0,
   pieces: 0,
   packedPieces: 0,
+  canReportShortfall: false,
+  shortfallReportedAt: null,
   canDeclareReady: false,
   coldOutsideIsotherm: [],
   packedAt: null,

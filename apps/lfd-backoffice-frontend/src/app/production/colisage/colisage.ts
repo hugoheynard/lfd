@@ -23,6 +23,7 @@ import { narrowViewport } from '../../shared/viewport/narrow-viewport';
 import { ClienteleBadge } from './clientele-badge/clientele-badge';
 import { PackingDayReader } from './packing-day.reader';
 import { PackingGestures } from './packing-gestures';
+import { PackingShortfallGesture } from './packing-shortfall-gesture';
 import { PackingOpenOrder } from './packing-open-order/packing-open-order';
 import { PackingOrders } from './packing-orders/packing-orders';
 import { PackingResources } from './packing-resources/packing-resources';
@@ -90,7 +91,7 @@ const COMPACT_MASTHEAD_QUERY = '(max-width: 1366px)';
   ],
   // Fournis ICI, pas à la racine : un poste ouvert deux fois ne partage ni sa
   // lecture ni ses envois.
-  providers: [PackingDayReader, PackingGestures, PackingRoundsReader],
+  providers: [PackingDayReader, PackingGestures, PackingShortfallGesture, PackingRoundsReader],
   templateUrl: './colisage.html',
   styleUrl: './colisage.scss',
 })
@@ -98,6 +99,7 @@ export class Colisage {
   protected readonly day = inject(PackingDayReader);
   private readonly permissions = inject(PermissionsStore);
   protected readonly gestures = inject(PackingGestures);
+  protected readonly shortfall = inject(PackingShortfallGesture);
   /** Les tournées du jour, lues côté livraison (lot PC2) : l'ORDRE de la liste. */
   protected readonly rounds = inject(PackingRoundsReader);
   /**
@@ -295,6 +297,7 @@ export class Colisage {
   /** La lecture initiale — et « Réessayer ». Elle ouvre ensuite la commande du QR. */
   protected async load(): Promise<void> {
     this.gestures.forgetOrderFailures();
+    this.shortfall.forget();
     const served = await this.day.load();
     if (served !== null) {
       await this.rounds.load(served.date);
@@ -360,6 +363,7 @@ export class Colisage {
     this.chosen.set(reference);
     this.unknownReference.set(null);
     this.gestures.forgetOrderFailures();
+    this.shortfall.forget();
     this.justDeclared.set(null);
     this.closedElsewhere.set(null);
     this.ordersFolded.set(true);

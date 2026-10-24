@@ -1,9 +1,19 @@
-import { instantToLocal, type DaySupervisionView, type LateOrder } from "@lfd/contracts";
+import {
+  instantToLocal,
+  type DaySupervisionView,
+  type LateOrder,
+  type ShortfallAwaitingDecision,
+} from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../../platform/time/clock.js";
 import { DaySupervisionReader } from "../../domain/ports/day-supervision.reader.js";
-import { superviseDay, type LateEntry } from "../../domain/services/day-supervision.js";
+import {
+  awaitingDecisionOf,
+  superviseDay,
+  type LateEntry,
+} from "../../domain/services/day-supervision.js";
+import type { SupervisedOrder } from "../../domain/ports/day-supervision.reader.js";
 import { GetDaySupervisionQuery } from "./get-day-supervision.query.js";
 
 /**
@@ -37,9 +47,22 @@ export class GetDaySupervisionHandler implements IQueryHandler<
       asOf: now.toISOString(),
       flow: [...flow],
       late: late.map(toLateOrder),
+      awaitingDecision: awaitingDecisionOf(orders).map(toAwaitingDecision),
       undated,
     };
   }
+}
+
+function toAwaitingDecision(
+  order: SupervisedOrder & { readonly shortfallReportedAt: Date },
+): ShortfallAwaitingDecision {
+  return {
+    orderId: order.orderId,
+    reference: order.reference,
+    customerName: order.customerName,
+    fulfillmentMethod: order.fulfillmentMethod,
+    reportedAt: order.shortfallReportedAt.toISOString(),
+  };
 }
 
 function toLateOrder({ order, window, stage, rule }: LateEntry): LateOrder {

@@ -84,6 +84,28 @@
           >
             {{ readyLabel() }}
           </button>
+          @if (order.shortfallReportedAt !== null) {
+            <!-- Lot E6a : le commerce attend une décision. Fermer complet l'efface. -->
+            <fold-callout variant="warning" data-shortfall-reported>
+              Manque signalé — décision attendue. Si la pièce arrive, mettez-la au bac et déclarez
+              la commande prête : le signalement s'efface.
+            </fold-callout>
+          }
+          @if (order.canReportShortfall) {
+            <!-- Lot E6a : visible seulement sur une fiche ouverte incomplète (règle du serveur). -->
+            <button
+              foldButton
+              emphasis="outline"
+              [disabled]="reportingShortfall()"
+              [loading]="reportingShortfall()"
+              (click)="reportShortfall.emit(order)"
+              data-report-shortfall
+            >
+              {{
+                order.shortfallReportedAt === null ? 'Il manque' : 'Il manque — signaler de nouveau'
+              }}
+            </button>
+          }
           @if (!order.canDeclareReady && !closing()) {
             <!-- ⚠️ Le nombre est celui du serveur (`remainingLines`), mais la
                PHRASE décrit la règle d'aujourd'hui : le serveur dit « non » sans

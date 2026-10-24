@@ -39,6 +39,12 @@ export interface AdminOrderRow {
    * reprise au fournil (toujours `placed`). Le geste : reprendre la journée.
    */
   readonly offPlan: boolean;
+  /**
+   * **Manque signalé — décision attendue** (lot E6a,
+   * `commandes/plan-e6-le-depart-incomplet.md` § 3) : l'instant ISO du
+   * signalement en vigueur au colisage, `null` = aucun.
+   */
+  readonly shortfallReportedAt: string | null;
   readonly paymentStatus: PaymentStatus;
   readonly fulfillmentMethod: FulfillmentMethod;
   /**

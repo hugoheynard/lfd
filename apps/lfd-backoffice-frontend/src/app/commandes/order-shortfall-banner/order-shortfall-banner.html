@@ -1,0 +1,9 @@
+@if (shortfall(); as s) {
+  <fold-callout appearance="inset" variant="warning" data-shortfall-banner>
+    <strong>Manque signalé — décision attendue.</strong>
+    Le colisage l'a signalé le {{ s.reportedAt | date: "dd/MM 'à' HH:mm" }} :
+    @for (line of short(); track line.sku; let last = $last) {
+      {{ line.name }}, {{ line.packed }} au bac sur {{ line.due }}{{ last ? '.' : ' ;' }}
+    }
+  </fold-callout>
+}

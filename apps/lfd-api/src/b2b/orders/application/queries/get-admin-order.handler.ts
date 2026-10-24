@@ -2,6 +2,7 @@ import type {
   AdminCancellationRefund,
   AdminCancellationVoucher,
   AdminOrderCancellability,
+  AdminOrderShortfall,
   AdminOrderView,
 } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
@@ -14,6 +15,10 @@ import { CancellationSubjectReader } from "../../domain/ports/cancellation-subje
 import { Clock } from "../../../../platform/time/clock.js";
 import type { VoucherRestitution } from "../../domain/ports/loyalty-voucher-redemption.js";
 import { OrderReader } from "../../domain/ports/order.reader.js";
+import {
+  OrderShortfallReader,
+  type OrderShortfallReading,
+} from "../../domain/ports/order-shortfall.reader.js";
 import { VoucherRestitutionPreview } from "../../domain/ports/voucher-restitution-preview.js";
 import { cancellationVoucherSentenceOf } from "../../domain/services/order-cancellation-voucher.js";
 import {
@@ -48,6 +53,9 @@ import { GetAdminOrderQuery } from "./get-admin-order.query.js";
  * Depuis le 2026-10-23 (plan `documentation/commandes/modification/plan-modifier-une-commande.md`,
  * §6), il dit aussi si l'équipe peut la modifier, par la règle du geste, et
  * sa révision courante.
+ *
+ * Lot E6a (`commandes/plan-e6-le-depart-incomplet.md` § 3) : et le manque
+ * signalé au colisage, en vigueur — « décision attendue ».
  */
 @QueryHandler(GetAdminOrderQuery)
 export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, AdminOrderView> {
@@ -63,15 +71,17 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
     private readonly refunds: AdminOrderRefundView,
     private readonly clock: Clock,
     private readonly revisions: OrderRevisabilityReading,
+    private readonly shortfalls: OrderShortfallReader,
   ) {}
 
   async execute(query: GetAdminOrderQuery): Promise<AdminOrderView> {
-    const [owned, author, cancellability, refund, revision] = await Promise.all([
+    const [owned, author, cancellability, refund, revision, shortfall] = await Promise.all([
       this.orders.findById(query.orderId),
       this.authors.authorOf(query.orderId),
       this.cancellabilityOf(query.orderId),
       this.refunds.of(query.orderId),
       this.revisions.forStaff(query.orderId),
+      this.shortfalls.of(query.orderId),
     ]);
     if (owned === null || author === null || cancellability === null || revision === null) {
       throw new OrderNotFoundError(query.orderId);
@@ -89,6 +99,7 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
       refund,
       revisability: revision.revisability,
       revision: revision.revision,
+      shortfall: shortfall === null ? null : shortfallViewOf(shortfall),
     };
   }
 
@@ -120,6 +131,14 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
     }
     return { cancellable: true, voucher: voucherPreviewOf(restitution), refund };
   }
+}
+
+/** Le manque signalé, dans la forme du contrat (E6a). */
+function shortfallViewOf(reading: OrderShortfallReading): AdminOrderShortfall {
+  return {
+    reportedAt: reading.reportedAt.toISOString(),
+    lines: reading.lines.map((line) => ({ sku: line.sku, due: line.due, packed: line.packed })),
+  };
 }
 
 /** Lot C4 (C4.9) : ce que l'annulation d'une payée rendra — `null` hors carte payée. */

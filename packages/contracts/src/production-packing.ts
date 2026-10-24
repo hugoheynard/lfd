@@ -174,6 +174,17 @@ export interface PackingSheet {
    */
   readonly canDeclareReady: boolean;
   /**
+   * « Il manque » est-il permis ? (lot E6a, `commandes/plan-e6-le-depart-incomplet.md`
+   * § 3) : un bac ouvert, rangé en contenants, dont une ligne due n'est pas
+   * entièrement répartie. Une règle, donc au serveur.
+   */
+  readonly canReportShortfall: boolean;
+  /**
+   * L'instant du manque signalé en vigueur (ISO), `null` = aucun. Effacé quand
+   * le bac se ferme complet.
+   */
+  readonly shortfallReportedAt: string | null;
+  /**
    * Les produits froids posés hors d'un bac isotherme, par nom (2026-10-07) —
    * livraison rangée en contenants seulement ; vide sinon. Un AVERTISSEMENT :
    * « Déclarer prête » reste permis.

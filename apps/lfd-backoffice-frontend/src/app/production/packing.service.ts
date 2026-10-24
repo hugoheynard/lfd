@@ -60,6 +60,15 @@ export class PackingService {
   }
 
   /**
+   * **« Il manque »** (lot E6a) : fige ce qui est au bac et l'annonce au
+   * commerce, qui attend une décision. La fiche reste ouverte. `409` sur un bac
+   * complet ou fermé — le message du serveur se montre tel quel.
+   */
+  async reportShortfall(date: string, orderId: string): Promise<void> {
+    await firstValueFrom(this.http.post<void>(`${this.orderUrl(date, orderId)}/shortfall`, {}));
+  }
+
+  /**
    * **Les fiches de réassort** du jour (lot R3b, écran R3d) — une par
    * réassort d'un point servi par transfert, à part des commandes.
    */

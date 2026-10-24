@@ -47,4 +47,9 @@ export interface PackingSheetSnapshot {
   readonly fulfillmentMethod: "pickup" | "delivery";
   /** Vide sur `counted`. */
   readonly containerList: readonly PackingContainerState[];
+  /**
+   * L'instant du manque signalé en vigueur (E6a). Absent = aucun : un bac
+   * relu d'avant le champ, ou une fixture qui n'en parle pas.
+   */
+  readonly shortfallReportedAt?: Date | null;
 }

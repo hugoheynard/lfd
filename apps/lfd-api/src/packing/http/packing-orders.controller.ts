@@ -4,6 +4,7 @@ import { CommandBus } from "@nestjs/cqrs";
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../platform/auth/staff.decorator.js";
 import { ClosePackingOrderCommand } from "../application/station/close-packing-order.command.js";
+import { ReportPackingShortfallCommand } from "../application/station/report-packing-shortfall.command.js";
 import { ReopenPackingOrderCommand } from "../application/station/reopen-packing-order.command.js";
 import { packingDayOf } from "./packing-day-path.js";
 
@@ -18,9 +19,11 @@ const NO_CONTENT = 204;
  *   publié dans la même transaction ;
  * - `POST …/reopen` — rouvrir le rangement seulement (option b de Hugo) :
  *   refusé si un bac est chargé ou la tournée partie ; la commande reste
- *   « prête » au commerce.
+ *   « prête » au commerce ;
+ * - `POST …/shortfall` — « Il manque » (E6a) : fige ce qui est au bac et
+ *   publie `packing.shortfall_reported` ; la fiche reste ouverte.
  *
- * Sous `production_packing` (`write`). Les deux rendent `204` : l'écran relit
+ * Sous `production_packing` (`write`). Les trois rendent `204` : l'écran relit
  * `GET admin/packing/:date/board`. Il n'injecte que le `CommandBus`.
  */
 @Controller("admin/packing/:date/orders/:orderId")
@@ -37,6 +40,18 @@ export class PackingOrdersController {
   ): Promise<void> {
     await this.commands.execute<ClosePackingOrderCommand, void>(
       new ClosePackingOrderCommand(packingDayOf(date), orderId, staffUserId),
+    );
+  }
+
+  @Post("shortfall")
+  @HttpCode(NO_CONTENT)
+  async reportShortfall(
+    @Param("date") date: string,
+    @Param("orderId") orderId: string,
+    @StaffUserId() staffUserId: string,
+  ): Promise<void> {
+    await this.commands.execute<ReportPackingShortfallCommand, void>(
+      new ReportPackingShortfallCommand(packingDayOf(date), orderId, staffUserId),
     );
   }
 

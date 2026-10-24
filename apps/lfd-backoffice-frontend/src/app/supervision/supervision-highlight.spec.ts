@@ -28,6 +28,8 @@ function sheet(reference: string, awaited: readonly string[]): PackingSheet {
     remainingLines: skus.length,
     pieces: skus.length,
     packedPieces: 0,
+    canReportShortfall: false,
+    shortfallReportedAt: null,
     canDeclareReady: false,
     coldOutsideIsotherm: [],
     packedAt: null,

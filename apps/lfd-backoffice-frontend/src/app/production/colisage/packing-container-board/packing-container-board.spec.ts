@@ -73,6 +73,8 @@ function sheet(over: Partial<PackingSheet>): PackingSheet {
     remainingLines: 1,
     pieces: 20,
     packedPieces: 0,
+    canReportShortfall: false,
+    shortfallReportedAt: null,
     canDeclareReady: false,
     coldOutsideIsotherm: [],
     packedAt: null,

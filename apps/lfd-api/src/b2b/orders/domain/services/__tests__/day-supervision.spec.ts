@@ -1,6 +1,7 @@
 import type { SupervisedOrder } from "../../ports/day-supervision.reader.js";
 import type { HandoverQueueWindow } from "../../ports/order.reader.js";
 import {
+  awaitingDecisionOf,
   latenessOf,
   READY_BEFORE_WINDOW_MINUTES,
   stageOf,
@@ -116,6 +117,7 @@ describe("superviseDay", () => {
     fulfillmentMethod,
     status,
     window,
+    shortfallReportedAt: null,
   });
 
   it("compte par acheminement et par étape, les annulées à part, les brouillons nulle part", () => {
@@ -176,5 +178,34 @@ describe("superviseDay", () => {
     expect(late.map((entry) => [entry.order.orderId, entry.stage, entry.rule])).toEqual([
       ["1", "ready", "not_handed_over_after_window"],
     ]);
+  });
+});
+
+describe("awaitingDecisionOf — « Manque signalé — décision attendue » (E6a)", () => {
+  // Un instant recopié, jamais comparé à l'horloge.
+  const REPORTED = new Date(1_000);
+  const order = (
+    id: string,
+    status: SupervisedOrder["status"],
+    shortfallReportedAt: Date | null,
+  ): SupervisedOrder => ({
+    orderId: id,
+    reference: `CMD-${id}`,
+    customerName: null,
+    fulfillmentMethod: "delivery",
+    status,
+    window: null,
+    shortfallReportedAt,
+  });
+
+  it("ne garde que les commandes au manque signalé, hors annulées", () => {
+    const kept = awaitingDecisionOf([
+      order("1", "in_production", REPORTED),
+      order("2", "in_production", null),
+      order("3", "cancelled", REPORTED),
+      order("4", "ready", REPORTED),
+    ]);
+
+    expect(kept.map((entry) => entry.orderId)).toEqual(["1", "4"]);
   });
 });

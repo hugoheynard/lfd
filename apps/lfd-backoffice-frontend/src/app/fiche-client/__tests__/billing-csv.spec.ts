@@ -18,6 +18,7 @@ function order(
     placedAt,
     status: 'fulfilled' as OrderStatus,
     offPlan: false,
+    shortfallReportedAt: null,
     paymentStatus,
     fulfillmentMethod: 'pickup',
     subtotalCents: Math.round(totalCents / 1.055),

@@ -130,6 +130,11 @@
         la journée se lit sans se préparer.
       </fold-callout>
     }
+    @if (awaitingDecision(); as orders) {
+      <fold-callout variant="warning" data-awaiting-decision>
+        Manque signalé — décision attendue : {{ orders }}.
+      </fold-callout>
+    }
     @if (showCompositionGaps()) {
       <app-composition-gaps-callout />
     }

@@ -27,6 +27,7 @@ import { OrderSalesTermsCard } from '../order-sales-terms-card/order-sales-terms
 import { OrderDeliveryNotesCard } from '../order-delivery-notes-card/order-delivery-notes-card';
 import { OrderInvoicesCard } from '../order-invoices-card/order-invoices-card';
 import { OrderRefundBanner } from '../order-refund-banner/order-refund-banner';
+import { OrderShortfallBanner } from '../order-shortfall-banner/order-shortfall-banner';
 import { OrderRefundsCard } from '../order-refunds-card/order-refunds-card';
 import { isOrderSheet } from '../commande-page/order-sheet-key';
 import { AdminOrdersService } from '../orders.service';
@@ -69,6 +70,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     OrderDeliveryNotesCard,
     OrderInvoicesCard,
     OrderRefundBanner,
+    OrderShortfallBanner,
     OrderRefundsCard,
   ],
   templateUrl: './order-view.html',

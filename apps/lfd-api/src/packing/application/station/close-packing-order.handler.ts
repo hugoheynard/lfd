@@ -4,6 +4,7 @@ import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { DurablePublisher } from "../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { PackingOrderPackedEvent } from "../../../production/channels/packing/index.js";
+import { PackingShortfallClearedEvent } from "../../channels/commerce/index.js";
 import { PackingSheetRepository } from "../../domain/ports/packing-sheet.repository.js";
 import { lockedSheet } from "../containers/container-support.js";
 import { ClosePackingOrderCommand } from "./close-packing-order.command.js";
@@ -28,6 +29,10 @@ import { ClosePackingOrderCommand } from "./close-packing-order.command.js";
  *   le filet humain d'un abonné perdu ; sans danger, le commerce ne fait rien
  *   sur une commande déjà prête.
  *
+ * **Un manque signalé (E6a) est effacé** par une fermeture complète : le fait
+ * `packing.shortfall_cleared` part dans la même transaction, et seulement
+ * alors — jamais sur un bac déjà fermé.
+ *
  * @sans-journal comme `PackOrderHandler` : `order.ready` est écrit par
  * l'abonné du commerce ; un second fait ici doublerait son écrivain.
  *
@@ -46,6 +51,7 @@ export class ClosePackingOrderHandler implements ICommandHandler<ClosePackingOrd
     await this.uow.run(async () => {
       const sheet = await lockedSheet(this.sheets, command.serviceDay, command.orderId);
       const now = this.clock.now();
+      const signalled = sheet.shortfallReportedAt !== null;
       const sealed = sheet.seal({ at: now, by: command.staffUserId });
       if (sealed.fresh) {
         await this.sheets.save(sheet);
@@ -59,6 +65,11 @@ export class ClosePackingOrderHandler implements ICommandHandler<ClosePackingOrd
           sealed.fresh ? null : now,
         ).durableFact(),
       );
+      if (sealed.fresh && signalled) {
+        await this.durable.publish(
+          new PackingShortfallClearedEvent(sheet.orderId, sheet.reference, now).durableFact(),
+        );
+      }
     });
   }
 }

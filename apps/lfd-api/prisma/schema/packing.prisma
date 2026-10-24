@@ -44,6 +44,8 @@ model PackingOrder {
   /// `counted` (le compte ci-dessus) ou `listed` (la colonne Contenants, K2b).
   /// `listed` est posé à l'inscription par le binaire de K2b (CHECK).
   containerMode  String    @default("counted") @map("container_mode") @db.VarChar(8)
+  /// Un manque signalé sur ce bac (E6a) ; effacé — et annoncé — à la fermeture complète.
+  shortfallReportedAt DateTime? @map("shortfall_reported_at") @db.Timestamptz(6)
 
   lines      PackingLine[]
   containers PackingContainer[]

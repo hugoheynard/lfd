@@ -15,6 +15,7 @@ const SUPERVISION_SELECT = {
   status: true,
   fulfillmentMethod: true,
   fulfillment: true,
+  shortfallReportedAt: true,
   company: { select: { raisonSociale: true } },
   placedBy: { select: { firstName: true, lastName: true } },
 } as const;
@@ -53,6 +54,7 @@ export class PrismaDaySupervisionReader extends DaySupervisionReader {
       fulfillmentMethod: row.fulfillmentMethod,
       status: row.status,
       window: windowOf(fulfillmentOf(row.fulfillment)),
+      shortfallReportedAt: row.shortfallReportedAt,
     }));
   }
 

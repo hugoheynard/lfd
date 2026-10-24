@@ -754,6 +754,8 @@ export type {
   AdminOrderCompanyView,
   AdminOrderCustomerView,
   AdminOrderPlacedByView,
+  AdminOrderShortfall,
+  AdminOrderShortfallLine,
   AdminOrderView,
 } from "./admin-order-detail.js";
 export { adminCancelOrderPayloadSchema } from "./admin-order-detail.js";
@@ -2325,6 +2327,7 @@ export {
   supervisionWindowSchema,
   supervisionFlowSchema,
   lateOrderSchema,
+  shortfallAwaitingDecisionSchema,
   daySupervisionViewSchema,
 } from "./day-supervision.js";
 export type {
@@ -2334,6 +2337,7 @@ export type {
   SupervisionWindow,
   SupervisionFlow,
   LateOrder,
+  ShortfallAwaitingDecision,
   DaySupervisionView,
 } from "./day-supervision.js";
 export { dayVersionQuerySchema, dayVersionViewSchema } from "./day-version.js";

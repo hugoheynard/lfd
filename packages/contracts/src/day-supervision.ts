@@ -90,12 +90,29 @@ export const lateOrderSchema = z.object({
 });
 export type LateOrder = z.infer<typeof lateOrderSchema>;
 
+/**
+ * Une commande dont le colisage a signalé un manque et qui attend une décision
+ * (lot E6a, `commandes/plan-e6-le-depart-incomplet.md` § 3) — « Manque
+ * signalé — décision attendue ». Lecture seule : la décision se prend sur la
+ * fiche commande (E6b). `reportedAt` : l'instant du signalement en vigueur, ISO.
+ */
+export const shortfallAwaitingDecisionSchema = z.object({
+  orderId: z.string().min(1),
+  reference: z.string(),
+  customerName: z.string().nullable(),
+  fulfillmentMethod: fulfillmentMethodSchema,
+  reportedAt: z.string(),
+});
+export type ShortfallAwaitingDecision = z.infer<typeof shortfallAwaitingDecisionSchema>;
+
 /** La vue d'un jour. `asOf` est l'instant de lecture, ISO — l'horloge du serveur. */
 export const daySupervisionViewSchema = z.object({
   date: z.string(),
   asOf: z.string(),
   flow: z.array(supervisionFlowSchema),
   late: z.array(lateOrderSchema),
+  /** Les commandes du jour au manque signalé, par numéro (E6a). */
+  awaitingDecision: z.array(shortfallAwaitingDecisionSchema),
   /** Les commandes OUVERTES sans date de service : elles n'appartiennent à aucun jour, et attendent encore un geste. */
   undated: z.number().int().nonnegative(),
 });

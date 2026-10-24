@@ -97,6 +97,7 @@ function order(orderId: string, packedBy: string | null): BoardOrder {
     containerMode: "listed",
     lines: [{ sku: "CRO", productName: "Croissant", quantity: 1, packed: null }],
     containerList: [],
+    shortfallReportedAt: null,
   };
 }
 

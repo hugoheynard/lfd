@@ -46,6 +46,8 @@ function sheet(over: Partial<PackingSheet> = {}): PackingSheet {
     remainingLines: 2,
     pieces: 20,
     packedPieces: 0,
+    canReportShortfall: false,
+    shortfallReportedAt: null,
     canDeclareReady: false,
     coldOutsideIsotherm: [],
     packedAt: null,
@@ -221,5 +223,50 @@ describe('une commande colisée avec l’ancien poste (`counted`, §17.6)', () =
     const host: HTMLElement = render({ sheet: legacy }).nativeElement;
 
     expect(host.querySelector('[data-legacy-order]')).not.toBeNull();
+  });
+
+  describe('« Il manque » (E6a)', () => {
+    it('n’offre pas le geste quand le serveur ne le permet pas', () => {
+      const host: HTMLElement = render({ sheet: sheet() }).nativeElement;
+
+      expect(host.querySelector('[data-report-shortfall]')).toBeNull();
+      expect(host.querySelector('[data-shortfall-reported]')).toBeNull();
+    });
+
+    it('offre le geste sur une fiche ouverte incomplète, et émet la commande', () => {
+      const order = sheet({ canReportShortfall: true });
+      const fixture = render({ sheet: order });
+      const host: HTMLElement = fixture.nativeElement;
+      const reported: PackingSheet[] = [];
+      fixture.componentInstance.reportShortfall.subscribe((sent) => reported.push(sent));
+
+      const button = host.querySelector<HTMLButtonElement>('[data-report-shortfall]');
+      expect(said(button)).toBe('Il manque');
+      button?.click();
+
+      expect(reported).toEqual([order]);
+    });
+
+    it('dit « décision attendue » une fois signalé, et propose de signaler de nouveau', () => {
+      const host: HTMLElement = render({
+        sheet: sheet({ canReportShortfall: true, shortfallReportedAt: '2026-10-05T05:00:00Z' }),
+      }).nativeElement;
+
+      expect(said(host.querySelector('[data-shortfall-reported]'))).toContain(
+        'Manque signalé — décision attendue',
+      );
+      expect(said(host.querySelector('[data-report-shortfall]'))).toBe(
+        'Il manque — signaler de nouveau',
+      );
+    });
+
+    it('désarme le geste pendant le signalement en vol', () => {
+      const host: HTMLElement = render({
+        sheet: sheet({ canReportShortfall: true }),
+        reportingShortfall: true,
+      }).nativeElement;
+
+      expect(host.querySelector<HTMLButtonElement>('[data-report-shortfall]')?.disabled).toBe(true);
+    });
   });
 });

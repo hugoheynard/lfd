@@ -94,6 +94,8 @@ function bac(over: Partial<PackingSheet> = {}): PackingSheet {
     remainingLines: 2,
     pieces: 20,
     packedPieces: 0,
+    canReportShortfall: false,
+    shortfallReportedAt: null,
     canDeclareReady: false,
     coldOutsideIsotherm: [],
     packedAt: null,

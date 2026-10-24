@@ -63,6 +63,12 @@
         <fold-badge variant="alert" content="Hors plan" />
         <span class="ot-time">Reprendre la journée au fournil</span>
       </span>
+    } @else if (row.shortfallReportedAt !== null) {
+      <!-- Lot E6a : le colisage a signalé un manque ; la décision se prend sur la fiche. -->
+      <span class="ot-stack" data-shortfall>
+        <fold-badge [variant]="statusTone(row)" [content]="status(row)" />
+        <fold-badge variant="warning" content="Manque signalé — décision attendue" />
+      </span>
     } @else {
       <fold-badge [variant]="statusTone(row)" [content]="status(row)" />
     }

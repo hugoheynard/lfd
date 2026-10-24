@@ -175,6 +175,21 @@ export class SupervisionPage {
     return queue === null ? null : handoverBoard(queue, dataOf(this.day()));
   });
 
+  /**
+   * **Manque signalé — décision attendue** (lot E6a) : les commandes du jour
+   * que le colisage n'a pas pu remplir, dites par numéro et client. Lecture
+   * seule : la décision se prend sur la fiche commande.
+   */
+  protected readonly awaitingDecision = computed(() =>
+    (dataOf(this.day())?.awaitingDecision ?? [])
+      .map((order) =>
+        order.customerName === null
+          ? order.reference
+          : `${order.reference} (${order.customerName})`,
+      )
+      .join(', '),
+  );
+
   protected readonly latenessUnknown = computed(() => {
     const day = this.day();
     return day.status !== 'ready' || day.stale;

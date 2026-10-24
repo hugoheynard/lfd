@@ -28,6 +28,7 @@ function row(id: string): AdminOrderRow {
     placedAt: '2026-10-12T08:00:00.000Z',
     status: 'placed',
     offPlan: false,
+    shortfallReportedAt: null,
     paymentStatus: 'paid',
     fulfillmentMethod: 'pickup',
     fulfillmentDay: '2026-10-14',

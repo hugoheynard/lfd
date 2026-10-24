@@ -33,6 +33,8 @@ export interface BoardOrder {
   readonly lines: readonly SheetLine[];
   /** Les contenants vivants, dans l'ordre de création. */
   readonly containerList: readonly BoardContainer[];
+  /** Le manque signalé en vigueur (E6a), `null` = aucun. */
+  readonly shortfallReportedAt: Date | null;
 }
 
 /** La réserve d'un article : reçu du four, rendu, au bac, réservé. */

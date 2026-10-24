@@ -21,6 +21,7 @@ function order(shape: OrderShape): AdminOrderRow {
     placedAt: shape.placedAt,
     status: shape.status ?? 'placed',
     offPlan: false,
+    shortfallReportedAt: null,
     paymentStatus: shape.paymentStatus ?? 'paid',
     fulfillmentMethod: 'pickup',
     subtotalCents: shape.totalCents,

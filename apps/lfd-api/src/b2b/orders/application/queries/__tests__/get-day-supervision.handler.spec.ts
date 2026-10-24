@@ -37,6 +37,7 @@ const LATE: SupervisedOrder = {
   fulfillmentMethod: "pickup",
   status: "ready",
   window: { start: "07:00", end: "08:00", source: "override" },
+  shortfallReportedAt: null,
 };
 
 describe("GetDaySupervisionHandler", () => {
@@ -70,6 +71,26 @@ describe("GetDaySupervisionHandler", () => {
     ).execute(new GetDaySupervisionQuery(DAY));
 
     expect(view.undated).toBe(3);
+  });
+
+  it("rend les commandes au manque signalé — « décision attendue » (E6a)", async () => {
+    const view = await new GetDaySupervisionHandler(
+      new StubReader(
+        [LATE, { ...LATE, orderId: "o2", reference: "CMD-0002", shortfallReportedAt: NOW }],
+        0,
+      ),
+      new FixedClock(NOW),
+    ).execute(new GetDaySupervisionQuery(DAY));
+
+    expect(view.awaitingDecision).toEqual([
+      {
+        orderId: "o2",
+        reference: "CMD-0002",
+        customerName: "Boulangerie du Col",
+        fulfillmentMethod: "pickup",
+        reportedAt: NOW.toISOString(),
+      },
+    ]);
   });
 
   it("projette un retard sans rien ajouter à la commande", async () => {

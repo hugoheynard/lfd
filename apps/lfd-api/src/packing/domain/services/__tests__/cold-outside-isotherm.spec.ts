@@ -21,6 +21,7 @@ function order(overrides: Partial<BoardOrder> = {}): BoardOrder {
       { sku: "PAIN", productName: "Pain", quantity: 4, packed: null },
     ],
     containerList: [],
+    shortfallReportedAt: null,
     ...overrides,
   };
 }

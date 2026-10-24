@@ -165,3 +165,17 @@ function countStages(
     cancelled: count("cancelled"),
   };
 }
+
+/**
+ * **Manque signalé — décision attendue** (lot E6a) : les commandes du jour dont
+ * le colisage a signalé un manque, hors annulées — une commande annulée
+ * n'attend plus aucune décision.
+ */
+export function awaitingDecisionOf(
+  orders: readonly SupervisedOrder[],
+): readonly (SupervisedOrder & { readonly shortfallReportedAt: Date })[] {
+  return orders.filter(
+    (order): order is SupervisedOrder & { readonly shortfallReportedAt: Date } =>
+      order.shortfallReportedAt !== null && order.status !== "cancelled",
+  );
+}
