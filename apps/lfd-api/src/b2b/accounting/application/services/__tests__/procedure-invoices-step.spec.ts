@@ -110,20 +110,6 @@ describe("ProcedureInvoicesStep — l'onglet Factures de la procédure", () => {
     expect((await read(world)).orders).toEqual([]);
   });
 
-  it("remise sans jour de réception : confirmée, nommée à reprendre, hors du bouton — l'onglet reste à faire", async () => {
-    const world = invoicesStepWorld();
-    world.invoices.floorAt = FLOOR;
-    world.orders.rows = [procedureRow("noday", { receivedOn: null })];
-
-    const view = await read(world);
-
-    expect(view.orders[0]).toMatchObject({
-      status: "receipt_confirmed",
-      deliveryDayMissing: true,
-    });
-    expect(view).toMatchObject({ state: "to_do", reason: "receipts_to_invoice", issuableCount: 0 });
-  });
-
   it("un payeur qui ne clôt pas ici est écarté, sauf si une facture de la clôture le porte", async () => {
     const weeklyClosure = paris("2026-10-26");
     const mixed = InvoicingCalendar.of(defaultModes(), [

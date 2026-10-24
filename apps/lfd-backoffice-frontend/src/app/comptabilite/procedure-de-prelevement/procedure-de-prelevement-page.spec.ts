@@ -357,7 +357,6 @@ describe('la page « Procédure de prélèvement »', () => {
             totalCents: 1_200,
             status: 'receipt_to_confirm',
             invoiceNumber: null,
-            deliveryDayMissing: false,
           },
         ],
         figures: { invoiced: 0, receiptConfirmed: 0, receiptToConfirm: 1 },

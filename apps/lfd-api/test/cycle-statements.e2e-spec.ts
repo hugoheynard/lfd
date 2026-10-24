@@ -25,7 +25,7 @@ import type {
 import { StatementMonth } from "../src/b2b/accounting/domain/value-objects/statement-month.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { createCompany, createUser, receivedOnColumn } from "./factories.js";
+import { createCompany, createUser, receivedColumns } from "./factories.js";
 
 const stubAdminVerifier = {
   verify: (subject: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -88,7 +88,7 @@ async function seedOrder(seed: OrderSeed): Promise<string> {
       ...(seed.vatShares === undefined ? {} : { vatShares: [...seed.vatShares] }),
       ...(seed.createdAt === undefined ? {} : { createdAt: seed.createdAt }),
       // Livré le jour de sa passation : le relevé suit la livraison (lot ZL).
-      receivedOn: receivedOnColumn(seed.createdAt ?? new Date()),
+      ...receivedColumns(seed.createdAt ?? new Date()),
     },
   });
   return orderNumber;

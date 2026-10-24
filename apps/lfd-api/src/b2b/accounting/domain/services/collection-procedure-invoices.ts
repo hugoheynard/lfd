@@ -37,7 +37,7 @@ export interface ProcedureOrderFacts {
  * les disait « à constater » (constaté en dev le 2026-10-24).
  *
  * Un jour de réception posé vaut remise enregistrée : il n'est écrit qu'à la
- * remise attestée (`RecordDeliveryDayOnHandover`), et le retrait attesté
+ * remise (`MarkOrderFulfilledHandler`), et le retrait attesté
  * sans snapshot sur la commande existe (les fixtures e2e le sèment ainsi).
  */
 export function procedureOrderStatus(facts: ProcedureOrderFacts): ProcedureOrderStatus {
@@ -45,14 +45,6 @@ export function procedureOrderStatus(facts: ProcedureOrderFacts): ProcedureOrder
     return "invoiced";
   }
   return facts.handedOver || facts.receivedOn !== null ? "receipt_confirmed" : "receipt_to_confirm";
-}
-
-/**
- * Remise enregistrée sans jour de réception : elle n'entre dans aucune
- * facture (l'assiette lit `received_on`). Nommée, jamais cachée — à reprendre.
- */
-export function deliveryDayMissing(facts: ProcedureOrderFacts): boolean {
-  return procedureOrderStatus(facts) === "receipt_confirmed" && facts.receivedOn === null;
 }
 
 /**

@@ -225,9 +225,10 @@ B2), elle est posée par `MarkOrderFulfilledHandler` **dans la même écriture**
 que `handed_over_at` : il relit le retrait et les arrêts de tournée par leurs
 canaux et applique `receivedOnOf` — le jour de la tournée qui l'a remis à la
 porte, sinon le jour du retrait, et en dernier repli le jour de Paris de
-l'instant du fait. L'ancien abonné `RecordDeliveryDayOnHandover` reste branché
-jusqu'au troisième temps (B4) et ne pose plus rien quand la remise est passée
-avant lui. Le déclencheur `orders_received_on_frozen` refuse de la changer,
+l'instant du fait. C'est le seul écrivain depuis B4 (2026-10-24) : l'ancien abonné
+`RecordDeliveryDayOnHandover` est retiré, et la base refuse une remise sans
+date comme une date sans remise (`orders_handover_has_received_on`,
+`orders_received_on_has_handover`). Le déclencheur `orders_received_on_frozen` refuse de la changer,
 même si la commande est annulée ensuite (Q4) : un bac ramené puis relivré ne la
 déplace pas. La facture carte lit la même colonne.
 
@@ -254,10 +255,9 @@ reste dans le cycle de sa livraison. Le lot, lui, écarte un bon dont la
 facture se clôt après lui (`PrismaCollectionCandidatesReader.invoicedAfter`) :
 constitué en retard, il ne prélève pas la facture suivante.
 
-**La reprise** (développement) : `seed:invoices` relancé rejoue
-`RecordOrderDeliveryDayCommand` pour chaque commande retirée sans date
-(`datePastDeliveries`). La production n'avait émis aucune facture au
-2026-10-22.
+**La reprise** : faite par la migration `20261024150000_la_reception_suit_la_remise`
+(jour de Paris de la remise), avant de poser les deux contraintes. La
+production n'avait émis aucune facture au 2026-10-22.
 
 **La bascule** : `invoicing_floor`, posé par migration au 1er du mois qui suit le
 déploiement. Avant, un bon garde l'arrêté figé ; depuis, un bon sans facture

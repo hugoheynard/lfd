@@ -15,7 +15,6 @@ import {
 } from "../../domain/ports/procedure-orders.reader.js";
 import { billedPayerOf } from "../../domain/services/billed-payer.js";
 import {
-  deliveryDayMissing,
   invoicesStatus,
   procedureOrderStatus,
 } from "../../domain/services/collection-procedure-invoices.js";
@@ -141,7 +140,6 @@ function orderView(row: ProcedureOrderRow): ProcedureOrderView {
     totalCents: row.totalCents,
     status: procedureOrderStatus(facts),
     invoiceNumber: row.invoice?.number ?? null,
-    deliveryDayMissing: deliveryDayMissing(facts),
   };
 }
 

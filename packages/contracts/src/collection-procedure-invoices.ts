@@ -56,18 +56,12 @@ export interface ProcedureOrderView {
   readonly status: ProcedureOrderStatusView;
   /** Le numéro de la facture qui la porte ; `null` tant qu'elle n'est pas facturée. */
   readonly invoiceNumber: string | null;
-  /**
-   * Remise enregistrée sans jour de réception (donnée antérieure à la règle
-   * du 2026-10-22) : elle n'entre dans aucune facture tant qu'on ne la reprend
-   * pas. Toujours `false` hors de `receipt_confirmed`.
-   */
-  readonly deliveryDayMissing: boolean;
 }
 
 /** Les trois chiffres clés de l'onglet, au vocabulaire des statuts. */
 export interface ProcedureOrderFiguresView {
   readonly invoiced: number;
-  /** Réceptions confirmées, pas encore facturées (jour manquant compris). */
+  /** Réceptions confirmées, pas encore facturées. */
   readonly receiptConfirmed: number;
   readonly receiptToConfirm: number;
 }

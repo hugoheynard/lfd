@@ -946,10 +946,24 @@ describe("le plan du soir", () => {
     await eventuallyStatus(reference, "fulfilled");
     expect((await dayStatus(SERVICE_DAY)).handedOverBehind).toBe(0);
 
-    await ctx.prisma.order.update({
-      where: { orderNumber: reference },
-      data: { status: "ready", handedOverAt: null, handedOverBy: null, handedOverVia: null },
-    });
+    // Le commerce qui n'a pas appris la remise n'a ni remise ni date. Depuis
+    // B4, la base interdit d'y revenir : la date est figée par
+    // `orders_received_on_frozen`, et une date sans remise est refusée par
+    // CHECK. Le déclencheur est donc suspendu le temps de cette seule
+    // transaction, `replica` ne touchant pas aux CHECK, qui restent tenus.
+    await ctx.prisma.$transaction([
+      ctx.prisma.$executeRaw`SET LOCAL session_replication_role = replica`,
+      ctx.prisma.order.update({
+        where: { orderNumber: reference },
+        data: {
+          status: "ready",
+          handedOverAt: null,
+          handedOverBy: null,
+          handedOverVia: null,
+          receivedOn: null,
+        },
+      }),
+    ]);
     expect((await dayStatus(SERVICE_DAY)).handedOverBehind).toBe(1);
 
     // Le refus part — et le fait est republié dans le même mouvement.

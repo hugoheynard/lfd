@@ -238,9 +238,9 @@ const HANDOVER_AFTER_PLACEMENT_MS = 60 * 60 * 1000;
  * fichier : écrit par Prisma, faute de chemin public qui n'exige pas une
  * journée de production.
  *
- * Il pose aussi `orders.received_on` — ce que l'abonné du retrait
- * (`RecordDeliveryDayOnHandover`) écrirait sur le fait, que cette écriture
- * directe ne publie pas (lot ZL) : le jour de Paris du retrait.
+ * Il pose aussi `orders.handed_over_at` et `orders.received_on` — ce que
+ * `MarkOrderFulfilledHandler` écrirait sur le fait, que cette écriture
+ * directe ne publie pas : le jour de Paris du retrait.
  */
 export async function handOver(
   prisma: PrismaService,
@@ -260,9 +260,11 @@ export async function handOver(
 }
 
 /**
- * Le **jour de livraison** d'un bon, sans fait de retrait : pour les suites
- * qui éprouvent l'assiette (relevé, lot, dossier) et pas le retrait — un bon
- * non livré n'y entre plus (lot ZL). Le jour de Paris de `at`.
+ * La **remise** d'un bon et son jour de réception, sans fait de retrait :
+ * pour les suites qui éprouvent l'assiette (relevé, lot, dossier) et pas le
+ * retrait — un bon non livré n'y entre plus (lot ZL). Le jour de Paris de
+ * `at`. Les deux colonnes ensemble : la base refuse l'une sans l'autre
+ * (plan-date-de-reception, B4, Q5).
  */
 export async function markDelivered(
   prisma: PrismaService,
@@ -271,14 +273,19 @@ export async function markDelivered(
 ): Promise<void> {
   await prisma.order.update({
     where: { id: orderId },
-    data: { receivedOn: receivedOnColumn(at) },
+    data: receivedColumns(at),
   });
 }
 
 /**
- * La colonne `received_on` (`@db.Date`) du jour de Paris de `at` — pour une
- * fixture qui sème un bon livré d'un seul `create` (lot ZL).
+ * Les colonnes d'un bon remis à `at` : `handed_over_at` et `received_on`
+ * (`@db.Date`, le jour de Paris de `at`) — pour une fixture qui sème un bon
+ * livré d'un seul `create`. Toujours ensemble : la base refuse l'une sans
+ * l'autre (plan-date-de-reception, B4, Q5).
  */
-export function receivedOnColumn(at: Date): Date {
-  return new Date(`${instantToLocal(at).day}T00:00:00.000Z`);
+export function receivedColumns(at: Date): {
+  readonly handedOverAt: Date;
+  readonly receivedOn: Date;
+} {
+  return { handedOverAt: at, receivedOn: new Date(`${instantToLocal(at).day}T00:00:00.000Z`) };
 }

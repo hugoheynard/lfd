@@ -18,9 +18,6 @@
       @if (row.invoiceNumber !== null) {
         <span data-order-invoice>{{ row.invoiceNumber }}</span>
       }
-      @if (row.deliveryDayMissing) {
-        <span data-order-day-missing>date de réception manquante — à reprendre</span>
-      }
     </span>
   </ng-template>
   <ng-template foldCell="gesture" let-row>

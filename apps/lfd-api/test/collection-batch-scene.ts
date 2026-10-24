@@ -23,7 +23,7 @@ import { cycleToConstitute } from "../src/b2b/accounting/domain/services/billing
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { createCompany, createUser, receivedOnColumn } from "./factories.js";
+import { createCompany, createUser, receivedColumns } from "./factories.js";
 
 export const SIREN = "552100554";
 export const ICS = "FR72ZZZ123456";
@@ -197,7 +197,7 @@ export async function orderOf(
       vatCents: spec.vatCents,
       paymentStatus: "not_required",
       createdAt: new Date(closesAt.getTime() - daysBefore * DAY_MS),
-      receivedOn: receivedOnColumn(new Date(closesAt.getTime() - daysBefore * DAY_MS)),
+      ...receivedColumns(new Date(closesAt.getTime() - daysBefore * DAY_MS)),
       ...(bon === null
         ? {}
         : {

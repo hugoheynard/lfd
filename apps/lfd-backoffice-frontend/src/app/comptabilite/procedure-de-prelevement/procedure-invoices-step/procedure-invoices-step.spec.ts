@@ -41,7 +41,6 @@ function order(
     totalCents: 1_200,
     status,
     invoiceNumber: null,
-    deliveryDayMissing: false,
     ...over,
   };
 }
@@ -52,11 +51,11 @@ const MIXED = procedureInvoices({
   orders: [
     order('a', 'invoiced', { invoiceNumber: 'FA-LFD-2026-000001' }),
     order('b', 'receipt_confirmed'),
-    order('c', 'receipt_confirmed', { deliveryDayMissing: true }),
+    order('c', 'receipt_confirmed'),
     order('d', 'receipt_to_confirm'),
   ],
   figures: { invoiced: 1, receiptConfirmed: 2, receiptToConfirm: 1 },
-  issuableCount: 1,
+  issuableCount: 2,
   closure: CLOSURE,
 });
 
@@ -117,7 +116,7 @@ describe('l’onglet Factures de la procédure', () => {
     expect(host.querySelector('[data-order-invoice]')?.textContent).toContain('FA-LFD-2026-000001');
   });
 
-  it('un statut par ligne ; le jour manquant est nommé ; seule la réception à confirmer porte le geste', () => {
+  it('un statut par ligne ; seule la réception à confirmer porte le geste', () => {
     const { fixture } = boot(MIXED);
     const host = root(fixture);
     expect(statuses(host)).toEqual([
@@ -126,10 +125,6 @@ describe('l’onglet Factures de la procédure', () => {
       'receipt_confirmed',
       'receipt_to_confirm',
     ]);
-    expect(host.querySelectorAll('[data-order-day-missing]')).toHaveLength(1);
-    expect(host.querySelector('[data-order-day-missing]')?.textContent).toContain(
-      'date de réception manquante — à reprendre',
-    );
     const gestures = host.querySelectorAll('[data-confirm-receipt]');
     expect(gestures).toHaveLength(1);
     expect(gestures[0]?.getAttribute('data-confirm-receipt')).toBe('d');
@@ -156,7 +151,7 @@ describe('l’onglet Factures de la procédure', () => {
   it('« Émettre les factures des réceptions confirmées (N) » émet la clôture', () => {
     const { fixture, issued } = boot(MIXED);
     const button = root(fixture).querySelector<HTMLButtonElement>('[data-issue-invoices]');
-    expect(button?.textContent).toContain('Émettre les factures des réceptions confirmées (1)');
+    expect(button?.textContent).toContain('Émettre les factures des réceptions confirmées (2)');
 
     button?.click();
 

@@ -123,7 +123,12 @@ async function seedOrder(seed: OrderSeed): Promise<string> {
         : {}),
       paymentStatus: seed.paymentStatus ?? "not_required",
       ...(day === null ? {} : { requestedDeliveryDate: new Date(`${day}T00:00:00.000Z`) }),
-      ...(delivered === null ? {} : { receivedOn: new Date(`${delivered}T00:00:00.000Z`) }),
+      ...(delivered === null
+        ? {}
+        : {
+            handedOverAt: new Date(`${delivered}T10:00:00.000Z`),
+            receivedOn: new Date(`${delivered}T00:00:00.000Z`),
+          }),
       lines: {
         create: [
           {

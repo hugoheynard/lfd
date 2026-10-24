@@ -17,6 +17,7 @@ import {
   seedDelivery,
 } from "./delivery-rounds-scene.js";
 import { composedOrder, declareBins, depart, loadBin } from "./delivery-loading-scene.js";
+import { receivedColumns } from "./factories.js";
 import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
 import { PrismaService } from "../src/platform/database/prisma.service.js";
 import { currentTransaction } from "../src/platform/database/transaction.store.js";
@@ -141,7 +142,7 @@ describe("votre livraison est en route (PL3)", () => {
     const { roundId, orderIds } = await loadedRoundOfTwo();
     await ctx.prisma.order.update({
       where: { id: orderIds[0] },
-      data: { handedOverAt: new Date() },
+      data: receivedColumns(new Date()),
     });
 
     expect((await depart(ctx, roundId)).status).toBe(204);

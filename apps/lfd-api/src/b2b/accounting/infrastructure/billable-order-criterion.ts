@@ -24,8 +24,8 @@ import type { Prisma } from "../../../platform/database/client/client.js";
  * récapitulative couvre les livraisons d'un mois civil (CGI art. 289-I-3).
  * Sous `created_at`, un bon commandé le 30 pour le 5 tombait dans la facture
  * du mois de sa commande. `received_on` est posé une fois, à la première
- * remise attestée (`RecordDeliveryDayOnHandover`) : un bon non livré n'est
- * dans AUCUNE assiette — il n'est ni facturé, ni prélevé, et figure dans les
+ * remise (`MarkOrderFulfilledHandler` ; la base refuse l'une sans l'autre) :
+ * un bon non livré n'est dans AUCUNE assiette — il n'est ni facturé, ni prélevé, et figure dans les
  * « Bons à constater » une fois son jour passé.
  *
  * ## Jour à jour, à Paris

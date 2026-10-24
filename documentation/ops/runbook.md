@@ -1198,6 +1198,28 @@ que citait ici une phrase n'est plus affichée nulle part depuis le
 **Après** : ouvrir un point de vente existant au back-office, l'enregistrer,
 puis ouvrir son historique — il doit se lire sans fait brut.
 
+## Une remise ne se défait pas — même à la main (depuis le 2026-10-24)
+
+Depuis la migration `20261024150000_la_reception_suit_la_remise`, la base
+refuse de revenir sur une remise : `received_on` est figé une fois posé
+(déclencheur `orders_received_on_frozen`), et deux CHECK tiennent « remise ⇒
+date » et « date ⇒ remise ». Remettre `handed_over_at` à `NULL` est donc
+refusé, avec ou sans la date. C'est voulu (décision Q4 de
+[`plan-date-de-reception.md`](../commandes/plan-date-de-reception.md)) : la
+date de réception entre dans la facture.
+
+Une remise constatée par erreur ne se corrige pas en base. La lever
+demanderait de retirer une contrainte en production : ne pas le faire sans
+décision de Hugo, prise sur le cas précis.
+
+**Lettres mortes laissées en place, décision de Hugo (2026-10-24)** :
+l'abonné `accounting.record-delivery-day.on-handover` est retiré par le même
+lot. Ses livraisons encore en attente, et celles créées par l'ancienne image
+entre `migrate deploy` et la bascule, finissent en lettres mortes (« n'est
+plus inscrit »). Elles ne portent rien de perdu : la remise pose déjà la date.
+Elles restent visibles dans `GET /admin/outbox/dead-letters` ; ne pas les
+rejouer, le rejeu échoue de la même façon.
+
 ## Remettre la production à blanc — délibérément SANS outil
 
 Fait une fois, le **2026-08-16**, pour vider les données de test avant

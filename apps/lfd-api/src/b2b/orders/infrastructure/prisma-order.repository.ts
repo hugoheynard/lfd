@@ -360,20 +360,13 @@ export class PrismaOrderRepository extends OrderRepository {
       status: OrderStatus.fulfilled,
     };
     // La date de réception part dans la MÊME instruction que la remise
-    // (plan-date-de-reception, B2). Elle peut déjà être posée — par l'ancien
-    // abonné `RecordDeliveryDayOnHandover`, encore branché jusqu'à B4 — et
-    // elle est alors figée (`orders_received_on_frozen`) : on ne la réécrit
-    // pas, d'où la seconde instruction, qui ne porte pas la colonne.
-    const dated = await this.prisma.order.updateMany({
-      where: { ...where, receivedOn: null },
-      data: { ...handedOver, receivedOn: new Date(`${receivedOn}T00:00:00.000Z`) },
-    });
-    if (dated.count === 1) {
-      return true;
-    }
+    // (plan-date-de-reception, B2). Depuis B4, la base refuse l'une sans
+    // l'autre (`orders_handover_has_received_on` et son sens inverse) : une
+    // commande pas encore remise n'a jamais de date, il n'y a plus de cas où
+    // elle serait déjà posée.
     const { count } = await this.prisma.order.updateMany({
-      where: { ...where, receivedOn: { not: null } },
-      data: handedOver,
+      where,
+      data: { ...handedOver, receivedOn: new Date(`${receivedOn}T00:00:00.000Z`) },
     });
     return count === 1;
   }

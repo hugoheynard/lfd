@@ -75,7 +75,7 @@ contre aucun geste existant ; elle protège contre celui qu'on écrirait demain.
   changement d'une valeur posée, y compris vers `NULL`, l. 26-42). **Déjà en
   production** : commit `b102bc9dc` sur `origin/main`.
 - **Abonné** : `RecordDeliveryDayOnHandover`
-  (`src/b2b/accounting/application/handlers/record-delivery-day-on-handover.handler.ts:33`,
+  (l'abonné `RecordDeliveryDayOnHandover`, retiré en B4,
   abonné `accounting.record-delivery-day.on-handover`) — un **second** abonné
   durable du même fait `handover.handed_over`, indépendant du premier.
 - **Commande** : `RecordOrderDeliveryDayHandler`
@@ -112,7 +112,7 @@ question se déplace** : l'invariant ne porte pas sur `order_handover`
 colonnes de cette ligne sont déjà dans `b2b`**. Le bricolage n'est pas une
 traversée de frontière : c'est que **deux abonnés du même fait** écrivent deux
 colonnes de la même ligne, chacun dans sa propre transaction, sans ordre entre
-eux (`on-order-handed-over.handler.ts:41`, `record-delivery-day-on-handover.handler.ts:33`).
+eux (`on-order-handed-over.handler.ts:41`, l'abonné ZL, retiré en B4).
 Entre les deux, et pour toujours si le second a échoué ou n'existait pas, la
 ligne dit « remise » sans date.
 
@@ -161,7 +161,7 @@ il n'est pas vérifié ici que l'arrêt est clos avant que le fait parte (Q2).
 | le lecteur des commandes de procédure (`PrismaProcedureOrdersReader`, non commité, chantier en cours) | statut de l'onglet Factures                                         |
 | `src/b2b/accounting/domain/services/collection-procedure-invoices.ts:30,47,57`                        | `procedureOrderStatus`, `deliveryDayMissing`                        |
 | `src/b2b/accounting/application/services/procedure-invoices-step.ts:121,133,139`                      | l'étape facture de la procédure                                     |
-| `src/dev/seeding/invoice-handovers.seed.ts:106`                                                       | reprise de dev par le bus (`datePastDeliveries`)                    |
+| `datePastDeliveries` (retiré en B4)                                                                   | reprise de dev par le bus (`datePastDeliveries`)                    |
 | `test/factories.ts:249-285` (`markDelivered`, `deliveredOnColumn`) et 13 suites e2e                   | fixtures                                                            |
 
 **`invoice_order.delivered_on` (la copie figée sur la facture)** — colonne
@@ -385,7 +385,7 @@ raisonne par bloc.
    n'est donc jamais nul par construction, et la phrase du §0.3 ne vaut qu'avec
    ce repli.
 2. **La liste des fixtures de B4 était incomplète.** Il faut ajouter :
-   - `test/monthly-invoices.e2e-spec.ts:1412`, qui pose `handedOverAt` seul
+   - le test `deliveryDayMissing` de `monthly-invoices` (retiré en B4), qui pose `handedOverAt` seul
      (c'est le test `deliveryDayMissing` du chantier non commité) ;
    - les doubles de `markFulfilled` dans `test/packing-order-packed.e2e-spec.ts:93`
      et `test/production-day-closed.e2e-spec.ts:87`, dont la signature change.
@@ -477,6 +477,15 @@ MINEUR, pris en compte :
   `receivedOnColumn`, et les 13 suites qui la lisent) sont à réécrire à B4.
 - **Q6 — reprise par script, pas par migration** : c'est le deuxième temps
   (§8).
+- **Q6 révisée (Hugo, 2026-10-24) — pour ce seul cas, la migration de B4 date
+  elle-même les remises sans date, par la règle simple, AVANT de poser les
+  contraintes.** Raisons : éviter d'exporter l'URL de production sur un poste
+  pour lancer le script ; il n'en restait qu'UNE en production
+  (ORD-MV0Q32ES-0XXX, remise le 2026-10-13 à 12:35Z → 2026-10-13, contrôle
+  n° 5 à 0 le même jour) ; B1+B2 est déployé, donc plus aucune remise neuve
+  ne part sans date et la liste ne peut pas grandir. Pas de jointure
+  inter-schémas : la règle de la porte n'est pas rejouée. Le script du §8 est
+  retiré avec B4 (il écrivait par le port `OrderDeliveryDays`, retiré).
 
 ## 7. Premier temps (B1 + B2) — ce qui est bâti (2026-10-24, non commité)
 
@@ -546,10 +555,10 @@ liste par numéro, sans rien écrire, pour décision de Hugo.
   commande DÉDIÉE : `RecordOrderDeliveryDayHandler` reste sans repli, c'est
   juste pour l'abonné du retrait. Même écriture conditionnée
   `received_on IS NULL` (`OrderDeliveryDays.recordFirst`).
-- `apps/lfd-api/prisma/ops/received-on-backfill.ts` (contrôles + boucle, lit en
+- `prisma/ops/received-on-backfill` (retiré en B4) (contrôles + boucle, lit en
   Prisma, écrit par le bus seulement ; l'attestation se lit par
   `OrderHandoverHistoryReader`, pas par jointure sur `production`) et
-  `apps/lfd-api/prisma/ops-received-on-backfill.ts` (amorce l'application
+  `prisma/ops-received-on-backfill` (retiré en B4) (amorce l'application
   réelle, affiche `hôte:port/base`, jamais l'utilisateur ni le mot de passe).
 - `pnpm --filter lfd-api ops:received-on-backfill` : simulation ;
   `… --apply` : écriture, puis contrôles « après », code de sortie 1 si
@@ -602,7 +611,10 @@ SELECT count(*) FROM orders WHERE received_on IS NOT NULL AND handed_over_at IS 
 remise ne se répare pas en posant une date. Si la base en porte, B4 (Q5) ne
 passera pas, et la décision est à prendre avec Hugo.
 
-### 8.3 Le geste de production (runbook — NON exécuté)
+### 8.3 Le geste de production — SANS OBJET (Q6 révisée, 2026-10-24)
+
+La migration de B4 fait la reprise ; le script et sa commande
+`ops:received-on-backfill` sont retirés. Le texte ci-dessous reste pour mémoire.
 
 Après le déploiement du premier temps (migration `20261024120000` appliquée,
 API servie), avant B4. Depuis un poste, dans `apps/lfd-api` :
@@ -624,3 +636,39 @@ API servie), avant B4. Depuis un poste, dans `apps/lfd-api` :
 6. `unset DATABASE_LFD_URL` et les autres variables exportées.
 
 Rien d'autre n'écrit : pas de SQL à la main, pas d'`UPDATE`.
+
+## 9. Troisième temps (B4) — bâti le 2026-10-24, non commité
+
+**Migration** `apps/lfd-api/prisma/migrations/20261024150000_la_reception_suit_la_remise/migration.sql`,
+dans une transaction explicite (`BEGIN` / `COMMIT` : Prisma n'en ouvre pas,
+et un échec sur le second CHECK laissait l'`UPDATE` et le premier appliqués,
+constaté sur une base de test) :
+
+1. `UPDATE` des remises sans date, par la règle simple (Q6 révisée). ⚠️
+   `handed_over_at` est un `TIMESTAMP(3)` SANS fuseau, écrit en UTC :
+   l'expression est `(("handed_over_at" AT TIME ZONE 'UTC') AT TIME ZONE
+'Europe/Paris')::date`. Le seul `AT TIME ZONE 'Europe/Paris'` (§1 D3,
+   §8.2 n° 3) lit l'heure comme une heure de Paris et rend le jour de la
+   session — faux pour une remise après 22h/23h UTC (vérifié : 22:30Z le 13
+   rend le 13 au lieu du 14). Sans effet sur la commande de production
+   (12:35Z). Le déclencheur figé laisse passer `NULL` → valeur.
+2. `orders_handover_has_received_on` et `orders_received_on_has_handover` (Q5).
+
+**Retirés** : l'abonné `RecordDeliveryDayOnHandover`
+(`accounting.record-delivery-day.on-handover`), `RecordOrderDeliveryDayCommand`,
+`BackfillOrderReceivedOnCommand`, le port `OrderDeliveryDays` et
+`PrismaOrderDeliveryDays`, le script `ops:received-on-backfill` et son e2e,
+`deliveryDayMissing` (contrat `collection-procedure-invoices.ts`, domaine,
+écran de l'onglet Factures), `datePastDeliveries`. `markFulfilled` n'a plus
+qu'une instruction : une commande pas encore remise n'a jamais de date.
+`issuableCount` compte toutes les réceptions confirmées.
+
+**Fixtures** : `receivedOnColumn` devient `receivedColumns` (les deux colonnes
+ensemble), `markDelivered` pose aussi `handed_over_at`, `invoice-dossiers`
+pose la remise avec le jour, `delivery-en-route` pose les deux colonnes ; le
+test `deliveryDayMissing` de `monthly-invoices` est retiré (état refusé en
+base), et `order-received-on` prouve les deux refus.
+
+**Reste au déploiement** : les lettres mortes éventuelles de l'abonné retiré
+(§5 obj. 8) ne sont pas acquittées par la migration — à constater et
+acquitter à la main après le déploiement.

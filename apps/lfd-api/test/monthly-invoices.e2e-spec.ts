@@ -1332,7 +1332,6 @@ describe("l'onglet Factures de la procédure : une commande, un statut", () => {
         orderNumber: order.orderNumber,
         status: "receipt_confirmed",
         invoiceNumber: null,
-        deliveryDayMissing: false,
       }),
     ]);
 
@@ -1400,27 +1399,5 @@ describe("l'onglet Factures de la procédure : une commande, un statut", () => {
       { status: "invoiced", invoiceNumber: invoice.number },
     );
     expect(view.invoices).toMatchObject({ state: "done", reason: "all_invoiced" });
-  });
-
-  it("remise enregistrée sans jour de livraison : confirmée, à reprendre, hors du bouton", async () => {
-    const id = await entity();
-    const company = await payer(id, { handedOver: false });
-    const order = await firstOrderOf(company.id);
-    await servedOn(order.id, new Date(closesAt.getTime() - 2 * DAY_MS));
-    await ctx.prisma.order.update({
-      where: { id: order.id },
-      data: { handedOverAt: new Date(closesAt.getTime() - 2 * DAY_MS) },
-    });
-
-    const view = await procedureAt(id);
-
-    expect(view.invoices.orders).toEqual([
-      expect.objectContaining({ status: "receipt_confirmed", deliveryDayMissing: true }),
-    ]);
-    expect(view.invoices).toMatchObject({
-      state: "to_do",
-      reason: "receipts_to_invoice",
-      issuableCount: 0,
-    });
   });
 });

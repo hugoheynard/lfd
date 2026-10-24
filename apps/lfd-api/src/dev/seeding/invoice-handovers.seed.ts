@@ -1,4 +1,3 @@
-import { RecordOrderDeliveryDayCommand } from "../../b2b/accounting/application/commands/record-order-delivery-day.command.js";
 import { ConfirmManualHandoverCommand } from "../../handover/application/commands/confirm-manual-handover.command.js";
 import { OrderStatus } from "../../platform/database/client/client.js";
 import { asStaff, atHour, isoDay, SEED_STAFF_SUB, type SeedContext } from "./order-placing.seed.js";
@@ -87,28 +86,4 @@ export async function handOverPastOrders(
     }
   }
   return handedOver;
-}
-
-/**
- * **La reprise du jour de livraison** (lot ZL) — les commandes retirées AVANT
- * que le commerce ne pose `orders.received_on` n'en ont pas, et n'entrent
- * donc dans aucune facture. On rejoue la commande de l'abonné du retrait
- * (`RecordOrderDeliveryDayCommand`) pour chacune : la même règle, par le bus,
- * jamais une écriture SQL. Idempotent : une commande datée n'est plus lue.
- *
- * Toutes les sociétés, pas seulement les Cimes : la colonne est neuve pour
- * toute la base de développement.
- *
- * @returns le nombre de commandes relues.
- */
-export async function datePastDeliveries(context: SeedContext): Promise<number> {
-  const pending = await context.prisma.order.findMany({
-    where: { handedOverAt: { not: null }, receivedOn: null },
-    select: { id: true },
-    orderBy: { createdAt: "asc" },
-  });
-  for (const order of pending) {
-    await context.commands.execute(new RecordOrderDeliveryDayCommand(order.id));
-  }
-  return pending.length;
 }
