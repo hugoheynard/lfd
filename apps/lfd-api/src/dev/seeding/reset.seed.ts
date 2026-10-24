@@ -183,15 +183,17 @@ async function wipe(prisma: PrismaClient, companyIds: string[], userIds: string[
   await prisma.subAccountNoticeSetting.deleteMany({
     where: { principalCompanyId: { in: companyIds } },
   });
-  await prisma.order.deleteMany({
-    where: {
-      OR: [
-        { companyId: { in: companyIds } },
-        { principalCompanyId: { in: companyIds } },
-        { placedByUserId: { in: userIds } },
-      ],
-    },
-  });
+  const ofOrders = {
+    OR: [
+      { companyId: { in: companyIds } },
+      { principalCompanyId: { in: companyIds } },
+      { placedByUserId: { in: userIds } },
+    ],
+  };
+  // Les bons de livraison tiennent leur commande en `Restrict` (plan E1).
+  await prisma.deliveryNoteLine.deleteMany({ where: { note: { order: ofOrders } } });
+  await prisma.deliveryNote.deleteMany({ where: { order: ofOrders } });
+  await prisma.order.deleteMany({ where: ofOrders });
   // `company_id` en `Restrict` (N4e) : le panier d'une personne hors périmètre
   // posé sur une société du périmètre partirait sinon en erreur.
   await prisma.subscription.deleteMany({

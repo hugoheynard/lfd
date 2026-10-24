@@ -1,0 +1,56 @@
+import { BusinessError, DomainError } from "../../../../platform/shared/errors/app-error.js";
+
+/**
+ * Les refus du **bon de livraison** (plan
+ * `documentation/commandes/plan-e1-bon-de-livraison-prevu.md`).
+ *
+ * En E1, personne ne lit ni ne pilote un BL : ces refus ne partent que d'un
+ * abonné (l'arrêt du plan) ou de l'annulation d'une commande. Leur message est
+ * donc lu par qui relit un message mort sur la carte de santé, ou par le
+ * membre de l'équipe dont l'annulation a été refusée.
+ */
+
+/** Une commande sans aucune ligne n'a rien à livrer : pas de BL. */
+export class DeliveryNoteWithoutLinesError extends DomainError {
+  constructor(orderNumber: string) {
+    super(
+      "delivery_notes.note.no_lines",
+      `La commande ${orderNumber} n'a aucune ligne : aucun bon de livraison ne peut être prévu. ` +
+        "Vérifier la commande dans le back-office avant de rejouer l'arrêt du plan.",
+    );
+  }
+}
+
+/** Une ligne recopiée porte une valeur qu'une ligne de commande ne peut pas avoir. */
+export class InvalidDeliveryNoteLineError extends DomainError {
+  constructor(sku: string, reason: string) {
+    super(
+      "delivery_notes.line.invalid",
+      `Bon de livraison, ligne ${sku === "" ? "sans SKU" : sku} : ${reason}. ` +
+        "La ligne de commande d'origine est à vérifier ; aucun bon n'a été écrit.",
+    );
+  }
+}
+
+/** Le numéro d'un BL ne se forme qu'à partir d'un numéro de commande `ORD-…` et d'un rang ≥ 1. */
+export class InvalidDeliveryNoteNumberError extends DomainError {
+  constructor(orderNumber: string, rank: number) {
+    super(
+      "delivery_notes.number.invalid",
+      `Impossible de numéroter le bon de livraison de rang ${rank} de la commande « ${orderNumber} » : ` +
+        "le numéro de commande doit commencer par ORD- et le rang être un entier d'au moins 1. " +
+        "Prévenir l'équipe technique.",
+    );
+  }
+}
+
+/** Seul un BL prévu se réécrit ou s'annule ; un BL préparé ou remis ne bouge plus. */
+export class DeliveryNoteNotPlannedError extends BusinessError {
+  constructor(noteNumber: string, status: string) {
+    super(
+      "delivery_notes.note.not_planned",
+      `Le bon de livraison ${noteNumber} est « ${status} » : seul un bon encore prévu ` +
+        "se réécrit ou s'annule. Le bon reste tel quel ; prévenir l'équipe technique.",
+    );
+  }
+}

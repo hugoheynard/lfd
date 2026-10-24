@@ -48,6 +48,7 @@ import { DeliveryTransferCounterModule } from "./delivery-transfer-counter.modul
 import { DebtorMandateModule } from "./debtor-mandate.module.js";
 import { LoyaltyVoucherModule } from "./loyalty-voucher.module.js";
 import { AccountOrderEngagementModule } from "./account-order-engagement.module.js";
+import { DeliveryNotePlanningModule } from "./delivery-note-planning.module.js";
 import { IssuedMandatesModule } from "./issued-mandates.module.js";
 import { ProductionFeedModule } from "./production-feed.module.js";
 import { PackingModule } from "../packing/packing.module.js";
@@ -207,6 +208,8 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     DebtorMandateModule,
     LoyaltyVoucherModule,
     AccountOrderEngagementModule,
+    // La commande et son bon de livraison (plan E1).
+    DeliveryNotePlanningModule,
     IssuedMandatesModule,
     PricingAdminModule,
     PricingFollowJournalModule,

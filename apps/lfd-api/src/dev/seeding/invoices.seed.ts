@@ -70,9 +70,11 @@ export async function seedInvoices(context: InvoiceSeedContext): Promise<Invoice
     const handedOver = await handOverPastOrders(context, payerIds);
     return { kind: "already_seeded", invoices: existing, handedOver };
   }
-  await context.prisma.order.deleteMany({
-    where: { companyId: { in: payerIds }, note: INVOICE_SEED_NOTE },
-  });
+  const seeded = { companyId: { in: payerIds }, note: INVOICE_SEED_NOTE };
+  // Les bons de livraison tiennent leur commande en `Restrict` (plan E1).
+  await context.prisma.deliveryNoteLine.deleteMany({ where: { note: { order: seeded } } });
+  await context.prisma.deliveryNote.deleteMany({ where: { order: seeded } });
+  await context.prisma.order.deleteMany({ where: seeded });
   const calendar = planInvoiceCalendar(context.now);
   const legalEntityId = await readyLegalEntity(context, calendar.modeSetAt);
   const staffId = await accountingStaffId(context);

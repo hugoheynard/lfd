@@ -30,6 +30,7 @@ import {
   InMemoryCancellations,
   ScriptedCancelGateway,
   ScriptedDesk,
+  RecordingNoteVoiding,
   ScriptedEngagements,
 } from "./cancellation-doubles.js";
 import { RecordingDurable } from "./durable-doubles.js";
@@ -94,6 +95,7 @@ function scene(options: Scene = {}) {
       engagements,
       new CancellationRefundRequester(new InMemoryRefundRequests(refundStore), dispatch),
       durable,
+      new RecordingNoteVoiding(),
       new DirectUnitOfWork(),
       new FixedClock(NOW),
     ),
@@ -409,6 +411,7 @@ describe("CancelOrderHandler — les refus", () => {
           new RecordingDispatch(),
         ),
         new RecordingDurable(),
+        new RecordingNoteVoiding(),
         new DirectUnitOfWork(),
         new FixedClock(NOW),
       ),

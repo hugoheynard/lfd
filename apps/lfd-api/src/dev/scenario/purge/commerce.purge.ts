@@ -11,6 +11,9 @@ import type { PurgeClient, ScenarioScope } from "./scenario-scope.js";
  * portent la commande que par son numéro, au bout de leur clé d'idempotence
  * (`notification:product.first_order:<numéro>`, relu le 2026-10-05).
  *
+ * Les bons de livraison (plan E1, 2026-10-24) tiennent leur commande en
+ * `RESTRICT` : ils partent avant elle, leurs lignes avant eux.
+ *
  * @returns les lignes supprimées, dont les commandes à part.
  */
 export async function purgeCommerce(
@@ -29,6 +32,8 @@ export async function purgeCommerce(
       where: ofOrderNumbers.length === 0 ? { id: { in: [] } } : { OR: ofOrderNumbers },
     }),
     await tx.orderDayChange.deleteMany({ where: { serviceDay: { in: [...scope.days] } } }),
+    await tx.deliveryNoteLine.deleteMany({ where: { note: { orderId: { in: orderIds } } } }),
+    await tx.deliveryNote.deleteMany({ where: { orderId: { in: orderIds } } }),
   ];
   // Les lignes suivent la commande en cascade.
   const orders = await tx.order.deleteMany({ where: { id: { in: orderIds } } });

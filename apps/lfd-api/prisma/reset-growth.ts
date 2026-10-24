@@ -65,9 +65,13 @@ async function wipe(
   await prisma.activityEvent.deleteMany({ where: { subjectId: { in: subjects } } });
   await prisma.leadScore.deleteMany({ where: { subjectId: { in: subjects } } });
   await prisma.companyTermination.deleteMany({ where: { companyId: { in: companyIds } } });
-  await prisma.order.deleteMany({
-    where: { OR: [{ placedByUserId: { in: userIds } }, { companyId: { in: companyIds } }] },
-  });
+  const orderWhere = {
+    OR: [{ placedByUserId: { in: userIds } }, { companyId: { in: companyIds } }],
+  };
+  // Les bons de livraison tiennent leur commande en RESTRICT (lot E1) : d'abord eux.
+  await prisma.deliveryNoteLine.deleteMany({ where: { note: { order: orderWhere } } });
+  await prisma.deliveryNote.deleteMany({ where: { order: orderWhere } });
+  await prisma.order.deleteMany({ where: orderWhere });
   await prisma.subscription.deleteMany({ where: { placedByUserId: { in: userIds } } });
   await prisma.address.deleteMany({ where: { companyId: { in: companyIds } } });
   // `Membership.company` n'est pas en cascade (seul le côté user l'est) → explicite.

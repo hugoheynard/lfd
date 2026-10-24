@@ -111,6 +111,11 @@ async function wipe(): Promise<void> {
   const companyIds = [ESTABLISHED.companyId, SIGNING_UP.companyId];
   const userIds = [ESTABLISHED.userId, SIGNING_UP.userId];
   // Les lignes tombent en cascade avec leur commande / leur abonnement.
+  // Les bons de livraison tiennent leur commande en RESTRICT (lot E1) : d'abord eux.
+  await prisma.deliveryNoteLine.deleteMany({
+    where: { note: { order: { companyId: { in: companyIds } } } },
+  });
+  await prisma.deliveryNote.deleteMany({ where: { order: { companyId: { in: companyIds } } } });
   await prisma.order.deleteMany({ where: { companyId: { in: companyIds } } });
   await prisma.subscription.deleteMany({ where: { placedByUserId: { in: userIds } } });
   await prisma.membership.deleteMany({ where: { companyId: { in: companyIds } } });

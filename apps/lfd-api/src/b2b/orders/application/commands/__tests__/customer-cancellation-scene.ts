@@ -22,6 +22,7 @@ import {
   InMemoryCancellations,
   ScriptedCancelGateway,
   ScriptedDesk,
+  RecordingNoteVoiding,
   ScriptedEngagements,
 } from "./cancellation-doubles.js";
 import {
@@ -78,6 +79,7 @@ export function customerScene(options: CustomerScene) {
       new RecordingDispatch(),
     ),
     durable,
+    new RecordingNoteVoiding(),
     new DirectUnitOfWork(),
     new FixedClock(options.now),
   );

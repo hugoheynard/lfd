@@ -1,5 +1,12 @@
 # Plan E1 — le bon de livraison prévu, né à l'arrêt du plan
 
+> ✅ **Bâti le 2026-10-24** (contexte `apps/lfd-api/src/b2b/delivery-notes/`,
+> migration `20261024190000_le_bon_de_livraison_prevu`, relue par
+> `lecteur-de-migrations` : additive). Choix du bâtisseur que le plan ne
+> disait pas : `plannedAt` figé à la première prévision ; l'ordre des lignes
+> suit leurs identifiants ; la réannonce n'est éprouvée qu'en test
+> d'application.
+
 > **Doc-first, 2026-10-24.** Premier lot de
 > [`plan-commande-bon-de-livraison-facture.md`](plan-commande-bon-de-livraison-facture.md).
 > Porte une **migration** (tables neuves, additive) : `vitruve`, puis

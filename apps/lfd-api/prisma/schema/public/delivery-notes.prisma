@@ -1,0 +1,67 @@
+/// Le cycle d'un **bon de livraison** (plan
+/// `documentation/commandes/plan-e1-bon-de-livraison-prevu.md`). E1 n'écrit
+/// que `planned` (prévu à l'arrêt du plan) et `voided` (commande annulée) ;
+/// `prepared` et `handed_over` arrivent avec le colisage et le retrait (E3).
+enum DeliveryNoteStatus {
+  planned
+  prepared
+  handed_over
+  voided
+
+  @@schema("public")
+}
+
+/// **Un bon de livraison** — ce qu'une commande livre en une fois. E1 en est
+/// l'ombre : le BL-1 naît à l'arrêt du plan, personne ne le lit.
+///
+/// `(order_id, rank)` unique : une seconde livraison du fait d'arrêt, une
+/// réannonce ou une re-clôture réécrivent le BL prévu, sans en créer. Un BL
+/// annulé consomme son rang et son numéro — un numéro ne se réemploie jamais.
+model DeliveryNote {
+  id      String @id
+  orderId String @map("order_id")
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  /// 1, 2… — CHECK `rank >= 1` dans la migration.
+  rank    Int
+  /// `BL-<numéro de commande sans ORD->-<rang>` (Q-E4, Q-E1-1).
+  number  String @unique
+
+  status    DeliveryNoteStatus
+  plannedAt DateTime           @map("planned_at") @db.Timestamptz(6)
+  voidedAt  DateTime?          @map("voided_at") @db.Timestamptz(6)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  lines DeliveryNoteLine[]
+
+  @@unique([orderId, rank])
+  @@map("delivery_note")
+  @@schema("public")
+}
+
+/// **Une ligne de bon de livraison**, recopiée de sa ligne de commande
+/// (invariant 3 du plan-cadre). Aucune clé vers `order_lines` : la révision
+/// d'une commande supprime et recrée ses lignes (plan E1, § 6). Les pendants
+/// TTC sont recopiés tels quels, `NULL` compris, jamais calculés.
+model DeliveryNoteLine {
+  /// Identifiant ULID : l'ordre des identifiants est l'ordre des lignes.
+  id     String       @id
+  noteId String       @map("note_id")
+  note   DeliveryNote @relation(fields: [noteId], references: [id], onDelete: Restrict)
+
+  sku                 String
+  productName         String  @map("product_name")
+  /// Prix unitaire HT en millicentimes, comme `order_lines`.
+  unitPriceMillicents Int     @map("unit_price_millicents")
+  vatRate             Decimal @map("vat_rate") @db.Decimal(5, 2)
+  /// CHECK `quantity >= 0` : une ligne à zéro est recopiée (plan E1, § 6).
+  quantity            Int
+  lineTotalCents      Int     @map("line_total_cents")
+  unitPriceTtcCents   Int?    @map("unit_price_ttc_cents")
+  lineTotalTtcCents   Int?    @map("line_total_ttc_cents")
+
+  @@index([noteId])
+  @@map("delivery_note_line")
+  @@schema("public")
+}

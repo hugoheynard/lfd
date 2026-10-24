@@ -62,6 +62,8 @@ export async function dropSitelessPickups(prisma: PrismaClient): Promise<Siteles
   await prisma.shopOrderIdempotency.deleteMany({ where: ofOrders });
   await prisma.customerRequest.deleteMany({ where: ofOrders });
   await prisma.loyaltyLedgerEntry.deleteMany({ where: ofOrders });
+  await prisma.deliveryNoteLine.deleteMany({ where: { note: ofOrders } });
+  await prisma.deliveryNote.deleteMany({ where: ofOrders });
   const removed = await prisma.order.deleteMany({ where: { id: { in: orderIds } } });
   return { removed: removed.count, keptInAccounting: accounted.size };
 }

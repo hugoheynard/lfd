@@ -2,6 +2,7 @@ import {
   ProductionDayClosedEvent,
   ProductionDayClosedPayloadError,
 } from "../../../../../production/channels/commerce/index.js";
+import { DeliveryNotePlanning } from "../../../domain/ports/delivery-note-planning.js";
 import {
   OrderRepository,
   type AbandonedSettlement,
@@ -22,7 +23,12 @@ interface Absorption {
 class AbsorbingRepository extends OrderRepository {
   readonly absorbed: Absorption[] = [];
 
+  constructor(private readonly trace: string[]) {
+    super();
+  }
+
   absorbIntoPlan(serviceDay: string, orderIds: readonly string[], at: Date): Promise<number> {
+    this.trace.push("absorb");
     this.absorbed.push({ serviceDay, orderIds, at });
     return Promise.resolve(orderIds.length);
   }
@@ -56,14 +62,31 @@ class AbsorbingRepository extends OrderRepository {
   }
 }
 
+/** La prévision des BL (plan E1) : elle note ce qu'on lui demande, après l'absorption. */
+class RecordingPlanning extends DeliveryNotePlanning {
+  readonly planned: { orderIds: readonly string[]; closedAt: Date }[] = [];
+
+  constructor(private readonly trace: string[]) {
+    super();
+  }
+
+  planConfirmed(orderIds: readonly string[], closedAt: Date): Promise<void> {
+    this.trace.push("plan-notes");
+    this.planned.push({ orderIds, closedAt });
+    return Promise.resolve();
+  }
+}
+
 function deliver(payload: Readonly<Record<string, unknown>>) {
-  const orders = new AbsorbingRepository();
-  const run = new OnProductionDayClosed(orders).handle({
+  const trace: string[] = [];
+  const orders = new AbsorbingRepository(trace);
+  const notes = new RecordingPlanning(trace);
+  const run = new OnProductionDayClosed(orders, notes).handle({
     eventId: "evt_1",
     type: "production.day_closed",
     payload,
   });
-  return { orders, run };
+  return { orders, notes, trace, run };
 }
 
 describe("le commerce apprend qu'une journée est arrêtée (abonné durable)", () => {
@@ -89,6 +112,16 @@ describe("le commerce apprend qu'une journée est arrêtée (abonné durable)", 
     expect(orders.absorbed[0]?.at).toEqual(CLOSED_AT);
   });
 
+  it("prévoit les BL APRÈS l'absorption, sur l'instantané et l'instant d'origine (plan E1)", async () => {
+    const fact = new ProductionDayClosedEvent(DAY, CLOSED_AT, ["ord_1"], new Date(1)).durableFact();
+    const { notes, trace, run } = deliver(fact.payload);
+
+    await run;
+
+    expect(trace).toEqual(["absorb", "plan-notes"]);
+    expect(notes.planned).toEqual([{ orderIds: ["ord_1"], closedAt: CLOSED_AT }]);
+  });
+
   it.each<[string, Readonly<Record<string, unknown>>]>([
     ["sans journée", { closedAt: CLOSED_AT.toISOString(), orderIds: [] }],
     ["instant illisible", { serviceDay: DAY, closedAt: "hier", orderIds: [] }],
@@ -98,9 +131,10 @@ describe("le commerce apprend qu'une journée est arrêtée (abonné durable)", 
       { serviceDay: DAY, closedAt: CLOSED_AT.toISOString(), orderIds: [1] },
     ],
   ])("REFUSE un payload hors contrat (%s) sans rien écrire", async (_case, payload) => {
-    const { orders, run } = deliver(payload);
+    const { orders, notes, run } = deliver(payload);
 
     await expect(run).rejects.toThrow(ProductionDayClosedPayloadError);
     expect(orders.absorbed).toEqual([]);
+    expect(notes.planned).toEqual([]);
   });
 });

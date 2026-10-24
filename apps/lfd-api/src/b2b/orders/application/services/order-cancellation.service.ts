@@ -28,6 +28,7 @@ import {
 import { LoyaltyVoucherRedemption } from "../../domain/ports/loyalty-voucher-redemption.js";
 import { OrderCancellationRepository } from "../../domain/ports/order-cancellation.repository.js";
 import { AccountOrderEngagement } from "../../domain/ports/account-order-engagement.js";
+import { PlannedDeliveryNoteVoiding } from "../../domain/ports/delivery-note-planning.js";
 import { customerUserOf, staffSheetOf } from "../../domain/services/cancellation-actor.js";
 import type { CancellableRegime } from "../../domain/services/order-cancellation.js";
 import { recordOf, type CancellationIntent } from "./cancellation-intent.js";
@@ -112,6 +113,7 @@ export class OrderCancellation {
     private readonly engagements: AccountOrderEngagement,
     private readonly refunds: CancellationRefundRequester,
     private readonly durable: DurablePublisher,
+    private readonly deliveryNotes: PlannedDeliveryNoteVoiding,
     private readonly unitOfWork: UnitOfWork,
     private readonly clock: Clock,
   ) {}
@@ -246,6 +248,9 @@ export class OrderCancellation {
       // la ligne d'encaissement est ouverte, on la ferme (C5.4).
       await this.engagements.closeForCancellation(locked.orderId, locked.totalCents, now);
     }
+    // Plan E1 : une commande rendue au client par une réouverture porte un BL
+    // prévu ; il s'annule avec elle, dans cette transaction.
+    await this.deliveryNotes.voidPlannedFor(locked.orderId, now);
     const voucher = await this.restitute(locked, now);
     // Lot C4 : APRÈS le bon — un bon qui refuse annule tout, demande comprise.
     const refund =

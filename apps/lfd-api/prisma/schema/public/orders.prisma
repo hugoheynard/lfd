@@ -390,6 +390,8 @@ model Order {
   revisions          OrderRevisionEntry[]
   /// L'issue de sa facture carte (E5a), s'il y en a une.
   cardInvoiceOutcome CardInvoiceOutcome?
+  /// Ses bons de livraison (plan E1, `commandes/plan-e1-bon-de-livraison-prevu.md`).
+  deliveryNotes      DeliveryNote[]
 
   @@index([companyId])
   @@index([billedCompanyId])

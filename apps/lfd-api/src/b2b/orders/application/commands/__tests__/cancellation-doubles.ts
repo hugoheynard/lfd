@@ -15,6 +15,7 @@ import {
   AccountOrderEngagement,
   type AccountEngagement,
 } from "../../../domain/ports/account-order-engagement.js";
+import { PlannedDeliveryNoteVoiding } from "../../../domain/ports/delivery-note-planning.js";
 import {
   CancellationSubjectReader,
   type CancellationSubject,
@@ -190,6 +191,25 @@ export class ScriptedEngagements extends AccountOrderEngagement {
   closeForCancellation(orderId: string, amountCents: number, at: Date): Promise<void> {
     this.trace.push(`close:${orderId}`);
     this.closed.push({ orderId, amountCents, at });
+    return Promise.resolve();
+  }
+}
+
+/**
+ * Le bon de livraison doublé (plan E1) : les annulations de BL prévu
+ * demandées. Hors de la `trace` partagée par défaut, pour que les suites
+ * d'avant E1 gardent leurs séquences ; une `trace` passée l'y inscrit.
+ */
+export class RecordingNoteVoiding extends PlannedDeliveryNoteVoiding {
+  readonly voided: { orderId: string; at: Date }[] = [];
+
+  constructor(private readonly trace: string[] | null = null) {
+    super();
+  }
+
+  voidPlannedFor(orderId: string, at: Date): Promise<void> {
+    this.trace?.push(`void-note:${orderId}`);
+    this.voided.push({ orderId, at });
     return Promise.resolve();
   }
 }

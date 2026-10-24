@@ -81,6 +81,9 @@ async function main(): Promise<void> {
     // Elle n'est pas recopiée : les points de la source ne sont pas des données
     // de démonstration.
     await target.$executeRaw`TRUNCATE "public"."loyalty_ledger_entries", "public"."loyalty_vouchers"`;
+    // Les bons de livraison tiennent leur commande en RESTRICT (lot E1) : d'abord eux.
+    await target.deliveryNoteLine.deleteMany();
+    await target.deliveryNote.deleteMany();
     await target.orderLine.deleteMany();
     await target.order.deleteMany();
     await target.supportRequest.deleteMany();

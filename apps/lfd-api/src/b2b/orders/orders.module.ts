@@ -139,6 +139,8 @@ import { OnProductionDayClosed } from "./application/handlers/on-production-day-
 import { OnProductionDayReopened } from "./application/handlers/on-production-day-reopened.handler.js";
 import { OrderPlanRelease } from "./domain/ports/order-plan-release.js";
 import { PrismaOrderPlanRelease } from "./infrastructure/prisma-order-plan-release.js";
+import { OrderLinesForDeliveryNote } from "./domain/ports/order-lines-for-delivery-note.js";
+import { PrismaOrderLinesForDeliveryNote } from "./infrastructure/prisma-order-lines-for-delivery-note.js";
 import { OnOrderHandedOver } from "./application/handlers/on-order-handed-over.handler.js";
 import { OnPackingOrderPacked } from "./application/handlers/on-packing-order-packed.handler.js";
 import { PrismaDayOrdersSource } from "./infrastructure/prisma-day-orders.source.js";
@@ -392,6 +394,8 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // qu'il écrit.
     OnProductionDayReopened,
     { provide: OrderPlanRelease, useClass: PrismaOrderPlanRelease },
+    // Ce que le bon de livraison lit d'une commande confirmée (plan E1).
+    { provide: OrderLinesForDeliveryNote, useClass: PrismaOrderLinesForDeliveryNote },
     // Le bac fermé au colisage — le seul fait « bac fait » depuis K3c.
     OnPackingOrderPacked,
     OnOrderHandedOver,
@@ -588,6 +592,8 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     AudienceOrderReader,
     // Le résumé d'une commande, que les avis au principal lisent (N2).
     OrderNoticeSummaryReader,
+    // Les lignes d'une commande confirmée, que le bon de livraison recopie (plan E1).
+    OrderLinesForDeliveryNote,
   ],
 })
 export class OrdersModule {}

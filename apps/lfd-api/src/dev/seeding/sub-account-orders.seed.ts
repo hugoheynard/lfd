@@ -110,9 +110,11 @@ export async function seedSubAccountOrders(
   context: SeedContext,
   companies: OrderingCompanies,
 ): Promise<SubAccountOrdersReport> {
-  const removed = await context.prisma.order.deleteMany({
-    where: { companyId: { in: [...companies.values()] } },
-  });
+  const ofCompanies = { companyId: { in: [...companies.values()] } };
+  // Les bons de livraison tiennent leur commande en `Restrict` (plan E1).
+  await context.prisma.deliveryNoteLine.deleteMany({ where: { note: { order: ofCompanies } } });
+  await context.prisma.deliveryNote.deleteMany({ where: { order: ofCompanies } });
+  const removed = await context.prisma.order.deleteMany({ where: ofCompanies });
   const days = {
     previous: PREVIOUS_MONTH_DAYS.map((day) => dayOfMonth(context.now, -1, day)),
     current: currentMonthDays(context.now),

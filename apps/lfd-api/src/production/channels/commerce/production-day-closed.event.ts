@@ -15,8 +15,9 @@ export const PRODUCTION_DAY_CLOSED = "production.day_closed";
  *
  * ## Le contrat (le payload), et pourquoi il porte les commandes
  *
- * `{ serviceDay, closedAt, orderIds }` — rien d'autre, aucune forme Prisma.
- * `orderIds` est l'instantané que la production a compté : l'abonné n'absorbe
+ * `{ serviceDay, closedAt, orderIds, reannouncedAt, resupplyIds }` — aucune
+ * forme Prisma (`reannouncedAt` ajouté le 2026-10-06, `resupplyIds` le
+ * 2026-10-21 ; liste relue le 2026-10-24). `orderIds` est l'instantané que la production a compté : l'abonné n'absorbe
  * QUE celles-là. Sans eux, une livraison tardive (reprise, rejeu d'un message
  * mort) confirmait aussi les commandes passées APRÈS l'arrêt, que le fournil
  * n'a jamais comptées, et les datait d'une clôture qui ne les avait pas vues.

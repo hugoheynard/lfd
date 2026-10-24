@@ -9,6 +9,7 @@ import {
   PRODUCTION_DAY_CLOSED,
   ProductionDayClosedEvent,
 } from "../../../../production/channels/commerce/index.js";
+import { DeliveryNotePlanning } from "../../domain/ports/delivery-note-planning.js";
 import { OrderRepository } from "../../domain/ports/order.repository.js";
 
 /** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
@@ -41,13 +42,24 @@ export const ON_PRODUCTION_DAY_CLOSED = "b2b.orders.absorb-into-plan";
  * de l'heure de livraison : une reprise tardive confirmait aussi les commandes
  * passées après l'arrêt, que le fournil n'avait pas comptées.
  *
+ * ## Le bon de livraison prévu (plan E1, 2026-10-24)
+ *
+ * Après l'absorption, dans la MÊME unité de travail (celle du reçu), chaque
+ * commande que cet arrêt a confirmée — `confirmedAt = closedAt` — reçoit son
+ * BL-1 prévu, ou voit son BL-1 encore prévu réécrit sur ses lignes
+ * (`documentation/commandes/plan-e1-bon-de-livraison-prevu.md`, § 6). Une
+ * commande écartée par `planWhere` n'est pas confirmée, donc n'a pas de BL.
+ *
  * Le relais l'inscrit à `BackgroundWork` : c'est ce que `lint:events-tracked`
  * vérifie sur un `@DurableHandler`.
  */
 @Injectable()
 @DurableHandler({ type: PRODUCTION_DAY_CLOSED, subscriber: ON_PRODUCTION_DAY_CLOSED })
 export class OnProductionDayClosed implements DurableSubscriber {
-  constructor(private readonly orders: OrderRepository) {}
+  constructor(
+    private readonly orders: OrderRepository,
+    private readonly deliveryNotes: DeliveryNotePlanning,
+  ) {}
 
   async handle(delivery: DurableDelivery): Promise<void> {
     const event = ProductionDayClosedEvent.fromPayload(delivery.payload);
@@ -55,5 +67,6 @@ export class OnProductionDayClosed implements DurableSubscriber {
     // absorbées par la même clôture portent la même heure, y compris quand le
     // relais livre une heure plus tard ou lors d'une réannonce.
     await this.orders.absorbIntoPlan(event.serviceDay, event.orderIds, event.closedAt);
+    await this.deliveryNotes.planConfirmed(event.orderIds, event.closedAt);
   }
 }
