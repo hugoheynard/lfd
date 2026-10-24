@@ -112,7 +112,13 @@ const FLOOR = 12;
 const ALLOWED = [];
 
 /** Ce que le dépôt contient — `.gitignore` honoré, et le même partout. */
-const everyFile = execFileSync("git", ["ls-files"], { cwd: ROOT, encoding: "utf8" })
+const everyFile = execFileSync("git", ["ls-files"], {
+  cwd: ROOT,
+  encoding: "utf8",
+  // La liste des fichiers suivis dépasse 1 Mio (2026-10-24) : le défaut de
+  // `maxBuffer` faisait échouer la porte en ENOBUFS pour tout le monde.
+  maxBuffer: 64 * 1024 * 1024,
+})
   .split("\n")
   .filter((line) => line !== "");
 const byPath = new Set(everyFile);
