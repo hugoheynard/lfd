@@ -95,16 +95,6 @@ export interface CollectionProcedureFileView {
   readonly state: CollectionProcedureStepStateView;
   readonly reason: CollectionProcedureFileReasonView;
   /**
-   * @deprecated depuis le 2026-10-24 (P4 révisé) — compte de l'ENTITÉ, que
-   * l'onglet 3 ne lit plus : il lit `debtorsNotImported`. Gardé pour le
-   * contrat servi.
-   */
-  readonly mandatesNotImportedCount: number;
-  /** @deprecated depuis le 2026-10-24 — mandats de l'entité écartés ; l'onglet 2 les dit. */
-  readonly excludedMandateCount: number;
-  /** @deprecated depuis le 2026-10-24 — comptes de l'entité écartés ; l'onglet 1 les dit. */
-  readonly excludedAccountCount: number;
-  /**
    * Les débiteurs du lot suivi et des autres lots vivants de la procédure
    * dont le compte ou le mandat n'est pas importé dans CENET (P4 révisé,
    * 2026-10-24). Un AVERTISSEMENT : pour un dépôt de fichier, la banque ne

@@ -50,9 +50,6 @@ export function procedureView(
     file: {
       state: 'to_do',
       reason: 'to_deposit',
-      mandatesNotImportedCount: 2,
-      excludedMandateCount: 0,
-      excludedAccountCount: 0,
       debtorsNotImported: [],
       tightDepositMargin: null,
     },

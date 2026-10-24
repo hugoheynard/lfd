@@ -120,6 +120,18 @@ un onglet verrouillé ouvrirait un mensonge. Un `lot=` qui désigne un lot
 entité, du même schéma et de la même clôture s'il a été préparé de nouveau
 (sinon « Préparer le lot ») — la page ne suit jamais un lot mort en silence.
 
+> ⚠️ **Corrigé le 2026-10-24.** L'onglet peut désormais être DEMANDÉ par
+> l'adresse : `?onglet=comptes|mandats|fichier|retours` sur le détail
+> `/comptabilite/procedure-de-prelevement/:id` choisit l'onglet d'arrivée,
+> sinon `arrivalStep` décide comme avant. Il ne déverrouille rien : un
+> onglet verrouillé s'ouvre verrouillé, avec sa raison et le lien vers
+> l'onglet qui le débloque — pas de mensonge. Et
+> `/comptabilite/procedure-de-prelevement/entite/:entityId` renvoie à la
+> procédure en cours de l'entité (celle du lot suivi, sinon de la clôture à
+> préparer ; à défaut, la table de l'entité) : c'est l'adresse de la fiche
+> de l'entité, qui pointe l'onglet Comptes s'il reste des comptes à
+> exporter, sinon Mandats.
+
 ## 3. Les onglets et leurs états
 
 Chaque onglet a l'un de quatre états, calculés :
@@ -504,7 +516,8 @@ procédure par lot. S1 est une lecture ; elle n'écrit rien (CQRS).
    (société, RUM, ce qui manque) avec un lien vers l'onglet 1 ou 2. Plus
    d'avertissement à l'échelle de l'entité dans l'onglet 3 (les onglets 1 et
    2 le portent ; `mandatesNotImportedCount`, `excludedMandateCount`,
-   `excludedAccountCount` restent servis, dépréciés). Aucun verrou d'onglet.
+   `excludedAccountCount` ont été retirés du contrat le 2026-10-24, le front
+   ne les lisant plus). Aucun verrou d'onglet.
    **Question reposée à la banque** : un prélèvement déposé par fichier sous
    une RUM jamais importée est-il exécuté normalement, et vers un compte
    jamais importé ? **Si elle répond non, P4 devient un blocage par débiteur**

@@ -49,7 +49,7 @@ describe("la procédure de prélèvement — la lecture d'état", () => {
     expect(view.arrivalStep).toBe("mandates");
   });
 
-  it("onglet 3 : avertit des mandats non importés de l'entité, sans se verrouiller (P2)", async () => {
+  it("onglet 3 : des mandats de l'entité à exporter ne le verrouillent pas (P2)", async () => {
     const w = world();
     w.mandates.mandates.exportable = [bankMandate("m1"), bankMandate("m2")];
     w.batches.batches = [stored("b1")];
@@ -59,8 +59,8 @@ describe("la procédure de prélèvement — la lecture d'état", () => {
     expect(view.file).toMatchObject({
       state: "to_do",
       reason: "to_deposit",
-      mandatesNotImportedCount: 2,
     });
+    expect(view.mandates.toExportCount).toBe(2);
     expect(view.followed?.id).toBe("b1");
     // Un lot sans payeur rattaché ne prête aucun rythme : rien n'est inventé.
     expect(view.followed?.payerModes).toEqual([]);

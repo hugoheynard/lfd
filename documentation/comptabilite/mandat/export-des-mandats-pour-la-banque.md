@@ -84,7 +84,8 @@ flowchart LR
   `b2b/payments` (`PrismaMandatesForBankExportReader`, même `FieldCipher` et
   même `debitedAccounts` que le lot), relié dans
   `appBootstrap/debtor-mandate.module.ts`. L'ICS vient de l'entité, le nom du
-  débiteur de `CollectionCandidatesReader.companyNames`.
+  débiteur de `CompanyNamesReader.companyNames` (port étroit sorti de
+  `CollectionCandidatesReader` le 2026-10-24, même adaptateur).
 - **Routes** (`http/admin-mandate-bank-exports.controller.ts`, sous
   `admin/accounting/legal-entities/:id/mandate-exports`) : `GET` (la carte,
   lecture), `POST` (préparer, `b2b_accounting:write`), `GET

@@ -254,8 +254,13 @@ export interface CollectionPreviewLineView {
   readonly orderCount: number;
   /** Le total de la facture de la ligne — ce qui serait prélevé. */
   readonly amountCents: number;
-  /** Σ des totaux des bons ; l'écart est `amountCents − ordersTotalCents`. */
+  /** Σ des totaux des bons. */
   readonly ordersTotalCents: number;
+  /**
+   * L'écart `amountCents − ordersTotalCents`, signé, calculé par le serveur :
+   * l'écran ne refait pas d'arithmétique sur l'argent (2026-10-24).
+   */
+  readonly gapCents: number;
 }
 
 /** L'aperçu d'un mois prélevable : rien n'est écrit, rien n'est verrouillé. */

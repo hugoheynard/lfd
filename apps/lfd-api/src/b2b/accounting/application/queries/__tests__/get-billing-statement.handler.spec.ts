@@ -50,6 +50,7 @@ const STATEMENT: BillingStatementView = {
   totalVatCents: 1,
   totalTtcCents: 22,
   ordersTotalCents: 24,
+  gapCents: -2,
   invoice: {
     lines: [],
     companyDiscountCents: 0,

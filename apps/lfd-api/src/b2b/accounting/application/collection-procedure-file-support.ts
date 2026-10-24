@@ -1,9 +1,7 @@
 import {
   instantToLocal,
-  type CollectionProcedureAccountsView,
   type CollectionProcedureDebtorGapView,
   type CollectionProcedureFileView,
-  type CollectionProcedureMandatesView,
 } from "@lfd/contracts";
 
 import { isDeadBatchStatus } from "../domain/entities/collection-batch-status.js";
@@ -39,19 +37,14 @@ export function fileStep(
   input: {
     readonly followed: ProcedureBatch | null;
     readonly toPrepare: boolean;
-    readonly accounts: CollectionProcedureAccountsView;
-    readonly mandates: CollectionProcedureMandatesView;
     readonly debtorsNotImported: readonly CollectionProcedureDebtorGapView[];
   },
   views: ReadonlyMap<string, StoredBatchView>,
 ): CollectionProcedureFileView {
-  const { followed, accounts, mandates } = input;
+  const { followed } = input;
   const stored = followed === null ? undefined : views.get(followed.id);
   return {
     ...fileStatus(followed, input.toPrepare),
-    mandatesNotImportedCount: mandates.toExportCount,
-    excludedMandateCount: mandates.excludedCount,
-    excludedAccountCount: accounts.excludedCount,
     debtorsNotImported: input.debtorsNotImported,
     tightDepositMargin:
       stored === undefined

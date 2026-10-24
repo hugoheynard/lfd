@@ -65,6 +65,17 @@ export const comptabiliteRoutes: Routes = [
           ),
       },
       {
+        // LA PROCÉDURE EN COURS D'UNE ENTITÉ — un renvoi, sans écran : la
+        // fiche de l'entité ne connaît pas l'identifiant de sa procédure.
+        // `?onglet=` suit le renvoi (2026-10-24). Chargé à la demande : la
+        // garde importée en tête alourdissait le paquet initial de ~490 ko.
+        path: 'procedure-de-prelevement/entite/:entityId',
+        loadChildren: () =>
+          import('./procedure-de-prelevement/procedure-entity-redirect').then(
+            (m) => m.procedureOfEntityRoutes,
+          ),
+      },
+      {
         // UNE PROCÉDURE — le fil d'une clôture, en quatre onglets qui se
         // déverrouillent ; leur état est relu au serveur, jamais stocké.
         // `:id` = entité × clôture. Les gestes demandent `b2b_accounting:write`.

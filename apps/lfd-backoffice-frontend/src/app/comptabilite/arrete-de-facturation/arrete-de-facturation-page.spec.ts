@@ -48,6 +48,7 @@ function statement(over: Partial<BillingStatementView> = {}): BillingStatementVi
     totalVatCents: 522,
     totalTtcCents: 10_018,
     ordersTotalCents: 10_019,
+    gapCents: -1,
     invoice: {
       lines: [],
       companyDiscountCents: 0,
@@ -109,6 +110,13 @@ describe('ArreteDeFacturationPage', () => {
     expect(page.textContent).toContain('CMD-1');
     expect(page.textContent).toContain('o2');
     expect(page.querySelector('[data-statement-cancelled]')).toBeNull();
+  });
+
+  /** L'écart est servi par le serveur (2026-10-24) : une valeur distincte de la soustraction prouve qu'il est lu. */
+  it("affiche l'écart que sert le serveur, sans le recalculer", async () => {
+    const page = host(await render(() => Promise.resolve(statement({ gapCents: -37 }))));
+
+    expect(page.querySelector('[data-statement-gap]')?.textContent).toMatch(/−0,37\s€/u);
   });
 
   it('un arrêté annulé le dit, et ne se dit plus prélevé', async () => {

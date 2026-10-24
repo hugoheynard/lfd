@@ -50,7 +50,6 @@ describe("la procédure de prélèvement — la lecture d'état", () => {
     const unlocked = await procedure(entityId);
     expect(unlocked.accounts.state).toBe("done");
     expect(unlocked.mandates).toMatchObject({ state: "to_do", toExportCount: 1 });
-    expect(unlocked.file).toMatchObject({ mandatesNotImportedCount: 1 });
     expect(unlocked.arrivalStep).toBe("mandates");
   });
 

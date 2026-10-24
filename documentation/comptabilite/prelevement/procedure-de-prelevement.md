@@ -7,10 +7,13 @@
 > le mécanisme (les docs d'état le font) : elle dit **qui fait quoi, quand, où,
 > et ce qu'on vérifie**. Contredite par `vitruve` le même jour (§ 7).
 >
-> **Son écran existe depuis le 2026-10-23 (lot P2, non commité à l'écriture
-> de cette ligne)** : Comptabilité › **Procédure de prélèvement**
-> (`/comptabilite/procedure-de-prelevement?entite=…&lot=…`), quatre onglets
-> — 1 Comptes (§ 1), 2 Mandats (§ 1), 3 Fichier (§ 2.2 à § 2.9), 4 Retours
+> **Son écran existe depuis le 2026-10-23** : Comptabilité › **Procédure de
+> prélèvement** — la table de toutes les procédures
+> (`/comptabilite/procedure-de-prelevement`), puis le détail d'une procédure
+> (`…/procedure-de-prelevement/<entité>~<jour de clôture>`, `?onglet=` pour
+> ouvrir un onglet ; `…/entite/<id>` ouvre la procédure en cours), quatre
+> onglets — 1 Comptes (§ 1), 2 Mandats (§ 1), 3 Fichier de prélèvement
+> (§ 2.2 à § 2.9), 4 Retours de la banque
 > (§ 3) — dont l'état est relu au serveur à chaque affichage
 > (`GET admin/accounting/collection-procedure`), jamais stocké. Le titre dit
 > le lot suivi (rythme et période), les lots ouverts sont listés en tête, la

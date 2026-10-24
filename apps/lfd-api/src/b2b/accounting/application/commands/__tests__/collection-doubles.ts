@@ -21,6 +21,7 @@ import { StatementBuyerReader } from "../../../domain/ports/statement-buyer.read
 import { CancelledOrdersReader } from "../../../domain/ports/cancelled-orders.reader.js";
 import { CollectionBatchRepository } from "../../../domain/ports/collection-batch.repository.js";
 import type { CollectionCalendarReader } from "../../../domain/ports/collection-calendar.reader.js";
+import type { CompanyNamesReader } from "../../../domain/ports/company-names.reader.js";
 import type { CountedLotInputsReader } from "../../../domain/ports/counted-lot-inputs.reader.js";
 import {
   CollectionCandidatesReader,
@@ -75,10 +76,10 @@ export class FixedCreditors extends CreditorReader {
   }
 }
 
-/** Joue les trois ports de l'adaptateur Prisma : candidats, calendrier, sites. */
+/** Joue les quatre ports de l'adaptateur Prisma : candidats, calendrier, sites, raisons sociales. */
 export class FakeCandidates
   extends CollectionCandidatesReader
-  implements CollectionCalendarReader, CountedLotInputsReader
+  implements CollectionCalendarReader, CountedLotInputsReader, CompanyNamesReader
 {
   floorAt: Date | null = new Date("2026-08-01T00:00:00.000Z");
   orders: CollectableOrder[] = [];

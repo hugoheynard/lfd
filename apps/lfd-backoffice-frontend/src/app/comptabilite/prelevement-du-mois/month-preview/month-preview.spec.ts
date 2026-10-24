@@ -85,6 +85,21 @@ describe('MonthPreview', () => {
     expect(host.querySelector('[data-preview-gap]')?.textContent).toContain('−0,07');
   });
 
+  it("l'écart d'une ligne est celui que sert le serveur", async () => {
+    const line = {
+      scheme: 'B2B' as const,
+      payerCompanyId: 'c1',
+      debtorName: 'Boulangerie du Port',
+      orderCount: 1,
+      amountCents: 100,
+      ordersTotalCents: 100,
+      gapCents: -9,
+    };
+    const host = (await render({}, { ...PREVIEW, lines: [line] })).nativeElement as HTMLElement;
+
+    expect(host.textContent).toContain('−0,09');
+  });
+
   it('un téléchargement refusé le dit', async () => {
     const fixture = await render({
       cycleDraft: () => Promise.reject({ error: { message: 'Aperçu refusé.' } }),

@@ -58,6 +58,7 @@ export class PrismaBillingStatementReader extends BillingStatementReader {
       totalVatCents: row.totalVatCents,
       totalTtcCents: row.totalTtcCents,
       ordersTotalCents: row.ordersTotalCents,
+      gapCents: row.totalTtcCents - row.ordersTotalCents,
       invoice: body.data,
       bodyVersion: row.bodyVersion,
       computedWith: row.computedWith,

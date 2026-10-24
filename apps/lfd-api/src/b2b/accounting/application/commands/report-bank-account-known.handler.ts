@@ -5,7 +5,7 @@ import { DomainEventPublisher } from "../../../../platform/events/domain-event-p
 import { Clock } from "../../../../platform/time/clock.js";
 import { AccountBankLineCorrectedEvent } from "../../domain/events/account-bank-export.events.js";
 import { AccountBankExportRepository } from "../../domain/ports/account-bank-export.repository.js";
-import { CollectionCandidatesReader } from "../../domain/ports/collection-candidates.reader.js";
+import { CompanyNamesReader } from "../../domain/ports/company-names.reader.js";
 import { LegalEntityReader } from "../../domain/ports/legal-entity.reader.js";
 import { nameOf } from "../../domain/services/collection-debit-drafts.js";
 import { accountExportOrFail } from "../account-bank-export-support.js";
@@ -25,7 +25,7 @@ export class ReportBankAccountKnownHandler implements ICommandHandler<
   constructor(
     private readonly entities: LegalEntityReader,
     private readonly exports: AccountBankExportRepository,
-    private readonly candidates: CollectionCandidatesReader,
+    private readonly companies: CompanyNamesReader,
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
@@ -38,7 +38,7 @@ export class ReportBankAccountKnownHandler implements ICommandHandler<
       const bankExport = await accountExportOrFail(this.exports, entity.id, command.exportId);
       const line = bankExport.reportKnownByBank(command.bankAccountId, stamp);
       await this.exports.save(bankExport);
-      const names = await this.candidates.companyNames([line.companyId]);
+      const names = await this.companies.companyNames([line.companyId]);
       await this.events.publishTraced(
         new AccountBankLineCorrectedEvent(
           line,

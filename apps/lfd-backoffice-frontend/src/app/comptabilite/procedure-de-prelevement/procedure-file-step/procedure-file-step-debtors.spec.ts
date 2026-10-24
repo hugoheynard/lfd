@@ -84,12 +84,8 @@ describe('l’onglet « Fichier » — les débiteurs du lot au référentiel de
     const view = withGaps([]);
     const { host } = await render({
       ...view,
-      file: {
-        ...view.file,
-        mandatesNotImportedCount: 3,
-        excludedMandateCount: 1,
-        excludedAccountCount: 1,
-      },
+      mandates: { ...view.mandates, toExportCount: 3, excludedCount: 1 },
+      accounts: { ...view.accounts, excludedCount: 1 },
     });
 
     expect(host.querySelector('[data-debtor-gaps]')).toBeNull();

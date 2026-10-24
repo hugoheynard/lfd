@@ -6,7 +6,7 @@ import {
   NotOwnEstablishmentError,
 } from "../../domain/errors/collection-test-errors.js";
 import { BankExportWithoutCreditorIdentifierError } from "../../domain/errors/mandate-bank-export-errors.js";
-import { CollectionCandidatesReader } from "../../domain/ports/collection-candidates.reader.js";
+import { CompanyNamesReader } from "../../domain/ports/company-names.reader.js";
 import { CollectionMandatesReader } from "../../domain/ports/collection-mandates.reader.js";
 import { EstablishmentCompaniesReader } from "../../domain/ports/establishment-companies.reader.js";
 import { LegalEntityReader } from "../../domain/ports/legal-entity.reader.js";
@@ -44,7 +44,7 @@ export class ExportCollectionTestMandateHandler implements IQueryHandler<
     private readonly mandates: CollectionMandatesReader,
     private readonly bankMandates: MandatesForBankExportReader,
     private readonly entities: LegalEntityReader,
-    private readonly candidates: CollectionCandidatesReader,
+    private readonly names: CompanyNamesReader,
   ) {}
 
   async execute(query: ExportCollectionTestMandateQuery): Promise<MandateBankFile> {
@@ -65,7 +65,7 @@ export class ExportCollectionTestMandateHandler implements IQueryHandler<
       throw new BankExportWithoutCreditorIdentifierError(entity.name);
     }
     const mandate = await this.exportable(own.mandate, company.name);
-    const csv = await mandateBankCsvOf(this.candidates, entity, [mandate]);
+    const csv = await mandateBankCsvOf(this.names, entity, [mandate]);
     return { csv, fileName: `ESSAI-mandat-banque-${entity.siren}-${mandate.reference}.csv` };
   }
 

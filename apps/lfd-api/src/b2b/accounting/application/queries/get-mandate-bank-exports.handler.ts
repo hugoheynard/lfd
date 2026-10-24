@@ -3,7 +3,7 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { mandateExportFileNameOf } from "../bank-export-naming-support.js";
 import { Clock } from "../../../../platform/time/clock.js";
-import { CollectionCandidatesReader } from "../../domain/ports/collection-candidates.reader.js";
+import { CompanyNamesReader } from "../../domain/ports/company-names.reader.js";
 import { LegalEntityReader } from "../../domain/ports/legal-entity.reader.js";
 import {
   KnownMandateAccountsReader,
@@ -33,7 +33,7 @@ export class GetMandateBankExportsHandler implements IQueryHandler<
     private readonly mandates: MandatesForBankExportReader,
     private readonly known: KnownMandateAccountsReader,
     private readonly exports: MandateBankExportsReader,
-    private readonly candidates: CollectionCandidatesReader,
+    private readonly companies: CompanyNamesReader,
     private readonly lines: MandateBankLinesReader,
     private readonly clock: Clock,
   ) {}
@@ -47,7 +47,7 @@ export class GetMandateBankExportsHandler implements IQueryHandler<
       this.lines.linesOf(entity.id),
     ]);
     const selection = selectForBankExport(exportable, known);
-    const names = await this.candidates.companyNames([
+    const names = await this.companies.companyNames([
       ...new Set([...exportable, ...excluded].map((mandate) => mandate.debtorCompanyId)),
     ]);
     const rows = mandateBankRows(exportable, excluded, lines, names, this.clock.now());

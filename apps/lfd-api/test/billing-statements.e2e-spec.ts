@@ -307,7 +307,7 @@ describe("la relecture d'un arrêté (F4)", () => {
     const view = jsonBody<BillingStatementView>(await staff().get(`${READ}/${id}`).expect(200));
 
     expect(view).toMatchObject({ status: "active", batchStatus: "constituted", lineRank: 1 });
-    expect(view).toMatchObject({ totalTtcCents: 23, ordersTotalCents: 24 });
+    expect(view).toMatchObject({ totalTtcCents: 23, ordersTotalCents: 24, gapCents: -1 });
     expect(view.invoice.totalCents).toBe(view.totalTtcCents);
     expect(view.buyer.name).toBe("Boulangerie du Port");
     expect(view.orders.map((order) => order.orderNumber)).toEqual([

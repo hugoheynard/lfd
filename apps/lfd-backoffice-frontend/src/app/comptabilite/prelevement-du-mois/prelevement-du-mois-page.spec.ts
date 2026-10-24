@@ -85,6 +85,7 @@ const OPEN_PREVIEW: CollectionPreviewView = {
       orderCount: 2,
       amountCents: 22,
       ordersTotalCents: 24,
+      gapCents: -2,
     },
   ],
   totalCents: 22,

@@ -62,6 +62,7 @@ import { CollectionBatchRepository } from "./domain/ports/collection-batch.repos
 import { CountedLotInputsReader } from "./domain/ports/counted-lot-inputs.reader.js";
 import { CollectionCalendarReader } from "./domain/ports/collection-calendar.reader.js";
 import { CollectionCandidatesReader } from "./domain/ports/collection-candidates.reader.js";
+import { CompanyNamesReader } from "./domain/ports/company-names.reader.js";
 import { CollectionLock } from "./domain/ports/collection-lock.js";
 import { CollectionBatchLock } from "./domain/ports/collection-batch-lock.js";
 import { InvoiceNumbering } from "./domain/ports/invoice-numbering.js";
@@ -265,6 +266,7 @@ import { PrismaOrderRowsLock } from "./infrastructure/prisma-order-rows-lock.js"
     // Le compte des clients rejoue le lot avec SES lectures (prelevement-sepa § 12 bis).
     { provide: CountedLotInputsReader, useExisting: CollectionCandidatesReader },
     { provide: CollectionCalendarReader, useExisting: CollectionCandidatesReader },
+    { provide: CompanyNamesReader, useExisting: CollectionCandidatesReader },
     { provide: RecordedClosureReader, useClass: PrismaRecordedClosureReader },
     { provide: CollectionBatchRepository, useClass: PrismaCollectionBatchRepository },
     { provide: OrderCollectionRepository, useClass: PrismaOrderCollectionRepository },

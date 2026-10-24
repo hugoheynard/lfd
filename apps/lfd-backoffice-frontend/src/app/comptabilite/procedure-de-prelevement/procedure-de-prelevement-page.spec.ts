@@ -79,22 +79,26 @@ class FakeProcedure {
 }
 
 /** L'adresse du détail : la procédure d'octobre, sur le lot `b1`. */
-const ROUTE = {
-  snapshot: {
-    paramMap: convertToParamMap({ id: 'le1~2026-11-01' }),
-    queryParamMap: convertToParamMap({ lot: 'b1' }),
-  },
-};
+function routeOf(queryParams: Readonly<Record<string, string>>) {
+  return {
+    snapshot: {
+      paramMap: convertToParamMap({ id: 'le1~2026-11-01' }),
+      queryParamMap: convertToParamMap(queryParams),
+    },
+  };
+}
 
 let procedure: FakeProcedure;
 
-async function render(): Promise<ComponentFixture<ProcedureDePrelevementPage>> {
+async function render(
+  queryParams: Readonly<Record<string, string>> = { lot: 'b1' },
+): Promise<ComponentFixture<ProcedureDePrelevementPage>> {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [ProcedureDePrelevementPage],
     providers: [
       provideRouter([]),
-      { provide: ActivatedRoute, useValue: ROUTE },
+      { provide: ActivatedRoute, useValue: routeOf(queryParams) },
       { provide: CollectionProcedureService, useValue: procedure },
       {
         provide: CollectionBatchesService,
@@ -168,6 +172,20 @@ describe('la page « Procédure de prélèvement »', () => {
     await fixture.whenStable();
     fixture.detectChanges();
     expect(query(fixture, '[data-nothing-to-do]')).toBeNull();
+  });
+
+  it('`?onglet=comptes` ouvre l’onglet Comptes, même si le serveur désigne Mandats', async () => {
+    procedure.view = procedureView({ arrivalStep: 'mandates' });
+    const fixture = await render({ onglet: 'comptes' });
+
+    expect(fixture.debugElement.query(By.directive(AccountBankExportCard))).not.toBeNull();
+  });
+
+  it('un `?onglet=` inconnu laisse le serveur choisir', async () => {
+    procedure.view = procedureView({ arrivalStep: 'mandates' });
+    const fixture = await render({ onglet: 'inconnu' });
+
+    expect(fixture.debugElement.query(By.directive(AccountBankExportCard))).toBeNull();
   });
 
   it('un onglet verrouillé reste lisible : il dit pourquoi et mène à l’onglet qui le débloque', async () => {

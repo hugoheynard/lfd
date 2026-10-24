@@ -175,7 +175,7 @@ export class MonthPreview {
       orderCount: line.orderCount,
       ordersTotal: euros(line.ordersTotalCents),
       billed: euros(line.amountCents),
-      gap: signedEuros(line.amountCents - line.ordersTotalCents),
+      gap: signedEuros(line.gapCents),
     })),
   );
 

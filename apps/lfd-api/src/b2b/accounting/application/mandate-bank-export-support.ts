@@ -2,7 +2,7 @@ import type { MandateBankExport } from "../domain/entities/mandate-bank-export.j
 import { LegalEntityNotFoundError } from "../domain/errors/accounting-errors.js";
 import { MandateBankExportNotFoundError } from "../domain/errors/mandate-bank-export-errors.js";
 import type { ExportEntity } from "../domain/events/mandate-bank-export.events.js";
-import type { CollectionCandidatesReader } from "../domain/ports/collection-candidates.reader.js";
+import type { CompanyNamesReader } from "../domain/ports/company-names.reader.js";
 import type { LegalEntityReader, LegalEntityRecord } from "../domain/ports/legal-entity.reader.js";
 import type { MandateBankExportRepository } from "../domain/ports/mandate-bank-export.repository.js";
 import type { MandateForBankExport } from "../domain/ports/mandates-for-bank-export.reader.js";
@@ -48,11 +48,11 @@ export function journalEntity(entity: LegalEntityRecord): ExportEntity {
  * constitution du lot. Un seul rendu pour l'export groupé et pour l'essai.
  */
 export async function mandateBankCsvOf(
-  candidates: CollectionCandidatesReader,
+  companies: CompanyNamesReader,
   entity: LegalEntityRecord,
   mandates: readonly MandateForBankExport[],
 ): Promise<string> {
-  const names = await candidates.companyNames([
+  const names = await companies.companyNames([
     ...new Set(mandates.map((mandate) => mandate.debtorCompanyId)),
   ]);
   return renderMandateBankCsv(

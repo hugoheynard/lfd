@@ -73,6 +73,8 @@ describe("l'aperçu du mois (PA4)", () => {
     expect(previewed.get(port)).toBe(23);
     expect(view.totalCents).toBe(23 + 10_550);
     expect(view.ordersTotalCents).toBe(24 + 10_550);
+    const gaps = new Map(view.lines.map((line) => [line.payerCompanyId, line.gapCents]));
+    expect(gaps.get(port)).toBe(-1);
   });
 
   it("mise en service après la prochaine clôture : « pas encore prélevable », deux dates", async () => {

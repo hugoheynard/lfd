@@ -93,8 +93,8 @@ describe("la procédure de prélèvement — les débiteurs du lot au référent
     const view = await w.read();
 
     expect(view.file.debtorsNotImported).toEqual([]);
-    // Le compte de l'entité, déprécié, le voit encore : c'est ce que l'onglet ne lit plus.
-    expect(view.file.mandatesNotImportedCount).toBe(1);
+    // L'entité a bien un mandat à exporter : c'est l'onglet 2 qui le dit, pas l'onglet 3.
+    expect(view.mandates.toExportCount).toBe(1);
   });
 
   it("un export de mandats préparé mais pas importé : le débiteur est nommé « en export »", async () => {

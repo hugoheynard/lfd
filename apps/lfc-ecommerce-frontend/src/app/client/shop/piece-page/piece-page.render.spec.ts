@@ -12,7 +12,7 @@ import { escapeHtml, findPublicPiece, renderPieceHead } from './piece-page.rende
 const ORIGIN = 'https://lfc-ecommerce.pages.dev';
 
 const INDEX_HTML =
-  '<!doctype html><html><head>\n    <title>La Folie Coffee — B2B</title>\n  </head><body><app-root></app-root></body></html>';
+  '<!doctype html><html><head>\n    <title>La Folie Coffee</title>\n  </head><body><app-root></app-root></body></html>';
 
 function item(sku: string, overrides: Readonly<Record<string, unknown>> = {}) {
   return {

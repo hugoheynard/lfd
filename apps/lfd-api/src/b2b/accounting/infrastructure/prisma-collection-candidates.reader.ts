@@ -6,6 +6,7 @@ import {
   type CollectableOrder,
 } from "../domain/ports/collection-candidates.reader.js";
 import type { CollectionCalendarReader } from "../domain/ports/collection-calendar.reader.js";
+import type { CompanyNamesReader } from "../domain/ports/company-names.reader.js";
 import type { CountedLotInputsReader } from "../domain/ports/counted-lot-inputs.reader.js";
 import { COMMERCIAL_INVOICE } from "../domain/entities/invoice.types.js";
 import type { BillingFollow } from "../domain/ports/statement-billing.reader.js";
@@ -35,7 +36,7 @@ const OPEN_STATES = ["due", "excluded"] as const;
 @Injectable()
 export class PrismaCollectionCandidatesReader
   extends CollectionCandidatesReader
-  implements CollectionCalendarReader, CountedLotInputsReader
+  implements CollectionCalendarReader, CountedLotInputsReader, CompanyNamesReader
 {
   constructor(private readonly prisma: PrismaService) {
     super();

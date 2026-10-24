@@ -168,7 +168,7 @@ export class GetCollectionProcedureHandler implements IQueryHandler<
       bank.standing,
     );
     const file = fileStep(
-      { followed, toPrepare: toPrepare !== null, accounts, mandates, debtorsNotImported },
+      { followed, toPrepare: toPrepare !== null, debtorsNotImported },
       storedById,
     );
     const returns = await readReturnsStep(

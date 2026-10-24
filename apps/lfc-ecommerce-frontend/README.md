@@ -20,7 +20,7 @@ browser-only** (pas de SSR). ⚠️ Le build par défaut (`ng build`) est SSR
 
 **Méthode : CI (GitHub Actions).** Le workflow `.github/workflows/deploy_lfc_boutique.yml`
 build (gate `tsc` + `build:cloudflare`) et pousse à Cloudflare Pages (Direct
-Upload, projet `lfc-b2b`) à chaque push sur `main`. Build local pour vérifier :
+Upload, projet `lfc-ecommerce`) à chaque push sur `main`. Build local pour vérifier :
 
 ```bash
 pnpm --filter lfc-ecommerce-frontend build:cloudflare

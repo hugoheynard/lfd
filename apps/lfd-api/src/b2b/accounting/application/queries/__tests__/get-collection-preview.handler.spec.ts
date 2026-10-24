@@ -88,6 +88,10 @@ describe("l'aperçu du mois", () => {
     expect(view.lines.map((line) => line.orderCount).sort()).toEqual([1, 2]);
     expect(view.ordersTotalCents).toBe(3_000);
     expect(view.gapCents).toBe(view.totalCents - view.ordersTotalCents);
+    // L'écart de chaque ligne est servi : l'écran ne soustrait plus (2026-10-24).
+    for (const line of view.lines) {
+      expect(line.gapCents).toBe(line.amountCents - line.ordersTotalCents);
+    }
   });
 
   it("n'écrit rien et ne verrouille rien", async () => {

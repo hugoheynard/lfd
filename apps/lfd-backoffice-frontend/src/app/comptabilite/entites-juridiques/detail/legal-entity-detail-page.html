@@ -190,8 +190,9 @@
             actions
             emphasis="outline"
             size="sm"
-            routerLink="/comptabilite/procedure-de-prelevement"
-            [queryParams]="{ entite: entity.id }"
+            [routerLink]="['/comptabilite/procedure-de-prelevement/entite', entity.id]"
+            [queryParams]="{ onglet: pending.accounts > 0 ? 'comptes' : 'mandats' }"
+            data-bank-pending-link
           >
             Ouvrir la procédure
           </a>

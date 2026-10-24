@@ -107,6 +107,7 @@ function toView(read: ReadAssembly): Omit<CollectionPreviewOpenView, "payerModes
         orderCount: debit.orders.length,
         amountCents: debit.amountCents,
         ordersTotalCents: debit.ordersTotalCents,
+        gapCents: debit.amountCents - debit.ordersTotalCents,
       })),
   );
   const exclusions: CollectionExclusionView[] = read.assembly.exclusions.map(
@@ -127,7 +128,7 @@ function toView(read: ReadAssembly): Omit<CollectionPreviewOpenView, "payerModes
     lines,
     totalCents: sum(lines.map((line) => line.amountCents)),
     ordersTotalCents: sum(lines.map((line) => line.ordersTotalCents)),
-    gapCents: sum(lines.map((line) => line.amountCents - line.ordersTotalCents)),
+    gapCents: sum(lines.map((line) => line.gapCents)),
     exclusions,
     unmandatedCompanies: read.assembly.unmandatedCompanies,
   };

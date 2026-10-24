@@ -25,19 +25,24 @@ Le workflow (déjà présent dans le repo) fait, à chaque push sur **`main`** :
 1. `pnpm install --frozen-lockfile` (racine du workspace),
 2. **gate** : `tsc --noEmit` (typecheck),
 3. `ng build --configuration cloudflare` (sortie statique `…/browser`),
-4. `wrangler pages deploy … --project-name=lfc-b2b --branch=main` (→ prod).
+4. `wrangler pages deploy … --project-name=lfc-ecommerce --branch=main` (→ prod).
 
 Un typecheck ou un build rouge **stoppe** avant tout déploiement.
 
+> ⚠️ Ce document a nommé le projet `lfc-b2b` jusqu'au 2026-10-24, un mois
+> après que le workflow est passé à `lfc-ecommerce` (2026-09-22, vérifié dans
+> `deploy_lfc_boutique.yml` le 2026-10-24). L'**adresse**, elle, n'a pas
+> changé au renommage : `lfc-b2b-eu7.pages.dev` (en-tête du workflow).
+
 ### Ce que TU dois faire une seule fois (je ne peux pas le faire à ta place)
 
-#### 1. Le projet Pages `lfc-b2b` — automatique
+#### 1. Le projet Pages `lfc-ecommerce` — automatique
 
 Rien à créer à la main : le workflow contient une étape **Ensure Pages project
-exists** qui crée `lfc-b2b` au premier run (idempotente ensuite). Il te reste
+exists** qui crée `lfc-ecommerce` au premier run (idempotente ensuite). Il te reste
 donc **uniquement** les secrets ci-dessous.
 
-> Le nom **`lfc-b2b`** doit rester cohérent entre l'étape de création et
+> Le nom **`lfc-ecommerce`** doit rester cohérent entre l'étape de création et
 > `--project-name` du deploy dans le workflow.
 
 #### 2. Récupérer un API token + l'Account ID
@@ -80,7 +85,7 @@ Tu bosses sur `dev` → la prod ne bouge que quand tu **merges `dev → main`**
 
 ### Vérifier
 
-Après le run vert : ouvrir `https://lfc-b2b.pages.dev`, naviguer, **recharger sur
+Après le run vert : ouvrir `https://lfc-b2b-eu7.pages.dev`, naviguer, **recharger sur
 une route profonde** (ex. `/boutique`) → la page s'affiche (grâce à
 `public/_redirects`), pas un 404.
 
@@ -121,7 +126,7 @@ automatiquement ; sinon suivre le CNAME. HTTPS provisionné tout seul.
 Sortie **100 % statique** → tous les appels API partent du **navigateur** :
 
 - Le backend NestJS doit renvoyer les en-têtes **CORS** autorisant l'origine
-  `https://lfc-b2b.pages.dev` (et le domaine custom).
+  `https://lfc-b2b-eu7.pages.dev` (et le domaine custom).
 - L'URL de l'API se **bake au build** (`environment.ts`) ou se lit depuis un
   `config.json` statique — une env var Cloudflare **n'atteint pas** le navigateur.
 - En dev, `http://localhost:PORT` marche depuis **ta** machine ; pour tester le
@@ -138,7 +143,7 @@ Sortie **100 % statique** → tous les appels API partent du **navigateur** :
 | -------------- | ----------------------------------------------------------------- |
 | Méthode        | CI GitHub Actions → Direct Upload                                 |
 | Workflow       | `.github/workflows/deploy_lfc_boutique.yml`                       |
-| Projet Pages   | `lfc-b2b` (Direct Upload)                                         |
+| Projet Pages   | `lfc-ecommerce` (Direct Upload)                                   |
 | Secrets repo   | `CLOUDFLARE_API_TOKEN_B2B_PLATFORM`, `CLOUDFLARE_ACCOUNT_ID`      |
 | Build interne  | `ng build --configuration cloudflare`                             |
 | Sortie publiée | `apps/lfc-ecommerce-frontend/dist/lfc-ecommerce-frontend/browser` |

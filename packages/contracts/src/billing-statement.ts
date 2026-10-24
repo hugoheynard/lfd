@@ -66,6 +66,11 @@ export interface BillingStatementView {
   readonly totalTtcCents: number;
   /** Σ des totaux des bons couverts. */
   readonly ordersTotalCents: number;
+  /**
+   * L'écart `totalTtcCents − ordersTotalCents`, signé, calculé par le serveur
+   * entre deux montants figés : l'écran ne soustrait pas (2026-10-24).
+   */
+  readonly gapCents: number;
   /** La facture figée (`body`), telle quelle. */
   readonly invoice: InvoiceDossierInvoiceView;
   readonly bodyVersion: number;

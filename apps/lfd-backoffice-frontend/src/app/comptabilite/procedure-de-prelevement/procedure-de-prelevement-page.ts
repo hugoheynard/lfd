@@ -35,6 +35,7 @@ import {
 } from './procedure-file-step/procedure-file-step';
 import { ProcedureReturnsStep } from './procedure-returns-step/procedure-returns-step';
 import { PROCEDURE_LIST_ROUTE } from './procedure-list-wording';
+import { PROCEDURE_TAB_PARAM, requestedTab } from './procedure-tab-param';
 import {
   LOCK_REASONS,
   STEP_ORDER,
@@ -153,14 +154,15 @@ export class ProcedureDePrelevementPage {
     void this.load();
   }
 
-  /** Les entités, puis l'état ; l'onglet ouvert est le premier qui attend un geste. */
+  /** Les entités, puis l'état ; l'onglet ouvert est celui de `?onglet=`, sinon le premier qui attend un geste. */
   protected async load(): Promise<void> {
     this.loading.set(true);
     this.loadError.set(null);
     try {
       this.entities.set(await this.entitiesApi.list());
       await this.refresh();
-      this.tab.set(this.view()?.arrivalStep ?? 'accounts');
+      const asked = requestedTab(this.route.snapshot.queryParamMap.get(PROCEDURE_TAB_PARAM));
+      this.tab.set(asked ?? this.view()?.arrivalStep ?? 'accounts');
     } catch (caught) {
       this.loadError.set(httpErrorMessage(caught, 'La procédure de prélèvement est illisible.'));
     } finally {

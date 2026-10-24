@@ -529,7 +529,21 @@ describe('LegalEntityDetailPage', () => {
 
       expect(text(fixture)).toContain('2 compte(s) et');
       expect(text(fixture)).toContain('3 mandat(s) à exporter');
-      expect(link?.getAttribute('href')).toBe('/comptabilite/procedure-de-prelevement?entite=le1');
+      expect(link?.getAttribute('href')).toBe(
+        '/comptabilite/procedure-de-prelevement/entite/le1?onglet=comptes',
+      );
+    });
+
+    it('sans compte à exporter, renvoie à l’onglet Mandats', async () => {
+      const fixture = await render(new FakeLegalEntities(), new FakePanels(), {
+        accounts: 0,
+        mandates: 3,
+      });
+      const link = (fixture.nativeElement as HTMLElement).querySelector('[data-bank-pending-link]');
+
+      expect(link?.getAttribute('href')).toBe(
+        '/comptabilite/procedure-de-prelevement/entite/le1?onglet=mandats',
+      );
     });
   });
 });

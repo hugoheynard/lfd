@@ -67,12 +67,10 @@ export class ArreteDeFacturationPage {
     return statement === null ? 'Arrêté de facturation' : `Arrêté — ${statement.buyer.name}`;
   });
 
-  /** Total facturé − Σ bons : la seule soustraction de l'écran, entre deux montants figés. */
+  /** Total facturé − Σ bons : l'écart est servi par le serveur, l'écran ne soustrait pas. */
   protected readonly gap = computed(() => {
     const statement = this.statement();
-    return statement === null
-      ? ''
-      : signedEuros(statement.totalTtcCents - statement.ordersTotalCents);
+    return statement === null ? '' : signedEuros(statement.gapCents);
   });
 
   protected readonly euros = euros;

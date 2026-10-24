@@ -5,7 +5,7 @@ import {
   MandateBankExportAbandonedError,
   MandateBankExportNotFoundError,
 } from "../../domain/errors/mandate-bank-export-errors.js";
-import { CollectionCandidatesReader } from "../../domain/ports/collection-candidates.reader.js";
+import { CompanyNamesReader } from "../../domain/ports/company-names.reader.js";
 import { LegalEntityReader } from "../../domain/ports/legal-entity.reader.js";
 import { MandateBankExportsReader } from "../../domain/ports/mandate-bank-exports.reader.js";
 import { MandatesForBankExportReader } from "../../domain/ports/mandates-for-bank-export.reader.js";
@@ -28,7 +28,7 @@ export interface MandateBankFile {
  *
  * Le nom du débiteur est celui du `pain.008` (§ 2 bis-7) : la raison sociale
  * de la société débitrice, lue par la même source que la constitution du lot
- * (`CollectionCandidatesReader.companyNames`, puis `nameOf`).
+ * (`CompanyNamesReader.companyNames`, puis `nameOf`).
  */
 @QueryHandler(ExportMandateBankFileQuery)
 export class ExportMandateBankFileHandler implements IQueryHandler<
@@ -39,7 +39,7 @@ export class ExportMandateBankFileHandler implements IQueryHandler<
     private readonly entities: LegalEntityReader,
     private readonly exports: MandateBankExportsReader,
     private readonly mandates: MandatesForBankExportReader,
-    private readonly candidates: CollectionCandidatesReader,
+    private readonly companies: CompanyNamesReader,
   ) {}
 
   async execute(query: ExportMandateBankFileQuery): Promise<MandateBankFile> {
@@ -53,7 +53,7 @@ export class ExportMandateBankFileHandler implements IQueryHandler<
     }
     const { exportable } = await this.mandates.activeOf(entity.id);
     const mandates = currentMandatesOf(file.lines, exportable);
-    const csv = await mandateBankCsvOf(this.candidates, entity, mandates);
+    const csv = await mandateBankCsvOf(this.companies, entity, mandates);
     return { csv, fileName: mandateExportFileNameOf(file) };
   }
 }
