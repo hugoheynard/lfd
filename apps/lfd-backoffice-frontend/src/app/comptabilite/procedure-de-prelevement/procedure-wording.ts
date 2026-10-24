@@ -30,8 +30,8 @@ export const STEP_ORDER: readonly CollectionProcedureStepKeyView[] = [
 const STEP_LABELS: Readonly<Record<CollectionProcedureStepKeyView, string>> = {
   accounts: '1 Comptes',
   mandates: '2 Mandats',
-  file: '3 Fichier',
-  returns: '4 Retours',
+  file: '3 Fichier de prélèvement',
+  returns: '4 Retours de la banque',
 };
 
 const STATE_ICONS: Readonly<Record<CollectionProcedureStepStateView, FoldIconName | undefined>> = {
