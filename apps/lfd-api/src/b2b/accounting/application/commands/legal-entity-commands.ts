@@ -2,6 +2,7 @@ import type { SetMandateDefaultsPayload } from "@lfd/contracts";
 import type {
   CorrectLegalEntityPayload,
   DeclareLegalEntityPayload,
+  SetBankCollectionLimitsPayload,
   SetCollectionSchedulePayload,
   SetCreditorAccountPayload,
   SetInvoicePaymentTermsPayload,
@@ -76,6 +77,17 @@ export class SetCollectionScheduleCommand {
   constructor(
     readonly legalEntityId: string,
     readonly payload: SetCollectionSchedulePayload,
+  ) {}
+}
+
+/**
+ * Les plafonds de la convention d'émission, pour un schéma SEPA — unitaire,
+ * par remise, mensuel (plan `plan-plafonds-de-la-banque.md`, PL1).
+ */
+export class SetBankCollectionLimitsCommand {
+  constructor(
+    readonly legalEntityId: string,
+    readonly payload: SetBankCollectionLimitsPayload,
   ) {}
 }
 

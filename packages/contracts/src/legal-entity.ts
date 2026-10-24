@@ -259,6 +259,12 @@ export interface LegalEntityView {
   readonly collectionDaysAfterClosure: number | null;
   /** `null` = « à renseigner ». */
   readonly depositCutoff: DepositCutoffView | null;
+  /**
+   * Les plafonds de la banque, PAR SCHÉMA (PL1,
+   * `plan-plafonds-de-la-banque.md`) — les deux schémas toujours présents,
+   * chaque montant `null` = « non renseigné ».
+   */
+  readonly bankCollectionLimits: Readonly<Record<SepaScheme, BankCollectionLimitsView>>;
   /** Les dates des trois modes de facturation (§16), mensuel d'abord. */
   readonly billingModes: readonly LegalEntityBillingModeView[];
   /**
@@ -545,6 +551,29 @@ export const setCollectionSchedulePayloadSchema = z.strictObject({
   depositCutoff: z.strictObject({ businessDaysBefore: z.int(), time: z.string() }).nullable(),
 });
 export type SetCollectionSchedulePayload = z.infer<typeof setCollectionSchedulePayloadSchema>;
+
+/** Les plafonds de la convention d'émission pour un schéma, en centimes ; `null` = non renseigné. */
+export interface BankCollectionLimitsView {
+  readonly perDebitCents: number | null;
+  readonly perRemittanceCents: number | null;
+  readonly monthlyCents: number | null;
+}
+
+/**
+ * Les plafonds de la banque pour un schéma (PL1). La FORME seulement : un
+ * montant non entier ou ≤ 0 est refusé par le value object, dont le refus
+ * nomme le plafond. L'ordre unitaire ≤ remise ≤ mensuel n'est pas un refus.
+ *
+ * Sans `.default()`, comme le calendrier : un écran qui omettrait un champ ne
+ * doit pas effacer un plafond saisi sans que personne l'ait décidé.
+ */
+export const setBankCollectionLimitsPayloadSchema = z.strictObject({
+  scheme: sepaSchemeSchema,
+  perDebitCents: z.int().nullable(),
+  perRemittanceCents: z.int().nullable(),
+  monthlyCents: z.int().nullable(),
+});
+export type SetBankCollectionLimitsPayload = z.infer<typeof setBankCollectionLimitsPayloadSchema>;
 
 /**
  * Les dates d'un mode (`PUT …/billing-modes/:mode`). La FORME seulement : les

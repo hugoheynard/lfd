@@ -99,6 +99,20 @@ export const ACCOUNTING_FACTS = {
     depositCutoffTime: clockTime().nullable(),
   }),
   /**
+   * Les plafonds de la banque pour UN schéma, APRÈS le réglage (PL1,
+   * `plan-plafonds-de-la-banque.md`). Chaque montant nul = « non renseigné ».
+   * Né avec son `subjectLabel` : aucune forme d'avant à garder.
+   */
+  "legal_entity.bank_collection_limits_set": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      scheme: sepaScheme(),
+      perDebitCents: cents().nullable(),
+      perRemittanceCents: cents().nullable(),
+      monthlyCents: cents().nullable(),
+    }),
+  ),
+  /**
    * Le rythme UNIQUE de l'entité (R2) — RETIRÉ en M1 (plan
    * `plan-rythme-de-facturation.md`, §16.6) : le geste n'existe plus, les dates
    * se règlent par mode. Gardé pour que ses lignes de dev se lisent encore.

@@ -67,6 +67,10 @@ function entity(over: Partial<LegalEntityView> = {}): LegalEntityView {
     },
     collectionDaysAfterClosure: null,
     depositCutoff: null,
+    bankCollectionLimits: {
+      CORE: { perDebitCents: null, perRemittanceCents: null, monthlyCents: null },
+      B2B: { perDebitCents: null, perRemittanceCents: null, monthlyCents: null },
+    },
     nextCollection: {
       closesAt: '2026-10-31T23:00:00.000Z',
       plannedConstitutionAt: '2026-11-01T00:00:00.000Z',

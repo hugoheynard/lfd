@@ -212,6 +212,35 @@ export class CollectionScheduleChangedEvent implements JournaledEvent {
 }
 
 /**
+ * Les plafonds de la banque pour un schéma ont été réglés (PL1,
+ * `plan-plafonds-de-la-banque.md`). Le schéma et l'APRÈS au payload, nuls
+ * compris (« non renseigné ») : c'est ce qui dira sous quels plafonds tel lot
+ * a été lu.
+ */
+export class BankCollectionLimitsSetEvent implements JournaledEvent {
+  constructor(
+    readonly entity: LegalEntitySubject,
+    readonly at: Date,
+    readonly scheme: SepaScheme,
+    readonly limits: {
+      readonly perDebitCents: number | null;
+      readonly perRemittanceCents: number | null;
+      readonly monthlyCents: number | null;
+    },
+  ) {}
+
+  journalFact(): JournalFact {
+    return {
+      type: ACCOUNTING_FACTS.bankCollectionLimitsSet,
+      subjectType: SUBJECT,
+      subjectId: this.entity.id,
+      occurredAt: this.at,
+      payload: { subjectLabel: this.entity.name, scheme: this.scheme, ...this.limits },
+    };
+  }
+}
+
+/**
  * La constitution automatique est activée, ou désactivée. Un fait DISTINCT du
  * calendrier (plan `prelevement-automatique.md`, § 3) : c'est le geste
  * qui fait partir des lots et des avis sans qu'un humain clique, et la

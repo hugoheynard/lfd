@@ -5,7 +5,12 @@ import type {
   LegalEntity as LegalEntityTable,
   Prisma,
 } from "../../../platform/database/client/client.js";
-import { LegalEntity, type LegalEntitySnapshot } from "../domain/entities/legal-entity.js";
+import {
+  type BankCollectionLimitsSnapshot,
+  LegalEntity,
+  type LegalEntitySnapshot,
+} from "../domain/entities/legal-entity.js";
+import type { SepaScheme } from "../domain/value-objects/sepa-scheme.js";
 import { sellerBlockers } from "../domain/services/invoice-issuance-blockers.js";
 
 /**
@@ -14,10 +19,14 @@ import { sellerBlockers } from "../domain/services/invoice-issuance-blockers.js"
  */
 export const LEGAL_ENTITY_ROW_INCLUDE = {
   invoices: { select: { id: true }, take: 1 },
+  bankLimits: {
+    select: { scheme: true, perDebitCents: true, perRemittanceCents: true, monthlyCents: true },
+  },
 } as const satisfies Prisma.LegalEntityInclude;
 
 export type LegalEntityRow = LegalEntityTable & {
   readonly invoices: readonly { readonly id: string }[];
+  readonly bankLimits: readonly BankCollectionLimitsSnapshot[];
 };
 
 /**
@@ -26,7 +35,7 @@ export type LegalEntityRow = LegalEntityTable & {
  * plutôt que promenée dans le domaine.
  */
 export function toDomain(row: LegalEntityRow, cipher: FieldCipher): LegalEntity {
-  return LegalEntity.reconstitute(toSnapshot(row, cipher));
+  return LegalEntity.reconstitute(toSnapshot(row, cipher), row.bankLimits);
 }
 
 /**
@@ -92,6 +101,7 @@ export function toView(entity: LegalEntity, isLastActive: boolean): LegalEntityR
     autoCollectionDelayHours: snapshot.autoCollectionDelayHours,
     collectionDaysAfterClosure: snapshot.collectionDaysAfterClosure,
     depositCutoff: entity.collectionSchedule.depositCutoff,
+    bankCollectionLimits: { CORE: limitsView(entity, "CORE"), B2B: limitsView(entity, "B2B") },
     invoicePaymentTerms: {
       latePenaltyRateBasisPoints: snapshot.invoiceLatePenaltyRateBasisPoints,
       recoveryIndemnityCents: snapshot.invoiceRecoveryIndemnityCents,
@@ -115,6 +125,19 @@ export function toView(entity: LegalEntity, isLastActive: boolean): LegalEntityR
     // est une propriété de l'ensemble. Le lui faire calculer supposerait de lui
     // donner un dépôt, c'est-à-dire d'en faire autre chose qu'un mapper.
     isLastActive,
+  };
+}
+
+/** Les plafonds d'un schéma, tels que l'écran les lit ; `null` = non renseigné. */
+function limitsView(
+  entity: LegalEntity,
+  scheme: SepaScheme,
+): LegalEntityRecord["bankCollectionLimits"][SepaScheme] {
+  const limits = entity.bankCollectionLimits(scheme);
+  return {
+    perDebitCents: limits.perDebitCents,
+    perRemittanceCents: limits.perRemittanceCents,
+    monthlyCents: limits.monthlyCents,
   };
 }
 

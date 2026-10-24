@@ -203,6 +203,22 @@ function invoicePaymentTerms(fact: PhraseFact): Segment[] {
   ];
 }
 
+/** « : unitaire 5 000,00 €, par remise non renseigné, mensuel … » (PL1). */
+function bankCollectionLimits(fact: PhraseFact): Segment[] {
+  const limit = (raw: unknown): Segment =>
+    typeof raw === 'number' ? inUnit('cents', raw) : text('non renseigné');
+  return [
+    text(' en '),
+    valueIn(SEPA_SCHEME, fact.payload['scheme']),
+    text(' : unitaire '),
+    limit(fact.payload['perDebitCents']),
+    text(', par remise '),
+    limit(fact.payload['perRemittanceCents']),
+    text(', mensuel '),
+    limit(fact.payload['monthlyCents']),
+  ];
+}
+
 // ─── Les mandats ────────────────────────────────────────────────────────────
 
 const MANDATE: Noun = { the: 'le mandat', a: 'un mandat' };
@@ -641,6 +657,12 @@ export const ACCOUNTING_PHRASES = {
       return from === null ? [text(' : '), to] : [text(' '), ...fromTo([value(from)], [to])];
     },
     ['from', 'to'],
+  ),
+  'legal_entity.bank_collection_limits_set': onEntity(
+    'a réglé les plafonds de la banque',
+    'de',
+    bankCollectionLimits,
+    ['scheme', 'perDebitCents', 'perRemittanceCents', 'monthlyCents'],
   ),
   'legal_entity.mandate_scheme_changed': onEntity(
     'a passé les mandats à venir',

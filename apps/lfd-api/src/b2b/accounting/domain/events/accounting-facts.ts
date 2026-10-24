@@ -34,6 +34,8 @@ export const ACCOUNTING_FACTS = {
   preNotificationChanged: "legal_entity.pre_notification_changed",
   /** Le calendrier de prélèvement : délai de constitution, échéance N, cut-off de dépôt. */
   collectionScheduleChanged: "legal_entity.collection_schedule_changed",
+  /** Les plafonds de la banque pour un schéma : unitaire, par remise, mensuel (PL1). */
+  bankCollectionLimitsSet: "legal_entity.bank_collection_limits_set",
   /**
    * Les dates d'un mode de facturation sont programmées à la prochaine clôture
    * de ce mode, ou un programmé est annulé (plan `plan-rythme-de-facturation.md`,

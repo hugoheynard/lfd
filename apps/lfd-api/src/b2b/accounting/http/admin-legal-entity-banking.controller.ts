@@ -11,6 +11,8 @@ import {
   setPreNotificationPayloadSchema,
   setAutoCollectionPayloadSchema,
   setCollectionSchedulePayloadSchema,
+  setBankCollectionLimitsPayloadSchema,
+  type SetBankCollectionLimitsPayload,
   type SetAutoCollectionPayload,
   type SetCollectionSchedulePayload,
   type AssignCreditorIdentifierPayload,
@@ -25,6 +27,7 @@ import {
   SetMandateDefaultsCommand,
   SetAutoCollectionCommand,
   SetCollectionScheduleCommand,
+  SetBankCollectionLimitsCommand,
   SetCreditorAccountCommand,
   SetPreNotificationCommand,
 } from "../application/commands/legal-entity-commands.js";
@@ -182,6 +185,22 @@ export class AdminLegalEntityBankingController {
     @Body(new ZodBody(setCollectionSchedulePayloadSchema)) payload: SetCollectionSchedulePayload,
   ): Promise<void> {
     await this.commands.execute(new SetCollectionScheduleCommand(id, payload));
+  }
+
+  /**
+   * Les plafonds de la convention d'émission pour un schéma — unitaire, par
+   * remise, mensuel (plan `plan-plafonds-de-la-banque.md`, PL1). Répond 400 à
+   * un montant nul, négatif ou non entier ; `null` = non renseigné. Aucun
+   * plafond ne bloque un dépôt : ils avertissent à la lecture (PL2).
+   */
+  @Put(":id/bank-collection-limits")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async setBankCollectionLimits(
+    @Param("id") id: string,
+    @Body(new ZodBody(setBankCollectionLimitsPayloadSchema))
+    payload: SetBankCollectionLimitsPayload,
+  ): Promise<void> {
+    await this.commands.execute(new SetBankCollectionLimitsCommand(id, payload));
   }
 
   /**

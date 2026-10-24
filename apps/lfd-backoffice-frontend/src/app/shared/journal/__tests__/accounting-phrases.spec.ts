@@ -88,6 +88,22 @@ describe('l’entité émettrice', () => {
     );
   });
 
+  it('dit les plafonds de la banque d’un schéma, et ceux non renseignés tels quels', () => {
+    expect(
+      sentence(
+        entity('legal_entity.bank_collection_limits_set', {
+          subjectLabel: ENTITY,
+          scheme: 'B2B',
+          perDebitCents: 500_000,
+          perRemittanceCents: null,
+          monthlyCents: 9_000_000,
+        }),
+      ).replace(/[\u00a0\u202f]/gu, ' '),
+    ).toBe(
+      'Colette Martin a réglé les plafonds de la banque de l’entité émettrice « La Folie Douce SAS » en SEPA interentreprises (B2B) : unitaire 5 000,00 €, par remise non renseigné, mensuel 90 000,00 €',
+    );
+  });
+
   it('dit l’activation et la désactivation du prélèvement automatique', () => {
     expect(sentence(entity('legal_entity.auto_collection_enabled', { subjectLabel: ENTITY }))).toBe(
       'Colette Martin a activé le prélèvement automatique de l’entité émettrice « La Folie Douce SAS »',

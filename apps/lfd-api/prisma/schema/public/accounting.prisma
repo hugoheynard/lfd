@@ -237,11 +237,38 @@ model LegalEntity {
   // Les dates des modes et le mode des payeurs (M1, `plan-rythme-de-facturation.md`).
   billingModeDates       BillingModeDates[]
   payerBillingModes      PayerBillingMode[]
+  // Les plafonds de la convention d'émission, par schéma (PL1,
+  // `plan-plafonds-de-la-banque.md`). Côté inverse obligatoire.
+  bankLimits             LegalEntityBankLimits[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("legal_entities")
+  @@schema("public")
+}
+
+/// Les **plafonds de la banque** pour un schéma SEPA — unitaire (un
+/// prélèvement), par remise (un fichier), cumul mensuel — en centimes (PL1,
+/// `documentation/comptabilite/prelevement/plan-plafonds-de-la-banque.md` § 6).
+///
+/// Chaque montant NULL = « non renseigné » : rien n'est comparé. CHECK `> 0`
+/// sur les trois. L'ordre unitaire ≤ remise ≤ mensuel n'est PAS tenu : la
+/// banque n'a rien dit de cette relation. Ils n'avertissent qu'à la lecture
+/// (PL2), ils ne bloquent rien.
+model LegalEntityBankLimits {
+  legalEntityId      String      @map("legal_entity_id")
+  legalEntity        LegalEntity @relation(fields: [legalEntityId], references: [id])
+  scheme             SepaScheme
+  perDebitCents      Int?        @map("per_debit_cents")
+  perRemittanceCents Int?        @map("per_remittance_cents")
+  monthlyCents       Int?        @map("monthly_cents")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@id([legalEntityId, scheme])
+  @@map("legal_entity_bank_limits")
   @@schema("public")
 }
 

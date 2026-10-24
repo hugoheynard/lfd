@@ -53,6 +53,22 @@ export class PrismaLegalEntityRepository extends LegalEntityRepository {
       create: { id: snapshot.id, ...columns },
       update: columns,
     });
+    await this.saveBankLimits(entity);
+  }
+
+  /**
+   * Les plafonds de la banque, une ligne par schéma que l'agrégat connaît —
+   * vides compris : effacer un plafond est une écriture, pas une suppression.
+   * Dans la transaction de l'appelant (même client Prisma, CLS).
+   */
+  private async saveBankLimits(entity: LegalEntity): Promise<void> {
+    for (const { scheme, ...limits } of entity.bankLimitsToPersistence()) {
+      await this.prisma.legalEntityBankLimits.upsert({
+        where: { legalEntityId_scheme: { legalEntityId: entity.id, scheme } },
+        create: { legalEntityId: entity.id, scheme, ...limits },
+        update: limits,
+      });
+    }
   }
 
   /**

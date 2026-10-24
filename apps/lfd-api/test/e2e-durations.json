@@ -2,6 +2,7 @@
   "test/account-alerts.e2e-spec.ts": 10744,
   "test/audiences-stay-profile.e2e-spec.ts": 9500,
   "test/audiences.e2e-spec.ts": 8841,
+  "test/bank-collection-limits.e2e-spec.ts": 6000,
   "test/bundles.e2e-spec.ts": 13045,
   "test/bought-with.e2e-spec.ts": 9483,
   "test/delivery-zones-uncovered.e2e-spec.ts": 7298,

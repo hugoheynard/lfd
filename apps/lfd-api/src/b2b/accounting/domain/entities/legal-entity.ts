@@ -12,6 +12,10 @@ import {
 } from "../value-objects/collection-schedule.js";
 import { MandateDefaults, type MandatePaymentType } from "../value-objects/mandate-defaults.js";
 import type { SepaScheme } from "../value-objects/sepa-scheme.js";
+import {
+  BankCollectionLimits,
+  type BankCollectionLimitsInput,
+} from "../value-objects/bank-collection-limits.js";
 import { CreditorIdentifier } from "../value-objects/creditor-identifier.js";
 import { Bic } from "../value-objects/bic.js";
 import { CreditorAccount } from "../value-objects/creditor-account.js";
@@ -133,6 +137,15 @@ export interface LegalEntitySnapshot {
 }
 
 /**
+ * Les plafonds de la banque pour un schéma, tels qu'une ligne de
+ * `legal_entity_bank_limits` les range. Hors de {@link LegalEntitySnapshot} :
+ * c'est une autre table, écrite par schéma.
+ */
+export interface BankCollectionLimitsSnapshot extends BankCollectionLimitsInput {
+  readonly scheme: SepaScheme;
+}
+
+/**
  * Une **entité juridique émettrice** : qui encaisse, et sous quelle identité.
  *
  * Ce n'est pas un client — c'est nous. Le mot `Company` est déjà pris par le
@@ -176,6 +189,7 @@ export class LegalEntity {
     private paymentTermsValue: InvoicePaymentTerms,
     private invoicePrefixValue: InvoicePrefix | null,
     private readonly invoicesIssuedValue: boolean,
+    private readonly bankLimitsValue: Map<SepaScheme, BankCollectionLimits>,
   ) {}
 
   /**
@@ -216,11 +230,19 @@ export class LegalEntity {
       // Le préfixe se choisit à l'écran, et rien n'est émis.
       null,
       false,
+      // Les plafonds de la banque : non renseignés (PL1).
+      new Map(),
     );
   }
 
-  /** Reconstruit une entité depuis sa ligne en base ; les VO revalident. */
-  static reconstitute(snapshot: LegalEntitySnapshot): LegalEntity {
+  /**
+   * Reconstruit une entité depuis sa ligne en base ; les VO revalident.
+   * `bankLimits` : les lignes de plafonds, une par schéma renseigné.
+   */
+  static reconstitute(
+    snapshot: LegalEntitySnapshot,
+    bankLimits: readonly BankCollectionLimitsSnapshot[] = [],
+  ): LegalEntity {
     return new LegalEntity(
       snapshot.id,
       snapshot.name,
@@ -263,6 +285,7 @@ export class LegalEntity {
       }),
       snapshot.invoicePrefix === null ? null : InvoicePrefix.create(snapshot.invoicePrefix),
       snapshot.invoicesIssued,
+      new Map(bankLimits.map((row) => [row.scheme, BankCollectionLimits.create(row)])),
     );
   }
 
@@ -409,6 +432,41 @@ export class LegalEntity {
 
   get collectionSchedule(): CollectionSchedule {
     return this.collectionScheduleValue;
+  }
+
+  /** Les plafonds de la banque pour ce schéma — vides tant que rien n'est saisi. */
+  bankCollectionLimits(scheme: SepaScheme): BankCollectionLimits {
+    return this.bankLimitsValue.get(scheme) ?? BankCollectionLimits.empty();
+  }
+
+  /**
+   * Règle les plafonds de la convention d'émission pour un schéma (PL1).
+   *
+   * Seule la forme des montants est refusée (non entier, ≤ 0) : l'ordre
+   * unitaire ≤ remise ≤ mensuel ne l'est pas, la banque n'en a rien dit.
+   * Aucun plafond ne bloque un dépôt (décision Q1 du 2026-10-24) : ils
+   * n'avertissent qu'à la lecture.
+   *
+   * @returns vrai si quelque chose a changé — une saisie rejouée n'est pas un fait.
+   * @throws {InvalidBankCollectionLimitError} un montant non entier ou ≤ 0.
+   */
+  setBankCollectionLimits(scheme: SepaScheme, input: BankCollectionLimitsInput): boolean {
+    const limits = BankCollectionLimits.create(input);
+    if (limits.equals(this.bankCollectionLimits(scheme))) {
+      return false;
+    }
+    this.bankLimitsValue.set(scheme, limits);
+    return true;
+  }
+
+  /** Les plafonds à écrire, un par schéma connu de l'agrégat — vides compris. */
+  bankLimitsToPersistence(): readonly BankCollectionLimitsSnapshot[] {
+    return [...this.bankLimitsValue].map(([scheme, limits]) => ({
+      scheme,
+      perDebitCents: limits.perDebitCents,
+      perRemittanceCents: limits.perRemittanceCents,
+      monthlyCents: limits.monthlyCents,
+    }));
   }
 
   get autoCollectionEnabled(): boolean {
