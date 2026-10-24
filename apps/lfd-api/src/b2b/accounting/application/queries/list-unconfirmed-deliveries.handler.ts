@@ -4,6 +4,7 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../../platform/time/clock.js";
 import { UnconfirmedDeliveriesReader } from "../../domain/ports/unconfirmed-deliveries.reader.js";
+import { unconfirmedDeliveryView } from "../unconfirmed-delivery-view.js";
 import { ListUnconfirmedDeliveriesQuery } from "./list-unconfirmed-deliveries.query.js";
 
 /**
@@ -28,6 +29,6 @@ export class ListUnconfirmedDeliveriesHandler implements IQueryHandler<
   async execute(): Promise<UnconfirmedDeliveriesView> {
     const today = instantToLocal(this.clock.now()).day;
     const orders = await this.reader.servedBefore(today);
-    return { before: today, orders: [...orders] };
+    return { before: today, orders: orders.map(unconfirmedDeliveryView) };
   }
 }

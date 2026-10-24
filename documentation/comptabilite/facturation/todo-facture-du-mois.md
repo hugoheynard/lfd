@@ -24,18 +24,19 @@ mois : ni facture, ni payeur signalé » (`monthly-invoicing.spec.ts`).
       clients au compte. Requête de contrôle :
 
       ```sql
-                  SELECT count(*) FROM public.companies c
-                  WHERE NOT EXISTS (
-                    SELECT 1 FROM public.addresses a
-                    WHERE a.company_id = c.id AND a.kind = 'billing' AND a.archived_at IS NULL
-                  );
-                  ```
+                          SELECT count(*) FROM public.companies c
+                          WHERE NOT EXISTS (
+                            SELECT 1 FROM public.addresses a
+                            WHERE a.company_id = c.id AND a.kind = 'billing' AND a.archived_at IS NULL
+                          );
+                          ```
 
 - [ ] **Mentions de paiement de l'entité** (pénalités de retard, indemnité de
       40 €) : sans elles, aucune facture ne part (`payment_terms_missing`).
       Les poser sur la fiche de l'entité émettrice.
-- [ ] **Le 30 novembre au soir**, regarder l'écran « Prélèvement du mois » :
-      factures émises et payeurs signalés.
+- [ ] **Le 30 novembre au soir**, regarder la procédure de prélèvement de la
+      clôture, onglet « 3 Factures » (« Prélèvement du mois » retiré le
+      2026-10-24) : bons à constater, factures émises et payeurs signalés.
 
 ## Régler une FACTURE, pas un bon déjà facturé (2026-10-21)
 

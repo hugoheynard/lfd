@@ -117,6 +117,12 @@ const KNOWN_BANK_ACCOUNT_REASON = domain('raison d’un compte connu de la banqu
   reported_by_bank: 'Signalé comme déjà connu par la banque',
 });
 
+const BATCH_ATTESTATION_KIND = domain('attestation d’un lot de prélèvement', {
+  audit_reviewed: 'Contrôle CSV relu',
+  remittance_signed: 'Remise signée sur CENET',
+  psr_read: 'Comptes rendus PSR lus',
+});
+
 export const ACCOUNTING_VALUES: ValueFamily = {
   enums: [
     VOUCHER_REINSTATEMENT,
@@ -136,5 +142,6 @@ export const ACCOUNTING_VALUES: ValueFamily = {
     COLLECTION_RETURN_RESOLUTION,
     TEST_SEQUENCE,
     KNOWN_BANK_ACCOUNT_REASON,
+    BATCH_ATTESTATION_KIND,
   ],
 };

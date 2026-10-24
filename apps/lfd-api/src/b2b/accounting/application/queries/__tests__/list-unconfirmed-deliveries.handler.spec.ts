@@ -26,6 +26,8 @@ describe("ListUnconfirmedDeliveries — les bons à constater (lot ZL)", () => {
         serviceDay: "2026-10-31",
         fulfillmentMethod: "delivery",
         totalCents: 1200,
+        placedAt: new Date("2026-10-30T08:00:00.000Z"),
+        billedCompanyId: null,
       },
     ];
     const handler = new ListUnconfirmedDeliveriesHandler(
@@ -38,5 +40,7 @@ describe("ListUnconfirmedDeliveries — les bons à constater (lot ZL)", () => {
     expect(reader.asked).toEqual(["2026-11-01"]);
     expect(view.before).toBe("2026-11-01");
     expect(view.orders.map((order) => order.orderNumber)).toEqual(["CMD-1"]);
+    // La passation et le payeur figé servent au tri par période, pas à l'écran.
+    expect(Object.keys(view.orders[0] ?? {})).not.toContain("placedAt");
   });
 });

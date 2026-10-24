@@ -14,10 +14,7 @@ import {
 
 import { tightDepositMarginSentence } from '../../collection-schedule-wording';
 import { longDay } from '../../collection-month-wording';
-import {
-  PendingBatch,
-  type PendingBatchGesture,
-} from '../../prelevement-du-mois/pending-batch/pending-batch';
+import { PendingBatch, type PendingBatchGesture } from '../pending-batch/pending-batch';
 import { ProcedureBatchActions } from '../procedure-batch-actions/procedure-batch-actions';
 import { ProcedureBatchAttestations } from '../procedure-batch-attestations/procedure-batch-attestations';
 import { collectionDayLabel, deadlineLabel } from '../procedure-wording';

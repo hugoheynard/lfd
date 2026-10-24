@@ -3,7 +3,7 @@ import type { CollectionBatchView } from '@lfd/contracts';
 import { FoldButtonComponent, FoldInlineConfirmComponent } from 'fold-ng';
 
 import { cancellable, depositClosedReason, rejectableByBank } from '../../collection-batch-steps';
-import type { PendingBatchGesture } from '../../prelevement-du-mois/pending-batch/pending-batch';
+import type { PendingBatchGesture } from '../pending-batch/pending-batch';
 
 /**
  * **La barre d'actions d'un lot**, au-dessus de sa carte — même forme que les

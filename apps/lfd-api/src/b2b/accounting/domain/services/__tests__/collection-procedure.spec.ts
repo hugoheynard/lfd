@@ -269,13 +269,37 @@ describe("le lot suivi (§ 4.3, Q4)", () => {
 describe("l'onglet ouvert à l'arrivée", () => {
   it("le premier qui attend un geste, à faire ou en attente", () => {
     expect(
-      arrivalStepOf({ accounts: "done", mandates: "waiting", file: "to_do", returns: "locked" }),
+      arrivalStepOf({
+        accounts: "done",
+        mandates: "waiting",
+        invoices: "to_do",
+        file: "to_do",
+        returns: "locked",
+      }),
     ).toBe("mandates");
   });
 
   it("tout est fait : le premier onglet", () => {
     expect(
-      arrivalStepOf({ accounts: "done", mandates: "done", file: "done", returns: "done" }),
+      arrivalStepOf({
+        accounts: "done",
+        mandates: "done",
+        invoices: "done",
+        file: "done",
+        returns: "done",
+      }),
     ).toBe("accounts");
+  });
+
+  it("les factures à faire passent avant le fichier (onglet 3, 2026-10-24)", () => {
+    expect(
+      arrivalStepOf({
+        accounts: "done",
+        mandates: "done",
+        invoices: "to_do",
+        file: "to_do",
+        returns: "locked",
+      }),
+    ).toBe("invoices");
   });
 });

@@ -12,6 +12,12 @@
 > mandats — si pas de nouveaux éléments, dire "aucune action à mener" et bouton
 > suivant —, 3 générer le fichier de prélèvement, 4 contrôle pain.002 ».
 >
+> **§ 12 bâti le 2026-10-24** (non commité à l'écriture) : un onglet
+> **3 « Factures »** s'insère avant le fichier — l'ordre devient 1 Comptes,
+> 2 Mandats, 3 Factures, 4 Fichier, 5 Retours —, et la page « Prélèvement du
+> mois » est **retirée**. ⚠️ Dans les §§ 1 à 11, « onglet 3 » et « onglet 4 »
+> désignent le Fichier et les Retours, devenus 4 et 5.
+>
 > **§ 11 bâti le 2026-10-23** (non commité à l'écriture) : l'arrivée de la
 > page est une **table de toutes les procédures**, chacune ouvre son détail.
 >
@@ -111,7 +117,7 @@ jusqu'à cinq clôtures (procédure § 2), donc jusqu'à cinq lots par schéma. 
 page choisit **un lot** comme fil des onglets 3 et 4, par défaut **le lot
 non déposé dont la limite de dépôt est la plus proche** (cf. § 4.3), et les autres lots ouverts sont
 listés en tête de l'onglet 3 avec leur état. Le sélecteur d'entité (affiché seulement s'il y a plus d'une entité) reprend
-celui de « Prélèvement du mois » (`apps/lfd-backoffice-frontend/src/app/comptabilite/prelevement-du-mois/prelevement-du-mois-page.html:20-27`).
+celui de « Prélèvement du mois » (page retirée le 2026-10-24, § 12).
 
 Adresse : `/comptabilite/procedure-de-prelevement?entite=:id&lot=:batchId` —
 l'onglet n'est **pas** dans l'URL : il est calculé (§ 1). Un lien direct vers
@@ -255,11 +261,11 @@ rebours ; si `depositDeadline` est `null` (limite non renseignée, procédure
 § 0.4), l'onglet le dit en alerte et donne la consigne provisoire (J-2 ouvré,
 13 h 45) — il ne calcule **rien** à la place de l'entité.
 
-**Réutilise** `app-pending-batch` (`apps/lfd-backoffice-frontend/src/app/comptabilite/prelevement-du-mois/pending-batch/pending-batch.ts:49-53` :
+**Réutilise** `app-pending-batch` (`apps/lfd-backoffice-frontend/src/app/comptabilite/procedure-de-prelevement/pending-batch/pending-batch.ts:49-53`, déplacé le 2026-10-24 :
 `batch`, `canWrite`, `pending`, sortie `gesture`) pour b à f, `app-excluded-orders`
 pour les exclusions, et les gestes de la page « Prélèvement du mois »
 (préparer, annuler, déposer). Ces gestes vivent aujourd'hui **dans la page**
-(`prelevement-du-mois-page.ts`) ; ils se déplacent dans un service partagé des
+(de « Prélèvement du mois », retirée depuis) ; ils se déplacent dans un service partagé des
 deux pages — c'est un déplacement, pas une copie.
 
 **Fait** : lot déposé et signature attestée. Un lot `cancelled` ne fait pas
@@ -291,7 +297,7 @@ quand même par l'import et la cloche `collection.returned`
 (`retours-bancaires.md:95-96`), et rouvre l'onglet.
 
 Gestes : « Importer un fichier de la banque » (déjà là,
-`apps/lfd-backoffice-frontend/src/app/comptabilite/prelevement-du-mois/bank-returns/bank-returns.html:4`, panneau
+`apps/lfd-backoffice-frontend/src/app/comptabilite/procedure-de-prelevement/bank-returns/bank-returns.html:4`, panneau
 `import-returns-panel`), puis « Contrôle fait : aucun impayé » ou, après un
 import, l'attestation `imported` (posée par la confirmation d'import elle-même,
 pas par une case — S4). ⚠️ La confirmation exige au moins une transaction
@@ -677,3 +683,75 @@ Décisions de Hugo, bâties le même jour (non commitées à l'écriture) :
   réunis et leurs clients, lus des factures des lots —
   `CollectionProcedureView.procedure.payerCounts`), et un repère sur la marque
   de clôture des barres du tableau de bord.
+
+## 12. L'onglet « Factures », et la fin de « Prélèvement du mois » (bâti le 2026-10-24)
+
+Décision de Hugo, le 2026-10-24 : la procédure gagne un onglet **3
+« Factures »**, AVANT le fichier, qui reprend de « Prélèvement du mois » la
+facturation de **la période de la procédure** ; puis la page du mois est
+retirée, route comprise, **sans renvoi** (« tu dégages son ancienne
+adresse »). Précision du même jour : « juste bons à constater est
+intéressant par période ».
+
+### 12.1 L'état, calculé au serveur
+
+`CollectionProcedureView.invoices` (`packages/contracts/src/collection-procedure-invoices.ts`),
+calculé par `ProcedureInvoicesStep` (`apps/lfd-api/src/b2b/accounting/application/services/procedure-invoices-step.ts`)
+et décidé par `invoicesStatus` (`apps/lfd-api/src/b2b/accounting/domain/services/collection-procedure-invoices.ts`) :
+
+| État       | Raison                   | Quand                                                                                        |
+| ---------- | ------------------------ | -------------------------------------------------------------------------------------------- |
+| verrouillé | `not_yet_issuable`       | la veille de la clôture, 23 h 55, n'est pas passée                                           |
+| fait       | `before_service`         | la clôture précède la mise en service de la facture du mois                                  |
+| à faire    | `unconfirmed_deliveries` | des bons de la période attendent qu'on constate leur remise (premier geste)                  |
+| à faire    | `missing_invoices`       | des bons de l'assiette n'ont pas leur facture                                                |
+| fait       | `all_invoiced`           | tout est facturé, rien à constater                                                           |
+| fait       | `no_closure`             | aucune clôture, ou une clôture hors du calendrier de facturation (un lot d'un ancien rythme) |
+
+**Aucune règle recopiée.** Les bons sans facture sont ceux que « Émettre »
+prendrait : `uninvoicedOrders(plancher, clôture)` restreints aux payeurs qui
+closent ici (`closesFor`), comme `IssueMonthlyInvoicesHandler.prepare`. La
+lecture passe par un port étroit, `UninvoicedOrdersReader`, dont
+`MonthlyInvoicingReader` hérite (même adaptateur, relié par `useExisting`).
+La carte de la clôture est `closureView`, celle de la lecture des factures du
+mois.
+
+**Les bons à constater de la période** : la lecture existante
+`UnconfirmedDeliveriesReader.servedBefore` prend une borne basse (`from`,
+le premier jour de la période affichée) ; le service garde ceux dont le jour
+demandé tombe au plus tard le dernier jour de la période et dont le payeur
+(`billedPayerOf`) clôt ici. Ils s'affichent en tête, avec leur numéro, leur
+client, leur jour, ce qui manque (retrait ou livraison non constaté) et
+« Constater sur la commande » — le geste vit sur la commande (le retrait
+enregistré pose `delivered_on`).
+
+**La table des procédures ne calcule pas cet onglet** : il faudrait lire
+l'assiette de chaque clôture. Son étape reste bancaire ; le détail dit les
+factures.
+
+### 12.2 Le fichier n'en dépend pas
+
+La constitution d'un lot n'exige **pas** que toutes les factures soient
+émises : une ligne encaisse les factures émises qu'elle trouve
+([`../facturation/le-prelevement-suit-la-facture.md`](../facturation/le-prelevement-suit-la-facture.md) § 1,
+vérifié le 2026-10-24). L'onglet 4 ne se verrouille donc pas sur l'onglet 3.
+
+### 12.3 Ce que « Prélèvement du mois » faisait, et où c'est passé
+
+| Section de la page retirée                      | Désormais                                                                                    |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| les factures de la clôture et « Émettre »       | onglet 3 (`month-invoices`, la clôture de la procédure seule)                                |
+| les bons à constater (`unconfirmed-deliveries`) | onglet 3, en tête, bornés à la période                                                       |
+| les bons écartés et « Réglée autrement »        | onglet 3 (`excluded-orders`, `settle-panel`)                                                 |
+| les factures carte signalées                    | onglet 3 (`card-invoice-signals`)                                                            |
+| l'aperçu du mois (`month-preview`)              | onglet 4, tant qu'aucun lot n'est suivi (avant préparation)                                  |
+| le lot à traiter, ses gestes                    | onglet 4 (déjà, P2)                                                                          |
+| les retours de la banque                        | onglet 5 (déjà, P2)                                                                          |
+| l'historique des lots (`batch-history`)         | la table, « afficher les procédures closes » ; le fichier se retélécharge du détail — retiré |
+| le calendrier et la dernière tentative          | la fiche de l'entité (carte « Prélèvement automatique ») — `month-schedule` retiré           |
+
+Les composants gardés vivent sous `comptabilite/procedure-de-prelevement/` ;
+la route, l'entrée de menu, `closures-in-order` et le service front des bons
+à constater (la lecture passe par la procédure) sont supprimés. Les liens
+qui menaient à la page (tableau de bord, facture émise, arrêté, carte des
+retours de la fiche client) mènent à la procédure.

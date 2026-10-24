@@ -3,9 +3,10 @@ import { describe, expect, it } from 'vitest';
 import { requestedTab } from './procedure-tab-param';
 
 describe('le paramètre `?onglet=` du détail d’une procédure', () => {
-  it('traduit les quatre valeurs de la barre d’adresse', () => {
+  it('traduit les cinq valeurs de la barre d’adresse', () => {
     expect(requestedTab('comptes')).toBe('accounts');
     expect(requestedTab('mandats')).toBe('mandates');
+    expect(requestedTab('factures')).toBe('invoices');
     expect(requestedTab('fichier')).toBe('file');
     expect(requestedTab('retours')).toBe('returns');
   });

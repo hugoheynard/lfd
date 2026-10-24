@@ -1,5 +1,6 @@
 import type {
   CollectionProcedureBatchView,
+  CollectionProcedureInvoicesView,
   CollectionProcedureRowView,
   CollectionProcedureView,
 } from '@lfd/contracts';
@@ -28,6 +29,20 @@ export function procedureBatch(
   };
 }
 
+/** L'onglet « Factures » : tout facturé, sans carte de clôture (2026-10-24). */
+export function procedureInvoices(
+  over: Partial<CollectionProcedureInvoicesView> = {},
+): CollectionProcedureInvoicesView {
+  return {
+    state: 'done',
+    reason: 'all_invoiced',
+    missingOrderCount: 0,
+    unconfirmedDeliveries: [],
+    closure: null,
+    ...over,
+  };
+}
+
 export function procedureView(
   over: Partial<CollectionProcedureView> = {},
 ): CollectionProcedureView {
@@ -47,6 +62,7 @@ export function procedureView(
     openBatches: [procedureBatch()],
     accounts: { state: 'done', toExportCount: 0, inFlightCount: 0, excludedCount: 0 },
     mandates: { state: 'to_do', toExportCount: 2, awaitingImport: false, excludedCount: 0 },
+    invoices: procedureInvoices(),
     file: {
       state: 'to_do',
       reason: 'to_deposit',

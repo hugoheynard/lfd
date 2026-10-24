@@ -76,7 +76,6 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'comptabilite/entites-juridiques/:id': null,
   'comptabilite/blocages-prelevement': null,
   'comptabilite/liens-de-paiement': null,
-  'comptabilite/prelevement-du-mois': null,
   'comptabilite/procedure-de-prelevement': null,
   'comptabilite/procedure-de-prelevement/:id': null,
   'comptabilite/arretes-de-facturation/:id': null,
@@ -765,17 +764,18 @@ describe("l'arbre de routes du back-office", () => {
     ]);
   });
 
-  it('renvoie les lots de prélèvement vers le prélèvement du mois', () => {
-    // Remplacés par l'écran du mois le 2026-10-08 (PA4) : l'adresse vit dans
-    // des favoris, et dans les liens des arrêtés déjà ouverts.
+  it('ne renvoie plus vers « Prélèvement du mois », retiré sans renvoi', () => {
+    // Retiré le 2026-10-24 avec son ancienne adresse `lots-de-prelevement`
+    // (Hugo : « tu dégages son ancienne adresse ») : seul le tableau de bord
+    // reste un renvoi de la comptabilité.
     const comptabilite = routes.find((route) => route.path === 'comptabilite');
     const moved = (comptabilite?.children ?? [])
       .filter((child) => typeof child.redirectTo === 'string')
       .map((child) => [child.path, child.redirectTo]);
-    expect(moved).toEqual([
-      ['', 'tableau-de-bord'],
-      ['lots-de-prelevement', 'prelevement-du-mois'],
-    ]);
+    expect(moved).toEqual([['', 'tableau-de-bord']]);
+    const paths = (comptabilite?.children ?? []).map((child) => child.path);
+    expect(paths).not.toContain('prelevement-du-mois');
+    expect(paths).not.toContain('lots-de-prelevement');
   });
 
   it('renvoie l’ancienne file de retrait vers la vue du comptoir', () => {

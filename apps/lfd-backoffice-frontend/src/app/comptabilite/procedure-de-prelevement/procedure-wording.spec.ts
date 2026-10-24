@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { procedureBatch, procedureView } from '../__tests__/collection-procedure-fixture';
+import {
+  procedureBatch,
+  procedureInvoices,
+  procedureView,
+} from '../__tests__/collection-procedure-fixture';
 import {
   batchShortLabel,
   isPooled,
@@ -60,8 +64,30 @@ describe('la barre d’onglets', () => {
     expect(tabs.map((tab) => [tab.key, tab.icon ?? null, tab.badge ?? null])).toEqual([
       ['accounts', 'check-circle', null],
       ['mandates', null, 2],
+      ['invoices', 'check-circle', null],
       ['file', null, null],
       ['returns', 'lock', null],
+    ]);
+  });
+});
+
+describe('l’onglet Factures dans la barre', () => {
+  it('se place en 3, et compte en badge les bons à constater et sans facture', () => {
+    const view = procedureView({
+      invoices: procedureInvoices({
+        state: 'to_do',
+        reason: 'missing_invoices',
+        missingOrderCount: 2,
+      }),
+    });
+    const tab = procedureTabs(view).find((item) => item.key === 'invoices');
+    expect(tab).toMatchObject({ label: '3 Factures', badge: 2 });
+    expect(procedureTabs(view).map((item) => item.label)).toEqual([
+      '1 Comptes',
+      '2 Mandats',
+      '3 Factures',
+      '4 Fichier de prélèvement',
+      '5 Retours de la banque',
     ]);
   });
 });

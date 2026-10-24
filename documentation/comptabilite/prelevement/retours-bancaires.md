@@ -94,7 +94,8 @@ batches/:batchId/lines/:rank`, `POST :id/represent`, `POST
 import/confirm` (écriture, multipart pour l'import).
 - Faits `collection.returned` et `collection.return_resolved` (sujet : le payeur,
   jamais d'IBAN) ; cloche `collection.returned` vers la fiche.
-- « Prélèvement du mois » : section « Les retours de la banque » (lignes du lot
+- Procédure de prélèvement, onglet « 5 Retours de la banque » (« Prélèvement
+  du mois » retiré le 2026-10-24) : « Les retours de la banque » (lignes du lot
   déposé, « Signaler un retour », gestes, « Importer un fichier de la banque ») ;
   fiche client › Facturation : carte « Prélèvements rejetés ».
 

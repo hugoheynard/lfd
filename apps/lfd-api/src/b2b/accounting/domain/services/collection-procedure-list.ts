@@ -217,7 +217,12 @@ function closureRow(
   };
 }
 
-/** L'onglet que la page ouvrirait sur ce lot — la même règle (§ 1). */
+/**
+ * L'onglet que la page ouvrirait sur ce lot — la même règle (§ 1). Les
+ * factures n'y entrent pas : la table ne lit pas l'assiette de chaque
+ * clôture (une lecture de bons par ligne) ; elle dit l'étape bancaire, le
+ * détail dit l'onglet « Factures » (2026-10-24).
+ */
 function stageOf(
   input: ProcedureListInput,
   followed: ProcedureBatch | null,
@@ -226,6 +231,7 @@ function stageOf(
   return arrivalStepOf({
     accounts: input.accounts.state,
     mandates: input.mandates.state,
+    invoices: "done",
     file: fileStatus(followed, toPrepare).state,
     returns: returnsStatus(followed, input.now.day).state,
   });
@@ -236,6 +242,7 @@ function upcomingStageOf(input: ProcedureListInput): ProcedureStage {
   return arrivalStepOf({
     accounts: input.accounts.state,
     mandates: input.mandates.state,
+    invoices: "locked",
     file: "waiting",
     returns: "locked",
   });

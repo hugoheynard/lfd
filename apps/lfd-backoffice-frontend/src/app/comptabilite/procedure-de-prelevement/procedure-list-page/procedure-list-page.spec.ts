@@ -153,8 +153,8 @@ describe('la table « Procédure de prélèvement »', () => {
   it('dit l’étape, la limite dépassée en rouge et les avertissements', async () => {
     const fixture = await render();
     const text = root(fixture).textContent ?? '';
-    expect(text).toContain('3 Fichier');
-    expect(text).toContain('3 Fichier de prélèvement · à venir');
+    expect(text).toContain('4 Fichier');
+    expect(text).toContain('4 Fichier de prélèvement · à venir');
     expect(text).toContain('Limite de dépôt dépassée');
     expect(text).toContain('2 mandats non importés');
     const deadlines = root(fixture).querySelectorAll('[data-deadline]');

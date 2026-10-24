@@ -1,5 +1,6 @@
 import {
   instantToLocal,
+  localToInstant,
   type CollectionProcedureView,
   type CollectionProcedureBatchView,
   type CollectionProcedureToPrepareView,
@@ -60,12 +61,14 @@ import { lotModesByClosureDay, procedureRhythmsOf } from "../procedure-rhythms-s
 import { readMissedProcedure } from "../missed-closures-support.js";
 import { readLotPayerModes } from "../lot-payer-modes-support.js";
 import { exportEntityOrFail } from "../mandate-bank-export-support.js";
+import { ProcedureInvoicesStep } from "../services/procedure-invoices-step.js";
 import { GetCollectionProcedureQuery } from "./collection-procedure-queries.js";
 import { isDeadBatchStatus } from "../../domain/entities/collection-batch-status.js";
 
 /**
- * **La procédure de prélèvement** (S1) : l'état des quatre onglets, calculé
- * à chaque lecture depuis les exports, les lots et les retours — la page
+ * **La procédure de prélèvement** (S1) : l'état des cinq onglets, calculé
+ * à chaque lecture depuis les exports, les factures, les lots et les
+ * retours (« Factures » depuis le 2026-10-24) — la page
  * n'en garde aucune mémoire (plan `plan-page-procedure-de-prelevement.md`,
  * § 1). Une lecture : rien n'est écrit.
  *
@@ -98,6 +101,7 @@ export class GetCollectionProcedureHandler implements IQueryHandler<
     private readonly authors: StaffAuthorDirectory,
     private readonly lotDebtors: LotDebtorsReader,
     private readonly attestations: CollectionBatchAttestationsReader,
+    private readonly invoicesStep: ProcedureInvoicesStep,
   ) {}
 
   async execute(query: GetCollectionProcedureQuery): Promise<CollectionProcedureView> {
@@ -180,6 +184,12 @@ export class GetCollectionProcedureHandler implements IQueryHandler<
         today,
       },
     );
+    const invoices = await this.invoicesStep.read({
+      legalEntityId: entity.id,
+      calendar,
+      closesAt: closureDay === null ? null : localToInstant(closureDay, CLOSURE_TIME),
+      now,
+    });
     const replacement =
       followed !== null && isDeadBatchStatus(followed.status)
         ? replacementOf(followed, batches)
@@ -208,17 +218,22 @@ export class GetCollectionProcedureHandler implements IQueryHandler<
       openBatches: viewsOf(views, openBatchesOf(batches, today)),
       accounts,
       mandates,
+      invoices,
       file,
       returns,
       arrivalStep: arrivalStepOf({
         accounts: accounts.state,
         mandates: mandates.state,
+        invoices: invoices.state,
         file: file.state,
         returns: returns.state,
       }),
     };
   }
 }
+
+/** Minuit à Paris : l'instant d'une clôture, depuis son jour (`procedureIdentityOf`). */
+const CLOSURE_TIME = "00:00";
 
 /**
  * La clôture à préparer, seulement si c'est celle de la procédure ouverte :

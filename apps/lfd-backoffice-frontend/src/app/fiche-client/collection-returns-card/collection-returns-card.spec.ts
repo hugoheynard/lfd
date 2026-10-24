@@ -40,7 +40,7 @@ describe('CollectionReturnsCard', () => {
     );
     expect(card?.textContent).toContain('pas bloqué d');
     expect(card?.querySelector('a')?.getAttribute('href')).toBe(
-      '/comptabilite/prelevement-du-mois',
+      '/comptabilite/procedure-de-prelevement',
     );
   });
 

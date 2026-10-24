@@ -4,7 +4,10 @@ import { By } from '@angular/platform-browser';
 import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
 import type {
   AccountBankExportsView,
+  CardInvoiceSignalsView,
   CollectionCycleView,
+  IssueMonthlyInvoicesPayload,
+  MonthlyInvoiceReportView,
   CollectionProcedureView,
   LegalEntityView,
   MandateBankExportsView,
@@ -14,7 +17,13 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { NotifyService } from '../../notify.service';
-import { procedureBatch, procedureView } from '../__tests__/collection-procedure-fixture';
+import {
+  procedureBatch,
+  procedureInvoices,
+  procedureView,
+} from '../__tests__/collection-procedure-fixture';
+import { CardInvoicesService } from '../card-invoices.service';
+import { MonthlyInvoicesService } from '../monthly-invoices.service';
 import { AccountBankExportsService } from '../account-bank-exports.service';
 import { CollectionBatchesService } from '../collection-batches.service';
 import { CollectionProcedureService, type ProcedureAddress } from '../collection-procedure.service';
@@ -22,6 +31,7 @@ import { AccountBankExportCard } from '../entites-juridiques/detail/account-bank
 import { LegalEntitiesService } from '../legal-entities.service';
 import { MandateBankExportsService } from '../mandate-bank-exports.service';
 import { ProcedureDePrelevementPage } from './procedure-de-prelevement-page';
+import { ProcedureInvoicesStep } from './procedure-invoices-step/procedure-invoices-step';
 
 /**
  * Ce que la page tient : le titre dit le lot suivi, l'onglet ouvert à
@@ -88,7 +98,25 @@ function routeOf(queryParams: Readonly<Record<string, string>>) {
   };
 }
 
+/** L'émission des factures : rejouable, elle rend un compte rendu vide. */
+class FakeInvoices {
+  readonly issued: IssueMonthlyInvoicesPayload[] = [];
+  issue(payload: IssueMonthlyInvoicesPayload): Promise<MonthlyInvoiceReportView> {
+    this.issued.push(payload);
+    return Promise.resolve({
+      periodClosesAt: payload.periodClosesAt,
+      periodStartsAt: '2026-09-30T22:00:00.000Z',
+      periodLabel: 'du 1er au 31 octobre 2026',
+      issued: [],
+      blocked: [],
+      alreadyInvoiced: 0,
+      unbillableOrders: 0,
+    });
+  }
+}
+
 let procedure: FakeProcedure;
+let invoices: FakeInvoices;
 
 async function render(
   queryParams: Readonly<Record<string, string>> = { lot: 'b1' },
@@ -105,6 +133,14 @@ async function render(
         useValue: {
           cycle: (): Promise<CollectionCycleView> =>
             Promise.resolve({ batches: [], exclusions: [] }),
+          preview: (): Promise<never> => Promise.reject(new Error('aperçu hors sujet ici')),
+        },
+      },
+      { provide: MonthlyInvoicesService, useValue: invoices },
+      {
+        provide: CardInvoicesService,
+        useValue: {
+          signals: (): Promise<CardInvoiceSignalsView> => Promise.resolve({ signaled: [] }),
         },
       },
       {
@@ -145,6 +181,7 @@ function click(fixture: ComponentFixture<ProcedureDePrelevementPage>, selector: 
 
 beforeEach(() => {
   procedure = new FakeProcedure();
+  invoices = new FakeInvoices();
 });
 
 describe('la page « Procédure de prélèvement »', () => {
@@ -294,5 +331,66 @@ describe('la page « Procédure de prélèvement »', () => {
     const back = query(fixture, '[data-back-to-list] a') ?? query(fixture, '[data-back-to-list]');
     expect(back?.textContent).toContain('Toutes les procédures');
     expect(back?.getAttribute('href')).toBe('/comptabilite/procedure-de-prelevement');
+  });
+
+  it('« 3 Factures » est entre les mandats et le fichier ; `?onglet=factures` l’ouvre', async () => {
+    const fixture = await render({ onglet: 'factures' });
+    expect(text(fixture)).toContain('3 Factures');
+    expect(text(fixture)).toContain('4 Fichier de prélèvement');
+    expect(text(fixture)).toContain('5 Retours de la banque');
+    expect(query(fixture, 'app-procedure-invoices-step')).not.toBeNull();
+  });
+
+  it('l’onglet Factures montre d’abord les bons à constater de la période', async () => {
+    procedure.view = procedureView({
+      arrivalStep: 'invoices',
+      invoices: procedureInvoices({
+        state: 'to_do',
+        reason: 'unconfirmed_deliveries',
+        unconfirmedDeliveries: [
+          {
+            orderId: 'o1',
+            orderNumber: 'ORD-001',
+            companyId: 'c1',
+            companyName: 'Hôtel du Port',
+            serviceDay: '2026-10-20',
+            fulfillmentMethod: 'pickup',
+            totalCents: 1_200,
+          },
+        ],
+      }),
+    });
+    const fixture = await render();
+
+    expect(query(fixture, '[data-unconfirmed]')?.textContent).toContain('ORD-001');
+    expect(query(fixture, '[data-figure-unconfirmed]')?.textContent).toContain('1');
+    expect(query(fixture, '[data-invoices-reason="unconfirmed_deliveries"]')).not.toBeNull();
+  });
+
+  it('« Émettre » envoie la clôture de la procédure, puis relit l’état', async () => {
+    procedure.view = procedureView({ arrivalStep: 'invoices' });
+    const fixture = await render();
+    const reads = procedure.reads;
+    const step = fixture.debugElement.query(By.css('app-procedure-invoices-step'));
+
+    (step.componentInstance as ProcedureInvoicesStep).issue.emit('2026-10-31T23:00:00.000Z');
+    await fixture.whenStable();
+
+    expect(invoices.issued).toEqual([
+      { legalEntityId: 'le1', periodClosesAt: '2026-10-31T23:00:00.000Z' },
+    ]);
+    expect(procedure.reads).toBeGreaterThan(reads);
+  });
+
+  it('verrouillé (clôture à venir) : il dit pourquoi, sans onglet à ouvrir, et garde les bons à constater', async () => {
+    procedure.view = procedureView({
+      arrivalStep: 'invoices',
+      invoices: procedureInvoices({ state: 'locked', reason: 'not_yet_issuable' }),
+    });
+    const fixture = await render();
+
+    expect(query(fixture, '[data-locked]')?.textContent).toContain('23 h 55');
+    expect(query(fixture, '[data-locked] button')).toBeNull();
+    expect(query(fixture, 'app-procedure-invoices-step')).not.toBeNull();
   });
 });

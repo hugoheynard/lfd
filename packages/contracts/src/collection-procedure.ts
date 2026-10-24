@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import type { CollectionBatchAttestationsView } from "./collection-batch-attestation.js";
 import type { CollectionBatchStatusView } from "./collection-batch.js";
+import type { CollectionProcedureInvoicesView } from "./collection-procedure-invoices.js";
 import type { BillingRhythmKind, LocalDeadlineView } from "./legal-entity.js";
 
 /**
@@ -19,8 +20,9 @@ import type { BillingRhythmKind, LocalDeadlineView } from "./legal-entity.js";
 /** L'état d'un onglet (§ 3). Une VALEUR : stable. */
 export type CollectionProcedureStepStateView = "locked" | "to_do" | "waiting" | "done";
 
-/** Les quatre onglets, dans l'ordre de la procédure. */
-export type CollectionProcedureStepKeyView = "accounts" | "mandates" | "file" | "returns";
+/** Les cinq onglets, dans l'ordre de la procédure (« Factures » en 3 depuis le 2026-10-24). */
+export type CollectionProcedureStepKeyView =
+  "accounts" | "mandates" | "invoices" | "file" | "returns";
 
 /** Onglet 1 — les comptes destinataires à la banque (l'entité). */
 export interface CollectionProcedureAccountsView {
@@ -281,6 +283,7 @@ export interface CollectionProcedureView {
   readonly openBatches: readonly CollectionProcedureBatchView[];
   readonly accounts: CollectionProcedureAccountsView;
   readonly mandates: CollectionProcedureMandatesView;
+  readonly invoices: CollectionProcedureInvoicesView;
   readonly file: CollectionProcedureFileView;
   readonly returns: CollectionProcedureReturnsView;
   /** L'onglet ouvert à l'arrivée : le premier qui attend un geste. */

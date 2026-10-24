@@ -7,7 +7,7 @@ import { NotifyService } from '../notify.service';
 import { saveBlob } from '../shared/download/save-blob';
 import { BatchRejectedByBankPanel } from './batch-rejected-by-bank-panel/batch-rejected-by-bank-panel';
 import { CollectionBatchesService } from './collection-batches.service';
-import type { PendingBatchGesture } from './prelevement-du-mois/pending-batch/pending-batch';
+import type { PendingBatchGesture } from './procedure-de-prelevement/pending-batch/pending-batch';
 
 /** Un téléchargement d'un lot : son fichier XML ou son CSV de contrôle. */
 export interface BatchDownload {

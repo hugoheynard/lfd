@@ -143,10 +143,18 @@ admin/accounting/monthly-invoices/autopilot`, `RunInvoiceAutopilotCommand`
   d'un 23h55 manqué (au plus tôt 00h15 le 1er) ; sa réponse porte
   `invoiceRuns` à côté de `runs`.
 
-## 6. L'écran « Prélèvement du mois »
+## 6. L'écran « Prélèvement du mois » — retiré le 2026-10-24
 
-`apps/lfd-backoffice-frontend/src/app/comptabilite/prelevement-du-mois/`
-(l'ancienne route `lots-de-prelevement` y redirige), de haut en bas : le
+> 🗑️ **Retiré le 2026-10-24** (Hugo), route et ancienne adresse
+> `lots-de-prelevement` comprises, **sans renvoi** : la procédure de
+> prélèvement (`/comptabilite/procedure-de-prelevement`,
+> [`plan-page-procedure-de-prelevement.md`](plan-page-procedure-de-prelevement.md)
+> § 12) en reprend tout — les factures, les bons à constater, les bons
+> écartés et l'émission dans l'onglet « Factures », l'aperçu dans
+> « Fichier ». Le calendrier et la dernière tentative restent sur la fiche
+> de l'entité. Ce qui suit décrit l'écran tel qu'il était.
+
+L'écran, de haut en bas : le
 calendrier (`collection-calendar/`, partagé avec la fiche de l'entité) et
 la dernière tentative ; l'aperçu (facture par ligne, signalements, pourquoi
 il est vide) ; **les factures du mois** (émises, payeurs signalés, le bouton

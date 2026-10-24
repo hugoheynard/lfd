@@ -23,6 +23,7 @@ export const PAGE_TITLE = 'Procédure de prélèvement';
 export const STEP_ORDER: readonly CollectionProcedureStepKeyView[] = [
   'accounts',
   'mandates',
+  'invoices',
   'file',
   'returns',
 ];
@@ -30,8 +31,9 @@ export const STEP_ORDER: readonly CollectionProcedureStepKeyView[] = [
 const STEP_LABELS: Readonly<Record<CollectionProcedureStepKeyView, string>> = {
   accounts: '1 Comptes',
   mandates: '2 Mandats',
-  file: '3 Fichier de prélèvement',
-  returns: '4 Retours de la banque',
+  invoices: '3 Factures',
+  file: '4 Fichier de prélèvement',
+  returns: '5 Retours de la banque',
 };
 
 const STATE_ICONS: Readonly<Record<CollectionProcedureStepStateView, FoldIconName | undefined>> = {
@@ -93,6 +95,10 @@ export function procedureTabs(
   const badges: Readonly<Record<CollectionProcedureStepKeyView, number | null>> = {
     accounts: view.accounts.state === 'to_do' ? view.accounts.toExportCount : null,
     mandates: view.mandates.state === 'to_do' ? view.mandates.toExportCount : null,
+    invoices:
+      view.invoices.state === 'to_do'
+        ? view.invoices.missingOrderCount + view.invoices.unconfirmedDeliveries.length
+        : null,
     file: null,
     returns: view.returns.pendingReturnCount > 0 ? view.returns.pendingReturnCount : null,
   };
@@ -122,18 +128,24 @@ export function collectionDayLabel(batch: CollectionProcedureBatchView): string 
     : `échéance le ${day(batch.requestedCollectionDay)}`;
 }
 
-/** Pourquoi un onglet est verrouillé, et vers quel onglet aller (Q6, option A). */
+/**
+ * Pourquoi un onglet est verrouillé, et vers quel onglet aller (Q6, option A) ;
+ * sans `go`, aucun onglet ne lève le verrou — les factures attendent la clôture.
+ */
 export const LOCK_REASONS: Readonly<
   Partial<
     Record<
       CollectionProcedureStepKeyView,
-      { readonly text: string; readonly go: CollectionProcedureStepKeyView }
+      { readonly text: string; readonly go?: CollectionProcedureStepKeyView }
     >
   >
 > = {
   mandates: {
     text: 'Importer d’abord les comptes à la banque : elle refuse un mandat dont le compte lui est inconnu.',
     go: 'accounts',
+  },
+  invoices: {
+    text: 'La période n’est pas close : ses factures s’émettent la veille de la clôture, à 23 h 55. Les bons à constater se traitent dès maintenant.',
   },
   returns: {
     text: 'Un retour ne s’enregistre que sur un lot déposé : déposer d’abord le fichier.',

@@ -23,7 +23,8 @@ import type { BillingRhythmKind, LocalDeadlineView } from "./legal-entity.js";
 export type CollectionProcedurePhaseView = "open" | "upcoming" | "closed" | "missed";
 
 /** L'étape en cours : l'onglet qui attend un geste, ou `closed`. */
-export type CollectionProcedureStageView = "accounts" | "mandates" | "file" | "returns" | "closed";
+export type CollectionProcedureStageView =
+  "accounts" | "mandates" | "invoices" | "file" | "returns" | "closed";
 
 /**
  * Un avertissement d'une ligne. Une VALEUR : stable.

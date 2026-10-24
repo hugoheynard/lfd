@@ -19,7 +19,7 @@ import { httpErrorMessage } from '@lfd/endpoints';
 
 import { BankReturnChecksService } from '../../bank-return-checks.service';
 import { day, instant } from '../../invoice-dossier-format';
-import { BankReturns } from '../../prelevement-du-mois/bank-returns/bank-returns';
+import { BankReturns } from '../bank-returns/bank-returns';
 import {
   WithdrawReturnCheckPanel,
   type WithdrawReturnCheckPanelData,

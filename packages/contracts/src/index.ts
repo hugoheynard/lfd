@@ -200,6 +200,10 @@ export type {
   AttestBankReturnCheckPayload,
   WithdrawBankReturnCheckPayload,
 } from "./collection-procedure.js";
+export type {
+  CollectionProcedureInvoicesReasonView,
+  CollectionProcedureInvoicesView,
+} from "./collection-procedure-invoices.js";
 export {
   attestBankReturnCheckPayloadSchema,
   withdrawBankReturnCheckPayloadSchema,

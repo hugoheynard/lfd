@@ -76,7 +76,7 @@ export const comptabiliteRoutes: Routes = [
           ),
       },
       {
-        // UNE PROCÉDURE — le fil d'une clôture, en quatre onglets qui se
+        // UNE PROCÉDURE — le fil d'une clôture, en cinq onglets qui se
         // déverrouillent ; leur état est relu au serveur, jamais stocké.
         // `:id` = entité × clôture. Les gestes demandent `b2b_accounting:write`.
         // Plan : documentation/comptabilite/prelevement/plan-page-procedure-de-prelevement.md (P2, § 11).
@@ -85,18 +85,6 @@ export const comptabiliteRoutes: Routes = [
         loadComponent: () =>
           import('./procedure-de-prelevement/procedure-de-prelevement-page').then(
             (m) => m.ProcedureDePrelevementPage,
-          ),
-      },
-      {
-        // LE MOIS DU PRÉLÈVEMENT, de haut en bas : son calendrier, l'aperçu de
-        // ce qui sera prélevé, le lot à déposer, l'historique. Les gestes
-        // demandent `b2b_accounting:write`.
-        // Plan : documentation/comptabilite/prelevement/prelevement-automatique.md (PA4).
-        path: 'prelevement-du-mois',
-        title: 'Prélèvement du mois — LFC B2B admin',
-        loadComponent: () =>
-          import('./prelevement-du-mois/prelevement-du-mois-page').then(
-            (m) => m.PrelevementDuMoisPage,
           ),
       },
       {
@@ -123,8 +111,9 @@ export const comptabiliteRoutes: Routes = [
             (m) => m.NosEtablissementsPage,
           ),
       },
-      // L'ancienne adresse vit dans des favoris : remplacée le 2026-10-08 (PA4).
-      { path: 'lots-de-prelevement', redirectTo: 'prelevement-du-mois' },
+      // « Prélèvement du mois » (et son ancienne adresse `lots-de-prelevement`)
+      // est retiré le 2026-10-24, sans renvoi (Hugo : « tu dégages son ancienne
+      // adresse ») : la procédure de prélèvement en reprend tout.
       {
         // UNE facture émise, figée (facture-emise.md),
         // ouverte depuis l'onglet « Facturation » de la fiche client.

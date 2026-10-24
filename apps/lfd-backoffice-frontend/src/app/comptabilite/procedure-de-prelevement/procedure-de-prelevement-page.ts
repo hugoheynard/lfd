@@ -2,6 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { ActivatedRoute, Router } from '@angular/router';
 import type {
   CollectionBatchView,
+  CollectionExclusionView,
+  CollectionPreviewView,
   CollectionProcedureStepKeyView,
   CollectionProcedureView,
   LegalEntityView,
@@ -15,6 +17,7 @@ import {
   FoldIconComponent,
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
+  FoldPanelHostService,
   FoldTabPanelComponent,
   FoldTabsComponent,
 } from 'fold-ng';
@@ -28,7 +31,13 @@ import { CollectionProcedureService } from '../collection-procedure.service';
 import { AccountBankExportCard } from '../entites-juridiques/detail/account-bank-export-card/account-bank-export-card';
 import { MandateBankExportCard } from '../entites-juridiques/detail/mandate-bank-export-card/mandate-bank-export-card';
 import { LegalEntitiesService } from '../legal-entities.service';
-import type { PendingBatchGesture } from '../prelevement-du-mois/pending-batch/pending-batch';
+import { MonthlyInvoicesService } from '../monthly-invoices.service';
+import { NotifyService } from '../../notify.service';
+import { issuedInvoicesSentence } from './issued-invoices-sentence';
+import { MonthPreview } from './month-preview/month-preview';
+import type { PendingBatchGesture } from './pending-batch/pending-batch';
+import { ProcedureInvoicesStep } from './procedure-invoices-step/procedure-invoices-step';
+import { SettlePanel } from './settle-panel/settle-panel';
 import {
   ProcedureFileStep,
   type OtherBatchGesture,
@@ -51,7 +60,10 @@ import {
  * **Comptabilité › Procédure de prélèvement** (plan
  * `documentation/comptabilite/prelevement/plan-page-procedure-de-prelevement.md`,
  * lot P2) — la procédure écrite (`procedure-de-prelevement.md`), rendue
- * suivable en quatre onglets : comptes, mandats, fichier, retours.
+ * suivable en cinq onglets : comptes, mandats, factures, fichier, retours.
+ * « Factures » (2026-10-24) a repris de « Prélèvement du mois », retiré le
+ * même jour, les factures de la période, les bons à constater, les bons
+ * écartés et l'émission ; l'aperçu du lot à venir est dans « Fichier ».
  *
  * Le DÉTAIL d'une procédure (§ 11, Hugo 2026-10-23) : on y arrive depuis la
  * table de toutes les procédures, et « ← Toutes les procédures » y ramène.
@@ -84,7 +96,9 @@ import {
     FoldTabPanelComponent,
     FoldTabsComponent,
     MandateBankExportCard,
+    MonthPreview,
     ProcedureFileStep,
+    ProcedureInvoicesStep,
     ProcedureReturnsStep,
   ],
   providers: [CollectionBatchGestures],
@@ -98,6 +112,9 @@ export class ProcedureDePrelevementPage {
   private readonly permissions = inject(PermissionsStore);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly invoicesApi = inject(MonthlyInvoicesService);
+  private readonly notify = inject(NotifyService);
+  private readonly panels = inject(FoldPanelHostService);
   protected readonly gestures = inject(CollectionBatchGestures);
 
   protected readonly listRoute = PROCEDURE_LIST_ROUTE;
@@ -108,6 +125,11 @@ export class ProcedureDePrelevementPage {
   private readonly lot = signal<string | null>(this.route.snapshot.queryParamMap.get('lot'));
   protected readonly view = signal<CollectionProcedureView | null>(null);
   private readonly batches = signal<readonly CollectionBatchView[]>([]);
+  /** Les bons écartés à la dernière préparation — l'onglet « Factures » les montre. */
+  protected readonly exclusions = signal<readonly CollectionExclusionView[]>([]);
+  /** L'aperçu du lot à venir, lu seulement sans lot suivi ; son échec ne coûte que sa carte. */
+  protected readonly preview = signal<CollectionPreviewView | null>(null);
+  protected readonly previewError = signal<string | null>(null);
   protected readonly tab = signal<CollectionProcedureStepKeyView>('accounts');
   protected readonly loading = signal(true);
   protected readonly loadError = signal<string | null>(null);
@@ -134,7 +156,7 @@ export class ProcedureDePrelevementPage {
       (batch) => ids.has(batch.id) && batch.id !== view?.followed?.id && !isDeadBatch(batch),
     );
   });
-  /** Le lot suivi, tel que « Prélèvement du mois » le lit — pour réutiliser ses cartes. */
+  /** Le lot suivi, tel que la lecture des lots le rend — pour réutiliser ses cartes. */
   protected readonly followedBatch = computed(
     () => this.batches().find((batch) => batch.id === this.view()?.followed?.id) ?? null,
   );
@@ -176,6 +198,49 @@ export class ProcedureDePrelevementPage {
     const cycle = await this.batchesApi.cycle(view.legalEntityId);
     this.view.set(view);
     this.batches.set(cycle.batches);
+    this.exclusions.set(cycle.exclusions);
+    await this.loadPreview(view);
+  }
+
+  /** L'aperçu de ce que le prochain lot prélèverait — avant préparation seulement. */
+  private async loadPreview(view: CollectionProcedureView): Promise<void> {
+    this.previewError.set(null);
+    if (view.followed !== null) {
+      this.preview.set(null);
+      return;
+    }
+    try {
+      this.preview.set(await this.batchesApi.preview(view.legalEntityId));
+    } catch (caught) {
+      this.preview.set(null);
+      this.previewError.set(httpErrorMessage(caught, 'L’aperçu du lot est illisible.'));
+    }
+  }
+
+  /** « Émettre les factures de … » — rejouable ; le compte rendu dit ce qui est parti. */
+  protected async issueInvoices(periodClosesAt: string): Promise<void> {
+    const entityId = this.entityId();
+    if (entityId !== null) {
+      await this.gestures.run(
+        'invoices',
+        async () => {
+          const report = await this.invoicesApi.issue({ legalEntityId: entityId, periodClosesAt });
+          this.notify.success(issuedInvoicesSentence(report, periodClosesAt));
+        },
+        () => this.refresh(),
+      );
+    }
+  }
+
+  /** « Réglée autrement » sur un bon écarté : le panneau, puis l'état relu. */
+  protected async settle(row: CollectionExclusionView): Promise<void> {
+    const done = await this.panels.open<CollectionExclusionView, boolean>(SettlePanel, {
+      data: row,
+      width: 'md',
+    }).closed;
+    if (done === true) {
+      await this.onCardChanged();
+    }
   }
 
   /** Revenir au lot que la règle choisit pour cette procédure. */
@@ -196,7 +261,7 @@ export class ProcedureDePrelevementPage {
       await this.gestures.prepare(
         entityId,
         this.view()?.toPrepare?.periodLabel ?? '',
-        'Aucun lot préparé : les bons écartés sont listés sur « Prélèvement du mois ».',
+        'Aucun lot préparé : les bons écartés sont listés dans l’onglet « Factures ».',
         () => this.refresh(),
       );
     }

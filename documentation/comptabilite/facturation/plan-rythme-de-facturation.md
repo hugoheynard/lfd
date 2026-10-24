@@ -700,7 +700,8 @@ rend la timeline du **mode mensuel**. Le lisent encore, et sont à reprendre :
 | M4 (relevé, dossier) | `statement-period-support` (`get-current-billing-cycle`, `list-statement-cycles`, `get-cycle-statement`, `export-cycle-statement`, `get-invoice-dossier`, `export-invoice-dossier`), et `PrismaInvoicePeriodsReader`, qui lit le mensuel en jointure SANS passer par le port                                                   |
 
 Les écrans de prélèvement du back-office (`month-schedule`, `month-preview`,
-`prelevement-du-mois-page`) ont perdu leur branche « autre rythme » : en M1 le
+et la page « Prélèvement du mois », retirée le 2026-10-24 au profit de la
+procédure de prélèvement) ont perdu leur branche « autre rythme » : en M1 le
 lot suit le mensuel. M4 la rend, par période.
 
 **Deux e2e retirés, à rétablir** (`test/monthly-invoices.e2e-spec.ts`) : ils

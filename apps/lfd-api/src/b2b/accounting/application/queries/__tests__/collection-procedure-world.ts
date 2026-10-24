@@ -18,6 +18,7 @@ import {
   FixedStaffAuthorDirectory,
   authorsKnownAs,
 } from "../../../../../staff/directory/domain/__tests__/fixed-staff-author-directory.js";
+import { invoicesStepWorld } from "../../services/__tests__/procedure-invoices-doubles.js";
 import { GetCollectionProcedureQuery } from "../collection-procedure-queries.js";
 import { GetCollectionProcedureHandler } from "../get-collection-procedure.handler.js";
 
@@ -35,6 +36,7 @@ export function world() {
   const checks = new FixedBankReturnChecks();
   const lotDebtors = new FixedLotDebtors();
   const attestations = new FixedBatchAttestations();
+  const invoices = invoicesStepWorld();
   const handler = new GetCollectionProcedureHandler(
     accounts.entities,
     accounts.accounts,
@@ -58,8 +60,20 @@ export function world() {
     ),
     lotDebtors,
     attestations,
+    invoices.step,
   );
   const read = (batchId: string | null = null, closureDay: string | null = null) =>
     handler.execute(new GetCollectionProcedureQuery("le1", batchId, closureDay));
-  return { accounts, mandates, batches, returns, coverage, checks, lotDebtors, attestations, read };
+  return {
+    accounts,
+    mandates,
+    batches,
+    returns,
+    coverage,
+    checks,
+    lotDebtors,
+    attestations,
+    invoices,
+    read,
+  };
 }

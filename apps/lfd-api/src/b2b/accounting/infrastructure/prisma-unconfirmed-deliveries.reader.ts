@@ -10,6 +10,11 @@ import { accountOrderWhere } from "./billable-order-criterion.js";
 /** `AAAA-MM-JJ`. */
 const DAY_LENGTH = 10;
 
+/** `@db.Date` : minuit UTC du jour, dont la date ISO EST le jour de Paris. */
+function utcMidnight(day: string): Date {
+  return new Date(`${day}T00:00:00.000Z`);
+}
+
 /**
  * Les bons à constater : l'assiette sans sa fenêtre (`accountOrderWhere`),
  * `delivered_on` nul, jour demandé passé. Surface staff : aucune société
@@ -21,13 +26,15 @@ export class PrismaUnconfirmedDeliveriesReader extends UnconfirmedDeliveriesRead
     super();
   }
 
-  async servedBefore(day: string): Promise<readonly UnconfirmedDelivery[]> {
+  async servedBefore(day: string, from?: string): Promise<readonly UnconfirmedDelivery[]> {
     const rows = await this.prisma.order.findMany({
       where: {
         ...accountOrderWhere(),
         deliveredOn: null,
-        // `@db.Date` : minuit UTC du jour, dont la date ISO EST le jour de Paris.
-        requestedDeliveryDate: { lt: new Date(`${day}T00:00:00.000Z`) },
+        requestedDeliveryDate: {
+          lt: utcMidnight(day),
+          ...(from === undefined ? {} : { gte: utcMidnight(from) }),
+        },
       },
       orderBy: [{ requestedDeliveryDate: "asc" }, { orderNumber: "asc" }],
       select: {
@@ -37,6 +44,8 @@ export class PrismaUnconfirmedDeliveriesReader extends UnconfirmedDeliveriesRead
         requestedDeliveryDate: true,
         fulfillmentMethod: true,
         totalCents: true,
+        createdAt: true,
+        billedCompanyId: true,
         company: { select: { raisonSociale: true } },
       },
     });
@@ -52,6 +61,8 @@ export class PrismaUnconfirmedDeliveriesReader extends UnconfirmedDeliveriesRead
               serviceDay: row.requestedDeliveryDate.toISOString().slice(0, DAY_LENGTH),
               fulfillmentMethod: row.fulfillmentMethod === "pickup" ? "pickup" : "delivery",
               totalCents: row.totalCents,
+              placedAt: row.createdAt,
+              billedCompanyId: row.billedCompanyId,
             },
           ],
     );

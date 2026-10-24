@@ -20,8 +20,9 @@ export const PROCEDURE_LIST_ROUTE = '/comptabilite/procedure-de-prelevement';
 const STAGE_LABELS: Readonly<Record<CollectionProcedureStageView, string>> = {
   accounts: '1 Comptes',
   mandates: '2 Mandats',
-  file: '3 Fichier de prélèvement',
-  returns: '4 Retours de la banque',
+  invoices: '3 Factures',
+  file: '4 Fichier de prélèvement',
+  returns: '5 Retours de la banque',
   closed: 'Close',
 };
 

@@ -8,6 +8,22 @@ import { NOW } from "../../commands/__tests__/account-bank-export-doubles.js";
 import { bankMandate } from "../../commands/__tests__/mandate-bank-export-doubles.js";
 import { LAST_CLOSURE, TODAY, stored } from "./collection-procedure-doubles.js";
 import { world } from "./collection-procedure-world.js";
+import { frozenOrder } from "../../../domain/services/__tests__/collection-fixtures.js";
+import type { InvoiceableOrder } from "../../../domain/services/monthly-invoicing.js";
+
+/** Un bon livré et passé au compte, qu'aucune facture ne porte encore. */
+function missingOrder(): InvoiceableOrder {
+  const placedAt = new Date("2026-09-10T08:00:00.000Z");
+  return {
+    orderId: "o1",
+    orderNumber: "ORD-1",
+    companyId: "c1",
+    placedAt,
+    deliveredOn: "2026-09-11",
+    billedCompanyId: null,
+    frozen: frozenOrder("ORD-1", placedAt),
+  };
+}
 
 /**
  * La lecture d'état de la procédure (S1) : les quatre onglets calculés depuis
@@ -102,6 +118,19 @@ describe("la procédure de prélèvement — la lecture d'état", () => {
     expect(view.followed).toBeNull();
     expect(view.toPrepare?.closesAt).toBe(LAST_CLOSURE);
     expect(view.file.reason).toBe("to_prepare");
+  });
+
+  it("onglet 3 Factures : un bon de la clôture sans facture — à faire, et l'arrivée s'y pose (2026-10-24)", async () => {
+    const w = world();
+    w.batches.batches = [stored("x", { status: "cancelled", cancelledAt: NOW.toISOString() })];
+    w.invoices.invoices.floorAt = new Date("2026-01-01T00:00:00.000Z");
+    w.invoices.uninvoiced.orders = [missingOrder()];
+
+    const view = await w.read();
+
+    expect(view.invoices).toMatchObject({ state: "to_do", missingOrderCount: 1 });
+    expect(view.invoices.closure?.periodClosesAt).toBe(LAST_CLOSURE);
+    expect(view.arrivalStep).toBe("invoices");
   });
 
   it("un lot déposé avec un retour en suspens : l'onglet 4 est à faire", async () => {

@@ -101,7 +101,11 @@ import { InvoiceAutopilotRuns } from "./domain/ports/invoice-autopilot-runs.js";
 import { MonthlyInvoiceOutcomes } from "./domain/ports/monthly-invoice-outcomes.js";
 import { MonthlyInvoicesReader } from "./domain/ports/monthly-invoices.reader.js";
 import { ClosureBatchesReader } from "./domain/ports/closure-batches.reader.js";
-import { MonthlyInvoicingReader } from "./domain/ports/monthly-invoicing.reader.js";
+import {
+  MonthlyInvoicingReader,
+  UninvoicedOrdersReader,
+} from "./domain/ports/monthly-invoicing.reader.js";
+import { ProcedureInvoicesStep } from "./application/services/procedure-invoices-step.js";
 import { AdminCardInvoicesController } from "./http/admin-card-invoices.controller.js";
 import { AdminInvoiceSpecimenController } from "./http/admin-invoice-specimen.controller.js";
 import { AdminSepaMandateSpecimensController } from "./http/admin-sepa-mandate-specimens.controller.js";
@@ -295,6 +299,9 @@ import { PrismaOrderRowsLock } from "./infrastructure/prisma-order-rows-lock.js"
     InvoiceIssuer,
     // La facture du mois, et le lot qui encaisse des factures (E4).
     { provide: MonthlyInvoicingReader, useClass: PrismaMonthlyInvoicingReader },
+    // L'onglet « Factures » de la procédure lit la même assiette (2026-10-24).
+    { provide: UninvoicedOrdersReader, useExisting: MonthlyInvoicingReader },
+    ProcedureInvoicesStep,
     { provide: InvoicingFloorReader, useClass: PrismaInvoicingFloorReader },
     { provide: MonthlyInvoiceOutcomes, useClass: PrismaMonthlyInvoiceOutcomes },
     { provide: MonthlyInvoicesReader, useClass: PrismaMonthlyInvoicesReader },

@@ -10,11 +10,12 @@ import type { CollectionProcedureStepKeyView } from '@lfd/contracts';
  */
 export const PROCEDURE_TAB_PARAM = 'onglet';
 
-export type ProcedureTabParam = 'comptes' | 'mandats' | 'fichier' | 'retours';
+export type ProcedureTabParam = 'comptes' | 'mandats' | 'factures' | 'fichier' | 'retours';
 
 const TAB_OF_PARAM: Readonly<Record<ProcedureTabParam, CollectionProcedureStepKeyView>> = {
   comptes: 'accounts',
   mandats: 'mandates',
+  factures: 'invoices',
   fichier: 'file',
   retours: 'returns',
 };

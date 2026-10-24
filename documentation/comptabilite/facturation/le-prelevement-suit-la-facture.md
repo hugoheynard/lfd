@@ -53,7 +53,7 @@ bloquer les autres payeurs. Il revient au lot suivant une fois corrigé.
 
 ## 4. Les écrans et routes
 
-- Le lot (`prelevement-du-mois/batch-lines/`) : par ligne, Σ bons, total
+- Le lot (`procedure-de-prelevement/batch-lines/`, onglet « Fichier » de la procédure depuis le 2026-10-24) : par ligne, Σ bons, total
   facturé, écart signé, et ses factures ou son arrêté.
 - `GET admin/accounting/billing-statements/:id` relit l'arrêté sans recalcul
   (le `body` est revalidé par zod) ; page `comptabilite/arretes-de-facturation/:id`.

@@ -7,7 +7,7 @@ import {
 } from "../entities/collection-batch-status.js";
 
 /**
- * **L'état de la procédure de prélèvement** — les quatre onglets de la page,
+ * **L'état de la procédure de prélèvement** — les onglets de la page,
  * calculés depuis l'état réel (plan
  * `documentation/comptabilite/prelevement/plan-page-procedure-de-prelevement.md`,
  * § 1 et § 3). Pur : le jour de Paris est donné, rien n'est lu ni stocké.
@@ -20,6 +20,10 @@ import {
  * `lot-debtor-bank-standing.ts`) — la banque ne contrôle pas au dépôt. Les
  * attestations « Retours contrôlés » (entité × jour) y sont depuis le
  * 2026-10-23 : l'onglet 4 les lit.
+ *
+ * ⚠️ Depuis le 2026-10-24, l'onglet « Factures » s'insère en 3
+ * (`collection-procedure-invoices.ts`) : « onglet 3 » et « onglet 4 » de ces
+ * commentaires désignent le Fichier (affiché 4) et les Retours (affiché 5).
  */
 
 /** Les quatre états d'un onglet (§ 3). */
@@ -256,7 +260,7 @@ export function replacementOf(
   );
 }
 
-export type ProcedureStepKey = "accounts" | "mandates" | "file" | "returns";
+export type ProcedureStepKey = "accounts" | "mandates" | "invoices" | "file" | "returns";
 
 /**
  * L'onglet ouvert à l'arrivée (§ 1) : le premier qui attend un geste, à
@@ -265,6 +269,12 @@ export type ProcedureStepKey = "accounts" | "mandates" | "file" | "returns";
 export function arrivalStepOf(
   states: Readonly<Record<ProcedureStepKey, ProcedureStepState>>,
 ): ProcedureStepKey {
-  const order: readonly ProcedureStepKey[] = ["accounts", "mandates", "file", "returns"];
+  const order: readonly ProcedureStepKey[] = [
+    "accounts",
+    "mandates",
+    "invoices",
+    "file",
+    "returns",
+  ];
   return order.find((key) => states[key] === "to_do" || states[key] === "waiting") ?? "accounts";
 }

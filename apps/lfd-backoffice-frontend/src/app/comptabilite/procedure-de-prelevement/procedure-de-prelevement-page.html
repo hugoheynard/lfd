@@ -12,7 +12,7 @@
     } @else if (entity(); as current) {
       Prochaine clôture le {{ longDay(current.nextCollection.closesAt) }}.
     } @else {
-      La procédure écrite, onglet par onglet&nbsp;: comptes, mandats, fichier, retours.
+      La procédure écrite, onglet par onglet&nbsp;: comptes, mandats, factures, fichier, retours.
     }
   </p>
 
@@ -75,9 +75,11 @@
               @if (lockReason(); as lock) {
                 <fold-callout variant="neutral" icon="lock" data-locked>
                   {{ lock.text }}
-                  <button actions foldButton emphasis="outline" (click)="goTo(lock.go)">
-                    Aller à l’onglet
-                  </button>
+                  @if (lock.go; as go) {
+                    <button actions foldButton emphasis="outline" (click)="goTo(go)">
+                      Aller à l’onglet
+                    </button>
+                  }
                 </fold-callout>
               }
             } @else if (stepState() === 'done') {
@@ -102,6 +104,17 @@
                   <app-mandate-bank-export-card [entity]="current" (changed)="onCardChanged()" />
                 }
               }
+              @case ('invoices') {
+                <!-- Même verrouillé : les bons à constater se traitent avant la clôture. -->
+                <app-procedure-invoices-step
+                  [view]="state.invoices"
+                  [exclusions]="exclusions()"
+                  [canWrite]="canWrite()"
+                  [pending]="gestures.pending() === 'invoices'"
+                  (issue)="issueInvoices($event)"
+                  (settle)="settle($event)"
+                />
+              }
               @case ('file') {
                 <app-procedure-file-step
                   [view]="state"
@@ -115,6 +128,14 @@
                   (openStep)="tab.set($event)"
                   (changed)="onCardChanged()"
                 />
+                @if (state.followed === null) {
+                  <!-- Avant préparation : ce que le prochain lot prélèverait (repris du mois). -->
+                  <app-month-preview
+                    [entity]="current"
+                    [preview]="preview()"
+                    [error]="previewError()"
+                  />
+                }
               }
               @case ('returns') {
                 @if (stepState() !== 'locked') {

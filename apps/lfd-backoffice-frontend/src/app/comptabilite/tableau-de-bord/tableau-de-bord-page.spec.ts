@@ -369,16 +369,16 @@ describe('TableauDeBordPage — le résumé du prélèvement du mois', () => {
     return entities;
   };
 
-  it('dit la prochaine date, le montant de l’aperçu, et mène à l’écran du mois', async () => {
+  it('dit la prochaine date, le montant de l’aperçu, et mène à la procédure de prélèvement', async () => {
     const { fixture } = await render(new FakeDashboard(), ready());
     const host = fixture.nativeElement as HTMLElement;
 
     expect(host.querySelector('[data-next-collection]')?.textContent).toContain('16 nov. 2026');
     expect(host.querySelector('[data-preview-summary]')?.textContent).toMatch(/1\s?234,56\s€/u);
     const link = Array.from(host.querySelectorAll('a')).find((a) =>
-      a.textContent?.includes('Ouvrir le prélèvement du mois'),
+      a.textContent?.includes('Ouvrir la procédure de prélèvement'),
     );
-    expect(link?.getAttribute('href')).toBe('/comptabilite/prelevement-du-mois');
+    expect(link?.getAttribute('href')).toBe('/comptabilite/procedure-de-prelevement');
   });
 
   it('pas encore prélevable : le dit, avec la date', async () => {

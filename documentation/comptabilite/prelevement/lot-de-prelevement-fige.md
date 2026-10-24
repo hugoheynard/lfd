@@ -105,7 +105,7 @@ Chaque geste écrit un fait : `collection.batch_constituted`,
 `collection.batch_cancelled`, `collection.batch_deposited`,
 `collection.order_settled_otherwise`.
 
-Écran : `comptabilite/prelevement-du-mois/` du back-office.
+Écran : la procédure de prélèvement du back-office, `comptabilite/procedure-de-prelevement/` (« Prélèvement du mois » retiré le 2026-10-24).
 
 ## Ce qui reste ouvert
 

@@ -8,13 +8,13 @@ describe('l’étape d’une procédure déposée sans signature attestée', () 
   it('dit « déposé · signature à attester » sur l’onglet 3', () => {
     const row = procedureRow({ deposited: true, signatureToAttest: true });
 
-    expect(stageLabel(row)).toBe('3 Fichier de prélèvement · déposé · signature à attester');
+    expect(stageLabel(row)).toBe('4 Fichier de prélèvement · déposé · signature à attester');
   });
 
   it('signée, ou pas encore déposée : l’étape seule', () => {
-    expect(stageLabel(procedureRow())).toBe('3 Fichier de prélèvement');
+    expect(stageLabel(procedureRow())).toBe('4 Fichier de prélèvement');
     expect(stageLabel(procedureRow({ stage: 'returns', deposited: true }))).toBe(
-      '4 Retours de la banque',
+      '5 Retours de la banque',
     );
   });
 });

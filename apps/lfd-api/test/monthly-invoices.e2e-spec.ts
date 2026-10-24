@@ -19,6 +19,7 @@ import {
   instantToLocal,
   weekdayOf,
   type CollectionCycleView,
+  type CollectionProcedureView,
   type CycleStatementView,
   type InvoiceDossierView,
   type UnconfirmedDeliveriesView,
@@ -1278,5 +1279,81 @@ describe("facturer chaque bon dans le mois de sa livraison (lot ZL)", () => {
     await expect(
       markDelivered(ctx.prisma, order.id, new Date(closesAt.getTime() + DAY_MS)),
     ).rejects.toThrow(/ne change plus/u);
+  });
+});
+
+/**
+ * L'onglet « Factures » de la procédure de prélèvement (2026-10-24) : la même
+ * assiette que l'émission, lue à travers la vraie base — un bon de la période
+ * sans facture rend l'onglet « à faire », tout facturé le rend « fait ».
+ */
+describe("l'onglet Factures de la procédure lit l'assiette de la clôture", () => {
+  async function procedureAt(entityId: string): Promise<CollectionProcedureView> {
+    const procedureId = `${entityId}~${instantToLocal(closesAt).day}`;
+    return jsonBody<CollectionProcedureView>(
+      await staff()
+        .get(
+          `/admin/accounting/collection-procedure?procedureId=${encodeURIComponent(procedureId)}`,
+        )
+        .expect(200),
+    );
+  }
+
+  function firstOrderOf(companyId: string) {
+    return ctx.prisma.order.findFirstOrThrow({
+      where: { companyId },
+      select: { id: true, orderNumber: true },
+    });
+  }
+
+  it("un bon livré non facturé : à faire ; une fois émis : fait", async () => {
+    const id = await entity();
+    await payer(id);
+
+    const before = await procedureAt(id);
+    expect(before.invoices).toMatchObject({
+      state: "to_do",
+      reason: "missing_invoices",
+      missingOrderCount: 1,
+      unconfirmedDeliveries: [],
+    });
+    expect(before.invoices.closure?.periodClosesAt).toBe(closesAt.toISOString());
+
+    await issueByHand(id);
+
+    const after = await procedureAt(id);
+    expect(after.invoices).toMatchObject({
+      state: "done",
+      reason: "all_invoiced",
+      missingOrderCount: 0,
+    });
+    expect(after.invoices.closure?.invoices).toHaveLength(1);
+  });
+
+  it("un bon de la période jamais remis : à constater, nommé par l'onglet ; un bon d'avant la période n'y est pas", async () => {
+    const id = await entity();
+    const company = await payer(id, { handedOver: false });
+    const order = await firstOrderOf(company.id);
+    const served = new Date(closesAt.getTime() - 2 * DAY_MS);
+    await ctx.prisma.order.update({
+      where: { id: order.id },
+      data: { requestedDeliveryDate: new Date(`${instantToLocal(served).day}T00:00:00.000Z`) },
+    });
+    const older = await payer(id, { handedOver: false });
+    const olderOrder = await firstOrderOf(older.id);
+    const beforePeriod = new Date(month.cycle().startsAt.getTime() - 2 * DAY_MS);
+    await ctx.prisma.order.update({
+      where: { id: olderOrder.id },
+      data: {
+        requestedDeliveryDate: new Date(`${instantToLocal(beforePeriod).day}T00:00:00.000Z`),
+      },
+    });
+
+    const view = await procedureAt(id);
+
+    expect(view.invoices.reason).toBe("unconfirmed_deliveries");
+    expect(view.invoices.unconfirmedDeliveries.map((row) => row.orderNumber)).toEqual([
+      order.orderNumber,
+    ]);
   });
 });

@@ -18,7 +18,7 @@ export class AdminCollectionProcedureController {
   constructor(private readonly queries: QueryBus) {}
 
   /**
-   * L'état des quatre onglets. `procedureId` (la ligne de la liste, § 11)
+   * L'état des cinq onglets. `procedureId` (la ligne de la liste, § 11)
    * désigne l'entité et la clôture, sinon `legalEntityId` seule ; `batchId`
    * épingle le lot suivi (404 s'il n'est pas de l'entité).
    */
