@@ -8,6 +8,7 @@ import { AccountBankExport } from "../../domain/entities/account-bank-export.js"
 import { AccountBankExportEvent } from "../../domain/events/account-bank-export.events.js";
 import { AccountBankExportRepository } from "../../domain/ports/account-bank-export.repository.js";
 import { KnownAccountFingerprintsReader } from "../../domain/ports/account-bank-exports.reader.js";
+import { BankExportPreparationLock } from "../../domain/ports/bank-export-preparation-lock.js";
 import { AccountBankExportNumbering } from "../../domain/ports/bank-export-numbering.js";
 import { AccountsForBankExportReader } from "../../domain/ports/accounts-for-bank-export.reader.js";
 import { LegalEntityReader } from "../../domain/ports/legal-entity.reader.js";
@@ -51,12 +52,16 @@ export class ExportAccountsForBankHandler implements ICommandHandler<
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly lock: BankExportPreparationLock,
   ) {}
 
   async execute(command: ExportAccountsForBankCommand): Promise<string> {
     const at = this.clock.now();
     const entity = await exportEntityOrFail(this.entities, command.legalEntityId);
     return this.uow.run(async () => {
+      // AVANT toute lecture : une préparation concurrente a écrit ses lignes et
+      // pris son numéro quand on lit « en vol » (prerequis-export-ribs.md § 8).
+      await this.lock.acquire(entity.id, "accounts");
       const [{ exportable }, fingerprints] = await Promise.all([
         this.accounts.debitedBy(entity.id),
         this.fingerprints.all(),

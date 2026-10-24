@@ -159,6 +159,13 @@ n'ont pas eu de réponse explicite : la vérification CENET le dira.
   ouvert, sinon redonne le fichier de CET export (« Télécharger à nouveau le
   fichier ») ; « J'ai déposé le fichier dans CENET » ; « Abandonner »,
   discret. Plus d'historique ni de paragraphe.
+- **Deux préparations simultanées se suivent** (2026-10-24) : un verrou par
+  (entité, sorte d'export), pris dans la transaction avant la lecture des
+  candidats et avant le numéro EXM (`BankExportPreparationLock`,
+  `pg_advisory_xact_lock`). La seconde voit les mandats de la première en vol
+  et prend les suivants, ou est refusée (409) s'il ne reste rien — elle ne
+  fige plus les mêmes mandats sous un second numéro, que CENET aurait
+  rejetés à l'import. E2E : `mandate-bank-export-race`.
 - **Toujours vérifier dans CENET avant l'import réel** (réponse 10) : c'est la
   seule vérification du format que nous aurons, la banque ne contrôle rien au
   dépôt d'une remise (réponse 15).

@@ -8,6 +8,7 @@ import { MandateBankExport } from "../../domain/entities/mandate-bank-export.js"
 import { BankExportWithoutCreditorIdentifierError } from "../../domain/errors/mandate-bank-export-errors.js";
 import { MandateBankExportCreatedEvent } from "../../domain/events/mandate-bank-export.events.js";
 import { LegalEntityReader } from "../../domain/ports/legal-entity.reader.js";
+import { BankExportPreparationLock } from "../../domain/ports/bank-export-preparation-lock.js";
 import { MandateBankExportNumbering } from "../../domain/ports/bank-export-numbering.js";
 import { MandateBankExportRepository } from "../../domain/ports/mandate-bank-export.repository.js";
 import { KnownMandateAccountsReader } from "../../domain/ports/mandate-bank-exports.reader.js";
@@ -56,6 +57,7 @@ export class ExportMandatesForBankHandler implements ICommandHandler<
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly lock: BankExportPreparationLock,
   ) {}
 
   async execute(command: ExportMandatesForBankCommand): Promise<string> {
@@ -65,6 +67,9 @@ export class ExportMandatesForBankHandler implements ICommandHandler<
       throw new BankExportWithoutCreditorIdentifierError(entity.name);
     }
     return this.uow.run(async () => {
+      // AVANT toute lecture : une préparation concurrente a écrit ses lignes et
+      // pris son numéro quand on lit « en vol » (prerequis-export-ribs.md § 8).
+      await this.lock.acquire(entity.id, "mandates");
       const queue = await this.chosen(command);
       const chosen = queue.slice(0, BANK_IMPORT_MAX_ROWS);
       const previous = await this.numbering.lastPart(entity.id);

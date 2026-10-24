@@ -416,5 +416,7 @@
   "test/collection-batch-preview.e2e-spec.ts": 5716,
   "test/mandate-bank-export-deposit.e2e-spec.ts": 5653,
   "test/account-bank-export-import.e2e-spec.ts": 5333,
-  "test/collection-test-return.e2e-spec.ts": 4000
+  "test/collection-test-return.e2e-spec.ts": 4000,
+  "test/account-bank-export-race.e2e-spec.ts": 16231,
+  "test/mandate-bank-export-race.e2e-spec.ts": 16253
 }

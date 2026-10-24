@@ -1,6 +1,8 @@
 import type { Provider } from "@nestjs/common";
 
 import { AccountBankExportNumbering } from "./domain/ports/bank-export-numbering.js";
+import { BankExportPreparationLock } from "./domain/ports/bank-export-preparation-lock.js";
+import { PrismaBankExportPreparationLock } from "./infrastructure/prisma-bank-export-preparation-lock.js";
 import { PrismaAccountBankExportNumbering } from "./infrastructure/prisma-bank-export-numbering.js";
 import { AbandonAccountBankExportHandler } from "./application/commands/abandon-account-bank-export.handler.js";
 import { DeclareBankAccountKnownHandler } from "./application/commands/declare-bank-account-known.handler.js";
@@ -40,6 +42,8 @@ import { PrismaKnownAccountStampsReader } from "./infrastructure/prisma-known-ac
  */
 export const ACCOUNT_BANK_EXPORT_PROVIDERS: readonly Provider[] = [
   { provide: AccountBankExportNumbering, useClass: PrismaAccountBankExportNumbering },
+  // Partagé avec la préparation des mandats : les deux tableaux vont au même module.
+  { provide: BankExportPreparationLock, useClass: PrismaBankExportPreparationLock },
   { provide: AccountBankExportRepository, useClass: PrismaAccountBankExportRepository },
   { provide: KnownBankAccountRepository, useClass: PrismaKnownBankAccountRepository },
   { provide: KnownAccountFingerprintsReader, useClass: PrismaKnownAccountFingerprintsReader },

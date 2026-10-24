@@ -1,4 +1,8 @@
 import {
+  BankExportPreparationLock,
+  type BankExportKind,
+} from "../../../domain/ports/bank-export-preparation-lock.js";
+import {
   AccountBankExportNumbering,
   MandateBankExportNumbering,
 } from "../../../domain/ports/bank-export-numbering.js";
@@ -58,5 +62,23 @@ export class MemoryMandateNumbering extends MandateBankExportNumbering {
   }
   lastPart(legalEntityId: string): Promise<PreviousExportPart | null> {
     return Promise.resolve(lastPartIn(this.rows.rows.values(), legalEntityId));
+  }
+}
+
+/**
+ * Le verrou de préparation en mémoire : il note chaque prise, et ce que le
+ * monde montrait à cet instant (`seen`) — de quoi prouver qu'il passe AVANT
+ * la lecture des candidats et le numéro.
+ */
+export class RecordingPreparationLock extends BankExportPreparationLock {
+  readonly acquired: {
+    readonly legalEntityId: string;
+    readonly kind: BankExportKind;
+    readonly seen: string;
+  }[] = [];
+  observe: () => string = () => "";
+  acquire(legalEntityId: string, kind: BankExportKind): Promise<void> {
+    this.acquired.push({ legalEntityId, kind, seen: this.observe() });
+    return Promise.resolve();
   }
 }

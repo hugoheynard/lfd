@@ -1,5 +1,8 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
-import { MemoryMandateNumbering } from "./bank-export-numbering-doubles.js";
+import {
+  MemoryMandateNumbering,
+  RecordingPreparationLock,
+} from "./bank-export-numbering-doubles.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { MandateBankExport } from "../../../domain/entities/mandate-bank-export.js";
@@ -199,16 +202,20 @@ export function bankExportWorld() {
     events: new RecordingPublisher(),
     clock: new FixedClock(NOW),
   };
+  const numbering = new MemoryMandateNumbering(w.exports);
+  const lock = new RecordingPreparationLock();
+  lock.observe = () => `read:${w.mandates.asked.length} rank:${numbering.lastRank}`;
   const exportCommand = new ExportMandatesForBankHandler(
     w.entities,
     w.mandates,
     w.known,
     w.exports,
-    new MemoryMandateNumbering(w.exports),
+    numbering,
     new UlidSequence(),
     w.clock,
     w.events,
     new DirectUnitOfWork(),
+    lock,
   );
   const markImported = new MarkMandateBankExportImportedHandler(
     w.entities,
@@ -234,5 +241,5 @@ export function bankExportWorld() {
   const gesture = [w.entities, w.exports, w.clock, w.events, new DirectUnitOfWork()] as const;
   const reportKnown = new ReportMandateKnownToBankHandler(...gesture);
   const reject = new RejectMandateAtBankHandler(...gesture);
-  return { ...w, exportCommand, markImported, abandon, recordDownload, reportKnown, reject };
+  return { ...w, lock, exportCommand, markImported, abandon, recordDownload, reportKnown, reject };
 }

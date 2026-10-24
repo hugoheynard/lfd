@@ -1,5 +1,8 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
-import { MemoryAccountNumbering } from "./bank-export-numbering-doubles.js";
+import {
+  MemoryAccountNumbering,
+  RecordingPreparationLock,
+} from "./bank-export-numbering-doubles.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { AccountBankExport } from "../../../domain/entities/account-bank-export.js";
@@ -201,6 +204,9 @@ export function accountExportWorld() {
     clock: new FixedClock(NOW),
   };
   const uow = new DirectUnitOfWork();
+  const numbering = new MemoryAccountNumbering(exports);
+  const lock = new RecordingPreparationLock();
+  lock.observe = () => `read:${w.accounts.asked.length} rank:${numbering.lastRank}`;
   const gesture = { entities: w.entities, exports, clock: w.clock, events: w.events, uow };
   const handlers = {
     prepare: new ExportAccountsForBankHandler(
@@ -208,11 +214,12 @@ export function accountExportWorld() {
       w.accounts,
       w.fingerprints,
       exports,
-      new MemoryAccountNumbering(exports),
+      numbering,
       new UlidSequence(),
       w.clock,
       w.events,
       uow,
+      lock,
     ),
     markImported: new MarkAccountBankExportImportedHandler(
       gesture.entities,
@@ -262,5 +269,5 @@ export function accountExportWorld() {
       uow,
     ),
   };
-  return { ...w, ...handlers };
+  return { ...w, lock, ...handlers };
 }

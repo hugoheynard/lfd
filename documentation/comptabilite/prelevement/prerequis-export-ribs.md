@@ -402,5 +402,13 @@ flowchart LR
   chaque ligne sont au § 2.6.
 
 **Reste à faire** : avertir sur la carte des mandats quand un compte n'est
-pas importé (§ 2.4) ; deux préparations simultanées ne sont pas
-sérialisées (même trou que l'export des mandats).
+pas importé (§ 2.4).
+
+**Deux préparations simultanées se suivent** (corrigé le 2026-10-24) : la
+préparation prend un verrou par (entité, sorte d'export) — `pg_advisory_xact_lock`,
+port `BankExportPreparationLock` — dans sa transaction, AVANT de lire les
+candidats et avant le numéro EXC et le rang « k sur N ». La seconde voit
+donc les lignes de la première « en vol » : elle prend les suivants, ou est
+refusée (409) s'il ne reste rien. Même verrou, sorte `mandates`, pour
+l'export des mandats. E2E de course : `account-bank-export-race`,
+`mandate-bank-export-race`.
