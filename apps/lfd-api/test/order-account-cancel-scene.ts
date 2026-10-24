@@ -12,6 +12,7 @@ import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import { setUpEntity } from "./collection-returns-scene.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";
 import { addBillingAddress, attachTo, createCompany, createUser, handOver } from "./factories.js";
+import { pickupSite, placeOrder } from "./order-factory.js";
 
 /**
  * **La scène de l'annulation d'une commande AU COMPTE** (doc
@@ -25,8 +26,10 @@ import { addBillingAddress, attachTo, createCompany, createUser, handOver } from
  * verrou (entre la lecture et lui) ou juste APRÈS (pendant qu'il est tenu).
  * Tout le reste tourne sur le vrai Postgres.
  *
- * ⚠️ Commandes, mandats, planchers écrits par Prisma : même dette que
- * `monthly-invoices.e2e-spec.ts`, faute de chemin public pour les poser.
+ * Les commandes sont passées au compte par le vrai chemin (`placeOrder`,
+ * plan T), antidatées. ⚠️ Mandats et planchers écrits par Prisma, faute de
+ * chemin public pour les poser ; deux écritures de commande brutes restent,
+ * datées au-dessus d'elles (`accountOrder`).
  */
 
 const HOUR_MS = 60 * 60 * 1000;
@@ -157,7 +160,7 @@ export async function payer(
   await addBillingAddress(ctx.prisma, company.id);
   await ctx.prisma.company.update({
     where: { id: company.id },
-    data: { vatNumber: "FR40303265045" },
+    data: { vatNumber: "FR40303265045", grantedTerms: ["monthly"] },
   });
   if (options.mandate !== false) {
     await staff().put(`/admin/companies/${company.id}/bank-account`).send(RIB).expect(204);
@@ -181,36 +184,86 @@ export async function payer(
   return { companyId: company.id, ownerId: owner.id };
 }
 
+/** Un bon au compte : son identifiant, son numéro, et le total TTC que la passation a facturé. */
+export interface AccountOrder {
+  readonly id: string;
+  readonly orderNumber: string;
+  readonly totalCents: number;
+}
+
 /**
- * Un bon au compte de 105,50 € (100 € HT à 5,5 %), passé deux jours avant la
- * clôture, sans jour de service : le fournil n'a rien à retirer ; retiré au
- * comptoir une heure après (lot ZA : sans date de livraison, pas de facture). `id` permet
- * de choisir l'identifiant (casse mêlée, pour la collation) ; `incoherent`
- * en fait un bon non facturable.
+ * Un bon au compte, passé deux jours avant la clôture par le vrai chemin
+ * (`placeOrder`, plan T) et retiré au comptoir une heure après (lot ZA : sans
+ * date de livraison, pas de facture). `id` permet de choisir l'identifiant
+ * (casse mêlée, pour la collation) ; `incoherent` en fait un bon non
+ * facturable.
  */
 export async function accountOrder(
   who: { readonly companyId: string; readonly ownerId: string },
   options: { readonly id?: string; readonly incoherent?: boolean } = {},
-): Promise<{ readonly id: string; readonly orderNumber: string }> {
-  seq += 1;
-  const placed = await context().prisma.order.create({
+): Promise<AccountOrder> {
+  const ctx = context();
+  const placedAt = new Date(account.closesAt.getTime() - 2 * DAY_MS);
+  const placed =
+    options.id === undefined
+      ? await placeOrder(ctx, {
+          buyerUserId: who.ownerId,
+          companyId: who.companyId,
+          settlement: "account",
+          placedAt,
+          fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
+        })
+      : await chosenIdOrder(who, options.id, placedAt);
+  if (options.incoherent === true) {
+    // Un centime de trop : le total ne se recompose pas, le bon n'est pas
+    // facturable (`unbillable`). Aucune route ne produit un tel bon — c'est
+    // la panne que le lot écarte. Posé après la vraie passation (plan T,
+    // 2026-10-25).
+    await ctx.prisma.order.update({
+      where: { id: placed.id },
+      data: { totalCents: { increment: 1 } },
+    });
+  }
+  const row = await ctx.prisma.order.findUniqueOrThrow({
+    where: { id: placed.id },
+    select: { id: true, orderNumber: true, createdAt: true, totalCents: true },
+  });
+  // Retiré au comptoir : un bon sans date de livraison ne se facture pas (M5).
+  await handOver(ctx.prisma, row);
+  return { id: row.id, orderNumber: row.orderNumber, totalCents: row.totalCents };
+}
+
+let chosenSeq = 0;
+
+/**
+ * **Exception gardée du plan T (2026-10-25)** : un bon dont la suite CHOISIT
+ * l'identifiant (casse mêlée, pour éprouver la collation de l'ordre des
+ * verrous). La passation tire son identifiant elle-même ; aucune route ne
+ * le laisse choisir. Écrit en base, 100 € HT à 5,5 %, numéro au format réel
+ * hors de portée de la séquence.
+ */
+async function chosenIdOrder(
+  who: { readonly companyId: string; readonly ownerId: string },
+  id: string,
+  createdAt: Date,
+): Promise<{ readonly id: string }> {
+  chosenSeq += 1;
+  return context().prisma.order.create({
     data: {
-      ...(options.id === undefined ? {} : { id: options.id }),
-      orderNumber: `CMD-C5-${String(seq)}`,
+      id,
+      orderNumber: `ORD-${String(800_000 + chosenSeq)}`,
       companyId: who.companyId,
       placedByUserId: who.ownerId,
       subtotalCents: 10_000,
-      // Un centime de trop : le total ne se recompose pas, le bon n'est pas
-      // facturable (`unbillable`) — signalé, laissé hors de la facture.
-      totalCents: options.incoherent === true ? 10_551 : 10_550,
+      totalCents: 10_550,
       vatCents: 550,
       paymentStatus: "not_required",
-      createdAt: new Date(account.closesAt.getTime() - 2 * DAY_MS),
+      createdAt,
       vatShares: [{ rate: 5.5, amountCents: 550 }],
       lines: {
         create: {
-          sku: "PAIN-C5",
-          productNameSnapshot: "Pain du mois",
+          sku: "VIE-001",
+          productNameSnapshot: "Croissant",
           unitPriceMillicents: 10_000_000,
           vatRate: 5.5,
           quantity: 1,
@@ -218,11 +271,8 @@ export async function accountOrder(
         },
       },
     },
-    select: { id: true, orderNumber: true, createdAt: true },
+    select: { id: true },
   });
-  // Retiré au comptoir : un bon sans date de livraison ne se facture pas (M5).
-  await handOver(context().prisma, placed);
-  return { id: placed.id, orderNumber: placed.orderNumber };
 }
 
 export const REASON = "Le client s'est trompé de semaine";

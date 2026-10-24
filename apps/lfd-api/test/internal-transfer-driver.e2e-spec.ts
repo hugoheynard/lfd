@@ -23,7 +23,12 @@ import {
 import { MY_ROUND, seedDriverRole, staffWithRole } from "./delivery-driver-scene.js";
 import { ADMIN_VERIFIER_OVERRIDE, admin, ROUNDS, roundOf } from "./delivery-rounds-scene.js";
 import { ROAD_ROUTING_OVERRIDES } from "./delivery-routing-scene.js";
-import { composedTransfer, declareTransferBins, FixedRoad } from "./internal-transfer-scene.js";
+import {
+  composedTransfer,
+  declareTransferBins,
+  FixedRoad,
+  VILLAGE_BREAD,
+} from "./internal-transfer-scene.js";
 
 const DAY = serviceDay();
 
@@ -82,7 +87,7 @@ describe("le transfert du livreur, sous le mur de « Ma tournée »", () => {
     expect(stop?.siteAddress).toMatchObject({ ligne1: "Route du Village", codePostal: "73150" });
     expect(stop?.orders.items.map((item) => item.subjectId)).toEqual([orderId]);
     expect(stop?.orders.totals).toEqual([
-      { sku: "PAIN-VV", productName: "Pain du village", quantity: 3 },
+      { sku: VILLAGE_BREAD.sku, productName: VILLAGE_BREAD.name, quantity: 3 },
     ]);
   });
 
@@ -113,7 +118,7 @@ describe("la feuille de route imprime l'arrêt de transfert", () => {
     expect(text).toContain("Route du Village");
     expect(text).toContain("2 bacs");
     expect(text).toContain("COMMANDES · 1 COMMANDE");
-    expect(text).toContain("3 × Pain du village");
+    expect(text).toContain(`3 × ${VILLAGE_BREAD.name}`);
   });
 });
 

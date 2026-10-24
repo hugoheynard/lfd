@@ -40,10 +40,9 @@ import {
   REASON,
   resetScene,
   scene,
-  seedFreeOrder,
-  seedOrder,
   withdrawals,
 } from "./order-staff-cancel-scene.js";
+import { seedFreeOrder, seedOrder } from "./order-staff-cancel-orders.js";
 
 let ctx: E2eContext;
 

@@ -14,6 +14,7 @@
 import type { GpsPoint, ProductionDueThresholdsView } from "@lfd/contracts";
 
 import { RoadTravelTimeReader } from "../src/delivery/channels/commerce/index.js";
+import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { DayOrdersReader, ServiceDay } from "../src/production/channels/commerce/index.js";
 import {
@@ -23,7 +24,8 @@ import {
   serviceDay,
   type E2eContext,
 } from "./e2e-harness.js";
-import { createUser } from "./factories.js";
+import { attachTo, createCompany, createUser } from "./factories.js";
+import { cardGatewayDouble, payByCard, placeOrder } from "./order-factory.js";
 
 const TRAVEL_MINUTES = 25;
 const DAY = serviceDay();
@@ -51,6 +53,7 @@ beforeAll(async () => {
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
       { token: RoadTravelTimeReader, value: road },
+      { token: PaymentGateway, value: cardGatewayDouble("pi_echeance") },
     ],
   });
 });
@@ -98,61 +101,88 @@ async function seedSites(): Promise<{ village: string; fournil: string; counter:
   return { village: village.id, fournil: fournil.id, counter: counter.id };
 }
 
-let seq = 0;
+/** Les SKU du catalogue de test, un par commande : la vue se lit par ligne. */
+const VIL = "VIE-001";
+const CPT = "VIE-002";
+const OLD = "VIE-003";
 
-/** Un retrait réglé, pour le jour, avec un créneau 08:00–10:00 et une ligne d'un SKU. */
-async function seedPickup(
-  sku: string,
-  pickupAddress: Record<string, unknown>,
-  placedByUserId: string,
-): Promise<void> {
-  seq += 1;
-  await ctx.prisma.order.create({
-    data: {
-      orderNumber: `CMD-${sku}-${seq}`,
-      placedByUserId,
-      clientele: "public",
-      status: "placed",
-      paymentStatus: "not_required",
-      requestedDeliveryDate: new Date(`${DAY}T00:00:00.000Z`),
-      fulfillmentMethod: "pickup",
-      pickupAddress: { ligne2: "", ...ADDRESS, ...pickupAddress },
-      fulfillment: {
-        window: { value: { start: "08:00", end: "10:00" }, source: "override" },
-        contact: { value: null, source: "default" },
-        signatureRequired: { value: false, source: "default" },
-      },
-      subtotalCents: 1000,
-      totalCents: 1000,
-      lines: {
-        create: [
-          {
-            sku,
-            productNameSnapshot: sku,
-            unitPriceMillicents: 100_000,
-            quantity: 3,
-            lineTotalCents: 300,
-          },
-        ],
-      },
-    },
+/**
+ * Un retrait pro réglé, pour le jour, avec un créneau 08:00–09:00 et une
+ * ligne d'un SKU — passé par le vrai chemin (`placeOrder`, plan T). Rend son
+ * numéro. Pro, et dans l'ouverture pro du village : le vrai chemin refuse un
+ * particulier au village (pas d'ouverture publique) et une tranche qui
+ * déborde de 07:30–09:00 — la fixture d'avant le plan T semait les deux.
+ */
+async function seedPickup(sku: string, siteId: string, buyer: Buyer): Promise<string> {
+  const order = await placeOrder(ctx, {
+    buyerUserId: buyer.userId,
+    companyId: buyer.companyId,
+    settlement: "card",
+    forDay: DAY,
+    window: { start: "08:00", end: "09:00" },
+    fulfillment: { method: "pickup", pickupSiteId: siteId },
+    lines: [{ sku, quantity: 3 }],
   });
+  await payByCard(ctx, order);
+  return order.orderNumber;
+}
+
+/**
+ * Une commande d'avant S2 : le snapshot du point de retrait sans `siteId`.
+ * La passation le pose toujours désormais ; aucune route ne produit plus cet
+ * état, il est donc retiré après coup (plan T, 2026-10-25).
+ */
+async function forgetPickupSite(orderNumber: string): Promise<void> {
+  const row = await ctx.prisma.order.findUniqueOrThrow({
+    where: { orderNumber },
+    select: { id: true, pickupAddress: true },
+  });
+  const snapshot = row.pickupAddress;
+  if (snapshot === null || typeof snapshot !== "object" || Array.isArray(snapshot)) {
+    throw new TypeError(`la commande ${orderNumber} n'a pas de point de retrait`);
+  }
+  const { siteId: _siteId, ...beforeS2 } = snapshot;
+  await ctx.prisma.order.update({ where: { id: row.id }, data: { pickupAddress: beforeS2 } });
+}
+
+interface Buyer {
+  readonly userId: string;
+  readonly companyId: string;
+}
+
+interface SeededDay {
+  readonly village: string;
+  readonly fournil: string;
+  readonly counter: string;
+  /** Le SKU de chaque commande, par numéro — l'arrêt du plan ne garde que le numéro. */
+  readonly skuOf: ReadonlyMap<string, string>;
 }
 
 /** Trois commandes : le village, le comptoir sur place, et une d'avant S2 (sans `siteId`). */
-async function seedDay(): Promise<{ village: string; fournil: string; counter: string }> {
+async function seedDay(): Promise<SeededDay> {
   const sites = await seedSites();
   const user = await createUser(ctx.prisma, { auth0Sub: "auth0|client", email: "c@col.fr" });
-  await seedPickup("VIL", { label: "Val Village", siteId: sites.village }, user.id);
-  await seedPickup("CPT", { label: "Comptoir", siteId: sites.counter }, user.id);
+  const company = await createCompany(ctx.prisma, { enseigne: "Hôtel du Col" });
+  await attachTo(ctx.prisma, user.id, company.id);
+  const buyer = { userId: user.id, companyId: company.id };
+  const village = await seedPickup(VIL, sites.village, buyer);
+  const counter = await seedPickup(CPT, sites.counter, buyer);
   // Avant S2 : le libellé seul. Même nom que le village — on ne rattrape pas par libellé.
-  await seedPickup("OLD", { label: "Val Village" }, user.id);
+  const old = await seedPickup(OLD, sites.village, buyer);
+  await forgetPickupSite(old);
   await ctx
     .asSub(E2E_STAFF_SUB)
     .patch("/admin/delivery-availability")
     .send({ deliveryMarginMinutes: 50, pickupMarginMinutes: 20 })
     .expect(204);
-  return sites;
+  return {
+    ...sites,
+    skuOf: new Map([
+      [village, VIL],
+      [counter, CPT],
+      [old, OLD],
+    ]),
+  };
 }
 
 function firstBefore(view: ProductionDueThresholdsView, sku: string): string | null | undefined {
@@ -171,11 +201,11 @@ describe("l'échéance du fournil selon le site (T0)", () => {
     );
 
     // 07:30 (pros) − 10 min de mise en place − 25 min de route = 06:55 ; − 50 = 06:05.
-    expect(firstBefore(view, "VIL")).toBe("06:05");
+    expect(firstBefore(view, VIL)).toBe("06:05");
     // Sur place, mise en place 0 : 08:00 − 20 = 07:40, comme avant les sites.
-    expect(firstBefore(view, "CPT")).toBe("07:40");
+    expect(firstBefore(view, CPT)).toBe("07:40");
     // Sans `siteId` : l'ancien calcul, malgré le libellé du village.
-    expect(firstBefore(view, "OLD")).toBe("07:40");
+    expect(firstBefore(view, OLD)).toBe("07:40");
     expect(road.asked).toEqual([{ from: FOURNIL_GPS, to: VILLAGE_GPS }]);
   });
 
@@ -191,9 +221,9 @@ describe("l'échéance du fournil selon le site (T0)", () => {
     );
 
     expect(Object.fromEntries(bySku)).toEqual({
-      VIL: { dueAt: "07:20", siteId: sites.village },
-      CPT: { dueAt: "08:00", siteId: sites.counter },
-      OLD: { dueAt: "08:00", siteId: null },
+      [VIL]: { dueAt: "07:20", siteId: sites.village },
+      [CPT]: { dueAt: "08:00", siteId: sites.counter },
+      [OLD]: { dueAt: "08:00", siteId: null },
     });
   });
 
@@ -205,12 +235,14 @@ describe("l'échéance du fournil selon le site (T0)", () => {
     const rows = await ctx.prisma.productionOrder.findMany({
       where: { serviceDay: DAY },
       select: { reference: true, siteId: true, dueAt: true },
-      orderBy: { reference: "asc" },
     });
-    expect(rows.map((row) => [row.reference.split("-")[1], row.siteId, row.dueAt])).toEqual([
-      ["CPT", sites.counter, "08:00"],
-      ["OLD", null, "08:00"],
-      ["VIL", sites.village, "07:20"],
+    const bySku = rows
+      .map((row) => [sites.skuOf.get(row.reference), row.siteId, row.dueAt])
+      .sort((a, b) => String(a[0]).localeCompare(String(b[0])));
+    expect(bySku).toEqual([
+      [VIL, sites.village, "07:20"],
+      [CPT, sites.counter, "08:00"],
+      [OLD, null, "08:00"],
     ]);
   });
 

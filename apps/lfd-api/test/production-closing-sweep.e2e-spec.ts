@@ -9,10 +9,10 @@
  * fournil, l'adaptateur du commerce, le `where` conditionné, les abonnés du
  * courriel et de la cloche tournent sur le vrai Postgres.
  *
- * Les commandes sont semées par Prisma, faute d'agrégat qui sache écrire une
- * commande à un état donné (même dette que `order-abandon.e2e-spec.ts`).
+ * Les commandes sont passées par le vrai chemin (`placeOrder`, plan T), et
+ * réglées ou refusées par la vraie confirmation. Seule la commande SANS jour
+ * de retrait garde une écriture brute, datée au-dessus d'elle.
  */
-import { lineTotalCents } from "@lfd/money";
 import { CommandBus } from "@nestjs/cqrs";
 
 import { ConfirmOrderPaymentCommand } from "../src/b2b/orders/application/commands/confirm-order-payment.command.js";
@@ -29,12 +29,19 @@ import {
 import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
 import {
   bootstrapE2e,
+  E2E_STAFF_ID,
   E2E_STAFF_SUB,
   jsonBody,
   serviceDay,
   type E2eContext,
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import {
+  cardGatewayDouble,
+  pickupSite,
+  placeOrder,
+  placeOrderForCustomer,
+} from "./order-factory.js";
 
 /** La journée balayée, et la veille — pour une commande sans date passée hors fenêtre. */
 const DAY = serviceDay();
@@ -43,14 +50,12 @@ const EVE = serviceDay(6);
 let cancellation: IntentCancellation = { kind: "cancelled" };
 const cancelledIntents: string[] = [];
 const fakeGateway = {
-  createIntent: () => Promise.reject(new Error("non utilisé")),
+  ...cardGatewayDouble("pi_balayage"),
   retrieveIntent: () => Promise.reject(new Error("non utilisé")),
   cancelIntent: (id: string) => {
     cancelledIntents.push(id);
     return Promise.resolve(cancellation);
   },
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
 };
 
 interface SentMail {
@@ -96,10 +101,18 @@ beforeEach(async () => {
 
 interface Seed {
   readonly clientele?: OrderClientele;
-  readonly payment?: PaymentStatus;
+  /** L'issue de la carte : en attente par défaut. */
+  readonly payment?: "pending" | "paid" | "failed";
   /** Le jour de retrait ; `null` = aucun, rattaché au jour de passation (Q5). */
   readonly day?: string | null;
+  /** L'instant de passation, pour une commande sans jour (Q5). */
   readonly createdAt?: Date;
+  /**
+   * Saisie par l'équipe, lien de carte : seule porte encore ouverte sur une
+   * journée arrêtée (`OrderDrafting.ensureDayOpen`, vérifié le 2026-10-25).
+   * Toujours pour une société.
+   */
+  readonly byStaff?: boolean;
 }
 
 let seq = 0;
@@ -112,46 +125,57 @@ async function seedOrder(seed: Seed = {}): Promise<{ orderId: string; intent: st
     email: `balayage-${seq}@example.test`,
   });
   let companyId: string | null = null;
-  if (seed.clientele === OrderClientele.pro) {
+  if (seed.clientele === OrderClientele.pro || seed.byStaff === true) {
     const company = await createCompany(ctx.prisma, { enseigne: "Hôtel des Cimes" });
     companyId = company.id;
     await attachTo(ctx.prisma, author.id, company.id);
   }
-  const intent = `pi_balayage_${seq}`;
-  const day = seed.day === undefined ? DAY : seed.day;
-  const order = await ctx.prisma.order.create({
-    data: {
-      orderNumber: `CMD-BALAYAGE-${seq}`,
-      placedByUserId: author.id,
-      companyId,
-      clientele: seed.clientele ?? OrderClientele.public,
-      status: OrderStatus.placed,
-      requestedDeliveryDate: day === null ? null : new Date(`${day}T00:00:00.000Z`),
-      fulfillmentMethod: "pickup",
-      subtotalCents: 1_000,
-      totalCents: 1_055,
-      vatCents: 55,
-      paymentStatus: seed.payment ?? PaymentStatus.pending,
-      stripePaymentIntentId: intent,
-      ...(seed.createdAt === undefined ? {} : { createdAt: seed.createdAt }),
-      lines: {
-        create: [
-          {
-            sku: "VIE-001",
-            productNameSnapshot: "Croissant",
-            unitPriceMillicents: 100_000,
-            quantity: 1,
-            lineTotalCents: lineTotalCents(100_000, 1),
-          },
-        ],
-      },
-    },
-    select: { id: true },
-  });
+  const mailsBefore = sentMails.length;
+  const content = {
+    buyerUserId: author.id,
+    forDay: DAY,
+    fulfillment: { method: "pickup" as const, pickupSiteId: await pickupSite(ctx.prisma) },
+    lines: [{ sku: "VIE-001", quantity: 1 }],
+  };
+  const order =
+    seed.byStaff === true && companyId !== null
+      ? await placeOrderForCustomer(ctx, {
+          ...content,
+          companyId,
+          staffUserId: E2E_STAFF_ID,
+          settlement: "link",
+        })
+      : await placeOrder(ctx, { ...content, companyId, settlement: "card" });
+  const intent = order.paymentIntentId ?? "";
+  if (seed.payment !== undefined && seed.payment !== "pending") {
+    const outcome = seed.payment === "paid" ? "succeeded" : "failed";
+    await ctx.app.get(CommandBus).execute(new ConfirmOrderPaymentCommand(intent, outcome));
+    await ctx.drain();
+  }
+  if (seed.day === null) {
+    await forgetServiceDay(order.id, seed.createdAt);
+  }
+  // La passation (et un refus de carte) ont écrit au client : pas le sujet ici.
+  sentMails.splice(mailsBefore);
   return { orderId: order.id, intent };
 }
 
-const paidOrder = () => seedOrder({ payment: PaymentStatus.paid });
+/**
+ * Une commande SANS jour de retrait, rattachée à son jour de passation (Q5).
+ * La passation exige un jour depuis la saisie du créneau : aucune route ne
+ * produit plus cet état, il est posé après coup (plan T, 2026-10-25).
+ */
+async function forgetServiceDay(orderId: string, createdAt: Date | undefined): Promise<void> {
+  await ctx.prisma.order.update({
+    where: { id: orderId },
+    data: {
+      requestedDeliveryDate: null,
+      ...(createdAt === undefined ? {} : { createdAt }),
+    },
+  });
+}
+
+const paidOrder = () => seedOrder({ payment: "paid" });
 
 async function close() {
   const response = await ctx.asSub(E2E_STAFF_SUB).post(`/admin/production/batch/${DAY}/close`);
@@ -209,7 +233,7 @@ describe("la clôture balaie AVANT de compter (Q1, B1)", () => {
 
   it("balaie aussi une carte refusée en journée : son intention vit encore (B2)", async () => {
     await paidOrder();
-    const refused = await seedOrder({ payment: PaymentStatus.failed });
+    const refused = await seedOrder({ payment: "failed" });
 
     await close();
 
@@ -249,7 +273,8 @@ describe("la réannonce balaie aussi, sans rien redire (S4)", () => {
     await paidOrder();
     const before = await seedOrder();
     await close();
-    const after = await seedOrder();
+    // Après l'arrêt, seule l'équipe saisit encore pour la journée.
+    const after = await seedOrder({ byStaff: true });
 
     const again = await close();
 

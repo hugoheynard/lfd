@@ -12,8 +12,8 @@
  *   anonyme ne porte pas la clé.
  *
  * Les points de départ viennent de l'ajustement motivé, la vraie route staff ;
- * la commande définitive d'un gain est semée par Prisma, faute d'agrégat qui
- * sache l'écrire à cet état (même dette que `loyalty-voucher-order.e2e-spec.ts`).
+ * la commande définitive d'un gain est passée par le vrai chemin
+ * (`placeOrder`, plan T), réglée puis remise.
  */
 import type {
   MyLoyaltyConversionResponse,
@@ -24,23 +24,13 @@ import type {
 } from "@lfd/contracts";
 import request from "supertest";
 
+import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import {
-  CompanyStatus,
-  CustomerRole,
-  OrderClientele,
-  OrderStatus,
-  PaymentStatus,
-} from "../src/platform/database/client/client.js";
+import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
-import {
-  bootstrapE2e,
-  E2E_STAFF_SUB,
-  jsonBody,
-  serviceDay,
-  type E2eContext,
-} from "./e2e-harness.js";
+import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { cardGatewayDouble, handOver, payByCard, pickupSite, placeOrder } from "./order-factory.js";
 
 /** Un palier : 1 000 points valent 5 € HT. */
 const SETTINGS: SetLoyaltySettingsPayload = {
@@ -65,7 +55,10 @@ let ctx: E2eContext;
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
-    overrides: [{ token: AdminTokenVerifier, value: stubAdminVerifier }],
+    overrides: [
+      { token: AdminTokenVerifier, value: stubAdminVerifier },
+      { token: PaymentGateway, value: cardGatewayDouble("pi_fidele") },
+    ],
   });
 });
 
@@ -145,19 +138,15 @@ describe("GET me/loyalty", () => {
   it("nomme la commande qui a rapporté les points", async () => {
     await openProgram();
     const userId = await personWith(CLIENT, 0);
-    await ctx.prisma.order.create({
-      data: {
-        orderNumber: "CMD-FIDELE-1",
-        placedByUserId: userId,
-        clientele: OrderClientele.public,
-        status: OrderStatus.fulfilled,
-        subtotalCents: 2_000,
-        discountCents: 0,
-        totalCents: 2_000,
-        paymentStatus: PaymentStatus.paid,
-        stripePaymentIntentId: "pi_fidele_1",
-        requestedDeliveryDate: new Date(serviceDay()),
-      },
+    const order = await placeOrder(ctx, {
+      buyerUserId: userId,
+      fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
+    });
+    await payByCard(ctx, order);
+    await handOver(ctx, order);
+    const { subtotalCents } = await ctx.prisma.order.findUniqueOrThrow({
+      where: { id: order.id },
+      select: { subtotalCents: true },
     });
     await ctx
       .http()
@@ -167,9 +156,13 @@ describe("GET me/loyalty", () => {
 
     const { entries, balancePoints } = opened(await myLoyalty(CLIENT));
 
-    expect(balancePoints).toBe(2_000);
+    expect(balancePoints).toBe(subtotalCents);
     expect(entries).toEqual([
-      expect.objectContaining({ kind: "earned", points: 2_000, orderNumber: "CMD-FIDELE-1" }),
+      expect.objectContaining({
+        kind: "earned",
+        points: subtotalCents,
+        orderNumber: order.orderNumber,
+      }),
     ]);
   });
 

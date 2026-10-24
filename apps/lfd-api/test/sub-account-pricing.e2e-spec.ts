@@ -16,9 +16,11 @@ import type { PricedLot } from "../src/b2b/pricing/application/priced-lot.js";
 import { Pricer } from "../src/b2b/pricing/application/pricer.js";
 import { CustomerVolumeReader } from "../src/b2b/pricing/domain/ports/customer-volume.reader.js";
 import { ProductCatalogReader } from "../src/b2b/catalog/domain/ports/product-catalog.reader.js";
+import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { cardGatewayDouble, payByCard, pickupSite, placeOrder } from "./order-factory.js";
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -32,7 +34,10 @@ let volumes: CustomerVolumeReader;
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
-    overrides: [{ token: AdminTokenVerifier, value: stubAdminVerifier }],
+    overrides: [
+      { token: AdminTokenVerifier, value: stubAdminVerifier },
+      { token: PaymentGateway, value: cardGatewayDouble("pi_club") },
+    ],
   });
   pricer = ctx.app.get(Pricer);
   catalog = ctx.app.get(ProductCatalogReader);
@@ -229,33 +234,22 @@ describe("le tarif d'un sous-compte", () => {
 describe("le volume du Club Med", () => {
   let orderSeq = 0;
 
-  /** Une commande du sous-compte, datée de l'instant où elle est écrite. */
+  /**
+   * Une commande du sous-compte, passée maintenant par le vrai chemin
+   * (`placeOrder`, plan T) et réglée, par un membre du site.
+   */
   async function ordered(companyId: string, quantity: number): Promise<void> {
     orderSeq += 1;
     const user = await createUser(ctx.prisma, { auth0Sub: `auth0|club_${orderSeq}` });
-    const cents = quantity * 100;
-    await ctx.prisma.order.create({
-      data: {
-        orderNumber: `CMD-CLUB-${orderSeq}`,
-        companyId,
-        placedByUserId: user.id,
-        status: "placed",
-        subtotalCents: cents,
-        totalCents: cents,
-        createdAt: new Date(Date.now()),
-        lines: {
-          create: [
-            {
-              sku: SKU,
-              productNameSnapshot: "Croissant",
-              unitPriceMillicents: millicentsFromCents(100),
-              quantity,
-              lineTotalCents: cents,
-            },
-          ],
-        },
-      },
+    await attachTo(ctx.prisma, user.id, companyId);
+    const order = await placeOrder(ctx, {
+      buyerUserId: user.id,
+      companyId,
+      settlement: "card",
+      fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
+      lines: [{ sku: SKU, quantity }],
     });
+    await payByCard(ctx, order);
   }
 
   function windowAroundNow() {

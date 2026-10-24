@@ -6,9 +6,14 @@
  * d'argent partagé avec le dossier du jour, le compte des commandes sans date,
  * et le mur de la ressource `b2b_supervision`.
  *
- * ⚠️ Les commandes sont semées par Prisma, comme dans `customer-sheet` : les
- * statuts `ready` / `fulfilled` exigeraient sinon le colisage et le retrait
- * entiers, qui ne sont pas le sujet. Dette notée dans `test/factories.ts`.
+ * ⚠️ **Exception gardée du plan T (2026-10-25)** : les commandes sont écrites
+ * par Prisma, et c'est voulu. La suite éprouve un LECTEUR sur une matrice
+ * d'états que la passation ne produit pas d'un geste : `confirmed` et `draft`
+ * côte à côte, `ready` sans colisage, une commande sans jour de service, un
+ * créneau d'hier (l'heure limite refuserait la passation). Les passer par le
+ * vrai chemin demanderait le fournil, le colisage et une horloge antidatée
+ * pour éprouver une requête de comptage. Les numéros suivent le format réel
+ * (`ORD-<n>`).
  *
  * Toutes les dates sont RELATIVES (`serviceDay`) : la vue compare le créneau à
  * l'horloge.
@@ -25,7 +30,7 @@ import {
   serviceDay,
   type E2eContext,
 } from "./e2e-harness.js";
-import { createCompany, createGuest, createUser } from "./factories.js";
+import { attachTo, createCompany, createGuest, createUser } from "./factories.js";
 
 const DAY = serviceDay();
 const OTHER_DAY = serviceDay(8);
@@ -83,6 +88,7 @@ interface OrderSeed {
 
 let seq = 0;
 
+/** Écriture brute assumée : cf. l'en-tête (plan T, exception du 2026-10-25). */
 async function seedOrder(seed: OrderSeed): Promise<void> {
   seq += 1;
   await ctx.prisma.order.create({
@@ -106,6 +112,7 @@ async function seedOrder(seed: OrderSeed): Promise<void> {
 async function seedParties(): Promise<{ companyId: string; memberId: string; guestId: string }> {
   const company = await createCompany(ctx.prisma, { raisonSociale: "Boulangerie du Col" });
   const member = await createUser(ctx.prisma, { auth0Sub: "auth0|pro", email: "pro@col.fr" });
+  await attachTo(ctx.prisma, member.id, company.id);
   const guest = await createGuest(ctx.prisma, {
     email: "visiteur@exemple.fr",
     firstName: "Léa",
@@ -135,20 +142,20 @@ describe("la Supervision du jour", () => {
   it("compte le flux du jour par acheminement, sans les autres jours ni les brouillons", async () => {
     const { companyId, memberId } = await seedParties();
     const pro = { companyId, placedByUserId: memberId };
-    await seedOrder({ ...pro, reference: "CMD-1", day: DAY, status: "placed" });
-    await seedOrder({ ...pro, reference: "CMD-2", day: DAY, status: "confirmed" });
-    await seedOrder({ ...pro, reference: "CMD-3", day: DAY, status: "ready" });
-    await seedOrder({ ...pro, reference: "CMD-4", day: DAY, status: "fulfilled" });
-    await seedOrder({ ...pro, reference: "CMD-5", day: DAY, status: "cancelled" });
-    await seedOrder({ ...pro, reference: "CMD-6", day: DAY, status: "draft" });
+    await seedOrder({ ...pro, reference: "ORD-1", day: DAY, status: "placed" });
+    await seedOrder({ ...pro, reference: "ORD-2", day: DAY, status: "confirmed" });
+    await seedOrder({ ...pro, reference: "ORD-3", day: DAY, status: "ready" });
+    await seedOrder({ ...pro, reference: "ORD-4", day: DAY, status: "fulfilled" });
+    await seedOrder({ ...pro, reference: "ORD-5", day: DAY, status: "cancelled" });
+    await seedOrder({ ...pro, reference: "ORD-6", day: DAY, status: "draft" });
     await seedOrder({
       ...pro,
-      reference: "CMD-7",
+      reference: "ORD-7",
       day: DAY,
       status: "ready",
       fulfillmentMethod: "delivery",
     });
-    await seedOrder({ ...pro, reference: "CMD-8", day: OTHER_DAY, status: "placed" });
+    await seedOrder({ ...pro, reference: "ORD-8", day: OTHER_DAY, status: "placed" });
 
     const view = await supervise(DAY);
 
@@ -175,20 +182,20 @@ describe("la Supervision du jour", () => {
 
   it("compte à part les commandes OUVERTES sans date de service", async () => {
     const { companyId, memberId } = await seedParties();
-    await seedOrder({ companyId, placedByUserId: memberId, reference: "CMD-1", day: null });
-    await seedOrder({ companyId, placedByUserId: memberId, reference: "CMD-2", day: DAY });
+    await seedOrder({ companyId, placedByUserId: memberId, reference: "ORD-1", day: null });
+    await seedOrder({ companyId, placedByUserId: memberId, reference: "ORD-2", day: DAY });
     // Closes sans date : plus aucun geste à faire, elles ne comptent pas.
     await seedOrder({
       companyId,
       placedByUserId: memberId,
-      reference: "CMD-3",
+      reference: "ORD-3",
       day: null,
       status: "fulfilled",
     });
     await seedOrder({
       companyId,
       placedByUserId: memberId,
-      reference: "CMD-4",
+      reference: "ORD-4",
       day: null,
       status: "cancelled",
     });
@@ -202,14 +209,14 @@ describe("la Supervision du jour", () => {
   it("écarte la carte en l'air du particulier ET du pro (D2, 2026-09-22)", async () => {
     const { companyId, memberId, guestId } = await seedParties();
     await seedOrder({
-      reference: "CMD-PUBLIC",
+      reference: "ORD-9",
       day: DAY,
       clientele: "public",
       paymentStatus: "pending",
       placedByUserId: guestId,
     });
     await seedOrder({
-      reference: "CMD-PRO",
+      reference: "ORD-10",
       day: DAY,
       paymentStatus: "pending",
       companyId,
@@ -226,7 +233,7 @@ describe("la Supervision du jour", () => {
   it("signale un créneau promis dépassé, et ne rend ni montant ni e-mail", async () => {
     const { guestId } = await seedParties();
     await seedOrder({
-      reference: "CMD-LATE",
+      reference: "ORD-11",
       day: YESTERDAY,
       status: "ready",
       clientele: "public",
@@ -243,7 +250,7 @@ describe("la Supervision du jour", () => {
 
     expect(view.late).toEqual([
       expect.objectContaining({
-        reference: "CMD-LATE",
+        reference: "ORD-11",
         customerName: "Léa",
         stage: "ready",
         rule: "not_handed_over_after_window",
@@ -259,7 +266,7 @@ describe("la Supervision du jour", () => {
   it("ne juge jamais une heure d'ouverture recopiée", async () => {
     const { companyId, memberId } = await seedParties();
     await seedOrder({
-      reference: "CMD-DEFAULT",
+      reference: "ORD-12",
       day: YESTERDAY,
       companyId,
       placedByUserId: memberId,

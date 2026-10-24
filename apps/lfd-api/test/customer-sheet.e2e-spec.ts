@@ -5,13 +5,21 @@
  * bons statuts et les bonnes fenêtres. Une commande annulée ne compte pas, un
  * brouillon non plus, et la fenêtre des 30 jours ne déborde pas sur la
  * précédente — trois erreurs qu'un test en mémoire ne verrait jamais.
+ *
+ * Les commandes sont passées au compte par le vrai chemin (`placeOrder`,
+ * plan T), antidatées ; les montants attendus sont RELUS sur la commande
+ * passée, jamais recopiés — le prix est celui du catalogue.
  */
 import type { CustomerSheetView } from "@lfd/contracts";
-import { CustomerRole, OrderStatus } from "../src/platform/database/client/client.js";
+import { CommandBus } from "@nestjs/cqrs";
+
+import { CancelOrderCommand } from "../src/b2b/orders/application/commands/cancel-order.command.js";
+import { CustomerRole } from "../src/platform/database/client/client.js";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, E2E_STAFF_ID, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { pickupSite, placeOrder as placeTestOrder } from "./order-factory.js";
 
 const OWNER = "auth0|owner";
 
@@ -40,31 +48,69 @@ function staff(): ReturnType<E2eContext["http"]> {
   return ctx.http().set("Authorization", "Bearer staff-e2e");
 }
 
-/** Une société active, son membre, et de quoi commander. */
+/** Une société active au compte, son détenteur, et de quoi commander. */
 async function seed(): Promise<{ companyId: string; userId: string }> {
   const owner = await createUser(ctx.prisma, { auth0Sub: OWNER });
   const company = await createCompany(ctx.prisma, { status: "active" });
+  await ctx.prisma.company.update({
+    where: { id: company.id },
+    data: { grantedTerms: ["monthly"] },
+  });
   await attachTo(ctx.prisma, owner.id, company.id, CustomerRole.owner);
   return { companyId: company.id, userId: owner.id };
 }
 
-/** Pose une commande `daysAgo` jours en arrière, pour un total donné. */
+/** Ce que devient la commande après sa passation. */
+type Outcome = "placed" | "cancelled";
+
+/**
+ * Passe une commande `daysAgo` jours en arrière, de `units` croissants, et
+ * rend le total TTC que la passation a facturé.
+ */
 async function placeOrder(
   seeded: { companyId: string; userId: string },
   daysAgo: number,
-  totalCents: number,
-  status: OrderStatus = OrderStatus.placed,
-): Promise<void> {
-  const createdAt = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000);
+  units: number,
+  outcome: Outcome = "placed",
+): Promise<number> {
+  const order = await placeTestOrder(ctx, {
+    buyerUserId: seeded.userId,
+    companyId: seeded.companyId,
+    settlement: "account",
+    placedAt: new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000),
+    fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
+    lines: [{ sku: "VIE-001", quantity: units }],
+  });
+  if (outcome === "cancelled") {
+    await ctx.app
+      .get(CommandBus)
+      .execute(new CancelOrderCommand(order.id, E2E_STAFF_ID, "Le client renonce."));
+    await ctx.drain();
+  }
+  const row = await ctx.prisma.order.findUniqueOrThrow({
+    where: { id: order.id },
+    select: { totalCents: true },
+  });
+  return row.totalCents;
+}
+
+/**
+ * Une commande au statut `draft`, écrite en base. **Exception gardée du plan T
+ * (2026-10-25)** : aucune route n'écrit plus ce statut — un brouillon de
+ * l'équipe vit dans `order_drafts` depuis la saisie staff (vérifié le
+ * 2026-10-25 : aucun écrivain de `status: draft` sous `src/b2b/orders`). Les
+ * lecteurs l'écartent encore, et ce filtre-là ne s'éprouve qu'en le semant.
+ * Numéro au format réel, hors de portée de la séquence de la suite.
+ */
+async function legacyDraft(seeded: { companyId: string; userId: string }): Promise<void> {
   await ctx.prisma.order.create({
     data: {
-      orderNumber: `CMD-${daysAgo}-${totalCents}-${status}`,
+      orderNumber: "ORD-900001",
       companyId: seeded.companyId,
       placedByUserId: seeded.userId,
-      status,
-      subtotalCents: totalCents,
-      totalCents,
-      createdAt,
+      status: "draft",
+      subtotalCents: 99_000,
+      totalCents: 99_000,
     },
   });
 }
@@ -94,49 +140,49 @@ describe("la fiche client", () => {
 
   it("somme le chiffre, compte les commandes et en tire le panier moyen", async () => {
     const seeded = await seed();
-    await placeOrder(seeded, 3, 10_000);
-    await placeOrder(seeded, 5, 20_000);
+    const first = await placeOrder(seeded, 3, 10);
+    const second = await placeOrder(seeded, 5, 20);
 
     const view = await sheet(seeded.companyId);
     expect(view.stats).toMatchObject({
-      totalSpentCents: 30_000,
+      totalSpentCents: first + second,
       ordersCount: 2,
-      averageTicketCents: 15_000,
+      averageTicketCents: Math.round((first + second) / 2),
     });
   });
 
   it("EXCLUT les annulées et les brouillons — ils n'ont jamais été de l'argent", async () => {
     const seeded = await seed();
-    await placeOrder(seeded, 3, 10_000);
-    await placeOrder(seeded, 3, 99_000, OrderStatus.cancelled);
-    await placeOrder(seeded, 3, 99_000, OrderStatus.draft);
+    const kept = await placeOrder(seeded, 3, 10);
+    await placeOrder(seeded, 3, 40, "cancelled");
+    await legacyDraft(seeded);
 
     const view = await sheet(seeded.companyId);
-    expect(view.stats).toMatchObject({ totalSpentCents: 10_000, ordersCount: 1 });
+    expect(view.stats).toMatchObject({ totalSpentCents: kept, ordersCount: 1 });
   });
 
   it("compare les 30 derniers jours aux 30 PRÉCÉDENTS, sans les mélanger", async () => {
     const seeded = await seed();
-    await placeOrder(seeded, 10, 12_000); // fenêtre courante
-    await placeOrder(seeded, 40, 10_000); // fenêtre précédente
-    await placeOrder(seeded, 90, 50_000); // hors des deux
+    const current = await placeOrder(seeded, 10, 12); // fenêtre courante
+    const previous = await placeOrder(seeded, 40, 10); // fenêtre précédente
+    await placeOrder(seeded, 90, 50); // hors des deux
 
     const view = await sheet(seeded.companyId);
     expect(view.stats.trend).toMatchObject({
-      last30Cents: 12_000,
-      previous30Cents: 10_000,
-      percent: 20,
+      last30Cents: current,
+      previous30Cents: previous,
+      percent: Math.round(((current - previous) / previous) * 100),
       direction: "up",
     });
   });
 
   it("rend les commandes récentes, de la plus récente à la plus ancienne", async () => {
     const seeded = await seed();
-    await placeOrder(seeded, 10, 10_000);
-    await placeOrder(seeded, 2, 20_000);
+    const older = await placeOrder(seeded, 10, 10);
+    const newer = await placeOrder(seeded, 2, 20);
 
     const view = await sheet(seeded.companyId);
-    expect(view.recentOrders.map((order) => order.totalCents)).toEqual([20_000, 10_000]);
+    expect(view.recentOrders.map((order) => order.totalCents)).toEqual([newer, older]);
     // Les annulées RESTENT listées : le commercial doit les voir pour en parler.
     expect(view.recentOrders).toHaveLength(2);
   });
@@ -146,16 +192,15 @@ describe("la fiche client", () => {
     // rend est ce que le commercial lit. Sans ce plafond en base, ajouter une
     // commande allongeait un écran que personne n'avait décidé d'allonger.
     const seeded = await seed();
+    const totals: number[] = [];
     for (let daysAgo = 1; daysAgo <= 7; daysAgo += 1) {
-      await placeOrder(seeded, daysAgo, 1_000 * daysAgo);
+      totals.push(await placeOrder(seeded, daysAgo, daysAgo));
     }
 
     const view = await sheet(seeded.companyId);
     expect(view.recentOrders).toHaveLength(5);
     // Les CINQ plus récentes, pas les cinq premières venues.
-    expect(view.recentOrders.map((order) => order.totalCents)).toEqual([
-      1_000, 2_000, 3_000, 4_000, 5_000,
-    ]);
+    expect(view.recentOrders.map((order) => order.totalCents)).toEqual(totals.slice(0, 5));
   });
 
   it("remonte l'historique d'interaction depuis le JOURNAL, du plus récent au plus ancien", async () => {

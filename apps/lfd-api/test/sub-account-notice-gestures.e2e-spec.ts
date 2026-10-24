@@ -9,23 +9,20 @@
  * commande, et une commande sans copie (d'avant N1) ne prévient personne ;
  * le journal d'envoi arrête une relivraison.
  *
- * Sociétés et commande semées par Prisma (aucun chemin court vers une
- * commande retirée, dette de `test/factories.ts`) ; le signalement par HTTP.
+ * Sociétés semées par Prisma ; la commande passée par le vrai chemin
+ * (`placeOrder`, plan T), réglée puis remise ; le signalement par HTTP.
  * Doublés : la signature des jetons (le jeton EST le `sub`) et le courrier.
  */
 import { WORKSPACE_HEADER, type CreatedIdResponse } from "@lfd/contracts";
 
 import { NotifyPrincipalOnOrderProblemReported } from "../src/b2b/sub-account-notices/application/handlers/notify-principal-on-order-problem-reported.handler.js";
 import { ORDER_PROBLEM_REPORTED } from "../src/b2b/contact/domain/order-problem-reported.fact.js";
-import {
-  OrderClientele,
-  OrderStatus,
-  PaymentStatus,
-} from "../src/platform/database/client/client.js";
+import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
-import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { cardGatewayDouble, handOver, payByCard, pickupSite, placeOrder } from "./order-factory.js";
 import {
   enableNotices,
   mailOf,
@@ -51,11 +48,14 @@ const recordingMailer = {
 };
 
 let ctx: E2eContext;
-let seq = 0; // numéros de commande
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
-    overrides: [ADMIN_VERIFIER_OVERRIDE, { token: MAILER, value: recordingMailer }],
+    overrides: [
+      ADMIN_VERIFIER_OVERRIDE,
+      { token: MAILER, value: recordingMailer },
+      { token: PaymentGateway, value: cardGatewayDouble("pi_n4a") },
+    ],
   });
 });
 
@@ -71,22 +71,25 @@ beforeEach(async () => {
 /** Une commande RETIRÉE du site ; `principal` : la copie de N1, `null` : d'avant N1. */
 async function fulfilledOrder(s: NoticeScene, principal: string | null): Promise<string> {
   const buyer = await ctx.prisma.user.findUniqueOrThrow({ where: { auth0Sub: s.housekeeper } });
-  const order = await ctx.prisma.order.create({
-    data: {
-      orderNumber: `CMD-N4A-${String((seq += 1))}`,
-      placedByUserId: buyer.id,
-      companyId: s.site,
-      principalCompanyId: principal,
-      clientele: OrderClientele.pro,
-      status: OrderStatus.fulfilled,
-      subtotalCents: 2_000,
-      discountCents: 0,
-      totalCents: 2_000,
-      paymentStatus: PaymentStatus.paid,
-      requestedDeliveryDate: new Date(daysAgo(2)),
-    },
-    select: { id: true },
+  const mailsBefore = mails.length;
+  const order = await placeOrder(ctx, {
+    buyerUserId: buyer.id,
+    companyId: s.site,
+    settlement: "card",
+    fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
   });
+  await payByCard(ctx, order);
+  await handOver(ctx, order);
+  if (principal === null) {
+    // Une commande d'avant N1 n'a pas de copie du principal, et la passation
+    // la pose toujours : aucune route ne produit plus cet état (plan T, 2026-10-25).
+    await ctx.prisma.order.update({
+      where: { id: order.id },
+      data: { principalCompanyId: null },
+    });
+  }
+  // La passation a pu prévenir le principal : ces avis-là ne sont pas le sujet.
+  mails.splice(mailsBefore);
   return order.id;
 }
 
@@ -171,7 +174,10 @@ describe("un site signale un problème sur une commande retirée", () => {
     );
 
     expect(notices()).toHaveLength(before);
-    expect(await ctx.prisma.subAccountNoticeSend.count()).toBe(3);
+    // Le journal d'envoi du SEUL fait signalé : la passation a les siens.
+    expect(await ctx.prisma.subAccountNoticeSend.count({ where: { eventId: row?.id ?? "" } })).toBe(
+      3,
+    );
   });
 });
 

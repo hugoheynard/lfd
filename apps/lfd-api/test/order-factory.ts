@@ -22,11 +22,17 @@
  *   dans la suite qui en a besoin.
  */
 import type { BillingAddressPayload, PlaceOrderPayload, StaffSettlement } from "@lfd/contracts";
-import { adminPlaceOrderPayloadSchema, placeOrderPayloadSchema } from "@lfd/contracts";
+import {
+  addDays,
+  adminPlaceOrderPayloadSchema,
+  instantToLocal,
+  placeOrderPayloadSchema,
+} from "@lfd/contracts";
 import { CommandBus } from "@nestjs/cqrs";
 import { randomUUID } from "node:crypto";
 
 import { ConfirmOrderPaymentCommand } from "../src/b2b/orders/application/commands/confirm-order-payment.command.js";
+import { MarkOrderFulfilledCommand } from "../src/b2b/orders/application/commands/mark-order-fulfilled.command.js";
 import {
   PlaceOrderForCustomerCommand,
   type PlaceOrderForCustomerResult,
@@ -38,7 +44,7 @@ import {
 import { runWithRequestContext } from "../src/platform/context/request-context.store.js";
 import { newTraceId } from "../src/platform/context/trace-context.js";
 import type { PrismaService } from "../src/platform/database/prisma.service.js";
-import { serviceDay, type E2eContext } from "./e2e-harness.js";
+import { E2E_STAFF_ID, serviceDay, type E2eContext } from "./e2e-harness.js";
 
 /** Une ligne de panier : le client n'envoie qu'un SKU et une quantité, le serveur tarife. */
 export interface OrderLineSeed {
@@ -63,7 +69,10 @@ export interface OrderSeed {
   /** La société visée ; absente ou `null` = commande personnelle. */
   readonly companyId?: string | null;
   readonly fulfillment: FulfillmentSeed;
-  /** Le jour de service ; absent = dans une semaine ({@link serviceDay}). */
+  /**
+   * Le jour de service ; absent = une semaine après la passation — après
+   * `placedAt` s'il est dit, sinon après maintenant ({@link serviceDay}).
+   */
   readonly forDay?: string;
   /** L'instant de passation ; absent = maintenant. */
   readonly placedAt?: Date;
@@ -76,6 +85,8 @@ export interface OrderSeed {
   readonly note?: string;
   /** La langue de la boutique à la passation ; absente = non dite. */
   readonly locale?: "fr" | "en" | "it";
+  /** Le bon de fidélité imputé ; absent = aucun. Un particulier seulement. */
+  readonly voucherId?: string;
 }
 
 /** La commande passée : son identifiant et le numéro que la production lui a donné. */
@@ -91,9 +102,20 @@ export interface PlacedTestOrder {
 
 const DEFAULT_LINES: readonly OrderLineSeed[] = [{ sku: "VIE-001", quantity: 3 }];
 const DEFAULT_WINDOW = { start: "07:00", end: "08:00" } as const;
+const DEFAULT_LEAD_DAYS = 7;
 
 /** Ce que les deux portes partagent du corps de la commande. */
-type OrderContentSeed = Pick<OrderSeed, "fulfillment" | "forDay" | "lines" | "window" | "note">;
+type OrderContentSeed = Pick<
+  OrderSeed,
+  "fulfillment" | "forDay" | "placedAt" | "lines" | "window" | "note"
+>;
+
+/** Une semaine après la passation : l'heure limite se juge à l'instant de passation. */
+function defaultServiceDay(placedAt: Date | undefined): string {
+  return placedAt === undefined
+    ? serviceDay()
+    : addDays(instantToLocal(placedAt).day, DEFAULT_LEAD_DAYS);
+}
 
 /** Le contenu commun aux deux portes : acheminement, jour, tranche, lignes. */
 function contentOf(seed: OrderContentSeed) {
@@ -104,7 +126,7 @@ function contentOf(seed: OrderContentSeed) {
     pickupAddressId: fulfillment.method === "pickup" ? fulfillment.pickupSiteId : null,
     deliveryAddress: fulfillment.method === "delivery" ? fulfillment.address : null,
     deliveryAddressId: fulfillment.method === "delivery" ? (fulfillment.addressId ?? null) : null,
-    requestedDeliveryDate: seed.forDay ?? serviceDay(),
+    requestedDeliveryDate: seed.forDay ?? defaultServiceDay(seed.placedAt),
     requestedWindow: seed.window ?? DEFAULT_WINDOW,
     note: seed.note ?? "",
     lines: (seed.lines ?? DEFAULT_LINES).map((line) => ({ ...line })),
@@ -117,6 +139,7 @@ function payloadOf(seed: OrderSeed): PlaceOrderPayload {
     ...contentOf(seed),
     settlement: seed.settlement ?? null,
     ...(seed.locale === undefined ? {} : { locale: seed.locale }),
+    ...(seed.voucherId === undefined ? {} : { voucherId: seed.voucherId }),
   });
 }
 
@@ -168,7 +191,10 @@ export function placeOrder(ctx: E2eContext, seed: OrderSeed): Promise<PlacedTest
 }
 
 /** Ce que la saisie de l'équipe ajoute : qui saisit, et un règlement au compte ou par lien. */
-export interface StaffOrderSeed extends Omit<OrderSeed, "companyId" | "settlement" | "locale"> {
+export interface StaffOrderSeed extends Omit<
+  OrderSeed,
+  "companyId" | "settlement" | "locale" | "voucherId"
+> {
   /** La fiche staff de qui saisit. */
   readonly staffUserId: string;
   /** Toujours une société : l'équipe ne saisit pas de commande personnelle. */
@@ -258,5 +284,17 @@ export async function payByCard(ctx: E2eContext, order: PlacedTestOrder): Promis
   await ctx.app
     .get(CommandBus)
     .execute(new ConfirmOrderPaymentCommand(order.paymentIntentId, "succeeded"));
+  await ctx.drain();
+}
+
+/**
+ * Remet une commande comme le comptoir le fait — par la commande du commerce
+ * qui recopie la remise constatée (`order.fulfilled`, points, BL). L'instant
+ * est maintenant : une remise dans le passé n'a pas de route.
+ */
+export async function handOver(ctx: E2eContext, order: PlacedTestOrder): Promise<void> {
+  await ctx.app
+    .get(CommandBus)
+    .execute(new MarkOrderFulfilledCommand(order.orderNumber, E2E_STAFF_ID, new Date(), "scan"));
   await ctx.drain();
 }

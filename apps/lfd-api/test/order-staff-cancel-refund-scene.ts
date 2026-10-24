@@ -13,7 +13,8 @@ import {
 import { PaymentStatus } from "../src/platform/database/client/client.js";
 import { currentTransaction } from "../src/platform/database/transaction.store.js";
 import { WallClock } from "../src/platform/time/wall-clock.js";
-import { bootScene, context, seedOrder, type OrderSeed } from "./order-staff-cancel-scene.js";
+import { bootScene, context } from "./order-staff-cancel-scene.js";
+import { seedOrder, type OrderSeed } from "./order-staff-cancel-orders.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 
 /**
@@ -181,7 +182,7 @@ export function resetStripe(): void {
 export async function seedPaidOrder(seed: OrderSeed = {}) {
   const order = await seedOrder({ payment: PaymentStatus.paid, ...seed });
   if (order.intent !== null) {
-    stripe.charged.set(order.intent, seed.totalCents ?? 1_055);
+    stripe.charged.set(order.intent, order.totalCents);
   }
   return order;
 }

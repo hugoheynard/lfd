@@ -16,10 +16,9 @@ import { randomUUID } from "node:crypto";
  * - l'assiette des points retranche le bon.
  *
  * Stripe et la signature du jeton staff sont les seules frontières doublées.
- * Les commandes « payées » ou « remises » sont semées par Prisma, faute
- * d'agrégat qui sache écrire une commande à cet état (même dette que
- * `loyalty-earning.e2e-spec.ts`) ; les bons, eux, naissent par la vraie
- * conversion.
+ * Toutes les commandes passent par la vraie route `POST /orders` (plan T) ;
+ * le règlement et la remise par les vraies commandes du commerce ; les bons
+ * naissent par la vraie conversion.
  */
 import type {
   MyShopQuoteView,
@@ -30,19 +29,18 @@ import type {
 import { CommandBus } from "@nestjs/cqrs";
 import request from "supertest";
 
+import { ConfirmOrderPaymentCommand } from "../src/b2b/orders/application/commands/confirm-order-payment.command.js";
+import { MarkOrderFulfilledCommand } from "../src/b2b/orders/application/commands/mark-order-fulfilled.command.js";
 import { ConvertLoyaltyPointsCommand } from "../src/b2b/loyalty/application/commands/convert-loyalty-points.command.js";
 import { PendingSettlementSweep } from "../src/b2b/orders/application/services/pending-settlement-sweep.service.js";
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import {
-  OrderClientele,
-  OrderStatus,
-  PaymentStatus,
-} from "../src/platform/database/client/client.js";
+import { OrderStatus, PaymentStatus } from "../src/platform/database/client/client.js";
 import { ServiceDay } from "../src/production/channels/commerce/index.js";
 import {
   bootstrapE2e,
   daysAgo,
+  E2E_STAFF_ID,
   E2E_STAFF_SUB,
   jsonBody,
   serviceDay,
@@ -125,6 +123,9 @@ beforeEach(async () => {
     select: { id: true },
   });
   pickupId = point.id;
+  await ctx.prisma.deliveryZone.create({
+    data: { postalPrefixes: ["73150"], label: "Val d'Isère", feeMode: "amount", feeValue: 2_000 },
+  });
   await ctx.asSub(E2E_STAFF_SUB).put("/admin/loyalty/settings").send(SETTINGS).expect(204);
 });
 
@@ -284,21 +285,23 @@ describe("le reliquat", () => {
   });
 
   it("une commande payée reçoit son reliquat au rattrapage de nuit, une seule fois", async () => {
-    const { userId, voucherId } = await holderWithVoucher(CLIENT, 2);
-    await seedOrderCarrying(userId, voucherId, { voucherDiscountCents: 400, paid: true });
+    const { voucherId } = await holderWithVoucher(CLIENT, 2);
+    const orderId = await seedOrderCarrying(voucherId, { units: 2, delivered: true });
+    const imputed = (await orderRow(orderId)).voucherDiscountCents;
+    expect(imputed).toBeLessThan(1_000);
 
     expect((await nightly()).vouchers.settled).toBe(1);
     await nightly();
 
     const remainders = await remaindersOf(voucherId);
     expect(remainders).toHaveLength(1);
-    expect(remainders[0]?.valueCents).toBe(600);
+    expect(remainders[0]?.valueCents).toBe(1_000 - imputed);
   });
 
   /** Plan §11 bis B2 : le bon a expiré entre le paiement et la nuit. */
   it("un bon échu avant le rattrapage : aucun reliquat, un seul fait, la nuit suivante est silencieuse", async () => {
-    const { userId, voucherId } = await holderWithVoucher(CLIENT, 2);
-    await seedOrderCarrying(userId, voucherId, { voucherDiscountCents: 400, paid: true });
+    const { voucherId } = await holderWithVoucher(CLIENT, 2);
+    await seedOrderCarrying(voucherId, { units: 2, delivered: true });
     await ageVoucher(voucherId);
 
     expect((await nightly()).vouchers).toMatchObject({ reserved: 1, settled: 1 });
@@ -312,8 +315,10 @@ describe("le reliquat", () => {
   });
 
   it("un bon entièrement imputé est marqué soldé, et la nuit suivante ne le relit pas", async () => {
-    const { userId, voucherId } = await holderWithVoucher(CLIENT, 2);
-    await seedOrderCarrying(userId, voucherId, { voucherDiscountCents: 1_000, paid: true });
+    const { voucherId } = await holderWithVoucher(CLIENT, 2);
+    // Dix croissants valent plus que les deux paliers : le bon est tout imputé.
+    const orderId = await seedOrderCarrying(voucherId, { units: 10 });
+    expect((await orderRow(orderId)).voucherDiscountCents).toBe(1_000);
 
     expect((await nightly()).vouchers).toMatchObject({ reserved: 1, settled: 1 });
     expect((await nightly()).vouchers).toMatchObject({ reserved: 0, settled: 0 });
@@ -494,53 +499,56 @@ describe("le devis et l'assiette", () => {
 
   it("une commande définitive rapporte le HT payé : sous-total − remise − bon", async () => {
     const { userId, voucherId } = await holderWithVoucher();
-    await seedOrderCarrying(userId, voucherId, {
-      voucherDiscountCents: 500,
-      paid: true,
-      fulfilled: true,
-    });
+    const orderId = await seedOrderCarrying(voucherId, { units: 10, fulfilled: true });
+    const row = await orderRow(orderId);
+    expect(row.voucherDiscountCents).toBe(500);
 
     await nightly();
 
     const earned = await ctx.prisma.loyaltyLedgerEntry.findFirstOrThrow({
       where: { userId, kind: "earned" },
     });
-    expect(earned.points).toBe(2_000 - 160 - 500);
+    expect(earned.points).toBe(row.subtotalCents - row.discountCents - row.voucherDiscountCents);
   });
 });
 
-let sequence = 0;
+/** Une adresse de la zone de livraison semée : le port rend le total payable. */
+const COURIER_ADDR = {
+  label: "",
+  ligne1: "12 rue du Test",
+  ligne2: "",
+  codePostal: "73150",
+  ville: "Val d'Isère",
+  pays: "France",
+};
 
 /**
- * Une commande publique qui porte le bon, semée à l'état voulu — et le bon
- * engagé, comme la passation l'aurait laissé.
+ * Une commande publique qui porte le bon, passée par la vraie route, réglée
+ * par carte — et remise si `fulfilled`. `delivered` : en livraison, dont le
+ * port garde un total à régler même quand le bon couvre les marchandises —
+ * le seul chemin vers un reliquat qui attend la nuit.
  */
 async function seedOrderCarrying(
-  userId: string,
   voucherId: string,
-  state: { voucherDiscountCents: number; paid: boolean; fulfilled?: boolean },
+  state: { readonly units: number; readonly delivered?: boolean; readonly fulfilled?: boolean },
 ): Promise<string> {
-  sequence += 1;
-  const order = await ctx.prisma.order.create({
-    data: {
-      orderNumber: `CMD-BON-${String(sequence)}`,
-      placedByUserId: userId,
-      clientele: OrderClientele.public,
-      status: state.fulfilled === true ? OrderStatus.fulfilled : OrderStatus.placed,
-      subtotalCents: 2_000,
-      discountCents: 160,
-      voucherDiscountCents: state.voucherDiscountCents,
-      loyaltyVoucherId: voucherId,
-      totalCents: 2_000 - 160 - state.voucherDiscountCents,
-      paymentStatus: state.paid ? PaymentStatus.paid : PaymentStatus.pending,
-      stripePaymentIntentId: `pi_seme_${String(sequence)}`,
-      requestedDeliveryDate: new Date(DAY_OF_SERVICE),
-    },
-    select: { id: true },
-  });
-  await ctx.prisma.loyaltyVoucher.update({
-    where: { id: voucherId },
-    data: { status: "reserved" },
-  });
+  const body =
+    state.delivered === true
+      ? {
+          ...basket(state.units, voucherId),
+          fulfillmentMethod: "delivery",
+          pickupAddressId: null,
+          requestedWindow: { start: null, end: "10:00" },
+          deliveryAddress: COURIER_ADDR,
+        }
+      : basket(state.units, voucherId);
+  const order = await placed(body);
+  const { orderNumber, stripePaymentIntentId } = await orderRow(order.id);
+  const bus = ctx.app.get(CommandBus);
+  await bus.execute(new ConfirmOrderPaymentCommand(stripePaymentIntentId ?? "", "succeeded"));
+  if (state.fulfilled === true) {
+    await bus.execute(new MarkOrderFulfilledCommand(orderNumber, E2E_STAFF_ID, new Date(), "scan"));
+  }
+  await ctx.drain();
   return order.id;
 }

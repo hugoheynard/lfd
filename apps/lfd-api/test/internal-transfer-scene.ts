@@ -13,7 +13,8 @@ import { jsonBody, type E2eContext } from "./e2e-harness.js";
 import { binTypeId, LOADING } from "./delivery-loading-scene.js";
 import { admin, addVehicle } from "./delivery-rounds-scene.js";
 import { MEASURED, seedDeparture } from "./delivery-routing-scene.js";
-import { createUser } from "./factories.js";
+import { attachTo, createCompany, createUser } from "./factories.js";
+import { placeOrder } from "./order-factory.js";
 
 const VILLAGE_GPS = { lat: 45.45, lng: 6.98 };
 
@@ -43,10 +44,18 @@ export async function seedVillage(ctx: E2eContext): Promise<string> {
   return village.id;
 }
 
+/** Le pain des commandes du village, au catalogue de test. */
+export const VILLAGE_BREAD = { sku: "PAI-001", name: "Baguette tradition" } as const;
+
+/** Le numéro de la dernière commande du village — celui que le comptoir scanne. */
+let villageOrderNumber = "";
+
 /**
- * Un retrait réglé au village pour le jour : trois pains. Écrit en Prisma,
- * comme les autres suites du fournil — le commerce n'a pas d'agrégat de ligne
- * hors d'une passation complète (dette de `test/factories.ts`).
+ * Un retrait réglé au village pour le jour : trois baguettes, passées au
+ * compte par un pro, par le vrai chemin (`placeOrder`, plan T). Un pro : le
+ * village n'a pas d'ouverture publique, et la vraie passation refuse un
+ * particulier (la fixture d'avant le plan T en semait un). Tranche 08:00–09:00,
+ * dans l'ouverture pro 07:30–09:00.
  */
 export async function seedVillageOrder(
   ctx: E2eContext,
@@ -54,44 +63,22 @@ export async function seedVillageOrder(
   siteId: string,
 ): Promise<string> {
   const user = await createUser(ctx.prisma, { auth0Sub: "auth0|client", email: "c@vv.fr" });
-  const order = await ctx.prisma.order.create({
-    data: {
-      orderNumber: "CMD-VV-1",
-      placedByUserId: user.id,
-      clientele: "public",
-      status: "placed",
-      paymentStatus: "not_required",
-      requestedDeliveryDate: new Date(`${day}T00:00:00.000Z`),
-      fulfillmentMethod: "pickup",
-      pickupAddress: {
-        label: "Val Village",
-        siteId,
-        ligne1: "Route du Village",
-        ligne2: "",
-        codePostal: "73150",
-        ville: "Val d'Isère",
-        pays: "France",
-      },
-      fulfillment: {
-        window: { value: { start: "08:00", end: "10:00" }, source: "override" },
-        contact: { value: null, source: "default" },
-        signatureRequired: { value: false, source: "default" },
-      },
-      subtotalCents: 300,
-      totalCents: 300,
-      lines: {
-        create: [
-          {
-            sku: "PAIN-VV",
-            productNameSnapshot: "Pain du village",
-            unitPriceMillicents: 100_000,
-            quantity: 3,
-            lineTotalCents: 300,
-          },
-        ],
-      },
-    },
+  const company = await createCompany(ctx.prisma, { enseigne: "Chalet du Village" });
+  await ctx.prisma.company.update({
+    where: { id: company.id },
+    data: { grantedTerms: ["monthly"] },
   });
+  await attachTo(ctx.prisma, user.id, company.id);
+  const order = await placeOrder(ctx, {
+    buyerUserId: user.id,
+    companyId: company.id,
+    settlement: "account",
+    forDay: day,
+    window: { start: "08:00", end: "09:00" },
+    fulfillment: { method: "pickup", pickupSiteId: siteId },
+    lines: [{ sku: VILLAGE_BREAD.sku, quantity: 3 }],
+  });
+  villageOrderNumber = order.orderNumber;
   return order.id;
 }
 
@@ -131,9 +118,9 @@ export async function composedTransfer(
   return { orderId, transferId: transfer.id };
 }
 
-/** Une commande en retrait au comptoir, par son numéro (`CMD-VV-1`). */
+/** La commande du village en retrait au comptoir, par son numéro. */
 export function handOverAtCounter(ctx: E2eContext) {
-  return admin(ctx).post(`/admin/handover/manual/CMD-VV-1`);
+  return admin(ctx).post(`/admin/handover/manual/${villageOrderNumber}`);
 }
 
 export function receiveAtCounter(ctx: E2eContext, orderId: string, reason: string | null) {

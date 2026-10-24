@@ -10,9 +10,8 @@
  * le mur, le `where` conditionné, le bus, les abonnés du courriel, de la
  * cloche et du journal — tourne sur le vrai Postgres.
  *
- * Les commandes sont semées par Prisma, faute d'agrégat qui sache écrire une
- * commande à un état donné (même dette que `test/factories.ts` et
- * `order-payment-retry.e2e-spec.ts`).
+ * Les commandes sont passées par le vrai chemin (`placeOrder`, plan T), carte
+ * en attente — l'état même que l'abandon reprend.
  */
 import { CommandBus } from "@nestjs/cqrs";
 
@@ -30,19 +29,18 @@ import {
 import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { cardGatewayDouble, pickupSite, placeOrder } from "./order-factory.js";
 
 /** L'issue que Stripe rendra à la prochaine annulation — remise à « annulée » avant chaque test. */
 let cancellation: IntentCancellation = { kind: "cancelled" };
 const cancelledIntents: string[] = [];
 const fakeGateway = {
-  createIntent: () => Promise.reject(new Error("non utilisé")),
+  ...cardGatewayDouble("pi_abandon"),
   retrieveIntent: () => Promise.reject(new Error("non utilisé")),
   cancelIntent: (id: string) => {
     cancelledIntents.push(id);
     return Promise.resolve(cancellation);
   },
-  publishableKey: () => "pk_e2e",
-  parseWebhook: () => ({ kind: "ignored" as const }),
 };
 
 interface SentMail {
@@ -88,11 +86,8 @@ interface Seeded {
   readonly intent: string;
 }
 
-let seq = 0;
-
 /** Une commande passée, carte en attente, pour un particulier ou pour une société. */
 async function seedOrder(clientele: OrderClientele): Promise<Seeded> {
-  seq += 1;
   const author = await createUser(ctx.prisma, { auth0Sub: AUTHOR, firstName: "Léa" });
   let companyId: string | null = null;
   if (clientele === OrderClientele.pro) {
@@ -102,23 +97,18 @@ async function seedOrder(clientele: OrderClientele): Promise<Seeded> {
     const colleague = await createUser(ctx.prisma, { auth0Sub: COLLEAGUE });
     await attachTo(ctx.prisma, colleague.id, company.id, CustomerRole.owner);
   }
-  const intent = `pi_abandon_${seq}`;
-  const order = await ctx.prisma.order.create({
-    data: {
-      orderNumber: `CMD-ABANDON-${seq}`,
-      placedByUserId: author.id,
-      companyId,
-      clientele,
-      status: OrderStatus.placed,
-      subtotalCents: 2_000,
-      totalCents: 2_110,
-      vatCents: 110,
-      paymentStatus: PaymentStatus.pending,
-      stripePaymentIntentId: intent,
-    },
-    select: { id: true },
+  const order = await placeOrder(ctx, {
+    buyerUserId: author.id,
+    companyId,
+    settlement: "card",
+    fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
   });
-  return { orderId: order.id, intent };
+  if (order.paymentIntentId === null) {
+    throw new TypeError("la passation par carte n'a lié aucune intention");
+  }
+  // La passation a confirmé la commande : ce courriel-là n'est pas le sujet.
+  sentMails.splice(0);
+  return { orderId: order.id, intent: order.paymentIntentId };
 }
 
 async function stateOf(orderId: string) {

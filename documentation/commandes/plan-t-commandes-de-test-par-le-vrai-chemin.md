@@ -11,6 +11,22 @@
 > `TRN-` 5/5, `ORD-` 186/82 — le § 0 sous-comptait. **Reste** : 37 fichiers en
 > tranches, le renommage des écritures brutes restantes, puis le CHECK
 > `^ORD-([1-9][0-9]*|[A-Z0-9]{8}-[A-Z0-9]{4})$`.
+>
+> 🟡 **Tranches 2 à 5 bâties le 2026-10-25** (suites touchées vertes, une
+> chaîne à la fois) : 33 fichiers de `test/` de plus, dont les scènes
+> `order-account-cancel`, `order-staff-cancel` (commandes sorties dans
+> `apps/lfd-api/test/order-staff-cancel-orders.ts`), `order-customer-cancel` et
+> `internal-transfer`. Le vrai chemin a refusé quatre fixtures impossibles
+> (un particulier au village sans ouverture publique, une tranche hors de
+> l'ouverture pro, une commande publique après l'arrêt du plan, une livraison
+> pro sur une échéance non inscrite). Écritures brutes GARDÉES, datées dans
+> leur fichier : `day-supervision` (matrice d'états d'un lecteur),
+> `customer-sheet` (statut `draft`, plus écrit par aucune route),
+> `pickups-before-s2-migration` (donnée d'avant migration), identifiant
+> choisi de `order-account-cancel-scene` ; numéros au format `ORD-<n>`. **Reste** :
+> 15 fichiers (scènes `collection-*`, `delivery-rounds`/`delivery-routing` —
+> 102 et 42 suites clientes —, factures, relevés, `audiences`), les
+> `order.update` de simulation d'état, puis le renommage et le CHECK.
 
 > **Doc-first, 2026-10-24.** Hors de la chaîne E1–E9 de
 > [`plan-commande-bon-de-livraison-facture.md`](plan-commande-bon-de-livraison-facture.md),

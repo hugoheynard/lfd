@@ -7,9 +7,9 @@
  * que les points et le journal suivent — et qu'un abonné qui échoue, repris par
  * le balayage, ne crédite qu'une fois ; qu'une double attestation n'a qu'un effet.
  *
- * Les commandes sont semées par Prisma, faute d'agrégat qui sache écrire une
- * commande prête et réglée (même dette que `test/factories.ts`) ; le retrait,
- * lui, passe par la vraie route du comptoir.
+ * Les commandes sont passées par le vrai chemin (`placeOrder`, plan T) et
+ * réglées par la vraie confirmation ; le retrait passe par la vraie route du
+ * comptoir.
  */
 import { instantToLocal, type SetLoyaltySettingsPayload } from "@lfd/contracts";
 
@@ -19,13 +19,10 @@ import { LoyaltySettingsReader } from "../src/b2b/loyalty/domain/ports/loyalty-s
 import type { LoyaltySettings } from "../src/b2b/loyalty/domain/value-objects/loyalty-settings.js";
 import { PrismaLoyaltySettingsStore } from "../src/b2b/loyalty/infrastructure/prisma-loyalty-settings.store.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import {
-  OrderClientele,
-  OrderStatus,
-  PaymentStatus,
-} from "../src/platform/database/client/client.js";
+import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
+import { cardGatewayDouble, payByCard, pickupSite, placeOrder } from "./order-factory.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 
 const SETTINGS: SetLoyaltySettingsPayload = {
@@ -71,6 +68,7 @@ beforeAll(async () => {
         },
       },
       { token: LoyaltySettingsReader, value: settings },
+      { token: PaymentGateway, value: cardGatewayDouble("pi_retrait") },
     ],
   });
   settings.inner = ctx.app.get(PrismaLoyaltySettingsStore);
@@ -86,25 +84,20 @@ beforeEach(async () => {
   await ctx.asSub(E2E_STAFF_SUB).put("/admin/loyalty/settings").send(SETTINGS).expect(204);
 });
 
-/** Une commande prête au comptoir, carte déjà encaissée. */
-async function readyOrder(): Promise<{ id: string; number: string }> {
+/** Une commande de comptoir, carte déjà encaissée, et le sous-total qu'elle crédite. */
+async function readyOrder(): Promise<{ id: string; number: string; subtotalCents: number }> {
   sequence += 1;
-  const number = `CMD-RETRAIT-${String(sequence)}`;
   const user = await createUser(ctx.prisma, { auth0Sub: `auth0|retrait-${String(sequence)}` });
-  const order = await ctx.prisma.order.create({
-    data: {
-      orderNumber: number,
-      placedByUserId: user.id,
-      clientele: OrderClientele.public,
-      status: OrderStatus.ready,
-      subtotalCents: 2_340,
-      totalCents: 2_340,
-      paymentStatus: PaymentStatus.paid,
-      stripePaymentIntentId: `pi_retrait_${String(sequence)}`,
-    },
-    select: { id: true },
+  const order = await placeOrder(ctx, {
+    buyerUserId: user.id,
+    fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
   });
-  return { id: order.id, number };
+  await payByCard(ctx, order);
+  const row = await ctx.prisma.order.findUniqueOrThrow({
+    where: { id: order.id },
+    select: { subtotalCents: true },
+  });
+  return { id: order.id, number: order.orderNumber, subtotalCents: row.subtotalCents };
 }
 
 function handOver(reference: string) {
@@ -171,7 +164,7 @@ describe("le retrait passe par la boîte d'envoi", () => {
       `order.fulfilled:${order.id}`,
     ]);
     expect(await statusOf(order.id)).toEqual({ status: "fulfilled" });
-    expect(await earned()).toEqual([{ orderId: order.id, points: 2_340 }]);
+    expect(await earned()).toEqual([{ orderId: order.id, points: order.subtotalCents }]);
     expect(await journaled()).toBe(1);
     // Lot ZL : le même fait pose le jour de livraison du bon, jour de Paris.
     expect(await deliveryDayOf(order.id)).toEqual(await handoverDayOf(order.id));

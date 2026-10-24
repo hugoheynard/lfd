@@ -31,9 +31,9 @@ import {
   deliver,
   resetScene,
   scene,
-  seedOrder,
   withdrawals,
 } from "./order-staff-cancel-scene.js";
+import { seedOrder } from "./order-staff-cancel-orders.js";
 
 let ctx: E2eContext;
 
@@ -65,13 +65,16 @@ const cancelColumns = (orderId: string) =>
   });
 
 /** Une commande de société, et un membre ACCEPTÉ de cette société. */
-async function proOrder(role: CustomerRole = CustomerRole.orders) {
+async function proOrder(
+  role: CustomerRole = CustomerRole.orders,
+  payment: PaymentStatus = PaymentStatus.pending,
+) {
   const companyId = await company();
   const author = await customer();
   await member(author.id, companyId);
   const other = await customer();
   await member(other.id, companyId, { role });
-  const order = await seedCustomerOrder({ placedByUserId: author.id, companyId });
+  const order = await seedCustomerOrder({ placedByUserId: author.id, companyId, payment });
   return { companyId, author, other, ...order };
 }
 
@@ -260,11 +263,7 @@ describe("le geste (C6.6, C6.9)", () => {
   });
 
   it("payée : la demande de remboursement n'a pas d'auteur staff", async () => {
-    const pro = await proOrder();
-    await ctx.prisma.order.update({
-      where: { id: pro.orderId },
-      data: { paymentStatus: PaymentStatus.paid },
-    });
+    const pro = await proOrder(CustomerRole.orders, PaymentStatus.paid);
     await customerCancel(pro.other.sub, pro.orderId).expect(204);
     const request = await ctx.prisma.orderRefundRequest.findUniqueOrThrow({
       where: { orderId: pro.orderId },
@@ -305,19 +304,9 @@ describe("le geste (C6.6, C6.9)", () => {
 describe("la course avec la clôture (C3.4, acteur client)", () => {
   const DAY = serviceDay();
   const closeDay = () => ctx.asSub(E2E_STAFF_SUB).post(`/admin/production/batch/${DAY}/close`);
-  /** Une commande pro à total nul : producible, donc inscrite par la clôture. */
-  async function freeProOrder() {
-    const pro = await proOrder();
-    await ctx.prisma.order.update({
-      where: { id: pro.orderId },
-      data: {
-        paymentStatus: PaymentStatus.not_required,
-        totalCents: 0,
-        subtotalCents: 0,
-        vatCents: 0,
-      },
-    });
-    return pro;
+  /** Une commande pro au compte : producible, donc inscrite par la clôture. */
+  function freeProOrder() {
+    return proOrder(CustomerRole.orders, PaymentStatus.not_required);
   }
 
   it("clôturée d'abord : le client reçoit « en préparation », sans mot du fournil", async () => {

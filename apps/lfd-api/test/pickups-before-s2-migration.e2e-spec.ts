@@ -5,7 +5,9 @@
  * L'état d'avant S2 est reproduit tel qu'il était : une commande de retrait
  * dont le snapshot porte les champs postaux et pas de `siteId`. Aucune
  * fabrique du domaine ne sait plus l'écrire — c'est précisément ce que S2 a
- * changé — d'où l'écriture Prisma directe, comme `invoice-dossiers`.
+ * changé — d'où l'écriture Prisma directe. Exception gardée du plan T
+ * (relue le 2026-10-25) : la donnée d'avant une migration est le sujet même
+ * de la suite. Les numéros suivent le format réel (`ORD-<n>`).
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -68,7 +70,7 @@ async function seedPickup(seed: PickupSeed): Promise<string> {
   const user = await createUser(ctx.prisma, { auth0Sub: `s2-${String(seq)}` });
   const order = await ctx.prisma.order.create({
     data: {
-      orderNumber: `CMD-S2-${String(seq)}`,
+      orderNumber: `ORD-${String(seq)}`,
       companyId: company.id,
       placedByUserId: user.id,
       subtotalCents: 100,

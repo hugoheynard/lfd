@@ -13,9 +13,9 @@
  * - le critère de la facture du mois n'attrape jamais une commande carte, et
  *   une commande au compte n'a jamais de facture carte.
  *
- * Les commandes sont semées par Prisma, faute d'agrégat qui sache écrire une
- * commande à un état donné (même dette que `test/factories.ts`). Le retrait,
- * l'encaissement et le remboursement passent par les VRAIES commandes du bus.
+ * Les commandes sont passées par le vrai chemin (`placeOrder`, plan T), la
+ * veille ; le retrait, l'encaissement et le remboursement passent par les
+ * VRAIES commandes du bus. Le total attendu est relu sur la commande.
  */
 import { CommandBus } from "@nestjs/cqrs";
 
@@ -23,8 +23,9 @@ import { billableOrderWhere } from "../src/b2b/accounting/infrastructure/billabl
 import { ConfirmOrderPaymentCommand } from "../src/b2b/orders/application/commands/confirm-order-payment.command.js";
 import { MarkOrderFulfilledCommand } from "../src/b2b/orders/application/commands/mark-order-fulfilled.command.js";
 import { RecordOrderRefundCommand } from "../src/b2b/orders/application/commands/record-order-refund.command.js";
+import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { CustomerRole, OrderClientele } from "../src/platform/database/client/client.js";
+import { CustomerRole } from "../src/platform/database/client/client.js";
 import { OutboxRelay } from "../src/platform/outbox/outbox-relay.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import {
@@ -34,9 +35,9 @@ import {
   createUser,
   markDelivered,
 } from "./factories.js";
+import { cardGatewayDouble, pickupSite, placeOrder } from "./order-factory.js";
 
 const ENTITIES = "/admin/accounting/legal-entities";
-const TOTAL = 1_055;
 const STAFF = "staff-e2e";
 
 const stubAdminVerifier = {
@@ -49,7 +50,10 @@ let seq = 0;
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
-    overrides: [{ token: AdminTokenVerifier, value: stubAdminVerifier }],
+    overrides: [
+      { token: AdminTokenVerifier, value: stubAdminVerifier },
+      { token: PaymentGateway, value: cardGatewayDouble("pi_e5") },
+    ],
   });
 });
 
@@ -130,6 +134,8 @@ interface Seeded {
   readonly orderNumber: string;
   readonly intent: string;
   readonly companyId: string;
+  /** Le total TTC que la passation a facturé. */
+  readonly totalCents: number;
 }
 
 /** Une commande pro, carte attendue ou au compte ; la société avec ou sans TVA. */
@@ -141,39 +147,31 @@ async function proOrder(
   await addBillingAddress(ctx.prisma, company.id);
   await ctx.prisma.company.update({
     where: { id: company.id },
-    data: { vatNumber: options.vatNumber ?? "FR40303265045" },
+    data: {
+      vatNumber: options.vatNumber ?? "FR40303265045",
+      ...(options.account === true ? { grantedTerms: ["monthly"] } : {}),
+    },
   });
   const owner = await createUser(ctx.prisma, { auth0Sub: `e5-owner-${String(seq)}` });
   await attachTo(ctx.prisma, owner.id, company.id, CustomerRole.owner);
-  const orderNumber = `CMD-E5-${String(seq)}`;
-  const intent = `pi_e5_${String(seq)}`;
-  const order = await ctx.prisma.order.create({
-    data: {
-      orderNumber,
-      companyId: company.id,
-      clientele: OrderClientele.pro,
-      placedByUserId: owner.id,
-      subtotalCents: 1_000,
-      totalCents: TOTAL,
-      vatCents: 55,
-      paymentStatus: options.account === true ? "not_required" : "pending",
-      ...(options.account === true ? {} : { stripePaymentIntentId: intent }),
-      createdAt: new Date(daysAgo(1)),
-      vatShares: [{ rate: 5.5, amountCents: 55 }],
-      lines: {
-        create: {
-          sku: "PAIN-E5",
-          productNameSnapshot: "Pain de la carte",
-          unitPriceMillicents: 1_000_000,
-          vatRate: 5.5,
-          quantity: 1,
-          lineTotalCents: 1_000,
-        },
-      },
-    },
-    select: { id: true },
+  const order = await placeOrder(ctx, {
+    buyerUserId: owner.id,
+    companyId: company.id,
+    settlement: options.account === true ? "account" : "card",
+    placedAt: new Date(daysAgo(1)),
+    fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
   });
-  return { orderId: order.id, orderNumber, intent, companyId: company.id };
+  const { totalCents } = await ctx.prisma.order.findUniqueOrThrow({
+    where: { id: order.id },
+    select: { totalCents: true },
+  });
+  return {
+    orderId: order.id,
+    orderNumber: order.orderNumber,
+    intent: order.paymentIntentId ?? "",
+    companyId: company.id,
+    totalCents,
+  };
 }
 
 async function handOver(order: Seeded): Promise<void> {
@@ -224,8 +222,8 @@ describe("la facture carte (E5a)", () => {
     expect(invoice).toMatchObject({
       type: "380",
       payerCompanyId: order.companyId,
-      totalTtcCents: TOTAL,
-      prepaidCents: TOTAL,
+      totalTtcCents: order.totalCents,
+      prepaidCents: order.totalCents,
       paymentMeans: { code: "48" },
     });
     const outcome = await ctx.prisma.cardInvoiceOutcome.findUniqueOrThrow({
@@ -286,12 +284,12 @@ describe("l'avoir des remboursements (E5b)", () => {
     await handOver(order);
 
     await refund(order, "re_e5_1", 400);
-    await refund(order, "re_e5_2", TOTAL - 400);
+    await refund(order, "re_e5_2", order.totalCents - 400);
 
     const [invoice, ...notes] = await piecesOf(order.orderId);
     expect(notes.map((note) => [note.type, note.totalTtcCents])).toEqual([
       ["381", 400],
-      ["381", TOTAL - 400],
+      ["381", order.totalCents - 400],
     ]);
     const sum = (field: "totalHtCents" | "totalVatCents") =>
       notes.reduce((total, note) => total + note[field], 0);
@@ -318,7 +316,7 @@ describe("l'avoir des remboursements (E5b)", () => {
     await entity();
     const order = await proOrder();
     await pay(order);
-    await refund(order, "re_e5_total", TOTAL);
+    await refund(order, "re_e5_total", order.totalCents);
     await handOver(order);
 
     expect(await piecesOf(order.orderId)).toEqual([]);

@@ -5,9 +5,14 @@
  */
 import type { GrowthStatsView } from "@lfd/contracts";
 
+import { CommandBus } from "@nestjs/cqrs";
+
+import { ConfirmOrderPaymentCommand } from "../src/b2b/orders/application/commands/confirm-order-payment.command.js";
+import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { createUser } from "./factories.js";
+import { attachTo, createUser } from "./factories.js";
+import { cardGatewayDouble, payByCard, pickupSite, placeOrder } from "./order-factory.js";
 import type { InputJsonObject } from "../src/platform/database/client/internal/prismaNamespace.js";
 
 const stubAdminVerifier = {
@@ -20,7 +25,10 @@ let sequence = 0;
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
-    overrides: [{ token: AdminTokenVerifier, value: stubAdminVerifier }],
+    overrides: [
+      { token: AdminTokenVerifier, value: stubAdminVerifier },
+      { token: PaymentGateway, value: cardGatewayDouble("pi_croissance") },
+    ],
   });
 });
 
@@ -107,39 +115,43 @@ describe("GET /admin/growth/stats", () => {
 describe("l'état du portefeuille", () => {
   const DAY_MS = 24 * 60 * 60 * 1000;
 
-  /** Le client qui passe les commandes du test — une commande a toujours un auteur. */
-  async function buyer(): Promise<string> {
+  /** Le client qui passe les commandes du test — membre de chaque société qu'il sert. */
+  async function buyer(...companyIds: readonly string[]): Promise<string> {
     const user = await createUser(ctx.prisma, { auth0Sub: `auth0|buyer-${sequence}` });
+    for (const companyId of companyIds) {
+      await attachTo(ctx.prisma, user.id, companyId);
+    }
     return user.id;
   }
 
-  /** Une commande encaissable, datée, rattachée à une société. */
+  /**
+   * Une commande par carte, passée il y a `daysAgo` jours par le vrai chemin
+   * (`placeOrder`, plan T), puis réglée — ou refusée par la banque. Le CA se
+   * dit en croissants : seul le rapport entre deux fenêtres compte.
+   */
   async function order(input: {
     readonly companyId: string;
     readonly daysAgo: number;
-    readonly totalCents: number;
+    readonly units: number;
     readonly paymentStatus?: "paid" | "failed";
     readonly placedByUserId: string;
   }): Promise<void> {
-    sequence += 1;
-    const at = new Date(Date.now() - input.daysAgo * DAY_MS);
-    await ctx.prisma.order.create({
-      data: {
-        id: `order_${String(sequence).padStart(4, "0")}`,
-        orderNumber: `LFC-${1000 + sequence}`,
-        companyId: input.companyId,
-        placedByUserId: input.placedByUserId,
-        status: "confirmed",
-        paymentStatus: input.paymentStatus ?? "paid",
-        subtotalCents: input.totalCents,
-        vatCents: 0,
-        totalCents: input.totalCents,
-        discountCents: 0,
-        deliveryFeeCents: 0,
-        fulfillmentMethod: "pickup",
-        createdAt: at,
-      },
+    const placed = await placeOrder(ctx, {
+      buyerUserId: input.placedByUserId,
+      companyId: input.companyId,
+      placedAt: new Date(Date.now() - input.daysAgo * DAY_MS),
+      settlement: "card",
+      fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
+      lines: [{ sku: "VIE-001", quantity: input.units }],
     });
+    if (input.paymentStatus === "failed") {
+      await ctx.app
+        .get(CommandBus)
+        .execute(new ConfirmOrderPaymentCommand(placed.paymentIntentId ?? "", "failed"));
+      await ctx.drain();
+      return;
+    }
+    await payByCard(ctx, placed);
   }
 
   async function portfolio(): Promise<{
@@ -223,11 +235,11 @@ describe("l'état du portefeuille", () => {
     });
 
     // Fenêtre précédente (J−45) puis fenêtre courante (J−5).
-    const placedByUserId = await buyer();
-    await order({ companyId: up.id, daysAgo: 45, totalCents: 10_000, placedByUserId });
-    await order({ companyId: up.id, daysAgo: 5, totalCents: 30_000, placedByUserId });
-    await order({ companyId: down.id, daysAgo: 45, totalCents: 50_000, placedByUserId });
-    await order({ companyId: down.id, daysAgo: 5, totalCents: 10_000, placedByUserId });
+    const placedByUserId = await buyer(up.id, down.id);
+    await order({ companyId: up.id, daysAgo: 45, units: 5, placedByUserId });
+    await order({ companyId: up.id, daysAgo: 5, units: 15, placedByUserId });
+    await order({ companyId: down.id, daysAgo: 45, units: 25, placedByUserId });
+    await order({ companyId: down.id, daysAgo: 5, units: 5, placedByUserId });
 
     const view = await portfolio();
 
@@ -248,22 +260,22 @@ describe("l'état du portefeuille", () => {
       },
     });
     // Deux échecs sur LE MÊME compte : deux relances, donc deux.
-    const placedByUserId = await buyer();
+    const placedByUserId = await buyer(company.id);
     await order({
       companyId: company.id,
       daysAgo: 2,
-      totalCents: 5_000,
+      units: 25,
       paymentStatus: "failed",
       placedByUserId,
     });
     await order({
       companyId: company.id,
       daysAgo: 1,
-      totalCents: 7_000,
+      units: 35,
       paymentStatus: "failed",
       placedByUserId,
     });
-    await order({ companyId: company.id, daysAgo: 1, totalCents: 9_000, placedByUserId });
+    await order({ companyId: company.id, daysAgo: 1, units: 45, placedByUserId });
 
     const view = await portfolio();
 

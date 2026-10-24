@@ -33,6 +33,7 @@ import {
   FixedRoad,
   handOverAtCounter,
   receiveAtCounter,
+  VILLAGE_BREAD,
 } from "./internal-transfer-scene.js";
 
 const DAY = serviceDay();
@@ -137,9 +138,9 @@ describe("le transfert interne, de la clôture au départ (lot T1)", () => {
     });
     expect(before).toMatchObject({ frozen: false, siteLabel: "Val Village", siteId: village.id });
     // La clientèle de chaque commande, lue au commerce (plan du tri et des couleurs, L1a).
-    expect(before.orders.items.map((item) => item.clientele)).toEqual(["public"]);
+    expect(before.orders.items.map((item) => item.clientele)).toEqual(["pro"]);
     expect(before.totals).toEqual([
-      { sku: "PAIN-VV", productName: "Pain du village", quantity: 3 },
+      { sku: VILLAGE_BREAD.sku, productName: VILLAGE_BREAD.name, quantity: 3 },
     ]);
 
     const [binId] = await declareTransferBins(ctx, transferId, 1);
@@ -157,7 +158,7 @@ describe("le transfert interne, de la clôture au départ (lot T1)", () => {
     expect(after.frozen).toBe(true);
     expect(after.totals).toEqual(before.totals);
     // Figé, le manifeste garde sa clientèle : elle se relit, elle ne se recopie pas.
-    expect(after.orders.items.map((item) => item.clientele)).toEqual(["public"]);
+    expect(after.orders.items.map((item) => item.clientele)).toEqual(["pro"]);
     expect(
       await ctx.prisma.deliveryInternalTransferManifestLine.count({ where: { transferId } }),
     ).toBe(1);

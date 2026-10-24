@@ -33,6 +33,7 @@ import {
   staff,
   statementPath,
 } from "./order-account-cancel-scene.js";
+import { pickupSite, placeOrder } from "./order-factory.js";
 
 let ctx: E2eContext;
 
@@ -103,18 +104,12 @@ describe("le rejet bancaire passé (condition 5, défaut C5.9 bis, 3)", () => {
     await accountOrder(who);
     await rejectedLine(entityId);
     // Passée après la clôture du lot rejeté : sur aucune de ses lignes.
-    const later = await ctx.prisma.order.create({
-      data: {
-        orderNumber: "CMD-C5-APRES",
-        companyId: who.companyId,
-        placedByUserId: who.ownerId,
-        subtotalCents: 1_000,
-        totalCents: 1_055,
-        vatCents: 55,
-        paymentStatus: "not_required",
-        createdAt: new Date(account.closesAt.getTime() + DAY_MS / 24),
-      },
-      select: { id: true },
+    const later = await placeOrder(ctx, {
+      buyerUserId: who.ownerId,
+      companyId: who.companyId,
+      settlement: "account",
+      placedAt: new Date(account.closesAt.getTime() + DAY_MS / 24),
+      fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
     });
 
     await cancelRequest(later.id).expect(204);
@@ -136,7 +131,7 @@ describe("la ligne fermée (C5.4)", () => {
       batchId: null,
       lineRank: null,
       exclusionReason: null,
-      amountCents: 10_550,
+      amountCents: placed.totalCents,
     });
     if (loaded === null) {
       return;
@@ -165,7 +160,7 @@ describe("la ligne fermée (C5.4)", () => {
   it("une impayée détachée annulée sort des impayés détachés", async () => {
     const entityId = await entity();
     const placed = await accountOrder(await payer(entityId));
-    const detached = OrderCollection.due(placed.id, 10_550, account.clock.now());
+    const detached = OrderCollection.due(placed.id, placed.totalCents, account.clock.now());
     detached.exclude("payer_detached", account.clock.now());
     await collections().saveAll([detached]);
     const unpaid = () => ctx.app.get(DetachedUnpaidReader).rows();

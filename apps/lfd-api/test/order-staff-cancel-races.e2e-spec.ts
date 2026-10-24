@@ -19,10 +19,9 @@ import {
   orderState,
   resetScene,
   scene,
-  seedFreeOrder,
-  seedOrder,
   withdrawals,
 } from "./order-staff-cancel-scene.js";
+import { seedFreeOrder, seedOrder } from "./order-staff-cancel-orders.js";
 
 let ctx: E2eContext;
 
@@ -134,8 +133,9 @@ describe("la course avec le retirage (C3.4)", () => {
     const first = await seedOrder({ payment: PaymentStatus.paid });
     await closeDay().expect(201);
     await deliver();
-    const late = await seedOrder({ payment: PaymentStatus.paid });
-    const cancelled = await seedFreeOrder();
+    // Après l'arrêt, seule l'équipe saisit encore pour la journée.
+    const late = await seedOrder({ payment: PaymentStatus.paid, byStaff: true });
+    const cancelled = await seedOrder({ payment: PaymentStatus.not_required, byStaff: true });
     scene.afterProducibleRead = async () => {
       await cancelRequest(cancelled.orderId).expect(204);
     };

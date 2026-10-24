@@ -15,23 +15,17 @@
  * d'identité (Auth0, tenant distant).
  */
 import type { SetLoyaltySettingsPayload } from "@lfd/contracts";
-import { CommandBus } from "@nestjs/cqrs";
 
 import { NO_LOGIN_METHODS } from "../src/b2b/account/domain/ports/__tests__/login-method-doubles.js";
 import { CustomerIdentityPort } from "../src/b2b/account/domain/ports/customer-identity.port.js";
 import { AccountAccessGranter } from "../src/b2b/account/application/services/grant-account-access.service.js";
-import { ConfirmOrderPaymentCommand } from "../src/b2b/orders/application/commands/confirm-order-payment.command.js";
-import { MarkOrderFulfilledCommand } from "../src/b2b/orders/application/commands/mark-order-fulfilled.command.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { PrincipalResolver } from "../src/platform/auth/principal.resolver.js";
-import {
-  OrderClientele,
-  OrderStatus,
-  PaymentStatus,
-} from "../src/platform/database/client/client.js";
+import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import type { ProvisionedIdentity } from "../src/platform/shared/identity/provisioned-identity.js";
 import { bootstrapE2e, E2E_STAFF_ID, E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";
 import { createCompany, createGuest } from "./factories.js";
+import { cardGatewayDouble, handOver, payByCard, pickupSite, placeOrder } from "./order-factory.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 
 const SETTINGS: SetLoyaltySettingsPayload = {
@@ -64,13 +58,13 @@ const identityDouble: CustomerIdentityPort = {
 };
 
 let ctx: E2eContext;
-let sequence = 0;
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
       { token: CustomerIdentityPort, value: identityDouble },
+      { token: PaymentGateway, value: cardGatewayDouble("pi_rattache") },
     ],
   });
 });
@@ -92,34 +86,22 @@ async function openProgram(): Promise<void> {
   await ctx.asSub(E2E_STAFF_SUB).put("/admin/loyalty/settings").send(SETTINGS).expect(204);
 }
 
-/** Une commande publique de l'invité, rendue définitive (réglée puis remise). */
-async function completedOrderOf(userId: string): Promise<string> {
-  sequence += 1;
-  const number = `CMD-RAT-${String(sequence)}`;
-  const intent = `pi_rattache_${String(sequence)}`;
-  const order = await ctx.prisma.order.create({
-    data: {
-      orderNumber: number,
-      placedByUserId: userId,
-      companyId: null,
-      clientele: OrderClientele.public,
-      status: OrderStatus.ready,
-      subtotalCents: 2_340,
-      discountCents: 0,
-      deliveryFeeCents: 0,
-      lateFeeCents: 0,
-      vatCents: 0,
-      totalCents: 2_340,
-      paymentStatus: PaymentStatus.pending,
-      stripePaymentIntentId: intent,
-    },
-    select: { id: true },
+/** Une commande publique de l'invité, passée par le vrai chemin, réglée puis remise. */
+async function completedOrderOf(
+  userId: string,
+): Promise<{ readonly id: string; readonly subtotalCents: number }> {
+  const order = await placeOrder(ctx, {
+    buyerUserId: userId,
+    fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
   });
-  const bus = ctx.app.get(CommandBus);
-  await bus.execute(new ConfirmOrderPaymentCommand(intent, "succeeded"));
-  await bus.execute(new MarkOrderFulfilledCommand(number, E2E_STAFF_ID, new Date(), "scan"));
-  await ctx.drain();
-  return order.id;
+  await payByCard(ctx, order);
+  await handOver(ctx, order);
+  // Le sous-total (l'assiette des points) est celui que la passation a
+  // tarifé : relu, jamais recopié.
+  return ctx.prisma.order.findUniqueOrThrow({
+    where: { id: order.id },
+    select: { id: true, subtotalCents: true },
+  });
 }
 
 function earned() {
@@ -137,7 +119,7 @@ describe("R1 — la fiche invité devient le compte", () => {
   it("rattache par code e-mail, et crédite la commande définitive une seule fois", async () => {
     await openProgram();
     const guest = await createGuest(ctx.prisma, { email: "Lea@Invitee-E2E.fr" });
-    const orderId = await completedOrderOf(guest.id);
+    const order = await completedOrderOf(guest.id);
     // Invité au moment des deux faits : rien n'est dû.
     expect(await earned()).toEqual([]);
 
@@ -149,7 +131,9 @@ describe("R1 — la fiche invité devient le compte", () => {
     expect(claimed).toMatchObject({ auth0Sub: BY_CODE, emailVerified: true });
     expect(claimed.becameAccountAt).toBeInstanceOf(Date);
     expect(await ctx.prisma.user.count()).toBe(1);
-    expect(await earned()).toEqual([{ orderId, points: 2_340, userId: guest.id }]);
+    expect(await earned()).toEqual([
+      { orderId: order.id, points: order.subtotalCents, userId: guest.id },
+    ]);
     // Le rattrapage de nuit passe ensuite : rien de plus.
     await ctx
       .http()

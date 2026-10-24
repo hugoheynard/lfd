@@ -8,8 +8,10 @@
  * n'atteint pas son frère), le filtre de jour borne la vraie colonne
  * `@db.Date`, et les refus nommés sortent avec leur statut.
  *
- * Sociétés, rattachements et commandes semés par Prisma (dette de
- * `test/factories.ts`) ; tous les gestes par HTTP. Aucune date absolue.
+ * Sociétés et rattachements semés par Prisma (dette de `test/factories.ts`) ;
+ * les commandes passées par le vrai chemin (`placeOrder`, plan T) — les
+ * montants attendus sont RELUS sur elles, jamais recopiés ; tous les gestes
+ * par HTTP. Aucune date absolue.
  */
 import { Buffer } from "node:buffer";
 
@@ -33,6 +35,7 @@ import {
   member,
   seedCustomerOrder,
 } from "./order-customer-cancel-scene.js";
+import { placeOrder } from "./order-factory.js";
 import { resetScene } from "./order-staff-cancel-scene.js";
 
 let ctx: E2eContext;
@@ -80,7 +83,7 @@ async function principalMember(g: Group, role: CustomerRole): Promise<Person> {
   return person;
 }
 
-/** Une commande au compte (sous-total 1 000, 55 de TVA à 5,5 %, 1 055 TTC). */
+/** Une commande au compte d'un croissant, au prix du catalogue. */
 async function accountOrder(
   companyId: string,
   author: Person,
@@ -97,11 +100,86 @@ async function accountOrder(
     ...(over.status === undefined ? {} : { status: over.status }),
     ...(over.inDays === undefined ? {} : { inDays: over.inDays }),
   });
-  await ctx.prisma.order.update({
-    where: { id: orderId },
-    data: { vatShares: [{ rate: 5.5, amountCents: 55 }] },
-  });
   return orderId;
+}
+
+/** Les montants que la passation a figés — ce que le récapitulatif doit sommer. */
+async function amountsOf(orderId: string) {
+  const row = await ctx.prisma.order.findUniqueOrThrow({
+    where: { id: orderId },
+    select: {
+      subtotalCents: true,
+      vatCents: true,
+      totalCents: true,
+      lines: { select: { lineTotalCents: true } },
+    },
+  });
+  const linesHt = row.lines.reduce((sum, line) => sum + line.lineTotalCents, 0);
+  return { ...row, linesHt };
+}
+
+/** Des centimes comme le PDF et le tableur les impriment : `21,10`. */
+function euros(cents: number): string {
+  return (cents / 100).toFixed(2).replace(".", ",");
+}
+
+/** Le port de la zone de livraison semée : 7,50 €. */
+const DELIVERY_FEE = 750;
+
+const COURIER_ADDRESS = {
+  label: "",
+  ligne1: "12 rue du Test",
+  ligne2: "",
+  codePostal: "73150",
+  ville: "Val d'Isère",
+  pays: "France",
+};
+
+/** Une commande au compte LIVRÉE dans la zone semée, par le vrai chemin (plan T). */
+async function deliveredAccountOrder(companyId: string, author: Person): Promise<string> {
+  await ctx.prisma.deliveryZone.create({
+    data: {
+      postalPrefixes: ["73150"],
+      label: "Val d'Isère",
+      feeMode: "amount",
+      feeValue: DELIVERY_FEE,
+    },
+  });
+  await ctx.prisma.company.update({
+    where: { id: companyId },
+    data: { grantedTerms: ["monthly"] },
+  });
+  // Un pro ne demande qu'une échéance inscrite sur l'adresse de son carnet.
+  const booked = await ctx
+    .asSub(author.sub)
+    .post(`/companies/${companyId}/delivery-addresses`)
+    .send({
+      ...COURIER_ADDRESS,
+      isDefault: true,
+      specs: {
+        signatureRequired: null,
+        note: "",
+        slotList: { mode: "everyday", slots: [] },
+        deliveryContact: null,
+        gps: null,
+        windowMode: "deadline",
+        deadlines: { mode: "everyday", times: ["10:00"] },
+      },
+    })
+    .expect(201);
+  const order = await placeOrder(ctx, {
+    buyerUserId: author.id,
+    companyId,
+    settlement: "account",
+    window: { start: null, end: "10:00" },
+    fulfillment: {
+      method: "delivery",
+      address: COURIER_ADDRESS,
+      addressId: jsonBody<{ id: string }>(booked).id,
+    },
+    lines: [{ sku: "VIE-001", quantity: 1 }],
+  });
+  return order.id;
 }
 
 const summarize = (who: Person, companyId: string, orderIds: readonly string[]) =>
@@ -124,15 +202,17 @@ describe("le récapitulatif sous le mur de la liste (§6.5)", () => {
     expect(summary.companies.map((c) => c.companyId).sort()).toEqual(
       [g.principal, g.site, g.sibling].sort(),
     );
-    // La graine pose une ligne à 100 centimes sous un sous-total de 1 000 :
-    // le produit somme les lignes, le bas somme les colonnes — chacun la sienne.
+    // Le produit somme les lignes, le bas somme les colonnes — chacun la sienne.
+    const amounts = await Promise.all([own, ofSite, ofSibling].map(amountsOf));
+    const sum = (pick: (a: (typeof amounts)[number]) => number) =>
+      amounts.reduce((total, a) => total + pick(a), 0);
     expect(summary.total.products).toEqual([
-      { sku: "VIE-001", name: "Croissant", quantity: 3, htCents: 300 },
+      { sku: "VIE-001", name: "Croissant", quantity: 3, htCents: sum((a) => a.linesHt) },
     ]);
     expect(summary.total.bottom).toMatchObject({
-      subtotalCents: 3_000,
-      vat: [{ rate: 5.5, amountCents: 165 }],
-      totalCents: 3_165,
+      subtotalCents: sum((a) => a.subtotalCents),
+      vat: [{ rate: 5.5, amountCents: sum((a) => a.vatCents) }],
+      totalCents: sum((a) => a.totalCents),
     });
   });
 
@@ -169,7 +249,7 @@ describe("le récapitulatif sous le mur de la liste (§6.5)", () => {
     );
 
     expect(summary.total.orderCount).toBe(1);
-    expect(summary.total.bottom.totalCents).toBe(1_055);
+    expect(summary.total.bottom.totalCents).toBe((await amountsOf(kept)).totalCents);
     expect(summary.excluded.map((e) => [e.orderId, e.reason]).sort()).toEqual(
       [
         [cancelled, "cancelled"],
@@ -236,7 +316,8 @@ describe("le récapitulatif en PDF et au tableur (lot R2) — même mur, mêmes 
     expect(text).toContain("RÉCAPITULATIF DE COMMANDES");
     expect(text).toContain("Montants à la commande");
     expect(text).toContain("Total général");
-    expect(text).toContain("21,10");
+    const general = (await amountsOf(own)).totalCents + (await amountsOf(ofSite)).totalCents;
+    expect(text).toContain(`Total TTC ${euros(general)}`);
     expect(text).toContain("annulée");
     // Les bons inclus en annexe, sur leur page (§10).
     expect(text).toContain("Page 1/2");
@@ -247,11 +328,7 @@ describe("le récapitulatif en PDF et au tableur (lot R2) — même mur, mêmes 
     const g = await group();
     const boss = await principalMember(g, CustomerRole.owner);
     const pickedUp = await accountOrder(g.principal, boss);
-    const delivered = await accountOrder(g.principal, boss);
-    await ctx.prisma.order.update({
-      where: { id: delivered },
-      data: { fulfillmentMethod: "delivery", deliveryFeeCents: 750, totalCents: 1_955 },
-    });
+    const delivered = await deliveredAccountOrder(g.principal, boss);
     const cancelled = await accountOrder(g.principal, boss, { status: OrderStatus.cancelled });
     const ids = [pickedUp, delivered, cancelled];
 
@@ -260,18 +337,20 @@ describe("le récapitulatif en PDF et au tableur (lot R2) — même mur, mêmes 
     );
 
     const bons = summary.companies[0]?.orders ?? [];
+    const pickedUpHt = (await amountsOf(pickedUp)).subtotalCents;
+    const deliveredHt = (await amountsOf(delivered)).subtotalCents;
     expect(bons.map((o) => [o.orderId, o.fulfillmentMethod, o.pretaxCents]).sort()).toEqual(
       [
-        [pickedUp, "pickup", 1_000],
-        [delivered, "delivery", 1_750],
+        [pickedUp, "pickup", pickedUpHt],
+        [delivered, "delivery", deliveredHt + DELIVERY_FEE],
       ].sort(),
     );
     expect(bons[0]?.author).toEqual({ kind: "customer", name: "Léa Petit" });
     expect(bons[0]?.day).toMatch(/^\d{4}-\d{2}-\d{2}$/u);
-    expect(summary.total.bottom.deliveryFeeCents).toBe(750);
+    expect(summary.total.bottom.deliveryFeeCents).toBe(DELIVERY_FEE);
     expect(summary.total.ordersPretax).toEqual({
-      pretaxCents: 2_750,
-      gapCents: 750,
+      pretaxCents: pickedUpHt + deliveredHt + DELIVERY_FEE,
+      gapCents: DELIVERY_FEE,
       cappedDiscountCents: 0,
     });
 
@@ -294,8 +373,9 @@ describe("le récapitulatif en PDF et au tableur (lot R2) — même mur, mêmes 
     expect(response.headers["content-disposition"]).toMatch(/recapitulatif-.+\.csv/u);
     const csv = bytesOf(response.body).toString("utf8");
     expect(csv.startsWith("\uFEFF")).toBe(true);
-    expect(csv).toContain('"Croissant";"VIE-001";1;1,00');
-    expect(csv).toContain('"Total général";"Total TTC";"";;10,55');
+    const amounts = await amountsOf(own);
+    expect(csv).toContain(`"Croissant";"VIE-001";1;${euros(amounts.linesHt)}`);
+    expect(csv).toContain(`"Total général";"Total TTC";"";;${euros(amounts.totalCents)}`);
   });
 
   it("CSV : la période du corps est imprimée, et ne retire aucune commande (§9)", async () => {
@@ -312,7 +392,9 @@ describe("le récapitulatif en PDF et au tableur (lot R2) — même mur, mêmes 
       .expect(200);
 
     expect(response.text).toContain("Retraits et livraisons du 1er au 15 janvier 2020");
-    expect(response.text).toContain('"Croissant";"VIE-001";1;1,00');
+    expect(response.text).toContain(
+      `"Croissant";"VIE-001";1;${euros((await amountsOf(own)).linesHt)}`,
+    );
   });
 
   it("une période mal formée : 400", async () => {

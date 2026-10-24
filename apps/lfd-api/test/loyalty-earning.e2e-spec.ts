@@ -9,25 +9,18 @@
  * - la lecture « définitive » d'`orders` : `not_required` et `pending` n'en
  *   sont pas, un invité ne gagne rien, un pro sans société non plus.
  *
- * Les commandes sont semées par Prisma, faute d'agrégat qui sache écrire une
- * commande remise (même dette que `test/factories.ts`) ; le règlement et la
- * remise, eux, passent par les vraies commandes du commerce.
+ * Les commandes sont passées par le vrai chemin (`placeOrder`, plan T) ; le
+ * règlement et la remise passent par les vraies commandes du commerce. Une
+ * seule écriture brute reste, datée : la société disparue.
  * Frontière doublée : la signature du jeton staff.
  */
 import type { SetLoyaltySettingsPayload } from "@lfd/contracts";
-import { CommandBus } from "@nestjs/cqrs";
 
 import { LoyaltySettings } from "../src/b2b/loyalty/domain/value-objects/loyalty-settings.js";
 import { PrismaLoyaltySettingsStore } from "../src/b2b/loyalty/infrastructure/prisma-loyalty-settings.store.js";
 
-import { ConfirmOrderPaymentCommand } from "../src/b2b/orders/application/commands/confirm-order-payment.command.js";
-import { MarkOrderFulfilledCommand } from "../src/b2b/orders/application/commands/mark-order-fulfilled.command.js";
+import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import {
-  OrderClientele,
-  OrderStatus,
-  PaymentStatus,
-} from "../src/platform/database/client/client.js";
 import {
   bootstrapE2e,
   daysAgo,
@@ -36,7 +29,15 @@ import {
   jsonBody,
   type E2eContext,
 } from "./e2e-harness.js";
-import { createCompany, createGuest, createUser } from "./factories.js";
+import { attachTo, createCompany, createGuest, createUser } from "./factories.js";
+import {
+  cardGatewayDouble,
+  handOver as handOverOrder,
+  payByCard,
+  pickupSite,
+  placeOrder,
+  type PlacedTestOrder,
+} from "./order-factory.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 
 const SETTINGS: SetLoyaltySettingsPayload = {
@@ -54,11 +55,13 @@ const stubAdminVerifier = {
 };
 
 let ctx: E2eContext;
-let sequence = 0;
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
-    overrides: [{ token: AdminTokenVerifier, value: stubAdminVerifier }],
+    overrides: [
+      { token: AdminTokenVerifier, value: stubAdminVerifier },
+      { token: PaymentGateway, value: cardGatewayDouble("pi_fidelite") },
+    ],
   });
 });
 
@@ -87,60 +90,50 @@ async function openProgramToPro(): Promise<void> {
 
 interface OrderSeed {
   readonly placedByUserId: string;
-  readonly companyId?: string | null;
-  readonly clientele?: OrderClientele;
-  readonly paymentStatus?: PaymentStatus;
-  readonly subtotalCents?: number;
-  readonly discountCents?: number;
-  readonly vatCents?: number;
-  readonly deliveryFeeCents?: number;
-  readonly lateFeeCents?: number;
-  /** L'instant de passation (`created_at`) ; maintenant par défaut. */
+  /** La société au nom de qui l'auteur commande ; absente = commande personnelle. */
+  readonly companyId?: string;
+  /** Au compte (`not_required`) plutôt que par carte. */
+  readonly onAccount?: boolean;
+  /** L'instant de passation ; maintenant par défaut. */
   readonly placedAt?: Date;
 }
 
-/** Une commande prête au comptoir ; carte en attente par défaut. */
-async function seedOrder(seed: OrderSeed): Promise<{ id: string; number: string; intent: string }> {
-  sequence += 1;
-  const number = `CMD-FID-${String(sequence)}`;
-  const intent = `pi_fidelite_${String(sequence)}`;
-  const subtotalCents = seed.subtotalCents ?? 2_340;
-  const discountCents = seed.discountCents ?? 0;
-  const deliveryFeeCents = seed.deliveryFeeCents ?? 0;
-  const lateFeeCents = seed.lateFeeCents ?? 0;
-  const vatCents = seed.vatCents ?? 0;
-  const order = await ctx.prisma.order.create({
-    data: {
-      orderNumber: number,
-      placedByUserId: seed.placedByUserId,
-      companyId: seed.companyId ?? null,
-      clientele: seed.clientele ?? OrderClientele.public,
-      status: OrderStatus.ready,
-      subtotalCents,
-      discountCents,
-      deliveryFeeCents,
-      lateFeeCents,
-      vatCents,
-      totalCents: subtotalCents - discountCents + deliveryFeeCents + lateFeeCents + vatCents,
-      paymentStatus: seed.paymentStatus ?? PaymentStatus.pending,
-      stripePaymentIntentId: intent,
-      ...(seed.placedAt === undefined ? {} : { createdAt: seed.placedAt }),
-    },
-    select: { id: true },
+interface SeededOrder {
+  readonly order: PlacedTestOrder;
+  readonly id: string;
+  /** L'assiette des points : hors taxe, remise déduite — relue, jamais recopiée. */
+  readonly basisCents: number;
+}
+
+/** Une commande passée par le vrai chemin ; carte en attente par défaut. */
+async function seedOrder(seed: OrderSeed): Promise<SeededOrder> {
+  const order = await placeOrder(ctx, {
+    buyerUserId: seed.placedByUserId,
+    companyId: seed.companyId ?? null,
+    settlement: seed.onAccount === true ? "account" : "card",
+    fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
+    ...(seed.placedAt === undefined ? {} : { placedAt: seed.placedAt }),
   });
-  return { id: order.id, number, intent };
+  const row = await ctx.prisma.order.findUniqueOrThrow({
+    where: { id: order.id },
+    select: { subtotalCents: true, discountCents: true },
+  });
+  return { order, id: order.id, basisCents: row.subtotalCents - row.discountCents };
 }
 
-async function pay(intent: string): Promise<void> {
-  await ctx.app.get(CommandBus).execute(new ConfirmOrderPaymentCommand(intent, "succeeded"));
-  await ctx.drain();
+async function pay(seeded: SeededOrder): Promise<void> {
+  await payByCard(ctx, seeded.order);
 }
 
-async function handOver(number: string): Promise<void> {
-  await ctx.app
-    .get(CommandBus)
-    .execute(new MarkOrderFulfilledCommand(number, E2E_STAFF_ID, new Date(), "scan"));
-  await ctx.drain();
+async function handOver(seeded: SeededOrder): Promise<void> {
+  await handOverOrder(ctx, seeded.order);
+}
+
+/** Un membre de la société, pour qu'il puisse commander à son nom. */
+async function proMember(companyId: string): Promise<string> {
+  const userId = await member();
+  await attachTo(ctx.prisma, userId, companyId);
+  return userId;
 }
 
 async function sweep(): Promise<{
@@ -172,23 +165,20 @@ async function member(): Promise<string> {
 }
 
 describe("le crédit au fil de l'eau — remise ET encaissement", () => {
-  it("crédite au second fait quand la carte est réglée avant la remise — hors taxe, sans port ni surtaxe", async () => {
+  // L'assiette (hors taxe, sans port ni surtaxe) est éprouvée sur le service
+  // pur `order-earning` ; une commande passée au comptoir n'a ni port ni surtaxe.
+  it("crédite au second fait quand la carte est réglée avant la remise — hors taxe", async () => {
     await openProgram();
     const userId = await member();
-    const order = await seedOrder({
-      placedByUserId: userId,
-      subtotalCents: 2_500,
-      discountCents: 160,
-      vatCents: 129,
-      deliveryFeeCents: 700,
-      lateFeeCents: 300,
-    });
+    const order = await seedOrder({ placedByUserId: userId });
 
-    await pay(order.intent);
+    await pay(order);
     expect(await earned()).toEqual([]);
-    await handOver(order.number);
+    await handOver(order);
 
-    expect(await earned()).toEqual([{ orderId: order.id, points: 2_340, userId, companyId: null }]);
+    expect(await earned()).toEqual([
+      { orderId: order.id, points: order.basisCents, userId, companyId: null },
+    ]);
   });
 
   it("crédite aussi quand la remise précède le règlement", async () => {
@@ -196,21 +186,21 @@ describe("le crédit au fil de l'eau — remise ET encaissement", () => {
     const userId = await member();
     const order = await seedOrder({ placedByUserId: userId });
 
-    await handOver(order.number);
+    await handOver(order);
     expect(await earned()).toEqual([]);
-    await pay(order.intent);
+    await pay(order);
 
-    expect(await earned()).toMatchObject([{ orderId: order.id, points: 2_340 }]);
+    expect(await earned()).toMatchObject([{ orderId: order.id, points: order.basisCents }]);
   });
 
   it("🔴 ne crédite jamais deux fois : abonné, puis rattrapage, puis un fait rejoué", async () => {
     await openProgram();
     const order = await seedOrder({ placedByUserId: await member() });
-    await pay(order.intent);
-    await handOver(order.number);
+    await pay(order);
+    await handOver(order);
 
     expect(await sweep()).toMatchObject({ scanned: 1, credited: 0 });
-    await pay(order.intent);
+    await pay(order);
     expect(await earned()).toHaveLength(1);
   });
 
@@ -218,13 +208,11 @@ describe("le crédit au fil de l'eau — remise ET encaissement", () => {
     await openProgramToPro();
     const company = await createCompany(ctx.prisma);
     const order = await seedOrder({
-      placedByUserId: await member(),
+      placedByUserId: await proMember(company.id),
       companyId: company.id,
-      clientele: OrderClientele.pro,
-      paymentStatus: PaymentStatus.pending,
     });
-    await pay(order.intent);
-    await handOver(order.number);
+    await pay(order);
+    await handOver(order);
 
     expect(await earned()).toMatchObject([{ companyId: company.id, userId: null }]);
   });
@@ -232,12 +220,19 @@ describe("le crédit au fil de l'eau — remise ET encaissement", () => {
 
 describe("ce qui ne crédite pas", () => {
   it("🔴 `not_required` n'est pas un encaissement", async () => {
-    await openProgram();
-    const order = await seedOrder({
-      placedByUserId: await member(),
-      paymentStatus: PaymentStatus.not_required,
+    // Au compte : seul un pro y commande, d'où le programme ouvert aux pros.
+    await openProgramToPro();
+    const company = await createCompany(ctx.prisma);
+    await ctx.prisma.company.update({
+      where: { id: company.id },
+      data: { grantedTerms: ["monthly"] },
     });
-    await handOver(order.number);
+    const order = await seedOrder({
+      placedByUserId: await proMember(company.id),
+      companyId: company.id,
+      onAccount: true,
+    });
+    await handOver(order);
 
     expect(await sweep()).toMatchObject({ scanned: 0, credited: 0 });
     expect(await earned()).toEqual([]);
@@ -246,7 +241,7 @@ describe("ce qui ne crédite pas", () => {
   it("une carte encore en attente, remise quand même", async () => {
     await openProgram();
     const order = await seedOrder({ placedByUserId: await member() });
-    await handOver(order.number);
+    await handOver(order);
 
     expect(await sweep()).toMatchObject({ scanned: 0, credited: 0 });
     expect(await earned()).toEqual([]);
@@ -256,8 +251,8 @@ describe("ce qui ne crédite pas", () => {
     await openProgram();
     const guest = await createGuest(ctx.prisma, { email: "invite@lfc.test" });
     const order = await seedOrder({ placedByUserId: guest.id });
-    await pay(order.intent);
-    await handOver(order.number);
+    await pay(order);
+    await handOver(order);
 
     expect(await sweep()).toMatchObject({ scanned: 1, credited: 0 });
     expect(await earned()).toEqual([]);
@@ -265,21 +260,29 @@ describe("ce qui ne crédite pas", () => {
 
   it("un pro dont la société a disparu", async () => {
     await openProgramToPro();
+    const company = await createCompany(ctx.prisma);
     const order = await seedOrder({
-      placedByUserId: await member(),
-      clientele: OrderClientele.pro,
-      companyId: null,
+      placedByUserId: await proMember(company.id),
+      companyId: company.id,
     });
-    await pay(order.intent);
-    await handOver(order.number);
+    // Une société ne disparaît plus (pas de suppression physique) : une
+    // commande pro sans société est un état d'avant, qu'aucune route ne
+    // produit. Posé après la vraie passation (plan T, 2026-10-25).
+    // Le payeur part avec elle : la base refuse un payeur sans société.
+    await ctx.prisma.order.update({
+      where: { id: order.id },
+      data: { companyId: null, billedCompanyId: null },
+    });
+    await pay(order);
+    await handOver(order);
 
     expect(await earned()).toEqual([]);
   });
 
   it("rien tant que le programme est fermé — et le rattrapage ne parcourt rien", async () => {
     const order = await seedOrder({ placedByUserId: await member() });
-    await pay(order.intent);
-    await handOver(order.number);
+    await pay(order);
+    await handOver(order);
 
     // `vouchers` : le rattrapage des bons engagés (lot C, 2026-09-27). Il ne
     // dépend pas du réglage — un bon déjà engagé se solde même programme fermé.
@@ -306,14 +309,16 @@ describe("le rattrapage — POST /admin/loyalty/sweep", () => {
     await openProgram({ ...SETTINGS, openToPublic: false });
     const userId = await member();
     const order = await seedOrder({ placedByUserId: userId });
-    await pay(order.intent);
-    await handOver(order.number);
+    await pay(order);
+    await handOver(order);
     expect(await earned()).toEqual([]);
     await openProgram();
 
     expect(await sweep()).toMatchObject({ scanned: 1, credited: 1 });
     expect(await sweep()).toMatchObject({ scanned: 1, credited: 0 });
-    expect(await earned()).toEqual([{ orderId: order.id, points: 2_340, userId, companyId: null }]);
+    expect(await earned()).toEqual([
+      { orderId: order.id, points: order.basisCents, userId, companyId: null },
+    ]);
   });
 
   it("est murée : sans le jeton machine, rien", async () => {
@@ -333,8 +338,8 @@ describe("avant l'ouverture au public (R4)", () => {
       placedByUserId: await member(),
       placedAt: new Date(daysAgo(3)),
     });
-    await pay(order.intent);
-    await handOver(order.number);
+    await pay(order);
+    await handOver(order);
     await openProgram();
 
     expect(await sweep()).toMatchObject({ scanned: 1, credited: 0 });

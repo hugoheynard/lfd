@@ -20,8 +20,8 @@ import {
   orderState,
   resetScene,
   scene,
-  seedOrder,
 } from "./order-staff-cancel-scene.js";
+import { seedOrder } from "./order-staff-cancel-orders.js";
 import {
   advanceWallPastRetries,
   attention,
@@ -65,12 +65,12 @@ const retry = (orderId: string, sub = E2E_STAFF_SUB) =>
 
 describe("une commande payée s'annule, et l'argent part après", () => {
   it("annulée, une demande, un re_… sans montant imposé, carnet `pending` ; le webhook la dit remboursée", async () => {
-    const { orderId, intent } = await seedPaidOrder();
+    const { orderId, intent, totalCents } = await seedPaidOrder();
 
     const before = await detail(orderId);
     expect(before.cancellability).toMatchObject({
       cancellable: true,
-      refund: { amountCents: 1_055 },
+      refund: { amountCents: totalCents },
     });
     await cancelRequest(orderId).expect(204);
     await deliver();
@@ -81,7 +81,7 @@ describe("une commande payée s'annule, et l'argent part après", () => {
     });
     expect(await refundRequestOf(orderId)).toMatchObject({
       cause: "cancellation",
-      announcedCents: 1_055,
+      announcedCents: totalCents,
       generation: 1,
       attempts: 1,
       stripeRefundId: "re_e2e_1",
@@ -91,7 +91,7 @@ describe("une commande payée s'annule, et l'argent part après", () => {
       { paymentIntentId: intent, key: `lfd-order-refund:${orderId}:1:1` },
     ]);
     expect(await ledgerOf(orderId)).toEqual([
-      { stripeRefundId: "re_e2e_1", amountCents: 1_055, status: "pending" },
+      { stripeRefundId: "re_e2e_1", amountCents: totalCents, status: "pending" },
     ]);
     expect((await detail(orderId)).refund).toMatchObject({ state: "issued", retryable: false });
 
@@ -108,7 +108,7 @@ describe("une commande payée s'annule, et l'argent part après", () => {
   });
 
   it("courriel variante `paid`, journal `regime: paid` avec le montant promis", async () => {
-    const { orderId } = await seedPaidOrder();
+    const { orderId, totalCents } = await seedPaidOrder();
 
     await cancelRequest(orderId).expect(204);
     await deliver();
@@ -116,12 +116,12 @@ describe("une commande payée s'annule, et l'argent part après", () => {
     expect(cancelledMails()).toHaveLength(1);
     expect(cancelledMails()[0]?.data).toMatchObject({
       regime: "paid",
-      refund: { announcedCents: 1_055 },
+      refund: { announcedCents: totalCents },
     });
     const journal = await ctx.prisma.activityEvent.findMany({ where: { type: "order.cancelled" } });
     expect(journal[0]?.payload).toMatchObject({
       regime: "paid",
-      refund: { announcedCents: 1_055 },
+      refund: { announcedCents: totalCents },
     });
   });
 
@@ -140,10 +140,10 @@ describe("une commande payée s'annule, et l'argent part après", () => {
 
   it("déjà remboursée en entier depuis Stripe : annulée SANS demande, courriel « déjà remboursé »", async () => {
     // Par le vrai chemin : le webhook d'un remboursement total fait passer `refunded`.
-    const { orderId, intent } = await seedPaidOrder();
+    const { orderId, intent, totalCents } = await seedPaidOrder();
     await webhook(
       intent ?? "",
-      { refundId: "re_tableau", amountCents: 1_055, createdAt: new Date(daysAgo(1)) },
+      { refundId: "re_tableau", amountCents: totalCents, createdAt: new Date(daysAgo(1)) },
       "succeeded",
     );
     expect((await orderState(orderId)).paymentStatus).toBe(PaymentStatus.refunded);
@@ -157,15 +157,15 @@ describe("une commande payée s'annule, et l'argent part après", () => {
   });
 
   it("un remboursement partiel antérieur : on rend le reste", async () => {
-    const { orderId, intent } = await seedPaidOrder();
+    const { orderId, intent, totalCents } = await seedPaidOrder();
     await webhook(
       intent ?? "",
-      { refundId: "re_tableau", amountCents: 300, createdAt: new Date(daysAgo(1)) },
+      { refundId: "re_tableau", amountCents: 100, createdAt: new Date(daysAgo(1)) },
       "succeeded",
     );
     stripe.refunds.push({
       refundId: "re_tableau",
-      amountCents: 300,
+      amountCents: 100,
       currency: "eur",
       status: "succeeded",
       createdAt: new Date(daysAgo(1)),
@@ -178,8 +178,8 @@ describe("une commande payée s'annule, et l'argent part après", () => {
     await cancelRequest(orderId).expect(204);
     await deliver();
 
-    expect((await refundRequestOf(orderId))?.announcedCents).toBe(755);
-    expect(stripe.refunds.at(-1)?.amountCents).toBe(755);
+    expect((await refundRequestOf(orderId))?.announcedCents).toBe(totalCents - 100);
+    expect(stripe.refunds.at(-1)?.amountCents).toBe(totalCents - 100);
   });
 
   it("un remboursement en vol refuse, avec son montant", async () => {

@@ -7,18 +7,21 @@
  * qu'il suivait **à la date de la commande** — et un site détaché en cours de
  * mois laisse ses commandes d'avant chez le principal.
  *
- * ⚠️ Sociétés, suivis et commandes écrits par Prisma : même dette que
- * `cycle-statements.e2e-spec.ts`. Ce qui est éprouvé est en AVAL — la lecture.
+ * ⚠️ Sociétés et suivis écrits par Prisma (dette de `test/factories.ts`) ;
+ * les commandes passées au compte par le vrai chemin (`placeOrder`, plan T),
+ * antidatées. Ce qui est éprouvé est en AVAL — la lecture.
  * Les dates sont posées relativement au cycle que le serveur annonce, jamais
  * écrites en dur.
  */
 import type { CycleStatementView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import { CustomerRole } from "../src/platform/database/client/client.js";
 import type { BillingCycle } from "../src/b2b/accounting/domain/services/billing-cycle.js";
 import { StatementMonth } from "../src/b2b/accounting/domain/value-objects/statement-month.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { createCompany, createUser, receivedColumns } from "./factories.js";
+import { attachTo, createCompany, createUser, markDelivered } from "./factories.js";
+import { pickupSite, placeOrder } from "./order-factory.js";
 
 const stubAdminVerifier = {
   verify: (subject: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -56,6 +59,12 @@ async function company(
   parentId?: string,
 ): Promise<string> {
   const created = await createCompany(ctx.prisma, { raisonSociale, enseigne });
+  // Au compte : chacune commande sous un terme mensuel, qu'elle règle elle-même
+  // ou par son principal.
+  await ctx.prisma.company.update({
+    where: { id: created.id },
+    data: { grantedTerms: ["monthly"] },
+  });
   if (parentId !== undefined) {
     await ctx.prisma.company.update({
       where: { id: created.id },
@@ -76,31 +85,40 @@ async function followBilling(
   });
 }
 
-async function seedOrder(
-  companyId: string,
-  createdAt: Date,
-  subtotalCents: number,
-): Promise<string> {
+/** Le détenteur de la société — semé à sa première commande, une société n'en a qu'un. */
+async function ownerOf(companyId: string): Promise<string> {
+  const existing = await ctx.prisma.membership.findFirst({
+    where: { companyId, role: CustomerRole.owner },
+    select: { userId: true },
+  });
+  if (existing !== null) {
+    return existing.userId;
+  }
   seq += 1;
   const user = await createUser(ctx.prisma, { auth0Sub: `payeur-${String(seq)}` });
-  const orderNumber = `CMD-PAY-${String(seq)}`;
-  const vat = Math.round(subtotalCents * 0.055);
-  await ctx.prisma.order.create({
-    data: {
-      orderNumber,
-      companyId,
-      placedByUserId: user.id,
-      subtotalCents,
-      vatCents: vat,
-      vatShares: [{ rate: 5.5, amountCents: vat }],
-      totalCents: subtotalCents + vat,
-      status: "placed",
-      paymentStatus: "not_required",
-      createdAt,
-      ...receivedColumns(createdAt),
-    },
+  await attachTo(ctx.prisma, user.id, companyId, CustomerRole.owner);
+  return user.id;
+}
+
+/**
+ * Une commande au compte, passée à `placedAt` par le détenteur de la société,
+ * puis remise le même instant. `units` croissants : seul l'ordre de grandeur
+ * distingue les commandes, le prix est celui du catalogue.
+ */
+async function seedOrder(companyId: string, placedAt: Date, units: number): Promise<string> {
+  const order = await placeOrder(ctx, {
+    buyerUserId: await ownerOf(companyId),
+    companyId,
+    placedAt,
+    settlement: "account",
+    fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
+    lines: [{ sku: "VIE-001", quantity: units }],
   });
-  return orderNumber;
+  // Aucune route ne remet une commande dans le passé : la remise est posée à
+  // l'instant de passation, pour que le bon tombe dans le cycle clos (plan T,
+  // 2026-10-25).
+  await markDelivered(ctx.prisma, order.id, placedAt);
+  return order.orderNumber;
 }
 
 /**
@@ -158,11 +176,11 @@ async function seedGroup(): Promise<Group> {
     club,
     period: cycle.closesAt.toISOString(),
     numbers: {
-      own: await seedOrder(principal, day(2), 10_000),
-      arolle: await seedOrder(arolle, day(3), 2_000),
-      edelweissBefore: await seedOrder(edelweiss, day(5), 3_000),
-      edelweissAfter: await seedOrder(edelweiss, day(20), 4_000),
-      club: await seedOrder(club, day(4), 5_000),
+      own: await seedOrder(principal, day(2), 50),
+      arolle: await seedOrder(arolle, day(3), 10),
+      edelweissBefore: await seedOrder(edelweiss, day(5), 15),
+      edelweissAfter: await seedOrder(edelweiss, day(20), 20),
+      club: await seedOrder(club, day(4), 25),
     },
   };
 }

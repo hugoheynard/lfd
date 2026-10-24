@@ -20,8 +20,8 @@ import {
   orderState,
   resetScene,
   scene,
-  seedOrder,
 } from "./order-staff-cancel-scene.js";
+import { seedOrder } from "./order-staff-cancel-orders.js";
 import {
   advanceWallPastRetries,
   attention,
@@ -60,12 +60,16 @@ const codeOf = (response: request.Response) => jsonBody<{ readonly code: string 
 const SIX_MINUTES = 6 * 60 * 1000;
 
 /** Une payée annulée dont le premier appel n'a pas abouti : la demande attend. */
-async function waitingRequest(): Promise<{ readonly orderId: string; readonly intent: string }> {
-  const { orderId, intent } = await seedPaidOrder();
+async function waitingRequest(): Promise<{
+  readonly orderId: string;
+  readonly intent: string;
+  readonly totalCents: number;
+}> {
+  const { orderId, intent, totalCents } = await seedPaidOrder();
   stripe.script.push({ kind: "unavailable" });
   await cancelRequest(orderId).expect(204);
   await deliver();
-  return { orderId, intent: intent ?? "" };
+  return { orderId, intent: intent ?? "", totalCents };
 }
 
 describe("un seul remboursement, quoi qu'il arrive", () => {
@@ -123,11 +127,11 @@ describe("un seul remboursement, quoi qu'il arrive", () => {
   });
 
   it("`COMMIT` perdu après un re_… créé : la recherche le retrouve, aucun second", async () => {
-    const { orderId, intent } = await waitingRequest();
+    const { orderId, intent, totalCents } = await waitingRequest();
     // Ce que Stripe sait et que la base a perdu : le re_… de la génération 1.
     stripe.refunds.push({
       refundId: "re_perdu",
-      amountCents: 1_055,
+      amountCents: totalCents,
       currency: "eur",
       status: "pending",
       createdAt: new Date(),
@@ -143,21 +147,21 @@ describe("un seul remboursement, quoi qu'il arrive", () => {
     expect(stripe.refunds).toHaveLength(1);
     expect((await refundRequestOf(orderId))?.stripeRefundId).toBe("re_perdu");
     expect(await ledgerOf(orderId)).toEqual([
-      { stripeRefundId: "re_perdu", amountCents: 1_055, status: "pending" },
+      { stripeRefundId: "re_perdu", amountCents: totalCents, status: "pending" },
     ]);
   });
 });
 
 describe("le webhook et l'exécuteur se croisent", () => {
   it("`refund.created` livré AVANT l'écriture de l'exécuteur : une ligne, aucun refus", async () => {
-    const { orderId, intent } = await seedPaidOrder();
+    const { orderId, intent, totalCents } = await seedPaidOrder();
     stripe.afterIssue = (refund) => webhook(intent ?? "", refund, "pending");
 
     await cancelRequest(orderId).expect(204);
     await deliver();
 
     expect(await ledgerOf(orderId)).toEqual([
-      { stripeRefundId: "re_e2e_1", amountCents: 1_055, status: "pending" },
+      { stripeRefundId: "re_e2e_1", amountCents: totalCents, status: "pending" },
     ]);
     expect((await refundRequestOf(orderId))?.stripeRefundId).toBe("re_e2e_1");
     expect(
@@ -238,10 +242,10 @@ describe("la course avec la clôture (C3, sur une payée)", () => {
 
 describe("l'encaissé après annulation se rembourse tout seul (C4.11)", () => {
   it("une carte annulée puis débitée : demande `paid_after_cancellation`, remboursée, sans cloche", async () => {
-    const { orderId, intent } = await seedOrder();
+    const { orderId, intent, totalCents } = await seedOrder();
     await cancelRequest(orderId).expect(204);
     await deliver();
-    stripe.charged.set(intent ?? "", 1_055);
+    stripe.charged.set(intent ?? "", totalCents);
 
     await ctx.app
       .get(CommandBus)
@@ -251,7 +255,7 @@ describe("l'encaissé après annulation se rembourse tout seul (C4.11)", () => {
     expect((await orderState(orderId)).status).toBe(OrderStatus.cancelled);
     expect(await refundRequestOf(orderId)).toMatchObject({
       cause: "paid_after_cancellation",
-      announcedCents: 1_055,
+      announcedCents: totalCents,
       requestedBy: null,
       stripeRefundId: "re_e2e_1",
     });

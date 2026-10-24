@@ -1,17 +1,26 @@
-import { lineTotalCents } from "@lfd/money";
 import type request from "supertest";
 
 import { OrderMailOrigins } from "../src/b2b/orders/domain/ports/order-mail-origins.js";
+import { CommandBus } from "@nestjs/cqrs";
+
+import { CancelOrderCommand } from "../src/b2b/orders/application/commands/cancel-order.command.js";
+import { ConfirmOrderPaymentCommand } from "../src/b2b/orders/application/commands/confirm-order-payment.command.js";
 import {
   CompanyStatus,
   CustomerRole,
-  OrderClientele,
   OrderStatus,
   PaymentStatus,
 } from "../src/platform/database/client/client.js";
-import { E2E_STAFF_SUB, serviceDay } from "./e2e-harness.js";
+import { daysAgo, E2E_STAFF_ID, E2E_STAFF_SUB, serviceDay } from "./e2e-harness.js";
 import { createCompany, createGuest, createUser } from "./factories.js";
-import { bootScene, context } from "./order-staff-cancel-scene.js";
+import {
+  handOver,
+  payByCard,
+  pickupSite,
+  placeOrder,
+  type PlacedTestOrder,
+} from "./order-factory.js";
+import { bootScene, context, scene } from "./order-staff-cancel-scene.js";
 
 /**
  * **La scène de l'annulation par le client** (doc
@@ -23,9 +32,10 @@ import { bootScene, context } from "./order-staff-cancel-scene.js";
  * apporte : des personnes (compte, invité, membres acceptés ou non), le
  * réglage ouvert par la VRAIE route admin, et l'origine de l'app cliente.
  *
- * Les commandes sont semées par Prisma, faute d'agrégat qui sache écrire une
- * commande à un état donné (même dette que la scène staff). Aucune date
- * absolue : un jour de service se dit en jours depuis aujourd'hui.
+ * Les commandes sont passées par le vrai chemin (`placeOrder`, plan T) ;
+ * les états qu'aucun geste ne produit sont posés après coup, datés au-dessus
+ * de leur écriture (`seedCustomerOrder`). Aucune date absolue : un jour de
+ * service se dit en jours depuis aujourd'hui.
  */
 
 export const CLIENT_BASE_URL = "https://app.lfc.test";
@@ -88,66 +98,112 @@ export async function member(
 
 export interface CustomerOrderSeed {
   readonly placedByUserId: string;
+  /** La société ; l'auteur doit en être membre ACCEPTÉ, comme à la vraie passation. */
   readonly companyId?: string | null;
   /** Le jour de service, en jours depuis aujourd'hui (Paris) ; `null` = sans date. */
   readonly inDays?: number | null;
+  /** `cancelled` et `fulfilled` par leurs vrais gestes ; tout autre posé après coup. */
   readonly status?: OrderStatus;
+  /**
+   * `pending` (défaut) : carte en attente ; `paid` / `failed` : par la vraie
+   * confirmation ; `not_required` : au compte (la société en reçoit le terme).
+   */
   readonly payment?: PaymentStatus;
-  readonly totalCents?: number;
-  /** `HH:mm` du début du créneau figé. */
-  readonly windowStart?: string;
 }
 
-/** Une commande d'un croissant, carte en attente, retrait, par défaut dans 7 jours. */
-export async function seedCustomerOrder(seed: CustomerOrderSeed): Promise<{
+/** Une commande passée : son identifiant, son numéro, et l'intention de carte liée. */
+export interface SeededCustomerOrder {
   readonly orderId: string;
   readonly orderNumber: string;
-}> {
-  const n = next();
-  const day = seed.inDays === null ? null : serviceDay(seed.inDays ?? 7);
-  const totalCents = seed.totalCents ?? 1_055;
-  const orderNumber = `CMD-CLIENT-${n}`;
-  const order = await context().prisma.order.create({
-    data: {
-      orderNumber,
-      placedByUserId: seed.placedByUserId,
-      companyId: seed.companyId ?? null,
-      clientele:
-        seed.companyId === undefined || seed.companyId === null
-          ? OrderClientele.public
-          : OrderClientele.pro,
-      status: seed.status ?? OrderStatus.placed,
-      requestedDeliveryDate: day === null ? null : new Date(`${day}T00:00:00.000Z`),
-      fulfillmentMethod: "pickup",
-      ...(seed.windowStart === undefined
-        ? {}
-        : {
-            fulfillment: {
-              window: { value: { start: seed.windowStart, end: "12:00" }, source: "override" },
-              contact: { value: null, source: "default" },
-              signatureRequired: { value: false, source: "default" },
-            },
-          }),
-      subtotalCents: totalCents === 0 ? 0 : 1_000,
-      totalCents,
-      vatCents: totalCents === 0 ? 0 : 55,
-      paymentStatus: seed.payment ?? PaymentStatus.pending,
-      stripePaymentIntentId: `pi_client_${n}`,
-      lines: {
-        create: [
-          {
-            sku: "VIE-001",
-            productNameSnapshot: "Croissant",
-            unitPriceMillicents: 100_000,
-            quantity: 1,
-            lineTotalCents: lineTotalCents(100_000, 1),
-          },
-        ],
-      },
-    },
-    select: { id: true },
+  readonly intent: string | null;
+}
+
+/** Les jours d'avance par défaut : une commande pour la semaine prochaine. */
+const DEFAULT_IN_DAYS = 7;
+/** La passation précède le jour de service d'une semaine, pour un jour passé. */
+const LEAD_DAYS = 7;
+
+/**
+ * Une commande d'un croissant, retrait, par défaut dans 7 jours et carte en
+ * attente — passée par le vrai chemin (`placeOrder`, plan T). Un jour de
+ * service PASSÉ se passe une semaine avant lui, sous une horloge antidatée.
+ */
+export async function seedCustomerOrder(seed: CustomerOrderSeed): Promise<SeededCustomerOrder> {
+  const ctx = context();
+  const companyId = seed.companyId ?? null;
+  const onAccount = seed.payment === PaymentStatus.not_required;
+  if (onAccount && companyId !== null) {
+    await ctx.prisma.company.update({
+      where: { id: companyId },
+      data: { grantedTerms: ["monthly"] },
+    });
+  }
+  const inDays = seed.inDays ?? DEFAULT_IN_DAYS;
+  const mailsBefore = scene.mails.length;
+  const order = await placeOrder(ctx, {
+    buyerUserId: seed.placedByUserId,
+    companyId,
+    settlement: onAccount ? "account" : "card",
+    forDay: serviceDay(inDays),
+    ...(inDays < 1 ? { placedAt: new Date(daysAgo(LEAD_DAYS - inDays)) } : {}),
+    fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
+    // « Avant midi », sans début : le délai du particulier s'ancre alors à
+    // minuit du jour, la borne la plus tôt — un `too_late` à J+1 ne dépend pas
+    // de l'heure à laquelle la suite tourne.
+    window: { start: null, end: "12:00" },
+    lines: [{ sku: "VIE-001", quantity: 1 }],
   });
-  return { orderId: order.id, orderNumber };
+  await settle(order, seed.payment);
+  await reachStatus(order, seed);
+  // La passation et ses suites ont écrit au client : pas le sujet des suites.
+  scene.mails.splice(mailsBefore);
+  return { orderId: order.id, orderNumber: order.orderNumber, intent: order.paymentIntentId };
+}
+
+/** La carte réglée ou refusée par la vraie confirmation ; en attente sinon. */
+async function settle(order: PlacedTestOrder, payment: PaymentStatus | undefined): Promise<void> {
+  if (payment === PaymentStatus.paid) {
+    await payByCard(context(), order);
+  } else if (payment === PaymentStatus.failed && order.paymentIntentId !== null) {
+    await context()
+      .app.get(CommandBus)
+      .execute(new ConfirmOrderPaymentCommand(order.paymentIntentId, "failed"));
+    await context().drain();
+  }
+}
+
+/**
+ * Le statut demandé : `cancelled` par l'annulation de l'équipe, `fulfilled`
+ * par la remise. **Exceptions gardées du plan T (2026-10-25)**, posées en
+ * base après la vraie passation : une commande SANS jour de service (la
+ * passation en exige un) et tout autre statut (`ready`, `confirmed`…), que
+ * seuls le fournil et le colisage entiers produiraient.
+ */
+async function reachStatus(order: PlacedTestOrder, seed: CustomerOrderSeed): Promise<void> {
+  const ctx = context();
+  if (seed.status === OrderStatus.cancelled) {
+    await ctx.app
+      .get(CommandBus)
+      .execute(new CancelOrderCommand(order.id, E2E_STAFF_ID, "Le client renonce."));
+    await ctx.drain();
+  } else if (seed.status === OrderStatus.fulfilled) {
+    await handOver(ctx, order);
+  }
+  const forced =
+    seed.status !== undefined &&
+    seed.status !== OrderStatus.cancelled &&
+    seed.status !== OrderStatus.fulfilled &&
+    seed.status !== OrderStatus.placed;
+  if (!forced && seed.inDays !== null) {
+    return;
+  }
+  await ctx.prisma.order.update({
+    where: { id: order.id },
+    data: {
+      ...(forced ? { status: seed.status } : {}),
+      ...(seed.inDays === null ? { requestedDeliveryDate: null } : {}),
+    },
+  });
 }
 
 /** Le réglage, posé par la VRAIE route staff (C6.5). */

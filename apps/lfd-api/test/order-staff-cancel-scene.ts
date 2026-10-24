@@ -1,4 +1,3 @@
-import { lineTotalCents } from "@lfd/money";
 import type request from "supertest";
 
 import { SitedDayOrders } from "../src/b2b/orders/application/services/sited-day-orders.service.js";
@@ -6,11 +5,6 @@ import {
   PaymentGateway,
   type IntentCancellation,
 } from "../src/b2b/payments/domain/payment-gateway.js";
-import {
-  OrderClientele,
-  OrderStatus,
-  PaymentStatus,
-} from "../src/platform/database/client/client.js";
 import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
 import { OutboxRelay } from "../src/platform/outbox/outbox-relay.js";
 import { ProductionOrderWithdrawalDesk } from "../src/production/application/services/production-order-withdrawal.desk.js";
@@ -28,7 +22,6 @@ import {
   type E2eContext,
   type E2eOverride,
 } from "./e2e-harness.js";
-import { attachTo, createCompany, createUser } from "./factories.js";
 
 /**
  * **La scène de l'annulation staff** (doc
@@ -42,8 +35,9 @@ import { attachTo, createCompany, createUser } from "./factories.js";
  * guichet du retrait (pour faire tomber la transaction après Stripe). Tout le
  * reste tourne sur le vrai Postgres.
  *
- * Les commandes sont semées par Prisma, faute d'agrégat qui sache écrire une
- * commande à un état donné (même dette que `order-abandon.e2e-spec.ts`).
+ * Les commandes sont passées par le vrai chemin (`placeOrder`, plan T), dans
+ * `order-staff-cancel-orders.ts` ; deux états qu'aucun geste court ne
+ * produit y restent écrits en base, datés au-dessus de leur écriture.
  */
 
 export const DAY = serviceDay();
@@ -143,75 +137,6 @@ export async function resetScene(): Promise<void> {
   scene.afterProducibleRead = null;
   scene.withdrawalFailures = 0;
 }
-
-export interface OrderSeed {
-  readonly clientele?: OrderClientele;
-  readonly status?: OrderStatus;
-  readonly payment?: PaymentStatus;
-  readonly totalCents?: number;
-  readonly intent?: string | null;
-  readonly voucherId?: string | null;
-}
-
-let seq = 0;
-
-/** Une commande d'un croissant pour {@link DAY} — carte en attente, particulier, par défaut. */
-export async function seedOrder(seed: OrderSeed = {}): Promise<{
-  readonly orderId: string;
-  readonly orderNumber: string;
-  readonly intent: string | null;
-}> {
-  seq += 1;
-  const ctx = context();
-  const author = await createUser(ctx.prisma, {
-    auth0Sub: `auth0|annulation-${String(seq)}`,
-    email: `annulation-${String(seq)}@example.test`,
-  });
-  const clientele = seed.clientele ?? OrderClientele.public;
-  let companyId: string | null = null;
-  if (clientele === OrderClientele.pro) {
-    const company = await createCompany(ctx.prisma, { enseigne: "Hôtel des Cimes" });
-    companyId = company.id;
-    await attachTo(ctx.prisma, author.id, company.id);
-  }
-  const totalCents = seed.totalCents ?? 1_055;
-  const intent = seed.intent === undefined ? `pi_annulation_${String(seq)}` : seed.intent;
-  const orderNumber = `CMD-ANNULATION-${String(seq)}`;
-  const order = await ctx.prisma.order.create({
-    data: {
-      orderNumber,
-      placedByUserId: author.id,
-      companyId,
-      clientele,
-      status: seed.status ?? OrderStatus.placed,
-      requestedDeliveryDate: new Date(`${DAY}T00:00:00.000Z`),
-      fulfillmentMethod: "pickup",
-      subtotalCents: totalCents === 0 ? 0 : 1_000,
-      totalCents,
-      vatCents: totalCents === 0 ? 0 : 55,
-      paymentStatus: seed.payment ?? PaymentStatus.pending,
-      stripePaymentIntentId: intent,
-      loyaltyVoucherId: seed.voucherId ?? null,
-      lines: {
-        create: [
-          {
-            sku: "VIE-001",
-            productNameSnapshot: "Croissant",
-            unitPriceMillicents: 100_000,
-            quantity: 1,
-            lineTotalCents: lineTotalCents(100_000, 1),
-          },
-        ],
-      },
-    },
-    select: { id: true },
-  });
-  return { orderId: order.id, orderNumber, intent };
-}
-
-/** Une commande à total nul, sans règlement — le régime `free`. */
-export const seedFreeOrder = (seed: OrderSeed = {}) =>
-  seedOrder({ payment: PaymentStatus.not_required, totalCents: 0, intent: null, ...seed });
 
 export const REASON = "Le client a appelé : il part en vacances";
 

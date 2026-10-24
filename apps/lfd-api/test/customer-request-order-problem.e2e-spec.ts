@@ -15,14 +15,11 @@ import type { CreatedIdResponse, CustomerRequestView, RequestReasonPayload } fro
 import type { Test } from "supertest";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import {
-  OrderClientele,
-  OrderStatus,
-  PaymentStatus,
-} from "../src/platform/database/client/client.js";
+import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
+import { cardGatewayDouble, handOver, payByCard, pickupSite, placeOrder } from "./order-factory.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 import { storageKeys } from "./storage.js";
 
@@ -52,6 +49,7 @@ beforeAll(async () => {
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
       { token: MAILER, value: recordingMailer },
+      { token: PaymentGateway, value: cardGatewayDouble("pi_probleme") },
     ],
   });
 });
@@ -95,33 +93,23 @@ async function createReason(overrides: Partial<RequestReasonPayload> = {}): Prom
   return jsonBody<CreatedIdResponse>(response).id;
 }
 
-let sequence = 0;
-
 /**
- * Une commande personnelle semée à l'état voulu. Écrite par Prisma faute de
- * chemin court vers `fulfilled` (dette des factories, `test/factories.ts`).
+ * Une commande personnelle, passée par le vrai chemin et réglée ; remise au
+ * comptoir si `handedOver` — l'état qu'exige le signalement.
  */
 async function seedOrder(
   userId: string,
-  status: OrderStatus,
+  handedOver: boolean,
 ): Promise<{ id: string; number: string }> {
-  sequence += 1;
-  const number = `CMD-PB-${String(sequence)}`;
-  const order = await ctx.prisma.order.create({
-    data: {
-      orderNumber: number,
-      placedByUserId: userId,
-      clientele: OrderClientele.public,
-      status,
-      subtotalCents: 2_000,
-      discountCents: 0,
-      totalCents: 2_000,
-      paymentStatus: PaymentStatus.paid,
-      requestedDeliveryDate: new Date(daysAgo(2)),
-    },
-    select: { id: true },
+  const order = await placeOrder(ctx, {
+    buyerUserId: userId,
+    fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
   });
-  return { id: order.id, number };
+  await payByCard(ctx, order);
+  if (handedOver) {
+    await handOver(ctx, order);
+  }
+  return { id: order.id, number: order.orderNumber };
 }
 
 function report(sub: string, orderId: string, reasonId: string, photos = 0): Test {
@@ -152,8 +140,10 @@ describe("un client signale un problème sur sa commande retirée", () => {
       firstName: "Jean",
       lastName: "Martin",
     });
-    const order = await seedOrder(user.id, OrderStatus.fulfilled);
+    const order = await seedOrder(user.id, true);
     const reasonId = await createReason();
+    // La passation a confirmé la commande au client : ce courriel-là n'est pas le sujet.
+    sentMails.splice(0);
 
     const id = jsonBody<CreatedIdResponse>(
       await report("auth0|pb-client", order.id, reasonId, 2).expect(201),
@@ -188,7 +178,7 @@ describe("un client signale un problème sur sa commande retirée", () => {
 
   it("une commande pas encore retirée ni livrée → 409 nommé", async () => {
     const user = await createUser(ctx.prisma, { auth0Sub: "auth0|pb-early" });
-    const order = await seedOrder(user.id, OrderStatus.placed);
+    const order = await seedOrder(user.id, false);
     const reasonId = await createReason();
     const refused = await report("auth0|pb-early", order.id, reasonId).expect(409);
     expect(JSON.stringify(refused.body)).toContain("contact.order_problem.not_fulfilled");
@@ -198,7 +188,7 @@ describe("un client signale un problème sur sa commande retirée", () => {
   it("la commande d'un autre → 404, sans rien ranger", async () => {
     const owner = await createUser(ctx.prisma, { auth0Sub: "auth0|pb-owner" });
     await createUser(ctx.prisma, { auth0Sub: "auth0|pb-curious" });
-    const order = await seedOrder(owner.id, OrderStatus.fulfilled);
+    const order = await seedOrder(owner.id, true);
     const reasonId = await createReason();
     await report("auth0|pb-curious", order.id, reasonId).expect(404);
     expect(await pending()).toEqual([]);
@@ -207,7 +197,7 @@ describe("un client signale un problème sur sa commande retirée", () => {
 
   it("une quatrième photo est refusée, et rien n'est rangé", async () => {
     const user = await createUser(ctx.prisma, { auth0Sub: "auth0|pb-four" });
-    const order = await seedOrder(user.id, OrderStatus.fulfilled);
+    const order = await seedOrder(user.id, true);
     const reasonId = await createReason();
     await report("auth0|pb-four", order.id, reasonId, 4).expect(400);
     expect(await pending()).toEqual([]);
@@ -216,14 +206,14 @@ describe("un client signale un problème sur sa commande retirée", () => {
 
   it("un motif « Nous écrire » est refusé par le signalement (§6.5)", async () => {
     const user = await createUser(ctx.prisma, { auth0Sub: "auth0|pb-kind" });
-    const order = await seedOrder(user.id, OrderStatus.fulfilled);
+    const order = await seedOrder(user.id, true);
     const contact = await createReason({ kind: "contact" });
     await report("auth0|pb-kind", order.id, contact).expect(409);
   });
 
   it("le débit par compte : le quatrième signalement en dix minutes est refusé", async () => {
     const user = await createUser(ctx.prisma, { auth0Sub: "auth0|pb-rate" });
-    const order = await seedOrder(user.id, OrderStatus.fulfilled);
+    const order = await seedOrder(user.id, true);
     const reasonId = await createReason();
     for (let attempt = 0; attempt < 3; attempt += 1) {
       await report("auth0|pb-rate", order.id, reasonId).expect(201);
@@ -235,7 +225,7 @@ describe("un client signale un problème sur sa commande retirée", () => {
 describe("l'anonymisation d'un signalement", () => {
   it("vide `order_id` et SUPPRIME les photos du stockage ; la ligne reste", async () => {
     const user = await createUser(ctx.prisma, { auth0Sub: "auth0|pb-old" });
-    const order = await seedOrder(user.id, OrderStatus.fulfilled);
+    const order = await seedOrder(user.id, true);
     const reasonId = await createReason();
     const id = jsonBody<CreatedIdResponse>(
       await report("auth0|pb-old", order.id, reasonId, 1).expect(201),
