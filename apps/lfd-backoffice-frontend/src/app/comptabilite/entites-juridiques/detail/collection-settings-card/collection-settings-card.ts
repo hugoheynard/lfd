@@ -30,6 +30,7 @@ import {
 
 import { Router } from '@angular/router';
 
+import { BankLimitsSection } from '../bank-limits-section/bank-limits-section';
 import { DEPOSIT_CUTOFF_ANCHOR } from '../../../deposit-cutoff-anchor';
 import { AutopilotLastRun } from '../../../autopilot-last-run/autopilot-last-run';
 import { CollectionCalendar } from '../../../collection-calendar/collection-calendar';
@@ -81,6 +82,7 @@ import { LegalEntitiesService } from '../../../legal-entities.service';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     AutopilotLastRun,
+    BankLimitsSection,
     CollectionCalendar,
     FoldPageSectionComponent,
     FoldCalloutComponent,

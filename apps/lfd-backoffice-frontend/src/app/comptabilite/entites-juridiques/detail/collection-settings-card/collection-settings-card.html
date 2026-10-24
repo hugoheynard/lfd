@@ -107,5 +107,8 @@
         Enregistrer
       </button>
     </div>
+
+    <!-- Ses propres gestes : les plafonds ne partent pas avec le calendrier. -->
+    <app-bank-limits-section [entity]="entity()" [busy]="busy()" (saved)="saved.emit($event)" />
   </div>
 </fold-page-section>

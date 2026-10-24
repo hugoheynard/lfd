@@ -1,0 +1,41 @@
+<section class="bl-block" aria-labelledby="bl-title">
+  <h3 id="bl-title" class="bl-heading">Plafonds de la banque (prélèvement B2B)</h3>
+  <p class="bl-said">
+    Les montants que votre convention d'émission autorise. Un champ vide reste non renseigné.
+  </p>
+  <p class="bl-said" data-stored-limits>{{ storedSentence() }}</p>
+  <div class="bl-row">
+    <fold-number-input
+      label="Par prélèvement (€)"
+      [decimals]="2"
+      [min]="0.01"
+      [value]="perDebit()"
+      (valueChange)="perDebit.set($event)"
+    />
+    <fold-number-input
+      label="Par remise (€)"
+      [decimals]="2"
+      [min]="0.01"
+      [value]="perRemittance()"
+      (valueChange)="perRemittance.set($event)"
+    />
+    <fold-number-input
+      label="Par mois (€)"
+      [decimals]="2"
+      [min]="0.01"
+      [value]="monthly()"
+      (valueChange)="monthly.set($event)"
+    />
+  </div>
+  @for (sentence of incoherences(); track sentence) {
+    <fold-callout variant="warning" data-limits-incoherence
+      >{{ sentence }} La banque n'a pas fixé cette règle : l'enregistrement reste
+      possible.</fold-callout
+    >
+  }
+  <div class="bl-actions">
+    <button foldButton emphasis="outline" [disabled]="busy()" (click)="save()">
+      Enregistrer les plafonds
+    </button>
+  </div>
+</section>

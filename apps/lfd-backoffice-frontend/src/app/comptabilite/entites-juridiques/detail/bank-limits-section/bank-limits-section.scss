@@ -1,0 +1,33 @@
+.bl-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.bl-heading {
+  margin: 0;
+  font-size: var(--fold-text-md);
+}
+
+.bl-said {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+  max-width: 65ch;
+}
+
+.bl-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--fold-space-sm);
+  flex-wrap: wrap;
+}
+
+.bl-row fold-number-input {
+  flex: 1 1 12rem;
+}
+
+.bl-actions {
+  display: flex;
+  justify-content: flex-end;
+}

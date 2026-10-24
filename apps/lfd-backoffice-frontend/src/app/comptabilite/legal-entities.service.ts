@@ -12,6 +12,7 @@ import type {
   MandateSchemeUsageView,
   SetAutoCollectionPayload,
   SetBillingModeDatesPayload,
+  SetBankCollectionLimitsPayload,
   SetCollectionSchedulePayload,
   SetCreditorAccountPayload,
   SetInvoicePaymentTermsPayload,
@@ -174,6 +175,14 @@ export class LegalEntitiesService {
    */
   async setCollectionSchedule(id: string, payload: SetCollectionSchedulePayload): Promise<void> {
     await firstValueFrom(this.http.put<void>(`${this.base}/${id}/collection-schedule`, payload));
+  }
+
+  /** Les plafonds de la convention d'émission pour un schéma (PL1) — `null` = non renseigné. */
+  async setBankCollectionLimits(
+    id: string,
+    payload: SetBankCollectionLimitsPayload,
+  ): Promise<void> {
+    await firstValueFrom(this.http.put<void>(`${this.base}/${id}/bank-collection-limits`, payload));
   }
 
   /** Activer ou désactiver la constitution automatique — un geste à part, journalisé. */
