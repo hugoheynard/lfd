@@ -9,7 +9,7 @@ import {
   PRODUCTION_DAY_CLOSED,
   ProductionDayClosedEvent,
 } from "../../../../production/channels/commerce/index.js";
-import { DeliveryNotePlanning } from "../../domain/ports/delivery-note-planning.js";
+import { DeliveryNoteFollowing } from "../../domain/ports/delivery-note-following.js";
 import { OrderRepository } from "../../domain/ports/order.repository.js";
 
 /** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
@@ -58,7 +58,7 @@ export const ON_PRODUCTION_DAY_CLOSED = "b2b.orders.absorb-into-plan";
 export class OnProductionDayClosed implements DurableSubscriber {
   constructor(
     private readonly orders: OrderRepository,
-    private readonly deliveryNotes: DeliveryNotePlanning,
+    private readonly deliveryNotes: DeliveryNoteFollowing,
   ) {}
 
   async handle(delivery: DurableDelivery): Promise<void> {

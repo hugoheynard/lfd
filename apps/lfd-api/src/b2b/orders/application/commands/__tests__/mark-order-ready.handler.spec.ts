@@ -12,6 +12,7 @@ import { OrderReader, type PackingOrder } from "../../../domain/ports/order.read
 import { OrderRepository } from "../../../domain/ports/order.repository.js";
 import { MarkOrderReadyCommand } from "../mark-order-ready.command.js";
 import { MarkOrderReadyHandler } from "../mark-order-ready.handler.js";
+import { RecordingDeliveryNoteFollowing } from "./delivery-note-following-double.js";
 import { RecordingDurable } from "./durable-doubles.js";
 
 // Comparées entre elles seulement : le handler ne lit aucune horloge.
@@ -109,6 +110,7 @@ function subject(states: PackingOrder[], wins = true) {
   const events = new RecordingPublisher();
   const afterCommit = new HeldAfterCommit();
   const durable = new RecordingDurable();
+  const notes = new RecordingDeliveryNoteFollowing();
   const handler = new MarkOrderReadyHandler(
     new Reader(states),
     repository,
@@ -117,8 +119,9 @@ function subject(states: PackingOrder[], wins = true) {
     afterCommit,
     new DirectUnitOfWork(),
     durable,
+    notes,
   );
-  return { handler, repository, events, afterCommit, durable };
+  return { handler, repository, events, afterCommit, durable, notes };
 }
 
 const ready = () => new MarkOrderReadyCommand(REFERENCE, "staff_a", PACKED_AT);
@@ -207,5 +210,26 @@ describe("déclarer une commande prête", () => {
 
     await expect(handler.execute(ready())).rejects.toBeInstanceOf(PackingRefusedError);
     expect(repository.writes).toBe(0);
+  });
+});
+
+describe("le BL suit le bac fermé (plan E2, § 8.3)", () => {
+  it("le gagnant fait passer le BL `prepared`", async () => {
+    const { handler, notes } = subject([order()]);
+
+    await handler.execute(ready());
+
+    expect(notes.calls).toEqual(["prepare:ord_1"]);
+  });
+
+  it("une course perdue ou une commande déjà prête ne touchent pas au BL", async () => {
+    const lost = subject([order(), order({ readyAt: EARLIER, status: "ready" })], false);
+    const already = subject([order({ readyAt: EARLIER, status: "ready" })]);
+
+    await lost.handler.execute(ready());
+    await already.handler.execute(ready());
+
+    expect(lost.notes.calls).toEqual([]);
+    expect(already.notes.calls).toEqual([]);
   });
 });

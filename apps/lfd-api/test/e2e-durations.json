@@ -100,6 +100,7 @@
   "test/delivery-my-round.e2e-spec.ts": 7677,
   "test/delivery-packing-rounds.e2e-spec.ts": 3447,
   "test/delivery-notes-planned.e2e-spec.ts": 9723,
+  "test/delivery-notes-following.e2e-spec.ts": 11503,
   "test/delivery-placement-suggestion.e2e-spec.ts": 10376,
   "test/delivery-procedure-refusals.e2e-spec.ts": 11158,
   "test/delivery-procedure.e2e-spec.ts": 6925,

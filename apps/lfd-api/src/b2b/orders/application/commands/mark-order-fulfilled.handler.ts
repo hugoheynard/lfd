@@ -7,6 +7,7 @@ import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.
 import { receivedOnOrDayOf } from "../../../accounting/domain/services/monthly-invoicing.js";
 import { OrderReferenceNotFoundError } from "../../domain/errors/order-errors.js";
 import { OrderHandedOverEvent } from "../../domain/events/order-handed-over.event.js";
+import { DeliveryNoteFollowing } from "../../domain/ports/delivery-note-following.js";
 import { OrderReader } from "../../domain/ports/order.reader.js";
 import { OrderRepository } from "../../domain/ports/order.repository.js";
 import { MarkOrderFulfilledCommand } from "./mark-order-fulfilled.command.js";
@@ -53,6 +54,12 @@ import { MarkOrderFulfilledCommand } from "./mark-order-fulfilled.command.js";
  * livraison publient pour le commerce. Dernier repli : le jour de Paris de
  * l'instant porté par le fait — une remise n'est jamais sans date, même
  * quand aucune attestation n'est encore lisible.
+ *
+ * ## Le bon de livraison suit (plan E2, 2026-10-24)
+ *
+ * Sous `won`, dans la même unité de travail : le BL passe `handed_over`, avec
+ * l'instant et le jour de réception que cette instruction vient d'écrire
+ * (`documentation/commandes/plan-e2-rattrapage-des-bons.md`, § 8.3).
  */
 @CommandHandler(MarkOrderFulfilledCommand)
 export class MarkOrderFulfilledHandler implements ICommandHandler<MarkOrderFulfilledCommand, void> {
@@ -63,6 +70,7 @@ export class MarkOrderFulfilledHandler implements ICommandHandler<MarkOrderFulfi
     private readonly durable: DurablePublisher,
     private readonly handovers: OrderHandoverHistoryReader,
     private readonly deliveries: OrderDeliveryHistoryReader,
+    private readonly deliveryNotes: DeliveryNoteFollowing,
   ) {}
 
   async execute(command: MarkOrderFulfilledCommand): Promise<void> {
@@ -90,6 +98,9 @@ export class MarkOrderFulfilledHandler implements ICommandHandler<MarkOrderFulfi
       );
       if (won) {
         await this.durable.publish(fulfilled.durableFact());
+        // Plan E2, § 8.3 : le BL passe `handed_over` avec la commande, dans
+        // cette transaction — créé plein s'il manquait (remise hors plan).
+        await this.deliveryNotes.handOver(order.orderId);
       }
     });
   }

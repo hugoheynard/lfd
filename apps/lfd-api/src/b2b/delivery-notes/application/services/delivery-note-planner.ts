@@ -1,8 +1,8 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
+import { AppError } from "../../../../platform/shared/errors/app-error.js";
 import { Clock } from "../../../../platform/time/clock.js";
-import { DeliveryNotePlanning } from "../../../orders/domain/ports/delivery-note-planning.js";
 import {
   OrderLinesForDeliveryNote,
   type DeliveryNoteOrder,
@@ -21,18 +21,20 @@ import { DeliveryNoteRepository } from "../../domain/ports/delivery-note.reposit
  * - BL-1 encore prévu (re-clôture après réouverture, réannonce, seconde
  *   livraison) : ses lignes sont réécrites, rang et numéro inchangés ;
  * - BL annulé ou plus avancé : rien. Une commande annulée n'est plus
- *   confirmée, et `prepared` / `handed_over` n'existent qu'à partir d'E3.
+ *   confirmée, et un BL préparé ou remis a déjà suivi sa commande (E2).
+ *
+ * Répond à `DeliveryNoteFollowing.planConfirmed` par `DeliveryNoteFollower`.
  */
 @Injectable()
-export class DeliveryNotePlanner extends DeliveryNotePlanning {
+export class DeliveryNotePlanner {
+  private readonly logger = new Logger(DeliveryNotePlanner.name);
+
   constructor(
     private readonly orders: OrderLinesForDeliveryNote,
     private readonly notes: DeliveryNoteRepository,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
-  ) {
-    super();
-  }
+  ) {}
 
   async planConfirmed(orderIds: readonly string[], closedAt: Date): Promise<void> {
     const confirmed = await this.orders.confirmedByPlan(orderIds, closedAt);
@@ -42,10 +44,44 @@ export class DeliveryNotePlanner extends DeliveryNotePlanning {
     const existing = await this.notes.loadForOrders(confirmed.map((order) => order.orderId));
     for (const order of confirmed) {
       const notes = existing.filter((note) => note.orderId === order.orderId);
-      const note = this.noteFor(order, notes);
-      if (note !== null) {
-        await this.notes.save(note);
+      const note = this.guardedNoteFor(order, notes);
+      if (note === null) {
+        continue;
       }
+      if (notes.length > 0) {
+        await this.notes.save(note);
+      } else if (!(await this.notes.saveNew(note))) {
+        this.logger.warn(
+          `BL-1 de la commande ${order.orderNumber} déjà écrit par un geste concurrent : laissé tel quel.`,
+        );
+      }
+    }
+  }
+
+  /**
+   * 🔴 Régression du 2026-10-24 (CI de dev sur `3e99c9a83`) : un numéro de
+   * commande sans `ORD-` levait `InvalidDeliveryNoteNumberError` dans l'unité
+   * de travail de l'arrêt, qui s'annulait — absorption comprise : les commandes
+   * payées restaient `placed`. Un BL qui ne peut pas naître ne bloque JAMAIS la
+   * confirmation : le refus du domaine est journalisé, la commande est sautée,
+   * et le réconciliateur la compte (plan E2, § 8.2). Les refus du domaine
+   * tombent avant toute écriture : la transaction reste saine.
+   */
+  private guardedNoteFor(
+    order: DeliveryNoteOrder,
+    notes: readonly DeliveryNote[],
+  ): DeliveryNote | null {
+    try {
+      return this.noteFor(order, notes);
+    } catch (error) {
+      if (!(error instanceof AppError)) {
+        throw error;
+      }
+      this.logger.warn(
+        `Aucun bon de livraison prévu pour la commande ${order.orderNumber} (${order.orderId}) : ` +
+          `${error.message} La commande est confirmée quand même.`,
+      );
+      return null;
     }
   }
 

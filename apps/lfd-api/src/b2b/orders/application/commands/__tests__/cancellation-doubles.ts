@@ -15,7 +15,7 @@ import {
   AccountOrderEngagement,
   type AccountEngagement,
 } from "../../../domain/ports/account-order-engagement.js";
-import { PlannedDeliveryNoteVoiding } from "../../../domain/ports/delivery-note-planning.js";
+import { DeliveryNoteFollowing } from "../../../domain/ports/delivery-note-following.js";
 import {
   CancellationSubjectReader,
   type CancellationSubject,
@@ -196,20 +196,32 @@ export class ScriptedEngagements extends AccountOrderEngagement {
 }
 
 /**
- * Le bon de livraison doublé (plan E1) : les annulations de BL prévu
- * demandées. Hors de la `trace` partagée par défaut, pour que les suites
+ * Le bon de livraison doublé (plans E1, E2) : les annulations de BL non remis
+ * demandées. Les autres gestes du port ne sont pas ceux de l'annulation. Hors de la `trace` partagée par défaut, pour que les suites
  * d'avant E1 gardent leurs séquences ; une `trace` passée l'y inscrit.
  */
-export class RecordingNoteVoiding extends PlannedDeliveryNoteVoiding {
+export class RecordingNoteVoiding extends DeliveryNoteFollowing {
   readonly voided: { orderId: string; at: Date }[] = [];
 
   constructor(private readonly trace: string[] | null = null) {
     super();
   }
 
-  voidPlannedFor(orderId: string, at: Date): Promise<void> {
+  voidLiveFor(orderId: string, at: Date): Promise<void> {
     this.trace?.push(`void-note:${orderId}`);
     this.voided.push({ orderId, at });
     return Promise.resolve();
+  }
+
+  planConfirmed(): Promise<void> {
+    return Promise.reject(new RangeError("non utilisé par l'annulation"));
+  }
+
+  prepare(): Promise<void> {
+    return Promise.reject(new RangeError("non utilisé par l'annulation"));
+  }
+
+  handOver(): Promise<void> {
+    return Promise.reject(new RangeError("non utilisé par l'annulation"));
   }
 }

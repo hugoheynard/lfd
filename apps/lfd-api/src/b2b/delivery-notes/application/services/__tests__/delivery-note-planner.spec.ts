@@ -59,6 +59,9 @@ describe("DeliveryNotePlanner — le BL prévu à l'arrêt du plan (plan E1)", (
         status: "planned",
         plannedAt: NOW,
         voidedAt: null,
+        preparedAt: null,
+        handedOverAt: null,
+        receivedOn: null,
         lines: [BREAD],
       },
     ]);
@@ -118,5 +121,33 @@ describe("DeliveryNotePlanner — le BL prévu à l'arrêt du plan (plan E1)", (
     await planner.planConfirmed(["ord_1"], CLOSED_AT);
 
     expect(notes.saves).toBe(0);
+  });
+});
+
+/**
+ * Régression (CI de dev, 2026-10-24, `3e99c9a83`) : un numéro de commande sans
+ * `ORD-` levait dans l'unité de travail de l'arrêt, qui s'annulait — et les
+ * commandes payées restaient `placed`. Un BL qui ne peut pas naître ne bloque
+ * jamais la confirmation.
+ */
+describe("DeliveryNotePlanner — un BL impossible ne bloque pas l'arrêt", () => {
+  it("une commande au numéro atypique est sautée sans lever, les autres ont leur BL", async () => {
+    const { orders, notes, planner } = scene();
+    orders.confirm(orderOf("ord_odd", "CMD-BALAYAGE-1"), CLOSED_AT);
+    orders.confirm(orderOf("ord_1", "ORD-1042"), CLOSED_AT);
+
+    await expect(planner.planConfirmed(["ord_odd", "ord_1"], CLOSED_AT)).resolves.toBeUndefined();
+
+    expect(notes.forOrder("ord_odd")).toEqual([]);
+    expect(notes.forOrder("ord_1")).toHaveLength(1);
+  });
+
+  it("une commande sans ligne ne lève pas non plus", async () => {
+    const { orders, notes, planner } = scene();
+    orders.confirm(orderOf("ord_1", "ORD-1042", []), CLOSED_AT);
+
+    await expect(planner.planConfirmed(["ord_1"], CLOSED_AT)).resolves.toBeUndefined();
+
+    expect(notes.forOrder("ord_1")).toEqual([]);
   });
 });

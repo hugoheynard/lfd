@@ -2,7 +2,7 @@ import {
   ProductionDayClosedEvent,
   ProductionDayClosedPayloadError,
 } from "../../../../../production/channels/commerce/index.js";
-import { DeliveryNotePlanning } from "../../../domain/ports/delivery-note-planning.js";
+import { DeliveryNoteFollowing } from "../../../domain/ports/delivery-note-following.js";
 import {
   OrderRepository,
   type AbandonedSettlement,
@@ -63,7 +63,7 @@ class AbsorbingRepository extends OrderRepository {
 }
 
 /** La prévision des BL (plan E1) : elle note ce qu'on lui demande, après l'absorption. */
-class RecordingPlanning extends DeliveryNotePlanning {
+class RecordingPlanning extends DeliveryNoteFollowing {
   readonly planned: { orderIds: readonly string[]; closedAt: Date }[] = [];
 
   constructor(private readonly trace: string[]) {
@@ -74,6 +74,18 @@ class RecordingPlanning extends DeliveryNotePlanning {
     this.trace.push("plan-notes");
     this.planned.push({ orderIds, closedAt });
     return Promise.resolve();
+  }
+
+  prepare(): Promise<void> {
+    return Promise.reject(new RangeError("non utilisé par l'arrêt"));
+  }
+
+  handOver(): Promise<void> {
+    return Promise.reject(new RangeError("non utilisé par l'arrêt"));
+  }
+
+  voidLiveFor(): Promise<void> {
+    return Promise.reject(new RangeError("non utilisé par l'arrêt"));
   }
 }
 

@@ -1,0 +1,42 @@
+import type { UnrepairableReason } from "../../domain/services/delivery-note-alignment.js";
+
+/**
+ * **Le réconciliateur des bons de livraison** (plan
+ * `documentation/commandes/plan-e2-rattrapage-des-bons.md`, § 8.2) : chaque
+ * commande confirmée, prête, remise ou annulée voit son BL aligné par la même
+ * règle que les gestes. Déclenché toutes les heures par le Worker, et à la
+ * demande par l'équipe.
+ */
+export class ReconcileDeliveryNotesCommand {}
+
+/** Une page du parcours ; les commandes se lisent par identifiant croissant. */
+export const RECONCILE_PAGE_SIZE = 200;
+
+/**
+ * Le plafond des réparations d'un passage : chacune est une transaction
+ * courte, et un premier passage en production ne doit pas tenir une instance
+ * plusieurs minutes. Le reste attend le passage suivant (`complete: false`).
+ */
+export const RECONCILE_REPAIR_LIMIT = 100;
+
+/** Un écart non réparable, nommé pour qu'on le retrouve. */
+export interface UnrepairedOrder {
+  readonly orderId: string;
+  readonly orderNumber: string;
+  readonly reason: UnrepairableReason;
+}
+
+/** Le compte rendu d'un passage — ce qu'il a lu, écrit, et laissé. */
+export interface DeliveryNoteReconciliationReport {
+  /** Commandes passées en revue. */
+  readonly scanned: number;
+  readonly created: number;
+  readonly advanced: number;
+  readonly voided: number;
+  /** Réparations tentées et échouées (erreur technique) : à relire dans le journal. */
+  readonly failed: number;
+  /** Écarts non réparables, comptés par cause et nommés. Rien n'a été inventé. */
+  readonly unrepaired: readonly UnrepairedOrder[];
+  /** `false` si le plafond de réparations a arrêté le passage avant la fin. */
+  readonly complete: boolean;
+}

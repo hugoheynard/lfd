@@ -1,5 +1,7 @@
 import {
   DeliveryNoteNotPlannedError,
+  DeliveryNoteTransitionRefusedError,
+  InvalidDeliveryNoteReceivedOnError,
   DeliveryNoteWithoutLinesError,
   InvalidDeliveryNoteLineError,
 } from "../../errors/delivery-note-errors.js";
@@ -8,6 +10,9 @@ import { DeliveryNote, type DeliveryNoteSource } from "../delivery-note.js";
 
 const PLANNED_AT = new Date(0);
 const VOIDED_AT = new Date(1);
+const PREPARED_AT = new Date(2);
+const HANDED_OVER_AT = new Date(3);
+const RECEIVED_ON = "1970-01-01";
 
 const BREAD: DeliveryNoteLineState = {
   sku: "PAIN-001",
@@ -47,6 +52,9 @@ describe("DeliveryNote.planFromOrder", () => {
       status: "planned",
       plannedAt: PLANNED_AT,
       voidedAt: null,
+      preparedAt: null,
+      handedOverAt: null,
+      receivedOn: null,
       lines: [BREAD, CROISSANT],
     });
   });
@@ -113,7 +121,7 @@ describe("DeliveryNote — un BL prévu se réécrit, il ne se duplique pas", ()
     note.void(VOIDED_AT);
 
     expect(() => note.replanFrom(order([CROISSANT]))).toThrow(DeliveryNoteNotPlannedError);
-    expect(() => note.void(VOIDED_AT)).toThrow(DeliveryNoteNotPlannedError);
+    expect(() => note.void(VOIDED_AT)).toThrow(DeliveryNoteTransitionRefusedError);
   });
 
   it("rehydrate revalide les lignes relues", () => {
@@ -123,5 +131,96 @@ describe("DeliveryNote — un BL prévu se réécrit, il ne se duplique pas", ()
     expect(() => DeliveryNote.rehydrate({ ...state, lines: [{ ...BREAD, quantity: -2 }] })).toThrow(
       InvalidDeliveryNoteLineError,
     );
+  });
+});
+
+describe("DeliveryNote — le BL suit la commande (plan E2, § 8.3)", () => {
+  const planned = (): DeliveryNote =>
+    DeliveryNote.planFromOrder("dn_1", order([BREAD]), PLANNED_AT);
+
+  it("prepare : prévu → préparé, à l'instant du bac", () => {
+    const note = planned();
+
+    note.prepare(PREPARED_AT);
+
+    expect(note.toState()).toMatchObject({
+      status: "prepared",
+      preparedAt: PREPARED_AT,
+      handedOverAt: null,
+    });
+  });
+
+  it("handOver depuis préparé : garde l'instant du bac, pose remise et jour de réception", () => {
+    const note = planned();
+    note.prepare(PREPARED_AT);
+
+    note.handOver(HANDED_OVER_AT, RECEIVED_ON);
+
+    expect(note.toState()).toMatchObject({
+      status: "handed_over",
+      preparedAt: PREPARED_AT,
+      handedOverAt: HANDED_OVER_AT,
+      receivedOn: RECEIVED_ON,
+    });
+  });
+
+  it("handOver depuis prévu (remise sans bac) : préparé à l'instant de la remise", () => {
+    const note = planned();
+
+    note.handOver(HANDED_OVER_AT, RECEIVED_ON);
+
+    expect(note.toState()).toMatchObject({ status: "handed_over", preparedAt: HANDED_OVER_AT });
+  });
+
+  it("void depuis préparé : annulé, l'instant du bac reste", () => {
+    const note = planned();
+    note.prepare(PREPARED_AT);
+
+    note.void(VOIDED_AT);
+
+    expect(note.toState()).toMatchObject({
+      status: "voided",
+      voidedAt: VOIDED_AT,
+      preparedAt: PREPARED_AT,
+    });
+    expect(note.isLive).toBe(false);
+  });
+
+  it("refuse : préparer deux fois, remettre ou annuler un BL remis, réécrire un BL préparé", () => {
+    const note = planned();
+    note.prepare(PREPARED_AT);
+    expect(() => note.prepare(PREPARED_AT)).toThrow(DeliveryNoteTransitionRefusedError);
+    expect(() => note.replanFrom(order([CROISSANT]))).toThrow(DeliveryNoteNotPlannedError);
+    note.handOver(HANDED_OVER_AT, RECEIVED_ON);
+
+    expect(() => note.handOver(HANDED_OVER_AT, RECEIVED_ON)).toThrow(
+      DeliveryNoteTransitionRefusedError,
+    );
+    expect(() => note.void(VOIDED_AT)).toThrow(DeliveryNoteTransitionRefusedError);
+    expect(() => note.prepare(PREPARED_AT)).toThrow(DeliveryNoteTransitionRefusedError);
+  });
+
+  it("refuse de préparer ou remettre un BL annulé", () => {
+    const note = planned();
+    note.void(VOIDED_AT);
+
+    expect(() => note.prepare(PREPARED_AT)).toThrow(DeliveryNoteTransitionRefusedError);
+    expect(() => note.handOver(HANDED_OVER_AT, RECEIVED_ON)).toThrow(
+      DeliveryNoteTransitionRefusedError,
+    );
+  });
+
+  it("refuse un jour de réception qui n'est pas AAAA-MM-JJ", () => {
+    expect(() => planned().handOver(HANDED_OVER_AT, "01/01/1970")).toThrow(
+      InvalidDeliveryNoteReceivedOnError,
+    );
+  });
+
+  it("rehydrate relit les colonnes d'avancement", () => {
+    const note = planned();
+    note.handOver(HANDED_OVER_AT, RECEIVED_ON);
+    const state = note.toState();
+
+    expect(DeliveryNote.rehydrate(state).toState()).toEqual(state);
   });
 });

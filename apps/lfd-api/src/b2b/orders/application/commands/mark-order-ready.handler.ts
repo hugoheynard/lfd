@@ -12,6 +12,7 @@ import {
 } from "../../domain/errors/order-errors.js";
 import { OrderReadyEvent } from "../../domain/events/order-ready.event.js";
 import { OrderReadyFact } from "../../domain/events/order-ready.fact.js";
+import { DeliveryNoteFollowing } from "../../domain/ports/delivery-note-following.js";
 import { OrderReader, type PackingOrder } from "../../domain/ports/order.reader.js";
 import { OrderRepository } from "../../domain/ports/order.repository.js";
 import { packingBlocker } from "../../domain/services/packing.js";
@@ -53,6 +54,11 @@ import { MarkOrderReadyCommand } from "./mark-order-ready.command.js";
  * livraison durable du colisage, que celle-ci rejoint. Seul le gagnant l'écrit.
  * `OrderReadyEvent` reste, après la validation, pour la croissance et le
  * journal (E6).
+ *
+ * ## Le bon de livraison suit (plan E2, 2026-10-24)
+ *
+ * Sous la même condition gagnée, dans la même unité de travail : le BL passe
+ * `prepared` (`documentation/commandes/plan-e2-rattrapage-des-bons.md`, § 8.3).
  */
 @CommandHandler(MarkOrderReadyCommand)
 export class MarkOrderReadyHandler implements ICommandHandler<
@@ -67,6 +73,7 @@ export class MarkOrderReadyHandler implements ICommandHandler<
     private readonly afterCommit: AfterCommit,
     private readonly uow: UnitOfWork,
     private readonly durable: DurablePublisher,
+    private readonly deliveryNotes: DeliveryNoteFollowing,
   ) {}
 
   async execute(command: MarkOrderReadyCommand): Promise<OrderPackingView> {
@@ -89,6 +96,9 @@ export class MarkOrderReadyHandler implements ICommandHandler<
       const written = await this.repository.markReady(command.reference, at, command.staffUserId);
       if (written) {
         await this.durable.publish(new OrderReadyFact(order.orderId).durableFact());
+        // Plan E2, § 8.3 : le BL suit, dans la même transaction, et seulement
+        // pour le gagnant — créé plein `prepared` s'il manquait (prête hors plan).
+        await this.deliveryNotes.prepare(order.orderId);
       }
       return written;
     });

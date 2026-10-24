@@ -44,13 +44,38 @@ export class InvalidDeliveryNoteNumberError extends DomainError {
   }
 }
 
-/** Seul un BL prévu se réécrit ou s'annule ; un BL préparé ou remis ne bouge plus. */
+/** Seul un BL prévu se réécrit ; un BL préparé, remis ou annulé garde ses lignes. */
 export class DeliveryNoteNotPlannedError extends BusinessError {
   constructor(noteNumber: string, status: string) {
     super(
       "delivery_notes.note.not_planned",
       `Le bon de livraison ${noteNumber} est « ${status} » : seul un bon encore prévu ` +
-        "se réécrit ou s'annule. Le bon reste tel quel ; prévenir l'équipe technique.",
+        "voit ses lignes réécrites. Le bon reste tel quel ; prévenir l'équipe technique.",
+    );
+  }
+}
+
+/**
+ * Une transition que le cycle du BL refuse : préparer un bon qui n'est plus
+ * prévu, remettre ou annuler un bon déjà remis ou annulé (plan E2, § 8.3).
+ */
+export class DeliveryNoteTransitionRefusedError extends BusinessError {
+  constructor(noteNumber: string, status: string, gesture: string) {
+    super(
+      "delivery_notes.note.transition_refused",
+      `Le bon de livraison ${noteNumber} est « ${status} » : il ne peut pas être ${gesture}. ` +
+        "Le bon reste tel quel ; prévenir l'équipe technique avec ce numéro.",
+    );
+  }
+}
+
+/** Le jour de réception d'un BL est un jour civil `AAAA-MM-JJ`, recopié de sa commande. */
+export class InvalidDeliveryNoteReceivedOnError extends DomainError {
+  constructor(noteNumber: string, receivedOn: string) {
+    super(
+      "delivery_notes.note.received_on_invalid",
+      `Bon de livraison ${noteNumber} : le jour de réception « ${receivedOn} » n'est pas une date AAAA-MM-JJ. ` +
+        "La date de réception de la commande est à vérifier ; aucun bon n'a été écrit.",
     );
   }
 }

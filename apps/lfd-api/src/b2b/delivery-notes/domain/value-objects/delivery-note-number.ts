@@ -17,6 +17,13 @@ const DELIVERY_NOTE_PREFIX = "BL";
 export class DeliveryNoteNumber {
   private constructor(readonly value: string) {}
 
+  /** Le numéro de commande permet-il de numéroter un BL ? `ORD-` suivi d'au moins un caractère. */
+  static canNumber(orderNumber: string): boolean {
+    return (
+      orderNumber.startsWith(ORDER_NUMBER_PREFIX) && orderNumber.length > ORDER_NUMBER_PREFIX.length
+    );
+  }
+
   /** @throws {InvalidDeliveryNoteNumberError} préfixe absent, rang non entier ou < 1. */
   static of(orderNumber: string, rank: number): DeliveryNoteNumber {
     const core = orderNumber.startsWith(ORDER_NUMBER_PREFIX)

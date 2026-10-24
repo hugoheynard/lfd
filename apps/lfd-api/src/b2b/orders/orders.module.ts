@@ -141,6 +141,12 @@ import { OrderPlanRelease } from "./domain/ports/order-plan-release.js";
 import { PrismaOrderPlanRelease } from "./infrastructure/prisma-order-plan-release.js";
 import { OrderLinesForDeliveryNote } from "./domain/ports/order-lines-for-delivery-note.js";
 import { PrismaOrderLinesForDeliveryNote } from "./infrastructure/prisma-order-lines-for-delivery-note.js";
+import {
+  OrderProgressForDeliveryNote,
+  OrdersToReconcileDeliveryNotes,
+} from "./domain/ports/order-progress-for-delivery-note.js";
+import { PrismaOrderProgressForDeliveryNote } from "./infrastructure/prisma-order-progress-for-delivery-note.js";
+import { PrismaOrdersToReconcileDeliveryNotes } from "./infrastructure/prisma-orders-to-reconcile-delivery-notes.js";
 import { OnOrderHandedOver } from "./application/handlers/on-order-handed-over.handler.js";
 import { OnPackingOrderPacked } from "./application/handlers/on-packing-order-packed.handler.js";
 import { PrismaDayOrdersSource } from "./infrastructure/prisma-day-orders.source.js";
@@ -396,6 +402,10 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     { provide: OrderPlanRelease, useClass: PrismaOrderPlanRelease },
     // Ce que le bon de livraison lit d'une commande confirmée (plan E1).
     { provide: OrderLinesForDeliveryNote, useClass: PrismaOrderLinesForDeliveryNote },
+    // Où en est une commande, vu du BL qui la suit (plan E2) : le geste, puis
+    // le réconciliateur.
+    { provide: OrderProgressForDeliveryNote, useClass: PrismaOrderProgressForDeliveryNote },
+    { provide: OrdersToReconcileDeliveryNotes, useClass: PrismaOrdersToReconcileDeliveryNotes },
     // Le bac fermé au colisage — le seul fait « bac fait » depuis K3c.
     OnPackingOrderPacked,
     OnOrderHandedOver,
@@ -594,6 +604,9 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     OrderNoticeSummaryReader,
     // Les lignes d'une commande confirmée, que le bon de livraison recopie (plan E1).
     OrderLinesForDeliveryNote,
+    // Ce que le bon de livraison suit de la commande (plan E2).
+    OrderProgressForDeliveryNote,
+    OrdersToReconcileDeliveryNotes,
   ],
 })
 export class OrdersModule {}

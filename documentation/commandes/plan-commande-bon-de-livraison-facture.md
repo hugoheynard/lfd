@@ -206,6 +206,7 @@ commandes du comptoir et à 0 €, l'unicité SQL des arrêts.
   décider d'un départ incomplet.
 - **Q-E4 — oui** : les BL se numérotent `BL-1042-1`, `BL-1042-2`.
 - **Q-E5 — oui** : une commande remise sans être passée au colisage reçoit un BL plein au retrait.
+- Lot E4a : [`plan-e4a-totaux-du-bon.md`](plan-e4a-totaux-du-bon.md) — le BL porte ses totaux (E4 coupé en deux par l'assistant, 2026-10-24).
 - Lot E2 : [`plan-e2-rattrapage-des-bons.md`](plan-e2-rattrapage-des-bons.md) — le BL suit la commande, un réconciliateur rattrape l'existant.
 - Lot E1 : [`plan-e1-bon-de-livraison-prevu.md`](plan-e1-bon-de-livraison-prevu.md) — BL prévu à l'arrêt du plan (idée de Hugo, 2026-10-24).
 
@@ -349,3 +350,35 @@ Hugo le même jour).
   téléphone du livreur ?) ; une réserve sans photo est-elle recevable ?
 - R2 : avoir automatique sur réserve acceptée, ou décision de l'équipe ?
 - H2 : la carte pro s'aligne-t-elle sur le particulier ?
+
+## 12. Le « bon de commande » devient la « confirmation de commande » (Hugo, 2026-10-24) — lot E5
+
+Dans le commerce entre professionnels, le « bon de commande » est souvent le
+document que le **client** envoie à son fournisseur ; le nôtre dit ce que nous
+avons **reçu et accepté**. Hugo : « on appellera ça confirmation de
+commande ». Les quatre documents, une fois E5 bâti :
+
+| Document                                                | Dit                                             | Naît                               | Lu par                                               |
+| ------------------------------------------------------- | ----------------------------------------------- | ---------------------------------- | ---------------------------------------------------- |
+| **Confirmation de commande** (l'actuel bon de commande) | ce que le client a demandé ; porte le QR (Q-E1) | à la passation, jointe au courriel | client, équipe                                       |
+| **Fiche d'atelier**                                     | ce qu'il faut produire, sans prix               | à l'arrêt du plan                  | fournil                                              |
+| **Bon de livraison**                                    | ce qui part, en une fois                        | à la fermeture du bac              | transport (non chiffré) ; client et compta (chiffré) |
+| **Facture**                                             | ce qu'on fait payer, Σ des BL reçus             | à l'émission                       | client, comptabilité                                 |
+
+**À faire en E5** : renommer partout les **libellés** (titre du PDF, courriels,
+écrans, fichiers téléchargés, textes du recueil de la boutique et du manifeste
+des e-mails — `pnpm copy:digest`, `pnpm mail-copy:digest`), et la doc
+[`bon-et-pieces/architecture-bon-de-commande.md`](bon-et-pieces/architecture-bon-de-commande.md).
+Les **identifiants** du code (`OrderSheet`, `clientSheetOf`…) ne changent pas :
+une valeur ou un nom technique n'est pas un libellé (CLAUDE.md § 8). La
+confirmation ne sert plus de justificatif de livraison : c'est le BL qu'on
+coche à la réception.
+
+## 13. L'ordre révisé par l'assistant (2026-10-24, « tu décides seul »)
+
+E2 pose déjà la date de réception sur le BL : la facture peut lire les BL
+**sans** que le retrait se fasse BL par BL. E3 (retrait et livraison par BL)
+n'est nécessaire qu'avec un **second** BL, c'est-à-dire le reliquat. Ordre
+retenu : E1 ✅ → E2 ✅ → **E4a** (totaux du BL) → **E4b** (la facture lit les
+BL) → E5 (PDF du BL, confirmation de commande) → E6 (le manque) → **E3 + E7**
+ensemble (retrait par BL et reliquat) → E8 → E9.

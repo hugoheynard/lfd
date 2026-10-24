@@ -1220,6 +1220,48 @@ plus inscrit »). Elles ne portent rien de perdu : la remise pose déjà la date
 Elles restent visibles dans `GET /admin/outbox/dead-letters` ; ne pas les
 rejouer, le rejeu échoue de la même façon.
 
+## Le bon de livraison suit la commande (lot E2, depuis le 2026-10-24)
+
+Plan [`commandes/plan-e2-rattrapage-des-bons.md`](../commandes/plan-e2-rattrapage-des-bons.md),
+§ 8.4. La migration `20261024210000` n'écrit **aucune donnée** ; le rattrapage
+est fait par le réconciliateur, dans le code.
+
+**Avant le merge vers `main`** — lecture seule, en production :
+
+```sql
+SELECT
+  (SELECT count(*) FROM public.orders WHERE status IN ('in_production','draft'))            AS statuts_morts,
+  (SELECT count(*) FROM public.orders WHERE status = 'fulfilled' AND handed_over_at IS NULL) AS remises_sans_instant,
+  (SELECT count(*) FROM public.orders WHERE order_number NOT LIKE 'ORD-_%')                 AS numeros_atypiques,
+  (SELECT count(*) FROM public.orders o WHERE o.status IN ('confirmed','ready','fulfilled')
+     AND NOT EXISTS (SELECT 1 FROM public.order_lines l WHERE l.order_id = o.id))            AS sans_ligne,
+  (SELECT count(*) FROM public.orders o WHERE o.status IN ('confirmed','ready','fulfilled')
+     AND EXISTS (SELECT 1 FROM public.delivery_note n WHERE n.order_id = o.id)
+     AND NOT EXISTS (SELECT 1 FROM public.delivery_note n WHERE n.order_id = o.id AND n.status <> 'voided'))
+                                                                                             AS bl_annule_seul,
+  (SELECT count(*) FROM public.orders o JOIN public.delivery_note n ON n.order_id = o.id
+     WHERE o.status IN ('ready','fulfilled') AND n.status = 'planned')                       AS bl_prevu_en_retard;
+```
+
+Les quatre premiers et `bl_annule_seul` doivent rendre 0 ; sinon, ces commandes
+seront **comptées** par le réconciliateur, jamais réparées — à reprendre à la
+main. `sans_ligne` dit combien de commandes restent sans BL, à juste titre ;
+`bl_prevu_en_retard`, combien le premier passage avancera.
+
+**Après le déploiement** — lancer le réconciliateur à la main, puis lire son
+compte rendu :
+
+```bash
+curl -X POST https://<api>/admin/delivery-notes/reconcile -H "Authorization: Bearer <jeton staff>"
+```
+
+Droit : `ops_health:write` (celui du rejeu des messages morts). Le compte rendu
+porte `created`, `advanced`, `voided`, `failed`, la liste `unrepaired`
+(commande, numéro, cause) et `complete`. `complete: false` = le plafond d'un
+passage (100 réparations) est atteint : relancer jusqu'à `true`. `failed > 0`
+se lit dans les journaux (`ReconcileDeliveryNotesHandler`). Ensuite, le Worker
+le repasse **toutes les heures** (`admin/delivery-notes/sweep`).
+
 ## Remettre la production à blanc — délibérément SANS outil
 
 Fait une fois, le **2026-08-16**, pour vider les données de test avant

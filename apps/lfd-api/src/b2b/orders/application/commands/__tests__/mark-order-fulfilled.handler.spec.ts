@@ -19,6 +19,7 @@ import { OrderReader, type OrderAuthor } from "../../../domain/ports/order.reade
 import { OrderRepository } from "../../../domain/ports/order.repository.js";
 import { MarkOrderFulfilledCommand } from "../mark-order-fulfilled.command.js";
 import { MarkOrderFulfilledHandler } from "../mark-order-fulfilled.handler.js";
+import { RecordingDeliveryNoteFollowing } from "./delivery-note-following-double.js";
 
 // Recopié tel quel, jamais comparé à une horloge : le handler n'en lit aucune.
 const HANDED_OVER_AT = new Date(60_000);
@@ -116,6 +117,7 @@ interface World {
 function subject(world: World = {}) {
   const uow = new TransactionalUnitOfWork();
   const repository = new Repository(uow);
+  const notes = new RecordingDeliveryNoteFollowing(() => uow.isOpen);
   const handler = new MarkOrderFulfilledHandler(
     new Reader(world.author === undefined ? AUTHOR : world.author),
     repository,
@@ -123,8 +125,9 @@ function subject(world: World = {}) {
     new TransactionalDurablePublisher(uow),
     new Handovers(world.handovers ?? []),
     new Stops(world.stops ?? []),
+    notes,
   );
-  return { handler, repository, uow };
+  return { handler, repository, uow, notes };
 }
 
 /** Un arrêt parti et clos sans retour, le jour donné. */
@@ -226,5 +229,28 @@ describe("la date de réception part avec la remise (date-de-reception, B2)", ()
     await handler.execute(handOver());
 
     expect(repository.receivedOn).toEqual([HANDED_OVER_DAY]);
+  });
+});
+
+describe("le BL suit la remise (plan E2, § 8.3)", () => {
+  it("le gagnant fait passer le BL `handed_over`, DANS l'unité de travail de la remise", async () => {
+    const { handler, notes } = subject();
+
+    await handler.execute(
+      new MarkOrderFulfilledCommand(REFERENCE, "staff_a", HANDED_OVER_AT, "scan"),
+    );
+
+    expect(notes.calls).toEqual(["hand-over:ord_1"]);
+    expect(notes.insideUnit).toEqual([true]);
+  });
+
+  it("une réannonce perdue ne touche pas au BL", async () => {
+    const { handler, notes } = subject();
+    const command = new MarkOrderFulfilledCommand(REFERENCE, "staff_a", HANDED_OVER_AT, "scan");
+    await handler.execute(command);
+
+    await handler.execute(command);
+
+    expect(notes.calls).toEqual(["hand-over:ord_1"]);
   });
 });

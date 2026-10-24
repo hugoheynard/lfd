@@ -2,6 +2,11 @@ import {
   OrderLinesForDeliveryNote,
   type DeliveryNoteOrder,
 } from "../../../orders/domain/ports/order-lines-for-delivery-note.js";
+import {
+  OrderProgressForDeliveryNote,
+  OrdersToReconcileDeliveryNotes,
+  type DeliveryNoteOrderProgress,
+} from "../../../orders/domain/ports/order-progress-for-delivery-note.js";
 import { DeliveryNote, type DeliveryNoteState } from "../../domain/entities/delivery-note.js";
 import { DeliveryNoteRepository } from "../../domain/ports/delivery-note.repository.js";
 
@@ -31,6 +36,19 @@ export class InMemoryDeliveryNotes extends DeliveryNoteRepository {
     this.saves += 1;
     this.rows.set(state.id, state);
     return Promise.resolve();
+  }
+
+  saveNew(note: DeliveryNote): Promise<boolean> {
+    const state = note.toState();
+    const clash = [...this.rows.values()].some(
+      (row) => row.orderId === state.orderId && row.rank === state.rank,
+    );
+    if (clash) {
+      return Promise.resolve(false);
+    }
+    this.saves += 1;
+    this.rows.set(state.id, state);
+    return Promise.resolve(true);
   }
 
   /** Les états, par commande — l'ordre d'insertion. */
@@ -63,5 +81,44 @@ export class FixedConfirmedOrders extends OrderLinesForDeliveryNote {
         return order !== undefined && at?.getTime() === closedAt.getTime() ? [order] : [];
       }),
     );
+  }
+}
+
+/**
+ * Les commandes vues du BL qui les suit (plan E2) : une table en mémoire, lue
+ * par le geste et parcourue par le réconciliateur, par identifiant croissant.
+ */
+export class InMemoryOrderProgress extends OrderProgressForDeliveryNote {
+  readonly orders = new Map<string, DeliveryNoteOrderProgress>();
+  readonly locked: string[] = [];
+
+  put(order: DeliveryNoteOrderProgress): void {
+    this.orders.set(order.orderId, order);
+  }
+
+  progressOf(orderId: string): Promise<DeliveryNoteOrderProgress | null> {
+    return Promise.resolve(this.orders.get(orderId) ?? null);
+  }
+
+  /** Le parcours du réconciliateur, sur la même table. */
+  readonly scan: OrdersToReconcileDeliveryNotes = new InMemoryOrderScan(this);
+}
+
+class InMemoryOrderScan extends OrdersToReconcileDeliveryNotes {
+  constructor(private readonly table: InMemoryOrderProgress) {
+    super();
+  }
+
+  pageAfter(afterId: string | null, limit: number): Promise<readonly DeliveryNoteOrderProgress[]> {
+    const sorted = [...this.table.orders.values()]
+      .filter((order) => order.status !== "placed")
+      .filter((order) => afterId === null || order.orderId > afterId)
+      .sort((a, b) => (a.orderId < b.orderId ? -1 : 1));
+    return Promise.resolve(sorted.slice(0, limit));
+  }
+
+  lockProgressOf(orderId: string): Promise<DeliveryNoteOrderProgress | null> {
+    this.table.locked.push(orderId);
+    return this.table.progressOf(orderId);
   }
 }

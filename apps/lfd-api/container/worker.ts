@@ -467,6 +467,31 @@ async function triggerVitrineSweep(env: Env): Promise<void> {
 }
 
 /**
+ * Réveille le container et passe le réconciliateur des bons de livraison :
+ * chaque commande confirmée, prête, remise ou annulée voit son BL aligné, et
+ * les écarts non réparables sont comptés (plan
+ * `documentation/commandes/plan-e2-rattrapage-des-bons.md`, § 8.2). Sur le
+ * cron HORAIRE, pas sur celui de rafraîchissement : il parcourt toutes les
+ * commandes, et un écart n'a rien d'urgent — personne ne lit encore le BL.
+ * Même porte et même jeton que la boîte d'envoi ; idempotent.
+ */
+async function triggerDeliveryNotesReconcile(env: Env): Promise<void> {
+  const token = env.RECOMPUTE_TOKEN;
+  if (!token) {
+    return;
+  }
+  await postSweep(env, token, "admin/delivery-notes/sweep");
+}
+
+/**
+ * Les passages du cron horaire, chacun pour soi : l'échec de l'un ne prive
+ * pas l'autre de son tour (`postSweep` l'écrit dans les logs du Worker).
+ */
+async function hourlySweeps(env: Env): Promise<void> {
+  await Promise.allSettled([triggerSettlementReminders(env), triggerDeliveryNotesReconcile(env)]);
+}
+
+/**
  * Les balayages du cron de rafraîchissement, chacun pour soi : un échec de
  * l'un (container qui répond mal, réseau) ne prive pas les suivants de leur
  * tour. Le prochain passage est dans cinq minutes ; l'échec ne fait pas
@@ -508,7 +533,7 @@ const MEDIA_SWEEP_CRON = "30 3 * * *";
 const LOYALTY_SWEEP_CRON = "0 2 * * *";
 
 /**
- * Le rappel de règlement — toutes les heures, pile : l'heure limite se règle à
+ * Le rappel de règlement et la réconciliation des BL — toutes les heures, pile : l'heure limite se règle à
  * la minute, et une heure de retard au plus laisse encore le temps de relancer
  * avant la fournée. Même règle : identique à `wrangler.jsonc`, sinon il
  * partirait en recompute.
@@ -571,7 +596,7 @@ function dispatchCron(cron: string, env: Env): Promise<void> {
     case LOYALTY_SWEEP_CRON:
       return triggerLoyaltySweep(env);
     case SETTLEMENT_REMINDERS_CRON:
-      return triggerSettlementReminders(env);
+      return hourlySweeps(env);
     case QUALITY_UPLOAD_SWEEP_CRON:
       return triggerQualityUploadSweep(env);
     case COLLECTION_AUTOPILOT_CRON:
@@ -595,7 +620,7 @@ export default {
   // Cloudflare Cron Trigger (cf. `triggers.crons` dans wrangler.jsonc). Dix
   // expressions sur le même handler, départagées par l'expression (`dispatchCron`) :
   // toutes les 5 min pour garder le container chaud, toutes les heures pour les
-  // liens de paiement non réglés à l'heure limite, toutes les heures au quart
+  // liens de paiement non réglés à l'heure limite et la réconciliation des BL, toutes les heures au quart
   // pour la constitution automatique du prélèvement, à 21h55 et 22h55 UTC pour
   // la facture du mois (23h55 à Paris, été comme hiver), 3×/jour aux heures creuses
   // pour le recompute batch, et 1×/nuit pour la fidélité, le ramassage des

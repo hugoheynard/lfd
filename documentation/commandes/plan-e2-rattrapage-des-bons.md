@@ -1,5 +1,17 @@
 # Plan E2 — un bon de livraison pour chaque commande qui en a besoin
 
+> ✅ **Bâti le 2026-10-24** (migration `20261024210000_le_bon_de_livraison_suit_la_commande`,
+> réconciliateur `ReconcileDeliveryNotes`, cron horaire du worker, route
+> `POST admin/delivery-notes/reconcile` sous `ops_health:write`). Corrige au
+> passage la régression d'E1 vue en CI : un numéro de commande atypique
+> (`CMD-…` des scènes de test) faisait lever le BL dans l'unité de travail de
+> l'arrêt et annulait la confirmation ; un refus du domaine est désormais
+> sauté et journalisé. Choix du bâtisseur : un geste réécrit les lignes d'un
+> BL prévu avant de l'avancer ; `prepared_at` = `ready_at` s'il existe, sinon
+> la remise. **Reste** : aucun signal sur la carte de santé (seulement le
+> journal et le compte rendu) ; le passage horaire relit toutes les commandes
+> vivantes — à borner quand le volume grandira.
+
 > **Doc-first, 2026-10-24.** Deuxième lot de
 > [`plan-commande-bon-de-livraison-facture.md`](plan-commande-bon-de-livraison-facture.md).
 > Porte une **migration de données** : `vitruve`, puis `lecteur-de-migrations`

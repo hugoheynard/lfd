@@ -1,7 +1,7 @@
 /// Le cycle d'un **bon de livraison** (plan
-/// `documentation/commandes/plan-e1-bon-de-livraison-prevu.md`). E1 n'écrit
-/// que `planned` (prévu à l'arrêt du plan) et `voided` (commande annulée) ;
-/// `prepared` et `handed_over` arrivent avec le colisage et le retrait (E3).
+/// `documentation/commandes/plan-e1-bon-de-livraison-prevu.md`). `planned` à
+/// l'arrêt du plan (E1) ; `prepared` et `handed_over` suivent la commande
+/// depuis E2 (`plan-e2-rattrapage-des-bons.md`) ; `voided` avec l'annulation.
 enum DeliveryNoteStatus {
   planned
   prepared
@@ -26,9 +26,16 @@ model DeliveryNote {
   /// `BL-<numéro de commande sans ORD->-<rang>` (Q-E4, Q-E1-1).
   number  String @unique
 
-  status    DeliveryNoteStatus
-  plannedAt DateTime           @map("planned_at") @db.Timestamptz(6)
-  voidedAt  DateTime?          @map("voided_at") @db.Timestamptz(6)
+  status       DeliveryNoteStatus
+  plannedAt    DateTime           @map("planned_at") @db.Timestamptz(6)
+  voidedAt     DateTime?          @map("voided_at") @db.Timestamptz(6)
+  /// Bac fermé (ou commande prête hors plan) — lot E2. CHECK d'état dans la
+  /// migration `20261024210000` : `prepared` et `handed_over` l'exigent.
+  preparedAt   DateTime?          @map("prepared_at") @db.Timestamptz(6)
+  /// Remise — celle de la commande, recopiée (lot E2).
+  handedOverAt DateTime?          @map("handed_over_at") @db.Timestamptz(6)
+  /// Jour de réception (Europe/Paris), celui de la commande (lot E2).
+  receivedOn   DateTime?          @map("received_on") @db.Date
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
