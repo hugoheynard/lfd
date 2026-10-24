@@ -206,6 +206,7 @@ commandes du comptoir et à 0 €, l'unicité SQL des arrêts.
   décider d'un départ incomplet.
 - **Q-E4 — oui** : les BL se numérotent `BL-1042-1`, `BL-1042-2`.
 - **Q-E5 — oui** : une commande remise sans être passée au colisage reçoit un BL plein au retrait.
+- Lot E2 : [`plan-e2-rattrapage-des-bons.md`](plan-e2-rattrapage-des-bons.md) — le BL suit la commande, un réconciliateur rattrape l'existant.
 - Lot E1 : [`plan-e1-bon-de-livraison-prevu.md`](plan-e1-bon-de-livraison-prevu.md) — BL prévu à l'arrêt du plan (idée de Hugo, 2026-10-24).
 
 ## 10. BL chiffré ou non chiffré (Hugo, 2026-10-24)
