@@ -1,5 +1,6 @@
 import type { Provider } from "@nestjs/common";
 
+import { BackfillOrderReceivedOnHandler } from "./application/commands/backfill-order-received-on.handler.js";
 import { RecordOrderDeliveryDayHandler } from "./application/commands/record-order-delivery-day.handler.js";
 import { RecordDeliveryDayOnHandover } from "./application/handlers/record-delivery-day-on-handover.handler.js";
 import { ListUnconfirmedDeliveriesHandler } from "./application/queries/list-unconfirmed-deliveries.handler.js";
@@ -17,6 +18,7 @@ export const DELIVERY_DAY_PROVIDERS: readonly Provider[] = [
   { provide: OrderDeliveryDays, useClass: PrismaOrderDeliveryDays },
   { provide: UnconfirmedDeliveriesReader, useClass: PrismaUnconfirmedDeliveriesReader },
   RecordOrderDeliveryDayHandler,
+  BackfillOrderReceivedOnHandler,
   RecordDeliveryDayOnHandover,
   ListUnconfirmedDeliveriesHandler,
 ];

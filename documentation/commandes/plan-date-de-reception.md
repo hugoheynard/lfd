@@ -513,7 +513,7 @@ ne fait que le CITER en commentaire ; l'import de `receivedOnOf` par
 `mark-order-fulfilled.handler.ts` est le premier `orders → accounting` du
 domaine.
 
-## 8. Deuxième temps — le script de reprise (écrit, NON bâti, NON lancé)
+## 8. Deuxième temps — le script de reprise (bâti et lancé en dev le 2026-10-24, non commité ; NON lancé en production)
 
 Il se lance **après** le déploiement du premier temps, **avant** B4.
 
@@ -530,30 +530,32 @@ lancé dans un contexte Nest autonome contre la base de production.
 ⚠️ **Ce n'est pas la commande de B2** : `MarkOrderFulfilledCommand` ne touche
 pas une commande déjà remise (`where handedOverAt: null`), et c'est voulu.
 
-⚠️ **Le repli manque à la commande de reprise** : `RecordOrderDeliveryDayHandler`
-ne pose rien quand aucune ligne `order_handover` n'est lue
-(`receivedOnOf(null, …) = null`), là où B2 retombe sur l'instant du fait. Une
-commande `handed_over_at` non nulle sans attestation (écrite hors du retrait)
-resterait sans date, et B4 échouerait. Le contrôle « après » n°1 la verrait ;
-la décision (ajouter le repli `handed_over_at` à la commande de reprise, ou
-traiter ces lignes à la main) est à prendre avant de bâtir le script.
+✅ **Décidé par Hugo le 2026-10-24 : la reprise a le MÊME repli que la remise.**
+Quand `receivedOnOf` ne rend rien (`handed_over_at` posé, aucune ligne
+`order_handover`), la date est le jour de Paris de `handed_over_at`. La règle
+et son repli sont écrits une fois, `receivedOnOrDayOf`
+(`b2b/accounting/domain/services/monthly-invoicing.ts`), appelée par
+`MarkOrderFulfilledHandler` (B2) et par la commande de reprise. Les commandes
+« date posée sans remise » ne se réparent pas : le script les compte et les
+liste par numéro, sans rien écrire, pour décision de Hugo.
 
-```ts
-// apps/lfd-api/src/dev/ops/date-received-orders.ts — esquisse, un fichier
-const app = await NestFactory.createApplicationContext(AppModule, { logger: ["error"] });
-const prisma = app.get(PrismaService);
-const commands = app.get(CommandBus);
-const pending = await prisma.order.findMany({
-  where: { handedOverAt: { not: null }, receivedOn: null },
-  select: { id: true, orderNumber: true },
-  orderBy: { createdAt: "asc" },
-});
-for (const order of pending) {
-  await commands.execute(new RecordOrderDeliveryDayCommand(order.id));
-}
-// puis : relire les restantes, les afficher par numéro, code de sortie ≠ 0 s'il en reste
-await app.close();
-```
+**Ce qui est bâti** (au lieu de l'esquisse ci-dessous, qui reste pour mémoire) :
+
+- `BackfillOrderReceivedOnCommand(orderId, handedOverAt)` + handler
+  (`b2b/accounting/application/commands/backfill-order-received-on.*`) — une
+  commande DÉDIÉE : `RecordOrderDeliveryDayHandler` reste sans repli, c'est
+  juste pour l'abonné du retrait. Même écriture conditionnée
+  `received_on IS NULL` (`OrderDeliveryDays.recordFirst`).
+- `apps/lfd-api/prisma/ops/received-on-backfill.ts` (contrôles + boucle, lit en
+  Prisma, écrit par le bus seulement ; l'attestation se lit par
+  `OrderHandoverHistoryReader`, pas par jointure sur `production`) et
+  `apps/lfd-api/prisma/ops-received-on-backfill.ts` (amorce l'application
+  réelle, affiche `hôte:port/base`, jamais l'utilisateur ni le mot de passe).
+- `pnpm --filter lfd-api ops:received-on-backfill` : simulation ;
+  `… --apply` : écriture, puis contrôles « après », code de sortie 1 si
+  l'un des n° 1, 2, 4, 5 n'est pas à zéro (n° 3 est informatif).
+- Lancé en dev le 2026-10-24 contre `localhost:5433/lfc_b2b_dev` : avant 0 / 0 / 0
+  / 0, après 0 partout — rien à dater (les 21 du constat avaient déjà leur date).
 
 ### 8.2 Contrôles (runbook), noms de colonnes après le premier temps
 
@@ -599,3 +601,26 @@ SELECT count(*) FROM orders WHERE received_on IS NOT NULL AND handed_over_at IS 
 ⚠️ Le contrôle « après » n°5 n'est pas couvert par la reprise : une date sans
 remise ne se répare pas en posant une date. Si la base en porte, B4 (Q5) ne
 passera pas, et la décision est à prendre avec Hugo.
+
+### 8.3 Le geste de production (runbook — NON exécuté)
+
+Après le déploiement du premier temps (migration `20261024120000` appliquée,
+API servie), avant B4. Depuis un poste, dans `apps/lfd-api` :
+
+1. Exporter la cible dans le shell (l'environnement prime sur `.env`, que
+   `--env-file-if-exists` ne lit qu'en complément) :
+   `export DATABASE_LFD_URL='<URL directe de production>'` et les autres
+   variables qu'`AppConfig` exige au démarrage.
+2. `pnpm ops:received-on-backfill` — **simulation**. Vérifier la ligne
+   `Base ciblée : <hôte>:<port>/<base>` : c'est la production, et rien
+   d'autre. Relever les chiffres « AVANT » (n° 1 à 3, 5).
+3. Si le n° 5 (« dates sans remise ») n'est pas à zéro : **s'arrêter**, transmettre
+   la liste des numéros à Hugo. La reprise ne la répare pas, et le contrôle
+   « après » échouerait.
+4. `pnpm ops:received-on-backfill --apply` — écriture par le bus. Le n° 1
+   « APRÈS » doit rendre 0, les n° 2 et 4 aussi ; le n° 3 ne doit lister que
+   des remises à la porte. Code de sortie 0 attendu.
+5. Relancer la simulation : « AVANT » n° 1 doit être à 0 (idempotence vérifiée).
+6. `unset DATABASE_LFD_URL` et les autres variables exportées.
+
+Rien d'autre n'écrit : pas de SQL à la main, pas d'`UPDATE`.

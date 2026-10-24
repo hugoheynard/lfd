@@ -1,11 +1,10 @@
-import { instantToLocal } from "@lfd/contracts";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { OrderDeliveryHistoryReader } from "../../../../delivery/channels/commerce/index.js";
 import { OrderHandoverHistoryReader } from "../../../../handover/channels/commerce/index.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
-import { receivedOnOf } from "../../../accounting/domain/services/monthly-invoicing.js";
+import { receivedOnOrDayOf } from "../../../accounting/domain/services/monthly-invoicing.js";
 import { OrderReferenceNotFoundError } from "../../domain/errors/order-errors.js";
 import { OrderHandedOverEvent } from "../../domain/events/order-handed-over.event.js";
 import { OrderReader } from "../../domain/ports/order.reader.js";
@@ -101,10 +100,10 @@ export class MarkOrderFulfilledHandler implements ICommandHandler<MarkOrderFulfi
       this.handovers.ofOrders([orderId]),
       this.deliveries.ofOrders([orderId]),
     ]);
-    const day = receivedOnOf(
+    return receivedOnOrDayOf(
       handovers.get(orderId) ?? null,
       stops.filter((stop) => stop.orderId === orderId),
+      at,
     );
-    return day ?? instantToLocal(at).day;
   }
 }

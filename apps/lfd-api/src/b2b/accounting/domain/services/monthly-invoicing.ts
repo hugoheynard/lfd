@@ -208,3 +208,22 @@ export function receivedOnOf(
     orderHistory(handover, stops).actualDeliveryDay ?? instantToLocal(handover.handedOverAt).day
   );
 }
+
+/**
+ * **Le jour de réception d'une commande remise** — jamais `null`. La règle
+ * {@link receivedOnOf}, sinon le jour (Paris) de l'instant de la remise.
+ *
+ * Écrite une fois pour ses deux écrivains (plan
+ * `documentation/commandes/plan-date-de-reception.md`) : la remise (B2,
+ * `MarkOrderFulfilledHandler`, l'instant du fait) et la reprise (§8,
+ * `BackfillOrderReceivedOnHandler`, `handed_over_at`). Le repli couvre une
+ * remise qu'aucune attestation de retrait n'accompagne : elle a eu lieu, elle
+ * a donc un jour (Hugo, 2026-10-24).
+ */
+export function receivedOnOrDayOf(
+  handover: DossierHandoverFact | null,
+  stops: readonly DossierStopFact[],
+  handedOverAt: Date,
+): string {
+  return receivedOnOf(handover, stops) ?? instantToLocal(handedOverAt).day;
+}

@@ -27,6 +27,8 @@
     "prisma/reset-to-seed.ts",
     "prisma/seed-roles.ts",
     "prisma/seed-pim.ts",
+    "prisma/ops-received-on-backfill.ts",
+    "prisma/ops",
     "prisma/seed-pim",
     "prisma/seed-growth/fake-document-store.ts",
     "prisma/mercuriale"

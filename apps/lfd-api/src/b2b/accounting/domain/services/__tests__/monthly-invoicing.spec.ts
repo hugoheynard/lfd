@@ -1,6 +1,7 @@
 import type { BillingFollow } from "../../ports/statement-billing.reader.js";
 import {
   receivedOnOf,
+  receivedOnOrDayOf,
   invoiceGroupKey,
   invoicePaymentMeansOf,
   ordersByPayer,
@@ -235,5 +236,19 @@ describe("receivedOnOf — la date de livraison réelle", () => {
       broughtBackAt: null,
     };
     expect(receivedOnOf({ handedOverAt, via: "scan", atDoor: true }, [stop])).toBe("2026-09-29");
+  });
+});
+
+describe("receivedOnOrDayOf — une commande remise a toujours un jour", () => {
+  /** 00h30 à Paris le 1er octobre — encore le 30 septembre en UTC. */
+  const handedOverAt = new Date("2026-09-30T22:30:00.000Z");
+
+  it("sans attestation de retrait : le jour de Paris de la remise", () => {
+    expect(receivedOnOrDayOf(null, [], handedOverAt)).toBe("2026-10-01");
+  });
+
+  it("avec attestation : la règle de la facture, pas le repli", () => {
+    const attested = { handedOverAt: new Date("2026-09-29T08:00:00.000Z"), via: "scan" as const };
+    expect(receivedOnOrDayOf({ ...attested, atDoor: false }, [], handedOverAt)).toBe("2026-09-29");
   });
 });
