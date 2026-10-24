@@ -213,4 +213,32 @@ describe("l'échéance du fournil selon le site (T0)", () => {
       ["VIL", sites.village, "07:20"],
     ]);
   });
+
+  /**
+   * Régression : le compte à rebours lisait le périmètre du plan (`placed`) ;
+   * l'arrêt confirme les commandes, et la section « Échéances » du dossier du
+   * jour se vidait au moment où le fournil travaillait (fix 2026-10-24).
+   */
+  it("après l'arrêt du plan, les seuils du jour ne sont pas vides", async () => {
+    await seedDay();
+    const staff = ctx.asSub(E2E_STAFF_SUB);
+    const before = jsonBody<ProductionDueThresholdsView>(
+      await staff.get(`/admin/production/batch/${DAY}/due-thresholds`).expect(200),
+    );
+
+    await staff.post(`/admin/production/batch/${DAY}/close`).expect(201);
+    await ctx.drain();
+    // L'arrêt a confirmé les commandes : c'est l'état qui vidait les seuils.
+    const statuses = await ctx.prisma.order.findMany({ select: { status: true } });
+    expect(statuses.map((order) => order.status)).toEqual(["confirmed", "confirmed", "confirmed"]);
+
+    const after = jsonBody<ProductionDueThresholdsView>(
+      await ctx
+        .asSub(E2E_STAFF_SUB)
+        .get(`/admin/production/batch/${DAY}/due-thresholds`)
+        .expect(200),
+    );
+    expect(after.lines.length).toBeGreaterThan(0);
+    expect(after).toEqual(before);
+  });
 });

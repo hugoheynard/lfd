@@ -31,8 +31,12 @@ export interface SitedOrder {
  * tournées et lui — tous deux lus à la livraison, qui les déclare et les
  * implémente (`DepartureSiteReader`, `RoadTravelTimeReader`).
  *
- * Calculé À LA VOLÉE, jamais rangé : le fournil lit ses commandes avant et
- * pendant l'arrêt du plan, et c'est l'arrêt qui fige (`production_order.due_at`).
+ * Calculé À LA VOLÉE, jamais rangé. L'arrêt du plan fige l'échéance de chaque
+ * commande sur le bon du fournil (`production_order.due_at`, par
+ * `SitedDayOrders`) ; mais le compte à rebours (`DueThresholds`) NE LIT PAS
+ * cette colonne : il recalcule ici, avant comme après l'arrêt, sur les
+ * commandes vivantes du jour (vérifié le 2026-10-24). Un site réglé autrement
+ * après l'arrêt déplace donc le compte à rebours, pas le bon déjà figé.
  *
  * ## Une échéance qui passe sans heure : au LOG, pas au journal
  *

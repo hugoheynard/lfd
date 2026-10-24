@@ -20,6 +20,10 @@ export interface SiteArrivalOrder {
  * `in_production` n'est écrit par aucun chemin (vérifié le 2026-10-24) ; il
  * est compté pour qu'une commande qui le porterait un jour ne fasse pas
  * disparaître l'heure de son site.
+ *
+ * Le compte à rebours du fournil (`DeadlineOrdersReader`) lit la même liste,
+ * livraisons comprises : aucune n'a de statut propre entre `confirmed` et
+ * `fulfilled` (vérifié le 2026-10-24).
  */
 export const STATUSES_AWAITING_PICKUP: readonly OrderStatus[] = [
   "placed",

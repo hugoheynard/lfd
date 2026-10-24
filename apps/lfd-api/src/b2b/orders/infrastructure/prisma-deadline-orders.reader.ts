@@ -5,14 +5,16 @@ import {
   DeadlineOrdersReader,
   type SitedDeadlineOrder,
 } from "../domain/ports/deadline-orders.reader.js";
+import { STATUSES_AWAITING_PICKUP } from "../domain/ports/site-arrival-orders.reader.js";
 import { fulfillmentOf } from "./order-fulfillment.parse.js";
 import { siteIdOf } from "./pickup-site.parse.js";
-import { planWhere } from "./plan-filter.js";
+import { settlementWhere } from "./plan-filter.js";
 
 /**
- * Adaptateur Prisma de `DeadlineOrdersReader` : les commandes du plan d'une
- * journée — le même `where` que la clôture (`PrismaDayOrdersSource`), pour
- * que le compte à rebours et le compte à produire parlent des mêmes commandes.
+ * Adaptateur Prisma de `DeadlineOrdersReader` : les commandes vivantes d'une
+ * journée — statut par `STATUSES_AWAITING_PICKUP`, argent par
+ * `settlementWhere`. Jamais `planWhere` : il ne garde que `placed`, et le
+ * compte à rebours se vidait à l'arrêt du plan (corrigé le 2026-10-24).
  *
  * La fenêtre est lue du JSON `fulfillment` par le parseur partagé ; une
  * commande antérieure à la colonne rend `null`, c'est-à-dire « sans échéance ».
@@ -28,7 +30,8 @@ export class PrismaDeadlineOrdersReader extends DeadlineOrdersReader {
       where: {
         // Colonne `date` lue à minuit UTC : même composition que `producibleFor`.
         requestedDeliveryDate: new Date(`${day}T00:00:00.000Z`),
-        ...planWhere(),
+        status: { in: [...STATUSES_AWAITING_PICKUP] },
+        ...settlementWhere(),
       },
       orderBy: { orderNumber: "asc" },
       select: {
