@@ -19,6 +19,7 @@
 import { instantToLocal } from "@lfd/contracts";
 
 import { OrderDeliveryDays } from "../src/b2b/accounting/domain/ports/order-delivery-days.js";
+import { PrismaOrderDeliveryDays } from "../src/b2b/accounting/infrastructure/prisma-order-delivery-days.js";
 import {
   OrderClientele,
   OrderStatus,
@@ -153,5 +154,24 @@ describe("la date de réception part avec la remise", () => {
     expect(
       await ctx.prisma.outboxDelivery.count({ where: { deliveredAt: null, attempts: { gt: 0 } } }),
     ).toBe(0);
+  });
+
+  /**
+   * Régression (2026-10-24) : l'ancien abonné, livré AVANT la remise, posait
+   * la date seul — une date sans remise, et une instruction de plus sur
+   * `orders`, donc une ligne de plus dans `public.day_change` selon l'ordre
+   * des deux abonnés (`dev-scenario-stability` rouge en CI).
+   */
+  it("l'ancien abonné ne date pas une commande qui n'est pas encore remise", async () => {
+    const order = await readyOrder();
+    const legacy = new PrismaOrderDeliveryDays(ctx.prisma);
+
+    expect(await legacy.recordFirst(order.id, "2026-01-02")).toBe(false);
+    expect((await received(order.id)).receivedOn).toBeNull();
+
+    await ctx.asSub(E2E_STAFF_SUB).post(`/admin/handover/manual/${order.number}`).expect(201);
+    await ctx.drain();
+    const state = await received(order.id);
+    expect(state.receivedOn).toBe(state.handedOverDay);
   });
 });
