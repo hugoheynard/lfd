@@ -206,6 +206,8 @@ commandes du comptoir et à 0 €, l'unicité SQL des arrêts.
   décider d'un départ incomplet.
 - **Q-E4 — oui** : les BL se numérotent `BL-1042-1`, `BL-1042-2`.
 - **Q-E5 — oui** : une commande remise sans être passée au colisage reçoit un BL plein au retrait.
+- Lot E5a : [`plan-e5a-le-bon-de-livraison-imprime.md`](plan-e5a-le-bon-de-livraison-imprime.md) — le BL imprimé, une pièce par lecteur.
+- Lot E4b : [`plan-e4b-la-facture-lit-les-bons.md`](plan-e4b-la-facture-lit-les-bons.md) — **reporté et fusionné avec E6** (2026-10-24, § 6 de ce plan).
 - Lot E4a : [`plan-e4a-totaux-du-bon.md`](plan-e4a-totaux-du-bon.md) — le BL porte ses totaux (E4 coupé en deux par l'assistant, 2026-10-24).
 - Lot E2 : [`plan-e2-rattrapage-des-bons.md`](plan-e2-rattrapage-des-bons.md) — le BL suit la commande, un réconciliateur rattrape l'existant.
 - Lot E1 : [`plan-e1-bon-de-livraison-prevu.md`](plan-e1-bon-de-livraison-prevu.md) — BL prévu à l'arrêt du plan (idée de Hugo, 2026-10-24).
@@ -382,3 +384,8 @@ n'est nécessaire qu'avec un **second** BL, c'est-à-dire le reliquat. Ordre
 retenu : E1 ✅ → E2 ✅ → **E4a** (totaux du BL) → **E4b** (la facture lit les
 BL) → E5 (PDF du BL, confirmation de commande) → E6 (le manque) → **E3 + E7**
 ensemble (retrait par BL et reliquat) → E8 → E9.
+
+**Ordre révisé une seconde fois (2026-10-24)** : E1 ✅ → E2 ✅ → E4a ✅ → **E5**
+(PDF du BL, confirmation de commande) → **lot T** (commandes de test par le
+vrai chemin) → **E6 + E4b** (le premier BL partiel et la facture qui le lit)
+→ E3 + E7 → E8 → E9.
