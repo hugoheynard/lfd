@@ -18,8 +18,8 @@ export type SpecimenKey =
 
 /** Le nom de chaque exemplaire. Un `Record` : une clé ajoutée sans nom ne compile pas. */
 export const SPECIMEN_LABELS: Readonly<Record<SpecimenKey, string>> = {
-  'order-sheet-pro': 'Bon de commande — pro',
-  'order-sheet-public': 'Bon de commande — public',
+  'order-sheet-pro': 'Confirmation de commande — pro',
+  'order-sheet-public': 'Confirmation de commande — public',
   'atelier-sheet': "Fiche d'atelier",
   'round-paper': 'Feuille de tournée (livreur)',
   invoice: 'Facture Factur-X',

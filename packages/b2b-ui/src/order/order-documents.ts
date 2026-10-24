@@ -47,7 +47,7 @@ export function orderDocuments(order: CustomerOrderView): readonly OrderDocument
   return [
     {
       key: ORDER_DOC_ORDER_SHEET,
-      label: 'Bon de commande',
+      label: 'Confirmation de commande',
       icon: 'contracts',
       ...(settled
         ? { hint: 'Généré depuis la commande.' }

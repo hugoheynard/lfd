@@ -39,7 +39,9 @@ export class AdminOrderSheetSpecimensController {
     response.setHeader("Content-Type", "application/pdf");
     response.setHeader(
       "Content-Disposition",
-      contentDispositionInline(sanitiseFileName(pdf.fileName, "exemple-bon-de-commande.pdf")),
+      contentDispositionInline(
+        sanitiseFileName(pdf.fileName, "exemple-confirmation-de-commande.pdf"),
+      ),
     );
     return new StreamableFile(pdf.bytes);
   }

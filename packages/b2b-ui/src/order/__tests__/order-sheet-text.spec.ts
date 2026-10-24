@@ -94,13 +94,13 @@ function staff(): StaffSheet {
 }
 
 describe("l'en-tête", () => {
-  it('annonce un BON DE COMMANDE, jamais une livraison — y compris sur un RETRAIT', () => {
+  it('annonce une CONFIRMATION DE COMMANDE, jamais une livraison — y compris sur un RETRAIT', () => {
     // Régression : l'en-tête était en dur `BON DE LIVRAISON`, sous une ligne
     // « Acheminement : Retrait au laboratoire ». Le document tirait son nom d'un
     // de ses champs.
     const text = renderOrderSheetText(atelier());
 
-    expect(text.startsWith('BON DE COMMANDE')).toBe(true);
+    expect(text.startsWith('CONFIRMATION DE COMMANDE')).toBe(true);
     expect(text).not.toContain('BON DE LIVRAISON');
     expect(text).toContain('Acheminement  : Retrait au laboratoire');
   });
@@ -121,7 +121,7 @@ describe("l'en-tête", () => {
       }),
     );
 
-    expect(text.startsWith('BON DE COMMANDE')).toBe(true);
+    expect(text.startsWith('CONFIRMATION DE COMMANDE')).toBe(true);
     expect(text).toContain('Acheminement  : Livraison par coursier');
     expect(text).toContain('Tignes');
   });
@@ -219,8 +219,8 @@ describe('la note', () => {
 
 describe('le nom de fichier', () => {
   it("porte l'audience : deux exemplaires ne se confondent pas sur un bureau", () => {
-    expect(orderSheetFileName(atelier())).toBe('bon-de-commande-CMD-4812-atelier.txt');
-    expect(orderSheetFileName(client())).toBe('bon-de-commande-CMD-4812-client.txt');
+    expect(orderSheetFileName(atelier())).toBe('confirmation-de-commande-CMD-4812-atelier.txt');
+    expect(orderSheetFileName(client())).toBe('confirmation-de-commande-CMD-4812-client.txt');
   });
 });
 

@@ -988,9 +988,9 @@ Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/ord
 | `orders.summary.csv` | Tableur | Spreadsheet | Foglio di calcolo |  |
 | `orders.summary.failed` | Le récapitulatif n’a pas pu être établi. Réessayez dans un instant. | The summary could not be built. Try again in a moment. | Non è stato possibile preparare il riepilogo. Riprova tra un istante. |  |
 | `orders.summary.exportFailed` | Le fichier n’a pas pu être produit. Réessayez dans un instant. | The file could not be produced. Try again in a moment. | Non è stato possibile produrre il file. Riprova tra un istante. |  |
-| `orders.summary.ordersHead` | Bons de commande inclus | Order forms included | Buoni d’ordine inclusi |  |
-| `orders.summary.ordersNote` | Montants HT tels que chaque bon les imprime — la TVA se calcule sur la facture. | Amounts excl. VAT as each order form prints them — VAT is worked out on the invoice. | Importi IVA esclusa come li stampa ogni buono — l’IVA si calcola in fattura. |  |
-| `orders.summary.colOrder` | Bon | Order | Buono |  |
+| `orders.summary.ordersHead` | Confirmations de commande incluses | Order confirmations included | Conferme d’ordine incluse |  |
+| `orders.summary.ordersNote` | Montants HT tels que chaque confirmation les imprime — la TVA se calcule sur la facture. | Amounts excl. VAT as each order confirmation prints them — VAT is worked out on the invoice. | Importi IVA esclusa come li stampa ogni conferma — l’IVA si calcola in fattura. |  |
+| `orders.summary.colOrder` | Commande | Order | Ordine |  |
 | `orders.summary.colDay` | Jour | Day | Giorno |  |
 | `orders.summary.colMode` | Mode | Mode | Modalità |  |
 | `orders.summary.colAuthor` | Auteur | Placed by | Autore |  |
@@ -998,7 +998,7 @@ Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/ord
 | `orders.summary.modeDelivery` | Livraison | Delivery | Consegna |  |
 | `orders.summary.authorTeam` | l’équipe | our team | il nostro team |  |
 | `orders.summary.undated` | sans date | no date | senza data |  |
-| `orders.summary.ordersPretax` | Total HT des bons | Order forms total excl. VAT | Totale buoni IVA esclusa |  |
+| `orders.summary.ordersPretax` | Total HT des confirmations | Order confirmations total excl. VAT | Totale conferme IVA esclusa |  |
 | `orders.summary.ordersGap` | Écart avec le sous-total HT : {causes} | Difference from the subtotal excl. VAT: {causes} | Differenza dal subtotale IVA esclusa: {causes} | `{causes}` |
 | `orders.summary.gapDiscount` | remises | discounts | sconti |  |
 | `orders.summary.gapVoucher` | bons de fidélité | loyalty vouchers | buoni fedeltà |  |
@@ -1114,8 +1114,8 @@ Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/ord
 | `orders.originRecurring` | Panier récurrent | Recurring basket | Carrello ricorrente |  |
 | `orders.originPhone` | Prise par La Folie Coffee | Taken by La Folie Coffee | Presa da La Folie Coffee |  |
 | `orders.detailMode` | Mode | Mode | Modalità |  |
-| `orders.purchaseOrder` | Bon de commande | Order form | Buono d’ordine |  |
-| `orders.purchaseOrderFailed` | Le bon de commande n’a pas pu être téléchargé. Réessayez dans un instant. | The order form could not be downloaded. Please try again in a moment. | Non è stato possibile scaricare il buono d’ordine. Riprova tra un istante. |  |
+| `orders.purchaseOrder` | Confirmation de commande | Order confirmation | Conferma d’ordine |  |
+| `orders.purchaseOrderFailed` | La confirmation de commande n’a pas pu être téléchargée. Réessayez dans un instant. | The order confirmation could not be downloaded. Please try again in a moment. | Non è stato possibile scaricare la conferma d’ordine. Riprova tra un istante. |  |
 | `orders.deliveryNote` | Bon de livraison | Delivery note | Documento di trasporto |  |
 | `orders.deliveryNoteFailed` | Le bon de livraison n’a pas pu être téléchargé. Réessayez dans un instant. | The delivery note could not be downloaded. Please try again in a moment. | Non è stato possibile scaricare il documento di trasporto. Riprova tra un istante. |  |
 | `orders.reorder` | Recommander à l’identique | Order the same again | Riordinare identico |  |

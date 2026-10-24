@@ -9,7 +9,7 @@ import { specimenClientSheet, specimenProOrderState } from "../specimen-data.js"
 const NOW = new Date();
 const TOMORROW = addDays(instantToLocal(NOW).day, 1);
 
-describe("le bon de commande d'exemple", () => {
+describe("la confirmation de commande d'exemple", () => {
   it("pro : deux taux, le port sans remise de retrait, réglé au compte et hors taxe", () => {
     const sheet = specimenClientSheet("pro", NOW);
 

@@ -23,7 +23,7 @@ describe("GetOrderSheetSpecimenHandler", () => {
     const pdf = await handler.execute(new GetOrderSheetSpecimenQuery(variant));
 
     expect(pdf.bytes.toString("latin1").startsWith("%PDF-")).toBe(true);
-    expect(pdf.fileName).toBe(`exemple-bon-de-commande-${variant}.pdf`);
+    expect(pdf.fileName).toBe(`exemple-confirmation-de-commande-${variant}.pdf`);
     expect(pdfPages(pdf.bytes).join(" ")).toContain("EXEMPLE");
   });
 

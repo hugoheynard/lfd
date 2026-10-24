@@ -141,12 +141,12 @@ describe("l'accusé de réception d'une commande", () => {
     expect(subject.mailer.sent).toBeNull();
   });
 
-  it("joint le BON DE COMMANDE en PDF — le même que l'archive", async () => {
+  it("joint la CONFIRMATION DE COMMANDE en PDF — le même que l'archive", async () => {
     const subject = handler({});
     await fire(subject);
 
     const data = subject.mailer.sent?.data as B2bMails["customer.order-placed"];
-    expect(data.document?.fileName).toBe("bon-de-commande-ORD-4812.pdf");
+    expect(data.document?.fileName).toBe("confirmation-de-commande-ORD-4812.pdf");
     expect(
       Buffer.from(data.document?.pdfBase64 ?? "", "base64")
         .subarray(0, 5)

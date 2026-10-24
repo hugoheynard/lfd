@@ -40,7 +40,7 @@ export function header(doc: Doc, sheet: ClientSheet, logo: Buffer, color: string
   return paperHeader(
     doc,
     {
-      title: "BON DE COMMANDE",
+      title: "CONFIRMATION DE COMMANDE",
       reference: sheet.reference,
       dateLine: `Passée le ${longDate(sheet.placedAt)}`,
       subLine: sheet.requestedFor === null ? null : `Souhaitée le ${longDate(sheet.requestedFor)}`,

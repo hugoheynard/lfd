@@ -14,7 +14,7 @@ import { weekdayShortDate } from "../../../../platform/pdf/paper-pdf-kit.js";
  * Aucun calcul : le domaine a déjà sommé et rapproché.
  */
 
-export const ORDERS_SECTION_TITLE = "Bons de commande inclus";
+export const ORDERS_SECTION_TITLE = "Confirmations de commande incluses";
 
 /** Le pied d'une liste : la somme des « Total HT » des bons. */
 export const ORDERS_PRETAX_LABEL = "Total HT des bons";

@@ -46,6 +46,6 @@ export class GetOrderSheetSpecimenHandler implements IQueryHandler<
       categoryColor: null,
       handoverUrl,
     });
-    return { bytes, fileName: `exemple-bon-de-commande-${query.variant}.pdf` };
+    return { bytes, fileName: `exemple-confirmation-de-commande-${query.variant}.pdf` };
   }
 }

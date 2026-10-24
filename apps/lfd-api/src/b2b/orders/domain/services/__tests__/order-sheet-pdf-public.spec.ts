@@ -49,7 +49,7 @@ describe("le dessin, pour tous", () => {
     expect(printed).not.toContain("Reçu par");
     expect(printed).not.toContain("La Folie Coffee — B2B");
     expect(printed).toContain("pas une facture");
-    expect(printed).toContain("BON DE COMMANDE");
+    expect(printed).toContain("CONFIRMATION DE COMMANDE");
   });
 
   it("embarque le logo comme une image", async () => {

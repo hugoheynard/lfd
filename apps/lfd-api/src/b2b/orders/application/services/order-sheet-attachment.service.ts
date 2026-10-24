@@ -33,7 +33,7 @@ export class OrderSheetAttachment {
       return { fileName: pdf.fileName, pdfBase64: pdf.bytes.toString("base64") };
     } catch (error: unknown) {
       this.logger.error(
-        `Bon de commande ${sheet.reference} non joint à la confirmation : le rendu ou la lecture a échoué. Le courriel part sans pièce jointe ; le bon reste téléchargeable depuis l'espace du client.`,
+        `Confirmation de commande ${sheet.reference} non jointe au courriel : le rendu ou la lecture a échoué. Le courriel part sans pièce jointe ; le bon reste téléchargeable depuis l'espace du client.`,
         error instanceof Error ? error.stack : String(error),
       );
       return null;

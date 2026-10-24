@@ -22,7 +22,7 @@ import { pdfText } from "./pdf-text.js";
  * laisser en magasin un fichier différent de celui qui a été servi.
  */
 
-describe("le bon de commande en PDF", () => {
+describe("la confirmation de commande en PDF", () => {
   it("rend les MÊMES octets deux fois — l'archivage sans verrou en dépend", async () => {
     const first = await renderOrderSheetPdf(sheet(), ART);
     const second = await renderOrderSheetPdf(sheet(), ART);
@@ -136,7 +136,7 @@ describe("le rangement", () => {
   });
 
   it("propose un nom lisible sur un bureau, pas une clé opaque", () => {
-    expect(orderSheetPdfFileName(sheet())).toBe("bon-de-commande-CMD-4812.pdf");
+    expect(orderSheetPdfFileName(sheet())).toBe("confirmation-de-commande-CMD-4812.pdf");
   });
 });
 

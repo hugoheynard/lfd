@@ -103,7 +103,7 @@ describe('OrderDetail', () => {
     expect(el().querySelector('.rate-label')?.textContent).toContain(FR.orders.rateHigh);
   });
 
-  it('remonte la demande de bon de commande — le bouton ne faisait RIEN', () => {
+  it('remonte la demande de confirmation de commande — le bouton ne faisait RIEN', () => {
     // 🔴 Régression du 2026-09-07 : ce bouton portait `icon="download"` et aucun
     // `(click)`. Un attribut manquant sur un bouton ne lève rien, ne casse aucun
     // typecheck et ne rougit dans aucun test — il ne se voit qu'en cliquant.

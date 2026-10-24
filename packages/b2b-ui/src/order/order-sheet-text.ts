@@ -68,7 +68,7 @@ function addressLines(sheet: OrderSheet): readonly string[] {
 /** L'en-tête : ce que la feuille dit d'elle-même avant de dire son contenu. */
 function headerLines(sheet: OrderSheet): readonly string[] {
   return [
-    'BON DE COMMANDE',
+    'CONFIRMATION DE COMMANDE',
     '',
     `Commande      : ${sheet.reference}`,
     `Passée le     : ${formatOrderDate(sheet.placedAt)}`,
@@ -214,5 +214,5 @@ export function renderOrderSheetText(sheet: OrderSheet): string {
  * de montants doit se reconnaître sans être ouvert.
  */
 export function orderSheetFileName(sheet: OrderSheet): string {
-  return `bon-de-commande-${sheet.reference}-${sheet.audience}.txt`;
+  return `confirmation-de-commande-${sheet.reference}-${sheet.audience}.txt`;
 }

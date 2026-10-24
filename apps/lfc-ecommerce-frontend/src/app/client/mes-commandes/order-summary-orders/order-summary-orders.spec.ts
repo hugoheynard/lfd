@@ -25,7 +25,7 @@ describe('OrderSummaryOrders — les bons inclus', () => {
   it('liste chaque bon : référence, jour, mode, auteur et HT du bon', () => {
     const shown = text(render(SUMMARY));
 
-    expect(shown).toContain('Bons de commande inclus');
+    expect(shown).toContain('Confirmations de commande incluses');
     expect(shown).toContain('CMD-001');
     expect(shown).toContain('Livraison');
     expect(shown).toContain('l’équipe');
@@ -40,7 +40,7 @@ describe('OrderSummaryOrders — les bons inclus', () => {
   it('sous la liste, la somme des bons et l’écart EXPLIQUÉ avec le sous-total HT', () => {
     const shown = text(render(SUMMARY));
 
-    expect(shown).toContain('Total HT des bons');
+    expect(shown).toContain('Total HT des confirmations');
     expect(shown).toContain('115,50 €');
     expect(shown).toContain('Écart avec le sous-total HT : remises, livraison');
     expect(shown).toContain('-4,50 €');
@@ -77,7 +77,7 @@ describe('OrderSummaryOrders — les bons inclus', () => {
 
     expect(host.querySelector('[data-summary-orders-company="co_2"]')).not.toBeNull();
     expect(text(host.querySelector('[data-summary-orders-total]'))).toContain(
-      'Total HT des bons — Total général',
+      'Total HT des confirmations — Total général',
     );
   });
 

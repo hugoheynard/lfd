@@ -545,8 +545,9 @@ export const ORDERS_FR: OrdersCopy = {
   originRecurring: 'Panier récurrent',
   originPhone: 'Prise par La Folie Coffee',
   detailMode: 'Mode',
-  purchaseOrder: 'Bon de commande',
-  purchaseOrderFailed: 'Le bon de commande n’a pas pu être téléchargé. Réessayez dans un instant.',
+  purchaseOrder: 'Confirmation de commande',
+  purchaseOrderFailed:
+    'La confirmation de commande n’a pas pu être téléchargée. Réessayez dans un instant.',
   deliveryNote: 'Bon de livraison',
   deliveryNoteFailed: 'Le bon de livraison n’a pas pu être téléchargé. Réessayez dans un instant.',
   reorder: 'Recommander à l’identique',
@@ -662,8 +663,9 @@ export const ORDERS_EN: OrdersCopy = {
   originRecurring: 'Recurring basket',
   originPhone: 'Taken by La Folie Coffee',
   detailMode: 'Mode',
-  purchaseOrder: 'Order form',
-  purchaseOrderFailed: 'The order form could not be downloaded. Please try again in a moment.',
+  purchaseOrder: 'Order confirmation',
+  purchaseOrderFailed:
+    'The order confirmation could not be downloaded. Please try again in a moment.',
   deliveryNote: 'Delivery note',
   deliveryNoteFailed: 'The delivery note could not be downloaded. Please try again in a moment.',
   reorder: 'Order the same again',
@@ -779,8 +781,9 @@ export const ORDERS_IT: OrdersCopy = {
   originRecurring: 'Carrello ricorrente',
   originPhone: 'Presa da La Folie Coffee',
   detailMode: 'Modalità',
-  purchaseOrder: 'Buono d’ordine',
-  purchaseOrderFailed: 'Non è stato possibile scaricare il buono d’ordine. Riprova tra un istante.',
+  purchaseOrder: 'Conferma d’ordine',
+  purchaseOrderFailed:
+    'Non è stato possibile scaricare la conferma d’ordine. Riprova tra un istante.',
   deliveryNote: 'Documento di trasporto',
   deliveryNoteFailed:
     'Non è stato possibile scaricare il documento di trasporto. Riprova tra un istante.',

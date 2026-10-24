@@ -138,7 +138,7 @@ export class OrderSheetArchive {
     const admin = this.origins.adminBaseUrl();
     if (sheet.fulfillment.method === "pickup" && handoverToken !== null && admin === null) {
       this.logger.warn(
-        `Bon de commande ${sheet.reference} rendu sans QR de retrait : l'origine du back-office n'est pas configurée. Ce bon archivé n'en portera jamais.`,
+        `Confirmation de commande ${sheet.reference} rendue sans QR de retrait : l'origine du back-office n'est pas configurée. Cette confirmation archivée n'en portera jamais.`,
       );
     }
     return handoverUrlOf(admin, handoverToken);

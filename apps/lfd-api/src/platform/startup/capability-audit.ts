@@ -190,7 +190,7 @@ const CHECKS: readonly Check[] = [
     // rien : il fait seulement refabriquer à chaque téléchargement. Ce qu'on
     // perdrait, c'est l'archive d'une révision qu'un avenant a remplacée.
     consequence:
-      "les bons de commande sont refabriqués à chaque téléchargement, et aucune révision n'est archivée",
+      "les confirmations de commande sont refabriquées à chaque téléchargement, et aucune révision n'est archivée",
     severity: "degraded",
     present: (s) => s.hasCustomerStorage,
   },

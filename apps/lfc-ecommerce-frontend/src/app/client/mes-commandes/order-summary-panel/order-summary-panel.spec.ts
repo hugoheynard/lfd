@@ -122,10 +122,10 @@ describe('OrderSummaryPanel — le récapitulatif à l’écran (plan du récapi
     expect(host.querySelector('[data-summary-block="total"] fold-data-table')).not.toBeNull();
   });
 
-  it('les bons de commande inclus suivent, repliés (§10)', async () => {
+  it('les confirmations de commande incluses suivent, repliés (§10)', async () => {
     const host = await boot(() => Promise.resolve(SUMMARY));
     const orders = host.querySelector('[data-summary-orders]');
-    expect(orders?.textContent).toContain('Bons de commande inclus');
+    expect(orders?.textContent).toContain('Confirmations de commande incluses');
     expect(orders?.querySelector('[aria-expanded="false"]')).not.toBeNull();
   });
 

@@ -140,7 +140,7 @@ describe("le récapitulatif imprimé et au tableur (lot R2)", () => {
       new ExportCompanyOrderSummaryCsvQuery("usr_1", "co_principal", ids),
     );
 
-    expect(pdfText(pdf.bytes)).toContain("BONS DE COMMANDE INCLUS");
+    expect(pdfText(pdf.bytes)).toContain("CONFIRMATIONS DE COMMANDE INCLUSES");
     expect(csv.csv).toContain('"CMD-o1";"Maison mère";07/10/2026;"Retrait";"Léa Martin";10,00');
   });
 

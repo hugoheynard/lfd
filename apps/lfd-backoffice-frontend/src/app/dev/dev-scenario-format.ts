@@ -56,7 +56,7 @@ export function purgeLines(report: DevScenarioResetReport): readonly PurgeLine[]
   }));
   const files = report.storage.reduce((total, bucket) => total + bucket.objects, 0);
   lines.push({
-    label: 'Fichiers (bons de commande, photos)',
+    label: 'Fichiers (confirmations de commande, photos)',
     count: plural(files, 'fichier', 'fichiers'),
   });
   return lines;

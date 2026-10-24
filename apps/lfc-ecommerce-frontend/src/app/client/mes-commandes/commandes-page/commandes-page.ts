@@ -250,7 +250,7 @@ export class CommandesPage {
       const pdf = await this.sheets.pdfOf(order.id);
       // Le nom se compose sur la RÉFÉRENCE, celle que le client lit sur son
       // écran : c'est ce qu'il cherchera dans son dossier de téléchargements.
-      downloadBlob(`bon-de-commande-${order.reference}.pdf`, pdf);
+      downloadBlob(`confirmation-de-commande-${order.reference}.pdf`, pdf);
     } catch {
       this.notify.error(this.t().orders.purchaseOrderFailed);
     }

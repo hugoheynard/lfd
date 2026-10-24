@@ -173,7 +173,7 @@ export class OrderViewComponent {
       link.href = url;
       // Le nom se compose sur la RÉFÉRENCE — celle qu'on lit au téléphone, et
       // qu'on cherchera dans un dossier de téléchargements.
-      link.download = `bon-de-commande-${order.orderNumber}.pdf`;
+      link.download = `confirmation-de-commande-${order.orderNumber}.pdf`;
       link.click();
       // Révoqué après coup : sans ça chaque téléchargement fuiterait son blob
       // jusqu'au rechargement de la page.
@@ -181,7 +181,7 @@ export class OrderViewComponent {
         URL.revokeObjectURL(url);
       }, 60_000);
     } catch {
-      this.notify.error("Le bon de commande n'a pas pu être téléchargé.");
+      this.notify.error("La confirmation de commande n'a pas pu être téléchargée.");
     }
   }
 }

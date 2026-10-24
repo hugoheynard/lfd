@@ -125,6 +125,6 @@ export const GLOSSARY_P: Readonly<Record<string, string>> = {
   profileSaveFailed: 'Profil non enregistré',
   progress: 'Avancement',
   proof: 'Preuves',
-  purchaseOrder: 'Bon de commande',
-  purchaseOrderFailed: 'Bon de commande non téléchargé',
+  purchaseOrder: 'Confirmation de commande',
+  purchaseOrderFailed: 'Confirmation de commande non téléchargée',
 };

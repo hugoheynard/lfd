@@ -254,7 +254,7 @@ function column(fixture: { nativeElement: HTMLElement }, key: string): HTMLEleme
 }
 
 /** Les mots des gestes de la maquette : aucun ne doit survivre dans une vue qui n'agit pas. */
-const GESTURES = /Remettre|Scanner|Appeler|Étiquettes|Bon de commande|Cocher/u;
+const GESTURES = /Remettre|Scanner|Appeler|Étiquettes|Confirmation de commande|Cocher/u;
 
 afterEach(() => {
   vi.unstubAllGlobals();

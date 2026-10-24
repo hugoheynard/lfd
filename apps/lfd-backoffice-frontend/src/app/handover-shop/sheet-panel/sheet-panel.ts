@@ -143,9 +143,9 @@ export class SheetPanel implements FoldPanelContent<SheetPanelData> {
     this.busy.set(true);
     try {
       const pdf = await this.api.sheetPdf(order.orderId);
-      saveBlob(pdf, `bon-de-commande-${order.orderNumber}.pdf`);
+      saveBlob(pdf, `confirmation-de-commande-${order.orderNumber}.pdf`);
     } catch (caught) {
-      this.notify.error(caught, "Le bon de commande n'a pas pu être téléchargé.");
+      this.notify.error(caught, "La confirmation de commande n'a pas pu être téléchargée.");
     } finally {
       this.busy.set(false);
     }

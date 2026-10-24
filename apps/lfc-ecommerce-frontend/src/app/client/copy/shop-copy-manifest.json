@@ -4957,23 +4957,23 @@
         },
         {
           "key": "orders.summary.ordersHead",
-          "fr": "Bons de commande inclus",
-          "en": "Order forms included",
-          "it": "Buoni d’ordine inclusi",
+          "fr": "Confirmations de commande incluses",
+          "en": "Order confirmations included",
+          "it": "Conferme d’ordine incluse",
           "variables": []
         },
         {
           "key": "orders.summary.ordersNote",
-          "fr": "Montants HT tels que chaque bon les imprime — la TVA se calcule sur la facture.",
-          "en": "Amounts excl. VAT as each order form prints them — VAT is worked out on the invoice.",
-          "it": "Importi IVA esclusa come li stampa ogni buono — l’IVA si calcola in fattura.",
+          "fr": "Montants HT tels que chaque confirmation les imprime — la TVA se calcule sur la facture.",
+          "en": "Amounts excl. VAT as each order confirmation prints them — VAT is worked out on the invoice.",
+          "it": "Importi IVA esclusa come li stampa ogni conferma — l’IVA si calcola in fattura.",
           "variables": []
         },
         {
           "key": "orders.summary.colOrder",
-          "fr": "Bon",
+          "fr": "Commande",
           "en": "Order",
-          "it": "Buono",
+          "it": "Ordine",
           "variables": []
         },
         {
@@ -5027,9 +5027,9 @@
         },
         {
           "key": "orders.summary.ordersPretax",
-          "fr": "Total HT des bons",
-          "en": "Order forms total excl. VAT",
-          "it": "Totale buoni IVA esclusa",
+          "fr": "Total HT des confirmations",
+          "en": "Order confirmations total excl. VAT",
+          "it": "Totale conferme IVA esclusa",
           "variables": []
         },
         {
@@ -5827,16 +5827,16 @@
         },
         {
           "key": "orders.purchaseOrder",
-          "fr": "Bon de commande",
-          "en": "Order form",
-          "it": "Buono d’ordine",
+          "fr": "Confirmation de commande",
+          "en": "Order confirmation",
+          "it": "Conferma d’ordine",
           "variables": []
         },
         {
           "key": "orders.purchaseOrderFailed",
-          "fr": "Le bon de commande n’a pas pu être téléchargé. Réessayez dans un instant.",
-          "en": "The order form could not be downloaded. Please try again in a moment.",
-          "it": "Non è stato possibile scaricare il buono d’ordine. Riprova tra un istante.",
+          "fr": "La confirmation de commande n’a pas pu être téléchargée. Réessayez dans un instant.",
+          "en": "The order confirmation could not be downloaded. Please try again in a moment.",
+          "it": "Non è stato possibile scaricare la conferma d’ordine. Riprova tra un istante.",
           "variables": []
         },
         {

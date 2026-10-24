@@ -40,6 +40,7 @@ export const GLOSSARY_D_H: Readonly<Record<string, string>> = {
   deliveryHead: 'Livraison — titre',
   deliveryIntro: 'Livraison — introduction',
   deliveryNote: 'Livraison — note',
+  deliveryNoteFailed: 'Bon de livraison — échec du téléchargement',
   deliveryNoteWide: 'Livraison — note, grand écran',
   deliverySubtitle: 'Livraison seule — sous-titre',
   deliveryTitle: 'Livraison — titre',

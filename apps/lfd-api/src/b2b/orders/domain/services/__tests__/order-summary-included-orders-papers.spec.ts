@@ -74,12 +74,12 @@ describe("une commande livrée dans le récapitulatif", () => {
   });
 });
 
-describe("l'annexe « Bons de commande inclus » du PDF", () => {
+describe("l'annexe « Confirmations de commande incluses » du PDF", () => {
   it("liste chaque bon : référence, jour, mode, auteur, HT du bon — sans TVA par bon", async () => {
     const text = pdfText(
       await renderOrderSummaryPdf(paperOf([order({ id: "r" }), delivered]), LOGO),
     );
-    const annex = text.slice(text.indexOf("BONS DE COMMANDE INCLUS"));
+    const annex = text.slice(text.indexOf("CONFIRMATIONS DE COMMANDE INCLUSES"));
 
     for (const expected of [
       "CMD-r",
@@ -104,7 +104,7 @@ describe("l'annexe « Bons de commande inclus » du PDF", () => {
   it("répète la barre de titres sur chaque page de la liste", async () => {
     const many = Array.from({ length: 70 }, (_, index) => order({ id: `o${String(index)}` }));
     const text = pdfText(await renderOrderSummaryPdf(paperOf(many), LOGO));
-    const annex = text.slice(text.indexOf("BONS DE COMMANDE INCLUS"));
+    const annex = text.slice(text.indexOf("CONFIRMATIONS DE COMMANDE INCLUSES"));
 
     expect(annex).toContain("Maison mère (suite)");
     expect(annex.split("Auteur").length - 1).toBeGreaterThanOrEqual(2);
@@ -120,7 +120,7 @@ describe("l'annexe « Bons de commande inclus » du PDF", () => {
         LOGO,
       ),
     );
-    const annex = text.slice(text.indexOf("BONS DE COMMANDE INCLUS"));
+    const annex = text.slice(text.indexOf("CONFIRMATIONS DE COMMANDE INCLUSES"));
 
     expect(annex.indexOf("CMD-m")).toBeLessThan(annex.indexOf("Atelier"));
     expect(annex).toContain("Total HT des bons");
@@ -133,7 +133,7 @@ describe("l'annexe « Bons de commande inclus » du PDF", () => {
       await renderOrderSummaryPdf(paperOf([order({ id: "x", cancelled: true })]), LOGO),
     );
 
-    expect(text).not.toContain("BONS DE COMMANDE INCLUS");
+    expect(text).not.toContain("CONFIRMATIONS DE COMMANDE INCLUSES");
   });
 });
 
@@ -141,8 +141,10 @@ describe("le bloc « bons » du tableur", () => {
   it("une ligne par bon, son HT seul, puis la somme et l'écart expliqué", () => {
     const lines = renderOrderSummaryCsv(paperOf([order({ id: "r" }), delivered])).split("\r\n");
 
-    expect(lines).toContain('"Bons de commande inclus"');
-    expect(lines).toContain('"Bon de commande";"Société";"Jour";"Mode";"Auteur";"Montant HT (€)"');
+    expect(lines).toContain('"Confirmations de commande incluses"');
+    expect(lines).toContain(
+      '"Confirmation de commande";"Société";"Jour";"Mode";"Auteur";"Montant HT (€)"',
+    );
     expect(lines).toContain('"CMD-r";"Maison mère";07/10/2026;"Retrait";"Léa Martin";10,00');
     expect(lines).toContain('"CMD-livree";"Maison mère";08/10/2026;"Livraison";"l\'équipe";17,50');
     expect(lines).toContain('"Total HT des bons";"Maison mère";;"";"";27,50');

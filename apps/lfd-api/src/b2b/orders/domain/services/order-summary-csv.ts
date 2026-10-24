@@ -141,7 +141,11 @@ function includedOrderRows(summary: CompanyOrderSummaryView): readonly string[] 
   return [
     "",
     line([csvQuoted(ORDERS_SECTION_TITLE)]),
-    line(["Bon de commande", "Société", "Jour", "Mode", "Auteur", "Montant HT (€)"].map(csvQuoted)),
+    line(
+      ["Confirmation de commande", "Société", "Jour", "Mode", "Auteur", "Montant HT (€)"].map(
+        csvQuoted,
+      ),
+    ),
     ...summary.companies.flatMap(companyOrderRows),
     ...(summary.companies.length > 1 ? pretaxFootRows(TOTAL_LABEL, summary.total) : []),
   ];

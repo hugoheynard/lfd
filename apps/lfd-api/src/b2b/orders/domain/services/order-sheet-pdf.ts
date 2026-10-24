@@ -393,7 +393,7 @@ function draw(doc: Doc, sheet: ClientSheet, art: OrderSheetArt): void {
  * Les dates sortent de la RÉVISION, pas de l'horloge.
  */
 export async function renderOrderSheetPdf(sheet: ClientSheet, art: OrderSheetArt): Promise<Buffer> {
-  return render(new Date(sheet.issuedAt), `Bon de commande ${sheet.reference}`, (doc) => {
+  return render(new Date(sheet.issuedAt), `Confirmation de commande ${sheet.reference}`, (doc) => {
     draw(doc, sheet, art);
   });
 }
@@ -420,5 +420,5 @@ export function orderSheetPdfKey(sheet: OrderSheet): string {
 
 /** Le nom proposé au téléchargement — lisible sur un bureau, pas une clé opaque. */
 export function orderSheetPdfFileName(sheet: OrderSheet): string {
-  return `bon-de-commande-${sheet.reference}.pdf`;
+  return `confirmation-de-commande-${sheet.reference}.pdf`;
 }

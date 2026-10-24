@@ -339,7 +339,7 @@ export class AdminOrdersController {
     response.setHeader("Content-Type", "application/pdf");
     response.setHeader(
       "Content-Disposition",
-      contentDispositionAttachment(sanitiseFileName(pdf.fileName, "bon-de-commande.pdf")),
+      contentDispositionAttachment(sanitiseFileName(pdf.fileName, "confirmation-de-commande.pdf")),
     );
     return new StreamableFile(pdf.bytes);
   }

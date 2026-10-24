@@ -1,4 +1,13 @@
-# Le bon de commande — un objet, plusieurs formats
+# La confirmation de commande — un objet, plusieurs formats
+
+> **Renommée le 2026-10-24 (lot E5b, décision de Hugo).** Cette pièce
+> s'appelait « bon de commande » ; elle dit ce que nous avons **reçu et
+> accepté**, et s'appelle désormais **confirmation de commande** dans tous les
+> libellés (titre du PDF, écrans, courriels, fichiers téléchargés). Les
+> identifiants du code (`OrderSheet`, `clientSheetOf`, routes, clés de
+> stockage `orders/<id>/bon-de-commande-r…pdf`) et le nom de ce fichier ne
+> changent pas : un nom technique n'est pas un libellé (CLAUDE.md § 8). Plan :
+> [`../plan-commande-bon-de-livraison-facture.md`](../plan-commande-bon-de-livraison-facture.md) § 12.
 
 **État : ✅ bâti, réécrit en doc d'état le 2026-10-12** après confrontation au
 code. L'ancienne version (2026-09-07) était un document de conception qui
@@ -6,7 +15,7 @@ décrivait en partie un monde périmé (un QR « jamais imprimé », un PDF « s
 QR », un registre de rendus à quatre formats) ; le plan du bon « public »
 (`plan-bon-public`, 2026-10-09) y est fondu. L'historique est dans git.
 
-Ce document décrit **une pièce et une seule**, le bon de commande, et la façon
+Ce document décrit **une pièce et une seule**, la confirmation de commande, et la façon
 dont une même projection serveur sert plusieurs lecteurs.
 
 ⚠️ Cette phrase disait « il n'existe pas de bon de livraison » ; c'est faux
@@ -14,7 +23,7 @@ depuis le lot E5a (2026-10-24) : le bon de livraison est une pièce à part, né
 à l'arrêt du plan, et imprimée selon le même principe d'audience — transport
 sans montant, client chiffré, équipe
 ([`../plan-e5a-le-bon-de-livraison-imprime.md`](../plan-e5a-le-bon-de-livraison-imprime.md)).
-Le bon de commande, lui, reste une seule feuille dont le mode d'acheminement
+La confirmation de commande, elle, reste une seule feuille dont le mode d'acheminement
 n'est qu'un champ.
 
 ## 1. Deux axes, à ne pas confondre
@@ -71,7 +80,7 @@ commande, jamais devinée au rendu.
 | Pied   | « Arrêté le … · révision n », mentions          | « Ce n'est pas une facture. » et la date d'arrêt, sans révision                                         |
 
 Pour tous : logo à gauche (`apps/lfd-api/assets/logo-la-folie-coffee-noir-et-blanc.png`),
-« BON DE COMMANDE » et la référence à droite ; ni « exemplaire chiffré », ni
+« CONFIRMATION DE COMMANDE » et la référence à droite ; ni « exemplaire chiffré », ni
 « reçu par », ni « La Folie Coffee — B2B ». **Ce n'est pas une facture**, et le
 pied le dit (§6).
 

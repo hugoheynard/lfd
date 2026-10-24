@@ -125,14 +125,14 @@ describe("le courriel de confirmation", () => {
     expect(rendered.html).not.toContain("cid:qr-retrait");
   });
 
-  it("joint le BON DE COMMANDE en PDF, à part du QR en ligne", () => {
+  it("joint la CONFIRMATION DE COMMANDE en PDF, à part du QR en ligne", () => {
     const rendered = render({
-      document: { fileName: "bon-de-commande-ORD-4812.pdf", pdfBase64: "JVBERi0=" },
+      document: { fileName: "confirmation-de-commande-ORD-4812.pdf", pdfBase64: "JVBERi0=" },
     });
 
     expect(rendered.attachments).toHaveLength(3); // + le logo, en dernier
     const pdf = rendered.attachments?.[1];
-    expect(pdf?.filename).toBe("bon-de-commande-ORD-4812.pdf");
+    expect(pdf?.filename).toBe("confirmation-de-commande-ORD-4812.pdf");
     expect(pdf?.contentType).toBe("application/pdf");
     // Pièce jointe ordinaire : sans `contentId`, le client la liste à ouvrir.
     expect(pdf?.contentId).toBeUndefined();
@@ -142,7 +142,7 @@ describe("le courriel de confirmation", () => {
     const rendered = render({
       handoverToken: null,
       handoverUrl: "",
-      document: { fileName: "bon-de-commande-ORD-4812.pdf", pdfBase64: "JVBERi0=" },
+      document: { fileName: "confirmation-de-commande-ORD-4812.pdf", pdfBase64: "JVBERi0=" },
     });
 
     expect(rendered.attachments).toHaveLength(2); // + le logo, en dernier

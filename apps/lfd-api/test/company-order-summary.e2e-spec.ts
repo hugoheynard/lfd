@@ -240,7 +240,7 @@ describe("le récapitulatif en PDF et au tableur (lot R2) — même mur, mêmes 
     expect(text).toContain("annulée");
     // Les bons inclus en annexe, sur leur page (§10).
     expect(text).toContain("Page 1/2");
-    expect(text).toContain("BONS DE COMMANDE INCLUS");
+    expect(text).toContain("CONFIRMATIONS DE COMMANDE INCLUSES");
   });
 
   it("les bons inclus : une commande LIVRÉE porte ses frais au bas et dans le HT de son bon (§10)", async () => {
