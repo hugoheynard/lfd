@@ -432,13 +432,15 @@ Ce que ça veut dire :
    retour paramétrés (réponse 1). _Hors code._
 2. **Communiquer les plafonds** unitaire, par remise, mensuel (réponse 2, D1).
    _Hors code._
-3. **Rendre l'export des mandats conforme au modèle** (§ 2 bis) — _code, petit_ :
+3. ~~**Rendre l'export des mandats conforme au modèle** (§ 2 bis)~~ — bâti le
+   2026-10-23 (`a82e885c6`, relu le 2026-10-24 dans `mandate-bank-export-values.ts`) :
    - F `AAAAMMJJ`, G `RECURRENT`/`PONCTUEL` (`mandate-bank-export-values.ts`) ;
    - **K et L, obligatoires, aujourd'hui vides** : `O` et `N` pour nos mandats
      (après la réponse à Q-B2) ;
    - **18 colonnes** (ajouter R) ;
    - les specs de l'export suivent.
-4. **Bâtir l'export des comptes destinataires** selon [`prerequis-export-ribs.md`](prerequis-export-ribs.md)
+4. ~~**Bâtir l'export des comptes destinataires**~~ — bâti le 2026-10-23
+   (`5a7e9c6f4`), selon [`prerequis-export-ribs.md`](prerequis-export-ribs.md)
    (Latin-1, CRLF, type `I`, IBAN découpé, nouveaux seulement, 200 lignes),
    après les réponses Q-B1, Q-B4, Q-B5 — ou, pour les tout premiers clients,
    saisir les comptes à la main dans CENET. _Pièces jointes reçues le
@@ -451,10 +453,17 @@ Ce que ça veut dire :
 
 ### 🟡 À faire
 
-- Borner un export de mandats à **200 lignes** (réponse 12).
-- Marquer importé **sauf** les RUM en erreur du compte rendu (réponse 13).
-- Colonnes **M–R** : mandat modifié, révoqué, repris (réponse 14).
-- Avertir d'un dépassement de plafond à la constitution (réponse 2).
+- ~~Borner un export de mandats à **200 lignes** (réponse 12).~~ Bâti : l'export
+  prend les 200 premiers, les suivants attendent le suivant
+  (`export-mandates-for-bank.handler.ts`, `BANK_IMPORT_MAX_ROWS`, relu le 2026-10-24).
+- ~~Marquer importé **sauf** les RUM en erreur du compte rendu (réponse 13).~~
+  Bâti : un mandat en erreur au compte rendu redevient « à exporter », motif
+  recopié (`RejectMandateAtBankCommand`, relu le 2026-10-24).
+- Colonnes **M–R** : mandat modifié, révoqué, repris (réponse 14). **En attente
+  de la banque** (Q-B3) et de D9 : rien à bâtir avant.
+- Avertir d'un dépassement de plafond (réponse 2) : les trois plafonds se
+  notent sur l'entité — [`plan-plafonds-de-la-banque.md`](plan-plafonds-de-la-banque.md)
+  (2026-10-24, doc-first).
 - ~~Avertir d'un lot qui contient un mandat jamais importé (réponse 15).~~
   Bâti le 2026-10-24 : l'onglet 3 de la page « Procédure de prélèvement »
   nomme chaque débiteur du lot au compte ou au mandat non importé
@@ -541,6 +550,10 @@ Réponses 7, 11 (en-tête, longueur), 17, 18, 19, 20 (lot réel), 21 (lot réel)
   mandats ?
 - **Q-B6** — Le fichier des comptes est en ISO-8859-1 : un nom **sans
   accents** (comme dans le fichier des mandats) est-il accepté ?
+- **Q-B7** — Le **cumul mensuel** de la convention d'émission (réponse 2) se
+  compte-t-il par **date d'échéance** des prélèvements, ou par **date de
+  dépôt** du fichier ? Une représentation d'impayé compte-t-elle une seconde
+  fois ? (Ajoutée le 2026-10-24, [`plan-plafonds-de-la-banque.md`](plan-plafonds-de-la-banque.md) § 7.)
 
 ## 6. Ce qui attendait les pièces jointes
 
