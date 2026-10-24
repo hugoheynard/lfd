@@ -40,9 +40,9 @@ sequenceDiagram
   Col->>Col: une ligne ne se remplit pas
   Col->>Com: « il manque » — fait packing.shortfall_reported (quantités au bac)
   Com->>Com: la commande : décision attendue
-  Dec->>Com: décide : ça part ; reste : à relivrer (date) ou abandonné
+  Dec->>Com: décide : ça part, reste à relivrer (date) ou abandonné
   Com->>Col: ShortfallDesk.authorize(commande, quantités)
-  Col->>Col: la ligne due devient la quantité au bac ; seal passe
+  Col->>Col: la ligne due devient la quantité au bac, seal passe
   Col->>Com: bac fermé (fait existant)
   Com->>Com: BL-1 préparé AUX QUANTITÉS DÉCIDÉES, totaux répartis
   Note over Dec: « Écrire au client » : un geste à part, jamais automatique
