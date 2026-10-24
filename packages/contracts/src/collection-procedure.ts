@@ -11,7 +11,8 @@ import type { BillingRhythmKind, LocalDeadlineView } from "./legal-entity.js";
  * L'état de chaque onglet est CALCULÉ par le serveur à chaque lecture depuis
  * les exports, les lots et les retours : rien n'est stocké, pas même l'onglet
  * courant (§ 1). Les attestations « Retours contrôlés » (P3) y sont depuis
- * le 2026-10-23 ; celles du lot et le verrou par débiteur (P4) pas encore.
+ * le 2026-10-23, l'avertissement par débiteur du lot (P4 révisé) depuis le
+ * 2026-10-24 ; les attestations du lot pas encore.
  */
 
 /** L'état d'un onglet (§ 3). Une VALEUR : stable. */
@@ -50,20 +51,57 @@ export interface CollectionProcedureMandatesView {
 export type CollectionProcedureFileReasonView =
   "no_batch" | "to_prepare" | "cancelled" | "rejected_by_bank" | "to_deposit" | "deposited";
 
+/**
+ * Le compte destinataire d'un débiteur, vu des exports de comptes (EXC) :
+ * `known` (importé, ou déclaré connu de la banque), `in_export` (dans un
+ * export ni importé ni abandonné), `not_exported` (jamais exporté sous son
+ * IBAN actuel), `excluded` (écarté de l'export : sans BIC). Une VALEUR.
+ */
+export type CollectionProcedureDebtorAccountView =
+  "known" | "in_export" | "not_exported" | "excluded";
+
+/**
+ * Le mandat d'un débiteur, vu des exports de mandats (EXM) : `imported`
+ * (sous son compte actuel), `in_export`, `not_exported`, `excluded` (repris,
+ * sans compte, sans BIC), `inactive` (plus actif). Une VALEUR.
+ */
+export type CollectionProcedureDebtorMandateView =
+  "imported" | "in_export" | "not_exported" | "excluded" | "inactive";
+
+/** Un débiteur d'un lot de la procédure à qui il manque le compte ou le mandat chez CENET. */
+export interface CollectionProcedureDebtorGapView {
+  readonly batchId: string;
+  readonly scheme: "CORE" | "B2B";
+  /** Le nom figé sur la ligne du lot. */
+  readonly debtorName: string;
+  /** La RUM figée sur la ligne du lot. */
+  readonly mandateReference: string;
+  /** `null` : le mandat n'a plus de compte actuel à comparer (écarté ou inactif). */
+  readonly account: CollectionProcedureDebtorAccountView | null;
+  readonly mandate: CollectionProcedureDebtorMandateView;
+}
+
 /** Onglet 3 — le fichier du lot suivi. */
 export interface CollectionProcedureFileView {
   readonly state: CollectionProcedureStepStateView;
   readonly reason: CollectionProcedureFileReasonView;
   /**
-   * Mandats de l'ENTITÉ pas encore importés sous leur compte actuel. Jusqu'au
-   * lot P4 (S2), le serveur ne sait pas lesquels sont des débiteurs du lot :
-   * l'onglet avertit, il ne verrouille pas (§ 3.3).
+   * @deprecated depuis le 2026-10-24 (P4 révisé) — compte de l'ENTITÉ, que
+   * l'onglet 3 ne lit plus : il lit `debtorsNotImported`. Gardé pour le
+   * contrat servi.
    */
   readonly mandatesNotImportedCount: number;
-  /** Mandats de l'entité écartés de l'export. */
+  /** @deprecated depuis le 2026-10-24 — mandats de l'entité écartés ; l'onglet 2 les dit. */
   readonly excludedMandateCount: number;
-  /** Comptes de l'entité écartés (sans BIC). */
+  /** @deprecated depuis le 2026-10-24 — comptes de l'entité écartés ; l'onglet 1 les dit. */
   readonly excludedAccountCount: number;
+  /**
+   * Les débiteurs du lot suivi et des autres lots vivants de la procédure
+   * dont le compte ou le mandat n'est pas importé dans CENET (P4 révisé,
+   * 2026-10-24). Un AVERTISSEMENT : pour un dépôt de fichier, la banque ne
+   * contrôle pas son référentiel (réponse 15) — l'onglet ne se verrouille pas.
+   */
+  readonly debtorsNotImported: readonly CollectionProcedureDebtorGapView[];
   /**
    * Jours ouvrés TARGET2 entre la préparation du lot suivi et sa limite de
    * dépôt, quand il y en a MOINS de deux (Hugo, 2026-10-23) ; `null` sinon,

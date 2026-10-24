@@ -1,9 +1,6 @@
 import {
   instantToLocal,
-  type CollectionProcedureFileView,
-  type CollectionProcedureMandatesView,
   type CollectionProcedureView,
-  type CollectionProcedureAccountsView,
   type CollectionProcedureBatchView,
   type CollectionProcedureToPrepareView,
 } from "@lfd/contracts";
@@ -19,10 +16,8 @@ import { KnownAccountFingerprintsReader } from "../../domain/ports/account-bank-
 import { AccountsForBankExportReader } from "../../domain/ports/accounts-for-bank-export.reader.js";
 import { AutopilotCoverageReader } from "../../domain/ports/autopilot-coverage.reader.js";
 import { BillingModeDatesReader } from "../../domain/ports/billing-mode-dates.reader.js";
-import {
-  CollectionBatchReader,
-  type StoredBatchView,
-} from "../../domain/ports/collection-batch.reader.js";
+import { CollectionBatchReader } from "../../domain/ports/collection-batch.reader.js";
+import { LotDebtorsReader } from "../../domain/ports/lot-debtors.reader.js";
 import { CollectionReturnsReader } from "../../domain/ports/collection-returns.reader.js";
 import { LegalEntityReader } from "../../domain/ports/legal-entity.reader.js";
 import {
@@ -38,10 +33,8 @@ import { PayerStandingsReader } from "../../domain/ports/payer-standings.reader.
 import { InvoicingCalendar } from "../../domain/services/invoicing-calendar.js";
 import { payerCountsAt } from "../../domain/services/rhythm-payer-counts.js";
 import { closureDayOf } from "../../domain/services/collection-procedure-id.js";
-import { preparedDepositMargin } from "../../domain/services/collection-procedure-warnings.js";
 import {
   arrivalStepOf,
-  fileStatus,
   followedAtClosure,
   followedBatchOf,
   openBatchesOf,
@@ -51,10 +44,10 @@ import {
 import {
   procedureBatchesOf,
   procedureBatchView,
-  readAccountsStep,
-  readMandatesStep,
+  readBankSteps,
   toPrepareOf,
 } from "../collection-procedure-support.js";
+import { fileStep, readDebtorsNotImported } from "../collection-procedure-file-support.js";
 import { batchesOfClosure, procedureIdentityOf } from "../collection-procedure-identity-support.js";
 import { countedPayerIdsOf } from "../counted-payers-support.js";
 import { readBillingDates } from "../invoicing-calendar-support.js";
@@ -98,21 +91,23 @@ export class GetCollectionProcedureHandler implements IQueryHandler<
     private readonly clock: Clock,
     private readonly checks: BankReturnChecksReader,
     private readonly authors: StaffAuthorDirectory,
+    private readonly lotDebtors: LotDebtorsReader,
   ) {}
 
   async execute(query: GetCollectionProcedureQuery): Promise<CollectionProcedureView> {
     const entity = await exportEntityOrFail(this.entities, query.legalEntityId);
     const now = this.clock.now();
     const today = instantToLocal(now).day;
-    const accounts = await readAccountsStep(
-      { accounts: this.accounts, fingerprints: this.fingerprints },
-      entity.id,
-    );
-    const [mandates, stored, dates, payerIds, checks] = await Promise.all([
-      readMandatesStep(
-        { mandates: this.mandates, known: this.known, exports: this.exports },
+    const [bank, stored, dates, payerIds, checks] = await Promise.all([
+      readBankSteps(
+        {
+          accounts: this.accounts,
+          fingerprints: this.fingerprints,
+          mandates: this.mandates,
+          known: this.known,
+          exports: this.exports,
+        },
         entity.id,
-        accounts,
       ),
       this.batches.list(entity.id),
       readBillingDates({ modeDates: this.modeDates, payerModes: this.payerModes }, entity.id),
@@ -145,7 +140,22 @@ export class GetCollectionProcedureHandler implements IQueryHandler<
       ]),
     );
     const storedById = new Map(stored.map((batch) => [batch.id, batch]));
-    const file = fileStep(followed, toPrepare !== null, storedById, accounts, mandates);
+    const closureDay = procedureDayOf(query, followed, toPrepare);
+    const ofClosure = closureDay === null ? [] : batchesOfClosure(stored, closureDay);
+    const procedureBatches = batches.filter((batch) =>
+      ofClosure.some((row) => row.id === batch.id),
+    );
+    const { accounts, mandates } = bank;
+    const debtorsNotImported = await readDebtorsNotImported(
+      this.lotDebtors,
+      entity.id,
+      followed === null ? procedureBatches : [followed, ...procedureBatches],
+      bank.standing,
+    );
+    const file = fileStep(
+      { followed, toPrepare: toPrepare !== null, accounts, mandates, debtorsNotImported },
+      storedById,
+    );
     const returns = await readReturnsStep(
       { returns: this.returns, authors: this.authors },
       {
@@ -159,8 +169,6 @@ export class GetCollectionProcedureHandler implements IQueryHandler<
       followed !== null && isDeadBatchStatus(followed.status)
         ? replacementOf(followed, batches)
         : null;
-    const closureDay = procedureDayOf(query, followed, toPrepare);
-    const ofClosure = closureDay === null ? [] : batchesOfClosure(stored, closureDay);
     return {
       legalEntityId: entity.id,
       procedure:
@@ -177,10 +185,7 @@ export class GetCollectionProcedureHandler implements IQueryHandler<
                 payerCountsAt(dates.modes, dates.payers, payerIds, now),
               ),
             ),
-      procedureBatches: viewsOf(
-        views,
-        batches.filter((batch) => ofClosure.some((row) => row.id === batch.id)),
-      ),
+      procedureBatches: viewsOf(views, procedureBatches),
       followed: viewsOf(views, followed === null ? [] : [followed])[0] ?? null,
       replacementBatchId: replacement?.id ?? null,
       toPrepare,
@@ -266,32 +271,4 @@ function viewsOf(
     const view = views.get(batch.id);
     return view === undefined ? [] : [view];
   });
-}
-
-/**
- * L'onglet 3 et ses avertissements. Les mandats non importés sont ceux de
- * l'ENTITÉ : sans S2 (P4), on ne sait pas lesquels sont du lot.
- */
-function fileStep(
-  followed: ProcedureBatch | null,
-  toPrepare: boolean,
-  views: ReadonlyMap<string, StoredBatchView>,
-  accounts: CollectionProcedureAccountsView,
-  mandates: CollectionProcedureMandatesView,
-): CollectionProcedureFileView {
-  const stored = followed === null ? undefined : views.get(followed.id);
-  return {
-    ...fileStatus(followed, toPrepare),
-    mandatesNotImportedCount: mandates.toExportCount,
-    excludedMandateCount: mandates.excludedCount,
-    excludedAccountCount: accounts.excludedCount,
-    tightDepositMargin:
-      stored === undefined
-        ? null
-        : preparedDepositMargin(
-            stored.status,
-            instantToLocal(new Date(stored.constitutedAt)).day,
-            stored.depositDeadline,
-          ),
-  };
 }

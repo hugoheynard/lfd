@@ -52,6 +52,7 @@ export function procedureView(
       mandatesNotImportedCount: 2,
       excludedMandateCount: 0,
       excludedAccountCount: 0,
+      debtorsNotImported: [],
       tightDepositMargin: null,
     },
     returns: {

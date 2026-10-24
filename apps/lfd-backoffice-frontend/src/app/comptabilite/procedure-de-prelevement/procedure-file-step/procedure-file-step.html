@@ -28,19 +28,30 @@
     <fold-callout variant="warning" data-tight-margin>{{ sentence }}</fold-callout>
   }
 
-  @if (file().mandatesNotImportedCount > 0 || file().excludedMandateCount > 0) {
-    <!-- P2 : un avertissement, pas un verrou — S2 (P4) dira lesquels sont du lot. -->
-    <fold-callout variant="warning" data-unimported>
-      {{ file().mandatesNotImportedCount }} mandat(s) de l’entité ne sont pas importés à la banque,
-      {{ file().excludedMandateCount }} écarté(s) de l’export — vérifier qu’aucun n’est d’un
-      débiteur de ce lot. Un tel débiteur passerait le dépôt et la signature, puis reviendrait en
-      rejet le jour de l’échéance.
-    </fold-callout>
-  }
-  @if (file().excludedAccountCount > 0) {
-    <fold-callout variant="warning" data-excluded-accounts>
-      {{ file().excludedAccountCount }} compte(s) de l’entité sans BIC ne sont pas à la
-      banque&nbsp;: s’il est d’un débiteur de ce lot, sa ligne ne sera pas prélevable.
+  @if (gaps().length > 0) {
+    <!-- P4 révisé (2026-10-24) : par débiteur du lot, un avertissement — jamais un verrou. -->
+    <fold-callout variant="warning" data-debtor-gaps>
+      {{ gapsHeadline() }}
+      <ul class="pf-gaps">
+        @for (gap of gaps(); track gap.batchId + gap.mandateReference) {
+          <li data-debtor-gap [attr.data-rum]="gap.mandateReference">
+            <span>
+              <strong>{{ gap.debtorName }}</strong> · {{ gap.mandateReference }} ·
+              {{ missing(gap) }}
+            </span>
+            <button
+              foldButton
+              emphasis="soft"
+              size="sm"
+              type="button"
+              [attr.data-open-step]="step(gap)"
+              (click)="openStep.emit(step(gap))"
+            >
+              {{ stepLabel[step(gap)] }}
+            </button>
+          </li>
+        }
+      </ul>
     </fold-callout>
   }
 

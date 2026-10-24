@@ -180,6 +180,9 @@ export type { BillingCycleView } from "./billing-cycle.js";
 export type {
   CollectionProcedureAccountsView,
   CollectionProcedureBatchView,
+  CollectionProcedureDebtorAccountView,
+  CollectionProcedureDebtorGapView,
+  CollectionProcedureDebtorMandateView,
   CollectionProcedureFileReasonView,
   CollectionProcedureFileView,
   CollectionProcedureMandatesView,

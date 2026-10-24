@@ -16,9 +16,11 @@
 > le lot suivi (rythme et période), les lots ouverts sont listés en tête, la
 > limite de dépôt la plus proche d'abord. Ce qu'il ne fait **pas encore** : les
 > attestations hors outil — contrôle CSV relu, remise signée, PSR lus, retours
-> contrôlés (P3) — et le verrou de l'onglet 3 par débiteur du lot (P4) ; d'ici
-> là, l'onglet 3 **avertit** des mandats non importés de l'entité, il ne
-> bloque pas. Plan : [`plan-page-procedure-de-prelevement.md`](plan-page-procedure-de-prelevement.md).
+> contrôlés (P3). Depuis le 2026-10-24 (P4 révisé), l'onglet 3 **nomme
+> chaque débiteur du lot** dont le compte ou le mandat n'est pas importé dans
+> CENET, avec un lien vers l'onglet 1 ou 2 ; il **avertit**, il ne bloque pas
+> — la banque ne contrôle pas son référentiel au dépôt d'un fichier
+> (réponse 15). Plan : [`plan-page-procedure-de-prelevement.md`](plan-page-procedure-de-prelevement.md).
 >
 > 🔴 **Aujourd'hui, aucune remise ne peut partir** : le contrat CENET REMISES
 > n'est pas signé ([`reponses-de-la-banque.md`](reponses-de-la-banque.md) § 3).
@@ -232,8 +234,16 @@ Qui : la comptabilité. Où : Prélèvement du mois › le lot à traiter.
 - Comparer le total aux **plafonds** communiqués à la banque (§ 0.2). ⛔ Aucun
   avertissement dans l'outil ; au-delà, la banque **appelle** (réponse 2), elle
   ne rejette pas.
-- Vérifier que chaque débiteur a un mandat **importé** chez la banque (§ 1.6).
-  ⛔ Non relié dans l'outil.
+- Vérifier que chaque débiteur a son compte et son mandat **importés** chez
+  la banque (§ 1.6). ✅ Depuis le 2026-10-24, l'onglet 3 de la page
+  « Procédure de prélèvement » nomme chaque débiteur du lot à qui il en manque
+  un (société, RUM, ce qui manque) et mène à l'onglet qui le règle. Un
+  **avertissement**, pas un blocage : pour un dépôt de fichier, CENET ne
+  contrôle pas le référentiel (réponse 15) — bloquer empêcherait des
+  prélèvements valides. Importer quand même, pour garder le référentiel à
+  jour. Si la banque répond qu'un débit sous une RUM jamais importée n'est
+  pas exécuté, l'avertissement devient un blocage par débiteur
+  ([plan](plan-page-procedure-de-prelevement.md) § 8, P4).
 - **Corriger** : « Annuler » (`POST batches/:id/cancel`, `:92` ; ses commandes
   repassent dues), corriger la cause, « Préparer le lot » de nouveau. Les payeurs
   déjà avisés reçoivent un **rectificatif** (termes changés) ou une
@@ -640,7 +650,7 @@ celle de la **préparation**, à Paris.
 | ~~Export des comptes destinataires~~ — bâti le 2026-10-23 (`5a7e9c6f4`) ; valeurs à confirmer par la banque                                                                                                                            | 🟡 vérification CENET avant le premier import                                                             | [`prerequis-export-ribs.md`](prerequis-export-ribs.md) § 7, § 8 |
 | Limite de dépôt non renseignée (D4)                                                                                                                                                                                                    | aucune date limite affichée                                                                               | § 0.4                                                           |
 | ~~« Marquer importé sauf les RUM en erreur »~~ — bâti le 2026-10-23 (rejet par ligne après dépôt) ; borne de 200 lignes                                                                                                                | un import partiel oblige à tout ré-exporter                                                               | réponses 12, 13                                                 |
-| Avertissement plafond, mandat non importé                                                                                                                                                                                              | contrôles à la main au § 2.4                                                                              | réponses 2, 15                                                  |
+| Avertissement plafond ; ~~mandat non importé~~ — averti par débiteur du lot sur la page, 2026-10-24 (P4 révisé)                                                                                                                        | plafond contrôlé à la main au § 2.4                                                                       | réponses 2, 15                                                  |
 | Lien entre une remise CENET et le lot (signature, PSR)                                                                                                                                                                                 | « Marquer déposé » reste une déclaration humaine                                                          | réponse 24                                                      |
 | « Annuler » ouvert sur un lot **préparé** dont la remise est signée (oubli de « Marquer déposé ») ; ~~pas de « dé-déposer » un lot déposé dont le fichier est rejeté (PSR1)~~ — bâti le 2026-10-23 (« La banque a rejeté ce fichier ») | règle écrite seulement (§ 2.7) ; un rejet déclaré à tort fait débiter deux fois, sortie à la main (§ 4.7) | `CollectionBatch.cancel`, `CollectionBatch.rejectByBank`        |
 | Alerte d'un lot préparé et jamais déposé — en partie : la page « Procédure de prélèvement » liste en tête tout lot non déposé, limite la plus proche d'abord (P2, 2026-10-23) ; aucune alerte poussée                                  | un oubli ne se voit que sur la page                                                                       | § 2.7                                                           |

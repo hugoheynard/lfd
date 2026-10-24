@@ -16,12 +16,22 @@ import {
 } from '../../prelevement-du-mois/pending-batch/pending-batch';
 import { ProcedureBatchActions } from '../procedure-batch-actions/procedure-batch-actions';
 import { collectionDayLabel, deadlineLabel } from '../procedure-wording';
+import {
+  DEBTOR_GAP_STEP_LABEL,
+  debtorGapMissing,
+  debtorGapStep,
+  debtorGapsHeadline,
+} from './debtor-gap-wording';
 
 /**
  * **Onglet 3 — le fichier du lot suivi** (plan
  * `plan-page-procedure-de-prelevement.md` § 3.3, lot P2). Réutilise
  * `app-pending-batch` pour les gestes du lot ; ne verrouille rien sur l'onglet
- * 2 : sans S2 (P4), il AVERTIT des mandats non importés de l'entité.
+ * 2. Depuis le 2026-10-24 (P4 révisé), il nomme les débiteurs DU LOT dont le
+ * compte ou le mandat n'est pas importé dans CENET, avec l'onglet qui le
+ * règle — un avertissement : la banque ne contrôle pas son référentiel au
+ * dépôt d'un fichier (réponse 15). Plus d'avertissement à l'échelle de
+ * l'entité : les onglets 1 et 2 le portent.
  *
  * Une procédure porte jusqu'à deux lots (CORE et B2B) : tous sont montrés
  * ici, sans « suivre » (2026-10-23).
@@ -67,6 +77,8 @@ export class ProcedureFileStep {
   readonly gesture = output<PendingBatchGesture>();
   readonly otherGesture = output<OtherBatchGesture>();
   readonly prepare = output();
+  /** Mène à l'onglet qui règle l'écart d'un débiteur. */
+  readonly openStep = output<'accounts' | 'mandates'>();
 
   protected readonly followed = computed(() => this.view().followed);
   protected readonly file = computed(() => this.view().file);
@@ -85,6 +97,12 @@ export class ProcedureFileStep {
     const by = rejection.byName === null ? '' : ` par ${rejection.byName}`;
     return `Déclaré rejeté le ${longDay(rejection.at)}${by} : « ${rejection.reason} ». Ses bons redeviennent à prélever.`;
   });
+
+  protected readonly gaps = computed(() => this.file().debtorsNotImported);
+  protected readonly gapsHeadline = computed(() => debtorGapsHeadline(this.gaps().length));
+  protected readonly missing = debtorGapMissing;
+  protected readonly step = debtorGapStep;
+  protected readonly stepLabel = DEBTOR_GAP_STEP_LABEL;
 
   protected readonly deadline = deadlineLabel;
   protected readonly collectionDay = collectionDayLabel;

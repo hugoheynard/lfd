@@ -6,15 +6,30 @@ import type {
   CollectionProcedureToPrepareView,
 } from "@lfd/contracts";
 
-import type { KnownAccountFingerprintsReader } from "../domain/ports/account-bank-exports.reader.js";
-import type { AccountsForBankExportReader } from "../domain/ports/accounts-for-bank-export.reader.js";
+import type {
+  KnownAccountFingerprints,
+  KnownAccountFingerprintsReader,
+} from "../domain/ports/account-bank-exports.reader.js";
+import type {
+  AccountsForBankExport,
+  AccountsForBankExportReader,
+} from "../domain/ports/accounts-for-bank-export.reader.js";
 import type { StoredBatchView } from "../domain/ports/collection-batch.reader.js";
 import type { CollectionReturnsReader } from "../domain/ports/collection-returns.reader.js";
 import type {
   KnownMandateAccountsReader,
+  KnownMandateLines,
+  MandateBankExportRecord,
   MandateBankExportsReader,
 } from "../domain/ports/mandate-bank-exports.reader.js";
-import type { MandatesForBankExportReader } from "../domain/ports/mandates-for-bank-export.reader.js";
+import type {
+  MandatesForBankExport,
+  MandatesForBankExportReader,
+} from "../domain/ports/mandates-for-bank-export.reader.js";
+import {
+  bankReferentialStandingOf,
+  type BankReferentialStanding,
+} from "../domain/services/lot-debtor-bank-standing.js";
 import { selectAccountsForBankExport } from "../domain/services/account-bank-export-selection.js";
 import {
   accountsState,
@@ -45,10 +60,17 @@ export async function readAccountsStep(
   readers: ProcedureAccountReaders,
   legalEntityId: string,
 ): Promise<CollectionProcedureAccountsView> {
-  const [{ exportable, excluded }, fingerprints] = await Promise.all([
+  const [accounts, fingerprints] = await Promise.all([
     readers.accounts.debitedBy(legalEntityId),
     readers.fingerprints.all(),
   ]);
+  return accountsStepOf(accounts, fingerprints);
+}
+
+function accountsStepOf(
+  { exportable, excluded }: AccountsForBankExport,
+  fingerprints: KnownAccountFingerprints,
+): CollectionProcedureAccountsView {
   const selection = selectAccountsForBankExport(exportable, fingerprints);
   return {
     state: accountsState(selection.toExport.length, selection.inFlight.length),
@@ -67,11 +89,20 @@ export async function readMandatesStep(
   legalEntityId: string,
   accounts: CollectionProcedureAccountsView,
 ): Promise<CollectionProcedureMandatesView> {
-  const [{ exportable, excluded }, known, exports] = await Promise.all([
+  const [mandates, known, exports] = await Promise.all([
     readers.mandates.activeOf(legalEntityId),
     readers.known.of(legalEntityId),
     readers.exports.list(legalEntityId),
   ]);
+  return mandatesStepOf(mandates, known, exports, accounts);
+}
+
+function mandatesStepOf(
+  { exportable, excluded }: MandatesForBankExport,
+  known: KnownMandateLines,
+  exports: readonly MandateBankExportRecord[],
+  accounts: CollectionProcedureAccountsView,
+): CollectionProcedureMandatesView {
   const toExportCount = selectForBankExport(exportable, known).toExport.length;
   const awaitingImport = exports.some((row) => row.importedAt === null && row.abandonedAt === null);
   return {
@@ -79,6 +110,37 @@ export async function readMandatesStep(
     toExportCount,
     awaitingImport,
     excludedCount: excluded.length,
+  };
+}
+
+/** Les onglets 1 et 2, et ce que leurs exports disent de chaque mandat. */
+export interface ProcedureBankSteps {
+  readonly accounts: CollectionProcedureAccountsView;
+  readonly mandates: CollectionProcedureMandatesView;
+  readonly standing: BankReferentialStanding;
+}
+
+/**
+ * Les onglets 1 et 2 ET le référentiel de CENET par mandat, sur UNE lecture
+ * des ports — l'onglet 3 nomme ses débiteurs sous les mêmes sélections
+ * (P4 révisé, 2026-10-24).
+ */
+export async function readBankSteps(
+  readers: ProcedureAccountReaders & ProcedureMandateReaders,
+  legalEntityId: string,
+): Promise<ProcedureBankSteps> {
+  const [accounts, fingerprints, mandates, known, exports] = await Promise.all([
+    readers.accounts.debitedBy(legalEntityId),
+    readers.fingerprints.all(),
+    readers.mandates.activeOf(legalEntityId),
+    readers.known.of(legalEntityId),
+    readers.exports.list(legalEntityId),
+  ]);
+  const accountsView = accountsStepOf(accounts, fingerprints);
+  return {
+    accounts: accountsView,
+    mandates: mandatesStepOf(mandates, known, exports, accountsView),
+    standing: bankReferentialStandingOf(mandates, known, accounts, fingerprints),
   };
 }
 

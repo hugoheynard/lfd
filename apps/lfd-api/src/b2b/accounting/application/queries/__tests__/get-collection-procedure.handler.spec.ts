@@ -4,75 +4,17 @@ import { CollectionBatchNotFoundError } from "../../../domain/errors/collection-
 import { debitedAccount } from "../../../domain/services/__tests__/account-for-bank-export.fixture.js";
 import { ExportAccountsForBankCommand } from "../../commands/export-accounts-for-bank.command.js";
 import { ExportMandatesForBankCommand } from "../../commands/export-mandates-for-bank.command.js";
-import { NOW, accountExportWorld } from "../../commands/__tests__/account-bank-export-doubles.js";
-import {
-  bankExportWorld,
-  bankMandate,
-} from "../../commands/__tests__/mandate-bank-export-doubles.js";
-import {
-  FixedModeDates,
-  FixedPayerModes,
-} from "../../commands/__tests__/monthly-invoice-doubles.js";
-import { FixedInvoicePeriods } from "../../services/__tests__/issued-invoice-doubles.js";
-import {
-  FixedBatches,
-  FixedBankReturnChecks,
-  FixedCoverage,
-  LAST_CLOSURE,
-  PendingReturns,
-  TODAY,
-  stored,
-} from "./collection-procedure-doubles.js";
-import { countingOf } from "./counted-payers-doubles.js";
-import {
-  FixedStaffAuthorDirectory,
-  authorsKnownAs,
-} from "../../../../../staff/directory/domain/__tests__/fixed-staff-author-directory.js";
-import { GetCollectionProcedureQuery } from "../collection-procedure-queries.js";
-import { GetCollectionProcedureHandler } from "../get-collection-procedure.handler.js";
+import { NOW } from "../../commands/__tests__/account-bank-export-doubles.js";
+import { bankMandate } from "../../commands/__tests__/mandate-bank-export-doubles.js";
+import { LAST_CLOSURE, TODAY, stored } from "./collection-procedure-doubles.js";
+import { world } from "./collection-procedure-world.js";
 
 /**
  * La lecture d'état de la procédure (S1) : les quatre onglets calculés depuis
  * les exports, les lots et les retours, sans rien stocker. Les jours des lots
  * sont RELATIFS à l'horloge fixe : la règle du § 4.3 les compare à
- * aujourd'hui.
+ * aujourd'hui. Le monde est partagé avec la suite des débiteurs (P4 révisé).
  */
-
-function world() {
-  const accounts = accountExportWorld();
-  const mandates = bankExportWorld();
-  const batches = new FixedBatches();
-  const returns = new PendingReturns();
-  const coverage = new FixedCoverage();
-  const counting = countingOf([], []);
-  const checks = new FixedBankReturnChecks();
-  const handler = new GetCollectionProcedureHandler(
-    accounts.entities,
-    accounts.accounts,
-    accounts.fingerprints,
-    mandates.mandates,
-    mandates.known,
-    mandates.reader,
-    batches,
-    returns,
-    new FixedModeDates(),
-    new FixedPayerModes(),
-    new FixedInvoicePeriods(new Map()),
-    coverage,
-    counting.standings,
-    counting.mandates,
-    counting.lot,
-    accounts.clock,
-    checks,
-    new FixedStaffAuthorDirectory(
-      authorsKnownAs({ firstName: "Claire", lastName: "Compta" }, "staff_1"),
-    ),
-  );
-  const read = (batchId: string | null = null, closureDay: string | null = null) =>
-    handler.execute(new GetCollectionProcedureQuery("le1", batchId, closureDay));
-  return { accounts, mandates, batches, returns, coverage, checks, read };
-}
-
 describe("la procédure de prélèvement — la lecture d'état", () => {
   it("des comptes à exporter : onglet 1 à faire, onglet 2 verrouillé, arrivée sur l'onglet 1", async () => {
     const w = world();

@@ -455,7 +455,10 @@ Ce que ça veut dire :
 - Marquer importé **sauf** les RUM en erreur du compte rendu (réponse 13).
 - Colonnes **M–R** : mandat modifié, révoqué, repris (réponse 14).
 - Avertir d'un dépassement de plafond à la constitution (réponse 2).
-- Avertir d'un lot qui contient un mandat jamais importé (réponse 15).
+- ~~Avertir d'un lot qui contient un mandat jamais importé (réponse 15).~~
+  Bâti le 2026-10-24 : l'onglet 3 de la page « Procédure de prélèvement »
+  nomme chaque débiteur du lot au compte ou au mandat non importé
+  ([`plan-page-procedure-de-prelevement.md`](plan-page-procedure-de-prelevement.md), P4 révisé).
 - Éprouver l'import des retours sur un vrai fichier (réponse 30).
 - Runbook : annuler sur CENET avant signature (réponse 29), heure limite,
   vérification avant import.
@@ -515,6 +518,9 @@ Réponses 7, 11 (en-tête, longueur), 17, 18, 19, 20 (lot réel), 21 (lot réel)
   tranchera.
 - Le **deuxième envoi** ([`question-banque-v2.md`](question-banque-v2.md)) n'a
   pas de réponse.
+- **Confirmation de la réponse 15** (ajoutée le 2026-10-24) : « Un prélèvement déposé par fichier sous une RUM jamais importée dans CENET est-il exécuté normalement ? Et un compte destinataire jamais importé ? (confirmation de la réponse 15) » Si
+  la réponse est non, l'avertissement par débiteur de la page devient un
+  blocage par débiteur (plan de la page, P4).
 
 ## 5 bis. Les nouvelles questions à poser à la banque (après les modèles)
 

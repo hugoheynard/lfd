@@ -5,12 +5,17 @@
  * Découpé de `collection-procedure.e2e-spec.ts` le 2026-10-23 ; la scène
  * commune vit dans `collection-procedure-scene.ts`.
  */
-import type { AccountBankExportCreatedView, CollectionProcedureView } from "@lfd/contracts";
+import type {
+  AccountBankExportCreatedView,
+  CollectionProcedureView,
+  MandateBankExportCreatedView,
+} from "@lfd/contracts";
 import { daysAgo, jsonBody } from "./e2e-harness.js";
 import {
   ctx,
   entity,
   exportsOf,
+  lotCarrying,
   mandated,
   procedure,
   procedureOf,
@@ -76,6 +81,50 @@ describe("la procédure de prélèvement — la lecture d'état", () => {
 
     await staff().get(procedureOf("le_inconnue")).expect(404);
     await staff().get(procedureOf(entityId, "lot_inconnu")).expect(404);
+  });
+});
+
+/** Exporte, télécharge et marque importé : « importé » ne se dit que d'un fichier sorti. */
+async function importAtBank(entityId: string, kind: "account" | "mandate"): Promise<void> {
+  const created = await staff().post(exportsOf(entityId, kind)).send({}).expect(201);
+  const exportId = jsonBody<AccountBankExportCreatedView | MandateBankExportCreatedView>(
+    created,
+  ).exportId;
+  await staff()
+    .get(`${exportsOf(entityId, kind)}/${exportId}/file.csv`)
+    .expect(200);
+  await staff()
+    .post(`${exportsOf(entityId, kind)}/${exportId}/imported`)
+    .expect(204);
+}
+
+describe("l'onglet 3 nomme les débiteurs du lot absents de CENET (P4 révisé)", () => {
+  it("un débiteur au mandat jamais exporté est nommé ; une fois tout importé, plus rien", async () => {
+    const entityId = await entity("552100554");
+    const reference = await mandated(entityId, "Café de l'Isère");
+    const batchId = await lotCarrying(entityId, reference);
+
+    const before = jsonBody<CollectionProcedureView>(
+      await staff().get(procedureOf(entityId, batchId)).expect(200),
+    );
+    expect(before.file.debtorsNotImported).toEqual([
+      {
+        batchId,
+        scheme: "B2B",
+        debtorName: "Café de l'Isère",
+        mandateReference: reference,
+        account: "not_exported",
+        mandate: "not_exported",
+      },
+    ]);
+
+    await importAtBank(entityId, "account");
+    await importAtBank(entityId, "mandate");
+
+    const after = jsonBody<CollectionProcedureView>(
+      await staff().get(procedureOf(entityId, batchId)).expect(200),
+    );
+    expect(after.file.debtorsNotImported).toEqual([]);
   });
 });
 

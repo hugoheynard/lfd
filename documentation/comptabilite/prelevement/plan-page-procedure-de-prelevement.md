@@ -1,8 +1,9 @@
 # Plan — la page « Procédure de prélèvement »
 
 > 📝 **Doc-first, écrit le 2026-10-23.** **P1** et **P2** sont bâtis
-> (2026-10-23 — § 8) : la page existe, sans attestations du lot ni verrou par
-> débiteur du lot (P4). **P3, partie retours** (« Retours contrôlés »,
+> (2026-10-23 — § 8) : la page existe, sans attestations du lot. **P4 bâti
+> le 2026-10-24, révisé** : un avertissement par débiteur du lot, pas un
+> verrou (§ 8). **P3, partie retours** (« Retours contrôlés »,
 > onglet 4) bâtie le même jour (§ 8).
 > Questions du § 9 **tranchées** le même jour. Demande de Hugo, ce
 > jour-là : « dans comptabilité on doit avoir une page procédure de
@@ -204,6 +205,12 @@ attendant S2, la page **n'a pas de quoi** tenir ce verrou : elle avertit
 (bandeau sur l'onglet 3 « 2 mandats de l'entité ne sont pas importés —
 vérifier qu'aucun n'est d'un débiteur de ce lot ») et ne verrouille pas.
 
+> ⚠️ **Révisé le 2026-10-24 (P4, § 8)** : l'onglet 3 ne se verrouille pas
+> par débiteur du lot ; il nomme chaque débiteur au compte ou au mandat non
+> importé. La banque ne contrôle pas son référentiel au dépôt d'un fichier
+> (réponse 15) : bloquer empêcherait des prélèvements valides. Le bandeau à
+> l'échelle de l'entité a disparu de l'onglet 3.
+
 🔴 **Le risque, nommé** : « Marquer déposé » ne relit **pas** l'import chez
 CENET (sa relecture porte sur les sociétés sans mandat, les avis, les
 mandats révoqués, l'IBAN et les commandes, `collection-batch.ts:212-233`), et
@@ -376,13 +383,13 @@ relance du client (§ 3.9).
 
 ## 7. Ce qui manque côté serveur
 
-| #   | Manque                                                                                                                                                                                                                                                      | Pourquoi                                                                                                                                                        |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| S1  | **Une lecture d'état de la procédure** : `GET admin/accounting/collection-procedure?legalEntityId=` → l'état calculé de chaque onglet, le lot suivi, les autres lots ouverts, les attestations. Une query, un handler, qui lit les trois lecteurs existants | l'état des onglets ne se calcule pas à l'écran à partir de quatre appels : la règle de déverrouillage est du métier, elle vit côté serveur et se teste une fois |
-| S2  | **Par ligne de lot : compte importé, mandat importé** (sous l'empreinte actuelle)                                                                                                                                                                           | le verrou de l'onglet 3 par débiteur du lot (§ 3.3) ; c'est aussi l'avertissement « mandat non importé » que la procédure dit manquant (§ 1, § 2.4, § 5)        |
-| S3  | ~~**« Abandonner » un export de mandats**~~ — bâti le 2026-10-23 (P1)                                                                                                                                                                                       | sinon un export rejeté bloque l'onglet 2 pour toujours (§ 3.2)                                                                                                  |
-| S4  | **Les attestations** : tables `collection_batch_attestation` et `bank_return_check` (migration additive), commandes `AttestCollectionBatch`, `RecordBankReturnCheck`, faits au journal ; la confirmation d'import pose son `bank_return_check` (`imported`) | § 1.2                                                                                                                                                           |
-| S5  | Les gestes de « Prélèvement du mois » sortis de la page vers un service partagé (front)                                                                                                                                                                     | deux hôtes, une logique (§ 3.3)                                                                                                                                 |
+| #   | Manque                                                                                                                                                                                                                                                      | Pourquoi                                                                                                                                                                                              |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| S1  | **Une lecture d'état de la procédure** : `GET admin/accounting/collection-procedure?legalEntityId=` → l'état calculé de chaque onglet, le lot suivi, les autres lots ouverts, les attestations. Une query, un handler, qui lit les trois lecteurs existants | l'état des onglets ne se calcule pas à l'écran à partir de quatre appels : la règle de déverrouillage est du métier, elle vit côté serveur et se teste une fois                                       |
+| S2  | ~~**Par ligne de lot : compte importé, mandat importé**~~ — bâti le 2026-10-24 (P4 révisé, § 8)                                                                                                                                                             | l'avertissement par débiteur du lot de l'onglet 3 (§ 3.3) — un avertissement, pas un verrou (réponse 15) ; c'est l'avertissement « mandat non importé » que la procédure disait manquant (§ 2.4, § 5) |
+| S3  | ~~**« Abandonner » un export de mandats**~~ — bâti le 2026-10-23 (P1)                                                                                                                                                                                       | sinon un export rejeté bloque l'onglet 2 pour toujours (§ 3.2)                                                                                                                                        |
+| S4  | **Les attestations** : tables `collection_batch_attestation` et `bank_return_check` (migration additive), commandes `AttestCollectionBatch`, `RecordBankReturnCheck`, faits au journal ; la confirmation d'import pose son `bank_return_check` (`imported`) | § 1.2                                                                                                                                                                                                 |
+| S5  | Les gestes de « Prélèvement du mois » sortis de la page vers un service partagé (front)                                                                                                                                                                     | deux hôtes, une logique (§ 3.3)                                                                                                                                                                       |
 
 Ce qui n'est **pas** demandé : stocker l'onglet courant, ni un état de
 procédure par lot. S1 est une lecture ; elle n'écrit rien (CQRS).
@@ -458,7 +465,30 @@ procédure par lot. S1 est une lecture ; elle n'écrit rien (CQRS).
    Reste de P3 : `collection_batch_attestation` (CSV relu, remise signée, PSR
    lus) et l'onglet 3 complet.
 
-4. **P4** — S2 : le verrou de l'onglet 3 par débiteur du lot.
+4. ~~**P4** — S2 : le verrou de l'onglet 3 par débiteur du lot.~~ **Révisé
+   par Hugo le 2026-10-24 (option 1), bâti le même jour** (non commité à
+   l'écriture) : **pas de blocage du dépôt.** La réponse 15 de la banque
+   ([`reponses-de-la-banque.md`](reponses-de-la-banque.md)) dit que pour un
+   dépôt de fichier, CENET ne contrôle pas le référentiel des RIB et des
+   mandats : bloquer empêcherait des prélèvements valides. À la place, S2
+   est un **avertissement par débiteur** : pour chaque ligne du lot suivi et
+   des autres lots vivants de la procédure, le serveur dit si le compte du
+   débiteur et son mandat sont importés dans CENET, sous l'empreinte du compte
+   actuel du mandat, par les deux sélections des exports sans en recopier la
+   règle (`apps/lfd-api/src/b2b/accounting/domain/services/lot-debtor-bank-standing.ts`,
+   port `LotDebtorsReader`, champ `file.debtorsNotImported` du contrat). L'onglet 3 dit
+   « N débiteur(s) de ce lot n'ont pas leur compte ou leur mandat importé
+   dans CENET : la banque ne le contrôle pas au dépôt (réponse 15), mais
+   importez-les pour garder le référentiel à jour », puis la liste nommée
+   (société, RUM, ce qui manque) avec un lien vers l'onglet 1 ou 2. Plus
+   d'avertissement à l'échelle de l'entité dans l'onglet 3 (les onglets 1 et
+   2 le portent ; `mandatesNotImportedCount`, `excludedMandateCount`,
+   `excludedAccountCount` restent servis, dépréciés). Aucun verrou d'onglet.
+   **Question reposée à la banque** : un prélèvement déposé par fichier sous
+   une RUM jamais importée est-il exécuté normalement, et vers un compte
+   jamais importé ? **Si elle répond non, P4 devient un blocage par débiteur**
+   (petit lot : la lecture existe, il reste le refus de « Marquer déposé » et
+   le verrou de l'onglet).
 
 ## 9. Questions pour Hugo
 
@@ -467,7 +497,8 @@ procédure par lot. S1 est une lecture ; elle n'écrit rien (CQRS).
 >
 > - **Q1** — attestations **nommées** (l'auteur est une personne, donc une
 >   colonne au registre RGPD, `documentation/legal/rgpd-registre.json`) ;
-> - **Q2** — l'onglet 3 se verrouille **par débiteur du lot** (P4) ;
+> - **Q2** — l'onglet 3 se verrouille **par débiteur du lot** (P4) —
+>   **révisé le 2026-10-24** : il avertit par débiteur, sans verrou (§ 8) ;
 > - **Q3** — **N = 5 jours ouvrés** après l'échéance ;
 > - **Q4** — **un** lot suivi, et **tous les lots ouverts listés en tête** ;
 > - **Q5** — « PSR lus » **facultatif** ;
@@ -512,7 +543,7 @@ ci-dessous. Non vérifié par lui : les renvois aux autres docs,
 | Le diagramme verrouillait l'onglet 4 sur la signature attestée, le § 3.4 sur le dépôt seul                                          | BLOQUANT | **corrigée** : dépôt seul ; une attestation ne ferme jamais l'import des impayés (§ 3, § 3.4)                   |
 | L'attestation `imported` par la confirmation n'existe pas pour un fichier sans impayé (`min(1)`) ; trous non détectés               | SÉRIEUX  | **corrigée** : la case « aucun impayé » couvre ce jour ; les jours manquants sont nommés (§ 3.4)                |
 | Contrôle par jour, « fait » par lot : règle de couverture absente                                                                   | SÉRIEUX  | **corrigée** : un contrôle de J couvre tous les lots déposés d'échéance ≤ J, deux schémas (§ 3.4)               |
-| Onglet 2 « fait » malgré un mandat écarté ou non importé d'un débiteur du lot → rejet après signature                               | SÉRIEUX  | **assumée jusqu'à P4**, risque nommé (§ 3.3) ; écartés en alerte (§ 3.2)                                        |
+| Onglet 2 « fait » malgré un mandat écarté ou non importé d'un débiteur du lot → rejet après signature                               | SÉRIEUX  | P4 révisé (2026-10-24) : nommé par débiteur, sans verrou (§ 8)                                                  |
 | Attestations indéfaisables, laquelle fait foi                                                                                       | SÉRIEUX  | **corrigée** : retrait par une ligne `withdrawn`, la dernière par (lot, kind) fait foi (§ 1.2) ; à valider (Q1) |
 | URL épinglée sur un lot annulé                                                                                                      | SÉRIEUX  | **corrigée** : la page le dit et propose le lot re-préparé (§ 2)                                                |
 | P2 dépend de P1 sans l'imposer                                                                                                      | SÉRIEUX  | **corrigée** : prérequis dur (§ 8)                                                                              |

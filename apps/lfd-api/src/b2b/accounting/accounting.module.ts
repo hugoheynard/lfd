@@ -122,6 +122,8 @@ import { PrismaUnpaidAccessReader } from "./infrastructure/prisma-unpaid-access.
 import { GetDetachedUnpaidOrdersHandler } from "./application/queries/get-detached-unpaid-orders.handler.js";
 import { GetMyDetachedUnpaidOrdersHandler } from "./application/queries/get-my-detached-unpaid-orders.handler.js";
 import { PrismaCollectionBatchReader } from "./infrastructure/prisma-collection-batch.reader.js";
+import { PrismaLotDebtorsReader } from "./infrastructure/prisma-lot-debtors.reader.js";
+import { LotDebtorsReader } from "./domain/ports/lot-debtors.reader.js";
 import { PrismaCollectionBatchRepository } from "./infrastructure/prisma-collection-batch.repository.js";
 import { PrismaCollectionCandidatesReader } from "./infrastructure/prisma-collection-candidates.reader.js";
 import { PrismaCollectionLock } from "./infrastructure/prisma-collection-lock.js";
@@ -267,6 +269,8 @@ import { PrismaOrderRowsLock } from "./infrastructure/prisma-order-rows-lock.js"
     { provide: CollectionBatchRepository, useClass: PrismaCollectionBatchRepository },
     { provide: OrderCollectionRepository, useClass: PrismaOrderCollectionRepository },
     { provide: CollectionBatchReader, useClass: PrismaCollectionBatchReader },
+    // Les débiteurs des lots, pour l'onglet 3 de la procédure (P4 révisé).
+    { provide: LotDebtorsReader, useClass: PrismaLotDebtorsReader },
     { provide: CollectionLock, useClass: PrismaCollectionLock },
     { provide: CollectionBatchLock, useClass: PrismaCollectionBatchLock },
     // L'arrêté de facturation figé (plan `le-prelevement-suit-la-facture.md`).

@@ -14,8 +14,9 @@
  * dont la mise en place est reprise. Aucune date absolue.
  */
 import type { CollectionProcedureView } from "@lfd/contracts";
+import { sha256Of } from "../src/b2b/accounting/domain/services/collection-batch-file.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { E2E_STAFF_ID, bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
 
 export const ICS = "FR72ZZZ123456";
@@ -117,6 +118,51 @@ export async function mandated(entityId: string, name: string): Promise<string> 
     },
   });
   return mandate.reference;
+}
+
+/**
+ * Un lot CONSTITUÉ de l'entité, dont la ligne porte le mandat de cette RUM.
+ * Écrit par Prisma (même dette que `collection-test-scene.ts`) : la
+ * constitution réelle demande un cycle de commandes entier, et seule la
+ * ligne compte pour l'avertissement par débiteur (P4 révisé). Dates
+ * relatives à maintenant.
+ */
+export async function lotCarrying(entityId: string, reference: string): Promise<string> {
+  const mandate = await ctx.prisma.paymentMandate.findFirstOrThrow({ where: { reference } });
+  const now = new Date();
+  const id = "01JBQ7Z5K8M3QT9P2X4BPROC00";
+  await ctx.prisma.collectionBatch.create({
+    data: {
+      id,
+      legalEntityId: entityId,
+      scheme: "B2B",
+      cycleStartsAt: new Date(daysAgo(30)),
+      cycleClosesAt: now,
+      status: "constituted",
+      constitutedAt: now,
+      constitutedByStaffId: E2E_STAFF_ID,
+      xml: "<Document/>",
+      fileSha256: sha256Of("<Document/>"),
+      lines: {
+        create: {
+          rank: 1,
+          endToEndId: `${id}-0001`,
+          mandateId: mandate.id,
+          mandateReference: reference,
+          mandateSignedAt: new Date(SIGNED_AT),
+          debtorCompanyId: mandate.companyId,
+          debtorName: "Café de l'Isère",
+          debtorIbanSealed: "scelle",
+          debtorIbanLast4: "0143",
+          sequence: "RCUR",
+          amountCents: 1_000,
+          orderCount: 1,
+          priorOrderCount: 0,
+        },
+      },
+    },
+  });
+  return id;
 }
 
 /**

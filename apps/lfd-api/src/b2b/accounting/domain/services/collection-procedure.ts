@@ -14,8 +14,9 @@ import {
  *
  * Ce qui n'y est pas encore, et c'est voulu : les attestations du LOT (P3,
  * `collection_batch_attestation`) — l'onglet 3 est donc « fait » au dépôt,
- * sans la signature attestée — et le verrou de l'onglet 3 par débiteur du lot
- * (P4) — l'onglet 3 ne se verrouille pas sur l'onglet 2, il avertit. Les
+ * sans la signature attestée. L'onglet 3 ne se verrouille pas sur l'onglet 2 :
+ * il nomme les débiteurs du lot absents de CENET (P4 révisé, 2026-10-24,
+ * `lot-debtor-bank-standing.ts`) — la banque ne contrôle pas au dépôt. Les
  * attestations « Retours contrôlés » (entité × jour) y sont depuis le
  * 2026-10-23 : l'onglet 4 les lit.
  */
