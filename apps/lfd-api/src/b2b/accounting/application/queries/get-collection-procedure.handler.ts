@@ -172,7 +172,12 @@ export class GetCollectionProcedureHandler implements IQueryHandler<
       bank.standing,
     );
     const file = fileStep(
-      { followed, toPrepare: toPrepare !== null, debtorsNotImported },
+      {
+        followed,
+        toPrepare: toPrepare !== null,
+        debtorsNotImported,
+        limits: entity.bankCollectionLimits,
+      },
       storedById,
     );
     const returns = await readReturnsStep(

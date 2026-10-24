@@ -202,6 +202,12 @@ export type {
   WithdrawBankReturnCheckPayload,
 } from "./collection-procedure.js";
 export type {
+  CollectionProcedureAmountOverLimitView,
+  CollectionProcedureBankLimitsView,
+  CollectionProcedureDebitOverLimitView,
+  CollectionProcedureMonthlyOverLimitView,
+} from "./collection-procedure-bank-limits.js";
+export type {
   CollectionProcedureInvoicesReasonView,
   CollectionProcedureInvoicesView,
   ProcedureOrderFiguresView,

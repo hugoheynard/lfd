@@ -404,6 +404,7 @@
   "test/billing-mode-payer.e2e-spec.ts": 7678,
   "test/collection-notice-constitute.e2e-spec.ts": 6200,
   "test/collection-return-import.e2e-spec.ts": 9882,
+  "test/collection-procedure-bank-limits.e2e-spec.ts": 6000,
   "test/collection-procedure-state.e2e-spec.ts": 10643,
   "test/billing-mode-calendar.e2e-spec.ts": 8354,
   "test/mandate-bank-export-abandon.e2e-spec.ts": 8164,

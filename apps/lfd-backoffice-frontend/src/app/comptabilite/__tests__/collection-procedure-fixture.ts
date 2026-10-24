@@ -69,6 +69,7 @@ export function procedureView(
       reason: 'to_deposit',
       debtorsNotImported: [],
       tightDepositMargin: null,
+      bankLimits: null,
     },
     returns: {
       state: 'locked',

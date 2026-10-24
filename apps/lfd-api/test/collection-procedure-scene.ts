@@ -127,10 +127,14 @@ export async function mandated(entityId: string, name: string): Promise<string> 
  * ligne compte pour l'avertissement par débiteur (P4 révisé). Dates
  * relatives à maintenant.
  */
-export async function lotCarrying(entityId: string, reference: string): Promise<string> {
+export async function lotCarrying(
+  entityId: string,
+  reference: string,
+  lot: LotShape = {},
+): Promise<string> {
   const mandate = await ctx.prisma.paymentMandate.findFirstOrThrow({ where: { reference } });
   const now = new Date();
-  const id = "01JBQ7Z5K8M3QT9P2X4BPROC00";
+  const id = lot.id ?? "01JBQ7Z5K8M3QT9P2X4BPROC00";
   await ctx.prisma.collectionBatch.create({
     data: {
       id,
@@ -138,8 +142,11 @@ export async function lotCarrying(entityId: string, reference: string): Promise<
       scheme: "B2B",
       cycleStartsAt: new Date(daysAgo(30)),
       cycleClosesAt: now,
-      status: "constituted",
+      status: lot.status ?? "constituted",
       constitutedAt: now,
+      ...(lot.status === "deposited" ? { depositedAt: now, depositedByStaffId: E2E_STAFF_ID } : {}),
+      requestedCollectionDay:
+        lot.requestedCollectionDay === undefined ? null : new Date(lot.requestedCollectionDay),
       constitutedByStaffId: E2E_STAFF_ID,
       xml: "<Document/>",
       fileSha256: sha256Of("<Document/>"),
@@ -155,7 +162,7 @@ export async function lotCarrying(entityId: string, reference: string): Promise<
           debtorIbanSealed: "scelle",
           debtorIbanLast4: "0143",
           sequence: "RCUR",
-          amountCents: 1_000,
+          amountCents: lot.amountCents ?? 1_000,
           orderCount: 1,
           priorOrderCount: 0,
         },
@@ -163,6 +170,15 @@ export async function lotCarrying(entityId: string, reference: string): Promise<
     },
   });
   return id;
+}
+
+/** Ce qu'un lot de la scène peut changer — par défaut, un lot constitué de 10 €, sans échéance. */
+export interface LotShape {
+  readonly id?: string;
+  readonly status?: "constituted" | "deposited";
+  readonly amountCents?: number;
+  /** `AAAA-MM-JJ`. */
+  readonly requestedCollectionDay?: string;
 }
 
 /**

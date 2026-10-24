@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import type { CollectionBatchAttestationsView } from "./collection-batch-attestation.js";
 import type { CollectionBatchStatusView } from "./collection-batch.js";
+import type { CollectionProcedureBankLimitsView } from "./collection-procedure-bank-limits.js";
 import type { CollectionProcedureInvoicesView } from "./collection-procedure-invoices.js";
 import type { BillingRhythmKind, LocalDeadlineView } from "./legal-entity.js";
 
@@ -109,6 +110,11 @@ export interface CollectionProcedureFileView {
    * ou si la limite n'est pas renseignée. Un avertissement, jamais un refus.
    */
   readonly tightDepositMargin: number | null;
+  /**
+   * Les plafonds de la banque, comparés au lot suivi (PL2) ; `null` sans lot
+   * suivi, ou s'il est annulé ou rejeté — il ne part pas.
+   */
+  readonly bankLimits: CollectionProcedureBankLimitsView | null;
 }
 
 /**

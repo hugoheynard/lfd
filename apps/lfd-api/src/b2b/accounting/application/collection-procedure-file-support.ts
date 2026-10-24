@@ -10,6 +10,11 @@ import type { LotDebtorsReader } from "../domain/ports/lot-debtors.reader.js";
 import { fileStatus, type ProcedureBatch } from "../domain/services/collection-procedure.js";
 import { preparedDepositMargin } from "../domain/services/collection-procedure-warnings.js";
 import {
+  bankLimitWarningsOf,
+  type LimitsToCompare,
+} from "../domain/services/bank-limit-warnings.js";
+import type { SepaScheme } from "../domain/value-objects/sepa-scheme.js";
+import {
   lotDebtorGaps,
   type BankReferentialStanding,
 } from "../domain/services/lot-debtor-bank-standing.js";
@@ -32,12 +37,18 @@ export async function readDebtorsNotImported(
   return lotDebtorGaps(lines, standing);
 }
 
-/** L'onglet 3 et ses avertissements — ceux des débiteurs sont lus par `readDebtorsNotImported`. */
+/**
+ * L'onglet 3 et ses avertissements — ceux des débiteurs sont lus par
+ * `readDebtorsNotImported` ; ceux des plafonds (PL2) comparent le lot suivi
+ * aux lots de l'entité, `views` étant la liste murée par l'entité.
+ */
 export function fileStep(
   input: {
     readonly followed: ProcedureBatch | null;
     readonly toPrepare: boolean;
     readonly debtorsNotImported: readonly CollectionProcedureDebtorGapView[];
+    /** Les plafonds de l'entité, par schéma (PL1). */
+    readonly limits: Readonly<Record<SepaScheme, LimitsToCompare>>;
   },
   views: ReadonlyMap<string, StoredBatchView>,
 ): CollectionProcedureFileView {
@@ -54,5 +65,9 @@ export function fileStep(
             instantToLocal(new Date(stored.constitutedAt)).day,
             stored.depositDeadline,
           ),
+    bankLimits:
+      stored === undefined
+        ? null
+        : bankLimitWarningsOf(input.limits[stored.scheme], stored, [...views.values()]),
   };
 }
