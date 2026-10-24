@@ -156,7 +156,7 @@ export interface DeliveryOrderBinsView {
   /**
    * Ce qui range la commande dans sa catégorie de couleur — l'étiquette
    * imprime un carré de cette couleur (plan
-   * `commandes/back-office/plan-tri-depart-et-couleurs.md`, L1b), lue à chaque lecture.
+   * `commandes/back-office/tri-depart-et-couleurs.md`, L1b), lue à chaque lecture.
    * Absents : commande inconnue du commerce, clientèle inconnue, ou retrait
    * sans site — aucun carré.
    */
@@ -218,7 +218,7 @@ export interface DeliveryLoadingStopView {
   readonly bins: readonly DeliveryLoadingBinView[];
   /**
    * `pro` / `public`, lue au commerce à chaque lecture (plan
-   * `commandes/back-office/plan-tri-depart-et-couleurs.md`, L1a) — l'écran en tire la
+   * `commandes/back-office/tri-depart-et-couleurs.md`, L1a) — l'écran en tire la
    * couleur de la commande. Absent : inconnue (commande d'avant la
    * distinction, ou que le commerce ne connaît plus) — teinte neutre.
    */

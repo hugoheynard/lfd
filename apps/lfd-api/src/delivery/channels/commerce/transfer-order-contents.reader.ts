@@ -2,7 +2,7 @@ import type { DeliveryOrderLine } from "./delivery-order-lines.reader.js";
 
 /**
  * Ce qui range une commande d'un transfert dans sa catégorie de couleur (plan
- * `commandes/back-office/plan-tri-depart-et-couleurs.md`, L1a) : figé à la passation, lu
+ * `commandes/back-office/tri-depart-et-couleurs.md`, L1a) : figé à la passation, lu
  * à chaque lecture — jamais recopié dans le manifeste.
  */
 export interface TransferOrderCategory {

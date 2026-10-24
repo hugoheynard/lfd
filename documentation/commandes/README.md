@@ -31,7 +31,7 @@ entrer**. Il ne remplace aucun d'eux.
 | [`annulation/`](annulation/)       | annuler, par le client ou le staff, et ses verrous                                                                            |
 | [`reglement/`](reglement/)         | qui paie, quand : compte de production, abandon, carte réglée, commandes épargnées, régler une sélection                      |
 | [`bon-et-pieces/`](bon-et-pieces/) | les papiers : bon de commande, TTC, pièces en R2, conservation, export, agrégation, TVA du port                               |
-| [`back-office/`](back-office/)     | les écrans staff des commandes : la page Commandes, le tri par départ et les couleurs                                         |
+| [`back-office/`](back-office/)     | les écrans staff des commandes : la page Commandes (état), les couleurs et le tri par départ (état partiel)                   |
 
 À la racine : ce README, les parcours ([`flux-de-commande.md`](flux-de-commande.md)),
 l'audit ([`audit-flux-de-commande.md`](audit-flux-de-commande.md)), le carnet
@@ -113,6 +113,8 @@ flowchart TD
 | Comment on commande sans avoir d'entreprise ?                                          | [`architecture-flux-commande-zero-friction.md`](passation/architecture-flux-commande-zero-friction.md)                                                                                                              |
 | Comment un commercial commande **pour** un client ?                                    | [`architecture-commande-saisie-par-l-equipe.md`](passation/architecture-commande-saisie-par-l-equipe.md)                                                                                                            |
 | Jusqu'à quand on prend commande, et que coûte le retard ?                              | [`../limites-de-commande/README.md`](../limites-de-commande/README.md)                                                                                                                                              |
+| Où le staff voit toutes les commandes, filtrées, et le détail d'une commande ?         | [`page-commandes.md`](back-office/page-commandes.md) (état, 2026-10-24)                                                                                                                                             |
+| D'où vient la couleur d'une commande, et dans quel ordre le colisage la range ?        | [`tri-depart-et-couleurs.md`](back-office/tri-depart-et-couleurs.md) (état partiel, 2026-10-24)                                                                                                                     |
 | Comment l'équipe annule une commande, et ce que devient l'argent ?                     | [`annulation-par-le-staff.md`](annulation/annulation-par-le-staff.md)                                                                                                                                               |
 | Ce qui reste à faire sur l'annulation                                                  | [`todo-annulation.md`](annulation/todo-annulation.md)                                                                                                                                                               |
 | Comment un client annule lui-même sa commande ?                                        | [`annulation-par-le-client.md`](annulation/annulation-par-le-client.md)                                                                                                                                             |

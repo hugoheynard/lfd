@@ -27,7 +27,7 @@ const UNKNOWN: ReadyBy = { time: null, source: null };
 
 /**
  * **À quelle heure cette commande doit-elle être prête ?** (lot L2,
- * `commandes/back-office/plan-tri-depart-et-couleurs.md` §3 ; Hugo, 2026-10-14).
+ * `commandes/back-office/tri-depart-et-couleurs.md` §3 ; Hugo, 2026-10-14).
  *
  * - une **livraison** part avec sa tournée : l'heure est le départ de la
  *   tournée, jamais la fenêtre du client. Pas encore de tournée, ou une tournée

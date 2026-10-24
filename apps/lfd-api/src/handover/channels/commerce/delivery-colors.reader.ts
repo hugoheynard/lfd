@@ -9,7 +9,7 @@ export interface RunSheetDeliveryColors {
 
 /**
  * **Les couleurs de livraison du site de départ, pour la feuille de route**
- * (plan `commandes/back-office/plan-tri-depart-et-couleurs.md`, L5). Déclaré par le
+ * (plan `commandes/back-office/tri-depart-et-couleurs.md`, L5). Déclaré par le
  * retrait, implémenté par le commerce (`b2b/sites/`), relié dans
  * `appBootstrap`.
  *

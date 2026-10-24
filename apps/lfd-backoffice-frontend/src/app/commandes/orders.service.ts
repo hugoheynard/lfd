@@ -67,7 +67,7 @@ export class AdminOrdersService {
 
   /**
    * **L'historique d'une commande** — les faits du journal qui la touchent, le
-   * plus récent d'abord, bornés côté serveur (plan `plan-page-commandes.md` §3 bis).
+   * plus récent d'abord, bornés côté serveur (plan `page-commandes.md` §3 bis).
    */
   /**
    * Les CGV que la commande porte — texte, révision, PDF en vigueur à sa

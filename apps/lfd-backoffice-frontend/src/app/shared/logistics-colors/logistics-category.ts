@@ -2,7 +2,7 @@ import type { SitePaletteEntryView } from '@lfd/contracts';
 
 /**
  * **La catégorie logistique d'une commande, et sa couleur** (plan
- * `documentation/commandes/back-office/plan-tri-depart-et-couleurs.md`, §4, L1b).
+ * `documentation/commandes/back-office/tri-depart-et-couleurs.md`, §4, L1b).
  *
  * Côté back-office et pas dans `@lfd/contracts` : la boutique ne s'en sert
  * pas, et le baril pèse sur son budget (§4).

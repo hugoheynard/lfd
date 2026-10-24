@@ -25,7 +25,7 @@ import { AdminOrdersService } from '../orders.service';
 type LoadState = 'loading' | 'ready' | 'error';
 
 /**
- * **« Historique »** sur la fiche d'une commande (plan `plan-page-commandes.md`
+ * **« Historique »** sur la fiche d'une commande (plan `page-commandes.md`
  * §3 bis) : les faits du journal qui la touchent, mis en phrase par le même
  * moteur que le journal d'activité, pour qu'un fait se lise pareil aux deux
  * endroits.

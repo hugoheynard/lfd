@@ -9,7 +9,7 @@ import type { PackingEntry } from './packing-rounds';
 
 /**
  * **Les cadres de couleur de la colonne des commandes** (Hugo, 2026-10-13,
- * revus le 2026-10-14 — plan `commandes/back-office/plan-tri-depart-et-couleurs.md`, L1b
+ * revus le 2026-10-14 — plan `commandes/back-office/tri-depart-et-couleurs.md`, L1b
  * puis L2). Chaque cadre est bordé à gauche et en haut de sa couleur, son
  * titre écrit dans la bordure haute :
  *

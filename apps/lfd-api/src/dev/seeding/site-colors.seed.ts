@@ -6,7 +6,7 @@ import { asStaff, type SeedContext } from "./order-placing.seed.js";
 
 /**
  * **Les couleurs des deux sites**, posées par la commande de l'écran des sites
- * (`documentation/commandes/back-office/plan-tri-depart-et-couleurs.md` §4).
+ * (`documentation/commandes/back-office/tri-depart-et-couleurs.md` §4).
  *
  * Les teintes suivent la demande logistique — bleu la livraison pro, jaune le
  * retrait pro, orange le retrait particulier du Labo, gris celui du Village —

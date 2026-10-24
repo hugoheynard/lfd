@@ -77,7 +77,7 @@ function sameFilters(left: OrderListFilters, right: OrderListFilters): boolean {
 
 /**
  * **Toutes les commandes** — pro et particuliers, retrait et livraison, la plus
- * récente en tête (plan-page-commandes.md, lot C2).
+ * récente en tête (page-commandes.md, lot C2).
  *
  * Le même tableau que l'onglet Commandes d'un compte (`app-orders-table`),
  * élargi au client et au jour de retrait ou de livraison. Les filtres vivent

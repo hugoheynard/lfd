@@ -58,7 +58,7 @@ export interface InternalTransferManifestView {
   readonly siteLabel: string;
   /**
    * Le site servi, identifiant opaque du commerce (plan
-   * `commandes/back-office/plan-tri-depart-et-couleurs.md`, L1a) — l'écran y lit les
+   * `commandes/back-office/tri-depart-et-couleurs.md`, L1a) — l'écran y lit les
    * couleurs du retrait. Absent : vue d'avant le champ.
    */
   readonly siteId?: string;
@@ -153,7 +153,7 @@ export interface DriverTransferStopView {
   readonly siteLabel: string;
   /**
    * Le site servi, identifiant opaque du commerce (plan
-   * `commandes/back-office/plan-tri-depart-et-couleurs.md`, L1a) — l'écran y lit les
+   * `commandes/back-office/tri-depart-et-couleurs.md`, L1a) — l'écran y lit les
    * couleurs du retrait. Absent : vue d'avant le champ.
    */
   readonly siteId?: string;

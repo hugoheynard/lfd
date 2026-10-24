@@ -1122,7 +1122,7 @@ export interface PlacedOrderResponse {
 // ─── Surface ADMIN (staff) ───────────────────────────────────────────────────
 
 // La liste staff (`AdminOrderRow`, ses filtres, sa page) vit dans
-// `admin-order-list.ts` depuis le 2026-10-12 (plan-page-commandes, lot C1).
+// `admin-order-list.ts` depuis le 2026-10-12 (page-commandes, lot C1).
 
 /**
  * **Ce que le serveur facturera**, demandé avant de valider.

@@ -188,7 +188,7 @@ export class App {
   );
   protected readonly canSeeCommercial = computed(() => this.permissions.can('b2b_growth:read'));
   /**
-   * Toutes les commandes (plan-page-commandes.md, C2) : le droit même de la
+   * Toutes les commandes (page-commandes.md, C2) : le droit même de la
    * route, pour que l'entrée ne mène jamais à une redirection muette.
    */
   protected readonly canSeeOrders = computed(() => this.permissions.can('b2b_orders:read'));

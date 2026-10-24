@@ -16,7 +16,7 @@ import type { OrderClientele } from "./order-handover.js";
  * **La liste staff des commandes** — `GET /admin/orders`.
  *
  * Sortie d'`order.ts` le 2026-10-12 avec la pagination par curseur
- * (`documentation/commandes/back-office/plan-page-commandes.md`, lot C1) : la liste a désormais
+ * (`documentation/commandes/back-office/page-commandes.md`, lot C1) : la liste a désormais
  * ses filtres, sa page et sa ligne, qui ne concernent ni le client ni la
  * passation.
  */

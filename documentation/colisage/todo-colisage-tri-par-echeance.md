@@ -3,7 +3,7 @@
 > 📌 **Ouvert le 2026-09-14, à la demande de Hugo.**
 >
 > ✅ **Pris le 2026-10-14 par le lot L2** de
-> [`../commandes/back-office/plan-tri-depart-et-couleurs.md`](../commandes/back-office/plan-tri-depart-et-couleurs.md)
+> [`../commandes/back-office/tri-depart-et-couleurs.md`](../commandes/back-office/tri-depart-et-couleurs.md)
 > (« Ce qui est bâti de L2 ») — non commité à l'écriture. Le poste est rangé
 > par heure « prête pour », lue à la livraison. Ce qui suit est l'état du
 > 2026-09-14, gardé pour la trace ; les deux questions ont leur réponse

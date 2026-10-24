@@ -51,7 +51,7 @@ export interface AdminOrderListSlice {
  * Port de **lecture** de la liste staff des commandes, ordonnée
  * `createdAt desc, id desc`.
  *
- * Séparé d'`OrderReader` le 2026-10-12 (plan-page-commandes, C1) : la liste a
+ * Séparé d'`OrderReader` le 2026-10-12 (page-commandes, C1) : la liste a
  * ses propres filtres et sa pagination, et aucun autre consommateur d'`OrderReader`
  * n'en a besoin. Aucun mur ici — la porte staff du contrôleur décide, et le
  * staff voit les commandes des sociétés comme celles des particuliers.

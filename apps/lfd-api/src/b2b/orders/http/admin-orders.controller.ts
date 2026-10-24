@@ -248,7 +248,7 @@ export class AdminOrdersController {
 
   /**
    * **L'historique** d'une commande : les faits du journal qui la concernent,
-   * du plus récent au plus ancien, bornés à 200 (plan-page-commandes, §3 bis).
+   * du plus récent au plus ancien, bornés à 200 (page-commandes, §3 bis).
    * Même garde que le détail : `b2b_orders:read`, par le verbe.
    */
   @Get(":id/history")

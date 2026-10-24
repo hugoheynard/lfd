@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 /**
  * E2E de la **liste staff paginée** (`GET /admin/orders`, plan
- * `documentation/commandes/back-office/plan-page-commandes.md`, lot C1).
+ * `documentation/commandes/back-office/page-commandes.md`, lot C1).
  *
  * Ce que seul le vrai SQL prouve : que le curseur ne saute ni ne répète une
  * ligne quand une commande s'insère entre deux pages ou que deux commandes

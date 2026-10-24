@@ -17,7 +17,7 @@ const USER_SUBJECT = "user";
  * Lit l'historique d'une commande dans `growth.activity_events` — même bloc
  * `b2b` que le journal, la porte de propriété l'admet.
  *
- * Deux branches (plan-page-commandes, §3 bis) : les faits dont la commande est
+ * Deux branches (page-commandes, §3 bis) : les faits dont la commande est
  * le sujet (`delivery_bin.*`, `packing_container.*`), et ceux dont son AUTEUR
  * est le sujet avec `payload.orderId` (`order.placed`, `order.ready`…). La
  * seconde passe par l'index `(subject_type, subject_id, occurred_at)` : la

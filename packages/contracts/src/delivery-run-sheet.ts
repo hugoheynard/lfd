@@ -71,7 +71,7 @@ export interface DeliveryRunSheetStopView {
   /**
    * La couleur de l'arrêt (`#rrggbb`), lue à chaque lecture dans les couleurs
    * de livraison du site de départ selon la clientèle (plan
-   * `commandes/back-office/plan-tri-depart-et-couleurs.md`, L5). Absente : clientèle
+   * `commandes/back-office/tri-depart-et-couleurs.md`, L5). Absente : clientèle
    * inconnue, ou couleur non posée — le papier n'imprime alors aucun carré.
    * Servie ici parce que la feuille s'ouvre sous `delivery_run_sheet`, qui
    * n'ouvre pas la palette.

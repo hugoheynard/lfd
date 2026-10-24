@@ -2,7 +2,7 @@ import { describe, expect, it } from "@jest/globals";
 
 import { adminOrdersQuerySchema } from "../admin-order-list.js";
 
-/** La forme des filtres de la liste staff (plan-page-commandes, lot C1). */
+/** La forme des filtres de la liste staff (page-commandes, lot C1). */
 describe("adminOrdersQuerySchema", () => {
   it("prend les filtres de la page Commandes, plafond par défaut", () => {
     const parsed = adminOrdersQuerySchema.parse({

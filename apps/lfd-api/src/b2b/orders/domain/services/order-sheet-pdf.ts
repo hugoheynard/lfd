@@ -86,7 +86,7 @@ export interface OrderSheetArt {
   readonly logo: Buffer;
   /**
    * La couleur de la commande (`#rrggbb`) — un trait épais entre le titre et
-   * le numéro (plan `commandes/back-office/plan-tri-depart-et-couleurs.md`, L5) ; `null` :
+   * le numéro (plan `commandes/back-office/tri-depart-et-couleurs.md`, L5) ; `null` :
    * pas de trait. Celle de l'instant du rendu, figée avec le bon archivé.
    */
   readonly categoryColor: string | null;

@@ -61,7 +61,7 @@ export const ficheClientRoutes: Routes = [
       },
       {
         // 🔴 `b2b_orders:read` et non le droit du parent (posé le 2026-10-12,
-        // plan-page-commandes.md) : sans lui, qui ne lit que les comptes
+        // page-commandes.md) : sans lui, qui ne lit que les comptes
         // voyait l'onglet et prenait un 403 sur la liste.
         path: 'commandes',
         canActivate: [permissionGuard('b2b_orders:read')],

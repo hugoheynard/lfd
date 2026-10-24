@@ -328,7 +328,7 @@ export const routes: Routes = [
       import('./agent/agent-tools-page/agent-tools-page').then((m) => m.AgentToolsPage),
   },
   {
-    // TOUTES les commandes, pro et particuliers (plan-page-commandes.md, C2).
+    // TOUTES les commandes, pro et particuliers (page-commandes.md, C2).
     // Les filtres sont des queryParams, liés en `input()` : l'adresse se
     // partage, et le retour depuis le détail la retrouve.
     path: 'commandes',

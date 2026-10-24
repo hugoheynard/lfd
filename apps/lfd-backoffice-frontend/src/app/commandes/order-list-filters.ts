@@ -12,7 +12,7 @@ import { orderStatusLabel, paymentStatusLabel } from '@lfd/b2b-ui/order';
  * **Les filtres de la liste des commandes, tels que l'URL les porte.**
  *
  * L'URL est la source : un filtre posé se partage en copiant l'adresse, et le
- * retour depuis le détail le retrouve (plan-page-commandes.md, §3). Les noms des
+ * retour depuis le détail le retrouve (page-commandes.md, §3). Les noms des
  * paramètres sont ceux de `GET /admin/orders`, pour qu'aucune traduction ne
  * sépare ce qu'on lit dans la barre d'adresse de ce que le serveur reçoit.
  *

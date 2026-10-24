@@ -5,7 +5,7 @@ import { inkOn, type LogisticsCategory } from '../logistics-category';
 /**
  * **La pastille d'une catégorie logistique** — sa couleur et son nom (« Livraison
  * pro », « Retrait particulier Adroit »…), posée sur le tableau des tournées,
- * le chargement et « Ma tournée » (plan `commandes/back-office/plan-tri-depart-et-couleurs.md`,
+ * le chargement et « Ma tournée » (plan `commandes/back-office/tri-depart-et-couleurs.md`,
  * L1b).
  *
  * Les couleurs sont LIBRES : l'encre (claire ou sombre) se choisit par

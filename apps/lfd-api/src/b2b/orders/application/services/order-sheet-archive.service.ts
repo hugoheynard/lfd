@@ -111,7 +111,7 @@ export class OrderSheetArchive {
   }
 
   /**
-   * La couleur est lue AU RENDU (plan `commandes/back-office/plan-tri-depart-et-couleurs.md`,
+   * La couleur est lue AU RENDU (plan `commandes/back-office/tri-depart-et-couleurs.md`,
    * L5) : celle de la passation pour le bon archivé et joint au courriel. Un
    * bon déjà rangé n'est pas refait — c'est pourquoi la version de dessin
    * (`orderSheetPdfKey`) n'a PAS bougé : les bons émis avant le trait restent

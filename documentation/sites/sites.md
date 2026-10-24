@@ -10,7 +10,7 @@
 > 2026-10-13, découpé le même jour en trois documents (Hugo) : celui-ci (le
 > site, bâti), [`../livraisons/transferts/plan-transfert-interne.md`](../livraisons/transferts/plan-transfert-interne.md)
 > (le transfert, plan) et
-> [`../commandes/back-office/plan-tri-depart-et-couleurs.md`](../commandes/back-office/plan-tri-depart-et-couleurs.md)
+> [`../commandes/back-office/tri-depart-et-couleurs.md`](../commandes/back-office/tri-depart-et-couleurs.md)
 > (le tri et les couleurs de la logistique, plan).
 >
 > **Pourquoi un dossier à part**, et pas sous `livraisons/` : le site

@@ -7,7 +7,7 @@ import {
 
 /**
  * **La catégorie de chaque arrêt de livraison, par arrêt** (plan
- * `commandes/back-office/plan-tri-depart-et-couleurs.md`, L1b) — la couleur de livraison
+ * `commandes/back-office/tri-depart-et-couleurs.md`, L1b) — la couleur de livraison
  * du site de départ pour la clientèle de sa commande. Un arrêt de transfert
  * n'y est pas : il mêle des clientèles.
  */

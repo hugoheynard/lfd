@@ -9,7 +9,7 @@ export type OrderDepartureVia = "delivery" | "transfer";
  *
  * `at` est le départ PRÉVU de la tournée (`plannedDepartureAt`), sinon son
  * départ RÉEL (`departedAt`) — la règle du plan
- * `commandes/back-office/plan-tri-depart-et-couleurs.md`, §3. Une commande dont la tournée
+ * `commandes/back-office/tri-depart-et-couleurs.md`, §3. Une commande dont la tournée
  * n'a ni l'un ni l'autre n'a pas de départ : elle est absente de la réponse,
  * jamais datée d'une heure inventée.
  */
