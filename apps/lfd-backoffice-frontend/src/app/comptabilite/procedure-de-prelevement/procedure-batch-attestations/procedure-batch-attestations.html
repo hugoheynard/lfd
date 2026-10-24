@@ -1,0 +1,46 @@
+@if (rows().length > 0) {
+  <ul class="pba-list" data-attestations [attr.data-batch]="batchId()">
+    @for (row of rows(); track row.kind) {
+      <li class="pba-row" [attr.data-attestation]="row.kind">
+        @if (row.done; as done) {
+          <span class="pba-done" data-attested>
+            <strong>{{ row.gesture }}</strong> — {{ attested(done) }}.
+          </span>
+          @if (canWrite()) {
+            <button
+              foldButton
+              size="sm"
+              emphasis="outline"
+              intent="neutral"
+              (click)="withdraw(row.kind)"
+              data-withdraw-attestation
+            >
+              Retirer
+            </button>
+          }
+        } @else {
+          @if (canWrite()) {
+            <button
+              foldButton
+              size="sm"
+              emphasis="outline"
+              icon="check"
+              [loading]="attesting() === row.kind"
+              (click)="attest(row.kind)"
+              data-attest
+            >
+              {{ row.gesture }}
+            </button>
+          } @else {
+            <span class="pba-todo">{{ row.gesture }} — pas encore noté.</span>
+          }
+          <span class="pba-hint">{{ row.hint }}</span>
+        }
+      </li>
+    }
+  </ul>
+}
+
+@if (error(); as message) {
+  <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+}

@@ -172,3 +172,14 @@ export const BANK_RETURN_CHECK_FACT_TYPES = {
   attested: "bank_return_check.attested",
   withdrawn: "bank_return_check.withdrawn",
 } as const satisfies Readonly<Record<string, JournalFactType>>;
+
+/**
+ * Les faits des attestations d'un lot — « Contrôle CSV relu », « Remise
+ * signée sur CENET », « Accusés PSR lus » (plan
+ * `plan-page-procedure-de-prelevement.md` § 1.2, P3). Sujet : l'entité ;
+ * charge : le lot nommé, la sorte (et la raison d'un retrait). Jamais un IBAN.
+ */
+export const BATCH_ATTESTATION_FACT_TYPES = {
+  attested: "collection_batch_attestation.attested",
+  withdrawn: "collection_batch_attestation.withdrawn",
+} as const satisfies Readonly<Record<string, JournalFactType>>;

@@ -1,6 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import type { CollectionBatchView, CollectionProcedureView } from '@lfd/contracts';
+import type {
+  CollectionBatchAttestationsView,
+  CollectionBatchView,
+  CollectionProcedureView,
+} from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
@@ -15,6 +19,7 @@ import {
   type PendingBatchGesture,
 } from '../../prelevement-du-mois/pending-batch/pending-batch';
 import { ProcedureBatchActions } from '../procedure-batch-actions/procedure-batch-actions';
+import { ProcedureBatchAttestations } from '../procedure-batch-attestations/procedure-batch-attestations';
 import { collectionDayLabel, deadlineLabel } from '../procedure-wording';
 import {
   DEBTOR_GAP_STEP_LABEL,
@@ -42,12 +47,23 @@ import {
  * carte (`app-procedure-batch-actions`), comme les onglets Comptes et
  * Mandats ; sans limite de dépôt réglée, aucun délai n'est proposé — un lien
  * mène au réglage de l'entité.
+ *
+ * P3 (2026-10-24) : sous la barre de chaque lot, ses attestations — contrôle
+ * CSV relu, remise signée sur CENET, comptes rendus PSR lus. Déposé, l'onglet
+ * attend « J'ai signé la remise sur CENET » ; il est fait quand elle est
+ * cochée. Aucune attestation ne ferme un geste.
  */
 /** Un geste sur un autre lot de la procédure que le lot suivi. */
 export interface OtherBatchGesture {
   readonly batchId: string;
   readonly gesture: PendingBatchGesture;
 }
+
+const NO_ATTESTATION: CollectionBatchAttestationsView = {
+  audit_reviewed: null,
+  remittance_signed: null,
+  psr_read: null,
+};
 
 @Component({
   selector: 'app-procedure-file-step',
@@ -59,6 +75,7 @@ export interface OtherBatchGesture {
     FoldIconComponent,
     PendingBatch,
     ProcedureBatchActions,
+    ProcedureBatchAttestations,
     RouterLink,
   ],
   templateUrl: './procedure-file-step.html',
@@ -79,6 +96,8 @@ export class ProcedureFileStep {
   readonly prepare = output();
   /** Mène à l'onglet qui règle l'écart d'un débiteur. */
   readonly openStep = output<'accounts' | 'mandates'>();
+  /** Une attestation posée ou retirée — l'hôte relit l'état de la procédure. */
+  readonly changed = output();
 
   protected readonly followed = computed(() => this.view().followed);
   protected readonly file = computed(() => this.view().file);
@@ -103,6 +122,16 @@ export class ProcedureFileStep {
   protected readonly missing = debtorGapMissing;
   protected readonly step = debtorGapStep;
   protected readonly stepLabel = DEBTOR_GAP_STEP_LABEL;
+
+  /** Les attestations d'un lot de la procédure, lues dans l'état du serveur. */
+  protected attestationsOf(batchId: string): CollectionBatchAttestationsView {
+    const view = this.view();
+    const found = [
+      ...view.procedureBatches,
+      ...(view.followed === null ? [] : [view.followed]),
+    ].find((lot) => lot.id === batchId);
+    return found?.attestations ?? NO_ATTESTATION;
+  }
 
   protected readonly deadline = deadlineLabel;
   protected readonly collectionDay = collectionDayLabel;

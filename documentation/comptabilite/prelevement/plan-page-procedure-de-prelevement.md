@@ -463,8 +463,28 @@ procédure par lot. S1 est une lecture ; elle n'écrit rien (CQRS).
    - **Chiffres clés** en tête : lignes du lot, retours en attente de décision,
      re-présentés, réglés autrement, passés en perte.
 
-   Reste de P3 : `collection_batch_attestation` (CSV relu, remise signée, PSR
-   lus) et l'onglet 3 complet.
+   ~~Reste de P3 : `collection_batch_attestation` (CSV relu, remise signée,
+   PSR lus) et l'onglet 3 complet.~~ **Bâti le 2026-10-24** (non commité à
+   l'écriture) : table `collection_batch_attestation` (migration additive
+   `20261024090000_les_attestations_du_lot_de_prelevement` — lot, sorte
+   `audit_reviewed` | `remittance_signed` | `psr_read` bornée par CHECK,
+   auteur au registre RGPD, instant ; un retrait est une ligne `withdrawn` de
+   plus avec sa note, la base refuse UPDATE et DELETE par déclencheur ; la
+   dernière ligne d'un (lot, sorte) fait foi,
+   `apps/lfd-api/src/b2b/accounting/domain/services/collection-batch-attestations.ts`).
+   Agrégat `CollectionBatchAttestations` : il tient l'ordre du § 3.3 (la
+   remise ne se signe qu'un lot déposé, les PSR ne se lisent qu'après un
+   dépôt, un lot annulé n'atteste rien). Gestes
+   `POST admin/accounting/collection/batches/:id/attestations` et
+   `…/withdrawn`, sous `b2b_accounting`, faits
+   `collection_batch_attestation.attested` / `.withdrawn` (sujet : l'entité,
+   le lot cité). **Onglet 3** : déposé sans « remise signée » attestée, il est
+   « en attente » (raison `signature_to_attest`, invite « Signer la remise
+   sur CENET, puis cocher ») ; signé, « fait » — « PSR lus » facultatif (Q5).
+   Chaque lot de la procédure porte ses `attestations`, montrées sous sa barre
+   d'actions avec « fait le … par … » et « Retirer » (panneau avec note). La
+   table dit « déposé · signature à attester » (`signatureToAttest`). Aucune
+   attestation ne conditionne un geste du domaine ni le verrou de l'onglet 4.
 
 4. ~~**P4** — S2 : le verrou de l'onglet 3 par débiteur du lot.~~ **Révisé
    par Hugo le 2026-10-24 (option 1), bâti le même jour** (non commité à

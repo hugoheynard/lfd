@@ -33,6 +33,7 @@ function batch(id: string, closesAt: Date, over: Partial<ListedBatch> = {}): Lis
     depositDeadline: { day: addDays(TODAY, 6), time: "16:00" },
     pendingReturnCount: 0,
     checkedDays: EVERY_DAY_CHECKED,
+    remittanceSigned: true,
     constitutedDay: TODAY,
     unmandatedCount: 0,
     periodLabel: "du 1er au 30 septembre 2026",

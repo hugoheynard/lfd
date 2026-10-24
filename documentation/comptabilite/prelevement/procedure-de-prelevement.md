@@ -14,9 +14,10 @@
 > (§ 3) — dont l'état est relu au serveur à chaque affichage
 > (`GET admin/accounting/collection-procedure`), jamais stocké. Le titre dit
 > le lot suivi (rythme et période), les lots ouverts sont listés en tête, la
-> limite de dépôt la plus proche d'abord. Ce qu'il ne fait **pas encore** : les
-> attestations hors outil — contrôle CSV relu, remise signée, PSR lus, retours
-> contrôlés (P3). Depuis le 2026-10-24 (P4 révisé), l'onglet 3 **nomme
+> limite de dépôt la plus proche d'abord. Les attestations hors outil y sont
+> depuis P3 : « Retours contrôlés » (2026-10-23, § 3.4 bis), et celles du lot
+> — contrôle CSV relu, remise signée, comptes rendus PSR lus — depuis le
+> 2026-10-24 (§ 2.4, § 2.8, § 2.9). Depuis le 2026-10-24 (P4 révisé), l'onglet 3 **nomme
 > chaque débiteur du lot** dont le compte ou le mandat n'est pas importé dans
 > CENET, avec un lien vers l'onglet 1 ou 2 ; il **avertit**, il ne bloque pas
 > — la banque ne contrôle pas son référentiel au dépôt d'un fichier
@@ -267,6 +268,12 @@ Qui : la comptabilité. Où : Prélèvement du mois › le lot à traiter.
   déjà avisés reçoivent un **rectificatif** (termes changés) ou une
   **annulation** (plus prélevés) ; mêmes termes, rien ne part. ✅
 
+- Cocher **« J'ai relu le contrôle CSV »** sous la barre du lot (onglet
+  Fichier de la procédure ; `POST batches/:id/attestations`, sorte
+  `audit_reviewed`). ✅ depuis le 2026-10-24. **Facultatif** : il dit qui a
+  relu et quand, il ne ferme **aucun** geste — « J'ai déposé » reste gardé par
+  sa propre relecture, jamais par cette case.
+
 _Si on l'oublie_ : une erreur déposée et signée ne s'annule plus (§ 4.2) ; seul
 un retour, ou un remboursement hors de l'outil, la défait.
 
@@ -363,6 +370,16 @@ marqué déposé.
   (réponse 29).
 - ⚠️ La façon de signer (qui, quel moyen) dépend du contrat CENET REMISES,
   pas encore signé : **non documenté**.
+- Puis cocher **« J'ai signé la remise sur CENET »** sous la barre du lot
+  (onglet Fichier ; sorte `remittance_signed`). ✅ depuis le 2026-10-24. La
+  case n'apparaît qu'un lot déposé, et l'outil refuse (409) de la poser
+  avant : c'est l'ordre du § 2.7 rendu matériel. Tant qu'elle n'est pas
+  cochée, l'onglet 3 est **« en attente »** (« Signer la remise sur CENET,
+  puis cocher ») et la table des procédures dit « déposé · signature à
+  attester » ; cochée, il est **fait**. Elle ne gouverne que l'écran :
+  l'onglet 4 s'ouvre au dépôt, signature cochée ou non. Une case cochée à
+  tort se **retire** (« Retirer », avec sa raison) : une ligne de plus,
+  rien ne s'efface.
 - Si un PSR1 arrive **après** « Marquer déposé » (le fichier ENTIER est
   refusé, la remise n'a pas été signée) : **« La banque a rejeté ce fichier »**
   sur le lot déposé (onglet Fichier de la procédure), attestation cochée et
@@ -387,6 +404,11 @@ Sur CENET (pas par mail, réponse 24) :
 | PSR1   | le **fichier** est KO (n'arrive qu'en cas d'échec)    | avant « Marquer déposé » : § 4.1 ; après : § 2.8       |
 | PSR2   | les **opérations** (positif + négatif par défaut, D5) | comparer au lot ; un négatif se traite en retour (§ 3) |
 | PSR3   | les **opérations écartées**                           | chaque ligne écartée se traite comme un retour (§ 3)   |
+
+Une fois lus, cocher **« J'ai lu les comptes rendus PSR »** sous la barre du
+lot (sorte `psr_read`). ✅ depuis le 2026-10-24. **Facultatif** (décision Q5
+de Hugo) : l'onglet 3 est fait sans lui, tant que la banque n'a pas dit quand
+PSR1 arrive.
 
 ⚠️ À quel moment PSR1 arrive (au dépôt, ou après signature) n'est pas dit par
 la banque : à constater à la première remise.

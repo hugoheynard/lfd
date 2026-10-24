@@ -123,8 +123,36 @@
           [pending]="pending() === current.id"
           (gesture)="gesture.emit($event)"
         />
+        <app-procedure-batch-attestations
+          [batchId]="current.id"
+          [status]="current.status"
+          [attestations]="attestationsOf(current.id)"
+          [canWrite]="canWrite()"
+          (changed)="changed.emit()"
+        />
         <app-pending-batch [batch]="current" [actions]="false" />
       }
+    }
+    @case ('signature_to_attest') {
+      @if (batch(); as current) {
+        <app-procedure-batch-actions
+          [batch]="current"
+          [canWrite]="canWrite()"
+          [pending]="pending() === current.id"
+          (gesture)="gesture.emit($event)"
+        />
+        <app-procedure-batch-attestations
+          [batchId]="current.id"
+          [status]="current.status"
+          [attestations]="attestationsOf(current.id)"
+          [canWrite]="canWrite()"
+          (changed)="changed.emit()"
+        />
+      }
+      <fold-callout variant="warning" icon="clock" data-signature-to-attest>
+        Lot déposé. Signer la remise sur CENET, puis cocher «&nbsp;J’ai signé la remise sur
+        CENET&nbsp;» — l’outil ne voit pas la signature.
+      </fold-callout>
     }
     @case ('deposited') {
       @if (batch(); as current) {
@@ -134,10 +162,17 @@
           [pending]="pending() === current.id"
           (gesture)="gesture.emit($event)"
         />
+        <app-procedure-batch-attestations
+          [batchId]="current.id"
+          [status]="current.status"
+          [attestations]="attestationsOf(current.id)"
+          [canWrite]="canWrite()"
+          (changed)="changed.emit()"
+        />
       }
       <fold-callout variant="success" data-deposited>
-        Lot déposé. Signer la remise sur CENET si ce n’est pas fait, et lire les accusés PSR —
-        l’outil ne peut pas le vérifier.
+        Lot déposé, remise signée sur CENET. Les comptes rendus PSR se lisent sur le portail de la
+        banque.
       </fold-callout>
     }
   }
@@ -147,6 +182,13 @@
       <fold-callout variant="success" data-other-batch [attr.data-batch]="other.id">
         Lot {{ other.scheme }} de la même procédure, déposé.
       </fold-callout>
+      <app-procedure-batch-attestations
+        [batchId]="other.id"
+        [status]="other.status"
+        [attestations]="attestationsOf(other.id)"
+        [canWrite]="canWrite()"
+        (changed)="changed.emit()"
+      />
     } @else {
       <app-procedure-batch-actions
         data-other-batch
@@ -155,6 +197,13 @@
         [canWrite]="canWrite()"
         [pending]="pending() === other.id"
         (gesture)="otherGesture.emit({ batchId: other.id, gesture: $event })"
+      />
+      <app-procedure-batch-attestations
+        [batchId]="other.id"
+        [status]="other.status"
+        [attestations]="attestationsOf(other.id)"
+        [canWrite]="canWrite()"
+        (changed)="changed.emit()"
       />
       <app-pending-batch [batch]="other" [actions]="false" />
     }

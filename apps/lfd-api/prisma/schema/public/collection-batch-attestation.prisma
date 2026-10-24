@@ -1,0 +1,36 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Les attestations d'un lot de prélèvement — « Contrôle CSV relu »,
+// « Remise signée sur CENET », « Accusés PSR lus » (plan
+// `documentation/comptabilite/prelevement/plan-page-procedure-de-prelevement.md`
+// § 1.2, P3).
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Propriétaire : `src/b2b/accounting/`. Un REGISTRE D'AJOUTS : aucune ligne ne
+// se modifie ni ne s'efface (déclencheur
+// `collection_batch_attestation_append_only`) ; la dernière ligne d'un (lot,
+// sorte) fait foi. Contraintes INVISIBLES ici — dans la migration
+// `20261024090000_les_attestations_du_lot_de_prelevement` : la sorte est l'une
+// des trois, un retrait porte sa note, une attestation n'en porte pas.
+
+/// Une attestation d'un geste fait hors de l'outil sur un lot, ou son retrait.
+model CollectionBatchAttestation {
+  /// ULID.
+  id String @id
+
+  batchId String          @map("batch_id")
+  batch   CollectionBatch @relation(fields: [batchId], references: [id], onDelete: Restrict)
+
+  /// `audit_reviewed` | `remittance_signed` | `psr_read` — une VALEUR (CHECK).
+  kind              String
+  attestedAt        DateTime @map("attested_at") @db.Timestamptz(3)
+  /// Identifiant staff LOCAL — jamais un `sub`.
+  attestedByStaffId String   @map("attested_by_staff_id")
+  /// `true` : la ligne RETIRE l'attestation de cette sorte.
+  withdrawn         Boolean  @default(false)
+  /// La raison d'un retrait ; `null` pour une attestation.
+  note              String?
+
+  @@index([batchId, kind])
+  @@map("collection_batch_attestation")
+  @@schema("public")
+}

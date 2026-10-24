@@ -25,13 +25,22 @@ const STAGE_LABELS: Readonly<Record<CollectionProcedureStageView, string>> = {
   closed: 'Close',
 };
 
-/** L'étape, « Manquée » pour une clôture jamais préparée, et « à venir » avant la clôture. */
+/**
+ * L'étape, « Manquée » pour une clôture jamais préparée, « à venir » avant la
+ * clôture, et « déposé · signature à attester » quand l'onglet 3 n'attend
+ * plus que la remise signée cochée (P3, 2026-10-24).
+ */
 export function stageLabel(row: CollectionProcedureRowView): string {
   if (row.phase === 'missed') {
     return 'Manquée';
   }
   const label = STAGE_LABELS[row.stage];
-  return row.phase === 'upcoming' ? `${label} · à venir` : label;
+  if (row.phase === 'upcoming') {
+    return `${label} · à venir`;
+  }
+  return row.stage === 'file' && row.signatureToAttest
+    ? `${label} · déposé · signature à attester`
+    : label;
 }
 
 /** Le ton du badge d'étape : manquée, à faire, à venir, close. */

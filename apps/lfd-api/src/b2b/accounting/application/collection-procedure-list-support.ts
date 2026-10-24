@@ -114,6 +114,7 @@ export function procedureRowView(
     collectionDay: row.collectionDay,
     depositDeadline: row.depositDeadline,
     deposited: row.followed?.status === "deposited",
+    signatureToAttest: row.followed?.status === "deposited" && !row.followed.remittanceSigned,
     warnings: row.warnings,
   };
 }

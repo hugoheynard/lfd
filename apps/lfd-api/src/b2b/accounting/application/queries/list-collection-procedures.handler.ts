@@ -20,6 +20,7 @@ import { CollectionMandatesReader } from "../../domain/ports/collection-mandates
 import { CountedLotInputsReader } from "../../domain/ports/counted-lot-inputs.reader.js";
 import { CollectionReturnsReader } from "../../domain/ports/collection-returns.reader.js";
 import { BankReturnChecksReader } from "../../domain/ports/bank-return-checks.reader.js";
+import { CollectionBatchAttestationsReader } from "../../domain/ports/collection-batch-attestations.reader.js";
 import { checkedDaysOf } from "../../domain/services/bank-return-checks.js";
 import { InvoicePeriodsReader } from "../../domain/ports/invoice-periods.reader.js";
 import { LegalEntityReader } from "../../domain/ports/legal-entity.reader.js";
@@ -93,6 +94,7 @@ export class ListCollectionProceduresHandler implements IQueryHandler<
     private readonly coverage: AutopilotCoverageReader,
     private readonly clock: Clock,
     private readonly checks: BankReturnChecksReader,
+    private readonly attestations: CollectionBatchAttestationsReader,
   ) {}
 
   async execute(query: ListCollectionProceduresQuery): Promise<CollectionProcedureListView> {
@@ -170,9 +172,12 @@ export class ListCollectionProceduresHandler implements IQueryHandler<
     readonly batches: readonly ListedBatch[];
     readonly modes: readonly (readonly BillingMode[])[];
   }> {
-    const checkedDays = checkedDaysOf(await this.checks.ofEntity(legalEntityId));
+    const [checks, attested] = await Promise.all([
+      this.checks.ofEntity(legalEntityId),
+      this.attestations.ofBatches(stored.map((batch) => batch.id)),
+    ]);
     const [batches, modes] = await Promise.all([
-      procedureBatchesOf(this.returns, stored, checkedDays),
+      procedureBatchesOf(this.returns, stored, checkedDaysOf(checks), attested),
       readLotPayerModes(
         this.periods,
         calendar,

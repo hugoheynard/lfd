@@ -91,6 +91,11 @@ export interface CollectionProcedureRowView {
   readonly depositDeadline: LocalDeadlineView | null;
   /** Le lot suivi est déposé. */
   readonly deposited: boolean;
+  /**
+   * Le lot suivi est déposé, et « J'ai signé la remise sur CENET » n'est pas
+   * coché : l'onglet 3 attend l'attestation (P3, 2026-10-24).
+   */
+  readonly signatureToAttest: boolean;
   readonly warnings: readonly CollectionProcedureWarningView[];
 }
 

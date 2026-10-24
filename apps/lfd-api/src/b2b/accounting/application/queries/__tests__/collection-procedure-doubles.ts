@@ -15,6 +15,11 @@ import {
 } from "../../../domain/ports/collection-returns.reader.js";
 import type { BatchCsvLine } from "../../../domain/services/collection-batch-csv.js";
 import { BankReturnChecksReader } from "../../../domain/ports/bank-return-checks.reader.js";
+import { CollectionBatchAttestationsReader } from "../../../domain/ports/collection-batch-attestations.reader.js";
+import type {
+  BatchAttestationKind,
+  BatchAttestationLine,
+} from "../../../domain/services/collection-batch-attestations.js";
 import type { BankReturnCheckLine } from "../../../domain/services/bank-return-checks.js";
 import { LotDebtorsReader } from "../../../domain/ports/lot-debtors.reader.js";
 import type { LotDebtorLine } from "../../../domain/services/lot-debtor-bank-standing.js";
@@ -140,6 +145,24 @@ export class FixedBankReturnChecks extends BankReturnChecksReader {
     for (const day of days) {
       this.lines.push({ id: `chk_${day}`, day, at: NOW, staffId: "staff_1", withdrawn: false });
     }
+  }
+}
+
+/** Les attestations des lots, écrites à la main ; le filtre par lot est rejoué. */
+export class FixedBatchAttestations extends CollectionBatchAttestationsReader {
+  lines: BatchAttestationLine[] = [];
+  ofBatches(batchIds: readonly string[]): Promise<readonly BatchAttestationLine[]> {
+    return Promise.resolve(this.lines.filter((line) => batchIds.includes(line.batchId)));
+  }
+
+  /** Atteste cette sorte sur ce lot, au nom de `staff_1`. */
+  attest(
+    batchId: string,
+    kind: BatchAttestationKind = "remittance_signed",
+    withdrawn = false,
+  ): void {
+    const id = `att_${batchId}_${kind}_${String(this.lines.length)}`;
+    this.lines.push({ id, batchId, kind, at: NOW, staffId: "staff_1", withdrawn });
   }
 }
 

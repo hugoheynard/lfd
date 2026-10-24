@@ -18,6 +18,7 @@ import { FixedInvoicePeriods } from "../../services/__tests__/issued-invoice-dou
 import {
   FixedBatches,
   FixedBankReturnChecks,
+  FixedBatchAttestations,
   FixedCoverage,
   PendingReturns,
   LAST_CLOSURE,
@@ -47,6 +48,7 @@ function world(payerModes: PayerBillingModesReader = new FixedPayerModes(), paye
   const returns = new PendingReturns();
   const coverage = new FixedCoverage();
   const checks = new FixedBankReturnChecks();
+  const attestations = new FixedBatchAttestations();
   const entity = new OneEntity({ ...entityRecord(), depositCutoff: CUTOFF });
   const counting = countingOf(
     payers.map((id) => activePayer(id)),
@@ -70,11 +72,12 @@ function world(payerModes: PayerBillingModesReader = new FixedPayerModes(), paye
     coverage,
     accounts.clock,
     checks,
+    attestations,
   );
   const id = entity.record.id;
   const list = (includeClosed = false, entityId = id): Promise<CollectionProcedureListView> =>
     handler.execute(new ListCollectionProceduresQuery(entityId, includeClosed));
-  return { id, entity, mandates, batches, returns, coverage, checks, list };
+  return { id, entity, mandates, batches, returns, coverage, checks, attestations, list };
 }
 
 describe("ListCollectionProceduresHandler — la liste des procédures", () => {
@@ -145,12 +148,19 @@ describe("ListCollectionProceduresHandler — la liste des procédures", () => {
     w.returns.pending.set("watched", 2);
     // La fenêtre du lot clos est attestée jour après jour : sans quoi il resterait suivi (P3).
     w.checks.attest(...Array.from({ length: 12 }, (_, index) => addDays(TODAY, -40 + index)));
+    // Les deux remises signées attestées : sans quoi l'étape serait l'onglet 3 (P3).
+    w.attestations.attest("watched");
+    w.attestations.attest("closed");
 
     const open = await w.list();
     const all = await w.list(true);
 
     expect(open.rows.map((row) => row.id)).toEqual([`${w.id}~2026-11-01`, `${w.id}~2026-10-01`]);
-    expect(open.rows[1]).toMatchObject({ stage: "returns", deposited: true });
+    expect(open.rows[1]).toMatchObject({
+      stage: "returns",
+      deposited: true,
+      signatureToAttest: false,
+    });
     expect(open.rows[1]?.warnings).toContainEqual({ code: "pending_returns", count: 2 });
     expect(all.closedSince).toBe(addDays(TODAY, -92));
     expect(all.rows.at(-1)).toMatchObject({
@@ -236,5 +246,23 @@ describe("ListCollectionProceduresHandler — la liste des procédures", () => {
     const view = await w.list();
 
     expect(view.rows.at(-1)).toMatchObject({ code: "PRL-261101-M", closureModes: ["monthly"] });
+  });
+
+  it("un déposé dont la remise n'est pas attestée signée : l'étape reste le fichier (P3)", async () => {
+    const w = world();
+    w.batches.batches = [
+      stored("dep", {
+        status: "deposited",
+        depositedAt: NOW.toISOString(),
+        requestedCollectionDay: addDays(TODAY, 1),
+      }),
+    ];
+
+    const open = await w.list();
+
+    expect(open.rows.find((row) => row.deposited)).toMatchObject({
+      stage: "file",
+      signatureToAttest: true,
+    });
   });
 });

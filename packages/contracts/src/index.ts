@@ -205,6 +205,18 @@ export {
   withdrawBankReturnCheckPayloadSchema,
 } from "./collection-procedure.js";
 export type {
+  BatchAttestationKindView,
+  BatchAttestationView,
+  CollectionBatchAttestationsView,
+  AttestCollectionBatchPayload,
+  WithdrawCollectionBatchAttestationPayload,
+} from "./collection-batch-attestation.js";
+export {
+  BATCH_ATTESTATION_KIND_VALUES,
+  attestCollectionBatchPayloadSchema,
+  withdrawCollectionBatchAttestationPayloadSchema,
+} from "./collection-batch-attestation.js";
+export type {
   CollectionProcedureListBatchView,
   CollectionProcedureListView,
   CollectionProcedurePhaseView,

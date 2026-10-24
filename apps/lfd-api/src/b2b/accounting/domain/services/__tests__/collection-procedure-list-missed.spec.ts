@@ -39,6 +39,7 @@ function cancelled(id: string, closesAt: Date): ListedBatch {
     depositDeadline: null,
     pendingReturnCount: 0,
     checkedDays: EVERY_DAY_CHECKED,
+    remittanceSigned: true,
     constitutedDay: addDays(TODAY, -40),
     unmandatedCount: 0,
     periodLabel: "période",

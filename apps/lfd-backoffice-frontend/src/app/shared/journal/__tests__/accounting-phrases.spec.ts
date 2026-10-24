@@ -765,3 +765,33 @@ describe('la facture du mois — passage automatique et payeur signalé (2026-10
     );
   });
 });
+
+describe('les attestations du lot (P3)', () => {
+  const batch = { id: 'b_1', name: 'Lot CORE 20261031' };
+
+  it('dit la sorte, le lot et l’entité ; un retrait dit sa raison', () => {
+    expect(
+      sentence(
+        entity('collection_batch_attestation.attested', {
+          subjectLabel: ENTITY,
+          batch,
+          kind: 'remittance_signed',
+        }),
+      ),
+    ).toBe(
+      'Colette Martin a attesté « remise signée sur CENET » pour le lot « Lot CORE 20261031 » de l’entité émettrice « La Folie Douce SAS »',
+    );
+    expect(
+      sentence(
+        entity('collection_batch_attestation.withdrawn', {
+          subjectLabel: ENTITY,
+          batch,
+          kind: 'psr_read',
+          note: 'pas encore arrivés',
+        }),
+      ),
+    ).toContain(
+      'a retiré l’attestation « comptes rendus PSR lus » pour le lot « Lot CORE 20261031 » de l’entité émettrice « La Folie Douce SAS » : pas encore arrivés',
+    );
+  });
+});

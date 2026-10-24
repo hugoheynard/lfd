@@ -23,6 +23,7 @@ export function procedureBatch(
     depositDeadline: { day: '2026-11-12', time: '13:45' },
     cancelledAt: null,
     rejectedAt: null,
+    attestations: { audit_reviewed: null, remittance_signed: null, psr_read: null },
     ...over,
   };
 }
@@ -90,6 +91,7 @@ export function procedureRow(
     collectionDay: '2026-11-16',
     depositDeadline: { day: '2026-11-12', time: '13:45' },
     deposited: false,
+    signatureToAttest: false,
     warnings: [],
     ...over,
   };

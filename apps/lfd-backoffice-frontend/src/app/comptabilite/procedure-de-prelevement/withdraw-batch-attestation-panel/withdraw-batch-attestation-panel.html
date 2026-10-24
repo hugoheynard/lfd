@@ -1,0 +1,32 @@
+<fold-panel-header [title]="title()" subtitle="Ce lot de prélèvement" />
+
+<div class="body">
+  <fold-callout appearance="inset" variant="info">
+    Rien ne s’efface&nbsp;: le retrait s’ajoute au registre, avec son auteur et sa raison, et la
+    case redevient à cocher.
+  </fold-callout>
+  <fold-input
+    label="Pourquoi retirer cette attestation"
+    required
+    hint="Une phrase : par exemple « cochée sur le mauvais lot »."
+    [(value)]="note"
+  />
+
+  @if (error(); as message) {
+    <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+  }
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="close()">Annuler</button>
+  <button
+    foldButton
+    intent="danger"
+    [disabled]="!canSubmit()"
+    [loading]="saving()"
+    (click)="submit()"
+    data-confirm-withdraw
+  >
+    Retirer l’attestation
+  </button>
+</footer>

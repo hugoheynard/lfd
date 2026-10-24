@@ -120,8 +120,9 @@ model CollectionBatch {
   /// (migration `20261024060000_le_telechargement_d_un_lot_de_prelevement`).
   lastDownloadedAt DateTime? @map("last_downloaded_at") @db.Timestamptz(3)
 
-  lines   CollectionBatchLine[]
-  notices CollectionNotice[]
+  lines        CollectionBatchLine[]
+  notices      CollectionNotice[]
+  attestations CollectionBatchAttestation[]
 
   @@index([legalEntityId, cycleClosesAt])
   @@map("collection_batch")

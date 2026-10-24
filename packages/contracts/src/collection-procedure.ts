@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import type { CollectionBatchAttestationsView } from "./collection-batch-attestation.js";
 import type { CollectionBatchStatusView } from "./collection-batch.js";
 import type { BillingRhythmKind, LocalDeadlineView } from "./legal-entity.js";
 
@@ -11,8 +12,8 @@ import type { BillingRhythmKind, LocalDeadlineView } from "./legal-entity.js";
  * L'état de chaque onglet est CALCULÉ par le serveur à chaque lecture depuis
  * les exports, les lots et les retours : rien n'est stocké, pas même l'onglet
  * courant (§ 1). Les attestations « Retours contrôlés » (P3) y sont depuis
- * le 2026-10-23, l'avertissement par débiteur du lot (P4 révisé) depuis le
- * 2026-10-24 ; les attestations du lot pas encore.
+ * le 2026-10-23, l'avertissement par débiteur du lot (P4 révisé) et les
+ * attestations du lot depuis le 2026-10-24.
  */
 
 /** L'état d'un onglet (§ 3). Une VALEUR : stable. */
@@ -46,10 +47,18 @@ export interface CollectionProcedureMandatesView {
  * déposer), `to_prepare` (la dernière clôture n'a pas de lot), `cancelled`
  * (le lot demandé a été annulé), `rejected_by_bank` (son fichier a été
  * rejeté par la banque après dépôt : à préparer de nouveau), `to_deposit`,
- * `deposited`.
+ * `signature_to_attest` (déposé, « J'ai signé la remise sur CENET » pas
+ * encore coché — « en attente », depuis le 2026-10-24), `deposited` (déposé
+ * et signature attestée : « fait »).
  */
 export type CollectionProcedureFileReasonView =
-  "no_batch" | "to_prepare" | "cancelled" | "rejected_by_bank" | "to_deposit" | "deposited";
+  | "no_batch"
+  | "to_prepare"
+  | "cancelled"
+  | "rejected_by_bank"
+  | "to_deposit"
+  | "signature_to_attest"
+  | "deposited";
 
 /**
  * Le compte destinataire d'un débiteur, vu des exports de comptes (EXC) :
@@ -205,6 +214,11 @@ export interface CollectionProcedureBatchView {
   readonly cancelledAt: string | null;
   /** L'instant du rejet déclaré par la banque ; `null` sinon. */
   readonly rejectedAt: string | null;
+  /**
+   * Ses attestations — contrôle CSV relu, remise signée, accusés PSR lus
+   * (P3, 2026-10-24) ; chacune la dernière ligne de sa sorte.
+   */
+  readonly attestations: CollectionBatchAttestationsView;
 }
 
 /** La dernière clôture du calendrier, sans lot préparé. */

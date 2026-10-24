@@ -1,5 +1,6 @@
 import type {
   BillingRhythmKind,
+  CollectionBatchAttestationsView,
   CollectionProcedureAccountsView,
   CollectionProcedureBatchView,
   CollectionProcedureMandatesView,
@@ -30,6 +31,10 @@ import {
   bankReferentialStandingOf,
   type BankReferentialStanding,
 } from "../domain/services/lot-debtor-bank-standing.js";
+import {
+  standingAttestationOf,
+  type BatchAttestationLine,
+} from "../domain/services/collection-batch-attestations.js";
 import { selectAccountsForBankExport } from "../domain/services/account-bank-export-selection.js";
 import {
   accountsState,
@@ -148,12 +153,15 @@ export async function readBankSteps(
  * Les lots de l'entité, chacun avec ses retours en suspens. Seuls les lots
  * DÉPOSÉS en ont : un retour exige un lot déposé (`collection-return.ts`).
  * `checkedDays` : les jours « Retours contrôlés » de l'entité — un contrôle
- * du jour couvre tous ses lots (plan § 3.4).
+ * du jour couvre tous ses lots (plan § 3.4). `attestations` : les lignes des
+ * attestations des lots — « remise signée » fait passer l'onglet 3 à « fait »
+ * (P3).
  */
 export async function procedureBatchesOf(
   returns: CollectionReturnsReader,
   stored: readonly StoredBatchView[],
   checkedDays: ReadonlySet<string>,
+  attestations: readonly BatchAttestationLine[],
 ): Promise<readonly ProcedureBatch[]> {
   return Promise.all(
     stored.map(async (batch): Promise<ProcedureBatch> => {
@@ -167,6 +175,11 @@ export async function procedureBatchesOf(
         depositDeadline: batch.depositDeadline,
         pendingReturnCount: rows.filter((row) => row.resolution === "pending").length,
         checkedDays,
+        remittanceSigned:
+          standingAttestationOf(
+            attestations.filter((line) => line.batchId === batch.id),
+            "remittance_signed",
+          ) !== null,
       };
     }),
   );
@@ -177,6 +190,7 @@ export function procedureBatchView(
   legalEntityId: string,
   batch: StoredBatchView,
   payerModes: readonly BillingRhythmKind[],
+  attestations: CollectionBatchAttestationsView,
 ): CollectionProcedureBatchView {
   return {
     id: batch.id,
@@ -189,6 +203,7 @@ export function procedureBatchView(
     depositDeadline: batch.depositDeadline,
     cancelledAt: batch.cancelledAt,
     rejectedAt: batch.rejection?.at ?? null,
+    attestations,
   };
 }
 

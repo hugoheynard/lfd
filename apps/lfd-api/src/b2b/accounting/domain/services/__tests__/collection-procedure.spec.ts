@@ -28,6 +28,7 @@ function batch(id: string, over: Partial<ProcedureBatch> = {}): ProcedureBatch {
     depositDeadline: { day: "2026-11-12", time: "13:45" },
     pendingReturnCount: 0,
     checkedDays: EVERY_DAY_CHECKED,
+    remittanceSigned: true,
     ...over,
   };
 }
@@ -76,6 +77,25 @@ describe("onglet 3 — le fichier du lot suivi (P2 : sans attestation)", () => {
       state: "to_do",
       reason: "rejected_by_bank",
     });
+  });
+});
+
+describe("onglet 3 — la remise signée attestée (P3, Q5)", () => {
+  const unsigned = batch("u", { status: "deposited", remittanceSigned: false });
+
+  it("déposé sans signature attestée : en attente, sous sa propre raison", () => {
+    expect(fileStatus(unsigned, false)).toEqual({
+      state: "waiting",
+      reason: "signature_to_attest",
+    });
+  });
+
+  it("la signature n'est attendue qu'après le dépôt : un lot préparé reste à déposer", () => {
+    expect(fileStatus(batch("p", { remittanceSigned: false }), false).reason).toBe("to_deposit");
+  });
+
+  it("l'onglet 4 ne lit pas la signature : un lot déposé non signé s'y suit quand même", () => {
+    expect(returnsStatus(unsigned, "2026-11-13").state).not.toBe("locked");
   });
 });
 

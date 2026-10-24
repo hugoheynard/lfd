@@ -8,6 +8,7 @@ import { FixedInvoicePeriods } from "../../services/__tests__/issued-invoice-dou
 import {
   FixedBatches,
   FixedBankReturnChecks,
+  FixedBatchAttestations,
   FixedCoverage,
   FixedLotDebtors,
   PendingReturns,
@@ -33,6 +34,7 @@ export function world() {
   const counting = countingOf([], []);
   const checks = new FixedBankReturnChecks();
   const lotDebtors = new FixedLotDebtors();
+  const attestations = new FixedBatchAttestations();
   const handler = new GetCollectionProcedureHandler(
     accounts.entities,
     accounts.accounts,
@@ -55,8 +57,9 @@ export function world() {
       authorsKnownAs({ firstName: "Claire", lastName: "Compta" }, "staff_1"),
     ),
     lotDebtors,
+    attestations,
   );
   const read = (batchId: string | null = null, closureDay: string | null = null) =>
     handler.execute(new GetCollectionProcedureQuery("le1", batchId, closureDay));
-  return { accounts, mandates, batches, returns, coverage, checks, lotDebtors, read };
+  return { accounts, mandates, batches, returns, coverage, checks, lotDebtors, attestations, read };
 }

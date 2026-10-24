@@ -114,6 +114,8 @@ describe("la procédure de prélèvement — la lecture d'état", () => {
       }),
     ];
     w.returns.pending.set("dep", 1);
+    // La remise signée attestée : sans elle, l'onglet 3 attend (P3).
+    w.attestations.attest("dep");
 
     const view = await w.read();
 
@@ -206,6 +208,7 @@ describe("la procédure de prélèvement — la lecture d'état", () => {
       }),
       stored("current"),
     ];
+    w.attestations.attest("old");
 
     const view = await w.read(null, "2026-09-01");
 

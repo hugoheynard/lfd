@@ -15,6 +15,7 @@ import { cents, count, day, fact, instant, named, payload, subjectLabel } from "
  */
 
 const sepaScheme = () => z.enum(["CORE", "B2B"]);
+const batchAttestationKind = () => z.enum(["audit_reviewed", "remittance_signed", "psr_read"]);
 
 const batch = {
   subjectLabel: subjectLabel(),
@@ -352,6 +353,27 @@ export const COLLECTION_FACTS = {
   /** Une attestation fausse retirée — par une ligne de plus, avec sa raison. */
   "bank_return_check.withdrawn": fact(
     payload({ subjectLabel: subjectLabel(), day: day(), note: z.string().min(1) }),
+  ),
+  /**
+   * Un geste fait hors de l'outil sur un lot est attesté : le contrôle CSV
+   * relu, la remise signée sur CENET, les accusés PSR lus (plan
+   * `plan-page-procedure-de-prelevement.md` § 1.2, P3). Sujet : l'entité.
+   */
+  "collection_batch_attestation.attested": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      batch: named("collection_batch"),
+      kind: batchAttestationKind(),
+    }),
+  ),
+  /** Une attestation fausse retirée — par une ligne de plus, avec sa raison. */
+  "collection_batch_attestation.withdrawn": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      batch: named("collection_batch"),
+      kind: batchAttestationKind(),
+      note: z.string().min(1),
+    }),
   ),
   /**
    * Un compte est déclaré connu de la banque sans fichier, et pourquoi : saisi

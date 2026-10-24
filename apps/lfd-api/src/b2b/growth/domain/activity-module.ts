@@ -224,6 +224,9 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     // « Retours contrôlés » : le contrôle quotidien des retours de la banque
     // (plan `plan-page-procedure-de-prelevement.md` § 1.2, P3, 2026-10-23).
     "bank_return_check.",
+    // Les attestations du lot : contrôle CSV relu, remise signée, accusés PSR
+    // lus (plan `plan-page-procedure-de-prelevement.md` § 1.2, P3, 2026-10-24).
+    "collection_batch_attestation.",
   ],
   // Le fonds d'images : un bloc à lui depuis le 2026-09-23, avec son droit
   // (`media_library`). Rangé sous `pim` jusqu'au 2026-10-10.

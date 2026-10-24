@@ -12,9 +12,10 @@ import {
  * `documentation/comptabilite/prelevement/plan-page-procedure-de-prelevement.md`,
  * § 1 et § 3). Pur : le jour de Paris est donné, rien n'est lu ni stocké.
  *
- * Ce qui n'y est pas encore, et c'est voulu : les attestations du LOT (P3,
- * `collection_batch_attestation`) — l'onglet 3 est donc « fait » au dépôt,
- * sans la signature attestée. L'onglet 3 ne se verrouille pas sur l'onglet 2 :
+ * Les attestations du LOT (P3, `collection_batch_attestation`, 2026-10-24) :
+ * l'onglet 3 n'est « fait » qu'au dépôt ET à la remise signée attestée
+ * (« Accusés PSR lus » est facultatif, Q5) ; aucune n'entre dans l'onglet 4,
+ * verrouillé par le seul dépôt. L'onglet 3 ne se verrouille pas sur l'onglet 2 :
  * il nomme les débiteurs du lot absents de CENET (P4 révisé, 2026-10-24,
  * `lot-debtor-bank-standing.ts`) — la banque ne contrôle pas au dépôt. Les
  * attestations « Retours contrôlés » (entité × jour) y sont depuis le
@@ -43,6 +44,11 @@ export interface ProcedureBatch {
    * du jour J couvre tous les lots de l'entité (§ 3.4).
    */
   readonly checkedDays: ReadonlySet<string>;
+  /**
+   * « J'ai signé la remise sur CENET » fait foi pour ce lot (la dernière ligne
+   * de la sorte, `standingAttestationOf`). Ne gouverne que l'onglet 3.
+   */
+  readonly remittanceSigned: boolean;
 }
 
 /** Onglet 1 (§ 3.1) : à exporter, sinon en vol, sinon fait. */
@@ -73,9 +79,20 @@ export function mandatesState(
 }
 
 export type FileReason =
-  "no_batch" | "to_prepare" | "cancelled" | "rejected_by_bank" | "to_deposit" | "deposited";
+  | "no_batch"
+  | "to_prepare"
+  | "cancelled"
+  | "rejected_by_bank"
+  | "to_deposit"
+  | "signature_to_attest"
+  | "deposited";
 
-/** Onglet 3 (§ 3.3), sans attestation ni verrou par débiteur (P2). */
+/**
+ * Onglet 3 (§ 3.3) : « fait » quand le lot est déposé ET la remise signée
+ * attestée ; déposé sans signature attestée, « en attente » — la signature se
+ * fait sur CENET, l'outil attend qu'on la coche (P3, décision Q5 : « PSR
+ * lus » n'y entre pas). Sans verrou par débiteur (P4 révisé).
+ */
 export function fileStatus(
   followed: ProcedureBatch | null,
   toPrepare: boolean,
@@ -89,9 +106,12 @@ export function fileStatus(
     // Un lot rejeté par la banque se prépare de nouveau, comme un lot annulé.
     return { state: "to_do", reason: followed.status };
   }
-  return followed.status === "constituted"
-    ? { state: "to_do", reason: "to_deposit" }
-    : { state: "done", reason: "deposited" };
+  if (followed.status === "constituted") {
+    return { state: "to_do", reason: "to_deposit" };
+  }
+  return followed.remittanceSigned
+    ? { state: "done", reason: "deposited" }
+    : { state: "waiting", reason: "signature_to_attest" };
 }
 
 export type ReturnsReason =

@@ -358,6 +358,37 @@ function capOf(raw: unknown): Segment {
 
 const BATCH: Noun = { the: 'le lot', a: 'un lot' };
 
+/** Les attestations d'un lot, telles que l'écran les nomme (plan `plan-page-procedure-de-prelevement.md` § 1.2). */
+const BATCH_ATTESTATION: Readonly<Record<string, string>> = {
+  audit_reviewed: 'contrôle CSV relu',
+  remittance_signed: 'remise signée sur CENET',
+  psr_read: 'comptes rendus PSR lus',
+};
+
+/**
+ * « … a attesté « remise signée sur CENET » pour le lot « Lot CORE 20261031 »
+ * de l'entité émettrice « X » » ; un retrait dit sa raison (P3).
+ */
+function onAttestation(verb: string): Phrase {
+  return (fact) => {
+    const kind = optional(fact.payload['kind']);
+    const note = optional(fact.payload['note']);
+    return byActor(
+      fact,
+      [
+        text(`${verb} « `),
+        value((kind === null ? undefined : BATCH_ATTESTATION[kind]) ?? kind ?? '—'),
+        text(' » pour '),
+        ...cite(BATCH, fact.payload['batch']),
+        text(' '),
+        ...entity(fact, 'de'),
+        ...(note === null ? [] : [text(' : '), name(note)]),
+      ],
+      ['subjectLabel', 'batch', 'kind', 'note'],
+    );
+  };
+}
+
 /**
  * « … a constitué le lot « Lot B2B 202609 » de l'entité émettrice « X » —
  * 3 lignes, 1 234,00 € ». Le plan : `lot-de-prelevement-fige.md`.
@@ -742,6 +773,8 @@ export const ACCOUNTING_PHRASES = {
     (fact) => [text(' pour le '), inUnit('day', fact.payload['day'])],
     ['day'],
   ),
+  'collection_batch_attestation.attested': onAttestation('a attesté'),
+  'collection_batch_attestation.withdrawn': onAttestation('a retiré l’attestation'),
   'bank_return_check.withdrawn': onEntity(
     'a retiré le contrôle des retours de la banque',
     'de',

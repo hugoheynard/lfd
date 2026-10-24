@@ -9,6 +9,11 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 import { Clock } from "../../../../platform/time/clock.js";
 import { StaffAuthorDirectory } from "../../../../staff/directory/domain/staff-author-directory.js";
 import { BankReturnChecksReader } from "../../domain/ports/bank-return-checks.reader.js";
+import { CollectionBatchAttestationsReader } from "../../domain/ports/collection-batch-attestations.reader.js";
+import {
+  attestationsViewOf,
+  readProcedureAttestations,
+} from "../collection-procedure-attestations-support.js";
 import { checkedDaysOf } from "../../domain/services/bank-return-checks.js";
 import { readReturnsStep } from "../collection-procedure-returns-support.js";
 import { CollectionBatchNotFoundError } from "../../domain/errors/collection-errors.js";
@@ -92,6 +97,7 @@ export class GetCollectionProcedureHandler implements IQueryHandler<
     private readonly checks: BankReturnChecksReader,
     private readonly authors: StaffAuthorDirectory,
     private readonly lotDebtors: LotDebtorsReader,
+    private readonly attestations: CollectionBatchAttestationsReader,
   ) {}
 
   async execute(query: GetCollectionProcedureQuery): Promise<CollectionProcedureView> {
@@ -119,8 +125,12 @@ export class GetCollectionProcedureHandler implements IQueryHandler<
       this.checks.ofEntity(entity.id),
     ]);
     const calendar = InvoicingCalendar.of(dates.modes, dates.payers);
+    const attested = await readProcedureAttestations(
+      { attestations: this.attestations, authors: this.authors },
+      stored.map((batch) => batch.id),
+    );
     const [batches, modes, missed] = await Promise.all([
-      procedureBatchesOf(this.returns, stored, checkedDaysOf(checks)),
+      procedureBatchesOf(this.returns, stored, checkedDaysOf(checks), attested.lines),
       readLotPayerModes(
         this.periods,
         calendar,
@@ -136,7 +146,12 @@ export class GetCollectionProcedureHandler implements IQueryHandler<
     const views = new Map(
       stored.map((batch, index) => [
         batch.id,
-        procedureBatchView(entity.id, batch, modes[index] ?? []),
+        procedureBatchView(
+          entity.id,
+          batch,
+          modes[index] ?? [],
+          attestationsViewOf(attested.views, batch.id),
+        ),
       ]),
     );
     const storedById = new Map(stored.map((batch) => [batch.id, batch]));
