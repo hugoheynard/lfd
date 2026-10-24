@@ -31,12 +31,14 @@ describe("la procédure de prélèvement — la liste des procédures", () => {
       await staff().get(listOf(entityId, true)).expect(200),
     );
 
-    expect(list.rows.map((row) => row.phase)).toEqual(["open", "upcoming"]);
+    // La plus récente en haut (Hugo, 2026-10-24).
+    expect(list.rows.map((row) => row.phase)).toEqual(["upcoming", "open"]);
     expect(list.rows.every((row) => row.id.startsWith(`${entityId}~`))).toBe(true);
-    expect(list.rows[0]).toMatchObject({ stage: "accounts", followedBatchId: null });
-    expect(list.rows[0]?.warnings).toContainEqual({ code: "accounts_to_export", count: 1 });
+    const toPrepare = list.rows.find((row) => row.phase === "open");
+    expect(toPrepare).toMatchObject({ stage: "accounts", followedBatchId: null });
+    expect(toPrepare?.warnings).toContainEqual({ code: "accounts_to_export", count: 1 });
 
-    const [open, upcoming] = list.rows;
+    const [upcoming, open] = list.rows;
     const opened = jsonBody<CollectionProcedureView>(
       await staff()
         .get(`/admin/accounting/collection-procedure?procedureId=${open?.id ?? ""}`)
@@ -73,7 +75,7 @@ describe("la procédure de prélèvement — la liste des procédures", () => {
    * Prisma, comme `collection-autopilot-outcome.e2e-spec.ts` : la produire par le
    * passage demanderait de remonter l'horloge d'un mois.
    */
-  it("met la clôture manquée en tête, et son détail renvoie au lot de la dernière", async () => {
+  it("liste la clôture manquée à sa place par clôture décroissante, et son détail renvoie au lot de la dernière", async () => {
     const entityId = await entity("552100554");
     const before = jsonBody<CollectionProcedureListView>(
       await staff().get(listOf(entityId)).expect(200),
@@ -98,7 +100,10 @@ describe("la procédure de prélèvement — la liste des procédures", () => {
     const list = jsonBody<CollectionProcedureListView>(
       await staff().get(listOf(entityId)).expect(200),
     );
-    const [missed] = list.rows;
+    expect(list.rows.map((row) => row.closesAt)).toEqual(
+      [...list.rows.map((row) => row.closesAt)].sort().reverse(),
+    );
+    const missed = list.rows.find((row) => row.phase === "missed");
     expect(missed).toMatchObject({ phase: "missed", closesAt: previous.closesAt.toISOString() });
     expect(missed?.warnings).toEqual([{ code: "missed_closure", count: null }]);
 

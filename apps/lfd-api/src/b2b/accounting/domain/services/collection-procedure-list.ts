@@ -34,7 +34,8 @@ import { isDeadBatchStatus } from "../entities/collection-batch-status.js";
 /**
  * `missed` : une clôture passée, plus ancienne que la dernière, que
  * l'automatisme n'a jamais tentée et qu'aucun lot ne couvre
- * (`missedClosures`, R4b — Hugo, 2026-10-23 : la table la montre en tête).
+ * (`missedClosures`, R4b — Hugo, 2026-10-23). Depuis le 2026-10-24, la table
+ * ne la remonte plus : elle prend sa place par jour de clôture, et son badge la signale.
  */
 export type ProcedurePhase = "open" | "upcoming" | "closed" | "missed";
 export type ProcedureStage = ProcedureStepKey | "closed";
@@ -46,6 +47,8 @@ export interface ListedBatch extends ProcedureBatch {
   readonly unmandatedCount: number;
   readonly periodLabel: string;
   readonly payerModes: readonly BillingMode[];
+  /** Les commandes portées par ses lignes. */
+  readonly orderCount: number;
 }
 
 /** Une clôture sans lot (à préparer ou à venir), avec ses jalons du calendrier. */
@@ -77,6 +80,12 @@ export interface ProcedureListInput {
   readonly upcoming: readonly ClosureToCome[];
   /** `AAAA-MM-JJ` — les closes d'avant ne sont pas listées ; `null` = aucune close. */
   readonly closedSince: string | null;
+  /**
+   * `AAAA-MM-JJ` (jour de clôture) → les commandes que la constitution
+   * prendrait pour cette clôture sans lot. Une clôture absente n'a pas de
+   * compte calculé (« — »).
+   */
+  readonly candidateOrderCounts: ReadonlyMap<string, number>;
 }
 
 export interface ProcedureRow {
@@ -91,9 +100,14 @@ export interface ProcedureRow {
   readonly collectionDay: string | null;
   readonly depositDeadline: LocalDeadline | null;
   readonly warnings: readonly ProcedureWarning[];
+  /**
+   * Les commandes de la procédure : celles de ses lots vivants, sinon ses
+   * candidates ; `null` quand elles ne sont pas calculées (Hugo, 2026-10-24).
+   */
+  readonly orderCount: number | null;
 }
 
-/** Les lignes, dans l'ordre de la table (cf. {@link byUrgency}). */
+/** Les lignes, dans l'ordre de la table (cf. {@link byMostRecent}). */
 export function procedureRowsOf(input: ProcedureListInput): readonly ProcedureRow[] {
   const groups = groupByClosure(input.batches);
   const rows = [...groups.values()].map((batches) => batchRow(input, batches));
@@ -110,7 +124,7 @@ export function procedureRowsOf(input: ProcedureListInput): readonly ProcedureRo
       rows.push(row);
     }
   }
-  return rows.filter((row) => listed(row, input.closedSince)).sort(byUrgency);
+  return rows.filter((row) => listed(row, input.closedSince)).sort(byMostRecent);
 }
 
 function listed(row: ProcedureRow, closedSince: string | null): boolean {
@@ -161,7 +175,15 @@ function batchRow(input: ProcedureListInput, batches: readonly ListedBatch[]): P
     collectionDay: followed?.requestedCollectionDay ?? null,
     depositDeadline: followed?.depositDeadline ?? null,
     warnings: batchWarnings(input, batches, followed, open),
+    orderCount: liveOrderCountOf(batches),
   };
+}
+
+/** Σ des commandes des lots vivants : un lot annulé ou rejeté n'en porte plus. */
+function liveOrderCountOf(batches: readonly ListedBatch[]): number {
+  return batches
+    .filter((batch) => !isDeadBatchStatus(batch.status))
+    .reduce((sum, batch) => sum + batch.orderCount, 0);
 }
 
 function batchWarnings(
@@ -193,8 +215,9 @@ function closureRow(
   closure: ClosureToCome,
   phase: "open" | "upcoming" | "missed",
 ): ProcedureRow {
+  const orderCount = input.candidateOrderCounts.get(closureDayOf(closure.closesAt)) ?? null;
   if (phase === "missed") {
-    return missedRow(input.legalEntityId, closure);
+    return { ...missedRow(input.legalEntityId, closure), orderCount };
   }
   const deposit =
     phase === "open"
@@ -214,6 +237,7 @@ function closureRow(
     collectionDay: closure.collectionDay,
     depositDeadline: closure.depositDeadline,
     warnings: [...deposit, ...entityWarnings(input)],
+    orderCount,
   };
 }
 
@@ -261,42 +285,11 @@ function modesOf(batches: readonly ListedBatch[]): readonly BillingMode[] {
 }
 
 /**
- * L'ordre de la table : d'abord les clôtures manquées, la plus ancienne en
- * tête (Hugo, 2026-10-23) ; puis ce qui reste à déposer (ouvertes non
- * déposées et à venir), la limite la plus proche en tête — une limite ne se
- * rattrape pas ; puis les déposées encore suivies, l'échéance la plus proche
- * en tête ; les closes à la fin, la plus récente d'abord. Même priorité que
- * les lots ouverts de la page (Q4).
+ * La plus récente en haut (Hugo, 2026-10-24) : la table se lit comme un
+ * historique, par jour de clôture décroissant. Les manquées et les limites
+ * dépassées se signalent par leur badge et leurs avertissements, pas par
+ * l'ordre.
  */
-function byUrgency(left: ProcedureRow, right: ProcedureRow): number {
-  const rank = rankOf(left) - rankOf(right);
-  if (rank !== 0) {
-    return rank;
-  }
-  if (left.phase === "closed") {
-    return right.closesAt.getTime() - left.closesAt.getTime();
-  }
-  return urgencyKey(left).localeCompare(urgencyKey(right));
-}
-
-const RANK_MISSED = -1;
-const RANK_TO_DEPOSIT = 0;
-const RANK_DEPOSITED = 1;
-const RANK_CLOSED = 2;
-
-function rankOf(row: ProcedureRow): number {
-  if (row.phase === "missed") {
-    return RANK_MISSED;
-  }
-  if (row.phase === "closed") {
-    return RANK_CLOSED;
-  }
-  return row.followed?.status === "deposited" ? RANK_DEPOSITED : RANK_TO_DEPOSIT;
-}
-
-function urgencyKey(row: ProcedureRow): string {
-  if (row.followed?.status !== "deposited" && row.depositDeadline !== null) {
-    return `${row.depositDeadline.day}T${row.depositDeadline.time}`;
-  }
-  return row.collectionDay ?? closureDayOf(row.closesAt);
+function byMostRecent(left: ProcedureRow, right: ProcedureRow): number {
+  return right.closesAt.getTime() - left.closesAt.getTime();
 }

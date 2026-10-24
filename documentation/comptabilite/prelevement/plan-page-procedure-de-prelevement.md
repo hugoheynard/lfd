@@ -623,11 +623,12 @@ réglée, marge < 2 jours ouvrés (la même `tightDepositMargin`, factorisée da
 mandats de l'entité à exporter, débiteurs du lot sans mandat
 (`unmandatedCompanies`), retours en suspens.
 
-**Tri** : ce qui reste à déposer d'abord, la limite la plus proche en tête ;
-puis les déposées suivies, l'échéance la plus proche en tête ; les closes à la
-fin, la plus récente d'abord. Les déposées ne sont pas classées par leur
-limite — passée par définition, elle les ferait remonter devant un dépôt à
-faire (la même priorité que Q4).
+**Tri** (Hugo, 2026-10-24) : par jour de clôture **décroissant**, la plus
+récente en haut — la table se lit comme un historique (`byMostRecent`). Une
+manquée ou une limite dépassée se signale par son badge et ses
+avertissements, plus par l'ordre. Le front ne retrie pas. ~~Ce qui reste à
+déposer d'abord, la limite la plus proche en tête ; puis les déposées
+suivies ; les closes à la fin~~ — règle du 2026-10-23, retirée le 2026-10-24.
 
 **Le détail** est la page des § 1-5, sur
 `/comptabilite/procedure-de-prelevement/:id` (`?lot=` épingle un lot), avec
@@ -641,8 +642,8 @@ désignent (redirection sur la table). Le tableau de bord des rythmes ouvre
 directement le détail : `BillingRhythmPeriodView.procedureId`.
 
 **Les clôtures manquées** (Hugo, 2026-10-23 — bâties le même jour, non
-commitées) : une ligne `missed`, en **tête** de table, la plus ancienne
-d'abord, badge « Manquée » en alerte et l'avertissement `missed_closure`.
+commitées) : une ligne `missed`, ~~en tête de table, la plus ancienne
+d'abord~~ à sa place par clôture décroissante depuis le 2026-10-24, badge « Manquée » en alerte et l'avertissement `missed_closure`.
 La règle n'est pas refaite : `missedClosures` (R4b), lue par
 `readMissedClosures` (`application/missed-closures-support.ts`) avec
 `current` = la dernière clôture passée et le même `AutopilotCoverageReader`

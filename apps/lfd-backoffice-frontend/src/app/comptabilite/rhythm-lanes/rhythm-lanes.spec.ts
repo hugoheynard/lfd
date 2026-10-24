@@ -251,7 +251,8 @@ describe('RhythmLanes', () => {
     expect(
       [...(weekly?.querySelectorAll('a') ?? [])].map((link) => link.getAttribute('href')),
     ).toEqual([
-      '/comptabilite/entites-juridiques/le1',
+      // Le lien arrive sur la section de la limite (2026-10-24).
+      '/comptabilite/entites-juridiques/le1#limite-de-depot',
       '/comptabilite/procedure-de-prelevement/le1~2026-10-12?lot=b_weekly',
     ]);
   });

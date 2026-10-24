@@ -6,7 +6,7 @@ import type {
   SetCollectionSchedulePayload,
   SetPreNotificationPayload,
 } from '@lfd/contracts';
-import { FoldInputComponent, FoldNumberInputComponent } from 'fold-ng';
+import { FoldTimeComponent, FoldNumberInputComponent } from 'fold-ng';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { LegalEntitiesService } from '../../../legal-entities.service';
@@ -148,7 +148,7 @@ function type(
 
 function typeTime(fixture: ComponentFixture<CollectionSettingsCard>, value: string): void {
   fixture.debugElement
-    .query(By.directive(FoldInputComponent))
+    .query(By.directive(FoldTimeComponent))
     .triggerEventHandler('valueChange', value);
   fixture.detectChanges();
 }
@@ -326,5 +326,33 @@ describe('CollectionSettingsCard — le prélèvement automatique', () => {
 
     expect(wire.autos).toEqual([{ id: 'le1', payload: { enabled: false } }]);
     expect(wire.saved[0]?.said).toBe('Prélèvement automatique désactivé.');
+  });
+
+  it('la section « Limite de dépôt à la banque » porte l’ancre des liens « Régler »', () => {
+    const fixture = boot();
+    const section = (fixture.nativeElement as HTMLElement).querySelector('#limite-de-depot');
+
+    expect(section?.getAttribute('aria-labelledby')).toBe('cs-deposit-title');
+    expect(section?.querySelector('#cs-deposit-title')?.textContent).toContain(
+      'Limite de dépôt à la banque',
+    );
+  });
+
+  it('l’heure limite est un contrôle d’heure, et part au service en « HH:MM » même avec des secondes', async () => {
+    const fixture = boot();
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('fold-time input')?.getAttribute('type'),
+    ).toBe('time');
+    type(fixture, DAYS, 20);
+    type(fixture, CUTOFF_DAYS, 2);
+    typeTime(fixture, '13:45:00');
+
+    button(fixture, 'Enregistrer').click();
+    await wire.saved[0]?.action();
+
+    expect(wire.schedules[0]?.payload.depositCutoff).toEqual({
+      businessDaysBefore: 2,
+      time: '13:45',
+    });
   });
 });

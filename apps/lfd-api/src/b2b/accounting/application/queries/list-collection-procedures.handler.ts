@@ -53,6 +53,8 @@ import {
 } from "../collection-procedure-support.js";
 import { countedPayerIdsOf } from "../counted-payers-support.js";
 import { readBillingDates } from "../invoicing-calendar-support.js";
+import { CollectionAssemblyReaders } from "../collection-constitution-ports.js";
+import { readCandidateOrderCounts } from "../procedure-candidate-counts-support.js";
 import { missedClosuresToCome } from "../missed-closures-support.js";
 import { readLotPayerModes } from "../lot-payer-modes-support.js";
 import { lotModesByClosureDay, procedureRhythmsOf } from "../procedure-rhythms-support.js";
@@ -95,6 +97,7 @@ export class ListCollectionProceduresHandler implements IQueryHandler<
     private readonly clock: Clock,
     private readonly checks: BankReturnChecksReader,
     private readonly attestations: CollectionBatchAttestationsReader,
+    private readonly assembly: CollectionAssemblyReaders,
   ) {}
 
   async execute(query: ListCollectionProceduresQuery): Promise<CollectionProcedureListView> {
@@ -122,6 +125,12 @@ export class ListCollectionProceduresHandler implements IQueryHandler<
     const followed = BILLING_MODES.filter((mode) => isRhythmFollowed(mode, counts.get(mode) ?? 0));
     const toPrepare = toPrepareOf(entity.id, calendar, stored, now);
     const toPrepareAt = toPrepare === null ? null : new Date(toPrepare.closesAt);
+    const candidateOrderCounts = await readCandidateOrderCounts(
+      this.assembly,
+      entity.id,
+      now,
+      toPrepareAt !== null,
+    );
     const closedSince = query.includeClosed
       ? addDays(local.day, -CLOSED_PROCEDURES_LOOKBACK_DAYS)
       : null;
@@ -137,6 +146,7 @@ export class ListCollectionProceduresHandler implements IQueryHandler<
           : closureToCome(calendar, toPrepareAt, settings, calendar.modesClosingAt(toPrepareAt)),
       upcoming: upcomingClosures(dates.modes, followed, calendar, settings, now),
       closedSince,
+      candidateOrderCounts,
     });
     return {
       legalEntityId: entity.id,

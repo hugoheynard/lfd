@@ -38,6 +38,7 @@ function batch(id: string, closesAt: Date, over: Partial<ListedBatch> = {}): Lis
     unmandatedCount: 0,
     periodLabel: "du 1er au 30 septembre 2026",
     payerModes: ["monthly"],
+    orderCount: 0,
     ...over,
   };
 }
@@ -63,6 +64,7 @@ function input(over: Partial<ProcedureListInput> = {}): ProcedureListInput {
     toPrepare: null,
     upcoming: [],
     closedSince: null,
+    candidateOrderCounts: new Map(),
     ...over,
   };
 }

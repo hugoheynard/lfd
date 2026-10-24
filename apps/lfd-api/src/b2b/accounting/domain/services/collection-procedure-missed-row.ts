@@ -7,7 +7,10 @@ import type { ClosureToCome, ProcedureRow } from "./collection-procedure-list.js
  * de la période manquée (`missedClosuresMessage`). Le seul avertissement
  * est la clôture manquée : sa limite, passée, n'est plus un geste.
  */
-export function missedRow(legalEntityId: string, closure: ClosureToCome): ProcedureRow {
+export function missedRow(
+  legalEntityId: string,
+  closure: ClosureToCome,
+): Omit<ProcedureRow, "orderCount"> {
   return {
     id: procedureIdOf(legalEntityId, closure.closesAt),
     closesAt: closure.closesAt,

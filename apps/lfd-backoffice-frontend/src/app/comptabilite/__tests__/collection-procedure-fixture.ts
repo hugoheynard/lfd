@@ -106,6 +106,7 @@ export function procedureRow(
     deposited: false,
     signatureToAttest: false,
     warnings: [],
+    orderCount: 3,
     ...over,
   };
 }

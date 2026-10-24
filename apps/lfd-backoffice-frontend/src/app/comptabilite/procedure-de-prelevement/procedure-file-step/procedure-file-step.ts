@@ -24,6 +24,7 @@ import {
   debtorGapStep,
   debtorGapsHeadline,
 } from './debtor-gap-wording';
+import { DEPOSIT_CUTOFF_ANCHOR } from '../../deposit-cutoff-anchor';
 
 /**
  * **Onglet 3 — le fichier du lot suivi** (plan
@@ -96,6 +97,7 @@ export class ProcedureFileStep {
   /** Une attestation posée ou retirée — l'hôte relit l'état de la procédure. */
   readonly changed = output();
 
+  protected readonly depositAnchor = DEPOSIT_CUTOFF_ANCHOR;
   protected readonly followed = computed(() => this.view().followed);
   protected readonly file = computed(() => this.view().file);
 

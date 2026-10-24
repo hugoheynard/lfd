@@ -98,9 +98,17 @@ export interface CollectionProcedureRowView {
    */
   readonly signatureToAttest: boolean;
   readonly warnings: readonly CollectionProcedureWarningView[];
+  /**
+   * Les commandes de la procédure (ajouté le 2026-10-24) : celles des lots
+   * vivants s'il en existe, sinon celles que la constitution prendrait.
+   * `null` = non calculé (« — ») : une manquée (ses commandes entrent dans
+   * le lot de la dernière clôture), une clôture à venir qui n'est pas la
+   * plus proche.
+   */
+  readonly orderCount: number | null;
 }
 
-/** La table : les manquées d'abord, puis ouvertes et à venir par limite de dépôt, les déposées suivies ensuite, les closes à la fin. */
+/** La table : une ligne par clôture, la plus récente en haut (Hugo, 2026-10-24). */
 export interface CollectionProcedureListView {
   readonly legalEntityId: string;
   /** `AAAA-MM-JJ` — aujourd'hui, à Paris. */

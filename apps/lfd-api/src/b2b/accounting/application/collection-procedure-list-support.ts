@@ -40,6 +40,7 @@ export function listedBatchesOf(
             unmandatedCount: row.unmandatedCompanies.length,
             periodLabel: row.periodLabel,
             payerModes: modes[index] ?? [],
+            orderCount: row.orderCount,
           },
         ];
   });
@@ -116,5 +117,6 @@ export function procedureRowView(
     deposited: row.followed?.status === "deposited",
     signatureToAttest: row.followed?.status === "deposited" && !row.followed.remittanceSigned,
     warnings: row.warnings,
+    orderCount: row.orderCount,
   };
 }

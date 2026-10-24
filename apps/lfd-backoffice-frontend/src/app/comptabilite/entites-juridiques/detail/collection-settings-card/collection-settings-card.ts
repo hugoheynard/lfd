@@ -1,6 +1,8 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
+  afterNextRender,
   computed,
   effect,
   inject,
@@ -21,11 +23,14 @@ import {
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
-  FoldInputComponent,
+  FoldTimeComponent,
   FoldNumberInputComponent,
   FoldPageSectionComponent,
 } from 'fold-ng';
 
+import { Router } from '@angular/router';
+
+import { DEPOSIT_CUTOFF_ANCHOR } from '../../../deposit-cutoff-anchor';
 import { AutopilotLastRun } from '../../../autopilot-last-run/autopilot-last-run';
 import { CollectionCalendar } from '../../../collection-calendar/collection-calendar';
 import {
@@ -81,7 +86,7 @@ import { LegalEntitiesService } from '../../../legal-entities.service';
     FoldCalloutComponent,
     FoldButtonComponent,
     FoldNumberInputComponent,
-    FoldInputComponent,
+    FoldTimeComponent,
   ],
   templateUrl: './collection-settings-card.html',
   styleUrl: './collection-settings-card.scss',
@@ -102,6 +107,9 @@ export class CollectionSettingsCard {
   protected readonly minCutoff = DEPOSIT_CUTOFF_MIN_BUSINESS_DAYS;
   protected readonly maxCutoff = DEPOSIT_CUTOFF_MAX_BUSINESS_DAYS;
   protected readonly marginSentence = tightDepositMarginSentence;
+  protected readonly depositAnchor = DEPOSIT_CUTOFF_ANCHOR;
+  private readonly router = inject(Router);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   protected readonly delayDraft = signal<number | null>(null);
   /** Le délai de notification — à la fois l'avis et l'échéance. */
@@ -136,6 +144,14 @@ export class CollectionSettingsCard {
       this.cutoffDaysDraft.set(current.depositCutoff?.businessDaysBefore ?? null);
       this.cutoffTimeDraft.set(current.depositCutoff?.time ?? '');
     });
+    // `anchorScrolling` défile à la fin de la navigation, AVANT que la fiche
+    // ait lu l'entité : la carte n'existe pas encore. Elle défile donc
+    // elle-même à son premier rendu, quand l'adresse vise sa section.
+    afterNextRender(() => {
+      if (this.router.parseUrl(this.router.url).fragment === DEPOSIT_CUTOFF_ANCHOR) {
+        this.host.nativeElement.querySelector(`#${DEPOSIT_CUTOFF_ANCHOR}`)?.scrollIntoView();
+      }
+    });
   }
 
   protected saveSchedule(): void {
@@ -151,7 +167,7 @@ export class CollectionSettingsCard {
       depositCutoff:
         cutoffDays === null
           ? null
-          : { businessDaysBefore: cutoffDays, time: this.cutoffTimeDraft().trim() },
+          : { businessDaysBefore: cutoffDays, time: minutesOf(this.cutoffTimeDraft()) },
     };
     const { id, preNotificationDays } = this.entity();
     this.saved.emit({
@@ -175,3 +191,13 @@ export class CollectionSettingsCard {
     });
   }
 }
+
+/**
+ * « HH:MM », le format du contrat : le contrôle d'heure natif rend `HH:mm`
+ * au pas de 60 s, mais un navigateur peut ajouter les secondes (`HH:mm:ss`).
+ */
+function minutesOf(time: string): string {
+  return time.trim().slice(0, HH_MM_LENGTH);
+}
+
+const HH_MM_LENGTH = 5;

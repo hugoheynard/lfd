@@ -42,7 +42,7 @@ describe('l’onglet « Fichier » de la procédure', () => {
     expect(callout).not.toContain('13 h 45');
     const link = host(fixture).querySelector<HTMLAnchorElement>('[data-deadline-settings]');
     expect(link?.textContent).toContain('Régler la limite de dépôt');
-    expect(link?.getAttribute('href')).toBe('/comptabilite/entites-juridiques/le1');
+    expect(link?.getAttribute('href')).toBe('/comptabilite/entites-juridiques/le1#limite-de-depot');
   });
 
   it('avec une limite réglée : pas d’encadré de réglage', async () => {

@@ -73,7 +73,7 @@
       <p class="cs-said">{{ daysHint() }}</p>
     </section>
 
-    <section class="cs-block" aria-labelledby="cs-deposit-title">
+    <section class="cs-block" [id]="depositAnchor" aria-labelledby="cs-deposit-title">
       <h3 id="cs-deposit-title" class="cs-heading">Limite de dépôt à la banque</h3>
       <p class="cs-said">
         Votre banque exige que le fichier soit déposé un certain nombre de jours ouvrés bancaires
@@ -88,9 +88,9 @@
           [value]="cutoffDaysDraft()"
           (valueChange)="cutoffDaysDraft.set($event)"
         />
-        <fold-input
+        <fold-time
+          [step]="60"
           label="Heure limite (heure de Paris)"
-          placeholder="16:00"
           [value]="cutoffTimeDraft()"
           (valueChange)="cutoffTimeDraft.set($event)"
         />

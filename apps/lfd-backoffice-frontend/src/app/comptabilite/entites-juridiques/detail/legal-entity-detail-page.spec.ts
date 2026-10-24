@@ -324,9 +324,9 @@ describe('LegalEntityDetailPage', () => {
       // du COMPTE », et ce n'est plus vrai. Ce que ce test tient reste le même —
       // aucun champ ICS une fois l'ICS posé.
       'Description du contrat',
-      // Et la carte du prélèvement automatique un autre depuis le 2026-10-08
-      // (prelevement-automatique.md, PA1) : l'heure limite de dépôt.
-      'Heure limite (heure de Paris)',
+      // L'heure limite de dépôt (carte du prélèvement automatique, 2026-10-08)
+      // n'est plus un `fold-input` depuis le 2026-10-24 : c'est un contrôle
+      // d'heure (`fold-time`), et ce n'est pas un champ ICS.
       // Et la carte des mentions de la facture quatre depuis le 2026-10-08
       // (facture-emise.md) — aucun n'est un champ ICS.
       'Taux BCE de référence (%)',

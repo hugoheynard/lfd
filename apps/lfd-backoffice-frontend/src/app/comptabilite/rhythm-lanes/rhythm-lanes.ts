@@ -9,6 +9,7 @@ import {
 } from '@lfd/contracts';
 
 import { isPooled, pooledTitle } from '../procedure-de-prelevement/procedure-wording';
+import { DEPOSIT_CUTOFF_ANCHOR } from '../deposit-cutoff-anchor';
 
 const MS_PER_DAY = 86_400_000;
 const DAYS_PER_WEEK = 7;
@@ -104,6 +105,7 @@ export class RhythmLanes {
   readonly calendar = input.required<BillingRhythmsCalendarView>();
 
   protected readonly legend = RHYTHM_MARK_LEGEND;
+  protected readonly depositAnchor = DEPOSIT_CUTOFF_ANCHOR;
 
   private readonly span = computed(() =>
     Math.max(1, daysBetween(this.calendar().startsOn, this.calendar().endsOn)),

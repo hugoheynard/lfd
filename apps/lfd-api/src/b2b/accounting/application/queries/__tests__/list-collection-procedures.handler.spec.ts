@@ -25,6 +25,13 @@ import {
   TODAY,
   stored,
 } from "./collection-procedure-doubles.js";
+import { mandate, order } from "../../../domain/services/__tests__/collection-fixtures.js";
+import {
+  FakeCandidates,
+  FakeMandates,
+  Steps,
+} from "../../commands/__tests__/collection-doubles.js";
+import { assemblyReaders } from "../../commands/__tests__/collection-world.js";
 import { activePayer, countingOf, signedMandate } from "./counted-payers-doubles.js";
 import { ListCollectionProceduresQuery } from "../collection-procedure-queries.js";
 import { ListCollectionProceduresHandler } from "../list-collection-procedures.handler.js";
@@ -54,6 +61,7 @@ function world(payerModes: PayerBillingModesReader = new FixedPayerModes(), paye
     payers.map((id) => activePayer(id)),
     payers.map((id) => signedMandate(entity.record.id, id)),
   );
+  const assembly = { candidates: new FakeCandidates(new Steps()), mandates: new FakeMandates() };
   const handler = new ListCollectionProceduresHandler(
     entity,
     accounts.accounts,
@@ -73,27 +81,30 @@ function world(payerModes: PayerBillingModesReader = new FixedPayerModes(), paye
     accounts.clock,
     checks,
     attestations,
+    assemblyReaders(assembly, payerModes),
   );
   const id = entity.record.id;
   const list = (includeClosed = false, entityId = id): Promise<CollectionProcedureListView> =>
     handler.execute(new ListCollectionProceduresQuery(entityId, includeClosed));
-  return { id, entity, mandates, batches, returns, coverage, checks, attestations, list };
+  return { id, entity, assembly, mandates, batches, returns, coverage, checks, attestations, list };
 }
 
 describe("ListCollectionProceduresHandler — la liste des procédures", () => {
-  it("sans lot : la dernière clôture à préparer, puis la prochaine du mensuel", async () => {
+  it("sans lot : la prochaine du mensuel, puis la dernière clôture à préparer", async () => {
     const w = world();
 
     const view = await w.list();
 
     expect(view.today).toBe(TODAY);
     expect(view.rows.map((row) => [row.id, row.phase, row.stage])).toEqual([
-      [`${w.id}~2026-10-01`, "open", "file"],
       [`${w.id}~2026-11-01`, "upcoming", "file"],
+      [`${w.id}~2026-10-01`, "open", "file"],
     ]);
-    expect(view.rows[0]?.warnings).toContainEqual({ code: "deadline_passed", count: null });
-    expect(view.rows[1]?.modes).toEqual(["monthly"]);
-    expect(view.rows[1]?.warnings).toEqual([]);
+    const open = view.rows.find((row) => row.phase === "open");
+    const upcoming = view.rows.find((row) => row.phase === "upcoming");
+    expect(open?.warnings).toContainEqual({ code: "deadline_passed", count: null });
+    expect(upcoming?.modes).toEqual(["monthly"]);
+    expect(upcoming?.warnings).toEqual([]);
   });
 
   it("limite non réglée : chaque ligne à venir le dit", async () => {
@@ -103,7 +114,9 @@ describe("ListCollectionProceduresHandler — la liste des procédures", () => {
     const view = await w.list();
 
     expect(view.rows.every((row) => row.depositDeadline === null)).toBe(true);
-    expect(view.rows[1]?.warnings).toEqual([{ code: "deadline_not_set", count: null }]);
+    expect(view.rows.find((row) => row.phase === "upcoming")?.warnings).toEqual([
+      { code: "deadline_not_set", count: null },
+    ]);
   });
 
   it("un lot à déposer : sa ligne le suit, et avertit des mandats de l'entité à exporter", async () => {
@@ -112,10 +125,9 @@ describe("ListCollectionProceduresHandler — la liste des procédures", () => {
     w.batches.batches = [stored("b1", { unmandatedCompanies: ["Café"] })];
 
     const view = await w.list();
-    const row = view.rows[0];
+    const row = view.rows.find((candidate) => candidate.id === `${w.id}~2026-10-01`);
 
     expect(row).toMatchObject({
-      id: `${w.id}~2026-10-01`,
       phase: "open",
       stage: "mandates",
       followedBatchId: "b1",
@@ -130,7 +142,7 @@ describe("ListCollectionProceduresHandler — la liste des procédures", () => {
     );
   });
 
-  it("un déposé suivi passe après ce qui reste à déposer ; une close n'est listée que sur demande", async () => {
+  it("un déposé suivi prend sa place par clôture décroissante ; une close n'est listée que sur demande", async () => {
     const w = world();
     w.batches.batches = [
       stored("watched", {
@@ -193,21 +205,24 @@ describe("ListCollectionProceduresHandler — la liste des procédures", () => {
     const view = await w.list();
     const upcoming = view.rows.filter((row) => row.phase === "upcoming");
 
-    expect(upcoming.map((row) => row.modes)).toEqual([["weekly"], ["monthly"]]);
+    expect(upcoming.map((row) => row.modes)).toEqual([["monthly"], ["weekly"]]);
+    expect(upcoming[0]!.closesAt > upcoming[1]!.closesAt).toBe(true);
   });
 
-  it("une clôture jamais tentée ni couverte par un lot : manquée, en tête de table", async () => {
+  it("une clôture jamais tentée ni couverte par un lot : manquée, à sa place par clôture décroissante", async () => {
     const w = world();
     w.coverage.attempted = [new Date(AUG_CLOSURE)];
 
     const view = await w.list();
 
     expect(view.rows.map((row) => [row.id, row.phase])).toEqual([
-      [`${w.id}~2026-09-01`, "missed"],
-      [`${w.id}~2026-10-01`, "open"],
       [`${w.id}~2026-11-01`, "upcoming"],
+      [`${w.id}~2026-10-01`, "open"],
+      [`${w.id}~2026-09-01`, "missed"],
     ]);
-    expect(view.rows[0]?.warnings).toEqual([{ code: "missed_closure", count: null }]);
+    expect(view.rows.find((row) => row.phase === "missed")?.warnings).toEqual([
+      { code: "missed_closure", count: null },
+    ]);
   });
 
   it("un lot vivant sur la dernière clôture la couvre : plus rien de manqué", async () => {
@@ -235,8 +250,8 @@ describe("ListCollectionProceduresHandler — la liste des procédures", () => {
     const view = await w.list();
 
     expect(view.rows.map((row) => [row.code, row.closureModes])).toEqual([
-      ["PRL-261001-M", ["monthly"]],
       ["PRL-261101", []],
+      ["PRL-261001-M", ["monthly"]],
     ]);
   });
 
@@ -245,7 +260,10 @@ describe("ListCollectionProceduresHandler — la liste des procédures", () => {
 
     const view = await w.list();
 
-    expect(view.rows.at(-1)).toMatchObject({ code: "PRL-261101-M", closureModes: ["monthly"] });
+    expect(view.rows.find((row) => row.phase === "upcoming")).toMatchObject({
+      code: "PRL-261101-M",
+      closureModes: ["monthly"],
+    });
   });
 
   it("un déposé dont la remise n'est pas attestée signée : l'étape reste le fichier (P3)", async () => {
@@ -264,5 +282,20 @@ describe("ListCollectionProceduresHandler — la liste des procédures", () => {
       stage: "file",
       signatureToAttest: true,
     });
+  });
+
+  it("« Commandes » : un lot compte ses commandes, une clôture sans lot ses candidates", async () => {
+    const w = world();
+    w.assembly.candidates.orders = [order("c_port"), order("c_port")];
+    w.assembly.mandates.mandates = [mandate("c_port", { creditorId: w.id })];
+
+    const before = await w.list();
+    w.batches.batches = [stored("b1", { orderCount: 9 })];
+    const after = await w.list();
+
+    const october = (view: CollectionProcedureListView) =>
+      view.rows.find((row) => row.id === `${w.id}~2026-10-01`)?.orderCount;
+    expect(october(before)).toBe(2);
+    expect(october(after)).toBe(9);
   });
 });

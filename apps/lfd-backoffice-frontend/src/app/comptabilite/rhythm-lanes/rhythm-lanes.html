@@ -56,7 +56,14 @@
           <span class="lanes-next">
             {{ next.text }}
             @if (next.settingsLink; as settings) {
-              · <a class="lanes-link" [routerLink]="settings">Régler la limite de dépôt</a>
+              ·
+              <a
+                class="lanes-link"
+                [routerLink]="settings"
+                [fragment]="depositAnchor"
+                data-cutoff-link
+                >Régler la limite de dépôt</a
+              >
             }
             ·
             <a

@@ -26,7 +26,13 @@ import { ProcedureListPage } from './procedure-list-page';
  * relit ; une ancienne adresse `?entite=&lot=` mène au détail du lot.
  */
 
-const ENTITY: Partial<LegalEntityView> = { id: 'le1', name: 'La Folie Douce', archivedAt: null };
+const ENTITY: Partial<LegalEntityView> = {
+  id: 'le1',
+  name: 'La Folie Douce',
+  archivedAt: null,
+  depositCutoff: { businessDaysBefore: 1, time: '16:00' },
+};
+let entity: Partial<LegalEntityView>;
 
 class FakeProcedures {
   list: CollectionProcedureListView = {
@@ -93,7 +99,7 @@ async function render(
       {
         provide: LegalEntitiesService,
         useValue: {
-          list: (): Promise<readonly Partial<LegalEntityView>[]> => Promise.resolve([ENTITY]),
+          list: (): Promise<readonly Partial<LegalEntityView>[]> => Promise.resolve([entity]),
         },
       },
     ],
@@ -117,6 +123,7 @@ const root = (fixture: ComponentFixture<ProcedureListPage>): HTMLElement =>
 beforeEach(() => {
   procedures = new FakeProcedures();
   navigations = [];
+  entity = ENTITY;
 });
 
 describe('la table « Procédure de prélèvement »', () => {
@@ -162,7 +169,7 @@ describe('la table « Procédure de prélèvement »', () => {
     expect(deadlines[1]?.classList.contains('pl-late')).toBe(false);
   });
 
-  it('une clôture manquée : en tête, « Manquée » en alerte, et ce qu’il faut faire', async () => {
+  it('une clôture manquée : rendue à la place que le serveur lui donne, « Manquée » en alerte, et ce qu’il faut faire', async () => {
     procedures.list = {
       ...procedures.list,
       rows: [
@@ -216,5 +223,32 @@ describe('la table « Procédure de prélèvement »', () => {
       { queryParams: { lot: 'b1' }, replaceUrl: true },
     ]);
     expect(procedures.listed).toEqual([]);
+  });
+
+  it('la colonne « Commandes » : le compte servi, « — » quand il n’est pas calculé', async () => {
+    procedures.list = {
+      ...procedures.list,
+      rows: [procedureRow({ orderCount: 12 }), procedureRow({ id: 'le1~x', orderCount: null })],
+    };
+    const fixture = await render();
+    const counts = [...root(fixture).querySelectorAll('[data-order-count]')].map((node) =>
+      node.textContent?.trim(),
+    );
+    expect(counts).toEqual(['12', '—']);
+  });
+
+  it('limite de dépôt non réglée : l’avertissement et le lien vers l’entité', async () => {
+    entity = { ...ENTITY, depositCutoff: null };
+    const fixture = await render();
+    const callout = root(fixture).querySelector('[data-cutoff-missing]');
+    expect(callout?.textContent).toContain('La limite de dépôt n’est pas réglée');
+    expect(callout?.querySelector('a')?.getAttribute('href')).toBe(
+      '/comptabilite/entites-juridiques/le1#limite-de-depot',
+    );
+  });
+
+  it('limite de dépôt réglée : aucun avertissement', async () => {
+    const fixture = await render();
+    expect(root(fixture).querySelector('[data-cutoff-missing]')).toBeNull();
   });
 });

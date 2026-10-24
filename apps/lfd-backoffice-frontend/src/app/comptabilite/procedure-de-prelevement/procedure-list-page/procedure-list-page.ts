@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import type {
   CollectionProcedureListView,
   CollectionProcedureRowView,
@@ -9,6 +9,7 @@ import { httpErrorMessage } from '@lfd/endpoints';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
+  FoldCalloutComponent,
   FoldCheckboxComponent,
   FoldDataTableCellDirective,
   FoldDataTableComponent,
@@ -36,11 +37,13 @@ import {
   warningText,
   warningVariant,
 } from '../procedure-list-wording';
+import { DEPOSIT_CUTOFF_ANCHOR } from '../../deposit-cutoff-anchor';
 import { PAGE_TITLE, POOLED_BADGE, isPooled, pooledTitle } from '../procedure-wording';
 
 const COLUMNS: readonly FoldTableColumn<CollectionProcedureRowView>[] = [
   { key: 'code', label: 'Code' },
   { key: 'period', label: 'Rythme · période' },
+  { key: 'orders', label: 'Commandes', numeric: true },
   { key: 'stage', label: 'Étape en cours' },
   { key: 'closure', label: 'Clôture' },
   { key: 'deadline', label: 'Limite de dépôt' },
@@ -54,9 +57,9 @@ const COLUMNS: readonly FoldTableColumn<CollectionProcedureRowView>[] = [
  * `plan-page-procedure-de-prelevement.md`, § 11, Hugo 2026-10-23). Une
  * procédure = une clôture ; une ligne mène à son détail, en quatre onglets.
  *
- * Le serveur rend les lignes triées (limite de dépôt la plus proche d'abord,
- * closes à la fin) avec leur étape et leurs avertissements : l'écran ne
- * recalcule rien. « Afficher les closes » relit avec les trois derniers mois.
+ * Le serveur rend les lignes triées (clôture la plus récente en haut, Hugo
+ * 2026-10-24) avec leur étape, leurs commandes et leurs avertissements :
+ * l'écran ne retrie ni ne recalcule rien. « Afficher les closes » relit avec les trois derniers mois.
  *
  * Les anciennes adresses `?entite=&lot=` (tableau de bord, liens gardés)
  * mènent au détail du lot qu'elles désignent.
@@ -67,6 +70,7 @@ const COLUMNS: readonly FoldTableColumn<CollectionProcedureRowView>[] = [
   imports: [
     FoldBadgeComponent,
     FoldButtonComponent,
+    FoldCalloutComponent,
     FoldCheckboxComponent,
     FoldDataTableCellDirective,
     FoldDataTableComponent,
@@ -75,6 +79,7 @@ const COLUMNS: readonly FoldTableColumn<CollectionProcedureRowView>[] = [
     FoldListboxComponent,
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
+    RouterLink,
   ],
   templateUrl: './procedure-list-page.html',
   styleUrl: './procedure-list-page.scss',
@@ -103,6 +108,18 @@ export class ProcedureListPage {
     this.entities().map((entity) => ({ value: entity.id, label: entity.name })),
   );
   protected readonly rows = computed(() => this.list()?.rows ?? []);
+  /**
+   * La limite de dépôt de l'entité affichée n'est pas réglée (Hugo,
+   * 2026-10-24) — lue sur l'entité que la page a déjà chargée.
+   */
+  protected readonly cutoffMissing = computed(
+    () => this.entities().find((entity) => entity.id === this.entityId())?.depositCutoff === null,
+  );
+  protected readonly depositAnchor = DEPOSIT_CUTOFF_ANCHOR;
+  protected readonly entityRoute = (entityId: string): string =>
+    `/comptabilite/entites-juridiques/${entityId}`;
+  protected readonly orderCountLabel = (row: CollectionProcedureRowView): string =>
+    row.orderCount === null ? '—' : String(row.orderCount);
 
   protected readonly rowKey = (row: CollectionProcedureRowView): string => row.id;
   protected readonly rowTone = rowTone;

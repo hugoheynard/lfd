@@ -1,8 +1,7 @@
 <fold-page-layout [title]="title" separator>
   <p description>
-    Une ligne par clôture&nbsp;: les clôtures manquées en tête, les procédures ouvertes et la
-    prochaine de chaque rythme, la limite de dépôt la plus proche d’abord. Ouvrir une ligne pour la
-    suivre onglet par onglet.
+    Une ligne par clôture, la plus récente en haut&nbsp;: les procédures ouvertes, les clôtures
+    manquées et la prochaine de chaque rythme. Ouvrir une ligne pour la suivre onglet par onglet.
   </p>
 
   @if (loading()) {
@@ -15,8 +14,18 @@
     >
       <button foldButton (click)="load()">Réessayer</button>
     </fold-empty-state>
-  } @else if (entityId() !== null) {
+  } @else if (entityId(); as currentEntityId) {
     <div class="pl-stack">
+      @if (cutoffMissing()) {
+        <fold-callout variant="warning" data-cutoff-missing>
+          La limite de dépôt n’est pas réglée&nbsp;: l’outil ne peut pas vous dire jusqu’à quand
+          déposer le fichier à la banque. Un fichier déposé trop tard est prélevé plus tard que la
+          date annoncée à vos clients.
+          <a [routerLink]="entityRoute(currentEntityId)" [fragment]="depositAnchor" data-cutoff-link
+            >Régler la limite de dépôt</a
+          >
+        </fold-callout>
+      }
       <div class="pl-filters">
         @if (entityOptions().length > 1) {
           <fold-listbox
@@ -59,6 +68,10 @@
               <fold-badge radius="square" variant="info" [content]="pooledBadge" />
             </span>
           }
+        </ng-template>
+
+        <ng-template foldCell="orders" let-row>
+          <span data-order-count>{{ orderCountLabel(row) }}</span>
         </ng-template>
 
         <ng-template foldCell="stage" let-row>

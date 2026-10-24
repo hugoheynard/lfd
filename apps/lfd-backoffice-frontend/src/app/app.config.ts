@@ -1,6 +1,11 @@
 import { type ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
-import { provideRouter, withComponentInputBinding, withRouterConfig } from '@angular/router';
+import {
+  provideRouter,
+  withComponentInputBinding,
+  withInMemoryScrolling,
+  withRouterConfig,
+} from '@angular/router';
 import {
   provideFoldCommonLabels,
   provideFoldInlineConfirmLabels,
@@ -92,6 +97,10 @@ export const appConfig: ApplicationConfig = {
       // échoueraient à l'exécution sur un `input.required` non fourni — invisible
       // au build, visible au premier clic.
       withRouterConfig({ paramsInheritanceStrategy: 'always' }),
+      // Un lien à `fragment` arrive sur sa section (« Régler la limite de
+      // dépôt », 2026-10-24). L'ancre SEULEMENT : `scrollPositionRestoration`
+      // reste au défaut, la restauration de position n'a pas été décidée.
+      withInMemoryScrolling({ anchorScrolling: 'enabled' }),
     ),
     // Un seul point d'attache du jeton staff, pour que treize services n'aient
     // pas à s'en souvenir chacun (sept l'avaient oublié). Cf. `staff-auth.interceptor.ts`.
