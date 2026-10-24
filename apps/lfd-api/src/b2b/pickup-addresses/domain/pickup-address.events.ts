@@ -106,7 +106,7 @@ export class PickupAddressRemovedEvent implements JournaledEvent {
 
 /**
  * **Le fait de l'horaire public d'un point** — plan
- * `documentation/commandes/plan-creneaux-de-retrait.md`, lot A.
+ * `documentation/commandes/passation/plan-creneaux-de-retrait.md`, lot A.
  *
  * Il se journalise pour la même raison que la remise : ce réglage décide de ce
  * qu'un visiteur peut choisir — et une capacité posée trop serrée, un jour

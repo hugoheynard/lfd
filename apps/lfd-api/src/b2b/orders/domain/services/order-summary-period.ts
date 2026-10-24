@@ -1,6 +1,6 @@
 /**
  * **La période imprimée sur le récapitulatif** (plan
- * `documentation/commandes/plan-recapitulatif-des-commandes.md`, §9, lot R3) —
+ * `documentation/commandes/boutique/plan-recapitulatif-des-commandes.md`, §9, lot R3) —
  * les bornes du filtre de jour que l'écran affichait quand la sélection a été
  * faite. Purement INFORMATIVE : elle n'élargit ni ne restreint la sélection,
  * les ids font foi.

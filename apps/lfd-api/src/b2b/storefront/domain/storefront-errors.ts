@@ -7,7 +7,7 @@ import {
 } from "../../../platform/shared/errors/app-error.js";
 
 /**
- * Les refus de la vitrine — plan `documentation/commandes/boutique-rayon-layout.md`.
+ * Les refus de la vitrine — plan `documentation/commandes/boutique/boutique-rayon-layout.md`.
  *
  * Ils sont lus par la personne qui compose la vitrine, sans la grille ni le
  * code sous les yeux : chacun nomme ce qui cloche et le geste qui en sort.

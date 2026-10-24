@@ -7,7 +7,7 @@ import {
 
 /**
  * Les refus de la **demande de modification de commande** (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, M4). Lus par un
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, M4). Lus par un
  * client ou par le commerce, sans le code sous les yeux : chacun nomme le cas
  * et le geste de sortie.
  */

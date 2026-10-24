@@ -40,7 +40,7 @@ const CHANGE_CONSUMED = ['subjectLabel', 'orderNumber'];
 
 /**
  * **La demande de modification d'une commande** (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, M4) : « Jean D. a
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, M4) : « Jean D. a
  * demandé une modification de la commande ORD-7 », puis « Marie D. a
  * appliqué… » ou « … a refusé… ». La demande, la révision de départ, la
  * révision produite et le mot du refus restent au détail.

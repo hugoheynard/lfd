@@ -19,7 +19,7 @@ export const companyOrdersQuerySchema = z.object({
   site: z.string().min(1).optional(),
   /**
    * Bornes INCLUSES sur le jour de retrait/livraison (`requested_delivery_date`)
-   * — plan `documentation/commandes/plan-recapitulatif-des-commandes.md`, §6.6.
+   * — plan `documentation/commandes/boutique/plan-recapitulatif-des-commandes.md`, §6.6.
    * Une commande sans date sort de la liste dès qu'une borne est posée.
    */
   from: orderDaySchema.optional(),

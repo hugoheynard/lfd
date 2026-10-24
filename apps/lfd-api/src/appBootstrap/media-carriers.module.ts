@@ -24,7 +24,7 @@ import { RefocusStorefrontOnMediaDescribed } from "./storefront-media-focus.js";
  *
  * Depuis le 2026-09-24, la vitrine du commerce est un second porteur : le
  * token est lié à un {@link CompositeMediaCarriers} qui interroge les deux, et
- * échoue si l'un échoue (plan `documentation/commandes/boutique-rayon-layout.md`, D9).
+ * échoue si l'un échoue (plan `documentation/commandes/boutique/boutique-rayon-layout.md`, D9).
  *
  * Depuis le 2026-10-15 (lot 2 de
  * `documentation/operations-datees/plan-l-operation-passe-au-commerce.md`), un

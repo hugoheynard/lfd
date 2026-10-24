@@ -115,10 +115,10 @@ que le client a en poche.
   clé : le dessin du 2026-10-09 a la sienne, les PDF déjà rangés restent
   en stockage sous l'ancienne et ne sont plus relus. `revision` est la
   révision de la commande depuis le 2026-10-23 (`orders.revision`, `0` à la
-  passation, `+1` à chaque modification — [`plan-modifier-une-commande.md`](plan-modifier-une-commande.md), M1) :
+  passation, `+1` à chaque modification — [`plan-modifier-une-commande.md`](../modification/plan-modifier-une-commande.md), M1) :
   une commande modifiée a un nouveau bon, l'ancien reste rangé sous sa clé.
   Il n'y aura pas d'avenants
-  ([`architecture-commande-immuable-avenants.md`](architecture-commande-immuable-avenants.md)).
+  ([`architecture-commande-immuable-avenants.md`](../modification/architecture-commande-immuable-avenants.md)).
 - **Qui range** : `OrderSheetArchive` (`application/services/order-sheet-archive.service.ts`)
   relit ou fabrique, partagé par la route client (`GET /orders/:id/bon.pdf`) et la
   route staff (`GET /admin/orders/:id/bon.pdf`) — pas de version staff du bon : le
@@ -147,7 +147,7 @@ de numéro de série) ; son pied le dit. **Les factures existent maintenant** : 
 facturation émet des factures carte (modèle `Invoice`,
 `apps/lfd-api/src/b2b/accounting/`, `issue-card-invoice-on-paid` et
 `-on-fulfilled`) et le prélèvement du compte ;
-[`../b2b/architecture-facturation.md`](../b2b/architecture-facturation.md). Le bon
+[`../../b2b/architecture-facturation.md`](../../b2b/architecture-facturation.md). Le bon
 n'y est pas substitué.
 
 ## 7. Reste à faire et décisions ouvertes (relevé le 2026-10-12)

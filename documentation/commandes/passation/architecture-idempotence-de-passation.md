@@ -3,7 +3,7 @@
 **État : ✅ bâti, relu contre le code le 2026-10-12.** Remplace
 `plan-idempotence-de-passation` (supprimé le 2026-10-12 ; l'historique, y
 compris les cinq bloquants de `vitruve`, est dans git). Défaut **T12** de
-[`audit-flux-de-commande.md`](audit-flux-de-commande.md).
+[`audit-flux-de-commande.md`](../audit-flux-de-commande.md).
 
 ## 1. Le défaut, et la réponse
 

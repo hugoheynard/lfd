@@ -6,7 +6,7 @@ import {
 
 /*
  * Les refus de l'abandon du règlement (plan
- * `documentation/commandes/architecture-abandon-du-reglement.md`, §5). Rangés à part de
+ * `documentation/commandes/reglement/architecture-abandon-du-reglement.md`, §5). Rangés à part de
  * `order-errors.ts`, déjà au-delà des 300 lignes.
  *
  * ⚠️ Chacun est lu par un client qui vient de cliquer « Abandonner » : il dit

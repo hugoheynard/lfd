@@ -9,7 +9,7 @@ portent « vérifié le 2026-10-12 »). Les écarts du 2026-09-17 sont au §7.
 **comment elle est définie** — qui la calcule, à quel moment, et ce que veut
 dire son absence. Ce document ne décrit ni les écrans, ni les transitions (voir
 [`architecture-cycle-de-vie-commande.md`](architecture-cycle-de-vie-commande.md)),
-ni le calcul d'un prix de ligne (voir [`../pricing/README.md`](../pricing/README.md)).
+ni le calcul d'un prix de ligne (voir [`../../pricing/README.md`](../../pricing/README.md)).
 
 > **Pourquoi ce document** (Hugo, 2026-09-17) : les informations de la commande
 > étaient expliquées à quinze endroits — un commentaire de schéma, un plan, un
@@ -17,10 +17,10 @@ ni le calcul d'un prix de ligne (voir [`../pricing/README.md`](../pricing/README
 > Ce document est la **carte** ; les documents cités restent la source du
 > détail.
 
-Sources lues : [`orders.prisma`](../../apps/lfd-api/prisma/schema/public/orders.prisma),
-[`order.ts`](../../apps/lfd-api/src/b2b/orders/domain/entities/order.ts),
-[`order-drafting.service.ts`](../../apps/lfd-api/src/b2b/orders/application/services/order-drafting.service.ts),
-[`prisma-order.repository.ts`](../../apps/lfd-api/src/b2b/orders/infrastructure/prisma-order.repository.ts).
+Sources lues : [`orders.prisma`](../../../apps/lfd-api/prisma/schema/public/orders.prisma),
+[`order.ts`](../../../apps/lfd-api/src/b2b/orders/domain/entities/order.ts),
+[`order-drafting.service.ts`](../../../apps/lfd-api/src/b2b/orders/application/services/order-drafting.service.ts),
+[`prisma-order.repository.ts`](../../../apps/lfd-api/src/b2b/orders/infrastructure/prisma-order.repository.ts).
 
 ---
 
@@ -51,7 +51,7 @@ Il y a **deux sortes** de colonnes, et on ne les lit pas de la même façon :
 
 - **figées à la passation** — écrites une seule fois, dans la même transaction
   que la commande, et plus jamais modifiées. Ce qui bouge après passe par un
-  **avenant** ([`architecture-commande-immuable-avenants.md`](architecture-commande-immuable-avenants.md)) ;
+  **avenant** ([`architecture-commande-immuable-avenants.md`](../modification/architecture-commande-immuable-avenants.md)) ;
 - **projetées après** — écrites par un fait qui arrive plus tard (Stripe, le
   fournil, le comptoir). Chacune de ces écritures est **conditionnée en base**
   (`updateMany` + `where`), ce qui la rend idempotente et tranche les courses.
@@ -93,7 +93,7 @@ durable `b2b.orders.mark-ready-from-packing`) écrit `ready` (vérifié le
 
 Convention des tableaux : **Défini par** dit QUI produit la valeur. **`NULL`**
 dit ce que l'absence signifie — et elle ne signifie jamais « zéro » ni « vide »
-par défaut (règle 4 du [`README.md`](README.md)).
+par défaut (règle 4 du [`README.md`](../README.md)).
 
 ### 3.1 Identité
 
@@ -244,7 +244,7 @@ flowchart TD
 - **La formule du TTC n'est écrite qu'à un endroit**, `ventilateVat`. La
   recopier ici en ferait une deuxième définition — c'est déjà arrivé, et il y
   manquait la surtaxe. Pour ajouter un terme :
-  [`../pricing/ajouter-un-terme-au-panier.md`](../pricing/ajouter-un-terme-au-panier.md).
+  [`../../pricing/ajouter-un-terme-au-panier.md`](../../pricing/ajouter-un-terme-au-panier.md).
 - La **clientèle tarifée** qui décide de la remise et des frais
   (`CustomerAudiences`) n'est **pas** `clientele` (§3.2) et n'est pas figée
   comme telle : seul son effet l'est, dans les ajustements.
@@ -272,7 +272,7 @@ flowchart TD
   commande fantôme.
 
 Tout le détail — les deux situations, les courriels, la carte abandonnée :
-[`architecture-reglement-et-compte-de-production.md`](architecture-reglement-et-compte-de-production.md).
+[`architecture-reglement-et-compte-de-production.md`](../reglement/architecture-reglement-et-compte-de-production.md).
 
 ### 3.7 L'avancement
 
@@ -340,14 +340,14 @@ stateDiagram-v2
 
 ### 3.8 bis Colonnes ajoutées depuis la première écriture (vérifié le 2026-10-12)
 
-| Colonne / relation                 | Ce qu'elle dit                                                                                                                                                                            | Défini par                                |
-| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| `billedCompanyId`                  | le **payeur**, copié à la passation (le principal que le site suivait en `billing`, sinon la société) ; l'argent lit `COALESCE(billed_company_id, company_id)`                            | la passation ; `NULL` avant S4            |
-| `voucherDiscountCents`             | la part du **bon de fidélité** imputée, HT, à part de `discountCents` ; `0` = aucun bon                                                                                                   | la passation                              |
-| `loyaltyVoucherId`                 | le bon engagé (unique parmi les commandes non annulées, index partiel à la main de `20260927100000`)                                                                                      | la passation                              |
-| `deliveryVatMode`                  | le mode de TVA du port, figé : `standard` ou `follows_goods` ; `NULL` = avant le réglage = taux normal ([`architecture-tva-des-frais-de-port.md`](architecture-tva-des-frais-de-port.md)) | `OrderDrafting`, depuis le réglage global |
-| relation `refunds` (`OrderRefund`) | les remboursements Stripe constatés sur la commande                                                                                                                                       | `record-order-refund.handler.ts`          |
-| relation `cardInvoiceOutcome`      | l'issue de la facture carte, s'il y en a une                                                                                                                                              | la comptabilité (`b2b/accounting`)        |
+| Colonne / relation                 | Ce qu'elle dit                                                                                                                                                                                             | Défini par                                |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| `billedCompanyId`                  | le **payeur**, copié à la passation (le principal que le site suivait en `billing`, sinon la société) ; l'argent lit `COALESCE(billed_company_id, company_id)`                                             | la passation ; `NULL` avant S4            |
+| `voucherDiscountCents`             | la part du **bon de fidélité** imputée, HT, à part de `discountCents` ; `0` = aucun bon                                                                                                                    | la passation                              |
+| `loyaltyVoucherId`                 | le bon engagé (unique parmi les commandes non annulées, index partiel à la main de `20260927100000`)                                                                                                       | la passation                              |
+| `deliveryVatMode`                  | le mode de TVA du port, figé : `standard` ou `follows_goods` ; `NULL` = avant le réglage = taux normal ([`architecture-tva-des-frais-de-port.md`](../bon-et-pieces/architecture-tva-des-frais-de-port.md)) | `OrderDrafting`, depuis le réglage global |
+| relation `refunds` (`OrderRefund`) | les remboursements Stripe constatés sur la commande                                                                                                                                                        | `record-order-refund.handler.ts`          |
+| relation `cardInvoiceOutcome`      | l'issue de la facture carte, s'il y en a une                                                                                                                                                               | la comptabilité (`b2b/accounting`)        |
 
 ### 3.9 La note
 
@@ -403,7 +403,7 @@ flowchart LR
   réglementaire ; `codes: []` = fiche déclarée **sans allergène**.
 - `@@unique(orderId, sku)` : le panier fusionne les quantités, et la base le
   garantit. C'est ce qui donne un sens unique à « la quantité commandée ».
-- Le calcul d'un prix de ligne : [`../pricing/README.md`](../pricing/README.md).
+- Le calcul d'un prix de ligne : [`../../pricing/README.md`](../../pricing/README.md).
 
 ---
 
@@ -465,11 +465,11 @@ Relevés en écrivant ce document, **non corrigés** — chacun demande une déc
 - ~~**`cancelled` n'est écrit par aucun chemin.**~~ ✅ **Fermé le 2026-09-26** :
   l'abandon du règlement (`markAbandoned`), la clôture (`failAtClosing`) et
   l'expiration des impayés de la boutique l'écrivent (vérifié le 2026-10-12)
-  ([`architecture-abandon-du-reglement.md`](architecture-abandon-du-reglement.md)).
+  ([`architecture-abandon-du-reglement.md`](../reglement/architecture-abandon-du-reglement.md)).
   Le constat d'origine : aucune commande ne pouvait être annulée, alors que la file du comptoir, le dossier du jour et le
   compte de production savent l'écarter. La proposition d'expiration des
   commandes impayées en aurait besoin
-  ([`architecture-reglement-et-compte-de-production.md`](architecture-reglement-et-compte-de-production.md) §4.1).
+  ([`architecture-reglement-et-compte-de-production.md`](../reglement/architecture-reglement-et-compte-de-production.md) §4.1).
 - **`draft` et `in_production` ne sont écrits par aucun chemin.** Le brouillon
   vit dans `order_drafts`, et rien ne marque le début de la fabrication. Le
   chiffre d'affaires et les alertes comptent pourtant `in_production`.

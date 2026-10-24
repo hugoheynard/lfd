@@ -74,7 +74,7 @@ export class OrderDetail {
   /**
    * Une commande carte non réglée se règle sur SA page de règlement — jamais
    * en repassant le panier, qui ferait une seconde commande (plan
-   * `documentation/commandes/commande-carte-reglee.md`, §4.3).
+   * `documentation/commandes/reglement/commande-carte-reglee.md`, §4.3).
    */
   protected readonly settleable = computed(() => {
     const payment = this.order().payment;

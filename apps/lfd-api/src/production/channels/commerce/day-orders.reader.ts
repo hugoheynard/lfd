@@ -56,7 +56,7 @@ export interface SheetContact {
  *
  * Le numéro de révision n'y est pas : une commande inscrite au fournil ne se
  * modifie plus — la modification s'arrête à l'inscription (plan
- * `commandes/plan-modifier-une-commande.md`, R1 ; vérifié le 2026-10-23 dans
+ * `commandes/modification/plan-modifier-une-commande.md`, R1 ; vérifié le 2026-10-23 dans
  * `order-revising.service.ts`). Ce que le fournil fige est donc la dernière
  * révision, et elle ne bouge plus.
  */

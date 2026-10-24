@@ -4,7 +4,7 @@ import type { OrderRevisionChange } from "./order-revision.values.js";
 
 /**
  * **Les versions précédentes d'une commande** — `GET /admin/orders/:id/revisions`
- * (plan `documentation/commandes/plan-modifier-une-commande.md`, §6, M3).
+ * (plan `documentation/commandes/modification/plan-modifier-une-commande.md`, §6, M3).
  *
  * Une entrée par modification, la plus récente en tête : qui, quand, ce qui a
  * changé, l'écart, et la composition REMPLACÉE telle qu'elle était écrite.

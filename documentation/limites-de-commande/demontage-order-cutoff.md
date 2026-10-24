@@ -12,7 +12,7 @@
 > est toujours lue à la passation, à la boutique et au fournil, sous un
 > interrupteur (`order_cutoff_settings`) qui n'existait pas quand ce plan a été
 > écrit. Le choix B/C qui doit précéder sa reprise (Q9 de
-> [`../commandes/plan-reglages-commandes.md`](../commandes/plan-reglages-commandes.md) §2)
+> [`../commandes/passation/plan-reglages-commandes.md`](../commandes/passation/plan-reglages-commandes.md) §2)
 > n'est pas tranché. L'état actuel : [`reglages-generaux.md`](reglages-generaux.md).
 > Déplacé de `commandes/` le 2026-10-21.
 

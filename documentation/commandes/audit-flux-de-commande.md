@@ -82,7 +82,7 @@ Aucune route n'écrit `cancelled`, aucune n'écrit `refunded` (vérifié le
 2026-09-18 : les seules écritures de statut du dépôt sont `confirmed`, `ready` et
 `fulfilled` dans `prisma-order.repository.ts`, plus le `@default` `placed`).
 Aucun avenant n'est codé ;
-[`architecture-commande-immuable-avenants.md`](architecture-commande-immuable-avenants.md)
+[`architecture-commande-immuable-avenants.md`](modification/architecture-commande-immuable-avenants.md)
 en tranche la conception.
 
 Le plan existe et a été **contredit par `vitruve` le 2026-09-17 : 4 BLOQUANT,
@@ -110,7 +110,7 @@ Ce qui reste vrai, et qui coûte :
 - **l'export dont il facture n'existe pas** — c'est le seul maillon manquant
   entre notre commande et la facture du client. Bloqué sur une question non
   technique (le format que son logiciel importe) :
-  [`todo-export-des-commandes-pour-le-comptable.md`](todo-export-des-commandes-pour-le-comptable.md) ;
+  [`todo-export-des-commandes-pour-le-comptable.md`](bon-et-pieces/todo-export-des-commandes-pour-le-comptable.md) ;
 - ~~**« Mes factures » affiche toujours les factures de personne.**~~ Réglé
   le 2026-10-09 : la maquette (`MOCK_LEDGER`, `MOCK_STATEMENT_SUM`) est
   retirée, et `/mes-factures` redirige vers « Mes factures » de
@@ -167,7 +167,7 @@ du plan. Rien n'est construit.
 suffit pas, la commande doit la **porter**. Elle se lit aujourd'hui dans
 l'annuaire au moment de l'envoi — changer son adresse réécrit donc le
 destinataire d'une commande passée. Détail, et ce qu'il reste à trancher :
-[`todo-adresse-de-la-commande.md`](todo-adresse-de-la-commande.md).
+[`todo-adresse-de-la-commande.md`](la-commande/todo-adresse-de-la-commande.md).
 
 ### T4 — 🟡 Quatre états écrits sur sept
 
@@ -235,7 +235,7 @@ rien n'est codé.
 
 `POST /orders` et la commande boutique sont idempotents — clé au contrat,
 table `order_idempotency`, résolution dans la transaction qui écrit la commande.
-Plan et contradiction : [`architecture-idempotence-de-passation.md`](architecture-idempotence-de-passation.md).
+Plan et contradiction : [`architecture-idempotence-de-passation.md`](passation/architecture-idempotence-de-passation.md).
 
 Trois bords restent ouverts :
 

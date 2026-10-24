@@ -7,7 +7,7 @@ import type { MediaCarrierView } from '@lfd/pim-contracts';
  * Les chemins des fiches et des familles ont été vérifiés dans
  * `pim/pim.routes.ts` le 2026-09-23 : enfants DIRECTS de `pim`, et « familles »
  * se dit `categories` dans l'URL. La vitrine vit en `/vitrine`, hors de
- * l'espace B2B (`documentation/commandes/boutique-rayon-layout.md`, D7).
+ * l'espace B2B (`documentation/commandes/boutique/boutique-rayon-layout.md`, D7).
  * Les opérations datées (2026-09-24) mènent à `/operations/<clé>` : la
  * route naît avec l'écran de préparation, au lot front du plan
  * `documentation/operations-datees/architecture-operations-datees.md`.

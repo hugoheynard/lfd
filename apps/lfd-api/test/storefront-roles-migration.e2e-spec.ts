@@ -1,6 +1,6 @@
 /**
  * E2E des **droits migrés de la vitrine** — `20260924100100_la_vitrine_s_enregistre`,
- * section 7, rejouée (plan `documentation/commandes/boutique-rayon-layout.md`, D7).
+ * section 7, rejouée (plan `documentation/commandes/boutique/boutique-rayon-layout.md`, D7).
  *
  * 🔴 Pourquoi ce test existe : le harnais réécrit `staff_role_definitions`
  * depuis `ROLE_GRANTS` à chaque `reset()`. Aucune autre suite ne verrait donc

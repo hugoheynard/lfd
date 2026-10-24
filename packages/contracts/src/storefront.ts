@@ -13,8 +13,8 @@ import type { ShopOperationState } from "./shop-catalogue.js";
 /**
  * **La vitrine** — le contrat de l'éditeur (admin) et de la boutique (public).
  *
- * Plan : `documentation/commandes/boutique-rayon-layout.md` (D2 à D8).
- * Conception : `documentation/commandes/boutique-rayon-layout.md`, « Composer une
+ * Plan : `documentation/commandes/boutique/boutique-rayon-layout.md` (D2 à D8).
+ * Conception : `documentation/commandes/boutique/boutique-rayon-layout.md`, « Composer une
  * page ».
  *
  * Ces schémas ne valident que la **forme** : chevauchement, débordement, côté

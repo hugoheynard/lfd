@@ -292,9 +292,9 @@ Deux surfaces de commande vivent sous les réglages de la plateforme :
 **Back-office** : Réglages › Commandes — `/reglages/commandes/ouverture`
 (`lfc_order_opening:read`), `/heure-limite` et `/annulation`
 (`lfc_order_settings:read`) depuis le 2026-10-13
-([`../commandes/plan-reglages-commandes.md`](../commandes/plan-reglages-commandes.md)) ;
+([`../commandes/passation/plan-reglages-commandes.md`](../commandes/passation/plan-reglages-commandes.md)) ;
 les anciennes adresses sous `/b2b/reglages/` redirigent. Voir
-[`../commandes/ouverture-de-la-boutique.md`](../commandes/ouverture-de-la-boutique.md) et
+[`../commandes/passation/ouverture-de-la-boutique.md`](../commandes/passation/ouverture-de-la-boutique.md) et
 [`../limites-de-commande/architecture-heure-limite-de-commande.md`](../limites-de-commande/architecture-heure-limite-de-commande.md).
 
 L'accès aux fonctionnalités (`b2b_feature_access`) n'ouvre **pas** la boutique :

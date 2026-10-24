@@ -5,7 +5,7 @@ import {
 
 /**
  * Trop de commandes pour un récapitulatif (plan
- * `documentation/commandes/plan-recapitulatif-des-commandes.md`, §6.5).
+ * `documentation/commandes/boutique/plan-recapitulatif-des-commandes.md`, §6.5).
  */
 export class OrderSummaryTooManyOrdersError extends DomainError {
   constructor(

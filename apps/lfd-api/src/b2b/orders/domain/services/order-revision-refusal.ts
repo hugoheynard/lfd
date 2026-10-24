@@ -11,7 +11,7 @@ function shortDay(day: string): string {
 
 /**
  * **La phrase du refus d'une modification** (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, R1) — la même
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, R1) — la même
  * frontière que l'annulation (`cancellationOf`), dite avec le geste qu'on
  * refuse. Lue par du personnel et par le client, sans le code sous les yeux :
  * elle nomme le cas et ce qu'on peut faire à la place.

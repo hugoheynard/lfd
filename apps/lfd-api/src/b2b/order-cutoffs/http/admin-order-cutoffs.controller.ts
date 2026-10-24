@@ -13,7 +13,7 @@ import { GetGeneralOrderCutoffQuery } from "../application/get-general-order-cut
 
 /**
  * Gestion **staff** de l'heure limite générale (Réglages › Commandes › Heure
- * limite), sous `lfc_order_settings` (`documentation/commandes/plan-reglages-commandes.md`,
+ * limite), sous `lfc_order_settings` (`documentation/commandes/passation/plan-reglages-commandes.md`,
  * §3.4, lot O1a). Surface staff murée par `@AdminSurface`.
  *
  * Une seule ressource depuis le 2026-10-21 : **la règle générale**

@@ -12,7 +12,7 @@ import {
 
 /**
  * **Commander sans compte** — plan
- * `documentation/commandes/architecture-commande-sans-compte.md`, §5 et lot C.
+ * `documentation/commandes/passation/architecture-commande-sans-compte.md`, §5 et lot C.
  *
  * ## Pourquoi un contrat de plus, et pas un champ de plus sur `placeOrderPayloadSchema`
  *

@@ -6,7 +6,7 @@ import { NO_DAYS, type OrderDays } from '../client-order-history.service';
 
 /**
  * Le filtre « du … au … » de « Mes commandes » — le jour de retrait ou de
- * livraison (plan `documentation/commandes/plan-recapitulatif-des-commandes.md`,
+ * livraison (plan `documentation/commandes/boutique/plan-recapitulatif-des-commandes.md`,
  * §6.6, lot R3).
  *
  * Il ne filtre rien lui-même : il émet des bornes, que l'écran fait RELIRE au

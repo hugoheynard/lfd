@@ -8,7 +8,7 @@ quel bucket va-t-il, sous quelle clé, et qui peut le relire ?** Les décisions
 qui ont mené à ce découpage vivent ailleurs, et ne sont pas réécrites ici :
 
 - pourquoi les pièces d'un client sont coupées en deux buckets —
-  [`../commandes/architecture-pieces-en-r2.md`](../commandes/architecture-pieces-en-r2.md) ;
+  [`../commandes/bon-et-pieces/architecture-pieces-en-r2.md`](../commandes/bon-et-pieces/architecture-pieces-en-r2.md) ;
 - pourquoi les images du catalogue sont publiques et servies par un domaine —
   [`cloudflare-images.md`](cloudflare-images.md).
 
@@ -146,7 +146,7 @@ que le stockage lui-même possède : R2 ne connaît ni société ni commande.
 bon de commande. C'est cohérent avec ce que la fiche est — un papier
 opérationnel, refabricable — mais ça veut dire qu'un avenant écrasera la feuille
 partie au fournil le matin. Le tableau de
-[`../commandes/architecture-pieces-en-r2.md`](../commandes/architecture-pieces-en-r2.md)
+[`../commandes/bon-et-pieces/architecture-pieces-en-r2.md`](../commandes/bon-et-pieces/architecture-pieces-en-r2.md)
 annonçait `fiche-atelier-r{n}.pdf` ; il est corrigé dans le même commit que cette
 page, et la question de la révision reste ouverte.
 
@@ -331,11 +331,11 @@ passer sur un montage où les deux se confondraient.
 ## 8. Ce que ce document ne dit pas
 
 - **Ce que contient chaque pièce**, audience par audience :
-  [`../commandes/architecture-bon-de-commande.md`](../commandes/architecture-bon-de-commande.md).
+  [`../commandes/bon-et-pieces/architecture-bon-de-commande.md`](../commandes/bon-et-pieces/architecture-bon-de-commande.md).
 - **Combien de temps on garde les bons de commande** — sans limite : un bon
   émis à juste titre ne se supprime pas (Hugo, 2026-09-17) ; aucune règle de
   cycle de vie ne doit viser `orders/` :
-  [`../commandes/todo-conservation-des-bons-en-r2.md`](../commandes/todo-conservation-des-bons-en-r2.md).
+  [`../commandes/bon-et-pieces/todo-conservation-des-bons-en-r2.md`](../commandes/bon-et-pieces/todo-conservation-des-bons-en-r2.md).
 - **Le cache, le domaine et ce que « CDN » recouvre** :
   [`cloudflare-images.md`](cloudflare-images.md).
 - **Ce qui est vérifié à chaque déploiement** :

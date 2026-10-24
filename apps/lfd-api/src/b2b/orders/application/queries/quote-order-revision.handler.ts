@@ -7,7 +7,7 @@ import { RevisionWall } from "../services/revision-wall.js";
 import { QuoteOrderRevisionQuery } from "./quote-order-revision.query.js";
 
 /**
- * **Le devis de révision** (plan `documentation/commandes/plan-modifier-une-commande.md`,
+ * **Le devis de révision** (plan `documentation/commandes/modification/plan-modifier-une-commande.md`,
  * M1) : la commande telle qu'elle serait, par la MÊME recomposition que la
  * modification, et l'écart avec la révision courante. Ne mute rien.
  *

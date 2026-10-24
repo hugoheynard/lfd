@@ -60,7 +60,7 @@ export class PickupDiscountCategoryReinclusionError extends DomainError {
 
 /**
  * Les refus des **créneaux publics** — plan
- * `documentation/commandes/plan-creneaux-de-retrait.md`, D2 et D7.
+ * `documentation/commandes/passation/plan-creneaux-de-retrait.md`, D2 et D7.
  *
  * Quatre d'entre eux portent sur UNE règle et vivent donc dans son value object ;
  * seul le chevauchement porte sur l'ensemble, et c'est lui qui justifie

@@ -16,7 +16,7 @@ export const REQUEST_KIND_GESTURES: Readonly<Record<RequestKind, string>> = {
 
 /**
  * « Marquer traité » est-il le geste de ce type ? Une demande de modification
- * (plan `documentation/commandes/plan-modifier-une-commande.md`, M4) se traite
+ * (plan `documentation/commandes/modification/plan-modifier-une-commande.md`, M4) se traite
  * par une RÉPONSE — « Appliquer » ou « Refuser » — que le client attend ; le
  * serveur refuse de la marquer simplement traitée.
  */

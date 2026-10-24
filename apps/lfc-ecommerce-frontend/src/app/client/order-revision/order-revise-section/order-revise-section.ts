@@ -18,7 +18,7 @@ import { changeRequestNoteOf, reviseOfferOf, type ReviseOffer } from '../revisio
 
 /**
  * **« Modifier ma commande » dans le tiroir** (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, M3, §6), à côté de
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, M3, §6), à côté de
  * l'annulation et sous la même forme. Un lien : il mène à une page, qui
  * survit à un rechargement.
  *

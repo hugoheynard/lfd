@@ -1,7 +1,7 @@
 /**
  * **« Quelles journées ont leur plan arrêté ? »** — port de LECTURE que le
  * fournil déclare et implémente, pour le commerce (plan
- * `documentation/commandes/plan-reglages-commandes.md`, §8, point 3, lot O3).
+ * `documentation/commandes/passation/plan-reglages-commandes.md`, §8, point 3, lot O3).
  *
  * Un plan arrêté (`production_day.closed_at` posé) ne prend plus de commande :
  * la boutique ne propose plus ce jour, et la passation le refuse d'avance. Sans

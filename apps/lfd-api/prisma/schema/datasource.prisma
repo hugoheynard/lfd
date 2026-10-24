@@ -20,7 +20,7 @@
 //
 // Contexte : clients pros (customers) qui commandent à La Folie Coffee.
 // Doc d'archi : documentation/auth-inscription/architecture-identite-auth-tenancy.md
-//              documentation/commandes/architecture-flux-commande-prod.md
+//              documentation/commandes/la-commande/architecture-flux-commande-prod.md
 //
 // Conventions (alignées sur le PIM) :
 // - `User` ICI = une PERSONNE côté client (customer), avec son profil : nom,

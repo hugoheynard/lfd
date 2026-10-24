@@ -65,7 +65,7 @@ export abstract class OrderRepository {
 
   /**
    * **L'abandon du règlement par son client** — il quitte l'écran de carte
-   * (plan `documentation/commandes/architecture-abandon-du-reglement.md`, D1, D4, Q3).
+   * (plan `documentation/commandes/reglement/architecture-abandon-du-reglement.md`, D1, D4, Q3).
    *
    * 🔴 **Écriture nue, conditionnée en base, et c'est voulu** — au même titre
    * que {@link markPaid} : `Order` est un agrégat de PASSATION qui ne sait pas
@@ -123,7 +123,7 @@ export abstract class OrderRepository {
    * d'annulation, 2026-10-12) : `false`, et elle reste annulée.
    *
    * **La date de réception part avec la remise** (plan
-   * `documentation/commandes/date-de-reception.md`, B2, 2026-10-24) :
+   * `documentation/commandes/la-commande/date-de-reception.md`, B2, 2026-10-24) :
    * `receivedOn` (`AAAA-MM-JJ`, jour de Paris) est écrit dans la MÊME
    * instruction que `handedOverAt` — jamais une remise sans date. Une date
    * déjà posée n'est jamais remplacée (elle est figée en base), et ne

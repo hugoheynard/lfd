@@ -19,7 +19,7 @@ import { PrismaOrderOpeningRepository } from "./infrastructure/prisma-order-open
 
 /**
  * **À qui la boutique prend des commandes** — un réglage global (Hugo,
- * 2026-10-09). Doc : `documentation/commandes/ouverture-de-la-boutique.md`.
+ * 2026-10-09). Doc : `documentation/commandes/passation/ouverture-de-la-boutique.md`.
  *
  * Importe `AccountModule` pour le seul `StaffDirectory` (l'auteur figé du geste).
  * Exporte le port de LECTURE seul : `orders` refuse une passation, il ne pose

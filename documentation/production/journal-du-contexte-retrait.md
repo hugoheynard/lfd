@@ -44,12 +44,12 @@ contraire.
 
 **Les quatre, et ce qu'elles disaient :**
 
-| Où                                           | Ce qu'elle affirmait                                |
-| -------------------------------------------- | --------------------------------------------------- |
-| `public/orders.prisma`                       | « Émis à la passation pour les seules `pickup` »    |
-| `public/orders.prisma`, deux lignes plus bas | « Les deux autres colonnes **SONT** l'attestation » |
-| `prisma-order.repository.ts`                 | « Seul le retrait en reçoit un »                    |
-| `commandes/architecture-bon-de-commande.md`  | « Rien de tout ça n'existe »                        |
+| Où                                                           | Ce qu'elle affirmait                                |
+| ------------------------------------------------------------ | --------------------------------------------------- |
+| `public/orders.prisma`                                       | « Émis à la passation pour les seules `pickup` »    |
+| `public/orders.prisma`, deux lignes plus bas                 | « Les deux autres colonnes **SONT** l'attestation » |
+| `prisma-order.repository.ts`                                 | « Seul le retrait en reçoit un »                    |
+| `../commandes/bon-et-pieces/architecture-bon-de-commande.md` | « Rien de tout ça n'existe »                        |
 
 Aucune n'a été **supprimée** : chacune garde sa formulation d'origine sous un
 bandeau daté qui dit ce qui l'a périmée. Une raison qu'on efface se represente —

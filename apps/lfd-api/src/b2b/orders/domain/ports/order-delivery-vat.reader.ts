@@ -2,7 +2,7 @@ import type { DeliveryVatMode } from "@lfd/contracts";
 
 /**
  * Port de **lecture** du mode de TVA de la livraison, vu depuis la passation et
- * le devis de la boutique (plan `documentation/commandes/architecture-tva-des-frais-de-port.md`).
+ * le devis de la boutique (plan `documentation/commandes/bon-et-pieces/architecture-tva-des-frais-de-port.md`).
  *
  * Rend **toujours** un mode : sans réglage posé, `standard` — ce que toute
  * commande a fait avant le réglage. Le repli est ici, et pas dans un DEFAULT

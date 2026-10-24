@@ -54,7 +54,7 @@ flowchart LR
 - **D3 — pas de rapatriement par ce chantier.** Ce geste existe depuis le
   2026-10-11 : la première entrée par code e-mail ou Google, adresse prouvée, pose
   son `sub` sur l'unique fiche invité de l'adresse (rien n'est réécrit sur les
-  commandes) — [`plan-bienvenue-et-invite-rattache.md`](../comptabilite/fidelite/plan-bienvenue-et-invite-rattache.md).
+  commandes) — [`plan-bienvenue-et-invite-rattache.md`](../../comptabilite/fidelite/plan-bienvenue-et-invite-rattache.md).
 - **D4 — un règlement interrompu perd le paiement, pas la commande.** Aucune route
   publique de reprise (`retrieveIntent` rendrait un secret vivant) ; non réglée, la
   commande expire. 🔴 **Rien ne se règle au comptoir** (Hugo, 2026-10-11 : « soit on
@@ -75,13 +75,13 @@ secret de paiement vivant.
 
 ## 3. État du code (vérifié le 2026-10-12)
 
-| Lot | Ce qui existe                                                                                                              | Où                                                                                                                                                                     |
-| --- | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A   | le panier retient le règlement tant qu'il ignore qui commande, offre les deux portes ensemble sans regarder l'adresse (D7) | `apps/lfc-ecommerce-frontend/src/app/client/cart/guest-identity-form/`                                                                                                 |
-| B   | `auth0Sub` nullable                                                                                                        | `account.prisma`                                                                                                                                                       |
-| C   | `POST /shop/orders`, ouverte le 2026-10-11                                                                                 | `b2b/orders/http/shop-orders.controller.ts`, `orders.module.ts`, `place-shop-order.handler.ts`                                                                         |
-| D8  | invité retrouvé                                                                                                            | `prisma-guest-buyer.registrar.ts` (⚠️ l'invité retrouvé garde son ancien prénom et son téléphone : [`todo-adresse-de-la-commande.md`](todo-adresse-de-la-commande.md)) |
-| D7  | courriel « une commande a été passée avec votre adresse »                                                                  | `send-guest-order-notice.handler.ts`, `order-sheet`                                                                                                                    |
+| Lot | Ce qui existe                                                                                                              | Où                                                                                                                                                                                    |
+| --- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A   | le panier retient le règlement tant qu'il ignore qui commande, offre les deux portes ensemble sans regarder l'adresse (D7) | `apps/lfc-ecommerce-frontend/src/app/client/cart/guest-identity-form/`                                                                                                                |
+| B   | `auth0Sub` nullable                                                                                                        | `account.prisma`                                                                                                                                                                      |
+| C   | `POST /shop/orders`, ouverte le 2026-10-11                                                                                 | `b2b/orders/http/shop-orders.controller.ts`, `orders.module.ts`, `place-shop-order.handler.ts`                                                                                        |
+| D8  | invité retrouvé                                                                                                            | `prisma-guest-buyer.registrar.ts` (⚠️ l'invité retrouvé garde son ancien prénom et son téléphone : [`todo-adresse-de-la-commande.md`](../la-commande/todo-adresse-de-la-commande.md)) |
+| D7  | courriel « une commande a été passée avec votre adresse »                                                                  | `send-guest-order-notice.handler.ts`, `order-sheet`                                                                                                                                   |
 
 Contrat : `packages/contracts/src/shop-order.ts`. Éprouvé : `test/shop-order.e2e-spec.ts`,
 `place-shop-order.handler.spec.ts` ; D7 n'est éprouvé qu'en unitaire (le mailer y est

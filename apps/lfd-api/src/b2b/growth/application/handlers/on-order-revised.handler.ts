@@ -20,7 +20,7 @@ export const RECORD_ORDER_REVISED = "b2b.growth.record-order-revised";
 
 /**
  * Abonné du journal : `order.revised` → **le témoin immuable d'une
- * modification** (plan `documentation/commandes/plan-modifier-une-commande.md`,
+ * modification** (plan `documentation/commandes/modification/plan-modifier-une-commande.md`,
  * M1, §5). Le sujet est le client ; la charge dit qui a modifié (la fiche
  * staff, ou le client, sous son nom du moment), quelle révision, ce qui a
  * changé et l'écart de total. Visible dans l'historique du détail staff, qui

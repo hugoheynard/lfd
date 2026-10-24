@@ -7,7 +7,7 @@ import { SteppedRevisionNotices } from "../../__tests__/revision-notice-doubles.
 import { FreshDayOrders } from "../fresh-day-orders.js";
 
 /**
- * §9.1 du plan de modification (`documentation/commandes/plan-modifier-une-commande.md`) :
+ * §9.1 du plan de modification (`documentation/commandes/modification/plan-modifier-une-commande.md`) :
  * la clôture et le retirage lisent les commandes hors verrou, puis les
  * RELISENT sous lui si une révision a été notée entre-temps.
  */

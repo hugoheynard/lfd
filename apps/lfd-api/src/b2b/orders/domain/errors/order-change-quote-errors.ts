@@ -2,7 +2,7 @@ import { BusinessError } from "../../../../platform/shared/errors/app-error.js";
 
 /**
  * **Le devis d'une demande refusé** (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, §14) : il n'est
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, §14) : il n'est
  * ouvert qu'à une commande dont l'heure limite est passée et qui n'est pas au
  * plan — celle qu'on peut DEMANDER à modifier. Les blocages communs (carte,
  * engagée, annulée…) gardent leur propre erreur.

@@ -10,7 +10,7 @@ import { OrderChangeAppliedEvent } from "../../domain/order-change.events.js";
  * **« Votre modification est faite »** — au client qui l'a demandée, à
  * l'adresse prise à son compte, avec le nouveau total et l'écart, lus sur la
  * révision appliquée (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, M4, §14).
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, M4, §14).
  *
  * Hors de la requête, suivi par `BackgroundWork`, comme le courriel d'une
  * demande à l'équipe. Un échec d'envoi est écrit dans les logs — avec l'id de

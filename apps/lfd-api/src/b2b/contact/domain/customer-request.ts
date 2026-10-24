@@ -116,7 +116,7 @@ export class CustomerRequest {
 
   /**
    * Une demande de modification, l'heure limite passée (plan
-   * `documentation/commandes/plan-modifier-une-commande.md`, M4) : la
+   * `documentation/commandes/modification/plan-modifier-une-commande.md`, M4) : la
    * commande, la révision sur laquelle le client a composé, la composition
    * voulue. Le mot est facultatif. Que la commande soit bien « trop tard »
    * est la règle de la commande, jugée par le handler avant d'arriver ici.

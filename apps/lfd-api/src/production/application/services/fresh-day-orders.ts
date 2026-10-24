@@ -15,7 +15,7 @@ export interface DayOrdersSnapshot {
 
 /**
  * **Une révision n'est jamais inscrite dans une ancienne composition** (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, §9.1, 2026-10-23).
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, §9.1, 2026-10-23).
  *
  * La clôture et le retirage lisent les commandes du commerce HORS du verrou
  * de la journée — pas de lecture d'un autre bloc sous un verrou tenu, en temps

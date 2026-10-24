@@ -6,7 +6,7 @@ export type PlanAdmission = "open" | "closed";
 /**
  * **Le guichet d'admission au plan** — port que le fournil DÉCLARE et
  * IMPLÉMENTE, et que le commerce appelle quand il écrit une commande (plan
- * `documentation/commandes/plan-reglages-commandes.md`, §8.1, S5, lot O3).
+ * `documentation/commandes/passation/plan-reglages-commandes.md`, §8.1, S5, lot O3).
  *
  * ## Pourquoi un verrou, et pas seulement une lecture
  *

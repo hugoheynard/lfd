@@ -30,7 +30,7 @@ const CURRENCY = "eur";
 
 /**
  * **Commander sans compte** — plan
- * `documentation/commandes/architecture-commande-sans-compte.md`, §5 et lot C.
+ * `documentation/commandes/passation/architecture-commande-sans-compte.md`, §5 et lot C.
  *
  * ## Ce qu'il partage avec la passation connectée, et ce qu'il ne partage pas
  *

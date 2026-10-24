@@ -2,7 +2,7 @@ import type { MailAttachment } from "@lfd/mailer";
 
 /**
  * **Le bon de commande joint à la confirmation** (plan
- * `documentation/commandes/architecture-bon-de-commande.md`, §2.4) : le nom remis au client et
+ * `documentation/commandes/bon-et-pieces/architecture-bon-de-commande.md`, §2.4) : le nom remis au client et
  * les octets du PDF rangé. Même forme que la pièce de la facture.
  */
 export interface OrderSheetMailDocument {

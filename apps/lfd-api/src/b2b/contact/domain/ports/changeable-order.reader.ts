@@ -1,6 +1,6 @@
 /**
  * Où en est une commande pour une **demande de modification** (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, M4) — ce que la
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, M4) — ce que la
  * règle de la modification en dit pour ce client, réduit à ce que la demande
  * tranche :
  *

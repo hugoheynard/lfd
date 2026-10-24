@@ -29,7 +29,7 @@ import { RequestReasonRepository } from "../../domain/ports/request-reason.repos
 
 /**
  * **Demander une modification** (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, §4, M4).
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, §4, M4).
  *
  * L'ordre : la commande par LA règle d'accès et LA règle de la modification
  * (hors périmètre → 404 ; « trop tard » est le SEUL cas admis, le reste

@@ -32,7 +32,7 @@ import type { StoredDocument } from "./document-store.js";
  * « À juste titre » laisse une porte, et elle n'est pas dans le code : un bon
  * qui n'aurait jamais dû exister se retire par un geste humain décidé au cas
  * par cas, comme la remise à blanc (`CLAUDE.md` §0). Cf.
- * `documentation/commandes/todo-conservation-des-bons-en-r2.md`.
+ * `documentation/commandes/bon-et-pieces/todo-conservation-des-bons-en-r2.md`.
  *
  * ⚠️ Écraser reste possible : `save` sur une clé existante remplace. C'est sans
  * risque pour le bon tant que sa clé porte la révision et que son rendu est
@@ -53,7 +53,7 @@ import type { StoredDocument } from "./document-store.js";
  * le jour où une borne au fournil lit des documents, le jeton `customers` lui
  * donnerait aussi toutes les factures.
  *
- * Cf. `documentation/commandes/architecture-pieces-en-r2.md`.
+ * Cf. `documentation/commandes/bon-et-pieces/architecture-pieces-en-r2.md`.
  *
  * Ce qui protège un client d'un autre n'est pas le bucket : c'est le préfixe de
  * clé, dérivé d'identifiants vérifiés, et le mur de la société côté API.

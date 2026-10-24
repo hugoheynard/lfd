@@ -36,7 +36,7 @@ La réponse, avant correction, était **non** : elle l'était.
 
 ## 1. Deux colonnes, et c'est tout le sujet
 
-[`orders.prisma`](../../apps/lfd-api/prisma/schema/public/orders.prisma) les
+[`orders.prisma`](../../../apps/lfd-api/prisma/schema/public/orders.prisma) les
 sépare volontairement — « une commande peut être `placed` et déjà `paid`, ou
 `placed` et `not_required` ».
 
@@ -51,7 +51,7 @@ l'autre, c'est la seconde colonne.
 ## 2. Situation A — le client PRO
 
 La décision vit dans `requiresCard`
-([`place-order.handler.ts`](../../apps/lfd-api/src/b2b/orders/application/commands/place-order.handler.ts)),
+([`place-order.handler.ts`](../../../apps/lfd-api/src/b2b/orders/application/commands/place-order.handler.ts)),
 et elle écoute le client avant d'appliquer la règle.
 
 ```mermaid
@@ -81,7 +81,7 @@ encaisser en ligne », pas « payé ».
 ## 3. Situation B — le client PUBLIC
 
 Aucune décision à prendre : `settle`
-([`place-shop-order.handler.ts`](../../apps/lfd-api/src/b2b/orders/application/commands/place-shop-order.handler.ts))
+([`place-shop-order.handler.ts`](../../../apps/lfd-api/src/b2b/orders/application/commands/place-shop-order.handler.ts))
 n'a pas de branche « au compte », et son JSDoc dit pourquoi — « offrir depuis
 une surface anonyme reviendrait à accorder un crédit à quiconque tape une
 adresse ».
@@ -103,7 +103,7 @@ visible.
 
 ## 4. Le retour de Stripe — et le cas qui ne revient jamais
 
-[`stripe-payment-gateway.ts`](../../apps/lfd-api/src/b2b/payments/infrastructure/stripe-payment-gateway.ts)
+[`stripe-payment-gateway.ts`](../../../apps/lfd-api/src/b2b/payments/infrastructure/stripe-payment-gateway.ts)
 ne retient que **deux** événements ; tout le reste est `ignored`.
 
 ```mermaid
@@ -117,7 +117,7 @@ flowchart LR
 
 Les deux écritures sont **idempotentes** : un `updateMany` filtré sur l'état
 d'origine, donc un webhook rejoué ou un intent inconnu ne fait rien
-([`prisma-order.repository.ts`](../../apps/lfd-api/src/b2b/orders/infrastructure/prisma-order.repository.ts)).
+([`prisma-order.repository.ts`](../../../apps/lfd-api/src/b2b/orders/infrastructure/prisma-order.repository.ts)).
 
 > ⚠️ **Corrigé le 2026-09-26** : le filtre n'est plus « `pending` » pour les
 > deux. Un encaissement part de `pending` **ou** `failed` (une autre carte sur
@@ -204,7 +204,7 @@ message qu'il recevait jamais. Hugo : « je ne veux pas que pour un paiement
 carte, order placed parte à la passation ».
 
 Les deux retours de Stripe sont désormais **publiés** par
-[`confirm-order-payment.handler.ts`](../../apps/lfd-api/src/b2b/orders/application/commands/confirm-order-payment.handler.ts)
+[`confirm-order-payment.handler.ts`](../../../apps/lfd-api/src/b2b/orders/application/commands/confirm-order-payment.handler.ts)
 — et seulement au franchissement : le dépôt ne bascule que ce qui était encore
 `pending`, donc un webhook rejoué ne publie rien.
 
@@ -229,14 +229,14 @@ flowchart TD
     FAILE --> KO["📧 « votre paiement n'est pas passé »<br/>SANS QR"]
 ```
 
-| Abonné                                                                                                                   | Écoute                     | Envoie                                        |
-| ------------------------------------------------------------------------------------------------------------------------ | -------------------------- | --------------------------------------------- |
-| [`send-order-placed-mail`](../../apps/lfd-api/src/b2b/orders/application/handlers/send-order-placed-mail.handler.ts)     | `OrderPlacedEvent`         | l'accusé, **sauf** si le règlement est en vol |
-| [`send-order-settled-mail`](../../apps/lfd-api/src/b2b/orders/application/handlers/send-order-settled-mail.handler.ts)   | `OrderPaymentSettledEvent` | le même accusé                                |
-| [`send-payment-failed-mail`](../../apps/lfd-api/src/b2b/orders/application/handlers/send-payment-failed-mail.handler.ts) | `OrderPaymentFailedEvent`  | le refus                                      |
+| Abonné                                                                                                                      | Écoute                     | Envoie                                        |
+| --------------------------------------------------------------------------------------------------------------------------- | -------------------------- | --------------------------------------------- |
+| [`send-order-placed-mail`](../../../apps/lfd-api/src/b2b/orders/application/handlers/send-order-placed-mail.handler.ts)     | `OrderPlacedEvent`         | l'accusé, **sauf** si le règlement est en vol |
+| [`send-order-settled-mail`](../../../apps/lfd-api/src/b2b/orders/application/handlers/send-order-settled-mail.handler.ts)   | `OrderPaymentSettledEvent` | le même accusé                                |
+| [`send-payment-failed-mail`](../../../apps/lfd-api/src/b2b/orders/application/handlers/send-payment-failed-mail.handler.ts) | `OrderPaymentFailedEvent`  | le refus                                      |
 
 - **Les deux chemins de l'accusé partagent un service**
-  ([`order-placed-mail.service.ts`](../../apps/lfd-api/src/b2b/orders/application/services/order-placed-mail.service.ts))
+  ([`order-placed-mail.service.ts`](../../../apps/lfd-api/src/b2b/orders/application/services/order-placed-mail.service.ts))
   : même feuille, même QR, **même clé d'idempotence** par commande. Une commande
   ne peut pas produire deux accusés, quel que soit le chemin qui l'annonce.
 - **Le refus ne porte pas de QR** : une commande impayée ne se retire pas, et
@@ -283,21 +283,21 @@ commande annulée ne la rouvre pas et sonne « à rembourser »
 
 Le domaine décide, l'infrastructure traduit, les lecteurs épandent :
 
-- [`production-plan.ts`](../../apps/lfd-api/src/b2b/orders/domain/services/production-plan.ts)
+- [`production-plan.ts`](../../../apps/lfd-api/src/b2b/orders/domain/services/production-plan.ts)
   — `absorbedByPlan` (statut **et** argent) et `settlementAllowsProduction`
   (l'argent **seul**), avec les constantes `STATUS_IN_PLAN`, `PAYMENTS_REFUSED`,
   `PAYMENTS_AWAITING`. Testé sans base.
-- [`plan-filter.ts`](../../apps/lfd-api/src/b2b/orders/infrastructure/plan-filter.ts)
+- [`plan-filter.ts`](../../../apps/lfd-api/src/b2b/orders/infrastructure/plan-filter.ts)
   — leur traduction Prisma : `planWhere()` et `settlementWhere()`. Aucun lecteur
   ne réécrit plus la condition à la main.
 
-| Surface                                     | Fichier                                                                                                                         | Fragment               |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
-| la **clôture** (`placed → confirmed`)       | [`prisma-order.repository.ts`](../../apps/lfd-api/src/b2b/orders/infrastructure/prisma-order.repository.ts)                     | `planWhere`            |
-| la **fiche du fournil**                     | [`prisma-day-orders.source.ts`](../../apps/lfd-api/src/b2b/orders/infrastructure/prisma-day-orders.source.ts)                   | `planWhere`            |
-| le **prévisionnel**                         | [`prisma-expected-production.reader.ts`](../../apps/lfd-api/src/b2b/orders/infrastructure/prisma-expected-production.reader.ts) | `planWhere`            |
-| le **compteur de contrôle** (retards)       | [`prisma-pending-orders.reader.ts`](../../apps/lfd-api/src/b2b/orders/infrastructure/prisma-pending-orders.reader.ts)           | `planWhere`            |
-| le **dossier du jour** (la liasse imprimée) | [`prisma-order.reader.ts`](../../apps/lfd-api/src/b2b/orders/infrastructure/prisma-order.reader.ts) — `listForProduction`       | `settlementWhere` seul |
+| Surface                                     | Fichier                                                                                                                            | Fragment               |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| la **clôture** (`placed → confirmed`)       | [`prisma-order.repository.ts`](../../../apps/lfd-api/src/b2b/orders/infrastructure/prisma-order.repository.ts)                     | `planWhere`            |
+| la **fiche du fournil**                     | [`prisma-day-orders.source.ts`](../../../apps/lfd-api/src/b2b/orders/infrastructure/prisma-day-orders.source.ts)                   | `planWhere`            |
+| le **prévisionnel**                         | [`prisma-expected-production.reader.ts`](../../../apps/lfd-api/src/b2b/orders/infrastructure/prisma-expected-production.reader.ts) | `planWhere`            |
+| le **compteur de contrôle** (retards)       | [`prisma-pending-orders.reader.ts`](../../../apps/lfd-api/src/b2b/orders/infrastructure/prisma-pending-orders.reader.ts)           | `planWhere`            |
+| le **dossier du jour** (la liasse imprimée) | [`prisma-order.reader.ts`](../../../apps/lfd-api/src/b2b/orders/infrastructure/prisma-order.reader.ts) — `listForProduction`       | `settlementWhere` seul |
 
 Avant ce jour, les quatre premières posaient chacune leur `where`, et le
 compteur l'écrivait noir sur blanc : « si les deux divergeaient, le compteur
@@ -323,7 +323,7 @@ moment précis où on l'imprime. Il partage donc la moitié **argent**, et garde
 son propre statut : tout sauf `cancelled` et `draft`.
 
 Un test tient cette coupe dans
-[`production-plan.spec.ts`](../../apps/lfd-api/src/b2b/orders/domain/services/__tests__/production-plan.spec.ts)
+[`production-plan.spec.ts`](../../../apps/lfd-api/src/b2b/orders/domain/services/__tests__/production-plan.spec.ts)
 : `settlementAllowsProduction` ne porte **aucune** condition de statut, et elle
 dit exactement la même chose qu'`absorbedByPlan` sur une commande `placed`.
 

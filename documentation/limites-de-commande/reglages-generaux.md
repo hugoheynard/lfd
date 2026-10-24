@@ -2,7 +2,7 @@
 
 > Doc d'état, écrite le 2026-10-21 à partir du code ouvert ce jour-là. Elle
 > remplace, pour l'état courant, le §1 de
-> [`../commandes/plan-reglages-commandes.md`](../commandes/plan-reglages-commandes.md)
+> [`../commandes/passation/plan-reglages-commandes.md`](../commandes/passation/plan-reglages-commandes.md)
 > et le §9 de [`architecture-heure-limite-de-commande.md`](architecture-heure-limite-de-commande.md),
 > qui gardent l'historique des décisions. Entrée du dossier : [`README.md`](README.md).
 

@@ -28,7 +28,7 @@ questions liées, avant qu'un écran ne fige la mauvaise réponse.
 
 > **Depuis le 2026-08-15**, une commande peut aussi être **saisie par l'équipe**
 > pour un client (cf.
-> [`architecture-commande-saisie-par-l-equipe.md`](architecture-commande-saisie-par-l-equipe.md)).
+> [`architecture-commande-saisie-par-l-equipe.md`](../passation/architecture-commande-saisie-par-l-equipe.md)).
 > Cela n'entame en rien ce document : on ajoute un fait, on n'en réécrit aucun.
 > Un avenant aura d'ailleurs le même besoin — un **auteur** qui peut être staff —
 > et la réponse y est la même : un attribut, pas une nature d'avenant.
@@ -162,7 +162,7 @@ raison. Même canal, message inverse, sans lien de paiement.
 ni conversion autre que centimes → euros pour l'affichage.
 
 La raison n'est pas dogmatique : la TVA se calcule **par taux, remise déduite au
-prorata, arrondie par groupe** ([`vat.ts`](../../apps/lfd-api/src/b2b/orders/domain/services/vat.ts)).
+prorata, arrondie par groupe** ([`vat.ts`](../../../apps/lfd-api/src/b2b/orders/domain/services/vat.ts)).
 Deux implémentations de cette règle, c'est deux résultats à un centime près, et
 un client qui compare son écran à sa facture. Une seule implémentation, côté
 serveur, dans le domaine.
@@ -238,7 +238,7 @@ avant de savoir s'il y en aura pour les avoirs, c'est le refaire deux fois.
    dans le domaine, une seule fois, avenants inclus.
 3. **UI** — le rail droit boucle sur la vue ; `discountLabel()` et la
    construction de `totals()` disparaissent de
-   [`order-detail.ts`](../../packages/b2b-ui/src/order/order-detail/order-detail.ts).
+   [`order-detail.ts`](../../../packages/b2b-ui/src/order/order-detail/order-detail.ts).
 
 La frise d'avancement, elle, **reste côté lib** : elle ne porte aucun montant,
 seulement du vocabulaire dérivé de trois énumérations, et elle est testée sur

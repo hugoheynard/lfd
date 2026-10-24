@@ -3,7 +3,7 @@
 > **État : description du code au 2026-09-17, ADRESSES rouvertes le
 > 2026-09-21.** Ce document ne propose rien et ne décide rien. Il dessine ce qui
 > EXISTE, pour que le plan
-> [`architecture-commande-sans-compte.md`](architecture-commande-sans-compte.md) se décide sur
+> [`architecture-commande-sans-compte.md`](passation/architecture-commande-sans-compte.md) se décide sur
 > une carte plutôt que de mémoire.
 >
 > Chaque affirmation porte le fichier qui la prouve. Ce qui n'a pas été ouvert est

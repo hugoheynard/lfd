@@ -60,7 +60,7 @@ import { FixedDeliveryVat } from "./fixed-delivery-vat.js";
 
 /**
  * **La scène de la modification d'une commande** (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, M1) — la
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, M1) — la
  * recomposition RÉELLE (`OrderRevising` sur `OrderComposition`), montée sur
  * des doubles écrits à la main en héritant des ports, et un `trace` partagé
  * pour éprouver l'ordre des gestes.

@@ -8,7 +8,7 @@ import type { OrderDays } from './client-order-history.service';
 
 /**
  * Les mises en forme du récapitulatif (plan
- * `documentation/commandes/plan-recapitulatif-des-commandes.md`, lot R3) —
+ * `documentation/commandes/boutique/plan-recapitulatif-des-commandes.md`, lot R3) —
  * des MOTS posés sur ce que le serveur a sommé, jamais un calcul.
  */
 

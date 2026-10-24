@@ -330,7 +330,7 @@ export function deliveryAddressIssue(): { message: string; path: PropertyKey[] }
  * `uuid()` la borne par son type. Un index btree refuse une entrée au-delà de
  * 2704 octets ; un en-tête HTTP libre en accepte seize mille.
  *
- * Cf. `documentation/commandes/architecture-idempotence-de-passation.md`.
+ * Cf. `documentation/commandes/passation/architecture-idempotence-de-passation.md`.
  */
 export const idempotencyKeySchema = z.string().uuid("clé d'idempotence attendue (UUID)");
 
@@ -649,7 +649,7 @@ export interface OrderView {
    * L'identifiant du point de retrait de la commande (le `siteId` figé avec
    * son adresse, lot S2), ou `null` : livraison, ou commande d'avant le lot.
    * Ce que la modification renvoie en `pickupAddressId` (plan
-   * `documentation/commandes/plan-modifier-une-commande.md`, M3).
+   * `documentation/commandes/modification/plan-modifier-une-commande.md`, M3).
    */
   readonly pickupAddressId: string | null;
   /**

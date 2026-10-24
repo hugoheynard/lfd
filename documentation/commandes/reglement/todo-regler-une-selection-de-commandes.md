@@ -1,7 +1,7 @@
 # TODO — régler une sélection de commandes, et en tirer une facture
 
 **Ouvert le 2026-10-05**, pendant le chantier sous-comptes
-([`../comptes-client/sous-comptes.md`](../comptes-client/sous-comptes.md)).
+([`../../comptes-client/sous-comptes.md`](../../comptes-client/sous-comptes.md)).
 
 ## Le besoin (Hugo, 2026-10-05)
 
@@ -25,7 +25,7 @@ et sur une sélection, pas sur tout un cycle.
   lister les commandes au compte d'une société, une par une, avec leurs
   totaux figés et la TVA par taux.
 - **Le lot de prélèvement figé** (S4-0,
-  [`../comptabilite/prelevement/lot-de-prelevement-fige.md`](../comptabilite/prelevement/lot-de-prelevement-fige.md))
+  [`../../comptabilite/prelevement/lot-de-prelevement-fige.md`](../../comptabilite/prelevement/lot-de-prelevement-fige.md))
   prévoit l'état d'encaissement par commande, dont `settled_otherwise`. C'est
   lui qui garantit qu'une commande réglée ici **ne sera pas prélevée** en fin
   de mois.

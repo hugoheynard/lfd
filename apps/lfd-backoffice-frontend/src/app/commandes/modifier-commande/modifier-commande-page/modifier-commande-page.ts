@@ -90,7 +90,7 @@ interface QuotedRevision {
 
 /**
  * **Modifier une commande passée** — le parcours de l'équipe (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, §6, M3).
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, §6, M3).
  *
  * La saisie par l'équipe, préremplie : les mêmes sources d'articles, le même
  * panier, le même sélecteur d'acheminement — seuls l'interlocuteur et le

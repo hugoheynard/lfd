@@ -9,7 +9,7 @@
 > « Approvisionné par transfert », `transfer_mode`, `counter_setup_minutes`,
 > point GPS) ; le **tri par heure de départ et les couleurs** de la
 > logistique, qui lisent ce transfert, ont leur plan :
-> [`../../commandes/plan-tri-depart-et-couleurs.md`](../../commandes/plan-tri-depart-et-couleurs.md).
+> [`../../commandes/back-office/plan-tri-depart-et-couleurs.md`](../../commandes/back-office/plan-tri-depart-et-couleurs.md).
 >
 > Ce fichier est l'ancien plan commun « sites, transfert interne, tri et
 > couleurs » (2026-10-13, déplacé par `git mv` pour garder l'histoire),

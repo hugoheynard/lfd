@@ -1,6 +1,6 @@
 /**
  * E2E de la **modification d'une commande** (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, lot M1).
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, lot M1).
  *
  * Ce que seul le vrai SQL prouve : l'écriture conditionnée sur la révision
  * (R7), les lignes remplacées avec l'historique complet de la composition

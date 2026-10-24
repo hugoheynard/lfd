@@ -10,7 +10,7 @@ const NONE: TransferClienteles = new Map();
 
 /**
  * **La clientèle des commandes de ces transferts**, lue au commerce en UNE
- * lecture (plan `commandes/plan-tri-depart-et-couleurs.md`, L1a) — à chaque
+ * lecture (plan `commandes/back-office/plan-tri-depart-et-couleurs.md`, L1a) — à chaque
  * lecture, même pour un manifeste figé : elle ne change pas, et le manifeste
  * ne la recopie pas. Le site, lui, est celui du transfert.
  */

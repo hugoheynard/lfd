@@ -368,7 +368,7 @@ temps d'arrêt de l'adresse`, sans nouvel appel ; après ETA3 seulement.
   l'exclut (`b2b/accounting/infrastructure/billable-order-criterion.ts:43`,
   vitruve), et un webhook Stripe rejoué sur une annulée sonne « à rembourser »
   (`confirm-order-payment.handler.ts:63-67`, vitruve). Les **avenants** sont
-  conçus et pas codés (`commandes/architecture-commande-immuable-avenants.md`),
+  conçus et pas codés (`../../commandes/modification/architecture-commande-immuable-avenants.md`),
   avec une règle : « un avoir ne se crée pas avant livraison », et trois états
   de règlement (dont « indécis » ≠ « sans règlement »). Un retrait **n'a pas
   de frais** (`orders.prisma:209-210`) ; les frais de livraison sont figés

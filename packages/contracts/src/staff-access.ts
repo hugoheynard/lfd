@@ -358,7 +358,7 @@ export const staffResourceSchema = z.enum([
   "lfc_operations",
   /**
    * **Le réglage des commandes** — l'heure limite, son rattrapage, et
-   * l'annulation par le client (`documentation/commandes/plan-reglages-commandes.md`).
+   * l'annulation par le client (`documentation/commandes/passation/plan-reglages-commandes.md`).
    * Ajoutée au lot S0 ; les routes passent dessous au lot O1. Accordée à
    * l'écran.
    */
@@ -415,7 +415,7 @@ export const staffResourceSchema = z.enum([
   "lfd_webhooks",
   /**
    * **La vitrine** — composer les pages de la boutique : formes, positions,
-   * rayons, contenus, gabarits (`documentation/commandes/boutique-rayon-layout.md`,
+   * rayons, contenus, gabarits (`documentation/commandes/boutique/boutique-rayon-layout.md`,
    * D7).
    *
    * Détachée de `b2b_settings` parce que ce n'est pas le même métier : la

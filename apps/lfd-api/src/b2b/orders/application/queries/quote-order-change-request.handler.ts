@@ -13,7 +13,7 @@ import { QuoteOrderChangeRequestQuery } from "./quote-order-change-request.query
 
 /**
  * **Le devis d'une demande de modification** (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, §14 ; décision de
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, §14 ; décision de
  * Hugo du 2026-10-23 : « oui montre le nouveau total au client »).
  *
  * Le mur du client (`RevisionWall`, celui de `GET /orders/:id` : hors mur,

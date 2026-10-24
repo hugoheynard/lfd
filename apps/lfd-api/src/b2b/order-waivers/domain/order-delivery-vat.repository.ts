@@ -2,7 +2,7 @@ import type { DeliveryVatMode } from "@lfd/contracts";
 
 /**
  * Port d'**administration** de la TVA de la livraison (plan
- * `documentation/commandes/architecture-tva-des-frais-de-port.md`, V2).
+ * `documentation/commandes/bon-et-pieces/architecture-tva-des-frais-de-port.md`, V2).
  *
  * Une seule valeur pour toute la maison (décision du 2026-10-08 : réglage
  * global, pas par zone). `read` rend `null` quand rien n'a été posé — c'est le

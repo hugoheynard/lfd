@@ -258,7 +258,7 @@ model DeliveryAvailability {
 /// toujours. Une ligne unique, de clé `orders` ; **ligne absente = ouverte aux
 /// deux**. Sa propre table et non `delivery_settings` : celle-là est le réglage
 /// de la LIVRAISON, et y loger la commande aurait fait de chaque geste de l'un
-/// une réécriture de l'autre. Doc : `documentation/commandes/ouverture-de-la-boutique.md`.
+/// une réécriture de l'autre. Doc : `documentation/commandes/passation/ouverture-de-la-boutique.md`.
 model OrderOpening {
   /// Toujours `orders` : il n'y a qu'un réglage.
   key String @id
@@ -278,7 +278,7 @@ model OrderOpening {
 }
 
 /// **L'interrupteur de l'heure limite générale** (plan
-/// `documentation/commandes/plan-reglages-commandes.md`, §8.1, lot O3, Hugo
+/// `documentation/commandes/passation/plan-reglages-commandes.md`, §8.1, lot O3, Hugo
 /// 2026-10-14). Désactivée, la règle `OrderCutoff` n'est plus servie (passation,
 /// boutique, fournil) ; elle reste en base. Une ligne au plus, clé `orders` ;
 /// **ligne absente = activée**. Les limites produit n'en dépendent pas.
@@ -418,7 +418,7 @@ model LegalDocumentFile {
 /// découpée à pas constant pour le VISITEUR.
 ///
 /// 🔴 Elle ne remplace rien : `PickupAddress.opening` porte toujours les heures
-/// PRO, et ce plan n'y touche pas (`documentation/commandes/plan-creneaux-de-retrait.md`,
+/// PRO, et ce plan n'y touche pas (`documentation/commandes/passation/plan-creneaux-de-retrait.md`,
 /// §3). Les créneaux restent DÉRIVÉS (D1) — rien d'enregistré ici ne peut
 /// diverger de l'horaire réel, seule la règle est stockée.
 ///

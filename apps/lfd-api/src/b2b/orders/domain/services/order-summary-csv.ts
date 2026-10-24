@@ -26,7 +26,7 @@ import { periodSentence } from "./order-summary-period.js";
 
 /**
  * **Le récapitulatif au tableur** (plan
- * `documentation/commandes/plan-recapitulatif-des-commandes.md`, lot R2) — pur,
+ * `documentation/commandes/boutique/plan-recapitulatif-des-commandes.md`, lot R2) — pur,
  * à partir du récapitulatif déjà calculé.
  *
  * Une ligne par (société, produit), puis les lignes du bas de la société ; le

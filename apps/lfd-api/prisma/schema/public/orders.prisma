@@ -25,7 +25,7 @@ enum OrderStatus {
   confirmed
   in_production
   /// Fabrication finie, en attente de remise. Écrit par l'ATELIER, au scan du
-  /// QR de colisage de la fiche. Cf. documentation/commandes/architecture-cycle-de-vie-commande.md
+  /// QR de colisage de la fiche. Cf. documentation/commandes/la-commande/architecture-cycle-de-vie-commande.md
   ready
   fulfilled
   cancelled
@@ -52,7 +52,7 @@ enum PaymentStatus {
 ///
 /// ⚠️ Ce n'est PAS la clientèle TARIFÉE B2B/B2C (`CustomerAudiences`, B2B =
 /// société active) : les deux divergent sur une société en attente et sur un
-/// rattaché en espace perso. Cf. documentation/commandes/architecture-ce-que-porte-la-commande.md (D1, D2).
+/// rattaché en espace perso. Cf. documentation/commandes/la-commande/architecture-ce-que-porte-la-commande.md (D1, D2).
 enum OrderClientele {
   pro
   public
@@ -163,7 +163,7 @@ model Order {
   /// changé de mains** — livrée à la porte (le jour de la tournée) ou retirée
   /// au comptoir. Le mois de la facture de la commande en découle (CGI art.
   /// 269-1-a et 269-2-a ; plans `plan-zero-faille.md` lot ZL et
-  /// `documentation/commandes/date-de-reception.md`).
+  /// `documentation/commandes/la-commande/date-de-reception.md`).
   ///
   /// Posée UNE fois, dans le même `UPDATE` que `handed_over_at`
   /// (`MarkOrderFulfilledHandler`, depuis le 2026-10-24), et jamais déplacée
@@ -373,7 +373,7 @@ model Order {
   cancelledByUser        User?   @relation("OrderCancelledByUser", fields: [cancelledByUserId], references: [id], onDelete: Restrict)
   cancellationReasonCode String? @map("cancellation_reason_code")
 
-  /// **La révision de la commande** (plan `documentation/commandes/plan-modifier-une-commande.md`,
+  /// **La révision de la commande** (plan `documentation/commandes/modification/plan-modifier-une-commande.md`,
   /// M1) : `0` à la passation, `+1` à chaque modification. Toute écriture d'une
   /// révision est conditionnée sur elle (R7), et la clé d'archive du bon la porte.
   revision  Int       @default(0)
@@ -409,7 +409,7 @@ model Order {
 }
 
 /// **L'historique des révisions d'une commande** (plan
-/// `documentation/commandes/plan-modifier-une-commande.md`, M1, §9) : une
+/// `documentation/commandes/modification/plan-modifier-une-commande.md`, M1, §9) : une
 /// ligne par modification, qui garde EN ENTIER la composition qu'elle a
 /// remplacée — lignes, acheminement, montants —, son auteur, sa date et
 /// l'écart de total. C'est elle seule qui fait foi du passé : les lignes de
@@ -678,7 +678,7 @@ model OrderLateFee {
 }
 
 /// **La TVA de la livraison** — le réglage global du comptable (plan
-/// `documentation/commandes/architecture-tva-des-frais-de-port.md`, V2) : le port au taux
+/// `documentation/commandes/bon-et-pieces/architecture-tva-des-frais-de-port.md`, V2) : le port au taux
 /// normal (`standard`), ou au prorata des marchandises (`follows_goods`).
 ///
 /// Une ligne au plus, comme `order_late_fee`. Pas de ligne = `standard` : c'est
@@ -705,7 +705,7 @@ model OrderDeliveryVat {
 /// la durée de l'appel — long, puisqu'il ré-résout les prix, lit l'heure limite
 /// et attend le prestataire.
 ///
-/// Le plan : `documentation/commandes/architecture-idempotence-de-passation.md`.
+/// Le plan : `documentation/commandes/passation/architecture-idempotence-de-passation.md`.
 model OrderIdempotency {
   id String @id @default(cuid())
 
@@ -753,7 +753,7 @@ model OrderIdempotency {
 }
 
 /// **Une clé de passation de la boutique PUBLIQUE** — plan
-/// `documentation/commandes/architecture-commande-sans-compte.md` §5.
+/// `documentation/commandes/passation/architecture-commande-sans-compte.md` §5.
 ///
 /// Séparée d'`OrderIdempotency`, et ce n'est pas une duplication de confort :
 /// celle-ci est murée par `user_id`, avec clé étrangère et `@@unique(user_id,

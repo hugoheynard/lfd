@@ -41,7 +41,7 @@ export interface RevisionRow {
 
 /**
  * **Une version précédente, dite** (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, §6) — pur, pour
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, §6) — pur, pour
  * être éprouvé sans monter la carte.
  */
 export function revisionRowOf(entry: OrderRevisionEntryView): RevisionRow {

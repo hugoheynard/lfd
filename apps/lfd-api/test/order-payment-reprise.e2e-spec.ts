@@ -1,6 +1,6 @@
 /**
  * E2E de la **reprise d'un règlement refusé** (plan
- * `documentation/commandes/architecture-abandon-du-reglement.md`, lot 3 bis) : après un
+ * `documentation/commandes/reglement/architecture-abandon-du-reglement.md`, lot 3 bis) : après un
  * refus de carte, la page de règlement sert encore la MÊME intention tant
  * qu'elle est vivante chez Stripe, et un encaissement qui suit solde la
  * commande (`settle` accepte `failed → paid` depuis 3b8598fdf).

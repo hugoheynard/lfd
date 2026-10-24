@@ -129,7 +129,7 @@ export interface PackingSheet {
   readonly clientele: "pro" | "public" | null;
   /**
    * **Le site qui remet ce retrait**, identifiant opaque du commerce, tel que
-   * le fournil l'a figé à l'arrêt (plan `commandes/plan-tri-depart-et-couleurs.md`,
+   * le fournil l'a figé à l'arrêt (plan `commandes/back-office/plan-tri-depart-et-couleurs.md`,
    * L1a). `null` : une livraison, une commande d'avant le site (S2), ou une
    * ligne inscrite avant que le colisage ne le recopie — l'écran la peint
    * alors en teinte neutre, jamais d'une couleur devinée. Toujours servi ;
@@ -141,7 +141,7 @@ export interface PackingSheet {
   readonly dueAt?: string | null;
   /**
    * **L'heure à laquelle la commande doit être prête**, `HH:mm` (lot L2,
-   * `commandes/plan-tri-depart-et-couleurs.md` §3, 2026-10-14) : le départ de
+   * `commandes/back-office/plan-tri-depart-et-couleurs.md` §3, 2026-10-14) : le départ de
    * sa tournée pour une livraison, le départ du transfert pour un retrait
    * porté au site, l'échéance (`dueAt`) pour un retrait sur place. Lu à chaque
    * ouverture du poste — la composition des tournées vient après la clôture.

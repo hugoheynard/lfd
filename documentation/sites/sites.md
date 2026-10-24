@@ -10,7 +10,7 @@
 > 2026-10-13, découpé le même jour en trois documents (Hugo) : celui-ci (le
 > site, bâti), [`../livraisons/transferts/plan-transfert-interne.md`](../livraisons/transferts/plan-transfert-interne.md)
 > (le transfert, plan) et
-> [`../commandes/plan-tri-depart-et-couleurs.md`](../commandes/plan-tri-depart-et-couleurs.md)
+> [`../commandes/back-office/plan-tri-depart-et-couleurs.md`](../commandes/back-office/plan-tri-depart-et-couleurs.md)
 > (le tri et les couleurs de la logistique, plan).
 >
 > **Pourquoi un dossier à part**, et pas sous `livraisons/` : le site
@@ -363,7 +363,7 @@ et la limite générale va dans Réglages › Commandes.
 - Gardes front : `lfc_site_settings:read` (création : `:write`).
 - `lfc_order_settings` sert au déménagement de Réglages › Commandes (lot O1),
   qui a son plan :
-  [`../commandes/plan-reglages-commandes.md`](../commandes/plan-reglages-commandes.md)
+  [`../commandes/passation/plan-reglages-commandes.md`](../commandes/passation/plan-reglages-commandes.md)
   (ouverture du e-commerce, heure limite, annulation ; la bascule des droits
   y est détaillée).
 

@@ -6,7 +6,7 @@ import { byActor, countOf, text, value, type Phrase, type Segment } from '../phr
 /**
  * **La vitrine** — un enregistrement de la composition des pages de la
  * boutique (`storefront.saved`, famille `commerce`,
- * `documentation/commandes/boutique-rayon-layout.md`, D6).
+ * `documentation/commandes/boutique/boutique-rayon-layout.md`, D6).
  *
  * Enregistrer publie, et ce fait est la SEULE trace de qui a vidé un rayon :
  * la phrase dit donc ce qui a bougé, en comptes. Les objets n'ont pas de nom

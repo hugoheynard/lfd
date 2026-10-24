@@ -655,7 +655,7 @@ ce point et le remontent plutôt que de trancher par défaut.
 - **Q2 — la remise du point de retrait** : recommandation inchangée, **oui**
   (elle récompense le mode de retrait) ; ⚠️ une remise à seuil peut ne plus se
   déclencher ; ⚠️ une remise en montant fixe est saisie HT
-  (`commandes/todo-remise-du-point-de-retrait-en-ttc.md`).
+  (`../commandes/bon-et-pieces/todo-remise-du-point-de-retrait-en-ttc.md`).
 - **Les promotions sur la formule elle-même** (« le petit déjeuner −10 % ») :
   une règle de contexte sans portée d'article (`global` + `bundle:X`) le
   permettrait ; hors du plan.

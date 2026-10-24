@@ -2,7 +2,7 @@ import type { ServiceDay } from "../../domain/value-objects/service-day.value-ob
 
 /**
  * **Le balayage des règlements restés en l'air**, demandé par la clôture AVANT
- * de compter (plan `documentation/commandes/architecture-abandon-du-reglement.md`, Q1, B1).
+ * de compter (plan `documentation/commandes/reglement/architecture-abandon-du-reglement.md`, Q1, B1).
  *
  * ## Pourquoi un port synchrone, et pas un abonné
  *

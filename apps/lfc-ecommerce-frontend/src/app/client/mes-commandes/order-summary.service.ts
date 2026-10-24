@@ -43,7 +43,7 @@ export class OrderSummaryRefused extends Error {
 /**
  * **Le récapitulatif de commandes cochées** — `POST
  * /companies/:companyId/orders/summary` (plan
- * `documentation/commandes/plan-recapitulatif-des-commandes.md`, lot R3).
+ * `documentation/commandes/boutique/plan-recapitulatif-des-commandes.md`, lot R3).
  *
  * Calculé au serveur, jamais ici : l'écran envoie des ids et lit ce qu'on lui
  * rend. La période n'est qu'imprimée (§9) — les ids font foi. Le mur (un id

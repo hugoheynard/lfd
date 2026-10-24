@@ -30,7 +30,7 @@ export interface PackingListOrder {
   /**
    * Le site qui remet ce retrait, identifiant OPAQUE du commerce, tel que la
    * journée l'a figé (S2) — le colisage le recopie pour sa couleur (plan
-   * `commandes/plan-tri-depart-et-couleurs.md`, L1a). `null` : livraison,
+   * `commandes/back-office/plan-tri-depart-et-couleurs.md`, L1a). `null` : livraison,
    * commande d'avant le site, ou fait écrit avant le champ.
    */
   readonly siteId: string | null;

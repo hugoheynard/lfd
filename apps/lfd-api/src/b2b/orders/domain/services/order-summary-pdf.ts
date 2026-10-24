@@ -33,7 +33,7 @@ import { drawIncludedOrders } from "./order-summary-pdf-orders.js";
 
 /**
  * **Le récapitulatif de commandes en PDF** (plan
- * `documentation/commandes/plan-recapitulatif-des-commandes.md`, lot R2) — A4
+ * `documentation/commandes/boutique/plan-recapitulatif-des-commandes.md`, lot R2) — A4
  * PORTRAIT : quatre colonnes (produit, SKU, quantité, HT) y tiennent, le
  * paysage n'apporterait que du blanc.
  *

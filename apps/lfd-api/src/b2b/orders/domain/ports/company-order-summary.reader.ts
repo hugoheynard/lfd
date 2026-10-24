@@ -9,7 +9,7 @@ export interface CompanyOrderSummaryScope {
 
 /**
  * Port de **lecture** du récapitulatif de commandes (plan
- * `documentation/commandes/plan-recapitulatif-des-commandes.md`, §6.5) —
+ * `documentation/commandes/boutique/plan-recapitulatif-des-commandes.md`, §6.5) —
  * distinct de {@link CompanyOrderListReader} : il lit les colonnes d'argent
  * et les lignes, et ne filtre pas les paiements en attente ou refusés, que le
  * récapitulatif doit nommer comme exclus.

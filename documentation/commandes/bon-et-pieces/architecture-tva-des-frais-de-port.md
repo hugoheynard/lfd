@@ -93,4 +93,4 @@ foi. Éprouvé : `quote-order-parity.e2e-spec.ts` et `order-delivery-vat.e2e-spe
 - **Dossier de facturation** : la part HT du port par taux n'est figée nulle
   part (`vatShares` = `{ rate, amountCents }`) ; le dossier la recalcule sur
   l'agrégat et range l'écart dans « arrondi de la TVA »
-  ([simulateur](../comptabilite/facturation/simulateur-dossier-de-facturation.md)).
+  ([simulateur](../../comptabilite/facturation/simulateur-dossier-de-facturation.md)).

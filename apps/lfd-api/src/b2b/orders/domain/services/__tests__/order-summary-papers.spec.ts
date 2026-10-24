@@ -8,7 +8,7 @@ import { pdfText } from "./pdf-text.js";
 
 /**
  * Le récapitulatif imprimé et au tableur (plan
- * `documentation/commandes/plan-recapitulatif-des-commandes.md`, lot R2) : on
+ * `documentation/commandes/boutique/plan-recapitulatif-des-commandes.md`, lot R2) : on
  * LIT ce qui sort, plutôt que d'assurer sur une structure.
  */
 

@@ -8,7 +8,7 @@ import { ensureOrderVisible } from "../../domain/services/order-access.js";
 
 /**
  * **La commande à modifier, derrière son mur** (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, M1) — partagé par
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, M1) — partagé par
  * la modification et son devis.
  *
  * Le client ne voit que ses commandes personnelles et celles des sociétés

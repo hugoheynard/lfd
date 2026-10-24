@@ -95,7 +95,7 @@ import {
 
 /**
  * **La commande sans compte**, éprouvée là où elle décide — plan
- * `documentation/commandes/architecture-commande-sans-compte.md`, lot C.
+ * `documentation/commandes/passation/architecture-commande-sans-compte.md`, lot C.
  *
  * Ce que ces cas mesurent est ce qui DISTINGUE ce chemin de la passation
  * connectée : l'inscription du porteur, la carte sans alternative, la clientèle

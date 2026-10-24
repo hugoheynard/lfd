@@ -8,7 +8,7 @@ import { selectedLabel } from '../order-summary-format';
 /**
  * La barre de la sélection, dans l'en-tête de l'historique : « N
  * sélectionnées », le plafond, et le bouton « Récapitulatif » (plan
- * `documentation/commandes/plan-recapitulatif-des-commandes.md`, §6.5, lot R3).
+ * `documentation/commandes/boutique/plan-recapitulatif-des-commandes.md`, §6.5, lot R3).
  *
  * Le plafond est dit AVANT d'envoyer : la case d'en-tête coche tout ce qui
  * est affiché, et une liste longue le dépasse d'un clic. Au-delà, le bouton se

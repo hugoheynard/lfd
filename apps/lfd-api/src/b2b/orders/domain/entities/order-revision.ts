@@ -31,7 +31,7 @@ import type {
 
 /**
  * **La commande telle qu'on la modifie** (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, M1) : sa révision
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, M1) : sa révision
  * courante, ce qui ne change pas (payeur, société, clientèle, CGV, langue,
  * surtaxe), et la composition qu'une révision remplace.
  */

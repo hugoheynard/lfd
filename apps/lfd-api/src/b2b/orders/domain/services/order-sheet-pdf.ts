@@ -49,7 +49,7 @@ import {
  *
  * ## Deux bons : pro et public
  *
- * `sheet.variant` (plan `documentation/commandes/architecture-bon-de-commande.md`, Hugo,
+ * `sheet.variant` (plan `documentation/commandes/bon-et-pieces/architecture-bon-de-commande.md`, Hugo,
  * 2026-10-09). Le bon **public** — une commande sans société — ne porte ni
  * colonne de référence, ni hors taxe, ni révision, ni phrase sur les mentions
  * légales : un particulier lit un prix taxe comprise, et le téléphone de
@@ -86,7 +86,7 @@ export interface OrderSheetArt {
   readonly logo: Buffer;
   /**
    * La couleur de la commande (`#rrggbb`) — un trait épais entre le titre et
-   * le numéro (plan `commandes/plan-tri-depart-et-couleurs.md`, L5) ; `null` :
+   * le numéro (plan `commandes/back-office/plan-tri-depart-et-couleurs.md`, L5) ; `null` :
    * pas de trait. Celle de l'instant du rendu, figée avec le bon archivé.
    */
   readonly categoryColor: string | null;

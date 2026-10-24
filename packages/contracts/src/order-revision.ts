@@ -11,7 +11,7 @@ import {
 
 /**
  * **Modifier une commande passée** (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, lot M1) — les
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, lot M1) — les
  * formes de la révision, communes au client et à l'équipe.
  *
  * Une modification décrit la commande VOULUE, entière : le même panier que

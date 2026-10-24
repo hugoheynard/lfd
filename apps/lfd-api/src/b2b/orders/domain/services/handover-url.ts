@@ -1,7 +1,7 @@
 /**
  * **L'URL que le QR de retrait encode** — une seule fabrique, pour les trois
  * courriels qui l'affichent et pour le bon de commande qui l'imprime (plan
- * `documentation/commandes/architecture-bon-de-commande.md`, §5).
+ * `documentation/commandes/bon-et-pieces/architecture-bon-de-commande.md`, §5).
  *
  * Elle pointe le **back-office** : c'est l'équipe qui scanne, pas le client.
  * La page `/retrait/<jeton>` exige un membre du staff connecté qui a le droit

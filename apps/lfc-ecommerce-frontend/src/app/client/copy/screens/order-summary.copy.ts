@@ -1,7 +1,7 @@
 /**
  * Ce que disent le filtre de jours, la sélection et le panneau du
  * **récapitulatif** de « Mes commandes », dans les trois langues (plan
- * `documentation/commandes/plan-recapitulatif-des-commandes.md`, lot R3). À
+ * `documentation/commandes/boutique/plan-recapitulatif-des-commandes.md`, lot R3). À
  * part de `orders.copy.ts`, qui atteint déjà la taille d'un fichier.
  *
  * Les montants sont ceux que le serveur a sommés : le texte ne fait que les

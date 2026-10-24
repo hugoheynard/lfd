@@ -20,7 +20,7 @@ import { settlementSweepWindow } from "../../domain/services/settlement-sweep.js
 
 /**
  * **La clôture tue les règlements en vol de sa journée** (plan
- * `documentation/commandes/architecture-abandon-du-reglement.md`, D3, Q1, Q7, B1, B2).
+ * `documentation/commandes/reglement/architecture-abandon-du-reglement.md`, D3, Q1, Q7, B1, B2).
  *
  * Le commerce implémente ici le port que le fournil déclare : pour chaque
  * commande `placed` dont le règlement n'est pas encaissé — en attente ou

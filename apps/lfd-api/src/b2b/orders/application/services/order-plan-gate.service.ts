@@ -12,7 +12,7 @@ import { SameDayOrderReader } from "../../domain/ports/same-day-order.reader.js"
 
 /**
  * **L'arrêt du plan, lu pour la passation** (plan
- * `documentation/commandes/plan-reglages-commandes.md`, §8 point 3, §8.1 S5 et
+ * `documentation/commandes/passation/plan-reglages-commandes.md`, §8 point 3, §8.1 S5 et
  * §8.3, lot O3) — client, boutique et saisie de l'équipe, par `OrderDrafting`.
  *
  * Deux temps, et les deux sont nécessaires :

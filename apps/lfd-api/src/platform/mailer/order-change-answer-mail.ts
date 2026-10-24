@@ -5,7 +5,7 @@ import { fill, mailCopyOf } from "./copy/mail-copy.js";
 
 /**
  * Les données des deux e-mails qui RÉPONDENT à une demande de modification
- * (plan `documentation/commandes/plan-modifier-une-commande.md`, M4) :
+ * (plan `documentation/commandes/modification/plan-modifier-une-commande.md`, M4) :
  * appliquée, ou refusée avec le mot de l'équipe. Destinataire : l'auteur de
  * la demande, à l'adresse de son compte.
  *

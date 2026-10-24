@@ -9,7 +9,7 @@ const SOURCE_WORDS: Readonly<Record<NonNullable<PackingSheet['readyBySource']>, 
 
 /**
  * **L'heure « prête pour » d'une commande du poste, en toutes lettres** (lot
- * L2, `commandes/plan-tri-depart-et-couleurs.md` §3 ; Hugo, 2026-10-14).
+ * L2, `commandes/back-office/plan-tri-depart-et-couleurs.md` §3 ; Hugo, 2026-10-14).
  *
  * L'heure et sa source viennent du serveur (`readyBy`, `readyBySource`) :
  * l'écran ne les calcule pas, il dit d'où elles viennent — une livraison part

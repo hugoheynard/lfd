@@ -161,7 +161,7 @@ export const ORDER_SELECT = {
 
 /**
  * **Ce que le client voit de ses commandes** (plan
- * `documentation/commandes/commande-carte-reglee.md`, §2.1, §4.3) : une
+ * `documentation/commandes/reglement/commande-carte-reglee.md`, §2.1, §4.3) : une
  * commande annulée sans avoir été payée n'en est pas une. Seule la carte
  * connaît `pending` et `failed` (`settlement-regime.ts`) : la condition ne
  * retire donc ni une commande au compte, ni une gratuite, ni une remboursée.

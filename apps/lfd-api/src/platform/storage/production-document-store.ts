@@ -26,6 +26,6 @@ import { DocumentStore } from "./document-store.js";
  * la feuille d'atelier n'a pas de champ de prix — l'absence est portée par son
  * type. Le compte à produire non plus : c'est un compte de matière.
  *
- * Cf. `documentation/commandes/architecture-pieces-en-r2.md`.
+ * Cf. `documentation/commandes/bon-et-pieces/architecture-pieces-en-r2.md`.
  */
 export abstract class ProductionDocumentStore extends DocumentStore {}

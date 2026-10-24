@@ -10,7 +10,7 @@ import {
 
 /**
  * **La modificabilité d'une commande** (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, R1, §6, §9) — la
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, R1, §6, §9) — la
  * règle pure que le geste et les deux vues partagent.
  *
  * Les instants ne sont comparés qu'entre eux : la règle ne lit aucune horloge

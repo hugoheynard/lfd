@@ -15,7 +15,7 @@ import type { RevisableOrder } from "../order-revision.js";
 
 /**
  * **La révision d'une commande, jugée par l'agrégat** (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, M1) : M1 ne sert
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, M1) : M1 ne sert
  * que le compte et le total nul, les prix déjà présents tiennent, le bon
  * imputé reste couvert, et une révision change quelque chose.
  *

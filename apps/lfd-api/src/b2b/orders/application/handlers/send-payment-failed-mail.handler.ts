@@ -39,7 +39,7 @@ export const SEND_PAYMENT_FAILED_MAIL = "orders.send-payment-failed-mail";
  * ## Il ne parle que d'un REFUS
  *
  * Le fait porte une cause depuis le 2026-09-26 (plan
- * `documentation/commandes/architecture-abandon-du-reglement.md`, Q4, §9 bis S9). « Votre
+ * `documentation/commandes/reglement/architecture-abandon-du-reglement.md`, Q4, §9 bis S9). « Votre
  * banque a refusé » est faux pour les deux autres : le client qui abandonne
  * vient de cliquer et ne reçoit rien, et la clôture a son propre courriel
  * (`SendPaymentExpiredMail`).

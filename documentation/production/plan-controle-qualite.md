@@ -282,7 +282,7 @@ Une photo de contrôle se garde **indéfiniment**, comme le contrôle lui-même.
 Aucune règle d'expiration n'existe aujourd'hui sur ce bucket (vérifié : ni dans
 `platform/storage/`, ni dans la configuration lue). ⚠️ Le jour où une règle de
 cycle de vie y est posée pour les pièces du fournil (« des semaines », selon
-`commandes/architecture-pieces-en-r2.md`), elle doit **exclure le préfixe
+`../commandes/bon-et-pieces/architecture-pieces-en-r2.md`), elle doit **exclure le préfixe
 `quality/`** — sauf `quality/pending/`, que le balayage nettoie déjà.
 
 ### D9 — Le journal

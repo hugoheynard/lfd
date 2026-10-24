@@ -1,7 +1,7 @@
 /**
  * **Demander une modification après l'heure limite** — le tiroir et l'écran de
  * modification en mode « demande » (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, M4). Greffé dans
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, M4). Greffé dans
  * `orders.revision.request` ; à part de `orders.copy.ts` pour ne pas
  * l'allonger.
  *

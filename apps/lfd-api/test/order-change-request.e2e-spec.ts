@@ -1,6 +1,6 @@
 /**
  * E2E de **la demande de modification après l'heure limite** (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, §4, M4) :
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, §4, M4) :
  * `POST /me/orders/:id/change-request` (client), puis la boîte des demandes
  * — `GET …/order-change/quote`, `POST …/apply`, `POST …/refuse` (équipe,
  * `b2b_contact`).

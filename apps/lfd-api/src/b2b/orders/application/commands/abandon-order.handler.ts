@@ -29,7 +29,7 @@ import { AbandonOrderCommand } from "./abandon-order.command.js";
 
 /**
  * **Abandonner le règlement** d'une commande — le client quitte l'écran de
- * carte (plan `documentation/commandes/architecture-abandon-du-reglement.md`, D1, D4, §5).
+ * carte (plan `documentation/commandes/reglement/architecture-abandon-du-reglement.md`, D1, D4, §5).
  *
  * ## L'ordre, pour un particulier : Stripe d'abord, la base ensuite
  *

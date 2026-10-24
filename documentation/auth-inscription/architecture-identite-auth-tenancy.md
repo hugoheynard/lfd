@@ -213,4 +213,4 @@ le tarif catalogue hors mercuriale, par décision
 ## 8. Modèle d'exécution
 
 Aucune brique always-on ici non plus : l'admin et l'auth réveillent des Workers sur
-requête. Voir [`architecture-flux-commande-prod.md`](../commandes/architecture-flux-commande-prod.md).
+requête. Voir [`architecture-flux-commande-prod.md`](../commandes/la-commande/architecture-flux-commande-prod.md).

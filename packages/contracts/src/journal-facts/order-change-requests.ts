@@ -4,7 +4,7 @@ import { count, fact, payload, ref, subjectLabel } from "./fact.js";
 
 /**
  * **Les demandes de modification de commande** (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, M4, 2026-10-23) :
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, M4, 2026-10-23) :
  * après l'heure limite, le client DEMANDE ; le commerce applique ou refuse.
  *
  * Le sujet est la COMMANDE, son libellé son numéro ; `requestId` désigne la

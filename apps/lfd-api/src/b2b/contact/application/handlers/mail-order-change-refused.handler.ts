@@ -9,7 +9,7 @@ import { OrderChangeRefusedEvent } from "../../domain/order-change.events.js";
 /**
  * **« Nous n'avons pas pu modifier votre commande »**, avec le mot de
  * l'équipe — au client qui l'a demandée (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, M4). Mêmes règles
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, M4). Mêmes règles
  * que `MailOrderChangeApplied` : en fond, un échec logué sans
  * l'adresse, la réponse toujours lisible sur la commande.
  */

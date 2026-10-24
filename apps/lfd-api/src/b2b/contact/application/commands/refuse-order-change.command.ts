@@ -1,6 +1,6 @@
 /**
  * **Refuser une demande de modification** (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, M4) avec un mot au
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, M4) avec un mot au
  * client. Acte **staff** : l'auteur est figé avec son nom.
  */
 export class RefuseOrderChangeCommand {

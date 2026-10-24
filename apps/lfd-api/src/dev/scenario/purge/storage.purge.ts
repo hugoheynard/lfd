@@ -15,7 +15,7 @@ export interface ScenarioBuckets {
 
 /**
  * Ce que le scénario a laissé dans le stockage, par préfixe — relu le
- * 2026-10-05 dans `documentation/commandes/architecture-pieces-en-r2.md` et chez
+ * 2026-10-05 dans `documentation/commandes/bon-et-pieces/architecture-pieces-en-r2.md` et chez
  * les écrivains :
  *
  * - `customers` : `orders/{id}/` — les bons de commande tirés ;

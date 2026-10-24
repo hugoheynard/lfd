@@ -33,7 +33,7 @@ import { SUMMARY_LIMIT, summaryRoom } from "./order-summary-pdf-frame.js";
 
 /**
  * **L'annexe « Bons de commande inclus »** du récapitulatif en PDF (plan
- * `documentation/commandes/plan-recapitulatif-des-commandes.md`, §10).
+ * `documentation/commandes/boutique/plan-recapitulatif-des-commandes.md`, §10).
  *
  * En annexe, sur page neuve, plutôt qu'entre les tables et le total : le
  * récapitulatif garde sa lecture d'une traite, et la liste — qui peut compter

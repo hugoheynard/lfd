@@ -16,7 +16,7 @@ import { GetOrderOpeningQuery } from "../application/queries/get-order-opening.q
  * Réglage **staff** de l'ouverture du e-commerce (« Réglages › Commandes ›
  * Ouverture du e-commerce »). Sous sa propre ressource, `lfc_order_opening`,
  * depuis le 2026-10-13 (Hugo, Q5 de
- * `documentation/commandes/plan-reglages-commandes.md`) : c'est
+ * `documentation/commandes/passation/plan-reglages-commandes.md`) : c'est
  * l'interrupteur qui ferme toute prise de commande d'une clientèle, il ne se
  * confond pas avec l'heure limite. L'action se déduit du verbe (`@AdminSurface`).
  */

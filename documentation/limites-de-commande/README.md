@@ -119,7 +119,7 @@ flowchart LR
 | [`plan-heure-limite-par-clientele.md`](plan-heure-limite-par-clientele.md)             | 🗄️   | Plan **remplacé** (2026-10-21) par le modèle du schéma §0                                                                                                                   |
 
 Hors du dossier, et cités plutôt que déplacés :
-[`../commandes/plan-reglages-commandes.md`](../commandes/plan-reglages-commandes.md)
+[`../commandes/passation/plan-reglages-commandes.md`](../commandes/passation/plan-reglages-commandes.md)
 (l'écran Réglages › Commandes, ses droits, l'interrupteur — lot O3, §8),
 [`../production/arret-du-plan.md`](../production/arret-du-plan.md),
 [`../operations-datees/architecture-operations-datees.md`](../operations-datees/architecture-operations-datees.md).

@@ -26,7 +26,7 @@
   passation (`orders.prisma` : rien ; vérifié par grep).
 - Un dépôt de PDF existe déjà ailleurs : `platform/shared/documents/scanned-document.ts`
   (contrôle par signature d'octets `%PDF-`, 10 Mo), pièces en R2
-  ([`commandes/architecture-pieces-en-r2.md`](../commandes/architecture-pieces-en-r2.md)).
+  ([`../commandes/bon-et-pieces/architecture-pieces-en-r2.md`](../commandes/bon-et-pieces/architecture-pieces-en-r2.md)).
 
 ## 2. Décisions
 

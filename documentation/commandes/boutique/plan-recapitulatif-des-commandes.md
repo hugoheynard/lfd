@@ -11,7 +11,7 @@
 - **« Mes commandes »** de la boutique
   (`apps/lfc-ecommerce-frontend/src/app/client/mes-commandes/`) : la liste
   `GET /companies/:companyId/orders?site=…` (`CompanyOrderListItemView`,
-  [`plan-commandes-des-sites.md`](../comptes-client/plan-commandes-des-sites.md),
+  [`plan-commandes-des-sites.md`](../../comptes-client/plan-commandes-des-sites.md),
   C1–C2) — un principal y voit les commandes de ses sites.
 - **Une ligne de commande** (`order_lines`) porte un instantané figé à la
   passation : `sku`, `product_name_snapshot`, `quantity`,

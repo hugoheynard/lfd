@@ -21,7 +21,7 @@ import { PrismaRevisableOrderReader } from "./infrastructure/prisma-revisable-or
 
 /**
  * Les providers du lot M1 (plan
- * `documentation/commandes/plan-modifier-une-commande.md`) : la modification
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`) : la modification
  * d'une commande et son devis, par le client et par l'équipe, la
  * recomposition partagée avec la passation, et leurs deux ports — lire et
  * écrire (ISP). À part du module, qui dépasse déjà la taille d'un fichier.

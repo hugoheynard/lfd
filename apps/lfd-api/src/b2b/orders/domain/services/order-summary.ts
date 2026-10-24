@@ -91,7 +91,7 @@ export function ensureAllSummarized(
 
 /**
  * **Le récapitulatif de commandes** (plan
- * `documentation/commandes/plan-recapitulatif-des-commandes.md`, §6) — pur.
+ * `documentation/commandes/boutique/plan-recapitulatif-des-commandes.md`, §6) — pur.
  *
  * Comme une facture (§6.1) : par produit, la quantité et le HT ; puis un bas
  * dont chaque ligne est la SOMME de la colonne des commandes. Le bas est donc

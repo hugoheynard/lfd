@@ -1,6 +1,6 @@
 /**
  * E2E de **ce que les vues disent de la modification** (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, §6, M3) : la
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, §6, M3) : la
  * modificabilité et la révision sur `GET /orders/:id` (client) et
  * `GET /admin/orders/:id` (équipe), l'identifiant du point de retrait, et
  * l'historique `GET /admin/orders/:id/revisions`.

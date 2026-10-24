@@ -3,7 +3,7 @@ import { BusinessError } from "../../../../platform/shared/errors/app-error.js";
 /**
  * **Le plan de production de cette journée est arrêté** — refus métier (409),
  * pour le client comme pour l'équipe (plan
- * `documentation/commandes/plan-reglages-commandes.md`, §8, point 3, lot O3).
+ * `documentation/commandes/passation/plan-reglages-commandes.md`, §8, point 3, lot O3).
  *
  * L'arrêt du plan est une limite à part entière depuis le 2026-10-14 : le
  * fournil a compté ses commandes, une commande de plus ne serait ni fabriquée

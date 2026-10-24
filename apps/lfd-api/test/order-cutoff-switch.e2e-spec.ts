@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 /**
- * E2E du **lot O3** de `documentation/commandes/plan-reglages-commandes.md`
+ * E2E du **lot O3** de `documentation/commandes/passation/plan-reglages-commandes.md`
  * (§8, §8.1, 2026-10-14) : l'arrêt du plan de production devenu une limite,
  * et le jour même. L'interrupteur de l'heure limite générale, que ce fichier
  * éprouvait aussi, est retiré le 2026-10-21

@@ -14,7 +14,7 @@ import { ListOrderRevisionsQuery } from "../list-order-revisions.query.js";
 
 /**
  * **Les versions précédentes d'une commande** (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, §6) : l'ordre du
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, §6) : l'ordre du
  * port, l'auteur staff nommé par l'annuaire, le 404 d'une commande inconnue.
  *
  * Les instants ne sont que des données rendues telles quelles.

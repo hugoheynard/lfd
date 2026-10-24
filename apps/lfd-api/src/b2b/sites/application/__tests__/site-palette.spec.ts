@@ -9,7 +9,7 @@ import { FixedDepartureSite } from "./site-doubles.js";
 
 /**
  * La palette de la logistique et les couleurs de livraison du départ (plan
- * `commandes/plan-tri-depart-et-couleurs.md`, L1a, L5) : lues à chaque appel,
+ * `commandes/back-office/plan-tri-depart-et-couleurs.md`, L1a, L5) : lues à chaque appel,
  * jamais une couleur inventée.
  */
 

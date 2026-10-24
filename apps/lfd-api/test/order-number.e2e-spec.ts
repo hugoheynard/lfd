@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 /**
  * E2E du **numéro de commande court** — `ORD-<n>`, un seul compteur pour toute
- * la plateforme (plan `documentation/commandes/plan-numero-de-commande-court.md`).
+ * la plateforme (plan `documentation/commandes/passation/plan-numero-de-commande-court.md`).
  *
  * Ce que seul le vrai SQL prouve : le rang pris sous verrou dans la transaction
  * de passation (`order_number_counter`), l'absence de doublon sous concurrence,

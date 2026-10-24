@@ -18,7 +18,7 @@ import { GetCustomerCancellationSettingsQuery } from "../application/queries/get
  * `documentation/commandes/annulation/annulation-par-le-client.md`, C6.5).
  * Sous `lfc_order_settings` depuis le 2026-10-13, avec l'heure limite : ce
  * que le client peut faire de sa commande, et jusqu'à quand
- * (`documentation/commandes/plan-reglages-commandes.md`, §3.4, lot O1a).
+ * (`documentation/commandes/passation/plan-reglages-commandes.md`, §3.4, lot O1a).
  *
  * `GET` rend la vue ; `PATCH` (`204`) prend `{ delayEnabled?, hoursBefore? }`,
  * au moins une clé ; un délai hors de 0 à 168 h est un `400`.

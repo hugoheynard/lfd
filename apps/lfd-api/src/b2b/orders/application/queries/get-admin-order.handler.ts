@@ -45,7 +45,7 @@ import { GetAdminOrderQuery } from "./get-admin-order.query.js";
  * commande porte un bon, l'aperçu de la restitution dit ce que deviendra le
  * bon (`voucher`, avec sa phrase) — ou en fait le refus des cas 5 et 6.
  *
- * Depuis le 2026-10-23 (plan `documentation/commandes/plan-modifier-une-commande.md`,
+ * Depuis le 2026-10-23 (plan `documentation/commandes/modification/plan-modifier-une-commande.md`,
  * §6), il dit aussi si l'équipe peut la modifier, par la règle du geste, et
  * sa révision courante.
  */

@@ -6,7 +6,7 @@ import type {
 
 /**
  * Port d'**écriture** de la révision d'une commande (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, M1, §9).
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, M1, §9).
  *
  * Le cycle de l'agrégat : `lock` recharge la commande sous `FOR UPDATE` —
  * le verrou que prennent l'annulation, l'émission mensuelle et la

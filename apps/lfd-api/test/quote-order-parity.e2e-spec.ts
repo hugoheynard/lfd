@@ -443,7 +443,7 @@ describe("le devis de la vitrine et la facture", () => {
 
 /**
  * 🔴 **La TVA du port, dans ses deux modes** (plan
- * `documentation/commandes/architecture-tva-des-frais-de-port.md`, V4) : le devis lit le
+ * `documentation/commandes/bon-et-pieces/architecture-tva-des-frais-de-port.md`, V4) : le devis lit le
  * même réglage que la passation, et la commande le fige. Comparé taux par
  * taux : un port ventilé au mauvais taux garderait souvent le bon total.
  */

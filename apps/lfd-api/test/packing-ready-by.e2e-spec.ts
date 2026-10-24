@@ -1,6 +1,6 @@
 /**
  * **Le départ des commandes, lu par le colisage** (lot L2 —
- * `documentation/commandes/plan-tri-depart-et-couleurs.md`, §3) — sur le vrai
+ * `documentation/commandes/back-office/plan-tri-depart-et-couleurs.md`, §3) — sur le vrai
  * Postgres : l'adaptateur de la livraison (`PrismaOrderDeparturesReader`)
  * trouve la tournée d'une livraison et celle qui porte l'arrêt du transfert
  * d'un retrait au village, et ne date pas ce qui n'a pas de départ.

@@ -18,7 +18,7 @@ export interface RevisionLine {
 
 /**
  * **La commande voulue**, en cours de saisie (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, M3).
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, M3).
  *
  * `service` réutilise la forme du choix de la boutique (`ServiceChoice`) :
  * les dialogues de retrait, d'heure et d'adresse la rendent déjà, et la

@@ -15,7 +15,7 @@ import { revisedCompositionOf } from "./revised-composition.js";
 
 /**
  * Adaptateur Prisma de la révision d'une commande (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, M1, §9). Rejoint
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, M1, §9). Rejoint
  * l'unité de travail ambiante : la révision, son historique, la note au
  * fournil, la ligne d'encaissement et les faits partent ensemble, ou rien.
  */

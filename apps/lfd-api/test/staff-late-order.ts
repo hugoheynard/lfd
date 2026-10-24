@@ -12,7 +12,7 @@ import { attachTo, createCompany, createUser } from "./factories.js";
 
 /**
  * **La retardataire, par la vraie porte** (lot O3,
- * `documentation/commandes/plan-reglages-commandes.md` §8.3, Hugo 2026-10-14).
+ * `documentation/commandes/passation/plan-reglages-commandes.md` §8.3, Hugo 2026-10-14).
  *
  * Depuis O3, un CLIENT ne passe plus commande sur une journée dont le plan est
  * arrêté ; seule la saisie de l'ÉQUIPE y est reçue, marquée « hors plan ». Les

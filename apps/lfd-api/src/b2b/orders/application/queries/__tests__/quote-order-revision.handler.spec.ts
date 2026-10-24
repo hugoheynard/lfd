@@ -14,7 +14,7 @@ import { QuoteOrderRevisionHandler } from "../quote-order-revision.handler.js";
 import { QuoteOrderRevisionQuery } from "../quote-order-revision.query.js";
 
 /**
- * **Le devis de révision** (plan `documentation/commandes/plan-modifier-une-commande.md`,
+ * **Le devis de révision** (plan `documentation/commandes/modification/plan-modifier-une-commande.md`,
  * M1) : la même recomposition que la modification, l'écart, la révision à
  * renvoyer — et un panier intact se chiffre sans refus.
  */

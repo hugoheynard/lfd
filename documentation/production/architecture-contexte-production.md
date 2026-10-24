@@ -11,7 +11,7 @@ feuille d'atelier d'une commande, le compte à produire d'une journée.
 décrit dès la première section, et il n'est pas flatteur.
 
 Le cycle de vie d'une commande — l'énuméré, les transitions, qui les écrit — vit
-à côté : [`../commandes/architecture-cycle-de-vie-commande.md`](../commandes/architecture-cycle-de-vie-commande.md).
+à côté : [`../commandes/la-commande/architecture-cycle-de-vie-commande.md`](../commandes/la-commande/architecture-cycle-de-vie-commande.md).
 
 ---
 
@@ -221,5 +221,5 @@ une au bon de commande — et le compte du jour, lui, ne bougera pas.
   déclarés plutôt qu'une liste écrite en dur.
 - **Le bucket `production`** existe déjà en configuration, en dev et en test, et
   attend précisément ces deux pièces :
-  [`../commandes/architecture-pieces-en-r2.md`](../commandes/architecture-pieces-en-r2.md). Il n'a aucun
+  [`../commandes/bon-et-pieces/architecture-pieces-en-r2.md`](../commandes/bon-et-pieces/architecture-pieces-en-r2.md). Il n'a aucun
   écrivain — ce chantier est son premier.

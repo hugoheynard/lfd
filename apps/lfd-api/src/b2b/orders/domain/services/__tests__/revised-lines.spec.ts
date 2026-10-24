@@ -2,7 +2,7 @@ import type { OrderLineSnapshot } from "../../value-objects/order-line.js";
 import { revisedLineRequests } from "../revised-lines.js";
 
 /**
- * R3 du plan de modification (`documentation/commandes/plan-modifier-une-commande.md`) :
+ * R3 du plan de modification (`documentation/commandes/modification/plan-modifier-une-commande.md`) :
  * une ligne déjà présente garde son prix, une ligne nouvelle part au prix du jour.
  */
 

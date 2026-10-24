@@ -45,7 +45,7 @@
 > une viennoiserie, une baguette, une boisson.
 >
 > Place réservée depuis le plan de la boutique :
-> [`commandes/boutique-rayon-layout.md`](../commandes/boutique-rayon-layout.md), ligne
+> [`../commandes/boutique/boutique-rayon-layout.md`](../commandes/boutique/boutique-rayon-layout.md), ligne
 > « Formule » (`:168`, toujours « ❌ à concevoir » au 2026-10-17) — « un choix
 > par groupe, le prix de la formule appliqué ».
 

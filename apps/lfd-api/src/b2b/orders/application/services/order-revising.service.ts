@@ -31,7 +31,7 @@ import { OrderPlanGate } from "./order-plan-gate.service.js";
 
 /**
  * **Recomposer une commande passée** (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, M1) — partagé par
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, M1) — partagé par
  * la modification et par son devis, qui disent donc le même montant.
  *
  * Le calcul est celui de la passation ({@link OrderComposition}) ; ce service

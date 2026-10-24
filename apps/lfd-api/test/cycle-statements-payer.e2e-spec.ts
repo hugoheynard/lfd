@@ -1,6 +1,6 @@
 /**
  * E2E de la **vue payeur** du relevé de cycle (plan
- * `documentation/commandes/plan-agregation-des-commandes.md` §1.2, avant S4).
+ * `documentation/commandes/bon-et-pieces/plan-agregation-des-commandes.md` §1.2, avant S4).
  *
  * Ce que seul le vrai SQL prouve : les périodes `company_follows` réelles,
  * lues sur un mois passé, rangent chaque commande d'un site chez le principal

@@ -10,7 +10,7 @@
 ---
 
 ⚠️ **Le trou d'envoi est déjà relevé**, sous le nom **T14** de
-[`audit-flux-de-commande.md`](audit-flux-de-commande.md) (2026-09-17). Ce
+[`audit-flux-de-commande.md`](../audit-flux-de-commande.md) (2026-09-17). Ce
 document-ci ne le redécouvre pas : il ajoute ce que T14 ne dit pas — que
 l'adresse doit être **figée sur la commande**, et pas seulement demandée au
 panier.
@@ -106,7 +106,7 @@ Deux moitiés, et elles se tiennent :
    un refus **côté serveur** à la passation : le front seul ne tient rien, un
    appel direct passerait à côté, et c'est le courriel du client qui manquerait.
    C'est déjà la direction écrite au §12.2 de
-   [`../auth-inscription/plan-connexion-sociale.md`](../auth-inscription/plan-connexion-sociale.md).
+   [`../../auth-inscription/plan-connexion-sociale.md`](../../auth-inscription/plan-connexion-sociale.md).
 
 🔴 **Cette adresse est une adresse de CONTACT, pas de connexion.** Elle n'est
 pas prouvée : elle ne rattache rien, ne vérifie rien, et ne doit **pas** être

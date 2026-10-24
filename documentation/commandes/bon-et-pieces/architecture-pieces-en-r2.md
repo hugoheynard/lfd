@@ -4,7 +4,7 @@
 > (`order-sheet-attachment.service.ts`, via `OrderSheetArchive`), qui est donc
 > archivé à la passation et non plus au premier téléchargement. Les clés
 > `R2_CUSTOMERS_EU_*` et `R2_PRODUCTION_*` ont été **posées le 2026-09-21**
-> (`../ops/secrets-et-variables.md`). Les factures **sont émises** : modèle
+> (`../../ops/secrets-et-variables.md`). Les factures **sont émises** : modèle
 > `Invoice` (`prisma/schema/public/invoice.prisma`), la ligne « déposée par le
 > comptable » du §3 est périmée.
 
@@ -18,7 +18,7 @@ commande, et pour la même raison. **Deux écarts subsistent entre ce document e
 le code** : la feuille d'atelier est rangée sous `orders/{orderId}/fiche-atelier.pdf`,
 **sans révision** (le tableau du §3 en annonce une), et le bulletin de démarrage
 ignore toujours ce stockage. La carte complète du stockage objet est dans
-[`../ops/architecture-stockage-r2.md`](../ops/architecture-stockage-r2.md).
+[`../../ops/architecture-stockage-r2.md`](../../ops/architecture-stockage-r2.md).
 
 Ce document dit comment les deux sont organisés, et ce qui viendra s'y ajouter :
 l'écrire avant que le comptable dépose sa première facture coûte une page ;
@@ -184,7 +184,7 @@ se remplacent pas.
 
 C'est la pièce qui change la nature du bucket, et il faut le dire franchement :
 **la plateforme n'émet pas de facture**, et
-[`order-documents.ts`](../../packages/b2b-ui/src/order/order-documents.ts) la
+[`order-documents.ts`](../../../packages/b2b-ui/src/order/order-documents.ts) la
 déclare indisponible pour une raison qui ne bouge pas :
 
 > « Une facture porte un numéro dans une série continue et des mentions légales.
@@ -204,7 +204,7 @@ pièces qu'on fabrique :
    dans un nom de fichier, qu'on peut renommer.
 
 Le chantier est ailleurs :
-[`../b2b/architecture-facturation.md`](../b2b/architecture-facturation.md).
+[`../../b2b/architecture-facturation.md`](../../b2b/architecture-facturation.md).
 
 ---
 
@@ -230,4 +230,4 @@ supprime pas.
 - **Ce que contient chaque pièce**, audience par audience :
   [`architecture-bon-de-commande.md`](architecture-bon-de-commande.md).
 - **Comment une facture est émise** :
-  [`../b2b/architecture-facturation.md`](../b2b/architecture-facturation.md).
+  [`../../b2b/architecture-facturation.md`](../../b2b/architecture-facturation.md).

@@ -25,7 +25,7 @@ traiter, tous types.
 
 **Depuis le 2026-10-23, un troisième type : `order_change`** — la demande de
 modification d'une commande après l'heure limite (plan
-[`plan-modifier-une-commande.md`](../commandes/plan-modifier-une-commande.md),
+[`plan-modifier-une-commande.md`](../commandes/modification/plan-modifier-une-commande.md),
 §4 et §14). Le client la compose depuis « Modifier ma commande » ; elle porte
 la commande voulue, et l'équipe y répond par « Appliquer » (une révision de la
 commande au nom de l'équipe) ou « Refuser » avec un mot — jamais par « Marquer

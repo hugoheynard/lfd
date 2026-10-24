@@ -14,7 +14,7 @@ import { revisionRefusalOf } from "../services/order-revision-refusal.js";
 
 /**
  * Les refus de la **modification d'une commande** (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, M1). Lus par
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, M1). Lus par
  * l'équipe et par le client : chacun nomme le cas et le geste de sortie.
  */
 

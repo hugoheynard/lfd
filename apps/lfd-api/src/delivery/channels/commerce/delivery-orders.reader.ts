@@ -40,7 +40,7 @@ export interface DeliveryOrderFacts extends DeliveryOrderRef {
   /**
    * `pro` / `public`, figée à la passation ; `null` = commande d'avant la
    * distinction. L'écran en tire la couleur de l'arrêt (plan
-   * `commandes/plan-tri-depart-et-couleurs.md`, L1a).
+   * `commandes/back-office/plan-tri-depart-et-couleurs.md`, L1a).
    */
   readonly clientele: "pro" | "public" | null;
   /**

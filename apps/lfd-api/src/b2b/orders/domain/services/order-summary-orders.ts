@@ -9,7 +9,7 @@ import { weekdayShortDate } from "../../../../platform/pdf/paper-pdf-kit.js";
 
 /**
  * **Les mots de la liste des bons inclus** (plan
- * `documentation/commandes/plan-recapitulatif-des-commandes.md`, §10) — communs
+ * `documentation/commandes/boutique/plan-recapitulatif-des-commandes.md`, §10) — communs
  * au PDF et au tableur, comme `order-summary-paper.ts` l'est pour les tables.
  * Aucun calcul : le domaine a déjà sommé et rapproché.
  */

@@ -68,7 +68,7 @@ export class PrismaOrderRepository extends OrderRepository {
 
   /**
    * Numéro humain d'une commande — `ORD-<n>`, le rang suivant du compteur
-   * unique de la plateforme (plan `commandes/plan-numero-de-commande-court.md`).
+   * unique de la plateforme (plan `commandes/passation/plan-numero-de-commande-court.md`).
    * `INSERT … ON CONFLICT DO UPDATE … RETURNING`, comme le compteur des
    * factures : la ligne reste verrouillée jusqu'au COMMIT de la passation, une
    * passation concurrente attend puis prend le rang suivant. Un échec après

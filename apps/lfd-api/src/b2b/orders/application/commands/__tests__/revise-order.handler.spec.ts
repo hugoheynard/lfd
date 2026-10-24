@@ -23,7 +23,7 @@ import {
 } from "./revision-scene.js";
 
 /**
- * **Modifier une commande** (plan `documentation/commandes/plan-modifier-une-commande.md`,
+ * **Modifier une commande** (plan `documentation/commandes/modification/plan-modifier-une-commande.md`,
  * M1) — l'orchestration du geste : le mur, la révision attendue (R7), la
  * frontière de l'annulation (R1), la carte refusée (§9), l'heure limite du
  * client, le guichet du fournil sous verrou (§9.1), l'écriture conditionnée,

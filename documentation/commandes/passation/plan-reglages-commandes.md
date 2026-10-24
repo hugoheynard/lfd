@@ -2,7 +2,7 @@
 
 > 📁 **2026-10-21** : l'état de l'heure limite générale (interrupteur, jour
 > même, dérogations, compte à rebours) est décrit au présent dans
-> [`../limites-de-commande/reglages-generaux.md`](../limites-de-commande/reglages-generaux.md).
+> [`../../limites-de-commande/reglages-generaux.md`](../../limites-de-commande/reglages-generaux.md).
 > Ce plan garde l'écran Réglages › Commandes, ses droits et l'historique des
 > décisions ; O2 / Q9 restent ouverts.
 
@@ -12,15 +12,15 @@
 Hugo le 2026-10-13** (§5). Annoncé par le
 §5.4 du plan commun des sites (2026-10-13, découpé le même jour) ; les
 droits granulaires qui le fondent sont décrits dans
-[`../sites/sites.md`](../sites/sites.md) §5 (lot O1), et élargi ici.
+[`../../sites/sites.md`](../../sites/sites.md) §5 (lot O1), et élargi ici.
 
 **Pourquoi un document à part, et ici** : le plan des sites parle de lieux, de
 transferts et de couleurs ; ce lot parle de la **règle qui refuse une
 commande**, et doit se tenir à côté de ce qu'il touche —
-[`architecture-heure-limite-de-commande.md`](../limites-de-commande/architecture-heure-limite-de-commande.md),
-[`demontage-order-cutoff.md`](../limites-de-commande/demontage-order-cutoff.md),
-[`plan-heure-limite-par-clientele.md`](../limites-de-commande/plan-heure-limite-par-clientele.md) et
-[`annulation/annulation-par-le-client.md`](annulation/annulation-par-le-client.md).
+[`architecture-heure-limite-de-commande.md`](../../limites-de-commande/architecture-heure-limite-de-commande.md),
+[`demontage-order-cutoff.md`](../../limites-de-commande/demontage-order-cutoff.md),
+[`plan-heure-limite-par-clientele.md`](../../limites-de-commande/plan-heure-limite-par-clientele.md) et
+[`../annulation/annulation-par-le-client.md`](../annulation/annulation-par-le-client.md).
 Les documents de commande vivent dans `commandes/` (CLAUDE.md §8). Le lot O1
 grossissait aussi d'un déplacement d'écran (taille S) à une question d'argent
 et de frontière : il n'a plus sa place en une ligne d'un autre plan.
@@ -53,7 +53,7 @@ L'heure limite et l'annulation sous **`lfc_order_settings`** (ajouté à
 accordé à aucun rôle par migration) ; l'ouverture sous un droit à elle,
 **`lfc_order_opening`** (Hugo, 2026-10-13, Q5). La limite **par point de retrait n'est pas
 reprise** : le démontage d'`OrderCutoff` est décidé
-([`demontage-order-cutoff.md`](../limites-de-commande/demontage-order-cutoff.md), Hugo 2026-09-04).
+([`demontage-order-cutoff.md`](../../limites-de-commande/demontage-order-cutoff.md), Hugo 2026-09-04).
 
 ## 1. Ce qu'est « la limite générale » aujourd'hui (vérifié le 2026-10-13)
 
@@ -137,7 +137,7 @@ avec la mention « non reprise, retirée au démontage ».
   sera **réécrit** au déploiement B du démontage.
 - ⚠️ « Par clientèle » n'existe pas : la ligne vaut pour tous les clients du
   commerce. Le B2C ne la lit déjà pas
-  ([`plan-heure-limite-par-clientele.md`](../limites-de-commande/plan-heure-limite-par-clientele.md) §4,
+  ([`plan-heure-limite-par-clientele.md`](../../limites-de-commande/plan-heure-limite-par-clientele.md) §4,
   à vérifier au moment du lot) — l'écran le dit, il ne le règle pas.
 
 ### Option B — la règle générale devient le rang global de l'échelle PIM
@@ -390,7 +390,7 @@ encore sous l'ancien rendrait 403).
 vérifier) : le public **lit** la ligne générale. `PlaceShopOrderHandler`
 passe par `OrderDrafting.ensureNotTooLate`, qui oppose le repli du commerce à
 toute ligne sans limite d'article, sans distinguer la clientèle — le lot 1 de
-[`plan-heure-limite-par-clientele.md`](../limites-de-commande/plan-heure-limite-par-clientele.md) §4
+[`plan-heure-limite-par-clientele.md`](../../limites-de-commande/plan-heure-limite-par-clientele.md) §4
 n'est pas bâti. La carte « Clientèle particulière » dit donc ce qui est vrai :
 la limite de l'article, sinon la limite générale, sans dérogation possible.
 
@@ -448,7 +448,7 @@ fichier la cite, son usage n'est pas relu).
 une limite produit décide seul ; sinon il retombe sur `OrderCutoff` ; **rien
 nulle part → tout passe**. La passation ne lit pas l'état de la journée du
 fournil : une commande a été acceptée sur un plan arrêté (observation O5,
-[`observations-flux-de-commande.md`](observations-flux-de-commande.md)).
+[`observations-flux-de-commande.md`](../observations-flux-de-commande.md)).
 
 **Décidé :**
 

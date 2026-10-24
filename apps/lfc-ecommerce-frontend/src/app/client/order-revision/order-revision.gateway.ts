@@ -41,7 +41,7 @@ export const STALE_CHANGE_REQUEST = 'contact.order_change.stale_revision';
 
 /**
  * **Modifier une commande passée**, côté réseau (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, M1 et M3) : la
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, M1 et M3) : la
  * commande relue, le devis de révision, la révision.
  *
  * Seul `revise` écrit, et seul un clic l'appelle. Le devis ne mute rien

@@ -7,7 +7,7 @@ export interface SiteColorSet {
 }
 
 /**
- * **La couleur d'une commande** (plan `commandes/plan-tri-depart-et-couleurs.md`,
+ * **La couleur d'une commande** (plan `commandes/back-office/plan-tri-depart-et-couleurs.md`,
  * §4) : un retrait prend la couleur de retrait de SON site, une livraison
  * celle de livraison du site de DÉPART — chacune selon la clientèle.
  *

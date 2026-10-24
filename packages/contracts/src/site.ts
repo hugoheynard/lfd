@@ -103,7 +103,7 @@ export interface StoredSiteView
 /**
  * **Une entrée de la palette de la logistique** — ce qu'un écran du colisage,
  * des tournées, du chargement ou de « Ma tournée » lit d'un site pour peindre
- * une commande (plan `commandes/plan-tri-depart-et-couleurs.md`, L1a).
+ * une commande (plan `commandes/back-office/plan-tri-depart-et-couleurs.md`, L1a).
  *
  * Lecture SEULE, sans `lfc_site_settings` : ni adresse, ni heures, ni remise.
  * `supply` nomme un retrait servi par transfert (« Transfert Val Village ») ;

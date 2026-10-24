@@ -11,7 +11,7 @@ export interface DeliveryColors {
 /**
  * **Les couleurs de livraison du site de départ** — ce que la feuille de
  * tournée imprime en tête de chaque arrêt (plan
- * `commandes/plan-tri-depart-et-couleurs.md`, L5). Déclaré par la livraison,
+ * `commandes/back-office/plan-tri-depart-et-couleurs.md`, L5). Déclaré par la livraison,
  * implémenté par le commerce (`b2b/sites/`), relié dans `appBootstrap`.
  *
  * Lues À CHAQUE TIRAGE, jamais figées : un changement en Réglages › Sites se

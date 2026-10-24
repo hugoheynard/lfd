@@ -14,7 +14,7 @@ import { ApplyOrderChangeCommand } from "./apply-order-change.command.js";
 
 /**
  * **Appliquer une demande de modification** (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, §4, M4) : c'est une
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, §4, M4) : c'est une
  * RÉVISION de la commande au nom de l'équipe, par le même geste que
  * « Modifier la commande » ({@link OrderChangeApplier}), qui rejuge tout —
  * inscrite au plan entre-temps, modifiée ailleurs depuis la demande (R7),

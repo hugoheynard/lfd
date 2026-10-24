@@ -19,7 +19,7 @@ export interface AdminRevisionStanding {
 
 /**
  * **La modification, lue pour les vues** (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, §6) — la règle du
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, §6) — la règle du
  * geste (`OrderRevising.revisabilityOf`), avec le jour d'inscription demandé
  * au fournil par son canal, comme l'aperçu de l'annulation. Sans verrou :
  * c'est un affichage. Le mur reste l'affaire de l'appelant.

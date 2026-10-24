@@ -23,7 +23,7 @@ export const OrderChangeRequestThrottleGuard = perAccountThrottleGuard({
 
 /**
  * **Demander une modification de commande** après l'heure limite (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, M4) — et lire où
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, M4) — et lire où
  * elle en est. La personne vient du jeton ; la société est celle de la
  * COMMANDE. Hors mur, `404`.
  */

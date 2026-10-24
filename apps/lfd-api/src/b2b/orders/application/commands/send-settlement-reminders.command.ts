@@ -7,7 +7,7 @@ export interface SettlementRemindersReport {
 /**
  * **Prévenir le commercial** qu'une commande saisie par l'équipe, avec lien de
  * paiement, n'est pas réglée à l'heure limite de sa journée (plan
- * `documentation/commandes/architecture-abandon-du-reglement.md`, Q6, S5).
+ * `documentation/commandes/reglement/architecture-abandon-du-reglement.md`, Q6, S5).
  *
  * Sans charge utile : c'est une passe horaire sur tout le commerce, déclenchée
  * par un Cron Trigger. Rejouable à volonté — une commande ne sonne qu'une fois.

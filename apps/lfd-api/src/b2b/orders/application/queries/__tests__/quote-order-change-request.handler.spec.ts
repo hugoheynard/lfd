@@ -26,7 +26,7 @@ import { QuoteOrderChangeRequestQuery } from "../quote-order-change-request.quer
 
 /**
  * **Le devis d'une demande de modification** (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, §14) — ouvert au
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, §14) — ouvert au
  * seul « trop tard », derrière le mur du client, chiffré par la MÊME
  * recomposition que la modification. Instants de la scène, horloge FIXE.
  */

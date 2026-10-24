@@ -214,7 +214,7 @@ export function receivedOnOf(
  * {@link receivedOnOf}, sinon le jour (Paris) de l'instant de la remise.
  *
  * Son seul écrivain est la remise (plan
- * `documentation/commandes/date-de-reception.md`, B2,
+ * `documentation/commandes/la-commande/date-de-reception.md`, B2,
  * `MarkOrderFulfilledHandler`, l'instant du fait) ; la reprise du §8 a été
  * faite par la migration de B4, par la règle simple. Le repli couvre une
  * remise qu'aucune attestation de retrait n'accompagne : elle a eu lieu, elle

@@ -1,6 +1,6 @@
 /**
  * Le récapitulatif de commandes choisies d'une société et de ses sites
- * (`documentation/commandes/plan-recapitulatif-des-commandes.md`, lot R1) —
+ * (`documentation/commandes/boutique/plan-recapitulatif-des-commandes.md`, lot R1) —
  * une LECTURE. `actorUserId` accompagne `companyId` : elle est murée.
  */
 export class SummarizeCompanyOrdersQuery {

@@ -475,7 +475,7 @@ describe("le mur staff — la première entrée se journalise", () => {
 
 /**
  * Les réglages des commandes ont quitté `b2b_settings` le 2026-10-13
- * (`documentation/commandes/plan-reglages-commandes.md`, §3.4, lot O1a) :
+ * (`documentation/commandes/passation/plan-reglages-commandes.md`, §3.4, lot O1a) :
  * l'heure limite et l'annulation sous `lfc_order_settings`, l'ouverture sous
  * `lfc_order_opening`. Tenir les réglages plateforme n'y ouvre plus rien.
  */

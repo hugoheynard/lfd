@@ -182,7 +182,7 @@ de C1, après lui.
   commande), la composition et l'explication du prix
   (`GET /admin/orders/:id/lines/:sku/rules` existe), le statut.
 - **Annuler** et **Rembourser** : lots à part — bâtis le 2026-10-12
-  ([`annulation-par-le-staff.md`](annulation/annulation-par-le-staff.md) : bouton « Annuler la commande »,
+  ([`annulation-par-le-staff.md`](../annulation/annulation-par-le-staff.md) : bouton « Annuler la commande »,
   bandeau du remboursement et « Relancer »).
 
 - **Entrée « Commandes » dans le menu PRIMAIRE** (Hugo, 2026-10-12), dans les

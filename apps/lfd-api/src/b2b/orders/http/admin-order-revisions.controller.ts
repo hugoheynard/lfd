@@ -22,7 +22,7 @@ import { QuoteOrderRevisionQuery } from "../application/queries/quote-order-revi
 
 /**
  * **L'équipe modifie une commande** (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, M1) — heure limite
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, M1) — heure limite
  * ignorée, jusqu'à l'inscription au fournil, au compte ou à total nul
  * seulement (§9).
  *

@@ -64,7 +64,7 @@ interface SubmitRefusal {
 
 /**
  * **Modifier une commande passée** (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, M3, côté boutique).
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, M3, côté boutique).
  *
  * Le brouillon part de la commande telle qu'elle est ; chaque changement
  * redemande le **devis de révision**, qui dit le nouveau total et l'écart —

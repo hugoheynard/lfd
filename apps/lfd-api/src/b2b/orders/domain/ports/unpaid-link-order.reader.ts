@@ -11,7 +11,7 @@ export interface UnpaidLinkOrder {
 
 /**
  * Port de **lecture** du rappel de règlement (plan
- * `documentation/commandes/architecture-abandon-du-reglement.md`, Q6) : les commandes que
+ * `documentation/commandes/reglement/architecture-abandon-du-reglement.md`, Q6) : les commandes que
  * l'équipe a saisies avec un lien de paiement (`placedByStaffId` posé, une
  * intention Stripe), encore `placed`, dont le règlement est en attente ou
  * refusé.

@@ -7,7 +7,7 @@ import { pdfText } from "./pdf-text.js";
 
 /**
  * Les bons inclus, IMPRIMÉS (plan
- * `documentation/commandes/plan-recapitulatif-des-commandes.md`, §10) — du
+ * `documentation/commandes/boutique/plan-recapitulatif-des-commandes.md`, §10) — du
  * domaine au texte du PDF et du tableur, sans structure intermédiaire écrite
  * à la main : ce qui sort est ce que le domaine a calculé.
  */

@@ -1,6 +1,6 @@
 /**
  * E2E : **la liste transverse des dérogations** (Réglages › Commandes › Heure
- * limite, `documentation/commandes/plan-reglages-commandes.md`, lot O1c).
+ * limite, `documentation/commandes/passation/plan-reglages-commandes.md`, lot O1c).
  *
  * Ce que seule cette suite prouve : la lecture `GET /admin/order-cutoff-waivers`
  * traverse le vrai SQL — toutes sociétés, journée passée exclue (comparée à

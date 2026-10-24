@@ -127,7 +127,7 @@ toucher la commande elle-même. **À vérifier au bâti** — si un chemin le fa
 ajouter la table.
 
 > 2026-10-23 — un chemin réécrit désormais les lignes : la modification d'une
-> commande ([`plan-modifier-une-commande.md`](../commandes/plan-modifier-une-commande.md), M1)
+> commande ([`plan-modifier-une-commande.md`](../commandes/modification/plan-modifier-une-commande.md), M1)
 > les remplace en bloc. Il écrit aussi `orders` dans la même transaction (au
 > moins `revision`), donc l'ancien et le nouveau jour avancent : la table reste
 > hors surveillance, et `apps/lfd-api/test/order-revision.e2e-spec.ts` l'éprouve.

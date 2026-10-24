@@ -10,7 +10,7 @@ const NO_COLORS: SiteDeliveryColors = { pro: null, public: null };
 
 /**
  * **La palette de la logistique** (plan
- * `commandes/plan-tri-depart-et-couleurs.md`, L1a) : de chaque site, l'id, le
+ * `commandes/back-office/plan-tri-depart-et-couleurs.md`, L1a) : de chaque site, l'id, le
  * nom, l'approvisionnement, les quatre couleurs, et le départ des tournées.
  * Rien d'autre — ni adresse, ni heures, ni remise : elle s'ouvre sans
  * `lfc_site_settings`. Les archivés y restent : une commande passée garde son

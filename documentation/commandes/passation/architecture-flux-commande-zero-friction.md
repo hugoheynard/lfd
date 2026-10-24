@@ -3,7 +3,7 @@
 > Pivot **2026-08-06**. Le checkout n'est plus adossé à une entreprise : on peut
 > commander (ex. une brioche au sucre) sans aucun paramétrage préalable. Détail du
 > modèle + TODO rapatriement dans
-> [`architecture-flux-commande-prod.md#commande-zéro-friction`](architecture-flux-commande-prod.md).
+> [`architecture-flux-commande-prod.md#commande-zéro-friction`](../la-commande/architecture-flux-commande-prod.md).
 
 Tous les chemins possibles — premier achat sans entreprise (chemin court),
 commande avec entreprise (terme négocié), et l'après-coup (rapatriement des

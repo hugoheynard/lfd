@@ -1,7 +1,7 @@
 /**
  * La COMPOSITION d'une page de rayon — où va chaque chose, sans rien rendre
- * (`documentation/commandes/boutique-rayon-layout.md`, D10 ; règles :
- * `documentation/commandes/boutique-rayon-layout.md`, « Une page par rayon »).
+ * (`documentation/commandes/boutique/boutique-rayon-layout.md`, D10 ; règles :
+ * `documentation/commandes/boutique/boutique-rayon-layout.md`, « Une page par rayon »).
  *
  * Elle reçoit la page servie et le rayon, et rend des **cases résolues** :
  * leur place au bureau, leur place dans la pile, et ce qu'elles portent — les

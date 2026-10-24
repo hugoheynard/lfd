@@ -50,7 +50,7 @@ export interface OrderSheetPdf {
  *
  * Ce paragraphe disait « on écrit à la demande » : fabriquer à la passation
  * aurait produit un document par commande, que presque personne ne demande.
- * Le plan `documentation/commandes/architecture-bon-de-commande.md` (§2.4, §5, Hugo,
+ * Le plan `documentation/commandes/bon-et-pieces/architecture-bon-de-commande.md` (§2.4, §5, Hugo,
  * 2026-10-09) renverse la décision : le bon part **joint au courriel de
  * confirmation**, donc chaque commande en écrit un (~50 Ko, logo 16 Ko).
  * C'est l'expéditeur de `customer.order-placed` qui le demande ici ; le
@@ -85,7 +85,7 @@ export class OrderSheetArchive {
    * jeton manque parce que la commande n'est pas réglée
    * (`exposedHandoverToken`), et archiver ce rendu figerait un bon sans QR que
    * l'accusé au paiement joindrait ensuite (plan
-   * `documentation/commandes/commande-carte-reglee.md`, §2.5). Le
+   * `documentation/commandes/reglement/commande-carte-reglee.md`, §2.5). Le
    * téléchargement avant paiement reste permis : il rend un bon sans QR,
    * fabriqué à chaque demande. Ne pas relire l'archive empêche aussi d'y
    * reprendre le QR d'une commande remboursée avant son retrait.
@@ -111,7 +111,7 @@ export class OrderSheetArchive {
   }
 
   /**
-   * La couleur est lue AU RENDU (plan `commandes/plan-tri-depart-et-couleurs.md`,
+   * La couleur est lue AU RENDU (plan `commandes/back-office/plan-tri-depart-et-couleurs.md`,
    * L5) : celle de la passation pour le bon archivé et joint au courriel. Un
    * bon déjà rangé n'est pas refait — c'est pourquoi la version de dessin
    * (`orderSheetPdfKey`) n'a PAS bougé : les bons émis avant le trait restent

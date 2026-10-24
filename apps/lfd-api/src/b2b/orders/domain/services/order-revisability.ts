@@ -6,7 +6,7 @@ import { settlementRegimeOf } from "./settlement-regime.js";
 
 /**
  * **La commande se modifie-t-elle, et sinon pourquoi** (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, R1, §6, §9) — pure :
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, R1, §6, §9) — pure :
  * pas d'horloge, pas de port. Elle sert deux fois, comme `cancellationOf` : le
  * refus du geste (`OrderRevising.ensureRevisable`) et l'affichage des deux vues,
  * client et équipe, qui disent donc le même cas.

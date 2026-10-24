@@ -7,7 +7,7 @@ import { OrderSummaryOrders } from './order-summary-orders';
 
 /**
  * Les bons de commande inclus (plan
- * `documentation/commandes/plan-recapitulatif-des-commandes.md`, §10) : le HT
+ * `documentation/commandes/boutique/plan-recapitulatif-des-commandes.md`, §10) : le HT
  * de chaque bon, leur somme, l'écart expliqué — jamais de TVA par bon.
  */
 function render(summary: CompanyOrderSummaryView): HTMLElement {

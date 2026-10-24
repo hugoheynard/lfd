@@ -6,7 +6,7 @@ const CLOCK_TIME = /^([01]\d|2[0-3]):[0-5]\d$/u;
 
 /**
  * **Le jour même**, tel qu'on l'écrit (plan
- * `documentation/commandes/plan-reglages-commandes.md`, §8.3 ; sa page depuis
+ * `documentation/commandes/passation/plan-reglages-commandes.md`, §8.3 ; sa page depuis
  * le 2026-10-21).
  *
  * Porte aussi, depuis le lot R3a du réassort (2026-10-21), **l'heure limite

@@ -121,7 +121,7 @@ et « réception non constatée » pour une ligne sans date.
 - **Une remise ne se défait plus**, même à la main : le déclencheur et les deux
   CHECK la refusent. Lever une remise constatée par erreur demande de retirer
   une contrainte en production, sur décision de Hugo
-  ([`../ops/runbook.md`](../ops/runbook.md), « Une remise ne se défait pas »).
+  ([`../../ops/runbook.md`](../../ops/runbook.md), « Une remise ne se défait pas »).
 - **Lettres mortes laissées en place** : l'abonné
   `accounting.record-delivery-day.on-handover` est retiré ; ses livraisons
   encore en attente finissent en lettres mortes, sans rien de perdu (la remise

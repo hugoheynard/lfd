@@ -18,7 +18,7 @@ import { GetOrderPaymentQuery } from "./get-order-payment.query.js";
  * règlement a **échoué et reste à reprendre**.
  *
  * `failed` est admis depuis le 2026-09-26 (plan
- * `documentation/commandes/architecture-abandon-du-reglement.md`, lot 3 bis, §9 bis B3 et
+ * `documentation/commandes/reglement/architecture-abandon-du-reglement.md`, lot 3 bis, §9 bis B3 et
  * Q8 a) : une carte refusée rend l'intention à `requires_payment_method`, et un
  * pro qui abandonne garde une intention non annulée — dans les deux cas le
  * client peut encore payer. Le lien de paiement le déclarait déjà « à
@@ -39,7 +39,7 @@ import { GetOrderPaymentQuery } from "./get-order-payment.query.js";
  * croire une commande en attente alors que Stripe a déjà annulé l'intention
  * (une annulation réussie chez Stripe puis une écriture perdue chez nous) ou
  * déjà encaissé (le webhook n'est pas encore arrivé). Dans les deux cas le
- * secret ne se sert pas (plan `documentation/commandes/architecture-abandon-du-reglement.md`,
+ * secret ne se sert pas (plan `documentation/commandes/reglement/architecture-abandon-du-reglement.md`,
  * §5 « Le trou que l'ordre ne ferme pas » et §9 bis, B3).
  */
 @QueryHandler(GetOrderPaymentQuery)

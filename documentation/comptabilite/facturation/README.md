@@ -30,10 +30,10 @@ Ces documents restent où ils sont tant qu'un chantier ne les reprend pas :
 - [`../../b2b/architecture-facturation.md`](../../b2b/architecture-facturation.md) —
   📐 la facture comme agrégat figé, la numérotation sans trou, Factur-X, les
   deux régimes (à la commande, au compte), dix tranches. Rien n'est codé.
-- [`../../commandes/plan-agregation-des-commandes.md`](../../commandes/plan-agregation-des-commandes.md) —
+- [`../../commandes/bon-et-pieces/plan-agregation-des-commandes.md`](../../commandes/bon-et-pieces/plan-agregation-des-commandes.md) —
   🟡 le **relevé de cycle**, bâti le 2026-10-05 (Comptabilité, route
   `admin/accounting/statements`) : le point de départ du dossier.
-- [`../../commandes/todo-export-des-commandes-pour-le-comptable.md`](../../commandes/todo-export-des-commandes-pour-le-comptable.md) —
+- [`../../commandes/bon-et-pieces/todo-export-des-commandes-pour-le-comptable.md`](../../commandes/bon-et-pieces/todo-export-des-commandes-pour-le-comptable.md) —
   la règle des arrondis : on **somme** les TVA déjà arrondies des commandes,
   on ne recalcule jamais une TVA sur une base agrégée.
 - [`../comptabilite/`](../README.md) — l'entité qui émet, le

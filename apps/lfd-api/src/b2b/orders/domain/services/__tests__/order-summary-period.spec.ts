@@ -2,7 +2,7 @@ import { frenchDay, periodSentence } from "../order-summary-period.js";
 
 /**
  * La période imprimée sur le récapitulatif (plan
- * `documentation/commandes/plan-recapitulatif-des-commandes.md`, §9) : des jours
+ * `documentation/commandes/boutique/plan-recapitulatif-des-commandes.md`, §9) : des jours
  * comparés entre eux seulement, jamais à l'horloge.
  */
 describe("la période du récapitulatif", () => {

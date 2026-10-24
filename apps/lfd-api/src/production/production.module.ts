@@ -286,7 +286,7 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     PrismaOrderInscriptionReader,
     { provide: OrderInscriptionReader, useExisting: PrismaOrderInscriptionReader },
     ProductionOrderWithdrawalDesk,
-    // La modification d'une commande (plan `commandes/plan-modifier-une-commande.md`,
+    // La modification d'une commande (plan `commandes/modification/plan-modifier-une-commande.md`,
     // §9.1) : les notes de révision, écrites par le guichet sous le verrou de
     // la journée, relues par la clôture et le retirage (`FreshDayOrders`).
     { provide: OrderRevisionNoticeLedger, useClass: PrismaOrderRevisionNoticeLedger },

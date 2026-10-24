@@ -7,7 +7,7 @@ export const COMMERCE_ORDER_REVISED = "commerce.order_revised";
 /**
  * **« Une commande vient d'être modifiée »** — ce que la livraison DÉCLARE et
  * que le commerce ÉCRIT dans la boîte d'envoi, dans la transaction de la
- * révision (plan `documentation/commandes/plan-modifier-une-commande.md`, M1,
+ * révision (plan `documentation/commandes/modification/plan-modifier-une-commande.md`, M1,
  * §9 : « Livraison »). Même figure que `CommerceOrderPlacedFact` et
  * `CommerceOrderCancelledFact`, et pour la même raison : `delivery → b2b` est
  * interdit, le fait vit donc dans SON canal.

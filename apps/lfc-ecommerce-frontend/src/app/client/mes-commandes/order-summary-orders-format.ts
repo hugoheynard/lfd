@@ -12,7 +12,7 @@ import type { SummaryBottomLine } from './order-summary-format';
 
 /**
  * Les mots de la liste des **bons de commande inclus** (plan
- * `documentation/commandes/plan-recapitulatif-des-commandes.md`, §10) — posés
+ * `documentation/commandes/boutique/plan-recapitulatif-des-commandes.md`, §10) — posés
  * sur ce que le serveur a calculé : le HT de chaque bon, leur somme et
  * l'écart avec le sous-total. Aucun calcul ici.
  */

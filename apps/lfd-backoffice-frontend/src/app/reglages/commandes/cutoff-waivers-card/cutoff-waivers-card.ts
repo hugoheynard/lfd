@@ -20,7 +20,7 @@ type LoadState = 'loading' | 'ready' | 'error';
 /**
  * **Les dérogations d'heure limite d'actualité** — sous la limite générale de
  * Réglages › Commandes › Heure limite
- * (`documentation/commandes/plan-reglages-commandes.md` §3.2, lot O1c).
+ * (`documentation/commandes/passation/plan-reglages-commandes.md` §3.2, lot O1c).
  *
  * Une LISTE, pas un geste d'accord : une dérogation s'accorde pendant la
  * saisie d'une commande, là où elle a un motif. Ici, on voit toutes celles dont

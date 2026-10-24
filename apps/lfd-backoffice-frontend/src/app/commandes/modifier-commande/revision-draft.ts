@@ -12,7 +12,7 @@ import { NEW_ADDRESS, type DraftSnapshot } from '../nouvelle-commande/draft.stor
 
 /**
  * **La commande passée, remise dans la forme de la saisie** — et le chemin
- * retour (plan `documentation/commandes/plan-modifier-une-commande.md`, M3).
+ * retour (plan `documentation/commandes/modification/plan-modifier-une-commande.md`, M3).
  *
  * La modification réutilise le panier et le brouillon de la saisie par
  * l'équipe : ces deux fonctions pures sont toute la traduction, comme

@@ -20,7 +20,7 @@ export type ReviseOffer =
 
 /**
  * **La modificabilité dite au client** (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, §6) — le serveur
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, §6) — le serveur
  * décide par la règle du geste (`revisability` de `GET /orders/:id`), la
  * boutique ne fait que le dire dans la langue du client.
  */

@@ -13,7 +13,7 @@ import {
 
 /**
  * Le récapitulatif de commandes (plan
- * `documentation/commandes/plan-recapitulatif-des-commandes.md`, §6) : le bas
+ * `documentation/commandes/boutique/plan-recapitulatif-des-commandes.md`, §6) : le bas
  * est la SOMME des colonnes des commandes, au centime.
  */
 const PRINCIPAL = "co_principal";

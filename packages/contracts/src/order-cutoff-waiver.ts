@@ -75,7 +75,7 @@ export interface OrderCutoffWaiverView {
 
 /**
  * Une dérogation de la liste transverse (Réglages › Commandes › Heure limite,
- * `documentation/commandes/plan-reglages-commandes.md`, lot O1c) : toutes
+ * `documentation/commandes/passation/plan-reglages-commandes.md`, lot O1c) : toutes
  * sociétés confondues, dont la journée n'est pas passée — servie ou non.
  *
  * Le client et l'auteur y sont NOMMÉS : la liste n'est pas lue depuis une

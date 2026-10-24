@@ -129,7 +129,7 @@ export interface B2bMails {
   /**
    * **Le paiement n'a pas abouti à temps pour la fournée.** Destinataire : le
    * client. La clôture de la journée a annulé la commande (plan
-   * `documentation/commandes/architecture-abandon-du-reglement.md`, Q4, Q7).
+   * `documentation/commandes/reglement/architecture-abandon-du-reglement.md`, Q4, Q7).
    *
    * Sans bouton : il n'y a plus rien à reprendre, et un lien vers un
    * règlement mort mènerait à un refus.
@@ -146,7 +146,7 @@ export interface B2bMails {
   "customer.order-cancelled": OrderCancelledMailData;
   /**
    * **La demande de modification est appliquée / refusée** (plan
-   * `documentation/commandes/plan-modifier-une-commande.md`, M4).
+   * `documentation/commandes/modification/plan-modifier-une-commande.md`, M4).
    * Destinataire : l'auteur de la demande. Cf. `order-change-answer-mail.ts`.
    */
   "customer.order-change-applied": OrderChangeAppliedMailData;

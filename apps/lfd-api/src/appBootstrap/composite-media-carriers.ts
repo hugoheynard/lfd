@@ -13,7 +13,7 @@ import type { WriteTicket } from "../platform/journal/scoped-journal.js";
  * ses familles, la vitrine du commerce pour ses objets. Ce composite somme les
  * comptes et concatène les listes, sans que `media/` sache combien de porteurs
  * existent : un porteur de plus est un élément de plus dans la liste, pas une
- * branche de plus (plan `documentation/commandes/boutique-rayon-layout.md`, D9).
+ * branche de plus (plan `documentation/commandes/boutique/boutique-rayon-layout.md`, D9).
  *
  * 🔴 **Si UN porteur échoue, le composite échoue.** `Promise.all`, jamais
  * `Promise.allSettled` : un porteur muet ne vaut pas « zéro emploi », et une

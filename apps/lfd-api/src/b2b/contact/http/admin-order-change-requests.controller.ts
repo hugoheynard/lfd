@@ -16,7 +16,7 @@ import { QuoteOrderChangeQuery } from "../application/queries/quote-order-change
 
 /**
  * **Répondre à une demande de modification** dans la boîte « Demandes
- * clients » (plan `documentation/commandes/plan-modifier-une-commande.md`,
+ * clients » (plan `documentation/commandes/modification/plan-modifier-une-commande.md`,
  * M4), sous le droit de la boîte, `b2b_contact` : l'écart, puis « Appliquer »
  * — une révision au nom de l'équipe — ou « Refuser » avec un mot.
  */

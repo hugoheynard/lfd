@@ -13,7 +13,7 @@ import {
 
 /**
  * **Modifier une commande passée** — le bouton du tiroir et l'écran de
- * modification (plan `documentation/commandes/plan-modifier-une-commande.md`,
+ * modification (plan `documentation/commandes/modification/plan-modifier-une-commande.md`,
  * M3). Rangé ici plutôt que dans un fichier d'écran à lui : un nouveau fichier
  * de `screens/` est une ligne de plus au recueil (`dev-toolbox/shop-copy/spaces.mjs`),
  * et ces textes appartiennent à « Mes commandes ».

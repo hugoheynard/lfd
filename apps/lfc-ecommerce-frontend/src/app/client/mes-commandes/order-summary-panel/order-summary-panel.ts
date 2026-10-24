@@ -64,7 +64,7 @@ interface SummaryBlock {
 
 /**
  * **Le récapitulatif des commandes cochées** (plan
- * `documentation/commandes/plan-recapitulatif-des-commandes.md`, lot R3) —
+ * `documentation/commandes/boutique/plan-recapitulatif-des-commandes.md`, lot R3) —
  * une CONSULTATION, donc sur le côté (`panelSide()`), pas un dialogue.
  *
  * Tout vient du serveur, qui calcule : une table par société (le compte puis

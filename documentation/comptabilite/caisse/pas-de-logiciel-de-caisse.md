@@ -89,7 +89,7 @@ journalières, mensuelles et annuelles, puis certificat ou attestation) — ce
 second chemin est lourd.
 
 La règle est aussi écrite là où elle risque d'être oubliée :
-[`../../commandes/architecture-commande-sans-compte.md`](../../commandes/architecture-commande-sans-compte.md),
+[`../../commandes/passation/architecture-commande-sans-compte.md`](../../commandes/passation/architecture-commande-sans-compte.md),
 D4 : une commande non réglée expire, elle ne se règle jamais au comptoir.
 
 ## 5. Ce qui reste à faire confirmer par le cabinet

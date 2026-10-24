@@ -1081,7 +1081,7 @@ export {
   refundedCentsOf,
 } from "./order.js";
 export { exposedHandoverToken, isSettled } from "./order-settlement.values.js";
-// Modifier une commande passée (plan `commandes/plan-modifier-une-commande.md`, M1).
+// Modifier une commande passée (plan `commandes/modification/plan-modifier-une-commande.md`, M1).
 export {
   ORDER_REVISION_CHANGES,
   ORDER_REVISION_REFUSALS,

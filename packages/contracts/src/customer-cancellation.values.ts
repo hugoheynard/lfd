@@ -135,7 +135,7 @@ export const CUSTOMER_CANCELLATION_MAX_HOURS_BEFORE = 168;
 /**
  * `GET /orders/:id` côté client : la commande, si elle s'annule (C6.8), et
  * depuis le 2026-10-23 si elle se modifie et sa révision courante (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, §6).
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, §6).
  */
 export type CustomerOrderDetailView = CustomerOrderView & {
   readonly cancellability: OrderCancellability;

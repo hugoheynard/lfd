@@ -16,7 +16,7 @@ import {
 
 /**
  * **Commander sans compte** — plan
- * `documentation/commandes/architecture-commande-sans-compte.md`, §5 et lot C.
+ * `documentation/commandes/passation/architecture-commande-sans-compte.md`, §5 et lot C.
  *
  * 🔴 **Ouvert le 2026-10-11** (§6). Il est resté construit et non branché
  * tant qu'un arbitrage de prix et de fiscalité manquait. Hugo l'a tranché :

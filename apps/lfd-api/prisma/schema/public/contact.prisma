@@ -33,7 +33,7 @@ enum RequestKind {
   contact
   order_problem
   /// Une demande de modification de commande après l'heure limite (plan
-  /// `documentation/commandes/plan-modifier-une-commande.md`, M4).
+  /// `documentation/commandes/modification/plan-modifier-une-commande.md`, M4).
   order_change
 
   @@schema("public")

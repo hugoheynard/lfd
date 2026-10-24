@@ -17,7 +17,7 @@ import type { OrderHandoverLine } from "./order-handover.js";
  *   représenter, donc rien à s'attribuer indûment : la porte staff suffit.
  *
  * C'est pour ça que le QR de la fiche peut s'imprimer et que celui du retrait
- * ne le peut pas. Voir `documentation/commandes/architecture-bon-de-commande.md`.
+ * ne le peut pas. Voir `documentation/commandes/bon-et-pieces/architecture-bon-de-commande.md`.
  */
 export interface OrderPackingView {
   readonly orderId: string;

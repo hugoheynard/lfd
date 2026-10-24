@@ -207,7 +207,7 @@ export interface MyDeliveryStopView {
   readonly binsExpected?: number;
   /**
    * `pro` / `public`, lue au commerce à chaque lecture (plan
-   * `commandes/plan-tri-depart-et-couleurs.md`, L1a) — l'écran en tire la
+   * `commandes/back-office/plan-tri-depart-et-couleurs.md`, L1a) — l'écran en tire la
    * couleur de la commande. Absent : inconnue (commande d'avant la
    * distinction, ou que le commerce ne connaît plus) — teinte neutre.
    */

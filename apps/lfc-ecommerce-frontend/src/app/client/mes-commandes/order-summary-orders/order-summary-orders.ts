@@ -39,7 +39,7 @@ interface OrdersBlock {
 
 /**
  * **Les bons de commande inclus** du récapitulatif (plan
- * `documentation/commandes/plan-recapitulatif-des-commandes.md`, §10) —
+ * `documentation/commandes/boutique/plan-recapitulatif-des-commandes.md`, §10) —
  * repliés par défaut : le récapitulatif se lit d'abord, la liste sert à
  * pointer.
  *

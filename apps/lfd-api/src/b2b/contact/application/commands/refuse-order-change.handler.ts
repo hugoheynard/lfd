@@ -12,7 +12,7 @@ import { RefuseOrderChangeCommand } from "./refuse-order-change.command.js";
 
 /**
  * **Refuser une demande de modification** (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, §4, M4) : la
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, §4, M4) : la
  * commande ne bouge pas ; la demande est traitée avec le mot adressé au
  * client, qui le reçoit par courriel et le lit sur sa commande. La ligne de
  * la demande est verrouillée, comme pour « Appliquer » : les deux réponses ne

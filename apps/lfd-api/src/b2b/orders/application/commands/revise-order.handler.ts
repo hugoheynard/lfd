@@ -20,7 +20,7 @@ import { ReviseOrderCommand, type ReviseOrderResult } from "./revise-order.comma
 
 /**
  * **Modifier une commande** (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, M1, §9).
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, M1, §9).
  *
  * ## L'ordre des gestes
  *

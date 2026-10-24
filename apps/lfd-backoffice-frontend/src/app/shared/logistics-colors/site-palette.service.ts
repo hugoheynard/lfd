@@ -9,7 +9,7 @@ import { B2B_API_BASE } from '../../api/api-config';
 /**
  * **La palette de la logistique** — `GET admin/sites/palette`, en lecture
  * seule, ouverte au colisage et à la livraison SANS `lfc_site_settings` (plan
- * `commandes/plan-tri-depart-et-couleurs.md`, L1a).
+ * `commandes/back-office/plan-tri-depart-et-couleurs.md`, L1a).
  */
 @Injectable({ providedIn: 'root' })
 export class SitePaletteService {

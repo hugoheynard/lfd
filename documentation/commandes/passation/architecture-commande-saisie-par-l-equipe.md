@@ -124,7 +124,7 @@ négocié — et la plateforme livrerait à crédit sans jamais l'avoir décidé
 L'écran de confirmation annonce, en mode `account` : _« facturée sur la période
 en cours »_. **Cette période n'existe pas encore.** La facturation mensuelle est
 doc-first — aucune facture, aucune échéance, aucun prélèvement :
-[`architecture-facturation.md`](../b2b/architecture-facturation.md).
+[`architecture-facturation.md`](../../b2b/architecture-facturation.md).
 
 Ce que la commande porte réellement est `payment_status: not_required`, avec le
 même sens que pour une commande passée par le client sur son terme : **à
@@ -187,7 +187,7 @@ La famille d'un produit se lit dans son préfixe de SKU (`VIE`/`PAI`/`PAT`/`SAL`
   serveur, et le panier le dit à l'écran. Les recopier donnerait deux
   implémentations de la même règle d'arrondi, donc deux résultats à un centime
   près, et un client qui compare son écran à sa facture (cf.
-  [`architecture-commande-immuable-avenants.md`](architecture-commande-immuable-avenants.md)).
+  [`architecture-commande-immuable-avenants.md`](../modification/architecture-commande-immuable-avenants.md)).
 - **Saisir une adresse de livraison à la volée.** Le sélecteur d'acheminement
   propose retrait **ou** coursier, comme le panier du client — mais les adresses
   viennent du **carnet de la société**. Côté client, l'adresse libre sert à
@@ -269,7 +269,7 @@ commande passée — aucune route ne l'expose.
 - **Le lien de règlement ne part par aucun e-mail.** Il est copié dans le
   presse-papier du commercial et dicté dans un toast si la copie échoue, parce
   que le canal e-mail n'a encore jamais envoyé un message en production (cf.
-  [`../todos/todo-notifications.md`](../todos/todo-notifications.md)). Le jour où
+  [`../../todos/todo-notifications.md`](../../todos/todo-notifications.md)). Le jour où
   il enverra, l'envoi s'ajoutera **sans remplacer** la copie : une commande prise
   au téléphone se conclut au téléphone.
 - **Sans `CLIENT_BASE_URL`**, la commande part quand même et le lien est absent —

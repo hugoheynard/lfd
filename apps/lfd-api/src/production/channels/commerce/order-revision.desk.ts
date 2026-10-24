@@ -13,7 +13,7 @@ export type OrderRevisionOutcome = "noted" | "inscribed";
 /**
  * **Le guichet de la révision au fournil** — port que le fournil DÉCLARE et
  * IMPLÉMENTE, et que le commerce appelle quand une commande est modifiée
- * (plan `documentation/commandes/plan-modifier-une-commande.md`, §9.1,
+ * (plan `documentation/commandes/modification/plan-modifier-une-commande.md`, §9.1,
  * 2026-10-23). Même figure que {@link OrderWithdrawalDesk}, pour la même
  * raison : la clôture et le retirage lisent les commandes du commerce AVANT
  * le verrou de la journée, et une révision validée entre les deux aurait été

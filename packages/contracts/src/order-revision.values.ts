@@ -1,6 +1,6 @@
 /**
  * **Ce qu'une révision de commande peut changer** — le résumé que le journal
- * garde (`order.revised`, plan `documentation/commandes/plan-modifier-une-commande.md`,
+ * garde (`order.revised`, plan `documentation/commandes/modification/plan-modifier-une-commande.md`,
  * M1). Des VALEURS écrites au journal : elles ne se renomment que par
  * migration.
  *
@@ -22,7 +22,7 @@ export type OrderRevisionChange = (typeof ORDER_REVISION_CHANGES)[number];
 
 /**
  * **Pourquoi le client ne peut pas modifier sa commande maintenant** (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, R1, §6) — des codes,
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, R1, §6) — des codes,
  * pas des phrases : la boutique les dit dans la langue du client.
  *
  * - `cancelled`, `ready`, `fulfilled` : l'état de la commande le dit déjà ;

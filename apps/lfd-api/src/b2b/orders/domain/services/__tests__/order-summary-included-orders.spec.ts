@@ -4,7 +4,7 @@ import { authorLabel, orderDayLabel, ordersGapLabel } from "../order-summary-ord
 
 /**
  * Les bons de commande inclus du récapitulatif (plan
- * `documentation/commandes/plan-recapitulatif-des-commandes.md`, §10) : un bon
+ * `documentation/commandes/boutique/plan-recapitulatif-des-commandes.md`, §10) : un bon
  * par commande COMPTÉE, au « Total HT » que son bon imprime (F5), et la somme
  * rapprochée du sous-total HT — l'écart dit, jamais muet.
  *

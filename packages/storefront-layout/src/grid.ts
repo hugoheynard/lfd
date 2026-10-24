@@ -3,10 +3,10 @@
  *
  * Fonctions PURES : aucune dépendance, aucun effet. C'est ici que vit la règle
  * « deux objets ne se chevauchent jamais, aucun ne déborde des 5 colonnes ni
- * des R rangées » (`documentation/commandes/boutique-rayon-layout.md`, « Composer
+ * des R rangées » (`documentation/commandes/boutique/boutique-rayon-layout.md`, « Composer
  * une page »), et elle a TROIS lecteurs : l'éditeur la refuse à la pose, le
  * serveur à l'écriture (`b2b/storefront`, agrégat `Storefront`), la boutique
- * en compose ses pages (`documentation/commandes/boutique-rayon-layout.md`,
+ * en compose ses pages (`documentation/commandes/boutique/boutique-rayon-layout.md`,
  * D8). Une seule table des formes : deux implémentations divergeraient à la
  * première forme ajoutée.
  *

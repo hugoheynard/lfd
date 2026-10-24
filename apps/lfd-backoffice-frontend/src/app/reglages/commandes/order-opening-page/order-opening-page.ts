@@ -52,7 +52,7 @@ interface AudienceRow {
 
 /**
  * **Ouverture du e-commerce** — Réglages › Commandes (Hugo, 2026-10-09 ;
- * déplacée le 2026-10-13, `documentation/commandes/plan-reglages-commandes.md`
+ * déplacée le 2026-10-13, `documentation/commandes/passation/plan-reglages-commandes.md`
  * §3.0). Deux interrupteurs, un par clientèle, sous `lfc_order_opening` : le
  * droit à part de l'interrupteur qui ferme toute prise de commande.
  *

@@ -1,6 +1,6 @@
 /**
  * E2E du **filtre de date** et du **récapitulatif** de « Mes commandes » (plan
- * `documentation/commandes/plan-recapitulatif-des-commandes.md`, lot R1, §6)
+ * `documentation/commandes/boutique/plan-recapitulatif-des-commandes.md`, lot R1, §6)
  * — une frontière de sécurité : le mur tenant de la liste, repris tel quel.
  *
  * Ce que seul l'e2e prouve : le récapitulatif lit sous le VRAI mur (un owner

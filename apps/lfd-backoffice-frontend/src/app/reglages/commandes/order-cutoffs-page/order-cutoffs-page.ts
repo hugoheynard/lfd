@@ -17,7 +17,7 @@ import { LateFeeSummaryCard } from '../late-fee-summary-card/late-fee-summary-ca
 
 /**
  * **Heure limite de commande** — Réglages › Commandes
- * (`documentation/commandes/plan-reglages-commandes.md` §3.2, lots O1b et O1c).
+ * (`documentation/commandes/passation/plan-reglages-commandes.md` §3.2, lots O1b et O1c).
  *
  * Trois blocs, dans cet ordre : l'heure limite générale, pour tout le monde,
  * qui déclenche l'arrêt du plan de production pour le lendemain (Hugo,

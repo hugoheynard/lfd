@@ -7,7 +7,7 @@ import { OnOrderRevised } from "../on-order-revised.handler.js";
 import { TableActors, TableCustomers } from "./order-fact-doubles.js";
 
 /**
- * `order.revised` au journal (plan `documentation/commandes/plan-modifier-une-commande.md`,
+ * `order.revised` au journal (plan `documentation/commandes/modification/plan-modifier-une-commande.md`,
  * M1). Chaque charge écrite est passée au catalogue des faits : une clé que le
  * contrat refuse serait une ligne illisible pour le back-office.
  */

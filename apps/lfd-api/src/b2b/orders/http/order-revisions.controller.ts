@@ -21,7 +21,7 @@ import { QuoteOrderRevisionQuery } from "../application/queries/quote-order-revi
 
 /**
  * **Le client modifie sa commande** (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, M1) — tant qu'elle
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, M1) — tant qu'elle
  * n'est pas inscrite au fournil et avant l'heure limite de l'ancienne et de la
  * nouvelle date ; au compte ou à total nul seulement (une commande réglée par
  * carte est refusée en `409`, §9).

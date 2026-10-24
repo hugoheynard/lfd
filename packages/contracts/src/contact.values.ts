@@ -180,7 +180,7 @@ export interface OrderProblemDetailsView {
 
 /**
  * La réponse du commerce à une demande de modification (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, M4) : appliquée —
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, M4) : appliquée —
  * la révision qu'elle a produite —, ou refusée avec un mot.
  */
 export type OrderChangeDecisionView =

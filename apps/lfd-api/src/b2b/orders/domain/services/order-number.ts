@@ -15,7 +15,7 @@ export class InvalidOrderNumberRankError extends TechnicalError {
 
 /**
  * Le numéro humain d'une commande : `ORD-<n>` — `ORD-1`, `ORD-42`, `ORD-1042`
- * (plan `commandes/plan-numero-de-commande-court.md`, R1). Ni année ni zéros
+ * (plan `commandes/passation/plan-numero-de-commande-court.md`, R1). Ni année ni zéros
  * devant : il se dit et se tape au comptoir. Il ne se confond pas avec un
  * ancien numéro, qui porte deux tirets (`ORD-MV84O2XA-Y9W3`).
  *

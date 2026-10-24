@@ -11,7 +11,7 @@ export const ORDER_REVISED = "order.revised";
 
 /**
  * **« Une commande a été modifiée »** (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, M1, §5) — écrit
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, M1, §5) — écrit
  * dans la boîte d'envoi dans la transaction de la révision. Le journal en
  * garde le témoin (qui, quand, ce qui a changé, l'écart de total).
  *

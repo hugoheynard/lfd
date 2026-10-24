@@ -1,6 +1,6 @@
 /**
  * Les textes des e-mails de **la demande de modification d'une commande**
- * (plan `documentation/commandes/plan-modifier-une-commande.md`, M4) : le
+ * (plan `documentation/commandes/modification/plan-modifier-une-commande.md`, M4) : le
  * commerce a appliqué, ou refusé, ce que le client a demandé après l'heure
  * limite. Section par clé du registre (`B2bMails`).
  */

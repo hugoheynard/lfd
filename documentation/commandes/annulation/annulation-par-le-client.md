@@ -177,7 +177,7 @@ entre 0 et 168), auteur figé. L'écran dit « Imposer un délai aux
 particuliers » ; décoché : « Sans délai, les particuliers annulent jusqu'à
 l'arrêt du plan de production, comme les pros ». Routes `GET` / `PATCH /admin/customer-cancellation`, sous
 `lfc_order_settings` depuis le 2026-10-13 (avec l'heure limite,
-`../plan-reglages-commandes.md`). Écran du back-office
+`../passation/plan-reglages-commandes.md`). Écran du back-office
 `/reglages/commandes/annulation` (`reglages/commandes/customer-cancellation-page/`) ;
 l'ancienne `/b2b/reglages/commandes` y redirige. La
 valeur n'est pas datée : elle décide d'un geste au moment où il est fait, et le

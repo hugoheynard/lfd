@@ -1,6 +1,6 @@
 /**
  * Le cron demande d'annuler les commandes boutique restées non réglées au-delà
- * de leur délai (plan `documentation/commandes/commande-carte-reglee.md`,
+ * de leur délai (plan `documentation/commandes/reglement/commande-carte-reglee.md`,
  * §2.3, §4.5). Sans paramètre : l'instant est celui du `Clock`.
  */
 export class ExpireUnsettledShopOrdersCommand {}

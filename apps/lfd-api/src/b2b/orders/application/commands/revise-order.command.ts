@@ -3,7 +3,7 @@ import type { OrderContent } from "../services/order-content.js";
 
 /**
  * **Modifier une commande passée** (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, M1) — par le
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, M1) — par le
  * client, sous son mur et jusqu'à l'heure limite, ou par l'équipe, jusqu'à
  * l'inscription au fournil (R1).
  *

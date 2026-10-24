@@ -7,7 +7,7 @@ import { UnsettledShopOrderExpiry } from "../services/unsettled-shop-order-expir
 
 /**
  * **Une seule commande boutique en attente par particulier** (plan
- * `documentation/commandes/commande-carte-reglee.md`, §2.2, §4.4).
+ * `documentation/commandes/reglement/commande-carte-reglee.md`, §2.2, §4.4).
  *
  * Accroché au FAIT de passation et non aux deux handlers qui passent : le
  * remplacement ne peut ainsi jamais refuser la nouvelle commande — il tourne

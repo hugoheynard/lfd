@@ -14,7 +14,7 @@ import {
 /**
  * **L'heure limite opposée à un panier** — extraite d'`OrderDrafting` le
  * 2026-10-23 pour servir aussi la révision (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, R1), sans en faire
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, R1), sans en faire
  * une seconde copie.
  *
  * **Deux sources.** Chaque article peut porter la sienne, résolue par le
@@ -70,7 +70,7 @@ export class OrderCutoffGate {
   /**
    * La MÊME décision, sans refuser : ce que la vue d'une commande dit de sa
    * modification (« jusqu'à quand », ou « trop tard » — plan
-   * `documentation/commandes/plan-modifier-une-commande.md`, §6). Aucune
+   * `documentation/commandes/modification/plan-modifier-une-commande.md`, §6). Aucune
    * dérogation : la révision n'en dépense pas.
    */
   async decide(skus: readonly string[], fulfillmentDate: string): Promise<OrderCutoffDecision> {

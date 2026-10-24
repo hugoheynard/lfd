@@ -59,7 +59,7 @@ const NOT_FOUND = 404;
  * Un point de retrait n'est plus une adresse : il porte l'adresse, ses heures,
  * sa réduction et les clientèles de cette réduction — et il
  * recevra ses créneaux publics, leurs badges, leurs capacités et les fermetures
- * datées (`documentation/commandes/plan-creneaux-de-retrait.md`). Six sujets, bientôt
+ * datées (`documentation/commandes/passation/plan-creneaux-de-retrait.md`). Six sujets, bientôt
  * huit, qu'on ne lit pas de haut en bas : on va directement à celui qu'on vient
  * régler. C'est le critère qui sépare une page d'un panneau dans ce
  * back-office, où six pages de détail suivent déjà ce motif. Décidé avec Hugo

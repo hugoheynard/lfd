@@ -51,7 +51,7 @@ export class AdminOrderCutoffWaiversController {
   /**
    * Toutes les dérogations dont la journée n'est pas passée, servies ou non —
    * la liste de Réglages › Commandes › Heure limite
-   * (`documentation/commandes/plan-reglages-commandes.md`, lot O1c). Même
+   * (`documentation/commandes/passation/plan-reglages-commandes.md`, lot O1c). Même
    * ressource que l'accord : la règle (`lfc_order_settings`) et l'exception
    * ne sont pas le même droit.
    */

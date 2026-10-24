@@ -4,11 +4,11 @@
 > voir « Ce qui est bâti » sous §5. **L2 bâti en partie le 2026-10-14 (non
 > commité à l'écriture)** : le colisage est rangé par heure « prête pour » ; le
 > tri de la liste `/commandes` attend Q2. L4 est hors du chantier. Les couleurs qu'il lit existent sur les sites
-> ([`../sites/sites.md`](../sites/sites.md), ✅). Écrit d'abord ici comme
+> ([`../../sites/sites.md`](../../sites/sites.md), ✅). Écrit d'abord ici comme
 > « écart logistique », fusionné le même jour dans un plan commun avec les
 > sites et le transfert interne, puis redécoupé le 2026-10-13 (Hugo) : le
 > site a sa doc d'état, le transfert son plan
-> ([`../livraisons/transferts/plan-transfert-interne.md`](../livraisons/transferts/plan-transfert-interne.md)),
+> ([`../../livraisons/transferts/plan-transfert-interne.md`](../../livraisons/transferts/plan-transfert-interne.md)),
 > et ce document garde la demande de la logistique.
 >
 > **Pourquoi dans `commandes/`** : l'écran visé est une liste de commandes,
@@ -106,11 +106,11 @@ Deux candidats, aucun ne colle tel quel :
    (`apps/lfc-ecommerce-frontend/src/app/legacy/contact/contact-panel/contact-panel.html`),
    qui recueille déjà nom, e-mail, téléphone, motif et texte
    (`CustomerRequest`, doc
-   [`../demandes-client/demandes-clients.md`](../demandes-client/demandes-clients.md)).
+   [`../../demandes-client/demandes-clients.md`](../../demandes-client/demandes-clients.md)).
 2. **La saisie d'une commande par l'équipe** : `/comptoir/nouvelle-commande`
    ne saisit rien, elle cherche un compte pro actif puis passe la main à
    `commandes/nouvelle-commande/`
-   ([`architecture-commande-saisie-par-l-equipe.md`](architecture-commande-saisie-par-l-equipe.md)).
+   ([`architecture-commande-saisie-par-l-equipe.md`](../passation/architecture-commande-saisie-par-l-equipe.md)).
    **Aucun formulaire** pour un client sans compte.
 
 Lecture la plus probable : le second. Hugo a mis la question de côté le
@@ -195,7 +195,7 @@ lot.
 ## 4. La couleur de chaque commande
 
 Toutes sur le site, sous `lfc_site_settings`
-([`../sites/sites.md`](../sites/sites.md) §3) :
+([`../../sites/sites.md`](../../sites/sites.md) §3) :
 
 | Catégorie                                       | Couleur (demande) | Où elle vit                                                                |
 | ----------------------------------------------- | ----------------- | -------------------------------------------------------------------------- |
@@ -305,7 +305,7 @@ même raison, et ses cadres intérieurs portent les deux couleurs de retrait
 (2026-10-14).
 
 Le tri du colisage par `dueAt` répond, pour le village, à la question 1 de
-[`../colisage/todo-colisage-tri-par-echeance.md`](../colisage/todo-colisage-tri-par-echeance.md).
+[`../../colisage/todo-colisage-tri-par-echeance.md`](../../colisage/todo-colisage-tri-par-echeance.md).
 
 ### Ce qui est bâti de L2 (2026-10-14, non commité à l'écriture)
 

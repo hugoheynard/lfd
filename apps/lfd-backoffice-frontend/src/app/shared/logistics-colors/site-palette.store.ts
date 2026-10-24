@@ -6,7 +6,7 @@ import { SitePaletteService } from './site-palette.service';
 
 /**
  * **La palette des sites, à l'écran** — source réactive unique des couleurs
- * de la logistique (plan `commandes/plan-tri-depart-et-couleurs.md`, L1b).
+ * de la logistique (plan `commandes/back-office/plan-tri-depart-et-couleurs.md`, L1b).
  *
  * Relue À CHAQUE écran qui s'ouvre (`refresh()`), jamais au démarrage : tout
  * le monde n'a pas le droit de la lire, et une couleur changée en Réglages ›

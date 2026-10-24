@@ -6,7 +6,7 @@ import type { CollectionProcedureInvoicesView, ProcedureOrderView } from "@lfd/c
  *
  * `issuableCount` : les réceptions confirmées — celles que l'émission
  * prendra (l'assiette lit `received_on`, que la base impose à toute remise
- * depuis B4 de `documentation/commandes/date-de-reception.md`).
+ * depuis B4 de `documentation/commandes/la-commande/date-de-reception.md`).
  */
 export function procedureOrdersView(
   orders: readonly ProcedureOrderView[],

@@ -13,7 +13,7 @@ export interface OpenCutoffWaiverEntry {
 
 /**
  * Port de **lecture** des dérogations encore d'actualité, toutes sociétés
- * confondues (`documentation/commandes/plan-reglages-commandes.md`, lot O1c).
+ * confondues (`documentation/commandes/passation/plan-reglages-commandes.md`, lot O1c).
  *
  * Un port à part, et pas une méthode de plus sur `OrderCutoffWaiverRepository`
  * (ISP) : la liste de Réglages ne fait que lire, et accorder ou retirer reste

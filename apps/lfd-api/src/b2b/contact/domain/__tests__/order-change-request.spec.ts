@@ -31,7 +31,7 @@ function changeDetails(request: ReturnType<typeof orderChange>): OrderChangeDeta
 
 /**
  * La demande de modification d'une commande (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, M4) : une réponse,
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, M4) : une réponse,
  * une seule — appliquée ou refusée avec un mot —, jamais « traitée » sans
  * réponse, et rien à appliquer une fois anonymisée.
  */

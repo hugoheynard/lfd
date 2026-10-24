@@ -3,7 +3,7 @@ import { OrderCollection, type OrderCollectionStateName } from "../order-collect
 
 /**
  * La ligne d'encaissement d'une commande au compte MODIFIÉE (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, M1) : elle prend le
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, M1) : elle prend le
  * nouveau total tant qu'elle n'est pas engagée, et refuse sinon. L'instant
  * n'est que recopié.
  */

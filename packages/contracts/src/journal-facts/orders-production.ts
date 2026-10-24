@@ -339,7 +339,7 @@ export const ORDERS_PRODUCTION_FACTS = {
   ),
   /**
    * Le client a **abandonné le règlement** de sa commande en quittant l'écran
-   * de carte (plan `documentation/commandes/architecture-abandon-du-reglement.md`, D1).
+   * de carte (plan `documentation/commandes/reglement/architecture-abandon-du-reglement.md`, D1).
    * Le sujet est ce client, seul à pouvoir le faire (Q2). `cancelled` : la
    * commande d'un particulier est annulée ; `failed` : celle d'un pro garde
    * son statut, son seul règlement est tombé (D4).
@@ -406,7 +406,7 @@ export const ORDERS_PRODUCTION_FACTS = {
   ),
   /**
    * La commande a été **modifiée** avant son inscription au fournil (plan
-   * `documentation/commandes/plan-modifier-une-commande.md`, M1, 2026-10-23).
+   * `documentation/commandes/modification/plan-modifier-une-commande.md`, M1, 2026-10-23).
    * Le sujet est le client ; `revision` la révision devenue courante (`1` à la
    * première modification) ; `revisedBy` la fiche staff qui a modifié, sous
    * son nom du moment, ou `null` quand c'est le client — alors cité en

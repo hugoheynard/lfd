@@ -30,7 +30,7 @@ const REFERENCE_OFFSET_UNDER_RULE = 9 * MM;
  * dates cadrées à droite. Le logo dit qui émet — « La Folie Coffee — B2B » et
  * « EXEMPLAIRE CHIFFRÉ » sont retirés (Hugo, 2026-10-09).
  *
- * Depuis le 2026-10-13 (Hugo, plan `commandes/plan-tri-depart-et-couleurs.md`,
+ * Depuis le 2026-10-13 (Hugo, plan `commandes/back-office/plan-tri-depart-et-couleurs.md`,
  * L5) : un trait épais de la couleur de la commande entre « Bon de commande »
  * et son numéro. Sans couleur, l'en-tête est celui d'avant, au point près.
  *

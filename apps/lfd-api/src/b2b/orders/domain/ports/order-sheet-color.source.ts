@@ -1,6 +1,6 @@
 /**
  * **La couleur du bon de commande** — le trait épais entre le titre et le
- * numéro (plan `commandes/plan-tri-depart-et-couleurs.md`, L5, revu par Hugo
+ * numéro (plan `commandes/back-office/plan-tri-depart-et-couleurs.md`, L5, revu par Hugo
  * le 2026-10-13). `null` : pas de trait.
  *
  * Un port, comme le logo : le rendu reste pur et déterministe, l'adaptateur

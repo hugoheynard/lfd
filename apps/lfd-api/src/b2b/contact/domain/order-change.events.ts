@@ -7,7 +7,7 @@ import type { AppliedOrderChange } from "./ports/order-change.applier.js";
 
 /**
  * **Les faits de la demande de modification** (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, M4). Le sujet est
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, M4). Le sujet est
  * la COMMANDE, nommée par son numéro ; la demande y est citée par son id.
  * Rien de l'auteur : la demande s'anonymise, le journal non.
  */

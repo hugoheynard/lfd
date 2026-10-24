@@ -9,7 +9,7 @@ import type { OrderSummaryPeriod } from "./order-summary-period.js";
 
 /**
  * **Ce que le PDF et le tableur du récapitulatif disent en commun** (plan
- * `documentation/commandes/plan-recapitulatif-des-commandes.md`, lot R2) — les
+ * `documentation/commandes/boutique/plan-recapitulatif-des-commandes.md`, lot R2) — les
  * mots, l'ordre du bas, le nom du fichier. Les deux rendus en dérivent : un
  * libellé changé ici change aux deux endroits, et ils ne se contredisent pas.
  */

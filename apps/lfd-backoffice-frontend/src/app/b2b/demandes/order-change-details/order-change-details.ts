@@ -39,7 +39,7 @@ type QuoteState =
 
 /**
  * **Les détails d'une demande de modification de commande** (plan
- * `documentation/commandes/plan-modifier-une-commande.md`, M4) — la commande,
+ * `documentation/commandes/modification/plan-modifier-une-commande.md`, M4) — la commande,
  * l'écart que la modification demandée donnerait (le devis de révision de
  * l'équipe : total actuel, nouveau total, ce qui change, les lignes), puis
  * « Appliquer » ou « Refuser » avec un mot au client.
