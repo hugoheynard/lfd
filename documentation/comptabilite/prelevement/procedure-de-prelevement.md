@@ -111,6 +111,23 @@ _Si on l'oublie_ : sans contrat, le fichier est inutilisable ; sans limite, un
 dépôt tardif décale l'échéance chez la banque (« recalculée à J+2 », réponse 22)
 alors que l'avis envoyé au débiteur annonçait l'ancienne date.
 
+**Le délai de notification est le seul nombre de jours de la carte**
+(Hugo, 2026-10-24). Le champ « Délai de notification (jours entre la clôture
+et le prélèvement) », dans la même carte « Prélèvement automatique » que la
+limite de dépôt, fixe à la fois l'avis au client et l'échéance : clôture + N,
+reportée au jour ouvré TARGET2. Il n'y a plus de réglage « Pré-notification »
+séparé sur la fiche, ni d'avertissement « plus court que le délai d'avis ».
+**Au moins 3 jours** (`PRE_NOTIFICATION_MIN_DAYS`, refus 400 en dessous) ; un
+délai de moins de 14 jours demande la clause dans les CGV et le mandat.
+« Enregistrer » écrit N dans `legal_entities.pre_notification_days` et remet
+l'échéance propre (`collection_days_after_closure`) à vide — par les deux
+routes existantes, le calendrier d'abord, le délai ensuite, ordre qui ne
+traverse jamais un état refusé. Une entité qui portait une échéance distincte
+n'est pas réécrite en base : l'écran montre sa valeur effective et
+l'enregistrement aligne les deux. Une entité réglée à 1 ou 2 jours avant cette
+date se relit telle quelle, mais l'écran demande 3 jours ou plus au prochain
+enregistrement.
+
 Les deux imports de départ ont leurs propres documents, en cours d'écriture le
 2026-10-23 et non recopiés ici : [`prerequis-export-ribs.md`](prerequis-export-ribs.md)
 (comptes destinataires) et [`prerequis-export-mandats.md`](prerequis-export-mandats.md)

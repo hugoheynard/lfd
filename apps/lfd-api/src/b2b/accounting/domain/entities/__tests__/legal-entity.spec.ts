@@ -193,8 +193,24 @@ describe("LegalEntity — encaisser demande tout", () => {
 describe("LegalEntity — le délai de pré-notification", () => {
   it("se règle par entité : c'est une négociation bancaire, pas un déploiement", () => {
     const entity = collecting();
-    entity.setPreNotificationDays(2);
-    expect(entity.creditorSnapshot().preNotificationDays).toBe(2);
+    entity.setPreNotificationDays(5);
+    expect(entity.creditorSnapshot().preNotificationDays).toBe(5);
+  });
+
+  it("refuse moins de 3 jours, en le disant (Hugo, 2026-10-24)", () => {
+    const entity = collecting();
+    expect(() => entity.setPreNotificationDays(2)).toThrow(/au moins 3 jours/u);
+    expect(() => entity.setPreNotificationDays(1)).toThrow(InvalidLegalEntityError);
+    entity.setPreNotificationDays(3);
+    expect(entity.creditorSnapshot().preNotificationDays).toBe(3);
+  });
+
+  it("relit telle quelle une entité réglée à 2 jours avant le minimum de 3", () => {
+    const legacy = LegalEntity.reconstitute({
+      ...collecting().toPersistence(),
+      preNotificationDays: 2,
+    });
+    expect(legacy.creditorSnapshot().preNotificationDays).toBe(2);
   });
 
   it("refuse un délai nul, négatif, fractionnaire ou déraisonnable", () => {

@@ -58,25 +58,19 @@
       <p class="cs-said">{{ delayHint() }}</p>
 
       <fold-number-input
-        label="Jours entre la clôture et le prélèvement"
+        label="Délai de notification (jours entre la clôture et le prélèvement)"
         [hint]="
-          'Ne peut pas être plus court que le délai d’avis à vos clients (' +
-          entity().preNotificationDays +
-          ' jours). Un délai plus court demande la clause dans vos CGV et le mandat.'
+          'Vos clients sont avisés à la clôture et prélevés ce nombre de jours plus tard. Au moins ' +
+          minDays +
+          ' jours. Un délai de moins de 14 jours demande la clause dans vos CGV et le mandat.'
         "
         integer
-        [min]="1"
+        [min]="minDays"
         [max]="maxDays"
         [value]="daysDraft()"
         (valueChange)="daysDraft.set($event)"
       />
       <p class="cs-said">{{ daysHint() }}</p>
-      @if (daysTooShort()) {
-        <fold-callout variant="warning">
-          Plus court que le délai d'avis à vos clients ({{ entity().preNotificationDays }} jours) :
-          l'enregistrement sera refusé.
-        </fold-callout>
-      }
     </section>
 
     <section class="cs-block" aria-labelledby="cs-deposit-title">
@@ -107,7 +101,7 @@
     <div class="cs-actions">
       <button
         foldButton
-        [disabled]="busy() || cutoffIncomplete() || delayDraft() === null"
+        [disabled]="busy() || cutoffIncomplete() || delayDraft() === null || daysOutOfRange()"
         (click)="saveSchedule()"
       >
         Enregistrer

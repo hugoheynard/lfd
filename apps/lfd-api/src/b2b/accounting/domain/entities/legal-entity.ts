@@ -31,7 +31,13 @@ import { InvoicePrefix } from "../value-objects/invoice-prefix.js";
  * **par contrat** avec la banque, et c'est ce qui rend un cycle mensuel tenable.
  */
 export const PRE_NOTIFICATION_DEFAULT_DAYS = 14;
-export const PRE_NOTIFICATION_MIN_DAYS = 1;
+/**
+ * Trois jours au moins (Hugo, 2026-10-24) : en dessous, l'avis et le débit se
+ * croisent presque, et le client n'a pas le temps de provisionner. Une entité
+ * déjà réglée à 1 ou 2 jours se relit telle quelle — seul un nouvel
+ * enregistrement est refusé.
+ */
+export const PRE_NOTIFICATION_MIN_DAYS = 3;
 export const PRE_NOTIFICATION_MAX_DAYS = 60;
 
 /** L'identité déclarée à la création. Les coordonnées bancaires viennent après. */
@@ -390,7 +396,9 @@ export class LegalEntity {
     ) {
       throw new InvalidLegalEntityError(
         "Délai de pré-notification",
-        `entier entre ${PRE_NOTIFICATION_MIN_DAYS} et ${PRE_NOTIFICATION_MAX_DAYS} jours attendu`,
+        `au moins ${PRE_NOTIFICATION_MIN_DAYS} jours (le client doit avoir le temps de lire l'avis ` +
+          `et de provisionner son compte) et au plus ${PRE_NOTIFICATION_MAX_DAYS} jours, en nombre ` +
+          `entier — saisissez un délai dans ces bornes`,
       );
     }
     // Porter le délai au-dessus d'une échéance déjà réglée est le même refus

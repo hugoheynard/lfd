@@ -8,7 +8,8 @@ import { z } from "zod";
  * au champ de saisie — un écran qui laisse taper 400 pour se faire répondre non
  * par le serveur est un écran qui fait perdre une saisie.
  */
-export const PRE_NOTIFICATION_MIN_DAYS = 1;
+/** Trois jours au moins depuis le 2026-10-24 (Hugo). */
+export const PRE_NOTIFICATION_MIN_DAYS = 3;
 export const PRE_NOTIFICATION_MAX_DAYS = 60;
 
 /**

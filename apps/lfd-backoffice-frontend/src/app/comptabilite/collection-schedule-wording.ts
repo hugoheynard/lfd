@@ -72,22 +72,18 @@ function collectionDayAfter(days: number): string {
   return date <= LAST_SAFE_DAY_OF_MONTH ? `le ${date}` : `${days} jours après le 1er`;
 }
 
-/** L'exemple du délai entre la clôture et le prélèvement, vide compris. */
-export function daysExample(days: number | null, noticeDays: number): string {
-  const effective = days ?? noticeDays;
-  const prefix =
-    days === null
-      ? `Laissé vide : ${noticeDays} jours, le délai d’avis à vos clients. `
-      : 'Exemple : ';
+/**
+ * L'exemple du délai de notification : le même nombre de jours fixe l'avis au
+ * client et l'échéance (Hugo, 2026-10-24).
+ */
+export function daysExample(days: number | null): string {
+  if (days === null) {
+    return 'Indiquez un nombre de jours.';
+  }
   return (
-    `${prefix}clôture le 1er + ${effective} jours → prélèvement ${collectionDayAfter(effective)}` +
-    ' (ou le jour ouvré bancaire suivant si la banque est fermée).'
+    `Exemple : clôture le 1er + ${days} jours → vos clients sont avisés à la clôture, ` +
+    `prélèvement ${collectionDayAfter(days)} (ou le jour ouvré bancaire suivant si la banque est fermée).`
   );
-}
-
-/** Vrai quand la saisie précède la fin du délai d'avis — le serveur la refusera. */
-export function daysTooShort(days: number | null, noticeDays: number): boolean {
-  return days !== null && days < noticeDays;
 }
 
 /** L'exemple de la limite de dépôt, ou ce qu'il manque pour le donner. */

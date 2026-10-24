@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 import {
   collectionSteps,
   daysExample,
-  daysTooShort,
   delayExample,
   depositExample,
 } from '../collection-schedule-wording';
@@ -37,17 +36,11 @@ describe('les mots du calendrier de prélèvement', () => {
     expect(delayExample(null)).toBe('Indiquez un nombre d’heures.');
   });
 
-  it('la clôture + N jours, vide = le délai d’avis, et au-delà du 28 on parle en jours', () => {
-    expect(daysExample(9, 14)).toContain('clôture le 1er + 9 jours → prélèvement le 10');
-    expect(daysExample(null, 14)).toContain('Laissé vide : 14 jours');
-    expect(daysExample(null, 14)).toContain('prélèvement le 15');
-    expect(daysExample(40, 14)).toContain('prélèvement 40 jours après le 1er');
-  });
-
-  it('un délai plus court que l’avis est signalé, vide ne l’est pas', () => {
-    expect(daysTooShort(9, 14)).toBe(true);
-    expect(daysTooShort(14, 14)).toBe(false);
-    expect(daysTooShort(null, 14)).toBe(false);
+  it('le délai de notification : clôture + N jours, et au-delà du 28 on parle en jours', () => {
+    expect(daysExample(9)).toContain('clôture le 1er + 9 jours');
+    expect(daysExample(9)).toContain('prélèvement le 10');
+    expect(daysExample(40)).toContain('prélèvement 40 jours après le 1er');
+    expect(daysExample(null)).toBe('Indiquez un nombre de jours.');
   });
 
   it('la limite de dépôt : absente, à moitié, complète', () => {

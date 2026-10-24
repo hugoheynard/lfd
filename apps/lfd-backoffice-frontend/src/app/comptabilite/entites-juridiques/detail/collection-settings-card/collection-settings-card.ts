@@ -11,10 +11,11 @@ import {
 import {
   AUTO_COLLECTION_DELAY_MAX_HOURS,
   AUTO_COLLECTION_DELAY_MIN_HOURS,
-  COLLECTION_DAYS_MAX,
   DEPOSIT_CUTOFF_MAX_BUSINESS_DAYS,
   DEPOSIT_CUTOFF_MIN_BUSINESS_DAYS,
   type LegalEntityView,
+  PRE_NOTIFICATION_MAX_DAYS,
+  PRE_NOTIFICATION_MIN_DAYS,
   type SetCollectionSchedulePayload,
 } from '@lfd/contracts';
 import {
@@ -29,7 +30,6 @@ import { AutopilotLastRun } from '../../../autopilot-last-run/autopilot-last-run
 import { CollectionCalendar } from '../../../collection-calendar/collection-calendar';
 import {
   daysExample,
-  daysTooShort,
   delayExample,
   depositExample,
   tightDepositMarginSentence,
@@ -47,11 +47,19 @@ import { LegalEntitiesService } from '../../../legal-entities.service';
  * AFFICHE, il ne les recalcule pas. Un second calcul de Pâques côté front
  * finirait par dire une autre date que le fichier déposé.
  *
- * ## Le refus « N < délai » est celui du serveur
+ * ## Un seul délai : la notification ET l'échéance (Hugo, 2026-10-24)
  *
- * La carte ne valide que la forme. La règle — l'échéance ne précède pas la
- * fin du préavis — est dans l'agrégat, dont le message nomme les deux
- * valeurs et la clause des CGV ; la page l'affiche tel quel.
+ * « Délai de notification » est le seul nombre de jours de l'écran : il fixe
+ * l'avis au client et l'échéance (clôture + N, reportée au jour ouvré
+ * TARGET2). « Enregistrer » écrit N dans le délai de pré-notification et
+ * remet l'échéance propre à `null` (= le délai). Une entité qui portait une
+ * échéance distincte s'affiche à sa valeur EFFECTIVE, et s'aligne au premier
+ * enregistrement.
+ *
+ * Deux routes existantes, dans CET ordre : le calendrier d'abord (échéance
+ * `null`, qui ne contredit jamais aucun délai), puis le délai. L'ordre inverse
+ * serait refusé (409) dès que N dépasse l'ancienne échéance. Si le second
+ * appel échoue, l'état intermédiaire reste valide : échéance = ancien délai.
  *
  * ## L'automatisme a son propre bouton
  *
@@ -89,13 +97,14 @@ export class CollectionSettingsCard {
 
   protected readonly minDelay = AUTO_COLLECTION_DELAY_MIN_HOURS;
   protected readonly maxDelay = AUTO_COLLECTION_DELAY_MAX_HOURS;
-  protected readonly maxDays = COLLECTION_DAYS_MAX;
+  protected readonly minDays = PRE_NOTIFICATION_MIN_DAYS;
+  protected readonly maxDays = PRE_NOTIFICATION_MAX_DAYS;
   protected readonly minCutoff = DEPOSIT_CUTOFF_MIN_BUSINESS_DAYS;
   protected readonly maxCutoff = DEPOSIT_CUTOFF_MAX_BUSINESS_DAYS;
   protected readonly marginSentence = tightDepositMarginSentence;
 
   protected readonly delayDraft = signal<number | null>(null);
-  /** Vide = l'échéance suit le délai de pré-notification. */
+  /** Le délai de notification — à la fois l'avis et l'échéance. */
   protected readonly daysDraft = signal<number | null>(null);
   protected readonly cutoffDaysDraft = signal<number | null>(null);
   protected readonly cutoffTimeDraft = signal('');
@@ -106,12 +115,15 @@ export class CollectionSettingsCard {
   );
 
   protected readonly delayHint = computed(() => delayExample(this.delayDraft()));
-  protected readonly daysHint = computed(() =>
-    daysExample(this.daysDraft(), this.entity().preNotificationDays),
-  );
-  protected readonly daysTooShort = computed(() =>
-    daysTooShort(this.daysDraft(), this.entity().preNotificationDays),
-  );
+  protected readonly daysHint = computed(() => daysExample(this.daysDraft()));
+  /**
+   * Hors bornes : une entité réglée à 1 ou 2 jours avant le minimum de 3 se
+   * relit telle quelle, mais ne se réenregistre pas sans le relever.
+   */
+  protected readonly daysOutOfRange = computed(() => {
+    const days = this.daysDraft();
+    return days === null || days < this.minDays || days > this.maxDays;
+  });
   protected readonly depositHint = computed(() =>
     depositExample(this.cutoffDaysDraft(), this.cutoffTimeDraft()),
   );
@@ -120,7 +132,7 @@ export class CollectionSettingsCard {
     effect(() => {
       const current = this.entity();
       this.delayDraft.set(current.autoCollectionDelayHours);
-      this.daysDraft.set(current.collectionDaysAfterClosure);
+      this.daysDraft.set(current.collectionDaysAfterClosure ?? current.preNotificationDays);
       this.cutoffDaysDraft.set(current.depositCutoff?.businessDaysBefore ?? null);
       this.cutoffTimeDraft.set(current.depositCutoff?.time ?? '');
     });
@@ -128,21 +140,28 @@ export class CollectionSettingsCard {
 
   protected saveSchedule(): void {
     const delayHours = this.delayDraft();
-    if (delayHours === null || this.cutoffIncomplete()) {
+    const days = this.daysDraft();
+    if (delayHours === null || days === null || this.cutoffIncomplete() || this.daysOutOfRange()) {
       return;
     }
     const cutoffDays = this.cutoffDaysDraft();
     const payload: SetCollectionSchedulePayload = {
       delayHours,
-      daysAfterClosure: this.daysDraft(),
+      daysAfterClosure: null,
       depositCutoff:
         cutoffDays === null
           ? null
           : { businessDaysBefore: cutoffDays, time: this.cutoffTimeDraft().trim() },
     };
-    const id = this.entity().id;
+    const { id, preNotificationDays } = this.entity();
     this.saved.emit({
-      action: () => this.api.setCollectionSchedule(id, payload),
+      action: async () => {
+        await this.api.setCollectionSchedule(id, payload);
+        // Un délai inchangé n'est pas un fait : on ne le réécrit pas.
+        if (days !== preNotificationDays) {
+          await this.api.setPreNotification(id, { days });
+        }
+      },
       said: 'Calendrier de prélèvement enregistré.',
     });
   }

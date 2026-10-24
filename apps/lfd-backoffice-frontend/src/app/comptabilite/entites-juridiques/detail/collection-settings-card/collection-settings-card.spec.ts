@@ -4,6 +4,7 @@ import type {
   LegalEntityView,
   SetAutoCollectionPayload,
   SetCollectionSchedulePayload,
+  SetPreNotificationPayload,
 } from '@lfd/contracts';
 import { FoldInputComponent, FoldNumberInputComponent } from 'fold-ng';
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -78,13 +79,16 @@ function entity(over: Partial<LegalEntityView> = {}): LegalEntityView {
 interface Wire {
   schedules: { id: string; payload: SetCollectionSchedulePayload }[];
   autos: { id: string; payload: SetAutoCollectionPayload }[];
+  /** Tous les appels, dans l'ordre — l'ordre est la garantie. */
+  calls: string[];
+  notices: { id: string; payload: SetPreNotificationPayload }[];
   saved: { action: () => Promise<unknown>; said: string }[];
 }
 
 let wire: Wire;
 
 function boot(over: Partial<LegalEntityView> = {}): ComponentFixture<CollectionSettingsCard> {
-  wire = { schedules: [], autos: [], saved: [] };
+  wire = { schedules: [], autos: [], saved: [], calls: [], notices: [] };
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [CollectionSettingsCard],
@@ -94,6 +98,12 @@ function boot(over: Partial<LegalEntityView> = {}): ComponentFixture<CollectionS
         useValue: {
           setCollectionSchedule: (id: string, payload: SetCollectionSchedulePayload) => {
             wire.schedules.push({ id, payload });
+            wire.calls.push('schedule');
+            return Promise.resolve();
+          },
+          setPreNotification: (id: string, payload: SetPreNotificationPayload) => {
+            wire.notices.push({ id, payload });
+            wire.calls.push('notice');
             return Promise.resolve();
           },
           setAutoCollection: (id: string, payload: SetAutoCollectionPayload) => {
@@ -156,7 +166,7 @@ function button(
   return found;
 }
 
-const DAYS = 'Jours entre la clôture et le prélèvement';
+const DAYS = 'Délai de notification (jours entre la clôture et le prélèvement)';
 const CUTOFF_DAYS = 'Jours ouvrés bancaires avant le prélèvement';
 
 describe('CollectionSettingsCard — le prélèvement automatique', () => {
@@ -195,13 +205,39 @@ describe('CollectionSettingsCard — le prélèvement automatique', () => {
     expect((fixture.nativeElement as HTMLElement).querySelector('[data-autopilot-run]')).toBeNull();
   });
 
-  it('calcule l’exemple en direct depuis la saisie, et le délai d’avis quand c’est vide', () => {
+  it('un seul champ de jours, nommé « Délai de notification », borné à 3 au moins', () => {
     const fixture = boot();
-    expect(text(fixture)).toContain('Laissé vide : 14 jours');
+    const days = fixture.debugElement
+      .queryAll(By.directive(FoldNumberInputComponent))
+      .map((node) => (node.componentInstance as FoldNumberInputComponent).label())
+      .filter((label) => (label ?? '').includes('jours') && !(label ?? '').includes('ouvrés'));
+
+    expect(days).toEqual([DAYS]);
+    expect((numberInput(fixture, DAYS).componentInstance as FoldNumberInputComponent).min()).toBe(
+      3,
+    );
+  });
+
+  it('montre le délai effectif, l’exemple en direct, et plus jamais « plus court que le délai d’avis »', () => {
+    const fixture = boot({ collectionDaysAfterClosure: 20 });
+    expect((numberInput(fixture, DAYS).componentInstance as FoldNumberInputComponent).value()).toBe(
+      20,
+    );
 
     type(fixture, DAYS, 9);
-    expect(text(fixture)).toContain('clôture le 1er + 9 jours → prélèvement le 10');
-    expect(text(fixture)).toContain("l'enregistrement sera refusé");
+    expect(text(fixture)).toContain('clôture le 1er + 9 jours');
+    expect(text(fixture)).toContain('prélèvement le 10');
+    expect(text(fixture)).not.toContain('délai d’avis');
+    expect(text(fixture)).not.toContain("délai d'avis");
+    expect(text(fixture)).not.toContain("l'enregistrement sera refusé");
+  });
+
+  it('une entité réglée à 2 jours se lit, mais ne se réenregistre pas sans passer à 3', () => {
+    const fixture = boot({ preNotificationDays: 2 });
+
+    expect(button(fixture, 'Enregistrer').disabled).toBe(true);
+    type(fixture, DAYS, 3);
+    expect(button(fixture, 'Enregistrer').disabled).toBe(false);
   });
 
   it('affiche la date limite de dépôt quand elle est renseignée', () => {
@@ -240,8 +276,8 @@ describe('CollectionSettingsCard — le prélèvement automatique', () => {
     expect(warned(null)).toBeNull();
   });
 
-  it('enregistre le calendrier saisi, cut-off compris', async () => {
-    const fixture = boot();
+  it('enregistre : échéance remise au délai PUIS délai réglé, cut-off compris', async () => {
+    const fixture = boot({ collectionDaysAfterClosure: 10 });
     type(fixture, DAYS, 20);
     type(fixture, CUTOFF_DAYS, 2);
     typeTime(fixture, '16:00');
@@ -249,16 +285,29 @@ describe('CollectionSettingsCard — le prélèvement automatique', () => {
     button(fixture, 'Enregistrer').click();
     await wire.saved[0]?.action();
 
+    expect(wire.calls).toEqual(['schedule', 'notice']);
     expect(wire.schedules).toEqual([
       {
         id: 'le1',
         payload: {
           delayHours: 1,
-          daysAfterClosure: 20,
+          daysAfterClosure: null,
           depositCutoff: { businessDaysBefore: 2, time: '16:00' },
         },
       },
     ]);
+    expect(wire.notices).toEqual([{ id: 'le1', payload: { days: 20 } }]);
+  });
+
+  it('un délai inchangé ne se réécrit pas : seul le calendrier part', async () => {
+    const fixture = boot({ collectionDaysAfterClosure: 20 });
+    type(fixture, DAYS, 14);
+
+    button(fixture, 'Enregistrer').click();
+    await wire.saved[0]?.action();
+
+    expect(wire.calls).toEqual(['schedule']);
+    expect(wire.schedules[0]?.payload.daysAfterClosure).toBeNull();
   });
 
   it('refuse d’enregistrer un cut-off à moitié saisi, et le dit', () => {

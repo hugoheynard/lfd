@@ -160,6 +160,32 @@ describe("le calendrier de prélèvement de l'entité", () => {
     expect((await read(id)).preNotificationDays).toBe(14);
   });
 
+  it("refuse en 400 un délai de pré-notification de moins de 3 jours (Hugo, 2026-10-24)", async () => {
+    const id = await declare();
+
+    await staff().put(`${BASE}/${id}/pre-notification`).send({ days: 2 }).expect(400);
+
+    expect((await read(id)).preNotificationDays).toBe(14);
+  });
+
+  it("aligne échéance et délai dans l'ordre de l'écran : N remis au délai, puis le délai réglé", async () => {
+    const id = await declare();
+    await staff()
+      .put(`${BASE}/${id}/collection-schedule`)
+      .send({ ...SCHEDULE, daysAfterClosure: 20 })
+      .expect(204);
+
+    await staff()
+      .put(`${BASE}/${id}/collection-schedule`)
+      .send({ ...SCHEDULE, daysAfterClosure: null })
+      .expect(204);
+    await staff().put(`${BASE}/${id}/pre-notification`).send({ days: 25 }).expect(204);
+
+    const entity = await read(id);
+    expect(entity.collectionDaysAfterClosure).toBeNull();
+    expect(entity.preNotificationDays).toBe(25);
+  });
+
   it("refuse en 400 un délai de constitution qui passerait au lendemain", async () => {
     const id = await declare();
 

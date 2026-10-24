@@ -8,7 +8,6 @@ import {
   signal,
 } from '@angular/core';
 import type { DeclareLegalEntityPayload, LegalEntityView } from '@lfd/contracts';
-import { PRE_NOTIFICATION_MAX_DAYS, PRE_NOTIFICATION_MIN_DAYS } from '@lfd/contracts';
 import {
   FoldBackLinkComponent,
   FoldBadgeComponent,
@@ -22,7 +21,6 @@ import {
   FoldInlineConfirmComponent,
   FoldInputComponent,
   FoldLoadingStateComponent,
-  FoldNumberInputComponent,
   FoldPageLayoutComponent,
   FoldPageSectionComponent,
   FoldPanelHostService,
@@ -102,7 +100,6 @@ import { SampleMandateActions } from './sample-mandate-actions/sample-mandate-ac
     AccountBankExportCard,
     MandateBankExportCard,
     FoldLoadingStateComponent,
-    FoldNumberInputComponent,
     FoldPageLayoutComponent,
     FoldPageSectionComponent,
   ],
@@ -124,16 +121,7 @@ export class LegalEntityDetailPage {
   /** L'échec de la LECTURE, distinct d'un échec d'écriture : rien à l'écran. */
   protected readonly loadFailed = signal(false);
 
-  protected readonly minDays = PRE_NOTIFICATION_MIN_DAYS;
-  protected readonly maxDays = PRE_NOTIFICATION_MAX_DAYS;
-
   protected readonly icsDraft = signal('');
-  protected readonly daysDraft = signal<number | null>(null);
-
-  /** Le délai en cours d'édition, ou celui que porte l'entité. */
-  protected readonly days = computed(
-    () => this.daysDraft() ?? this.entity()?.preNotificationDays ?? null,
-  );
 
   /**
    * L'état affiché à côté du titre — la MÊME formulation que la colonne « État »
@@ -186,17 +174,6 @@ export class LegalEntityDetailPage {
     await this.run(
       () => this.api.assignCreditorIdentifier(entity.id, { ics }),
       'Identifiant créancier enregistré.',
-    );
-  }
-
-  protected async savePreNotification(entity: LegalEntityView): Promise<void> {
-    const days = this.days();
-    if (days === null) {
-      return;
-    }
-    await this.run(
-      () => this.api.setPreNotification(entity.id, { days }),
-      'Délai de pré-notification enregistré.',
     );
   }
 
@@ -260,7 +237,6 @@ export class LegalEntityDetailPage {
       this.toasts.show(said, 'success');
       const reloaded = await this.api.one(this.id());
       this.entity.set(reloaded);
-      this.daysDraft.set(null);
     } catch (caught) {
       this.error.set(httpErrorMessage(caught, 'Enregistrement impossible.'));
     } finally {

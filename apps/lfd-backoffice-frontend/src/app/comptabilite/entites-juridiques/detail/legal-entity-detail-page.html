@@ -143,31 +143,6 @@
       <app-mandate-settings-card [entity]="entity" [busy]="busy()" (saved)="runSaved($event)" />
     </fold-card>
 
-    <fold-card>
-      <fold-page-section title="Pré-notification" separator>
-        <p class="ej-said">
-          Le délai annoncé au débiteur entre l'avis de prélèvement et le débit. Il se
-          <strong>négocie avec la banque</strong>&nbsp;: c'est une saisie, pas un réglage technique,
-          et deux entités peuvent ne pas avoir le même.
-        </p>
-        <div class="ej-row">
-          <!-- Libellé VISIBLE et unité dedans : `fold-number-input` n'a ni
-             `hideLabel` ni `suffix`. Un « 14 » nu ne dit pas s'il s'agit de
-             jours, de semaines ou d'un pourcentage. -->
-          <fold-number-input
-            label="Délai (jours)"
-            [min]="minDays"
-            [max]="maxDays"
-            [value]="days()"
-            (valueChange)="daysDraft.set($event)"
-          />
-          <button foldButton [disabled]="busy()" (click)="savePreNotification(entity)">
-            Enregistrer
-          </button>
-        </div>
-      </fold-page-section>
-    </fold-card>
-
     <!-- Les dates des modes AVANT le prélèvement : ce sont elles qui posent
          les clôtures que le calendrier de prélèvement compte ensuite (plan
          `plan-rythme-de-facturation.md`, §16). -->
@@ -175,8 +150,8 @@
       <app-billing-modes-card [entity]="entity" [busy]="busy()" (saved)="runSaved($event)" />
     </fold-card>
 
-    <!-- Juste après le délai de pré-notification : l'échéance ne peut pas le
-         précéder, et le refus du serveur le dit en nommant les deux. -->
+    <!-- Le délai de notification vit DANS cette carte depuis le 2026-10-24 :
+         un seul nombre de jours fixe l'avis et l'échéance. -->
     <fold-card>
       <app-collection-settings-card [entity]="entity" [busy]="busy()" (saved)="runSaved($event)" />
     </fold-card>
