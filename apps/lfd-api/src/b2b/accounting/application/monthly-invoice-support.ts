@@ -25,12 +25,12 @@ export interface MonthlyContext {
   readonly mandates: readonly CollectionMandate[];
   readonly collectionForms: ReadonlyMap<string, CollectionFormName>;
   /**
-   * La date de livraison de chaque bon : `orders.delivered_on`, celle qui l'a
+   * La date de livraison de chaque bon : `orders.received_on`, celle qui l'a
    * fait entrer dans l'assiette (lot ZL) — plus recalculée depuis les faits
    * du retrait et de la tournée à l'émission, pour que « livré le … » et le
    * mois de la facture ne puissent pas diverger.
    */
-  readonly deliveredOn: ReadonlyMap<string, string | null>;
+  readonly receivedOn: ReadonlyMap<string, string | null>;
 }
 
 /**
@@ -57,6 +57,6 @@ export async function readMonthlyContext(
     readers.mandates.activeFor(companies),
     readers.reader.collectionFormsAt(sites, at),
   ]);
-  const deliveredOn = new Map(orders.map((order) => [order.orderId, order.deliveredOn]));
-  return { follows, buyers, names, mandates, collectionForms, deliveredOn };
+  const receivedOn = new Map(orders.map((order) => [order.orderId, order.receivedOn]));
+  return { follows, buyers, names, mandates, collectionForms, receivedOn };
 }

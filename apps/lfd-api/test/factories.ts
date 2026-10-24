@@ -238,7 +238,7 @@ const HANDOVER_AFTER_PLACEMENT_MS = 60 * 60 * 1000;
  * fichier : écrit par Prisma, faute de chemin public qui n'exige pas une
  * journée de production.
  *
- * Il pose aussi `orders.delivered_on` — ce que l'abonné du retrait
+ * Il pose aussi `orders.received_on` — ce que l'abonné du retrait
  * (`RecordDeliveryDayOnHandover`) écrirait sur le fait, que cette écriture
  * directe ne publie pas (lot ZL) : le jour de Paris du retrait.
  */
@@ -271,14 +271,14 @@ export async function markDelivered(
 ): Promise<void> {
   await prisma.order.update({
     where: { id: orderId },
-    data: { deliveredOn: deliveredOnColumn(at) },
+    data: { receivedOn: receivedOnColumn(at) },
   });
 }
 
 /**
- * La colonne `delivered_on` (`@db.Date`) du jour de Paris de `at` — pour une
+ * La colonne `received_on` (`@db.Date`) du jour de Paris de `at` — pour une
  * fixture qui sème un bon livré d'un seul `create` (lot ZL).
  */
-export function deliveredOnColumn(at: Date): Date {
+export function receivedOnColumn(at: Date): Date {
   return new Date(`${instantToLocal(at).day}T00:00:00.000Z`);
 }

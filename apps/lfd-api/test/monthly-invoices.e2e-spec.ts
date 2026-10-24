@@ -179,7 +179,7 @@ async function payer(
   options: {
     readonly siren?: string;
     readonly billingAddress?: boolean;
-    /** `false` : le bon n'a jamais été remis — ni retrait, ni `delivered_on`. */
+    /** `false` : le bon n'a jamais été remis — ni retrait, ni `received_on`. */
     readonly handedOver?: boolean;
   } = {},
 ) {
@@ -1073,9 +1073,9 @@ describe("facturer chaque bon dans le mois de sa livraison (lot ZL)", () => {
     });
   }
 
-  async function deliveredOnOfLine(orderId: string): Promise<string | null> {
+  async function receivedOnOfLine(orderId: string): Promise<string | null> {
     const line = await ctx.prisma.invoiceOrder.findFirstOrThrow({ where: { orderId } });
-    return line.deliveredOn?.toISOString().slice(0, 10) ?? null;
+    return line.receivedOn?.toISOString().slice(0, 10) ?? null;
   }
 
   it("commandé le 30, livré le 5 : facturé avec le mois de SA livraison, pas celui de sa commande", async () => {
@@ -1097,7 +1097,7 @@ describe("facturer chaque bon dans le mois de sa livraison (lot ZL)", () => {
 
     expect(second.issued.map((issue) => issue.payerCompanyId)).toEqual([company.id]);
     expect(second.issued[0]?.issuedOn).toBe(lastDayOf(next));
-    expect(await deliveredOnOfLine(order.id)).toBe(instantToLocal(fifth).day);
+    expect(await receivedOnOfLine(order.id)).toBe(instantToLocal(fifth).day);
   });
 
   it("livré le 31, constaté le 1er après l'émission : dans la facture suivante, « livré le 31 », facturé et prélevé une fois", async () => {
@@ -1118,7 +1118,7 @@ describe("facturer chaque bon dans le mois de sa livraison (lot ZL)", () => {
     const report = await issueByHand(id, next);
 
     expect(report.issued.map((issue) => issue.payerCompanyId)).toEqual([company.id]);
-    expect(await deliveredOnOfLine(order.id)).toBe(lastDayOf(closesAt));
+    expect(await receivedOnOfLine(order.id)).toBe(lastDayOf(closesAt));
     // Rejoué : jamais deux fois.
     expect((await issueByHand(id, next)).issued).toEqual([]);
     expect(await ctx.prisma.invoiceOrder.count({ where: { orderId: order.id } })).toBe(1);
@@ -1227,7 +1227,7 @@ describe("facturer chaque bon dans le mois de sa livraison (lot ZL)", () => {
     const invoices = await ctx.prisma.invoice.findMany({
       where: { payerCompanyId: company.id },
       orderBy: { rank: "asc" },
-      include: { orders: { select: { deliveredOn: true } } },
+      include: { orders: { select: { receivedOn: true } } },
     });
     expect(invoices.map((invoice) => invoice.issuedOn.toISOString().slice(0, 7))).toEqual([
       lastDayOf(closesAt).slice(0, 7),
@@ -1235,7 +1235,7 @@ describe("facturer chaque bon dans le mois de sa livraison (lot ZL)", () => {
     ]);
     expect(
       invoices.map((invoice) =>
-        invoice.orders.map((line) => line.deliveredOn?.toISOString().slice(0, 10)),
+        invoice.orders.map((line) => line.receivedOn?.toISOString().slice(0, 10)),
       ),
     ).toEqual([[lastDayOf(closesAt)], [instantToLocal(closesAt).day]]);
   });
@@ -1371,7 +1371,7 @@ describe("l'onglet Factures de la procédure : une commande, un statut", () => {
     ]);
   });
 
-  /** Régression (dev, 2026-10-24) : remise et facturée avant la règle ZL, sans `delivered_on`, elle était « à constater ». */
+  /** Régression (dev, 2026-10-24) : remise et facturée avant la règle ZL, sans `received_on`, elle était « à constater ». */
   it("facturée sans jour de livraison : facturée, jamais à confirmer", async () => {
     const id = await entity();
     await payer(id);
@@ -1389,7 +1389,7 @@ describe("l'onglet Factures de la procédure : une commande, un statut", () => {
         invoiceType: "380",
         orderId: order.id,
         orderNumber: order.orderNumber,
-        deliveredOn: null,
+        receivedOn: null,
         position: 1,
       },
     });

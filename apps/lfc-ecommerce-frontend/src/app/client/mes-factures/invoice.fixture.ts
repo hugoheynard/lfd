@@ -79,8 +79,8 @@ export const SEPTEMBER_DETAIL: IssuedInvoiceView = {
     billingAddressLines: ['12 rue des Alpages'],
   },
   orders: [
-    { reference: 'CMD-1', deliveredOn: '2026-09-12' },
-    { reference: 'CMD-2', deliveredOn: null },
+    { reference: 'CMD-1', receivedOn: '2026-09-12' },
+    { reference: 'CMD-2', receivedOn: null },
   ],
   lines: [
     {

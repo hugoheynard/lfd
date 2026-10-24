@@ -1,6 +1,6 @@
 import type { BillingFollow } from "../../ports/statement-billing.reader.js";
 import {
-  deliveredOnOf,
+  receivedOnOf,
   invoiceGroupKey,
   invoicePaymentMeansOf,
   ordersByPayer,
@@ -25,7 +25,7 @@ function bon(companyId: string, overrides: Partial<InvoiceableOrder> = {}): Invo
     orderNumber,
     companyId,
     placedAt,
-    deliveredOn: "2026-09-16",
+    receivedOn: "2026-09-16",
     billedCompanyId: null,
     frozen: frozenOrder(orderNumber, placedAt),
     ...overrides,
@@ -208,18 +208,18 @@ describe("invoicePaymentMeansOf — le moyen de paiement figé (BG-16)", () => {
   });
 });
 
-describe("deliveredOnOf — la date de livraison réelle", () => {
+describe("receivedOnOf — la date de livraison réelle", () => {
   const handedOverAt = new Date("2026-09-30T21:30:00.000Z");
 
   it("jamais retiré : aucune date", () => {
-    expect(deliveredOnOf(null, [])).toBeNull();
+    expect(receivedOnOf(null, [])).toBeNull();
   });
 
   it("au comptoir : le jour du retrait, à Paris", () => {
     // 23h30 à Paris : encore le 30, pas le 1er de l'heure UTC… ni le 30 UTC par hasard.
-    expect(deliveredOnOf({ handedOverAt, via: "scan", atDoor: false }, [])).toBe("2026-09-30");
+    expect(receivedOnOf({ handedOverAt, via: "scan", atDoor: false }, [])).toBe("2026-09-30");
     expect(
-      deliveredOnOf(
+      receivedOnOf(
         { handedOverAt: new Date("2026-09-30T22:30:00.000Z"), via: "scan", atDoor: false },
         [],
       ),
@@ -234,6 +234,6 @@ describe("deliveredOnOf — la date de livraison réelle", () => {
       closedAt: new Date("2026-09-29T09:00:00.000Z"),
       broughtBackAt: null,
     };
-    expect(deliveredOnOf({ handedOverAt, via: "scan", atDoor: true }, [stop])).toBe("2026-09-29");
+    expect(receivedOnOf({ handedOverAt, via: "scan", atDoor: true }, [stop])).toBe("2026-09-29");
   });
 });

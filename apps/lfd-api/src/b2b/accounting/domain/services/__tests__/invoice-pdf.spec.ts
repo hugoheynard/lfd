@@ -137,8 +137,8 @@ describe("renderInvoicePdf — ce que la facture imprime", () => {
       "Indemnité forfaitaire pour frais de recouvrement : 40,00 €.",
       "Pas d'escompte pour paiement anticipé.",
       "livraison de biens",
-      "CMD-001 (livré le 12/09/2026)",
-      "CMD-002 (livré le 13/09/2026)",
+      "CMD-001 (reçue le 12/09/2026)",
+      "CMD-002 (reçue le 13/09/2026)",
       `${state.number} — ${state.seller.name}`,
       "page 1 / 1",
     ]) {

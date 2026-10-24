@@ -27,7 +27,7 @@ import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
 import { Clock } from "../src/platform/time/clock.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { attachTo, createCompany, createUser, deliveredOnColumn } from "./factories.js";
+import { attachTo, createCompany, createUser, receivedOnColumn } from "./factories.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 
 export const HOUR_MS = 60 * 60 * 1000;
@@ -134,7 +134,7 @@ export async function payerWithOrder(entityId: string): Promise<void> {
       vatCents: 550,
       paymentStatus: "not_required",
       createdAt: new Date(closesAt.getTime() - 2 * DAY_MS),
-      deliveredOn: deliveredOnColumn(new Date(closesAt.getTime() - 2 * DAY_MS)),
+      receivedOn: receivedOnColumn(new Date(closesAt.getTime() - 2 * DAY_MS)),
       vatShares: [{ rate: 5.5, amountCents: 550 }],
       lines: {
         create: {

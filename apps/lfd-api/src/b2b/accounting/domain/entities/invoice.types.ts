@@ -62,7 +62,7 @@ export interface InvoiceOrderReference {
   readonly orderId: string;
   readonly reference: string;
   /** `AAAA-MM-JJ`, ou `null` : non livré (ou inconnu) au jour de l'émission. */
-  readonly deliveredOn: string | null;
+  readonly receivedOn: string | null;
 }
 
 /** UNTDID 4461 — le prélèvement SEPA, le moyen de la facture du mois. */

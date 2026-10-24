@@ -135,8 +135,9 @@ export async function prepareCardInvoice(
           {
             orderId: candidate.orderId,
             reference: candidate.orderNumber,
-            deliveredOn:
-              candidate.handedOverAt === null ? null : instantToLocal(candidate.handedOverAt).day,
+            // La colonne posée avec la remise (plan-date-de-reception, B2) :
+            // une remise à la porte y prend le jour de la tournée.
+            receivedOn: candidate.receivedOn,
           },
         ],
         paymentMeans: CARD_PAYMENT_MEANS,

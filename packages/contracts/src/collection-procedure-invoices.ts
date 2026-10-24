@@ -37,7 +37,7 @@ export type CollectionProcedureInvoicesReasonView =
  * - `receipt_to_confirm` — aucune remise enregistrée, son jour est passé ;
  * - `receipt_confirmed` — remise enregistrée, pas encore facturée ;
  * - `invoiced` — une facture (380) la porte. L'emporte TOUJOURS, quel que
- *   soit son jour de livraison.
+ *   soit son jour de réception.
  */
 export type ProcedureOrderStatusView = "receipt_to_confirm" | "receipt_confirmed" | "invoiced";
 
@@ -48,7 +48,7 @@ export interface ProcedureOrderView {
   readonly companyName: string;
   /**
    * `AAAA-MM-JJ` — le jour de retrait ou de livraison demandé, à défaut le
-   * jour de livraison ; `null` sans l'un ni l'autre.
+   * jour de réception ; `null` sans l'un ni l'autre.
    */
   readonly serviceDay: string | null;
   readonly fulfillmentMethod: "pickup" | "delivery";
@@ -57,7 +57,7 @@ export interface ProcedureOrderView {
   /** Le numéro de la facture qui la porte ; `null` tant qu'elle n'est pas facturée. */
   readonly invoiceNumber: string | null;
   /**
-   * Remise enregistrée sans jour de livraison (donnée antérieure à la règle
+   * Remise enregistrée sans jour de réception (donnée antérieure à la règle
    * du 2026-10-22) : elle n'entre dans aucune facture tant qu'on ne la reprend
    * pas. Toujours `false` hors de `receipt_confirmed`.
    */
@@ -81,7 +81,7 @@ export interface CollectionProcedureInvoicesView {
   readonly figures: ProcedureOrderFiguresView;
   /**
    * Ce que « Émettre les factures des réceptions confirmées » prendrait : les
-   * réceptions confirmées qui ont leur jour de livraison.
+   * réceptions confirmées qui ont leur jour de réception.
    */
   readonly issuableCount: number;
   /** La clôture, telle que la carte de ses factures la lit ; `null` sans clôture. */

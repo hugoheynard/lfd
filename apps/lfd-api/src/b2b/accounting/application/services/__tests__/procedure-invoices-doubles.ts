@@ -73,7 +73,7 @@ export function procedureRow(
     placedAt: new Date("2026-10-10T07:00:00.000Z"),
     billedCompanyId: null,
     handedOver: true,
-    deliveredOn: "2026-10-12",
+    receivedOn: "2026-10-12",
     invoice: null,
     ...overrides,
   };

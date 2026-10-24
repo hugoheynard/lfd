@@ -26,17 +26,17 @@ export interface ProcedureOrderFacts {
   readonly invoiced: boolean;
   /** Le snapshot du retrait (`orders.handed_over_at`) est posé. */
   readonly handedOver: boolean;
-  /** `AAAA-MM-JJ` — le jour de livraison ; `null` s'il n'est pas posé. */
-  readonly deliveredOn: string | null;
+  /** `AAAA-MM-JJ` — le jour de réception ; `null` s'il n'est pas posé. */
+  readonly receivedOn: string | null;
 }
 
 /**
  * La facture l'emporte TOUJOURS : une commande facturée n'est jamais « à
- * confirmer », quel que soit son `delivered_on` — les factures émises avant
- * la règle du 2026-10-22 portent des bons sans jour de livraison, et l'onglet
+ * confirmer », quel que soit son `received_on` — les factures émises avant
+ * la règle du 2026-10-22 portent des bons sans jour de réception, et l'onglet
  * les disait « à constater » (constaté en dev le 2026-10-24).
  *
- * Un jour de livraison posé vaut remise enregistrée : il n'est écrit qu'à la
+ * Un jour de réception posé vaut remise enregistrée : il n'est écrit qu'à la
  * remise attestée (`RecordDeliveryDayOnHandover`), et le retrait attesté
  * sans snapshot sur la commande existe (les fixtures e2e le sèment ainsi).
  */
@@ -44,17 +44,15 @@ export function procedureOrderStatus(facts: ProcedureOrderFacts): ProcedureOrder
   if (facts.invoiced) {
     return "invoiced";
   }
-  return facts.handedOver || facts.deliveredOn !== null
-    ? "receipt_confirmed"
-    : "receipt_to_confirm";
+  return facts.handedOver || facts.receivedOn !== null ? "receipt_confirmed" : "receipt_to_confirm";
 }
 
 /**
- * Remise enregistrée sans jour de livraison : elle n'entre dans aucune
- * facture (l'assiette lit `delivered_on`). Nommée, jamais cachée — à reprendre.
+ * Remise enregistrée sans jour de réception : elle n'entre dans aucune
+ * facture (l'assiette lit `received_on`). Nommée, jamais cachée — à reprendre.
  */
 export function deliveryDayMissing(facts: ProcedureOrderFacts): boolean {
-  return procedureOrderStatus(facts) === "receipt_confirmed" && facts.deliveredOn === null;
+  return procedureOrderStatus(facts) === "receipt_confirmed" && facts.receivedOn === null;
 }
 
 /**

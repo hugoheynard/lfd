@@ -1,5 +1,12 @@
 # Plan — la page « Procédure de prélèvement »
 
+> ⚠️ **2026-10-24** : `delivered_on` est renommée `received_on` (colonne
+> `orders` et `invoice_order`, déclencheur `orders_received_on_frozen`,
+> `deliveredOnOf` → `receivedOnOf`), et la date est posée avec la remise par
+> `MarkOrderFulfilledHandler` — plan
+> [`plan-date-de-reception.md`](../../commandes/plan-date-de-reception.md). Les mentions ci-dessous gardent
+> l'ancien nom : elles décrivent ce qui a été bâti à leur date.
+
 > 📝 **Doc-first, écrit le 2026-10-23.** **P1** et **P2** sont bâtis
 > (2026-10-23 — § 8) : la page existe, sans attestations du lot. **P4 bâti
 > le 2026-10-24, révisé** : un avertissement par débiteur du lot, pas un

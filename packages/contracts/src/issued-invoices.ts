@@ -96,8 +96,8 @@ export interface IssuedInvoiceVatCategoryView {
 export interface IssuedInvoiceOrderView {
   /** Le numéro du bon. */
   readonly reference: string;
-  /** `AAAA-MM-JJ`, ou `null` : non livré (ou inconnu) à l'émission. */
-  readonly deliveredOn: string | null;
+  /** La date de réception (livrée ou retirée), `AAAA-MM-JJ` ; `null` : non reçue (ou inconnue) à l'émission. */
+  readonly receivedOn: string | null;
 }
 
 /** `GET companies/:companyId/invoices/:invoiceId` et `GET admin/accounting/invoices/:invoiceId`. */

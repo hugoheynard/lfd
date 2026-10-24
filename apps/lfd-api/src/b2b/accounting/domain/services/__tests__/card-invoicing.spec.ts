@@ -25,6 +25,7 @@ function candidate(overrides: Partial<CardInvoiceCandidate> = {}): CardInvoiceCa
     totalCents: 1_000,
     paidAt: PLACED,
     handedOverAt: PLACED,
+    receivedOn: "2026-09-15",
     invoiced: false,
     refundedCents: 0,
     follows: [],
@@ -39,7 +40,9 @@ describe("cardInvoiceVerdict", () => {
   });
 
   it("attend l'autre déclencheur, dans les deux ordres", () => {
-    expect(cardInvoiceVerdict(candidate({ handedOverAt: null }))).toBe("awaiting_handover");
+    expect(cardInvoiceVerdict(candidate({ handedOverAt: null, receivedOn: null }))).toBe(
+      "awaiting_handover",
+    );
     expect(cardInvoiceVerdict(candidate({ paymentStatus: "pending", paidAt: null }))).toBe(
       "awaiting_payment",
     );

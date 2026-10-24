@@ -163,7 +163,7 @@ export function invoicePrefixMissingBlocker(entityName: string): InvoiceIssuance
 export interface InvoiceOrderFacts {
   readonly reference: string;
   /** La date de livraison réelle (`AAAA-MM-JJ`), ou `null` : ni retrait ni livraison enregistrés. */
-  readonly deliveredOn: string | null;
+  readonly receivedOn: string | null;
 }
 
 /**
@@ -177,7 +177,7 @@ export function orderDeliveryBlockers(
   orders: readonly InvoiceOrderFacts[],
 ): readonly InvoiceIssuanceBlocker[] {
   return orders
-    .filter((order) => order.deliveredOn === null)
+    .filter((order) => order.receivedOn === null)
     .map((order) => ({
       code: "order_delivery_unknown" as const,
       message:

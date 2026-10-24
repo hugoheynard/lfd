@@ -17,7 +17,7 @@ export type InvoiceFromDossierInput = Omit<IssueInvoiceInput, "lines" | "vat"> &
  * (`invoiceVatBreakdown`) sont reprises telles que le simulateur les a
  * rendues ; l'agrégat vérifie qu'elles se recomposent, il ne les refait pas.
  * Les dates demandées des lignes du dossier ne passent PAS : la facture porte
- * les dates de livraison réelles des bons (`orders[].deliveredOn`), ou rien.
+ * les dates de livraison réelles des bons (`orders[].receivedOn`), ou rien.
  */
 export function invoiceFromDossier(input: InvoiceFromDossierInput): Invoice {
   const { computed, ...issue } = input;

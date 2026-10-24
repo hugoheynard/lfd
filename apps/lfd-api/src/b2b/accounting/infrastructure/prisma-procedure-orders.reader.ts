@@ -45,7 +45,7 @@ export class PrismaProcedureOrdersReader extends ProcedureOrdersReader {
           billableOrderWhere(scope.deliveredFrom, scope.deliveredTo),
           {
             ...accountOrderWhere(),
-            deliveredOn: null,
+            receivedOn: null,
             requestedDeliveryDate: {
               gte: dayColumnOf(scope.servedFrom),
               lte: dayColumnOf(scope.servedThrough),
@@ -64,7 +64,7 @@ export class PrismaProcedureOrdersReader extends ProcedureOrdersReader {
         createdAt: true,
         billedCompanyId: true,
         handedOverAt: true,
-        deliveredOn: true,
+        receivedOn: true,
         company: { select: { raisonSociale: true } },
       },
     });
@@ -84,7 +84,7 @@ export class PrismaProcedureOrdersReader extends ProcedureOrdersReader {
               placedAt: row.createdAt,
               billedCompanyId: row.billedCompanyId,
               handedOver: row.handedOverAt !== null,
-              deliveredOn: dayOf(row.deliveredOn),
+              receivedOn: dayOf(row.receivedOn),
               invoice: invoices.get(row.id) ?? null,
             },
           ],

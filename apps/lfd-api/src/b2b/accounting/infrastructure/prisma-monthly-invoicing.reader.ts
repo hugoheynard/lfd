@@ -42,7 +42,7 @@ export class PrismaMonthlyInvoicingReader extends MonthlyInvoicingReader {
         id: true,
         companyId: true,
         billedCompanyId: true,
-        deliveredOn: true,
+        receivedOn: true,
       },
     });
     const invoiced = await this.prisma.invoiceOrder.findMany({
@@ -63,7 +63,7 @@ export class PrismaMonthlyInvoicingReader extends MonthlyInvoicingReader {
               companyId: order.companyId,
               placedAt: order.createdAt,
               // `@db.Date` : minuit UTC, dont la date ISO EST le jour de Paris.
-              deliveredOn: order.deliveredOn?.toISOString().slice(0, DAY_LENGTH) ?? null,
+              receivedOn: order.receivedOn?.toISOString().slice(0, DAY_LENGTH) ?? null,
               billedCompanyId: order.billedCompanyId,
               frozen: toFrozenInvoiceOrder(order),
             },

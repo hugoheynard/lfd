@@ -1788,8 +1788,8 @@ Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 
 | `account.invoices.directDebit` | Prélèvement SEPA, mandat {rum} | SEPA direct debit, mandate {rum} | Addebito diretto SEPA, mandato {rum} | `{rum}` |
 | `account.invoices.paidByCard` | Acquittée par carte le {date} | Paid by card on {date} | Pagata con carta il {date} | `{date}` |
 | `account.invoices.orders` | Commandes facturées | Invoiced orders | Ordini fatturati |  |
-| `account.invoices.delivered` | livrée le {date} | delivered on {date} | consegnato il {date} | `{date}` |
-| `account.invoices.notDelivered` | livraison non constatée | delivery not recorded | consegna non registrata |  |
+| `account.invoices.received` | reçue le {date} | received on {date} | ricevuta il {date} | `{date}` |
+| `account.invoices.notReceived` | réception non constatée | receipt not recorded | ricezione non registrata |  |
 | `account.invoices.pdfPending` | Le PDF de la facture est en préparation : il sera téléchargeable ici dans quelques minutes. Les informations ci-dessous sont celles de la facture émise. | The PDF of this invoice is being prepared: it will be available here in a few minutes. The details below are those of the issued invoice. | Il PDF della fattura è in preparazione: sarà scaricabile qui tra qualche minuto. I dati qui sotto sono quelli della fattura emessa. |  |
 | `account.invoices.downloadPdf` | Télécharger le PDF | Download the PDF | Scarica il PDF |  |
 | `account.invoices.downloadFailed` | Le PDF n’a pas pu être téléchargé. Réessayez dans un instant. | The PDF could not be downloaded. Please try again in a moment. | Impossibile scaricare il PDF. Riprova tra un istante. |  |

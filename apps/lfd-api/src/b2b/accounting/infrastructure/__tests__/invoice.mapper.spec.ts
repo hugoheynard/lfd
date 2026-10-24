@@ -65,7 +65,7 @@ function rowOf(invoice: Invoice, correctsNumber: string | null = null): InvoiceR
         invoiceType: data.type,
         orderId: order.orderId,
         orderNumber: order.orderNumber,
-        deliveredOn: dateOf(order.deliveredOn),
+        receivedOn: dateOf(order.receivedOn),
         position: order.position,
       }))
       .sort((a, b) => a.position - b.position),

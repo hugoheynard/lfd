@@ -145,7 +145,7 @@ export interface InvoiceDossierOrderView {
   readonly reference: string;
   /**
    * ISO — la passation. Elle ne range PAS le bon dans le cycle : depuis ZL
-   * (2026-10-22), l'appartenance suit la facture (jour de livraison).
+   * (2026-10-22), l'appartenance suit la facture (jour de réception).
    */
   readonly placedAt: string;
   /** `AAAA-MM-JJ`, ou `null`. */

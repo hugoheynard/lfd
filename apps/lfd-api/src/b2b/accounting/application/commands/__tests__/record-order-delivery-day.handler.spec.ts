@@ -12,7 +12,7 @@ import { EveryOrderHandedOver, NoHandovers, NoStops } from "./monthly-invoice-do
  * qu'au jour qu'ils donnent, aucune horloge n'est lue.
  */
 
-/** La colonne `delivered_on` et son `where delivered_on IS NULL`. */
+/** La colonne `received_on` et son `where received_on IS NULL`. */
 class MemoryDeliveryDays extends OrderDeliveryDays {
   readonly days = new Map<string, string>();
   readonly attempts: string[] = [];
@@ -69,7 +69,7 @@ describe("RecordOrderDeliveryDay — la première remise date le bon", () => {
     expect(days.days.get("o1")).toBe("2026-11-01");
   });
 
-  it("à la porte : le jour de la tournée qui l'a livré, la règle de la facture (`deliveredOnOf`)", async () => {
+  it("à la porte : le jour de la tournée qui l'a livré, la règle de la facture (`receivedOnOf`)", async () => {
     const stops = new FixedStops();
     stops.stops = [stop({})];
     const days = new MemoryDeliveryDays();

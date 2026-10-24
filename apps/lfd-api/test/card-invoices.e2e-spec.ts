@@ -342,10 +342,14 @@ describe("la frontière avec la facture du mois", () => {
     const account = await proOrder({ account: true });
     await pay(card);
     await handOver(card);
-    // Les deux livrés hier (lot ZL : l'assiette suit la livraison) — seul le
-    // mode de règlement les distingue.
-    await markDelivered(ctx.prisma, card.orderId, new Date(daysAgo(1)));
+    // Les deux reçus dans la fenêtre (lot ZL : l'assiette suit la réception) —
+    // seul le mode de règlement les distingue. La commande carte a reçu sa
+    // date avec sa remise (plan-date-de-reception, B2) : elle est figée, on
+    // ne la réécrit pas.
     await markDelivered(ctx.prisma, account.orderId, new Date(daysAgo(1)));
+    expect(
+      (await ctx.prisma.order.findUniqueOrThrow({ where: { id: card.orderId } })).receivedOn,
+    ).not.toBeNull();
 
     const window = billableOrderWhere(new Date(daysAgo(30)), new Date(daysAgo(-1)));
     const billable = await ctx.prisma.order.findMany({ where: window, select: { id: true } });

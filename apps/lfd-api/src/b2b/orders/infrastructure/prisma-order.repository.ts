@@ -333,7 +333,13 @@ export class PrismaOrderRepository extends OrderRepository {
     return count === 1;
   }
 
-  async markFulfilled(reference: string, at: Date, by: string, via: HandoverVia): Promise<boolean> {
+  async markFulfilled(
+    reference: string,
+    at: Date,
+    by: string,
+    via: HandoverVia,
+    receivedOn: string,
+  ): Promise<boolean> {
     // `handedOverAt: null` dans le WHERE : c'est la base qui arbitre. Le fait
     // vient du fournil, qui a déjà tranché la course sur SA contrainte
     // d'unicité — mais un abonné rappelé ne doit pas réécrire l'attestation, et
@@ -342,14 +348,32 @@ export class PrismaOrderRepository extends OrderRepository {
     // 🔴 Et le STATUT, depuis le 2026-10-12 (plan d'annulation, S1) : une
     // commande annulée ne devient jamais `fulfilled` — un fait de retrait
     // tardif sur une annulée ne la ressuscite pas, il rend `false`.
+    const where = {
+      orderNumber: reference,
+      handedOverAt: null,
+      status: { not: OrderStatus.cancelled },
+    };
+    const handedOver = {
+      handedOverAt: at,
+      handedOverBy: by,
+      handedOverVia: via,
+      status: OrderStatus.fulfilled,
+    };
+    // La date de réception part dans la MÊME instruction que la remise
+    // (plan-date-de-reception, B2). Elle peut déjà être posée — par l'ancien
+    // abonné `RecordDeliveryDayOnHandover`, encore branché jusqu'à B4 — et
+    // elle est alors figée (`orders_received_on_frozen`) : on ne la réécrit
+    // pas, d'où la seconde instruction, qui ne porte pas la colonne.
+    const dated = await this.prisma.order.updateMany({
+      where: { ...where, receivedOn: null },
+      data: { ...handedOver, receivedOn: new Date(`${receivedOn}T00:00:00.000Z`) },
+    });
+    if (dated.count === 1) {
+      return true;
+    }
     const { count } = await this.prisma.order.updateMany({
-      where: { orderNumber: reference, handedOverAt: null, status: { not: OrderStatus.cancelled } },
-      data: {
-        handedOverAt: at,
-        handedOverBy: by,
-        handedOverVia: via,
-        status: OrderStatus.fulfilled,
-      },
+      where: { ...where, receivedOn: { not: null } },
+      data: handedOver,
     });
     return count === 1;
   }

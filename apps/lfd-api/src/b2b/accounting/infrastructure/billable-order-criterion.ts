@@ -4,7 +4,7 @@ import type { Prisma } from "../../../platform/database/client/client.js";
 
 /**
  * **L'assiette, écrite une seule fois** : « ce bon passé au compte a été
- * LIVRÉ pendant `[from, to[` » — jour de livraison, pas jour de commande,
+ * LIVRÉ pendant `[from, to[` » — jour de réception, pas jour de commande,
  * depuis le lot ZL (plan `plan-zero-faille.md`, §12, Hugo 2026-10-22).
  *
  * ## Les cinq critères, et ce que chacun évite
@@ -15,7 +15,7 @@ import type { Prisma } from "../../../platform/database/client/client.js";
  * | `total_cents > 0`              | 🔴 les commandes GRATUITES, qui sont aussi `not_required`        |
  * | `status <> 'cancelled'`        | prélever ce qui n'a rien produit                                |
  * | `company_id IS NOT NULL`       | un bon sans société, que le compte refuse de toute façon        |
- * | `delivered_on` dans la fenêtre | facturer un bon pas encore livré, ou dans le mauvais mois       |
+ * | `received_on` dans la fenêtre | facturer un bon pas encore livré, ou dans le mauvais mois       |
  *
  * ## Pourquoi la livraison, et pas la commande
  *
@@ -23,14 +23,14 @@ import type { Prisma } from "../../../platform/database/client/client.js";
  * sont la livraison (CGI art. 269-1-a et 269-2-a), et une facture
  * récapitulative couvre les livraisons d'un mois civil (CGI art. 289-I-3).
  * Sous `created_at`, un bon commandé le 30 pour le 5 tombait dans la facture
- * du mois de sa commande. `delivered_on` est posé une fois, à la première
+ * du mois de sa commande. `received_on` est posé une fois, à la première
  * remise attestée (`RecordDeliveryDayOnHandover`) : un bon non livré n'est
  * dans AUCUNE assiette — il n'est ni facturé, ni prélevé, et figure dans les
  * « Bons à constater » une fois son jour passé.
  *
  * ## Jour à jour, à Paris
  *
- * `delivered_on` est un JOUR de Paris (`@db.Date`) ; les bornes sont des
+ * `received_on` est un JOUR de Paris (`@db.Date`) ; les bornes sont des
  * instants (une clôture est un minuit de Paris, le plancher peut tomber en
  * journée). On compare donc des jours : `[jour(from), jour(to)[`, chacun lu à
  * Paris. Une clôture du 1er novembre à 00h00 exclut le 1er et garde le 31.
@@ -67,7 +67,7 @@ import type { Prisma } from "../../../platform/database/client/client.js";
 export function billableOrderWhere(from: Date, to: Date): Prisma.OrderWhereInput {
   return {
     ...accountOrderWhere(),
-    deliveredOn: { gte: parisDayOf(from), lt: parisDayOf(to) },
+    receivedOn: { gte: parisDayOf(from), lt: parisDayOf(to) },
   };
 }
 
@@ -76,7 +76,7 @@ export function billableOrderWhere(from: Date, to: Date): Prisma.OrderWhereInput
  * à l'instant (l'état d'encaissement) — un bon livré aujourd'hui y est.
  */
 export function billableSinceWhere(from: Date): Prisma.OrderWhereInput {
-  return { ...accountOrderWhere(), deliveredOn: { gte: parisDayOf(from) } };
+  return { ...accountOrderWhere(), receivedOn: { gte: parisDayOf(from) } };
 }
 
 /**

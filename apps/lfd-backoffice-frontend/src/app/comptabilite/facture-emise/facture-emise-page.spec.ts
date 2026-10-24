@@ -48,8 +48,8 @@ function issuedInvoice(over: Partial<IssuedInvoiceView> = {}): IssuedInvoiceView
       billingAddressLines: ['1 quai du Port'],
     },
     orders: [
-      { reference: 'CMD-1', deliveredOn: '2026-09-12' },
-      { reference: 'CMD-2', deliveredOn: null },
+      { reference: 'CMD-1', receivedOn: '2026-09-12' },
+      { reference: 'CMD-2', receivedOn: null },
     ],
     lines: [
       {
@@ -159,7 +159,7 @@ describe('FactureEmisePage', () => {
     expect(page.querySelector('[data-invoice-means]')?.textContent).toContain('RUM-PORT-1');
     expect(page.textContent).toContain('14,15 %');
     expect(page.textContent).toContain('Pain du mois');
-    expect(page.textContent).toContain('livraison non constatée');
+    expect(page.textContent).toContain('réception non constatée');
     expect(page.querySelector('a[href="/comptes-clients/co_1/facturation"]')).not.toBeNull();
   });
 

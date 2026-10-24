@@ -17,7 +17,7 @@ function utcMidnight(day: string): Date {
 
 /**
  * Les bons à constater : l'assiette sans sa fenêtre (`accountOrderWhere`),
- * `delivered_on` nul, jour demandé passé. Surface staff : aucune société
+ * `received_on` nul, jour demandé passé. Surface staff : aucune société
  * n'est filtrée, c'est la comptabilité qui lit.
  */
 @Injectable()
@@ -30,7 +30,7 @@ export class PrismaUnconfirmedDeliveriesReader extends UnconfirmedDeliveriesRead
     const rows = await this.prisma.order.findMany({
       where: {
         ...accountOrderWhere(),
-        deliveredOn: null,
+        receivedOn: null,
         requestedDeliveryDate: { lt: utcMidnight(day) },
       },
       orderBy: [{ requestedDeliveryDate: "asc" }, { orderNumber: "asc" }],

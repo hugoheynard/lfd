@@ -20,7 +20,7 @@ dans [`facture-carte-et-remboursements.md`](facture-carte-et-remboursements.md).
   pas, elle se compense par un **avoir** (381).
 - **La facture précède le lot** : émise le dernier jour du mois, le lot du 1er
   ne fait qu'encaisser des factures émises (Q1).
-- **Le mois est celui de la LIVRAISON** (`orders.delivered_on`) depuis le lot
+- **Le mois est celui de la LIVRAISON** (`orders.received_on`) depuis le lot
   ZL ([`plan-zero-faille.md`](plan-zero-faille.md), §11–§12, Hugo
   2026-10-22) — il était celui de la commande (`createdAt`, Q2). Pour une
   livraison de biens, le fait générateur et l'exigibilité de la TVA sont la
@@ -43,7 +43,7 @@ dans [`facture-carte-et-remboursements.md`](facture-carte-et-remboursements.md).
 
 ```mermaid
 flowchart LR
-  B["Bons au compte LIVRÉS<br/>(delivered_on ≤ fin de période,<br/>jamais facturés)"] --> F["Dernier jour · 23h55<br/>une facture par payeur légal et par mandat<br/>ou une issue SIGNALÉE"]
+  B["Bons au compte LIVRÉS<br/>(received_on ≤ fin de période,<br/>jamais facturés)"] --> F["Dernier jour · 23h55<br/>une facture par payeur légal et par mandat<br/>ou une issue SIGNALÉE"]
   F -->|"invoice.issued"| N["PDF/A-3 rendu, puis e-mail<br/>avec la pièce jointe"]
   F --> L["Le 1er · lot<br/>une ligne = des factures émises<br/>montant = Σ TTC"]
   L --> A["Avis : montant et numéros"]
@@ -82,19 +82,19 @@ compte actif sans SIREN reste actif.
   séquence ; l'année est celle de `issued_on`, le préfixe celui de l'entité
   (`InvoicePrefix`, 2 à 6 lettres majuscules). 21 caractères au plus,
   lettres, chiffres et `-` : BR-FR-01/02 (BT-1) tenues par construction.
-- **Bon sans date de livraison** (`delivered_on` NULL) : l'émission est
+- **Bon sans date de livraison** (`received_on` NULL) : l'émission est
   bloquée (`order_delivery_unknown`, M5) ; le refus nomme le bon et le geste
   (enregistrer son retrait ou sa livraison, ou l'annuler). Depuis ZL, ce n'est
   plus qu'un **filet** : l'assiette ne prend que des bons livrés, et un bon
-  sans date est dans les « Bons à constater » (§ « La date de livraison »).
+  sans date est dans les « Bons à constater » (§ « La date de réception »).
 - **Parties figées** (vendeur, acheteur = payeur légal) ; mentions copiées de
   l'entité, catégorie `goods`, pas d'option sur les débits.
   `Invoice.issue` juge les manques **avant** tout le reste
   (`InvoiceIssuanceBlockedError`, 409).
 - **Quantité** en millièmes entiers ; `H87` reste entière, `KGM` admet trois
   décimales.
-- **Dates de livraison** par bon (`orders[].deliveredOn`) : la copie de
-  `orders.delivered_on`, celle qui a fait entrer le bon dans l'assiette (ZL).
+- **Dates de réception** par bon (`orders[].receivedOn`, « reçue le ») : la copie de
+  `orders.received_on`, celle qui a fait entrer le bon dans l'assiette (ZL).
 - **Remises et frais** : pas de ligne à part, ils vivent dans la ventilation par
   taux.
 - **Invariants** (`InvoiceTotalsMismatchError`, 500) : Σ lignes par taux, base =
@@ -158,7 +158,7 @@ domaine `domain/services/monthly-invoicing.ts`. Routes
 
 - **Périmètre** (lot ZL, 2026-10-22) : les bons passés au compte et non
   annulés (`billableOrderWhere`) **livrés** depuis le plancher jusqu'au
-  dernier jour de la période — `delivered_on` comparé jour à jour, à Paris —
+  dernier jour de la période — `received_on` comparé jour à jour, à Paris —
   qu'aucune 380 ne porte encore (filtre en mémoire de
   `PrismaMonthlyInvoicingReader`, tenu en base par l'index unique
   `invoice_order_invoiced_once`). Un bon livré le 31 mais constaté le 1er,
@@ -213,22 +213,27 @@ toute la facture ; une facture dont un bon n'est plus ouvert attend.
 l'émission et le lot. L'avis cite les numéros (`collection_notice.invoice_numbers`),
 le `RmtInf` aussi. Un lot annulé relâche ses factures.
 
-### La date de livraison (lot ZL)
+### La date de réception (lot ZL, puis plan date de réception)
 
-`orders.delivered_on` (DATE, jour de Paris, migration
-`20261022180000_la_date_de_livraison_du_bon`) est posée **une fois**, par
-l'abonné durable `RecordDeliveryDayOnHandover` du fait `handover.handed_over`
-(canal `handover/channels/commerce/`) : `RecordOrderDeliveryDayHandler` relit
-le retrait et les arrêts de tournée par leurs canaux et applique
-`deliveredOnOf` — le jour de la tournée qui l'a remis à la porte, sinon le jour
-du retrait. Écriture conditionnée (`delivered_on IS NULL`), et le déclencheur
-`orders_delivered_on_frozen` refuse de la changer : un bac ramené puis relivré
-ne la déplace pas. La livraison ne publie vers le commerce aucun fait de remise
-(son départ n'en est pas un) : ses arrêts sont lus au moment du retrait.
+`orders.received_on` (DATE, jour de Paris ; colonne créée `delivered_on` par
+`20261022180000_la_date_de_livraison_du_bon`, renommée par
+`20261024120000_la_date_de_reception`) est le jour où la marchandise a changé
+de mains, livrée ou retirée — libellé « reçue le » partout (Q3, Hugo,
+2026-10-24). Depuis le 2026-10-24 (plan
+[`../../commandes/plan-date-de-reception.md`](../../commandes/plan-date-de-reception.md),
+B2), elle est posée par `MarkOrderFulfilledHandler` **dans la même écriture**
+que `handed_over_at` : il relit le retrait et les arrêts de tournée par leurs
+canaux et applique `receivedOnOf` — le jour de la tournée qui l'a remis à la
+porte, sinon le jour du retrait, et en dernier repli le jour de Paris de
+l'instant du fait. L'ancien abonné `RecordDeliveryDayOnHandover` reste branché
+jusqu'au troisième temps (B4) et ne pose plus rien quand la remise est passée
+avant lui. Le déclencheur `orders_received_on_frozen` refuse de la changer,
+même si la commande est annulée ensuite (Q4) : un bac ramené puis relivré ne la
+déplace pas. La facture carte lit la même colonne.
 
 **Les bons à constater** : `GET admin/accounting/unconfirmed-deliveries`
 (`ListUnconfirmedDeliveriesQuery`) rend les bons au compte, non annulés, sans
-`delivered_on`, dont le jour demandé est passé (Paris). L'écran « Prélèvement
+`received_on`, dont le jour demandé est passé (Paris). L'écran « Prélèvement
 du mois » les montre à côté des factures, avec le geste de sortie (enregistrer
 le retrait ou la livraison, ou annuler). Un bon sans jour demandé n'y figure
 pas.

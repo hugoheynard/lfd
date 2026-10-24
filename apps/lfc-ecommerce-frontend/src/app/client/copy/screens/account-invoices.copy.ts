@@ -122,8 +122,8 @@ export interface AccountInvoicesCopy {
   readonly paidByCard: string;
   readonly orders: string;
   /** `{date}`. */
-  readonly delivered: string;
-  readonly notDelivered: string;
+  readonly received: string;
+  readonly notReceived: string;
   /** Le PDF/A-3 n'est pas encore rendu (il suit l'émission, E3b) : la pièce se lit ici. */
   readonly pdfPending: string;
   /** Le bouton qui télécharge le PDF/A-3 Factur-X rangé. */
@@ -222,8 +222,8 @@ export const ACCOUNT_INVOICES_FR: AccountInvoicesCopy = {
   directDebit: 'Prélèvement SEPA, mandat {rum}',
   paidByCard: 'Acquittée par carte le {date}',
   orders: 'Commandes facturées',
-  delivered: 'livrée le {date}',
-  notDelivered: 'livraison non constatée',
+  received: 'reçue le {date}',
+  notReceived: 'réception non constatée',
   pdfPending:
     'Le PDF de la facture est en préparation : il sera téléchargeable ici dans quelques minutes. Les informations ci-dessous sont celles de la facture émise.',
   downloadPdf: 'Télécharger le PDF',
@@ -319,8 +319,8 @@ export const ACCOUNT_INVOICES_EN: AccountInvoicesCopy = {
   directDebit: 'SEPA direct debit, mandate {rum}',
   paidByCard: 'Paid by card on {date}',
   orders: 'Invoiced orders',
-  delivered: 'delivered on {date}',
-  notDelivered: 'delivery not recorded',
+  received: 'received on {date}',
+  notReceived: 'receipt not recorded',
   pdfPending:
     'The PDF of this invoice is being prepared: it will be available here in a few minutes. The details below are those of the issued invoice.',
   downloadPdf: 'Download the PDF',
@@ -417,8 +417,8 @@ export const ACCOUNT_INVOICES_IT: AccountInvoicesCopy = {
   directDebit: 'Addebito diretto SEPA, mandato {rum}',
   paidByCard: 'Pagata con carta il {date}',
   orders: 'Ordini fatturati',
-  delivered: 'consegnato il {date}',
-  notDelivered: 'consegna non registrata',
+  received: 'ricevuta il {date}',
+  notReceived: 'ricezione non registrata',
   pdfPending:
     'Il PDF della fattura è in preparazione: sarà scaricabile qui tra qualche minuto. I dati qui sotto sono quelli della fattura emessa.',
   downloadPdf: 'Scarica il PDF',

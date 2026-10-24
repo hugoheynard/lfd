@@ -128,7 +128,7 @@ describe('l’onglet Factures de la procédure', () => {
     ]);
     expect(host.querySelectorAll('[data-order-day-missing]')).toHaveLength(1);
     expect(host.querySelector('[data-order-day-missing]')?.textContent).toContain(
-      'date de remise manquante — à reprendre',
+      'date de réception manquante — à reprendre',
     );
     const gestures = host.querySelectorAll('[data-confirm-receipt]');
     expect(gestures).toHaveLength(1);
@@ -163,7 +163,7 @@ describe('l’onglet Factures de la procédure', () => {
     expect(issued).toEqual([CLOSURE.periodClosesAt]);
   });
 
-  it('pas de bouton à N = 0, même avec des réceptions confirmées sans jour de livraison', () => {
+  it('pas de bouton à N = 0, même avec des réceptions confirmées sans jour de réception', () => {
     const { fixture } = boot({ ...MIXED, issuableCount: 0 });
     expect(root(fixture).querySelector('[data-issue-invoices]')).toBeNull();
   });

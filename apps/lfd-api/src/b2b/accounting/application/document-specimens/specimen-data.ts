@@ -123,7 +123,7 @@ export function specimenInvoice(now: Date): Invoice {
     orders: ORDERS.map((order) => ({
       orderId: order.orderId,
       reference: order.reference,
-      deliveredOn: addDays(today, -order.daysBefore),
+      receivedOn: addDays(today, -order.daysBefore),
     })),
     paymentMeans: null,
     prepayment: null,

@@ -1,4 +1,12 @@
 import {
+  OrderDeliveryHistoryReader,
+  type OrderDeliveryStopFact,
+} from "../../../../../delivery/channels/commerce/index.js";
+import {
+  OrderHandoverHistoryReader,
+  type OrderHandoverHistoryFact,
+} from "../../../../../handover/channels/commerce/index.js";
+import {
   TransactionalDurablePublisher,
   TransactionalUnitOfWork,
 } from "../../../../../platform/outbox/__tests__/transactional-durable.js";
@@ -14,6 +22,10 @@ import { MarkOrderFulfilledHandler } from "../mark-order-fulfilled.handler.js";
 
 // Recopié tel quel, jamais comparé à une horloge : le handler n'en lit aucune.
 const HANDED_OVER_AT = new Date(60_000);
+/** Le jour de Paris de `HANDED_OVER_AT` (1er janvier 1970, 01h01 à Paris). */
+const HANDED_OVER_DAY = "1970-01-01";
+/** Le 3 octobre 2026 à 00h30 à Paris — une attestation passée minuit. */
+const AFTER_MIDNIGHT = new Date("2026-10-02T22:30:00.000Z");
 const REFERENCE = "CMD-0001";
 const AUTHOR: OrderAuthor = { orderId: "ord_1", orderNumber: REFERENCE, placedByUserId: "user_1" };
 
@@ -41,13 +53,21 @@ class Repository extends OrderRepository {
   fulfilled = false;
   writes = 0;
   insideUnit: boolean[] = [];
+  receivedOn: string[] = [];
 
   constructor(private readonly uow: TransactionalUnitOfWork) {
     super();
   }
 
-  markFulfilled(): Promise<boolean> {
+  markFulfilled(
+    _reference: string,
+    _at: Date,
+    _by: string,
+    _via: string,
+    receivedOn: string,
+  ): Promise<boolean> {
     this.insideUnit.push(this.uow.isOpen);
+    this.receivedOn.push(receivedOn);
     if (this.fulfilled) {
       return Promise.resolve(false);
     }
@@ -65,16 +85,58 @@ class Repository extends OrderRepository {
   absorbIntoPlan = unused;
 }
 
-function subject(author: OrderAuthor | null = AUTHOR) {
+/** Ce que le retrait a attesté, commande par commande. */
+class Handovers extends OrderHandoverHistoryReader {
+  constructor(private readonly facts: readonly OrderHandoverHistoryFact[]) {
+    super();
+  }
+
+  ofOrders(): Promise<ReadonlyMap<string, OrderHandoverHistoryFact>> {
+    return Promise.resolve(new Map(this.facts.map((fact) => [fact.orderId, fact])));
+  }
+}
+
+/** Les arrêts que la livraison garde. */
+class Stops extends OrderDeliveryHistoryReader {
+  constructor(private readonly stops: readonly OrderDeliveryStopFact[]) {
+    super();
+  }
+
+  ofOrders(): Promise<readonly OrderDeliveryStopFact[]> {
+    return Promise.resolve(this.stops);
+  }
+}
+
+interface World {
+  readonly author?: OrderAuthor | null;
+  readonly handovers?: readonly OrderHandoverHistoryFact[];
+  readonly stops?: readonly OrderDeliveryStopFact[];
+}
+
+function subject(world: World = {}) {
   const uow = new TransactionalUnitOfWork();
   const repository = new Repository(uow);
   const handler = new MarkOrderFulfilledHandler(
-    new Reader(author),
+    new Reader(world.author === undefined ? AUTHOR : world.author),
     repository,
     uow,
     new TransactionalDurablePublisher(uow),
+    new Handovers(world.handovers ?? []),
+    new Stops(world.stops ?? []),
   );
   return { handler, repository, uow };
+}
+
+/** Un arrêt parti et clos sans retour, le jour donné. */
+function closedStop(serviceDay: string): OrderDeliveryStopFact {
+  return {
+    orderId: "ord_1",
+    serviceDay,
+    placedAt: new Date(0),
+    departedAt: new Date(1),
+    closedAt: new Date(2),
+    broughtBackAt: null,
+  };
 }
 
 const handOver = () => new MarkOrderFulfilledCommand(REFERENCE, "staff_a", HANDED_OVER_AT, "scan");
@@ -112,9 +174,57 @@ describe("le commerce clôt une commande retirée", () => {
   });
 
   it("une référence inconnue lève — incohérence entre deux contextes, message mort visible", async () => {
-    const { handler, uow } = subject(null);
+    const { handler, uow } = subject({ author: null });
 
     await expect(handler.execute(handOver())).rejects.toBeInstanceOf(OrderReferenceNotFoundError);
     expect(uow.committed).toEqual([]);
+  });
+});
+
+describe("la date de réception part avec la remise (plan-date-de-reception, B2)", () => {
+  it("au comptoir : le jour de Paris de la remise attestée", async () => {
+    const { handler, repository } = subject({
+      handovers: [{ orderId: "ord_1", handedOverAt: AFTER_MIDNIGHT, via: "scan", atDoor: false }],
+    });
+
+    await handler.execute(handOver());
+
+    expect(repository.receivedOn).toEqual(["2026-10-03"]);
+  });
+
+  it("à la porte : le jour de la tournée, même attestée après minuit", async () => {
+    const { handler, repository } = subject({
+      handovers: [{ orderId: "ord_1", handedOverAt: AFTER_MIDNIGHT, via: "scan", atDoor: true }],
+      stops: [closedStop("2026-10-02")],
+    });
+
+    await handler.execute(handOver());
+
+    expect(repository.receivedOn).toEqual(["2026-10-02"]);
+  });
+
+  it("les arrêts d'une autre commande ne datent pas celle-ci", async () => {
+    const { handler, repository } = subject({
+      handovers: [{ orderId: "ord_1", handedOverAt: AFTER_MIDNIGHT, via: "scan", atDoor: true }],
+      stops: [{ ...closedStop("2026-09-01"), orderId: "ord_other" }],
+    });
+
+    await handler.execute(handOver());
+
+    expect(repository.receivedOn).toEqual(["2026-10-03"]);
+  });
+
+  /**
+   * Régression (2026-10-24) : une commande remise restait sans date de
+   * réception quand l'abonné ne passait pas — deux abonnés écrivaient les deux
+   * colonnes chacun dans sa transaction. Et sans attestation lisible, la
+   * règle rendait `null`.
+   */
+  it("une commande remise restait sans date de réception quand l'abonné ne passait pas", async () => {
+    const { handler, repository } = subject();
+
+    await handler.execute(handOver());
+
+    expect(repository.receivedOn).toEqual([HANDED_OVER_DAY]);
   });
 });

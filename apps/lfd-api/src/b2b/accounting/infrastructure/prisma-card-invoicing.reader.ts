@@ -9,6 +9,9 @@ import {
   toFrozenInvoiceOrder,
 } from "./frozen-invoice-order.mapper.js";
 
+/** `AAAA-MM-JJ` — la longueur d'un jour ISO. */
+const DAY_LENGTH = 10;
+
 /**
  * Ce que lit la facture carte (E5a) : la commande, ce qu'elle a figé, ses
  * remboursements réussis, et si une 380 la porte déjà. `invoice_order` n'a
@@ -36,6 +39,7 @@ export class PrismaCardInvoicingReader extends CardInvoicingReader {
         paymentStatus: true,
         paidAt: true,
         handedOverAt: true,
+        receivedOn: true,
         refunds: { where: { status: "succeeded" }, select: { amountCents: true } },
       },
     });
@@ -58,6 +62,8 @@ export class PrismaCardInvoicingReader extends CardInvoicingReader {
       totalCents: order.totalCents,
       paidAt: order.paidAt,
       handedOverAt: order.handedOverAt,
+      // `@db.Date` : minuit UTC du jour, dont la date ISO EST le jour de Paris.
+      receivedOn: order.receivedOn?.toISOString().slice(0, DAY_LENGTH) ?? null,
       invoiced: invoiced > 0,
       refundedCents: order.refunds.reduce((sum, refund) => sum + refund.amountCents, 0),
       follows,

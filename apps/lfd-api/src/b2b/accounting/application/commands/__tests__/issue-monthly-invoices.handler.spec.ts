@@ -63,8 +63,8 @@ const FLOOR = new Date("2026-08-31T22:00:00.000Z");
 /** Les clés d'issue (payeur × mandat effectif, E4b) des deux payeurs mandatés. */
 const PORT = invoiceGroupKey("c_port", "m_c_port");
 const PRINCIPAL = invoiceGroupKey("c_principal", "m_c_principal");
-/** Le jour de livraison des bons (`orders.delivered_on`) — dans la période facturée. */
-const DELIVERED_ON = "2026-09-16";
+/** Le jour de réception des bons (`orders.received_on`) — dans la période facturée. */
+const RECEIVED_ON = "2026-09-16";
 
 let seq = 0;
 function bon(companyId: string, overrides: Partial<InvoiceableOrder> = {}): InvoiceableOrder {
@@ -76,7 +76,7 @@ function bon(companyId: string, overrides: Partial<InvoiceableOrder> = {}): Invo
     orderNumber,
     companyId,
     placedAt,
-    deliveredOn: DELIVERED_ON,
+    receivedOn: RECEIVED_ON,
     billedCompanyId: null,
     frozen: frozenOrder(orderNumber, placedAt),
     ...overrides,
@@ -563,7 +563,7 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
     atMonday.reader.orders = [
       bon("c_port", {
         placedAt: new Date("2026-10-02T08:00:00.000Z"),
-        deliveredOn: "2026-10-02",
+        receivedOn: "2026-10-02",
       }),
     ];
 
@@ -673,11 +673,11 @@ describe("IssueMonthlyInvoices — les annulées entre la préparation et l'émi
 describe("IssueMonthlyInvoices — la date de livraison (M5, lot ZA)", () => {
   /**
    * M5 (lot ZA) : la date de livraison est obligatoire ; elle ne s'invente pas.
-   * Depuis ZL, l'assiette ne rend plus de bon sans `delivered_on` : le
+   * Depuis ZL, l'assiette ne rend plus de bon sans `received_on` : le
    * bloqueur reste un FILET, éprouvé ici par un lecteur qui en rendrait un.
    */
   it("un bon sans date de livraison signale son payeur, en nommant le bon et le geste ; les autres sont facturés", async () => {
-    const unknown = bon("c_principal", { deliveredOn: null });
+    const unknown = bon("c_principal", { receivedOn: null });
     const h = harness();
     h.reader.orders = [unknown, bon("c_port")];
 
@@ -695,13 +695,13 @@ describe("IssueMonthlyInvoices — la date de livraison (M5, lot ZA)", () => {
     ]);
   });
 
-  it("la facture date chaque bon de SON `delivered_on` — celui qui l'a fait entrer dans l'assiette", async () => {
+  it("la facture date chaque bon de SON `received_on` — celui qui l'a fait entrer dans l'assiette", async () => {
     const h = harness();
     h.reader.orders = [bon("c_port")];
 
     await h.run();
 
-    expect(h.invoices.inserted[0]?.toState().orders.map((order) => order.deliveredOn)).toEqual([
+    expect(h.invoices.inserted[0]?.toState().orders.map((order) => order.receivedOn)).toEqual([
       "2026-09-16",
     ]);
   });

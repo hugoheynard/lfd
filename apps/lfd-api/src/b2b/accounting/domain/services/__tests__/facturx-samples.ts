@@ -90,7 +90,7 @@ function paidByCard(): Invoice {
   return Invoice.issue(
     realisticInput({
       id: "inv_card",
-      orders: [{ orderId: "o_1", reference: "CMD-001", deliveredOn: "2026-09-29" }],
+      orders: [{ orderId: "o_1", reference: "CMD-001", receivedOn: "2026-09-29" }],
       lines: CARD_LINES,
       vat,
       dueOn: "2026-09-30",

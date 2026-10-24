@@ -119,10 +119,10 @@ export class InvoiceDialog {
     return fill(this.copy().vatRate, { rate: formatRate(rate) });
   }
 
-  protected delivered(day: string | null): string {
+  protected received(day: string | null): string {
     return day === null
-      ? this.copy().notDelivered
-      : fill(this.copy().delivered, { date: invoiceDay(day, this.locale()) });
+      ? this.copy().notReceived
+      : fill(this.copy().received, { date: invoiceDay(day, this.locale()) });
   }
 
   /** Le règlement figé : le prélèvement et sa RUM, ou la carte qui l'a acquittée (E5a). */

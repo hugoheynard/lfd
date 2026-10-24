@@ -120,7 +120,7 @@
       <h3 class="sub">{{ copy().orders }}</h3>
       <ul class="rows">
         @for (order of bill.orders; track order.reference) {
-          <li class="order">{{ order.reference }} — {{ delivered(order.deliveredOn) }}</li>
+          <li class="order">{{ order.reference }} — {{ received(order.receivedOn) }}</li>
         }
       </ul>
     </section>

@@ -73,7 +73,7 @@ interface OrderSeed {
   readonly paymentStatus?: "not_required" | "paid";
   readonly fulfillmentMethod?: "pickup" | "delivery";
   /** Le jour de livraison (lot ZL) : aujourd'hui par défaut ; `null`, jamais remis. */
-  readonly deliveredOn?: string | null;
+  readonly receivedOn?: string | null;
 }
 
 const PICKUP_SNAPSHOT = {
@@ -95,7 +95,7 @@ async function seedOrder(seed: OrderSeed): Promise<string> {
   const lateVat = lateRate === null ? 0 : Math.round((lateFee * lateRate) / 100);
   const goodsVat = Math.round(goods * 0.055);
   const day = seed.requestedDay === undefined ? TODAY : seed.requestedDay;
-  const delivered = seed.deliveredOn === undefined ? TODAY : seed.deliveredOn;
+  const delivered = seed.receivedOn === undefined ? TODAY : seed.receivedOn;
   await ctx.prisma.order.create({
     data: {
       orderNumber,
@@ -123,7 +123,7 @@ async function seedOrder(seed: OrderSeed): Promise<string> {
         : {}),
       paymentStatus: seed.paymentStatus ?? "not_required",
       ...(day === null ? {} : { requestedDeliveryDate: new Date(`${day}T00:00:00.000Z`) }),
-      ...(delivered === null ? {} : { deliveredOn: new Date(`${delivered}T00:00:00.000Z`) }),
+      ...(delivered === null ? {} : { receivedOn: new Date(`${delivered}T00:00:00.000Z`) }),
       lines: {
         create: [
           {
@@ -263,7 +263,7 @@ describe("l'historique et le lieu de chaque bon (DF3)", () => {
     const port = await client("Boulangerie du Port");
     const counter = await seedOrder({ ...port, quantity: 1, fulfillmentMethod: "pickup" });
     const delivered = await seedOrder({ ...port, quantity: 2 });
-    const never = await seedOrder({ ...port, quantity: 3, deliveredOn: null });
+    const never = await seedOrder({ ...port, quantity: 3, receivedOn: null });
     const handedOverAt = new Date(daysAgo(0));
     await ctx.prisma.orderHandover.create({
       data: {

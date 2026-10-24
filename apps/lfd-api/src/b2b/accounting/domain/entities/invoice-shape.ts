@@ -55,8 +55,8 @@ export function assertOrders(orders: readonly InvoiceOrderReference[]): void {
     if (order.reference.trim() === "") {
       throw new InvalidInvoiceError("bons", "un bon sans référence ne se cite pas (BT-13)");
     }
-    if (order.deliveredOn !== null) {
-      assertCalendarDate(`livraison du bon ${order.reference}`, order.deliveredOn);
+    if (order.receivedOn !== null) {
+      assertCalendarDate(`livraison du bon ${order.reference}`, order.receivedOn);
     }
   }
 }

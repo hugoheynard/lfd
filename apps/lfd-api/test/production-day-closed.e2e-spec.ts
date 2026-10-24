@@ -84,8 +84,14 @@ class FlakyOrders extends OrderRepository {
   failAtClosing(orderId: string): Promise<boolean> {
     return this.real.failAtClosing(orderId);
   }
-  markFulfilled(reference: string, at: Date, by: string, via: HandoverVia): Promise<boolean> {
-    return this.real.markFulfilled(reference, at, by, via);
+  markFulfilled(
+    reference: string,
+    at: Date,
+    by: string,
+    via: HandoverVia,
+    receivedOn: string,
+  ): Promise<boolean> {
+    return this.real.markFulfilled(reference, at, by, via, receivedOn);
   }
   markReady(reference: string, at: Date, by: string): Promise<boolean> {
     return this.real.markReady(reference, at, by);

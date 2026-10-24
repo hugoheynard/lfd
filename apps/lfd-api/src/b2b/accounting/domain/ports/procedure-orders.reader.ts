@@ -5,7 +5,7 @@ export interface ProcedureOrdersScope {
   /** L'assiette de l'émission, `[from, to[` — plancher et clôture. */
   readonly deliveredFrom: Date;
   readonly deliveredTo: Date;
-  /** Jours demandés des commandes SANS jour de livraison : `[servedFrom, servedThrough]`… */
+  /** Jours demandés des commandes SANS jour de réception : `[servedFrom, servedThrough]`… */
   readonly servedFrom: string;
   readonly servedThrough: string;
   /** … et strictement avant ce jour (`AAAA-MM-JJ`, aujourd'hui à Paris) : leur jour est passé. */
@@ -27,8 +27,8 @@ export interface ProcedureOrderRow {
   readonly billedCompanyId: string | null;
   /** Le snapshot du retrait (`handed_over_at`) est posé. */
   readonly handedOver: boolean;
-  /** `AAAA-MM-JJ` ; `null` : pas de jour de livraison. */
-  readonly deliveredOn: string | null;
+  /** `AAAA-MM-JJ` ; `null` : pas de jour de réception. */
+  readonly receivedOn: string | null;
   /** La facture 380 qui la porte, quelle que soit sa période ; `null` sinon. */
   readonly invoice: { readonly invoiceId: string; readonly number: string } | null;
 }
@@ -42,7 +42,7 @@ export interface ProcedureOrderRow {
  * Une commande en est si l'une des trois est vraie :
  * 1. une facture de la clôture la porte ;
  * 2. elle est dans l'assiette de l'émission (`billableOrderWhere`) ;
- * 3. passée au compte, sans jour de livraison, son jour demandé est dans la
+ * 3. passée au compte, sans jour de réception, son jour demandé est dans la
  *    période et passé.
  *
  * L'adaptateur ne décide rien d'autre : le tri par payeur et le statut

@@ -135,13 +135,13 @@ function facts(type: string) {
   return ctx.prisma.outboxMessage.findMany({ where: { type } });
 }
 
-/** `orders.delivered_on`, `AAAA-MM-JJ` (lot ZL). */
+/** `orders.received_on`, `AAAA-MM-JJ` (lot ZL). */
 async function deliveryDayOf(id: string): Promise<string | null> {
   const row = await ctx.prisma.order.findUniqueOrThrow({
     where: { id },
-    select: { deliveredOn: true },
+    select: { receivedOn: true },
   });
-  return row.deliveredOn?.toISOString().slice(0, 10) ?? null;
+  return row.receivedOn?.toISOString().slice(0, 10) ?? null;
 }
 
 /** Le jour de Paris du retrait attesté. */

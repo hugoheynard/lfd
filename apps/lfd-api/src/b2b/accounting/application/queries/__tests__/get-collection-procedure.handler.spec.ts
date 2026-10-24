@@ -110,7 +110,7 @@ describe("la procédure de prélèvement — la lecture d'état", () => {
     w.batches.batches = [stored("x", { status: "cancelled", cancelledAt: NOW.toISOString() })];
     w.invoices.invoices.floorAt = new Date("2026-01-01T00:00:00.000Z");
     w.invoices.orders.rows = [
-      procedureRow("o1", { serviceDay: "2026-09-11", deliveredOn: "2026-09-11" }),
+      procedureRow("o1", { serviceDay: "2026-09-11", receivedOn: "2026-09-11" }),
     ];
 
     const view = await w.read();

@@ -54,13 +54,13 @@ const NO_CLOSURE: CollectionProcedureInvoicesView = {
  *
  * Une commande est de la période (`ProcedureOrdersReader`) si une facture de
  * la clôture la porte, si elle est dans l'assiette de l'émission
- * (`[plancher, clôture[`), ou si, sans jour de livraison, son jour demandé
+ * (`[plancher, clôture[`), ou si, sans jour de réception, son jour demandé
  * tombe dans la période affichée (`periodOf`, la plus longue) et est passé.
  * Hors des factures de la clôture, seuls restent les payeurs qui closent ici
  * (`closesFor`) — exactement ce que « Émettre » prendrait
  * (`IssueMonthlyInvoicesHandler.prepare`) — et une commande facturée ailleurs
  * n'est gardée que par sa date demandée (une facture d'avant la règle du
- * 2026-10-22, sans jour de livraison).
+ * 2026-10-22, sans jour de réception).
  */
 @Injectable()
 export class ProcedureInvoicesStep {
@@ -117,8 +117,8 @@ export class ProcedureInvoicesStep {
         if (row.invoice !== null && periodInvoiceIds.has(row.invoice.invoiceId)) {
           return true;
         }
-        // Facturée ailleurs : seule la branche « sans jour de livraison » la retient.
-        const kept = row.invoice === null || row.deliveredOn === null;
+        // Facturée ailleurs : seule la branche « sans jour de réception » la retient.
+        const kept = row.invoice === null || row.receivedOn === null;
         return kept && calendar.closesFor(billedPayerOf(row, follows), closesAt);
       })
       .map(orderView)
@@ -130,13 +130,13 @@ function orderView(row: ProcedureOrderRow): ProcedureOrderView {
   const facts = {
     invoiced: row.invoice !== null,
     handedOver: row.handedOver,
-    deliveredOn: row.deliveredOn,
+    receivedOn: row.receivedOn,
   };
   return {
     orderId: row.orderId,
     orderNumber: row.orderNumber,
     companyName: row.companyName,
-    serviceDay: row.serviceDay ?? row.deliveredOn,
+    serviceDay: row.serviceDay ?? row.receivedOn,
     fulfillmentMethod: row.fulfillmentMethod,
     totalCents: row.totalCents,
     status: procedureOrderStatus(facts),

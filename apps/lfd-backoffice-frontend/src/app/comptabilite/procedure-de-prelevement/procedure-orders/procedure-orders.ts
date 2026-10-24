@@ -31,7 +31,7 @@ const STATUS_VARIANTS: Readonly<Record<ProcedureOrderStatusView, 'warning' | 'in
 /**
  * **Les commandes de la période, un statut chacune** (onglet « Factures »,
  * Hugo, 2026-10-24). Le statut vient du serveur ; une commande facturée dit
- * son numéro de facture, une réception confirmée sans jour de livraison le
+ * son numéro de facture, une réception confirmée sans jour de réception le
  * dit (« à reprendre »), une réception à confirmer porte son geste : la
  * commande, où l'on enregistre la remise — retrait ou livraison.
  */

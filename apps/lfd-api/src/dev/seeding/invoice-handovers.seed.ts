@@ -91,7 +91,7 @@ export async function handOverPastOrders(
 
 /**
  * **La reprise du jour de livraison** (lot ZL) — les commandes retirées AVANT
- * que le commerce ne pose `orders.delivered_on` n'en ont pas, et n'entrent
+ * que le commerce ne pose `orders.received_on` n'en ont pas, et n'entrent
  * donc dans aucune facture. On rejoue la commande de l'abonné du retrait
  * (`RecordOrderDeliveryDayCommand`) pour chacune : la même règle, par le bus,
  * jamais une écriture SQL. Idempotent : une commande datée n'est plus lue.
@@ -103,7 +103,7 @@ export async function handOverPastOrders(
  */
 export async function datePastDeliveries(context: SeedContext): Promise<number> {
   const pending = await context.prisma.order.findMany({
-    where: { handedOverAt: { not: null }, deliveredOn: null },
+    where: { handedOverAt: { not: null }, receivedOn: null },
     select: { id: true },
     orderBy: { createdAt: "asc" },
   });

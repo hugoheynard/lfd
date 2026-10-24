@@ -31,7 +31,7 @@ export interface DeliveryDayArrestView {
   readonly due: DeliveryDayDue | null;
 }
 
-/** Le jour de livraison est aujourd'hui, ou demain. */
+/** Le jour de réception est aujourd'hui, ou demain. */
 export type DeliveryDayDue = "today" | "tomorrow";
 
 /** Aucun véhicule en service n'a ses cotes ; aucun type de bac n'est en service. */

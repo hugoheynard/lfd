@@ -121,12 +121,20 @@ export abstract class OrderRepository {
    *
    * Une commande **annulée** ne franchit pas non plus (S1 du plan
    * d'annulation, 2026-10-12) : `false`, et elle reste annulée.
+   *
+   * **La date de réception part avec la remise** (plan
+   * `documentation/commandes/plan-date-de-reception.md`, B2, 2026-10-24) :
+   * `receivedOn` (`AAAA-MM-JJ`, jour de Paris) est écrit dans la MÊME
+   * instruction que `handedOverAt` — jamais une remise sans date. Une date
+   * déjà posée n'est jamais remplacée (elle est figée en base), et ne
+   * bloque pas la remise.
    */
   abstract markFulfilled(
     reference: string,
     at: Date,
     by: string,
     via: HandoverVia,
+    receivedOn: string,
   ): Promise<boolean>;
 
   /**

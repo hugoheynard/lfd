@@ -34,7 +34,7 @@ import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, daysAgo, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
-import { attachTo, createCompany, createUser, deliveredOnColumn } from "./factories.js";
+import { attachTo, createCompany, createUser, receivedOnColumn } from "./factories.js";
 
 const SERVICE_DAY = serviceDay();
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -264,7 +264,7 @@ async function billedOrder(site: string, payer: string): Promise<string> {
       vatShares: [{ rate: 5.5, amountCents: 550 }],
       paymentStatus: "not_required",
       createdAt: new Date(closesAt.getTime() - 2 * DAY_MS),
-      deliveredOn: deliveredOnColumn(new Date(closesAt.getTime() - 2 * DAY_MS)),
+      receivedOn: receivedOnColumn(new Date(closesAt.getTime() - 2 * DAY_MS)),
       lines: {
         create: {
           sku: "PAIN-S4",

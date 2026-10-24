@@ -162,13 +162,13 @@ function headerAgreement(state: InvoiceState): string {
  */
 function headerDelivery(state: InvoiceState): string {
   const [single, ...others] = state.orders;
-  const deliveredOn = others.length === 0 ? (single?.deliveredOn ?? null) : null;
+  const receivedOn = others.length === 0 ? (single?.receivedOn ?? null) : null;
   return [
     "<ram:ApplicableHeaderTradeDelivery>",
     shipToParty(state.buyer.name, state.deliveryAddressLines),
-    deliveredOn === null
+    receivedOn === null
       ? ""
-      : `<ram:ActualDeliverySupplyChainEvent>${dateElement("ram:OccurrenceDateTime", deliveredOn, "udt")}</ram:ActualDeliverySupplyChainEvent>`,
+      : `<ram:ActualDeliverySupplyChainEvent>${dateElement("ram:OccurrenceDateTime", receivedOn, "udt")}</ram:ActualDeliverySupplyChainEvent>`,
     "</ram:ApplicableHeaderTradeDelivery>",
   ].join("");
 }

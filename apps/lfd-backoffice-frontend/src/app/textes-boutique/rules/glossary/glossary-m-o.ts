@@ -88,7 +88,7 @@ export const GLOSSARY_M_O: Readonly<Record<string, string>> = {
   noneRegistered: 'Aucune heure inscrite ce jour-là',
   noneSubtitle: 'Aucun — sous-titre',
   noneTitle: 'Aucun — titre',
-  notDelivered: 'Livraison non constatée',
+  notReceived: 'Réception non constatée',
   noteLabel: 'Consignes d’accès',
   notePlaceholder: 'Consignes d’accès — exemple',
   notifications: 'Notifications',

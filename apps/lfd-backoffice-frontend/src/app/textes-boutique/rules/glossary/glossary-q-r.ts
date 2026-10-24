@@ -18,6 +18,7 @@ export const GLOSSARY_Q_R: Readonly<Record<string, string>> = {
   reasonsFailed: 'Raisons illisibles',
   reasonsLoading: 'Chargement des raisons',
   reasonsRetry: 'Raisons — réessayer',
+  received: 'Reçue le',
   recapContent: 'Récapitulatif — contenu',
   recapDelivery: 'Récapitulatif — livraison',
   recapPickup: 'Récapitulatif — retrait',

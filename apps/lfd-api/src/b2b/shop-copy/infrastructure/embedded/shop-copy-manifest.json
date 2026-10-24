@@ -10358,17 +10358,17 @@
           "variables": []
         },
         {
-          "key": "account.invoices.delivered",
-          "fr": "livrée le {date}",
-          "en": "delivered on {date}",
-          "it": "consegnato il {date}",
+          "key": "account.invoices.received",
+          "fr": "reçue le {date}",
+          "en": "received on {date}",
+          "it": "ricevuta il {date}",
           "variables": ["date"]
         },
         {
-          "key": "account.invoices.notDelivered",
-          "fr": "livraison non constatée",
-          "en": "delivery not recorded",
-          "it": "consegna non registrata",
+          "key": "account.invoices.notReceived",
+          "fr": "réception non constatée",
+          "en": "receipt not recorded",
+          "it": "ricezione non registrata",
           "variables": []
         },
         {

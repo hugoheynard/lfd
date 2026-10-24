@@ -3,7 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { OrderDeliveryHistoryReader } from "../../../../delivery/channels/commerce/index.js";
 import { OrderHandoverHistoryReader } from "../../../../handover/channels/commerce/index.js";
 import { OrderDeliveryDays } from "../../domain/ports/order-delivery-days.js";
-import { deliveredOnOf } from "../../domain/services/monthly-invoicing.js";
+import { receivedOnOf } from "../../domain/services/monthly-invoicing.js";
 import { RecordOrderDeliveryDayCommand } from "./record-order-delivery-day.command.js";
 
 /**
@@ -12,7 +12,7 @@ import { RecordOrderDeliveryDayCommand } from "./record-order-delivery-day.comma
  *
  * Il relit ce que le retrait et la livraison disent du bon, par leurs canaux
  * (`handover/channels/commerce/`, `delivery/channels/commerce/`), et applique
- * LA règle de la facture — `deliveredOnOf` : le jour de la tournée qui l'a
+ * LA règle de la facture — `receivedOnOf` : le jour de la tournée qui l'a
  * remis à la porte, sinon le jour (Paris) du retrait. Elle n'est pas
  * réécrite ici.
  *
@@ -38,7 +38,7 @@ export class RecordOrderDeliveryDayHandler implements ICommandHandler<
       this.handovers.ofOrders([orderId]),
       this.deliveries.ofOrders([orderId]),
     ]);
-    const day = deliveredOnOf(
+    const day = receivedOnOf(
       handovers.get(orderId) ?? null,
       stops.filter((stop) => stop.orderId === orderId),
     );

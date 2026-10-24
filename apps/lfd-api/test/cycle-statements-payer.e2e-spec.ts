@@ -18,7 +18,7 @@ import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js
 import type { BillingCycle } from "../src/b2b/accounting/domain/services/billing-cycle.js";
 import { StatementMonth } from "../src/b2b/accounting/domain/value-objects/statement-month.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { createCompany, createUser, deliveredOnColumn } from "./factories.js";
+import { createCompany, createUser, receivedOnColumn } from "./factories.js";
 
 const stubAdminVerifier = {
   verify: (subject: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -97,7 +97,7 @@ async function seedOrder(
       status: "placed",
       paymentStatus: "not_required",
       createdAt,
-      deliveredOn: deliveredOnColumn(createdAt),
+      receivedOn: receivedOnColumn(createdAt),
     },
   });
   return orderNumber;

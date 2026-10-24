@@ -151,9 +151,9 @@ describe("le préfixe et la date de livraison (lot ZA)", () => {
 
   it("un bon sans date de livraison : un manque par bon, qui le nomme avec le geste", () => {
     const blockers = orderDeliveryBlockers([
-      { reference: "CMD-001", deliveredOn: "2026-09-12" },
-      { reference: "CMD-002", deliveredOn: null },
-      { reference: "CMD-003", deliveredOn: null },
+      { reference: "CMD-001", receivedOn: "2026-09-12" },
+      { reference: "CMD-002", receivedOn: null },
+      { reference: "CMD-003", receivedOn: null },
     ]);
     expect(blockers.map((b) => b.code)).toEqual([
       "order_delivery_unknown",
@@ -165,8 +165,6 @@ describe("le préfixe et la date de livraison (lot ZA)", () => {
   });
 
   it("tous les bons datés : aucun manque", () => {
-    expect(orderDeliveryBlockers([{ reference: "CMD-001", deliveredOn: "2026-09-12" }])).toEqual(
-      [],
-    );
+    expect(orderDeliveryBlockers([{ reference: "CMD-001", receivedOn: "2026-09-12" }])).toEqual([]);
   });
 });

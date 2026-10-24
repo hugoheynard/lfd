@@ -194,9 +194,9 @@
                 <li>
                   {{ order.reference }} —
                   {{
-                    order.deliveredOn === null
-                      ? 'livraison non constatée'
-                      : 'livré le ' + day(order.deliveredOn)
+                    order.receivedOn === null
+                      ? 'réception non constatée'
+                      : 'reçue le ' + day(order.receivedOn)
                   }}
                 </li>
               }

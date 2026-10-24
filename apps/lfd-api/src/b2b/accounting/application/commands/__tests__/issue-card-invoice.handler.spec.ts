@@ -31,6 +31,7 @@ function order(overrides: Partial<CardInvoiceCandidate> = {}): CardInvoiceCandid
     totalCents: 1_000,
     paidAt: PAID,
     handedOverAt: RETRAIT,
+    receivedOn: "2026-09-30",
     invoiced: false,
     refundedCents: 0,
     follows: [],
@@ -57,7 +58,7 @@ describe("IssueCardInvoiceHandler — les deux ordres d'arrivée", () => {
 
   it("paiement puis retrait : rien au paiement, la facture au retrait", async () => {
     const w = cardWorld(RETRAIT);
-    w.reader.orders.set("o_1", order({ handedOverAt: null }));
+    w.reader.orders.set("o_1", order({ handedOverAt: null, receivedOn: null }));
 
     expect((await issue(w)).outcome).toBe("awaiting_handover");
     w.reader.orders.set("o_1", order());
@@ -65,7 +66,7 @@ describe("IssueCardInvoiceHandler — les deux ordres d'arrivée", () => {
     expect((await issue(w)).outcome).toBe("issued");
   });
 
-  it("la facture est acquittée, datée du jour d'émission, livrée le jour du retrait", async () => {
+  it("la facture est acquittée, datée du jour d'émission, reçue le jour du retrait", async () => {
     const w = cardWorld(RETRAIT);
     w.reader.orders.set("o_1", order());
     await issue(w);
@@ -76,11 +77,23 @@ describe("IssueCardInvoiceHandler — les deux ordres d'arrivée", () => {
       dueOn: "2026-09-30",
       paymentMeans: { code: "48" },
       prepayment: { amountCents: 1_000, paidOn: "2026-09-29" },
-      orders: [{ orderId: "o_1", reference: "CMD-001", deliveredOn: "2026-09-30" }],
+      orders: [{ orderId: "o_1", reference: "CMD-001", receivedOn: "2026-09-30" }],
     });
     expect(state?.buyer.companyId).toBe("c_port");
     expect(w.outcomes.rows.get("o_1")?.invoiceId).toBe(state?.id);
     expect(w.lock.locked).toEqual(["o_1"]);
+  });
+
+  /**
+   * Régression (plan-date-de-reception, B2, 2026-10-24) : la facture carte
+   * recalculait le jour de Paris de `handedOverAt`, sans la règle de la porte.
+   */
+  it("une remise à la porte attestée après minuit prend le jour de la tournée, lu sur la commande", async () => {
+    const w = cardWorld(RETRAIT);
+    w.reader.orders.set("o_1", order({ handedOverAt: AFTER_MIDNIGHT, receivedOn: "2026-09-30" }));
+    await issue(w);
+
+    expect(w.invoices.inserted[0]?.toState().orders).toMatchObject([{ receivedOn: "2026-09-30" }]);
   });
 
   it("l'acheteur est le payeur légal copié sur la commande, pas le site", async () => {
@@ -113,7 +126,7 @@ describe("IssueCardInvoiceHandler — idempotence et chronologie", () => {
     expect((await issue(w)).outcome).toBe("issued");
     expect(w.invoices.inserted[1]?.toState()).toMatchObject({
       issuedOn: "2026-10-01",
-      orders: [{ deliveredOn: "2026-09-30" }],
+      orders: [{ receivedOn: "2026-09-30" }],
     });
   });
 });

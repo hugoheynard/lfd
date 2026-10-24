@@ -1,5 +1,12 @@
 # Plan — aucune faille sur la facturation
 
+> ⚠️ **2026-10-24** : `delivered_on` est renommée `received_on` (colonne
+> `orders` et `invoice_order`, déclencheur `orders_received_on_frozen`,
+> `deliveredOnOf` → `receivedOnOf`), et la date est posée avec la remise par
+> `MarkOrderFulfilledHandler` — plan
+> [`plan-date-de-reception.md`](../../commandes/plan-date-de-reception.md). Les mentions ci-dessous gardent
+> l'ancien nom : elles décrivent ce qui a été bâti à leur date.
+
 > **Doc-first, 2026-10-22.** Hugo : « je ne veux aucune faille sur la
 > facturation ». Ce plan recense **tout ce qui reste ouvert** sur la facture
 > émise et l'avoir — conformité, intégrité, métier — à partir de

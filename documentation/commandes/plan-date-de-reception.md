@@ -1,6 +1,10 @@
 # La date de réception d'une commande — plan (doc-first, 2026-10-24)
 
-> **État : plan, rien n'est bâti.** Décision de Hugo du 2026-10-24 : la « date
+> **État (2026-10-24, soir) : premier temps (B1 + B2) bâti, non commité** —
+> voir §6 et §7. Deuxième temps (reprise, §8) écrit, ni bâti ni lancé.
+> Troisième temps (B4) : rien.
+>
+> Décision de Hugo du 2026-10-24 : la « date
 > de réception » — le jour de Paris où la marchandise change de mains, livrée
 > à la porte OU retirée au comptoir — est un modèle sans bricolage. Ce plan
 > prolonge le lot ZL de
@@ -448,3 +452,150 @@ MINEUR, pris en compte :
 - la facture carte lit la ligne déjà écrite dans la même unité de travail ;
 - `test/production-batch.e2e-spec.ts:951` remet `handedOverAt` à `NULL`, ce
   qui reste compatible avec le CHECK.
+
+---
+
+## 6. Décisions de Hugo (2026-10-24) — l'emportent sur les §0 à §5
+
+- **Q1 — option A.** Le commerce calcule le jour à la copie de la remise.
+- **Q2 — vérifiée par un test au premier lot** : à la porte, l'arrêt est-il
+  clos et la preuve écrite avant que le fait de retrait ne parte ? **Oui**
+  (2026-10-24) : `HandoverDoorstepAttestor.attest` écrit l'attestation, son
+  fait dans la boîte d'envoi et la preuve, puis `closeStop`, dans UNE unité de
+  travail du livreur ; le relais ne livre qu'après validation. Prouvé par
+  `apps/lfd-api/test/order-received-on.e2e-spec.ts` (« Q2 ») : la tournée
+  roule dans une semaine, la remise est attestée aujourd'hui, et
+  `received_on` vaut le jour de la tournée.
+- **Q3 — « Reçue le » partout**, un seul mot, livrée ou retirée (écran de la
+  facture émise, dialogue client, note Factur-X / PDF ; « réception non
+  constatée » pour une ligne sans date).
+- **Q4 — la date ne change jamais une fois posée**, même si la commande est
+  annulée ensuite. Le déclencheur figé le tient déjà.
+- **Q5 — les deux sens** : « remise ⇒ date » ET « date ⇒ remise ». Les deux
+  contraintes n'arrivent qu'au **troisième temps** (B4), pas avant ; les
+  fixtures qui sèment un jour sans remise (`test/factories.ts`
+  `receivedOnColumn`, et les 13 suites qui la lisent) sont à réécrire à B4.
+- **Q6 — reprise par script, pas par migration** : c'est le deuxième temps
+  (§8).
+
+## 7. Premier temps (B1 + B2) — ce qui est bâti (2026-10-24, non commité)
+
+**Migration** `apps/lfd-api/prisma/migrations/20261024120000_la_date_de_reception/migration.sql` :
+`RENAME COLUMN` sur `orders` et `invoice_order` (aucune valeur recalculée),
+`ALTER INDEX … RENAME`, `ALTER TRIGGER … RENAME` et `ALTER FUNCTION … RENAME`,
+puis `CREATE OR REPLACE FUNCTION orders_received_on_frozen()` dont le corps lit
+`received_on` (objection 9). Aucune ligne écrite, aucun CHECK.
+
+**Un seul écrivain** : `MarkOrderFulfilledHandler` relit
+`OrderHandoverHistoryReader` et `OrderDeliveryHistoryReader` (canaux
+existants), applique `receivedOnOf` importée de
+`b2b/accounting/domain/services/monthly-invoicing.ts` (jamais recopiée),
+repli sur le jour de Paris de `command.at` ; `OrderRepository.markFulfilled`
+prend `receivedOn` et l'écrit dans le même `updateMany` que `handed_over_at`.
+Si l'ancien abonné l'a déjà posée, une seconde instruction pose la remise sans
+toucher la colonne : la date figée ne bloque pas la remise (prouvé en e2e).
+L'ancien abonné reste branché : son `where received_on IS NULL` le rend inerte
+après la remise, et sa valeur, quand il passe avant, est la même règle.
+
+**Facture carte** : `card-invoice-support.ts` lit `CardInvoiceCandidate.receivedOn`
+(la colonne) au lieu de recalculer le jour de Paris de `handedOverAt`.
+
+**Contrat** : `IssuedInvoiceOrderView.receivedOn` (`packages/contracts/src/issued-invoices.ts`) ;
+`deliveryDayMissing` reste jusqu'à B4.
+
+**Injection** : le boot de `apps/lfd-api/test/order-received-on.e2e-spec.ts` prouve qu'elle
+n'est pas circulaire (objection 7) — les deux lecteurs viennent de modules
+`@Global`.
+
+Un constat en le bâtissant : l'objection 6 dit qu'`orders` importe déjà
+`accounting` « dans `settlement-regime.ts` ». Ouvert le 2026-10-24 : ce fichier
+ne fait que le CITER en commentaire ; l'import de `receivedOnOf` par
+`mark-order-fulfilled.handler.ts` est le premier `orders → accounting` du
+domaine.
+
+## 8. Deuxième temps — le script de reprise (écrit, NON bâti, NON lancé)
+
+Il se lance **après** le déploiement du premier temps, **avant** B4.
+
+### 8.1 Ce qu'il fait
+
+Pour chaque commande `handed_over_at IS NOT NULL AND received_on IS NULL`,
+dans l'ordre de `created_at`, il exécute par le bus
+`RecordOrderDeliveryDayCommand(orderId)` — la même règle `receivedOnOf`,
+écrite une fois, et l'écriture conditionnée `received_on IS NULL` : jamais une
+date déjà posée ne bouge, le déclencheur ne mord pas. C'est exactement
+`datePastDeliveries` (`apps/lfd-api/src/dev/seeding/invoice-handovers.seed.ts`),
+lancé dans un contexte Nest autonome contre la base de production.
+
+⚠️ **Ce n'est pas la commande de B2** : `MarkOrderFulfilledCommand` ne touche
+pas une commande déjà remise (`where handedOverAt: null`), et c'est voulu.
+
+⚠️ **Le repli manque à la commande de reprise** : `RecordOrderDeliveryDayHandler`
+ne pose rien quand aucune ligne `order_handover` n'est lue
+(`receivedOnOf(null, …) = null`), là où B2 retombe sur l'instant du fait. Une
+commande `handed_over_at` non nulle sans attestation (écrite hors du retrait)
+resterait sans date, et B4 échouerait. Le contrôle « après » n°1 la verrait ;
+la décision (ajouter le repli `handed_over_at` à la commande de reprise, ou
+traiter ces lignes à la main) est à prendre avant de bâtir le script.
+
+```ts
+// apps/lfd-api/src/dev/ops/date-received-orders.ts — esquisse, un fichier
+const app = await NestFactory.createApplicationContext(AppModule, { logger: ["error"] });
+const prisma = app.get(PrismaService);
+const commands = app.get(CommandBus);
+const pending = await prisma.order.findMany({
+  where: { handedOverAt: { not: null }, receivedOn: null },
+  select: { id: true, orderNumber: true },
+  orderBy: { createdAt: "asc" },
+});
+for (const order of pending) {
+  await commands.execute(new RecordOrderDeliveryDayCommand(order.id));
+}
+// puis : relire les restantes, les afficher par numéro, code de sortie ≠ 0 s'il en reste
+await app.close();
+```
+
+### 8.2 Contrôles (runbook), noms de colonnes après le premier temps
+
+Avant :
+
+```sql
+-- 1. combien, et lesquelles
+SELECT count(*) FROM orders WHERE handed_over_at IS NOT NULL AND received_on IS NULL;
+SELECT order_number, handed_over_at, (handed_over_at AT TIME ZONE 'Europe/Paris')::date AS jour_paris
+  FROM orders WHERE handed_over_at IS NOT NULL AND received_on IS NULL ORDER BY handed_over_at;
+-- 2. parmi elles, celles sans attestation de retrait (le repli manquant, §8.1)
+SELECT o.order_number FROM orders o
+  WHERE o.handed_over_at IS NOT NULL AND o.received_on IS NULL
+    AND NOT EXISTS (SELECT 1 FROM production.order_handover h WHERE h.order_id = o.id);
+-- 3. celles déjà sur une facture (date figée NULL sur la ligne de facture)
+SELECT o.order_number FROM orders o JOIN invoice_order io ON io.order_id = o.id
+  WHERE o.handed_over_at IS NOT NULL AND o.received_on IS NULL;
+-- 4. instantanés de comparaison (même session que les contrôles « après »)
+CREATE TEMP TABLE avant AS SELECT id, received_on FROM orders;
+CREATE TEMP TABLE factures_avant AS SELECT invoice_id, order_id, received_on FROM invoice_order;
+-- 5. le sens inverse (Q5, contrainte de B4) : une date sans remise
+SELECT count(*) FROM orders WHERE received_on IS NOT NULL AND handed_over_at IS NULL;
+```
+
+Après :
+
+```sql
+-- 1. doit rendre 0
+SELECT count(*) FROM orders WHERE handed_over_at IS NOT NULL AND received_on IS NULL;
+-- 2. aucune date déjà posée n'a bougé — doit rendre 0
+SELECT count(*) FROM orders o JOIN avant a USING (id)
+  WHERE a.received_on IS NOT NULL AND o.received_on IS DISTINCT FROM a.received_on;
+-- 3. écart à la règle simple (attendu : seulement des remises à la porte)
+SELECT order_number FROM orders
+  WHERE handed_over_at IS NOT NULL AND received_on <> (handed_over_at AT TIME ZONE 'Europe/Paris')::date;
+-- 4. aucune facture touchée — doit rendre 0 (la ligne figée ne bouge jamais)
+SELECT count(*) FROM invoice_order io JOIN factures_avant f USING (invoice_id, order_id)
+  WHERE io.received_on IS DISTINCT FROM f.received_on;
+-- 5. le sens inverse doit aussi rendre 0 avant B4 (Q5)
+SELECT count(*) FROM orders WHERE received_on IS NOT NULL AND handed_over_at IS NULL;
+```
+
+⚠️ Le contrôle « après » n°5 n'est pas couvert par la reprise : une date sans
+remise ne se répare pas en posant une date. Si la base en porte, B4 (Q5) ne
+passera pas, et la décision est à prendre avec Hugo.

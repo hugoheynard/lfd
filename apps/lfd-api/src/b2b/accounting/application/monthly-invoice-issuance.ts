@@ -73,7 +73,7 @@ export function draftOf(
     orders: payer.billable.map((order) => ({
       orderId: order.orderId,
       reference: order.orderNumber,
-      deliveredOn: context.deliveredOn.get(order.orderId) ?? null,
+      receivedOn: context.receivedOn.get(order.orderId) ?? null,
     })),
     paymentMeans: invoicePaymentMeansOf(payer.mandate),
     // Rien n'est payé d'avance sur un bon au compte : il sera prélevé.

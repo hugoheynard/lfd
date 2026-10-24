@@ -159,17 +159,19 @@ model Order {
   // Alimente le plan de prod (« à produire pour demain »).
   requestedDeliveryDate DateTime? @map("requested_delivery_date") @db.Date
 
-  /// **Le jour (Europe/Paris) de la première remise attestée** — au comptoir,
-  /// à la porte ou déposée. Le mois de la facture du bon en découle (CGI art.
-  /// 269-1-a et 269-2-a : fait générateur et exigibilité à la livraison ; plan
-  /// `plan-zero-faille.md`, lot ZL).
+  /// **La date de réception : le jour (Europe/Paris) où la marchandise a
+  /// changé de mains** — livrée à la porte (le jour de la tournée) ou retirée
+  /// au comptoir. Le mois de la facture de la commande en découle (CGI art.
+  /// 269-1-a et 269-2-a ; plans `plan-zero-faille.md` lot ZL et
+  /// `documentation/commandes/plan-date-de-reception.md`).
   ///
-  /// Posée UNE fois, par l'abonné durable du retrait
-  /// (`RecordDeliveryDayOnHandover`), et jamais déplacée ensuite : le
-  /// déclencheur `orders_delivered_on_frozen` refuse de la changer. `NULL` =
-  /// pas encore constatée — le bon n'est dans aucune facture, et figure dans
-  /// les « Bons à constater » une fois son jour passé.
-  deliveredOn DateTime? @map("delivered_on") @db.Date
+  /// Posée UNE fois, dans le même `UPDATE` que `handed_over_at`
+  /// (`MarkOrderFulfilledHandler`, depuis le 2026-10-24), et jamais déplacée
+  /// ensuite, même si la commande est annulée : le déclencheur
+  /// `orders_received_on_frozen` refuse de la changer. `NULL` = pas encore
+  /// reçue — la commande n'est dans aucune facture, et figure dans les « Bons
+  /// à constater » une fois son jour passé.
+  receivedOn DateTime? @map("received_on") @db.Date
 
   // Acheminement. `delivery` = **coursier** : `deliveryZoneId` (zone tarifée) +
   // `deliveryAddressSnapshot` (adresse libre FIGÉE, comme les prix). `pickup` =
@@ -395,7 +397,7 @@ model Order {
   @@index([placedByUserId])
   @@index([placedByStaffId])
   @@index([requestedDeliveryDate])
-  @@index([deliveredOn])
+  @@index([receivedOn])
   @@index([status])
   @@index([paymentStatus])
   @@index([fromSubscriptionId])

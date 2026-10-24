@@ -55,7 +55,7 @@ export interface CycleStatementOrderView {
   /**
    * ISO — l'instant de passation. Il ne range PAS la commande dans son cycle :
    * depuis ZL (2026-10-22), un cycle montre les bons que sa facture porte ou
-   * portera, rangés par jour de livraison.
+   * portera, rangés par jour de réception.
    */
   readonly placedAt: string;
   /** La société qui a commandé — le site, quand c'est un sous-compte. */

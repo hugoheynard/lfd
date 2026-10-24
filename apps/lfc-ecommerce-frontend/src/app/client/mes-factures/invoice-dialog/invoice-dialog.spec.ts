@@ -53,7 +53,7 @@ describe('InvoiceDialog', () => {
     expect(el.querySelector('[data-invoice-total]')?.textContent).toMatch(/105,50\s€/u);
     expect(el.querySelector('[data-invoice-means]')?.textContent).toContain('RUM-PORT-1');
     expect(el.textContent).toContain('14,15 %');
-    expect(el.textContent).toContain('livraison non constatée');
+    expect(el.textContent).toContain('réception non constatée');
     // Le PDF n'est pas encore rendu (E3b) : le dialogue le dit, sans bouton.
     expect(el.querySelector('[data-invoice-pdf-pending]')?.textContent).toContain('en préparation');
     expect(el.querySelector('[data-invoice-pdf]')).toBeNull();

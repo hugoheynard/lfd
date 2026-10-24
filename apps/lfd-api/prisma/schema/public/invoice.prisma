@@ -117,8 +117,9 @@ model InvoiceOrder {
 
   orderId     String    @map("order_id")
   orderNumber String    @map("order_number")
-  /// La date de livraison RÉELLE ; NULL quand inconnue à l'émission.
-  deliveredOn DateTime? @map("delivered_on") @db.Date
+  /// La date de réception RÉELLE (livrée ou retirée), figée à l'émission ;
+  /// NULL quand inconnue à l'émission.
+  receivedOn  DateTime? @map("received_on") @db.Date
   /// Le rang d'écriture du bon sur la pièce — l'ordre de relecture.
   position    Int
 

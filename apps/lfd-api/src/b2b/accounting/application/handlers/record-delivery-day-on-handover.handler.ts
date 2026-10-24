@@ -28,6 +28,13 @@ export const RECORD_DELIVERY_DAY_ON_HANDOVER = "accounting.record-delivery-day.o
  * Abonné durable, un fait d'un autre bloc (`lint:durable-cross-block`) ;
  * livré au moins une fois, et la réannonce d'un retrait arrive comme un fait
  * neuf : la commande ne pose le jour que s'il est absent.
+ *
+ * ⚠️ **En sursis depuis le 2026-10-24** (`documentation/commandes/plan-date-de-reception.md`,
+ * B2) : `MarkOrderFulfilledHandler` pose `received_on` dans la même écriture
+ * que la remise. Cet abonné ne pose plus rien quand il passe après, et ce
+ * qu'il pose quand il passe avant est la même règle, que la remise ne
+ * réécrit pas. Il est retiré au troisième temps (B4), après contrôle de la
+ * boîte d'envoi.
  */
 @Injectable()
 @DurableHandler({ type: HANDOVER_HANDED_OVER, subscriber: RECORD_DELIVERY_DAY_ON_HANDOVER })

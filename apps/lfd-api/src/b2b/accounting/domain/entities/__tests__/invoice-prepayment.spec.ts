@@ -20,7 +20,7 @@ const PAID_ON = "2026-09-28";
 
 function cardInput(overrides: Parameters<typeof issueInput>[0] = {}) {
   return issueInput({
-    orders: [{ orderId: "o_1", reference: "CMD-001", deliveredOn: "2026-09-29" }],
+    orders: [{ orderId: "o_1", reference: "CMD-001", receivedOn: "2026-09-29" }],
     dueOn: ISSUED_ON,
     paymentMeans: { code: BANK_CARD },
     prepayment: { amountCents: TTC, paidOn: PAID_ON },

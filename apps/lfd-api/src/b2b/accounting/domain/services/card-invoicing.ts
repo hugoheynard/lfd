@@ -28,6 +28,12 @@ export interface CardInvoiceCandidate {
   readonly paidAt: Date | null;
   /** Le retrait constaté ; `null` tant que la commande n'est pas retirée. */
   readonly handedOverAt: Date | null;
+  /**
+   * La date de réception (`orders.received_on`, `AAAA-MM-JJ`) — posée avec la
+   * remise, et pour une remise à la porte le jour de la tournée. `null` tant
+   * que la commande n'est pas reçue.
+   */
+  readonly receivedOn: string | null;
   /** Une facture 380 couvre déjà le bon. */
   readonly invoiced: boolean;
   /** Le cumul des remboursements RÉUSSIS. */

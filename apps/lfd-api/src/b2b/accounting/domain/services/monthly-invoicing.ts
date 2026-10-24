@@ -29,11 +29,11 @@ export interface InvoiceableOrder {
   readonly companyId: string;
   readonly placedAt: Date;
   /**
-   * `AAAA-MM-JJ` — `orders.delivered_on`, le jour qui l'a fait entrer dans
+   * `AAAA-MM-JJ` — `orders.received_on`, le jour qui l'a fait entrer dans
    * l'assiette (lot ZL). Jamais `null` sous `billableOrderWhere` ; le type le
    * garde nullable pour que le bloqueur M5 reste un filet.
    */
-  readonly deliveredOn: string | null;
+  readonly receivedOn: string | null;
   readonly billedCompanyId: string | null;
   readonly frozen: FrozenInvoiceOrder;
 }
@@ -197,7 +197,7 @@ export function invoicePaymentMeansOf(
  * de la tournée qui l'a remis à la porte, sinon le jour (Paris) de son
  * retrait. Jamais la date demandée.
  */
-export function deliveredOnOf(
+export function receivedOnOf(
   handover: DossierHandoverFact | null,
   stops: readonly DossierStopFact[],
 ): string | null {

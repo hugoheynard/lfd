@@ -41,7 +41,7 @@ export type InvoiceSeedReport =
       readonly invoices: number;
       /** Les commandes passées des Cimes retirées par cette relance — le rattrapage. */
       readonly handedOver: number;
-      /** Les commandes retirées que cette relance a datées (`delivered_on`, lot ZL). */
+      /** Les commandes retirées que cette relance a datées (`received_on`, lot ZL). */
       readonly dated: number;
     }
   | {

@@ -419,5 +419,6 @@
   "test/collection-test-return.e2e-spec.ts": 4000,
   "test/account-bank-export-race.e2e-spec.ts": 16231,
   "test/mandate-bank-export-race.e2e-spec.ts": 16253,
-  "test/collection-batch-attestation.e2e-spec.ts": 12444
+  "test/collection-batch-attestation.e2e-spec.ts": 12444,
+  "test/order-received-on.e2e-spec.ts": 8069
 }

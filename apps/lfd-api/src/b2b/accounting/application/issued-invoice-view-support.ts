@@ -141,7 +141,7 @@ function detailOf(invoice: Invoice, period: BillingCycle | null): IssuedInvoiceV
     },
     orders: state.orders.map((order) => ({
       reference: order.reference,
-      deliveredOn: order.deliveredOn,
+      receivedOn: order.receivedOn,
     })),
     lines: state.lines.map((line) => ({ ...line })),
     vat: {

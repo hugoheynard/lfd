@@ -1,7 +1,11 @@
+import { instantToLocal } from "@lfd/contracts";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { OrderDeliveryHistoryReader } from "../../../../delivery/channels/commerce/index.js";
+import { OrderHandoverHistoryReader } from "../../../../handover/channels/commerce/index.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
+import { receivedOnOf } from "../../../accounting/domain/services/monthly-invoicing.js";
 import { OrderReferenceNotFoundError } from "../../domain/errors/order-errors.js";
 import { OrderHandedOverEvent } from "../../domain/events/order-handed-over.event.js";
 import { OrderReader } from "../../domain/ports/order.reader.js";
@@ -38,6 +42,18 @@ import { MarkOrderFulfilledCommand } from "./mark-order-fulfilled.command.js";
  * n'écrit alors rien — ni second gain de points, ni second témoin au journal.
  * Ce handler ne publie plus rien en mémoire : plus rien n'hérite de la
  * transaction du relais.
+ *
+ * ## La date de réception, posée avec la remise (2026-10-24)
+ *
+ * Plan `documentation/commandes/plan-date-de-reception.md`, B2, option A :
+ * le jour où la marchandise a changé de mains est écrit dans la MÊME
+ * instruction que `handedOverAt`. La règle est celle de la facture,
+ * `receivedOnOf` (comptabilité, même bloc), importée et jamais recopiée : le
+ * jour de la tournée pour une remise à la porte, sinon le jour de Paris de
+ * la remise. Les deux lectures passent par les canaux que le retrait et la
+ * livraison publient pour le commerce. Dernier repli : le jour de Paris de
+ * l'instant porté par le fait — une remise n'est jamais sans date, même
+ * quand aucune attestation n'est encore lisible.
  */
 @CommandHandler(MarkOrderFulfilledCommand)
 export class MarkOrderFulfilledHandler implements ICommandHandler<MarkOrderFulfilledCommand, void> {
@@ -46,6 +62,8 @@ export class MarkOrderFulfilledHandler implements ICommandHandler<MarkOrderFulfi
     private readonly repository: OrderRepository,
     private readonly uow: UnitOfWork,
     private readonly durable: DurablePublisher,
+    private readonly handovers: OrderHandoverHistoryReader,
+    private readonly deliveries: OrderDeliveryHistoryReader,
   ) {}
 
   async execute(command: MarkOrderFulfilledCommand): Promise<void> {
@@ -54,6 +72,7 @@ export class MarkOrderFulfilledHandler implements ICommandHandler<MarkOrderFulfi
       throw new OrderReferenceNotFoundError(command.reference);
     }
 
+    const receivedOn = await this.receivedOnOf(order.orderId, command.at);
     const fulfilled = new OrderHandedOverEvent(
       order.orderId,
       order.orderNumber,
@@ -68,10 +87,24 @@ export class MarkOrderFulfilledHandler implements ICommandHandler<MarkOrderFulfi
         command.at,
         command.staffUserId,
         command.via,
+        receivedOn,
       );
       if (won) {
         await this.durable.publish(fulfilled.durableFact());
       }
     });
+  }
+
+  /** Le jour de réception (`AAAA-MM-JJ`, Paris) : la règle de la facture, sinon le jour du fait. */
+  private async receivedOnOf(orderId: string, at: Date): Promise<string> {
+    const [handovers, stops] = await Promise.all([
+      this.handovers.ofOrders([orderId]),
+      this.deliveries.ofOrders([orderId]),
+    ]);
+    const day = receivedOnOf(
+      handovers.get(orderId) ?? null,
+      stops.filter((stop) => stop.orderId === orderId),
+    );
+    return day ?? instantToLocal(at).day;
   }
 }

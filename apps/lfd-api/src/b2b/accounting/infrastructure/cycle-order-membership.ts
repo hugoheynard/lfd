@@ -30,7 +30,7 @@ const PASSED_RUN_OUTCOMES: readonly InvoiceAutopilotOutcome[] = ["issued", "noth
  *
  * - **Déjà facturé** : le bon est au cycle de SA facture 380 — l'issue
  *   `issued` dont la clôture est celle du cycle. La pièce fait foi, quel que
- *   soit son jour de livraison.
+ *   soit son jour de réception.
  * - **Pas encore facturé** : au cycle dont la facture le prendra
  *   (`pendingOrderIsInCycle`), qui applique la même assiette que la facture.
  *
@@ -156,18 +156,18 @@ async function pendingInCycle(
   const rows = await prisma.order.findMany({
     where: {
       AND: [accountOrderWhere(), companyWallWhere(companyIds)],
-      deliveredOn: {
+      receivedOn: {
         gte: dayColumnOf(earliestPendingDay(cycle, progress)),
         lt: dayColumnOf(parisDay(cycle.closesAt)),
       },
     },
-    select: { id: true, deliveredOn: true },
+    select: { id: true, receivedOn: true },
   });
   const inCycle = rows.filter(
     (row) =>
-      row.deliveredOn !== null &&
+      row.receivedOn !== null &&
       // `@db.Date` : minuit UTC, dont la date ISO EST le jour de Paris.
-      pendingOrderIsInCycle(row.deliveredOn.toISOString().slice(0, DAY_LENGTH), cycle, progress),
+      pendingOrderIsInCycle(row.receivedOn.toISOString().slice(0, DAY_LENGTH), cycle, progress),
   );
   const invoiced = await prisma.invoiceOrder.findMany({
     where: { invoiceType: COMMERCIAL_INVOICE, orderId: { in: inCycle.map((row) => row.id) } },

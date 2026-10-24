@@ -79,7 +79,7 @@ export function toInvoiceCreate(invoice: Invoice): Prisma.InvoiceUncheckedCreate
         position,
         orderId: order.orderId,
         orderNumber: order.reference,
-        deliveredOn: order.deliveredOn === null ? null : dayColumn(order.deliveredOn),
+        receivedOn: order.receivedOn === null ? null : dayColumn(order.receivedOn),
       })),
     },
   };
@@ -123,7 +123,7 @@ function toInvoiceState(row: InvoiceRow): InvoiceState {
     orders: row.orders.map((order) => ({
       orderId: order.orderId,
       reference: order.orderNumber,
-      deliveredOn: order.deliveredOn === null ? null : dayOf(order.deliveredOn),
+      receivedOn: order.receivedOn === null ? null : dayOf(order.receivedOn),
     })),
     lines: read(invoiceLinesSchema, row.lines, "lines"),
     vat: read(vatBreakdownSchema, row.vatBreakdown, "vat_breakdown"),

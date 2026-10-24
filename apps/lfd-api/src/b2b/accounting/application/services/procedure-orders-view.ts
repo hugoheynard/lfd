@@ -4,8 +4,8 @@ import type { CollectionProcedureInvoicesView, ProcedureOrderView } from "@lfd/c
  * Les chiffres clés de l'onglet « Factures », comptés sur la liste même qu'il
  * montre : un chiffre et sa liste ne divergent pas.
  *
- * `issuableCount` : les réceptions confirmées qui ont leur jour de livraison —
- * celles que l'émission prendra (l'assiette lit `delivered_on`).
+ * `issuableCount` : les réceptions confirmées qui ont leur jour de réception —
+ * celles que l'émission prendra (l'assiette lit `received_on`).
  */
 export function procedureOrdersView(
   orders: readonly ProcedureOrderView[],

@@ -26,7 +26,6 @@ export const GLOSSARY_D_H: Readonly<Record<string, string>> = {
   defaultHint: 'Par défaut — aide',
   defaultLabel: 'Par défaut',
   defaultTag: 'Pastille « par défaut »',
-  delivered: 'Livrée le',
   delivery: 'Livraison',
   deliveryAddSubmit: 'Ajouter l’adresse de livraison',
   deliveryBadge: 'Livraison — pastille',

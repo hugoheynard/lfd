@@ -79,16 +79,16 @@ export function operationText(state: InvoiceState): string {
 }
 
 /**
- * Les bons couverts et leur livraison réelle. La norme n'admet qu'UNE
+ * Les bons couverts et leur réception réelle (livrée ou retirée, « reçue le »). La norme n'admet qu'UNE
  * référence de commande (BT-13, 0..1) et une facture du mois en couvre
  * plusieurs : la liste entière vit donc en note (plan § 5, remonté le
  * 2026-10-08).
  */
 export function ordersText(orders: readonly InvoiceOrderReference[]): string {
   const listed = orders.map((order) =>
-    order.deliveredOn === null
-      ? `${order.reference} (livraison non constatée)`
-      : `${order.reference} (livré le ${frenchDate(order.deliveredOn)})`,
+    order.receivedOn === null
+      ? `${order.reference} (réception non constatée)`
+      : `${order.reference} (reçue le ${frenchDate(order.receivedOn)})`,
   );
   return `Bons de commande : ${listed.join(", ")}.`;
 }

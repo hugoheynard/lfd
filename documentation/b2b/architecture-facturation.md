@@ -123,7 +123,7 @@ Invoice
   company_id              ← le mur ; jamais nullable
   period_start/end        ← la fenêtre facturée (= la date de commande, en scope=order)
   status                  ← draft | issued | paid | failed | cancelled
-  issued_at, due_at, delivered_on
+  issued_at, due_at, received_on
   document_type_code      ← 380 (facture) | 381 (avoir)
   currency                ← EUR
   seller_snapshot         ← identité LFC au jour de l'émission (§4.3)

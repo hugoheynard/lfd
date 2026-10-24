@@ -61,8 +61,8 @@ const MOTHER = Invoice.issue(
     id: "inv_9",
     number: InvoiceNumber.compose("LFD", 2026, 9),
     orders: [
-      { orderId: "o_port", reference: "CMD-008", deliveredOn: "2026-09-20" },
-      { orderId: "o_site", reference: "CMD-009", deliveredOn: "2026-09-21" },
+      { orderId: "o_port", reference: "CMD-008", receivedOn: "2026-09-20" },
+      { orderId: "o_site", reference: "CMD-009", receivedOn: "2026-09-21" },
     ],
   }),
 );
@@ -135,8 +135,8 @@ describe("« Mes factures » côté client (E6)", () => {
     expect(view.mentions.latePenaltyRateBasisPoints).toBe(1_415);
     expect(view.mandateReference).toBe("RUM-PORT-1");
     expect(view.orders).toEqual([
-      { reference: "CMD-001", deliveredOn: "2026-09-12" },
-      { reference: "CMD-002", deliveredOn: "2026-09-13" },
+      { reference: "CMD-001", receivedOn: "2026-09-12" },
+      { reference: "CMD-002", receivedOn: "2026-09-13" },
     ]);
     expect(view.documentAvailable).toBe(false);
     expect(JSON.stringify(view.seller)).not.toMatch(/iban|bic/iu);

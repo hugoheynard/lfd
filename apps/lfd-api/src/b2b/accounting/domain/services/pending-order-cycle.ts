@@ -53,7 +53,7 @@ export interface InvoicingProgress {
  * ⚠️ Une PRÉVISION : la comptabilité peut rejouer une clôture passée. Un bon
  * déjà facturé, lui, ne se prévoit pas — il est au cycle de sa facture.
  *
- * @param deliveredDay le jour de Paris de la livraison (`orders.delivered_on`).
+ * @param deliveredDay le jour de Paris de la livraison (`orders.received_on`).
  */
 export function pendingOrderIsInCycle(
   deliveredDay: string,
@@ -77,7 +77,7 @@ export function pendingOrderIsInCycle(
 }
 
 /**
- * Le plus ancien jour de livraison qu'un bon non facturé du cycle peut porter
+ * Le plus ancien jour de réception qu'un bon non facturé du cycle peut porter
  * — la borne basse de la lecture SQL, qui ne fait que restreindre ce que
  * `pendingOrderIsInCycle` tranche ensuite.
  */

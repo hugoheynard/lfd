@@ -60,7 +60,7 @@ describe("ProcedureInvoicesStep — l'onglet Factures de la procédure", () => {
     world.invoices.floorAt = FLOOR;
     world.invoices.invoices = [invoice("inv1", "FA-LFD-2026-000001")];
     world.orders.rows = [
-      procedureRow("late", { serviceDay: "2026-10-20", handedOver: false, deliveredOn: null }),
+      procedureRow("late", { serviceDay: "2026-10-20", handedOver: false, receivedOn: null }),
       procedureRow("billed", {
         serviceDay: "2026-10-05",
         invoice: { invoiceId: "inv1", number: "FA-LFD-2026-000001" },
@@ -80,13 +80,13 @@ describe("ProcedureInvoicesStep — l'onglet Factures de la procédure", () => {
     expect(view).toMatchObject({ state: "to_do", reason: "receipts_to_confirm" });
   });
 
-  /** Régression (dev, 2026-10-24) : une commande remise et facturée avant ZL, sans `delivered_on`, était « à constater ». */
-  it("facturée avant la règle ZL, sans jour de livraison, facture d'une autre période : facturée", async () => {
+  /** Régression (dev, 2026-10-24) : une commande remise et facturée avant ZL, sans `received_on`, était « à constater ». */
+  it("facturée avant la règle ZL, sans jour de réception, facture d'une autre période : facturée", async () => {
     const world = invoicesStepWorld();
     world.invoices.floorAt = FLOOR;
     world.orders.rows = [
       procedureRow("old", {
-        deliveredOn: null,
+        receivedOn: null,
         invoice: { invoiceId: "inv0", number: "FA-LFD-2026-000000" },
       }),
     ];
@@ -102,7 +102,7 @@ describe("ProcedureInvoicesStep — l'onglet Factures de la procédure", () => {
     world.invoices.floorAt = FLOOR;
     world.orders.rows = [
       procedureRow("sept", {
-        deliveredOn: "2026-09-12",
+        receivedOn: "2026-09-12",
         invoice: { invoiceId: "inv-sept", number: "FA-LFD-2026-000009" },
       }),
     ];
@@ -110,10 +110,10 @@ describe("ProcedureInvoicesStep — l'onglet Factures de la procédure", () => {
     expect((await read(world)).orders).toEqual([]);
   });
 
-  it("remise sans jour de livraison : confirmée, nommée à reprendre, hors du bouton — l'onglet reste à faire", async () => {
+  it("remise sans jour de réception : confirmée, nommée à reprendre, hors du bouton — l'onglet reste à faire", async () => {
     const world = invoicesStepWorld();
     world.invoices.floorAt = FLOOR;
-    world.orders.rows = [procedureRow("noday", { deliveredOn: null })];
+    world.orders.rows = [procedureRow("noday", { receivedOn: null })];
 
     const view = await read(world);
 
@@ -155,7 +155,7 @@ describe("ProcedureInvoicesStep — l'onglet Factures de la procédure", () => {
   it("une clôture à venir est verrouillée, et sa liste se lit déjà", async () => {
     const world = invoicesStepWorld();
     world.invoices.floorAt = FLOOR;
-    world.orders.rows = [procedureRow("1", { handedOver: false, deliveredOn: null })];
+    world.orders.rows = [procedureRow("1", { handedOver: false, receivedOn: null })];
 
     const view = await read(world, paris("2026-12-01"));
 

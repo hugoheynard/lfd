@@ -67,7 +67,7 @@ describe("Invoice.issue", () => {
     expect(
       issuedInvoice()
         .toState()
-        .orders.map((o) => o.deliveredOn),
+        .orders.map((o) => o.receivedOn),
     ).toEqual(["2026-09-12", "2026-09-13"]);
   });
 
@@ -77,8 +77,8 @@ describe("Invoice.issue", () => {
       Invoice.issue(
         issueInput({
           orders: [
-            { orderId: "o_1", reference: "CMD-001", deliveredOn: "2026-09-12" },
-            { orderId: "o_2", reference: "CMD-002", deliveredOn: null },
+            { orderId: "o_1", reference: "CMD-001", receivedOn: "2026-09-12" },
+            { orderId: "o_2", reference: "CMD-002", receivedOn: null },
           ],
         }),
       );
@@ -181,14 +181,14 @@ describe("Invoice.issue — refus d'émettre", () => {
       "bon cité deux fois",
       {
         orders: [
-          { orderId: "o", reference: "C", deliveredOn: "2026-09-12" },
-          { orderId: "o", reference: "C", deliveredOn: "2026-09-12" },
+          { orderId: "o", reference: "C", receivedOn: "2026-09-12" },
+          { orderId: "o", reference: "C", receivedOn: "2026-09-12" },
         ],
       },
     ],
     [
       "date de livraison mal formée",
-      { orders: [{ orderId: "o", reference: "C", deliveredOn: "12/09" }] },
+      { orders: [{ orderId: "o", reference: "C", receivedOn: "12/09" }] },
     ],
     ["aucune ligne", { lines: [], vat: breakdownOf([]) }],
   ])("refuse : %s", (_case, overrides) => {
