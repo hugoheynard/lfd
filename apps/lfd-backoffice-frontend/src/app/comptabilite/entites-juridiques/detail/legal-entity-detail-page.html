@@ -171,18 +171,37 @@
       <app-invoice-prefix-card [entity]="entity" [busy]="busy()" (saved)="runSaved($event)" />
     </fold-card>
 
-    <!-- Après les réglages : le fichier que la banque importe AVANT le premier
-         dépôt d'un lot (plan `export-des-mandats-pour-la-banque.md`). La
-         carte lit et écrit elle-même : ses gestes ne touchent pas l'entité. -->
-    <!-- AVANT les mandats, comme à la banque : les comptes destinataires
-         s'importent d'abord (doc `prerequis-export-ribs.md`). -->
-    <fold-card>
-      <app-account-bank-export-card [entity]="entity" />
-    </fold-card>
-
-    <fold-card>
-      <app-mandate-bank-export-card [entity]="entity" />
-    </fold-card>
+    <!-- Les comptes et les mandats à porter à la banque : un RENVOI, plus
+         deux cartes (décision du 2026-10-24). Leurs gestes vivent dans les
+         onglets 1 et 2 de la procédure de prélèvement ; les montrer aussi ici
+         faisait deux endroits pour le même fichier. Les nombres sont ceux du
+         serveur. -->
+    @if (bankPendingFailed()) {
+      <fold-callout appearance="inset" variant="alert">
+        Comptes et mandats à la banque&nbsp;: lecture impossible.
+      </fold-callout>
+    } @else if (bankPending(); as pending) {
+      @if (pending.accounts + pending.mandates > 0) {
+        <fold-callout appearance="inset" variant="neutral">
+          Comptes et mandats à la banque&nbsp;: {{ pending.accounts }} compte(s) et
+          {{ pending.mandates }} mandat(s) à exporter.
+          <a
+            foldButton
+            actions
+            emphasis="outline"
+            size="sm"
+            routerLink="/comptabilite/procedure-de-prelevement"
+            [queryParams]="{ entite: entity.id }"
+          >
+            Ouvrir la procédure
+          </a>
+        </fold-callout>
+      } @else {
+        <fold-callout appearance="inset" variant="neutral">
+          Comptes et mandats à la banque&nbsp;: à jour.
+        </fold-callout>
+      }
+    }
 
     <!-- 🔴 La ZONE DE DANGER de cette fiche, et elle se voit AVANT le clic :
          `fold-danger-zone` pose un cadre d'alerte et son propre titre, ce qui

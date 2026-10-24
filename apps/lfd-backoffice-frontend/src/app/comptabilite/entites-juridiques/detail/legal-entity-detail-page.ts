@@ -38,8 +38,9 @@ import { BillingModesCard } from './billing-modes-card/billing-modes-card';
 import { CollectionSettingsCard } from './collection-settings-card/collection-settings-card';
 import { InvoicePrefixCard } from './invoice-prefix-card/invoice-prefix-card';
 import { InvoiceTermsCard } from './invoice-terms-card/invoice-terms-card';
-import { AccountBankExportCard } from './account-bank-export-card/account-bank-export-card';
-import { MandateBankExportCard } from './mandate-bank-export-card/mandate-bank-export-card';
+import { RouterLink } from '@angular/router';
+import { AccountBankExportsService } from '../../account-bank-exports.service';
+import { MandateBankExportsService } from '../../mandate-bank-exports.service';
 import { legalEntityStateLabel, legalEntityStateVariant } from '../../legal-entity-state';
 import { SampleMandateActions } from './sample-mandate-actions/sample-mandate-actions';
 
@@ -97,8 +98,7 @@ import { SampleMandateActions } from './sample-mandate-actions/sample-mandate-ac
     CollectionSettingsCard,
     InvoicePrefixCard,
     InvoiceTermsCard,
-    AccountBankExportCard,
-    MandateBankExportCard,
+    RouterLink,
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
     FoldPageSectionComponent,
@@ -110,6 +110,8 @@ export class LegalEntityDetailPage {
   private readonly api = inject(LegalEntitiesService);
   private readonly toasts = inject(FoldToastService);
   private readonly panels = inject(FoldPanelHostService);
+  private readonly accountExports = inject(AccountBankExportsService);
+  private readonly mandateExports = inject(MandateBankExportsService);
 
   /** L'identifiant de la route (`withComponentInputBinding`). */
   readonly id = input.required<string>();
@@ -122,6 +124,18 @@ export class LegalEntityDetailPage {
   protected readonly loadFailed = signal(false);
 
   protected readonly icsDraft = signal('');
+
+  /**
+   * Ce qui reste à porter à la banque — deux nombres LUS au serveur, jamais
+   * recomptés ici. Les gestes vivent dans les onglets 1 et 2 de la procédure
+   * de prélèvement (décision du 2026-10-24) ; la fiche n'en garde qu'un renvoi.
+   * `null` tant que la lecture n'a pas abouti.
+   */
+  protected readonly bankPending = signal<{
+    readonly accounts: number;
+    readonly mandates: number;
+  } | null>(null);
+  protected readonly bankPendingFailed = signal(false);
 
   /**
    * L'état affiché à côté du titre — la MÊME formulation que la colonne « État »
@@ -142,7 +156,9 @@ export class LegalEntityDetailPage {
     // pas encore fourni à la construction, et le routeur peut changer le
     // segment sans reconstruire la page.
     effect(() => {
-      void this.load(this.id());
+      const id = this.id();
+      void this.load(id);
+      void this.loadBankPending(id);
     });
   }
 
@@ -158,6 +174,23 @@ export class LegalEntityDetailPage {
       this.error.set(httpErrorMessage(caught, 'Entité illisible.'));
     } finally {
       this.loading.set(false);
+    }
+  }
+
+  private async loadBankPending(id: string): Promise<void> {
+    this.bankPending.set(null);
+    this.bankPendingFailed.set(false);
+    try {
+      const [accounts, mandates] = await Promise.all([
+        this.accountExports.of(id),
+        this.mandateExports.of(id),
+      ]);
+      this.bankPending.set({
+        accounts: accounts.toExport.length,
+        mandates: mandates.toExportCount,
+      });
+    } catch {
+      this.bankPendingFailed.set(true);
     }
   }
 

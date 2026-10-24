@@ -162,9 +162,10 @@ débiteur du lot (il ne sera alors pas prélevable, § 3.3).
 (`apps/lfd-backoffice-frontend/src/app/comptabilite/entites-juridiques/detail/account-bank-export-card/account-bank-export-card.ts:62`,
 une seule entrée `entity: LegalEntityView` — la page charge donc l'entité
 complète), incluse dans le panneau : elle porte déjà la lecture, les quatre
-gestes et le « Déjà connu de la banque ». Elle reste aussi
-sur la fiche de l'entité (`legal-entity-detail-page.html:205`) — **un seul
-composant, deux hôtes**, pas de copie. Ce qui manque à la carte — une
+gestes et le « Déjà connu de la banque ». Elle restait aussi
+sur la fiche de l'entité — **retirée de la fiche le 2026-10-24** (décision de
+Hugo, doublon) : la fiche n'en garde qu'un renvoi « Comptes et mandats à la
+banque », avec les deux nombres du serveur. La procédure est son seul hôte. Ce qui manque à la carte — une
 **modification**, pas un réemploi tel quel : elle n'a aucune sortie
 aujourd'hui ; émettre un `changed` après chaque geste, pour que la page recalcule les états des onglets.
 

@@ -158,19 +158,19 @@ ouvert le 2026-10-23 avec `iconv -f ISO-8859-1` et `od -c` :
 Doc d'état : [`../mandat/export-des-mandats-pour-la-banque.md`](../mandat/export-des-mandats-pour-la-banque.md).
 Sous `apps/lfd-api/src/b2b/accounting/` :
 
-| Pièce                                                            | Ce qu'elle fait                                                                                                                              |
-| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `domain/entities/mandate-bank-export.ts:36-77`                   | l'agrégat : au moins une ligne, chaque mandat une fois, « importé » marqué une seule fois                                                    |
-| `domain/services/account-fingerprint.ts:13-16`                   | SHA-256 de l'IBAN normalisé : **seule** trace du compte en base                                                                              |
-| `domain/services/mandate-bank-export-selection.ts:33-45`         | « à exporter » = aucune ligne d'un export **importé** portant l'empreinte du compte actuel                                                   |
-| `domain/services/mandate-bank-export-selection.ts:54-70`         | au téléchargement, 409 si une empreinte ne correspond plus                                                                                   |
-| `domain/services/mandate-bank-export-csv.ts:54-86`               | rendu : `sepa()` (ASCII), `;` terminateur, CRLF, sans en-tête, neutralisation des débuts de formule                                          |
-| `application/commands/export-mandates-for-bank.handler.ts:47-71` | fige l'export dans une transaction, publie `mandate_bank_export.created`                                                                     |
-| `application/queries/export-mandate-bank-file.handler.ts:39-49`  | recalcule le fichier, **jamais rangé**                                                                                                       |
-| `http/admin-mandate-bank-exports.controller.ts:42-103`           | `@AdminSurface("b2b_accounting")` ; le `GET …/file.csv` exige `b2b_accounting:write` (l. 73), `no-store`, pièce jointe                       |
-| `domain/ports/mandates-for-bank-export.reader.ts:54-56`          | lecteur par créancier, implémenté par `payments` (qui descelle), écartés nommés (`taken_over`, `no_account`, `no_bic`)                       |
-| `domain/events/mandate-bank-export.events.ts:16-29`              | fait au journal : sujet l'entité, `mandateCount`, jamais d'IBAN                                                                              |
-| back-office                                                      | carte « Mandats à la banque » sur la fiche de l'entité (`apps/lfd-backoffice-frontend/src/app/comptabilite/mandate-bank-exports.service.ts`) |
+| Pièce                                                            | Ce qu'elle fait                                                                                                                                                                                              |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `domain/entities/mandate-bank-export.ts:36-77`                   | l'agrégat : au moins une ligne, chaque mandat une fois, « importé » marqué une seule fois                                                                                                                    |
+| `domain/services/account-fingerprint.ts:13-16`                   | SHA-256 de l'IBAN normalisé : **seule** trace du compte en base                                                                                                                                              |
+| `domain/services/mandate-bank-export-selection.ts:33-45`         | « à exporter » = aucune ligne d'un export **importé** portant l'empreinte du compte actuel                                                                                                                   |
+| `domain/services/mandate-bank-export-selection.ts:54-70`         | au téléchargement, 409 si une empreinte ne correspond plus                                                                                                                                                   |
+| `domain/services/mandate-bank-export-csv.ts:54-86`               | rendu : `sepa()` (ASCII), `;` terminateur, CRLF, sans en-tête, neutralisation des débuts de formule                                                                                                          |
+| `application/commands/export-mandates-for-bank.handler.ts:47-71` | fige l'export dans une transaction, publie `mandate_bank_export.created`                                                                                                                                     |
+| `application/queries/export-mandate-bank-file.handler.ts:39-49`  | recalcule le fichier, **jamais rangé**                                                                                                                                                                       |
+| `http/admin-mandate-bank-exports.controller.ts:42-103`           | `@AdminSurface("b2b_accounting")` ; le `GET …/file.csv` exige `b2b_accounting:write` (l. 73), `no-store`, pièce jointe                                                                                       |
+| `domain/ports/mandates-for-bank-export.reader.ts:54-56`          | lecteur par créancier, implémenté par `payments` (qui descelle), écartés nommés (`taken_over`, `no_account`, `no_bic`)                                                                                       |
+| `domain/events/mandate-bank-export.events.ts:16-29`              | fait au journal : sujet l'entité, `mandateCount`, jamais d'IBAN                                                                                                                                              |
+| back-office                                                      | carte « Mandats à la banque », onglet 2 de la procédure de prélèvement (retirée de la fiche de l'entité le 2026-10-24) (`apps/lfd-backoffice-frontend/src/app/comptabilite/mandate-bank-exports.service.ts`) |
 
 **Ce qui n'existait pas** à l'écriture : aucun export des RIB. Il existe
 depuis le 2026-10-23 — § 8.
@@ -387,8 +387,9 @@ flowchart LR
 - **Faits** : `account_bank_export.created`, `.downloaded`, `.imported`,
   `.abandoned`, `.account_known_declared`, `.account_reported_known`,
   `.account_rejected` — sujet l'entité, jamais un IBAN.
-- **Écran** (2026-10-23) : carte « Comptes à la banque » sur la fiche de
-  l'entité, au-dessus de « Mandats à la banque » : trois chiffres qui
+- **Écran** (2026-10-23) : carte « Comptes à la banque », onglet 1 de la
+  procédure de prélèvement (sur la fiche de l'entité jusqu'au 2026-10-24, qui
+  n'en garde qu'un renvoi) : trois chiffres qui
   filtrent, puis **une barre d'actions** au-dessus du tableau — un seul
   bouton « Télécharger le fichier des comptes (N comptes) » qui, sans export
   ouvert, **prépare puis télécharge** (l'écran enchaîne `POST` puis `GET` :

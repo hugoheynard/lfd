@@ -175,6 +175,7 @@ const archiveButton = (
 async function render(
   api: FakeLegalEntities,
   panels: FakePanels = new FakePanels(),
+  bank: { readonly accounts: number; readonly mandates: number } = { accounts: 0, mandates: 0 },
 ): Promise<ComponentFixture<LegalEntityDetailPage>> {
   TestBed.configureTestingModule({
     imports: [LegalEntityDetailPage],
@@ -183,39 +184,15 @@ async function render(
     providers: [
       { provide: LegalEntitiesService, useValue: api },
       { provide: FoldPanelHostService, useValue: panels },
-      // La carte « Comptes à la banque » aussi, pour la même raison.
+      // Le renvoi « Comptes et mandats à la banque » ne lit que ces deux
+      // nombres : le stub ne rend rien d'autre.
       {
         provide: AccountBankExportsService,
-        useValue: {
-          of: () =>
-            Promise.resolve({
-              debitedCount: 0,
-              toExport: [],
-              inFlightCount: 0,
-              knownCount: 0,
-              maxPerExport: 200,
-              excluded: [],
-              accounts: [],
-              exports: [],
-            }),
-        },
+        useValue: { of: () => Promise.resolve({ toExport: Array(bank.accounts).fill({}) }) },
       },
-      // La carte « Mandats à la banque » lit elle-même : rien à exporter ici,
-      // ce n'est pas le sujet de cette suite (elle a la sienne).
       {
         provide: MandateBankExportsService,
-        useValue: {
-          of: () =>
-            Promise.resolve({
-              exportableCount: 0,
-              toExportCount: 0,
-              inFlightCount: 0,
-              importedCount: 0,
-              excluded: [],
-              exports: [],
-              mandates: [],
-            }),
-        },
+        useValue: { of: () => Promise.resolve({ toExportCount: bank.mandates }) },
       },
       provideRouter([]),
     ],
@@ -523,5 +500,36 @@ describe('LegalEntityDetailPage', () => {
     fixture.detectChanges();
 
     expect(text(fixture)).toContain(COLLECTION_REFUSAL);
+  });
+
+  describe('le renvoi vers la procédure de prélèvement', () => {
+    it("n'affiche plus les cartes d'export : elles vivent dans la procédure", async () => {
+      const fixture = await render(new FakeLegalEntities());
+      const host = fixture.nativeElement as HTMLElement;
+
+      expect(host.querySelector('app-account-bank-export-card')).toBeNull();
+      expect(host.querySelector('app-mandate-bank-export-card')).toBeNull();
+    });
+
+    it('dit « à jour » sans lien quand rien ne reste à exporter', async () => {
+      const fixture = await render(new FakeLegalEntities());
+
+      expect(text(fixture)).toContain('Comptes et mandats à la banque\u00a0: à jour.');
+      expect(text(fixture)).not.toContain('Ouvrir la procédure');
+    });
+
+    it('nomme les deux nombres du serveur et renvoie vers la procédure de l’entité', async () => {
+      const fixture = await render(new FakeLegalEntities(), new FakePanels(), {
+        accounts: 2,
+        mandates: 3,
+      });
+      const link = [
+        ...(fixture.nativeElement as HTMLElement).querySelectorAll<HTMLAnchorElement>('a'),
+      ].find((anchor) => (anchor.textContent ?? '').includes('Ouvrir la procédure'));
+
+      expect(text(fixture)).toContain('2 compte(s) et');
+      expect(text(fixture)).toContain('3 mandat(s) à exporter');
+      expect(link?.getAttribute('href')).toBe('/comptabilite/procedure-de-prelevement?entite=le1');
+    });
   });
 });

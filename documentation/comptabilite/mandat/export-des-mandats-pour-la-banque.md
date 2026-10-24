@@ -91,7 +91,7 @@ flowchart LR
 …/:exportId/file.csv` (**`b2b_accounting:write`**), `POST …/:exportId/imported`.
 - **Faits** `mandate_bank_export.created` et `mandate_bank_export.imported`
   (sujet : l'entité ; `mandateCount` ; jamais un IBAN ni l'id de l'export).
-- **Écran** : carte « Mandats à la banque » sur la fiche de l'entité juridique.
+- **Écran** : carte « Mandats à la banque », onglet 2 de la procédure de prélèvement (sur la fiche de l'entité juridique jusqu'au 2026-10-24, qui n'en garde qu'un renvoi).
 - Les deux colonnes d'auteur sont au registre RGPD
   (`documentation/legal/rgpd-registre.json`).
 
