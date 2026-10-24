@@ -152,6 +152,8 @@ import { OnPackingOrderPacked } from "./application/handlers/on-packing-order-pa
 import { PrismaDayOrdersSource } from "./infrastructure/prisma-day-orders.source.js";
 import { PrismaSiteDaySettingsReader } from "./infrastructure/prisma-site-day-settings.reader.js";
 import { DayOrdersSource } from "./domain/ports/day-orders.source.js";
+import { SiteArrivalOrdersReader } from "./domain/ports/site-arrival-orders.reader.js";
+import { PrismaSiteArrivalOrdersReader } from "./infrastructure/prisma-site-arrival-orders.reader.js";
 import { SiteDaySettingsReader } from "./domain/ports/site-day-settings.reader.js";
 import { SiteDeadlines } from "./application/services/site-deadlines.service.js";
 import { SitedDayOrders } from "./application/services/sited-day-orders.service.js";
@@ -387,7 +389,9 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     { provide: SiteDaySettingsReader, useClass: PrismaSiteDaySettingsReader },
     SiteDeadlines,
     SitedDayOrders,
-    // Le transfert interne (lot T1) : l'heure d'arrivée par la même règle.
+    // Le transfert interne (lot T1) : l'heure d'arrivée par la même règle, sur
+    // les retraits VIVANTS du jour — pas le plan, vide après l'arrêt (2026-10-24).
+    { provide: SiteArrivalOrdersReader, useClass: PrismaSiteArrivalOrdersReader },
     CommerceTransferSites,
     PrismaHandoverSubjectReader,
     PrismaPendingOrdersReader,

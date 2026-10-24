@@ -18,6 +18,12 @@ export interface SitedDeadlineOrder extends DeadlineOrder {
  * Un port à lui (ISP) : le lecteur de la clôture rend client et destination,
  * dont le compte à rebours n'a que faire, et pas la fenêtre, dont il a besoin.
  * Même périmètre « producible » que la clôture (`planWhere`).
+ *
+ * ⚠️ **Angle mort après l'arrêt** (constaté le 2026-10-24, non corrigé) : les
+ * commandes sont alors `confirmed`, ce lecteur rend une liste vide, et le
+ * compte à rebours du fournil (`DueThresholds`) n'affiche plus rien pour la
+ * journée arrêtée. Le transfert d'un site, qui avait le même défaut, lit
+ * désormais `SiteArrivalOrdersReader`.
  */
 export abstract class DeadlineOrdersReader {
   /** `day` : `AAAA-MM-JJ`. */

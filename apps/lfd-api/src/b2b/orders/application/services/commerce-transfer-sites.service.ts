@@ -4,8 +4,7 @@ import {
   type TransferSiteFacts,
   TransferSitesReader,
 } from "../../../../delivery/channels/commerce/index.js";
-import { ServiceDay } from "../../../../production/channels/commerce/index.js";
-import { DayOrdersSource } from "../../domain/ports/day-orders.source.js";
+import { SiteArrivalOrdersReader } from "../../domain/ports/site-arrival-orders.reader.js";
 import { SiteDaySettingsReader } from "../../domain/ports/site-day-settings.reader.js";
 import { SiteDeadlines } from "./site-deadlines.service.js";
 
@@ -18,11 +17,19 @@ import { SiteDeadlines } from "./site-deadlines.service.js";
  * Implémente le port que la livraison déclare, relié dans
  * `appBootstrap/delivery-feed.module.ts`. Lu hors transaction : le trajet
  * passe par le calcul routier.
+ *
+ * 🔴 **Les commandes qui fixent l'heure sont les retraits VIVANTS du jour**
+ * (`SiteArrivalOrdersReader`), pas celles du plan. Jusqu'au 2026-10-24, ce
+ * service lisait `DayOrdersSource.producibleFor` (`planWhere`, `placed` seul) :
+ * après l'arrêt du plan, toutes les commandes sont `confirmed`, le site n'était
+ * plus résolu, `arrivalBy` tombait à `null`, et la composition de l'arrêt,
+ * « Proposer » et le placement au fil de l'eau posaient le transfert sans
+ * fenêtre — parfois dans une tournée d'après-midi.
  */
 @Injectable()
 export class CommerceTransferSites extends TransferSitesReader {
   constructor(
-    private readonly source: DayOrdersSource,
+    private readonly orders: SiteArrivalOrdersReader,
     private readonly settings: SiteDaySettingsReader,
     private readonly deadlines: SiteDeadlines,
   ) {
@@ -36,17 +43,13 @@ export class CommerceTransferSites extends TransferSitesReader {
     if (siteIds.length === 0) {
       return new Map();
     }
-    const [sourced, settings] = await Promise.all([
-      this.source.producibleFor(ServiceDay.of(day)),
+    const [pickups, settings] = await Promise.all([
+      this.orders.forDay(day),
       this.settings.forDay(day, siteIds),
     ]);
     const deadlines = await this.deadlines.forDay(
       day,
-      sourced.map(({ order, window }) => ({
-        fulfillmentMethod: order.fulfillmentMethod,
-        window,
-        siteId: order.siteId,
-      })),
+      pickups.map(({ window, siteId }) => ({ fulfillmentMethod: "pickup", window, siteId })),
     );
     const facts = new Map<string, TransferSiteFacts>();
     for (const siteId of siteIds) {

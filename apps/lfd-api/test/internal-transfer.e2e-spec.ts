@@ -18,7 +18,10 @@ import type {
   InternalTransferManifestView,
 } from "@lfd/contracts";
 
-import { RoadTravelTimeReader } from "../src/delivery/channels/commerce/index.js";
+import {
+  RoadTravelTimeReader,
+  TransferSitesReader,
+} from "../src/delivery/channels/commerce/index.js";
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { depart, loadBin, LOADING } from "./delivery-loading-scene.js";
 import { ADMIN_VERIFIER_OVERRIDE, admin, ROUNDS } from "./delivery-rounds-scene.js";
@@ -78,6 +81,29 @@ describe("le transfert interne, de la clôture au départ (lot T1)", () => {
     expect(view.rounds[0]?.transferStops?.[0]?.siteId).toEqual(expect.any(String));
     // Le retrait du village n'est jamais « à répartir » : ce n'est pas une livraison.
     expect(view.unassigned).toEqual([]);
+  });
+
+  /**
+   * Régression du 2026-10-24 : l'heure d'arrivée du site était calculée sur
+   * les commandes `placed` ; après l'arrêt, toutes sont `confirmed`, et le
+   * transfert se plaçait sans fenêtre — parfois l'après-midi, en silence.
+   */
+  it("après l'arrêt du plan, le site du transfert garde son heure d'arrivée requise", async () => {
+    const { orderId } = await composedTransfer(ctx, DAY);
+    const order = await ctx.prisma.order.findUniqueOrThrow({
+      where: { id: orderId },
+      select: { status: true },
+    });
+    expect(order.status).toBe("confirmed");
+    const village = await ctx.prisma.site.findFirstOrThrow({
+      where: { label: "Val Village" },
+      select: { id: true },
+    });
+
+    const facts = await ctx.app.get(TransferSitesReader).sitesFor(DAY, [village.id]);
+
+    // Ouverture pros 07:30 − 10 minutes de mise en place.
+    expect(facts.get(village.id)?.arrivalBy).toBe("07:20");
   });
 
   it("la base tient le genre d'arrêt : CHECK, et un transfert dans au plus une tournée vivante", async () => {

@@ -1,4 +1,7 @@
-import { DayOrdersSource, type SourcedDayOrder } from "../../../domain/ports/day-orders.source.js";
+import {
+  type SiteArrivalOrder,
+  SiteArrivalOrdersReader,
+} from "../../../domain/ports/site-arrival-orders.reader.js";
 import { CommerceTransferSites } from "../commerce-transfer-sites.service.js";
 import {
   FOURNIL_GPS,
@@ -7,32 +10,22 @@ import {
   VILLAGE_GPS,
 } from "./site-deadlines-doubles.js";
 
-class FixedSource extends DayOrdersSource {
-  constructor(private readonly orders: readonly SourcedDayOrder[]) {
+class FixedPickups extends SiteArrivalOrdersReader {
+  constructor(private readonly orders: readonly SiteArrivalOrder[]) {
     super();
   }
 
-  producibleFor(): Promise<readonly SourcedDayOrder[]> {
+  forDay(): Promise<readonly SiteArrivalOrder[]> {
     return Promise.resolve(this.orders);
   }
 }
 
-const VILLAGE_ORDER: SourcedDayOrder = {
-  order: {
-    orderId: "v1",
-    reference: "V1",
-    customerLabel: "Chalet",
-    fulfillmentMethod: "pickup",
-    destination: "Val Village",
-    clientele: "pro",
-    siteId: "site_village",
-    lines: [],
-    sheetDetails: null,
-  },
+const VILLAGE_ORDER: SiteArrivalOrder = {
+  siteId: "site_village",
   window: { start: "09:00", end: "10:00" },
 };
 
-function service(orders: readonly SourcedDayOrder[]) {
+function service(orders: readonly SiteArrivalOrder[]) {
   const sites = new Map([
     ["site_fournil", siteSettings({ gps: FOURNIL_GPS })],
     [
@@ -48,7 +41,7 @@ function service(orders: readonly SourcedDayOrder[]) {
     ],
   ]);
   const { service: deadlines, sites: reader } = siteDeadlinesOf({ sites, travelMinutes: 25 });
-  return new CommerceTransferSites(new FixedSource(orders), reader, deadlines);
+  return new CommerceTransferSites(new FixedPickups(orders), reader, deadlines);
 }
 
 describe("CommerceTransferSites — de quoi placer le transfert d'un site (lot T1)", () => {

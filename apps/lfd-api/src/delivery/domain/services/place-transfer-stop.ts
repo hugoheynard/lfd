@@ -80,6 +80,12 @@ interface Measure {
  * SEULE, et la tournée d'après-midi de Camionnette 1 recevait le transfert du
  * Village, dû avant l'ouverture du comptoir — en silence, des heures trop tard.
  *
+ * ⚠️ **Revenue par la donnée le 2026-10-24** : cette fonction était juste, mais
+ * la fenêtre qu'elle reçoit (`arrivalBy`) arrivait `null` après l'arrêt du
+ * plan — le commerce la calculait sur les commandes `placed`, toutes
+ * confirmées à ce moment-là. Sans fenêtre, n'importe quelle place convient.
+ * Corrigé côté commerce (`CommerceTransferSites` lit les retraits vivants).
+ *
  * Pure et déterministe : à temps ajouté égal, la tournée d'identifiant le
  * plus petit, puis la place la plus tôt.
  */
