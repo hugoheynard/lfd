@@ -1,5 +1,8 @@
 # Plan — les plafonds de la banque, sur l'entité
 
+> ✅ **PL1 et PL2 bâtis le 2026-10-24** (`57dd613c3`, `8e5f55972`, `885b87bc0`,
+> et le commit de l'onglet 3). Reste ouvert : Q-B7 (le mois du cumul).
+
 > Écrit le **2026-10-24** à la demande de Hugo (« noter le plafond dans
 > l'entité »), réponse 2 et décision D1 de
 > [`reponses-de-la-banque.md`](reponses-de-la-banque.md). **Doc-first : rien

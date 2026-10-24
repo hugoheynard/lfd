@@ -56,6 +56,35 @@
     </fold-callout>
   }
 
+  @if (bankLimits(); as limits) {
+    <!-- PL2 (2026-10-24) : les plafonds de la banque avertissent, ils ne ferment aucun geste. -->
+    @if (limits.perDebit.length > 0) {
+      <fold-callout variant="warning" data-limit-per-debit>
+        {{ perDebitHeadline(limits.perDebit.length) }}
+        <ul class="pf-gaps">
+          @for (debit of limits.perDebit; track debit.rank) {
+            <li data-debit-over-limit [attr.data-rank]="debit.rank">
+              <span
+                ><strong>{{ debit.debtorName }}</strong> · {{ perDebitLine(debit) }}</span
+              >
+            </li>
+          }
+        </ul>
+        {{ limitNote }}
+      </fold-callout>
+    }
+    @if (limits.perRemittance; as over) {
+      <fold-callout variant="warning" data-limit-per-remittance>
+        {{ perRemittanceSentence(over) }} {{ limitNote }}
+      </fold-callout>
+    }
+    @if (limits.monthly; as over) {
+      <fold-callout variant="warning" data-limit-monthly>
+        {{ monthlySentence(over) }} {{ monthlyNote }} {{ limitNote }}
+      </fold-callout>
+    }
+  }
+
   @switch (file().reason) {
     @case ('to_prepare') {
       <fold-empty-state

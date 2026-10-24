@@ -25,6 +25,14 @@ import {
   debtorGapsHeadline,
 } from './debtor-gap-wording';
 import { DEPOSIT_CUTOFF_ANCHOR } from '../../deposit-cutoff-anchor';
+import {
+  BANK_LIMIT_NOTE,
+  MONTHLY_BASIS_NOTE,
+  monthlySentence,
+  perDebitHeadline,
+  perDebitLine,
+  perRemittanceSentence,
+} from './bank-limit-wording';
 
 /**
  * **Onglet 3 — le fichier du lot suivi** (plan
@@ -121,6 +129,26 @@ export class ProcedureFileStep {
   protected readonly missing = debtorGapMissing;
   protected readonly step = debtorGapStep;
   protected readonly stepLabel = DEBTOR_GAP_STEP_LABEL;
+
+  /**
+   * Les plafonds de la banque dépassés par le lot suivi (PL2) — `null` quand
+   * aucun constat n'est présent, pour ne rien afficher.
+   */
+  protected readonly bankLimits = computed(() => {
+    const limits = this.file().bankLimits;
+    if (limits === null) {
+      return null;
+    }
+    const present =
+      limits.perDebit.length > 0 || limits.perRemittance !== null || limits.monthly !== null;
+    return present ? limits : null;
+  });
+  protected readonly perDebitHeadline = perDebitHeadline;
+  protected readonly perDebitLine = perDebitLine;
+  protected readonly perRemittanceSentence = perRemittanceSentence;
+  protected readonly monthlySentence = monthlySentence;
+  protected readonly monthlyNote = MONTHLY_BASIS_NOTE;
+  protected readonly limitNote = BANK_LIMIT_NOTE;
 
   /** Les attestations d'un lot de la procédure, lues dans l'état du serveur. */
   protected attestationsOf(batchId: string): CollectionBatchAttestationsView {
