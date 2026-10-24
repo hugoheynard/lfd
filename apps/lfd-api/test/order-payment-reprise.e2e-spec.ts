@@ -9,8 +9,7 @@
  * rend l'état que la suite lui fixe, comme Stripe après un refus
  * (`requires_payment_method`, donc `awaiting_payment`).
  *
- * Les commandes sont semées par Prisma, faute d'agrégat qui sache écrire une
- * commande à un état donné (même dette que `test/factories.ts`).
+ * Les commandes sont passées par le vrai chemin (`placeOrder`, plan T).
  */
 import type { OrderPaymentIntent } from "@lfd/contracts";
 import { CommandBus } from "@nestjs/cqrs";
@@ -20,21 +19,22 @@ import {
   PaymentGateway,
   type PaymentIntentState,
 } from "../src/b2b/payments/domain/payment-gateway.js";
-import {
-  OrderClientele,
-  OrderStatus,
-  PaymentStatus,
-} from "../src/platform/database/client/client.js";
+import { PaymentStatus } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
+import { pickupSite, placeOrder } from "./order-factory.js";
 
 const BUYER = "auth0|reprise";
 
 /** L'état que Stripe rendrait pour l'intention, fixé par chaque test. */
 let intentState: PaymentIntentState = "awaiting_payment";
 
+/** L'intention que la prochaine passation recevra, fixée par chaque test. */
+let nextIntent = "pi_e2e";
+
 const fakeGateway = {
-  createIntent: () => Promise.resolve({ paymentIntentId: "pi_e2e", clientSecret: "pi_e2e_secret" }),
+  createIntent: () =>
+    Promise.resolve({ paymentIntentId: nextIntent, clientSecret: `${nextIntent}_secret` }),
   retrieveIntent: (paymentIntentId: string) =>
     Promise.resolve({
       paymentIntentId,
@@ -61,21 +61,13 @@ beforeEach(async () => {
   intentState = "awaiting_payment";
 });
 
+/** Une commande personnelle, carte en attente sur l'intention `intent`. */
 async function seedPendingOrder(intent: string): Promise<string> {
   const buyer = await createUser(ctx.prisma, { auth0Sub: BUYER, firstName: "Léa" });
-  const order = await ctx.prisma.order.create({
-    data: {
-      orderNumber: "CMD-REPRISE-1",
-      placedByUserId: buyer.id,
-      clientele: OrderClientele.public,
-      status: OrderStatus.placed,
-      subtotalCents: 2_000,
-      totalCents: 2_110,
-      vatCents: 110,
-      paymentStatus: PaymentStatus.pending,
-      stripePaymentIntentId: intent,
-    },
-    select: { id: true },
+  nextIntent = intent;
+  const order = await placeOrder(ctx, {
+    buyerUserId: buyer.id,
+    fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
   });
   return order.id;
 }
@@ -100,12 +92,18 @@ describe("GET /orders/:id/payment après un refus de carte", () => {
     await webhook("pi_reprise", "failed");
     expect(await paymentStatusOf(orderId)).toBe(PaymentStatus.failed);
 
+    const { totalCents } = await ctx.prisma.order.findUniqueOrThrow({
+      where: { id: orderId },
+      select: { totalCents: true },
+    });
     const response = await ctx.asSub(BUYER).get(`/orders/${orderId}/payment`).expect(200);
     expect(jsonBody<OrderPaymentIntent>(response)).toEqual({
       clientSecret: "pi_reprise_secret",
       publishableKey: "pk_e2e",
-      amountCents: 2_110,
+      // Le total que la passation a tarifé, pas un chiffre recopié.
+      amountCents: totalCents,
     });
+    expect(totalCents).toBeGreaterThan(0);
 
     await webhook("pi_reprise", "succeeded");
     expect(await paymentStatusOf(orderId)).toBe(PaymentStatus.paid);

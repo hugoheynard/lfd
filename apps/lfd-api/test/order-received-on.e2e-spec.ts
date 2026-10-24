@@ -15,11 +15,10 @@
  */
 import { instantToLocal } from "@lfd/contracts";
 
-import {
-  OrderClientele,
-  OrderStatus,
-  PaymentStatus,
-} from "../src/platform/database/client/client.js";
+import { CommandBus } from "@nestjs/cqrs";
+
+import { ConfirmOrderPaymentCommand } from "../src/b2b/orders/application/commands/confirm-order-payment.command.js";
+import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { staffWithRole } from "./delivery-driver-scene.js";
 import { DOOR_DAY, DOOR_ROLE, departedStop, JPEG, myRound } from "./delivery-handover-scene.js";
 import { MY_ROUND } from "./delivery-driver-scene.js";
@@ -27,13 +26,24 @@ import { ADMIN_VERIFIER_OVERRIDE, forgetCustomer } from "./delivery-rounds-scene
 import { forgetRoutingScene } from "./delivery-routing-scene.js";
 import { bootstrapE2e, E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
+import { pickupSite, placeOrder } from "./order-factory.js";
 
 let ctx: E2eContext;
 let sequence = 0;
 
+/** L'intention que la prochaine passation recevra. */
+let nextIntent = "pi_e2e";
+const fakeGateway = {
+  createIntent: () =>
+    Promise.resolve({ paymentIntentId: nextIntent, clientSecret: `${nextIntent}_secret` }),
+  publishableKey: () => "pk_e2e",
+  parseWebhook: () => ({ kind: "ignored" as const }),
+  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
+};
+
 beforeAll(async () => {
   ctx = await bootstrapE2e({
-    overrides: [ADMIN_VERIFIER_OVERRIDE],
+    overrides: [ADMIN_VERIFIER_OVERRIDE, { token: PaymentGateway, value: fakeGateway }],
   });
 });
 
@@ -48,25 +58,18 @@ beforeEach(async () => {
   await ctx.asSub(E2E_STAFF_SUB).post("/admin/staff-roles").send(DOOR_ROLE).expect(201);
 });
 
-/** Une commande prête au comptoir, carte déjà encaissée — la scène de `handover-durable`. */
+/** Une commande de comptoir, carte déjà encaissée, passée par le vrai chemin (plan T). */
 async function readyOrder(): Promise<{ readonly id: string; readonly number: string }> {
   sequence += 1;
-  const number = `CMD-RECUE-${String(sequence)}`;
   const user = await createUser(ctx.prisma, { auth0Sub: `auth0|recue-${String(sequence)}` });
-  const order = await ctx.prisma.order.create({
-    data: {
-      orderNumber: number,
-      placedByUserId: user.id,
-      clientele: OrderClientele.public,
-      status: OrderStatus.ready,
-      subtotalCents: 2_340,
-      totalCents: 2_340,
-      paymentStatus: PaymentStatus.paid,
-      stripePaymentIntentId: `pi_recue_${String(sequence)}`,
-    },
-    select: { id: true },
+  nextIntent = `pi_recue_${String(sequence)}`;
+  const order = await placeOrder(ctx, {
+    buyerUserId: user.id,
+    fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
   });
-  return { id: order.id, number };
+  await ctx.app.get(CommandBus).execute(new ConfirmOrderPaymentCommand(nextIntent, "succeeded"));
+  await ctx.drain();
+  return { id: order.id, number: order.orderNumber };
 }
 
 async function received(orderId: string) {

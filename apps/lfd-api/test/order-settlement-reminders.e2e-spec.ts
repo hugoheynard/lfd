@@ -8,24 +8,28 @@
  * l'équipe, intention Stripe, `placed`, non encaissée), la porte machine du
  * Cron Trigger, et l'anti-doublon de la cloche en base.
  *
- * Les commandes sont semées par Prisma, faute d'agrégat qui sache écrire une
- * commande à un état donné (même dette que `production-closing-sweep`).
+ * Les commandes sont passées par le vrai chemin (plan T) — saisies par
+ * l'équipe (`placeOrderForCustomer`) ou par le client (`placeOrder`), cinq jours
+ * avant leur journée pour passer sous l'heure limite ; le règlement, le refus et
+ * l'annulation passent par les vraies commandes. Seule la passerelle de carte
+ * est doublée.
  */
-import { lineTotalCents } from "@lfd/money";
+import { CommandBus } from "@nestjs/cqrs";
 
-import {
-  OrderClientele,
-  OrderStatus,
-  PaymentStatus,
-} from "../src/platform/database/client/client.js";
+import { CancelOrderCommand } from "../src/b2b/orders/application/commands/cancel-order.command.js";
+import { ConfirmOrderPaymentCommand } from "../src/b2b/orders/application/commands/confirm-order-payment.command.js";
+import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { CustomerRole, DeferredTerm } from "../src/platform/database/client/client.js";
 import {
   bootstrapE2e,
+  daysAgo,
   E2E_STAFF_ID,
   jsonBody,
   serviceDay,
   type E2eContext,
 } from "./e2e-harness.js";
-import { createCompany, createUser } from "./factories.js";
+import { attachTo, createCompany, createUser } from "./factories.js";
+import { pickupSite, placeOrder, placeOrderForCustomer } from "./order-factory.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 
 const ROUTE = "/admin/orders/settlement-reminders";
@@ -35,11 +39,25 @@ const KIND = "order.settlement_overdue";
 const OVERDUE_DAY = serviceDay(1);
 const OPEN_DAY = serviceDay(10);
 
+/** Passée cinq jours avant : sous l'heure limite de demain comme de dans dix jours. */
+const PLACED_DAYS_AGO = 5;
+
 let ctx: E2eContext;
 let seq = 0;
 
+/** Passerelle de carte doublée : une intention par passation, rien d'autre. */
+const fakeGateway = {
+  createIntent: () => {
+    const paymentIntentId = `pi_rappel_${String(seq)}`;
+    return Promise.resolve({ paymentIntentId, clientSecret: `${paymentIntentId}_secret` });
+  },
+  publishableKey: () => "pk_e2e",
+  parseWebhook: () => ({ kind: "ignored" as const }),
+  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
+};
+
 beforeAll(async () => {
-  ctx = await bootstrapE2e();
+  ctx = await bootstrapE2e({ overrides: [{ token: PaymentGateway, value: fakeGateway }] });
 });
 
 afterAll(async () => {
@@ -53,52 +71,69 @@ beforeEach(async () => {
   });
 });
 
+/** Ce qui arrive au règlement après la passation, par les vraies commandes. */
+type Outcome = "pending" | "failed" | "paid" | "cancelled";
+
 interface Seed {
   readonly day?: string;
   readonly byStaff?: boolean;
+  /** `false` = saisie au compte : aucune intention, rien à encaisser. */
   readonly link?: boolean;
-  readonly payment?: PaymentStatus;
-  readonly status?: OrderStatus;
+  readonly outcome?: Outcome;
 }
 
-async function seedOrder(seed: Seed = {}): Promise<string> {
-  seq += 1;
+/** Une société active, son acheteur, et — saisie au compte — un crédit accordé. */
+async function buyerOf(onAccount: boolean): Promise<{ companyId: string; buyerUserId: string }> {
   const author = await createUser(ctx.prisma, {
     auth0Sub: `auth0|rappel-${seq}`,
     email: `rappel-${seq}@example.test`,
   });
   const company = await createCompany(ctx.prisma, { enseigne: "Hôtel des Cimes" });
-  const day = seed.day ?? OVERDUE_DAY;
-  const order = await ctx.prisma.order.create({
-    data: {
-      orderNumber: `CMD-RAPPEL-${seq}`,
-      placedByUserId: author.id,
-      placedByStaffId: seed.byStaff === false ? null : E2E_STAFF_ID,
-      companyId: company.id,
-      clientele: OrderClientele.pro,
-      status: seed.status ?? OrderStatus.placed,
-      requestedDeliveryDate: new Date(`${day}T00:00:00.000Z`),
-      fulfillmentMethod: "pickup",
-      subtotalCents: 1_000,
-      totalCents: 1_055,
-      vatCents: 55,
-      paymentStatus: seed.payment ?? PaymentStatus.pending,
-      stripePaymentIntentId: seed.link === false ? null : `pi_rappel_${seq}`,
-      lines: {
-        create: [
-          {
-            sku: "VIE-001",
-            productNameSnapshot: "Croissant",
-            unitPriceMillicents: 100_000,
-            quantity: 1,
-            lineTotalCents: lineTotalCents(100_000, 1),
-          },
-        ],
-      },
-    },
-    select: { id: true },
-  });
+  if (onAccount) {
+    await ctx.prisma.company.update({
+      where: { id: company.id },
+      data: { grantedTerms: [DeferredTerm.monthly] },
+    });
+  }
+  await attachTo(ctx.prisma, author.id, company.id, CustomerRole.owner);
+  return { companyId: company.id, buyerUserId: author.id };
+}
+
+async function seedOrder(seed: Seed = {}): Promise<string> {
+  seq += 1;
+  const buyer = await buyerOf(seed.link === false);
+  const common = {
+    ...buyer,
+    fulfillment: { method: "pickup" as const, pickupSiteId: await pickupSite(ctx.prisma) },
+    forDay: seed.day ?? OVERDUE_DAY,
+    placedAt: new Date(daysAgo(PLACED_DAYS_AGO)),
+  };
+  const order =
+    seed.byStaff === false
+      ? await placeOrder(ctx, { ...common, settlement: "card" })
+      : await placeOrderForCustomer(ctx, {
+          ...common,
+          staffUserId: E2E_STAFF_ID,
+          settlement: seed.link === false ? "account" : "link",
+        });
+  await settle(order, seed.outcome ?? "pending");
   return order.id;
+}
+
+/** Fait arriver au règlement ce que le test demande : webhook de carte, ou annulation staff. */
+async function settle(
+  order: { readonly id: string; readonly paymentIntentId: string | null },
+  outcome: Outcome,
+): Promise<void> {
+  const bus = ctx.app.get(CommandBus);
+  if (outcome !== "pending" && order.paymentIntentId !== null) {
+    const card = outcome === "paid" ? "succeeded" : "failed";
+    await bus.execute(new ConfirmOrderPaymentCommand(order.paymentIntentId, card));
+  }
+  if (outcome === "cancelled") {
+    await bus.execute(new CancelOrderCommand(order.id, E2E_STAFF_ID, "Le client renonce."));
+  }
+  await ctx.drain();
 }
 
 async function pass(): Promise<{ readonly overdue: number }> {
@@ -128,7 +163,7 @@ describe(`POST ${ROUTE}`, () => {
   });
 
   it("une carte refusée compte aussi : le règlement n'est pas encaissé", async () => {
-    await seedOrder({ payment: PaymentStatus.failed });
+    await seedOrder({ outcome: "failed" });
 
     expect(await pass()).toEqual({ overdue: 1 });
   });
@@ -142,9 +177,9 @@ describe(`POST ${ROUTE}`, () => {
 
   it("ignore ce qui n'est pas un lien de l'équipe resté en l'air", async () => {
     await seedOrder({ byStaff: false });
-    await seedOrder({ link: false, payment: PaymentStatus.not_required });
-    await seedOrder({ payment: PaymentStatus.paid });
-    await seedOrder({ status: OrderStatus.cancelled, payment: PaymentStatus.failed });
+    await seedOrder({ link: false });
+    await seedOrder({ outcome: "paid" });
+    await seedOrder({ outcome: "cancelled" });
 
     expect(await pass()).toEqual({ overdue: 0 });
     expect(await bells()).toEqual([]);

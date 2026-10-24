@@ -17,10 +17,21 @@ import {
 } from "@lfd/contracts";
 import request from "supertest";
 
+import { CommandBus } from "@nestjs/cqrs";
+
+import { CancelOrderCommand } from "../src/b2b/orders/application/commands/cancel-order.command.js";
+import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { OrderClientele, OrderStatus } from "../src/platform/database/client/client.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
-import { bootstrapE2e, daysAgo, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
+import {
+  bootstrapE2e,
+  daysAgo,
+  E2E_STAFF_ID,
+  jsonBody,
+  serviceDay,
+  type E2eContext,
+} from "./e2e-harness.js";
+import { cardGatewayDouble, payByCard, pickupSite, placeOrder } from "./order-factory.js";
 import { stubAdminVerifier } from "./operations-at-commerce-scene.js";
 
 let ctx: E2eContext;
@@ -34,11 +45,15 @@ const TUESDAY = 2;
 let companyA = "";
 let companyB = "";
 let userA = "";
+let userB = "";
 let userPerson = "";
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
-    overrides: [{ token: AdminTokenVerifier, value: stubAdminVerifier }],
+    overrides: [
+      { token: AdminTokenVerifier, value: stubAdminVerifier },
+      { token: PaymentGateway, value: cardGatewayDouble("pi_habituels") },
+    ],
   });
 });
 
@@ -56,6 +71,7 @@ beforeEach(async () => {
   await attachTo(ctx.prisma, a.id, companyA);
   await attachTo(ctx.prisma, b.id, companyB);
   userA = a.id;
+  userB = b.id;
   userPerson = person.id;
 });
 
@@ -75,47 +91,54 @@ interface SeedOrder {
   readonly skus: readonly string[];
   /** Le jour pour lequel la commande est passée, `back` jours en arrière. */
   readonly back: number;
-  readonly status?: OrderStatus;
+  readonly cancelled?: boolean;
   readonly fromSubscription?: boolean;
   /** Passée combien de jours avant son jour ; la veille par défaut. */
   readonly placedBefore?: number;
 }
 
-/** Une commande figée telle que la passation l'écrit, une pièce par article. */
+/**
+ * Une commande passée par le vrai chemin (plan T) pour le jour `back` jours en
+ * arrière, un exemplaire par article, puis réglée — ou annulée par l'équipe.
+ */
 async function seedOrder(order: SeedOrder): Promise<void> {
   seq += 1;
-  const day = serviceDay(-order.back);
-  await ctx.prisma.order.create({
-    data: {
-      orderNumber: `CMD-USUALS-${String(seq)}`,
-      placedByUserId: order.userId,
-      companyId: order.companyId,
-      clientele: order.companyId === null ? OrderClientele.public : OrderClientele.pro,
-      status: order.status ?? OrderStatus.placed,
-      fromSubscriptionId: order.fromSubscription === true ? `sub-${String(seq)}` : null,
-      requestedDeliveryDate: new Date(`${day}T12:00:00.000Z`),
-      subtotalCents: 100 * order.skus.length,
-      vatCents: 0,
-      totalCents: 100 * order.skus.length,
-      createdAt: new Date(daysAgo(order.back + (order.placedBefore ?? 1))),
-      lines: {
-        create: order.skus.map((sku) => ({
-          sku,
-          productNameSnapshot: sku,
-          unitPriceMillicents: 100_000,
-          quantity: 1,
-          lineTotalCents: 100,
-        })),
-      },
-    },
+  const placed = await placeOrder(ctx, {
+    buyerUserId: order.userId,
+    companyId: order.companyId,
+    fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
+    forDay: serviceDay(-order.back),
+    placedAt: new Date(daysAgo(order.back + (order.placedBefore ?? 1))),
+    lines: order.skus.map((sku) => ({ sku, quantity: 1 })),
   });
+  if (order.cancelled === true) {
+    await ctx.app
+      .get(CommandBus)
+      .execute(new CancelOrderCommand(placed.id, E2E_STAFF_ID, "Le client renonce."));
+    await ctx.drain();
+  } else {
+    await payByCard(ctx, placed);
+  }
+  if (order.fromSubscription === true) {
+    // Écriture brute GARDÉE (plan T, 2026-10-24) : une commande de panier
+    // récurrent naît de la génération des abonnements, qu'aucune entrée de
+    // test ne déclenche pour un jour passé. La commande est vraie ; seule sa
+    // provenance est posée après coup, et c'est elle que la requête exclut.
+    await ctx.prisma.order.update({
+      where: { id: placed.id },
+      data: { fromSubscriptionId: `sub-${String(seq)}` },
+    });
+  }
 }
 
 /** `count` mardis consécutifs, les plus récents d'abord, pour cette société. */
 async function tuesdays(count: number, companyId: string, skus: readonly string[]): Promise<void> {
   const first = lastTuesdayBack();
+  // Le membre de LA société : la passation refuse qu'un acheteur commande pour
+  // une maison dont il n'est pas (le semis brut laissait A commander pour B).
+  const userId = companyId === companyB ? userB : userA;
   for (let week = 0; week < count; week += 1) {
-    await seedOrder({ userId: userA, companyId, skus, back: first + 7 * week });
+    await seedOrder({ userId, companyId, skus, back: first + 7 * week });
   }
 }
 
@@ -167,7 +190,7 @@ describe("vos habituels (R1)", () => {
     await tuesdays(2, companyA, ["VIE-001"]);
     const first = lastTuesdayBack();
     const base = { userId: userA, companyId: companyA, skus: ["VIE-001"] };
-    await seedOrder({ ...base, back: first + 14, status: OrderStatus.cancelled });
+    await seedOrder({ ...base, back: first + 14, cancelled: true });
     await seedOrder({ ...base, back: first + 21, fromSubscription: true });
     await seedOrder({ ...base, back: first + 7 * 54 });
 

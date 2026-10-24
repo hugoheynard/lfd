@@ -13,33 +13,37 @@
  * Frontière doublée : la passerelle Stripe — le webhook passe par la vraie
  * route et le vrai contrôleur, mais la vérification de signature est celle du
  * double (la vraie est éprouvée par `stripe-payment-gateway-refunds.spec.ts`).
- * La commande est semée par Prisma, faute d'agrégat qui sache écrire une
- * commande à un état donné (même dette que `test/factories.ts`).
+ * La commande est passée par le vrai chemin (`placeOrder`, plan T) et réglée
+ * par la vraie commande de confirmation.
  */
 import {
   PaymentGateway,
   type PaymentRefundStatus,
   type PaymentWebhookEvent,
 } from "../src/b2b/payments/domain/payment-gateway.js";
-import {
-  OrderClientele,
-  OrderStatus,
-  PaymentStatus,
-} from "../src/platform/database/client/client.js";
+import { CommandBus } from "@nestjs/cqrs";
+
+import { ConfirmOrderPaymentCommand } from "../src/b2b/orders/application/commands/confirm-order-payment.command.js";
+import { PaymentStatus } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, daysAgo, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
+import { pickupSite, placeOrder } from "./order-factory.js";
 
 /** Le prochain événement que « Stripe » livrera au webhook. */
 let nextWebhook: PaymentWebhookEvent = { kind: "ignored" };
+/** L'intention que la prochaine passation recevra. */
+let nextIntent = "pi_e2e";
 const fakeGateway = {
-  createIntent: () => Promise.reject(new Error("aucune intention dans cette suite")),
+  createIntent: () =>
+    Promise.resolve({ paymentIntentId: nextIntent, clientSecret: `${nextIntent}_secret` }),
   retrieveIntent: () => Promise.reject(new Error("aucune intention dans cette suite")),
   publishableKey: () => "pk_e2e",
   parseWebhook: (): PaymentWebhookEvent => nextWebhook,
   cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
 };
 
-const TOTAL = 2_110;
+/** Le total que la passation a tarifé — relu à chaque semis, jamais recopié. */
+let orderTotal = 0;
 /** L'instant Stripe du remboursement : recopié, jamais comparé à l'horloge. */
 const REFUNDED_AT = new Date(daysAgo(1));
 
@@ -60,20 +64,20 @@ beforeEach(async () => {
 
 async function seedPaidOrder(intent: string): Promise<string> {
   const buyer = await createUser(ctx.prisma, { auth0Sub: "auth0|rembourse", firstName: "Léa" });
-  const order = await ctx.prisma.order.create({
-    data: {
-      orderNumber: "CMD-REMB-1",
-      placedByUserId: buyer.id,
-      clientele: OrderClientele.public,
-      status: OrderStatus.placed,
-      subtotalCents: 2_000,
-      totalCents: TOTAL,
-      vatCents: 110,
-      paymentStatus: PaymentStatus.paid,
-      stripePaymentIntentId: intent,
-    },
-    select: { id: true },
+  nextIntent = intent;
+  const order = await placeOrder(ctx, {
+    buyerUserId: buyer.id,
+    fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
+    // Dix croissants : le total dépasse le premier remboursement partiel (10 €).
+    lines: [{ sku: "VIE-001", quantity: 10 }],
   });
+  await ctx.app.get(CommandBus).execute(new ConfirmOrderPaymentCommand(intent, "succeeded"));
+  await ctx.drain();
+  const row = await ctx.prisma.order.findUniqueOrThrow({
+    where: { id: order.id },
+    select: { totalCents: true },
+  });
+  orderTotal = row.totalCents;
   return order.id;
 }
 
@@ -129,7 +133,7 @@ describe("un remboursement partiel, puis le reste", () => {
     await webhook({ id: "re_partiel", intent: "pi_rembourse", amountCents: 1_000 });
     expect(await paymentStatusOf(orderId)).toBe(PaymentStatus.paid);
 
-    await webhook({ id: "re_reste", intent: "pi_rembourse", amountCents: TOTAL - 1_000 });
+    await webhook({ id: "re_reste", intent: "pi_rembourse", amountCents: orderTotal - 1_000 });
 
     expect(await paymentStatusOf(orderId)).toBe(PaymentStatus.refunded);
     const refunds = await ctx.prisma.orderRefund.findMany({
@@ -146,7 +150,7 @@ describe("un remboursement partiel, puis le reste", () => {
       },
       {
         stripeRefundId: "re_reste",
-        amountCents: TOTAL - 1_000,
+        amountCents: orderTotal - 1_000,
         status: "succeeded",
         refundedAt: REFUNDED_AT,
       },

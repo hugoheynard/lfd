@@ -206,6 +206,9 @@ commandes du comptoir et à 0 €, l'unicité SQL des arrêts.
   décider d'un départ incomplet.
 - **Q-E4 — oui** : les BL se numérotent `BL-1042-1`, `BL-1042-2`.
 - **Q-E5 — oui** : une commande remise sans être passée au colisage reçoit un BL plein au retrait.
+- Lot E6 : [`plan-e6-le-depart-incomplet.md`](plan-e6-le-depart-incomplet.md) — le départ incomplet ; E6a d'abord, E6b + E6c après validation de Hugo.
+- Lot T : [`plan-t-commandes-de-test-par-le-vrai-chemin.md`](plan-t-commandes-de-test-par-le-vrai-chemin.md) — les commandes de test passent par le vrai chemin.
+- E5b bâti le 2026-10-25 : « confirmation de commande » dans les libellés (`473093bdf`).
 - Lot E5a : [`plan-e5a-le-bon-de-livraison-imprime.md`](plan-e5a-le-bon-de-livraison-imprime.md) — le BL imprimé, une pièce par lecteur.
 - Lot E4b : [`plan-e4b-la-facture-lit-les-bons.md`](plan-e4b-la-facture-lit-les-bons.md) — **reporté et fusionné avec E6** (2026-10-24, § 6 de ce plan).
 - Lot E4a : [`plan-e4a-totaux-du-bon.md`](plan-e4a-totaux-du-bon.md) — le BL porte ses totaux (E4 coupé en deux par l'assistant, 2026-10-24).

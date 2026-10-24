@@ -1,15 +1,29 @@
 /**
- * Fabriques de données pour les tests e2e.
+ * Fabriques de données pour les tests e2e — sociétés, personnes, rattachements.
  *
- * ⚠️ **Dette assumée, à résorber** : elles écrivent par Prisma parce que le
- * contexte commerce n'a pas encore d'agrégat de domaine (`domain/entities/`).
- * Dès que `Company` et `User` existeront comme entités, ces fabriques devront
- * passer par leurs factories — une donnée de test que le domaine ne saurait pas
- * produire est une donnée que la prod ne verra jamais, et le test ne prouve
- * alors rien (cf. `CLAUDE.md` §5).
+ * ⚠️ **Dette, réécrite le 2026-10-24 (plan T,
+ * `documentation/commandes/plan-t-commandes-de-test-par-le-vrai-chemin.md`).**
+ * Cet en-tête disait qu'elles écrivaient par Prisma « parce que le contexte
+ * commerce n'a pas encore d'agrégat de domaine ». C'était faux : `Company`
+ * (`b2b/account/domain/entities/company.ts`, `Company.declare`) et `Order`
+ * (`b2b/orders/domain/entities/order.ts`) existent depuis au moins le
+ * 2026-08-19 (vérifié le 2026-10-24).
  *
- * En attendant, elles restent **minimales et nommées** : chaque appel ne
- * mentionne que ce qui compte pour le test, le reste est un défaut plausible.
+ * Ce qui est vrai à cette date :
+ *
+ * - **les commandes** ne se sèment plus ici : `order-factory.ts` (`placeOrder`,
+ *   `placeOrderForCustomer`) les passe par la commande de passation du bus —
+ *   numéro, prix, TVA et contrôles de la production. Les suites qui écrivent
+ *   encore `orders` en Prisma sont les tranches du plan T pas encore migrées,
+ *   ou une exception datée et justifiée au-dessus de l'écriture ;
+ * - **les sociétés et les personnes** s'écrivent encore par Prisma, sans
+ *   passer par `Company.declare` : aucune raison de fond ne l'impose, c'est une
+ *   dette qui reste à rembourser. Une donnée que le domaine ne saurait pas
+ *   produire est une donnée que la prod ne verra jamais (`CLAUDE.md` §5) — d'où
+ *   le SIREN demandé au domaine plus bas.
+ *
+ * Elles restent **minimales et nommées** : chaque appel ne mentionne que ce qui
+ * compte pour le test, le reste est un défaut plausible.
  */
 import { instantToLocal } from "@lfd/contracts";
 

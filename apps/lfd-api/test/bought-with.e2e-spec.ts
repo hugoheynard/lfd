@@ -16,12 +16,18 @@ import {
 } from "@lfd/contracts";
 import request from "supertest";
 
+import { CommandBus } from "@nestjs/cqrs";
+
+import { CancelOrderCommand } from "../src/b2b/orders/application/commands/cancel-order.command.js";
+import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { OrderClientele, OrderStatus } from "../src/platform/database/client/client.js";
-import { createCompany, createUser } from "./factories.js";
+import { CustomerRole } from "../src/platform/database/client/client.js";
+import { attachTo, createCompany, createUser } from "./factories.js";
+import { cardGatewayDouble, payByCard, pickupSite, placeOrder } from "./order-factory.js";
 import {
   bootstrapE2e,
   daysAgo,
+  E2E_STAFF_ID,
   E2E_STAFF_SUB,
   jsonBody,
   serviceDay,
@@ -34,7 +40,10 @@ let seq = 0;
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
-    overrides: [{ token: AdminTokenVerifier, value: stubAdminVerifier }],
+    overrides: [
+      { token: AdminTokenVerifier, value: stubAdminVerifier },
+      { token: PaymentGateway, value: cardGatewayDouble("pi_pris_avec") },
+    ],
   });
 });
 
@@ -50,38 +59,47 @@ interface SeedOrder {
   readonly userId: string;
   readonly skus: readonly string[];
   readonly companyId?: string;
-  readonly status?: OrderStatus;
+  readonly cancelled?: boolean;
   readonly fromSubscription?: boolean;
   /** Il y a combien de jours elle a été passée ; hier par défaut. */
   readonly daysAgo?: number;
 }
 
-/** Une commande figée telle que la passation l'écrit, une pièce par article. */
+/**
+ * Une commande passée par le vrai chemin (plan T), un exemplaire par article,
+ * puis réglée — ou annulée par l'équipe.
+ */
 async function seedOrder(order: SeedOrder): Promise<void> {
   seq += 1;
-  await ctx.prisma.order.create({
-    data: {
-      orderNumber: `CMD-BOUGHT-WITH-${String(seq)}`,
-      placedByUserId: order.userId,
-      companyId: order.companyId ?? null,
-      clientele: order.companyId === undefined ? OrderClientele.public : OrderClientele.pro,
-      status: order.status ?? OrderStatus.placed,
-      fromSubscriptionId: order.fromSubscription === true ? `sub-${String(seq)}` : null,
-      subtotalCents: 100 * order.skus.length,
-      vatCents: 0,
-      totalCents: 100 * order.skus.length,
-      createdAt: new Date(daysAgo(order.daysAgo ?? 1)),
-      lines: {
-        create: order.skus.map((sku) => ({
-          sku,
-          productNameSnapshot: sku,
-          unitPriceMillicents: 100_000,
-          quantity: 1,
-          lineTotalCents: 100,
-        })),
-      },
-    },
+  if (order.companyId !== undefined) {
+    await attachTo(ctx.prisma, order.userId, order.companyId, CustomerRole.owner);
+  }
+  const placed = await placeOrder(ctx, {
+    buyerUserId: order.userId,
+    companyId: order.companyId ?? null,
+    fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
+    placedAt: new Date(daysAgo(order.daysAgo ?? 1)),
+    forDay: serviceDay(1 - (order.daysAgo ?? 1)),
+    lines: order.skus.map((sku) => ({ sku, quantity: 1 })),
   });
+  if (order.cancelled === true) {
+    await ctx.app
+      .get(CommandBus)
+      .execute(new CancelOrderCommand(placed.id, E2E_STAFF_ID, "Le client renonce."));
+    await ctx.drain();
+  } else {
+    await payByCard(ctx, placed);
+  }
+  if (order.fromSubscription === true) {
+    // Écriture brute GARDÉE (plan T, 2026-10-24) : une commande de panier
+    // récurrent naît de la génération des abonnements, qu'aucune entrée de
+    // test ne déclenche pour un seul jour. La commande est vraie ; seule sa
+    // provenance est posée après coup, et c'est elle que la requête exclut.
+    await ctx.prisma.order.update({
+      where: { id: placed.id },
+      data: { fromSubscriptionId: `sub-${String(seq)}` },
+    });
+  }
 }
 
 async function person(): Promise<string> {
@@ -156,7 +174,7 @@ describe("souvent pris avec (R2)", () => {
     await seedOrder({
       userId: await person(),
       skus: ["VIE-001", "PAI-001"],
-      status: OrderStatus.cancelled,
+      cancelled: true,
     });
     await seedOrder({
       userId: await person(),

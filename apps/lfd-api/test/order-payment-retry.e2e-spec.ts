@@ -7,25 +7,35 @@
  * MÊME intention. Seuls le vrai SQL et le vrai bus prouvent que la commande
  * suit.
  *
- * Les commandes sont semées par Prisma, faute d'agrégat qui sache écrire une
- * commande à un état donné (même dette que `test/factories.ts`) ; le règlement,
- * lui, passe par la vraie commande du commerce.
+ * Les commandes sont passées par le vrai chemin (`placeOrder`, plan T) ; seule
+ * la passerelle de carte est doublée, et elle rend l'intention que le test
+ * nomme. Le règlement passe par la vraie commande du commerce.
  */
 import { CommandBus } from "@nestjs/cqrs";
 
 import { ConfirmOrderPaymentCommand } from "../src/b2b/orders/application/commands/confirm-order-payment.command.js";
-import {
-  OrderClientele,
-  OrderStatus,
-  PaymentStatus,
-} from "../src/platform/database/client/client.js";
+import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { PaymentStatus } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
+import { pickupSite, placeOrder } from "./order-factory.js";
+
+/** L'intention que la prochaine passation recevra, fixée par chaque test. */
+let nextIntent = "pi_e2e";
+
+/** Passerelle de carte doublée : elle rend l'intention nommée, aucun appel réseau. */
+const fakeGateway = {
+  createIntent: () =>
+    Promise.resolve({ paymentIntentId: nextIntent, clientSecret: `${nextIntent}_secret` }),
+  publishableKey: () => "pk_e2e",
+  parseWebhook: () => ({ kind: "ignored" as const }),
+  cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
+};
 
 let ctx: E2eContext;
 
 beforeAll(async () => {
-  ctx = await bootstrapE2e();
+  ctx = await bootstrapE2e({ overrides: [{ token: PaymentGateway, value: fakeGateway }] });
 });
 
 afterAll(async () => {
@@ -36,21 +46,13 @@ beforeEach(async () => {
   await ctx.reset();
 });
 
+/** Une commande personnelle, carte en attente sur l'intention `intent`. */
 async function seedPendingOrder(intent: string): Promise<string> {
   const buyer = await createUser(ctx.prisma, { auth0Sub: "auth0|second-essai", firstName: "Léa" });
-  const order = await ctx.prisma.order.create({
-    data: {
-      orderNumber: "CMD-ESSAI-1",
-      placedByUserId: buyer.id,
-      clientele: OrderClientele.public,
-      status: OrderStatus.placed,
-      subtotalCents: 2_000,
-      totalCents: 2_110,
-      vatCents: 110,
-      paymentStatus: PaymentStatus.pending,
-      stripePaymentIntentId: intent,
-    },
-    select: { id: true },
+  nextIntent = intent;
+  const order = await placeOrder(ctx, {
+    buyerUserId: buyer.id,
+    fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
   });
   return order.id;
 }

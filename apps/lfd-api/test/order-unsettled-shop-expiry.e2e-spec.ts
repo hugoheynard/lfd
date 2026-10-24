@@ -8,29 +8,30 @@
  * `cancelled`. Le reste — le `where` du périmètre, le bus, l'abonné de
  * remplacement, la liste « Mes commandes » — tourne sur le vrai Postgres.
  *
- * Les commandes sont semées par Prisma, faute d'agrégat qui sache écrire une
- * commande à un état donné (même dette que `order-abandon.e2e-spec.ts`). La
- * passation est représentée par son FAIT, `OrderPlacedEvent`, publié sur le
- * vrai bus : c'est lui, et lui seul, que le remplacement écoute.
+ * Les commandes sont passées par le vrai chemin (`placeOrder`, plan T) : la
+ * passation publie elle-même `OrderPlacedEvent`, le fait que le remplacement
+ * écoute. Un particulier distinct par commande là où le remplacement ne doit
+ * pas jouer.
  */
-import { CommandBus, EventBus } from "@nestjs/cqrs";
+import { CommandBus } from "@nestjs/cqrs";
 
 import { ConfirmOrderPaymentCommand } from "../src/b2b/orders/application/commands/confirm-order-payment.command.js";
-import { OrderPlacedEvent } from "../src/b2b/orders/domain/events/order-placed.event.js";
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
-import {
-  OrderClientele,
-  OrderStatus,
-  PaymentStatus,
-} from "../src/platform/database/client/client.js";
+import { OrderStatus, PaymentStatus } from "../src/platform/database/client/client.js";
 import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
+import { pickupSite, placeOrder } from "./order-factory.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 
 const cancelledIntents: string[] = [];
+let issuedIntents = 0;
 const fakeGateway = {
-  createIntent: () => Promise.reject(new Error("non utilisé")),
+  createIntent: () => {
+    issuedIntents += 1;
+    const paymentIntentId = `pi_non_reglee_${String(issuedIntents)}`;
+    return Promise.resolve({ paymentIntentId, clientSecret: `${paymentIntentId}_secret` });
+  },
   retrieveIntent: () => Promise.reject(new Error("non utilisé")),
   cancelIntent: (id: string) => {
     cancelledIntents.push(id);
@@ -74,29 +75,23 @@ const BUYER = "auth0|non-reglee-acheteur";
 const MINUTES_PER_DAY = 24 * 60;
 const ROUTE = "/admin/orders/unsettled-shop-orders/expire";
 
-let seq = 0;
-
 /** Une commande boutique, carte en attente, passée il y a `minutes`. */
 async function seedPending(userId: string, minutes: number) {
-  seq += 1;
-  const intent = `pi_non_reglee_${String(seq)}`;
-  const order = await ctx.prisma.order.create({
-    data: {
-      orderNumber: `CMD-NONREGLEE-${String(seq)}`,
-      placedByUserId: userId,
-      companyId: null,
-      clientele: OrderClientele.public,
-      status: OrderStatus.placed,
-      subtotalCents: 2_000,
-      totalCents: 2_110,
-      vatCents: 110,
-      paymentStatus: PaymentStatus.pending,
-      stripePaymentIntentId: intent,
-      createdAt: daysAgo(minutes / MINUTES_PER_DAY),
-    },
-    select: { id: true, orderNumber: true },
+  const order = await placeOrder(ctx, {
+    buyerUserId: userId,
+    fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
+    placedAt: new Date(daysAgo(minutes / MINUTES_PER_DAY)),
   });
-  return { ...order, intent };
+  if (order.paymentIntentId === null) {
+    throw new Error("Une commande personnelle à la carte doit porter son intention.");
+  }
+  return { id: order.id, intent: order.paymentIntentId };
+}
+
+/** Un autre particulier : ses commandes ne remplacent pas celles de l'acheteur. */
+async function otherBuyer(tag: string): Promise<string> {
+  const user = await createUser(ctx.prisma, { auth0Sub: `auth0|non-reglee-${tag}` });
+  return user.id;
 }
 
 async function stateOf(orderId: string) {
@@ -117,11 +112,7 @@ describe("deux essais, un paiement", () => {
     const first = await seedPending(buyer.id, 3);
     const second = await seedPending(buyer.id, 0);
 
-    // La seconde passation : son fait déclenche le remplacement de la première.
-    ctx.app
-      .get(EventBus)
-      .publish(new OrderPlacedEvent(second.id, second.orderNumber, buyer.id, null, 2_110));
-    await ctx.drain();
+    // La seconde passation a publié son fait, qui a remplacé la première.
     await ctx.app
       .get(CommandBus)
       .execute(new ConfirmOrderPaymentCommand(second.intent, "succeeded"));
@@ -141,12 +132,10 @@ describe("POST /admin/orders/unsettled-shop-orders/expire — le cron", () => {
   it("annule à 31 minutes, garde à 29, et ne touche pas une commande payée", async () => {
     const buyer = await createUser(ctx.prisma, { auth0Sub: BUYER });
     const lapsed = await seedPending(buyer.id, 31);
-    const young = await seedPending(buyer.id, 29);
-    const paid = await seedPending(buyer.id, 45);
-    await ctx.prisma.order.update({
-      where: { id: paid.id },
-      data: { paymentStatus: PaymentStatus.paid },
-    });
+    const young = await seedPending(await otherBuyer("jeune"), 29);
+    const paid = await seedPending(await otherBuyer("payee"), 45);
+    await ctx.app.get(CommandBus).execute(new ConfirmOrderPaymentCommand(paid.intent, "succeeded"));
+    await ctx.drain();
 
     const response = await ctx
       .http()

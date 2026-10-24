@@ -9,29 +9,27 @@
  * règle du domaine et le seuil appliqués à une vraie réponse.
  */
 import { addDays, instantToLocal, localToInstant, type AudiencesView } from "@lfd/contracts";
-import { lineTotalCents } from "@lfd/money";
 
+import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import {
-  OrderClientele,
-  OrderStatus,
-  PaymentStatus,
-} from "../src/platform/database/client/client.js";
+import { CustomerRole } from "../src/platform/database/client/client.js";
 import { Clock } from "../src/platform/time/clock.js";
-import { createCompany, createUser } from "./factories.js";
+import { attachTo, createCompany, createUser } from "./factories.js";
+import { cardGatewayDouble, payByCard, pickupSite, placeOrder } from "./order-factory.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { stubAdminVerifier } from "./operations-at-commerce-scene.js";
 
-const BAGUETTE = { sku: "PAI-001", unitPriceMillicents: 120_000, quantity: 2 };
-const LINE_HT = lineTotalCents(BAGUETTE.unitPriceMillicents, BAGUETTE.quantity);
-const ORDER_TTC = 253;
+const BAGUETTES = [{ sku: "PAI-001", quantity: 2 }] as const;
 
 let ctx: E2eContext;
 let seq = 0;
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
-    overrides: [{ token: AdminTokenVerifier, value: stubAdminVerifier }],
+    overrides: [
+      { token: AdminTokenVerifier, value: stubAdminVerifier },
+      { token: PaymentGateway, value: cardGatewayDouble("pi_sejour") },
+    ],
   });
 });
 
@@ -60,27 +58,26 @@ interface SeedOrder {
   readonly companyId?: string;
 }
 
+/**
+ * Une commande passée par le vrai chemin (plan T), il y a `daysAgo` jours à 9 h,
+ * et réglée : une carte restée en attente serait remplacée par la commande
+ * suivante du même particulier.
+ */
 async function seedOrder(order: SeedOrder): Promise<void> {
-  seq += 1;
-  await ctx.prisma.order.create({
-    data: {
-      orderNumber: `CMD-SEJOUR-${String(seq)}`,
-      placedByUserId: order.userId,
-      companyId: order.companyId ?? null,
-      clientele: order.companyId === undefined ? OrderClientele.public : OrderClientele.pro,
-      status: OrderStatus.placed,
-      paymentStatus: PaymentStatus.not_required,
-      fulfillmentMethod: "pickup",
-      locale: order.locale ?? null,
-      subtotalCents: LINE_HT,
-      vatCents: ORDER_TTC - LINE_HT,
-      totalCents: ORDER_TTC,
-      createdAt: daysAgoMorning(order.daysAgo),
-      lines: {
-        create: [{ ...BAGUETTE, productNameSnapshot: "Baguette", lineTotalCents: LINE_HT }],
-      },
-    },
+  if (order.companyId !== undefined) {
+    await attachTo(ctx.prisma, order.userId, order.companyId, CustomerRole.owner);
+  }
+  const placedAt = daysAgoMorning(order.daysAgo);
+  const placed = await placeOrder(ctx, {
+    buyerUserId: order.userId,
+    companyId: order.companyId ?? null,
+    fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
+    forDay: addDays(instantToLocal(placedAt).day, 1),
+    placedAt,
+    lines: BAGUETTES,
+    ...(order.locale === undefined ? {} : { locale: order.locale }),
   });
+  await payByCard(ctx, placed);
 }
 
 async function person(phone = ""): Promise<string> {

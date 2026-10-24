@@ -54,7 +54,7 @@ describe("termsGapsOf — le contrôle des totaux du BL (plan E4a, § 2)", () =>
     const moved = {
       ...ORDER_TERMS,
       totalCents: ORDER_TERMS.totalCents + 1,
-      vatShares: [{ ratePercent: 20, baseCents: 1, vatCents: 0 }],
+      vatShares: [{ rate: 20, amountCents: 0 }],
     };
 
     expect(termsGapsOf(order({ terms: moved }), [noteOf(order())])).toEqual([
