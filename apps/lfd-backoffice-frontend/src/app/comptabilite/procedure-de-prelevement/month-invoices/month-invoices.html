@@ -1,20 +1,7 @@
 <fold-card>
   <div class="mi-stack">
-    <fold-element-title variant="title" [title]="title()" [subtitle]="subtitle()">
-      @if (canIssue()) {
-        <button
-          titleAction
-          foldButton
-          size="sm"
-          icon="receipt"
-          [loading]="pending()"
-          (click)="onIssue()"
-          data-issue-invoices
-        >
-          {{ issueLabel() }}
-        </button>
-      }
-    </fold-element-title>
+    <!-- « Émettre » vit en tête de l'onglet, compté sur les réceptions confirmées (2026-10-24). -->
+    <fold-element-title variant="title" [title]="title()" [subtitle]="subtitle()" />
 
     @if (view() !== null) {
       <div class="mi-batches" data-closure-batches>
@@ -45,7 +32,7 @@
         <fold-callout variant="warning" data-invoices-signaled>
           {{ signaled().length }} facture(s) signalée(s)&nbsp;: elles ne sont pas parties, leurs
           bons ne seront pas prélevés tant qu’elles ne le sont pas. Corriger la fiche, puis «
-          {{ issueLabel() }} ».
+          Émettre les factures des réceptions confirmées ».
         </fold-callout>
         <fold-data-table
           caption="Payeurs signalés"
@@ -91,7 +78,7 @@
       } @else if (signaled().length === 0) {
         <fold-empty-state
           title="Aucune facture émise pour cette période"
-          subtitle="Elles partent la veille de la clôture à 23h55, ou par le bouton."
+          subtitle="Elles partent la veille de la clôture à 23h55, ou par le bouton en tête de l’onglet."
           data-invoices-empty
         >
           <fold-icon empty-icon name="receipt" />

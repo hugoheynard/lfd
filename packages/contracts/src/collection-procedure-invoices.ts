@@ -1,5 +1,4 @@
 import type { MonthlyClosureView } from "./monthly-invoices.js";
-import type { UnconfirmedDeliveryView } from "./unconfirmed-deliveries.js";
 
 /**
  * **L'onglet « Factures » de la procédure de prélèvement** (Hugo,
@@ -7,6 +6,10 @@ import type { UnconfirmedDeliveryView } from "./unconfirmed-deliveries.js";
  * `documentation/comptabilite/prelevement/plan-page-procedure-de-prelevement.md`,
  * § 12). Calculé par le serveur à chaque lecture, comme les autres onglets.
  * Types seulement. Montants en centimes.
+ *
+ * Refondu le même jour (§ 12.4) : UNE liste des commandes de la période, UN
+ * statut par commande, décidé au serveur — là où l'onglet montrait des bons
+ * « à constater » et des factures sans lien entre eux.
  */
 
 /**
@@ -14,35 +17,73 @@ import type { UnconfirmedDeliveryView } from "./unconfirmed-deliveries.js";
  *
  * - `not_yet_issuable` — la clôture est à venir (verrouillé) ;
  * - `before_service` — la clôture précède la mise en service de la facture du mois ;
- * - `unconfirmed_deliveries` — des bons de la période attendent qu'on constate leur remise ;
- * - `missing_invoices` — des bons de l'assiette n'ont pas leur facture ;
- * - `all_invoiced` — tout est facturé ;
+ * - `receipts_to_confirm` — des commandes de la période attendent qu'on confirme leur réception ;
+ * - `receipts_to_invoice` — des réceptions confirmées n'ont pas encore leur facture ;
+ * - `all_invoiced` — toutes les commandes de la période sont facturées ;
  * - `no_closure` — aucune clôture à montrer, ou la clôture n'est pas une
  *   clôture de facturation du calendrier : rien ne s'y émet.
  */
 export type CollectionProcedureInvoicesReasonView =
   | "not_yet_issuable"
   | "before_service"
-  | "unconfirmed_deliveries"
-  | "missing_invoices"
+  | "receipts_to_confirm"
+  | "receipts_to_invoice"
   | "all_invoiced"
   | "no_closure";
+
+/**
+ * Le statut d'une commande de la période — un seul, décidé au serveur.
+ *
+ * - `receipt_to_confirm` — aucune remise enregistrée, son jour est passé ;
+ * - `receipt_confirmed` — remise enregistrée, pas encore facturée ;
+ * - `invoiced` — une facture (380) la porte. L'emporte TOUJOURS, quel que
+ *   soit son jour de livraison.
+ */
+export type ProcedureOrderStatusView = "receipt_to_confirm" | "receipt_confirmed" | "invoiced";
+
+/** Une commande de la période, telle que l'onglet la liste. */
+export interface ProcedureOrderView {
+  readonly orderId: string;
+  readonly orderNumber: string;
+  readonly companyName: string;
+  /**
+   * `AAAA-MM-JJ` — le jour de retrait ou de livraison demandé, à défaut le
+   * jour de livraison ; `null` sans l'un ni l'autre.
+   */
+  readonly serviceDay: string | null;
+  readonly fulfillmentMethod: "pickup" | "delivery";
+  readonly totalCents: number;
+  readonly status: ProcedureOrderStatusView;
+  /** Le numéro de la facture qui la porte ; `null` tant qu'elle n'est pas facturée. */
+  readonly invoiceNumber: string | null;
+  /**
+   * Remise enregistrée sans jour de livraison (donnée antérieure à la règle
+   * du 2026-10-22) : elle n'entre dans aucune facture tant qu'on ne la reprend
+   * pas. Toujours `false` hors de `receipt_confirmed`.
+   */
+  readonly deliveryDayMissing: boolean;
+}
+
+/** Les trois chiffres clés de l'onglet, au vocabulaire des statuts. */
+export interface ProcedureOrderFiguresView {
+  readonly invoiced: number;
+  /** Réceptions confirmées, pas encore facturées (jour manquant compris). */
+  readonly receiptConfirmed: number;
+  readonly receiptToConfirm: number;
+}
 
 /** Onglet 3 — les factures de LA période de la procédure. */
 export interface CollectionProcedureInvoicesView {
   readonly state: "locked" | "to_do" | "waiting" | "done";
   readonly reason: CollectionProcedureInvoicesReasonView;
+  /** Les commandes de la période, par jour demandé puis par numéro. */
+  readonly orders: readonly ProcedureOrderView[];
+  readonly figures: ProcedureOrderFiguresView;
   /**
-   * Les bons passés au compte avant la clôture, sans facture, des payeurs qui
-   * closent ici — ce que « Émettre » prendrait (bons non facturables compris).
+   * Ce que « Émettre les factures des réceptions confirmées » prendrait : les
+   * réceptions confirmées qui ont leur jour de livraison.
    */
-  readonly missingOrderCount: number;
-  /**
-   * Les bons à constater de la période : jour demandé dans la période et
-   * passé, remise non constatée, payeur qui clôt ici — du plus ancien au
-   * plus récent. Ils ne sont dans aucune facture tant qu'on ne les constate pas.
-   */
-  readonly unconfirmedDeliveries: readonly UnconfirmedDeliveryView[];
+  readonly issuableCount: number;
   /** La clôture, telle que la carte de ses factures la lit ; `null` sans clôture. */
   readonly closure: MonthlyClosureView | null;
 }

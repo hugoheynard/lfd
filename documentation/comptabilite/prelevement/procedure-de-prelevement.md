@@ -198,16 +198,28 @@ ce que la banque exige (« un fichier par schéma et par échéance », réponse
   23h55 heure de Paris et l'autre passage se tait
   (`http/invoice-autopilot.controller.ts:12-20`) — un passage à 22h55 ou 00h55
   dans les journaux n'est pas une anomalie.
-- **Où le voir** : Procédure de prélèvement › onglet « 3 Factures » — les
-  factures de la période, ses payeurs signalés, et en tête les **bons à
-  constater** de la période (jour passé, remise non constatée : ils ne sont
-  dans aucune facture). L'onglet est « fait » quand tous les bons
-  facturables de la période ont leur facture, « à faire » sinon (avec le
-  nombre et la raison), « verrouillé » avant la clôture. Il ne verrouille
-  pas le fichier : le lot encaisse les factures émises qu'il trouve.
+- **Où le voir** (refondu le 2026-10-24) : Procédure de prélèvement › onglet
+  « 3 Factures » — une phrase d'état (« 12 facturées, 2 réceptions confirmées
+  à facturer, 3 réceptions à confirmer »), trois chiffres clés qui filtrent
+  la liste, puis **une seule liste des commandes de la période**, chacune
+  avec **un** statut : « Réception à confirmer » (aucune remise enregistrée,
+  jour passé), « Réception confirmée » (remise enregistrée, pas encore
+  facturée), « Facturée » (avec son numéro — une facture l'emporte toujours,
+  même sans jour de livraison). Une réception confirmée sans jour de
+  livraison (donnée d'avant le 2026-10-22) porte « date de remise manquante —
+  à reprendre » : elle n'entre dans aucune facture. Sous la liste : la carte
+  de la clôture (factures, payeurs signalés, lots) et les factures carte
+  signalées. Les commandes écartées du lot sont dans l'onglet « 4 Fichier de
+  prélèvement ». L'onglet est « fait » quand plus aucune commande n'est à
+  confirmer ni confirmée non facturée, « à faire » sinon, « verrouillé »
+  avant la clôture. Il ne verrouille pas le fichier : le lot encaisse les
+  factures émises qu'il trouve.
+- **Confirmer une réception** : « Confirmer la réception » sur la ligne mène
+  à la commande, où l'on enregistre la remise (retrait ou livraison).
 - **Vérifier** : la tentative automatique est « émise », et les payeurs
   signalés sont nuls ou compris.
-- **Si elle a manqué** : bouton « Émettre les factures … »
+- **Si elle a manqué** : bouton « Émettre les factures des réceptions
+  confirmées (N) », visible seulement quand N > 0
   (`POST admin/accounting/monthly-invoices`, `http/admin-monthly-invoices.controller.ts:47`),
   rejouable. ✅
 - _Si on l'oublie_ : le lot n'encaisse que des factures émises ; sans facture,

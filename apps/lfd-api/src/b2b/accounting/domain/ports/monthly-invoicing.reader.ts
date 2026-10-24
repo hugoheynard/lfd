@@ -3,21 +3,14 @@ import type { CollectionFormName } from "../value-objects/collection-form.js";
 import type { BillingFollow } from "./statement-billing.reader.js";
 
 /**
- * **L'assiette restante d'une période** : la part de la lecture de
- * l'émission que l'onglet « Factures » de la procédure lit aussi pour dire
- * ce qui manque (2026-10-24). Un port à part (ISP) : la procédure ne lit
- * ni le plancher (la carte de la clôture le porte), ni les formes de
- * prélèvement, ni les factures émises.
+ * **Qui paie pour qui** : la seule part de la lecture de l'émission que
+ * l'onglet « Factures » de la procédure lit aussi (2026-10-24). Un port à
+ * part (ISP) : la procédure ne lit ni l'assiette restante, ni le plancher,
+ * ni les formes de prélèvement, ni les factures émises.
  * L'adaptateur est le même — `MonthlyInvoicingReader` l'étend, et le module
  * relie l'un à l'autre (`useExisting`) : une règle, une traduction SQL.
  */
-export abstract class UninvoicedOrdersReader {
-  /**
-   * Les bons passés au compte sur `[from, to[` qu'aucune facture (380) ne
-   * porte encore, du plus ancien au plus récent.
-   */
-  abstract uninvoicedOrders(from: Date, to: Date): Promise<readonly InvoiceableOrder[]>;
-
+export abstract class BillingFollowsReader {
   /** Toutes les périodes `billing` de ces sociétés (le site suit son payeur). */
   abstract billingFollowsOf(companyIds: readonly string[]): Promise<readonly BillingFollow[]>;
 }
@@ -27,7 +20,13 @@ export abstract class UninvoicedOrdersReader {
  * ces méthodes lui servent). Le critère de l'assiette est celui du relevé et
  * du lot (`billable-order-criterion.ts`), moins les bons déjà facturés.
  */
-export abstract class MonthlyInvoicingReader extends UninvoicedOrdersReader {
+export abstract class MonthlyInvoicingReader extends BillingFollowsReader {
+  /**
+   * Les bons passés au compte sur `[from, to[` qu'aucune facture (380) ne
+   * porte encore, du plus ancien au plus récent.
+   */
+  abstract uninvoicedOrders(from: Date, to: Date): Promise<readonly InvoiceableOrder[]>;
+
   /** La mise en service de la facture du mois ; `null` si la ligne a disparu. */
   abstract invoicingFloor(): Promise<Date | null>;
 

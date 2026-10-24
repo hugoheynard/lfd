@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import {
   instantToLocal,
   type MonthlyClosureBatchView,
@@ -6,7 +6,6 @@ import {
   type MonthlyInvoiceAutopilotRunView,
 } from '@lfd/contracts';
 import {
-  FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
   FoldDataTableCellDirective,
@@ -110,18 +109,19 @@ export function periodLastDay(periodClosesAtIso: string): string {
 /**
  * **Les factures de la période** (plan `facture-emise.md` ; par clôture depuis R3) :
  * émises la veille de la clôture à 23h55, une par payeur légal et par mandat (E4b) ;
- * les factures SIGNALÉES (refusées, avec le geste de sortie) ; le bouton qui émet ou reprend.
+ * les factures SIGNALÉES (refusées, avec le geste de sortie). Le bouton qui émet ou
+ * reprend vit en tête de l'onglet « Factures » depuis le 2026-10-24 : il est
+ * compté sur les réceptions confirmées, que cette carte ne lit pas.
  * Le lot du 1er encaisse ces factures — il n'y a plus d'arrêté à figer.
  *
  * Depuis M4c (plan `plan-rythme-de-facturation.md`, §16.13), une carte par
  * CLÔTURE : son titre dit les modes qui y closent quand ils sont mêlés, et
- * elle nomme ses lots. Le bouton n'émet qu'une clôture dont l'heure est passée.
+ * elle nomme ses lots.
  */
 @Component({
   selector: 'app-month-invoices',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    FoldButtonComponent,
     FoldCalloutComponent,
     FoldCardComponent,
     FoldDataTableCellDirective,
@@ -139,24 +139,16 @@ export class MonthInvoices {
   readonly toPrepare = input(false);
   /** L'échec de la lecture : il ne coûte que cette carte. */
   readonly error = input<string | null>(null);
-  readonly canWrite = input(false);
-  readonly pending = input(false);
-  readonly issue = output<string>();
 
   protected readonly invoiceColumns = INVOICE_COLUMNS;
   protected readonly signalColumns = SIGNAL_COLUMNS;
   protected readonly rowKey = (row: { readonly key: string }): string => row.key;
-
-  /** « du 1er au 30 septembre 2026 » — la période de la dernière clôture (R3). */
-  protected readonly periodLabel = computed(() => this.view()?.periodLabel ?? '');
 
   protected readonly title = computed(() => {
     const view = this.view();
     const period = view === null ? '' : periodWithModes(view.periodLabel, view.modes);
     return `Les factures ${period}`;
   });
-
-  protected readonly issueLabel = computed(() => `Émettre les factures ${this.periodLabel()}`);
 
   protected readonly subtitle = computed(() => {
     const view = this.view();
@@ -234,16 +226,4 @@ export class MonthInvoices {
     const run = this.view()?.autopilotRun ?? null;
     return run === null ? null : autopilotSentence(run);
   });
-
-  protected readonly canIssue = computed(() => {
-    const view = this.view();
-    return this.canWrite() && view !== null && view.open && view.reached;
-  });
-
-  protected onIssue(): void {
-    const view = this.view();
-    if (view !== null) {
-      this.issue.emit(view.periodClosesAt);
-    }
-  }
 }

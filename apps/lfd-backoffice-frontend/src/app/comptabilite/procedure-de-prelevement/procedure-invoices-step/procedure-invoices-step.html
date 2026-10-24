@@ -1,47 +1,51 @@
 <div class="pi-stack">
-  <p class="pi-figures" data-invoice-figures>
-    <span data-figure-unconfirmed
-      ><strong>{{ unconfirmedCount() }}</strong> bon(s) à constater</span
-    >
-    <span data-figure-missing
-      ><strong>{{ view().missingOrderCount }}</strong> bon(s) sans facture</span
-    >
-    <span data-figure-issued
-      ><strong>{{ issuedCount() }}</strong> facture(s) émise(s)</span
-    >
-  </p>
+  <fold-callout
+    [variant]="view().state === 'to_do' ? 'warning' : 'neutral'"
+    [attr.data-invoices-reason]="view().reason"
+  >
+    {{ sentence() }}
+  </fold-callout>
 
-  @if (sentence(); as said) {
-    <fold-callout
-      [variant]="view().state === 'to_do' ? 'warning' : 'neutral'"
-      [attr.data-invoices-reason]="view().reason"
-    >
-      {{ said }}
-    </fold-callout>
+  @if (view().orders.length > 0) {
+    <div class="pi-figures" role="group" aria-label="Filtrer les commandes">
+      @for (figure of figures(); track figure.status) {
+        <button
+          type="button"
+          class="pi-figure"
+          [class.pi-figure--zero]="figure.count === 0"
+          [attr.aria-pressed]="filter() === figure.status"
+          [attr.data-figure]="figure.status"
+          (click)="toggle(figure.status)"
+        >
+          <span class="pi-figure-count">{{ figure.count }}</span>
+          <span class="pi-figure-label">{{ figure.label }}</span>
+        </button>
+      }
+    </div>
   }
 
-  <!-- 1. En tête : les bons de la période qui bloquent leur facture. -->
-  <app-unconfirmed-deliveries [orders]="view().unconfirmedDeliveries" />
+  @if (issuable(); as issue) {
+    <div>
+      <button
+        foldButton
+        icon="receipt"
+        [loading]="pending()"
+        (click)="onIssue(issue.closesAt)"
+        data-issue-invoices
+      >
+        {{ issue.label }}
+      </button>
+    </div>
+  }
 
-  <!-- 2. La clôture : ses factures, ses signalements, ses lots, « Émettre ». -->
+  @if (view().orders.length > 0) {
+    <app-procedure-orders [orders]="orders()" />
+  }
+
   @if (view().closure; as closure) {
-    <app-month-invoices
-      [view]="closure"
-      [canWrite]="canWrite()"
-      [pending]="pending()"
-      (issue)="issue.emit($event)"
-    />
+    <app-month-invoices [view]="closure" />
   }
 
-  <!-- 3. Les bons écartés du dernier lot. -->
-  @if (exclusions().length > 0) {
-    <app-excluded-orders
-      [exclusions]="exclusions()"
-      [canWrite]="canWrite()"
-      (settle)="settle.emit($event)"
-    />
-  }
-
-  <!-- 4. Les factures carte qui ne sont pas parties : rien quand il n'y en a pas. -->
+  <!-- Les factures carte qui ne sont pas parties : rien quand il n'y en a pas. -->
   <app-card-invoice-signals [canWrite]="canWrite()" />
 </div>

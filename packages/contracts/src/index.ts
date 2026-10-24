@@ -203,6 +203,9 @@ export type {
 export type {
   CollectionProcedureInvoicesReasonView,
   CollectionProcedureInvoicesView,
+  ProcedureOrderFiguresView,
+  ProcedureOrderStatusView,
+  ProcedureOrderView,
 } from "./collection-procedure-invoices.js";
 export {
   attestBankReturnCheckPayloadSchema,

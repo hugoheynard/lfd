@@ -1283,11 +1283,12 @@ describe("facturer chaque bon dans le mois de sa livraison (lot ZL)", () => {
 });
 
 /**
- * L'onglet « Factures » de la procédure de prélèvement (2026-10-24) : la même
- * assiette que l'émission, lue à travers la vraie base — un bon de la période
- * sans facture rend l'onglet « à faire », tout facturé le rend « fait ».
+ * L'onglet « Factures » de la procédure de prélèvement (2026-10-24, refondu
+ * le même jour, plan § 12.4) : UNE liste des commandes de la période, UN
+ * statut par commande, lus à travers la vraie base — la facture l'emporte
+ * toujours, même sans jour de livraison.
  */
-describe("l'onglet Factures de la procédure lit l'assiette de la clôture", () => {
+describe("l'onglet Factures de la procédure : une commande, un statut", () => {
   async function procedureAt(entityId: string): Promise<CollectionProcedureView> {
     const procedureId = `${entityId}~${instantToLocal(closesAt).day}`;
     return jsonBody<CollectionProcedureView>(
@@ -1306,18 +1307,34 @@ describe("l'onglet Factures de la procédure lit l'assiette de la clôture", () 
     });
   }
 
-  it("un bon livré non facturé : à faire ; une fois émis : fait", async () => {
+  /** Le jour demandé de la commande : `at`, lu à Paris. */
+  async function servedOn(orderId: string, at: Date): Promise<void> {
+    await ctx.prisma.order.update({
+      where: { id: orderId },
+      data: { requestedDeliveryDate: new Date(`${instantToLocal(at).day}T00:00:00.000Z`) },
+    });
+  }
+
+  it("une réception confirmée : à facturer, comptée au bouton ; une fois émise : facturée, avec son numéro", async () => {
     const id = await entity();
-    await payer(id);
+    const company = await payer(id);
+    const order = await firstOrderOf(company.id);
 
     const before = await procedureAt(id);
     expect(before.invoices).toMatchObject({
       state: "to_do",
-      reason: "missing_invoices",
-      missingOrderCount: 1,
-      unconfirmedDeliveries: [],
+      reason: "receipts_to_invoice",
+      figures: { invoiced: 0, receiptConfirmed: 1, receiptToConfirm: 0 },
+      issuableCount: 1,
     });
-    expect(before.invoices.closure?.periodClosesAt).toBe(closesAt.toISOString());
+    expect(before.invoices.orders).toEqual([
+      expect.objectContaining({
+        orderNumber: order.orderNumber,
+        status: "receipt_confirmed",
+        invoiceNumber: null,
+        deliveryDayMissing: false,
+      }),
+    ]);
 
     await issueByHand(id);
 
@@ -1325,35 +1342,85 @@ describe("l'onglet Factures de la procédure lit l'assiette de la clôture", () 
     expect(after.invoices).toMatchObject({
       state: "done",
       reason: "all_invoiced",
-      missingOrderCount: 0,
+      figures: {
+        invoiced: before.invoices.issuableCount,
+        receiptConfirmed: 0,
+        receiptToConfirm: 0,
+      },
+      issuableCount: 0,
     });
-    expect(after.invoices.closure?.invoices).toHaveLength(1);
+    expect(after.invoices.orders[0]?.invoiceNumber).toMatch(NUMBER);
   });
 
-  it("un bon de la période jamais remis : à constater, nommé par l'onglet ; un bon d'avant la période n'y est pas", async () => {
+  it("jamais remise, jour passé dans la période : à confirmer ; une commande d'avant la période n'y est pas", async () => {
     const id = await entity();
     const company = await payer(id, { handedOver: false });
     const order = await firstOrderOf(company.id);
-    const served = new Date(closesAt.getTime() - 2 * DAY_MS);
-    await ctx.prisma.order.update({
-      where: { id: order.id },
-      data: { requestedDeliveryDate: new Date(`${instantToLocal(served).day}T00:00:00.000Z`) },
-    });
+    await servedOn(order.id, new Date(closesAt.getTime() - 2 * DAY_MS));
     const older = await payer(id, { handedOver: false });
-    const olderOrder = await firstOrderOf(older.id);
-    const beforePeriod = new Date(month.cycle().startsAt.getTime() - 2 * DAY_MS);
-    await ctx.prisma.order.update({
-      where: { id: olderOrder.id },
+    await servedOn(
+      (await firstOrderOf(older.id)).id,
+      new Date(month.cycle().startsAt.getTime() - 2 * DAY_MS),
+    );
+
+    const view = await procedureAt(id);
+
+    expect(view.invoices.reason).toBe("receipts_to_confirm");
+    expect(view.invoices.orders.map((row) => [row.orderNumber, row.status])).toEqual([
+      [order.orderNumber, "receipt_to_confirm"],
+    ]);
+  });
+
+  /** Régression (dev, 2026-10-24) : remise et facturée avant la règle ZL, sans `delivered_on`, elle était « à constater ». */
+  it("facturée sans jour de livraison : facturée, jamais à confirmer", async () => {
+    const id = await entity();
+    await payer(id);
+    await issueByHand(id);
+    const invoice = await ctx.prisma.invoice.findFirstOrThrow({
+      where: { legalEntityId: id, type: "380" },
+      select: { id: true, number: true },
+    });
+    const legacy = await payer(id, { handedOver: false });
+    const order = await firstOrderOf(legacy.id);
+    await servedOn(order.id, new Date(closesAt.getTime() - 3 * DAY_MS));
+    await ctx.prisma.invoiceOrder.create({
       data: {
-        requestedDeliveryDate: new Date(`${instantToLocal(beforePeriod).day}T00:00:00.000Z`),
+        invoiceId: invoice.id,
+        invoiceType: "380",
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        deliveredOn: null,
+        position: 1,
       },
     });
 
     const view = await procedureAt(id);
 
-    expect(view.invoices.reason).toBe("unconfirmed_deliveries");
-    expect(view.invoices.unconfirmedDeliveries.map((row) => row.orderNumber)).toEqual([
-      order.orderNumber,
+    expect(view.invoices.orders.find((row) => row.orderNumber === order.orderNumber)).toMatchObject(
+      { status: "invoiced", invoiceNumber: invoice.number },
+    );
+    expect(view.invoices).toMatchObject({ state: "done", reason: "all_invoiced" });
+  });
+
+  it("remise enregistrée sans jour de livraison : confirmée, à reprendre, hors du bouton", async () => {
+    const id = await entity();
+    const company = await payer(id, { handedOver: false });
+    const order = await firstOrderOf(company.id);
+    await servedOn(order.id, new Date(closesAt.getTime() - 2 * DAY_MS));
+    await ctx.prisma.order.update({
+      where: { id: order.id },
+      data: { handedOverAt: new Date(closesAt.getTime() - 2 * DAY_MS) },
+    });
+
+    const view = await procedureAt(id);
+
+    expect(view.invoices.orders).toEqual([
+      expect.objectContaining({ status: "receipt_confirmed", deliveryDayMissing: true }),
     ]);
+    expect(view.invoices).toMatchObject({
+      state: "to_do",
+      reason: "receipts_to_invoice",
+      issuableCount: 0,
+    });
   });
 });

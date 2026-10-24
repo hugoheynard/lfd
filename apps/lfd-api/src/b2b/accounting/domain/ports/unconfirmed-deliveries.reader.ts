@@ -25,11 +25,7 @@ export abstract class UnconfirmedDeliveriesReader {
    * Les bons au compte, non annulés, sans jour de livraison, dont le jour
    * demandé est STRICTEMENT antérieur à `day` — du plus ancien au plus récent.
    *
-   * `from` (2026-10-24, l'onglet « Factures » de la procédure) borne le jour
-   * demandé par en bas, inclus : les bons d'UNE période.
-   *
    * @param day `AAAA-MM-JJ`, aujourd'hui à Paris.
-   * @param from `AAAA-MM-JJ`, inclus ; absent : depuis toujours.
    */
-  abstract servedBefore(day: string, from?: string): Promise<readonly UnconfirmedDelivery[]>;
+  abstract servedBefore(day: string): Promise<readonly UnconfirmedDelivery[]>;
 }

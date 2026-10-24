@@ -105,14 +105,12 @@
                 }
               }
               @case ('invoices') {
-                <!-- Même verrouillé : les bons à constater se traitent avant la clôture. -->
+                <!-- Même verrouillé : les réceptions se confirment avant la clôture. -->
                 <app-procedure-invoices-step
                   [view]="state.invoices"
-                  [exclusions]="exclusions()"
                   [canWrite]="canWrite()"
                   [pending]="gestures.pending() === 'invoices'"
                   (issue)="issueInvoices($event)"
-                  (settle)="settle($event)"
                 />
               }
               @case ('file') {
@@ -128,6 +126,14 @@
                   (openStep)="tab.set($event)"
                   (changed)="onCardChanged()"
                 />
+                @if (exclusions().length > 0) {
+                  <!-- Les commandes écartées du lot (Hugo, 2026-10-24 : quittent l'onglet Factures). -->
+                  <app-excluded-orders
+                    [exclusions]="exclusions()"
+                    [canWrite]="canWrite()"
+                    (settle)="settle($event)"
+                  />
+                }
                 @if (state.followed === null) {
                   <!-- Avant préparation : ce que le prochain lot prélèverait (repris du mois). -->
                   <app-month-preview

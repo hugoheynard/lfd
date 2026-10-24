@@ -1,30 +1,93 @@
-import type { CollectionProcedureInvoicesView } from '@lfd/contracts';
+import type {
+  CollectionProcedureInvoicesView,
+  ProcedureOrderFiguresView,
+  ProcedureOrderStatusView,
+} from '@lfd/contracts';
 
 /**
- * Les mots de l'onglet « Factures » de la procédure (2026-10-24). L'état et
- * les nombres viennent du serveur ; on ne fait que les dire.
+ * Les mots de l'onglet « Factures » de la procédure (Hugo, 2026-10-24). Le
+ * statut de chaque commande et les nombres viennent du serveur ; on ne fait
+ * que les dire, au même vocabulaire partout : la liste, les chiffres, la phrase.
  */
 
-/** La phrase d'état, ou `null` quand le cadre de la page suffit (verrouillé, fait). */
-export function invoicesSentence(view: CollectionProcedureInvoicesView): string | null {
-  const unconfirmed = view.unconfirmedDeliveries.length;
+/** Le statut d'une commande, tel que la liste l'écrit. */
+export const STATUS_LABELS: Readonly<Record<ProcedureOrderStatusView, string>> = {
+  receipt_to_confirm: 'Réception à confirmer',
+  receipt_confirmed: 'Réception confirmée',
+  invoiced: 'Facturée',
+};
+
+/** Les trois chiffres clés, dans l'ordre des gestes : confirmer, émettre, c'est fait. */
+export const FIGURE_ORDER: readonly ProcedureOrderStatusView[] = [
+  'receipt_to_confirm',
+  'receipt_confirmed',
+  'invoiced',
+];
+
+export const FIGURE_LABELS: Readonly<Record<ProcedureOrderStatusView, string>> = {
+  receipt_to_confirm: 'Réceptions à confirmer',
+  receipt_confirmed: 'Réceptions confirmées à facturer',
+  invoiced: 'Facturées',
+};
+
+/** Le chiffre d'un statut. */
+export function figureOf(
+  figures: ProcedureOrderFiguresView,
+  status: ProcedureOrderStatusView,
+): number {
+  switch (status) {
+    case 'receipt_to_confirm':
+      return figures.receiptToConfirm;
+    case 'receipt_confirmed':
+      return figures.receiptConfirmed;
+    case 'invoiced':
+      return figures.invoiced;
+  }
+}
+
+/** Le libellé du bouton global, compté. */
+export function issueLabel(count: number): string {
+  return `Émettre les factures des réceptions confirmées (${String(count)})`;
+}
+
+function plural(count: number, one: string, many: string): string {
+  return `${String(count)} ${count > 1 ? many : one}`;
+}
+
+/**
+ * La phrase d'état, unique : « 12 facturées, 2 réceptions confirmées à
+ * facturer, 3 réceptions à confirmer » ; « Toutes les commandes de la période
+ * sont facturées. » quand plus rien n'attend. Un nombre nul n'est pas dit.
+ */
+export function invoicesSentence(view: CollectionProcedureInvoicesView): string {
   switch (view.reason) {
-    case 'unconfirmed_deliveries':
-      return (
-        `${String(unconfirmed)} bon(s) de la période à constater : sans remise enregistrée, ` +
-        'ils ne sont dans aucune facture. Les constater d’abord, puis émettre les factures.'
-      );
-    case 'missing_invoices':
-      return (
-        `${String(view.missingOrderCount)} bon(s) livré(s) sans facture : ` +
-        'émettre les factures de la période (rejouable — une facture déjà émise ne l’est pas deux fois).'
-      );
     case 'before_service':
       return 'Cette période se clôt avant la mise en service de la facture du mois : rien à y facturer.';
     case 'no_closure':
       return 'Aucune clôture de facturation pour cette procédure : rien à émettre.';
-    case 'not_yet_issuable':
-    case 'all_invoiced':
-      return null;
+    default:
+      return figuresSentence(view.figures);
   }
+}
+
+function figuresSentence(figures: ProcedureOrderFiguresView): string {
+  if (figures.receiptConfirmed === 0 && figures.receiptToConfirm === 0) {
+    return figures.invoiced === 0
+      ? 'Aucune commande au compte dans la période.'
+      : 'Toutes les commandes de la période sont facturées.';
+  }
+  const parts = [
+    figures.invoiced === 0 ? null : plural(figures.invoiced, 'facturée', 'facturées'),
+    figures.receiptConfirmed === 0
+      ? null
+      : plural(
+          figures.receiptConfirmed,
+          'réception confirmée à facturer',
+          'réceptions confirmées à facturer',
+        ),
+    figures.receiptToConfirm === 0
+      ? null
+      : plural(figures.receiptToConfirm, 'réception à confirmer', 'réceptions à confirmer'),
+  ];
+  return `${parts.filter((part) => part !== null).join(', ')}.`;
 }

@@ -97,7 +97,7 @@ export function procedureTabs(
     mandates: view.mandates.state === 'to_do' ? view.mandates.toExportCount : null,
     invoices:
       view.invoices.state === 'to_do'
-        ? view.invoices.missingOrderCount + view.invoices.unconfirmedDeliveries.length
+        ? view.invoices.figures.receiptConfirmed + view.invoices.figures.receiptToConfirm
         : null,
     file: null,
     returns: view.returns.pendingReturnCount > 0 ? view.returns.pendingReturnCount : null,

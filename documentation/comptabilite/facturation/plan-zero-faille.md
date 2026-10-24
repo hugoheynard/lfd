@@ -255,6 +255,8 @@ ce qui arrive avant son émission se voit dans ses lignes.
 
 ## 11. Facturer chaque bon dans le mois de sa livraison (Hugo, 2026-10-22, à contredire)
 
+> 2026-10-24 : la suite de ZL — `received_on`, posé avec la remise et exigé par la base — est dans [`../../commandes/plan-date-de-reception.md`](../../commandes/plan-date-de-reception.md).
+
 ZA a bâti M5 tel qu'écrit : une facture dont un bon n'a pas de date de
 livraison n'est pas émise. Avec l'assiette actuelle par **date de commande**
 (`billable-order-criterion.ts`, `created_at`), un bon commandé le 30 pour le 5

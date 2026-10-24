@@ -1,0 +1,39 @@
+<fold-data-table
+  caption="Les commandes de la période"
+  narrowLayout="cards"
+  [columns]="columns"
+  [rows]="rows()"
+  [rowKey]="rowKey"
+  data-procedure-orders
+>
+  <ng-template foldCell="order" let-row>
+    <a [routerLink]="['/commandes', row.orderId]">{{ row.orderNumber }}</a>
+  </ng-template>
+  <ng-template foldCell="company" let-row>{{ row.companyName }}</ng-template>
+  <ng-template foldCell="day" let-row>{{ row.day }}</ng-template>
+  <ng-template foldCell="total" let-row>{{ row.total }}</ng-template>
+  <ng-template foldCell="status" let-row>
+    <span [attr.data-order-status]="row.status">
+      <fold-badge [variant]="row.statusVariant" [content]="row.statusLabel" />
+      @if (row.invoiceNumber !== null) {
+        <span data-order-invoice>{{ row.invoiceNumber }}</span>
+      }
+      @if (row.deliveryDayMissing) {
+        <span data-order-day-missing>date de remise manquante — à reprendre</span>
+      }
+    </span>
+  </ng-template>
+  <ng-template foldCell="gesture" let-row>
+    @if (row.status === 'receipt_to_confirm') {
+      <a
+        foldButton
+        size="sm"
+        emphasis="outline"
+        [routerLink]="['/commandes', row.orderId]"
+        [attr.data-confirm-receipt]="row.orderId"
+      >
+        Confirmer la réception
+      </a>
+    }
+  </ng-template>
+</fold-data-table>

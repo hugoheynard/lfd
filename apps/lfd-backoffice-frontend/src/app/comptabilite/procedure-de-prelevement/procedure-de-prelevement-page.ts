@@ -34,6 +34,7 @@ import { LegalEntitiesService } from '../legal-entities.service';
 import { MonthlyInvoicesService } from '../monthly-invoices.service';
 import { NotifyService } from '../../notify.service';
 import { issuedInvoicesSentence } from './issued-invoices-sentence';
+import { ExcludedOrders } from './excluded-orders/excluded-orders';
 import { MonthPreview } from './month-preview/month-preview';
 import type { PendingBatchGesture } from './pending-batch/pending-batch';
 import { ProcedureInvoicesStep } from './procedure-invoices-step/procedure-invoices-step';
@@ -62,8 +63,9 @@ import {
  * lot P2) — la procédure écrite (`procedure-de-prelevement.md`), rendue
  * suivable en cinq onglets : comptes, mandats, factures, fichier, retours.
  * « Factures » (2026-10-24) a repris de « Prélèvement du mois », retiré le
- * même jour, les factures de la période, les bons à constater, les bons
- * écartés et l'émission ; l'aperçu du lot à venir est dans « Fichier ».
+ * même jour, les factures de la période et l'émission — une liste des
+ * commandes de la période, un statut chacune ; l'aperçu du lot à venir et
+ * les commandes écartées du lot sont dans « Fichier ».
  *
  * Le DÉTAIL d'une procédure (§ 11, Hugo 2026-10-23) : on y arrive depuis la
  * table de toutes les procédures, et « ← Toutes les procédures » y ramène.
@@ -86,6 +88,7 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     AccountBankExportCard,
+    ExcludedOrders,
     FoldBackLinkComponent,
     FoldButtonComponent,
     FoldCalloutComponent,

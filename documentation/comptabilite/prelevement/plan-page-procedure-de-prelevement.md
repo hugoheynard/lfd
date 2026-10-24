@@ -700,14 +700,14 @@ intéressant par période ».
 calculé par `ProcedureInvoicesStep` (`apps/lfd-api/src/b2b/accounting/application/services/procedure-invoices-step.ts`)
 et décidé par `invoicesStatus` (`apps/lfd-api/src/b2b/accounting/domain/services/collection-procedure-invoices.ts`) :
 
-| État       | Raison                   | Quand                                                                                        |
-| ---------- | ------------------------ | -------------------------------------------------------------------------------------------- |
-| verrouillé | `not_yet_issuable`       | la veille de la clôture, 23 h 55, n'est pas passée                                           |
-| fait       | `before_service`         | la clôture précède la mise en service de la facture du mois                                  |
-| à faire    | `unconfirmed_deliveries` | des bons de la période attendent qu'on constate leur remise (premier geste)                  |
-| à faire    | `missing_invoices`       | des bons de l'assiette n'ont pas leur facture                                                |
-| fait       | `all_invoiced`           | tout est facturé, rien à constater                                                           |
-| fait       | `no_closure`             | aucune clôture, ou une clôture hors du calendrier de facturation (un lot d'un ancien rythme) |
+| État       | Raison                         | Quand                                                                                        |
+| ---------- | ------------------------------ | -------------------------------------------------------------------------------------------- |
+| verrouillé | `not_yet_issuable`             | la veille de la clôture, 23 h 55, n'est pas passée                                           |
+| fait       | `before_service`               | la clôture précède la mise en service de la facture du mois                                  |
+| à faire    | `receipts_to_confirm` (§ 12.4) | des commandes de la période attendent qu'on confirme leur réception (premier geste)          |
+| à faire    | `receipts_to_invoice` (§ 12.4) | des réceptions confirmées n'ont pas leur facture                                             |
+| fait       | `all_invoiced`                 | tout est facturé, rien à constater                                                           |
+| fait       | `no_closure`                   | aucune clôture, ou une clôture hors du calendrier de facturation (un lot d'un ancien rythme) |
 
 **Aucune règle recopiée.** Les bons sans facture sont ceux que « Émettre »
 prendrait : `uninvoicedOrders(plancher, clôture)` restreints aux payeurs qui
@@ -742,8 +742,8 @@ vérifié le 2026-10-24). L'onglet 4 ne se verrouille donc pas sur l'onglet 3.
 | Section de la page retirée                      | Désormais                                                                                    |
 | ----------------------------------------------- | -------------------------------------------------------------------------------------------- |
 | les factures de la clôture et « Émettre »       | onglet 3 (`month-invoices`, la clôture de la procédure seule)                                |
-| les bons à constater (`unconfirmed-deliveries`) | onglet 3, en tête, bornés à la période                                                       |
-| les bons écartés et « Réglée autrement »        | onglet 3 (`excluded-orders`, `settle-panel`)                                                 |
+| les bons à constater (`unconfirmed-deliveries`) | onglet 3, dans la liste des commandes (« Réception à confirmer », § 12.4)                    |
+| les bons écartés et « Réglée autrement »        | onglet 4 depuis le § 12.4 (`excluded-orders`, `settle-panel`)                                |
 | les factures carte signalées                    | onglet 3 (`card-invoice-signals`)                                                            |
 | l'aperçu du mois (`month-preview`)              | onglet 4, tant qu'aucun lot n'est suivi (avant préparation)                                  |
 | le lot à traiter, ses gestes                    | onglet 4 (déjà, P2)                                                                          |
@@ -756,3 +756,43 @@ la route, l'entrée de menu, `closures-in-order` et le service front des bons
 à constater (la lecture passe par la procédure) sont supprimés. Les liens
 qui menaient à la page (tableau de bord, facture émise, arrêté, carte des
 retours de la fiche client) mènent à la procédure.
+
+### 12.4 Une commande, un statut (refonte du 2026-10-24, bâtie)
+
+Hugo ne lisait pas l'onglet : des bons « à constater » et des factures en
+dessous, sans lien ; « Émettre » flou. Constat en dev le même jour : des
+commandes **remises et déjà facturées** (factures d'avant la règle ZL du
+2026-10-22, `delivered_on` absent) sortaient « à constater », parce que le
+lecteur des bons à constater lit `delivered_on IS NULL`.
+
+Décisions de Hugo, bâties :
+
+- **Une seule liste** des commandes de la période, **un statut** chacune,
+  décidé au serveur (`procedureOrderStatus`, `domain/services/collection-procedure-invoices.ts`) :
+  « Réception à confirmer » (ni `handed_over_at` ni `delivered_on`, jour
+  passé), « Réception confirmée » (remise enregistrée, sans facture),
+  « Facturée » (une ligne `invoice_order` 380 — l'emporte toujours, avec son
+  numéro). Remise sans `delivered_on` : « Réception confirmée » + « date de
+  remise manquante — à reprendre ».
+- **La lecture** est un port à part, `ProcedureOrdersReader`
+  (`infrastructure/prisma-procedure-orders.reader.ts`), en trois requêtes
+  groupées : une commande est de la période si une facture de la clôture la
+  porte, si elle est dans l'assiette de l'émission (`billableOrderWhere`,
+  plancher → clôture), ou si, sans jour de livraison (`accountOrderWhere`),
+  son jour demandé est dans la période et passé. Hors des factures de la
+  clôture, seuls restent les payeurs qui closent ici (`closesFor`). Les suivis
+  de facturation passent par un port étroit, `BillingFollowsReader`, que
+  `MonthlyInvoicingReader` étend (il remplace `UninvoicedOrdersReader`).
+- **Le contrat** (`CollectionProcedureInvoicesView`) porte `orders`,
+  `figures` et `issuableCount` ; `missingOrderCount` et
+  `unconfirmedDeliveries` sont retirés (pré-release). Raisons :
+  `receipts_to_confirm`, `receipts_to_invoice` remplacent
+  `unconfirmed_deliveries`, `missing_invoices`.
+- **Le geste** : « Confirmer la réception » par ligne (vers la commande) ;
+  « Émettre les factures des réceptions confirmées (N) » en tête, seulement
+  si N > 0 (N = réceptions confirmées qui ont leur jour), appelle l'émission
+  existante de la période. La carte de la clôture n'a plus de bouton.
+- **L'état** : « fait » quand plus rien n'est à confirmer ni confirmé non
+  facturé.
+- Les **commandes écartées du lot** passent dans l'onglet « Fichier de
+  prélèvement » ; les factures carte signalées restent sous la liste.

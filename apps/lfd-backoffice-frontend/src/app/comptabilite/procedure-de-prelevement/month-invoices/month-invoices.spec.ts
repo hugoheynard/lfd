@@ -42,20 +42,17 @@ const VIEW: MonthlyClosureView = {
 
 async function render(
   view: MonthlyClosureView | null,
-  options: { readonly canWrite?: boolean; readonly error?: string } = {},
-): Promise<{ host: HTMLElement; issued: string[] }> {
+  options: { readonly error?: string } = {},
+): Promise<{ host: HTMLElement }> {
   TestBed.configureTestingModule({ imports: [MonthInvoices] });
   const fixture = TestBed.createComponent(MonthInvoices);
   fixture.componentRef.setInput('view', view);
-  fixture.componentRef.setInput('canWrite', options.canWrite ?? true);
   if (options.error !== undefined) {
     fixture.componentRef.setInput('error', options.error);
   }
-  const issued: string[] = [];
-  fixture.componentInstance.issue.subscribe((month) => issued.push(month));
   fixture.detectChanges();
   await fixture.whenStable();
-  return { host: fixture.nativeElement as HTMLElement, issued };
+  return { host: fixture.nativeElement as HTMLElement };
 }
 
 describe('MonthInvoices', () => {
@@ -70,21 +67,12 @@ describe('MonthInvoices', () => {
     expect(host.querySelector('[data-invoice-unbillable]')?.textContent).toContain('CMD-9');
   });
 
-  it('le bouton émet le mois de la vue', async () => {
-    const { host, issued } = await render(VIEW);
-
-    host.querySelector<HTMLButtonElement>('[data-issue-invoices]')?.click();
-
-    expect(issued).toEqual(['2026-09-30T22:00:00.000Z']);
-  });
-
-  it('un mois d’avant la mise en service le dit, sans bouton', async () => {
+  it('un mois d’avant la mise en service le dit', async () => {
     const { host } = await render({ ...VIEW, open: false, invoices: [] });
 
     expect(host.querySelector('[data-invoices-not-open]')?.textContent).toContain(
       'gardent l’arrêté de facturation',
     );
-    expect(host.querySelector('[data-issue-invoices]')).toBeNull();
   });
 
   it('rien d’émis ni de signalé : dit quand elles partent', async () => {
@@ -109,7 +97,7 @@ describe('MonthInvoices', () => {
     });
 
     expect(host.querySelector('[data-invoices-signaled]')?.textContent).toContain(
-      'Émettre les factures du 1er au 30 septembre 2026',
+      'Émettre les factures des réceptions confirmées',
     );
     expect(host.querySelector('[data-signaled-table]')?.textContent).toContain('pas de SIREN');
   });
@@ -144,10 +132,6 @@ describe('MonthInvoices', () => {
     expect(host.textContent).toContain(
       'Les factures du 1er au 30 septembre 2026 — clients hebdomadaires et mensuels',
     );
-    // Le bouton garde la seule période : c'est elle qu'il émet.
-    expect(host.querySelector('[data-issue-invoices]')?.textContent).toContain(
-      'Émettre les factures du 1er au 30 septembre 2026',
-    );
   });
 
   it('nomme les lots de la clôture, et en dit l’absence (M4c)', async () => {
@@ -173,8 +157,6 @@ describe('MonthInvoices', () => {
     expect(upcoming.host.querySelector('[data-closure-no-batch]')?.textContent).toContain(
       'Le lot se prépare après la clôture du 1er octobre 2026.',
     );
-    // Une clôture dont l'heure n'est pas venue ne s'émet pas.
-    expect(upcoming.host.querySelector('[data-issue-invoices]')).toBeNull();
   });
 
   it('une lecture en échec ne montre que son message', async () => {

@@ -341,30 +341,33 @@ describe('la page « Procédure de prélèvement »', () => {
     expect(query(fixture, 'app-procedure-invoices-step')).not.toBeNull();
   });
 
-  it('l’onglet Factures montre d’abord les bons à constater de la période', async () => {
+  it('l’onglet Factures liste les commandes de la période, chacune avec son statut', async () => {
     procedure.view = procedureView({
       arrivalStep: 'invoices',
       invoices: procedureInvoices({
         state: 'to_do',
-        reason: 'unconfirmed_deliveries',
-        unconfirmedDeliveries: [
+        reason: 'receipts_to_confirm',
+        orders: [
           {
             orderId: 'o1',
             orderNumber: 'ORD-001',
-            companyId: 'c1',
             companyName: 'Hôtel du Port',
             serviceDay: '2026-10-20',
             fulfillmentMethod: 'pickup',
             totalCents: 1_200,
+            status: 'receipt_to_confirm',
+            invoiceNumber: null,
+            deliveryDayMissing: false,
           },
         ],
+        figures: { invoiced: 0, receiptConfirmed: 0, receiptToConfirm: 1 },
       }),
     });
     const fixture = await render();
 
-    expect(query(fixture, '[data-unconfirmed]')?.textContent).toContain('ORD-001');
-    expect(query(fixture, '[data-figure-unconfirmed]')?.textContent).toContain('1');
-    expect(query(fixture, '[data-invoices-reason="unconfirmed_deliveries"]')).not.toBeNull();
+    expect(query(fixture, '[data-procedure-orders]')?.textContent).toContain('ORD-001');
+    expect(query(fixture, '[data-figure="receipt_to_confirm"]')?.textContent).toContain('1');
+    expect(query(fixture, '[data-invoices-reason="receipts_to_confirm"]')).not.toBeNull();
   });
 
   it('« Émettre » envoie la clôture de la procédure, puis relit l’état', async () => {
@@ -382,7 +385,7 @@ describe('la page « Procédure de prélèvement »', () => {
     expect(procedure.reads).toBeGreaterThan(reads);
   });
 
-  it('verrouillé (clôture à venir) : il dit pourquoi, sans onglet à ouvrir, et garde les bons à constater', async () => {
+  it('verrouillé (clôture à venir) : il dit pourquoi, sans onglet à ouvrir, et garde les réceptions à confirmer', async () => {
     procedure.view = procedureView({
       arrivalStep: 'invoices',
       invoices: procedureInvoices({ state: 'locked', reason: 'not_yet_issuable' }),

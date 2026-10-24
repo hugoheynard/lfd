@@ -26,15 +26,12 @@ export class PrismaUnconfirmedDeliveriesReader extends UnconfirmedDeliveriesRead
     super();
   }
 
-  async servedBefore(day: string, from?: string): Promise<readonly UnconfirmedDelivery[]> {
+  async servedBefore(day: string): Promise<readonly UnconfirmedDelivery[]> {
     const rows = await this.prisma.order.findMany({
       where: {
         ...accountOrderWhere(),
         deliveredOn: null,
-        requestedDeliveryDate: {
-          lt: utcMidnight(day),
-          ...(from === undefined ? {} : { gte: utcMidnight(from) }),
-        },
+        requestedDeliveryDate: { lt: utcMidnight(day) },
       },
       orderBy: [{ requestedDeliveryDate: "asc" }, { orderNumber: "asc" }],
       select: {

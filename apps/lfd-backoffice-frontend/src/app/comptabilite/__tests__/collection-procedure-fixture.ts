@@ -36,8 +36,9 @@ export function procedureInvoices(
   return {
     state: 'done',
     reason: 'all_invoiced',
-    missingOrderCount: 0,
-    unconfirmedDeliveries: [],
+    orders: [],
+    figures: { invoiced: 0, receiptConfirmed: 0, receiptToConfirm: 0 },
+    issuableCount: 0,
     closure: null,
     ...over,
   };

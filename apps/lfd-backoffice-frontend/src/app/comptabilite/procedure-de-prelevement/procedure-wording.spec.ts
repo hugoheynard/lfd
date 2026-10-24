@@ -72,16 +72,16 @@ describe('la barre d’onglets', () => {
 });
 
 describe('l’onglet Factures dans la barre', () => {
-  it('se place en 3, et compte en badge les bons à constater et sans facture', () => {
+  it('se place en 3, et compte en badge les réceptions à confirmer et à facturer', () => {
     const view = procedureView({
       invoices: procedureInvoices({
         state: 'to_do',
-        reason: 'missing_invoices',
-        missingOrderCount: 2,
+        reason: 'receipts_to_confirm',
+        figures: { invoiced: 5, receiptConfirmed: 2, receiptToConfirm: 1 },
       }),
     });
     const tab = procedureTabs(view).find((item) => item.key === 'invoices');
-    expect(tab).toMatchObject({ label: '3 Factures', badge: 2 });
+    expect(tab).toMatchObject({ label: '3 Factures', badge: 3 });
     expect(procedureTabs(view).map((item) => item.label)).toEqual([
       '1 Comptes',
       '2 Mandats',

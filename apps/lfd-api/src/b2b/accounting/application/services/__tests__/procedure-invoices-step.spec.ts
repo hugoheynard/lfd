@@ -1,9 +1,8 @@
+import type { MonthlyInvoiceView } from "@lfd/contracts";
+
 import { InvoicingCalendar } from "../../../domain/services/invoicing-calendar.js";
 import { defaultModes, paris } from "../../../domain/services/__tests__/billing-mode-fixtures.js";
-import { frozenOrder } from "../../../domain/services/__tests__/collection-fixtures.js";
-import type { InvoiceableOrder } from "../../../domain/services/monthly-invoicing.js";
-import type { UnconfirmedDelivery } from "../../../domain/ports/unconfirmed-deliveries.reader.js";
-import { invoicesStepWorld } from "./procedure-invoices-doubles.js";
+import { invoicesStepWorld, procedureRow } from "./procedure-invoices-doubles.js";
 
 /**
  * Les dates ne sont comparées qu'à l'instant `NOW` donné au service, jamais
@@ -14,30 +13,18 @@ const FLOOR = paris("2026-01-01");
 const OCTOBER_CLOSURE = paris("2026-11-01");
 const calendar = InvoicingCalendar.of(defaultModes(), []);
 
-function order(orderId: string, companyId: string): InvoiceableOrder {
-  const placedAt = paris("2026-10-10", "09:00");
+function invoice(invoiceId: string, number: string): MonthlyInvoiceView {
   return {
-    orderId,
-    orderNumber: `ORD-${orderId}`,
-    companyId,
-    placedAt,
-    deliveredOn: "2026-10-12",
-    billedCompanyId: null,
-    frozen: frozenOrder(`ORD-${orderId}`, placedAt),
-  };
-}
-
-function unconfirmed(orderId: string, serviceDay: string): UnconfirmedDelivery {
-  return {
-    orderId,
-    orderNumber: `ORD-${orderId}`,
-    companyId: "c1",
-    companyName: "Hôtel du Port",
-    serviceDay,
-    fulfillmentMethod: "delivery",
+    invoiceId,
+    number,
+    payerCompanyId: "c1",
+    payerName: "Hôtel du Port",
+    issuedOn: "2026-10-31",
+    dueOn: null,
     totalCents: 1200,
-    placedAt: paris("2026-09-01", "09:00"),
-    billedCompanyId: null,
+    orderCount: 1,
+    mandateReference: null,
+    unbillableOrders: [],
   };
 }
 
@@ -49,70 +36,146 @@ function read(
 }
 
 describe("ProcedureInvoicesStep — l'onglet Factures de la procédure", () => {
-  it("un bon de la période sans facture : à faire, compté, lu du plancher à la clôture", async () => {
+  it("demande la période en une lecture : factures de la clôture, assiette, jours demandés passés", async () => {
     const world = invoicesStepWorld();
     world.invoices.floorAt = FLOOR;
-    world.uninvoiced.orders = [order("1", "c1")];
+    world.invoices.invoices = [invoice("inv1", "FA-LFD-2026-000001")];
 
-    const view = await read(world);
+    await read(world);
 
-    expect(view).toMatchObject({
-      state: "to_do",
-      reason: "missing_invoices",
-      missingOrderCount: 1,
-    });
-    expect(world.uninvoiced.asked).toEqual([{ from: FLOOR, to: OCTOBER_CLOSURE }]);
-    expect(view.closure?.periodClosesAt).toBe(OCTOBER_CLOSURE.toISOString());
+    expect(world.orders.asked).toEqual([
+      {
+        periodInvoiceIds: ["inv1"],
+        deliveredFrom: FLOOR,
+        deliveredTo: OCTOBER_CLOSURE,
+        servedFrom: "2026-10-01",
+        servedThrough: "2026-10-31",
+        servedBefore: "2026-11-03",
+      },
+    ]);
   });
 
-  it("tout facturé : fait", async () => {
+  it("une seule liste, un statut par commande, triée par jour ; les chiffres en sont comptés", async () => {
     const world = invoicesStepWorld();
     world.invoices.floorAt = FLOOR;
-
-    expect(await read(world)).toMatchObject({ state: "done", reason: "all_invoiced" });
-  });
-
-  it("les bons à constater sont ceux de LA période : ni avant, ni après sa fin", async () => {
-    const world = invoicesStepWorld();
-    world.invoices.floorAt = FLOOR;
-    world.unconfirmed.rows = [
-      unconfirmed("sept", "2026-09-30"),
-      unconfirmed("oct", "2026-10-20"),
-      unconfirmed("nov", "2026-11-02"),
+    world.invoices.invoices = [invoice("inv1", "FA-LFD-2026-000001")];
+    world.orders.rows = [
+      procedureRow("late", { serviceDay: "2026-10-20", handedOver: false, deliveredOn: null }),
+      procedureRow("billed", {
+        serviceDay: "2026-10-05",
+        invoice: { invoiceId: "inv1", number: "FA-LFD-2026-000001" },
+      }),
+      procedureRow("given", { serviceDay: "2026-10-12" }),
     ];
 
     const view = await read(world);
 
-    expect(world.unconfirmed.asked).toEqual([{ day: "2026-11-03", from: "2026-10-01" }]);
-    expect(view.unconfirmedDeliveries.map((row) => row.orderNumber)).toEqual(["ORD-oct"]);
-    expect(view).toMatchObject({ state: "to_do", reason: "unconfirmed_deliveries" });
-    expect(Object.keys(view.unconfirmedDeliveries[0] ?? {})).not.toContain("placedAt");
+    expect(view.orders.map((o) => [o.orderNumber, o.status, o.invoiceNumber])).toEqual([
+      ["ORD-billed", "invoiced", "FA-LFD-2026-000001"],
+      ["ORD-given", "receipt_confirmed", null],
+      ["ORD-late", "receipt_to_confirm", null],
+    ]);
+    expect(view.figures).toEqual({ invoiced: 1, receiptConfirmed: 1, receiptToConfirm: 1 });
+    expect(view.issuableCount).toBe(1);
+    expect(view).toMatchObject({ state: "to_do", reason: "receipts_to_confirm" });
   });
 
-  it("une clôture à venir est verrouillée", async () => {
+  /** Régression (dev, 2026-10-24) : une commande remise et facturée avant ZL, sans `delivered_on`, était « à constater ». */
+  it("facturée avant la règle ZL, sans jour de livraison, facture d'une autre période : facturée", async () => {
     const world = invoicesStepWorld();
     world.invoices.floorAt = FLOOR;
+    world.orders.rows = [
+      procedureRow("old", {
+        deliveredOn: null,
+        invoice: { invoiceId: "inv0", number: "FA-LFD-2026-000000" },
+      }),
+    ];
 
-    expect(await read(world, paris("2026-12-01"))).toMatchObject({
-      state: "locked",
-      reason: "not_yet_issuable",
-    });
+    const view = await read(world);
+
+    expect(view.orders.map((o) => o.status)).toEqual(["invoiced"]);
+    expect(view).toMatchObject({ state: "done", reason: "all_invoiced", issuableCount: 0 });
   });
 
-  it("une clôture d'avant la mise en service : rien à facturer, l'assiette n'est pas lue", async () => {
+  it("une commande livrée et facturée dans une période passée ne revient pas", async () => {
+    const world = invoicesStepWorld();
+    world.invoices.floorAt = FLOOR;
+    world.orders.rows = [
+      procedureRow("sept", {
+        deliveredOn: "2026-09-12",
+        invoice: { invoiceId: "inv-sept", number: "FA-LFD-2026-000009" },
+      }),
+    ];
+
+    expect((await read(world)).orders).toEqual([]);
+  });
+
+  it("remise sans jour de livraison : confirmée, nommée à reprendre, hors du bouton — l'onglet reste à faire", async () => {
+    const world = invoicesStepWorld();
+    world.invoices.floorAt = FLOOR;
+    world.orders.rows = [procedureRow("noday", { deliveredOn: null })];
+
+    const view = await read(world);
+
+    expect(view.orders[0]).toMatchObject({
+      status: "receipt_confirmed",
+      deliveryDayMissing: true,
+    });
+    expect(view).toMatchObject({ state: "to_do", reason: "receipts_to_invoice", issuableCount: 0 });
+  });
+
+  it("un payeur qui ne clôt pas ici est écarté, sauf si une facture de la clôture le porte", async () => {
+    const weeklyClosure = paris("2026-10-26");
+    const mixed = InvoicingCalendar.of(defaultModes(), [
+      {
+        payerCompanyId: "c_week",
+        segments: [{ effectiveFrom: paris("2026-08-01"), mode: "weekly" as const }],
+      },
+    ]);
+    // Le lundi 26 clôt l'hebdomadaire, pas le mensuel de `c1`.
+    expect(mixed.closesFor("c1", weeklyClosure)).toBe(false);
+    const world = invoicesStepWorld();
+    world.invoices.floorAt = FLOOR;
+    world.invoices.invoices = [invoice("inv1", "FA-LFD-2026-000001")];
+    world.orders.rows = [
+      procedureRow("monthly"),
+      procedureRow("carried", { invoice: { invoiceId: "inv1", number: "FA-LFD-2026-000001" } }),
+    ];
+
+    const view = await world.step.read({
+      legalEntityId: "le1",
+      calendar: mixed,
+      closesAt: weeklyClosure,
+      now: NOW,
+    });
+
+    expect(view.orders.map((o) => o.orderNumber)).toEqual(["ORD-carried"]);
+  });
+
+  it("une clôture à venir est verrouillée, et sa liste se lit déjà", async () => {
+    const world = invoicesStepWorld();
+    world.invoices.floorAt = FLOOR;
+    world.orders.rows = [procedureRow("1", { handedOver: false, deliveredOn: null })];
+
+    const view = await read(world, paris("2026-12-01"));
+
+    expect(view).toMatchObject({ state: "locked", reason: "not_yet_issuable" });
+    expect(view.figures.receiptToConfirm).toBe(1);
+  });
+
+  it("une clôture d'avant la mise en service : rien à facturer, les commandes ne sont pas lues", async () => {
     const world = invoicesStepWorld();
     world.invoices.floorAt = paris("2026-12-01");
-    world.uninvoiced.orders = [order("1", "c1")];
 
     expect(await read(world)).toMatchObject({ state: "done", reason: "before_service" });
-    expect(world.uninvoiced.asked).toEqual([]);
+    expect(world.orders.asked).toEqual([]);
   });
 
   it("sans clôture : rien n'est lu", async () => {
     const world = invoicesStepWorld();
 
     expect(await read(world, null)).toMatchObject({ reason: "no_closure", closure: null });
-    expect(world.unconfirmed.asked).toEqual([]);
+    expect(world.orders.asked).toEqual([]);
   });
 
   /** Régression : un lot clos hors du calendrier faisait lever `periodOf` (500 sur la lecture). */

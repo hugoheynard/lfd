@@ -8,22 +8,7 @@ import { NOW } from "../../commands/__tests__/account-bank-export-doubles.js";
 import { bankMandate } from "../../commands/__tests__/mandate-bank-export-doubles.js";
 import { LAST_CLOSURE, TODAY, stored } from "./collection-procedure-doubles.js";
 import { world } from "./collection-procedure-world.js";
-import { frozenOrder } from "../../../domain/services/__tests__/collection-fixtures.js";
-import type { InvoiceableOrder } from "../../../domain/services/monthly-invoicing.js";
-
-/** Un bon livré et passé au compte, qu'aucune facture ne porte encore. */
-function missingOrder(): InvoiceableOrder {
-  const placedAt = new Date("2026-09-10T08:00:00.000Z");
-  return {
-    orderId: "o1",
-    orderNumber: "ORD-1",
-    companyId: "c1",
-    placedAt,
-    deliveredOn: "2026-09-11",
-    billedCompanyId: null,
-    frozen: frozenOrder("ORD-1", placedAt),
-  };
-}
+import { procedureRow } from "../../services/__tests__/procedure-invoices-doubles.js";
 
 /**
  * La lecture d'état de la procédure (S1) : les quatre onglets calculés depuis
@@ -124,11 +109,13 @@ describe("la procédure de prélèvement — la lecture d'état", () => {
     const w = world();
     w.batches.batches = [stored("x", { status: "cancelled", cancelledAt: NOW.toISOString() })];
     w.invoices.invoices.floorAt = new Date("2026-01-01T00:00:00.000Z");
-    w.invoices.uninvoiced.orders = [missingOrder()];
+    w.invoices.orders.rows = [
+      procedureRow("o1", { serviceDay: "2026-09-11", deliveredOn: "2026-09-11" }),
+    ];
 
     const view = await w.read();
 
-    expect(view.invoices).toMatchObject({ state: "to_do", missingOrderCount: 1 });
+    expect(view.invoices).toMatchObject({ state: "to_do", issuableCount: 1 });
     expect(view.invoices.closure?.periodClosesAt).toBe(LAST_CLOSURE);
     expect(view.arrivalStep).toBe("invoices");
   });
