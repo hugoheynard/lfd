@@ -80,8 +80,10 @@ describe('OrderDetail', () => {
   });
 
   it('offre les trois poids du système, jamais trois fois le même', () => {
+    // Commande remise : les deux documents (bon de commande, bon de livraison
+    // — plan E5a) partagent le poids plein de « ce qu'on vient chercher ».
     const buttons = Array.from(el().querySelectorAll('button[foldButton]'));
-    expect(buttons.map((b) => b.getAttribute('emphasis'))).toEqual([null, 'soft', 'outline']);
+    expect(buttons.map((b) => b.getAttribute('emphasis'))).toEqual([null, null, 'soft', 'outline']);
     expect(buttons.at(-1)?.getAttribute('intent')).toBe('danger');
   });
 
@@ -113,6 +115,24 @@ describe('OrderDetail', () => {
 
     expect(asked).toBe(1);
   });
+
+  it('remonte la demande de bon de livraison sur une commande remise (plan E5a)', () => {
+    let asked = 0;
+    fixture.componentInstance.deliveryNoteRequested.subscribe(() => (asked += 1));
+
+    el().querySelector<HTMLButtonElement>('button[data-delivery-note]')?.click();
+
+    expect(asked).toBe(1);
+  });
+
+  it.each(['received', 'bakery', 'ready', 'route', 'cancelled'] as const)(
+    'ne propose pas le bon de livraison sur une commande %s : rien n’a été remis',
+    (status) => {
+      fixture.componentRef.setInput('order', { ...ROWS[0]!, status });
+      fixture.detectChanges();
+      expect(el().querySelector('button[data-delivery-note]')).toBeNull();
+    },
+  );
 
   it('remonte le signalement sans choisir la surface qui l’accueille', () => {
     let raised = 0;

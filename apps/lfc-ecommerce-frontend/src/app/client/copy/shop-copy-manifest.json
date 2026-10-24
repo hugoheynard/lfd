@@ -5840,6 +5840,20 @@
           "variables": []
         },
         {
+          "key": "orders.deliveryNote",
+          "fr": "Bon de livraison",
+          "en": "Delivery note",
+          "it": "Documento di trasporto",
+          "variables": []
+        },
+        {
+          "key": "orders.deliveryNoteFailed",
+          "fr": "Le bon de livraison n’a pas pu être téléchargé. Réessayez dans un instant.",
+          "en": "The delivery note could not be downloaded. Please try again in a moment.",
+          "it": "Non è stato possibile scaricare il documento di trasporto. Riprova tra un istante.",
+          "variables": []
+        },
+        {
           "key": "orders.reorder",
           "fr": "Recommander à l’identique",
           "en": "Order the same again",

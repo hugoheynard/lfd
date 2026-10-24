@@ -20,9 +20,9 @@ import {
 /**
  * **Le bon de commande** — une pièce, plusieurs formats.
  *
- * Il n'existe pas de « bon de livraison » : une seule feuille, qui porte un
- * **mode d'acheminement** comme elle porte une date. Celui qui réceptionne un
- * colis et celui qui retire au comptoir cochent le même papier.
+ * Une seule feuille, qui porte un **mode d'acheminement** comme elle porte une
+ * date. Le **bon de livraison** est une autre pièce depuis le lot E5a
+ * (`delivery-note-sheet.ts`), construite sur le même principe d'audience.
  *
  * ## Deux axes, et il ne faut pas les confondre
  *

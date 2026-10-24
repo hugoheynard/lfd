@@ -112,7 +112,7 @@ const QR_SIZE = 30 * MM;
 export const HANDOVER_QR_CAPTION = "À présenter au retrait";
 
 /** « Retrait au laboratoire » / « Livraison par coursier ». */
-function methodLabel(fulfillment: SheetFulfillment): string {
+export function methodLabel(fulfillment: SheetFulfillment): string {
   return fulfillment.method === "pickup" ? "Retrait au laboratoire" : "Livraison par coursier";
 }
 
@@ -121,7 +121,7 @@ function methodLabel(fulfillment: SheetFulfillment): string {
  * y figure : une feuille qui dit le lieu sans dire l'heure oblige à rouvrir
  * l'application pour la seule information qui décide de la journée.
  */
-function fulfillmentLines(fulfillment: SheetFulfillment): readonly string[] {
+export function fulfillmentLines(fulfillment: SheetFulfillment): readonly string[] {
   const address = fulfillment.address;
   const window = fulfillment.window;
   return [

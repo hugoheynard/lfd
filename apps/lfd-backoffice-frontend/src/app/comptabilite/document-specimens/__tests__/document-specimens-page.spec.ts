@@ -61,7 +61,7 @@ describe('la planche des documents', () => {
       'Récapitulatifs',
       'Catalogue',
     ]);
-    expect(page['groups'].flatMap((group) => group.options).length).toBe(11);
+    expect(page['groups'].flatMap((group) => group.options).length).toBe(13);
   });
 
   it('charge l’exemplaire choisi et révoque l’URL précédente', async () => {

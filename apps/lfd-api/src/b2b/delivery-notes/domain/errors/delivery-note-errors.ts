@@ -1,4 +1,8 @@
-import { BusinessError, DomainError } from "../../../../platform/shared/errors/app-error.js";
+import {
+  BusinessError,
+  DomainError,
+  ResourceNotFoundError,
+} from "../../../../platform/shared/errors/app-error.js";
 
 /**
  * Les refus du **bon de livraison** (plan
@@ -102,6 +106,35 @@ export class DeliveryNoteTermsAlreadySetError extends BusinessError {
       "delivery_notes.terms.not_completable",
       `Le bon de livraison ${noteNumber} (« ${status} ») a déjà ses totaux, ou est annulé : ` +
         "ils ne se complètent pas une seconde fois. Le bon reste tel quel ; prévenir l'équipe technique.",
+    );
+  }
+}
+
+/**
+ * Un BL écrit avant E4a n'a pas ses totaux : on ne peut pas l'imprimer chiffré
+ * sans inventer des montants qu'il ne porte pas (plan E5a, § 1).
+ */
+export class DeliveryNoteWithoutTermsError extends BusinessError {
+  constructor(noteNumber: string) {
+    super(
+      "delivery_notes.note.without_terms",
+      `Le bon de livraison ${noteNumber} a été écrit avant que les bons ne portent leurs totaux : ` +
+        "il ne s'imprime pas chiffré. Lancer le rattrapage des bons de livraison depuis la carte " +
+        "de santé, puis réessayer ; le bon de transport, lui, s'imprime déjà.",
+    );
+  }
+}
+
+/**
+ * Ce BL n'existe pas pour cette commande — ou, côté client, n'est pas à vous :
+ * un seul 404, qui ne dit pas à un curieux qu'un numéro existe.
+ */
+export class DeliveryNoteNotFoundError extends ResourceNotFoundError {
+  constructor(orderId: string, noteNumber: string) {
+    super(
+      "delivery_notes.note.not_found",
+      `Aucun bon de livraison ${noteNumber} pour la commande ${orderId}. ` +
+        "Rouvrir la commande pour voir ses bons de livraison.",
     );
   }
 }

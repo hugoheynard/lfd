@@ -1,5 +1,13 @@
 # Plan E5a — le bon de livraison imprimé, une pièce par lecteur
 
+> ✅ **Bâti le 2026-10-24.** Choix du bâtisseur : deux rendus nommés
+> (`renderCarrierNotePdf`, `renderClientNotePdf`) plutôt qu'un seul, qui
+> aurait aiguillé sur l'audience ; un BL sans totaux (d'avant E4a) refuse le
+> chiffré (409) mais s'imprime en transport ; la route client sert le dernier
+> BL remis (une liste viendra avec E6). **Vrai jusqu'à E6 seulement** : la
+> remise de retrait, le régime et la devise du BL chiffré sont lus sur la
+> commande.
+
 > **Doc-first, 2026-10-24.** Premier temps du lot E5 de
 > [`plan-commande-bon-de-livraison-facture.md`](plan-commande-bon-de-livraison-facture.md)
 > (§ 10 : chiffré ou non selon le lecteur ; § 12 : la confirmation de

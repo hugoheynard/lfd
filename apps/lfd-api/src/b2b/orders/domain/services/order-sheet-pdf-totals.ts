@@ -1,4 +1,4 @@
-import type { ClientSheet, SheetMoney } from "@lfd/contracts";
+import type { ClientSheet, ClientSheetLine, SheetMoney } from "@lfd/contracts";
 
 import { sheetShowsTtc } from "./order-sheet.js";
 import { money } from "./order-sheet-pdf-format.js";
@@ -11,6 +11,17 @@ import { orderPretaxCents } from "./order-pretax.js";
  * propre pied, et l'ordre des lignes est une règle qu'on éprouve mieux à part
  * de la plume.
  */
+
+/**
+ * Ce que le pavé lit d'un papier chiffré : sa variante, ses montants, et les
+ * totaux TTC de ses lignes. Le bon de commande en est un, le bon de livraison
+ * client aussi (plan E5a, § 2) — le même pavé, jamais un second.
+ */
+export interface PricedPaper {
+  readonly variant: ClientSheet["variant"];
+  readonly money: SheetMoney;
+  readonly lines: readonly Pick<ClientSheetLine, "unitPriceTtcCents" | "lineTotalTtcCents">[];
+}
 
 /** Une ligne du pavé de totaux. */
 export interface TotalRow {
@@ -124,7 +135,7 @@ function proRows(totals: SheetMoney): readonly TotalRow[] {
  * de ligne TTC scellés, ou le sous-total HT figé quand la feuille n'en porte
  * pas (commande antérieure à R3 — le tableau est alors en HT aussi).
  */
-function articlesCents(sheet: ClientSheet): number {
+function articlesCents(sheet: PricedPaper): number {
   if (!sheetShowsTtc(sheet)) {
     return sheet.money.subtotalCents;
   }
@@ -160,7 +171,7 @@ function gesturesOf(totals: SheetMoney, ttc: boolean): readonly Gesture[] {
  * Gestes qui s'annulent en HT (somme nulle) : aucune clé de répartition
  * honnête n'existe, ils restent en HT et le disent.
  */
-function taxedGestureRows(sheet: ClientSheet): readonly TotalRow[] {
+function taxedGestureRows(sheet: PricedPaper): readonly TotalRow[] {
   const gestures = gesturesOf(sheet.money, sheetShowsTtc(sheet));
   const pretaxSum = gestures.reduce((sum, gesture) => sum + gesture.pretaxCents, 0);
   if (gestures.length === 0) {
@@ -190,7 +201,7 @@ function taxedGestureRows(sheet: ClientSheet): readonly TotalRow[] {
  * « Sous-total HT » ni « Total avant TVA » : un particulier lit un prix taxe
  * comprise, et la colonne s'additionne.
  */
-function publicRows(sheet: ClientSheet): readonly TotalRow[] {
+function publicRows(sheet: PricedPaper): readonly TotalRow[] {
   const totals = sheet.money;
   return [
     { label: "Articles", value: money(articlesCents(sheet)) },
@@ -201,6 +212,6 @@ function publicRows(sheet: ClientSheet): readonly TotalRow[] {
 }
 
 /** Les lignes du pavé de totaux, selon le bon. */
-export function totalRows(sheet: ClientSheet): readonly TotalRow[] {
+export function totalRows(sheet: PricedPaper): readonly TotalRow[] {
   return sheet.variant === "public" ? publicRows(sheet) : proRows(sheet.money);
 }

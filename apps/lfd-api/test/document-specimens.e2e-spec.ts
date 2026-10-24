@@ -33,6 +33,8 @@ const DOCUMENTS = [
   "allergen-matrix.pdf",
   "production-count.pdf",
   "day-dossier.pdf",
+  "delivery-note-carrier.pdf",
+  "delivery-note-client-pro.pdf",
 ] as const;
 
 let ctx: E2eContext;

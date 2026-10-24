@@ -12,7 +12,9 @@ export type SpecimenKey =
   | 'order-summary'
   | 'allergen-matrix'
   | 'production-count'
-  | 'day-dossier';
+  | 'day-dossier'
+  | 'delivery-note-carrier'
+  | 'delivery-note-client-pro';
 
 /** Le nom de chaque exemplaire. Un `Record` : une clé ajoutée sans nom ne compile pas. */
 export const SPECIMEN_LABELS: Readonly<Record<SpecimenKey, string>> = {
@@ -27,6 +29,8 @@ export const SPECIMEN_LABELS: Readonly<Record<SpecimenKey, string>> = {
   'allergen-matrix': 'Matrice des allergènes',
   'production-count': 'Compte à produire',
   'day-dossier': 'Dossier du jour',
+  'delivery-note-carrier': 'Bon de livraison — transport',
+  'delivery-note-client-pro': 'Bon de livraison — client pro',
 };
 
 /** Un groupe de la planche : ce qu'un document dit de l'argent. */
@@ -42,14 +46,15 @@ function group(title: string, keys: readonly SpecimenKey[]): SpecimenGroup {
 /**
  * **La planche, rangée par ce que le papier montre** : les bons qui portent
  * des prix, ceux qui n'en portent aucun (le fournil et le livreur ne lisent
- * jamais un montant), les papiers du fournil pour la journée (compte à
+ * jamais un montant — le bon de livraison de transport non plus, il voyage
+ * avec la marchandise), les papiers du fournil pour la journée (compte à
  * produire, dossier du jour), la facture, les deux mandats SEPA, le récapitulatif de
  * commandes d'une société, et la matrice des allergènes du catalogue. Il n'y
  * a pas de bon « bureau » : le bon que le staff ouvre est celui du client.
  */
 export const SPECIMEN_GROUPS: readonly SpecimenGroup[] = [
-  group('Bons chiffrés', ['order-sheet-pro', 'order-sheet-public']),
-  group('Bons non chiffrés', ['atelier-sheet', 'round-paper']),
+  group('Bons chiffrés', ['order-sheet-pro', 'order-sheet-public', 'delivery-note-client-pro']),
+  group('Bons non chiffrés', ['atelier-sheet', 'round-paper', 'delivery-note-carrier']),
   group('Fournil', ['production-count', 'day-dossier']),
   group('Factures', ['invoice']),
   group('Mandats', ['sepa-mandate-b2b', 'sepa-mandate-core']),

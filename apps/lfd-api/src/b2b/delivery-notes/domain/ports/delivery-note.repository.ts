@@ -3,7 +3,8 @@ import type { DeliveryNote } from "../entities/delivery-note.js";
 /**
  * Port d'**écriture** des bons de livraison : il prend et rend l'agrégat.
  *
- * Aucun port de lecture en E1 ni en E2 : personne ne lit un BL (plan E1, § 1).
+ * Lire un BL pour l’imprimer passe par `DeliveryNoteReader` (plan E5a) : ce
+ * port-ci ne sert que les écritures.
  *
  * L'adaptateur Prisma rejoint l'unité de travail de l'appelant : il injecte
  * `PrismaService`, routé vers la transaction ambiante

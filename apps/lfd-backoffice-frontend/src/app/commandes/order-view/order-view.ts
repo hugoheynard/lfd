@@ -24,6 +24,7 @@ import { OrderReviseAction } from '../order-revise-action/order-revise-action';
 import { OrderHistoryCard } from '../order-history-card/order-history-card';
 import { OrderRevisionsCard } from '../order-revisions-card/order-revisions-card';
 import { OrderSalesTermsCard } from '../order-sales-terms-card/order-sales-terms-card';
+import { OrderDeliveryNotesCard } from '../order-delivery-notes-card/order-delivery-notes-card';
 import { OrderInvoicesCard } from '../order-invoices-card/order-invoices-card';
 import { OrderRefundBanner } from '../order-refund-banner/order-refund-banner';
 import { OrderRefundsCard } from '../order-refunds-card/order-refunds-card';
@@ -65,6 +66,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     OrderHistoryCard,
     OrderRevisionsCard,
     OrderSalesTermsCard,
+    OrderDeliveryNotesCard,
     OrderInvoicesCard,
     OrderRefundBanner,
     OrderRefundsCard,

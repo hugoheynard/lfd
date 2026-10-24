@@ -7,9 +7,15 @@ QR », un registre de rendus à quatre formats) ; le plan du bon « public »
 (`plan-bon-public`, 2026-10-09) y est fondu. L'historique est dans git.
 
 Ce document décrit **une pièce et une seule**, le bon de commande, et la façon
-dont une même projection serveur sert plusieurs lecteurs. Il n'existe pas de
-« bon de livraison » : celui qui réceptionne et celui qui retire cochent la même
-feuille ; le mode d'acheminement n'est qu'un de ses champs.
+dont une même projection serveur sert plusieurs lecteurs.
+
+⚠️ Cette phrase disait « il n'existe pas de bon de livraison » ; c'est faux
+depuis le lot E5a (2026-10-24) : le bon de livraison est une pièce à part, née
+à l'arrêt du plan, et imprimée selon le même principe d'audience — transport
+sans montant, client chiffré, équipe
+([`../plan-e5a-le-bon-de-livraison-imprime.md`](../plan-e5a-le-bon-de-livraison-imprime.md)).
+Le bon de commande, lui, reste une seule feuille dont le mode d'acheminement
+n'est qu'un champ.
 
 ## 1. Deux axes, à ne pas confondre
 

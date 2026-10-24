@@ -62,7 +62,8 @@
   </dl>
 </div>
 
-<!-- TROIS POIDS, et ils viennent du système : le bon de commande est ce qu'on
+<!-- TROIS POIDS, et ils viennent du système : les documents — bon de commande,
+     et bon de livraison d'une commande remise (plan E5a) — sont ce qu'on
      vient chercher (plein), recommander est la suite naturelle (teinté), le
      problème est OFFERT sans être encouragé (bordé — un aplat rouge invite au
      clic). -->
@@ -85,6 +86,19 @@
   >
     {{ t().orders.purchaseOrder }}
   </button>
+  @if (reportable()) {
+    <button
+      foldButton
+      block
+      size="sm"
+      icon="download"
+      type="button"
+      data-delivery-note
+      (click)="deliveryNoteRequested.emit()"
+    >
+      {{ t().orders.deliveryNote }}
+    </button>
+  }
   <button foldButton block size="sm" emphasis="soft" type="button">
     {{ t().orders.reorder }}
   </button>

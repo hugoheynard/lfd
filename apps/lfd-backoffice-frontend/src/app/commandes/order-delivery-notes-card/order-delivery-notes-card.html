@@ -1,0 +1,34 @@
+@if (loadError()) {
+  <fold-callout variant="alert" data-order-delivery-notes-error>
+    Impossible de lire les bons de livraison de cette commande.
+    <button foldButton size="sm" emphasis="soft" (click)="retry()">Réessayer</button>
+  </fold-callout>
+} @else if (notes().length > 0) {
+  <fold-card data-order-delivery-notes>
+    <fold-element-title cardHeader variant="title" icon="truck" title="Bons de livraison" />
+    <div class="body">
+      @for (note of notes(); track note.number) {
+        <div class="row" [attr.data-delivery-note]="note.number">
+          <strong>{{ note.number }}</strong>
+          <span class="meta">{{ statusLabel(note) }} · {{ stepDate(note) }}</span>
+          <span class="actions">
+            <button foldButton size="sm" emphasis="soft" (click)="print(note)" data-print-carrier>
+              Imprimer (transport)
+            </button>
+            @if (note.money !== null) {
+              <button
+                foldButton
+                size="sm"
+                emphasis="soft"
+                (click)="download(note)"
+                data-download-client
+              >
+                Télécharger (chiffré)
+              </button>
+            }
+          </span>
+        </div>
+      }
+    </div>
+  </fold-card>
+}

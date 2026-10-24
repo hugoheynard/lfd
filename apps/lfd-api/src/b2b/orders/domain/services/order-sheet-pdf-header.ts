@@ -37,20 +37,47 @@ const REFERENCE_OFFSET_UNDER_RULE = 9 * MM;
  * @returns l'ordonnée sous le filet de l'en-tête.
  */
 export function header(doc: Doc, sheet: ClientSheet, logo: Buffer, color: string | null): number {
+  return paperHeader(
+    doc,
+    {
+      title: "BON DE COMMANDE",
+      reference: sheet.reference,
+      dateLine: `Passée le ${longDate(sheet.placedAt)}`,
+      subLine: sheet.requestedFor === null ? null : `Souhaitée le ${longDate(sheet.requestedFor)}`,
+    },
+    logo,
+    color,
+  );
+}
+
+/**
+ * Ce que l'en-tête du papier écrit : le titre et le numéro à gauche, deux
+ * lignes cadrées à droite. Le bon de livraison (plan E5a, § 2) prend le même
+ * en-tête — même logo, même place — avec ses propres mots.
+ */
+export interface PaperHead {
+  readonly title: string;
+  readonly reference: string;
+  readonly dateLine: string;
+  readonly subLine: string | null;
+}
+
+/** L'en-tête, quels que soient ses mots. @returns l'ordonnée sous son filet. */
+export function paperHeader(doc: Doc, head: PaperHead, logo: Buffer, color: string | null): number {
   const top = MARGIN_Y;
   doc.image(logo, CONTENT_LEFT, top, { fit: [LOGO_SIZE, LOGO_SIZE] });
   const titleX = CONTENT_LEFT + LOGO_SIZE + 5 * MM;
   const y = top + 3 * MM;
-  put(doc, "BON DE COMMANDE", titleX, y, { size: TITLE_SIZE, bold: true });
-  putRight(doc, `Passée le ${longDate(sheet.placedAt)}`, CONTENT_RIGHT, y + 3, 10);
+  put(doc, head.title, titleX, y, { size: TITLE_SIZE, bold: true });
+  putRight(doc, head.dateLine, CONTENT_RIGHT, y + 3, 10);
   const referenceY = y + (color === null ? REFERENCE_OFFSET : REFERENCE_OFFSET_UNDER_RULE);
   if (color !== null) {
-    const width = doc.font(BOLD).fontSize(TITLE_SIZE).widthOfString("BON DE COMMANDE");
+    const width = doc.font(BOLD).fontSize(TITLE_SIZE).widthOfString(head.title);
     fillBox(doc, { x: titleX, y: y + COLOR_RULE_TOP, width, height: COLOR_RULE_HEIGHT }, color);
   }
-  put(doc, sheet.reference, titleX, referenceY, { size: 13, bold: true });
-  if (sheet.requestedFor !== null) {
-    putRight(doc, `Souhaitée le ${longDate(sheet.requestedFor)}`, CONTENT_RIGHT, referenceY, 10);
+  put(doc, head.reference, titleX, referenceY, { size: 13, bold: true });
+  if (head.subLine !== null) {
+    putRight(doc, head.subLine, CONTENT_RIGHT, referenceY, 10);
   }
   const bottom = top + LOGO_SIZE + 2 * MM;
   rule(doc, bottom, 2);

@@ -54,6 +54,9 @@ export class OrderDetail {
    */
   readonly purchaseOrderRequested = output<void>();
 
+  /** Le bon de livraison chiffré, offert sur une commande remise (plan E5a, § 3). */
+  readonly deliveryNoteRequested = output<void>();
+
   protected readonly t = inject(ClientCopyService).t;
   protected readonly stars = STARS;
 

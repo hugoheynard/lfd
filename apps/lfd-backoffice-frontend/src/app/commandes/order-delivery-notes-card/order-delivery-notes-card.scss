@@ -1,0 +1,22 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: baseline;
+  gap: var(--fold-space-md);
+}
+
+.meta {
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+.actions {
+  display: flex;
+  gap: var(--fold-space-xs);
+}

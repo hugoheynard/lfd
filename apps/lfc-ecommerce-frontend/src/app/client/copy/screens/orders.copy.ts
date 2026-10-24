@@ -422,6 +422,10 @@ export interface OrdersCopy {
    * un clic manqué, et on reclique.
    */
   readonly purchaseOrderFailed: string;
+  /** Le bon de livraison chiffré d'une commande remise (plan E5a, § 3). */
+  readonly deliveryNote: string;
+  /** Quand il ne vient pas — même règle que le bon de commande. */
+  readonly deliveryNoteFailed: string;
   readonly reorder: string;
   readonly problem: string;
   readonly expand: string;
@@ -543,6 +547,8 @@ export const ORDERS_FR: OrdersCopy = {
   detailMode: 'Mode',
   purchaseOrder: 'Bon de commande',
   purchaseOrderFailed: 'Le bon de commande n’a pas pu être téléchargé. Réessayez dans un instant.',
+  deliveryNote: 'Bon de livraison',
+  deliveryNoteFailed: 'Le bon de livraison n’a pas pu être téléchargé. Réessayez dans un instant.',
   reorder: 'Recommander à l’identique',
   problem: 'Un problème sur cette commande',
   expand: 'Déplier la commande',
@@ -658,6 +664,8 @@ export const ORDERS_EN: OrdersCopy = {
   detailMode: 'Mode',
   purchaseOrder: 'Order form',
   purchaseOrderFailed: 'The order form could not be downloaded. Please try again in a moment.',
+  deliveryNote: 'Delivery note',
+  deliveryNoteFailed: 'The delivery note could not be downloaded. Please try again in a moment.',
   reorder: 'Order the same again',
   problem: 'A problem with this order',
   expand: 'Expand the order',
@@ -773,6 +781,9 @@ export const ORDERS_IT: OrdersCopy = {
   detailMode: 'Modalità',
   purchaseOrder: 'Buono d’ordine',
   purchaseOrderFailed: 'Non è stato possibile scaricare il buono d’ordine. Riprova tra un istante.',
+  deliveryNote: 'Documento di trasporto',
+  deliveryNoteFailed:
+    'Non è stato possibile scaricare il documento di trasporto. Riprova tra un istante.',
   reorder: 'Riordinare identico',
   problem: 'Un problema su questo ordine',
   expand: 'Aprire l’ordine',

@@ -105,6 +105,9 @@ export class HistoryTable {
   /** Relayé comme le signalement : la table ne va pas chercher de fichier. */
   readonly purchaseOrderRequested = output<HistoryOrder>();
 
+  /** Relayé de même : le bon de livraison d'une commande remise. */
+  readonly deliveryNoteRequested = output<HistoryOrder>();
+
   protected readonly t = inject(ClientCopyService).t;
 
   /** La note donnée, par commande — la maquette la garde le temps de la visite. */

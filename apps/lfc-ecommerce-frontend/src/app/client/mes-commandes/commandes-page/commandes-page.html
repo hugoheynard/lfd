@@ -73,6 +73,7 @@
       (problemRaised)="report($event)"
       (orderCancelled)="reload()"
       (purchaseOrderRequested)="downloadSheet($event)"
+      (deliveryNoteRequested)="downloadDeliveryNote($event)"
     >
       <app-order-selection-bar historyToolbar [count]="selectedCount()" (summarize)="summarize()" />
     </app-history-table>

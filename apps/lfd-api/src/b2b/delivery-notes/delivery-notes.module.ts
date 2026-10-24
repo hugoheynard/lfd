@@ -1,6 +1,19 @@
 import { Module } from "@nestjs/common";
 
+import { BrandModule } from "../../platform/brand/brand.module.js";
 import { OrdersModule } from "../orders/orders.module.js";
+import { GetAdminClientNotePdfHandler } from "./application/queries/get-admin-client-note-pdf.handler.js";
+import { GetCarrierNotePdfHandler } from "./application/queries/get-carrier-note-pdf.handler.js";
+import { GetCarrierNoteSpecimenHandler } from "./application/queries/get-carrier-note-specimen.handler.js";
+import { GetClientNotePdfHandler } from "./application/queries/get-client-note-pdf.handler.js";
+import { GetClientNoteSpecimenHandler } from "./application/queries/get-client-note-specimen.handler.js";
+import { ListOrderDeliveryNotesHandler } from "./application/queries/list-order-delivery-notes.handler.js";
+import { DeliveryNoteDocuments } from "./application/services/delivery-note-documents.js";
+import { DeliveryNoteReader } from "./domain/ports/delivery-note.reader.js";
+import { AdminDeliveryNoteSpecimensController } from "./http/admin-delivery-note-specimens.controller.js";
+import { AdminOrderDeliveryNotesController } from "./http/admin-order-delivery-notes.controller.js";
+import { DeliveryNotesController } from "./http/delivery-notes.controller.js";
+import { PrismaDeliveryNoteReader } from "./infrastructure/prisma-delivery-note.reader.js";
 import { ReconcileDeliveryNotesHandler } from "./application/commands/reconcile-delivery-notes.handler.js";
 import { AdminDeliveryNotesController } from "./http/admin-delivery-notes.controller.js";
 import { DeliveryNotesReconcileController } from "./http/delivery-notes-reconcile.controller.js";
@@ -14,8 +27,9 @@ import { PrismaDeliveryNoteRepository } from "./infrastructure/prisma-delivery-n
  * **Les bons de livraison** — plan
  * `documentation/commandes/plan-e1-bon-de-livraison-prevu.md`.
  *
- * En E1, une ombre : le BL prévu naît à l'arrêt du plan et s'annule avec sa
- * commande ; aucune route, aucun écran ne le lit. Importe `OrdersModule` pour
+ * Le BL prévu naît à l'arrêt du plan et s'annule avec sa commande (E1) ;
+ * depuis E5a, il s'imprime — transport et chiffré — depuis la fiche commande,
+ * l'espace client et la planche des documents. Importe `OrdersModule` pour
  * les ports de lecture que la commande déclare (`OrderLinesForDeliveryNote`,
  * `OrderProgressForDeliveryNote`, `OrdersToReconcileDeliveryNotes`) : il lit
  * la commande par eux, jamais dans ses tables. `DeliveryNoteFollower` répond
@@ -23,11 +37,25 @@ import { PrismaDeliveryNoteRepository } from "./infrastructure/prisma-delivery-n
  * `appBootstrap/delivery-note-planning.module.ts` (plan E2, § 8.3).
  */
 @Module({
-  imports: [OrdersModule],
-  controllers: [DeliveryNotesReconcileController, AdminDeliveryNotesController],
+  imports: [OrdersModule, BrandModule],
+  controllers: [
+    DeliveryNotesReconcileController,
+    AdminDeliveryNotesController,
+    AdminOrderDeliveryNotesController,
+    DeliveryNotesController,
+    AdminDeliveryNoteSpecimensController,
+  ],
   providers: [
     ReconcileDeliveryNotesHandler,
+    ListOrderDeliveryNotesHandler,
+    GetCarrierNotePdfHandler,
+    GetAdminClientNotePdfHandler,
+    GetClientNotePdfHandler,
+    GetCarrierNoteSpecimenHandler,
+    GetClientNoteSpecimenHandler,
+    DeliveryNoteDocuments,
     { provide: DeliveryNoteRepository, useClass: PrismaDeliveryNoteRepository },
+    { provide: DeliveryNoteReader, useClass: PrismaDeliveryNoteReader },
     DeliveryNotePlanner,
     DeliveryNoteAligner,
     DeliveryNoteFollower,

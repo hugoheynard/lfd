@@ -207,7 +207,9 @@ function staffLineOf(line: OrderLineView): StaffSheetLine {
  * sous des intitulés hors taxe. Dériver au rendu l'aurait piégé le jour où son
  * drapeau remonte.
  */
-export function sheetShowsTtc(sheet: { readonly lines: readonly ClientSheetLine[] }): boolean {
+export function sheetShowsTtc(sheet: {
+  readonly lines: readonly Pick<ClientSheetLine, "unitPriceTtcCents" | "lineTotalTtcCents">[];
+}): boolean {
   return (
     sheet.lines.length > 0 &&
     sheet.lines.every((line) => line.unitPriceTtcCents !== null && line.lineTotalTtcCents !== null)

@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1592 textes
+## Sommaire — 1594 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -38,7 +38,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le cadre — bandeaux, installation, erreurs générales](#espace-chrome) | `chrome` | 41 |
 | [La navigation](#espace-nav) | `nav` | 24 |
 | [La colonne d’accompagnement](#espace-aside) | `aside` | 4 |
-| [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 232 |
+| [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 234 |
 | [Annuler une commande — Mes commandes et la page invité](#espace-ordercancel) | `orderCancel` | 54 |
 | [Fidélité](#espace-loyalty) | `loyalty` | 38 |
 | [Mon compte (factures comprises)](#espace-account) | `account` | 525 |
@@ -47,7 +47,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
-| **Total** | | **1592** |
+| **Total** | | **1594** |
 
 ## Le parcours de commande
 
@@ -913,7 +913,7 @@ Source : `fr.ts · en.ts · it.ts` · 4 textes.
 
 ### Mes commandes (récapitulatif compris) — `orders`
 
-Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/order-change-request.copy.ts` · 232 textes.
+Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/order-change-request.copy.ts` · 234 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -1116,6 +1116,8 @@ Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/ord
 | `orders.detailMode` | Mode | Mode | Modalità |  |
 | `orders.purchaseOrder` | Bon de commande | Order form | Buono d’ordine |  |
 | `orders.purchaseOrderFailed` | Le bon de commande n’a pas pu être téléchargé. Réessayez dans un instant. | The order form could not be downloaded. Please try again in a moment. | Non è stato possibile scaricare il buono d’ordine. Riprova tra un istante. |  |
+| `orders.deliveryNote` | Bon de livraison | Delivery note | Documento di trasporto |  |
+| `orders.deliveryNoteFailed` | Le bon de livraison n’a pas pu être téléchargé. Réessayez dans un instant. | The delivery note could not be downloaded. Please try again in a moment. | Non è stato possibile scaricare il documento di trasporto. Riprova tra un istante. |  |
 | `orders.reorder` | Recommander à l’identique | Order the same again | Riordinare identico |  |
 | `orders.problem` | Un problème sur cette commande | A problem with this order | Un problema su questo ordine |  |
 | `orders.expand` | Déplier la commande | Expand the order | Aprire l’ordine |  |

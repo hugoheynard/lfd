@@ -1968,6 +1968,26 @@ export type {
   OrderSheet,
   PricedSheet,
 } from "./order-sheet.js";
+export {
+  deliveryNoteStatusSchema,
+  deliveryNoteAudienceSchema,
+  carrierNoteLineSchema,
+  clientNoteLineSchema,
+  carrierNoteSchema,
+  clientNoteSchema,
+  staffNoteSchema,
+  deliveryNoteSheetSchema,
+} from "./delivery-note-sheet.js";
+export type {
+  DeliveryNoteStatusView,
+  DeliveryNoteAudience,
+  CarrierNoteLine,
+  ClientNoteLine,
+  CarrierNote,
+  ClientNote,
+  StaffNote,
+  DeliveryNoteSheet,
+} from "./delivery-note-sheet.js";
 export type { OrderPackingView } from "./order-packing.js";
 export type { ProductionPlanClosure, ProductionPlanReopening } from "./production-sheet.js";
 export {

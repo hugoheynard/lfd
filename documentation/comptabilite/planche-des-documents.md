@@ -11,19 +11,21 @@ d'exemple fixes** : jamais une vraie commande, **rien d'écrit en base, rien
 d'archivé, rien d'envoyé**. On choisit un document à gauche, l'aperçu PDF
 s'affiche à droite, et « Ouvrir dans un onglet » sert à l'imprimer.
 
-| Groupe            | Document                     | Route (`GET`)                                     | Bloc qui le sert | Rendu pur utilisé          |
-| ----------------- | ---------------------------- | ------------------------------------------------- | ---------------- | -------------------------- |
-| Bons chiffrés     | bon de commande pro          | `admin/document-specimens/order-sheet-pro.pdf`    | `b2b/orders`     | `renderOrderSheetPdf`      |
-| Bons chiffrés     | bon de commande public       | `admin/document-specimens/order-sheet-public.pdf` | `b2b/orders`     | `renderOrderSheetPdf`      |
-| Bons non chiffrés | fiche d'atelier              | `admin/document-specimens/atelier-sheet.pdf`      | `production`     | `renderAtelierSheetPdf`    |
-| Bons non chiffrés | feuille de tournée (livreur) | `admin/document-specimens/round-paper.pdf`        | `delivery`       | `renderRoundPaperPdf`      |
-| Fournil           | compte à produire            | `admin/document-specimens/production-count.pdf`   | `production`     | `renderProductionCountPdf` |
-| Fournil           | dossier du jour              | `admin/document-specimens/day-dossier.pdf`        | `production`     | `renderDayDossierPdf`      |
-| Factures          | facture Factur-X (PDF/A-3)   | `admin/document-specimens/invoice.pdf`            | `b2b/accounting` | `renderInvoicePdf`         |
-| Mandats           | mandat SEPA interentreprises | `admin/document-specimens/sepa-mandate-b2b.pdf`   | `b2b/accounting` | `renderSepaMandatePdf`     |
-| Mandats           | mandat SEPA CORE             | `admin/document-specimens/sepa-mandate-core.pdf`  | `b2b/accounting` | `renderSepaMandatePdf`     |
-| Récapitulatifs    | récapitulatif de commandes   | `admin/document-specimens/order-summary.pdf`      | `b2b/orders`     | `renderOrderSummaryPdf`    |
-| Catalogue         | matrice des allergènes       | `admin/document-specimens/allergen-matrix.pdf`    | `pim`            | `renderAllergenMatrixPdf`  |
+| Groupe            | Document                     | Route (`GET`)                                           | Bloc qui le sert     | Rendu pur utilisé          |
+| ----------------- | ---------------------------- | ------------------------------------------------------- | -------------------- | -------------------------- |
+| Bons chiffrés     | bon de commande pro          | `admin/document-specimens/order-sheet-pro.pdf`          | `b2b/orders`         | `renderOrderSheetPdf`      |
+| Bons chiffrés     | bon de commande public       | `admin/document-specimens/order-sheet-public.pdf`       | `b2b/orders`         | `renderOrderSheetPdf`      |
+| Bons non chiffrés | fiche d'atelier              | `admin/document-specimens/atelier-sheet.pdf`            | `production`         | `renderAtelierSheetPdf`    |
+| Bons non chiffrés | feuille de tournée (livreur) | `admin/document-specimens/round-paper.pdf`              | `delivery`           | `renderRoundPaperPdf`      |
+| Bons chiffrés     | bon de livraison client pro  | `admin/document-specimens/delivery-note-client-pro.pdf` | `b2b/delivery-notes` | `renderClientNotePdf`      |
+| Bons non chiffrés | bon de livraison transport   | `admin/document-specimens/delivery-note-carrier.pdf`    | `b2b/delivery-notes` | `renderCarrierNotePdf`     |
+| Fournil           | compte à produire            | `admin/document-specimens/production-count.pdf`         | `production`         | `renderProductionCountPdf` |
+| Fournil           | dossier du jour              | `admin/document-specimens/day-dossier.pdf`              | `production`         | `renderDayDossierPdf`      |
+| Factures          | facture Factur-X (PDF/A-3)   | `admin/document-specimens/invoice.pdf`                  | `b2b/accounting`     | `renderInvoicePdf`         |
+| Mandats           | mandat SEPA interentreprises | `admin/document-specimens/sepa-mandate-b2b.pdf`         | `b2b/accounting`     | `renderSepaMandatePdf`     |
+| Mandats           | mandat SEPA CORE             | `admin/document-specimens/sepa-mandate-core.pdf`        | `b2b/accounting`     | `renderSepaMandatePdf`     |
+| Récapitulatifs    | récapitulatif de commandes   | `admin/document-specimens/order-summary.pdf`            | `b2b/orders`         | `renderOrderSummaryPdf`    |
+| Catalogue         | matrice des allergènes       | `admin/document-specimens/allergen-matrix.pdf`          | `pim`                | `renderAllergenMatrixPdf`  |
 
 ## Pourquoi chaque bloc sert ses propres exemplaires
 
@@ -44,6 +46,7 @@ flowchart LR
   screen -->|atelier-sheet.pdf| production["production<br/>AdminAtelierSheetSpecimenController"]
   screen -->|production-count.pdf, day-dossier.pdf| dayPapers["production<br/>AdminDayPapersSpecimensController"]
   screen -->|round-paper.pdf| delivery["delivery<br/>AdminRoundPaperSpecimenController"]
+  screen -->|delivery-note-*.pdf| notes["b2b/delivery-notes<br/>AdminDeliveryNoteSpecimensController"]
 ```
 
 Chaque contrôleur n'injecte que le `QueryBus` ; une query par document

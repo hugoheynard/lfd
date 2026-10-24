@@ -26,6 +26,7 @@ import { ClientChrome } from '../../client-chrome.service';
 import { ClientCopyService } from '../../copy/client-copy.service';
 import { ClientCompany } from '../../client-company.service';
 import { ClientOrderHistory, type OrderDays } from '../client-order-history.service';
+import { DeliveryNoteService } from '../delivery-note.service';
 import { OrderSheetService } from '../order-sheet.service';
 import { downloadBlob } from '../download-blob';
 import {
@@ -96,6 +97,7 @@ export class CommandesPage {
   private readonly chrome = inject(ClientChrome);
   private readonly router = inject(Router);
   private readonly sheets = inject(OrderSheetService);
+  private readonly deliveryNotes = inject(DeliveryNoteService);
   private readonly notify = inject(NotifyService);
   private readonly panels = inject(FoldPanelHostService);
 
@@ -251,6 +253,22 @@ export class CommandesPage {
       downloadBlob(`bon-de-commande-${order.reference}.pdf`, pdf);
     } catch {
       this.notify.error(this.t().orders.purchaseOrderFailed);
+    }
+  }
+
+  /** Le bon de livraison chiffré d'une commande remise (plan E5a, § 3). */
+  protected downloadDeliveryNote(order: HistoryOrder): void {
+    void this.fetchDeliveryNote(order);
+  }
+
+  private async fetchDeliveryNote(order: HistoryOrder): Promise<void> {
+    try {
+      downloadBlob(
+        `bon-de-livraison-${order.reference}.pdf`,
+        await this.deliveryNotes.pdfOf(order.id),
+      );
+    } catch {
+      this.notify.error(this.t().orders.deliveryNoteFailed);
     }
   }
 

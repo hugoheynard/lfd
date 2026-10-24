@@ -4,28 +4,8 @@ import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { DeliveryNote, type DeliveryNoteState } from "../domain/entities/delivery-note.js";
 import { DeliveryNoteRepository } from "../domain/ports/delivery-note.repository.js";
-import { termsColumns, termsOf } from "./delivery-note-terms.columns.js";
-
-const LINE_COLUMNS = {
-  sku: true,
-  productName: true,
-  unitPriceMillicents: true,
-  vatRate: true,
-  quantity: true,
-  lineTotalCents: true,
-  unitPriceTtcCents: true,
-  lineTotalTtcCents: true,
-  pickupDiscountEligible: true,
-} as const;
-
-/** `received_on` est un `DATE` : son jour UTC est le jour écrit. */
-function dayOf(date: Date | null): string | null {
-  return date === null ? null : date.toISOString().slice(0, 10);
-}
-
-function dateOf(day: string | null): Date | null {
-  return day === null ? null : new Date(`${day}T00:00:00.000Z`);
-}
+import { dateOf, NOTE_INCLUDE, stateOf } from "./delivery-note.rows.js";
+import { termsColumns } from "./delivery-note-terms.columns.js";
 
 /** Les colonnes qui bougent avec l'état du BL. */
 function progressColumns(head: Omit<DeliveryNoteState, "lines">) {
@@ -65,24 +45,9 @@ export class PrismaDeliveryNoteRepository extends DeliveryNoteRepository {
     const rows = await this.prisma.deliveryNote.findMany({
       where: { orderId: { in: [...orderIds] } },
       orderBy: [{ orderId: "asc" }, { rank: "asc" }],
-      include: { lines: { orderBy: { id: "asc" }, select: LINE_COLUMNS } },
+      include: NOTE_INCLUDE,
     });
-    return rows.map((row) =>
-      DeliveryNote.rehydrate({
-        id: row.id,
-        orderId: row.orderId,
-        rank: row.rank,
-        number: row.number,
-        status: row.status,
-        plannedAt: row.plannedAt,
-        voidedAt: row.voidedAt,
-        preparedAt: row.preparedAt,
-        handedOverAt: row.handedOverAt,
-        receivedOn: dayOf(row.receivedOn),
-        terms: termsOf(row),
-        lines: row.lines.map((line) => ({ ...line, vatRate: line.vatRate.toNumber() })),
-      }),
-    );
+    return rows.map((row) => DeliveryNote.rehydrate(stateOf(row)));
   }
 
   async save(note: DeliveryNote): Promise<void> {
