@@ -79,3 +79,29 @@ export class InvalidDeliveryNoteReceivedOnError extends DomainError {
     );
   }
 }
+
+/** Un total d'en-tête recopié de la commande n'est pas un entier de centimes (plan E4a). */
+export class InvalidDeliveryNoteTermsError extends DomainError {
+  constructor(orderNumber: string, field: string) {
+    super(
+      "delivery_notes.terms.invalid",
+      `Commande ${orderNumber} : le total « ${field} » n'est pas un nombre entier de centimes, ` +
+        "le bon de livraison ne peut pas le recopier. Les totaux de la commande sont à vérifier ; aucun bon n'a été écrit.",
+    );
+  }
+}
+
+/**
+ * Compléter un en-tête n'est permis que s'il est VIDE, et jamais sur un bon
+ * annulé (plan E4a, § 4) : on remplit un champ vide, on ne change aucune
+ * valeur posée.
+ */
+export class DeliveryNoteTermsAlreadySetError extends BusinessError {
+  constructor(noteNumber: string, status: string) {
+    super(
+      "delivery_notes.terms.not_completable",
+      `Le bon de livraison ${noteNumber} (« ${status} ») a déjà ses totaux, ou est annulé : ` +
+        "ils ne se complètent pas une seconde fois. Le bon reste tel quel ; prévenir l'équipe technique.",
+    );
+  }
+}

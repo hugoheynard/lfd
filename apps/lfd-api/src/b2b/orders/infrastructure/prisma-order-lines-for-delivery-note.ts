@@ -6,6 +6,11 @@ import {
   OrderLinesForDeliveryNote,
   type DeliveryNoteOrder,
 } from "../domain/ports/order-lines-for-delivery-note.js";
+import {
+  DELIVERY_NOTE_LINE_SELECT,
+  DELIVERY_NOTE_TERMS_SELECT,
+  toDeliveryNoteOrder,
+} from "./delivery-note-order.row.js";
 
 /**
  * L'adaptateur Prisma de ce que le bon de livraison lit d'une commande. Le
@@ -25,32 +30,8 @@ export class PrismaOrderLinesForDeliveryNote extends OrderLinesForDeliveryNote {
     const rows = await this.prisma.order.findMany({
       where: { id: { in: [...orderIds] }, status: OrderStatus.confirmed, confirmedAt: closedAt },
       orderBy: { id: "asc" },
-      select: {
-        id: true,
-        orderNumber: true,
-        lines: {
-          orderBy: { id: "asc" },
-          select: {
-            sku: true,
-            productNameSnapshot: true,
-            unitPriceMillicents: true,
-            vatRate: true,
-            quantity: true,
-            lineTotalCents: true,
-            unitPriceTtcCents: true,
-            lineTotalTtcCents: true,
-          },
-        },
-      },
+      select: { ...DELIVERY_NOTE_TERMS_SELECT, lines: DELIVERY_NOTE_LINE_SELECT },
     });
-    return rows.map((row) => ({
-      orderId: row.id,
-      orderNumber: row.orderNumber,
-      lines: row.lines.map(({ productNameSnapshot, vatRate, ...line }) => ({
-        ...line,
-        productName: productNameSnapshot,
-        vatRate: vatRate.toNumber(),
-      })),
-    }));
+    return rows.map(toDeliveryNoteOrder);
   }
 }

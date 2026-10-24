@@ -1,3 +1,4 @@
+import { ORDER_TERMS } from "../../../domain/value-objects/__tests__/delivery-note-terms.fixture.js";
 import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import type {
@@ -25,10 +26,11 @@ const BREAD: DeliveryNoteOrderLine = {
   lineTotalCents: 49_481,
   unitPriceTtcCents: null,
   lineTotalTtcCents: null,
+  pickupDiscountEligible: true,
 };
 
 function orderOf(id: string, number: string, lines = [BREAD]): DeliveryNoteOrder {
-  return { orderId: id, orderNumber: number, lines };
+  return { orderId: id, orderNumber: number, lines, terms: ORDER_TERMS };
 }
 
 function scene() {
@@ -63,6 +65,7 @@ describe("DeliveryNotePlanner — le BL prévu à l'arrêt du plan (plan E1)", (
         handedOverAt: null,
         receivedOn: null,
         lines: [BREAD],
+        terms: ORDER_TERMS,
       },
     ]);
   });
@@ -98,6 +101,25 @@ describe("DeliveryNotePlanner — le BL prévu à l'arrêt du plan (plan E1)", (
 
     expect(notes.forOrder("ord_1")).toEqual([
       expect.objectContaining({ id: "dn_000001", number: "BL-1-1", lines: [revised] }),
+    ]);
+  });
+
+  it("une re-clôture après révision recopie les NOUVEAUX totaux dans l'en-tête (plan E4a, § 4)", async () => {
+    const { orders, notes, planner } = scene();
+    orders.confirm(orderOf("ord_1", "ORD-1"), CLOSED_AT);
+    await planner.planConfirmed(["ord_1"], CLOSED_AT);
+    const revisedTerms = {
+      ...ORDER_TERMS,
+      subtotalCents: 60_000,
+      vatCents: 3_300,
+      totalCents: 61_241,
+    };
+    orders.confirm({ ...orderOf("ord_1", "ORD-1"), terms: revisedTerms }, RECLOSED_AT);
+
+    await planner.planConfirmed(["ord_1"], RECLOSED_AT);
+
+    expect(notes.forOrder("ord_1")).toEqual([
+      expect.objectContaining({ id: "dn_000001", terms: revisedTerms }),
     ]);
   });
 

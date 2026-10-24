@@ -4,6 +4,7 @@ import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { DeliveryNote, type DeliveryNoteState } from "../domain/entities/delivery-note.js";
 import { DeliveryNoteRepository } from "../domain/ports/delivery-note.repository.js";
+import { termsColumns, termsOf } from "./delivery-note-terms.columns.js";
 
 const LINE_COLUMNS = {
   sku: true,
@@ -14,6 +15,7 @@ const LINE_COLUMNS = {
   lineTotalCents: true,
   unitPriceTtcCents: true,
   lineTotalTtcCents: true,
+  pickupDiscountEligible: true,
 } as const;
 
 /** `received_on` est un `DATE` : son jour UTC est le jour écrit. */
@@ -34,6 +36,7 @@ function progressColumns(head: Omit<DeliveryNoteState, "lines">) {
     preparedAt: head.preparedAt,
     handedOverAt: head.handedOverAt,
     receivedOn: dateOf(head.receivedOn),
+    ...termsColumns(head.terms),
   };
 }
 
@@ -76,6 +79,7 @@ export class PrismaDeliveryNoteRepository extends DeliveryNoteRepository {
         preparedAt: row.preparedAt,
         handedOverAt: row.handedOverAt,
         receivedOn: dayOf(row.receivedOn),
+        terms: termsOf(row),
         lines: row.lines.map((line) => ({ ...line, vatRate: line.vatRate.toNumber() })),
       }),
     );

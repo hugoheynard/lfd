@@ -8,6 +8,34 @@ export interface DeliveryNoteOrderLine {
   readonly lineTotalCents: number;
   readonly unitPriceTtcCents: number | null;
   readonly lineTotalTtcCents: number | null;
+  readonly pickupDiscountEligible: boolean;
+}
+
+/** Une valeur JSON écrite sur la commande, transmise sans être lue. */
+export type DeliveryNoteOrderJson =
+  | string
+  | number
+  | boolean
+  | null
+  | readonly DeliveryNoteOrderJson[]
+  | { readonly [key: string]: DeliveryNoteOrderJson | undefined };
+
+/**
+ * Les totaux d'une commande, tels que le bon de livraison les recopie (plan
+ * `documentation/commandes/plan-e4a-totaux-du-bon.md`) : les colonnes
+ * d'`orders` telles qu'écrites, JSON compris, sans interprétation.
+ */
+export interface DeliveryNoteOrderTerms {
+  readonly subtotalCents: number;
+  readonly discountCents: number;
+  readonly voucherDiscountCents: number;
+  readonly deliveryFeeCents: number;
+  readonly deliveryVatMode: string | null;
+  readonly lateFeeCents: number;
+  readonly lateFeeAdjustment: DeliveryNoteOrderJson | null;
+  readonly vatShares: DeliveryNoteOrderJson | null;
+  readonly vatCents: number;
+  readonly totalCents: number;
 }
 
 /** Une commande confirmée par un arrêt du plan, vue du bon de livraison. */
@@ -15,6 +43,7 @@ export interface DeliveryNoteOrder {
   readonly orderId: string;
   readonly orderNumber: string;
   readonly lines: readonly DeliveryNoteOrderLine[];
+  readonly terms: DeliveryNoteOrderTerms;
 }
 
 /**

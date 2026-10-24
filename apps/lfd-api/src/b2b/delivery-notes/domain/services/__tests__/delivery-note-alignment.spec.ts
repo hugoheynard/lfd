@@ -1,5 +1,6 @@
+import { ORDER_TERMS } from "../../value-objects/__tests__/delivery-note-terms.fixture.js";
 import { DeliveryNote } from "../../entities/delivery-note.js";
-import type { DeliveryNoteLineState } from "../../value-objects/delivery-note-line.js";
+import type { DeliveryNoteSourceLine } from "../../value-objects/delivery-note-line.js";
 import { alignmentOf, type FollowedOrder } from "../delivery-note-alignment.js";
 
 // Comparés entre eux seulement : la règle ne lit aucune horloge.
@@ -9,7 +10,7 @@ const HANDED_OVER_AT = new Date(3_000);
 const NOW = new Date(4_000);
 const RECEIVED_ON = "1970-01-01";
 
-const BREAD: DeliveryNoteLineState = {
+const BREAD: DeliveryNoteSourceLine = {
   sku: "PAIN-001",
   productName: "Pain",
   unitPriceMillicents: 100_000,
@@ -18,6 +19,7 @@ const BREAD: DeliveryNoteLineState = {
   lineTotalCents: 200,
   unitPriceTtcCents: null,
   lineTotalTtcCents: null,
+  pickupDiscountEligible: true,
 };
 const REVISED = { ...BREAD, quantity: 5, lineTotalCents: 500 };
 
@@ -31,6 +33,7 @@ function order(overrides: Partial<FollowedOrder> = {}): FollowedOrder {
     readyAt: null,
     handedOverAt: null,
     receivedOn: null,
+    terms: ORDER_TERMS,
     ...overrides,
   };
 }
@@ -47,7 +50,7 @@ const context = { newId: () => "dn_new", now: NOW };
 function planned(lines = [BREAD]): DeliveryNote {
   return DeliveryNote.planFromOrder(
     "dn_1",
-    { orderId: "ord_1", orderNumber: "ORD-7", lines },
+    { orderId: "ord_1", orderNumber: "ORD-7", lines, terms: ORDER_TERMS },
     CONFIRMED_AT,
   );
 }
@@ -126,6 +129,54 @@ describe("alignmentOf — un BL en retard avance, ses lignes réalignées", () =
     const note = planned();
 
     expect(alignmentOf(order(), [note], context)).toEqual({ change: "none" });
+  });
+});
+
+/** Un BL écrit avant E4a : son en-tête est vide. */
+function withoutTerms(note: DeliveryNote): DeliveryNote {
+  return DeliveryNote.rehydrate({ ...note.toState(), terms: null });
+}
+
+describe("alignmentOf — l'en-tête vide d'un BL d'avant E4a est complété (plan E4a)", () => {
+  it("BL remis à l'état juste : `completed`, totaux de la commande, état intact (exception du § 4)", () => {
+    const source = planned();
+    source.handOver(HANDED_OVER_AT, RECEIVED_ON);
+    const note = withoutTerms(source);
+    const fulfilled = order(FULFILLED);
+
+    const result = alignmentOf(fulfilled, [note], context);
+
+    expect(result).toEqual({ change: "completed", writes: [note] });
+    expect(note.toState()).toMatchObject({ status: "handed_over", terms: ORDER_TERMS });
+  });
+
+  it("BL prévu à l'état juste : complété par la réécriture", () => {
+    const note = withoutTerms(planned());
+
+    expect(alignmentOf(order(), [note], context).change).toBe("completed");
+    expect(note.toState().terms).toEqual(ORDER_TERMS);
+  });
+
+  it("BL préparé sans en-tête sur une commande remise : avancé ET complété", () => {
+    const source = planned();
+    source.prepare(READY_AT);
+    const note = withoutTerms(source);
+
+    expect(alignmentOf(order({ ...FULFILLED, readyAt: READY_AT }), [note], context).change).toBe(
+      "advanced",
+    );
+    expect(note.toState()).toMatchObject({ status: "handed_over", terms: ORDER_TERMS });
+  });
+
+  it("un BL annulé sans en-tête n'est pas complété", () => {
+    const source = planned();
+    source.void(NOW);
+    const note = withoutTerms(source);
+
+    expect(alignmentOf(order({ status: "cancelled" }), [note], context)).toEqual({
+      change: "none",
+    });
+    expect(note.toState().terms).toBeNull();
   });
 });
 

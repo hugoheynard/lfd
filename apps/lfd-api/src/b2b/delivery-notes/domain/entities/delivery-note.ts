@@ -1,5 +1,6 @@
 import {
   DeliveryNoteNotPlannedError,
+  DeliveryNoteTermsAlreadySetError,
   DeliveryNoteTransitionRefusedError,
   DeliveryNoteWithoutLinesError,
   InvalidDeliveryNoteReceivedOnError,
@@ -7,7 +8,9 @@ import {
 import {
   DeliveryNoteLine,
   type DeliveryNoteLineState,
+  type DeliveryNoteSourceLine,
 } from "../value-objects/delivery-note-line.js";
+import { copyOfTerms, type DeliveryNoteTerms } from "../value-objects/delivery-note-terms.js";
 import { DeliveryNoteNumber } from "../value-objects/delivery-note-number.js";
 
 /**
@@ -24,11 +27,12 @@ export const FIRST_DELIVERY_NOTE_RANK = 1;
 /** Un jour civil `AAAA-MM-JJ` — la forme de la date de réception d'une commande. */
 const CIVIL_DAY = /^\d{4}-\d{2}-\d{2}$/;
 
-/** Ce que la prévision lit d'une commande : son identité et ses lignes figées. */
+/** Ce que la prévision lit d'une commande : son identité, ses lignes figées, ses totaux. */
 export interface DeliveryNoteSource {
   readonly orderId: string;
   readonly orderNumber: string;
-  readonly lines: readonly DeliveryNoteLineState[];
+  readonly lines: readonly DeliveryNoteSourceLine[];
+  readonly terms: DeliveryNoteTerms;
 }
 
 /** L'état complet d'un BL, tel que l'adaptateur l'écrit et le relit. */
@@ -45,6 +49,8 @@ export interface DeliveryNoteState {
   /** Jour de réception `AAAA-MM-JJ` (Europe/Paris), celui de la commande. */
   readonly receivedOn: string | null;
   readonly lines: readonly DeliveryNoteLineState[];
+  /** L'en-tête recopié de la commande (plan E4a) ; `null` sur un BL d'avant E4a. */
+  readonly terms: DeliveryNoteTerms | null;
 }
 
 /** Ce qui bouge dans un BL ; le reste est son identité. */
@@ -52,7 +58,7 @@ type Progress = Pick<
   DeliveryNoteState,
   "status" | "voidedAt" | "preparedAt" | "handedOverAt" | "receivedOn"
 >;
-type Identity = Omit<DeliveryNoteState, keyof Progress | "lines">;
+type Identity = Omit<DeliveryNoteState, keyof Progress | "lines" | "terms">;
 
 const PLANNED: Progress = {
   status: "planned",
@@ -77,6 +83,7 @@ export class DeliveryNote {
     private readonly identity: Identity,
     private progress: Progress,
     private currentLines: readonly DeliveryNoteLine[],
+    private currentTerms: DeliveryNoteTerms | null,
   ) {}
 
   /**
@@ -94,21 +101,29 @@ export class DeliveryNote {
       number: number.value,
       plannedAt,
     };
-    return new DeliveryNote(identity, PLANNED, linesOf(source));
+    const note = new DeliveryNote(identity, PLANNED, linesOf(source), null);
+    note.copyTermsFrom(source);
+    return note;
   }
 
   /** Recharge un BL écrit ; ses lignes revalident. */
   static rehydrate(state: DeliveryNoteState): DeliveryNote {
-    const { status, voidedAt, preparedAt, handedOverAt, receivedOn, lines, ...identity } = state;
+    const { status, voidedAt, preparedAt, handedOverAt, receivedOn, lines, terms, ...identity } =
+      state;
     return new DeliveryNote(
       identity,
       { status, voidedAt, preparedAt, handedOverAt, receivedOn },
       lines.map((l) => DeliveryNoteLine.of(l)),
+      terms,
     );
   }
 
   get orderId(): string {
     return this.identity.orderId;
+  }
+
+  get number(): string {
+    return this.identity.number;
   }
 
   get status(): DeliveryNoteStatus {
@@ -132,6 +147,43 @@ export class DeliveryNote {
       throw new DeliveryNoteNotPlannedError(this.identity.number, this.progress.status);
     }
     this.currentLines = linesOf(source);
+    this.copyTermsFrom(source);
+  }
+
+  /** L'en-tête est posé — faux pour un BL écrit avant E4a. */
+  get hasTerms(): boolean {
+    return this.currentTerms !== null;
+  }
+
+  /**
+   * **Complète** l'en-tête VIDE d'un BL non annulé, à partir des totaux
+   * actuels de sa commande, quel que soit son statut — remis compris. C'est
+   * l'exception écrite à « remis, il ne change plus » (plan E4a, § 4,
+   * bloquant 3) : elle remplit un champ vide, elle ne change aucune valeur
+   * posée. Une commande remise ne change plus de totaux : aucun écrivain des
+   * totaux d'`orders` n'agit après `placed` (vérifié le 2026-10-24 : la
+   * passation, la révision `status: placed`, l'annulation `status: placed`
+   * sans toucher aux totaux, le remboursement qui n'écrit que le règlement).
+   *
+   * L'éligibilité des lignes se remplit là où elle manque, sur une ligne qui
+   * est la même — rang, SKU, quantité, total — que celle de la commande ;
+   * ailleurs elle reste `null`, et le contrôle la compte.
+   *
+   * @throws {DeliveryNoteTermsAlreadySetError} l'en-tête est déjà posé, ou le BL est annulé.
+   */
+  completeTermsFrom(source: DeliveryNoteSource): void {
+    if (this.currentTerms !== null || this.progress.status === "voided") {
+      throw new DeliveryNoteTermsAlreadySetError(this.identity.number, this.progress.status);
+    }
+    this.currentTerms = copyOfTerms(source.orderNumber, source.terms);
+    this.currentLines = this.currentLines.map((line, index) =>
+      line.withEligibilityFrom(source.lines[index]),
+    );
+  }
+
+  /** La recopie, une seule : appelée par {@link planFromOrder} et {@link replanFrom}. */
+  private copyTermsFrom(source: DeliveryNoteSource): void {
+    this.currentTerms = copyOfTerms(source.orderNumber, source.terms);
   }
 
   /**
@@ -184,6 +236,7 @@ export class DeliveryNote {
       ...this.identity,
       ...this.progress,
       lines: this.currentLines.map((line) => line.state),
+      terms: this.currentTerms,
     };
   }
 
@@ -199,6 +252,7 @@ export class DeliveryNote {
 }
 
 function linesOf(source: DeliveryNoteSource): readonly DeliveryNoteLine[] {
+  // Les lignes d'abord : une commande sans ligne est refusée avant ses totaux.
   if (source.lines.length === 0) {
     throw new DeliveryNoteWithoutLinesError(source.orderNumber);
   }

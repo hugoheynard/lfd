@@ -1,4 +1,5 @@
 import type { UnrepairableReason } from "../../domain/services/delivery-note-alignment.js";
+import type { DeliveryNoteTermsGap } from "../../domain/services/delivery-note-terms-control.js";
 
 /**
  * **Le réconciliateur des bons de livraison** (plan
@@ -33,10 +34,21 @@ export interface DeliveryNoteReconciliationReport {
   readonly created: number;
   readonly advanced: number;
   readonly voided: number;
+  /** BL à l'état juste dont l'en-tête vide a été complété depuis la commande (plan E4a). */
+  readonly completed: number;
   /** Réparations tentées et échouées (erreur technique) : à relire dans le journal. */
   readonly failed: number;
   /** Écarts non réparables, comptés par cause et nommés. Rien n'a été inventé. */
   readonly unrepaired: readonly UnrepairedOrder[];
   /** `false` si le plafond de réparations a arrêté le passage avant la fin. */
   readonly complete: boolean;
+  /**
+   * Le contrôle des totaux (plan E4a, § 2) : les commandes complètes dont le
+   * BL n'avait rien à réparer à ce passage, comparées champ par champ.
+   * Zéro écart, ou la facture ne lira pas le BL (E4b).
+   */
+  readonly terms: {
+    readonly compared: number;
+    readonly gaps: readonly DeliveryNoteTermsGap[];
+  };
 }

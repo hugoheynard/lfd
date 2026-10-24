@@ -1,3 +1,4 @@
+import { ORDER_TERMS } from "../../value-objects/__tests__/delivery-note-terms.fixture.js";
 import {
   DeliveryNoteNotPlannedError,
   DeliveryNoteTransitionRefusedError,
@@ -5,7 +6,7 @@ import {
   DeliveryNoteWithoutLinesError,
   InvalidDeliveryNoteLineError,
 } from "../../errors/delivery-note-errors.js";
-import type { DeliveryNoteLineState } from "../../value-objects/delivery-note-line.js";
+import type { DeliveryNoteSourceLine } from "../../value-objects/delivery-note-line.js";
 import { DeliveryNote, type DeliveryNoteSource } from "../delivery-note.js";
 
 const PLANNED_AT = new Date(0);
@@ -14,7 +15,7 @@ const PREPARED_AT = new Date(2);
 const HANDED_OVER_AT = new Date(3);
 const RECEIVED_ON = "1970-01-01";
 
-const BREAD: DeliveryNoteLineState = {
+const BREAD: DeliveryNoteSourceLine = {
   sku: "PAIN-001",
   productName: "Pain de campagne",
   unitPriceMillicents: 412_345,
@@ -23,9 +24,10 @@ const BREAD: DeliveryNoteLineState = {
   lineTotalCents: 49_481,
   unitPriceTtcCents: null,
   lineTotalTtcCents: null,
+  pickupDiscountEligible: true,
 };
 
-const CROISSANT: DeliveryNoteLineState = {
+const CROISSANT: DeliveryNoteSourceLine = {
   sku: "VIEN-002",
   productName: "Croissant",
   unitPriceMillicents: 95_000,
@@ -34,10 +36,11 @@ const CROISSANT: DeliveryNoteLineState = {
   lineTotalCents: 5_700,
   unitPriceTtcCents: 100,
   lineTotalTtcCents: 601,
+  pickupDiscountEligible: true,
 };
 
-function order(lines: readonly DeliveryNoteLineState[]): DeliveryNoteSource {
-  return { orderId: "ord_1", orderNumber: "ORD-1042", lines };
+function order(lines: readonly DeliveryNoteSourceLine[]): DeliveryNoteSource {
+  return { orderId: "ord_1", orderNumber: "ORD-1042", lines, terms: ORDER_TERMS };
 }
 
 describe("DeliveryNote.planFromOrder", () => {
@@ -56,6 +59,7 @@ describe("DeliveryNote.planFromOrder", () => {
       handedOverAt: null,
       receivedOn: null,
       lines: [BREAD, CROISSANT],
+      terms: ORDER_TERMS,
     });
   });
 
@@ -73,7 +77,7 @@ describe("DeliveryNote.planFromOrder", () => {
     );
   });
 
-  it.each<[string, Partial<DeliveryNoteLineState>]>([
+  it.each<[string, Partial<DeliveryNoteSourceLine>]>([
     ["quantité négative", { quantity: -1 }],
     ["quantité fractionnaire", { quantity: 1.5 }],
     ["prix non entier", { unitPriceMillicents: 1.2 }],

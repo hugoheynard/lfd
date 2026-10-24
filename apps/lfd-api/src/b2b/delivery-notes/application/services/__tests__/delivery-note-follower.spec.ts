@@ -1,3 +1,4 @@
+import { ORDER_TERMS } from "../../../domain/value-objects/__tests__/delivery-note-terms.fixture.js";
 import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import type { DeliveryNoteOrderProgress } from "../../../../orders/domain/ports/order-progress-for-delivery-note.js";
@@ -27,6 +28,7 @@ const LINE = {
   lineTotalCents: 100,
   unitPriceTtcCents: null,
   lineTotalTtcCents: null,
+  pickupDiscountEligible: true,
 };
 
 function order(overrides: Partial<DeliveryNoteOrderProgress> = {}): DeliveryNoteOrderProgress {
@@ -39,6 +41,7 @@ function order(overrides: Partial<DeliveryNoteOrderProgress> = {}): DeliveryNote
     readyAt: null,
     handedOverAt: null,
     receivedOn: null,
+    terms: ORDER_TERMS,
     ...overrides,
   };
 }

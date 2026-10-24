@@ -44,11 +44,18 @@ export const UNREPAIRABLE_REASONS = [
 ] as const;
 export type UnrepairableReason = (typeof UNREPAIRABLE_REASONS)[number];
 
-/** Ce que l'alignement a décidé ; les BL de `writes` sont à écrire, `created` est neuf. */
+/**
+ * Ce que l'alignement a décidé ; les BL de `writes` sont à écrire, `created`
+ * est neuf. `completed` : l'état était juste, seul l'en-tête vide d'un BL
+ * d'avant E4a a été rempli (plan E4a, § 1.2).
+ */
 export type DeliveryNoteAlignment =
   | { readonly change: "none" }
   | { readonly change: "created"; readonly created: DeliveryNote }
-  | { readonly change: "advanced" | "voided"; readonly writes: readonly DeliveryNote[] }
+  | {
+      readonly change: "advanced" | "voided" | "completed";
+      readonly writes: readonly DeliveryNote[];
+    }
   | { readonly change: "unrepairable"; readonly reason: UnrepairableReason };
 
 /** L'identifiant d'un BL neuf, et l'instant d'une annulation. */
@@ -158,15 +165,35 @@ function advanceOf(
     return UNREPAIRABLE("note_ahead_of_order");
   }
   if (from === ORDER_OF[target.status]) {
-    return NONE;
+    return completionOf(order, note);
   }
   if (note.status === "planned") {
     // Un BL prévu peut porter des lignes antérieures à une révision : il
-    // s'aligne sur la commande avant d'avancer (plan E2, § 7 et § 8.2).
+    // s'aligne sur la commande avant d'avancer (plan E2, § 7 et § 8.2) — et
+    // recopie ses totaux avec (plan E4a).
     note.replanFrom(order);
+  } else if (!note.hasTerms) {
+    note.completeTermsFrom(order);
   }
   advance(note, target);
   return { change: "advanced", writes: [note] };
+}
+
+/**
+ * Un BL à l'état juste mais sans en-tête (écrit avant E4a) : il est complété
+ * depuis la commande, remis compris (plan E4a, § 4, bloquant 3). Un BL prévu
+ * se complète comme il se réécrit, par {@link DeliveryNote.replanFrom}.
+ */
+function completionOf(order: FollowedOrder, note: DeliveryNote): DeliveryNoteAlignment {
+  if (note.hasTerms) {
+    return NONE;
+  }
+  if (note.status === "planned") {
+    note.replanFrom(order);
+  } else {
+    note.completeTermsFrom(order);
+  }
+  return { change: "completed", writes: [note] };
 }
 
 /** Avance un BL vivant jusqu'à la cible ; préparé à `ready_at` quand il est connu. */

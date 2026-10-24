@@ -11,8 +11,8 @@ import { DeliveryNoteRepository } from "../../domain/ports/delivery-note.reposit
 
 /** Ce qu'un alignement a fait, après écriture. */
 export type AlignedOutcome =
-  | Exclude<DeliveryNoteAlignment, { change: "created" | "advanced" | "voided" }>
-  | { readonly change: "created" | "advanced" | "voided" };
+  | Exclude<DeliveryNoteAlignment, { change: "created" | "advanced" | "voided" | "completed" }>
+  | { readonly change: "created" | "advanced" | "voided" | "completed" };
 
 /**
  * **Fait dire la vérité au BL d'une commande** (plan

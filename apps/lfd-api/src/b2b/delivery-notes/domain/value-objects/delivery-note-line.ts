@@ -21,6 +21,16 @@ export interface DeliveryNoteLineState {
   readonly lineTotalCents: number;
   readonly unitPriceTtcCents: number | null;
   readonly lineTotalTtcCents: number | null;
+  /**
+   * Recopié de la ligne de commande (plan E4a) ; `null` sur une ligne écrite
+   * avant E4a, jamais deviné.
+   */
+  readonly pickupDiscountEligible: boolean | null;
+}
+
+/** Une ligne telle que la commande la donne : l'éligibilité y est toujours connue. */
+export interface DeliveryNoteSourceLine extends DeliveryNoteLineState {
+  readonly pickupDiscountEligible: boolean;
 }
 
 /** Une ligne valide — immuable, auto-validée. */
@@ -34,6 +44,27 @@ export class DeliveryNoteLine {
       throw new InvalidDeliveryNoteLineError(state.sku, reason);
     }
     return new DeliveryNoteLine({ ...state });
+  }
+
+  /**
+   * La même ligne, son éligibilité remplie depuis la ligne de commande de même
+   * rang — seulement si elle manquait et que c'est bien la même ligne (SKU,
+   * quantité, total). Sinon, inchangée : on ne devine pas.
+   */
+  withEligibilityFrom(source: DeliveryNoteSourceLine | undefined): DeliveryNoteLine {
+    const { state } = this;
+    const same =
+      source !== undefined &&
+      source.sku === state.sku &&
+      source.quantity === state.quantity &&
+      source.lineTotalCents === state.lineTotalCents;
+    if (state.pickupDiscountEligible !== null || !same) {
+      return this;
+    }
+    return new DeliveryNoteLine({
+      ...state,
+      pickupDiscountEligible: source.pickupDiscountEligible,
+    });
   }
 }
 

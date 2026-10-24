@@ -1,3 +1,4 @@
+import { ORDER_TERMS } from "../../../domain/value-objects/__tests__/delivery-note-terms.fixture.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
@@ -26,6 +27,7 @@ const LINE = {
   lineTotalCents: 100,
   unitPriceTtcCents: null,
   lineTotalTtcCents: null,
+  pickupDiscountEligible: true,
 };
 
 function order(
@@ -41,6 +43,7 @@ function order(
     readyAt: null,
     handedOverAt: null,
     receivedOn: null,
+    terms: ORDER_TERMS,
     ...overrides,
   };
 }
@@ -186,5 +189,49 @@ describe("ReconcileDeliveryNotes — les cas du plan E2, § 8.2", () => {
     const report = await handler.execute();
 
     expect(report).toMatchObject({ created: RECONCILE_REPAIR_LIMIT, complete: false });
+  });
+});
+
+describe("ReconcileDeliveryNotes — les totaux du BL (plan E4a)", () => {
+  it("complète l'en-tête vide d'un BL remis d'avant E4a, compté `completed`", async () => {
+    const { notes, orders, handler } = scene();
+    const subject = order("a", FULFILLED);
+    orders.put(subject);
+    const note = DeliveryNote.planFromOrder("dn_a", subject, CONFIRMED_AT);
+    note.handOver(HANDED_OVER_AT, "1970-01-01");
+    notes.rows.set("dn_a", { ...note.toState(), terms: null });
+
+    const report = await handler.execute();
+
+    expect(report).toMatchObject({ completed: 1, advanced: 0, created: 0 });
+    expect(notes.forOrder("a")[0]).toMatchObject({ status: "handed_over", terms: ORDER_TERMS });
+    expect(orders.locked).toEqual(["a"]);
+  });
+
+  it("le contrôle rend zéro écart quand chaque BL reprend sa commande", async () => {
+    const { orders, handler } = scene();
+    orders.put(order("a", READY));
+    orders.put(order("b", FULFILLED));
+    await handler.execute();
+
+    const report = await handler.execute();
+
+    expect(report.terms).toEqual({ compared: 2, gaps: [] });
+  });
+
+  it("le contrôle compte et nomme un BL dont les totaux divergent, sans le réécrire", async () => {
+    const { notes, orders, handler } = scene();
+    orders.put(order("a"));
+    await plannedFor(notes, order("a"));
+    orders.put(order("a", { terms: { ...ORDER_TERMS, totalCents: 1 } }));
+    const saves = notes.saves;
+
+    const report = await handler.execute();
+
+    expect(report.terms).toEqual({
+      compared: 1,
+      gaps: [{ orderId: "a", orderNumber: "ORD-a", noteNumber: "BL-a-1", fields: ["totalCents"] }],
+    });
+    expect(notes.saves).toBe(saves);
   });
 });

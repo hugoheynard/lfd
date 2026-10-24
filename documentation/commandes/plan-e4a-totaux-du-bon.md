@@ -1,5 +1,13 @@
 # Plan E4a — le bon de livraison porte ses totaux
 
+> ✅ **Bâti le 2026-10-24** (migration `20261024230000_le_bon_de_livraison_porte_ses_totaux`).
+> Vérifié au bâti : aucun écrivain des totaux de commande après la remise ;
+> l'exception du § 4 tient. Corrigé : l'annulation ne remet pas `totalCents`
+> à 0 (`prisma-order-cancellation.repository.ts` l. 76 est un `where`).
+> Non recopiés, à trancher en E4b : `discountAdjustment`,
+> `deliveryFeeAdjustment`. Le contrôle sort dans le compte rendu de
+> `POST admin/delivery-notes/reconcile` (pas de route à part).
+
 > **Doc-first, 2026-10-24.** Premier temps du lot E4 de
 > [`plan-commande-bon-de-livraison-facture.md`](plan-commande-bon-de-livraison-facture.md)
 > (« la facture lit les BL »), coupé en deux par l'assistant (décision du

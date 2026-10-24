@@ -8,6 +8,10 @@ import { AppError } from "../../../../platform/shared/errors/app-error.js";
 import type { DeliveryNote } from "../../domain/entities/delivery-note.js";
 import { DeliveryNoteRepository } from "../../domain/ports/delivery-note.repository.js";
 import { alignmentOf, type FollowedOrder } from "../../domain/services/delivery-note-alignment.js";
+import {
+  termsGapsOf,
+  type DeliveryNoteTermsGap,
+} from "../../domain/services/delivery-note-terms-control.js";
 import { DeliveryNoteAligner, type AlignedOutcome } from "../services/delivery-note-aligner.js";
 import {
   RECONCILE_PAGE_SIZE,
@@ -46,12 +50,24 @@ class Tally {
   created = 0;
   advanced = 0;
   voided = 0;
+  completed = 0;
   failed = 0;
   complete = true;
+  compared = 0;
   readonly unrepaired: UnrepairedOrder[] = [];
+  readonly gaps: DeliveryNoteTermsGap[] = [];
 
   get repairs(): number {
-    return this.created + this.advanced + this.voided + this.failed;
+    return this.created + this.advanced + this.voided + this.completed + this.failed;
+  }
+
+  /** Le contrôle des totaux d'une commande dont le BL est déjà juste (plan E4a, § 2). */
+  control(order: FollowedOrder, notes: readonly DeliveryNote[]): void {
+    if (order.status === "cancelled" || order.status === "placed" || order.lines.length === 0) {
+      return;
+    }
+    this.compared += 1;
+    this.gaps.push(...termsGapsOf(order, notes));
   }
 
   record(order: FollowedOrder, outcome: AlignedOutcome): void {
@@ -64,6 +80,9 @@ class Tally {
         return;
       case "voided":
         this.voided += 1;
+        return;
+      case "completed":
+        this.completed += 1;
         return;
       case "unrepairable":
         this.unrepaired.push({
@@ -78,8 +97,9 @@ class Tally {
   }
 
   report(): DeliveryNoteReconciliationReport {
-    const { scanned, created, advanced, voided, failed, unrepaired, complete } = this;
-    return { scanned, created, advanced, voided, failed, unrepaired, complete };
+    const { scanned, created, advanced, voided, completed, failed, unrepaired, complete } = this;
+    const terms = { compared: this.compared, gaps: [...this.gaps] };
+    return { scanned, created, advanced, voided, completed, failed, unrepaired, complete, terms };
   }
 }
 
@@ -135,6 +155,7 @@ export class ReconcileDeliveryNotesHandler implements ICommandHandler<
       tally.scanned += 1;
       const preview = previewOf(order, notes, now);
       if (preview.change === "none") {
+        tally.control(order, notes);
         continue;
       }
       if (preview.change === "unrepairable") {
@@ -173,6 +194,12 @@ export class ReconcileDeliveryNotesHandler implements ICommandHandler<
       this.logger.warn(
         `Bon de livraison non aligné sur la commande ${order.orderNumber} (${order.orderId}) : ` +
           `${order.reason}. Rien n'a été inventé ; à reprendre à la main.`,
+      );
+    }
+    for (const gap of report.terms.gaps) {
+      this.logger.warn(
+        `Totaux du bon de livraison ${gap.noteNumber} différents de la commande ${gap.orderNumber} ` +
+          `(${gap.orderId}) : ${gap.fields.join(", ")}. Rien n'a été réécrit ; à examiner avant E4b.`,
       );
     }
   }
