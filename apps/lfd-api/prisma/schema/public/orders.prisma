@@ -163,7 +163,7 @@ model Order {
   /// changé de mains** — livrée à la porte (le jour de la tournée) ou retirée
   /// au comptoir. Le mois de la facture de la commande en découle (CGI art.
   /// 269-1-a et 269-2-a ; plans `plan-zero-faille.md` lot ZL et
-  /// `documentation/commandes/plan-date-de-reception.md`).
+  /// `documentation/commandes/date-de-reception.md`).
   ///
   /// Posée UNE fois, dans le même `UPDATE` que `handed_over_at`
   /// (`MarkOrderFulfilledHandler`, depuis le 2026-10-24), et jamais déplacée

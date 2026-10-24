@@ -220,7 +220,7 @@ le `RmtInf` aussi. Un lot annulé relâche ses factures.
 `20261024120000_la_date_de_reception`) est le jour où la marchandise a changé
 de mains, livrée ou retirée — libellé « reçue le » partout (Q3, Hugo,
 2026-10-24). Depuis le 2026-10-24 (plan
-[`../../commandes/plan-date-de-reception.md`](../../commandes/plan-date-de-reception.md),
+[`../../commandes/date-de-reception.md`](../../commandes/date-de-reception.md),
 B2), elle est posée par `MarkOrderFulfilledHandler` **dans la même écriture**
 que `handed_over_at` : il relit le retrait et les arrêts de tournée par leurs
 canaux et applique `receivedOnOf` — le jour de la tournée qui l'a remis à la

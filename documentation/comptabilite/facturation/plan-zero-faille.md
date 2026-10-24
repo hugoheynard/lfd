@@ -4,7 +4,7 @@
 > `orders` et `invoice_order`, déclencheur `orders_received_on_frozen`,
 > `deliveredOnOf` → `receivedOnOf`), et la date est posée avec la remise par
 > `MarkOrderFulfilledHandler` — plan
-> [`plan-date-de-reception.md`](../../commandes/plan-date-de-reception.md). Les mentions ci-dessous gardent
+> [`date-de-reception.md`](../../commandes/date-de-reception.md). Les mentions ci-dessous gardent
 > l'ancien nom : elles décrivent ce qui a été bâti à leur date.
 
 > **Doc-first, 2026-10-22.** Hugo : « je ne veux aucune faille sur la
@@ -262,7 +262,7 @@ ce qui arrive avant son émission se voit dans ses lignes.
 
 ## 11. Facturer chaque bon dans le mois de sa livraison (Hugo, 2026-10-22, à contredire)
 
-> 2026-10-24 : la suite de ZL — `received_on`, posé avec la remise et exigé par la base — est dans [`../../commandes/plan-date-de-reception.md`](../../commandes/plan-date-de-reception.md).
+> 2026-10-24 : la suite de ZL — `received_on`, posé avec la remise et exigé par la base — est dans [`../../commandes/date-de-reception.md`](../../commandes/date-de-reception.md).
 
 ZA a bâti M5 tel qu'écrit : une facture dont un bon n'a pas de date de
 livraison n'est pas émise. Avec l'assiette actuelle par **date de commande**

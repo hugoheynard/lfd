@@ -1,6 +1,6 @@
 /**
  * **La date de réception part avec la remise** (plan
- * `documentation/commandes/plan-date-de-reception.md`, B2, option A).
+ * `documentation/commandes/date-de-reception.md`, B2, option A).
  *
  * Ce que seul le vrai Postgres prouve :
  *

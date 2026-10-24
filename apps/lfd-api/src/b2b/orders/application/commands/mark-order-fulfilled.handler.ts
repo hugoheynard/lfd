@@ -44,7 +44,7 @@ import { MarkOrderFulfilledCommand } from "./mark-order-fulfilled.command.js";
  *
  * ## La date de réception, posée avec la remise (2026-10-24)
  *
- * Plan `documentation/commandes/plan-date-de-reception.md`, B2, option A :
+ * Plan `documentation/commandes/date-de-reception.md`, B2, option A :
  * le jour où la marchandise a changé de mains est écrit dans la MÊME
  * instruction que `handedOverAt`. La règle est celle de la facture,
  * `receivedOnOf` (comptabilité, même bloc), importée et jamais recopiée : le

@@ -4,7 +4,7 @@
 > `orders` et `invoice_order`, déclencheur `orders_received_on_frozen`,
 > `deliveredOnOf` → `receivedOnOf`), et la date est posée avec la remise par
 > `MarkOrderFulfilledHandler` — plan
-> [`plan-date-de-reception.md`](../../commandes/plan-date-de-reception.md). Les mentions ci-dessous gardent
+> [`date-de-reception.md`](../../commandes/date-de-reception.md). Les mentions ci-dessous gardent
 > l'ancien nom : elles décrivent ce qui a été bâti à leur date.
 
 > 📝 **Doc-first, écrit le 2026-10-23.** **P1** et **P2** sont bâtis

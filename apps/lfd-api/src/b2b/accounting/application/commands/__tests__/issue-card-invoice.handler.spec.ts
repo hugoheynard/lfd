@@ -85,7 +85,7 @@ describe("IssueCardInvoiceHandler — les deux ordres d'arrivée", () => {
   });
 
   /**
-   * Régression (plan-date-de-reception, B2, 2026-10-24) : la facture carte
+   * Régression (date-de-reception, B2, 2026-10-24) : la facture carte
    * recalculait le jour de Paris de `handedOverAt`, sans la règle de la porte.
    */
   it("une remise à la porte attestée après minuit prend le jour de la tournée, lu sur la commande", async () => {

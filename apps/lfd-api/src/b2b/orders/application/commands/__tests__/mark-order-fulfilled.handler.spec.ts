@@ -181,7 +181,7 @@ describe("le commerce clôt une commande retirée", () => {
   });
 });
 
-describe("la date de réception part avec la remise (plan-date-de-reception, B2)", () => {
+describe("la date de réception part avec la remise (date-de-reception, B2)", () => {
   it("au comptoir : le jour de Paris de la remise attestée", async () => {
     const { handler, repository } = subject({
       handovers: [{ orderId: "ord_1", handedOverAt: AFTER_MIDNIGHT, via: "scan", atDoor: false }],

@@ -344,7 +344,7 @@ describe("la frontière avec la facture du mois", () => {
     await handOver(card);
     // Les deux reçus dans la fenêtre (lot ZL : l'assiette suit la réception) —
     // seul le mode de règlement les distingue. La commande carte a reçu sa
-    // date avec sa remise (plan-date-de-reception, B2) : elle est figée, on
+    // date avec sa remise (date-de-reception, B2) : elle est figée, on
     // ne la réécrit pas.
     await markDelivered(ctx.prisma, account.orderId, new Date(daysAgo(1)));
     expect(

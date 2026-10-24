@@ -135,7 +135,7 @@ export async function prepareCardInvoice(
           {
             orderId: candidate.orderId,
             reference: candidate.orderNumber,
-            // La colonne posée avec la remise (plan-date-de-reception, B2) :
+            // La colonne posée avec la remise (date-de-reception, B2) :
             // une remise à la porte y prend le jour de la tournée.
             receivedOn: candidate.receivedOn,
           },

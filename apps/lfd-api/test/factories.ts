@@ -264,7 +264,7 @@ export async function handOver(
  * pour les suites qui éprouvent l'assiette (relevé, lot, dossier) et pas le
  * retrait — un bon non livré n'y entre plus (lot ZL). Le jour de Paris de
  * `at`. Les deux colonnes ensemble : la base refuse l'une sans l'autre
- * (plan-date-de-reception, B4, Q5).
+ * (date-de-reception, B4, Q5).
  */
 export async function markDelivered(
   prisma: PrismaService,
@@ -281,7 +281,7 @@ export async function markDelivered(
  * Les colonnes d'un bon remis à `at` : `handed_over_at` et `received_on`
  * (`@db.Date`, le jour de Paris de `at`) — pour une fixture qui sème un bon
  * livré d'un seul `create`. Toujours ensemble : la base refuse l'une sans
- * l'autre (plan-date-de-reception, B4, Q5).
+ * l'autre (date-de-reception, B4, Q5).
  */
 export function receivedColumns(at: Date): {
   readonly handedOverAt: Date;

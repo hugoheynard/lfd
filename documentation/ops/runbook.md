@@ -1205,7 +1205,7 @@ refuse de revenir sur une remise : `received_on` est figé une fois posé
 (déclencheur `orders_received_on_frozen`), et deux CHECK tiennent « remise ⇒
 date » et « date ⇒ remise ». Remettre `handed_over_at` à `NULL` est donc
 refusé, avec ou sans la date. C'est voulu (décision Q4 de
-[`plan-date-de-reception.md`](../commandes/plan-date-de-reception.md)) : la
+[`date-de-reception.md`](../commandes/date-de-reception.md)) : la
 date de réception entre dans la facture.
 
 Une remise constatée par erreur ne se corrige pas en base. La lever

@@ -360,7 +360,7 @@ export class PrismaOrderRepository extends OrderRepository {
       status: OrderStatus.fulfilled,
     };
     // La date de réception part dans la MÊME instruction que la remise
-    // (plan-date-de-reception, B2). Depuis B4, la base refuse l'une sans
+    // (date-de-reception, B2). Depuis B4, la base refuse l'une sans
     // l'autre (`orders_handover_has_received_on` et son sens inverse) : une
     // commande pas encore remise n'a jamais de date, il n'y a plus de cas où
     // elle serait déjà posée.
