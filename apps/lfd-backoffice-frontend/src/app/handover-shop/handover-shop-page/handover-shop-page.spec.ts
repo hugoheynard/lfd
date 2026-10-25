@@ -11,6 +11,8 @@ import { type DayWatch, DayVersionWatcher } from '../../shared/day-version/day-v
 import { HandoverMasthead } from '../handover-masthead/handover-masthead';
 import { HandoverQueueService } from '../handover-queue.service';
 import { HandoverQueueStore } from '../handover-queue.store';
+import { FoldPanelHostService } from 'fold-ng';
+import type { ScanOutcome } from '../scan-dialog/scan-dialog';
 import { HandoverShopPage } from './handover-shop-page';
 
 /**
@@ -79,6 +81,19 @@ class FakeQueue {
   fails = false;
   /** Les jours demandés, dans l'ordre — c'est par eux qu'on voit une bascule. */
   readonly days: string[] = [];
+  /** Les remises demandées, par jeton (code) ou par numéro (sans code). */
+  readonly scannedRemits: string[] = [];
+  readonly manualRemits: string[] = [];
+
+  confirmScanned(token: string): Promise<unknown> {
+    this.scannedRemits.push(token);
+    return Promise.resolve({});
+  }
+
+  confirmManually(reference: string): Promise<unknown> {
+    this.manualRemits.push(reference);
+    return Promise.resolve({});
+  }
 
   forDay(day: string): Promise<HandoverQueueView> {
     this.days.push(day);
@@ -129,7 +144,26 @@ async function renderNarrow(api: FakeQueue): Promise<ComponentFixture<RetraitHos
   }
 }
 
-async function render(api: FakeQueue): Promise<ComponentFixture<RetraitHost>> {
+/** Le scanner doublé : il rend ce que le test lui dicte, sans caméra. */
+class FakePanels {
+  outcome: ScanOutcome | undefined = undefined;
+  readonly opened: unknown[] = [];
+
+  open(
+    _component: unknown,
+    options: { readonly data?: unknown } = {},
+  ): {
+    readonly closed: Promise<ScanOutcome | undefined>;
+  } {
+    this.opened.push(options.data);
+    return { closed: Promise.resolve(this.outcome) };
+  }
+}
+
+async function render(
+  api: FakeQueue,
+  panels: FakePanels = new FakePanels(),
+): Promise<ComponentFixture<RetraitHost>> {
   TestBed.configureTestingModule({
     imports: [RetraitHost],
     providers: [
@@ -137,6 +171,7 @@ async function render(api: FakeQueue): Promise<ComponentFixture<RetraitHost>> {
       { provide: AdminOrdersService, useValue: new FakeOrders() },
       { provide: PermissionsStore, useValue: { can: (): boolean => true } },
       { provide: DayVersionWatcher, useValue: fakeWatcher },
+      { provide: FoldPanelHostService, useValue: panels },
       {
         provide: PickupAddressesService,
         useValue: { list: () => Promise.resolve([]), listFor: () => Promise.resolve([]) },
@@ -517,6 +552,135 @@ describe('HandoverShopPage — changer de journée', () => {
       await fixture.whenStable();
       fixture.detectChanges();
       expect(text(fixture)).not.toContain("La file n'a pas pu être relue");
+    });
+  });
+
+  describe('le scan IDENTIFIE, il ne remet pas (Hugo, 2026-10-25)', () => {
+    function scanned(token: string, orderId: string, orderNumber: string): ScanOutcome {
+      return {
+        kind: 'identified',
+        token,
+        view: {
+          orderId,
+          orderNumber,
+          customerLabel: 'x',
+          placedAt: `${DAY}T05:00:00.000Z`,
+          requestedDeliveryDate: DAY,
+          pickupLabel: 'Laboratoire',
+          fulfillmentMethod: 'pickup',
+          note: '',
+          totalUnits: 1,
+          lines: [],
+          handedOverAt: null,
+          handedOverBy: null,
+          handedOverByName: null,
+          handedOverVia: null,
+          blockedReason: null,
+        },
+      };
+    }
+
+    function queueOfTwo(): FakeQueue {
+      const api = new FakeQueue();
+      api.entries = [
+        entry(),
+        entry({ orderId: 'ord_2', reference: 'CMD-2001', customerLabel: 'Café Lumière' }),
+      ];
+      return api;
+    }
+
+    async function settle(fixture: ComponentFixture<RetraitHost>): Promise<void> {
+      for (let pass = 0; pass < 3; pass += 1) {
+        fixture.detectChanges();
+        await fixture.whenStable();
+      }
+    }
+
+    function button(
+      fixture: ComponentFixture<RetraitHost>,
+      label: string,
+    ): HTMLButtonElement | null {
+      return (
+        [
+          ...(fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('button'),
+        ].find((item) => (item.textContent ?? '').trim() === label) ?? null
+      );
+    }
+
+    it('🔴 depuis la barre, le code surligne SA ligne et ouvre sa fiche — sans rien remettre', async () => {
+      const api = queueOfTwo();
+      const panels = new FakePanels();
+      panels.outcome = scanned('tok_2', 'ord_2', 'CMD-2001');
+      const fixture = await render(api, panels);
+
+      button(fixture, 'Scanner le QR code du client')?.click();
+      await settle(fixture);
+
+      const current = (fixture.nativeElement as HTMLElement).querySelector('tbody [data-current]');
+      expect(current?.closest('tr')?.textContent).toContain('Café Lumière');
+      expect(text(fixture)).toContain('QR code lu');
+      expect(api.scannedRemits).toEqual([]);
+      expect(api.manualRemits).toEqual([]);
+    });
+
+    it('🔴 « Remettre la commande » après le scan part avec le jeton lu — la preuve QR', async () => {
+      const api = queueOfTwo();
+      const panels = new FakePanels();
+      panels.outcome = scanned('tok_2', 'ord_2', 'CMD-2001');
+      const fixture = await render(api, panels);
+
+      button(fixture, 'Scanner le QR code du client')?.click();
+      await settle(fixture);
+      expect(text(fixture)).not.toContain('QR non scanné');
+      button(fixture, 'Remettre la commande')?.click();
+      await settle(fixture);
+
+      expect(api.scannedRemits).toEqual(['tok_2']);
+      expect(api.manualRemits).toEqual([]);
+    });
+
+    it('🔴 la preuve ne suit pas un clic sur une AUTRE ligne : retour au « sans code »', async () => {
+      const api = queueOfTwo();
+      const panels = new FakePanels();
+      panels.outcome = scanned('tok_2', 'ord_2', 'CMD-2001');
+      const fixture = await render(api, panels);
+
+      button(fixture, 'Scanner le QR code du client')?.click();
+      await settle(fixture);
+      const other = rowTexts(fixture).findIndex((row) => row.includes('Boulangerie Marin'));
+      (fixture.nativeElement as HTMLElement)
+        .querySelectorAll<HTMLElement>('tbody tr.folddt-row')
+        [other]?.click();
+      await settle(fixture);
+
+      expect(text(fixture)).toContain('QR non scanné');
+      button(fixture, 'Remettre la commande')?.click();
+      await settle(fixture);
+      expect(api.manualRemits).toEqual(['CMD-1042']);
+      expect(api.scannedRemits).toEqual([]);
+    });
+
+    it('🔴 depuis une fiche, le code d’une AUTRE commande ouvre l’autre fiche et nomme les deux', async () => {
+      const api = queueOfTwo();
+      const panels = new FakePanels();
+      const fixture = await render(api, panels);
+      const first = rowTexts(fixture).findIndex((row) => row.includes('Boulangerie Marin'));
+      (fixture.nativeElement as HTMLElement)
+        .querySelectorAll<HTMLElement>('tbody tr.folddt-row')
+        [first]?.click();
+      await settle(fixture);
+
+      panels.outcome = scanned('tok_2', 'ord_2', 'CMD-2001');
+      (fixture.nativeElement as HTMLElement)
+        .querySelector<HTMLButtonElement>('[data-action="scan"]')
+        ?.click();
+      await settle(fixture);
+
+      const notice = (fixture.nativeElement as HTMLElement).querySelector('[data-scan-notice]');
+      expect(notice?.textContent).toContain('Ce code désigne CMD-2001, pas CMD-1042');
+      const current = (fixture.nativeElement as HTMLElement).querySelector('tbody [data-current]');
+      expect(current?.closest('tr')?.textContent).toContain('Café Lumière');
+      expect(api.scannedRemits).toEqual([]);
     });
   });
 });

@@ -25,15 +25,9 @@
       />
     }
     @case ('found') {
-      @if (mismatch(); as other) {
-        <!-- 🔴 Le refus qui justifie le bouton par ligne. Les DEUX numéros sont
-             nommés : sans eux, l'équipe ne sait pas si elle s'est trompée de
-             ligne ou de client. -->
-        <fold-callout appearance="inset" variant="alert" icon="info">
-          <strong>Ce code désigne {{ other }}</strong
-          >, pas {{ expected()?.reference }}. Rien n’a été remis.
-        </fold-callout>
-      } @else if (subject(); as found) {
+      @if (subject(); as found) {
+        <!-- Seule une commande HORS file reste ici : celle de la file a déjà
+             ouvert sa fiche, sans rien remettre (2026-10-25). -->
         @if (elsewhere(); as notice) {
           <!-- 🔴 AU-DESSUS de l'accusé, et la confirmation reste offerte. Ce
                n'est pas un refus : c'est la phrase qui explique pourquoi le sac
@@ -70,14 +64,16 @@
 </fold-panel-body>
 
 <!--
-  🔴 **Un seul geste, et seulement quand il existe.** Le pied portait « Fermer »
+  🔴 **Un seul geste, et seulement pour une commande hors file** : celle de la
+  file se remet sur sa fiche (2026-10-25).
+  **Un seul geste, et seulement quand il existe.** Le pied portait « Fermer »
   — que la croix du bandeau fait déjà — et « Remettre sans code », qui remettait
   une commande DEPUIS le scanner, sans l'avoir scannée. Ce dialogue ne sert qu'à
   lire un code ; le retrait saisi vit sur le rail, à côté du sac qu'on regarde,
   et c'est là qu'elle a du sens. Deux chemins pour un même acte, dont l'un sous
   une caméra allumée, c'est celui-là qu'on prend quand ça presse.
 -->
-@if (subject() !== null && mismatch() === null) {
+@if (subject() !== null) {
   <fold-panel-footer align="end">
     <button foldButton icon="check" [loading]="busy()" (click)="confirm()">
       Remettre la commande

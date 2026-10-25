@@ -60,6 +60,25 @@ export class HandoverQueueService {
   }
 
   /**
+   * **Le retrait prouvé par le code**, avec le jeton lu juste avant.
+   *
+   * 🔴 Depuis le 2026-10-25, le scan n'atteste plus rien : il IDENTIFIE la
+   * commande et ouvre sa fiche (Hugo : « c'est censé juste nous aider à
+   * identifier la commande »). La remise reste un geste explicite sur la
+   * fiche ; quand la fiche a été ouverte par le code, ce geste renvoie ce
+   * jeton, et le serveur grave `scan` comme avant. La lecture
+   * (`GET /admin/handover/:token`) ne grave rien — seul ce `POST` écrit.
+   */
+  async confirmScanned(token: string): Promise<OrderHandoverView> {
+    return firstValueFrom(
+      this.http.post<OrderHandoverView>(
+        `${B2B_API_BASE}/admin/handover/${encodeURIComponent(token)}`,
+        {},
+      ),
+    );
+  }
+
+  /**
    * **Le retrait saisi**, par le numéro de commande — le chemin sans QR.
    *
    * 🔴 Elle grave `manual`, et c'est tout ce qui la distingue du scan côté

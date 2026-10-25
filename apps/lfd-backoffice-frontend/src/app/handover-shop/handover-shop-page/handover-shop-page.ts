@@ -26,12 +26,12 @@ import {
 
 import { narrowViewport } from '../../shared/viewport/narrow-viewport';
 import { NotifyService } from '../../notify.service';
-import { matchingQueue } from '../handover-queue';
+import { matchingQueue, scanNotice, type ScanProof } from '../handover-queue';
 import { HandoverQueueStore } from '../handover-queue.store';
 import { QueueTable } from '../queue-table/queue-table';
 import { HandoverDetail } from '../handover-detail/handover-detail';
 import { TransferStrip } from '../transfer-strip/transfer-strip';
-import { SCANNED, ScanDialog, type ScanDialogData } from '../scan-dialog/scan-dialog';
+import { ScanDialog, type ScanDialogData, type ScanOutcome } from '../scan-dialog/scan-dialog';
 import { AdminOrdersService } from '../../commandes/orders.service';
 import { PermissionsStore } from '../../auth/permissions.store';
 
@@ -162,6 +162,21 @@ export class HandoverShopPage {
   private readonly selectedId = signal<string | null>(null);
 
   /**
+   * Le dernier code lu, et la commande qu'il désigne — au plus un.
+   *
+   * 🔴 Il ne vaut que pour la fiche qu'il a ouverte : choisir une autre ligne,
+   * refermer le rail ou changer de jour l'efface. Une preuve qui survivrait à
+   * la sélection attesterait par le code un sac qu'aucun code n'a désigné.
+   */
+  private readonly proof = signal<ScanProof | null>(null);
+
+  /** La preuve, seulement si elle désigne la fiche ouverte. */
+  protected readonly selectedProof = computed<ScanProof | null>(() => {
+    const proof = this.proof();
+    return proof !== null && proof.orderId === this.selectedId() ? proof : null;
+  });
+
+  /**
    * Combien de lignes le terme laisse — ce que la boîte annonce à voix haute.
    *
    * 🔴 Calculé ici par la MÊME fonction que la file, et non demandé à la file :
@@ -230,11 +245,14 @@ export class HandoverShopPage {
   /**
    * **Ouvre le scanner**, avec ou sans commande attendue.
    *
-   * 🔴 Depuis une ligne, il porte la référence : un code qui en désigne une
-   * autre est refusé au lieu d'être honoré. Un scan lit ce qu'on lui présente,
-   * pas ce qu'on a cliqué — sans ce contrôle, un bouton par ligne remettrait la
-   * commande du voisin un matin de coup de feu. Depuis la bande, il vaut
-   * `null` : on prend ce qui se présente, comme un comptoir.
+   * 🔴 **Le scan identifie, il ne remet pas** (Hugo, 2026-10-25). Le code lu
+   * ouvre la fiche de SA commande, avec ses avertissements, et y laisse la
+   * preuve ; la remise est le geste « Remettre la commande » de la fiche.
+   *
+   * Depuis une fiche, il porte la référence : un code qui en désigne une autre
+   * ouvre l'autre fiche en nommant les deux numéros. Un scan lit ce qu'on lui
+   * présente, pas ce qu'on a cliqué. Depuis la bande, il vaut `null` : on
+   * prend ce qui se présente, comme un comptoir.
    *
    * ⚠️ L'onglet ouvert l'accompagne dans les deux cas. Prendre ce qui se
    * présente ne veut pas dire le prendre en silence : l'écran affirme un point
@@ -250,13 +268,43 @@ export class HandoverShopPage {
       // clé, le scan remettait un sac du Village sans qu'une ligne ne l'ait
       // jamais montré (revue du 2026-09-11, point 3).
       openTab: this.store.activeTab(),
+      inQueue: (orderId) => this.store.entries().some((row) => row.orderId === orderId),
     };
-    const ref = this.panels.open<ScanDialogData, string>(ScanDialog, { data });
-    void ref.closed.then((result) => {
-      if (result === SCANNED) {
-        void this.store.load();
-      }
+    const ref = this.panels.open<ScanDialogData, ScanOutcome>(ScanDialog, { data });
+    void ref.closed.then((result) => this.scanned(result, entry?.reference ?? null));
+  }
+
+  /** Ce que le scan a rendu : une fiche à ouvrir, ou une remise hors file. */
+  protected scanned(result: ScanOutcome | undefined, expected: string | null): void {
+    if (result?.kind === 'remitted') {
+      void this.store.load();
+      return;
+    }
+    if (result?.kind !== 'identified') {
+      return;
+    }
+    const { token, view } = result;
+    // Comme un clic sur sa ligne : l'onglet qui la porte s'ouvre, et une
+    // recherche qui la cacherait se vide — la ligne doit se voir surlignée.
+    const notice = scanNotice(view, expected, this.store.activeTab());
+    this.store.revealEntry(view.orderId);
+    if (
+      !matchingQueue(this.store.rows(), this.query()).some((row) => row.orderId === view.orderId)
+    ) {
+      this.query.set('');
+    }
+    this.selectedId.set(view.orderId);
+    this.proof.set({
+      orderId: view.orderId,
+      token,
+      notice,
     });
+  }
+
+  /** Un sac est parti depuis la fiche : la preuve est consommée, la file relue. */
+  protected remitted(): void {
+    this.proof.set(null);
+    void this.store.load();
   }
 
   /**
@@ -283,10 +331,14 @@ export class HandoverShopPage {
   /** Referme le rail. Il reste à l'écran, vide — rien ne disparaît. */
   protected clearSelection(): void {
     this.selectedId.set(null);
+    this.proof.set(null);
   }
 
   /** Ouvre la ligne dans le rail. Rien ne s'ouvre ni ne se ferme : il est là. */
   protected select(entry: HandoverQueueEntryView): void {
+    if (entry.orderId !== this.selectedId()) {
+      this.proof.set(null);
+    }
     this.selectedId.set(entry.orderId);
   }
 }

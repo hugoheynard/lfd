@@ -42,6 +42,19 @@
         </p>
         <p class="hd-reference">{{ row.reference }}</p>
         <p class="hd-meta">Commandée le {{ placedAt() }}</p>
+        <!-- Le bon PRÈS de l'identité (Hugo, 2026-10-25) : c'est une lecture
+             de la commande, pas un geste de remise — il n'a rien à faire à
+             côté de « Remettre la commande ». -->
+        <button
+          foldButton
+          class="hd-bon"
+          emphasis="soft"
+          size="sm"
+          iconTrailing="arrow-right"
+          (click)="openBon()"
+        >
+          Voir le bon
+        </button>
       </div>
 
       <!-- Une commande annulée est DANS la file, et le rail dit pourquoi rien ne
@@ -141,7 +154,7 @@
     }
 
     <footer class="hd-actions">
-      <!-- 🔴 **Le retrait saisi, et il le dit.** Le client n'a pas présenté
+      <!-- 🔴 **Sans code, la remise le dit.** Quand le client n'a pas présenté
            de code : l'attestation sera gravée `manual`, donc faible et honnête.
            La maquiller en scan est exactement ce qui fait imprimer le code sur
            le colis « pour les cas difficiles » — et un coursier scanne alors
@@ -149,51 +162,59 @@
       @if (transferBlock(); as why) {
         <fold-callout variant="info" icon="truck" data-transfer-block>{{ why }}</fold-callout>
       }
+      @if (activeProof(); as scanned) {
+        <!-- Ce que le code a de surprenant — autre commande que celle ouverte,
+             autre point — se lit AVANT le geste, sans le barrer. -->
+        @if (scanned.notice; as notice) {
+          <fold-callout appearance="inset" variant="warning" icon="info" data-scan-notice>
+            {{ notice }}
+          </fold-callout>
+        }
+      }
       @if (remittable()) {
-        <!-- Le scan EN PREMIER, et c'est l'ordre qui le dit : on tend le
-             lecteur, et la saisie n'est que le repli quand le code manque. -->
+        <!-- 🔴 UN SEUL geste de remise (Hugo, 2026-10-25). Sa preuve dépend du
+             scan : la fiche ouverte par le QR remet avec la preuve du code,
+             sinon la remise est enregistrée sans code — et la mention le dit
+             avant le clic. Le scan, lui, identifie : il ne remet rien. -->
         <!-- Atténués tant que le four ou le bac n'a pas fini — jamais désactivés :
              le client est là, et c'est l'équipe qui tranche en regardant le sac. -->
         @if (caution(); as why) {
           <p class="hd-muted-note" data-muted-note>{{ why }}</p>
         }
+        @if (activeProof() === null) {
+          <button
+            foldButton
+            class="hd-scan"
+            block
+            size="lg"
+            icon="qr-code"
+            emphasis="outline"
+            [intent]="muted() ? 'neutral' : 'primary'"
+            data-action="scan"
+            (click)="scan()"
+          >
+            Scanner le QR code du client
+          </button>
+          <p class="hd-muted-note" data-proof="manual">
+            QR non scanné : la remise sera enregistrée sans code.
+          </p>
+        } @else {
+          <p class="hd-muted-note" data-proof="scan">QR code lu : c'est bien cette commande.</p>
+        }
         <button
           foldButton
-          class="hd-scan"
-          block
-          size="lg"
-          icon="qr-code"
-          [emphasis]="muted() ? 'soft' : 'solid'"
-          [intent]="muted() ? 'neutral' : 'primary'"
-          data-action="scan"
-          (click)="scan()"
-        >
-          Scanner le QR code du client
-        </button>
-        <button
-          foldButton
-          emphasis="outline"
-          [intent]="muted() ? 'neutral' : 'primary'"
-          data-action="remit"
           block
           size="lg"
           icon="check"
+          [emphasis]="muted() ? 'soft' : 'solid'"
+          [intent]="muted() ? 'neutral' : 'primary'"
+          data-action="remit"
           [loading]="remitting()"
           (click)="remit()"
         >
-          Remettre la commande sans code
+          Remettre la commande
         </button>
       }
-
-      <div class="hd-foot">
-        <!-- Ce qu'on ne fait PAS ici, dit là où quelqu'un pourrait le chercher.
-             La file ne porte aucun montant, par construction : un total affiché
-             au comptoir se lirait comme une somme à encaisser. -->
-        <span class="hd-note">Aucun montant&nbsp;: on coche, on ne facture pas.</span>
-        <button foldButton emphasis="soft" size="sm" iconTrailing="arrow-right" (click)="openBon()">
-          Voir le bon
-        </button>
-      </div>
     </footer>
   } @else {
     <!-- Le rail existe même vide, et c'est le sujet : sa place est réservée, la

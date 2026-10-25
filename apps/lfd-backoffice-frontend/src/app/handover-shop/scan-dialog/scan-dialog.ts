@@ -32,10 +32,11 @@ import { readQrCode, scannerAvailable, tokenOf } from './qr-reader';
 /**
  * Ce que la file demande au scanner.
  *
- * 🔴 `expected` est le cœur de cette surface. Ouvert depuis UNE ligne, le
- * scanner sait quelle commande on croit avoir en face ; un code qui en désigne
- * une autre est alors **refusé au lieu d'être honoré**. Ouvert depuis la bande
- * de tête, il vaut `null` : on prend ce qui se présente, comme un comptoir.
+ * `expected` nomme, dans le bandeau, la commande qu'on croit avoir en face
+ * quand le scan part de sa fiche ; `null` depuis la barre de la file. La
+ * comparaison avec ce que le code désigne se fait à l'écran, qui ouvre la
+ * bonne fiche (2026-10-25 : un code d'une autre commande n'est plus refusé
+ * ici, il ouvre l'autre fiche avec un avertissement).
  */
 export interface ScanDialogData {
   readonly expected: { readonly reference: string; readonly customerLabel: string } | null;
@@ -50,15 +51,42 @@ export interface ScanDialogData {
    * point 3).
    */
   readonly openTab: string;
+  /**
+   * La commande a-t-elle une ligne dans la file affichée ?
+   *
+   * 🔴 C'est ce qui décide où le scan aboutit. Une commande de la file ouvre
+   * sa FICHE — le dialogue se referme sans rien attester. Une commande hors
+   * file (une livraison rattrapée au comptoir, un sac d'un autre jour) n'a pas
+   * de fiche où s'ouvrir : le dialogue la montre, et la remise y reste un
+   * geste explicite.
+   */
+  readonly inQueue: (orderId: string) => boolean;
 }
 
-/** Ce que le panneau rend à la file : un retrait a été gravé. */
-export const SCANNED = 'scanned';
+/**
+ * Ce que le panneau rend à la file.
+ *
+ * - `identified` : le code désigne une commande de la file. RIEN n'est remis ;
+ *   le jeton voyage jusqu'à la fiche, pour que « Remettre la commande » y
+ *   grave la preuve du code.
+ * - `remitted` : une commande HORS file a été remise depuis le dialogue, par
+ *   le geste explicite qu'il offre dans ce seul cas.
+ */
+export type ScanOutcome =
+  | { readonly kind: 'identified'; readonly token: string; readonly view: OrderHandoverView }
+  | { readonly kind: 'remitted' };
 
 type Stage = 'starting' | 'scanning' | 'unsupported' | 'denied' | 'found' | 'done';
 
 /**
- * **Lire le code d'un client, et attester.**
+ * **Lire le code d'un client, et identifier sa commande.**
+ *
+ * 🔴 Depuis le 2026-10-25, le scan n'atteste plus rien de lui-même (Hugo :
+ * « c'est censé juste nous aider à identifier la commande »). Il relit le
+ * sujet du code et rend la main à l'écran, qui ouvre la fiche ; la remise y
+ * est un geste explicite, et elle garde la preuve du code. Le seul cas où ce
+ * dialogue offre encore « Remettre la commande » est la commande sans ligne
+ * dans la file, qui n'a pas de fiche où s'ouvrir.
  *
  * ## Pourquoi un scan, et pas un bouton
  *
@@ -67,13 +95,12 @@ type Stage = 'starting' | 'scanning' | 'unsupported' | 'denied' | 'found' | 'don
  * seule attestation forte du système. La saisie à la main existe à côté, et
  * elle grave `manual` — faible, et honnête à ce sujet.
  *
- * ## 🔴 Ouvert sur une commande, il VÉRIFIE cette commande
+ * ## 🔴 Ouvert sur une commande, l'écran VÉRIFIE cette commande
  *
  * Un scan lit ce qu'on lui présente, pas ce qu'on a ouvert. Quand le dialogue
- * part du RAIL, une commande est sous les yeux de l'équipe — elle vient de lire
- * le sac, ligne par ligne — et un code qui en désigne une autre serait honoré
- * en silence. Le dialogue relit donc le sujet du code AVANT d'attester, et
- * refuse en nommant les deux commandes quand elles diffèrent.
+ * part du RAIL et que le code en désigne une autre, c'est l'écran qui ouvre
+ * l'AUTRE fiche en nommant les deux numéros (`scanNotice`) — le dialogue, lui,
+ * ne fait que rendre ce qu'il a lu.
  *
  * Ouvert depuis la barre de la file, il vaut `null` : on prend ce qui se
  * présente, comme un comptoir.
@@ -160,12 +187,10 @@ export class ScanDialog implements FoldPanelContent<ScanDialogData> {
 
   protected readonly stage = signal<Stage>('starting');
   protected readonly busy = signal(false);
-  protected readonly mismatch = signal<string | null>(null);
   /**
    * Ce que le code a de dépaysant au regard de l'onglet ouvert, ou `null`.
    *
-   * ⚠️ Un **avertissement**, pas un refus : `mismatch` barre la confirmation,
-   * celui-ci la laisse passer. Un sac transporté, un client redirigé, une
+   * ⚠️ Un **avertissement**, pas un refus : il laisse passer la confirmation. Un sac transporté, un client redirigé, une
    * livraison rattrapée au comptoir — le retrait y est légitime, et ce qui
    * manquait n'était pas une interdiction mais une phrase.
    */
@@ -228,11 +253,10 @@ export class ScanDialog implements FoldPanelContent<ScanDialogData> {
   }
 
   /**
-   * Relit le sujet du code, **avant** d'attester quoi que ce soit.
+   * Relit le sujet du code — une lecture, sans effet.
    *
-   * 🔴 Deux lectures et non une : le comptoir doit voir ce qu'il s'apprête à
-   * remettre. Attester d'un trait sur un code à peine lu, c'est tendre un sac
-   * sur la foi d'un pixel.
+   * 🔴 Le comptoir doit voir ce qu'il s'apprête à remettre : attester d'un
+   * trait sur un code à peine lu, c'est tendre un sac sur la foi d'un pixel.
    */
   private async inspect(scanned: string): Promise<void> {
     const token = tokenOf(scanned);
@@ -243,10 +267,9 @@ export class ScanDialog implements FoldPanelContent<ScanDialogData> {
     this.busy.set(true);
     try {
       const view = await this.handovers.byToken(token);
-      const expected = this.expected();
-      if (expected !== null && view.orderNumber !== expected.reference) {
-        this.mismatch.set(view.orderNumber);
-        this.stage.set('found');
+      if (this.data()?.inQueue(view.orderId) === true) {
+        // La file la connaît : sa fiche s'ouvre, et rien n'est remis ici.
+        this.panel.close({ kind: 'identified', token, view } satisfies ScanOutcome);
         return;
       }
       this.elsewhere.set(outsideTheCounter(view, this.data()?.openTab ?? ''));
@@ -263,7 +286,7 @@ export class ScanDialog implements FoldPanelContent<ScanDialogData> {
 
   private token: string | null = null;
 
-  /** Atteste le retrait par le SCAN — l'attestation forte. */
+  /** Atteste le retrait d'une commande HORS file, par le code lu — le seul cas. */
   protected async confirm(): Promise<void> {
     const token = this.token;
     if (token === null) {
@@ -273,7 +296,7 @@ export class ScanDialog implements FoldPanelContent<ScanDialogData> {
     try {
       await this.handovers.confirm(token);
       this.stage.set('done');
-      this.panel.close(SCANNED);
+      this.panel.close({ kind: 'remitted' } satisfies ScanOutcome);
     } catch (caught) {
       this.notify.error(caught, "Ce retrait n'a pas pu être enregistré.");
     } finally {

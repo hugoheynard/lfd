@@ -132,7 +132,7 @@ export interface CounterPlace {
  * un onglet à son libellé figé. Il disparaîtra avec la dernière commande
  * d'avant le lot (S3r).
  */
-function tabKeyOf(entry: HandoverQueueEntryView, places: readonly CounterPlace[]): string {
+export function tabKeyOf(entry: HandoverQueueEntryView, places: readonly CounterPlace[]): string {
   const siteId = entry.siteId ?? null;
   if (siteId !== null && siteId !== '') {
     return siteId;
@@ -564,4 +564,38 @@ export function outsideTheCounter(
   return subject.pickupLabel === openTab
     ? null
     : `Cette commande est rattachée à « ${subject.pickupLabel ?? ''} », pas à « ${openTab} ».`;
+}
+
+/**
+ * **La preuve du code**, gardée entre le scan et la remise.
+ *
+ * Le scan identifie ; la remise se fait sur la fiche (2026-10-25). Ce qui
+ * relie les deux est ce jeton, lu à l'instant, et la commande qu'il désigne :
+ * « Remettre la commande » le renvoie, et le serveur grave `scan`. Sans lui,
+ * la fiche ne connaît que la remise sans code.
+ */
+export interface ScanProof {
+  readonly orderId: string;
+  readonly token: string;
+  /** Ce que le code a de surprenant — autre commande, autre point — ou `null`. */
+  readonly notice: string | null;
+}
+
+/**
+ * Ce que l'écran dit en ouvrant la fiche que le code désigne.
+ *
+ * 🔴 Un code d'une AUTRE commande que celle ouverte n'est plus refusé : il
+ * ouvre l'autre fiche — c'est elle que le client présente — mais en nommant
+ * les deux numéros. Sans eux, l'équipe ne sait pas si elle s'est trompée de
+ * ligne ou de client. Le dépaysement de point suit, par `outsideTheCounter`.
+ */
+export function scanNotice(
+  subject: Pick<OrderHandoverView, 'orderNumber' | 'fulfillmentMethod' | 'pickupLabel'>,
+  expectedReference: string | null,
+  openTab: string,
+): string | null {
+  if (expectedReference !== null && subject.orderNumber !== expectedReference) {
+    return `Ce code désigne ${subject.orderNumber}, pas ${expectedReference}. C’est la fiche de ${subject.orderNumber} qui est ouverte : vérifiez le sac avant de remettre.`;
+  }
+  return outsideTheCounter(subject, openTab);
 }

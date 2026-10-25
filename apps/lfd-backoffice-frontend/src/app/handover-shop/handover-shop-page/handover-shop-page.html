@@ -122,6 +122,7 @@
                   [busyId]="remindingId()"
                   [reminded]="remindedIds()"
                   [canRemind]="canRemind()"
+                  [currentId]="selected()?.orderId ?? null"
                   (opened)="select($event)"
                   (reminder)="remind($event)"
                 />
@@ -136,7 +137,8 @@
       asideRight
       [entry]="selected()"
       [day]="store.day()"
-      (remitted)="store.load()"
+      [proof]="selectedProof()"
+      (remitted)="remitted()"
       (scanned)="scan($event)"
       (cleared)="clearSelection()"
     />

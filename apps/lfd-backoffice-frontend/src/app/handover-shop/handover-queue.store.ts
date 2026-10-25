@@ -22,6 +22,7 @@ import {
   pickupTabs,
   queueCounters,
   type QueueCounters,
+  tabKeyOf,
 } from './handover-queue';
 
 export type HandoverQueueLoadState = 'loading' | 'ready' | 'error';
@@ -312,6 +313,22 @@ export class HandoverQueueStore {
       }
     } catch {
       this.refreshFailed.set(true);
+    }
+  }
+
+  /**
+   * **Montre la ligne d'une commande** : ouvre l'onglet qui la porte quand
+   * l'onglet ouvert ne la montre pas. C'est ce que fait le scan (2026-10-25) —
+   * le code lu surligne sa ligne, et une ligne d'un autre onglet ne se
+   * surligne pas sous les yeux.
+   */
+  revealEntry(orderId: string): void {
+    if (this.rows().some((row) => row.orderId === orderId)) {
+      return;
+    }
+    const entry = this.entries().find((row) => row.orderId === orderId);
+    if (entry !== undefined) {
+      this.selectTab(tabKeyOf(entry, this.places()));
     }
   }
 

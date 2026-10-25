@@ -107,6 +107,13 @@ class FakeHandovers {
     });
   }
 
+  readonly scanned: string[] = [];
+
+  confirmScanned(token: string): Promise<Pick<OrderHandoverView, 'orderNumber'>> {
+    this.scanned.push(token);
+    return Promise.resolve({ orderNumber: 'CMD-1042' });
+  }
+
   confirmManually(reference: string): Promise<Pick<OrderHandoverView, 'orderNumber'>> {
     this.remitted.push(reference);
     return Promise.resolve({ orderNumber: reference });
@@ -240,7 +247,7 @@ describe('HandoverDetail', () => {
     expect(text(fixture)).toContain('Fournil · tout est sorti');
     expect(text(fixture)).toContain('Colisage · sac fermé à 5 h 12');
     expect(element.querySelector('[data-muted-note]')).toBeNull();
-    expect(element.querySelector('[data-action="scan"]')?.classList).toContain('solid');
+    expect(element.querySelector('[data-action="remit"]')?.classList).toContain('solid');
   });
 
   /** Lot QC5 : le comptoir le lit AVANT de tendre le lecteur. */
@@ -370,11 +377,13 @@ describe('HandoverDetail', () => {
     expect(buttonSaying(fixture, 'Scanner le QR code du client')).toBeNull();
   });
 
-  it('🔴 le retrait saisi dit qu’il est SANS CODE, et part sur le numéro', async () => {
+  it('🔴 sans QR scanné, UN seul geste, qui annonce « sans code » et part sur le numéro', async () => {
     const handovers = new FakeHandovers();
     const fixture = await render(entry(), { handovers });
 
-    const remit = buttonSaying(fixture, 'Remettre la commande sans code');
+    expect(text(fixture)).toContain('QR non scanné : la remise sera enregistrée sans code.');
+    expect(buttonSaying(fixture, 'sans code')).toBeNull();
+    const remit = buttonSaying(fixture, 'Remettre la commande');
     expect(remit).not.toBeNull();
     remit?.click();
     await fixture.whenStable();
@@ -442,5 +451,57 @@ describe('HandoverDetail', () => {
     const fixture = await render(entry());
 
     expect(text(fixture)).not.toContain('Commande incomplète');
+  });
+
+  it('🔴 ouverte par le code, la fiche remet AVEC le jeton lu — pas sans code', async () => {
+    const handovers = new FakeHandovers();
+    const fixture = await render(entry(), { handovers });
+    fixture.componentRef.setInput('proof', { orderId: 'ord_1', token: 'tok_1', notice: null });
+    fixture.detectChanges();
+
+    expect(text(fixture)).toContain('QR code lu');
+    expect(text(fixture)).not.toContain('QR non scanné');
+    expect(buttonSaying(fixture, 'Scanner le QR code du client')).toBeNull();
+    buttonSaying(fixture, 'Remettre la commande')?.click();
+    await fixture.whenStable();
+
+    expect(handovers.scanned).toEqual(['tok_1']);
+    expect(handovers.remitted).toEqual([]);
+  });
+
+  it('🔴 une preuve d’une AUTRE commande ne s’applique pas à celle-ci', async () => {
+    const handovers = new FakeHandovers();
+    const fixture = await render(entry(), { handovers });
+    fixture.componentRef.setInput('proof', { orderId: 'ord_9', token: 'tok_9', notice: null });
+    fixture.detectChanges();
+
+    expect(text(fixture)).toContain('QR non scanné');
+    buttonSaying(fixture, 'Remettre la commande')?.click();
+    await fixture.whenStable();
+    expect(handovers.remitted).toEqual(['CMD-1042']);
+    expect(handovers.scanned).toEqual([]);
+  });
+
+  it('l’avertissement du scan se lit au-dessus du geste, sans le barrer', async () => {
+    const fixture = await render(entry());
+    fixture.componentRef.setInput('proof', {
+      orderId: 'ord_1',
+      token: 'tok_1',
+      notice: 'Ce code désigne CMD-1042, pas CMD-7.',
+    });
+    fixture.detectChanges();
+
+    expect(text(fixture)).toContain('Ce code désigne CMD-1042, pas CMD-7.');
+    expect(buttonSaying(fixture, 'Remettre la commande')).not.toBeNull();
+  });
+
+  it('🔴 « Voir le bon » se lit près de l’identité, et la fiche ne parle plus de montant', async () => {
+    const fixture = await render(entry());
+    const element: HTMLElement = fixture.nativeElement;
+
+    const bon = buttonSaying(fixture, 'Voir le bon');
+    expect(bon?.closest('.hd-identity')).not.toBeNull();
+    expect(bon?.closest('.hd-actions')).toBeNull();
+    expect(element.textContent).not.toContain('Aucun montant');
   });
 });

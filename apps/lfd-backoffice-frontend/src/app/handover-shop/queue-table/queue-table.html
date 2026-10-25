@@ -39,6 +39,10 @@
       @if (clienteleLabel(row); as who) {
         <fold-badge radius="square" [variant]="clienteleVariant(row)" [content]="who" />
       }
+      <!-- La commande ouverte dans le rail — par un clic ou par le QR. -->
+      @if (isCurrent(row)) {
+        <fold-badge variant="info" content="Ouverte" data-current />
+      }
     </span>
     @if (handedOverAt(row); as done) {
       <span class="qt-sub">{{ done }}</span>

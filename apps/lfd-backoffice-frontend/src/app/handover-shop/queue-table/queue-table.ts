@@ -1,4 +1,16 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import {
+  afterNextRender,
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  ElementRef,
+  inject,
+  Injector,
+  input,
+  output,
+  untracked,
+} from '@angular/core';
 import type { HandoverQueueEntryView, OrderClientele, PackingAbandonedLine } from '@lfd/contracts';
 import {
   FoldBadgeComponent,
@@ -125,6 +137,48 @@ export class QueueTable {
    * un nom prend une décision sur un chiffre faux.
    */
   readonly query = input<string>('');
+
+  /**
+   * **La commande ouverte dans le rail**, ou `null`.
+   *
+   * 🔴 Depuis le 2026-10-25, le scan identifie au lieu de remettre (Hugo) : le
+   * code lu ouvre la commande comme un clic sur sa ligne, et la ligne doit se
+   * VOIR — surlignée, et amenée sous les yeux si la file est longue.
+   *
+   * ⚠️ `fold-data-table` n'a pas d'état « ligne courante » hors du mode à
+   * cases (`selectable`, vérifié dans `fold-ng.d.ts` le 2026-10-25) : la
+   * ligne porte donc une pastille « Ouverte » à côté du nom, et c'est elle
+   * qu'on fait défiler jusqu'à l'écran. Un vrai état de ligne est un chantier
+   * fold.
+   */
+  readonly currentId = input<string | null>(null);
+
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly injector = inject(Injector);
+
+  constructor() {
+    effect(() => {
+      const id = this.currentId();
+      this.rows();
+      if (id === null) {
+        return;
+      }
+      untracked(() =>
+        afterNextRender(
+          () =>
+            this.host.nativeElement
+              .querySelector('[data-current]')
+              ?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' }),
+          { injector: this.injector },
+        ),
+      );
+    });
+  }
+
+  /** La ligne est-elle celle ouverte dans le rail ? */
+  protected isCurrent(entry: HandoverQueueEntryView): boolean {
+    return entry.orderId === this.currentId();
+  }
 
   /** On a touché la ligne : elle s'ouvre dans le rail. */
   readonly opened = output<HandoverQueueEntryView>();

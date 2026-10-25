@@ -30,7 +30,7 @@ import { PackingService } from '../../production/packing.service';
 import { HandoverQueueService } from '../handover-queue.service';
 import { MissingItems } from '../missing-items/missing-items';
 import { SheetPanel, type SheetPanelData } from '../sheet-panel/sheet-panel';
-import { formatWindow, stillRemittable } from '../handover-queue';
+import { formatWindow, stillRemittable, type ScanProof } from '../handover-queue';
 import { transferBlockReason } from '../handover-transfer';
 import { bagReadiness, gestureCaution, readyVerdict } from './bag-readiness';
 
@@ -64,10 +64,16 @@ const PLACED_AT = new Intl.DateTimeFormat('fr-FR', {
  *
  * ## Ce qu'il atteste, et comment il le dit
  *
- * 🔴 **Il atteste un retrait SAISI, jamais un scan.** Le scan
- * (`/retrait/:token`) prouve la présence ; un clic non. Le serveur porte donc
- * deux verbes, et celui-ci grave `manual` — une attestation **faible et
- * honnête**. Le bouton l'écrit en toutes lettres : « Remettre la commande sans code ».
+ * 🔴 **Deux remises, et chacune dit ce qu'elle prouve.** Le scan prouve la
+ * présence ; un clic non. Le serveur porte donc deux verbes :
+ *
+ * Un seul bouton, « Remettre la commande » (2026-10-25), dont la preuve suit
+ * le scan :
+ *
+ * - **ouverte par le code** (`proof`), il renvoie le jeton lu et grave `scan`.
+ *   Le scan n'atteste plus rien de lui-même : il identifie, on remet ici ;
+ * - **sans code**, il grave `manual` — une attestation **faible et honnête**,
+ *   annoncée au-dessus du bouton (« QR non scanné… »).
  *
  * ⚠️ Le JSDoc disait « il n'atteste aucune remise » jusqu'au 2026-09-11.
  * Refuser le geste ne le supprimait pas : il renvoyait le cas de tous les
@@ -95,6 +101,18 @@ export class HandoverDetail {
   readonly entry = input<HandoverQueueEntryView | null>(null);
   /** Le jour de service de la file — celui dont on lit le colisage. */
   readonly day = input.required<string>();
+
+  /**
+   * Le code lu juste avant, quand c'est LUI qui a ouvert cette fiche — sinon
+   * `null`. L'écran ne le passe que pour la commande qu'il désigne.
+   */
+  readonly proof = input<ScanProof | null>(null);
+
+  /** La preuve, seulement si elle désigne la commande ouverte. */
+  protected readonly activeProof = computed<ScanProof | null>(() => {
+    const proof = this.proof();
+    return proof !== null && proof.orderId === this.entry()?.orderId ? proof : null;
+  });
 
   /**
    * Un sac est parti par ici. La file se relit chez son appelant : le serveur
@@ -314,15 +332,27 @@ export class HandoverDetail {
     }
   }
 
-  /** **Le retrait saisi**, depuis le rail — le chemin sans QR. */
+  /**
+   * **Le seul geste de remise** (Hugo, 2026-10-25).
+   *
+   * 🔴 Sa preuve dépend du scan, pas du bouton : la fiche ouverte par le QR
+   * renvoie le jeton lu et le serveur grave `scan` ; sinon elle part sur le
+   * numéro et grave `manual`. La lecture du code n'a rien gravé — c'est ici,
+   * et ici seulement, qu'on écrit.
+   */
   protected async remit(): Promise<void> {
     const entry = this.entry();
     if (entry === null) {
       return;
     }
+    const proof = this.activeProof();
     this.remitting.set(true);
     try {
-      await this.handovers.confirmManually(entry.reference);
+      if (proof !== null) {
+        await this.handovers.confirmScanned(proof.token);
+      } else {
+        await this.handovers.confirmManually(entry.reference);
+      }
       this.remitted.emit();
     } catch (caught) {
       this.notify.error(caught, "Ce retrait n'a pas pu être enregistré.");

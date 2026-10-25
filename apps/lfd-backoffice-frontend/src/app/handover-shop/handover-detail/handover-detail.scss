@@ -316,14 +316,6 @@
   );
 }
 
-.hd-foot {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--fold-space-xs) var(--fold-space-sm);
-}
-
 .hd-steps {
   display: flex;
   flex-direction: column;
@@ -337,7 +329,7 @@
   color: var(--fold-color-text-muted);
 }
 
-.hd-note {
-  color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-xs);
+/* Le bon se lit près de l'identité, sans s'étirer sur la colonne. */
+.hd-bon {
+  align-self: flex-start;
 }
