@@ -27,3 +27,20 @@ export class ReserveShopQuantityInvalidError extends DomainError {
     );
   }
 }
+
+/**
+ * Un mouvement de bac porte un nombre de pièces négatif ou fractionnaire.
+ *
+ * Aucun appelant n'en produit (vérifié le 2026-10-25 : `allocate-to-container`
+ * et `apply-packing-proposal` passent des quantités validées par
+ * `OrderContents`) ; mais sans ce refus, `take(-3)` faisait BAISSER le bac
+ * sans rien refuser. Zéro reste admis : c'est un mouvement vide.
+ */
+export class StockMoveQuantityInvalidError extends DomainError {
+  constructor(sku: string, quantity: number) {
+    super(
+      "packing.stock.move_quantity_invalid",
+      `Le mouvement de « ${sku} » doit être un nombre entier de pièces, positif ou nul (reçu : ${String(quantity)}).`,
+    );
+  }
+}

@@ -1,6 +1,7 @@
 import { StockReservationQuantityInvalidError } from "../errors/packing-resupply-errors.js";
 import {
   ReserveShopQuantityInvalidError,
+  StockMoveQuantityInvalidError,
   ReserveShortForShopError,
 } from "../errors/packing-shop-release-errors.js";
 import { LineNotProducedYetError } from "../errors/packing-station-errors.js";
@@ -110,6 +111,7 @@ export class PackingStock {
    *   dit combien il en manque, comme l'ancien poste.
    */
   take(quantity: number, productName: string): void {
+    this.ensureMovable(quantity);
     const missing = shortfall(this.free, quantity);
     if (missing > 0) {
       throw new LineNotProducedYetError(productName, missing);
@@ -164,6 +166,7 @@ export class PackingStock {
    * @throws {LineNotProducedYetError} le four n'a pas encore remis assez.
    */
   takeForResupply(resupplyId: string, quantity: number, productName: string): void {
+    this.ensureMovable(quantity);
     const missing = shortfall(availableTo(this, this.reservationsValue, resupplyId), quantity);
     if (missing > 0) {
       throw new LineNotProducedYetError(productName, missing);
@@ -174,8 +177,16 @@ export class PackingStock {
 
   /** La fiche emballe moins : les pièces reviennent, à sa réservation d'abord. */
   releaseFromResupply(resupplyId: string, quantity: number): void {
+    this.ensureMovable(quantity);
     this.packedValue = Math.max(0, this.packedValue - quantity);
     this.shiftOwnPacked(resupplyId, -quantity);
+  }
+
+  /** @throws {StockMoveQuantityInvalidError} négatif ou fractionnaire. */
+  private ensureMovable(quantity: number): void {
+    if (!Number.isInteger(quantity) || quantity < 0) {
+      throw new StockMoveQuantityInvalidError(this.sku, quantity);
+    }
   }
 
   /** Ce que la réservation de `resupplyId` attend encore du four. */
@@ -204,6 +215,7 @@ export class PackingStock {
 
   /** Des pièces ressortent d'un bac et redeviennent disponibles. */
   release(quantity: number): void {
+    this.ensureMovable(quantity);
     this.packedValue = Math.max(0, this.packedValue - quantity);
   }
 

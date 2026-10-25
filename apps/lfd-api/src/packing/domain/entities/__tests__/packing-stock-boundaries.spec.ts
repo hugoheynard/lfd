@@ -1,3 +1,4 @@
+import { StockMoveQuantityInvalidError } from "../../errors/packing-shop-release-errors.js";
 import { LineNotProducedYetError } from "../../errors/packing-station-errors.js";
 import { PackingStock } from "../packing-stock.js";
 
@@ -23,6 +24,30 @@ function expectInvariant(held: PackingStock): void {
 }
 
 describe("PackingStock — frontières de l'invariant", () => {
+  /**
+   * Régression : take(-3) passait la garde de manque (rien ne manque pour
+   * moins que rien) et faisait BAISSER le bac (2026-10-25).
+   */
+  it.each([-3, 1.5])("refuse un mouvement de bac de %s pièce(s), sans rien toucher", (quantity) => {
+    const held = stock(10, 0, 4);
+    for (const move of [
+      () => held.take(quantity, "Croissant"),
+      () => held.takeForResupply("rs-1", quantity, "Croissant"),
+      () => held.release(quantity),
+      () => held.releaseFromResupply("rs-1", quantity),
+    ]) {
+      expect(move).toThrow(StockMoveQuantityInvalidError);
+    }
+    expect(held.toSnapshot().packed).toBe(4);
+  });
+
+  it("un mouvement de zéro pièce est admis et ne change rien", () => {
+    const held = stock(10, 0, 4);
+    held.take(0, "Croissant");
+    held.release(0);
+    expect(held.toSnapshot().packed).toBe(4);
+  });
+
   it("un libre à zéro refuse une seule pièce, et la pièce suivante au cran près passe", () => {
     expect(() => stock(10, 0, 10).take(1, "Croissant")).toThrow(/Il manque 1 « Croissant »/);
     expect(() => stock(10, 0, 9).take(1, "Croissant")).not.toThrow();
