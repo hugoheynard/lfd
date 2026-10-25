@@ -242,7 +242,7 @@ describe('une commande colisée avec l’ancien poste (`counted`, §17.6)', () =
       fixture.componentInstance.reportShortfall.subscribe((sent) => reported.push(sent));
 
       const button = host.querySelector<HTMLButtonElement>('[data-report-shortfall]');
-      expect(said(button)).toBe('Manque — demander une décision');
+      expect(said(button)).toBe('Manque des produits — demander une décision');
       button?.click();
 
       expect(reported).toEqual([order]);
@@ -257,7 +257,7 @@ describe('une commande colisée avec l’ancien poste (`counted`, §17.6)', () =
         'Manque signalé — décision attendue',
       );
       expect(said(host.querySelector('[data-report-shortfall]'))).toBe(
-        'Manque — relancer la décision',
+        'Manque des produits — relancer la décision',
       );
     });
 
