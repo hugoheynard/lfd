@@ -267,3 +267,121 @@ describe("alignmentOf — la révision après l'arrêt (plan A2)", () => {
     expect(note.toState().lines).toEqual([BREAD]);
   });
 });
+
+describe("alignmentOf — les bords de la règle unique", () => {
+  it("confirmée sans `confirmed_at` : l'instant qui la date manque, rien n'est inventé", () => {
+    expect(alignmentOf(order({ confirmedAt: null }), [], context)).toEqual({
+      change: "unrepairable",
+      reason: "missing_instant",
+    });
+  });
+
+  // `planned_at` = le PREMIER instant connu : sans confirmation ni bac, la
+  // remise date la naissance du BL.
+  it("remise sans `confirmed_at` ni `ready_at` : le BL naît à l'instant de la remise", () => {
+    const state = createdState(order({ ...FULFILLED, confirmedAt: null }));
+    expect(state.status).toBe("handed_over");
+    expect(state.plannedAt).toEqual(HANDED_OVER_AT);
+  });
+
+  it("un BL annulé À CÔTÉ d'un BL vivant juste : le vivant seul compte, rien à faire", () => {
+    const voided = planned();
+    voided.void(CONFIRMED_AT);
+    expect(alignmentOf(order(), [voided, planned()], context)).toEqual({ change: "none" });
+  });
+
+  it("idempotent à la naissance : rejouer sur le BL qu'on vient de créer ne change rien", () => {
+    const first = alignmentOf(order(READY), [], context);
+    if (first.change !== "created") {
+      throw new RangeError("attendu « created »");
+    }
+    expect(alignmentOf(order(READY), [first.created], context)).toEqual({ change: "none" });
+  });
+
+  it("un refus ne touche à aucun BL : deux vivants sur une commande prête restent prévus", () => {
+    const notes = [planned(), planned()];
+    expect(alignmentOf(order(READY), notes, context).change).toBe("unrepairable");
+    expect(notes.map((note) => note.toState().status)).toEqual(["planned", "planned"]);
+  });
+});
+
+describe("alignmentOf — annulation de la commande, plusieurs BL", () => {
+  it("annule TOUS les BL vivants, et laisse l'annulé comme il était", () => {
+    const alreadyVoided = planned();
+    alreadyVoided.void(CONFIRMED_AT);
+    const a = planned();
+    const b = planned();
+
+    const result = alignmentOf(order({ status: "cancelled" }), [alreadyVoided, a, b], context);
+
+    expect(result.change).toBe("voided");
+    expect(a.toState().status).toBe("voided");
+    expect(b.toState().status).toBe("voided");
+    if (result.change === "voided") {
+      expect(result.writes).toEqual([a, b]);
+    }
+  });
+
+  // Le refus doit précéder tout geste : annuler le premier puis buter sur le
+  // second laisserait une commande à moitié défaite.
+  it("un BL remis parmi les vivants : refus, et AUCUN autre BL n'est annulé", () => {
+    const handedOver = planned();
+    handedOver.handOver(HANDED_OVER_AT, RECEIVED_ON);
+    const other = planned();
+
+    const result = alignmentOf(order({ status: "cancelled" }), [other, handedOver], context);
+
+    expect(result).toEqual({ change: "unrepairable", reason: "note_ahead_of_order" });
+    expect(other.toState().status).toBe("planned");
+  });
+
+  it("annulée avec pour seul BL un BL déjà annulé : rien à faire", () => {
+    const voided = planned();
+    voided.void(CONFIRMED_AT);
+    expect(alignmentOf(order({ status: "cancelled" }), [voided], context)).toEqual({
+      change: "none",
+    });
+  });
+});
+
+describe("alignmentOf — le départ décidé (E6b) et la révision, sur un BL qui diverge", () => {
+  it("départ décidé : le BL prévu qui ne dit plus sa commande est réécrit", () => {
+    const note = planned();
+    const result = alignmentOf(
+      order({ lines: [REVISED], departureDecided: true }),
+      [note],
+      context,
+    );
+    expect(result.change).toBe("completed");
+    expect(note.toState().lines).toEqual([REVISED]);
+  });
+
+  it("départ décidé, BL déjà juste : rien n'est réécrit, sa version ne monte pas", () => {
+    const note = planned();
+    const before = note.toState().contentVersion;
+    expect(alignmentOf(order({ departureDecided: true }), [note], context)).toEqual({
+      change: "none",
+    });
+    expect(note.toState().contentVersion).toBe(before);
+  });
+
+  it("révisée, BL déjà juste : rien n'est réécrit", () => {
+    const note = planned();
+    const before = note.toState().contentVersion;
+    expect(alignmentOf(order(), [note], { ...context, revised: true })).toEqual({ change: "none" });
+    expect(note.toState().contentVersion).toBe(before);
+  });
+
+  // Seul un BL PRÉVU se réécrit : un BL préparé a déjà été monté au bac.
+  it("départ décidé sur un BL préparé qui diverge : jamais réécrit", () => {
+    const note = planned();
+    note.prepare(READY_AT);
+    const result = alignmentOf(
+      order({ ...READY, lines: [REVISED], departureDecided: true }),
+      [note],
+      context,
+    );
+    expect(result).toEqual({ change: "none" });
+    expect(note.toState().lines).toEqual([BREAD]);
+  });
+});
