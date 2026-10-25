@@ -67,7 +67,7 @@ const PLACED_AT = new Intl.DateTimeFormat('fr-FR', {
  * 🔴 **Il atteste un retrait SAISI, jamais un scan.** Le scan
  * (`/retrait/:token`) prouve la présence ; un clic non. Le serveur porte donc
  * deux verbes, et celui-ci grave `manual` — une attestation **faible et
- * honnête**. Le bouton l'écrit en toutes lettres : « Remettre sans code ».
+ * honnête**. Le bouton l'écrit en toutes lettres : « Remettre la commande sans code ».
  *
  * ⚠️ Le JSDoc disait « il n'atteste aucune remise » jusqu'au 2026-09-11.
  * Refuser le geste ne le supprimait pas : il renvoyait le cas de tous les

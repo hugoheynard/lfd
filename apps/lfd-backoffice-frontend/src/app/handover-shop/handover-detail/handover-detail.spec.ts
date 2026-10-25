@@ -374,7 +374,7 @@ describe('HandoverDetail', () => {
     const handovers = new FakeHandovers();
     const fixture = await render(entry(), { handovers });
 
-    const remit = buttonSaying(fixture, 'Remettre sans code');
+    const remit = buttonSaying(fixture, 'Remettre la commande sans code');
     expect(remit).not.toBeNull();
     remit?.click();
     await fixture.whenStable();
