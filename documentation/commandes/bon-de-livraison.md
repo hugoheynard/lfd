@@ -164,8 +164,10 @@ publie `packing.shortfall_reported` (`packing/channels/commerce/`). Le commerce
 le tient dans l'agrégat `OrderShortfall` (`orders.shortfall_reported_at`,
 `shortfall_lines`, `shortfall_cleared_at`) ; la page Commandes, la fiche
 commande et la Supervision du jour le montrent. Refermer le bac **complet**
-efface le signal (`packing.shortfall_cleared`). Le signal ne bloque rien
-d'autre.
+efface le signal (`packing.shortfall_cleared`). Tant que le commerce n'a
+pas décidé, le bac **incomplet** ne se ferme pas (`ShortfallAwaitingDecisionError`,
+409, Hugo, 2026-10-25) : le poste dit « En attente de la décision d'un
+manager ». Le signal ne bloque rien d'autre.
 
 **La décision (E6b).** `POST admin/orders/:id/shortfall-decision`, sous
 `b2b_orders_shortfall:write` (migration `20261025140000` ; la ressource
@@ -293,7 +295,9 @@ forme du bon de commande
   <n> <produit> » par article (dû au signal moins parti). Le commerce le sert
   par `ShortfallAftermathReader` (déclaré par le colisage dans
   `packing/channels/commerce/`) ; la fiche commande le relit sur son manque
-  décidé.
+  décidé. Le même lecteur rend la décision elle-même (reste, instant, auteur
+  nommé par l'annuaire du staff) : le poste dit « Décision : départ
+  incomplet, reste abandonné — par <nom> à <heure> » (`shortfallDecision`).
 
 ## Les décisions
 

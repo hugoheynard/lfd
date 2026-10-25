@@ -3,6 +3,7 @@ import { BusinessError } from "../../../../platform/shared/errors/app-error.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import type { PackingSheetSnapshot } from "../../../domain/entities/packing-sheet.js";
 import { UnallocatedLinesError } from "../../../domain/errors/packing-container-errors.js";
+import { ShortfallAwaitingDecisionError } from "../../../domain/errors/packing-shortfall-errors.js";
 import { PackingOrderNotDrawnYetError } from "../../../domain/errors/packing-station-errors.js";
 import { ScriptedBinDesk } from "../../__tests__/bin-desk-double.js";
 import { InMemorySheets, RecordingDurable } from "../../__tests__/station-doubles.js";
@@ -102,6 +103,19 @@ describe("ClosePackingOrderHandler — « Déclarer prête » au colisage", () =
       UnallocatedLinesError,
     );
     expect(sheets.of(DAY, "ord_1")?.packed).toBeNull();
+    expect(durable.facts).toEqual([]);
+  });
+
+  it("🔴 refuse un bac incomplet dont le manque attend la décision, et ne publie rien", async () => {
+    const { close, sheets, durable } = setup(
+      sheet({ containerList: [], containers: 0, shortfallReportedAt: FIRST }),
+    );
+
+    await expect(close.execute(new ClosePackingOrderCommand(DAY, "ord_1", "s2"))).rejects.toThrow(
+      ShortfallAwaitingDecisionError,
+    );
+    expect(sheets.of(DAY, "ord_1")?.packed).toBeNull();
+    expect(sheets.of(DAY, "ord_1")?.shortfallReportedAt).toEqual(FIRST);
     expect(durable.facts).toEqual([]);
   });
 

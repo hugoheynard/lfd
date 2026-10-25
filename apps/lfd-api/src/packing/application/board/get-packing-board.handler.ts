@@ -65,13 +65,12 @@ export class GetPackingBoardHandler implements IQueryHandler<
   async execute(query: GetPackingBoardQuery): Promise<ProductionPackingView> {
     const day = await this.board.dayOf(query.serviceDay);
     const orderIds = day.orders.map((order) => order.orderId);
-    const [heldOrders, destinations, authors, cold, departures, reprintNeeded, aftermath] =
+    const [heldOrders, destinations, cold, departures, reprintNeeded, aftermath] =
       await Promise.all([
         this.held.heldOrders(query.serviceDay, orderIds),
         orderIds.length === 0
           ? new Map<string, string>()
           : this.destinations.destinationsOf(query.serviceDay),
-        this.staffAuthors.identify(day.orders.map((order) => order.packed?.by ?? null)),
         // Le froid ne se lit que pour les livraisons : un retrait n'a pas de bac.
         this.desk.coldPacking(
           day.orders
@@ -84,6 +83,12 @@ export class GetPackingBoardHandler implements IQueryHandler<
         // Le départ incomplet décidé : son reste et son BL (Hugo, 2026-10-25).
         this.aftermath.among(orderIds),
       ]);
+    // Les auteurs APRÈS le commerce : qui a fermé un bac, et qui a décidé un
+    // départ incomplet — une seule lecture de l'annuaire pour les deux.
+    const authors = await this.staffAuthors.identify([
+      ...day.orders.map((order) => order.packed?.by ?? null),
+      ...[...aftermath.values()].map((decided) => decided.decision?.decidedBy ?? null),
+    ]);
     return packingBoardOf({
       date: query.serviceDay,
       day,

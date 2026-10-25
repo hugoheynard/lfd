@@ -24,6 +24,20 @@ export class ShortfallAlreadyAuthorizedError extends BusinessError {
   }
 }
 
+/**
+ * **Fermer un bac incomplet dont le manque attend la décision** (Hugo,
+ * 2026-10-25) : le commerce n'a pas encore dit ce qui part. Les pièces
+ * arrivées, le bac complet se ferme, et le signal s'efface.
+ */
+export class ShortfallAwaitingDecisionError extends BusinessError {
+  constructor(reference: string) {
+    super(
+      "packing.shortfall.awaiting_decision",
+      `Le manque de ${reference} attend la décision d'un manager : le bac ne se ferme pas incomplet. Attendez la décision, ou mettez au bac les pièces manquantes si elles arrivent.`,
+    );
+  }
+}
+
 /** § 12.2 : la décision arrive sur un bac fermé complet. */
 export class ShortfallSheetSealedError extends BusinessError {
   constructor(reference: string) {

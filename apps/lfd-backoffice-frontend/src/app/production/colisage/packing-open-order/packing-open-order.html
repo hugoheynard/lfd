@@ -42,6 +42,15 @@
       <div class="co-close">
         <!-- Départ incomplet décidé : ce qui n'est pas parti reste dit, et le
              BL qui a changé se réimprime (plan E6, § 14 ; Hugo, 2026-10-25). -->
+        @if (order.shortfallDecision; as decision) {
+          <!-- La décision prise, dite au poste (Hugo, 2026-10-25) : ce qui
+               est au bac part, « Déclarer prête » vaut pour lui. -->
+          <fold-callout variant="success" icon="check-circle" data-shortfall-decision>
+            Décision : départ incomplet, reste abandonné — par
+            {{ decision.decidedByName ?? decision.decidedBy }} à
+            {{ decision.decidedAt | date: 'HH:mm' }}
+          </fold-callout>
+        }
         @if (order.abandonedRemainder?.length) {
           <app-abandoned-remainder [lines]="order.abandonedRemainder" />
         }
@@ -94,13 +103,14 @@
             (click)="declareReady.emit()"
             data-declare-ready
           >
-            {{ readyLabel() }}
+            {{ awaitingDecision() ? 'En attente de la décision d’un manager' : readyLabel() }}
           </button>
-          @if (order.shortfallReportedAt !== null) {
-            <!-- Lot E6a : le commerce attend une décision. Fermer complet l'efface. -->
-            <fold-callout variant="warning" data-shortfall-reported>
-              Manque signalé — décision attendue. Si la pièce arrive, mettez-la au bac et déclarez
-              la commande prête : le signalement s'efface.
+          @if (awaitingDecision()) {
+            <!-- Manque signalé, bac incomplet : le serveur refuse de fermer
+                 (Hugo, 2026-10-25). Le bac complet, lui, se ferme encore. -->
+            <fold-callout variant="warning" icon="clock" data-shortfall-reported>
+              En attente de la décision d’un manager. Si les pièces arrivent, mettez-les au bac : la
+              commande se déclare prête et le signalement s’efface.
             </fold-callout>
           }
           @if (order.canReportShortfall) {
@@ -123,7 +133,7 @@
               }}
             </button>
           }
-          @if (!order.canDeclareReady && !closing()) {
+          @if (!order.canDeclareReady && !closing() && !awaitingDecision()) {
             <!-- ⚠️ Le nombre est celui du serveur (`remainingLines`), mais la
                PHRASE décrit la règle d'aujourd'hui : le serveur dit « non » sans
                dire pourquoi. -->

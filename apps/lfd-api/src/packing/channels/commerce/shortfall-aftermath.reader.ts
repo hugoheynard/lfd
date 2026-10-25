@@ -6,6 +6,18 @@ export interface AbandonedLine {
 }
 
 /**
+ * **La décision elle-même** (Hugo, 2026-10-25 : « la décision choisie doit
+ * s'afficher au colisage ») : ce que devient le reste — `abandoned` seulement,
+ * « à relivrer » arrive avec E7 —, l'instant, et l'auteur tel qu'il est écrit
+ * (un `StaffUser.id`), que le colisage nomme par l'annuaire du staff.
+ */
+export interface ShortfallDecisionMark {
+  readonly remainder: "abandoned";
+  readonly decidedAt: Date;
+  readonly decidedBy: string;
+}
+
+/**
  * Ce que le commerce sait d'un départ incomplet décidé : le reste abandonné,
  * et l'état d'impression de ses BL vivants — `to_print` si l'un n'est pas
  * imprimé à sa version courante, `printed` s'ils le sont tous, `null` sans BL
@@ -14,6 +26,8 @@ export interface AbandonedLine {
 export interface ShortfallAftermath {
   readonly abandoned: readonly AbandonedLine[];
   readonly deliveryNote: "to_print" | "printed" | null;
+  /** `null` si la commande porte l'instant de décision sans la décision elle-même. */
+  readonly decision: ShortfallDecisionMark | null;
 }
 
 /**

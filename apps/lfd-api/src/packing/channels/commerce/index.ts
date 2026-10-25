@@ -37,6 +37,7 @@ export { DeliveryNoteReprintsReader } from "./delivery-note-reprints.reader.js";
 export {
   ShortfallAftermathReader,
   type AbandonedLine,
+  type ShortfallDecisionMark,
   type ShortfallAftermath,
 } from "./shortfall-aftermath.reader.js";
 export { OrderBagLabelReader, type OrderBagLabelFacts } from "./order-bag-label.reader.js";

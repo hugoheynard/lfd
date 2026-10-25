@@ -3,6 +3,7 @@ import type {
   PackingDeliveryNotePrint,
   PackingLine,
   PackingSheet,
+  PackingShortfallDecision,
 } from "@lfd/contracts";
 
 import type { SheetLine } from "../entities/packing-sheet.snapshot.js";
@@ -43,6 +44,28 @@ export interface DecidedShortfall {
     readonly quantity: number;
   }[];
   readonly deliveryNote: "to_print" | "printed" | null;
+  readonly decision: {
+    readonly remainder: "abandoned";
+    readonly decidedAt: Date;
+    readonly decidedBy: string;
+  } | null;
+}
+
+/** La décision dite au poste, l'auteur nommé par l'annuaire ; `null` sans décision. */
+export function shortfallDecisionOf(
+  decided: DecidedShortfall | undefined,
+  authorName: (reference: string | null) => string | null,
+): PackingShortfallDecision | null {
+  const decision = decided?.decision ?? null;
+  if (decision === null) {
+    return null;
+  }
+  return {
+    remainder: decision.remainder,
+    decidedAt: decision.decidedAt.toISOString(),
+    decidedBy: decision.decidedBy,
+    decidedByName: authorName(decision.decidedBy),
+  };
 }
 
 /**
@@ -162,6 +185,10 @@ export function sheetOf(order: BoardOrder, context: SheetContext): PackingSheet 
     ),
     abandonedRemainder:
       context.aftermath?.get(order.orderId)?.abandoned.map((line) => ({ ...line })) ?? [],
+    shortfallDecision: shortfallDecisionOf(
+      context.aftermath?.get(order.orderId),
+      context.authorName,
+    ),
     coldOutsideIsotherm: coldOutsideIsotherm(order, context.cold),
     packedAt: order.packed?.at.toISOString() ?? null,
     packedBy: order.packed?.by ?? null,

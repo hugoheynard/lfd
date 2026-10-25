@@ -12,6 +12,7 @@ import {
 import {
   NothingShortError,
   ShortfallAlreadyAuthorizedError,
+  ShortfallAwaitingDecisionError,
   ShortfallContentsChangedError,
   ShortfallSheetSealedError,
 } from "../errors/packing-shortfall-errors.js";
@@ -150,6 +151,8 @@ export class PackingSheet {
    * d'ORIGINE, jamais celle du rescan.
    *
    * @throws {ContainersCountedError} une commande colisée avec l'ancien poste.
+   * @throws {ShortfallAwaitingDecisionError} un manque est signalé, le bac est
+   *   incomplet : le commerce n'a pas encore décidé (Hugo, 2026-10-25).
    * @throws {UnallocatedLinesError} une ligne n'est pas entièrement répartie.
    */
   seal(mark: SheetMark): { readonly mark: SheetMark; readonly fresh: boolean } {
@@ -157,6 +160,10 @@ export class PackingSheet {
     this.assertListed();
     if (this.packedValue !== null) {
       return { mark: this.packedValue, fresh: false };
+    }
+    // Les pièces arrivées : le bac complet se ferme, et le signal s'efface.
+    if (this.shortfallValue !== null && this.contents.unallocated(this.linesValue).length > 0) {
+      throw new ShortfallAwaitingDecisionError(this.reference);
     }
     this.assertAllAllocated();
     this.packedValue = mark;
@@ -168,7 +175,8 @@ export class PackingSheet {
   /**
    * **« Il manque »** (lot E6a, plan E6 (`documentation/commandes/bon-de-livraison.md`) § 3) :
    * fige ce qui est au bac, ligne par ligne. Un second signalement remplace le
-   * premier ; le bac reste ouvert, rien d'autre n'est bloqué.
+   * premier ; le bac reste ouvert, mais ne se ferme plus incomplet tant que le
+   * commerce n'a pas décidé (`seal`, Hugo, 2026-10-25).
    *
    * @throws {PackedOrderSealedError} @throws {ContainersCountedError}
    * @throws {NothingShortError} chaque ligne due est entièrement répartie.

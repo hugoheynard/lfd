@@ -943,6 +943,7 @@ export type {
 export { productionPackingQuerySchema } from "./production-packing.js";
 export type {
   PackingAbandonedLine,
+  PackingShortfallDecision,
   PackingDeliveryNotePrint,
   PackingLine,
   PackingResource,

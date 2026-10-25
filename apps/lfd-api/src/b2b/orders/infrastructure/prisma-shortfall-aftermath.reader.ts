@@ -4,6 +4,7 @@ import {
   ShortfallAftermathReader,
   type AbandonedLine,
   type ShortfallAftermath,
+  type ShortfallDecisionMark,
 } from "../../../packing/channels/commerce/index.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import type { ShortfallQuantity } from "../domain/entities/order-shortfall.js";
@@ -36,7 +37,13 @@ export class PrismaShortfallAftermathReader extends ShortfallAftermathReader {
     }
     const decided = await this.prisma.order.findMany({
       where: { id: { in: [...orderIds] }, shortfallDecidedAt: { not: null } },
-      select: { id: true, shortfallLines: true },
+      select: {
+        id: true,
+        shortfallLines: true,
+        shortfallDecision: {
+          select: { decidedAt: true, decidedByStaffId: true, remainder: true },
+        },
+      },
     });
     if (decided.length === 0) {
       return new Map();
@@ -65,6 +72,7 @@ export class PrismaShortfallAftermathReader extends ShortfallAftermathReader {
             ),
           ),
           deliveryNote: printStateOf(notes.filter((note) => note.orderId === row.id)),
+          decision: decisionMarkOf(row.shortfallDecision),
         },
       ]),
     );
@@ -102,4 +110,23 @@ export function printStateOf(notes: readonly PrintedPaper[]): ShortfallAftermath
   return notes.every((note) => note.printedVersion === note.contentVersion)
     ? "printed"
     : "to_print";
+}
+
+/** Ce qu'il faut d'une décision pour la dire au poste. */
+export interface DecisionRow {
+  readonly decidedAt: Date;
+  readonly decidedByStaffId: string;
+  readonly remainder: string;
+}
+
+/**
+ * La décision telle que le poste la dit. Le reste n'a qu'une valeur en base,
+ * `abandoned` (CHECK) ; une autre — « à relivrer », E7 — ne se dit pas
+ * « abandonné » : `null` plutôt qu'un mot faux.
+ */
+export function decisionMarkOf(row: DecisionRow | null): ShortfallDecisionMark | null {
+  if (row === null || row.remainder !== "abandoned") {
+    return null;
+  }
+  return { remainder: "abandoned", decidedAt: row.decidedAt, decidedBy: row.decidedByStaffId };
 }

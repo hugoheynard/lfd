@@ -1,3 +1,4 @@
+import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import {
   FoldButtonComponent,
@@ -40,6 +41,7 @@ import { PackingLine } from '../packing-line/packing-line';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     AbandonedRemainder,
+    DatePipe,
     DeliveryNotePrintNotice,
     FoldButtonComponent,
     FoldCalloutComponent,
@@ -96,6 +98,16 @@ export class PackingOpenOrder {
    * La commande tient-elle ses contenants dans la colonne (K2b) ? Sinon, elle
    * a été colisée avec l'ancien poste : lecture seule (§17.6).
    */
+  /**
+   * Un manque signalé sur un bac incomplet : la décision du manager est
+   * attendue, et le serveur refuse la fermeture (`ShortfallAwaitingDecisionError`,
+   * Hugo, 2026-10-25). Le bac complet reste fermable : `canDeclareReady` le dit.
+   */
+  protected readonly awaitingDecision = computed(() => {
+    const order = this.sheet();
+    return order !== null && order.shortfallReportedAt !== null && !order.canDeclareReady;
+  });
+
   protected readonly listed = computed(() => {
     const order = this.sheet();
     return order !== null && isListed(order);

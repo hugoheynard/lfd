@@ -106,6 +106,21 @@ export interface PackingAbandonedLine {
   readonly quantity: number;
 }
 
+/**
+ * **La décision d'un départ incomplet**, vue du poste (Hugo, 2026-10-25 :
+ * « la décision choisie doit s'afficher au colisage »). `abandoned` seulement :
+ * « à relivrer » arrive avec E7.
+ */
+export interface PackingShortfallDecision {
+  readonly remainder: "abandoned";
+  /** ISO 8601. */
+  readonly decidedAt: string;
+  /** La référence brute de l'auteur — un `StaffUser.id`. */
+  readonly decidedBy: string;
+  /** « Prénom Nom », ou `null` : l'écran affiche alors la référence brute. */
+  readonly decidedByName: string | null;
+}
+
 export interface PackingSheet {
   /**
    * L'identifiant de la commande (ajouté le 2026-09-29, plan de tournée lot 4) :
@@ -219,6 +234,13 @@ export interface PackingSheet {
    * Facultatif dans le TYPE seulement : le serveur l'envoie toujours.
    */
   readonly abandonedRemainder?: readonly PackingAbandonedLine[];
+  /**
+   * **La décision prise** sur le manque (Hugo, 2026-10-25), `null` sans
+   * décision. Avec elle, « Déclarer prête » vaut pour ce qui part.
+   *
+   * Facultatif dans le TYPE seulement : le serveur l'envoie toujours.
+   */
+  readonly shortfallDecision?: PackingShortfallDecision | null;
   /**
    * Les produits froids posés hors d'un bac isotherme, par nom (2026-10-07) —
    * livraison rangée en contenants seulement ; vide sinon. Un AVERTISSEMENT :

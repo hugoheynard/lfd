@@ -248,17 +248,67 @@ describe('une commande colisée avec l’ancien poste (`counted`, §17.6)', () =
       expect(reported).toEqual([order]);
     });
 
-    it('dit « décision attendue » une fois signalé, et propose de signaler de nouveau', () => {
+    it('en attente de décision, bac incomplet : « Déclarer prête » désarmé et le dit', () => {
       const host: HTMLElement = render({
         sheet: sheet({ canReportShortfall: true, shortfallReportedAt: '2026-10-05T05:00:00Z' }),
       }).nativeElement;
 
+      const ready = host.querySelector<HTMLButtonElement>('[data-declare-ready]');
+      expect(ready?.disabled).toBe(true);
+      expect(said(ready)).toBe('En attente de la décision d’un manager');
       expect(said(host.querySelector('[data-shortfall-reported]'))).toContain(
-        'Manque signalé — décision attendue',
+        'En attente de la décision d’un manager',
       );
+      // L'état dit déjà pourquoi : pas de « lignes encore dehors » en plus.
+      expect(host.textContent).not.toContain('encore dehors');
       expect(said(host.querySelector('[data-report-shortfall]'))).toBe(
         'Manque des produits — relancer la décision',
       );
+    });
+
+    it('signalé mais devenu complet : « Déclarer prête » reste armé, sans attente', () => {
+      const host: HTMLElement = render({
+        sheet: sheet({ canDeclareReady: true, shortfallReportedAt: '2026-10-05T05:00:00Z' }),
+      }).nativeElement;
+
+      const ready = host.querySelector<HTMLButtonElement>('[data-declare-ready]');
+      expect(ready?.disabled).toBe(false);
+      expect(host.querySelector('[data-shortfall-reported]')).toBeNull();
+    });
+
+    it('dit la décision prise, son auteur et son heure', () => {
+      const decidedAt = new Date(2026, 9, 5, 7, 42).toISOString();
+      const host: HTMLElement = render({
+        sheet: sheet({
+          canDeclareReady: true,
+          shortfallDecision: {
+            remainder: 'abandoned',
+            decidedAt,
+            decidedBy: 'staff_1',
+            decidedByName: 'Marie Boulanger',
+          },
+        }),
+      }).nativeElement;
+
+      expect(said(host.querySelector('[data-shortfall-decision]'))).toBe(
+        'Décision : départ incomplet, reste abandonné — par Marie Boulanger à 07:42',
+      );
+      expect(host.querySelector<HTMLButtonElement>('[data-declare-ready]')?.disabled).toBe(false);
+    });
+
+    it('nomme l’auteur par sa référence brute quand l’annuaire ne le connaît pas', () => {
+      const host: HTMLElement = render({
+        sheet: sheet({
+          shortfallDecision: {
+            remainder: 'abandoned',
+            decidedAt: new Date(2026, 9, 5, 7, 42).toISOString(),
+            decidedBy: 'staff_1',
+            decidedByName: null,
+          },
+        }),
+      }).nativeElement;
+
+      expect(said(host.querySelector('[data-shortfall-decision]'))).toContain('par staff_1 à');
     });
 
     it('désarme le geste pendant le signalement en vol', () => {

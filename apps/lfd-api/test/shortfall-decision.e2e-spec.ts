@@ -261,6 +261,7 @@ describe("« Décider du départ » — reste abandonné (E6b + E6c1)", () => {
   it("au poste, la commande décidée garde son reste abandonné et demande un BL jamais imprimé", async () => {
     const order = await accountOrder(1);
     expect((await sheetOf(ctx, order.orderNumber)).deliveryNotePrint).toBeNull();
+    expect((await sheetOf(ctx, order.orderNumber)).shortfallDecision).toBeNull();
 
     await report(order.id);
     await decide(order.id);
@@ -269,6 +270,12 @@ describe("« Décider du départ » — reste abandonné (E6b + E6c1)", () => {
     expect(sheet.abandonedRemainder?.map(({ sku, quantity }) => ({ sku, quantity }))).toEqual([
       { sku: CROISSANT, quantity: 2 },
     ]);
+    // La décision elle-même, son auteur nommé par l'annuaire (Hugo, 2026-10-25).
+    expect(sheet.shortfallDecision).toMatchObject({
+      remainder: "abandoned",
+      decidedByName: "Opérateur E2E",
+    });
+    expect(sheet.canDeclareReady).toBe(true);
     // Jamais imprimé : `reprintNeeded` se tait, le départ décidé non.
     expect(sheet.deliveryNoteReprintNeeded).toBe(false);
     expect(sheet.deliveryNotePrint).toBe("to_reprint");

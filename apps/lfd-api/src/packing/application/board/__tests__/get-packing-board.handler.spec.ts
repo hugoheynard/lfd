@@ -224,8 +224,9 @@ describe("GetPackingBoardHandler — le poste lu au colisage (K3a)", () => {
     aftermath.decided.set("1", {
       abandoned: [{ sku: "PAI", productName: "Baguette", quantity: 2 }],
       deliveryNote: "to_print",
+      decision: null,
     });
-    aftermath.decided.set("2", { abandoned: [], deliveryNote: "printed" });
+    aftermath.decided.set("2", { abandoned: [], deliveryNote: "printed", decision: null });
     // Changé depuis son impression, sans décision : à réimprimer aussi.
     reprints.needed.add("3");
 
@@ -243,5 +244,35 @@ describe("GetPackingBoardHandler — le poste lu au colisage (K3a)", () => {
       ["3", "to_reprint", []],
       ["4", null, []],
     ]);
+  });
+
+  it("dit la décision prise, son auteur nommé par l'annuaire, en une seule lecture", async () => {
+    const { handler, aftermath, authors } = setup({
+      orders: [order("1", null), order("2", null)],
+      withdrawn: [],
+      stocks: [],
+    });
+    const decidedAt = new Date(5_000);
+    aftermath.decided.set("1", {
+      abandoned: [],
+      deliveryNote: "printed",
+      decision: { remainder: "abandoned", decidedAt, decidedBy: "staff_1" },
+    });
+
+    const view = await handler.execute(new GetPackingBoardQuery(DAY));
+
+    expect(view.sheets.map((sheet) => [sheet.orderId, sheet.shortfallDecision])).toEqual([
+      [
+        "1",
+        {
+          remainder: "abandoned",
+          decidedAt: decidedAt.toISOString(),
+          decidedBy: "staff_1",
+          decidedByName: "Marie Boulanger",
+        },
+      ],
+      ["2", null],
+    ]);
+    expect(authors.asked).toEqual([[null, null, "staff_1"]]);
   });
 });

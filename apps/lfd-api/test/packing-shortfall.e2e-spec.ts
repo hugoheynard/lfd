@@ -137,6 +137,22 @@ describe("« Il manque » au colisage → la commande attend une décision", () 
     expect((await sheetOf(ctx, sheet.reference)).shortfallReportedAt).toBeNull();
   });
 
+  it("🔴 un bac incomplet dont le manque attend la décision ne se ferme pas — 409 nommé", async () => {
+    const { id, sheet } = await shortOrder();
+    await reportShortfall(sheet.orderId);
+
+    const refusal = await ctx.asSub(STAFF).post(`${packingOrderPath(sheet.orderId)}/close`);
+
+    expect(refusal.status).toBe(409);
+    expect(jsonBody<{ readonly code: string }>(refusal).code).toBe(
+      "packing.shortfall.awaiting_decision",
+    );
+    const after = await sheetOf(ctx, sheet.reference);
+    expect(after.packedAt).toBeNull();
+    expect(after.canDeclareReady).toBe(false);
+    expect((await shortfallOf(id)).shortfallReportedAt).not.toBeNull();
+  });
+
   it("refuse un bac complet, en 409", async () => {
     const { sheet } = await shortOrder();
     await addToBag(sheet, 2);

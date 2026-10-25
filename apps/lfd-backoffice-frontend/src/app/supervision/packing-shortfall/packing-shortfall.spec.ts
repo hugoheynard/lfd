@@ -59,11 +59,11 @@ describe('PackingShortfall — le manque sur la carte du colisage', () => {
     expect(el.querySelector('[data-shortfall-missing]')?.textContent).not.toContain('Chausson');
   });
 
-  it('sans le droit, le texte seul et « en attente d’une décision du commerce »', () => {
+  it('sans le droit, le texte seul et « en attente de la décision d’un manager »', () => {
     const { el } = mount(['b2b_orders:read']);
     expect(el.querySelector('[data-shortfall-decide]')).toBeNull();
     expect(el.querySelector('[data-shortfall-waiting]')?.textContent).toContain(
-      "En attente d'une décision du commerce",
+      "En attente de la décision d'un manager",
     );
   });
 

@@ -37,6 +37,7 @@ import { ClosePackingOrderCommand } from "./close-packing-order.command.js";
  * l'abonné du commerce ; un second fait ici doublerait son écrivain.
  *
  * @throws {PackingOrderNotDrawnYetError} @throws {UnallocatedLinesError}
+ * @throws {ShortfallAwaitingDecisionError} manque signalé, bac incomplet, pas de décision.
  */
 @CommandHandler(ClosePackingOrderCommand)
 export class ClosePackingOrderHandler implements ICommandHandler<ClosePackingOrderCommand, void> {

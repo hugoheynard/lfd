@@ -2,6 +2,7 @@ import { ContainersCountedError } from "../../errors/packing-container-errors.js
 import {
   NothingShortError,
   ShortfallAlreadyAuthorizedError,
+  ShortfallAwaitingDecisionError,
   ShortfallContentsChangedError,
   ShortfallSheetSealedError,
 } from "../../errors/packing-shortfall-errors.js";
@@ -107,12 +108,19 @@ describe("PackingSheet — la fermeture complète efface le manque (E6a)", () =>
     expect(target.shortfallReportedAt).toBeNull();
   });
 
+  it("sans signal, un bac incomplet garde son refus d'origine", () => {
+    expect(() => shortOfThree().seal({ at: LATER, by: "s2" })).not.toThrow(
+      ShortfallAwaitingDecisionError,
+    );
+  });
+
   it("une fermeture refusée laisse le signalement en place", () => {
     const target = shortOfThree();
     target.reportShortfall(FIRST);
 
-    expect(() => target.seal({ at: LATER, by: "s2" })).toThrow();
+    expect(() => target.seal({ at: LATER, by: "s2" })).toThrow(ShortfallAwaitingDecisionError);
     expect(target.shortfallReportedAt).toEqual(FIRST);
+    expect(target.packed).toBeNull();
   });
 });
 

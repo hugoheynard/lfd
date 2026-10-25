@@ -1,4 +1,4 @@
-import { abandonedOf, printStateOf } from "../prisma-shortfall-aftermath.reader.js";
+import { abandonedOf, decisionMarkOf, printStateOf } from "../prisma-shortfall-aftermath.reader.js";
 
 describe("abandonedOf — le reste abandonné d'un départ décidé", () => {
   it("rend le dû moins ce qui est parti, sur les seules lignes incomplètes", () => {
@@ -49,5 +49,22 @@ describe("printStateOf — l'impression des BL d'un départ décidé", () => {
 
   it("imprimé quand tous le sont à leur version courante", () => {
     expect(printStateOf([{ contentVersion: 2, printedVersion: 2 }])).toBe("printed");
+  });
+});
+
+describe("decisionMarkOf — la décision dite au poste", () => {
+  const at = new Date(1_000);
+
+  it("rend le reste abandonné, l'instant et l'auteur écrit", () => {
+    expect(
+      decisionMarkOf({ decidedAt: at, decidedByStaffId: "staff_1", remainder: "abandoned" }),
+    ).toEqual({ remainder: "abandoned", decidedAt: at, decidedBy: "staff_1" });
+  });
+
+  it("ne dit pas « abandonné » d'un autre reste, ni d'une décision absente", () => {
+    expect(
+      decisionMarkOf({ decidedAt: at, decidedByStaffId: "s", remainder: "to_redeliver" }),
+    ).toBeNull();
+    expect(decisionMarkOf(null)).toBeNull();
   });
 });
