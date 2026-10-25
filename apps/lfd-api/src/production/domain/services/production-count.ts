@@ -99,10 +99,36 @@ export function countOf(orders: readonly CountedItem[]): readonly ProducedItemSn
   return [...bySku.values()].sort((left, right) => left.sku.localeCompare(right.sku));
 }
 
+/**
+ * **Le compte d'après l'arrêt ne baisse jamais** (plan A2,
+ * `documentation/commandes/modification/plan-a2-modifier-une-commande-inscrite.md`,
+ * § 7, B3) : par article, le plus grand du compte précédent et du compte
+ * refait. Une commande dont la quantité baisse après l'arrêt dit son dû
+ * révisé dans ses lignes ; ce qui a été demandé au four, lui, reste — le
+ * surplus ira en réserve au colisage, comme pour une commande retirée (A1).
+ *
+ * Trié par SKU comme {@link countOf}. Le nom est celui du compte refait
+ * quand il connaît l'article, sinon celui d'avant. Aucune coche recopiée :
+ * l'appelant a matérialisé les coches héritées en fournées avant.
+ */
+export function floorCounts(
+  previous: readonly ProducedItemSnapshot[],
+  next: readonly ProducedItemSnapshot[],
+): readonly ProducedItemSnapshot[] {
+  const bySku = new Map<string, ProducedItemSnapshot>();
+  for (const item of previous) {
+    bySku.set(item.sku, { ...item, done: null });
+  }
+  for (const item of next) {
+    const before = bySku.get(item.sku)?.quantity ?? 0;
+    bySku.set(item.sku, { ...item, quantity: Math.max(before, item.quantity), done: null });
+  }
+  return [...bySku.values()].sort((left, right) => left.sku.localeCompare(right.sku));
+}
+
 /** Ce que le retirage inscrit dans la journée — ou rien, s'il n'y a rien à absorber. */
 export interface AbsorbedArrivals {
   readonly orders: readonly ProductionOrderSnapshot[];
-  readonly counts: readonly ProducedItemSnapshot[];
   /** Le nombre de commandes réellement absorbées. `0` = rien n'était arrivé. */
   readonly count: number;
 }
@@ -134,28 +160,19 @@ export interface AbsorbedArrivals {
  * les a matérialisées en fournées avant, sous le verrou de la journée. Ce qui
  * est sorti survit donc au retirage par les fournées, pas par le compte.
  *
- * Le compte se refait depuis TOUTES les commandes de la journée, pas en ajoutant
- * les nouvelles au total précédent : c'est la même fonction qui produit le
- * tirage et le retirage, donc ils ne peuvent pas compter différemment.
+ * Le compte, lui, n'est plus calculé ici depuis A2 (2026-10-25) : l'agrégat le
+ * refait par sa méthode unique (`ProductionDay.recount`), depuis TOUTES les
+ * commandes et les réassorts figés, avec le plancher de {@link floorCounts} —
+ * la même pour le retirage, le lancement d'un réassort et la révision.
  */
 export function absorbArrivals(
   known: readonly ProductionOrderSnapshot[],
-  counts: readonly ProducedItemSnapshot[],
   incoming: readonly ProducibleOrder[],
-  resupplies: readonly ProductionResupplySnapshot[] = [],
 ): AbsorbedArrivals {
   const knownIds = new Set(known.map((order) => order.orderId));
   const arrivals = incoming.filter((order) => !knownIds.has(order.orderId));
   if (arrivals.length === 0) {
-    return { orders: known, counts, count: 0 };
+    return { orders: known, count: 0 };
   }
-  const merged = [...known, ...arrivals.map(freezeOrder)];
-  return {
-    orders: merged,
-    // Les réassorts figés restent au compte : le retirage n'en absorbe
-    // aucun (aucun ne peut être envoyé pour une journée arrêtée, R3a), mais
-    // un compte refait sans eux les ferait disparaître des fournées.
-    counts: countOf([...merged, ...resupplies]),
-    count: arrivals.length,
-  };
+  return { orders: [...known, ...arrivals.map(freezeOrder)], count: arrivals.length };
 }

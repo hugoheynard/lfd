@@ -70,4 +70,13 @@ export type OrderRevisability =
  * quelle sous le bouton grisé : elle nomme le cas et le geste de sortie.
  */
 export type AdminOrderRevisability =
-  { readonly revisable: true } | { readonly revisable: false; readonly reason: string };
+  | {
+      readonly revisable: true;
+      /**
+       * Plan A2 (2026-10-25) : la commande est déjà inscrite au plan du
+       * fournil — l'équipe n'en change que les quantités. La phrase du
+       * serveur, à montrer telle quelle ; ABSENT = tout se modifie.
+       */
+      readonly quantitiesOnly?: string;
+    }
+  | { readonly revisable: false; readonly reason: string };

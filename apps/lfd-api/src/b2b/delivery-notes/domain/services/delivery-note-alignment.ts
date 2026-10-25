@@ -62,6 +62,13 @@ export type DeliveryNoteAlignment =
 export interface AlignmentContext {
   readonly newId: () => string;
   readonly now: Date;
+  /**
+   * Plan A2 (§ 7) : la commande vient d'être révisée après l'arrêt — un BL
+   * prévu qui ne dit plus sa commande se réécrit. Seul le geste de la
+   * révision le pose : le réconciliateur, lui, COMPTE un écart de totaux
+   * sans le réécrire (plan E4a).
+   */
+  readonly revised?: boolean;
 }
 
 /** L'état que la commande demande à son BL, et ses instants. */
@@ -120,7 +127,7 @@ export function alignmentOf(
   if (current === undefined) {
     return creationOf(order, notes, target, context);
   }
-  return advanceOf(order, current, target);
+  return advanceOf(order, current, target, context.revised === true);
 }
 
 /** Commande annulée : tout BL vivant non remis passe `voided`. */
@@ -159,13 +166,14 @@ function advanceOf(
   order: FollowedOrder,
   note: DeliveryNote,
   target: Target,
+  revised: boolean,
 ): DeliveryNoteAlignment {
   const from = note.status === "voided" ? null : ORDER_OF[note.status];
   if (from === null || from > ORDER_OF[target.status]) {
     return UNREPAIRABLE("note_ahead_of_order");
   }
   if (from === ORDER_OF[target.status]) {
-    return completionOf(order, note);
+    return completionOf(order, note, revised);
   }
   if (note.status === "planned") {
     // Un BL prévu peut porter des lignes antérieures à une révision : il
@@ -184,9 +192,18 @@ function advanceOf(
  * depuis la commande, remis compris (plan E4a, § 4, bloquant 3). Un BL prévu
  * se complète comme il se réécrit, par {@link DeliveryNote.replanFrom}.
  */
-function completionOf(order: FollowedOrder, note: DeliveryNote): DeliveryNoteAlignment {
-  // Un départ décidé (E6b) réécrit le BL prévu sur ce qui part, dès la décision.
-  if (order.departureDecided === true && note.status === "planned" && !note.matches(order)) {
+function completionOf(
+  order: FollowedOrder,
+  note: DeliveryNote,
+  revised: boolean,
+): DeliveryNoteAlignment {
+  // Un départ décidé (E6b) réécrit le BL prévu sur ce qui part, dès la
+  // décision ; une révision après l'arrêt (plan A2), sur la commande révisée.
+  if (
+    (order.departureDecided === true || revised) &&
+    note.status === "planned" &&
+    !note.matches(order)
+  ) {
     note.replanFrom(order);
     return { change: "completed", writes: [note] };
   }

@@ -72,6 +72,7 @@ interface Harness {
 
 async function mount(
   revise: () => Promise<unknown> = async () => ({ totalCents: 1583 }),
+  order: object = ORDER,
 ): Promise<Harness> {
   const quoteRevision = vi.fn(async () => QUOTE);
   const reviseFn = vi.fn(revise);
@@ -80,7 +81,7 @@ async function mount(
       provideRouter([]),
       {
         provide: AdminOrdersService,
-        useValue: { byId: async () => ORDER, quoteRevision, revise: reviseFn },
+        useValue: { byId: async () => order, quoteRevision, revise: reviseFn },
       },
       {
         provide: AdminCatalogService,
@@ -177,5 +178,39 @@ describe('modifier une commande depuis le back-office', () => {
     await page['validate']();
     expect(page['refusal']()).toBe('Commande réglée par carte.');
     expect(page['stale']()).toBe(false);
+  });
+
+  describe('après l’arrêt du plan (plan A2) : les quantités seulement', () => {
+    const NOTE =
+      'Le plan du fournil est arrêté pour cette commande : seules les quantités changent.';
+    const INSCRIBED = { ...ORDER, revisability: { revisable: true, quantitiesOnly: NOTE } };
+
+    it('dit pourquoi, retire les sources d’articles et verrouille le reste', async () => {
+      const { fixture } = await mount(undefined, INSCRIBED);
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('[data-quantities-only]')?.textContent).toContain(NOTE);
+      expect(el.querySelector('app-source-produits')).toBeNull();
+      expect(el.querySelector<HTMLFieldSetElement>('fieldset.mc-locked')?.disabled).toBe(true);
+    });
+
+    it('une quantité change : le devis se demande', async () => {
+      const { page } = await mount(undefined, INSCRIBED);
+      page['cart'].setQuantity('BAG', 15);
+      expect(page['blockers']()).toEqual([]);
+      expect(page['content']()).not.toBeNull();
+    });
+
+    it('un article retiré : refusé avant le serveur, nommé', async () => {
+      const { page } = await mount(undefined, INSCRIBED);
+      page['cart'].remove('BAG');
+      expect(page['blockers']().join(' ')).toContain('« Baguette » retiré');
+    });
+
+    it('avant l’arrêt, rien n’est verrouillé', async () => {
+      const { fixture } = await mount();
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('[data-quantities-only]')).toBeNull();
+      expect(el.querySelector<HTMLFieldSetElement>('fieldset.mc-locked')?.disabled).toBe(false);
+    });
   });
 });

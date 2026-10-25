@@ -44,6 +44,15 @@ export abstract class DeliveryNoteFollowing {
    */
   abstract followDecision(orderId: string): Promise<void>;
 
+  /**
+   * Les quantités d'une commande inscrite viennent d'être révisées (plan A2,
+   * § 7) : son BL encore prévu se réécrit sur les lignes de la commande,
+   * `content_version` monte, et l'avertissement de réimpression s'affiche —
+   * par la même règle que les autres gestes. Un BL déjà préparé ne bouge pas :
+   * la commande est alors prête, et la révision refusée bien avant.
+   */
+  abstract followRevision(orderId: string): Promise<void>;
+
   /** La commande vient d'être annulée : tout BL non remis passe `voided` à `at`. */
   abstract voidLiveFor(orderId: string, at: Date): Promise<void>;
 }

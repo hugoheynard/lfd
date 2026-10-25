@@ -58,6 +58,7 @@ import {
 } from "./customer-cancellation.providers.js";
 import { OrderCancellation } from "./application/services/order-cancellation.service.js";
 import { OrderWorkshopWithdrawal } from "./application/services/order-workshop-withdrawal.js";
+import { OrderWorkshopRevision } from "./application/services/order-workshop-revision.js";
 import { RecordOrderRefundHandler } from "./application/commands/record-order-refund.handler.js";
 import { RingRefundRejected } from "./application/handlers/ring-refund-rejected.handler.js";
 import { OrderRefundRepository } from "./domain/ports/order-refund.repository.js";
@@ -367,6 +368,8 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     OrderCancellation,
     // Plan A1 : retirer la commande du fournil, puis du colisage.
     OrderWorkshopWithdrawal,
+    // Plan A2 : réviser les quantités au fournil, puis au colisage.
+    OrderWorkshopRevision,
     ...CUSTOMER_CANCELLATION_PROVIDERS,
     ...ORDER_REVISION_PROVIDERS,
     ...ORDER_SHORTFALL_PROVIDERS,

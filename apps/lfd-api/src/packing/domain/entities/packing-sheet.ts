@@ -19,6 +19,7 @@ import {
   PackingSheetHasLiveContainersError,
   PackingSheetWithdrawnError,
 } from "../errors/packing-withdrawal-errors.js";
+import { type DueRevision, type RevisedDueLine, revisedDueOf } from "../services/revised-due.js";
 import {
   type AuthorizedLine,
   authorizedLinesOf,
@@ -223,6 +224,37 @@ export class PackingSheet {
     }
     this.shortfallValue = null;
     this.authorizedValue = mark.at;
+  }
+
+  /**
+   * **Révise les lignes dues** — l'équipe a changé les quantités d'une
+   * commande déjà inscrite (plan A2,
+   * `documentation/commandes/modification/plan-a2-modifier-une-commande-inscrite.md`,
+   * § 7). Bac ouvert seulement ; aucune ligne sous ce qui est déjà au bac.
+   * Une ligne qui monte et n'est plus entièrement répartie perd sa marque
+   * « au bac » ; une ligne qui descend jusqu'à ce qui est au bac la prend,
+   * signée par la révision. Un manque signalé reste écrit (§ 2.2) : fermer
+   * le bac complet l'effacera, comme aujourd'hui.
+   *
+   * @returns les lignes qui ont changé, de → à ; vide si rien.
+   * @throws {PackedOrderSealedError} @throws {ContainersCountedError}
+   * @throws {ShortfallAlreadyAuthorizedError} le départ incomplet est décidé.
+   * @throws les refus de `revisedDueOf` : articles changés, sous le bac.
+   */
+  reviseDue(revisions: readonly DueRevision[], mark: SheetMark): readonly RevisedDueLine[] {
+    this.assertNotWithdrawn();
+    this.assertListedAndOpen();
+    if (this.authorizedValue !== null) {
+      throw new ShortfallAlreadyAuthorizedError(this.reference);
+    }
+    const revised = revisedDueOf(this.reference, this.linesValue, revisions, (sku) =>
+      this.contents.allocatedOf(sku),
+    );
+    this.linesValue = revised.lines;
+    for (const line of revised.lines) {
+      this.markByAllocation(line, line.packed ?? { ...mark, initials: "" });
+    }
+    return revised.changed;
   }
 
   /**

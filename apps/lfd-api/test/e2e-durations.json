@@ -197,6 +197,8 @@
   "test/order-cancel-after-plan-races.e2e-spec.ts": 14000,
   "test/order-cancel-after-plan-traces.e2e-spec.ts": 14000,
   "test/order-cancel-after-plan.e2e-spec.ts": 14000,
+  "test/order-revise-after-plan-races.e2e-spec.ts": 12000,
+  "test/order-revise-after-plan.e2e-spec.ts": 14000,
   "test/order-cancel-stage.e2e-spec.ts": 9910,
   "test/order-customer-cancel.e2e-spec.ts": 14568,
   "test/order-cutoffs.e2e-spec.ts": 12711,

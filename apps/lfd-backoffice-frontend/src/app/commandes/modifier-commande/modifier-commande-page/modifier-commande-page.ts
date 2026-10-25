@@ -185,11 +185,27 @@ export class ModifierCommandePage {
     this.fulfillment().method === 'delivery' ? 'Livraison souhaitée le' : 'Retrait souhaité le',
   );
 
+  /**
+   * Plan A2 (§ 7) : la commande est inscrite au plan du fournil — seules les
+   * quantités changent. La phrase du serveur, ou `null` : tout se modifie.
+   */
+  protected readonly quantitiesOnly = computed<string | null>(() => {
+    const revisability = this.order()?.revisability;
+    return revisability?.revisable === true ? (revisability.quantitiesOnly ?? null) : null;
+  });
+
   /** Ce qui empêche de demander le devis, dit en clair. */
   protected readonly blockers = computed<readonly string[]>(() => {
     const issues: string[] = [];
     if (this.cart.isEmpty()) {
       issues.push('Le panier est vide : pour tout retirer, annulez la commande.');
+    }
+    const changed = this.quantitiesOnly() === null ? [] : this.articlesChanged();
+    if (changed.length > 0) {
+      issues.push(
+        `Après l’arrêt du plan, un article ne s’ajoute ni ne se retire : ${changed.join(', ')}. ` +
+          'Remettez la commande à ses articles d’origine, ou annulez-la.',
+      );
     }
     if (this.draft.requestedDate() === '') {
       issues.push('Aucun jour de retrait/livraison.');
@@ -245,6 +261,20 @@ export class ModifierCommandePage {
   });
 
   protected readonly cents = formatCents;
+
+  /** Les articles ajoutés ou retirés par rapport à la commande, nommés. */
+  private articlesChanged(): readonly string[] {
+    const before = this.order()?.lines ?? [];
+    const now = this.cart.lines();
+    const kept = new Set(now.map((line) => line.sku));
+    const known = new Set(before.map((line) => line.sku));
+    return [
+      ...before
+        .filter((line) => !kept.has(line.sku))
+        .map((line) => `« ${line.productName} » retiré`),
+      ...now.filter((line) => !known.has(line.sku)).map((line) => `« ${line.name} » ajouté`),
+    ];
+  }
 
   constructor() {
     effect(() => {

@@ -19,6 +19,9 @@ import { revisedCompositionOf } from "./revised-composition.js";
  * l'unité de travail ambiante : la révision, son historique, la note au
  * fournil, la ligne d'encaissement et les faits partent ensemble, ou rien.
  */
+/** Les statuts qu'une révision écrit : avant l'arrêt, et inscrite (plan A2, § 7). */
+const REVISABLE_STATUSES = [OrderStatus.placed, OrderStatus.confirmed];
+
 @Injectable()
 export class PrismaOrderRevisionRepository extends OrderRevisionRepository {
   constructor(private readonly prisma: PrismaService) {
@@ -43,7 +46,9 @@ export class PrismaOrderRevisionRepository extends OrderRevisionRepository {
   }
 
   /**
-   * L'écriture conditionnée d'abord (révision ET `placed`, R7) : si elle ne
+   * L'écriture conditionnée d'abord (révision ET `placed`, R7 — ou
+   * `confirmed`, la commande inscrite dont l'équipe change les quantités,
+   * plan A2, § 7 : la règle et les guichets l'ont déjà jugée) : si elle ne
    * franchit pas, rien d'autre n'est écrit. La composition remplacée est
    * relue telle qu'écrite AVANT d'être recouverte, puis les lignes sont
    * remplacées en bloc — l'historique seul fait foi du passé.
@@ -52,7 +57,11 @@ export class PrismaOrderRevisionRepository extends OrderRevisionRepository {
     const replaced = await revisedCompositionOf(this.prisma, revision.orderId);
     const { state } = revision;
     const { count } = await this.prisma.order.updateMany({
-      where: { id: revision.orderId, revision: revision.fromRevision, status: OrderStatus.placed },
+      where: {
+        id: revision.orderId,
+        revision: revision.fromRevision,
+        status: { in: REVISABLE_STATUSES },
+      },
       data: {
         revision: revision.toRevision,
         revisedAt: at,

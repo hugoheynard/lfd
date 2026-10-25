@@ -9,6 +9,7 @@ import {
   revisionBlockReasonOf,
   type RevisionVerdict,
 } from "../../domain/services/order-revisability.js";
+import { QUANTITIES_ONLY_NOTE } from "../../domain/services/revision-after-arrest.js";
 import { OrderRevising } from "./order-revising.service.js";
 
 /** Ce que l'équipe lit de la modification d'une commande : le verdict et la révision courante. */
@@ -67,9 +68,13 @@ export function customerRevisabilityOf(verdict: RevisionVerdict): OrderRevisabil
 
 /** Le verdict dit à l'équipe : la phrase du serveur sous le bouton grisé. */
 export function adminRevisabilityOf(verdict: RevisionVerdict): AdminOrderRevisability {
-  return verdict.revisable
-    ? { revisable: true }
-    : { revisable: false, reason: revisionBlockReasonOf(verdict.block) };
+  if (!verdict.revisable) {
+    return { revisable: false, reason: revisionBlockReasonOf(verdict.block) };
+  }
+  // Plan A2, § 7 : inscrite — l'équipe n'en change que les quantités, et l'écran le dit.
+  return verdict.quantitiesOnly === true
+    ? { revisable: true, quantitiesOnly: QUANTITIES_ONLY_NOTE }
+    : { revisable: true };
 }
 
 function isoOrNull(at: Date | null): string | null {

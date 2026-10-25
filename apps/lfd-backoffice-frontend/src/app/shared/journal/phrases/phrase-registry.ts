@@ -22,6 +22,7 @@ import { HANDOVER_PROOF_PHRASES } from './handover-proof-phrases';
 import { INVOICE_PHRASES } from './invoice-phrases';
 import { PACKING_CONTAINER_PHRASES } from './packing-container-phrases';
 import { AFTER_CLOSE_WITHDRAWAL_PHRASES } from './after-close-withdrawal-phrases';
+import { AFTER_CLOSE_REVISION_PHRASES } from './after-close-revision-phrases';
 import { PACKING_RESERVE_PHRASES } from './packing-reserve-phrases';
 import { LOYALTY_PHRASES } from './loyalty-phrases';
 import { COMMERCE_OPERATION_PHRASES, OPERATION_PHRASES } from './operation-phrases';
@@ -187,6 +188,7 @@ export const PHRASES: Readonly<Record<JournalFactType, Phrase>> = {
   ...HANDOVER_PROOF_PHRASES,
   ...PACKING_CONTAINER_PHRASES,
   ...AFTER_CLOSE_WITHDRAWAL_PHRASES,
+  ...AFTER_CLOSE_REVISION_PHRASES,
   ...PACKING_RESERVE_PHRASES,
   ...PRODUCTION_QUALITY_PHRASES,
   ...PRODUCTION_SETTINGS_PHRASES,

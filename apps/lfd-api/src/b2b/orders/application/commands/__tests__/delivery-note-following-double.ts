@@ -28,6 +28,10 @@ export class RecordingDeliveryNoteFollowing extends DeliveryNoteFollowing {
     return this.record(`follow-decision:${orderId}`);
   }
 
+  followRevision(orderId: string): Promise<void> {
+    return this.record(`follow-revision:${orderId}`);
+  }
+
   voidLiveFor(orderId: string): Promise<void> {
     return this.record(`void:${orderId}`);
   }

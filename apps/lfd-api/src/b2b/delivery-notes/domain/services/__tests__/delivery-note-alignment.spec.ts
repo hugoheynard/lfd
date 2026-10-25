@@ -247,3 +247,23 @@ describe("alignmentOf — ce qu'on ne répare pas est nommé, jamais inventé", 
     });
   });
 });
+
+describe("alignmentOf — la révision après l'arrêt (plan A2)", () => {
+  it("révisée : le BL prévu se réécrit sur les nouvelles quantités, sa version monte", () => {
+    const note = planned();
+    const before = note.toState().contentVersion;
+
+    const result = alignmentOf(order({ lines: [REVISED] }), [note], { ...context, revised: true });
+
+    expect(result.change).toBe("completed");
+    expect(note.toState().lines).toEqual([REVISED]);
+    expect(note.toState().contentVersion).toBe((before ?? 1) + 1);
+  });
+
+  it("sans le geste de la révision, le réconciliateur ne réécrit pas un BL prévu qui diverge", () => {
+    const note = planned();
+
+    expect(alignmentOf(order({ lines: [REVISED] }), [note], context)).toEqual({ change: "none" });
+    expect(note.toState().lines).toEqual([BREAD]);
+  });
+});

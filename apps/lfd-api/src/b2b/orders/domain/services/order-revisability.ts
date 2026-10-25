@@ -36,7 +36,12 @@ export type StandingRevisionBlock = Extract<
  * l'équipe ou sans limite —, ou bloquée.
  */
 export type RevisionVerdict =
-  | { readonly revisable: true; readonly until: Date | null }
+  | {
+      readonly revisable: true;
+      readonly until: Date | null;
+      /** Plan A2 : inscrite au plan — l'équipe n'en change que les quantités. */
+      readonly quantitiesOnly?: true;
+    }
   | { readonly revisable: false; readonly block: RevisionBlock };
 
 /** Ce que la règle lit de la commande, hors frontière de l'annulation. */

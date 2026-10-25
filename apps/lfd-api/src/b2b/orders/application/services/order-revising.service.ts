@@ -18,6 +18,10 @@ import type { WindowRequester } from "../../domain/services/delivery-window.js";
 import { BEFORE_INSCRIPTION } from "../../domain/services/cancellation-allowance.js";
 import { cancellationOf } from "../../domain/services/order-cancellation.js";
 import {
+  quantitiesAfterArrestAllowed,
+  type RevisionScope,
+} from "../../domain/services/revision-after-arrest.js";
+import {
   revisabilityOf,
   standingBlockOf,
   type RevisionVerdict,
@@ -68,18 +72,27 @@ export class OrderRevising {
    * l'agrégat le refuse aussi, mais après une recomposition inutile. Puis les
    * CGV figées, sans lesquelles rien ne se recompose.
    *
+   * Plan A2 (§ 7) : une commande que son statut dit déjà inscrite
+   * (`confirmed`) n'est pas refusée pour l'équipe sur une commande au compte —
+   * la portée devient `quantities`, que l'appelant fait respecter.
+   *
+   * @returns la portée : `full`, ou `quantities` si la commande est déjà inscrite.
    * @throws {OrderNotRevisableError} la commande ne se modifie plus.
    * @throws {CardOrderNotRevisableError} la commande se règle par carte.
    * @throws {OrderWithoutSalesTermsError} une commande d'avant les CGV figées.
    */
-  async ensureRevisable(order: RevisableOrder): Promise<void> {
+  async ensureRevisable(
+    order: RevisableOrder,
+    actorKind: RevisionActor["kind"],
+  ): Promise<RevisionScope> {
     // La règle est celle de l'agrégat ; rejouée ici sous le verrou de `orders`
     // que `OrderRevisionRepository.lock` vient de poser (E6b).
     ensureNoShortfallDecision(order);
-    const block = await this.standingOf(order, null);
-    if (block !== null) {
-      throw standingRevisionErrorOf(order.orderId, block);
+    const standing = await this.standingOf(order, null, actorKind);
+    if (standing.block !== null) {
+      throw standingRevisionErrorOf(order.orderId, standing.block);
     }
+    return standing.scope;
   }
 
   /**
@@ -94,7 +107,10 @@ export class OrderRevising {
     actorKind: RevisionActor["kind"],
     inscribedDay: string | null,
   ): Promise<RevisionVerdict> {
-    const standing = await this.standingOf(order, inscribedDay);
+    const { block: standing, scope } = await this.standingOf(order, inscribedDay, actorKind);
+    if (standing === null && scope === "quantities") {
+      return { revisable: true, until: null, quantitiesOnly: true };
+    }
     if (standing !== null || actorKind === "staff" || order.serviceDay === null) {
       return revisabilityOf({ standing, planClosedDay: null, cutoff: null });
     }
@@ -109,21 +125,37 @@ export class OrderRevising {
     return revisabilityOf({ standing, planClosedDay: closed ? day : null, cutoff });
   }
 
+  /**
+   * La frontière commune, et la portée. « Inscrite » est le DERNIER refus que
+   * la règle cherche (`cancellationOf`) : quand c'est lui, tout le reste est
+   * passé, et l'équipe d'une commande au compte garde les quantités (plan A2,
+   * § 7) — le guichet du fournil le tranche sous le verrou de la journée.
+   */
   private async standingOf(
     order: RevisableOrder,
     inscribedDay: string | null,
-  ): Promise<StandingRevisionBlock | null> {
+    actorKind: RevisionActor["kind"],
+  ): Promise<{ readonly block: StandingRevisionBlock | null; readonly scope: RevisionScope }> {
     const decision = cancellationOf(
       await this.rule.stateOf(subjectOf(order), inscribedDay),
       // Une modification s'arrête à l'inscription, quel que soit le réglage
-      // d'annulation du plan A1 : elle change ce qu'on fabrique.
+      // d'annulation du plan A1 : elle change ce qu'on fabrique. Au-delà, c'est
+      // la portée `quantities` (plan A2), propre à la révision.
       BEFORE_INSCRIPTION,
     );
-    return standingBlockOf(decision, {
-      paymentStatus: order.paymentStatus,
-      totalCents: order.totalCents,
-      hasSalesTerms: order.salesTerms !== null,
-    });
+    const quantities =
+      !decision.cancellable &&
+      decision.block.kind === "inscribed" &&
+      quantitiesAfterArrestAllowed(actorKind, order.paymentStatus, order.totalCents);
+    const block = standingBlockOf(
+      quantities ? { cancellable: true, regime: "account" } : decision,
+      {
+        paymentStatus: order.paymentStatus,
+        totalCents: order.totalCents,
+        hasSalesTerms: order.salesTerms !== null,
+      },
+    );
+    return { block, scope: quantities ? "quantities" : "full" };
   }
 
   /**

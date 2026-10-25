@@ -84,6 +84,10 @@ class RecordingPlanning extends DeliveryNoteFollowing {
     return Promise.reject(new RangeError("non utilisé par l'arrêt"));
   }
 
+  followRevision(): Promise<void> {
+    return Promise.reject(new RangeError("non utilisé par l'arrêt"));
+  }
+
   followDecision(): Promise<void> {
     return Promise.reject(new RangeError("non utilisé par l'arrêt du plan"));
   }

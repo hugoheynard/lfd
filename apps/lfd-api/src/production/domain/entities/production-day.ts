@@ -8,6 +8,7 @@ import {
 import {
   absorbArrivals,
   countOf,
+  floorCounts,
   freezeOrder,
   freezeResupply,
 } from "../services/production-count.js";
@@ -26,6 +27,7 @@ import {
   type ResupplyLaunchGesture,
 } from "./production-day.launch.js";
 import { assertReopenable, type DownstreamProgress } from "./production-day.reopening.js";
+import { type RaisedLine, type RevisedLine, revisedPlanOf } from "./production-day.revision.js";
 import type {
   DoneMark,
   LaunchedResupplySnapshot,
@@ -40,6 +42,7 @@ import { type PlanSigner, staffSigner } from "./plan-signer.js";
 
 // La forme de la journée vit à côté ; réexportée : l'agrégat reste le point d'entrée.
 export type { DownstreamProgress } from "./production-day.reopening.js";
+export type { RaisedLine, RevisedLine } from "./production-day.revision.js";
 export {
   NOTHING_PENDING,
   type PendingPlan,
@@ -325,17 +328,12 @@ export class ProductionDay {
       throw new ProductionDayNotClosedError(this.day.value);
     }
     const kept = withoutWithdrawn(orders, withdrawn);
-    const absorbed = absorbArrivals(
-      this.ordersValue,
-      this.countsValue,
-      kept,
-      this.plannedResupplies,
-    );
+    const absorbed = absorbArrivals(this.ordersValue, kept);
     if (absorbed.count === 0) {
       return 0;
     }
     this.ordersValue = absorbed.orders;
-    this.countsValue = absorbed.counts;
+    this.recount();
     this.retakenValue = { at, by };
     this.retakenByNameValue = byName;
     return absorbed.count;
@@ -399,13 +397,49 @@ export class ProductionDay {
       assertNothingElseToFreeze(this.day.value, pending);
     }
     this.launchedValue = [...this.launchedValue, launchedOf(resupply, gesture)];
-    this.countsValue = countOf([...this.ordersValue, ...this.plannedResupplies]);
+    this.recount();
     if (opening) {
       this.closedAtValue = gesture.at;
       this.closedByValue = staffSigner(gesture.staffUserId, gesture.name);
       this.packingOwnerValue = PACKING_PACKING_OWNER;
     }
     return opening;
+  }
+
+  /**
+   * **Révise le dû d'une commande inscrite** (plan A2,
+   * `documentation/commandes/modification/plan-a2-modifier-une-commande-inscrite.md`,
+   * § 7, B3) : ses lignes disent la quantité révisée, dans les deux sens ; le
+   * compte du jour ne baisse jamais ({@link recount}). L'appelant a
+   * matérialisé les coches héritées avant ({@link materialize}), sous le
+   * verrou de la journée.
+   *
+   * @returns les lignes montées — vide si rien n'a monté (une baisse, ou rien).
+   * @throws {ProductionDayNotClosedError} rien n'est arrêté : rien n'est inscrit.
+   * @throws les refus de `revisedPlanOf` : commande absente, articles changés.
+   */
+  reviseOrder(orderId: string, lines: readonly RevisedLine[]): readonly RaisedLine[] {
+    if (!this.isClosed) {
+      throw new ProductionDayNotClosedError(this.day.value);
+    }
+    const revised = revisedPlanOf(this.day.value, this.ordersValue, orderId, lines);
+    this.ordersValue = revised.orders;
+    this.recount();
+    return revised.raised;
+  }
+
+  /**
+   * **Le compte d'une journée arrêtée, refait** — la méthode unique du
+   * retirage, du lancement d'un réassort et de la révision (plan A2, § 7,
+   * B3) : toutes les commandes et tous les réassorts au plan, sans qu'aucun
+   * article ne descende sous ce qui a déjà été demandé au four. L'arrêt, lui,
+   * part d'un compte vide et passe par `countOf` seul.
+   */
+  private recount(): void {
+    this.countsValue = floorCounts(
+      this.countsValue,
+      countOf([...this.ordersValue, ...this.plannedResupplies]),
+    );
   }
 
   /** L'état à écrire. Les getters de l'agrégat, jamais ses champs privés. */

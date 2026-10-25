@@ -19,6 +19,7 @@ import { ORDER_CHANGE_REQUEST_FACTS } from "./order-change-requests.js";
 import { ORDER_REFUND_FACTS } from "./order-refunds.js";
 import { ORDER_SHORTFALL_FACTS } from "./order-shortfalls.js";
 import { AFTER_CLOSE_WITHDRAWAL_FACTS } from "./after-close-withdrawals.js";
+import { AFTER_CLOSE_REVISION_FACTS } from "./after-close-revisions.js";
 import { PACKING_CONTAINER_FACTS } from "./packing-containers.js";
 import { PACKING_RESERVE_FACTS } from "./packing-reserve.js";
 import { PRODUCTION_SETTINGS_FACTS } from "./production-settings.js";
@@ -665,6 +666,8 @@ export const ORDERS_PRODUCTION_FACTS = {
   ...ORDER_SHORTFALL_FACTS,
   /** **Retirée après l'arrêt du plan** (plan A1, lot A1.3) — même famille. */
   ...AFTER_CLOSE_WITHDRAWAL_FACTS,
+  /** **Quantités changées après l'arrêt du plan** (plan A2) — même famille. */
+  ...AFTER_CLOSE_REVISION_FACTS,
   /** **Les demandes de modification** après l'heure limite (plan de modification, M4). */
   ...ORDER_CHANGE_REQUEST_FACTS,
   ...PACKING_CONTAINER_FACTS,

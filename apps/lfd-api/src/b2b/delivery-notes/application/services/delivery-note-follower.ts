@@ -54,17 +54,22 @@ export class DeliveryNoteFollower extends DeliveryNoteFollowing {
     return this.follow(orderId, this.clock.now(), true);
   }
 
+  /** Non strict : un écart non réparable est compté, la révision a eu lieu. */
+  followRevision(orderId: string): Promise<void> {
+    return this.follow(orderId, this.clock.now(), false, true);
+  }
+
   voidLiveFor(orderId: string, at: Date): Promise<void> {
     return this.follow(orderId, at);
   }
 
   /** `now` ne sert qu'à dater une annulation ; les autres instants sont ceux de la commande. */
-  private async follow(orderId: string, now: Date, strict = false): Promise<void> {
+  private async follow(orderId: string, now: Date, strict = false, revised = false): Promise<void> {
     const order = await this.orders.progressOf(orderId);
     if (order === null) {
       return;
     }
-    const outcome = await this.aligner.align(order, now, strict);
+    const outcome = await this.aligner.align(order, now, strict, revised);
     this.aligner.report(order, outcome);
   }
 }

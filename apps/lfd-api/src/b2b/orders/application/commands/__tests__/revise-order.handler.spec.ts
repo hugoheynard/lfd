@@ -148,7 +148,15 @@ describe("ReviseOrderHandler — le geste", () => {
       new ReviseOrderCommand("ord_1", STAFF, 0, content({ requestedDeliveryDate: NEXT_DAY })),
     );
 
-    expect(desk.noted).toEqual([{ days: [DAY, NEXT_DAY], orderId: "ord_1", revision: 1 }]);
+    expect(desk.noted).toEqual([
+      {
+        days: [DAY, NEXT_DAY],
+        orderId: "ord_1",
+        revision: 1,
+        lines: [{ sku: "VIE-001", quantity: 10 }],
+        allowance: "before_inscription",
+      },
+    ]);
   });
 });
 
@@ -221,12 +229,14 @@ describe("ReviseOrderHandler — les refus", () => {
     ).rejects.toThrow(OrderNotRevisableError);
   });
 
+  // Depuis le plan A2 (2026-10-25), l'équipe d'une commande au compte reçoit
+  // le refus « quantités seulement » (cas suivant) : le client reste le cas d'origine.
   it("§9.1 : une commande inscrite au fournil sous le verrou est refusée, rien n'est écrit", async () => {
     const order = await placedOrder();
     const { handler, revisions, durable } = reviseScene(order, { desk: "inscribed" });
 
     await expect(
-      handler.execute(new ReviseOrderCommand("ord_1", STAFF, 0, content({ note: "x" }))),
+      handler.execute(new ReviseOrderCommand("ord_1", CUSTOMER, 0, content({ note: "x" }))),
     ).rejects.toThrow("Le fournil a déjà inscrit cette commande");
     expect(revisions.saved).toEqual([]);
     expect(durable.facts).toEqual([]);

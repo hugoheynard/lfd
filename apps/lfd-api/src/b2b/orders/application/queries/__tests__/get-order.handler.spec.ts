@@ -366,7 +366,31 @@ describe("GetAdminOrderHandler", () => {
   describe("la modification par l'équipe (plan de modification, §6)", () => {
     const owner = { customer: CUSTOMER, company: COMPANY, placedByStaffId: null };
 
-    it("une commande inscrite au fournil se grise, avec la phrase du geste", async () => {
+    // Depuis le plan A2 (2026-10-25), la grisaille ne vaut plus que hors du
+    // compte : une commande gratuite inscrite reste refusée comme avant.
+    it("une commande inscrite au fournil, hors du compte, se grise, avec la phrase du geste", async () => {
+      const free = await placedOrder({ totalCents: 0 });
+
+      const view = await adminHandler(
+        ofCompany("cmp_1"),
+        owner,
+        directory(),
+        cancellationSubject(),
+        "2026-11-10",
+        undefined,
+        {},
+        { kind: "free" },
+        new RefundStore(),
+        free,
+      ).execute(new GetAdminOrderQuery("ord_1"));
+
+      expect(view.revisability).toEqual({
+        revisable: false,
+        reason: expect.stringContaining("Le fournil a déjà inscrit cette commande") as string,
+      });
+    });
+
+    it("plan A2 : une commande au compte inscrite se modifie encore, en quantités seulement — l'écran le dit", async () => {
       const view = await adminHandler(
         ofCompany("cmp_1"),
         owner,
@@ -376,8 +400,8 @@ describe("GetAdminOrderHandler", () => {
       ).execute(new GetAdminOrderQuery("ord_1"));
 
       expect(view.revisability).toEqual({
-        revisable: false,
-        reason: expect.stringContaining("Le fournil a déjà inscrit cette commande") as string,
+        revisable: true,
+        quantitiesOnly: expect.stringContaining("seules les quantités") as string,
       });
     });
 

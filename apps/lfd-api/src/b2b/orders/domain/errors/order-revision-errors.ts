@@ -154,3 +154,32 @@ export class ShortfallDecidedRevisionError extends BusinessError {
     );
   }
 }
+
+/**
+ * Plan A2, § 7 : après l'arrêt du plan, une révision ne change que des
+ * quantités — ni date, ni acheminement, ni note, ni article.
+ */
+export class QuantitiesOnlyAfterArrestError extends BusinessError {
+  constructor(readonly orderId: string) {
+    super(
+      "orders.revise.quantities_only",
+      "Le plan du fournil est arrêté pour cette commande : seules les quantités des articles déjà commandés se modifient, " +
+        "et chacune reste d'au moins 1. Remettez la date, l'acheminement, la note et les articles tels qu'ils étaient, " +
+        "ou annulez la commande.",
+    );
+  }
+}
+
+/**
+ * Plan A2, § 7, B2 : la feuille du colisage n'est pas encore écrite — la
+ * fenêtre entre l'arrêt et la livraison de la liste dure quelques secondes.
+ */
+export class PackingSheetNotYetDrawnError extends BusinessError {
+  constructor(readonly orderId: string) {
+    super(
+      "orders.revise.packing_not_drawn",
+      "Le colisage n'a pas encore reçu cette commande, qui vient d'être inscrite au plan : rien n'a été modifié. " +
+        "Réessayez dans quelques secondes.",
+    );
+  }
+}

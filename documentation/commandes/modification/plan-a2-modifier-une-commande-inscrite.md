@@ -1,5 +1,24 @@
 # Plan A2 — changer les quantités d'une commande inscrite au plan
 
+> 🟡 **2026-10-25 : A2 bâti (A2.1 à A2.3), pas encore commité.** Le § 7
+> fait foi. Fournil : `OrderRevisionDesk.note(days, orderId, revision, lines,
+allowance)`, issues `raised` / `unchanged` sous `staff_quantities` ;
+> `ProductionDay.reviseOrder` (dû révisé dans les deux sens) et le compte
+> refait par une méthode unique `recount` (plancher `floorCounts`), partagée
+> avec le retirage et le lancement d'un réassort ; fait
+> `production.order_quantities_raised` sur hausse seulement. Colisage :
+> `PackingRevisionDesk` (`packing/channels/commerce/`),
+> `PackingSheet.reviseDue`, fait journalisé `packing_sheet.revised`.
+> Commerce : portée `quantities` (`OrderRevising.ensureRevisable`),
+> `OrderWorkshopRevision`, BL par `DeliveryNoteFollowing.followRevision` ;
+> écran « Modifier les quantités ». Choix de bâti à relire : après l'arrêt,
+> seule la clé `lines` peut changer (la note, le créneau, le contact aussi
+> sont refusés) ; l'écriture conditionnée de la révision admet `confirmed` ;
+> le réalignement du BL prévu n'est posé que par le geste de la révision (le
+> réconciliateur compte toujours l'écart sans réécrire, E4a) ;
+> `reviseDue` refuse aussi une feuille au départ incomplet décidé. E2E
+> écrits, pas encore passés.
+
 > **Doc-first, 2026-10-25, deuxième version. Rien n'est bâti.** Deuxième lot
 > de l'[étude de l'arrêt du plan](../etude-arret-du-plan-publication.md)
 > (§ 5), après A1 ([`../annulation/plan-a1-retirer-une-commande-inscrite.md`](../annulation/plan-a1-retirer-une-commande-inscrite.md)).

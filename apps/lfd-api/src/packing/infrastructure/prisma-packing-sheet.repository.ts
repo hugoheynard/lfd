@@ -135,7 +135,8 @@ export class PrismaPackingSheetRepository extends PackingSheetRepository {
           },
         },
         data: {
-          // La quantité due ne bouge que par la décision d'un départ incomplet (E6b).
+          // La quantité due ne bouge que par la décision d'un départ incomplet (E6b)
+          // et par la révision d'une commande inscrite (plan A2).
           quantity: line.quantity,
           packedAt: line.packed?.at ?? null,
           packedBy: line.packed?.by ?? null,

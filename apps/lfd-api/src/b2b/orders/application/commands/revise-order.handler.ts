@@ -4,17 +4,22 @@ import { CommerceOrderRevisedFact } from "../../../../delivery/channels/commerce
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../../platform/time/clock.js";
-import { OrderRevisionDesk, ServiceDay } from "../../../../production/channels/commerce/index.js";
 import type { OrderRevisionToSave, RevisableOrder } from "../../domain/entities/order-revision.js";
 import { OrderNotFoundError } from "../../domain/errors/order-errors.js";
 import {
-  OrderNotRevisableError,
   OrderRevisedElsewhereError,
+  QuantitiesOnlyAfterArrestError,
 } from "../../domain/errors/order-revision-errors.js";
 import { OrderRevisedEvent } from "../../domain/events/order-revised.event.js";
 import { AccountOrderRevaluation } from "../../domain/ports/account-order-revaluation.js";
+import { DeliveryNoteFollowing } from "../../domain/ports/delivery-note-following.js";
 import { OrderRevisionRepository } from "../../domain/ports/order-revision.repository.js";
+import {
+  isQuantitiesOnly,
+  type RevisionScope,
+} from "../../domain/services/revision-after-arrest.js";
 import { OrderRevising } from "../services/order-revising.service.js";
+import { OrderWorkshopRevision } from "../services/order-workshop-revision.js";
 import { RevisionWall } from "../services/revision-wall.js";
 import { ReviseOrderCommand, type ReviseOrderResult } from "./revise-order.command.js";
 
@@ -34,6 +39,14 @@ import { ReviseOrderCommand, type ReviseOrderResult } from "./revise-order.comma
  *    d'encaissement recalée (au compte), et les deux faits durables.
  *
  * Aucune carte : M1 refuse une commande payable par carte (§9, lot M2).
+ *
+ * ## Après l'arrêt du plan (plan A2, § 7)
+ *
+ * L'équipe d'une commande au compte change encore les QUANTITÉS : la portée
+ * `quantities` (statut déjà inscrit) refuse tôt tout autre changement, et
+ * les ateliers ({@link OrderWorkshopRevision}) révisent le fournil puis le
+ * colisage sous leurs verrous. Le BL prévu suit, après l'écriture de la
+ * commande : `orders` → journée → feuille → BL.
  */
 @CommandHandler(ReviseOrderCommand)
 export class ReviseOrderHandler implements ICommandHandler<ReviseOrderCommand, ReviseOrderResult> {
@@ -41,8 +54,9 @@ export class ReviseOrderHandler implements ICommandHandler<ReviseOrderCommand, R
     private readonly wall: RevisionWall,
     private readonly revising: OrderRevising,
     private readonly revisions: OrderRevisionRepository,
-    private readonly desk: OrderRevisionDesk,
+    private readonly workshops: OrderWorkshopRevision,
     private readonly revaluation: AccountOrderRevaluation,
+    private readonly deliveryNotes: DeliveryNoteFollowing,
     private readonly durable: DurablePublisher,
     private readonly unitOfWork: UnitOfWork,
     private readonly clock: Clock,
@@ -51,10 +65,11 @@ export class ReviseOrderHandler implements ICommandHandler<ReviseOrderCommand, R
   async execute(command: ReviseOrderCommand): Promise<ReviseOrderResult> {
     const current = await this.wall.find(command.orderId, command.actor);
     ensureExpected(current, command.expectedRevision);
-    await this.revising.ensureRevisable(current);
+    const scope = await this.revising.ensureRevisable(current, command.actor.kind);
     const revision = await this.revising.compose(current, command.content, command.actor, {
       requireChange: true,
     });
+    ensureWithinScope(current, revision, scope);
     await this.unitOfWork.run(() => this.record(command, revision));
     return {
       id: revision.orderId,
@@ -70,8 +85,12 @@ export class ReviseOrderHandler implements ICommandHandler<ReviseOrderCommand, R
       throw new OrderNotFoundError(command.orderId);
     }
     ensureExpected(locked, command.expectedRevision);
-    await this.revising.ensureRevisable(locked);
-    await this.noteAtBakery(revision);
+    ensureWithinScope(
+      locked,
+      revision,
+      await this.revising.ensureRevisable(locked, command.actor.kind),
+    );
+    const afterArrest = await this.workshops.note(locked, revision, command.actor);
     await this.revising.holdDay(revision, command.actor);
     const now = this.clock.now();
     if (!(await this.revisions.save(revision, command.actor, now))) {
@@ -81,6 +100,10 @@ export class ReviseOrderHandler implements ICommandHandler<ReviseOrderCommand, R
     }
     if (revision.onAccount) {
       await this.revaluation.revalue(revision.orderId, revision.totalAfterCents, now);
+    }
+    if (afterArrest) {
+      // Plan A2 : le BL prévu se réécrit sur la commande qu'on vient d'écrire.
+      await this.deliveryNotes.followRevision(revision.orderId);
     }
     await this.durable.publish(
       new OrderRevisedEvent(
@@ -103,30 +126,21 @@ export class ReviseOrderHandler implements ICommandHandler<ReviseOrderCommand, R
       ).durableFact(),
     );
   }
+}
 
-  /**
-   * Le guichet du fournil, sous le verrou de l'ancienne ET de la nouvelle
-   * journée (§9.1). Sans jour, une commande n'est jamais producible : rien à
-   * noter.
-   */
-  private async noteAtBakery(revision: OrderRevisionToSave): Promise<void> {
-    const days = [
-      ...new Set([revision.previousServiceDay, revision.serviceDay].filter((day) => day !== null)),
-    ];
-    if (days.length === 0) {
-      return;
-    }
-    const outcome = await this.desk.note(
-      days.map((day) => ServiceDay.of(day)),
-      revision.orderId,
-      revision.toRevision,
-    );
-    if (outcome === "inscribed") {
-      throw new OrderNotRevisableError(revision.orderId, {
-        kind: "inscribed",
-        day: revision.previousServiceDay,
-      });
-    }
+/**
+ * Plan A2, § 7 : une commande que son statut dit déjà inscrite ne change que
+ * des quantités. Le guichet du fournil le rejuge sous le verrou de la journée.
+ *
+ * @throws {QuantitiesOnlyAfterArrestError}
+ */
+function ensureWithinScope(
+  order: RevisableOrder,
+  revision: OrderRevisionToSave,
+  scope: RevisionScope,
+): void {
+  if (scope === "quantities" && !isQuantitiesOnly(order.lines, revision)) {
+    throw new QuantitiesOnlyAfterArrestError(order.orderId);
   }
 }
 

@@ -44,5 +44,13 @@ export class OrderReviseAction {
     return this.blocker() !== null && !cancelSaysIt;
   });
 
+  /** Plan A2 : inscrite au plan — le bouton dit qu'on n'y change que les quantités. */
+  protected readonly label = computed(() => {
+    const r = this.revisability();
+    return r.revisable && r.quantitiesOnly !== undefined
+      ? 'Modifier les quantités'
+      : 'Modifier la commande';
+  });
+
   protected readonly link = computed(() => ['/commandes', this.orderId(), 'modifier']);
 }

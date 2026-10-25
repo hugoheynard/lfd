@@ -53,6 +53,7 @@ import { PackingShortfallDesk } from "./application/station/packing-shortfall-de
 import { PackingReserveShopRelease } from "./application/shop-release/packing-reserve-shop-release.js";
 import { PackingContainerVoiding } from "./application/containers/packing-container-voiding.js";
 import { PackingSheetWithdrawalDesk } from "./application/withdrawal/packing-sheet-withdrawal.desk.js";
+import { PackingSheetRevisionDesk } from "./application/revision/packing-sheet-revision.desk.js";
 import { PackingSheetTombstones } from "./domain/ports/packing-sheet-tombstones.js";
 import { PrismaPackingSheetTombstones } from "./infrastructure/prisma-packing-sheet-tombstones.js";
 import {
@@ -135,6 +136,8 @@ import { PackingResuppliesController } from "./http/packing-resupplies.controlle
     PackingShortfallDesk,
     // Le retrait d'une feuille par l'annulation (plan A1), relié par `PackingFeedModule`.
     PackingSheetWithdrawalDesk,
+    // La révision d'une feuille après l'arrêt (plan A2), reliée par `PackingFeedModule`.
+    PackingSheetRevisionDesk,
     // La sortie de réserve en boutique (plan A1, lot A1.4), reliée par `PackingFeedModule`.
     PackingReserveShopRelease,
     { provide: PackingSheetTombstones, useClass: PrismaPackingSheetTombstones },
@@ -161,6 +164,7 @@ import { PackingResuppliesController } from "./http/packing-resupplies.controlle
     PrismaOrderPackingStateReader,
     PackingShortfallDesk,
     PackingSheetWithdrawalDesk,
+    PackingSheetRevisionDesk,
     PackingReserveShopRelease,
   ],
 })

@@ -83,4 +83,15 @@ describe('le bouton « Modifier la commande »', () => {
     expect(el(f).querySelector('button[data-revise-trigger]')?.hasAttribute('disabled')).toBe(true);
     expect(el(f).querySelector('[data-revise-blocked]')).toBeNull();
   });
+
+  it('plan A2 : inscrite au plan, le bouton dit « Modifier les quantités »', () => {
+    const f = mount(
+      { revisable: true, quantitiesOnly: 'Seules les quantités changent.' },
+      CANCEL_CLOSED,
+      ['b2b_place_order:write'],
+    );
+    expect(el(f).querySelector('[data-revise-trigger]')?.textContent?.trim()).toBe(
+      'Modifier les quantités',
+    );
+  });
 });

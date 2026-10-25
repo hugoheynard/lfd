@@ -12,8 +12,15 @@ import {
 } from "../../../../../platform/metrics/__tests__/metrics-doubles.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import {
+  PackingRevisionDesk,
+  type PackingDueLine,
+  type PackingRevisionOutcome,
+} from "../../../../../packing/channels/commerce/index.js";
+import {
   OrderRevisionDesk,
+  type OrderRevisionAllowance,
   type OrderRevisionOutcome,
+  type RevisedOrderLine,
   type ServiceDay,
 } from "../../../../../production/channels/commerce/index.js";
 import { noSaleOperations } from "../../../../catalog/application/__tests__/sale-operations-doubles.js";
@@ -52,8 +59,10 @@ import { OrderLinePricing } from "../../services/order-line-pricing.service.js";
 import { OrderOperations } from "../../services/order-operations.service.js";
 import type { OrderPlanGate } from "../../services/order-plan-gate.service.js";
 import { OrderRevising } from "../../services/order-revising.service.js";
+import { OrderWorkshopRevision } from "../../services/order-workshop-revision.js";
 import { RevisionWall } from "../../services/revision-wall.js";
 import { ReviseOrderHandler } from "../revise-order.handler.js";
+import { RecordingDeliveryNoteFollowing } from "./delivery-note-following-double.js";
 import { RecordingDurable } from "./durable-doubles.js";
 import { openPlanGate } from "./plan-doubles.js";
 import { FixedDeliveryVat } from "./fixed-delivery-vat.js";
@@ -335,7 +344,7 @@ export class FixedRevisableOrders extends RevisableOrderReader {
 
 /**
  * La ligne `orders` en mémoire, avec la sémantique de l'écriture conditionnée
- * sur la révision ET sur `placed` (R7). `underLock` : l'état relu sous le
+ * sur la révision ET sur `placed` ou `confirmed` (R7, plan A2). `underLock` : l'état relu sous le
  * verrou, s'il a bougé depuis le premier regard.
  */
 export class InMemoryOrderRevisions extends OrderRevisionRepository {
@@ -359,7 +368,7 @@ export class InMemoryOrderRevisions extends OrderRevisionRepository {
     if (
       current === null ||
       current.revision !== revision.fromRevision ||
-      current.status !== "placed"
+      (current.status !== "placed" && current.status !== "confirmed")
     ) {
       return Promise.resolve(false);
     }
@@ -371,7 +380,13 @@ export class InMemoryOrderRevisions extends OrderRevisionRepository {
 
 /** Le guichet du fournil : l'issue écrite d'avance, et les journées tenues. */
 export class RecordingRevisionDesk extends OrderRevisionDesk {
-  readonly noted: { days: string[]; orderId: string; revision: number }[] = [];
+  readonly noted: {
+    days: string[];
+    orderId: string;
+    revision: number;
+    lines: readonly RevisedOrderLine[];
+    allowance: OrderRevisionAllowance;
+  }[] = [];
 
   constructor(
     private readonly outcome: OrderRevisionOutcome = "noted",
@@ -384,9 +399,46 @@ export class RecordingRevisionDesk extends OrderRevisionDesk {
     days: readonly ServiceDay[],
     orderId: string,
     revision: number,
+    lines: readonly RevisedOrderLine[],
+    allowance: OrderRevisionAllowance,
   ): Promise<OrderRevisionOutcome> {
     this.trace.push(`desk:${days.map((day) => day.value).join(",")}`);
-    this.noted.push({ days: days.map((day) => day.value), orderId, revision });
+    this.noted.push({ days: days.map((day) => day.value), orderId, revision, lines, allowance });
+    // Le guichet réel ne révise que sous `staff_quantities` ; sinon, inscrite reste inscrite.
+    if (
+      (this.outcome === "raised" || this.outcome === "unchanged") &&
+      allowance !== "staff_quantities"
+    ) {
+      return Promise.resolve("inscribed");
+    }
+    return Promise.resolve(this.outcome);
+  }
+}
+
+/** Le guichet du colisage (plan A2) : l'issue écrite d'avance, et les lignes reçues. */
+export class RecordingPackingRevisionDesk extends PackingRevisionDesk {
+  readonly revised: {
+    day: string;
+    orderId: string;
+    lines: readonly PackingDueLine[];
+    by: string;
+  }[] = [];
+
+  constructor(
+    private readonly outcome: PackingRevisionOutcome = "revised",
+    private readonly trace: string[] = [],
+  ) {
+    super();
+  }
+
+  revise(
+    serviceDay: string,
+    orderId: string,
+    lines: readonly PackingDueLine[],
+    revisedBy: string,
+  ): Promise<PackingRevisionOutcome> {
+    this.trace.push(`packing:${serviceDay}`);
+    this.revised.push({ day: serviceDay, orderId, lines, by: revisedBy });
     return Promise.resolve(this.outcome);
   }
 }
@@ -424,6 +476,7 @@ export function reviseScene(
     readonly clock?: FixedClock;
     readonly underLock?: RevisableOrder | null;
     readonly desk?: OrderRevisionOutcome;
+    readonly packing?: PackingRevisionOutcome;
     readonly role?: OrderRole | null;
     readonly plans?: OrderPlanGate;
     readonly engagements?: AccountOrderEngagementReader;
@@ -436,6 +489,8 @@ export function reviseScene(
     trace,
   );
   const desk = new RecordingRevisionDesk(options.desk ?? "noted", trace);
+  const packing = new RecordingPackingRevisionDesk(options.packing ?? "revised", trace);
+  const notes = new RecordingDeliveryNoteFollowing();
   const revaluation = new RecordingRevaluation(trace);
   const durable = new RecordingDurable();
   const handler = new ReviseOrderHandler(
@@ -448,11 +503,12 @@ export function reviseScene(
       ...(options.engagements === undefined ? {} : { engagements: options.engagements }),
     }),
     revisions,
-    desk,
+    new OrderWorkshopRevision(desk, packing),
     revaluation,
+    notes,
     durable,
     new DirectUnitOfWork(),
     clock,
   );
-  return { handler, trace, revisions, desk, revaluation, durable };
+  return { handler, trace, revisions, desk, packing, notes, revaluation, durable };
 }

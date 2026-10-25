@@ -12,6 +12,7 @@
  * | `OrderPackingStateReader`       | port déclaré ET implémenté ici | bac fermé, feuille retirée (A1.3)       |
  * | `DeliveryNoteReprintsReader`    | port déclaré ici, implémenté par le commerce | BL à réimprimer (§ 14) |
  * | `ReserveShopRelease`            | port déclaré ET implémenté ici | la sortie de réserve en boutique (A1.4) |
+ * | `PackingRevisionDesk`           | port déclaré ET implémenté ici | les lignes dues révisées après l'arrêt (A2) |
  *
  * `lint:context-boundaries` n'autorise `b2b → packing` que par ce dossier ;
  * `packing → b2b` reste interdit : le colisage ne sait pas qui le lit.
@@ -36,3 +37,8 @@ export {
   type ShopRelease,
   type ShopReleaseLine,
 } from "./reserve-shop-release.js";
+export {
+  PackingRevisionDesk,
+  type PackingDueLine,
+  type PackingRevisionOutcome,
+} from "./packing-revision.desk.js";

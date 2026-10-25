@@ -12,17 +12,23 @@
     }
     @default {
       <div class="mc-columns">
-        <app-source-produits
-          class="mc-col"
-          [kind]="source()"
-          [catalogue]="catalogue()"
-          [habits]="habits()"
-          [orders]="[]"
-          [cart]="cart"
-          (kindChange)="source.set($event)"
-          (add)="onAdd($event)"
-          (addAll)="onAddAll($event)"
-        />
+        @if (quantitiesOnly() === null) {
+          <app-source-produits
+            class="mc-col"
+            [kind]="source()"
+            [catalogue]="catalogue()"
+            [habits]="habits()"
+            [orders]="[]"
+            [cart]="cart"
+            (kindChange)="source.set($event)"
+            (add)="onAdd($event)"
+            (addAll)="onAddAll($event)"
+          />
+        } @else {
+          <fold-callout class="mc-col" variant="info" data-quantities-only>
+            {{ quantitiesOnly() }}
+          </fold-callout>
+        }
 
         <div class="mc-col mc-side">
           <fold-card>
@@ -52,30 +58,34 @@
                 </ul>
               }
 
-              <app-acheminement-commande
-                [pickups]="pickups()"
-                [addresses]="addresses()"
-                [zones]="zones()"
-                [deliveryAvailability]="deliveryAvailability()"
-                [audience]="audience()"
-                [preferredPickupId]="preferredPickupId()"
-                [draft]="draft"
-                [canKeepAddress]="false"
-                (choiceChange)="fulfillment.set($event)"
-              />
+              <!-- Plan A2 : après l'arrêt, l'acheminement, la date et la note sont
+                   verrouillés ; le serveur refuse de toute façon leur changement. -->
+              <fieldset class="mc-locked" [disabled]="quantitiesOnly() !== null">
+                <app-acheminement-commande
+                  [pickups]="pickups()"
+                  [addresses]="addresses()"
+                  [zones]="zones()"
+                  [deliveryAvailability]="deliveryAvailability()"
+                  [audience]="audience()"
+                  [preferredPickupId]="preferredPickupId()"
+                  [draft]="draft"
+                  [canKeepAddress]="false"
+                  (choiceChange)="fulfillment.set($event)"
+                />
 
-              <fold-date
-                [label]="dateLabel()"
-                [value]="draft.requestedDate()"
-                (valueChange)="draft.requestedDate.set($event)"
-              />
+                <fold-date
+                  [label]="dateLabel()"
+                  [value]="draft.requestedDate()"
+                  (valueChange)="draft.requestedDate.set($event)"
+                />
 
-              <fold-textarea
-                label="Note"
-                [rows]="2"
-                [value]="draft.note()"
-                (valueChange)="draft.note.set($event)"
-              />
+                <fold-textarea
+                  label="Note"
+                  [rows]="2"
+                  [value]="draft.note()"
+                  (valueChange)="draft.note.set($event)"
+                />
+              </fieldset>
             </div>
           </fold-card>
 

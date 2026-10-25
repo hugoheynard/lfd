@@ -6,11 +6,13 @@ import { PrismaPackedOrdersReader } from "../packing/infrastructure/prisma-packe
 import {
   OrderPackingStateReader,
   PackedResuppliesReader,
+  PackingRevisionDesk,
   PackingWithdrawalDesk,
   ReserveShopRelease,
   ShortfallDesk,
 } from "../packing/channels/commerce/index.js";
 import { PackingReserveShopRelease } from "../packing/application/shop-release/packing-reserve-shop-release.js";
+import { PackingSheetRevisionDesk } from "../packing/application/revision/packing-sheet-revision.desk.js";
 import { PackingSheetWithdrawalDesk } from "../packing/application/withdrawal/packing-sheet-withdrawal.desk.js";
 import { PackingShortfallDesk } from "../packing/application/station/packing-shortfall-desk.js";
 import { PrismaPackedResuppliesReader } from "../packing/infrastructure/prisma-packed-resupplies.reader.js";
@@ -79,6 +81,9 @@ import { ProductionModule } from "../production/production.module.js";
     // L'envoi en boutique depuis la réserve (plan A1, lot A1.4) — le colisage
     // déclare ET implémente, le commerce l'appelle dans la transaction du geste.
     { provide: ReserveShopRelease, useExisting: PackingReserveShopRelease },
+    // La révision des quantités d'une commande inscrite (plan A2, 2026-10-25) —
+    // le colisage déclare ET implémente, le commerce l'appelle après le fournil.
+    { provide: PackingRevisionDesk, useExisting: PackingSheetRevisionDesk },
   ],
   exports: [
     PackingDayVersionReader,
@@ -92,6 +97,7 @@ import { ProductionModule } from "../production/production.module.js";
     OrderPackingStateReader,
     InscribedOrderHeaderReader,
     ReserveShopRelease,
+    PackingRevisionDesk,
   ],
 })
 export class PackingFeedModule {}

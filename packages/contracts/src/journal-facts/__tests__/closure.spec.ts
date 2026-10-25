@@ -125,6 +125,7 @@ const BARE_REFS: Readonly<Record<string, string>> = {
   "order.abandoned:orderId": "voisine son nom figé (`orderNumber`)",
   "order.cancelled:orderId": "voisine son nom figé (`orderNumber`)",
   "production_day.order_withdrawn:orderId": "voisine son nom figé au plan (`orderNumber`)",
+  "production_day.order_quantities_raised:orderId": "voisine son nom figé au plan (`orderNumber`)",
   "order.cancelled:cancelledBy": "une fiche staff que l'annuaire ne nomme pas se cite par son id",
   "order.cancelled:cancelledByCustomer": "un client que l'annuaire ne nomme pas se cite par son id",
   // La modification d'une commande (plan de modification, M1, 2026-10-23).

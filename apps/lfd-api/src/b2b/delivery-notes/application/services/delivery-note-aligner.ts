@@ -42,16 +42,24 @@ export class DeliveryNoteAligner {
   ) {}
 
   /**
+   * `revised` : la révision après l'arrêt (plan A2) — un BL prévu qui ne dit
+   * plus sa commande se réécrit.
+   *
    * `strict` : le geste qui appelle NE PEUT PAS laisser le BL en arrière — la
    * décision d'un départ incomplet (E6b). Un refus du domaine remonte alors et
    * annule la transaction de l'appelant au lieu d'être compté.
    */
-  async align(order: FollowedOrder, now: Date, strict = false): Promise<AlignedOutcome> {
-    const outcome = await this.attempt(order, now, strict);
+  async align(
+    order: FollowedOrder,
+    now: Date,
+    strict = false,
+    revised = false,
+  ): Promise<AlignedOutcome> {
+    const outcome = await this.attempt(order, now, { strict, revised });
     if (outcome !== "rank_taken") {
       return outcome;
     }
-    const retried = await this.attempt(order, now, strict);
+    const retried = await this.attempt(order, now, { strict, revised });
     // Le rang pris l'est encore après relecture : il n'y a pas de seconde course possible.
     return retried === "rank_taken" ? { change: "none" } : retried;
   }
@@ -59,7 +67,7 @@ export class DeliveryNoteAligner {
   private async attempt(
     order: FollowedOrder,
     now: Date,
-    strict: boolean,
+    { strict, revised }: { readonly strict: boolean; readonly revised: boolean },
   ): Promise<AlignedOutcome | "rank_taken"> {
     const [notes, decided] = await Promise.all([
       this.notes.loadForOrders([order.orderId]),
@@ -71,7 +79,7 @@ export class DeliveryNoteAligner {
           newId: () => this.ids.next(),
           now,
         })
-      : this.decide(order, decision, notes, now);
+      : this.decide(order, decision, notes, { now, revised });
     if (strict && alignment.change === "unrepairable") {
       throw new DecisionNoteNotFollowedError(order.orderNumber, alignment.reason);
     }
@@ -98,12 +106,12 @@ export class DeliveryNoteAligner {
     order: FollowedOrder,
     decision: DecidedDeparture | undefined,
     notes: Parameters<typeof alignmentOf>[1],
-    now: Date,
+    { now, revised }: { readonly now: Date; readonly revised: boolean },
   ): DeliveryNoteAlignment {
     try {
       // La décision d'abord (E6b, plan E6 § 13) : le BL suit ce qui part.
       const source = departingSourceOf(order, decision);
-      return alignmentOf(source, notes, { newId: () => this.ids.next(), now });
+      return alignmentOf(source, notes, { newId: () => this.ids.next(), now, revised });
     } catch (error) {
       if (!(error instanceof AppError)) {
         throw error;
