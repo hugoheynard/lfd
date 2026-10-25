@@ -30,7 +30,9 @@ import { OrderCancellationRepository } from "../../domain/ports/order-cancellati
 import { AccountOrderEngagement } from "../../domain/ports/account-order-engagement.js";
 import { DeliveryNoteFollowing } from "../../domain/ports/delivery-note-following.js";
 import { customerUserOf, staffSheetOf } from "../../domain/services/cancellation-actor.js";
+import type { CancellationAllowance } from "../../domain/services/cancellation-allowance.js";
 import type { CancellableRegime } from "../../domain/services/order-cancellation.js";
+import { CancellationAllowanceGate } from "./cancellation-allowance-gate.js";
 import { recordOf, type CancellationIntent } from "./cancellation-intent.js";
 import { CancellationRule } from "./cancellation-rule.js";
 import { CancellationRefundRequester } from "./cancellation-refund-requester.js";
@@ -110,6 +112,7 @@ export class OrderCancellation {
     private readonly vouchers: LoyaltyVoucherRedemption,
     private readonly refusals: VoucherRestitutionRefusal,
     private readonly rule: CancellationRule,
+    private readonly allowances: CancellationAllowanceGate,
     private readonly engagements: AccountOrderEngagement,
     private readonly refunds: CancellationRefundRequester,
     private readonly durable: DurablePublisher,
@@ -132,10 +135,13 @@ export class OrderCancellation {
     if (subject === null) {
       throw new OrderNotFoundError(orderId);
     }
+    // Plan A1 (C7 § 4) : l'autorisation, calculée UNE fois pour tout acteur ;
+    // la relecture sous verrou applique la même.
+    const allowance = await this.allowances.of(subject);
     // La règle, sans verrou : un refus ici n'a rien touché.
-    const regime = await this.rule.regimeOf(subject);
+    const regime = await this.rule.regimeOf(subject, allowance);
     const intentClosed = await this.closeIntent(subject, regime);
-    await this.recordOnce(orderId, intent, intentClosed);
+    await this.recordOnce(orderId, intent, allowance, intentClosed);
   }
 
   /**
@@ -177,17 +183,18 @@ export class OrderCancellation {
   private async recordOnce(
     orderId: string,
     intent: CancellationIntent,
+    allowance: CancellationAllowance,
     intentClosed: boolean,
   ): Promise<void> {
     try {
-      await this.record(orderId, intent);
+      await this.record(orderId, intent, allowance);
     } catch (first) {
       if (!intentClosed || isRefusal(first)) {
         throw first;
       }
       this.logger.warn(`Annulation rejouée après fermeture Stripe (commande ${orderId})`);
       try {
-        await this.record(orderId, intent);
+        await this.record(orderId, intent, allowance);
       } catch (second) {
         if (isRefusal(second)) {
           throw second;
@@ -197,13 +204,17 @@ export class OrderCancellation {
     }
   }
 
-  private async record(orderId: string, intent: CancellationIntent): Promise<void> {
+  private async record(
+    orderId: string,
+    intent: CancellationIntent,
+    allowance: CancellationAllowance,
+  ): Promise<void> {
     await this.unitOfWork.run(async () => {
       const locked = await this.cancellations.lock(orderId);
       if (locked === null) {
         throw new OrderNotFoundError(orderId);
       }
-      const regime = await this.rule.regimeOf(locked);
+      const regime = await this.rule.regimeOf(locked, allowance);
       await this.withdrawFromBakery(locked);
       const now = this.clock.now();
       const written = await this.cancellations.cancel(locked.orderId, recordOf(intent, now));
@@ -212,7 +223,7 @@ export class OrderCancellation {
         // veut dire un état que le `where` refuse. On le relit pour le nommer,
         // et le refus annule tout, retrait au fournil compris.
         const again = (await this.cancellations.lock(locked.orderId)) ?? locked;
-        await this.rule.regimeOf(again);
+        await this.rule.regimeOf(again, allowance);
         throw new OrderNotCancellableError(locked.orderId, { kind: "already_cancelled", at: null });
       }
       await this.afterCancelled(locked, intent, regime, now);

@@ -53,6 +53,19 @@
             </p>
           }
 
+          @if (canWrite()) {
+            <fold-listbox
+              label="Jusqu'où un particulier peut-il annuler ?"
+              hint="Le staff suit la même limite pour une commande de particulier. Une commande en livraison ne s'annule jamais après l'arrêt du plan."
+              [options]="stageOptions"
+              [value]="stage()"
+              [disabled]="saving()"
+              (selectionChange)="stage.set($event)"
+            />
+          } @else {
+            <p class="help">Un particulier annule {{ stageLabel() }}.</p>
+          }
+
           <p class="help">Les pros annulent jusqu'à l'arrêt du plan de production, sans délai.</p>
 
           @if (trace(); as author) {

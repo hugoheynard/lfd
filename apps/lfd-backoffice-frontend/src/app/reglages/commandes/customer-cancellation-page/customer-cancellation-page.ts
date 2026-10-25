@@ -3,6 +3,7 @@ import {
   CUSTOMER_CANCELLATION_MAX_HOURS_BEFORE,
   type CustomerCancellationSettingsPatch,
   type CustomerCancellationSettingsView,
+  type CustomerCancellationStage,
 } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
@@ -12,6 +13,7 @@ import {
   FoldCheckboxComponent,
   FoldElementTitleComponent,
   FoldEmptyStateComponent,
+  FoldListboxComponent,
   FoldLoadingStateComponent,
   FoldNumberInputComponent,
   FoldPageLayoutComponent,
@@ -22,6 +24,18 @@ import { factWhen } from '../../../shared/journal/units';
 import { CustomerCancellationService } from '../customer-cancellation.service';
 
 type LoadState = 'loading' | 'ready' | 'error';
+
+/**
+ * Jusqu'où un particulier peut annuler (plan A1, libellés de C7 § 2). Pas de
+ * « retrait au comptoir » : Hugo l'a écarté le 2026-10-25.
+ */
+export const STAGE_OPTIONS: readonly {
+  readonly value: CustomerCancellationStage;
+  readonly label: string;
+}[] = [
+  { value: 'production_plan', label: "Jusqu'à l'arrêt du plan de production" },
+  { value: 'ready', label: "Jusqu'à ce que la commande soit prête" },
+];
 
 /**
  * **Réglages › Commandes › Annulation de commande** (doc
@@ -44,6 +58,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     FoldCheckboxComponent,
     FoldElementTitleComponent,
     FoldEmptyStateComponent,
+    FoldListboxComponent,
     FoldLoadingStateComponent,
     FoldNumberInputComponent,
     FoldPageLayoutComponent,
@@ -56,6 +71,7 @@ export class CustomerCancellationPage {
   private readonly permissions = inject(PermissionsStore);
 
   protected readonly maxHours = CUSTOMER_CANCELLATION_MAX_HOURS_BEFORE;
+  protected readonly stageOptions = STAGE_OPTIONS;
 
   /**
    * `PATCH /admin/customer-cancellation` exige `lfc_order_settings:write`
@@ -70,6 +86,11 @@ export class CustomerCancellationPage {
   protected readonly delay = signal(true);
   /** `null` quand le champ est vidé (`fold-number-input`). */
   protected readonly hours = signal<number | null>(null);
+  protected readonly stage = signal<CustomerCancellationStage>('production_plan');
+  /** En lecture seule, l'étape se dit en clair, sans sélecteur : « jusqu'à … ». */
+  protected readonly stageLabel = computed(() =>
+    (STAGE_OPTIONS.find((option) => option.value === this.stage())?.label ?? '').toLowerCase(),
+  );
   protected readonly saving = signal(false);
   /** Le dernier refus, en clair ; `null` quand le dernier envoi a abouti. */
   protected readonly failure = signal<string | null>(null);
@@ -81,12 +102,19 @@ export class CustomerCancellationPage {
     if (served === null) {
       return null;
     }
-    const patch: { delayEnabled?: boolean; hoursBefore?: number } = {};
+    const patch: {
+      delayEnabled?: boolean;
+      hoursBefore?: number;
+      b2cCancellableUntil?: CustomerCancellationStage;
+    } = {};
     if (this.delay() !== served.delayEnabled) {
       patch.delayEnabled = this.delay();
     }
     if (this.delay() && hours !== null && hours !== served.hoursBefore) {
       patch.hoursBefore = hours;
+    }
+    if (this.stage() !== served.b2cCancellableUntil) {
+      patch.b2cCancellableUntil = this.stage();
     }
     return Object.keys(patch).length === 0 ? null : patch;
   });
@@ -153,5 +181,6 @@ export class CustomerCancellationPage {
     this.settings.set(view);
     this.delay.set(view.delayEnabled);
     this.hours.set(view.hoursBefore);
+    this.stage.set(view.b2cCancellableUntil);
   }
 }

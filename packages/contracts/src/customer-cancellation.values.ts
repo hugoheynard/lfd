@@ -108,6 +108,16 @@ export interface GuestOrderCancellationView {
 }
 
 /**
+ * **Jusqu'où un particulier peut annuler** sa commande (plan
+ * `documentation/commandes/annulation/plan-a1-retirer-une-commande-inscrite.md`,
+ * décision C7 § 2) : jusqu'à l'arrêt du plan de production, ou jusqu'à ce que
+ * la commande soit prête. 🔴 Valeurs d'un enum Postgres : irréversibles.
+ * `handover` n'y entre pas (Hugo, 2026-10-25).
+ */
+export const CUSTOMER_CANCELLATION_STAGES = ["production_plan", "ready"] as const;
+export type CustomerCancellationStage = (typeof CUSTOMER_CANCELLATION_STAGES)[number];
+
+/**
  * Le réglage « Réglages › Commandes » (C6.5). `delayEnabled` : un délai est
  * imposé aux particuliers — actif par défaut (décision de Hugo du
  * 2026-10-13) ; désactivé, seul l'arrêt du plan de production limite, comme
@@ -116,6 +126,8 @@ export interface GuestOrderCancellationView {
 export interface CustomerCancellationSettingsView {
   readonly delayEnabled: boolean;
   readonly hoursBefore: number;
+  /** Jusqu'où un particulier peut annuler (plan A1) ; `production_plan` par défaut. */
+  readonly b2cCancellableUntil: CustomerCancellationStage;
   /** Instant du dernier geste ; `null` tant que personne n'a rien réglé. */
   readonly updatedAt: string | null;
   readonly updatedBy: string | null;
@@ -125,6 +137,7 @@ export interface CustomerCancellationSettingsView {
 export const DEFAULT_CUSTOMER_CANCELLATION_SETTINGS: CustomerCancellationSettingsView = {
   delayEnabled: true,
   hoursBefore: 24,
+  b2cCancellableUntil: "production_plan",
   updatedAt: null,
   updatedBy: null,
 };

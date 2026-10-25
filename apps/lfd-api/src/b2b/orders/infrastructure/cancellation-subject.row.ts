@@ -9,6 +9,7 @@ export const CANCELLATION_SUBJECT_SELECT = {
   id: true,
   orderNumber: true,
   placedByUserId: true,
+  companyId: true,
   status: true,
   paymentStatus: true,
   totalCents: true,
@@ -24,6 +25,7 @@ interface CancellationSubjectRow {
   readonly id: string;
   readonly orderNumber: string;
   readonly placedByUserId: string;
+  readonly companyId: string | null;
   readonly status: CancellationSubject["status"];
   readonly paymentStatus: CancellationSubject["paymentStatus"];
   readonly totalCents: number;
@@ -40,6 +42,7 @@ export function toCancellationSubject(row: CancellationSubjectRow): Cancellation
     orderId: row.id,
     orderNumber: row.orderNumber,
     placedByUserId: row.placedByUserId,
+    companyId: row.companyId,
     status: row.status,
     paymentStatus: row.paymentStatus,
     totalCents: row.totalCents,

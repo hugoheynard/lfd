@@ -329,9 +329,13 @@ model CustomerCancellationSettings {
   /// colonne garde son nom d'origine, `open_to_b2c`, mais `true` veut dire
   /// « délai imposé », plus « annulation ouverte » — la limite de tous est
   /// le compte à produire, le délai ne fait que l'avancer.)
-  delayEnabled Boolean @default(true) @map("open_to_b2c")
+  delayEnabled        Boolean                   @default(true) @map("open_to_b2c")
   /// Délai avant l'ancre (retrait / livraison), en heures — 0 à 168 (CHECK).
-  hoursBefore  Int     @default(24) @map("hours_before")
+  hoursBefore         Int                       @default(24) @map("hours_before")
+  /// **Jusqu'où un particulier peut annuler** (plan A1,
+  /// `documentation/commandes/annulation/plan-a1-retirer-une-commande-inscrite.md`,
+  /// décision C7 § 2). Défaut : l'arrêt du plan de production, la règle d'avant.
+  b2cCancellableUntil CustomerCancellationStage @default(production_plan) @map("b2c_cancellable_until")
 
   /// Instant du dernier geste ; NULL tant que personne n'a rien réglé.
   updatedAt        DateTime? @map("updated_at")
@@ -341,6 +345,19 @@ model CustomerCancellationSettings {
   updatedByRole    String?   @map("updated_by_role")
 
   @@map("customer_cancellation_settings")
+  @@schema("public")
+}
+
+/// L'étape jusqu'à laquelle un particulier peut annuler (plan A1). 🔴 Valeurs
+/// irréversibles dès la première ligne écrite. `handover` (C7b) n'y entre pas :
+/// Hugo l'a écarté le 2026-10-25 (A1 § 4, Q2).
+enum CustomerCancellationStage {
+  /// Jusqu'à l'arrêt du plan de production — la règle d'avant, défaut.
+  production_plan
+  /// Jusqu'à ce que la commande soit prête (feuille du colisage fermée).
+  ready
+
+  @@map("customer_cancellation_stage")
   @@schema("public")
 }
 

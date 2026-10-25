@@ -1,6 +1,7 @@
 import {
   CUSTOMER_CANCELLATION_MAX_HOURS_BEFORE,
   type CustomerCancellationSettingsPatch,
+  type CustomerCancellationStage,
 } from "@lfd/contracts";
 
 import { DomainError } from "../../../platform/shared/errors/app-error.js";
@@ -10,6 +11,7 @@ import type { StaffTrace } from "../../account/domain/value-objects/staff-trace.
 export interface CustomerCancellationSettingsState {
   readonly delayEnabled: boolean;
   readonly hoursBefore: number;
+  readonly b2cCancellableUntil: CustomerCancellationStage;
 }
 
 /**
@@ -26,6 +28,7 @@ export class CustomerCancellationSettings {
   private constructor(
     readonly delayEnabled: boolean,
     readonly hoursBefore: number,
+    readonly b2cCancellableUntil: CustomerCancellationStage,
     readonly at: Date,
     readonly author: StaffTrace,
   ) {}
@@ -53,6 +56,7 @@ export class CustomerCancellationSettings {
     return new CustomerCancellationSettings(
       patch.delayEnabled ?? current.delayEnabled,
       hoursBefore,
+      patch.b2cCancellableUntil ?? current.b2cCancellableUntil,
       input.at,
       input.author,
     );

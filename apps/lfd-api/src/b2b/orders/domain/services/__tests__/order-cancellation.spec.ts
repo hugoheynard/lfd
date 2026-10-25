@@ -1,3 +1,4 @@
+import { BEFORE_INSCRIPTION } from "../cancellation-allowance.js";
 import {
   cancellationBlocker,
   cancellationOf,
@@ -45,7 +46,7 @@ describe("cancellationOf — ce qui s'annule", () => {
     ],
     ["remboursée en entier depuis Stripe (lot C4)", state({ paymentStatus: "refunded" }), "paid"],
   ] as const)("%s → annulable, régime %s", (_, subject, regime) => {
-    expect(cancellationOf(subject)).toEqual({ cancellable: true, regime });
+    expect(cancellationOf(subject, BEFORE_INSCRIPTION)).toEqual({ cancellable: true, regime });
   });
 });
 
@@ -82,18 +83,24 @@ describe("cancellationBlocker — les refus, dans l'ordre du plan (C3.3)", () =>
     ["confirmée par le plan du soir", state({ status: "confirmed" }), "inscribed"],
     ["en production", state({ status: "in_production" }), "inscribed"],
   ] as const)("%s → %s", (_, subject, kind) => {
-    expect(cancellationBlocker(subject)?.kind).toBe(kind);
+    expect(cancellationBlocker(subject, BEFORE_INSCRIPTION)?.kind).toBe(kind);
   });
 
   it("un remboursement en vol n'est lu que sur une payée : une carte attendue l'ignore", () => {
     expect(
-      cancellationBlocker(state({ refunds: { refundableCents: 0, inFlightCents: 500 } })),
+      cancellationBlocker(
+        state({ refunds: { refundableCents: 0, inFlightCents: 500 } }),
+        BEFORE_INSCRIPTION,
+      ),
     ).toBeNull();
   });
 
   it("le statut annulé l'emporte sur tout le reste", () => {
     expect(
-      cancellationBlocker(state({ status: "cancelled", paymentStatus: "paid", inscribedDay: "x" })),
+      cancellationBlocker(
+        state({ status: "cancelled", paymentStatus: "paid", inscribedDay: "x" }),
+        BEFORE_INSCRIPTION,
+      ),
     ).toEqual({ kind: "already_cancelled", at: null });
   });
 
@@ -104,7 +111,7 @@ describe("cancellationBlocker — les refus, dans l'ordre du plan (C3.3)", () =>
       engagement: { kind: "written_off" },
     });
 
-    expect(cancellationBlocker(blocked)?.kind).toBe("written_off");
+    expect(cancellationBlocker(blocked, BEFORE_INSCRIPTION)?.kind).toBe("written_off");
   });
 
   it("au compte, rien d'engagé mais inscrite : le fournil refuse", () => {
@@ -114,34 +121,35 @@ describe("cancellationBlocker — les refus, dans l'ordre du plan (C3.3)", () =>
       engagement: { kind: "free" },
     });
 
-    expect(cancellationBlocker(blocked)?.kind).toBe("inscribed");
+    expect(cancellationBlocker(blocked, BEFORE_INSCRIPTION)?.kind).toBe("inscribed");
   });
 
   it("un engagement `null` hors du compte ne refuse rien : seule la carte et le total nul y ont droit", () => {
-    expect(cancellationBlocker(state({ engagement: null }))).toBeNull();
+    expect(cancellationBlocker(state({ engagement: null }), BEFORE_INSCRIPTION)).toBeNull();
   });
 
   it("au compte, le statut l'emporte sur l'engagement", () => {
     expect(
       cancellationBlocker(
         state({ status: "cancelled", paymentStatus: "not_required", engagement: null }),
+        BEFORE_INSCRIPTION,
       )?.kind,
     ).toBe("already_cancelled");
   });
 
   it("le jour de l'inscription vient du fournil, sinon du jour de service", () => {
-    expect(cancellationBlocker(state({ inscribedDay: "2026-10-14" }))).toEqual({
+    expect(cancellationBlocker(state({ inscribedDay: "2026-10-14" }), BEFORE_INSCRIPTION)).toEqual({
       kind: "inscribed",
       day: "2026-10-14",
     });
-    expect(cancellationBlocker(state({ status: "confirmed" }))).toEqual({
+    expect(cancellationBlocker(state({ status: "confirmed" }), BEFORE_INSCRIPTION)).toEqual({
       kind: "inscribed",
       day: "2026-10-13",
     });
   });
 
   it("rien n'empêche : null", () => {
-    expect(cancellationBlocker(state())).toBeNull();
+    expect(cancellationBlocker(state(), BEFORE_INSCRIPTION)).toBeNull();
   });
 });
 
@@ -205,5 +213,23 @@ describe("cancellationRefusalOf — les phrases (C3.7)", () => {
     ).toMatch(
       /^Le reste de ce bon \(4,50\s€\) a été annulé par l'équipe : l'annulation de la commande n'est plus possible\. Voyez avec la direction\.$/u,
     );
+  });
+});
+
+describe("cancellationOf — l'autorisation du plan A1 (lot A1.1)", () => {
+  // 🔴 Jusqu'au lot A1.2 (guichets du fournil et du colisage), `before_packing`
+  // ne lève PAS le refus « inscrite » : choisir `ready` ne change rien.
+  it.each([
+    ["inscrite au fournil", state({ inscribedDay: "2026-10-14" })],
+    ["confirmée au plan", state({ status: "confirmed" })],
+  ] as const)("étape ready, commande %s : toujours refusée jusqu'à A1.2", (_, inscribed) => {
+    expect(cancellationBlocker(inscribed, { allowance: "before_packing" })?.kind).toBe("inscribed");
+  });
+
+  it("étape ready : ce qui s'annulait s'annule toujours", () => {
+    expect(cancellationOf(state(), { allowance: "before_packing" })).toEqual({
+      cancellable: true,
+      regime: "due",
+    });
   });
 });

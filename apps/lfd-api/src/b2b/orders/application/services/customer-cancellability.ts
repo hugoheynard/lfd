@@ -12,6 +12,7 @@ import {
 } from "../../domain/ports/cancellation-subject.reader.js";
 import type { CustomerCancellationSubject } from "../../domain/ports/customer-cancellation-subject.reader.js";
 import { customerRefusalOf } from "../../domain/services/customer-cancellation-refusal.js";
+import { BEFORE_INSCRIPTION } from "../../domain/services/cancellation-allowance.js";
 import {
   cancellationOf,
   type CancellableRegime,
@@ -53,7 +54,13 @@ export class CustomerCancellability {
     if (staffSubject === null) {
       return refused("not_allowed");
     }
-    const decision = cancellationOf(await this.rule.stateOf(staffSubject, inscribedDay));
+    // Plan A1.1 (2026-10-25) : aperçu à l'autorisation d'avant. Tant que le
+    // geste ne lève pas le refus « inscrite » (lot A1.2), l'aperçu dit la même
+    // chose sous les deux ; il suivra le réglage quand le geste le suivra.
+    const decision = cancellationOf(
+      await this.rule.stateOf(staffSubject, inscribedDay),
+      BEFORE_INSCRIPTION,
+    );
     if (!decision.cancellable) {
       return refused(customerRefusalOf(decision.block) ?? "not_allowed");
     }

@@ -3,6 +3,7 @@ import type { OrderStatus, PaymentStatus } from "@lfd/contracts";
 import type { RefundPosition } from "../entities/order-refund.js";
 import type { AccountEngagement } from "../ports/account-order-engagement.js";
 import type { CancellationSubject } from "../ports/cancellation-subject.reader.js";
+import type { CancellationAllowance } from "./cancellation-allowance.js";
 import {
   engagementBlockOf,
   engagementRefusalOf,
@@ -126,7 +127,10 @@ export type CancellationDecision =
  * seul chemin qui écrit `confirmed` est l'absorption par le plan du soir
  * (`absorbIntoPlan`, vérifié le 2026-10-12), et rien n'écrit `in_production`.
  */
-export function cancellationOf(state: CancellationState): CancellationDecision {
+export function cancellationOf(
+  state: CancellationState,
+  allowance: CancellationAllowance,
+): CancellationDecision {
   const byStatus = statusBlock(state);
   if (byStatus !== null) {
     return { cancellable: false, block: byStatus };
@@ -146,14 +150,37 @@ export function cancellationOf(state: CancellationState): CancellationDecision {
   }
   if (state.inscribedDay !== null || state.status !== "placed") {
     const day = state.inscribedDay ?? state.serviceDay;
-    return { cancellable: false, block: { kind: "inscribed", day } };
+    return { cancellable: false, block: inscribedBlockUnder(allowance, day) };
   }
   return { cancellable: true, regime };
 }
 
+/**
+ * Le refus « inscrite », selon l'autorisation.
+ *
+ * 🔴 **A1.1 (2026-10-25) : `before_packing` ne lève PAS encore ce refus.**
+ * Retirer une commande inscrite demande les guichets du fournil et du
+ * colisage (lot A1.2, plan A1 § 2), qui n'existent pas encore : jusque-là,
+ * l'issue reste le refus d'avant, et choisir `ready` au réglage ne change
+ * rien en production.
+ */
+function inscribedBlockUnder(
+  allowance: CancellationAllowance,
+  day: string | null,
+): CancellationBlock {
+  switch (allowance.allowance) {
+    case "before_inscription":
+    case "before_packing":
+      return { kind: "inscribed", day };
+  }
+}
+
 /** Ce qui empêche d'annuler — ou `null` si rien. Cf. {@link cancellationOf}. */
-export function cancellationBlocker(state: CancellationState): CancellationBlock | null {
-  const decision = cancellationOf(state);
+export function cancellationBlocker(
+  state: CancellationState,
+  allowance: CancellationAllowance,
+): CancellationBlock | null {
+  const decision = cancellationOf(state, allowance);
   return decision.cancellable ? null : decision.block;
 }
 

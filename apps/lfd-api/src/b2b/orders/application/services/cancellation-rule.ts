@@ -12,6 +12,7 @@ import {
   type CancellableRegime,
   type CancellationState,
 } from "../../domain/services/order-cancellation.js";
+import type { CancellationAllowance } from "../../domain/services/cancellation-allowance.js";
 import { settlementRegimeOf } from "../../domain/services/settlement-regime.js";
 
 /**
@@ -41,12 +42,16 @@ export class CancellationRule {
   }
 
   /**
-   * Le régime sous lequel la commande s'annule.
+   * Le régime sous lequel la commande s'annule, sous l'autorisation que le
+   * noyau a calculée une fois (plan A1).
    *
    * @throws {OrderNotCancellableError} la règle refuse.
    */
-  async regimeOf(subject: CancellationSubject): Promise<CancellableRegime> {
-    const decision = cancellationOf(await this.stateOf(subject, null));
+  async regimeOf(
+    subject: CancellationSubject,
+    allowance: CancellationAllowance,
+  ): Promise<CancellableRegime> {
+    const decision = cancellationOf(await this.stateOf(subject, null), allowance);
     if (!decision.cancellable) {
       throw new OrderNotCancellableError(subject.orderId, decision.block);
     }

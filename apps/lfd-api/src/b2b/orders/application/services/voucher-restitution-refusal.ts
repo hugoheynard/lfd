@@ -3,6 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { OrderInscriptionReader } from "../../../../production/channels/commerce/index.js";
 import type { VoucherRestitution } from "../../domain/ports/loyalty-voucher-redemption.js";
 import { CancellationSubjectReader } from "../../domain/ports/cancellation-subject.reader.js";
+import { BEFORE_INSCRIPTION } from "../../domain/services/cancellation-allowance.js";
 import {
   cancellationOf,
   type CancellationBlock,
@@ -51,8 +52,12 @@ export class VoucherRestitutionRefusal {
       this.subjects.find(orderId),
       this.inscriptions.inscribedDayOf(orderId),
     ]);
+    // Plan A1.1 (2026-10-25) : aperçu à l'autorisation d'avant. Tant que le
+    // geste ne lève pas le refus « inscrite » (lot A1.2), l'aperçu dit la même
+    // chose sous les deux ; il suivra le réglage quand le geste le suivra.
     return (
-      subject !== null && cancellationOf(await this.rule.stateOf(subject, inscribedDay)).cancellable
+      subject !== null &&
+      cancellationOf(await this.rule.stateOf(subject, inscribedDay), BEFORE_INSCRIPTION).cancellable
     );
   }
 }

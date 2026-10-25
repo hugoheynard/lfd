@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest';
 
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { CustomerCancellationService } from '../customer-cancellation.service';
-import { CustomerCancellationPage } from './customer-cancellation-page';
+import { CustomerCancellationPage, STAGE_OPTIONS } from './customer-cancellation-page';
 
 /**
  * **Réglages › Commandes** (C6.5) : un interrupteur, un délai visible quand il
@@ -18,6 +18,7 @@ import { CustomerCancellationPage } from './customer-cancellation-page';
 const NO_DELAY: CustomerCancellationSettingsView = {
   delayEnabled: false,
   hoursBefore: 24,
+  b2cCancellableUntil: 'production_plan',
   updatedAt: null,
   updatedBy: null,
 };
@@ -44,6 +45,7 @@ class FakeSettings {
     this.current = {
       delayEnabled: patch.delayEnabled ?? base.delayEnabled,
       hoursBefore: patch.hoursBefore ?? base.hoursBefore,
+      b2cCancellableUntil: patch.b2cCancellableUntil ?? base.b2cCancellableUntil,
       updatedAt: '2026-10-13T08:00:00.000Z',
       updatedBy: 'Hugo',
     };
@@ -95,6 +97,7 @@ describe('CustomerCancellationPage', () => {
       new FakeSettings({
         delayEnabled: true,
         hoursBefore: 48,
+        b2cCancellableUntil: 'production_plan',
         updatedAt: '2026-10-12T08:00:00.000Z',
         updatedBy: 'Cécile Martin',
       }),
@@ -160,5 +163,40 @@ describe('CustomerCancellationPage', () => {
     const fixture = await mount(new FakeSettings(new Error('panne')));
 
     expect(text(fixture)).toContain('Impossible de charger le réglage des commandes');
+  });
+
+  it('jusqu’où un particulier annule : un choix parmi deux étapes, servi par le réglage (plan A1)', async () => {
+    const fixture = await mount(new FakeSettings({ ...NO_DELAY, b2cCancellableUntil: 'ready' }));
+    const page = fixture.componentInstance;
+
+    expect(text(fixture)).toContain("Jusqu'où un particulier peut-il annuler ?");
+    expect((fixture.nativeElement as HTMLElement).querySelector('fold-listbox')).not.toBeNull();
+    expect(STAGE_OPTIONS.map((option) => option.label)).toEqual([
+      "Jusqu'à l'arrêt du plan de production",
+      "Jusqu'à ce que la commande soit prête",
+    ]);
+    expect(page['stage']()).toBe('ready');
+  });
+
+  it('n’envoie que l’étape quand seule l’étape change', async () => {
+    const api = new FakeSettings(NO_DELAY);
+    const fixture = await mount(api);
+    const page = fixture.componentInstance;
+
+    page['stage'].set('ready');
+    await page['save']();
+
+    expect(api.patches).toEqual([{ b2cCancellableUntil: 'ready' }]);
+    expect(page['settings']()?.b2cCancellableUntil).toBe('ready');
+    expect(page['patch']()).toBeNull();
+  });
+
+  it('en lecture seule, l’étape se dit en clair, sans sélecteur', async () => {
+    const fixture = await mount(new FakeSettings({ ...NO_DELAY, b2cCancellableUntil: 'ready' }), [
+      'lfc_order_settings:read',
+    ]);
+
+    expect((fixture.nativeElement as HTMLElement).querySelector('fold-listbox')).toBeNull();
+    expect(text(fixture)).toContain("Un particulier annule jusqu'à ce que la commande soit prête.");
   });
 });

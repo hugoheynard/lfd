@@ -17,6 +17,8 @@ import {
 } from "../../../domain/events/order-cancelled.event.js";
 import type { VoucherRestitution } from "../../../domain/ports/loyalty-voucher-redemption.js";
 import { VoucherRestitutionRefusal } from "../../services/voucher-restitution-refusal.js";
+import { CancellationAllowanceGate } from "../../services/cancellation-allowance-gate.js";
+import { FixedCancellationSettings } from "./customer-cancellation-doubles.js";
 import { CancellationRule } from "../../services/cancellation-rule.js";
 import type { AccountEngagement } from "../../../domain/ports/account-order-engagement.js";
 import type { CancellationSubject } from "../../../domain/ports/cancellation-subject.reader.js";
@@ -92,6 +94,7 @@ function scene(options: Scene = {}) {
       vouchers,
       new VoucherRestitutionRefusal(subjects, new FixedInscriptions(), rule),
       rule,
+      new CancellationAllowanceGate(new FixedCancellationSettings()),
       engagements,
       new CancellationRefundRequester(new InMemoryRefundRequests(refundStore), dispatch),
       durable,
@@ -405,6 +408,7 @@ describe("CancelOrderHandler — les refus", () => {
           new CancellationRule(new ScriptedEngagements()),
         ),
         new CancellationRule(new ScriptedEngagements()),
+        new CancellationAllowanceGate(new FixedCancellationSettings()),
         new ScriptedEngagements(),
         new CancellationRefundRequester(
           new InMemoryRefundRequests(new RefundStore()),

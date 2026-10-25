@@ -16,6 +16,7 @@ export class PrismaCustomerCancellationSettingsRepository extends CustomerCancel
     const row = {
       delayEnabled: settings.delayEnabled,
       hoursBefore: settings.hoursBefore,
+      b2cCancellableUntil: settings.b2cCancellableUntil,
       updatedAt: settings.at,
       updatedByStaffId: settings.author.staffUserId,
       updatedByName: settings.author.name,

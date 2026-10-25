@@ -15,6 +15,7 @@ import {
 } from "../../domain/errors/order-revision-errors.js";
 import { ProductionPlanClosedError } from "../../domain/errors/production-plan-closed.error.js";
 import type { WindowRequester } from "../../domain/services/delivery-window.js";
+import { BEFORE_INSCRIPTION } from "../../domain/services/cancellation-allowance.js";
 import { cancellationOf } from "../../domain/services/order-cancellation.js";
 import {
   revisabilityOf,
@@ -112,7 +113,12 @@ export class OrderRevising {
     order: RevisableOrder,
     inscribedDay: string | null,
   ): Promise<StandingRevisionBlock | null> {
-    const decision = cancellationOf(await this.rule.stateOf(subjectOf(order), inscribedDay));
+    const decision = cancellationOf(
+      await this.rule.stateOf(subjectOf(order), inscribedDay),
+      // Une modification s'arrête à l'inscription, quel que soit le réglage
+      // d'annulation du plan A1 : elle change ce qu'on fabrique.
+      BEFORE_INSCRIPTION,
+    );
     return standingBlockOf(decision, {
       paymentStatus: order.paymentStatus,
       totalCents: order.totalCents,
@@ -273,6 +279,7 @@ function subjectOf(order: RevisableOrder) {
     orderId: order.orderId,
     orderNumber: order.orderNumber,
     placedByUserId: order.placedByUserId,
+    companyId: order.companyId,
     status: order.status,
     paymentStatus: order.paymentStatus,
     totalCents: order.totalCents,

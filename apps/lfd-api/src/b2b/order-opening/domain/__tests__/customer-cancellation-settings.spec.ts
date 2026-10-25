@@ -5,7 +5,11 @@ import {
 
 const AT = new Date(0);
 const AUTHOR = { staffUserId: "staff_agent", name: "Camille Durand", role: "commercial" };
-const NO_DELAY = { delayEnabled: false, hoursBefore: 24 } as const;
+const NO_DELAY = {
+  delayEnabled: false,
+  hoursBefore: 24,
+  b2cCancellableUntil: "production_plan",
+} as const;
 
 describe("CustomerCancellationSettings.pose (C6.5)", () => {
   it("ne change que la clé nommée par le patch", () => {
@@ -16,7 +20,11 @@ describe("CustomerCancellationSettings.pose (C6.5)", () => {
       author: AUTHOR,
     });
 
-    expect([settings.delayEnabled, settings.hoursBefore]).toEqual([true, 24]);
+    expect([settings.delayEnabled, settings.hoursBefore, settings.b2cCancellableUntil]).toEqual([
+      true,
+      24,
+      "production_plan",
+    ]);
     expect(settings.author).toEqual(AUTHOR);
   });
 
@@ -40,5 +48,20 @@ describe("CustomerCancellationSettings.pose (C6.5)", () => {
         author: AUTHOR,
       }),
     ).toThrow(CancellationDelayOutOfRangeError);
+  });
+
+  it("pose l'étape jusqu'où un particulier annule, sans toucher au délai (plan A1)", () => {
+    const settings = CustomerCancellationSettings.pose({
+      current: NO_DELAY,
+      patch: { b2cCancellableUntil: "ready" },
+      at: AT,
+      author: AUTHOR,
+    });
+
+    expect([settings.b2cCancellableUntil, settings.delayEnabled, settings.hoursBefore]).toEqual([
+      "ready",
+      false,
+      24,
+    ]);
   });
 });

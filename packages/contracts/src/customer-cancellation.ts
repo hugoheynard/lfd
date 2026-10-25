@@ -1,6 +1,9 @@
 import { z } from "zod";
 
-import { CUSTOMER_CANCELLATION_REASON_CODES } from "./customer-cancellation.values.js";
+import {
+  CUSTOMER_CANCELLATION_REASON_CODES,
+  CUSTOMER_CANCELLATION_STAGES,
+} from "./customer-cancellation.values.js";
 
 /**
  * Contrat de fil de **l'annulation par le client** (lot C6) : les schémas des
@@ -17,11 +20,13 @@ export {
   CUSTOMER_CANCELLATION_REASON_CODES,
   CUSTOMER_CANCELLATION_REASON_MAX_LENGTH,
   CUSTOMER_CANCELLATION_REFUSALS,
+  CUSTOMER_CANCELLATION_STAGES,
   DEFAULT_CUSTOMER_CANCELLATION_SETTINGS,
   type CustomerCancellationMoney,
   type CustomerCancellationReasonCode,
   type CustomerCancellationRefusal,
   type CustomerCancellationSettingsView,
+  type CustomerCancellationStage,
   type GuestOrderCancellationView,
   type OrderCancellability,
   type CustomerOrderDetailView,
@@ -57,9 +62,10 @@ export const customerCancellationSettingsPatchSchema = z
     delayEnabled: z.boolean().optional(),
     // La borne (0 à 168 h) est une règle du domaine, refusée avec sa phrase.
     hoursBefore: z.number().int().optional(),
+    b2cCancellableUntil: z.enum(CUSTOMER_CANCELLATION_STAGES).optional(),
   })
   .refine((patch) => Object.values(patch).some((value) => value !== undefined), {
-    message: "au moins un réglage : delayEnabled ou hoursBefore",
+    message: "au moins un réglage : delayEnabled, hoursBefore ou b2cCancellableUntil",
   });
 export type CustomerCancellationSettingsPatch = z.infer<
   typeof customerCancellationSettingsPatchSchema

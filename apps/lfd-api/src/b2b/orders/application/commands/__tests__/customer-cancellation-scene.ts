@@ -8,6 +8,7 @@ import type { CancellationSubject } from "../../../domain/ports/cancellation-sub
 import type { CancellingPrincipal } from "../../../domain/ports/cancelling-member.reader.js";
 import type { CustomerCancellationSubject } from "../../../domain/ports/customer-cancellation-subject.reader.js";
 import { CancellationRefundRequester } from "../../services/cancellation-refund-requester.js";
+import { CancellationAllowanceGate } from "../../services/cancellation-allowance-gate.js";
 import { CancellationRule } from "../../services/cancellation-rule.js";
 import { CancellationWall } from "../../services/cancellation-wall.js";
 import { CustomerCancellationPolicyGate } from "../../services/customer-cancellation-policy.js";
@@ -57,7 +58,9 @@ export interface CustomerScene {
 
 export function customerScene(options: CustomerScene) {
   const trace: string[] = [];
-  const order = cancellationSubject(options.order ?? {});
+  const customer = customerSubject(options.customer ?? {});
+  // La même commande vue des deux côtés : sa société est la même (plan A1).
+  const order = cancellationSubject({ companyId: customer.companyId, ...options.order });
   const rows = new InMemoryCancellations(order, trace);
   rows.failures = options.failures ?? 0;
   const subjects = new FixedSubjects(order);
@@ -65,6 +68,7 @@ export function customerScene(options: CustomerScene) {
   const rule = new CancellationRule(engagements);
   const durable = new RecordingDurable();
   const refundStore = new RefundStore();
+  const settings = new FixedCancellationSettings(options.settings ?? {});
   const core = new OrderCancellation(
     subjects,
     rows,
@@ -73,6 +77,7 @@ export function customerScene(options: CustomerScene) {
     new RecordingRedemption(false, RETURNED),
     new VoucherRestitutionRefusal(subjects, new FixedInscriptions(), rule),
     rule,
+    new CancellationAllowanceGate(settings),
     engagements,
     new CancellationRefundRequester(
       new InMemoryRefundRequests(refundStore),
@@ -83,8 +88,7 @@ export function customerScene(options: CustomerScene) {
     new DirectUnitOfWork(),
     new FixedClock(options.now),
   );
-  const settings = new FixedCancellationSettings(options.settings ?? {});
-  const customers = new FixedCustomerSubjects(customerSubject(options.customer ?? {}));
+  const customers = new FixedCustomerSubjects(customer);
   const signer = new ReadableSigner();
   return {
     trace,

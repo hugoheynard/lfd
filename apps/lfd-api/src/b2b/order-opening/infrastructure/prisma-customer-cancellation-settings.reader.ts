@@ -23,7 +23,13 @@ export class PrismaCustomerCancellationSettingsReader extends CustomerCancellati
   async current(): Promise<CustomerCancellationSettingsView> {
     const row = await this.prisma.customerCancellationSettings.findUnique({
       where: { key: ORDER_OPENING_KEY },
-      select: { delayEnabled: true, hoursBefore: true, updatedAt: true, updatedByName: true },
+      select: {
+        delayEnabled: true,
+        hoursBefore: true,
+        b2cCancellableUntil: true,
+        updatedAt: true,
+        updatedByName: true,
+      },
     });
     if (row === null) {
       return DEFAULT_CUSTOMER_CANCELLATION_SETTINGS;
@@ -31,6 +37,7 @@ export class PrismaCustomerCancellationSettingsReader extends CustomerCancellati
     return {
       delayEnabled: row.delayEnabled,
       hoursBefore: row.hoursBefore,
+      b2cCancellableUntil: row.b2cCancellableUntil,
       updatedAt: row.updatedAt === null ? null : row.updatedAt.toISOString(),
       // Un agent que l'annuaire ne connaissait pas a été figé sans nom : on ne
       // l'invente pas ; la ligne posée par la migration n'a pas d'auteur.

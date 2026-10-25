@@ -25,6 +25,7 @@ import {
 } from "../../domain/ports/order-shortfall.reader.js";
 import { VoucherRestitutionPreview } from "../../domain/ports/voucher-restitution-preview.js";
 import { cancellationVoucherSentenceOf } from "../../domain/services/order-cancellation-voucher.js";
+import { BEFORE_INSCRIPTION } from "../../domain/services/cancellation-allowance.js";
 import {
   cancellationBlocker,
   cancellationRefusalOf,
@@ -120,7 +121,13 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
     }
     // Lot C5 : au compte, la règle lit aussi l'engagement comptable — par le
     // port de LECTURE seul (ISP), sans verrou : c'est un affichage.
-    const block = cancellationBlocker(await this.rule.stateOf(subject, inscribedDay));
+    // Plan A1.1 (2026-10-25) : aperçu à l'autorisation d'avant. Tant que le
+    // geste ne lève pas le refus « inscrite » (lot A1.2), l'aperçu dit la même
+    // chose sous les deux ; il suivra le réglage quand le geste le suivra.
+    const block = cancellationBlocker(
+      await this.rule.stateOf(subject, inscribedDay),
+      BEFORE_INSCRIPTION,
+    );
     if (block !== null) {
       return { cancellable: false, reason: cancellationRefusalOf(block) };
     }

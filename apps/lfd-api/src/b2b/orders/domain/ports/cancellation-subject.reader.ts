@@ -10,6 +10,11 @@ export interface CancellationSubject {
   readonly orderId: string;
   readonly orderNumber: string;
   readonly placedByUserId: string;
+  /**
+   * La société de la commande, ou `null` : commande personnelle. Lue pour
+   * l'autorisation du plan A1 (`cancellationAllowanceOf`).
+   */
+  readonly companyId: string | null;
   readonly status: OrderStatus;
   readonly paymentStatus: PaymentStatus;
   readonly totalCents: number;

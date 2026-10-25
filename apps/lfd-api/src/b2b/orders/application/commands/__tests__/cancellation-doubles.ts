@@ -39,6 +39,7 @@ export function cancellationSubject(
     orderId: "ord_1",
     orderNumber: "ORD-0001",
     placedByUserId: "usr_1",
+    companyId: null,
     status: "placed",
     paymentStatus: "pending",
     totalCents: 2_110,

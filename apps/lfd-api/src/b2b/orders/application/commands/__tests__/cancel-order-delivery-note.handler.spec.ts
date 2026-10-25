@@ -3,6 +3,8 @@ import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import type { OrderWithdrawalOutcome } from "../../../../../production/channels/commerce/index.js";
 import { OrderNotCancellableError } from "../../../domain/errors/order-cancellation-errors.js";
 import { CancellationRefundRequester } from "../../services/cancellation-refund-requester.js";
+import { CancellationAllowanceGate } from "../../services/cancellation-allowance-gate.js";
+import { FixedCancellationSettings } from "./customer-cancellation-doubles.js";
 import { CancellationRule } from "../../services/cancellation-rule.js";
 import { OrderCancellation } from "../../services/order-cancellation.service.js";
 import { VoucherRestitutionRefusal } from "../../services/voucher-restitution-refusal.js";
@@ -46,6 +48,7 @@ function scene(desk: OrderWithdrawalOutcome = "withdrawn") {
       new RecordingRedemption(false, RETURNED),
       new VoucherRestitutionRefusal(subjects, new FixedInscriptions(), rule),
       rule,
+      new CancellationAllowanceGate(new FixedCancellationSettings()),
       engagements,
       new CancellationRefundRequester(
         new InMemoryRefundRequests(new RefundStore()),

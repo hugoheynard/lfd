@@ -20,7 +20,7 @@ import { GetCustomerCancellationSettingsQuery } from "../application/queries/get
  * que le client peut faire de sa commande, et jusqu'à quand
  * (`documentation/commandes/passation/plan-reglages-commandes.md`, §3.4, lot O1a).
  *
- * `GET` rend la vue ; `PATCH` (`204`) prend `{ delayEnabled?, hoursBefore? }`,
+ * `GET` rend la vue ; `PATCH` (`204`) prend `{ delayEnabled?, hoursBefore?, b2cCancellableUntil? }`,
  * au moins une clé ; un délai hors de 0 à 168 h est un `400`.
  */
 @Controller("admin/customer-cancellation")

@@ -84,6 +84,7 @@ import { PrismaOrderRecipientReader } from "./infrastructure/prisma-order-recipi
 import { AbandonOrderHandler } from "./application/commands/abandon-order.handler.js";
 import { CancelOrderHandler } from "./application/commands/cancel-order.handler.js";
 import { VoucherRestitutionRefusal } from "./application/services/voucher-restitution-refusal.js";
+import { CancellationAllowanceGate } from "./application/services/cancellation-allowance-gate.js";
 import { CancellationRule } from "./application/services/cancellation-rule.js";
 import { SendOrderCancelledMail } from "./application/handlers/send-order-cancelled-mail.handler.js";
 import { CancellationSubjectReader } from "./domain/ports/cancellation-subject.reader.js";
@@ -369,6 +370,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // Lot C5 : la règle d'annulation et l'engagement comptable — le port est
     // relié par `appBootstrap/account-order-engagement.module.ts`.
     CancellationRule,
+    CancellationAllowanceGate,
     SendOrderCancelledMail,
     { provide: CancellationSubjectReader, useClass: PrismaCancellationSubjectReader },
     { provide: OrderCancellationRepository, useClass: PrismaOrderCancellationRepository },
