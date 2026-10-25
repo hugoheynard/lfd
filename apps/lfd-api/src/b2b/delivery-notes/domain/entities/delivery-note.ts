@@ -207,9 +207,20 @@ export class DeliveryNote {
     return this.progress.status;
   }
 
-  /** Vivant = pas annulé : une commande vivante en a exactement un (plan E2, § 1). */
+  /**
+   * Vivant = pas annulé. Une commande vivante en a exactement un PAR RANG
+   * (plan E7, choix 3) : un BL-1 remis reste vivant à côté d'un reliquat.
+   */
   get isLive(): boolean {
     return this.progress.status !== "voided";
+  }
+
+  /**
+   * Le BL de rang 1, le seul qui suit sa commande (plan E7, choix 3) : un
+   * reliquat a son propre état, que seuls les gestes de son envoi font avancer.
+   */
+  get followsItsOrder(): boolean {
+    return this.identity.rank === FIRST_DELIVERY_NOTE_RANK;
   }
 
   /**

@@ -23,7 +23,8 @@ export interface FollowedOrder extends DeliveryNoteSource {
  * Ce qu'on ne répare pas — plan E2, § 8.2 : compté et remonté, jamais inventé.
  *
  * - `voided_only` : la commande vit, son seul BL est annulé ;
- * - `several_live_notes` : plus d'un BL vivant ;
+ * - `several_live_notes` : plus d'un BL vivant de rang 1 (plan E7, choix 3 :
+ *   un reliquat vivant à côté d'un BL-1 remis est l'état normal) ;
  * - `dead_status` : `draft` ou `in_production`, qu'aucun chemin n'écrit ;
  * - `missing_instant` : le statut de la commande sans l'instant qui le date
  *   (`fulfilled` sans remise ni jour de réception, `ready` sans `ready_at`…) ;
@@ -100,12 +101,17 @@ const NONE: DeliveryNoteAlignment = { change: "none" };
  *
  * Hors de son champ, sans rien faire : une commande `placed` (son BL prévu
  * attend la re-clôture, E1), une commande sans ligne (rien à livrer).
+ *
+ * **Seul le BL de rang 1 suit la commande** (plan E7, choix 3) : les
+ * reliquats sont écartés avant toute décision — jamais créés, avancés,
+ * complétés ni annulés ici, et jamais comptés dans `several_live_notes`.
  */
 export function alignmentOf(
   order: FollowedOrder,
-  notes: readonly DeliveryNote[],
+  allRanks: readonly DeliveryNote[],
   context: AlignmentContext,
 ): DeliveryNoteAlignment {
+  const notes = allRanks.filter((note) => note.followsItsOrder);
   if (order.status === "cancelled") {
     return voidingOf(notes, context.now);
   }

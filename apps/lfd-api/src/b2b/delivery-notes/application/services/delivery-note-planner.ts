@@ -99,10 +99,13 @@ export class DeliveryNotePlanner {
 
   /** Le BL à écrire pour cette commande, ou `null` s'il n'y a rien à faire. */
   private noteFor(order: DeliveryNoteOrder, notes: readonly DeliveryNote[]): DeliveryNote | null {
-    if (notes.length === 0) {
+    // Seul le BL-1 suit la commande : un reliquat a ses propres lignes et
+    // son jour, la re-clôture ne le réécrit jamais (reliquat, choix 3).
+    const followers = notes.filter((note) => note.followsItsOrder);
+    if (followers.length === 0) {
       return DeliveryNote.planFromOrder(this.ids.next(), order, this.clock.now());
     }
-    const planned = notes.find((note) => note.status === "planned");
+    const planned = followers.find((note) => note.status === "planned");
     if (planned === undefined) {
       return null;
     }

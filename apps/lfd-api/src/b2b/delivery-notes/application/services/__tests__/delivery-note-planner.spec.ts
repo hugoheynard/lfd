@@ -129,6 +129,35 @@ describe("DeliveryNotePlanner — le BL prévu à l'arrêt du plan (plan E1)", (
     ]);
   });
 
+  /**
+   * Régression : la re-clôture prenait le premier BL `planned` de la
+   * commande, et un reliquat prévu passait pour le BL-1 dès que celui-ci
+   * était préparé (reliquat, lot L2, 2026-10-26).
+   */
+  it("une re-clôture ne réécrit jamais un reliquat prévu, même quand le BL-1 est préparé", async () => {
+    const { orders, notes, planner } = scene();
+    orders.confirm(orderOf("ord_1", "ORD-1"), CLOSED_AT);
+    await planner.planConfirmed(["ord_1"], CLOSED_AT);
+    const [first] = notes.forOrder("ord_1");
+    const firstNote = DeliveryNote.rehydrate(first!);
+    firstNote.prepare(CLOSED_AT);
+    await notes.save(firstNote);
+    const remainder = DeliveryNote.planRemainder(
+      "dn_rest",
+      { ...orderOf("ord_1", "ORD-1"), orderDay: "2030-03-10" },
+      2,
+      "2030-03-11",
+      CLOSED_AT,
+    );
+    await notes.save(remainder);
+    const before = remainder.toState();
+    orders.confirm(orderOf("ord_1", "ORD-1", [{ ...BREAD, quantity: 3 }]), RECLOSED_AT);
+
+    await planner.planConfirmed(["ord_1"], RECLOSED_AT);
+
+    expect(notes.forOrder("ord_1").find((note) => note.id === "dn_rest")).toEqual(before);
+  });
+
   it("un BL annulé n'est ni réécrit ni remplacé : son numéro n'est jamais réemployé", async () => {
     const { orders, notes, planner } = scene();
     const voided = DeliveryNote.planFromOrder("dn_old", orderOf("ord_1", "ORD-1"), CLOSED_AT);

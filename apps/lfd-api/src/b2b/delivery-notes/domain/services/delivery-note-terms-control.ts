@@ -35,21 +35,25 @@ export function termsGapsOf(
   if (!CONTROLLED_STATUSES.has(order.status) || order.lines.length === 0) {
     return [];
   }
-  return notes
-    .filter((note) => note.orderId === order.orderId && note.isLive)
-    .flatMap((note) => {
-      const fields = gapFields(order, note);
-      return fields.length === 0
-        ? []
-        : [
-            {
-              orderId: order.orderId,
-              orderNumber: order.orderNumber,
-              noteNumber: note.number,
-              fields,
-            },
-          ];
-    });
+  return (
+    notes
+      // Un reliquat porte SES lignes et SES montants (plan E7, choix 10) : seul le
+      // BL-1 doit reprendre la commande.
+      .filter((note) => note.orderId === order.orderId && note.isLive && note.followsItsOrder)
+      .flatMap((note) => {
+        const fields = gapFields(order, note);
+        return fields.length === 0
+          ? []
+          : [
+              {
+                orderId: order.orderId,
+                orderNumber: order.orderNumber,
+                noteNumber: note.number,
+                fields,
+              },
+            ];
+      })
+  );
 }
 
 function gapFields(order: FollowedOrder, note: DeliveryNote): readonly string[] {
