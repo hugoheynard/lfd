@@ -1,5 +1,7 @@
 # Plan E7.1 — le bon de livraison porte son jour, et le jour lit ses bons
 
+> **Remplacé le 2026-10-25 au soir par [`plan-e7-reliquat-bati.md`](plan-e7-reliquat-bati.md)**, qui lève les trois bloquants ci-dessous. Gardé pour l'historique de la contradiction.
+
 > **Doc-first, 2026-10-25.** Lot E7.1 du programme
 > [`plan-e7-le-reliquat.md`](plan-e7-le-reliquat.md) (§ 5), sur le recensement
 > [`e7-recensement.md`](e7-recensement.md). Règle de Hugo : se rapprocher le plus
