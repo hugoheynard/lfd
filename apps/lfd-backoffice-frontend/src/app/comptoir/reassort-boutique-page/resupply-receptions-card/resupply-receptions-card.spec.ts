@@ -150,6 +150,23 @@ describe('ResupplyReceptionsCard', () => {
     expect(service.calls).toEqual(['receive site_v r2']);
   });
 
+  /** Plan A1, lot A1.4 : le pain rendu, sorti de la réserve, se réceptionne comme les autres. */
+  it('marque « Pain rendu, envoyé par la réserve » une sortie de réserve, qui se réceptionne', async () => {
+    const fromReserve: ResupplyReceptionView = { ...EXPECTED, origin: 'reserve', resupplyId: 'r3' };
+    const { root, service, fixture } = mount([fromReserve], true);
+
+    const marked = root.querySelector('[data-resupply-reception="r3"]');
+    expect(marked?.querySelector('[data-resupply-reception-reserve]')?.textContent).toContain(
+      'Pain rendu, envoyé par la réserve',
+    );
+    expect(marked?.querySelector('[data-resupply-reception-bakehouse]')).toBeNull();
+
+    marked?.querySelector<HTMLButtonElement>('[data-resupply-receive]')?.click();
+    await fixture.whenStable();
+
+    expect(service.calls).toEqual(['receive site_v r3']);
+  });
+
   it('dit le refus du serveur sans prévenir la page', async () => {
     const { root, service, changed, fixture } = mount([EXPECTED], true);
     service.fail = true;

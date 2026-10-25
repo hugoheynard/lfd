@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import type { WithdrawnPackingSheet } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import type { PackingBoard, PackingCard } from '../packing-cards';
@@ -48,6 +49,7 @@ async function mountFixture(
     canCheck?: boolean;
     awaitedOpen?: string;
     narrow?: boolean;
+    canSendToShop?: boolean;
   } = {},
 ) {
   TestBed.configureTestingModule({ providers: [provideRouter([])] });
@@ -59,6 +61,7 @@ async function mountFixture(
   fixture.componentRef.setInput('canCheck', quality.canCheck ?? false);
   fixture.componentRef.setInput('awaitedOpen', quality.awaitedOpen ?? null);
   fixture.componentRef.setInput('narrow', quality.narrow ?? false);
+  fixture.componentRef.setInput('canSendToShop', quality.canSendToShop ?? false);
   fixture.detectChanges();
   await fixture.whenStable();
   return fixture;
@@ -80,6 +83,7 @@ describe('PackingColumn', () => {
           reference: 'CMD-9',
           customerLabel: 'Camille',
           withdrawnAt: '2030-03-12T07:00:00.000Z',
+          released: [],
         },
       ],
     });
@@ -89,6 +93,47 @@ describe('PackingColumn', () => {
     );
     const card = element.querySelector('[data-packing="withdrawn"][data-reference="CMD-9"]');
     expect(card?.querySelector('[data-withdrawn]')?.textContent).toContain("Annulée après l'arrêt");
+  });
+
+  /** Plan A1, lot A1.4 : le pain rendu à la réserve peut partir en boutique. */
+  describe('« Envoyer en boutique »', () => {
+    const withdrawnWith = (released: WithdrawnPackingSheet['released']): PackingBoard => ({
+      ...BOARD,
+      withdrawn: [
+        {
+          orderId: 'o-CMD-9',
+          reference: 'CMD-9',
+          customerLabel: 'Camille',
+          withdrawnAt: '2030-03-12T07:00:00.000Z',
+          released,
+        },
+      ],
+    });
+    const RELEASED = [{ sku: 'CRO', productName: 'Croissant', quantity: 3, free: 5 }];
+
+    it('s’offre à qui a le droit, sur une feuille qui a rendu, et émet la feuille', async () => {
+      const fixture = await mountFixture(withdrawnWith(RELEASED), NO_MATCHES, {
+        canSendToShop: true,
+      });
+      const emitted: WithdrawnPackingSheet[] = [];
+      fixture.componentInstance.sendToShop.subscribe((sheet) => emitted.push(sheet));
+
+      fixture.nativeElement.querySelector('[data-send-to-shop]')?.click();
+
+      expect(emitted.map((sheet) => sheet.reference)).toEqual(['CMD-9']);
+    });
+
+    it('ne s’offre pas sans le droit', async () => {
+      const fixture = await mountFixture(withdrawnWith(RELEASED));
+
+      expect(fixture.nativeElement.querySelector('[data-send-to-shop]')).toBeNull();
+    });
+
+    it('ne s’offre pas quand rien n’a été rendu à la réserve', async () => {
+      const fixture = await mountFixture(withdrawnWith([]), NO_MATCHES, { canSendToShop: true });
+
+      expect(fixture.nativeElement.querySelector('[data-send-to-shop]')).toBeNull();
+    });
   });
 
   it('sans feuille retirée, rien de plus', async () => {

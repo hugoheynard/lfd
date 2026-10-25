@@ -11,6 +11,7 @@ interface StockRow {
   readonly received: number;
   readonly returned: number;
   readonly packed: number;
+  readonly sentToShop: number;
 }
 
 /**
@@ -18,8 +19,8 @@ interface StockRow {
  *
  * `lock` crée la ligne vide si besoin (`ON CONFLICT DO NOTHING`), puis la lit
  * `FOR UPDATE`. Une remise qui arrive pendant le verrou attend son `COMMIT`,
- * puis ajoute à `received` en incrément : `save` n'écrit donc que `packed` et
- * `returned`, les deux compteurs que l'agrégat change — et les réservations
+ * puis ajoute à `received` en incrément : `save` n'écrit donc que `packed`,
+ * `returned` et `sentToShop` (A1.4), les compteurs que l'agrégat change — et les réservations
  * des réassorts lancés (R4b) : une neuve s'insère, une levée prend son
  * instant. Leur reste dû n'est pas écrit : il se déduit de la ligne.
  */
@@ -36,7 +37,7 @@ export class PrismaPackingStockRepository extends PackingStockRepository {
       VALUES (${serviceDay}, ${sku})
       ON CONFLICT ("service_day", "sku") DO NOTHING`;
     const rows = await this.prisma.$queryRaw<StockRow[]>`
-      SELECT "received", "returned", "packed" FROM "packing"."packing_stock"
+      SELECT "received", "returned", "packed", "sent_to_shop" AS "sentToShop" FROM "packing"."packing_stock"
        WHERE "service_day" = ${serviceDay} AND "sku" = ${sku}
          FOR UPDATE`;
     const row = rows[0];
@@ -52,7 +53,7 @@ export class PrismaPackingStockRepository extends PackingStockRepository {
   async save(stock: PackingStock): Promise<void> {
     await this.prisma.packingStock.update({
       where: { serviceDay_sku: { serviceDay: stock.serviceDay, sku: stock.sku } },
-      data: { packed: stock.packed, returned: stock.returned },
+      data: { packed: stock.packed, returned: stock.returned, sentToShop: stock.sentToShop },
     });
     await this.saveReservations(stock);
   }

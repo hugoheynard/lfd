@@ -435,5 +435,6 @@
   "test/collection-batch-attestation.e2e-spec.ts": 12444,
   "test/order-received-on.e2e-spec.ts": 8069,
   "test/delivery-notes-terms.e2e-spec.ts": 10131,
-  "test/delivery-notes-terms-scenario.e2e-spec.ts": 40412
+  "test/delivery-notes-terms-scenario.e2e-spec.ts": 40412,
+  "test/reserve-sent-to-shop.e2e-spec.ts": 15000
 }

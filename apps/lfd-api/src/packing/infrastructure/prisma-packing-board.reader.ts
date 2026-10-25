@@ -7,6 +7,7 @@ import { citeContainer } from "../domain/events/packing-container.events.js";
 import {
   type BoardContainer,
   type BoardOrder,
+  type BoardReleasedLine,
   type BoardWithdrawnSheet,
   PackingBoardReader,
   type PackingBoardDay,
@@ -73,7 +74,7 @@ export class PrismaPackingBoardReader extends PackingBoardReader {
       }),
       this.prisma.packingStock.findMany({
         where: { serviceDay },
-        select: { sku: true, received: true, returned: true, packed: true },
+        select: { sku: true, received: true, returned: true, packed: true, sentToShop: true },
         orderBy: { sku: "asc" },
       }),
       reservationsOn(this.prisma, serviceDay),
@@ -168,8 +169,32 @@ function withdrawnSheetOf(row: OrderRow): BoardWithdrawnSheet[] {
           customerLabel: row.customerLabel,
           drawnAt: row.drawnAt,
           withdrawnAt: row.withdrawnAt,
+          released: releasedBy(row, row.withdrawnAt),
         },
       ];
+}
+
+/**
+ * Ce que le retrait a rendu (lot A1.4) : le retrait annule chaque contenant
+ * vivant au même instant que sa propre marque (`PackingSheetWithdrawalDesk`,
+ * vérifié le 2026-10-25) — les contenants annulés à `withdrawnAt`, sommés par
+ * article, nommés comme la feuille les nomme.
+ */
+function releasedBy(row: OrderRow, withdrawnAt: Date): BoardReleasedLine[] {
+  const names = new Map(row.lines.map((line) => [line.sku, line.productName]));
+  const totals = new Map<string, number>();
+  for (const container of row.containers) {
+    if (container.voidedAt?.getTime() !== withdrawnAt.getTime()) {
+      continue;
+    }
+    for (const line of container.lines) {
+      totals.set(line.sku, (totals.get(line.sku) ?? 0) + line.quantity);
+    }
+  }
+  return [...totals.entries()]
+    .filter(([, quantity]) => quantity > 0)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([sku, quantity]) => ({ sku, productName: names.get(sku) ?? sku, quantity }));
 }
 
 function isLive(container: PackingContainerState, liveBins: ReadonlySet<string>): boolean {

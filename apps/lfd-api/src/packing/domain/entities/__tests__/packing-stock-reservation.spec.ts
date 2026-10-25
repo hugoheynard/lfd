@@ -14,6 +14,7 @@ function stock(received: number, packed = 0, returned = 0): PackingStock {
     received,
     returned,
     packed,
+    sentToShop: 0,
     reservations: [],
   });
 }

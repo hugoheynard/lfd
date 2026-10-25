@@ -336,6 +336,18 @@ déclaré et implémenté ici, implémentation `PackingSheetWithdrawalDesk`).
   (`packed` | `withdrawn`, par lot) : les aperçus d'annulation disent « prête »
   quand le bac est fermé, et la Supervision compte les annulées après l'arrêt.
 
+- **Envoyer en boutique** (lot A1.4, bâti, pas encore commité ; plan
+  [`plan-a1-4-envoyer-en-boutique.md`](../commandes/annulation/plan-a1-4-envoyer-en-boutique.md)) :
+  la réserve gagne `packing_stock.sent_to_shop`, et le libre devient
+  reçu − rendu − au bac − envoyé en boutique − réservé.
+  `PackingStock.sendToShop` refuse au-delà du libre
+  (`packing.reserve.short_for_shop`). Le commerce appelle
+  `ReserveShopRelease` (`packing/channels/commerce/`, déclaré et implémenté
+  ici) dans la transaction qui écrit le réassort `reserve` ; verrou par SKU
+  triés, fait journalisé `packing_stock.sent_to_shop`. Le tableau donne, par
+  feuille retirée, ce qu'elle a rendu et le libre de l'article
+  (`withdrawnSheets[].released`).
+
 ## 5. Les routes HTTP
 
 Toutes dans `apps/lfd-api/src/packing/http/`, sous la ressource

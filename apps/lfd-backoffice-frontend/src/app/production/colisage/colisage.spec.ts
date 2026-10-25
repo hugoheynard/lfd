@@ -439,6 +439,7 @@ describe('le poste de colisage', () => {
             reference: 'CMD-9',
             customerLabel: 'Camille',
             withdrawnAt: `${today()}T06:00:00`,
+            released: [],
           },
         ],
       });

@@ -97,11 +97,14 @@ model PackingStock {
   sku        String
 
   /// Σ des remises reçues du fournil.
-  received Int @default(0)
+  received   Int @default(0)
   /// Σ des retours rendus au fournil.
-  returned Int @default(0)
+  returned   Int @default(0)
   /// Ce qui est au bac (K2). En K1, toujours 0.
-  packed   Int @default(0)
+  packed     Int @default(0)
+  /// Σ des pièces envoyées en boutique depuis la réserve (plan A1, lot A1.4) :
+  /// une sortie, reçue au comptoir comme un réassort d'origine `reserve`.
+  sentToShop Int @default(0) @map("sent_to_shop")
 
   @@id([serviceDay, sku])
   @@map("packing_stock")

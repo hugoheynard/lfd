@@ -89,18 +89,47 @@ export function packingBoardOf(sources: BoardSources): ProductionPackingView {
           compareReadyBy(left.readyBy ?? null, right.readyBy ?? null) ||
           left.reference.localeCompare(right.reference),
       ),
-    withdrawnSheets: sources.day.withdrawn.map((sheet) => ({
-      orderId: sheet.orderId,
-      reference: sheet.reference,
-      customerLabel: sheet.customerLabel,
-      withdrawnAt: sheet.withdrawnAt.toISOString(),
-    })),
+    withdrawnSheets: withdrawnSheetsOf(sources.day),
     resources: resourcesOf(sources.day, awaiting),
     orderCount: orders.length,
     todoCount: orders.length - readyCount,
     readyCount,
     relativeDay,
   };
+}
+
+/**
+ * Les feuilles retirées, avec ce que chacune a rendu et le libre de la
+ * réserve pour l'article (lot A1.4) — la borne de « Envoyer en boutique ».
+ */
+function withdrawnSheetsOf(day: PackingBoardDay): ProductionPackingView["withdrawnSheets"] {
+  const free = freeBySku(day);
+  return day.withdrawn.map((sheet) => ({
+    orderId: sheet.orderId,
+    reference: sheet.reference,
+    customerLabel: sheet.customerLabel,
+    withdrawnAt: sheet.withdrawnAt.toISOString(),
+    released: sheet.released.map((line) => ({
+      ...line,
+      free: Math.max(0, free.get(line.sku) ?? 0),
+    })),
+  }));
+}
+
+/**
+ * Le libre de chaque réserve — `PackingStock.free` sans la borne à zéro :
+ * une réserve en dette manque d'autant.
+ */
+function freeBySku(day: PackingBoardDay): ReadonlyMap<string, number> {
+  return new Map(
+    day.stocks.map(
+      (stock) =>
+        [
+          stock.sku,
+          stock.received - stock.returned - stock.packed - stock.sentToShop - stock.reserved,
+        ] as const,
+    ),
+  );
 }
 
 /** Retirées comprises : une journée dont toutes les feuilles sont retirées a bien été tirée. */
@@ -119,12 +148,7 @@ function firstDrawnAt(day: PackingBoardDay): Date | null {
  * réserve (R4b) n'y sont pas : `PackingStock.free` les retire aussi.
  */
 function awaitingOf(day: PackingBoardDay): Awaiting {
-  const free = new Map(
-    day.stocks.map(
-      (stock) =>
-        [stock.sku, stock.received - stock.returned - stock.packed - stock.reserved] as const,
-    ),
-  );
+  const free = freeBySku(day);
   return (sku, quantity) => shortfall(free.get(sku) ?? 0, quantity) > 0;
 }
 

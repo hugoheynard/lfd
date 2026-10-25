@@ -45,6 +45,8 @@ export interface BoardStock {
   readonly received: number;
   readonly returned: number;
   readonly packed: number;
+  /** Envoyé en boutique depuis la réserve (plan A1, lot A1.4). */
+  readonly sentToShop: number;
   /** Ce que les réassorts lancés retiennent encore (R4b) — hors d'atteinte des commandes. */
   readonly reserved: number;
 }
@@ -60,6 +62,19 @@ export interface BoardWithdrawnSheet {
   readonly customerLabel: string;
   readonly drawnAt: Date;
   readonly withdrawnAt: Date;
+  /**
+   * Ce que CE retrait a rendu à la réserve (lot A1.4) : les contenants
+   * annulés à l'instant du retrait, sommés par article. Vide pour une pierre
+   * tombale, ou quand rien n'était au bac.
+   */
+  readonly released: readonly BoardReleasedLine[];
+}
+
+/** Une ligne rendue à la réserve par le retrait d'une feuille. */
+export interface BoardReleasedLine {
+  readonly sku: string;
+  readonly productName: string;
+  readonly quantity: number;
 }
 
 export interface PackingBoardDay {

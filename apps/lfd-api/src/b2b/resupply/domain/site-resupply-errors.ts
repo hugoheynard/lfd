@@ -260,3 +260,44 @@ export class ResupplyNameTooLongError extends DomainError {
     );
   }
 }
+
+/**
+ * « Envoyer en boutique » depuis la réserve d'un autre jour (plan A1, lot
+ * A1.4) : seule la réserve DU JOUR — la journée du geste, à Paris — sort
+ * vers une boutique.
+ */
+export class ReserveNotTodayError extends BusinessError {
+  constructor(reserveDay: string, today: string) {
+    super(
+      "packing.reserve.not_today",
+      `Seule la réserve du jour (${today}) s'envoie en boutique, pas celle du ${reserveDay}. Revenez à la journée d'aujourd'hui dans la Supervision.`,
+    );
+  }
+}
+
+/**
+ * Une sortie de réserve (plan A1, lot A1.4) ne s'annule pas : le pain est
+ * physiquement parti du colisage, et la réserve l'a déjà décompté.
+ */
+export class ReserveResupplyNotCancellableError extends BusinessError {
+  constructor() {
+    super(
+      "resupply.order.reserve_not_cancellable",
+      "Ce réassort est du pain envoyé par la réserve du colisage : il est déjà parti et ne s'annule pas. Réceptionnez ce qui arrive vraiment, avec l'écart s'il y en a un.",
+    );
+  }
+}
+
+/**
+ * Un réassort envoyé porte un identifiant déjà écrit — un même envoi rejoué
+ * en même temps depuis l'écran (plan A1, lot A1.4) : la base a refusé le
+ * second.
+ */
+export class SiteResupplyAlreadyWrittenError extends BusinessError {
+  constructor(readonly resupplyId: string) {
+    super(
+      "resupply.order.already_written",
+      "Ce réassort vient d'être envoyé depuis un autre clic : rechargez la page, il y est déjà.",
+    );
+  }
+}

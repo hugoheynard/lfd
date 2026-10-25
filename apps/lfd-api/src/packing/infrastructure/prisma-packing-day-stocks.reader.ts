@@ -16,7 +16,7 @@ export class PrismaPackingDayStocksReader extends PackingDayStocksReader {
     const [rows, reservations] = await Promise.all([
       this.prisma.packingStock.findMany({
         where: { serviceDay },
-        select: { sku: true, received: true, returned: true, packed: true },
+        select: { sku: true, received: true, returned: true, packed: true, sentToShop: true },
         orderBy: { sku: "asc" },
       }),
       reservationsOn(this.prisma, serviceDay),

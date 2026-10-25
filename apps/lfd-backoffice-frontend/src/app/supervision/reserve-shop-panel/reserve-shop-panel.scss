@@ -1,0 +1,43 @@
+// Couleurs et pas : tokens fold. Le libellé et son contrôle : un flex et son gap, jamais une marge.
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.head-title {
+  font-size: var(--fold-text-xl);
+  font-weight: var(--fold-weight-bold);
+  line-height: var(--fold-leading-tight);
+  letter-spacing: var(--fold-tracking-tight);
+  color: var(--fold-color-text);
+}
+
+.head-subtitle {
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-secondary);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+}
+
+.lines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--fold-space-sm);
+  width: 100%;
+}

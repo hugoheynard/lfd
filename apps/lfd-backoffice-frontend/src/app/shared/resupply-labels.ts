@@ -33,6 +33,13 @@ export const RESUPPLY_TARGET_LABELS: Readonly<Record<ResupplyTarget, string>> = 
 export const BAKEHOUSE_ORIGIN_MARK = 'Envoyé par le fournil';
 
 /**
+ * La marque d'une sortie de réserve (plan A1, lot A1.4) : le pain rendu par
+ * une annulation, envoyé depuis le colisage — il se réceptionne comme les
+ * autres.
+ */
+export const RESERVE_ORIGIN_MARK = 'Pain rendu, envoyé par la réserve';
+
+/**
  * Le titre d'un réassort nommé (R1g, Hugo 2026-10-21) : « Vitrine du matin —
  * Village ». Sans nom, `unnamed` — l'affichage de l'endroit tel qu'avant le
  * nom. Même forme que `resupplyTitleOf` de `@lfd/contracts`, recopiée ici

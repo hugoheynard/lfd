@@ -23,6 +23,8 @@
           }
           @if (reception.origin === 'bakehouse') {
             <span class="origin" data-resupply-reception-bakehouse>{{ bakehouseMark }}</span>
+          } @else if (reception.origin === 'reserve') {
+            <span class="origin" data-resupply-reception-reserve>{{ reserveMark }}</span>
           }
           @if (reception.status === 'received') {
             <fold-status-badge status="active" label="Réceptionné" />

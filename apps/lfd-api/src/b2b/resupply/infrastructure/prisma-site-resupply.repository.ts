@@ -5,6 +5,7 @@ import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { type ResupplyTarget, SiteResupply } from "../domain/site-resupply.js";
 import {
   SiteResupplyChangedMeanwhileError,
+  SiteResupplyAlreadyWrittenError,
   SiteResupplyDraftOpenedMeanwhileError,
 } from "../domain/site-resupply-errors.js";
 import { SiteResupplyRepository } from "../domain/site-resupply.repository.js";
@@ -124,9 +125,12 @@ export class PrismaSiteResupplyRepository extends SiteResupplyRepository {
         },
       });
     } catch (error) {
-      // Seule unicité d'un réassort neuf hors clé primaire : la demande en cours.
-      if (resupply.placed === null && isUniqueViolation(error)) {
-        throw new SiteResupplyDraftOpenedMeanwhileError();
+      // Un brouillon : l'index de la demande en cours. Un envoyé : sa clé
+      // primaire, qu'un même envoi rejoué en même temps a déjà écrite (A1.4).
+      if (isUniqueViolation(error)) {
+        throw resupply.placed === null
+          ? new SiteResupplyDraftOpenedMeanwhileError()
+          : new SiteResupplyAlreadyWrittenError(resupply.id);
       }
       throw error;
     }

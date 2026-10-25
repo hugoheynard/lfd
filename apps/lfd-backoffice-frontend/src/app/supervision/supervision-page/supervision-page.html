@@ -237,6 +237,8 @@
               [quality]="quality.lookup()"
               [canCheck]="quality.canCheck()"
               (check)="check($event)"
+              [canSendToShop]="reserveShop.canSend()"
+              (sendToShop)="sendToShop($event)"
               [awaitedOpen]="highlight.awaitedOpen()"
               (awaitedToggle)="highlight.toggleAwaited($event)"
               (showPreparation)="tab.set('preparation')"

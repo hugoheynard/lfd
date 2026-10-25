@@ -275,6 +275,8 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   resource: 'Clé de la ressource',
   resourceLabel: 'Ressource',
   resupplyColor: 'Teinte du réassort',
+  // La sortie de réserve vers une boutique (plan A1, lot A1.4).
+  resupplyId: 'Réassort',
   // La modification d'une commande (`order.revised`, plan de modification, M1).
   revisedBy: 'Modifiée par',
   revisedByCustomer: 'Modifiée par le client',
@@ -304,6 +306,8 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   siren: 'SIREN',
   siret: 'SIRET',
   skipped: 'Sautée',
+  // Le point qui reçoit une sortie de réserve (plan A1, lot A1.4).
+  site: 'Point',
   sku: 'SKU',
   skus: 'Articles',
   source: 'Source de la reprise',

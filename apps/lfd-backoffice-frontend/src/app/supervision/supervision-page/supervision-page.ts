@@ -9,7 +9,7 @@ import {
   signal,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import type { FulfillmentMethod } from '@lfd/contracts';
+import type { FulfillmentMethod, WithdrawnPackingSheet } from '@lfd/contracts';
 import type { FoldViewNavItem } from 'fold-ng';
 import {
   FoldButtonIconComponent,
@@ -38,6 +38,7 @@ import { ALL_SHELVES, preparationBoard } from '../preparation-shelves';
 import type { QualityRequest } from '../quality-badges';
 import { qualityContextOf } from '../quality-context';
 import { QualityBoardStore } from '../quality-board.store';
+import { ReserveShopLauncher } from '../reserve-shop-panel/reserve-shop-launcher';
 import { SupervisionCalendar } from '../supervision-calendar/supervision-calendar';
 import { SupervisionColumn } from '../supervision-column/supervision-column';
 import { dayDiff, dayStripOf, serviceDayParam, shiftServiceDay, stampOf } from '../supervision-day';
@@ -114,6 +115,8 @@ export class SupervisionPage {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   /** Les pastilles du contrôle qualité et son panneau (`plan-controle-qualite.md`). */
   protected readonly quality = inject(QualityBoardStore);
+  /** « Envoyer en boutique » le pain rendu par une annulation (plan A1, lot A1.4). */
+  protected readonly reserveShop = inject(ReserveShopLauncher);
 
   /** Le jour choisi à l'écran, ou `null` : on suit le jour du serveur. */
   protected readonly chosen = signal(
@@ -322,6 +325,17 @@ export class SupervisionPage {
       dataOf(this.handover()),
     );
     if (date !== null && (await this.quality.open(date, context, side))) {
+      await this.reads.refresh();
+    }
+  }
+
+  /** Le pain rendu part en boutique ; un envoi fait relire la page. */
+  protected async sendToShop(sheet: WithdrawnPackingSheet): Promise<void> {
+    const date = this.date();
+    if (
+      date !== null &&
+      (await this.reserveShop.open(date, sheet, this.narrow() ? 'bottom' : 'right'))
+    ) {
       await this.reads.refresh();
     }
   }

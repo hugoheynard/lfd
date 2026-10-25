@@ -87,7 +87,9 @@ model SiteResupply {
   serviceDay DateTime @map("service_day") @db.Date
   /// Qui l'envoie (lot R1d) : `counter` — le comptoir, par sa demande en
   /// cours ; `bakehouse` — le fournil, « je t'envoie ça », jamais brouillon
-  /// (CHECK `site_resupply_bakehouse_placed`).
+  /// (CHECK `site_resupply_bakehouse_placed`) ; `reserve` — une sortie de
+  /// la réserve du colisage (plan A1, lot A1.4), née envoyée « au plus tôt »,
+  /// jamais lancée (CHECK `site_resupply_reserve_placed_asap`).
   origin     String   @default("counter")
   /// Son nom libre et facultatif (lot R1g), « Vitrine du matin » : rogné,
   /// 1 à 60 caractères (CHECK `site_resupply_name_trimmed`), `null` : sans nom.

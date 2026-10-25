@@ -945,7 +945,10 @@ export type {
   ProductionPackingQuery,
   ProductionPackingView,
 } from "./production-packing.js";
-export type { WithdrawnPackingSheet } from "./production-packing-withdrawn.js";
+export type {
+  ReleasedToReserveLine,
+  WithdrawnPackingSheet,
+} from "./production-packing-withdrawn.js";
 export {
   SHELF_LABEL_OFF_CATALOG,
   SHELF_LABEL_UNKNOWN,
@@ -2687,6 +2690,7 @@ export {
   RESUPPLY_USED_NAMES_MAX,
   resupplyTitleOf,
   seenSiteResupplyVersionSchema,
+  sendReserveToShopSchema,
 } from "./site-resupply.js";
 export type {
   AddSiteResupplyLinePayload,
@@ -2703,6 +2707,7 @@ export type {
   ResupplyTotalView,
   ResupplyUsedNamesView,
   SeenSiteResupplyVersionPayload,
+  SendReserveToShopPayload,
   SiteResuppliesView,
   SiteResupplyDraftView,
   SiteResupplyLineView,

@@ -15,6 +15,7 @@ import {
   type SiteResupplyTrace,
 } from "../../domain/site-resupply.js";
 import {
+  SiteResupplyAlreadyWrittenError,
   SiteResupplyChangedMeanwhileError,
   SiteResupplyDraftOpenedMeanwhileError,
 } from "../../domain/site-resupply-errors.js";
@@ -72,6 +73,10 @@ export class InMemorySiteResupplies extends SiteResupplyRepository {
       const open = this.openRow(resupply.siteId, resupply.target, resupply.serviceDay);
       if (resupply.placed === null && open !== undefined) {
         return Promise.reject(new SiteResupplyDraftOpenedMeanwhileError());
+      }
+      // La clé primaire : un envoyé déjà écrit sous cet id (A1.4).
+      if (resupply.placed !== null && this.rows.has(resupply.id)) {
+        return Promise.reject(new SiteResupplyAlreadyWrittenError(resupply.id));
       }
     } else if (this.rows.get(resupply.id)?.version !== resupply.version) {
       return Promise.reject(new SiteResupplyChangedMeanwhileError());

@@ -41,6 +41,8 @@ export interface StockCounters {
   readonly received: number;
   readonly returned: number;
   readonly packed: number;
+  /** Les pièces sorties vers une boutique (plan A1, lot A1.4). */
+  readonly sentToShop: number;
 }
 
 /**
@@ -74,7 +76,14 @@ export function availableTo(
     own === undefined
       ? reservations
       : reservations.filter((reservation) => servedBefore(reservation, own));
-  return Math.max(0, counters.received - counters.returned - counters.packed - reservedOf(ahead));
+  return Math.max(
+    0,
+    counters.received -
+      counters.returned -
+      counters.packed -
+      counters.sentToShop -
+      reservedOf(ahead),
+  );
 }
 
 /**

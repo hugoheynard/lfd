@@ -232,6 +232,23 @@
             data-withdrawn
           />
         </div>
+        <!-- Plan A1, lot A1.4 : ce qui a été rendu à la réserve peut partir en boutique. -->
+        @if (canSendToShop() && sheet.released.length > 0) {
+          <div class="quality-row">
+            <button
+              foldButton
+              type="button"
+              size="sm"
+              emphasis="outline"
+              intent="neutral"
+              class="check"
+              (click)="sendToShop.emit(sheet)"
+              data-send-to-shop
+            >
+              Envoyer en boutique
+            </button>
+          </div>
+        }
       </fold-card>
     }
   }

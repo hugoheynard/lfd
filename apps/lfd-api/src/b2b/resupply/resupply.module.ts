@@ -29,6 +29,8 @@ import { ResupplyPlanGate } from "./application/resupply-plan-gate.js";
 import { ReceiveResupplyLineHandler } from "./application/receive-resupply-line.handler.js";
 import { ReceiveSiteResupplyHandler } from "./application/receive-site-resupply.handler.js";
 import { SendBakehouseResupplyHandler } from "./application/send-bakehouse-resupply.handler.js";
+import { SendReserveToShopHandler } from "./application/send-reserve-to-shop.handler.js";
+import { AdminReserveShopReleasesController } from "./http/admin-reserve-shop-releases.controller.js";
 import { SendSiteResupplyHandler } from "./application/send-site-resupply.handler.js";
 import { WithdrawResupplyLineHandler } from "./application/withdraw-resupply-line.handler.js";
 import { WithdrawSiteResupplyLineHandler } from "./application/withdraw-site-resupply-line.handler.js";
@@ -109,6 +111,7 @@ import { PrismaTransferServedSites } from "./infrastructure/prisma-transfer-serv
     AdminLiveStockAlertsController,
     AdminBakehouseResuppliesController,
     AdminSupervisionStockController,
+    AdminReserveShopReleasesController,
   ],
   providers: [
     { provide: ResupplyReceiptRepository, useClass: PrismaResupplyReceiptRepository },
@@ -135,6 +138,8 @@ import { PrismaTransferServedSites } from "./infrastructure/prisma-transfer-serv
     GetDayStockOverviewHandler,
     ListResupplyArticlesHandler,
     SendBakehouseResupplyHandler,
+    // « Envoyer en boutique » depuis la réserve du colisage (plan A1, lot A1.4).
+    SendReserveToShopHandler,
     CancelSiteResupplyHandler,
     AddSiteResupplyLineHandler,
     CorrectSiteResupplyLineHandler,

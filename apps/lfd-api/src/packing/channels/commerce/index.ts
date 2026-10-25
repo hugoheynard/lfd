@@ -11,6 +11,7 @@
  * | `PackingWithdrawalDesk`         | port déclaré ET implémenté ici | la feuille retirée par l'annulation (A1) |
  * | `OrderPackingStateReader`       | port déclaré ET implémenté ici | bac fermé, feuille retirée (A1.3)       |
  * | `DeliveryNoteReprintsReader`    | port déclaré ici, implémenté par le commerce | BL à réimprimer (§ 14) |
+ * | `ReserveShopRelease`            | port déclaré ET implémenté ici | la sortie de réserve en boutique (A1.4) |
  *
  * `lint:context-boundaries` n'autorise `b2b → packing` que par ce dossier ;
  * `packing → b2b` reste interdit : le colisage ne sait pas qui le lit.
@@ -30,3 +31,8 @@ export { ShortfallDesk, type DepartingLine } from "./shortfall-desk.js";
 export { PackingWithdrawalDesk, type PackingWithdrawalOutcome } from "./packing-withdrawal.desk.js";
 export { OrderPackingStateReader, type OrderPackingState } from "./order-packing-state.reader.js";
 export { DeliveryNoteReprintsReader } from "./delivery-note-reprints.reader.js";
+export {
+  ReserveShopRelease,
+  type ShopRelease,
+  type ShopReleaseLine,
+} from "./reserve-shop-release.js";

@@ -22,9 +22,10 @@ export type ResupplyTarget = (typeof RESUPPLY_TARGETS)[number];
  * Qui envoie un réassort (lot R1d, 2026-10-21) : `counter` — le comptoir, par
  * sa demande en cours ; `bakehouse` — le fournil, « je t'envoie ça », un
  * réassort à part, créé déjà envoyé, qui ne touche jamais la demande du
- * comptoir.
+ * comptoir ; `reserve` — une sortie de la réserve du colisage (plan A1, lot
+ * A1.4), le pain déjà fabriqué, envoyé « au plus tôt », jamais lancé.
  */
-export const RESUPPLY_ORIGINS = ["counter", "bakehouse"] as const;
+export const RESUPPLY_ORIGINS = ["counter", "bakehouse", "reserve"] as const;
 export type ResupplyOrigin = (typeof RESUPPLY_ORIGINS)[number];
 
 /**
@@ -284,3 +285,23 @@ export interface ResupplyProductionDayView extends ResupplyDayToProduceView {
    */
   readonly transferSiteIds: readonly string[];
 }
+
+/**
+ * `POST /admin/reserve-shop-releases/:serviceDay` — « Envoyer en boutique »
+ * (plan A1, lot A1.4) : sortir des pièces de la réserve du colisage de la
+ * journée vers un point, qui les reçoit comme un réassort d'origine
+ * `reserve`. `key` est fournie par l'écran, une par ouverture du panneau : un
+ * second envoi avec la même clé ne fait rien. Le libellé n'est PAS accepté :
+ * le serveur le lit au catalogue publié. Les règles (quantité entière > 0, au
+ * moins une ligne, le libre de la réserve) vivent dans le domaine.
+ */
+export const sendReserveToShopSchema = z
+  .object({
+    siteId: z.string().trim().min(1),
+    key: z.string().trim().min(1).max(64),
+    lines: z
+      .array(z.object({ sku: z.string().trim().min(1), quantity: z.number() }).strict())
+      .max(200),
+  })
+  .strict();
+export type SendReserveToShopPayload = z.infer<typeof sendReserveToShopSchema>;

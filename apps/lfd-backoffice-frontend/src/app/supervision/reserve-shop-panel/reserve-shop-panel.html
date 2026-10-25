@@ -1,0 +1,64 @@
+<fold-panel-header variant="eyebrow" closeLabel="Fermer" title="Envoyer en boutique">
+  <div class="head">
+    <span class="head-title">Pain rendu par {{ data()?.reference }}</span>
+    <span class="head-subtitle"
+      >Il sort de la réserve du colisage ; la boutique le reçoit comme un réassort.</span
+    >
+  </div>
+</fold-panel-header>
+
+<fold-panel-body>
+  <div class="panel">
+    @if (sitesFailed()) {
+      <fold-empty-state tone="alert" title="Impossible de lire les points de retrait">
+        <button foldButton (click)="loadSites()">Réessayer</button>
+      </fold-empty-state>
+    } @else {
+      <fold-listbox
+        label="Boutique"
+        placeholder="Choisir une boutique"
+        [options]="sites()"
+        [value]="siteId()"
+        (valueChange)="siteId.set($event)"
+        data-reserve-site
+      />
+    }
+
+    <ul class="lines">
+      @for (row of rows(); track row.sku) {
+        <li class="line" [attr.data-reserve-line]="row.sku">
+          <fold-number-input
+            [label]="row.productName"
+            [value]="row.chosen"
+            (valueChange)="choose(row.sku, $event)"
+            [min]="0"
+            [max]="row.free"
+            [hint]="'Rendu : ' + row.quantity + ' · libre à la réserve : ' + row.free"
+            integer
+          />
+        </li>
+      }
+    </ul>
+
+    @if (tooMany()) {
+      <fold-callout variant="alert" data-reserve-too-many>
+        Une quantité dépasse ce qui est libre à la réserve : réduisez-la.
+      </fold-callout>
+    }
+    <fold-callout variant="info" data-reserve-transport>
+      Le transport n'est pas suivi ici : le pain part avec le prochain passage vers la boutique.
+    </fold-callout>
+    @if (refusal(); as why) {
+      <fold-callout variant="alert" data-reserve-refusal>{{ why }}</fold-callout>
+    }
+  </div>
+</fold-panel-body>
+
+<fold-panel-footer>
+  <div class="foot">
+    <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+    <button foldButton [disabled]="!canSend()" (click)="send()" data-reserve-send>
+      {{ sending() ? 'Envoi…' : 'Envoyer' }}
+    </button>
+  </div>
+</fold-panel-footer>

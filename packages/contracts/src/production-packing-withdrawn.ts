@@ -13,4 +13,23 @@ export interface WithdrawnPackingSheet {
   readonly customerLabel: string;
   /** L'instant du retrait, ISO. */
   readonly withdrawnAt: string;
+  /**
+   * Ce que le retrait a rendu à la réserve, article par article (lot A1.4) —
+   * vide quand rien n'était au bac, ou que la feuille n'était pas tirée.
+   * C'est ce que « Envoyer en boutique » propose.
+   */
+  readonly released: readonly ReleasedToReserveLine[];
+}
+
+/** Une ligne rendue à la réserve par le retrait d'une feuille (plan A1, lot A1.4). */
+export interface ReleasedToReserveLine {
+  readonly sku: string;
+  readonly productName: string;
+  /** Les pièces rendues par CE retrait. */
+  readonly quantity: number;
+  /**
+   * Le libre de la réserve pour cet article, à la lecture — ce qui peut
+   * encore en sortir : la borne de l'envoi en boutique.
+   */
+  readonly free: number;
 }

@@ -22,6 +22,7 @@ import {
 
 import {
   BAKEHOUSE_ORIGIN_MARK,
+  RESERVE_ORIGIN_MARK,
   parisClock,
   RESUPPLY_TARGET_LABELS,
 } from '../../../shared/resupply-labels';
@@ -82,6 +83,7 @@ export class ResupplyReceptionsCard {
 
   protected readonly targetLabels = RESUPPLY_TARGET_LABELS;
   protected readonly bakehouseMark = BAKEHOUSE_ORIGIN_MARK;
+  protected readonly reserveMark = RESERVE_ORIGIN_MARK;
   protected readonly pending = signal(false);
   protected readonly failure = signal<string | null>(null);
   /** Les reçus en cours de correction, par « réassort/SKU ». */

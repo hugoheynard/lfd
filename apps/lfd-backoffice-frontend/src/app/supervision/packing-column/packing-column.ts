@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, model, output } from '@angular/core';
+import type { WithdrawnPackingSheet } from '@lfd/contracts';
 import { RouterLink } from '@angular/router';
 import type { FoldBadgeVariant } from 'fold-ng';
 import {
@@ -79,6 +80,10 @@ export class PackingColumn {
   readonly check = output<QualityRequest>();
   /** « n produits attendus du four » ou double-clic : bascule le dépliage de CETTE commande. */
   readonly awaitedToggle = output<string>();
+  /** `production_resupply:write` (plan A1, lot A1.4) : « Envoyer en boutique ». */
+  readonly canSendToShop = input(false);
+  /** Le pain rendu par une feuille retirée part en boutique — la page ouvre le panneau. */
+  readonly sendToShop = output<WithdrawnPackingSheet>();
   /** Mobile (B7) : « Voir en Préparation → » sur la commande dépliée. */
   readonly showPreparation = output();
 

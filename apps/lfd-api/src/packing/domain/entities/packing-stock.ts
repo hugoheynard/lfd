@@ -1,4 +1,8 @@
 import { StockReservationQuantityInvalidError } from "../errors/packing-resupply-errors.js";
+import {
+  ReserveShopQuantityInvalidError,
+  ReserveShortForShopError,
+} from "../errors/packing-shop-release-errors.js";
 import { LineNotProducedYetError } from "../errors/packing-station-errors.js";
 import { shortfall } from "../services/placement.js";
 import {
@@ -18,13 +22,15 @@ export interface PackingStockSnapshot {
   readonly returned: number;
   /** Les pièces au bac, tous bacs confondus — une SOMME, pas une ligne. */
   readonly packed: number;
+  /** Σ des pièces envoyées en boutique (plan A1, lot A1.4). */
+  readonly sentToShop: number;
   /** Les réservations des réassorts lancés (R4b), levées comprises. */
   readonly reservations: readonly StockReservationSnapshot[];
 }
 
 /**
  * **La réserve d'un article pour une journée** — l'agrégat qui porte
- * l'invariant du colisage : `au bac ≤ reçu − rendu` (plan
+ * l'invariant du colisage : `au bac + envoyé en boutique ≤ reçu − rendu` (plan
  * `documentation/colisage/colisage.md`, §10.1, §11 SÉRIEUX).
  *
  * Elle est LA ligne verrouillée : la mise au bac et le retour passent tous les
@@ -49,6 +55,7 @@ export class PackingStock {
     readonly received: number,
     private returnedValue: number,
     private packedValue: number,
+    private sentToShopValue: number,
     private reservationsValue: readonly StockReservationSnapshot[],
   ) {}
 
@@ -59,6 +66,7 @@ export class PackingStock {
       snapshot.received,
       snapshot.returned,
       snapshot.packed,
+      snapshot.sentToShop,
       snapshot.reservations,
     );
   }
@@ -71,6 +79,10 @@ export class PackingStock {
     return this.packedValue;
   }
 
+  get sentToShop(): number {
+    return this.sentToShopValue;
+  }
+
   get reservations(): readonly StockReservationSnapshot[] {
     return this.reservationsValue;
   }
@@ -81,11 +93,14 @@ export class PackingStock {
   }
 
   /**
-   * Ce qui peut encore aller au bac d'une commande, ou être rendu — hors des
-   * pièces réservées. Jamais négatif.
+   * Ce qui peut encore aller au bac d'une commande, être rendu ou envoyé en
+   * boutique — hors des pièces réservées. Jamais négatif.
    */
   get free(): number {
-    return Math.max(0, this.received - this.returnedValue - this.packedValue - this.reserved);
+    return Math.max(
+      0,
+      this.received - this.returnedValue - this.packedValue - this.sentToShopValue - this.reserved,
+    );
   }
 
   /**
@@ -168,6 +183,25 @@ export class PackingStock {
     return awaitingOvenOf(this, this.reservationsValue, resupplyId);
   }
 
+  /**
+   * **Des pièces sortent de la réserve vers une boutique** (plan A1, lot
+   * A1.4) — le pain rendu par une annulation, ou tout surplus. Seulement du
+   * libre : jamais une pièce au bac, ni une pièce qu'un réassort lancé
+   * retient.
+   *
+   * @throws {ReserveShopQuantityInvalidError} pas un entier > 0.
+   * @throws {ReserveShortForShopError} le libre ne couvre pas la quantité.
+   */
+  sendToShop(quantity: number, productName: string): void {
+    if (!Number.isInteger(quantity) || quantity <= 0) {
+      throw new ReserveShopQuantityInvalidError(productName, quantity);
+    }
+    if (shortfall(this.free, quantity) > 0) {
+      throw new ReserveShortForShopError(productName, this.serviceDay, this.free, quantity);
+    }
+    this.sentToShopValue += quantity;
+  }
+
   /** Des pièces ressortent d'un bac et redeviennent disponibles. */
   release(quantity: number): void {
     this.packedValue = Math.max(0, this.packedValue - quantity);
@@ -193,6 +227,7 @@ export class PackingStock {
       received: this.received,
       returned: this.returnedValue,
       packed: this.packedValue,
+      sentToShop: this.sentToShopValue,
       reservations: this.reservationsValue,
     };
   }

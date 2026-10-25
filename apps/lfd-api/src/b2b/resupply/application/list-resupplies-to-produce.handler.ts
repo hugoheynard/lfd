@@ -3,6 +3,7 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../platform/time/clock.js";
 import { ClosedPlansReader } from "../../../production/channels/commerce/index.js";
+import { isProducedByBakehouse } from "../domain/resupply-origin.js";
 import { ResupplySiteLabels } from "../domain/resupply-site-labels.js";
 import { SiteResupplyReader } from "../domain/site-resupply.reader.js";
 import { ListResuppliesToProduceQuery } from "./list-resupplies-to-produce.query.js";
@@ -19,7 +20,8 @@ import { resupplyDays } from "./resupply-days.js";
  * fournil, et le compter ici aussi le ferait produire deux fois. L'écran ne
  * montre donc que ce qui n'est pas figé. Depuis R4a (2026-10-22), un « au
  * plus tôt » LANCÉ n'y est plus non plus, pour la même raison : il est au plan
- * du jour, compté dans les fournées.
+ * du jour, compté dans les fournées. Une sortie de réserve (plan A1, lot
+ * A1.4) n'y est jamais : le pain est déjà fait.
  */
 @QueryHandler(ListResuppliesToProduceQuery)
 export class ListResuppliesToProduceHandler implements IQueryHandler<
@@ -38,6 +40,7 @@ export class ListResuppliesToProduceHandler implements IQueryHandler<
     const stopped = new Set(await this.plans.closedBetween(today, tomorrow));
     const placed = (await this.reader.placedOn([today, tomorrow])).filter(
       (resupply) =>
+        isProducedByBakehouse(resupply.origin) &&
         !(resupply.target === "tomorrow" && stopped.has(resupply.serviceDay)) &&
         (resupply.launched ?? null) === null,
     );

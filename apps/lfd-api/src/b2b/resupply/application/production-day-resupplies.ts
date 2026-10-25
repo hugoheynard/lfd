@@ -5,6 +5,7 @@ import {
   type PlacedResupply,
   type ServiceDay,
 } from "../../../production/channels/commerce/index.js";
+import { isProducedByBakehouse } from "../domain/resupply-origin.js";
 import { ResupplySiteLabels } from "../domain/resupply-site-labels.js";
 import type { PlacedSiteResupplySnapshot } from "../domain/site-resupply.js";
 import { SiteResupplyReader } from "../domain/site-resupply.reader.js";
@@ -39,11 +40,15 @@ export class ProductionDayResupplies extends DayResuppliesReader {
 
   /**
    * R4a : LE réassort « au plus tôt » envoyé et non annulé que le fournil
-   * lance, pour cette journée — `null` sinon (annulé, autre jour, autre visée).
+   * lance, pour cette journée — `null` sinon (annulé, autre jour, autre
+   * visée, ou sortie de réserve : rien à fabriquer, plan A1, lot A1.4).
    */
   async asapToLaunch(day: ServiceDay, resupplyId: string): Promise<PlacedResupply | null> {
     const asap = (await this.reader.placedOn([day.value])).filter(
-      (resupply) => resupply.target === "asap" && resupply.id === resupplyId,
+      (resupply) =>
+        resupply.target === "asap" &&
+        resupply.id === resupplyId &&
+        isProducedByBakehouse(resupply.origin),
     );
     return (await this.forProduction(asap))[0] ?? null;
   }

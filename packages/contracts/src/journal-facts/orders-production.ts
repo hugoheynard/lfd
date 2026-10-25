@@ -20,6 +20,7 @@ import { ORDER_REFUND_FACTS } from "./order-refunds.js";
 import { ORDER_SHORTFALL_FACTS } from "./order-shortfalls.js";
 import { AFTER_CLOSE_WITHDRAWAL_FACTS } from "./after-close-withdrawals.js";
 import { PACKING_CONTAINER_FACTS } from "./packing-containers.js";
+import { PACKING_RESERVE_FACTS } from "./packing-reserve.js";
 import { PRODUCTION_SETTINGS_FACTS } from "./production-settings.js";
 import { DELIVERY_SIMULATION_FACTS } from "./delivery-simulation.js";
 import {
@@ -667,6 +668,8 @@ export const ORDERS_PRODUCTION_FACTS = {
   /** **Les demandes de modification** après l'heure limite (plan de modification, M4). */
   ...ORDER_CHANGE_REQUEST_FACTS,
   ...PACKING_CONTAINER_FACTS,
+  /** **Une sortie de réserve vers une boutique** (plan A1, lot A1.4). */
+  ...PACKING_RESERVE_FACTS,
   /** **Les réglages du fournil** (arrêt du plan, jours fermés) — même famille. */
   ...PRODUCTION_SETTINGS_FACTS,
 

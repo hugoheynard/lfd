@@ -47,6 +47,7 @@ const STATE_BADGES: Readonly<Record<DayStockResupplyState, { status: string; lab
 const ORIGIN_LABELS: Readonly<Record<ResupplyOrigin, string>> = {
   counter: 'Comptoir',
   bakehouse: 'Fournil',
+  reserve: 'Réserve',
 };
 
 const ALERT_BADGES: Readonly<

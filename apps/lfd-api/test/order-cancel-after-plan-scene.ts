@@ -5,7 +5,7 @@ import {
   type RefundIssuance,
   type RefundLookup,
 } from "../src/b2b/payments/domain/payment-refunder.js";
-import { E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { E2E_STAFF_SUB, jsonBody, type E2eContext, type E2eOverride } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
 import { pickupSite, placeOrder } from "./order-factory.js";
 import { settleCardPayments } from "./card-payments.js";
@@ -38,8 +38,13 @@ class SilentRefunder extends PaymentRefunder {
   }
 }
 
-export async function bootAfterPlanScene(): Promise<{ ctx: E2eContext; issued: string[] }> {
-  return bootstrapProductionDay([{ token: PaymentRefunder, value: new SilentRefunder() }]);
+export async function bootAfterPlanScene(
+  extra: readonly E2eOverride[] = [],
+): Promise<{ ctx: E2eContext; issued: string[] }> {
+  return bootstrapProductionDay([
+    { token: PaymentRefunder, value: new SilentRefunder() },
+    ...extra,
+  ]);
 }
 
 /** Le réglage « Jusqu'où un particulier peut-il annuler ? », délai coupé. */

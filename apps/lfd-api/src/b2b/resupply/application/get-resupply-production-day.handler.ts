@@ -3,6 +3,7 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { ClosedPlansReader } from "../../../production/channels/commerce/index.js";
 import { ResupplyCatalogue } from "../domain/resupply-catalogue.js";
+import { isProducedByBakehouse } from "../domain/resupply-origin.js";
 import { ResupplySiteLabels } from "../domain/resupply-site-labels.js";
 import { SiteResupplyReader } from "../domain/site-resupply.reader.js";
 import { TransferServedSites } from "../domain/transfer-served-sites.js";
@@ -26,6 +27,10 @@ import { resupplyDayView } from "./resupply-day-view.js";
  *
  * Depuis R3e, il dit quels points sont servis par transfert : aux autres,
  * l'onglet propose « Monté ».
+ *
+ * Une sortie de réserve (plan A1, lot A1.4) n'y est pas : rien à fabriquer,
+ * rien à lancer ni à monter — la carte « Au plus tôt » la proposerait sinon
+ * au lancement. Le comptoir la réceptionne comme les autres.
  */
 @QueryHandler(GetResupplyProductionDayQuery)
 export class GetResupplyProductionDayHandler implements IQueryHandler<
@@ -42,11 +47,12 @@ export class GetResupplyProductionDayHandler implements IQueryHandler<
 
   async execute(query: GetResupplyProductionDayQuery): Promise<ResupplyProductionDayView> {
     const day = query.serviceDay;
-    const [placed, stopped, articles] = await Promise.all([
+    const [sent, stopped, articles] = await Promise.all([
       this.reader.placedOn([day]),
       this.plans.closedBetween(day, day),
       this.catalogue.articles(),
     ]);
+    const placed = sent.filter((resupply) => isProducedByBakehouse(resupply.origin));
     const siteIds = [...new Set(placed.map((r) => r.siteId))];
     const [labels, transferSites] = await Promise.all([
       this.sites.labelsOf(siteIds),

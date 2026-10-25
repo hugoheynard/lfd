@@ -7,6 +7,8 @@ import {
   ResupplyLineNotInDraftError,
   ResupplyAlreadyReceivedNotCancellableError,
   ResupplyNotCancellableError,
+  ReserveNotTodayError,
+  ReserveResupplyNotCancellableError,
   BakehouseResupplyAfterStopError,
   ResupplyFrozenInPlanError,
   ResupplyLaunchedNotCancellableError,
@@ -122,6 +124,35 @@ export class SiteResupply {
     return resupply;
   }
 
+  /**
+   * **« Envoyer en boutique »** — une sortie de la réserve du colisage (plan
+   * A1, lot A1.4) : le pain est déjà fabriqué, le réassort naît envoyé « au
+   * plus tôt », pour la journée du geste, et ne se lance jamais
+   * ({@link recordLaunch}) ni ne s'annule ({@link cancel}). Seule la
+   * réserve du jour du geste sort. Ses lignes s'additionnent comme ailleurs ;
+   * au moins une.
+   *
+   * @throws {ReserveNotTodayError} `reserveDay` n'est pas la journée du geste.
+   */
+  static sentFromReserve(input: {
+    readonly id: string;
+    readonly siteId: string;
+    readonly reserveDay: string;
+    readonly lines: readonly SiteResupplyLine[];
+    readonly trace: SiteResupplyTrace;
+  }): SiteResupply {
+    const today = serviceDayFor("asap", input.trace.at);
+    if (input.reserveDay !== today) {
+      throw new ReserveNotTodayError(input.reserveDay, today);
+    }
+    const resupply = SiteResupply.blank({ ...input, target: "asap" }, input.trace.at, "reserve");
+    for (const line of input.lines) {
+      resupply.addLine(line);
+    }
+    resupply.place(input.trace, null, false);
+    return resupply;
+  }
+
   /** Réhydrate un réassort, brouillon compris ; chaque ligne revalide. */
   static restore(snapshot: SiteResupplySnapshot): SiteResupply {
     return new SiteResupply(
@@ -205,15 +236,20 @@ export class SiteResupply {
 
   /**
    * **Le fournil l'a lancé** (R4a) — l'affichage, posé par l'abonné au fait
-   * `production.resupply_launched`. Seul un « au plus tôt » envoyé se lance ;
-   * rejoué, rien ne change.
+   * `production.resupply_launched`. Seul un « au plus tôt » envoyé se lance,
+   * jamais une sortie de réserve (A1.4) ; rejoué, rien ne change.
    *
    * @returns `true` si l'affichage vient d'être posé ; `false` sinon (déjà
    *   posé, ou réassort qui n'est pas un « au plus tôt » envoyé — l'abonné
    *   l'écarte sans relivrer le fait sans fin).
    */
   recordLaunch(launch: SiteResupplyLaunch): boolean {
-    if (this.target !== "asap" || this.status !== "placed" || this.launchedMark !== null) {
+    if (
+      this.target !== "asap" ||
+      this.origin === "reserve" ||
+      this.status !== "placed" ||
+      this.launchedMark !== null
+    ) {
       return false;
     }
     this.launchedMark = launch;
@@ -389,6 +425,9 @@ export class SiteResupply {
   ): void {
     if (this.status !== "placed") {
       throw new ResupplyNotCancellableError();
+    }
+    if (this.origin === "reserve") {
+      throw new ReserveResupplyNotCancellableError();
     }
     if (this.target === "tomorrow" && planStopped) {
       throw new ResupplyFrozenInPlanError(this.serviceDay);

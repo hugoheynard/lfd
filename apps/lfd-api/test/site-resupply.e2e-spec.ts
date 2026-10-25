@@ -256,6 +256,13 @@ describe("le fournil envoie un réassort (R1d)", () => {
       { resource: "production_resupply", action: "read" },
     ]);
     await reader.post(route).send(body).expect(403);
+    // A1.4 : la sortie de réserve vers une boutique exige le même droit en
+    // écriture. Testé ici et pas dans reserve-sent-to-shop.e2e-spec.ts : le
+    // harnais de la journée de production rend toujours l'administrateur.
+    await reader
+      .post("/admin/reserve-shop-releases/2030-01-01")
+      .send({ siteId: "site", key: "k", lines: [{ sku: "SKU", quantity: 1 }] })
+      .expect(403);
     await reader.get("/admin/bakehouse-resupplies/articles").expect(200);
     const sites = jsonBody<readonly { id: string }[]>(
       await reader.get("/admin/pickup-addresses").expect(200),

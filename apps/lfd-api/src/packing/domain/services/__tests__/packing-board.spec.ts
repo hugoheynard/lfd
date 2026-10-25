@@ -204,7 +204,7 @@ describe("packingBoardOf — le poste servi par le colisage (K3a)", () => {
           }),
         ],
         withdrawn: [],
-        stocks: [{ sku: "CRO", received: 10, returned: 0, packed: 6, reserved: 0 }],
+        stocks: [{ sku: "CRO", received: 10, returned: 0, packed: 6, sentToShop: 0, reserved: 0 }],
       }),
     );
 
@@ -255,8 +255,8 @@ describe("packingBoardOf — le poste servi par le colisage (K3a)", () => {
         orders: [order({ orderId: "1", lines: [line("CRO", 5), line("PAI", 2)] })],
         withdrawn: [],
         stocks: [
-          { sku: "CRO", received: 6, returned: 2, packed: 0, reserved: 0 },
-          { sku: "PAI", received: 2, returned: 0, packed: 0, reserved: 0 },
+          { sku: "CRO", received: 6, returned: 2, packed: 0, sentToShop: 0, reserved: 0 },
+          { sku: "PAI", received: 2, returned: 0, packed: 0, sentToShop: 0, reserved: 0 },
         ],
       }),
     );
@@ -280,7 +280,7 @@ describe("packingBoardOf — le poste servi par le colisage (K3a)", () => {
           order({ orderId: "2", lines: [line("CRO", 3, false, "Croissant")] }),
         ],
         withdrawn: [],
-        stocks: [{ sku: "CRO", received: 7, returned: 0, packed: 4, reserved: 0 }],
+        stocks: [{ sku: "CRO", received: 7, returned: 0, packed: 4, sentToShop: 0, reserved: 0 }],
       }),
     );
 
@@ -341,10 +341,10 @@ describe("packingBoardOf — le poste servi par le colisage (K3a)", () => {
         ],
         withdrawn: [],
         stocks: [
-          { sku: "BAG", received: 23, returned: 0, packed: 23, reserved: 0 },
-          { sku: "CHA", received: 6, returned: 0, packed: 6, reserved: 0 },
-          { sku: "CRO", received: 423, returned: 0, packed: 346, reserved: 0 },
-          { sku: "PAI", received: 41, returned: 0, packed: 0, reserved: 0 },
+          { sku: "BAG", received: 23, returned: 0, packed: 23, sentToShop: 0, reserved: 0 },
+          { sku: "CHA", received: 6, returned: 0, packed: 6, sentToShop: 0, reserved: 0 },
+          { sku: "CRO", received: 423, returned: 0, packed: 346, sentToShop: 0, reserved: 0 },
+          { sku: "PAI", received: 41, returned: 0, packed: 0, sentToShop: 0, reserved: 0 },
         ],
       }),
     );
@@ -380,6 +380,7 @@ describe("packingBoardOf — les feuilles retirées après l'arrêt (plan A1)", 
             customerLabel: "Camille",
             drawnAt: CLOSED,
             withdrawnAt: WITHDRAWN_AT,
+            released: [],
           },
         ],
         stocks: [],
@@ -394,7 +395,32 @@ describe("packingBoardOf — les feuilles retirées après l'arrêt (plan A1)", 
         reference: "ORD-2",
         customerLabel: "Camille",
         withdrawnAt: WITHDRAWN_AT.toISOString(),
+        released: [],
       },
+    ]);
+  });
+
+  /** Lot A1.4 : « Envoyer en boutique » propose ce qui a été rendu, borné au libre. */
+  it("dit ce que le retrait a rendu, et le libre de la réserve pour l'article", () => {
+    const view = packingBoardOf(
+      sources({
+        orders: [],
+        withdrawn: [
+          {
+            orderId: "2",
+            reference: "ORD-2",
+            customerLabel: "Camille",
+            drawnAt: CLOSED,
+            withdrawnAt: WITHDRAWN_AT,
+            released: [{ sku: "CRO", productName: "Croissant", quantity: 6 }],
+          },
+        ],
+        stocks: [{ sku: "CRO", received: 20, returned: 2, packed: 8, sentToShop: 3, reserved: 4 }],
+      }),
+    );
+
+    expect(view.withdrawnSheets[0]?.released).toEqual([
+      { sku: "CRO", productName: "Croissant", quantity: 6, free: 3 },
     ]);
   });
 
@@ -409,6 +435,7 @@ describe("packingBoardOf — les feuilles retirées après l'arrêt (plan A1)", 
             customerLabel: "Camille",
             drawnAt: CLOSED,
             withdrawnAt: WITHDRAWN_AT,
+            released: [],
           },
         ],
         stocks: [],

@@ -152,6 +152,10 @@ const BARE_REFS: Readonly<Record<string, string>> = {
   "order_cutoff.created:pickupAddress": "un point de retrait disparu se cite par son id",
   "order_cutoff.updated:pickupAddress": "un point de retrait disparu se cite par son id",
   "order_cutoff.removed:pickupAddress": "un point de retrait disparu se cite par son id",
+  // La sortie de réserve vers une boutique (plan A1, lot A1.4, 2026-10-25).
+  "packing_stock.sent_to_shop:site": "un point de retrait disparu se cite par son id",
+  "packing_stock.sent_to_shop:resupplyId":
+    "un réassort n'a pas de nom obligatoire : il se lit par son point (`site`) et ses lignes",
   "volume_commitment.signed:company":
     "aucune clé étrangère n'attache un engagement à une société : inconnue, elle se cite par son id",
   "volume_commitment.closed:company":

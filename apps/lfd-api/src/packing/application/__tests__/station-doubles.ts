@@ -68,6 +68,7 @@ export class InMemorySheets extends PackingSheetRepository {
 /** La réserve, adossée à celle de l'ombre (reçu, rendu) et à un compte au bac. */
 export class InMemoryStocks extends PackingStockRepository {
   private readonly packed = new Map<string, number>();
+  private readonly sent = new Map<string, number>();
   /**
    * Les réservations (R4b), telles que l'adaptateur les relit : leur emballé
    * suit l'agrégat, comme la ligne de la fiche s'écrit sous le même verrou.
@@ -87,6 +88,7 @@ export class InMemoryStocks extends PackingStockRepository {
         sku,
         ...held,
         packed: this.packed.get(key) ?? 0,
+        sentToShop: this.sent.get(key) ?? 0,
         reservations: this.reservations.get(key) ?? [],
       }),
     );
@@ -97,8 +99,14 @@ export class InMemoryStocks extends PackingStockRepository {
     const held = this.shadow.stocks.get(key) ?? { received: 0, returned: 0 };
     this.shadow.stocks.set(key, { ...held, returned: stock.returned });
     this.packed.set(key, stock.packed);
+    this.sent.set(key, stock.sentToShop);
     this.reservations.set(key, stock.reservations);
     return Promise.resolve();
+  }
+
+  /** Ce que la réserve a envoyé en boutique (plan A1, lot A1.4). */
+  sentOf(serviceDay: string, sku: string): number {
+    return this.sent.get(`${serviceDay}/${sku}`) ?? 0;
   }
 
   packedOf(serviceDay: string, sku: string): number {

@@ -116,7 +116,7 @@ Ce que le complément **ne règle pas** :
 
 1. **A1 — le retrait d'une commande inscrite** ([`plan-a1-retirer-une-commande-inscrite.md`](annulation/plan-a1-retirer-une-commande-inscrite.md)) : le cas le plus simple (tout
    part ou rien), il pose le fait d'ajustement et la réaction des trois postes.
-2. **A2 — le changement** : le même fait avec des écarts par ligne.
+2. **A2 — le changement** ([`plan-a2-modifier-une-commande-inscrite.md`](modification/plan-a2-modifier-une-commande-inscrite.md)) : les quantités d'une commande de pro au compte, par le staff, après l'arrêt.
 3. **E7 inchangé dans sa forme** : un BL-2 a ses propres clés (E7.4), sa
    remise (E7.3) et son jour (E7.1). Il réutilise le fait d'ajustement
    d'A1/A2 pour annoncer le complément aux postes.

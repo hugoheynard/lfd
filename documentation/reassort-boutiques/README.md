@@ -775,6 +775,19 @@ sequenceDiagram
   (étape 4 bis : « parti » au comptoir et à la Supervision, rejeu du fait
   sans effet).
 
+## Ce qui est bâti : la sortie de réserve, origine `reserve` (lot A1.4, 2026-10-25, non commité)
+
+Troisième origine d'un réassort : `reserve` — le pain rendu à la réserve du
+colisage par une annulation, envoyé en boutique depuis la Supervision
+(« Envoyer en boutique », `production_resupply:write`, `POST
+admin/reserve-shop-releases/:serviceDay`). Il naît envoyé « au plus tôt »
+(CHECK `site_resupply_reserve_placed_asap`), ne se lance jamais et ne
+s'annule pas. Il n'est ni dans « Réassorts à produire », ni dans l'onglet de
+Prod manager, ni lançable (`isProducedByBakehouse`) ; le comptoir le
+réceptionne comme les autres, marqué « Pain rendu, envoyé par la réserve ».
+Seule la réserve du jour sort. Plan :
+[`plan-a1-4-envoyer-en-boutique.md`](../commandes/annulation/plan-a1-4-envoyer-en-boutique.md).
+
 ## Ce qui reste
 
 - **« Réceptionné » à Prod manager** : la carte « Au plus tôt » lit
