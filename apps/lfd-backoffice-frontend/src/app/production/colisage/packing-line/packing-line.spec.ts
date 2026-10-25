@@ -46,9 +46,7 @@ describe('la ligne de colisage', () => {
 
     expect(host.querySelector<HTMLInputElement>('input')?.disabled).toBe(true);
     expect(host.classList.contains('is-awaiting')).toBe(true);
-    expect(host.querySelector('app-awaiting-badge')?.textContent).toContain(
-      'En attente de la prod',
-    );
+    expect(host.querySelector('app-awaiting-badge')?.textContent).toContain('Att. prod');
   });
 
   it('🔴 se fige aussi quand la commande est déclarée prête — sans badge', () => {

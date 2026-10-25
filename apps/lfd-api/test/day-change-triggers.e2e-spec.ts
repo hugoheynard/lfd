@@ -87,6 +87,9 @@ const UNWATCHED: Readonly<Record<string, string>> = {
   // surveillée.
   "delivery.delivery_doorstep_settings":
     "le réglage global de la décision d'avance à la porte, un réglage unique sans journée",
+  // Les réglages du colisage (Réglages › Colisage, 2026-10-25) : un réglage.
+  // Ce qu'il permet — l'autre moitié d'un bac — s'écrit dans `container`, surveillée.
+  "packing.packing_settings": "les réglages du colisage, un réglage unique sans journée",
   "delivery.delivery_geocode":
     "le cache du géocodage, clé d'une adresse et non d'un jour — une proposition appliquée s'écrit dans `delivery_round`, surveillée",
   // Le simulateur (lot 9, L9-C7, 2026-09-29) : des arrêts INVENTÉS, sans

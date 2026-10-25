@@ -15,6 +15,7 @@
  * | `PlannedDestinationsReader` | port publié (K3a) | la destination figée au plan, pour le poste |
  * | `PackedOrdersReader`    | port (K3a)       | « cette commande est-elle colisée ? »         |
  * | `InscribedOrderHeaderReader` | port publié (A1) | l'en-tête figé d'une commande, pour la pierre tombale |
+ * | `OrderLabelHeadReader`  | port publié      | l'acheminement et le créneau, pour l'étiquette d'un sac |
  *
  * `lint:context-boundaries` n'autorise `packing → production` que par ce
  * dossier, et `production → packing` jamais : le fournil publie, il ne sait
@@ -62,6 +63,7 @@ export {
   InscribedOrderHeaderReader,
   type InscribedOrderHeader,
 } from "./inscribed-order-header.reader.js";
+export { OrderLabelHeadReader, type OrderLabelHead } from "./order-label-head.reader.js";
 // La réouverture (Hugo, 2026-10-14) : même figure que pour la livraison.
 export {
   PRODUCTION_DAY_REOPENED,

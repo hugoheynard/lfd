@@ -33,6 +33,7 @@ import {
 
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { DeliveryBinsService } from '../../../livraison/delivery-bins.service';
+import { PackingSettingsService } from '../../packing-settings.service';
 import { AwaitingBadge } from '../awaiting-badge/awaiting-badge';
 import { type BinFormatButton, binFormatButtons } from '../bin-row';
 import {
@@ -45,6 +46,7 @@ import {
   unallocatedOf,
 } from '../container-board';
 import { PackingContainerGestures } from '../packing-container-gestures';
+import { PackingDayReader } from '../packing-day.reader';
 import {
   PackingQuantityDialog,
   type PackingQuantityDialogData,
@@ -131,6 +133,8 @@ export class PackingContainerBoard {
   private readonly permissions = inject(PermissionsStore);
   private readonly binTypes = inject(DeliveryBinsService);
   private readonly panels = inject(FoldPanelHostService);
+  private readonly packingSettings = inject(PackingSettingsService);
+  private readonly day = inject(PackingDayReader);
 
   /** La commande ouverte, `containerMode = listed`. */
   readonly sheet = input.required<PackingSheet>();
@@ -158,11 +162,21 @@ export class PackingContainerBoard {
     () => this.sheet().containerList ?? [],
   );
 
-  /** Des bacs à étiqueter ? Un sac n'a pas encore d'étiquette (§2.3). */
+  /** Des bacs à étiqueter ? */
   protected readonly hasBins = computed(() => this.containers().some((c) => c.binId !== null));
 
   /** La page d'étiquettes de la commande — la même que la rangée « + format ». */
   protected readonly labelsLink = computed(() => ['/livraison/etiquettes', this.sheet().orderId]);
+
+  /** Des sacs à étiqueter ? (2026-10-25 : « je ne peux pas faire d'étiquette pour les sacs ».) */
+  protected readonly hasBags = computed(() => this.containers().some((c) => c.nature === 'bag'));
+
+  /** La page d'étiquettes des sacs, sur la journée LUE du poste. */
+  protected readonly bagLabelsLink = computed(() => [
+    '/colisage/etiquettes',
+    this.day.date(),
+    this.sheet().orderId,
+  ]);
 
   /** Le choix du format est-il déplié (« + Nouveau bac ») ? */
   protected readonly choosing = signal(false);
@@ -171,6 +185,12 @@ export class PackingContainerBoard {
     const types = this.types();
     return types.status === 'ready' ? binFormatButtons(types.value, null) : [];
   });
+  /**
+   * « Partager une moitié » est-il ouvert dans Réglages › Colisage ? Fermé
+   * tant qu'on ne l'a pas lu, et si la lecture échoue : c'est le défaut
+   * (Hugo, 2026-10-25), et le serveur refuse de toute façon le geste fermé.
+   */
+  protected readonly halfSharing = signal(false);
   /** Le choix d'une moitié voisine est-il déplié (« Partager une moitié ») ? */
   protected readonly sharing = signal(false);
   protected readonly halves = signal<Loadable<readonly DeliveryBinFreeHalfView[]>>({
@@ -227,6 +247,16 @@ export class PackingContainerBoard {
       });
     });
     inject(DestroyRef).onDestroy(() => this.closeDialog());
+    void this.loadHalfSharing();
+  }
+
+  /** Lu à l'ouverture du tableau ; un poste resté ouvert sur un réglage fermé reçoit le refus du serveur. */
+  private async loadHalfSharing(): Promise<void> {
+    try {
+      this.halfSharing.set((await this.packingSettings.read()).halfSharing);
+    } catch {
+      this.halfSharing.set(false);
+    }
   }
 
   protected draggable(line: PackingLine): boolean {

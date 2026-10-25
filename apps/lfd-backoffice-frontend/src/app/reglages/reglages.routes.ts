@@ -201,6 +201,20 @@ export const reglagesRoutes: Routes = [
           ),
       },
 
+      // RÉGLAGES › COLISAGE (Hugo, 2026-10-25) — ce que le poste permet, dont
+      // le partage d'une moitié de bac, fermé par défaut. Sous
+      // `delivery_settings`, le droit des bacs et des contenances, comme la
+      // route `admin/packing/settings`.
+      {
+        path: 'colisage',
+        canActivate: [permissionGuard('delivery_settings:read')],
+        title: 'Colisage — LFC B2B admin',
+        loadComponent: () =>
+          import('./colisage/packing-settings-page/packing-settings-page').then(
+            (m) => m.PackingSettingsPage,
+          ),
+      },
+
       // RÉGLAGES › COMMERCIAL (Hugo, 2026-10-13) — venus de la section
       // « Réglages » de l'espace Commercial, mêmes droits que leurs routes
       // d'API : Disponibilité sous `b2b_commercial_appointment`, Marchés sous

@@ -324,6 +324,8 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // LE COURSIER (2026-10-03) : la page du livreur, hors de la Livraison.
   coursier: 'delivery_driving:read',
   colisage: 'production_packing:read',
+  // Les étiquettes des sacs (2026-10-25) : une lecture, comme la route du serveur.
+  'colisage/etiquettes/:date/:orderId': 'production_packing:read',
   'coursier/:roundId/chargement': 'delivery_driving:read',
   // Le texte d'information du livreur (rgpd-livreur.md §7) : le droit de la page.
   'coursier/mes-donnees': 'delivery_driving:read',
@@ -359,6 +361,8 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'reglages/livraison/depart': 'delivery_settings:read',
   // Venue des réglages de l'e-commerce (2026-10-10) : ses deux droits, l'un OU l'autre.
   'reglages/livraison/zones': { anyOf: ['delivery_availability:read', 'delivery_fee:read'] },
+  // Réglages › Colisage (2026-10-25) : le droit des bacs.
+  'reglages/colisage': 'delivery_settings:read',
   // Un QR de sa propre origine et un mode d'emploi : rien à garder.
   'app-mobile': OPEN,
   // 🔴 **L'outillage de développement**, et son absence de garde est le point.

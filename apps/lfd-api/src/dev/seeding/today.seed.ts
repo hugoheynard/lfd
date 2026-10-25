@@ -1,6 +1,9 @@
+import { DEFAULT_RESUPPLY_CUTOFF_TIME } from "@lfd/contracts";
+
 import type { DayComposer } from "../../delivery/application/day-composer.js";
 import { CloseProductionDayCommand } from "../../production/application/commands/close-production-day.command.js";
 import { MarkWorksheetLineCommand } from "../../production/application/commands/mark-worksheet-line.command.js";
+import { planStopOf, planStopRules } from "../../production/domain/services/latest-order-cutoff.js";
 import {
   COUNTER,
   packCounter,
@@ -112,6 +115,51 @@ export interface AutoComposedRounds {
   };
 }
 
+/**
+ * Les réglages qui fixent l'arrêt du plan, tels que l'étape 1 les relit : la
+ * règle générale et l'heure du réassort (`order_cutoff_settings`, clé `orders`).
+ */
+export interface PlanStopSettings {
+  readonly orderCutoff: {
+    findFirst(args: {
+      where: { pickupAddressId: null; weekday: null };
+      select: { daysBefore: true; time: true; graceMinutes: true };
+    }): Promise<{ daysBefore: number; time: string; graceMinutes: number } | null>;
+  };
+  readonly orderCutoffSettings: {
+    findUnique(args: {
+      where: { key: string };
+      select: { resupplyCutoffTime: true };
+    }): Promise<{ resupplyCutoffTime: string } | null>;
+  };
+}
+
+/** La clé de la ligne unique des réglages des limites (`order-cutoff-settings.key.ts`). */
+const ORDER_CUTOFF_SETTINGS_KEY = "orders";
+
+/**
+ * L'instant où le semis arrête le plan : le soir de la veille, ou plus tard si
+ * les réglages arrêtent le plan plus tard. Un arrêt plus tôt est refusé
+ * (`PlanClosedBeforeOrderCutoffError`) : le 2026-10-25, une heure du réassort
+ * réglée à 23:00 dans la base de dev faisait échouer chaque rechargement.
+ */
+async function planCloseInstant(prisma: PlanStopSettings, day: ScenarioDay): Promise<Date> {
+  const [general, settings] = await Promise.all([
+    prisma.orderCutoff.findFirst({
+      where: { pickupAddressId: null, weekday: null },
+      select: { daysBefore: true, time: true, graceMinutes: true },
+    }),
+    prisma.orderCutoffSettings.findUnique({
+      where: { key: ORDER_CUTOFF_SETTINGS_KEY },
+      select: { resupplyCutoffTime: true },
+    }),
+  ]);
+  const evening = atHour(day.orderedAt, EVENING_CLOSE_HOUR);
+  const resupply = settings?.resupplyCutoffTime ?? DEFAULT_RESUPPLY_CUTOFF_TIME;
+  const stop = planStopOf(planStopRules(general, resupply), day.forDay);
+  return stop !== null && stop.at.getTime() > evening.getTime() ? stop.at : evening;
+}
+
 /** Le compte du jour, tel que l'étape 3 le lit. */
 export interface ProductionCountTable {
   readonly productionCount: {
@@ -174,10 +222,10 @@ export async function placeToday(
  * clôture, et l'étape suivante s'appuie dessus.
  */
 export async function closeTodayPlan(
-  context: StepContext & { readonly prisma: AutoComposedRounds },
+  context: StepContext & { readonly prisma: AutoComposedRounds & PlanStopSettings },
   day: ScenarioDay,
 ): Promise<void> {
-  await asStaff(atHour(day.orderedAt, EVENING_CLOSE_HOUR), () =>
+  await asStaff(await planCloseInstant(context.prisma, day), () =>
     context.commands.execute(new CloseProductionDayCommand(day.forDay)),
   );
   await context.settle();

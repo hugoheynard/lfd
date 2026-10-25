@@ -29,6 +29,11 @@
    repoussé. `document.body.scrollHeight` vaut la fenêtre dans les DEUX cas —
    c'est pour ça que la panne ne ressemble pas à sa cause. */
 :host {
+  /* Un poste qu'on touche et qu'on glisse : RIEN ne s'y sélectionne par
+     mégarde (Hugo, 2026-10-25). Un champ de saisie reste éditable : pour un
+     élément éditable, la valeur utilisée de `user-select` est `contain`. */
+  user-select: none;
+
   /* Aucun écart entre la bande et le corps : le corps PROLONGE la bande. */
   --fold-page-gap: 0;
   --fold-page-pad-top: 0;

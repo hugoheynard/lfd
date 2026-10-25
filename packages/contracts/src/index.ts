@@ -929,6 +929,9 @@ export type {
   TransferPackingPieces,
   PackingContainerView,
 } from "./packing-containers.js";
+export type { PackingBagLabelView, PackingBagLabelsView } from "./packing-bag-labels.js";
+export { DEFAULT_PACKING_HALF_SHARING, packingSettingsPayloadSchema } from "./packing-settings.js";
+export type { PackingSettingsPayload, PackingSettingsView } from "./packing-settings.js";
 export { enterPackedResupplyLineSchema } from "./packing-resupplies.js";
 export type {
   EnterPackedResupplyLine,

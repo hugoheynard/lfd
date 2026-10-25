@@ -3,6 +3,7 @@ import { Module } from "@nestjs/common";
 
 import { ProductionOrderWithdrawalDesk } from "./application/services/production-order-withdrawal.desk.js";
 import { DayInscribedOrderHeaderReader } from "./application/services/day-inscribed-order-header.reader.js";
+import { DayOrderLabelHeadReader } from "./application/services/day-order-label-head.reader.js";
 import { ProductionOrderRevisionDesk } from "./application/services/production-order-revision.desk.js";
 import { FreshDayOrders } from "./application/services/fresh-day-orders.js";
 import { OrderRevisionNoticeLedger } from "./domain/ports/order-revision-notice.ledger.js";
@@ -292,6 +293,8 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     ProductionOrderWithdrawalDesk,
     // L'en-tête figé d'une commande, pour la pierre tombale du colisage (plan A1).
     DayInscribedOrderHeaderReader,
+    // L'acheminement et le créneau d'une commande, pour l'étiquette d'un sac.
+    DayOrderLabelHeadReader,
     // La modification d'une commande (plan `commandes/modification/plan-modifier-une-commande.md`,
     // §9.1) : les notes de révision, écrites par le guichet sous le verrou de
     // la journée, relues par la clôture et le retirage (`FreshDayOrders`).
@@ -316,6 +319,7 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     DayPlannedDestinationsReader,
     ProductionOrderWithdrawalDesk,
     DayInscribedOrderHeaderReader,
+    DayOrderLabelHeadReader,
     ProductionOrderRevisionDesk,
     PrismaOrderInscriptionReader,
     PrismaClosedPlansReader,

@@ -38,6 +38,7 @@ import {
   LOADING,
   shareBin,
 } from "./delivery-loading-scene.js";
+import { openHalfSharing } from "./packing-settings-scene.js";
 
 const DAY = serviceDay();
 
@@ -201,6 +202,9 @@ describe("GET …/proposal", () => {
 });
 
 describe("GET …/shareable-halves", () => {
+  // Fermé par défaut (Hugo, 2026-10-25) : ces cas éprouvent la lecture ouverte.
+  beforeEach(() => openHalfSharing(ctx));
+
   it("rend la place de la commande et les moitiés libres de ses voisins", async () => {
     const { roundId, orders } = await threeStops();
     const [left] = await declareTypedBins(ctx, {

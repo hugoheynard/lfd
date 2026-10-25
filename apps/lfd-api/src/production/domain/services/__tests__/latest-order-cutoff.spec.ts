@@ -114,3 +114,19 @@ describe("planStopOf — l'arrêt et sa cause", () => {
     expect(planStopOf(planStopRules(null, "20:00"), "2026-10-07")).toBeNull();
   });
 });
+
+describe("planStopOf — aux deux changements d'heure", () => {
+  const rules = planStopRules(rule(1, "18:00", 60), "20:00");
+
+  it("le 2026-10-25 (heure d'hiver), « la veille 20:00 » reste 20:00 à Paris (UTC+2 le 24)", () => {
+    expect(planStopOf(rules, "2026-10-25")?.at.toISOString()).toBe("2026-10-24T18:00:00.000Z");
+  });
+
+  it("le 2027-03-28 (heure d'été), « la veille 20:00 » reste 20:00 à Paris (UTC+1 le 27)", () => {
+    expect(planStopOf(rules, "2027-03-28")?.at.toISOString()).toBe("2027-03-27T19:00:00.000Z");
+  });
+
+  it("le lendemain du passage à l'heure d'hiver, la veille est déjà à UTC+1", () => {
+    expect(planStopOf(rules, "2026-10-26")?.at.toISOString()).toBe("2026-10-25T19:00:00.000Z");
+  });
+});

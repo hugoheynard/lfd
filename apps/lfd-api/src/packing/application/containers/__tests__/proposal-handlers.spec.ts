@@ -16,6 +16,7 @@ import { GetShareableHalvesHandler } from "../get-shareable-halves.handler.js";
 import { GetShareableHalvesQuery } from "../get-shareable-halves.query.js";
 import { OpenPackingContainerCommand } from "../open-packing-container.command.js";
 import { OpenPackingContainerHandler } from "../open-packing-container.handler.js";
+import { InMemoryPackingSettings } from "../../__tests__/packing-settings-doubles.js";
 
 // Un jour comparé à rien, jamais à l'horloge.
 const DAY = "2030-03-12";
@@ -69,7 +70,15 @@ function setup(received = 70) {
     desk,
     events,
     apply: new ApplyPackingProposalHandler(sheets, stocks, desk, ids, clock, events, uow),
-    open: new OpenPackingContainerHandler(sheets, desk, ids, clock, events, uow),
+    open: new OpenPackingContainerHandler(
+      sheets,
+      desk,
+      ids,
+      clock,
+      events,
+      uow,
+      InMemoryPackingSettings.sharingOpen().reader(),
+    ),
   };
 }
 
@@ -169,9 +178,10 @@ describe("GetShareableHalvesHandler — les moitiés libres, vues du poste", () 
     };
     desk.halves = [half];
 
-    const view = await new GetShareableHalvesHandler(desk).execute(
-      new GetShareableHalvesQuery("ord_1"),
-    );
+    const view = await new GetShareableHalvesHandler(
+      desk,
+      InMemoryPackingSettings.sharingOpen().reader(),
+    ).execute(new GetShareableHalvesQuery("ord_1"));
 
     expect(view.halves).toEqual([half]);
     expect(desk.declared).toEqual([]);
@@ -182,7 +192,9 @@ describe("GetShareableHalvesHandler — les moitiés libres, vues du poste", () 
     desk.refusal = new RoundDeparted();
 
     await expect(
-      new GetShareableHalvesHandler(desk).execute(new GetShareableHalvesQuery("ord_1")),
+      new GetShareableHalvesHandler(desk, InMemoryPackingSettings.sharingOpen().reader()).execute(
+        new GetShareableHalvesQuery("ord_1"),
+      ),
     ).rejects.toThrow(RoundDeparted);
   });
 });

@@ -7,6 +7,7 @@ import type {
   MovePackingPieces,
   OpenedPackingContainer,
   OpenPackingContainer,
+  PackingBagLabelsView,
   TransferPackingPieces,
 } from '@lfd/contracts';
 
@@ -101,6 +102,13 @@ export class PackingContainersService {
   shareableHalves(date: string, orderId: string): Promise<DeliveryBinFreeHalvesView> {
     return firstValueFrom(
       this.http.get<DeliveryBinFreeHalvesView>(`${this.orderUrl(date, orderId)}/shareable-halves`),
+    );
+  }
+
+  /** Les étiquettes des sacs d'une commande — une lecture : imprimer ne crée rien. */
+  bagLabels(date: string, orderId: string): Promise<PackingBagLabelsView> {
+    return firstValueFrom(
+      this.http.get<PackingBagLabelsView>(`${this.orderUrl(date, orderId)}/bag-labels`),
     );
   }
 

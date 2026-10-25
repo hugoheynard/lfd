@@ -7,10 +7,12 @@ import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { BinDesk } from "../../channels/delivery/index.js";
 import type { ContainerBin } from "../../domain/entities/order-contents.js";
+import { PackingSettings } from "../../domain/entities/packing-settings.js";
 import {
   citeContainer,
   PackingContainerOpenedEvent,
 } from "../../domain/events/packing-container.events.js";
+import { PackingSettingsReader } from "../../domain/ports/packing-settings.reader.js";
 import { PackingSheetRepository } from "../../domain/ports/packing-sheet.repository.js";
 import { citedOrderOf, lockedSheet } from "./container-support.js";
 import { OpenPackingContainerCommand } from "./open-packing-container.command.js";
@@ -26,9 +28,13 @@ import { OpenPackingContainerCommand } from "./open-packing-container.command.js
  * le bac du colisage refuse le contenant (fermé, `counted`, plafond), rien
  * n'est écrit — ni bac, ni contenant.
  *
+ * L'autre moitié d'un bac partagé n'est ouverte que si Réglages › Colisage
+ * l'autorise (fermé par défaut, Hugo, 2026-10-25) — refusé avant que la
+ * livraison ne soit appelée.
+ *
  * Rend l'identifiant du contenant ; le client relit le poste.
  *
- * @throws {PackingOrderNotDrawnYetError} @throws {PackedOrderSealedError}
+ * @throws {HalfSharingDisabledError} @throws {PackingOrderNotDrawnYetError} @throws {PackedOrderSealedError}
  * @throws {ContainersCountedError} @throws {ContainerCeilingReachedError}
  *   et les refus de la livraison pour un bac.
  */
@@ -44,6 +50,7 @@ export class OpenPackingContainerHandler implements ICommandHandler<
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly settings: PackingSettingsReader,
   ) {}
 
   async execute(command: OpenPackingContainerCommand): Promise<string> {
@@ -80,6 +87,9 @@ export class OpenPackingContainerHandler implements ICommandHandler<
   ): Promise<ContainerBin | null> {
     if (request.nature === "bag") {
       return null;
+    }
+    if ("partnerBinId" in request) {
+      ((await this.settings.current()) ?? PackingSettings.defaults()).assertCanShareHalf();
     }
     const declared =
       "partnerBinId" in request

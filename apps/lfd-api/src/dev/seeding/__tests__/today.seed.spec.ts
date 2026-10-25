@@ -3,6 +3,7 @@ import { MarkWorksheetLineCommand } from "../../../production/application/comman
 import { currentRequestContext } from "../../../platform/context/request-context.store.js";
 import {
   type AutoComposedRounds,
+  type PlanStopSettings,
   bakeToday,
   closeTodayPlan,
   scenarioDayOf,
@@ -19,11 +20,24 @@ import {
 const NOW = new Date(2026, 9, 5, 14, 30);
 const DAY = scenarioDayOf(NOW);
 
+/** Les réglages d'arrêt : `resupply` l'heure du réassort, `null` = ligne absente. */
+function stopSettings(resupply: string | null = null): PlanStopSettings {
+  return {
+    orderCutoff: {
+      findFirst: () => Promise.resolve({ daysBefore: 1, time: "18:00", graceMinutes: 60 }),
+    },
+    orderCutoffSettings: {
+      findUnique: () =>
+        Promise.resolve(resupply === null ? null : { resupplyCutoffTime: resupply }),
+    },
+  };
+}
+
 /** Un bus et une boîte d'envoi qui notent ce qu'on leur demande, dans l'ordre. */
-function recorder() {
+function recorder(settings: PlanStopSettings = stopSettings()) {
   const journal: string[] = [];
   const instants: Date[] = [];
-  const context: StepContext & { readonly prisma: AutoComposedRounds } = {
+  const context: StepContext & { readonly prisma: AutoComposedRounds & PlanStopSettings } = {
     commands: {
       execute: (command) => {
         journal.push(
@@ -43,6 +57,7 @@ function recorder() {
       return Promise.resolve();
     },
     prisma: {
+      ...settings,
       deliveryRound: {
         findMany: () => Promise.resolve([{ id: "r_auto" }]),
         deleteMany: (args: { where: { serviceDay: string } }) => {
@@ -94,6 +109,20 @@ describe("closeTodayPlan — étape 1", () => {
     expect(instants[0]?.getDate()).toBe(4);
     expect(instants[0]?.getHours()).toBe(20);
   });
+
+  /**
+   * Régression : `POST /admin/dev/seed/reload` répondait 409
+   * `production.day.before_order_cutoff` le 2026-10-25 — l'heure du réassort
+   * de la base de dev était réglée à 23:00, et le semis arrêtait à 20 h.
+   */
+  it("arrête à l'heure du réassort quand elle est plus tardive que le soir", async () => {
+    const day = scenarioDayOf(new Date(2026, 9, 25, 15, 0));
+    const { instants, context } = recorder(stopSettings("23:00"));
+
+    await closeTodayPlan(context, day);
+
+    expect(instants[0]?.toISOString()).toBe("2026-10-24T21:00:00.000Z");
+  });
 });
 
 describe("bakeToday — étape 2", () => {
@@ -142,6 +171,7 @@ describe("les gestes envoyés", () => {
     };
     const prisma = { productionCount: { findMany: () => Promise.resolve([{ sku: "VIE-001" }]) } };
     const rounds = {
+      ...stopSettings(),
       deliveryRoundStop: { deleteMany: () => Promise.resolve() },
       deliveryRound: { findMany: () => Promise.resolve([]), deleteMany: () => Promise.resolve() },
       activityEvent: { deleteMany: () => Promise.resolve() },

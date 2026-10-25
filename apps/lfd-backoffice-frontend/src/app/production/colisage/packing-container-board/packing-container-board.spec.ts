@@ -17,6 +17,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { DeliveryBinsService } from '../../../livraison/delivery-bins.service';
 import { PackingContainersService } from '../../packing-containers.service';
+import { PackingSettingsService } from '../../packing-settings.service';
 import { PackingDayReader } from '../packing-day.reader';
 import { PackingContainerBoard } from './packing-container-board';
 
@@ -155,6 +156,8 @@ class FakeContainers {
 
 let api: FakeContainers;
 let rereads: number;
+/** Réglages › Colisage, servi : ouvert dans la plupart des cas, qui éprouvent le geste. */
+let halfSharing: boolean;
 /** Le dialogue « combien ? » vit dans l'hôte des panneaux, hors du tableau. */
 let overlay: ComponentFixture<FoldPanelHostComponent>;
 
@@ -187,6 +190,10 @@ async function render(
       provideRouter([]),
       { provide: PermissionsStore, useValue: grants },
       { provide: PackingContainersService, useValue: api },
+      {
+        provide: PackingSettingsService,
+        useValue: { read: () => Promise.resolve({ halfSharing, source: 'explicit' }) },
+      },
       {
         provide: PackingDayReader,
         useValue: {
@@ -225,6 +232,7 @@ describe('les contenants d’une commande `listed` (K2b)', () => {
   beforeEach(() => {
     api = new FakeContainers();
     rereads = 0;
+    halfSharing = true;
   });
 
   it('un retrait crée un sac, pas un bac, et relit', async () => {
@@ -511,6 +519,15 @@ describe('les contenants d’une commande `listed` (K2b)', () => {
     );
   });
 
+  // Réglages › Colisage, fermé par défaut (Hugo, 2026-10-25) : le bouton
+  // disparaît du poste, et le serveur refuse le geste.
+  it('sans le partage ouvert dans Réglages › Colisage, n’offre pas « Partager une moitié »', async () => {
+    halfSharing = false;
+    const { el } = await render(sheet({}));
+    expect(el.querySelector('[data-share-half]')).toBeNull();
+    expect(el.querySelector('[data-new-bin]')).not.toBeNull();
+  });
+
   it('« Proposer » ne s’offre plus dès qu’un contenant existe', async () => {
     const { el } = await render(sheet({ containerList: [container({})] }));
     expect(el.querySelector('[data-propose]')).toBeNull();
@@ -530,7 +547,7 @@ describe('les contenants d’une commande `listed` (K2b)', () => {
     expect(el.querySelector('[data-withdraw]')).toBeNull();
   });
 
-  it('un bac s’étiquette, seul ou avec toute la commande ; un sac non', async () => {
+  it('un bac s’étiquette, seul ou avec toute la commande ; un sac n’a pas l’étiquette d’un bac', async () => {
     const { el } = await render(
       sheet({
         containerList: [
@@ -550,5 +567,28 @@ describe('les contenants d’une commande `listed` (K2b)', () => {
   it('sans bac, pas d’étiquettes à imprimer', async () => {
     const { el } = await render(sheet({ fulfillmentMethod: 'pickup' }));
     expect(el.querySelector('[data-labels]')).toBeNull();
+    expect(el.querySelector('[data-bag-labels]')).toBeNull();
+  });
+
+  /** 2026-10-25, Hugo : « je ne peux pas faire d'étiquette pour les sacs ». */
+  it('un sac s’étiquette, seul ou avec tous les sacs, sur la journée du poste', async () => {
+    const { el } = await render(
+      sheet({
+        fulfillmentMethod: 'pickup',
+        containerList: [
+          container({ id: 'c-2', nature: 'bag', label: 'Sac 1', binId: null, binCode: null }),
+          container({ id: 'c-3', nature: 'bag', label: 'Sac 2', binId: null, binCode: null }),
+        ],
+      }),
+    );
+    const one = [...el.querySelectorAll<HTMLAnchorElement>('[data-bag-label]')];
+    expect(one.map((link) => link.getAttribute('href'))).toEqual([
+      '/colisage/etiquettes/2026-10-05/o-1?sacs=c-2',
+      '/colisage/etiquettes/2026-10-05/o-1?sacs=c-3',
+    ]);
+    expect(el.querySelector('[data-bag-labels]')?.getAttribute('href')).toBe(
+      '/colisage/etiquettes/2026-10-05/o-1',
+    );
+    expect(el.querySelector('[data-bin-label]')).toBeNull();
   });
 });

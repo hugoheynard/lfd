@@ -16,6 +16,7 @@ import { MoveBetweenContainersCommand } from "../move-between-containers.command
 import { MoveBetweenContainersHandler } from "../move-between-containers.handler.js";
 import { OpenPackingContainerCommand } from "../open-packing-container.command.js";
 import { OpenPackingContainerHandler } from "../open-packing-container.handler.js";
+import { InMemoryPackingSettings } from "../../__tests__/packing-settings-doubles.js";
 
 // Un jour comparé à rien, jamais à l'horloge.
 const DAY = "2030-03-12";
@@ -50,6 +51,7 @@ async function setup(target: typeof BAG | typeof BIN = BAG) {
     clock,
     events,
     uow,
+    InMemoryPackingSettings.sharingOpen().reader(),
   );
   const from = await open.execute(new OpenPackingContainerCommand(DAY, "ord_1", BAG, STAFF));
   const to = await open.execute(new OpenPackingContainerCommand(DAY, "ord_1", target, STAFF));

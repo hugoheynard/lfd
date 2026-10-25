@@ -603,6 +603,16 @@ export const routes: Routes = [
   // au fournil, mais le geste n'en est pas une vue. Le même composant que
   // `colisage/:reference` : le poste ouvert sur la liste plutôt que sur une
   // commande. Le chemin exact ne masque pas la route du QR, qui exige un segment.
+  // Les étiquettes des SACS d'une commande (2026-10-25) : la même mécanique
+  // que celles des bacs (une page qu'on imprime), lue sous
+  // `production_packing:read` — la route du serveur ne demande pas davantage.
+  {
+    path: 'colisage/etiquettes/:date/:orderId',
+    canActivate: [permissionGuard('production_packing:read')],
+    title: 'Étiquettes des sacs — LFC B2B admin',
+    loadComponent: () =>
+      import('./production/colisage/bag-labels-page/bag-labels-page').then((m) => m.BagLabelsPage),
+  },
   {
     path: 'colisage',
     pathMatch: 'full',

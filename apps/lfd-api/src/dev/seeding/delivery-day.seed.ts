@@ -81,12 +81,12 @@ export const DELIVERY_DAY: readonly DeliveryDayEntry[] = [
     enseigne: "Le Refuge du Fond",
     window: null,
     ready: true,
-    // Un Bac L, et un reste qui tient dans un demi-Bac M — dont l'autre moitié
-    // part à l'arrêt qui le suit dans sa tournée, si le calcul en met un
-    // de prêt juste après (v2-4, dernier recours).
+    // Un Bac L, et le reste dans un Bac M entier : le partage d'une moitié est
+    // un réglage du colisage, FERMÉ par défaut (Hugo, 2026-10-25) — le semis
+    // ne l'ouvre pas.
     bins: [
       { type: BIN_L, whole: 6, half: false, innerBags: 2 },
-      { type: BIN_M, whole: 0, half: true, innerBags: 1 },
+      { type: BIN_M, whole: 1, half: false, innerBags: 1 },
     ],
     lines: [
       { sku: "PAI-013", quantity: 8 },

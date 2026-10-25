@@ -1,0 +1,76 @@
+/* Le format de l'étiquette d'un bac (Q22, provisoire) : une étiquette par page A4. */
+.bgl-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-lg);
+  text-align: center;
+  break-inside: avoid;
+}
+
+.bgl-reference,
+.bgl-customer,
+.bgl-method,
+.bgl-when,
+.bgl-rank {
+  margin: 0;
+}
+
+/* Le numéro de commande, lu depuis l'autre bout du comptoir. */
+.bgl-reference {
+  font-size: calc(var(--fold-text-2xl) * 2);
+  font-weight: var(--fold-weight-bold);
+  line-height: var(--fold-leading-none);
+}
+
+.bgl-customer {
+  font-size: var(--fold-text-xl);
+}
+
+.bgl-method {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  font-size: var(--fold-text-xl);
+  font-weight: var(--fold-weight-semibold);
+}
+
+/* Le carré du site — imprimé tel quel (`print-color-adjust`), cerclé : un
+   jaune pâle reste visible sur le papier. Même règle que l'étiquette d'un bac. */
+.bgl-color {
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--fold-ref-black);
+  print-color-adjust: exact;
+}
+
+.bgl-when {
+  font-size: var(--fold-text-lg);
+}
+
+.bgl-rank {
+  font-size: var(--fold-text-2xl);
+  font-weight: var(--fold-weight-bold);
+}
+
+.bgl-qr {
+  --app-qr-size: 12rem;
+}
+
+@media print {
+  /* Une étiquette par page ; la dernière ne pousse pas de page blanche. */
+  :host(:not(:last-child)) .bgl-label {
+    break-after: page;
+  }
+
+  .bgl-qr {
+    --app-qr-size: 9cm;
+  }
+
+  .bgl-color {
+    width: 2cm;
+    height: 2cm;
+  }
+}

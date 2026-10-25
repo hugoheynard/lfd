@@ -9,6 +9,7 @@ import { PrismaPackingListWithdrawal } from "./infrastructure/prisma-packing-lis
 import { PackingShadowLedger } from "./domain/ports/packing-shadow.ledger.js";
 import { ApplyPackingProposalHandler } from "./application/containers/apply-packing-proposal.handler.js";
 import { GetShareableHalvesHandler } from "./application/containers/get-shareable-halves.handler.js";
+import { GetBagLabelsHandler } from "./application/containers/get-bag-labels.handler.js";
 import { AllocateToContainerHandler } from "./application/containers/allocate-to-container.handler.js";
 import { GetPackingProposalHandler } from "./application/containers/get-packing-proposal.handler.js";
 import { OpenPackingContainerHandler } from "./application/containers/open-packing-container.handler.js";
@@ -62,6 +63,13 @@ import {
 } from "./infrastructure/prisma-packing-resupply.repository.js";
 import { PrismaPackingResupplyListing } from "./infrastructure/prisma-packing-resupply-listing.js";
 import { PackingResuppliesController } from "./http/packing-resupplies.controller.js";
+import { GetPackingSettingsHandler } from "./application/settings/get-packing-settings.handler.js";
+import { SetPackingSettingsHandler } from "./application/settings/set-packing-settings.handler.js";
+import { PackingSettingsReader } from "./domain/ports/packing-settings.reader.js";
+import { PackingSettingsRepository } from "./domain/ports/packing-settings.repository.js";
+import { PackingSettingsController } from "./http/packing-settings.controller.js";
+import { PrismaPackingSettingsReader } from "./infrastructure/prisma-packing-settings.reader.js";
+import { PrismaPackingSettingsRepository } from "./infrastructure/prisma-packing-settings.repository.js";
 
 /**
  * **Le colisage** — son propre bloc depuis le 2026-10-04 (plan
@@ -93,6 +101,9 @@ import { PackingResuppliesController } from "./http/packing-resupplies.controlle
  * son abonné (`production.resupply_list_drawn`), ses gestes (saisir l'emballé,
  * clore), sa liste, et `PackedResuppliesReader`, que le commerce lit par
  * `packing/channels/commerce/` (relié par `PackingFeedModule`).
+ *
+ * Réglages › Colisage (2026-10-25) : ses réglages, dont le partage d'une
+ * moitié de bac, fermé par défaut.
  */
 @Module({
   controllers: [
@@ -100,6 +111,7 @@ import { PackingResuppliesController } from "./http/packing-resupplies.controlle
     PackingBoardController,
     PackingOrdersController,
     PackingResuppliesController,
+    PackingSettingsController,
   ],
   providers: [
     OnPackingListDrawn,
@@ -127,6 +139,7 @@ import { PackingResuppliesController } from "./http/packing-resupplies.controlle
     GetPackingProposalHandler,
     ApplyPackingProposalHandler,
     GetShareableHalvesHandler,
+    GetBagLabelsHandler,
     PrismaContainerManagedOrders,
     // Le poste servi par le colisage (K3a).
     GetPackingBoardHandler,
@@ -156,6 +169,11 @@ import { PackingResuppliesController } from "./http/packing-resupplies.controlle
     { provide: PackingDayStocksReader, useClass: PrismaPackingDayStocksReader },
     PrismaPackedResuppliesReader,
     PrismaOrderPackingStateReader,
+    // Réglages › Colisage (2026-10-25).
+    GetPackingSettingsHandler,
+    SetPackingSettingsHandler,
+    { provide: PackingSettingsReader, useClass: PrismaPackingSettingsReader },
+    { provide: PackingSettingsRepository, useClass: PrismaPackingSettingsRepository },
   ],
   exports: [
     PrismaContainerManagedOrders,

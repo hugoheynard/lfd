@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { FoldIconComponent } from 'fold-ng';
 
 /**
- * **« En attente de la prod »** — l'article n'est pas encore sorti du four.
+ * **« Att. prod »** (« en attente de la prod », raccourci par Hugo le 2026-10-25) — l'article n'est pas encore sorti du four.
  *
  * 🔴 **Ce n'est pas une anomalie.** En début de fournée, la moitié de l'écran
  * est dans cet état : le badge dit donc l'ATTENTE, pas l'erreur — un

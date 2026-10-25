@@ -88,17 +88,20 @@
             >
               Nouveau bac
             </button>
-            <!-- §7 : la moitié libre d'un arrêt voisin — un dernier recours, à la main. -->
-            <button
-              foldButton
-              emphasis="outline"
-              icon="package"
-              [disabled]="gestures.busy()"
-              (click)="toggleSharing()"
-              data-share-half
-            >
-              Partager une moitié
-            </button>
+            <!-- §7 : la moitié libre d'un arrêt voisin — un dernier recours, à la main,
+                 et seulement si Réglages › Colisage l'ouvre (fermé par défaut, 2026-10-25). -->
+            @if (halfSharing()) {
+              <button
+                foldButton
+                emphasis="outline"
+                icon="package"
+                [disabled]="gestures.busy()"
+                (click)="toggleSharing()"
+                data-share-half
+              >
+                Partager une moitié
+              </button>
+            }
             <!-- §2.4 : sur un clic, jamais d'office — et seulement sur une commande sans contenant. -->
             @if (containers().length === 0) {
               <button
@@ -159,7 +162,7 @@
           }
         }
 
-        @if (sharing()) {
+        @if (halfSharing() && sharing()) {
           @switch (halves().status) {
             @case ('loading') {
               <fold-loading message="Lecture des moitiés libres…" />
@@ -214,6 +217,12 @@
       @if (hasBins()) {
         <a foldButton emphasis="soft" icon="print" [routerLink]="labelsLink()" data-labels>
           Imprimer les étiquettes
+        </a>
+      }
+
+      @if (hasBags()) {
+        <a foldButton emphasis="soft" icon="print" [routerLink]="bagLabelsLink()" data-bag-labels>
+          Imprimer les étiquettes des sacs
         </a>
       }
 
@@ -272,6 +281,20 @@
                   [queryParams]="{ bacs: binId }"
                   [attr.aria-label]="'Imprimer l’étiquette ' + title(container)"
                   data-bin-label
+                >
+                  Étiquette
+                </a>
+              } @else if (container.nature === 'bag') {
+                <a
+                  titleAction
+                  foldButton
+                  size="sm"
+                  emphasis="soft"
+                  icon="print"
+                  [routerLink]="bagLabelsLink()"
+                  [queryParams]="{ sacs: container.id }"
+                  [attr.aria-label]="'Imprimer l’étiquette ' + title(container)"
+                  data-bag-label
                 >
                   Étiquette
                 </a>

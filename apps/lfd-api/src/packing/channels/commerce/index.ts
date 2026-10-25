@@ -11,6 +11,7 @@
  * | `PackingWithdrawalDesk`         | port déclaré ET implémenté ici | la feuille retirée par l'annulation (A1) |
  * | `OrderPackingStateReader`       | port déclaré ET implémenté ici | bac fermé, feuille retirée (A1.3)       |
  * | `DeliveryNoteReprintsReader`    | port déclaré ici, implémenté par le commerce | BL à réimprimer (§ 14) |
+ * | `OrderBagLabelReader`           | port déclaré ici, implémenté par le commerce | couleur et QR de l'étiquette d'un sac |
  * | `ReserveShopRelease`            | port déclaré ET implémenté ici | la sortie de réserve en boutique (A1.4) |
  * | `PackingRevisionDesk`           | port déclaré ET implémenté ici | les lignes dues révisées après l'arrêt (A2) |
  *
@@ -32,6 +33,7 @@ export { ShortfallDesk, type DepartingLine } from "./shortfall-desk.js";
 export { PackingWithdrawalDesk, type PackingWithdrawalOutcome } from "./packing-withdrawal.desk.js";
 export { OrderPackingStateReader, type OrderPackingState } from "./order-packing-state.reader.js";
 export { DeliveryNoteReprintsReader } from "./delivery-note-reprints.reader.js";
+export { OrderBagLabelReader, type OrderBagLabelFacts } from "./order-bag-label.reader.js";
 export {
   ReserveShopRelease,
   type ShopRelease,

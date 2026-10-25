@@ -32,6 +32,7 @@ import {
   packing,
   recordBatch,
 } from "./production-day-fixture.js";
+import { PACKING_SETTINGS, openHalfSharing } from "./packing-settings-scene.js";
 
 const SITE = {
   label: "Maison",
@@ -182,7 +183,57 @@ describe("« Proposer », appliqué par le serveur d'un seul coup", () => {
 });
 
 describe("partager une moitié de bac depuis le colisage", () => {
+  /** Deux arrêts voisins d'une tournée ; le premier déclare une moitié de bac. */
+  async function neighbours(): Promise<{ readonly first: string; readonly second: string }> {
+    const sheets = await day([4, 4], 8);
+    const [first, second] = sheets;
+    const roundId = await openRound(ctx, SERVICE_DAY, await addVehicle(ctx, "Kangoo"));
+    await assign(ctx, SERVICE_DAY, roundId, first?.orderId ?? "");
+    await assign(ctx, SERVICE_DAY, roundId, second?.orderId ?? "");
+    await staff()
+      .post(`${base(first?.orderId ?? "")}/containers`)
+      .send({ nature: "bin", binTypeId: await binTypeId(ctx), half: true, innerBags: 0 })
+      .expect(201);
+    return { first: first?.orderId ?? "", second: second?.orderId ?? "" };
+  }
+
+  it("refuse le geste tant que Réglages › Colisage ne l'ouvre pas (409, défaut fermé)", async () => {
+    const { second } = await neighbours();
+    const partner = await ctx.prisma.deliveryBin.findFirstOrThrow({ select: { id: true } });
+
+    const listing = await staff()
+      .get(`${base(second)}/shareable-halves`)
+      .expect(409);
+    expect(jsonBody<{ readonly code: string }>(listing).code).toBe("packing.half_sharing.disabled");
+    const refusal = await staff()
+      .post(`${base(second)}/containers`)
+      .send({ nature: "bin", partnerBinId: partner.id, innerBags: 0 })
+      .expect(409);
+    expect(jsonBody<{ readonly code: string }>(refusal).code).toBe("packing.half_sharing.disabled");
+    expect(await ctx.prisma.deliveryBin.count()).toBe(1);
+  });
+
+  it("un bac déjà partagé reste lisible tel quel quand on referme le partage", async () => {
+    await openHalfSharing(ctx);
+    const { second } = await neighbours();
+    const partner = await ctx.prisma.deliveryBin.findFirstOrThrow({ select: { id: true } });
+    const opened = jsonBody<OpenedPackingContainer>(
+      await staff()
+        .post(`${base(second)}/containers`)
+        .send({ nature: "bin", partnerBinId: partner.id, innerBags: 0 })
+        .expect(201),
+    );
+
+    await admin(ctx).put(PACKING_SETTINGS).send({ halfSharing: false }).expect(204);
+
+    const container = (await sheetOf(second))?.containerList?.find(
+      (candidate) => candidate.id === opened.containerId,
+    );
+    expect(container).toMatchObject({ nature: "bin", binHalf: "right" });
+  });
+
   it("liste la moitié libre de l'arrêt voisin, et y crée le contenant", async () => {
+    await openHalfSharing(ctx);
     const sheets = await day([4, 4], 8);
     const [first, second] = sheets;
     const typeId = await binTypeId(ctx);

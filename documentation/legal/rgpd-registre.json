@@ -765,6 +765,15 @@
       "information": false
     },
     {
+      "colonne": "packing.packing_settings.updated_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`updated_by`) sur `packing_settings`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "production.production_settings.updated_by",
       "personne": "staff",
       "categorie": "auteur-geste",

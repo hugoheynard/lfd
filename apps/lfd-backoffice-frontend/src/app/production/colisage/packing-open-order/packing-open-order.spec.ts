@@ -146,14 +146,14 @@ describe('la commande ouverte du colisage', () => {
   it('émet la déclaration au premier appui, avec le libellé du mode', () => {
     const fixture = render({
       sheet: sheet({ canDeclareReady: true }),
-      readyLabel: 'Déclarer prête pour la livraison',
+      readyLabel: 'Commande emballée',
     });
     const host: HTMLElement = fixture.nativeElement;
     let declared = 0;
     fixture.componentInstance.declareReady.subscribe(() => (declared += 1));
 
     const button = host.querySelector<HTMLButtonElement>('[data-declare-ready]');
-    expect(said(button)).toBe('Déclarer prête pour la livraison');
+    expect(said(button)).toBe('Commande emballée');
     button?.click();
 
     expect(declared).toBe(1);
@@ -242,7 +242,7 @@ describe('une commande colisée avec l’ancien poste (`counted`, §17.6)', () =
       fixture.componentInstance.reportShortfall.subscribe((sent) => reported.push(sent));
 
       const button = host.querySelector<HTMLButtonElement>('[data-report-shortfall]');
-      expect(said(button)).toBe('Il manque');
+      expect(said(button)).toBe('Manque — demander une décision');
       button?.click();
 
       expect(reported).toEqual([order]);
@@ -257,7 +257,7 @@ describe('une commande colisée avec l’ancien poste (`counted`, §17.6)', () =
         'Manque signalé — décision attendue',
       );
       expect(said(host.querySelector('[data-report-shortfall]'))).toBe(
-        'Il manque — signaler de nouveau',
+        'Manque — relancer la décision',
       );
     });
 

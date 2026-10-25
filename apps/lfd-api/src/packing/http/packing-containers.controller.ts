@@ -1,6 +1,7 @@
 import {
   type DeliveryBinFreeHalvesView,
   type DeliveryPackingProposalView,
+  type PackingBagLabelsView,
   type MovePackingPieces,
   type OpenedPackingContainer,
   type OpenPackingContainer,
@@ -17,6 +18,7 @@ import { StaffUserId } from "../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../platform/shared/http/zod-body.pipe.js";
 import { ApplyPackingProposalCommand } from "../application/containers/apply-packing-proposal.command.js";
 import { GetShareableHalvesQuery } from "../application/containers/get-shareable-halves.query.js";
+import { GetBagLabelsQuery } from "../application/containers/get-bag-labels.query.js";
 import { AllocateToContainerCommand } from "../application/containers/allocate-to-container.command.js";
 import { GetPackingProposalQuery } from "../application/containers/get-packing-proposal.query.js";
 import { MoveBetweenContainersCommand } from "../application/containers/move-between-containers.command.js";
@@ -32,7 +34,8 @@ const NO_CONTENT = 204;
  * **La colonne Contenants du poste de colisage** (K2b,
  * `colisage/colisage.md` §5–§5.1) : créer un bac ou un sac,
  * y glisser une quantité d'une ligne, l'en ressortir, la déplacer vers un autre, annuler un contenant,
- * proposer un colisage et l'appliquer, lister les moitiés partageables.
+ * proposer un colisage et l'appliquer, lister les moitiés partageables, lire
+ * les étiquettes des sacs.
  *
  * Sous `production_packing` : le droit de qui tient le poste — `write` pour
  * les gestes, `read` pour la proposition. Aucun droit neuf, aucun rôle touché.
@@ -182,6 +185,17 @@ export class PackingContainersController {
     dayOf(date);
     return this.queries.execute<GetShareableHalvesQuery, DeliveryBinFreeHalvesView>(
       new GetShareableHalvesQuery(orderId),
+    );
+  }
+
+  /** Les étiquettes des sacs de la commande, à imprimer — une lecture. */
+  @Get("bag-labels")
+  async bagLabels(
+    @Param("date") date: string,
+    @Param("orderId") orderId: string,
+  ): Promise<PackingBagLabelsView> {
+    return this.queries.execute<GetBagLabelsQuery, PackingBagLabelsView>(
+      new GetBagLabelsQuery(dayOf(date), orderId),
     );
   }
 }

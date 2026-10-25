@@ -60,7 +60,7 @@ describe('la marchandise à répartir', () => {
     expect(rows).toHaveLength(1);
     expect(rows[0]?.classList.contains('is-awaiting')).toBe(true);
     expect(rows[0]?.classList.contains('is-short')).toBe(true);
-    expect(said(rows[0])).toContain('En attente de la prod');
+    expect(said(rows[0])).toContain('Att. prod');
     expect(said(rows[0])).toContain('-10');
   });
 

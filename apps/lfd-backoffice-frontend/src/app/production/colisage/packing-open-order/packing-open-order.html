@@ -98,16 +98,21 @@
           }
           @if (order.canReportShortfall) {
             <!-- Lot E6a : visible seulement sur une fiche ouverte incomplète (règle du serveur). -->
+            <!-- Un bouton d'ALERTE, qui dit ce qu'il déclenche : une décision
+                 du commerce (Hugo, 2026-10-25 — « Il manque » ne le disait pas). -->
             <button
               foldButton
-              emphasis="outline"
+              intent="danger"
+              icon="alert"
               [disabled]="reportingShortfall()"
               [loading]="reportingShortfall()"
               (click)="reportShortfall.emit(order)"
               data-report-shortfall
             >
               {{
-                order.shortfallReportedAt === null ? 'Il manque' : 'Il manque — signaler de nouveau'
+                order.shortfallReportedAt === null
+                  ? 'Manque — demander une décision'
+                  : 'Manque — relancer la décision'
               }}
             </button>
           }

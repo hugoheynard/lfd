@@ -298,3 +298,20 @@ model PackingStockReservation {
   @@map("packing_stock_reservation")
   @@schema("packing")
 }
+
+/// **Les réglages du colisage** — Réglages › Colisage (Hugo, 2026-10-25) : UNE
+/// ligne, clé naturelle `packing`, comme `production_settings`. Ligne absente :
+/// les défauts — le partage d'une moitié FERMÉ.
+///
+/// **Aucune journée** : exception écrite dans `test/day-change-triggers.e2e-spec.ts`.
+model PackingSettings {
+  /// Toujours `packing` : il n'y a qu'un réglage.
+  key         String   @id
+  /// Le geste « Partager une moitié » du poste ; fermé par défaut.
+  halfSharing Boolean  @default(false) @map("half_sharing")
+  updatedAt   DateTime @map("updated_at") @db.Timestamptz(6)
+  updatedBy   String   @map("updated_by")
+
+  @@map("packing_settings")
+  @@schema("packing")
+}

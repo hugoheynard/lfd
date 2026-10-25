@@ -233,6 +233,11 @@ stateDiagram-v2
   contenant s'ouvre dessus par `POST …/containers`
   (`{ nature: "bin", partnerBinId, innerBags }`). C'est un dernier recours, à
   la main : « Proposer » ne le fait jamais.
+  **Soumis à Réglages › Colisage** (`/reglages/colisage`, Hugo, 2026-10-25),
+  **fermé par défaut** : fermé, le poste n'offre plus « Partager une moitié »
+  ET le serveur refuse la liste comme le geste (`HalfSharingDisabledError`,
+  409, `packing.half_sharing.disabled`). Les bacs déjà partagés restent
+  lisibles tels quels.
 - **Répartir** (`allocate`) et **retirer** (`withdraw`, partiel permis) bougent
   une quantité d'un article dans un contenant vivant. Répartir vérifie que le
   bac est encore vivant chez la livraison (`liveBins`).
@@ -354,21 +359,23 @@ Toutes dans `apps/lfd-api/src/packing/http/`, sous la ressource
 `production_packing` (`@AdminSurface`) : `read` pour les lectures, `write` pour
 les écritures. Les contrôleurs n'injectent que les bus.
 
-| Route                                                  | Effet                                                     | Droit                                                   |
-| ------------------------------------------------------ | --------------------------------------------------------- | ------------------------------------------------------- |
-| `GET admin/packing/:date/board`                        | le poste entier (`ProductionPackingView`)                 | `production_packing:read` **ou** `b2b_supervision:read` |
-| `POST admin/packing/:date/orders/:orderId/containers`  | ouvrir un sac, un bac, ou l'autre moitié d'un bac partagé | `production_packing:write`                              |
-| `POST …/containers/:containerId/lines/:sku`            | répartir une quantité                                     | idem                                                    |
-| `POST …/containers/:containerId/lines/:sku/withdrawal` | retirer une quantité (partiel permis)                     | idem                                                    |
-| `POST …/containers/:containerId/void`                  | annuler un contenant                                      | idem                                                    |
-| `GET …/proposal`                                       | la proposition de la livraison                            | `production_packing:read`                               |
-| `POST …/proposal/apply`                                | appliquer la proposition, d'un coup (`204`)               | `production_packing:write`                              |
-| `GET …/shareable-halves`                               | les moitiés libres d'un bac voisin                        | `production_packing:read`                               |
-| `POST admin/packing/:date/orders/:orderId/close`       | fermer — déclarer prête (`204`)                           | `production_packing:write`                              |
-| `POST admin/packing/:date/orders/:orderId/reopen`      | rouvrir le rangement (`204`)                              | idem                                                    |
-| `GET admin/packing/:date/resupplies`                   | les fiches de réassort du jour (`PackingResuppliesView`)  | `production_packing:read`                               |
-| `PUT …/resupplies/:resupplyId/lines/:sku`              | saisir l'emballé `{ quantity }` (`204`)                   | `production_packing:write`                              |
-| `POST …/resupplies/:resupplyId/close`                  | clore la fiche (`204`)                                    | idem                                                    |
+| Route                                                  | Effet                                                     | Droit                                                     |
+| ------------------------------------------------------ | --------------------------------------------------------- | --------------------------------------------------------- |
+| `GET admin/packing/:date/board`                        | le poste entier (`ProductionPackingView`)                 | `production_packing:read` **ou** `b2b_supervision:read`   |
+| `POST admin/packing/:date/orders/:orderId/containers`  | ouvrir un sac, un bac, ou l'autre moitié d'un bac partagé | `production_packing:write`                                |
+| `POST …/containers/:containerId/lines/:sku`            | répartir une quantité                                     | idem                                                      |
+| `POST …/containers/:containerId/lines/:sku/withdrawal` | retirer une quantité (partiel permis)                     | idem                                                      |
+| `POST …/containers/:containerId/void`                  | annuler un contenant                                      | idem                                                      |
+| `GET …/proposal`                                       | la proposition de la livraison                            | `production_packing:read`                                 |
+| `POST …/proposal/apply`                                | appliquer la proposition, d'un coup (`204`)               | `production_packing:write`                                |
+| `GET …/shareable-halves`                               | les moitiés libres d'un bac voisin                        | `production_packing:read`                                 |
+| `POST admin/packing/:date/orders/:orderId/close`       | fermer — déclarer prête (`204`)                           | `production_packing:write`                                |
+| `POST admin/packing/:date/orders/:orderId/reopen`      | rouvrir le rangement (`204`)                              | idem                                                      |
+| `GET admin/packing/:date/resupplies`                   | les fiches de réassort du jour (`PackingResuppliesView`)  | `production_packing:read`                                 |
+| `PUT …/resupplies/:resupplyId/lines/:sku`              | saisir l'emballé `{ quantity }` (`204`)                   | `production_packing:write`                                |
+| `POST …/resupplies/:resupplyId/close`                  | clore la fiche (`204`)                                    | idem                                                      |
+| `GET admin/packing/settings`                           | Réglages › Colisage (`PackingSettingsView`)               | `delivery_settings:read` **ou** `production_packing:read` |
+| `PUT admin/packing/settings`                           | poser `{ halfSharing }` (`204`)                           | `delivery_settings:write`                                 |
 
 Les écritures rendent peu ou rien : l'écran relit le `board`.
 
@@ -395,6 +402,18 @@ Les écritures rendent peu ou rien : l'écran relit le `board`.
   `board` (`supervision/supervision.service.ts`), sous `b2b_supervision:read`.
 - **Les étiquettes** des bacs et le chargement restent des écrans de la
   livraison ([`chargement-les-bacs.md`](chargement-les-bacs.md) §5.3, §6).
+- **Les étiquettes des sacs** (2026-10-25) sont un écran du colisage :
+  `/colisage/etiquettes/:date/:orderId` (`?sacs=` pour un seul), lu par
+  `GET admin/packing/:date/orders/:orderId/bag-labels` sous
+  `production_packing:read`. Même mécanique et même format que celles des
+  bacs (une page A4 par étiquette, `window.print`). Le numéro de commande en
+  gros, le client, l'acheminement et le créneau composés par le fournil
+  (`OrderLabelHeadReader`, publié par `production/channels/packing/` avec
+  `fulfillmentLabelOf` et l'en-tête du bon), le carré de couleur et le QR de
+  RETRAIT de la commande lus au commerce (`OrderBagLabelReader`, déclaré par
+  `packing/channels/commerce/` : la règle de couleur des papiers, le jeton
+  montrable seulement si la commande est réglée). « Sac n/N » compte les sacs
+  vivants.
 
 ## 7. Le schéma Postgres `packing`
 
@@ -415,6 +434,7 @@ identifiants opaques plus un instantané.
 | `packing_resupply`          | `(service_day, resupply_id)`      | une fiche de réassort (R3b) : point, `kind` (`evening`/`asap`, R4b), `drawn_at`, clôture                              |
 | `packing_resupply_line`     | `(service_day, resupply_id, sku)` | demandé, emballé saisi (`0 ≤ packed ≤ quantity`, CHECK)                                                               |
 | `packing_stock_reservation` | `(service_day, resupply_id, sku)` | la part réservée par un réassort lancé (R4b) : `quantity`, `reserved_at`, `released_at`                               |
+| `packing_settings`          | `key` (= `packing`, CHECK)        | Réglages › Colisage : `half_sharing` (défaut `false`), auteur et instant ; ligne absente = défauts                    |
 
 ## 8. Ce qui reste en base
 

@@ -283,19 +283,11 @@ export class Colisage {
   );
 
   /**
-   * « Déclarer prête pour le retrait » / « … pour la livraison ». Le mode est DANS
-   * le libellé, et « retrait » sur une commande livrée serait faux : le lexique
-   * réserve `pickup` au mode d'acheminement.
+   * « Commande emballée » (Hugo, 2026-10-25 : « plus explicite ») — le geste
+   * que le coliseur vient de faire, dit avec ses mots, le même au retrait et à
+   * la livraison. Remplace « Déclarer prête pour le retrait / la livraison ».
    */
-  protected readonly readyLabel = computed(() => {
-    const sheet = this.current();
-    if (sheet === null) {
-      return 'Déclarer prête';
-    }
-    return sheet.fulfillmentMethod === 'pickup'
-      ? 'Déclarer prête pour le retrait'
-      : 'Déclarer prête pour la livraison';
-  });
+  protected readonly readyLabel = computed(() => 'Commande emballée');
 
   /** La lecture initiale — et « Réessayer ». Elle ouvre ensuite la commande du QR. */
   protected async load(): Promise<void> {

@@ -21,6 +21,7 @@ import { PackingModule } from "../packing/packing.module.js";
 import {
   DayPackingProgressReader,
   InscribedOrderHeaderReader,
+  OrderLabelHeadReader,
   PackedOrdersReader,
   PackingDayVersionReader,
   PlannedDestinationsReader,
@@ -29,6 +30,7 @@ import {
 import { ChannelQualityHeldOrdersReader } from "../production/application/services/channel-quality-held-orders.reader.js";
 import { DayPlannedDestinationsReader } from "../production/application/services/day-planned-destinations.reader.js";
 import { DayInscribedOrderHeaderReader } from "../production/application/services/day-inscribed-order-header.reader.js";
+import { DayOrderLabelHeadReader } from "../production/application/services/day-order-label-head.reader.js";
 import { ProductionModule } from "../production/production.module.js";
 
 /**
@@ -78,6 +80,9 @@ import { ProductionModule } from "../production/production.module.js";
     { provide: PackingWithdrawalDesk, useExisting: PackingSheetWithdrawalDesk },
     { provide: OrderPackingStateReader, useExisting: PrismaOrderPackingStateReader },
     { provide: InscribedOrderHeaderReader, useExisting: DayInscribedOrderHeaderReader },
+    // L'étiquette d'un sac (2026-10-25) : l'acheminement et le créneau, titrés
+    // par le fournil avec les fonctions de ses papiers.
+    { provide: OrderLabelHeadReader, useExisting: DayOrderLabelHeadReader },
     // L'envoi en boutique depuis la réserve (plan A1, lot A1.4) — le colisage
     // déclare ET implémente, le commerce l'appelle dans la transaction du geste.
     { provide: ReserveShopRelease, useExisting: PackingReserveShopRelease },
@@ -96,6 +101,7 @@ import { ProductionModule } from "../production/production.module.js";
     PackingWithdrawalDesk,
     OrderPackingStateReader,
     InscribedOrderHeaderReader,
+    OrderLabelHeadReader,
     ReserveShopRelease,
     PackingRevisionDesk,
   ],

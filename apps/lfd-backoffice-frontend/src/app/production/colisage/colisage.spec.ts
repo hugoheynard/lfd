@@ -931,9 +931,7 @@ describe('le poste de colisage', () => {
     // K3b : plus aucune coche — les lignes se rangent dans les contenants.
     expect(boxes[0]?.disabled).toBe(true);
     expect(boxes[1]?.disabled).toBe(true);
-    expect(said(el.querySelector('.co-line.is-awaiting .co-awaiting'))).toContain(
-      'En attente de la prod',
-    );
+    expect(said(el.querySelector('.co-line.is-awaiting .co-awaiting'))).toContain('Att. prod');
   });
 
   /**
@@ -954,7 +952,7 @@ describe('le poste de colisage', () => {
     expect(rows[0]?.classList.contains('is-short')).toBe(true);
     // L'article reste dans la marchandise à répartir : ce qui est dû existe
     // avant d'être fabriqué.
-    expect(said(rows[0])).toContain('En attente de la prod');
+    expect(said(rows[0])).toContain('Att. prod');
     expect(said(rows[0])).toContain('-10');
   });
 

@@ -309,7 +309,7 @@ function underSection(section: string, views: readonly WorkspaceView[]): Workspa
  */
 export const EXPLOITATION_VIEWS: readonly WorkspaceView[] = [
   // L'ORDRE DES SECTIONS (Hugo, 2026-10-13) : Commandes, Production,
-  // Livraison, Commercial, Sites — puis Légal (2026-10-15). `/reglages` mène à la première vue ouverte
+  // Livraison, Colisage (2026-10-25), Commercial, Sites — puis Légal (2026-10-15). `/reglages` mène à la première vue ouverte
   // dans cet ordre (`firstReglagesView`).
   // RÉGLAGES › COMMANDES (plan-reglages-commandes.md, lot O1b, 2026-10-13) —
   // venues de la section « Réglages » de l'E-commerce, chacune sous son droit.
@@ -350,6 +350,17 @@ export const EXPLOITATION_VIEWS: readonly WorkspaceView[] = [
   },
   ...underSection('Production', PRODUCTION_VIEWS),
   ...underSection('Livraison', LIVRAISON_VIEWS),
+  // RÉGLAGES › COLISAGE (Hugo, 2026-10-25) — ce que le poste permet. Sous
+  // `delivery_settings:read`, le droit des bacs : après la Livraison, dont il
+  // règle l'usage des bacs. Une table pour le rail ET le lanceur mobile.
+  {
+    key: 'reglages-colisage',
+    label: 'Colisage',
+    link: '/reglages/colisage',
+    icon: 'package',
+    section: 'Colisage',
+    needs: 'delivery_settings:read',
+  },
   // « Réglages commerciaux » est partie dans l'espace Commercial le
   // 2026-10-13 (Hugo), puis revenue le même jour en section « Commercial »
   // (plus bas).
