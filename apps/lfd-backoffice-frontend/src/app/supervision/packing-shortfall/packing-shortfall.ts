@@ -31,10 +31,14 @@ export class PackingShortfall {
   protected readonly allowed = computed(() => this.permissions.can('b2b_orders_shortfall:write'));
 
   protected readonly missing = computed(() =>
-    this.shortfall().lines.map(
-      (line) =>
-        `Manque : ${line.productName} — ${String(line.packed)} sur ${String(line.due)} au bac`,
-    ),
+    // Seules les lignes où le bac tient MOINS que le dû : le signalement porte
+    // toute la commande, et « 4 sur 4 au bac » n'est pas un manque.
+    this.shortfall()
+      .lines.filter((line) => line.packed < line.due)
+      .map(
+        (line) =>
+          `Manque : ${line.productName} — ${String(line.packed)} sur ${String(line.due)} au bac`,
+      ),
   );
 
   /** La forme que lit le composant de la fiche : rien n'est décidé, puisqu'on attend. */

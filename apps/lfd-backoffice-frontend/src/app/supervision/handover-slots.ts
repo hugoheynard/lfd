@@ -3,6 +3,7 @@ import type {
   DaySupervisionView,
   FulfillmentMethod,
   HandoverQueueEntryView,
+  HandoverQueueRoundView,
   HandoverQueueView,
 } from '@lfd/contracts';
 
@@ -25,7 +26,10 @@ export interface SlotRow {
   readonly reference: string;
   readonly customerLabel: string;
   readonly state: SlotRowState;
-  /** « 7 h 15 », ou `null` sans heure promise (heure d'ouverture, sans créneau). */
+  /**
+   * « 7 h 15 », « avant 7 h 30 » pour l'échéance d'une livraison, ou `null`
+   * sans heure promise (heure d'ouverture d'un retrait, sans créneau).
+   */
   readonly time: string | null;
   readonly totalUnits: number;
   readonly pickupLabel: string | null;
@@ -52,21 +56,35 @@ export interface SlotRow {
    * D4, D7). Lu tel quel dans la file — jamais `true` sur une retirée ou une annulée.
    */
   readonly heldForQuality: boolean;
+  /**
+   * La tournée d'une LIVRAISON (Hugo, 2026-10-25) : « Kangoo blanc · arrêt 3 ·
+   * départ prévu 6 h 45 », ou « Pas encore dans une tournée ». `null` au retrait.
+   */
+  readonly roundLine: string | null;
+  /** Partie à — « 7 h 02 » —, ou `null` tant que la tournée est au dépôt. */
+  readonly departedAt: string | null;
+  /** Un bac de l'arrêt est chargé dans la camionnette. */
+  readonly loaded: boolean;
 }
 
 export type OverdueCause = 'kitchen' | 'customer';
 
-export type SlotKind = 'hour' | 'opening' | 'none';
+/**
+ * `deadline` : l'échéance d'une livraison, « avant 7 h 30 » (Hugo,
+ * 2026-10-25). Une livraison n'a pas de début : la ranger par heure
+ * d'ouverture la mettait toute dans « Heure d'ouverture », sans heure.
+ */
+export type SlotKind = 'hour' | 'deadline' | 'opening' | 'none';
 
 export interface SlotGroup {
   readonly key: string;
   readonly kind: SlotKind;
-  /** « 7 h – 8 h », « Heure d'ouverture », « Sans créneau ». */
+  /** « 7 h – 8 h », « Avant 7 h 30 », « Heure d'ouverture », « Sans créneau ». */
   readonly label: string;
   /** Hors annulées. */
   readonly expected: number;
   readonly handedOver: number;
-  /** Fin de la tranche, en minutes du jour — `null` hors tranche horaire. */
+  /** Fin de la tranche ou échéance, en minutes du jour — `null` sinon. */
   readonly endMinutes: number | null;
   readonly rows: readonly SlotRow[];
 }
@@ -182,10 +200,7 @@ function rowOf(
     // Fond ») ne se dit qu'à défaut d'enseigne.
     customerLabel: entry.tradeName ?? entry.customerLabel,
     state,
-    time:
-      slotKindOf(entry) === 'hour' && window !== null
-        ? slotTimeLabel(window.start ?? window.end)
-        : null,
+    time: timeOf(entry),
     totalUnits: entry.totalUnits,
     pickupLabel: entry.pickupLabel,
     handedOverAt: entry.handedOverAt === null ? null : clockLabel(entry.handedOverAt),
@@ -197,10 +212,70 @@ function rowOf(
     overdueCause: state === 'overdue' && window !== null ? causeOf(entry, day, window.end) : null,
     method: entry.fulfillmentMethod,
     heldForQuality: entry.heldForQuality,
+    roundLine: roundLineOf(entry),
+    departedAt:
+      entry.round?.departedAt === undefined || entry.round.departedAt === null
+        ? null
+        : clockLabel(entry.round.departedAt),
+    loaded: entry.round?.loaded ?? false,
   };
 }
 
+/**
+ * La clé de rangement d'une livraison : son échéance (`d07:30`) quand elle n'a
+ * pas de début, sinon la tranche de son début, comme un retrait — quelle que
+ * soit la provenance du créneau : une livraison n'a pas d'heure d'ouverture.
+ */
+function deliveryKeyOf(entry: HandoverQueueEntryView): string {
+  const window = entry.window;
+  if (window === null) {
+    return 'none';
+  }
+  if (window.start === null) {
+    return minutesOf(window.end) === null ? 'none' : `d${window.end.slice(0, 5)}`;
+  }
+  const hour = hourOf(entry);
+  return hour === null ? 'none' : `h${String(hour).padStart(2, '0')}`;
+}
+
+/** L'heure affichée : promise au retrait, échéance ou début à la livraison. */
+function timeOf(entry: HandoverQueueEntryView): string | null {
+  const window = entry.window;
+  if (window === null) {
+    return null;
+  }
+  if (entry.fulfillmentMethod === 'delivery') {
+    return window.start === null
+      ? `avant ${slotTimeLabel(window.end)}`
+      : slotTimeLabel(window.start);
+  }
+  return slotKindOf(entry) === 'hour' ? slotTimeLabel(window.start ?? window.end) : null;
+}
+
+/** Une livraison qu'aucune tournée ne porte encore. */
+export const UNPLACED_LINE = 'Pas encore dans une tournée';
+
+/** La ligne de tournée d'une livraison — `null` au retrait, qui n'en a pas. */
+function roundLineOf(entry: HandoverQueueEntryView): string | null {
+  if (entry.fulfillmentMethod !== 'delivery') {
+    return null;
+  }
+  const round: HandoverQueueRoundView | null = entry.round ?? null;
+  if (round === null) {
+    return UNPLACED_LINE;
+  }
+  const place = `${round.label} · arrêt ${String(round.position)}`;
+  const planned =
+    round.departedAt === null && round.plannedDepartureAt !== null
+      ? clockLabel(round.plannedDepartureAt)
+      : null;
+  return planned === null ? place : `${place} · départ prévu ${planned}`;
+}
+
 function groupKeyOf(entry: HandoverQueueEntryView): string {
+  if (entry.fulfillmentMethod === 'delivery') {
+    return deliveryKeyOf(entry);
+  }
   const kind = slotKindOf(entry);
   if (kind !== 'hour') {
     return kind;
@@ -216,6 +291,9 @@ function labelOf(key: string): { kind: SlotKind; label: string } {
   if (key === 'none') {
     return { kind: 'none', label: 'Sans créneau' };
   }
+  if (key.startsWith('d')) {
+    return { kind: 'deadline', label: `Avant ${slotTimeLabel(key.slice(1))}` };
+  }
   const hour = Number(key.slice(1));
   return { kind: 'hour', label: `${String(hour)} h – ${String(hour + 1)} h` };
 }
@@ -229,17 +307,38 @@ export function groupOf(key: string, rows: readonly SlotRow[]): SlotGroup {
     label,
     expected: rows.filter((row) => row.state !== 'cancelled').length,
     handedOver: rows.filter((row) => row.state === 'handed_over').length,
-    endMinutes: kind === 'hour' ? (Number(key.slice(1)) + 1) * MINUTES_PER_HOUR : null,
+    endMinutes: endMinutesOf(key, kind),
     rows,
   };
 }
 
-/** Les tranches horaires dans l'ordre du jour, puis l'heure d'ouverture, puis sans créneau. */
+function endMinutesOf(key: string, kind: SlotKind): number | null {
+  if (kind === 'hour') {
+    return (Number(key.slice(1)) + 1) * MINUTES_PER_HOUR;
+  }
+  return kind === 'deadline' ? minutesOf(key.slice(1)) : null;
+}
+
+/**
+ * Le rang d'une clé dans la journée, en minutes : une tranche par son début,
+ * une échéance par elle-même ; l'heure d'ouverture puis le sans-créneau en fin.
+ */
+function rankOf(key: string): number {
+  if (key === 'opening') {
+    return Number.MAX_SAFE_INTEGER - 1;
+  }
+  if (key.startsWith('h')) {
+    return Number(key.slice(1)) * MINUTES_PER_HOUR;
+  }
+  if (key.startsWith('d')) {
+    return minutesOf(key.slice(1)) ?? Number.MAX_SAFE_INTEGER;
+  }
+  return Number.MAX_SAFE_INTEGER;
+}
+
+/** Les tranches et échéances dans l'ordre du jour, puis l'heure d'ouverture, puis sans créneau. */
 function groupsOf(rows: readonly { key: string; row: SlotRow }[]): SlotGroup[] {
-  const keys = [...new Set(rows.map(({ key }) => key))].sort((a, b) => {
-    const rank = (key: string): string => (key === 'opening' ? 'y' : key === 'none' ? 'z' : key);
-    return rank(a).localeCompare(rank(b));
-  });
+  const keys = [...new Set(rows.map(({ key }) => key))].sort((a, b) => rankOf(a) - rankOf(b));
   // Ce qui attend d'abord, ce qui est remis ou annulé en bas — visible, pas
   // retiré (Hugo, 2026-09-28). Tri stable : l'ordre du serveur tient dedans.
   return keys.map((key) =>

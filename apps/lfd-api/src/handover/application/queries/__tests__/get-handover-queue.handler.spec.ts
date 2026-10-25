@@ -6,6 +6,7 @@ import {
   type AttestedHandover,
 } from "../../../domain/ports/handover-attestations.reader.js";
 import { FixedQualityHolds } from "../../__tests__/fixed-quality-holds.js";
+import { FixedRoundPlacements } from "./run-sheet-doubles.js";
 import { GetHandoverQueueHandler } from "../get-handover-queue.handler.js";
 import { GetHandoverQueueQuery } from "../get-handover-queue.query.js";
 
@@ -86,6 +87,7 @@ function handlerOf(
   holds: FixedQualityHolds = new FixedQualityHolds(),
   transfers: FixedTransferStatus = new FixedTransferStatus(),
   resupplyTransfers: FixedResupplyTransfers = new FixedResupplyTransfers(),
+  rounds: FixedRoundPlacements = new FixedRoundPlacements(),
 ) {
   const queue = new RecordingHandoverQueueReader(entries);
   const attestations = new RecordingHandoverAttestationsReader(attested);
@@ -95,9 +97,54 @@ function handlerOf(
     holds,
     transfers,
     resupplyTransfers,
+    rounds,
   );
-  return { handler, queue, attestations, holds };
+  return { handler, queue, attestations, holds, rounds };
 }
+
+describe("GetHandoverQueueHandler — la tournée d'une livraison", () => {
+  it("ne demande la place que des livraisons, et la rend sur leur ligne", async () => {
+    const planned = new Date(Date.now() + 60 * 60 * 1000);
+    const rounds = new FixedRoundPlacements(
+      new Map([
+        [
+          "ord_liv",
+          {
+            roundId: "rnd_1",
+            label: "Kangoo blanc",
+            position: 3,
+            plannedDepartureAt: planned,
+            departedAt: null,
+            loaded: true,
+          },
+        ],
+      ]),
+    );
+    const { handler } = handlerOf(
+      [
+        entry({ orderId: "ord_liv", fulfillmentMethod: "delivery", pickupLabel: null }),
+        entry({ orderId: "ord_ret" }),
+      ],
+      new Map(),
+      undefined,
+      undefined,
+      undefined,
+      rounds,
+    );
+
+    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10"));
+
+    expect(rounds.calls).toEqual([{ day: "2026-09-10", orderIds: ["ord_liv"] }]);
+    expect(view.entries.find((line) => line.orderId === "ord_liv")?.round).toEqual({
+      label: "Kangoo blanc",
+      position: 3,
+      plannedDepartureAt: planned.toISOString(),
+      departedAt: null,
+      loaded: true,
+    });
+    expect(view.entries.find((line) => line.orderId === "ord_ret")?.round).toBeNull();
+  });
+});
 
 /**
  * Régression : la file montrait « attendue » une commande carte « À régler »,

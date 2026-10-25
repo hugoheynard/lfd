@@ -197,6 +197,11 @@ export interface HandoverQueueEntryView {
    * « Réceptionner ». Facultatif : additif.
    */
   readonly transfer?: OrderTransferView | null | undefined;
+  /**
+   * La tournée qui porte cette LIVRAISON (Supervision, 2026-10-25), ou `null` :
+   * pas encore dans une tournée — ou retrait. Facultatif : additif.
+   */
+  readonly round?: HandoverQueueRoundView | null | undefined;
   /** Le créneau convenu, ou `null` si aucune tranche n'a été demandée. */
   readonly window: HandoverQueueWindowView | null;
   /** Somme des quantités — le chiffre qu'on recompte à voix haute. */
@@ -226,6 +231,20 @@ export interface HandoverQueueEntryView {
    * Supervision, pas devant le client.
    */
   readonly heldForQuality: boolean;
+}
+
+/** La place d'une livraison dans sa tournée, lue à la livraison par son port. */
+export interface HandoverQueueRoundView {
+  /** « Kangoo blanc », « Kangoo blanc · passage 2 ». */
+  readonly label: string;
+  /** Le rang de l'arrêt, à partir de 1. */
+  readonly position: number;
+  /** ISO du départ prévu par le calcul routier, ou `null` sans horaire posé. */
+  readonly plannedDepartureAt: string | null;
+  /** ISO du départ réel, ou `null` tant que la tournée est au dépôt. */
+  readonly departedAt: string | null;
+  /** Au moins un bac de l'arrêt est chargé. */
+  readonly loaded: boolean;
 }
 
 /**

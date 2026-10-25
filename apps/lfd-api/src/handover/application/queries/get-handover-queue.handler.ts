@@ -1,5 +1,6 @@
 import type {
   HandoverQueueEntryView,
+  HandoverQueueRoundView,
   HandoverQueueView,
   OrderTransferView,
   ResupplyTransferView,
@@ -17,6 +18,8 @@ import {
   type OrderTransferStatus,
   type ResupplyOnlyTransferStatus,
   ResupplyTransfersReader,
+  type RoundPlacement,
+  RoundPlacementsReader,
   TransferStatusReader,
 } from "../../../delivery/channels/handover/index.js";
 import { GetHandoverQueueQuery } from "./get-handover-queue.query.js";
@@ -42,7 +45,9 @@ import { GetHandoverQueueQuery } from "./get-handover-queue.query.js";
  * Une pour la file, une pour les attestations du lot, une pour les retenues
  * qualité du lot (`QualityHoldsReader`, publié par la production —
  * `plan-controle-qualite.md`, D4), et une pour les transferts de réassort
- * seul de la journée (R3c, R3e). Demander ligne par ligne ferait autant
+ * seul de la journée (R3c, R3e). Plus la place des livraisons dans leurs
+ * tournées (`RoundPlacementsReader`, ajouté le 2026-10-25 pour la
+ * Supervision), en lot elle aussi. Demander ligne par ligne ferait autant
  * d'allers-retours que de commandes pour peindre un écran.
  */
 @QueryHandler(GetHandoverQueueQuery)
@@ -56,16 +61,21 @@ export class GetHandoverQueueHandler implements IQueryHandler<
     private readonly holds: QualityHoldsReader,
     private readonly transfers: TransferStatusReader,
     private readonly resupplyTransfers: ResupplyTransfersReader,
+    private readonly rounds: RoundPlacementsReader,
   ) {}
 
   async execute(query: GetHandoverQueueQuery): Promise<HandoverQueueView> {
     const expected = await this.queue.expectedOn(query.day);
     const orderIds = expected.map((entry) => entry.orderId);
-    const [attested, held, transfers, resupplyOnly] = await Promise.all([
+    const deliveryIds = expected
+      .filter((entry) => entry.fulfillmentMethod === "delivery")
+      .map((entry) => entry.orderId);
+    const [attested, held, transfers, resupplyOnly, placements] = await Promise.all([
       this.attestations.forOrders(orderIds),
       this.holds.heldOrders(query.day, orderIds),
       this.transfers.statusOf(orderIds),
       this.resupplyTransfers.resupplyOnlyOn(query.day),
+      this.rounds.placementsOf(query.day, deliveryIds),
     ]);
     return {
       day: query.day,
@@ -77,6 +87,7 @@ export class GetHandoverQueueHandler implements IQueryHandler<
           ...toEntryView(entry, attested.get(entry.orderId), held.has(entry.orderId)),
           // Lot T2 du transfert interne : « Réceptionner » tant qu'il n'est pas reçu.
           transfer: transferViewOf(transfers.get(entry.orderId)),
+          round: roundViewOf(placements.byOrder.get(entry.orderId)),
         })),
       // R3c, R3e : un transfert de réassort seul, qu'aucune ligne ne désigne.
       resupplyTransfers: resupplyOnly.map(resupplyTransferViewOf),
@@ -112,6 +123,18 @@ function toEntryView(
     handedOverVia: attestation?.via ?? null,
     readyAt: entry.readyAt === null ? null : entry.readyAt.toISOString(),
   };
+}
+
+function roundViewOf(placement: RoundPlacement | undefined): HandoverQueueRoundView | null {
+  return placement === undefined
+    ? null
+    : {
+        label: placement.label,
+        position: placement.position,
+        plannedDepartureAt: placement.plannedDepartureAt?.toISOString() ?? null,
+        departedAt: placement.departedAt?.toISOString() ?? null,
+        loaded: placement.loaded,
+      };
 }
 
 function transferViewOf(status: OrderTransferStatus | undefined): OrderTransferView | null {

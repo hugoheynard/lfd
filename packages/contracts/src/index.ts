@@ -1240,6 +1240,7 @@ export type {
   HandoverQueueState,
   HandoverVia,
   HandoverQueueView,
+  HandoverQueueRoundView,
   HandoverQueueWindowView,
   OrderClientele,
   OrderHandoverLine,

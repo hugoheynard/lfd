@@ -21,6 +21,7 @@ import {
 
 import { ALL_POINTS, atPoint, slotLayout } from '../handover-layout';
 import type { SlotItem } from '../handover-layout';
+import { UNPLACED_LINE } from '../handover-slots';
 import type { HandoverBoard, SlotGroup, SlotRow } from '../handover-slots';
 import { countLabel, durationLabel } from '../supervision-labels';
 import { SUPERVISION_LINKS } from '../supervision-links';
@@ -61,6 +62,7 @@ export class HandoverColumn {
   readonly latenessUnknown = input(false);
 
   protected readonly link = SUPERVISION_LINKS.handover;
+  protected readonly unplaced = UNPLACED_LINE;
   private readonly host: ElementRef<HTMLElement> = inject(ElementRef);
 
   /** L'acheminement lu — choisi par la bande (`app-handover-band`), relié par la page. */
@@ -155,8 +157,22 @@ export class HandoverColumn {
       case 'not_ready':
         return 'Au colisage';
       case 'ready':
-        return this.readyLine(row);
+        return this.deliveryLine(row) ?? this.readyLine(row);
     }
+  }
+
+  /**
+   * Prête, une livraison avance encore (Hugo, 2026-10-25) : chargée dans la
+   * camionnette, puis partie. `null` au retrait, ou tant qu'elle est au sac.
+   */
+  private deliveryLine(row: SlotRow): string | null {
+    if (row.method !== 'delivery') {
+      return null;
+    }
+    if (row.departedAt !== null) {
+      return `Partie à ${row.departedAt}`;
+    }
+    return row.loaded ? 'Chargée' : null;
   }
 
   private readyLine(row: SlotRow): string {

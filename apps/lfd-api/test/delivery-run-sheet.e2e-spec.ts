@@ -14,6 +14,7 @@ import type {
   AdminCompanyDetailView,
   DeliveryProcedureView,
   DeliveryRunSheetView,
+  HandoverQueueView,
   StaffRole,
 } from "@lfd/contracts";
 
@@ -362,6 +363,27 @@ describe("la tournée et le rang de chaque arrêt (2026-10-06)", () => {
     expect(sheet.roundCount).toBe(2);
     expect(byId.get(second)?.round).toEqual({ roundId, label: "Kangoo blanc", position: 2 });
     expect(byId.get(first)?.round).toMatchObject({ roundId, position: 1 });
+    expect(byId.get(loose)?.round).toBeNull();
+  });
+
+  it("la file de la Supervision dit la tournée, le rang et l'horaire de chaque livraison (2026-10-25)", async () => {
+    const { addressId } = await seedCompany(OWNER, "Boulangerie du Col");
+    const placed = await place(OWNER, "delivery", addressId);
+    const loose = await place(OWNER, "delivery", addressId);
+    const roundId = await openRound(ctx, DAY, await addVehicle(ctx, "Kangoo blanc"));
+    await assign(ctx, DAY, roundId, placed);
+
+    const queue = (await staff().get(`/admin/supervision/handover?jour=${DAY}`).expect(200))
+      .body as HandoverQueueView;
+    const byId = new Map(queue.entries.map((entry) => [entry.orderId, entry]));
+
+    expect(byId.get(placed)?.round).toEqual({
+      label: "Kangoo blanc",
+      position: 1,
+      plannedDepartureAt: null,
+      departedAt: null,
+      loaded: false,
+    });
     expect(byId.get(loose)?.round).toBeNull();
   });
 

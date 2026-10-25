@@ -193,6 +193,9 @@ describe('lateSkusOf', () => {
     overdueCause: cause,
     method: 'pickup',
     heldForQuality: false,
+    roundLine: null,
+    departedAt: null,
+    loaded: false,
   });
   const board = (rows: readonly SlotRow[]): HandoverBoard => ({
     pickup: [groupOf('h05', rows)],

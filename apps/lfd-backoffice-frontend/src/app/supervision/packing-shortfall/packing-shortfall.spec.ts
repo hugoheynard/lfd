@@ -18,6 +18,7 @@ const SHORTFALL: ShortfallAwaitingDecision = {
   lines: [
     { sku: 'CRO', productName: 'Croissant', due: 12, packed: 9 },
     { sku: 'PAC', productName: 'Pain au chocolat', due: 6, packed: 0 },
+    { sku: 'CHA', productName: 'Chausson aux pommes', due: 4, packed: 4 },
   ],
 };
 
@@ -50,6 +51,12 @@ describe('PackingShortfall — le manque sur la carte du colisage', () => {
       'Manque : Croissant — 9 sur 12 au bac',
       'Manque : Pain au chocolat — 0 sur 6 au bac',
     ]);
+  });
+
+  /** Régression : « Manque : Chausson aux pommes — 4 sur 4 au bac » s'affichait (2026-10-25). */
+  it('ne dit pas manquante une ligne complète au bac', () => {
+    const { el } = mount([]);
+    expect(el.querySelector('[data-shortfall-missing]')?.textContent).not.toContain('Chausson');
   });
 
   it('sans le droit, le texte seul et « en attente d’une décision du commerce »', () => {

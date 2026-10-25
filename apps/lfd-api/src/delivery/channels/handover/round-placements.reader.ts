@@ -30,4 +30,13 @@ export interface RoundPlacement {
   readonly label: string;
   /** Le rang de l'arrêt, à partir de 1. */
   readonly position: number;
+  /**
+   * Le départ que le calcul routier a prévu, ou `null` : aucun horaire posé,
+   * ou effacé par un geste à la main (ajouté le 2026-10-25 pour la Supervision).
+   */
+  readonly plannedDepartureAt: Date | null;
+  /** Partie le, ou `null` tant que la tournée est au dépôt. */
+  readonly departedAt: Date | null;
+  /** Au moins un bac de cet arrêt est chargé dans la camionnette. */
+  readonly loaded: boolean;
 }

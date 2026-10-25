@@ -85,6 +85,11 @@
               "
               >{{ subLine(row) }}</span
             >
+            @if (row.roundLine !== null && row.state !== 'cancelled') {
+              <span class="round" [class.is-unplaced]="row.roundLine === unplaced" data-row-round>{{
+                row.roundLine
+              }}</span>
+            }
           </div>
           @if (linksTo(row)) {
             <a class="renvoi" [routerLink]="link.path">{{ link.label }} →</a>

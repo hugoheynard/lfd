@@ -15,7 +15,15 @@ interface PlacedStopRow {
   readonly position: number;
   readonly closedAt: Date | null;
   readonly createdAt: Date;
-  readonly round: { readonly id: string; readonly vehicleName: string; readonly passage: number };
+  readonly round: {
+    readonly id: string;
+    readonly vehicleName: string;
+    readonly passage: number;
+    readonly plannedDepartureAt: Date | null;
+    readonly departedAt: Date | null;
+  };
+  /** Les chargements POSÉS de l'arrêt — un seul suffit à dire « chargée ». */
+  readonly binLoads: readonly { readonly id: string }[];
 }
 
 /**
@@ -46,7 +54,16 @@ export class PrismaRoundPlacementsReader extends RoundPlacementsReader {
               position: true,
               closedAt: true,
               createdAt: true,
-              round: { select: { id: true, vehicleName: true, passage: true } },
+              round: {
+                select: {
+                  id: true,
+                  vehicleName: true,
+                  passage: true,
+                  plannedDepartureAt: true,
+                  departedAt: true,
+                },
+              },
+              binLoads: { where: { loadedAt: { not: null } }, select: { id: true }, take: 1 },
             },
           }),
     ]);
@@ -71,6 +88,9 @@ export function placementsByOrder(
       roundId: stop.round.id,
       label: roundPaperTitle(stop.round),
       position: stop.position,
+      plannedDepartureAt: stop.round.plannedDepartureAt,
+      departedAt: stop.round.departedAt,
+      loaded: stop.binLoads.length > 0,
     });
   }
   return placements;

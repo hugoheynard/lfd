@@ -178,6 +178,17 @@
   }
 }
 
+// La tournée d'une livraison (Hugo, 2026-10-25) : où elle part, à quel rang.
+.round {
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-secondary);
+
+  &.is-unplaced {
+    font-style: italic;
+    color: var(--fold-color-text-muted);
+  }
+}
+
 .renvoi {
   flex: none;
   font-size: var(--fold-text-xs);

@@ -21,6 +21,9 @@ function row(reference: string, overrides: Partial<SlotRow> = {}): SlotRow {
     overdueCause: null,
     method: 'pickup',
     heldForQuality: false,
+    roundLine: null,
+    departedAt: null,
+    loaded: false,
     ...overrides,
   };
 }
@@ -212,5 +215,69 @@ describe('HandoverColumn', () => {
         element.querySelector('[data-reference="PRETE"] [data-row-point]')?.textContent?.trim(),
       ).toBe('Boutique');
     });
+  });
+});
+
+/** Hugo, 2026-10-25 : « on devrait avoir plus d'info sur les cartes livraison ». */
+describe('HandoverColumn — la carte de livraison', () => {
+  function deliveryBoard(rows: readonly SlotRow[]): HandoverBoard {
+    return {
+      ...BOARD,
+      delivery: [
+        {
+          key: 'd07:30',
+          kind: 'deadline',
+          label: 'Avant 7 h 30',
+          expected: rows.length,
+          handedOver: 0,
+          endMinutes: 450,
+          rows,
+        },
+      ],
+    };
+  }
+
+  async function mountDelivery(rows: readonly SlotRow[]): Promise<HTMLElement> {
+    const fixture = await mount(deliveryBoard(rows));
+    fixture.componentRef.setInput('method', 'delivery');
+    fixture.detectChanges();
+    await fixture.whenStable();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  const text = (el: HTMLElement, selector: string) =>
+    el.querySelector(selector)?.textContent?.trim();
+
+  it('dit la tournée, le rang et l’état chargée', async () => {
+    const el = await mountDelivery([
+      row('LIV', {
+        method: 'delivery',
+        time: 'avant 7 h 30',
+        roundLine: 'Kangoo blanc · arrêt 3 · départ prévu 6 h 45',
+        loaded: true,
+      }),
+    ]);
+    expect(text(el, '[data-reference="LIV"] [data-row-round]')).toBe(
+      'Kangoo blanc · arrêt 3 · départ prévu 6 h 45',
+    );
+    expect(text(el, '[data-reference="LIV"] .sub')).toBe('Chargée');
+    expect(text(el, '[data-reference="LIV"] .time')).toBe('avant 7 h 30');
+  });
+
+  it('dit « Partie à » une fois la tournée partie, et « Pas encore dans une tournée » sinon', async () => {
+    const el = await mountDelivery([
+      row('PARTIE', {
+        method: 'delivery',
+        roundLine: 'Kangoo blanc · arrêt 1',
+        departedAt: '7 h 02',
+        loaded: true,
+      }),
+      row('SEULE', { method: 'delivery', roundLine: 'Pas encore dans une tournée' }),
+    ]);
+    expect(text(el, '[data-reference="PARTIE"] .sub')).toBe('Partie à 7 h 02');
+    expect(text(el, '[data-reference="SEULE"] [data-row-round]')).toBe(
+      'Pas encore dans une tournée',
+    );
+    expect(text(el, '[data-reference="SEULE"] .sub')).toBe('Prête');
   });
 });

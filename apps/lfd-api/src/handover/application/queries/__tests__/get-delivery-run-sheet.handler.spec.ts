@@ -195,7 +195,19 @@ describe("GetDeliveryRunSheetHandler", () => {
   describe("la tournée et le rang de chaque arrêt (2026-10-06)", () => {
     it("dit la tournée et le rang d'une placée, `null` pour une non placée, et le compte du jour", async () => {
       const rounds = new FixedRoundPlacements(
-        new Map([["a", { roundId: "rnd_1", label: "Kangoo blanc · passage 2", position: 2 }]]),
+        new Map([
+          [
+            "a",
+            {
+              roundId: "rnd_1",
+              label: "Kangoo blanc · passage 2",
+              position: 2,
+              plannedDepartureAt: null,
+              departedAt: null,
+              loaded: false,
+            },
+          ],
+        ]),
         3,
       );
       const { handler } = handlerOf(

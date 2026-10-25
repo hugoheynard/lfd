@@ -7,7 +7,7 @@ import type {
   LateOrder,
 } from '@lfd/contracts';
 
-import { causeOf, clockOf, handoverBoard, overdueMinutesOf } from './handover-slots';
+import { causeOf, clockOf, handoverBoard, overdueMinutesOf, UNPLACED_LINE } from './handover-slots';
 
 const DAY = '2026-09-25';
 
@@ -221,5 +221,86 @@ describe('clockOf (Supervision v2, A8)', () => {
   it('un autre jour n’a pas de repère : tout passé, ou tout à venir', () => {
     expect(clockOf(DAY, '2026-09-26T05:55:00.000Z')).toEqual({ minutes: Infinity, label: null });
     expect(clockOf(DAY, '2026-09-24T05:55:00.000Z')).toEqual({ minutes: -Infinity, label: null });
+  });
+});
+
+/**
+ * Régression : les 18 livraisons du jour tombaient toutes dans « Heure
+ * d'ouverture », heure « — » — une livraison a une échéance, pas un début
+ * (Hugo, 2026-10-25).
+ */
+describe('la colonne Livraison', () => {
+  const delivery = (
+    reference: string,
+    window: HandoverQueueWindowView | null,
+    overrides: Partial<HandoverQueueEntryView> = {},
+  ) => entry(reference, window, { fulfillmentMethod: 'delivery', pickupLabel: null, ...overrides });
+  const before = (end: string): HandoverQueueWindowView => ({
+    start: null,
+    end,
+    source: 'default',
+  });
+
+  it('range par échéance, triée, et une vraie tranche par son début — jamais « Heure d’ouverture »', () => {
+    const board = handoverBoard(
+      {
+        day: DAY,
+        entries: [
+          delivery('B', before('08:00')),
+          delivery('T', { start: '13:30', end: '14:30', source: 'override' }),
+          delivery('A', before('07:30')),
+          delivery('A2', before('07:30')),
+        ],
+      },
+      null,
+    );
+
+    expect(
+      board.delivery.map((group) => [group.label, group.rows.map((r) => r.reference)]),
+    ).toEqual([
+      ['Avant 7 h 30', ['A', 'A2']],
+      ['Avant 8 h 00', ['B']],
+      ['13 h – 14 h', ['T']],
+    ]);
+    expect(board.delivery.map((group) => group.kind)).not.toContain('opening');
+    expect(board.delivery[0]?.rows[0]?.time).toBe('avant 7 h 30');
+    expect(board.delivery[2]?.rows[0]?.time).toBe('13 h 30');
+  });
+
+  it('garde « Heure d’ouverture » au retrait, où elle a un sens', () => {
+    const board = handoverBoard(
+      { day: DAY, entries: [entry('OPEN', { start: '07:00', end: '19:00', source: 'default' })] },
+      null,
+    );
+    expect(board.pickup[0]?.label).toBe("Heure d'ouverture");
+  });
+
+  it('dit la tournée et l’horaire prévu, ou qu’aucune tournée ne la porte', () => {
+    const board = handoverBoard(
+      {
+        day: DAY,
+        entries: [
+          delivery('P', before('07:30'), {
+            round: {
+              label: 'Kangoo blanc',
+              position: 3,
+              // 04:45 UTC = 6 h 45 à Paris (heure d'été).
+              plannedDepartureAt: '2026-09-25T04:45:00.000Z',
+              departedAt: null,
+              loaded: true,
+            },
+          }),
+          delivery('L', before('07:30'), { round: null }),
+        ],
+      },
+      null,
+    );
+    const rows = board.delivery[0]?.rows ?? [];
+
+    expect(rows.map((r) => r.roundLine)).toEqual([
+      'Kangoo blanc · arrêt 3 · départ prévu 6 h 45',
+      UNPLACED_LINE,
+    ]);
+    expect(rows[0]?.loaded).toBe(true);
   });
 });

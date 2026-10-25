@@ -20,6 +20,9 @@ function row(reference: string, overrides: Partial<SlotRow> = {}): SlotRow {
     overdueCause: null,
     method: 'pickup',
     heldForQuality: false,
+    roundLine: null,
+    departedAt: null,
+    loaded: false,
     ...overrides,
   };
 }

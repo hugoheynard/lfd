@@ -13,14 +13,28 @@ function stop(
   orderId: string,
   roundId: string,
   position: number,
-  options: { readonly closedAt?: Date; readonly createdAt?: Date; readonly passage?: number } = {},
+  options: {
+    readonly closedAt?: Date;
+    readonly createdAt?: Date;
+    readonly passage?: number;
+    readonly loads?: number;
+  } = {},
 ) {
   return {
     orderId,
     position,
     closedAt: options.closedAt ?? null,
     createdAt: options.createdAt ?? EARLIER,
-    round: { id: roundId, vehicleName: "Kangoo blanc", passage: options.passage ?? 1 },
+    round: {
+      id: roundId,
+      vehicleName: "Kangoo blanc",
+      passage: options.passage ?? 1,
+      plannedDepartureAt: EARLIER,
+      departedAt: null,
+    },
+    binLoads: Array.from({ length: options.loads ?? 0 }, (_, index) => ({
+      id: `load_${String(index)}`,
+    })),
   };
 }
 
@@ -28,7 +42,18 @@ describe("placementsByOrder", () => {
   it("rend la tournée, son libellé et le rang de l'arrêt", () => {
     const placements = placementsByOrder([stop("a", "rnd_1", 2)]);
 
-    expect(placements.get("a")).toEqual({ roundId: "rnd_1", label: "Kangoo blanc", position: 2 });
+    expect(placements.get("a")).toEqual({
+      roundId: "rnd_1",
+      label: "Kangoo blanc",
+      position: 2,
+      plannedDepartureAt: EARLIER,
+      departedAt: null,
+      loaded: false,
+    });
+  });
+
+  it("dit l'arrêt chargé dès qu'un de ses bacs l'est", () => {
+    expect(placementsByOrder([stop("a", "rnd_1", 1, { loads: 1 })]).get("a")?.loaded).toBe(true);
   });
 
   it("nomme le second passage comme l'écran et le papier", () => {
