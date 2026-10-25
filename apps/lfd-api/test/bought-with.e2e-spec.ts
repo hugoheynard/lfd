@@ -26,7 +26,7 @@ import { attachTo, createCompany, createUser } from "./factories.js";
 import { cardGatewayDouble, payByCard, pickupSite, placeOrder } from "./order-factory.js";
 import {
   bootstrapE2e,
-  daysAgo,
+  placedDaysAgo,
   E2E_STAFF_ID,
   E2E_STAFF_SUB,
   jsonBody,
@@ -78,7 +78,7 @@ async function seedOrder(order: SeedOrder): Promise<void> {
     buyerUserId: order.userId,
     companyId: order.companyId ?? null,
     fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
-    placedAt: new Date(daysAgo(order.daysAgo ?? 1)),
+    placedAt: new Date(placedDaysAgo(order.daysAgo ?? 1)),
     forDay: serviceDay(1 - (order.daysAgo ?? 1)),
     lines: order.skus.map((sku) => ({ sku, quantity: 1 })),
   });

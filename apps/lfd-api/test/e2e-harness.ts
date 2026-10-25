@@ -48,7 +48,7 @@ import { CachedPublishedMailCopyReader } from "../src/b2b/mail-copy/infrastructu
 import { CachedPublishedShopCopyReader } from "../src/b2b/shop-copy/infrastructure/cached-published-shop-copy.reader.js";
 import { StaffAccessResolver } from "../src/platform/auth/staff-access.resolver.js";
 import { prismaSchemaSource } from "../src/platform/database/prisma-schema-source.js";
-import { addDays, instantToLocal } from "@lfd/contracts";
+import { addDays, instantToLocal, localToInstant } from "@lfd/contracts";
 import { testDatabaseUrl } from "./setup-env.js";
 import { waitForDatabase } from "./database-readiness.js";
 import { BootStopwatch } from "./e2e-boot-log.js";
@@ -304,6 +304,26 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
 export function daysAgo(days: number): string {
   return new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 }
+
+/**
+ * L'instant d'une commande **passée il y a `days` jours, à 10 h de Paris**.
+ *
+ * {@link daysAgo} garde l'heure qu'il est : lancé à 23 h 25, il passait la
+ * commande de la veille à 23 h 25, après l'heure limite, et la passation
+ * refusait (`usual-suggestions`, `bought-with`, rouges le 2026-10-25 au soir
+ * sur du code inchangé). Une passation se date donc à une heure de jour.
+ */
+export function placedDaysAgo(days: number): string {
+  const day = addDays(instantToLocal(new Date()).day, -days);
+  const instant = localToInstant(day, PLACED_AT_TIME);
+  if (instant === null) {
+    throw new Error(`Instant de passation introuvable : ${day} ${PLACED_AT_TIME}`);
+  }
+  return instant.toISOString();
+}
+
+/** 10 h : avant toute heure limite plausible, et jamais dans un changement d'heure. */
+const PLACED_AT_TIME = "10:00";
 
 /**
  * Un **jour de service** à venir, au format `AAAA-MM-JJ`. Par défaut dans une

@@ -25,7 +25,7 @@ import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js
 import { attachTo, createCompany, createUser } from "./factories.js";
 import {
   bootstrapE2e,
-  daysAgo,
+  placedDaysAgo,
   E2E_STAFF_ID,
   jsonBody,
   serviceDay,
@@ -108,7 +108,7 @@ async function seedOrder(order: SeedOrder): Promise<void> {
     companyId: order.companyId,
     fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
     forDay: serviceDay(-order.back),
-    placedAt: new Date(daysAgo(order.back + (order.placedBefore ?? 1))),
+    placedAt: new Date(placedDaysAgo(order.back + (order.placedBefore ?? 1))),
     lines: order.skus.map((sku) => ({ sku, quantity: 1 })),
   });
   if (order.cancelled === true) {
