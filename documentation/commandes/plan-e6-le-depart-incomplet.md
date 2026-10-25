@@ -329,3 +329,9 @@ constitué ; le verbe (`settle` désigne déjà le RÈGLEMENT ici).
   gardes que `Order.draft`.
 - ✅ **Le texte de facture** (bâti le 2026-10-25) « Bons de commande : … » devient « Confirmations de
   commande : … » (Hugo).
+- **La ligne de référence de la facture, en E6c** (Hugo, 2026-10-25) : elle
+  cite les commandes **et** les bons de livraison facturés —
+  « Commandes : ORD-1042, ORD-1043 — Bons de livraison : BL-1042-1,
+  BL-1043-1 » — dans le PDF et la note Factur-X (`facturx-mentions.ts`,
+  `ordersText`). Le titre « FACTURE » et le numéro de facture ne changent pas ;
+  une facture déjà émise garde son texte archivé.
