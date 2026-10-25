@@ -2,6 +2,7 @@ import type { CatalogFamilyView } from "@lfd/contracts";
 import { instantToLocal } from "@lfd/contracts";
 
 import { AppConfig } from "../../../../platform/config/app-config.js";
+import { pdfPages } from "../../../../platform/pdf/__tests__/pdf-text.js";
 import type { ProducibleOrder } from "../../../channels/commerce/day-orders.reader.js";
 import { WorkshopShelvesReader } from "../../../channels/commerce/workshop-shelves.reader.js";
 import { ProductionDay } from "../../../domain/entities/production-day.js";
@@ -13,6 +14,7 @@ import {
   FixedOrderPrintColors,
   FixedResupplyPrintColors,
 } from "../../__tests__/order-print-colors-doubles.js";
+import { FixedPaperLogo, FixedPlannedDeliveryNotes } from "../../__tests__/paper-doubles.js";
 import { InMemoryProductionStore } from "../../__tests__/quality-doubles.js";
 import { ProductionPapers } from "../../services/production-paper.service.js";
 import { GetDayDossierPdfHandler } from "../get-day-dossier-pdf.handler.js";
@@ -83,6 +85,7 @@ class NoAdminOrigin extends AppConfig {
 function setup(
   day: ProductionDay,
   colors = new FixedOrderPrintColors(),
+  deliveryNotes = new FixedPlannedDeliveryNotes(),
 ): {
   handler: GetDayDossierPdfHandler;
   store: InMemoryProductionStore;
@@ -96,6 +99,8 @@ function setup(
     shelves,
     colors,
     new FixedResupplyPrintColors(),
+    new FixedPaperLogo(),
+    deliveryNotes,
   );
   return { handler: new GetDayDossierPdfHandler(new Days(day), papers), store, shelves };
 }
@@ -156,5 +161,22 @@ describe("GetDayDossierPdfHandler", () => {
 
     const plain = await setup(closedDay()).handler.execute(new GetDayDossierPdfQuery(DAY));
     expect(colored.bytes.equals(plain.bytes)).toBe(false);
+  });
+
+  it("imprime le BL de transport de chaque commande derrière son bon (Hugo, 2026-10-25)", async () => {
+    const notes = new FixedPlannedDeliveryNotes(new Map([["ord_1", "BL-0001-1"]]));
+    const { handler } = setup(closedDay(), new FixedOrderPrintColors(), notes);
+    const paper = await handler.execute(new GetDayDossierPdfQuery(DAY));
+    const pages = pdfPages(paper.bytes);
+    expect(notes.asked).toEqual([["ord_1"]]);
+    expect(pages[pages.length - 1]).toContain("BON DE LIVRAISON BL-0001-1");
+  });
+
+  it("sert le dossier sans BL quand le commerce ne les rend pas, mais ne l'archive pas", async () => {
+    const notes = new FixedPlannedDeliveryNotes(new Map(), true);
+    const { handler, store } = setup(closedDay(), new FixedOrderPrintColors(), notes);
+    const paper = await handler.execute(new GetDayDossierPdfQuery(DAY));
+    expect(pdfPages(paper.bytes).join("")).not.toContain("BON DE LIVRAISON");
+    expect(store.objects.size).toBe(0);
   });
 });

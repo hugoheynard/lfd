@@ -82,10 +82,12 @@ describe("le bon figé à l'arrêt (E1b)", () => {
     await place(ctx, issued, [{ sku: CROISSANT, quantity: 12 }]);
     await closePlan(ctx);
 
-    const pages = await dossierPages();
-    expect(pages[1]).toContain("Camille Durand");
-    expect(pages[1]).toContain("Boutique");
-    expect(pages[1]).toContain("73150 Val d'Isère");
+    // La page de la fiche, cherchée par son titre : la couverture et une page
+    // par rayon la précèdent depuis la nouvelle mise en page (2026-10-25).
+    const sheet = orderSheetPage(await dossierPages());
+    expect(sheet).toContain("Camille Durand");
+    expect(sheet).toContain("Boutique");
+    expect(sheet).toContain("73150 Val d'Isère");
   });
 
   it("une journée arrêtée avant le lot (colonnes vides) garde le rendu d'avant, sans « undefined »", async () => {
@@ -98,7 +100,7 @@ describe("le bon figé à l'arrêt (E1b)", () => {
     });
 
     const pages = await dossierPages();
-    expect(pages[1]).toContain("Camille Durand");
+    expect(orderSheetPage(pages)).toContain("Camille Durand");
     expect(pages.join("")).not.toMatch(/undefined/);
   });
 });
@@ -135,3 +137,8 @@ describe("GET admin/production/batch/:date/dossier.pdf", () => {
     expect(jsonBody<{ message: string }>(response).message).toContain("n'est pas arrêtée");
   });
 });
+
+/** La page de la fiche de commande, par son titre « … — Fiche de commande ». */
+function orderSheetPage(pages: readonly string[]): string {
+  return pages.find((page) => page.includes("Fiche de commande")) ?? "";
+}

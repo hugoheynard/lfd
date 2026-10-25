@@ -8,6 +8,7 @@ import {
   ROW_GRAY,
   WIDTH,
   put,
+  putCaps,
   putRight,
   rule,
   type Doc,
@@ -50,27 +51,32 @@ export function lotCount(dossier: DayDossier): string {
     : `${lot} dont ${String(dossier.resupplyPieces)} de réassort`;
 }
 
-/** Une fiche de poste : le rayon, son total, ses produits. Rend le `y` dessous. */
+/**
+ * Une fiche de poste : son total, puis ses produits. Le rayon est le titre
+ * de la page (« Viennoiserie — total à produire »), posé par le cadre. Rend le
+ * `y` dessous.
+ */
 export function drawRecapGroup(
   doc: Doc,
   group: DossierRecapGroup,
   top: number,
   room: MakeRoom,
 ): number {
-  let y = room(top, 16 * MM);
-  put(doc, group.label.toUpperCase(), LEFT, y, { size: 11, bold: true });
-  const total = String(group.quantity);
-  putRight(
+  let y = top;
+  putCaps(
     doc,
-    group.resupplyQuantity === 0 ? total : `${total} — ${resupplyPart(group.resupplyQuantity)}`,
-    RIGHT,
+    `TOTAL À PRODUIRE · ${plural(group.lines.length, "article").toUpperCase()}`,
+    LEFT,
     y,
-    11,
-    true,
   );
   y += 5 * MM;
-  rule(doc, y, 1);
-  y += 3.5 * MM;
+  put(doc, plural(group.quantity, "pièce"), LEFT, y, { size: 22, bold: true });
+  if (group.resupplyQuantity > 0) {
+    putRight(doc, resupplyPart(group.resupplyQuantity), RIGHT, y + 3 * MM, 11);
+  }
+  y += 10 * MM;
+  rule(doc, y, 1.5);
+  y += 4 * MM;
   for (const line of group.lines) {
     y = room(y, (line.resupplyQuantity > 0 ? 15 : 10) * MM);
     put(doc, String(line.quantity), LEFT, y - 1.2 * MM, { size: 16, bold: true });

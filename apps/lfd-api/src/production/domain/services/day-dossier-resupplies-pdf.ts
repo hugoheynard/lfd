@@ -3,7 +3,6 @@ import { resupplySheetTitleOf } from "./day-dossier.js";
 import { drawOrderSwatch } from "./order-color-swatch.js";
 import {
   LEFT,
-  MARGIN_Y,
   MM,
   RIGHT,
   ROW_GRAY,
@@ -29,7 +28,8 @@ export type MakeRoom = (y: number, needed: number) => number;
  * dit la répartition par point — la section aurait dit deux fois la même
  * chose.
  *
- * `banner` est le bandeau du lot (« LOT POUR LE MER. 7 OCT. ») ; `rank`,
+ * `top` est le haut du contenu, sous l'en-tête du cadre (`paper-pages.ts`),
+ * dont le titre nomme déjà le réassort. `banner` est le bandeau du lot (« LOT POUR LE MER. 7 OCT. ») ; `rank`,
  * « réassort 1/2 ». `color` est la teinte de réassort du site destinataire
  * (Hugo, 2026-10-22) : une pastille devant le titre, du même dessin que celle
  * des commandes, sans mot ; `null` — site sans teinte — n'en pose aucune.
@@ -38,12 +38,13 @@ export type MakeRoom = (y: number, needed: number) => number;
 export function drawResupplySheet(
   doc: Doc,
   resupply: ProductionResupplySnapshot,
+  top: number,
   banner: string,
   rank: string,
   room: MakeRoom,
   color: string | null,
 ): number {
-  let y = MARGIN_Y;
+  let y = top;
   putCaps(doc, `${banner} · ${rank.toUpperCase()}`, LEFT, y);
   y += 5 * MM;
   const swatch = drawOrderSwatch(doc, color, LEFT, y + 0.5 * MM);
@@ -54,7 +55,10 @@ export function drawResupplySheet(
   });
   putRight(doc, "RÉASSORT", RIGHT, y + 1, 12, true);
   y += 8 * MM;
-  put(doc, resupply.servedByTransfer ? "Par transfert" : "Servi sur place", LEFT, y, { size: 11 });
+  // « Servi sur place » retiré (Hugo, 2026-10-25) : seul le transfert se dit.
+  if (resupply.servedByTransfer) {
+    put(doc, "Par transfert", LEFT, y, { size: 11 });
+  }
   y += 5.5 * MM;
   rule(doc, y, 2);
   const pieces = resupply.lines.reduce((sum, line) => sum + line.quantity, 0);

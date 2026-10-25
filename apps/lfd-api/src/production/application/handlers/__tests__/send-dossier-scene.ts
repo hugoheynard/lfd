@@ -42,6 +42,7 @@ import {
   FixedOrderPrintColors,
   FixedResupplyPrintColors,
 } from "../../__tests__/order-print-colors-doubles.js";
+import { FixedPaperLogo, FixedPlannedDeliveryNotes } from "../../__tests__/paper-doubles.js";
 import { SendDossierOnDayClosed } from "../send-dossier-on-day-closed.handler.js";
 import { SendDossierOnDayRetaken } from "../send-dossier-on-day-retaken.handler.js";
 
@@ -192,6 +193,8 @@ export function setup(
       new Shelves(),
       new FixedOrderPrintColors(),
       new FixedResupplyPrintColors(),
+      new FixedPaperLogo(),
+      new FixedPlannedDeliveryNotes(),
     ),
     log,
     mailer,

@@ -1,5 +1,6 @@
 import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 
+import { BrandLogoSource } from "../../../platform/brand/brand-logo.source.js";
 import { AppConfig } from "../../../platform/config/app-config.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { renderAtelierSheetPdf } from "../../domain/services/atelier-sheet-pdf.js";
@@ -24,6 +25,7 @@ export class GetAtelierSheetSpecimenHandler implements IQueryHandler<
   constructor(
     private readonly clock: Clock,
     private readonly config: AppConfig,
+    private readonly logo: BrandLogoSource,
   ) {}
 
   async execute(): Promise<ProductionPaper> {
@@ -33,8 +35,7 @@ export class GetAtelierSheetSpecimenHandler implements IQueryHandler<
       base === null ? "" : `${base}/colisage/${encodeURIComponent(SPECIMEN_ORDER.reference)}`;
     const bytes = await renderAtelierSheetPdf(
       SPECIMEN_ORDER,
-      specimenServiceDay(now),
-      now,
+      { serviceDay: specimenServiceDay(now), closedAt: now, logo: await this.logo.load() },
       colisageUrl,
       // Le spécimen n'a pas de commande réelle, donc pas de couleur : comme
       // la planche (`categoryColor: null`), aucune pastille.

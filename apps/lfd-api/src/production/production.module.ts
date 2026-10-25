@@ -1,3 +1,4 @@
+import { BrandModule } from "../platform/brand/brand.module.js";
 import { Module } from "@nestjs/common";
 
 import { ProductionOrderWithdrawalDesk } from "./application/services/production-order-withdrawal.desk.js";
@@ -154,6 +155,8 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
  * retrait implémente. Il ne tient plus son dépôt d'écriture.
  */
 @Module({
+  // Le logo de l'en-tête des papiers du fournil (Hugo, 2026-10-25).
+  imports: [BrandModule],
   controllers: [
     ProductionDayController,
     ProductionWorksheetController,

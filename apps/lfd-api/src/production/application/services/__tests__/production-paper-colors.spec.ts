@@ -12,6 +12,7 @@ import {
   FixedOrderPrintColors,
   FixedResupplyPrintColors,
 } from "../../__tests__/order-print-colors-doubles.js";
+import { FixedPaperLogo, FixedPlannedDeliveryNotes } from "../../__tests__/paper-doubles.js";
 import { InMemoryProductionStore } from "../../__tests__/quality-doubles.js";
 import { ProductionPapers } from "../production-paper.service.js";
 
@@ -53,6 +54,7 @@ class NoShelves extends WorkshopShelvesReader {
 function papersWith(
   colors: FixedOrderPrintColors,
   resupplyColors = new FixedResupplyPrintColors(),
+  deliveryNotes = new FixedPlannedDeliveryNotes(),
 ): {
   papers: ProductionPapers;
   store: InMemoryProductionStore;
@@ -65,6 +67,8 @@ function papersWith(
       new NoShelves(),
       colors,
       resupplyColors,
+      new FixedPaperLogo(),
+      deliveryNotes,
     ),
     store,
   };

@@ -1,6 +1,11 @@
 import { Global, Module } from "@nestjs/common";
 
 import { CatalogModule } from "../b2b/catalog/catalog.module.js";
+import {
+  ProductionPlannedDeliveryNotesReader,
+  ProductionSpecimenDeliveryNoteReader,
+} from "../b2b/delivery-notes/infrastructure/production-planned-delivery-notes.reader.js";
+import { DeliveryNotesModule } from "../b2b/delivery-notes/delivery-notes.module.js";
 import { CatalogWorkshopShelvesReader } from "../b2b/catalog/infrastructure/catalog-workshop-shelves.reader.js";
 import { ProductionOrderCutoffRulesReader } from "../b2b/order-cutoffs/infrastructure/production-order-cutoff-rules.reader.js";
 import { ProductionResupplyCutoffTimeReader } from "../b2b/order-cutoffs/infrastructure/production-resupply-cutoff-time.reader.js";
@@ -27,8 +32,10 @@ import {
   OrderPrintColorsReader,
   PendingCommerceOrdersReader,
   PendingSettlementSweeper,
+  PlannedDeliveryNotesReader,
   ResupplyCutoffTimeReader,
   ResupplyPrintColorsReader,
+  SpecimenDeliveryNoteReader,
   WorkshopShelvesReader,
 } from "../production/channels/commerce/index.js";
 
@@ -58,7 +65,14 @@ import {
  */
 @Global()
 @Module({
-  imports: [OrdersModule, CatalogModule, OrderCutoffsModule, ResupplyModule, SitesModule],
+  imports: [
+    OrdersModule,
+    CatalogModule,
+    OrderCutoffsModule,
+    ResupplyModule,
+    SitesModule,
+    DeliveryNotesModule,
+  ],
   providers: [
     // `useExisting` : l'instance d'`OrdersModule`, qui a les ports des sites
     // (échéance par site, lot T0).
@@ -98,6 +112,11 @@ import {
     { provide: OrderPrintColorsReader, useClass: ProductionOrderPrintColorsReader },
     // La teinte de réassort du site qui le reçoit (décisions du soir, 2026-10-22).
     { provide: ResupplyPrintColorsReader, useClass: SiteResupplyPrintColorsReader },
+    // Le BL de transport joint à chaque bon du dossier du jour (Hugo,
+    // 2026-10-25) : `useExisting`, l'instance de `DeliveryNotesModule`, qui a
+    // ses ports de lecture.
+    { provide: PlannedDeliveryNotesReader, useExisting: ProductionPlannedDeliveryNotesReader },
+    { provide: SpecimenDeliveryNoteReader, useExisting: ProductionSpecimenDeliveryNoteReader },
   ],
   exports: [
     DayOrdersReader,
@@ -109,8 +128,10 @@ import {
     OrderPrintColorsReader,
     PendingCommerceOrdersReader,
     PendingSettlementSweeper,
+    PlannedDeliveryNotesReader,
     ResupplyCutoffTimeReader,
     ResupplyPrintColorsReader,
+    SpecimenDeliveryNoteReader,
     WorkshopShelvesReader,
   ],
 })

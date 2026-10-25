@@ -3,10 +3,15 @@ import { Buffer } from "node:buffer";
 import type { CatalogFamilyView } from "@lfd/contracts";
 import { Injectable, Logger } from "@nestjs/common";
 
+import { BrandLogoSource } from "../../../platform/brand/brand-logo.source.js";
 import { AppConfig } from "../../../platform/config/app-config.js";
 import { DocumentStorageUnavailableError } from "../../../platform/shared/errors/storage-errors.js";
 import { ProductionDocumentStore } from "../../../platform/storage/production-document-store.js";
 import { OrderPrintColorsReader } from "../../channels/commerce/order-print-colors.reader.js";
+import {
+  type DeliveryNoteDrawing,
+  PlannedDeliveryNotesReader,
+} from "../../channels/commerce/planned-delivery-notes.reader.js";
 import { ResupplyPrintColorsReader } from "../../channels/commerce/resupply-print-colors.reader.js";
 import { WorkshopShelvesReader } from "../../channels/commerce/workshop-shelves.reader.js";
 import type {
@@ -69,6 +74,8 @@ export class ProductionPapers {
     private readonly shelves: WorkshopShelvesReader,
     private readonly colors: OrderPrintColorsReader,
     private readonly resupplyColors: ResupplyPrintColorsReader,
+    private readonly logo: BrandLogoSource,
+    private readonly deliveryNotes: PlannedDeliveryNotesReader,
   ) {}
 
   /**
@@ -84,11 +91,13 @@ export class ProductionPapers {
       atelierSheetPdfKey(order.orderId),
       `fiche-atelier-${order.reference}.pdf`,
       async () => {
-        const colors = await this.colors.colorsOf([order.orderId]);
+        const [colors, logo] = await Promise.all([
+          this.colors.colorsOf([order.orderId]),
+          this.logo.load(),
+        ]);
         return renderAtelierSheetPdf(
           order,
-          serviceDay,
-          closedAt,
+          { serviceDay, closedAt, logo },
           this.colisageUrl(order.reference),
           colors.get(order.orderId) ?? null,
         );
@@ -112,14 +121,14 @@ export class ProductionPapers {
       `compte-a-produire-${snapshot.serviceDay}.pdf`,
       async () => {
         const resupplies = snapshot.resupplies ?? [];
-        const [colors, resupplyColors] = await Promise.all([
+        const [colors, resupplyColors, logo] = await Promise.all([
           this.colors.colorsOf(snapshot.orders.map((order) => order.orderId)),
           this.resupplyColors.colorsOf([...new Set(resupplies.map((resupply) => resupply.siteId))]),
+          this.logo.load(),
         ]);
         return renderProductionCountPdf(
           snapshot.counts,
-          snapshot.serviceDay,
-          closedAt,
+          { serviceDay: snapshot.serviceDay, closedAt, logo },
           countColorSharesOf(snapshot.orders, resupplies, colors, resupplyColors),
         );
       },
@@ -128,7 +137,8 @@ export class ProductionPapers {
 
   /**
    * **Le dossier du jour** — récapitulatif par rayon (réassorts compris), puis
-   * un bon par commande et par réassort, lus dans ce que la journée a figé.
+   * un bon par commande suivi de son BL de transport, et un bon par réassort,
+   * lus dans ce que la journée a figé (les BL, eux, au tirage).
    *
    * Archivé **par tirage arrêté** : la clé porte l'instant du dernier retirage
    * (`dayDossierPdfKey`), si bien qu'un retirage fabrique un dossier complété
@@ -159,9 +169,12 @@ export class ProductionPapers {
       ...snapshot.orders.flatMap((order) => order.lines),
       ...resupplies.flatMap((resupply) => resupply.lines),
     ]);
-    const [colors, resupplyColors] = await Promise.all([
-      this.colors.colorsOf(snapshot.orders.map((order) => order.orderId)),
+    const orderIds = snapshot.orders.map((order) => order.orderId);
+    const [colors, resupplyColors, logo, deliveryNotes] = await Promise.all([
+      this.colors.colorsOf(orderIds),
       this.resupplyColors.colorsOf([...new Set(resupplies.map((resupply) => resupply.siteId))]),
+      this.logo.load(),
+      this.deliveryNotesOrNull(snapshot.serviceDay, orderIds),
     ]);
     const bytes = await renderDayDossierPdf(
       dayDossierOf(snapshot.orders, shelves, resupplies),
@@ -172,11 +185,15 @@ export class ProductionPapers {
         retakenAt,
         retakenByName: snapshot.retakenByName,
       },
-      (reference) => this.colisageUrl(reference),
-      colors,
-      resupplyColors,
+      {
+        logo,
+        colisageUrlOf: (reference) => this.colisageUrl(reference),
+        colors,
+        resupplyColors,
+        deliveryNotes: deliveryNotes ?? new Map(),
+      },
     );
-    if (shelves !== null) {
+    if (shelves !== null && deliveryNotes !== null) {
       await this.archive(key, bytes);
     }
     return { bytes, fileName };
@@ -196,6 +213,26 @@ export class ProductionPapers {
     } catch (error) {
       this.logger.error(
         `Dossier du ${serviceDay} : rayons illisibles, tiré en « Rayon inconnu » et non archivé.`,
+        error instanceof Error ? error.stack : String(error),
+      );
+      return null;
+    }
+  }
+
+  /**
+   * Les BL de transport des commandes du jour, ou `null` : panne journalisée,
+   * jamais tue. Le dossier part alors sans BL, et n'est **pas archivé** — le
+   * tirage suivant le refera avec eux, comme pour les rayons.
+   */
+  private async deliveryNotesOrNull(
+    serviceDay: string,
+    orderIds: readonly string[],
+  ): Promise<ReadonlyMap<string, DeliveryNoteDrawing> | null> {
+    try {
+      return await this.deliveryNotes.drawingsOf(orderIds);
+    } catch (error) {
+      this.logger.error(
+        `Dossier du ${serviceDay} : bons de livraison illisibles, tiré sans eux et non archivé.`,
         error instanceof Error ? error.stack : String(error),
       );
       return null;

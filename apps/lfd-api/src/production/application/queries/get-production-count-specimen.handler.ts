@@ -1,5 +1,6 @@
 import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 
+import { BrandLogoSource } from "../../../platform/brand/brand-logo.source.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { renderProductionCountPdf } from "../../domain/services/atelier-sheet-pdf.js";
 import { countColorSharesOf } from "../../domain/services/count-color-shares.js";
@@ -25,14 +26,16 @@ export class GetProductionCountSpecimenHandler implements IQueryHandler<
   GetProductionCountSpecimenQuery,
   ProductionPaper
 > {
-  constructor(private readonly clock: Clock) {}
+  constructor(
+    private readonly clock: Clock,
+    private readonly logo: BrandLogoSource,
+  ) {}
 
   async execute(): Promise<ProductionPaper> {
     const now = this.clock.now();
     const bytes = await renderProductionCountPdf(
       countOf([...SPECIMEN_DAY_ORDERS, ...SPECIMEN_DAY_RESUPPLIES]),
-      specimenServiceDay(now),
-      now,
+      { serviceDay: specimenServiceDay(now), closedAt: now, logo: await this.logo.load() },
       countColorSharesOf(
         SPECIMEN_DAY_ORDERS,
         SPECIMEN_DAY_RESUPPLIES,

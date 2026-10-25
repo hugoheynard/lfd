@@ -119,3 +119,10 @@ export {
 // documents v2, §0 bis, 2026-10-22) : la couleur lue au tirage, par le commerce.
 export { OrderPrintColorsReader } from "./order-print-colors.reader.js";
 export { ResupplyPrintColorsReader } from "./resupply-print-colors.reader.js";
+// Le BL de transport joint à chaque bon du dossier du jour (Hugo,
+// 2026-10-25) : dessiné par le commerce, posé par le fournil.
+export {
+  type DeliveryNoteDrawing,
+  PlannedDeliveryNotesReader,
+  SpecimenDeliveryNoteReader,
+} from "./planned-delivery-notes.reader.js";

@@ -152,12 +152,22 @@ export async function renderCarrierNotePdf(
   note: CarrierNote,
   art: DeliveryNoteArt,
 ): Promise<Buffer> {
-  const columns: Columns = { skuRight: RIGHT, heads: () => undefined, row: () => undefined };
   return render(new Date(note.issuedAt), `Bon de livraison ${note.number}`, (doc) => {
-    const top = noteParties(doc, note, noteHeader(doc, note, art.logo));
-    const end = table(doc, note, columns, top);
-    noteFooter(doc, note, noteRemark(doc, note, receipt(doc, end)), []);
+    drawCarrierNote(doc, note, art);
   });
+}
+
+/**
+ * Le BL de transport, dessiné **sur la page courante d'un document qu'un
+ * autre tient** — le dossier du jour du fournil le joint à chaque bon de
+ * commande (Hugo, 2026-10-25). Le même dessin que `renderCarrierNotePdf`, au
+ * point près : il tourne ses propres pages quand le tableau déborde.
+ */
+export function drawCarrierNote(doc: Doc, note: CarrierNote, art: DeliveryNoteArt): void {
+  const columns: Columns = { skuRight: RIGHT, heads: () => undefined, row: () => undefined };
+  const top = noteParties(doc, note, noteHeader(doc, note, art.logo));
+  const end = table(doc, note, columns, top);
+  noteFooter(doc, note, noteRemark(doc, note, receipt(doc, end)), []);
 }
 
 /** Les colonnes chiffrées : PU et total, TTC quand le BL en porte (bon public). */

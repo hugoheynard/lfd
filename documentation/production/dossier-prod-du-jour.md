@@ -18,9 +18,34 @@ faut fabriquer, puis un bon par commande. Il se lit à deux endroits :
 Depuis le 2026-10-06, on n'imprime plus depuis le navigateur : l'impression était l'écran, menu compris.
 
 Le PDF serveur ne bouge plus une fois tiré : il est archivé
-(`<jour>/dossier-du-jour-v5.pdf`). Après un retirage qui ajoute des commandes,
+(`<jour>/dossier-du-jour-v11.pdf`). Après un retirage qui ajoute des commandes,
 un second dossier « complété » est archivé à côté
-(`<jour>/dossier-du-jour-v5-retirage-<instant>.pdf`) ; l'original reste.
+(`<jour>/dossier-du-jour-v11-retirage-<instant>.pdf`) ; l'original reste.
+
+## La mise en page (2026-10-25, Hugo)
+
+Chaque page porte une **en-tête** : le logo, le titre de la page, « Lot pour le
+lun. 26 oct. » à droite ; le pied porte le **numéro de page encadré**. Une
+section qui déborde dit « (1/2) », « (2/2) » dans son titre. L'ordre :
+
+1. **La couverture** — « Dossier de production du lundi 26 octobre 2026 », le
+   lot compté, les commandes par acheminement, les rayons et leur total, les
+   réassorts. Rien que les pages suivantes ne détaillent.
+2. **Un rayon par page** — « Viennoiseries — total à produire ».
+3. **Une fiche par commande** — « ORD-… — Fiche de commande ». L'acheminement
+   s'écrit « Retrait <site> · pro / particulier » ou « Livraison · … », derrière
+   le carré de la couleur de la commande (`OrderPrintColorsReader`).
+   **Suivie de son BL de transport** (non chiffré), dessiné par le commerce par
+   le port `PlannedDeliveryNotesReader` (`production/channels/commerce/`) : le
+   premier BL non annulé, lu au tirage. Une commande sans BL n'en a pas ; un
+   commerce muet laisse partir le dossier sans BL, **non archivé**.
+4. **Une fiche par réassort** — « Fiche de réassort ».
+
+La fiche d'atelier (« ORD-… // Fiche de préparation », clé
+`fiche-atelier-v2.pdf`) et le compte à produire (clé
+`compte-a-produire-v2.pdf`) prennent le même cadre.
+
+Les tableaux ci-dessous décrivent ce que chaque page DIT ; la place a changé.
 
 ## Page 1 — le récapitulatif
 
@@ -63,7 +88,7 @@ encore d'avenant, il vaudrait toujours 0.
 automatiquement le … » pour l'arrêt automatique, « Arrêté le … » quand l'auteur
 est inconnu (journée arrêtée avant le 2026-10-06) —, puis « — complété par … le
 … » après un retirage, puis le folio « x/N » (« 3/12 ») : toutes les pages du fichier sont
-comptées, pages « SUITE » comprises — une feuille manquante se voit. Le jour de
+comptées, pages de suite et de BL comprises — une feuille manquante se voit. Le jour de
 la semaine est aussi dans les pieds de la feuille d'atelier et du compte à
 produire (même formatteur). L'auteur de l'arrêt est **figé à l'arrêt** (`production_day.closed_by` : l'id de
 la fiche, ou `auto-close` ; `closed_by_name` : son nom ce jour-là), et celui du
