@@ -34,7 +34,7 @@ import {
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { DeliveryBinsService } from '../../../livraison/delivery-bins.service';
 import { PackingSettingsService } from '../../packing-settings.service';
-import { AwaitingBadge } from '../awaiting-badge/awaiting-badge';
+import { AwaitingBadge } from '../../../shared/awaiting-badge/awaiting-badge';
 import { type BinFormatButton, binFormatButtons } from '../bin-row';
 import {
   allocatedOf,

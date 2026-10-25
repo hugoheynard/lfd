@@ -168,7 +168,13 @@ describe("« Il manque » au colisage → la commande attend une décision", () 
       await ctx.asSub(STAFF).get(`/admin/supervision/day?date=${SERVICE_DAY}`).expect(200),
     );
     expect(day.awaitingDecision).toEqual([
-      expect.objectContaining({ orderId: id, reference: sheet.reference, reportedAt }),
+      expect.objectContaining({
+        orderId: id,
+        reference: sheet.reference,
+        reportedAt,
+        // La carte du colisage dit « Manque : <produit> — 1 sur 3 au bac ».
+        lines: [expect.objectContaining({ sku: CROISSANT, due: 3, packed: 1 })],
+      }),
     ]);
   });
 });

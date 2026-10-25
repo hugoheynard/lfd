@@ -81,6 +81,7 @@ function toAwaitingDecision(
     customerName: order.customerName,
     fulfillmentMethod: order.fulfillmentMethod,
     reportedAt: order.shortfallReportedAt.toISOString(),
+    lines: order.shortfallLines.map((line) => ({ ...line })),
   };
 }
 

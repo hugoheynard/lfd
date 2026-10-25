@@ -1,8 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import type { WithdrawnPackingSheet } from '@lfd/contracts';
+import type {
+  ShortfallAwaitingDecision,
+  StaffPermission,
+  WithdrawnPackingSheet,
+} from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
+import { PermissionsStore } from '../../auth/permissions.store';
 import type { PackingBoard, PackingCard } from '../packing-cards';
 import { NO_QUALITY, orderBadge, type QualityLookup, type QualityRequest } from '../quality-badges';
 import { NO_MATCHES, type SupervisionMatches } from '../supervision-search';
@@ -50,9 +55,20 @@ async function mountFixture(
     awaitedOpen?: string;
     narrow?: boolean;
     canSendToShop?: boolean;
+    shortfalls?: ReadonlyMap<string, ShortfallAwaitingDecision>;
+    permissions?: readonly StaffPermission[];
   } = {},
 ) {
-  TestBed.configureTestingModule({ providers: [provideRouter([])] });
+  const permissions = quality.permissions ?? [];
+  TestBed.configureTestingModule({
+    providers: [
+      provideRouter([]),
+      {
+        provide: PermissionsStore,
+        useValue: { can: (p: StaffPermission): boolean => permissions.includes(p) },
+      },
+    ],
+  });
   const fixture = TestBed.createComponent(PackingColumn);
   fixture.componentRef.setInput('board', board);
   fixture.componentRef.setInput('matches', matches);
@@ -62,6 +78,7 @@ async function mountFixture(
   fixture.componentRef.setInput('awaitedOpen', quality.awaitedOpen ?? null);
   fixture.componentRef.setInput('narrow', quality.narrow ?? false);
   fixture.componentRef.setInput('canSendToShop', quality.canSendToShop ?? false);
+  fixture.componentRef.setInput('shortfalls', quality.shortfalls ?? new Map());
   fixture.detectChanges();
   await fixture.whenStable();
   return fixture;
@@ -175,6 +192,38 @@ describe('PackingColumn', () => {
     expect(inProgress?.textContent).toContain('6 références sur 9 posées');
     expect(inProgress?.querySelector('.pastille')?.textContent).toContain('En cours');
     expect(inProgress?.textContent).toContain('CMD-1 · retrait 7\u00a0h');
+  });
+
+  it('dit « Att. prod x/n » : lignes encore au four sur lignes de la commande (2026-10-25)', async () => {
+    const element = await mount(BOARD);
+    const badge = element.querySelector('[data-reference="CMD-2"] app-awaiting-badge');
+
+    expect(badge?.textContent?.trim()).toBe('Att. prod 1/9');
+  });
+
+  it('une commande en décision attendue passe en tête, au fond d’alerte, et dit son manque', async () => {
+    const shortfall: ShortfallAwaitingDecision = {
+      orderId: 'o-CMD-2',
+      reference: 'CMD-2',
+      customerName: null,
+      fulfillmentMethod: 'pickup',
+      reportedAt: '2030-01-10T05:30:00.000Z',
+      lines: [{ sku: 'ECL', productName: 'Éclair pistache', due: 4, packed: 1 }],
+    };
+    const fixture = await mountFixture(BOARD, NO_MATCHES, {
+      shortfalls: new Map([['CMD-2', shortfall]]),
+    });
+    const element: HTMLElement = fixture.nativeElement;
+    const cards = [...element.querySelectorAll('fold-card[data-reference]')];
+    const target = element.querySelector('[data-reference="CMD-2"]');
+
+    expect(cards[0]?.getAttribute('data-reference')).toBe('CMD-2');
+    expect(target?.classList).toContain('is-shortfall');
+    expect(target?.classList).not.toContain('edge-warning');
+    expect(target?.textContent).toContain('Manque : Éclair pistache — 1 sur 4 au bac');
+    expect(element.querySelector('[data-reference="CMD-1"]')?.classList).not.toContain(
+      'is-shortfall',
+    );
   });
 
   it('replié, compte ce qui attend le four, sans renvoi — rien à y faire', async () => {

@@ -1,0 +1,23 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.missing {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--fold-color-alert-text);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-bold);
+}
+
+.waiting {
+  margin: 0;
+  color: var(--fold-color-alert-text);
+  font-size: var(--fold-text-sm);
+}

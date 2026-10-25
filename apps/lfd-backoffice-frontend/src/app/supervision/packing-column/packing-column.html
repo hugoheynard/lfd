@@ -48,7 +48,8 @@
       [class.is-current]="isCurrent(card.reference)"
       [class.is-receded]="receded(card.reference)"
       [class.is-source]="isSelected(card)"
-      [class.edge-warning]="card.state === 'awaiting_oven'"
+      [class.edge-warning]="card.state === 'awaiting_oven' && shortfallOf(card) === null"
+      [class.is-shortfall]="shortfallOf(card) !== null"
       [attr.data-packing]="card.state"
       [attr.data-reference]="card.reference"
       [attr.data-hit-key]="card.reference"
@@ -63,14 +64,28 @@
             <span class="customer">{{ card.customerLabel }}</span>
             <span class="meta">{{ meta(card) }}</span>
           </div>
-          <fold-badge
-            class="pastille"
-            radius="square"
-            [attr.data-state]="card.state"
-            [content]="badgeLabel(card)"
-            [variant]="badgeVariant(card)"
-          />
+          @if (card.state === 'awaiting_oven') {
+            <!-- « Att. prod x/n » : lignes encore au four sur lignes de la
+                 commande, le mot du poste de colisage (Hugo, 2026-10-25). -->
+            <app-awaiting-badge
+              [attr.data-state]="card.state"
+              [waiting]="card.awaited.length"
+              [total]="card.lineCount"
+            />
+          } @else {
+            <fold-badge
+              class="pastille"
+              radius="square"
+              [attr.data-state]="card.state"
+              [content]="badgeLabel(card)"
+              [variant]="badgeVariant(card)"
+            />
+          }
         </div>
+
+        @if (shortfallOf(card); as shortfall) {
+          <app-packing-shortfall [shortfall]="shortfall" (decided)="shortfallDecided.emit()" />
+        }
 
         @if (card.state === 'in_progress') {
           <fold-meter

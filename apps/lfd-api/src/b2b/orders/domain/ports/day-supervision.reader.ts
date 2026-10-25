@@ -17,6 +17,21 @@ export interface SupervisedOrder {
   readonly window: HandoverQueueWindow | null;
   /** Le manque signalé au colisage en vigueur (E6a), `null` = aucun. */
   readonly shortfallReportedAt: Date | null;
+  /**
+   * Les lignes de ce manque, telles que le colisage les a figées au
+   * signalement, nommées par la commande — vide exactement quand
+   * `shortfallReportedAt` est `null`. La carte de la Supervision dit
+   * « Manque : <produit> — <n> sur <dû> au bac ».
+   */
+  readonly shortfallLines: readonly SupervisedShortfallLine[];
+}
+
+/** Une ligne manquante : l'article, son nom à la commande, le dû et ce qui est au bac. */
+export interface SupervisedShortfallLine {
+  readonly sku: string;
+  readonly productName: string;
+  readonly due: number;
+  readonly packed: number;
 }
 
 /**

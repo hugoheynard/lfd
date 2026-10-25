@@ -109,6 +109,15 @@ export const shortfallAwaitingDecisionSchema = z.object({
   customerName: z.string().nullable(),
   fulfillmentMethod: fulfillmentMethodSchema,
   reportedAt: z.string(),
+  /** Les lignes manquantes, figées au signalement : le dû et ce qui est au bac. */
+  lines: z.array(
+    z.object({
+      sku: z.string(),
+      productName: z.string(),
+      due: z.number().int().nonnegative(),
+      packed: z.number().int().nonnegative(),
+    }),
+  ),
 });
 export type ShortfallAwaitingDecision = z.infer<typeof shortfallAwaitingDecisionSchema>;
 

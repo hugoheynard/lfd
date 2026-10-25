@@ -4,7 +4,9 @@ import { PrismaService } from "../../../platform/database/prisma.service.js";
 import {
   DaySupervisionReader,
   type SupervisedOrder,
+  type SupervisedShortfallLine,
 } from "../domain/ports/day-supervision.reader.js";
+import { shortfallLinesOf } from "./prisma-order-shortfall.repository.js";
 import { fulfillmentOf, windowOf } from "./order-fulfillment.parse.js";
 import { settlementWhere } from "./plan-filter.js";
 
@@ -16,6 +18,7 @@ const SUPERVISION_SELECT = {
   fulfillmentMethod: true,
   fulfillment: true,
   shortfallReportedAt: true,
+  shortfallLines: true,
   shortfallDecidedAt: true,
   company: { select: { raisonSociale: true } },
   placedBy: { select: { firstName: true, lastName: true } },
@@ -48,6 +51,12 @@ export class PrismaDaySupervisionReader extends DaySupervisionReader {
       orderBy: { orderNumber: "asc" },
       select: SUPERVISION_SELECT,
     });
+    // Un manque décidé (E6b) n'attend plus de décision.
+    const pending = (row: (typeof rows)[number]): boolean =>
+      row.shortfallDecidedAt === null &&
+      row.shortfallReportedAt !== null &&
+      row.shortfallLines !== null;
+    const names = await this.productNames(rows.filter(pending).map((row) => row.id));
     return rows.map((row) => ({
       orderId: row.id,
       reference: row.orderNumber,
@@ -55,9 +64,35 @@ export class PrismaDaySupervisionReader extends DaySupervisionReader {
       fulfillmentMethod: row.fulfillmentMethod,
       status: row.status,
       window: windowOf(fulfillmentOf(row.fulfillment)),
-      // Un manque décidé (E6b) n'attend plus de décision.
-      shortfallReportedAt: row.shortfallDecidedAt === null ? row.shortfallReportedAt : null,
+      shortfallReportedAt: pending(row) ? row.shortfallReportedAt : null,
+      shortfallLines:
+        pending(row) && row.shortfallLines !== null
+          ? namedLines(shortfallLinesOf(row.shortfallLines), names.get(row.id))
+          : [],
     }));
+  }
+
+  /**
+   * Le nom à la commande de chaque article, pour les seules commandes au manque
+   * en vigueur — une requête de plus, jamais les lignes de toute la journée.
+   */
+  private async productNames(
+    orderIds: readonly string[],
+  ): Promise<ReadonlyMap<string, ReadonlyMap<string, string>>> {
+    if (orderIds.length === 0) {
+      return new Map();
+    }
+    const lines = await this.prisma.orderLine.findMany({
+      where: { orderId: { in: [...orderIds] } },
+      select: { orderId: true, sku: true, productNameSnapshot: true },
+    });
+    const byOrder = new Map<string, Map<string, string>>();
+    for (const line of lines) {
+      const names = byOrder.get(line.orderId) ?? new Map<string, string>();
+      names.set(line.sku, line.productNameSnapshot);
+      byOrder.set(line.orderId, names);
+    }
+    return byOrder;
   }
 
   countUndated(): Promise<number> {
@@ -88,4 +123,17 @@ function nameOf(
   }
   const fullName = `${person.firstName} ${person.lastName}`.trim();
   return fullName === "" ? null : fullName;
+}
+
+/** Le manque nommé ; un article absent des lignes garde son SKU plutôt qu'un nom inventé. */
+function namedLines(
+  lines: readonly { readonly sku: string; readonly due: number; readonly packed: number }[],
+  names: ReadonlyMap<string, string> | undefined,
+): SupervisedShortfallLine[] {
+  return lines.map((line) => ({
+    sku: line.sku,
+    productName: names?.get(line.sku) ?? line.sku,
+    due: line.due,
+    packed: line.packed,
+  }));
 }

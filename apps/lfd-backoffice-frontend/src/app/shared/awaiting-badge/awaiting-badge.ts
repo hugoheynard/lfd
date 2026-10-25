@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { FoldIconComponent } from 'fold-ng';
 
 /**
@@ -14,6 +14,11 @@ import { FoldIconComponent } from 'fold-ng';
  * marchandise à répartir, parce que c'est le même FAIT. Deux dessins auraient
  * demandé de l'apprendre deux fois, et auraient divergé au premier réglage.
  *
+ * **Le compte, facultatif** (Hugo, 2026-10-25) : avec `waiting` et `total`,
+ * « Att. prod 2/5 » — les lignes encore au four sur les lignes de la commande,
+ * comme la Supervision le dit d'une carte. Sans, « Att. prod » seul : une
+ * ligne du colisage n'a rien à compter. L'horloge se retire par `icon`.
+ *
  * Sa classe `co-awaiting` est posée sur l'hôte : l'écran la lit depuis ses deux
  * colonnes sans avoir à connaître l'intérieur du badge.
  */
@@ -25,4 +30,19 @@ import { FoldIconComponent } from 'fold-ng';
   styleUrl: './awaiting-badge.scss',
   host: { class: 'co-awaiting' },
 })
-export class AwaitingBadge {}
+export class AwaitingBadge {
+  /** L'horloge devant le libellé ; vraie par défaut, comme au colisage. */
+  readonly icon = input(true);
+  /** Les lignes encore au four ; ne s'affiche qu'avec `total`. */
+  readonly waiting = input<number | null>(null);
+  /** Les lignes de la commande. */
+  readonly total = input<number | null>(null);
+
+  protected readonly label = computed(() => {
+    const waiting = this.waiting();
+    const total = this.total();
+    return waiting === null || total === null
+      ? 'Att. prod'
+      : `Att. prod ${String(waiting)}/${String(total)}`;
+  });
+}

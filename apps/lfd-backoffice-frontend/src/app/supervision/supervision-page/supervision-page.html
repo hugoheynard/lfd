@@ -130,9 +130,23 @@
         la journée se lit sans se préparer.
       </fold-callout>
     }
-    @if (awaitingDecision(); as orders) {
-      <fold-callout variant="warning" data-awaiting-decision>
-        Manque signalé — décision attendue : {{ orders }}.
+    <!-- Un message qui reste tant qu'une décision attend, jamais un toast
+         (Hugo, 2026-10-25) : le détail est sur la carte du colisage. -->
+    @if (decisionMessage(); as message) {
+      <fold-callout variant="alert" data-awaiting-decision>
+        {{ message }}
+        <div actions>
+          <button
+            foldButton
+            type="button"
+            size="sm"
+            emphasis="soft"
+            data-awaiting-decision-go
+            (click)="showFirstDecision()"
+          >
+            Voir
+          </button>
+        </div>
       </fold-callout>
     }
     @if (cancelledAfterPlan() > 0) {
@@ -239,6 +253,8 @@
               (check)="check($event)"
               [canSendToShop]="reserveShop.canSend()"
               (sendToShop)="sendToShop($event)"
+              [shortfalls]="shortfalls()"
+              (shortfallDecided)="onShortfallDecided()"
               [awaitedOpen]="highlight.awaitedOpen()"
               (awaitedToggle)="highlight.toggleAwaited($event)"
               (showPreparation)="tab.set('preparation')"

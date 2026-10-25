@@ -390,21 +390,33 @@ describe('SupervisionPage', () => {
     ).not.toBeNull();
   });
 
-  it('dit les commandes au manque signalé — « décision attendue » (E6a)', async () => {
+  it('dit au masthead combien de commandes demandent une décision (E6a, 2026-10-25)', async () => {
     const shortfall = {
       orderId: 'o-short',
       reference: 'SHORT',
       customerName: 'Hôtel du Parc',
       fulfillmentMethod: 'delivery' as const,
       reportedAt: '2026-09-25T06:00:00.000Z',
+      lines: [{ sku: 'CRO', productName: 'Croissant', due: 3, packed: 1 }],
     };
-    const fixture = await mount({
+    const one = await mount({
       day: () => Promise.resolve({ ...DAY, awaitingDecision: [shortfall] }),
     });
+    expect(root(one).querySelector('.masthead [data-awaiting-decision]')?.textContent).toContain(
+      '1 commande demande votre décision',
+    );
+    TestBed.resetTestingModule();
 
-    expect(
-      root(fixture).querySelector('.masthead [data-awaiting-decision]')?.textContent,
-    ).toContain('Manque signalé — décision attendue : SHORT (Hôtel du Parc).');
+    const two = await mount({
+      day: () =>
+        Promise.resolve({
+          ...DAY,
+          awaitingDecision: [shortfall, { ...shortfall, orderId: 'o-2', reference: 'SHORT-2' }],
+        }),
+    });
+    expect(root(two).querySelector('.masthead [data-awaiting-decision]')?.textContent).toContain(
+      '2 commandes demandent votre décision',
+    );
   });
 
   it('ne dit rien du manque quand aucune commande n’en porte', async () => {

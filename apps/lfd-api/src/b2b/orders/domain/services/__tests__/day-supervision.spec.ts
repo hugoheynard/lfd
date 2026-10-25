@@ -118,6 +118,7 @@ describe("superviseDay", () => {
     status,
     window,
     shortfallReportedAt: null,
+    shortfallLines: [],
   });
 
   it("compte par acheminement et par étape, les annulées à part, les brouillons nulle part", () => {
@@ -209,6 +210,7 @@ describe("awaitingDecisionOf — « Manque signalé — décision attendue » (E
     status,
     window: null,
     shortfallReportedAt,
+    shortfallLines: [],
   });
 
   it("ne garde que les commandes au manque signalé, hors annulées", () => {

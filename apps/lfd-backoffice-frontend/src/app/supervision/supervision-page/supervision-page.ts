@@ -12,6 +12,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import type { FulfillmentMethod, WithdrawnPackingSheet } from '@lfd/contracts';
 import type { FoldViewNavItem } from 'fold-ng';
 import {
+  FoldButtonComponent,
   FoldButtonIconComponent,
   FoldCalloutComponent,
   FoldPageLayoutComponent,
@@ -86,6 +87,7 @@ const BOARD_NARROW = '(max-width: 900px)';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CompositionGapsCallout,
+    FoldButtonComponent,
     FoldButtonIconComponent,
     FoldCalloutComponent,
     FoldPageLayoutComponent,
@@ -179,19 +181,27 @@ export class SupervisionPage {
   });
 
   /**
-   * **Manque signalé — décision attendue** (lot E6a) : les commandes du jour
-   * que le colisage n'a pas pu remplir, dites par numéro et client. Lecture
-   * seule : la décision se prend sur la fiche commande.
+   * **Manque signalé — décision attendue** (lot E6a), par numéro : la carte
+   * du colisage passe au fond d'alerte et porte la décision (Hugo,
+   * 2026-10-25), le masthead dit combien attendent.
    */
-  protected readonly awaitingDecision = computed(() =>
-    (dataOf(this.day())?.awaitingDecision ?? [])
-      .map((order) =>
-        order.customerName === null
-          ? order.reference
-          : `${order.reference} (${order.customerName})`,
-      )
-      .join(', '),
+  protected readonly shortfalls = computed(
+    () =>
+      new Map(
+        (dataOf(this.day())?.awaitingDecision ?? []).map((order) => [order.reference, order]),
+      ),
   );
+
+  /** « 1 commande demande votre décision », sinon `null` : rien à dire. */
+  protected readonly decisionMessage = computed(() => {
+    const count = this.shortfalls().size;
+    if (count === 0) {
+      return null;
+    }
+    return count === 1
+      ? '1 commande demande votre décision'
+      : `${String(count)} commandes demandent votre décision`;
+  });
 
   /**
    * **Annulées après l'arrêt** (plan A1, lot A1.3) : gardées au compte à
@@ -292,6 +302,28 @@ export class SupervisionPage {
     if (this.narrow() && current !== null) {
       this.tab.set(current.hit.column);
     }
+  }
+
+  /**
+   * Le message du masthead mène à la PREMIÈRE commande en décision attendue
+   * de la colonne Colisage — qui les range en tête : on la met en avant par
+   * son numéro, comme une recherche, et la page y défile.
+   */
+  protected showFirstDecision(): void {
+    const first = this.shortfalls().keys().next();
+    if (first.done === true) {
+      return;
+    }
+    this.view.set('day');
+    if (this.narrow()) {
+      this.tab.set('packing');
+    }
+    this.highlight.search(first.value);
+  }
+
+  /** Une décision prise sur une carte : la carte et le compteur se relisent. */
+  protected async onShortfallDecided(): Promise<void> {
+    await this.reads.refresh();
   }
 
   /** Un segment Hier / Aujourd'hui / Demain. */

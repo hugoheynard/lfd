@@ -43,6 +43,16 @@
     box-shadow: 0 6px 18px -8px color-mix(in srgb, var(--fold-ref-amber-700) 45%, transparent);
   }
 
+  // Manque signalé — décision attendue (Hugo, 2026-10-25) : le fond d'alerte
+  // de fold, rendu opaque sur la carte comme `.is-source` — la surface d'alerte
+  // est transparente et laisserait passer le gris de la colonne.
+  &.is-shortfall {
+    background: color-mix(in srgb, var(--fold-color-alert) 10%, var(--fold-color-surface-card));
+    border: 1px solid var(--fold-color-alert-border);
+    border-left: 3px solid var(--fold-color-alert);
+    border-radius: 0 var(--fold-radius-sm) var(--fold-radius-sm) 0;
+  }
+
   &.is-receded {
     opacity: 0.45;
   }
@@ -112,11 +122,6 @@
   &[data-state='in_progress'] {
     background: var(--fold-color-primary-surface);
     color: var(--fold-color-primary-strong);
-  }
-
-  &[data-state='awaiting_oven'] {
-    background: var(--fold-color-warning-surface);
-    color: var(--fold-color-warning-text);
   }
 }
 

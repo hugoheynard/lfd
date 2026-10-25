@@ -1,0 +1,15 @@
+<ul class="missing" data-shortfall-missing>
+  @for (text of missing(); track $index) {
+    <li>{{ text }}</li>
+  }
+</ul>
+@if (allowed()) {
+  <app-order-shortfall-decision
+    [orderId]="shortfall().orderId"
+    [shortfall]="asOrderShortfall()"
+    [lines]="names()"
+    (decided)="decided.emit()"
+  />
+} @else {
+  <p class="waiting" data-shortfall-waiting>En attente d'une décision du commerce</p>
+}

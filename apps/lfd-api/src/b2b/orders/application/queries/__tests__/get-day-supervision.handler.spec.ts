@@ -39,6 +39,7 @@ const LATE: SupervisedOrder = {
   status: "ready",
   window: { start: "07:00", end: "08:00", source: "override" },
   shortfallReportedAt: null,
+  shortfallLines: [],
 };
 
 describe("GetDaySupervisionHandler", () => {
@@ -81,7 +82,16 @@ describe("GetDaySupervisionHandler", () => {
   it("rend les commandes au manque signalé — « décision attendue » (E6a)", async () => {
     const view = await new GetDaySupervisionHandler(
       new StubReader(
-        [LATE, { ...LATE, orderId: "o2", reference: "ORD-0002", shortfallReportedAt: NOW }],
+        [
+          LATE,
+          {
+            ...LATE,
+            orderId: "o2",
+            reference: "ORD-0002",
+            shortfallReportedAt: NOW,
+            shortfallLines: [{ sku: "CRO", productName: "Croissant", due: 3, packed: 1 }],
+          },
+        ],
         0,
       ),
       new FixedClock(NOW),
@@ -95,6 +105,7 @@ describe("GetDaySupervisionHandler", () => {
         customerName: "Boulangerie du Col",
         fulfillmentMethod: "pickup",
         reportedAt: NOW.toISOString(),
+        lines: [{ sku: "CRO", productName: "Croissant", due: 3, packed: 1 }],
       },
     ]);
   });

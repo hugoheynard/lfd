@@ -3,7 +3,7 @@ import { FoldCheckboxComponent, FoldEmptyStateComponent, FoldIconComponent } fro
 
 import type { PackingResource } from '@lfd/contracts';
 
-import { AwaitingBadge } from '../awaiting-badge/awaiting-badge';
+import { AwaitingBadge } from '../../../shared/awaiting-badge/awaiting-badge';
 
 /**
  * **La marchandise à répartir** — la colonne de droite, l'autre plateau de la

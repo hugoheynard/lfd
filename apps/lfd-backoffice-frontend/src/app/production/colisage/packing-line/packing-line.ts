@@ -3,7 +3,7 @@ import { FoldCheckboxComponent } from 'fold-ng';
 
 import type { PackingLine as PackingLineView } from '@lfd/contracts';
 
-import { AwaitingBadge } from '../awaiting-badge/awaiting-badge';
+import { AwaitingBadge } from '../../../shared/awaiting-badge/awaiting-badge';
 
 /**
  * **Une ligne de commande au colisage** — case, quantité, produit, initiales.

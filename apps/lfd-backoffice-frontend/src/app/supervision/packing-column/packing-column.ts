@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, model, output } from '@angular/core';
-import type { WithdrawnPackingSheet } from '@lfd/contracts';
+import type { ShortfallAwaitingDecision, WithdrawnPackingSheet } from '@lfd/contracts';
 import { RouterLink } from '@angular/router';
 import type { FoldBadgeVariant } from 'fold-ng';
 import {
@@ -11,6 +11,7 @@ import {
   FoldMeterComponent,
 } from 'fold-ng';
 
+import { AwaitingBadge } from '../../shared/awaiting-badge/awaiting-badge';
 import {
   ALL_POINTS,
   PACKING_VISIBLE_MAX,
@@ -20,16 +21,23 @@ import {
   type PackingState,
   type UpcomingOrder,
 } from '../packing-cards';
+import { PackingShortfall } from '../packing-shortfall/packing-shortfall';
 import { NO_QUALITY, type QualityBadge, type QualityRequest } from '../quality-badges';
 import { countLabel } from '../supervision-labels';
 import { SUPERVISION_LINKS } from '../supervision-links';
 import { NO_MATCHES } from '../supervision-search';
 
-/** La pastille Mono de chaque état ouvert : le libellé porte l'état, jamais la couleur seule. */
+/**
+ * La pastille Mono de chaque état ouvert : le libellé porte l'état, jamais la
+ * couleur seule. « Attend le four » n'y est plus : c'est `app-awaiting-badge`,
+ * « Att. prod x/n », le mot du poste de colisage (Hugo, 2026-10-25).
+ */
 const BADGES: Readonly<
-  Record<Exclude<PackingState, 'packed'>, { label: string; variant: FoldBadgeVariant }>
+  Record<
+    Exclude<PackingState, 'packed' | 'awaiting_oven'>,
+    { label: string; variant: FoldBadgeVariant }
+  >
 > = {
-  awaiting_oven: { label: 'Attend le four', variant: 'warning' },
   in_progress: { label: 'En cours', variant: 'accent' },
   to_pack: { label: 'À coliser', variant: 'neutral' },
 };
@@ -50,6 +58,8 @@ const BADGES: Readonly<
   selector: 'app-packing-column',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    AwaitingBadge,
+    PackingShortfall,
     RouterLink,
     FoldBadgeComponent,
     FoldButtonComponent,
@@ -84,6 +94,13 @@ export class PackingColumn {
   readonly canSendToShop = input(false);
   /** Le pain rendu par une feuille retirée part en boutique — la page ouvre le panneau. */
   readonly sendToShop = output<WithdrawnPackingSheet>();
+  /**
+   * **Manque signalé — décision attendue**, par numéro de commande : la carte
+   * passe au fond d'alerte, dit ce qui manque, et porte la décision.
+   */
+  readonly shortfalls = input<ReadonlyMap<string, ShortfallAwaitingDecision>>(new Map());
+  /** Une décision est enregistrée sur une carte : à la page de relire. */
+  readonly shortfallDecided = output<void>();
   /** Mobile (B7) : « Voir en Préparation → » sur la commande dépliée. */
   readonly showPreparation = output();
 
@@ -95,7 +112,15 @@ export class PackingColumn {
    */
   readonly point = model(ALL_POINTS);
 
-  private readonly open = computed(() => this.inPoint(this.board().visible));
+  /** Les commandes en décision attendue d'abord : ce sont elles qui demandent un geste. */
+  private readonly open = computed(() => {
+    const cards = this.inPoint(this.board().visible);
+    const shortfalls = this.shortfalls();
+    return [
+      ...cards.filter((card) => shortfalls.has(card.reference)),
+      ...cards.filter((card) => !shortfalls.has(card.reference)),
+    ];
+  });
 
   protected readonly visible = computed(() => this.open().slice(0, PACKING_VISIBLE_MAX));
 
@@ -179,12 +204,20 @@ export class PackingColumn {
     });
   }
 
+  protected shortfallOf(card: PackingCard): ShortfallAwaitingDecision | null {
+    return this.shortfalls().get(card.reference) ?? null;
+  }
+
   protected badgeLabel(card: PackingCard): string {
-    return card.state === 'packed' ? '' : BADGES[card.state].label;
+    return card.state === 'packed' || card.state === 'awaiting_oven'
+      ? ''
+      : BADGES[card.state].label;
   }
 
   protected badgeVariant(card: PackingCard): FoldBadgeVariant {
-    return card.state === 'packed' ? 'success' : BADGES[card.state].variant;
+    return card.state === 'packed' || card.state === 'awaiting_oven'
+      ? 'success'
+      : BADGES[card.state].variant;
   }
 
   protected meta(card: PackingCard): string {
