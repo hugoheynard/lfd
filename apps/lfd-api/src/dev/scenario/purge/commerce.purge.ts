@@ -12,7 +12,12 @@ import type { PurgeClient, ScenarioScope } from "./scenario-scope.js";
  * (`notification:product.first_order:<numéro>`, relu le 2026-10-05).
  *
  * Les bons de livraison (plan E1, 2026-10-24) tiennent leur commande en
- * `RESTRICT` : ils partent avant elle, leurs lignes avant eux.
+ * `RESTRICT` : ils partent avant elle, leurs lignes avant eux. Même clé, et
+ * donc même ordre, pour ce que les gestes d'après l'arrêt du plan écrivent
+ * sur une commande (relu dans le schéma le 2026-10-25) : la décision de
+ * départ incomplet, les révisions de quantités (A2), la demande de
+ * remboursement et le remboursement. Oubliée, la première faisait échouer
+ * toute la remise (« Une ressource liée est introuvable », 2026-10-25).
  *
  * @returns les lignes supprimées, dont les commandes à part.
  */
@@ -32,6 +37,7 @@ export async function purgeCommerce(
       where: ofOrderNumbers.length === 0 ? { id: { in: [] } } : { OR: ofOrderNumbers },
     }),
     await tx.orderDayChange.deleteMany({ where: { serviceDay: { in: [...scope.days] } } }),
+    ...(await purgeOrderChildren(tx, orderIds)),
     await tx.deliveryNoteLine.deleteMany({ where: { note: { orderId: { in: orderIds } } } }),
     await tx.deliveryNote.deleteMany({ where: { orderId: { in: orderIds } } }),
   ];
@@ -41,4 +47,18 @@ export async function purgeCommerce(
     rows: lines + orders.count + counts.reduce((total, { count }) => total + count, 0),
     orders: orders.count,
   };
+}
+
+/** Ce que les gestes d'après l'arrêt écrivent sous une commande, tenu en `RESTRICT`. */
+async function purgeOrderChildren(
+  tx: PurgeClient,
+  orderIds: readonly string[],
+): Promise<readonly { readonly count: number }[]> {
+  const ofOrders = { orderId: { in: [...orderIds] } };
+  return [
+    await tx.orderShortfallDecision.deleteMany({ where: ofOrders }),
+    await tx.orderRevisionEntry.deleteMany({ where: ofOrders }),
+    await tx.orderRefund.deleteMany({ where: ofOrders }),
+    await tx.orderRefundRequest.deleteMany({ where: ofOrders }),
+  ];
 }

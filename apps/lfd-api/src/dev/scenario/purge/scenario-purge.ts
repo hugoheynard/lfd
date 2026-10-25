@@ -8,6 +8,7 @@ import { purgeJournals } from "./journals.purge.js";
 import { purgeOutbox } from "./outbox.purge.js";
 import { purgePacking } from "./packing.purge.js";
 import { purgeProduction } from "./production.purge.js";
+import { purgeReserveResupplies } from "./resupply.purge.js";
 import { PURGE_TRANSACTION_TIMEOUT_MS, type ScenarioScope } from "./scenario-scope.js";
 import { purgeStorage, scenarioPrefixes, type ScenarioBuckets } from "./storage.purge.js";
 
@@ -52,6 +53,7 @@ export async function purgeScenario(
   const production = await prisma.$transaction((tx) => purgeProduction(tx, scope), options);
   const outbox = await prisma.$transaction((tx) => purgeOutbox(tx, scope), options);
   const commerce = await prisma.$transaction((tx) => purgeCommerce(tx, scope), options);
+  const resupplies = await prisma.$transaction((tx) => purgeReserveResupplies(tx, scope), options);
   const journals = await prisma.$transaction((tx) => purgeJournals(tx, scope, delivery), options);
   const storage = await purgeStorage(
     buckets,
@@ -59,7 +61,7 @@ export async function purgeScenario(
   );
   return {
     removed: [
-      { category: "orders", rows: commerce.rows },
+      { category: "orders", rows: commerce.rows + resupplies },
       { category: "production", rows: production.rows },
       { category: "packing", rows: packing },
       { category: "delivery", rows: delivery.rows },

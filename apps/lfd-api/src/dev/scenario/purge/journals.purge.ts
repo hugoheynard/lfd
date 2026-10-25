@@ -3,6 +3,8 @@ import type { PurgeClient, ScenarioScope } from "./scenario-scope.js";
 
 /** Les modèles de courrier que la vie d'une commande envoie au client. */
 const ORDER_MAIL_TEMPLATE_PREFIX = "customer.order-";
+/** « Votre livraison est en route » : écrit au départ d'une tournée, hors du préfixe. */
+const DELIVERY_EN_ROUTE_TEMPLATE = "customer.delivery-en-route";
 
 /**
  * **Les journaux que le scénario a écrits** : le journal d'activité de ses
@@ -59,7 +61,10 @@ export async function purgeJournals(
   const mails = await tx.mailSend.deleteMany({
     where: {
       recipient: { in: buyers.map((buyer) => buyer.email) },
-      template: { startsWith: ORDER_MAIL_TEMPLATE_PREFIX },
+      OR: [
+        { template: { startsWith: ORDER_MAIL_TEMPLATE_PREFIX } },
+        { template: DELIVERY_EN_ROUTE_TEMPLATE },
+      ],
     },
   });
   return activity + mails.count;

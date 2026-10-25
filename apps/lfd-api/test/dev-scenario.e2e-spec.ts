@@ -209,4 +209,67 @@ describe("le scénario du jour, étape par étape", () => {
     },
     TIMEOUT_MS,
   );
+
+  /**
+   * Régression : la décision de départ incomplet (`order_shortfall_decision`,
+   * 2026-10-25) tient sa commande en `RESTRICT`, et la purge ne la
+   * connaissait pas — « La remise à l'état de base n'a pas abouti — Une
+   * ressource liée est introuvable » (Hugo, 2026-10-25).
+   */
+  it(
+    "la remise à l'état de base passe après les gestes du jour",
+    async () => {
+      const { day } = await reset();
+      for (const step of [1, 2, 3]) {
+        expect(await next()).toEqual({ played: step });
+      }
+      const order = await shortfallCandidate(day);
+      const packing = `/admin/packing/${day}/orders/${order.id}`;
+      const bag = jsonBody<{ containerId: string }>(
+        await admin(ctx).post(`${packing}/containers`).send({ nature: "bag" }).expect(201),
+      );
+      await admin(ctx)
+        .post(`${packing}/containers/${bag.containerId}/lines/${order.sku}`)
+        .send({ quantity: 1 })
+        .expect(204);
+      await admin(ctx).post(`${packing}/shortfall`).expect(204);
+      await ctx.drain();
+      await admin(ctx)
+        .post(`/admin/orders/${order.id}/shortfall-decision`)
+        .send({ remainder: "abandoned" })
+        .expect(204);
+      await ctx.drain();
+      expect(await ctx.prisma.orderShortfallDecision.count()).toBe(1);
+
+      await reset();
+      expect(await ctx.prisma.orderShortfallDecision.count()).toBe(0);
+      expect((await state()).reached).toBe(0);
+    },
+    TIMEOUT_MS,
+  );
 });
+
+/**
+ * Une commande du jour au compte, au retrait, dont une ligne compte plus d'une
+ * pièce : la seule forme dont on peut décider un départ incomplet (ni carte,
+ * ni bon de fidélité).
+ */
+async function shortfallCandidate(day: string): Promise<{ id: string; sku: string }> {
+  const orders = await ctx.prisma.order.findMany({
+    where: {
+      requestedDeliveryDate: new Date(`${day}T00:00:00.000Z`),
+      fulfillmentMethod: "pickup",
+      stripePaymentIntentId: null,
+      loyaltyVoucherId: null,
+      cancelledAt: null,
+    },
+    select: { id: true, lines: { select: { sku: true, quantity: true } } },
+  });
+  for (const order of orders) {
+    const line = order.lines.find((candidate) => candidate.quantity > 1);
+    if (line !== undefined) {
+      return { id: order.id, sku: line.sku };
+    }
+  }
+  throw new Error(`Le scénario du ${day} ne porte aucune commande au compte à départ incomplet.`);
+}
