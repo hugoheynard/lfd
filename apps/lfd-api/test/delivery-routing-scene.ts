@@ -194,6 +194,14 @@ export async function seedLocatedDelivery(
       // La clé de journée du commerce : minuit UTC, comme `expectedOnWhere`.
       requestedDeliveryDate: new Date(`${day}T00:00:00.000Z`),
       fulfillmentMethod: "delivery",
+      // Une livraison porte son échéance (CHECK `orders_delivery_has_deadline`,
+      // 2026-10-25) : la plus tardive possible, pour ne contraindre aucune
+      // composition que ces suites éprouvent.
+      fulfillment: {
+        window: { value: { start: null, end: "23:59" }, source: "default" },
+        contact: { value: null, source: "default" },
+        signatureRequired: { value: false, source: "default" },
+      },
       deliveryAddressId: address.id,
       deliveryAddressSnapshot: site,
       subtotalCents: 1000,

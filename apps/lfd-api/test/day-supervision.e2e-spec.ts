@@ -95,13 +95,21 @@ const PICKUP_FULFILLMENT = {
   signatureRequired: { value: false, source: "default" },
 };
 
+const DELIVERY_FULFILLMENT = {
+  window: { value: { start: null, end: "11:00" }, source: "default" },
+  contact: { value: null, source: "default" },
+  signatureRequired: { value: false, source: "default" },
+};
+
 function fulfillmentOf(seed: OrderSeed): { fulfillment?: Prisma.InputJsonValue } {
   if (seed.fulfillment !== undefined) {
     return { fulfillment: seed.fulfillment };
   }
+  // Un retrait porte son créneau, une livraison son échéance (CHECK en base,
+  // 2026-10-25) : la Supervision n'en lit pas l'heure ici.
   return (seed.fulfillmentMethod ?? "pickup") === "pickup"
     ? { fulfillment: PICKUP_FULFILLMENT }
-    : {};
+    : { fulfillment: DELIVERY_FULFILLMENT };
 }
 
 async function seedOrder(seed: OrderSeed): Promise<void> {
