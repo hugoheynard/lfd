@@ -1,5 +1,7 @@
 # Plan C7 — un particulier annule après l'arrêt du plan de production
 
+> 🔴 **2026-10-25 : la mécanique de ce plan (§ 3.2–3.3) est remplacée par [`plan-a1-retirer-une-commande-inscrite.md`](plan-a1-retirer-une-commande-inscrite.md)** ; ses décisions restent.
+>
 > **État au 2026-10-13 : doc-first, prêt à bâtir, rien n'est bâti.**
 > `vitruve` l'a contredit le 2026-10-13, et Hugo a répondu « corrige tous les
 > bloquants ». Ce plan s'ajoute à
