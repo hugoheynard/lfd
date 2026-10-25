@@ -137,7 +137,6 @@ describe("l'espace Livraison", () => {
     expect(await opens('comptoir', 'chargement')).toBe(true);
     expect(await opens('comptoir', 'chargement/:roundId')).toBe(true);
     expect(await opens('comptoir', 'bac/:binId')).toBe(true);
-    expect(await opens('comptoir', 'etiquettes/:orderId')).toBe(true);
     expect(await opens('comptoir', 'vehicules')).toBe(true);
     expect(await opens('comptoir', 'bacs')).toBe(true);
     expect(await opens('comptoir', 'contenances')).toBe(true);
@@ -163,18 +162,9 @@ describe("l'espace Livraison", () => {
     expect(await opens('dev', 'bac/:binId')).toBe(false);
   });
 
-  /** Les étiquettes lisent le panneau du geste : lire le colisage n'y suffit pas (2026-10-02). */
-  it('n’ouvre les étiquettes qu’à qui écrit le colisage ou le chargement', async () => {
-    expect(await opens('support', 'etiquettes/:orderId')).toBe(false);
-  });
-
   it('ne montre ni n’ouvre le chargement au commercial (Q21 : admin et comptoir)', async () => {
     expect(deliveryViewKeys('commercial')).not.toContain('chargement');
     expect(await opens('commercial', 'chargement')).toBe(false);
-    // Les étiquettes, elles, suivent le panneau des bacs (2026-10-02) : le
-    // commercial écrit le colisage dans la grille par défaut, le serveur lui
-    // sert déjà cette liste — la route s'aligne.
-    expect(await opens('commercial', 'etiquettes/:orderId')).toBe(true);
   });
 
   it('ne montre ni n’ouvre les tournées au commercial', async () => {

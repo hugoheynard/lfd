@@ -26,13 +26,15 @@ s'affiche à droite, et « Ouvrir dans un onglet » sert à l'imprimer.
 | Mandats           | mandat SEPA CORE                | `admin/document-specimens/sepa-mandate-core.pdf`        | `b2b/accounting`     | `renderSepaMandatePdf`     |
 | Récapitulatifs    | récapitulatif de commandes      | `admin/document-specimens/order-summary.pdf`            | `b2b/orders`         | `renderOrderSummaryPdf`    |
 | Catalogue         | matrice des allergènes          | `admin/document-specimens/allergen-matrix.pdf`          | `pim`                | `renderAllergenMatrixPdf`  |
+| Étiquettes        | étiquette de sac (A6)           | `admin/document-specimens/bag-label.pdf`                | `packing`            | `renderBagLabelsPdf`       |
+| Étiquettes        | étiquette de bac (A6)           | `admin/document-specimens/bin-label.pdf`                | `delivery`           | `renderBinLabelsPdf`       |
 
 ## Pourquoi chaque bloc sert ses propres exemplaires
 
 La matrice des blocs (`CLAUDE.md` §3) interdit au commerce d'importer le
 fournil ou la livraison, et ne le laisse lire le référentiel que par son
-canal. Un seul contrôleur qui rendrait les onze documents traverserait donc
-trois frontières. Chaque bloc sert les siens, sous le **même
+canal. Un seul contrôleur qui rendrait les quinze documents traverserait donc
+quatre frontières (le colisage depuis le 2026-10-25). Chaque bloc sert les siens, sous le **même
 préfixe** et le **même droit**, et l'écran les assemble :
 
 ```mermaid
@@ -47,6 +49,8 @@ flowchart LR
   screen -->|production-count.pdf, day-dossier.pdf| dayPapers["production<br/>AdminDayPapersSpecimensController"]
   screen -->|round-paper.pdf| delivery["delivery<br/>AdminRoundPaperSpecimenController"]
   screen -->|delivery-note-*.pdf| notes["b2b/delivery-notes<br/>AdminDeliveryNoteSpecimensController"]
+  screen -->|bag-label.pdf| packing["packing<br/>AdminBagLabelSpecimenController"]
+  screen -->|bin-label.pdf| binLabel["delivery<br/>AdminBinLabelSpecimenController"]
 ```
 
 Chaque contrôleur n'injecte que le `QueryBus` ; une query par document

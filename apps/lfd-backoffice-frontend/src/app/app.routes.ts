@@ -603,16 +603,6 @@ export const routes: Routes = [
   // au fournil, mais le geste n'en est pas une vue. Le même composant que
   // `colisage/:reference` : le poste ouvert sur la liste plutôt que sur une
   // commande. Le chemin exact ne masque pas la route du QR, qui exige un segment.
-  // Les étiquettes des SACS d'une commande (2026-10-25) : la même mécanique
-  // que celles des bacs (une page qu'on imprime), lue sous
-  // `production_packing:read` — la route du serveur ne demande pas davantage.
-  {
-    path: 'colisage/etiquettes/:date/:orderId',
-    canActivate: [permissionGuard('production_packing:read')],
-    title: 'Étiquettes des sacs — LFC B2B admin',
-    loadComponent: () =>
-      import('./production/colisage/bag-labels-page/bag-labels-page').then((m) => m.BagLabelsPage),
-  },
   {
     path: 'colisage',
     pathMatch: 'full',
@@ -828,28 +818,10 @@ export const routes: Routes = [
         title: 'Bac — LFC B2B admin',
         loadComponent: () => import('./livraison/bin-page/bin-page').then((m) => m.BinPage),
       },
-      {
-        // Les étiquettes des bacs d'un TRANSFERT interne (plan du transfert
-        // interne, lot T3) : la même page, lue sous `delivery_loading:read` —
-        // la route du serveur ne demande pas davantage.
-        path: 'etiquettes/transfert/:transferId',
-        canActivate: [permissionGuard('delivery_loading:read')],
-        title: 'Étiquettes du transfert — LFC B2B admin',
-        loadComponent: () =>
-          import('./livraison/bin-labels-page/bin-labels-page').then((m) => m.BinLabelsPage),
-      },
-      {
-        // Les étiquettes lisent la liste des bacs d'une commande, qui est le
-        // PANNEAU du geste : le serveur l'ouvre sous `production_packing:write`
-        // OU `delivery_loading:write` (plan des droits par geste §5.3). La
-        // route demande la même chose, sans quoi elle s'ouvrirait sur un 403
-        // (aligné le 2026-10-02).
-        path: 'etiquettes/:orderId',
-        canActivate: [anyPermissionGuard('production_packing:write', 'delivery_loading:write')],
-        title: 'Étiquettes des bacs — LFC B2B admin',
-        loadComponent: () =>
-          import('./livraison/bin-labels-page/bin-labels-page').then((m) => m.BinLabelsPage),
-      },
+      // Les ÉTIQUETTES des bacs (`etiquettes/:orderId`, `etiquettes/transfert/
+      // :transferId`) ne sont plus des pages depuis le 2026-10-25 : le serveur
+      // les rend en PDF A6, que le colisage et le chargement ouvrent dans un
+      // onglet (`shared/label-printer/`). Celles des sacs non plus.
       // LES RÉGLAGES DE LA LIVRAISON sont partis sous `/reglages/livraison/`
       // le 2026-10-13 (Hugo). Les anciennes adresses vivent dans des favoris ;
       // absolues, elles redirigent avant tout garde.

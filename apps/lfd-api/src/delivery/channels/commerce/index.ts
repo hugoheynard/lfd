@@ -88,6 +88,7 @@ export {
 export { DeliveryColorsReader, type DeliveryColors } from "./delivery-colors.reader.js";
 // La pastille par commande du transfert interne imprimé (2026-10-22).
 export { TransferOrderColorsReader } from "./transfer-order-colors.reader.js";
+export { BinLabelColorsReader } from "./bin-label-colors.reader.js";
 export {
   type TransferOrderCategory,
   TransferOrderContentsReader,

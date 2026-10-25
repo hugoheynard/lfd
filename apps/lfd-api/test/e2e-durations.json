@@ -228,7 +228,7 @@
   "test/orders-sales-terms.e2e-spec.ts": 13080,
   "test/orders.e2e-spec.ts": 10565,
   "test/outbox.e2e-spec.ts": 4964,
-  "test/packing-bag-labels.e2e-spec.ts": 4000,
+  "test/packing-bag-labels.e2e-spec.ts": 14104,
   "test/packing-board.e2e-spec.ts": 9171,
   "test/packing-clientele.e2e-spec.ts": 10764,
   "test/packing-containers.e2e-spec.ts": 5707,
@@ -440,5 +440,6 @@
   "test/order-received-on.e2e-spec.ts": 8069,
   "test/delivery-notes-terms.e2e-spec.ts": 10131,
   "test/delivery-notes-terms-scenario.e2e-spec.ts": 40412,
-  "test/reserve-sent-to-shop.e2e-spec.ts": 15000
+  "test/reserve-sent-to-shop.e2e-spec.ts": 15000,
+  "test/delivery-bin-labels-pdf.e2e-spec.ts": 12943
 }

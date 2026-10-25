@@ -1,5 +1,9 @@
 import type { BoardContainer, BoardOrder } from "../../ports/packing-board.reader.js";
-import { bagLabelsOf } from "../bag-labels.js";
+import {
+  BagLabelsBagNotFoundError,
+  BagLabelsNoBagError,
+} from "../../errors/packing-bag-label-errors.js";
+import { bagLabelsOf, bagsToPrint } from "../bag-labels.js";
 
 // Un instant recopié, jamais comparé à l'horloge.
 const AT = new Date(1_000);
@@ -75,5 +79,28 @@ describe("bagLabelsOf", () => {
 
   it("une commande sans sac : aucune étiquette", () => {
     expect(bagLabelsOf(order([bin("b1")]), HEAD, FACTS).bags).toEqual([]);
+  });
+});
+
+describe("bagsToPrint", () => {
+  const view = bagLabelsOf(order([bag("c2", "Sac 2"), bag("c3", "Sac 3")]), HEAD, FACTS);
+
+  it("sans sélection, tous les sacs vivants", () => {
+    expect(bagsToPrint(view, []).map((one) => one.containerId)).toEqual(["c2", "c3"]);
+  });
+
+  it("une sélection garde ses sacs, et leur rang dans la commande", () => {
+    expect(bagsToPrint(view, ["c3", "c9"])).toEqual([
+      { containerId: "c3", label: "Sac 3", rank: 2, of: 2 },
+    ]);
+  });
+
+  it("refuse une sélection dont aucun sac n'est vivant", () => {
+    expect(() => bagsToPrint(view, ["c1"])).toThrow(BagLabelsBagNotFoundError);
+  });
+
+  it("refuse une commande sans sac : un PDF sans page ne s'imprime pas", () => {
+    const empty = bagLabelsOf(order([bin("b1")]), HEAD, FACTS);
+    expect(() => bagsToPrint(empty, [])).toThrow(BagLabelsNoBagError);
   });
 });

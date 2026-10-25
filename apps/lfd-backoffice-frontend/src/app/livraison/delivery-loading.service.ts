@@ -5,9 +5,7 @@ import type {
   DeliveryLoadingDayView,
   DeliveryLoadingPlanView,
   DeliveryLoadingRoundView,
-  DeliveryOrderBinsView,
   DeliveryPackingRoundsView,
-  DeliveryTransferBinsView,
   DeclaredTransferBinsView,
   DeclareTransferBinsPayload,
   LoadDeliveryBinPayload,
@@ -52,11 +50,6 @@ export class DeliveryLoadingService {
     );
   }
 
-  /** Les bacs d'une commande — pour l'étiquetage. Une lecture : imprimer ne crée rien. */
-  orderBins(orderId: string): Promise<DeliveryOrderBinsView> {
-    return firstValueFrom(this.http.get<DeliveryOrderBinsView>(`${BINS}?order=${id(orderId)}`));
-  }
-
   /** Ce qu'on voit en ouvrant le QR d'un bac. Ouvrir n'écrit rien (L4-C13). */
   bin(binId: string): Promise<DeliveryBinDetailView> {
     return firstValueFrom(this.http.get<DeliveryBinDetailView>(`${BINS}/${id(binId)}`));
@@ -96,16 +89,6 @@ export class DeliveryLoadingService {
 
   async depart(roundId: string, version: number): Promise<void> {
     await firstValueFrom(this.http.post(`${BASE}/rounds/${id(roundId)}/departure`, { version }));
-  }
-
-  /**
-   * Les bacs d'un transfert interne (lot T3) — la page d'étiquettes du
-   * transfert, annulés compris. Sous `delivery_loading:read`.
-   */
-  transferBins(transferId: string): Promise<DeliveryTransferBinsView> {
-    return firstValueFrom(
-      this.http.get<DeliveryTransferBinsView>(`${BASE}/loading/transfers/${id(transferId)}/bins`),
-    );
   }
 
   /**

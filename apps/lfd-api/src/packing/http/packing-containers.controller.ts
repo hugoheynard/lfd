@@ -10,15 +10,30 @@ import {
   openPackingContainerSchema,
   transferPackingPiecesSchema,
 } from "@lfd/contracts";
-import { Body, Controller, Get, HttpCode, Param, Post } from "@nestjs/common";
+import { contentDispositionInline, sanitiseFileName } from "@lfd/storage";
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Query,
+  Res,
+  StreamableFile,
+} from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
+import type { Response } from "express";
+import { z } from "zod";
 
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../platform/auth/staff.decorator.js";
-import { ZodBody } from "../../platform/shared/http/zod-body.pipe.js";
+import { ZodBody, ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
 import { ApplyPackingProposalCommand } from "../application/containers/apply-packing-proposal.command.js";
 import { GetShareableHalvesQuery } from "../application/containers/get-shareable-halves.query.js";
 import { GetBagLabelsQuery } from "../application/containers/get-bag-labels.query.js";
+import type { BagLabelsFile } from "../application/containers/get-bag-labels-pdf.handler.js";
+import { GetBagLabelsPdfQuery } from "../application/containers/get-bag-labels-pdf.query.js";
 import { AllocateToContainerCommand } from "../application/containers/allocate-to-container.command.js";
 import { GetPackingProposalQuery } from "../application/containers/get-packing-proposal.query.js";
 import { MoveBetweenContainersCommand } from "../application/containers/move-between-containers.command.js";
@@ -26,6 +41,10 @@ import { OpenPackingContainerCommand } from "../application/containers/open-pack
 import { VoidPackingContainerCommand } from "../application/containers/void-packing-container.command.js";
 import { WithdrawFromContainerCommand } from "../application/containers/withdraw-from-container.command.js";
 import { packingDayOf as dayOf } from "./packing-day-path.js";
+
+/** `?sacs=c1,c2` — les sacs à imprimer, validés dans leur FORME ; absent : tous. */
+const bagLabelsQuerySchema = z.object({ sacs: z.string().optional() });
+type BagLabelsQueryString = z.infer<typeof bagLabelsQuerySchema>;
 
 /** Le code de retour d'un geste qui n'a rien à rendre — le client relit le poste. */
 const NO_CONTENT = 204;
@@ -197,5 +216,29 @@ export class PackingContainersController {
     return this.queries.execute<GetBagLabelsQuery, PackingBagLabelsView>(
       new GetBagLabelsQuery(dayOf(date), orderId),
     );
+  }
+
+  /**
+   * **Les étiquettes des sacs, en PDF A6** (2026-10-25) — une par feuille,
+   * toutes ou celles de `?sacs=`. Servi en ligne : le navigateur l'ouvre et
+   * l'imprime. Une lecture, sous le même droit que les données.
+   */
+  @Get("bag-labels.pdf")
+  async bagLabelsPdf(
+    @Param("date") date: string,
+    @Param("orderId") orderId: string,
+    @Query(new ZodQuery(bagLabelsQuerySchema)) query: BagLabelsQueryString,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<StreamableFile> {
+    const containerIds = (query.sacs ?? "").split(",").filter((id) => id !== "");
+    const pdf = await this.queries.execute<GetBagLabelsPdfQuery, BagLabelsFile>(
+      new GetBagLabelsPdfQuery(dayOf(date), orderId, containerIds),
+    );
+    response.setHeader("Content-Type", "application/pdf");
+    response.setHeader(
+      "Content-Disposition",
+      contentDispositionInline(sanitiseFileName(pdf.fileName, "etiquettes-sacs.pdf")),
+    );
+    return new StreamableFile(pdf.bytes);
   }
 }

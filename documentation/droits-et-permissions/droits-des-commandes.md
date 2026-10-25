@@ -237,9 +237,12 @@ Touche une commande par sa fiche PDF ; le reste est la production du jour.
 | `GET /admin/delivery/packing/bins`, `POST …/bacs/:binId/annulation`                                                                                    | `production_packing:write` **ou** `delivery_loading:write`              |
 
 **Back-office** : `/colisage` (garde `production_packing:read`),
-`/colisage/:reference` (garde `production_packing:write`), `…/bac/:binId` et
-`…/etiquettes/:orderId` (l'un ou l'autre droit), et les boutons du tableau des
-contenants (`can('production_packing:write')`). Voir
+`/colisage/:reference` (garde `production_packing:write`), `…/bac/:binId`
+(l'un ou l'autre droit), et les boutons du tableau des contenants
+(`can('production_packing:write')`). Les étiquettes des bacs ne sont plus une
+page depuis le 2026-10-25 : le PDF `GET /admin/delivery/packing/bin-labels`
+demande l'un ou l'autre droit en écriture, et ses boutons ne s'offrent qu'à
+qui le tient. Voir
 [`../colisage/colisage.md`](../colisage/colisage.md).
 
 ## `production_settings` — Réglages du fournil

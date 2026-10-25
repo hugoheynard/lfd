@@ -14,7 +14,9 @@ export type SpecimenKey =
   | 'production-count'
   | 'day-dossier'
   | 'delivery-note-carrier'
-  | 'delivery-note-client-pro';
+  | 'delivery-note-client-pro'
+  | 'bag-label'
+  | 'bin-label';
 
 /** Le nom de chaque exemplaire. Un `Record` : une clé ajoutée sans nom ne compile pas. */
 export const SPECIMEN_LABELS: Readonly<Record<SpecimenKey, string>> = {
@@ -31,6 +33,8 @@ export const SPECIMEN_LABELS: Readonly<Record<SpecimenKey, string>> = {
   'day-dossier': 'Dossier du jour',
   'delivery-note-carrier': 'Bon de livraison — transport',
   'delivery-note-client-pro': 'Bon de livraison — client pro',
+  'bag-label': 'Étiquette de sac',
+  'bin-label': 'Étiquette de bac',
 };
 
 /** Un groupe de la planche : ce qu'un document dit de l'argent. */
@@ -49,7 +53,8 @@ function group(title: string, keys: readonly SpecimenKey[]): SpecimenGroup {
  * jamais un montant — le bon de livraison de transport non plus, il voyage
  * avec la marchandise), les papiers du fournil pour la journée (compte à
  * produire, dossier du jour), la facture, les deux mandats SEPA, le récapitulatif de
- * commandes d'une société, et la matrice des allergènes du catalogue. Il n'y
+ * commandes d'une société, la matrice des allergènes du catalogue, et les
+ * étiquettes A6 du colisage — sac et bac (2026-10-25). Il n'y
  * a pas de bon « bureau » : le bon que le staff ouvre est celui du client.
  */
 export const SPECIMEN_GROUPS: readonly SpecimenGroup[] = [
@@ -60,6 +65,7 @@ export const SPECIMEN_GROUPS: readonly SpecimenGroup[] = [
   group('Mandats', ['sepa-mandate-b2b', 'sepa-mandate-core']),
   group('Récapitulatifs', ['order-summary']),
   group('Catalogue', ['allergen-matrix']),
+  group('Étiquettes', ['bag-label', 'bin-label']),
 ];
 
 /** Une clé reçue de `fold-choice-row` (une `string`) est-elle un exemplaire ? */

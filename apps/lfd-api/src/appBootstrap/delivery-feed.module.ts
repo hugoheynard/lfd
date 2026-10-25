@@ -21,6 +21,7 @@ import { PickupAddressesModule } from "../b2b/pickup-addresses/pickup-addresses.
 import { PickupDepartureCandidatesReader } from "../b2b/pickup-addresses/infrastructure/pickup-departure-candidates.reader.js";
 import { SiteTransferPlacesReader } from "../b2b/pickup-addresses/infrastructure/site-transfer-places.reader.js";
 import { DeliveryTransferOrderColorsReader } from "../b2b/orders/infrastructure/delivery-transfer-order-colors.reader.js";
+import { DeliveryBinLabelColorsReader } from "../b2b/orders/infrastructure/delivery-bin-label-colors.reader.js";
 import { SiteDeliveryColorsReader } from "../b2b/sites/infrastructure/site-delivery-colors.reader.js";
 import { SitesModule } from "../b2b/sites/sites.module.js";
 import {
@@ -28,6 +29,7 @@ import {
   DeliveryAddressPointCorrector,
   DeliveryColorsReader,
   TransferOrderColorsReader,
+  BinLabelColorsReader,
   DeliveryAddressPointsReader,
   DeliveryOrderLinesReader,
   DeliveryOrdersReader,
@@ -129,6 +131,8 @@ import { ResolvedDepartureSiteReader } from "../delivery/infrastructure/resolved
     { provide: DeliveryColorsReader, useClass: SiteDeliveryColorsReader },
     // La pastille par commande du transfert imprimé (2026-10-22) : la règle du bon.
     { provide: TransferOrderColorsReader, useClass: DeliveryTransferOrderColorsReader },
+    // Le carré de l'étiquette de bac imprimée (2026-10-25) : la règle du bon.
+    { provide: BinLabelColorsReader, useClass: DeliveryBinLabelColorsReader },
   ],
   exports: [
     DepartureCandidatesReader,
@@ -150,6 +154,7 @@ import { ResolvedDepartureSiteReader } from "../delivery/infrastructure/resolved
     TransferSitePlacesReader,
     DeliveryColorsReader,
     TransferOrderColorsReader,
+    BinLabelColorsReader,
   ],
 })
 export class DeliveryFeedModule {}

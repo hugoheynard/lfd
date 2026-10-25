@@ -283,8 +283,14 @@ que le second).
 
 ### 5.3 Les étiquettes
 
-`Livraison → Étiquettes` (`/livraison/etiquettes/:orderId`, ouverte depuis le
-panneau ou de la rangée) imprime une étiquette par bac, ou toutes. **En tête et
+Les étiquettes sont un **PDF A6 portrait, une par feuille**, que le serveur
+rend et que l'écran ouvre dans un onglet — depuis le 2026-10-25, où la page
+web `Livraison → Étiquettes` (`window.print`) a été retirée. `GET
+admin/delivery/packing/bin-labels?order=…` (`&bacs=` pour un seul), sous
+`production_packing:write` **ou** `delivery_loading:write` ; celles d'un
+transfert interne par `GET …/bin-labels/transfers/:transferId`, sous
+`delivery_loading:read`, titrées « Transfert <site> ». Une étiquette par bac
+vivant, ou toutes. **En tête et
 en très gros, la tournée et le rang d'arrêt** (« Kangoo · passage 2 »,
 « Arrêt 3 » — lot PC3) : on pose le bac dans la zone de sa tournée ; hors
 tournée, rien n'est imprimé à cette place. Puis numéro de commande, client,
@@ -513,8 +519,8 @@ contenances), `delivery-packing.ts` (proposition, moitiés libres),
 `livraison/bins-page/` et `livraison/bin-type-dialog/` (types),
 `livraison/bin-capacities-page/` (grille), `production/colisage/packing-rounds.ts`
 (le rangement par tournée) — le poste lui-même est décrit dans
-[`colisage.md`](colisage.md) §6, `livraison/bin-labels-page/` et
-`livraison/bin-label/` (étiquettes), `livraison/bin-page/` (le QR ouvert),
+[`colisage.md`](colisage.md) §6, `shared/label-printer/` (les étiquettes,
+PDF du serveur depuis le 2026-10-25), `livraison/bin-page/` (le QR ouvert),
 `livraison/loading-page/` et `livraison/loading-round-page/` (chargement,
 scan, Partir), `livraison/loading-plan/` (plan).
 

@@ -10,6 +10,10 @@ import { PackingShadowLedger } from "./domain/ports/packing-shadow.ledger.js";
 import { ApplyPackingProposalHandler } from "./application/containers/apply-packing-proposal.handler.js";
 import { GetShareableHalvesHandler } from "./application/containers/get-shareable-halves.handler.js";
 import { GetBagLabelsHandler } from "./application/containers/get-bag-labels.handler.js";
+import { GetBagLabelsPdfHandler } from "./application/containers/get-bag-labels-pdf.handler.js";
+import { GetBagLabelSpecimenHandler } from "./application/queries/get-bag-label-specimen.handler.js";
+import { BrandModule } from "../platform/brand/brand.module.js";
+import { AdminBagLabelSpecimenController } from "./http/admin-bag-label-specimen.controller.js";
 import { AllocateToContainerHandler } from "./application/containers/allocate-to-container.handler.js";
 import { GetPackingProposalHandler } from "./application/containers/get-packing-proposal.handler.js";
 import { OpenPackingContainerHandler } from "./application/containers/open-packing-container.handler.js";
@@ -106,12 +110,15 @@ import { PrismaPackingSettingsRepository } from "./infrastructure/prisma-packing
  * moitié de bac, fermé par défaut.
  */
 @Module({
+  // Le logo des étiquettes de sac (2026-10-25).
+  imports: [BrandModule],
   controllers: [
     PackingContainersController,
     PackingBoardController,
     PackingOrdersController,
     PackingResuppliesController,
     PackingSettingsController,
+    AdminBagLabelSpecimenController,
   ],
   providers: [
     OnPackingListDrawn,
@@ -140,6 +147,8 @@ import { PrismaPackingSettingsRepository } from "./infrastructure/prisma-packing
     ApplyPackingProposalHandler,
     GetShareableHalvesHandler,
     GetBagLabelsHandler,
+    GetBagLabelsPdfHandler,
+    GetBagLabelSpecimenHandler,
     PrismaContainerManagedOrders,
     // Le poste servi par le colisage (K3a).
     GetPackingBoardHandler,

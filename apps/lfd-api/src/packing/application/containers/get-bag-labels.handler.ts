@@ -3,21 +3,14 @@ import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 
 import { OrderBagLabelReader } from "../../channels/commerce/index.js";
 import { OrderLabelHeadReader } from "../../../production/channels/packing/index.js";
-import { BagLabelsSheetNotFoundError } from "../../domain/errors/packing-bag-label-errors.js";
 import { PackingBoardReader } from "../../domain/ports/packing-board.reader.js";
-import { bagLabelsOf } from "../../domain/services/bag-labels.js";
+import { readBagLabels } from "./bag-labels-reading.js";
 import { GetBagLabelsQuery } from "./get-bag-labels.query.js";
 
 /**
- * **Les étiquettes des sacs d'une commande** (2026-10-25, demande de Hugo) —
- * une LECTURE : imprimer ne crée aucun sac, réimprimer non plus.
- *
- * Trois lectures, chacune chez qui la tient :
- *
- * - les sacs vivants, aux tables du colisage (`PackingBoardReader`) ;
- * - le libellé et le créneau, au fournil, composés par les fonctions de ses
- *   papiers (`OrderLabelHeadReader`) — l'étiquette dit ce que dit le bon ;
- * - la couleur et le QR de retrait, au commerce (`OrderBagLabelReader`).
+ * **Les étiquettes des sacs d'une commande, en données** (2026-10-25) — une
+ * LECTURE : imprimer ne crée aucun sac, réimprimer non plus. Le papier, lui,
+ * est {@link GetBagLabelsPdfHandler} ; les deux lisent par `readBagLabels`.
  *
  * @throws {BagLabelsSheetNotFoundError} la commande n'est pas au poste de ce
  *   jour, ou le fournil ne l'a pas inscrite.
@@ -30,16 +23,8 @@ export class GetBagLabelsHandler implements IQueryHandler<GetBagLabelsQuery, Pac
     private readonly commerce: OrderBagLabelReader,
   ) {}
 
-  async execute(query: GetBagLabelsQuery): Promise<PackingBagLabelsView> {
-    const [day, head, facts] = await Promise.all([
-      this.board.dayOf(query.serviceDay),
-      this.heads.headOf(query.serviceDay, query.orderId),
-      this.commerce.factsOf(query.orderId),
-    ]);
-    const order = day.orders.find((candidate) => candidate.orderId === query.orderId);
-    if (order === undefined || head === null) {
-      throw new BagLabelsSheetNotFoundError(query.serviceDay);
-    }
-    return bagLabelsOf(order, head, facts);
+  execute(query: GetBagLabelsQuery): Promise<PackingBagLabelsView> {
+    const sources = { board: this.board, heads: this.heads, commerce: this.commerce };
+    return readBagLabels(sources, query.serviceDay, query.orderId);
   }
 }

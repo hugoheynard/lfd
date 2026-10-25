@@ -7,7 +7,6 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import {
   DELIVERY_BIN_INNER_BAGS_MAX,
   DELIVERY_BINS_PER_DECLARATION_MAX,
@@ -25,6 +24,7 @@ import {
 
 import { httpErrorMessage } from '@lfd/endpoints';
 
+import { LabelPrinter } from '../../shared/label-printer/label-printer';
 import { DeliveryBinsService } from '../delivery-bins.service';
 import { DeliveryLoadingService } from '../delivery-loading.service';
 import { transferBinsPayload, transferBinsSummary } from '../transfer-bins';
@@ -39,7 +39,6 @@ import { transferBinsPayload, transferBinsSummary } from '../transfer-bins';
   selector: 'app-transfer-bins-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    RouterLink,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCardComponent,
@@ -53,6 +52,7 @@ import { transferBinsPayload, transferBinsSummary } from '../transfer-bins';
 export class TransferBinsCard {
   private readonly loading = inject(DeliveryLoadingService);
   private readonly bins = inject(DeliveryBinsService);
+  private readonly labels = inject(LabelPrinter);
 
   readonly stop = input.required<DeliveryLoadingTransferStopView>();
   /** `delivery_loading:write`, et la tournée encore au dépôt. */
@@ -88,10 +88,13 @@ export class TransferBinsCard {
   );
   protected readonly canSubmit = computed(() => !this.saving() && this.payload() !== null);
 
-  protected readonly labelsQuery = computed(() => {
-    const ids = this.justDeclared();
-    return ids.length === 0 ? {} : { bacs: ids.join(',') };
-  });
+  /**
+   * Les étiquettes A6 du transfert, en PDF dans un onglet (2026-10-25) : les
+   * bacs qu'on vient de déclarer, ou tous. N'écrit rien.
+   */
+  protected printLabels(): void {
+    void this.labels.transferBins(this.stop().transferId, this.justDeclared());
+  }
 
   protected async open(): Promise<void> {
     this.declaring.set(true);

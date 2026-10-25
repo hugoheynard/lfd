@@ -1,18 +1,17 @@
 <fold-card data-transfer-bins>
   <div class="tbc-body">
     <fold-element-title variant="title" icon="truck" [title]="title()" [subtitle]="subtitle()">
-      <a
+      <button
         titleAction
         foldButton
         size="sm"
         emphasis="outline"
         icon="print"
-        [routerLink]="['/livraison/etiquettes/transfert', stop().transferId]"
-        [queryParams]="labelsQuery()"
+        (click)="printLabels()"
         data-transfer-labels
       >
         {{ justDeclared().length > 0 ? 'Imprimer les nouvelles étiquettes' : 'Étiquettes' }}
-      </a>
+      </button>
     </fold-element-title>
 
     @if (lateResupplies() > 0) {

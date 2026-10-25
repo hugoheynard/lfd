@@ -214,16 +214,16 @@
         }
       }
 
-      @if (hasBins()) {
-        <a foldButton emphasis="soft" icon="print" [routerLink]="labelsLink()" data-labels>
+      @if (hasBins() && canPrintBins()) {
+        <button foldButton emphasis="soft" icon="print" (click)="printBins()" data-labels>
           Imprimer les étiquettes
-        </a>
+        </button>
       }
 
       @if (hasBags()) {
-        <a foldButton emphasis="soft" icon="print" [routerLink]="bagLabelsLink()" data-bag-labels>
+        <button foldButton emphasis="soft" icon="print" (click)="printBags()" data-bag-labels>
           Imprimer les étiquettes des sacs
-        </a>
+        </button>
       }
 
       @if (gestures.refusal(); as refusal) {
@@ -270,34 +270,34 @@
               [title]="title(container)"
               [subtitle]="pieces(container.pieces)"
             >
-              @if (container.binId; as binId) {
-                <a
+              <!-- Gardes À PLAT : un `@if` imbriqué ôterait au bouton sa place
+                   dans le créneau `titleAction`. -->
+              @if (canPrintBins() && container.binId; as binId) {
+                <button
                   titleAction
                   foldButton
                   size="sm"
                   emphasis="soft"
                   icon="print"
-                  [routerLink]="labelsLink()"
-                  [queryParams]="{ bacs: binId }"
+                  (click)="printBins(binId)"
                   [attr.aria-label]="'Imprimer l’étiquette ' + title(container)"
                   data-bin-label
                 >
                   Étiquette
-                </a>
+                </button>
               } @else if (container.nature === 'bag') {
-                <a
+                <button
                   titleAction
                   foldButton
                   size="sm"
                   emphasis="soft"
                   icon="print"
-                  [routerLink]="bagLabelsLink()"
-                  [queryParams]="{ sacs: container.id }"
+                  (click)="printBags(container.id)"
                   [attr.aria-label]="'Imprimer l’étiquette ' + title(container)"
                   data-bag-label
                 >
                   Étiquette
-                </a>
+                </button>
               }
               @if (editable()) {
                 <button

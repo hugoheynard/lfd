@@ -17,6 +17,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { DeliveryBinsService } from '../../../livraison/delivery-bins.service';
 import { PackingContainersService } from '../../packing-containers.service';
+import { LabelPrinter } from '../../../shared/label-printer/label-printer';
 import { PackingSettingsService } from '../../packing-settings.service';
 import { PackingDayReader } from '../packing-day.reader';
 import { PackingContainerBoard } from './packing-container-board';
@@ -154,7 +155,23 @@ class FakeContainers {
   }
 }
 
+/** L'imprimante doublée : elle garde ce qu'on lui demande d'ouvrir. */
+class FakeLabels {
+  readonly asked: string[] = [];
+
+  bags(date: string, orderId: string, containerIds: readonly string[]): Promise<void> {
+    this.asked.push(`sacs ${date}/${orderId} [${containerIds.join(',')}]`);
+    return Promise.resolve();
+  }
+
+  orderBins(orderId: string, binIds: readonly string[]): Promise<void> {
+    this.asked.push(`bacs ${orderId} [${binIds.join(',')}]`);
+    return Promise.resolve();
+  }
+}
+
 let api: FakeContainers;
+let labels: FakeLabels;
 let rereads: number;
 /** Réglages › Colisage, servi : ouvert dans la plupart des cas, qui éprouvent le geste. */
 let halfSharing: boolean;
@@ -190,6 +207,7 @@ async function render(
       provideRouter([]),
       { provide: PermissionsStore, useValue: grants },
       { provide: PackingContainersService, useValue: api },
+      { provide: LabelPrinter, useValue: labels },
       {
         provide: PackingSettingsService,
         useValue: { read: () => Promise.resolve({ halfSharing, source: 'explicit' }) },
@@ -231,6 +249,7 @@ function click(el: HTMLElement, selector: string): void {
 describe('les contenants d’une commande `listed` (K2b)', () => {
   beforeEach(() => {
     api = new FakeContainers();
+    labels = new FakeLabels();
     rereads = 0;
     halfSharing = true;
   });
@@ -547,7 +566,8 @@ describe('les contenants d’une commande `listed` (K2b)', () => {
     expect(el.querySelector('[data-withdraw]')).toBeNull();
   });
 
-  it('un bac s’étiquette, seul ou avec toute la commande ; un sac n’a pas l’étiquette d’un bac', async () => {
+  /** 2026-10-25, Hugo : « imprimer l'étiquette devrait donner un beau PDF ». */
+  it('un bac s’étiquette en PDF, seul ou avec toute la commande ; un sac n’a pas l’étiquette d’un bac', async () => {
     const { el } = await render(
       sheet({
         containerList: [
@@ -556,12 +576,19 @@ describe('les contenants d’une commande `listed` (K2b)', () => {
         ],
       }),
     );
-    const one = el.querySelectorAll<HTMLAnchorElement>('[data-bin-label]');
-    expect(one.length).toBe(1);
-    expect(one[0]?.getAttribute('href')).toBe('/livraison/etiquettes/o-1?bacs=b-1');
-    expect(el.querySelector('[data-labels]')?.getAttribute('href')).toBe(
-      '/livraison/etiquettes/o-1',
+    expect(el.querySelectorAll('[data-bin-label]').length).toBe(1);
+    click(el, '[data-bin-label]');
+    click(el, '[data-labels]');
+    expect(labels.asked).toEqual(['bacs o-1 [b-1]', 'bacs o-1 []']);
+  });
+
+  it('sans écrire ni le colisage ni le chargement, les étiquettes des bacs ne s’offrent pas', async () => {
+    const { el } = await render(
+      sheet({ containerList: [container({})] }),
+      only('production_packing:read'),
     );
+    expect(el.querySelector('[data-bin-label]')).toBeNull();
+    expect(el.querySelector('[data-labels]')).toBeNull();
   });
 
   it('sans bac, pas d’étiquettes à imprimer', async () => {
@@ -571,7 +598,7 @@ describe('les contenants d’une commande `listed` (K2b)', () => {
   });
 
   /** 2026-10-25, Hugo : « je ne peux pas faire d'étiquette pour les sacs ». */
-  it('un sac s’étiquette, seul ou avec tous les sacs, sur la journée du poste', async () => {
+  it('un sac s’étiquette en PDF, seul ou avec tous les sacs, sur la journée du poste', async () => {
     const { el } = await render(
       sheet({
         fulfillmentMethod: 'pickup',
@@ -581,14 +608,11 @@ describe('les contenants d’une commande `listed` (K2b)', () => {
         ],
       }),
     );
-    const one = [...el.querySelectorAll<HTMLAnchorElement>('[data-bag-label]')];
-    expect(one.map((link) => link.getAttribute('href'))).toEqual([
-      '/colisage/etiquettes/2026-10-05/o-1?sacs=c-2',
-      '/colisage/etiquettes/2026-10-05/o-1?sacs=c-3',
-    ]);
-    expect(el.querySelector('[data-bag-labels]')?.getAttribute('href')).toBe(
-      '/colisage/etiquettes/2026-10-05/o-1',
-    );
+    const one = [...el.querySelectorAll<HTMLElement>('[data-bag-label]')];
+    expect(one.length).toBe(2);
+    one[1]?.click();
+    click(el, '[data-bag-labels]');
+    expect(labels.asked).toEqual(['sacs 2026-10-05/o-1 [c-3]', 'sacs 2026-10-05/o-1 []']);
     expect(el.querySelector('[data-bin-label]')).toBeNull();
   });
 });

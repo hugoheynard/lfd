@@ -3,7 +3,7 @@
  * chaque bloc sert sous `admin/document-specimens/`
  * (`documentation/comptabilite/planche-des-documents.md`).
  *
- * Ce que seul l'e2e prouve : les huit contrôleurs montés dans leurs quatre
+ * Ce que seul l'e2e prouve : les onze contrôleurs montés dans leurs cinq
  * blocs — le référentiel compris, hors de son préfixe `/pim` —, le même mur
  * (`b2b_accounting:read`), les en-têtes servis, et que rien ne s'écrit — ni
  * commande, ni facture, ni mandat, ni journée de fabrication.
@@ -35,6 +35,9 @@ const DOCUMENTS = [
   "day-dossier.pdf",
   "delivery-note-carrier.pdf",
   "delivery-note-client-pro.pdf",
+  // Les étiquettes A6 du colisage (2026-10-25) : le sac, et le bac de la livraison.
+  "bag-label.pdf",
+  "bin-label.pdf",
 ] as const;
 
 let ctx: E2eContext;

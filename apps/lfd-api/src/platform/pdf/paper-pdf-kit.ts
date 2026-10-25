@@ -41,6 +41,15 @@ export type Doc = PDFKit.PDFDocument;
  */
 export type PageLayout = "portrait" | "landscape";
 
+/**
+ * Le format du papier. A6 : les étiquettes de sac et de bac (2026-10-25,
+ * Hugo : « un beau PDF, là on est sur une capture d'écran ») — une étiquette
+ * par feuille. Les constantes ci-dessus restent celles de l'A4 ; un papier
+ * A6 pose ses propres marges (`label-pdf-kit.ts`). `MM` reste juste : c'est
+ * une unité, pas une page.
+ */
+export type PaperSize = "A4" | "A6";
+
 const MONTHS = [
   "janvier",
   "février",
@@ -220,6 +229,7 @@ export async function render(
   draw: (doc: Doc) => void,
   bufferPages = false,
   layout: PageLayout = "portrait",
+  size: PaperSize = "A4",
 ): Promise<Buffer> {
   const doc = new PDFDocument({
     // Repris par chaque `addPage()` sans option.
@@ -227,7 +237,7 @@ export async function render(
     // `bufferPages` garde les pages ouvertes jusqu'à la fin, pour qu'un pied
     // puisse dire « 3/12 » une fois le total connu.
     bufferPages,
-    size: "A4",
+    size,
     margin: 0,
     info: {
       Title: title,

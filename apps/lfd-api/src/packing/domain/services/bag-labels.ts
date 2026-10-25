@@ -1,4 +1,9 @@
-import type { PackingBagLabelsView } from "@lfd/contracts";
+import type { PackingBagLabelsView, PackingBagLabelView } from "@lfd/contracts";
+
+import {
+  BagLabelsBagNotFoundError,
+  BagLabelsNoBagError,
+} from "../errors/packing-bag-label-errors.js";
 
 import type { BoardOrder } from "../ports/packing-board.reader.js";
 
@@ -48,4 +53,29 @@ export function bagLabelsOf(
       of: bags.length,
     })),
   };
+}
+
+/**
+ * **Les sacs à imprimer** (2026-10-25) : tous les sacs vivants, ou ceux que
+ * l'adresse nomme (`?sacs=`). « n/N » reste celui de la commande entière —
+ * réimprimer le sac 2 seul imprime « Sac 2/3 », pas « Sac 1/1 ».
+ *
+ * @throws {BagLabelsNoBagError} la commande n'a aucun sac vivant.
+ * @throws {BagLabelsBagNotFoundError} aucun des sacs nommés n'est vivant.
+ */
+export function bagsToPrint(
+  labels: PackingBagLabelsView,
+  wanted: readonly string[],
+): readonly PackingBagLabelView[] {
+  if (labels.bags.length === 0) {
+    throw new BagLabelsNoBagError(labels.reference);
+  }
+  if (wanted.length === 0) {
+    return labels.bags;
+  }
+  const chosen = labels.bags.filter((bag) => wanted.includes(bag.containerId));
+  if (chosen.length === 0) {
+    throw new BagLabelsBagNotFoundError(labels.reference);
+  }
+  return chosen;
 }

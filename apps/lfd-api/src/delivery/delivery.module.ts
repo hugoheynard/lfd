@@ -125,6 +125,8 @@ import {
 import { DOORSTEP_CONTROLLERS, DOORSTEP_PROVIDERS } from "./doorstep.providers.js";
 import { DRIVER_CONTROLLERS, DRIVER_PROVIDERS } from "./driver.providers.js";
 import { ROUND_PAPER_CONTROLLERS, ROUND_PAPER_PROVIDERS } from "./round-paper.providers.js";
+import { BIN_LABELS_CONTROLLERS, BIN_LABELS_PROVIDERS } from "./bin-labels.providers.js";
+import { BrandModule } from "../platform/brand/brand.module.js";
 import {
   PURCHASE_LIBRARY_CONTROLLERS,
   PURCHASE_LIBRARY_PROVIDERS,
@@ -151,6 +153,8 @@ import {
  * est celui du seul PIM (`CLAUDE.md` §4).
  */
 @Module({
+  // Le logo des étiquettes de bac (2026-10-25).
+  imports: [BrandModule],
   controllers: [
     VehiclesController,
     DepartureController,
@@ -173,6 +177,7 @@ import {
     ...DAY_READINESS_CONTROLLERS,
     ...DRIVER_CONTROLLERS,
     ...ROUND_PAPER_CONTROLLERS,
+    ...BIN_LABELS_CONTROLLERS,
     ...DOORSTEP_CONTROLLERS,
     ...INTERNAL_TRANSFER_CONTROLLERS,
   ],
@@ -234,6 +239,7 @@ import {
     ...COMPOSITION_PREREQUISITES_PROVIDERS,
     ...DRIVER_PROVIDERS,
     ...ROUND_PAPER_PROVIDERS,
+    ...BIN_LABELS_PROVIDERS,
     ...DOORSTEP_PROVIDERS,
     { provide: VehicleRepository, useClass: PrismaVehicleRepository },
     { provide: FleetReader, useClass: PrismaFleetReader },

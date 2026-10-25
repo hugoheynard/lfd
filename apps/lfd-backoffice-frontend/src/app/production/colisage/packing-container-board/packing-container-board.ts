@@ -35,6 +35,7 @@ import { PermissionsStore } from '../../../auth/permissions.store';
 import { DeliveryBinsService } from '../../../livraison/delivery-bins.service';
 import { PackingSettingsService } from '../../packing-settings.service';
 import { AwaitingBadge } from '../../../shared/awaiting-badge/awaiting-badge';
+import { LabelPrinter } from '../../../shared/label-printer/label-printer';
 import { type BinFormatButton, binFormatButtons } from '../bin-row';
 import {
   allocatedOf,
@@ -135,6 +136,7 @@ export class PackingContainerBoard {
   private readonly panels = inject(FoldPanelHostService);
   private readonly packingSettings = inject(PackingSettingsService);
   private readonly day = inject(PackingDayReader);
+  private readonly labels = inject(LabelPrinter);
 
   /** La commande ouverte, `containerMode = listed`. */
   readonly sheet = input.required<PackingSheet>();
@@ -165,18 +167,37 @@ export class PackingContainerBoard {
   /** Des bacs à étiqueter ? */
   protected readonly hasBins = computed(() => this.containers().some((c) => c.binId !== null));
 
-  /** La page d'étiquettes de la commande — la même que la rangée « + format ». */
-  protected readonly labelsLink = computed(() => ['/livraison/etiquettes', this.sheet().orderId]);
+  /**
+   * Les étiquettes des bacs se lisent au PANNEAU du geste (plan des droits par
+   * geste §5.3) : le serveur les sert sous l'écriture du colisage OU du
+   * chargement. Sans l'une ni l'autre, le bouton ne s'offre pas — il
+   * n'ouvrirait qu'un refus.
+   */
+  protected readonly canPrintBins = computed(
+    () =>
+      this.permissions.can('production_packing:write') ||
+      this.permissions.can('delivery_loading:write'),
+  );
 
   /** Des sacs à étiqueter ? (2026-10-25 : « je ne peux pas faire d'étiquette pour les sacs ».) */
   protected readonly hasBags = computed(() => this.containers().some((c) => c.nature === 'bag'));
 
-  /** La page d'étiquettes des sacs, sur la journée LUE du poste. */
-  protected readonly bagLabelsLink = computed(() => [
-    '/colisage/etiquettes',
-    this.day.date(),
-    this.sheet().orderId,
-  ]);
+  /**
+   * Les étiquettes A6 des bacs, en PDF dans un onglet (2026-10-25) : toutes,
+   * ou celle d'un bac. N'écrit rien.
+   */
+  protected printBins(binId: string | null = null): void {
+    void this.labels.orderBins(this.sheet().orderId, binId === null ? [] : [binId]);
+  }
+
+  /** Les étiquettes des sacs, sur la journée LUE du poste : toutes, ou celle d'un sac. */
+  protected printBags(containerId: string | null = null): void {
+    void this.labels.bags(
+      this.day.date(),
+      this.sheet().orderId,
+      containerId === null ? [] : [containerId],
+    );
+  }
 
   /** Le choix du format est-il déplié (« + Nouveau bac ») ? */
   protected readonly choosing = signal(false);

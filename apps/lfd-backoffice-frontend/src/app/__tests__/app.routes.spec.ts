@@ -324,8 +324,6 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // LE COURSIER (2026-10-03) : la page du livreur, hors de la Livraison.
   coursier: 'delivery_driving:read',
   colisage: 'production_packing:read',
-  // Les étiquettes des sacs (2026-10-25) : une lecture, comme la route du serveur.
-  'colisage/etiquettes/:date/:orderId': 'production_packing:read',
   'coursier/:roundId/chargement': 'delivery_driving:read',
   // Le texte d'information du livreur (rgpd-livreur.md §7) : le droit de la page.
   'coursier/mes-donnees': 'delivery_driving:read',
@@ -347,12 +345,6 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'livraison/chargement/:roundId': 'delivery_loading:read',
   // La fiche d'un bac se lit sous le colisage OU le chargement (2026-10-02).
   'livraison/bac/:binId': { anyOf: ['production_packing:read', 'delivery_loading:read'] },
-  // Les étiquettes lisent le panneau des bacs : celui du geste (2026-10-02).
-  // Les étiquettes d'un transfert interne (lot T3) : la route du serveur se lit sous la lecture.
-  'livraison/etiquettes/transfert/:transferId': 'delivery_loading:read',
-  'livraison/etiquettes/:orderId': {
-    anyOf: ['production_packing:write', 'delivery_loading:write'],
-  },
   // Les RÉGLAGES de la livraison, partis en Réglages › Livraison le
   // 2026-10-13 (Hugo), mêmes droits.
   'reglages/livraison/vehicules': 'delivery_settings:read',

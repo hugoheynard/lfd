@@ -400,13 +400,18 @@ Les écritures rendent peu ou rien : l'écran relit le `board`.
   `production/packing.service.ts`, `production/packing-containers.service.ts`.
 - **La Supervision** (`/supervision`) — sa colonne colisage lit le même
   `board` (`supervision/supervision.service.ts`), sous `b2b_supervision:read`.
-- **Les étiquettes** des bacs et le chargement restent des écrans de la
-  livraison ([`chargement-les-bacs.md`](chargement-les-bacs.md) §5.3, §6).
-- **Les étiquettes des sacs** (2026-10-25) sont un écran du colisage :
-  `/colisage/etiquettes/:date/:orderId` (`?sacs=` pour un seul), lu par
-  `GET admin/packing/:date/orders/:orderId/bag-labels` sous
-  `production_packing:read`. Même mécanique et même format que celles des
-  bacs (une page A4 par étiquette, `window.print`). Le numéro de commande en
+- **Les étiquettes** des bacs sont un PDF de la livraison, et le chargement
+  reste un écran de la livraison ([`chargement-les-bacs.md`](chargement-les-bacs.md) §5.3, §6).
+- **Les étiquettes des sacs** (2026-10-25) sont un PDF du colisage :
+  `GET admin/packing/:date/orders/:orderId/bag-labels.pdf` (`?sacs=` pour un
+  seul), sous `production_packing:read`. Depuis le même jour (Hugo :
+  « imprimer l'étiquette devrait donner un beau PDF, là on est sur une
+  capture d'écran »), sacs ET bacs sortent du serveur en **A6 portrait,
+  une étiquette par feuille** (la trousse des étiquettes de `platform/pdf/`, partagée
+  parce que `packing ↔ delivery` est fermé) ; le poste ouvre le PDF dans un
+  onglet (`shared/label-printer/`), les pages web `window.print` sont
+  retirées. Les données restent servies en JSON
+  (`GET …/bag-labels`). Le numéro de commande en
   gros, le client, l'acheminement et le créneau composés par le fournil
   (`OrderLabelHeadReader`, publié par `production/channels/packing/` avec
   `fulfillmentLabelOf` et l'en-tête du bon), le carré de couleur et le QR de

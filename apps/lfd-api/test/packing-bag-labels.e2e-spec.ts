@@ -7,7 +7,12 @@
  * fournil, la couleur et le jeton de retrait au commerce — et la route est une
  * lecture, qui ne crée ni n'écrit rien.
  */
+import { Buffer } from "node:buffer";
+
 import type { OpenedPackingContainer, PackingBagLabelsView } from "@lfd/contracts";
+import type request from "supertest";
+
+import { pdfPages } from "../src/platform/pdf/__tests__/pdf-text.js";
 
 import { jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
@@ -131,5 +136,79 @@ describe("les étiquettes des sacs d'une commande", () => {
     const response = await ctx.asSub(STAFF).get(`${base("ord_inconnue")}/bag-labels`);
     expect(response.status).toBe(404);
     expect((response.body as { code?: unknown }).code).toBe("packing.bag_labels.sheet_not_found");
+  });
+});
+
+/** Le corps brut : supertest ne parse pas un PDF tout seul. */
+function pdfOf(test: request.Test): request.Test {
+  return test.buffer(true).parse((res, callback) => {
+    const chunks: Buffer[] = [];
+    res.on("data", (chunk: Buffer) => chunks.push(chunk));
+    res.on("end", () => {
+      callback(null, Buffer.concat(chunks));
+    });
+  });
+}
+
+function pagesOf(response: request.Response): readonly string[] {
+  const body: unknown = response.body;
+  if (!(body instanceof Uint8Array)) {
+    throw new TypeError("le corps servi n'est pas binaire");
+  }
+  return pdfPages(Buffer.from(body));
+}
+
+/** 2026-10-25, Hugo : « imprimer l'étiquette devrait donner un beau PDF ». */
+describe("les étiquettes des sacs, en PDF A6", () => {
+  it("une feuille par sac vivant, servie en ligne", async () => {
+    const { orderId, reference } = await pickupSheet();
+    await openBag(orderId);
+    await openBag(orderId);
+
+    const response = await pdfOf(ctx.asSub(STAFF).get(`${base(orderId)}/bag-labels.pdf`)).expect(
+      200,
+    );
+
+    expect(response.headers["content-type"]).toContain("application/pdf");
+    expect(response.headers["content-disposition"]).toContain("inline");
+    const pages = pagesOf(response);
+    expect(pages).toHaveLength(2);
+    expect(pages[0]).toContain(reference);
+    expect(pages[1]).toContain("Sac 2/2");
+  });
+
+  it("`?sacs=` n'imprime que ce sac, et imprimer n'écrit rien", async () => {
+    const { orderId } = await pickupSheet();
+    await openBag(orderId);
+    const second = await openBag(orderId);
+    const before = await ctx.prisma.packingContainer.count();
+
+    const response = await pdfOf(
+      ctx.asSub(STAFF).get(`${base(orderId)}/bag-labels.pdf?sacs=${second}`),
+    ).expect(200);
+
+    expect(pagesOf(response)).toHaveLength(1);
+    expect(await ctx.prisma.packingContainer.count()).toBe(before);
+  });
+
+  it("une commande sans sac : 409 qui le dit, pas une feuille blanche", async () => {
+    const { orderId } = await pickupSheet();
+    const response = await ctx.asSub(STAFF).get(`${base(orderId)}/bag-labels.pdf`);
+    expect(response.status).toBe(409);
+    expect((response.body as { code?: unknown }).code).toBe("packing.bag_labels.no_bag");
+  });
+
+  it("un sac annulé depuis : 404 qui le dit", async () => {
+    const { orderId } = await pickupSheet();
+    await openBag(orderId);
+    const voided = await openBag(orderId);
+    await ctx
+      .asSub(STAFF)
+      .post(`${base(orderId)}/containers/${voided}/void`)
+      .expect(204);
+
+    const response = await ctx.asSub(STAFF).get(`${base(orderId)}/bag-labels.pdf?sacs=${voided}`);
+    expect(response.status).toBe(404);
+    expect((response.body as { code?: unknown }).code).toBe("packing.bag_labels.bag_not_found");
   });
 });

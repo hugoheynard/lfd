@@ -8,6 +8,7 @@ import type {
   DeliveryLoadingTransferStopView,
 } from '@lfd/contracts';
 
+import { LabelPrinter } from '../../shared/label-printer/label-printer';
 import { DeliveryBinsService } from '../delivery-bins.service';
 import { DeliveryLoadingService } from '../delivery-loading.service';
 import { TransferBinsCard } from './transfer-bins-card';
@@ -36,12 +37,25 @@ class FakeLoading {
   }
 }
 
+/** L'imprimante doublée : elle garde les étiquettes qu'on lui demande. */
+class FakeLabels {
+  readonly asked: string[] = [];
+  transferBins(transferId: string, binIds: readonly string[]): Promise<void> {
+    this.asked.push(`${transferId} [${binIds.join(',')}]`);
+    return Promise.resolve();
+  }
+}
+
+let labels = new FakeLabels();
+
 async function render(loading: FakeLoading, stop: DeliveryLoadingTransferStopView = STOP) {
+  labels = new FakeLabels();
   TestBed.configureTestingModule({
     imports: [TransferBinsCard],
     providers: [
       provideRouter([]),
       { provide: DeliveryLoadingService, useValue: loading },
+      { provide: LabelPrinter, useValue: labels },
       { provide: DeliveryBinsService, useValue: { binTypes: () => Promise.resolve(TYPES) } },
     ],
   });
@@ -65,9 +79,24 @@ describe('TransferBinsCard', () => {
     await fixture.whenStable();
     const submit = host.querySelector<HTMLButtonElement>('[data-declare-transfer-bins]');
     expect(submit?.disabled).toBe(true);
-    expect(host.querySelector('[data-transfer-labels]')?.getAttribute('href')).toBe(
-      '/livraison/etiquettes/transfert/tr_1',
-    );
+  });
+
+  /** 2026-10-25 : les étiquettes sont un PDF du serveur, plus une page imprimée. */
+  it('imprime en PDF toutes les étiquettes, puis seulement celles des bacs qu’on vient de déclarer', async () => {
+    const fixture = await render(new FakeLoading());
+    const host = fixture.nativeElement as HTMLElement;
+    host.querySelector<HTMLButtonElement>('[data-transfer-labels]')?.click();
+    expect(labels.asked).toEqual(['tr_1 []']);
+
+    fixture.componentInstance['binTypeId'].set('t-m');
+    host.querySelector<HTMLButtonElement>('[data-open-transfer-bins]')?.click();
+    await fixture.whenStable();
+    fixture.componentInstance['binTypeId'].set('t-m');
+    await fixture.whenStable();
+    host.querySelector<HTMLButtonElement>('[data-declare-transfer-bins]')?.click();
+    await fixture.whenStable();
+    host.querySelector<HTMLButtonElement>('[data-transfer-labels]')?.click();
+    expect(labels.asked).toEqual(['tr_1 []', 'tr_1 [b1,b2]']);
   });
 
   it('dit qu’un réassort au plus tôt arrivé après le chargement demande un bac de plus', async () => {
