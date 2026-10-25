@@ -20,7 +20,7 @@ function stop(overrides: Partial<DoorstepStopState> = {}): DoorstepStop {
     round: { roundId: "r_1", vehicleName: "Kangoo", serviceDay: "2030-03-12", passage: 1 },
     departedAt: DEPARTED,
     returnedAt: null,
-    reference: "CMD-1",
+    reference: "ORD-1",
     closedAt: null,
     arrivedAt: null,
     signatureRequired: false,
@@ -89,7 +89,7 @@ describe("DoorstepStop.ensureDepositPermitted — « Déposé avec preuve » (B2
 
   it("refuse un dépôt que le client n'a pas autorisé, en nommant la commande", () => {
     expect(() => stop().ensureDepositPermitted()).toThrow(DepositNotAllowedError);
-    expect(() => stop().ensureDepositPermitted()).toThrow(/CMD-1/);
+    expect(() => stop().ensureDepositPermitted()).toThrow(/ORD-1/);
   });
 
   it("🔴 la signature exigée l'emporte, même dépôt autorisé (AP-Q6)", () => {

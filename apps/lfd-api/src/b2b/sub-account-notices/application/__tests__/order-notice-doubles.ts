@@ -19,7 +19,7 @@ import { NoticeSendJournal } from "../../domain/ports/notice-send.journal.js";
 export function chaletOrder(overrides: Partial<OrderNoticeSummary> = {}): OrderNoticeSummary {
   return {
     orderId: "o1",
-    orderNumber: "CMD-0001",
+    orderNumber: "ORD-0001",
     companyId: "chalet",
     companyName: "Chalet Gentiane",
     principalCompanyId: "alpes",

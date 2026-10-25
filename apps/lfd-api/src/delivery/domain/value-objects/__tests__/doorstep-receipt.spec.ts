@@ -66,14 +66,14 @@ describe("DoorstepReceipt — les pièces d'une remise (B1, § 9)", () => {
   it("🔴 exige la signature quand l'arrêt l'exige au départ (AP-D4)", () => {
     const unsigned = DoorstepReceipt.take({ receiverName: "Paul", photo: JPEG, signature: null });
 
-    expect(() => unsigned.ensureSignedIf(true, "CMD-1")).toThrow(HandoverSignatureMissingError);
-    expect(() => unsigned.ensureSignedIf(false, "CMD-1")).not.toThrow();
+    expect(() => unsigned.ensureSignedIf(true, "ORD-1")).toThrow(HandoverSignatureMissingError);
+    expect(() => unsigned.ensureSignedIf(false, "ORD-1")).not.toThrow();
   });
 
   it("garde une signature jointe sans être exigée", () => {
     const signed = DoorstepReceipt.take({ receiverName: "Paul", photo: JPEG, signature: PNG });
 
-    expect(() => signed.ensureSignedIf(false, "CMD-1")).not.toThrow();
+    expect(() => signed.ensureSignedIf(false, "ORD-1")).not.toThrow();
     expect(signed.signed).toBe(true);
   });
 });

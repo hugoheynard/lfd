@@ -94,7 +94,7 @@ function reportedFact(principalCompanyId: string | null = "alpes") {
   const fact = new OrderProblemReportedFact(
     "req_1",
     "o1",
-    "CMD-0001",
+    "ORD-0001",
     { companyId: "chalet", name: "Chalet Gentiane", principalCompanyId },
     "housekeeper",
   );
@@ -117,7 +117,7 @@ describe("NotifyPrincipalOnOrderProblemReported — problème signalé par un si
       data: {
         gesture: "problem_reported",
         siteName: "Chalet Gentiane",
-        reference: "CMD-0001",
+        reference: "ORD-0001",
         byTeam: false,
       },
       idempotencyKey: "sub-account-notice:evt_pb:owner",
@@ -166,7 +166,7 @@ describe("GestureNoticeDispatcher — un geste de l'équipe", () => {
       gesture: "problem_reported",
       principalCompanyId: "alpes",
       siteName: "Chalet Gentiane",
-      reference: "CMD-0001",
+      reference: "ORD-0001",
       authorUserId: null,
       byTeam: true,
     });

@@ -31,8 +31,8 @@ describe("ordersToReplace — les commandes rapportées à replacer (RL1)", () =
     const replaceable = await ordersToReplace(broughtBack, orders, states);
 
     expect(replaceable).toEqual([
-      { orderId: "o_ok", reference: "CMD-o_ok", status: "active" },
-      { orderId: "o_later", reference: "CMD-o_later", status: "active" },
+      { orderId: "o_ok", reference: "ORD-o_ok", status: "active" },
+      { orderId: "o_later", reference: "ORD-o_later", status: "active" },
     ]);
   });
 

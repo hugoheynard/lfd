@@ -167,13 +167,18 @@ async function seedCompany(
   });
 }
 
+/** Les numéros des commandes semées ici : `ORD-700001`, `ORD-700002`… */
+const SEED_ORDER_NUMBER_BASE = 700_000;
+
 /** Une commande, avec deux lignes — de quoi qu'elle ne soit pas vide à l'écran. */
 async function seedOrder(index: number, days: number, totalCents: number): Promise<void> {
   const placedAt = daysAgo(days);
   await prisma.order.create({
     data: {
       id: `${NS}-order-${index}`,
-      orderNumber: `CMD-SEEDF-${index}`,
+      // Le format réel (`ORD-<n>`), hors de la plage que le compteur atteint :
+      // la base refuse tout autre numéro (CHECK `orders_order_number_format`).
+      orderNumber: `ORD-${String(SEED_ORDER_NUMBER_BASE + index)}`,
       companyId: ESTABLISHED.companyId,
       placedByUserId: ESTABLISHED.userId,
       status: OrderStatus.fulfilled,

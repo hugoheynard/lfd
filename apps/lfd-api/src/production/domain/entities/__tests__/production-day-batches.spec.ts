@@ -26,7 +26,7 @@ const MARK = { at: FIVE, by: "staff-1", initials: "MB" };
 /** Deux bacs de 12 croissants : 24 au compte. */
 const ORDERS: readonly ProducibleOrder[] = ["1", "2"].map((n) => ({
   orderId: `ord_${n}`,
-  reference: `CMD-000${n}`,
+  reference: `ORD-000${n}`,
   customerLabel: "Trois Ponts",
   fulfillmentMethod: "pickup",
   destination: "Le Labo",

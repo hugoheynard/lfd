@@ -34,29 +34,29 @@ const WEEK = {
 describe("dossierCalendarNotes", () => {
   it("signale un bon livré hors de la période et liste à part un bon sans date", () => {
     const notes = dossierCalendarNotes(
-      [bon("CMD-1", "2026-10-31"), bon("CMD-2", "2026-11-02"), bon("CMD-3", null)],
+      [bon("ORD-1", "2026-10-31"), bon("ORD-2", "2026-11-02"), bon("ORD-3", null)],
       OCTOBER,
     );
 
     expect(notes).toEqual({
-      outsidePeriod: [{ reference: "CMD-2", requestedDeliveryDate: "2026-11-02" }],
-      withoutDate: ["CMD-3"],
+      outsidePeriod: [{ reference: "ORD-2", requestedDeliveryDate: "2026-11-02" }],
+      withoutDate: ["ORD-3"],
     });
   });
 
   it("ne dit rien quand tous les bons sont livrés dans la période, bornes comprises", () => {
     expect(
-      dossierCalendarNotes([bon("CMD-1", "2026-10-01"), bon("CMD-2", "2026-10-31")], OCTOBER),
+      dossierCalendarNotes([bon("ORD-1", "2026-10-01"), bon("ORD-2", "2026-10-31")], OCTOBER),
     ).toEqual({ outsidePeriod: [], withoutDate: [] });
   });
 
   it("à la semaine, signale le bon livré la semaine suivante, dans le même mois", () => {
     const notes = dossierCalendarNotes(
-      [bon("CMD-1", "2026-10-05"), bon("CMD-2", "2026-10-11"), bon("CMD-3", "2026-10-12")],
+      [bon("ORD-1", "2026-10-05"), bon("ORD-2", "2026-10-11"), bon("ORD-3", "2026-10-12")],
       WEEK,
     );
     expect(notes.outsidePeriod).toEqual([
-      { reference: "CMD-3", requestedDeliveryDate: "2026-10-12" },
+      { reference: "ORD-3", requestedDeliveryDate: "2026-10-12" },
     ]);
   });
 });

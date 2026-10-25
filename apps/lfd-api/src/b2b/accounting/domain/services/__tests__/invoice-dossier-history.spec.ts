@@ -92,9 +92,9 @@ describe("neverHandedOver", () => {
       order: { reference },
       history: orderHistory(handover, []),
     });
-    const records = [record("CMD-1", null), record("CMD-2", COUNTER), record("CMD-3", null)];
+    const records = [record("ORD-1", null), record("ORD-2", COUNTER), record("ORD-3", null)];
 
-    expect(neverHandedOver(records)).toEqual(["CMD-1", "CMD-3"]);
+    expect(neverHandedOver(records)).toEqual(["ORD-1", "ORD-3"]);
   });
 });
 

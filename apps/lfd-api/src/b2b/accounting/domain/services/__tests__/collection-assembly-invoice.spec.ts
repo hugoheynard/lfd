@@ -173,12 +173,12 @@ describe("assembleCollection — un bon qu'on ne sait pas facturer est écarté,
 
 describe("isBillable — un bon jugé seul", () => {
   it("accepte un bon cohérent, ventilé ou non", () => {
-    const frozen = frozenOrder("CMD-X", AT);
+    const frozen = frozenOrder("ORD-X", AT);
     expect(isBillable(frozen)).toBe(true);
     expect(isBillable({ ...frozen, vatShares: null })).toBe(true);
   });
 
   it("refuse un bon dont le total ne se recompose pas", () => {
-    expect(isBillable({ ...frozenOrder("CMD-X", AT), totalCents: 1_001 })).toBe(false);
+    expect(isBillable({ ...frozenOrder("ORD-X", AT), totalCents: 1_001 })).toBe(false);
   });
 });

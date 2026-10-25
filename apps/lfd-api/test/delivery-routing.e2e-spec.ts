@@ -366,7 +366,7 @@ describe("la place des véhicules dans « Proposer » (CA4)", () => {
     expect(view.unfit.map(({ orderId, reason }) => [orderId, reason])).toEqual([
       [huge, "capacity"],
     ]);
-    expect(view.unfit.every((order) => order.reference.startsWith("TRN-"))).toBe(true);
+    expect(view.unfit.every((order) => order.reference.startsWith("ORD-9"))).toBe(true);
     expect(view.unknownDemand.map((order) => order.orderId)).toEqual([unknown]);
     expect(view.overflow).toEqual([]);
   });

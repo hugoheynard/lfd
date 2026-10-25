@@ -22,7 +22,7 @@ function ring(event: OrderCancelledEvent) {
 describe("RingCustomerCancellation (C6.9, Q-C6.8)", () => {
   it("sonne quand un client annule — une clé par commande", async () => {
     const { notifier, done } = ring(
-      new OrderCancelledEvent("o1", "CMD-1", "u1", null, null, "due", null, null, "customer", "u1"),
+      new OrderCancelledEvent("o1", "ORD-1", "u1", null, null, "due", null, null, "customer", "u1"),
     );
     await done;
 
@@ -38,7 +38,7 @@ describe("RingCustomerCancellation (C6.9, Q-C6.8)", () => {
 
   it("se tait quand c'est l'équipe : elle le sait", async () => {
     const { notifier, done } = ring(
-      new OrderCancelledEvent("o1", "CMD-1", "u1", "fiche_1", "motif", "due", null),
+      new OrderCancelledEvent("o1", "ORD-1", "u1", "fiche_1", "motif", "due", null),
     );
     await done;
 

@@ -18,7 +18,7 @@ import { RecordingDurable } from "./durable-doubles.js";
 // Comparées entre elles seulement : le handler ne lit aucune horloge.
 const PACKED_AT = new Date("2026-09-08T04:00:00.000Z");
 const EARLIER = new Date("2026-09-08T03:00:00.000Z");
-const REFERENCE = "CMD-0001";
+const REFERENCE = "ORD-0001";
 
 function order(overrides: Partial<PackingOrder> = {}): PackingOrder {
   return {

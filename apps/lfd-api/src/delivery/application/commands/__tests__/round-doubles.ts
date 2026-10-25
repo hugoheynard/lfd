@@ -197,7 +197,7 @@ export function deliveryOn(
 ): DeliveryOrderFacts {
   return {
     orderId,
-    reference: `CMD-${orderId}`,
+    reference: `ORD-${orderId}`,
     customerLabel: `Maison ${orderId}`,
     status: "active",
     day,

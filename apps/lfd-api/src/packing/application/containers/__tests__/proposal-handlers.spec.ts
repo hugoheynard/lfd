@@ -47,7 +47,7 @@ function setup(received = 70) {
   sheets.put({
     serviceDay: DAY,
     orderId: "ord_1",
-    reference: "CMD-0001",
+    reference: "ORD-0001",
     packed: null,
     containers: 0,
     lines: [{ sku: "CRO", productName: "Croissant", quantity: 70, packed: null }],
@@ -159,7 +159,7 @@ describe("GetShareableHalvesHandler — les moitiés libres, vues du poste", () 
       binId: "b_left",
       code: "AAAAAA",
       orderId: "ord_2",
-      reference: "CMD-0002",
+      reference: "ORD-0002",
       customerLabel: "Voisin",
       position: 2,
       binTypeId: "t_m",

@@ -8,7 +8,7 @@ function sealedListed(overrides: Partial<PackingSheetSnapshot> = {}): PackingShe
   return PackingSheet.fromSnapshot({
     serviceDay: "2030-03-12",
     orderId: "ord_1",
-    reference: "CMD-0001",
+    reference: "ORD-0001",
     packed: { at: AT, by: "s1" },
     containers: 2,
     lines: [

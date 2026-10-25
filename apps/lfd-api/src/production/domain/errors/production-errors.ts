@@ -67,7 +67,7 @@ export class ProductionDayNotClosedError extends BusinessError {
  * Aucune feuille pour cette référence dans cette journée.
  *
  * Un `ResourceNotFoundError` et pas un refus métier : la question « où est la
- * feuille de CMD-0009 du 8 septembre ? » a une réponse vide, ce qui est
+ * feuille de ORD-0009 du 8 septembre ? » a une réponse vide, ce qui est
  * différent d'un état qui interdit le geste.
  */
 export class AtelierSheetNotFoundError extends ResourceNotFoundError {

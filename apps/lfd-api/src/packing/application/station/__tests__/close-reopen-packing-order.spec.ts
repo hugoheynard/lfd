@@ -28,7 +28,7 @@ function sheet(overrides: Partial<PackingSheetSnapshot> = {}): PackingSheetSnaps
   return {
     serviceDay: DAY,
     orderId: "ord_1",
-    reference: "CMD-0001",
+    reference: "ORD-0001",
     packed: null,
     containers: 1,
     lines: [{ sku: "CRO", productName: "Croissant", quantity: 4, packed: null }],
@@ -90,7 +90,7 @@ describe("ClosePackingOrderHandler — « Déclarer prête » au colisage", () =
     expect(durable.of(PACKED).map((fact) => [fact.key, fact.payload])).toEqual([
       [
         `${PACKED}:ord_1`,
-        { orderId: "ord_1", reference: "CMD-0001", packedAt: FIRST.toISOString(), packedBy: "s2" },
+        { orderId: "ord_1", reference: "ORD-0001", packedAt: FIRST.toISOString(), packedBy: "s2" },
       ],
     ]);
   });
@@ -123,7 +123,7 @@ describe("ClosePackingOrderHandler — « Déclarer prête » au colisage", () =
     expect(durable.of(PACKED).map((fact) => [fact.key, fact.payload])).toEqual([
       [
         `${PACKED}:ord_1:reannounced:${LATER.toISOString()}`,
-        { orderId: "ord_1", reference: "CMD-0001", packedAt: FIRST.toISOString(), packedBy: "s1" },
+        { orderId: "ord_1", reference: "ORD-0001", packedAt: FIRST.toISOString(), packedBy: "s1" },
       ],
     ]);
   });

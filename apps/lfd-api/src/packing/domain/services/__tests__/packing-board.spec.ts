@@ -22,7 +22,7 @@ function line(sku: string, quantity: number, packed = false, name = sku): SheetL
 
 function order(overrides: Partial<BoardOrder> & Pick<BoardOrder, "orderId">): BoardOrder {
   return {
-    reference: `CMD-${overrides.orderId}`,
+    reference: `ORD-${overrides.orderId}`,
     customerLabel: "Le Bistrot",
     fulfillmentMethod: "delivery",
     clientele: null,
@@ -117,7 +117,7 @@ describe("packingBoardOf — le poste servi par le colisage (K3a)", () => {
       }),
     );
 
-    expect(view.sheets.map((sheet) => sheet.reference)).toEqual(["CMD-1", "CMD-2"]);
+    expect(view.sheets.map((sheet) => sheet.reference)).toEqual(["ORD-1", "ORD-2"]);
     expect(view).toMatchObject({ orderCount: 2, todoCount: 1, readyCount: 1 });
   });
 

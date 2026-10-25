@@ -10,7 +10,7 @@ function order(overrides: Partial<CycleOrder>): CycleOrder {
   seq += 1;
   return {
     id: `o${String(seq)}`,
-    orderNumber: `CMD-${String(seq)}`,
+    orderNumber: `ORD-${String(seq)}`,
     placedAt: PLACED_AT,
     companyId: "c-port",
     billedCompanyId: null,

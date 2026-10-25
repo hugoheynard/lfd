@@ -27,7 +27,7 @@ const HANDED_OVER_AT = new Date(60_000);
 const HANDED_OVER_DAY = "1970-01-01";
 /** Le 3 octobre 2026 à 00h30 à Paris — une attestation passée minuit. */
 const AFTER_MIDNIGHT = new Date("2026-10-02T22:30:00.000Z");
-const REFERENCE = "CMD-0001";
+const REFERENCE = "ORD-0001";
 const AUTHOR: OrderAuthor = { orderId: "ord_1", orderNumber: REFERENCE, placedByUserId: "user_1" };
 
 function unused(): Promise<never> {

@@ -32,7 +32,7 @@ function doorstep(): DoorstepStopState {
     round: { roundId: "r_1", vehicleName: "Kangoo", serviceDay: DAY, passage: 1 },
     departedAt: DEPARTED,
     returnedAt: null,
-    reference: "CMD-1",
+    reference: "ORD-1",
     closedAt: null,
     arrivedAt: null,
     signatureRequired: false,

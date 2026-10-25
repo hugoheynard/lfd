@@ -32,7 +32,7 @@ class StubReader extends DaySupervisionReader {
 
 const LATE: SupervisedOrder = {
   orderId: "o1",
-  reference: "CMD-0001",
+  reference: "ORD-0001",
   customerName: "Boulangerie du Col",
   fulfillmentMethod: "pickup",
   status: "ready",
@@ -76,7 +76,7 @@ describe("GetDaySupervisionHandler", () => {
   it("rend les commandes au manque signalé — « décision attendue » (E6a)", async () => {
     const view = await new GetDaySupervisionHandler(
       new StubReader(
-        [LATE, { ...LATE, orderId: "o2", reference: "CMD-0002", shortfallReportedAt: NOW }],
+        [LATE, { ...LATE, orderId: "o2", reference: "ORD-0002", shortfallReportedAt: NOW }],
         0,
       ),
       new FixedClock(NOW),
@@ -85,7 +85,7 @@ describe("GetDaySupervisionHandler", () => {
     expect(view.awaitingDecision).toEqual([
       {
         orderId: "o2",
-        reference: "CMD-0002",
+        reference: "ORD-0002",
         customerName: "Boulangerie du Col",
         fulfillmentMethod: "pickup",
         reportedAt: NOW.toISOString(),
@@ -102,7 +102,7 @@ describe("GetDaySupervisionHandler", () => {
     expect(view.late).toEqual([
       {
         orderId: "o1",
-        reference: "CMD-0001",
+        reference: "ORD-0001",
         customerName: "Boulangerie du Col",
         fulfillmentMethod: "pickup",
         window: { start: "07:00", end: "08:00", source: "override" },

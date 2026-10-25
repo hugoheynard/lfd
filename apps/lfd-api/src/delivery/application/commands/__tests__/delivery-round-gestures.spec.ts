@@ -54,12 +54,12 @@ describe("ReorderDeliveryRoundHandler", () => {
     expect(rounds.stored("r_1")?.orderIds).toEqual(["o_2", "o_1"]);
     expect(events.traced[0]?.journalFact().payload).toMatchObject({
       before: [
-        { id: "o_1", name: "CMD-o_1" },
-        { id: "o_2", name: "CMD-o_2" },
+        { id: "o_1", name: "ORD-o_1" },
+        { id: "o_2", name: "ORD-o_2" },
       ],
       after: [
-        { id: "o_2", name: "CMD-o_2" },
-        { id: "o_1", name: "CMD-o_1" },
+        { id: "o_2", name: "ORD-o_2" },
+        { id: "o_1", name: "ORD-o_1" },
       ],
     });
   });
@@ -103,7 +103,7 @@ describe("RemoveDeliveryStopHandler", () => {
     expect(rounds.stored("r_1")?.orderIds).toEqual(["o_2"]);
     expect(await rounds.liveHolderOf("o_1")).toBeNull();
     expect(events.traced[0]?.journalFact().payload).toMatchObject({
-      order: { id: "o_1", name: "CMD-o_1" },
+      order: { id: "o_1", name: "ORD-o_1" },
     });
   });
 
@@ -171,7 +171,7 @@ describe("MoveDeliveryStopHandler — I7", () => {
     expect(events.traced[0]?.journalFact()).toMatchObject({
       subjectId: "r_2",
       payload: {
-        order: { id: "o_1", name: "CMD-o_1" },
+        order: { id: "o_1", name: "ORD-o_1" },
         from: { round: { id: "r_1", name: "Véhicule v_1" }, passage: 1 },
         position: 2,
       },

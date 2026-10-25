@@ -19,7 +19,7 @@ import { ENTITY_ID, frozenOrder, mandate } from "./collection-fixtures.js";
 let seq = 0;
 function bon(companyId: string, overrides: Partial<InvoiceableOrder> = {}): InvoiceableOrder {
   seq += 1;
-  const orderNumber = `CMD-${String(seq).padStart(3, "0")}`;
+  const orderNumber = `ORD-${String(seq).padStart(3, "0")}`;
   const placedAt = new Date("2026-09-15T08:00:00.000Z");
   return {
     orderId: `o${String(seq)}`,

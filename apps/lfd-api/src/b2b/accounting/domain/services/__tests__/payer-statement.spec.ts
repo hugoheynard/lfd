@@ -16,7 +16,7 @@ function order(companyId: string, siteName: string, placedAt: Date, cents: numbe
   const vat = Math.round(cents * 0.055);
   return {
     id: `o${String(seq)}`,
-    orderNumber: `CMD-${String(seq)}`,
+    orderNumber: `ORD-${String(seq)}`,
     placedAt,
     companyId,
     billedCompanyId: null,

@@ -50,7 +50,7 @@ const POINTS: readonly DeliveryStopPoint[] = [
   ["o3", 45.5, 6.0],
 ].map(([orderId, lat, lng]) => ({
   orderId: String(orderId),
-  reference: `CMD-${String(orderId)}`,
+  reference: `ORD-${String(orderId)}`,
   gps: { lat: Number(lat), lng: Number(lng) },
   address: null,
   window: null,
@@ -153,18 +153,18 @@ describe("ApplyDeliveryProposalHandler — « Appliquer » (L7-C6, L7-C11, L7-C1
             opened: true,
             before: [],
             after: [
-              { id: "o3", name: "CMD-o3" },
-              { id: "o2", name: "CMD-o2" },
+              { id: "o3", name: "ORD-o3" },
+              { id: "o2", name: "ORD-o2" },
             ],
           },
           {
             round: { id: "r1", name: "Véhicule v1" },
             opened: false,
             before: [
-              { id: "o1", name: "CMD-o1" },
-              { id: "o2", name: "CMD-o2" },
+              { id: "o1", name: "ORD-o1" },
+              { id: "o2", name: "ORD-o2" },
             ],
-            after: [{ id: "o1", name: "CMD-o1" }],
+            after: [{ id: "o1", name: "ORD-o1" }],
           },
         ],
       },

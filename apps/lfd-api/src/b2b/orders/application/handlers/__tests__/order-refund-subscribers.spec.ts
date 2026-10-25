@@ -123,7 +123,7 @@ describe("RingRefundFailed — le re_… d'une demande a échoué (C4.7)", () =>
     expect(notifier.notices).toMatchObject([
       {
         kind: "order.refund_attention",
-        subject: "Remboursement échoué chez Stripe — à traiter — CMD-0001",
+        subject: "Remboursement échoué chez Stripe — à traiter — ORD-0001",
         link: `/commandes/${ORDER_ID}`,
         idempotencyKey: `notification:order.refund_attention:${ORDER_ID}:1:failed`,
       },

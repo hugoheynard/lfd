@@ -19,7 +19,7 @@ const CHARGED = 2_000;
 function ledger(paymentStatus: LedgerPaymentStatus = "paid"): OrderRefundLedger {
   return OrderRefundLedger.reconstitute({
     orderId: "ord_1",
-    orderNumber: "CMD-1",
+    orderNumber: "ORD-1",
     chargedCents: CHARGED,
     paymentStatus,
     refunds: [],

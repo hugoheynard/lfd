@@ -16,9 +16,9 @@ import {
 import { FixedTransferredOrders } from "../../__tests__/transfer-doubles.js";
 
 const ORDERS = [
-  deliveryOrder("o1", "LIV-1"),
-  deliveryOrder("o2", "LIV-2"),
-  deliveryOrder("o3", "LIV-3"),
+  deliveryOrder("o1", "ORD-1"),
+  deliveryOrder("o2", "ORD-2"),
+  deliveryOrder("o3", "ORD-3"),
 ];
 
 const CATALOG = new FixedBinCatalog(
@@ -67,7 +67,7 @@ describe("GetDeliveryPackingProposalHandler", () => {
   it("fusionne les lignes, y croise le froid de la fiche, et propose par type en service", async () => {
     const view = await proposalHandler().execute(new GetDeliveryPackingProposalQuery("o2"));
 
-    expect(view.reference).toBe("LIV-2");
+    expect(view.reference).toBe("ORD-2");
     expect(view.lines).toEqual([
       { sku: "VIE-001", name: "Croissant", quantity: 10, requiresCold: false },
       { sku: "TAR-001", name: "Tarte", quantity: 2, requiresCold: true },
@@ -114,7 +114,7 @@ describe("GetDeliveryPackingProposalHandler", () => {
 
     expect(view.shareCandidate).toEqual({
       partnerOrderId: "o1",
-      partnerReference: "LIV-1",
+      partnerReference: "ORD-1",
       partnerBinId: "b1",
       binTypeId: "bin_m",
       binTypeName: "Bac bin_m",
@@ -186,15 +186,15 @@ describe("GetDeliveryBinFreeHalvesHandler", () => {
     ).toEqual([
       {
         binId: "b1",
-        reference: "LIV-1",
-        customerLabel: "Client LIV-1",
+        reference: "ORD-1",
+        customerLabel: "Client ORD-1",
         position: 1,
         freeHalf: "right",
       },
       {
         binId: "b3",
-        reference: "LIV-3",
-        customerLabel: "Client LIV-3",
+        reference: "ORD-3",
+        customerLabel: "Client ORD-3",
         position: 3,
         freeHalf: "left",
       },
@@ -210,7 +210,7 @@ describe("GetDeliveryBinFreeHalvesHandler", () => {
 
     expect(await handler.execute(new GetDeliveryBinFreeHalvesQuery("o2"))).toEqual({
       orderId: "o2",
-      reference: "LIV-2",
+      reference: "ORD-2",
       round: null,
       halves: [],
     });

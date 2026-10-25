@@ -44,7 +44,7 @@ function bon(
 
 describe("simulateInvoiceDossier — les bons incohérents", () => {
   it("des bons cohérents : rien de signalé, l'invariant des trois écarts tient", () => {
-    const dossier = simulateInvoiceDossier([bon("CMD-1", 7, 50), bon("CMD-2", 3, 0)]);
+    const dossier = simulateInvoiceDossier([bon("ORD-1", 7, 50), bon("ORD-2", 3, 0)]);
 
     expect(dossier.inconsistentOrders).toEqual([]);
     expect(dossier.threeGapInvariantHolds).toBe(true);
@@ -52,8 +52,8 @@ describe("simulateInvoiceDossier — les bons incohérents", () => {
   });
 
   it("un bon à remise plafonnée est signalé, et la somme des quatre termes reste exacte", () => {
-    const capped = bon("CMD-9", 2, 500, 60);
-    const dossier = simulateInvoiceDossier([bon("CMD-1", 7, 50), capped]);
+    const capped = bon("ORD-9", 2, 500, 60);
+    const dossier = simulateInvoiceDossier([bon("ORD-1", 7, 50), capped]);
 
     // Depuis le découpage bon par bon (2026-10-22), la facture ne déduit d'un
     // bon que la remise bornée à sa marchandise — 67 c ici, pas les 500 figés —
@@ -62,7 +62,7 @@ describe("simulateInvoiceDossier — les bons incohérents", () => {
     const recomposed = goods - Math.min(capped.discountCents, goods) + capped.vatCents;
     expect(dossier.inconsistentOrders).toEqual([
       {
-        reference: "CMD-9",
+        reference: "ORD-9",
         recomposedTotalCents: recomposed,
         totalCents: capped.totalCents,
         gapCents: recomposed - capped.totalCents,

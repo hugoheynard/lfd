@@ -113,7 +113,7 @@ export abstract class DeliveryRoundOnTheRoad extends DeliveryRoundBase {
    * clos sans remise, rapporté par un commercial ou par réglage — passe par
    * `closeStop` ; un arrêt seulement signalé, ou qui attend la décision du
    * commercial, est encore vivant. Le refus nomme les arrêts par `labels`
-   * (commande → « Client (CMD-1) »).
+   * (commande → « Client (ORD-1) »).
    *
    * Une tournée déjà rentrée rend `false` sans rien vérifier : le premier
    * retour fait foi, même celui du staff avec des arrêts ouverts. La rentrée

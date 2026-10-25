@@ -46,9 +46,9 @@ describe("aggregateInvoiceLines — le montant repris des bons (F6)", () => {
    */
   it("le montant d'une ligne agrégée est la somme des montants figés des bons", () => {
     const orders = [
-      bonOf("CMD-1", 1, "2026-10-02"),
-      bonOf("CMD-2", 2, "2026-10-05"),
-      bonOf("CMD-3", 3, "2026-10-09"),
+      bonOf("ORD-1", 1, "2026-10-02"),
+      bonOf("ORD-2", 2, "2026-10-05"),
+      bonOf("ORD-3", 3, "2026-10-09"),
     ];
     const ordersSum = orders.reduce((total, o) => total + (o.lines[0]?.lineTotalCents ?? 0), 0);
 

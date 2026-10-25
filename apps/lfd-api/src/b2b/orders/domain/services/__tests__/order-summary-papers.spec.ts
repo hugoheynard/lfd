@@ -47,7 +47,7 @@ function company(id: string, name: string, products: number): OrderSummaryCompan
     orders: [
       {
         orderId: `${id}_o1`,
-        orderNumber: `CMD-${id}`,
+        orderNumber: `ORD-${id}`,
         day: "2026-10-07",
         fulfillmentMethod: "delivery",
         author: { kind: "team" },
@@ -67,7 +67,7 @@ function paper(over: Partial<CompanyOrderSummaryView> = {}): OrderSummaryPaper {
       amountsAt: "placement",
       companies,
       total: { orderCount: 4, products: companies[0]?.products ?? [], bottom, ordersPretax },
-      excluded: [{ orderId: "o9", orderNumber: "CMD-009", reason: "cancelled" }],
+      excluded: [{ orderId: "o9", orderNumber: "ORD-009", reason: "cancelled" }],
       ...over,
     },
   };
@@ -114,7 +114,7 @@ describe("le récapitulatif en PDF", () => {
       "Total TTC",
       "124,00",
       "Total général",
-      "CMD-009",
+      "ORD-009",
       "annulée",
       // Les bons en annexe, sur leur page (§10).
       "Page 1/2",
@@ -202,7 +202,7 @@ describe("le récapitulatif au tableur", () => {
     expect(lines).toContain('"Maison mère";"Remises";"";;-12,50');
     expect(lines).toContain('"Maison mère";"TVA 5,5 %";"";;5,50');
     expect(lines).toContain('"Total général";"Total TTC";"";;124,00');
-    expect(lines).toContain('"CMD-009";"annulée"');
+    expect(lines).toContain('"ORD-009";"annulée"');
   });
 
   it("neutralise une société dont le nom commence comme une formule", () => {

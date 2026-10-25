@@ -253,7 +253,7 @@ export class FixedCompletedOrders extends CompletedOrderReader {
 export function completedOrder(overrides: Partial<CompletedOrder> = {}): CompletedOrder {
   return {
     orderId: "o1",
-    orderNumber: "CMD-1",
+    orderNumber: "ORD-1",
     placedAt: new Date(0),
     clientele: "public",
     companyId: null,
@@ -288,7 +288,7 @@ export function voucherOrder(overrides: Partial<VoucherOrder> = {}): VoucherOrde
   return {
     voucherId: "v1",
     orderId: "o1",
-    orderNumber: "CMD-1",
+    orderNumber: "ORD-1",
     status: "placed",
     paymentStatus: "paid",
     voucherDiscountCents: 300,

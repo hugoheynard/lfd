@@ -165,8 +165,9 @@ describe("la livraison apprend le retirage du fournil (CA6b)", () => {
   it("un vrai retirage ajoute les livraisons absorbées et sonne le delta", async () => {
     await seedDelivery(ctx, DAY);
     await closePlan();
-    const late = await seedDelivery(ctx, DAY);
-    await seedDelivery(ctx, DAY);
+    // Après l'arrêt, seule la saisie de l'équipe entre encore dans le jour.
+    const late = await seedDelivery(ctx, DAY, { byStaff: true });
+    await seedDelivery(ctx, DAY, { byStaff: true });
 
     await retakePlan();
 
@@ -185,7 +186,7 @@ describe("la livraison apprend le retirage du fournil (CA6b)", () => {
   it("le rejeu du retirage ne sonne pas une seconde fois", async () => {
     await seedDelivery(ctx, DAY);
     await closePlan();
-    await seedDelivery(ctx, DAY);
+    await seedDelivery(ctx, DAY, { byStaff: true });
     await retakePlan();
 
     await ctx.prisma.outboxDelivery.updateMany({

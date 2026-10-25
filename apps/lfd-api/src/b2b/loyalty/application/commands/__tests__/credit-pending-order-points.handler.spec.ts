@@ -50,7 +50,7 @@ function setup(
 function many(n: number): CompletedOrder[] {
   return Array.from({ length: n }, (_, index) => {
     const id = `o${String(index).padStart(4, "0")}`;
-    return completedOrder({ orderId: id, orderNumber: `CMD-${id}` });
+    return completedOrder({ orderId: id, orderNumber: `ORD-${id}` });
   });
 }
 
@@ -58,7 +58,7 @@ describe("CreditPendingOrderPointsHandler — le rattrapage", () => {
   it("crédite ce que l'abonné a manqué, et saute ce qui est déjà écrit", async () => {
     const { ledger, handler } = setup([
       completedOrder({ orderId: "o1" }),
-      completedOrder({ orderId: "o2", orderNumber: "CMD-2", subtotalCents: 1_000 }),
+      completedOrder({ orderId: "o2", orderNumber: "ORD-2", subtotalCents: 1_000 }),
     ]);
     ledger.entries.push({
       id: "déjà",

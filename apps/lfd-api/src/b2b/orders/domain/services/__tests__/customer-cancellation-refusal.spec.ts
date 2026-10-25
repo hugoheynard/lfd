@@ -22,11 +22,11 @@ describe("les refus de la règle staff, dits à un client (C6.7)", () => {
     const refusal = customerRefusalOf({
       kind: "voucher_remainder_engaged",
       remainderValueCents: 100,
-      order: { id: "ord_2", number: "CMD-0002" },
+      order: { id: "ord_2", number: "ORD-0002" },
       otherCancellable: true,
     });
     expect(refusal).toBe("voucher_reused");
-    expect(CUSTOMER_REFUSAL_PHRASES.voucher_reused).not.toContain("CMD-0002");
+    expect(CUSTOMER_REFUSAL_PHRASES.voucher_reused).not.toContain("ORD-0002");
   });
 
   it("ne dit pas qu'un brouillon existe : l'appelant répond 404", () => {

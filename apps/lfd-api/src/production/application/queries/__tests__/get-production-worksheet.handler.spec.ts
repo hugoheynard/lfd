@@ -37,7 +37,7 @@ const TIRAGE = new Date(NOW.getTime() - 60 * 60 * 1000);
 function order(orderId: string, quantity: number): ProducibleOrder {
   return {
     orderId,
-    reference: `CMD-${orderId}`,
+    reference: `ORD-${orderId}`,
     customerLabel: "Trois Ponts",
     fulfillmentMethod: "pickup",
     destination: "Le Labo",

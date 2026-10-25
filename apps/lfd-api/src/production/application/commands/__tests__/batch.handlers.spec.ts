@@ -40,7 +40,7 @@ const SECOND = "01K6A0000000000000000000B2";
 const ORDERS: readonly ProducibleOrder[] = [
   {
     orderId: "ord_1",
-    reference: "CMD-0001",
+    reference: "ORD-0001",
     customerLabel: "Trois Ponts",
     fulfillmentMethod: "pickup",
     destination: "Le Labo",
@@ -52,7 +52,7 @@ const ORDERS: readonly ProducibleOrder[] = [
   },
   {
     orderId: "ord_2",
-    reference: "CMD-0002",
+    reference: "ORD-0002",
     customerLabel: "Le Chalet",
     fulfillmentMethod: "delivery",
     destination: "Val d'Isère",

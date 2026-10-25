@@ -21,7 +21,7 @@ const PAID = new Date("2026-09-29T09:00:00.000Z");
 function order(overrides: Partial<CardInvoiceCandidate> = {}): CardInvoiceCandidate {
   return {
     orderId: "o_1",
-    orderNumber: "CMD-001",
+    orderNumber: "ORD-001",
     companyId: "c_port",
     billedCompanyId: null,
     placedAt: PAID,
@@ -35,7 +35,7 @@ function order(overrides: Partial<CardInvoiceCandidate> = {}): CardInvoiceCandid
     invoiced: false,
     refundedCents: 0,
     follows: [],
-    frozen: frozenOrder("CMD-001", PAID),
+    frozen: frozenOrder("ORD-001", PAID),
     ...overrides,
   };
 }
@@ -77,7 +77,7 @@ describe("IssueCardInvoiceHandler — les deux ordres d'arrivée", () => {
       dueOn: "2026-09-30",
       paymentMeans: { code: "48" },
       prepayment: { amountCents: 1_000, paidOn: "2026-09-29" },
-      orders: [{ orderId: "o_1", reference: "CMD-001", receivedOn: "2026-09-30" }],
+      orders: [{ orderId: "o_1", reference: "ORD-001", receivedOn: "2026-09-30" }],
     });
     expect(state?.buyer.companyId).toBe("c_port");
     expect(w.outcomes.rows.get("o_1")?.invoiceId).toBe(state?.id);
@@ -118,7 +118,7 @@ describe("IssueCardInvoiceHandler — idempotence et chronologie", () => {
 
   it("un rejeu après minuit est daté du jour réel, sans heurter le dernier jour émis", async () => {
     const w = cardWorld(RETRAIT);
-    w.reader.orders.set("o_other", { ...order(), orderId: "o_other", orderNumber: "CMD-002" });
+    w.reader.orders.set("o_other", { ...order(), orderId: "o_other", orderNumber: "ORD-002" });
     await w.handler.execute(new IssueCardInvoiceCommand("o_other"));
     w.clock.set(AFTER_MIDNIGHT);
     w.reader.orders.set("o_1", order());

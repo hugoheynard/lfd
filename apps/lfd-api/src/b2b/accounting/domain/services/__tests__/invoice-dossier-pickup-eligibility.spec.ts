@@ -50,7 +50,7 @@ function bon(reference: string, lines: readonly FrozenInvoiceLine[]): FrozenInvo
 
 describe("la facture — la remise de retrait sur ses lignes éligibles", () => {
   it("ne répartit la remise que sur les lignes qui y étaient éligibles", () => {
-    const dossier = simulateInvoiceDossier([bon("CMD-1", [PAIN, JUS])]);
+    const dossier = simulateInvoiceDossier([bon("ORD-1", [PAIN, JUS])]);
 
     const parts = dossier.invoice.vat.categories.map((category) => [
       category.rate,
@@ -68,7 +68,7 @@ describe("la facture — la remise de retrait sur ses lignes éligibles", () => 
   it("ne fond pas une ligne exclue dans une ligne éligible du même produit", () => {
     const exclu = { ...PAIN, pickupDiscountEligible: false };
 
-    const lines = aggregateInvoiceLines([bon("CMD-1", [PAIN]), bon("CMD-2", [exclu])]);
+    const lines = aggregateInvoiceLines([bon("ORD-1", [PAIN]), bon("ORD-2", [exclu])]);
 
     expect(lines.map((line) => [line.sku, line.pickupDiscountEligible ?? true])).toEqual([
       ["PAI-001", true],

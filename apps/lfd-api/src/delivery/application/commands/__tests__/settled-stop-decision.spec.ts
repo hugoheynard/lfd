@@ -37,7 +37,7 @@ import { InMemoryDeliveryRounds } from "./round-doubles.js";
 
 function departed(rule: DoorstepRule): DepartedStopRow {
   return {
-    reference: "CMD-1",
+    reference: "ORD-1",
     customerLabel: "Maison Colin",
     address: null,
     contact: null,
@@ -128,7 +128,7 @@ describe("ReportDeliveryIncidentHandler — la décision réglée d'avance (B3 b
       "delivery_round.stop_brought_back",
     ]);
     expect(events.traced[1]?.journalFact().payload).toMatchObject({
-      order: { id: "o_1", name: "CMD-1" },
+      order: { id: "o_1", name: "ORD-1" },
       source: "setting",
     });
     // Le retour au retrait part en fait durable, dans la transaction du signalement (DD1).

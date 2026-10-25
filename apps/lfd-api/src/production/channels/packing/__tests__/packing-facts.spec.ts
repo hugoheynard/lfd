@@ -17,7 +17,7 @@ const DAY = "2026-09-13";
 
 const ORDER: PackingListOrder = {
   orderId: "ord_1",
-  reference: "CMD-0001",
+  reference: "ORD-0001",
   customerLabel: "Trois Ponts",
   fulfillmentMethod: "delivery",
   dueAt: "07:30",

@@ -18,7 +18,7 @@ const PRINCIPAL = "co_principal";
 
 function order(over: Partial<OrderSummarySource> & { readonly id: string }): OrderSummarySource {
   return {
-    orderNumber: `CMD-${over.id}`,
+    orderNumber: `ORD-${over.id}`,
     companyId: PRINCIPAL,
     companyName: "Maison mère",
     day: "2026-10-07",
@@ -82,12 +82,12 @@ describe("l'annexe « Confirmations de commande incluses » du PDF", () => {
     const annex = text.slice(text.indexOf("CONFIRMATIONS DE COMMANDE INCLUSES"));
 
     for (const expected of [
-      "CMD-r",
+      "ORD-r",
       "mer. 7 oct. 2026",
       "Retrait",
       "Léa Martin",
       "10,00",
-      "CMD-livree",
+      "ORD-livree",
       "jeu. 8 oct. 2026",
       "l'équipe",
       "17,50",
@@ -122,7 +122,7 @@ describe("l'annexe « Confirmations de commande incluses » du PDF", () => {
     );
     const annex = text.slice(text.indexOf("CONFIRMATIONS DE COMMANDE INCLUSES"));
 
-    expect(annex.indexOf("CMD-m")).toBeLessThan(annex.indexOf("Atelier"));
+    expect(annex.indexOf("ORD-m")).toBeLessThan(annex.indexOf("Atelier"));
     expect(annex).toContain("Total HT des bons");
     expect(annex).toContain("total général");
     expect(annex).toContain("20,00");
@@ -145,8 +145,8 @@ describe("le bloc « bons » du tableur", () => {
     expect(lines).toContain(
       '"Confirmation de commande";"Société";"Jour";"Mode";"Auteur";"Montant HT (€)"',
     );
-    expect(lines).toContain('"CMD-r";"Maison mère";07/10/2026;"Retrait";"Léa Martin";10,00');
-    expect(lines).toContain('"CMD-livree";"Maison mère";08/10/2026;"Livraison";"l\'équipe";17,50');
+    expect(lines).toContain('"ORD-r";"Maison mère";07/10/2026;"Retrait";"Léa Martin";10,00');
+    expect(lines).toContain('"ORD-livree";"Maison mère";08/10/2026;"Livraison";"l\'équipe";17,50');
     expect(lines).toContain('"Total HT des bons";"Maison mère";;"";"";27,50');
     expect(lines).toContain('"Écart avec le sous-total HT : livraison";"Maison mère";;"";"";7,50');
   });

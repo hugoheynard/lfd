@@ -35,9 +35,9 @@ class InMemoryShortfalls extends OrderShortfallRepository {
 
 function setup() {
   const shortfalls = new InMemoryShortfalls();
-  shortfalls.rows.set("CMD-0001", {
+  shortfalls.rows.set("ORD-0001", {
     orderId: "ord_1",
-    reference: "CMD-0001",
+    reference: "ORD-0001",
     reportedAt: null,
     lines: null,
     clearedAt: null,
@@ -54,37 +54,37 @@ describe("RecordOrderShortfallHandler / ClearOrderShortfallHandler (E6a)", () =>
   it("pose le manque sur la commande", async () => {
     const { record, shortfalls } = setup();
 
-    await record.execute(new RecordOrderShortfallCommand("CMD-0001", T1, LINES));
+    await record.execute(new RecordOrderShortfallCommand("ORD-0001", T1, LINES));
 
-    expect(shortfalls.rows.get("CMD-0001")).toMatchObject({ reportedAt: T1, lines: LINES });
+    expect(shortfalls.rows.get("ORD-0001")).toMatchObject({ reportedAt: T1, lines: LINES });
   });
 
   it("n'écrit rien pour un fait plus ancien que l'état connu", async () => {
     const { record, shortfalls } = setup();
-    await record.execute(new RecordOrderShortfallCommand("CMD-0001", T2, LINES));
+    await record.execute(new RecordOrderShortfallCommand("ORD-0001", T2, LINES));
 
-    await record.execute(new RecordOrderShortfallCommand("CMD-0001", T1, LINES));
+    await record.execute(new RecordOrderShortfallCommand("ORD-0001", T1, LINES));
 
     expect(shortfalls.saves).toBe(1);
-    expect(shortfalls.rows.get("CMD-0001")?.reportedAt).toEqual(T2);
+    expect(shortfalls.rows.get("ORD-0001")?.reportedAt).toEqual(T2);
   });
 
   it("efface le manque quand le bac s'est fermé complet", async () => {
     const { record, clear, shortfalls } = setup();
-    await record.execute(new RecordOrderShortfallCommand("CMD-0001", T1, LINES));
+    await record.execute(new RecordOrderShortfallCommand("ORD-0001", T1, LINES));
 
-    await clear.execute(new ClearOrderShortfallCommand("CMD-0001", T2));
+    await clear.execute(new ClearOrderShortfallCommand("ORD-0001", T2));
 
-    expect(shortfalls.rows.get("CMD-0001")).toMatchObject({ reportedAt: null, lines: null });
+    expect(shortfalls.rows.get("ORD-0001")).toMatchObject({ reportedAt: null, lines: null });
   });
 
   it("refuse une référence inconnue, des deux côtés", async () => {
     const { record, clear } = setup();
 
     await expect(
-      record.execute(new RecordOrderShortfallCommand("CMD-9999", T1, LINES)),
+      record.execute(new RecordOrderShortfallCommand("ORD-9999", T1, LINES)),
     ).rejects.toThrow(OrderReferenceNotFoundError);
-    await expect(clear.execute(new ClearOrderShortfallCommand("CMD-9999", T1))).rejects.toThrow(
+    await expect(clear.execute(new ClearOrderShortfallCommand("ORD-9999", T1))).rejects.toThrow(
       OrderReferenceNotFoundError,
     );
   });

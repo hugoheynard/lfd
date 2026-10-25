@@ -25,7 +25,7 @@ class BrokenNotifier extends StaffNotifier {
 const NOW = new Date(0);
 const EVENT = new RefundNotCreditedEvent(
   "ord_1",
-  "CMD-1",
+  "ORD-1",
   "ref_1",
   1_250,
   "FA-LFD-2026-000004",
@@ -44,7 +44,7 @@ describe("RingRefundNotCredited", () => {
     expect(notifier.notices).toEqual([
       {
         kind: "order.refund_not_credited",
-        subject: "Remboursement sans avoir — CMD-1",
+        subject: "Remboursement sans avoir — ORD-1",
         body: expect.stringContaining("facture du mois") as string,
         link: "/commandes/ord_1",
         idempotencyKey: "notification:order.refund_not_credited:ref_1",

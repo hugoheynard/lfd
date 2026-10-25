@@ -14,7 +14,7 @@ const PRINCIPAL = "co_principal";
 
 function order(over: Partial<OrderSummarySource> & { readonly id: string }): OrderSummarySource {
   return {
-    orderNumber: `CMD-${over.id}`,
+    orderNumber: `ORD-${over.id}`,
     companyId: PRINCIPAL,
     companyName: "Maison mère",
     day: "2026-10-07",
@@ -76,7 +76,7 @@ describe("summarizeOrders — les bons inclus (§10)", () => {
     expect(summary.companies[0]?.orders).toEqual([
       {
         orderId: "livree",
-        orderNumber: "CMD-livree",
+        orderNumber: "ORD-livree",
         day: "2026-10-07",
         fulfillmentMethod: "delivery",
         author: { kind: "team" },

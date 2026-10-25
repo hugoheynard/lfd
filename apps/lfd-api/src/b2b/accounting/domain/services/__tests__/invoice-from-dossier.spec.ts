@@ -13,8 +13,8 @@ const PLACED = new Date("2026-09-15T08:00:00.000Z");
 
 function input(overrides: Partial<InvoiceFromDossierInput> = {}): InvoiceFromDossierInput {
   const bons = [
-    { ...frozenOrder("CMD-001", PLACED), requestedDeliveryDate: "2026-09-16" },
-    { ...frozenOrder("CMD-002", PLACED), discountCents: 100, deliveryFeeCents: 300 },
+    { ...frozenOrder("ORD-001", PLACED), requestedDeliveryDate: "2026-09-16" },
+    { ...frozenOrder("ORD-002", PLACED), discountCents: 100, deliveryFeeCents: 300 },
   ];
   const { lines: _lines, vat: _vat, ...issue } = issueInput();
   return { ...issue, computed: simulateInvoiceDossier(bons).invoice, ...overrides };

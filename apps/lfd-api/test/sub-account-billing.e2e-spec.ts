@@ -10,7 +10,8 @@ import { randomUUID } from "node:crypto";
  * du site au nom du principal, dans la transaction du geste ; les routes
  * client d'un site ne rendent ni l'IBAN ni le mandat du principal.
  *
- * ⚠️ Sociétés, suivis, mandats actifs et commandes du lot écrits par Prisma :
+ * Les commandes du lot passent par le vrai chemin (plan T).
+ * ⚠️ Sociétés, suivis et mandats actifs écrits par Prisma :
  * même dette que `collection-batch-scene.ts` (un mandat actif exige une
  * pièce et une signature qu'aucun e2e n'a à rejouer ici). Les passations, la
  * forme de prélèvement, le détachement et les lectures passent par HTTP.
@@ -18,14 +19,15 @@ import { randomUUID } from "node:crypto";
  * Aucune date absolue : la clôture est le dernier 1er du mois atteint,
  * calculé par le domaine depuis l'instant présent.
  */
-import type {
-  AdminCompanyFicheView,
-  ClientSheet,
-  CollectionCycleView,
-  ConstitutedBatchesView,
-  CustomerBankAccountSectionView,
-  CustomerBilledToView,
-  DetachedUnpaidOrdersView,
+import {
+  instantToLocal,
+  type AdminCompanyFicheView,
+  type ClientSheet,
+  type CollectionCycleView,
+  type ConstitutedBatchesView,
+  type CustomerBankAccountSectionView,
+  type CustomerBilledToView,
+  type DetachedUnpaidOrdersView,
 } from "@lfd/contracts";
 
 import { cycleToConstitute } from "../src/b2b/accounting/domain/services/billing-cycle.js";
@@ -34,7 +36,8 @@ import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, daysAgo, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
-import { attachTo, createCompany, createUser, receivedColumns } from "./factories.js";
+import { attachTo, createCompany, createUser, markDelivered } from "./factories.js";
+import { placeOrder as placeTestOrder } from "./order-factory.js";
 
 const SERVICE_DAY = serviceDay();
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -244,40 +247,32 @@ async function activeMandate(
 }
 
 /**
- * Une commande du site passée au compte du principal, deux jours avant la
- * clôture. Elle porte sa ligne figée : depuis le lot F2
- * (`le-prelevement-suit-la-facture.md`), un bon dont le total ne se
- * recompose pas de ses lignes est écarté `unbillable` du lot.
+ * Une commande du site passée au compte du principal par le vrai chemin
+ * (`placeOrder`, plan T) : un acheteur du site la passe, la passation résout
+ * le payeur. Servie deux jours avant la clôture, passée trois jours plus tôt,
+ * livrée le jour de service — aucune route ne remet une commande dans le
+ * passé (plan T, 2026-10-25).
  */
 async function billedOrder(site: string, payer: string): Promise<string> {
   seq += 1;
-  const user = await createUser(ctx.prisma, { auth0Sub: `s4-${String(seq)}` });
-  const order = await ctx.prisma.order.create({
-    data: {
-      orderNumber: `CMD-S4-${String(seq)}`,
-      companyId: site,
-      billedCompanyId: payer,
-      placedByUserId: user.id,
-      subtotalCents: 10_000,
-      totalCents: 10_550,
-      vatCents: 550,
-      vatShares: [{ rate: 5.5, amountCents: 550 }],
-      paymentStatus: "not_required",
-      createdAt: new Date(closesAt.getTime() - 2 * DAY_MS),
-      ...receivedColumns(new Date(closesAt.getTime() - 2 * DAY_MS)),
-      lines: {
-        create: {
-          sku: "PAIN-S4",
-          productNameSnapshot: "Pain du site",
-          unitPriceMillicents: 10_000_000,
-          vatRate: 5.5,
-          quantity: 1,
-          lineTotalCents: 10_000,
-        },
-      },
-    },
-    select: { id: true },
+  const buyer = await createUser(ctx.prisma, { auth0Sub: `s4-${String(seq)}` });
+  await attachTo(ctx.prisma, buyer.id, site);
+  const servedAt = new Date(closesAt.getTime() - 2 * DAY_MS);
+  const order = await placeTestOrder(ctx, {
+    buyerUserId: buyer.id,
+    companyId: site,
+    settlement: "account",
+    placedAt: new Date(servedAt.getTime() - 3 * DAY_MS),
+    forDay: instantToLocal(servedAt).day,
+    fulfillment: { method: "pickup", pickupSiteId: pickupId },
+    lines: [{ sku: "VIE-001", quantity: 50 }],
   });
+  await markDelivered(ctx.prisma, order.id, servedAt);
+  const { billedCompanyId } = await ctx.prisma.order.findUniqueOrThrow({
+    where: { id: order.id },
+    select: { billedCompanyId: true },
+  });
+  expect(billedCompanyId).toBe(payer);
   return order.id;
 }
 

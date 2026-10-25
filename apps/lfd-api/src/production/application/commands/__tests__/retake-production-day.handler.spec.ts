@@ -29,7 +29,7 @@ const DAY = "2026-09-13";
 function order(orderId: string, quantity: number): ProducibleOrder {
   return {
     orderId,
-    reference: `CMD-${orderId}`,
+    reference: `ORD-${orderId}`,
     customerLabel: "Trois Ponts",
     fulfillmentMethod: "pickup",
     destination: "Le Labo",

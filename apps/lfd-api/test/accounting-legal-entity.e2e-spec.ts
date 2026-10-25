@@ -19,7 +19,9 @@ import { instantToLocal, type BillingCycleView, type LegalEntityView } from "@lf
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { createCompany, createUser, markDelivered } from "./factories.js";
+import { CustomerRole } from "../src/platform/database/client/client.js";
+import { attachTo, createCompany, createUser, markDelivered } from "./factories.js";
+import { pickupSite, placeOrder } from "./order-factory.js";
 import { storageKeys } from "./storage.js";
 
 /** SIREN dont la clé de Luhn est bonne : un SIREN inventé se fait refuser. */
@@ -420,10 +422,11 @@ const SIGNED_DAY = instantToLocal(SIGNED_ON_PAPER).day;
  * Une société qui doit quelque chose sur le cycle en cours, et — si `scheme`
  * n'est pas `null` — un mandat ACTIF frappé sous ce schéma, avec son RIB.
  *
- * ⚠️ Commande et mandat écrits par Prisma : même dette que `test/factories.ts`
- * et `mandate.e2e-spec.ts`. Ce qui est éprouvé est en AVAL — la découpe du lot
- * par schéma sur le vrai SQL. La commande prend l'instant de la base, donc tombe
- * dans le cycle courant sans aucune date écrite ici.
+ * La commande passe au compte par le vrai chemin (`placeOrder`, plan T),
+ * maintenant, et se retire le même instant : elle tombe dans le cycle courant
+ * sans aucune date écrite ici. ⚠️ Mandat écrit par Prisma : même dette que
+ * `mandate.e2e-spec.ts`. Ce qui est éprouvé est en AVAL — la découpe du lot
+ * par schéma sur le vrai SQL.
  */
 async function billedCompany(
   legalEntityId: string,
@@ -432,18 +435,22 @@ async function billedCompany(
 ): Promise<void> {
   orderSeq += 1;
   const company = await createCompany(ctx.prisma, { raisonSociale: name });
-  const user = await createUser(ctx.prisma, { auth0Sub: `billed-${String(orderSeq)}` });
-  const order = await ctx.prisma.order.create({
-    data: {
-      orderNumber: `CMD-CYCLE-${String(orderSeq)}`,
-      companyId: company.id,
-      placedByUserId: user.id,
-      subtotalCents: 12_345,
-      totalCents: 12_345,
-    },
+  await ctx.prisma.company.update({
+    where: { id: company.id },
+    data: { grantedTerms: ["monthly"] },
   });
-  // Livrée le jour de sa passation : l'assiette du cycle suit la livraison (lot ZL).
-  await markDelivered(ctx.prisma, order.id, order.createdAt);
+  const user = await createUser(ctx.prisma, { auth0Sub: `billed-${String(orderSeq)}` });
+  await attachTo(ctx.prisma, user.id, company.id, CustomerRole.owner);
+  const order = await placeOrder(ctx, {
+    buyerUserId: user.id,
+    companyId: company.id,
+    settlement: "account",
+    fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
+  });
+  // Retirée à l'instant de sa passation : l'assiette du cycle suit la
+  // livraison (lot ZL), et aucune route ne retire un bon avant son jour
+  // (plan T, 2026-10-25).
+  await markDelivered(ctx.prisma, order.id, new Date());
   if (scheme === null) {
     return;
   }

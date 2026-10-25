@@ -168,7 +168,7 @@ describe("un chemin mal formé", () => {
     const responses = await Promise.all([
       ctx.asSub(STAFF).get(`${day}/compte-a-produire.pdf`),
       ctx.asSub(STAFF).get(`${day}/dossier.pdf`),
-      ctx.asSub(STAFF).get(`${day}/sheets/CMD-1.pdf`),
+      ctx.asSub(STAFF).get(`${day}/sheets/ORD-1.pdf`),
       ctx.asSub(STAFF).get(`${day}/due-thresholds`),
       ctx.asSub(STAFF).get(`${day}/resupplies`),
       ctx.asSub(STAFF).get(`${day}/status`),

@@ -56,7 +56,7 @@ describe("CreditOrderPointsHandler — le gain d'une commande définitive", () =
       type: "loyalty.points_earned",
       subjectType: "user",
       subjectId: "u1",
-      payload: { subjectLabel: "Léa Martin", points: 2_340, order: { id: "o1", name: "CMD-1" } },
+      payload: { subjectLabel: "Léa Martin", points: 2_340, order: { id: "o1", name: "ORD-1" } },
     });
   });
 

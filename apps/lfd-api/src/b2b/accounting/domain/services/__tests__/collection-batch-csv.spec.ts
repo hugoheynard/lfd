@@ -12,7 +12,7 @@ function line(overrides: Partial<BatchCsvLine> = {}): BatchCsvLine {
     ordersTotalCents: 123_456,
     orderCount: 2,
     priorOrderCount: 1,
-    orderNumbers: ["CMD-1", "CMD-2"],
+    orderNumbers: ["ORD-1", "ORD-2"],
     ...overrides,
   };
 }
@@ -31,7 +31,7 @@ describe("le CSV de contrôle d'un lot", () => {
     expect(csv.startsWith("﻿")).toBe(true);
     expect(csv).toContain('"••••0143"');
     expect(csv).toContain('"Boulangerie; du Port"');
-    expect(csv).toContain('"CMD-1 CMD-2"');
+    expect(csv).toContain('"ORD-1 ORD-2"');
     expect(csv).toContain("1234,56");
     expect(csv).toContain('"TOTAL"');
   });

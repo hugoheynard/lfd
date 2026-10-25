@@ -22,7 +22,7 @@ const VAT = breakdownOf(LINES);
 function cardInvoice(): Invoice {
   return Invoice.issue(
     issueInput({
-      orders: [{ orderId: "o_1", reference: "CMD-001", receivedOn: "2026-09-29" }],
+      orders: [{ orderId: "o_1", reference: "ORD-001", receivedOn: "2026-09-29" }],
       lines: LINES,
       vat: VAT,
       dueOn: "2026-09-30",

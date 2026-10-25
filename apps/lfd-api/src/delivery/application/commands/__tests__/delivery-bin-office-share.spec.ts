@@ -95,13 +95,13 @@ describe("DeliveryBinOffice.share — le bac partagé (lot 4 bis, v2-4)", () => 
         subjectType: "order",
         subjectId: "o_2",
         payload: {
-          subjectLabel: "CMD-o_2",
+          subjectLabel: "ORD-o_2",
           binType: { id: "t_m", name: "Bac t_m" },
           innerBags: 2,
           bin: { id, name: "JJJJJJ" },
           half: "right",
           partner: { id: "h_1", name: "HHHHHH" },
-          partnerOrder: { id: "o_1", name: "CMD-o_1" },
+          partnerOrder: { id: "o_1", name: "ORD-o_1" },
         },
       },
     ]);

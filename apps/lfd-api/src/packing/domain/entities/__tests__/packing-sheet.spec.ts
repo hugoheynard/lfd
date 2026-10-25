@@ -13,7 +13,7 @@ function sheet(containerMode: ContainerMode, packed: SheetMark | null = null): P
   return PackingSheet.fromSnapshot({
     serviceDay: "2026-09-13",
     orderId: "ord_1",
-    reference: "CMD-0001",
+    reference: "ORD-0001",
     packed,
     containers: 2,
     // Une commande sans ligne : rien à répartir, la fermeture ne bute que sur le mode.
@@ -50,7 +50,7 @@ describe("PackingSheet — une commande colisée avec l'ancien poste (`counted`,
 
     expect(() => bac.seal({ at: AT, by: "s1" })).toThrow(ContainersCountedError);
     expect(() => bac.seal({ at: AT, by: "s1" })).toThrow(
-      "Commande CMD-0001 colisée avec l'ancien poste : elle ne se modifie plus ici.",
+      "Commande ORD-0001 colisée avec l'ancien poste : elle ne se modifie plus ici.",
     );
     expect(bac.packed).toBeNull();
   });

@@ -135,7 +135,7 @@ function getHandler(
 
 const ORDER: CycleOrder = {
   id: "o1",
-  orderNumber: "CMD-1",
+  orderNumber: "ORD-1",
   placedAt: new Date("2026-09-12T08:00:00.000Z"),
   companyId: "c1",
   billedCompanyId: null,
@@ -254,14 +254,14 @@ describe("GetCycleStatementHandler", () => {
     });
     expect(view.provisional).toBe(true);
     expect(view.totals.unventilatedVatCents).toBe(55);
-    expect(view.groups[0]?.orders[0]).toMatchObject({ orderNumber: "CMD-1", vatVentilated: false });
+    expect(view.groups[0]?.orders[0]).toMatchObject({ orderNumber: "ORD-1", vatVentilated: false });
   });
 
   it("garde au relevé le bon annulé après facturation, marqué, et le compte au total", async () => {
     const cancelled: CycleOrder = {
       ...ORDER,
       id: "o2",
-      orderNumber: "CMD-2",
+      orderNumber: "ORD-2",
       cancelledAfterInvoicing: true,
     };
     const reader = new RecordingCycleOrders("Boulangerie du Port", [ORDER, cancelled]);
@@ -381,6 +381,6 @@ describe("ExportCycleStatementHandler", () => {
       new FixedPayerModes(),
     ).execute(new ExportCycleStatementQuery("c1", SEPTEMBER_CLOSES_AT));
     expect(file.fileName).toBe("RELEVE-PROVISOIRE-Boulangerie du Port-20260930.csv");
-    expect(file.csv).toContain('"CMD-1"');
+    expect(file.csv).toContain('"ORD-1"');
   });
 });

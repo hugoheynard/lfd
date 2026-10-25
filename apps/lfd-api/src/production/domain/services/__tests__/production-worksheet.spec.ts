@@ -46,7 +46,7 @@ function demanded(sku: string, productName: string, quantity: number): DemandedI
 function arrival(orderId: string, lines: readonly [string, string, number][]): ProducibleOrder {
   return {
     orderId,
-    reference: `CMD-${orderId}`,
+    reference: `ORD-${orderId}`,
     customerLabel: "Trois Ponts",
     fulfillmentMethod: "pickup",
     destination: "Le Labo",

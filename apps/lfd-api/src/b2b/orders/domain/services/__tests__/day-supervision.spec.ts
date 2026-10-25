@@ -112,7 +112,7 @@ describe("superviseDay", () => {
     window: HandoverQueueWindow | null = null,
   ): SupervisedOrder => ({
     orderId: id,
-    reference: `CMD-${id}`,
+    reference: `ORD-${id}`,
     customerName: "Boulangerie du Col",
     fulfillmentMethod,
     status,
@@ -190,7 +190,7 @@ describe("awaitingDecisionOf — « Manque signalé — décision attendue » (E
     shortfallReportedAt: Date | null,
   ): SupervisedOrder => ({
     orderId: id,
-    reference: `CMD-${id}`,
+    reference: `ORD-${id}`,
     customerName: null,
     fulfillmentMethod: "delivery",
     status,

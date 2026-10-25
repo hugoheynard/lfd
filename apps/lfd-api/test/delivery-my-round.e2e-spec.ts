@@ -205,7 +205,7 @@ describe("« Commencer ma tournée » (MT3)", () => {
       .expect(409);
 
     expect(messageOf(refused)).toMatch(
-      /n'est pas chargé \(Maison 1 \(TRN-0001\)\) — appelez le dépôt/u,
+      /n'est pas chargé \(Maison 1 \(ORD-900001\)\) — appelez le dépôt/u,
     );
     expect(await ctx.prisma.deliveryStopExecution.count()).toBe(0);
   });
@@ -258,7 +258,7 @@ describe("« Commencer ma tournée » (MT3)", () => {
     const after = await myRound(paul.agent, roundId);
     expect(after).toMatchObject({ freeze: "departure" });
     expect(after.departedAt).not.toBeNull();
-    expect(after.stops[0]).toMatchObject({ rank: 1, gps: POINT, reference: "TRN-0001" });
+    expect(after.stops[0]).toMatchObject({ rank: 1, gps: POINT, reference: "ORD-900001" });
     expect(after.home?.label).toBe("Laboratoire");
     expect(JSON.stringify(after)).not.toMatch(/cents|price|total|amount|prix|montant/iu);
 

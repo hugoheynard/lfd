@@ -39,14 +39,14 @@ const DAMAGED = reason({
 });
 const FULFILLED: ReportableOrder = {
   id: "o1",
-  number: "CMD-0001",
+  number: "ORD-0001",
   fulfilled: true,
   companyId: null,
   site: null,
 };
 const PENDING: ReportableOrder = {
   id: "o2",
-  number: "CMD-0002",
+  number: "ORD-0002",
   fulfilled: false,
   companyId: null,
   site: null,
@@ -54,7 +54,7 @@ const PENDING: ReportableOrder = {
 /** Une commande du site `chalet`, son principal `alpes` COPIÉ à la passation. */
 const SITE_ORDER: ReportableOrder = {
   id: "o3",
-  number: "CMD-0003",
+  number: "ORD-0003",
   fulfilled: true,
   companyId: "chalet",
   site: { companyId: "chalet", name: "Chalet Gentiane", principalCompanyId: "alpes" },
@@ -62,7 +62,7 @@ const SITE_ORDER: ReportableOrder = {
 /** La même, passée avant la copie du principal (N1) : aucun principal. */
 const BEFORE_N1: ReportableOrder = {
   id: "o4",
-  number: "CMD-0004",
+  number: "ORD-0004",
   fulfilled: true,
   companyId: "chalet",
   site: { companyId: "chalet", name: "Chalet Gentiane", principalCompanyId: null },
@@ -122,7 +122,7 @@ describe("ReportOrderProblemHandler — signaler un problème", () => {
       author: JEAN,
       audience: "b2c",
       userId: "u1",
-      details: { kind: "order_problem", order: { id: "o1", number: "CMD-0001" }, photos: [] },
+      details: { kind: "order_problem", order: { id: "o1", number: "ORD-0001" }, photos: [] },
     });
     expect(events.published[0]).toBeInstanceOf(CustomerRequestReceivedEvent);
     expect(events.published[0]).toMatchObject({ recipientEmail: "commercial@lfc.fr" });
@@ -171,7 +171,7 @@ describe("ReportOrderProblemHandler — signaler un problème", () => {
   it("commande ni retirée ni livrée → 409 qui nomme la commande", async () => {
     const { handler } = setup();
     await expect(handler.execute(report("o2"))).rejects.toThrow(OrderNotYetFulfilledError);
-    await expect(handler.execute(report("o2"))).rejects.toThrow(/CMD-0002/u);
+    await expect(handler.execute(report("o2"))).rejects.toThrow(/ORD-0002/u);
   });
 
   it("refuse un motif « Nous écrire » : l'envoi exige un motif du bon type (§6.5)", async () => {
@@ -218,7 +218,7 @@ describe("ReportOrderProblemHandler — le fait durable pour le principal (N4a)"
       payload: {
         requestId: id,
         orderId: "o3",
-        orderNumber: "CMD-0003",
+        orderNumber: "ORD-0003",
         siteCompanyId: "chalet",
         siteName: "Chalet Gentiane",
         principalCompanyId: "alpes",

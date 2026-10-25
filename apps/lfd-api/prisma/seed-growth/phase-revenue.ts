@@ -1,6 +1,9 @@
 import { type SeedHarness } from "./harness.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+/** Les numéros des commandes semées ici : `ORD-600000`, `ORD-600001`… */
+const SEED_REVENUE_NUMBER_BASE = 600_000;
+
 /** Fenêtre historique (jours) — couvre les 13 semaines du dashboard. */
 const SPAN_DAYS = 90;
 /** Zones du marché ciblé (les sociétés y portent un secteur NAF). */
@@ -74,7 +77,10 @@ function buildOrders(
       }
       const amount = 4000 + week * 450 + (n % 4) * 1500; // panier croissant + variété
       rows.push({
-        orderNumber: `seed-rev-${k}`,
+        // Le format réel (`ORD-<n>`), hors de la plage que le compteur
+        // atteint : la base refuse tout autre numéro (CHECK
+        // `orders_order_number_format`).
+        orderNumber: `ORD-${String(SEED_REVENUE_NUMBER_BASE + k)}`,
         placedByUserId: buyerId,
         companyId: company.id,
         status: "placed",

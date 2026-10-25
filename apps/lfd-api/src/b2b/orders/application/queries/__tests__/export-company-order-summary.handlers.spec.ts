@@ -74,7 +74,7 @@ const NOW = new Date("2026-10-21T08:00:00.000Z");
 
 const source = (id: string): OrderSummarySource => ({
   id,
-  orderNumber: `CMD-${id}`,
+  orderNumber: `ORD-${id}`,
   companyId: "co_principal",
   companyName: "Maison mère",
   day: "2026-10-07",
@@ -141,7 +141,7 @@ describe("le récapitulatif imprimé et au tableur (lot R2)", () => {
     );
 
     expect(pdfText(pdf.bytes)).toContain("CONFIRMATIONS DE COMMANDE INCLUSES");
-    expect(csv.csv).toContain('"CMD-o1";"Maison mère";07/10/2026;"Retrait";"Léa Martin";10,00');
+    expect(csv.csv).toContain('"ORD-o1";"Maison mère";07/10/2026;"Retrait";"Léa Martin";10,00');
   });
 
   it("CSV : même lecture, même nom au bon suffixe", async () => {

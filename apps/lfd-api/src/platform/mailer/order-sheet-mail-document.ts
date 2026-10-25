@@ -6,7 +6,7 @@ import type { MailAttachment } from "@lfd/mailer";
  * les octets du PDF rangé. Même forme que la pièce de la facture.
  */
 export interface OrderSheetMailDocument {
-  /** `bon-de-commande-CMD-4812.pdf`. */
+  /** `bon-de-commande-ORD-4812.pdf`. */
   readonly fileName: string;
   readonly pdfBase64: string;
 }

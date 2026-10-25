@@ -121,6 +121,9 @@ export async function seedPlannableDelivery(
 
 let sequence = 0;
 
+/** Les numéros semés à la main partent d'ici : `ORD-900001`, `ORD-900002`… */
+export const RAW_REFERENCE_BASE = 900_000;
+
 /** Oublie les numéros semés : `ctx.reset()` a tout effacé. */
 export function forgetRoutingScene(): void {
   sequence = 0;
@@ -173,9 +176,16 @@ export async function seedLocatedDelivery(
     },
     select: { id: true },
   });
+  // ⚠️ Écriture brute GARDÉE (plan T, 2026-10-25) : les suites du calcul de
+  // tournée mesurent des commandes SANS créneau (départ à l'heure par défaut,
+  // aucune place intenable) et SANS ligne (le contenant par défaut) — deux
+  // formes que la passation n'écrit plus (créneau obligatoire depuis le
+  // 2026-10-14) mais que la base porte encore. Passées par le vrai chemin,
+  // elles changeraient ce que les quarante suites clientes mesurent. Le
+  // numéro suit le format réel, hors de la plage que la séquence atteint.
   const order = await ctx.prisma.order.create({
     data: {
-      orderNumber: `TRN-${n.padStart(4, "0")}`,
+      orderNumber: `ORD-${String(RAW_REFERENCE_BASE + sequence)}`,
       placedByUserId: owner.id,
       companyId: company.id,
       clientele: "pro",

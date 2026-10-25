@@ -6,7 +6,7 @@ import {
 const fact = new OrderProblemReportedFact(
   "req_1",
   "o1",
-  "CMD-0001",
+  "ORD-0001",
   { companyId: "chalet", name: "Chalet Gentiane", principalCompanyId: "alpes" },
   "u1",
 );
@@ -17,7 +17,7 @@ describe("OrderProblemReportedFact — le fait « problème signalé »", () => 
   });
 
   it("une clé par signalement, pas par commande", () => {
-    const second = new OrderProblemReportedFact("req_2", "o1", "CMD-0001", fact.site, "u1");
+    const second = new OrderProblemReportedFact("req_2", "o1", "ORD-0001", fact.site, "u1");
     expect(second.durableFact().key).not.toBe(fact.durableFact().key);
   });
 

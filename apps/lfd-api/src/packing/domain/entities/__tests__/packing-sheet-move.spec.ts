@@ -22,7 +22,7 @@ function filled(mode: ContainerMode = "listed"): PackingSheet {
   const sheet = PackingSheet.fromSnapshot({
     serviceDay: "2030-03-12",
     orderId: "ord_1",
-    reference: "CMD-0001",
+    reference: "ORD-0001",
     packed: null,
     containers: 0,
     lines: [{ sku: "CRO", productName: "Croissant", quantity: 20, packed: null }],

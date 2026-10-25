@@ -25,7 +25,7 @@ const ISSUED = new Date("2026-01-10T09:00:00.000Z");
 const DAY = 86_400_000;
 const BEFORE_EXPIRY = new Date(ISSUED.getTime() + DAY);
 const AFTER_EXPIRY = new Date(ISSUED.getTime() + 60 * DAY);
-const ORDER = { id: "o1", number: "CMD-1" };
+const ORDER = { id: "o1", number: "ORD-1" };
 
 /** Un bon de 1 000 centimes, valable 30 jours, à la personne `u1`. */
 function setup(status: "available" | "reserved" = "available") {
@@ -177,7 +177,7 @@ describe("LoyaltyVoucherRedeeming — solder le reliquat", () => {
 describe("LoyaltyVoucherRedeeming — solder relit la commande sous le verrou (C3b.1, 4)", () => {
   it("ne solde rien si la commande du lot ne porte plus le bon", async () => {
     const { redeeming, vouchers, events, live } = setup("reserved");
-    live.splice(0, live.length, voucherOrder({ orderId: "o2", orderNumber: "CMD-2" }));
+    live.splice(0, live.length, voucherOrder({ orderId: "o2", orderNumber: "ORD-2" }));
 
     await redeeming.settleRemainder(
       { voucherId: "v1", appliedCents: 400, order: ORDER },
@@ -279,13 +279,13 @@ describe("LoyaltyVoucherRedeeming — restituer (lot C3b)", () => {
     if (child !== undefined) {
       vouchers.rows.set(childId, { ...child, status: "reserved" });
     }
-    live.push(voucherOrder({ voucherId: childId, orderId: "o2", orderNumber: "CMD-2" }));
+    live.push(voucherOrder({ voucherId: childId, orderId: "o2", orderNumber: "ORD-2" }));
 
     await expect(redeeming.reinstate("v1", ORDER, BEFORE_EXPIRY)).resolves.toEqual({
       kind: "blocked",
       cause: "remainder_engaged",
       remainderValueCents: 600,
-      order: { id: "o2", number: "CMD-2" },
+      order: { id: "o2", number: "ORD-2" },
     });
     expect(vouchers.calls).toEqual(["lock:user:u1"]);
     expect(events.factTypes()).toEqual([]);
@@ -293,7 +293,7 @@ describe("LoyaltyVoucherRedeeming — restituer (lot C3b)", () => {
 
   it("parent réengagé par une AUTRE commande : `already`, rien n'est écrit ni publié", async () => {
     const { redeeming, vouchers, events, live } = setup("reserved");
-    live.splice(0, live.length, voucherOrder({ orderId: "o9", orderNumber: "CMD-9" }));
+    live.splice(0, live.length, voucherOrder({ orderId: "o9", orderNumber: "ORD-9" }));
 
     await expect(redeeming.reinstate("v1", ORDER, BEFORE_EXPIRY)).resolves.toEqual({
       kind: "already",

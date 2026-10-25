@@ -37,7 +37,7 @@ const address = (ligne1: string) => ({
 function point(orderId: string): DeliveryStopPoint {
   return {
     orderId,
-    reference: `CMD-${orderId}`,
+    reference: `ORD-${orderId}`,
     gps: null,
     address: address(`${orderId} rue du Pont`),
     window: null,

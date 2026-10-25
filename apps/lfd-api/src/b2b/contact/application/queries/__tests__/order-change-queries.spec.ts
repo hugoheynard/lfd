@@ -67,7 +67,7 @@ describe("GetMyOrderChangeRequestHandler", () => {
   it("dans son mur : la dernière demande, ou `null`", async () => {
     const view = await new GetMyOrderChangeRequestHandler(
       new VisibleOrders({
-        o1: { id: "o1", number: "CMD-0001", companyId: null, fulfilled: false, site: null },
+        o1: { id: "o1", number: "ORD-0001", companyId: null, fulfilled: false, site: null },
       }),
       new PendingChanges(),
     ).execute(new GetMyOrderChangeRequestQuery("o1", "u1"));

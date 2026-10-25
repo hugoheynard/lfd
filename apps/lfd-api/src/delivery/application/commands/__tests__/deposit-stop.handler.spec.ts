@@ -68,7 +68,7 @@ describe("DepositStopHandler — « Déposé avec preuve » (B2)", () => {
       subjectLabel: "Kangoo",
       day: DAY,
       passage: 1,
-      order: { id: "o_1", name: "CMD-1" },
+      order: { id: "o_1", name: "ORD-1" },
     });
     expect(attestor.published).toEqual([]);
 

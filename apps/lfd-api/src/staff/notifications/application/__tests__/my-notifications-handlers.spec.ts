@@ -74,7 +74,7 @@ class InMemoryAudienceNotices extends AudienceNotificationReader {
 const DECISION = {
   id: "n_1",
   kind: "delivery.stop_decision",
-  subject: "Livraison à décider — commande CMD-1",
+  subject: "Livraison à décider — commande ORD-1",
   body: "Kangoo, passage 1 : personne pour réceptionner.",
   link: "/livraison/a-decider",
   occurredAt: NOW.toISOString(),

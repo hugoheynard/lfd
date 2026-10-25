@@ -174,13 +174,13 @@ describe("constituer, annuler, déposer un lot", () => {
       new ConstituteCollectionBatchesCommand(ENTITY_ID, STAFF_AUTHOR),
     );
     w.recheck.now = new Map([["m_c_port", { active: true, iban: mandate("c_port").iban }]]);
-    w.cancelled.numbers = ["CMD-X"];
+    w.cancelled.numbers = ["ORD-X"];
     sendAllQueued(w.noticeStore, w.clock.now());
 
     await w.download.execute(new RecordCollectionBatchDownloadCommand(id ?? "", "staff_1"));
     await expect(
       w.deposit.execute(new DepositCollectionBatchCommand(id ?? "", "staff_1")),
-    ).rejects.toThrow(/CMD-X a été annulée/u);
+    ).rejects.toThrow(/ORD-X a été annulée/u);
   });
 
   it("refuse sans plancher, et quand il n'y a rien à faire", async () => {

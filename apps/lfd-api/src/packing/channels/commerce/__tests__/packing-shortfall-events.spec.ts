@@ -8,7 +8,7 @@ import {
 const AT = new Date(1_000);
 
 describe("packing.shortfall_reported — le contrat relu par le commerce", () => {
-  const event = new PackingShortfallReportedEvent("ord_1", "CMD-0001", AT, "s1", [
+  const event = new PackingShortfallReportedEvent("ord_1", "ORD-0001", AT, "s1", [
     { sku: "CRO", due: 4, packed: 0 },
   ]);
 
@@ -31,7 +31,7 @@ describe("packing.shortfall_reported — le contrat relu par le commerce", () =>
 });
 
 describe("packing.shortfall_cleared — le contrat relu par le commerce", () => {
-  const event = new PackingShortfallClearedEvent("ord_1", "CMD-0001", AT);
+  const event = new PackingShortfallClearedEvent("ord_1", "ORD-0001", AT);
 
   it("se relit à l'identique depuis sa charge", () => {
     expect(PackingShortfallClearedEvent.fromPayload(event.durableFact().payload)).toEqual(event);

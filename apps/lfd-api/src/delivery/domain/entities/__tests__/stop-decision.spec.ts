@@ -10,7 +10,7 @@ const FIRST = new Date(2_000);
 const LATER = new Date(3_000);
 const LEA = { staffUserId: "staff_lea", name: "Léa Martin" };
 const MARC = { staffUserId: "staff_marc", name: "Marc Petit" };
-const OPEN_STOP: DecidedStop = { label: "CMD-1", closed: false, returned: false };
+const OPEN_STOP: DecidedStop = { label: "ORD-1", closed: false, returned: false };
 
 function opened(): StopDecision {
   return StopDecision.open({
@@ -84,7 +84,7 @@ describe("StopDecision — le commercial décide (B3, § 10 bis)", () => {
     expect(() => opened().bringBack(returned, LEA, FIRST)).toThrow(
       StopDecisionOnReturnedRoundError,
     );
-    expect(() => opened().authorizeDeposit(returned, LEA, FIRST)).toThrow(/CMD-1/u);
+    expect(() => opened().authorizeDeposit(returned, LEA, FIRST)).toThrow(/ORD-1/u);
   });
 
   it("restaurée, elle garde la version lue que l'adaptateur exigera", () => {

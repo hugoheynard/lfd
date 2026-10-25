@@ -13,7 +13,7 @@ function sheet(mode: ContainerMode = "listed", sealed = false): PackingSheet {
   return PackingSheet.fromSnapshot({
     serviceDay: "2030-03-12",
     orderId: "ord_1",
-    reference: "CMD-0001",
+    reference: "ORD-0001",
     packed: sealed ? MARK : null,
     containers: 0,
     lines: [

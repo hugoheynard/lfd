@@ -16,7 +16,7 @@ function render(overrides: Partial<Parameters<typeof notice>[0]> = {}) {
   return notice({
     activity: "placed",
     siteName: "Chalet Gentiane",
-    orderNumber: "CMD-0042",
+    orderNumber: "ORD-0042",
     totalCents: 123_456,
     requestedFor: "2030-01-02",
     enteredByTeam: false,
@@ -29,9 +29,9 @@ describe("le courriel « un de vos sites a… »", () => {
     const rendered = render();
 
     expect(rendered.subject).toBe(
-      "Chalet Gentiane — Commande passée par un de vos sites (CMD-0042)",
+      "Chalet Gentiane — Commande passée par un de vos sites (ORD-0042)",
     );
-    expect(rendered.html).toContain("Votre site Chalet Gentiane a passé la commande CMD-0042.");
+    expect(rendered.html).toContain("Votre site Chalet Gentiane a passé la commande ORD-0042.");
     expect(rendered.html).toContain("mercredi 2 janvier");
     expect(rendered.html).toMatch(/1\s234,56\s€/u);
   });

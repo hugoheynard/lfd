@@ -83,11 +83,11 @@ function compositionGap(vat: InvoiceVatBreakdown, orders: readonly FrozenInvoice
 describe("la facture — remises et port découpés bon par bon", () => {
   /** L'exemple du §0 : un bon de pain remisé de 5 €, un bon de boissons sans remise. */
   const painRemise = frozenBon({
-    reference: "CMD-1",
+    reference: "ORD-1",
     lines: [goodsLine("PAI", PAIN, 2_000)],
     pickupDiscountCents: 500,
   });
-  const boissons = frozenBon({ reference: "CMD-2", lines: [goodsLine("BOI", BOISSON, 3_000)] });
+  const boissons = frozenBon({ reference: "ORD-2", lines: [goodsLine("BOI", BOISSON, 3_000)] });
 
   it("§0 : les 5 € restent sur le 5,5 % ; l'écart de composition disparaît", () => {
     const dossier = simulateInvoiceDossier([painRemise, boissons]);
@@ -114,13 +114,13 @@ describe("la facture — remises et port découpés bon par bon", () => {
   it("le port qui suit la marchandise reste sur les taux de son bon", () => {
     const orders = [
       frozenBon({
-        reference: "CMD-1",
+        reference: "ORD-1",
         lines: [goodsLine("PAI", PAIN, 2_000)],
         deliveryFeeCents: 400,
         deliveryVatMode: "follows_goods",
       }),
       frozenBon({
-        reference: "CMD-2",
+        reference: "ORD-2",
         lines: [goodsLine("BOI", BOISSON, 3_000)],
         deliveryFeeCents: 300,
         deliveryVatMode: "follows_goods",
@@ -143,7 +143,7 @@ describe("la facture — remises et port découpés bon par bon", () => {
 
   it("une remise de retrait qui absorbe tout un taux, puis un bon de fidélité : aucune base négative", () => {
     const bon = frozenBon({
-      reference: "CMD-1",
+      reference: "ORD-1",
       lines: [goodsLine("PAI", PAIN, 1_000), goodsLine("JUS", BOISSON, 1_000, true)],
       pickupDiscountCents: 1_000,
       voucherCents: 300,
@@ -170,7 +170,7 @@ describe("la facture — remises et port découpés bon par bon", () => {
         deliveryFeeCents: 200,
         deliveryVatMode: "follows_goods",
       });
-    const orders = [same("CMD-1"), same("CMD-2"), same("CMD-3")];
+    const orders = [same("ORD-1"), same("ORD-2"), same("ORD-3")];
 
     const { vat } = simulateInvoiceDossier(orders).invoice;
     const before = cycleWide(orders);
@@ -227,14 +227,14 @@ function* generatedCycles(count: number): Generator<readonly FrozenInvoiceOrder[
       const delivered = next(2) === 0;
       const spec: BonSpec = delivered
         ? {
-            reference: `CMD-${String(index)}`,
+            reference: `ORD-${String(index)}`,
             lines,
             voucherCents: next(2) === 0 ? 0 : next(1_500),
             deliveryFeeCents: next(800),
             deliveryVatMode: next(2) === 0 ? "follows_goods" : "standard",
           }
         : {
-            reference: `CMD-${String(index)}`,
+            reference: `ORD-${String(index)}`,
             lines,
             pickupDiscountCents: next(600),
             voucherCents: next(2) === 0 ? 0 : next(1_500),

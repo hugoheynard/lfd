@@ -201,7 +201,7 @@ describe("partir d'une vraie journée (L9-C8)", () => {
         stopMinutes: 12,
       },
     ]);
-    expect(view.withoutPoint).toEqual([{ reference: "TRN-0002", label: "Site 2" }]);
+    expect(view.withoutPoint).toEqual([{ reference: "ORD-900002", label: "Site 2" }]);
     expect(view.scenario.vehicles).toEqual(["Kangoo"]);
     expect(view.scenario.departure).toBeNull();
     const body = JSON.stringify(view);

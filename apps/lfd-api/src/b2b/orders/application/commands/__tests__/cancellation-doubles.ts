@@ -37,7 +37,7 @@ export function cancellationSubject(
 ): CancellationSubject {
   return {
     orderId: "ord_1",
-    orderNumber: "CMD-0001",
+    orderNumber: "ORD-0001",
     placedByUserId: "usr_1",
     status: "placed",
     paymentStatus: "pending",

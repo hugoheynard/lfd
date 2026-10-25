@@ -121,10 +121,10 @@ function freshOrders(): [InvoiceOrderReference, InvoiceOrderReference] {
   return [
     {
       orderId: `o_${String(seq + 1)}`,
-      reference: `CMD-${String(seq + 1)}`,
+      reference: `ORD-${String(seq + 1)}`,
       receivedOn: ISSUED_ON,
     },
-    { orderId: `o_${String(seq)}`, reference: `CMD-${String(seq)}`, receivedOn: ISSUED_ON },
+    { orderId: `o_${String(seq)}`, reference: `ORD-${String(seq)}`, receivedOn: ISSUED_ON },
   ];
 }
 

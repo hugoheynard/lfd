@@ -24,7 +24,7 @@ const SITE = {
 function point(orderId: string, overrides: Partial<DeliveryStopPoint> = {}): DeliveryStopPoint {
   return {
     orderId,
-    reference: `CMD-${orderId}`,
+    reference: `ORD-${orderId}`,
     gps: { lat: 45.46, lng: 6.9 },
     address: null,
     window: null,
@@ -90,7 +90,7 @@ describe("GetSimulationFromDayHandler — partir d'une vraie journée (L9-C8)", 
     ).execute(new GetSimulationFromDayQuery(DAY));
 
     expect(view.scenario.stops.map((s) => s.label)).toEqual(["Maison o1"]);
-    expect(view.withoutPoint).toEqual([{ reference: "CMD-o2", label: "Maison o2" }]);
+    expect(view.withoutPoint).toEqual([{ reference: "ORD-o2", label: "Maison o2" }]);
   });
 
   it("prend les véhicules actifs ce jour-là par leur nom, les réglages en vigueur, le départ réglé", async () => {

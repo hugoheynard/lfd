@@ -15,7 +15,7 @@ const PLACED = new Date("2026-09-15T08:00:00.000Z");
 function candidate(overrides: Partial<CardInvoiceCandidate> = {}): CardInvoiceCandidate {
   return {
     orderId: "o_1",
-    orderNumber: "CMD-001",
+    orderNumber: "ORD-001",
     companyId: "c_port",
     billedCompanyId: null,
     placedAt: PLACED,
@@ -29,7 +29,7 @@ function candidate(overrides: Partial<CardInvoiceCandidate> = {}): CardInvoiceCa
     invoiced: false,
     refundedCents: 0,
     follows: [],
-    frozen: frozenOrder("CMD-001", PLACED),
+    frozen: frozenOrder("ORD-001", PLACED),
     ...overrides,
   };
 }

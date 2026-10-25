@@ -77,15 +77,15 @@ describe("Invoice.issue", () => {
       Invoice.issue(
         issueInput({
           orders: [
-            { orderId: "o_1", reference: "CMD-001", receivedOn: "2026-09-12" },
-            { orderId: "o_2", reference: "CMD-002", receivedOn: null },
+            { orderId: "o_1", reference: "ORD-001", receivedOn: "2026-09-12" },
+            { orderId: "o_2", reference: "ORD-002", receivedOn: null },
           ],
         }),
       );
     expect(issue).toThrow(InvoiceIssuanceBlockedError);
-    expect(issue).toThrow(/Le bon CMD-002 n'a pas de date de livraison/u);
+    expect(issue).toThrow(/Le bon ORD-002 n'a pas de date de livraison/u);
     expect(issue).toThrow(/Enregistrer son retrait ou sa livraison/u);
-    expect(issue).not.toThrow(/CMD-001/u);
+    expect(issue).not.toThrow(/ORD-001/u);
   });
 
   /** F14 (lot ZA) : le numéro nomme l'entité ; un autre préfixe est une pièce mal assemblée. */

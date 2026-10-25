@@ -29,7 +29,7 @@ function order(reference: string, quantity: number): ProductionOrderSnapshot {
   };
 }
 
-const DOSSIER = dayDossierOf([order("LFC-0002", 4), order("LFC-0001", 6)], new Map());
+const DOSSIER = dayDossierOf([order("ORD-0002", 4), order("ORD-0001", 6)], new Map());
 
 /** Aucune commande colorée : aucune pastille. */
 const NO_COLORS: ReadonlyMap<string, string> = new Map();
@@ -45,7 +45,7 @@ const STAMP = {
 describe("renderDayDossierPdf — le bon figé à l'arrêt (E1b)", () => {
   it("imprime l'enseigne, la raison sociale, l'adresse, la fenêtre, le contact, la signature, l'origine et la note", async () => {
     const frozen: ProductionOrderSnapshot = {
-      ...order("LFC-0001", 6),
+      ...order("ORD-0001", 6),
       sheetDetails: {
         tradeName: "Hôtel des Trois Ponts",
         legalName: "SAS Trois Ponts",
@@ -91,7 +91,7 @@ describe("renderDayDossierPdf — le bon figé à l'arrêt (E1b)", () => {
     const pages = pdfPages(
       await renderDayDossierPdf(DOSSIER, STAMP, () => "", NO_COLORS, NO_COLORS),
     );
-    expect(pages[1]).toContain("Client LFC-0001");
+    expect(pages[1]).toContain("Client ORD-0001");
     expect(pages[1]).toContain("3 rue du Four");
     expect(pages[1]).not.toContain("NOTE DU CLIENT");
     expect(pages.join("")).not.toMatch(/undefined|null/);
@@ -132,10 +132,10 @@ describe("renderDayDossierPdf", () => {
     expect(pages[0]).toContain("2 commandes (2 en livraison) · 10 pièces");
     expect(pages[0]).toContain("2 cdes");
     expect(pages[1]).toContain("BON 1/2");
-    expect(pages[1]).toContain("LFC-0001");
+    expect(pages[1]).toContain("ORD-0001");
     expect(pages[1]).toContain("Pour 07:30");
     expect(pages[2]).toContain("BON 2/2");
-    expect(pages[2]).toContain("LFC-0002");
+    expect(pages[2]).toContain("ORD-0002");
     expect(pages.every((page) => page.includes("Arrêté le mercredi 7 octobre 2026"))).toBe(true);
   });
 
@@ -189,7 +189,7 @@ describe("renderDayDossierPdf", () => {
       productName: `Produit ${String(index)}`,
       quantity: 1,
     }));
-    const dossier = dayDossierOf([{ ...order("LFC-0001", 1), lines: many }], new Map());
+    const dossier = dayDossierOf([{ ...order("ORD-0001", 1), lines: many }], new Map());
     const pages = pdfPages(
       await renderDayDossierPdf(
         dossier,
@@ -246,7 +246,7 @@ describe("renderDayDossierPdf", () => {
 
   it("sépare retrait et livraison dans le compte du lot", async () => {
     const mixed = dayDossierOf(
-      [order("LFC-0001", 4), { ...order("LFC-0002", 6), fulfillmentMethod: "pickup" }],
+      [order("ORD-0001", 4), { ...order("ORD-0002", 6), fulfillmentMethod: "pickup" }],
       new Map(),
     );
     const pages = pdfPages(await renderDayDossierPdf(mixed, STAMP, () => "", NO_COLORS, NO_COLORS));
@@ -281,7 +281,7 @@ describe("dayDossierPdfKey", () => {
   });
 
   it("compte le réassort sur la fiche de poste, total d'abord, et imprime son bon après les bons de commande", async () => {
-    const dossier = dayDossierOf([order("LFC-0001", 6)], new Map(), [
+    const dossier = dayDossierOf([order("ORD-0001", 6)], new Map(), [
       {
         resupplyId: "r-1",
         siteId: "site-v",
@@ -355,7 +355,7 @@ describe("renderDayDossierPdf — la pastille par commande (§0 bis, 2026-10-22)
       DOSSIER,
       STAMP,
       () => "",
-      new Map([["id-LFC-0001", "#e4572e"]]),
+      new Map([["id-ORD-0001", "#e4572e"]]),
       NO_COLORS,
     );
     expect(colored.equals(plain)).toBe(false);
@@ -368,7 +368,7 @@ describe("renderDayDossierPdf — la pastille par commande (§0 bis, 2026-10-22)
         DOSSIER,
         STAMP,
         () => "",
-        new Map([["id-LFC-0001", "#e4572e"]]),
+        new Map([["id-ORD-0001", "#e4572e"]]),
         NO_COLORS,
       ),
     );

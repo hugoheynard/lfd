@@ -18,12 +18,12 @@ const PLACED = new Date("2026-09-15T08:00:00.000Z");
 function bon(id: string): InvoiceableOrder {
   return {
     orderId: id,
-    orderNumber: `CMD-${id}`,
+    orderNumber: `ORD-${id}`,
     companyId: "c_port",
     placedAt: PLACED,
     receivedOn: "2026-09-16",
     billedCompanyId: null,
-    frozen: frozenOrder(`CMD-${id}`, PLACED),
+    frozen: frozenOrder(`ORD-${id}`, PLACED),
   };
 }
 
@@ -36,7 +36,7 @@ const GROUP: PayerInvoicePlan = {
 
 describe("withoutCancelled — retirer, rien d'autre", () => {
   it("retire les annulées des DEUX listes, sans toucher au payeur ni au mandat : la clé ne bouge pas", () => {
-    const live = withoutCancelled(GROUP, new Set(["CMD-a", "CMD-z"]));
+    const live = withoutCancelled(GROUP, new Set(["ORD-a", "ORD-z"]));
 
     expect(live?.billable.map((order) => order.orderId)).toEqual(["b"]);
     expect(live?.unbillable).toEqual([]);
@@ -50,11 +50,11 @@ describe("withoutCancelled — retirer, rien d'autre", () => {
   });
 
   it("plus aucun bon : `null`, rien à émettre ni à signaler", () => {
-    expect(withoutCancelled(GROUP, new Set(["CMD-a", "CMD-b", "CMD-z"]))).toBeNull();
+    expect(withoutCancelled(GROUP, new Set(["ORD-a", "ORD-b", "ORD-z"]))).toBeNull();
   });
 
   it("ne reste que des non facturables : le groupe survit, pour être signalé", () => {
-    const live = withoutCancelled(GROUP, new Set(["CMD-a", "CMD-b"]));
+    const live = withoutCancelled(GROUP, new Set(["ORD-a", "ORD-b"]));
 
     expect(live?.billable).toEqual([]);
     expect(live?.unbillable.map((order) => order.orderId)).toEqual(["z"]);

@@ -8,7 +8,7 @@ import { OrderCancelledEvent } from "../order-cancelled.event.js";
  */
 describe("OrderCancelledEvent — aller-retour du fait durable", () => {
   it.each(["free", "due", "account", "paid"] as const)("régime %s", (regime) => {
-    const event = new OrderCancelledEvent("o1", "CMD-1", "usr_1", "staff_1", "motif", regime, null);
+    const event = new OrderCancelledEvent("o1", "ORD-1", "usr_1", "staff_1", "motif", regime, null);
 
     expect(OrderCancelledEvent.fromPayload(event.durableFact().payload)).toEqual(event);
   });
@@ -17,7 +17,7 @@ describe("OrderCancelledEvent — aller-retour du fait durable", () => {
     const payload = {
       ...new OrderCancelledEvent(
         "o1",
-        "CMD-1",
+        "ORD-1",
         "usr_1",
         "staff_1",
         "motif",
@@ -34,7 +34,7 @@ describe("OrderCancelledEvent — aller-retour du fait durable", () => {
   it("le remboursement promis fait l'aller-retour (lot C4, C4.8)", () => {
     const event = new OrderCancelledEvent(
       "o1",
-      "CMD-1",
+      "ORD-1",
       "usr_1",
       "staff_1",
       "motif",
@@ -51,7 +51,7 @@ describe("OrderCancelledEvent — aller-retour du fait durable", () => {
   it("un fait d'avant C4, sans la clé `refund`, se lit `null`", () => {
     const { refund: _absent, ...before } = new OrderCancelledEvent(
       "o1",
-      "CMD-1",
+      "ORD-1",
       "usr_1",
       "staff_1",
       "motif",
@@ -68,7 +68,7 @@ describe("OrderCancelledEvent — aller-retour du fait durable", () => {
       const payload = {
         ...new OrderCancelledEvent(
           "o1",
-          "CMD-1",
+          "ORD-1",
           "usr_1",
           "staff_1",
           "motif",
@@ -91,7 +91,7 @@ describe("OrderCancelledEvent — l'auteur client (lot C6)", () => {
   /** Un `order.cancelled` sérialisé AVANT C6, tel que la boîte d'envoi le garde. */
   const BEFORE_C6 = {
     orderId: "o1",
-    orderNumber: "CMD-1",
+    orderNumber: "ORD-1",
     placedByUserId: "usr_1",
     cancelledBy: "staff_1",
     reason: "Le client a appelé",
@@ -113,7 +113,7 @@ describe("OrderCancelledEvent — l'auteur client (lot C6)", () => {
   it("un client, sans motif : l'aller-retour garde l'auteur, le code et le délai", () => {
     const event = new OrderCancelledEvent(
       "o1",
-      "CMD-1",
+      "ORD-1",
       "usr_1",
       null,
       null,
@@ -132,7 +132,7 @@ describe("OrderCancelledEvent — l'auteur client (lot C6)", () => {
   it("un invité fait l'aller-retour", () => {
     const event = new OrderCancelledEvent(
       "o1",
-      "CMD-1",
+      "ORD-1",
       "usr_1",
       null,
       "Plus besoin",

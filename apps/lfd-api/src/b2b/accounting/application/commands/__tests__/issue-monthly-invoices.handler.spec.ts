@@ -69,7 +69,7 @@ const RECEIVED_ON = "2026-09-16";
 let seq = 0;
 function bon(companyId: string, overrides: Partial<InvoiceableOrder> = {}): InvoiceableOrder {
   seq += 1;
-  const orderNumber = `CMD-${String(seq).padStart(3, "0")}`;
+  const orderNumber = `ORD-${String(seq).padStart(3, "0")}`;
   const placedAt = new Date("2026-09-15T08:00:00.000Z");
   return {
     orderId: `o${String(seq)}`,
@@ -163,7 +163,7 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
     expect(report.issued.map((issue) => issue.payerCompanyId)).toEqual(["c_principal", "c_port"]);
     const [principal] = h.invoices.inserted.map((invoice) => invoice.toState());
     expect(principal?.buyer.companyId).toBe("c_principal");
-    expect(principal?.orders.map((order) => order.reference)).toEqual(["CMD-001", "CMD-002"]);
+    expect(principal?.orders.map((order) => order.reference)).toEqual(["ORD-001", "ORD-002"]);
     expect(h.events.factTypes()).toEqual(["invoice.issued", "invoice.issued"]);
     // E6 : chaque facture émise écrit son fait durable, qui fera partir l'e-mail.
     expect(h.durable.facts.map((fact) => fact.key)).toEqual(

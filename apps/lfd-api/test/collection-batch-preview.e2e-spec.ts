@@ -49,7 +49,7 @@ describe("l'aperçu du mois (PA4)", () => {
     await mandated(entity, quai);
     await orderOf(port, 2, HALF_CENT_BON);
     await orderOf(port, 3, HALF_CENT_BON);
-    await orderOf(quai);
+    const quaiBon = await orderOf(quai);
     await orderOf(sans);
 
     const view = await preview(entity);
@@ -71,8 +71,8 @@ describe("l'aperçu du mois (PA4)", () => {
     const previewed = new Map(view.lines.map((line) => [line.payerCompanyId, line.amountCents]));
     expect(previewed).toEqual(amounts);
     expect(previewed.get(port)).toBe(23);
-    expect(view.totalCents).toBe(23 + 10_550);
-    expect(view.ordersTotalCents).toBe(24 + 10_550);
+    expect(view.totalCents).toBe(23 + quaiBon.totalCents);
+    expect(view.ordersTotalCents).toBe(24 + quaiBon.totalCents);
     const gaps = new Map(view.lines.map((line) => [line.payerCompanyId, line.gapCents]));
     expect(gaps.get(port)).toBe(-1);
   });

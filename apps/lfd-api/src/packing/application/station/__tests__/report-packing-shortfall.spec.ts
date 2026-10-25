@@ -21,7 +21,7 @@ function sheet(held: number, overrides: Partial<PackingSheetSnapshot> = {}): Pac
   return {
     serviceDay: DAY,
     orderId: "ord_1",
-    reference: "CMD-0001",
+    reference: "ORD-0001",
     packed: null,
     containers: 1,
     lines: [
@@ -76,7 +76,7 @@ describe("ReportPackingShortfallHandler — « Il manque » au colisage", () => 
         `${REPORTED}:ord_1:${FIRST.toISOString()}`,
         {
           orderId: "ord_1",
-          reference: "CMD-0001",
+          reference: "ORD-0001",
           reportedAt: FIRST.toISOString(),
           reportedBy: "s2",
           lines: [{ sku: "CRO", due: 4, packed: 3 }],
@@ -128,7 +128,7 @@ describe("ClosePackingOrderHandler — la fermeture complète efface le manque",
     expect(durable.of(CLEARED).map((fact) => [fact.key, fact.payload])).toEqual([
       [
         `${CLEARED}:ord_1:${LATER.toISOString()}`,
-        { orderId: "ord_1", reference: "CMD-0001", clearedAt: LATER.toISOString() },
+        { orderId: "ord_1", reference: "ORD-0001", clearedAt: LATER.toISOString() },
       ],
     ]);
   });

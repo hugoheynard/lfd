@@ -23,7 +23,7 @@ class BrokenNotifier extends StaffNotifier {
 }
 
 const NOW = new Date(0);
-const REJECTED = new OrderRefundRejectedEvent("ord_1", "CMD-1", "re_9", 1_250, "exceeds_charge");
+const REJECTED = new OrderRefundRejectedEvent("ord_1", "ORD-1", "re_9", 1_250, "exceeds_charge");
 
 /** Lot R1 : un remboursement refusé par la commande se VOIT, au back-office. */
 describe("RingRefundRejected", () => {
@@ -37,7 +37,7 @@ describe("RingRefundRejected", () => {
     expect(notifier.notices).toEqual([
       {
         kind: "order.refund_rejected",
-        subject: "Remboursement Stripe non noté — CMD-1",
+        subject: "Remboursement Stripe non noté — ORD-1",
         body: expect.stringContaining("dépasseraient ce qui a été encaissé") as string,
         link: "/commandes/ord_1",
         idempotencyKey: "notification:order.refund_rejected:re_9:exceeds_charge",

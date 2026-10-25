@@ -45,7 +45,7 @@ export function order(
   overrides: Partial<CollectableOrder> = {},
 ): CollectableOrder {
   seq += 1;
-  const orderNumber = `CMD-${String(seq).padStart(3, "0")}`;
+  const orderNumber = `ORD-${String(seq).padStart(3, "0")}`;
   const placedAt = new Date("2026-09-15T08:00:00.000Z");
   return {
     orderId: `o${String(seq)}`,

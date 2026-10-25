@@ -52,7 +52,7 @@ function line(overrides: Partial<OrderLineView> = {}): OrderLineView {
 function order(overrides: Partial<OrderView> = {}): OrderView {
   return {
     id: "order_1",
-    orderNumber: "CMD-4812",
+    orderNumber: "ORD-4812",
     status: "placed",
     paymentStatus: "paid",
     settlement: "paid",

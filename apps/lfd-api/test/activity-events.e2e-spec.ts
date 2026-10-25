@@ -35,7 +35,7 @@ beforeEach(async () => {
 });
 
 /** Une charge conforme au catalogue des faits : le journal est strict sous le harnais. */
-const PLACED = { orderId: "order_1", orderNumber: "CMD-0001", companyId: null, totalCents: 4200 };
+const PLACED = { orderId: "order_1", orderNumber: "ORD-0001", companyId: null, totalCents: 4200 };
 
 function input(overrides: Partial<RecordActivityInput> = {}): RecordActivityInput {
   return {

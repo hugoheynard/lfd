@@ -3,17 +3,23 @@
  * tournées** : le parcours (`delivery-rounds.e2e-spec.ts`) et les gardes
  * (`delivery-rounds-guards.e2e-spec.ts`) — plan de tournée, lot 3.
  *
- * Rien ici ne boote l'application. Les commandes sont semées par Prisma, comme
- * `day-supervision.e2e-spec.ts` : la composition ne lit d'une commande que son
- * jour, son mode et son statut, et la passer par la boutique ne prouverait
- * rien de plus sur ce lot.
+ * Rien ici ne boote l'application. Les commandes passent par le vrai chemin
+ * (`placeOrder`, plan T, 2026-10-25) : livrées à Val-d'Isère, au compte, sur
+ * l'échéance de l'adresse du carnet.
  */
-import type { CreatedIdResponse, DeliveryRoundsDayView, DeliveryRoundView } from "@lfd/contracts";
+import {
+  addDays,
+  type CreatedIdResponse,
+  type DeliveryRoundsDayView,
+  type DeliveryRoundView,
+} from "@lfd/contracts";
 import type request from "supertest";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { createUser } from "./factories.js";
+import { CustomerRole } from "../src/platform/database/client/client.js";
+import { E2E_STAFF_ID, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { attachTo, createCompany, createUser } from "./factories.js";
+import { placeOrder, placeOrderForCustomer, type OrderLineSeed } from "./order-factory.js";
 
 export const ROUNDS = "/admin/delivery/rounds";
 export const VEHICLES = "/admin/delivery/vehicles";
@@ -51,40 +57,124 @@ export async function addVehicle(
   return jsonBody<CreatedIdResponse>(response).id;
 }
 
-let orderSeq = 0;
-let customerId: string | null = null;
+/** Le client qui commande les livraisons du test : un pro au compte, son adresse au carnet. */
+interface DeliveryCustomer {
+  readonly userId: string;
+  readonly companyId: string;
+  readonly addressId: string;
+}
+
+let customer: DeliveryCustomer | null = null;
 
 /** Oublie le client semé : `ctx.reset()` l'a effacé. */
 export function forgetCustomer(): void {
-  customerId = null;
+  customer = null;
 }
 
-/** Une commande en livraison pour ce jour ; rend son id et son numéro. */
+const COURIER_ADDRESS = {
+  label: "",
+  ligne1: "12 rue du Test",
+  ligne2: "",
+  codePostal: "73150",
+  ville: "Val d'Isère",
+  pays: "France",
+};
+/** L'échéance inscrite sur l'adresse : un pro ne demande qu'elle. */
+const DEADLINE = "10:00";
+const DAY_MS = 24 * 60 * 60 * 1000;
+/** Trois jours avant le jour de service : l'heure limite est loin. */
+const LEAD_DAYS = 3;
+
+/**
+ * Le client des livraisons, semé une fois par test : la zone de Val-d'Isère,
+ * une société au compte, son détenteur, et l'adresse de son carnet — posée par
+ * sa route, avec son échéance.
+ */
+async function deliveryCustomer(ctx: E2eContext): Promise<DeliveryCustomer> {
+  if (customer !== null) {
+    return customer;
+  }
+  await ctx.prisma.deliveryZone.create({
+    data: { postalPrefixes: ["73150"], label: "Val d'Isère", feeMode: "amount", feeValue: 0 },
+  });
+  const company = await createCompany(ctx.prisma, { raisonSociale: "Chalet des Tournées" });
+  await ctx.prisma.company.update({
+    where: { id: company.id },
+    data: { grantedTerms: ["monthly"] },
+  });
+  const user = await createUser(ctx.prisma, { auth0Sub: "auth0|rounds", email: "r@col.fr" });
+  await attachTo(ctx.prisma, user.id, company.id, CustomerRole.owner);
+  const booked = await ctx
+    .asSub("auth0|rounds")
+    .post(`/companies/${company.id}/delivery-addresses`)
+    .send({
+      ...COURIER_ADDRESS,
+      isDefault: true,
+      specs: {
+        signatureRequired: null,
+        note: "",
+        slotList: { mode: "everyday", slots: [] },
+        deliveryContact: null,
+        gps: null,
+        windowMode: "deadline",
+        deadlines: { mode: "everyday", times: [DEADLINE] },
+      },
+    })
+    .expect(201);
+  customer = {
+    userId: user.id,
+    companyId: company.id,
+    addressId: jsonBody<{ id: string }>(booked).id,
+  };
+  return customer;
+}
+
+/** Ce qu'une suite peut imposer à une livraison semée. */
+export interface DeliverySeedOptions {
+  /** Absentes = cinq croissants. */
+  readonly lines?: readonly OrderLineSeed[];
+  /**
+   * Saisie par l'équipe : seule une saisie entre encore dans un jour dont le
+   * plan est arrêté (une commande absorbée par le retirage).
+   */
+  readonly byStaff?: boolean;
+}
+
+/**
+ * Une commande en livraison pour ce jour, passée au compte par le vrai chemin
+ * (`placeOrder`, plan T) ; rend son id et son numéro. Un jour proche se
+ * commande trois jours plus tôt (antidatée : l'heure limite se juge alors).
+ */
 export async function seedDelivery(
   ctx: E2eContext,
   day: string,
+  options: DeliverySeedOptions = {},
 ): Promise<{ readonly id: string; readonly reference: string }> {
-  if (customerId === null) {
-    customerId = (await createUser(ctx.prisma, { auth0Sub: "auth0|rounds", email: "r@col.fr" })).id;
-  }
-  orderSeq += 1;
-  const reference = `LIV-${String(orderSeq).padStart(4, "0")}`;
-  const order = await ctx.prisma.order.create({
-    data: {
-      orderNumber: reference,
-      placedByUserId: customerId,
-      clientele: "pro",
-      status: "placed",
-      paymentStatus: "not_required",
-      // La clé de journée du commerce : minuit UTC, comme `expectedOnWhere`.
-      requestedDeliveryDate: new Date(`${day}T00:00:00.000Z`),
-      fulfillmentMethod: "delivery",
-      subtotalCents: 1000,
-      totalCents: 1200,
+  const buyer = await deliveryCustomer(ctx);
+  const placedAt = new Date(`${addDays(day, -LEAD_DAYS)}T08:00:00.000Z`);
+  const content = {
+    buyerUserId: buyer.userId,
+    companyId: buyer.companyId,
+    forDay: day,
+    // On ne passe pas une commande dans le futur.
+    ...(placedAt.getTime() < Date.now() - DAY_MS ? { placedAt } : {}),
+    window: { start: null, end: DEADLINE },
+    fulfillment: {
+      method: "delivery" as const,
+      address: COURIER_ADDRESS,
+      addressId: buyer.addressId,
     },
-    select: { id: true },
-  });
-  return { id: order.id, reference };
+    lines: options.lines ?? [{ sku: "VIE-001", quantity: 5 }],
+  };
+  const order =
+    options.byStaff === true
+      ? await placeOrderForCustomer(ctx, {
+          ...content,
+          staffUserId: E2E_STAFF_ID,
+          settlement: "account",
+        })
+      : await placeOrder(ctx, { ...content, settlement: "account" });
+  return { id: order.id, reference: order.orderNumber };
 }
 
 export async function openRound(ctx: E2eContext, day: string, vehicleId: string): Promise<string> {

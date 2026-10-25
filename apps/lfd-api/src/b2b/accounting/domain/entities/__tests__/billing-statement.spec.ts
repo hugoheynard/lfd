@@ -32,7 +32,7 @@ const BUYER: StatementBuyer = {
 };
 
 function bon(orderId: string, requestedDeliveryDate: string | null): StatementOrder {
-  return { orderId, frozen: { ...frozenOrder(`CMD-${orderId}`, PLACED), requestedDeliveryDate } };
+  return { orderId, frozen: { ...frozenOrder(`ORD-${orderId}`, PLACED), requestedDeliveryDate } };
 }
 
 function input(orders: readonly StatementOrder[]): IssueStatementInput {

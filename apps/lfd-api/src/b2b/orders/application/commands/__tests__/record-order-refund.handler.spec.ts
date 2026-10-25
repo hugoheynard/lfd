@@ -30,7 +30,7 @@ class InMemoryRefunds extends OrderRefundRepository {
         ? null
         : OrderRefundLedger.reconstitute({
             orderId: "ord_1",
-            orderNumber: "CMD-1",
+            orderNumber: "ORD-1",
             chargedCents: 2_000,
             paymentStatus,
             refunds: [],
@@ -112,7 +112,7 @@ describe("RecordOrderRefundHandler", () => {
     expect(journal.facts[1]).toMatchObject({
       subjectType: "order",
       subjectId: "ord_1",
-      payload: { subjectLabel: "CMD-1", amountCents: 1_500, refundedCents: 2_000 },
+      payload: { subjectLabel: "ORD-1", amountCents: 1_500, refundedCents: 2_000 },
     });
   });
 
@@ -138,7 +138,7 @@ describe("RecordOrderRefundHandler", () => {
         subjectType: "order",
         subjectId: "ord_1",
         payload: {
-          subjectLabel: "CMD-1",
+          subjectLabel: "ORD-1",
           amountCents: 500,
           currency: "usd",
           status: "succeeded",
@@ -147,7 +147,7 @@ describe("RecordOrderRefundHandler", () => {
       },
     ]);
     expect(events.published).toEqual([
-      new OrderRefundRejectedEvent("ord_1", "CMD-1", "re_9", 500, "currency"),
+      new OrderRefundRejectedEvent("ord_1", "ORD-1", "re_9", 500, "currency"),
     ]);
   });
 
@@ -159,7 +159,7 @@ describe("RecordOrderRefundHandler", () => {
 
     expect(refunds.status()).toBe("paid");
     expect(events.published).toEqual([
-      new OrderRefundRejectedEvent("ord_1", "CMD-1", "re_2", 600, "exceeds_charge"),
+      new OrderRefundRejectedEvent("ord_1", "ORD-1", "re_2", 600, "exceeds_charge"),
     ]);
   });
 

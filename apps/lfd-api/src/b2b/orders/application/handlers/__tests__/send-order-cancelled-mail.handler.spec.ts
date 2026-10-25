@@ -32,7 +32,7 @@ function subscriber(email: string | null = "camille@example.test") {
 
 const FACT = new OrderCancelledEvent(
   "order_1",
-  "CMD-0001",
+  "ORD-0001",
   "user_7",
   "fiche-marie",
   "Le client a appelé",

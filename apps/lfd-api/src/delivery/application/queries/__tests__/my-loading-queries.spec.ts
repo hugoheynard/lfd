@@ -17,7 +17,7 @@ function handler(wall: FixedDriverWall) {
     wall,
     new GetDeliveryLoadingRoundHandler(
       LOADING,
-      new FixedDeliveryOrders([deliveryOrder("o1", "LIV-1"), deliveryOrder("o2", "LIV-2")]),
+      new FixedDeliveryOrders([deliveryOrder("o1", "ORD-1"), deliveryOrder("o2", "ORD-2")]),
     ),
   );
 }
@@ -27,7 +27,7 @@ describe("GetMyLoadingRoundHandler — le scan de MA tournée (PL1)", () => {
     const wall = new FixedDriverWall(new Map([["r_1", "staff_paul"]]));
     const direct = await new GetDeliveryLoadingRoundHandler(
       LOADING,
-      new FixedDeliveryOrders([deliveryOrder("o1", "LIV-1"), deliveryOrder("o2", "LIV-2")]),
+      new FixedDeliveryOrders([deliveryOrder("o1", "ORD-1"), deliveryOrder("o2", "ORD-2")]),
     ).execute(new GetDeliveryLoadingRoundQuery("r_1"));
 
     await expect(

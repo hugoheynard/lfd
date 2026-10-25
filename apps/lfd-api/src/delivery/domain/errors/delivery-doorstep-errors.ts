@@ -68,7 +68,7 @@ export class RoundNotDepartedForReturnError extends BusinessError {
  * nomme les arrêts, comme celui du départ.
  */
 export class RoundStopsWithoutOutcomeError extends BusinessError {
-  /** Les arrêts en cause, tels que le livreur les lit (« Client (CMD-1) »). */
+  /** Les arrêts en cause, tels que le livreur les lit (« Client (ORD-1) »). */
   readonly stops: readonly string[];
 
   constructor(stops: readonly string[]) {

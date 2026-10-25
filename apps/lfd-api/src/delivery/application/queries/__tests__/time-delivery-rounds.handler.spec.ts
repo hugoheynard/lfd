@@ -49,7 +49,7 @@ const LABO = { lat: 45.5646, lng: 5.9178 };
 function at(orderId: string, lat: number, lng: number): DeliveryStopPoint {
   return {
     orderId,
-    reference: `CMD-${orderId}`,
+    reference: `ORD-${orderId}`,
     gps: { lat, lng },
     address: null,
     window: null,

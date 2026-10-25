@@ -67,7 +67,7 @@ function bon(spec: BonSpec): FrozenInvoiceOrder {
     extras,
   });
   return {
-    reference: `CMD-${String(seq)}`,
+    reference: `ORD-${String(seq)}`,
     createdAt: new Date((spec.placedSeq ?? seq) * 60_000),
     requestedDeliveryDate: spec.date === undefined ? null : spec.date,
     lines,

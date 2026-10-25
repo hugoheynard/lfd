@@ -6,7 +6,7 @@
  * `POST /orders` : le numéro (`ORD-<n>`), les prix ré-résolus au catalogue, la
  * TVA ventilée, les contrôles de passation sont ceux de la production. Une
  * suite qui semait sa commande par `prisma.order.create` inventait tout cela,
- * et le 2026-10-24 un numéro `CMD-…` a fait lever l'arrêt du plan sans
+ * et le 2026-10-24 un numéro `ORD-…` a fait lever l'arrêt du plan sans
  * qu'aucun test l'ait vu.
  *
  * Deux écarts seulement avec la passation réelle, et ils sont ici pour ne pas

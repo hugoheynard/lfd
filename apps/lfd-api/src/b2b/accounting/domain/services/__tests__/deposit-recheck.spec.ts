@@ -59,9 +59,9 @@ describe("depositRecheckProblems — ce qui a changé depuis la constitution", (
 
   it("une commande annulée s'ajoute après les mandats", () => {
     const now = new Map([["m1", { active: false, iban: null }]]);
-    expect(depositRecheckProblems([LINE], now, ["CMD-7"])).toEqual([
+    expect(depositRecheckProblems([LINE], now, ["ORD-7"])).toEqual([
       "le mandat RUM-1 de Port n'est plus actif",
-      "la commande CMD-7 a été annulée",
+      "la commande ORD-7 a été annulée",
     ]);
   });
 });

@@ -17,7 +17,7 @@ const SKU = "VIE-001";
 
 const ORDER: EvaluatedOrder = {
   id: "order_1",
-  orderNumber: "LFC-1042",
+  orderNumber: "ORD-1042",
   placedAt: new Date("2026-08-11T08:59:00.000Z"),
   companyId: "company_1",
   companyName: "Boulangerie Périn",
@@ -95,7 +95,7 @@ describe("EvaluateOrderAlerts", () => {
 
     expect(recorded).toHaveLength(1);
     expect(recorded[0]?.kind).toBe("product.first_order");
-    expect(recorded[0]?.orderNumber).toBe("LFC-1042");
+    expect(recorded[0]?.orderNumber).toBe("ORD-1042");
     expect(recorded[0]?.occurredAt).toBe(NOW);
   });
 

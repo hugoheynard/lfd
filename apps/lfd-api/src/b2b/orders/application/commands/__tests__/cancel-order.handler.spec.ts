@@ -113,7 +113,7 @@ function eventOf(
 ): OrderCancelledEvent {
   return new OrderCancelledEvent(
     "ord_1",
-    "CMD-0001",
+    "ORD-0001",
     "usr_1",
     STAFF,
     "Le client a appelé : il part en vacances",

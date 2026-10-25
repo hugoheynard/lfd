@@ -36,7 +36,7 @@ function drawn(
 ) {
   return new PackingListDrawnEvent(DAY, AT, {
     orderId,
-    reference: `CMD-${orderId}`,
+    reference: `ORD-${orderId}`,
     customerLabel: "Trois Ponts",
     fulfillmentMethod: "pickup",
     dueAt: "07:00",
@@ -83,7 +83,7 @@ describe("OnPackingListDrawn", () => {
       {
         serviceDay: DAY,
         orderId: "ord_1",
-        reference: "CMD-ord_1",
+        reference: "ORD-ord_1",
         customerLabel: "Trois Ponts",
         fulfillmentMethod: "pickup",
         dueAt: "07:00",

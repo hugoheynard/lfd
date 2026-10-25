@@ -90,7 +90,7 @@ function paidByCard(): Invoice {
   return Invoice.issue(
     realisticInput({
       id: "inv_card",
-      orders: [{ orderId: "o_1", reference: "CMD-001", receivedOn: "2026-09-29" }],
+      orders: [{ orderId: "o_1", reference: "ORD-001", receivedOn: "2026-09-29" }],
       lines: CARD_LINES,
       vat,
       dueOn: "2026-09-30",
@@ -139,18 +139,18 @@ function weighed(): Invoice {
 function perOrderCycle(): Invoice {
   const computed = simulateInvoiceDossier([
     frozenBon({
-      reference: "CMD-1",
+      reference: "ORD-1",
       lines: [goodsLine("PAIN", 5.5, 2_333), goodsLine("JUS", 20, 1_001, true)],
       pickupDiscountCents: 467,
     }),
     frozenBon({
-      reference: "CMD-2",
+      reference: "ORD-2",
       lines: [goodsLine("PAIN", 5.5, 1_111), goodsLine("JUS", 20, 777), goodsLine("FLAN", 10, 499)],
       deliveryFeeCents: 333,
       deliveryVatMode: "follows_goods",
     }),
     frozenBon({
-      reference: "CMD-3",
+      reference: "ORD-3",
       lines: [goodsLine("JUS", 20, 3_001)],
       deliveryFeeCents: 250,
       deliveryVatMode: "standard",

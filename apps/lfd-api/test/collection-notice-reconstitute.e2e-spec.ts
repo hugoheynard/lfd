@@ -28,10 +28,10 @@ describe("annuler puis reconstituer : un avis parti se corrige", () => {
     const entity = await collectingEntity();
     const port = await payer(entity, "Boulangerie du Port");
     await billingContact(port.id, "compta@port.test");
-    await orderOf(port.id);
+    const firstBon = await orderOf(port.id);
     const first = await constitute(entity);
     await staff().post(`${BASE}/batches/${first}/cancel`).expect(204);
-    await orderOf(port.id);
+    const secondBon = await orderOf(port.id);
 
     const second = await constitute(entity);
 
@@ -42,8 +42,12 @@ describe("annuler puis reconstituer : un avis parti se corrige", () => {
     const correction = await ctx.prisma.collectionNotice.findFirstOrThrow({
       where: { batchId: second },
     });
-    expect(correction).toMatchObject({ kind: "correction", status: "sent", amountCents: 21_100 });
-    expect(correction.previousAmountCents).toBe(10_550);
+    expect(correction).toMatchObject({
+      kind: "correction",
+      status: "sent",
+      amountCents: firstBon.totalCents + secondBon.totalCents,
+    });
+    expect(correction.previousAmountCents).toBe(firstBon.totalCents);
     await staff().get(`${BASE}/batches/${second}/file.xml`).expect(200);
     await staff().post(`${BASE}/batches/${second}/deposit`).expect(204);
   });
@@ -73,7 +77,7 @@ describe("annuler puis reconstituer : un avis parti se corrige", () => {
     const entity = await collectingEntity();
     const port = await payer(entity, "Boulangerie du Port");
     await billingContact(port.id, "compta@port.test");
-    await orderOf(port.id);
+    const bon = await orderOf(port.id);
     const first = await constitute(entity);
     await staff().post(`${BASE}/batches/${first}/cancel`).expect(204);
     await ctx.prisma.paymentMandate.updateMany({
@@ -97,7 +101,7 @@ describe("annuler puis reconstituer : un avis parti se corrige", () => {
       batchId: null,
       debtorCompanyId: port.id,
       status: "sent",
-      amountCents: 10_550,
+      amountCents: bon.totalCents,
     });
   });
 });

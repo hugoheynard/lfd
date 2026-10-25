@@ -70,7 +70,7 @@ describe("HandOverStopHandler — « Remis au client » (B1)", () => {
       subjectLabel: "Kangoo",
       day: DAY,
       passage: 1,
-      order: { id: "o_1", name: "CMD-1" },
+      order: { id: "o_1", name: "ORD-1" },
       signed: false,
     });
     expect(attestor.published).toEqual([]);

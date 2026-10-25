@@ -13,9 +13,10 @@
  *
  * - **les commandes** ne se sèment plus ici : `order-factory.ts` (`placeOrder`,
  *   `placeOrderForCustomer`) les passe par la commande de passation du bus —
- *   numéro, prix, TVA et contrôles de la production. Les suites qui écrivent
- *   encore `orders` en Prisma sont les tranches du plan T pas encore migrées,
- *   ou une exception datée et justifiée au-dessus de l'écriture ;
+ *   numéro, prix, TVA et contrôles de la production. Depuis le 2026-10-25,
+ *   toute création de commande restante en Prisma dans `test/` est une
+ *   exception datée et justifiée au-dessus de l'écriture, au format réel
+ *   (`ORD-…`) — la base refuse tout autre numéro ;
  * - **les sociétés et les personnes** s'écrivent encore par Prisma, sans
  *   passer par `Company.declare` : aucune raison de fond ne l'impose, c'est une
  *   dette qui reste à rembourser. Une donnée que le domaine ne saurait pas

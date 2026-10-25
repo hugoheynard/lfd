@@ -69,7 +69,7 @@ const address = (ligne1: string) => ({
 function at(orderId: string, lat: number, lng: number): DeliveryStopPoint {
   return {
     orderId,
-    reference: `CMD-${orderId}`,
+    reference: `ORD-${orderId}`,
     gps: { lat, lng },
     address: address(orderId),
     window: null,
@@ -179,8 +179,8 @@ describe("GetDeliveryRoundProposalHandler — « Proposer » (L7-C3 à C6)", () 
 
     expect(placed(view)).toEqual(["o1", "o2", "o3", "o4", "o7"]);
     expect(view.unlocated).toEqual([
-      { orderId: "o5", reference: "CMD-o5", reason: "no_address" },
-      { orderId: "o6", reference: "CMD-o6", reason: "not_geocoded" },
+      { orderId: "o5", reference: "ORD-o5", reason: "no_address" },
+      { orderId: "o6", reference: "ORD-o6", reason: "not_geocoded" },
     ]);
     expect(view.rounds.every((round) => round.roundId === null)).toBe(true);
     expect(view.estimate).toBe("road"); // déprécié, toujours `road` (L10b-C5)
@@ -503,8 +503,8 @@ describe("GetDeliveryRoundProposalHandler — la place (CA4)", () => {
     expect(view.unfit).toEqual([]);
     // o5 n'est pas située, mais ses bacs sont inconnus aussi : l'écran la retrouvera si on la place.
     expect(view.unknownDemand).toEqual([
-      { orderId: "o1", reference: "CMD-o1" },
-      { orderId: "o5", reference: "CMD-o5" },
+      { orderId: "o1", reference: "ORD-o1" },
+      { orderId: "o5", reference: "ORD-o5" },
     ]);
   });
 
@@ -520,7 +520,7 @@ describe("GetDeliveryRoundProposalHandler — la place (CA4)", () => {
     const view = await handler.execute(new GetDeliveryRoundProposalQuery(DAY, null, false));
 
     expect(placed(view)).not.toContain("o1");
-    expect(view.unfit).toEqual([{ orderId: "o1", reference: "CMD-o1", reason: "capacity" }]);
+    expect(view.unfit).toEqual([{ orderId: "o1", reference: "ORD-o1", reason: "capacity" }]);
     expect(view.overflow).toEqual([]);
   });
 
@@ -537,7 +537,7 @@ describe("GetDeliveryRoundProposalHandler — la place (CA4)", () => {
     const view = await handler.execute(new GetDeliveryRoundProposalQuery(DAY, null, false));
 
     expect(placed(view)).toEqual(["o2", "o3", "o4", "o7"]);
-    expect(view.unfit).toEqual([{ orderId: "o1", reference: "CMD-o1", reason: "zone" }]);
+    expect(view.unfit).toEqual([{ orderId: "o1", reference: "ORD-o1", reason: "zone" }]);
     expect(view.overflow).toEqual([]);
   });
 
@@ -604,14 +604,14 @@ describe("GetDeliveryRoundProposalHandler — la place (CA4)", () => {
       expect(view.defaultDemand).toEqual([
         {
           orderId: "o1",
-          reference: "CMD-o1",
+          reference: "ORD-o1",
           binTypeName: "Bac bin_m",
           count: 1,
           withEstimate: false,
         },
         {
           orderId: "o5",
-          reference: "CMD-o5",
+          reference: "ORD-o5",
           binTypeName: "Bac bin_m",
           count: 1,
           withEstimate: false,
@@ -635,7 +635,7 @@ describe("GetDeliveryRoundProposalHandler — la place (CA4)", () => {
       const view = await handler.execute(new GetDeliveryRoundProposalQuery(DAY, null, false));
 
       expect(placed(view)).not.toContain("o1");
-      expect(view.unfit).toEqual([{ orderId: "o1", reference: "CMD-o1", reason: "capacity" }]);
+      expect(view.unfit).toEqual([{ orderId: "o1", reference: "ORD-o1", reason: "capacity" }]);
       expect(view.unknownDemand).toEqual([]);
     });
 

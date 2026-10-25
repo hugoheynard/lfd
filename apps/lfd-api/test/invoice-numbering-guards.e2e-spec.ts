@@ -110,7 +110,7 @@ function invoiceOf(entityId: string, number: InvoiceNumber): Invoice {
             },
           }),
       orders: [
-        { orderId: `o_${String(seq)}`, reference: `CMD-${String(seq)}`, receivedOn: ISSUED_ON },
+        { orderId: `o_${String(seq)}`, reference: `ORD-${String(seq)}`, receivedOn: ISSUED_ON },
       ],
     }),
   );

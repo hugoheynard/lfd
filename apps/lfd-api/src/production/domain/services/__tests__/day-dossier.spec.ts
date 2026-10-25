@@ -34,12 +34,12 @@ function order(
 }
 
 const ORDERS = [
-  order("LFC-0003", [["PAI-SEI", "Pain de seigle", 2]]),
-  order("LFC-0001", [
+  order("ORD-0003", [["PAI-SEI", "Pain de seigle", 2]]),
+  order("ORD-0001", [
     ["VIE-001", "Croissant", 40],
     ["VIE-002", "Pain au chocolat", 40],
   ]),
-  order("LFC-0002", [
+  order("ORD-0002", [
     ["VIE-001", "Croissant", 10],
     ["OLD-001", "Retiré", 1],
   ]),
@@ -55,9 +55,9 @@ describe("dayDossierOf", () => {
   it("empile les bons par référence, quel que soit l'ordre reçu", () => {
     const dossier = dayDossierOf(ORDERS, SHELVES);
     expect(dossier.sheets.map((sheet) => sheet.reference)).toEqual([
-      "LFC-0001",
-      "LFC-0002",
-      "LFC-0003",
+      "ORD-0001",
+      "ORD-0002",
+      "ORD-0003",
     ]);
   });
 

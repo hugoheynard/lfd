@@ -258,8 +258,8 @@ function getHandler(
 describe("GetInvoiceDossierHandler", () => {
   it("lit le mois demandé, pour la société et ses sites suivis, et rend le dossier", async () => {
     const reader = new RecordingDossiers("Maison mère", [
-      entry("c1", bon("CMD-1", "2026-09-14")),
-      entry("site", bon("CMD-2", "2026-09-15")),
+      entry("c1", bon("ORD-1", "2026-09-14")),
+      entry("site", bon("ORD-2", "2026-09-15")),
     ]);
     const view = await getHandler(reader, new FixedBilling([SITE_FOLLOW])).execute(
       new GetInvoiceDossierQuery("c1", SEPTEMBER_CLOSES_AT),
@@ -272,7 +272,7 @@ describe("GetInvoiceDossierHandler", () => {
       periodLabel: "du 1er au 30 septembre 2026",
       inProgress: false,
     });
-    expect(view.orders.map((order) => order.reference)).toEqual(["CMD-1", "CMD-2"]);
+    expect(view.orders.map((order) => order.reference)).toEqual(["ORD-1", "ORD-2"]);
     expect(view.invoice.lines).toEqual([
       expect.objectContaining({ sku: "BAG-001", quantity: 2, amountCents: 200 }),
     ]);
@@ -283,37 +283,37 @@ describe("GetInvoiceDossierHandler", () => {
 
   it("garde au dossier le bon annulé après facturation, marqué", async () => {
     const reader = new RecordingDossiers("Maison mère", [
-      entry("c1", bon("CMD-1", "2026-09-14")),
-      { ...entry("c1", bon("CMD-2", "2026-09-15")), cancelledAfterInvoicing: true },
+      entry("c1", bon("ORD-1", "2026-09-14")),
+      { ...entry("c1", bon("ORD-2", "2026-09-15")), cancelledAfterInvoicing: true },
     ]);
     const view = await getHandler(reader, new FixedBilling([])).execute(
       new GetInvoiceDossierQuery("c1", SEPTEMBER_CLOSES_AT),
     );
 
     expect(view.orders.map((order) => [order.reference, order.cancelledAfterInvoicing])).toEqual([
-      ["CMD-1", false],
-      ["CMD-2", true],
+      ["ORD-1", false],
+      ["ORD-2", true],
     ]);
     expect(view.ordersTotalCents).toBe(212);
   });
 
   it("écarte le bon d'un site que la société ne réglait pas, comme le relevé", async () => {
     const reader = new RecordingDossiers("Maison mère", [
-      entry("c1", bon("CMD-1", "2026-09-14")),
-      entry("site", bon("CMD-2", "2026-09-15"), "autre-payeur"),
+      entry("c1", bon("ORD-1", "2026-09-14")),
+      entry("site", bon("ORD-2", "2026-09-15"), "autre-payeur"),
     ]);
     const view = await getHandler(reader, new FixedBilling([SITE_FOLLOW])).execute(
       new GetInvoiceDossierQuery("c1", SEPTEMBER_CLOSES_AT),
     );
 
-    expect(view.orders.map((order) => order.reference)).toEqual(["CMD-1"]);
+    expect(view.orders.map((order) => order.reference)).toEqual(["ORD-1"]);
   });
 
   it("signale les bons livrés hors de la période et ceux sans date, sans les retirer", async () => {
     const reader = new RecordingDossiers("Maison mère", [
-      entry("c1", bon("CMD-1", "2026-09-14")),
-      entry("c1", bon("CMD-2", "2026-10-02")),
-      entry("c1", bon("CMD-3", null)),
+      entry("c1", bon("ORD-1", "2026-09-14")),
+      entry("c1", bon("ORD-2", "2026-10-02")),
+      entry("c1", bon("ORD-3", null)),
     ]);
     const view = await getHandler(reader).execute(
       new GetInvoiceDossierQuery("c1", SEPTEMBER_CLOSES_AT),
@@ -321,9 +321,9 @@ describe("GetInvoiceDossierHandler", () => {
 
     expect(view.orders).toHaveLength(3);
     expect(view.outsidePeriodOrders).toEqual([
-      { reference: "CMD-2", requestedDeliveryDate: "2026-10-02" },
+      { reference: "ORD-2", requestedDeliveryDate: "2026-10-02" },
     ]);
-    expect(view.ordersWithoutDate).toEqual(["CMD-3"]);
+    expect(view.ordersWithoutDate).toEqual(["ORD-3"]);
   });
 
   it("ne signale aucun manque quand le vendeur et le payeur sont complets", async () => {
@@ -389,28 +389,28 @@ describe("GetInvoiceDossierHandler", () => {
 
   it("lit l'historique de tous les bons en UN lot par bloc, et signale le bon jamais retiré", async () => {
     const reader = new RecordingDossiers("Maison mère", [
-      entry("c1", bon("CMD-1", "2026-09-14")),
-      entry("c1", bon("CMD-2", "2026-09-15")),
-      entry("c1", bon("CMD-3", "2026-09-16")),
+      entry("c1", bon("ORD-1", "2026-09-14")),
+      entry("c1", bon("ORD-2", "2026-09-15")),
+      entry("c1", bon("ORD-3", "2026-09-16")),
     ]);
     const handovers = new FixedHandovers([
       {
-        orderId: "id-CMD-1",
+        orderId: "id-ORD-1",
         handedOverAt: new Date("2026-09-14T07:30:00.000Z"),
         via: "scan",
         atDoor: false,
       },
       {
-        orderId: "id-CMD-2",
+        orderId: "id-ORD-2",
         handedOverAt: new Date("2026-09-16T09:00:00.000Z"),
         via: "manual",
         atDoor: true,
       },
     ]);
-    // CMD-2 : rapporté le 15, replacé et livré le 16.
+    // ORD-2 : rapporté le 15, replacé et livré le 16.
     const stops = new FixedStops([
       {
-        orderId: "id-CMD-2",
+        orderId: "id-ORD-2",
         serviceDay: "2026-09-15",
         placedAt: new Date("2026-09-14T15:00:00.000Z"),
         departedAt: new Date("2026-09-15T06:00:00.000Z"),
@@ -418,7 +418,7 @@ describe("GetInvoiceDossierHandler", () => {
         broughtBackAt: new Date("2026-09-15T08:00:00.000Z"),
       },
       {
-        orderId: "id-CMD-2",
+        orderId: "id-ORD-2",
         serviceDay: "2026-09-16",
         placedAt: new Date("2026-09-15T14:00:00.000Z"),
         departedAt: new Date("2026-09-16T06:00:00.000Z"),
@@ -430,9 +430,9 @@ describe("GetInvoiceDossierHandler", () => {
       new GetInvoiceDossierQuery("c1", SEPTEMBER_CLOSES_AT),
     );
 
-    expect(handovers.asked).toEqual([["id-CMD-1", "id-CMD-2", "id-CMD-3"]]);
-    expect(stops.asked).toEqual([["id-CMD-1", "id-CMD-2", "id-CMD-3"]]);
-    expect(view.neverHandedOver).toEqual(["CMD-3"]);
+    expect(handovers.asked).toEqual([["id-ORD-1", "id-ORD-2", "id-ORD-3"]]);
+    expect(stops.asked).toEqual([["id-ORD-1", "id-ORD-2", "id-ORD-3"]]);
+    expect(view.neverHandedOver).toEqual(["ORD-3"]);
     expect(view.orders[0]?.history).toEqual([
       { kind: "handed_over", at: "2026-09-14T07:30:00.000Z", serviceDay: null, via: "scan" },
     ]);
@@ -454,7 +454,7 @@ describe("GetInvoiceDossierHandler", () => {
 
   it("arrête le dossier sur une surtaxe sans taux, en nommant le bon", async () => {
     const reader = new RecordingDossiers("Maison mère", [
-      entry("c1", bon("CMD-7", "2026-09-14", { lateFeeCents: 50, totalCents: 156 })),
+      entry("c1", bon("ORD-7", "2026-09-14", { lateFeeCents: 50, totalCents: 156 })),
     ]);
     await expect(
       getHandler(reader).execute(new GetInvoiceDossierQuery("c1", SEPTEMBER_CLOSES_AT)),
@@ -464,15 +464,15 @@ describe("GetInvoiceDossierHandler", () => {
 
 describe("ExportInvoiceDossierHandler", () => {
   const reader = new RecordingDossiers("Maison mère", [
-    entry("c1", bon("CMD-1", "2026-09-14")),
-    entry("c1", bon("CMD-2", null)),
+    entry("c1", bon("ORD-1", "2026-09-14")),
+    entry("c1", bon("ORD-2", null)),
   ]);
   const handler = new ExportInvoiceDossierHandler(
     reader,
     new FixedBilling(),
     new FixedHandovers([
       {
-        orderId: "id-CMD-1",
+        orderId: "id-ORD-1",
         handedOverAt: new Date("2026-09-14T07:30:00.000Z"),
         via: "scan",
         atDoor: false,
@@ -502,7 +502,7 @@ describe("ExportInvoiceDossierHandler", () => {
 
     expect(file.fileName).toBe("DOSSIER-BONS-Maison mère-20260930.csv");
     expect(file.csv).toContain('"sans date demandée"');
-    expect(file.csv).toContain('"Facturés sans aucun fait de retrait : CMD-2"');
+    expect(file.csv).toContain('"Facturés sans aucun fait de retrait : ORD-2"');
     expect(file.csv).toContain('"Retrait — Labo, 1 rue du Four, 75001 Paris"');
     expect(file.csv).toContain('"retiré au comptoir 2026-09-14T07:30:00.000Z (scan)"');
   });

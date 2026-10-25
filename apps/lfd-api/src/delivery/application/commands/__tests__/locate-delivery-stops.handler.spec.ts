@@ -31,7 +31,7 @@ const address = (ligne1: string) => ({
 function point(orderId: string, overrides: Partial<DeliveryStopPoint> = {}): DeliveryStopPoint {
   return {
     orderId,
-    reference: `CMD-${orderId}`,
+    reference: `ORD-${orderId}`,
     gps: null,
     address: address(`${orderId} rue du Pont`),
     window: null,

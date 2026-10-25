@@ -20,7 +20,7 @@ const PRINCIPAL = "co_principal";
 
 function order(over: Partial<OrderSummarySource> & { readonly id: string }): OrderSummarySource {
   return {
-    orderNumber: `CMD-${over.id}`,
+    orderNumber: `ORD-${over.id}`,
     companyId: PRINCIPAL,
     companyName: "Maison mère",
     day: "2026-10-07",
@@ -180,9 +180,9 @@ describe("summarizeOrders — exclues et listées (§6.5)", () => {
     ]);
 
     expect(summary.excluded).toEqual([
-      { orderId: "annulee", orderNumber: "CMD-annulee", reason: "cancelled" },
-      { orderId: "attente", orderNumber: "CMD-attente", reason: "payment_pending" },
-      { orderId: "refuse", orderNumber: "CMD-refuse", reason: "payment_failed" },
+      { orderId: "annulee", orderNumber: "ORD-annulee", reason: "cancelled" },
+      { orderId: "attente", orderNumber: "ORD-attente", reason: "payment_pending" },
+      { orderId: "refuse", orderNumber: "ORD-refuse", reason: "payment_failed" },
     ]);
     expect(summary.total.orderCount).toBe(1);
     expect(summary.total.bottom.totalCents).toBe(1_055);

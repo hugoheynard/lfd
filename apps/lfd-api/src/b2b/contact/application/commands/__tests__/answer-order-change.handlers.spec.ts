@@ -147,7 +147,7 @@ describe("RefuseOrderChangeHandler", () => {
     expect(events.factTypes()).toEqual(["order.change_refused"]);
     expect(events.traced[0]?.journalFact().payload).toMatchObject({
       reason: "La fournée est lancée.",
-      orderNumber: "CMD-0001",
+      orderNumber: "ORD-0001",
     });
   });
 

@@ -197,7 +197,7 @@ describe("GetRoundPaperPdfHandler — la feuille de tournée tirée au moment", 
     const { handler } = subject();
     const file = await handler.execute(new GetRoundPaperPdfQuery("round_1", true));
     const text = textOf(file);
-    const positions = ["Commande CMD-o2", "Commande FIGEE-1", "Commande o_unknown"].map((part) =>
+    const positions = ["Commande ORD-o2", "Commande FIGEE-1", "Commande o_unknown"].map((part) =>
       text.indexOf(part),
     );
     expect(positions.every((at) => at >= 0)).toBe(true);

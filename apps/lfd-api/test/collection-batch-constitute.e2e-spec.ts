@@ -35,22 +35,23 @@ useCollectionBatchScene();
 describe("les bons que la constitution lit (F1)", () => {
   it("portent leurs lignes figées et le taux de surtaxe, en une lecture", async () => {
     const companyId = await client("Boulangerie figée");
-    const placed = await orderOf(companyId, 2, null);
+    const placed = await orderOf(companyId);
+    // La surtaxe de retard ne se pose pas sur un bon passé dans le délai :
+    // posée après coup, sa forme figée (montant + taux) est ce qui est relu
+    // (plan T, 2026-10-25).
     await ctx.prisma.order.update({
       where: { id: placed.id },
       data: {
         lateFeeCents: 200,
         lateFeeAdjustment: { adjustment: { mode: "amount", cents: 200 }, vatRatePercent: 5.5 },
-        vatShares: [{ rate: 5.5, amountCents: 550 }],
+      },
+    });
+    const written = await ctx.prisma.order.findUniqueOrThrow({
+      where: { id: placed.id },
+      select: {
+        vatShares: true,
         lines: {
-          create: {
-            sku: "PAIN-E2E",
-            productNameSnapshot: "Pain e2e",
-            unitPriceMillicents: 980_000,
-            vatRate: 5.5,
-            quantity: 1,
-            lineTotalCents: 9_800,
-          },
+          select: { sku: true, unitPriceMillicents: true, quantity: true, lineTotalCents: true },
         },
       },
     });
@@ -69,17 +70,9 @@ describe("les bons que la constitution lit (F1)", () => {
       reference: placed.orderNumber,
       lateFeeCents: 200,
       lateFeeVatRate: 5.5,
-      vatShares: [{ rate: 5.5, amountCents: 550 }],
-      totalCents: 10_550,
-      lines: [
-        {
-          sku: "PAIN-E2E",
-          unitPriceMillicents: 980_000,
-          vatRate: "5.5",
-          quantity: 1,
-          lineTotalCents: 9_800,
-        },
-      ],
+      vatShares: written.vatShares,
+      totalCents: placed.totalCents,
+      lines: written.lines.map((line) => ({ ...line, vatRate: "5.5" })),
     });
   });
 });
@@ -208,7 +201,7 @@ describe("le prélèvement suit la facture (F2)", () => {
     await mandated(entity, quai);
     await orderOf(port, 2, HALF_CENT_BON);
     await orderOf(port, 3, HALF_CENT_BON);
-    await orderOf(quai);
+    const quaiBon = await orderOf(quai);
     const reader = ctx.app.get(CollectionCandidatesReader);
     const from = (await ctx.app.get(CollectionCalendarReader).floor()) ?? closesAt;
     const read = await reader.collectableOrders(
@@ -233,7 +226,7 @@ describe("le prélèvement suit la facture (F2)", () => {
     expect(expectedOf(port)).toBe(23);
     expect(byDebtor.get(quai)).toMatchObject({
       amountCents: expectedOf(quai),
-      ordersTotalCents: 10_550,
+      ordersTotalCents: quaiBon.totalCents,
     });
     const total = lines.reduce((sum, line) => sum + line.amountCents, 0);
     const xml = await staff()
@@ -257,7 +250,12 @@ describe("le prélèvement suit la facture (F2)", () => {
     await mandated(entity, quai);
     const sound = await orderOf(port);
     const broken = await orderOf(port, 3);
-    await ctx.prisma.order.update({ where: { id: broken.id }, data: { totalCents: 10_549 } });
+    // Un total qui ne se recompose plus : la passation ne l'écrit jamais, il
+    // est forcé après coup (plan T, 2026-10-25).
+    await ctx.prisma.order.update({
+      where: { id: broken.id },
+      data: { totalCents: broken.totalCents - 1 },
+    });
     const other = await orderOf(quai);
 
     await constitute(entity);

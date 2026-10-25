@@ -20,7 +20,7 @@ function order(overrides: Partial<ProductionOrderSnapshot> = {}): ProductionOrde
   return {
     packed: null,
     orderId: "ord_1",
-    reference: "CMD-0001",
+    reference: "ORD-0001",
     customerLabel: "Hôtel des Trois Ponts",
     fulfillmentMethod: "delivery",
     destination: "3 rue du Four, Val d'Isère",

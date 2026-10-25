@@ -45,7 +45,7 @@ function setup(options: { readonly mode?: ContainerMode; readonly received?: num
   sheets.put({
     serviceDay: DAY,
     orderId: "ord_1",
-    reference: "CMD-0001",
+    reference: "ORD-0001",
     packed: null,
     containers: 0,
     lines: [{ sku: "CRO", productName: "Croissant", quantity: 20, packed: null }],
@@ -102,7 +102,7 @@ describe("OpenPackingContainerHandler — un bac par la livraison, un sac ici", 
       subjectType: "order",
       subjectId: "ord_1",
       payload: {
-        subjectLabel: "CMD-0001",
+        subjectLabel: "ORD-0001",
         container: { id, name: "CODE01" },
         nature: "bin",
       },

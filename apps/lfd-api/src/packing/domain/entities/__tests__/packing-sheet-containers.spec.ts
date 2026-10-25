@@ -27,7 +27,7 @@ function sheet(
   return PackingSheet.fromSnapshot({
     serviceDay: "2030-03-12",
     orderId: "ord_1",
-    reference: "CMD-0001",
+    reference: "ORD-0001",
     packed: null,
     containers: 0,
     lines: [

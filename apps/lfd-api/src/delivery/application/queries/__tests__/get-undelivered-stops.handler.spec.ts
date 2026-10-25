@@ -48,7 +48,7 @@ function stop(stopId: string): UndeliveredStopRow {
     serviceDay: "2030-07-13",
     stopId,
     orderId: `o_${stopId}`,
-    reference: `CMD-${stopId}`,
+    reference: `ORD-${stopId}`,
     customerLabel: "Refuge 1950",
     departedAt: SUMMER_MIDNIGHT_PARIS,
     returnedAt: null,

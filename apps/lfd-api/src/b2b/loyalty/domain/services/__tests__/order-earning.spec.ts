@@ -17,7 +17,7 @@ const BOTH = LoyaltySettings.of({ ...OPEN, openToPro: true });
 
 const PUBLIC_ORDER: EarnableOrder = {
   orderId: "o1",
-  orderNumber: "CMD-1",
+  orderNumber: "ORD-1",
   placedAt: new Date("2026-03-01T10:00:00.000Z"),
   clientele: "public",
   companyId: null,

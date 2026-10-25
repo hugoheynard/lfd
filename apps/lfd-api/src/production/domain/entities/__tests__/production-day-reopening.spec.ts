@@ -22,7 +22,7 @@ const NOTHING: DownstreamProgress = { packingStarted: false, dispatchStarted: fa
 function order(orderId: string): ProducibleOrder {
   return {
     orderId,
-    reference: `CMD-${orderId}`,
+    reference: `ORD-${orderId}`,
     customerLabel: "Trois Ponts",
     fulfillmentMethod: "pickup",
     destination: "Le Labo",

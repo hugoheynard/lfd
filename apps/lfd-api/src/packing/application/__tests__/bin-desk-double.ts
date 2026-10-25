@@ -48,7 +48,7 @@ export class ScriptedBinDesk extends BinDesk {
   propose(orderId: string): Promise<DeliveryPackingProposalView> {
     return Promise.resolve({
       orderId,
-      reference: `CMD-${orderId}`,
+      reference: `ORD-${orderId}`,
       lines: [],
       bins: this.proposedBins,
       unplaced: [],
@@ -73,7 +73,7 @@ export class ScriptedBinDesk extends BinDesk {
     }
     return Promise.resolve({
       orderId,
-      reference: `CMD-${orderId}`,
+      reference: `ORD-${orderId}`,
       round: null,
       halves: this.halves,
     });

@@ -47,7 +47,7 @@ function paper(overrides: Partial<RoundPaper> = {}): RoundPaper {
     serviceDay: DAY,
     driverName: "Paul Durand",
     planned: null,
-    stops: [stop("LFC-0001"), stop("LFC-0002")],
+    stops: [stop("ORD-0001"), stop("ORD-0002")],
     printedAt: PRINTED,
     ...overrides,
   };
@@ -131,7 +131,7 @@ describe("renderRoundPaperPdf — la feuille de tournée", () => {
   });
 
   it("imprime adresse, fenêtre, contact, signature, bacs, notes et étapes", async () => {
-    const full = stop("LFC-0001", {
+    const full = stop("ORD-0001", {
       signatureRequired: true,
       binCodes: ["K7Q2", "M3X9"],
       orderNote: "Sonner deux fois",
@@ -140,8 +140,8 @@ describe("renderRoundPaperPdf — la feuille de tournée", () => {
     });
     const [first = ""] = pdfPages(await renderRoundPaperPdf(paper({ stops: [full] })));
     for (const expected of [
-      "Hôtel LFC-0001",
-      "Commande LFC-0001",
+      "Hôtel ORD-0001",
+      "Commande ORD-0001",
       "3 rue du Four",
       "73150 Val d'Isère",
       // Le tiret demi-cadratin est l'octet WinAnsi 0x96, que le lecteur latin1
@@ -224,7 +224,7 @@ describe("renderRoundPaperPdf — la feuille de tournée", () => {
 
   it("pose « Tiré le … à HH:MM » à l'heure de Paris et « x/N » sur chaque page", async () => {
     const many = Array.from({ length: 30 }, (_, index) =>
-      stop(`LFC-${String(index).padStart(4, "0")}`, {
+      stop(`ORD-${String(index).padStart(4, "0")}`, {
         steps: [{ title: "Étape", body: "Une consigne assez longue pour prendre de la place." }],
       }),
     );
@@ -235,7 +235,7 @@ describe("renderRoundPaperPdf — la feuille de tournée", () => {
         `Tiré le mercredi 7 octobre 2026 à 06:15 · ${String(index + 1)}/${String(pages.length)}`,
       );
     });
-    expect(pages.join("\n")).toContain("Hôtel LFC-0029");
+    expect(pages.join("\n")).toContain("Hôtel ORD-0029");
   });
 
   it("rend les mêmes octets pour le même papier", async () => {

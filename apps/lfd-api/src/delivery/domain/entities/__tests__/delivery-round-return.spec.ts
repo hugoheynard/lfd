@@ -80,8 +80,8 @@ describe("DeliveryRound.returnToDepot — « Tournée terminée » (PL2, I8)", (
 
 describe("DeliveryRound.finish — le livreur exige un sort pour chaque arrêt (B4, I9)", () => {
   const LABELS = new Map([
-    ["o_1", "Refuge 1950 (CMD-1)"],
-    ["o_2", "Chalet Lou (CMD-2)"],
+    ["o_1", "Refuge 1950 (ORD-1)"],
+    ["o_2", "Chalet Lou (ORD-2)"],
   ]);
 
   // Chaque sort ferme l'arrêt par `closeStop` — remise, dépôt, clôture sans
@@ -108,7 +108,7 @@ describe("DeliveryRound.finish — le livreur exige un sort pour chaque arrêt (
 
     expect(() => departed.finish(LATER, PAUL, LABELS)).toThrow(RoundStopsWithoutOutcomeError);
     expect(() => departed.finish(LATER, PAUL, LABELS)).toThrow(
-      /un arrêt n'a pas de sort \(Chalet Lou \(CMD-2\)\)/u,
+      /un arrêt n'a pas de sort \(Chalet Lou \(ORD-2\)\)/u,
     );
     expect(departed.returnedAt).toBeNull();
     expect(departed.version).toBe(4);
@@ -124,8 +124,8 @@ describe("DeliveryRound.finish — le livreur exige un sort pour chaque arrêt (
 
     expect(refused).toBeInstanceOf(RoundStopsWithoutOutcomeError);
     expect(refused instanceof RoundStopsWithoutOutcomeError ? refused.stops : []).toEqual([
-      "Refuge 1950 (CMD-1)",
-      "Chalet Lou (CMD-2)",
+      "Refuge 1950 (ORD-1)",
+      "Chalet Lou (ORD-2)",
     ]);
     expect(refused instanceof Error ? refused.message : "").toMatch(/2 arrêts n'ont pas de sort/u);
   });

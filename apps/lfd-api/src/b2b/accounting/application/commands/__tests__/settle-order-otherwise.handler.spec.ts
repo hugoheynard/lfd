@@ -43,7 +43,7 @@ class TracedLock extends OrderInvoicingLock {
 
 class Numbers extends OrderNumbersReader {
   numberOf(orderId: string): Promise<string | null> {
-    return Promise.resolve(`CMD-${orderId}`);
+    return Promise.resolve(`ORD-${orderId}`);
   }
 }
 

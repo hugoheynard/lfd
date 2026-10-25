@@ -10,9 +10,9 @@ import { binRow, deliveryOrder, FixedLoading, roundRow } from "./packing-doubles
 const DAY = "2026-10-01";
 
 const ORDERS = new FixedDeliveryOrders([
-  deliveryOrder("o1", "LIV-1"),
-  deliveryOrder("o2", "LIV-2"),
-  deliveryOrder("o3", "LIV-3"),
+  deliveryOrder("o1", "ORD-1"),
+  deliveryOrder("o2", "ORD-2"),
+  deliveryOrder("o3", "ORD-3"),
 ]);
 
 /**
@@ -52,9 +52,9 @@ describe("GetDeliveryPackingRoundsHandler — le poste de colisage par tournée 
     );
 
     expect(view.rounds[0]?.stops.map((stop) => [stop.reference, stop.position])).toEqual([
-      ["LIV-3", 3],
-      ["LIV-2", 2],
-      ["LIV-1", 1],
+      ["ORD-3", 3],
+      ["ORD-2", 2],
+      ["ORD-1", 1],
     ]);
   });
 

@@ -44,7 +44,7 @@ describe("Invoice.creditNote", () => {
   });
 
   it("corrige une part de la facture, et cite le bon visé", () => {
-    const orders = [{ orderId: "o_1", reference: "CMD-001", receivedOn: "2026-09-12" }];
+    const orders = [{ orderId: "o_1", reference: "ORD-001", receivedOn: "2026-09-12" }];
     const note = Invoice.creditNote(
       creditInput(issuedInvoice(), [line("PAIN", 5.5, 400)], { orders }),
     );
@@ -98,7 +98,7 @@ describe("Invoice.creditNote", () => {
     ["au numéro de la facture", { number: InvoiceNumber.compose("LFD", 2026, 1) }],
     [
       "sur un bon absent de la facture",
-      { orders: [{ orderId: "o_9", reference: "CMD-9", receivedOn: null }] },
+      { orders: [{ orderId: "o_9", reference: "ORD-9", receivedOn: null }] },
     ],
   ])("refuse un avoir %s", (_case, overrides) => {
     expect(() => Invoice.creditNote(creditInput(issuedInvoice(), LINES, overrides))).toThrow(

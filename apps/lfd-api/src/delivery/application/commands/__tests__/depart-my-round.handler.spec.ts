@@ -42,7 +42,7 @@ const ORDERS = new LocatedDeliveryOrders(
   [
     {
       orderId: "o_1",
-      reference: "CMD-o_1",
+      reference: "ORD-o_1",
       gps: POINT,
       address: null,
       window: null,
@@ -205,7 +205,7 @@ describe("DepartMyRoundHandler — « Commencer ma tournée » (MT-D3 v2)", () =
 
     await expect(refused).rejects.toThrow(DriverRoundNotReadyError);
     await expect(refused).rejects.toThrow(
-      "Vous ne pouvez pas partir : un arrêt n'est pas chargé (Refuge 1950 (CMD-o_1)) — appelez le dépôt.",
+      "Vous ne pouvez pas partir : un arrêt n'est pas chargé (Refuge 1950 (ORD-o_1)) — appelez le dépôt.",
     );
     expect(departed.recorded).toEqual([]);
   });
@@ -246,7 +246,7 @@ describe("DepartMyRoundHandler — « Commencer ma tournée » (MT-D3 v2)", () =
 
     await expect(refused).rejects.toThrow(DriverRoundBlockedError);
     await expect(refused).rejects.toThrow(
-      "Vous ne pouvez pas partir : l'arrêt CMD-o_1 (Refuge 1950) est retenu au contrôle qualité — appelez le dépôt.",
+      "Vous ne pouvez pas partir : l'arrêt ORD-o_1 (Refuge 1950) est retenu au contrôle qualité — appelez le dépôt.",
     );
     expect(rounds.stored("r_1")?.departedAt).toBeNull();
     expect(departed.recorded).toEqual([]);

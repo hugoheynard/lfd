@@ -10,7 +10,8 @@
  *
  * 🔴 Aucun courriel ne part : le mailer est un double qui enregistre.
  *
- * ⚠️ Commandes, mandats, plancher : écrits par Prisma, même dette que
+ * Les bons passent par le vrai chemin (plan T), servis aux instants que la
+ * suite dit. ⚠️ Mandats, retraits, plancher : écrits par Prisma, même dette que
  * `collection-autopilot-scene.ts`. Aucune date absolue : le mois est le
  * PRÉCÉDENT du jour du test, ses instants sortent du domaine, et l'horloge
  * FIXE est posée relativement à eux.
@@ -51,6 +52,7 @@ import {
   handOver,
   markDelivered,
 } from "./factories.js";
+import { placeServedOrder, type ServedOrder, type ServedOrderSeed } from "./served-order.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 
 const HOUR_MS = 60 * 60 * 1000;
@@ -173,6 +175,27 @@ async function entity(): Promise<string> {
   return id;
 }
 
+/**
+ * Un bon au compte passé par le vrai chemin (`placeServedOrder`, plan T). Les
+ * courriels de la passation (confirmation) sont retirés de l'enregistreur :
+ * la suite ne compte que ceux de la facture et du prélèvement.
+ */
+async function placeQuietly(seed: ServedOrderSeed): Promise<ServedOrder> {
+  const mailsBefore = sentMails.length;
+  const placed = await placeServedOrder(ctx, seed);
+  sentMails.splice(mailsBefore);
+  return placed;
+}
+
+/** Le détenteur de la société : c'est lui qui passe ses bons. */
+async function ownerOf(companyId: string): Promise<string> {
+  const owner = await ctx.prisma.membership.findFirstOrThrow({
+    where: { companyId, role: CustomerRole.owner },
+    select: { userId: true },
+  });
+  return owner.userId;
+}
+
 /** Un payeur au compte : mandat B2B actif, détenteur joignable, un bon du mois. */
 async function payer(
   entityId: string,
@@ -193,7 +216,7 @@ async function payer(
   }
   await ctx.prisma.company.update({
     where: { id: company.id },
-    data: { vatNumber: "FR40303265045" },
+    data: { vatNumber: "FR40303265045", grantedTerms: ["monthly"] },
   });
   await staff().put(`/admin/companies/${company.id}/bank-account`).send(RIB).expect(204);
   await ctx.prisma.paymentMandate.create({
@@ -212,32 +235,10 @@ async function payer(
     email: `patron${String(seq)}@port.test`,
   });
   await attachTo(ctx.prisma, owner.id, company.id, CustomerRole.owner);
-  const placedOrder = await ctx.prisma.order.create({
-    data: {
-      orderNumber: `CMD-E4-${String(seq)}`,
-      companyId: company.id,
-      placedByUserId: owner.id,
-      subtotalCents: 10_000,
-      totalCents: 10_550,
-      vatCents: 550,
-      paymentStatus: "not_required",
-      createdAt: new Date(closesAt.getTime() - 2 * DAY_MS),
-      vatShares: [{ rate: 5.5, amountCents: 550 }],
-      lines: {
-        create: {
-          sku: "PAIN-E4",
-          productNameSnapshot: "Pain du mois",
-          unitPriceMillicents: 10_000_000,
-          vatRate: 5.5,
-          quantity: 1,
-          lineTotalCents: 10_000,
-        },
-      },
-    },
-    select: { id: true, orderNumber: true, createdAt: true },
-  });
+  const servedAt = new Date(closesAt.getTime() - 2 * DAY_MS);
+  const placed = await placeQuietly({ buyerUserId: owner.id, companyId: company.id, servedAt });
   if (options.handedOver !== false) {
-    await handOver(ctx.prisma, placedOrder);
+    await handOver(ctx.prisma, { ...placed, createdAt: servedAt });
   }
   return company;
 }
@@ -945,35 +946,13 @@ async function payersInvoiced(): Promise<readonly string[]> {
   return [...new Set(invoices.map((invoice) => invoice.payerCompanyId))];
 }
 
-/** Un bon de plus au compte de ce payeur, passé à `createdAt`. */
-async function laterOrder(companyId: string, createdAt: Date): Promise<void> {
-  seq += 1;
-  const user = await createUser(ctx.prisma, { auth0Sub: `r3-later-${String(seq)}` });
-  const placedOrder = await ctx.prisma.order.create({
-    data: {
-      orderNumber: `CMD-R3-${String(seq)}`,
-      companyId,
-      placedByUserId: user.id,
-      subtotalCents: 10_000,
-      totalCents: 10_550,
-      vatCents: 550,
-      vatShares: [{ rate: 5.5, amountCents: 550 }],
-      paymentStatus: "not_required",
-      createdAt,
-      lines: {
-        create: {
-          sku: "PAIN-R3",
-          productNameSnapshot: "Pain de la semaine",
-          unitPriceMillicents: 10_000_000,
-          vatRate: 5.5,
-          quantity: 1,
-          lineTotalCents: 10_000,
-        },
-      },
-    },
-    select: { id: true, orderNumber: true, createdAt: true },
-  });
-  await handOver(ctx.prisma, placedOrder);
+/**
+ * Un bon de plus au compte de ce payeur, servi et retiré à `servedAt`, passé
+ * par son détenteur par le vrai chemin (plan T).
+ */
+async function laterOrder(companyId: string, servedAt: Date): Promise<void> {
+  const placed = await placeQuietly({ buyerUserId: await ownerOf(companyId), companyId, servedAt });
+  await handOver(ctx.prisma, { ...placed, createdAt: servedAt });
 }
 
 /**
@@ -1030,32 +1009,10 @@ async function siteOnOwnMandate(
     },
   });
   const user = await createUser(ctx.prisma, { auth0Sub: `e4b-site-${String(seq)}` });
-  const placedOrder = await ctx.prisma.order.create({
-    data: {
-      orderNumber: `CMD-E4-${String(seq)}`,
-      companyId: site.id,
-      billedCompanyId: principalId,
-      placedByUserId: user.id,
-      subtotalCents: 10_000,
-      totalCents: 10_550,
-      vatCents: 550,
-      vatShares: [{ rate: 5.5, amountCents: 550 }],
-      paymentStatus: "not_required",
-      createdAt: new Date(closesAt.getTime() - DAY_MS),
-      lines: {
-        create: {
-          sku: "PAIN-E4",
-          productNameSnapshot: "Pain du site",
-          unitPriceMillicents: 10_000_000,
-          vatRate: 5.5,
-          quantity: 1,
-          lineTotalCents: 10_000,
-        },
-      },
-    },
-    select: { id: true, orderNumber: true, createdAt: true },
-  });
-  await handOver(ctx.prisma, placedOrder);
+  await attachTo(ctx.prisma, user.id, site.id, CustomerRole.owner);
+  const servedAt = new Date(closesAt.getTime() - DAY_MS);
+  const placed = await placeQuietly({ buyerUserId: user.id, companyId: site.id, servedAt });
+  await handOver(ctx.prisma, { ...placed, createdAt: servedAt });
   return { id: site.id, reference };
 }
 
@@ -1069,7 +1026,7 @@ describe("facturer chaque bon dans le mois de sa livraison (lot ZL)", () => {
   function orderOf(companyId: string) {
     return ctx.prisma.order.findFirstOrThrow({
       where: { companyId },
-      select: { id: true, orderNumber: true },
+      select: { id: true, orderNumber: true, totalCents: true },
     });
   }
 
@@ -1259,7 +1216,7 @@ describe("facturer chaque bon dans le mois de sa livraison (lot ZL)", () => {
         orderNumber: order.orderNumber,
         companyId: company.id,
         serviceDay: instantToLocal(served).day,
-        totalCents: 10_550,
+        totalCents: order.totalCents,
       }),
     ]);
 

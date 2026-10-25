@@ -199,7 +199,7 @@ describe("clore sans remise (AP-D2)", () => {
       .send({ version })
       .expect(409);
 
-    expect(messageOf(refused)).toMatch(/TRN-0001 n'a été ni retirée au comptoir ni annulée/u);
+    expect(messageOf(refused)).toMatch(/ORD-900001 n'a été ni retirée au comptoir ni annulée/u);
     const stop = await ctx.prisma.deliveryRoundStop.findUniqueOrThrow({ where: { id: stopId } });
     expect(stop.closedAt).toBeNull();
   });
@@ -369,7 +369,7 @@ describe("« Déclarer un problème » (§ 3)", () => {
     ]);
     expect(ofDay.incidents[0]).toMatchObject({
       id: created.id,
-      orderReference: "TRN-0001",
+      orderReference: "ORD-900001",
       note: "sonné trois fois",
       reportedBy: { staffUserId: paul.id, name: "livreur-paul Test" },
     });

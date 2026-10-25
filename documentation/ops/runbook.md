@@ -1262,6 +1262,23 @@ passage (100 réparations) est atteint : relancer jusqu'à `true`. `failed > 0`
 se lit dans les journaux (`ReconcileDeliveryNotesHandler`). Ensuite, le Worker
 le repasse **toutes les heures** (`admin/delivery-notes/sweep`).
 
+## Avant de déployer le format du numéro de commande (2026-10-25)
+
+La migration `20261025120000_le_numero_de_commande_a_son_format` pose un CHECK
+sur `orders.order_number`. Elle **échoue** (et bloque les déploiements
+suivants jusqu'à `migrate resolve --rolled-back`) si une seule ligne ne
+respecte pas le motif. Avant de promouvoir, en lecture seule :
+
+```sql
+SELECT count(*) AS refuses, min(order_number), max(order_number)
+FROM public.orders
+WHERE order_number !~ '^ORD-([1-9][0-9]*|[A-Z0-9]{8}-[A-Z0-9]{4})$';
+```
+
+Il faut **0**. Le comptage `LIKE 'ORD-_%'` ne suffit pas : il accepte des
+numéros que le motif refuse. Retour arrière : `ALTER TABLE "public"."orders"
+DROP CONSTRAINT "orders_order_number_format";` (sans perte).
+
 ## Remettre la production à blanc — délibérément SANS outil
 
 Fait une fois, le **2026-08-16**, pour vider les données de test avant

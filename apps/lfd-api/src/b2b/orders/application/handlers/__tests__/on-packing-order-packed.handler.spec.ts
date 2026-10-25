@@ -36,13 +36,13 @@ describe("OnPackingOrderPacked — le bac fermé AU COLISAGE (K2)", () => {
       type: PACKING_ORDER_PACKED,
       payload: {
         orderId: "ord_1",
-        reference: "CMD-0001",
+        reference: "ORD-0001",
         packedAt: PACKED_AT.toISOString(),
         packedBy: "s1",
       },
     });
 
-    expect(sent).toEqual([new MarkOrderReadyCommand("CMD-0001", "s1", PACKED_AT)]);
+    expect(sent).toEqual([new MarkOrderReadyCommand("ORD-0001", "s1", PACKED_AT)]);
   });
 
   it("une charge hors contrat échoue, visible, sans rien demander au commerce", async () => {

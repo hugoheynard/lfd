@@ -54,7 +54,7 @@ class RecordingSummary extends CompanyOrderSummaryReader {
 
 const source = (id: string): OrderSummarySource => ({
   id,
-  orderNumber: `CMD-${id}`,
+  orderNumber: `ORD-${id}`,
   companyId: "co_principal",
   companyName: "Maison mère",
   day: "2026-10-07",
@@ -96,8 +96,8 @@ describe("SummarizeCompanyOrdersHandler (plan récapitulatif, lot R1)", () => {
     const summary = await handler.execute(query(["o1", "o2"]));
 
     expect(summary.companies[0]?.orders.map((o) => [o.orderNumber, o.pretaxCents])).toEqual([
-      ["CMD-o1", 1_000],
-      ["CMD-o2", 1_000],
+      ["ORD-o1", 1_000],
+      ["ORD-o2", 1_000],
     ]);
     expect(summary.total.ordersPretax).toEqual({
       pretaxCents: 2_000,

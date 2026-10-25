@@ -6,7 +6,7 @@ const COLD: ColdPacking = { coldSkus: new Set(["FLAN"]), isothermBinIds: new Set
 function order(overrides: Partial<BoardOrder> = {}): BoardOrder {
   return {
     orderId: "o1",
-    reference: "CMD-1",
+    reference: "ORD-1",
     customerLabel: "Café du Port",
     fulfillmentMethod: "delivery",
     clientele: "pro",

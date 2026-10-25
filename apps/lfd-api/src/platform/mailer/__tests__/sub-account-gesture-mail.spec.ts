@@ -15,7 +15,7 @@ function render(overrides: Partial<Parameters<typeof notice>[0]> = {}) {
   return notice({
     gesture: "problem_reported",
     siteName: "Chalet Gentiane",
-    reference: "CMD-0042",
+    reference: "ORD-0042",
     byTeam: false,
     ...overrides,
   });
@@ -26,10 +26,10 @@ describe("le courriel « un de vos sites a… » d'un geste hors commande", () =
     const rendered = render();
 
     expect(rendered.subject).toBe(
-      "Chalet Gentiane — Problème signalé par un de vos sites (CMD-0042)",
+      "Chalet Gentiane — Problème signalé par un de vos sites (ORD-0042)",
     );
     expect(rendered.html).toContain(
-      "Votre site Chalet Gentiane a signalé un problème sur la commande CMD-0042.",
+      "Votre site Chalet Gentiane a signalé un problème sur la commande ORD-0042.",
     );
     expect(rendered.html).toContain("Commande");
   });

@@ -4,7 +4,7 @@ import { compositionZonesOf } from "../proposal-zones.js";
 function located(orderId: string, zoneId: string | null): LocatedStop {
   return {
     orderId,
-    reference: `CMD-${orderId}`,
+    reference: `ORD-${orderId}`,
     point: { lat: 45.6, lng: 6.8 },
     unlocated: null,
     window: null,

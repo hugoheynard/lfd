@@ -17,7 +17,7 @@ const EARLIER = "2026-10-12T08:00:00.000Z";
 function rowOf(id: string, placedAt: string): AdminOrderRow {
   return {
     id,
-    orderNumber: `CMD-${id}`,
+    orderNumber: `ORD-${id}`,
     placedAt,
     status: "placed",
     offPlan: false,

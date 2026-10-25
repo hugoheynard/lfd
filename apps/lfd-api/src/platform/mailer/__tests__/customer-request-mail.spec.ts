@@ -45,12 +45,12 @@ describe("le courriel d'une demande client", () => {
       ...data,
       formLabel: "Signaler un problème",
       reasonLabel: "Produit abîmé",
-      orderNumber: "CMD-0001",
+      orderNumber: "ORD-0001",
       photoCount: 2,
       message: "",
     });
-    expect(rendered.subject).toContain("Signaler un problème — Produit abîmé · CMD-0001");
-    expect(rendered.html).toContain("Commande : CMD-0001");
+    expect(rendered.subject).toContain("Signaler un problème — Produit abîmé · ORD-0001");
+    expect(rendered.html).toContain("Commande : ORD-0001");
     expect(rendered.html).toContain("2 — à voir au back-office");
     expect(rendered.html).toContain("https://bo.lfc.test/commercial/demandes?demande=q1");
   });

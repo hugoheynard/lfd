@@ -20,7 +20,7 @@ const LATER = new Date("2026-09-08T05:30:00.000Z");
 function order(overrides: Partial<ProducibleOrder> = {}): ProducibleOrder {
   return {
     orderId: "ord_1",
-    reference: "CMD-0001",
+    reference: "ORD-0001",
     customerLabel: "Hôtel des Trois Ponts",
     fulfillmentMethod: "pickup",
     destination: "Le Labo",
@@ -139,7 +139,7 @@ describe("le colisage, vu de la journée", () => {
   function closed(): ProductionDay {
     const day = opened();
     day.close(
-      [order(), order({ orderId: "ord_2", reference: "CMD-0002" })],
+      [order(), order({ orderId: "ord_2", reference: "ORD-0002" })],
       new Set<string>(),
       AT,
       null,

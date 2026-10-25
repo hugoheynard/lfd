@@ -91,8 +91,8 @@ export function issueInput(overrides: Partial<IssueInvoiceInput> = {}): IssueInv
     buyer: BUYER,
     deliveryAddressLines: null,
     orders: [
-      { orderId: "o_1", reference: "CMD-001", receivedOn: "2026-09-12" },
-      { orderId: "o_2", reference: "CMD-002", receivedOn: "2026-09-13" },
+      { orderId: "o_1", reference: "ORD-001", receivedOn: "2026-09-12" },
+      { orderId: "o_2", reference: "ORD-002", receivedOn: "2026-09-13" },
     ],
     lines: LINES,
     vat: breakdownOf(LINES),

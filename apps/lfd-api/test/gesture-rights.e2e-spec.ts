@@ -68,11 +68,11 @@ const ROUTES = {
   dayStatus: (agent) => agent.get(`/admin/production/batch/${DAY}/status`),
   worksheet: (agent) => agent.get(`/admin/production/worksheet?date=${DAY}`),
   packing: (agent) => agent.get(`/admin/packing/${DAY}/board`),
-  packingSheet: (agent) => agent.get("/admin/production/packing/CMD-INCONNUE"),
+  packingSheet: (agent) => agent.get("/admin/production/packing/ORD-INCONNUE"),
   packed: (agent) => agent.post(`/admin/packing/${DAY}/orders/commande-inconnue/close`),
   version: (agent) => agent.get(`/admin/production/version?date=${DAY}`),
   handoverQueue: (agent) => agent.get(`/admin/handover/file?jour=${DAY}`),
-  binsOfOrder: (agent) => agent.get("/admin/delivery/packing/bins?order=CMD-INCONNUE"),
+  binsOfOrder: (agent) => agent.get("/admin/delivery/packing/bins?order=ORD-INCONNUE"),
   binSheet: (agent) => agent.get("/admin/delivery/packing/bins/bac-inconnu"),
   procedure: (agent) =>
     agent.get("/admin/companies/societe-inconnue/delivery-addresses/adresse-inconnue/procedure"),

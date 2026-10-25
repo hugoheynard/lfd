@@ -30,7 +30,7 @@ export const LINE = {
 export function sheet(overrides: Partial<ClientSheet> = {}): ClientSheet {
   return {
     orderId: "ord_1",
-    reference: "CMD-4812",
+    reference: "ORD-4812",
     audience: "client",
     placedAt: "2026-09-02T09:00:00.000Z",
     requestedFor: "2026-09-03",

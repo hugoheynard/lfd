@@ -70,7 +70,7 @@ const STATEMENT: BillingStatementView = {
   },
   bodyVersion: 1,
   computedWith: "invoice-dossier/2026-10-08",
-  orders: [{ orderId: "o_1", orderNumber: "CMD-1" }],
+  orders: [{ orderId: "o_1", orderNumber: "ORD-1" }],
 };
 
 describe("GetBillingStatementHandler", () => {

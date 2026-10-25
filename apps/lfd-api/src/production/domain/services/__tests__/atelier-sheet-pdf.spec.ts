@@ -28,7 +28,7 @@ describe("renderAtelierSheetPdf — la pastille de la commande", () => {
   const ORDER: ProductionOrderSnapshot = {
     packed: null,
     orderId: "ord-1",
-    reference: "LFC-0001",
+    reference: "ORD-0001",
     customerLabel: "Hôtel des Trois Ponts",
     fulfillmentMethod: "pickup",
     destination: "Village",

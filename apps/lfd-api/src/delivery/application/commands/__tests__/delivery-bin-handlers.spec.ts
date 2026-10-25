@@ -123,7 +123,7 @@ describe("DeliveryBinOffice.declare — L4-C16, L4-C20, lot 4 bis", () => {
         subjectType: "order",
         subjectId: "o_1",
         payload: {
-          subjectLabel: "CMD-o_1",
+          subjectLabel: "ORD-o_1",
           binType: { id: "t_m", name: "Bac t_m" },
           innerBags: 3,
           bins: [
@@ -248,7 +248,7 @@ describe("VoidDeliveryBinHandler — L4-C19", () => {
       type: "delivery_bin.voided",
       subjectType: "delivery_bin",
       subjectId: "b_1",
-      payload: { subjectLabel: "AAAAAA", order: { id: "o_1", name: "CMD-o_1" } },
+      payload: { subjectLabel: "AAAAAA", order: { id: "o_1", name: "ORD-o_1" } },
     });
   });
 

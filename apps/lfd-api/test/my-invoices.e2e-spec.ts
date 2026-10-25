@@ -28,7 +28,6 @@ import { attachTo, createCompany, createUser } from "./factories.js";
 const HOUR_MS = 60 * 60 * 1000;
 const COLLECTION = "/admin/accounting/collection";
 const RETURNS = "/admin/accounting/collection-returns";
-const TOTAL_TTC = 10_550;
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -78,7 +77,12 @@ async function member(companyId: string, sub: string, role: CustomerRole): Promi
 }
 
 /** La facture du mois du payeur de la scène ; rend la société et la pièce. */
-async function issuedInvoice(): Promise<{ companyId: string; invoiceId: string }> {
+async function issuedInvoice(): Promise<{
+  companyId: string;
+  invoiceId: string;
+  /** Le total du seul bon du mois, relu sur la commande passée. */
+  totalTtc: number;
+}> {
   const entityId = await setUpEntity(staff);
   const companyId = await invoicedPayer(ctx, staff, entityId, closesAt);
   await staff()
@@ -89,7 +93,11 @@ async function issuedInvoice(): Promise<{ companyId: string; invoiceId: string }
   const invoice = await ctx.prisma.invoice.findFirstOrThrow({
     where: { payerCompanyId: companyId },
   });
-  return { companyId, invoiceId: invoice.id };
+  const { totalCents: totalTtc } = await ctx.prisma.order.findFirstOrThrow({
+    where: { companyId },
+    select: { totalCents: true },
+  });
+  return { companyId, invoiceId: invoice.id, totalTtc };
 }
 
 async function list(sub: string, companyId: string, query = ""): Promise<MyIssuedInvoicesView> {
@@ -100,7 +108,7 @@ async function list(sub: string, companyId: string, query = ""): Promise<MyIssue
 
 describe("« Mes factures » : le statut suit le prélèvement (§7.1)", () => {
   it("émise → prévue à l'échéance ; en lot → prévue au jour du lot ; déposée → prélevée ; rejet → à régulariser", async () => {
-    const { companyId } = await issuedInvoice();
+    const { companyId, totalTtc } = await issuedInvoice();
     const compta = await member(companyId, "my-compta", CustomerRole.billing);
     const invoice = await ctx.prisma.invoice.findFirstOrThrow();
     const dueOn = invoice.dueOn?.toISOString().slice(0, 10) ?? null;
@@ -112,7 +120,7 @@ describe("« Mes factures » : le statut suit le prélèvement (§7.1)", () => {
       otherInvoicesOnDebit: 0,
     });
     expect(issued.amountDue).toEqual({
-      totalCents: TOTAL_TTC,
+      totalCents: totalTtc,
       invoiceCount: 1,
       rejectedCount: 0,
       rejectedCents: 0,
@@ -149,10 +157,10 @@ describe("« Mes factures » : le statut suit le prélèvement (§7.1)", () => {
       otherInvoicesOnDebit: 0,
     });
     expect(rejected.amountDue).toEqual({
-      totalCents: TOTAL_TTC,
+      totalCents: totalTtc,
       invoiceCount: 1,
       rejectedCount: 1,
-      rejectedCents: TOTAL_TTC,
+      rejectedCents: totalTtc,
     });
   });
 
@@ -177,7 +185,7 @@ describe("« Mes factures » : le statut suit le prélèvement (§7.1)", () => {
 
 describe("« Mes factures » : filtres et mur", () => {
   it("les filtres choisissent les lignes, pas le total dû ; un mois sans année : 400", async () => {
-    const { companyId, invoiceId } = await issuedInvoice();
+    const { companyId, invoiceId, totalTtc } = await issuedInvoice();
     const invoice = await ctx.prisma.invoice.findUniqueOrThrow({ where: { id: invoiceId } });
     const [year, month] = invoice.issuedOn.toISOString().slice(0, 7).split("-").map(Number);
 
@@ -185,7 +193,7 @@ describe("« Mes factures » : filtres et mur", () => {
     expect(same.invoices.map((one) => one.invoiceId)).toEqual([invoiceId]);
     const otherYear = await list("r5-owner", companyId, `?year=${String((year ?? 0) - 1)}`);
     expect(otherYear.invoices).toEqual([]);
-    expect(otherYear.amountDue.totalCents).toBe(TOTAL_TTC);
+    expect(otherYear.amountDue.totalCents).toBe(totalTtc);
     const notes = await list("r5-owner", companyId, "?kind=credit_note");
     expect(notes.invoices).toEqual([]);
     expect(notes.amountDue.invoiceCount).toBe(1);

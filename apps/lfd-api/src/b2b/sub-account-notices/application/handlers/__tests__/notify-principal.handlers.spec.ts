@@ -77,7 +77,7 @@ const cancelledFact = (cancelledByUserId: string | null) => ({
   type: "order.cancelled",
   payload: new OrderCancelledEvent(
     "o1",
-    "CMD-0001",
+    "ORD-0001",
     "housekeeper",
     cancelledByUserId === null ? "staff_1" : null,
     cancelledByUserId === null ? "erreur de saisie" : null,
@@ -107,7 +107,7 @@ describe("NotifyPrincipalOnOrderPlaced", () => {
       data: {
         activity: "placed",
         siteName: "Chalet Gentiane",
-        orderNumber: "CMD-0001",
+        orderNumber: "ORD-0001",
         totalCents: 4_200,
         enteredByTeam: false,
       },

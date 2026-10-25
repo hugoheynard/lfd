@@ -17,7 +17,7 @@ const SEPTEMBER = {
 function order(overrides: Partial<CycleOrder>): CycleOrder {
   return {
     id: "o1",
-    orderNumber: "CMD-1",
+    orderNumber: "ORD-1",
     placedAt: new Date("2026-09-14T22:30:00.000Z"),
     companyId: "c-port",
     billedCompanyId: null,
@@ -52,7 +52,7 @@ describe("statementCsv", () => {
   });
 
   it("ouvre une colonne par taux présent, et une pour la TVA non ventilée", () => {
-    const legacy = order({ id: "o2", orderNumber: "CMD-2", vatShares: null, vatCents: 220 });
+    const legacy = order({ id: "o2", orderNumber: "ORD-2", vatShares: null, vatCents: 220 });
     const rows = rowsOf(statementCsv(aggregateStatement([order({}), legacy]), SEPTEMBER));
     const header = rows[5] ?? "";
     expect(header).toContain('"TVA 5,5 % (€)";"TVA 20 % (€)";"TVA non ventilée (€)"');
@@ -65,7 +65,7 @@ describe("statementCsv", () => {
 
   it("date chaque commande en jour LOCAL — 22h30 UTC le 14 est le 15 à Paris", () => {
     const rows = rowsOf(statementCsv(aggregateStatement([order({})]), SEPTEMBER));
-    expect(rows[6]?.startsWith('"2026-09-15";"CMD-1"')).toBe(true);
+    expect(rows[6]?.startsWith('"2026-09-15";"ORD-1"')).toBe(true);
   });
 
   it("finit par une ligne de total qui recopie les totaux du relevé", () => {
@@ -87,7 +87,7 @@ describe("rateLabel", () => {
       companyId: "c-alpes",
       name: "Alpes Chalets",
     }));
-    const [line] = rowsOf(statementCsv(paid, SEPTEMBER)).filter((row) => row.includes("CMD-1"));
+    const [line] = rowsOf(statementCsv(paid, SEPTEMBER)).filter((row) => row.includes("ORD-1"));
     expect(line).toContain('"Chalet Edelweiss";"Alpes Chalets"');
   });
 });

@@ -152,7 +152,7 @@ describe("IssueOrderRefundHandler — émis", () => {
       type: "order.refund_issued",
       subjectType: "order",
       subjectId: ORDER_ID,
-      payload: { subjectLabel: "CMD-0001", announcedCents: 2_340, issuedCents: 1_840 },
+      payload: { subjectLabel: "ORD-0001", announcedCents: 2_340, issuedCents: 1_840 },
     });
   });
 });
@@ -227,7 +227,7 @@ describe("IssueOrderRefundHandler — rejouer ne changerait rien", () => {
     });
     expect(journal.facts[0]?.payload).toMatchObject({ failure: "declined:charge_disputed" });
     expect(notifier.notices.map((notice) => notice.subject)).toEqual([
-      "Remboursement refusé par Stripe — CMD-0001",
+      "Remboursement refusé par Stripe — ORD-0001",
     ]);
   });
 
@@ -284,7 +284,7 @@ describe("IssueOrderRefundHandler — rejouer ne changerait rien", () => {
 
     expect(journalTypes(journal)).toEqual(["order.refund_rejected"]);
     expect(events.published).toEqual([
-      new OrderRefundRejectedEvent(ORDER_ID, "CMD-0001", "re_1", 9_999, "exceeds_charge"),
+      new OrderRefundRejectedEvent(ORDER_ID, "ORD-0001", "re_1", 9_999, "exceeds_charge"),
     ]);
     expect(store.request).toMatchObject({
       stripeRefundId: null,

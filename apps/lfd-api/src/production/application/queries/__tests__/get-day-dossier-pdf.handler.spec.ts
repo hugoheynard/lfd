@@ -34,7 +34,7 @@ const VIENNOISERIES: CatalogFamilyView = { id: "fam-vien", name: "Viennoiseries"
 function order(orderId: string): ProducibleOrder {
   return {
     orderId,
-    reference: `CMD-${orderId}`,
+    reference: `ORD-${orderId}`,
     customerLabel: "Trois Ponts",
     fulfillmentMethod: "pickup",
     destination: "Le Labo",

@@ -8,35 +8,51 @@
  * les JSON figés (`pickup_address`, `delivery_address_snapshot`), la
  * jointure du code NAF — puis le seuil appliqué à une vraie réponse, et le
  * mur `b2b_growth`.
+ *
+ * Les commandes passent par le vrai chemin (plan T, 2026-10-25), antidatées
+ * à hier matin ; les montants attendus sont relus sur la commande passée.
  */
 import { addDays, instantToLocal, localToInstant, type AudiencesView } from "@lfd/contracts";
-import { lineTotalCents } from "@lfd/money";
 
+import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import {
-  OrderClientele,
-  OrderStatus,
-  PaymentStatus,
-  Prisma,
-} from "../src/platform/database/client/client.js";
+import { CustomerRole, OrderStatus } from "../src/platform/database/client/client.js";
 import { Clock } from "../src/platform/time/clock.js";
-import { createCompany, createUser } from "./factories.js";
+import { attachTo, createCompany, createUser } from "./factories.js";
 import { bootstrapE2e, E2E_STAFF_ID, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { staffWith, stubAdminVerifier } from "./operations-at-commerce-scene.js";
+import {
+  cardGatewayDouble,
+  payByCard,
+  pickupSite,
+  placeOrder,
+  placeOrderForCustomer,
+  type PlacedTestOrder,
+} from "./order-factory.js";
 
 const AUDIENCES = "/admin/audiences";
 
-/** Une baguette à 1,20 € HT, deux par commande : 240 c HT, 253 c TTC. */
-const BAGUETTE = { sku: "PAI-001", unitPriceMillicents: 120_000, quantity: 2 };
-const LINE_HT = lineTotalCents(BAGUETTE.unitPriceMillicents, BAGUETTE.quantity);
-const ORDER_TTC = 253;
+/** Deux baguettes par commande : une famille, les Pains. */
+const BAGUETTES = [{ sku: "PAI-001", quantity: 2 }] as const;
+
+const COURIER_ADDRESS = {
+  label: "",
+  ligne1: "1 rue du Test",
+  ligne2: "",
+  codePostal: "73150",
+  ville: "Val-d'Isère",
+  pays: "France",
+};
 
 let ctx: E2eContext;
 let seq = 0;
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
-    overrides: [{ token: AdminTokenVerifier, value: stubAdminVerifier }],
+    overrides: [
+      { token: AdminTokenVerifier, value: stubAdminVerifier },
+      { token: PaymentGateway, value: cardGatewayDouble("pi_audiences") },
+    ],
   });
 });
 
@@ -62,61 +78,108 @@ function yesterdayMorning(): Date {
   return at;
 }
 
-interface SeedOrder {
-  readonly userId: string;
-  readonly companyId?: string;
-  readonly status?: OrderStatus;
-  readonly paymentStatus?: PaymentStatus;
-  readonly byStaff?: boolean;
-  readonly fromSubscription?: boolean;
-  readonly delivery?: { readonly codePostal: string; readonly ville: string };
+/**
+ * La commande d'un particulier, retirée au point semé, passée hier matin par
+ * le vrai chemin (`placeOrder`, plan T) — carte en attente : à la suite de la
+ * régler si elle doit compter.
+ */
+async function personalOrder(userId: string): Promise<PlacedTestOrder> {
+  return placeOrder(ctx, {
+    buyerUserId: userId,
+    settlement: "card",
+    placedAt: yesterdayMorning(),
+    fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
+    lines: BAGUETTES,
+  });
 }
 
-/** Une commande figée telle que la passation l'écrit : retrait au Fournil, sinon livraison. */
-async function seedOrder(order: SeedOrder): Promise<void> {
-  seq += 1;
-  const place = { label: "", ligne1: "1 rue du Test", ligne2: "", pays: "FR" };
-  await ctx.prisma.order.create({
-    data: {
-      orderNumber: `CMD-AUDIENCES-${String(seq)}`,
-      placedByUserId: order.userId,
-      companyId: order.companyId ?? null,
-      placedByStaffId: order.byStaff === true ? E2E_STAFF_ID : null,
-      clientele: order.companyId === undefined ? OrderClientele.public : OrderClientele.pro,
-      status: order.status ?? OrderStatus.placed,
-      paymentStatus: order.paymentStatus ?? PaymentStatus.not_required,
-      fromSubscriptionId: order.fromSubscription === true ? `sub-${String(seq)}` : null,
-      fulfillmentMethod: order.delivery === undefined ? "pickup" : "delivery",
-      pickupAddress:
-        order.delivery === undefined
-          ? {
-              ...place,
-              label: "Le Fournil",
-              codePostal: "73150",
-              ville: "Val-d'Isère",
-              siteId: "site-fournil",
-            }
-          : Prisma.DbNull,
-      deliveryAddressSnapshot:
-        order.delivery === undefined ? Prisma.DbNull : { ...place, ...order.delivery },
-      subtotalCents: LINE_HT,
-      vatCents: ORDER_TTC - LINE_HT,
-      totalCents: ORDER_TTC,
-      createdAt: yesterdayMorning(),
-      lines: {
-        create: [{ ...BAGUETTE, productNameSnapshot: "Baguette", lineTotalCents: LINE_HT }],
-      },
-    },
+/** Ce que la passation a écrit, relu — jamais recopié. */
+async function amountsOf(order: PlacedTestOrder): Promise<{
+  readonly subtotalCents: number;
+  readonly totalCents: number;
+}> {
+  return ctx.prisma.order.findUniqueOrThrow({
+    where: { id: order.id },
+    select: { subtotalCents: true, totalCents: true },
   });
+}
+
+/** La zone de livraison de Val-d'Isère, sans laquelle un pro n'y est pas livré. */
+async function deliveryZone(): Promise<void> {
+  await ctx.prisma.deliveryZone.create({
+    data: { postalPrefixes: ["73150"], label: "Val-d'Isère", feeMode: "amount", feeValue: 750 },
+  });
+}
+
+/**
+ * Une société au compte, dont `buyer` est détenteur, avec son adresse de
+ * livraison au carnet — un pro ne demande qu'une échéance qui y est inscrite.
+ */
+async function proCompany(
+  buyer: { readonly id: string; readonly sub: string },
+  nafCode: string,
+): Promise<{ readonly companyId: string; readonly addressId: string }> {
+  const company = await createCompany(ctx.prisma, { nafCode });
+  await ctx.prisma.company.update({
+    where: { id: company.id },
+    data: { grantedTerms: ["monthly"] },
+  });
+  await attachTo(ctx.prisma, buyer.id, company.id, CustomerRole.owner);
+  const booked = await ctx
+    .asSub(buyer.sub)
+    .post(`/companies/${company.id}/delivery-addresses`)
+    .send({
+      ...COURIER_ADDRESS,
+      isDefault: true,
+      specs: {
+        signatureRequired: null,
+        note: "",
+        slotList: { mode: "everyday", slots: [] },
+        deliveryContact: null,
+        gps: null,
+        windowMode: "deadline",
+        deadlines: { mode: "everyday", times: ["10:00"] },
+      },
+    })
+    .expect(201);
+  return { companyId: company.id, addressId: jsonBody<{ id: string }>(booked).id };
+}
+
+/** Une commande pro au compte, livrée à Val-d'Isère ; saisie par l'équipe si `byStaff`. */
+async function proOrder(
+  buyerId: string,
+  pro: { readonly companyId: string; readonly addressId: string },
+  byStaff = false,
+): Promise<void> {
+  const content = {
+    buyerUserId: buyerId,
+    companyId: pro.companyId,
+    placedAt: yesterdayMorning(),
+    window: { start: null, end: "10:00" },
+    fulfillment: {
+      method: "delivery" as const,
+      address: COURIER_ADDRESS,
+      addressId: pro.addressId,
+    },
+    lines: BAGUETTES,
+  };
+  await (byStaff
+    ? placeOrderForCustomer(ctx, { ...content, staffUserId: E2E_STAFF_ID, settlement: "account" })
+    : placeOrder(ctx, { ...content, settlement: "account" }));
 }
 
 async function person(): Promise<string> {
+  return (await personWithSub()).id;
+}
+
+async function personWithSub(): Promise<{ readonly id: string; readonly sub: string }> {
   seq += 1;
+  const sub = `auth0|audiences-${String(seq)}`;
   const user = await createUser(ctx.prisma, {
-    auth0Sub: `auth0|audiences-${String(seq)}`,
+    auth0Sub: sub,
     email: `audiences-${String(seq)}@example.test`,
   });
-  return user.id;
+  return { id: user.id, sub };
 }
 
 async function read(query: string): Promise<AudiencesView> {
@@ -129,21 +192,47 @@ function cellsOf(view: AudiencesView, dimension: string) {
   return view.segmentations.find((segmentation) => segmentation.dimension === dimension)?.cells;
 }
 
-/** Cinq particuliers, une commande chacun — dont une saisie par le staff. */
-async function fivePeople(): Promise<void> {
+/** Cinq particuliers, une commande réglée chacun ; rend les montants de la première. */
+async function fivePeople(): Promise<{
+  readonly subtotalCents: number;
+  readonly totalCents: number;
+}> {
+  const orders: PlacedTestOrder[] = [];
   for (let index = 0; index < 5; index += 1) {
-    await seedOrder({ userId: await person(), byStaff: index === 0 });
+    const order = await personalOrder(await person());
+    await payByCard(ctx, order);
+    orders.push(order);
   }
+  const [first] = orders;
+  if (first === undefined) {
+    throw new Error("cinq commandes semées");
+  }
+  return amountsOf(first);
 }
 
 describe("les audiences de la clientèle (A1)", () => {
   it("chiffre une case de cinq clients et exclut brouillon, annulée, carte non encaissée et abonnement", async () => {
-    await fivePeople();
+    const one = await fivePeople();
     const outsider = await person();
-    await seedOrder({ userId: outsider, status: OrderStatus.cancelled });
-    await seedOrder({ userId: outsider, status: OrderStatus.draft });
-    await seedOrder({ userId: outsider, paymentStatus: PaymentStatus.pending });
-    await seedOrder({ userId: outsider, fromSubscription: true });
+    // Annulée, brouillon, issue d'un abonnement : des états que la passation
+    // ne pose pas d'un geste. La commande est vraie ; seul l'état est posé
+    // après coup, et c'est lui que la requête exclut (plan T, 2026-10-25).
+    const cancelled = await personalOrder(outsider);
+    await payByCard(ctx, cancelled);
+    await ctx.prisma.order.update({
+      where: { id: cancelled.id },
+      data: { status: OrderStatus.cancelled },
+    });
+    const draft = await personalOrder(outsider);
+    await payByCard(ctx, draft);
+    await ctx.prisma.order.update({ where: { id: draft.id }, data: { status: OrderStatus.draft } });
+    await personalOrder(outsider); // carte jamais encaissée
+    const fromSubscription = await personalOrder(outsider);
+    await payByCard(ctx, fromSubscription);
+    await ctx.prisma.order.update({
+      where: { id: fromSubscription.id },
+      data: { fromSubscriptionId: "sub-audiences" },
+    });
 
     const view = await read("?days=7&dimension=clientele");
 
@@ -156,11 +245,13 @@ describe("les audiences de la clientèle (A1)", () => {
         label: "Particuliers",
         clients: 5,
         orders: 5,
-        revenueHtCents: 5 * LINE_HT,
-        revenueTtcCents: 5 * ORDER_TTC,
-        averageBasketHtCents: LINE_HT,
-        averageBasketTtcCents: ORDER_TTC,
-        topFamilies: [{ familyId: "fam-pains", name: "Pains", revenueHtCents: 5 * LINE_HT }],
+        revenueHtCents: 5 * one.subtotalCents,
+        revenueTtcCents: 5 * one.totalCents,
+        averageBasketHtCents: one.subtotalCents,
+        averageBasketTtcCents: one.totalCents,
+        topFamilies: [
+          { familyId: "fam-pains", name: "Pains", revenueHtCents: 5 * one.subtotalCents },
+        ],
       },
     ]);
     // L'abonnement est à part, et une seule personne ne passe pas le seuil.
@@ -172,27 +263,16 @@ describe("les audiences de la clientèle (A1)", () => {
   });
 
   it("compte le client pro par SOCIÉTÉ, et masque une famille d'activité sous cinq sociétés", async () => {
-    const buyer = await person();
+    await deliveryZone();
+    const buyer = await personWithSub();
     for (let index = 0; index < 4; index += 1) {
-      const company = await createCompany(ctx.prisma, { nafCode: "56.10A" });
-      // Deux commandes par société, par la même personne : quatre clients, pas un.
-      await seedOrder({
-        userId: buyer,
-        companyId: company.id,
-        delivery: { codePostal: "73150", ville: "Val-d'Isère" },
-      });
-      await seedOrder({
-        userId: buyer,
-        companyId: company.id,
-        delivery: { codePostal: "73150", ville: "Val-d'Isère" },
-      });
+      const pro = await proCompany(buyer, "56.10A");
+      // Deux commandes par société, par la même personne : quatre clients, pas
+      // un. La première de la première société est saisie par l'équipe.
+      await proOrder(buyer.id, pro, index === 0);
+      await proOrder(buyer.id, pro);
     }
-    const fifth = await createCompany(ctx.prisma, { nafCode: "56.21Z" });
-    await seedOrder({
-      userId: buyer,
-      companyId: fifth.id,
-      delivery: { codePostal: "73150", ville: "Val-d'Isère" },
-    });
+    await proOrder(buyer.id, await proCompany(buyer, "56.21Z"));
 
     const view = await read("?days=7");
 
@@ -219,6 +299,7 @@ describe("les audiences de la clientèle (A1)", () => {
 
   it("range le moment à l'heure de Paris, et le site par l'identifiant figé du point", async () => {
     await fivePeople();
+    const siteId = await pickupSite(ctx.prisma);
 
     const view = await read("?days=7");
 
@@ -229,8 +310,8 @@ describe("les audiences de la clientèle (A1)", () => {
     expect(cellsOf(view, "pickup_site")).toEqual([
       expect.objectContaining({
         status: "shown",
-        key: "site-fournil",
-        label: "Le Fournil",
+        key: siteId,
+        label: "Labo",
         clients: 5,
       }),
     ]);

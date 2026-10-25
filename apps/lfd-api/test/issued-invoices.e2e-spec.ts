@@ -11,7 +11,8 @@
  *
  * 🔴 Aucun courriel ne part : le mailer est un double qui enregistre.
  *
- * ⚠️ Commandes, mandats, rattachements : écrits par Prisma, même dette que
+ * Les bons passent par le vrai chemin (plan T).
+ * ⚠️ Mandats, rattachements, retraits : écrits par Prisma, même dette que
  * `monthly-invoices.e2e-spec.ts`. Aucune date absolue : le mois est le
  * PRÉCÉDENT du jour du test, l'horloge FIXE est posée relativement à lui.
  */
@@ -22,6 +23,7 @@ import type { IssuedInvoiceView, IssuedInvoicesView } from "@lfd/contracts";
 import { invoiceVatBreakdown } from "@lfd/money";
 import type { SendMailArgs } from "@lfd/mailer";
 
+import { placeServedOrder, type ServedOrder } from "./served-order.js";
 import { InvoiceIssuer } from "../src/b2b/accounting/application/services/invoice-issuer.js";
 import { Invoice } from "../src/b2b/accounting/domain/entities/invoice.js";
 import { InvoiceReader } from "../src/b2b/accounting/domain/ports/invoice.reader.js";
@@ -155,35 +157,17 @@ async function member(companyId: string, role: CustomerRole, email: string): Pro
   return sub;
 }
 
-/** Un bon au compte du mois facturé, passé par `companyId`. */
-async function orderOf(companyId: string, placedBy: string): Promise<void> {
-  seq += 1;
+/**
+ * Un bon au compte du mois facturé, passé par `companyId` par le vrai chemin
+ * (`placeServedOrder`, plan T), servi deux jours avant la clôture ; le
+ * retrait est écrit à part (`handOver`).
+ */
+async function orderOf(companyId: string, placedBy: string): Promise<ServedOrder> {
   const user = await ctx.prisma.user.findUniqueOrThrow({ where: { auth0Sub: placedBy } });
-  const placedOrder = await ctx.prisma.order.create({
-    data: {
-      orderNumber: `CMD-E6-${String(seq)}`,
-      companyId,
-      placedByUserId: user.id,
-      subtotalCents: 10_000,
-      totalCents: 10_550,
-      vatCents: 550,
-      paymentStatus: "not_required",
-      createdAt: new Date(closesAt.getTime() - 2 * DAY_MS),
-      vatShares: [{ rate: 5.5, amountCents: 550 }],
-      lines: {
-        create: {
-          sku: "PAIN-E6",
-          productNameSnapshot: "Pain du mois",
-          unitPriceMillicents: 10_000_000,
-          vatRate: 5.5,
-          quantity: 1,
-          lineTotalCents: 10_000,
-        },
-      },
-    },
-    select: { id: true, orderNumber: true, createdAt: true },
-  });
-  await handOver(ctx.prisma, placedOrder);
+  const servedAt = new Date(closesAt.getTime() - 2 * DAY_MS);
+  const order = await placeServedOrder(ctx, { buyerUserId: user.id, companyId, servedAt });
+  await handOver(ctx.prisma, { ...order, createdAt: servedAt });
+  return order;
 }
 
 /**
@@ -196,7 +180,7 @@ async function payer(entityId: string, ownerEmail: string | null) {
   await addBillingAddress(ctx.prisma, company.id);
   await ctx.prisma.company.update({
     where: { id: company.id },
-    data: { vatNumber: "FR40303265045" },
+    data: { vatNumber: "FR40303265045", grantedTerms: ["monthly"] },
   });
   await staff().put(`/admin/companies/${company.id}/bank-account`).send(RIB).expect(204);
   await ctx.prisma.paymentMandate.create({
@@ -321,7 +305,7 @@ describe("« Mes factures » — le mur client (E6)", () => {
     const compta = await member(port.company.id, CustomerRole.billing, "compta@port.test");
     const commis = await member(port.company.id, CustomerRole.orders, "commis@port.test");
     const other = await payer(id, "patron@autre.test");
-    await orderOf(port.company.id, port.owner);
+    const ported = await orderOf(port.company.id, port.owner);
     await orderOf(other.company.id, other.owner);
     await issue(id);
     const theirs = await ctx.prisma.invoice.findFirstOrThrow({
@@ -347,8 +331,8 @@ describe("« Mes factures » — le mur client (E6)", () => {
         .get(`${base}/${mine?.invoiceId ?? ""}`)
         .expect(200),
     );
-    expect(detail.totalTtcCents).toBe(10_550);
-    expect(detail.lines.map((line) => line.sku)).toEqual(["PAIN-E6"]);
+    expect(detail.totalTtcCents).toBe(ported.totalCents);
+    expect(detail.lines.map((line) => line.sku)).toEqual(["VIE-001"]);
     expect(JSON.stringify(detail)).not.toContain("FR1420041010050500013M02606");
 
     await ctx.asSub(commis).get(base).expect(403);

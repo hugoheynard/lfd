@@ -24,7 +24,7 @@ const GESTURE: ResupplyLaunchGesture = { at: MORNING, staffUserId: "s_max", name
 function order(orderId = "ord_1", quantity = 40): ProducibleOrder {
   return {
     orderId,
-    reference: "CMD-0001",
+    reference: "ORD-0001",
     customerLabel: "Hôtel des Trois Ponts",
     fulfillmentMethod: "pickup",
     destination: "Le Labo",

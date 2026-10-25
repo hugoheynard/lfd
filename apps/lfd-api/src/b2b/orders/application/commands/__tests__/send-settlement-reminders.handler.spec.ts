@@ -79,7 +79,7 @@ class DedupingNotifier extends StaffNotifier {
 
 const order = (over: Partial<UnpaidLinkOrder> = {}): UnpaidLinkOrder => ({
   orderId: "order_1",
-  orderNumber: "CMD-1",
+  orderNumber: "ORD-1",
   companyName: "Hôtel des Trois Ponts",
   serviceDay: DAY,
   placedAt: at(EVE, "09:00"),
@@ -113,7 +113,7 @@ describe("SendSettlementRemindersHandler (Q6)", () => {
         kind: "order.settlement_overdue",
         subject: "Lien de paiement non réglé — Hôtel des Trois Ponts",
         body:
-          "Commande CMD-1 pas réglée à l'heure limite : relancer le client avant la fournée, " +
+          "Commande ORD-1 pas réglée à l'heure limite : relancer le client avant la fournée, " +
           "sinon elle sera annulée à la clôture.",
         link: "/commandes/order_1",
         idempotencyKey: "notification:order.settlement_overdue:order_1",
@@ -146,7 +146,7 @@ describe("SendSettlementRemindersHandler (Q6)", () => {
   });
 
   it("trie par journée : seule celle dont la limite est passée sonne", async () => {
-    const late = order({ orderId: "order_late", orderNumber: "CMD-LATE" });
+    const late = order({ orderId: "order_late", orderNumber: "ORD-LATE" });
     const later = order({ orderId: "order_later", serviceDay: "2030-03-20" });
     const { handler, notifier } = passAt(at(EVE, "19:00"), [late, later]);
 
@@ -166,7 +166,7 @@ describe("SendSettlementRemindersHandler (Q6)", () => {
     const { handler, notifier } = passAt(at(EVE, "19:00"), [order({ companyName: null })]);
     await handler.execute();
 
-    expect(notifier.rung[0]?.subject).toBe("Lien de paiement non réglé — CMD-1");
+    expect(notifier.rung[0]?.subject).toBe("Lien de paiement non réglé — ORD-1");
   });
 
   it("sans candidate, ne lit même pas les règles", async () => {

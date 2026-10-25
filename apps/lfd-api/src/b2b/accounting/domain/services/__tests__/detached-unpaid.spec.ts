@@ -8,7 +8,7 @@ const AUGUST = new Date("2026-08-15T08:00:00.000Z");
 function row(over: Partial<DetachedUnpaidRow> = {}): DetachedUnpaidRow {
   return {
     orderId: "o1",
-    orderNumber: "CMD-1",
+    orderNumber: "ORD-1",
     placedAt: AUGUST,
     totalCents: 1_000,
     site: { id: "chalet", name: "Chalet Edelweiss" },

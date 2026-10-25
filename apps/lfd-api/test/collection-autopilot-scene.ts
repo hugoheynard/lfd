@@ -13,8 +13,8 @@
  *
  * 🔴 Aucun courriel ne part : le mailer est un double qui enregistre.
  *
- * ⚠️ Commandes, mandats et contacts écrits par Prisma : même dette que
- * `collection-batch-scene.ts`. Aucune date absolue : la clôture est le
+ * Les bons passent par le vrai chemin (plan T). ⚠️ Mandats et contacts écrits
+ * par Prisma : même dette que `collection-batch-scene.ts`. Aucune date absolue : la clôture est le
  * dernier 1er du mois atteint, calculé par le domaine, et l'horloge FIXE est
  * posée relativement à elle.
  */
@@ -27,7 +27,8 @@ import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
 import { Clock } from "../src/platform/time/clock.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { attachTo, createCompany, createUser, receivedColumns } from "./factories.js";
+import { attachTo, createCompany, createUser, markDelivered } from "./factories.js";
+import { placeServedOrder } from "./served-order.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 
 export const HOUR_MS = 60 * 60 * 1000;
@@ -124,30 +125,24 @@ export async function payerWithOrder(entityId: string): Promise<void> {
     email: "patron@port.test",
   });
   await attachTo(ctx.prisma, owner.id, company.id, CustomerRole.owner);
-  await ctx.prisma.order.create({
-    data: {
-      orderNumber: `CMD-AUTO-${String(seq)}`,
-      companyId: company.id,
-      placedByUserId: owner.id,
-      subtotalCents: 10_000,
-      totalCents: 10_550,
-      vatCents: 550,
-      paymentStatus: "not_required",
-      createdAt: new Date(closesAt.getTime() - 2 * DAY_MS),
-      ...receivedColumns(new Date(closesAt.getTime() - 2 * DAY_MS)),
-      vatShares: [{ rate: 5.5, amountCents: 550 }],
-      lines: {
-        create: {
-          sku: "PAIN-AUTO",
-          productNameSnapshot: "Pain de l'automatisme",
-          unitPriceMillicents: 10_000_000,
-          vatRate: 5.5,
-          quantity: 1,
-          lineTotalCents: 10_000,
-        },
-      },
-    },
+  await placeServedBeforeClosure(owner.id, company.id);
+}
+
+/**
+ * Un bon au compte passé par le vrai chemin (`placeServedOrder`, plan T),
+ * servi deux jours avant la clôture et livré ce jour-là.
+ */
+async function placeServedBeforeClosure(buyerUserId: string, companyId: string): Promise<void> {
+  await ctx.prisma.company.update({
+    where: { id: companyId },
+    data: { grantedTerms: ["monthly"] },
   });
+  const servedAt = new Date(closesAt.getTime() - 2 * DAY_MS);
+  const order = await placeServedOrder(ctx, { buyerUserId, companyId, servedAt });
+  await markDelivered(ctx.prisma, order.id, servedAt);
+  // La confirmation de commande est partie au détenteur : les suites ne
+  // comptent que les avis de prélèvement.
+  sentMails.splice(0);
 }
 
 /** Un passage du cron, jeton présenté ; attend la livraison des avis. */

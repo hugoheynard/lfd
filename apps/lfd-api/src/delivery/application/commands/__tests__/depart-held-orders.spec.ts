@@ -84,7 +84,7 @@ describe("DepartDeliveryRoundHandler — une commande retenue ne part pas (BQ)",
 
     await expect(refused).rejects.toThrow(DepartureOrderHeldError);
     await expect(refused).rejects.toThrow(
-      "« Véhicule v_1 » ne peut pas partir : l'arrêt CMD-o_2 (Maison o_2) est retenu au contrôle qualité. Levez la retenue à la Supervision, ou retirez l'arrêt de la tournée, puis partez.",
+      "« Véhicule v_1 » ne peut pas partir : l'arrêt ORD-o_2 (Maison o_2) est retenu au contrôle qualité. Levez la retenue à la Supervision, ou retirez l'arrêt de la tournée, puis partez.",
     );
     expect(rounds.stored("r_1")?.departedAt).toBeNull();
     expect(departed.recorded).toEqual([]);

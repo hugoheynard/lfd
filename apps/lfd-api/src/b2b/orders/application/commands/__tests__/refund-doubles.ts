@@ -144,7 +144,7 @@ export class InMemoryRefundReader extends OrderRefundRequestReader {
     }
     return Promise.resolve({
       request,
-      orderNumber: "CMD-0001",
+      orderNumber: "ORD-0001",
       chargedCents: this.store.chargedCents,
       refunds: this.store.refunds,
     });
@@ -168,7 +168,7 @@ export class InMemoryLedgers extends OrderRefundRepository {
     return Promise.resolve(
       OrderRefundLedger.reconstitute({
         orderId: ORDER_ID,
-        orderNumber: "CMD-0001",
+        orderNumber: "ORD-0001",
         chargedCents: this.store.chargedCents,
         paymentStatus: this.store.paymentStatus,
         refunds: this.store.refunds,

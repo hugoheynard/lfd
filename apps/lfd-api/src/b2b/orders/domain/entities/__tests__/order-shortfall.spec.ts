@@ -11,7 +11,7 @@ const SECOND: readonly ShortfallQuantity[] = [{ sku: "CRO", due: 12, packed: 11 
 function none(): OrderShortfall {
   return OrderShortfall.fromSnapshot({
     orderId: "ord_1",
-    reference: "CMD-0001",
+    reference: "ORD-0001",
     reportedAt: null,
     lines: null,
     clearedAt: null,

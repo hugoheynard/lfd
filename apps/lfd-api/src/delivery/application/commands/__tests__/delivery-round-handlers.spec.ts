@@ -112,7 +112,7 @@ describe("AssignDeliveryStopHandler", () => {
     expect(rounds.stored("r_1")?.orderIds).toEqual(["o_1", "o_2"]);
     expect(rounds.stored("r_1")?.version).toBe(2);
     expect(events.traced[0]?.journalFact().payload).toMatchObject({
-      order: { id: "o_2", name: "CMD-o_2" },
+      order: { id: "o_2", name: "ORD-o_2" },
       position: 2,
     });
   });

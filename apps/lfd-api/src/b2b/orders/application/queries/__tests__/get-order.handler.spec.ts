@@ -48,7 +48,7 @@ import {
   revisingAt,
 } from "../../commands/__tests__/revision-scene.js";
 
-const VIEW: OrderView = { ...orderView(), id: "ord_1", orderNumber: "CMD-0001" };
+const VIEW: OrderView = { ...orderView(), id: "ord_1", orderNumber: "ORD-0001" };
 
 /** Lecteur doublé : rend la commande demandée (ou rien), et compte ses appels. */
 function reader(owned: OwnedOrder | null): OrderReader {

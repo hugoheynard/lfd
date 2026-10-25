@@ -30,7 +30,7 @@ async function setup(target: typeof BAG | typeof BIN = BAG) {
   sheets.put({
     serviceDay: DAY,
     orderId: "ord_1",
-    reference: "CMD-0001",
+    reference: "ORD-0001",
     packed: null,
     containers: 0,
     lines: [{ sku: "CRO", productName: "Croissant", quantity: 20, packed: null }],

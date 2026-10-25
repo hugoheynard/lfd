@@ -38,7 +38,7 @@ describe("ReconcileRefundsHandler", () => {
         subjectType: "order",
         subjectId: "o_1",
         payload: {
-          subjectLabel: "CMD-001",
+          subjectLabel: "ORD-001",
           amountCents: 300,
           invoice: { id: monthly.id, name: monthly.number },
           reason: "account_invoice",
@@ -46,7 +46,7 @@ describe("ReconcileRefundsHandler", () => {
       },
     ]);
     expect(w.events.published).toEqual([
-      new RefundNotCreditedEvent("o_1", "CMD-001", "r_1", 300, monthly.number, "account_invoice"),
+      new RefundNotCreditedEvent("o_1", "ORD-001", "r_1", 300, monthly.number, "account_invoice"),
     ]);
     expect(w.refunds.rows[0]?.creditNoteId).toBeNull();
   });

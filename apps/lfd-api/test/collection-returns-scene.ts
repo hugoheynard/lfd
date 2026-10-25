@@ -3,12 +3,14 @@
  * une entité émettrice complète, un payeur au compte sous mandat B2B actif
  * avec un bon du mois, et des fiches staff aux droits choisis.
  *
- * ⚠️ Mandat, bon et dérogation de droits écrits par Prisma : même dette que
- * `monthly-invoices.e2e-spec.ts`, faute de chemin public pour les poser.
+ * Le bon passe par le vrai chemin (plan T). ⚠️ Mandat, retrait et dérogation
+ * de droits écrits par Prisma : même dette que `monthly-invoices.e2e-spec.ts`,
+ * faute de chemin public pour les poser.
  */
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { addBillingAddress, attachTo, createCompany, createUser, handOver } from "./factories.js";
+import { placeServedOrder } from "./served-order.js";
 import { invoicingMomentOf } from "../src/b2b/accounting/domain/services/invoicing-closures.js";
 import { StatementMonth } from "../src/b2b/accounting/domain/value-objects/statement-month.js";
 import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
@@ -101,32 +103,28 @@ export async function invoicedPayer(
   });
   const owner = await createUser(ctx.prisma, { auth0Sub: "r5-owner", email: "patron@port.test" });
   await attachTo(ctx.prisma, owner.id, company.id, CustomerRole.owner);
-  const placedOrder = await ctx.prisma.order.create({
-    data: {
-      orderNumber: "CMD-R5-1",
-      companyId: company.id,
-      placedByUserId: owner.id,
-      subtotalCents: 10_000,
-      totalCents: 10_550,
-      vatCents: 550,
-      paymentStatus: "not_required",
-      createdAt: new Date(closesAt.getTime() - 2 * DAY_MS),
-      vatShares: [{ rate: 5.5, amountCents: 550 }],
-      lines: {
-        create: {
-          sku: "PAIN-R5",
-          productNameSnapshot: "Pain du mois",
-          unitPriceMillicents: 10_000_000,
-          vatRate: 5.5,
-          quantity: 1,
-          lineTotalCents: 10_000,
-        },
-      },
-    },
-    select: { id: true, orderNumber: true, createdAt: true },
+  await ctx.prisma.company.update({
+    where: { id: company.id },
+    data: { grantedTerms: ["monthly"] },
   });
-  await handOver(ctx.prisma, placedOrder);
+  await placeServedBeforeClosure(ctx, owner.id, company.id, closesAt);
   return company.id;
+}
+
+/**
+ * Le bon du mois, au compte, par le vrai chemin (`placeServedOrder`, plan T),
+ * servi deux jours avant la clôture ; le retrait est écrit à part (`handOver`
+ * des factories) : aucune route ne remet une commande dans le passé.
+ */
+async function placeServedBeforeClosure(
+  ctx: E2eContext,
+  buyerUserId: string,
+  companyId: string,
+  closesAt: Date,
+): Promise<void> {
+  const servedAt = new Date(closesAt.getTime() - 2 * DAY_MS);
+  const order = await placeServedOrder(ctx, { buyerUserId, companyId, servedAt });
+  await handOver(ctx.prisma, { ...order, createdAt: servedAt });
 }
 
 /** Une fiche staff active ; `action` : la dérogation sur `b2b_accounting`, ou aucune. */

@@ -28,7 +28,7 @@ const CHANGE_REASON = reason({
 });
 const LATE: ChangeableOrder = {
   id: "o1",
-  number: "CMD-0001",
+  number: "ORD-0001",
   companyId: null,
   revision: 1,
   standing: "too_late",
@@ -83,7 +83,7 @@ describe("RequestOrderChangeHandler", () => {
     const saved = requests.saved[0];
     expect(saved?.kind).toBe("order_change");
     expect(saved?.pendingOrderChange()).toEqual({
-      order: { id: "o1", number: "CMD-0001" },
+      order: { id: "o1", number: "ORD-0001" },
       baseRevision: 1,
       change: CHANGE,
     });

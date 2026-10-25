@@ -58,7 +58,7 @@ class FixedHolderReader extends HolderLoyaltyReader {
 
 class FixedOrderNumbers extends OrderNumberReader {
   numbersOf(orderIds: readonly string[]): Promise<ReadonlyMap<string, string>> {
-    return Promise.resolve(new Map(orderIds.map((id) => [id, `CMD-${id}`])));
+    return Promise.resolve(new Map(orderIds.map((id) => [id, `ORD-${id}`])));
   }
 }
 
@@ -77,7 +77,7 @@ function setup(reader: FixedHolderReader, settings: LoyaltySettingsInput | null 
   return new GetMyLoyaltyHandler(
     new FixedLoyaltySettings(settings),
     reader,
-    new FixedVoucherOrders([voucherOrder({ voucherId: "v2", orderNumber: "CMD-42" })]),
+    new FixedVoucherOrders([voucherOrder({ voucherId: "v2", orderNumber: "ORD-42" })]),
     new FixedOrderNumbers(),
     new FixedClock(NOW),
   );
@@ -148,7 +148,7 @@ describe("GetMyLoyaltyHandler — la fidélité d'un particulier", () => {
       ["v4", "cancelled"],
       ["v3", "expired"],
     ]);
-    expect(view.vouchers[1]?.usedOn).toEqual({ orderId: "o1", orderNumber: "CMD-42" });
+    expect(view.vouchers[1]?.usedOn).toEqual({ orderId: "o1", orderNumber: "ORD-42" });
     expect(view.vouchers[0]?.usedOn).toBeNull();
   });
 
@@ -174,7 +174,7 @@ describe("GetMyLoyaltyHandler — la fidélité d'un particulier", () => {
         kind: "earned",
         points: 800,
         occurredAt: BEFORE.toISOString(),
-        orderNumber: "CMD-o9",
+        orderNumber: "ORD-o9",
       },
     ]);
   });

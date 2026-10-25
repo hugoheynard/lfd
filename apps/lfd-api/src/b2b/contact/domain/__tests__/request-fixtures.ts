@@ -60,7 +60,7 @@ export const RECEPTION: RequestReception = {
   at: AT,
 };
 
-export const ORDER = { id: "o1", number: "CMD-0001" };
+export const ORDER = { id: "o1", number: "ORD-0001" };
 
 export function orderProblem(overrides: Partial<RequestReception> = {}): CustomerRequest {
   return CustomerRequest.orderProblem({ ...RECEPTION, ...overrides, order: ORDER });

@@ -62,7 +62,7 @@ export async function asDriverRefusal(
   return error;
 }
 
-/** « CMD-1 Refuge 1950 » — la référence que le dépôt lit, et le client que le livreur connaît. */
+/** « ORD-1 Refuge 1950 » — la référence que le dépôt lit, et le client que le livreur connaît. */
 async function customersOf(
   orders: DeliveryOrdersReader,
   orderIds: readonly string[],
@@ -77,7 +77,7 @@ async function customersOf(
 }
 
 /**
- * Commande → « Client (CMD-1) », pour nommer les arrêts d'un refus du livreur
+ * Commande → « Client (ORD-1) », pour nommer les arrêts d'un refus du livreur
  * (« Tournée terminée », `a-la-porte.md` § 10 B4). Rien à lire quand il
  * n'y a aucune commande.
  */

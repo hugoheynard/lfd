@@ -97,7 +97,7 @@ describe("LoadDeliveryBinHandler — L4-C2, L4-C18", () => {
       subjectId: "b_1",
       payload: {
         subjectLabel: "AAAAAA",
-        order: { id: "o_1", name: "CMD-o_1" },
+        order: { id: "o_1", name: "ORD-o_1" },
         round: { id: "r_1", name: "Kangoo blanc" },
         day: DAY,
         passage: 1,
@@ -225,7 +225,7 @@ describe("DepartDeliveryRoundHandler — L4-C4, Q14", () => {
 
     await expect(
       handler.execute(new DepartDeliveryRoundCommand("r_1", { version: 1 })),
-    ).rejects.toThrow(/sans bac déclaré : CMD-o_1/u);
+    ).rejects.toThrow(/sans bac déclaré : ORD-o_1/u);
   });
 
   it("chargé : pose le départ, fige la feuille de chaque arrêt, et trace", async () => {
@@ -252,13 +252,13 @@ describe("DepartDeliveryRoundHandler — L4-C4, Q14", () => {
         departedAt: NOW,
         sheet: {
           orderId: "o_1",
-          reference: "CMD-o_1",
+          reference: "ORD-o_1",
           customerLabel: "Maison o_1",
           address: null,
           contact: null,
           window: null,
           signatureRequired: false,
-          note: "note CMD-o_1",
+          note: "note ORD-o_1",
           addressNote: null,
           // Figé avec la feuille (plan « À la porte », AP-D5).
           depositAllowed: false,
@@ -303,7 +303,7 @@ describe("DepartDeliveryRoundHandler — L4-C4, Q14", () => {
     await expect(
       handler.execute(new DepartDeliveryRoundCommand("r_1", { version: 1 })),
     ).rejects.toThrow(
-      "« Véhicule v_1 » ne peut pas partir — le bac partagé HHHHHH (CMD-o_1) n'est plus entre deux arrêts consécutifs : recolisez-le ou remettez les arrêts côte à côte.",
+      "« Véhicule v_1 » ne peut pas partir — le bac partagé HHHHHH (ORD-o_1) n'est plus entre deux arrêts consécutifs : recolisez-le ou remettez les arrêts côte à côte.",
     );
     expect(rounds.stored("r_1")?.departedAt).toBeNull();
     expect(departed.recorded).toEqual([]);
@@ -341,7 +341,7 @@ describe("DepartDeliveryRoundHandler — L4-C4, Q14", () => {
 
     await expect(
       handler.execute(new DepartDeliveryRoundCommand("r_1", { version: 1 })),
-    ).rejects.toThrow(/CMD-o_1 a été annulée\. Retirez l'arrêt/u);
+    ).rejects.toThrow(/ORD-o_1 a été annulée\. Retirez l'arrêt/u);
     expect(departed.recorded).toEqual([]);
   });
 });

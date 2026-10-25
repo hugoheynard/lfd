@@ -28,7 +28,7 @@ function round(id: string, vehicleId: string, orderIds: readonly string[]): Roun
 function located(orderId: string, situated: boolean): LocatedStop {
   return {
     orderId,
-    reference: `CMD-${orderId}`,
+    reference: `ORD-${orderId}`,
     point: situated ? { lat: 45.6, lng: 6.8 } : null,
     unlocated: situated ? null : "not_geocoded",
     window: null,

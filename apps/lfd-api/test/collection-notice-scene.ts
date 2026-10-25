@@ -12,11 +12,15 @@
  *
  * 🔴 Aucun courriel ne part : le mailer est un double qui enregistre.
  *
- * ⚠️ Commandes, mandats et contacts écrits par Prisma : même dette que
- * `collection-batch-scene.ts`. Aucune date absolue : la clôture est le
+ * Les bons passent par le vrai chemin (plan T). ⚠️ Mandats et contacts écrits
+ * par Prisma : même dette que `collection-batch-scene.ts`. Aucune date absolue : la clôture est le
  * dernier 1er du mois atteint, calculé par le domaine.
  */
-import type { CollectionCycleView, ConstitutedBatchesView } from "@lfd/contracts";
+import {
+  instantToLocal,
+  type CollectionCycleView,
+  type ConstitutedBatchesView,
+} from "@lfd/contracts";
 import type { SendMailArgs } from "@lfd/mailer";
 import { cycleToConstitute } from "../src/b2b/accounting/domain/services/billing-cycle.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
@@ -24,7 +28,8 @@ import { CustomerRole } from "../src/platform/database/client/client.js";
 import type { B2bMails } from "../src/platform/mailer/mail-templates.js";
 import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { attachTo, createCompany, createUser, receivedColumns } from "./factories.js";
+import { attachTo, createCompany, createUser, markDelivered } from "./factories.js";
+import { pickupSite, placeOrder } from "./order-factory.js";
 
 export const DAY_MS = 24 * 60 * 60 * 1000;
 export const ICS = "FR72ZZZ123456";
@@ -136,36 +141,40 @@ export async function owner(companyId: string, email: string): Promise<void> {
   await attachTo(ctx.prisma, user.id, companyId, CustomerRole.owner);
 }
 
-/** Un bon de 100 € HT à 5,5 %, deux jours avant la clôture. */
-export async function orderOf(companyId: string): Promise<string> {
+/**
+ * Un bon au compte passé par le vrai chemin (`placeOrder`, plan T) par un
+ * acheteur de la société : servi deux jours avant la clôture, passé trois
+ * jours plus tôt, livré le jour de service — aucune route ne remet une
+ * commande dans le passé (plan T, 2026-10-25). Rend son total, relu.
+ */
+export async function orderOf(companyId: string): Promise<{ id: string; totalCents: number }> {
   seq += 1;
-  const user = await createUser(ctx.prisma, { auth0Sub: `avis-${String(seq)}` });
-  const order = await ctx.prisma.order.create({
-    data: {
-      orderNumber: `CMD-AVIS-${String(seq)}`,
-      companyId,
-      placedByUserId: user.id,
-      subtotalCents: 10_000,
-      totalCents: 10_550,
-      vatCents: 550,
-      paymentStatus: "not_required",
-      createdAt: new Date(closesAt.getTime() - 2 * DAY_MS),
-      ...receivedColumns(new Date(closesAt.getTime() - 2 * DAY_MS)),
-      vatShares: [{ rate: 5.5, amountCents: 550 }],
-      lines: {
-        create: {
-          sku: "PAIN-AVIS",
-          productNameSnapshot: "Pain de l'avis",
-          unitPriceMillicents: 10_000_000,
-          vatRate: 5.5,
-          quantity: 1,
-          lineTotalCents: 10_000,
-        },
-      },
-    },
-    select: { id: true },
+  const buyer = await createUser(ctx.prisma, { auth0Sub: `avis-${String(seq)}` });
+  await attachTo(ctx.prisma, buyer.id, companyId);
+  await ctx.prisma.company.update({
+    where: { id: companyId },
+    data: { grantedTerms: ["monthly"] },
   });
-  return order.id;
+  const servedAt = new Date(closesAt.getTime() - 2 * DAY_MS);
+  const mailsBefore = sentMails.length;
+  const order = await placeOrder(ctx, {
+    buyerUserId: buyer.id,
+    companyId,
+    settlement: "account",
+    placedAt: new Date(servedAt.getTime() - 3 * DAY_MS),
+    forDay: instantToLocal(servedAt).day,
+    fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
+    lines: [{ sku: "VIE-001", quantity: 50 }],
+  });
+  // Les courriels de la passation (confirmation) ne sont pas des avis : les
+  // suites ne comptent que ceux du prélèvement.
+  sentMails.splice(mailsBefore);
+  await markDelivered(ctx.prisma, order.id, servedAt);
+  const { totalCents } = await ctx.prisma.order.findUniqueOrThrow({
+    where: { id: order.id },
+    select: { totalCents: true },
+  });
+  return { id: order.id, totalCents };
 }
 
 /** Constitue, puis attend que la boîte d'envoi ait livré les avis. */

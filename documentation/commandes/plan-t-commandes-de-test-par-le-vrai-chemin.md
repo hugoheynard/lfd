@@ -28,6 +28,20 @@
 > 102 et 42 suites clientes —, factures, relevés, `audiences`), les
 > `order.update` de simulation d'état, puis le renommage et le CHECK.
 
+> 🟢 **Tranches 6 à 8 bâties le 2026-10-25, et le CHECK posé** (non commité) :
+> les 15 fichiers restants passent par la vraie passation — relevés, dossier,
+> factures, prélèvement (le demi-centime par une vraie mercuriale à 10 500
+> millicentimes), `audiences`, `delivery-rounds-scene` (adresse au carnet,
+> échéance, zone). Nouveau `test/served-order.ts` (bon servi avant une
+> clôture, horloge FIXE ramenée à l'instant de passation). Écritures brutes
+> GARDÉES et datées : `delivery-routing-scene` (commandes sans créneau ni
+> ligne, que le calcul de tournée mesure), les formes de lecture de
+> `cycle-statements` (deux taux, TVA non ventilée, total nul) et la surtaxe
+> figée d'`invoice-dossiers`. Numéros `CMD-`/`LIV-`/`TRN-` et `LFC-` de
+> commande renommés `ORD-…` (tests unitaires, semis `seed-fiche`,
+> `seed-growth`) ; seuls les tests qui éprouvent un numéro atypique le
+> gardent. Migration `20261025120000_le_numero_de_commande_a_son_format`.
+
 > **Doc-first, 2026-10-24.** Hors de la chaîne E1–E9 de
 > [`plan-commande-bon-de-livraison-facture.md`](plan-commande-bon-de-livraison-facture.md),
 > mais placé avant E6 (premier BL partiel, l'argent) : on ne bâtit pas sur

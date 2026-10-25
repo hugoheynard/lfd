@@ -33,7 +33,7 @@ function scene(
   const desk = new StopDecisionDesk(
     decisions,
     rounds,
-    new FixedDeliveryOrders([deliveryOn("o_1", DAY, { reference: "CMD-1" })]),
+    new FixedDeliveryOrders([deliveryOn("o_1", DAY, { reference: "ORD-1" })]),
     new FixedStaffAuthorDirectory(
       new Map(authorsKnownAs({ staffUserId: LEA, firstName: "Léa", lastName: "Martin" }, LEA)),
     ),
@@ -80,7 +80,7 @@ describe("AuthorizeStopDepositHandler — « Autoriser le dépôt cette fois » 
       subjectLabel: "Kangoo",
       day: DAY,
       passage: 1,
-      order: { id: "o_1", name: "CMD-1" },
+      order: { id: "o_1", name: "ORD-1" },
       source: "staff",
     });
   });

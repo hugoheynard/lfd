@@ -70,27 +70,6 @@ beforeEach(async () => {
   forgetCustomer();
 });
 
-/**
- * Pose des lignes sur une commande semée. Écrit en Prisma, comme la commande
- * elle-même (`seedDelivery`) : le commerce n'a pas d'agrégat de ligne à qui le
- * demander hors d'une passation complète — dette de `test/factories.ts`.
- */
-async function withLines(
-  orderId: string,
-  lines: readonly { readonly sku: string; readonly quantity: number }[],
-): Promise<void> {
-  await ctx.prisma.orderLine.createMany({
-    data: lines.map(({ sku, quantity }) => ({
-      orderId,
-      sku,
-      productNameSnapshot: `Produit ${sku}`,
-      unitPriceMillicents: 100_000,
-      quantity,
-      lineTotalCents: quantity * 100,
-    })),
-  });
-}
-
 async function setCapacity(binType: string, sku: string, units: number): Promise<void> {
   await admin(ctx)
     .put(`${LOADING}/capacities`)
@@ -122,10 +101,11 @@ async function proposalOf(orderId: string): Promise<DeliveryPackingProposalView>
 /** Une tournée de trois arrêts, dans l'ordre. */
 async function threeStops() {
   const roundId = await openRound(ctx, DAY, await addVehicle(ctx, "Kangoo"));
+  const tenCroissants = { lines: [{ sku: CROISSANT, quantity: 10 }] };
   const orders = [
-    await seedDelivery(ctx, DAY),
-    await seedDelivery(ctx, DAY),
-    await seedDelivery(ctx, DAY),
+    await seedDelivery(ctx, DAY, tenCroissants),
+    await seedDelivery(ctx, DAY, tenCroissants),
+    await seedDelivery(ctx, DAY, tenCroissants),
   ] as const;
   for (const order of orders) {
     await assign(ctx, DAY, roundId, order.id);
@@ -135,7 +115,13 @@ async function threeStops() {
 
 describe("GET …/proposal", () => {
   it("colise le froid en isotherme, le sec à part, et signale ce qui n'a pas de contenance", async () => {
-    const order = await seedDelivery(ctx, DAY);
+    const order = await seedDelivery(ctx, DAY, {
+      lines: [
+        { sku: CROISSANT, quantity: 30 },
+        { sku: TARTE, quantity: 2 },
+        { sku: "PAI-001", quantity: 5 },
+      ],
+    });
     const bacM = await binTypeId(ctx);
     const bacS = await isothermType();
     await setCapacity(bacM, CROISSANT, 24);
@@ -145,11 +131,6 @@ describe("GET …/proposal", () => {
       where: { productSku: TARTE },
       data: { requiresCold: true },
     });
-    await withLines(order.id, [
-      { sku: CROISSANT, quantity: 30 },
-      { sku: TARTE, quantity: 2 },
-      { sku: "PAI-001", quantity: 5 },
-    ]);
 
     const view = await proposalOf(order.id);
 
@@ -162,8 +143,12 @@ describe("GET …/proposal", () => {
       // 30 croissants à 24 par bac : un bac plein, et 6 (0,25) en demi-bac.
       { type: bacM, whole: 1, half: true, cold: false },
     ]);
+    const bread = await ctx.prisma.orderLine.findFirstOrThrow({
+      where: { orderId: order.id, sku: "PAI-001" },
+      select: { productNameSnapshot: true },
+    });
     expect(view.unplaced).toEqual([
-      { sku: "PAI-001", name: "Produit PAI-001", quantity: 5, reason: "no_capacity" },
+      { sku: "PAI-001", name: bread.productNameSnapshot, quantity: 5, reason: "no_capacity" },
     ]);
     expect(view.shareCandidate).toBeNull();
     // Une lecture : rien de déclaré.
@@ -180,7 +165,6 @@ describe("GET …/proposal", () => {
       half: true,
       innerBags: 0,
     });
-    await withLines(orders[1].id, [{ sku: CROISSANT, quantity: 10 }]);
 
     expect((await proposalOf(orders[1].id)).shareCandidate).toEqual({
       partnerOrderId: orders[0].id,
@@ -191,7 +175,6 @@ describe("GET …/proposal", () => {
       replacesBinIndex: 0,
     });
     // L'arrêt 3 n'est pas voisin de l'arrêt 1 : rien pour lui.
-    await withLines(orders[2].id, [{ sku: CROISSANT, quantity: 10 }]);
     expect((await proposalOf(orders[2].id)).shareCandidate).toBeNull();
 
     // Chaque arrêt porte un bac, puis la tournée part.

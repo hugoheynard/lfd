@@ -94,7 +94,7 @@ describe("MailCustomerRequest — le courriel à l'adresse du motif", () => {
     const mailer = await mailOf(problemEvent());
     expect(mailer.sent[0]?.data).toMatchObject({
       formLabel: "Signaler un problème",
-      orderNumber: "CMD-0001",
+      orderNumber: "ORD-0001",
       photoCount: 2,
       clientLabel: "compte u1",
     });

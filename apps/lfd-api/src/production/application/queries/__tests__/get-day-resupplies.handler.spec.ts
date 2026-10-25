@@ -30,7 +30,7 @@ function resupply(resupplyId: string, quantity: number): PlacedResupply {
 
 const ORDER: ProducibleOrder = {
   orderId: "ord_1",
-  reference: "CMD-1",
+  reference: "ORD-1",
   customerLabel: "Trois Ponts",
   fulfillmentMethod: "pickup",
   destination: "Le Labo",

@@ -62,7 +62,7 @@ describe("le lot figé", () => {
     const entity = await collectingEntity();
     const port = await client("Boulangerie du Port");
     await mandated(entity, port);
-    await orderOf(port);
+    const placed = await orderOf(port);
 
     const [batchId] = await constitute(entity);
     const first = await staff()
@@ -84,6 +84,6 @@ describe("le lot figé", () => {
     const csv = await staff()
       .get(`${BASE}/batches/${batchId ?? ""}/audit.csv`)
       .expect(200);
-    expect(csv.text).toContain("CMD-LOT-");
+    expect(csv.text).toContain(placed.orderNumber);
   });
 });

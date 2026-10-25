@@ -64,7 +64,7 @@ function doorstep(overrides: Partial<DoorstepStopState> = {}): DoorstepStopState
     round: KEY,
     departedAt: DEPARTED,
     returnedAt: null,
-    reference: "CMD-1",
+    reference: "ORD-1",
     closedAt: null,
     arrivedAt: null,
     signatureRequired: false,
@@ -101,7 +101,7 @@ describe("DeclareStopArrivalHandler — « Je suis arrivé » (AP-D6)", () => {
         subjectLabel: "Kangoo",
         day: DAY,
         passage: 1,
-        order: { id: "o_1", name: "CMD-1" },
+        order: { id: "o_1", name: "ORD-1" },
       },
     });
   });
@@ -188,7 +188,7 @@ describe("CloseStopWithoutHandoverHandler — « déjà retirée / annulée » (
       subjectLabel: "Kangoo",
       day: DAY,
       passage: 1,
-      order: { id: "o_1", name: "CMD-o_1" },
+      order: { id: "o_1", name: "ORD-o_1" },
       cause: "handed_over",
     });
   });
@@ -532,7 +532,7 @@ describe("« Tournée terminée » — ReturnMyRoundHandler et ReturnDeliveryRou
       RoundStopsWithoutOutcomeError,
     );
     await expect(mine.execute(new ReturnMyRoundCommand(PAUL, "r_1"))).rejects.toThrow(
-      /Refuge 1950 \(CMD-o_1\)/u,
+      /Refuge 1950 \(ORD-o_1\)/u,
     );
     expect(rounds.saved).toEqual([]);
     expect(events.traced).toEqual([]);

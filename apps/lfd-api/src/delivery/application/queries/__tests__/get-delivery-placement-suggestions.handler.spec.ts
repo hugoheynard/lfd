@@ -31,7 +31,7 @@ const LABO = { lat: 45.5646, lng: 5.9178 };
 function at(orderId: string, lat: number, lng: number): DeliveryStopPoint {
   return {
     orderId,
-    reference: `CMD-${orderId}`,
+    reference: `ORD-${orderId}`,
     gps: { lat, lng },
     address: null,
     window: null,
@@ -106,7 +106,7 @@ describe("GetDeliveryPlacementSuggestionsHandler — la place suggérée (CA7)",
     expect(view.suggestions).toEqual([
       expect.objectContaining({
         orderId: "o1",
-        reference: "CMD-o1",
+        reference: "ORD-o1",
         status: "suggested",
         roundId: "r_loaded",
         roundVersion: 1,
@@ -115,7 +115,7 @@ describe("GetDeliveryPlacementSuggestionsHandler — la place suggérée (CA7)",
         passage: 1,
         stopCount: 1,
       }),
-      { orderId: "o5", reference: "CMD-o5", status: "none", reason: "unlocated" },
+      { orderId: "o5", reference: "ORD-o5", status: "none", reason: "unlocated" },
     ]);
   });
 

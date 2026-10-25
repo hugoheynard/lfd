@@ -40,7 +40,7 @@ const RETURN_REQUESTED = "production.return_requested";
 
 const ORDER: ProducibleOrder = {
   orderId: "ord_1",
-  reference: "CMD-0001",
+  reference: "ORD-0001",
   customerLabel: "Trois Ponts",
   fulfillmentMethod: "pickup",
   destination: "Le Labo",

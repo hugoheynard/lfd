@@ -42,7 +42,7 @@ describe("les courriels de réponse à une demande de modification", () => {
         to: "jean@exemple.fr",
         template: "customer.order-change-applied",
         idempotencyKey: "order-change-applied:q1",
-        data: { reference: "CMD-0001", totalCents: 4250, previousTotalCents: 3800, locale: "fr" },
+        data: { reference: "ORD-0001", totalCents: 4250, previousTotalCents: 3800, locale: "fr" },
       },
     ]);
   });
@@ -57,7 +57,7 @@ describe("les courriels de réponse à une demande de modification", () => {
     expect(mailer.sent[0]).toMatchObject({
       to: "jean@exemple.fr",
       template: "customer.order-change-refused",
-      data: { reference: "CMD-0001", reason: "La fournée est lancée." },
+      data: { reference: "ORD-0001", reason: "La fournée est lancée." },
     });
   });
 

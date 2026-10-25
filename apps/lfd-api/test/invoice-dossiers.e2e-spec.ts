@@ -16,18 +16,33 @@
  *   canaux, sur leurs propres tables, et le bon jamais retiré est signalé ;
  *   le lieu se lit dans les snapshots figés.
  *
- * ⚠️ Commandes écrites par Prisma, même dette que `cycle-statements.e2e-spec.ts`
- * et `test/factories.ts`. Elles prennent l'instant de la base, donc tombent
- * dans le cycle en cours ; les dates demandées sont relatives à maintenant.
+ * Les commandes passent par le vrai chemin (`placeOrder`, plan T), passées
+ * trois jours avant leur jour demandé, relatif à maintenant ; lignes et
+ * montants sont relus sur la commande passée. Seul le bon à surtaxe figée
+ * reste écrit par Prisma (justifié sur `seedLateFeeOrder`).
  * Les faits de retrait et de tournée sont écrits par Prisma aussi : les
  * scènes du livreur sèment leurs propres commandes, hors du périmètre du
  * dossier (comptes au paiement par carte) — même dette.
  */
-import { instantToLocal, type CycleStatementView, type InvoiceDossierView } from "@lfd/contracts";
+import {
+  addDays,
+  instantToLocal,
+  type CycleStatementView,
+  type InvoiceDossierView,
+} from "@lfd/contracts";
 
+import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import { CustomerRole } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { createCompany, createUser } from "./factories.js";
+import { attachTo, createCompany, createUser, markDelivered } from "./factories.js";
+import {
+  cardGatewayDouble,
+  payByCard,
+  pickupSite,
+  placeOrder,
+  type PlacedTestOrder,
+} from "./order-factory.js";
 
 const stubAdminVerifier = {
   verify: (subject: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -38,7 +53,10 @@ let ctx: E2eContext;
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
-    overrides: [{ token: AdminTokenVerifier, value: stubAdminVerifier }],
+    overrides: [
+      { token: AdminTokenVerifier, value: stubAdminVerifier },
+      { token: PaymentGateway, value: cardGatewayDouble("pi_dossier") },
+    ],
   });
 });
 
@@ -62,73 +80,105 @@ const OTHER_MONTH_DAY = instantToLocal(new Date(daysAgo(-40))).day;
 
 let seq = 0;
 
-interface OrderSeed {
+interface Client {
   readonly companyId: string;
   readonly userId: string;
-  /** Une baguette à 1,00 € HT par unité, 5,5 %. */
+}
+
+interface OrderSeed {
   readonly quantity: number;
-  readonly requestedDay?: string | null;
-  readonly lateFee?: { readonly cents: number; readonly vatRatePercent: number | null };
-  readonly status?: "placed" | "cancelled";
-  readonly paymentStatus?: "not_required" | "paid";
-  readonly fulfillmentMethod?: "pickup" | "delivery";
+  /** Le jour demandé ; aujourd'hui par défaut. */
+  readonly requestedDay?: string;
+  readonly settlement?: "account" | "card";
   /** Le jour de livraison (lot ZL) : aujourd'hui par défaut ; `null`, jamais remis. */
   readonly receivedOn?: string | null;
 }
 
-const PICKUP_SNAPSHOT = {
-  label: "Labo du Port",
-  ligne1: "1 quai du Four",
-  ligne2: "",
-  codePostal: "13002",
-  ville: "Marseille",
-  pays: "FR",
-};
+/** Trois jours avant le jour demandé : l'heure limite est loin. */
+const LEAD_DAYS = 3;
 
-/** Un bon cohérent : 100 c par baguette, TVA 5,5 % arrondie sur le bon. */
-async function seedOrder(seed: OrderSeed): Promise<string> {
-  seq += 1;
-  const orderNumber = `CMD-DOS-${String(seq)}`;
-  const goods = seed.quantity * 100;
-  const lateFee = seed.lateFee?.cents ?? 0;
-  const lateRate = seed.lateFee?.vatRatePercent ?? null;
-  const lateVat = lateRate === null ? 0 : Math.round((lateFee * lateRate) / 100);
-  const goodsVat = Math.round(goods * 0.055);
-  const day = seed.requestedDay === undefined ? TODAY : seed.requestedDay;
+/**
+ * Un bon passé par le vrai chemin (`placeOrder`, plan T) : des croissants
+ * retirés au point semé, au compte par défaut, passés trois jours avant le
+ * jour demandé (maintenant s'il est à venir). Livré ce jour-là à 10 h UTC — aucune route ne remet une
+ * commande dans le passé, le retrait est posé (plan T, 2026-10-25).
+ */
+async function seedOrder(buyer: Client, seed: OrderSeed): Promise<PlacedTestOrder> {
+  const day = seed.requestedDay ?? TODAY;
+  const order = await placeOrder(ctx, {
+    buyerUserId: buyer.userId,
+    companyId: buyer.companyId,
+    settlement: seed.settlement ?? "account",
+    // Un jour à venir se commande maintenant : on ne passe pas dans le futur.
+    ...(day > TODAY ? {} : { placedAt: new Date(`${addDays(day, -LEAD_DAYS)}T08:00:00.000Z`) }),
+    forDay: day,
+    fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
+    lines: [{ sku: "VIE-001", quantity: seed.quantity }],
+  });
+  if (seed.settlement === "card") {
+    await payByCard(ctx, order);
+  }
   const delivered = seed.receivedOn === undefined ? TODAY : seed.receivedOn;
+  if (delivered !== null) {
+    await markDelivered(ctx.prisma, order.id, new Date(`${delivered}T10:00:00.000Z`));
+  }
+  return order;
+}
+
+/** La ligne que la passation a figée, relue — jamais recopiée. */
+async function lineOf(order: PlacedTestOrder) {
+  return ctx.prisma.orderLine.findFirstOrThrow({
+    where: { orderId: order.id },
+    select: {
+      sku: true,
+      productNameSnapshot: true,
+      unitPriceMillicents: true,
+      lineTotalCents: true,
+    },
+  });
+}
+
+/**
+ * ⚠️ **Écriture brute gardée (plan T, 2026-10-25)** : un bon portant une
+ * surtaxe de retard dans la forme figée du JSON — avec son taux, ou SANS (la
+ * forme d'avant que le taux y soit figé, que la passation n'écrit plus).
+ * C'est la LECTURE de ce JSON réel qui est éprouvée.
+ */
+async function seedLateFeeOrder(
+  buyer: Client,
+  quantity: number,
+  lateFee: { readonly cents: number; readonly vatRatePercent: number | null },
+): Promise<string> {
+  seq += 1;
+  const orderNumber = `ORD-${String(900_000 + seq)}`;
+  const goods = quantity * 100;
+  const lateVat =
+    lateFee.vatRatePercent === null
+      ? 0
+      : Math.round((lateFee.cents * lateFee.vatRatePercent) / 100);
+  const goodsVat = Math.round(goods * 0.055);
   await ctx.prisma.order.create({
     data: {
       orderNumber,
-      companyId: seed.companyId,
-      placedByUserId: seed.userId,
+      companyId: buyer.companyId,
+      placedByUserId: buyer.userId,
       subtotalCents: goods,
-      lateFeeCents: lateFee,
-      ...(seed.lateFee === undefined
-        ? {}
-        : {
-            lateFeeAdjustment:
-              seed.lateFee.vatRatePercent === null
-                ? { adjustment: { mode: "amount", cents: lateFee } }
-                : {
-                    adjustment: { mode: "amount", cents: lateFee },
-                    vatRatePercent: seed.lateFee.vatRatePercent,
-                  },
-          }),
+      lateFeeCents: lateFee.cents,
+      lateFeeAdjustment:
+        lateFee.vatRatePercent === null
+          ? { adjustment: { mode: "amount", cents: lateFee.cents } }
+          : {
+              adjustment: { mode: "amount", cents: lateFee.cents },
+              vatRatePercent: lateFee.vatRatePercent,
+            },
       vatCents: goodsVat + lateVat,
       vatShares: [{ rate: 5.5, amountCents: goodsVat + lateVat }],
-      totalCents: goods + lateFee + goodsVat + lateVat,
-      status: seed.status ?? "placed",
-      ...(seed.fulfillmentMethod === "pickup"
-        ? { fulfillmentMethod: "pickup", pickupAddress: PICKUP_SNAPSHOT }
-        : {}),
-      paymentStatus: seed.paymentStatus ?? "not_required",
-      ...(day === null ? {} : { requestedDeliveryDate: new Date(`${day}T00:00:00.000Z`) }),
-      ...(delivered === null
-        ? {}
-        : {
-            handedOverAt: new Date(`${delivered}T10:00:00.000Z`),
-            receivedOn: new Date(`${delivered}T00:00:00.000Z`),
-          }),
+      totalCents: goods + lateFee.cents + goodsVat + lateVat,
+      status: "placed",
+      paymentStatus: "not_required",
+      requestedDeliveryDate: new Date(`${TODAY}T00:00:00.000Z`),
+      handedOverAt: new Date(`${TODAY}T10:00:00.000Z`),
+      receivedOn: new Date(`${TODAY}T00:00:00.000Z`),
       lines: {
         create: [
           {
@@ -136,7 +186,7 @@ async function seedOrder(seed: OrderSeed): Promise<string> {
             productNameSnapshot: "Baguette",
             unitPriceMillicents: 100_000,
             vatRate: "5.50",
-            quantity: seed.quantity,
+            quantity,
             lineTotalCents: goods,
           },
         ],
@@ -146,10 +196,28 @@ async function seedOrder(seed: OrderSeed): Promise<string> {
   return orderNumber;
 }
 
-async function client(name: string): Promise<{ companyId: string; userId: string }> {
+/**
+ * Un bon sans jour demandé : la passation en exige un depuis longtemps, mais
+ * les bons d'avant restent en base et le dossier les signale. La commande est
+ * vraie ; seule sa date est effacée après coup (plan T, 2026-10-25).
+ */
+async function withoutDate(order: PlacedTestOrder): Promise<void> {
+  await ctx.prisma.order.update({
+    where: { id: order.id },
+    data: { requestedDeliveryDate: null },
+  });
+}
+
+/** Une société au compte mensuel, et son détenteur. */
+async function client(name: string): Promise<Client> {
   seq += 1;
   const company = await createCompany(ctx.prisma, { raisonSociale: name });
+  await ctx.prisma.company.update({
+    where: { id: company.id },
+    data: { grantedTerms: ["monthly"] },
+  });
   const user = await createUser(ctx.prisma, { auth0Sub: `dossier-${String(seq)}` });
+  await attachTo(ctx.prisma, user.id, company.id, CustomerRole.owner);
   return { companyId: company.id, userId: user.id };
 }
 
@@ -163,20 +231,28 @@ describe("le dossier de facturation d'un cycle", () => {
   it("retient le périmètre du relevé, et pour CETTE société seulement", async () => {
     const port = await client("Boulangerie du Port");
     const other = await client("Autre Société");
-    const kept = await seedOrder({ ...port, quantity: 3 });
-    await seedOrder({ ...port, quantity: 1, status: "cancelled" });
-    await seedOrder({ ...port, quantity: 1, paymentStatus: "paid" });
-    await seedOrder({ ...other, quantity: 5 });
+    const kept = await seedOrder(port, { quantity: 3 });
+    const cancelled = await seedOrder(port, { quantity: 1 });
+    // Seul le statut écarte le bon : posé après coup (plan T, 2026-10-25).
+    await ctx.prisma.order.update({ where: { id: cancelled.id }, data: { status: "cancelled" } });
+    await seedOrder(port, { quantity: 1, settlement: "card" });
+    await seedOrder(other, { quantity: 5 });
+    const line = await lineOf(kept);
 
     const view = await dossier(port.companyId);
     const statement = jsonBody<CycleStatementView>(
       await staff().get(`/admin/accounting/statements/companies/${port.companyId}`).expect(200),
     );
 
-    expect(view.orders.map((order) => order.reference)).toEqual([kept]);
+    expect(view.orders.map((order) => order.reference)).toEqual([kept.orderNumber]);
     expect(view.ordersTotalCents).toBe(statement.totals.totalCents);
     expect(view.invoice.lines).toEqual([
-      expect.objectContaining({ sku: "BAG-001", vatRate: 5.5, quantity: 3, amountCents: 300 }),
+      expect.objectContaining({
+        sku: line.sku,
+        vatRate: 5.5,
+        quantity: 3,
+        amountCents: line.lineTotalCents,
+      }),
     ]);
     expect(view.orders[0]?.requestedDeliveryDate).toBe(TODAY);
     expect(view.differenceCents).toBe(view.gaps.totalCents);
@@ -185,9 +261,13 @@ describe("le dossier de facturation d'un cycle", () => {
 
   it("signale un bon livré hors de la période et un bon sans date, sans les retirer", async () => {
     const port = await client("Boulangerie du Port");
-    await seedOrder({ ...port, quantity: 1 });
-    const later = await seedOrder({ ...port, quantity: 1, requestedDay: OTHER_MONTH_DAY });
-    const undated = await seedOrder({ ...port, quantity: 1, requestedDay: null });
+    await seedOrder(port, { quantity: 1 });
+    const later = (
+      await seedOrder(port, { quantity: 1, requestedDay: OTHER_MONTH_DAY, receivedOn: TODAY })
+    ).orderNumber;
+    const undatedOrder = await seedOrder(port, { quantity: 1 });
+    await withoutDate(undatedOrder);
+    const undated = undatedOrder.orderNumber;
 
     const view = await dossier(port.companyId);
 
@@ -200,14 +280,10 @@ describe("le dossier de facturation d'un cycle", () => {
 
   it("lit le taux de la surtaxe dans le JSON figé, et refuse (409) un bon qui ne l'a pas", async () => {
     const port = await client("Boulangerie du Port");
-    await seedOrder({ ...port, quantity: 2, lateFee: { cents: 150, vatRatePercent: 5.5 } });
+    await seedLateFeeOrder(port, 2, { cents: 150, vatRatePercent: 5.5 });
     expect((await dossier(port.companyId)).invoice.lateFeeCents).toBe(150);
 
-    const broken = await seedOrder({
-      ...port,
-      quantity: 1,
-      lateFee: { cents: 100, vatRatePercent: null },
-    });
+    const broken = await seedLateFeeOrder(port, 1, { cents: 100, vatRatePercent: null });
     const response = await staff().get(`${BASE}/companies/${port.companyId}`).expect(409);
     expect(JSON.stringify(response.body)).toContain(broken);
   });
@@ -266,9 +342,9 @@ async function deliveredStop(orderId: string, now: Date): Promise<void> {
 describe("l'historique et le lieu de chaque bon (DF3)", () => {
   it("retiré au comptoir, livré à la porte, jamais retiré : la frise, le lieu, et le signalement", async () => {
     const port = await client("Boulangerie du Port");
-    const counter = await seedOrder({ ...port, quantity: 1, fulfillmentMethod: "pickup" });
-    const delivered = await seedOrder({ ...port, quantity: 2 });
-    const never = await seedOrder({ ...port, quantity: 3, receivedOn: null });
+    const counter = (await seedOrder(port, { quantity: 1 })).orderNumber;
+    const delivered = (await seedOrder(port, { quantity: 2 })).orderNumber;
+    const never = (await seedOrder(port, { quantity: 3, receivedOn: null })).orderNumber;
     const handedOverAt = new Date(daysAgo(0));
     await ctx.prisma.orderHandover.create({
       data: {
@@ -311,8 +387,8 @@ describe("l'historique et le lieu de chaque bon (DF3)", () => {
     const [first, second] = view.orders;
     expect(first?.place).toEqual({
       method: "pickup",
-      label: "Labo du Port",
-      address: "1 quai du Four, 13002 Marseille",
+      label: "Labo",
+      address: "5 rue du Four, 75002 Paris",
     });
     expect(first?.history).toEqual([
       { kind: "handed_over", at: handedOverAt.toISOString(), serviceDay: null, via: "scan" },
@@ -325,7 +401,7 @@ describe("l'historique et le lieu de chaque bon (DF3)", () => {
 
     const orders = await staff().get(`${BASE}/companies/${port.companyId}/orders.csv`).expect(200);
     expect(orders.text).not.toContain(never);
-    expect(orders.text).toContain('"Retrait — Labo du Port, 1 quai du Four, 13002 Marseille"');
+    expect(orders.text).toContain('"Retrait — Labo, 5 rue du Four, 75002 Paris"');
     expect(orders.text).toContain(`remis à la porte ${handedOverAt.toISOString()} (saisie)"`);
   });
 });
@@ -333,14 +409,21 @@ describe("l'historique et le lieu de chaque bon (DF3)", () => {
 describe("les CSV du dossier", () => {
   it("rend la facture, les bons et les écarts, un fichier chacun", async () => {
     const port = await client("Boulangerie du Port");
-    const number = await seedOrder({ ...port, quantity: 2, requestedDay: null });
+    const placed = await seedOrder(port, { quantity: 2 });
+    await withoutDate(placed);
+    const number = placed.orderNumber;
+    const line = await lineOf(placed);
+    const unitEuros = (line.unitPriceMillicents / 100_000).toFixed(5).replace(".", ",");
+    const amountEuros = (line.lineTotalCents / 100).toFixed(2).replace(".", ",");
 
     const invoice = await staff()
       .get(`${BASE}/companies/${port.companyId}/invoice.csv`)
       .expect(200);
     expect(invoice.headers["content-type"]).toContain("text/csv");
     expect(invoice.headers["content-disposition"]).toContain("DOSSIER-FACTURE-SIMULEE");
-    expect(invoice.text).toContain('"BAG-001";"Baguette";"1,00000";"5,5 %";2;2,00');
+    expect(invoice.text).toContain(
+      `"${line.sku}";"${line.productNameSnapshot}";"${unitEuros}";"5,5 %";2;${amountEuros}`,
+    );
 
     const orders = await staff().get(`${BASE}/companies/${port.companyId}/orders.csv`).expect(200);
     expect(orders.text).toContain(`"${number}"`);

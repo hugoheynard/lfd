@@ -11,10 +11,11 @@
  *   et en « non ventilée », et la TVA totale retombe sur Σ `vat_cents` ;
  * - le mur staff : `b2b_companies:read` lit le relevé mais pas l'export.
  *
- * ⚠️ Commandes écrites par Prisma : même dette que `test/factories.ts` et
- * `accounting-legal-entity.e2e-spec.ts`. Ce qui est éprouvé est en AVAL — la
- * lecture et l'agrégation. Elles prennent l'instant de la base, donc tombent
- * dans le cycle en cours sans aucune date écrite ici.
+ * Les commandes passent par le vrai chemin (`placeOrder`, plan T) ; leurs
+ * montants sont relus sur la commande passée. Les formes que la passation ne
+ * produit pas (deux taux, remise et port, TVA non ventilée, total nul)
+ * restent des écritures brutes, justifiées sur `seedLegacyOrder`. Sans date
+ * dite, elles tombent dans le cycle en cours.
  */
 import type {
   CycleStatementOrderView,
@@ -23,9 +24,24 @@ import type {
 } from "@lfd/contracts";
 
 import { StatementMonth } from "../src/b2b/accounting/domain/value-objects/statement-month.js";
+import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import { CustomerRole } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { createCompany, createUser, receivedColumns } from "./factories.js";
+import {
+  attachTo,
+  createCompany,
+  createUser,
+  markDelivered,
+  receivedColumns,
+} from "./factories.js";
+import {
+  cardGatewayDouble,
+  payByCard,
+  pickupSite,
+  placeOrder,
+  type PlacedTestOrder,
+} from "./order-factory.js";
 
 const stubAdminVerifier = {
   verify: (subject: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -36,7 +52,10 @@ let ctx: E2eContext;
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
-    overrides: [{ token: AdminTokenVerifier, value: stubAdminVerifier }],
+    overrides: [
+      { token: AdminTokenVerifier, value: stubAdminVerifier },
+      { token: PaymentGateway, value: cardGatewayDouble("pi_releve") },
+    ],
   });
 });
 
@@ -56,48 +75,94 @@ const BASE = "/admin/accounting/statements";
 
 let seq = 0;
 
-interface OrderSeed {
-  readonly companyId: string;
-  readonly userId: string;
+/**
+ * Une commande passée au compte par le vrai chemin (`placeOrder`, plan T),
+ * puis livrée à l'instant de passation : le relevé suit la livraison (lot ZL),
+ * et aucune route ne remet une commande dans le passé (plan T, 2026-10-25).
+ */
+async function placeOnAccount(
+  buyer: Client,
+  options: { readonly units?: number; readonly placedAt?: Date } = {},
+): Promise<PlacedTestOrder> {
+  const order = await placeOrder(ctx, {
+    buyerUserId: buyer.userId,
+    companyId: buyer.companyId,
+    settlement: "account",
+    fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
+    lines: [{ sku: "VIE-001", quantity: options.units ?? 10 }],
+    ...(options.placedAt === undefined ? {} : { placedAt: options.placedAt }),
+  });
+  await markDelivered(ctx.prisma, order.id, options.placedAt ?? new Date());
+  return order;
+}
+
+/** Ce que la passation a écrit, relu — jamais recopié. */
+async function amountsOf(orderId: string): Promise<{
+  readonly subtotalCents: number;
+  readonly vatCents: number;
+  readonly totalCents: number;
+}> {
+  return ctx.prisma.order.findUniqueOrThrow({
+    where: { id: orderId },
+    select: { subtotalCents: true, vatCents: true, totalCents: true },
+  });
+}
+
+interface LegacyOrderSeed {
   readonly subtotalCents: number;
   readonly vatCents: number;
   readonly totalCents: number;
   readonly vatShares?: readonly { rate: number; amountCents: number }[];
   readonly deliveryFeeCents?: number;
   readonly discountCents?: number;
-  readonly status?: "placed" | "cancelled";
-  readonly paymentStatus?: "not_required" | "paid";
-  readonly createdAt?: Date;
 }
 
-async function seedOrder(seed: OrderSeed): Promise<string> {
+/**
+ * ⚠️ **Écriture brute gardée (plan T, 2026-10-25)** : une commande que la
+ * passation ne produit pas — ventilée sur deux taux (le semis du catalogue
+ * est tout à 5,5 %), avec remise ET frais de port sur une commande pro, ou
+ * sans ventilation (`vat_shares` nul : bons d'avant la ventilation), ou d'un
+ * total nul. Ce qui est éprouvé est la LECTURE de ces formes réelles en base.
+ */
+async function seedLegacyOrder(buyer: Client, seed: LegacyOrderSeed): Promise<string> {
   seq += 1;
-  const orderNumber = `CMD-REL-${String(seq)}`;
+  const orderNumber = `ORD-${String(900_000 + seq)}`;
+  const createdAt = new Date();
   await ctx.prisma.order.create({
     data: {
       orderNumber,
-      companyId: seed.companyId,
-      placedByUserId: seed.userId,
+      companyId: buyer.companyId,
+      placedByUserId: buyer.userId,
       subtotalCents: seed.subtotalCents,
       discountCents: seed.discountCents ?? 0,
       deliveryFeeCents: seed.deliveryFeeCents ?? 0,
       vatCents: seed.vatCents,
       totalCents: seed.totalCents,
-      status: seed.status ?? "placed",
-      paymentStatus: seed.paymentStatus ?? "not_required",
+      status: "placed",
+      paymentStatus: "not_required",
       ...(seed.vatShares === undefined ? {} : { vatShares: [...seed.vatShares] }),
-      ...(seed.createdAt === undefined ? {} : { createdAt: seed.createdAt }),
-      // Livré le jour de sa passation : le relevé suit la livraison (lot ZL).
-      ...receivedColumns(seed.createdAt ?? new Date()),
+      createdAt,
+      ...receivedColumns(createdAt),
     },
   });
   return orderNumber;
 }
 
-async function client(name: string): Promise<{ companyId: string; userId: string }> {
+interface Client {
+  readonly companyId: string;
+  readonly userId: string;
+}
+
+/** Une société au compte mensuel, et son détenteur — qui seul y passe commande. */
+async function client(name: string): Promise<Client> {
   seq += 1;
   const company = await createCompany(ctx.prisma, { raisonSociale: name });
+  await ctx.prisma.company.update({
+    where: { id: company.id },
+    data: { grantedTerms: ["monthly"] },
+  });
   const user = await createUser(ctx.prisma, { auth0Sub: `releve-${String(seq)}` });
+  await attachTo(ctx.prisma, user.id, company.id, CustomerRole.owner);
   return { companyId: company.id, userId: user.id };
 }
 
@@ -135,8 +200,7 @@ describe("le relevé d'un cycle", () => {
     const port = await client("Boulangerie du Port");
     const other = await client("Autre Société");
 
-    const kept = await seedOrder({
-      ...port,
+    const kept = await seedLegacyOrder(port, {
       subtotalCents: 10_000,
       deliveryFeeCents: 1_500,
       discountCents: 500,
@@ -147,22 +211,20 @@ describe("le relevé d'un cycle", () => {
       vatCents: 823,
       totalCents: 11_823,
     });
-    await seedOrder({
-      ...port,
-      subtotalCents: 1_000,
-      vatCents: 55,
-      totalCents: 1_055,
-      status: "cancelled",
+    const cancelled = await placeOnAccount(port);
+    // Une annulation datée n'est pas le sujet : seul le statut écarte le bon
+    // de l'assiette (plan T, 2026-10-25 — `order.update` de simulation admis).
+    await ctx.prisma.order.update({ where: { id: cancelled.id }, data: { status: "cancelled" } });
+    const byCard = await placeOrder(ctx, {
+      buyerUserId: port.userId,
+      companyId: port.companyId,
+      settlement: "card",
+      fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
     });
-    await seedOrder({
-      ...port,
-      subtotalCents: 1_000,
-      vatCents: 55,
-      totalCents: 1_055,
-      paymentStatus: "paid",
-    });
-    await seedOrder({ ...port, subtotalCents: 0, vatCents: 0, totalCents: 0 });
-    await seedOrder({ ...other, subtotalCents: 2_000, vatCents: 110, totalCents: 2_110 });
+    await payByCard(ctx, byCard);
+    await markDelivered(ctx.prisma, byCard.id, new Date());
+    await seedLegacyOrder(port, { subtotalCents: 0, vatCents: 0, totalCents: 0 });
+    await placeOnAccount(other);
 
     const view = await statement(port.companyId);
 
@@ -175,21 +237,15 @@ describe("le relevé d'un cycle", () => {
 
   it("porte la TVA d'une commande sans ventilation en « non ventilée », et retombe sur Σ vat_cents", async () => {
     const port = await client("Boulangerie du Port");
-    await seedOrder({
-      ...port,
-      subtotalCents: 10_000,
-      vatShares: [{ rate: 5.5, amountCents: 550 }],
-      vatCents: 550,
-      totalCents: 10_550,
-    });
-    await seedOrder({ ...port, subtotalCents: 4_000, vatCents: 220, totalCents: 4_220 });
+    const placed = await amountsOf((await placeOnAccount(port)).id);
+    await seedLegacyOrder(port, { subtotalCents: 4_000, vatCents: 220, totalCents: 4_220 });
 
     const { totals } = await statement(port.companyId);
 
-    expect(totals.vatByRate).toEqual([{ rate: 5.5, amountCents: 550 }]);
+    expect(totals.vatByRate).toEqual([{ rate: 5.5, amountCents: placed.vatCents }]);
     expect(totals.unventilatedVatCents).toBe(220);
-    expect(totals.vatCents).toBe(770);
-    expect(totals.totalCents).toBe(14_770);
+    expect(totals.vatCents).toBe(placed.vatCents + 220);
+    expect(totals.totalCents).toBe(placed.totalCents + 4_220);
   });
 
   it("lit une période passée à part de la période en cours", async () => {
@@ -197,17 +253,11 @@ describe("le relevé d'un cycle", () => {
     const past = new Date(daysAgo(40));
     // Aucune entité semée : le rythme par défaut, mensuel au 1er (R5).
     const pastClosesAt = StatementMonth.containing(past).cycle().closesAt.toISOString();
-    const old = await seedOrder({
-      ...port,
-      subtotalCents: 1_000,
-      vatCents: 55,
-      totalCents: 1_055,
-      createdAt: past,
-    });
+    const old = await placeOnAccount(port, { placedAt: past });
 
     const view = await statement(port.companyId, `?periodClosesAt=${pastClosesAt}`);
     expect(view.cycle).toMatchObject({ periodClosesAt: pastClosesAt, inProgress: false });
-    expect(ordersOf(view).map((order) => order.orderNumber)).toEqual([old]);
+    expect(ordersOf(view).map((order) => order.orderNumber)).toEqual([old.orderNumber]);
     expect(ordersOf(await statement(port.companyId))).toEqual([]);
   });
 
@@ -248,13 +298,7 @@ describe("les cycles proposés", () => {
 describe("l'export CSV", () => {
   it("rend une ligne par commande, sous un en-tête qui dit le périmètre, nommé PROVISOIRE", async () => {
     const port = await client("Boulangerie du Port");
-    const number = await seedOrder({
-      ...port,
-      subtotalCents: 10_000,
-      vatShares: [{ rate: 5.5, amountCents: 550 }],
-      vatCents: 550,
-      totalCents: 10_550,
-    });
+    const { orderNumber: number } = await placeOnAccount(port);
 
     const response = await staff()
       .get(`${BASE}/companies/${port.companyId}/export.csv`)
