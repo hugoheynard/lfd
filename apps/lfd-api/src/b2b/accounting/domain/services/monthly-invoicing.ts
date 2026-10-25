@@ -29,18 +29,27 @@ export interface InvoiceableOrder {
   readonly companyId: string;
   readonly placedAt: Date;
   /**
-   * `AAAA-MM-JJ` — `orders.received_on`, le jour qui l'a fait entrer dans
-   * l'assiette (lot ZL). Jamais `null` sous `billableOrderWhere` ; le type le
-   * garde nullable pour que le bloqueur M5 reste un filet.
+   * `AAAA-MM-JJ` — `orders.received_on`, la première remise : la date de
+   * livraison que la facture imprime. L'assiette lit le jour du SOLDE
+   * (`settled_on`, E6c2) ; le type garde ce jour nullable pour que le
+   * bloqueur M5 reste un filet.
    */
   readonly receivedOn: string | null;
   readonly billedCompanyId: string | null;
   readonly frozen: FrozenInvoiceOrder;
+  /** Les BL remis, par rang — cités par la ligne de référence de la facture. */
+  readonly deliveryNoteNumbers: readonly string[];
   /**
-   * Son départ incomplet est décidé (E6b) : la facture ne part pas, le
-   * bloqueur la nomme, jusqu'à E6c2. Absent = non.
+   * Remis mais pas soldé (plan E6c2, § 1, relecture de `vitruve`). Absent = soldé.
+   *
+   * - `awaiting_remainder` — un reste est encore à livrer (décision « à
+   *   relivrer », ou un BL ni remis ni annulé) : ATTENDU, pas anormal. Écarté
+   *   de la facture et signalé avec les bons hors facture ; il part au mois
+   *   de son solde (Q-E6-3).
+   * - `unsettled` — rien n'est en attente et pourtant le solde manque : une
+   *   anomalie. La facture de son payeur ne part pas, le bloqueur la nomme.
    */
-  readonly shortfallHeld?: boolean;
+  readonly settlement?: "awaiting_remainder" | "unsettled";
 }
 
 /** Les bons du mois d'UN payeur légal, dans l'ordre reçu (date de passation). */
@@ -180,7 +189,8 @@ function byMandate(payer: PayerOrders, context: MandateContext): readonly PayerI
     const mandate = effectiveMandateOf(order, context);
     const key = mandate?.mandateId ?? "";
     const group = groups.get(key) ?? { mandate, billable: [], unbillable: [] };
-    (isBillable(order.frozen) ? group.billable : group.unbillable).push(order);
+    const held = order.settlement === "awaiting_remainder";
+    (!held && isBillable(order.frozen) ? group.billable : group.unbillable).push(order);
     groups.set(key, group);
   }
   return [...groups.values()].map((group) => ({ payerId: payer.payerId, ...group }));

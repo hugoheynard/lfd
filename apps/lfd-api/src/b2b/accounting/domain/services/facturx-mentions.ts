@@ -79,15 +79,19 @@ export function operationText(state: InvoiceState): string {
 }
 
 /**
- * Les bons couverts et leur réception réelle (livrée ou retirée, « reçue le »). La norme n'admet qu'UNE
- * référence de commande (BT-13, 0..1) et une facture du mois en couvre
- * plusieurs : la liste entière vit donc en note (plan § 5, remonté le
- * 2026-10-08).
+ * **La ligne de référence** : les commandes couvertes, leur réception réelle
+ * (livrée ou retirée, « reçue le ») — une mention obligatoire —, puis les bons
+ * de livraison facturés. La norme n'admet qu'UNE référence de commande
+ * (BT-13, 0..1) et une facture du mois en couvre plusieurs : la liste entière
+ * vit donc en note (plan § 5, remonté le 2026-10-08).
  *
- * « Confirmations de commande » depuis le 2026-10-25 (Hugo, suite du
- * renommage E5b). Seul le rendu change : une facture déjà émise garde son
- * PDF et son Factur-X archivés (`document_sha256`, `invoice_immutable`),
- * donc l'ancien libellé « Bons de commande » — rien n'est réécrit.
+ * « Commandes : ORD-1042 (reçue le …) — Bons de livraison : BL-1042-1 »
+ * depuis E6c2 (Hugo, 2026-10-25, plan E6 § 11) : après un départ incomplet,
+ * le BL dit ce qui est facturé, la commande ce qui a été demandé. Une facture
+ * émise avant ne portait pas ses BL (`deliveryNoteNumbers` absent) : la
+ * seconde moitié se tait. Seul le rendu change : une facture déjà émise garde
+ * son PDF et son Factur-X archivés (`document_sha256`, `invoice_immutable`)
+ * — rien n'est réécrit.
  */
 export function ordersText(orders: readonly InvoiceOrderReference[]): string {
   const listed = orders.map((order) =>
@@ -95,7 +99,9 @@ export function ordersText(orders: readonly InvoiceOrderReference[]): string {
       ? `${order.reference} (réception non constatée)`
       : `${order.reference} (reçue le ${frenchDate(order.receivedOn)})`,
   );
-  return `Confirmations de commande : ${listed.join(", ")}.`;
+  const notes = orders.flatMap((order) => order.deliveryNoteNumbers ?? []);
+  const delivered = notes.length === 0 ? "" : ` — Bons de livraison : ${notes.join(", ")}`;
+  return `Commandes : ${listed.join(", ")}${delivered}.`;
 }
 
 function note(content: string, subject: string): string {

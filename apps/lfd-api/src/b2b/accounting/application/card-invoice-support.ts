@@ -138,6 +138,7 @@ export async function prepareCardInvoice(
             // La colonne posée avec la remise (date-de-reception, B2) :
             // une remise à la porte y prend le jour de la tournée.
             receivedOn: candidate.receivedOn,
+            deliveryNoteNumbers: candidate.deliveryNoteNumbers,
           },
         ],
         paymentMeans: CARD_PAYMENT_MEANS,

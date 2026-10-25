@@ -3,11 +3,13 @@ import { Global, Module } from "@nestjs/common";
 import { AccountingModule } from "../b2b/accounting/accounting.module.js";
 import { AccountOrderEngaging } from "../b2b/accounting/application/services/account-order-engaging.js";
 import { AccountOrderRevaluing } from "../b2b/accounting/application/services/account-order-revaluing.js";
+import { AccountOrderSettling } from "../b2b/accounting/application/services/account-order-settling.js";
 import {
   AccountOrderEngagement,
   AccountOrderEngagementReader,
 } from "../b2b/orders/domain/ports/account-order-engagement.js";
 import { AccountOrderRevaluation } from "../b2b/orders/domain/ports/account-order-revaluation.js";
+import { AccountOrderSettlement } from "../b2b/orders/domain/ports/account-order-settlement.js";
 
 /**
  * Le fil qui relie **l'annulation d'une commande au compte à la
@@ -23,6 +25,9 @@ import { AccountOrderRevaluation } from "../b2b/orders/domain/ports/account-orde
  * modification d'une commande au compte recale le montant de sa ligne
  * d'encaissement (`plan-modifier-une-commande.md`, M1).
  *
+ * Depuis le 2026-10-25, un quatrième : le solde d'une commande recale sa
+ * ligne d'encaissement encore `due` sur le montant facturable (plan E6c2).
+ *
  * `@Global` pour la même raison que `LoyaltyVoucherModule` : le consommateur
  * est `orders`, et le câblage ne vit dans aucun des deux modules.
  *
@@ -36,7 +41,13 @@ import { AccountOrderRevaluation } from "../b2b/orders/domain/ports/account-orde
     { provide: AccountOrderEngagement, useExisting: AccountOrderEngaging },
     { provide: AccountOrderEngagementReader, useExisting: AccountOrderEngaging },
     { provide: AccountOrderRevaluation, useExisting: AccountOrderRevaluing },
+    { provide: AccountOrderSettlement, useExisting: AccountOrderSettling },
   ],
-  exports: [AccountOrderEngagement, AccountOrderEngagementReader, AccountOrderRevaluation],
+  exports: [
+    AccountOrderEngagement,
+    AccountOrderEngagementReader,
+    AccountOrderRevaluation,
+    AccountOrderSettlement,
+  ],
 })
 export class AccountOrderEngagementModule {}

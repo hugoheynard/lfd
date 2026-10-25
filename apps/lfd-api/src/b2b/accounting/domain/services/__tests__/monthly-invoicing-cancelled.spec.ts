@@ -24,6 +24,7 @@ function bon(id: string): InvoiceableOrder {
     receivedOn: "2026-09-16",
     billedCompanyId: null,
     frozen: frozenOrder(`ORD-${id}`, PLACED),
+    deliveryNoteNumbers: [],
   };
 }
 

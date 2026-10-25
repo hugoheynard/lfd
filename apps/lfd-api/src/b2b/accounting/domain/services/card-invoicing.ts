@@ -41,6 +41,8 @@ export interface CardInvoiceCandidate {
   /** Les périodes `billing` de la société, pour `billedPayerOf`. */
   readonly follows: readonly BillingFollow[];
   readonly frozen: FrozenInvoiceOrder;
+  /** Les BL remis, par rang — cités par la ligne de référence (plan E6 § 11). */
+  readonly deliveryNoteNumbers: readonly string[];
 }
 
 /**

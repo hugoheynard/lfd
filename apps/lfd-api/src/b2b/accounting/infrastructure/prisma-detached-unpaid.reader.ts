@@ -40,6 +40,7 @@ export class PrismaDetachedUnpaidReader extends DetachedUnpaidReader {
         orderNumber: true,
         createdAt: true,
         totalCents: true,
+        billableTotalCents: true,
         billedCompanyId: true,
         company: { select: { id: true, raisonSociale: true, enseigne: true } },
       },
@@ -54,7 +55,9 @@ export class PrismaDetachedUnpaidReader extends DetachedUnpaidReader {
           orderId: order.id,
           orderNumber: order.orderNumber,
           placedAt: order.createdAt,
-          totalCents: order.totalCents,
+          // Ce qui reste dû est ce qui est parti (E6c2) ; une ligne exclue l'est
+          // depuis la constitution, qui exige le solde posé.
+          totalCents: order.billableTotalCents ?? order.totalCents,
           site: { id: order.company.id, name: companyDisplayName(order.company) },
           billedCompanyId: order.billedCompanyId,
           excludedAt: at,

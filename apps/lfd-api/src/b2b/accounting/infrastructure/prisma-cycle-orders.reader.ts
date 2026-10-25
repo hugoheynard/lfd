@@ -57,14 +57,7 @@ export class PrismaCycleOrdersReader extends CycleOrdersReader {
         id: true,
         orderNumber: true,
         createdAt: true,
-        subtotalCents: true,
-        discountCents: true,
-        voucherDiscountCents: true,
-        deliveryFeeCents: true,
-        lateFeeCents: true,
-        vatCents: true,
-        vatShares: true,
-        totalCents: true,
+        ...BILLABLE_TOTALS_SELECT,
         companyId: true,
         billedCompanyId: true,
         status: true,
@@ -86,6 +79,56 @@ export class PrismaCycleOrdersReader extends CycleOrdersReader {
       companyId: row.companyId ?? "",
       billedCompanyId: row.billedCompanyId,
       siteName: row.company === null ? "" : companyDisplayName(row.company),
+      ...billableTotalsOf(row),
+      collectionState: stateOf.get(row.id) ?? "due",
+      cancelledAfterInvoicing: isCancelledAfterInvoicing(membership, row.id, row.status),
+    }));
+  }
+}
+
+/**
+ * Les totaux d'un bon sur le relevé : ses montants FACTURABLES (E6c2) — ce
+ * que la facture du cycle porte. Un bon du relevé est soldé (l'assiette à
+ * venir lit `settled_on`) ou déjà facturé ; un bon facturé avant E6c2 que le
+ * rapprochement n'aurait pas soldé garde la recopie de la commande, qui est
+ * ce que le solde y poserait.
+ */
+const BILLABLE_TOTALS_SELECT = {
+  subtotalCents: true,
+  discountCents: true,
+  voucherDiscountCents: true,
+  deliveryFeeCents: true,
+  lateFeeCents: true,
+  vatCents: true,
+  vatShares: true,
+  totalCents: true,
+  billableSubtotalCents: true,
+  billableDiscountCents: true,
+  billableVoucherDiscountCents: true,
+  billableDeliveryFeeCents: true,
+  billableLateFeeCents: true,
+  billableVatCents: true,
+  billableVatShares: true,
+  billableTotalCents: true,
+} as const satisfies Prisma.OrderSelect;
+
+type BillableTotalsRow = Prisma.OrderGetPayload<{ select: typeof BILLABLE_TOTALS_SELECT }>;
+
+type CycleOrderTotals = Pick<
+  CycleOrder,
+  | "subtotalCents"
+  | "discountCents"
+  | "voucherDiscountCents"
+  | "deliveryFeeCents"
+  | "lateFeeCents"
+  | "vatCents"
+  | "vatShares"
+  | "totalCents"
+>;
+
+function billableTotalsOf(row: BillableTotalsRow): CycleOrderTotals {
+  if (row.billableTotalCents === null) {
+    return {
       subtotalCents: row.subtotalCents,
       discountCents: row.discountCents,
       voucherDiscountCents: row.voucherDiscountCents,
@@ -94,10 +137,19 @@ export class PrismaCycleOrdersReader extends CycleOrdersReader {
       vatCents: row.vatCents,
       vatShares: parseVatShares(row.vatShares),
       totalCents: row.totalCents,
-      collectionState: stateOf.get(row.id) ?? "due",
-      cancelledAfterInvoicing: isCancelledAfterInvoicing(membership, row.id, row.status),
-    }));
+    };
   }
+  // CHECK « tout ou rien » : un total posé porte les autres ; le repli ne sert qu'au typage.
+  return {
+    subtotalCents: row.billableSubtotalCents ?? row.subtotalCents,
+    discountCents: row.billableDiscountCents ?? row.discountCents,
+    voucherDiscountCents: row.billableVoucherDiscountCents ?? row.voucherDiscountCents,
+    deliveryFeeCents: row.billableDeliveryFeeCents ?? row.deliveryFeeCents,
+    lateFeeCents: row.billableLateFeeCents ?? row.lateFeeCents,
+    vatCents: row.billableVatCents ?? row.vatCents,
+    vatShares: parseVatShares(row.billableVatShares),
+    totalCents: row.billableTotalCents,
+  };
 }
 
 /**

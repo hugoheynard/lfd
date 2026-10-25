@@ -12,5 +12,6 @@ export function unconfirmedDeliveryView(order: UnconfirmedDelivery): Unconfirmed
     serviceDay: order.serviceDay,
     fulfillmentMethod: order.fulfillmentMethod,
     totalCents: order.totalCents,
+    awaitingRemainder: order.awaitingRemainder,
   };
 }

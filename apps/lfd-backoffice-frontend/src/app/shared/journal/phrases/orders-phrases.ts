@@ -154,6 +154,23 @@ function orderRevised(fact: PhraseFact): Said {
 }
 
 /**
+ * Le départ incomplet décidé (plan E6c2, § 5) : « Marie D. a décidé d’un
+ * départ incomplet pour la commande ORD-7 ». Ce qui part et le sort du reste
+ * restent au détail.
+ */
+function orderShortfallDecided(fact: PhraseFact): Said {
+  return staffGesture(
+    fact,
+    'decidedBy',
+    [
+      text(' a décidé d’un départ incomplet pour la commande '),
+      name(orDash(fact.payload['orderNumber'])),
+    ],
+    ['orderNumber'],
+  );
+}
+
+/**
  * L'annulation par le CLIENT (lot C6) : « Jean D. a annulé sa commande ORD-7 »,
  * ou « Un client invité a annulé sa commande ORD-7 ». `cancelledBy` est `null`
  * dans ce cas ; le motif choisi et le délai appliqué restent au détail.
@@ -438,6 +455,7 @@ export const ORDERS_PHRASES = {
   'order.abandoned': orderAbandoned,
   'order.cancelled': orderCancelled,
   'order.revised': orderRevised,
+  'order.shortfall_decided': orderShortfallDecided,
   'order.handed_over': orderHandedOver,
 
   'order_cutoff_waiver.granted': (fact) =>

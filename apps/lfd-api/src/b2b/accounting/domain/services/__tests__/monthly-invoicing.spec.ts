@@ -29,6 +29,7 @@ function bon(companyId: string, overrides: Partial<InvoiceableOrder> = {}): Invo
     receivedOn: "2026-09-16",
     billedCompanyId: null,
     frozen: frozenOrder(orderNumber, placedAt),
+    deliveryNoteNumbers: [],
     ...overrides,
   };
 }
@@ -250,5 +251,25 @@ describe("receivedOnOrDayOf — une commande remise a toujours un jour", () => {
   it("avec attestation : la règle de la facture, pas le repli", () => {
     const attested = { handedOverAt: new Date("2026-09-29T08:00:00.000Z"), via: "scan" as const };
     expect(receivedOnOrDayOf({ ...attested, atDoor: false }, [], handedOverAt)).toBe("2026-09-29");
+  });
+});
+
+describe("planMonthlyInvoices — un bon remis mais pas soldé (plan E6c2, § 1)", () => {
+  it("en attente de son reste : écarté de la facture et signalé, la facture part", () => {
+    const sound = bon("c_principal");
+    const waiting = bon("c_principal", { settlement: "awaiting_remainder" });
+
+    const [invoice] = plan([sound, waiting]).invoices;
+
+    expect(invoice?.billable.map((o) => o.orderId)).toEqual([sound.orderId]);
+    expect(invoice?.unbillable.map((o) => o.orderId)).toEqual([waiting.orderId]);
+  });
+
+  it("remis sans solde (anomalie) : reste dans la facture, que le bloqueur arrête", () => {
+    const broken = bon("c_principal", { settlement: "unsettled" });
+
+    const [invoice] = plan([broken]).invoices;
+
+    expect(invoice?.billable.map((o) => o.orderId)).toEqual([broken.orderId]);
   });
 });

@@ -30,6 +30,7 @@ function candidate(overrides: Partial<CardInvoiceCandidate> = {}): CardInvoiceCa
     refundedCents: 0,
     follows: [],
     frozen: frozenOrder("ORD-001", PLACED),
+    deliveryNoteNumbers: ["BL-001-1"],
     ...overrides,
   };
 }

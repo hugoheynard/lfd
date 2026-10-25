@@ -2,7 +2,7 @@ import { InvoiceAssemblyError, InvoiceIssuanceBlockedError } from "../errors/inv
 import {
   invoiceIssuanceBlockers,
   orderDeliveryBlockers,
-  orderShortfallBlockers,
+  orderSettlementBlockers,
   type InvoiceSellerFacts,
 } from "../services/invoice-issuance-blockers.js";
 import type { InvoiceNumber } from "../value-objects/invoice-number.js";
@@ -42,7 +42,7 @@ export function issuableParties(
   const blockers = [
     ...invoiceIssuanceBlockers(sellerFacts, buyer),
     ...orderDeliveryBlockers(orders),
-    ...orderShortfallBlockers(orders),
+    ...orderSettlementBlockers(orders),
   ];
   if (blockers.length > 0 || sellerFacts === null || buyer === null) {
     throw new InvoiceIssuanceBlockedError(blockers);

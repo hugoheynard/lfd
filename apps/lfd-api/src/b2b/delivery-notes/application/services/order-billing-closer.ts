@@ -1,8 +1,10 @@
 import { Injectable, Logger } from "@nestjs/common";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { Clock } from "../../../../platform/time/clock.js";
 import type { OrderBilling } from "../../../orders/domain/entities/order-billing.js";
 import { AccountOrderEngagementReader } from "../../../orders/domain/ports/account-order-engagement.js";
+import { AccountOrderSettlement } from "../../../orders/domain/ports/account-order-settlement.js";
 import { OrderBillingRepository } from "../../../orders/domain/ports/order-billing.repository.js";
 import type { DeliveryNote } from "../../domain/entities/delivery-note.js";
 import { DeliveryNoteRepository } from "../../domain/ports/delivery-note.repository.js";
@@ -13,8 +15,11 @@ export interface BillingGap {
   readonly orderId: string;
   readonly orderNumber: string;
   readonly fields: readonly string[];
-  /** Déjà facturée : rien n'a été corrigé, et c'est à reprendre à la main. */
-  readonly invoiced: boolean;
+  /**
+   * Déjà ENGAGÉE — facturée, relevée ou prélevée (plan E6c2, § 4) : rien n'a
+   * été corrigé, le gel l'interdit ; un écart s'y reprend par un avoir.
+   */
+  readonly engaged: boolean;
 }
 
 /** Le compte du solde d'un passage du réconciliateur. */
@@ -37,7 +42,10 @@ type Verdict = "close" | "correct" | "frozen" | "fine" | "unsettled";
  * propre transaction sous le verrou de la commande). L'exclusion entre les
  * deux tient au `WHERE billable_total_cents IS NULL` de la pose.
  *
- * AUCUN lecteur de facture ni de prélèvement ne lit ces montants (E6c2).
+ * Depuis E6c2, la facture, le relevé et le prélèvement les LISENT : au solde,
+ * la ligne d'encaissement encore ouverte (`due`, `excluded`) suit le montant facturable
+ * (`AccountOrderSettlement`, même unité de travail), et une commande ENGAGÉE
+ * n'est plus corrigée — le déclencheur `orders_billable_frozen` le refuserait.
  */
 @Injectable()
 export class OrderBillingCloser {
@@ -47,6 +55,8 @@ export class OrderBillingCloser {
     private readonly billings: OrderBillingRepository,
     private readonly notes: DeliveryNoteRepository,
     private readonly engagements: AccountOrderEngagementReader,
+    private readonly settlement: AccountOrderSettlement,
+    private readonly clock: Clock,
     private readonly uow: UnitOfWork,
   ) {}
 
@@ -58,7 +68,7 @@ export class OrderBillingCloser {
     }
     const notes = await this.notes.loadForOrders([orderId]);
     if (billing.closeBilling(handedOverAmountsOf(orderId, notes))) {
-      await this.billings.save(billing);
+      await this.persist(billing);
     }
   }
 
@@ -100,7 +110,7 @@ export class OrderBillingCloser {
           orderId: billing.orderId,
           orderNumber: billing.reference,
           fields: [gap],
-          invoiced: false,
+          engaged: false,
         });
       }
       return "unsettled";
@@ -110,11 +120,11 @@ export class OrderBillingCloser {
     if (fields.length === 0) {
       return "fine";
     }
-    const invoiced = await this.invoiced(billing.orderId);
-    if (!invoiced && fields[0] !== "settlement") {
+    const engaged = await this.engaged(billing.orderId);
+    if (!engaged && fields[0] !== "settlement") {
       return "correct";
     }
-    tally.gaps.push({ orderId: billing.orderId, orderNumber: billing.reference, fields, invoiced });
+    tally.gaps.push({ orderId: billing.orderId, orderNumber: billing.reference, fields, engaged });
     return "frozen";
   }
 
@@ -133,8 +143,8 @@ export class OrderBillingCloser {
         const changed =
           verdict === "close"
             ? billing.closeBilling(handed)
-            : billing.correctBilling(handed, await this.invoiced(orderId));
-        return changed && (await this.billings.save(billing));
+            : billing.correctBilling(handed, await this.engaged(orderId));
+        return changed && (await this.persist(billing));
       });
       if (written) {
         tally[verdict === "close" ? "closed" : "corrected"] += 1;
@@ -144,9 +154,30 @@ export class OrderBillingCloser {
     }
   }
 
-  private async invoiced(orderId: string): Promise<boolean> {
-    // Un engagement qu'on ne sait pas établir se traite comme facturé : on ne corrige pas à l'aveugle.
+  /** Pose le solde, puis recale l'encaissement `due` dessus — dans l'unité de travail de l'appelant. */
+  private async persist(billing: OrderBilling): Promise<boolean> {
+    if (!(await this.billings.save(billing))) {
+      return false;
+    }
+    const { billable } = billing.toSnapshot();
+    if (billable !== null) {
+      await this.settlement.alignOnSettlement(
+        billing.orderId,
+        billable.totalCents,
+        this.clock.now(),
+      );
+    }
+    return true;
+  }
+
+  /**
+   * Engagée : tout ce qui n'est pas `free` — facture, lot, prélèvement, rejet
+   * re-présenté, réglée autrement (plan E6c2, § 4 BLOQUANT 1). Un engagement
+   * qu'on ne sait pas établir se traite comme engagé : on ne corrige pas à
+   * l'aveugle.
+   */
+  private async engaged(orderId: string): Promise<boolean> {
     const engagement = await this.engagements.engagementOf(orderId);
-    return engagement === null || engagement.kind === "invoiced";
+    return engagement === null || engagement.kind !== "free";
   }
 }

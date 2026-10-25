@@ -80,6 +80,7 @@ export function toInvoiceCreate(invoice: Invoice): Prisma.InvoiceUncheckedCreate
         orderId: order.orderId,
         orderNumber: order.reference,
         receivedOn: order.receivedOn === null ? null : dayColumn(order.receivedOn),
+        deliveryNoteNumbers: [...(order.deliveryNoteNumbers ?? [])],
       })),
     },
   };
@@ -124,6 +125,10 @@ function toInvoiceState(row: InvoiceRow): InvoiceState {
       orderId: order.orderId,
       reference: order.orderNumber,
       receivedOn: order.receivedOn === null ? null : dayOf(order.receivedOn),
+      // Vide sur une pièce d'avant E6c2 : la ligne de référence ne cite alors aucun BL.
+      ...(order.deliveryNoteNumbers.length === 0
+        ? {}
+        : { deliveryNoteNumbers: order.deliveryNoteNumbers }),
     })),
     lines: read(invoiceLinesSchema, row.lines, "lines"),
     vat: read(vatBreakdownSchema, row.vatBreakdown, "vat_breakdown"),

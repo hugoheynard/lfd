@@ -17,7 +17,9 @@ function utcMidnight(day: string): Date {
 
 /**
  * Les bons à constater : l'assiette sans sa fenêtre (`accountOrderWhere`),
- * `received_on` nul, jour demandé passé. Surface staff : aucune société
+ * pas soldés (`settled_on` nul, E6c2 — § 4.3), jour demandé passé. Une
+ * commande remise en partie y reste, à son total COMMANDÉ, nommée « en
+ * attente du reste » : rien n'est encore facturable. Surface staff : aucune société
  * n'est filtrée, c'est la comptabilité qui lit.
  */
 @Injectable()
@@ -30,7 +32,7 @@ export class PrismaUnconfirmedDeliveriesReader extends UnconfirmedDeliveriesRead
     const rows = await this.prisma.order.findMany({
       where: {
         ...accountOrderWhere(),
-        receivedOn: null,
+        settledOn: null,
         requestedDeliveryDate: { lt: utcMidnight(day) },
       },
       orderBy: [{ requestedDeliveryDate: "asc" }, { orderNumber: "asc" }],
@@ -43,6 +45,7 @@ export class PrismaUnconfirmedDeliveriesReader extends UnconfirmedDeliveriesRead
         totalCents: true,
         createdAt: true,
         billedCompanyId: true,
+        receivedOn: true,
         company: { select: { raisonSociale: true } },
       },
     });
@@ -60,6 +63,7 @@ export class PrismaUnconfirmedDeliveriesReader extends UnconfirmedDeliveriesRead
               totalCents: row.totalCents,
               placedAt: row.createdAt,
               billedCompanyId: row.billedCompanyId,
+              awaitingRemainder: row.receivedOn !== null,
             },
           ],
     );

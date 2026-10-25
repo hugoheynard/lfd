@@ -1287,6 +1287,63 @@ Il faut **0**. Le comptage `LIKE 'ORD-_%'` ne suffit pas : il accepte des
 numéros que le motif refuse. Retour arrière : `ALTER TABLE "public"."orders"
 DROP CONSTRAINT "orders_order_number_format";` (sans perte).
 
+## Avant de déployer E6c2 — la facture lit les montants facturables (2026-10-25)
+
+Plan [`commandes/plan-e6c2-la-facture-lit-les-montants-facturables.md`](../commandes/plan-e6c2-la-facture-lit-les-montants-facturables.md),
+§ 2 et § 4. **Irréversible à la première facture émise** sur ces montants : une
+facture fausse ne se corrige plus que par un avoir. E6c2 part **seul**, après
+E6b + E6c1, et seulement si les quatre requêtes ci-dessous rendent **0** en
+production, en lecture seule :
+
+```sql
+-- 1. Toute commande remise est soldée (le rapprochement horaire a posé l'ombre).
+SELECT count(*) AS remises_sans_solde
+FROM public.orders
+WHERE status <> 'cancelled' AND received_on IS NOT NULL AND billable_total_cents IS NULL;
+
+-- 2. Zéro écart : une commande sans décision porte la recopie EXACTE de ses totaux.
+SELECT count(*) AS ecarts_recopie
+FROM public.orders o
+WHERE o.billable_total_cents IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM public.order_shortfall_decision d WHERE d.order_id = o.id)
+  AND (o.billable_subtotal_cents          IS DISTINCT FROM o.subtotal_cents
+    OR o.billable_discount_cents          IS DISTINCT FROM o.discount_cents
+    OR o.billable_voucher_discount_cents  IS DISTINCT FROM o.voucher_discount_cents
+    OR o.billable_delivery_fee_cents      IS DISTINCT FROM o.delivery_fee_cents
+    OR o.billable_late_fee_cents          IS DISTINCT FROM o.late_fee_cents
+    OR o.billable_vat_cents               IS DISTINCT FROM o.vat_cents
+    OR o.billable_vat_shares              IS DISTINCT FROM o.vat_shares
+    OR o.billable_total_cents             IS DISTINCT FROM o.total_cents);
+
+-- 3. Rien ne change de mois : sans décision, le jour du solde EST le jour de réception.
+SELECT count(*) AS soldes_hors_reception
+FROM public.orders o
+WHERE o.billable_total_cents IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM public.order_shortfall_decision d WHERE d.order_id = o.id)
+  AND o.settled_on IS DISTINCT FROM o.received_on;
+
+-- 4. Chaque ligne d'encaissement ouverte (`due`, `excluded`) vaut ce que la commande doit.
+SELECT count(*) AS encaissements_decales
+FROM public.order_collection oc
+JOIN public.orders o ON o.id = oc.order_id
+WHERE oc.state IN ('due', 'excluded') AND o.billable_total_cents IS NOT NULL
+  AND oc.amount_cents <> o.billable_total_cents;
+```
+
+Un départ incomplet (une ligne dans `order_shortfall_decision`) n'entre pas
+dans 2 et 3 : ses montants sont la somme de ses BL remis, et le rapprochement
+les contrôle lui-même (compte rendu, `billing.gaps`). Si 1 n'est pas nul :
+lancer le rapprochement (`POST /admin/delivery-notes/reconcile`, section
+ci-dessus) jusqu'à `complete: true`, puis relire. Si 2, 3 ou 4 ne sont pas
+nuls : **ne pas promouvoir**, remonter les commandes à l'équipe technique.
+
+**Après le déploiement**, le déclencheur `orders_billable_frozen` refuse toute
+réécriture des montants facturables d'une commande engagée (facture, relevé,
+encaissement ni `due` ni `excluded`) ; le rapprochement ne la corrige plus et la
+nomme « engagée » dans son compte rendu. Retour arrière du déclencheur, sans
+perte : `DROP TRIGGER orders_billable_frozen ON public.orders;` — mais **le code
+ne revient pas en arrière** une fois une facture émise sur ces montants.
+
 ## Remettre la production à blanc — délibérément SANS outil
 
 Fait une fois, le **2026-08-16**, pour vider les données de test avant

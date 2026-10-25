@@ -104,6 +104,8 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   decidedAt: 'Restreinte le',
   decidedBy: 'Restreinte par',
   declared: 'Fiche réglementaire',
+  // Le départ incomplet décidé (`order.shortfall_decided`, plan E6c2, § 5).
+  departing: 'Ce qui part',
   deliveryAddress: 'Adresse de livraison',
   deliveryAddressId: 'Adresse de livraison',
   deliveryColorB2b: 'Couleur de la livraison pro',
@@ -262,6 +264,8 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   refund: 'Remboursement promis',
   regime: 'Ce qui était dû',
   remainderValueCents: 'Valeur du reliquat',
+  // Le sort du reste d'un départ incomplet (`order.shortfall_decided`).
+  remainder: 'Le reste',
   removed: 'Retirés',
   replacedMandate: 'Mandat remplacé',
   replacedMandateId: 'Mandat remplacé',

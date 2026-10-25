@@ -26,7 +26,8 @@ export class PrismaBillableOrdersReader extends BillableOrdersReader {
     const rows = await this.prisma.order.groupBy({
       by: ["companyId", "billedCompanyId"],
       where: billableOrderWhere(from, to),
-      _sum: { totalCents: true },
+      // Ce qui est parti (E6c2) : l'assiette exige le solde posé.
+      _sum: { billableTotalCents: true },
       _count: { _all: true },
     });
     const byPayer = new Map<string, { orderCount: number; totalCents: number }>();
@@ -38,7 +39,7 @@ export class PrismaBillableOrdersReader extends BillableOrdersReader {
       const sum = byPayer.get(payerId) ?? { orderCount: 0, totalCents: 0 };
       byPayer.set(payerId, {
         orderCount: sum.orderCount + row._count._all,
-        totalCents: sum.totalCents + (row._sum.totalCents ?? 0),
+        totalCents: sum.totalCents + (row._sum.billableTotalCents ?? 0),
       });
     }
 

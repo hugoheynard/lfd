@@ -290,6 +290,34 @@ export async function markDelivered(
     where: { id: orderId },
     data: receivedColumns(at),
   });
+  await settleByRecopy(prisma, orderId);
+}
+
+/**
+ * **Le solde d'un bon remis en entier** (lot E6c2) : ses montants facturables
+ * sont la recopie de ses totaux, au jour de sa réception — exactement ce que
+ * `OrderBilling.closeBilling` pose pour une commande sans décision. Sans lui,
+ * un bon semé « livré » par Prisma n'entrerait dans aucune assiette : la
+ * facture, le relevé et le lot ne lisent que les bons soldés.
+ *
+ * Écrit en SQL parce que la fixture contourne déjà la remise (dette notée en
+ * tête du fichier) ; ne pose rien sur un bon déjà soldé, comme la pose réelle.
+ */
+export async function settleByRecopy(prisma: PrismaService, orderId: string): Promise<void> {
+  await prisma.$executeRaw`
+    UPDATE "public"."orders"
+       SET "billable_subtotal_cents" = "subtotal_cents",
+           "billable_discount_cents" = "discount_cents",
+           "billable_voucher_discount_cents" = "voucher_discount_cents",
+           "billable_delivery_fee_cents" = "delivery_fee_cents",
+           "billable_late_fee_cents" = "late_fee_cents",
+           "billable_vat_cents" = "vat_cents",
+           "billable_vat_shares" = "vat_shares",
+           "billable_total_cents" = "total_cents",
+           "settled_on" = "received_on"
+     WHERE "id" = ${orderId}
+       AND "received_on" IS NOT NULL
+       AND "billable_total_cents" IS NULL`;
 }
 
 /**

@@ -74,7 +74,8 @@ export function draftOf(
       orderId: order.orderId,
       reference: order.orderNumber,
       receivedOn: context.receivedOn.get(order.orderId) ?? null,
-      shortfallHeld: order.shortfallHeld ?? false,
+      deliveryNoteNumbers: order.deliveryNoteNumbers,
+      ...(order.settlement === "unsettled" ? { unsettled: true } : {}),
     })),
     paymentMeans: invoicePaymentMeansOf(payer.mandate),
     // Rien n'est payé d'avance sur un bon au compte : il sera prélevé.

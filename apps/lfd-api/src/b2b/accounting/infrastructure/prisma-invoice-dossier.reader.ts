@@ -15,9 +15,9 @@ import {
   isCancelledAfterInvoicing,
 } from "./cycle-order-membership.js";
 import {
-  FROZEN_INVOICE_ORDER_SELECT,
-  toFrozenInvoiceOrder,
-} from "./frozen-invoice-order.mapper.js";
+  BILLABLE_INVOICE_ORDER_SELECT,
+  toBillableInvoiceOrder,
+} from "./billable-invoice-order.mapper.js";
 
 /**
  * Les bons d'un dossier de facturation, par la **même appartenance** que le
@@ -63,7 +63,7 @@ export class PrismaInvoiceDossierReader extends InvoiceDossierReader {
 }
 
 const DOSSIER_ORDER_SELECT = {
-  ...FROZEN_INVOICE_ORDER_SELECT,
+  ...BILLABLE_INVOICE_ORDER_SELECT,
   id: true,
   fulfillmentMethod: true,
   pickupAddress: true,
@@ -86,7 +86,7 @@ function toDossierOrder(
     // Jamais vide : `accountOrderWhere` exige une société, et un bon facturé l'a passé.
     companyId: row.companyId ?? "",
     billedCompanyId: row.billedCompanyId,
-    order: toFrozenInvoiceOrder(row),
+    order: toBillableInvoiceOrder(row),
   };
 }
 

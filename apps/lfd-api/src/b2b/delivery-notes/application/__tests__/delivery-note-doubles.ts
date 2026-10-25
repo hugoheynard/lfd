@@ -16,7 +16,9 @@ import {
   AccountOrderEngagementReader,
   type AccountEngagement,
 } from "../../../orders/domain/ports/account-order-engagement.js";
+import { AccountOrderSettlement } from "../../../orders/domain/ports/account-order-settlement.js";
 import { OrderBillingRepository } from "../../../orders/domain/ports/order-billing.repository.js";
+import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import {
   ShortfallDecisionReader,
   type DecidedDeparture,
@@ -193,8 +195,18 @@ export class InMemoryOrderBillings extends OrderBillingRepository {
 /** L'engagement comptable, posé par le test ; « libre » par défaut. */
 export class FixedEngagements extends AccountOrderEngagementReader {
   readonly invoiced = new Set<string>();
+  /** Dans un lot, sans facture : engagée quand même (plan E6c2, § 4). */
+  readonly batched = new Set<string>();
 
   engagementOf(orderId: string): Promise<AccountEngagement | null> {
+    if (this.batched.has(orderId)) {
+      return Promise.resolve({
+        kind: "collecting",
+        state: "batched",
+        collectionDay: null,
+        statementNumber: null,
+      });
+    }
     return Promise.resolve(
       this.invoiced.has(orderId)
         ? { kind: "invoiced", invoiceNumber: "F-TEST-1", issuedOn: "2030-01-31" }
@@ -203,11 +215,32 @@ export class FixedEngagements extends AccountOrderEngagementReader {
   }
 }
 
+/** L'encaissement suivi au solde : ce que le solde lui a demandé, dans l'ordre. */
+export class RecordingSettlement extends AccountOrderSettlement {
+  readonly aligned: { readonly orderId: string; readonly amountCents: number }[] = [];
+
+  alignOnSettlement(orderId: string, amountCents: number): Promise<void> {
+    this.aligned.push({ orderId, amountCents });
+    return Promise.resolve();
+  }
+}
+
+/** L'instant du solde, sans importance pour la règle : seul le montant est vérifié. */
+const SETTLEMENT_CLOCK = new FixedClock(new Date(0));
+
 /** Le solde, monté sur ses doubles. */
 export function billingCloserOf(
   notes: DeliveryNoteRepository,
   billings: OrderBillingRepository = new InMemoryOrderBillings(),
   engagements: AccountOrderEngagementReader = new FixedEngagements(),
+  settlement: AccountOrderSettlement = new RecordingSettlement(),
 ): OrderBillingCloser {
-  return new OrderBillingCloser(billings, notes, engagements, new DirectUnitOfWork());
+  return new OrderBillingCloser(
+    billings,
+    notes,
+    engagements,
+    settlement,
+    SETTLEMENT_CLOCK,
+    new DirectUnitOfWork(),
+  );
 }

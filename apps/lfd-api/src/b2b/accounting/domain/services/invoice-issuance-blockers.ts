@@ -42,7 +42,7 @@ export type InvoiceIssuanceBlockerCode =
   | "payment_terms_missing"
   | "invoice_prefix_missing"
   | "order_delivery_unknown"
-  | "order_shortfall_pending"
+  | "order_unsettled"
   | "buyer_unknown"
   | "buyer_siren_missing"
   | "buyer_vat_missing"
@@ -165,28 +165,33 @@ export interface InvoiceOrderFacts {
   readonly reference: string;
   /** La date de livraison réelle (`AAAA-MM-JJ`), ou `null` : ni retrait ni livraison enregistrés. */
   readonly receivedOn: string | null;
-  /** Retenu par un départ incomplet décidé (E6b). Absent = non. */
-  readonly shortfallHeld?: boolean;
+  /** Remis, mais ses montants facturables ne sont pas posés (plan E6c2, § 1). Absent = soldé. */
+  readonly unsettled?: boolean;
 }
 
 /**
- * 🔴 **Garde avant E6c2** (plan `documentation/commandes/plan-e6-le-depart-incomplet.md`) :
- * un bon dont le départ incomplet est décidé ne se facture pas encore — la
- * facture lirait les totaux de la commande entière, alors que seule une
- * partie est partie. Il arrête la facture de son payeur, nommé, plutôt que
- * d'en disparaître en silence. E6c2 remplace ce refus par la lecture des
- * montants facturables.
+ * **Un bon remis mais pas soldé ne se facture pas** (plan
+ * `documentation/commandes/plan-e6c2-la-facture-lit-les-montants-facturables.md`,
+ * § 1) : la facture lit ce qui est parti (`billable_*`), et tant que le solde
+ * n'est pas posé, personne ne sait ce que le bon doit. Il arrête la facture de
+ * son payeur, nommé, plutôt que d'en disparaître en silence.
+ *
+ * Remplace la garde d'E6c1 (`order_shortfall_pending`), qui retenait tout
+ * départ incomplet : une commande décidée et soldée se facture désormais sur
+ * ses montants facturables.
  */
-export function orderShortfallBlockers(
+export function orderSettlementBlockers(
   orders: readonly InvoiceOrderFacts[],
 ): readonly InvoiceIssuanceBlocker[] {
   return orders
-    .filter((order) => order.shortfallHeld === true)
+    .filter((order) => order.unsettled === true)
     .map((order) => ({
-      code: "order_shortfall_pending" as const,
+      code: "order_unsettled" as const,
       message:
-        `Le bon ${order.reference} est un départ incomplet — facturation à venir : sa facture ` +
-        "attend la lecture des montants réellement livrés (E6c2). Rien n'est à corriger sur la commande.",
+        `Le bon ${order.reference} est remis, aucun reste n'est attendu, et pourtant son solde ` +
+        "n'est pas posé : la facture ne sait pas ce qu'il doit. Lancer la réconciliation des bons " +
+        "de livraison (POST admin/delivery-notes/reconcile) puis relire son compte rendu : la " +
+        "commande y est nommée avec la cause (BL remis sans jour de réception ou sans montants).",
     }));
 }
 

@@ -110,6 +110,26 @@ export class OrderCollection {
   }
 
   /**
+   * `due` ou `excluded` → même état, au montant facturable : sa commande
+   * vient d'être SOLDÉE (plan
+   * `documentation/commandes/plan-e6c2-la-facture-lit-les-montants-facturables.md`,
+   * § 4 BLOQUANT 5) — une ligne née sur le total commandé prend ce qui est
+   * parti. `excluded` suit aussi : elle est libre, et {@link batch} la reprend
+   * plus tard AVEC son montant (relu le 2026-10-25). Une ligne engagée porte
+   * déjà le sien, et le gel refuse de réécrire le solde d'une commande engagée.
+   *
+   * @returns `false` : rien à changer (autre état, ou même montant).
+   */
+  alignOnSettlement(amountCents: number, at: Date): boolean {
+    const open = this.state.state === "due" || this.state.state === "excluded";
+    if (!open || this.state.amountCents === amountCents) {
+      return false;
+    }
+    this.state = { ...this.state, amountCents, updatedAt: at };
+    return true;
+  }
+
+  /**
    * `due` ou `excluded` → `cancelled` : sa commande a été annulée par l'équipe
    * (C5.4). Ferme la ligne pour de bon — c'est ce qui rend impossible, et non
    * seulement refusé par un contrôle, qu'un lot ou un règlement la reprenne.

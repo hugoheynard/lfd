@@ -1,7 +1,8 @@
 /**
  * **« Décider du départ » — de la fiche commande au bon de livraison et au
  * solde** (lots E6b et E6c1, `documentation/commandes/plan-e6-le-depart-incomplet.md`
- * § 12 à § 14).
+ * § 12 à § 14). Sa lecture par la facture et le prélèvement (E6c2) :
+ * `billable-amounts.e2e-spec.ts`.
  *
  * Ce que seul le vrai Postgres prouve : la décision et la fiche réduite
  * partent dans la même transaction, l'unicité et les CHECK tiennent, le BL
@@ -9,38 +10,31 @@
  * réouverture de la journée épargne la commande décidée, et le papier
  * imprimé avant la décision est dit à réimprimer.
  */
-import type { AdminOrderView, PackingSheet, StaffNote } from "@lfd/contracts";
+import type { AdminOrderView, StaffNote } from "@lfd/contracts";
 
-import { CollectionCandidatesReader } from "../src/b2b/accounting/domain/ports/collection-candidates.reader.js";
-import { MonthlyInvoicingReader } from "../src/b2b/accounting/domain/ports/monthly-invoicing.reader.js";
 import { OrderPlanRelease } from "../src/b2b/orders/domain/ports/order-plan-release.js";
 import { PackingListWithdrawal } from "../src/packing/domain/ports/packing-list-withdrawal.js";
-import { DeferredTerm } from "../src/platform/database/client/client.js";
-import { E2E_STAFF_ID, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { attachTo, createCompany, createUser } from "./factories.js";
+import { jsonBody, type E2eContext } from "./e2e-harness.js";
+import { createUser } from "./factories.js";
 import { settleCardPayments } from "./card-payments.js";
+import { handOver, pickupSite, placeOrder, type PlacedTestOrder } from "./order-factory.js";
 import {
-  handOver,
-  pickupSite,
-  placeOrder,
-  placeOrderForCustomer,
-  type PlacedTestOrder,
-} from "./order-factory.js";
-import {
-  bagLines,
   bootstrapProductionDay,
   closeOrder,
-  closePlan,
   CROISSANT,
-  markLine,
   MEMBER,
   packingOrderPath,
   SERVICE_DAY,
   sheetOf,
   STAFF,
 } from "./production-day-fixture.js";
-
-const DAY_MS = 86_400_000;
+import {
+  accountOrder as sceneAccountOrder,
+  decide as sceneDecide,
+  drawn as sceneDrawn,
+  report as sceneReport,
+  type Drawn,
+} from "./shortfall-decision-scene.js";
 
 let ctx: E2eContext;
 let issued: string[];
@@ -57,60 +51,12 @@ beforeEach(async () => {
   await ctx.reset();
 });
 
-interface Drawn extends PlacedTestOrder {
-  readonly sheet: PackingSheet;
-}
-
-/** Une commande au compte de 3 croissants, tirée au colisage, `packed` au sac. */
-async function accountOrder(packed: number): Promise<Drawn> {
-  const company = await createCompany(ctx.prisma);
-  await ctx.prisma.company.update({
-    where: { id: company.id },
-    data: { grantedTerms: [DeferredTerm.monthly] },
-  });
-  const buyer = await createUser(ctx.prisma, { auth0Sub: MEMBER });
-  await attachTo(ctx.prisma, buyer.id, company.id);
-  const placed = await placeOrderForCustomer(ctx, {
-    buyerUserId: buyer.id,
-    companyId: company.id,
-    staffUserId: E2E_STAFF_ID,
-    settlement: "account",
-    forDay: SERVICE_DAY,
-    fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
-    lines: [{ sku: CROISSANT, quantity: 3 }],
-  });
-  return drawn(placed, packed);
-}
-
-async function drawn(placed: PlacedTestOrder, packed: number): Promise<Drawn> {
-  const { orderNumber } = placed;
-  await closePlan(ctx);
-  await ctx.drain();
-  expect(await markLine(ctx)).toBe(204);
-  await ctx.drain();
-  const sheet = await sheetOf(ctx, orderNumber);
-  if (packed > 0) {
-    expect(await bagLines(ctx, sheet, [{ sku: CROISSANT, quantity: packed }])).toBe(204);
-  }
-  return { ...placed, sheet: await sheetOf(ctx, orderNumber) };
-}
-
-async function report(orderId: string): Promise<number> {
-  const response = await ctx.asSub(STAFF).post(`${packingOrderPath(orderId)}/shortfall`);
-  await ctx.drain();
-  return response.status;
-}
-
-async function decide(orderId: string): Promise<{ status: number; code: unknown }> {
-  const response = await ctx
-    .asSub(STAFF)
-    .post(`/admin/orders/${orderId}/shortfall-decision`)
-    .send({ remainder: "abandoned" });
-  await ctx.drain();
-  const body: unknown = response.body;
-  const code = typeof body === "object" && body !== null && "code" in body ? body.code : null;
-  return { status: response.status, code };
-}
+const accountOrder = (packed: number): Promise<Drawn> => sceneAccountOrder(ctx, packed);
+const drawn = (placed: PlacedTestOrder, packed: number): Promise<Drawn> =>
+  sceneDrawn(ctx, placed, packed);
+const report = (orderId: string): Promise<number> => sceneReport(ctx, orderId);
+const decide = (orderId: string): Promise<{ status: number; code: unknown }> =>
+  sceneDecide(ctx, orderId);
 
 async function notesOf(orderId: string): Promise<readonly StaffNote[]> {
   return jsonBody<readonly StaffNote[]>(
@@ -157,27 +103,6 @@ describe("« Décider du départ » — reste abandonné (E6b + E6c1)", () => {
     expect(row.billableTotalCents).toBe(note?.totalCents);
     expect(row.billableTotalCents).toBeLessThan(row.totalCents);
     expect(row.settledOn).toEqual(row.receivedOn);
-  });
-
-  it("garde avant E6c2 : décidée et remise, elle n'entre dans aucun lot, et la facture la nomme au lieu de la taire", async () => {
-    const order = await accountOrder(1);
-    await report(order.id);
-    await decide(order.id);
-    expect(await closeOrder(ctx, order.id)).toBe(204);
-    await ctx.drain();
-    await handOver(ctx, order);
-    const from = new Date(0);
-    const to = new Date(Date.parse(`${SERVICE_DAY}T00:00:00.000Z`) + 30 * DAY_MS);
-
-    const candidates = await ctx.app
-      .get(CollectionCandidatesReader, { strict: false })
-      .collectableOrderIds(from, to);
-    const invoicing = await ctx.app
-      .get(MonthlyInvoicingReader, { strict: false })
-      .uninvoicedOrders(from, to);
-
-    expect(candidates).not.toContain(order.id);
-    expect(invoicing.find((one) => one.orderId === order.id)?.shortfallHeld).toBe(true);
   });
 
   it("une commande sans décision est soldée à la remise par la recopie de ses totaux", async () => {

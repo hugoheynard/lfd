@@ -50,9 +50,9 @@ export type BillingWrite = "closed" | "corrected";
  *   l'est à la remise de son BL : ses montants sont la **somme des BL remis**,
  *   au jour du dernier.
  * - **Jamais soldée** : une commande annulée, ou pas encore remise.
- * - **Posés une fois** par {@link closeBilling} ; l'ombre reste corrigeable
- *   par {@link correctBilling} tant que rien n'est facturé — le gel se pose
- *   en E6c2.
+ * - **Posés une fois** par {@link closeBilling} ; corrigeables par
+ *   {@link correctBilling} tant que la commande n'est pas engagée — gelés
+ *   ensuite en base (`orders_billable_frozen`, E6c2).
  */
 export class OrderBilling {
   private write: BillingWrite | null = null;
@@ -95,12 +95,14 @@ export class OrderBilling {
 
   /**
    * **Le geste de correction** (§ 13) : recompose des montants posés qui
-   * diffèrent de la règle — seulement tant que rien n'est facturé.
+   * diffèrent de la règle — seulement tant que la commande n'est pas ENGAGÉE
+   * (facture, relevé ou prélèvement — plan E6c2, § 4) : après, le gel en base
+   * le refuse, et un écart se reprend par un avoir.
    *
-   * @returns `false` : rien à corriger, pas soldée, ou déjà facturée.
+   * @returns `false` : rien à corriger, pas soldée, ou déjà engagée.
    */
-  correctBilling(notes: readonly HandedOverNoteAmounts[], invoiced: boolean): boolean {
-    if (invoiced || this.state.billable === null || this.gapsOf(notes).length === 0) {
+  correctBilling(notes: readonly HandedOverNoteAmounts[], engaged: boolean): boolean {
+    if (engaged || this.state.billable === null || this.gapsOf(notes).length === 0) {
       return false;
     }
     const settlement = this.settlementOf(notes);

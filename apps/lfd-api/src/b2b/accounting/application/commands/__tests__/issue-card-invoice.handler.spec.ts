@@ -36,6 +36,7 @@ function order(overrides: Partial<CardInvoiceCandidate> = {}): CardInvoiceCandid
     refundedCents: 0,
     follows: [],
     frozen: frozenOrder("ORD-001", PAID),
+    deliveryNoteNumbers: ["BL-001-1"],
     ...overrides,
   };
 }

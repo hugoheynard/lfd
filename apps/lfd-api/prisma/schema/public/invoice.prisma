@@ -115,13 +115,17 @@ model InvoiceOrder {
   invoiceType String  @map("invoice_type")
   invoice     Invoice @relation(fields: [invoiceId, invoiceType], references: [id, type], onDelete: Restrict)
 
-  orderId     String    @map("order_id")
-  orderNumber String    @map("order_number")
+  orderId             String    @map("order_id")
+  orderNumber         String    @map("order_number")
   /// La date de réception RÉELLE (livrée ou retirée), figée à l'émission ;
   /// NULL quand inconnue à l'émission.
-  receivedOn  DateTime? @map("received_on") @db.Date
+  receivedOn          DateTime? @map("received_on") @db.Date
+  /// Les bons de livraison remis que la pièce facture, par rang, figés à
+  /// l'émission (E6c2, plan E6 § 11) : cités par sa ligne de référence. Vide
+  /// pour une pièce émise avant E6c2.
+  deliveryNoteNumbers String[]  @default([]) @map("delivery_note_numbers")
   /// Le rang d'écriture du bon sur la pièce — l'ordre de relecture.
-  position    Int
+  position            Int
 
   @@id([invoiceId, orderId])
   @@unique([invoiceId, position])

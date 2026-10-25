@@ -45,7 +45,8 @@ export class PrismaProcedureOrdersReader extends ProcedureOrdersReader {
           billableOrderWhere(scope.deliveredFrom, scope.deliveredTo),
           {
             ...accountOrderWhere(),
-            receivedOn: null,
+            // Pas soldée (E6c2) : une commande remise en partie attend encore.
+            settledOn: null,
             requestedDeliveryDate: {
               gte: dayColumnOf(scope.servedFrom),
               lte: dayColumnOf(scope.servedThrough),
@@ -61,10 +62,11 @@ export class PrismaProcedureOrdersReader extends ProcedureOrdersReader {
         requestedDeliveryDate: true,
         fulfillmentMethod: true,
         totalCents: true,
+        billableTotalCents: true,
         createdAt: true,
         billedCompanyId: true,
         handedOverAt: true,
-        receivedOn: true,
+        settledOn: true,
         company: { select: { raisonSociale: true } },
       },
     });
@@ -80,11 +82,13 @@ export class PrismaProcedureOrdersReader extends ProcedureOrdersReader {
               companyName: row.company?.raisonSociale ?? "",
               serviceDay: dayOf(row.requestedDeliveryDate),
               fulfillmentMethod: row.fulfillmentMethod === "pickup" ? "pickup" : "delivery",
-              totalCents: row.totalCents,
+              // Ce que la facture porte ; le total commandé tant que rien n'est soldé.
+              totalCents: row.billableTotalCents ?? row.totalCents,
               placedAt: row.createdAt,
               billedCompanyId: row.billedCompanyId,
               handedOver: row.handedOverAt !== null,
-              receivedOn: dayOf(row.receivedOn),
+              // Le jour du solde (E6c2) : celui qui la fait entrer dans l'assiette.
+              receivedOn: dayOf(row.settledOn),
               invoice: invoices.get(row.id) ?? null,
             },
           ],

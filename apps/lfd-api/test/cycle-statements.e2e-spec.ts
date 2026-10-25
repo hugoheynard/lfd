@@ -34,6 +34,7 @@ import {
   createUser,
   markDelivered,
   receivedColumns,
+  settleByRecopy,
 } from "./factories.js";
 import {
   cardGatewayDouble,
@@ -128,7 +129,7 @@ async function seedLegacyOrder(buyer: Client, seed: LegacyOrderSeed): Promise<st
   seq += 1;
   const orderNumber = `ORD-${String(900_000 + seq)}`;
   const createdAt = new Date();
-  await ctx.prisma.order.create({
+  const created = await ctx.prisma.order.create({
     data: {
       orderNumber,
       companyId: buyer.companyId,
@@ -145,6 +146,7 @@ async function seedLegacyOrder(buyer: Client, seed: LegacyOrderSeed): Promise<st
       ...receivedColumns(createdAt),
     },
   });
+  await settleByRecopy(ctx.prisma, created.id);
   return orderNumber;
 }
 

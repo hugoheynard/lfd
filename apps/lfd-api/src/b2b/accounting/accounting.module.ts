@@ -197,6 +197,7 @@ import { PrismaLegalEntityReader } from "./infrastructure/prisma-legal-entity.re
 import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entity.repository.js";
 import { AccountOrderEngaging } from "./application/services/account-order-engaging.js";
 import { AccountOrderRevaluing } from "./application/services/account-order-revaluing.js";
+import { AccountOrderSettling } from "./application/services/account-order-settling.js";
 import { OrderEngagementReader } from "./domain/ports/order-engagement.reader.js";
 import { OrderRowsLock } from "./domain/ports/order-rows-lock.js";
 import { PrismaOrderEngagementReader } from "./infrastructure/prisma-order-engagement.reader.js";
@@ -294,6 +295,7 @@ import { PrismaOrderRowsLock } from "./infrastructure/prisma-order-rows-lock.js"
     { provide: OrderEngagementReader, useClass: PrismaOrderEngagementReader },
     AccountOrderEngaging,
     AccountOrderRevaluing,
+    AccountOrderSettling,
     { provide: OrderNumbersReader, useClass: PrismaOrderNumbersReader },
     // La facture émise (plan `facture-emise.md`).
     { provide: InvoiceNumbering, useClass: PrismaInvoiceNumbering },
@@ -401,6 +403,7 @@ import { PrismaOrderRowsLock } from "./infrastructure/prisma-order-rows-lock.js"
     FirstMandateLedger,
     AccountOrderEngaging,
     AccountOrderRevaluing,
+    AccountOrderSettling,
   ],
 })
 export class AccountingModule {}

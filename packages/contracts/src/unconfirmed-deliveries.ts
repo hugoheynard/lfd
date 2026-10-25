@@ -18,7 +18,13 @@ export interface UnconfirmedDeliveryView {
   /** `AAAA-MM-JJ` — le jour de retrait ou de livraison demandé. */
   readonly serviceDay: string;
   readonly fulfillmentMethod: "pickup" | "delivery";
+  /** Le total COMMANDÉ : rien n'est encore facturable. */
   readonly totalCents: number;
+  /**
+   * Remise en partie (un départ incomplet), pas encore soldée : « en attente
+   * du reste » (plan E6c2, § 4.3). `false` : rien n'est remis.
+   */
+  readonly awaitingRemainder: boolean;
 }
 
 /** `GET admin/accounting/unconfirmed-deliveries` — du jour le plus ancien au plus récent. */

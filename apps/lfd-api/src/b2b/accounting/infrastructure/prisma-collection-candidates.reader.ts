@@ -15,9 +15,9 @@ import type { CollectionFormName } from "../domain/value-objects/collection-form
 import type { SepaScheme } from "../domain/value-objects/sepa-scheme.js";
 import { billableOrderWhere } from "./billable-order-criterion.js";
 import {
-  FROZEN_INVOICE_ORDER_SELECT,
-  toFrozenInvoiceOrder,
-} from "./frozen-invoice-order.mapper.js";
+  BILLABLE_INVOICE_ORDER_SELECT,
+  toBillableInvoiceOrder,
+} from "./billable-invoice-order.mapper.js";
 import { toOrderCollectionState } from "./order-collection.mapper.js";
 import { LIVE_BATCH_STATUS } from "./live-batch-status.js";
 
@@ -65,7 +65,7 @@ export class PrismaCollectionCandidatesReader
       orderBy: [{ createdAt: "asc" }, { orderNumber: "asc" }],
       // Une seule lecture rend aussi ce que le bon a figé pour sa facture.
       select: {
-        ...FROZEN_INVOICE_ORDER_SELECT,
+        ...BILLABLE_INVOICE_ORDER_SELECT,
         id: true,
         companyId: true,
         billedCompanyId: true,
@@ -86,6 +86,8 @@ export class PrismaCollectionCandidatesReader
       ) {
         return [];
       }
+      // Ce qui est prélevé est ce qui est parti : le montant facturable (E6c2).
+      const frozen = toBillableInvoiceOrder(order);
       return [
         {
           orderId: order.id,
@@ -93,8 +95,8 @@ export class PrismaCollectionCandidatesReader
           companyId: order.companyId,
           placedAt: order.createdAt,
           billedCompanyId: order.billedCompanyId,
-          totalCents: order.totalCents,
-          frozen: toFrozenInvoiceOrder(order),
+          totalCents: frozen.totalCents,
+          frozen,
           collection: state === undefined ? null : toOrderCollectionState(state),
         },
       ];

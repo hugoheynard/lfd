@@ -24,14 +24,15 @@ export class PrismaOrderCollectionRepository extends OrderCollectionRepository {
     }
     const order = await this.prisma.order.findFirst({
       where: { ...billableSinceWhere(floor.floorAt), id: orderId },
-      select: { id: true, totalCents: true },
+      select: { id: true, billableTotalCents: true },
     });
-    if (order === null) {
+    // L'assiette exige le solde posé : jamais encaissé avant (plan E6c2, § 0).
+    if (order?.billableTotalCents == null) {
       return null;
     }
     const row = await this.prisma.orderCollection.findUnique({ where: { orderId } });
     return row === null
-      ? OrderCollection.due(order.id, order.totalCents, this.clock.now())
+      ? OrderCollection.due(order.id, order.billableTotalCents, this.clock.now())
       : OrderCollection.rehydrate(toOrderCollectionState(row));
   }
 

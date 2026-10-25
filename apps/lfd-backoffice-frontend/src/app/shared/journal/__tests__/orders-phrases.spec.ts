@@ -589,3 +589,27 @@ describe('la modification d’une commande (order.revised)', () => {
     expect(sentence(byCustomer)).toContain('Jean Dupont a modifié sa commande ORD-7');
   });
 });
+
+describe('le départ incomplet décidé (order.shortfall_decided)', () => {
+  const decided = fact({
+    type: 'order.shortfall_decided',
+    subjectType: 'user',
+    actorName: 'Système',
+    payload: {
+      subjectLabel: 'Jean Dupont',
+      orderId: 'ord_1',
+      orderNumber: 'ORD-7',
+      decidedBy: { id: 'stf_1', name: 'Cécile Martin' },
+      departing: [{ sku: 'CRO', quantity: 9 }],
+      remainder: 'abandoned',
+    },
+  });
+
+  it('nomme la fiche qui a décidé, et garde ce qui part et le reste au détail', () => {
+    expect(sentence(decided)).toBe(
+      'Cécile Martin a décidé d’un départ incomplet pour la commande ORD-7 — Jean Dupont',
+    );
+    expect(row(decided, 'Le reste')).toBe('Abandonné, non relivré');
+    expect(row(decided, 'Ce qui part')).toBeDefined();
+  });
+});

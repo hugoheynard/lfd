@@ -41,8 +41,11 @@ describe("les bons que la constitution lit (F1)", () => {
     // (plan T, 2026-10-25).
     await ctx.prisma.order.update({
       where: { id: placed.id },
+      // Le solde, posé à la remise, est ce que le prélèvement lit (E6c2) : la
+      // retouche s'y écrit aussi, comme la recopie l'aurait posée.
       data: {
         lateFeeCents: 200,
+        billableLateFeeCents: 200,
         lateFeeAdjustment: { adjustment: { mode: "amount", cents: 200 }, vatRatePercent: 5.5 },
       },
     });
@@ -254,7 +257,8 @@ describe("le prélèvement suit la facture (F2)", () => {
     // est forcé après coup (plan T, 2026-10-25).
     await ctx.prisma.order.update({
       where: { id: broken.id },
-      data: { totalCents: broken.totalCents - 1 },
+      // Le solde est ce que le prélèvement lit (E6c2) : forcé aussi.
+      data: { totalCents: broken.totalCents - 1, billableTotalCents: broken.totalCents - 1 },
     });
     const other = await orderOf(quai);
 

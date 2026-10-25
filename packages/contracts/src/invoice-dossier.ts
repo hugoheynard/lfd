@@ -32,7 +32,7 @@ export interface InvoiceIssuanceBlockerView {
     | "payment_terms_missing"
     | "invoice_prefix_missing"
     | "order_delivery_unknown"
-    | "order_shortfall_pending"
+    | "order_unsettled"
     | "buyer_unknown"
     | "buyer_siren_missing"
     | "buyer_vat_missing"

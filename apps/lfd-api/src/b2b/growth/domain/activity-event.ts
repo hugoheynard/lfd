@@ -73,6 +73,13 @@ export const ACTIVITY_TYPES = {
   orderCancelled: "order.cancelled",
   orderRevised: "order.revised",
   /**
+   * L'équipe a **décidé d'un départ incomplet** (plan
+   * `plan-e6c2-la-facture-lit-les-montants-facturables.md`, § 5) : la facture
+   * lira ce qui part. Un fait de cycle de vie : aucun score ne le lit au
+   * 2026-10-25.
+   */
+  orderShortfallDecided: "order.shortfall_decided",
+  /**
    * La commande a **changé de mains**. Le fait le plus important du lot : c'est
    * lui qu'on cherchera le jour où un client dit n'avoir rien reçu.
    *

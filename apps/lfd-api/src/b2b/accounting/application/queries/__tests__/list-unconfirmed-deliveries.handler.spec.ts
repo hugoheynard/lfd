@@ -28,6 +28,7 @@ describe("ListUnconfirmedDeliveries — les bons à constater (lot ZL)", () => {
         totalCents: 1200,
         placedAt: new Date("2026-10-30T08:00:00.000Z"),
         billedCompanyId: null,
+        awaitingRemainder: false,
       },
     ];
     const handler = new ListUnconfirmedDeliveriesHandler(

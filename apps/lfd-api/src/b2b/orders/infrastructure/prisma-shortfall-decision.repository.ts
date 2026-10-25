@@ -13,6 +13,7 @@ import { shortfallLinesOf } from "./prisma-order-shortfall.repository.js";
 const SUBJECT_SELECT = {
   id: true,
   orderNumber: true,
+  placedByUserId: true,
   status: true,
   paymentStatus: true,
   totalCents: true,
@@ -47,6 +48,7 @@ function lockedOf(row: SubjectRow): LockedShortfallSubject {
       ],
       decided: row.shortfallDecision !== null,
     },
+    placedByUserId: row.placedByUserId,
     shortfall: {
       orderId: row.id,
       reference: row.orderNumber,

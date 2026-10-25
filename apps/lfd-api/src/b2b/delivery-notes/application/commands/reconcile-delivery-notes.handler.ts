@@ -263,12 +263,12 @@ export class ReconcileDeliveryNotesHandler implements ICommandHandler<
 /** Ce que le journal dit d'un écart du solde, selon sa cause. */
 function billingGapSentence(gap: {
   readonly fields: readonly string[];
-  readonly invoiced: boolean;
+  readonly engaged: boolean;
 }): string {
   if (gap.fields.includes("receivedOn") || gap.fields.includes("terms")) {
     return "Un BL remis n'a pas de jour de réception ou d'en-tête : la commande n'est pas soldée, à reprendre à la main.";
   }
-  return gap.invoiced
-    ? "Déjà facturée : rien n'a été corrigé, à reprendre à la main."
+  return gap.engaged
+    ? "Déjà engagée (facture, relevé ou prélèvement) : rien n'a été corrigé ; un écart se reprend par un avoir."
     : "Non corrigés : la commande n'est plus soldée.";
 }

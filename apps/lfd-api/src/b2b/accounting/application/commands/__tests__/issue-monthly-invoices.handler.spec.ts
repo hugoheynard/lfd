@@ -79,6 +79,7 @@ function bon(companyId: string, overrides: Partial<InvoiceableOrder> = {}): Invo
     receivedOn: RECEIVED_ON,
     billedCompanyId: null,
     frozen: frozenOrder(orderNumber, placedAt),
+    deliveryNoteNumbers: [`BL-${String(seq).padStart(3, "0")}-1`],
     ...overrides,
   };
 }

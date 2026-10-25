@@ -1,7 +1,7 @@
 import {
   invoiceIssuanceBlockers,
   orderDeliveryBlockers,
-  orderShortfallBlockers,
+  orderSettlementBlockers,
   payerIssuanceBlockers,
   sellerBlockers,
   type InvoiceBuyerFacts,
@@ -170,13 +170,21 @@ describe("le préfixe et la date de livraison (lot ZA)", () => {
   });
 });
 
-describe("orderShortfallBlockers — garde avant E6c2 (plan E6)", () => {
-  it("nomme le bon retenu par un départ incomplet, « facturation à venir »", () => {
-    const blockers = orderShortfallBlockers([
+describe("orderSettlementBlockers — un bon remis mais pas soldé (plan E6c2, § 1)", () => {
+  it("nomme le bon dont les montants facturables ne sont pas posés, et le geste de sortie", () => {
+    const blockers = orderSettlementBlockers([
       { reference: "ORD-001", receivedOn: "2030-01-10" },
-      { reference: "ORD-002", receivedOn: "2030-01-10", shortfallHeld: true },
+      { reference: "ORD-002", receivedOn: "2030-01-10", unsettled: true },
     ]);
-    expect(blockers.map((b) => b.code)).toEqual(["order_shortfall_pending"]);
-    expect(blockers[0]?.message).toContain("ORD-002 est un départ incomplet — facturation à venir");
+    expect(blockers.map((blocker) => blocker.code)).toEqual(["order_unsettled"]);
+    expect(blockers[0]?.message).toContain("ORD-002 est remis, aucun reste n'est attendu");
+    expect(blockers[0]?.message).toContain("POST admin/delivery-notes/reconcile");
+  });
+
+  /** Régression d'E6c1 : un départ incomplet SOLDÉ ne bloque plus la facture de son payeur. */
+  it("ne retient plus un bon soldé, départ incomplet ou non", () => {
+    expect(orderSettlementBlockers([{ reference: "ORD-003", receivedOn: "2030-01-10" }])).toEqual(
+      [],
+    );
   });
 });

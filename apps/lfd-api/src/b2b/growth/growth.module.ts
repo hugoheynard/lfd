@@ -23,6 +23,7 @@ import { OnOrderPlaced } from "./application/handlers/on-order-placed.handler.js
 import { OnOrderAbandoned } from "./application/handlers/on-order-abandoned.handler.js";
 import { OnOrderCancelled } from "./application/handlers/on-order-cancelled.handler.js";
 import { OnOrderRevised } from "./application/handlers/on-order-revised.handler.js";
+import { OnOrderShortfallDecided } from "./application/handlers/on-order-shortfall-decided.handler.js";
 import { OnOrderReady } from "./application/handlers/on-order-ready.handler.js";
 import { OnSubscriptionCreated } from "./application/handlers/on-subscription-created.handler.js";
 import { OnGuestAccountClaimed } from "./application/handlers/on-guest-account-claimed.handler.js";
@@ -217,6 +218,7 @@ import { PrismaProspectReader } from "./infrastructure/prisma-prospect.reader.js
     OnOrderAbandoned,
     OnOrderCancelled,
     OnOrderRevised,
+    OnOrderShortfallDecided,
     OnOrderHandedOver,
     OnCompanyDeclared,
     OnCompanyStepReached,

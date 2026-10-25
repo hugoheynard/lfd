@@ -63,8 +63,13 @@ export interface InvoiceOrderReference {
   readonly reference: string;
   /** `AAAA-MM-JJ`, ou `null` : non livré (ou inconnu) au jour de l'émission. */
   readonly receivedOn: string | null;
-  /** Retenu par un départ incomplet décidé (E6b) — garde avant E6c2. Absent = non. */
-  readonly shortfallHeld?: boolean;
+  /**
+   * Les bons de livraison remis qu'elle facture, par rang (plan E6 § 11, E6c2) :
+   * cités par la ligne de référence. Absent d'une facture émise avant E6c2.
+   */
+  readonly deliveryNoteNumbers?: readonly string[];
+  /** Remis mais pas soldé : le bloqueur arrête la facture (plan E6c2, § 1). Absent = soldé. */
+  readonly unsettled?: boolean;
 }
 
 /** UNTDID 4461 — le prélèvement SEPA, le moyen de la facture du mois. */

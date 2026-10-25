@@ -7,6 +7,8 @@ import type {
 /** La commande relue sous son verrou : ce que la décision juge, et le signal qu'elle résout. */
 export interface LockedShortfallSubject {
   readonly subject: ShortfallDecisionSubject;
+  /** Le client qui a passé la commande : le sujet du témoin au journal. */
+  readonly placedByUserId: string;
   readonly shortfall: OrderShortfallSnapshot;
 }
 

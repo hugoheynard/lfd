@@ -3,26 +3,27 @@ import { instantToLocal } from "@lfd/contracts";
 import type { Prisma } from "../../../platform/database/client/client.js";
 
 /**
- * 🔴 **Garde technique avant E6c2** (plan
- * `documentation/commandes/plan-e6-le-depart-incomplet.md` § 12.3, relecture
- * de `vitruve` sur le bâti d'E6b) : une commande dont le départ incomplet est
- * décidé n'entre dans AUCUNE assiette — ni facture, ni lot de prélèvement —
- * tant que les lecteurs lisent les totaux de la commande entière et non ses
- * montants facturables. Elle est nommée au bloqueur d'émission
- * ({@link shortfallHeldWhere}) et reste dans les « Bons à constater »
- * (`accountOrderWhere` ne l'exclut pas). E6c2 remplace cette exclusion par la
- * lecture de `billable_*`.
+ * **Soldée** (lot E6c2, plan
+ * `documentation/commandes/plan-e6c2-la-facture-lit-les-montants-facturables.md`
+ * § 4.4) : ses montants facturables sont posés. Ajouté à l'assiette de la
+ * facture et du lot SEULEMENT — jamais à {@link accountOrderWhere}, que les
+ * bons à constater et les bons à venir du cycle partagent : une commande
+ * remise mais non soldée doit y rester visible.
  */
-const NOT_HELD_FOR_SHORTFALL = {
-  shortfallDecidedAt: null,
+const SETTLED = {
+  billableTotalCents: { not: null },
 } as const satisfies Prisma.OrderWhereInput;
 
 /**
  * **L'assiette, écrite une seule fois** : « ce bon passé au compte a été
- * LIVRÉ pendant `[from, to[` » — jour de réception, pas jour de commande,
- * depuis le lot ZL (plan `plan-zero-faille.md`, §12, Hugo 2026-10-22).
+ * SOLDÉ pendant `[from, to[` » — jour de livraison, pas jour de commande,
+ * depuis le lot ZL (plan `plan-zero-faille.md`, §12, Hugo 2026-10-22) ; le
+ * jour du SOLDE (`settled_on`, la dernière remise) depuis E6c2 (Q-E6-3 : une
+ * commande se facture au mois de son solde). Pour une commande à un BL
+ * complet, `settled_on` est la recopie de `received_on` (pré-condition du
+ * runbook) : rien ne change de mois.
  *
- * ## Les cinq critères, et ce que chacun évite
+ * ## Les six critères, et ce que chacun évite
  *
  * | Critère                        | Ce qu'il évite                                                  |
  * | ------------------------------ | ---------------------------------------------------------------- |
@@ -30,7 +31,8 @@ const NOT_HELD_FOR_SHORTFALL = {
  * | `total_cents > 0`              | 🔴 les commandes GRATUITES, qui sont aussi `not_required`        |
  * | `status <> 'cancelled'`        | prélever ce qui n'a rien produit                                |
  * | `company_id IS NOT NULL`       | un bon sans société, que le compte refuse de toute façon        |
- * | `received_on` dans la fenêtre | facturer un bon pas encore livré, ou dans le mauvais mois       |
+ * | `settled_on` dans la fenêtre   | facturer un bon pas encore soldé, ou dans le mauvais mois       |
+ * | `billable_total_cents` posé    | facturer ce qui n'est pas parti (le solde n'est pas posé)       |
  *
  * ## Pourquoi la livraison, et pas la commande
  *
@@ -45,7 +47,7 @@ const NOT_HELD_FOR_SHORTFALL = {
  *
  * ## Jour à jour, à Paris
  *
- * `received_on` est un JOUR de Paris (`@db.Date`) ; les bornes sont des
+ * `settled_on` est un JOUR de Paris (`@db.Date`) ; les bornes sont des
  * instants (une clôture est un minuit de Paris, le plancher peut tomber en
  * journée). On compare donc des jours : `[jour(from), jour(to)[`, chacun lu à
  * Paris. Une clôture du 1er novembre à 00h00 exclut le 1er et garde le 31.
@@ -82,29 +84,61 @@ const NOT_HELD_FOR_SHORTFALL = {
 export function billableOrderWhere(from: Date, to: Date): Prisma.OrderWhereInput {
   return {
     ...accountOrderWhere(),
-    ...NOT_HELD_FOR_SHORTFALL,
-    receivedOn: { gte: parisDayOf(from), lt: parisDayOf(to) },
-  };
-}
-
-/** Les commandes de la fenêtre que la garde ci-dessus retient — pour les nommer. */
-export function shortfallHeldWhere(from: Date, to: Date): Prisma.OrderWhereInput {
-  return {
-    ...accountOrderWhere(),
-    shortfallDecidedAt: { not: null },
-    receivedOn: { gte: parisDayOf(from), lt: parisDayOf(to) },
+    ...SETTLED,
+    settledOn: { gte: parisDayOf(from), lt: parisDayOf(to) },
   };
 }
 
 /**
- * La même assiette, sans borne haute : livré depuis `from`. Pour juger UN bon
- * à l'instant (l'état d'encaissement) — un bon livré aujourd'hui y est.
+ * Les bons de la fenêtre REMIS mais pas soldés — ceux que l'assiette écarte
+ * faute de montants facturables. Le lecteur les trie avec
+ * {@link AWAITING_REMAINDER_SELECT} : en attente de leur reste (signalés,
+ * hors facture) ou anomalie (le bloqueur d'émission les nomme) — § 1 du plan
+ * E6c2. Ils ne disparaissent jamais en silence de la facture.
+ */
+export function unsettledWhere(from: Date, to: Date): Prisma.OrderWhereInput {
+  return {
+    ...accountOrderWhere(),
+    billableTotalCents: null,
+    receivedOn: { gte: parisDayOf(from), lt: parisDayOf(to) },
+  };
+}
+
+/** Les BL encore à remettre : ni remis, ni annulés. */
+const PENDING_NOTE_STATUSES = ["planned", "prepared"] as const;
+
+/** Le sort du reste quand tout est dit : rien n'est plus attendu. */
+const ABANDONED_REMAINDER = "abandoned";
+
+/** Ce qu'il faut lire d'un bon non soldé pour savoir s'il attend un reste. */
+export const AWAITING_REMAINDER_SELECT = {
+  shortfallDecision: { select: { remainder: true } },
+  _count: { select: { deliveryNotes: { where: { status: { in: [...PENDING_NOTE_STATUSES] } } } } },
+} as const satisfies Prisma.OrderSelect;
+
+/**
+ * Un reste est encore attendu : une décision « à relivrer » (E7), ou un BL ni
+ * remis ni annulé. Sinon, un bon remis sans solde est une anomalie.
+ */
+export function awaitsRemainder(row: {
+  readonly shortfallDecision: { readonly remainder: string } | null;
+  readonly _count: { readonly deliveryNotes: number };
+}): boolean {
+  const decided = row.shortfallDecision;
+  return (
+    (decided !== null && decided.remainder !== ABANDONED_REMAINDER) || row._count.deliveryNotes > 0
+  );
+}
+
+/**
+ * La même assiette, sans borne haute : soldé depuis `from`. Pour juger UN bon
+ * à l'instant (l'état d'encaissement) — un bon soldé aujourd'hui y est.
  */
 export function billableSinceWhere(from: Date): Prisma.OrderWhereInput {
   return {
     ...accountOrderWhere(),
-    ...NOT_HELD_FOR_SHORTFALL,
-    receivedOn: { gte: parisDayOf(from) },
+    ...SETTLED,
+    settledOn: { gte: parisDayOf(from) },
   };
 }
 

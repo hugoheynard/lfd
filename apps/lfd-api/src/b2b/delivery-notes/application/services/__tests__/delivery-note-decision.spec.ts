@@ -297,7 +297,7 @@ describe("Le solde par le réconciliateur (E6c1)", () => {
     const report = await reconciler.execute();
     expect(report.billing.corrected).toBe(0);
     expect(report.billing.gaps).toEqual([
-      { orderId: "ord_1", orderNumber: "ORD-7", fields: ["totalCents"], invoiced: true },
+      { orderId: "ord_1", orderNumber: "ORD-7", fields: ["totalCents"], engaged: true },
     ]);
   });
 

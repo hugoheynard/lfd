@@ -310,5 +310,7 @@ export const ORDERS_VALUES: ValueFamily = {
     // Le `mode` d'une surtaxe de retard (`CartAdjustment`).
     percent: 'Pourcentage',
     amount: 'Montant',
+    // Le sort du reste d'un départ incomplet (`order.shortfall_decided`, plan E6c2).
+    abandoned: 'Abandonné, non relivré',
   },
 };

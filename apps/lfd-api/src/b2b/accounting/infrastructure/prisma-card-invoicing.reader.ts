@@ -8,6 +8,7 @@ import {
   FROZEN_INVOICE_ORDER_SELECT,
   toFrozenInvoiceOrder,
 } from "./frozen-invoice-order.mapper.js";
+import { handedOverNoteNumbersOf } from "./billable-invoice-order.mapper.js";
 
 /** `AAAA-MM-JJ` — la longueur d'un jour ISO. */
 const DAY_LENGTH = 10;
@@ -41,6 +42,11 @@ export class PrismaCardInvoicingReader extends CardInvoicingReader {
         handedOverAt: true,
         receivedOn: true,
         refunds: { where: { status: "succeeded" }, select: { amountCents: true } },
+        deliveryNotes: {
+          where: { status: "handed_over" },
+          orderBy: { rank: "asc" },
+          select: { number: true },
+        },
       },
     });
     if (order === null) {
@@ -67,7 +73,10 @@ export class PrismaCardInvoicingReader extends CardInvoicingReader {
       invoiced: invoiced > 0,
       refundedCents: order.refunds.reduce((sum, refund) => sum + refund.amountCents, 0),
       follows,
+      // La facture carte garde les totaux de la COMMANDE (plan E6c2, § 4) : pas
+      // de départ incomplet par carte, et elle part à la remise, avant tout solde.
       frozen: toFrozenInvoiceOrder(order),
+      deliveryNoteNumbers: handedOverNoteNumbersOf(order),
     };
   }
 

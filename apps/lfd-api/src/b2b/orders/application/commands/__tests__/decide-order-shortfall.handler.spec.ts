@@ -24,6 +24,7 @@ import {
 import { DecideOrderShortfallCommand } from "../decide-order-shortfall.command.js";
 import { DecideOrderShortfallHandler } from "../decide-order-shortfall.handler.js";
 import { RecordingDeliveryNoteFollowing } from "./delivery-note-following-double.js";
+import { RecordingDurable } from "./durable-doubles.js";
 
 // Instants comparés entre eux, jamais à l'horloge.
 const NOW = new Date(5_000);
@@ -109,6 +110,7 @@ function locked(settlementRegime: "account" | "paid" = "account"): LockedShortfa
       frozenTerms: [],
       decided: false,
     },
+    placedByUserId: "u_1",
     shortfall: {
       orderId: "ord_1",
       reference: "ORD-0001",
@@ -125,16 +127,18 @@ function scene(subject: LockedShortfallSubject | null, refusal: BusinessError | 
   const shortfalls = new RecordingShortfalls(trace);
   const desk = new RecordingDesk(trace, refusal);
   const notes = new RecordingDeliveryNoteFollowing();
+  const durable = new RecordingDurable();
   const handler = new DecideOrderShortfallHandler(
     decisions,
     shortfalls,
     desk,
     notes,
+    durable,
     new FixedIdGenerator("dec"),
     new FixedClock(NOW),
     new DirectUnitOfWork(),
   );
-  return { trace, decisions, shortfalls, desk, notes, handler };
+  return { trace, decisions, shortfalls, desk, notes, durable, handler };
 }
 
 const COMMAND = new DecideOrderShortfallCommand("ord_1", "staff_1", "abandoned");
@@ -158,6 +162,27 @@ describe("DecideOrderShortfallHandler — « Décider du départ » (E6b)", () =
     expect(notes.calls).toEqual(["follow-decision:ord_1"]);
   });
 
+  it("inscrit la décision au journal : auteur, ce qui part, le reste (plan E6c2, § 5)", async () => {
+    const { durable, handler } = scene(locked());
+
+    await handler.execute(COMMAND);
+
+    expect(durable.facts).toEqual([
+      {
+        type: "order.shortfall_decided",
+        key: "order.shortfall_decided:ord_1",
+        payload: {
+          orderId: "ord_1",
+          orderNumber: "ORD-0001",
+          placedByUserId: "u_1",
+          decidedByStaffId: "staff_1",
+          departing: [{ sku: "CRO", quantity: 9 }],
+          remainder: "abandoned",
+        },
+      },
+    ]);
+  });
+
   it("un refus de l'agrégat n'écrit rien, et le colisage n'est pas appelé", async () => {
     const { trace, notes, handler } = scene(locked("paid"));
 
@@ -167,10 +192,11 @@ describe("DecideOrderShortfallHandler — « Décider du départ » (E6b)", () =
   });
 
   it("un refus du colisage (bac fermé) n'écrit ni décision ni signal", async () => {
-    const { trace, notes, handler } = scene(locked(), new BoxClosedError());
+    const { trace, notes, durable, handler } = scene(locked(), new BoxClosedError());
 
     await expect(handler.execute(COMMAND)).rejects.toThrow(BoxClosedError);
     expect(trace).toEqual(["lock-order", "authorize-sheet"]);
+    expect(durable.facts).toEqual([]);
     expect(notes.calls).toEqual([]);
   });
 

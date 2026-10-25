@@ -35,7 +35,7 @@ import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { attachTo, createCompany, createUser, markDelivered } from "./factories.js";
+import { attachTo, createCompany, createUser, markDelivered, settleByRecopy } from "./factories.js";
 import {
   cardGatewayDouble,
   payByCard,
@@ -157,7 +157,7 @@ async function seedLateFeeOrder(
       ? 0
       : Math.round((lateFee.cents * lateFee.vatRatePercent) / 100);
   const goodsVat = Math.round(goods * 0.055);
-  await ctx.prisma.order.create({
+  const created = await ctx.prisma.order.create({
     data: {
       orderNumber,
       companyId: buyer.companyId,
@@ -193,6 +193,7 @@ async function seedLateFeeOrder(
       },
     },
   });
+  await settleByRecopy(ctx.prisma, created.id);
   return orderNumber;
 }
 

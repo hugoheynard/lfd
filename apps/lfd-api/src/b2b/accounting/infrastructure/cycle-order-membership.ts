@@ -156,18 +156,20 @@ async function pendingInCycle(
   const rows = await prisma.order.findMany({
     where: {
       AND: [accountOrderWhere(), companyWallWhere(companyIds)],
-      receivedOn: {
+      // Le jour du SOLDE (E6c2, Q-E6-3), comme l'assiette de la facture : un
+      // bon non soldé n'est à venir dans aucun cycle.
+      settledOn: {
         gte: dayColumnOf(earliestPendingDay(cycle, progress)),
         lt: dayColumnOf(parisDay(cycle.closesAt)),
       },
     },
-    select: { id: true, receivedOn: true },
+    select: { id: true, settledOn: true },
   });
   const inCycle = rows.filter(
     (row) =>
-      row.receivedOn !== null &&
+      row.settledOn !== null &&
       // `@db.Date` : minuit UTC, dont la date ISO EST le jour de Paris.
-      pendingOrderIsInCycle(row.receivedOn.toISOString().slice(0, DAY_LENGTH), cycle, progress),
+      pendingOrderIsInCycle(row.settledOn.toISOString().slice(0, DAY_LENGTH), cycle, progress),
   );
   const invoiced = await prisma.invoiceOrder.findMany({
     where: { invoiceType: COMMERCIAL_INVOICE, orderId: { in: inCycle.map((row) => row.id) } },
