@@ -10,7 +10,10 @@ import type { ServiceDay } from "../../domain/value-objects/service-day.value-ob
  * `trace` reçoit les lectures, pour éprouver l'ordre avec le verrou.
  */
 export class InMemoryWithdrawals extends OrderWithdrawalsReader {
-  readonly rows = new Map<string, { readonly day: string; readonly at: Date }>();
+  readonly rows = new Map<
+    string,
+    { readonly day: string; readonly at: Date; readonly afterInscription: boolean }
+  >();
 
   constructor(private readonly trace: string[] = []) {
     super();
@@ -34,10 +37,10 @@ export class InMemoryWithdrawalLedger extends OrderWithdrawalLedger {
     super();
   }
 
-  record(day: ServiceDay, orderId: string, at: Date): Promise<void> {
+  record(day: ServiceDay, orderId: string, at: Date, afterInscription: boolean): Promise<void> {
     this.trace.push(`record:${orderId}`);
     if (!this.withdrawals.rows.has(orderId)) {
-      this.withdrawals.rows.set(orderId, { day: day.value, at });
+      this.withdrawals.rows.set(orderId, { day: day.value, at, afterInscription });
     }
     return Promise.resolve();
   }

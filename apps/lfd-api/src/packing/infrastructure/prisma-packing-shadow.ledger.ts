@@ -36,6 +36,17 @@ export class PrismaPackingShadowLedger extends PackingShadowLedger {
       ],
       skipDuplicates: true,
     });
+    // Plan A1, § 2.2 : une feuille retirée — ou sa pierre tombale, posée par
+    // l'annulation avant que la liste n'arrive — ne reçoit pas de lignes.
+    // Relue APRÈS l'insertion : une pierre tombale en cours d'écriture fait
+    // attendre l'`INSERT`, et la relecture voit alors son `withdrawn_at`.
+    const drawn = await this.prisma.packingOrder.findUnique({
+      where: { serviceDay_orderId: { serviceDay: order.serviceDay, orderId: order.orderId } },
+      select: { withdrawnAt: true },
+    });
+    if (drawn !== null && drawn.withdrawnAt !== null) {
+      return;
+    }
     await this.prisma.packingLine.createMany({
       data: order.lines.map((line) => ({
         serviceDay: order.serviceDay,

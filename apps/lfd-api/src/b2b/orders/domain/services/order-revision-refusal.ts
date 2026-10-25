@@ -30,6 +30,14 @@ export function revisionRefusalOf(block: CancellationBlock): string {
       return block.day === null
         ? "Le fournil a déjà inscrit cette commande au compte à produire : elle ne se modifie plus. Voyez avec le fournil."
         : `Le fournil a déjà inscrit cette commande au compte à produire du ${shortDay(block.day)} : elle ne se modifie plus. Voyez avec le fournil.`;
+    // Plan A1 : refus de l'annulation au-delà de l'inscription, jamais
+    // rendus par la modification (`BEFORE_INSCRIPTION`) — dits quand même.
+    case "delivery_after_plan":
+    case "packed":
+    case "delivery_bin":
+      return "Cette commande est déjà au colisage : elle ne se modifie plus. Voyez avec le fournil.";
+    case "state_changed":
+      return "L'état de cette commande a changé pendant la modification : rien n'a été modifié. Rechargez-la.";
     case "refund_in_flight":
     case "paid_just_now":
       return "Cette commande a un règlement par carte en cours : elle ne se modifie pas. Annulez-la et recommandez, ou demandez au commerce.";

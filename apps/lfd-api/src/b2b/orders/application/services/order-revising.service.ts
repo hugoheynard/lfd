@@ -280,6 +280,7 @@ function subjectOf(order: RevisableOrder) {
     orderNumber: order.orderNumber,
     placedByUserId: order.placedByUserId,
     companyId: order.companyId,
+    fulfillmentMethod: order.fulfillment.method,
     status: order.status,
     paymentStatus: order.paymentStatus,
     totalCents: order.totalCents,

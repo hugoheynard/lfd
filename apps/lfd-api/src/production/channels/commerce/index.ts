@@ -75,7 +75,11 @@ export {
 // 2026-10-12) : deux ports que le fournil DÉCLARE et IMPLÉMENTE pour le
 // commerce — retirer une commande sous le verrou de la journée, et dire si
 // elle est inscrite (affichage).
-export { OrderWithdrawalDesk, type OrderWithdrawalOutcome } from "./order-withdrawal.desk.js";
+export {
+  OrderWithdrawalDesk,
+  type OrderWithdrawalAllowance,
+  type OrderWithdrawalOutcome,
+} from "./order-withdrawal.desk.js";
 export { OrderInscriptionReader } from "./order-inscription.reader.js";
 // La modification d'une commande (plan `commandes/modification/plan-modifier-une-commande.md`,
 // §9.1, 2026-10-23) : le guichet que le fournil DÉCLARE et IMPLÉMENTE pour

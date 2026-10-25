@@ -19,6 +19,7 @@ import { AllocateToContainerCommand } from "../allocate-to-container.command.js"
 import { AllocateToContainerHandler } from "../allocate-to-container.handler.js";
 import { GetPackingProposalHandler } from "../get-packing-proposal.handler.js";
 import { GetPackingProposalQuery } from "../get-packing-proposal.query.js";
+import { PackingContainerVoiding } from "../packing-container-voiding.js";
 import { OpenPackingContainerCommand } from "../open-packing-container.command.js";
 import { OpenPackingContainerHandler } from "../open-packing-container.handler.js";
 import { VoidPackingContainerCommand } from "../void-packing-container.command.js";
@@ -73,7 +74,12 @@ function setup(options: { readonly mode?: ContainerMode; readonly received?: num
     ),
     allocate: new AllocateToContainerHandler(sheets, stocks, desk, clock, events, uow),
     withdraw: new WithdrawFromContainerHandler(sheets, stocks, events, uow),
-    void: new VoidPackingContainerHandler(sheets, stocks, desk, clock, events, uow),
+    void: new VoidPackingContainerHandler(
+      sheets,
+      new PackingContainerVoiding(stocks, desk, events),
+      clock,
+      uow,
+    ),
   };
 }
 

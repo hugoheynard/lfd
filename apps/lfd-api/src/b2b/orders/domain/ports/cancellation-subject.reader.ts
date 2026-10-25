@@ -15,6 +15,12 @@ export interface CancellationSubject {
    * l'autorisation du plan A1 (`cancellationAllowanceOf`).
    */
   readonly companyId: string | null;
+  /**
+   * Retrait ou livraison — lu SOUS le verrou de la ligne `orders` par le
+   * geste : une livraison inscrite ne se retire jamais (plan A1, § 1 point 3 ;
+   * on ne défait ni bac ni tournée).
+   */
+  readonly fulfillmentMethod: "pickup" | "delivery";
   readonly status: OrderStatus;
   readonly paymentStatus: PaymentStatus;
   readonly totalCents: number;

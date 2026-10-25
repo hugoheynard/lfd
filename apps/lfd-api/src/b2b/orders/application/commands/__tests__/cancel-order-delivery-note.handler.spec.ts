@@ -18,6 +18,7 @@ import {
   RecordingNoteVoiding,
   ScriptedCancelGateway,
   ScriptedDesk,
+  workshops,
   ScriptedEngagements,
 } from "./cancellation-doubles.js";
 import { RecordingDurable } from "./durable-doubles.js";
@@ -44,7 +45,7 @@ function scene(desk: OrderWithdrawalOutcome = "withdrawn") {
       subjects,
       new InMemoryCancellations(subject, trace),
       new ScriptedCancelGateway({ kind: "cancelled" }, trace),
-      new ScriptedDesk(desk, trace),
+      workshops(new ScriptedDesk(desk, trace)),
       new RecordingRedemption(false, RETURNED),
       new VoucherRestitutionRefusal(subjects, new FixedInscriptions(), rule),
       rule,

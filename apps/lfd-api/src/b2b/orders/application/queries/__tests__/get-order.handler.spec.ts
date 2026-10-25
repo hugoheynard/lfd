@@ -21,6 +21,8 @@ import {
 } from "../../commands/__tests__/cancellation-doubles.js";
 import type { AccountEngagement } from "../../../domain/ports/account-order-engagement.js";
 import { CancellationRule } from "../../services/cancellation-rule.js";
+import { CancellationAllowanceGate } from "../../services/cancellation-allowance-gate.js";
+import { FixedCancellationSettings } from "../../commands/__tests__/customer-cancellation-doubles.js";
 import { orderView } from "../../handlers/__tests__/payment-failure-doubles.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import type { VoucherRestitution } from "../../../domain/ports/loyalty-voucher-redemption.js";
@@ -274,6 +276,7 @@ function adminHandler(
       revisingAt(new FixedClock(NOW), { engagements: new FixedEngagements(engagement) }),
     ),
     new FixedShortfall(shortfall),
+    new CancellationAllowanceGate(new FixedCancellationSettings()),
   );
 }
 

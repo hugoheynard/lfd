@@ -2,9 +2,10 @@
  * Le réglage « Jusqu'où un particulier peut-il annuler ? » (plan A1, lot A1.1 —
  * `documentation/commandes/annulation/plan-a1-retirer-une-commande-inscrite.md`).
  *
- * A1.1 pose le réglage de bout en bout SANS ouvrir l'annulation après l'arrêt
- * du plan : tant que le lot A1.2 n'est pas bâti, l'étape `ready` laisse une
- * commande inscrite refusée, au client comme au staff.
+ * A1.1 pose le réglage de bout en bout. Sous l'étape d'avant (« arrêt du
+ * plan »), une commande inscrite reste refusée, au client comme au staff ; ce
+ * que l'étape `ready` ouvre depuis A1.2 est éprouvé par
+ * `order-cancel-after-plan.e2e-spec.ts` et sa suite des courses.
  */
 import { PaymentStatus } from "../src/platform/database/client/client.js";
 import { E2E_STAFF_SUB, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
@@ -61,12 +62,12 @@ describe("le réglage de l'étape (A1.1)", () => {
   });
 });
 
-describe("étape `ready`, commande inscrite : toujours refusée jusqu'à A1.2", () => {
+describe("étape « arrêt du plan », commande inscrite : refusée", () => {
   const DAY = serviceDay();
 
   it("le particulier et le staff reçoivent le refus d'avant", async () => {
     await setCancellation(false);
-    await setStage("ready").expect(204);
+    await setStage("production_plan").expect(204);
     await seedOrder({ payment: PaymentStatus.paid });
     const author = await customer();
     const order = await seedCustomerOrder({

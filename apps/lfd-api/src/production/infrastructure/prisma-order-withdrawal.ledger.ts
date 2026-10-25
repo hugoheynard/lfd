@@ -15,9 +15,14 @@ export class PrismaOrderWithdrawalLedger extends OrderWithdrawalLedger {
     super();
   }
 
-  async record(day: ServiceDay, orderId: string, at: Date): Promise<void> {
+  async record(
+    day: ServiceDay,
+    orderId: string,
+    at: Date,
+    afterInscription: boolean,
+  ): Promise<void> {
     await this.prisma.orderWithdrawal.createMany({
-      data: [{ orderId, serviceDay: day.value, withdrawnAt: at }],
+      data: [{ orderId, serviceDay: day.value, withdrawnAt: at, afterInscription }],
       skipDuplicates: true,
     });
   }

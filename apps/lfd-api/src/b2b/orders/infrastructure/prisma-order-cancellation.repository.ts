@@ -3,6 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { OrderStatus, PaymentStatus } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import type { CancellationSubject } from "../domain/ports/cancellation-subject.reader.js";
+import type { CancellationAllowance } from "../domain/services/cancellation-allowance.js";
 import {
   OrderCancellationRepository,
   type CancellationRecord,
@@ -13,6 +14,17 @@ import { CANCELLATION_SUBJECT_SELECT, toCancellationSubject } from "./cancellati
 const DUE: readonly PaymentStatus[] = [PaymentStatus.pending, PaymentStatus.failed];
 /** Une carte encaissée — rendue en entier ou non (lot C4). */
 const PAID: readonly PaymentStatus[] = [PaymentStatus.paid, PaymentStatus.refunded];
+
+/**
+ * `placed`, et — plan A1, § 1 point 5 — `confirmed` quand l'autorisation va
+ * jusqu'au colisage. Jamais `ready` : le `where` le refuse même si un
+ * `markReady` passe entre le guichet et l'écriture.
+ */
+function cancellableStatusesUnder(allowance: CancellationAllowance): OrderStatus[] {
+  return allowance.allowance === "before_packing"
+    ? [OrderStatus.placed, OrderStatus.confirmed]
+    : [OrderStatus.placed];
+}
 
 /**
  * L'adaptateur de l'annulation staff. Par le client ROUTÉ : dans l'unité de
@@ -45,7 +57,12 @@ export class PrismaOrderCancellationRepository extends OrderCancellationReposito
     return toCancellationSubject(row);
   }
 
-  async cancel(orderId: string, record: CancellationRecord): Promise<boolean> {
+  async cancel(
+    orderId: string,
+    record: CancellationRecord,
+    allowance: CancellationAllowance,
+  ): Promise<boolean> {
+    const status = { in: cancellableStatusesUnder(allowance) };
     const stamp = {
       status: OrderStatus.cancelled,
       cancelledAt: record.cancelledAt,
@@ -58,11 +75,12 @@ export class PrismaOrderCancellationRepository extends OrderCancellationReposito
     };
     // Deux écritures exclusives par leur `where`, comme `markAbandoned` : le
     // règlement d'une carte non payée tombe aussi (`failed`), le total nul
-    // garde le sien (`not_required`). `status: placed` dans les deux : une
-    // commande déjà annulée — par le balayage, par un autre membre de
-    // l'équipe — ne franchit pas.
+    // garde le sien (`not_required`). `status: placed` dans les deux (plus
+    // `confirmed` sous `before_packing`, plan A1) : une commande déjà annulée
+    // — par le balayage, par un autre membre de l'équipe — ou prête ne
+    // franchit pas.
     const card = await this.prisma.order.updateMany({
-      where: { id: orderId, status: OrderStatus.placed, paymentStatus: { in: [...DUE] } },
+      where: { id: orderId, status, paymentStatus: { in: [...DUE] } },
       data: { ...stamp, paymentStatus: PaymentStatus.failed },
     });
     if (card.count === 1) {
@@ -71,7 +89,7 @@ export class PrismaOrderCancellationRepository extends OrderCancellationReposito
     const free = await this.prisma.order.updateMany({
       where: {
         id: orderId,
-        status: OrderStatus.placed,
+        status,
         paymentStatus: PaymentStatus.not_required,
         totalCents: 0,
       },
@@ -86,7 +104,7 @@ export class PrismaOrderCancellationRepository extends OrderCancellationReposito
     const account = await this.prisma.order.updateMany({
       where: {
         id: orderId,
-        status: OrderStatus.placed,
+        status,
         paymentStatus: PaymentStatus.not_required,
         totalCents: { gt: 0 },
       },
@@ -98,7 +116,7 @@ export class PrismaOrderCancellationRepository extends OrderCancellationReposito
     // Lot C4 : payée par carte. Règlement INCHANGÉ — c'est le carnet qui le
     // fera passer `refunded` quand Stripe aura rendu l'argent (C4.6).
     const paid = await this.prisma.order.updateMany({
-      where: { id: orderId, status: OrderStatus.placed, paymentStatus: { in: [...PAID] } },
+      where: { id: orderId, status, paymentStatus: { in: [...PAID] } },
       data: stamp,
     });
     return paid.count === 1;

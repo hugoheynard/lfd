@@ -72,7 +72,13 @@ export function customerRefusalOf(block: CancellationBlock): CustomerCancellatio
     case "paid_just_now":
       return block.kind;
     case "inscribed":
+    case "delivery_after_plan":
+    case "delivery_bin":
       return "in_preparation";
+    case "packed":
+      return "ready";
+    case "state_changed":
+      return "not_recorded";
     case "refund_in_flight":
       return "payment_in_progress";
     case "voucher_remainder_engaged":

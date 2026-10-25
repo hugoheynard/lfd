@@ -7,9 +7,23 @@ import type { ServiceDay } from "../../domain/value-objects/service-day.value-ob
  *   second retrait n'est pas une erreur) ; la clôture et le retirage
  *   l'écarteront ;
  * - `inscribed` — le fournil l'a déjà inscrite au compte à produire : elle sera
- *   fabriquée, rien n'est écrit.
+ *   fabriquée, rien n'est écrit ;
+ * - `withdrawn_after_inscription` — inscrite, mais l'autorisation permettait
+ *   d'aller jusqu'au colisage (plan A1, § 2.1) : le retrait est écrit avec
+ *   `after_inscription`, et le compte à produire ne bouge pas. Retirer la
+ *   feuille du colisage est l'affaire de l'appelant, par le guichet du
+ *   colisage : le fournil n'y touche pas.
  */
-export type OrderWithdrawalOutcome = "withdrawn" | "inscribed";
+export type OrderWithdrawalOutcome = "withdrawn" | "inscribed" | "withdrawn_after_inscription";
+
+/**
+ * Jusqu'où le retrait peut aller, décidé par le commerce (plan A1,
+ * `documentation/commandes/annulation/plan-a1-retirer-une-commande-inscrite.md`,
+ * § 2.1) : `before_inscription`, la règle d'avant ; `before_packing`, une
+ * commande de particulier sous le réglage « prête ». Le fournil ne sait pas
+ * pourquoi — il applique.
+ */
+export type OrderWithdrawalAllowance = "before_inscription" | "before_packing";
 
 /**
  * **Le guichet du retrait au fournil** — port que le fournil DÉCLARE et
@@ -36,8 +50,13 @@ export type OrderWithdrawalOutcome = "withdrawn" | "inscribed";
  */
 export abstract class OrderWithdrawalDesk {
   /**
-   * Verrouille la journée, regarde si la commande y est inscrite, et sinon
-   * écrit le retrait (idempotent sur la commande).
+   * Verrouille la journée, regarde si la commande y est inscrite, et sinon —
+   * ou si l'autorisation va jusqu'au colisage — écrit le retrait (idempotent
+   * sur la commande).
    */
-  abstract withdraw(day: ServiceDay, orderId: string): Promise<OrderWithdrawalOutcome>;
+  abstract withdraw(
+    day: ServiceDay,
+    orderId: string,
+    allowance: OrderWithdrawalAllowance,
+  ): Promise<OrderWithdrawalOutcome>;
 }

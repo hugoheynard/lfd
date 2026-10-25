@@ -36,17 +36,21 @@ describe("ProductionOrderWithdrawalDesk", () => {
   it("verrouille la journée, PUIS lit l'inscription, PUIS écrit le retrait", async () => {
     const { desk, trace, withdrawals } = subject();
 
-    const outcome = await desk.withdraw(DAY, "ord_1");
+    const outcome = await desk.withdraw(DAY, "ord_1", "before_inscription");
 
     expect(outcome).toBe("withdrawn");
     expect(trace).toEqual([`lock:${DAY.value}`, "inscription:ord_1", "record:ord_1"]);
-    expect(withdrawals.rows.get("ord_1")).toEqual({ day: DAY.value, at: NOW });
+    expect(withdrawals.rows.get("ord_1")).toEqual({
+      day: DAY.value,
+      at: NOW,
+      afterInscription: false,
+    });
   });
 
   it("une commande déjà inscrite par le fournil : « inscribed », et rien n'est écrit", async () => {
     const { desk, trace, withdrawals } = subject(new Map([["ord_1", DAY.value]]));
 
-    const outcome = await desk.withdraw(DAY, "ord_1");
+    const outcome = await desk.withdraw(DAY, "ord_1", "before_inscription");
 
     expect(outcome).toBe("inscribed");
     expect(trace).not.toContain("record:ord_1");
@@ -56,10 +60,35 @@ describe("ProductionOrderWithdrawalDesk", () => {
   it("un second retrait n'est pas une erreur, et ne fait qu'une ligne", async () => {
     const { desk, withdrawals } = subject();
 
-    await desk.withdraw(DAY, "ord_1");
-    const again = await desk.withdraw(DAY, "ord_1");
+    await desk.withdraw(DAY, "ord_1", "before_inscription");
+    const again = await desk.withdraw(DAY, "ord_1", "before_inscription");
 
     expect(again).toBe("withdrawn");
     expect(withdrawals.rows.size).toBe(1);
+  });
+
+  describe("plan A1 — l'autorisation va jusqu'au colisage (`before_packing`)", () => {
+    it("une commande inscrite est retirée APRÈS l'inscription, sous le verrou de la journée", async () => {
+      const { desk, trace, withdrawals } = subject(new Map([["ord_1", DAY.value]]));
+
+      const outcome = await desk.withdraw(DAY, "ord_1", "before_packing");
+
+      expect(outcome).toBe("withdrawn_after_inscription");
+      expect(trace).toEqual([`lock:${DAY.value}`, "inscription:ord_1", "record:ord_1"]);
+      expect(withdrawals.rows.get("ord_1")).toEqual({
+        day: DAY.value,
+        at: NOW,
+        afterInscription: true,
+      });
+    });
+
+    it("une commande pas encore inscrite : le retrait d'avant, sans `after_inscription`", async () => {
+      const { desk, withdrawals } = subject();
+
+      const outcome = await desk.withdraw(DAY, "ord_1", "before_packing");
+
+      expect(outcome).toBe("withdrawn");
+      expect(withdrawals.rows.get("ord_1")?.afterInscription).toBe(false);
+    });
   });
 });

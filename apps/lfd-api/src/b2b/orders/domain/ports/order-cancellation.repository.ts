@@ -1,5 +1,6 @@
 import type { CustomerCancellationReasonCode } from "@lfd/contracts";
 
+import type { CancellationAllowance } from "../services/cancellation-allowance.js";
 import type { CancellationSubject } from "./cancellation-subject.reader.js";
 
 /**
@@ -50,6 +51,13 @@ export abstract class OrderCancellationRepository {
    * non payée passe aussi `failed`, comme l'abandon ; une carte payée garde
    * son règlement (lot C4 : le carnet le fera passer `refunded`). Rend `true` si la ligne a
    * franchi — c'est ce `true`, et lui seul, qui rend le bon et publie le fait.
+   *
+   * Sous `before_packing` (plan A1, § 1 point 5), `confirmed` — inscrite au
+   * plan — franchit aussi ; `ready` et au-delà, jamais.
    */
-  abstract cancel(orderId: string, record: CancellationRecord): Promise<boolean>;
+  abstract cancel(
+    orderId: string,
+    record: CancellationRecord,
+    allowance: CancellationAllowance,
+  ): Promise<boolean>;
 }

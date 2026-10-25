@@ -3,12 +3,18 @@ import { Global, Module } from "@nestjs/common";
 import { PrismaPackingDayVersionReader } from "../packing/infrastructure/prisma-packing-day-version.reader.js";
 import { PrismaDayPackingProgressReader } from "../packing/infrastructure/prisma-day-packing-progress.reader.js";
 import { PrismaPackedOrdersReader } from "../packing/infrastructure/prisma-packed-orders.reader.js";
-import { PackedResuppliesReader, ShortfallDesk } from "../packing/channels/commerce/index.js";
+import {
+  PackedResuppliesReader,
+  PackingWithdrawalDesk,
+  ShortfallDesk,
+} from "../packing/channels/commerce/index.js";
+import { PackingSheetWithdrawalDesk } from "../packing/application/withdrawal/packing-sheet-withdrawal.desk.js";
 import { PackingShortfallDesk } from "../packing/application/station/packing-shortfall-desk.js";
 import { PrismaPackedResuppliesReader } from "../packing/infrastructure/prisma-packed-resupplies.reader.js";
 import { PackingModule } from "../packing/packing.module.js";
 import {
   DayPackingProgressReader,
+  InscribedOrderHeaderReader,
   PackedOrdersReader,
   PackingDayVersionReader,
   PlannedDestinationsReader,
@@ -16,6 +22,7 @@ import {
 } from "../production/channels/packing/index.js";
 import { ChannelQualityHeldOrdersReader } from "../production/application/services/channel-quality-held-orders.reader.js";
 import { DayPlannedDestinationsReader } from "../production/application/services/day-planned-destinations.reader.js";
+import { DayInscribedOrderHeaderReader } from "../production/application/services/day-inscribed-order-header.reader.js";
 import { ProductionModule } from "../production/production.module.js";
 
 /**
@@ -59,6 +66,11 @@ import { ProductionModule } from "../production/production.module.js";
     // Le départ incomplet (E6b, 2026-10-25) — le colisage déclare ET
     // implémente, le commerce l'appelle dans la transaction de sa décision.
     { provide: ShortfallDesk, useExisting: PackingShortfallDesk },
+    // Le retrait d'une commande inscrite (plan A1, 2026-10-25) — le colisage
+    // déclare ET implémente, le commerce l'appelle après le guichet du
+    // fournil ; la pierre tombale lit l'en-tête que le fournil publie.
+    { provide: PackingWithdrawalDesk, useExisting: PackingSheetWithdrawalDesk },
+    { provide: InscribedOrderHeaderReader, useExisting: DayInscribedOrderHeaderReader },
   ],
   exports: [
     PackingDayVersionReader,
@@ -68,6 +80,8 @@ import { ProductionModule } from "../production/production.module.js";
     DayPackingProgressReader,
     PackedResuppliesReader,
     ShortfallDesk,
+    PackingWithdrawalDesk,
+    InscribedOrderHeaderReader,
   ],
 })
 export class PackingFeedModule {}

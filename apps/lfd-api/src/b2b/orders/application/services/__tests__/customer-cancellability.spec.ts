@@ -1,3 +1,6 @@
+import type { CustomerCancellationStage } from "@lfd/contracts";
+
+import { CancellationAllowanceGate } from "../cancellation-allowance-gate.js";
 import { CancellationRule } from "../cancellation-rule.js";
 import { CustomerCancellability } from "../customer-cancellability.js";
 import { CustomerCancellationPolicyGate } from "../customer-cancellation-policy.js";
@@ -25,15 +28,20 @@ function serviceOf(options: {
   readonly order?: Partial<CancellationSubject>;
   readonly inscribed?: string;
   readonly delay?: boolean;
+  readonly stage?: CustomerCancellationStage;
 }) {
   const order = cancellationSubject({ serviceDay: SERVICE_DAY, ...options.order });
+  const settings = new FixedCancellationSettings({
+    delayEnabled: options.delay ?? true,
+    hoursBefore: 24,
+    b2cCancellableUntil: options.stage ?? "production_plan",
+  });
   return new CustomerCancellability(
     new FixedSubjects(order),
     new FixedInscriptions(options.inscribed === undefined ? {} : { ord_1: options.inscribed }),
     new CancellationRule(new ScriptedEngagements({ kind: "free" })),
-    new CustomerCancellationPolicyGate(
-      new FixedCancellationSettings({ delayEnabled: options.delay ?? true, hoursBefore: 24 }),
-    ),
+    new CustomerCancellationPolicyGate(settings),
+    new CancellationAllowanceGate(settings),
   );
 }
 
@@ -104,6 +112,30 @@ describe("CustomerCancellability", () => {
     expect(await serviceOf({}).of(PERSONAL, NOW, "not_allowed")).toMatchObject({
       cancellable: false,
       code: "not_allowed",
+    });
+  });
+
+  describe("plan A1 — l'aperçu suit le réglage", () => {
+    it("« prête » : une commande de retrait inscrite s'annule, à l'aperçu aussi", async () => {
+      const preview = await serviceOf({
+        inscribed: SERVICE_DAY,
+        delay: false,
+        stage: "ready",
+        order: { fulfillmentMethod: "pickup" },
+      }).of(PERSONAL, NOW, true);
+
+      expect(preview).toMatchObject({ cancellable: true });
+    });
+
+    it("« prête » : une livraison inscrite reste « en préparation »", async () => {
+      const preview = await serviceOf({
+        inscribed: SERVICE_DAY,
+        delay: false,
+        stage: "ready",
+        order: { fulfillmentMethod: "delivery" },
+      }).of(PERSONAL, NOW, true);
+
+      expect(preview).toEqual({ cancellable: false, code: "in_preparation", until: null });
     });
   });
 });

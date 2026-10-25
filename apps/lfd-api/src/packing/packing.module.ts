@@ -49,6 +49,10 @@ import { PackingResupplyListing } from "./domain/ports/packing-resupply-listing.
 import { PackingResupplyRepository } from "./domain/ports/packing-resupply.repository.js";
 import { PrismaPackedResuppliesReader } from "./infrastructure/prisma-packed-resupplies.reader.js";
 import { PackingShortfallDesk } from "./application/station/packing-shortfall-desk.js";
+import { PackingContainerVoiding } from "./application/containers/packing-container-voiding.js";
+import { PackingSheetWithdrawalDesk } from "./application/withdrawal/packing-sheet-withdrawal.desk.js";
+import { PackingSheetTombstones } from "./domain/ports/packing-sheet-tombstones.js";
+import { PrismaPackingSheetTombstones } from "./infrastructure/prisma-packing-sheet-tombstones.js";
 import {
   PrismaPackingResupplyBoardReader,
   PrismaPackingResupplyRepository,
@@ -115,6 +119,8 @@ import { PackingResuppliesController } from "./http/packing-resupplies.controlle
     WithdrawFromContainerHandler,
     MoveBetweenContainersHandler,
     VoidPackingContainerHandler,
+    // Le geste d'annulation, partagé avec le retrait d'une feuille (plan A1).
+    PackingContainerVoiding,
     GetPackingProposalHandler,
     ApplyPackingProposalHandler,
     GetShareableHalvesHandler,
@@ -125,6 +131,9 @@ import { PackingResuppliesController } from "./http/packing-resupplies.controlle
     ReportPackingShortfallHandler,
     // Le départ incomplet décidé par le commerce (E6b), relié par `PackingFeedModule`.
     PackingShortfallDesk,
+    // Le retrait d'une feuille par l'annulation (plan A1), relié par `PackingFeedModule`.
+    PackingSheetWithdrawalDesk,
+    { provide: PackingSheetTombstones, useClass: PrismaPackingSheetTombstones },
     ReopenPackingOrderHandler,
     { provide: PackingBoardReader, useClass: PrismaPackingBoardReader },
     PrismaPackedOrdersReader,
@@ -145,6 +154,7 @@ import { PackingResuppliesController } from "./http/packing-resupplies.controlle
     PrismaPackedOrdersReader,
     PrismaPackedResuppliesReader,
     PackingShortfallDesk,
+    PackingSheetWithdrawalDesk,
   ],
 })
 export class PackingModule {}

@@ -53,7 +53,10 @@ export interface ShadowReceipt {
  * (§11, B3). Une remise reçue avant la liste est gardée dans la réserve.
  */
 export abstract class PackingShadowLedger {
-  /** Inscrit la commande et ses lignes si elles n'y sont pas ; ne réécrit jamais. */
+  /**
+   * Inscrit la commande et ses lignes si elles n'y sont pas ; ne réécrit
+   * jamais. Une feuille retirée (plan A1) ne reçoit pas de lignes.
+   */
   abstract drawOrder(order: ShadowOrderToDraw): Promise<void>;
 
   /**

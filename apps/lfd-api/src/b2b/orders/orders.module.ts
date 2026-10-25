@@ -57,6 +57,7 @@ import {
   CUSTOMER_CANCELLATION_PROVIDERS,
 } from "./customer-cancellation.providers.js";
 import { OrderCancellation } from "./application/services/order-cancellation.service.js";
+import { OrderWorkshopWithdrawal } from "./application/services/order-workshop-withdrawal.js";
 import { RecordOrderRefundHandler } from "./application/commands/record-order-refund.handler.js";
 import { RingRefundRejected } from "./application/handlers/ring-refund-rejected.handler.js";
 import { OrderRefundRepository } from "./domain/ports/order-refund.repository.js";
@@ -363,6 +364,8 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     CancelOrderHandler,
     // Lot C6 : le noyau, extrait du geste staff, partagé avec le client.
     OrderCancellation,
+    // Plan A1 : retirer la commande du fournil, puis du colisage.
+    OrderWorkshopWithdrawal,
     ...CUSTOMER_CANCELLATION_PROVIDERS,
     ...ORDER_REVISION_PROVIDERS,
     ...ORDER_SHORTFALL_PROVIDERS,

@@ -5,7 +5,6 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { BusinessError, DomainError } from "../../../../platform/shared/errors/app-error.js";
 import { Clock } from "../../../../platform/time/clock.js";
-import { OrderWithdrawalDesk, ServiceDay } from "../../../../production/channels/commerce/index.js";
 import {
   PaymentGateway,
   type IntentCancellation,
@@ -36,6 +35,7 @@ import { CancellationAllowanceGate } from "./cancellation-allowance-gate.js";
 import { recordOf, type CancellationIntent } from "./cancellation-intent.js";
 import { CancellationRule } from "./cancellation-rule.js";
 import { CancellationRefundRequester } from "./cancellation-refund-requester.js";
+import { OrderWorkshopWithdrawal } from "./order-workshop-withdrawal.js";
 import { VoucherRestitutionRefusal } from "./voucher-restitution-refusal.js";
 
 /**
@@ -99,6 +99,15 @@ import { VoucherRestitutionRefusal } from "./voucher-restitution-refusal.js";
  * ## Ce qu'il ne fait pas
  *
  * Aucun mur client, aucun réglage : c'est l'affaire de l'appelant.
+ *
+ * ## Après l'arrêt du plan (plan A1, § 2)
+ *
+ * Sous l'autorisation `before_packing` — une commande de particulier, réglage
+ * « prête » —, une commande de RETRAIT inscrite s'annule : le fournil, puis le
+ * colisage, la retirent ({@link OrderWorkshopWithdrawal}). Une livraison
+ * inscrite reste refusée (`delivery_after_plan`). Ordre des verrous (§ 2.4) : ligne
+ * `orders` → journée → feuille → bac → réserve triée par SKU → BL → bon →
+ * remboursement.
  */
 @Injectable()
 export class OrderCancellation {
@@ -108,7 +117,7 @@ export class OrderCancellation {
     private readonly subjects: CancellationSubjectReader,
     private readonly cancellations: OrderCancellationRepository,
     private readonly payments: PaymentGateway,
-    private readonly desk: OrderWithdrawalDesk,
+    private readonly workshops: OrderWorkshopWithdrawal,
     private readonly vouchers: LoyaltyVoucherRedemption,
     private readonly refusals: VoucherRestitutionRefusal,
     private readonly rule: CancellationRule,
@@ -215,35 +224,24 @@ export class OrderCancellation {
         throw new OrderNotFoundError(orderId);
       }
       const regime = await this.rule.regimeOf(locked, allowance);
-      await this.withdrawFromBakery(locked);
+      await this.workshops.withdraw(locked, allowance, intent.actor);
       const now = this.clock.now();
-      const written = await this.cancellations.cancel(locked.orderId, recordOf(intent, now));
+      const written = await this.cancellations.cancel(
+        locked.orderId,
+        recordOf(intent, now),
+        allowance,
+      );
       if (!written) {
         // Sous le verrou, la règle venait de laisser passer : ne pas franchir
         // veut dire un état que le `where` refuse. On le relit pour le nommer,
-        // et le refus annule tout, retrait au fournil compris.
+        // et le refus annule tout, retrait au fournil et au colisage compris
+        // (plan A1, § 1 point 5 : `state_changed` si rien ne le nomme mieux).
         const again = (await this.cancellations.lock(locked.orderId)) ?? locked;
         await this.rule.regimeOf(again, allowance);
-        throw new OrderNotCancellableError(locked.orderId, { kind: "already_cancelled", at: null });
+        throw new OrderNotCancellableError(locked.orderId, { kind: "state_changed" });
       }
       await this.afterCancelled(locked, intent, regime, now);
     });
-  }
-
-  /** Le retrait au fournil, sous le verrou de la journée ; « inscrite » refuse et annule tout. */
-  private async withdrawFromBakery(locked: CancellationSubject): Promise<void> {
-    // Sans jour de service, une commande n'est jamais producible (`planWhere`
-    // lit `requested_delivery_date`) : il n'y a rien à retirer.
-    if (locked.serviceDay === null) {
-      return;
-    }
-    const outcome = await this.desk.withdraw(ServiceDay.of(locked.serviceDay), locked.orderId);
-    if (outcome === "inscribed") {
-      throw new OrderNotCancellableError(locked.orderId, {
-        kind: "inscribed",
-        day: locked.serviceDay,
-      });
-    }
   }
 
   /** Le bon restitué et le fait durable — seulement quand l'écriture a franchi. */

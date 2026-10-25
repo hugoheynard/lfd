@@ -317,7 +317,7 @@ describe("clore une journée", () => {
 
   it("🔴 écarte une commande retirée par l'annulation staff, lue sous le verrou (C3.4)", async () => {
     const withdrawals = new InMemoryWithdrawals();
-    withdrawals.rows.set("ord_2", { day: DAY, at: NOW });
+    withdrawals.rows.set("ord_2", { day: DAY, at: NOW, afterInscription: false });
     const { handler, days, durable } = subject(
       ProductionDay.open(ServiceDay.of(DAY)),
       [order(), order({ orderId: "ord_2" })],

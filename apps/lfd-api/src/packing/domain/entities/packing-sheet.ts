@@ -16,6 +16,10 @@ import {
   ShortfallSheetSealedError,
 } from "../errors/packing-shortfall-errors.js";
 import {
+  PackingSheetHasLiveContainersError,
+  PackingSheetWithdrawnError,
+} from "../errors/packing-withdrawal-errors.js";
+import {
   type AuthorizedLine,
   authorizedLinesOf,
   type ShortfallLine,
@@ -59,6 +63,11 @@ export {
  * (`ContainersCountedError`). La coche, le compte « + / − » et le total de
  * containers sont partis avec l'ancien poste.
  *
+ * 🔴 **Une feuille retirée ne bouge plus** (plan A1, § 2.3) : chaque méthode
+ * qui mute — et les deux lectures qui préparent un geste, `lineToTouch` et
+ * `liveContainer` — commence par `assertNotWithdrawn`. Un test lit le
+ * prototype : une méthode ajoutée sans la garde le fait rougir.
+ *
  * Ce qu'il ne décide PAS : si la marchandise existe. C'est la réserve
  * (`PackingStock`) qui le dit ; le service du poste les fait parler ensemble,
  * sous verrou.
@@ -78,6 +87,7 @@ export class PackingSheet {
     readonly fulfillmentMethod: "pickup" | "delivery",
     private shortfallValue: Date | null,
     private authorizedValue: Date | null,
+    private withdrawnValue: Date | null,
   ) {
     this.contents = OrderContents.of(reference, containerList);
   }
@@ -95,6 +105,7 @@ export class PackingSheet {
       snapshot.fulfillmentMethod,
       snapshot.shortfallReportedAt ?? null,
       snapshot.shortfallAuthorizedAt ?? null,
+      snapshot.withdrawnAt ?? null,
     );
   }
 
@@ -121,6 +132,7 @@ export class PackingSheet {
    * @throws {PackingLineNotFoundError} ce SKU n'est pas sur ce bon.
    */
   lineToTouch(sku: string): SheetLine {
+    this.assertNotWithdrawn();
     this.assertOpen();
     const line = this.linesValue.find((candidate) => candidate.sku === sku);
     if (line === undefined) {
@@ -140,6 +152,7 @@ export class PackingSheet {
    * @throws {UnallocatedLinesError} une ligne n'est pas entièrement répartie.
    */
   seal(mark: SheetMark): { readonly mark: SheetMark; readonly fresh: boolean } {
+    this.assertNotWithdrawn();
     this.assertListed();
     if (this.packedValue !== null) {
       return { mark: this.packedValue, fresh: false };
@@ -160,6 +173,7 @@ export class PackingSheet {
    * @throws {NothingShortError} chaque ligne due est entièrement répartie.
    */
   reportShortfall(at: Date): readonly ShortfallLine[] {
+    this.assertNotWithdrawn();
     this.assertListedAndOpen();
     if (this.authorizedValue !== null) {
       throw new ShortfallAlreadyAuthorizedError(this.reference);
@@ -191,6 +205,7 @@ export class PackingSheet {
    * @throws {ContainersCountedError} @throws {ShortfallContentsChangedError}
    */
   authorizeShortfall(authorized: readonly AuthorizedLine[], mark: SheetMark): void {
+    this.assertNotWithdrawn();
     if (this.packedValue !== null) {
       throw new ShortfallSheetSealedError(this.reference);
     }
@@ -226,12 +241,39 @@ export class PackingSheet {
    * @throws {ContainersCountedError} une commande colisée avec l'ancien poste.
    */
   reopen(): boolean {
+    this.assertNotWithdrawn();
     this.assertListed();
     if (this.packedValue === null) {
       return false;
     }
     this.packedValue = null;
     return true;
+  }
+
+  /**
+   * **Retire la feuille** — l'annulation d'une commande inscrite (plan A1,
+   * § 2.2) : l'appelant a d'abord annulé chaque contenant vivant, dans la même
+   * transaction. Ensuite, plus rien ne la touche.
+   *
+   * @returns `false` si elle l'était déjà : un rejeu n'écrit rien.
+   * @throws {PackedOrderSealedError} le bac est fermé : la commande est prête.
+   * @throws {PackingSheetHasLiveContainersError} un contenant vit encore.
+   */
+  withdrawSheet(at: Date): boolean {
+    if (this.withdrawnValue !== null) {
+      return false;
+    }
+    this.assertOpen();
+    if (this.contents.liveCount > 0) {
+      throw new PackingSheetHasLiveContainersError(this.reference, this.contents.liveCount);
+    }
+    this.withdrawnValue = at;
+    return true;
+  }
+
+  /** L'instant du retrait, ou `null` : la feuille vit. */
+  get withdrawnAt(): Date | null {
+    return this.withdrawnValue;
   }
 
   /** Les bacs de livraison vivants de la commande — ceux que la livraison doit libérer. */
@@ -252,6 +294,7 @@ export class PackingSheet {
       fulfillmentMethod: this.fulfillmentMethod,
       shortfallReportedAt: this.shortfallValue,
       shortfallAuthorizedAt: this.authorizedValue,
+      withdrawnAt: this.withdrawnValue,
     };
   }
 
@@ -265,6 +308,7 @@ export class PackingSheet {
    * @throws {ContainerCeilingReachedError}
    */
   assertCanOpenContainer(): void {
+    this.assertNotWithdrawn();
     this.assertListedAndOpen();
     if (this.contents.liveCount >= MAX_CONTAINERS_PER_ORDER) {
       throw new ContainerCeilingReachedError(this.reference, MAX_CONTAINERS_PER_ORDER);
@@ -279,6 +323,7 @@ export class PackingSheet {
    * @throws {ProposalOverContainersError}
    */
   assertCanApplyProposal(): void {
+    this.assertNotWithdrawn();
     this.assertListedAndOpen();
     if (this.contents.liveCount > 0) {
       throw new ProposalOverContainersError(this.reference);
@@ -287,6 +332,7 @@ export class PackingSheet {
 
   /** Un contenant de plus — un bac déjà déclaré par la livraison, ou un sac. */
   openContainer(container: PackingContainerState): void {
+    this.assertNotWithdrawn();
     this.assertCanOpenContainer();
     if (container.nature === "bag" && this.fulfillmentMethod === "delivery") {
       throw new BagOnDeliveryError(this.reference);
@@ -296,6 +342,7 @@ export class PackingSheet {
 
   /** Le contenant vivant, avant un geste qui doit d'abord passer ailleurs (le bac). */
   liveContainer(containerId: string): PackingContainerState {
+    this.assertNotWithdrawn();
     this.assertListedAndOpen();
     return this.contents.live(containerId);
   }
@@ -307,6 +354,7 @@ export class PackingSheet {
    * @returns les pièces que ce geste PREND à la réserve.
    */
   allocate(containerId: string, sku: string, quantity: number, mark: SheetMark): number {
+    this.assertNotWithdrawn();
     const line = this.listedLine(sku);
     const pieces = this.contents.allocate(containerId, line, quantity);
     this.markByAllocation(line, { ...mark, initials: "" });
@@ -315,6 +363,7 @@ export class PackingSheet {
 
   /** @returns les pièces que ce retrait d'un contenant REND à la réserve. */
   withdraw(containerId: string, sku: string, quantity: number): number {
+    this.assertNotWithdrawn();
     const line = this.listedLine(sku);
     const pieces = this.contents.withdraw(containerId, line, quantity);
     this.markByAllocation(line, null);
@@ -323,11 +372,13 @@ export class PackingSheet {
 
   /** @returns les pièces déplacées — la réserve et l'état « au bac » de la ligne n'en bougent pas. */
   move(fromId: string, toId: string, sku: string, quantity: number): number {
+    this.assertNotWithdrawn();
     return this.contents.move(fromId, toId, this.listedLine(sku), quantity);
   }
 
   /** Annule un contenant ; ses lignes restent, ignorées. @returns ce qui retourne à la réserve. */
   voidContainer(containerId: string, mark: ContainerMark): readonly ContainerLine[] {
+    this.assertNotWithdrawn();
     this.assertListedAndOpen();
     const released = this.contents.void(containerId, mark);
     for (const line of this.linesValue.filter((due) => released.some((r) => r.sku === due.sku))) {
@@ -366,6 +417,12 @@ export class PackingSheet {
   private assertListed(): void {
     if (this.containerMode !== "listed") {
       throw new ContainersCountedError(this.reference);
+    }
+  }
+
+  private assertNotWithdrawn(): void {
+    if (this.withdrawnValue !== null) {
+      throw new PackingSheetWithdrawnError(this.reference);
     }
   }
 

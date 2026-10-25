@@ -143,7 +143,11 @@ function customerCodeOf(block: CancellationBlock): OrderRevisionRefusal {
     case "fulfilled":
       return block.kind;
     case "inscribed":
+    case "delivery_after_plan":
+    case "delivery_bin":
       return "in_preparation";
+    case "packed":
+      return "ready";
     case "refund_in_flight":
     case "paid_just_now":
       return "payment_in_progress";
@@ -158,6 +162,7 @@ function customerCodeOf(block: CancellationBlock): OrderRevisionRefusal {
     case "engagement_unknown":
     case "voucher_remainder_engaged":
     case "voucher_remainder_cancelled":
+    case "state_changed":
       return "unavailable";
   }
 }

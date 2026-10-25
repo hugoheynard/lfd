@@ -330,8 +330,12 @@ describe("le guichet du fournil", () => {
     const desk = ctx.app.get(OrderWithdrawalDesk);
     const uow = ctx.app.get(UnitOfWork);
 
-    const first = await uow.run(() => desk.withdraw(ServiceDay.of(DAY), orderId));
-    const second = await uow.run(() => desk.withdraw(ServiceDay.of(DAY), orderId));
+    const first = await uow.run(() =>
+      desk.withdraw(ServiceDay.of(DAY), orderId, "before_inscription"),
+    );
+    const second = await uow.run(() =>
+      desk.withdraw(ServiceDay.of(DAY), orderId, "before_inscription"),
+    );
 
     expect([first, second]).toEqual(["withdrawn", "withdrawn"]);
     expect(await withdrawals()).toHaveLength(1);

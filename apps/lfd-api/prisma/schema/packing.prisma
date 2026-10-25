@@ -50,6 +50,12 @@ model PackingOrder {
   /// réduites aux quantités au bac. Une fiche autorisée ne se re-signale pas et
   /// ne se retire pas à la réouverture de la journée.
   shortfallAuthorizedAt DateTime? @map("shortfall_authorized_at") @db.Timestamptz(6)
+  /// La feuille retirée par l'annulation d'une commande inscrite (plan A1,
+  /// `documentation/commandes/annulation/plan-a1-retirer-une-commande-inscrite.md`,
+  /// § 2.2–2.3) : ses contenants sont annulés, plus aucun geste ne la touche.
+  /// Posée sur une ligne neuve — la pierre tombale — si la liste à coliser
+  /// n'est pas encore arrivée : le tirage n'y insère alors aucune ligne.
+  withdrawnAt           DateTime? @map("withdrawn_at") @db.Timestamptz(6)
 
   lines      PackingLine[]
   containers PackingContainer[]

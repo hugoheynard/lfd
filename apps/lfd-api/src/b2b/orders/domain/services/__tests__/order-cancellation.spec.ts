@@ -20,6 +20,7 @@ function state(overrides: Partial<CancellationState> = {}): CancellationState {
     paymentStatus: "pending",
     totalCents: 2_110,
     serviceDay: "2026-10-13",
+    fulfillmentMethod: "pickup",
     cancelledAt: null,
     inscribedDay: null,
     engagement: null,
@@ -216,15 +217,45 @@ describe("cancellationRefusalOf — les phrases (C3.7)", () => {
   });
 });
 
-describe("cancellationOf — l'autorisation du plan A1 (lot A1.1)", () => {
-  // 🔴 Jusqu'au lot A1.2 (guichets du fournil et du colisage), `before_packing`
-  // ne lève PAS le refus « inscrite » : choisir `ready` ne change rien.
+describe("cancellationOf — l'autorisation du plan A1", () => {
   it.each([
     ["inscrite au fournil", state({ inscribedDay: "2026-10-14" })],
     ["confirmée au plan", state({ status: "confirmed" })],
-  ] as const)("étape ready, commande %s : toujours refusée jusqu'à A1.2", (_, inscribed) => {
-    expect(cancellationBlocker(inscribed, { allowance: "before_packing" })?.kind).toBe("inscribed");
+  ] as const)("étape production_plan, commande %s : refusée", (_, inscribed) => {
+    expect(cancellationBlocker(inscribed, BEFORE_INSCRIPTION)?.kind).toBe("inscribed");
   });
+
+  it.each([
+    ["inscrite au fournil", state({ inscribedDay: "2026-10-14" })],
+    ["confirmée au plan", state({ status: "confirmed" })],
+  ] as const)("étape ready, retrait %s : annulable — le colisage tranchera", (_, inscribed) => {
+    expect(cancellationOf(inscribed, { allowance: "before_packing" })).toEqual({
+      cancellable: true,
+      regime: "due",
+    });
+  });
+
+  it("étape ready, livraison inscrite : `delivery_after_plan`, avec le jour", () => {
+    expect(
+      cancellationBlocker(state({ inscribedDay: "2026-10-14", fulfillmentMethod: "delivery" }), {
+        allowance: "before_packing",
+      }),
+    ).toEqual({ kind: "delivery_after_plan", day: "2026-10-14" });
+  });
+
+  it("étape ready, commande prête : « prête », jamais au-delà", () => {
+    expect(
+      cancellationBlocker(state({ status: "ready" }), { allowance: "before_packing" })?.kind,
+    ).toBe("ready");
+  });
+
+  it.each(["delivery_after_plan", "packed", "delivery_bin", "state_changed"] as const)(
+    "« %s » a sa phrase, qui nomme le geste de sortie",
+    (kind) => {
+      const block = kind === "delivery_after_plan" ? { kind, day: "2026-10-14" } : { kind };
+      expect(cancellationRefusalOf(block)).toMatch(/Voyez|Rechargez/);
+    },
+  );
 
   it("étape ready : ce qui s'annulait s'annule toujours", () => {
     expect(cancellationOf(state(), { allowance: "before_packing" })).toEqual({

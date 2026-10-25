@@ -163,8 +163,12 @@ function toAdminRow(row: AdminRow): AdminOrderRow {
     // `confirmed`, et c'est ce que l'écart du fournil sait déjà compter (§8.3).
     offPlan: row.placedOffPlan && row.status === "placed",
     // Un manque décidé (E6b) n'attend plus : la colonne « décision attendue » se tait.
+    // Une commande annulée non plus (plan A1, § 2.6) : le signal reste écrit —
+    // c'est de l'histoire —, mais il n'y a plus rien à décider.
     shortfallReportedAt:
-      row.shortfallDecidedAt === null ? (row.shortfallReportedAt?.toISOString() ?? null) : null,
+      row.shortfallDecidedAt === null && row.status !== "cancelled"
+        ? (row.shortfallReportedAt?.toISOString() ?? null)
+        : null,
     paymentStatus: row.paymentStatus,
     fulfillmentMethod: row.fulfillmentMethod,
     fulfillmentDay:

@@ -23,6 +23,7 @@ import {
   InMemoryCancellations,
   ScriptedCancelGateway,
   ScriptedDesk,
+  workshops,
   RecordingNoteVoiding,
   ScriptedEngagements,
 } from "./cancellation-doubles.js";
@@ -73,7 +74,7 @@ export function customerScene(options: CustomerScene) {
     subjects,
     rows,
     new ScriptedCancelGateway(options.stripe ?? { kind: "cancelled" }, trace),
-    new ScriptedDesk(options.desk ?? "withdrawn", trace),
+    workshops(new ScriptedDesk(options.desk ?? "withdrawn", trace)),
     new RecordingRedemption(false, RETURNED),
     new VoucherRestitutionRefusal(subjects, new FixedInscriptions(), rule),
     rule,

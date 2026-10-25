@@ -12,11 +12,11 @@ import {
 } from "../../domain/ports/cancellation-subject.reader.js";
 import type { CustomerCancellationSubject } from "../../domain/ports/customer-cancellation-subject.reader.js";
 import { customerRefusalOf } from "../../domain/services/customer-cancellation-refusal.js";
-import { BEFORE_INSCRIPTION } from "../../domain/services/cancellation-allowance.js";
 import {
   cancellationOf,
   type CancellableRegime,
 } from "../../domain/services/order-cancellation.js";
+import { CancellationAllowanceGate } from "./cancellation-allowance-gate.js";
 import { CancellationRule } from "./cancellation-rule.js";
 import { CustomerCancellationPolicyGate } from "./customer-cancellation-policy.js";
 
@@ -40,6 +40,7 @@ export class CustomerCancellability {
     private readonly inscriptions: OrderInscriptionReader,
     private readonly rule: CancellationRule,
     private readonly policy: CustomerCancellationPolicyGate,
+    private readonly allowances: CancellationAllowanceGate,
   ) {}
 
   async of(
@@ -54,12 +55,11 @@ export class CustomerCancellability {
     if (staffSubject === null) {
       return refused("not_allowed");
     }
-    // Plan A1.1 (2026-10-25) : aperçu à l'autorisation d'avant. Tant que le
-    // geste ne lève pas le refus « inscrite » (lot A1.2), l'aperçu dit la même
-    // chose sous les deux ; il suivra le réglage quand le geste le suivra.
+    // Plan A1 : l'autorisation du geste, lue au réglage. Le bac fermé n'est
+    // connu que du colisage : l'aperçu ne le dit pas encore (lot A1.3).
     const decision = cancellationOf(
       await this.rule.stateOf(staffSubject, inscribedDay),
-      BEFORE_INSCRIPTION,
+      await this.allowances.of(staffSubject),
     );
     if (!decision.cancellable) {
       return refused(customerRefusalOf(decision.block) ?? "not_allowed");

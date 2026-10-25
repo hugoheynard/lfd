@@ -14,5 +14,11 @@ export abstract class OrderWithdrawalLedger {
    * Écrit le retrait si la commande n'en a pas ; sinon ne fait rien. Un
    * second retrait (double clic, rejeu de transaction) n'est pas une erreur.
    */
-  abstract record(day: ServiceDay, orderId: string, at: Date): Promise<void>;
+  abstract record(
+    day: ServiceDay,
+    orderId: string,
+    at: Date,
+    /** Plan A1 : le retrait vient après l'inscription (`after_inscription`). */
+    afterInscription: boolean,
+  ): Promise<void>;
 }

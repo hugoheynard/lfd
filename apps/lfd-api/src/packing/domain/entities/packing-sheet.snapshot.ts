@@ -57,4 +57,6 @@ export interface PackingSheetSnapshot {
    * celles du bac. Absent = aucun.
    */
   readonly shortfallAuthorizedAt?: Date | null;
+  /** La feuille retirée par une annulation après l'arrêt (plan A1). Absent = vivante. */
+  readonly withdrawnAt?: Date | null;
 }

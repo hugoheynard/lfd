@@ -32,6 +32,7 @@ import {
   InMemoryCancellations,
   ScriptedCancelGateway,
   ScriptedDesk,
+  workshops,
   RecordingNoteVoiding,
   ScriptedEngagements,
 } from "./cancellation-doubles.js";
@@ -90,7 +91,7 @@ function scene(options: Scene = {}) {
       subjects,
       rows,
       gateway,
-      new ScriptedDesk(options.desk ?? "withdrawn", trace),
+      workshops(new ScriptedDesk(options.desk ?? "withdrawn", trace)),
       vouchers,
       new VoucherRestitutionRefusal(subjects, new FixedInscriptions(), rule),
       rule,
@@ -400,7 +401,7 @@ describe("CancelOrderHandler — les refus", () => {
         new FixedSubjects(null),
         new InMemoryCancellations(null),
         new ScriptedCancelGateway({ kind: "cancelled" }),
-        new ScriptedDesk(),
+        workshops(new ScriptedDesk()),
         new RecordingRedemption(),
         new VoucherRestitutionRefusal(
           new FixedSubjects(null),

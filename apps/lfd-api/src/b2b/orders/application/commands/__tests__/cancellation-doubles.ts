@@ -6,11 +6,18 @@ import {
   type RetrievedIntent,
 } from "../../../../payments/domain/payment-gateway.js";
 import {
+  PackingWithdrawalDesk,
+  type PackingWithdrawalOutcome,
+} from "../../../../../packing/channels/commerce/index.js";
+import {
   OrderInscriptionReader,
   OrderWithdrawalDesk,
+  type OrderWithdrawalAllowance,
   type OrderWithdrawalOutcome,
   type ServiceDay,
 } from "../../../../../production/channels/commerce/index.js";
+import type { CancellationAllowance } from "../../../domain/services/cancellation-allowance.js";
+import { OrderWorkshopWithdrawal } from "../../services/order-workshop-withdrawal.js";
 import {
   AccountOrderEngagement,
   type AccountEngagement,
@@ -40,6 +47,7 @@ export function cancellationSubject(
     orderNumber: "ORD-0001",
     placedByUserId: "usr_1",
     companyId: null,
+    fulfillmentMethod: "pickup",
     status: "placed",
     paymentStatus: "pending",
     totalCents: 2_110,
@@ -80,7 +88,8 @@ export class FixedInscriptions extends OrderInscriptionReader {
 
 /**
  * La ligne `orders`, en mémoire, avec la sémantique du `where` conditionné :
- * seule une `placed` en carte non encaissée ou à total nul franchit.
+ * seule une `placed` en carte non encaissée ou à total nul franchit — et une
+ * `confirmed` sous `before_packing` (plan A1).
  * `failures` fait échouer autant de verrous — une panne de base, pas un refus.
  * `refuseWrite` simule un `where` qui ne trouve rien.
  */
@@ -105,10 +114,18 @@ export class InMemoryCancellations extends OrderCancellationRepository {
     return Promise.resolve(this.current);
   }
 
-  cancel(orderId: string, record: CancellationRecord): Promise<boolean> {
+  cancel(
+    orderId: string,
+    record: CancellationRecord,
+    allowance: CancellationAllowance,
+  ): Promise<boolean> {
     this.trace.push(`cancel:${orderId}`);
     const current = this.current;
-    if (this.refuseWrite || current === null || current.status !== "placed") {
+    const reachable =
+      current !== null &&
+      (current.status === "placed" ||
+        (allowance.allowance === "before_packing" && current.status === "confirmed"));
+    if (this.refuseWrite || current === null || !reachable) {
       return Promise.resolve(false);
     }
     this.records.push(record);
@@ -153,6 +170,9 @@ export class ScriptedCancelGateway extends PaymentGateway {
 
 /** Le guichet du fournil : une issue écrite d'avance, et les retraits demandés. */
 export class ScriptedDesk extends OrderWithdrawalDesk {
+  /** L'autorisation reçue à chaque retrait (plan A1). */
+  readonly allowances: OrderWithdrawalAllowance[] = [];
+
   constructor(
     private readonly outcome: OrderWithdrawalOutcome = "withdrawn",
     private readonly trace: string[] = [],
@@ -160,10 +180,41 @@ export class ScriptedDesk extends OrderWithdrawalDesk {
     super();
   }
 
-  withdraw(day: ServiceDay, orderId: string): Promise<OrderWithdrawalOutcome> {
+  withdraw(
+    day: ServiceDay,
+    orderId: string,
+    allowance: OrderWithdrawalAllowance,
+  ): Promise<OrderWithdrawalOutcome> {
     this.trace.push(`withdraw:${day.value}:${orderId}`);
+    this.allowances.push(allowance);
     return Promise.resolve(this.outcome);
   }
+}
+
+/** Le guichet du colisage (plan A1) : une issue écrite d'avance, et les retraits demandés. */
+export class ScriptedPackingDesk extends PackingWithdrawalDesk {
+  readonly calls: { readonly day: string; readonly orderId: string; readonly by: string }[] = [];
+
+  constructor(
+    private readonly outcome: PackingWithdrawalOutcome = "withdrawn",
+    private readonly trace: string[] = [],
+  ) {
+    super();
+  }
+
+  withdraw(day: string, orderId: string, withdrawnBy: string): Promise<PackingWithdrawalOutcome> {
+    this.trace.push(`packing:${day}:${orderId}`);
+    this.calls.push({ day, orderId, by: withdrawnBy });
+    return Promise.resolve(this.outcome);
+  }
+}
+
+/** Les deux ateliers, doublés ensemble — le fournil puis le colisage. */
+export function workshops(
+  bakery: OrderWithdrawalDesk = new ScriptedDesk(),
+  packing: PackingWithdrawalDesk = new ScriptedPackingDesk(),
+): OrderWorkshopWithdrawal {
+  return new OrderWorkshopWithdrawal(bakery, packing);
 }
 
 /**

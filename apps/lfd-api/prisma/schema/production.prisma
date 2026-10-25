@@ -722,7 +722,8 @@ model ProductionDossierDispatch {
   @@schema("production")
 }
 
-/// **Une commande retirée du fournil avant d'y être inscrite** — l'annulation
+/// **Une commande retirée du fournil** — avant d'y être inscrite, ou après
+/// (plan A1, `after_inscription`) — l'annulation
 /// staff (doc `documentation/commandes/annulation/annulation-par-le-staff.md`, lot C3,
 /// C3.4 et C3.4 ter, 2026-10-12).
 ///
@@ -741,6 +742,12 @@ model OrderWithdrawal {
   orderId     String   @id @map("order_id")
   serviceDay  String   @map("service_day") @db.VarChar(10)
   withdrawnAt DateTime @map("withdrawn_at") @db.Timestamptz(6)
+  /// Le retrait est venu APRÈS l'inscription (plan A1,
+  /// `documentation/commandes/annulation/plan-a1-retirer-une-commande-inscrite.md`,
+  /// § 2.1) : une commande de particulier retirée jusqu'à « prête ». Le compte
+  /// à produire ne bouge pas ; la ligne explique un compte plus grand que les
+  /// feuilles du colisage.
+  afterInscription Boolean @default(false) @map("after_inscription")
 
   @@index([serviceDay])
   @@map("order_withdrawal")

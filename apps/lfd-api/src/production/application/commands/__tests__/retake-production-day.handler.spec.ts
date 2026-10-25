@@ -140,7 +140,7 @@ describe("RetakeProductionDayHandler", () => {
   it("🔴 n'absorbe pas une commande retirée par l'annulation staff (C3.4)", async () => {
     const days = new Days(closedDay());
     const withdrawals = new InMemoryWithdrawals();
-    withdrawals.rows.set("ord_2", { day: DAY, at: NOW });
+    withdrawals.rows.set("ord_2", { day: DAY, at: NOW, afterInscription: false });
     const handler = subject(
       days,
       [order("ord_1", 30), order("ord_2", 6)],

@@ -2,6 +2,7 @@ import type { CustomerCancellationStage } from "@lfd/contracts";
 
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
+import type { PackingWithdrawalOutcome } from "../../../../../packing/channels/commerce/index.js";
 import type { OrderWithdrawalOutcome } from "../../../../../production/channels/commerce/index.js";
 import type { CancellationSubject } from "../../../domain/ports/cancellation-subject.reader.js";
 import { CancellationAllowanceGate } from "../../services/cancellation-allowance-gate.js";
@@ -19,6 +20,8 @@ import {
   RecordingNoteVoiding,
   ScriptedCancelGateway,
   ScriptedDesk,
+  ScriptedPackingDesk,
+  workshops,
   ScriptedEngagements,
 } from "./cancellation-doubles.js";
 import { FixedCancellationSettings } from "./customer-cancellation-doubles.js";
@@ -27,9 +30,10 @@ import { InMemoryRefundRequests, RecordingDispatch, RefundStore } from "./refund
 import { RecordingRedemption, RETURNED } from "./voucher-doubles.js";
 
 /**
- * L'autorisation du plan A1 (lot A1.1), calculée une fois par le noyau.
- * Tant que les guichets du lot A1.2 n'existent pas, l'étape `ready` ne change
- * AUCUNE issue : c'est ce que ces tests tiennent.
+ * L'autorisation du plan A1, calculée une fois par le noyau (A1.1), et ce
+ * qu'elle ouvre depuis A1.2 : une commande de retrait inscrite se retire du
+ * fournil, puis du colisage — dans cet ordre, sous l'ordre des verrous du
+ * § 2.4.
  */
 
 /** Recopié dans l'écriture, jamais comparé à l'horloge. */
@@ -38,6 +42,7 @@ const NOW = new Date(0);
 function scene(input: {
   readonly stage: CustomerCancellationStage;
   readonly desk?: OrderWithdrawalOutcome;
+  readonly packing?: PackingWithdrawalOutcome;
   readonly subject?: Partial<CancellationSubject>;
 }) {
   const trace: string[] = [];
@@ -47,12 +52,14 @@ function scene(input: {
   const rule = new CancellationRule(engagements);
   const settings = new FixedCancellationSettings({ b2cCancellableUntil: input.stage });
   const rows = new InMemoryCancellations(subject, trace);
+  const bakery = new ScriptedDesk(input.desk ?? "withdrawn", trace);
+  const packing = new ScriptedPackingDesk(input.packing ?? "withdrawn", trace);
   const handler = new CancelOrderHandler(
     new OrderCancellation(
       subjects,
       rows,
       new ScriptedCancelGateway({ kind: "cancelled" }, trace),
-      new ScriptedDesk(input.desk ?? "withdrawn", trace),
+      workshops(bakery, packing),
       new RecordingRedemption(false, RETURNED),
       new VoucherRestitutionRefusal(subjects, new FixedInscriptions(), rule),
       rule,
@@ -68,28 +75,121 @@ function scene(input: {
       new FixedClock(NOW),
     ),
   );
-  return { handler, trace, settings, rows };
+  return { handler, trace, settings, rows, bakery, packing };
 }
 
 const cancel = () => new CancelOrderCommand("ord_1", "fiche-marie", "Le client a rappelé");
 
-describe("OrderCancellation — l'autorisation du plan A1 (lot A1.1)", () => {
-  it("étape ready, commande inscrite : toujours refusée jusqu'à A1.2", async () => {
-    const { handler, trace } = scene({ stage: "ready", desk: "inscribed" });
+describe("OrderCancellation — l'autorisation du plan A1", () => {
+  it("étape production_plan, commande inscrite : refusée, et le colisage n'est pas appelé", async () => {
+    const { handler, trace, bakery } = scene({ stage: "production_plan", desk: "inscribed" });
 
     await expect(handler.execute(cancel())).rejects.toMatchObject({
       code: "orders.cancel.inscribed",
     });
+    expect(bakery.allowances).toEqual(["before_inscription"]);
     expect(trace).not.toContain("cancel:ord_1");
+    expect(trace.some((step) => step.startsWith("packing:"))).toBe(false);
   });
 
-  it("étape ready, commande déjà confirmée au plan : toujours refusée jusqu'à A1.2", async () => {
-    const { handler, trace } = scene({ stage: "ready", subject: { status: "confirmed" } });
+  it("étape ready, retrait inscrit : fournil, PUIS colisage, PUIS écriture (§ 2.4)", async () => {
+    const { handler, trace, rows, bakery, packing } = scene({
+      stage: "ready",
+      desk: "withdrawn_after_inscription",
+      subject: { status: "confirmed" },
+    });
+
+    await handler.execute(cancel());
+
+    expect(bakery.allowances).toEqual(["before_packing"]);
+    expect(packing.calls).toEqual([{ day: "2026-10-13", orderId: "ord_1", by: "fiche-marie" }]);
+    const order = [
+      "lock:ord_1",
+      "withdraw:2026-10-13:ord_1",
+      "packing:2026-10-13:ord_1",
+      "cancel:ord_1",
+    ];
+    expect(trace.filter((step) => order.includes(step))).toEqual(order);
+    expect(rows.records).toHaveLength(1);
+  });
+
+  it("étape ready, livraison inscrite : `delivery_after_plan` avant tout guichet", async () => {
+    const { handler, trace } = scene({
+      stage: "ready",
+      subject: { status: "confirmed", fulfillmentMethod: "delivery" },
+    });
+
+    await expect(handler.execute(cancel())).rejects.toMatchObject({
+      code: "orders.cancel.delivery_after_plan",
+    });
+    expect(trace).toEqual([]);
+  });
+
+  it("étape ready, livraison que le fournil dit inscrite : le fournil est appelé sous `before_inscription`", async () => {
+    const { handler, bakery, packing } = scene({
+      stage: "ready",
+      desk: "inscribed",
+      subject: { fulfillmentMethod: "delivery" },
+    });
+
+    await expect(handler.execute(cancel())).rejects.toMatchObject({
+      code: "orders.cancel.delivery_after_plan",
+    });
+    expect(bakery.allowances).toEqual(["before_inscription"]);
+    expect(packing.calls).toEqual([]);
+  });
+
+  it.each([
+    ["packed", "orders.cancel.packed"],
+    ["delivery_bin", "orders.cancel.delivery_bin"],
+  ] as const)("le colisage répond « %s » : refus, rien n'est écrit", async (outcome, code) => {
+    const { handler, rows } = scene({
+      stage: "ready",
+      desk: "withdrawn_after_inscription",
+      packing: outcome,
+      subject: { status: "confirmed" },
+    });
+
+    await expect(handler.execute(cancel())).rejects.toMatchObject({ code });
+    expect(rows.records).toEqual([]);
+  });
+
+  it("étape ready, commande devenue prête : « prête », avant tout guichet", async () => {
+    const { handler, trace } = scene({ stage: "ready", subject: { status: "ready" } });
+
+    await expect(handler.execute(cancel())).rejects.toMatchObject({ code: "orders.cancel.ready" });
+    expect(trace).toEqual([]);
+  });
+
+  it("une commande de société inscrite reste refusée, réglage « prête » ou non (Q1)", async () => {
+    const { handler, bakery } = scene({
+      stage: "ready",
+      desk: "inscribed",
+      subject: { companyId: "co_1" },
+    });
 
     await expect(handler.execute(cancel())).rejects.toMatchObject({
       code: "orders.cancel.inscribed",
     });
-    expect(trace).toEqual([]);
+    expect(bakery.allowances).toEqual(["before_inscription"]);
+  });
+
+  /**
+   * Plan A1, § 1 point 5 : l'écriture conditionnée ne trouve rien (un état que
+   * le `where` refuse, sans que la règle sache le nommer) — `state_changed`,
+   * et la transaction défait les retraits.
+   */
+  it("l'écriture ne franchit pas : `state_changed`", async () => {
+    const { handler, rows } = scene({
+      stage: "ready",
+      desk: "withdrawn_after_inscription",
+      subject: { status: "confirmed" },
+    });
+    rows.refuseWrite = true;
+
+    await expect(handler.execute(cancel())).rejects.toMatchObject({
+      code: "orders.cancel.state_changed",
+    });
   });
 
   it("étape ready, commande non inscrite : annulée comme avant", async () => {

@@ -1,5 +1,18 @@
 # Plan A1 — retirer une commande inscrite au plan
 
+> 🟡 **2026-10-25 : A1.2 bâti, pas encore commité.** Migration
+> `20261025210000_retirer_une_commande_inscrite` (`order_withdrawal.after_inscription`,
+> `packing_order.withdrawn_at`). Le guichet du fournil prend l'autorisation ;
+> `PackingWithdrawalDesk` (`packing/channels/commerce/`) retire la feuille ou
+> pose la pierre tombale, par `PackingContainerVoiding` extrait de
+> l'annulation de contenant ; `PackingSheet.assertNotWithdrawn` garde chaque
+> geste. Le noyau appelle les deux par `OrderWorkshopWithdrawal`. Choix de
+> bâti à relire : l'en-tête de la pierre tombale vient du fournil par un port
+> qu'il publie (`InscribedOrderHeaderReader`, `production/channels/packing/`),
+> absent du tableau du § 2.1 ; son `drawn_at` est l'instant du retrait. Les
+> faits et `order.cancelled` étendu restent au lot A1.3. E2E écrits, pas
+> encore passés.
+
 > 🟡 **2026-10-25 : A1.1 bâti, pas encore commité.** Le réglage
 > `b2c_cancellable_until` (migration `20261025190000_jusqu_ou_un_particulier_annule`),
 > l'écran Réglages › Commandes, et l'autorisation calculée une fois par le

@@ -62,6 +62,7 @@ export class PrismaPackingSheetRepository extends PackingSheetRepository {
         fulfillmentMethod: true,
         shortfallReportedAt: true,
         shortfallAuthorizedAt: true,
+        withdrawnAt: true,
         containers: CONTAINER_SELECT,
         lines: {
           select: {
@@ -94,6 +95,7 @@ export class PrismaPackingSheetRepository extends PackingSheetRepository {
       fulfillmentMethod: row.fulfillmentMethod === "delivery" ? "delivery" : "pickup",
       shortfallReportedAt: row.shortfallReportedAt,
       shortfallAuthorizedAt: row.shortfallAuthorizedAt,
+      withdrawnAt: row.withdrawnAt,
     });
   }
 
@@ -119,6 +121,7 @@ export class PrismaPackingSheetRepository extends PackingSheetRepository {
         containerCount: snapshot.containers,
         shortfallReportedAt: snapshot.shortfallReportedAt ?? null,
         shortfallAuthorizedAt: snapshot.shortfallAuthorizedAt ?? null,
+        withdrawnAt: snapshot.withdrawnAt ?? null,
       },
     });
     await saveContainers(this.prisma, snapshot);

@@ -10,6 +10,8 @@ export const CANCELLATION_SUBJECT_SELECT = {
   orderNumber: true,
   placedByUserId: true,
   companyId: true,
+  // Plan A1 : une livraison inscrite ne se retire pas (`delivery_after_plan`).
+  fulfillmentMethod: true,
   status: true,
   paymentStatus: true,
   totalCents: true,
@@ -26,6 +28,7 @@ interface CancellationSubjectRow {
   readonly orderNumber: string;
   readonly placedByUserId: string;
   readonly companyId: string | null;
+  readonly fulfillmentMethod: CancellationSubject["fulfillmentMethod"];
   readonly status: CancellationSubject["status"];
   readonly paymentStatus: CancellationSubject["paymentStatus"];
   readonly totalCents: number;
@@ -43,6 +46,7 @@ export function toCancellationSubject(row: CancellationSubjectRow): Cancellation
     orderNumber: row.orderNumber,
     placedByUserId: row.placedByUserId,
     companyId: row.companyId,
+    fulfillmentMethod: row.fulfillmentMethod,
     status: row.status,
     paymentStatus: row.paymentStatus,
     totalCents: row.totalCents,

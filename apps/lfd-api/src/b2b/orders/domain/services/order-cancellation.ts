@@ -33,6 +33,8 @@ export interface CancellationState {
   readonly totalCents: number;
   /** Le jour de service `AAAA-MM-JJ`, ou `null` (commande sans jour). */
   readonly serviceDay: string | null;
+  /** Retrait ou livraison : une livraison inscrite ne se retire pas (plan A1, § 1). */
+  readonly fulfillmentMethod: "pickup" | "delivery";
   /** L'instant d'une annulation STAFF ; `null` pour une annulation automatique. */
   readonly cancelledAt: Date | null;
   /**
@@ -66,6 +68,7 @@ export function cancellationStateOf(
     paymentStatus: subject.paymentStatus,
     totalCents: subject.totalCents,
     serviceDay: subject.serviceDay,
+    fulfillmentMethod: subject.fulfillmentMethod,
     cancelledAt: subject.cancelledAt,
     inscribedDay,
     engagement,
@@ -89,6 +92,14 @@ export type CancellationBlock =
    */
   | { readonly kind: "paid_just_now" }
   | { readonly kind: "inscribed"; readonly day: string | null }
+  /** Plan A1, § 1 point 3 : livraison inscrite — on ne défait ni bac ni tournée. */
+  | { readonly kind: "delivery_after_plan"; readonly day: string | null }
+  /** Plan A1, § 1 point 4 : le colisage a fermé le bac — lu par son guichet, sous verrou. */
+  | { readonly kind: "packed" }
+  /** Plan A1, § 1 point 4 : un contenant porte un bac de livraison vivant. */
+  | { readonly kind: "delivery_bin" }
+  /** Plan A1, § 1 point 5 : l'écriture conditionnée n'a rien trouvé — tout est défait. */
+  | { readonly kind: "state_changed" }
   /**
    * Lot C3b, cas 5 : le reste du bon a servi sur `order`, vivante ;
    * `otherCancellable` dit si celle-là s'annule — la phrase ne propose que le
@@ -150,28 +161,31 @@ export function cancellationOf(
   }
   if (state.inscribedDay !== null || state.status !== "placed") {
     const day = state.inscribedDay ?? state.serviceDay;
-    return { cancellable: false, block: inscribedBlockUnder(allowance, day) };
+    const inscribed = inscribedBlockUnder(allowance, state.fulfillmentMethod, day);
+    if (inscribed !== null) {
+      return { cancellable: false, block: inscribed };
+    }
   }
   return { cancellable: true, regime };
 }
 
 /**
- * Le refus « inscrite », selon l'autorisation.
- *
- * 🔴 **A1.1 (2026-10-25) : `before_packing` ne lève PAS encore ce refus.**
- * Retirer une commande inscrite demande les guichets du fournil et du
- * colisage (lot A1.2, plan A1 § 2), qui n'existent pas encore : jusque-là,
- * l'issue reste le refus d'avant, et choisir `ready` au réglage ne change
- * rien en production.
+ * Le refus « inscrite », selon l'autorisation (plan A1, § 1) : sous
+ * `before_inscription`, la règle d'avant ; sous `before_packing`, une commande
+ * de retrait inscrite s'annule — le colisage dira, sous son verrou, si son bac
+ * est fermé (`packed`) ou porte un bac de livraison (`delivery_bin`) — et une
+ * livraison inscrite reste refusée.
  */
 function inscribedBlockUnder(
   allowance: CancellationAllowance,
+  fulfillmentMethod: "pickup" | "delivery",
   day: string | null,
-): CancellationBlock {
+): CancellationBlock | null {
   switch (allowance.allowance) {
     case "before_inscription":
-    case "before_packing":
       return { kind: "inscribed", day };
+    case "before_packing":
+      return fulfillmentMethod === "delivery" ? { kind: "delivery_after_plan", day } : null;
   }
 }
 
@@ -256,5 +270,13 @@ export function cancellationRefusalOf(block: CancellationBlock): string {
       return block.day === null
         ? "Le fournil a déjà inscrit cette commande au compte à produire : elle sera fabriquée. Voyez avec le fournil."
         : `Le fournil a déjà inscrit cette commande au compte à produire du ${serviceDayShort(block.day)} : elle sera fabriquée. Voyez avec le fournil.`;
+    case "delivery_after_plan":
+      return "Cette commande est en livraison et le plan de production est arrêté : elle ne s'annule plus, on ne défait ni bac ni tournée. Voyez avec la livraison.";
+    case "packed":
+      return "Le colisage a déjà fermé le bac de cette commande : elle est prête et ne s'annule plus. Voyez avec le colisage.";
+    case "delivery_bin":
+      return "Un bac de livraison porte déjà cette commande au colisage : on ne défait pas un bac. Voyez avec le colisage et la livraison.";
+    case "state_changed":
+      return "L'état de cette commande a changé pendant l'annulation : rien n'a été annulé. Rechargez la commande, puis recommencez si elle est encore annulable.";
   }
 }

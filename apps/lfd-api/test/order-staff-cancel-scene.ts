@@ -12,6 +12,7 @@ import {
   DayOrdersReader,
   OrderWithdrawalDesk,
   type ProducibleOrder,
+  type OrderWithdrawalAllowance,
   type ServiceDay,
 } from "../src/production/channels/commerce/index.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
@@ -103,14 +104,14 @@ const dayOrders = {
 
 /** Le vrai guichet, sauf quand une panne est demandée. */
 const flakyDesk = {
-  withdraw: (day: ServiceDay, orderId: string) => {
+  withdraw: (day: ServiceDay, orderId: string, allowance: OrderWithdrawalAllowance) => {
     if (scene.withdrawalFailures > 0) {
       scene.withdrawalFailures -= 1;
       return Promise.reject(new Error("la connexion à la base est tombée"));
     }
     return context()
       .app.get(ProductionOrderWithdrawalDesk, { strict: false })
-      .withdraw(day, orderId);
+      .withdraw(day, orderId, allowance);
   },
 };
 

@@ -25,7 +25,7 @@ import {
 } from "../../domain/ports/order-shortfall.reader.js";
 import { VoucherRestitutionPreview } from "../../domain/ports/voucher-restitution-preview.js";
 import { cancellationVoucherSentenceOf } from "../../domain/services/order-cancellation-voucher.js";
-import { BEFORE_INSCRIPTION } from "../../domain/services/cancellation-allowance.js";
+import { CancellationAllowanceGate } from "../services/cancellation-allowance-gate.js";
 import {
   cancellationBlocker,
   cancellationRefusalOf,
@@ -77,6 +77,7 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
     private readonly clock: Clock,
     private readonly revisions: OrderRevisabilityReading,
     private readonly shortfalls: OrderShortfallReader,
+    private readonly allowances: CancellationAllowanceGate,
   ) {}
 
   async execute(query: GetAdminOrderQuery): Promise<AdminOrderView> {
@@ -121,12 +122,12 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
     }
     // Lot C5 : au compte, la règle lit aussi l'engagement comptable — par le
     // port de LECTURE seul (ISP), sans verrou : c'est un affichage.
-    // Plan A1.1 (2026-10-25) : aperçu à l'autorisation d'avant. Tant que le
-    // geste ne lève pas le refus « inscrite » (lot A1.2), l'aperçu dit la même
-    // chose sous les deux ; il suivra le réglage quand le geste le suivra.
+    // Plan A1 : l'autorisation du geste, lue au réglage — le staff suit la
+    // limite du particulier. Le bac fermé n'est connu que du colisage, sous
+    // son verrou : l'aperçu ne le dit pas encore (lecteur du lot A1.3).
     const block = cancellationBlocker(
       await this.rule.stateOf(subject, inscribedDay),
-      BEFORE_INSCRIPTION,
+      await this.allowances.of(subject),
     );
     if (block !== null) {
       return { cancellable: false, reason: cancellationRefusalOf(block) };
