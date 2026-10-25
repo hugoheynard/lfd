@@ -140,3 +140,64 @@ describe("DeliveryNoteTerms.composePartial — les montants de ce qui part (§ 9
     expect(terms.totalCents).toBe(1_600 + 200 + 128);
   });
 });
+
+describe("departingSourceOf — frontières", () => {
+  it("un article décidé à zéro et inconnu de la commande n'est pas hors commande", () => {
+    expect(() =>
+      departingSourceOf(
+        ORDER,
+        decided([
+          { sku: "FANTOME", quantity: 0 },
+          { sku: "CRO", quantity: 1 },
+        ]),
+      ),
+    ).not.toThrow();
+  });
+
+  it("un article absent de la commande, à quantité positive, est refusé", () => {
+    expect(() => departingSourceOf(ORDER, decided([{ sku: "FANTOME", quantity: 1 }]))).toThrow(
+      DecisionOutsideOrderError,
+    );
+  });
+
+  it("une décision sans aucun article laisse chaque ligne à zéro (rien ne part)", () => {
+    const source = departingSourceOf(ORDER, decided([]));
+    expect(source.lines.map((l) => [l.quantity, l.lineTotalCents])).toEqual([
+      [0, 0],
+      [0, 0],
+    ]);
+    expect(source.terms.subtotalCents).toBe(0);
+    expect(source.terms.totalCents).toBe(0);
+  });
+
+  it("la décision complète rend les lignes de la commande telles quelles", () => {
+    const source = departingSourceOf(
+      ORDER,
+      decided([
+        { sku: "CRO", quantity: 10 },
+        { sku: "PAC", quantity: 10 },
+      ]),
+    );
+    expect(source.lines).toEqual(ORDER.lines);
+  });
+
+  // Le TTC d'une ligne réduite se recalcule depuis son HT réduit, jamais par
+  // proportion du TTC de la ligne de commande (l'arrondi se multiplierait).
+  it("le TTC d'une ligne réduite vient de son HT réduit, et reste null s'il l'était", () => {
+    const priced: DeliveryNoteSourceLine = {
+      ...line("CRO", 12),
+      unitPriceMillicents: 81_818,
+      vatRate: 10,
+      lineTotalCents: 982,
+      lineTotalTtcCents: 1_080,
+    };
+    const source = departingSourceOf(
+      { ...ORDER, lines: [priced, line("PAC", 1)] },
+      decided([{ sku: "CRO", quantity: 7 }]),
+    );
+    const [reduced, other] = source.lines;
+    expect(reduced?.lineTotalCents).toBe(573);
+    expect(reduced?.lineTotalTtcCents).toBe(630);
+    expect(other?.lineTotalTtcCents).toBeNull();
+  });
+});

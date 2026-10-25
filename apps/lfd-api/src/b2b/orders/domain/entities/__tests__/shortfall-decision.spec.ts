@@ -147,3 +147,77 @@ describe("OrderShortfall décidé — plus aucun fait du colisage ne le touche (
     expect(shortfall.pending).toBeNull();
   });
 });
+
+describe("ShortfallDecision — frontières du départ incomplet", () => {
+  // `every` est vrai sur une liste vide : un signal sans ligne ferait « partir »
+  // une commande vide au lieu de la refuser comme une annulation.
+  it("refuse un signal sans aucune ligne : rien ne part", () => {
+    const empty = OrderShortfall.fromSnapshot({
+      orderId: "ord_1",
+      reference: "ORD-0001",
+      reportedAt: REPORTED_AT,
+      lines: [],
+      clearedAt: null,
+    });
+    expect(() => ShortfallDecision.decide(subject(), empty, ACT)).toThrow(NothingDepartsError);
+    expect(empty.awaitingDecision).toBe(true);
+  });
+
+  it("une seule pièce au bac suffit : les lignes à zéro restent dans la décision", () => {
+    const one = OrderShortfall.fromSnapshot({
+      orderId: "ord_1",
+      reference: "ORD-0001",
+      reportedAt: REPORTED_AT,
+      lines: [
+        { sku: "CRO", due: 12, packed: 0 },
+        { sku: "PAC", due: 6, packed: 1 },
+      ],
+      clearedAt: null,
+    });
+    const decision = ShortfallDecision.decide(subject(), one, ACT);
+    expect(decision.departing).toEqual([
+      { sku: "CRO", quantity: 0 },
+      { sku: "PAC", quantity: 1 },
+    ]);
+  });
+
+  it("une décision déjà posée sur la fiche refuse, même si le sujet ne la voit pas", () => {
+    const shortfall = signalled();
+    ShortfallDecision.decide(subject(), shortfall, ACT);
+    expect(() => ShortfallDecision.decide(subject(), shortfall, ACT)).toThrow(
+      ShortfallAlreadyDecidedError,
+    );
+  });
+
+  it("un montant négatif non nul sans règle figée est aussi trop ancien", () => {
+    const old = subject({ frozenTerms: [{ amountCents: -300, hasAdjustment: false }] });
+    expect(() => ShortfallDecision.decide(old, signalled(), ACT)).toThrow(
+      OrderTooOldForShortfallError,
+    );
+  });
+
+  it("un montant à zéro sans règle figée passe, et sans terme aussi", () => {
+    expect(() =>
+      ShortfallDecision.decide(subject({ frozenTerms: [] }), signalled(), ACT),
+    ).not.toThrow();
+  });
+
+  it("un bon de fidélité d'un centime suffit à refuser", () => {
+    expect(() =>
+      ShortfallDecision.decide(subject({ voucherDiscountCents: 1 }), signalled(), ACT),
+    ).toThrow(VoucherOrderShortfallError);
+  });
+
+  it("un signal effacé n'est pas décidable : rien n'attend", () => {
+    const cleared = OrderShortfall.fromSnapshot({
+      orderId: "ord_1",
+      reference: "ORD-0001",
+      reportedAt: null,
+      lines: null,
+      clearedAt: REPORTED_AT,
+    });
+    expect(() => ShortfallDecision.decide(subject(), cleared, ACT)).toThrow(
+      NoShortfallToDecideError,
+    );
+  });
+});

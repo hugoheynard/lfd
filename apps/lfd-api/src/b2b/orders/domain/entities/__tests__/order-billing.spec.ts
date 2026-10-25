@@ -155,3 +155,81 @@ describe("OrderBilling — contrôle et correction (E6c1)", () => {
     expect(solde.gapsOf(HANDED)).toEqual(["settlement"]);
   });
 });
+
+describe("OrderBilling — frontières du solde", () => {
+  it("une commande remise sans jour de réception n'est pas soldée (attente, pas écart)", () => {
+    const solde = billing({ receivedOn: null });
+    expect(solde.closeBilling([])).toBe(false);
+    expect(solde.settlementGapOf([])).toBeNull();
+  });
+
+  it("une somme dont un BL n'a pas de ventilation n'en invente pas", () => {
+    const solde = billing({ partial: true });
+    const bare = {
+      number: "BL-2",
+      receivedOn: RECEIVED_ON,
+      amounts: { ...PARTIAL_AMOUNTS, vatShares: null },
+    };
+    solde.closeBilling([...HANDED, bare]);
+    expect(solde.toSnapshot().billable?.vatShares).toBeNull();
+    expect(solde.toSnapshot().billable?.subtotalCents).toBe(15_000);
+  });
+
+  it("le jour du solde est le dernier, quel que soit l'ordre des BL", () => {
+    const solde = billing({ partial: true });
+    const later = { number: "BL-2", receivedOn: "2030-02-01", amounts: PARTIAL_AMOUNTS };
+    solde.closeBilling([later, ...HANDED]);
+    expect(solde.toSnapshot().settledOn).toBe("2030-02-01");
+  });
+
+  it("nomme l'écart d'un BL remis sans jour, puis sans en-tête, et rien hors commande décidée remise", () => {
+    const partial = billing({ partial: true });
+    expect(
+      partial.settlementGapOf([{ number: "BL", receivedOn: null, amounts: PARTIAL_AMOUNTS }]),
+    ).toBe("receivedOn");
+    expect(
+      partial.settlementGapOf([{ number: "BL", receivedOn: RECEIVED_ON, amounts: null }]),
+    ).toBe("terms");
+    expect(partial.settlementGapOf(HANDED)).toBeNull();
+    expect(
+      billing({ partial: true, status: "confirmed" }).settlementGapOf([
+        { number: "BL", receivedOn: null, amounts: null },
+      ]),
+    ).toBeNull();
+  });
+
+  it("une ventilation TVA posée dans un autre ordre n'est pas un écart", () => {
+    const shares = [
+      { rate: 5.5, amountCents: 400 },
+      { rate: 20, amountCents: 139 },
+    ];
+    const solde = billing({
+      orderAmounts: { ...ORDER_AMOUNTS, vatShares: shares },
+      billable: { ...ORDER_AMOUNTS, vatShares: [...shares].reverse() },
+      settledOn: RECEIVED_ON,
+    });
+    expect(solde.gapsOf([])).toEqual([]);
+  });
+
+  it("une ventilation absente contre présente est un écart « vatShares »", () => {
+    const solde = billing({
+      billable: { ...ORDER_AMOUNTS, vatShares: null },
+      settledOn: RECEIVED_ON,
+    });
+    expect(solde.gapsOf([])).toEqual(["vatShares"]);
+  });
+
+  it("ne corrige rien quand les montants concordent, et corrige un jour de solde faux", () => {
+    const exact = billing({ billable: ORDER_AMOUNTS, settledOn: RECEIVED_ON });
+    expect(exact.correctBilling([], false)).toBe(false);
+    expect(exact.pendingWrite).toBeNull();
+    const late = billing({ billable: ORDER_AMOUNTS, settledOn: "2030-01-11" });
+    expect(late.correctBilling([], false)).toBe(true);
+    expect(late.toSnapshot().settledOn).toBe(RECEIVED_ON);
+  });
+
+  it("ne corrige pas des montants posés sur une commande annulée depuis", () => {
+    const solde = billing({ status: "cancelled", billable: ORDER_AMOUNTS, settledOn: RECEIVED_ON });
+    expect(solde.correctBilling([], false)).toBe(false);
+  });
+});
