@@ -758,12 +758,16 @@ export type {
   AdminOrderShortfallDecision,
   AdminOrderShortfallLine,
   AdminOrderView,
+  AdminShortfallCustomerNotice,
   AdminShortfallDecisionPayload,
+  AdminShortfallLetterDraft,
+  AdminShortfallLetterPayload,
   ShortfallRemainder,
 } from "./admin-order-detail.js";
 export {
   adminCancelOrderPayloadSchema,
   adminShortfallDecisionPayloadSchema,
+  adminShortfallLetterPayloadSchema,
   shortfallRemainderSchema,
 } from "./admin-order-detail.js";
 export {

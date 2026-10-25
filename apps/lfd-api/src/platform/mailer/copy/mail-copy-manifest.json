@@ -2444,6 +2444,72 @@
         "required": [],
         "fr": "Un doute ou une erreur ? Appelez le fournil — Le Labo · route de la Balme, Val d'Isère."
       }
+    },
+    "customer.order-shortfall": {
+      "kicker": {
+        "variables": [],
+        "required": [],
+        "fr": "Commande incomplète"
+      },
+      "subject": {
+        "variables": [
+          "ref"
+        ],
+        "required": [
+          "ref"
+        ],
+        "fr": "Commande {ref} : elle part incomplète"
+      },
+      "title": {
+        "variables": [],
+        "required": [],
+        "fr": "Votre commande part incomplète."
+      },
+      "intro": {
+        "variables": [
+          "ref"
+        ],
+        "required": [
+          "ref"
+        ],
+        "fr": "Bonjour,\n\nIl nous manque des articles pour votre commande {ref} : elle part avec ce que nous avons pu préparer."
+      },
+      "departedHeading": {
+        "variables": [],
+        "required": [],
+        "fr": "Ce qui part :"
+      },
+      "missingHeading": {
+        "variables": [],
+        "required": [],
+        "fr": "Ce qui manque :"
+      },
+      "line": {
+        "variables": [
+          "quantity",
+          "product"
+        ],
+        "required": [
+          "quantity",
+          "product"
+        ],
+        "fr": "– {quantity} × {product}"
+      },
+      "remainderAbandoned": {
+        "variables": [],
+        "required": [],
+        "fr": "Le reste ne sera pas livré, et ne vous sera pas facturé."
+      },
+      "closing": {
+        "variables": [],
+        "required": [],
+        "fr": "Toutes nos excuses pour ce manque."
+      },
+      "footer": {
+        "variables": [],
+        "required": [],
+        "fr": "Un doute ou une erreur ? Appelez le fournil — Le Labo · route de la Balme, Val d'Isère."
+      }
     }
   }
 }

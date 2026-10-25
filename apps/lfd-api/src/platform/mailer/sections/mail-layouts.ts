@@ -12,6 +12,7 @@ import {
 } from "./mail-layout.types.js";
 import { ORDER_CHANGE_MAIL_LAYOUTS } from "./order-change-mail-layouts.js";
 import { ORDER_MAIL_LAYOUTS } from "./order-mail-layouts.js";
+import { ORDER_SHORTFALL_MAIL_LAYOUTS } from "./order-shortfall-mail-layouts.js";
 import { TEAM_MAIL_LAYOUTS } from "./team-mail-layouts.js";
 
 export type {
@@ -30,6 +31,7 @@ export const MAIL_LAYOUTS: MailLayouts = {
   ...CUSTOMER_MAIL_LAYOUTS,
   ...TEAM_MAIL_LAYOUTS,
   ...ORDER_CHANGE_MAIL_LAYOUTS,
+  ...ORDER_SHORTFALL_MAIL_LAYOUTS,
 };
 
 /** Une section d'un e-mail, résolue : libellé et nature posés. */

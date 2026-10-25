@@ -144,6 +144,11 @@ export const MAIL_COPY_VARIABLES: MailCopyVariables = {
     lessToPay: ["amount", "previous"],
   },
   "customer.order-change-refused": { subject: ["ref"], intro: ["ref"] },
+  "customer.order-shortfall": {
+    subject: ["ref"],
+    intro: ["ref"],
+    line: ["quantity", "product"],
+  },
   "ops.deploy-check": { subject: ["revision"] },
   "agency.vitrine-notice": {},
 };

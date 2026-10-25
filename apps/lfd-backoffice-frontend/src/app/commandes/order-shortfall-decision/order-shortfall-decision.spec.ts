@@ -17,7 +17,7 @@ const AWAITING: AdminOrderShortfall = {
 };
 const DECIDED: AdminOrderShortfall = {
   ...AWAITING,
-  decision: { decidedAt: '2030-01-10T06:00:00.000Z', remainder: 'abandoned' },
+  decision: { decidedAt: '2030-01-10T06:00:00.000Z', remainder: 'abandoned', customerNotice: null },
 };
 const CAN: readonly StaffPermission[] = ['b2b_orders:read', 'b2b_orders_shortfall:write'];
 

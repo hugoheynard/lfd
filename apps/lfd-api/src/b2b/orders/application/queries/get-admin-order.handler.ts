@@ -4,11 +4,15 @@ import type {
   AdminOrderCancellability,
   AdminOrderShortfall,
   AdminOrderView,
+  AdminShortfallCustomerNotice,
 } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { OrderInscriptionReader } from "../../../../production/channels/commerce/index.js";
-import { StaffAuthorDirectory } from "../../../../staff/directory/domain/staff-author-directory.js";
+import {
+  StaffAuthorDirectory,
+  type StaffAuthors,
+} from "../../../../staff/directory/domain/staff-author-directory.js";
 import { OrderNotFoundError } from "../../domain/errors/order-errors.js";
 import { AdminOrderAuthorReader } from "../../domain/ports/admin-order-author.reader.js";
 import { CancellationSubjectReader } from "../../domain/ports/cancellation-subject.reader.js";
@@ -86,7 +90,10 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
     if (owned === null || author === null || cancellability === null || revision === null) {
       throw new OrderNotFoundError(query.orderId);
     }
-    const staffAuthors = await this.staff.identify([author.placedByStaffId]);
+    const notifier = shortfall?.decision?.customerNotice?.byStaffId;
+    const staffAuthors = await this.staff.identify(
+      notifier === undefined ? [author.placedByStaffId] : [author.placedByStaffId, notifier],
+    );
     return {
       ...owned.view,
       clientele: owned.clientele,
@@ -99,7 +106,7 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
       refund,
       revisability: revision.revisability,
       revision: revision.revision,
-      shortfall: shortfall === null ? null : shortfallViewOf(shortfall),
+      shortfall: shortfall === null ? null : shortfallViewOf(shortfall, staffAuthors),
     };
   }
 
@@ -133,8 +140,8 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
   }
 }
 
-/** Le manque signalé, dans la forme du contrat (E6a). */
-function shortfallViewOf(reading: OrderShortfallReading): AdminOrderShortfall {
+/** Le manque signalé, dans la forme du contrat (E6a) ; le client prévenu, nommé (E6d). */
+function shortfallViewOf(reading: OrderShortfallReading, staff: StaffAuthors): AdminOrderShortfall {
   return {
     reportedAt: reading.reportedAt.toISOString(),
     lines: reading.lines.map((line) => ({ sku: line.sku, due: line.due, packed: line.packed })),
@@ -144,8 +151,18 @@ function shortfallViewOf(reading: OrderShortfallReading): AdminOrderShortfall {
         : {
             decidedAt: reading.decision.decidedAt.toISOString(),
             remainder: reading.decision.remainder,
+            customerNotice: customerNoticeViewOf(reading.decision.customerNotice, staff),
           },
   };
+}
+
+function customerNoticeViewOf(
+  notice: { readonly at: Date; readonly byStaffId: string } | null,
+  staff: StaffAuthors,
+): AdminShortfallCustomerNotice | null {
+  return notice === null
+    ? null
+    : { notifiedAt: notice.at.toISOString(), notifiedByName: staff.nameOf(notice.byStaffId) };
 }
 
 /** Lot C4 (C4.9) : ce que l'annulation d'une payée rendra — `null` hors carte payée. */

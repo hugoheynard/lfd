@@ -326,6 +326,38 @@ describe("GetAdminOrderHandler", () => {
     });
   });
 
+  it("dit le client prévenu, quand et par qui, en nommant l'auteur par l'annuaire (E6d)", async () => {
+    const staff = directory();
+    const view = await adminHandler(
+      ofCompany("cmp_1"),
+      { customer: CUSTOMER, company: COMPANY, placedByStaffId: null },
+      staff,
+      cancellationSubject(),
+      null,
+      new FixedRestitutionPreview({ kind: "already" }),
+      {},
+      { kind: "free" },
+      new RefundStore(),
+      PLACED,
+      {
+        reportedAt: NOW,
+        lines: [{ sku: "CRO", due: 12, packed: 9 }],
+        decision: {
+          decidedAt: NOW,
+          remainder: "abandoned",
+          customerNotice: { at: NOW, byStaffId: "stf_1" },
+        },
+      },
+    ).execute(new GetAdminOrderQuery("ord_1"));
+
+    expect(staff.asked).toEqual([null, "stf_1"]);
+    expect(view.shortfall?.decision).toEqual({
+      decidedAt: NOW.toISOString(),
+      remainder: "abandoned",
+      customerNotice: { notifiedAt: NOW.toISOString(), notifiedByName: "Hugo H" },
+    });
+  });
+
   describe("la modification par l'équipe (plan de modification, §6)", () => {
     const owner = { customer: CUSTOMER, company: COMPANY, placedByStaffId: null };
 

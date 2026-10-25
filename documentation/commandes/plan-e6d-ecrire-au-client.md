@@ -1,5 +1,13 @@
 # Plan E6d — « Écrire au client » après un départ incomplet
 
+> 🟡 **Bâti le 2026-10-25, pas encore commité** (migration
+> `20261025180000_le_client_prevenu_du_depart`). Le gabarit
+> `customer.order-shortfall` ne rend que son cadre (objet, titre, pied) ;
+> ses « Paragraphes » sont la **proposition** — au manifeste, réécrivables à
+> l'écran des textes —, et le corps envoyé est le texte relu, une donnée
+> (`mail-layouts.spec.ts` les tient hors du rendu, avec leur raison). La
+> langue est celle de la commande (`orders.locale`), le français sans elle.
+
 > **Doc-first, 2026-10-25.** Lot E6d de
 > [`plan-e6-le-depart-incomplet.md`](plan-e6-le-depart-incomplet.md). Décision de
 > Hugo (commandes-incompletes.md § 4) : **avertir le client est un choix du

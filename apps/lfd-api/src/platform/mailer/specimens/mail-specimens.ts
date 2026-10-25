@@ -12,6 +12,7 @@ import { CUSTOMER_SPECIMENS } from "./customer-specimens.js";
 import type { MailFamily, MailSpecimens } from "./mail-specimen.types.js";
 import { ORDER_CHANGE_SPECIMENS } from "./order-change-specimens.js";
 import { ORDER_SPECIMENS } from "./order-specimens.js";
+import { ORDER_SHORTFALL_SPECIMENS } from "./order-shortfall-specimens.js";
 import { TEAM_SPECIMENS } from "./team-specimens.js";
 
 export type { MailFamily } from "./mail-specimen.types.js";
@@ -29,6 +30,7 @@ export const MAIL_SPECIMENS: MailSpecimens = {
   ...CUSTOMER_SPECIMENS,
   ...TEAM_SPECIMENS,
   ...ORDER_CHANGE_SPECIMENS,
+  ...ORDER_SHORTFALL_SPECIMENS,
 };
 
 /** Une clé du registre ? Une chaîne venue d'une route ne l'est pas d'office. */

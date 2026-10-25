@@ -89,3 +89,5 @@ l'ordre, chacun avec son plan, son recensement et `vitruve` :
 « une remise par commande » ne se resserrent plus.
 
 **E7.0 fait le 2026-10-25** : [`e7-recensement.md`](e7-recensement.md) — le classement des lecteurs et les huit cas ambigus tranchés.
+
+**E7.1 écrit et contredit le 2026-10-25** : [`plan-e7-1-le-jour-du-bon.md`](plan-e7-1-le-jour-du-bon.md) — trois bloquants ouverts, rien de bâti.

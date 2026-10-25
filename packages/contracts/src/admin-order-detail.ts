@@ -77,7 +77,38 @@ export type ShortfallRemainder = z.infer<typeof shortfallRemainderSchema>;
 export interface AdminOrderShortfallDecision {
   readonly decidedAt: string;
   readonly remainder: ShortfallRemainder;
+  /**
+   * **Le client prévenu** (lot E6d,
+   * `documentation/commandes/plan-e6d-ecrire-au-client.md`) — `null` tant que
+   * personne ne lui a écrit. Une fois par décision : « Client prévenu le … par … ».
+   */
+  readonly customerNotice: AdminShortfallCustomerNotice | null;
 }
+
+/** L'instant ISO de l'envoi, et qui l'a fait (« Prénom Nom », `null` = fiche introuvable). */
+export interface AdminShortfallCustomerNotice {
+  readonly notifiedAt: string;
+  readonly notifiedByName: string | null;
+}
+
+/**
+ * Réponse de `GET /admin/orders/:id/shortfall-letter` (lot E6d) : la
+ * proposition que l'équipe relit, rédigée par le dictionnaire des e-mails
+ * dans la langue de la commande.
+ */
+export interface AdminShortfallLetterDraft {
+  readonly message: string;
+}
+
+/**
+ * Corps de `POST /admin/orders/:id/shortfall-letter` (lot E6d) : le texte
+ * RELU, celui qui part. La forme seulement — le vide et la longueur se
+ * refusent au domaine (`ShortfallLetter`).
+ */
+export const adminShortfallLetterPayloadSchema = z.object({
+  message: z.string(),
+});
+export type AdminShortfallLetterPayload = z.infer<typeof adminShortfallLetterPayloadSchema>;
 
 /**
  * Corps de `POST /admin/orders/:id/shortfall-decision` (lot E6b). Les

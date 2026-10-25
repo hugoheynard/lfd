@@ -39,6 +39,14 @@ const NOT_SHOWN_AS_TEXT = new Set([
   // Branches qu'aucun cas de l'empreinte ne parcourt.
   "customer.sub-account-gesture|bodyByTeam",
   "staff.production-dossier|arrestedWithoutAuthor",
+  // La proposition d'« Écrire au client » (E6d) : elle rédige le texte que
+  // l'équipe relit ; le courriel rend le texte relu, une donnée.
+  "customer.order-shortfall|intro",
+  "customer.order-shortfall|departedHeading",
+  "customer.order-shortfall|missingHeading",
+  "customer.order-shortfall|line",
+  "customer.order-shortfall|remainderAbandoned",
+  "customer.order-shortfall|closing",
 ]);
 
 function render<K extends keyof B2bMails>(key: K, data: B2bMails[K]): RenderedMail {

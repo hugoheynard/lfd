@@ -9,7 +9,7 @@ import {
 } from "./rendering-golden/mail-rendering.fingerprint.js";
 
 /**
- * **Non-régression du rendu des 30 e-mails, en français.**
+ * **Non-régression du rendu des 31 e-mails, en français.**
  *
  * Les empreintes de `mail-rendering.golden.json` ont été capturées le
  * 2026-10-23 AVANT que les textes quittent les gabarits pour le dictionnaire
@@ -44,6 +44,10 @@ import {
  * §14) : son cas `only` change d'empreinte, objet et pièces jointes
  * identiques ; deux cas neufs (`lower`, `unchanged`) parcourent les autres
  * branches de l'écart. Aucun autre cas n'a bougé.
+ *
+ * **Complétée le 2026-10-25 (E6d)** : un e-mail neuf,
+ * `customer.order-shortfall`, son empreinte ajoutée sans toucher aux
+ * existantes.
  */
 
 const REGISTRY = b2bMailTemplates({
@@ -70,10 +74,10 @@ function casesOf<K extends keyof B2bMails>(key: K): readonly (readonly [string, 
 
 const KEYS = Object.keys(MAIL_CASES) as readonly (keyof B2bMails)[];
 
-it("couvre les 30 e-mails du registre, sans en oublier un", () => {
+it("couvre les 31 e-mails du registre, sans en oublier un", () => {
   expect([...KEYS].sort()).toEqual(Object.keys(REGISTRY).sort());
   expect(Object.keys(GOLDEN).sort()).toEqual(Object.keys(REGISTRY).sort());
-  expect(KEYS).toHaveLength(30);
+  expect(KEYS).toHaveLength(31);
 });
 
 describe.each(KEYS)("le rendu de « %s »", (key) => {

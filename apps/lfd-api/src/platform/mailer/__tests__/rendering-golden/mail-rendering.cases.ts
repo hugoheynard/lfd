@@ -2,10 +2,11 @@ import { CUSTOMER_CASES } from "./customer-cases.js";
 import type { MailCases } from "./mail-cases.type.js";
 import { ORDER_CHANGE_CASES } from "./order-change-cases.js";
 import { ORDER_CASES } from "./order-cases.js";
+import { ORDER_SHORTFALL_CASES } from "./order-shortfall-cases.js";
 import { TEAM_CASES } from "./team-cases.js";
 
 /**
- * **Les données d'exemple des 30 e-mails**, une liste de cas par clé du
+ * **Les données d'exemple des 31 e-mails**, une liste de cas par clé du
  * registre, choisis pour passer par CHAQUE branche du texte : avec et sans
  * prénom, avec et sans lien, chaque régime, chaque geste.
  *
@@ -21,4 +22,5 @@ export const MAIL_CASES: MailCases = {
   ...CUSTOMER_CASES,
   ...TEAM_CASES,
   ...ORDER_CHANGE_CASES,
+  ...ORDER_SHORTFALL_CASES,
 };

@@ -8,8 +8,8 @@ export interface MailLabel {
 }
 
 /**
- * **Les intitulés des 28 e-mails du registre** (`B2bMails`,
- * `apps/lfd-api/src/platform/mailer/mail-templates.ts`, relu le 2026-10-23) —
+ * **Les intitulés des 31 e-mails du registre** (`B2bMails`,
+ * `apps/lfd-api/src/platform/mailer/mail-templates.ts`, relu le 2026-10-25) —
  * la clé technique reste au survol. Une clé que l'écran ne connaît pas
  * s'affiche telle quelle (`mailLabel`) : un e-mail neuf reste éditable avant
  * d'avoir son intitulé.
@@ -64,6 +64,12 @@ const MAIL_LABELS: Readonly<Record<string, MailLabel>> = {
     title: 'Modification demandée — refusée',
     recipient: 'Le client qui l’a demandée',
     moment: 'quand l’équipe refuse sa demande de modification, avec son mot',
+  },
+  'customer.order-shortfall': {
+    title: 'Commande incomplète — écrit par l’équipe',
+    recipient: 'Le client qui a passé la commande',
+    moment:
+      'quand l’équipe écrit au client après la décision d’un départ incomplet — jamais automatiquement ; les paragraphes sont la proposition qu’elle relit avant d’envoyer',
   },
   'customer.invoice-issued': {
     title: 'Facture émise',

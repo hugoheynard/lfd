@@ -2177,6 +2177,15 @@
       "information": false
     },
     {
+      "colonne": "public.order_shortfall_decision.customer_notified_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a écrit au client après un départ incomplet (« Client prévenu le … par … », `order_shortfall_decision`, plan-e6d-ecrire-au-client § 1).",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "public.delivery_note.printed_by",
       "personne": "staff",
       "categorie": "auteur-geste",

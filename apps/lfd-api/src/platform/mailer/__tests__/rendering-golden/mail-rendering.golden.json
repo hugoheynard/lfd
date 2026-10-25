@@ -478,5 +478,12 @@
       "htmlSha256": "682acb41f8f6308cc640ba7ea61f98de6498cbf2c5115b7a7fea319255e5f22f",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     }
+  },
+  "customer.order-shortfall": {
+    "withMessage": {
+      "subject": "Commande ORD-4812 : elle part incomplète",
+      "htmlSha256": "c5e80c35ff86451ede6b261ba860be8a9c95c2b8322d3fb8067bc8250e4e3e06",
+      "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
+    }
   }
 }

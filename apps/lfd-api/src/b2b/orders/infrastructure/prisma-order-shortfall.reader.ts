@@ -20,7 +20,14 @@ export class PrismaOrderShortfallReader extends OrderShortfallReader {
       select: {
         shortfallReportedAt: true,
         shortfallLines: true,
-        shortfallDecision: { select: { decidedAt: true, remainder: true } },
+        shortfallDecision: {
+          select: {
+            decidedAt: true,
+            remainder: true,
+            customerNotifiedAt: true,
+            customerNotifiedByStaffId: true,
+          },
+        },
       },
     });
     if (row === null || row.shortfallReportedAt === null || row.shortfallLines === null) {
@@ -34,7 +41,17 @@ export class PrismaOrderShortfallReader extends OrderShortfallReader {
       decision:
         decision === null || decision.remainder !== "abandoned"
           ? null
-          : { decidedAt: decision.decidedAt, remainder: decision.remainder },
+          : {
+              decidedAt: decision.decidedAt,
+              remainder: decision.remainder,
+              customerNotice:
+                decision.customerNotifiedAt === null || decision.customerNotifiedByStaffId === null
+                  ? null
+                  : {
+                      at: decision.customerNotifiedAt,
+                      byStaffId: decision.customerNotifiedByStaffId,
+                    },
+            },
     };
   }
 }

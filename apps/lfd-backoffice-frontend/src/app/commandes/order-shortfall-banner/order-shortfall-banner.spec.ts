@@ -60,7 +60,11 @@ describe('le bandeau du manque signalé (E6a)', () => {
   it('se tait une fois le départ décidé (E6b)', () => {
     const decided = {
       ...SHORTFALL,
-      decision: { decidedAt: SHORTFALL.reportedAt, remainder: 'abandoned' as const },
+      decision: {
+        decidedAt: SHORTFALL.reportedAt,
+        remainder: 'abandoned' as const,
+        customerNotice: null,
+      },
     };
     expect(mount(decided).querySelector('[data-shortfall-banner]')).toBeNull();
   });

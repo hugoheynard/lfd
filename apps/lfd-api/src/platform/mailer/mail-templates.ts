@@ -40,6 +40,7 @@ import {
   type ProductionDossierMailData,
 } from "./production-dossier-mail.js";
 import type { MandateMailScheme } from "./mandate-to-sign-wording.js";
+import { renderOrderShortfallMail, type OrderShortfallMailData } from "./order-shortfall-mail.js";
 import { type OrderSheetMailDocument, withAttachments } from "./order-sheet-mail-document.js";
 import { pickupItinerary, type PickupPoint } from "./pickup-itinerary.js";
 import { qrPng } from "./qr-image.js";
@@ -151,6 +152,13 @@ export interface B2bMails {
    */
   "customer.order-change-applied": OrderChangeAppliedMailData;
   "customer.order-change-refused": OrderChangeRefusedMailData;
+  /**
+   * **« Votre commande part incomplète »**, écrit à la main par l'équipe
+   * après la décision du départ (plan
+   * `documentation/commandes/plan-e6d-ecrire-au-client.md`). Jamais envoyé par
+   * un abonné. Destinataire : le client. Cf. `order-shortfall-mail.ts`.
+   */
+  "customer.order-shortfall": OrderShortfallMailData;
   /**
    * **Un de vos sites a agi** — l'avis au principal (plan
    * `documentation/comptes-client/plan-notifications-sous-comptes.md`, N2).
@@ -678,6 +686,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
     "customer.order-cancelled": (data) => renderOrderCancelledMail(data, customerMail),
     "customer.order-change-applied": (data) => renderOrderChangeAppliedMail(data, customerMail),
     "customer.order-change-refused": (data) => renderOrderChangeRefusedMail(data, customerMail),
+    "customer.order-shortfall": (data) => renderOrderShortfallMail(data, customerMail),
     "customer.sub-account-activity": (data) => renderSubAccountActivityMail(data, customerMail),
     "customer.sub-account-gesture": (data) => renderSubAccountGestureMail(data, customerMail),
     "customer.order-placed": (data) => {

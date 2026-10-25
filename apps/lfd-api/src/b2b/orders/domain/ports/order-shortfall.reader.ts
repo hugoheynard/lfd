@@ -9,6 +9,8 @@ export interface OrderShortfallReading {
   readonly decision: {
     readonly decidedAt: Date;
     readonly remainder: ShortfallRemainder;
+    /** « Écrire au client » (E6d) : quand, et l'id de la fiche staff ; `null` = pas prévenu. */
+    readonly customerNotice: { readonly at: Date; readonly byStaffId: string } | null;
   } | null;
 }
 

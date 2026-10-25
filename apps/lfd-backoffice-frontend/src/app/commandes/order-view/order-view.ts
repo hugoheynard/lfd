@@ -29,6 +29,7 @@ import { OrderInvoicesCard } from '../order-invoices-card/order-invoices-card';
 import { OrderRefundBanner } from '../order-refund-banner/order-refund-banner';
 import { OrderShortfallBanner } from '../order-shortfall-banner/order-shortfall-banner';
 import { OrderShortfallDecision } from '../order-shortfall-decision/order-shortfall-decision';
+import { OrderShortfallLetter } from '../order-shortfall-letter/order-shortfall-letter';
 import { OrderRefundsCard } from '../order-refunds-card/order-refunds-card';
 import { isOrderSheet } from '../commande-page/order-sheet-key';
 import { AdminOrdersService } from '../orders.service';
@@ -73,6 +74,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     OrderRefundBanner,
     OrderShortfallBanner,
     OrderShortfallDecision,
+    OrderShortfallLetter,
     OrderRefundsCard,
   ],
   templateUrl: './order-view.html',

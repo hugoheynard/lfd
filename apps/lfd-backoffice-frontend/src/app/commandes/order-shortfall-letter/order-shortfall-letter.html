@@ -1,0 +1,69 @@
+@if (decision(); as d) {
+  <div class="letter">
+    @if (d.customerNotice; as notice) {
+      <fold-callout appearance="inset" variant="info" data-shortfall-notified>
+        Client prévenu le {{ notice.notifiedAt | date: "dd/MM 'à' HH:mm" }} par
+        {{ notice.notifiedByName ?? "un membre de l'équipe" }}.
+      </fold-callout>
+    } @else if (allowed()) {
+      @if (draft() === null) {
+        <div>
+          <button
+            foldButton
+            size="sm"
+            emphasis="outline"
+            [loading]="opening()"
+            (click)="open()"
+            data-shortfall-letter-open
+          >
+            Écrire au client
+          </button>
+        </div>
+      } @else {
+        <fold-textarea
+          label="Courriel au client"
+          required
+          [rows]="10"
+          [hint]="
+            blank()
+              ? 'Le texte est vide : écrivez ce que le client doit savoir, ou fermez sans rien envoyer.'
+              : tooLong()
+                ? 'Au plus ' + maxLength + ' caractères.'
+                : 'Relisez et corrigez : c’est ce texte qui part, une seule fois.'
+          "
+          [value]="draft() ?? ''"
+          (valueChange)="draft.set($event)"
+          data-shortfall-letter-text
+        />
+        <div class="actions">
+          <button
+            foldButton
+            size="sm"
+            [loading]="sending()"
+            [disabled]="blank() || tooLong()"
+            (click)="send()"
+            data-shortfall-letter-send
+          >
+            Envoyer au client
+          </button>
+          <button
+            foldButton
+            size="sm"
+            emphasis="outline"
+            intent="neutral"
+            [disabled]="sending()"
+            (click)="close()"
+            data-shortfall-letter-close
+          >
+            Fermer sans envoyer
+          </button>
+        </div>
+      }
+      @if (error(); as message) {
+        <fold-callout appearance="inset" variant="alert" announce data-shortfall-letter-error>{{
+          message
+        }}</fold-callout>
+      }
+    }
+  </div>
+}

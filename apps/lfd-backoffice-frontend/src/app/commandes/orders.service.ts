@@ -16,6 +16,8 @@ import type {
   AdminOrderView,
   AdminCancelOrderPayload,
   AdminShortfallDecisionPayload,
+  AdminShortfallLetterDraft,
+  AdminShortfallLetterPayload,
   OrderRevisedResponse,
   OrderRevisionEntryView,
   OrderRevisionPayload,
@@ -188,6 +190,25 @@ export class AdminOrdersService {
     await firstValueFrom(
       this.http.post<void>(
         `${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}/shortfall-decision`,
+        payload,
+      ),
+    );
+  }
+
+  /** La proposition « Écrire au client » (E6d) : le texte pré-rempli, à relire. */
+  async shortfallLetterDraft(id: string): Promise<AdminShortfallLetterDraft> {
+    return firstValueFrom(
+      this.http.get<AdminShortfallLetterDraft>(
+        `${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}/shortfall-letter`,
+      ),
+    );
+  }
+
+  /** « Écrire au client » (E6d) : envoie le texte RELU, une fois par décision. */
+  async writeShortfallLetter(id: string, payload: AdminShortfallLetterPayload): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(
+        `${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}/shortfall-letter`,
         payload,
       ),
     );

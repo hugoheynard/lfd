@@ -52,6 +52,8 @@
         [lines]="o.lines"
         (decided)="onShortfallDecided()"
       />
+      <!-- « Écrire au client » (E6d), après la décision : jamais automatique. -->
+      <app-order-shortfall-letter [orderId]="o.id" [shortfall]="o.shortfall" (sent)="load()" />
 
       <!-- L'argent à rendre d'une commande annulée (C4.9) : rien sans demande. -->
       <app-order-refund-banner [orderId]="o.id" [refund]="o.refund" (retried)="load()" />

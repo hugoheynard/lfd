@@ -2,6 +2,7 @@ import { ACCOUNT_MAILS_FR } from "./fr/account-mails.fr.js";
 import { BILLING_MAILS_FR } from "./fr/billing-mails.fr.js";
 import { ORDER_CHANGE_MAILS_FR } from "./fr/order-change-mails.fr.js";
 import { ORDER_MAILS_FR } from "./fr/order-mails.fr.js";
+import { ORDER_SHORTFALL_MAILS_FR } from "./fr/order-shortfall-mails.fr.js";
 import { PAYMENT_MAILS_FR } from "./fr/payment-mails.fr.js";
 import { TEAM_MAILS_FR } from "./fr/team-mails.fr.js";
 import type { MailCopy } from "./mail-copy.model.js";
@@ -19,4 +20,5 @@ export const MAIL_FR: MailCopy = {
   ...ACCOUNT_MAILS_FR,
   ...TEAM_MAILS_FR,
   ...ORDER_CHANGE_MAILS_FR,
+  ...ORDER_SHORTFALL_MAILS_FR,
 };

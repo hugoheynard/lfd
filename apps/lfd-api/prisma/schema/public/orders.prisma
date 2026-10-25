@@ -454,17 +454,21 @@ model Order {
 /// commande, définitive. Ce qui part — les quantités au bac du signal — et ce
 /// que devient le reste. `abandoned` seulement : `to_redeliver` arrive avec E7.
 model OrderShortfallDecision {
-  id               String   @id
-  orderId          String   @unique @map("order_id")
-  order            Order    @relation(fields: [orderId], references: [id], onDelete: Restrict)
-  decidedAt        DateTime @map("decided_at") @db.Timestamptz(6)
+  id                        String    @id
+  orderId                   String    @unique @map("order_id")
+  order                     Order     @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  decidedAt                 DateTime  @map("decided_at") @db.Timestamptz(6)
   /// Un `StaffUser.id`, pas une clé étrangère (comme `placed_by_staff_id`).
-  decidedByStaffId String   @map("decided_by_staff_id")
-  remainder        String
+  decidedByStaffId          String    @map("decided_by_staff_id")
+  remainder                 String
   /// `[{ sku, quantity }]` — ce qui part, par article.
-  departing        Json
+  departing                 Json
   /// L'instant du signal décidé.
-  signalReportedAt DateTime @map("signal_reported_at") @db.Timestamptz(6)
+  signalReportedAt          DateTime  @map("signal_reported_at") @db.Timestamptz(6)
+  /// « Écrire au client » (E6d) : l'instant de l'envoi, une fois par décision.
+  customerNotifiedAt        DateTime? @map("customer_notified_at") @db.Timestamptz(6)
+  /// Un `StaffUser.id`, pas une clé étrangère ; avec l'instant ou aucun (CHECK).
+  customerNotifiedByStaffId String?   @map("customer_notified_by_staff_id")
 
   @@map("order_shortfall_decision")
   @@schema("public")
