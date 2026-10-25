@@ -1,14 +1,15 @@
 # Le parcours complet d'une commande, de la prise à la facturation
 
-> **État réel, relu contre le code le 2026-10-25** (HEAD `c95188d91` sur `dev`,
-> `origin/main` à `71f61c869`). Chaque état, refus et décision dessiné ici a été
+> **État réel, relu contre le code le 2026-10-25** (HEAD `c95188d91` sur `dev`) ;
+> **tout ce qui était bâti est en production depuis le déploiement du
+> 2026-10-25 à 10 h 40** (`main` à `07ff2f541`, cinq déploiements verts). Chaque état, refus et décision dessiné ici a été
 > ouvert dans `apps/lfd-api/src/` (chemins relatifs à `apps/lfd-api/` sauf
 > mention). Trois états, et chacun se voit :
 >
 > - ✅ **en service** — sur `main`, donc en production (un merge dans `main`
 >   déploie ; le déploiement lui-même n'est pas revérifié ici) ;
 > - 🟦 **bâti, pas encore déployé** — sur `dev` seulement, en bleu dans les
->   schémas ;
+>   schémas (aucun aujourd'hui) ;
 > - 🟧 **prévu** — pas bâti, en pointillé orange, avec le lien vers son plan.
 >
 > Le bon de livraison, le départ incomplet et les montants facturables ont leur
@@ -36,7 +37,7 @@ flowchart LR
     BL["Bon de livraison<br/>prévu à l'arrêt, suit la commande<br/>(E1, E2, E4a)"]
     S2 --> BL
     BL --> S7
-    INC["Départ incomplet<br/>décidé, BL partiel (E6)"]:::bati
+    INC["Départ incomplet<br/>décidé, BL partiel (E6)"]
     S3 --> INC --> BL
     REL["Reliquat, solde, remboursement<br/>(E7–E9)"]:::prevu
     INC -.-> REL
@@ -44,16 +45,16 @@ flowchart LR
     classDef prevu fill:#fff3e0,stroke:#e65100,stroke-dasharray: 5 5
 ```
 
-| Étape | Qui agit                      | Ce qui en sort                                                                                            | État    |
-| ----- | ----------------------------- | --------------------------------------------------------------------------------------------------------- | ------- |
-| 1     | client, équipe, visiteur      | une commande `placed`, un règlement `not_required` ou `pending`                                           | ✅      |
-| 2     | le fournil (ou l'arrêt auto)  | les commandes réglées deviennent `confirmed`, les autres tombent ; chaque confirmée reçoit son BL-1 prévu | ✅      |
-| 3     | le coliseur                   | la commande devient `ready` à la fermeture du bac, son BL `prepared`                                      | ✅      |
-| 3 bis | le coliseur, puis un décideur | « Il manque », puis un départ incomplet décidé : BL partiel, reste abandonné                              | 🟦      |
-| 4     | le comptoir, le livreur       | l'attestation de retrait, la commande devient `fulfilled`, son BL `handed_over`                           | ✅      |
-| 5     | personne : une règle          | `received_on`, écrit dans la même instruction que le retrait, recopié sur le BL                           | ✅      |
-| 6     | client, équipe                | `cancelled`, son BL non remis `voided`, et un remboursement si la carte avait payé                        | ✅      |
-| 7     | l'automate ou la comptabilité | facture (mensuelle au compte, ou carte), lot de prélèvement ; sur `dev`, sur les montants facturables     | ✅ / 🟦 |
+| Étape | Qui agit                      | Ce qui en sort                                                                                            | État |
+| ----- | ----------------------------- | --------------------------------------------------------------------------------------------------------- | ---- |
+| 1     | client, équipe, visiteur      | une commande `placed`, un règlement `not_required` ou `pending`                                           | ✅   |
+| 2     | le fournil (ou l'arrêt auto)  | les commandes réglées deviennent `confirmed`, les autres tombent ; chaque confirmée reçoit son BL-1 prévu | ✅   |
+| 3     | le coliseur                   | la commande devient `ready` à la fermeture du bac, son BL `prepared`                                      | ✅   |
+| 3 bis | le coliseur, puis un décideur | « Il manque », puis un départ incomplet décidé : BL partiel, reste abandonné                              | ✅   |
+| 4     | le comptoir, le livreur       | l'attestation de retrait, la commande devient `fulfilled`, son BL `handed_over`                           | ✅   |
+| 5     | personne : une règle          | `received_on`, écrit dans la même instruction que le retrait, recopié sur le BL                           | ✅   |
+| 6     | client, équipe                | `cancelled`, son BL non remis `voided`, et un remboursement si la carte avait payé                        | ✅   |
+| 7     | l'automate ou la comptabilité | facture (mensuelle au compte, ou carte), lot de prélèvement ; sur les montants facturables                | ✅   |
 
 ## 1. La prise de commande
 
@@ -136,7 +137,7 @@ flowchart TD
     RO -->|"tournée partie"| E4["ReopenAfterDispatch"]:::sad
     RO -->|"rien commencé"| REL["Plan rouvert :<br/>confirmed → placed"]
     ABS --> BLP["BL-1 prévu, lignes et totaux<br/>recopiés (ou BL prévu réécrit)"]
-    REL --> KEEPD["Une commande au départ décidé<br/>reste confirmed"]:::bati
+    REL --> KEEPD["Une commande au départ décidé<br/>reste confirmed"]
     RS["Réassort d'une boutique"] --> LR["Lancement : arrête le jour<br/>s'il était ouvert"]
     classDef bati fill:#e3f2fd,stroke:#1565c0
     classDef sad fill:#ffebee,stroke:#c62828
@@ -151,7 +152,7 @@ flowchart TD
 | Réouverture          | `production-day.reopening.ts`                               | seulement si rien n'est cuit, colisé ou parti ; le commerce rend les commandes à `placed` | ✅   |
 | Réassort             | `ProductionDay.launchResupply`                              | un réassort lancé arrête le jour s'il était ouvert                                        | ✅   |
 | BL-1 prévu           | `DeliveryNotePlanner.planConfirmed` (`b2b/delivery-notes/`) | chaque commande que l'arrêt confirme (`confirmedAt = closedAt`) ; un refus est journalisé | ✅   |
-| Réouverture, décidée | `prisma-order-plan-release.ts` (`releaseFromPlan`)          | une commande au départ décidé n'est pas rendue à `placed`                                 | 🟦   |
+| Réouverture, décidée | `prisma-order-plan-release.ts` (`releaseFromPlan`)          | une commande au départ décidé n'est pas rendue à `placed`                                 | ✅   |
 
 ## 3. Le colisage
 
@@ -165,11 +166,11 @@ flowchart TD
     L["Liste à coliser publiée<br/>par le fournil"] --> AL["Répartir les lignes<br/>dans des contenants"]
     AL --> Q{"Toute la quantité<br/>répartie ?"}
     Q -->|"non"| E1["UnallocatedLines :<br/>le bac ne se ferme pas"]:::sad
-    E1 --> INC["« Il manque » : quantités au bac figées<br/>fait packing.shortfall_reported"]:::bati
-    INC --> WAIT["Commande : « décision attendue »<br/>(page Commandes, Supervision)"]:::bati
-    WAIT --> DEC{"Décider du départ<br/>(b2b_orders_shortfall)"}:::bati
+    E1 --> INC["« Il manque » : quantités au bac figées<br/>fait packing.shortfall_reported"]
+    INC --> WAIT["Commande : « décision attendue »<br/>(page Commandes, Supervision)"]
+    WAIT --> DEC{"Décider du départ<br/>(b2b_orders_shortfall)"}
     DEC -->|"carte, bon de fidélité, trop ancienne,<br/>rien au bac, bac changé, bac fermé"| E3["Refus nommé"]:::sad
-    DEC -->|"ça part, reste abandonné"| AUT["Lignes dues réduites,<br/>BL prévu réécrit aux quantités décidées"]:::bati
+    DEC -->|"ça part, reste abandonné"| AUT["Lignes dues réduites,<br/>BL prévu réécrit aux quantités décidées"]
     AUT --> SEAL
     WAIT -.->|"reste à relivrer (E7)"| RLQ["Reliquat, BL-2"]:::prevu
     Q -->|"oui"| SEAL["Fermer le bac (seal)<br/>fait packing.order_packed"]
@@ -185,15 +186,15 @@ flowchart TD
     classDef sad fill:#ffebee,stroke:#c62828
 ```
 
-| Décision           | Qui décide                                                                                            | Ce qui se passe                                                                                                           | État    |
-| ------------------ | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------- |
-| Fermer le bac      | `PackingSheet.seal`                                                                                   | refusé tant qu'une ligne due n'est pas entièrement répartie ; après une décision, la ligne due **est** la quantité au bac | ✅ / 🟦 |
-| Passer `ready`     | `mark-order-ready.handler.ts`, `markReady` (statut en `where`)                                        | refusé pour une commande annulée, brouillon ou déjà retirée                                                               | ✅      |
-| Rouvrir le bac     | `PackingSheet.reopen` + `BinDesk` de la livraison                                                     | refusé si le bac est chargé ou parti ; la commande reste `ready`                                                          | ✅      |
-| Retenue qualité    | `QualityCheck` (verdict `blocking`)                                                                   | la commande ne peut ni être retirée, ni partir en tournée                                                                 | ✅      |
-| Signaler un manque | `PackingSheet.reportShortfall`, puis `OrderShortfall` au commerce                                     | fige les quantités au bac ; refermer le bac complet efface le signal                                                      | 🟦      |
-| Départ incomplet   | `ShortfallDecision.decide` + `ShortfallDesk.authorize` ([`bon-de-livraison.md`](bon-de-livraison.md)) | au compte seulement ; reste abandonné ; « à relivrer » attend E7                                                          | 🟦      |
-| Réimprimer le BL   | `content_version` ≠ version imprimée                                                                  | « Le bon de livraison a changé depuis son impression » au poste et sur la fiche                                           | 🟦      |
+| Décision           | Qui décide                                                                                            | Ce qui se passe                                                                                                           | État |
+| ------------------ | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ---- |
+| Fermer le bac      | `PackingSheet.seal`                                                                                   | refusé tant qu'une ligne due n'est pas entièrement répartie ; après une décision, la ligne due **est** la quantité au bac | ✅   |
+| Passer `ready`     | `mark-order-ready.handler.ts`, `markReady` (statut en `where`)                                        | refusé pour une commande annulée, brouillon ou déjà retirée                                                               | ✅   |
+| Rouvrir le bac     | `PackingSheet.reopen` + `BinDesk` de la livraison                                                     | refusé si le bac est chargé ou parti ; la commande reste `ready`                                                          | ✅   |
+| Retenue qualité    | `QualityCheck` (verdict `blocking`)                                                                   | la commande ne peut ni être retirée, ni partir en tournée                                                                 | ✅   |
+| Signaler un manque | `PackingSheet.reportShortfall`, puis `OrderShortfall` au commerce                                     | fige les quantités au bac ; refermer le bac complet efface le signal                                                      | ✅   |
+| Départ incomplet   | `ShortfallDecision.decide` + `ShortfallDesk.authorize` ([`bon-de-livraison.md`](bon-de-livraison.md)) | au compte seulement ; reste abandonné ; « à relivrer » attend E7                                                          | ✅   |
+| Réimprimer le BL   | `content_version` ≠ version imprimée                                                                  | « Le bon de livraison a changé depuis son impression » au poste et sur la fiche                                           | ✅   |
 
 ## 4. Le départ : comptoir ou tournée
 
@@ -227,7 +228,7 @@ flowchart TD
     DP --> ATT
     ATT --> FUL["Commerce : → fulfilled<br/>+ received_on (étape 5)"]
     ATT --> BLR["BL → handed_over (créé plein s'il manquait)<br/>puis le solde : montants facturables"]
-    BLR --> SOL["Montants facturables posés<br/>(billable_*, settled_on)"]:::bati
+    BLR --> SOL["Montants facturables posés<br/>(billable_*, settled_on)"]
     ATT -.-> BLD["Le retrait par BL : un QR,<br/>le BL prêt remis (E7.3)"]:::prevu
     classDef bati fill:#e3f2fd,stroke:#1565c0
     classDef prevu fill:#fff3e0,stroke:#e65100,stroke-dasharray: 5 5
@@ -243,7 +244,7 @@ flowchart TD
 | Clore sans retrait   | `close-stop-without-handover.handler.ts`           | permis seulement si la commande n'est plus « à remettre » (annulée, etc.)        | ✅   |
 | Passer `fulfilled`   | `mark-order-fulfilled.handler.ts`, `markFulfilled` | une seule fois (`handed_over_at` nul), jamais sur une annulée                    | ✅   |
 | Le BL suit           | `DeliveryNoteFollower.handOver`                    | BL remis dans la même unité de travail ; BL plein s'il n'existait pas (Q-E5)     | ✅   |
-| Le solde             | `OrderBillingCloser.closeLocked`                   | montants facturables : recopie de la commande, ou Σ des BL remis si décidée      | 🟦   |
+| Le solde             | `OrderBillingCloser.closeLocked`                   | montants facturables : recopie de la commande, ou Σ des BL remis si décidée      | ✅   |
 
 ## 5. La date de réception
 
@@ -304,7 +305,7 @@ flowchart TD
     AB -->|"pro"| ABQ["failed seulement ;<br/>tombera à l'arrêt du plan"]
     MOD["Modifier (révision)"] --> MR{"Révisable ?"}
     MR -->|"non annulable, ou carte,<br/>ou plan arrêté, ou heure passée"| E5["Refus"]:::sad
-    MR -->|"départ incomplet décidé"| E6["Refus : décision prise"]:::bati
+    MR -->|"départ incomplet décidé"| E6["Refus : décision prise"]
     MR -->|"oui"| REV["Révision acceptée"]
     OK --> VO["BL non remis → voided"]
     OKF --> VO
@@ -326,7 +327,7 @@ flowchart TD
 | Expiration boutique       | `unsettled-shop-order-expiry.ts` (30 min)               | une commande boutique non réglée expire : `cancelled` + `failed`                         | ✅   |
 | Modifier                  | `order-revisability.ts`                                 | refusé si non annulable, réglée par carte, plan arrêté ou heure limite passée            | ✅   |
 | Le BL d'une annulée       | `DeliveryNoteFollower.voidLiveFor`                      | un BL non remis passe `voided` ; son numéro n'est jamais réemployé                       | ✅   |
-| Modifier une décidée      | erreur `orders.revise.shortfall_decided`                | une commande au départ décidé ne se révise plus                                          | 🟦   |
+| Modifier une décidée      | erreur `orders.revise.shortfall_decided`                | une commande au départ décidé ne se révise plus                                          | ✅   |
 
 ## 7. Facture et prélèvement
 
@@ -365,7 +366,7 @@ flowchart TD
     RES -->|"représenter"| REP["represented"]
     RES -->|"réglée autrement"| SO["settled_otherwise"]
     RES -->|"passer en perte"| WO["written_off"]
-    FM --> BLF["Sur dev : la facture lit les montants facturables<br/>(billable_*, settled_on), cite commandes et BL"]:::bati
+    FM --> BLF["La facture lit les montants facturables<br/>(billable_*, settled_on), cite commandes et BL"]
     BLF --> NS["Bon remis non soldé :<br/>bloqueur order_unsettled"]:::sad
     BLF -.-> RFD["Avoir sur réserve (R2),<br/>remboursement d'un reste (E9)"]:::prevu
     classDef bati fill:#e3f2fd,stroke:#1565c0
@@ -373,18 +374,18 @@ flowchart TD
     classDef sad fill:#ffebee,stroke:#c62828
 ```
 
-| Décision                    | Qui décide                                                    | Ce qui se passe                                                                                                      | État |
-| --------------------------- | ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ---- |
-| Facturable au compte        | `billable-order-criterion.ts`                                 | `not_required`, total > 0, non annulée, avec société, `received_on` dans la période                                  | ✅   |
-| Facturable au compte, `dev` | `billable-order-criterion.ts`                                 | `settled_on` dans la période **et** `billable_total_cents` posé ; non soldée : nommée (`order_unsettled`)            | 🟦   |
-| Le gel                      | déclencheur `orders_billable_frozen`                          | une commande facturée, relevée ou prélevée ne change plus de montants facturables : un écart se reprend par un avoir | 🟦   |
-| Facture mensuelle           | `issue-monthly-invoices.handler.ts` (et son automate)         | refusée hors clôture ou avant son ouverture ; avis envoyé au payeur                                                  | ✅   |
-| Facture carte               | `card-invoicing.ts`, déclenchée au paiement **et** au retrait | émise au second des deux ; jamais pour un particulier, ni remboursée en totalité                                     | ✅   |
-| Relevé (arrêté)             | `BillingStatement`, à la constitution                         | les payeurs hors régime « facture » sont prélevés sur un arrêté figé                                                 | ✅   |
-| Constitution d'un lot       | `constitute-collection-batches.handler.ts`                    | refusée s'il n'y a rien ; pré-notifications mises en file                                                            | ✅   |
-| Dépôt                       | `CollectionBatch.markDeposited`                               | refusé si un payeur n'a pas de mandat, si le fichier n'a jamais été téléchargé, si un avis n'est pas parti           | ✅   |
-| Rejet du lot par la banque  | `CollectionBatch.rejectByBank`                                | seulement un lot déposé, avant l'échéance, sans aucun retour                                                         | ✅   |
-| Retour (impayé)             | `CollectionReturn`                                            | sur un lot déposé, montant exact ; puis représenter, régler autrement ou passer en perte                             | ✅   |
+| Décision                   | Qui décide                                                    | Ce qui se passe                                                                                                      | État |
+| -------------------------- | ------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ---- |
+| Facturable au compte       | `billable-order-criterion.ts`                                 | `not_required`, total > 0, non annulée, avec société, `received_on` dans la période                                  | ✅   |
+| Facturable au compte       | `billable-order-criterion.ts`                                 | `settled_on` dans la période **et** `billable_total_cents` posé ; non soldée : nommée (`order_unsettled`)            | ✅   |
+| Le gel                     | déclencheur `orders_billable_frozen`                          | une commande facturée, relevée ou prélevée ne change plus de montants facturables : un écart se reprend par un avoir | ✅   |
+| Facture mensuelle          | `issue-monthly-invoices.handler.ts` (et son automate)         | refusée hors clôture ou avant son ouverture ; avis envoyé au payeur                                                  | ✅   |
+| Facture carte              | `card-invoicing.ts`, déclenchée au paiement **et** au retrait | émise au second des deux ; jamais pour un particulier, ni remboursée en totalité                                     | ✅   |
+| Relevé (arrêté)            | `BillingStatement`, à la constitution                         | les payeurs hors régime « facture » sont prélevés sur un arrêté figé                                                 | ✅   |
+| Constitution d'un lot      | `constitute-collection-batches.handler.ts`                    | refusée s'il n'y a rien ; pré-notifications mises en file                                                            | ✅   |
+| Dépôt                      | `CollectionBatch.markDeposited`                               | refusé si un payeur n'a pas de mandat, si le fichier n'a jamais été téléchargé, si un avis n'est pas parti           | ✅   |
+| Rejet du lot par la banque | `CollectionBatch.rejectByBank`                                | seulement un lot déposé, avant l'échéance, sans aucun retour                                                         | ✅   |
+| Retour (impayé)            | `CollectionReturn`                                            | sur un lot déposé, montant exact ; puis représenter, régler autrement ou passer en perte                             | ✅   |
 
 ## 8. Les statuts réels
 
@@ -444,12 +445,12 @@ flowchart LR
         P3["Facture mensuelle et carte,<br/>relevé, prélèvement"]
         B1["BL prévu, qui suit la commande,<br/>avec ses totaux (E1, E2, E4a)"]
     end
-    subgraph Dev["🟦 Bâti sur dev"]
-        D1["BL imprimé, confirmation<br/>de commande (E5a, E5b)"]:::bati
-        D2["Il manque, décision, BL partiel<br/>(E6a, E6b, E6c1)"]:::bati
-        D3["Facture sur montants facturables,<br/>gel (E6c2)"]:::bati
-        D4["Écrire au client (E6d)"]:::bati
-        D5["Commandes de test par<br/>la vraie passation (lot T)"]:::bati
+    subgraph Dev["✅ En service depuis le 2026-10-25"]
+        D1["BL imprimé, confirmation<br/>de commande (E5a, E5b)"]
+        D2["Il manque, décision, BL partiel<br/>(E6a, E6b, E6c1)"]
+        D3["Facture sur montants facturables,<br/>gel (E6c2)"]
+        D4["Écrire au client (E6d)"]
+        D5["Commandes de test par<br/>la vraie passation (lot T)"]
     end
     subgraph Reste["🟧 Prévu"]
         R1["Reliquat, retrait par BL<br/>(E3 + E7)"]:::prevu
@@ -467,12 +468,12 @@ flowchart LR
 | Sujet                                                                                          | État | Où                                                                                                                                                         |
 | ---------------------------------------------------------------------------------------------- | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Le BL prévu à l'arrêt, qui suit la commande, avec ses totaux ; le réconciliateur (E1, E2, E4a) | ✅   | [`bon-de-livraison.md`](bon-de-livraison.md)                                                                                                               |
-| Le BL imprimé, chiffré ou non selon le lecteur (E5a)                                           | 🟦   | [`bon-de-livraison.md`](bon-de-livraison.md)                                                                                                               |
-| « Confirmation de commande » dans les libellés (E5b)                                           | 🟦   | [`bon-et-pieces/architecture-bon-de-commande.md`](bon-et-pieces/architecture-bon-de-commande.md)                                                           |
-| Le départ incomplet : signal, décision, BL partiel, montants (E6a, E6b, E6c1)                  | 🟦   | [`bon-de-livraison.md`](bon-de-livraison.md)                                                                                                               |
-| La facture et le prélèvement lisent les montants facturables, le gel (E6c2)                    | 🟦   | [`bon-de-livraison.md`](bon-de-livraison.md), runbook « Avant de déployer E6c2 »                                                                           |
-| Écrire au client après un départ incomplet (E6d)                                               | 🟦   | [`bon-de-livraison.md`](bon-de-livraison.md)                                                                                                               |
-| Les commandes de test passent par la vraie passation (lot T)                                   | 🟦   | [`plan-t-commandes-de-test-par-le-vrai-chemin.md`](plan-t-commandes-de-test-par-le-vrai-chemin.md)                                                         |
+| Le BL imprimé, chiffré ou non selon le lecteur (E5a)                                           | ✅   | [`bon-de-livraison.md`](bon-de-livraison.md)                                                                                                               |
+| « Confirmation de commande » dans les libellés (E5b)                                           | ✅   | [`bon-et-pieces/architecture-bon-de-commande.md`](bon-et-pieces/architecture-bon-de-commande.md)                                                           |
+| Le départ incomplet : signal, décision, BL partiel, montants (E6a, E6b, E6c1)                  | ✅   | [`bon-de-livraison.md`](bon-de-livraison.md)                                                                                                               |
+| La facture et le prélèvement lisent les montants facturables, le gel (E6c2)                    | ✅   | [`bon-de-livraison.md`](bon-de-livraison.md), runbook « Avant de déployer E6c2 »                                                                           |
+| Écrire au client après un départ incomplet (E6d)                                               | ✅   | [`bon-de-livraison.md`](bon-de-livraison.md)                                                                                                               |
+| Les commandes de test passent par la vraie passation (lot T)                                   | ✅   | [`plan-t-commandes-de-test-par-le-vrai-chemin.md`](plan-t-commandes-de-test-par-le-vrai-chemin.md)                                                         |
 | Le reliquat : « reste à relivrer », BL-2, le retrait par BL (E3 + E7)                          | 🟧   | [`plan-e7-le-reliquat.md`](plan-e7-le-reliquat.md), [`e7-recensement.md`](e7-recensement.md), [`plan-e7-1-le-jour-du-bon.md`](plan-e7-1-le-jour-du-bon.md) |
 | « Commandé / livré / reste » sur le BL et les écrans                                           | 🟧   | [`plan-commande-bon-de-livraison-facture.md`](plan-commande-bon-de-livraison-facture.md), lot E5                                                           |
 | Solder : abandonner un reste après coup, `fulfilled` au solde (E8)                             | 🟧   | [`plan-commande-bon-de-livraison-facture.md`](plan-commande-bon-de-livraison-facture.md)                                                                   |

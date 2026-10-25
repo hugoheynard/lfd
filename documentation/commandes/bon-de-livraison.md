@@ -7,16 +7,15 @@
 > et les paragraphes que le code cite encore (« plan E6, § 14 ») sont traduits
 > à la fin, [« Renvois des plans retirés »](#renvois-des-plans-retirés).
 >
-> **Où c'est servi.** E1, E2 et E4a sont sur `main` depuis `71f61c869`
-> (2026-10-24) — en ombre, personne ne lit le BL pour facturer. E5a, E5b, E6a,
-> E6b, E6c1, E6c2 et E6d ne sont que sur `dev`. La production les reçoit en
-> **deux promotions** ([`../ops/runbook.md`](../ops/runbook.md), « Avant de
-> déployer E6c2 ») : d'abord jusqu'à E6b + E6c1 (`05b74b7f6`), le temps que le
-> rapprochement pose les montants facturables en ombre ; puis E6c2 et la suite,
-> une fois les quatre requêtes à zéro. La facture ne retient qu'une commande
-> dont `billable_total_cents` est posé (`billable-order-criterion.ts`, vérifié
-> le 2026-10-25) : tout pousser d'un coup sortirait les commandes déjà remises
-> de l'assiette jusqu'au premier rapprochement.
+> **Où c'est servi.** Tout est en production : E1, E2 et E4a depuis
+> `71f61c869` (2026-10-24), E5a à E6d depuis `07ff2f541` (2026-10-25, 10 h 40).
+> Le runbook prévoyait deux promotions (« Avant de déployer E6c2 ») ; le hook
+> `pre-push` n'en promeut qu'une, le sommet de `dev`. Hugo a choisi de tout
+> pousser et de rapprocher tout de suite après : la facture ne retient qu'une
+> commande dont `billable_total_cents` est posé (`billable-order-criterion.ts`,
+> vérifié le 2026-10-25), donc une commande remise non encore rapprochée est
+> **absente** de la facture et des lots, jamais facturée faux. Les quatre
+> requêtes du runbook se lisent après le premier rapprochement.
 >
 > **Ce qui reste** (le reliquat, le retrait par BL, solder, rembourser, les
 > gestes après l'arrêt) : [« Ce qui reste »](#ce-qui-reste). Le programme
