@@ -16,7 +16,7 @@
     "dev:typecheck": "NODE_OPTIONS=--max-old-space-size=8192 tsc --noEmit --watch --preserveWatchOutput -p tsconfig.test.json",
     "typecheck:tests": "tsc --noEmit -p tsconfig.test.json",
     "lint": "NODE_OPTIONS=--max-old-space-size=8192 eslint \"{src,apps,libs,test}/**/*.ts\" \"container/__tests__/**/*.ts\" --fix",
-    "lint:ci": "NODE_OPTIONS=--max-old-space-size=6144 eslint \"{src,apps,libs,test}/**/*.ts\" \"container/__tests__/**/*.ts\"",
+    "lint:ci": "NODE_OPTIONS=--max-old-space-size=10240 eslint \"{src,apps,libs,test}/**/*.ts\" \"container/__tests__/**/*.ts\"",
     "test": "pnpm run test:unit && pnpm run test:e2e",
     "verify:facturx-pdf": "node ../../dev-toolbox/ensure-docker.mjs && tsx src/b2b/accounting/domain/services/__tests__/facturx-pdf.verapdf.ts",
     "bench:composition": "tsx src/delivery/domain/services/__tests__/propose-rounds.bench.ts",
