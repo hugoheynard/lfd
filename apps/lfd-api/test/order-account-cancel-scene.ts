@@ -13,6 +13,7 @@ import { setUpEntity } from "./collection-returns-scene.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";
 import { addBillingAddress, attachTo, createCompany, createUser, handOver } from "./factories.js";
 import { pickupSite, placeOrder } from "./order-factory.js";
+import { LATEST_DELIVERY_FULFILLMENT } from "./delivery-deadline-fixture.js";
 
 /**
  * **La scène de l'annulation d'une commande AU COMPTE** (doc
@@ -258,6 +259,7 @@ async function chosenIdOrder(
       totalCents: 10_550,
       vatCents: 550,
       paymentStatus: "not_required",
+      fulfillment: LATEST_DELIVERY_FULFILLMENT,
       createdAt,
       vatShares: [{ rate: 5.5, amountCents: 550 }],
       lines: {

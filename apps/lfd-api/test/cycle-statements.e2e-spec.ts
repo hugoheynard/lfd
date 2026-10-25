@@ -43,6 +43,7 @@ import {
   placeOrder,
   type PlacedTestOrder,
 } from "./order-factory.js";
+import { LATEST_DELIVERY_FULFILLMENT } from "./delivery-deadline-fixture.js";
 
 const stubAdminVerifier = {
   verify: (subject: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -141,6 +142,7 @@ async function seedLegacyOrder(buyer: Client, seed: LegacyOrderSeed): Promise<st
       totalCents: seed.totalCents,
       status: "placed",
       paymentStatus: "not_required",
+      fulfillment: LATEST_DELIVERY_FULFILLMENT,
       ...(seed.vatShares === undefined ? {} : { vatShares: [...seed.vatShares] }),
       createdAt,
       ...receivedColumns(createdAt),

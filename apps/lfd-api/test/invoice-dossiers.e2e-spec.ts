@@ -43,6 +43,7 @@ import {
   placeOrder,
   type PlacedTestOrder,
 } from "./order-factory.js";
+import { LATEST_DELIVERY_FULFILLMENT } from "./delivery-deadline-fixture.js";
 
 const stubAdminVerifier = {
   verify: (subject: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -177,6 +178,7 @@ async function seedLateFeeOrder(
       status: "placed",
       paymentStatus: "not_required",
       requestedDeliveryDate: new Date(`${TODAY}T00:00:00.000Z`),
+      fulfillment: LATEST_DELIVERY_FULFILLMENT,
       handedOverAt: new Date(`${TODAY}T10:00:00.000Z`),
       receivedOn: new Date(`${TODAY}T00:00:00.000Z`),
       lines: {

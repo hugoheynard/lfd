@@ -197,7 +197,8 @@ describe("partir d'une vraie journée (L9-C8)", () => {
         id: "j1",
         label: "Site 1",
         gps: { lat: 45.6, lng: 5.9 },
-        window: null,
+        // La fenêtre de la scène (une livraison porte son échéance) : copiée telle quelle.
+        window: { start: null, end: "23:59" },
         stopMinutes: 12,
       },
     ]);

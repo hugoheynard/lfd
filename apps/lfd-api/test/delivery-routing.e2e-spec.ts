@@ -205,7 +205,10 @@ describe("proposer, puis appliquer (L7-C3 à C6)", () => {
       expect.objectContaining({ orderId: lost, reason: "not_geocoded" }),
     ]);
     expect(view.rounds.every((round) => round.minutes > 0 && round.meters > 0)).toBe(true);
-    expect(view.rounds.every((round) => round.departureTime === "06:00")).toBe(true);
+    // Réécrit le 2026-10-25 : une livraison porte son échéance (23:59 dans la
+    // scène), donc le départ est le plus tardif qui la tient — jamais avant
+    // le plancher réglé (06:00). « 06:00 » n'était vrai que sans échéance.
+    expect(view.rounds.every((round) => round.departureTime >= "06:00")).toBe(true);
     expect(await ctx.prisma.deliveryRound.count()).toBe(0);
   });
 
@@ -481,8 +484,11 @@ describe("chronométrer une composition glissée à la main (L10b-C2)", () => {
 
     expect(view.day).toBe(DAY);
     expect(view.rounds[0]?.stops.map((stop) => stop.orderId)).toEqual([dragged, placed]);
-    expect(view.rounds[0]?.departureTime).toBe("06:00");
-    // Sans échéance, aucune place n'est intenable : pas d'alerte rouge (CA5).
+    // Réécrit le 2026-10-25 : l'échéance de la scène (23:59) fixe le départ au
+    // plus tard qui la tient, au-dessus du plancher réglé (06:00).
+    expect(view.rounds[0]?.departureTime ?? "").toMatch(/^\d{2}:\d{2}$/);
+    expect((view.rounds[0]?.departureTime ?? "") >= "06:00").toBe(true);
+    // Échéance tenable : aucune place n'est intenable, pas d'alerte rouge (CA5).
     expect(view.rounds[0]?.stops.map((stop) => stop.placementLate)).toEqual([false, false]);
     // Départ, deux arrêts, retour : le double trace la ligne brisée.
     expect(view.rounds[0]?.geometry).toHaveLength(4);

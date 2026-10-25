@@ -38,6 +38,7 @@ import {
 import { declareBins, loadBin } from "./delivery-loading-scene.js";
 import { forgetRoutingScene, seedLocatedDelivery } from "./delivery-routing-scene.js";
 import { MY_ROUND, staffWithRole } from "./delivery-driver-scene.js";
+import { LATEST_DELIVERY_FULFILLMENT } from "./delivery-deadline-fixture.js";
 
 const DAY = serviceDay();
 const POINT = { lat: 45.6, lng: 6.1 };
@@ -271,7 +272,7 @@ describe("le dépôt autorisé, figé au départ, et la signature qui l'emporte 
         where: { id: orderId },
         data: {
           fulfillment: {
-            window: { value: null, source: "default" },
+            window: LATEST_DELIVERY_FULFILLMENT.window,
             contact: {
               value: { prenom: "Anne", nom: "Colin", telephone: "0600000000" },
               source: "override",
