@@ -41,12 +41,20 @@
 | **E7a** | Le reliquat **un autre jour** : « reste à relivrer » (date D2 > D1), BL-2, inscription au plan de D2 (fournil et colisage, clés existantes suffisantes), arrêt de tournée du BL-2, solde au BL-2         |
 | **E7b** | Le reliquat **le même jour** : clés `production_order` et `packing_order` élargies au rang du BL (migration de clé, trois temps), ajout au jour arrêté sur le modèle du retirage, seconde préparation    |
 
-## 3. Questions laissées au plan de bâti
+## 3. Questions laissées au plan de bâti — tranchées par Hugo le 2026-10-25
 
-- Le retrait d'un BL-2 à la porte quand le BL-1 a été déposé sans personne.
+- **Q-R1, le retrait d'un BL-2 à la porte quand le BL-1 a été déposé sans
+  personne** : chaque BL suit la règle de **son** arrêt (signature, nom,
+  dépôt), comme n'importe quel bon ; le BL-1 n'en change rien.
+- **Q-R2, le reliquat abandonné après décision « à relivrer » (E8)** : le
+  superviseur l'abandonne, par le même geste que le départ incomplet.
+- **Q-R3, le solde** : une commande est soldée quand son dernier BL est
+  livré **ou** que son reste est abandonné.
+- **Q-R4, la facture d'une commande payée par carte** : émise **au solde**,
+  et elle somme ses BL (la cible du plan-cadre §7, BLOQUANT 3). Aujourd'hui
+  elle part au second de « payée » et « remise » : c'est l'écart à combler.
 - La facture d'une commande dont le BL-2 tombe le mois suivant : au mois du
   solde (Q-E6-3), déjà décidé.
-- Le reliquat abandonné **après** décision « à relivrer » (E8).
 
 ## 4. Contradiction de `vitruve` (2026-10-25) et choix de Hugo — l'emporte sur les § 0 à § 3
 
