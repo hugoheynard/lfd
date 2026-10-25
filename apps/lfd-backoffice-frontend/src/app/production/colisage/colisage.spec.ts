@@ -799,15 +799,43 @@ describe('le poste de colisage', () => {
         'Comptoir',
       ]);
       expect(said(el.querySelector('.co-title'))).toBe('Le Refuge');
-      expect(
-        [...el.querySelectorAll('[data-round-head]')].map((head) => [
-          said(head.querySelector('.co-round-title')),
-          said(head.querySelector('.co-round-ready')),
-        ]),
-      ).toEqual([
-        ['Kangoo', '1 commande prête sur 2'],
-        ['Hors tournée', ''],
+      // Plus d'en-tête de tournée (2026-10-25) : la tournée est écrite sur la ligne.
+      expect(el.querySelector('[data-round-head]')).toBeNull();
+      expect([...el.querySelectorAll('[data-round]')].map((round) => said(round))).toEqual([
+        'Kangoo',
+        'Kangoo',
       ]);
+    });
+
+    /** Hugo, 2026-10-25 : la plus urgente en haut AVANT tout regroupement par tournée. */
+    it('range par urgence à travers les tournées, et ouvre la plus urgente', async () => {
+      api.packingView = view({
+        sheets: [
+          retrait({
+            reference: 'CMD-000',
+            orderId: 'o-CMD-000',
+            customerLabel: 'Comptoir',
+            readyBy: '06:00',
+          }),
+          bac({ readyBy: '09:00' }),
+          bac({
+            reference: 'CMD-002',
+            orderId: 'o-CMD-002',
+            customerLabel: 'Le Refuge',
+            readyBy: '08:00',
+          }),
+        ],
+      });
+      rounds = [round()];
+
+      const { el } = await render();
+
+      expect([...el.querySelectorAll('.co-bac-who')].map((who) => said(who))).toEqual([
+        'Comptoir',
+        'Le Refuge',
+        'Hôtel du Parc',
+      ]);
+      expect(said(el.querySelector('.co-title'))).toBe('Comptoir');
     });
 
     it('dit « À refaire » (livraison) et « Retenue au contrôle » (fournil) sur la commande', async () => {

@@ -31,7 +31,7 @@ import { PackingResources } from './packing-resources/packing-resources';
 import { PackingResupplies } from './packing-resupplies/packing-resupplies';
 import { PackingRoundsReader } from './packing-rounds.reader';
 import { SitePaletteStore } from '../../shared/logistics-colors/site-palette.store';
-import { sheetsInRoundOrder } from './packing-rounds';
+import { sheetsInListOrder } from './packing-frames';
 import { foundOnlyElsewhere, hitLinesByOrder, normaliseTerm, searchHits } from './packing-search';
 
 /**
@@ -228,14 +228,15 @@ export class Colisage {
   );
 
   /**
-   * La pile affichée à gauche, **rangée par tournée, du dernier arrêt au
-   * premier** (lot PC2) — un ordre d'affichage : la tête de pile, celle qui
-   * s'ouvre d'elle-même, est le dernier arrêt de la première tournée.
+   * La pile affichée à gauche, **la plus urgente en haut** (Hugo,
+   * 2026-10-25) ; dans une tournée, l'ordre de chargement départage (lot PC2).
+   * Un ordre d'affichage : la tête de pile est celle qui s'ouvre d'elle-même.
    */
   protected readonly visibleSheets = computed(() =>
-    sheetsInRoundOrder(
+    sheetsInListOrder(
       this.stack() === 'todo' ? this.todoSheets() : this.readySheets(),
       this.rounds.rounds(),
+      this.palette.sites(),
     ),
   );
 

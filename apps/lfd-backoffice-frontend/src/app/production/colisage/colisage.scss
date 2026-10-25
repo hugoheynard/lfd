@@ -203,15 +203,22 @@ fold-page-layout {
      produit s'écrit sous sa quantité, dans la colonne Produits ;
    - la liste des commandes se replie (220 px ouverte), et la bande nomme la
      commande ouverte ;
-   - la bande tient sur une ligne : titre · repli · recherche · compteurs. */
+   - la bande tient sur une ligne quand elle le peut : titre · repli ·
+     recherche · compteurs ; sinon elle passe à la ligne (2026-10-25). */
 @media (max-width: 1366px) {
   .co-masthead {
     padding-block: var(--fold-space-md);
   }
 
+  /* 🔴 `wrap`, jamais `nowrap` (2026-10-25) : la liste ouverte, la bande
+     tenait à peine, et le bloc du titre s'écrasait à un mot par ligne. Ce
+     qui ne tient pas passe à la ligne ; le titre garde sa largeur. */
   .co-masthead-bar {
-    flex-wrap: nowrap;
     align-items: center;
+  }
+
+  .co-said {
+    flex: 1 1 auto;
   }
 
   .co-title {

@@ -22,6 +22,11 @@ import { roundLabel } from '../../livraison/delivery-rounds';
 export interface PackingEntry {
   readonly sheet: PackingSheet;
   readonly stop: DeliveryPackingStopView | null;
+  /**
+   * La tournée qui porte l'arrêt — écrite sur la ligne depuis que la liste
+   * n'a plus d'en-têtes de tournée (Hugo, 2026-10-25). Absente : hors tournée.
+   */
+  readonly round?: DeliveryPackingRoundView | null;
 }
 
 /** Une tournée et ses commandes, ou (`round: null`) celles qui ne sont dans aucune. */
@@ -49,7 +54,7 @@ export function packingGroups(
         return [];
       }
       placed.add(stop.orderId);
-      return [{ sheet, stop }];
+      return [{ sheet, stop, round }];
     });
     if (entries.length > 0) {
       groups.push({ round, entries });

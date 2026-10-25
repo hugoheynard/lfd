@@ -173,8 +173,8 @@ describe('la liste des commandes du colisage', () => {
         .queryAll(By.css(selector))
         .map((icon) => (icon.componentInstance as FoldIconComponent).name());
 
-    // Les livraisons passent avant les retraits (ordre fixe des cadres, 2026-10-14).
-    expect(name('.co-bac-where fold-icon')).toEqual(['truck', 'store']);
+    // Plus de cadres par type (2026-10-25) : à heure égale, l’ordre servi.
+    expect(name('.co-bac-where fold-icon')).toEqual(['store', 'truck']);
     expect(name('.co-bac-closed fold-icon')).toEqual(['check']);
   });
 
@@ -222,17 +222,18 @@ describe('la liste des commandes du colisage', () => {
     expect(said(readyHost.querySelector('.co-stack-none'))).toContain('Rien n');
   });
 
-  it('range les commandes dans un cadre par catégorie, titré et peint de la couleur du site (L1b)', () => {
+  it('une liste par urgence, la couleur en barre ; seul le transfert garde un encadré (2026-10-25)', () => {
     const fixture = render({
       sheets: [
-        sheet({ reference: 'CMD-001', clientele: 'pro' }),
+        sheet({ reference: 'CMD-001', clientele: 'pro', readyBy: '08:00' }),
         sheet({
           reference: 'CMD-002',
           fulfillmentMethod: 'pickup',
           clientele: 'public',
           siteId: 'vv',
+          readyBy: '07:00',
         }),
-        sheet({ reference: 'CMD-003', clientele: null }),
+        sheet({ reference: 'CMD-003', clientele: null, readyBy: '06:00' }),
       ],
       palette: [
         {
@@ -249,22 +250,20 @@ describe('la liste des commandes du colisage', () => {
       ],
     });
     const host: HTMLElement = fixture.nativeElement;
-    const frames = Array.from(host.querySelectorAll<HTMLElement>('.co-frame'));
+    const bacs = Array.from(host.querySelectorAll<HTMLElement>('.co-bac'));
+    const transfers = host.querySelectorAll<HTMLElement>('.co-transfer');
 
-    expect(frames.map((frame) => said(frame.querySelector('.co-frame-title')))).toEqual([
-      'Transfert Val Village',
-      'Retrait particulier Val Village',
-      'Livraison pro',
+    expect(bacs.map((bac) => bac.title)).toEqual([
       'Livraison',
+      'Transfert Val Village · particulier',
+      'Livraison pro',
     ]);
-    // Le transfert CONTIENT son retrait (Hugo, 2026-10-14).
-    expect(frames[0]?.contains(frames[1] ?? null)).toBe(true);
-    expect(frames[1]?.style.getPropertyValue('--co-frame-color')).toBe('#fdd835');
-    expect(frames[1]?.querySelector('.co-frame-title')?.classList.contains('on-light')).toBe(true);
-    // Sans couleur posée, ni clientèle : la teinte neutre, jamais devinée.
-    expect(frames[0]?.classList.contains('is-neutral')).toBe(true);
-    expect(frames[2]?.classList.contains('is-neutral')).toBe(true);
-    expect(frames[3]?.classList.contains('is-neutral')).toBe(true);
-    expect(frames[1]?.querySelectorAll('.co-bac')).toHaveLength(1);
+    expect(bacs.map((bac) => bac.dataset['bar'])).toEqual(['neutral', '#fdd835', 'neutral']);
+    expect(bacs[1]?.style.getPropertyValue('--co-bar-color')).toBe('#fdd835');
+    expect(transfers).toHaveLength(1);
+    expect(said(transfers[0]?.querySelector('.co-transfer-title') ?? null)).toBe(
+      'Transfert Val Village',
+    );
+    expect(transfers[0]?.contains(bacs[1] ?? null)).toBe(true);
   });
 });

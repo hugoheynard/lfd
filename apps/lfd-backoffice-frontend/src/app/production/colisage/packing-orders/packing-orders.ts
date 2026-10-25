@@ -16,14 +16,9 @@ import type {
 
 import { methodLabel, type PackingStack } from '../../packing-board';
 import { ClienteleBadge } from '../clientele-badge/clientele-badge';
-import { type PackingFrame, packingFrames } from '../packing-frames';
+import { type PackingItem, packingList } from '../packing-frames';
 import { readyByLabel } from '../packing-ready-by';
-import {
-  type PackingGroup,
-  packingGroups,
-  packingRoundTitle,
-  readyOrdersLabel,
-} from '../packing-rounds';
+import { packingRoundTitle } from '../packing-rounds';
 
 /**
  * **La liste des commandes du poste** — la colonne de gauche : la bande, le
@@ -103,29 +98,18 @@ export class PackingOrders {
    */
   readonly palette = input<readonly SitePaletteEntryView[]>([]);
 
-  /** Les groupes affichés — la pile, rangée dans l'ordre des tournées. */
-  protected readonly groups = computed<readonly PackingGroup[]>(() =>
-    packingGroups(this.sheets(), this.rounds()),
-  );
-
   /**
-   * Chaque groupe, ses commandes rangées dans des cadres de couleur — par
-   * catégorie, et par tranche horaire quand elle en a plusieurs (Hugo,
-   * 2026-10-13) ; cadres et commandes par heure « prête pour » (L2,
-   * 2026-10-14). Un ordre d'affichage : rien n'est compté.
+   * UNE liste, la plus urgente en haut (heure « prête pour »), chacune avec sa
+   * barre de couleur ; seul le transfert d'un site garde un encadré. Plus
+   * d'en-tête de tournée : la tournée et l'arrêt s'écrivent sur la ligne
+   * (Hugo, 2026-10-25). Un ordre d'affichage : rien n'est compté.
    */
-  protected readonly framedGroups = computed<
-    readonly { readonly group: PackingGroup; readonly frames: readonly PackingFrame[] }[]
-  >(() =>
-    this.groups().map((group) => ({ group, frames: packingFrames(group.entries, this.palette()) })),
+  protected readonly items = computed<readonly PackingItem[]>(() =>
+    packingList(this.sheets(), this.rounds(), this.palette()),
   );
-
-  /** Y a-t-il au moins une tournée à l'écran ? Sinon, aucun en-tête de groupe. */
-  protected readonly grouped = computed(() => this.groups().some((group) => group.round !== null));
 
   protected readonly roundTitle = packingRoundTitle;
   protected readonly readyBy = readyByLabel;
-  protected readonly readyLabel = readyOrdersLabel;
 
   /** La commande qu'on veut ouvrir. */
   readonly chosen = output<string>();

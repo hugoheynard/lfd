@@ -24,36 +24,22 @@
   />
 
   <div class="co-bacs-list">
-    @for (framed of framedGroups(); track framed.group.round?.roundId ?? 'hors-tournee') {
-      @let group = framed.group;
-      <!-- Lot PC2 : l'en-tête de tournée et son avancement, comptés par la
-           livraison. Pas d'en-tête quand aucune tournée n'est à l'écran. -->
-      @if (grouped()) {
-        <p class="co-round" data-round-head>
-          <span class="co-round-title">{{ roundTitle(group.round) }}</span>
-          @if (group.round; as round) {
-            <span class="co-round-ready">{{ readyLabel(round) }}</span>
+    @for (item of items(); track item.key) {
+      @if (item.kind === 'transfer') {
+        <!-- Le site servi par transfert (Hugo, 2026-10-14, gardé le 2026-10-25) :
+               un encadré NEUTRE — ses retraits partent ensemble —, rangé à
+               l'heure de sa commande la plus urgente. Chacune garde sa barre. -->
+        <section class="co-transfer" [attr.aria-label]="item.title" [attr.data-frame]="item.key">
+          <p class="co-transfer-title">{{ item.title }}</p>
+          @for (order of item.orders; track order.key) {
+            <ng-container *ngTemplateOutlet="bac; context: { $implicit: order }" />
           }
-        </p>
-      }
-      @for (frame of framed.frames; track frame.key) {
-        @if (frame.kind === 'transfer') {
-          <!-- Le site servi par transfert (Hugo, 2026-10-14) : un cadre NEUTRE
-               qui contient ses retraits par clientèle, à leurs couleurs, et son
-               réapprovisionnement quand il sera bâti. -->
-          <section
-            class="co-frame co-transfer is-neutral"
-            [attr.aria-label]="frame.title"
-            [attr.data-frame]="frame.key"
-          >
-            <p class="co-frame-title">{{ frame.title }}</p>
-            @for (inner of frame.frames; track inner.key) {
-              <ng-container *ngTemplateOutlet="colored; context: { $implicit: inner }" />
-            }
-          </section>
-        } @else {
-          <ng-container *ngTemplateOutlet="colored; context: { $implicit: frame }" />
-        }
+          @for (supply of item.replenishment; track supply.key) {
+            <p class="co-replenishment">{{ supply.label }}</p>
+          }
+        </section>
+      } @else {
+        <ng-container *ngTemplateOutlet="bac; context: { $implicit: item }" />
       }
     } @empty {
       <!-- « Tout est prêt » et « rien n'est encore prêt » ne se ressemblent pas :
@@ -68,101 +54,87 @@
     }
   </div>
 
-  <!-- Un cadre coloré : de commandes, ou de réapprovisionnement. -->
-  <ng-template #colored let-frame>
-    <!-- Le cadre de la catégorie (Hugo, 2026-10-13) : bordé à gauche et en
-           haut de la couleur du site, son titre écrit DANS la bordure haute.
-           La couleur vient de la donnée ; sans elle, la teinte neutre. -->
-    <section
-      class="co-frame"
-      [class.is-neutral]="frame.ink === 'neutral'"
-      [style.--co-frame-color]="frame.color"
-      [attr.aria-label]="frame.title"
-      [attr.data-frame]="frame.key"
+  <!--
+    Une commande, et la couleur de sa catégorie en BARRE à gauche (Hugo,
+    2026-10-25 : « la couleur suffit en barre à gauche ») — celle de la palette
+    des sites ; sans couleur, la teinte neutre, jamais devinée.
+  -->
+  <ng-template #bac let-order>
+    @let entry = order.entry;
+    @let sheet = entry.sheet;
+    <button
+      type="button"
+      class="co-bac"
+      [style.--co-bar-color]="order.color"
+      [attr.title]="order.category"
+      [attr.data-bar]="order.color ?? 'neutral'"
+      [class.is-open]="sheet.reference === openReference()"
+      [class.is-closed]="sheet.packedAt !== null"
+      [class.is-hit]="hitLines().has(sheet.reference)"
+      [attr.aria-current]="sheet.reference === openReference() ? 'true' : null"
+      (click)="chosen.emit(sheet.reference)"
     >
-      <p
-        class="co-frame-title"
-        [class.on-dark]="frame.ink === 'light'"
-        [class.on-light]="frame.ink === 'dark'"
-      >
-        {{ frame.title }}
-      </p>
-      @if (frame.kind === 'replenishment') {
-        @for (item of frame.items; track item.key) {
-          <p class="co-replenishment">{{ item.label }}</p>
+      <span class="co-bac-who">
+        {{ sheet.customerLabel }}
+        <app-clientele-badge [clientele]="sheet.clientele" />
+        <!-- 🔴 Les quantités des lignes TROUVÉES, une par ligne, telles que
+         servies — JAMAIS additionnées. On voit qui attend combien sans
+         qu'aucune somme ait lieu ici. -->
+        @for (found of hitLines().get(sheet.reference) ?? []; track found.sku) {
+          <span class="co-hit-chip">{{ found.quantity }} {{ found.productName }}</span>
         }
-      } @else {
-        @for (entry of frame.entries; track entry.sheet.reference) {
-          @let sheet = entry.sheet;
-          <button
-            type="button"
-            class="co-bac"
-            [class.is-open]="sheet.reference === openReference()"
-            [class.is-closed]="sheet.packedAt !== null"
-            [class.is-hit]="hitLines().has(sheet.reference)"
-            [attr.aria-current]="sheet.reference === openReference() ? 'true' : null"
-            (click)="chosen.emit(sheet.reference)"
-          >
-            <span class="co-bac-who">
-              {{ sheet.customerLabel }}
-              <app-clientele-badge [clientele]="sheet.clientele" />
-              <!-- 🔴 Les quantités des lignes TROUVÉES, une par ligne, telles que
-               servies — JAMAIS additionnées. On voit qui attend combien sans
-               qu'aucune somme ait lieu ici. -->
-              @for (found of hitLines().get(sheet.reference) ?? []; track found.sku) {
-                <span class="co-hit-chip">{{ found.quantity }} {{ found.productName }}</span>
-              }
-            </span>
-            <!-- L'acheminement : le mode et le lieu disent sur quelle pile la
-             commande va ; l'heure « prête pour » (L2, 2026-10-14) dit quand,
-             et d'où elle vient — calculée au serveur. -->
-            <span class="co-bac-where">
-              <fold-icon
-                [name]="sheet.fulfillmentMethod === 'delivery' ? 'truck' : 'store'"
-                size="sm"
-                [attr.data-method-icon]="sheet.fulfillmentMethod"
-              />
-              {{ method(sheet) }} · {{ sheet.destination }}
-              @if (entry.stop; as stop) {
-                · arrêt {{ stop.position }}
-              }
-            </span>
-            @if (readyBy(sheet); as due) {
-              <span class="co-bac-due" data-ready-by>{{ due }}</span>
-            }
-            <!-- Lot PC2 : la retenue vient du fournil, « à refaire » de la livraison. -->
-            @if (sheet.qualityHeld === true || entry.stop?.binToRedo === true) {
-              <span class="co-bac-flags">
-                @if (sheet.qualityHeld === true) {
-                  <fold-badge variant="alert" content="Retenue au contrôle" data-flag-held />
-                }
-                @if (entry.stop?.binToRedo === true) {
-                  <fold-badge
-                    variant="warning"
-                    content="À refaire : annuler et recoliser"
-                    data-flag-redo
-                  />
-                }
-              </span>
-            }
-            <span class="co-bac-count">
-              <!-- 🔴 Le volume est en PRODUITS, compté au serveur (`pieces`,
-               `packedPieces`), et il reste affiché sur une commande prête :
-               « prête » dit l'état, pas le volume. -->
-              <span class="co-bac-pieces"
-                >{{ sheet.packedPieces
-                }}<span class="co-bac-of"> / {{ sheet.pieces }} produits</span></span
-              >
-              @if (sheet.packedAt !== null) {
-                <span class="co-bac-closed">
-                  <fold-icon name="check" size="sm" data-ready-icon />
-                  Prête
-                </span>
-              }
-            </span>
-          </button>
+      </span>
+      <!-- L'acheminement : le mode et le lieu disent sur quelle pile la
+       commande va ; l'heure « prête pour » (L2, 2026-10-14) dit quand,
+       et d'où elle vient — calculée au serveur. -->
+      <span class="co-bac-where">
+        <fold-icon
+          [name]="sheet.fulfillmentMethod === 'delivery' ? 'truck' : 'store'"
+          size="sm"
+          [attr.data-method-icon]="sheet.fulfillmentMethod"
+        />
+        {{ method(sheet) }} · {{ sheet.destination }}
+        <!-- Plus d'en-tête de tournée (2026-10-25) : la tournée s'écrit ici. -->
+        @if (entry.round; as round) {
+          · <span data-round>{{ roundTitle(round) }}</span>
         }
+        @if (entry.stop; as stop) {
+          · arrêt {{ stop.position }}
+        }
+      </span>
+      @if (readyBy(sheet); as due) {
+        <span class="co-bac-due" data-ready-by>{{ due }}</span>
       }
-    </section>
+      <!-- Lot PC2 : la retenue vient du fournil, « à refaire » de la livraison. -->
+      @if (sheet.qualityHeld === true || entry.stop?.binToRedo === true) {
+        <span class="co-bac-flags">
+          @if (sheet.qualityHeld === true) {
+            <fold-badge variant="alert" content="Retenue au contrôle" data-flag-held />
+          }
+          @if (entry.stop?.binToRedo === true) {
+            <fold-badge
+              variant="warning"
+              content="À refaire : annuler et recoliser"
+              data-flag-redo
+            />
+          }
+        </span>
+      }
+      <span class="co-bac-count">
+        <!-- 🔴 Le volume est en PRODUITS, compté au serveur (`pieces`,
+         `packedPieces`), et il reste affiché sur une commande prête :
+         « prête » dit l'état, pas le volume. -->
+        <span class="co-bac-pieces"
+          >{{ sheet.packedPieces
+          }}<span class="co-bac-of"> / {{ sheet.pieces }} produits</span></span
+        >
+        @if (sheet.packedAt !== null) {
+          <span class="co-bac-closed">
+            <fold-icon name="check" size="sm" data-ready-icon />
+            Prête
+          </span>
+        }
+      </span>
+    </button>
   </ng-template>
 </nav>

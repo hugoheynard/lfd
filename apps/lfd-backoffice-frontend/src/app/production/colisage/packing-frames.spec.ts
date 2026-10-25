@@ -88,198 +88,116 @@ const ADROIT: SitePaletteEntryView = {
   pickupColorB2c: '#2e7d32',
 };
 
-function titles(frames: ReturnType<typeof packingFrames>): unknown[] {
-  return frames.map((frame) =>
-    frame.kind === 'transfer'
-      ? [frame.title, frame.frames.map((inner) => inner.title)]
-      : frame.title,
+/** La liste lue de haut en bas : une référence, ou [encadré, ses références]. */
+function shape(items: ReturnType<typeof packingFrames>): unknown[] {
+  return items.map((item) =>
+    item.kind === 'transfer'
+      ? [item.title, item.orders.map((order) => order.entry.sheet.reference)]
+      : item.entry.sheet.reference,
   );
 }
 
-function references(frame: ReturnType<typeof packingFrames>[number] | undefined): string[] {
-  return frame?.kind === 'orders' ? frame.entries.map((e) => e.sheet.reference) : [];
-}
+const pickup = (siteId: string, more: Parameters<typeof entry>[1] = {}) =>
+  ({ fulfillmentMethod: 'pickup', clientele: 'public', siteId, ...more }) as const;
 
-describe('packingFrames — les cadres de couleur du colisage (L1b, revus le 2026-10-14)', () => {
-  it('un cadre par catégorie de livraison, couleur et encre comprises, commandes dans leur ordre servi', () => {
-    const frames = packingFrames(
-      [entry('A', {}), entry('B', { clientele: 'public' }), entry('C', {})],
-      PALETTE,
-    );
-
-    expect(
-      frames.map((frame) => frame.kind === 'orders' && [frame.title, frame.color, frame.ink]),
-    ).toEqual([
-      ['Livraison pro', '#0d47a1', 'light'],
-      ['Livraison particulier', null, 'neutral'],
-    ]);
-    expect(references(frames[0])).toEqual(['A', 'C']);
-  });
-
-  /**
-   * Régression : « une livraison par cadre » — l'échéance d'une livraison est
-   * la fenêtre du client, et le découpage par heure faisait un cadre par
-   * commande (Hugo, 2026-10-14).
-   */
-  it('une livraison par cadre : les livraisons ne se coupent plus par heure', () => {
-    const frames = packingFrames(
-      [entry('A', { dueAt: '07:00' }), entry('B', { dueAt: '09:30' }), entry('C', { dueAt: null })],
-      PALETTE,
-    );
-
-    expect(titles(frames)).toEqual(['Livraison pro']);
-    expect(references(frames[0])).toEqual(['A', 'B', 'C']);
-  });
-
-  it('les retraits sur place gardent leur créneau, rangés par heure', () => {
-    const frames = packingFrames(
-      [
-        entry('A', {
-          fulfillmentMethod: 'pickup',
-          clientele: 'public',
-          siteId: 'adroit',
-          dueAt: '10:00',
-        }),
-        entry('B', {
-          fulfillmentMethod: 'pickup',
-          clientele: 'public',
-          siteId: 'adroit',
-          dueAt: '08:00',
-        }),
-        entry('C', {
-          fulfillmentMethod: 'pickup',
-          clientele: 'public',
-          siteId: 'adroit',
-          dueAt: null,
-        }),
-      ],
-      [...PALETTE, ADROIT],
-    );
-
-    expect(titles(frames)).toEqual([
-      'Retrait particulier Adroit · 08:00',
-      'Retrait particulier Adroit · 10:00',
-      'Retrait particulier Adroit · sans heure',
-    ]);
-  });
-
-  it('🔴 un site servi par transfert : UN cadre neutre qui contient ses retraits par clientèle', () => {
-    const frames = packingFrames(
-      [
-        entry('A', {
-          fulfillmentMethod: 'pickup',
-          clientele: 'public',
-          siteId: 'vv',
-          dueAt: '08:00',
-        }),
-        entry('B', { fulfillmentMethod: 'pickup', clientele: 'pro', siteId: 'vv', dueAt: '11:00' }),
-        entry('C', {
-          fulfillmentMethod: 'pickup',
-          clientele: 'public',
-          siteId: 'vv',
-          dueAt: '09:00',
-        }),
-      ],
-      PALETTE,
-    );
-
-    expect(titles(frames)).toEqual([
-      ['Transfert Val Village', ['Retrait pro Val Village', 'Retrait particulier Val Village']],
-    ]);
-    const transfer = frames[0];
-    expect(transfer?.kind === 'transfer' && transfer.frames[1]).toMatchObject({
-      color: '#fdd835',
-      ink: 'dark',
-      entries: [expect.objectContaining({ stop: null }), expect.anything()],
-    });
-  });
-
-  it('à heure égale (ici aucune), l’ordre fixe départage : transfert, livraisons, retraits', () => {
-    const frames = packingFrames(
-      [
-        entry('R', { fulfillmentMethod: 'pickup', clientele: 'public', siteId: 'adroit' }),
-        entry('P', { clientele: 'public' }),
-        entry('L', { clientele: 'pro' }),
-        entry('T', { fulfillmentMethod: 'pickup', clientele: 'public', siteId: 'vv' }),
-      ],
-      [...PALETTE, ADROIT],
-    );
-
-    expect(titles(frames)).toEqual([
-      ['Transfert Val Village', ['Retrait particulier Val Village']],
-      'Livraison pro',
-      'Livraison particulier',
-      'Retrait particulier Adroit',
-    ]);
-  });
-
-  /**
-   * L2 (Hugo, 2026-10-14) : les cadres se rangent par leur heure « prête
-   * pour » la plus tôt — ce qui part d'abord se prépare d'abord —, et les
-   * commandes d'un cadre par heure. L'ordre FIXE d'avant ne départage plus
-   * que les égalités.
-   */
-  it('range les cadres par leur heure la plus tôt, et les commandes dans chaque cadre', () => {
-    const frames = packingFrames(
+describe('packingFrames — une liste par urgence, la couleur en barre (Hugo, 2026-10-25)', () => {
+  it('ne regroupe plus par type : la plus urgente en haut, toutes catégories mêlées', () => {
+    const items = packingFrames(
       [
         entry('L1', { clientele: 'pro', readyBy: '07:10' }),
-        entry('R', {
-          fulfillmentMethod: 'pickup',
-          clientele: 'public',
-          siteId: 'adroit',
-          readyBy: '06:45',
-        }),
+        entry('R', { ...pickup('adroit'), readyBy: '06:45' }),
         entry('L0', { clientele: 'pro', readyBy: null }),
+        entry('P', { clientele: 'public', readyBy: '06:50' }),
         entry('L2', { clientele: 'pro', readyBy: '05:50' }),
-        entry('T', {
-          fulfillmentMethod: 'pickup',
-          clientele: 'public',
-          siteId: 'vv',
-          readyBy: '06:30',
-        }),
       ],
       [...PALETTE, ADROIT],
     );
 
-    expect(titles(frames)).toEqual([
-      'Livraison pro',
-      ['Transfert Val Village', ['Retrait particulier Val Village']],
-      'Retrait particulier Adroit',
-    ]);
-    // Sans départ (L0) en dernier dans son cadre.
-    expect(references(frames[0])).toEqual(['L2', 'L1', 'L0']);
+    // Sans heure (L0) en dernier.
+    expect(shape(items)).toEqual(['L2', 'R', 'P', 'L1', 'L0']);
   });
 
-  it('l’heure servie l’emporte sur l’échéance figée : une livraison ne se range pas à sa fenêtre', () => {
-    const frames = packingFrames(
+  it('chaque commande porte la couleur de sa catégorie, et sa catégorie nommée', () => {
+    const items = packingFrames(
       [
-        entry('A', { clientele: 'pro', dueAt: '06:00', readyBy: '08:00' }),
-        entry('B', { clientele: 'pro', dueAt: '11:00', readyBy: '07:00' }),
+        entry('A', { readyBy: '06:00' }),
+        entry('B', { ...pickup('adroit'), readyBy: '07:00' }),
+        entry('C', { clientele: 'public', readyBy: '08:00' }),
+      ],
+      [...PALETTE, ADROIT],
+    );
+
+    expect(items.map((item) => item.kind === 'order' && [item.category, item.color])).toEqual([
+      ['Livraison pro', '#0d47a1'],
+      ['Retrait particulier Adroit', '#2e7d32'],
+      ['Livraison particulier', null],
+    ]);
+  });
+
+  it('à heure égale, l’ordre servi tient (tri stable)', () => {
+    const items = packingFrames(
+      [entry('B', { dueAt: '07:00' }), entry('A', { dueAt: '07:00' }), entry('C', {})],
+      PALETTE,
+    );
+
+    expect(shape(items)).toEqual(['B', 'A', 'C']);
+  });
+
+  it('🔴 le transfert garde son encadré, rangé à l’heure de sa commande la plus urgente', () => {
+    const items = packingFrames(
+      [
+        entry('L', { clientele: 'pro', readyBy: '07:00' }),
+        entry('T2', { ...pickup('vv', { clientele: 'pro' }), readyBy: '09:00' }),
+        entry('T1', { ...pickup('vv'), readyBy: '06:30' }),
+        entry('M', { readyBy: '08:00' }),
       ],
       PALETTE,
     );
 
-    expect(references(frames[0])).toEqual(['B', 'A']);
+    expect(shape(items)).toEqual([['Transfert Val Village', ['T1', 'T2']], 'L', 'M']);
+    const transfer = items[0];
+    expect(transfer?.kind === 'transfer' && transfer.orders[0]?.color).toBe('#fdd835');
   });
 
-  it('le réapprovisionnement entre dans le cadre du transfert, et jamais un cadre vide', () => {
+  it('à heure égale, l’encadré du transfert passe devant', () => {
+    const items = packingFrames([entry('L', {}), entry('T', pickup('vv'))], PALETTE);
+
+    expect(shape(items)).toEqual([['Transfert Val Village', ['T']], 'L']);
+  });
+
+  it('l’heure servie l’emporte sur l’échéance figée', () => {
+    const items = packingFrames(
+      [
+        entry('A', { dueAt: '06:00', readyBy: '08:00' }),
+        entry('B', { dueAt: '11:00', readyBy: '07:00' }),
+      ],
+      PALETTE,
+    );
+
+    expect(shape(items)).toEqual(['B', 'A']);
+  });
+
+  it('le réapprovisionnement entre dans l’encadré du transfert, et jamais un encadré vide', () => {
     const withItems = packingFrames([], PALETTE, [
       { siteId: 'vv', items: [{ key: 'r1', label: 'Pain de mie × 12' }] },
     ]);
     const empty = packingFrames([], PALETTE, [{ siteId: 'vv', items: [] }]);
 
-    expect(titles(withItems)).toEqual([['Transfert Val Village', ['Réassort Val Village']]]);
+    expect(withItems).toEqual([
+      expect.objectContaining({
+        title: 'Transfert Val Village',
+        replenishment: [{ key: 'r1', label: 'Pain de mie × 12' }],
+      }),
+    ]);
     expect(empty).toEqual([]);
   });
 
-  it('🔴 sans site, sans clientèle : un cadre NEUTRE, jamais une couleur devinée', () => {
-    const frames = packingFrames(
+  it('🔴 sans site : la teinte neutre, jamais une couleur devinée', () => {
+    const items = packingFrames(
       [entry('A', { fulfillmentMethod: 'pickup', clientele: 'pro', siteId: null })],
       PALETTE,
     );
 
-    expect(frames).toEqual([
-      expect.objectContaining({ title: 'Retrait', color: null, ink: 'neutral' }),
-    ]);
+    expect(items).toEqual([expect.objectContaining({ category: 'Retrait', color: null })]);
   });
 });

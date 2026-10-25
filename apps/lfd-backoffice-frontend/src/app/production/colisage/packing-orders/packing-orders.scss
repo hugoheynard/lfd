@@ -82,50 +82,27 @@
   overflow-y: auto;
 }
 
-/* ── LE CADRE D'UNE CATÉGORIE (Hugo, 2026-10-13, plan du tri et des couleurs, L1b)
-   Bordé à GAUCHE et en HAUT de la couleur du site, son titre écrit DANS la
-   bordure haute : on lit de loin à qui on remet. La couleur vient de la
-   donnée (Réglages › Sites), posée en propriété `--co-frame-color` ; sans
-   couleur, la teinte neutre. Une commande prête reste dans son cadre. */
-.co-frame {
+/* ── L'ENCADRÉ DU TRANSFERT (Hugo, 2026-10-14, gardé le 2026-10-25)
+   Le seul regroupement qui reste : un site servi par transfert, NEUTRE — il
+   mêle des clientèles —, ses commandes en retrait sous sa bordure, chacune
+   avec sa barre. */
+.co-transfer {
   display: flex;
   flex: none;
   flex-direction: column;
-  border-left: 6px solid var(--co-frame-color);
+  padding-left: var(--fold-space-sm);
+  border-left: 6px solid var(--fold-color-border);
 }
 
-.co-frame.is-neutral {
-  border-left-color: var(--fold-color-border);
-}
-
-.co-frame-title {
+.co-transfer-title {
   margin: 0;
   padding: var(--fold-space-xs) var(--fold-space-md);
-  background: var(--co-frame-color);
+  background: var(--fold-color-surface-sunken);
   font-size: var(--fold-text-sm);
   font-weight: var(--fold-weight-bold);
   letter-spacing: var(--fold-tracking-caps);
   text-transform: uppercase;
-}
-
-.co-frame-title.on-light {
-  color: var(--fold-ref-black);
-}
-
-.co-frame-title.on-dark {
-  color: var(--fold-ref-white);
-}
-
-.co-frame.is-neutral .co-frame-title {
-  background: var(--fold-color-surface-sunken);
   color: var(--fold-color-text-secondary);
-}
-
-/* Le cadre englobant d'un site servi par transfert (Hugo, 2026-10-14) : neutre,
-   il mêle des clientèles ; ses cadres intérieurs portent les couleurs, en
-   retrait sous sa bordure pour qu'on voie qu'ils lui appartiennent. */
-.co-transfer {
-  padding-left: var(--fold-space-sm);
 }
 
 /* Un élément de réapprovisionnement — forme réservée, rien ne le sert encore. */
@@ -144,6 +121,9 @@
   width: 100%;
   padding: var(--fold-space-md) var(--fold-space-xl);
   border: 0;
+  /* La barre de la catégorie (Hugo, 2026-10-25) : la couleur de la palette des
+     sites, posée en `--co-bar-color` ; sans couleur, la teinte neutre. */
+  border-left: 6px solid var(--co-bar-color, var(--fold-color-border));
   border-bottom: 1px solid var(--fold-color-border);
   background: transparent;
   color: inherit;
@@ -152,11 +132,11 @@
   cursor: pointer;
 }
 
-/* La commande OUVERTE : un filet à gauche plutôt qu'un fond, pour que la liste
-   reste lisible quand la moitié des commandes est prête. */
+/* La commande OUVERTE : le fond seul. Le filet bleu est retiré (Hugo,
+   2026-10-25) : la barre de gauche dit déjà la catégorie, deux traits côte à
+   côte se confondaient. */
 .co-bac.is-open {
   background: var(--fold-color-surface-band);
-  box-shadow: inset 3px 0 0 var(--fold-color-primary);
 }
 
 /* Une commande PRÊTE se distingue sans disparaître : on la rouvre pour lire ce
@@ -261,30 +241,6 @@
    simplement moins appuyé. */
 :host(.is-searching) .co-bac:not(.is-hit) {
   opacity: 0.55;
-}
-
-/* Lot PC2 : l'en-tête d'une tournée — on pose les bacs dans sa zone. */
-.co-round {
-  display: flex;
-  flex: none;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--fold-space-sm);
-  margin: 0;
-  padding: var(--fold-space-sm) var(--fold-space-xl);
-  background: var(--fold-color-surface-band);
-  border-bottom: 1px solid var(--fold-color-border);
-}
-
-.co-round-title {
-  font-size: var(--fold-text-sm);
-  font-weight: var(--fold-weight-semibold);
-}
-
-.co-round-ready {
-  font-size: var(--fold-text-xs);
-  font-variant-numeric: tabular-nums;
-  color: var(--fold-color-text-muted);
 }
 
 .co-bac-flags {
