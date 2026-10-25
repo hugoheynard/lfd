@@ -70,7 +70,7 @@ enum StaffResource {
   b2b_cancel_order
   /// DÉCIDER DU DÉPART INCOMPLET d'une commande dont le colisage a signalé un
   /// manque — un geste à part, accordé à l'écran (2026-10-25,
-  /// `documentation/commandes/plan-e6-le-depart-incomplet.md`, E6b).
+  /// plan E6 (`documentation/commandes/bon-de-livraison.md`), E6b).
   b2b_orders_shortfall
   /// Le COMPTOIR — la carte et le détail d'un client, taillés pour la prise de
   /// commande (2026-09-25, `architecture-commande-au-comptoir.md`).

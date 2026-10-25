@@ -60,7 +60,7 @@ const CARD_REGIMES: ReadonlySet<SettlementRegime> = new Set(["due", "paid"]);
 
 /**
  * **La décision du départ incomplet** (lot E6b,
- * `documentation/commandes/plan-e6-le-depart-incomplet.md` § 12.2 et § 13) :
+ * plan E6 (`documentation/commandes/bon-de-livraison.md`) § 12.2 et § 13) :
  * une par commande, définitive (Q-I4). Ce qui part est EXACTEMENT ce que le
  * colisage a figé au signal en vigueur — jamais une saisie : la fiche le
  * revérifie sous son verrou (`ShortfallDesk.authorize`).

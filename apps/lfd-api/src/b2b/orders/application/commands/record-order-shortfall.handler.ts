@@ -7,7 +7,7 @@ import { RecordOrderShortfallCommand } from "./record-order-shortfall.command.js
 
 /**
  * **La commande porte le manque signalé** — « décision attendue » (lot E6a,
- * `commandes/plan-e6-le-depart-incomplet.md` § 3).
+ * plan E6 (`documentation/commandes/bon-de-livraison.md`) § 3).
  *
  * Seul appelant : l'abonné durable `OnPackingShortfallReported`. L'agrégat
  * garde le plus récent : un fait en retard est un succès sans effet.

@@ -28,7 +28,7 @@ const NOT_SENT_SENTENCE =
 
 /**
  * **« Écrire au client »** après un départ incomplet (lot E6d,
- * `documentation/commandes/plan-e6d-ecrire-au-client.md`), sous la décision.
+ * plan E6d (`documentation/commandes/bon-de-livraison.md`)), sous la décision.
  *
  * Jamais automatique : le décideur ouvre la proposition, la relit, la corrige,
  * puis envoie — ou ferme sans rien envoyer. C'est le texte relu qui part. Une

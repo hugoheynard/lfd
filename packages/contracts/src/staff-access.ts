@@ -142,7 +142,7 @@ export const staffResourceSchema = z.enum([
   "b2b_cancel_order",
   /**
    * **Décider du départ incomplet** — `POST /admin/orders/:id/shortfall-decision`
-   * (plan `documentation/commandes/plan-e6-le-depart-incomplet.md`, E6b,
+   * (plan E6 (`documentation/commandes/bon-de-livraison.md`), E6b,
    * 2026-10-25). Laisser partir ce que le colisage a mis au bac et abandonner
    * le reste : le bon de livraison et les montants facturables suivent. Un
    * geste à part, `write` seul ; accordée à l'écran, aucune migration ne la

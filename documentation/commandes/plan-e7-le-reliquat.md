@@ -2,7 +2,7 @@
 
 > **Doc-first, 2026-10-25.** Lots E3 + E7 de
 > [`plan-commande-bon-de-livraison-facture.md`](plan-commande-bon-de-livraison-facture.md),
-> après E6 ([`plan-e6-le-depart-incomplet.md`](plan-e6-le-depart-incomplet.md)) :
+> après E6 ([`bon-de-livraison.md`](bon-de-livraison.md), doc d'état) :
 > la décision gagne « **reste à relivrer** ». Décisions de Hugo : le reliquat
 > est la suite de la **même** commande, aux mêmes prix ; sa date est choisie
 > par le commercial ; le cas courant est une **seconde livraison le jour même**.

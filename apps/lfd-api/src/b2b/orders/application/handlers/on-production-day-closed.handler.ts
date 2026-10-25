@@ -47,7 +47,7 @@ export const ON_PRODUCTION_DAY_CLOSED = "b2b.orders.absorb-into-plan";
  * Après l'absorption, dans la MÊME unité de travail (celle du reçu), chaque
  * commande que cet arrêt a confirmée — `confirmedAt = closedAt` — reçoit son
  * BL-1 prévu, ou voit son BL-1 encore prévu réécrit sur ses lignes
- * (`documentation/commandes/plan-e1-bon-de-livraison-prevu.md`, § 6). Une
+ * (plan E1 (`documentation/commandes/bon-de-livraison.md`), § 6). Une
  * commande écartée par `planWhere` n'est pas confirmée, donc n'a pas de BL.
  *
  * Le relais l'inscrit à `BackgroundWork` : c'est ce que `lint:events-tracked`

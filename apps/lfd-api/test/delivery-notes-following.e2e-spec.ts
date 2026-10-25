@@ -1,6 +1,6 @@
 /**
  * E2E du **bon de livraison qui suit la commande** (plan
- * `documentation/commandes/plan-e2-rattrapage-des-bons.md`, § 8.5).
+ * plan E2 (`documentation/commandes/bon-de-livraison.md`), § 8.5).
  *
  * Ce que seul le vrai Postgres prouve : que le BL avance dans la transaction
  * du geste (bac fermé, remise), que les CHECK d'état de `20261024210000`

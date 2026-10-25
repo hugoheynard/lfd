@@ -18,7 +18,7 @@ export interface ShortfallReportedLine {
 
 /**
  * **« Il manque » — signalé au colisage** (lot E6a,
- * `documentation/commandes/plan-e6-le-depart-incomplet.md` § 3). Le premier
+ * plan E6 (`documentation/commandes/bon-de-livraison.md`) § 3). Le premier
  * fait que le colisage publie POUR le commerce, déclaré dans son canal.
  *
  * La charge : `{ orderId, reference, reportedAt, reportedBy, lines }` — les

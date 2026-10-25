@@ -14,7 +14,7 @@ export const REPRINT_SENTENCE =
 
 /**
  * **Les bons de livraison d'une commande** (plan
- * `documentation/commandes/plan-e5a-le-bon-de-livraison-imprime.md`, § 3) :
+ * plan E5a (`documentation/commandes/bon-de-livraison.md`), § 3) :
  * la liste, le BL de transport à imprimer, le BL chiffré à télécharger. Sous
  * `b2b_orders:read`, le droit qui ouvre déjà la fiche.
  */

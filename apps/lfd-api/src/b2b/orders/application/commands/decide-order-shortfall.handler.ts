@@ -16,7 +16,7 @@ import { DecideOrderShortfallCommand } from "./decide-order-shortfall.command.js
 
 /**
  * **« Décider du départ »** (lot E6b, plan
- * `documentation/commandes/plan-e6-le-depart-incomplet.md` § 12.2 et § 13).
+ * plan E6 (`documentation/commandes/bon-de-livraison.md`) § 12.2 et § 13).
  *
  * Une transaction, et les verrous dans cet ordre — **commande, puis fiche** :
  *

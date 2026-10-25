@@ -1,6 +1,6 @@
 /**
  * **« Écrire au client » après un départ incomplet** (lot E6d,
- * `documentation/commandes/plan-e6d-ecrire-au-client.md` § 2) — sur le vrai
+ * plan E6d (`documentation/commandes/bon-de-livraison.md`) § 2) — sur le vrai
  * Postgres, mailer doublé.
  *
  * Ce que seul le vrai chemin prouve : la proposition lit la décision et les

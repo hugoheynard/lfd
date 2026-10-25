@@ -29,7 +29,7 @@ interface DepartingLine {
 
 /**
  * **« Décider du départ »** (lot E6b,
- * `documentation/commandes/plan-e6-le-depart-incomplet.md` § 12.2 et § 14),
+ * plan E6 (`documentation/commandes/bon-de-livraison.md`) § 12.2 et § 14),
  * sous le bandeau du manque signalé.
  *
  * Les quantités sont en lecture : ce qui part est ce que le colisage a figé.

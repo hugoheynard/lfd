@@ -58,7 +58,7 @@ import { GetAdminOrderQuery } from "./get-admin-order.query.js";
  * §6), il dit aussi si l'équipe peut la modifier, par la règle du geste, et
  * sa révision courante.
  *
- * Lot E6a (`commandes/plan-e6-le-depart-incomplet.md` § 3) : et le manque
+ * Lot E6a (plan E6 (`documentation/commandes/bon-de-livraison.md`) § 3) : et le manque
  * signalé au colisage, en vigueur — « décision attendue ».
  */
 @QueryHandler(GetAdminOrderQuery)

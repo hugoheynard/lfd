@@ -20,7 +20,7 @@ export interface DeliveryNoteTermsGap {
 
 /**
  * **Le contrôle qu'E4b exigera** (plan
- * `documentation/commandes/plan-e4a-totaux-du-bon.md`, § 2 et § 4) : pour
+ * plan E4a (`documentation/commandes/bon-de-livraison.md`), § 2 et § 4) : pour
  * chaque BL vivant d'une commande complète, ses totaux d'en-tête et
  * l'éligibilité de ses lignes sont-ils ceux de la commande, champ par champ ?
  * Tant que chaque BL est complet (avant E6), l'égalité est la règle.

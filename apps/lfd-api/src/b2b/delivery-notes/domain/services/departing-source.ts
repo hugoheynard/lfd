@@ -8,7 +8,7 @@ import { DeliveryNoteTerms } from "../value-objects/delivery-note-terms.js";
 
 /**
  * **La commande telle que son BL la voit, une fois le départ décidé** (plan
- * `documentation/commandes/plan-e6-le-depart-incomplet.md` § 13, bloquant 1) :
+ * plan E6 (`documentation/commandes/bon-de-livraison.md`) § 13, bloquant 1) :
  * les mêmes lignes, aux quantités décidées, et l'en-tête recomposé par
  * {@link DeliveryNoteTerms.composePartial}. Sans décision, la commande telle
  * quelle — les trois écrivains du BL passent tous par ici.

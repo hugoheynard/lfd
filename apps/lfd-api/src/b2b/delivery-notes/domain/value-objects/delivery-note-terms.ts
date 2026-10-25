@@ -25,7 +25,7 @@ export type FrozenJson =
 
 /**
  * **L'en-tête d'un bon de livraison** — les totaux de sa commande, recopiés
- * (plan `documentation/commandes/plan-e4a-totaux-du-bon.md`, § 1.1) : tant
+ * (plan E4a (`documentation/commandes/bon-de-livraison.md`), § 1.1) : tant
  * que chaque BL vivant est complet, sa règle est une recopie, jamais un
  * calcul. Le centime ne peut pas bouger, par construction.
  *
@@ -125,7 +125,7 @@ export interface PartialTermsInput {
 
 /**
  * **L'en-tête d'un BL partiel** (plan
- * `documentation/commandes/plan-e6-le-depart-incomplet.md` § 9.2, § 11 et
+ * plan E6 (`documentation/commandes/bon-de-livraison.md`) § 9.2, § 11 et
  * § 13) — la fabrique qui tient pour un BL le rôle d'`Order.draft` : chaque
  * terme est CALCULÉ par les fonctions mêmes de la passation, sur ce qui part,
  * puis passe les mêmes gardes, puis `computeOrderTotals`. Aucune seconde

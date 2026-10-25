@@ -2,7 +2,7 @@ import type { VatShare } from "@lfd/money";
 
 /**
  * **Les montants facturables** d'une commande (plan
- * `documentation/commandes/plan-e6-le-depart-incomplet.md` § 12.3, E6c1) — la
+ * plan E6 (`documentation/commandes/bon-de-livraison.md`) § 12.3, E6c1) — la
  * forme des totaux d'une commande, et celle de l'en-tête d'un bon de
  * livraison : la somme des BL remis en a la même. La ventilation est `null`
  * pour une commande d'avant le 2026-09-07, jamais reconstituée.

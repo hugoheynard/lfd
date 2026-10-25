@@ -1,5 +1,13 @@
 # Plan — commande, bon de livraison, facture : trois documents
 
+> 🟡 **Partiellement bâti — état au 2026-10-25.** E1, E2, E4a, E5a, E5b, E6
+> (E6a, E6b, E6c1, E6c2) et E6d sont bâtis ; E4b n'a pas été bâti, fondu dans
+> E6. Ce qui existe est décrit **au présent** dans la doc d'état
+> [`bon-de-livraison.md`](bon-de-livraison.md), qui reprend aussi les
+> décisions des plans de lot retirés. **Restent ouverts** : E3 + E7 (le
+> reliquat, [`plan-e7-le-reliquat.md`](plan-e7-le-reliquat.md)), E8, E9, et les
+> chantiers du § 11 (A1, A2, R1, R2, H1, H2).
+>
 > **Doc-first, 2026-10-24.** Décision de Hugo le même jour : « fais le modèle
 > ERP avant le lancement ». Touche **l'argent**, porte des **migrations de
 > données** et finira dans un **runbook** : `vitruve` avant Hugo, puis un plan
@@ -100,17 +108,17 @@ casser dans le même déploiement. Ce qui reste vrai : **aucune donnée détruit
 
 Chaque lot a son plan détaillé et son `vitruve` avant d'être bâti.
 
-| Lot | Contenu                                                                                                                                                                            | Pourquoi à ce rang                        |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| E1  | Le BL : tables, agrégat, invariants 1–3 et 7 ; **créé à la fermeture du bac** pour toute commande, en ombre (personne ne le lit)                                                   | le document existe avant qu'on s'y appuie |
-| E2  | Rattrapage : un BL par commande déjà remise                                                                                                                                        | E3 doit trouver un BL partout             |
-| E3  | La date de réception sur le BL ; le retrait et la livraison remettent le BL                                                                                                        | la facture date des BL                    |
-| E4  | **La facture lit les BL** ; `invoice_delivery_note` ; migration des factures émises avec contrôle au centime                                                                       | le cœur de l'argent, seul dans son lot    |
-| E5  | Le PDF du BL ; « commandé / livré / reste » sur les écrans                                                                                                                         | le client voit ce qui part                |
-| E6  | Le manque : signaler au colisage, décider (permission), BL partiel, reste à livrer — décisions de [`modification/commandes-incompletes.md`](modification/commandes-incompletes.md) | le premier BL partiel                     |
-| E7  | Le reliquat : seconde préparation (même jour : ajout tardif au fournil et au colisage), BL-2                                                                                       | le second BL                              |
-| E8  | Solder : abandonner un reste par décision ; commande `fulfilled` quand soldée                                                                                                      | ferme le cycle                            |
-| E9  | Particulier payé par carte : rembourser un reste abandonné (attend M2)                                                                                                             | l'argent rendu                            |
+| Lot | Contenu                                                                                                                                                                                                                                                                                                                | Pourquoi à ce rang                        |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| E1  | ✅ bâti le 2026-10-24 (`5b49793db`) — **né à l'arrêt du plan, pas à la fermeture du bac** (idée de Hugo, 2026-10-24). Le BL : tables, agrégat, invariants 1–3 et 7 ; **créé à la fermeture du bac** pour toute commande, en ombre (personne ne le lit)                                                                 | le document existe avant qu'on s'y appuie |
+| E2  | ✅ bâti le 2026-10-24 (`f17c4d7c5`) — devenu « le BL suit la commande » + un réconciliateur. Rattrapage : un BL par commande déjà remise                                                                                                                                                                               | E3 doit trouver un BL partout             |
+| E3  | 🟧 prévu, repris dans E7.3 ([`plan-e7-le-reliquat.md`](plan-e7-le-reliquat.md)) ; la date de réception est recopiée sur le BL depuis E2. La date de réception sur le BL ; le retrait et la livraison remettent le BL                                                                                                   | la facture date des BL                    |
+| E4  | 🟡 E4a bâti le 2026-10-24 (`111537375`) ; E4b non bâti — la facture lit les montants facturables de la commande (E6c2). **La facture lit les BL** ; `invoice_delivery_note` ; migration des factures émises avec contrôle au centime                                                                                   | le cœur de l'argent, seul dans son lot    |
+| E5  | 🟡 E5a (`219eac683`) et E5b (`473093bdf`) bâtis le 2026-10-24 ; « commandé / livré / reste » reste à faire. Le PDF du BL ; « commandé / livré / reste » sur les écrans                                                                                                                                                 | le client voit ce qui part                |
+| E6  | ✅ bâti le 2026-10-25 : E6a `f934db449`, E6b + E6c1 `05b74b7f6`, E6c2 `58fb48d9e`, E6d `c95188d91` — reste « abandonné » seulement. Le manque : signaler au colisage, décider (permission), BL partiel, reste à livrer — décisions de [`modification/commandes-incompletes.md`](modification/commandes-incompletes.md) | le premier BL partiel                     |
+| E7  | 🟧 prévu. Le reliquat : seconde préparation (même jour : ajout tardif au fournil et au colisage), BL-2                                                                                                                                                                                                                 | le second BL                              |
+| E8  | 🟧 prévu. Solder : abandonner un reste par décision ; commande `fulfilled` quand soldée                                                                                                                                                                                                                                | ferme le cycle                            |
+| E9  | 🟧 prévu. Particulier payé par carte : rembourser un reste abandonné (attend M2)                                                                                                                                                                                                                                       | l'argent rendu                            |
 
 ## 6. Questions pour Hugo
 
@@ -206,17 +214,13 @@ commandes du comptoir et à 0 €, l'unicité SQL des arrêts.
   décider d'un départ incomplet.
 - **Q-E4 — oui** : les BL se numérotent `BL-1042-1`, `BL-1042-2`.
 - **Q-E5 — oui** : une commande remise sans être passée au colisage reçoit un BL plein au retrait.
-- Lot E6d : [`plan-e6d-ecrire-au-client.md`](plan-e6d-ecrire-au-client.md) — « Écrire au client », jamais automatique.
+- Les lots E1, E2, E4a, E4b, E5a, E6 et E6d ont eu leur plan, retiré le
+  2026-10-25 : leurs décisions (Q-E1-1, Q-E6-1 à Q-E6-3, les choix de
+  l'assistant) sont au tableau « Les décisions » de
+  [`bon-de-livraison.md`](bon-de-livraison.md).
 - Programme E7 : [`plan-e7-le-reliquat.md`](plan-e7-le-reliquat.md) — le reliquat, un cycle de vie par BL (choix A de Hugo, 2026-10-25).
-- Lot E6c2 : [`plan-e6c2-la-facture-lit-les-montants-facturables.md`](plan-e6c2-la-facture-lit-les-montants-facturables.md) — la facture et le prélèvement lisent les montants facturables.
-- Lot E6 : [`plan-e6-le-depart-incomplet.md`](plan-e6-le-depart-incomplet.md) — le départ incomplet ; E6a d'abord, E6b + E6c après validation de Hugo.
 - Lot T : [`plan-t-commandes-de-test-par-le-vrai-chemin.md`](plan-t-commandes-de-test-par-le-vrai-chemin.md) — les commandes de test passent par le vrai chemin.
-- E5b bâti le 2026-10-25 : « confirmation de commande » dans les libellés (`473093bdf`).
-- Lot E5a : [`plan-e5a-le-bon-de-livraison-imprime.md`](plan-e5a-le-bon-de-livraison-imprime.md) — le BL imprimé, une pièce par lecteur.
-- Lot E4b : [`plan-e4b-la-facture-lit-les-bons.md`](plan-e4b-la-facture-lit-les-bons.md) — **reporté et fusionné avec E6** (2026-10-24, § 6 de ce plan).
-- Lot E4a : [`plan-e4a-totaux-du-bon.md`](plan-e4a-totaux-du-bon.md) — le BL porte ses totaux (E4 coupé en deux par l'assistant, 2026-10-24).
-- Lot E2 : [`plan-e2-rattrapage-des-bons.md`](plan-e2-rattrapage-des-bons.md) — le BL suit la commande, un réconciliateur rattrape l'existant.
-- Lot E1 : [`plan-e1-bon-de-livraison-prevu.md`](plan-e1-bon-de-livraison-prevu.md) — BL prévu à l'arrêt du plan (idée de Hugo, 2026-10-24).
+- E5b bâti le 2026-10-24 : « confirmation de commande » dans les libellés (`473093bdf`).
 
 ## 10. BL chiffré ou non chiffré (Hugo, 2026-10-24)
 
@@ -236,7 +240,7 @@ facturation chiffré. »
   rendus sont **le même BL**.
 - **Où il s'applique** : lot E5 (le PDF du BL et ses écrans) ; la facture
   reste toujours chiffrée.
-- **Aujourd'hui, rien n'existe** (recherché le 2026-10-24 : aucune notion de
+- **Au 2026-10-24, rien n'existait** — bâti depuis par E5a, cf. [`bon-de-livraison.md`](bon-de-livraison.md) (recherché le 2026-10-24 : aucune notion de
   ce genre dans `apps/lfd-api/src`, `packages/`, `documentation/`).
 
 **La forme : celle du bon de commande, sans en inventer une** (Hugo,

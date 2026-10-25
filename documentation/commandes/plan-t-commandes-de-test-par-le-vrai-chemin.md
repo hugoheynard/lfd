@@ -28,7 +28,7 @@
 > 102 et 42 suites clientes —, factures, relevés, `audiences`), les
 > `order.update` de simulation d'état, puis le renommage et le CHECK.
 
-> 🟢 **Tranches 6 à 8 bâties le 2026-10-25, et le CHECK posé** (non commité) :
+> 🟢 **Tranches 6 à 8 bâties le 2026-10-25, et le CHECK posé** (commit `aef0c7b4f`) :
 > les 15 fichiers restants passent par la vraie passation — relevés, dossier,
 > factures, prélèvement (le demi-centime par une vraie mercuriale à 10 500
 > millicentimes), `audiences`, `delivery-rounds-scene` (adresse au carnet,

@@ -59,7 +59,7 @@ import { MarkOrderFulfilledCommand } from "./mark-order-fulfilled.command.js";
  *
  * Sous `won`, dans la même unité de travail : le BL passe `handed_over`, avec
  * l'instant et le jour de réception que cette instruction vient d'écrire
- * (`documentation/commandes/plan-e2-rattrapage-des-bons.md`, § 8.3).
+ * (plan E2 (`documentation/commandes/bon-de-livraison.md`), § 8.3).
  */
 @CommandHandler(MarkOrderFulfilledCommand)
 export class MarkOrderFulfilledHandler implements ICommandHandler<MarkOrderFulfilledCommand, void> {

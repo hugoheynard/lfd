@@ -37,7 +37,7 @@ export type BillingWrite = "closed" | "corrected";
 
 /**
  * **Le solde d'une commande, et ce qu'elle doit** (lot E6c1, plan
- * `documentation/commandes/plan-e6-le-depart-incomplet.md` § 12.3 et § 13) —
+ * plan E6 (`documentation/commandes/bon-de-livraison.md`) § 12.3 et § 13) —
  * `Order.closeBilling` du plan.
  *
  * Pourquoi pas une méthode d'`Order` : `Order` est l'agrégat de PASSATION, il

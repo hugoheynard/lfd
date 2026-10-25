@@ -11,7 +11,7 @@ import type { BillingTally } from "../order-billing-closer.js";
 
 /**
  * Le solde, côté comptabilité (lot E6c2, plan
- * `documentation/commandes/plan-e6c2-la-facture-lit-les-montants-facturables.md`
+ * plan E6c2 (`documentation/commandes/bon-de-livraison.md`)
  * § 4) : la ligne d'encaissement suit la pose, et une commande ENGAGÉE n'est
  * plus corrigée — comptée, jamais tentée. Les jours ne sont comparés qu'entre
  * eux.

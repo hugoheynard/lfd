@@ -2,7 +2,7 @@ import { BusinessError } from "../../../platform/shared/errors/app-error.js";
 
 /**
  * **« Il manque » sur un bac complet** (lot E6a, plan
- * `documentation/commandes/plan-e6-le-depart-incomplet.md`, § 3) : toutes les
+ * plan E6 (`documentation/commandes/bon-de-livraison.md`), § 3) : toutes les
  * lignes dues sont entièrement réparties, il n'y a rien à signaler.
  */
 export class NothingShortError extends BusinessError {

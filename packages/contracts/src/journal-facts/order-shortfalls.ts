@@ -5,7 +5,7 @@ import { count, fact, namedOrBare, payload, ref, subjectLabel } from "./fact.js"
 
 /**
  * **Le départ incomplet décidé** (plan
- * `documentation/commandes/plan-e6c2-la-facture-lit-les-montants-facturables.md`
+ * plan E6c2 (`documentation/commandes/bon-de-livraison.md`)
  * § 5) — une décision d'argent prise par une personne : la facture lira ce qui
  * part, plus la commande entière. Le sujet est le client, comme
  * `order.revised` ; `decidedBy` la fiche staff, sous son nom du moment ;

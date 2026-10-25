@@ -22,7 +22,7 @@ export type DeliveryNoteOrderJson =
 
 /**
  * Les totaux d'une commande, tels que le bon de livraison les recopie (plan
- * `documentation/commandes/plan-e4a-totaux-du-bon.md`) : les colonnes
+ * plan E4a (`documentation/commandes/bon-de-livraison.md`)) : les colonnes
  * d'`orders` telles qu'écrites, JSON compris, sans interprétation.
  */
 export interface DeliveryNoteOrderTerms {
@@ -48,7 +48,7 @@ export interface DeliveryNoteOrder {
 
 /**
  * **Ce que le bon de livraison lit d'une commande** (plan
- * `documentation/commandes/plan-e1-bon-de-livraison-prevu.md`, § 6) — port de
+ * plan E1 (`documentation/commandes/bon-de-livraison.md`), § 6) — port de
  * lecture DÉCLARÉ par les commandes, qui possèdent `orders` et `order_lines`,
  * et implémenté dans `b2b/orders/infrastructure/`. `b2b/delivery-notes/` ne lit
  * jamais ces tables en Prisma direct ; aucune porte ne le tient à l'intérieur

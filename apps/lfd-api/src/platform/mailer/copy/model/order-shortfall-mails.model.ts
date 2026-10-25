@@ -1,6 +1,6 @@
 /**
  * Les textes de **« Écrire au client » après un départ incomplet** (plan
- * `documentation/commandes/plan-e6d-ecrire-au-client.md`, § 1). Section par
+ * plan E6d (`documentation/commandes/bon-de-livraison.md`), § 1). Section par
  * clé du registre (`B2bMails`).
  *
  * Deux sortes de textes, et la distinction est le sujet :

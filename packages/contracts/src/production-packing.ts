@@ -174,7 +174,7 @@ export interface PackingSheet {
    */
   readonly canDeclareReady: boolean;
   /**
-   * « Il manque » est-il permis ? (lot E6a, `commandes/plan-e6-le-depart-incomplet.md`
+   * « Il manque » est-il permis ? (lot E6a, plan E6 (`documentation/commandes/bon-de-livraison.md`)
    * § 3) : un bac ouvert, rangé en contenants, dont une ligne due n'est pas
    * entièrement répartie. Une règle, donc au serveur.
    */

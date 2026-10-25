@@ -1,7 +1,7 @@
 /// Le cycle d'un **bon de livraison** (plan
-/// `documentation/commandes/plan-e1-bon-de-livraison-prevu.md`). `planned` à
+/// plan E1 (`documentation/commandes/bon-de-livraison.md`)). `planned` à
 /// l'arrêt du plan (E1) ; `prepared` et `handed_over` suivent la commande
-/// depuis E2 (`plan-e2-rattrapage-des-bons.md`) ; `voided` avec l'annulation.
+/// depuis E2 (plan E2 (`documentation/commandes/bon-de-livraison.md`)) ; `voided` avec l'annulation.
 enum DeliveryNoteStatus {
   planned
   prepared

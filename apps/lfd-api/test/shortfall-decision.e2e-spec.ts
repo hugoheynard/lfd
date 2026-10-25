@@ -1,6 +1,6 @@
 /**
  * **« Décider du départ » — de la fiche commande au bon de livraison et au
- * solde** (lots E6b et E6c1, `documentation/commandes/plan-e6-le-depart-incomplet.md`
+ * solde** (lots E6b et E6c1, plan E6 (`documentation/commandes/bon-de-livraison.md`)
  * § 12 à § 14). Sa lecture par la facture et le prélèvement (E6c2) :
  * `billable-amounts.e2e-spec.ts`.
  *

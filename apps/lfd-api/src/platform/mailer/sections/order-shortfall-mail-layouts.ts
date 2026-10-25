@@ -2,7 +2,7 @@ import { KICKER, SUBJECT, texts, type MailLayouts } from "./mail-layout.types.js
 
 /**
  * « Écrire au client » après un départ incomplet (plan
- * `documentation/commandes/plan-e6d-ecrire-au-client.md`). Les « Paragraphes »
+ * plan E6d (`documentation/commandes/bon-de-livraison.md`)). Les « Paragraphes »
  * sont la PROPOSITION que l'équipe relit : le courriel rend le texte relu,
  * une donnée — d'où leur place à part dans `mail-layouts.spec.ts`.
  */

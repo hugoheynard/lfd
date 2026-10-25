@@ -8,7 +8,7 @@ import { PackingDayReader } from './packing-day.reader';
 
 /**
  * **« Il manque »** au poste de colisage (lot E6a,
- * `documentation/commandes/plan-e6-le-depart-incomplet.md` § 3) — l'envoi, son
+ * plan E6 (`documentation/commandes/bon-de-livraison.md`) § 3) — l'envoi, son
  * état et son refus.
  *
  * Fourni par l'écran (`providers` de `Colisage`), comme {@link PackingGestures}.

@@ -17,7 +17,7 @@ import { WriteShortfallLetterCommand } from "./write-shortfall-letter.command.js
 
 /**
  * **« Écrire au client »** (lot E6d, plan
- * `documentation/commandes/plan-e6d-ecrire-au-client.md`) — un geste à part,
+ * plan E6d (`documentation/commandes/bon-de-livraison.md`)) — un geste à part,
  * jamais un abonné : avertir le client est un choix du décideur.
  *
  * Une transaction : la décision verrouillée, l'envoi tracé par l'agrégat

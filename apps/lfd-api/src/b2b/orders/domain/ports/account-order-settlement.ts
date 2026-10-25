@@ -1,6 +1,6 @@
 /**
  * **L'encaissement suit le solde** (plan
- * `documentation/commandes/plan-e6c2-la-facture-lit-les-montants-facturables.md`,
+ * plan E6c2 (`documentation/commandes/bon-de-livraison.md`),
  * § 4 BLOQUANT 5) — port que la commande DÉCLARE et que la comptabilité
  * implémente, comme `AccountOrderRevaluation` : la ligne d'encaissement lui
  * appartient.

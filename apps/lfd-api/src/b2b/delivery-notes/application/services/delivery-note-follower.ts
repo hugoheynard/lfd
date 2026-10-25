@@ -9,7 +9,7 @@ import { OrderBillingCloser } from "./order-billing-closer.js";
 
 /**
  * **Le BL suit la commande** — l'implémentation de {@link DeliveryNoteFollowing}
- * (plan `documentation/commandes/plan-e2-rattrapage-des-bons.md`, § 8.3).
+ * (plan E2 (`documentation/commandes/bon-de-livraison.md`), § 8.3).
  *
  * La prévision reste celle d'E1 ; préparer, remettre et annuler passent tous
  * par la même règle que le réconciliateur ({@link DeliveryNoteAligner}) : la

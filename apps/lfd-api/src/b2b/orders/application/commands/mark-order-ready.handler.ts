@@ -58,7 +58,7 @@ import { MarkOrderReadyCommand } from "./mark-order-ready.command.js";
  * ## Le bon de livraison suit (plan E2, 2026-10-24)
  *
  * Sous la même condition gagnée, dans la même unité de travail : le BL passe
- * `prepared` (`documentation/commandes/plan-e2-rattrapage-des-bons.md`, § 8.3).
+ * `prepared` (plan E2 (`documentation/commandes/bon-de-livraison.md`), § 8.3).
  */
 @CommandHandler(MarkOrderReadyCommand)
 export class MarkOrderReadyHandler implements ICommandHandler<

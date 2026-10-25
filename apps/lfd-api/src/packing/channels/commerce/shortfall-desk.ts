@@ -6,7 +6,7 @@ export interface DepartingLine {
 
 /**
  * **Le guichet du départ incomplet** (lot E6b, plan
- * `documentation/commandes/plan-e6-le-depart-incomplet.md` § 12.2 et § 13) —
+ * plan E6 (`documentation/commandes/bon-de-livraison.md`) § 12.2 et § 13) —
  * déclaré ET implémenté par le colisage, appelé par le commerce DANS la
  * transaction de sa décision, après le verrou de la commande (ordre des
  * verrous : commande, puis fiche).

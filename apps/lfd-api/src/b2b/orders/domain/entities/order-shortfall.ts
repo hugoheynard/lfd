@@ -32,7 +32,7 @@ export interface PendingShortfall {
 
 /**
  * **Le manque signalé sur une commande** — « décision attendue » (lot E6a,
- * `documentation/commandes/plan-e6-le-depart-incomplet.md` § 3).
+ * plan E6 (`documentation/commandes/bon-de-livraison.md`) § 3).
  *
  * Le snapshot de deux faits du colisage, `packing.shortfall_reported` et
  * `packing.shortfall_cleared`, livrés au moins une fois et dans un ordre que

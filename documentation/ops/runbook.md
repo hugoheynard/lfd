@@ -1222,8 +1222,8 @@ rejouer, le rejeu échoue de la même façon.
 
 ## Le bon de livraison suit la commande (lot E2, depuis le 2026-10-24)
 
-Plan [`commandes/plan-e2-rattrapage-des-bons.md`](../commandes/plan-e2-rattrapage-des-bons.md),
-§ 8.4. La migration `20261024210000` n'écrit **aucune donnée** ; le rattrapage
+Doc d'état [`commandes/bon-de-livraison.md`](../commandes/bon-de-livraison.md) (plan E2 retiré,
+§ 8.4). La migration `20261024210000` n'écrit **aucune donnée** ; le rattrapage
 est fait par le réconciliateur, dans le code.
 
 **Avant le merge vers `main`** — lecture seule, en production :
@@ -1289,8 +1289,8 @@ DROP CONSTRAINT "orders_order_number_format";` (sans perte).
 
 ## Avant de déployer E6c2 — la facture lit les montants facturables (2026-10-25)
 
-Plan [`commandes/plan-e6c2-la-facture-lit-les-montants-facturables.md`](../commandes/plan-e6c2-la-facture-lit-les-montants-facturables.md),
-§ 2 et § 4. **Irréversible à la première facture émise** sur ces montants : une
+Doc d'état [`commandes/bon-de-livraison.md`](../commandes/bon-de-livraison.md) (plan E6c2 retiré,
+§ 2 et § 4). **Irréversible à la première facture émise** sur ces montants : une
 facture fausse ne se corrige plus que par un avoir. E6c2 part **seul**, après
 E6b + E6c1, et seulement si les quatre requêtes ci-dessous rendent **0** en
 production, en lecture seule :

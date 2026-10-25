@@ -8,7 +8,7 @@ import {
 
 /**
  * La couture de la facture (lot E6c2, plan
- * `documentation/commandes/plan-e6c2-la-facture-lit-les-montants-facturables.md`
+ * plan E6c2 (`documentation/commandes/bon-de-livraison.md`)
  * § 0 et § 4) : ce qu'un bon au compte doit est ce qui est PARTI. Les dates ne
  * sont comparées à aucune horloge.
  */

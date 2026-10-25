@@ -4,7 +4,7 @@ import type { Prisma } from "../../../platform/database/client/client.js";
 
 /**
  * **Soldée** (lot E6c2, plan
- * `documentation/commandes/plan-e6c2-la-facture-lit-les-montants-facturables.md`
+ * plan E6c2 (`documentation/commandes/bon-de-livraison.md`)
  * § 4.4) : ses montants facturables sont posés. Ajouté à l'assiette de la
  * facture et du lot SEULEMENT — jamais à {@link accountOrderWhere}, que les
  * bons à constater et les bons à venir du cycle partagent : une commande

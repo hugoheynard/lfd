@@ -1,6 +1,6 @@
 /**
  * E2E du **bon de livraison imprimé** (plan
- * `documentation/commandes/plan-e5a-le-bon-de-livraison-imprime.md`, § 4) :
+ * plan E5a (`documentation/commandes/bon-de-livraison.md`), § 4) :
  * la liste et les deux PDF côté équipe, le BL chiffré côté client, et le mur
  * de la société — un client d'une autre société lit un 404.
  *

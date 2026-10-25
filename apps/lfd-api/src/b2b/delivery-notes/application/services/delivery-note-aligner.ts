@@ -22,7 +22,7 @@ export type AlignedOutcome =
 
 /**
  * **Fait dire la vérité au BL d'une commande** (plan
- * `documentation/commandes/plan-e2-rattrapage-des-bons.md`, § 8.2 et § 8.3) :
+ * plan E2 (`documentation/commandes/bon-de-livraison.md`), § 8.2 et § 8.3) :
  * charge ses BL, applique la règle unique {@link alignmentOf}, écrit.
  *
  * Tourne dans l'unité de travail de l'appelant, la commande déjà verrouillée

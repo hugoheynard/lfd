@@ -7,7 +7,7 @@ export const PACKING_SHORTFALL_CLEARED = "packing.shortfall_cleared";
 
 /**
  * **Le manque est effacé : le bac s'est fermé complet** (lot E6a, plan
- * `commandes/plan-e6-le-depart-incomplet.md` § 3 — « refermer le bac complet
+ * plan E6 (`documentation/commandes/bon-de-livraison.md`) § 3 — « refermer le bac complet
  * efface le signal »).
  *
  * Un fait à part plutôt qu'un effet de `packing.order_packed` : refermer après

@@ -47,7 +47,7 @@ export interface AdminOrderView extends OrderView {
   readonly revision: number;
   /**
    * **Manque signalé — décision attendue** (lot E6a,
-   * `documentation/commandes/plan-e6-le-depart-incomplet.md` § 3) : ce que le
+   * plan E6 (`documentation/commandes/bon-de-livraison.md`) § 3) : ce que le
    * colisage a figé au signalement en vigueur ; `null` = aucun manque signalé.
    */
   readonly shortfall: AdminOrderShortfall | null;
@@ -68,7 +68,7 @@ export interface AdminOrderShortfall {
 /**
  * Ce que devient le reste d'un départ incomplet. `abandoned` seul : « à
  * relivrer » arrive avec le reliquat (E7, plan
- * `documentation/commandes/plan-e6-le-depart-incomplet.md` § 13).
+ * plan E6 (`documentation/commandes/bon-de-livraison.md`) § 13).
  */
 export const shortfallRemainderSchema = z.literal("abandoned");
 export type ShortfallRemainder = z.infer<typeof shortfallRemainderSchema>;
@@ -79,7 +79,7 @@ export interface AdminOrderShortfallDecision {
   readonly remainder: ShortfallRemainder;
   /**
    * **Le client prévenu** (lot E6d,
-   * `documentation/commandes/plan-e6d-ecrire-au-client.md`) — `null` tant que
+   * plan E6d (`documentation/commandes/bon-de-livraison.md`)) — `null` tant que
    * personne ne lui a écrit. Une fois par décision : « Client prévenu le … par … ».
    */
   readonly customerNotice: AdminShortfallCustomerNotice | null;

@@ -21,7 +21,7 @@ export const RECORD_ORDER_SHORTFALL_DECIDED = "b2b.growth.record-order-shortfall
 /**
  * Abonné du journal : `order.shortfall_decided` → **le témoin d'un départ
  * incomplet décidé** (plan
- * `documentation/commandes/plan-e6c2-la-facture-lit-les-montants-facturables.md`
+ * plan E6c2 (`documentation/commandes/bon-de-livraison.md`)
  * § 5). Le sujet est le client ; la charge dit qui a décidé (la fiche staff,
  * sous son nom du moment), ce qui part, et ce que devient le reste. Visible
  * dans l'historique du détail staff, qui lit le journal par `orderId`.

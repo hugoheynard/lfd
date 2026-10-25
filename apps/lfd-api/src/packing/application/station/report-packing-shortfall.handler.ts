@@ -10,7 +10,7 @@ import { ReportPackingShortfallCommand } from "./report-packing-shortfall.comman
 
 /**
  * **« Il manque »** — le colisage signale qu'une commande ne se remplira pas
- * entièrement (lot E6a, `commandes/plan-e6-le-depart-incomplet.md` § 3).
+ * entièrement (lot E6a, plan E6 (`documentation/commandes/bon-de-livraison.md`) § 3).
  *
  * Le bac verrouillé, l'agrégat fige ce qui est au bac et retient l'instant ;
  * `packing.shortfall_reported` part dans la même transaction. Un second

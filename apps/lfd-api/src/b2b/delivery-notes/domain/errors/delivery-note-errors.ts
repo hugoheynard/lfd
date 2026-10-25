@@ -6,7 +6,7 @@ import {
 
 /**
  * Les refus du **bon de livraison** (plan
- * `documentation/commandes/plan-e1-bon-de-livraison-prevu.md`).
+ * plan E1 (`documentation/commandes/bon-de-livraison.md`)).
  *
  * En E1, personne ne lit ni ne pilote un BL : ces refus ne partent que d'un
  * abonné (l'arrêt du plan) ou de l'annulation d'une commande. Leur message est

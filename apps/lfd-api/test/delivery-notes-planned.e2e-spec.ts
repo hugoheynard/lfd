@@ -1,6 +1,6 @@
 /**
  * E2E du **bon de livraison prévu** (plan
- * `documentation/commandes/plan-e1-bon-de-livraison-prevu.md`, lot E1).
+ * plan E1 (`documentation/commandes/bon-de-livraison.md`), lot E1).
  *
  * Ce que seul le vrai Postgres prouve : que le BL-1 naît dans la transaction
  * de l'abonné de l'arrêt, sur les seules commandes que cet arrêt a confirmées ;

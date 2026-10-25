@@ -35,7 +35,7 @@ type Verdict = "close" | "correct" | "frozen" | "fine" | "unsettled";
 
 /**
  * **Le solde de la commande, écrit par les bons de livraison** (lot E6c1,
- * plan `documentation/commandes/plan-e6-le-depart-incomplet.md` § 12.3 et
+ * plan E6 (`documentation/commandes/bon-de-livraison.md`) § 12.3 et
  * § 13) : les deux seuls écrivains d'`OrderBilling` — le suivi à la remise
  * ({@link closeLocked}, la commande déjà verrouillée par la remise), et le
  * réconciliateur pour l'existant ({@link reconcile}, chaque écriture dans sa

@@ -17,7 +17,7 @@ import { PrismaShortfallNoticeRepository } from "./infrastructure/prisma-shortfa
 
 /**
  * Les providers des lots E6b et E6c1 (plan
- * `documentation/commandes/plan-e6-le-depart-incomplet.md`) : la décision du
+ * plan E6 (`documentation/commandes/bon-de-livraison.md`)) : la décision du
  * départ incomplet, la décision comme entrée du BL, et le solde de la
  * commande — et, lot E6d, « Écrire au client ». À part du module, qui dépasse déjà la taille d'un fichier. Le
  * guichet du colisage (`ShortfallDesk`) vient de `PackingFeedModule`.

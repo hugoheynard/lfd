@@ -37,7 +37,7 @@ import {
 
 /**
  * **Le bon de livraison en PDF** (plan
- * `documentation/commandes/plan-e5a-le-bon-de-livraison-imprime.md`, § 2) —
+ * plan E5a (`documentation/commandes/bon-de-livraison.md`), § 2) —
  * un rendu par lecteur imprimable, sur le kit papier du bon de commande.
  *
  * - `renderCarrierNotePdf` : le papier qui voyage avec la marchandise.

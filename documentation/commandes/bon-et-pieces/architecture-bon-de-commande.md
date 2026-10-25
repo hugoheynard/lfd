@@ -22,7 +22,7 @@ dont une même projection serveur sert plusieurs lecteurs.
 depuis le lot E5a (2026-10-24) : le bon de livraison est une pièce à part, née
 à l'arrêt du plan, et imprimée selon le même principe d'audience — transport
 sans montant, client chiffré, équipe
-([`../plan-e5a-le-bon-de-livraison-imprime.md`](../plan-e5a-le-bon-de-livraison-imprime.md)).
+([`../bon-de-livraison.md`](../bon-de-livraison.md), « Les impressions »).
 La confirmation de commande, elle, reste une seule feuille dont le mode d'acheminement
 n'est qu'un champ.
 

@@ -152,7 +152,7 @@ export class PackingSheet {
   }
 
   /**
-   * **« Il manque »** (lot E6a, `commandes/plan-e6-le-depart-incomplet.md` § 3) :
+   * **« Il manque »** (lot E6a, plan E6 (`documentation/commandes/bon-de-livraison.md`) § 3) :
    * fige ce qui est au bac, ligne par ligne. Un second signalement remplace le
    * premier ; le bac reste ouvert, rien d'autre n'est bloqué.
    *

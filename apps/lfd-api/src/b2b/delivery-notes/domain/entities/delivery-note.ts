@@ -100,8 +100,8 @@ const PLANNED: Progress = {
 };
 
 /**
- * **Le bon de livraison** — plans `documentation/commandes/plan-e1-bon-de-livraison-prevu.md`
- * et `plan-e2-rattrapage-des-bons.md`.
+ * **Le bon de livraison** — plans E1 et E2, retirés
+ * (`documentation/commandes/bon-de-livraison.md`).
  *
  * Prévu, il est un **brouillon qui appartient à sa commande** (plan E1, § 6,
  * bloquant 1) : chaque arrêt du plan réécrit ses lignes sur celles de la

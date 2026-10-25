@@ -7,7 +7,7 @@ import { AuthFacade } from '../../auth/auth.facade';
 
 /**
  * Le **bon de livraison chiffré** d'une commande remise, tel que le serveur le
- * fabrique (plan `documentation/commandes/plan-e5a-le-bon-de-livraison-imprime.md`,
+ * fabrique (plan E5a (`documentation/commandes/bon-de-livraison.md`),
  * § 3). Le mur de la commande est appliqué derrière : une commande d'une
  * autre société, ou pas encore remise, rend 404.
  */

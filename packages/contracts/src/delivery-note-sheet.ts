@@ -13,7 +13,7 @@ import {
 
 /**
  * **Le bon de livraison imprimé** — une pièce, trois lecteurs (plan
- * `documentation/commandes/plan-e5a-le-bon-de-livraison-imprime.md`, § 1 ;
+ * plan E5a (`documentation/commandes/bon-de-livraison.md`), § 1 ;
  * plan-cadre `plan-commande-bon-de-livraison-facture.md`, § 10).
  *
  * Chiffré ou non, ce n'est pas un réglage : **c'est le lecteur qui décide**,

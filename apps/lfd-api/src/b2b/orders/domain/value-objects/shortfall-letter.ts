@@ -8,7 +8,7 @@ export const SHORTFALL_LETTER_MAX_LENGTH = 4000;
 
 /**
  * **Le texte que l'équipe envoie au client** après un départ incomplet (plan
- * `documentation/commandes/plan-e6d-ecrire-au-client.md`) : la proposition du
+ * plan E6d (`documentation/commandes/bon-de-livraison.md`)) : la proposition du
  * dictionnaire, relue et corrigée. C'est lui qui part, tel quel.
  *
  * Le contrôleur ne valide que la forme (une chaîne) ; le vide et l'excès

@@ -4,7 +4,7 @@ import type { BillingGap } from "../services/order-billing-closer.js";
 
 /**
  * **Le réconciliateur des bons de livraison** (plan
- * `documentation/commandes/plan-e2-rattrapage-des-bons.md`, § 8.2) : chaque
+ * plan E2 (`documentation/commandes/bon-de-livraison.md`), § 8.2) : chaque
  * commande confirmée, prête, remise ou annulée voit son BL aligné par la même
  * règle que les gestes. Déclenché toutes les heures par le Worker, et à la
  * demande par l'équipe.

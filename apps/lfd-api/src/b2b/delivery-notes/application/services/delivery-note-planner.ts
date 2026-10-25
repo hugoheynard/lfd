@@ -17,7 +17,7 @@ import { DeliveryNoteRepository } from "../../domain/ports/delivery-note.reposit
 
 /**
  * **La prévision du BL à l'arrêt du plan** (plan
- * `documentation/commandes/plan-e1-bon-de-livraison-prevu.md`, § 1 et § 6).
+ * plan E1 (`documentation/commandes/bon-de-livraison.md`), § 1 et § 6).
  *
  * Tourne dans l'unité de travail de l'abonné de l'arrêt, après l'absorption :
  * il ne voit donc que les commandes que CET arrêt vient de confirmer.

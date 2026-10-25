@@ -17,7 +17,7 @@ import { GetShortfallLetterDraftQuery } from "../application/queries/get-shortfa
 
 /**
  * **Le départ incomplet, vu du staff** (lot E6b,
- * `documentation/commandes/plan-e6-le-depart-incomplet.md` § 12.2). À part de
+ * plan E6 (`documentation/commandes/bon-de-livraison.md`) § 12.2). À part de
  * `AdminOrdersController`, qui dépasse déjà la taille d'un fichier.
  */
 @Controller("admin/orders")

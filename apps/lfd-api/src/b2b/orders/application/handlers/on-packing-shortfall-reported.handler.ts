@@ -17,7 +17,7 @@ export const ON_PACKING_SHORTFALL_REPORTED = "b2b.orders.record-shortfall-from-p
 
 /**
  * **Le commerce apprend qu'il manque quelque chose au bac** (lot E6a,
- * `commandes/plan-e6-le-depart-incomplet.md` § 3) : la commande passe
+ * plan E6 (`documentation/commandes/bon-de-livraison.md`) § 3) : la commande passe
  * « décision attendue ». Rien d'autre — ni courriel, ni statut, ni argent.
  */
 @Injectable()

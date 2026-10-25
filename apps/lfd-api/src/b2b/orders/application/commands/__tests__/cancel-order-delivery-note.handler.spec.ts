@@ -24,7 +24,7 @@ import { RecordingRedemption, RETURNED } from "./voucher-doubles.js";
 
 /**
  * L'annulation d'une commande annule son BL prévu, dans sa transaction (plan
- * `documentation/commandes/plan-e1-bon-de-livraison-prevu.md`, § 6, bloquant 2).
+ * plan E1 (`documentation/commandes/bon-de-livraison.md`), § 6, bloquant 2).
  */
 
 /** Recopié dans l'écriture, jamais comparé à l'horloge. */

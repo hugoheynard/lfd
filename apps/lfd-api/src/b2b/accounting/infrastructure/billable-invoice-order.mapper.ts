@@ -34,7 +34,7 @@ export class UnsettledPartialOrderError extends TechnicalError {
 
 /**
  * Ce qu'un bon au compte doit **réellement** (lot E6c2, plan
- * `documentation/commandes/plan-e6c2-la-facture-lit-les-montants-facturables.md`
+ * plan E6c2 (`documentation/commandes/bon-de-livraison.md`)
  * § 0 et § 4) — la couture que lisent la facture du mois, le relevé, le
  * dossier et la constitution d'un lot. La facture CARTE n'en dépend pas : elle
  * part à la remise, avant tout solde, et garde {@link toFrozenInvoiceOrder}.

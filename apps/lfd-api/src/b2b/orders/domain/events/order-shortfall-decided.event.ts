@@ -12,7 +12,7 @@ const REMAINDERS: readonly ShortfallRemainder[] = ["abandoned"];
 
 /**
  * **« Le départ incomplet est décidé »** (plan
- * `documentation/commandes/plan-e6c2-la-facture-lit-les-montants-facturables.md`
+ * plan E6c2 (`documentation/commandes/bon-de-livraison.md`)
  * § 5) — une décision d'argent prise par une personne : la facture lira ce qui
  * part, plus la commande. Écrit dans la boîte d'envoi, dans la transaction de
  * la décision ; le journal en garde le témoin (qui, ce qui part, le reste).

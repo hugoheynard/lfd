@@ -18,7 +18,7 @@ import type { DeliveryNoteTerms, FrozenJson } from "../value-objects/delivery-no
 
 /**
  * **La projection d'un bon de livraison, par lecteur** (plan
- * `documentation/commandes/plan-e5a-le-bon-de-livraison-imprime.md`, § 1).
+ * plan E5a (`documentation/commandes/bon-de-livraison.md`), § 1).
  *
  * Trois fonctions nommées, jamais un aiguilleur `noteOf(note, audience)` : la
  * route qui recevrait l'audience en paramètre laisserait le demandeur choisir

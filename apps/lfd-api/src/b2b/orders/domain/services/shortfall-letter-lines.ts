@@ -14,7 +14,7 @@ export interface ShortfallLetterLines {
 
 /**
  * **Ce qui part et ce qui manque**, par article, depuis le signal décidé (plan
- * `documentation/commandes/plan-e6d-ecrire-au-client.md`) : part ce qui était
+ * plan E6d (`documentation/commandes/bon-de-livraison.md`)) : part ce qui était
  * au bac (la décision n'en fait partir ni plus ni moins), manque la
  * différence avec ce qui était dû. Un article sans nom connu se dit par son
  * SKU plutôt que de disparaître de la lettre.

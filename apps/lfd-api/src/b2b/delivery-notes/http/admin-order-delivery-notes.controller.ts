@@ -18,7 +18,7 @@ import type { DeliveryNotePdf } from "../application/services/delivery-note-docu
 
 /**
  * **Les bons de livraison d'une commande, vus de l'équipe** (plan
- * `documentation/commandes/plan-e5a-le-bon-de-livraison-imprime.md`, § 3) :
+ * plan E5a (`documentation/commandes/bon-de-livraison.md`), § 3) :
  * la liste dans la fiche commande, le BL de transport à imprimer, le BL
  * chiffré à télécharger.
  *

@@ -16,7 +16,7 @@ export interface DeliveryNoteOrderProgress extends DeliveryNoteOrder {
 
 /**
  * **Où en est une commande, vu du BL qui la suit** (plan
- * `documentation/commandes/plan-e2-rattrapage-des-bons.md`, § 8.3) — port de
+ * plan E2 (`documentation/commandes/bon-de-livraison.md`), § 8.3) — port de
  * lecture déclaré par les commandes, implémenté dans `b2b/orders/infrastructure/`.
  *
  * Lu par les gestes, dans l'unité de travail de l'appelant, APRÈS l'écriture

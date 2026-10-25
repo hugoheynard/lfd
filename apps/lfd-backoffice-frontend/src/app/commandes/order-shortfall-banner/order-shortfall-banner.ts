@@ -13,7 +13,7 @@ interface ShortLine {
 
 /**
  * **Le bandeau du manque signalé** (lot E6a,
- * `documentation/commandes/plan-e6-le-depart-incomplet.md` § 3) : le colisage
+ * plan E6 (`documentation/commandes/bon-de-livraison.md`) § 3) : le colisage
  * a signalé qu'il manque des pièces, et la commande attend une décision.
  * Lecture seule ; la décision se prend juste dessous
  * (`app-order-shortfall-decision`, E6b), qui la dit une fois prise. Rien quand

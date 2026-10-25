@@ -41,7 +41,7 @@ export interface AdminOrderRow {
   readonly offPlan: boolean;
   /**
    * **Manque signalé — décision attendue** (lot E6a,
-   * `commandes/plan-e6-le-depart-incomplet.md` § 3) : l'instant ISO du
+   * plan E6 (`documentation/commandes/bon-de-livraison.md`) § 3) : l'instant ISO du
    * signalement en vigueur au colisage, `null` = aucun.
    */
   readonly shortfallReportedAt: string | null;

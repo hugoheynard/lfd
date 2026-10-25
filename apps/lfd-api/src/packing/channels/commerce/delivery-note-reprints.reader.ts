@@ -1,6 +1,6 @@
 /**
  * **« Le bon de livraison a changé depuis son impression »**, vu du poste de
- * colisage (plan `documentation/commandes/plan-e6-le-depart-incomplet.md`,
+ * colisage (plan E6 (`documentation/commandes/bon-de-livraison.md`),
  * § 14) — DÉCLARÉ par le colisage, IMPLÉMENTÉ par le commerce, qui tient les
  * BL : le colisage ne lit jamais leurs tables.
  */

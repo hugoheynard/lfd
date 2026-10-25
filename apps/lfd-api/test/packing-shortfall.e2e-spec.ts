@@ -1,6 +1,6 @@
 /**
  * **« Il manque » — du colisage à la commande** (lot E6a,
- * `documentation/commandes/plan-e6-le-depart-incomplet.md` § 3).
+ * plan E6 (`documentation/commandes/bon-de-livraison.md`) § 3).
  *
  * Ce que seul le vrai Postgres prouve : le fait part avec le geste, l'abonné
  * du commerce pose le manque sur la commande, un second signalement le

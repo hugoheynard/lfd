@@ -155,7 +155,7 @@ export interface B2bMails {
   /**
    * **« Votre commande part incomplète »**, écrit à la main par l'équipe
    * après la décision du départ (plan
-   * `documentation/commandes/plan-e6d-ecrire-au-client.md`). Jamais envoyé par
+   * plan E6d (`documentation/commandes/bon-de-livraison.md`)). Jamais envoyé par
    * un abonné. Destinataire : le client. Cf. `order-shortfall-mail.ts`.
    */
   "customer.order-shortfall": OrderShortfallMailData;

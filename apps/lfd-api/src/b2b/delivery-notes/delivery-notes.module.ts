@@ -28,7 +28,7 @@ import { OrderBillingCloser } from "./application/services/order-billing-closer.
 
 /**
  * **Les bons de livraison** — plan
- * `documentation/commandes/plan-e1-bon-de-livraison-prevu.md`.
+ * plan E1 (`documentation/commandes/bon-de-livraison.md`).
  *
  * Le BL prévu naît à l'arrêt du plan et s'annule avec sa commande (E1) ;
  * depuis E5a, il s'imprime — transport et chiffré — depuis la fiche commande,

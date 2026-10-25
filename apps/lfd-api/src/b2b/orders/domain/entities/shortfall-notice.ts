@@ -11,7 +11,7 @@ export interface ShortfallNoticeSnapshot {
 
 /**
  * **Le client prévenu du départ incomplet** (plan
- * `documentation/commandes/plan-e6d-ecrire-au-client.md`, § 1) — la part de
+ * plan E6d (`documentation/commandes/bon-de-livraison.md`), § 1) — la part de
  * la décision que le geste « Écrire au client » écrit.
  *
  * Son invariant : **une fois par décision**. L'instant et l'auteur vont

@@ -8,11 +8,11 @@ import { DeliveryNoteReprintsReader } from "../packing/channels/commerce/index.j
 
 /**
  * Le fil qui relie **la commande à son bon de livraison** (plan
- * `documentation/commandes/plan-e1-bon-de-livraison-prevu.md`).
+ * plan E1 (`documentation/commandes/bon-de-livraison.md`)).
  *
  * La commande déclare ce dont elle a besoin — prévoir le BL à l'arrêt du
  * plan, le préparer, le remettre, l'annuler avec elle : UN port,
- * `DeliveryNoteFollowing` (plan `plan-e2-rattrapage-des-bons.md`, § 8.3) — et
+ * `DeliveryNoteFollowing` (plan E2 (`documentation/commandes/bon-de-livraison.md`), § 8.3) — et
  * les bons de livraison y répondent. Le câblage
  * vit ici pour la même raison que `LoyaltyVoucherModule` : `DeliveryNotesModule`
  * importe `OrdersModule` pour lire la commande, et l'import inverse ferait un

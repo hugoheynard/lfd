@@ -313,7 +313,7 @@ model Order {
   readyAt DateTime? @map("ready_at")
   readyBy String?   @map("ready_by")
 
-  // Le MANQUE signalé au colisage (lot E6a, plan-e6-le-depart-incomplet.md § 3) :
+  // Le MANQUE signalé au colisage (lot E6a, plan E6 (`documentation/commandes/bon-de-livraison.md`) § 3) :
   // le snapshot du fait `packing.shortfall_reported`, jamais une lecture du
   // colisage. Non nul = « décision attendue ». Les quantités au bac par article
   // (jsonb `[{ sku, due, packed }]`), remplacées d'un bloc. `shortfallClearedAt`
@@ -325,7 +325,7 @@ model Order {
   shortfallDecidedAt  DateTime?               @map("shortfall_decided_at") @db.Timestamptz(6)
   shortfallDecision   OrderShortfallDecision?
 
-  // Les MONTANTS FACTURABLES, en ombre (E6c1, plan-e6-le-depart-incomplet.md
+  // Les MONTANTS FACTURABLES, en ombre (E6c1, plan E6 (`documentation/commandes/bon-de-livraison.md`)
   // § 12.3 et § 13) : posés au solde de la commande par `OrderBilling.closeBilling`
   // — la recopie des totaux pour une commande à un BL complet, la somme des BL
   // remis sinon. Aucun lecteur de facture ne les lit encore (E6c2). Les sept
@@ -419,7 +419,7 @@ model Order {
   revisions          OrderRevisionEntry[]
   /// L'issue de sa facture carte (E5a), s'il y en a une.
   cardInvoiceOutcome CardInvoiceOutcome?
-  /// Ses bons de livraison (plan E1, `commandes/plan-e1-bon-de-livraison-prevu.md`).
+  /// Ses bons de livraison (plan E1, plan E1 (`documentation/commandes/bon-de-livraison.md`)).
   deliveryNotes      DeliveryNote[]
 
   @@index([companyId])
@@ -450,7 +450,7 @@ model Order {
 /// `orders.placed_by_staff_id` : une pièce de l'historique ne doit ni
 /// disparaître ni bloquer le jour où une fiche ou un compte s'en va.
 /// **La décision du départ incomplet** (E6b,
-/// `documentation/commandes/plan-e6-le-depart-incomplet.md` § 12-13) : une par
+/// plan E6 (`documentation/commandes/bon-de-livraison.md`) § 12-13) : une par
 /// commande, définitive. Ce qui part — les quantités au bac du signal — et ce
 /// que devient le reste. `abandoned` seulement : `to_redeliver` arrive avec E7.
 model OrderShortfallDecision {

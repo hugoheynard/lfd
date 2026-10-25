@@ -9,7 +9,7 @@ import {
 
 /**
  * **Le réconciliateur des BL, à la demande** (plan
- * `documentation/commandes/plan-e2-rattrapage-des-bons.md`, § 8.2 et § 8.4) :
+ * plan E2 (`documentation/commandes/bon-de-livraison.md`), § 8.2 et § 8.4) :
  * le passage que le runbook fait lancer après le déploiement d'E2, et dont on
  * lit le compte rendu.
  *

@@ -1,7 +1,7 @@
 /**
  * **Le bon de livraison suit la commande** (plans
- * `documentation/commandes/plan-e1-bon-de-livraison-prevu.md` et
- * `plan-e2-rattrapage-des-bons.md`, § 8.3) — prévoir à l'arrêt du plan,
+ * plan E1 (`documentation/commandes/bon-de-livraison.md`) et
+ * plan E2 (`documentation/commandes/bon-de-livraison.md`), § 8.3) — prévoir à l'arrêt du plan,
  * préparer au bac fermé, remettre avec la commande, annuler avec elle.
  *
  * Déclaré par les commandes, implémenté par le contexte des bons de livraison

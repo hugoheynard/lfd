@@ -10,7 +10,7 @@ import {
 
 /**
  * Endpoint **machine** du réconciliateur des bons de livraison (plan
- * `documentation/commandes/plan-e2-rattrapage-des-bons.md`, § 8.2). Même
+ * plan E2 (`documentation/commandes/bon-de-livraison.md`), § 8.2). Même
  * porte que `admin/outbox/sweep` : le `RecomputeGuard` et son jeton, présentés
  * par le Worker sur son cron horaire (`container/worker.ts`). Idempotent.
  */

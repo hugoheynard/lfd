@@ -11,7 +11,7 @@ import { TableActors, TableCustomers } from "./order-fact-doubles.js";
 
 /**
  * `order.shortfall_decided` au journal (plan
- * `documentation/commandes/plan-e6c2-la-facture-lit-les-montants-facturables.md`
+ * plan E6c2 (`documentation/commandes/bon-de-livraison.md`)
  * § 5). La charge écrite est passée au catalogue des faits : une clé que le
  * contrat refuse serait une ligne illisible pour le back-office.
  */

@@ -7,7 +7,7 @@ import { NotifyService } from '../../../notify.service';
 
 /**
  * **« Le bon de livraison a changé depuis son impression »**, au poste de
- * colisage (plan `documentation/commandes/plan-e6-le-depart-incomplet.md`,
+ * colisage (plan E6 (`documentation/commandes/bon-de-livraison.md`),
  * § 14) : le serveur le dit (`deliveryNoteReprintNeeded`), l'écran l'affiche.
  *
  * Le bouton d'impression passe par la route des BL de la fiche commande, sous

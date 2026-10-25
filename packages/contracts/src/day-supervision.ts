@@ -92,7 +92,7 @@ export type LateOrder = z.infer<typeof lateOrderSchema>;
 
 /**
  * Une commande dont le colisage a signalé un manque et qui attend une décision
- * (lot E6a, `commandes/plan-e6-le-depart-incomplet.md` § 3) — « Manque
+ * (lot E6a, plan E6 (`documentation/commandes/bon-de-livraison.md`) § 3) — « Manque
  * signalé — décision attendue ». Lecture seule : la décision se prend sur la
  * fiche commande (E6b). `reportedAt` : l'instant du signalement en vigueur, ISO.
  */

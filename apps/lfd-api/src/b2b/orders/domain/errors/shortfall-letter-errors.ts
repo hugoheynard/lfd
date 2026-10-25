@@ -6,7 +6,7 @@ import {
 
 /**
  * Les refus de **« Écrire au client »** après un départ incomplet (plan
- * `documentation/commandes/plan-e6d-ecrire-au-client.md`). Lus par l'équipe :
+ * plan E6d (`documentation/commandes/bon-de-livraison.md`)). Lus par l'équipe :
  * chacun nomme le cas et le geste de sortie, et aucun ne porte l'adresse.
  */
 

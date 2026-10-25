@@ -470,7 +470,7 @@ async function triggerVitrineSweep(env: Env): Promise<void> {
  * Réveille le container et passe le réconciliateur des bons de livraison :
  * chaque commande confirmée, prête, remise ou annulée voit son BL aligné, et
  * les écarts non réparables sont comptés (plan
- * `documentation/commandes/plan-e2-rattrapage-des-bons.md`, § 8.2). Sur le
+ * plan E2 (`documentation/commandes/bon-de-livraison.md`), § 8.2). Sur le
  * cron HORAIRE, pas sur celui de rafraîchissement : il parcourt toutes les
  * commandes, et un écart n'a rien d'urgent — personne ne lit encore le BL.
  * Même porte et même jeton que la boîte d'envoi ; idempotent.

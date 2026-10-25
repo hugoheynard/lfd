@@ -5,7 +5,7 @@ import { fill, mailCopyOf } from "./copy/mail-copy.js";
 
 /**
  * **« Écrire au client » après un départ incomplet** (plan
- * `documentation/commandes/plan-e6d-ecrire-au-client.md`, § 1). Destinataire :
+ * plan E6d (`documentation/commandes/bon-de-livraison.md`), § 1). Destinataire :
  * le client qui a passé la commande, à l'adresse de son compte.
  *
  * Le corps est le texte que l'équipe a relu et corrigé — une DONNÉE, pas un

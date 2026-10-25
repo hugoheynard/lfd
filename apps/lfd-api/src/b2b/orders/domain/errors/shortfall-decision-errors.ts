@@ -2,7 +2,7 @@ import { BusinessError } from "../../../../platform/shared/errors/app-error.js";
 
 /**
  * Les refus de **« Décider du départ »** (lot E6b,
- * `documentation/commandes/plan-e6-le-depart-incomplet.md` § 12.2 et § 13).
+ * plan E6 (`documentation/commandes/bon-de-livraison.md`) § 12.2 et § 13).
  * Lus par l'équipe au téléphone : chacun nomme le cas et le geste de sortie.
  */
 

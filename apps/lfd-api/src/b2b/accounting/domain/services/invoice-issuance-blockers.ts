@@ -171,7 +171,7 @@ export interface InvoiceOrderFacts {
 
 /**
  * **Un bon remis mais pas soldé ne se facture pas** (plan
- * `documentation/commandes/plan-e6c2-la-facture-lit-les-montants-facturables.md`,
+ * plan E6c2 (`documentation/commandes/bon-de-livraison.md`),
  * § 1) : la facture lit ce qui est parti (`billable_*`), et tant que le solde
  * n'est pas posé, personne ne sait ce que le bon doit. Il arrête la facture de
  * son payeur, nommé, plutôt que d'en disparaître en silence.

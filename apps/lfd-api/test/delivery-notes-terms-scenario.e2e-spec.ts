@@ -1,6 +1,6 @@
 /**
  * E2E du **contrôle des totaux du BL sur le scénario de démonstration** (plan
- * `documentation/commandes/plan-e4a-totaux-du-bon.md`, § 2 et § 3) : le jeu
+ * plan E4a (`documentation/commandes/bon-de-livraison.md`), § 2 et § 3) : le jeu
  * de démonstration joué jusqu'aux tournées chargées, le contrôle du
  * réconciliateur rend zéro écart. C'est la condition qu'E4b exigera avant
  * que la facture lise le BL.

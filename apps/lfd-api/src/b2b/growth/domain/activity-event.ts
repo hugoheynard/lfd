@@ -74,7 +74,7 @@ export const ACTIVITY_TYPES = {
   orderRevised: "order.revised",
   /**
    * L'équipe a **décidé d'un départ incomplet** (plan
-   * `plan-e6c2-la-facture-lit-les-montants-facturables.md`, § 5) : la facture
+   * plan E6c2 (`documentation/commandes/bon-de-livraison.md`), § 5) : la facture
    * lira ce qui part. Un fait de cycle de vie : aucun score ne le lit au
    * 2026-10-25.
    */

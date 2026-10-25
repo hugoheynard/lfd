@@ -1,6 +1,6 @@
 /**
  * **La facture et le prélèvement lisent les montants facturables** (lot E6c2,
- * `documentation/commandes/plan-e6c2-la-facture-lit-les-montants-facturables.md`).
+ * plan E6c2 (`documentation/commandes/bon-de-livraison.md`)).
  *
  * Ce que seul le vrai Postgres prouve : chaque lecteur de la comptabilité,
  * devant une commande dont le BL partiel diffère VOLONTAIREMENT du total

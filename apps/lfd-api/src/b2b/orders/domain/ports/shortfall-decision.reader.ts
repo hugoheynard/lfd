@@ -22,7 +22,7 @@ export interface DecidedDeparture {
 
 /**
  * **La décision comme entrée du bon de livraison** (plan
- * `documentation/commandes/plan-e6-le-depart-incomplet.md` § 13, bloquant 1) —
+ * plan E6 (`documentation/commandes/bon-de-livraison.md`) § 13, bloquant 1) —
  * port de lecture déclaré par les commandes, lu par les trois écrivains du BL
  * (le suivi, le réconciliateur, la prévision) : avec une décision, ils
  * réécrivent le BL sur ces quantités, jamais sur la commande entière.

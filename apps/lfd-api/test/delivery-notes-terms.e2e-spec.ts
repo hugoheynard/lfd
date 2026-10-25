@@ -1,6 +1,6 @@
 /**
  * E2E des **totaux du bon de livraison** (plan
- * `documentation/commandes/plan-e4a-totaux-du-bon.md`, § 3 et § 4).
+ * plan E4a (`documentation/commandes/bon-de-livraison.md`), § 3 et § 4).
  *
  * Ce que seul le vrai Postgres prouve : que l'en-tête recopié à l'arrêt du
  * plan est celui de la commande, colonne par colonne, JSON compris ; que la
