@@ -248,6 +248,16 @@ faits antérieurs). Lue au tirage par le fournil via
 `ResupplyPrintColorsReader` (`production/channels/commerce/`), que
 `SiteResupplyPrintColorsReader` implémente.
 
+**La couleur du transfert** (Hugo, 2026-10-25) : une sixième colonne,
+`transfer_color`, même forme et même `CHECK` (migration `20261026010000`),
+tenue par `SiteColors.transfer`, saisie sous « Transfert » d'un site servi par
+transfert. Elle borde l'encadré qui regroupe ses retraits au colisage ;
+`NULL` = la couleur de livraison du site de départ (pro, sinon particulier),
+sinon neutre (`transferColorOf`). Facultative dans le `PUT …/couleurs` comme
+la teinte du réassort, portée par le fait (`transferColor`) et par la palette.
+Dans l'encadré, chaque commande garde la barre et le libellé de SON retrait
+(« Retrait particulier Le Village »).
+
 Qui les **lit** (depuis le 2026-10-13, lots L1a/L1b/L5 du plan du tri et des
 couleurs, non commités à l'écriture) : la palette en lecture seule
 `GET admin/sites/palette` (colisage et livraison, sans `lfc_site_settings`),

@@ -83,15 +83,16 @@
 }
 
 /* ── L'ENCADRÉ DU TRANSFERT (Hugo, 2026-10-14, gardé le 2026-10-25)
-   Le seul regroupement qui reste : un site servi par transfert, NEUTRE — il
-   mêle des clientèles —, ses commandes en retrait sous sa bordure, chacune
-   avec sa barre. */
+   Le seul regroupement qui reste : un site servi par transfert, sa bordure à
+   la couleur du transfert (sinon de la livraison, posée en
+   `--co-frame-color`), ses commandes en retrait, chacune avec la barre de
+   son cas. */
 .co-transfer {
   display: flex;
   flex: none;
   flex-direction: column;
   padding-left: var(--fold-space-sm);
-  border-left: 6px solid var(--fold-color-border);
+  border-left: 6px solid var(--co-frame-color, var(--fold-color-border));
 }
 
 .co-transfer-title {

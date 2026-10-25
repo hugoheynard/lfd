@@ -27,9 +27,16 @@
     @for (item of items(); track item.key) {
       @if (item.kind === 'transfer') {
         <!-- Le site servi par transfert (Hugo, 2026-10-14, gardé le 2026-10-25) :
-               un encadré NEUTRE — ses retraits partent ensemble —, rangé à
-               l'heure de sa commande la plus urgente. Chacune garde sa barre. -->
-        <section class="co-transfer" [attr.aria-label]="item.title" [attr.data-frame]="item.key">
+               ses retraits partent ensemble, rangés à l'heure du plus urgent.
+               L'encadré porte la couleur du transfert (sinon de la livraison) ;
+               chaque commande, la barre et le libellé de SON cas. -->
+        <section
+          class="co-transfer"
+          [style.--co-frame-color]="item.color"
+          [attr.aria-label]="item.title"
+          [attr.data-frame]="item.key"
+          [attr.data-frame-color]="item.color ?? 'neutral'"
+        >
           <p class="co-transfer-title">{{ item.title }}</p>
           @for (order of item.orders; track order.key) {
             <ng-container *ngTemplateOutlet="bac; context: { $implicit: order }" />

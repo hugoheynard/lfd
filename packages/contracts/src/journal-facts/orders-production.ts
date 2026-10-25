@@ -514,6 +514,8 @@ export const ORDERS_PRODUCTION_FACTS = {
       deliveryColorB2c: z.string().nullable(),
       /** La teinte du réassort (Hugo, 2026-10-22) ; absente des faits antérieurs. */
       resupplyColor: z.string().nullable().optional(),
+      /** La couleur du transfert (Hugo, 2026-10-25) ; absente des faits antérieurs. */
+      transferColor: z.string().nullable().optional(),
       removed: z
         .array(
           z.enum([
@@ -522,6 +524,7 @@ export const ORDERS_PRODUCTION_FACTS = {
             "deliveryColorB2b",
             "deliveryColorB2c",
             "resupplyColor",
+            "transferColor",
           ]),
         )
         .optional(),

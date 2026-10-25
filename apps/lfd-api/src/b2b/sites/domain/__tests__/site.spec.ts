@@ -41,6 +41,7 @@ const NO_COLORS: SiteColors = {
   deliveryB2b: null,
   deliveryB2c: null,
   resupply: null,
+  transfer: null,
 };
 
 /** Un instant quelconque : seul l'archivage le lit, sans le comparer à l'horloge. */

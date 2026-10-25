@@ -83,6 +83,15 @@
         [value]="draft().transferMode"
         (selectionChange)="set('transferMode', $event)"
       />
+      <!-- La couleur de l'encadré du transfert au colisage (Hugo, 2026-10-25) :
+           vide, il prend la couleur de livraison du départ. -->
+      <app-site-color-fields
+        [slots]="transferSlots"
+        [draft]="colors()"
+        [issues]="colorIssues()"
+        [readOnly]="readOnly()"
+        (colorChange)="setColor($event)"
+      />
       @if (gpsPlace() === 'transfer') {
         <ng-container [ngTemplateOutlet]="gpsFields" />
       }

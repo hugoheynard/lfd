@@ -72,6 +72,12 @@ export const siteColorsPayloadSchema = z.object({
    * avant lui ne doit pas l'effacer. `null` la retire.
    */
   resupplyColor: siteColorSchema.nullable().optional(),
+  /**
+   * La couleur du transfert vers ce site (Hugo, 2026-10-25) : la bordure de
+   * l'encadré de ses retraits au colisage. **Absent = inchangé**, comme
+   * `resupplyColor`. `null` = la couleur de livraison.
+   */
+  transferColor: siteColorSchema.nullable().optional(),
 });
 export type SiteColorsPayload = z.infer<typeof siteColorsPayloadSchema>;
 
@@ -94,6 +100,8 @@ export interface StoredSiteView
   readonly eatIn: boolean;
   /** Toujours rendu : `null` = aucune teinte, le réassort reste gris. */
   readonly resupplyColor: string | null;
+  /** Toujours rendu : `null` = la couleur de livraison. */
+  readonly transferColor: string | null;
   /** Toujours rendu : `null` = pas saisi (le trajet ne se calcule pas sans lui). */
   readonly gps: GpsPoint | null;
   /** ISO 8601, ou `null` : un site archivé n'est plus proposé. */
@@ -114,6 +122,8 @@ export interface StoredSiteView
 export interface SitePaletteEntryView extends SiteColorsPayload {
   /** Toujours rendu : `null` = aucune teinte de réassort. */
   readonly resupplyColor: string | null;
+  /** Toujours rendu : `null` = l'encadré du transfert prend la couleur de livraison. */
+  readonly transferColor: string | null;
   readonly id: string;
   readonly label: string;
   readonly supply: SiteSupply;

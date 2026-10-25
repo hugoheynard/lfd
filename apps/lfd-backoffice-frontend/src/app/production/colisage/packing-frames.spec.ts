@@ -10,6 +10,7 @@ const NO_COLORS = {
   deliveryColorB2b: null,
   deliveryColorB2c: null,
   resupplyColor: null,
+  transferColor: null,
 } as const;
 
 const PALETTE: readonly SitePaletteEntryView[] = [
@@ -157,6 +158,32 @@ describe('packingFrames — une liste par urgence, la couleur en barre (Hugo, 20
     expect(shape(items)).toEqual([['Transfert Val Village', ['T1', 'T2']], 'L', 'M']);
     const transfer = items[0];
     expect(transfer?.kind === 'transfer' && transfer.orders[0]?.color).toBe('#fdd835');
+  });
+
+  it('🔴 dans l’encadré, chaque commande dit SON cas — « Retrait … », pas « Transfert … » (2026-10-25)', () => {
+    const [transfer] = packingFrames(
+      [entry('T1', pickup('vv')), entry('T2', pickup('vv', { clientele: 'pro' }))],
+      PALETTE,
+    );
+
+    expect(transfer?.kind === 'transfer' && transfer.orders.map((o) => o.category)).toEqual([
+      'Retrait particulier Val Village',
+      'Retrait pro Val Village',
+    ]);
+  });
+
+  it('🔴 l’encadré porte la couleur du transfert, sinon celle de la livraison (2026-10-25)', () => {
+    const [fallback] = packingFrames([entry('T', pickup('vv'))], PALETTE);
+    const painted = PALETTE.map((site) =>
+      site.id === 'vv' ? { ...site, transferColor: '#7c3aed' } : site,
+    );
+    const [own] = packingFrames([entry('T', pickup('vv'))], painted);
+    const bare = PALETTE.map((site) => ({ ...site, deliveryColorB2b: null }));
+    const [neutral] = packingFrames([entry('T', pickup('vv'))], bare);
+
+    expect(fallback?.kind === 'transfer' && fallback.color).toBe('#0d47a1');
+    expect(own?.kind === 'transfer' && own.color).toBe('#7c3aed');
+    expect(neutral?.kind === 'transfer' && neutral.color).toBeNull();
   });
 
   it('à heure égale, l’encadré du transfert passe devant', () => {

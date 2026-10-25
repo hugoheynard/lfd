@@ -334,6 +334,7 @@ describe("SetSiteColorsHandler", () => {
           deliveryB2b: null,
           deliveryB2c: null,
           resupply: null,
+          transfer: null,
         },
       }),
     );
@@ -356,6 +357,7 @@ describe("SetSiteColorsHandler — la teinte du réassort (Hugo, 2026-10-22)", (
           deliveryB2b: null,
           deliveryB2c: null,
           resupply: SiteColor.of("#26a69a"),
+          transfer: null,
         },
       }),
     );
@@ -456,5 +458,40 @@ describe("RemovePickupAddressHandler — supprimer archive", () => {
     ).execute(new RemovePickupAddressCommand("site_bakery"));
 
     expect(sites.stateOf("site_bakery")?.archivedAt).toBe(clock.now());
+  });
+});
+
+describe("SetSiteColorsHandler — la couleur du transfert (Hugo, 2026-10-25)", () => {
+  async function paint(
+    sites: InMemorySites,
+    transferColor?: string | null,
+  ): Promise<RecordingPublisher> {
+    const events = new RecordingPublisher();
+    const payload = transferColor === undefined ? NO_COLORS : { ...NO_COLORS, transferColor };
+    await new SetSiteColorsHandler(sites, events, new DirectUnitOfWork()).execute(
+      new SetSiteColorsCommand("site_village", payload),
+    );
+    return events;
+  }
+
+  it("enregistre la couleur du transfert en minuscules, et le journal la porte", async () => {
+    const sites = twoSites();
+    const events = await paint(sites, "#7C3AED");
+    expect(sites.stateOf("site_village")?.colors.transfer?.hex).toBe("#7c3aed");
+    expect(events.traced[0]?.journalFact().payload).toMatchObject({ transferColor: "#7c3aed" });
+  });
+
+  it("absente du payload, elle reste ; `null` la retire et le journal le dit", async () => {
+    const sites = twoSites();
+    await paint(sites, "#7c3aed");
+    await paint(sites);
+    expect(sites.stateOf("site_village")?.colors.transfer?.hex).toBe("#7c3aed");
+    const events = await paint(sites, null);
+    expect(sites.stateOf("site_village")?.colors.transfer).toBeNull();
+    expect(events.traced[0]?.journalFact().payload).toMatchObject({ removed: ["transferColor"] });
+  });
+
+  it("refuse une couleur qui n'est pas #rrggbb", async () => {
+    await expect(paint(twoSites(), "violet")).rejects.toThrow(SiteColorFormatError);
   });
 });

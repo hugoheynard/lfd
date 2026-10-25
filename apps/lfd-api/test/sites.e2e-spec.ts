@@ -57,6 +57,7 @@ const NO_COLORS = {
   deliveryColorB2b: null,
   deliveryColorB2c: null,
   resupplyColor: null,
+  transferColor: null,
 } as const;
 
 async function create(label: string): Promise<string> {
@@ -231,6 +232,28 @@ describe("admin/sites — couleurs libres", () => {
 
     await staff().put(`/admin/sites/${id}/couleurs`).send(NO_COLORS).expect(204);
     expect((await site(id)).resupplyColor).toBeNull();
+  });
+
+  it("règle la couleur du transfert, et un payload sans elle la laisse en place (Hugo, 2026-10-25)", async () => {
+    const id = await create("Val Village");
+    await staff()
+      .put(`/admin/sites/${id}/couleurs`)
+      .send({ ...NO_COLORS, transferColor: "#7C3AED" })
+      .expect(204);
+    expect((await site(id)).transferColor).toBe("#7c3aed");
+
+    const { transferColor: _absent, ...before } = NO_COLORS;
+    await staff()
+      .put(`/admin/sites/${id}/couleurs`)
+      .send({ ...before, pickupColorB2b: "#16a34a" })
+      .expect(204);
+    expect((await site(id)).transferColor).toBe("#7c3aed");
+
+    await staff().put(`/admin/sites/${id}/couleurs`).send(NO_COLORS).expect(204);
+    expect((await site(id)).transferColor).toBeNull();
+    await expect(
+      ctx.prisma.site.update({ where: { id }, data: { transferColor: "violet" } }),
+    ).rejects.toThrow();
   });
 
   it("refuse une teinte de réassort hors `#rrggbb` (400), et la base aussi (CHECK)", async () => {

@@ -46,15 +46,46 @@ const CLIENTELE_WORDS: Readonly<Record<'pro' | 'public', string>> = {
   public: 'particulier',
 };
 
+/**
+ * Comment nommer le retrait d'un site servi par transfert : `named` le dit
+ * « Transfert … » (une liste où rien ne le regroupe) ; `as-pickup` le dit
+ * « Retrait … » comme tout retrait — DANS l'encadré du transfert, qui dit déjà
+ * le transfert (Hugo, 2026-10-25).
+ */
+export type TransferNaming = 'named' | 'as-pickup';
+
 /** La catégorie d'une commande, d'après la palette lue à l'instant. */
 export function logisticsCategoryOf(
   order: LogisticsOrderFacts,
   palette: readonly SitePaletteEntryView[],
+  transferNaming: TransferNaming = 'named',
 ): LogisticsCategory {
   const clientele = order.clientele ?? null;
   return order.fulfillmentMethod === 'delivery'
-    ? deliveryCategory(clientele, palette.find((site) => site.isDeparture) ?? null)
-    : pickupCategory(clientele, palette.find((site) => site.id === order.siteId) ?? null);
+    ? deliveryCategory(clientele, departureOf(palette))
+    : pickupCategory(
+        clientele,
+        palette.find((site) => site.id === order.siteId) ?? null,
+        transferNaming,
+      );
+}
+
+/**
+ * **La couleur de l'encadré d'un site servi par transfert** (Hugo,
+ * 2026-10-25) : sa couleur de transfert si l'admin l'a posée (Réglages ›
+ * Sites), sinon la couleur de livraison du site de départ — pro d'abord, le
+ * transfert roulant avec les tournées pro, puis particulier ; `null` : neutre.
+ */
+export function transferColorOf(
+  site: SitePaletteEntryView,
+  palette: readonly SitePaletteEntryView[],
+): string | null {
+  const departure = departureOf(palette);
+  return site.transferColor ?? departure?.deliveryColorB2b ?? departure?.deliveryColorB2c ?? null;
+}
+
+function departureOf(palette: readonly SitePaletteEntryView[]): SitePaletteEntryView | null {
+  return palette.find((site) => site.isDeparture) ?? null;
 }
 
 function deliveryCategory(
@@ -80,21 +111,20 @@ function deliveryCategory(
 function pickupCategory(
   clientele: 'pro' | 'public' | null,
   site: SitePaletteEntryView | null,
+  transferNaming: TransferNaming,
 ): LogisticsCategory {
   if (site === null) {
     return { key: 'pickup', label: 'Retrait', color: null };
   }
-  const place = site.supply === 'transfer' ? `Transfert ${site.label}` : `Retrait ${site.label}`;
+  const named = site.supply === 'transfer' && transferNaming === 'named';
+  const place = named ? `Transfert ${site.label}` : `Retrait ${site.label}`;
   if (clientele === null) {
     return { key: `pickup:${site.id}`, label: place, color: null };
   }
   const word = CLIENTELE_WORDS[clientele];
   return {
     key: `pickup:${site.id}:${clientele}`,
-    label:
-      site.supply === 'transfer'
-        ? `Transfert ${site.label} · ${word}`
-        : `Retrait ${word} ${site.label}`,
+    label: named ? `Transfert ${site.label} · ${word}` : `Retrait ${word} ${site.label}`,
     color: clientele === 'pro' ? site.pickupColorB2b : site.pickupColorB2c,
   };
 }

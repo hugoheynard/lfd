@@ -41,16 +41,20 @@ export class SetSiteColorsHandler implements ICommandHandler<SetSiteColorsComman
     };
     const resupply = payload.resupplyColor;
     const givenResupply = resupply === undefined ? undefined : colorOf(resupply);
+    const transfer = payload.transferColor;
+    const givenTransfer = transfer === undefined ? undefined : colorOf(transfer);
     await this.uow.run(async () => {
       const site = await this.sites.load(command.siteId);
       if (site === null) {
         throw new PickupAddressNotFoundError(command.siteId);
       }
       const before = site.snapshot().colors;
-      // Absent = inchangé : un onglet ouvert avant la teinte du réassort ne l'efface pas.
+      // Absent = inchangé : un onglet ouvert avant la teinte du réassort, ou
+      // avant la couleur du transfert, ne l'efface pas.
       const colors = {
         ...given,
         resupply: givenResupply === undefined ? before.resupply : givenResupply,
+        transfer: givenTransfer === undefined ? before.transfer : givenTransfer,
       };
       site.paint(colors);
       await this.sites.save(site);

@@ -37,6 +37,7 @@ function site(id: string, overrides: Partial<StoredSiteView> = {}): StoredSiteVi
     deliveryColorB2b: null,
     deliveryColorB2c: null,
     resupplyColor: null,
+    transferColor: null,
     ...overrides,
   };
 }
@@ -70,6 +71,7 @@ const VILLAGE = site("vv", {
   supply: "transfer",
   pickupColorB2c: "#9e9e9e",
   resupplyColor: "#26a69a",
+  transferColor: null,
   archivedAt: "2026-01-01T00:00:00.000Z",
 });
 
@@ -93,6 +95,7 @@ describe("GetSitePaletteHandler — la palette de la logistique (L1a)", () => {
         deliveryColorB2b: "#1e88e5",
         deliveryColorB2c: "#8e24aa",
         resupplyColor: null,
+        transferColor: null,
       },
       {
         id: "vv",
@@ -104,6 +107,7 @@ describe("GetSitePaletteHandler — la palette de la logistique (L1a)", () => {
         deliveryColorB2b: null,
         deliveryColorB2c: null,
         resupplyColor: "#26a69a",
+        transferColor: null,
       },
     ]);
   });

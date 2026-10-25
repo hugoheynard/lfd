@@ -30,6 +30,7 @@ function site(id: string, overrides: Partial<StoredSiteView> = {}): StoredSiteVi
     deliveryColorB2b: null,
     deliveryColorB2c: null,
     resupplyColor: null,
+    transferColor: null,
     ...overrides,
   };
 }

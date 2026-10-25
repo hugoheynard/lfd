@@ -120,6 +120,10 @@ model Site {
   /// La teinte des RÉASSORTS que ce site reçoit (Hugo, 2026-10-22) : elle
   /// peint leur part du camembert du compte à produire. `NULL` = gris.
   resupplyColor    String? @map("resupply_color")
+  /// La couleur du TRANSFERT vers ce site (Hugo, 2026-10-25) : la bordure de
+  /// l'encadré qui regroupe ses retraits au colisage. `NULL` = la couleur de
+  /// livraison du site de départ.
+  transferColor    String? @map("transfer_color")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

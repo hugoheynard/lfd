@@ -1,6 +1,10 @@
 import type { DeliveryPackingRoundView, PackingSheet, SitePaletteEntryView } from '@lfd/contracts';
 
-import { logisticsCategoryOf } from '../../shared/logistics-colors/logistics-category';
+import {
+  logisticsCategoryOf,
+  type TransferNaming,
+  transferColorOf,
+} from '../../shared/logistics-colors/logistics-category';
 import { type PackingEntry, packingGroups } from './packing-rounds';
 
 /**
@@ -49,14 +53,17 @@ export interface PackingReplenishmentItem {
 }
 
 /**
- * L'encadré d'un site servi par transfert. NEUTRE, délibérément : il mêle des
- * clientèles, comme l'arrêt de transfert des tournées ; ses commandes portent
- * chacune leur barre.
+ * L'encadré d'un site servi par transfert (Hugo, 2026-10-25) : SA couleur —
+ * celle du transfert posée en Réglages › Sites, sinon celle de la livraison
+ * ({@link transferColorOf}) ; ses commandes portent chacune la barre et le
+ * libellé de LEUR cas (« Retrait particulier Le Village »), comme hors encadré.
  */
 export interface PackingTransferFrame {
   readonly kind: 'transfer';
   readonly key: string;
   readonly title: string;
+  /** `#rrggbb`, ou `null` : la teinte neutre. */
+  readonly color: string | null;
   readonly orders: readonly PackingOrderItem[];
   readonly replenishment: readonly PackingReplenishmentItem[];
 }
@@ -91,12 +98,13 @@ export function packingFrames(
   const ranked: Ranked[] = [];
   const transfers = new Map<string, { site: SitePaletteEntryView; orders: PackingOrderItem[] }>();
   for (const entry of sorted) {
-    const order = orderItem(entry, palette);
     const site = transferSiteOf(entry, palette);
     if (site === null) {
-      ranked.push({ item: order, due: deadlineOf(entry.sheet) });
+      ranked.push({ item: orderItem(entry, palette, 'named'), due: deadlineOf(entry.sheet) });
       continue;
     }
+    // Dans l'encadré, la commande dit SON cas : l'encadré dit déjà le transfert.
+    const order = orderItem(entry, palette, 'as-pickup');
     const found = transfers.get(site.id);
     if (found === undefined) {
       transfers.set(site.id, { site, orders: [order] });
@@ -117,6 +125,7 @@ export function packingFrames(
       kind: 'transfer',
       key: `transfer:${site.id}`,
       title: `Transfert ${site.label}`,
+      color: transferColorOf(site, palette),
       orders,
       replenishment: replenishments
         .filter((replenishment) => replenishment.siteId === site.id)
@@ -157,8 +166,9 @@ export function sheetsInListOrder(
 function orderItem(
   entry: PackingEntry,
   palette: readonly SitePaletteEntryView[],
+  transferNaming: TransferNaming,
 ): PackingOrderItem {
-  const category = logisticsCategoryOf(entry.sheet, palette);
+  const category = logisticsCategoryOf(entry.sheet, palette, transferNaming);
   return {
     kind: 'order',
     key: entry.sheet.reference,

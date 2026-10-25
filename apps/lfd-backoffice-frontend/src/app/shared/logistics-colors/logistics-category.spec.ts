@@ -1,7 +1,7 @@
 import type { SitePaletteEntryView } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
-import { inkOn, logisticsCategoryOf } from './logistics-category';
+import { inkOn, logisticsCategoryOf, transferColorOf } from './logistics-category';
 
 const NO_COLORS = {
   pickupColorB2b: null,
@@ -9,6 +9,7 @@ const NO_COLORS = {
   deliveryColorB2b: null,
   deliveryColorB2c: null,
   resupplyColor: null,
+  transferColor: null,
 } as const;
 
 const FOURNIL: SitePaletteEntryView = {
@@ -69,6 +70,22 @@ describe('logisticsCategoryOf — la catégorie et la couleur d’une commande (
         PALETTE,
       ),
     ).toMatchObject({ label: 'Transfert Val Village · particulier', color: '#9e9e9e' });
+  });
+
+  it('dans l’encadré du transfert (`as-pickup`), il se dit « Retrait … » comme tout retrait', () => {
+    expect(
+      logisticsCategoryOf(
+        { fulfillmentMethod: 'pickup', clientele: 'public', siteId: 'vv' },
+        PALETTE,
+        'as-pickup',
+      ),
+    ).toMatchObject({ label: 'Retrait particulier Val Village', color: '#9e9e9e' });
+  });
+
+  it('l’encadré du transfert : sa couleur posée, sinon la livraison du départ, sinon neutre', () => {
+    expect(transferColorOf({ ...VILLAGE, transferColor: '#7c3aed' }, PALETTE)).toBe('#7c3aed');
+    expect(transferColorOf(VILLAGE, PALETTE)).toBe('#1e88e5');
+    expect(transferColorOf(VILLAGE, [ADROIT, VILLAGE])).toBeNull();
   });
 
   it('🔴 neutre, jamais inventée : clientèle inconnue, retrait sans site, site inconnu', () => {

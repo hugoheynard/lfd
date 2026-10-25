@@ -68,6 +68,11 @@ export interface SiteColors {
   readonly deliveryB2c: SiteColor | null;
   /** La teinte des réassorts que le site reçoit (Hugo, 2026-10-22). */
   readonly resupply: SiteColor | null;
+  /**
+   * La couleur du TRANSFERT vers ce site (Hugo, 2026-10-25) : l'encadré qui
+   * regroupe ses retraits au colisage. `null` = celle de la livraison.
+   */
+  readonly transfer: SiteColor | null;
 }
 
 /** Tout l'état d'un site — la forme lue et écrite par l'adaptateur. */
@@ -96,6 +101,7 @@ const NO_COLORS: SiteColors = {
   deliveryB2b: null,
   deliveryB2c: null,
   resupply: null,
+  transfer: null,
 };
 
 /**

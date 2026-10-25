@@ -275,6 +275,7 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   resource: 'Clé de la ressource',
   resourceLabel: 'Ressource',
   resupplyColor: 'Teinte du réassort',
+  transferColor: 'Couleur du transfert',
   // La sortie de réserve vers une boutique (plan A1, lot A1.4).
   resupplyId: 'Réassort',
   // La modification d'une commande (`order.revised`, plan de modification, M1).

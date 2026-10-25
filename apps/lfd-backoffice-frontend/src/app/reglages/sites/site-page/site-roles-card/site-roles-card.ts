@@ -37,6 +37,7 @@ import {
   type DeliveryOpen,
   PICKUP_SLOTS,
   RESUPPLY_SLOTS,
+  TRANSFER_SLOTS,
   withColor,
 } from '../site-color-fields/site-colors-draft';
 import { roleLabels } from '../../site-role-labels';
@@ -101,6 +102,7 @@ export class SiteRolesCard {
   protected readonly pickupSlots = PICKUP_SLOTS;
   protected readonly deliverySlots = DELIVERY_SLOTS;
   protected readonly resupplySlots = RESUPPLY_SLOTS;
+  protected readonly transferSlots = TRANSFER_SLOTS;
 
   /** Les brouillons, remis à l'état du serveur à chaque relecture du site. */
   protected readonly draft = linkedSignal(() => rolesOf(this.site()));

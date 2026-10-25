@@ -246,6 +246,7 @@ describe('la liste des commandes du colisage', () => {
           deliveryColorB2b: null,
           deliveryColorB2c: null,
           resupplyColor: null,
+          transferColor: '#7c3aed',
         },
       ],
     });
@@ -255,7 +256,7 @@ describe('la liste des commandes du colisage', () => {
 
     expect(bacs.map((bac) => bac.title)).toEqual([
       'Livraison',
-      'Transfert Val Village · particulier',
+      'Retrait particulier Val Village',
       'Livraison pro',
     ]);
     expect(bacs.map((bac) => bac.dataset['bar'])).toEqual(['neutral', '#fdd835', 'neutral']);
@@ -265,5 +266,7 @@ describe('la liste des commandes du colisage', () => {
       'Transfert Val Village',
     );
     expect(transfers[0]?.contains(bacs[1] ?? null)).toBe(true);
+    expect(transfers[0]?.dataset['frameColor']).toBe('#7c3aed');
+    expect(transfers[0]?.style.getPropertyValue('--co-frame-color')).toBe('#7c3aed');
   });
 });

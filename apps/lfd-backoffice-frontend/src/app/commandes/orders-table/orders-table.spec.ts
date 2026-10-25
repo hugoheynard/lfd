@@ -46,6 +46,7 @@ const ADROIT: SitePaletteEntryView = {
   deliveryColorB2b: '#000080',
   deliveryColorB2c: '#43a047',
   resupplyColor: null,
+  transferColor: null,
 };
 
 function render(

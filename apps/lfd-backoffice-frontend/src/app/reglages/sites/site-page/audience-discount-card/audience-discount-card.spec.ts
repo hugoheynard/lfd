@@ -37,6 +37,7 @@ const SITE: SiteView = {
   deliveryColorB2b: null,
   deliveryColorB2c: null,
   resupplyColor: null,
+  transferColor: null,
   archivedAt: null,
   isDeparture: false,
 };

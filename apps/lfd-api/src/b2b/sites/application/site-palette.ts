@@ -30,6 +30,7 @@ export function sitePaletteOf(
     deliveryColorB2b: site.deliveryColorB2b,
     deliveryColorB2c: site.deliveryColorB2c,
     resupplyColor: site.resupplyColor,
+    transferColor: site.transferColor,
   }));
 }
 

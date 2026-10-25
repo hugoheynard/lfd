@@ -4,7 +4,7 @@ import { normalizeSiteColor, SITE_COLOR_MESSAGES, siteColorIssue } from '../../s
 
 /**
  * Le brouillon des couleurs : chaque champ présent, `null` = aucune. Le
- * contrat laisse la teinte du réassort facultative (absente = inchangée) ;
+ * contrat laisse la teinte du réassort et la couleur du transfert facultatives (absente = inchangée) ;
  * l'écran, lui, l'envoie toujours.
  */
 export type SiteColorsDraft = { readonly [K in keyof SiteColorsPayload]-?: string | null };
@@ -37,9 +37,20 @@ export const RESUPPLY_SLOTS: readonly ColorSlot[] = [
   { key: 'resupplyColor', label: 'Teinte du réassort' },
 ];
 
-const ALL_KEYS: readonly ColorKey[] = [...PICKUP_SLOTS, ...DELIVERY_SLOTS, ...RESUPPLY_SLOTS].map(
-  (s) => s.key,
-);
+/**
+ * Sous « Transfert » : la couleur de l'encadré qui regroupe les retraits de
+ * ce site au colisage (Hugo, 2026-10-25). Vide : celle de la livraison.
+ */
+export const TRANSFER_SLOTS: readonly ColorSlot[] = [
+  { key: 'transferColor', label: 'Couleur du transfert' },
+];
+
+const ALL_KEYS: readonly ColorKey[] = [
+  ...PICKUP_SLOTS,
+  ...DELIVERY_SLOTS,
+  ...RESUPPLY_SLOTS,
+  ...TRANSFER_SLOTS,
+].map((s) => s.key);
 
 /** À quelles clientèles on livre — `null` tant que la lecture n'a pas répondu. */
 export interface DeliveryOpen {
@@ -75,6 +86,7 @@ export function colorsOf(site: SiteView): SiteColorsDraft {
     deliveryColorB2b: site.deliveryColorB2b,
     deliveryColorB2c: site.deliveryColorB2c,
     resupplyColor: site.resupplyColor,
+    transferColor: site.transferColor,
   };
 }
 
@@ -107,6 +119,7 @@ export function colorsPayload(draft: SiteColorsDraft): SiteColorsDraft {
     deliveryColorB2b: normalized(draft.deliveryColorB2b),
     deliveryColorB2c: normalized(draft.deliveryColorB2c),
     resupplyColor: normalized(draft.resupplyColor),
+    transferColor: normalized(draft.transferColor),
   };
 }
 

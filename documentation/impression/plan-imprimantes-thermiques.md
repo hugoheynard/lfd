@@ -8,8 +8,10 @@
 
 ## 1. Ce qui existe (relu le 2026-10-04)
 
-- L'étiquette d'un bac est une page A4 imprimée par le navigateur
-  (`livraison/bin-label/bin-label.ts`, `window.print()`). Son JSDoc garde la
+- L'étiquette d'un bac était une page A4 imprimée par le navigateur
+  (`window.print()`) ; depuis le 2026-10-25, c'est un PDF A6 rendu par le
+  serveur (`apps/lfd-api/src/delivery/domain/services/bin-labels-pdf.ts`), comme
+  l'étiquette de sac. Son JSDoc garde la
   question ouverte : « Q22 — imprimante d'étiquettes ou planche A4 adhésive ».
   Elle porte la tournée et le rang en très gros, la référence, le type de bac
   et la moitié, « partagé avec … », le code court et le QR.
