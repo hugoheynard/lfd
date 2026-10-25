@@ -3,6 +3,21 @@ import { instantToLocal } from "@lfd/contracts";
 import type { Prisma } from "../../../platform/database/client/client.js";
 
 /**
+ * 🔴 **Garde technique avant E6c2** (plan
+ * `documentation/commandes/plan-e6-le-depart-incomplet.md` § 12.3, relecture
+ * de `vitruve` sur le bâti d'E6b) : une commande dont le départ incomplet est
+ * décidé n'entre dans AUCUNE assiette — ni facture, ni lot de prélèvement —
+ * tant que les lecteurs lisent les totaux de la commande entière et non ses
+ * montants facturables. Elle est nommée au bloqueur d'émission
+ * ({@link shortfallHeldWhere}) et reste dans les « Bons à constater »
+ * (`accountOrderWhere` ne l'exclut pas). E6c2 remplace cette exclusion par la
+ * lecture de `billable_*`.
+ */
+const NOT_HELD_FOR_SHORTFALL = {
+  shortfallDecidedAt: null,
+} as const satisfies Prisma.OrderWhereInput;
+
+/**
  * **L'assiette, écrite une seule fois** : « ce bon passé au compte a été
  * LIVRÉ pendant `[from, to[` » — jour de réception, pas jour de commande,
  * depuis le lot ZL (plan `plan-zero-faille.md`, §12, Hugo 2026-10-22).
@@ -67,6 +82,16 @@ import type { Prisma } from "../../../platform/database/client/client.js";
 export function billableOrderWhere(from: Date, to: Date): Prisma.OrderWhereInput {
   return {
     ...accountOrderWhere(),
+    ...NOT_HELD_FOR_SHORTFALL,
+    receivedOn: { gte: parisDayOf(from), lt: parisDayOf(to) },
+  };
+}
+
+/** Les commandes de la fenêtre que la garde ci-dessus retient — pour les nommer. */
+export function shortfallHeldWhere(from: Date, to: Date): Prisma.OrderWhereInput {
+  return {
+    ...accountOrderWhere(),
+    shortfallDecidedAt: { not: null },
     receivedOn: { gte: parisDayOf(from), lt: parisDayOf(to) },
   };
 }
@@ -76,7 +101,11 @@ export function billableOrderWhere(from: Date, to: Date): Prisma.OrderWhereInput
  * à l'instant (l'état d'encaissement) — un bon livré aujourd'hui y est.
  */
 export function billableSinceWhere(from: Date): Prisma.OrderWhereInput {
-  return { ...accountOrderWhere(), receivedOn: { gte: parisDayOf(from) } };
+  return {
+    ...accountOrderWhere(),
+    ...NOT_HELD_FOR_SHORTFALL,
+    receivedOn: { gte: parisDayOf(from) },
+  };
 }
 
 /**

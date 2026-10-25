@@ -7,6 +7,8 @@ import { DeliveryNote } from "../../../domain/entities/delivery-note.js";
 import {
   InMemoryDeliveryNotes,
   InMemoryOrderProgress,
+  InMemoryShortfallDecisions,
+  billingCloserOf,
 } from "../../__tests__/delivery-note-doubles.js";
 import { DeliveryNoteAligner } from "../../services/delivery-note-aligner.js";
 import { RECONCILE_REPAIR_LIMIT } from "../reconcile-delivery-notes.command.js";
@@ -62,9 +64,11 @@ function scene() {
   const handler = new ReconcileDeliveryNotesHandler(
     orders.scan,
     notes,
-    new DeliveryNoteAligner(notes, ids),
+    new DeliveryNoteAligner(notes, ids, new InMemoryShortfallDecisions()),
     new DirectUnitOfWork(),
     new FixedClock(NOW),
+    new InMemoryShortfallDecisions(),
+    billingCloserOf(notes),
   );
   return { notes, orders, handler };
 }

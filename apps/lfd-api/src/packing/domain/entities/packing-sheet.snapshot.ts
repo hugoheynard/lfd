@@ -52,4 +52,9 @@ export interface PackingSheetSnapshot {
    * relu d'avant le champ, ou une fixture qui n'en parle pas.
    */
   readonly shortfallReportedAt?: Date | null;
+  /**
+   * Le départ incomplet décidé par le commerce (E6b) : les lignes dues sont
+   * celles du bac. Absent = aucun.
+   */
+  readonly shortfallAuthorizedAt?: Date | null;
 }

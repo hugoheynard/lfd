@@ -30,7 +30,12 @@ export class PrismaOrderShortfallRepository extends OrderShortfallRepository {
     }
     const row = await this.prisma.order.findUniqueOrThrow({
       where: { id },
-      select: { shortfallReportedAt: true, shortfallLines: true, shortfallClearedAt: true },
+      select: {
+        shortfallReportedAt: true,
+        shortfallLines: true,
+        shortfallClearedAt: true,
+        shortfallDecidedAt: true,
+      },
     });
     return OrderShortfall.fromSnapshot({
       orderId: id,
@@ -38,6 +43,7 @@ export class PrismaOrderShortfallRepository extends OrderShortfallRepository {
       reportedAt: row.shortfallReportedAt,
       lines: row.shortfallLines === null ? null : shortfallLinesOf(row.shortfallLines),
       clearedAt: row.shortfallClearedAt,
+      decidedAt: row.shortfallDecidedAt,
     });
   }
 
@@ -53,6 +59,7 @@ export class PrismaOrderShortfallRepository extends OrderShortfallRepository {
             ? Prisma.DbNull
             : snapshot.lines.map((line) => ({ sku: line.sku, due: line.due, packed: line.packed })),
         shortfallClearedAt: snapshot.clearedAt,
+        shortfallDecidedAt: snapshot.decidedAt ?? null,
       },
     });
   }

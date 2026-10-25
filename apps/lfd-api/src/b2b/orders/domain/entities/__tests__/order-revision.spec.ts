@@ -7,6 +7,7 @@ import {
   RevisionBelowVoucherError,
   RevisionFreesAccountOrderError,
   RevisionRequiresPaymentError,
+  ShortfallDecidedRevisionError,
   UnchangedOrderRevisionError,
 } from "../../errors/order-revision-errors.js";
 import type { OrderLineInput } from "../../value-objects/order-line.js";
@@ -98,6 +99,7 @@ function placed(
     placedByStaffId: null,
     status: "placed",
     paymentStatus: "not_required",
+    shortfallDecided: false,
     totalCents: state.totalCents,
     stripePaymentIntentId: null,
     cancelledAt: null,
@@ -148,6 +150,14 @@ describe("Order.revise — ce que M1 sert", () => {
     );
     expect(() => Order.revise(due, input({ lines: [line("VIE-001", 20)] }))).toThrow(
       "Commande réglée par carte : annulez-la et recommandez, ou demandez au commerce.",
+    );
+  });
+
+  it("refuse une commande dont le départ incomplet est décidé (E6b)", () => {
+    const decided = placed({ shortfallDecided: true });
+
+    expect(() => Order.revise(decided, input({ lines: [line("VIE-001", 20)] }))).toThrow(
+      ShortfallDecidedRevisionError,
     );
   });
 

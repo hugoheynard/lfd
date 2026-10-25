@@ -52,6 +52,15 @@ model DeliveryNote {
   vatCents             Int?    @map("vat_cents")
   totalCents           Int?    @map("total_cents")
 
+  /// La version du CONTENU (plan E6, § 14) : +1 à chaque changement de ses
+  /// lignes ou de ses montants — réécriture d'un BL prévu, départ décidé.
+  contentVersion Int       @default(1) @map("content_version")
+  /// La dernière impression (PDF de transport ou chiffré équipe) : la version
+  /// imprimée, l'instant, la fiche staff. Les trois ensemble ou aucun (CHECK).
+  printedVersion Int?      @map("printed_version")
+  printedAt      DateTime? @map("printed_at") @db.Timestamptz(6)
+  printedBy      String?   @map("printed_by")
+
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 

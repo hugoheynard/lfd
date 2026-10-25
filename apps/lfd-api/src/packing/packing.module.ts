@@ -48,6 +48,7 @@ import { PackingResupplyBoardReader } from "./domain/ports/packing-resupply-boar
 import { PackingResupplyListing } from "./domain/ports/packing-resupply-listing.js";
 import { PackingResupplyRepository } from "./domain/ports/packing-resupply.repository.js";
 import { PrismaPackedResuppliesReader } from "./infrastructure/prisma-packed-resupplies.reader.js";
+import { PackingShortfallDesk } from "./application/station/packing-shortfall-desk.js";
 import {
   PrismaPackingResupplyBoardReader,
   PrismaPackingResupplyRepository,
@@ -122,6 +123,8 @@ import { PackingResuppliesController } from "./http/packing-resupplies.controlle
     GetPackingBoardHandler,
     ClosePackingOrderHandler,
     ReportPackingShortfallHandler,
+    // Le départ incomplet décidé par le commerce (E6b), relié par `PackingFeedModule`.
+    PackingShortfallDesk,
     ReopenPackingOrderHandler,
     { provide: PackingBoardReader, useClass: PrismaPackingBoardReader },
     PrismaPackedOrdersReader,
@@ -137,6 +140,11 @@ import { PackingResuppliesController } from "./http/packing-resupplies.controlle
     { provide: PackingDayStocksReader, useClass: PrismaPackingDayStocksReader },
     PrismaPackedResuppliesReader,
   ],
-  exports: [PrismaContainerManagedOrders, PrismaPackedOrdersReader, PrismaPackedResuppliesReader],
+  exports: [
+    PrismaContainerManagedOrders,
+    PrismaPackedOrdersReader,
+    PrismaPackedResuppliesReader,
+    PackingShortfallDesk,
+  ],
 })
 export class PackingModule {}

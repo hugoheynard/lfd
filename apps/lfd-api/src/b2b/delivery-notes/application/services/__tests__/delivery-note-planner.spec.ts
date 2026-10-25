@@ -9,6 +9,7 @@ import { DeliveryNote } from "../../../domain/entities/delivery-note.js";
 import {
   FixedConfirmedOrders,
   InMemoryDeliveryNotes,
+  InMemoryShortfallDecisions,
 } from "../../__tests__/delivery-note-doubles.js";
 import { DeliveryNotePlanner } from "../delivery-note-planner.js";
 
@@ -41,6 +42,7 @@ function scene() {
     notes,
     new FixedIdGenerator("dn"),
     new FixedClock(NOW),
+    new InMemoryShortfallDecisions(),
   );
   return { orders, notes, planner };
 }
@@ -60,6 +62,9 @@ describe("DeliveryNotePlanner — le BL prévu à l'arrêt du plan (plan E1)", (
         number: "BL-1042-1",
         status: "planned",
         plannedAt: NOW,
+        // Le papier (plan E6, § 14) : version 1, jamais imprimé.
+        contentVersion: 1,
+        printed: null,
         voidedAt: null,
         preparedAt: null,
         handedOverAt: null,

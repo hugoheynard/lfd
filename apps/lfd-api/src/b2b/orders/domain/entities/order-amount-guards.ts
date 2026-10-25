@@ -18,7 +18,9 @@ import { voucherImputationCents } from "../services/voucher-imputation.js";
 import type { DraftOrderInput, OrderFulfillmentInput, OrderVoucher } from "./order.js";
 
 /**
- * Les **gardes de montant** de `Order.draft` : chaque terme du panier arrive de
+ * Les **gardes de montant** de `Order.draft` — réappliquées au bon de
+ * livraison partiel par `DeliveryNoteTerms.composePartial` (plan E6, § 11) :
+ * chacune ne prend que la part de la commande qu'elle lit. Chaque terme du panier arrive de
  * l'appelant à côté de l'ajustement qui le prétend, et l'agrégat vérifie que
  * l'un produit l'autre. Sortis d'`order.ts` le 2026-09-27, quand le bon de
  * fidélité en a ajouté une quatrième — le fichier dépassait sa taille.
@@ -60,7 +62,10 @@ export function ensureDraftable(input: DraftOrderInput): void {
  * qui ne découle pas de son ajustement rendrait la trace figée mensongère —
  * c'est-à-dire pire qu'absente.
  */
-export function ensureLateFeeMatches(input: DraftOrderInput, subtotalCents: number): void {
+export function ensureLateFeeMatches(
+  input: Pick<DraftOrderInput, "lateFeeAdjustment" | "lateFeeCents">,
+  subtotalCents: number,
+): void {
   const frozen = input.lateFeeAdjustment;
   if (frozen === null) {
     if (input.lateFeeCents !== 0) {
@@ -89,7 +94,10 @@ export function ensureLateFeeMatches(input: DraftOrderInput, subtotalCents: numb
  * en RETRAIT n'en a aucun, et lui en exiger un serait exiger la trace d'un
  * geste qui n'a pas eu lieu.
  */
-export function ensureDeliveryFeeMatches(input: DraftOrderInput, subtotalCents: number): void {
+export function ensureDeliveryFeeMatches(
+  input: Pick<DraftOrderInput, "deliveryFeeAdjustment" | "deliveryFeeCents">,
+  subtotalCents: number,
+): void {
   const frozen = input.deliveryFeeAdjustment;
   if (frozen === null) {
     if (input.deliveryFeeCents !== 0) {
@@ -122,7 +130,10 @@ export function ensureDeliveryFeeMatches(input: DraftOrderInput, subtotalCents: 
  *
  * @throws {InvalidOrderPaymentError} le libellé ne correspond pas au montant.
  */
-export function ensureDiscountMatches(input: DraftOrderInput, eligibleSubtotalCents: number): void {
+export function ensureDiscountMatches(
+  input: Pick<DraftOrderInput, "discountAdjustment" | "discountCents">,
+  eligibleSubtotalCents: number,
+): void {
   if (input.discountAdjustment === null) {
     return;
   }

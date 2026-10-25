@@ -28,6 +28,7 @@ import { OrderDeliveryNotesCard } from '../order-delivery-notes-card/order-deliv
 import { OrderInvoicesCard } from '../order-invoices-card/order-invoices-card';
 import { OrderRefundBanner } from '../order-refund-banner/order-refund-banner';
 import { OrderShortfallBanner } from '../order-shortfall-banner/order-shortfall-banner';
+import { OrderShortfallDecision } from '../order-shortfall-decision/order-shortfall-decision';
 import { OrderRefundsCard } from '../order-refunds-card/order-refunds-card';
 import { isOrderSheet } from '../commande-page/order-sheet-key';
 import { AdminOrdersService } from '../orders.service';
@@ -71,6 +72,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     OrderInvoicesCard,
     OrderRefundBanner,
     OrderShortfallBanner,
+    OrderShortfallDecision,
     OrderRefundsCard,
   ],
   templateUrl: './order-view.html',
@@ -94,6 +96,8 @@ export class OrderViewComponent {
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly order = signal<AdminOrderView | null>(null);
+  /** Avancé après une décision de départ : la carte des BL se relit (plan E6, § 14). */
+  protected readonly notesRefresh = signal(0);
 
   /**
    * Ouvre « pourquoi ce prix » dans un panneau latéral, au-dessus de la page.
@@ -124,6 +128,12 @@ export class OrderViewComponent {
     effect(() => {
       void this.load(this.orderId());
     });
+  }
+
+  /** Le départ est décidé : la commande et ses BL se relisent. */
+  protected onShortfallDecided(): void {
+    this.notesRefresh.update((count) => count + 1);
+    void this.load();
   }
 
   protected async load(id: string = this.orderId()): Promise<void> {

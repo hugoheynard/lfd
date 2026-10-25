@@ -5,10 +5,12 @@ import {
   sanitiseFileName,
 } from "@lfd/storage";
 import { Controller, Get, Param, Res, StreamableFile } from "@nestjs/common";
-import { QueryBus } from "@nestjs/cqrs";
+import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import type { Response } from "express";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
+import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
+import { RecordDeliveryNotePrintCommand } from "../application/commands/record-delivery-note-print.command.js";
 import { GetAdminClientNotePdfQuery } from "../application/queries/get-admin-client-note-pdf.query.js";
 import { GetCarrierNotePdfQuery } from "../application/queries/get-carrier-note-pdf.query.js";
 import { ListOrderDeliveryNotesQuery } from "../application/queries/list-order-delivery-notes.query.js";
@@ -21,12 +23,19 @@ import type { DeliveryNotePdf } from "../application/services/delivery-note-docu
  * chiffré à télécharger.
  *
  * Sous `b2b_orders` en lecture — le droit qui ouvre déjà la fiche et son bon
- * de commande. Aucune ressource neuve. Il n'injecte que le `QueryBus`.
+ * de commande. Aucune ressource neuve.
+ *
+ * Depuis le plan E6 (§ 14), chaque PDF servi trace son impression — la
+ * version du contenu imprimée — par une commande, APRÈS la lecture : un BL
+ * introuvable répond 404 sans rien écrire.
  */
 @Controller("admin/orders/:orderId/delivery-notes")
 @AdminSurface("b2b_orders")
 export class AdminOrderDeliveryNotesController {
-  constructor(private readonly queries: QueryBus) {}
+  constructor(
+    private readonly queries: QueryBus,
+    private readonly commands: CommandBus,
+  ) {}
 
   @Get()
   list(@Param("orderId") orderId: string): Promise<readonly StaffNote[]> {
@@ -40,11 +49,13 @@ export class AdminOrderDeliveryNotesController {
   async carrierPdf(
     @Param("orderId") orderId: string,
     @Param("number") number: string,
+    @StaffUserId() staffUserId: string,
     @Res({ passthrough: true }) response: Response,
   ): Promise<StreamableFile> {
     const pdf = await this.queries.execute<GetCarrierNotePdfQuery, DeliveryNotePdf>(
       new GetCarrierNotePdfQuery(orderId, number),
     );
+    await this.recordPrint(orderId, number, staffUserId);
     response.setHeader("Content-Type", "application/pdf");
     response.setHeader(
       "Content-Disposition",
@@ -58,16 +69,24 @@ export class AdminOrderDeliveryNotesController {
   async clientPdf(
     @Param("orderId") orderId: string,
     @Param("number") number: string,
+    @StaffUserId() staffUserId: string,
     @Res({ passthrough: true }) response: Response,
   ): Promise<StreamableFile> {
     const pdf = await this.queries.execute<GetAdminClientNotePdfQuery, DeliveryNotePdf>(
       new GetAdminClientNotePdfQuery(orderId, number),
     );
+    await this.recordPrint(orderId, number, staffUserId);
     response.setHeader("Content-Type", "application/pdf");
     response.setHeader(
       "Content-Disposition",
       contentDispositionAttachment(sanitiseFileName(pdf.fileName, "bon-de-livraison.pdf")),
     );
     return new StreamableFile(pdf.bytes);
+  }
+
+  private recordPrint(orderId: string, number: string, staffUserId: string): Promise<void> {
+    return this.commands.execute<RecordDeliveryNotePrintCommand, void>(
+      new RecordDeliveryNotePrintCommand(orderId, number, staffUserId),
+    );
   }
 }

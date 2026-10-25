@@ -3,6 +3,8 @@ import { Global, Module } from "@nestjs/common";
 import { DeliveryNotesModule } from "../b2b/delivery-notes/delivery-notes.module.js";
 import { DeliveryNoteFollower } from "../b2b/delivery-notes/application/services/delivery-note-follower.js";
 import { DeliveryNoteFollowing } from "../b2b/orders/domain/ports/delivery-note-following.js";
+import { PrismaDeliveryNoteReprintsReader } from "../b2b/delivery-notes/infrastructure/prisma-delivery-note-reprints.reader.js";
+import { DeliveryNoteReprintsReader } from "../packing/channels/commerce/index.js";
 
 /**
  * Le fil qui relie **la commande à son bon de livraison** (plan
@@ -22,7 +24,12 @@ import { DeliveryNoteFollowing } from "../b2b/orders/domain/ports/delivery-note-
 @Global()
 @Module({
   imports: [DeliveryNotesModule],
-  providers: [{ provide: DeliveryNoteFollowing, useExisting: DeliveryNoteFollower }],
-  exports: [DeliveryNoteFollowing],
+  providers: [
+    { provide: DeliveryNoteFollowing, useExisting: DeliveryNoteFollower },
+    // Le poste de colisage demande quels BL sont à réimprimer (plan E6, § 14) :
+    // le colisage déclare, les bons de livraison répondent.
+    { provide: DeliveryNoteReprintsReader, useExisting: PrismaDeliveryNoteReprintsReader },
+  ],
+  exports: [DeliveryNoteFollowing, DeliveryNoteReprintsReader],
 })
 export class DeliveryNotePlanningModule {}

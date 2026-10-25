@@ -11,7 +11,7 @@ import type {
   VatShareView,
 } from "@lfd/contracts";
 
-import type { DeliveryNoteState } from "../entities/delivery-note.js";
+import { reprintNeededOf, type DeliveryNoteState } from "../entities/delivery-note.js";
 import { DeliveryNoteWithoutTermsError } from "../errors/delivery-note-errors.js";
 import type { DeliveryNoteLineState } from "../value-objects/delivery-note-line.js";
 import type { DeliveryNoteTerms, FrozenJson } from "../value-objects/delivery-note-terms.js";
@@ -108,7 +108,7 @@ function isVatShare(value: FrozenJson): value is { rate: number; amountCents: nu
  * qu'on ne reconnaît pas rend `null` : le papier dit alors « dont TVA » au
  * total, ce qui est vrai, plutôt qu'un détail deviné.
  */
-function vatSharesOf(frozen: FrozenJson | null): readonly VatShareView[] | null {
+export function vatSharesOf(frozen: FrozenJson | null): readonly VatShareView[] | null {
   if (frozen === null || !Array.isArray(frozen)) {
     return null;
   }
@@ -203,5 +203,6 @@ export function staffNoteOf(
     preparedAt: note.preparedAt?.toISOString() ?? null,
     handedOverAt: note.handedOverAt?.toISOString() ?? null,
     voidedAt: note.voidedAt?.toISOString() ?? null,
+    reprintNeeded: reprintNeededOf(note),
   };
 }

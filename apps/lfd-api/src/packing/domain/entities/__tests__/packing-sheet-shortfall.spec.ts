@@ -1,5 +1,10 @@
 import { ContainersCountedError } from "../../errors/packing-container-errors.js";
-import { NothingShortError } from "../../errors/packing-shortfall-errors.js";
+import {
+  NothingShortError,
+  ShortfallAlreadyAuthorizedError,
+  ShortfallContentsChangedError,
+  ShortfallSheetSealedError,
+} from "../../errors/packing-shortfall-errors.js";
 import { PackedOrderSealedError } from "../../errors/packing-station-errors.js";
 import type { PackingContainerState } from "../order-contents.js";
 import { PackingSheet, type ContainerMode } from "../packing-sheet.js";
@@ -108,5 +113,57 @@ describe("PackingSheet — la fermeture complète efface le manque (E6a)", () =>
 
     expect(() => target.seal({ at: LATER, by: "s2" })).toThrow();
     expect(target.shortfallReportedAt).toEqual(FIRST);
+  });
+});
+
+describe("PackingSheet — le départ incomplet décidé (E6b)", () => {
+  const DECIDED = [
+    { sku: "CRO", quantity: 9 },
+    { sku: "PAC", quantity: 6 },
+  ];
+
+  it("réduit les lignes dues à ce qui est au bac, lève la marque, et le bac se ferme", () => {
+    const target = shortOfThree();
+    target.reportShortfall(FIRST);
+
+    target.authorizeShortfall(DECIDED, { at: LATER, by: "staff_2" });
+
+    expect(target.lines.map((line) => [line.sku, line.quantity, line.packed !== null])).toEqual([
+      ["CRO", 9, true],
+      ["PAC", 6, true],
+    ]);
+    expect(target.shortfallReportedAt).toBeNull();
+    expect(target.shortfallAuthorizedAt).toEqual(LATER);
+    expect(target.seal({ at: LATER, by: "staff_3" }).fresh).toBe(true);
+  });
+
+  it("refuse si le bac a changé depuis le signal", () => {
+    const target = shortOfThree();
+    target.reportShortfall(FIRST);
+    target.allocate("c_1", "CRO", 1, MARK);
+
+    expect(() => target.authorizeShortfall(DECIDED, { at: LATER, by: "s" })).toThrow(
+      ShortfallContentsChangedError,
+    );
+    expect(target.lines[0]?.quantity).toBe(12);
+  });
+
+  it("refuse une décision qui ne nomme pas toutes les lignes", () => {
+    const target = shortOfThree();
+    expect(() =>
+      target.authorizeShortfall([{ sku: "CRO", quantity: 9 }], { at: LATER, by: "s" }),
+    ).toThrow(ShortfallContentsChangedError);
+  });
+
+  it("refuse un bac déjà fermé complet", () => {
+    expect(() => sheet("listed", true).authorizeShortfall(DECIDED, { at: LATER, by: "s" })).toThrow(
+      ShortfallSheetSealedError,
+    );
+  });
+
+  it("une fiche autorisée ne se re-signale pas", () => {
+    const target = shortOfThree();
+    target.authorizeShortfall(DECIDED, { at: LATER, by: "s" });
+    expect(() => target.reportShortfall(LATER)).toThrow(ShortfallAlreadyAuthorizedError);
   });
 });

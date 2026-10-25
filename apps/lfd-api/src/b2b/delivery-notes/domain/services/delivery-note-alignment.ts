@@ -185,6 +185,11 @@ function advanceOf(
  * se complète comme il se réécrit, par {@link DeliveryNote.replanFrom}.
  */
 function completionOf(order: FollowedOrder, note: DeliveryNote): DeliveryNoteAlignment {
+  // Un départ décidé (E6b) réécrit le BL prévu sur ce qui part, dès la décision.
+  if (order.departureDecided === true && note.status === "planned" && !note.matches(order)) {
+    note.replanFrom(order);
+    return { change: "completed", writes: [note] };
+  }
   if (note.hasTerms) {
     return NONE;
   }

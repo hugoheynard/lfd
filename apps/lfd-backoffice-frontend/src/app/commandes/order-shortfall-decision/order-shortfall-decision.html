@@ -1,0 +1,46 @@
+@if (shortfall(); as s) {
+  <div class="decision">
+    @if (s.decision; as d) {
+      <fold-callout appearance="inset" variant="info" data-shortfall-decided>
+        Départ décidé le {{ d.decidedAt | date: "dd/MM 'à' HH:mm" }} : ce qui était au bac est
+        parti, le reste est abandonné.
+      </fold-callout>
+      @for (note of toReprint(); track note.number) {
+        <fold-callout appearance="inset" variant="warning" [attr.data-reprint-needed]="note.number">
+          {{ reprintSentence }}
+          <div actions>
+            <button foldButton size="sm" emphasis="soft" (click)="reprint(note)" data-reprint>
+              Imprimer {{ note.number }}
+            </button>
+          </div>
+        </fold-callout>
+      }
+    } @else if (allowed()) {
+      @if (open()) {
+        <ul class="departing" data-shortfall-departing>
+          @for (line of departing(); track line.sku) {
+            <li>{{ line.name }} : {{ line.packed }} sur {{ line.due }} part</li>
+          }
+        </ul>
+      }
+      <fold-inline-confirm
+        message="Ce qui est au bac part ; le reste est abandonné et ne sera pas facturé. Une pièce qui arriverait ensuite reste en réserve. La décision est définitive."
+        [labels]="{ confirm: 'Confirmer : reste abandonné', cancel: 'Attendre' }"
+        keepOpenOnConfirm
+        [loading]="saving()"
+        [open]="open()"
+        (openChange)="open.set($event)"
+        (confirmed)="confirm()"
+      >
+        <button foldButton size="sm" emphasis="outline" data-shortfall-decide>
+          Décider du départ
+        </button>
+      </fold-inline-confirm>
+      @if (error(); as message) {
+        <fold-callout appearance="inset" variant="alert" announce data-shortfall-decision-error>{{
+          message
+        }}</fold-callout>
+      }
+    }
+  </div>
+}

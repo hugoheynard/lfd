@@ -22,6 +22,9 @@ import { DeliveryNoteAligner } from "./application/services/delivery-note-aligne
 import { DeliveryNoteFollower } from "./application/services/delivery-note-follower.js";
 import { DeliveryNoteRepository } from "./domain/ports/delivery-note.repository.js";
 import { PrismaDeliveryNoteRepository } from "./infrastructure/prisma-delivery-note.repository.js";
+import { RecordDeliveryNotePrintHandler } from "./application/commands/record-delivery-note-print.handler.js";
+import { PrismaDeliveryNoteReprintsReader } from "./infrastructure/prisma-delivery-note-reprints.reader.js";
+import { OrderBillingCloser } from "./application/services/order-billing-closer.js";
 
 /**
  * **Les bons de livraison** — plan
@@ -47,6 +50,7 @@ import { PrismaDeliveryNoteRepository } from "./infrastructure/prisma-delivery-n
   ],
   providers: [
     ReconcileDeliveryNotesHandler,
+    RecordDeliveryNotePrintHandler,
     ListOrderDeliveryNotesHandler,
     GetCarrierNotePdfHandler,
     GetAdminClientNotePdfHandler,
@@ -59,7 +63,9 @@ import { PrismaDeliveryNoteRepository } from "./infrastructure/prisma-delivery-n
     DeliveryNotePlanner,
     DeliveryNoteAligner,
     DeliveryNoteFollower,
+    OrderBillingCloser,
+    PrismaDeliveryNoteReprintsReader,
   ],
-  exports: [DeliveryNoteFollower],
+  exports: [DeliveryNoteFollower, PrismaDeliveryNoteReprintsReader],
 })
 export class DeliveryNotesModule {}

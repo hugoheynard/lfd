@@ -162,6 +162,7 @@ function sheet(reference: string, overrides: Partial<PackingSheet> = {}): Packin
     packedPieces: 0,
     canReportShortfall: false,
     shortfallReportedAt: null,
+    deliveryNoteReprintNeeded: false,
     canDeclareReady: false,
     coldOutsideIsotherm: [],
     packedAt: null,

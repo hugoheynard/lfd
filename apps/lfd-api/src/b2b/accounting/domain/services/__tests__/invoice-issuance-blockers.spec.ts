@@ -1,6 +1,7 @@
 import {
   invoiceIssuanceBlockers,
   orderDeliveryBlockers,
+  orderShortfallBlockers,
   payerIssuanceBlockers,
   sellerBlockers,
   type InvoiceBuyerFacts,
@@ -166,5 +167,16 @@ describe("le préfixe et la date de livraison (lot ZA)", () => {
 
   it("tous les bons datés : aucun manque", () => {
     expect(orderDeliveryBlockers([{ reference: "ORD-001", receivedOn: "2026-09-12" }])).toEqual([]);
+  });
+});
+
+describe("orderShortfallBlockers — garde avant E6c2 (plan E6)", () => {
+  it("nomme le bon retenu par un départ incomplet, « facturation à venir »", () => {
+    const blockers = orderShortfallBlockers([
+      { reference: "ORD-001", receivedOn: "2030-01-10" },
+      { reference: "ORD-002", receivedOn: "2030-01-10", shortfallHeld: true },
+    ]);
+    expect(blockers.map((b) => b.code)).toEqual(["order_shortfall_pending"]);
+    expect(blockers[0]?.message).toContain("ORD-002 est un départ incomplet — facturation à venir");
   });
 });

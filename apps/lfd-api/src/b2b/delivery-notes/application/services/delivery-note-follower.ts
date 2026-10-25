@@ -5,6 +5,7 @@ import { OrderProgressForDeliveryNote } from "../../../orders/domain/ports/order
 import { Clock } from "../../../../platform/time/clock.js";
 import { DeliveryNoteAligner } from "./delivery-note-aligner.js";
 import { DeliveryNotePlanner } from "./delivery-note-planner.js";
+import { OrderBillingCloser } from "./order-billing-closer.js";
 
 /**
  * **Le BL suit la commande** — l'implémentation de {@link DeliveryNoteFollowing}
@@ -23,6 +24,7 @@ export class DeliveryNoteFollower extends DeliveryNoteFollowing {
     private readonly orders: OrderProgressForDeliveryNote,
     private readonly aligner: DeliveryNoteAligner,
     private readonly clock: Clock,
+    private readonly billing: OrderBillingCloser,
   ) {
     super();
   }
@@ -35,8 +37,21 @@ export class DeliveryNoteFollower extends DeliveryNoteFollowing {
     return this.follow(orderId, this.clock.now());
   }
 
-  handOver(orderId: string): Promise<void> {
-    return this.follow(orderId, this.clock.now());
+  /**
+   * Le BL remis, puis le solde de la commande (E6c1) : dans la même unité de
+   * travail, sous le verrou que la remise a posé sur la commande.
+   */
+  async handOver(orderId: string): Promise<void> {
+    await this.follow(orderId, this.clock.now());
+    await this.billing.closeLocked(orderId);
+  }
+
+  /**
+   * Strict : un BL qui ne peut pas suivre la décision la fait échouer — sans
+   * quoi elle partirait avec une fiche réduite et un BL plein (plan E6, § 13).
+   */
+  followDecision(orderId: string): Promise<void> {
+    return this.follow(orderId, this.clock.now(), true);
   }
 
   voidLiveFor(orderId: string, at: Date): Promise<void> {
@@ -44,12 +59,12 @@ export class DeliveryNoteFollower extends DeliveryNoteFollowing {
   }
 
   /** `now` ne sert qu'à dater une annulation ; les autres instants sont ceux de la commande. */
-  private async follow(orderId: string, now: Date): Promise<void> {
+  private async follow(orderId: string, now: Date, strict = false): Promise<void> {
     const order = await this.orders.progressOf(orderId);
     if (order === null) {
       return;
     }
-    const outcome = await this.aligner.align(order, now);
+    const outcome = await this.aligner.align(order, now, strict);
     this.aligner.report(order, outcome);
   }
 }

@@ -7,6 +7,7 @@ import { instantToLocal, type ProductionPackingView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../platform/time/clock.js";
+import { DeliveryNoteReprintsReader } from "../../channels/commerce/index.js";
 import {
   PlannedDestinationsReader,
   QualityHeldOrdersReader,
@@ -52,12 +53,13 @@ export class GetPackingBoardHandler implements IQueryHandler<
     private readonly clock: Clock,
     private readonly desk: BinDesk,
     private readonly departures: OrderDeparturesReader,
+    private readonly reprints: DeliveryNoteReprintsReader,
   ) {}
 
   async execute(query: GetPackingBoardQuery): Promise<ProductionPackingView> {
     const day = await this.board.dayOf(query.serviceDay);
     const orderIds = day.orders.map((order) => order.orderId);
-    const [heldOrders, destinations, authors, cold, departures] = await Promise.all([
+    const [heldOrders, destinations, authors, cold, departures, reprintNeeded] = await Promise.all([
       this.held.heldOrders(query.serviceDay, orderIds),
       orderIds.length === 0
         ? new Map<string, string>()
@@ -68,6 +70,8 @@ export class GetPackingBoardHandler implements IQueryHandler<
         day.orders.filter((order) => order.fulfillmentMethod === "delivery").map((o) => o.orderId),
       ),
       this.departures.departuresOf(orderIds),
+      // Le BL imprimé puis changé (plan E6, § 14), lu au commerce par le canal.
+      this.reprints.reprintNeededAmong(orderIds),
     ]);
     return packingBoardOf({
       date: query.serviceDay,
@@ -81,6 +85,7 @@ export class GetPackingBoardHandler implements IQueryHandler<
       heldOrders,
       cold,
       departures: localDepartures(departures),
+      reprintNeeded,
     });
   }
 }

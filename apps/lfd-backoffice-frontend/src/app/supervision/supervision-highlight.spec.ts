@@ -30,6 +30,7 @@ function sheet(reference: string, awaited: readonly string[]): PackingSheet {
     packedPieces: 0,
     canReportShortfall: false,
     shortfallReportedAt: null,
+    deliveryNoteReprintNeeded: false,
     canDeclareReady: false,
     coldOutsideIsotherm: [],
     packedAt: null,

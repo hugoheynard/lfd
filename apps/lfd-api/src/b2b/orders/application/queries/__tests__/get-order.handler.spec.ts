@@ -316,12 +316,13 @@ describe("GetAdminOrderHandler", () => {
       { kind: "free" },
       new RefundStore(),
       PLACED,
-      { reportedAt: NOW, lines: [{ sku: "CRO", due: 12, packed: 9 }] },
+      { reportedAt: NOW, lines: [{ sku: "CRO", due: 12, packed: 9 }], decision: null },
     ).execute(new GetAdminOrderQuery("ord_1"));
 
     expect(view.shortfall).toEqual({
       reportedAt: NOW.toISOString(),
       lines: [{ sku: "CRO", due: 12, packed: 9 }],
+      decision: null,
     });
   });
 

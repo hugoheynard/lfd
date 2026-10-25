@@ -48,6 +48,13 @@ export class InMemorySheets extends PackingSheetRepository {
     return Promise.resolve(row === undefined ? null : PackingSheet.fromSnapshot(row));
   }
 
+  lockLatestOf(orderId: string): Promise<PackingSheet | null> {
+    const latest = [...this.rows.values()]
+      .filter((row) => row.orderId === orderId)
+      .sort((a, b) => b.serviceDay.localeCompare(a.serviceDay))[0];
+    return Promise.resolve(latest === undefined ? null : PackingSheet.fromSnapshot(latest));
+  }
+
   save(sheet: PackingSheet): Promise<void> {
     this.put(sheet.toSnapshot());
     return Promise.resolve();

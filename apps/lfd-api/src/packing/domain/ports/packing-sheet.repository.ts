@@ -12,5 +12,12 @@ export abstract class PackingSheetRepository {
   /** @returns `null` si la liste à coliser n'a pas encore livré cette commande. */
   abstract lock(serviceDay: string, orderId: string): Promise<PackingSheet | null>;
 
+  /**
+   * Le bac le plus récent d'une commande, sous verrou — celui que la décision
+   * du départ incomplet autorise (E6b), qui ne connaît que la commande.
+   * `null` si la liste ne l'a jamais inscrite.
+   */
+  abstract lockLatestOf(orderId: string): Promise<PackingSheet | null>;
+
   abstract save(sheet: PackingSheet): Promise<void>;
 }

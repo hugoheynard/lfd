@@ -141,6 +141,15 @@ export const staffResourceSchema = z.enum([
    */
   "b2b_cancel_order",
   /**
+   * **Décider du départ incomplet** — `POST /admin/orders/:id/shortfall-decision`
+   * (plan `documentation/commandes/plan-e6-le-depart-incomplet.md`, E6b,
+   * 2026-10-25). Laisser partir ce que le colisage a mis au bac et abandonner
+   * le reste : le bon de livraison et les montants facturables suivent. Un
+   * geste à part, `write` seul ; accordée à l'écran, aucune migration ne la
+   * donne à un rôle.
+   */
+  "b2b_orders_shortfall",
+  /**
    * **Le Comptoir** — ce qu'il faut voir d'un client pour lui vendre, rien de
    * plus : une carte de recherche, et au détail ses adresses, ses acheteurs et
    * s'il règle au compte (`documentation/comptoir/architecture-commande-au-comptoir.md`).
@@ -764,6 +773,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   b2b_orders: "Commandes",
   b2b_place_order: "Passer une commande pro",
   b2b_cancel_order: "Annuler une commande",
+  b2b_orders_shortfall: "Décider du départ incomplet",
   b2b_counter: "Comptoir",
   b2b_supervision: "Supervision",
   b2b_subscriptions: "Paniers récurrents",
@@ -883,6 +893,9 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // La graine seule (2026-10-12, plan d'annulation C3.8) : en production,
     // le geste s'accorde à l'écran.
     b2b_cancel_order: "write",
+    // La graine seule (2026-10-25, plan E6b) : en production, le geste
+    // s'accorde à l'écran.
+    b2b_orders_shortfall: "write",
     production_plan: "write",
     production_count_stop: "write",
     production_settings: "write",

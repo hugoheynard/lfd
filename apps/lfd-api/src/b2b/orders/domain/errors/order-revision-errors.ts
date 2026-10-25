@@ -143,3 +143,14 @@ export function standingRevisionErrorOf(
       return new OrderWithoutSalesTermsError(orderId);
   }
 }
+
+/** E6b, plan § 12.2 : la décision et la commande ne divergent jamais. */
+export class ShortfallDecidedRevisionError extends BusinessError {
+  constructor(readonly orderId: string) {
+    super(
+      "orders.revise.shortfall_decided",
+      "Le départ incomplet de cette commande est décidé : elle ne se modifie plus, pour que la décision et la commande disent la même chose. " +
+        "Pour ajouter des articles, passez une nouvelle commande.",
+    );
+  }
+}

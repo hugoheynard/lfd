@@ -17,11 +17,24 @@ export class PrismaOrderShortfallReader extends OrderShortfallReader {
   async of(orderId: string): Promise<OrderShortfallReading | null> {
     const row = await this.prisma.order.findUnique({
       where: { id: orderId },
-      select: { shortfallReportedAt: true, shortfallLines: true },
+      select: {
+        shortfallReportedAt: true,
+        shortfallLines: true,
+        shortfallDecision: { select: { decidedAt: true, remainder: true } },
+      },
     });
     if (row === null || row.shortfallReportedAt === null || row.shortfallLines === null) {
       return null;
     }
-    return { reportedAt: row.shortfallReportedAt, lines: shortfallLinesOf(row.shortfallLines) };
+    const decision = row.shortfallDecision;
+    return {
+      reportedAt: row.shortfallReportedAt,
+      lines: shortfallLinesOf(row.shortfallLines),
+      // `abandoned` seul : le CHECK de la table n'admet rien d'autre (E6b).
+      decision:
+        decision === null || decision.remainder !== "abandoned"
+          ? null
+          : { decidedAt: decision.decidedAt, remainder: decision.remainder },
+    };
   }
 }

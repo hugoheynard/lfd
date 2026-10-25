@@ -6,7 +6,7 @@ import { MonthlyInvoicingReader } from "../domain/ports/monthly-invoicing.reader
 import type { BillingFollow } from "../domain/ports/statement-billing.reader.js";
 import { invoiceGroupKey, type InvoiceableOrder } from "../domain/services/monthly-invoicing.js";
 import type { CollectionFormName } from "../domain/value-objects/collection-form.js";
-import { billableOrderWhere } from "./billable-order-criterion.js";
+import { billableOrderWhere, shortfallHeldWhere } from "./billable-order-criterion.js";
 import {
   FROZEN_INVOICE_ORDER_SELECT,
   toFrozenInvoiceOrder,
@@ -35,7 +35,9 @@ export class PrismaMonthlyInvoicingReader extends MonthlyInvoicingReader {
 
   async uninvoicedOrders(from: Date, to: Date): Promise<readonly InvoiceableOrder[]> {
     const orders = await this.prisma.order.findMany({
-      where: billableOrderWhere(from, to),
+      // Les bons retenus par un départ incomplet (E6b) sont lus AUSSI, marqués :
+      // le bloqueur d'émission les nomme au lieu de les taire (garde avant E6c2).
+      where: { OR: [billableOrderWhere(from, to), shortfallHeldWhere(from, to)] },
       orderBy: [{ createdAt: "asc" }, { orderNumber: "asc" }],
       select: {
         ...FROZEN_INVOICE_ORDER_SELECT,
@@ -43,6 +45,7 @@ export class PrismaMonthlyInvoicingReader extends MonthlyInvoicingReader {
         companyId: true,
         billedCompanyId: true,
         receivedOn: true,
+        shortfallDecidedAt: true,
       },
     });
     const invoiced = await this.prisma.invoiceOrder.findMany({
@@ -66,6 +69,7 @@ export class PrismaMonthlyInvoicingReader extends MonthlyInvoicingReader {
               receivedOn: order.receivedOn?.toISOString().slice(0, DAY_LENGTH) ?? null,
               billedCompanyId: order.billedCompanyId,
               frozen: toFrozenInvoiceOrder(order),
+              shortfallHeld: order.shortfallDecidedAt !== null,
             },
           ],
     );

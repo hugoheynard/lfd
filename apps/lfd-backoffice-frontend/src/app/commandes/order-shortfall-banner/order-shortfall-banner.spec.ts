@@ -11,6 +11,7 @@ const SHORTFALL: AdminOrderShortfall = {
     { sku: 'CRO', due: 12, packed: 9 },
     { sku: 'PAC', due: 6, packed: 6 },
   ],
+  decision: null,
 };
 
 const LINES = [
@@ -54,5 +55,13 @@ describe('le bandeau du manque signalé (E6a)', () => {
     expect(said(fixture.nativeElement.querySelector('[data-shortfall-banner]'))).toContain(
       'CRO, 9 au bac sur 12.',
     );
+  });
+
+  it('se tait une fois le départ décidé (E6b)', () => {
+    const decided = {
+      ...SHORTFALL,
+      decision: { decidedAt: SHORTFALL.reportedAt, remainder: 'abandoned' as const },
+    };
+    expect(mount(decided).querySelector('[data-shortfall-banner]')).toBeNull();
   });
 });

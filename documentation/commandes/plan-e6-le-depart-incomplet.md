@@ -386,8 +386,9 @@ commande entière serait faux.
 **E6c1 — l'ombre de l'argent (aucun lecteur ne change).**
 
 - Colonnes `billable_*` et `settled_on` sur `orders`, nullables, un CHECK tout
-  ou rien, un déclencheur qui refuse toute réécriture d'une valeur posée
-  (NOT NULL → autre, et NOT NULL → NULL).
+  ou rien, ~~un déclencheur qui refuse toute réécriture d'une valeur posée
+  (NOT NULL → autre, et NOT NULL → NULL)~~ — dépassé par le § 13 : le gel se
+  pose en E6c2, l'ombre d'E6c1 reste corrigeable.
 - La **fabrique du BL partiel** (`DeliveryNoteTerms.composePartial`) : chaque
   terme calculé par `cartAdjustmentCents` / `discountCentsOf` sur les lignes
   livrées, assiette éligible lue sur la **ligne de commande**, mode de TVA du
@@ -473,3 +474,36 @@ _Toutes décidées par l'assistant (« prends les meilleures décisions »)._
 BL partiel avec ses montants, `billable_*` en ombre, contrôle) → plan et
 `vitruve` d'**E6c2** → E6c2 → les trois partent **ensemble** en production,
 sur ordre de Hugo. E6d (l'e-mail) suit. E7 rouvre « à relivrer ».
+
+## 14. Réimprimer un BL qui a changé (Hugo, 2026-10-25) — dans E6b
+
+« Dans tous les cas il faut signaler qu'il faut imprimer un nouveau BL s'il
+n'est pas conforme à l'original. » Le BL de transport a pu être imprimé au
+colisage avant la décision : après un départ incomplet, le papier annonce des
+articles qui ne sont pas au bac.
+
+_Décidé par l'assistant_ :
+
+- **Le BL porte une version de contenu** (`content_version`, entier, +1 à
+  chaque changement de ses lignes ou de ses montants : réécriture d'un BL prévu,
+  décision de départ incomplet).
+- **Chaque impression est tracée** : la version imprimée, l'instant, l'auteur
+  (`printed_version`, `printed_at`, `printed_by` — la dernière impression
+  suffit), au téléchargement du PDF de transport et du PDF chiffré équipe.
+- **Si une impression existe et que `printed_version ≠ content_version`**,
+  l'avertissement « **Le bon de livraison a changé depuis son impression —
+  réimprimez-le** » s'affiche, bouton d'impression à côté : au **poste de
+  colisage** (fiche du bac), sur la **fiche commande** du back-office, et dans
+  la **confirmation de la décision**. Un BL jamais imprimé ne déclenche rien.
+- La lecture le calcule côté serveur (`reprintNeeded: boolean`), comme
+  `canReportShortfall` : l'écran n'en déduit rien lui-même.
+
+**Précision de Hugo (2026-10-25)** : « pas de changement en chemin normal,
+seulement sur décision ; “il manque” ne déclenche pas encore ; la décision de
+traitement = changement de BL ». `content_version` n'avance **que** si le
+contenu imprimable change réellement : la **décision** (cas principal), et la
+réécriture d'un BL prévu dont les lignes diffèrent après réouverture et
+révision. N'avancent **pas** : la création à l'arrêt du plan, la préparation,
+la remise, la complétion des totaux par le réconciliateur, un réalignement
+sans effet, et le signal « Il manque ». Un test garde que le chemin normal ne
+déclenche jamais l'avertissement.

@@ -7,6 +7,8 @@
  * | `PackedResuppliesReader`        | port déclaré ET implémenté ici | l'emballé d'un réassort, une fois clos  |
  * | `PackingShortfallReportedEvent` | fait durable publié ici        | « il manque » : les quantités au bac    |
  * | `PackingShortfallClearedEvent`  | fait durable publié ici        | le bac s'est fermé complet, signal levé |
+ * | `ShortfallDesk`                 | port déclaré ET implémenté ici | le départ incomplet décidé (E6b)        |
+ * | `DeliveryNoteReprintsReader`    | port déclaré ici, implémenté par le commerce | BL à réimprimer (§ 14) |
  *
  * `lint:context-boundaries` n'autorise `b2b → packing` que par ce dossier ;
  * `packing → b2b` reste interdit : le colisage ne sait pas qui le lit.
@@ -22,3 +24,5 @@ export {
   PACKING_SHORTFALL_CLEARED,
   PackingShortfallClearedEvent,
 } from "./packing-shortfall-cleared.event.js";
+export { ShortfallDesk, type DepartingLine } from "./shortfall-desk.js";
+export { DeliveryNoteReprintsReader } from "./delivery-note-reprints.reader.js";

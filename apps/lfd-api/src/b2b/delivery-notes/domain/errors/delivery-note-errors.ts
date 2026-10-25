@@ -138,3 +138,25 @@ export class DeliveryNoteNotFoundError extends ResourceNotFoundError {
     );
   }
 }
+
+/** La décision nomme un article ou une quantité que la commande ne porte pas. */
+export class DecisionOutsideOrderError extends DomainError {
+  constructor(orderNumber: string, sku: string) {
+    super(
+      "delivery_notes.decision.outside_order",
+      `La décision du départ incomplet de ${orderNumber} fait partir « ${sku} » au-delà de ce que la commande porte : ` +
+        "le bon de livraison n'a pas été réécrit. Signalez-le à l'équipe technique.",
+    );
+  }
+}
+
+/** La décision d'un départ incomplet ne peut pas se reporter sur le BL : elle est annulée. */
+export class DecisionNoteNotFollowedError extends BusinessError {
+  constructor(orderNumber: string, reason: string) {
+    super(
+      "delivery_notes.decision.not_followed",
+      `Le bon de livraison de ${orderNumber} ne peut pas suivre la décision (${reason}) : rien n'a été décidé. ` +
+        "Le BL est à reprendre à la main avant de décider ; signalez-le à l'équipe technique.",
+    );
+  }
+}

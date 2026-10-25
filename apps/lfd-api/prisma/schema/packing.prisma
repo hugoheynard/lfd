@@ -37,15 +37,19 @@ model PackingOrder {
   drawnAt DateTime @map("drawn_at") @db.Timestamptz(6)
 
   /// Le bac fermé (K2). `null` tous les deux = ouvert ; en K1, toujours ouvert.
-  packedAt       DateTime? @map("packed_at") @db.Timestamptz(6)
-  packedBy       String?   @map("packed_by")
+  packedAt              DateTime? @map("packed_at") @db.Timestamptz(6)
+  packedBy              String?   @map("packed_by")
   /// Les contenants comptés (K2). `0` = personne ne les a comptés.
-  containerCount Int       @default(0) @map("container_count")
+  containerCount        Int       @default(0) @map("container_count")
   /// `counted` (le compte ci-dessus) ou `listed` (la colonne Contenants, K2b).
   /// `listed` est posé à l'inscription par le binaire de K2b (CHECK).
-  containerMode  String    @default("counted") @map("container_mode") @db.VarChar(8)
+  containerMode         String    @default("counted") @map("container_mode") @db.VarChar(8)
   /// Un manque signalé sur ce bac (E6a) ; effacé — et annoncé — à la fermeture complète.
-  shortfallReportedAt DateTime? @map("shortfall_reported_at") @db.Timestamptz(6)
+  shortfallReportedAt   DateTime? @map("shortfall_reported_at") @db.Timestamptz(6)
+  /// Le départ incomplet décidé par le commerce (E6b) : les lignes dues sont
+  /// réduites aux quantités au bac. Une fiche autorisée ne se re-signale pas et
+  /// ne se retire pas à la réouverture de la journée.
+  shortfallAuthorizedAt DateTime? @map("shortfall_authorized_at") @db.Timestamptz(6)
 
   lines      PackingLine[]
   containers PackingContainer[]

@@ -160,6 +160,8 @@ describe("« Il manque » au colisage → la commande attend une décision", () 
     expect(fiche.shortfall).toEqual({
       reportedAt,
       lines: [{ sku: CROISSANT, due: 3, packed: 1 }],
+      // Pas encore décidé (E6b).
+      decision: null,
     });
 
     const day = jsonBody<DaySupervisionView>(

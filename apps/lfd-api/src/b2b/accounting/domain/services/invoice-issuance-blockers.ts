@@ -42,6 +42,7 @@ export type InvoiceIssuanceBlockerCode =
   | "payment_terms_missing"
   | "invoice_prefix_missing"
   | "order_delivery_unknown"
+  | "order_shortfall_pending"
   | "buyer_unknown"
   | "buyer_siren_missing"
   | "buyer_vat_missing"
@@ -164,6 +165,29 @@ export interface InvoiceOrderFacts {
   readonly reference: string;
   /** La date de livraison réelle (`AAAA-MM-JJ`), ou `null` : ni retrait ni livraison enregistrés. */
   readonly receivedOn: string | null;
+  /** Retenu par un départ incomplet décidé (E6b). Absent = non. */
+  readonly shortfallHeld?: boolean;
+}
+
+/**
+ * 🔴 **Garde avant E6c2** (plan `documentation/commandes/plan-e6-le-depart-incomplet.md`) :
+ * un bon dont le départ incomplet est décidé ne se facture pas encore — la
+ * facture lirait les totaux de la commande entière, alors que seule une
+ * partie est partie. Il arrête la facture de son payeur, nommé, plutôt que
+ * d'en disparaître en silence. E6c2 remplace ce refus par la lecture des
+ * montants facturables.
+ */
+export function orderShortfallBlockers(
+  orders: readonly InvoiceOrderFacts[],
+): readonly InvoiceIssuanceBlocker[] {
+  return orders
+    .filter((order) => order.shortfallHeld === true)
+    .map((order) => ({
+      code: "order_shortfall_pending" as const,
+      message:
+        `Le bon ${order.reference} est un départ incomplet — facturation à venir : sa facture ` +
+        "attend la lecture des montants réellement livrés (E6c2). Rien n'est à corriger sur la commande.",
+    }));
 }
 
 /**

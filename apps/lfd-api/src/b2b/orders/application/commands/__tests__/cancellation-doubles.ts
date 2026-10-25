@@ -224,4 +224,8 @@ export class RecordingNoteVoiding extends DeliveryNoteFollowing {
   handOver(): Promise<void> {
     return Promise.reject(new RangeError("non utilisé par l'annulation"));
   }
+
+  followDecision(): Promise<void> {
+    return Promise.reject(new RangeError("non utilisé par l'annulation"));
+  }
 }

@@ -24,6 +24,7 @@ import {
 import { clienteleOf, normalizeFulfillment } from "./order-fulfillment.js";
 import {
   ensureChanged,
+  ensureNoShortfallDecision,
   ensureRevisableSettlement,
   revisionOf,
   type OrderRevisionToSave,
@@ -183,6 +184,7 @@ export class Order {
    * figés tenus (R3), bon imputé couvert (R4), au moins un changement (R6).
    *
    * @throws {CardOrderNotRevisableError} la commande se règle par carte (lot M2).
+   * @throws {ShortfallDecidedRevisionError} son départ incomplet est décidé (E6b).
    * @throws {UnchangedOrderRevisionError} la modification ne change rien.
    */
   static revise(current: RevisableOrder, input: DraftOrderInput): OrderRevisionToSave {
@@ -194,6 +196,7 @@ export class Order {
   /** La même recomposition, sans exiger de changement : ce que le devis de révision montre. */
   static recompose(current: RevisableOrder, input: DraftOrderInput): OrderRevisionToSave {
     ensureRevisableSettlement(current);
+    ensureNoShortfallDecision(current);
     const revised = Order.draft(input);
     revised.deferPayment();
     return revisionOf(current, revised.toPersistence());

@@ -1,9 +1,15 @@
+import type { ShortfallRemainder } from "@lfd/contracts";
+
 import type { ShortfallQuantity } from "../entities/order-shortfall.js";
 
-/** Le manque signalé en vigueur sur une commande. */
+/** Le manque signalé sur une commande, et sa décision quand elle est prise (E6b). */
 export interface OrderShortfallReading {
   readonly reportedAt: Date;
   readonly lines: readonly ShortfallQuantity[];
+  readonly decision: {
+    readonly decidedAt: Date;
+    readonly remainder: ShortfallRemainder;
+  } | null;
 }
 
 /**
@@ -12,6 +18,6 @@ export interface OrderShortfallReading {
  * Route staff, cross-tenant, gardée en amont par `b2b_orders`.
  */
 export abstract class OrderShortfallReader {
-  /** `null` : commande inconnue, ou aucun manque en vigueur. */
+  /** `null` : commande inconnue, ou aucun manque signalé (en vigueur ou décidé). */
   abstract of(orderId: string): Promise<OrderShortfallReading | null>;
 }

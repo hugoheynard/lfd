@@ -18,6 +18,11 @@ export interface SheetContext {
   readonly cold: ColdPacking;
   /** L'heure « prête pour » de chaque commande (lot L2), déjà résolue. */
   readonly readyByOf: (order: BoardOrder) => ReadyBy;
+  /**
+   * Les commandes dont le BL a changé depuis son impression (plan E6, § 14),
+   * lues au commerce. Absent = aucune.
+   */
+  readonly reprintNeeded?: ReadonlySet<string>;
 }
 
 /** Ce que la livraison dit du froid — relu ici sans connaître le port. */
@@ -76,6 +81,8 @@ export function canReportShortfall(order: BoardOrder): boolean {
   return (
     order.containerMode === "listed" &&
     order.packed === null &&
+    // Un départ décidé ne se re-signale pas (E6b).
+    (order.shortfallAuthorizedAt ?? null) === null &&
     order.lines.some((line) => allocatedOf(line) < line.quantity)
   );
 }
@@ -112,6 +119,7 @@ export function sheetOf(order: BoardOrder, context: SheetContext): PackingSheet 
     canDeclareReady: canDeclareReady(order),
     canReportShortfall: canReportShortfall(order),
     shortfallReportedAt: order.shortfallReportedAt?.toISOString() ?? null,
+    deliveryNoteReprintNeeded: context.reprintNeeded?.has(order.orderId) ?? false,
     coldOutsideIsotherm: coldOutsideIsotherm(order, context.cold),
     packedAt: order.packed?.at.toISOString() ?? null,
     packedBy: order.packed?.by ?? null,

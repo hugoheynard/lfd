@@ -1,12 +1,18 @@
 import { Injectable, Logger } from "@nestjs/common";
 
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
+import {
+  ShortfallDecisionReader,
+  type DecidedDeparture,
+} from "../../../orders/domain/ports/shortfall-decision.reader.js";
 import { AppError } from "../../../../platform/shared/errors/app-error.js";
 import {
   alignmentOf,
   type DeliveryNoteAlignment,
   type FollowedOrder,
 } from "../../domain/services/delivery-note-alignment.js";
+import { departingSourceOf } from "../../domain/services/departing-source.js";
+import { DecisionNoteNotFollowedError } from "../../domain/errors/delivery-note-errors.js";
 import { DeliveryNoteRepository } from "../../domain/ports/delivery-note.repository.js";
 
 /** Ce qu'un alignement a fait, après écriture. */
@@ -32,21 +38,43 @@ export class DeliveryNoteAligner {
   constructor(
     private readonly notes: DeliveryNoteRepository,
     private readonly ids: IdGenerator,
+    private readonly decisions: ShortfallDecisionReader,
   ) {}
 
-  async align(order: FollowedOrder, now: Date): Promise<AlignedOutcome> {
-    const outcome = await this.attempt(order, now);
+  /**
+   * `strict` : le geste qui appelle NE PEUT PAS laisser le BL en arrière — la
+   * décision d'un départ incomplet (E6b). Un refus du domaine remonte alors et
+   * annule la transaction de l'appelant au lieu d'être compté.
+   */
+  async align(order: FollowedOrder, now: Date, strict = false): Promise<AlignedOutcome> {
+    const outcome = await this.attempt(order, now, strict);
     if (outcome !== "rank_taken") {
       return outcome;
     }
-    const retried = await this.attempt(order, now);
+    const retried = await this.attempt(order, now, strict);
     // Le rang pris l'est encore après relecture : il n'y a pas de seconde course possible.
     return retried === "rank_taken" ? { change: "none" } : retried;
   }
 
-  private async attempt(order: FollowedOrder, now: Date): Promise<AlignedOutcome | "rank_taken"> {
-    const notes = await this.notes.loadForOrders([order.orderId]);
-    const alignment = this.decide(order, notes, now);
+  private async attempt(
+    order: FollowedOrder,
+    now: Date,
+    strict: boolean,
+  ): Promise<AlignedOutcome | "rank_taken"> {
+    const [notes, decided] = await Promise.all([
+      this.notes.loadForOrders([order.orderId]),
+      this.decisions.decidedFor([order.orderId]),
+    ]);
+    const decision = decided.get(order.orderId);
+    const alignment = strict
+      ? alignmentOf(departingSourceOf(order, decision), notes, {
+          newId: () => this.ids.next(),
+          now,
+        })
+      : this.decide(order, decision, notes, now);
+    if (strict && alignment.change === "unrepairable") {
+      throw new DecisionNoteNotFollowedError(order.orderNumber, alignment.reason);
+    }
     switch (alignment.change) {
       case "none":
       case "unrepairable":
@@ -68,11 +96,14 @@ export class DeliveryNoteAligner {
    */
   private decide(
     order: FollowedOrder,
+    decision: DecidedDeparture | undefined,
     notes: Parameters<typeof alignmentOf>[1],
     now: Date,
   ): DeliveryNoteAlignment {
     try {
-      return alignmentOf(order, notes, { newId: () => this.ids.next(), now });
+      // La décision d'abord (E6b, plan E6 § 13) : le BL suit ce qui part.
+      const source = departingSourceOf(order, decision);
+      return alignmentOf(source, notes, { newId: () => this.ids.next(), now });
     } catch (error) {
       if (!(error instanceof AppError)) {
         throw error;

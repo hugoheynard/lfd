@@ -61,6 +61,7 @@ export class PrismaPackingSheetRepository extends PackingSheetRepository {
         containerMode: true,
         fulfillmentMethod: true,
         shortfallReportedAt: true,
+        shortfallAuthorizedAt: true,
         containers: CONTAINER_SELECT,
         lines: {
           select: {
@@ -92,7 +93,20 @@ export class PrismaPackingSheetRepository extends PackingSheetRepository {
       containerList: row.containers.map(containerOf),
       fulfillmentMethod: row.fulfillmentMethod === "delivery" ? "delivery" : "pickup",
       shortfallReportedAt: row.shortfallReportedAt,
+      shortfallAuthorizedAt: row.shortfallAuthorizedAt,
     });
+  }
+
+  async lockLatestOf(orderId: string): Promise<PackingSheet | null> {
+    assertInsideUnitOfWork(`du bac le plus récent de ${orderId}`);
+    const days = await this.prisma.$queryRaw<{ service_day: string }[]>`
+      SELECT "service_day" FROM "packing"."packing_order"
+       WHERE "order_id" = ${orderId}
+       ORDER BY "service_day" DESC
+       LIMIT 1
+         FOR UPDATE`;
+    const day = days[0]?.service_day;
+    return day === undefined ? null : this.lock(day, orderId);
   }
 
   async save(sheet: PackingSheet): Promise<void> {
@@ -104,6 +118,7 @@ export class PrismaPackingSheetRepository extends PackingSheetRepository {
         packedBy: snapshot.packed?.by ?? null,
         containerCount: snapshot.containers,
         shortfallReportedAt: snapshot.shortfallReportedAt ?? null,
+        shortfallAuthorizedAt: snapshot.shortfallAuthorizedAt ?? null,
       },
     });
     await saveContainers(this.prisma, snapshot);
@@ -117,6 +132,8 @@ export class PrismaPackingSheetRepository extends PackingSheetRepository {
           },
         },
         data: {
+          // La quantité due ne bouge que par la décision d'un départ incomplet (E6b).
+          quantity: line.quantity,
           packedAt: line.packed?.at ?? null,
           packedBy: line.packed?.by ?? null,
           packedInitials: line.packed?.initials ?? "",

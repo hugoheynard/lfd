@@ -24,6 +24,10 @@ export class RecordingDeliveryNoteFollowing extends DeliveryNoteFollowing {
     return this.record(`hand-over:${orderId}`);
   }
 
+  followDecision(orderId: string): Promise<void> {
+    return this.record(`follow-decision:${orderId}`);
+  }
+
   voidLiveFor(orderId: string): Promise<void> {
     return this.record(`void:${orderId}`);
   }

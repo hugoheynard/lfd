@@ -16,7 +16,11 @@ import {
 } from 'fold-ng';
 
 import { NotifyService } from '../../notify.service';
-import { DeliveryNotesService } from '../delivery-notes.service';
+import {
+  BLOB_LIFETIME_MS,
+  DeliveryNotesService,
+  REPRINT_SENTENCE,
+} from '../delivery-notes.service';
 
 /** Le mot de chaque état, tel que l'équipe le dit. */
 const STATUS_LABELS: Readonly<Record<DeliveryNoteStatusView, string>> = {
@@ -25,9 +29,6 @@ const STATUS_LABELS: Readonly<Record<DeliveryNoteStatusView, string>> = {
   handed_over: 'Remis',
   voided: 'Annulé',
 };
-
-/** Combien de temps garder l'adresse d'un PDF ouvert avant de la libérer. */
-const BLOB_LIFETIME_MS = 60_000;
 
 /** L'instant du dernier pas du BL, ou son jour de réception quand il est remis. */
 function stepDate(note: StaffNote): string {
@@ -67,6 +68,8 @@ function stepDate(note: StaffNote): string {
 })
 export class OrderDeliveryNotesCard {
   readonly orderId = input.required<string>();
+  /** Un compteur que le parent avance pour faire relire la liste (après une décision). */
+  readonly refresh = input(0);
 
   private readonly service = inject(DeliveryNotesService);
   private readonly notify = inject(NotifyService);
@@ -76,10 +79,12 @@ export class OrderDeliveryNotesCard {
 
   protected readonly statusLabel = (note: StaffNote): string => STATUS_LABELS[note.status];
   protected readonly stepDate = stepDate;
+  protected readonly reprintSentence = REPRINT_SENTENCE;
 
   constructor() {
     effect(() => {
       const id = this.orderId();
+      this.refresh();
       untracked(() => {
         void this.load(id);
       });
@@ -110,11 +115,9 @@ export class OrderDeliveryNotesCard {
   /** Ouvre le BL de transport dans un onglet, d'où on l'imprime. */
   private async openCarrier(note: StaffNote): Promise<void> {
     try {
-      const url = URL.createObjectURL(await this.service.carrierPdf(this.orderId(), note.number));
-      window.open(url, '_blank', 'noopener');
-      setTimeout(() => {
-        URL.revokeObjectURL(url);
-      }, BLOB_LIFETIME_MS);
+      await this.service.openCarrier(this.orderId(), note.number);
+      // L'impression est tracée : la liste relue ne demande plus de réimprimer.
+      await this.load(this.orderId());
     } catch (error) {
       this.notify.error(error, `Le bon de livraison ${note.number} n'a pas pu être ouvert.`);
     }
@@ -130,6 +133,7 @@ export class OrderDeliveryNotesCard {
       setTimeout(() => {
         URL.revokeObjectURL(url);
       }, BLOB_LIFETIME_MS);
+      await this.load(this.orderId());
     } catch (error) {
       this.notify.error(
         error,

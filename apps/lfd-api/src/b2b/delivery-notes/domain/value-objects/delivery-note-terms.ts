@@ -1,4 +1,14 @@
+import { cartAdjustmentCents, discountCentsOf } from "@lfd/contracts";
+
+import {
+  ensureDeliveryFeeMatches,
+  ensureDiscountMatches,
+  ensureLateFeeMatches,
+} from "../../../orders/domain/entities/order-amount-guards.js";
+import type { FrozenOrderAdjustments } from "../../../orders/domain/ports/shortfall-decision.reader.js";
+import { computeOrderTotals } from "../../../orders/domain/services/vat.js";
 import { InvalidDeliveryNoteTermsError } from "../errors/delivery-note-errors.js";
+import type { DeliveryNoteSourceLine } from "./delivery-note-line.js";
 
 /**
  * Une valeur JSON figée, recopiée sans être lue — `vat_shares` et
@@ -104,3 +114,95 @@ export function termsDifferences(
     ...json.filter((field) => !sameJson(note[field], order[field])),
   ];
 }
+
+/** Ce qu'un BL partiel recompose : les lignes qui partent, et les règles figées de sa commande. */
+export interface PartialTermsInput {
+  readonly orderNumber: string;
+  /** Les lignes qui partent — l'éligibilité y est celle de la LIGNE DE COMMANDE. */
+  readonly lines: readonly DeliveryNoteSourceLine[];
+  readonly adjustments: FrozenOrderAdjustments;
+}
+
+/**
+ * **L'en-tête d'un BL partiel** (plan
+ * `documentation/commandes/plan-e6-le-depart-incomplet.md` § 9.2, § 11 et
+ * § 13) — la fabrique qui tient pour un BL le rôle d'`Order.draft` : chaque
+ * terme est CALCULÉ par les fonctions mêmes de la passation, sur ce qui part,
+ * puis passe les mêmes gardes, puis `computeOrderTotals`. Aucune seconde
+ * formule.
+ *
+ * - remise : `discountCentsOf` sur l'assiette ÉLIGIBLE des lignes qui partent —
+ *   un pourcentage suit le livré, un montant fixe reste entier mais plafonné
+ *   à cette assiette (Q-E6-2) ;
+ * - frais de livraison et surtaxe : `cartAdjustmentCents` sur le sous-total qui
+ *   part — un pourcentage suit le livré (Q-E6-1), un montant fixe reste
+ *   entier (Q-I2) ;
+ * - bon de fidélité : zéro — la décision refuse une commande qui en porte ;
+ * - mode de TVA du port et taux de la surtaxe : ceux de la commande.
+ *
+ * @throws {InvalidOrderPaymentError} une garde refuse (ne devrait pas : les
+ * termes sortent des mêmes fonctions).
+ * @throws {MissingLateFeeVatRateError} surtaxe sans taux figé.
+ * @throws {InvalidDeliveryNoteTermsError} un total non entier.
+ */
+function composePartial(input: PartialTermsInput): DeliveryNoteTerms {
+  const { lines, adjustments } = input;
+  const subtotalCents = lines.reduce((sum, line) => sum + line.lineTotalCents, 0);
+  const eligibleCents = lines.reduce(
+    (sum, line) => (line.pickupDiscountEligible ? sum + line.lineTotalCents : sum),
+    0,
+  );
+  const terms = {
+    discountAdjustment: adjustments.discount,
+    discountCents:
+      adjustments.discount === null ? 0 : discountCentsOf(adjustments.discount, eligibleCents),
+    deliveryFeeAdjustment: adjustments.deliveryFee,
+    deliveryFeeCents:
+      adjustments.deliveryFee === null
+        ? 0
+        : cartAdjustmentCents(adjustments.deliveryFee, subtotalCents),
+    lateFeeAdjustment: adjustments.lateFee,
+    lateFeeCents:
+      adjustments.lateFee === null
+        ? 0
+        : cartAdjustmentCents(adjustments.lateFee.adjustment, subtotalCents),
+  };
+  ensureDiscountMatches(terms, eligibleCents);
+  ensureLateFeeMatches(terms, subtotalCents);
+  ensureDeliveryFeeMatches(terms, subtotalCents);
+  const totals = computeOrderTotals({
+    lines: lines.map((line) => ({
+      htCents: line.lineTotalCents,
+      vatRate: line.vatRate,
+      discountEligible: line.pickupDiscountEligible,
+    })),
+    discountCents: terms.discountCents,
+    voucherDiscountCents: 0,
+    deliveryFeeCents: terms.deliveryFeeCents,
+    deliveryVatMode: adjustments.deliveryVatMode,
+    lateFeeCents: terms.lateFeeCents,
+    lateFeeVatRate: adjustments.lateFee?.vatRatePercent ?? null,
+  });
+  const lateFee = adjustments.lateFee;
+  return copyOfTerms(input.orderNumber, {
+    subtotalCents,
+    discountCents: terms.discountCents,
+    voucherDiscountCents: 0,
+    deliveryFeeCents: terms.deliveryFeeCents,
+    deliveryVatMode: adjustments.deliveryVatMode,
+    lateFeeCents: terms.lateFeeCents,
+    lateFeeAdjustment:
+      lateFee === null
+        ? null
+        : { adjustment: { ...lateFee.adjustment }, vatRatePercent: lateFee.vatRatePercent },
+    vatShares: totals.vatShares.map((share) => ({
+      rate: share.rate,
+      amountCents: share.amountCents,
+    })),
+    vatCents: totals.vatCents,
+    totalCents: totals.totalCents,
+  });
+}
+
+/** Les fabriques de l'en-tête d'un BL — `DeliveryNoteTerms.composePartial` du plan. */
+export const DeliveryNoteTerms = { composePartial } as const;

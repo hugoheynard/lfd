@@ -1,6 +1,7 @@
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { ORDER_REVISED } from "../../../domain/events/order-revised.event.js";
 import { OrderNotFoundError } from "../../../domain/errors/order-errors.js";
+import { ShortfallDecidedRevisionError } from "../../../domain/errors/order-revision-errors.js";
 import {
   CardOrderNotRevisableError,
   OrderNotRevisableError,
@@ -159,6 +160,16 @@ describe("ReviseOrderHandler — les refus", () => {
     await expect(
       handler.execute(new ReviseOrderCommand("ord_1", CUSTOMER, 0, content({ note: "x" }))),
     ).rejects.toThrow(CardOrderNotRevisableError);
+    expect(trace).toEqual([]);
+  });
+
+  it("E6b : refuse une commande dont le départ incomplet est décidé, sans rien toucher", async () => {
+    const order = { ...(await placedOrder()), shortfallDecided: true };
+    const { handler, trace } = reviseScene(order);
+
+    await expect(
+      handler.execute(new ReviseOrderCommand("ord_1", STAFF, 0, content({ note: "x" }))),
+    ).rejects.toThrow(ShortfallDecidedRevisionError);
     expect(trace).toEqual([]);
   });
 

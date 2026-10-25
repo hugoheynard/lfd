@@ -15,8 +15,9 @@ interface ShortLine {
  * **Le bandeau du manque signalé** (lot E6a,
  * `documentation/commandes/plan-e6-le-depart-incomplet.md` § 3) : le colisage
  * a signalé qu'il manque des pièces, et la commande attend une décision.
- * Lecture seule — la décision viendra avec E6b. Rien quand aucun manque n'est
- * en vigueur.
+ * Lecture seule ; la décision se prend juste dessous
+ * (`app-order-shortfall-decision`, E6b), qui la dit une fois prise. Rien quand
+ * aucun manque n'attend.
  *
  * Les lignes complètes ne sont pas répétées : seules celles où il manque
  * quelque chose sont dites, avec ce qui est au bac.

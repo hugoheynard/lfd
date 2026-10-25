@@ -10,7 +10,11 @@ import {
   type DeliveryNoteLineState,
   type DeliveryNoteSourceLine,
 } from "../value-objects/delivery-note-line.js";
-import { copyOfTerms, type DeliveryNoteTerms } from "../value-objects/delivery-note-terms.js";
+import {
+  copyOfTerms,
+  termsDifferences,
+  type DeliveryNoteTerms,
+} from "../value-objects/delivery-note-terms.js";
 import { DeliveryNoteNumber } from "../value-objects/delivery-note-number.js";
 
 /**
@@ -33,6 +37,11 @@ export interface DeliveryNoteSource {
   readonly orderNumber: string;
   readonly lines: readonly DeliveryNoteSourceLine[];
   readonly terms: DeliveryNoteTerms;
+  /**
+   * Le départ de la commande est décidé (E6b) : lignes et en-tête sont ceux
+   * de ce qui part. Absent = non.
+   */
+  readonly departureDecided?: boolean;
 }
 
 /** L'état complet d'un BL, tel que l'adaptateur l'écrit et le relit. */
@@ -51,6 +60,17 @@ export interface DeliveryNoteState {
   readonly lines: readonly DeliveryNoteLineState[];
   /** L'en-tête recopié de la commande (plan E4a) ; `null` sur un BL d'avant E4a. */
   readonly terms: DeliveryNoteTerms | null;
+  /** La version du contenu (plan E6, § 14). Absent = 1. */
+  readonly contentVersion?: number;
+  /** La dernière impression. Absent = jamais imprimé. */
+  readonly printed?: DeliveryNotePrint | null;
+}
+
+/** Une impression : la version imprimée, l'instant, la fiche staff. */
+export interface DeliveryNotePrint {
+  readonly version: number;
+  readonly at: Date;
+  readonly by: string;
 }
 
 /** Ce qui bouge dans un BL ; le reste est son identité. */
@@ -58,7 +78,18 @@ type Progress = Pick<
   DeliveryNoteState,
   "status" | "voidedAt" | "preparedAt" | "handedOverAt" | "receivedOn"
 >;
-type Identity = Omit<DeliveryNoteState, keyof Progress | "lines" | "terms">;
+type Identity = Omit<
+  DeliveryNoteState,
+  keyof Progress | "lines" | "terms" | "contentVersion" | "printed"
+>;
+
+/** Ce qui suit le papier : la version du contenu, la dernière impression. */
+interface Paper {
+  readonly contentVersion: number;
+  readonly printed: DeliveryNotePrint | null;
+}
+
+const FIRST_PAPER: Paper = { contentVersion: 1, printed: null };
 
 const PLANNED: Progress = {
   status: "planned",
@@ -84,6 +115,7 @@ export class DeliveryNote {
     private progress: Progress,
     private currentLines: readonly DeliveryNoteLine[],
     private currentTerms: DeliveryNoteTerms | null,
+    private paper: Paper,
   ) {}
 
   /**
@@ -101,20 +133,22 @@ export class DeliveryNote {
       number: number.value,
       plannedAt,
     };
-    const note = new DeliveryNote(identity, PLANNED, linesOf(source), null);
+    const note = new DeliveryNote(identity, PLANNED, linesOf(source), null, FIRST_PAPER);
     note.copyTermsFrom(source);
     return note;
   }
 
   /** Recharge un BL écrit ; ses lignes revalident. */
   static rehydrate(state: DeliveryNoteState): DeliveryNote {
-    const { status, voidedAt, preparedAt, handedOverAt, receivedOn, lines, terms, ...identity } =
-      state;
+    const { status, voidedAt, preparedAt, handedOverAt, receivedOn, lines, terms } = state;
+    const { id, orderId, rank, number, plannedAt, contentVersion, printed } = state;
+    const head = { id, orderId, rank, number, plannedAt };
     return new DeliveryNote(
-      identity,
+      head,
       { status, voidedAt, preparedAt, handedOverAt, receivedOn },
       lines.map((l) => DeliveryNoteLine.of(l)),
       terms,
+      { contentVersion: contentVersion ?? 1, printed: printed ?? null },
     );
   }
 
@@ -146,8 +180,47 @@ export class DeliveryNote {
     if (this.progress.status !== "planned") {
       throw new DeliveryNoteNotPlannedError(this.identity.number, this.progress.status);
     }
+    const changed = !this.matches(source);
     this.currentLines = linesOf(source);
     this.copyTermsFrom(source);
+    if (changed) {
+      // Le contenu a changé : un papier déjà imprimé ment désormais (§ 14).
+      this.paper = { ...this.paper, contentVersion: this.paper.contentVersion + 1 };
+    }
+  }
+
+  /**
+   * **Une impression** du BL (PDF de transport ou chiffré équipe, plan E6
+   * § 14) : la version courante du contenu est celle du papier. La dernière
+   * suffit.
+   */
+  recordPrint(at: Date, by: string): void {
+    this.paper = { ...this.paper, printed: { version: this.paper.contentVersion, at, by } };
+  }
+
+  /** Imprimé, puis changé : le papier ne dit plus le contenu. Jamais imprimé : non. */
+  get reprintNeeded(): boolean {
+    return reprintNeededOf(this.paper);
+  }
+
+  /**
+   * Ses lignes et son en-tête sont-ils ceux de la source — même SKU, même
+   * quantité, même total par ligne, même en-tête ?
+   */
+  matches(source: DeliveryNoteSource): boolean {
+    const terms = this.currentTerms;
+    const sameLines =
+      this.currentLines.length === source.lines.length &&
+      this.currentLines.every((line, index) => {
+        const other = source.lines[index];
+        return (
+          other !== undefined &&
+          other.sku === line.state.sku &&
+          other.quantity === line.state.quantity &&
+          other.lineTotalCents === line.state.lineTotalCents
+        );
+      });
+    return sameLines && terms !== null && termsDifferences(terms, source.terms).length === 0;
   }
 
   /** L'en-tête est posé — faux pour un BL écrit avant E4a. */
@@ -237,6 +310,8 @@ export class DeliveryNote {
       ...this.progress,
       lines: this.currentLines.map((line) => line.state),
       terms: this.currentTerms,
+      contentVersion: this.paper.contentVersion,
+      printed: this.paper.printed,
     };
   }
 
@@ -249,6 +324,17 @@ export class DeliveryNote {
       );
     }
   }
+}
+
+/**
+ * Imprimé, puis changé : le papier ne dit plus le contenu (plan E6, § 14).
+ * Une seule définition, lue par l'agrégat et par la vue de l'équipe.
+ */
+export function reprintNeededOf(
+  paper: Pick<DeliveryNoteState, "contentVersion" | "printed">,
+): boolean {
+  const printed = paper.printed ?? null;
+  return printed !== null && printed.version !== (paper.contentVersion ?? 1);
 }
 
 function linesOf(source: DeliveryNoteSource): readonly DeliveryNoteLine[] {

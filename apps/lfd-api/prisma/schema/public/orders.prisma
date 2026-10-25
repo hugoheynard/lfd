@@ -318,9 +318,29 @@ model Order {
   // colisage. Non nul = « décision attendue ». Les quantités au bac par article
   // (jsonb `[{ sku, due, packed }]`), remplacées d'un bloc. `shortfallClearedAt`
   // : le dernier effacement, pour qu'un fait plus ancien ne ressuscite rien.
-  shortfallReportedAt DateTime? @map("shortfall_reported_at") @db.Timestamptz(6)
-  shortfallLines      Json?     @map("shortfall_lines")
-  shortfallClearedAt  DateTime? @map("shortfall_cleared_at") @db.Timestamptz(6)
+  shortfallReportedAt DateTime?               @map("shortfall_reported_at") @db.Timestamptz(6)
+  shortfallLines      Json?                   @map("shortfall_lines")
+  shortfallClearedAt  DateTime?               @map("shortfall_cleared_at") @db.Timestamptz(6)
+  // Le manque RÉSOLU par une décision (E6b) : le signal reste, il n'attend plus.
+  shortfallDecidedAt  DateTime?               @map("shortfall_decided_at") @db.Timestamptz(6)
+  shortfallDecision   OrderShortfallDecision?
+
+  // Les MONTANTS FACTURABLES, en ombre (E6c1, plan-e6-le-depart-incomplet.md
+  // § 12.3 et § 13) : posés au solde de la commande par `OrderBilling.closeBilling`
+  // — la recopie des totaux pour une commande à un BL complet, la somme des BL
+  // remis sinon. Aucun lecteur de facture ne les lit encore (E6c2). Les sept
+  // entiers et `settled_on` vont ensemble (CHECK) ; la ventilation suit la
+  // commande, `NULL` compris pour une commande d'avant le 2026-09-07.
+  billableSubtotalCents        Int?      @map("billable_subtotal_cents")
+  billableDiscountCents        Int?      @map("billable_discount_cents")
+  billableVoucherDiscountCents Int?      @map("billable_voucher_discount_cents")
+  billableDeliveryFeeCents     Int?      @map("billable_delivery_fee_cents")
+  billableLateFeeCents         Int?      @map("billable_late_fee_cents")
+  billableVatCents             Int?      @map("billable_vat_cents")
+  billableVatShares            Json?     @map("billable_vat_shares")
+  billableTotalCents           Int?      @map("billable_total_cents")
+  /// Le jour (Paris) où la commande est soldée : sa dernière remise.
+  settledOn                    DateTime? @map("settled_on") @db.Date
 
   // Remise en main propre. `handoverToken` est un secret ALÉATOIRE, pas le
   // numéro de commande : celui-ci est imprimé sur le bon, donc public, donc sans
@@ -429,12 +449,33 @@ model Order {
 /// Les deux auteurs sont des identifiants sans clé étrangère, comme
 /// `orders.placed_by_staff_id` : une pièce de l'historique ne doit ni
 /// disparaître ni bloquer le jour où une fiche ou un compte s'en va.
+/// **La décision du départ incomplet** (E6b,
+/// `documentation/commandes/plan-e6-le-depart-incomplet.md` § 12-13) : une par
+/// commande, définitive. Ce qui part — les quantités au bac du signal — et ce
+/// que devient le reste. `abandoned` seulement : `to_redeliver` arrive avec E7.
+model OrderShortfallDecision {
+  id               String   @id
+  orderId          String   @unique @map("order_id")
+  order            Order    @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  decidedAt        DateTime @map("decided_at") @db.Timestamptz(6)
+  /// Un `StaffUser.id`, pas une clé étrangère (comme `placed_by_staff_id`).
+  decidedByStaffId String   @map("decided_by_staff_id")
+  remainder        String
+  /// `[{ sku, quantity }]` — ce qui part, par article.
+  departing        Json
+  /// L'instant du signal décidé.
+  signalReportedAt DateTime @map("signal_reported_at") @db.Timestamptz(6)
+
+  @@map("order_shortfall_decision")
+  @@schema("public")
+}
+
 model OrderRevisionEntry {
-  id      String @id @default(cuid())
-  orderId String @map("order_id")
-  order   Order  @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  id               String   @id @default(cuid())
+  orderId          String   @map("order_id")
+  order            Order    @relation(fields: [orderId], references: [id], onDelete: Restrict)
   /// La révision REMPLACÉE : `0` pour la composition de la passation.
-  replacedRevision Int @map("replaced_revision")
+  replacedRevision Int      @map("replaced_revision")
   /// La composition remplacée, telle qu'elle était écrite (colonnes de
   /// `orders` qui changent et lignes complètes).
   composition      Json

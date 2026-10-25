@@ -51,6 +51,11 @@ export function stateOf(row: NoteRow): DeliveryNoteState {
     handedOverAt: row.handedOverAt,
     receivedOn: dayOf(row.receivedOn),
     terms: termsOf(row),
+    contentVersion: row.contentVersion,
+    printed:
+      row.printedVersion === null || row.printedAt === null || row.printedBy === null
+        ? null
+        : { version: row.printedVersion, at: row.printedAt, by: row.printedBy },
     lines: row.lines.map((line) => ({ ...line, vatRate: line.vatRate.toNumber() })),
   };
 }

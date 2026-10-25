@@ -151,6 +151,7 @@ export const staffNoteSchema = z.object({
   preparedAt: z.string().nullable(),
   handedOverAt: z.string().nullable(),
   voidedAt: z.string().nullable(),
+  reprintNeeded: z.boolean(),
 });
 export interface StaffNote extends Omit<ClientNote, "audience" | "money"> {
   readonly audience: "staff";
@@ -160,6 +161,12 @@ export interface StaffNote extends Omit<ClientNote, "audience" | "money"> {
   readonly preparedAt: string | null;
   readonly handedOverAt: string | null;
   readonly voidedAt: string | null;
+  /**
+   * **Le papier ne dit plus le contenu** (plan E6, § 14) : le BL a été
+   * imprimé, puis ses lignes ou ses montants ont changé. Calculé par le
+   * serveur ; jamais imprimé = `false`. L'écran dit alors « réimprimez-le ».
+   */
+  readonly reprintNeeded: boolean;
 }
 
 /** Le BL, tous lecteurs. Un rendu qui veut un montant doit prouver qu'il n'est pas devant un BL de transport. */

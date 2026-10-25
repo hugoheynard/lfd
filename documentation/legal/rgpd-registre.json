@@ -2166,6 +2166,24 @@
       "conservation": "a-decider",
       "purge": null,
       "information": false
+    },
+    {
+      "colonne": "public.order_shortfall_decision.decided_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a décidé le départ incomplet d'une commande (`order_shortfall_decision`, plan-e6-le-depart-incomplet § 12.2).",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.delivery_note.printed_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a imprimé en dernier un bon de livraison (`delivery_note`, plan-e6-le-depart-incomplet § 14).",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
     }
   ],
   "exclusions": [

@@ -293,6 +293,7 @@ function seed(): RevisableOrder {
     placedByStaffId: null,
     status: "placed",
     paymentStatus: "not_required",
+    shortfallDecided: false,
     totalCents: 1,
     stripePaymentIntentId: null,
     cancelledAt: null,

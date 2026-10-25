@@ -1262,6 +1262,14 @@ passage (100 réparations) est atteint : relancer jusqu'à `true`. `failed > 0`
 se lit dans les journaux (`ReconcileDeliveryNotesHandler`). Ensuite, le Worker
 le repasse **toutes les heures** (`admin/delivery-notes/sweep`).
 
+## Après avoir déployé le départ incomplet (E6) : accorder `b2b_orders_shortfall`
+
+La ressource `b2b_orders_shortfall` (« Décider d'un départ incomplet ») n'est
+accordée à personne par migration (`lint:no-role-grants-in-migrations`).
+**Avant le premier manque signalé au colisage**, l'accorder à l'écran
+(`/admin/staff-roles`) aux commerciaux et aux superviseurs : sinon une
+commande « décision attendue » n'a personne pour la prendre.
+
 ## Avant de déployer le format du numéro de commande (2026-10-25)
 
 La migration `20261025120000_le_numero_de_commande_a_son_format` pose un CHECK

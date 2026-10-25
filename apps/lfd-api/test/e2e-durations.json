@@ -230,6 +230,7 @@
   "test/packing-proposal.e2e-spec.ts": 4791,
   "test/packing-ready-by.e2e-spec.ts": 9718,
   "test/packing-shortfall.e2e-spec.ts": 11150,
+  "test/shortfall-decision.e2e-spec.ts": 13800,
   "test/password-link.e2e-spec.ts": 4462,
   "test/payment-links.e2e-spec.ts": 6545,
   "test/payments-journal.e2e-spec.ts": 5571,

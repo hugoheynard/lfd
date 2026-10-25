@@ -16,6 +16,7 @@ const SUPERVISION_SELECT = {
   fulfillmentMethod: true,
   fulfillment: true,
   shortfallReportedAt: true,
+  shortfallDecidedAt: true,
   company: { select: { raisonSociale: true } },
   placedBy: { select: { firstName: true, lastName: true } },
 } as const;
@@ -54,7 +55,8 @@ export class PrismaDaySupervisionReader extends DaySupervisionReader {
       fulfillmentMethod: row.fulfillmentMethod,
       status: row.status,
       window: windowOf(fulfillmentOf(row.fulfillment)),
-      shortfallReportedAt: row.shortfallReportedAt,
+      // Un manque décidé (E6b) n'attend plus de décision.
+      shortfallReportedAt: row.shortfallDecidedAt === null ? row.shortfallReportedAt : null,
     }));
   }
 

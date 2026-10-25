@@ -87,6 +87,7 @@ export const REVISABLE_ORDER_SELECT = {
   salesTermsFileId: true,
   locale: true,
   catalogVersionId: true,
+  shortfallDecidedAt: true,
   lines: { select: LINE_SELECT, orderBy: { sku: "asc" } },
 } as const;
 
@@ -129,6 +130,7 @@ export interface RevisableOrderRow {
   readonly salesTermsFileId: string | null;
   readonly locale: string | null;
   readonly catalogVersionId: string | null;
+  readonly shortfallDecidedAt: Date | null;
   readonly lines: readonly RevisableLineRow[];
 }
 
@@ -149,6 +151,7 @@ export function toRevisableOrder(row: RevisableOrderRow): RevisableOrder {
     status: row.status,
     paymentStatus: row.paymentStatus,
     totalCents: row.totalCents,
+    shortfallDecided: row.shortfallDecidedAt !== null,
     stripePaymentIntentId: row.stripePaymentIntentId,
     cancelledAt: row.cancelledAt,
     refunds: refundPositionOf(row.totalCents, row.refunds),

@@ -37,6 +37,13 @@ export abstract class DeliveryNoteFollowing {
    */
   abstract handOver(orderId: string): Promise<void>;
 
+  /**
+   * Le départ incomplet de la commande vient d'être décidé (E6b, plan E6
+   * § 13) : son BL prévu se réécrit aux quantités décidées, ses montants
+   * recomposés — par la même règle que les autres gestes.
+   */
+  abstract followDecision(orderId: string): Promise<void>;
+
   /** La commande vient d'être annulée : tout BL non remis passe `voided` à `at`. */
   abstract voidLiveFor(orderId: string, at: Date): Promise<void>;
 }

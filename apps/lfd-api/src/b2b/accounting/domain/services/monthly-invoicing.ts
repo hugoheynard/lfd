@@ -36,6 +36,11 @@ export interface InvoiceableOrder {
   readonly receivedOn: string | null;
   readonly billedCompanyId: string | null;
   readonly frozen: FrozenInvoiceOrder;
+  /**
+   * Son départ incomplet est décidé (E6b) : la facture ne part pas, le
+   * bloqueur la nomme, jusqu'à E6c2. Absent = non.
+   */
+  readonly shortfallHeld?: boolean;
 }
 
 /** Les bons du mois d'UN payeur légal, dans l'ordre reçu (date de passation). */

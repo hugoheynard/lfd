@@ -77,6 +77,11 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
     write:
       "Annuler une commande que le fournil n'a pas encore inscrite — total nul, ou carte pas encore payée (le paiement est alors fermé chez Stripe). Le client reçoit un courriel ; un bon de fidélité utilisé lui est rendu. Demande aussi Commandes en lecture pour ouvrir la commande.",
   },
+  b2b_orders_shortfall: {
+    read: "N'ouvre rien : il n'y a rien à lire dans ce geste, seule l'écriture compte.",
+    write:
+      "Décider du départ d'une commande dont le colisage a signalé un manque : ce qui est au bac part, le reste est abandonné, et le bon de livraison comme les montants à facturer suivent. Définitif. Demande aussi Commandes en lecture pour ouvrir la commande.",
+  },
   b2b_counter: {
     read: "Chercher un client au comptoir et voir ce qu'il faut pour lui vendre — adresses, acheteurs, règlement au compte — sans ouvrir sa fiche complète.",
     write:

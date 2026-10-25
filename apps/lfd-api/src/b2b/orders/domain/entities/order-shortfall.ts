@@ -1,4 +1,4 @@
-import { EmptyShortfallError } from "../errors/order-shortfall-errors.js";
+import { EmptyShortfallError, NoShortfallToDecideError } from "../errors/order-shortfall-errors.js";
 
 /** Une ligne de la commande au signalement : la quantité due et ce qui est au bac. */
 export interface ShortfallQuantity {
@@ -17,6 +17,17 @@ export interface OrderShortfallSnapshot {
   readonly lines: readonly ShortfallQuantity[] | null;
   /** Le dernier effacement reçu. */
   readonly clearedAt: Date | null;
+  /**
+   * La décision qui a résolu le signal en vigueur (E6b) ; il reste posé, il
+   * n'attend plus. Absent = aucune : un snapshot d'avant le champ.
+   */
+  readonly decidedAt?: Date | null;
+}
+
+/** Le signal en vigueur, tel que la décision le reprend. */
+export interface PendingShortfall {
+  readonly reportedAt: Date;
+  readonly lines: readonly ShortfallQuantity[];
 }
 
 /**
@@ -42,6 +53,7 @@ export class OrderShortfall {
     private reportedAtValue: Date | null,
     private linesValue: readonly ShortfallQuantity[] | null,
     private clearedAtValue: Date | null,
+    private decidedAtValue: Date | null,
   ) {}
 
   static fromSnapshot(snapshot: OrderShortfallSnapshot): OrderShortfall {
@@ -51,12 +63,40 @@ export class OrderShortfall {
       snapshot.reportedAt,
       snapshot.lines,
       snapshot.clearedAt,
+      snapshot.decidedAt ?? null,
     );
   }
 
   /** « Manque signalé — décision attendue ». */
   get awaitingDecision(): boolean {
-    return this.reportedAtValue !== null;
+    return this.reportedAtValue !== null && this.decidedAtValue === null;
+  }
+
+  /** Le signal décidé est définitif (Q-I4) : plus aucun fait du colisage ne le touche. */
+  get decided(): boolean {
+    return this.decidedAtValue !== null;
+  }
+
+  /** Le signal qui attend une décision, ou `null`. */
+  get pending(): PendingShortfall | null {
+    const { reportedAtValue: reportedAt, linesValue: lines } = this;
+    if (this.decided || reportedAt === null || lines === null) {
+      return null;
+    }
+    return { reportedAt, lines };
+  }
+
+  /**
+   * **Le signal est résolu par une décision** (E6b, plan § 13) : il n'est pas
+   * effacé — ses quantités sont celles qui partent —, il n'attend plus.
+   *
+   * @throws {NoShortfallToDecideError} aucun signal n'attend de décision.
+   */
+  decide(at: Date): void {
+    if (!this.awaitingDecision) {
+      throw new NoShortfallToDecideError(this.reference);
+    }
+    this.decidedAtValue = at;
   }
 
   /**
@@ -68,6 +108,11 @@ export class OrderShortfall {
   report(at: Date, lines: readonly ShortfallQuantity[]): boolean {
     if (lines.length === 0) {
       throw new EmptyShortfallError(this.reference);
+    }
+    // Une fiche autorisée ne se re-signale pas (packing) : un fait qui
+    // arriverait quand même est sans effet, la décision est définitive.
+    if (this.decided) {
+      return false;
     }
     if (!isAfter(at, this.reportedAtValue) || !isAfter(at, this.clearedAtValue)) {
       return false;
@@ -86,6 +131,9 @@ export class OrderShortfall {
    * @returns `false` si le fait est plus ancien que l'état connu.
    */
   clear(at: Date): boolean {
+    if (this.decided) {
+      return false;
+    }
     if (!isAfter(at, this.clearedAtValue) || !isAfter(at, this.reportedAtValue, true)) {
       return false;
     }
@@ -102,6 +150,7 @@ export class OrderShortfall {
       reportedAt: this.reportedAtValue,
       lines: this.linesValue,
       clearedAt: this.clearedAtValue,
+      decidedAt: this.decidedAtValue,
     };
   }
 }

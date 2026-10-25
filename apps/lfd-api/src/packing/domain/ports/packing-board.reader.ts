@@ -35,6 +35,8 @@ export interface BoardOrder {
   readonly containerList: readonly BoardContainer[];
   /** Le manque signalé en vigueur (E6a), `null` = aucun. */
   readonly shortfallReportedAt: Date | null;
+  /** Le départ incomplet décidé (E6b). Absent = aucun. */
+  readonly shortfallAuthorizedAt?: Date | null;
 }
 
 /** La réserve d'un article : reçu du four, rendu, au bac, réservé. */

@@ -1,5 +1,6 @@
 import type { UnrepairableReason } from "../../domain/services/delivery-note-alignment.js";
 import type { DeliveryNoteTermsGap } from "../../domain/services/delivery-note-terms-control.js";
+import type { BillingGap } from "../services/order-billing-closer.js";
 
 /**
  * **Le réconciliateur des bons de livraison** (plan
@@ -50,5 +51,17 @@ export interface DeliveryNoteReconciliationReport {
   readonly terms: {
     readonly compared: number;
     readonly gaps: readonly DeliveryNoteTermsGap[];
+  };
+  /**
+   * Le solde (E6c1, plan E6 § 12.3) : montants facturables posés (`closed`),
+   * corrigés tant que rien n'est facturé (`corrected`), et le contrôle des
+   * commandes déjà soldées — la recopie pour une commande à un BL complet, la
+   * somme des BL pour une partielle. Zéro écart, ou E6c2 ne bascule pas.
+   */
+  readonly billing: {
+    readonly closed: number;
+    readonly corrected: number;
+    readonly compared: number;
+    readonly gaps: readonly BillingGap[];
   };
 }

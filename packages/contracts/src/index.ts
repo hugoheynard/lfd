@@ -755,10 +755,17 @@ export type {
   AdminOrderCustomerView,
   AdminOrderPlacedByView,
   AdminOrderShortfall,
+  AdminOrderShortfallDecision,
   AdminOrderShortfallLine,
   AdminOrderView,
+  AdminShortfallDecisionPayload,
+  ShortfallRemainder,
 } from "./admin-order-detail.js";
-export { adminCancelOrderPayloadSchema } from "./admin-order-detail.js";
+export {
+  adminCancelOrderPayloadSchema,
+  adminShortfallDecisionPayloadSchema,
+  shortfallRemainderSchema,
+} from "./admin-order-detail.js";
 export {
   announcedOrderUntil,
   clockTimeSchema,

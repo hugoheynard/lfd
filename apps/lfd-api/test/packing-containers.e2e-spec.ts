@@ -59,6 +59,10 @@ class BreakableSheets extends PackingSheetRepository {
     return this.real().lock(serviceDay, orderId);
   }
 
+  lockLatestOf(orderId: string): Promise<PackingSheet | null> {
+    return this.real().lockLatestOf(orderId);
+  }
+
   save(sheet: PackingSheet): Promise<void> {
     if (this.failNextSave) {
       this.failNextSave = false;

@@ -54,6 +54,9 @@ describe("DeliveryNote.planFromOrder", () => {
       number: "BL-1042-1",
       status: "planned",
       plannedAt: PLANNED_AT,
+      // Le papier (plan E6, § 14) : version 1, jamais imprimé.
+      contentVersion: 1,
+      printed: null,
       voidedAt: null,
       preparedAt: null,
       handedOverAt: null,

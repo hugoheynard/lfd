@@ -15,6 +15,7 @@ import type {
   OrderQuoteView,
   AdminOrderView,
   AdminCancelOrderPayload,
+  AdminShortfallDecisionPayload,
   OrderRevisedResponse,
   OrderRevisionEntryView,
   OrderRevisionPayload,
@@ -178,6 +179,20 @@ export class AdminOrdersService {
    * le détail. Les refus (`409 orders.cancel.*`) remontent tels quels — leur
    * message est la phrase à montrer.
    */
+  /**
+   * **« Décider du départ »** d'une commande dont le colisage a signalé un
+   * manque (plan E6, E6b) — ce qui est au bac part, le reste est abandonné.
+   * `204` : l'écran relit le détail. Les refus (`409`) portent leur phrase.
+   */
+  async decideShortfall(id: string, payload: AdminShortfallDecisionPayload): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(
+        `${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}/shortfall-decision`,
+        payload,
+      ),
+    );
+  }
+
   async cancel(id: string, payload: AdminCancelOrderPayload): Promise<void> {
     await firstValueFrom(
       this.http.post<void>(

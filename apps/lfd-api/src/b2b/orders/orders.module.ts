@@ -48,6 +48,11 @@ import {
   ORDER_REVISION_PROVIDERS,
 } from "./order-revision.providers.js";
 import {
+  ORDER_SHORTFALL_CONTROLLERS,
+  ORDER_SHORTFALL_EXPORTS,
+  ORDER_SHORTFALL_PROVIDERS,
+} from "./order-shortfall.providers.js";
+import {
   CUSTOMER_CANCELLATION_CONTROLLERS,
   CUSTOMER_CANCELLATION_PROVIDERS,
 } from "./customer-cancellation.providers.js";
@@ -291,6 +296,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     ...CUSTOMER_CANCELLATION_CONTROLLERS,
     // Modifier une commande (plan `plan-modifier-une-commande.md`, M1).
     ...ORDER_REVISION_CONTROLLERS,
+    ...ORDER_SHORTFALL_CONTROLLERS,
     OrdersController,
     MyShopCatalogueController,
     MyShopQuoteController,
@@ -358,6 +364,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     OrderCancellation,
     ...CUSTOMER_CANCELLATION_PROVIDERS,
     ...ORDER_REVISION_PROVIDERS,
+    ...ORDER_SHORTFALL_PROVIDERS,
     VoucherRestitutionRefusal,
     // Lot C5 : la règle d'annulation et l'engagement comptable — le port est
     // relié par `appBootstrap/account-order-engagement.module.ts`.
@@ -625,6 +632,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // Ce que le bon de livraison suit de la commande (plan E2).
     OrderProgressForDeliveryNote,
     OrdersToReconcileDeliveryNotes,
+    ...ORDER_SHORTFALL_EXPORTS,
   ],
 })
 export class OrdersModule {}

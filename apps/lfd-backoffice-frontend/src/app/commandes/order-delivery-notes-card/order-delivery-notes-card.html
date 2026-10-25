@@ -27,6 +27,16 @@
               </button>
             }
           </span>
+          @if (note.reprintNeeded) {
+            <fold-callout
+              class="reprint"
+              appearance="inset"
+              variant="warning"
+              [attr.data-reprint-needed]="note.number"
+            >
+              {{ reprintSentence }}
+            </fold-callout>
+          }
         </div>
       }
     </div>

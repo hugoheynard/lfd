@@ -16,6 +16,7 @@ import {
   RevisionBelowVoucherError,
   RevisionFreesAccountOrderError,
   RevisionRequiresPaymentError,
+  ShortfallDecidedRevisionError,
   UnchangedOrderRevisionError,
 } from "../errors/order-revision-errors.js";
 import { isCardSettlement } from "../services/order-revisability.js";
@@ -48,6 +49,12 @@ export interface RevisableOrder {
   readonly status: OrderStatus;
   readonly paymentStatus: PaymentStatus;
   readonly totalCents: number;
+  /**
+   * Son départ incomplet est décidé (E6b) : elle ne se modifie plus, pour que
+   * la décision et la commande ne divergent jamais. Relu sous le verrou de
+   * `orders` par la révision (`OrderRevisionRepository.lock`).
+   */
+  readonly shortfallDecided: boolean;
   readonly stripePaymentIntentId: string | null;
   readonly cancelledAt: Date | null;
   readonly refunds: RefundPosition;
@@ -127,6 +134,19 @@ export interface OrderRevisionToSave {
 export function ensureRevisableSettlement(order: RevisableOrder): void {
   if (isCardSettlement(order.paymentStatus, order.totalCents)) {
     throw new CardOrderNotRevisableError(order.orderId);
+  }
+}
+
+/**
+ * Une commande dont le départ incomplet est décidé ne se modifie plus (E6b,
+ * plan E6 § 12.2) : la décision et la commande ne divergent jamais. Jugé par
+ * {@link Order.recompose} et, sous le verrou, par la révision.
+ *
+ * @throws {ShortfallDecidedRevisionError}
+ */
+export function ensureNoShortfallDecision(order: RevisableOrder): void {
+  if (order.shortfallDecided) {
+    throw new ShortfallDecidedRevisionError(order.orderId);
   }
 }
 

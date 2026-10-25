@@ -84,6 +84,11 @@
           >
             {{ readyLabel() }}
           </button>
+          <!-- Plan E6, § 14 : le BL imprimé ne dit plus le bac. -->
+          <app-packing-reprint-notice
+            [orderId]="order.orderId"
+            [needed]="order.deliveryNoteReprintNeeded"
+          />
           @if (order.shortfallReportedAt !== null) {
             <!-- Lot E6a : le commerce attend une décision. Fermer complet l'efface. -->
             <fold-callout variant="warning" data-shortfall-reported>

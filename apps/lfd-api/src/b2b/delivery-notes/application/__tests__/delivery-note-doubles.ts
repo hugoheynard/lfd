@@ -7,7 +7,22 @@ import {
   OrdersToReconcileDeliveryNotes,
   type DeliveryNoteOrderProgress,
 } from "../../../orders/domain/ports/order-progress-for-delivery-note.js";
+import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
+import {
+  OrderBilling,
+  type OrderBillingSnapshot,
+} from "../../../orders/domain/entities/order-billing.js";
+import {
+  AccountOrderEngagementReader,
+  type AccountEngagement,
+} from "../../../orders/domain/ports/account-order-engagement.js";
+import { OrderBillingRepository } from "../../../orders/domain/ports/order-billing.repository.js";
+import {
+  ShortfallDecisionReader,
+  type DecidedDeparture,
+} from "../../../orders/domain/ports/shortfall-decision.reader.js";
 import { DeliveryNote, type DeliveryNoteState } from "../../domain/entities/delivery-note.js";
+import { OrderBillingCloser } from "../services/order-billing-closer.js";
 import { DeliveryNoteRepository } from "../../domain/ports/delivery-note.repository.js";
 
 /**
@@ -121,4 +136,78 @@ class InMemoryOrderScan extends OrdersToReconcileDeliveryNotes {
     this.table.locked.push(orderId);
     return this.table.progressOf(orderId);
   }
+}
+
+/** Les décisions de départ incomplet (E6b), posées par le test. */
+export class InMemoryShortfallDecisions extends ShortfallDecisionReader {
+  readonly decided = new Map<string, DecidedDeparture>();
+
+  decidedFor(orderIds: readonly string[]): Promise<ReadonlyMap<string, DecidedDeparture>> {
+    return Promise.resolve(
+      new Map([...this.decided].filter(([orderId]) => orderIds.includes(orderId))),
+    );
+  }
+}
+
+/**
+ * Le solde des commandes (E6c1) : des snapshots, rendus en agrégats neufs ;
+ * `save` reproduit le `WHERE billable_total_cents IS NULL` de la pose.
+ */
+export class InMemoryOrderBillings extends OrderBillingRepository {
+  readonly rows = new Map<string, OrderBillingSnapshot>();
+  readonly writes: string[] = [];
+
+  put(snapshot: OrderBillingSnapshot): void {
+    this.rows.set(snapshot.orderId, snapshot);
+  }
+
+  load(orderIds: readonly string[]): Promise<readonly OrderBilling[]> {
+    return Promise.resolve(
+      orderIds.flatMap((id) => {
+        const row = this.rows.get(id);
+        return row === undefined ? [] : [OrderBilling.fromSnapshot(row)];
+      }),
+    );
+  }
+
+  lock(orderId: string): Promise<OrderBilling | null> {
+    const row = this.rows.get(orderId);
+    return Promise.resolve(row === undefined ? null : OrderBilling.fromSnapshot(row));
+  }
+
+  save(billing: OrderBilling): Promise<boolean> {
+    const write = billing.pendingWrite;
+    const current = this.rows.get(billing.orderId);
+    if (write === null || current === undefined) {
+      return Promise.resolve(false);
+    }
+    if (write === "closed" && current.billable !== null) {
+      return Promise.resolve(false);
+    }
+    this.rows.set(billing.orderId, billing.toSnapshot());
+    this.writes.push(`${write}:${billing.orderId}`);
+    return Promise.resolve(true);
+  }
+}
+
+/** L'engagement comptable, posé par le test ; « libre » par défaut. */
+export class FixedEngagements extends AccountOrderEngagementReader {
+  readonly invoiced = new Set<string>();
+
+  engagementOf(orderId: string): Promise<AccountEngagement | null> {
+    return Promise.resolve(
+      this.invoiced.has(orderId)
+        ? { kind: "invoiced", invoiceNumber: "F-TEST-1", issuedOn: "2030-01-31" }
+        : { kind: "free" },
+    );
+  }
+}
+
+/** Le solde, monté sur ses doubles. */
+export function billingCloserOf(
+  notes: DeliveryNoteRepository,
+  billings: OrderBillingRepository = new InMemoryOrderBillings(),
+  engagements: AccountOrderEngagementReader = new FixedEngagements(),
+): OrderBillingCloser {
+  return new OrderBillingCloser(billings, notes, engagements, new DirectUnitOfWork());
 }

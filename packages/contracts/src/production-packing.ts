@@ -185,6 +185,12 @@ export interface PackingSheet {
    */
   readonly shortfallReportedAt: string | null;
   /**
+   * **Le bon de livraison a changé depuis son impression** (plan E6, § 14) :
+   * l'écran dit « réimprimez-le ». Calculé par le serveur ; jamais imprimé =
+   * `false`.
+   */
+  readonly deliveryNoteReprintNeeded: boolean;
+  /**
    * Les produits froids posés hors d'un bac isotherme, par nom (2026-10-07) —
    * livraison rangée en contenants seulement ; vide sinon. Un AVERTISSEMENT :
    * « Déclarer prête » reste permis.

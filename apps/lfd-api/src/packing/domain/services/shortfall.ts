@@ -30,3 +30,35 @@ export function shortfallOf(
   }));
   return counted.some((line) => line.packed < line.due) ? counted : null;
 }
+
+/** Une quantité autorisée à partir, par article (E6b). */
+export interface AuthorizedLine {
+  readonly sku: string;
+  readonly quantity: number;
+}
+
+/**
+ * **Les lignes dues réduites au départ décidé** (E6b, plan E6 § 13) — ou
+ * `null` si le bac n'est plus celui du signal : un article au bac en d'autres
+ * quantités, un article décidé absent de la fiche, une ligne de la fiche que
+ * la décision ne nomme pas.
+ */
+export function authorizedLinesOf(
+  lines: readonly SheetLine[],
+  authorized: readonly AuthorizedLine[],
+  allocatedOf: (sku: string) => number,
+): readonly SheetLine[] | null {
+  const bySku = new Map(authorized.map((line) => [line.sku, line.quantity]));
+  if (bySku.size !== lines.length || authorized.length !== lines.length) {
+    return null;
+  }
+  const reduced: SheetLine[] = [];
+  for (const line of lines) {
+    const quantity = bySku.get(line.sku);
+    if (quantity === undefined || quantity !== allocatedOf(line.sku) || quantity > line.quantity) {
+      return null;
+    }
+    reduced.push({ ...line, quantity });
+  }
+  return reduced;
+}

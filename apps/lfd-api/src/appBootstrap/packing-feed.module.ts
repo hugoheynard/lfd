@@ -3,7 +3,8 @@ import { Global, Module } from "@nestjs/common";
 import { PrismaPackingDayVersionReader } from "../packing/infrastructure/prisma-packing-day-version.reader.js";
 import { PrismaDayPackingProgressReader } from "../packing/infrastructure/prisma-day-packing-progress.reader.js";
 import { PrismaPackedOrdersReader } from "../packing/infrastructure/prisma-packed-orders.reader.js";
-import { PackedResuppliesReader } from "../packing/channels/commerce/index.js";
+import { PackedResuppliesReader, ShortfallDesk } from "../packing/channels/commerce/index.js";
+import { PackingShortfallDesk } from "../packing/application/station/packing-shortfall-desk.js";
 import { PrismaPackedResuppliesReader } from "../packing/infrastructure/prisma-packed-resupplies.reader.js";
 import { PackingModule } from "../packing/packing.module.js";
 import {
@@ -55,6 +56,9 @@ import { ProductionModule } from "../production/production.module.js";
     // commencé ? » — la production déclare, le colisage implémente.
     { provide: DayPackingProgressReader, useClass: PrismaDayPackingProgressReader },
     { provide: PackedResuppliesReader, useExisting: PrismaPackedResuppliesReader },
+    // Le départ incomplet (E6b, 2026-10-25) — le colisage déclare ET
+    // implémente, le commerce l'appelle dans la transaction de sa décision.
+    { provide: ShortfallDesk, useExisting: PackingShortfallDesk },
   ],
   exports: [
     PackingDayVersionReader,
@@ -63,6 +67,7 @@ import { ProductionModule } from "../production/production.module.js";
     PackedOrdersReader,
     DayPackingProgressReader,
     PackedResuppliesReader,
+    ShortfallDesk,
   ],
 })
 export class PackingFeedModule {}

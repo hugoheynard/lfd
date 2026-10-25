@@ -17,6 +17,10 @@ function progressColumns(head: Omit<DeliveryNoteState, "lines">) {
     handedOverAt: head.handedOverAt,
     receivedOn: dateOf(head.receivedOn),
     ...termsColumns(head.terms),
+    contentVersion: head.contentVersion ?? 1,
+    printedVersion: head.printed?.version ?? null,
+    printedAt: head.printed?.at ?? null,
+    printedBy: head.printed?.by ?? null,
   };
 }
 

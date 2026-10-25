@@ -6,6 +6,8 @@ import {
   FixedConfirmedOrders,
   InMemoryDeliveryNotes,
   InMemoryOrderProgress,
+  InMemoryShortfallDecisions,
+  billingCloserOf,
 } from "../../__tests__/delivery-note-doubles.js";
 import { DeliveryNote } from "../../../domain/entities/delivery-note.js";
 import { DeliveryNoteAligner } from "../delivery-note-aligner.js";
@@ -64,12 +66,19 @@ function scene() {
   const progress = new InMemoryOrderProgress();
   const ids = new FixedIdGenerator("dn");
   const clock = new FixedClock(NOW);
-  const planner = new DeliveryNotePlanner(new FixedConfirmedOrders(), notes, ids, clock);
+  const planner = new DeliveryNotePlanner(
+    new FixedConfirmedOrders(),
+    notes,
+    ids,
+    clock,
+    new InMemoryShortfallDecisions(),
+  );
   const follower = new DeliveryNoteFollower(
     planner,
     progress,
-    new DeliveryNoteAligner(notes, ids),
+    new DeliveryNoteAligner(notes, ids, new InMemoryShortfallDecisions()),
     clock,
+    billingCloserOf(notes),
   );
   return { notes, progress, follower };
 }
@@ -154,10 +163,17 @@ describe("DeliveryNoteFollower — les gestes (plan E2, § 8.3)", () => {
     const ids = new FixedIdGenerator("dn");
     const clock = new FixedClock(NOW);
     const follower = new DeliveryNoteFollower(
-      new DeliveryNotePlanner(new FixedConfirmedOrders(), notes, ids, clock),
+      new DeliveryNotePlanner(
+        new FixedConfirmedOrders(),
+        notes,
+        ids,
+        clock,
+        new InMemoryShortfallDecisions(),
+      ),
       progress,
-      new DeliveryNoteAligner(notes, ids),
+      new DeliveryNoteAligner(notes, ids, new InMemoryShortfallDecisions()),
       clock,
+      billingCloserOf(notes),
     );
     await notes.save(DeliveryNote.planFromOrder("dn_other", order(), CONFIRMED_AT));
     progress.put(order({ status: "ready", readyAt: READY_AT }));

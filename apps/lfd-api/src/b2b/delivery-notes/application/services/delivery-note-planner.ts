@@ -7,7 +7,12 @@ import {
   OrderLinesForDeliveryNote,
   type DeliveryNoteOrder,
 } from "../../../orders/domain/ports/order-lines-for-delivery-note.js";
+import {
+  ShortfallDecisionReader,
+  type DecidedDeparture,
+} from "../../../orders/domain/ports/shortfall-decision.reader.js";
 import { DeliveryNote } from "../../domain/entities/delivery-note.js";
+import { departingSourceOf } from "../../domain/services/departing-source.js";
 import { DeliveryNoteRepository } from "../../domain/ports/delivery-note.repository.js";
 
 /**
@@ -34,6 +39,7 @@ export class DeliveryNotePlanner {
     private readonly notes: DeliveryNoteRepository,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
+    private readonly decisions: ShortfallDecisionReader,
   ) {}
 
   async planConfirmed(orderIds: readonly string[], closedAt: Date): Promise<void> {
@@ -41,10 +47,14 @@ export class DeliveryNotePlanner {
     if (confirmed.length === 0) {
       return;
     }
-    const existing = await this.notes.loadForOrders(confirmed.map((order) => order.orderId));
+    const ids = confirmed.map((order) => order.orderId);
+    const [existing, decided] = await Promise.all([
+      this.notes.loadForOrders(ids),
+      this.decisions.decidedFor(ids),
+    ]);
     for (const order of confirmed) {
       const notes = existing.filter((note) => note.orderId === order.orderId);
-      const note = this.guardedNoteFor(order, notes);
+      const note = this.guardedNoteFor(order, decided.get(order.orderId), notes);
       if (note === null) {
         continue;
       }
@@ -69,10 +79,12 @@ export class DeliveryNotePlanner {
    */
   private guardedNoteFor(
     order: DeliveryNoteOrder,
+    decision: DecidedDeparture | undefined,
     notes: readonly DeliveryNote[],
   ): DeliveryNote | null {
     try {
-      return this.noteFor(order, notes);
+      // Une commande décidée (E6b) est prévue sur ce qui part, jamais en entier.
+      return this.noteFor(departingSourceOf(order, decision), notes);
     } catch (error) {
       if (!(error instanceof AppError)) {
         throw error;

@@ -47,6 +47,7 @@ const NOTE: StaffNote = {
   preparedAt: '2026-09-08T06:00:00.000Z',
   handedOverAt: '2026-09-08T07:00:00.000Z',
   voidedAt: null,
+  reprintNeeded: false,
 };
 
 interface Booted {
@@ -64,7 +65,11 @@ async function boot(read: () => Promise<readonly StaffNote[]>): Promise<Booted> 
           ofOrder: () => read(),
           carrierPdf: () => Promise.resolve(new Blob()),
           clientPdf: () => Promise.resolve(new Blob()),
-        } satisfies Pick<DeliveryNotesService, 'ofOrder' | 'carrierPdf' | 'clientPdf'>,
+          openCarrier: () => Promise.resolve(),
+        } satisfies Pick<
+          DeliveryNotesService,
+          'ofOrder' | 'carrierPdf' | 'clientPdf' | 'openCarrier'
+        >,
       },
       {
         provide: NotifyService,
@@ -107,5 +112,19 @@ describe('OrderDeliveryNotesCard', () => {
     const { element } = await boot(() => Promise.reject(new Error('500')));
 
     expect(element.querySelector('[data-order-delivery-notes-error]')).not.toBeNull();
+  });
+
+  it('dit « réimprimez-le » sur un BL imprimé puis changé (plan E6, § 14)', async () => {
+    const { element } = await boot(() => Promise.resolve([{ ...NOTE, reprintNeeded: true }]));
+
+    expect(element.querySelector('[data-reprint-needed="BL-1042-1"]')?.textContent).toContain(
+      'Le bon de livraison a changé depuis son impression — réimprimez-le.',
+    );
+  });
+
+  it('ne dit rien sur un BL jamais imprimé ou à jour', async () => {
+    const { element } = await boot(() => Promise.resolve([NOTE]));
+
+    expect(element.querySelector('[data-reprint-needed]')).toBeNull();
   });
 });

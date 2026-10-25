@@ -45,6 +45,13 @@
 
       <!-- Le manque signalé au colisage (E6a) : rien sans signalement en vigueur. -->
       <app-order-shortfall-banner [shortfall]="o.shortfall" [lines]="o.lines" />
+      <!-- La décision du départ (E6b), sous le bandeau : rien sans manque signalé. -->
+      <app-order-shortfall-decision
+        [orderId]="o.id"
+        [shortfall]="o.shortfall"
+        [lines]="o.lines"
+        (decided)="onShortfallDecided()"
+      />
 
       <!-- L'argent à rendre d'une commande annulée (C4.9) : rien sans demande. -->
       <app-order-refund-banner [orderId]="o.id" [refund]="o.refund" (retried)="load()" />
@@ -53,7 +60,7 @@
       <app-order-refunds-card [refunds]="o.refunds" />
 
       <!-- Les bons de livraison (plan E5a, § 3) : rien avant l'arrêt du plan. -->
-      <app-order-delivery-notes-card [orderId]="o.id" />
+      <app-order-delivery-notes-card [orderId]="o.id" [refresh]="notesRefresh()" />
 
       <!-- La facture et les avoirs de la commande (E5c) : rien quand il n'y en a pas. -->
       <app-order-invoices-card [orderId]="o.id" />

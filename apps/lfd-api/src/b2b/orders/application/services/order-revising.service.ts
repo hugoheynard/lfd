@@ -6,6 +6,7 @@ import {
   type OrderRevisionToSave,
   type RevisableOrder,
   type RevisionActor,
+  ensureNoShortfallDecision,
 } from "../../domain/entities/order-revision.js";
 import {
   OrderWithoutSalesTermsError,
@@ -71,6 +72,9 @@ export class OrderRevising {
    * @throws {OrderWithoutSalesTermsError} une commande d'avant les CGV figées.
    */
   async ensureRevisable(order: RevisableOrder): Promise<void> {
+    // La règle est celle de l'agrégat ; rejouée ici sous le verrou de `orders`
+    // que `OrderRevisionRepository.lock` vient de poser (E6b).
+    ensureNoShortfallDecision(order);
     const block = await this.standingOf(order, null);
     if (block !== null) {
       throw standingRevisionErrorOf(order.orderId, block);

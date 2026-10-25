@@ -45,6 +45,8 @@ export interface BoardSources {
   readonly cold: ColdPacking;
   /** Le départ connu de chaque commande, par id, lu à la livraison (lot L2). */
   readonly departures: ReadonlyMap<string, LocalDeparture>;
+  /** Les commandes dont le BL est à réimprimer (plan E6, § 14). Absent = aucune. */
+  readonly reprintNeeded?: ReadonlySet<string>;
 }
 
 /**

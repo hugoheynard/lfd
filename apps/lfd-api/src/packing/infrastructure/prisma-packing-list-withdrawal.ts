@@ -28,6 +28,8 @@ export class PrismaPackingListWithdrawal extends PackingListWithdrawal {
         serviceDay,
         orderId: { in: [...orderIds] },
         packedAt: null,
+        // Une fiche dont le départ est décidé reste (E6b, plan E6 § 13).
+        shortfallAuthorizedAt: null,
         containerCount: 0,
         containers: { none: {} },
         lines: { none: { packedAt: { not: null } } },

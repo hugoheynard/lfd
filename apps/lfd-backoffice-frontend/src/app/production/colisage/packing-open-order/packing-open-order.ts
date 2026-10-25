@@ -13,6 +13,7 @@ import { isListed } from '../container-board';
 import { PackingContainerBoard } from '../packing-container-board/packing-container-board';
 import { PackingContainers } from '../packing-containers/packing-containers';
 import { PackingLine } from '../packing-line/packing-line';
+import { PackingReprintNotice } from '../packing-reprint-notice/packing-reprint-notice';
 
 /**
  * **La commande ouverte au poste** — la colonne du milieu : la bande, les
@@ -37,6 +38,7 @@ import { PackingLine } from '../packing-line/packing-line';
   selector: 'app-packing-open-order',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    PackingReprintNotice,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldEmptyStateComponent,

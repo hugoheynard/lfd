@@ -127,6 +127,7 @@ function packingView(closedAt: string | null = 'x'): ProductionPackingView {
               canDeclareReady: false,
               canReportShortfall: false,
               shortfallReportedAt: null,
+              deliveryNoteReprintNeeded: false,
               coldOutsideIsotherm: [],
               packedAt: null,
               packedBy: null,

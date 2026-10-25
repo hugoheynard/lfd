@@ -9,8 +9,18 @@ import {
   PackedOrderSealedError,
   PackingLineNotFoundError,
 } from "../errors/packing-station-errors.js";
-import { NothingShortError } from "../errors/packing-shortfall-errors.js";
-import { type ShortfallLine, shortfallOf } from "../services/shortfall.js";
+import {
+  NothingShortError,
+  ShortfallAlreadyAuthorizedError,
+  ShortfallContentsChangedError,
+  ShortfallSheetSealedError,
+} from "../errors/packing-shortfall-errors.js";
+import {
+  type AuthorizedLine,
+  authorizedLinesOf,
+  type ShortfallLine,
+  shortfallOf,
+} from "../services/shortfall.js";
 import {
   type ContainerLine,
   type ContainerMark,
@@ -67,6 +77,7 @@ export class PackingSheet {
     containerList: readonly PackingContainerState[],
     readonly fulfillmentMethod: "pickup" | "delivery",
     private shortfallValue: Date | null,
+    private authorizedValue: Date | null,
   ) {
     this.contents = OrderContents.of(reference, containerList);
   }
@@ -83,6 +94,7 @@ export class PackingSheet {
       snapshot.containerList,
       snapshot.fulfillmentMethod,
       snapshot.shortfallReportedAt ?? null,
+      snapshot.shortfallAuthorizedAt ?? null,
     );
   }
 
@@ -149,6 +161,9 @@ export class PackingSheet {
    */
   reportShortfall(at: Date): readonly ShortfallLine[] {
     this.assertListedAndOpen();
+    if (this.authorizedValue !== null) {
+      throw new ShortfallAlreadyAuthorizedError(this.reference);
+    }
     const lines = shortfallOf(this.linesValue, (sku) => this.contents.allocatedOf(sku));
     if (lines === null) {
       throw new NothingShortError(this.reference);
@@ -159,6 +174,40 @@ export class PackingSheet {
 
   get shortfallReportedAt(): Date | null {
     return this.shortfallValue;
+  }
+
+  get shortfallAuthorizedAt(): Date | null {
+    return this.authorizedValue;
+  }
+
+  /**
+   * **Le départ incomplet décidé par le commerce** (E6b, plan E6 § 12.2 et
+   * § 13) : vérifie que le bac contient EXACTEMENT les quantités décidées, puis
+   * réduit chaque ligne due à ce qui est au bac — `seal` passe alors sans
+   * exception à sa règle. La marque « manque » est levée sans fait : le
+   * commerce résout lui-même son signal (aucun `shortfall_cleared`).
+   *
+   * @throws {ShortfallSheetSealedError} le bac est déjà fermé complet.
+   * @throws {ContainersCountedError} @throws {ShortfallContentsChangedError}
+   */
+  authorizeShortfall(authorized: readonly AuthorizedLine[], mark: SheetMark): void {
+    if (this.packedValue !== null) {
+      throw new ShortfallSheetSealedError(this.reference);
+    }
+    this.assertListed();
+    const reduced = authorizedLinesOf(this.linesValue, authorized, (sku) =>
+      this.contents.allocatedOf(sku),
+    );
+    if (reduced === null) {
+      throw new ShortfallContentsChangedError(this.reference);
+    }
+    this.linesValue = reduced;
+    // Une ligne devenue complète par la réduction est signée par la décision.
+    for (const line of reduced) {
+      this.markByAllocation(line, line.packed ?? { ...mark, initials: "" });
+    }
+    this.shortfallValue = null;
+    this.authorizedValue = mark.at;
   }
 
   /**
@@ -202,6 +251,7 @@ export class PackingSheet {
       containerList: this.contents.containers,
       fulfillmentMethod: this.fulfillmentMethod,
       shortfallReportedAt: this.shortfallValue,
+      shortfallAuthorizedAt: this.authorizedValue,
     };
   }
 

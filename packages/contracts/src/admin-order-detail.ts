@@ -57,7 +57,37 @@ export interface AdminOrderView extends OrderView {
 export interface AdminOrderShortfall {
   readonly reportedAt: string;
   readonly lines: readonly AdminOrderShortfallLine[];
+  /**
+   * **La décision du départ** (lot E6b) — `null` tant qu'elle est attendue.
+   * Une fois prise, elle est définitive : le bandeau dit ce qui est parti et
+   * que le reste est abandonné.
+   */
+  readonly decision: AdminOrderShortfallDecision | null;
 }
+
+/**
+ * Ce que devient le reste d'un départ incomplet. `abandoned` seul : « à
+ * relivrer » arrive avec le reliquat (E7, plan
+ * `documentation/commandes/plan-e6-le-depart-incomplet.md` § 13).
+ */
+export const shortfallRemainderSchema = z.literal("abandoned");
+export type ShortfallRemainder = z.infer<typeof shortfallRemainderSchema>;
+
+/** La décision prise : l'instant ISO, et le sort du reste. */
+export interface AdminOrderShortfallDecision {
+  readonly decidedAt: string;
+  readonly remainder: ShortfallRemainder;
+}
+
+/**
+ * Corps de `POST /admin/orders/:id/shortfall-decision` (lot E6b). Les
+ * quantités ne voyagent pas : ce qui part est ce que le colisage a figé au
+ * signal en vigueur, relu par le serveur sous verrou.
+ */
+export const adminShortfallDecisionPayloadSchema = z.object({
+  remainder: shortfallRemainderSchema,
+});
+export type AdminShortfallDecisionPayload = z.infer<typeof adminShortfallDecisionPayloadSchema>;
 
 export interface AdminOrderShortfallLine {
   readonly sku: string;

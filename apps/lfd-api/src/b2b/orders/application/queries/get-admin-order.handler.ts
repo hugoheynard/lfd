@@ -138,6 +138,13 @@ function shortfallViewOf(reading: OrderShortfallReading): AdminOrderShortfall {
   return {
     reportedAt: reading.reportedAt.toISOString(),
     lines: reading.lines.map((line) => ({ sku: line.sku, due: line.due, packed: line.packed })),
+    decision:
+      reading.decision === null
+        ? null
+        : {
+            decidedAt: reading.decision.decidedAt.toISOString(),
+            remainder: reading.decision.remainder,
+          },
   };
 }
 

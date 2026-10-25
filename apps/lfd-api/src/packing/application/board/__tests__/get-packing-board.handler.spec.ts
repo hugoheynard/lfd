@@ -1,3 +1,4 @@
+import { DeliveryNoteReprintsReader } from "../../../channels/commerce/index.js";
 import { localToInstant } from "@lfd/contracts";
 
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
@@ -101,6 +102,15 @@ function order(orderId: string, packedBy: string | null): BoardOrder {
   };
 }
 
+/** Les BL à réimprimer, lus au commerce (plan E6, § 14) : posés par le test. */
+class FixedReprints extends DeliveryNoteReprintsReader {
+  readonly needed = new Set<string>();
+
+  reprintNeededAmong(orderIds: readonly string[]): Promise<ReadonlySet<string>> {
+    return Promise.resolve(new Set(orderIds.filter((id) => this.needed.has(id))));
+  }
+}
+
 function setup(day: PackingBoardDay, known: readonly OrderDeparture[] = []) {
   const departures = new FixedDepartures(known);
   const held = new FixedHeld(new Set(["2"]));
@@ -116,6 +126,7 @@ function setup(day: PackingBoardDay, known: readonly OrderDeparture[] = []) {
     new FixedClock(AT),
     new ScriptedBinDesk(),
     departures,
+    new FixedReprints(),
   );
   return { handler, held, destinations, authors, departures };
 }
