@@ -308,3 +308,24 @@ constitué ; le verbe (`settle` désigne déjà le RÈGLEMENT ici).
   BL (le code existant borne déjà au panier), ou reportée ?
 - **Q-E6-3.** Une commande partielle se **facture au mois de son solde**
   (`settled_on`) : d'accord ?
+
+## 11. Décisions (Hugo, 2026-10-25 : « prends les meilleures décisions »)
+
+- **Q-E6-1 — un port ou une surtaxe en POURCENTAGE suit ce qui part.** Un
+  pourcentage décrit un rapport au panier, comme une remise en pourcentage ; le
+  facturer sur ce qui n'est pas parti serait injuste. Un montant FIXE reste
+  entier (Q-I2).
+- **Q-E6-2 — une remise fixe est plafonnée au BL.** Un BL n'a jamais un total
+  négatif, `discountCentsOf` borne déjà au panier, et la part restante portait
+  sur des articles non livrés.
+- **Q-E6-3 — une commande se facture au mois de son solde** (`settled_on`) :
+  une commande reste sur une seule facture ; relevés, avoirs, prélèvements
+  inchangés.
+- **Les deux bloquants du § 10, tranchés par l'assistant** : l'assiette éligible
+  d'un BL se lit sur la **ligne de commande** (non nullable), jamais sur le BL ;
+  la fabrique du BL partiel est nommée au plan de bâti d'E6b+E6c, et calcule
+  chaque terme par `cartAdjustmentCents` / `discountCentsOf` avec le
+  `deliveryVatMode` et le taux de surtaxe de la commande, puis passe les mêmes
+  gardes que `Order.draft`.
+- **Le texte de facture** « Bons de commande : … » devient « Confirmations de
+  commande : … » (Hugo).
