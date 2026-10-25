@@ -8,12 +8,13 @@ import {
 
 import type { PackingSheet } from '@lfd/contracts';
 
+import { AbandonedRemainder } from '../../../commandes/abandoned-remainder/abandoned-remainder';
+import { DeliveryNotePrintNotice } from '../../../commandes/delivery-note-print-notice/delivery-note-print-notice';
 import type { PackingStack } from '../../packing-board';
 import { isListed } from '../container-board';
 import { PackingContainerBoard } from '../packing-container-board/packing-container-board';
 import { PackingContainers } from '../packing-containers/packing-containers';
 import { PackingLine } from '../packing-line/packing-line';
-import { PackingReprintNotice } from '../packing-reprint-notice/packing-reprint-notice';
 
 /**
  * **La commande ouverte au poste** — la colonne du milieu : la bande, les
@@ -38,7 +39,8 @@ import { PackingReprintNotice } from '../packing-reprint-notice/packing-reprint-
   selector: 'app-packing-open-order',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    PackingReprintNotice,
+    AbandonedRemainder,
+    DeliveryNotePrintNotice,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldEmptyStateComponent,
@@ -87,6 +89,8 @@ export class PackingOpenOrder {
 
   /** « Il manque » (E6a) : la commande à signaler — `Colisage` l'écrit puis relit. */
   readonly reportShortfall = output<PackingSheet>();
+  /** Le BL est ouvert pour impression : au poste de relire (« Nouveau BL imprimé »). */
+  readonly deliveryNotePrinted = output<void>();
 
   /**
    * La commande tient-elle ses contenants dans la colonne (K2b) ? Sinon, elle

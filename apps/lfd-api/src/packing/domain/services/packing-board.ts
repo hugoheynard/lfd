@@ -2,7 +2,13 @@ import type { ColdPacking } from "./packing-board-sheet.js";
 import type { PackingResource, ProductionPackingView } from "@lfd/contracts";
 
 import type { PackingBoardDay } from "../ports/packing-board.reader.js";
-import { allocationOf, type Awaiting, byNameThenSku, sheetOf } from "./packing-board-sheet.js";
+import {
+  allocationOf,
+  type Awaiting,
+  byNameThenSku,
+  type DecidedShortfall,
+  sheetOf,
+} from "./packing-board-sheet.js";
 import { leftToPlace, shortfall } from "./placement.js";
 import { compareReadyBy, type LocalDeparture, readyByOf } from "./ready-by.js";
 import { relativeDayOf } from "./relative-day.js";
@@ -47,6 +53,8 @@ export interface BoardSources {
   readonly departures: ReadonlyMap<string, LocalDeparture>;
   /** Les commandes dont le BL est à réimprimer (plan E6, § 14). Absent = aucune. */
   readonly reprintNeeded?: ReadonlySet<string>;
+  /** Les départs incomplets décidés, par id, lus au commerce. Absent = aucun. */
+  readonly aftermath?: ReadonlyMap<string, DecidedShortfall>;
 }
 
 /**

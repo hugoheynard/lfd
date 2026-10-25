@@ -40,6 +40,18 @@
     <!-- Une commande `counted` : ni « Prête » ni « Rouvrir » (§17.6). -->
     @if (listed()) {
       <div class="co-close">
+        <!-- Départ incomplet décidé : ce qui n'est pas parti reste dit, et le
+             BL qui a changé se réimprime (plan E6, § 14 ; Hugo, 2026-10-25). -->
+        @if (order.abandonedRemainder?.length) {
+          <app-abandoned-remainder [lines]="order.abandonedRemainder" />
+        }
+        @if (order.deliveryNotePrint; as print) {
+          <app-delivery-note-print-notice
+            [orderId]="order.orderId"
+            [state]="print"
+            (printed)="deliveryNotePrinted.emit()"
+          />
+        }
         @if (order.packedAt !== null) {
           <p class="co-closed-said">
             <fold-icon name="package-check" size="sm" />
@@ -84,11 +96,6 @@
           >
             {{ readyLabel() }}
           </button>
-          <!-- Plan E6, § 14 : le BL imprimé ne dit plus le bac. -->
-          <app-packing-reprint-notice
-            [orderId]="order.orderId"
-            [needed]="order.deliveryNoteReprintNeeded"
-          />
           @if (order.shortfallReportedAt !== null) {
             <!-- Lot E6a : le commerce attend une décision. Fermer complet l'efface. -->
             <fold-callout variant="warning" data-shortfall-reported>

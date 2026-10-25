@@ -28,6 +28,9 @@ function card(reference: string, overrides: Partial<PackingCard> = {}): PackingC
     initials: ['LT'],
     slotMinutes: 420,
     packedAt: null,
+    sheetOrderId: `o-${reference}`,
+    deliveryNotePrint: null,
+    abandoned: [],
     ...overrides,
   };
 }

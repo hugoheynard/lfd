@@ -289,6 +289,11 @@ export class Colisage {
    */
   protected readonly readyLabel = computed(() => 'Commande emballée');
 
+  /** Le BL vient d'être ouvert pour impression : relire, pour dire « Nouveau BL imprimé ». */
+  protected afterDeliveryNotePrint(): void {
+    void this.refresh();
+  }
+
   /** La lecture initiale — et « Réessayer ». Elle ouvre ensuite la commande du QR. */
   protected async load(): Promise<void> {
     this.gestures.forgetOrderFailures();

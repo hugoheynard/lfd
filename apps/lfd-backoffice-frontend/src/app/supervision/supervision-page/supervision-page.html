@@ -255,6 +255,7 @@
               (sendToShop)="sendToShop($event)"
               [shortfalls]="shortfalls()"
               (shortfallDecided)="onShortfallDecided()"
+              (deliveryNotePrinted)="onDeliveryNotePrinted()"
               [awaitedOpen]="highlight.awaitedOpen()"
               (awaitedToggle)="highlight.toggleAwaited($event)"
               (showPreparation)="tab.set('preparation')"

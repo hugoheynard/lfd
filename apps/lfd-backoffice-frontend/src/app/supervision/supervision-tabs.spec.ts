@@ -38,6 +38,9 @@ function card(reference: string, state: PackingState): PackingCard {
     initials: [],
     slotMinutes: null,
     packedAt: null,
+    sheetOrderId: reference,
+    deliveryNotePrint: null,
+    abandoned: [],
   };
 }
 

@@ -11,6 +11,8 @@ import {
   FoldMeterComponent,
 } from 'fold-ng';
 
+import { AbandonedRemainder } from '../../commandes/abandoned-remainder/abandoned-remainder';
+import { DeliveryNotePrintNotice } from '../../commandes/delivery-note-print-notice/delivery-note-print-notice';
 import { AwaitingBadge } from '../../shared/awaiting-badge/awaiting-badge';
 import {
   ALL_POINTS,
@@ -58,7 +60,9 @@ const BADGES: Readonly<
   selector: 'app-packing-column',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    AbandonedRemainder,
     AwaitingBadge,
+    DeliveryNotePrintNotice,
     PackingShortfall,
     RouterLink,
     FoldBadgeComponent,
@@ -101,6 +105,8 @@ export class PackingColumn {
   readonly shortfalls = input<ReadonlyMap<string, ShortfallAwaitingDecision>>(new Map());
   /** Une décision est enregistrée sur une carte : à la page de relire. */
   readonly shortfallDecided = output<void>();
+  /** Un BL vient d'être ouvert pour impression : à la page de relire (« Nouveau BL imprimé »). */
+  readonly deliveryNotePrinted = output<void>();
   /** Mobile (B7) : « Voir en Préparation → » sur la commande dépliée. */
   readonly showPreparation = output();
 

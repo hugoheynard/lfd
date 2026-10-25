@@ -5,6 +5,7 @@
         Départ décidé le {{ d.decidedAt | date: "dd/MM 'à' HH:mm" }} : ce qui était au bac est
         parti, le reste est abandonné.
       </fold-callout>
+      <app-abandoned-remainder [lines]="abandoned()" />
       @for (note of toReprint(); track note.number) {
         <fold-callout appearance="inset" variant="warning" [attr.data-reprint-needed]="note.number">
           {{ reprintSentence }}

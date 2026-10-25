@@ -123,4 +123,11 @@ describe('« Décider du départ » (E6b)', () => {
 
     expect(el(fixture).querySelector('[data-reprint-needed]')).toBeNull();
   });
+
+  it('une fois décidé, dit le reste abandonné ligne par ligne', () => {
+    const { fixture } = mount(DECIDED);
+    expect(el(fixture).querySelector('[data-abandoned-remainder]')?.textContent).toContain(
+      'Reste abandonné : 3 Croissant',
+    );
+  });
 });

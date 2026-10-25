@@ -7,7 +7,10 @@ import { instantToLocal, type ProductionPackingView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../platform/time/clock.js";
-import { DeliveryNoteReprintsReader } from "../../channels/commerce/index.js";
+import {
+  DeliveryNoteReprintsReader,
+  ShortfallAftermathReader,
+} from "../../channels/commerce/index.js";
 import {
   PlannedDestinationsReader,
   QualityHeldOrdersReader,
@@ -32,6 +35,8 @@ import { GetPackingBoardQuery } from "./get-packing-board.query.js";
  * - les noms des auteurs, par l'annuaire du staff ;
  * - le froid des livraisons, par le guichet des bacs que la livraison tient
  *   (2026-10-07) ;
+ * - le reste abandonné et l'impression du BL d'un départ incomplet décidé,
+ *   au commerce par le canal (2026-10-25) ;
  * - le départ de la tournée ou du transfert de chaque commande, que la
  *   livraison sert par le port du colisage (lot L2, 2026-10-14) : le poste
  *   est rangé par heure « prête pour ».
@@ -54,25 +59,31 @@ export class GetPackingBoardHandler implements IQueryHandler<
     private readonly desk: BinDesk,
     private readonly departures: OrderDeparturesReader,
     private readonly reprints: DeliveryNoteReprintsReader,
+    private readonly aftermath: ShortfallAftermathReader,
   ) {}
 
   async execute(query: GetPackingBoardQuery): Promise<ProductionPackingView> {
     const day = await this.board.dayOf(query.serviceDay);
     const orderIds = day.orders.map((order) => order.orderId);
-    const [heldOrders, destinations, authors, cold, departures, reprintNeeded] = await Promise.all([
-      this.held.heldOrders(query.serviceDay, orderIds),
-      orderIds.length === 0
-        ? new Map<string, string>()
-        : this.destinations.destinationsOf(query.serviceDay),
-      this.staffAuthors.identify(day.orders.map((order) => order.packed?.by ?? null)),
-      // Le froid ne se lit que pour les livraisons : un retrait n'a pas de bac.
-      this.desk.coldPacking(
-        day.orders.filter((order) => order.fulfillmentMethod === "delivery").map((o) => o.orderId),
-      ),
-      this.departures.departuresOf(orderIds),
-      // Le BL imprimé puis changé (plan E6, § 14), lu au commerce par le canal.
-      this.reprints.reprintNeededAmong(orderIds),
-    ]);
+    const [heldOrders, destinations, authors, cold, departures, reprintNeeded, aftermath] =
+      await Promise.all([
+        this.held.heldOrders(query.serviceDay, orderIds),
+        orderIds.length === 0
+          ? new Map<string, string>()
+          : this.destinations.destinationsOf(query.serviceDay),
+        this.staffAuthors.identify(day.orders.map((order) => order.packed?.by ?? null)),
+        // Le froid ne se lit que pour les livraisons : un retrait n'a pas de bac.
+        this.desk.coldPacking(
+          day.orders
+            .filter((order) => order.fulfillmentMethod === "delivery")
+            .map((o) => o.orderId),
+        ),
+        this.departures.departuresOf(orderIds),
+        // Le BL imprimé puis changé (plan E6, § 14), lu au commerce par le canal.
+        this.reprints.reprintNeededAmong(orderIds),
+        // Le départ incomplet décidé : son reste et son BL (Hugo, 2026-10-25).
+        this.aftermath.among(orderIds),
+      ]);
     return packingBoardOf({
       date: query.serviceDay,
       day,
@@ -86,6 +97,7 @@ export class GetPackingBoardHandler implements IQueryHandler<
       cold,
       departures: localDepartures(departures),
       reprintNeeded,
+      aftermath,
     });
   }
 }

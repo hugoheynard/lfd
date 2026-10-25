@@ -19,6 +19,9 @@ function card(reference: string, destination: string): PackingCard {
     initials: [],
     slotMinutes: null,
     packedAt: null,
+    sheetOrderId: reference,
+    deliveryNotePrint: null,
+    abandoned: [],
   };
 }
 

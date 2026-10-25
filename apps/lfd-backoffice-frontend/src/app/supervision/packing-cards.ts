@@ -1,6 +1,8 @@
 import type {
   HandoverQueueEntryView,
   HandoverQueueView,
+  PackingAbandonedLine,
+  PackingDeliveryNotePrint,
   PackingSheet,
   ProductionPackingView,
   WithdrawnPackingSheet,
@@ -47,6 +49,12 @@ export interface PackingCard {
    * qu'elle ne l'est pas (Hugo, 2026-09-28 : l'heure manquait aux colisées).
    */
   readonly packedAt: string | null;
+  /** L'id de la commande tel que la fiche de colis le porte — celui du BL à imprimer. */
+  readonly sheetOrderId: string;
+  /** « BL à réimprimer » / « Nouveau BL imprimé » (plan E6, § 14), dit par le serveur. */
+  readonly deliveryNotePrint: PackingDeliveryNotePrint | null;
+  /** Le reste abandonné d'un départ incomplet décidé ; vide sinon (Hugo, 2026-10-25). */
+  readonly abandoned: readonly PackingAbandonedLine[];
 }
 
 /**
@@ -151,6 +159,9 @@ function cardOf(sheet: PackingSheet, entry: HandoverQueueEntryView | undefined):
     ],
     slotMinutes: slotOf(entry),
     packedAt: sheet.packedAt === null ? null : clockLabel(sheet.packedAt),
+    sheetOrderId: sheet.orderId,
+    deliveryNotePrint: sheet.deliveryNotePrint ?? null,
+    abandoned: sheet.abandonedRemainder ?? [],
   };
 }
 

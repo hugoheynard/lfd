@@ -326,6 +326,11 @@ export class SupervisionPage {
     await this.reads.refresh();
   }
 
+  /** Un BL ouvert pour impression : relire, pour que la carte dise « Nouveau BL imprimé ». */
+  protected async onDeliveryNotePrinted(): Promise<void> {
+    await this.reads.refresh();
+  }
+
   /** Un segment Hier / Aujourd'hui / Demain. */
   protected pickDay(value: string): void {
     const server = this.serverDay();

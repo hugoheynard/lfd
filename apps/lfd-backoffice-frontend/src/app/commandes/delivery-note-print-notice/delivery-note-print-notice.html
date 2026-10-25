@@ -1,0 +1,32 @@
+@switch (state()) {
+  @case ('to_reprint') {
+    <fold-callout variant="warning" data-delivery-note-to-reprint>
+      <strong>BL à réimprimer.</strong>
+      @if (!canPrint()) {
+        Imprimez-le depuis la fiche de la commande.
+      }
+      @if (canPrint()) {
+        <div actions>
+          <button
+            foldButton
+            size="sm"
+            emphasis="soft"
+            [loading]="printing()"
+            (click)="print()"
+            data-delivery-note-print
+          >
+            Imprimer le BL
+          </button>
+        </div>
+      }
+    </fold-callout>
+  }
+  @case ('reprinted') {
+    <fold-badge
+      radius="square"
+      variant="success"
+      content="Nouveau BL imprimé"
+      data-delivery-note-reprinted
+    />
+  }
+}

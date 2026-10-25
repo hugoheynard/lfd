@@ -1,4 +1,9 @@
-import type { PackingContainerView, PackingLine, PackingSheet } from "@lfd/contracts";
+import type {
+  PackingContainerView,
+  PackingDeliveryNotePrint,
+  PackingLine,
+  PackingSheet,
+} from "@lfd/contracts";
 
 import type { SheetLine } from "../entities/packing-sheet.snapshot.js";
 import type { BoardOrder } from "../ports/packing-board.reader.js";
@@ -23,6 +28,37 @@ export interface SheetContext {
    * lues au commerce. Absent = aucune.
    */
   readonly reprintNeeded?: ReadonlySet<string>;
+  /** Les départs incomplets décidés, par id, lus au commerce. Absent = aucun. */
+  readonly aftermath?: ReadonlyMap<string, DecidedShortfall>;
+}
+
+/**
+ * Un départ incomplet décidé, tel que le commerce le rend (Hugo,
+ * 2026-10-25) — la forme du canal, relue ici sans connaître le port.
+ */
+export interface DecidedShortfall {
+  readonly abandoned: readonly {
+    readonly sku: string;
+    readonly productName: string;
+    readonly quantity: number;
+  }[];
+  readonly deliveryNote: "to_print" | "printed" | null;
+}
+
+/**
+ * **Le BL à réimprimer, ou réimprimé** : à réimprimer s'il a changé depuis
+ * son impression (§ 14), ou si le départ est décidé et que son BL n'est pas
+ * imprimé à sa version courante ; réimprimé quand le départ est décidé et
+ * que tout est imprimé. Rien à dire hors de ces deux cas.
+ */
+export function deliveryNotePrintOf(
+  reprintNeeded: boolean,
+  decided: DecidedShortfall | undefined,
+): PackingDeliveryNotePrint | null {
+  if (reprintNeeded || decided?.deliveryNote === "to_print") {
+    return "to_reprint";
+  }
+  return decided?.deliveryNote === "printed" ? "reprinted" : null;
 }
 
 /** Ce que la livraison dit du froid — relu ici sans connaître le port. */
@@ -120,6 +156,12 @@ export function sheetOf(order: BoardOrder, context: SheetContext): PackingSheet 
     canReportShortfall: canReportShortfall(order),
     shortfallReportedAt: order.shortfallReportedAt?.toISOString() ?? null,
     deliveryNoteReprintNeeded: context.reprintNeeded?.has(order.orderId) ?? false,
+    deliveryNotePrint: deliveryNotePrintOf(
+      context.reprintNeeded?.has(order.orderId) ?? false,
+      context.aftermath?.get(order.orderId),
+    ),
+    abandonedRemainder:
+      context.aftermath?.get(order.orderId)?.abandoned.map((line) => ({ ...line })) ?? [],
     coldOutsideIsotherm: coldOutsideIsotherm(order, context.cold),
     packedAt: order.packed?.at.toISOString() ?? null,
     packedBy: order.packed?.by ?? null,

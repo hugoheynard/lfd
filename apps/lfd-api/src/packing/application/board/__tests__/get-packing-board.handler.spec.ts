@@ -1,4 +1,8 @@
-import { DeliveryNoteReprintsReader } from "../../../channels/commerce/index.js";
+import {
+  DeliveryNoteReprintsReader,
+  ShortfallAftermathReader,
+  type ShortfallAftermath,
+} from "../../../channels/commerce/index.js";
 import { localToInstant } from "@lfd/contracts";
 
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
@@ -111,7 +115,20 @@ class FixedReprints extends DeliveryNoteReprintsReader {
   }
 }
 
+/** Les départs incomplets décidés, lus au commerce : posés par le test. */
+class FixedAftermath extends ShortfallAftermathReader {
+  readonly decided = new Map<string, ShortfallAftermath>();
+
+  among(orderIds: readonly string[]): Promise<ReadonlyMap<string, ShortfallAftermath>> {
+    return Promise.resolve(
+      new Map([...this.decided].filter(([orderId]) => orderIds.includes(orderId))),
+    );
+  }
+}
+
 function setup(day: PackingBoardDay, known: readonly OrderDeparture[] = []) {
+  const reprints = new FixedReprints();
+  const aftermath = new FixedAftermath();
   const departures = new FixedDepartures(known);
   const held = new FixedHeld(new Set(["2"]));
   const destinations = new FixedDestinations(new Map([["1", "12 rue du Four"]]));
@@ -126,9 +143,10 @@ function setup(day: PackingBoardDay, known: readonly OrderDeparture[] = []) {
     new FixedClock(AT),
     new ScriptedBinDesk(),
     departures,
-    new FixedReprints(),
+    reprints,
+    aftermath,
   );
-  return { handler, held, destinations, authors, departures };
+  return { handler, held, destinations, authors, departures, reprints, aftermath };
 }
 
 describe("GetPackingBoardHandler — le poste lu au colisage (K3a)", () => {
@@ -195,5 +213,35 @@ describe("GetPackingBoardHandler — le poste lu au colisage (K3a)", () => {
         ["4", null, null],
       ],
     );
+  });
+
+  it("dit le reste abandonné d'un départ décidé, et où en est l'impression de son BL", async () => {
+    const { handler, reprints, aftermath } = setup({
+      orders: [order("1", null), order("2", null), order("3", null), order("4", null)],
+      withdrawn: [],
+      stocks: [],
+    });
+    aftermath.decided.set("1", {
+      abandoned: [{ sku: "PAI", productName: "Baguette", quantity: 2 }],
+      deliveryNote: "to_print",
+    });
+    aftermath.decided.set("2", { abandoned: [], deliveryNote: "printed" });
+    // Changé depuis son impression, sans décision : à réimprimer aussi.
+    reprints.needed.add("3");
+
+    const view = await handler.execute(new GetPackingBoardQuery(DAY));
+
+    expect(
+      view.sheets.map((sheet) => [
+        sheet.orderId,
+        sheet.deliveryNotePrint,
+        sheet.abandonedRemainder,
+      ]),
+    ).toEqual([
+      ["1", "to_reprint", [{ sku: "PAI", productName: "Baguette", quantity: 2 }]],
+      ["2", "reprinted", []],
+      ["3", "to_reprint", []],
+      ["4", null, []],
+    ]);
   });
 });

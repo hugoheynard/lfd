@@ -96,6 +96,16 @@ export type PackingReadyBySource = "round" | "transfer" | "due";
  * l'apprend. Rien ici ne le rouvre, et c'est voulu — un colis annoncé prêt à un
  * client ne se déclare pas non prêt par une case décochée.
  */
+/** Où en est l'impression du BL d'une commande, vu du poste (cf. `PackingSheet.deliveryNotePrint`). */
+export type PackingDeliveryNotePrint = "to_reprint" | "reprinted";
+
+/** Une ligne du reste abandonné : l'article, son nom à la commande, les pièces qui ne partent pas. */
+export interface PackingAbandonedLine {
+  readonly sku: string;
+  readonly productName: string;
+  readonly quantity: number;
+}
+
 export interface PackingSheet {
   /**
    * L'identifiant de la commande (ajouté le 2026-09-29, plan de tournée lot 4) :
@@ -191,6 +201,24 @@ export interface PackingSheet {
    * `false`.
    */
   readonly deliveryNoteReprintNeeded: boolean;
+  /**
+   * **Le BL à imprimer de nouveau, ou réimprimé** (Hugo, 2026-10-25) :
+   * `to_reprint` — un BL vivant a changé depuis son impression, ou, sur un
+   * départ incomplet décidé, n'a jamais été imprimé depuis ; `reprinted` — le
+   * départ incomplet est décidé et tous ses BL vivants sont imprimés à leur
+   * version courante ; `null` sinon. Calculé par le serveur.
+   *
+   * Facultatif dans le TYPE seulement : le serveur l'envoie toujours.
+   */
+  readonly deliveryNotePrint?: PackingDeliveryNotePrint | null;
+  /**
+   * **Le reste abandonné** d'un départ incomplet décidé (Hugo, 2026-10-25) :
+   * par article, le dû d'origine moins ce qui est parti — les lignes sorties
+   * de la fiche comprises. Vide sans décision.
+   *
+   * Facultatif dans le TYPE seulement : le serveur l'envoie toujours.
+   */
+  readonly abandonedRemainder?: readonly PackingAbandonedLine[];
   /**
    * Les produits froids posés hors d'un bac isotherme, par nom (2026-10-07) —
    * livraison rangée en contenants seulement ; vide sinon. Un AVERTISSEMENT :

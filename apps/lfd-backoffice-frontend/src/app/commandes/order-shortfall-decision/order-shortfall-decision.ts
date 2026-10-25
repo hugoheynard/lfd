@@ -17,7 +17,9 @@ import { FoldButtonComponent, FoldCalloutComponent, FoldInlineConfirmComponent }
 import { PermissionsStore } from '../../auth/permissions.store';
 import { NotifyService } from '../../notify.service';
 import { DeliveryNotesService, REPRINT_SENTENCE } from '../delivery-notes.service';
+import { AbandonedRemainder } from '../abandoned-remainder/abandoned-remainder';
 import { AdminOrdersService } from '../orders.service';
+import { abandonedOfShortfall } from '../shortfall-remainder';
 
 /** Une ligne qui part, nommée par la commande. */
 interface DepartingLine {
@@ -40,7 +42,13 @@ interface DepartingLine {
 @Component({
   selector: 'app-order-shortfall-decision',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DatePipe, FoldButtonComponent, FoldCalloutComponent, FoldInlineConfirmComponent],
+  imports: [
+    AbandonedRemainder,
+    DatePipe,
+    FoldButtonComponent,
+    FoldCalloutComponent,
+    FoldInlineConfirmComponent,
+  ],
   templateUrl: './order-shortfall-decision.html',
   styleUrl: './order-shortfall-decision.scss',
 })
@@ -64,6 +72,14 @@ export class OrderShortfallDecision {
   protected readonly error = signal<string | null>(null);
   /** Les BL imprimés puis changés, relus après la décision. */
   protected readonly toReprint = signal<readonly StaffNote[]>([]);
+
+  /** Le départ décidé : ce qui n'est pas parti, ligne par ligne (Hugo, 2026-10-25). */
+  protected readonly abandoned = computed(() =>
+    abandonedOfShortfall(
+      this.shortfall(),
+      new Map(this.lines().map((line) => [line.sku, line.productName])),
+    ),
+  );
 
   protected readonly departing = computed<readonly DepartingLine[]>(() => {
     const shortfall = this.shortfall();

@@ -255,5 +255,26 @@ describe("« Décider du départ » — reste abandonné (E6b + E6c1)", () => {
     await printCarrier(order.id, before?.number ?? "");
     expect((await notesOf(order.id))[0]?.reprintNeeded).toBe(false);
     expect((await sheetOf(ctx, order.orderNumber)).deliveryNoteReprintNeeded).toBe(false);
+    expect((await sheetOf(ctx, order.orderNumber)).deliveryNotePrint).toBe("reprinted");
+  });
+
+  it("au poste, la commande décidée garde son reste abandonné et demande un BL jamais imprimé", async () => {
+    const order = await accountOrder(1);
+    expect((await sheetOf(ctx, order.orderNumber)).deliveryNotePrint).toBeNull();
+
+    await report(order.id);
+    await decide(order.id);
+
+    const sheet = await sheetOf(ctx, order.orderNumber);
+    expect(sheet.abandonedRemainder?.map(({ sku, quantity }) => ({ sku, quantity }))).toEqual([
+      { sku: CROISSANT, quantity: 2 },
+    ]);
+    // Jamais imprimé : `reprintNeeded` se tait, le départ décidé non.
+    expect(sheet.deliveryNoteReprintNeeded).toBe(false);
+    expect(sheet.deliveryNotePrint).toBe("to_reprint");
+
+    const [note] = await notesOf(order.id);
+    await printCarrier(order.id, note?.number ?? "");
+    expect((await sheetOf(ctx, order.orderNumber)).deliveryNotePrint).toBe("reprinted");
   });
 });

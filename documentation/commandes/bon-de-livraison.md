@@ -286,6 +286,14 @@ forme du bon de commande
   `packing/channels/commerce/`, implémenté par le commerce). Le chemin normal
   ne fait jamais avancer `content_version` : seuls la décision et la
   réécriture d'un BL prévu dont les lignes ont réellement changé.
+- **Après la décision** (2026-10-25) : le poste de colisage et la carte de la
+  Supervision lisent `PackingSheet.deliveryNotePrint` — « BL à réimprimer »
+  (changé depuis son impression, ou départ décidé jamais imprimé depuis),
+  puis « Nouveau BL imprimé » — et `abandonedRemainder`, « Reste abandonné :
+  <n> <produit> » par article (dû au signal moins parti). Le commerce le sert
+  par `ShortfallAftermathReader` (déclaré par le colisage dans
+  `packing/channels/commerce/`) ; la fiche commande le relit sur son manque
+  décidé.
 
 ## Les décisions
 
