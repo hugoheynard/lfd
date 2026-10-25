@@ -2741,3 +2741,10 @@ export type {
 
 /** L'adresse d'une fiche article — partagée par la boutique et le flux de la vitrine. */
 export { PRODUCT_SEGMENT, productPath, productUrl, SHOP_PATH } from "./product-path.js";
+export { customerNudgesQuerySchema } from "./customer-nudges.js";
+export type {
+  CustomerNudgeTraceView,
+  CustomerNudgesQuery,
+  CustomerNudgesView,
+  OrderCustomerNudgesView,
+} from "./customer-nudges.js";

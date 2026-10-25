@@ -1,5 +1,5 @@
 import type { StaffTrace } from "../../account/domain/value-objects/staff-trace.js";
-import { InvalidResupplyCutoffTimeError } from "./order-cutoff-errors.js";
+import { InvalidNudgeDelayError, InvalidResupplyCutoffTimeError } from "./order-cutoff-errors.js";
 
 /** `HH:MM` sur 24 h : l'heure qui existe sur une pendule. */
 const CLOCK_TIME = /^([01]\d|2[0-3]):[0-5]\d$/u;
@@ -8,6 +8,10 @@ const CLOCK_TIME = /^([01]\d|2[0-3]):[0-5]\d$/u;
  * **Le jour même**, tel qu'on l'écrit (plan
  * `documentation/commandes/passation/plan-reglages-commandes.md`, §8.3 ; sa page depuis
  * le 2026-10-21).
+ *
+ * Porte aussi, depuis le 2026-10-25, les **délais des deux relances d'un
+ * retrait en retard** (« Rappel au client », « Avertir le client »), en
+ * minutes après la fin du créneau.
  *
  * Porte aussi, depuis le lot R3a du réassort (2026-10-21), **l'heure limite
  * du réassort pour demain** (« la veille, HH:MM ») ; l'interrupteur
@@ -27,6 +31,8 @@ export class OrderCutoffSettings {
   private constructor(
     readonly sameDayAllowed: boolean,
     readonly resupplyCutoffTime: string,
+    readonly pickupReminderDelayMinutes: number,
+    readonly delayWarningDelayMinutes: number,
     readonly at: Date,
     readonly author: StaffTrace,
   ) {}
@@ -37,11 +43,14 @@ export class OrderCutoffSettings {
    * même, l'heure du réassort — 2026-10-21).
    *
    * @throws {InvalidResupplyCutoffTimeError} l'heure du réassort n'existe pas.
+   * @throws {InvalidNudgeDelayError} un délai de relance n'est pas un entier ≥ 0.
    */
   static pose(input: {
     readonly current: OrderCutoffSettingsState;
     readonly sameDayAllowed?: boolean | undefined;
     readonly resupplyCutoffTime?: string | undefined;
+    readonly pickupReminderDelayMinutes?: number | undefined;
+    readonly delayWarningDelayMinutes?: number | undefined;
     readonly at: Date;
     readonly author: StaffTrace;
   }): OrderCutoffSettings {
@@ -52,6 +61,8 @@ export class OrderCutoffSettings {
     return new OrderCutoffSettings(
       input.sameDayAllowed ?? input.current.sameDayAllowed,
       resupplyCutoffTime,
+      nudgeDelay(input.pickupReminderDelayMinutes ?? input.current.pickupReminderDelayMinutes),
+      nudgeDelay(input.delayWarningDelayMinutes ?? input.current.delayWarningDelayMinutes),
       input.at,
       input.author,
     );
@@ -61,7 +72,9 @@ export class OrderCutoffSettings {
   sameAs(current: OrderCutoffSettingsState): boolean {
     return (
       this.sameDayAllowed === current.sameDayAllowed &&
-      this.resupplyCutoffTime === current.resupplyCutoffTime
+      this.resupplyCutoffTime === current.resupplyCutoffTime &&
+      this.pickupReminderDelayMinutes === current.pickupReminderDelayMinutes &&
+      this.delayWarningDelayMinutes === current.delayWarningDelayMinutes
     );
   }
 }
@@ -71,4 +84,16 @@ export interface OrderCutoffSettingsState {
   readonly sameDayAllowed: boolean;
   /** L'heure limite du réassort pour demain, `HH:MM` la veille (lot R3a). */
   readonly resupplyCutoffTime: string;
+  /** « Rappel au client » : minutes après la fin du créneau d'un retrait (2026-10-25). */
+  readonly pickupReminderDelayMinutes: number;
+  /** « Avertir le client » : minutes après la fin du créneau d'un retrait (2026-10-25). */
+  readonly delayWarningDelayMinutes: number;
+}
+
+/** Un délai de relance : un nombre entier de minutes, jamais négatif. */
+function nudgeDelay(minutes: number): number {
+  if (!Number.isInteger(minutes) || minutes < 0) {
+    throw new InvalidNudgeDelayError(minutes);
+  }
+  return minutes;
 }

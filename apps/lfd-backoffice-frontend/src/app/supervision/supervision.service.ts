@@ -3,6 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import type {
+  CustomerNudgesView,
   DayStockOverviewView,
   DaySupervisionView,
   HandoverQueueView,
@@ -67,6 +68,18 @@ export class SupervisionService {
     return firstValueFrom(
       this.http.get<HandoverQueueView>(
         `${B2B_API_BASE}/admin/supervision/handover?jour=${encodeURIComponent(day)}`,
+      ),
+    );
+  }
+
+  /**
+   * Les relances d'un retrait en retard (2026-10-25) : leurs délais, et qui a
+   * déjà fait quoi — de quoi choisir le bouton et dire la trace.
+   */
+  async customerNudges(date: string): Promise<CustomerNudgesView> {
+    return firstValueFrom(
+      this.http.get<CustomerNudgesView>(
+        `${B2B_API_BASE}/admin/supervision/customer-nudges?date=${encodeURIComponent(date)}`,
       ),
     );
   }

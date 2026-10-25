@@ -1,130 +1,38 @@
-import type { OrderView } from "@lfd/contracts";
-import type { MailReceipt, SendMailArgs } from "@lfd/mailer";
-
-import { Clock } from "../../../../../platform/time/clock.js";
-import { ReminderRefusedError, OrderNotFoundError } from "../../../domain/errors/order-errors.js";
-import { OrderMailOrigins } from "../../../domain/ports/order-mail-origins.js";
+import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
+import { BackgroundWork } from "../../../../../platform/events/background-work.js";
+import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
+import type { OrderCustomerNudgesSnapshot } from "../../../domain/entities/order-customer-nudges.js";
 import {
-  OrderRecipientReader,
-  type OrderRecipient,
-} from "../../../domain/ports/order-recipient.reader.js";
-import { OrderReader, type OwnedOrder } from "../../../domain/ports/order.reader.js";
+  PickupReminderAlreadySentError,
+  PickupReminderTooEarlyError,
+} from "../../../domain/errors/customer-nudge-errors.js";
+import { OrderNotFoundError, ReminderRefusedError } from "../../../domain/errors/order-errors.js";
+import { OrderMailOrigins } from "../../../domain/ports/order-mail-origins.js";
+import { AT_PLACEMENT } from "../../../domain/services/order-sheet.js";
+import {
+  OneOrderReader,
+  OneRecipientReader,
+  RecordingMailer,
+  orderView,
+} from "../../../application/handlers/__tests__/payment-failure-doubles.js";
 import { OrderReadyMail } from "../../services/order-ready-mail.service.js";
 import { SendHandoverReminderCommand } from "../send-handover-reminder.command.js";
 import { SendHandoverReminderHandler } from "../send-handover-reminder.handler.js";
+import {
+  FixedNudgeDelays,
+  OneOrderNudges,
+  minutesAfterEnd,
+  nudgeSnapshot,
+} from "./customer-nudge-doubles.js";
 
 /**
- * Le **rappel de retrait**, et les deux choses qu'il ne doit pas faire.
+ * **« Rappel au client »**, depuis la Supervision (2026-10-25) : ce qui part,
+ * ce qui se trace, et ce qui est refusé avant d'envoyer quoi que ce soit.
  *
- * 🔴 **Il ne part pas sur une commande non colisée.** Le message dit « votre
- * commande vous attend » : l'envoyer avant que le fournil n'ait rien préparé
- * ferait venir quelqu'un devant un comptoir vide — la seule chose pire que de
- * ne pas prévenir.
- *
- * 🔴 **Il se répète, là où le colisage ne se répète pas.** Sa clé porte
- * l'instant ; celle du colisage est déterministe par commande. C'est la seule
- * différence entre les deux, et c'est pour cela qu'elle vient de l'appelant.
+ * 🔴 Il ne partait que sur une commande prête, mais se répétait à volonté :
+ * sa clé portait l'instant. Il ne part désormais qu'UNE fois, passé le délai
+ * réglé après la fin du créneau, et la commande garde qui l'a envoyé.
  */
-
-const NOW = new Date("2026-09-11T09:12:00.000Z");
-
-function view(over: Partial<OrderView> = {}): OrderView {
-  return {
-    id: "order_1",
-    orderNumber: "ORD-4812",
-    status: "placed",
-    paymentStatus: "paid",
-    requestedDeliveryDate: "2026-09-11",
-    fulfillmentMethod: "pickup",
-    deliveryAddressId: null,
-    deliveryAddress: null,
-    pickupAddress: null,
-    fulfillment: {
-      window: { value: null, source: "default" },
-      contact: { value: null, source: "default" },
-      signatureRequired: { value: false, source: "default" },
-    },
-    note: "",
-    subtotalCents: 1_440,
-    discountCents: 0,
-    discountAdjustment: null,
-    deliveryFeeCents: 0,
-    deliveryFeeAdjustment: null,
-    lateFeeCents: 0,
-    lateFeeAdjustment: null,
-    totalCents: 1_440,
-    vatShares: [],
-    lines: [],
-    createdAt: "2026-09-10T08:00:00.000Z",
-    readyAt: "2026-09-11T05:00:00.000Z",
-    handedOverAt: null,
-    handoverToken: "tok_secret_42",
-    ...over,
-  } as OrderView;
-}
-
-/**
- * Ce doublé ne connaît qu'UN verbe, et déclare les huit autres pour le dire.
- *
- * 🔴 Les déclarer en levant plutôt que de laisser la classe incomplète : sans
- * elles, `tsc` refuse le fichier (TS2655) et seul `ts-jest`, qui ne typecheck
- * pas, le laissait passer — donc rien ne rougissait. Un appel imprévu meurt
- * maintenant en nommant la méthode, ce qui est la seule réponse utile : le
- * rappel ne lit QUE la commande, et un doublé qui rendrait `[]` au reste
- * laisserait passer une lecture que personne n'a voulue.
- *
- * C'est aussi le symptôme de la dette déjà notée sur `OrderReader` : neuf
- * verbes pour un port, c'est un manquement à l'ISP, et il se paie ici.
- */
-class OneOrderReader extends OrderReader {
-  constructor(private readonly order: OrderView | null) {
-    super();
-  }
-
-  override findById(id: string): Promise<OwnedOrder | null> {
-    if (this.order === null) {
-      return Promise.resolve(null);
-    }
-    return Promise.resolve({
-      companyId: "co_1",
-      placedByUserId: "auth0|client",
-      view: { ...this.order, id },
-    } as OwnedOrder);
-  }
-
-  override listPersonal(): Promise<readonly OrderView[]> {
-    return unused("listPersonal");
-  }
-
-  override findAuthorByReference() {
-    return Promise.reject(new Error("non utilisé"));
-  }
-
-  override findForPacking(): Promise<never> {
-    return unused("findForPacking");
-  }
-
-  override listForProduction(): Promise<never> {
-    return unused("listForProduction");
-  }
-}
-
-/** Le rappel ne lit que la commande : tout autre verbe est un bug du handler. */
-function unused(method: string): Promise<never> {
-  return Promise.reject(new Error(`Le rappel n'a pas à appeler ${method}.`));
-}
-
-class OneRecipientReader extends OrderRecipientReader {
-  constructor(private readonly email: string | null) {
-    super();
-  }
-
-  override findById(id: string): Promise<OrderRecipient | null> {
-    return this.email === null
-      ? Promise.resolve(null)
-      : Promise.resolve({ userId: id, email: this.email, firstName: "Camille", lastName: "R" });
-  }
-}
 
 class FixedOrigins extends OrderMailOrigins {
   override clientBaseUrl(): string | null {
@@ -136,93 +44,110 @@ class FixedOrigins extends OrderMailOrigins {
   }
 }
 
-/**
- * Le mailer, doublé au plus près de sa vraie forme.
- *
- * ⚠️ `enabled` et `providerId` ne sont pas décoratifs : sans eux la classe
- * n'était pas un `B2bMailer` et le reçu n'était pas un `MailReceipt` — deux
- * erreurs que `tsc` voyait et que `ts-jest` taisait. Un doublé qui dérive du
- * port qu'il prétend jouer est précisément ce que §6 refuse.
- */
-class RecordingMailer {
-  readonly enabled = false;
-  sent: SendMailArgs<never, never> | null = null;
-
-  send(args: unknown): Promise<MailReceipt> {
-    this.sent = args as SendMailArgs<never, never>;
-    return Promise.resolve({ providerId: "msg_1" });
-  }
-}
-
-class FixedClock extends Clock {
-  override now(): Date {
-    return NOW;
-  }
-}
-
-function handler(options: { order?: OrderView | null; email?: string | null } = {}): {
-  readonly run: SendHandoverReminderHandler;
-  readonly mailer: RecordingMailer;
-} {
+function setup(
+  options: {
+    readonly snapshot?: OrderCustomerNudgesSnapshot | null;
+    readonly email?: string | null;
+    readonly now?: Date;
+    readonly delay?: number;
+  } = {},
+) {
   const mailer = new RecordingMailer();
-  const orders = new OneOrderReader(options.order === undefined ? view() : options.order);
-  const run = new SendHandoverReminderHandler(
-    orders,
-    new OrderReadyMail(
-      orders,
-      new OneRecipientReader(options.email === undefined ? "camille@halles.test" : options.email),
-      new FixedOrigins(),
-      mailer,
-    ),
-    new FixedClock(),
+  const work = new BackgroundWork();
+  const nudges = new OneOrderNudges(
+    options.snapshot === undefined ? nudgeSnapshot() : options.snapshot,
   );
-  return { run, mailer };
+  const recipients = new OneRecipientReader(
+    options.email === undefined ? "camille@halles.test" : options.email,
+  );
+  const orders = new OneOrderReader({
+    view: { ...orderView("ready", "paid"), id: "order_1" },
+    companyId: null,
+    placedByUserId: "user_7",
+    stripePaymentIntentId: null,
+    clientele: "public",
+    loyaltyVoucherId: null,
+    billedCustomer: null,
+    buyerPhone: null,
+    revision: AT_PLACEMENT,
+  });
+  const handler = new SendHandoverReminderHandler(
+    nudges,
+    new FixedNudgeDelays({ pickupReminderMinutes: options.delay ?? 0, delayWarningMinutes: 0 }),
+    recipients,
+    new OrderReadyMail(orders, recipients, new FixedOrigins(), mailer),
+    new FixedClock(options.now ?? minutesAfterEnd(20)),
+    new DirectUnitOfWork(),
+    work,
+  );
+  const run = async (): Promise<void> => {
+    await handler.execute(new SendHandoverReminderCommand("order_1", "staff_karim"));
+    await work.whenIdle();
+  };
+  return { run, mailer, nudges };
 }
 
-describe("le rappel de retrait", () => {
-  it("renvoie le courriel de retrait au client", async () => {
-    const subject = handler();
+describe("« Rappel au client »", () => {
+  it("trace le geste et envoie le courriel de retrait, en-tête de rappel, au client", async () => {
+    const subject = setup();
 
-    await subject.run.execute(new SendHandoverReminderCommand("order_1", "auth0|karim"));
+    await subject.run();
 
-    expect(subject.mailer.sent?.to).toBe("camille@halles.test");
-    expect(subject.mailer.sent?.template).toBe("customer.order-ready");
+    expect(subject.nudges.saved).toEqual([
+      expect.objectContaining({
+        pickupReminder: { at: minutesAfterEnd(20), byStaffId: "staff_karim" },
+      }),
+    ]);
+    expect(subject.mailer.sent).toHaveLength(1);
+    expect(subject.mailer.sent[0]?.to).toBe("camille@halles.test");
+    expect(subject.mailer.sent[0]?.template).toBe("customer.order-ready");
+    expect(subject.mailer.sent[0]?.data).toMatchObject({ reminder: true });
   });
 
-  it("🔴 porte une clé DATÉE : un rappel n'existe que pour repartir", async () => {
-    const subject = handler();
+  it("🔴 porte UNE clé par commande : il ne part qu'une fois", async () => {
+    const subject = setup();
 
-    await subject.run.execute(new SendHandoverReminderCommand("order_1", "auth0|karim"));
+    await subject.run();
 
-    expect(subject.mailer.sent?.idempotencyKey).toBe(
-      `order.ready-reminder:order_1:${NOW.toISOString()}`,
-    );
-    // Et surtout : pas celle du colisage, qui ferait taire le rappel.
-    expect(subject.mailer.sent?.idempotencyKey).not.toBe("order.ready:order_1");
+    expect(subject.mailer.sent[0]?.idempotencyKey).toBe("order.pickup-reminder:order_1");
   });
 
-  it("🔴 REFUSE sur une commande que le fournil n'a pas déclarée prête", async () => {
-    const subject = handler({ order: view({ readyAt: null }) });
+  it("🔴 refuse un second rappel, sans rien envoyer", async () => {
+    const subject = setup({
+      snapshot: nudgeSnapshot({
+        pickupReminder: { at: minutesAfterEnd(5), byStaffId: "staff_lea" },
+      }),
+    });
 
-    await expect(
-      subject.run.execute(new SendHandoverReminderCommand("order_1", "auth0|karim")),
-    ).rejects.toBeInstanceOf(ReminderRefusedError);
-    expect(subject.mailer.sent).toBeNull();
+    await expect(subject.run()).rejects.toBeInstanceOf(PickupReminderAlreadySentError);
+    expect(subject.mailer.sent).toEqual([]);
+    expect(subject.nudges.saved).toEqual([]);
+  });
+
+  it("🔴 refuse avant le délai réglé après la fin du créneau", async () => {
+    const subject = setup({ now: minutesAfterEnd(10), delay: 15 });
+
+    await expect(subject.run()).rejects.toBeInstanceOf(PickupReminderTooEarlyError);
+    expect(subject.mailer.sent).toEqual([]);
+  });
+
+  it("🔴 refuse sur une commande que le fournil n'a pas déclarée prête", async () => {
+    const subject = setup({ snapshot: nudgeSnapshot({ status: "confirmed", readyAt: null }) });
+
+    await expect(subject.run()).rejects.toBeInstanceOf(ReminderRefusedError);
+    expect(subject.mailer.sent).toEqual([]);
   });
 
   it("refuse sans adresse lisible, plutôt que de dire qu'un message est parti", async () => {
-    const subject = handler({ email: null });
+    const subject = setup({ email: null });
 
-    await expect(
-      subject.run.execute(new SendHandoverReminderCommand("order_1", "auth0|karim")),
-    ).rejects.toBeInstanceOf(ReminderRefusedError);
+    await expect(subject.run()).rejects.toBeInstanceOf(ReminderRefusedError);
+    expect(subject.mailer.sent).toEqual([]);
   });
 
   it("refuse sur une commande introuvable", async () => {
-    const subject = handler({ order: null });
+    const subject = setup({ snapshot: null });
 
-    await expect(
-      subject.run.execute(new SendHandoverReminderCommand("nope", "auth0|karim")),
-    ).rejects.toBeInstanceOf(OrderNotFoundError);
+    await expect(subject.run()).rejects.toBeInstanceOf(OrderNotFoundError);
   });
 });

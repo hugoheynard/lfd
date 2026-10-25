@@ -136,6 +136,8 @@ export class SupervisionPage {
   protected readonly preparation = this.reads.preparation;
   protected readonly packing = this.reads.packing;
   protected readonly handover = this.reads.handover;
+  /** Les relances d'un retrait en retard : leurs délais et leurs traces (2026-10-25). */
+  protected readonly nudges = computed(() => dataOf(this.reads.nudges()));
 
   /** Journée (les trois colonnes) ou Stock (lot S1) ; le jour choisi vaut pour les deux. */
   protected readonly view = signal<SupervisionView>('day');

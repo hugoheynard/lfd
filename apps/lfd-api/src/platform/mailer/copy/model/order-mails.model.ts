@@ -114,6 +114,42 @@ export interface OrderReadyCopy {
   readonly itinerary: string;
   readonly cta: string;
   readonly footer: string;
+  /**
+   * Le **rappel** au client qui n'est pas venu (« Rappel au client », depuis
+   * la Supervision, Hugo 2026-10-25) : le même courriel, QR compris, mais il
+   * ne dit plus « c'est prêt » — il dit « elle vous attend, à tel point ».
+   * `{ref}` = le numéro de commande.
+   */
+  readonly subjectReminder: string;
+  readonly kickerReminder: string;
+  readonly titleReminder: string;
+  /** `{site}` = le point de retrait figé à la commande. */
+  readonly introReminder: string;
+  /** Le même, pour une commande qui n'a pas figé le nom de son point. */
+  readonly introReminderWithoutSite: string;
+}
+
+/**
+ * Ce que dit le courriel **« Votre commande prend du retard »** — le geste
+ * « Avertir le client » de la Supervision (Hugo, 2026-10-25), quand la fin du
+ * créneau de retrait est passée et que la commande n'est pas prête.
+ *
+ * 🔴 **Aucune heure.** On ne sait pas quand elle le sera : une heure inventée
+ * coûte plus qu'aucune. Le client sera prévenu par le courriel « prête ».
+ */
+export interface OrderDelayedCopy {
+  /** Le sous-titre du bandeau d'en-tête, sous l'enseigne — rendu en capitales. */
+  readonly kicker: string;
+  /** Objet du message. `{ref}` = le numéro de commande. */
+  readonly subject: string;
+  readonly title: string;
+  /** Ce qui se passe, et ce qui suit : le courriel « prête ». */
+  readonly intro: string;
+  readonly referenceLabel: string;
+  readonly whereLabel: string;
+  readonly apology: string;
+  readonly cta: string;
+  readonly footer: string;
 }
 
 /**
@@ -160,5 +196,6 @@ export interface OrderMailsCopy {
   readonly "customer.order-placed": OrderPlacedCopy;
   readonly "customer.order-ready": OrderReadyCopy;
   readonly "customer.delivery-en-route": DeliveryEnRouteCopy;
+  readonly "customer.order-delayed": OrderDelayedCopy;
   readonly "customer.order-placed-with-your-email": OrderPlacedWithYourEmailCopy;
 }

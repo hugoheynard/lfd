@@ -7,10 +7,11 @@ import {
   inject,
   input,
   model,
+  output,
   signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import type { FulfillmentMethod } from '@lfd/contracts';
+import type { CustomerNudgesView, FulfillmentMethod } from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
@@ -22,6 +23,7 @@ import {
 import { PermissionsStore } from '../../auth/permissions.store';
 import { AdminOrdersService } from '../../commandes/orders.service';
 import { NotifyService } from '../../notify.service';
+import { rowNudgeOf, type RowNudge } from '../customer-nudges';
 import { ALL_POINTS, atPoint, slotLayout } from '../handover-layout';
 import type { SlotItem } from '../handover-layout';
 import { UNPLACED_LINE } from '../handover-slots';
@@ -38,9 +40,12 @@ import { NO_MATCHES } from '../supervision-search';
  *
  * Ni Remettre, ni Scanner, ni Appeler (plan §1) : une commande prête renvoie
  * vers le retrait, qui opère. Une exception, voulue par Hugo le 2026-10-25 :
- * **« Envoyer un rappel »** a quitté le comptoir pour la supervision — relancer
- * un client qui n'est pas venu est une décision de superviseur, pas un geste
- * de comptoir. La tournée de la maquette n'a pas de donnée
+ * **les relances d'un retrait en retard** ont quitté le comptoir pour la
+ * supervision — relancer un client est une décision de superviseur, pas un
+ * geste de comptoir. Deux gestes selon qui est en retard, jamais les deux à
+ * la fois (`rowNudgeOf`) : « Rappel au client » (prête, pas venu) et
+ * « Avertir le client » (pas prête), chacun une fois par commande, passé son
+ * délai après la fin du créneau. La tournée de la maquette n'a pas de donnée
  * (plan §7) : l'onglet Livraison liste les commandes par créneau, sans ordre
  * de route.
  */
@@ -66,6 +71,10 @@ export class HandoverColumn {
   readonly matches = input(NO_MATCHES);
   /** `supervision/day` a échoué : la file reste, mais aucun retard n'est jugé. */
   readonly latenessUnknown = input(false);
+  /** Les relances du jour — délais et traces ; `null` tant qu'elles ne sont pas lues. */
+  readonly nudges = input<CustomerNudgesView | null>(null);
+  /** Une relance vient de partir : la page relit les traces. */
+  readonly nudged = output();
 
   protected readonly link = SUPERVISION_LINKS.handover;
   protected readonly unplaced = UNPLACED_LINE;
@@ -74,21 +83,22 @@ export class HandoverColumn {
   private readonly notify = inject(NotifyService);
   private readonly permissions = inject(PermissionsStore);
 
-  /** `POST /admin/orders/:id/pickup-reminder` exige `b2b_orders:write` : sans lui, aucun bouton ne promet un 403. */
-  protected readonly canRemind = computed(() => this.permissions.can('b2b_orders:write'));
+  /**
+   * `POST /admin/orders/:id/pickup-reminder` et `…/delay-warning` exigent
+   * `b2b_orders:write` : sans lui, aucun bouton ne promet un 403 — la trace,
+   * elle, se lit quand même.
+   */
+  protected readonly canNudge = computed(() => this.permissions.can('b2b_orders:write'));
 
-  /** La commande dont le rappel est en vol — au plus une, et le bouton le dit. */
-  protected readonly remindingId = signal<string | null>(null);
+  /** La commande dont la relance est en vol — au plus une, et le bouton le dit. */
+  protected readonly nudgingId = signal<string | null>(null);
 
   /**
-   * Les rappels déjà partis, dans cette session d'écran.
-   *
-   * ⚠️ **Local, et assumé comme tel** (repris tel quel du comptoir) : le serveur
-   * ne garde pas trace d'un rappel dans la file ; sans ce jeu, le bouton se
-   * réarmerait et on enverrait trois courriels en trois minutes. Rechargé,
-   * l'écran oublie.
+   * Les relances parties depuis cet écran, en attendant que la relecture des
+   * traces les rende (« … par … ») : le bouton ne se réarme pas entre-temps.
+   * Le serveur, lui, refuse de toute façon un second envoi.
    */
-  protected readonly reminded = signal<ReadonlySet<string>>(new Set());
+  protected readonly justSent = signal<ReadonlySet<string>>(new Set());
 
   /** L'acheminement lu — choisi par la bande (`app-handover-band`), relié par la page. */
   readonly method = model<FulfillmentMethod>('pickup');
@@ -205,31 +215,47 @@ export class HandoverColumn {
   }
 
   /**
-   * Le rappel ne se propose que sur un retrait **prêt à temps et pas retiré** —
-   * le client n'est pas venu. Retard de notre fait : un rappel ferait venir
-   * quelqu'un devant un comptoir vide, et le serveur le refuse de toute façon.
+   * La relance d'une ligne : le bon bouton, la trace, ou rien. Le bouton
+   * suppose le droit d'écrire ; une relance partie d'ici se dit « envoyée »
+   * jusqu'à ce que la trace relue la nomme.
    */
-  protected remindable(row: SlotRow): boolean {
-    return (
-      this.canRemind() &&
-      row.method === 'pickup' &&
-      row.state === 'overdue' &&
-      row.overdueCause === 'customer' &&
-      !row.heldForQuality
-    );
+  protected nudgeOf(row: SlotRow): RowNudge | null {
+    const nudge = rowNudgeOf(row, this.nudges());
+    if (nudge === null || nudge.kind === 'sent') {
+      return nudge;
+    }
+    if (this.justSent().has(row.orderId)) {
+      return { kind: 'sent', label: nudge.kind === 'remind' ? 'Rappel envoyé' : 'Client averti' };
+    }
+    return this.canNudge() ? nudge : null;
   }
 
-  /** Renvoie au client le courriel de retrait (« votre commande vous attend », avec le QR). */
-  protected async remind(row: SlotRow): Promise<void> {
-    this.remindingId.set(row.orderId);
+  /**
+   * « Rappel au client » (le courriel de retrait, avec le QR) ou « Avertir le
+   * client » (« Votre commande prend du retard ») — puis la page relit les traces.
+   */
+  protected async nudge(row: SlotRow, kind: 'remind' | 'warn'): Promise<void> {
+    this.nudgingId.set(row.orderId);
     try {
-      await this.orders.remindHandover(row.orderId);
-      this.reminded.update((sent) => new Set([...sent, row.orderId]));
-      this.notify.success(`Rappel envoyé pour ${row.reference}.`);
+      await (kind === 'remind'
+        ? this.orders.remindHandover(row.orderId)
+        : this.orders.warnOfDelay(row.orderId));
+      this.justSent.update((sent) => new Set([...sent, row.orderId]));
+      this.notify.success(
+        kind === 'remind'
+          ? `Rappel envoyé pour ${row.reference}.`
+          : `Client averti du retard de ${row.reference}.`,
+      );
+      this.nudged.emit();
     } catch (caught) {
-      this.notify.error(caught, "Le rappel n'a pas pu être envoyé.");
+      this.notify.error(
+        caught,
+        kind === 'remind'
+          ? "Le rappel n'a pas pu être envoyé."
+          : "L'avertissement n'a pas pu être envoyé.",
+      );
     } finally {
-      this.remindingId.set(null);
+      this.nudgingId.set(null);
     }
   }
 

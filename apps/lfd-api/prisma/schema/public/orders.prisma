@@ -313,6 +313,16 @@ model Order {
   readyAt DateTime? @map("ready_at")
   readyBy String?   @map("ready_by")
 
+  // Les deux RELANCES d'un retrait en retard (Hugo, 2026-10-25), une fois
+  // chacune par commande. « Rappel au client » : prête, le client n'est pas
+  // venu. « Avertir le client » : le créneau est passé, elle n'est pas prête.
+  // L'instant et l'id de la fiche staff (pas une clé étrangère) vont ensemble
+  // (CHECK `orders_pickup_reminded_together` / `orders_delay_warned_together`).
+  pickupRemindedAt        DateTime? @map("pickup_reminded_at") @db.Timestamptz(6)
+  pickupRemindedByStaffId String?   @map("pickup_reminded_by_staff_id")
+  delayWarnedAt           DateTime? @map("delay_warned_at") @db.Timestamptz(6)
+  delayWarnedByStaffId    String?   @map("delay_warned_by_staff_id")
+
   // Le MANQUE signalé au colisage (lot E6a, plan E6 (`documentation/commandes/bon-de-livraison.md`) § 3) :
   // le snapshot du fait `packing.shortfall_reported`, jamais une lecture du
   // colisage. Non nul = « décision attendue ». Les quantités au bac par article

@@ -297,6 +297,8 @@
               [(point)]="handoverShop"
               [board]="board"
               [showLinks]="showLinks().handover"
+              [nudges]="nudges()"
+              (nudged)="reads.readNudges()"
               [narrow]="narrow()"
               [latenessUnknown]="latenessUnknown()"
               [matches]="highlight.matches()"

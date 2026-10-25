@@ -12,6 +12,7 @@ import { PermissionsStore } from '../../../auth/permissions.store';
 import { CutoffWaiversCard } from '../cutoff-waivers-card/cutoff-waivers-card';
 import { GRACE_CHOICES } from '../cutoffs-section/cutoff-format';
 import { CutoffsSection } from '../cutoffs-section/cutoffs-section';
+import { CustomerNudgeDelaysCard } from '../customer-nudge-delays-card/customer-nudge-delays-card';
 import { ResupplyCutoffCard } from '../resupply-cutoff-card/resupply-cutoff-card';
 import { LateFeeSummaryCard } from '../late-fee-summary-card/late-fee-summary-card';
 
@@ -31,6 +32,10 @@ import { LateFeeSummaryCard } from '../late-fee-summary-card/late-fee-summary-ca
  * sont pas le même droit), le renvoi sous `pim_catalog:read`. Le renvoi n'est
  * qu'un LIEN : rien de l'échelle du référentiel ne se lit ni ne s'édite d'ici.
  *
+ * Depuis le 2026-10-25, une carte de plus sous le réassort : les délais des
+ * deux relances d'un retrait en retard (« Rappel au client », « Avertir le
+ * client »), comptés depuis la fin du créneau — même réglage, même droit.
+ *
  * L'interrupteur de l'heure limite générale est retiré (2026-10-21), et le
  * jour même a sa page (Réglages › Commandes › Jour même).
  *
@@ -48,6 +53,7 @@ import { LateFeeSummaryCard } from '../late-fee-summary-card/late-fee-summary-ca
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CutoffsSection,
+    CustomerNudgeDelaysCard,
     CutoffWaiversCard,
     FoldButtonComponent,
     FoldCardComponent,

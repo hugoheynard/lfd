@@ -8,7 +8,7 @@ export interface MailLabel {
 }
 
 /**
- * **Les intitulés des 31 e-mails du registre** (`B2bMails`,
+ * **Les intitulés des 32 e-mails du registre** (`B2bMails`,
  * `apps/lfd-api/src/platform/mailer/mail-templates.ts`, relu le 2026-10-25) —
  * la clé technique reste au survol. Une clé que l'écran ne connaît pas
  * s'affiche telle quelle (`mailLabel`) : un e-mail neuf reste éditable avant
@@ -23,7 +23,14 @@ const MAIL_LABELS: Readonly<Record<string, MailLabel>> = {
   'customer.order-ready': {
     title: 'Commande prête',
     recipient: 'Le client',
-    moment: 'quand sa commande est prête, au comptoir ou en livraison',
+    moment:
+      'quand sa commande est prête, au comptoir ou en livraison — et, au retrait, au « Rappel au client » de la Supervision',
+  },
+  'customer.order-delayed': {
+    title: 'Commande en retard',
+    recipient: 'Le client',
+    moment:
+      '« Avertir le client » à la Supervision, quand un retrait n’est pas prêt à la fin du créneau',
   },
   'customer.delivery-en-route': {
     title: 'Livraison en route',

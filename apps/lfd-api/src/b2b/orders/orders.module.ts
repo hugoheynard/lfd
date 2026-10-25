@@ -52,6 +52,7 @@ import {
   ORDER_SHORTFALL_EXPORTS,
   ORDER_SHORTFALL_PROVIDERS,
 } from "./order-shortfall.providers.js";
+import { ORDER_CUSTOMER_NUDGES_PROVIDERS } from "./order-customer-nudges.providers.js";
 import {
   CUSTOMER_CANCELLATION_CONTROLLERS,
   CUSTOMER_CANCELLATION_PROVIDERS,
@@ -67,7 +68,6 @@ import { PendingSettlementSweep } from "./application/services/pending-settlemen
 import { SendPaymentFailedMail } from "./application/handlers/send-payment-failed-mail.handler.js";
 import { OrderPlacedMail } from "./application/services/order-placed-mail.service.js";
 import { OrderReadyMail } from "./application/services/order-ready-mail.service.js";
-import { SendHandoverReminderHandler } from "./application/commands/send-handover-reminder.handler.js";
 import { BrandLogoSource } from "../../platform/brand/brand-logo.source.js";
 import { BrandModule } from "../../platform/brand/brand.module.js";
 import { AppConfig } from "../../platform/config/app-config.js";
@@ -496,13 +496,13 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     SendGuestOrderNoticeOnPaid,
     SendOrderReadyMail,
     // Le composeur du courriel de retrait, partagé par le colisage (qui
-    // l'annonce) et par le rappel du comptoir (qui le renvoie).
+    // l'annonce) et par le « Rappel au client » de la Supervision.
     OrderReadyMail,
     // « Votre livraison est en route » (en-route.md) : l'abonné durable du
     // départ d'une tournée (`delivery.round_departed`, DD1).
     DeliveryEnRouteMail,
     MailDeliveryEnRoute,
-    SendHandoverReminderHandler,
+    ...ORDER_CUSTOMER_NUDGES_PROVIDERS,
     { provide: OrderPaymentLinkReader, useClass: PrismaOrderPaymentLinkReader },
     ListOrdersAwaitingPaymentHandler,
     { provide: DaySupervisionReader, useClass: PrismaDaySupervisionReader },

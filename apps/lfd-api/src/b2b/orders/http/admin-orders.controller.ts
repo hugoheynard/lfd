@@ -51,6 +51,7 @@ import {
   type PlaceOrderForCustomerResult,
 } from "../application/commands/place-order-for-customer.command.js";
 import { SendHandoverReminderCommand } from "../application/commands/send-handover-reminder.command.js";
+import { WarnCustomerOfDelayCommand } from "../application/commands/warn-customer-of-delay.command.js";
 import { CancelOrderCommand } from "../application/commands/cancel-order.command.js";
 import { GetAdminOrderSheetPdfQuery } from "../application/queries/get-admin-order-sheet-pdf.query.js";
 import type { OrderSheetPdf } from "../application/services/order-sheet-archive.service.js";
@@ -101,20 +102,39 @@ export class AdminOrdersController {
    * journaux d'accès.
    */
   /**
-   * **Renvoyer au client le courriel de retrait.**
+   * **« Rappel au client »** — la commande prête l'attend, il n'est pas venu
+   * (Supervision, 2026-10-25).
    *
-   * `POST` parce qu'il part un message — un geste, pas une lecture, et il se
-   * répète volontairement (cf. `SendHandoverReminderHandler`). Il vit sur les
-   * commandes et non sur la remise : c'est le commerce qui possède le
-   * destinataire, le bon et le gabarit, et la remise n'a pas à les connaître.
+   * `POST` parce qu'il part un message — un geste, pas une lecture. Une fois
+   * par commande, passé le délai réglé après la fin du créneau (cf.
+   * `SendHandoverReminderHandler`). Il vit sur les commandes et non sur le
+   * retrait : c'est le commerce qui possède le destinataire, le bon et le
+   * gabarit.
    *
-   * Rend `204` : il n'y a rien à relire. Un refus, lui, porte sa phrase.
+   * Rend `204` : la trace se relit (`GET admin/supervision/customer-nudges`).
+   * Un refus — déjà envoyé, trop tôt, pas prête — est un `409` qui porte sa phrase.
    */
   @Post(":id/pickup-reminder")
   @HttpCode(HttpStatus.NO_CONTENT)
   async remindHandover(@Param("id") id: string, @StaffUserId() staffUserId: string): Promise<void> {
     await this.commands.execute<SendHandoverReminderCommand, void>(
       new SendHandoverReminderCommand(id, staffUserId),
+    );
+  }
+
+  /**
+   * **« Avertir le client »** — « Votre commande prend du retard » : la fin du
+   * créneau de retrait est passée, la commande n'est pas prête (Supervision,
+   * 2026-10-25). Même droit que le rappel ; mêmes règles, son propre délai.
+   *
+   * `204` ; un refus — déjà averti, trop tôt, déjà prête — est un `409` qui
+   * porte sa phrase.
+   */
+  @Post(":id/delay-warning")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async warnOfDelay(@Param("id") id: string, @StaffUserId() staffUserId: string): Promise<void> {
+    await this.commands.execute<WarnCustomerOfDelayCommand, void>(
+      new WarnCustomerOfDelayCommand(id, staffUserId),
     );
   }
 

@@ -51,6 +51,8 @@ async function mount(
 const VIEW: OrderCutoffSettingsView = {
   sameDayAllowed: false,
   resupplyCutoffTime: '20:00',
+  pickupReminderDelayMinutes: 0,
+  delayWarningDelayMinutes: 0,
   updatedAt: null,
   updatedBy: null,
 };

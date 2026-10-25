@@ -25,6 +25,9 @@ const QR = {
 /** L'itinéraire vers le point de retrait (S7) — absent pour une livraison. */
 const ITINERARY = { id: "itinerary", texts: texts("itinerary") } as const;
 
+/** Le « Rappel au client » de la Supervision : le même e-mail, renvoyé à qui n'est pas venu. */
+const REMINDER = "Rappel au client qui n'est pas venu";
+
 /** Les e-mails d'une commande et de son règlement. */
 export const ORDER_MAIL_LAYOUTS: Readonly<
   Pick<
@@ -32,6 +35,7 @@ export const ORDER_MAIL_LAYOUTS: Readonly<
     | "customer.order-placed"
     | "customer.order-ready"
     | "customer.delivery-en-route"
+    | "customer.order-delayed"
     | "customer.order-placed-with-your-email"
     | "customer.payment-failed"
     | "customer.payment-expired"
@@ -73,16 +77,25 @@ export const ORDER_MAIL_LAYOUTS: Readonly<
     ],
   },
   "customer.order-ready": {
-    subject: SUBJECT,
-    header: KICKER,
+    subject: [...SUBJECT, ...variants({ subjectReminder: REMINDER })],
+    header: [...KICKER, ...variants({ kickerReminder: REMINDER })],
     sections: [
       {
         id: "title",
-        texts: variants({ titlePickup: "Commande en retrait", titleDelivery: "Commande livrée" }),
+        texts: variants({
+          titlePickup: "Commande en retrait",
+          titleDelivery: "Commande livrée",
+          titleReminder: REMINDER,
+        }),
       },
       {
         id: "body",
-        texts: variants({ introPickup: "Commande en retrait", introDelivery: "Commande livrée" }),
+        texts: variants({
+          introPickup: "Commande en retrait",
+          introDelivery: "Commande livrée",
+          introReminder: REMINDER,
+          introReminderWithoutSite: `${REMINDER}, sans nom de point`,
+        }),
       },
       { id: "summary", texts: texts("whereLabel", "contentLabel", "piecesLabel") },
       QR,
@@ -98,6 +111,17 @@ export const ORDER_MAIL_LAYOUTS: Readonly<
       { id: "title", texts: texts("title") },
       { id: "body", texts: texts("intro") },
       { id: "summary", texts: texts("referenceLabel", "addressLabel") },
+      { id: "cta", texts: texts("cta") },
+      { id: "footer", texts: texts("footer") },
+    ],
+  },
+  "customer.order-delayed": {
+    subject: SUBJECT,
+    header: KICKER,
+    sections: [
+      { id: "title", texts: texts("title") },
+      { id: "body", texts: texts("intro", "apology") },
+      { id: "summary", texts: texts("referenceLabel", "whereLabel") },
       { id: "cta", texts: texts("cta") },
       { id: "footer", texts: texts("footer") },
     ],

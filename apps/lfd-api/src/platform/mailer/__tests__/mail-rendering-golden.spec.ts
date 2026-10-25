@@ -9,7 +9,7 @@ import {
 } from "./rendering-golden/mail-rendering.fingerprint.js";
 
 /**
- * **Non-régression du rendu des 31 e-mails, en français.**
+ * **Non-régression du rendu des 32 e-mails, en français.**
  *
  * Les empreintes de `mail-rendering.golden.json` ont été capturées le
  * 2026-10-23 AVANT que les textes quittent les gabarits pour le dictionnaire
@@ -54,6 +54,12 @@ import {
  * se nomme désormais (« Remise retrait Le Labo », le point figé ; la règle
  * quand elle l'est). Vérifié avant de régénérer : objet et pièces jointes
  * identiques, seul le HTML change. Aucun autre cas n'a bougé.
+ *
+ * **Complétée le 2026-10-25 (les relances d'un retrait en retard)** : un
+ * e-mail neuf, `customer.order-delayed` (« Avertir le client »), et deux
+ * cas neufs de `customer.order-ready`, `reminder` et `reminderWithoutSite`
+ * (« Rappel au client ») — leurs empreintes ajoutées sans toucher aux
+ * existantes.
  */
 
 const REGISTRY = b2bMailTemplates({
@@ -80,10 +86,10 @@ function casesOf<K extends keyof B2bMails>(key: K): readonly (readonly [string, 
 
 const KEYS = Object.keys(MAIL_CASES) as readonly (keyof B2bMails)[];
 
-it("couvre les 31 e-mails du registre, sans en oublier un", () => {
+it("couvre les 32 e-mails du registre, sans en oublier un", () => {
   expect([...KEYS].sort()).toEqual(Object.keys(REGISTRY).sort());
   expect(Object.keys(GOLDEN).sort()).toEqual(Object.keys(REGISTRY).sort());
-  expect(KEYS).toHaveLength(31);
+  expect(KEYS).toHaveLength(32);
 });
 
 describe.each(KEYS)("le rendu de « %s »", (key) => {

@@ -1539,6 +1539,24 @@
       "information": false
     },
     {
+      "colonne": "public.orders.pickup_reminded_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a envoyé le « Rappel au client » d'un retrait en retard (« Rappel envoyé le … par … », Supervision, 2026-10-25) — une fois par commande.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.orders.delay_warned_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a averti le client du retard de sa commande (« Client averti le … par … », Supervision, 2026-10-25) — une fois par commande.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "public.order_revision.revised_by_staff_id",
       "personne": "staff",
       "categorie": "auteur-geste",

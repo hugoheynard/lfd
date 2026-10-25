@@ -246,6 +246,39 @@
         "variables": [],
         "required": [],
         "fr": "Itinéraire vers la boutique"
+      },
+      "subjectReminder": {
+        "variables": [
+          "ref"
+        ],
+        "required": [
+          "ref"
+        ],
+        "fr": "Votre commande {ref} vous attend"
+      },
+      "kickerReminder": {
+        "variables": [],
+        "required": [],
+        "fr": "Rappel"
+      },
+      "titleReminder": {
+        "variables": [],
+        "required": [],
+        "fr": "Elle vous attend."
+      },
+      "introReminder": {
+        "variables": [
+          "site"
+        ],
+        "required": [
+          "site"
+        ],
+        "fr": "Votre commande vous attend au point de retrait {site}."
+      },
+      "introReminderWithoutSite": {
+        "variables": [],
+        "required": [],
+        "fr": "Votre commande vous attend au point de retrait."
       }
     },
     "customer.delivery-en-route": {
@@ -278,6 +311,57 @@
         "variables": [],
         "required": [],
         "fr": "Livrée à"
+      },
+      "cta": {
+        "variables": [],
+        "required": [],
+        "fr": "Voir ma commande"
+      },
+      "footer": {
+        "variables": [],
+        "required": [],
+        "fr": "Le Labo · route de la Balme, Val d'Isère — 7 h – 19 h"
+      }
+    },
+    "customer.order-delayed": {
+      "kicker": {
+        "variables": [],
+        "required": [],
+        "fr": "Retard"
+      },
+      "subject": {
+        "variables": [
+          "ref"
+        ],
+        "required": [
+          "ref"
+        ],
+        "fr": "Votre commande {ref} prend du retard"
+      },
+      "title": {
+        "variables": [],
+        "required": [],
+        "fr": "Votre commande prend du retard."
+      },
+      "intro": {
+        "variables": [],
+        "required": [],
+        "fr": "Elle n'est pas encore prête. Nous vous écrirons dès qu'elle le sera : inutile de vous déplacer d'ici là."
+      },
+      "referenceLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "Commande"
+      },
+      "whereLabel": {
+        "variables": [],
+        "required": [],
+        "fr": "À retirer"
+      },
+      "apology": {
+        "variables": [],
+        "required": [],
+        "fr": "Toutes nos excuses pour l'attente."
       },
       "cta": {
         "variables": [],

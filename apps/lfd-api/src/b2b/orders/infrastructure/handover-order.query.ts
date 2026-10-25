@@ -90,7 +90,7 @@ export function tradeNameOf(
  * que casté — une commande antérieure au point de retrait n'en porte pas, et un
  * JSON d'une autre forme ne doit pas remonter en vue.
  */
-function pickupLabelOf(value: Prisma.JsonValue | null): string | null {
+export function pickupLabelOf(value: Prisma.JsonValue | null): string | null {
   const address = parseAddress(value);
   if (address === null || address.label === "") {
     return null;

@@ -26,6 +26,14 @@ export interface OrderCutoffSettingsView {
    * contrat le même jour — sa colonne reste en base, morte.
    */
   readonly resupplyCutoffTime: string;
+  /**
+   * **« Rappel au client »**, en minutes après la FIN DU CRÉNEAU d'un retrait
+   * (Hugo, 2026-10-25) : avant, la Supervision ne propose pas le geste et le
+   * serveur le refuse. Entier ≥ 0, `0` par défaut.
+   */
+  readonly pickupReminderDelayMinutes: number;
+  /** **« Avertir le client »** (sa commande prend du retard) : même règle, son propre délai. */
+  readonly delayWarningDelayMinutes: number;
   /** Instant du dernier geste ; `null` tant que personne n'a rien réglé. */
   readonly updatedAt: string | null;
   /** Le nom de qui l'a posé, figé au geste ; `null` tant que personne n'a rien réglé. */
@@ -39,13 +47,16 @@ export const DEFAULT_RESUPPLY_CUTOFF_TIME = "20:00";
 export const DEFAULT_ORDER_CUTOFF_SETTINGS: OrderCutoffSettingsView = {
   sameDayAllowed: false,
   resupplyCutoffTime: DEFAULT_RESUPPLY_CUTOFF_TIME,
+  pickupReminderDelayMinutes: 0,
+  delayWarningDelayMinutes: 0,
   updatedAt: null,
   updatedBy: null,
 };
 
 /**
- * `PATCH /admin/order-cutoff-settings` — le jour même et l'heure limite du
- * réassort (2026-10-21, lot R3a). Une vraie rustine : chaque page n'envoie
+ * `PATCH /admin/order-cutoff-settings` — le jour même, l'heure limite du
+ * réassort (2026-10-21, lot R3a) et les délais des deux relances d'un retrait
+ * en retard (2026-10-25). Une vraie rustine : chaque page n'envoie
  * que sa clé, au moins une est exigée. Strict : une charge qui porte encore
  * `enabled` (l'interrupteur retiré le 2026-10-21) est refusée plutôt
  * qu'avalée en silence.
@@ -58,9 +69,12 @@ export const orderCutoffSettingsPatchSchema = z
       .string()
       .regex(/^\d{2}:\d{2}$/u, "heure attendue au format HH:MM")
       .optional(),
+    // La FORME seulement — un entier ; « pas négatif » est la règle du domaine.
+    pickupReminderDelayMinutes: z.number().int("nombre entier de minutes attendu").optional(),
+    delayWarningDelayMinutes: z.number().int("nombre entier de minutes attendu").optional(),
   })
   .strict()
-  .refine((patch) => patch.sameDayAllowed !== undefined || patch.resupplyCutoffTime !== undefined, {
+  .refine((patch) => Object.values(patch).some((value) => value !== undefined), {
     message: "Indiquez au moins un réglage à poser.",
   });
 export type OrderCutoffSettingsPatch = z.infer<typeof orderCutoffSettingsPatchSchema>;

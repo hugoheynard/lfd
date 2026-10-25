@@ -40,3 +40,16 @@ export class InvalidResupplyCutoffTimeError extends DomainError {
     );
   }
 }
+
+/**
+ * Un délai de relance d'un retrait en retard n'est pas un nombre entier de
+ * minutes positif ou nul (2026-10-25).
+ */
+export class InvalidNudgeDelayError extends DomainError {
+  constructor(readonly minutes: number) {
+    super(
+      "order_cutoff_settings.invalid_nudge_delay",
+      `Le délai d'une relance se compte en minutes entières après la fin du créneau, 0 ou plus (reçu : ${String(minutes)}). Saisissez par exemple 0 pour proposer le geste dès la fin du créneau, ou 15.`,
+    );
+  }
+}

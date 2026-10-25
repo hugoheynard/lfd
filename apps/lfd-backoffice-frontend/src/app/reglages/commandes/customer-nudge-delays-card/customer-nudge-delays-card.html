@@ -1,0 +1,77 @@
+<fold-card data-customer-nudge-delays>
+  <fold-element-title
+    cardHeader
+    variant="title"
+    title="Relances d’un retrait en retard"
+    subtitle="Quand la Supervision propose d’écrire au client, compté depuis la fin du créneau de retrait."
+  />
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Chargement des délais de relance…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Impossible de charger les délais de relance">
+        <button foldButton (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      <div class="form">
+        <fold-number-input
+          label="Rappel au client : minutes après la fin du créneau"
+          hint="La commande est prête, le client n’est pas venu."
+          [value]="reminder()"
+          (valueChange)="reminder.set($event)"
+          [min]="0"
+          integer
+          [readOnly]="!canWrite()"
+          [disabled]="pending()"
+          data-pickup-reminder-delay
+        />
+        <fold-number-input
+          label="Avertir le client : minutes après la fin du créneau"
+          hint="La commande n’est pas prête : il reçoit « Votre commande prend du retard »."
+          [value]="warning()"
+          (valueChange)="warning.set($event)"
+          [min]="0"
+          integer
+          [readOnly]="!canWrite()"
+          [disabled]="pending()"
+          data-delay-warning-delay
+        />
+        <p class="help">
+          0 : le geste se propose dès la fin du créneau. Chaque relance ne part qu’une fois par
+          commande.
+        </p>
+
+        @if (failure(); as message) {
+          <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+        }
+
+        @if (canWrite()) {
+          <div class="actions">
+            <button
+              foldButton
+              emphasis="outline"
+              size="sm"
+              [disabled]="patch() === null || pending()"
+              (click)="reset()"
+            >
+              Annuler
+            </button>
+            <button
+              foldButton
+              size="sm"
+              [disabled]="!canSave()"
+              [loading]="pending()"
+              (click)="save()"
+              data-customer-nudge-delays-save
+            >
+              Enregistrer
+            </button>
+          </div>
+        }
+      </div>
+    }
+  }
+</fold-card>

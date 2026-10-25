@@ -91,4 +91,24 @@ describe('l’heure limite générale (order_cutoff_settings.updated)', () => {
     );
     expect(renderFact(input).detail).toEqual([]);
   });
+
+  it('dit le délai d’une relance d’un retrait en retard (2026-10-25), sans détail résiduel', () => {
+    const input = updated({
+      sameDayAllowed: false,
+      resupplyCutoffTime: '20:00',
+      pickupReminderDelayMinutes: 0,
+      delayWarningDelayMinutes: 15,
+      previous: {
+        sameDayAllowed: false,
+        resupplyCutoffTime: '20:00',
+        pickupReminderDelayMinutes: 0,
+        delayWarningDelayMinutes: 0,
+      },
+    });
+
+    expect(sentence(input)).toBe(
+      'Colette Martin a réglé « Avertir le client » à 15 min après la fin du créneau',
+    );
+    expect(renderFact(input).detail).toEqual([]);
+  });
 });

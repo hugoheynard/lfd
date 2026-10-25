@@ -159,17 +159,33 @@ export class AdminOrdersService {
    * papier déjà parti.
    */
   /**
-   * **Renvoie au client le courriel de retrait** — le rappel du comptoir.
+   * **« Rappel au client »** — le courriel de retrait renvoyé à qui n'est pas
+   * venu, depuis la Supervision.
    *
    * Il vit sur les commandes et non sur le retrait : c'est le commerce qui
-   * possède le destinataire, le bon et le gabarit. Le serveur REFUSE sur une
-   * commande que le fournil n'a pas déclarée prête — un rappel qui ferait venir
-   * quelqu'un devant un comptoir vide est pire que pas de rappel du tout.
+   * possède le destinataire, le bon et le gabarit. Le serveur REFUSE (409,
+   * phrase à montrer) sur une commande pas prête, avant le délai réglé après
+   * la fin du créneau, et au second envoi : il ne part qu'une fois.
    */
   async remindHandover(id: string): Promise<void> {
     await firstValueFrom(
       this.http.post<void>(
         `${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}/pickup-reminder`,
+        {},
+      ),
+    );
+  }
+
+  /**
+   * **« Avertir le client »** — « Votre commande prend du retard », depuis la
+   * Supervision, quand la fin du créneau est passée et que la commande n'est
+   * pas prête. Mêmes refus que le rappel, son propre délai ; une fois par
+   * commande.
+   */
+  async warnOfDelay(id: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(
+        `${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}/delay-warning`,
         {},
       ),
     );

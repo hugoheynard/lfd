@@ -564,9 +564,23 @@ export const ORDERS_PRODUCTION_FACTS = {
     payload({
       sameDayAllowed: z.boolean(),
       resupplyCutoffTime: z.string(),
-      previous: payload({ sameDayAllowed: z.boolean(), resupplyCutoffTime: z.string() }),
+      pickupReminderDelayMinutes: minutes(),
+      delayWarningDelayMinutes: minutes(),
+      previous: payload({
+        sameDayAllowed: z.boolean(),
+        resupplyCutoffTime: z.string(),
+        pickupReminderDelayMinutes: minutes(),
+        delayWarningDelayMinutes: minutes(),
+      }),
     }),
     [
+      // Jusqu'au 2026-10-25, avant les délais des deux relances d'un retrait
+      // en retard (Rappel au client, Avertir le client).
+      payload({
+        sameDayAllowed: z.boolean(),
+        resupplyCutoffTime: z.string(),
+        previous: payload({ sameDayAllowed: z.boolean(), resupplyCutoffTime: z.string() }),
+      }),
       // Le 2026-10-21, de la limite du réapprovisionnement (oui/non) à son
       // heure (lot R3a du réassort).
       payload({

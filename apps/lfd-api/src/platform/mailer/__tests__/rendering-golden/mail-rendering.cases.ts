@@ -6,7 +6,7 @@ import { ORDER_SHORTFALL_CASES } from "./order-shortfall-cases.js";
 import { TEAM_CASES } from "./team-cases.js";
 
 /**
- * **Les données d'exemple des 31 e-mails**, une liste de cas par clé du
+ * **Les données d'exemple des 32 e-mails**, une liste de cas par clé du
  * registre, choisis pour passer par CHAQUE branche du texte : avec et sans
  * prénom, avec et sans lien, chaque régime, chaque geste.
  *

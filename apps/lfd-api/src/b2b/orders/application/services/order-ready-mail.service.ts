@@ -16,7 +16,9 @@ import { clientSheetOf } from "../../domain/services/order-sheet.js";
  * ## Pourquoi un service, et pas deux appelants qui se ressemblent
  *
  * Deux gestes l'envoient : le **colisage**, qui l'annonce une fois ; et le
- * **rappel** du comptoir, qui le renvoie à quelqu'un qui n'est pas venu. Tout
+ * **« Rappel au client »** de la Supervision, qui le renvoie à quelqu'un qui
+ * n'est pas venu — avec son propre en-tête (« elle vous attend au point de
+ * retrait … », option `reminder`, 2026-10-25). Tout
  * le reste est identique — même destinataire, même bon, même QR, mêmes replis
  * quand une adresse manque.
  *
@@ -29,9 +31,9 @@ import { clientSheetOf } from "../../domain/services/order-sheet.js";
  *
  * Et c'est tout le sujet de ce paramètre. Le colisage veut une clé
  * **déterministe** : un fait rejoué sur un bus en processus ne doit pas faire
- * partir un second message. Le rappel veut exactement l'inverse — il n'existe
- * que pour repartir. Coder la clé ici obligerait à choisir entre les deux, et
- * ce choix appartient au geste, pas au gabarit.
+ * partir un second message. Le rappel a la sienne, une par commande depuis
+ * qu'il ne part qu'une fois (2026-10-25). Ce choix appartient au geste, pas
+ * au gabarit.
  */
 @Injectable()
 export class OrderReadyMail {
@@ -52,7 +54,11 @@ export class OrderReadyMail {
    *
    * @returns `true` si le message a été remis au mailer.
    */
-  async send(orderId: string, idempotencyKey: string): Promise<boolean> {
+  async send(
+    orderId: string,
+    idempotencyKey: string,
+    options: { readonly reminder?: boolean } = {},
+  ): Promise<boolean> {
     const owned = await this.orders.findById(orderId);
     if (owned === null) {
       return false;
@@ -77,6 +83,7 @@ export class OrderReadyMail {
         orderUrl: client === null ? "" : `${client}/mes-commandes`,
         handoverUrl: handoverUrlOf(admin, token),
         locale: DEFAULT_MAIL_LOCALE,
+        ...(options.reminder === true ? { reminder: true } : {}),
       },
       idempotencyKey,
     });

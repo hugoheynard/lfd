@@ -91,9 +91,9 @@
               }}</span>
             }
           </div>
-          @if (remindable(row)) {
-            @if (reminded().has(row.orderId)) {
-              <span class="reminded" data-reminded>Rappel envoyé</span>
+          @if (nudgeOf(row); as offer) {
+            @if (offer.kind === 'sent') {
+              <span class="reminded" data-nudge-sent>{{ offer.label }}</span>
             } @else {
               <button
                 foldButton
@@ -101,11 +101,11 @@
                 emphasis="outline"
                 size="sm"
                 icon="mail"
-                data-remind
-                [loading]="remindingId() === row.orderId"
-                (click)="remind(row)"
+                [attr.data-nudge]="offer.kind"
+                [loading]="nudgingId() === row.orderId"
+                (click)="nudge(row, offer.kind)"
               >
-                Envoyer un rappel
+                {{ offer.kind === 'remind' ? 'Rappel au client' : 'Avertir le client' }}
               </button>
             }
           }

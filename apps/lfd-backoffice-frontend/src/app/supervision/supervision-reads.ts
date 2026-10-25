@@ -1,5 +1,6 @@
 import { signal } from '@angular/core';
 import type {
+  CustomerNudgesView,
   DayStockOverviewView,
   DaySupervisionView,
   HandoverQueueView,
@@ -34,6 +35,8 @@ export class SupervisionReads {
   readonly handover = signal<ColumnState<HandoverQueueView>>(LOADING);
   /** L'onglet Stock (lot S1), relu avec les colonnes : au même rythme. */
   readonly stock = signal<ColumnState<DayStockOverviewView>>(LOADING);
+  /** Les relances d'un retrait en retard (2026-10-25), relues avec la colonne du retrait. */
+  readonly nudges = signal<ColumnState<CustomerNudgesView>>(LOADING);
 
   constructor(
     private readonly service: SupervisionService,
@@ -43,7 +46,7 @@ export class SupervisionReads {
 
   /** Tout relire depuis le jour du serveur — le premier chargement, ou quand il a échoué. */
   async load(): Promise<void> {
-    const all = [this.day, this.preparation, this.packing, this.handover, this.stock];
+    const all = [this.day, this.preparation, this.packing, this.handover, this.stock, this.nudges];
     all.forEach((column) => column.set(LOADING));
     this.quality.reset();
     let day: DaySupervisionView;
@@ -110,8 +113,19 @@ export class SupervisionReads {
       this.readColumn('packing', date),
       this.readColumn('handover', date),
       this.readStock(date),
+      this.readNudges(),
       this.quality.read(date),
     ]);
+  }
+
+  /** Relire les relances du jour — après un geste, sans attendre la relecture périodique. */
+  readNudges(): Promise<void> {
+    const date = this.date();
+    if (date === null) {
+      return Promise.resolve();
+    }
+    const current = (): boolean => date === this.date();
+    return readInto(this.nudges, () => this.service.customerNudges(date), current);
   }
 
   private readStock(date: string, reset = false): Promise<void> {

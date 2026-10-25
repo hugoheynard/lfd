@@ -293,20 +293,25 @@ model OrderCutoffSettings {
   /// L'interrupteur de l'heure limite générale (lot O3). Ni lu ni écrit depuis
   /// le 2026-10-21 : l'heure limite déclenche l'arrêt du plan, elle est toujours
   /// en vigueur (`limites-de-commande/plan-une-seule-heure.md` §5). Gardée, morte.
-  enabled                 Boolean @default(true)
+  enabled                    Boolean @default(true)
   /// Une commande peut-elle viser AUJOURD'HUI ? (Hugo, 2026-10-14, §8.3.) Non
   /// par défaut ; aucune règle de délai codée en dur ailleurs.
-  sameDayAllowed          Boolean @default(false) @map("same_day_allowed")
+  sameDayAllowed             Boolean @default(false) @map("same_day_allowed")
   /// ⚠️ **À RETIRER** — l'interrupteur « réassort soumis à l'heure limite »
   /// (oui/non, Hugo 2026-10-21). Ni lu ni écrit depuis le lot R3a du réassort
   /// (2026-10-21) : remplacé par `resupply_cutoff_time`. Gardée, morte, dans la
   /// liste des colonnes à retirer (`limites-de-commande/schema-des-reglages.md`).
-  resupplySubjectToCutoff Boolean @default(true) @map("resupply_subject_to_cutoff")
+  resupplySubjectToCutoff    Boolean @default(true) @map("resupply_subject_to_cutoff")
   /// **L'heure limite du réassort pour demain**, `HH:MM` la VEILLE, heure de
   /// Paris (lot R3a, `reassort-boutiques/plan-reapprovisionnement.md` §13.3).
   /// Le plan du fournil s'arrête à la plus tardive de cette heure et de la fin
   /// du rattrapage de l'heure limite générale. `20:00` par défaut (Hugo).
-  resupplyCutoffTime      String  @default("20:00") @map("resupply_cutoff_time") @db.VarChar(5)
+  resupplyCutoffTime         String  @default("20:00") @map("resupply_cutoff_time") @db.VarChar(5)
+  /// **Les délais des deux relances d'un retrait en retard** (Hugo,
+  /// 2026-10-25), en minutes APRÈS LA FIN DU CRÉNEAU : avant, la Supervision
+  /// ne propose pas le geste et le serveur le refuse. 0 par défaut, ≥ 0 (CHECK).
+  pickupReminderDelayMinutes Int     @default(0) @map("pickup_reminder_delay_minutes")
+  delayWarningDelayMinutes   Int     @default(0) @map("delay_warning_delay_minutes")
 
   /// Instant du geste, lu du `Clock`.
   updatedAt        DateTime @map("updated_at")

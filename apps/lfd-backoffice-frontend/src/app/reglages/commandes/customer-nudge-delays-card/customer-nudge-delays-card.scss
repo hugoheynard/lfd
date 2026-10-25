@@ -1,0 +1,19 @@
+// Les deux délais de haut en bas, puis ce qu'ils veulent dire.
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.help {
+  margin: 0;
+  max-width: 60ch;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--fold-space-sm);
+}

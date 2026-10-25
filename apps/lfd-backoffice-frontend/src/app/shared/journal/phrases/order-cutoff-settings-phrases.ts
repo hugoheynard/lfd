@@ -51,7 +51,26 @@ function changes(fact: PhraseFact): string[] {
   if (time !== null && time.before !== time.after) {
     said.push(`a réglé l’heure limite du réassort boutique à la veille, ${time.after}`);
   }
+  for (const [key, gesture] of NUDGE_DELAYS) {
+    const delay = minutesChange(fact, key);
+    if (delay !== null && delay.before !== delay.after) {
+      said.push(`a réglé « ${gesture} » à ${String(delay.after)} min après la fin du créneau`);
+    }
+  }
   return said;
+}
+
+/** Les délais des deux relances d'un retrait en retard (2026-10-25), et le nom de leur geste. */
+const NUDGE_DELAYS = [
+  ['pickupReminderDelayMinutes', 'Rappel au client'],
+  ['delayWarningDelayMinutes', 'Avertir le client'],
+] as const;
+
+/** L'avant et l'après d'un délai en minutes, ou `null` (ligne d'avant le 2026-10-25). */
+function minutesChange(fact: PhraseFact, key: string): { before: number; after: number } | null {
+  const before = recordOf(fact.payload['previous'])?.[key];
+  const after = fact.payload[key];
+  return typeof before === 'number' && typeof after === 'number' ? { before, after } : null;
 }
 
 /** L'avant et l'après de l'heure du réassort (lot R3a), ou `null`. */
@@ -69,7 +88,8 @@ function readable(fact: PhraseFact): boolean {
 /**
  * Les clés que la phrase a dites : `enabled` seulement sur une ligne d'avant le
  * 2026-10-21, `resupplySubjectToCutoff` seulement sur une ligne du même jour
- * d'avant le lot R3a, `resupplyCutoffTime` sur une ligne d'après.
+ * d'avant le lot R3a, `resupplyCutoffTime` sur une ligne d'après, et les
+ * deux délais de relance sur une ligne d'après le 2026-10-25.
  */
 function saidKeys(fact: PhraseFact): string[] {
   if (!readable(fact)) {
@@ -79,7 +99,10 @@ function saidKeys(fact: PhraseFact): string[] {
     (key) => change(fact, key) !== null,
   );
   const time = timeChange(fact) === null ? [] : ['resupplyCutoffTime'];
-  return [...optional, ...time, 'sameDayAllowed', 'previous'];
+  const delays = NUDGE_DELAYS.map(([key]) => key).filter(
+    (key) => minutesChange(fact, key) !== null,
+  );
+  return [...optional, ...time, ...delays, 'sameDayAllowed', 'previous'];
 }
 
 function orderCutoffSettings(fact: PhraseFact): Segment[] {

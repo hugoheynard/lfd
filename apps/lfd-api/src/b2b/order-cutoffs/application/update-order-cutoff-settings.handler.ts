@@ -42,6 +42,8 @@ export class UpdateOrderCutoffSettingsHandler implements ICommandHandler<
         current: previous,
         sameDayAllowed: command.patch.sameDayAllowed,
         resupplyCutoffTime: command.patch.resupplyCutoffTime,
+        pickupReminderDelayMinutes: command.patch.pickupReminderDelayMinutes,
+        delayWarningDelayMinutes: command.patch.delayWarningDelayMinutes,
         at: this.clock.now(),
         author,
       });

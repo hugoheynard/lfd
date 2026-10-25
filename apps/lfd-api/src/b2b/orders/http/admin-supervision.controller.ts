@@ -1,4 +1,7 @@
 import {
+  type CustomerNudgesQuery,
+  customerNudgesQuerySchema,
+  type CustomerNudgesView,
   type DaySupervisionQuery,
   daySupervisionQuerySchema,
   type DaySupervisionView,
@@ -11,6 +14,7 @@ import { QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
+import { GetCustomerNudgesQuery } from "../application/queries/get-customer-nudges.query.js";
 import { GetDaySupervisionQuery } from "../application/queries/get-day-supervision.query.js";
 import { GetOrderDayVersionQuery } from "../application/queries/get-order-day-version.query.js";
 
@@ -52,6 +56,21 @@ export class AdminSupervisionController {
   ): Promise<DayVersionView> {
     return this.queries.execute<GetOrderDayVersionQuery, DayVersionView>(
       new GetOrderDayVersionQuery(query.date),
+    );
+  }
+
+  /**
+   * **Les relances d'un retrait en retard** d'une date de service (Hugo,
+   * 2026-10-25) : leurs délais, et qui a déjà fait quoi. La date est
+   * OBLIGATOIRE — l'écran la tient de `day`. Aucun contact : un nom de
+   * l'équipe et un instant.
+   */
+  @Get("customer-nudges")
+  customerNudges(
+    @Query(new ZodQuery(customerNudgesQuerySchema)) query: CustomerNudgesQuery,
+  ): Promise<CustomerNudgesView> {
+    return this.queries.execute<GetCustomerNudgesQuery, CustomerNudgesView>(
+      new GetCustomerNudgesQuery(query.date),
     );
   }
 }

@@ -176,6 +176,9 @@ describe("l'interrupteur de l'heure limite générale, retiré le 2026-10-21", (
     expect(view).toEqual({
       sameDayAllowed: false,
       resupplyCutoffTime: "20:00",
+      // Les délais des relances d'un retrait en retard (2026-10-25), 0 par défaut.
+      pickupReminderDelayMinutes: 0,
+      delayWarningDelayMinutes: 0,
       updatedAt: null,
       updatedBy: null,
     });
@@ -224,7 +227,14 @@ describe("l'interrupteur de l'heure limite générale, retiré le 2026-10-21", (
         payload: {
           sameDayAllowed: true,
           resupplyCutoffTime: "20:00",
-          previous: { sameDayAllowed: false, resupplyCutoffTime: "20:00" },
+          pickupReminderDelayMinutes: 0,
+          delayWarningDelayMinutes: 0,
+          previous: {
+            sameDayAllowed: false,
+            resupplyCutoffTime: "20:00",
+            pickupReminderDelayMinutes: 0,
+            delayWarningDelayMinutes: 0,
+          },
         },
       },
     ]);

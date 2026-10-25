@@ -26,6 +26,8 @@ class SameDay extends OrderCutoffSettingsReader {
       enabled: true,
       sameDayAllowed: this.allowed,
       resupplyCutoffTime: "20:00",
+      pickupReminderDelayMinutes: 0,
+      delayWarningDelayMinutes: 0,
       updatedAt: null,
       updatedBy: null,
     });

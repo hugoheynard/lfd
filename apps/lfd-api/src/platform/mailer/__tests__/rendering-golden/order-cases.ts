@@ -89,6 +89,7 @@ export const ORDER_CASES: Pick<
   | "customer.order-placed"
   | "customer.order-ready"
   | "customer.delivery-en-route"
+  | "customer.order-delayed"
   | "customer.payment-failed"
   | "customer.payment-expired"
   | "customer.order-cancelled"
@@ -139,6 +140,22 @@ export const ORDER_CASES: Pick<
       locale: "fr",
     },
     delivery: { sheet: DELIVERY, handoverToken: null, orderUrl: "", handoverUrl: "", locale: "fr" },
+    reminder: {
+      sheet: PAID,
+      handoverToken: "tok_abc",
+      orderUrl: "https://shop.lfc.test/c/1",
+      handoverUrl: HANDOVER,
+      locale: "fr",
+      reminder: true,
+    },
+    reminderWithoutSite: {
+      sheet: { ...PAID, fulfillment: { ...PAID.fulfillment, pickupLabel: null } },
+      handoverToken: "tok_abc",
+      orderUrl: "https://shop.lfc.test/c/1",
+      handoverUrl: HANDOVER,
+      locale: "fr",
+      reminder: true,
+    },
   },
   "customer.delivery-en-route": {
     full: {
@@ -148,6 +165,15 @@ export const ORDER_CASES: Pick<
       locale: "fr",
     },
     bare: { reference: "ORD-4812", addressLines: [], orderUrl: "", locale: "fr" },
+  },
+  "customer.order-delayed": {
+    full: {
+      reference: "ORD-4812",
+      pickupLabel: "Le Labo",
+      orderUrl: "https://shop.lfc.test/c/1",
+      locale: "fr",
+    },
+    bare: { reference: "ORD-4812", pickupLabel: null, orderUrl: "", locale: "fr" },
   },
   "customer.payment-failed": {
     withLink: { sheet: PAID, settleUrl: "https://shop.lfc.test/regler", locale: "fr" },

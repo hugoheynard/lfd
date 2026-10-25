@@ -17,6 +17,8 @@ export class PrismaOrderCutoffSettingsRepository extends OrderCutoffSettingsRepo
     const row = {
       sameDayAllowed: settings.sameDayAllowed,
       resupplyCutoffTime: settings.resupplyCutoffTime,
+      pickupReminderDelayMinutes: settings.pickupReminderDelayMinutes,
+      delayWarningDelayMinutes: settings.delayWarningDelayMinutes,
       updatedAt: settings.at,
       updatedByStaffId: settings.author.staffUserId,
       updatedByName: settings.author.name,

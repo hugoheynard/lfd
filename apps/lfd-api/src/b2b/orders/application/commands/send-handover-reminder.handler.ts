@@ -1,62 +1,87 @@
+import { Logger } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { BackgroundWork } from "../../../../platform/events/background-work.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { OrderNotFoundError, ReminderRefusedError } from "../../domain/errors/order-errors.js";
-import { OrderReader } from "../../domain/ports/order.reader.js";
+import { CustomerNudgeDelaysReader } from "../../domain/ports/customer-nudge-delays.reader.js";
+import { OrderCustomerNudgesRepository } from "../../domain/ports/order-customer-nudges.repository.js";
+import { OrderRecipientReader } from "../../domain/ports/order-recipient.reader.js";
 import { OrderReadyMail } from "../services/order-ready-mail.service.js";
 import { SendHandoverReminderCommand } from "./send-handover-reminder.command.js";
 
+/** Nom du travail de fond, et préfixe de la clé d'idempotence du courriel. */
+const PICKUP_REMINDER = "order.pickup-reminder";
+
 /**
- * **Le rappel de retrait**, depuis la file du comptoir.
+ * **« Rappel au client »**, depuis la Supervision (Hugo, 2026-10-25).
  *
- * ## 🔴 Il ne part que si la commande est DÉCLARÉE PRÊTE
+ * Une transaction : la commande verrouillée, le geste tracé par l'agrégat
+ * (prête, retrait ouvert, délai écoulé après la fin du créneau, une fois par
+ * commande), le destinataire vérifié — sans adresse lisible, rien n'est
+ * tracé. Puis le courriel part EN FOND, après la validation : la réponse
+ * n'attend pas le fournisseur. Un envoi raté est journalisé sans l'adresse ;
+ * la trace reste, et le journal des e-mails dit ce qui est parti.
  *
- * Et ce n'est pas une précaution d'écran : le message envoyé dit « votre
- * commande vous attend », avec le QR de retrait. L'envoyer sur une commande que
- * le fournil n'a pas colisée ferait venir quelqu'un devant un comptoir qui n'a
- * rien à lui tendre — la seule chose pire que de ne pas prévenir.
+ * La clé d'idempotence est UNE par commande (`order.pickup-reminder:<id>`) :
+ * le rappel ne part qu'une fois, et un envoi rejoué est absorbé par le
+ * fournisseur. C'est le courriel « prête », en-tête de rappel (« elle vous
+ * attend au point de retrait … »), QR compris.
  *
- * Le retard, lui, n'entre pas dans la règle. Une commande prête et pas encore
- * retirée se rappelle à toute heure ; c'est à l'équipe de juger quand, pas à un
- * seuil d'horloge.
- *
- * ## Pourquoi il se répète, là où le colisage ne se répète pas
- *
- * Le colisage compose une clé d'idempotence déterministe : un fait rejoué ne
- * fait pas partir un second message. Un rappel n'existe que pour repartir — sa
- * clé porte donc l'instant. C'est la MÊME fonction d'envoi ({@link
- * OrderReadyMail}) : ce qui diffère est la clé, et elle vient de l'appelant
- * précisément pour que ce choix soit lisible ici.
+ * @throws {OrderNotFoundError} @throws {ReminderRefusedError} et les refus de
+ * `OrderCustomerNudges.remindPickup`.
  */
 @CommandHandler(SendHandoverReminderCommand)
 export class SendHandoverReminderHandler implements ICommandHandler<
   SendHandoverReminderCommand,
   void
 > {
+  private readonly logger = new Logger(SendHandoverReminderHandler.name);
+
   constructor(
-    private readonly orders: OrderReader,
+    private readonly nudges: OrderCustomerNudgesRepository,
+    private readonly delays: CustomerNudgeDelaysReader,
+    private readonly recipients: OrderRecipientReader,
     private readonly mail: OrderReadyMail,
     private readonly clock: Clock,
+    private readonly uow: UnitOfWork,
+    private readonly work: BackgroundWork,
   ) {}
 
   async execute(command: SendHandoverReminderCommand): Promise<void> {
-    const owned = await this.orders.findById(command.orderId);
-    if (owned === null) {
-      throw new OrderNotFoundError(command.orderId);
-    }
-    if (owned.view.readyAt === null) {
-      throw new ReminderRefusedError(
-        "Cette commande n'est pas encore déclarée prête : le rappel ferait venir le client pour rien.",
-      );
-    }
-    const sent = await this.mail.send(
-      command.orderId,
-      `order.ready-reminder:${command.orderId}:${this.clock.now().toISOString()}`,
-    );
-    if (!sent) {
-      throw new ReminderRefusedError(
-        "Aucune adresse lisible pour cette commande : le rappel n'a pas d'où partir.",
-      );
+    const { pickupReminderMinutes } = await this.delays.delays();
+    const reference = await this.uow.run(async () => {
+      const locked = await this.nudges.lock(command.orderId);
+      if (locked === null) {
+        throw new OrderNotFoundError(command.orderId);
+      }
+      const { nudges } = locked;
+      nudges.remindPickup(this.clock.now(), command.staffUserId, pickupReminderMinutes);
+      await this.nudges.save(nudges);
+      if ((await this.recipients.findById(locked.placedByUserId)) === null) {
+        throw new ReminderRefusedError(
+          `Aucune adresse lisible pour la commande ${nudges.reference} : le rappel n'a pas d'où partir. Appelez le client.`,
+        );
+      }
+      return nudges.reference;
+    });
+    void this.work.track(this.send(command.orderId, reference), PICKUP_REMINDER);
+  }
+
+  /** Ne lève jamais : un échec est journalisé, sans l'adresse. */
+  private async send(orderId: string, reference: string): Promise<void> {
+    try {
+      const sent = await this.mail.send(orderId, `${PICKUP_REMINDER}:${orderId}`, {
+        reminder: true,
+      });
+      if (!sent) {
+        this.logger.warn(
+          `Rappel au client non envoyé (${reference}) : commande ou client disparu.`,
+        );
+      }
+    } catch (error: unknown) {
+      this.logger.error(`Rappel au client non envoyé (${reference}).`, error);
     }
   }
 }

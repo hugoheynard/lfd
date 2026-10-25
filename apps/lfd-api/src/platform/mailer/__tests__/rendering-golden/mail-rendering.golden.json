@@ -31,6 +31,16 @@
       "subject": "Votre commande ORD-4812 est prête",
       "htmlSha256": "f1cb958a612f685e44836a86c624ea7114fb9d432ef0bcc120e4f44e697b98eb",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
+    },
+    "reminder": {
+      "subject": "Votre commande ORD-4812 vous attend",
+      "htmlSha256": "8d456933580c088b5343b293deaff12b78593bf75f1e8f164c5436b5d8c77c48",
+      "attachmentsSha256": "4ed8d0c0f72da35145b273e7ed226c309e4b3eb021722537cdc72fef82d2207f"
+    },
+    "reminderWithoutSite": {
+      "subject": "Votre commande ORD-4812 vous attend",
+      "htmlSha256": "09ffc3a0c26a48dc02c1203b18b88721d733f32c2eed34d1955041afddb8caf6",
+      "attachmentsSha256": "4ed8d0c0f72da35145b273e7ed226c309e4b3eb021722537cdc72fef82d2207f"
     }
   },
   "customer.delivery-en-route": {
@@ -483,6 +493,18 @@
     "withMessage": {
       "subject": "Commande ORD-4812 : elle part incomplète",
       "htmlSha256": "c5e80c35ff86451ede6b261ba860be8a9c95c2b8322d3fb8067bc8250e4e3e06",
+      "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
+    }
+  },
+  "customer.order-delayed": {
+    "full": {
+      "subject": "Votre commande ORD-4812 prend du retard",
+      "htmlSha256": "e94bde4be9a9072be72c4a19d6cb965d4e8dc6e699ad116a9daa6da51f014aa1",
+      "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
+    },
+    "bare": {
+      "subject": "Votre commande ORD-4812 prend du retard",
+      "htmlSha256": "46b1ca78022203737420f88c3ec7e27b01f87d4aae64a26e0ff9713b49c56abe",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     }
   }

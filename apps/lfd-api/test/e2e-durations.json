@@ -240,6 +240,7 @@
   "test/packing-shortfall.e2e-spec.ts": 11150,
   "test/shortfall-decision.e2e-spec.ts": 9000,
   "test/shortfall-letter.e2e-spec.ts": 8605,
+  "test/customer-nudges.e2e-spec.ts": 11500,
   "test/billable-amounts.e2e-spec.ts": 6000,
   "test/password-link.e2e-spec.ts": 4462,
   "test/payment-links.e2e-spec.ts": 6545,

@@ -31,6 +31,7 @@ import {
   type OrderChangeAppliedMailData,
   type OrderChangeRefusedMailData,
 } from "./order-change-answer-mail.js";
+import { renderOrderDelayedMail, type OrderDelayedMailData } from "./order-delayed-mail.js";
 import {
   renderDeliveryEnRouteMail,
   type DeliveryEnRouteMailData,
@@ -96,6 +97,12 @@ export interface B2bMails {
     readonly locale: ContentLocale;
     /** Le point GPS du site de retrait, s'il est connu — l'itinéraire (E4, S7). */
     readonly pickupPoint?: PickupPoint | null;
+    /**
+     * Le **rappel** au client qui n'est pas venu (« Rappel au client », Hugo
+     * 2026-10-25) : même courriel, mais il dit « elle vous attend au point de
+     * retrait … » au lieu de « c'est prêt ». Absent = l'annonce du colisage.
+     */
+    readonly reminder?: boolean;
   };
   /**
    * **L'avis de prélèvement** (pré-notification SEPA) — premier avis,
@@ -110,6 +117,11 @@ export interface B2bMails {
   "customer.invoice-issued": InvoiceIssuedMailData;
   /** **La tournée est partie.** Destinataire : le client. Cf. `delivery-en-route-mail.ts`. */
   "customer.delivery-en-route": DeliveryEnRouteMailData;
+  /**
+   * **« Votre commande prend du retard »** — « Avertir le client », depuis la
+   * Supervision. Destinataire : le client. Cf. `order-delayed-mail.ts`.
+   */
+  "customer.order-delayed": OrderDelayedMailData;
   /**
    * **Le paiement a été refusé.** Destinataire : le client.
    *
@@ -598,6 +610,37 @@ function fontOf(brand: MailBranding): { readonly brandFontUrl?: string } {
  * e-mail il rend : la coquille en lit l'ordre de ses sections (plan
  * `plan-textes-des-e-mails.md`, E4).
  */
+/**
+ * L'en-tête du courriel « prête » : l'annonce du colisage, ou le RAPPEL au
+ * client qui n'est pas venu — qui ne dit plus « c'est prêt » mais « elle vous
+ * attend au point de retrait … ». Le reste du courriel (QR, itinéraire) est
+ * le même : c'est maintenant qu'il s'en sert.
+ */
+function orderReadyHeading(
+  copy: MailCopy["customer.order-ready"],
+  data: B2bMails["customer.order-ready"],
+): { subject: string; kicker: string; title: string; intro: string } {
+  const pickup = data.sheet.fulfillment.method === "pickup";
+  if (data.reminder === true) {
+    const site = data.sheet.fulfillment.pickupLabel;
+    return {
+      subject: copy.subjectReminder,
+      kicker: copy.kickerReminder,
+      title: copy.titleReminder,
+      intro:
+        site === null || site === ""
+          ? copy.introReminderWithoutSite
+          : fill(copy.introReminder, { site }),
+    };
+  }
+  return {
+    subject: copy.subject,
+    kicker: copy.kicker,
+    title: pickup ? copy.titlePickup : copy.titleDelivery,
+    intro: pickup ? copy.introPickup : copy.introDelivery,
+  };
+}
+
 function framedRegistry(registry: TemplateRegistry<B2bMails>): TemplateRegistry<B2bMails> {
   return withMailLogo(withRenderedMailKey(registry));
 }
@@ -635,15 +678,15 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
   return framedRegistry({
     "customer.order-ready": (data) => {
       const copy = mailCopyOf(data.locale)["customer.order-ready"];
-      const pickup = data.sheet.fulfillment.method === "pickup";
       const showQr = data.handoverToken !== null && data.handoverUrl !== "";
       const pieces = data.sheet.lines.reduce((sum, line) => sum + line.quantity, 0);
+      const heading = orderReadyHeading(copy, data);
       return {
-        subject: sanitiseSubject(fill(copy.subject, { ref: data.sheet.reference })),
+        subject: sanitiseSubject(fill(heading.subject, { ref: data.sheet.reference })),
         html: customerMail({
-          kicker: copy.kicker,
-          title: pickup ? copy.titlePickup : copy.titleDelivery,
-          body: `${pickup ? copy.introPickup : copy.introDelivery}\n\n${data.sheet.reference}`,
+          kicker: heading.kicker,
+          title: heading.title,
+          body: `${heading.intro}\n\n${data.sheet.reference}`,
           // Deux lignes et pas un décompte : où, et combien de pièces. Ce
           // courriel répond à UNE question — venir la chercher.
           rows: [
@@ -687,6 +730,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
       };
     },
     "customer.delivery-en-route": (data) => renderDeliveryEnRouteMail(data, customerMail),
+    "customer.order-delayed": (data) => renderOrderDelayedMail(data, customerMail),
     "customer.collection-notice": (data) => renderCollectionNoticeMail(data, customerMail),
     "customer.invoice-issued": (data) => renderInvoiceIssuedMail(data, customerMail),
     "customer.order-cancelled": (data) => renderOrderCancelledMail(data, customerMail),

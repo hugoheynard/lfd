@@ -32,9 +32,13 @@ export class OrderCutoffSettingsUpdatedEvent implements JournaledEvent {
       payload: {
         sameDayAllowed: this.next.sameDayAllowed,
         resupplyCutoffTime: this.next.resupplyCutoffTime,
+        pickupReminderDelayMinutes: this.next.pickupReminderDelayMinutes,
+        delayWarningDelayMinutes: this.next.delayWarningDelayMinutes,
         previous: {
           sameDayAllowed: this.previous.sameDayAllowed,
           resupplyCutoffTime: this.previous.resupplyCutoffTime,
+          pickupReminderDelayMinutes: this.previous.pickupReminderDelayMinutes,
+          delayWarningDelayMinutes: this.previous.delayWarningDelayMinutes,
         },
       },
     };

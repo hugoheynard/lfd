@@ -7,7 +7,10 @@ import {
   StaffDirectory,
   type StaffIdentity,
 } from "../../../account/domain/ports/staff-directory.js";
-import { InvalidResupplyCutoffTimeError } from "../../domain/order-cutoff-errors.js";
+import {
+  InvalidNudgeDelayError,
+  InvalidResupplyCutoffTimeError,
+} from "../../domain/order-cutoff-errors.js";
 import type { OrderCutoffSettings } from "../../domain/order-cutoff-settings.js";
 import { OrderCutoffSettingsReader } from "../../domain/order-cutoff-settings.reader.js";
 import { OrderCutoffSettingsRepository } from "../../domain/order-cutoff-settings.repository.js";
@@ -48,6 +51,8 @@ class Directory extends StaffDirectory {
 const SAME_DAY_OPEN: OrderCutoffSettingsView = {
   sameDayAllowed: true,
   resupplyCutoffTime: "20:00",
+  pickupReminderDelayMinutes: 0,
+  delayWarningDelayMinutes: 0,
   updatedAt: AT.toISOString(),
   updatedBy: "Alex",
 };
@@ -105,7 +110,14 @@ describe("UpdateOrderCutoffSettingsHandler", () => {
     expect(events.traced[0]?.journalFact().payload).toEqual({
       sameDayAllowed: false,
       resupplyCutoffTime: "20:00",
-      previous: { sameDayAllowed: true, resupplyCutoffTime: "20:00" },
+      pickupReminderDelayMinutes: 0,
+      delayWarningDelayMinutes: 0,
+      previous: {
+        sameDayAllowed: true,
+        resupplyCutoffTime: "20:00",
+        pickupReminderDelayMinutes: 0,
+        delayWarningDelayMinutes: 0,
+      },
     });
   });
 
@@ -123,9 +135,52 @@ describe("UpdateOrderCutoffSettingsHandler", () => {
     expect(events.traced[0]?.journalFact().payload).toEqual({
       sameDayAllowed: true,
       resupplyCutoffTime: "21:30",
-      previous: { sameDayAllowed: true, resupplyCutoffTime: "20:00" },
+      pickupReminderDelayMinutes: 0,
+      delayWarningDelayMinutes: 0,
+      previous: {
+        sameDayAllowed: true,
+        resupplyCutoffTime: "20:00",
+        pickupReminderDelayMinutes: 0,
+        delayWarningDelayMinutes: 0,
+      },
     });
   });
+
+  /** Les délais des deux relances d'un retrait en retard (2026-10-25) : une carte, ses deux clés. */
+  it("pose les délais des relances sans toucher au reste, et les journalise", async () => {
+    const written = new Written();
+    const events = new RecordingPublisher();
+
+    await handler(SAME_DAY_OPEN, written, events).execute(
+      new UpdateOrderCutoffSettingsCommand(
+        { pickupReminderDelayMinutes: 15, delayWarningDelayMinutes: 5 },
+        "staff_agent",
+      ),
+    );
+
+    expect(written.puts[0]?.pickupReminderDelayMinutes).toBe(15);
+    expect(written.puts[0]?.delayWarningDelayMinutes).toBe(5);
+    expect(written.puts[0]?.resupplyCutoffTime).toBe("20:00");
+    expect(events.traced[0]?.journalFact().payload).toMatchObject({
+      pickupReminderDelayMinutes: 15,
+      delayWarningDelayMinutes: 5,
+      previous: { pickupReminderDelayMinutes: 0, delayWarningDelayMinutes: 0 },
+    });
+  });
+
+  it.each([-1, 2.5])(
+    "refuse un délai de relance de %s minute(s), sans rien écrire",
+    async (minutes) => {
+      const written = new Written();
+
+      const refusal = handler(SAME_DAY_OPEN, written, new RecordingPublisher()).execute(
+        new UpdateOrderCutoffSettingsCommand({ delayWarningDelayMinutes: minutes }, "staff_agent"),
+      );
+
+      await expect(refusal).rejects.toThrow(InvalidNudgeDelayError);
+      expect(written.puts).toEqual([]);
+    },
+  );
 
   it("le jour même posé seul garde l'heure du réassort courante", async () => {
     const written = new Written();

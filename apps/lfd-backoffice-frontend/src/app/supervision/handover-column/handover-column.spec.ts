@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import type { CustomerNudgesView } from '@lfd/contracts';
 import { describe, expect, it, vi } from 'vitest';
 
 import { PermissionsStore } from '../../auth/permissions.store';
@@ -70,7 +71,17 @@ const BOARD: HandoverBoard = {
 interface World {
   readonly canWrite?: boolean;
   readonly remindHandover?: (id: string) => Promise<void>;
+  readonly warnOfDelay?: (id: string) => Promise<void>;
+  readonly nudges?: CustomerNudgesView | null;
 }
+
+/** Les relances lues : délais à 0, aucune trace. */
+const NO_NUDGES: CustomerNudgesView = {
+  date: '2026-09-11',
+  pickupReminderDelayMinutes: 0,
+  delayWarningDelayMinutes: 0,
+  orders: [],
+};
 
 const notified = { success: vi.fn(), error: vi.fn() };
 
@@ -80,7 +91,10 @@ async function mount(board: HandoverBoard, world: World = {}) {
       provideRouter([]),
       {
         provide: AdminOrdersService,
-        useValue: { remindHandover: world.remindHandover ?? (() => Promise.resolve()) },
+        useValue: {
+          remindHandover: world.remindHandover ?? (() => Promise.resolve()),
+          warnOfDelay: world.warnOfDelay ?? (() => Promise.resolve()),
+        },
       },
       { provide: NotifyService, useValue: notified },
       { provide: PermissionsStore, useValue: { can: (): boolean => world.canWrite ?? true } },
@@ -89,6 +103,7 @@ async function mount(board: HandoverBoard, world: World = {}) {
   const fixture = TestBed.createComponent(HandoverColumn);
   fixture.componentRef.setInput('board', board);
   fixture.componentRef.setInput('showLinks', true);
+  fixture.componentRef.setInput('nudges', world.nudges === undefined ? NO_NUDGES : world.nudges);
   fixture.detectChanges();
   await fixture.whenStable();
   return fixture;
@@ -302,7 +317,7 @@ describe('HandoverColumn — la carte de livraison', () => {
     expect(text(el, '[data-reference="SEULE"] .sub')).toBe('Prête');
   });
 
-  describe('le rappel du client (venu du comptoir, Hugo le 2026-10-25)', () => {
+  describe('les relances d’un retrait en retard (Supervision, Hugo le 2026-10-25)', () => {
     const absent = row('ABSENT', {
       state: 'overdue',
       readyAt: '6 h 48',
@@ -313,25 +328,67 @@ describe('HandoverColumn — la carte de livraison', () => {
       ...BOARD,
       pickup: [{ ...BOARD.pickup[0]!, rows: [...BOARD.pickup[0]!.rows, absent] }],
     };
-    const button = (el: HTMLElement, ref: string) =>
-      el.querySelector<HTMLButtonElement>(`[data-reference="${ref}"] button[data-remind]`);
+    const button = (el: HTMLElement, ref: string, kind: 'remind' | 'warn') =>
+      el.querySelector<HTMLButtonElement>(`[data-reference="${ref}"] button[data-nudge="${kind}"]`);
+    const sentLine = (el: HTMLElement, ref: string): string | undefined =>
+      el.querySelector(`[data-reference="${ref}"] [data-nudge-sent]`)?.textContent?.trim();
 
-    it('ne se propose que sur un retrait prêt dont le client n’est pas venu', async () => {
+    it('prête et client pas venu : « Rappel au client » ; pas prête : « Avertir le client »', async () => {
       const el: HTMLElement = (await mount(board)).nativeElement;
 
-      expect(button(el, 'ABSENT')?.textContent).toContain('Envoyer un rappel');
-      // Retard de notre fait : le client viendrait devant un comptoir vide.
-      expect(button(el, 'TARD')).toBeNull();
-      expect(button(el, 'PRETE')).toBeNull();
+      expect(button(el, 'ABSENT', 'remind')?.textContent).toContain('Rappel au client');
+      expect(button(el, 'ABSENT', 'warn')).toBeNull();
+      expect(button(el, 'TARD', 'warn')?.textContent).toContain('Avertir le client');
+      expect(button(el, 'TARD', 'remind')).toBeNull();
+      expect(button(el, 'PRETE', 'remind')).toBeNull();
+    });
+
+    it('n’apparaît qu’après le délai réglé depuis la fin du créneau', async () => {
+      const el: HTMLElement = (
+        await mount(board, {
+          nudges: { ...NO_NUDGES, pickupReminderDelayMinutes: 30, delayWarningDelayMinutes: 55 },
+        })
+      ).nativeElement;
+
+      expect(button(el, 'ABSENT', 'remind')).toBeNull();
+      expect(button(el, 'TARD', 'warn')).not.toBeNull();
+    });
+
+    it('déjà fait : la trace remplace le bouton, même sans le droit d’écrire', async () => {
+      const el: HTMLElement = (
+        await mount(board, {
+          canWrite: false,
+          nudges: {
+            ...NO_NUDGES,
+            orders: [
+              {
+                orderId: 'o-ABSENT',
+                pickupReminder: { at: '2026-09-11T06:20:00.000Z', byName: 'Léa Martin' },
+                delayWarning: null,
+              },
+            ],
+          },
+        })
+      ).nativeElement;
+
+      expect(sentLine(el, 'ABSENT')).toMatch(/^Rappel envoyé le .+ par Léa Martin$/u);
+      expect(button(el, 'ABSENT', 'remind')).toBeNull();
     });
 
     it('🔴 sans `b2b_orders:write`, aucun bouton ne promet un 403', async () => {
       const el: HTMLElement = (await mount(board, { canWrite: false })).nativeElement;
 
-      expect(button(el, 'ABSENT')).toBeNull();
+      expect(button(el, 'ABSENT', 'remind')).toBeNull();
+      expect(button(el, 'TARD', 'warn')).toBeNull();
     });
 
-    it('envoie, le dit, et ne se réarme pas', async () => {
+    it('sans lecture des relances, aucun bouton : un second envoi n’est pas à risquer', async () => {
+      const el: HTMLElement = (await mount(board, { nudges: null })).nativeElement;
+
+      expect(button(el, 'ABSENT', 'remind')).toBeNull();
+    });
+
+    it('envoie le rappel, le dit, demande la relecture des traces, et ne se réarme pas', async () => {
       const sent: string[] = [];
       const fixture = await mount(board, {
         remindHandover: (id) => {
@@ -339,30 +396,52 @@ describe('HandoverColumn — la carte de livraison', () => {
           return Promise.resolve();
         },
       });
+      let reread = 0;
+      fixture.componentInstance.nudged.subscribe(() => {
+        reread += 1;
+      });
       const el: HTMLElement = fixture.nativeElement;
 
-      button(el, 'ABSENT')?.click();
+      button(el, 'ABSENT', 'remind')?.click();
       await fixture.whenStable();
       fixture.detectChanges();
 
       expect(sent).toEqual(['o-ABSENT']);
+      expect(reread).toBe(1);
       expect(notified.success).toHaveBeenCalledWith('Rappel envoyé pour ABSENT.');
-      expect(button(el, 'ABSENT')).toBeNull();
-      expect(el.querySelector('[data-reference="ABSENT"] [data-reminded]')?.textContent).toContain(
-        'Rappel envoyé',
-      );
+      expect(button(el, 'ABSENT', 'remind')).toBeNull();
+      expect(sentLine(el, 'ABSENT')).toBe('Rappel envoyé');
+    });
+
+    it('avertit le client du retard', async () => {
+      const warned: string[] = [];
+      const fixture = await mount(board, {
+        warnOfDelay: (id) => {
+          warned.push(id);
+          return Promise.resolve();
+        },
+      });
+      const el: HTMLElement = fixture.nativeElement;
+
+      button(el, 'TARD', 'warn')?.click();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(warned).toEqual(['o-TARD']);
+      expect(notified.success).toHaveBeenCalledWith('Client averti du retard de TARD.');
+      expect(sentLine(el, 'TARD')).toBe('Client averti');
     });
 
     it('un échec est dit, et le bouton reste', async () => {
       const fixture = await mount(board, { remindHandover: () => Promise.reject(new Error('x')) });
       const el: HTMLElement = fixture.nativeElement;
 
-      button(el, 'ABSENT')?.click();
+      button(el, 'ABSENT', 'remind')?.click();
       await fixture.whenStable();
       fixture.detectChanges();
 
       expect(notified.error).toHaveBeenCalled();
-      expect(button(el, 'ABSENT')).not.toBeNull();
+      expect(button(el, 'ABSENT', 'remind')).not.toBeNull();
     });
   });
 });

@@ -19,6 +19,8 @@ import { SameDayPage } from './same-day-page';
 const CLOSED: OrderCutoffSettingsView = {
   sameDayAllowed: false,
   resupplyCutoffTime: '20:00',
+  pickupReminderDelayMinutes: 0,
+  delayWarningDelayMinutes: 0,
   updatedAt: null,
   updatedBy: null,
 };
@@ -45,6 +47,8 @@ class FakeSettings {
     this.current = {
       sameDayAllowed: patch.sameDayAllowed ?? before.sameDayAllowed,
       resupplyCutoffTime: patch.resupplyCutoffTime ?? before.resupplyCutoffTime,
+      pickupReminderDelayMinutes: before.pickupReminderDelayMinutes,
+      delayWarningDelayMinutes: before.delayWarningDelayMinutes,
       updatedAt: '2026-10-21T08:00:00.000Z',
       updatedBy: 'Hugo',
     };

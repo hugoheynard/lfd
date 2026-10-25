@@ -81,6 +81,7 @@ export const ORDER_SPECIMENS: Pick<
   | "customer.order-placed"
   | "customer.order-ready"
   | "customer.delivery-en-route"
+  | "customer.order-delayed"
   | "customer.order-placed-with-your-email"
   | "customer.payment-failed"
   | "customer.payment-expired"
@@ -114,6 +115,15 @@ export const ORDER_SPECIMENS: Pick<
     data: (locale) => ({
       reference: REFERENCE,
       addressLines: [`${SPECIMEN_MARK} — 1 rue du Col`, "73150 Val d'Isère"],
+      orderUrl: ORDER_URL,
+      locale,
+    }),
+  },
+  "customer.order-delayed": {
+    family: "order",
+    data: (locale) => ({
+      reference: REFERENCE,
+      pickupLabel: `${SPECIMEN_MARK} — Le Labo`,
       orderUrl: ORDER_URL,
       locale,
     }),
