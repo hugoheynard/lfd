@@ -18,7 +18,7 @@ function root(fixture: ComponentFixture<ProofPhoto>): HTMLElement {
   return fixture.nativeElement as HTMLElement;
 }
 
-describe('ProofPhoto — la photo d’une remise à la porte', () => {
+describe('ProofPhoto — la photo de la commande laissée à la porte', () => {
   it('dit son libellé, prend la photo de l’appareil, et la retire', async () => {
     const fixture = await boot();
     expect(root(fixture).querySelector('[data-handover-photo]')?.textContent).toContain(

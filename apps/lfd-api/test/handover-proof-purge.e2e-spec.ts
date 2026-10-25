@@ -54,6 +54,7 @@ async function proofTakenAt(orderId: string, recordedAt: string, signed: boolean
     receiverName: "Mme Durand",
     photoKey,
     signatureKey,
+    signedSlipKey: null,
     recordedBy: "stf_livreur",
     recordedAt: new Date(recordedAt),
   });

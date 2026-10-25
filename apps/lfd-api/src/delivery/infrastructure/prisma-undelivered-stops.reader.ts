@@ -48,7 +48,7 @@ export class PrismaUndeliveredStopsReader extends UndeliveredStopsReader {
           },
         },
         execution: {
-          select: { reference: true, customerLabel: true, arrivedAt: true, departedAt: true },
+          select: { reference: true, customerLabel: true, departedAt: true },
         },
       },
     });
@@ -69,7 +69,6 @@ export class PrismaUndeliveredStopsReader extends UndeliveredStopsReader {
               customerLabel: row.execution?.customerLabel ?? "",
               departedAt,
               returnedAt: row.round.returnedAt,
-              arrivedAt: row.execution?.arrivedAt ?? null,
             },
           ];
     });

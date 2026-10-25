@@ -1,18 +1,22 @@
 <div class="form" data-handover-form>
-  <app-proof-photo prompt="Prendre la photo de la remise" [(photo)]="photo" />
-
-  <fold-input
-    label="Nom de qui réceptionne"
-    placeholder="Tel qu’il le dit"
-    [hint]="'De ' + nameMin + ' à ' + nameMax + ' caractères'"
-    [value]="receiverName()"
-    (valueChange)="receiverName.set($event)"
-    data-receiver-name
-  />
+  <app-proof-photo prompt="Prendre en photo la commande déposée" [(photo)]="photo" />
 
   @if (signatureRequired()) {
+    <fold-input
+      label="Nom de qui signe"
+      placeholder="Tel qu’il le dit"
+      [hint]="'De ' + nameMin + ' à ' + nameMax + ' caractères'"
+      [value]="receiverName()"
+      (valueChange)="receiverName.set($event)"
+      data-receiver-name
+    />
     <span class="label">Signature exigée : faites signer au doigt</span>
     <app-signature-pad (signed)="signature.set($event)" />
+    <app-proof-photo
+      prompt="Prendre en photo le bon signé"
+      [(photo)]="signedSlip"
+      data-signed-slip
+    />
   }
 
   @if (refusal(); as refusal) {
@@ -36,7 +40,7 @@
       (click)="send()"
       data-send-handover
     >
-      Valider la remise
+      Valider la livraison
     </button>
   </div>
 </div>

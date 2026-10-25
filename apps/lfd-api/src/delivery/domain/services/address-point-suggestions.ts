@@ -50,7 +50,7 @@ export function metersBetween(a: GeoPoint, b: GeoPoint): number {
 /** Une position relevée au geste, rattachée à une adresse. */
 export interface PointObservation {
   readonly addressId: string;
-  /** `door` : une clôture à la porte ; `parking` : une arrivée. */
+  /** `door` : une clôture à la porte ; `parking` : la même clôture (2026-10-25), ou une arrivée d'avant. */
   readonly kind: AddressPointKind;
   readonly point: GeoPoint;
   readonly accuracyM: number;

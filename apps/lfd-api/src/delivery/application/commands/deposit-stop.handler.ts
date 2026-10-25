@@ -20,7 +20,7 @@ import { DepositStopCommand } from "./deposit-stop.command.js";
  * `DoorstepStop.ensureDepositPermitted` (le point d'extension de B3) ; le
  * fait, dans l'unité de travail. Le reste vit dans `DoorstepHandover`.
  *
- * @throws {DepositPhotoMissingError} @throws {DepositNotAllowedError}
+ * @throws {DepositPhotoMissingError}
  * @throws {DepositSignatureRequiredError} @throws {GesturePositionInvalidError}
  * @throws ceux de `DoorstepHandover.closeAtDoor`.
  */
@@ -40,20 +40,25 @@ export class DepositStopHandler implements ICommandHandler<DepositStopCommand, v
       stopId: command.stopId,
       version: command.fields.version,
       position: gesturePositionOf(command.fields),
+      mode: "deposited",
       receiverName: null,
       admit: (stop) => {
         stop.ensureDepositPermitted();
       },
     };
-    await this.handover.perform({ photo: deposit.photo, signature: null }, (staged) =>
-      this.uow.run(async () => {
-        const closed = await this.handover.closeAtDoor(gesture, staged);
-        if (closed === null) {
-          return false;
-        }
-        await this.events.publishTraced(new DeliveryStopDepositedEvent(closed.round, closed.order));
-        return true;
-      }),
+    await this.handover.perform(
+      { photo: deposit.photo, signature: null, signedSlip: null },
+      (staged) =>
+        this.uow.run(async () => {
+          const closed = await this.handover.closeAtDoor(gesture, staged);
+          if (closed === null) {
+            return false;
+          }
+          await this.events.publishTraced(
+            new DeliveryStopDepositedEvent(closed.round, closed.order),
+          );
+          return true;
+        }),
     );
   }
 }

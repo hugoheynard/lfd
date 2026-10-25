@@ -11,7 +11,6 @@ export interface UndeliveredStopRow {
   readonly departedAt: Date;
   /** Rentrée le (PL2), ou `null` : jamais déclarée rentrée. */
   readonly returnedAt: Date | null;
-  readonly arrivedAt: Date | null;
 }
 
 /**

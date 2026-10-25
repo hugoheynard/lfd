@@ -48,8 +48,9 @@ export interface HandoverProofRecord {
  */
 export function handoverProofExhibit(record: HandoverProofRecord): HandoverProofExhibit | null {
   const { handover, proof } = record;
-  const mode: HandoverProofMode =
-    handover.via === "deposit" || proof?.state.receiverName === null ? "deposited" : "handed";
+  // Le `via` seul dit le geste : depuis le 2026-10-25, une remise sans
+  // signature peut n'avoir aucun nom, et n'en est pas un dépôt pour autant.
+  const mode: HandoverProofMode = handover.via === "deposit" ? "deposited" : "handed";
   if (proof !== null) {
     return {
       mode,

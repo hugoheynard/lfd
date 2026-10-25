@@ -262,14 +262,17 @@ model OrderDeparture {
 ///
 /// `order_id` est OPAQUE : aucune clé étrangère, comme `order_handover`.
 model OrderHandoverProof {
-  orderId      String   @id @map("order_id")
+  orderId       String   @id @map("order_id")
   /// Nul pour une remise sans personne (le dépôt, B2) ; 2 à 80 sinon.
-  receiverName String?  @map("receiver_name")
-  photoKey     String   @map("photo_key")
-  signatureKey String?  @map("signature_key")
+  receiverName  String?  @map("receiver_name")
+  photoKey      String   @map("photo_key")
+  signatureKey  String?  @map("signature_key")
+  /// La photo du bon signé (Hugo, 2026-10-25) — exigée avec la signature ;
+  /// nulle sinon, et pour toute pièce d'avant.
+  signedSlipKey String?  @map("signed_slip_key")
   /// La fiche staff du livreur, figée.
-  recordedBy   String   @map("recorded_by")
-  recordedAt   DateTime @map("recorded_at")
+  recordedBy    String   @map("recorded_by")
+  recordedAt    DateTime @map("recorded_at")
 
   @@map("order_handover_proof")
   @@schema("production")
@@ -739,15 +742,15 @@ model ProductionDossierDispatch {
 /// arrêtée, donc n'avoir aucune ligne. Ni vers `public.orders` (cf. l'en-tête).
 model OrderWithdrawal {
   /// L'identifiant OPAQUE de la commande côté commerce.
-  orderId     String   @id @map("order_id")
-  serviceDay  String   @map("service_day") @db.VarChar(10)
-  withdrawnAt DateTime @map("withdrawn_at") @db.Timestamptz(6)
+  orderId          String   @id @map("order_id")
+  serviceDay       String   @map("service_day") @db.VarChar(10)
+  withdrawnAt      DateTime @map("withdrawn_at") @db.Timestamptz(6)
   /// Le retrait est venu APRÈS l'inscription (plan A1,
   /// `documentation/commandes/annulation/plan-a1-retirer-une-commande-inscrite.md`,
   /// § 2.1) : une commande de particulier retirée jusqu'à « prête ». Le compte
   /// à produire ne bouge pas ; la ligne explique un compte plus grand que les
   /// feuilles du colisage.
-  afterInscription Boolean @default(false) @map("after_inscription")
+  afterInscription Boolean  @default(false) @map("after_inscription")
 
   @@index([serviceDay])
   @@map("order_withdrawal")

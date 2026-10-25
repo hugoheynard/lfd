@@ -50,6 +50,7 @@ function scene() {
       receiverName: signed ? "Mme Durand" : null,
       photoKey: `handover/proofs/${orderId}/photo`,
       signatureKey: signed ? `handover/proofs/${orderId}/signature` : null,
+      signedSlipKey: null,
       recordedBy: "stf_paul",
       recordedAt: new Date(NOW.getTime() - ageDays * DAY),
     });

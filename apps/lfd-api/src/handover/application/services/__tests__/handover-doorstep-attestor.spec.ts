@@ -166,19 +166,20 @@ function factOf(at: Date, via: "manual" | "deposit", reannouncedAt: Date | null 
   return new OrderHandedOverEvent("o_1", "ORD-o_1", at, "paul", via, reannouncedAt).durableFact();
 }
 
-const STAGED = { photoKey: "handover/proofs/p/photo", signatureKey: null };
+const STAGED = { photoKey: "handover/proofs/p/photo", signatureKey: null, signedSlipKey: null };
 
 describe("HandoverDoorstepAttestor — la remise à la porte (B1)", () => {
   it("range la photo et la signature sous le préfixe du retrait, et les retire sur demande", async () => {
     const { attestor, store } = attestorOf();
 
-    const staged = await attestor.stageProofs({ photo: JPEG, signature: PNG });
+    const staged = await attestor.stageProofs({ photo: JPEG, signature: PNG, signedSlip: JPEG });
 
     expect(staged).toEqual({
       photoKey: "handover/proofs/proof_000001/photo",
       signatureKey: "handover/proofs/proof_000001/signature",
+      signedSlipKey: "handover/proofs/proof_000001/signed-slip",
     });
-    expect([...store.objects.keys()]).toHaveLength(2);
+    expect([...store.objects.keys()]).toHaveLength(3);
     await attestor.discardProofs(staged);
     expect(store.objects.size).toBe(0);
   });
@@ -187,9 +188,19 @@ describe("HandoverDoorstepAttestor — la remise à la porte (B1)", () => {
     const { attestor, store } = attestorOf();
     store.failOn = "handover/proofs/proof_000001/signature";
 
-    await expect(attestor.stageProofs({ photo: JPEG, signature: PNG })).rejects.toThrow(
-      "stockage en panne",
-    );
+    await expect(
+      attestor.stageProofs({ photo: JPEG, signature: PNG, signedSlip: null }),
+    ).rejects.toThrow("stockage en panne");
+    expect(store.objects.size).toBe(0);
+  });
+
+  it("un bon signé qui ne se range pas retire la photo et la signature déjà rangées", async () => {
+    const { attestor, store } = attestorOf();
+    store.failOn = "handover/proofs/proof_000001/signed-slip";
+
+    await expect(
+      attestor.stageProofs({ photo: JPEG, signature: PNG, signedSlip: JPEG }),
+    ).rejects.toThrow("stockage en panne");
     expect(store.objects.size).toBe(0);
   });
 
@@ -197,7 +208,13 @@ describe("HandoverDoorstepAttestor — la remise à la porte (B1)", () => {
     const { attestor, handovers, proofs, uow } = attestorOf();
 
     const publish = await inCourierUnit(uow, () =>
-      attestor.attest({ orderId: "o_1", by: "paul", receiverName: "Mme Durand", proofs: STAGED }),
+      attestor.attest({
+        orderId: "o_1",
+        by: "paul",
+        mode: "handed",
+        receiverName: "Mme Durand",
+        proofs: STAGED,
+      }),
     );
 
     expect(handovers.rows.get("o_1")?.via).toBe("manual");
@@ -206,6 +223,7 @@ describe("HandoverDoorstepAttestor — la remise à la porte (B1)", () => {
       receiverName: "Mme Durand",
       photoKey: STAGED.photoKey,
       signatureKey: null,
+      signedSlipKey: null,
       recordedBy: "paul",
       recordedAt: AT,
     });
@@ -220,7 +238,13 @@ describe("HandoverDoorstepAttestor — la remise à la porte (B1)", () => {
     const { attestor, uow } = attestorOf();
 
     await expect(
-      attestor.attest({ orderId: "o_1", by: "paul", receiverName: "Mme D", proofs: STAGED }),
+      attestor.attest({
+        orderId: "o_1",
+        by: "paul",
+        mode: "handed",
+        receiverName: "Mme D",
+        proofs: STAGED,
+      }),
     ).resolves.toBeInstanceOf(Function);
     expect(uow.of("handover.handed_over")).toEqual([factOf(AT, "manual")]);
   });
@@ -229,7 +253,13 @@ describe("HandoverDoorstepAttestor — la remise à la porte (B1)", () => {
     const { attestor, handovers, proofs, uow } = attestorOf();
 
     await inCourierUnit(uow, () =>
-      attestor.attest({ orderId: "o_1", by: "paul", receiverName: null, proofs: STAGED }),
+      attestor.attest({
+        orderId: "o_1",
+        by: "paul",
+        mode: "deposited",
+        receiverName: null,
+        proofs: STAGED,
+      }),
     );
 
     expect(handovers.rows.get("o_1")?.via).toBe("deposit");
@@ -237,12 +267,35 @@ describe("HandoverDoorstepAttestor — la remise à la porte (B1)", () => {
     expect(uow.of("handover.handed_over")).toEqual([factOf(AT, "deposit")]);
   });
 
+  it("🔴 une remise SANS nom (signature non exigée) reste attestée `manual`, pas `deposit`", async () => {
+    const { attestor, handovers, proofs, uow } = attestorOf();
+
+    await inCourierUnit(uow, () =>
+      attestor.attest({
+        orderId: "o_1",
+        by: "paul",
+        mode: "handed",
+        receiverName: null,
+        proofs: STAGED,
+      }),
+    );
+
+    expect(handovers.rows.get("o_1")?.via).toBe("manual");
+    expect(proofs.rows.get("o_1")?.state.receiverName).toBeNull();
+  });
+
   it("refuse avec la phrase du comptoir — et ne réannonce rien, l'unité va échouer", async () => {
     const { attestor, handovers, proofs, uow } = attestorOf([subjectOf("o_1", "cancelled")]);
 
     await expect(
       inCourierUnit(uow, () =>
-        attestor.attest({ orderId: "o_1", by: "paul", receiverName: "Mme D", proofs: STAGED }),
+        attestor.attest({
+          orderId: "o_1",
+          by: "paul",
+          mode: "handed",
+          receiverName: "Mme D",
+          proofs: STAGED,
+        }),
       ),
     ).rejects.toThrow("Cette commande est annulée.");
     expect(handovers.rows.size).toBe(0);
@@ -254,7 +307,13 @@ describe("HandoverDoorstepAttestor — la remise à la porte (B1)", () => {
     const { attestor } = attestorOf([]);
 
     await expect(
-      attestor.attest({ orderId: "o_1", by: "paul", receiverName: "Mme D", proofs: STAGED }),
+      attestor.attest({
+        orderId: "o_1",
+        by: "paul",
+        mode: "handed",
+        receiverName: "Mme D",
+        proofs: STAGED,
+      }),
     ).rejects.toThrow(HandoverRefusedError);
   });
 
@@ -268,6 +327,7 @@ describe("HandoverDoorstepAttestor — la remise à la porte (B1)", () => {
         receiverName: "Mme D",
         photoKey: STAGED.photoKey,
         signatureKey: null,
+        signedSlipKey: null,
         recordedBy: "paul",
         recordedAt: EARLIER,
       }),

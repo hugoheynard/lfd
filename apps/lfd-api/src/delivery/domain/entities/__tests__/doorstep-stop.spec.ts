@@ -1,8 +1,5 @@
 import { DoorstepStop, type DoorstepStopState } from "../doorstep-stop.js";
-import {
-  DepositNotAllowedError,
-  DepositSignatureRequiredError,
-} from "../../errors/delivery-doorstep-errors.js";
+import { DepositSignatureRequiredError } from "../../errors/delivery-doorstep-errors.js";
 
 // Un instant de départ qui n'est comparé à rien.
 const DEPARTED = new Date(1_000);
@@ -28,9 +25,9 @@ describe("DoorstepStop.ensureDepositPermitted — « Déposé avec preuve » (B2
     expect(() => stop({ depositAllowed: true }).ensureDepositPermitted()).not.toThrow();
   });
 
-  it("refuse un dépôt que le client n'a pas autorisé, en nommant la commande", () => {
-    expect(() => stop().ensureDepositPermitted()).toThrow(DepositNotAllowedError);
-    expect(() => stop().ensureDepositPermitted()).toThrow(/ORD-1/);
+  /** Hugo, 2026-10-25 (« dépôt A ») : le « dépôt autorisé » du client n'est plus exigé. */
+  it("permis sans signature exigée, même dépôt NON autorisé à l'adresse", () => {
+    expect(() => stop({ depositAllowed: false }).ensureDepositPermitted()).not.toThrow();
   });
 
   it("🔴 la signature exigée l'emporte, même dépôt autorisé (AP-Q6)", () => {
@@ -39,14 +36,17 @@ describe("DoorstepStop.ensureDepositPermitted — « Déposé avec preuve » (B2
     ).toThrow(DepositSignatureRequiredError);
   });
 
-  it("signature exigée sans dépôt autorisé : c'est la signature qui est nommée", () => {
+  it("signature exigée sans dépôt autorisé : refus nommé, la commande citée", () => {
     expect(() => stop({ signatureRequired: true }).ensureDepositPermitted()).toThrow(
       DepositSignatureRequiredError,
     );
+    expect(() => stop({ signatureRequired: true }).ensureDepositPermitted()).toThrow(/ORD-1/);
   });
 
   it("sans instantané, la commande est nommée par son id", () => {
-    expect(() => stop({ reference: "" }).ensureDepositPermitted()).toThrow(/o_1/);
+    expect(() => stop({ reference: "", signatureRequired: true }).ensureDepositPermitted()).toThrow(
+      /o_1/,
+    );
   });
 });
 
@@ -62,9 +62,9 @@ describe("DoorstepStop.ensureDepositPermitted — la décision du commercial (B3
   });
 
   it("🔴 une décision qui attend, ou « Rapporter », n'ouvre pas le dépôt", () => {
-    expect(() => stop({ decision: "pending" }).ensureDepositPermitted()).toThrow(
-      DepositNotAllowedError,
-    );
+    expect(() =>
+      stop({ signatureRequired: true, decision: "pending" }).ensureDepositPermitted(),
+    ).toThrow(DepositSignatureRequiredError);
     expect(() =>
       stop({ signatureRequired: true, decision: "bring_back" }).ensureDepositPermitted(),
     ).toThrow(DepositSignatureRequiredError);

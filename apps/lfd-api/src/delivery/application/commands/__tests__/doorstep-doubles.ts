@@ -144,6 +144,7 @@ export class ScriptedDoorstepAttestor extends DoorstepHandoverAttestor {
     return Promise.resolve({
       photoKey: `proofs/${n}/photo`,
       signatureKey: images.signature === null ? null : `proofs/${n}/signature`,
+      signedSlipKey: images.signedSlip === null ? null : `proofs/${n}/signed-slip`,
     });
   }
 

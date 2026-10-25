@@ -18,8 +18,10 @@ import { SignaturePad } from '../signature-pad/signature-pad';
 
 /**
  * **« Commande déposée »** (« Remis au client » jusqu'au 2026-10-25 ; `documentation/livraisons/livreur/a-la-porte.md`, B1,
- * § 9, AP-Q2, AP-D4) — la photo, toujours ; le nom de qui réceptionne,
- * toujours ; la signature au doigt quand l'arrêt l'exige (figée au départ).
+ * § 9, AP-Q2, AP-D4) — la photo de la commande déposée, toujours. Quand
+ * l'arrêt exige une signature (figée au départ) : le nom de qui signe, le
+ * tracé au doigt et la photo du bon signé ; sinon, ni nom ni signature — le
+ * champ n'apparaît pas (Hugo, 2026-10-25).
  *
  * L'écran n'envoie pas sans les pièces exigées, mais c'est le serveur qui
  * tranche : son refus s'affiche tel quel, et le formulaire reste ouvert.
@@ -48,7 +50,7 @@ export class HandoverForm {
   /** La signature exigée au départ. */
   readonly signatureRequired = input(false);
 
-  /** La remise est enregistrée. */
+  /** La livraison est enregistrée. */
   readonly handedOver = output();
   readonly cancelled = output();
 
@@ -58,19 +60,24 @@ export class HandoverForm {
   protected readonly receiverName = signal('');
   protected readonly photo = signal<File | null>(null);
   protected readonly signature = signal<Blob | null>(null);
+  protected readonly signedSlip = signal<File | null>(null);
   protected readonly sending = signal(false);
   protected readonly refusal = signal<string | null>(null);
 
+  /** Le nom n'est demandé — et n'existe — qu'avec la signature exigée. */
   protected readonly nameValid = computed(() => {
     const length = this.receiverName().trim().length;
     return length >= this.nameMin && length <= this.nameMax;
   });
+  /** Ce que la signature exigée ajoute : le nom, le tracé, la photo du bon signé. */
+  protected readonly signedPiecesReady = computed(
+    () => this.nameValid() && this.signature() !== null && this.signedSlip() !== null,
+  );
   protected readonly canSend = computed(
     () =>
       !this.sending() &&
       this.photo() !== null &&
-      this.nameValid() &&
-      (!this.signatureRequired() || this.signature() !== null),
+      (!this.signatureRequired() || this.signedPiecesReady()),
   );
 
   protected async send(): Promise<void> {
@@ -86,13 +93,15 @@ export class HandoverForm {
       await this.service.handOver(this.roundId(), this.stopId(), {
         position,
         version: this.version(),
-        receiverName: this.receiverName().trim(),
+        // Sans signature exigée, le champ n'existe pas : rien à envoyer.
+        receiverName: this.signatureRequired() ? this.receiverName().trim() : '',
         photo,
-        signature: this.signature(),
+        signature: this.signatureRequired() ? this.signature() : null,
+        signedSlip: this.signatureRequired() ? this.signedSlip() : null,
       });
       this.handedOver.emit();
     } catch (error) {
-      this.refusal.set(httpErrorMessage(error, 'La remise n’a pas pu être enregistrée.'));
+      this.refusal.set(httpErrorMessage(error, 'La livraison n’a pas pu être enregistrée.'));
     } finally {
       this.sending.set(false);
     }

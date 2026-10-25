@@ -86,16 +86,18 @@ describe("« Déposé avec preuve » (B2)", () => {
     expect(await depositFacts(roundId)).toBe(1);
   });
 
-  it("🔴 refusé quand le client n'a pas autorisé le dépôt — rien ne s'écrit", async () => {
+  /** Hugo, 2026-10-25 (« dépôt A ») : sans signature exigée, le dépôt n'attend plus l'adresse. */
+  it("permis sans « dépôt autorisé » à l'adresse quand aucune signature n'est exigée", async () => {
     const paul = await staffWithRole(ctx, "livreur-paul");
     const { roundId, orderId, stopId } = await departedStop(ctx, paul);
+    await frozeAtDeparture(stopId, { depositAllowed: false, signatureRequired: false });
+    expect((await myRound(paul.agent, roundId)).stops[0]?.canDeposit).toBe(true);
 
-    const refused = await deposit(paul.agent, roundId, stopId);
+    expect((await deposit(paul.agent, roundId, stopId)).status).toBe(204);
+    await ctx.drain();
 
-    expect(refused.status).toBe(409);
-    expect(messageOf(refused)).toMatch(/n'autorise pas le dépôt/u);
-    expect(await ctx.prisma.orderHandover.count({ where: { orderId } })).toBe(0);
-    expect(await orderStatus(ctx, orderId)).not.toBe("fulfilled");
+    const handover = await ctx.prisma.orderHandover.findUniqueOrThrow({ where: { orderId } });
+    expect(handover.handedOverVia).toBe("deposit");
   });
 
   it("🔴 refusé quand la signature est exigée, même dépôt autorisé (AP-Q6)", async () => {

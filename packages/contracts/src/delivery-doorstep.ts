@@ -237,7 +237,5 @@ export interface UndeliveredStopView {
   readonly departedAt: string;
   /** ISO, ou `null` : la tournée n'a pas été déclarée rentrée. */
   readonly returnedAt: string | null;
-  /** ISO, ou `null` : aucune arrivée déclarée. */
-  readonly arrivedAt: string | null;
   readonly incidents: readonly DeliveryIncidentView[];
 }

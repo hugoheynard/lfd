@@ -7,6 +7,8 @@ export interface HandoverProofState {
   readonly receiverName: string | null;
   readonly photoKey: string;
   readonly signatureKey: string | null;
+  /** La photo du bon signé (2026-10-25) ; `null` : sans signature exigée, ou d'avant. */
+  readonly signedSlipKey: string | null;
   readonly recordedBy: string;
   readonly recordedAt: Date;
 }
@@ -26,7 +28,7 @@ export class HandoverProof {
 
   /** @throws {HandoverRefusedError} une clé d'image ou l'auteur manque. */
   static attach(state: HandoverProofState): HandoverProof {
-    if (state.photoKey === "" || state.signatureKey === "") {
+    if (state.photoKey === "" || state.signatureKey === "" || state.signedSlipKey === "") {
       throw new HandoverRefusedError("Une pièce de remise sans image rangée n'est pas une preuve.");
     }
     if (state.recordedBy === "") {
@@ -45,7 +47,7 @@ export class HandoverProof {
    * la ligne, qui seule en garde les clés.
    */
   imageKeys(): readonly string[] {
-    const { photoKey, signatureKey } = this.state;
-    return signatureKey === null ? [photoKey] : [photoKey, signatureKey];
+    const { photoKey, signatureKey, signedSlipKey } = this.state;
+    return [photoKey, signatureKey, signedSlipKey].filter((key) => key !== null);
   }
 }

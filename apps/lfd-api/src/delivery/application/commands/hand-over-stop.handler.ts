@@ -35,6 +35,7 @@ export class HandOverStopHandler implements ICommandHandler<HandOverStopCommand,
       receiverName: command.fields.receiverName,
       photo: command.photo,
       signature: command.signature,
+      signedSlip: command.signedSlip,
     });
     const gesture: DoorstepHandoverGesture = {
       staffUserId: command.staffUserId,
@@ -42,22 +43,25 @@ export class HandOverStopHandler implements ICommandHandler<HandOverStopCommand,
       stopId: command.stopId,
       version: command.fields.version,
       position: gesturePositionOf(command.fields),
+      mode: "handed",
       receiverName: receipt.receiverName,
       admit: (stop) => {
         receipt.ensureSignedIf(stop.signatureRequired, stop.label);
       },
     };
-    await this.handover.perform({ photo: receipt.photo, signature: receipt.signature }, (staged) =>
-      this.uow.run(async () => {
-        const closed = await this.handover.closeAtDoor(gesture, staged);
-        if (closed === null) {
-          return false;
-        }
-        await this.events.publishTraced(
-          new DeliveryStopHandedOverEvent(closed.round, closed.order, receipt.signed),
-        );
-        return true;
-      }),
+    await this.handover.perform(
+      { photo: receipt.photo, signature: receipt.signature, signedSlip: receipt.signedSlip },
+      (staged) =>
+        this.uow.run(async () => {
+          const closed = await this.handover.closeAtDoor(gesture, staged);
+          if (closed === null) {
+            return false;
+          }
+          await this.events.publishTraced(
+            new DeliveryStopHandedOverEvent(closed.round, closed.order, receipt.signed),
+          );
+          return true;
+        }),
     );
   }
 }

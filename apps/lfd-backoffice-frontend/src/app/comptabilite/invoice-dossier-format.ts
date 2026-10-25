@@ -122,7 +122,7 @@ export function historyLabel(event: InvoiceDossierHistoryEventView): string {
           ? 'Retiré au comptoir (scan)'
           : 'Retiré au comptoir';
     case 'handed_over_at_door':
-      return 'Remis au client à la porte';
+      return 'Commande déposée chez le client';
     case 'deposited':
       return 'Déposé sans personne';
     case 'departed':

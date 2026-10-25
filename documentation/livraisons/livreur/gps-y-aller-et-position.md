@@ -14,9 +14,13 @@
 > « Remis au client » s'appelle **« Commande déposée »**, et **« Je suis
 > arrivé » est retiré du code** (bouton, route, handler). Les colonnes
 > `arrived_*` restent en base, **plus écrites** : la suggestion de
-> **stationnement** (§6), qui part des positions d'arrivée, ne lit donc plus
-> que les relevés d'avant cette date, et la purge à 60 jours continue de les
-> effacer. Ce que la suggestion de stationnement deviendra n'est pas décidé.
+> **stationnement** (§6) part désormais de la **position de clôture** — la
+> commande déposée, le dépôt avec preuve, la clôture sans remise
+> (`closed_*`), la même que la porte (décision de Hugo, même jour,
+> `PrismaGesturePositionsReader`) ; les relevés d'arrivée d'avant comptent
+> encore jusqu'à ce que la purge à 60 jours les efface. Conséquence : sans
+> stationnement au carnet, les deux suggestions tombent au même point, et
+> appliquer la porte d'abord éteint celle du stationnement (écart nul).
 > Le titre et les repères (« YA ») gardent l'ancien nom.
 
 Trois choses — deux sur l'écran « Ma tournée » du livreur (`/coursier`), une
@@ -312,7 +316,7 @@ erreur dans ses logs).
 | YA-D1      | Deux boutons, un calcul : les arrêts restants, sans les clos, relus à chaque fois.                                                                                                 |
 | YA-D2      | Tronçons de `MAX_WAYPOINTS` (3) étapes ; « Rentrer » à part.                                                                                                                       |
 | YA-D3      | Application choisie par appareil pour « Y aller » ; « Toute la tournée » toujours en liens Google (le code, relu le 2026-10-06).                                                   |
-| YA-D4      | Position au geste seulement — arrivée, remise, dépôt, clôture sans remise (arrivée ajoutée par Hugo le 2026-10-06) ; jamais exigée.                                                |
+| YA-D4      | Position au geste seulement — remise, dépôt, clôture sans remise (l'arrivée, ajoutée le 2026-10-06, est retirée le 2026-10-25) ; jamais exigée.                                    |
 | YA-Q1      | Pas de « Je suis passé » sans preuve : un arrêt sort par un geste qui le clôt.                                                                                                     |
 | YA-Q2      | Un arrêt raté puis rapporté est clos : il sort des liens.                                                                                                                          |
 | YA-Q3      | 60 jours (`POSITION_RETENTION_DAYS`), à faire valider.                                                                                                                             |
@@ -341,8 +345,10 @@ Règle validée par Hugo le 2026-10-06 ; bâti le même jour. Écran
   (`closed_*` : remise, dépôt, clôture sans remise — la base ne distingue pas
   les trois, et la règle tient le livreur pour être à la porte dans les
   trois ; rien ne le vérifie pour la clôture sans remise, question ouverte
-  au §7) ; `parking` (le stationnement) part des positions d'**arrivée**
-  (`arrived_*`).
+  au §7) ; `parking` (le stationnement) part des **mêmes positions de
+  clôture** depuis le 2026-10-25 (décision de Hugo), plus les relevés
+  d'**arrivée** (`arrived_*`) d'avant le retrait de « Je suis arrivé », tant
+  que la purge les garde.
 - **Rattachées à l'adresse du carnet** de la commande, par le commerce
   (`DeliveryAddressPointsReader`, sous le mur `(adresse, société)`, adresses
   archivées exclues). Une commande sans adresse reliée ne compte pas.

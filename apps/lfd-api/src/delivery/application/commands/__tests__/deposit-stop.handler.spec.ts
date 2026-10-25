@@ -1,7 +1,6 @@
 import type { DoorstepStopState } from "../../../domain/entities/doorstep-stop.js";
 import {
   DeliveryRoundReturnedError,
-  DepositNotAllowedError,
   DepositPhotoMissingError,
   DepositSignatureRequiredError,
   DoorstepRoundStaleError,
@@ -52,14 +51,15 @@ describe("DepositStopHandler — « Déposé avec preuve » (B2)", () => {
     await handler.execute(depose());
 
     expect(attestor.staged).toEqual([
-      { photo: { bytes: JPEG, contentType: "image/jpeg" }, signature: null },
+      { photo: { bytes: JPEG, contentType: "image/jpeg" }, signature: null, signedSlip: null },
     ]);
     expect(attestor.attested).toEqual([
       {
         orderId: "o_1",
         by: PAUL,
+        mode: "deposited",
         receiverName: null,
-        proofs: { photoKey: "proofs/1/photo", signatureKey: null },
+        proofs: { photoKey: "proofs/1/photo", signatureKey: null, signedSlipKey: null },
       },
     ]);
     expect(rounds.stored("r_1")?.hasClosed("s_1")).toBe(true);
@@ -88,13 +88,14 @@ describe("DepositStopHandler — « Déposé avec preuve » (B2)", () => {
     expect(attestor.attested).toEqual([]);
   });
 
-  it("🔴 dépôt non autorisé au départ : refus nommé, arrêt ouvert, photo retirée", async () => {
+  /** Hugo, 2026-10-25 (« dépôt A ») : sans signature exigée, le dépôt n'attend plus l'adresse. */
+  it("dépôt NON autorisé à l'adresse, sans signature exigée : déposé quand même", async () => {
     const { handler, rounds, attestor } = scene({ stop: { depositAllowed: false } });
 
-    await expect(handler.execute(depose())).rejects.toThrow(DepositNotAllowedError);
-    expect(attestor.attested).toEqual([]);
-    expect(rounds.saved).toEqual([]);
-    expect(attestor.discarded).toHaveLength(1);
+    await handler.execute(depose());
+
+    expect(attestor.attested[0]).toMatchObject({ orderId: "o_1", mode: "deposited" });
+    expect(rounds.stored("r_1")?.hasClosed("s_1")).toBe(true);
   });
 
   it("🔴 signature exigée : jamais de dépôt, même autorisé à l'adresse (AP-Q6)", async () => {
@@ -117,7 +118,9 @@ describe("DepositStopHandler — « Déposé avec preuve » (B2)", () => {
     await afterCommit.commit();
 
     expect(attestor.published).toEqual([]);
-    expect(attestor.discarded).toEqual([{ photoKey: "proofs/1/photo", signatureKey: null }]);
+    expect(attestor.discarded).toEqual([
+      { photoKey: "proofs/1/photo", signatureKey: null, signedSlipKey: null },
+    ]);
   });
 
   it("le refus du retrait remonte tel quel ; l'arrêt reste ouvert", async () => {
@@ -185,9 +188,11 @@ describe("DepositStopHandler — « Déposé avec preuve » (B2)", () => {
   });
 
   it("🔴 la décision n'est plus « Autoriser » : le dépôt est refusé", async () => {
-    const { handler, attestor } = scene({ stop: { decision: "pending" } });
+    const { handler, attestor } = scene({
+      stop: { signatureRequired: true, decision: "pending" },
+    });
 
-    await expect(handler.execute(depose())).rejects.toThrow(DepositNotAllowedError);
+    await expect(handler.execute(depose())).rejects.toThrow(DepositSignatureRequiredError);
     expect(attestor.attested).toEqual([]);
   });
 

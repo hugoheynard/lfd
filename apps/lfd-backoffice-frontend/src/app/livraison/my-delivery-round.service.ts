@@ -40,9 +40,12 @@ export interface IncidentReport {
 export interface DoorstepHandover {
   /** La version de la tournée lue par l'écran. */
   readonly version: number;
+  /** Tapé quand la signature est exigée ; `''` sinon — le serveur le tient pour absent. */
   readonly receiverName: string;
   /** Prise par l'appareil — toujours. */
   readonly photo: Blob;
+  /** La photo du bon signé, quand la signature est exigée ; `null` sinon. */
+  readonly signedSlip: Blob | null;
   /** Le tracé au doigt, en PNG ; `null` quand il n'est pas exigé et pas fait. */
   readonly signature: Blob | null;
   /** La position du téléphone au geste (YA-D4) ; `null` : indisponible. */
@@ -148,15 +151,19 @@ export class MyDeliveryRoundService {
 
   /**
    * « Commande déposée » (B1) — en multipart : la photo sous `photo`, la
-   * signature sous `signature`. Rejouée, la route répond pareil.
+   * signature sous `signature`, le bon signé sous `signedSlip`. Rejouée, la
+   * route répond pareil.
    */
   async handOver(roundId: string, stopId: string, handover: DoorstepHandover): Promise<void> {
     const body = new FormData();
     body.append('version', String(handover.version));
     body.append('receiverName', handover.receiverName);
-    body.append('photo', handover.photo, 'remise.jpg');
+    body.append('photo', handover.photo, 'commande-deposee.jpg');
     if (handover.signature !== null) {
       body.append('signature', handover.signature, 'signature.png');
+    }
+    if (handover.signedSlip !== null) {
+      body.append('signedSlip', handover.signedSlip, 'bon-signe.jpg');
     }
     appendPosition(body, handover.position);
     await firstValueFrom(this.http.post(`${stopUrl(roundId, stopId)}/handover`, body));

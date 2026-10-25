@@ -4,6 +4,7 @@ import { AfterCommit } from "../../platform/database/after-commit.js";
 import { Clock } from "../../platform/time/clock.js";
 import {
   DoorstepHandoverAttestor,
+  type DoorstepHandoverMode,
   type DoorstepProofImages,
   type StagedHandoverProofs,
 } from "../channels/handover/index.js";
@@ -35,7 +36,9 @@ export interface DoorstepHandoverGesture {
   readonly stopId: string;
   /** La version de la tournée lue par l'écran. */
   readonly version: number;
-  /** Qui a réceptionné ; `null` : personne — le dépôt (`deposit` au retrait). */
+  /** `handed` : remis à quelqu'un ; `deposited` : le dépôt (`deposit` au retrait). */
+  readonly mode: DoorstepHandoverMode;
+  /** Qui a réceptionné ; `null` : personne n'a été nommé (le dépôt, ou un nom facultatif omis). */
   readonly receiverName: string | null;
   /** La position du téléphone au geste (YA-D4), ou `null` : pas de relevé. */
   readonly position: GesturePosition | null;
@@ -137,6 +140,7 @@ export class DoorstepHandover {
     const publish = await this.attestor.attest({
       orderId: stop.orderId,
       by: gesture.staffUserId,
+      mode: gesture.mode,
       receiverName: gesture.receiverName,
       proofs: staged,
     });

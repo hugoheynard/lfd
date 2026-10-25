@@ -2,9 +2,12 @@ import { HANDOVER_RECEIVER_NAME_MAX, HANDOVER_RECEIVER_NAME_MIN } from "@lfd/con
 
 import {
   HandoverPhotoMissingError,
+  type HandoverPiece,
   HandoverSignatureMissingError,
   InvalidHandoverPictureError,
   ReceiverNameLengthError,
+  ReceiverNameRequiredError,
+  SignedSlipPhotoMissingError,
 } from "../errors/delivery-doorstep-errors.js";
 import {
   INCIDENT_PHOTO_MAX_BYTES,
@@ -23,14 +26,18 @@ export interface ReceiptInput {
   readonly receiverName: string;
   readonly photo: Buffer | null;
   readonly signature: Buffer | null;
+  /** La photo du bon signé ; `null` : aucune. */
+  readonly signedSlip: Buffer | null;
 }
 
 const BYTES_PER_MEGABYTE = 1024 * 1024;
 
 /**
  * **Les pièces d'une remise au client** (`a-la-porte.md`, B1, § 9,
- * AP-Q2, AP-D4) : la photo, toujours ; le nom de qui réceptionne, toujours,
- * de 2 à 80 caractères ; la signature au doigt quand l'arrêt l'exige.
+ * AP-Q2, AP-D4) : la photo, toujours ; la signature au doigt quand l'arrêt
+ * l'exige ; le nom de qui réceptionne, de 2 à 80 caractères — OBLIGATOIRE
+ * seulement avec la signature, facultatif sinon (Hugo, 2026-10-25 : un champ
+ * vide vaut « personne n'est nommé », `null`).
  *
  * Deux temps, parce que la signature exigée ne se lit qu'avec l'arrêt :
  * `take` refuse ce qui est faux en soi (avant tout envoi au stockage),
@@ -42,9 +49,11 @@ const BYTES_PER_MEGABYTE = 1024 * 1024;
  */
 export class DoorstepReceipt {
   private constructor(
-    readonly receiverName: string,
+    /** `null` : personne n'a été nommé — admis tant que l'arrêt n'exige pas de signature. */
+    readonly receiverName: string | null,
     readonly photo: ReceiptPicture,
     readonly signature: ReceiptPicture | null,
+    readonly signedSlip: ReceiptPicture | null,
   ) {}
 
   /**
@@ -55,8 +64,12 @@ export class DoorstepReceipt {
     if (input.photo === null) {
       throw new HandoverPhotoMissingError();
     }
-    const name = input.receiverName.trim();
-    if (name.length < HANDOVER_RECEIVER_NAME_MIN || name.length > HANDOVER_RECEIVER_NAME_MAX) {
+    const typed = input.receiverName.trim();
+    const name = typed === "" ? null : typed;
+    if (
+      name !== null &&
+      (name.length < HANDOVER_RECEIVER_NAME_MIN || name.length > HANDOVER_RECEIVER_NAME_MAX)
+    ) {
       throw new ReceiverNameLengthError(
         name.length,
         HANDOVER_RECEIVER_NAME_MIN,
@@ -67,6 +80,7 @@ export class DoorstepReceipt {
       name,
       receiptPicture("photo", input.photo),
       input.signature === null ? null : receiptPicture("signature", input.signature),
+      input.signedSlip === null ? null : receiptPicture("signed-slip", input.signedSlip),
     );
   }
 
@@ -77,12 +91,24 @@ export class DoorstepReceipt {
   /**
    * La signature exigée au départ est-elle là ? Une signature jointe sans être
    * exigée est gardée : elle ne prouve que davantage.
+   * Une signature exigée exige aussi le nom de qui signe et la photo du bon
+   * signé (Hugo, 2026-10-25).
    *
-   * @throws {HandoverSignatureMissingError}
+   * @throws {HandoverSignatureMissingError} @throws {ReceiverNameRequiredError}
+   * @throws {SignedSlipPhotoMissingError}
    */
   ensureSignedIf(signatureRequired: boolean, reference: string): void {
-    if (signatureRequired && this.signature === null) {
+    if (!signatureRequired) {
+      return;
+    }
+    if (this.signature === null) {
       throw new HandoverSignatureMissingError(reference);
+    }
+    if (this.receiverName === null) {
+      throw new ReceiverNameRequiredError(reference);
+    }
+    if (this.signedSlip === null) {
+      throw new SignedSlipPhotoMissingError(reference);
     }
   }
 }
@@ -93,7 +119,7 @@ export class DoorstepReceipt {
  *
  * @throws {InvalidHandoverPictureError}
  */
-export function receiptPicture(piece: "photo" | "signature", bytes: Buffer): ReceiptPicture {
+export function receiptPicture(piece: HandoverPiece, bytes: Buffer): ReceiptPicture {
   if (bytes.length === 0) {
     throw new InvalidHandoverPictureError(piece, "aucune image reçue.");
   }

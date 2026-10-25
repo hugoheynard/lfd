@@ -14,5 +14,7 @@ export class HandOverStopCommand {
     readonly photo: Buffer | null,
     /** La signature au doigt, en image ; `null` : aucune. */
     readonly signature: Buffer | null,
+    /** La photo du bon signé ; `null` : aucune — refusée si la signature est exigée. */
+    readonly signedSlip: Buffer | null,
   ) {}
 }

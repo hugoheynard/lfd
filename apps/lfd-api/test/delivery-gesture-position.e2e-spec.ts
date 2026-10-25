@@ -10,8 +10,8 @@
  *   sans remise), le CHECK l'accepte, et son absence n'empêche rien ;
  * - la purge efface les COLONNES à 60 jours, garde la ligne, et sa route est
  *   fermée sans jeton machine ;
- * - la v2 du texte d'information rouvre le dialogue d'un livreur qui avait
- *   accusé la v1.
+ * - la version courante du texte d'information (v3 depuis le 2026-10-25)
+ *   rouvre le dialogue d'un livreur qui avait accusé la précédente.
  */
 import type { MyDriverNoticeView } from "@lfd/contracts";
 import type { Response } from "supertest";
@@ -190,18 +190,18 @@ describe("la purge des positions à 60 jours", () => {
   });
 });
 
-describe("la v2 du texte d'information", () => {
-  it("un livreur qui avait accusé la v1 revoit le dialogue une fois", async () => {
+describe("la v3 du texte d'information (2026-10-25)", () => {
+  it("un livreur qui avait accusé la v2 revoit le dialogue une fois", async () => {
     const paul = await staffWithRole(ctx, "livreur-paul");
     // L'accusé d'une version passée : aucun geste ne peut plus l'écrire aujourd'hui.
     await ctx.prisma.deliveryDriverNoticeAcknowledgement.create({
-      data: { staffId: paul.id, version: 1, acknowledgedAt: new Date(daysAgo(3)) },
+      data: { staffId: paul.id, version: 2, acknowledgedAt: new Date(daysAgo(3)) },
     });
 
     const before = jsonBody<MyDriverNoticeView>(
       await paul.agent.get("/admin/delivery/my-data").expect(200),
     );
-    expect(before.notice.version).toBe(2);
+    expect(before.notice.version).toBe(3);
     expect(before.acknowledgedAt).toBeNull();
   });
 });

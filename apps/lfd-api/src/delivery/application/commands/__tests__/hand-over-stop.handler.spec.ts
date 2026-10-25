@@ -4,6 +4,8 @@ import {
   DoorstepStopNotFoundError,
   HandoverPhotoMissingError,
   HandoverSignatureMissingError,
+  ReceiverNameRequiredError,
+  SignedSlipPhotoMissingError,
   StopClosedWithoutHandoverError,
 } from "../../../domain/errors/delivery-doorstep-errors.js";
 import { DriverRoundNotFoundError } from "../../../domain/errors/delivery-driver-errors.js";
@@ -38,6 +40,7 @@ function remis(
     name?: string;
     photo?: Buffer | null;
     signature?: Buffer | null;
+    signedSlip?: Buffer | null;
   } = {},
 ): HandOverStopCommand {
   return new HandOverStopCommand(
@@ -47,6 +50,7 @@ function remis(
     { version: overrides.version ?? 2, receiverName: overrides.name ?? "Mme Durand" },
     overrides.photo === undefined ? JPEG : overrides.photo,
     overrides.signature ?? null,
+    overrides.signedSlip ?? null,
   );
 }
 
@@ -60,8 +64,9 @@ describe("HandOverStopHandler — « Remis au client » (B1)", () => {
       {
         orderId: "o_1",
         by: PAUL,
+        mode: "handed",
         receiverName: "Mme Durand",
-        proofs: { photoKey: "proofs/1/photo", signatureKey: null },
+        proofs: { photoKey: "proofs/1/photo", signatureKey: null, signedSlipKey: null },
       },
     ]);
     expect(rounds.stored("r_1")?.hasClosed("s_1")).toBe(true);
@@ -97,6 +102,7 @@ describe("HandOverStopHandler — « Remis au client » (B1)", () => {
         },
         JPEG,
         null,
+        null,
       ),
     );
     const closed = located.rounds
@@ -124,6 +130,7 @@ describe("HandOverStopHandler — « Remis au client » (B1)", () => {
       { version: 2, receiverName: "Mme Durand", positionLat: 45, positionLng: 6 },
       JPEG,
       null,
+      null,
     );
 
     await expect(handler.execute(forged)).rejects.toThrow(GesturePositionInvalidError);
@@ -141,7 +148,9 @@ describe("HandOverStopHandler — « Remis au client » (B1)", () => {
     await afterCommit.commit();
 
     expect(attestor.published).toEqual([]);
-    expect(attestor.discarded).toEqual([{ photoKey: "proofs/1/photo", signatureKey: null }]);
+    expect(attestor.discarded).toEqual([
+      { photoKey: "proofs/1/photo", signatureKey: null, signedSlipKey: null },
+    ]);
   });
 
   it("🔴 sans photo, rien ne part : ni stockage, ni attestation (§ 9)", async () => {
@@ -166,10 +175,43 @@ describe("HandOverStopHandler — « Remis au client » (B1)", () => {
   it("signée quand elle est exigée : la signature est rangée et le fait le dit", async () => {
     const { handler, attestor, events } = scene({ stop: { signatureRequired: true } });
 
-    await handler.execute(remis({ signature: PNG }));
+    await handler.execute(remis({ signature: PNG, signedSlip: JPEG }));
 
     expect(attestor.attested[0]?.proofs.signatureKey).toBe("proofs/1/signature");
+    expect(attestor.attested[0]?.proofs.signedSlipKey).toBe("proofs/1/signed-slip");
     expect(events.traced[0]?.journalFact().payload).toMatchObject({ signed: true });
+  });
+
+  /** Hugo, 2026-10-25 (« SARL Salon Olympique ») : le nom n'est exigé qu'avec la signature. */
+  it("sans signature exigée, sans nom : attestée remise (`handed`), nom nul", async () => {
+    const { handler, rounds, attestor } = scene();
+
+    await handler.execute(remis({ name: "" }));
+
+    expect(attestor.attested[0]).toMatchObject({ mode: "handed", receiverName: null });
+    expect(rounds.stored("r_1")?.hasClosed("s_1")).toBe(true);
+  });
+
+  it("🔴 signature exigée, signée mais sans nom : refus nommé, pièces retirées", async () => {
+    const { handler, rounds, attestor } = scene({ stop: { signatureRequired: true } });
+
+    await expect(handler.execute(remis({ name: "", signature: PNG }))).rejects.toThrow(
+      ReceiverNameRequiredError,
+    );
+    expect(attestor.attested).toEqual([]);
+    expect(rounds.saved).toEqual([]);
+    expect(attestor.discarded).toHaveLength(1);
+  });
+
+  it("🔴 signature exigée, signée et nommée, sans photo du bon : refus nommé, pièces retirées", async () => {
+    const { handler, rounds, attestor } = scene({ stop: { signatureRequired: true } });
+
+    await expect(handler.execute(remis({ signature: PNG }))).rejects.toThrow(
+      SignedSlipPhotoMissingError,
+    );
+    expect(attestor.attested).toEqual([]);
+    expect(rounds.saved).toEqual([]);
+    expect(attestor.discarded).toHaveLength(1);
   });
 
   it("le refus du retrait remonte tel quel ; l'arrêt reste ouvert, rien ne publie", async () => {
@@ -197,7 +239,9 @@ describe("HandOverStopHandler — « Remis au client » (B1)", () => {
     expect(attestor.attested).toHaveLength(1);
     expect(events.traced).toHaveLength(1);
     expect(attestor.published).toEqual(["attested:o_1", "replayed:o_1"]);
-    expect(attestor.discarded).toEqual([{ photoKey: "proofs/2/photo", signatureKey: null }]);
+    expect(attestor.discarded).toEqual([
+      { photoKey: "proofs/2/photo", signatureKey: null, signedSlipKey: null },
+    ]);
   });
 
   it("🔴 rejeu sur un arrêt clos SANS remise : refusé en le nommant", async () => {

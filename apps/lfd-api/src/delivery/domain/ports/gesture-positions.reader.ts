@@ -5,7 +5,10 @@ import type { GeoPoint } from "../value-objects/geo-point.js";
 /** Une position relevée au geste, rattachée à sa commande — sans livreur ni heure. */
 export interface GesturePositionRow {
   readonly orderId: string;
-  /** `door` : la clôture de l'arrêt ; `parking` : l'arrivée. */
+  /**
+   * `door` : la clôture de l'arrêt ; `parking` : la même clôture (depuis le
+   * 2026-10-25), ou une arrivée relevée avant le retrait de « Je suis arrivé ».
+   */
   readonly kind: AddressPointKind;
   readonly point: GeoPoint;
   readonly accuracyM: number;

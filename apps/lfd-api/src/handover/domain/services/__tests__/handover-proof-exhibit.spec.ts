@@ -15,6 +15,7 @@ function proof(receiverName: string | null, signatureKey: string | null): Handov
     receiverName,
     photoKey: "handover/proofs/x/photo",
     signatureKey,
+    signedSlipKey: null,
     recordedBy: "stf_paul",
     recordedAt: AT,
   });
@@ -44,6 +45,20 @@ describe("handoverProofExhibit", () => {
         departedWithRound: true,
       }),
     ).toMatchObject({ mode: "deposited", pieces: { receiverName: null, hasSignature: false } });
+  });
+
+  /**
+   * Régression évitée (2026-10-25) : le mode se lisait aussi sur un nom nul ;
+   * une remise sans nom — admise sans signature exigée — passait pour un dépôt.
+   */
+  it("une remise en main propre SANS nom reste une remise, pas un dépôt", () => {
+    expect(
+      handoverProofExhibit({
+        handover: attested("manual"),
+        proof: proof(null, null),
+        departedWithRound: true,
+      }),
+    ).toMatchObject({ mode: "handed", pieces: { receiverName: null, hasSignature: false } });
   });
 
   it("un dépôt sans pièce : la preuve a été effacée", () => {

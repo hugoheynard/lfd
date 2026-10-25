@@ -45,7 +45,6 @@ export class GetUndeliveredStopsHandler implements IQueryHandler<
         customerLabel: stop.customerLabel,
         departedAt: stop.departedAt.toISOString(),
         returnedAt: stop.returnedAt?.toISOString() ?? null,
-        arrivedAt: stop.arrivedAt?.toISOString() ?? null,
         incidents: incidents
           .filter((row) => row.roundId === stop.roundId && concerns(row.stopId, stop.stopId))
           .map(deliveryIncidentView),

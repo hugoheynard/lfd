@@ -14,7 +14,12 @@ interface Wire {
   handedOver: number;
 }
 
-const PHOTO = new File([new Uint8Array([0xff, 0xd8, 0xff])], 'remise.jpg', { type: 'image/jpeg' });
+const PHOTO = new File([new Uint8Array([0xff, 0xd8, 0xff])], 'commande-deposee.jpg', {
+  type: 'image/jpeg',
+});
+const SLIP = new File([new Uint8Array([0xff, 0xd8, 0xff])], 'bon-signe.jpg', {
+  type: 'image/jpeg',
+});
 const INK = new Blob([new Uint8Array([0x89, 0x50])], { type: 'image/png' });
 
 async function boot(
@@ -64,13 +69,17 @@ function sendButton(fixture: ComponentFixture<HandoverForm>): HTMLButtonElement 
   return button;
 }
 
-/** La photo « prise » : le champ natif annonce un fichier, puis change. */
-async function takePhoto(fixture: ComponentFixture<HandoverForm>): Promise<void> {
-  const input = element(fixture, '[data-handover-photo-input]');
+/** Une photo « prise » : le champ natif (sous `scope`) annonce un fichier, puis change. */
+async function takePhoto(
+  fixture: ComponentFixture<HandoverForm>,
+  file: File = PHOTO,
+  scope = '',
+): Promise<void> {
+  const input = element(fixture, `${scope} [data-handover-photo-input]`.trim());
   if (!(input instanceof HTMLInputElement)) {
     throw new Error('champ photo introuvable');
   }
-  Object.defineProperty(input, 'files', { value: { item: () => PHOTO }, configurable: true });
+  Object.defineProperty(input, 'files', { value: { item: () => file }, configurable: true });
   input.dispatchEvent(new Event('change'));
   await settle(fixture);
 }
@@ -83,24 +92,23 @@ async function typeName(fixture: ComponentFixture<HandoverForm>, name: string): 
   await settle(fixture);
 }
 
+async function sign(fixture: ComponentFixture<HandoverForm>): Promise<void> {
+  (
+    fixture.debugElement.query(By.directive(SignaturePad)).componentInstance as SignaturePad
+  ).signed.emit(INK);
+  await settle(fixture);
+}
+
 describe('HandoverForm — « Commande déposée » (B1)', () => {
-  it('n’envoie qu’avec la photo ET un nom de 2 caractères au moins', async () => {
-    const { fixture } = await boot();
-    expect(sendButton(fixture).disabled).toBe(true);
-
-    await typeName(fixture, 'A');
-    await takePhoto(fixture);
-    expect(sendButton(fixture).disabled).toBe(true);
-
-    await typeName(fixture, 'Mme Durand');
-    expect(sendButton(fixture).disabled).toBe(false);
-  });
-
-  it('envoie la photo, le nom rogné et la version lue ; puis annonce la remise', async () => {
+  /** Hugo, 2026-10-25 (« SARL Salon Olympique ») : sans signature exigée, ni nom ni cadre. */
+  it('sans signature exigée : ni nom, ni cadre, ni bon — la photo seule suffit', async () => {
     const { fixture, wire } = await boot();
-    await takePhoto(fixture);
-    await typeName(fixture, '  Mme Durand ');
+    expect(element(fixture, '[data-receiver-name]')).toBeNull();
+    expect(element(fixture, '[data-signature-surface]')).toBeNull();
+    expect(element(fixture, '[data-signed-slip]')).toBeNull();
+    expect(sendButton(fixture).disabled).toBe(true);
 
+    await takePhoto(fixture);
     sendButton(fixture).click();
     await settle(fixture);
 
@@ -109,9 +117,10 @@ describe('HandoverForm — « Commande déposée » (B1)', () => {
         stopId: 's-1',
         handover: {
           version: 7,
-          receiverName: 'Mme Durand',
+          receiverName: '',
           photo: PHOTO,
           signature: null,
+          signedSlip: null,
           position: null,
         },
       },
@@ -119,26 +128,46 @@ describe('HandoverForm — « Commande déposée » (B1)', () => {
     expect(wire.handedOver).toBe(1);
   });
 
-  it('signature exigée : le cadre paraît, et rien ne part sans le tracé', async () => {
+  it('dit « Prendre en photo la commande déposée » et « Valider la livraison »', async () => {
+    const { fixture } = await boot();
+
+    expect(sendButton(fixture).textContent).toContain('Valider la livraison');
+    expect(element(fixture, '[data-handover-photo]')?.textContent).toContain(
+      'Prendre en photo la commande déposée',
+    );
+  });
+
+  it('signature exigée : rien ne part sans le nom, le tracé ET la photo du bon signé', async () => {
     const { fixture, wire } = await boot(true);
+    expect(element(fixture, '[data-signed-slip] [data-handover-photo]')?.textContent).toContain(
+      'Prendre en photo le bon signé',
+    );
     await takePhoto(fixture);
-    await typeName(fixture, 'Mme Durand');
+    await typeName(fixture, 'A');
+    await sign(fixture);
+    await takePhoto(fixture, SLIP, '[data-signed-slip]');
     expect(sendButton(fixture).disabled).toBe(true);
 
-    (
-      fixture.debugElement.query(By.directive(SignaturePad)).componentInstance as SignaturePad
-    ).signed.emit(INK);
-    await settle(fixture);
+    await typeName(fixture, '  Mme Durand ');
+    expect(sendButton(fixture).disabled).toBe(false);
     sendButton(fixture).click();
     await settle(fixture);
 
-    expect(wire.sent[0]?.handover.signature).toBe(INK);
+    expect(wire.sent[0]?.handover).toMatchObject({
+      receiverName: 'Mme Durand',
+      photo: PHOTO,
+      signature: INK,
+      signedSlip: SLIP,
+    });
   });
 
-  it('sans signature exigée, aucun cadre', async () => {
-    const { fixture } = await boot();
+  it('signature exigée, sans photo du bon : le bouton reste fermé', async () => {
+    const { fixture } = await boot(true);
+    await takePhoto(fixture);
+    await typeName(fixture, 'Mme Durand');
+    await sign(fixture);
 
-    expect(element(fixture, '[data-signature-surface]')).toBeNull();
+    expect(sendButton(fixture).disabled).toBe(true);
   });
 
   it('un refus du serveur s’affiche tel quel, et le formulaire reste ouvert', async () => {
@@ -148,7 +177,6 @@ describe('HandoverForm — « Commande déposée » (B1)', () => {
       error: { message: 'Cette commande est annulée.' },
     });
     await takePhoto(fixture);
-    await typeName(fixture, 'Mme Durand');
 
     sendButton(fixture).click();
     await settle(fixture);

@@ -91,7 +91,12 @@ async function handOver(
   agent: Agent,
   roundId: string,
   stopId: string,
-  pieces: { readonly photo?: boolean; readonly signature?: boolean; readonly name?: string } = {},
+  pieces: {
+    readonly photo?: boolean;
+    readonly signature?: boolean;
+    readonly signedSlip?: boolean;
+    readonly name?: string;
+  } = {},
 ): Promise<Response> {
   const version = (await myRound(agent, roundId)).version;
   let call = agent
@@ -103,6 +108,9 @@ async function handOver(
   }
   if (pieces.signature ?? false) {
     call = call.attach("signature", PNG, "signature.png");
+  }
+  if (pieces.signedSlip ?? false) {
+    call = call.attach("signedSlip", JPEG, "bon-signe.jpg");
   }
   return call;
 }
@@ -192,7 +200,7 @@ describe("« Remis au client » (B1)", () => {
     expect(await ctx.prisma.orderHandover.count({ where: { orderId } })).toBe(0);
   });
 
-  it("refuse sans photo, et sans la signature exigée au départ", async () => {
+  it("refuse sans photo ; signature exigée : sans tracé, puis sans bon signé — et complet, 204", async () => {
     const paul = await staffWithRole(ctx, "livreur-paul");
     const { roundId, orderId, stopId } = await departedStop(paul);
 
@@ -208,9 +216,58 @@ describe("« Remis au client » (B1)", () => {
     expect(unsigned.status).toBe(400);
     expect(messageOf(unsigned)).toMatch(/exige une signature/u);
 
-    expect((await handOver(paul.agent, roundId, stopId, { signature: true })).status).toBe(204);
+    const noSlip = await handOver(paul.agent, roundId, stopId, { signature: true });
+    expect(noSlip.status).toBe(400);
+    expect(messageOf(noSlip)).toMatch(/photo le bon signé/u);
+
+    const complete = await handOver(paul.agent, roundId, stopId, {
+      signature: true,
+      signedSlip: true,
+    });
+    expect(complete.status).toBe(204);
     const proof = await ctx.prisma.orderHandoverProof.findUniqueOrThrow({ where: { orderId } });
     expect(proof.signatureKey).not.toBeNull();
+    expect(proof.signedSlipKey).not.toBeNull();
+    const store = ctx.app.get(ProductionDocumentStore);
+    expect(await store.readIfPresent(proof.signedSlipKey ?? "")).toEqual(JPEG);
+  });
+
+  /**
+   * Hugo, 2026-10-25 (arrêt « SARL Salon Olympique », signature non exigée) :
+   * le nom était exigé partout ; il ne l'est plus qu'avec la signature.
+   */
+  it("sans signature exigée, sans nom : 204, attestée `manual`, nom nul en base", async () => {
+    const paul = await staffWithRole(ctx, "livreur-paul");
+    const { roundId, orderId, stopId } = await departedStop(paul);
+
+    expect((await handOver(paul.agent, roundId, stopId, { name: "" })).status).toBe(204);
+    await ctx.drain();
+
+    const handover = await ctx.prisma.orderHandover.findUniqueOrThrow({ where: { orderId } });
+    expect(handover.handedOverVia).toBe("manual");
+    const proof = await ctx.prisma.orderHandoverProof.findUniqueOrThrow({ where: { orderId } });
+    expect(proof.receiverName).toBeNull();
+  });
+
+  it("🔴 signature exigée, signée mais sans nom : 400 nommé, l'arrêt reste ouvert", async () => {
+    const paul = await staffWithRole(ctx, "livreur-paul");
+    const { roundId, orderId, stopId } = await departedStop(paul);
+    await ctx.prisma.deliveryStopExecution.update({
+      where: { stopId },
+      data: { signatureRequired: true },
+    });
+
+    const anonymous = await handOver(paul.agent, roundId, stopId, {
+      name: "",
+      signature: true,
+      signedSlip: true,
+    });
+
+    expect(anonymous.status).toBe(400);
+    expect(messageOf(anonymous)).toMatch(/tapez aussi le nom/u);
+    expect(await ctx.prisma.orderHandoverProof.count({ where: { orderId } })).toBe(0);
+    const stop = await ctx.prisma.deliveryRoundStop.findUniqueOrThrow({ where: { id: stopId } });
+    expect(stop.closedAt).toBeNull();
   });
 
   it("🔴 le mur : un autre livreur prend 404, et rien ne s'écrit", async () => {

@@ -1,9 +1,6 @@
 import type { StopDecisionState } from "@lfd/contracts";
 
-import {
-  DepositNotAllowedError,
-  DepositSignatureRequiredError,
-} from "../errors/delivery-doorstep-errors.js";
+import { DepositSignatureRequiredError } from "../errors/delivery-doorstep-errors.js";
 import { depositPermitted } from "../services/deposit-rule.js";
 
 /** La tournée d'un arrêt, telle que le journal la cite : véhicule, jour, passage. */
@@ -91,26 +88,22 @@ export class DoorstepStop {
 
   /**
    * **« Déposé avec preuve » est-il permis ICI ?** (`a-la-porte.md`, B2,
-   * B3, AP-D4, AP-D5, AP-Q6, LB-Q5) — la règle de `depositPermitted` : les
-   * valeurs figées au départ, OU la décision vivante d'un commercial qui
-   * autorise le dépôt — elle l'emporte sur la signature (LB-Q5). L'écran lit
-   * `canDeposit`, calculé par la même règle. Le refus nomme ce qui manque, la
-   * signature d'abord.
+   * B3, AP-D4, AP-Q6, LB-Q5 ; « dépôt A » du 2026-10-25) — la règle de
+   * `depositPermitted` : pas de signature exigée au départ, OU la décision
+   * vivante d'un commercial qui autorise le dépôt — elle l'emporte sur la
+   * signature (LB-Q5). L'écran lit `canDeposit`, calculé par la même règle.
    *
    * Une décision qui n'est plus « Autoriser » (« Rapporter » l'a remplacée)
    * n'ouvre plus rien — et « Rapporter » a de toute façon clos l'arrêt.
    *
-   * @throws {DepositSignatureRequiredError} la signature est exigée.
-   * @throws {DepositNotAllowedError} le client n'a pas autorisé le dépôt.
+   * @throws {DepositSignatureRequiredError} la signature est exigée — seul
+   *   refus possible depuis le 2026-10-25 (« dépôt A »).
    */
   ensureDepositPermitted(): void {
     const authorized = this.state.decision === "authorize_deposit";
     if (depositPermitted({ ...this.state, depositAuthorized: authorized })) {
       return;
     }
-    if (this.state.signatureRequired) {
-      throw new DepositSignatureRequiredError(this.label);
-    }
-    throw new DepositNotAllowedError(this.label);
+    throw new DepositSignatureRequiredError(this.label);
   }
 }

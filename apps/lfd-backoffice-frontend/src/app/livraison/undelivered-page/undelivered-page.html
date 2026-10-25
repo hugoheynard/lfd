@@ -35,15 +35,6 @@
               <fold-field-list>
                 <fold-field label="Partie">{{ timeOf(stop.departedAt) }}</fold-field>
                 <fold-field
-                  label="Arrivée déclarée"
-                  placeholder="Aucune"
-                  [empty]="stop.arrivedAt === null"
-                >
-                  @if (stop.arrivedAt; as arrivedAt) {
-                    {{ timeOf(arrivedAt) }}
-                  }
-                </fold-field>
-                <fold-field
                   label="Rentrée"
                   placeholder="Jamais déclarée"
                   [empty]="stop.returnedAt === null"

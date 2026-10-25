@@ -62,22 +62,32 @@ export interface DoorstepProofImages {
   readonly photo: DoorstepProofImage;
   /** La signature au doigt, ou `null`. */
   readonly signature: DoorstepProofImage | null;
+  /** La photo du bon signé (Hugo, 2026-10-25), ou `null` : pas de signature exigée. */
+  readonly signedSlip: DoorstepProofImage | null;
 }
 
 /** Où les images ont été rangées — la livraison la rend telle quelle, sans la lire. */
 export interface StagedHandoverProofs {
   readonly photoKey: string;
   readonly signatureKey: string | null;
+  readonly signedSlipKey: string | null;
 }
+
+/** Le geste à la porte, tel que le retrait l'attestera. */
+export type DoorstepHandoverMode = "handed" | "deposited";
 
 export interface DoorstepHandoverRequest {
   readonly orderId: string;
   /** La fiche staff du livreur. */
   readonly by: string;
   /**
-   * Le nom tapé de qui a réceptionné — « Remis au client » ; `null` : personne,
-   * « Déposé avec preuve » (B2), attesté `deposit` au retrait (AP-D8).
+   * `handed` : « Commande déposée » chez quelqu'un (B1) ; `deposited` :
+   * « Déposé avec preuve » (B2), attesté `deposit` au retrait (AP-D8). Dit en
+   * clair depuis le 2026-10-25 : le nom, devenu facultatif sans signature, ne
+   * les distingue plus.
    */
+  readonly mode: DoorstepHandoverMode;
+  /** Le nom tapé de qui a réceptionné ; `null` : personne n'a été nommé. */
   readonly receiverName: string | null;
   readonly proofs: StagedHandoverProofs;
 }

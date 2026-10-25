@@ -114,8 +114,9 @@ export class MyDeliveryDoorstepController {
   }
 
   /**
-   * « Remis au client » (B1) — multipart : le nom et la version, la photo
-   * (toujours), la signature (quand l'arrêt l'exige). 204, même rejouée.
+   * « Commande déposée » (B1) — multipart : la version, la photo (toujours) ;
+   * quand l'arrêt exige une signature, le nom, le tracé (`signature`) et la
+   * photo du bon signé (`signedSlip`). 204, même rejouée.
    */
   @Post(":roundId/stops/:stopId/handover")
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -135,6 +136,7 @@ export class MyDeliveryDoorstepController {
         fields,
         pictures?.photo?.[0]?.buffer ?? null,
         pictures?.signature?.[0]?.buffer ?? null,
+        pictures?.signedSlip?.[0]?.buffer ?? null,
       ),
     );
   }

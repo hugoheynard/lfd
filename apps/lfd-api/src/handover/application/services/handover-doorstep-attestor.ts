@@ -3,6 +3,7 @@ import { Injectable } from "@nestjs/common";
 import {
   DoorstepHandoverAttestor,
   type DoorstepHandoverRequest,
+  type DoorstepProofImage,
   type DoorstepProofImages,
   type HandoverPublication,
   type StagedHandoverProofs,
@@ -36,7 +37,10 @@ const DEPOSIT_VIA: HandoverVia = "deposit";
 const ALREADY_IN_OUTBOX: HandoverPublication = () => undefined;
 
 /** Les pièces d'une remise, sous le préfixe du retrait. */
-function proofKey(stagingId: string, piece: "photo" | "signature"): string {
+/** Les pièces qu'une remise range au bucket. */
+type ProofPiece = "photo" | "signature" | "signed-slip";
+
+function proofKey(stagingId: string, piece: ProofPiece): string {
   return `handover/proofs/${stagingId}/${piece}`;
 }
 
@@ -64,21 +68,32 @@ export class HandoverDoorstepAttestor extends DoorstepHandoverAttestor {
     super();
   }
 
+  /**
+   * Range la photo, puis chaque pièce jointe ; une pièce qui échoue retire
+   * celles déjà rangées — rien d'orphelin au bucket.
+   */
   async stageProofs(images: DoorstepProofImages): Promise<StagedHandoverProofs> {
     const stagingId = this.ids.next();
-    const photoKey = proofKey(stagingId, "photo");
-    await this.store.save(photoKey, images.photo);
-    if (images.signature === null) {
-      return { photoKey, signatureKey: null };
-    }
-    const signatureKey = proofKey(stagingId, "signature");
+    const saved: string[] = [];
+    const stage = async (piece: ProofPiece, image: DoorstepProofImage): Promise<string> => {
+      const key = proofKey(stagingId, piece);
+      await this.store.save(key, image);
+      saved.push(key);
+      return key;
+    };
+    const stageIf = (piece: ProofPiece, image: DoorstepProofImage | null) =>
+      image === null ? Promise.resolve(null) : stage(piece, image);
     try {
-      await this.store.save(signatureKey, images.signature);
+      const photoKey = await stage("photo", images.photo);
+      const signatureKey = await stageIf("signature", images.signature);
+      const signedSlipKey = await stageIf("signed-slip", images.signedSlip);
+      return { photoKey, signatureKey, signedSlipKey };
     } catch (error) {
-      await this.store.delete(photoKey);
+      for (const key of saved) {
+        await this.store.delete(key);
+      }
       throw error;
     }
-    return { photoKey, signatureKey };
   }
 
   /** @throws {HandoverRefusedError} la commande n'est plus servie, ou l'état l'interdit. */
@@ -92,7 +107,7 @@ export class HandoverDoorstepAttestor extends DoorstepHandoverAttestor {
     await this.attestation.attestQuietly(
       subject,
       request.by,
-      request.receiverName === null ? DEPOSIT_VIA : HANDED_VIA,
+      request.mode === "deposited" ? DEPOSIT_VIA : HANDED_VIA,
     );
     await this.proofs.record(
       HandoverProof.attach({
@@ -100,6 +115,7 @@ export class HandoverDoorstepAttestor extends DoorstepHandoverAttestor {
         receiverName: request.receiverName,
         photoKey: request.proofs.photoKey,
         signatureKey: request.proofs.signatureKey,
+        signedSlipKey: request.proofs.signedSlipKey,
         recordedBy: request.by,
         recordedAt: this.clock.now(),
       }),
@@ -123,8 +139,10 @@ export class HandoverDoorstepAttestor extends DoorstepHandoverAttestor {
 
   async discardProofs(staged: StagedHandoverProofs): Promise<void> {
     await this.store.delete(staged.photoKey);
-    if (staged.signatureKey !== null) {
-      await this.store.delete(staged.signatureKey);
+    for (const key of [staged.signatureKey, staged.signedSlipKey]) {
+      if (key !== null) {
+        await this.store.delete(key);
+      }
     }
   }
 }

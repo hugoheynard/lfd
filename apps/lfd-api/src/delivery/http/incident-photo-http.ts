@@ -30,14 +30,19 @@ export function incidentPhotoUpload(): Type<NestInterceptor> {
   return FileInterceptor(PHOTO_FIELD, { limits: { fileSize: INCIDENT_UPLOAD_HARD_LIMIT } });
 }
 
-/** Les deux images d'une remise (`a-la-porte.md`, B1) : la photo, la signature. */
+/**
+ * Les images d'une remise (`a-la-porte.md`, B1) : la photo, la signature, et
+ * la photo du bon signé (2026-10-25).
+ */
 const HANDOVER_PHOTO_FIELD = "photo";
 const HANDOVER_SIGNATURE_FIELD = "signature";
+const HANDOVER_SIGNED_SLIP_FIELD = "signedSlip";
 
 /** Ce que Multer rend pour une remise : au plus une image par champ. */
 export interface UploadedHandoverPictures {
   readonly photo?: readonly UploadedIncidentPhoto[];
   readonly signature?: readonly UploadedIncidentPhoto[];
+  readonly signedSlip?: readonly UploadedIncidentPhoto[];
 }
 
 /** La même borne que la photo d'un signalement : le téléphone est le même. */
@@ -46,6 +51,7 @@ export function handoverPicturesUpload(): Type<NestInterceptor> {
     [
       { name: HANDOVER_PHOTO_FIELD, maxCount: 1 },
       { name: HANDOVER_SIGNATURE_FIELD, maxCount: 1 },
+      { name: HANDOVER_SIGNED_SLIP_FIELD, maxCount: 1 },
     ],
     { limits: { fileSize: INCIDENT_UPLOAD_HARD_LIMIT } },
   );

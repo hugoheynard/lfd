@@ -281,15 +281,17 @@ describe("le dépôt autorisé, figé au départ, et la signature qui l'emporte 
     ]);
   });
 
-  it("une commande sans adresse du carnet part avec `false`, écrit", async () => {
+  it("une commande sans adresse du carnet part avec `false`, écrit — et se dépose quand même sans signature", async () => {
     const paul = await staffWithRole(ctx, "livreur-paul");
     const { roundId } = await departedRound(paul, 1);
 
     const frozen = await ctx.prisma.deliveryStopExecution.findFirstOrThrow({
       where: { roundId },
-      select: { depositAllowed: true },
+      select: { depositAllowed: true, signatureRequired: true },
     });
-    expect(frozen.depositAllowed).toBe(false);
+    expect(frozen).toEqual({ depositAllowed: false, signatureRequired: false });
+    // « Dépôt A » (Hugo, 2026-10-25) : sans signature exigée, l'adresse ne compte plus.
+    expect((await myRound(paul.agent, roundId)).stops[0]?.canDeposit).toBe(true);
   });
 });
 
@@ -397,7 +399,7 @@ describe("« Non remis » (AP-D7)", () => {
     expect(view.stops[0]?.incidents.map((incident) => incident.reason)).toEqual([
       "vehicle_breakdown",
     ]);
-    expect(view.stops[0]?.arrivedAt).toBeNull();
+    expect(view.stops[0]).not.toHaveProperty("arrivedAt");
   });
 
   async function report(agent: Agent, roundId: string, fields: Record<string, string>) {

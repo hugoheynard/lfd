@@ -58,11 +58,12 @@ describe("« Mes données » — l'accusé et sa lecture", () => {
   });
 
   /**
-   * La v2 (position au geste, 2026-10-06) : un livreur qui a accusé la v1 voit
-   * le dialogue UNE fois de plus, puis plus jamais pour cette version.
+   * La v3 (« Je suis arrivé » retiré, nom et bon signé avec la signature
+   * seulement, 2026-10-25) : un livreur qui a accusé la v2 voit le dialogue
+   * UNE fois de plus, puis plus jamais pour cette version.
    */
   it("un accusé de la version précédente ne vaut pas : le dialogue se rouvre une fois", async () => {
-    expect(CURRENT).toBe(2);
+    expect(CURRENT).toBe(3);
     store.rows.set(`st_paul|${String(CURRENT - 1)}`, FIRST);
 
     expect((await read.execute(new GetMyDriverNoticeQuery("st_paul"))).acknowledgedAt).toBeNull();

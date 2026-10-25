@@ -280,7 +280,8 @@ describe("myDeliveryRoundView — à la porte (plan « À la porte », lot A)", 
     expect(view.stops.map((s) => [s.depositAllowed, s.canDeposit])).toEqual([
       [true, false],
       [true, true],
-      [false, false],
+      // « Dépôt A » (Hugo, 2026-10-25) : l'adresse ne compte plus sans signature exigée.
+      [false, true],
     ]);
   });
 

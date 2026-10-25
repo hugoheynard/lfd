@@ -34,13 +34,17 @@ describe("CURRENT_DRIVER_NOTICE (le texte d'information du livreur)", () => {
     expect(text).toContain(RECEIVER_SENTENCE);
   });
 
-  it("v2 : PRÉVIENT de la position au geste, en fait, sans rien demander (Hugo, 2026-10-06)", () => {
-    expect(CURRENT_DRIVER_NOTICE.version).toBe(2);
+  it("PRÉVIENT de la position au geste, en fait, sans rien demander (Hugo, 2026-10-06)", () => {
     expect(text).toContain(
-      "La position de votre téléphone est relevée au moment de chaque geste (arrivée, remise, dépôt, clôture d'un arrêt sans remise), jamais en continu. Si le téléphone ne la donne pas, le geste est enregistré sans elle.",
+      "La position de votre téléphone est relevée au moment de chaque geste qui clôt un arrêt (commande déposée chez le client, dépôt avec preuve, clôture d'un arrêt sans remise, transfert laissé à un site), jamais en continu. Si le téléphone ne la donne pas, le geste est enregistré sans elle.",
     );
     expect(text).not.toContain("ne relève pas la position");
     expect(text).not.toMatch(/refus|accepter|autoris|consent/iu);
+  });
+
+  it("v3 : n'annonce plus l'arrivée, retirée le 2026-10-25 (décision de Hugo)", () => {
+    expect(CURRENT_DRIVER_NOTICE.version).toBe(3);
+    expect(text).not.toMatch(/arrivée/iu);
   });
 
   it("chaque rubrique a un titre et au moins une ligne", () => {

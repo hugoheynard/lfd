@@ -32,6 +32,7 @@ export {
 } from "./delivery-orders-brought-back.fact.js";
 export {
   DoorstepHandoverAttestor,
+  type DoorstepHandoverMode,
   type DoorstepHandoverRequest,
   type DoorstepProofImage,
   type DoorstepProofImages,

@@ -24,12 +24,39 @@
 > `DeclareStopArrivalHandler`, `DoorstepStop.arrive`, `DoorstepStopClosedError`,
 > le champ `arrivedAt` de « Ma tournée » et la ligne « Arrivé à hh:mm ». La
 > colonne `arrived_at` (et `arrived_lat/lng/accuracy_m`) **reste en base**,
-> plus écrite ; ses lecteurs restent : « Non remis » (« Arrivée déclarée »),
-> la suggestion de stationnement, la purge à 60 jours. Le fait
+> plus écrite ; ses lecteurs restent : la suggestion de stationnement (pour
+> les relevés passés) et la purge à 60 jours. « Non remis » ne montre plus
+> d'« Arrivée déclarée » (champ `arrivedAt` retiré du contrat, même jour). Le fait
 > `delivery_round.stop_arrived` reste lisible au journal pour les faits passés.
 > Le même jour, deux libellés changent : « Y aller » devient **« Aller chez ce
 > client »** (« Aller à ce site » sur un arrêt de transfert), et « Remis au
 > client » devient **« Commande déposée »**.
+>
+> 🔴 **2026-10-25, suite — décisions de Hugo sur « Commande déposée » et le dépôt :**
+>
+> - **Le formulaire** : « Prendre en photo la commande déposée » (le bouton
+>   ouvre l'appareil photo arrière, `capture="environment"`), puis **« Valider
+>   la livraison »**. Sans signature exigée, **aucun nom n'est demandé** — le
+>   champ n'apparaît pas, `receiver_name` est nul. Signature exigée : le nom
+>   de qui signe, le tracé au doigt, ET **« Prendre en photo le bon signé »**
+>   (deux photos, le pavé reste) ; il manque l'un des trois → refus qui le
+>   nomme (`HandoverSignatureMissingError`, `ReceiverNameRequiredError`,
+>   `SignedSlipPhotoMissingError`). Le bon signé est rangé au bucket des
+>   pièces sous `order_handover_proof.signed_slip_key` (migration
+>   `20261026040000_la_photo_du_bon_signe`), effacé par la même purge. Le
+>   geste se dit au retrait par `mode` (`handed`/`deposited`), plus par un
+>   nom nul. Remplace **AP-Q2** pour le nom.
+> - **« Dépôt A »** : « Déposé avec preuve » est permis **dès qu'aucune
+>   signature n'est exigée**, que l'adresse autorise le dépôt ou non
+>   (`deposit-rule.ts` : `depositAuthorized || !signatureRequired`). La
+>   signature exigée l'interdit toujours, sauf autorisation d'un commercial
+>   (B3, inchangée). Remplace **AP-Q1** pour l'effet : « dépôt autorisé »
+>   (`deposit_allowed`) reste en base et à l'écran, **sans effet** sur le
+>   dépôt — à Hugo de dire s'il sort de l'écran. `DepositNotAllowedError`,
+>   devenue inatteignable, est retirée.
+> - ⏳ **Décision PROVISOIRE** (« pour le moment », à revoir) : quand le client
+>   n'autorise pas le dépôt mais que le réglage du commercial autorise le
+>   dépôt « sauvage », **le commercial l'emporte**.
 
 Suit « Ma tournée » ([`app-coursier-ma-tournee.md`](app-coursier-ma-tournee.md)) : la page du
 livreur, son mur « sa tournée ». La conception d'origine du lot 6 (L6-C1 à
@@ -171,7 +198,9 @@ sans auteur, **sans notification**). Défaut global : `ask`.
 
 **« Dépôt autorisé » de l'adresse** — réglé par le client sur ses adresses
 (`company-addresses.controller.ts`) et par le commercial
-(`PUT admin/companies/…/deposit`, sous `delivery_procedures`).
+(`PUT admin/companies/…/deposit`, sous `delivery_procedures`). ⚠️ Sans effet
+sur le dépôt depuis le 2026-10-25 (« dépôt A », bandeau en tête) : il est
+encore figé au départ et affiché, plus lu par la règle.
 
 **Prévenir (B5)** — une notice « Livraison à décider » par signalement qui
 ouvre une décision, après validation, adressée par droit
@@ -254,8 +283,11 @@ Accordées à l'écran des rôles, jamais par migration :
 ## 8. Décisions d'Hugo en vigueur
 
 - **AP-Q1** « dépôt autorisé » est un réglage à part de « signature exigée ».
-- **AP-Q2** « Remis au client » exige toujours le nom ; et **toute remise
-  porte une photo** (2026-10-01).
+  _(Son effet est retiré le 2026-10-25, « dépôt A » : seule la signature
+  exigée interdit le dépôt.)_
+- **AP-Q2** ~~« Remis au client » exige toujours le nom~~ — depuis le
+  2026-10-25, le nom n'est demandé qu'avec la signature exigée, avec la
+  photo du bon signé ; **toute remise porte une photo** (2026-10-01, inchangé).
 - **AP-Q3** la position se relèvera (YA4) mais ne corrigera jamais le carnet
   seule. _(Décision citée telle quelle ; YA4 est bâti depuis : la position se
   relève, et le carnet ne bouge que par une suggestion que le bureau applique.)_

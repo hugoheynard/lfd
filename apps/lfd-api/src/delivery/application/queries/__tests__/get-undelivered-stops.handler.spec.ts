@@ -52,7 +52,6 @@ function stop(stopId: string): UndeliveredStopRow {
     customerLabel: "Refuge 1950",
     departedAt: SUMMER_MIDNIGHT_PARIS,
     returnedAt: null,
-    arrivedAt: null,
   };
 }
 

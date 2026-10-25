@@ -4,8 +4,8 @@
  *
  * Ce que seul le vrai SQL prouve :
  * - les positions relevées au geste, rattachées à leur adresse du carnet par
- *   le canal du commerce, sous le mur : 3 remises concordantes → une
- *   suggestion ; 2 → rien ; dispersées → rien ;
+ *   le canal du commerce, sous le mur : 3 remises concordantes → la porte
+ *   et le stationnement suggérés ; 2 → rien ; dispersées → rien ;
  * - « Appliquer » écrit le CARNET (le commerce, par son agrégat), journalise
  *   `company.delivery_address_point_corrected`, et le départ suivant fige la
  *   porte et le stationnement ;
@@ -25,7 +25,7 @@ import {
 } from "./delivery-handover-scene.js";
 import { ADMIN_VERIFIER_OVERRIDE, forgetCustomer } from "./delivery-rounds-scene.js";
 import { forgetRoutingScene } from "./delivery-routing-scene.js";
-import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 
 const SUGGESTIONS = "/admin/delivery/address-corrections";
 /** Le point du carnet que la scène sème (`delivery-handover-scene.ts`). */
@@ -86,12 +86,13 @@ async function relinkTo(orderId: string, sameAs: string): Promise<void> {
 }
 
 /**
- * Une tournée de `doors.length` arrêts à la MÊME adresse : chacun remet à
- * `doors[i]`, et porte un relevé d'arrivée passé à `arrivals[i]` (s'il est donné).
+ * Une tournée de `doors.length` arrêts à la MÊME adresse : chacun est remis à
+ * `doors[i]`, par le vrai geste. Depuis le 2026-10-25 (décision de Hugo), cette
+ * position de remise situe la porte ET le stationnement : plus aucun geste
+ * n'écrit d'arrivée.
  */
 async function deliveredAt(
   doors: readonly GpsPoint[],
-  arrivals: readonly GpsPoint[] = [],
 ): Promise<{ readonly firstOrderId: string; readonly paul: DoorDriver }> {
   const paul = await staffWithRole(ctx, "livreur-paul");
   const { roundId, stops } = await departedStops(ctx, paul, doors.length);
@@ -99,21 +100,6 @@ async function deliveredAt(
   for (const [index, stop] of stops.entries()) {
     await relinkTo(stop.orderId, firstOrderId);
     await handOver(paul, roundId, stop.stopId, doors[index] ?? CARNET);
-    const arrival = arrivals[index];
-    if (arrival !== undefined) {
-      // « Je suis arrivé » est retiré le 2026-10-25 (décision de Hugo) : plus
-      // aucun geste n'écrit ce relevé, mais ceux d'avant restent en base et le
-      // lecteur des suggestions de stationnement les lit encore.
-      await ctx.prisma.deliveryStopExecution.update({
-        where: { stopId: stop.stopId },
-        data: {
-          arrivedAt: daysAgo(0),
-          arrivedLat: arrival.lat,
-          arrivedLng: arrival.lng,
-          arrivedAccuracyM: 6,
-        },
-      });
-    }
   }
   return { firstOrderId, paul };
 }
@@ -125,19 +111,21 @@ async function suggestions(): Promise<AddressPointSuggestionsView> {
 }
 
 describe("la règle — combien de livraisons, et où", () => {
-  it("3 remises concordantes à ~120 m : la porte est suggérée, 3 livraisons", async () => {
+  it("3 remises concordantes à ~120 m : la porte et le stationnement sont suggérés, 3 livraisons", async () => {
     await deliveredAt([north(118), north(120), north(122)]);
 
     const view = await suggestions();
 
-    expect(view.suggestions).toHaveLength(1);
-    expect(view.suggestions[0]).toMatchObject({
-      kind: "door",
-      reference: "carnet",
-      recorded: CARNET,
-      distanceM: 120,
-      concordant: 3,
-    });
+    expect(view.suggestions.map((s) => s.kind).sort()).toEqual(["door", "parking"]);
+    for (const suggestion of view.suggestions) {
+      // Le stationnement sans point au carnet se compare à la porte du carnet.
+      expect(suggestion).toMatchObject({
+        reference: "carnet",
+        recorded: CARNET,
+        distanceM: 120,
+        concordant: 3,
+      });
+    }
   });
 
   it("2 remises : rien", async () => {
@@ -155,13 +143,16 @@ describe("la règle — combien de livraisons, et où", () => {
 
 describe("« Appliquer » et « Ignorer »", () => {
   it("appliquer la porte et le stationnement : le carnet, le journal, puis le départ suivant les fige", async () => {
-    const doors = [north(118), north(120), north(122)];
-    const parking = [north(-80), north(-81), north(-79)];
-    const { firstOrderId, paul } = await deliveredAt(doors, parking);
+    const { firstOrderId, paul } = await deliveredAt([north(118), north(120), north(122)]);
     const shown = (await suggestions()).suggestions;
     expect(shown.map((s) => s.kind).sort()).toEqual(["door", "parking"]);
 
-    for (const suggestion of shown) {
+    // Le stationnement d'abord : sans point au carnet, il se compare à la
+    // porte — appliquée la première, elle l'éteindrait (écart nul).
+    const parkingFirst = [...shown].sort((a, b) =>
+      a.kind === b.kind ? 0 : a.kind === "parking" ? -1 : 1,
+    );
+    for (const suggestion of parkingFirst) {
       await ctx
         .asSub(E2E_STAFF_SUB)
         .post(`${SUGGESTIONS}/${suggestion.addressId}/apply`)
@@ -201,7 +192,7 @@ describe("« Appliquer » et « Ignorer »", () => {
 
   it("ignorer : le carnet ne bouge pas, et la suggestion ne revient pas", async () => {
     await deliveredAt([north(118), north(120), north(122)]);
-    const [shown] = (await suggestions()).suggestions;
+    const shown = (await suggestions()).suggestions.find((s) => s.kind === "door");
 
     await ctx
       .asSub(E2E_STAFF_SUB)
@@ -209,7 +200,7 @@ describe("« Appliquer » et « Ignorer »", () => {
       .send({ kind: "door", point: shown?.suggested })
       .expect(204);
 
-    expect((await suggestions()).suggestions).toEqual([]);
+    expect((await suggestions()).suggestions.map((s) => s.kind)).toEqual(["parking"]);
     const address = await ctx.prisma.address.findUniqueOrThrow({
       where: { id: shown?.addressId ?? "" },
       select: { deliverySpecs: true },
@@ -219,7 +210,7 @@ describe("« Appliquer » et « Ignorer »", () => {
 
   it("un point que le bureau n'a pas vu : 409, rien n'est écrit", async () => {
     await deliveredAt([north(118), north(120), north(122)]);
-    const [shown] = (await suggestions()).suggestions;
+    const shown = (await suggestions()).suggestions.find((s) => s.kind === "door");
 
     await ctx
       .asSub(E2E_STAFF_SUB)

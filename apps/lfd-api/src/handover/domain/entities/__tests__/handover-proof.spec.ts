@@ -7,6 +7,7 @@ function state(overrides: Partial<HandoverProofState> = {}): HandoverProofState 
     receiverName: "Mme Durand",
     photoKey: "handover/proofs/p_1/photo",
     signatureKey: null,
+    signedSlipKey: null,
     recordedBy: "staff_paul",
     recordedAt: new Date(1_000),
     ...overrides,

@@ -78,7 +78,7 @@ export class RoundStopsWithoutOutcomeError extends BusinessError {
         : "un arrêt n'a pas de sort";
     super(
       "delivery.round_stops_without_outcome",
-      `Vous ne pouvez pas terminer la tournée : ${subject} (${stops.join(", ")}). Pour chacun, remettez au client, déposez avec preuve ou clôturez sans remise — ou attendez la décision du commercial sur le problème signalé. Bloqué : appelez le dépôt.`,
+      `Vous ne pouvez pas terminer la tournée : ${subject} (${stops.join(", ")}). Pour chacun, validez « Commande déposée », déposez avec preuve ou clôturez sans remise — ou attendez la décision du commercial sur le problème signalé. Bloqué : appelez le dépôt.`,
     );
     this.stops = [...stops];
   }
@@ -169,24 +169,52 @@ export class HandoverPhotoMissingError extends DomainError {
   }
 }
 
+/** Les images qu'une remise peut joindre. */
+export type HandoverPiece = "photo" | "signature" | "signed-slip";
+
+/** Ce que dit le refus d'une image, pièce par pièce. */
+const PIECE_REFUSAL: Readonly<Record<HandoverPiece, (detail: string) => string>> = {
+  photo: (detail) => `Photo de la commande déposée : ${detail} Reprenez la photo, puis validez.`,
+  signature: (detail) => `Signature : ${detail} Effacez-la, faites signer à nouveau, puis validez.`,
+  "signed-slip": (detail) => `Photo du bon signé : ${detail} Reprenez la photo, puis validez.`,
+};
+
 /** Une pièce de la remise refusée — vide, trop lourde, ou d'un format inconnu. */
 export class InvalidHandoverPictureError extends DomainError {
-  constructor(piece: "photo" | "signature", detail: string) {
-    super(
-      "delivery.invalid_handover_picture",
-      piece === "photo"
-        ? `Photo de la remise : ${detail} Reprenez la photo, puis validez.`
-        : `Signature : ${detail} Effacez-la, faites signer à nouveau, puis validez.`,
-    );
+  constructor(piece: HandoverPiece, detail: string) {
+    super("delivery.invalid_handover_picture", PIECE_REFUSAL[piece](detail));
   }
 }
 
-/** Le nom tapé de qui réceptionne, hors bornes (AP-Q2 : toujours le nom). */
+/** Le nom tapé de qui réceptionne, hors bornes — quand il est donné. */
 export class ReceiverNameLengthError extends DomainError {
   constructor(length: number, min: number, max: number) {
     super(
       "delivery.receiver_name_length",
-      `Le nom de qui réceptionne fait ${String(length)} caractère(s) : il en faut de ${String(min)} à ${String(max)}. Demandez-lui son nom et tapez-le.`,
+      `Le nom de qui réceptionne fait ${String(length)} caractère(s) : il en faut de ${String(min)} à ${String(max)}. Corrigez le nom, ou videz le champ si la commande n'exige pas de signature.`,
+    );
+  }
+}
+
+/**
+ * La commande exige une signature, et personne n'est nommé (Hugo,
+ * 2026-10-25 : le nom n'est obligatoire que si la signature l'est).
+ */
+export class ReceiverNameRequiredError extends DomainError {
+  constructor(reference: string) {
+    super(
+      "delivery.receiver_name_required",
+      `La commande ${reference} exige une signature : tapez aussi le nom de la personne qui signe, puis validez.`,
+    );
+  }
+}
+
+/** La signature exigée, et la photo du bon signé manque (Hugo, 2026-10-25). */
+export class SignedSlipPhotoMissingError extends DomainError {
+  constructor(reference: string) {
+    super(
+      "delivery.signed_slip_photo_missing",
+      `La commande ${reference} exige une signature : prenez aussi en photo le bon signé, puis validez.`,
     );
   }
 }
@@ -222,16 +250,6 @@ export class DepositPhotoMissingError extends DomainError {
     super(
       "delivery.deposit_photo_missing",
       "Un dépôt porte toujours une photo : photographiez la marchandise à l'endroit où vous la laissez, puis validez.",
-    );
-  }
-}
-
-/** Le client n'a pas autorisé le dépôt à cette adresse (figé au départ, AP-D5). */
-export class DepositNotAllowedError extends BusinessError {
-  constructor(reference: string) {
-    super(
-      "delivery.deposit_not_allowed",
-      `L'adresse de la commande ${reference} n'autorise pas le dépôt sans personne : ne la laissez pas. Remettez-la en main propre, ou déclarez un problème « personne pour réceptionner ».`,
     );
   }
 }

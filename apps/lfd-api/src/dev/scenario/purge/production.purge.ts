@@ -29,7 +29,7 @@ export async function purgeProduction(
   const ofOrders = { orderId: { in: [...scope.orderIds] } };
   const proofs = await tx.orderHandoverProof.findMany({
     where: ofOrders,
-    select: { photoKey: true, signatureKey: true },
+    select: { photoKey: true, signatureKey: true, signedSlipKey: true },
   });
   // Ce qui part en cascade depuis la journée, compté AVANT : le compte rendu
   // dit ce qui a disparu, pas seulement ce qu'on a nommé.
@@ -51,7 +51,7 @@ export async function purgeProduction(
   return {
     rows: cascaded + counts.reduce((total, { count }) => total + count, 0),
     proofKeys: proofs.flatMap((proof) =>
-      proof.signatureKey === null ? [proof.photoKey] : [proof.photoKey, proof.signatureKey],
+      [proof.photoKey, proof.signatureKey, proof.signedSlipKey].filter((key) => key !== null),
     ),
   };
 }

@@ -17,7 +17,6 @@ function stopOf(overrides: Partial<UndeliveredStopView> = {}): UndeliveredStopVi
     customerLabel: 'Refuge 1950',
     departedAt: '2026-09-29T05:42:00.000Z',
     returnedAt: '2026-09-29T10:30:00.000Z',
-    arrivedAt: null,
     incidents: [],
     ...overrides,
   };
@@ -78,7 +77,6 @@ describe('UndeliveredPage', () => {
         before: '2026-10-01',
         stops: [
           stopOf({
-            arrivedAt: '2026-09-29T07:05:00.000Z',
             incidents: [
               {
                 id: 'i-1',
@@ -104,7 +102,9 @@ describe('UndeliveredPage', () => {
     expect(first).toContain('CMD-1 · Refuge 1950');
     expect(first).toContain('Kangoo · passage 2');
     expect(first).toMatch(/29 septembre/u);
-    expect(first).toContain('9 h 05');
+    expect(first).toContain('7 h 42');
+    // « Je suis arrivé » est retiré le 2026-10-25 : plus d'arrivée déclarée à montrer.
+    expect(first).not.toContain('Arrivée');
     expect(first).toContain('Problème à la remise · Accès impossible');
     expect(first).toContain('Portail fermé');
     expect(cards[1]?.textContent).toContain('Jamais déclarée');

@@ -20,6 +20,17 @@ import { POSITION_RETENTION_DAYS } from "../services/position-retention.js";
  * fait, et ne propose aucun refus. Le geste n'est jamais bloqué par une
  * position indisponible : c'est un comportement, pas une option offerte.
  *
+ * **Version 3** (2026-10-25, décision de Hugo) : « Je suis arrivé » est
+ * retiré — ni l'heure d'arrivée, ni la position à l'arrivée ne sont plus
+ * relevées. Le texte ne les annonce plus ; il nomme les gestes qui relèvent
+ * réellement la position (ceux qui clôturent un arrêt, vérifié le 2026-10-25 :
+ * `hand-over-stop`, `deposit-stop`, `close-stop-without-handover`,
+ * `drop-transfer-at-site`). Les relevés d'arrivée d'avant restent en base
+ * jusqu'à la purge. Le même jour, le nom de qui réceptionne n'est plus
+ * demandé que si l'arrêt exige une signature, et le bon signé est alors
+ * photographié : le texte le dit. Nouvelle version : le dialogue se rouvre
+ * une fois.
+ *
  * Les durées : seule la position en a une, `POSITION_RETENTION_DAYS` (60 j) ;
  * le registre dit toutes les autres `aucune-limite-decidee` ou `a-decider`
  * pour le livreur et le réceptionnaire (vérifié le 2026-10-06) — le texte le
@@ -41,10 +52,10 @@ export interface DriverNoticeSection {
 
 /** La phrase que le livreur dit à la personne qui réceptionne. */
 export const RECEIVER_SENTENCE =
-  "« Nous enregistrons votre nom, une photo de la livraison et, si besoin, votre signature, pour prouver que la commande vous a été remise. »";
+  "« Nous enregistrons une photo de la livraison et, quand une signature est demandée, votre nom, votre signature et une photo du bon signé, pour prouver que la commande vous a été livrée. »";
 
 export const CURRENT_DRIVER_NOTICE: DriverInformationNotice = {
-  version: 2,
+  version: 3,
   title: "Vos données de livreur",
   intro:
     "Avant de démarrer, voici ce que l'application enregistre quand vous livrez, pourquoi, qui le voit et combien de temps. Ce n'est pas une demande d'accord : c'est une information. Vous pouvez relire ce texte à tout moment dans « Mes données ».",
@@ -53,8 +64,8 @@ export const CURRENT_DRIVER_NOTICE: DriverInformationNotice = {
       heading: "Ce qui est enregistré sur vous",
       lines: [
         "Les tournées qui vous sont affectées.",
-        "L'heure de départ de votre tournée, l'heure de votre arrivée à chaque arrêt, l'heure de clôture de chaque arrêt et l'heure de votre retour.",
-        `La position de votre téléphone est relevée au moment de chaque geste (arrivée, remise, dépôt, clôture d'un arrêt sans remise), jamais en continu. Si le téléphone ne la donne pas, le geste est enregistré sans elle.`,
+        "L'heure de départ de votre tournée, l'heure de clôture de chaque arrêt et l'heure de votre retour.",
+        "La position de votre téléphone est relevée au moment de chaque geste qui clôt un arrêt (commande déposée chez le client, dépôt avec preuve, clôture d'un arrêt sans remise, transfert laissé à un site), jamais en continu. Si le téléphone ne la donne pas, le geste est enregistré sans elle.",
         "Les bacs que vous chargez, et quand.",
         "Les problèmes que vous signalez : leur motif, votre note, la photo si vous en prenez une, et l'heure.",
         "Votre nom sur ces gestes — chargement, remise, signalement, retour — pour savoir qui a fait quoi.",
@@ -64,7 +75,7 @@ export const CURRENT_DRIVER_NOTICE: DriverInformationNotice = {
     {
       heading: "Ce que vous enregistrez sur les personnes que vous livrez",
       lines: [
-        "Le nom de la personne qui reçoit la commande, une photo de la marchandise remise et, quand l'arrêt l'exige, sa signature.",
+        "Une photo de la commande déposée ; et, quand l'arrêt exige une signature, le nom de la personne qui signe, sa signature et une photo du bon signé.",
         "Une photo de problème peut montrer une personne ou un lieu : ne photographiez que ce qui est utile.",
         `Dites-le-lui, en une phrase : ${RECEIVER_SENTENCE}`,
       ],

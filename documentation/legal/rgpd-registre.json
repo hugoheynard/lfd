@@ -1,7 +1,7 @@
 {
   "$commentaire": "Registre machine des données personnelles du staff, des réceptionnaires et des personnes qui écrivent par « Nous contacter » (`contact`), et des tiers — prestataire, partenaire, agence (`tiers`, 2026-10-18). Tenu par `pnpm lint:rgpd-staff` (dev-toolbox/gates/rgpd-staff.mjs) contre apps/lfd-api/prisma/schema. Prose et raisons : documentation/legal/rgpd-livreur.md §8. Pas un avis juridique.",
   "texteInformation": {
-    "version": 2,
+    "version": 3,
     "empreinte": "84c2108d32430d44"
   },
   "entrees": [
@@ -357,7 +357,7 @@
       "colonne": "delivery.delivery_stop_execution.arrived_accuracy_m",
       "personne": "livreur",
       "categorie": "position",
-      "finalite": "Position du téléphone au geste (« Je suis arrivé »), jamais en continu : d'abord faciliter les tournées suivantes du livreur (adresses justes, où se garer, la bonne porte, les consignes d'accès — pour lui et pour le prochain livreur), puis prouver la livraison en cas de litige. Jamais suivre ses déplacements, ni mesurer sa vitesse ou son temps de travail.",
+      "finalite": "Position du téléphone au geste « Je suis arrivé », retiré le 2026-10-25 (décision de Hugo) : plus écrite, les relevés d'avant restent jusqu'à la purge à 60 jours. Jamais en continu : d'abord faciliter les tournées suivantes du livreur (adresses justes, où se garer, la bonne porte, les consignes d'accès — pour lui et pour le prochain livreur), puis prouver la livraison en cas de litige. Jamais suivre ses déplacements, ni mesurer sa vitesse ou son temps de travail.",
       "conservation": {
         "jours": 60
       },
@@ -368,7 +368,7 @@
       "colonne": "delivery.delivery_stop_execution.arrived_at",
       "personne": "livreur",
       "categorie": "horodatage-geste",
-      "finalite": "« Je suis arrivé » : instant de la porte.",
+      "finalite": "« Je suis arrivé » : instant de la porte. Geste retiré le 2026-10-25 (décision de Hugo) : plus écrit, l'existant reste ; le texte d'information v3 ne l'annonce plus.",
       "conservation": "aucune-limite-decidee",
       "purge": null,
       "information": true
@@ -377,7 +377,7 @@
       "colonne": "delivery.delivery_stop_execution.arrived_lat",
       "personne": "livreur",
       "categorie": "position",
-      "finalite": "Position du téléphone au geste (« Je suis arrivé »), jamais en continu : d'abord faciliter les tournées suivantes du livreur (adresses justes, où se garer, la bonne porte, les consignes d'accès — pour lui et pour le prochain livreur), puis prouver la livraison en cas de litige. Jamais suivre ses déplacements, ni mesurer sa vitesse ou son temps de travail.",
+      "finalite": "Position du téléphone au geste « Je suis arrivé », retiré le 2026-10-25 (décision de Hugo) : plus écrite, les relevés d'avant restent jusqu'à la purge à 60 jours. Jamais en continu : d'abord faciliter les tournées suivantes du livreur (adresses justes, où se garer, la bonne porte, les consignes d'accès — pour lui et pour le prochain livreur), puis prouver la livraison en cas de litige. Jamais suivre ses déplacements, ni mesurer sa vitesse ou son temps de travail.",
       "conservation": {
         "jours": 60
       },
@@ -388,7 +388,7 @@
       "colonne": "delivery.delivery_stop_execution.arrived_lng",
       "personne": "livreur",
       "categorie": "position",
-      "finalite": "Position du téléphone au geste (« Je suis arrivé »), jamais en continu : d'abord faciliter les tournées suivantes du livreur (adresses justes, où se garer, la bonne porte, les consignes d'accès — pour lui et pour le prochain livreur), puis prouver la livraison en cas de litige. Jamais suivre ses déplacements, ni mesurer sa vitesse ou son temps de travail.",
+      "finalite": "Position du téléphone au geste « Je suis arrivé », retiré le 2026-10-25 (décision de Hugo) : plus écrite, les relevés d'avant restent jusqu'à la purge à 60 jours. Jamais en continu : d'abord faciliter les tournées suivantes du livreur (adresses justes, où se garer, la bonne porte, les consignes d'accès — pour lui et pour le prochain livreur), puis prouver la livraison en cas de litige. Jamais suivre ses déplacements, ni mesurer sa vitesse ou son temps de travail.",
       "conservation": {
         "jours": 60
       },
@@ -579,7 +579,7 @@
       "colonne": "production.order_handover_proof.receiver_name",
       "personne": "receptionnaire",
       "categorie": "identite",
-      "finalite": "Nom de la personne qui a reçu la commande : preuve de remise.",
+      "finalite": "Nom de la personne qui a reçu la commande — demandé seulement quand l'arrêt exige une signature, nul sinon (Hugo, 2026-10-25) : preuve de remise.",
       "conservation": "a-decider",
       "purge": "apps/lfd-api/src/handover/application/commands/purge-handover-proofs-older-than.command.ts",
       "information": true
@@ -589,6 +589,15 @@
       "personne": "livreur",
       "categorie": "auteur-geste",
       "finalite": "Qui a constitué la pièce de remise (preuve de livraison).",
+      "conservation": "a-decider",
+      "purge": "apps/lfd-api/src/handover/application/commands/purge-handover-proofs-older-than.command.ts",
+      "information": true
+    },
+    {
+      "colonne": "production.order_handover_proof.signed_slip_key",
+      "personne": "receptionnaire",
+      "categorie": "photo",
+      "finalite": "Photo du bon signé par le réceptionnaire, quand l'arrêt exige une signature (Hugo, 2026-10-25) : preuve de remise.",
       "conservation": "a-decider",
       "purge": "apps/lfd-api/src/handover/application/commands/purge-handover-proofs-older-than.command.ts",
       "information": true
