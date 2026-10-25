@@ -13,7 +13,7 @@ import { randomUUID } from "node:crypto";
  * Deux frontières doublées : la signature du jeton (staff comme client) et la
  * passerelle Stripe. Le reste — guard, bus, domaine, SQL — est réel.
  */
-import { addDays, instantToLocal, type BillingAddressPayload } from "@lfd/contracts";
+import { addDays, type BillingAddressPayload } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
@@ -23,6 +23,7 @@ import {
 } from "../src/platform/database/client/client.js";
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { anActiveFiche, relayAll } from "./catalog-facts-scene.js";
+import { passedLimit } from "./order-cutoff-scene.js";
 import { bootstrapE2e, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
@@ -129,15 +130,20 @@ async function seedCutoff(rule: {
  * jours le rend dépendant de l'heure à laquelle la suite tourne.
  *
  * On part donc de l'instant voulu et on le traduit en règle, jamais l'inverse :
- * `instantToLocal` donne le jour et l'heure de PARIS de cette limite, et
+ * `passedLimit` donne le jour et l'heure de PARIS de cette limite (hors de l'heure
+ * répétée d'octobre, cf. `order-cutoff-scene.ts`), et
  * l'acheminement est calé deux jours plus loin pour rester dans le futur quelle
  * que soit l'heure.
  */
 const LIMIT_DAYS_BEFORE = 2;
 
 async function seedCutoffPassedBy(minutesAgo: number, graceMinutes: number): Promise<string> {
-  const limit = instantToLocal(new Date(Date.now() - minutesAgo * 60_000));
-  await seedCutoff({ daysBefore: LIMIT_DAYS_BEFORE, time: limit.time, graceMinutes });
+  const limit = passedLimit(new Date(), minutesAgo, graceMinutes);
+  await seedCutoff({
+    daysBefore: LIMIT_DAYS_BEFORE,
+    time: limit.time,
+    graceMinutes: limit.graceMinutes,
+  });
   return addDays(limit.day, LIMIT_DAYS_BEFORE);
 }
 

@@ -7,9 +7,10 @@
  * toujours pas (200), mais il dit `open` / `grace` / `closed` pour le jour visé,
  * par la même décision que la passation, lue en base.
  */
-import { addDays, instantToLocal, type OrderQuoteView } from "@lfd/contracts";
+import { addDays, type OrderQuoteView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import { passedLimit } from "./order-cutoff-scene.js";
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 
 const STAFF = "staff-e2e";
@@ -55,8 +56,12 @@ const LIMIT_DAYS_BEFORE = 2;
 
 /** Une règle tombée il y a `minutesAgo`, et le jour qu'elle vise (cf. `order-cutoffs.e2e-spec.ts`). */
 async function seedCutoffPassedBy(minutesAgo: number, graceMinutes: number): Promise<string> {
-  const limit = instantToLocal(new Date(Date.now() - minutesAgo * 60_000));
-  await seedCutoff({ daysBefore: LIMIT_DAYS_BEFORE, time: limit.time, graceMinutes });
+  const limit = passedLimit(new Date(), minutesAgo, graceMinutes);
+  await seedCutoff({
+    daysBefore: LIMIT_DAYS_BEFORE,
+    time: limit.time,
+    graceMinutes: limit.graceMinutes,
+  });
   return addDays(limit.day, LIMIT_DAYS_BEFORE);
 }
 
