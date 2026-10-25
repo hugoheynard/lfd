@@ -204,6 +204,43 @@ describe("le crédit au fil de l'eau — remise ET encaissement", () => {
     expect(await earned()).toHaveLength(1);
   });
 
+  /**
+   * Choix 16 du plan reliquat (`commandes/plan-e7-reliquat-bati.md`) : les
+   * points se lisent sur les montants FACTURABLES. Non vérifié au plan : que
+   * la remise d'une carte les pose avant le crédit — sans quoi le crédit
+   * refuserait. Les deux ordres des faits sont éprouvés.
+   */
+  it.each([
+    ["réglée puis remise", true],
+    ["remise puis réglée", false],
+  ])(
+    "une carte %s : le solde est posé au crédit, et l'assiette est la sienne",
+    async (_, payFirst) => {
+      await openProgram();
+      const order = await seedOrder({ placedByUserId: await member() });
+
+      if (payFirst) {
+        await pay(order);
+        await handOver(order);
+      } else {
+        await handOver(order);
+        await pay(order);
+      }
+
+      const row = await ctx.prisma.order.findUniqueOrThrow({
+        where: { id: order.id },
+        select: { billableSubtotalCents: true, billableDiscountCents: true },
+      });
+      expect(row.billableSubtotalCents).not.toBeNull();
+      expect(await earned()).toMatchObject([
+        {
+          orderId: order.id,
+          points: (row.billableSubtotalCents ?? 0) - (row.billableDiscountCents ?? 0),
+        },
+      ]);
+    },
+  );
+
   it("crédite la société pour une commande pro", async () => {
     await openProgramToPro();
     const company = await createCompany(ctx.prisma);

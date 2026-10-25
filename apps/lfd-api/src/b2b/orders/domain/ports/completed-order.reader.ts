@@ -34,7 +34,11 @@ export interface CompletedOrder {
    * pas d'ici — seul ce booléen.
    */
   readonly buyerHasAccount: boolean;
-  /** Les marchandises **hors taxe**, avant remise — centimes. */
+  /**
+   * Les marchandises **facturables** hors taxe, avant remise — centimes : la
+   * somme des BL remis (`billable_*`), pas le total commandé. Un reste
+   * abandonné ne rapporte rien (plan `commandes/plan-e7-reliquat-bati.md`, choix 16).
+   */
   readonly subtotalCents: number;
   /** La remise du point de retrait, **hors taxe** — centimes. */
   readonly discountCents: number;
@@ -50,11 +54,14 @@ export interface CompletedOrderPage {
 
 export abstract class CompletedOrderReader {
   /** La commande si elle est définitive, `null` sinon — ou si elle n'existe pas. */
+  /**
+   * @throws {CompletedOrderUnsettledError} définitive, mais sans montants facturables.
+   */
   abstract findCompleted(orderId: string): Promise<CompletedOrder | null>;
 
   /**
    * Au plus `limit` commandes définitives d'identifiant strictement supérieur à
-   * `after`, dans l'ordre des identifiants : un parcours par lots bornés qui ne
+   * `after`, **soldées** (montants facturables posés), dans l'ordre des identifiants : un parcours par lots bornés qui ne
    * saute ni ne répète rien, même si l'état change entre deux lots.
    */
   abstract listCompleted(after: string | null, limit: number): Promise<CompletedOrderPage>;

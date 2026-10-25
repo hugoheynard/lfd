@@ -199,6 +199,7 @@
   "test/login-methods.e2e-spec.ts": 4764,
   "test/loyalty-earning.e2e-spec.ts": 5747,
   "test/loyalty-me.e2e-spec.ts": 8841,
+  "test/loyalty-partial-order.e2e-spec.ts": 6000,
   "test/loyalty-voucher-order.e2e-spec.ts": 9574,
   "test/loyalty-welcome.e2e-spec.ts": 10037,
   "test/loyalty.e2e-spec.ts": 6124,
