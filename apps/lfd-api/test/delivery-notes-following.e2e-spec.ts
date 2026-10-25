@@ -295,3 +295,28 @@ describe("le réconciliateur rattrape ce que l'ancien code a laissé (plan E2, �
     expect(note?.preparedAt).not.toBeNull();
   });
 });
+
+describe("deux réconciliations ensemble (plan E2, § 8.2)", () => {
+  /**
+   * Le Worker et le bouton du staff peuvent tourner au même instant. Une
+   * commande avancée sans BL ne doit donner qu'UN bon — l'unicité de la base
+   * est la seule garde entre les deux lectures — et aucun des deux passages
+   * ne doit rendre un échec : le perdant constate, il ne tombe pas.
+   */
+  it("une commande sans BL n'en reçoit qu'un, et aucun passage n'échoue", async () => {
+    const where = await scene();
+    const account = await placeOnAccount(where);
+    await closePlan();
+    await ctx.prisma.order.update({
+      where: { id: account },
+      data: { status: OrderStatus.ready, readyAt: new Date(), readyBy: E2E_STAFF_ID },
+    });
+
+    const reports = await Promise.all([reconcile(), reconcile()]);
+
+    expect(reports.map((report) => report.failed)).toEqual([0, 0]);
+    expect(await notesOf(account)).toHaveLength(1);
+    expect(reports.reduce((sum, report) => sum + report.created, 0)).toBeLessThanOrEqual(1);
+    expect(await reconcile()).toMatchObject({ created: 0, advanced: 0, voided: 0, failed: 0 });
+  });
+});

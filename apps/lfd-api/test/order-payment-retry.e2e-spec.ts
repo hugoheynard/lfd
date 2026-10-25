@@ -115,3 +115,54 @@ describe("un refus de carte, puis une autre carte qui passe", () => {
     expect(second.paidAt).toEqual(first.paidAt);
   });
 });
+
+describe("un webhook livré deux fois EN MÊME TEMPS", () => {
+  const outcomeNow = (intent: string, outcome: "succeeded" | "failed") =>
+    ctx.app.get(CommandBus).execute(new ConfirmOrderPaymentCommand(intent, outcome));
+
+  /**
+   * Stripe réémet jusqu'au 2xx : deux livraisons peuvent se croiser. La garde
+   * est le `where` de `settle` ; si elle fuyait, `order.paid` partirait deux
+   * fois (deux accusés, deux crédits de points) ou `paidAt` serait réécrit.
+   */
+  it("`succeeded` ×2 : un seul `order.paid`, une seule date d'encaissement", async () => {
+    const orderId = await seedPendingOrder("pi_double_succes");
+
+    await Promise.all([
+      outcomeNow("pi_double_succes", "succeeded"),
+      outcomeNow("pi_double_succes", "succeeded"),
+    ]);
+
+    expect(await ctx.prisma.outboxMessage.count({ where: { type: "order.paid" } })).toBe(1);
+    expect(await paymentOf(orderId)).toEqual({ paymentStatus: PaymentStatus.paid, paid: true });
+    await ctx.drain();
+  });
+
+  it("`failed` ×2 : un seul `order.payment_failed`", async () => {
+    await seedPendingOrder("pi_double_refus");
+
+    await Promise.all([
+      outcomeNow("pi_double_refus", "failed"),
+      outcomeNow("pi_double_refus", "failed"),
+    ]);
+
+    expect(await ctx.prisma.outboxMessage.count({ where: { type: "order.payment_failed" } })).toBe(
+      1,
+    );
+    await ctx.drain();
+  });
+
+  /**
+   * Dans le désordre, au même instant : quel que soit le gagnant du verrou de
+   * ligne, un encaissement réel l'emporte — jamais une commande débitée que la
+   * base croit refusée.
+   */
+  it("`succeeded` × `failed` : la commande finit payée, dans les deux ordres possibles", async () => {
+    const orderId = await seedPendingOrder("pi_croises");
+
+    await Promise.all([outcomeNow("pi_croises", "failed"), outcomeNow("pi_croises", "succeeded")]);
+
+    expect(await paymentOf(orderId)).toEqual({ paymentStatus: PaymentStatus.paid, paid: true });
+    await ctx.drain();
+  });
+});

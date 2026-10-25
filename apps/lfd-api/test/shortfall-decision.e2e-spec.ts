@@ -142,6 +142,27 @@ describe("« Décider du départ » — reste abandonné (E6b + E6c1)", () => {
   });
 
   /**
+   * Deux postes qui décident ENSEMBLE le même départ : le verrou du comptoir
+   * (`ShortfallDesk.authorize`) en laisse passer un, l'autre relit « déjà
+   * décidée » — jamais deux décisions, jamais un 500, et un seul BL réécrit.
+   */
+  it("deux décisions simultanées : une seule passe, l'autre est un 409 nommé", async () => {
+    const order = await accountOrder(1);
+    expect(await report(order.id)).toBe(204);
+
+    const results = await Promise.all([decide(order.id), decide(order.id)]);
+
+    expect(results.map((one) => one.status).sort()).toEqual([204, 409]);
+    expect(results.find((one) => one.status === 409)?.code).toBe(
+      "orders.shortfall_decision.already_decided",
+    );
+    expect(await ctx.prisma.orderShortfallDecision.count()).toBe(1);
+    const notes = await notesOf(order.id);
+    expect(notes).toHaveLength(1);
+    expect(notes[0]?.lines.map((line) => line.quantity)).toEqual([1]);
+  });
+
+  /**
    * Régression (2026-10-25) : une ligne à 0 au bac restait due à 0 sur la
    * fiche, `packing_line_quantity_check` refusait, et la décision tombait en
    * « erreur technique ».

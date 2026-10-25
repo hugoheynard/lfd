@@ -193,3 +193,46 @@ describe("la transaction qui échoue après Stripe (C3.4 ter)", () => {
     expect((await orderState(orderId)).status).toBe(OrderStatus.cancelled);
   });
 });
+
+describe("la course avec la remise au comptoir", () => {
+  /**
+   * La remise est attestée par le retrait puis apprise du commerce par un fait
+   * durable : l'annulation peut donc passer ENTRE les deux. Ce que le dépôt
+   * promet (annulation-par-le-staff.md, C3.6) : « un retrait n'écrase pas une
+   * annulation ». Quel que soit le gagnant, jamais de 500, et une commande
+   * annulée n'est jamais passée `fulfilled` ni n'émet `order.fulfilled`.
+   */
+  it("remise × annulation : l'annulation gagnée survit à la remise tardive", async () => {
+    const { orderId, orderNumber } = await seedOrder({ payment: PaymentStatus.paid });
+
+    const [handed, cancelled] = await Promise.all([
+      ctx.asSub(E2E_STAFF_SUB).post(`/admin/handover/manual/${orderNumber}`),
+      cancelRequest(orderId),
+    ]);
+    await deliver();
+
+    expect(handed.status).toBeLessThan(500);
+    expect([204, 409]).toContain(cancelled.status);
+    const state = await orderState(orderId);
+    const fulfilledFacts = await ctx.prisma.outboxMessage.count({
+      where: { type: "order.fulfilled" },
+    });
+    if (cancelled.status === 204) {
+      expect(state.status).toBe(OrderStatus.cancelled);
+      expect(fulfilledFacts).toBe(0);
+    } else {
+      expect(state.status).toBe(OrderStatus.fulfilled);
+      expect(fulfilledFacts).toBe(1);
+    }
+  });
+
+  it("annulée AVANT : la remise est refusée en 409 et n'atteste rien", async () => {
+    const { orderId, orderNumber } = await seedOrder({ payment: PaymentStatus.paid });
+    expect((await cancelRequest(orderId)).status).toBe(204);
+
+    const handed = await ctx.asSub(E2E_STAFF_SUB).post(`/admin/handover/manual/${orderNumber}`);
+
+    expect(handed.status).toBe(409);
+    expect(await ctx.prisma.orderHandover.count({ where: { orderId } })).toBe(0);
+  });
+});
