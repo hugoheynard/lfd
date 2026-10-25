@@ -68,6 +68,15 @@ stateDiagram-v2
   supprimé**. Un test (`dev-scenario-stability.e2e-spec.ts`) vérifie que
   plusieurs `reset` + cinq `next` laissent le nombre de lignes et d'objets stables.
   L'écran affiche la taille de la base (`pg_database_size`).
+- **La purge sait ce qui peut la bloquer.** Une table neuve qui tient une
+  table purgée par une clé `RESTRICT` fait échouer tout le reset (le
+  2026-10-25 : `order_shortfall_decision` → `orders`). La couverture est
+  déclarée dans `scenario/purge/purge-coverage.ts` — chaque table supprimée,
+  les tables qui la tiennent et que la purge supprime avant elle, et les
+  exemptions avec leur raison (`card_invoice_outcome`, trace de facturation) —
+  et `test/dev-scenario-purge-coverage.e2e-spec.ts` la confronte à
+  `pg_constraint` : une clé non couverte, ou une inscription qui ne correspond
+  plus à aucune clé, échoue en nommant la table, la clé et le fichier.
 - Les serrures du `DevSeedService` (base locale seulement, pas en production, mur
   staff, stockage local) restent la condition de tout geste.
 
