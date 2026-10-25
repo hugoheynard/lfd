@@ -93,3 +93,10 @@ l'ordre, chacun avec son plan, son recensement et `vitruve` :
 **E7.1 écrit et contredit le 2026-10-25** : [`plan-e7-1-le-jour-du-bon.md`](plan-e7-1-le-jour-du-bon.md) — trois bloquants ouverts, rien de bâti.
 
 **Étude de l'arrêt du plan, 2026-10-25** : [`etude-arret-du-plan-publication.md`](etude-arret-du-plan-publication.md) — l'arrêt n'est pas le frein ; la clé par BL (E7.4) reste nécessaire, contredit par `vitruve`.
+
+**À reprendre au lot E7.5 (Hugo, 2026-10-25)** : partout où un départ
+incomplet se voit aujourd'hui — poste de colisage, Supervision, comptoir,
+feuille de route du livreur, fiche commande —, dire en plus **la décision
+du commerce** quand elle porte sur un reliquat : « reste relivré le
+<date> » plutôt que « reste abandonné ». Le type de décision transite déjà
+jusqu'à ces écrans (`remainder`) ; seule la phrase manque.
