@@ -43,6 +43,7 @@ import type { MandateMailScheme } from "./mandate-to-sign-wording.js";
 import { renderOrderShortfallMail, type OrderShortfallMailData } from "./order-shortfall-mail.js";
 import { type OrderSheetMailDocument, withAttachments } from "./order-sheet-mail-document.js";
 import { pickupItinerary, type PickupPoint } from "./pickup-itinerary.js";
+import { pickupDiscountMailLabel } from "./pickup-discount-mail-label.js";
 import { qrPng } from "./qr-image.js";
 import { renderVitrineNoticeMail, type VitrineNoticeMailData } from "./vitrine-notice-mail.js";
 import {
@@ -490,7 +491,12 @@ function recapRows(
     { label: copy.recapContent, value: fill(copy.recapPieces, { count: String(pieces) }) },
     ...(sheet.money.discountCents === 0
       ? []
-      : [{ label: copy.recapDiscount, value: `−${money(sheet.money.discountCents, locale)}` }]),
+      : [
+          {
+            label: pickupDiscountMailLabel(sheet, copy, (cents) => money(cents, locale), locale),
+            value: `−${money(sheet.money.discountCents, locale)}`,
+          },
+        ]),
     ...(sheet.money.voucherDiscountCents === 0
       ? []
       : [

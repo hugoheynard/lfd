@@ -39,6 +39,7 @@ const NOT_SHOWN_AS_TEXT = new Set([
   // Branches qu'aucun cas de l'empreinte ne parcourt.
   "customer.sub-account-gesture|bodyByTeam",
   "staff.production-dossier|arrestedWithoutAuthor",
+  "customer.order-placed|recapDiscountBase",
   // La proposition d'« Écrire au client » (E6d) : elle rédige le texte que
   // l'équipe relit ; le courriel rend le texte relu, une donnée.
   "customer.order-shortfall|intro",

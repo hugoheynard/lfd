@@ -184,7 +184,7 @@ describe("une ligne hors remise de retrait (lot C)", () => {
 
     expect(printed).toContain("Tasse *");
     expect(printed).toContain("Non concerné par la remise retrait.");
-    expect(printed).toMatch(/Remise retrait sur 124,91.{0,3}éligibles/u);
+    expect(printed).toMatch(/Remise retrait Le Labo sur 124,91.{0,3}éligibles/u);
   });
 
   it("sans ligne exclue, ni astérisque ni mention", async () => {

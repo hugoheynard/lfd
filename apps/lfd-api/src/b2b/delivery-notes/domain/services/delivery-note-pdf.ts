@@ -196,6 +196,9 @@ function pricedColumns(note: ClientNote): Columns {
   };
 }
 
+/** La colonne des montants du pavé de totaux, que le libellé ne mord pas. */
+const TOTAL_VALUE_WIDTH = 26 * MM;
+
 /** Le pavé de totaux du bon de commande, sur les totaux recopiés du BL. */
 function totals(doc: Doc, note: ClientNote, top: number): number {
   const blockLeft = RIGHT - 78 * MM;
@@ -209,9 +212,16 @@ function totals(doc: Doc, note: ClientNote, top: number): number {
         .restore();
       y += 2 * MM;
     }
-    put(doc, row.label, blockLeft, y, { size: 10.5, bold: row.strong === true });
+    // Le libellé se replie avant la colonne des montants : la remise de retrait
+    // se nomme (point, règle, assiette) et dépasse la largeur d'une ligne.
+    put(doc, row.label, blockLeft, y, {
+      size: 10.5,
+      bold: row.strong === true,
+      width: RIGHT - blockLeft - TOTAL_VALUE_WIDTH,
+    });
+    const labelBottom = doc.y;
     putRight(doc, row.value, RIGHT, y, 11, row.strong === true);
-    y += 5 * MM;
+    y = Math.max(y + 5 * MM, labelBottom + 0.5 * MM);
   }
   if (note.variant === "pro" && note.money.settlement === "account") {
     put(doc, PRETAX_ONLY_NOTE, blockLeft, y, { size: 9 });

@@ -78,7 +78,16 @@
       "recapDiscount": {
         "variables": [],
         "required": [],
-        "fr": "Remise"
+        "fr": "Remise retrait"
+      },
+      "recapDiscountBase": {
+        "variables": [
+          "base"
+        ],
+        "required": [
+          "base"
+        ],
+        "fr": "sur {base} éligibles"
       },
       "recapVoucher": {
         "variables": [],

@@ -49,7 +49,14 @@ export const ORDER_MAIL_LAYOUTS: Readonly<
         id: "summary",
         texts: [
           ...variants({ recapPickup: "En retrait", recapDelivery: "En livraison" }),
-          ...texts("recapContent", "recapPieces", "recapDiscount", "recapVoucher", "recapVat"),
+          ...texts(
+            "recapContent",
+            "recapPieces",
+            "recapDiscount",
+            "recapDiscountBase",
+            "recapVoucher",
+            "recapVat",
+          ),
           ...variantsOf("totalLabel", SETTLEMENTS),
           ...variants({
             totalPretax: "Commande au compte : le total HT",

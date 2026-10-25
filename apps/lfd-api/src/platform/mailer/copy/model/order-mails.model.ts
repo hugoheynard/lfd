@@ -30,7 +30,13 @@ export interface OrderPlacedCopy {
   readonly recapContent: string;
   /** `{count}` = le nombre de pièces. */
   readonly recapPieces: string;
+  /**
+   * La tête du libellé de la remise de retrait ; le point et la règle figés la
+   * suivent (« Remise retrait Le Labo (5 %) »).
+   */
   readonly recapDiscount: string;
+  /** `{base}` = l'assiette HT, quand une ligne est exclue de la remise. */
+  readonly recapDiscountBase: string;
   /** La ligne du bon de fidélité, distincte de la remise (plan des points, C7). */
   readonly recapVoucher: string;
   readonly recapVat: string;

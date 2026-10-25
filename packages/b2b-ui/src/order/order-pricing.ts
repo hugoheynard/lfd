@@ -72,7 +72,9 @@ export interface TotalRow {
  */
 function discountLabel(order: CustomerOrderView): string {
   const point = order.fulfillmentMethod === 'pickup' ? order.pickupAddress : null;
-  return point === null || point.label === '' ? 'Remise' : `Retrait — ${point.label}`;
+  // « Remise retrait <point> », comme sur le bon et l'e-mail (2026-10-25) : la
+  // règle figée suit en second niveau (`hint`).
+  return point === null || point.label === '' ? 'Remise retrait' : `Remise retrait ${point.label}`;
 }
 
 /**

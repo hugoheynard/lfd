@@ -181,3 +181,33 @@ describe('le récapitulatif d’un pro au compte (F5)', () => {
     expect(row(view, 'total')?.label).toBe('Total TTC');
   });
 });
+
+/** Régression : la remise disait « Retrait — Le Labo » ou « Remise », sans dire laquelle (2026-10-25). */
+describe('la ligne de remise', () => {
+  const PICKUP = {
+    label: 'Le Labo',
+    ligne1: 'route de la Balme',
+    ligne2: '',
+    codePostal: '73150',
+    ville: "Val d'Isère",
+    pays: 'FR',
+  };
+
+  it('nomme la remise retrait et son point, la règle en second niveau', () => {
+    const view = order({
+      pickupAddress: PICKUP,
+      discountCents: 500,
+      discountAdjustment: { mode: 'percent', bp: 500 },
+    });
+
+    expect(row(view, 'discount')).toMatchObject({ label: 'Remise retrait Le Labo' });
+    expect(row(view, 'discount')?.hint).toBeDefined();
+  });
+
+  it('sans point nommé ni règle figée : « Remise retrait », sans second niveau', () => {
+    const view = order({ discountCents: 500 });
+
+    expect(row(view, 'discount')?.label).toBe('Remise retrait');
+    expect(row(view, 'discount')?.hint).toBeUndefined();
+  });
+});

@@ -280,6 +280,9 @@ function handoverQr(doc: Doc, sheet: ClientSheet, handoverUrl: string, top: numb
   return caption + 8 * MM;
 }
 
+/** La colonne des montants du pavé de totaux, que le libellé ne mord pas. */
+const TOTAL_VALUE_WIDTH = 26 * MM;
+
 /** Le pavé de totaux, cadré à droite, la mention F5, et le QR à gauche. */
 function totals(doc: Doc, sheet: ClientSheet, handoverUrl: string, top: number): number {
   const blockLeft = CONTENT_RIGHT - 78 * MM;
@@ -294,9 +297,16 @@ function totals(doc: Doc, sheet: ClientSheet, handoverUrl: string, top: number):
         .restore();
       y += 2 * MM;
     }
-    put(doc, row.label, blockLeft, y, { size: 10.5, bold: row.strong === true });
+    // Le libellé se replie avant la colonne des montants : la remise de retrait
+    // se nomme (point, règle, assiette) et dépasse la largeur d'une ligne.
+    put(doc, row.label, blockLeft, y, {
+      size: 10.5,
+      bold: row.strong === true,
+      width: CONTENT_RIGHT - blockLeft - TOTAL_VALUE_WIDTH,
+    });
+    const labelBottom = doc.y;
     putRight(doc, row.value, CONTENT_RIGHT, y, 11, row.strong === true);
-    y += 5 * MM;
+    y = Math.max(y + 5 * MM, labelBottom + 0.5 * MM);
   }
   if (sheet.variant === "pro" && sheet.money.settlement === "account") {
     put(doc, PRETAX_ONLY_NOTE, blockLeft, y, { size: 9 });

@@ -1,8 +1,9 @@
-import type { ClientSheet, ClientSheetLine, SheetMoney } from "@lfd/contracts";
+import type { ClientSheet, ClientSheetLine, SheetFulfillment, SheetMoney } from "@lfd/contracts";
 
 import { sheetShowsTtc } from "./order-sheet.js";
 import { money } from "./order-sheet-pdf-format.js";
 import { orderPretaxCents } from "./order-pretax.js";
+import { eligibleBaseCentsOf, pickupDiscountLabel, pickupSiteOf } from "./pickup-discount-label.js";
 
 /**
  * **Le pavé de totaux du bon de commande**, ligne par ligne — sans dessin.
@@ -20,6 +21,8 @@ import { orderPretaxCents } from "./order-pretax.js";
 export interface PricedPaper {
   readonly variant: ClientSheet["variant"];
   readonly money: SheetMoney;
+  /** Le point de retrait figé, que nomme la remise. */
+  readonly fulfillment: Pick<SheetFulfillment, "method" | "address" | "pickupLabel">;
   readonly lines: readonly Pick<ClientSheetLine, "unitPriceTtcCents" | "lineTotalTtcCents">[];
 }
 
@@ -44,30 +47,28 @@ export const PRETAX_ONLY_NOTE = "TVA et TTC sur la facture du mois.";
 export const PICKUP_DISCOUNT_EXCLUDED_NOTE = "* Non concerné par la remise retrait.";
 
 /**
- * Le libellé de la remise : « Remise » tout court quand elle couvre tout le
- * bon, « Remise retrait sur X € éligibles » quand une ligne en est exclue.
- * X est l'assiette FIGÉE, dans la convention du bon : HT pour le pro, TTC
- * pour le public quand ses lignes en portent un.
+ * Le libellé de la remise de retrait, précis sur le point et la règle figés
+ * ({@link pickupDiscountLabel}). L'assiette est dans la convention du bon :
+ * HT pour le pro, TTC pour le public quand ses lignes en portent un.
  */
-function discountLabel(totals: SheetMoney, ttc: boolean): string {
-  const base = totals.pickupDiscountBase;
-  if (base === undefined) {
-    return "Remise";
-  }
-  const cents =
-    ttc && base.eligibleTtcCents !== null ? base.eligibleTtcCents : base.eligibleHtCents;
-  return `Remise retrait sur ${money(cents)} éligibles`;
+function discountLabel(sheet: PricedPaper, ttc: boolean): string {
+  return pickupDiscountLabel({
+    adjustment: sheet.money.discountAdjustment,
+    site: pickupSiteOf(sheet.fulfillment),
+    eligibleCents: eligibleBaseCentsOf(sheet.money, ttc),
+  });
 }
 
 /**
  * Les gestes entre les articles et le total — remise, bon, livraison,
  * surtaxe —, chacun seulement s'il a eu lieu. Communs aux deux bons.
  */
-function adjustmentRows(totals: SheetMoney): readonly TotalRow[] {
+function adjustmentRows(sheet: PricedPaper): readonly TotalRow[] {
+  const totals = sheet.money;
   return [
     ...(totals.discountCents === 0
       ? []
-      : [{ label: discountLabel(totals, false), value: money(-totals.discountCents) }]),
+      : [{ label: discountLabel(sheet, false), value: money(-totals.discountCents) }]),
     // Le bon de fidélité, après la remise et sur sa propre ligne (plan des points, C7).
     ...(totals.voucherDiscountCents === 0
       ? []
@@ -117,7 +118,8 @@ function taxedTail(totals: SheetMoney, pretaxCents: number): readonly TotalRow[]
 }
 
 /** Le pied du bon pro, dans l'ordre où la référence le pose. */
-function proRows(totals: SheetMoney): readonly TotalRow[] {
+function proRows(sheet: PricedPaper): readonly TotalRow[] {
+  const totals = sheet.money;
   const pretax = orderPretaxCents(totals);
   return [
     // 🔴 **« HT » est écrit, il n'est plus sous-entendu.** La colonne des
@@ -125,7 +127,7 @@ function proRows(totals: SheetMoney): readonly TotalRow[] {
     // inviterait à une addition qui ne tombe pas — et l'écart n'est pas un
     // arrondi, c'est la TVA entière (R3, 2026-09-21).
     { label: "Sous-total HT", value: money(totals.subtotalCents) },
-    ...adjustmentRows(totals),
+    ...adjustmentRows(sheet),
     ...(totals.settlement === "account" ? pretaxTail(pretax) : taxedTail(totals, pretax)),
   ];
 }
@@ -149,9 +151,10 @@ interface Gesture {
 }
 
 /** Les gestes qui ont eu lieu, signés comme ils pèsent sur le total. */
-function gesturesOf(totals: SheetMoney, ttc: boolean): readonly Gesture[] {
+function gesturesOf(sheet: PricedPaper, ttc: boolean): readonly Gesture[] {
+  const totals = sheet.money;
   return [
-    { label: discountLabel(totals, ttc), pretaxCents: -totals.discountCents },
+    { label: discountLabel(sheet, ttc), pretaxCents: -totals.discountCents },
     { label: "Bon de fidélité", pretaxCents: -totals.voucherDiscountCents },
     { label: "Livraison", pretaxCents: totals.deliveryFeeCents },
     { label: "Surtaxe de commande tardive", pretaxCents: totals.lateFeeCents },
@@ -172,7 +175,7 @@ function gesturesOf(totals: SheetMoney, ttc: boolean): readonly Gesture[] {
  * honnête n'existe, ils restent en HT et le disent.
  */
 function taxedGestureRows(sheet: PricedPaper): readonly TotalRow[] {
-  const gestures = gesturesOf(sheet.money, sheetShowsTtc(sheet));
+  const gestures = gesturesOf(sheet, sheetShowsTtc(sheet));
   const pretaxSum = gestures.reduce((sum, gesture) => sum + gesture.pretaxCents, 0);
   if (gestures.length === 0) {
     return [];
@@ -213,5 +216,5 @@ function publicRows(sheet: PricedPaper): readonly TotalRow[] {
 
 /** Les lignes du pavé de totaux, selon le bon. */
 export function totalRows(sheet: PricedPaper): readonly TotalRow[] {
-  return sheet.variant === "public" ? publicRows(sheet) : proRows(sheet.money);
+  return sheet.variant === "public" ? publicRows(sheet) : proRows(sheet);
 }

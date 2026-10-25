@@ -48,6 +48,12 @@ import {
  * **Complétée le 2026-10-25 (E6d)** : un e-mail neuf,
  * `customer.order-shortfall`, son empreinte ajoutée sans toucher aux
  * existantes.
+ *
+ * **Régénérées le 2026-10-25 pour les TROIS cas de `customer.order-placed`
+ * qui portent une remise** (paidPickup, account, free) : la ligne « Remise »
+ * se nomme désormais (« Remise retrait Le Labo », le point figé ; la règle
+ * quand elle l'est). Vérifié avant de régénérer : objet et pièces jointes
+ * identiques, seul le HTML change. Aucun autre cas n'a bougé.
  */
 
 const REGISTRY = b2bMailTemplates({

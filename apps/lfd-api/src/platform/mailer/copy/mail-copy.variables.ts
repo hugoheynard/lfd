@@ -24,7 +24,12 @@ export type MailCopyVariables = { readonly [K in keyof MailCopy]: MailSectionVar
  * ici, et un chemin déclaré qui n'existe plus au dictionnaire.
  */
 export const MAIL_COPY_VARIABLES: MailCopyVariables = {
-  "customer.order-placed": { subject: ["ref"], recapPieces: ["count"], qrAlt: ["ref"] },
+  "customer.order-placed": {
+    subject: ["ref"],
+    recapPieces: ["count"],
+    recapDiscountBase: ["base"],
+    qrAlt: ["ref"],
+  },
   "customer.order-ready": { subject: ["ref"], piecesLabel: ["count"], qrAlt: ["ref"] },
   "customer.delivery-en-route": {},
   "customer.order-placed-with-your-email": { title: ["firstName"] },

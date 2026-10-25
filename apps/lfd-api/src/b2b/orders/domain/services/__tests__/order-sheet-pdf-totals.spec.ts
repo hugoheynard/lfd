@@ -9,6 +9,9 @@ import { LINE, sheet } from "./client-sheet.fixture.js";
  * Régression : les gestes y étaient en HT sous des articles en TTC, et la
  * colonne ne retombait pas sur le total — 124,91 − 11,84 ≠ 112,42.
  */
+/** Le point figé par la fixture, sans règle figée (commande antérieure au snapshot). */
+const LABO = "Remise retrait Le Labo";
+
 const SEALED = { ...LINE, unitPriceTtcCents: 78, lineTotalTtcCents: 12_491 };
 
 function publicSheet(money: Partial<ClientSheet["money"]>): ClientSheet {
@@ -44,9 +47,9 @@ describe("le pied du bon public", () => {
     // 118,40 HT − 11,84 de remise = 106,56 HT → 112,42 TTC à 5,5 %.
     const rows = totalRows(publicSheet({ discountCents: 1_184, totalCents: 11_242 }));
 
-    expect(rows.map((row) => row.label)).toEqual(["Articles", "Remise", "Total TTC", "dont TVA"]);
+    expect(rows.map((row) => row.label)).toEqual(["Articles", LABO, "Total TTC", "dont TVA"]);
     columnAddsUp(rows);
-    expect(rows.find((row) => row.label === "Remise")?.value).toContain("12,49");
+    expect(rows.find((row) => row.label === LABO)?.value).toContain("12,49");
   });
 
   it("plusieurs gestes : répartis au prorata, le dernier prend le reste au centime", () => {
@@ -56,7 +59,7 @@ describe("le pied du bon public", () => {
 
     expect(rows.map((row) => row.label)).toEqual([
       "Articles",
-      "Remise",
+      LABO,
       "Livraison",
       "Total TTC",
       "dont TVA",
@@ -75,7 +78,7 @@ describe("le pied du bon public", () => {
       publicSheet({ discountCents: 500, deliveryFeeCents: 500, totalCents: 12_491 }),
     );
 
-    expect(rows.map((row) => row.label)).toContain("Remise (HT)");
+    expect(rows.map((row) => row.label)).toContain(`${LABO} (HT)`);
     expect(rows.map((row) => row.label)).toContain("Livraison (HT)");
   });
 });
@@ -89,7 +92,7 @@ describe("la remise de retrait sur ses lignes éligibles (lot C)", () => {
     );
 
     const label = rows[1]?.label ?? "";
-    expect(label).toMatch(/^Remise retrait sur 105,50\s€ éligibles$/u);
+    expect(label).toMatch(/^Remise retrait Le Labo sur 105,50\s€ éligibles$/u);
     columnAddsUp(rows);
   });
 
@@ -97,13 +100,59 @@ describe("la remise de retrait sur ses lignes éligibles (lot C)", () => {
     const rows = totalRows(sheet({ money: { ...sheet().money, pickupDiscountBase: BASE } }));
 
     expect(rows.map((row) => row.label)).toContainEqual(
-      expect.stringMatching(/^Remise retrait sur 100,00\s€ éligibles$/u),
+      expect.stringMatching(/^Remise retrait Le Labo sur 100,00\s€ éligibles$/u),
     );
   });
 
-  it("sans ligne exclue, la remise garde son libellé court", () => {
+  it("sans ligne exclue, la remise ne dit pas d'assiette", () => {
     const rows = totalRows(sheet());
 
-    expect(rows.map((row) => row.label)).toContain("Remise");
+    expect(rows.map((row) => row.label)).toContain(LABO);
+  });
+});
+
+/**
+ * Régression : le bon disait « Remise » sans dire laquelle (Hugo, 2026-10-25).
+ * Le libellé nomme le point de retrait et la règle figés sur la commande.
+ */
+describe("la remise de retrait se nomme", () => {
+  const labels = (money: Partial<ClientSheet["money"]>, fulfillment = sheet().fulfillment) =>
+    totalRows(sheet({ fulfillment, money: { ...sheet().money, ...money } })).map(
+      (row) => row.label,
+    );
+
+  it("un pourcentage figé : « Remise retrait Le Labo (5 %) »", () => {
+    expect(labels({ discountAdjustment: { mode: "percent", bp: 500 } })).toContain(
+      "Remise retrait Le Labo (5 %)",
+    );
+  });
+
+  it("un montant figé : « Remise retrait Le Labo (2,00 €) »", () => {
+    expect(labels({ discountAdjustment: { mode: "amount", cents: 200 } })).toContainEqual(
+      expect.stringMatching(/^Remise retrait Le Labo \(2,00\s€\)$/u),
+    );
+  });
+
+  it("une ligne exclue : la règle, puis l'assiette", () => {
+    expect(
+      labels({
+        discountAdjustment: { mode: "percent", bp: 1_000 },
+        pickupDiscountBase: {
+          eligibleHtCents: 10_000,
+          eligibleTtcCents: null,
+          excludedSkus: ["TAS"],
+        },
+      }),
+    ).toContainEqual(
+      expect.stringMatching(/^Remise retrait Le Labo \(10 %\) sur 100,00\s€ éligibles$/u),
+    );
+  });
+
+  it("un point sans nom figé : « Remise retrait (5 %) »", () => {
+    const anonymous = { ...sheet().fulfillment, pickupLabel: null, address: null };
+
+    expect(labels({ discountAdjustment: { mode: "percent", bp: 500 } }, anonymous)).toContain(
+      "Remise retrait (5 %)",
+    );
   });
 });
