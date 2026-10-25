@@ -15,3 +15,18 @@ describe("depositPermitted — « Déposé avec preuve » (AP-Q6, LB-Q5, « dép
     expect(depositPermitted({ depositAuthorized: true, signatureRequired: false })).toBe(true);
   });
 });
+
+describe("depositPermitted — table de vérité complète", () => {
+  // Quatre combinaisons, une seule refusée : signature exigée SANS autorisation.
+  it.each([
+    [false, false, true],
+    [false, true, true],
+    [true, false, false],
+    [true, true, true],
+  ])(
+    "signature exigée %s, autorisation du commercial %s ⇒ %s",
+    (signatureRequired, depositAuthorized, expected) => {
+      expect(depositPermitted({ signatureRequired, depositAuthorized })).toBe(expected);
+    },
+  );
+});

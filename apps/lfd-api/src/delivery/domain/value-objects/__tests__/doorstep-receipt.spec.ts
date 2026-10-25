@@ -172,3 +172,46 @@ describe("DoorstepReceipt — les pièces d'une remise (B1, § 9)", () => {
     expect(signed.signed).toBe(true);
   });
 });
+
+describe("DoorstepReceipt — frontières du nom et ordre des refus", () => {
+  const take = (
+    receiverName: string,
+    signature: Buffer | null = null,
+    signedSlip: Buffer | null = null,
+  ) => DoorstepReceipt.take({ receiverName, photo: JPEG, signature, signedSlip });
+
+  // Les bornes se mesurent APRÈS rognage : un seul caractère utile entouré
+  // d'espaces n'est pas un nom, et 80 caractères + espaces en est un.
+  it("refuse 1 caractère et 81 caractères, en rendant la longueur lue", () => {
+    expect(() => take("a")).toThrow(ReceiverNameLengthError);
+    expect(() => take("  a  ")).toThrow(ReceiverNameLengthError);
+    expect(() => take("x".repeat(81))).toThrow(ReceiverNameLengthError);
+    expect(take(` ${"x".repeat(80)} `).receiverName).toHaveLength(80);
+  });
+
+  it("ne rogne que les bords : une espace intérieure compte et reste", () => {
+    expect(take("A  B").receiverName).toBe("A  B");
+  });
+
+  // Une signature exigée sans rien : c'est la signature qui manque d'abord,
+  // puis le nom, puis le bon — le message doit nommer la première pièce absente.
+  it("🔴 signature exigée : la première pièce manquante est nommée (signature, nom, bon)", () => {
+    expect(() => take("", null, null).ensureSignedIf(true, "ORD-1")).toThrow(
+      HandoverSignatureMissingError,
+    );
+    expect(() => take("", PNG, null).ensureSignedIf(true, "ORD-1")).toThrow(
+      ReceiverNameRequiredError,
+    );
+    expect(() => take("Paul", PNG, null).ensureSignedIf(true, "ORD-1")).toThrow(
+      SignedSlipPhotoMissingError,
+    );
+  });
+
+  it("un bon signé sans signature est gardé quand rien n'est exigé, et refusé quand c'est exigé", () => {
+    const slipOnly = take("Paul", null, JPEG);
+    expect(slipOnly.signed).toBe(false);
+    expect(slipOnly.signedSlip).not.toBeNull();
+    expect(() => slipOnly.ensureSignedIf(false, "ORD-1")).not.toThrow();
+    expect(() => slipOnly.ensureSignedIf(true, "ORD-1")).toThrow(HandoverSignatureMissingError);
+  });
+});

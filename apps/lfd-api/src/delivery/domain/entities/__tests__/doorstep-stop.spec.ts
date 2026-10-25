@@ -75,3 +75,27 @@ describe("DoorstepStop.ensureDepositPermitted — la décision du commercial (B3
     expect(stop({ decision: "authorize_deposit" }).broughtBack).toBe(false);
   });
 });
+
+describe("DoorstepStop.ensureDepositPermitted — l'arrêt clos ou la tournée rentrée", () => {
+  // La règle ne lit ni `closedAt` ni `returnedAt` : ces refus-là appartiennent
+  // à la tournée (`closeStop`), pas à la règle du dépôt. On fige que la règle
+  // reste celle de la signature, quel que soit l'état de la tournée.
+  it("signature exigée sans autorisation : refus, tournée rentrée ou arrêt clos ou non", () => {
+    const later = new Date(2_000);
+    for (const state of [{}, { returnedAt: later }, { closedAt: later }]) {
+      expect(() => stop({ signatureRequired: true, ...state }).ensureDepositPermitted()).toThrow(
+        DepositSignatureRequiredError,
+      );
+    }
+  });
+
+  it("autorisation du commercial : permis même tournée rentrée", () => {
+    expect(() =>
+      stop({
+        signatureRequired: true,
+        decision: "authorize_deposit",
+        returnedAt: new Date(2_000),
+      }).ensureDepositPermitted(),
+    ).not.toThrow();
+  });
+});
