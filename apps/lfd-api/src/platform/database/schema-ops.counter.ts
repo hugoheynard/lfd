@@ -295,6 +295,7 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   // s'écrit aussi en SQL brut — comptée dans le seau brut.
   PackingOrder: "packing",
   PackingLine: "packing",
+  PackingSettings: "packing",
   PackingStock: "packing",
   PackingReceipt: "packing",
   // La bascule (K2) : les demandes de retour des deux côtés, et le journal de
