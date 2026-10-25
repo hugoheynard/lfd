@@ -11,6 +11,7 @@ import {
   type AdminCompanyView,
 } from "../domain/ports/admin-company.reader.js";
 import { companyWarnings } from "../domain/services/company-warnings.js";
+import { dossierPieces } from "../domain/services/dossier-pieces.js";
 import { requiresVatNumber } from "../domain/value-objects/vat-liability.js";
 import { projectContacts } from "./company-contacts.projection.js";
 import { billingCarriedAt, readHierarchy } from "./company-hierarchy.projection.js";
@@ -80,6 +81,12 @@ const COMPANY_SELECT = {
     select: { id: true },
     take: 1,
   },
+  // La pièce « livraison » du x/4 (plan auto-acquisition pro, P1) : un COMPTE,
+  // la relation `addresses` étant déjà prise par la facturation ci-dessus.
+  _count: {
+    select: { addresses: { where: { kind: "delivery", archivedAt: null } } },
+  },
+  declaredVia: true,
   // Les sous-comptes (sous-comptes §4) : le principal pour le badge et la
   // fiche, le suivi `billing` en cours pour les avertissements (§2.1 bis).
   groupWithoutDelivery: true,
@@ -273,5 +280,12 @@ function toView(company: CompanyRow, now: Date): AdminCompanyView {
       company.parentCompany === null
         ? null
         : { id: company.parentCompany.id, enseigne: company.parentCompany.enseigne },
+    declaredVia: company.declaredVia,
+    piecesReached: dossierPieces({
+      vatNumber: company.vatNumber,
+      kbisDeposited: company.kbisUploadedAt !== null,
+      hasBillingAddress: company.addresses.length > 0,
+      hasDeliveryAddress: company._count.addresses > 0,
+    }),
   };
 }

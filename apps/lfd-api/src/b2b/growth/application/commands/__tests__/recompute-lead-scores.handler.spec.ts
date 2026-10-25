@@ -6,7 +6,6 @@ import { LeadEventSource } from "../../../domain/ports/lead-event-source.js";
 import { LeadReader } from "../../../domain/ports/lead.reader.js";
 import { LeadScoreStore } from "../../../domain/ports/lead-score.store.js";
 import { CompanyNamer, type CompanyIdentity } from "../../../domain/ports/company-namer.js";
-import { CustomerEmailReader } from "../../../domain/ports/customer-email.reader.js";
 import { RecomputeLeadScoresHandler } from "../recompute-lead-scores.handler.js";
 
 const NOW = new Date("2026-08-20T10:00:00.000Z");
@@ -55,18 +54,6 @@ class FakeCompanies extends CompanyNamer {
   }
 }
 
-/** Les fiches des personnes doublées : l'adresse vit ici, plus dans le journal. */
-class FakeEmails extends CustomerEmailReader {
-  readonly batches: string[][] = [];
-  constructor(private readonly known: ReadonlyMap<string, string> = new Map()) {
-    super();
-  }
-  emailsOf(userIds: readonly string[]): Promise<ReadonlyMap<string, string>> {
-    this.batches.push([...userIds]);
-    return Promise.resolve(new Map([...this.known].filter(([id]) => userIds.includes(id))));
-  }
-}
-
 /** Déclaration d'une société restée en plan — le dossier que `rescue` vise. */
 function declared(companyId: string, at: string): LeadEvent {
   return {
@@ -94,12 +81,11 @@ describe("RecomputeLeadScoresHandler", () => {
   it("dérive la queue au temps du Clock puis remplace le read-model, et rend le compte", async () => {
     const store = new CapturingStore();
     const handler = new RecomputeLeadScoresHandler(
-      new FakeEventSource([ordered("u1", "2026-08-18T09:00:00.000Z", 5000)]),
+      new FakeEventSource([declared("c1", "2026-08-18T09:00:00.000Z")]),
       new FakeLeadReader(),
       store,
       new FixedClock(NOW),
       new FakeCompanies(),
-      new FakeEmails(),
     );
 
     const count = await handler.execute();
@@ -107,8 +93,8 @@ describe("RecomputeLeadScoresHandler", () => {
     expect(count).toBe(1);
     expect(store.written).toHaveLength(1);
     expect(store.written?.[0]).toMatchObject({
-      subjectId: "u1",
-      play: "lock_in",
+      subjectId: "c1",
+      play: "rescue",
       computedAt: NOW.toISOString(),
     });
   });
@@ -121,7 +107,6 @@ describe("RecomputeLeadScoresHandler", () => {
       store,
       new FixedClock(NOW),
       new FakeCompanies(),
-      new FakeEmails(),
     );
 
     const count = await handler.execute();
@@ -146,7 +131,6 @@ describe("RecomputeLeadScoresHandler", () => {
       store,
       new FixedClock(NOW),
       companies,
-      new FakeEmails(),
     );
 
     await handler.execute();
@@ -166,7 +150,6 @@ describe("RecomputeLeadScoresHandler", () => {
       new CapturingStore(),
       new FixedClock(NOW),
       companies,
-      new FakeEmails(),
     );
 
     await handler.execute();
@@ -174,14 +157,9 @@ describe("RecomputeLeadScoresHandler", () => {
     expect(companies.batches).toEqual([["c_a", "c_b"]]);
   });
 
-  /**
-   * Lot B du plan des phrases (2026-09-19) : `user.registered` ne porte plus
-   * l'e-mail. Le libellé d'un prospect sans nom se lit sur sa fiche — le
-   * read-model n'est pas le journal, et l'écran s'en sert pour rappeler.
-   */
-  it("nomme un prospect par l'adresse de sa fiche, demandée en UN lot", async () => {
+  /** Régression (lot P3, 2026-10-25) : un particulier entrait au cockpit en `lock_in`. */
+  it("n'écrit aucun particulier au read-model", async () => {
     const store = new CapturingStore();
-    const emails = new FakeEmails(new Map([["u1", "chef@resto.fr"]]));
     const handler = new RecomputeLeadScoresHandler(
       new FakeEventSource([
         ordered("u1", "2026-08-18T09:00:00.000Z", 5000),
@@ -191,14 +169,10 @@ describe("RecomputeLeadScoresHandler", () => {
       store,
       new FixedClock(NOW),
       new FakeCompanies(),
-      emails,
     );
 
     await handler.execute();
 
-    expect(emails.batches).toEqual([["u1"]]);
-    expect(store.written?.find((row) => row.subjectId === "u1")).toMatchObject({
-      label: "chef@resto.fr",
-    });
+    expect(store.written?.map((row) => row.subjectId)).toEqual(["c_a"]);
   });
 });

@@ -1,7 +1,7 @@
+import type { CompanyDeclarationChannel } from "../value-objects/company-declaration-channel.js";
 import type { PersonRef } from "./journal-names.js";
 
-/** Canal de déclaration d'une société : par le client lui-même, ou par le staff. */
-export type CompanyDeclarationChannel = "self" | "staff";
+export type { CompanyDeclarationChannel } from "../value-objects/company-declaration-channel.js";
 
 /**
  * Fait de domaine : **une société vient d'être déclarée** (dossier créé, statut

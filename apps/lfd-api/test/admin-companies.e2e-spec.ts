@@ -18,7 +18,7 @@ import type { CreatedCompanyResponse } from "../src/b2b/account/http/companies.c
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, E2E_STAFF_ID, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { attachTo, createCompany, createUser } from "./factories.js";
+import { addBillingAddress, attachTo, createCompany, createUser } from "./factories.js";
 import type { ProvisionedIdentity } from "../src/platform/shared/identity/provisioned-identity.js";
 
 /** Staff doublé : accepte n'importe quel jeton porteur comme staff synthétique. */
@@ -263,6 +263,66 @@ interface AdminCompanyDetailBody {
   readonly hasBankAccount: boolean;
   readonly addresses: { readonly billing: unknown; readonly deliveries: readonly unknown[] };
 }
+
+interface AdminCompanyListBody {
+  readonly id: string;
+  readonly declaredVia: "self" | "staff" | null;
+  readonly piecesReached: readonly string[];
+}
+
+/**
+ * Plan auto-acquisition pro, P1 : la liste dit par qui la société a été
+ * déclarée et quelles pièces son dossier porte — lus sur la société, sans le
+ * journal de `growth`.
+ */
+describe("GET /admin/companies — canal de déclaration et pièces", () => {
+  it("dit `self` pour la porte pro, `staff` pour le back-office", async () => {
+    await createUser(ctx.prisma, {
+      auth0Sub: "auth0|inscrit-seul",
+      email: "seul@pqmarais.fr",
+      firstName: "",
+      lastName: "",
+      phone: "",
+      emailVerified: true,
+    });
+    const declared = await ctx
+      .asSub("auth0|inscrit-seul")
+      .post("/me/establishment")
+      .send({ firstName: "Lou", lastName: "Seul", phone: "01 42 71 08 44", enseigne: "Seul" })
+      .expect(201);
+    const selfId = jsonBody<{ companyId: string }>(declared).companyId;
+    const created = await staff().post("/admin/companies").send(valide).expect(201);
+    const staffId = jsonBody<CreatedCompanyResponse>(created).id;
+
+    const rows = jsonBody<AdminCompanyListBody[]>(
+      await staff().get("/admin/companies").expect(200),
+    );
+
+    expect(rows.find((row) => row.id === selfId)).toMatchObject({
+      declaredVia: "self",
+      piecesReached: [],
+    });
+    // Le back-office a saisi la TVA : une pièce, et une seule.
+    expect(rows.find((row) => row.id === staffId)).toMatchObject({
+      declaredVia: "staff",
+      piecesReached: ["vat"],
+    });
+  });
+
+  it("rend `null` pour une société d'avant la colonne, et compte la facturation", async () => {
+    const legacy = await createCompany(ctx.prisma, { status: CompanyStatus.pending });
+    await addBillingAddress(ctx.prisma, legacy.id);
+
+    const rows = jsonBody<AdminCompanyListBody[]>(
+      await staff().get("/admin/companies").expect(200),
+    );
+    const row = rows.find((candidate) => candidate.id === legacy.id);
+
+    expect(row?.declaredVia).toBeNull();
+    expect(row?.piecesReached).toContain("billing");
+    expect(row?.piecesReached).not.toContain("delivery");
+  });
+});
 
 describe("GET /admin/companies/:id", () => {
   it("renvoie la fiche cross-tenant enrichie (TVA requise + adresses)", async () => {

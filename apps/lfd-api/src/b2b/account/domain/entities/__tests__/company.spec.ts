@@ -33,6 +33,7 @@ describe("Company.declare", () => {
     const company = Company.declare(
       { ...identity, raisonSociale: "  Boulangerie   du Marais SAS " },
       contact,
+      "self",
     );
 
     expect(company.raisonSociale).toBe("Boulangerie du Marais SAS");
@@ -43,10 +44,12 @@ describe("Company.declare", () => {
     // C'est le nom que le commercial a en tête et que le client donne au
     // téléphone. La raison sociale est une donnée d'identification officielle :
     // elle arrive avec le SIRET.
-    expect(() => Company.declare({ ...identity, enseigne: "   " }, contact)).toThrow(
+    expect(() => Company.declare({ ...identity, enseigne: "   " }, contact, "self")).toThrow(
       InvalidCompanyIdentityError,
     );
-    expect(Company.declare({ ...identity, raisonSociale: "" }, contact).raisonSociale).toBe("");
+    expect(Company.declare({ ...identity, raisonSociale: "" }, contact, "self").raisonSociale).toBe(
+      "",
+    );
   });
 
   it("s'ouvre SANS papiers — le commercial est chez le client, pas au greffe", () => {
@@ -56,6 +59,7 @@ describe("Company.declare", () => {
     const company = Company.declare(
       { ...identity, raisonSociale: "", formeJuridique: "", siret: "" },
       contact,
+      "self",
     );
 
     expect(company.siret).toBeNull();
@@ -69,6 +73,7 @@ describe("Company.declare", () => {
     const company = Company.declare(
       { ...identity, raisonSociale: "", formeJuridique: "", siret: "" },
       contact,
+      "self",
     );
 
     expect(() => {
@@ -82,6 +87,7 @@ describe("Company.declare", () => {
     const company = Company.declare(
       { ...identity, raisonSociale: "", formeJuridique: "", siret: "" },
       contact,
+      "self",
     );
 
     company.completeLegalIdentity({
@@ -107,7 +113,7 @@ describe("Company.declare", () => {
   it("CORRIGE ce que compléter refusait de toucher", () => {
     // L'opération que `completeLegalIdentity` annonçait sans la fournir : au
     // comptoir, une faute de frappe restait gravée sans recours.
-    const company = Company.declare({ ...identity, formeJuridique: "SARL" }, contact);
+    const company = Company.declare({ ...identity, formeJuridique: "SARL" }, contact, "self");
 
     company.correctLegalIdentity({
       raisonSociale: "",
@@ -125,13 +131,15 @@ describe("Company.declare", () => {
   it("refuse toujours un SIRET SAISI mais faux", () => {
     // Facultatif ne veut pas dire libre : mieux vaut rien qu'un numéro qu'on
     // croirait bon.
-    expect(() => Company.declare({ ...identity, siret: "11111111111111" }, contact)).toThrow();
+    expect(() =>
+      Company.declare({ ...identity, siret: "11111111111111" }, contact, "self"),
+    ).toThrow();
   });
 
   it("accepte une TVA absente", () => {
     // Tous les clients ne sont pas assujettis : l'exiger bloquerait des
     // déclarations parfaitement légitimes.
-    const company = Company.declare({ ...identity, vatNumber: "" }, contact);
+    const company = Company.declare({ ...identity, vatNumber: "" }, contact, "self");
 
     expect(company.vatNumber).toBe("");
   });
@@ -157,26 +165,30 @@ describe("Company.declare", () => {
     });
 
     expect(legacy.displayName()).toBe("Boulangerie du Marais SAS");
-    expect(Company.declare(identity, contact).displayName()).toBe("Le Pain Quotidien du Marais");
+    expect(Company.declare(identity, contact, "self").displayName()).toBe(
+      "Le Pain Quotidien du Marais",
+    );
   });
 
   it("reprend le contact fourni sans le redemander", () => {
     // Le créateur EST l'interlocuteur : lui redemander son nom juste après son
     // profil serait de la double saisie.
-    expect(Company.declare(identity, contact).contact?.email.value).toBe("camille@pqmarais.fr");
+    expect(Company.declare(identity, contact, "self").contact?.email.value).toBe(
+      "camille@pqmarais.fr",
+    );
   });
 
   it("s'ouvre SANS détenteur — et le dit `null`, pas « quelqu'un sans nom »", () => {
     // Au téléphone, le commercial n'a souvent que l'enseigne. Un contact aux
     // champs vides ferait passer « on ne sait pas encore » pour une personne
     // réelle, et l'activation ne saurait plus les distinguer.
-    expect(Company.declare(identity, null).contact).toBeNull();
+    expect(Company.declare(identity, null, "self").contact).toBeNull();
   });
 });
 
 describe("Company.attachHolder", () => {
   it("comble la place laissée vide à l'ouverture", () => {
-    const company = Company.declare(identity, null);
+    const company = Company.declare(identity, null, "self");
 
     company.attachHolder(contact);
 
@@ -186,7 +198,7 @@ describe("Company.attachHolder", () => {
   it("REFUSE d'écraser un détenteur en place", () => {
     // En changer est une autre décision : un second détenteur ne doit pas
     // naître d'un rattachement de rattrapage.
-    const company = Company.declare(identity, contact);
+    const company = Company.declare(identity, contact, "self");
 
     expect(() => company.attachHolder(contact)).toThrow(CompanyAlreadyHasOwnerError);
   });
@@ -196,7 +208,7 @@ describe("Company.attachHolder", () => {
     // même acte : le second ouvre un accès, celui-ci ne le fait pas. Sans ce
     // refus, « modifier le détenteur » posait un nom en fiche sans donner la clé
     // de l'espace — un détenteur affiché, incapable d'entrer.
-    const company = Company.declare(identity, null);
+    const company = Company.declare(identity, null, "self");
 
     expect(() => company.changePrimaryContact(contact)).toThrow(CompanyHasNoHolderError);
   });
@@ -204,10 +216,27 @@ describe("Company.attachHolder", () => {
   it("bloque l'activation tant que personne n'est rattaché", () => {
     // Le compte serait actif et sa porte murée : le client découvrirait au
     // premier besoin qu'on lui a ouvert un espace sans lui donner la clé.
-    const company = Company.declare(identity, null);
+    const company = Company.declare(identity, null, "self");
 
     expect(() => company.activate(new Date("2026-08-12T10:00:00.000Z"), true, AGENT)).toThrow(
       CompanyActivationBlockedError,
     );
+  });
+});
+
+describe("Company — le canal de déclaration (plan auto-acquisition pro, P1)", () => {
+  it("garde le canal donné à la naissance", () => {
+    expect(Company.declare(identity, null, "staff").declaredVia).toBe("staff");
+    expect(Company.declare(identity, null, "self").declaredVia).toBe("self");
+  });
+
+  it("le rend `null` à la relecture d'une société dont on ne l'a jamais su", () => {
+    const declared = Company.declare(identity, null, "self");
+    const reloaded = Company.reconstitute({
+      ...declared.toPersistence(),
+      id: "cmp_1",
+      contact: null,
+    });
+    expect(reloaded.declaredVia).toBeNull();
   });
 });

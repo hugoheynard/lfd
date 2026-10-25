@@ -1,2 +1,2 @@
-/** Query : lister les prospects (hot/mid) dérivés du journal, pour la surface staff. */
+/** Query : lister les établissements démarchés qui ne sont pas encore clients. */
 export class ListProspectsQuery {}

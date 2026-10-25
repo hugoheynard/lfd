@@ -133,6 +133,7 @@ describe("Company — blocage du prélèvement", () => {
         vatNumber: "",
       },
       null,
+      "self",
     );
 
     expect(declared.toPersistence().directDebitBlock).toBeNull();

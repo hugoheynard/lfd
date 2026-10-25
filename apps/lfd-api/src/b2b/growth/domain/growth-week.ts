@@ -29,3 +29,12 @@ export function weekStart(d: Date): string {
   dt.setUTCDate(dt.getUTCDate() - diff);
   return dt.toISOString().slice(0, 10);
 }
+
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** Le lundi décalé de `byWeeks` semaines, en `YYYY-MM-DD`. */
+export function shiftWeek(weekStartIso: string, byWeeks: number): string {
+  return new Date(new Date(`${weekStartIso}T00:00:00.000Z`).getTime() + byWeeks * WEEK_MS)
+    .toISOString()
+    .slice(0, 10);
+}

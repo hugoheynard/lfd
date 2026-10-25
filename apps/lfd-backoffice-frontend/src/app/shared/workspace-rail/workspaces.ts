@@ -95,7 +95,7 @@ export const COMMERCIAL_VIEWS: readonly CommercialView[] = [
     link: '/commercial/prospects',
     icon: 'team',
     description:
-      "Le parcours entier, d'un nom sur une liste à un compte qui commande — froid, tiède, chaud, puis l'activation du dossier.",
+      'Les établissements démarchés qui ne sont pas encore clients, de la première prise de contact à la négociation.',
   },
   {
     key: 'calendrier',

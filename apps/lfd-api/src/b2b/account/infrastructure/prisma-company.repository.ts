@@ -99,6 +99,8 @@ export class PrismaCompanyRepository extends CompanyRepository {
           siren: company.sirenDigits,
           vatNumber: company.vatNumber,
           ...contactColumns(company.toPersistence().contact),
+          // Fait de naissance : écrit ici, jamais par `save`.
+          declaredVia: company.declaredVia,
           // Déclarée, pas cliente : l'activation est commerciale.
           status: CompanyStatus.pending,
         },
@@ -153,6 +155,8 @@ export class PrismaCompanyRepository extends CompanyRepository {
           siren: company.sirenDigits,
           vatNumber: company.vatNumber,
           ...contactColumns(company.toPersistence().contact),
+          // Fait de naissance : écrit ici, jamais par `save`.
+          declaredVia: company.declaredVia,
           // Un sous-compte naît rattaché (sous-comptes §4) ; le verrou de
           // la hiérarchie est pris par le handler.
           parentCompanyId: company.parentCompanyId,
@@ -213,6 +217,7 @@ export class PrismaCompanyRepository extends CompanyRepository {
               role: row.activatedByRole ?? "",
             },
       suspensionCause: row.suspensionCause,
+      declaredVia: row.declaredVia,
       nafCode: row.nafCode,
       kbis: kbisOf(row),
       directDebitBlock: directDebitBlockOf(row),

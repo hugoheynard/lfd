@@ -25,7 +25,12 @@ export const APPOINTMENT_CHANNEL = domain('canal d’un rendez-vous', {
   onsite: 'Sur place',
 });
 
-/** Les mêmes mots que la file du cockpit (`play-queue.ts`, `PLAY`, vérifié le 2026-09-19). */
+/**
+ * Les mêmes mots que la file du cockpit (`play-queue.ts`, `PLAY`, vérifié le
+ * 2026-09-19). `lock_in`, `upgrade` et `win_back` ont quitté le cockpit au lot
+ * P3 (2026-10-25) avec les particuliers ; les faits `reco.shown` passés les
+ * portent encore, et le journal doit toujours savoir les dire.
+ */
 export const PLAY = domain('coup recommandé', {
   lock_in: 'Verrouiller',
   rescue: 'Rescousse',

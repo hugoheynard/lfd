@@ -3,8 +3,6 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 import type { LeadScoreView } from "@lfd/contracts";
 import { ACTIVITY_TYPES } from "../../domain/activity-event.js";
 import { ActivityRecorder } from "../../domain/ports/activity-recorder.js";
-import { CustomerNamer } from "../../domain/ports/customer-namer.js";
-import { customerLabel } from "../handlers/order-fact-names.js";
 import { LeadScoreReader } from "../../domain/ports/lead-score.reader.js";
 import { GetCockpitQuery } from "./get-cockpit.query.js";
 
@@ -19,25 +17,21 @@ const COCKPIT_SIZE = 5;
  * et **idempotente par (sujet, fenêtre de recompute)** : rafraîchir le cockpit
  * dans la même fenêtre ne recompte pas l'affichage.
  *
- * Le prospect est cité par son id (le sujet) et par son NOM quand il en a un
- * (`subjectLabel`) — jamais par le libellé du cockpit tel quel : pour une
- * personne sans nom, ce libellé est son e-mail (`lead-score.ts`), et une
- * coordonnée n'entre pas au journal (lot B du plan des phrases, 2026-09-19).
+ * Le sujet est cité par son id et par son NOM quand il en a un
+ * (`subjectLabel`) : l'enseigne d'une société ou d'un lead démarché. Le
+ * cockpit ne montre plus de personne depuis le lot P3 (2026-10-25) — dont le
+ * libellé était l'e-mail, qu'il fallait tenir hors du journal.
  */
 @QueryHandler(GetCockpitQuery)
 export class GetCockpitHandler implements IQueryHandler<GetCockpitQuery, LeadScoreView[]> {
   constructor(
     private readonly reader: LeadScoreReader,
     private readonly recorder: ActivityRecorder,
-    private readonly customers: CustomerNamer,
   ) {}
 
   async execute(): Promise<LeadScoreView[]> {
     const leads = await this.reader.topPlays(COCKPIT_SIZE);
-    // Les noms d'abord, les écritures ensuite : les faits partent dans l'ordre
-    // de la queue, quel que soit le temps que met chaque nom à se lire.
-    const labels = await Promise.all(leads.map((lead) => this.labelOf(lead)));
-    await Promise.all(leads.map((lead, index) => this.logShown(lead, labels[index] ?? {})));
+    await Promise.all(leads.map((lead) => this.logShown(lead, labelOf(lead))));
     return leads;
   }
 
@@ -57,18 +51,12 @@ export class GetCockpitHandler implements IQueryHandler<GetCockpitQuery, LeadSco
       },
     });
   }
+}
 
-  /**
-   * Le nom du prospect : une personne se nomme par sa fiche (le libellé du
-   * cockpit serait son e-mail) ; une société ou un prospect saisi, par le
-   * libellé du read-model — son enseigne —, sauf quand il n'est que l'id
-   * faute de nom (`deriveActivations`).
-   */
-  private async labelOf(lead: LeadScoreView): Promise<{ readonly subjectLabel?: string }> {
-    if (lead.subjectType === "user") {
-      // Best-effort : un annuaire illisible prive la ligne d'un nom, sans plus.
-      return customerLabel(this.customers, lead.subjectId);
-    }
-    return lead.label === "" || lead.label === lead.subjectId ? {} : { subjectLabel: lead.label };
-  }
+/**
+ * Le nom du sujet : le libellé du read-model — son enseigne —, sauf quand il
+ * n'est que l'id faute de nom (`deriveActivations`).
+ */
+function labelOf(lead: LeadScoreView): { readonly subjectLabel?: string } {
+  return lead.label === "" || lead.label === lead.subjectId ? {} : { subjectLabel: lead.label };
 }

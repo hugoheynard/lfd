@@ -61,9 +61,10 @@ export const commercialRoutes: Routes = [
         title: 'Prospects — LFC B2B admin',
         loadComponent: () => import('./prospects/prospects-page').then((m) => m.ProspectsPage),
       },
-      // L'onglet a fusionné dans Prospects : on redirige plutôt que de rendre un
-      // lien partagé caduc.
-      { path: 'activation', pathMatch: 'full', redirectTo: 'prospects' },
+      // Le suivi d'activation vit dans Comptes clients depuis le 2026-10-25
+      // (plan `documentation/b2b/plan-auto-acquisition-pro.md`, P1) : on
+      // redirige plutôt que de rendre un lien partagé caduc.
+      { path: 'activation', pathMatch: 'full', redirectTo: 'comptes-clients' },
       {
         path: 'calendrier',
         canActivate: [permissionGuard('b2b_growth:read')],

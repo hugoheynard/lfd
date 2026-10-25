@@ -74,6 +74,7 @@ export class DeclareMyEstablishmentHandler implements ICommandHandler<
         vatNumber: "",
       },
       contactFrom(profile),
+      "self",
     );
 
     const companyId = await this.uow.run(async () => {

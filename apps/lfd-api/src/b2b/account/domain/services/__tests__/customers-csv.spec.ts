@@ -36,6 +36,8 @@ function company(over: Partial<AdminCompanyView> = {}): AdminCompanyView {
     hasOpenSupportRequest: false,
     parent: null,
     createdAt: "2026-06-02T08:30:00.000Z",
+    declaredVia: null,
+    piecesReached: [],
     activatedAt: "2026-09-01T14:00:00.000Z",
     warnings: [],
     ...over,

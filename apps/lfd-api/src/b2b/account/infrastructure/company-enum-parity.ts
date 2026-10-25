@@ -1,4 +1,5 @@
 import type {
+  CompanyDeclarationChannel as PrismaCompanyDeclarationChannel,
   CompanyStatus as PrismaCompanyStatus,
   CustomerRole as PrismaCustomerRole,
   SuspensionCause as PrismaSuspensionCause,
@@ -12,6 +13,7 @@ import type {
   OrderCompanyStatus,
   OrderRole,
 } from "../../orders/domain/ports/order-guard.reader.js";
+import type { CompanyDeclarationChannel } from "../domain/value-objects/company-declaration-channel.js";
 import type { CompanyRole } from "../domain/value-objects/company-role.js";
 import type { CompanyStatus } from "../domain/value-objects/company-status.js";
 import type { SuspensionCause } from "../domain/value-objects/suspension-cause.js";
@@ -86,4 +88,9 @@ export type ContractStatusParity = Assert<Equals<ContractCompanyStatus, `${Prism
 /** Casse si la cause de suspension publiée aux fronts diverge de l'enum Postgres. */
 export type ContractSuspensionParity = Assert<
   Equals<ContractSuspensionCause, `${PrismaSuspensionCause}`>
+>;
+
+/** Casse si `CompanyDeclarationChannel` (domaine) et l'enum Postgres divergent. */
+export type CompanyDeclarationChannelParity = Assert<
+  Equals<CompanyDeclarationChannel, `${PrismaCompanyDeclarationChannel}`>
 >;

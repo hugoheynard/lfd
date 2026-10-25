@@ -81,50 +81,24 @@ function activated(companyId: string, at: string): LeadEvent {
 }
 
 describe("deriveLeadScores", () => {
-  it("play lock_in pour un prospect chaud sans abonnement, rythme porteur", () => {
-    const [lead] = deriveLeadScores(
+  /**
+   * Régression (lot P3, 2026-10-25) : un particulier qui commandait sans société
+   * entrait dans « les 5 meilleurs coups » en `lock_in` / `upgrade` / `win_back`,
+   * au-dessus des établissements à démarcher.
+   */
+  it("ne met aucun particulier dans la queue — inscription, commande sans société, abonnement", () => {
+    const leads = deriveLeadScores(
       [
         registered("u1", "2026-08-10T09:00:00.000Z"),
         ordered("u1", "2026-08-18T09:00:00.000Z", 5000),
+        ordered("u1", "2026-08-19T09:00:00.000Z", 5000),
+        subscribed("u1", "2026-08-19T10:00:00.000Z"),
+        registered("u2", "2026-08-18T09:00:00.000Z"),
+        ordered("u3", "2026-08-18T09:00:00.000Z", 5000, "company_42"),
       ],
       NOW,
     );
-    expect(lead).toMatchObject({
-      subjectType: "user",
-      subjectId: "u1",
-      label: "chef@resto.fr",
-      play: "lock_in",
-      momentum: "accelerating",
-      monetaryCents: 5000,
-    });
-    expect(lead?.reason).toContain("pas encore d'abonnement");
-    expect(lead?.score).toBeGreaterThan(0);
-  });
-
-  it("play upgrade dès qu'un abonnement existe", () => {
-    const [lead] = deriveLeadScores(
-      [
-        registered("u1", "2026-08-10T09:00:00.000Z"),
-        ordered("u1", "2026-08-18T09:00:00.000Z", 5000),
-        subscribed("u1", "2026-08-18T10:00:00.000Z"),
-      ],
-      NOW,
-    );
-    expect(lead?.play).toBe("upgrade");
-    expect(lead?.reason).toContain("déjà abonné");
-  });
-
-  it("play win_back pour un prospect chaud devenu silencieux (momentum dormant)", () => {
-    const [lead] = deriveLeadScores(
-      [
-        registered("u1", "2026-06-01T09:00:00.000Z"),
-        ordered("u1", "2026-06-05T09:00:00.000Z", 3000),
-      ],
-      NOW,
-    );
-    expect(lead?.play).toBe("win_back");
-    expect(lead?.momentum).toBe("dormant");
-    expect(lead?.reason).toContain("silencieux");
+    expect(leads).toHaveLength(0);
   });
 
   it("play rescue pour un dossier d'activation bloqué, scoré par complétion + urgence", () => {
@@ -140,15 +114,9 @@ describe("deriveLeadScores", () => {
       subjectType: "company",
       subjectId: "c1",
       play: "rescue",
-      momentum: null,
       recencyDays: 14, // bloqué depuis le 6 août
     });
     expect(lead?.reason).toBe("Dossier 2/4 pièces, bloqué depuis 14 j");
-  });
-
-  it("exclut les mid (inscrits sans commande) — ils vivent dans l'onglet Prospects", () => {
-    const leads = deriveLeadScores([registered("u1", "2026-08-18T09:00:00.000Z")], NOW);
-    expect(leads).toHaveLength(0);
   });
 
   it("exclut une société déjà activée (plus un dossier à secourir)", () => {
@@ -159,33 +127,20 @@ describe("deriveLeadScores", () => {
     expect(leads).toHaveLength(0);
   });
 
-  it("exclut une personne qui transacte pour une société (client établi, pas un prospect)", () => {
-    const leads = deriveLeadScores(
-      [
-        registered("u1", "2026-08-10T09:00:00.000Z"),
-        ordered("u1", "2026-08-18T09:00:00.000Z", 5000, "company_42"),
-      ],
-      NOW,
-    );
-    expect(leads).toHaveLength(0);
-  });
-
   it("trie par score décroissant et borne le score dans 0..100", () => {
     const leads = deriveLeadScores(
       [
-        // Lead fort : gros montant, fréquent, récent, abonné.
-        registered("u_strong", "2026-07-20T09:00:00.000Z"),
-        ordered("u_strong", "2026-08-12T09:00:00.000Z", 60000),
-        ordered("u_strong", "2026-08-16T09:00:00.000Z", 60000),
-        ordered("u_strong", "2026-08-19T09:00:00.000Z", 60000),
-        subscribed("u_strong", "2026-08-19T10:00:00.000Z"),
-        // Lead faible : petite commande ancienne.
-        registered("u_weak", "2026-06-10T09:00:00.000Z"),
-        ordered("u_weak", "2026-06-12T09:00:00.000Z", 800),
+        // Dossier fort : presque complet, bloqué depuis longtemps.
+        declared("c_strong", "2026-07-20T09:00:00.000Z"),
+        stepReached("c_strong", "2026-07-20T10:00:00.000Z", "vat"),
+        stepReached("c_strong", "2026-07-20T11:00:00.000Z", "kbis"),
+        stepReached("c_strong", "2026-07-20T12:00:00.000Z", "billing"),
+        // Dossier faible : rien de fourni, déclaré la veille.
+        declared("c_weak", "2026-08-19T09:00:00.000Z"),
       ],
       NOW,
     );
-    expect(leads.map((lead) => lead.subjectId)).toEqual(["u_strong", "u_weak"]);
+    expect(leads.map((lead) => lead.subjectId)).toEqual(["c_strong", "c_weak"]);
     for (const lead of leads) {
       expect(lead.score).toBeGreaterThanOrEqual(0);
       expect(lead.score).toBeLessThanOrEqual(100);
@@ -194,13 +149,7 @@ describe("deriveLeadScores", () => {
   });
 
   it("estampille chaque ligne du `now` injecté (fraîcheur de la reco)", () => {
-    const [lead] = deriveLeadScores(
-      [
-        registered("u1", "2026-08-10T09:00:00.000Z"),
-        ordered("u1", "2026-08-18T09:00:00.000Z", 5000),
-      ],
-      NOW,
-    );
+    const [lead] = deriveLeadScores([declared("c1", "2026-08-10T09:00:00.000Z")], NOW);
     expect(lead?.computedAt).toBe(NOW.toISOString());
   });
 });
@@ -232,7 +181,6 @@ describe("deriveLeadScores — leads cold (play nurture)", () => {
       subjectId: "lead_1",
       play: "nurture",
       label: "Traiteur Démarché",
-      momentum: null,
     });
     expect(lead?.reason).toContain("qualifié");
     expect(lead?.score).toBeGreaterThan(0);

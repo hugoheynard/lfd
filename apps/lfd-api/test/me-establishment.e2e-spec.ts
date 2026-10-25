@@ -79,6 +79,8 @@ describe("POST /me/establishment", () => {
     });
     expect(company.status).toBe(CompanyStatus.pending);
     expect(company).toMatchObject({
+      // Plan auto-acquisition pro, P1 : la porte pro écrit son canal.
+      declaredVia: "self",
       enseigne: "Le Pain Quotidien du Marais",
       contactPrenom: "Camille",
       contactNom: "Rousseau",

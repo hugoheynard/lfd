@@ -9,24 +9,7 @@
   max-width: 72rem;
 }
 
-.queues {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--fold-space-sm, 0.5rem);
-  justify-content: flex-end;
-}
-
-.filter {
-  align-self: flex-start;
-}
-
-.via {
-  display: block;
-  color: var(--fold-color-text-muted);
-  font-size: 0.75rem;
-}
-
-/* Déclencheur du menu d'actions (lignes cold) — cf. le pattern staff-users. */
+/* Déclencheur du menu d'actions — cf. le pattern staff-users. */
 .menu-trigger {
   flex: none;
   display: inline-flex;

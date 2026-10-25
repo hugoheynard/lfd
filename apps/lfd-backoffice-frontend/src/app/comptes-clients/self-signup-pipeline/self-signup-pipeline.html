@@ -1,0 +1,69 @@
+<div class="pipeline">
+  <fold-view-toggle
+    class="scope"
+    ariaLabel="Qui entre dans le pipeline"
+    [options]="scopes"
+    [value]="scope()"
+    (valueChange)="onScopeChange($event)"
+  />
+
+  <!-- Une barre par étape, dans l'ordre : OÙ ça se perd. Chaque barre compte
+       les dossiers qui portent la pièce, actifs compris, sur les déclarées. -->
+  <div class="steps" data-pipeline-steps>
+    @for (step of steps(); track step.key) {
+      <fold-meter
+        [label]="step.label"
+        [value]="step.count"
+        [max]="step.max"
+        showValue
+        [attr.data-step]="step.key"
+      />
+    }
+  </div>
+
+  <fold-data-table
+    caption="Dossiers en attente d’activation"
+    toolbarSurface="accent"
+    hover
+    clickable
+    stickyFirst
+    [columns]="columns"
+    [rows]="rows()"
+    [rowKey]="rowKey"
+    [loading]="loading()"
+    [empty]="empty()"
+    (rowClick)="open($event)"
+  >
+    <fold-element-title foldToolbar variant="bar" [title]="title()" />
+
+    <ng-template foldCell="company" let-row>
+      <span class="company">{{ displayName(row.company) }}</span>
+      <span class="ref">{{ row.company.reference }}</span>
+    </ng-template>
+
+    <ng-template foldCell="pieces" let-row>
+      <span class="pieces">
+        <span class="count">{{ row.reached }}/{{ pieceCount }}</span>
+        @for (mark of row.pieces; track mark.piece) {
+          <fold-badge
+            [variant]="mark.done ? 'success' : 'neutral'"
+            [content]="mark.label"
+            [attr.data-piece]="mark.piece"
+            [attr.data-done]="mark.done"
+          />
+        }
+        <!-- À part : l'activation ne l'exige pas (Hugo, 2026-10-25). -->
+        <fold-badge
+          variant="neutral"
+          [content]="row.delivery.label + (row.delivery.done ? ' renseignée' : ' à renseigner')"
+          [attr.data-piece]="row.delivery.piece"
+          [attr.data-done]="row.delivery.done"
+        />
+      </span>
+    </ng-template>
+
+    <ng-template foldCell="stalled" let-row>
+      <span class="count">{{ row.stalledDays }} j</span>
+    </ng-template>
+  </fold-data-table>
+</div>

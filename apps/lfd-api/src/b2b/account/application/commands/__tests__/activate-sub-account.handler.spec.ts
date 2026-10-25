@@ -54,6 +54,8 @@ function chaletView(parentStatus: "active" | "pending"): AdminCompanyDetailView 
     kbis: null,
     hasOpenSupportRequest: false,
     createdAt: clock.now().toISOString(),
+    declaredVia: null,
+    piecesReached: [],
     activatedAt: null,
     warnings: [],
     parent: { id: "groupe", enseigne: "Alpes Chalets" },

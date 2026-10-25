@@ -11,8 +11,7 @@ import { BackgroundWork } from "../../../../platform/events/background-work.js";
  * déterministe par personne.
  *
  * 🔴 **Sans e-mail** depuis le lot B du plan des phrases (2026-09-19) : une
- * coordonnée n'entre pas au journal, et la file des prospects lit l'adresse
- * sur la fiche (`CustomerEmailReader`). **Sans libellé** non plus : le
+ * coordonnée n'entre pas au journal. **Sans libellé** non plus : le
  * catalogue admet le nom de la personne si l'inscription le porte, et
  * `UserRegisteredEvent` n'en porte pas — la fiche naît de la seule identité du
  * jeton (vérifié le 2026-09-19, `customer-principal.resolver.ts`).

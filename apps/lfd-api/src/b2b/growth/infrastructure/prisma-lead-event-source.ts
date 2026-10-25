@@ -5,11 +5,12 @@ import { ACTIVITY_TYPES } from "../domain/activity-event.js";
 import type { LeadEvent } from "../domain/lead-score.js";
 import { LeadEventSource } from "../domain/ports/lead-event-source.js";
 
-/** Types de journal que le scoring consomme (personne + société). */
+/**
+ * Types de journal que le scoring consomme : le dossier d'une société. Les faits
+ * d'une personne (inscription, commande, abonnement) n'y entrent plus depuis le
+ * lot P3 (2026-10-25) — ils ne nourrissaient que les coups « particulier ».
+ */
 const SCORED_TYPES = [
-  ACTIVITY_TYPES.userRegistered,
-  ACTIVITY_TYPES.orderPlaced,
-  ACTIVITY_TYPES.subscriptionCreated,
   ACTIVITY_TYPES.companyDeclared,
   ACTIVITY_TYPES.companyStepReached,
   ACTIVITY_TYPES.companyActivated,

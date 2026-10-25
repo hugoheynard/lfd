@@ -7,7 +7,7 @@
  * recompute (rouvrir le cockpit ne recompte pas l'affichage). On matérialise via
  * le vrai `POST /admin/recompute` pour éprouver la chaîne complète.
  */
-import type { LeadScoreView } from "@lfd/contracts";
+import type { CreatedLeadResponse, LeadScoreView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
@@ -64,6 +64,14 @@ async function seed(
   });
 }
 
+/** Un établissement démarché, saisi par la vraie route : le coup `nurture`. */
+async function captureLead(businessName: string): Promise<string> {
+  const created = jsonBody<CreatedLeadResponse>(
+    await staff().post("/admin/leads").send({ businessName }).expect(201),
+  );
+  return created.id;
+}
+
 /** Matérialise le read-model via le vrai endpoint de recompute. */
 async function recompute(): Promise<void> {
   await ctx
@@ -79,20 +87,17 @@ describe("GET /admin/cockpit", () => {
   });
 
   it("rend la queue top-5 du read-model matérialisé et journalise reco.shown", async () => {
-    await seed("order.placed", "u_hot", daysAgo(3), {
-      totalCents: 5000,
-      companyId: null,
-    });
+    const id = await captureLead("Bistrot du Coin");
     await recompute();
 
     const queue = jsonBody<LeadScoreView[]>(await staff().get("/admin/cockpit").expect(200));
     expect(queue).toHaveLength(1);
-    expect(queue[0]).toMatchObject({ subjectId: "u_hot", play: "lock_in" });
+    expect(queue[0]).toMatchObject({ subjectId: id, play: "nurture" });
 
     // reco.shown a bien été journalisé pour le coup affiché.
     const shown = await ctx.prisma.activityEvent.findMany({ where: { type: "reco.shown" } });
     expect(shown).toHaveLength(1);
-    expect(shown[0]).toMatchObject({ subjectType: "user", subjectId: "u_hot" });
+    expect(shown[0]).toMatchObject({ subjectType: "lead", subjectId: id });
   });
 
   /**
@@ -102,7 +107,7 @@ describe("GET /admin/cockpit", () => {
    * (relevé par Hugo le 2026-09-19 sur l'écran Journal).
    */
   it("inscrit reco.shown au nom du système, pas de la personne qui ouvre le cockpit", async () => {
-    await seed("order.placed", "u_hot", daysAgo(3), { totalCents: 5000, companyId: null });
+    await captureLead("Bistrot du Coin");
     await recompute();
 
     await staff().get("/admin/cockpit").expect(200);
@@ -113,10 +118,7 @@ describe("GET /admin/cockpit", () => {
   });
 
   it("reste idempotent : rouvrir le cockpit dans la même fenêtre ne recompte pas reco.shown", async () => {
-    await seed("order.placed", "u_hot", daysAgo(3), {
-      totalCents: 5000,
-      companyId: null,
-    });
+    await captureLead("Bistrot du Coin");
     await recompute();
 
     await staff().get("/admin/cockpit").expect(200);
@@ -132,17 +134,53 @@ describe("GET /admin/cockpit", () => {
   });
 
   it("fait remonter un lead cold actif dans la queue avec la play nurture", async () => {
-    await ctx.prisma.lead.create({
-      data: { id: "lead_nego", businessName: "Traiteur Démarché", status: "negotiating" },
-    });
+    const id = await captureLead("Traiteur Démarché");
+    await staff().patch(`/admin/leads/${id}`).send({ status: "negotiating" }).expect(204);
     await recompute();
 
     const queue = jsonBody<LeadScoreView[]>(await staff().get("/admin/cockpit").expect(200));
-    const cold = queue.find((entry) => entry.subjectId === "lead_nego");
+    const cold = queue.find((entry) => entry.subjectId === id);
     expect(cold).toMatchObject({
       subjectType: "lead",
       play: "nurture",
       label: "Traiteur Démarché",
     });
+  });
+
+  /**
+   * Régression (lot P3, 2026-10-25) : un particulier qui commandait sans
+   * société entrait dans « les 5 meilleurs coups » en `lock_in`.
+   */
+  it("ne met aucun particulier dans la queue", async () => {
+    await seed("user.registered", "u_perso", daysAgo(10), {});
+    await seed("order.placed", "u_perso", daysAgo(3), { totalCents: 5000, companyId: null });
+    await recompute();
+
+    const queue = jsonBody<LeadScoreView[]>(await staff().get("/admin/cockpit").expect(200));
+    expect(queue).toEqual([]);
+  });
+
+  /**
+   * Le read-model calculé avant P3 porte encore des lignes « personne »
+   * jusqu'au prochain recompute : le cockpit ne doit pas les montrer d'ici là.
+   */
+  it("écarte une ligne « personne » restée dans le read-model d'avant P3", async () => {
+    await ctx.prisma.leadScore.create({
+      data: {
+        subjectType: "user",
+        subjectId: "u_stale",
+        label: "chef@resto.fr",
+        play: "lock_in",
+        score: 99,
+        reason: "…",
+        momentum: "stable",
+        monetaryCents: 5000,
+        recencyDays: 1,
+        computedAt: new Date(daysAgo(0)),
+      },
+    });
+
+    const queue = jsonBody<LeadScoreView[]>(await staff().get("/admin/cockpit").expect(200));
+    expect(queue).toEqual([]);
   });
 });

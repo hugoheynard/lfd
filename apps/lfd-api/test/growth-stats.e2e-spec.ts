@@ -69,14 +69,13 @@ async function seed(
 }
 
 /**
- * Les dates de la fixture, dites par leur INTENTION (cf. `daysAgo`). Les KPI
- * `hot`/`mid` dérivent d'une fenêtre glissante de 14 jours ancrée à `now` : une
- * date en dur devient fausse le jour où le calendrier la dépasse, et le test
- * échoue sans qu'une ligne ait bougé.
+ * Les dates de la fixture, dites par leur INTENTION (cf. `daysAgo`) : la
+ * fenêtre d'analyse glisse avec `now`, et une date en dur en sortirait le jour
+ * où le calendrier la dépasse, sans qu'une ligne ait bougé.
  */
-const HOT_REGISTERED = daysAgo(10);
-const HOT_ORDER = daysAgo(5);
-const MID_REGISTERED = daysAgo(8);
+const PERSON_REGISTERED = daysAgo(10);
+const PERSON_ORDER = daysAgo(5);
+const PRO_ORDER = daysAgo(4);
 const COMPANY_DECLARED = daysAgo(12);
 const COMPANY_ACTIVATED = daysAgo(10);
 
@@ -85,21 +84,21 @@ describe("GET /admin/growth/stats", () => {
     await ctx.http().get("/admin/growth/stats").expect(401);
   });
 
-  it("dérive KPIs + entonnoirs du journal et des leads", async () => {
-    await seed("user.registered", "user", "u_hot", HOT_REGISTERED, { email: "h@r.fr" });
-    await seed("order.placed", "user", "u_hot", HOT_ORDER, { totalCents: 5000 });
-    await seed("user.registered", "user", "u_mid", MID_REGISTERED, { email: "m@r.fr" });
+  /**
+   * Régression (lot P3, 2026-10-25) : les KPIs comptaient les particuliers —
+   * `hot`/`mid` en prospects, leurs commandes sans société dans « Commandes ».
+   */
+  it("dérive KPIs + entonnoirs du journal et des leads, sans particuliers", async () => {
+    await seed("user.registered", "user", "u_perso", PERSON_REGISTERED, {});
+    await seed("order.placed", "user", "u_perso", PERSON_ORDER, { totalCents: 900 });
+    await seed("order.placed", "user", "u_pro", PRO_ORDER, { totalCents: 5000, companyId: "c1" });
     await seed("company.declared", "company", "c1", COMPANY_DECLARED, { via: "self" });
     await seed("company.activated", "company", "c1", COMPANY_ACTIVATED);
-    await ctx.prisma.lead.create({
-      data: { id: "lead_x", businessName: "Traiteur", status: "contacted" },
-    });
+    await staff().post("/admin/leads").send({ businessName: "Traiteur" }).expect(201);
 
     const stats = jsonBody<GrowthStatsView>(await staff().get("/admin/growth/stats").expect(200));
-    expect(stats.kpis).toMatchObject({
-      hot: 1,
-      mid: 1,
-      cold: 1,
+    expect(stats.kpis).toEqual({
+      prospects: 1,
       orders: 1,
       ordersTotalCents: 5000,
       companiesDeclared: 1,

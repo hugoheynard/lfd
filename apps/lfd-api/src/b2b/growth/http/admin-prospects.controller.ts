@@ -6,8 +6,9 @@ import { ListProspectsQuery } from "../application/queries/list-prospects.query.
 import type { ProspectView } from "@lfd/contracts";
 
 /**
- * Surface **staff** du module croissance : la liste des **prospects** (hot/mid),
- * dérivée du journal, pour l'onglet commercial.
+ * Surface **staff** du module croissance : la file des **prospects** — les
+ * établissements démarchés qui ne sont pas encore clients — pour l'onglet
+ * commercial.
  *
  * Surface staff murée par `@AdminSurface` : identité vérifiée, puis périmètre.
  */

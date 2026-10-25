@@ -155,7 +155,6 @@ export class CockpitPage {
     const k = stats.kpis;
     return [
       { label: 'Prospects', value: `${k.prospects}` },
-      { label: 'Chauds', value: `${k.hot}` },
       { label: 'Commandes', value: `${k.orders}` },
       { label: 'Conversion', value: `${Math.round(k.conversionRate * 100)} %` },
     ];

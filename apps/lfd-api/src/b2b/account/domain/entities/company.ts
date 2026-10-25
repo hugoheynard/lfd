@@ -8,6 +8,7 @@ import {
 } from "../errors/account-errors.js";
 import { NO_FULFILLMENT_PREFERENCE } from "@lfd/contracts";
 import type { DeferredTerm, FulfillmentPreferenceView } from "@lfd/contracts";
+import type { CompanyDeclarationChannel } from "../value-objects/company-declaration-channel.js";
 import type { CompanyStatus } from "../value-objects/company-status.js";
 import type { StaffTrace } from "../value-objects/staff-trace.js";
 import type { SuspensionCause } from "../value-objects/suspension-cause.js";
@@ -113,6 +114,12 @@ export interface ReconstituteCompanyInput {
   readonly directDebitBlock?: DirectDebitBlock | null;
   /** Sa place dans la hiérarchie des comptes, **facultative** : absente = société seule. */
   readonly hierarchy?: HierarchyPlace;
+  /**
+   * Par qui elle a été déclarée, ou `null` : une société dont le fait
+   * `company.declared` n'a jamais atteint le journal n'a pas pu être rattrapée
+   * par la migration, et on n'invente pas son canal.
+   */
+  readonly declaredVia?: CompanyDeclarationChannel | null;
 }
 
 /**
@@ -221,6 +228,8 @@ export class Company {
     private directDebitBlockValue: DirectDebitBlock | null,
     /** Principal, sous-comptes, compte de groupe (sous-comptes §2). */
     private hierarchyValue: HierarchyPlace,
+    /** Fait de naissance, jamais muté — cf. {@link CompanyDeclarationChannel}. */
+    private readonly declaredViaValue: CompanyDeclarationChannel | null,
   ) {
     this.loadedHierarchy = hierarchyValue;
   }
@@ -236,7 +245,16 @@ export class Company {
     );
   }
 
-  static declare(identity: CompanyIdentityInput, contact: CompanyContact | null): Company {
+  /**
+   * `via` est décidé par l'appelant, qui SAIT par quelle porte il entre : le
+   * client qui se déclare dit `self`, le staff dit `staff`. Il entre à la
+   * naissance et n'en ressort plus.
+   */
+  static declare(
+    identity: CompanyIdentityInput,
+    contact: CompanyContact | null,
+    via: CompanyDeclarationChannel,
+  ): Company {
     return new Company(
       null,
       // L'ENSEIGNE est ce qu'on exige : c'est le nom que le commercial a en
@@ -269,6 +287,7 @@ export class Company {
       null,
       // Seule : un sous-compte naît par `attachTo`, sous le verrou de la hiérarchie.
       HierarchyPlace.standalone(),
+      via,
     );
   }
 
@@ -293,11 +312,17 @@ export class Company {
       input.kbis ?? null,
       input.directDebitBlock ?? null,
       input.hierarchy ?? HierarchyPlace.standalone(),
+      input.declaredVia ?? null,
     );
   }
 
   get id(): string | null {
     return this.identityId;
+  }
+
+  /** Par qui elle a été déclarée, ou `null` si on ne l'a jamais su. */
+  get declaredVia(): CompanyDeclarationChannel | null {
+    return this.declaredViaValue;
   }
 
   get raisonSociale(): string {

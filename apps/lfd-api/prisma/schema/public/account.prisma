@@ -38,6 +38,17 @@ enum CompanyStatus {
   @@schema("public")
 }
 
+/// Par qui une société a été déclarée : le client lui-même (porte pro), ou le
+/// staff. Fait de naissance, écrit à la création et jamais muté
+/// (`documentation/b2b/plan-auto-acquisition-pro.md`, § 5, lot P1).
+enum CompanyDeclarationChannel {
+  self
+  staff
+
+  @@map("company_declaration_channel")
+  @@schema("public")
+}
+
 /// Rôle d'une personne AU SEIN d'une société donnée — porté par le `Membership`,
 /// donc variable d'une société à l'autre pour la même personne.
 /// `company_admin` = gère les users/commandes de cette société (le
@@ -140,6 +151,12 @@ model Company {
   // certifier un KBIS rouvrirait le robinet d'un client en recouvrement.
   // `null` hors suspension.
   suspensionCause SuspensionCause? @map("suspension_cause")
+
+  // Par qui elle a été déclarée. `null` = on ne l'a jamais su : une société
+  // dont le fait `company.declared` n'a pas atteint le journal (abonné
+  // best-effort) n'a pas pu être rattrapée par la migration
+  // `20261025200000_le_canal_de_declaration`, et on n'invente pas son canal.
+  declaredVia CompanyDeclarationChannel? @map("declared_via")
 
   // KBIS — l'extrait déposé par le client, demandé pour la validation. Le fichier
   // vit dans le stockage objet (R2) ; on ne garde ici que ses métadonnées et sa

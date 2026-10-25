@@ -82,7 +82,7 @@ export class CreateCompanyByStaffHandler implements ICommandHandler<
     // tient les règles (e-mail valide, fonction bornée). Absent, c'est `null` —
     // pas un contact aux champs vides (cf. `CompanyContact`).
     const contact = command.contact === null ? null : ContactDetails.create(command.contact);
-    const company = Company.declare(command, contact);
+    const company = Company.declare(command, contact, "staff");
 
     // Le contrôle d'unicité ne vaut que si on a un SIRET : sans lui, il n'y a
     // rien à dédupliquer, et comparer des chaînes vides ferait de la deuxième

@@ -7,9 +7,10 @@ import type { ProspectView } from '@lfd/contracts';
 import { B2B_API_BASE } from '../../api/api-config';
 
 /**
- * Lecture des **prospects** (hot/mid) dérivés du journal — `GET /admin/prospects`.
- * Même auth staff que le reste de l'admin (token relayé par le shell ; `null` en
- * dev/standalone → aucun en-tête, bypass backend). Transport pur.
+ * Lecture des **prospects** — les établissements démarchés qui ne sont pas
+ * encore clients — `GET /admin/prospects`. Même auth staff que le reste de
+ * l'admin (token relayé par le shell ; `null` en dev/standalone → aucun
+ * en-tête, bypass backend). Transport pur.
  */
 @Injectable({ providedIn: 'root' })
 export class ProspectsService {

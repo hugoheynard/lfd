@@ -37,6 +37,8 @@ function company(hierarchy: Partial<CompanyHierarchyView> = {}): AdminCompanyDet
     hasOpenSupportRequest: false,
     parent: null,
     createdAt: '2026-07-30T10:00:00.000Z',
+    declaredVia: null,
+    piecesReached: [],
     activatedAt: null,
     warnings: [],
     activation: null,

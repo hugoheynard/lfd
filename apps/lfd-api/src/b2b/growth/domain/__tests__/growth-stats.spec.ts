@@ -32,23 +32,28 @@ function lead(overrides: Partial<LeadView> = {}): LeadView {
 }
 
 describe("deriveGrowthStats", () => {
-  it("calcule les KPIs (hot/mid/cold, commandes, conversion)", () => {
+  /**
+   * Régression (lot P3, 2026-10-25) : les KPIs comptaient les particuliers —
+   * `hot`/`mid` en prospects, leurs commandes sans société dans « Commandes ».
+   */
+  it("calcule les KPIs sans particuliers : leads ouverts, commandes de société, conversion", () => {
     const stats = deriveGrowthStats(
       [
-        ev("user.registered", "user", "u_hot", "2026-08-10T09:00:00.000Z", { email: "h@r.fr" }),
-        ev("order.placed", "user", "u_hot", "2026-08-15T09:00:00.000Z", { totalCents: 5000 }),
-        ev("user.registered", "user", "u_mid", "2026-08-12T09:00:00.000Z", { email: "m@r.fr" }),
+        ev("user.registered", "user", "u_perso", "2026-08-10T09:00:00.000Z"),
+        ev("order.placed", "user", "u_perso", "2026-08-15T09:00:00.000Z", { totalCents: 900 }),
+        ev("order.placed", "user", "u_pro", "2026-08-15T09:00:00.000Z", {
+          totalCents: 5000,
+          companyId: "c1",
+        }),
         ev("company.declared", "company", "c1", "2026-08-05T09:00:00.000Z", { via: "self" }),
         ev("company.activated", "company", "c1", "2026-08-10T09:00:00.000Z"),
         ev("company.declared", "company", "c2", "2026-08-06T09:00:00.000Z", { via: "self" }),
       ],
-      [lead({ id: "l1", status: "contacted" })],
+      [lead({ id: "l1", status: "contacted" }), lead({ id: "l2", status: "lost" })],
       NOW,
     );
-    expect(stats.kpis).toMatchObject({
-      hot: 1,
-      mid: 1,
-      cold: 1,
+    expect(stats.kpis).toEqual({
+      prospects: 1,
       orders: 1,
       ordersTotalCents: 5000,
       companiesDeclared: 2,
@@ -57,20 +62,35 @@ describe("deriveGrowthStats", () => {
     });
   });
 
-  it("bucketise l'acquisition par semaine (inscriptions + 1res commandes)", () => {
+  it("bucketise l'acquisition par semaine : sociétés déclarées, 1res commandes de société, leads", () => {
     const stats = deriveGrowthStats(
       [
-        ev("user.registered", "user", "u1", "2026-08-17T09:00:00.000Z"),
-        ev("order.placed", "user", "u1", "2026-08-18T09:00:00.000Z", { totalCents: 100 }),
-        ev("order.placed", "user", "u1", "2026-08-19T09:00:00.000Z", { totalCents: 100 }),
+        ev("company.declared", "company", "c1", "2026-08-17T09:00:00.000Z", { via: "self" }),
+        ev("order.placed", "user", "u1", "2026-08-18T09:00:00.000Z", {
+          totalCents: 100,
+          companyId: "c1",
+        }),
+        ev("order.placed", "user", "u1", "2026-08-19T09:00:00.000Z", {
+          totalCents: 100,
+          companyId: "c1",
+        }),
+        // Un particulier : ni inscription ni commande ne comptent.
+        ev("user.registered", "user", "u_perso", "2026-08-17T09:00:00.000Z"),
+        ev("order.placed", "user", "u_perso", "2026-08-18T09:00:00.000Z", { totalCents: 100 }),
+        ev("lead.captured", "lead", "l1", "2026-08-18T09:00:00.000Z"),
       ],
       [],
       NOW,
       4,
     );
-    // Semaine du 17 août (lundi) : 1 inscription + 1 première commande (pas 2).
+    // Semaine du 17 août (lundi) : 1 déclaration + 1 première commande (pas 2) + 1 lead.
     const week = stats.acquisition.find((p) => p.weekStart === "2026-08-17");
-    expect(week).toMatchObject({ registrations: 1, firstOrders: 1 });
+    expect(week).toEqual({
+      weekStart: "2026-08-17",
+      companiesDeclared: 1,
+      firstOrders: 1,
+      leadsCaptured: 1,
+    });
     expect(stats.weeks).toBe(4);
     expect(stats.acquisition).toHaveLength(4);
   });
@@ -134,81 +154,42 @@ describe("deriveGrowthStats", () => {
     expect(stats.coldFunnel.map((s) => s.count)).toEqual([1, 1, 1, 0, 0]);
   });
 
-  it("reconstruit le momentum du vivier (stock debout par chaleur, période par période)", () => {
+  it("calcule des cohortes de rétention par semaine de déclaration de société", () => {
     const stats = deriveGrowthStats(
       [
-        // mid : inscrit, jamais de commande.
-        ev("user.registered", "user", "u_mid", "2026-08-10T09:00:00.000Z"),
-        // hot : inscrit + commande perso (companyId absent).
-        ev("user.registered", "user", "u_hot", "2026-08-10T09:00:00.000Z"),
-        ev("order.placed", "user", "u_hot", "2026-08-15T09:00:00.000Z", { totalCents: 100 }),
-        // converti : hot puis SORT du vivier à sa 1re commande pour une société (08-19).
-        ev("user.registered", "user", "u_conv", "2026-08-10T09:00:00.000Z"),
-        ev("order.placed", "user", "u_conv", "2026-08-12T09:00:00.000Z", { totalCents: 100 }),
-        ev("order.placed", "user", "u_conv", "2026-08-19T09:00:00.000Z", {
+        ev("company.declared", "company", "c1", "2026-08-10T09:00:00.000Z", { via: "self" }),
+        ev("order.placed", "user", "u1", "2026-08-11T09:00:00.000Z", {
           totalCents: 100,
           companyId: "c1",
         }),
-        // cold : deux leads saisis ; le second est perdu le 18.
-        ev("lead.captured", "lead", "l1", "2026-08-08T09:00:00.000Z"),
-        ev("lead.captured", "lead", "l2", "2026-08-08T09:00:00.000Z"),
-        ev("lead.lost", "lead", "l2", "2026-08-18T09:00:00.000Z"),
-      ],
-      [],
-      NOW,
-    );
-    const w10 = stats.temperatureFlow.find((p) => p.weekStart === "2026-08-10");
-    // Clôture du 10 (borne 08-17) : u_hot + u_conv hot ; u_mid mid ; l1+l2 cold.
-    expect(w10).toMatchObject({ hot: 2, mid: 1, cold: 2 });
-    const w17 = stats.temperatureFlow.find((p) => p.weekStart === "2026-08-17");
-    // Clôture du 17 (borne 08-24) : u_conv a commandé pour c1 → sorti ; l2 perdu → sorti.
-    expect(w17).toMatchObject({ hot: 1, mid: 1, cold: 1 });
-  });
-
-  it("trace les transferts entre bandes (début → fin de période)", () => {
-    // Fenêtre de 4 semaines : bornes début = clôture du 2026-07-27, fin = clôture du 2026-08-17.
-    const stats = deriveGrowthStats(
-      [
-        // Tiède au début (inscrit avant), devient chaud (commande perso pendant la période).
-        ev("user.registered", "user", "u_warm", "2026-07-25T09:00:00.000Z"),
-        ev("order.placed", "user", "u_warm", "2026-08-14T09:00:00.000Z", { totalCents: 100 }),
-        // Chaud au début, converti à la fin (commande société pendant la période).
-        ev("user.registered", "user", "u_hot", "2026-07-20T09:00:00.000Z"),
-        ev("order.placed", "user", "u_hot", "2026-07-22T09:00:00.000Z", { totalCents: 100 }),
-        ev("order.placed", "user", "u_hot", "2026-08-14T09:00:00.000Z", {
+        ev("order.placed", "user", "u1", "2026-08-18T09:00:00.000Z", {
           totalCents: 100,
           companyId: "c1",
         }),
-        // Cold au début, perdu à la fin.
-        ev("lead.captured", "lead", "l1", "2026-07-20T09:00:00.000Z"),
-        ev("lead.lost", "lead", "l1", "2026-08-14T09:00:00.000Z"),
-      ],
-      [],
-      NOW,
-      4,
-    );
-    const link = (from: string, to: string): number | undefined =>
-      stats.temperatureTransitions.links.find((x) => x.source === from && x.target === to)?.value;
-    expect(link("from_mid", "to_hot")).toBe(1);
-    expect(link("from_hot", "to_converted")).toBe(1);
-    expect(link("from_cold", "to_lost")).toBe(1);
-  });
-
-  it("calcule des cohortes de rétention par semaine d'inscription", () => {
-    const stats = deriveGrowthStats(
-      [
-        ev("user.registered", "user", "u1", "2026-08-10T09:00:00.000Z"),
-        ev("order.placed", "user", "u1", "2026-08-11T09:00:00.000Z", { totalCents: 100 }),
-        ev("order.placed", "user", "u1", "2026-08-18T09:00:00.000Z", { totalCents: 100 }),
+        ev("company.declared", "company", "c2", "2026-08-12T09:00:00.000Z", { via: "staff" }),
       ],
       [],
       NOW,
       4,
     );
     const cohort = stats.cohorts.find((c) => c.cohortWeek === "2026-08-10");
-    expect(cohort?.size).toBe(1);
-    // Semaine 0 (inscription) et semaine +1 : commande présente → rétention 1.
-    expect(cohort?.retention[0]).toBe(1);
-    expect(cohort?.retention[1]).toBe(1);
+    expect(cohort?.size).toBe(2);
+    // c1 commande en semaine 0 et +1 ; c2 jamais → 1/2 chaque fois.
+    expect(cohort?.retention[0]).toBe(0.5);
+    expect(cohort?.retention[1]).toBe(0.5);
+  });
+
+  /** Régression (lot P3, 2026-10-25) : la cohorte était celle des personnes inscrites. */
+  it("ne forme aucune cohorte de particuliers inscrits", () => {
+    const stats = deriveGrowthStats(
+      [
+        ev("user.registered", "user", "u1", "2026-08-10T09:00:00.000Z"),
+        ev("order.placed", "user", "u1", "2026-08-11T09:00:00.000Z", { totalCents: 100 }),
+      ],
+      [],
+      NOW,
+      4,
+    );
+    expect(stats.cohorts).toEqual([]);
   });
 });

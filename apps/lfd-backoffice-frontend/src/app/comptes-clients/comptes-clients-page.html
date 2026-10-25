@@ -54,14 +54,17 @@
         />
 
         <!-- La place dans la hiérarchie, à côté du statut : deux questions
-           indépendantes, qui se combinent (« les sous-comptes en attente »). -->
-        <fold-view-toggle
-          class="filter"
-          ariaLabel="Filtrer les comptes par place dans la hiérarchie"
-          [options]="hierarchySegments"
-          [value]="hierarchy()"
-          (valueChange)="onHierarchyChange($event)"
-        />
+           indépendantes, qui se combinent (« les sous-comptes en attente »).
+           Absente du pipeline des inscrits seuls, qui ne la lit pas. -->
+        @if (filter() !== 'self_signup') {
+          <fold-view-toggle
+            class="filter"
+            ariaLabel="Filtrer les comptes par place dans la hiérarchie"
+            [options]="hierarchySegments"
+            [value]="hierarchy()"
+            (valueChange)="onHierarchyChange($event)"
+          />
+        }
       </div>
 
       <!-- Trois chemins d'arrivée : le nom en tête, un SIRET lu sur un document,
@@ -82,208 +85,219 @@
       </p>
     }
 
-    <!-- `narrowLayout="cards"
+    @if (filter() === 'self_signup') {
+      <!-- Le pipeline des inscrits seuls a SON tableau : pièces une à une,
+           « bloqué depuis », le plus ancien en tête (plan auto-acquisition
+           pro, P1). Il remplace l'étage Activation de Prospects. -->
+      <app-self-signup-pipeline
+        [companies]="searched()"
+        [now]="loadedAt()"
+        [loading]="state() === 'loading'"
+      />
+    } @else {
+      <!-- `narrowLayout="cards"
       rowCardChrome="none"` : sous 768px la table cède la place aux cartes
          ci-dessous. `auto-cards` empilerait les sept colonnes en paires
          libellé/valeur — sept lignes par compte, et le nom perdu au milieu. -->
-    <fold-data-table
-      caption="Comptes clients B2B"
-      toolbarSurface="accent"
-      narrowLayout="cards"
-      rowCardChrome="none"
-      hover
-      clickable
-      stickyFirst
-      [columns]="columns"
-      [rows]="paged()"
-      [rowKey]="rowKey"
-      [loading]="state() === 'loading'"
-      [empty]="emptyState()"
-      (rowClick)="open($event)"
-    >
-      <!-- La barre de titre de la table, projetée dans sa surface accent. Variante
+      <fold-data-table
+        caption="Comptes clients B2B"
+        toolbarSurface="accent"
+        narrowLayout="cards"
+        rowCardChrome="none"
+        hover
+        clickable
+        stickyFirst
+        [columns]="columns"
+        [rows]="paged()"
+        [rowKey]="rowKey"
+        [loading]="state() === 'loading'"
+        [empty]="emptyState()"
+        (rowClick)="open($event)"
+      >
+        <!-- La barre de titre de la table, projetée dans sa surface accent. Variante
            `bar` : UNE ligne, c'est un filet d'en-tête, pas une section. Le compte
            tient dans le libellé plutôt que dans un sous-titre — il n'aurait pas
            mérité une seconde ligne, mais il mérite d'être là : c'est le seul
            chiffre de l'écran que le filtre fait bouger. -->
-      <fold-element-title foldToolbar variant="bar" [title]="tableTitle()" />
+        <fold-element-title foldToolbar variant="bar" [title]="tableTitle()" />
 
-      <!-- Du TEXTE, plus un lien : c'est la ligne entière qui ouvre la fiche
+        <!-- Du TEXTE, plus un lien : c'est la ligne entière qui ouvre la fiche
            depuis le 2026-09-12. Garder l'ancre ici obligerait à viser huit
            caractères pour faire ce qu'un clic n'importe où sur la ligne fait,
            et ferait naviguer deux fois au même endroit. -->
-      <ng-template foldCell="reference" let-row>
-        <span class="ref">{{ row.reference }}</span>
-      </ng-template>
+        <ng-template foldCell="reference" let-row>
+          <span class="ref">{{ row.reference }}</span>
+        </ng-template>
 
-      <ng-template foldCell="raisonSociale" let-row>
-        <span class="raison">
-          {{ displayName(row) }}
-          <!-- La pastille mène DIRECTEMENT à l'onglet Alertes : sans ça, la
+        <ng-template foldCell="raisonSociale" let-row>
+          <span class="raison">
+            {{ displayName(row) }}
+            <!-- La pastille mène DIRECTEMENT à l'onglet Alertes : sans ça, la
                seule chose actionnable de la ligne demanderait deux clics et de
                savoir où regarder. -->
-          @if (pendingAlertsOf(row); as pending) {
-            <!-- 🔴 `stopPropagation` : fold n'exclut pas les contrôles internes
+            @if (pendingAlertsOf(row); as pending) {
+              <!-- 🔴 `stopPropagation` : fold n'exclut pas les contrôles internes
                  du clic de ligne (il ne le fait qu'au clavier). Sans ça, le clic
                  remonterait et la ligne ouvrirait la vue d'ensemble PAR-DESSUS
                  les alertes — la pastille deviendrait inatteignable. -->
-            <a
-              class="alert-pill"
-              [routerLink]="['/comptes-clients', row.id, 'alertes']"
-              [title]="pending + ' alerte' + (pending > 1 ? 's' : '') + ' en attente'"
-              (click)="$event.stopPropagation()"
-            >
-              <fold-badge variant="warning" [content]="pending + ' à voir'" />
-            </a>
-          }
-          <!-- Le principal, s'il y en a un : un sous-compte reste une ligne à
+              <a
+                class="alert-pill"
+                [routerLink]="['/comptes-clients', row.id, 'alertes']"
+                [title]="pending + ' alerte' + (pending > 1 ? 's' : '') + ' en attente'"
+                (click)="$event.stopPropagation()"
+              >
+                <fold-badge variant="warning" [content]="pending + ' à voir'" />
+              </a>
+            }
+            <!-- Le principal, s'il y en a un : un sous-compte reste une ligne à
                part entière (R9), et ce badge mène à la fiche de son principal. -->
-          @if (row.parent; as parent) {
-            <app-sub-account-badge [parent]="parent" />
-          }
-          <!-- Un principal le dit, avec son nombre de sous-comptes. -->
-          @if (subAccountsOf(row); as count) {
-            <fold-badge
-              variant="info"
-              [content]="count + ' sous-compte' + (count > 1 ? 's' : '')"
-              data-sub-account-count
-            />
-          }
-        </span>
-        <!-- En second : la dénomination du greffe, quand elle diffère du nom
+            @if (row.parent; as parent) {
+              <app-sub-account-badge [parent]="parent" />
+            }
+            <!-- Un principal le dit, avec son nombre de sous-comptes. -->
+            @if (subAccountsOf(row); as count) {
+              <fold-badge
+                variant="info"
+                [content]="count + ' sous-compte' + (count > 1 ? 's' : '')"
+                data-sub-account-count
+              />
+            }
+          </span>
+          <!-- En second : la dénomination du greffe, quand elle diffère du nom
              d'usage. Elle sert à retrouver un dossier, pas à reconnaître un
              client. -->
-        @if (row.raisonSociale && row.raisonSociale !== displayName(row)) {
-          <span class="enseigne">{{ row.raisonSociale }}</span>
-        }
-      </ng-template>
+          @if (row.raisonSociale && row.raisonSociale !== displayName(row)) {
+            <span class="enseigne">{{ row.raisonSociale }}</span>
+          }
+        </ng-template>
 
-      <ng-template foldCell="siret" let-row>
-        <span class="siret">{{ row.siret }}</span>
-      </ng-template>
+        <ng-template foldCell="siret" let-row>
+          <span class="siret">{{ row.siret }}</span>
+        </ng-template>
 
-      <ng-template foldCell="status" let-row>
-        @if (isAssistance(row)) {
-          <fold-badge variant="info" content="Assistance" />
-        } @else {
-          <fold-status-badge [status]="row.status" [label]="statusLabel(row)" />
-        }
-      </ng-template>
+        <ng-template foldCell="status" let-row>
+          @if (isAssistance(row)) {
+            <fold-badge variant="info" content="Assistance" />
+          } @else {
+            <fold-status-badge [status]="row.status" [label]="statusLabel(row)" />
+          }
+        </ng-template>
 
-      <ng-template foldCell="contact" let-row>
-        <span class="contact">{{ contactName(row) }}</span>
-        @if (row.primaryContact.email) {
-          <span class="contact-email">{{ row.primaryContact.email }}</span>
-        }
-      </ng-template>
+        <ng-template foldCell="contact" let-row>
+          <span class="contact">{{ contactName(row) }}</span>
+          @if (row.primaryContact.email) {
+            <span class="contact-email">{{ row.primaryContact.email }}</span>
+          }
+        </ng-template>
 
-      <!-- Le propriétaire est CHERCHABLE : il doit donc être visible, sinon une
+        <!-- Le propriétaire est CHERCHABLE : il doit donc être visible, sinon une
            ligne remonterait sans qu'on voie pourquoi elle correspond. -->
-      <ng-template foldCell="owner" let-row>
-        @if (ownerName(row); as name) {
-          <span class="contact">{{ name }}</span>
-        } @else {
-          <span class="owner-none">Aucun</span>
-        }
-      </ng-template>
+        <ng-template foldCell="owner" let-row>
+          @if (ownerName(row); as name) {
+            <span class="contact">{{ name }}</span>
+          } @else {
+            <span class="owner-none">Aucun</span>
+          }
+        </ng-template>
 
-      <ng-template foldCell="createdAt" let-row>
-        <span class="date">{{ formatDate(row.createdAt) }}</span>
-      </ng-template>
+        <ng-template foldCell="createdAt" let-row>
+          <span class="date">{{ formatDate(row.createdAt) }}</span>
+        </ng-template>
 
-      <!-- La carte mobile. Elle ne rejoue PAS les sept colonnes : elle garde ce
+        <!-- La carte mobile. Elle ne rejoue PAS les sept colonnes : elle garde ce
            qui sert à reconnaître un compte au téléphone — le nom, son état, de
            quoi le dicter (référence, SIRET), et qui décroche. La date d'entrée
            part : sur mobile on cherche un client, on n'audite pas un portefeuille.
 
            La carte entière est le lien vers la fiche — une cible de la largeur
            du pouce, là où un `<a>` sur le seul nom demanderait de viser. -->
-      <ng-template foldRowCard let-row>
-        <!-- L'ancre reste : elle porte l'ouverture dans un nouvel onglet que le
+        <ng-template foldRowCard let-row>
+          <!-- L'ancre reste : elle porte l'ouverture dans un nouvel onglet que le
              clic de ligne ne sait pas donner. `stopPropagation` évite la double
              navigation vers la même fiche. -->
-        <a
-          class="rc"
-          [routerLink]="['/comptes-clients', row.id]"
-          (click)="$event.stopPropagation()"
-        >
-          <span class="rc-head">
-            <span class="rc-name">{{ displayName(row) }}</span>
-            @if (isAssistance(row)) {
-              <fold-badge variant="info" content="Assistance" />
-            } @else {
-              <fold-status-badge [status]="row.status" [label]="statusLabel(row)" />
-            }
-          </span>
-
-          @if (row.raisonSociale && row.raisonSociale !== displayName(row)) {
-            <span class="rc-legal">{{ row.raisonSociale }}</span>
-          }
-
-          <span class="rc-ids">
-            <span class="rc-ref">{{ row.reference }}</span>
-            @if (row.siret) {
-              <span class="rc-siret">{{ row.siret }}</span>
-            }
-          </span>
-
-          @if (contactName(row); as name) {
-            <span class="rc-contact">
-              {{ name }}
-              @if (row.primaryContact.email) {
-                <span class="rc-email">{{ row.primaryContact.email }}</span>
-              }
-            </span>
-          }
-        </a>
-
-        <!-- Hors du lien, comme les alertes : le principal est une AUTRE
-             destination que la fiche de la carte. -->
-        @if (row.parent; as parent) {
-          <span class="rc-parent">
-            <app-sub-account-badge [parent]="parent" />
-          </span>
-        }
-        @if (subAccountsOf(row); as count) {
-          <span class="rc-parent">
-            <fold-badge
-              variant="info"
-              [content]="count + ' sous-compte' + (count > 1 ? 's' : '')"
-            />
-          </span>
-        }
-
-        <!-- Hors du lien : deux destinations dans une même ancre feraient un
-             lien imbriqué, que le HTML interdit et que le clavier ne sait pas
-             parcourir. -->
-        @if (pendingAlertsOf(row); as pending) {
           <a
-            class="rc-alerts"
-            [routerLink]="['/comptes-clients', row.id, 'alertes']"
+            class="rc"
+            [routerLink]="['/comptes-clients', row.id]"
             (click)="$event.stopPropagation()"
           >
-            <fold-badge
-              variant="warning"
-              [content]="pending + ' alerte' + (pending > 1 ? 's' : '') + ' à voir'"
-            />
-          </a>
-        }
-      </ng-template>
-    </fold-data-table>
+            <span class="rc-head">
+              <span class="rc-name">{{ displayName(row) }}</span>
+              @if (isAssistance(row)) {
+                <fold-badge variant="info" content="Assistance" />
+              } @else {
+                <fold-status-badge [status]="row.status" [label]="statusLabel(row)" />
+              }
+            </span>
 
-    <!-- Contrôlé de bout en bout : la tranche vient de `paged()`, et le
+            @if (row.raisonSociale && row.raisonSociale !== displayName(row)) {
+              <span class="rc-legal">{{ row.raisonSociale }}</span>
+            }
+
+            <span class="rc-ids">
+              <span class="rc-ref">{{ row.reference }}</span>
+              @if (row.siret) {
+                <span class="rc-siret">{{ row.siret }}</span>
+              }
+            </span>
+
+            @if (contactName(row); as name) {
+              <span class="rc-contact">
+                {{ name }}
+                @if (row.primaryContact.email) {
+                  <span class="rc-email">{{ row.primaryContact.email }}</span>
+                }
+              </span>
+            }
+          </a>
+
+          <!-- Hors du lien, comme les alertes : le principal est une AUTRE
+             destination que la fiche de la carte. -->
+          @if (row.parent; as parent) {
+            <span class="rc-parent">
+              <app-sub-account-badge [parent]="parent" />
+            </span>
+          }
+          @if (subAccountsOf(row); as count) {
+            <span class="rc-parent">
+              <fold-badge
+                variant="info"
+                [content]="count + ' sous-compte' + (count > 1 ? 's' : '')"
+              />
+            </span>
+          }
+
+          <!-- Hors du lien : deux destinations dans une même ancre feraient un
+             lien imbriqué, que le HTML interdit et que le clavier ne sait pas
+             parcourir. -->
+          @if (pendingAlertsOf(row); as pending) {
+            <a
+              class="rc-alerts"
+              [routerLink]="['/comptes-clients', row.id, 'alertes']"
+              (click)="$event.stopPropagation()"
+            >
+              <fold-badge
+                variant="warning"
+                [content]="pending + ' alerte' + (pending > 1 ? 's' : '') + ' à voir'"
+              />
+            </a>
+          }
+        </ng-template>
+      </fold-data-table>
+
+      <!-- Contrôlé de bout en bout : la tranche vient de `paged()`, et le
          paginator ne compte QUE ce que le filtre a laissé passer. -->
-    @if (filtered().length > pageSize()) {
-      <fold-paginator
-        class="pager"
-        [currentPage]="clampedPage()"
-        [pageSize]="pageSize()"
-        [totalItems]="filtered().length"
-        [pageSizeOptions]="pageSizes"
-        [labels]="paginatorLabels"
-        (pageChange)="page.set($event)"
-        (pageSizeChange)="onPageSizeChange($event)"
-      />
+      @if (filtered().length > pageSize()) {
+        <fold-paginator
+          class="pager"
+          [currentPage]="clampedPage()"
+          [pageSize]="pageSize()"
+          [totalItems]="filtered().length"
+          [pageSizeOptions]="pageSizes"
+          [labels]="paginatorLabels"
+          (pageChange)="page.set($event)"
+          (pageSizeChange)="onPageSizeChange($event)"
+        />
+      }
     }
   }
 </section>

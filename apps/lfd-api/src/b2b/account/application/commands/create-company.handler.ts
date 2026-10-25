@@ -46,15 +46,19 @@ export class CreateCompanyHandler implements ICommandHandler<CreateCompanyComman
     // déjà valide ; on le repasse par les value objects parce qu'un enregistrement
     // ancien peut être incomplet (les colonnes de profil sont arrivées avec des
     // défauts vides) — mieux vaut un refus explicite qu'une société au contact vide.
-    const company = Company.declare(command, {
-      firstName: PersonName.create(owner.firstName, "Prénom du contact"),
-      lastName: PersonName.create(owner.lastName, "Nom du contact"),
-      // Le contact dérivé d'un profil n'a pas de fonction ; le staff, lui, en
-      // fournit une à la création admin (cf. CreateCompanyByStaffHandler).
-      fonction: "",
-      email: EmailAddress.create(owner.email),
-      phone: PhoneNumber.create(owner.phone),
-    });
+    const company = Company.declare(
+      command,
+      {
+        firstName: PersonName.create(owner.firstName, "Prénom du contact"),
+        lastName: PersonName.create(owner.lastName, "Nom du contact"),
+        // Le contact dérivé d'un profil n'a pas de fonction ; le staff, lui, en
+        // fournit une à la création admin (cf. CreateCompanyByStaffHandler).
+        fonction: "",
+        email: EmailAddress.create(owner.email),
+        phone: PhoneNumber.create(owner.phone),
+      },
+      "self",
+    );
 
     // Le contrôle d'unicité ne vaut que si on a un SIRET : sans lui, il n'y a
     // rien à dédupliquer, et comparer des chaînes vides ferait de la deuxième

@@ -21,6 +21,7 @@ describe("Company — sous-comptes (sous-comptes S1)", () => {
         vatNumber: "",
       },
       null,
+      "self",
     );
     company.attachTo(principalCompany());
 

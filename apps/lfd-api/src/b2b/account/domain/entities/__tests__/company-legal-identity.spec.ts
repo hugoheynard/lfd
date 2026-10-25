@@ -22,7 +22,7 @@ const bare: CompanyIdentityInput = {
 };
 
 function declared(identity: Partial<CompanyIdentityInput> = {}): Company {
-  return Company.declare({ ...bare, ...identity }, null);
+  return Company.declare({ ...bare, ...identity }, null, "self");
 }
 
 const NOTHING = { raisonSociale: "", formeJuridique: "", siret: "", siren: "" };

@@ -25,8 +25,10 @@ export class PrismaLeadScoreStore extends LeadScoreStore {
       play: row.play,
       score: row.score,
       reason: row.reason,
-      momentum: row.momentum,
-      monetaryCents: row.monetaryCents,
+      // Colonnes des anciens coups « personne » (retirés au lot P3,
+      // 2026-10-25) : gardées en base, plus jamais remplies.
+      momentum: null,
+      monetaryCents: 0,
       recencyDays: row.recencyDays,
       computedAt: new Date(row.computedAt),
     }));

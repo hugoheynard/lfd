@@ -8,46 +8,30 @@
 import { z } from "zod";
 
 /**
- * Température d'un prospect : `hot` a commandé, `mid` s'est inscrit sans commander,
- * `cold` a été **saisi par un commercial** (sortant) — ce dernier vient de
- * l'agrégat `Lead`, pas du journal.
+ * Une ligne de la file **Prospects** : un établissement **démarché** par le
+ * commercial, qui n'est pas encore client (un lead à l'étape active).
+ *
+ * Jusqu'au 2026-10-25 (plan `b2b/plan-auto-acquisition-pro.md`, lot P3), la
+ * file mêlait des **personnes** dérivées du journal (`hot` : a commandé sans
+ * société, `mid` : inscrit sans commande). Depuis que la boutique sert les
+ * particuliers, c'étaient des clients particuliers ; ils sont sortis du poste
+ * commercial, et la file n'a plus qu'une source : l'agrégat `Lead`.
  */
-export type ProspectTemperature = "hot" | "mid" | "cold";
-
-/** Origine du prospect : entrant (self-service) ou sortant (démarchage commercial). */
-export type ProspectSource = "inbound" | "outbound";
-
-/**
- * Trajectoire du rythme de commande (deux fenêtres glissantes de 14 jours) :
- * accélère / stable / refroidit / dormant (aucune commande récente).
- */
-export type MomentumTrajectory = "accelerating" | "stable" | "cooling" | "dormant";
-
-/** Une ligne de la liste **prospects** (sujet = personne, ou lead cold saisi). */
 export interface ProspectView {
-  readonly subjectId: string;
-  /** E-mail connu du journal (inscription) ; vide si la personne préexiste au journal. */
+  readonly leadId: string;
+  readonly businessName: string;
+  /** Nom du contact chez l'établissement, ou chaîne vide. */
+  readonly contactName: string;
+  /** Téléphone, ou chaîne vide. */
+  readonly phone: string;
+  /** E-mail (clé de rapprochement à l'inscription), ou chaîne vide. */
   readonly email: string;
-  readonly temperature: ProspectTemperature;
-  /** Entrant (hot/mid, dérivé du journal) ou sortant (cold, agrégat démarchage). */
-  readonly source: ProspectSource;
-  readonly momentum: MomentumTrajectory;
-  readonly orderCount: number;
-  /** Total commandé, en centimes. */
-  readonly totalCents: number;
-  /** Dernière commande (ISO), ou `null` pour un mid/cold. */
-  readonly lastOrderAt: string | null;
-  /** Première trace de la personne dans le journal (ISO). */
-  readonly firstSeenAt: string;
-  /** Jours depuis la dernière activité (dernière commande, sinon 1re trace). */
-  readonly recencyDays: number;
-  /** Libellé lisible : e-mail entrant, ou raison sociale saisie pour un cold. */
-  readonly label: string;
-  /**
-   * Statut de pipeline pour un lead **cold** (permet les actions de suivi en
-   * ligne) ; `null` pour un prospect **entrant** (hot/mid), qui n'a pas d'agrégat.
-   */
-  readonly leadStatus: LeadStatus | null;
+  /** Étape du pipeline — jamais close : un lead converti ou perdu a quitté la file. */
+  readonly status: ActiveLeadStatus;
+  /** Saisie du lead (ISO) : « depuis ». */
+  readonly capturedAt: string;
+  /** Dernier contact enregistré (ISO), ou `null` si jamais contacté. */
+  readonly lastContactedAt: string | null;
 }
 
 /** Statut d'un dossier dans le tunnel d'activation. */
@@ -85,15 +69,15 @@ export interface ActivationView {
 }
 
 /**
- * **Play** — le type de motion commerciale recommandée pour un lead, pas un tri
- * unique qui mélange les intentions :
- * - `lock_in` : prospect chaud (a commandé, pas d'abonnement) → verrouiller par un abonnement.
- * - `rescue` : dossier d'activation bloqué (adoption-stalled) → débloquer les pièces.
- * - `upgrade` : lead engagé (abonné, momentum porteur) → étendre le compte.
- * - `win_back` : lead qui refroidit ou dort (a commandé puis s'est tu) → reconquérir.
- * - `nurture` : lead **cold** (démarchage sortant) actif → faire avancer le pipeline.
+ * **Play** — le type de motion commerciale recommandée pour un lead :
+ * - `rescue` : dossier d'activation bloqué → débloquer les pièces.
+ * - `nurture` : lead démarché actif → faire avancer le pipeline.
+ *
+ * `lock_in`, `upgrade` et `win_back` visaient des **personnes** (le `hot` des
+ * prospects) : retirés au lot P3 (2026-10-25) avec les particuliers. Les faits
+ * `reco.shown` passés les portent encore — une valeur écrite ne se réécrit pas.
  */
-export type PlayType = "lock_in" | "rescue" | "upgrade" | "win_back" | "nurture";
+export type PlayType = "rescue" | "nurture";
 
 /**
  * Une ligne de la queue **« 5 meilleurs coups du jour »** — lue du **read-model
@@ -102,16 +86,16 @@ export type PlayType = "lock_in" | "rescue" | "upgrade" | "win_back" | "nurture"
  * pour rendre le score auditable côté commercial.
  */
 export interface LeadScoreView {
-  /** Sujet : une personne (`user`), une société (`company`) ou un lead cold (`lead`). */
-  readonly subjectType: "user" | "company" | "lead";
+  /** Sujet : une société (`company`) ou un lead démarché (`lead`). */
+  readonly subjectType: "company" | "lead";
   readonly subjectId: string;
   /**
-   * Libellé lisible : enseigne pour une société, e-mail pour une personne, nom
-   * commercial pour un lead cold — et l'identifiant en tout dernier repli.
+   * Libellé lisible : enseigne pour une société, nom commercial pour un lead
+   * démarché — et l'identifiant en tout dernier repli.
    *
    * ⚠️ Ce repli est un **aveu d'échec**, pas un cas nominal : une ligne qui
    * montre un identifiant est une ligne que personne n'appellera. Il n'arrive
-   * que si la société ou l'e-mail a disparu de la base entre deux recomputes.
+   * que si la société a disparu de la base entre deux recomputes.
    */
   readonly label: string;
   readonly play: PlayType;
@@ -119,10 +103,6 @@ export interface LeadScoreView {
   readonly score: number;
   /** Justification courte du score/play (product-led, pas de boîte noire). */
   readonly reason: string;
-  /** Trajectoire du rythme si connue (leads personne) ; `null` pour un dossier société. */
-  readonly momentum: MomentumTrajectory | null;
-  /** Total commandé rattaché au lead, en centimes. */
-  readonly monetaryCents: number;
   /** Jours depuis la dernière activité. */
   readonly recencyDays: number;
   /** Instant du dernier recalcul du read-model (ISO) — fraîcheur de la reco. */
@@ -134,10 +114,13 @@ export interface LeadScoreView {
 /**
  * Statut d'un **lead cold** dans le pipeline commercial explicite. Il **ne recule
  * jamais** (jalon monotone) ; `converted` / `lost` sont **terminaux**, atteignables
- * depuis n'importe quel état actif. Contrairement à hot/mid (projections sans
- * invariant), le cold est un **agrégat** : ces transitions sont gardées.
+ * depuis n'importe quel état actif. Le lead est un **agrégat** : ces transitions
+ * sont gardées.
  */
 export type LeadStatus = "new" | "contacted" | "qualified" | "negotiating" | "converted" | "lost";
+
+/** Les étapes **ouvertes** du pipeline — celles d'un lead encore dans la file Prospects. */
+export type ActiveLeadStatus = Exclude<LeadStatus, "converted" | "lost">;
 
 /** Une ligne de lead cold telle que rendue à la surface staff. */
 export interface LeadView {
@@ -186,13 +169,9 @@ export interface CreatedLeadResponse {
 
 /** Chiffres de tête du dashboard de croissance. Montants en centimes, taux 0..1. */
 export interface GrowthKpis {
-  /** Prospects entrants (hot + mid) + cold actifs. */
+  /** Établissements démarchés encore ouverts (leads à une étape active). */
   readonly prospects: number;
-  readonly hot: number;
-  readonly mid: number;
-  readonly cold: number;
-  /** Leads cold encore ouverts (non clos). */
-  readonly activeLeads: number;
+  /** Commandes passées pour une société — celles d'un particulier n'y entrent pas. */
   readonly orders: number;
   readonly ordersTotalCents: number;
   readonly companiesDeclared: number;
@@ -204,27 +183,11 @@ export interface GrowthKpis {
 /** Un point hebdomadaire de la **courbe d'acquisition**. `weekStart` = lundi ISO. */
 export interface AcquisitionPoint {
   readonly weekStart: string;
-  readonly registrations: number;
+  /** Sociétés déclarées dans la semaine (par elles-mêmes ou par le staff). */
+  readonly companiesDeclared: number;
+  /** Sociétés ayant passé leur première commande dans la semaine. */
   readonly firstOrders: number;
   readonly leadsCaptured: number;
-}
-
-/**
- * **Momentum du vivier** — un point hebdomadaire du flux de prospects par
- * **chaleur** : combien de personnes *tiennent* dans chaque bande (hot/mid/cold) à
- * la clôture de la semaine. C'est un **stock debout** reconstitué période par
- * période (les gens entrent en s'inscrivant / en étant démarchés, sortent en
- * commandant pour une société ou en fermant le lead), pas un flux d'événements.
- * Rendu en flux (themeRiver).
- */
-export interface TemperatureFlowPoint {
-  readonly weekStart: string;
-  /** A commandé en perso, pas encore pour une société. */
-  readonly hot: number;
-  /** Inscrit, zéro commande. */
-  readonly mid: number;
-  /** Lead sortant actif (démarchage en cours). */
-  readonly cold: number;
 }
 
 /** Une marche d'entonnoir : le nombre atteignant cette étape (les fuites se lisent entre marches). */
@@ -235,9 +198,11 @@ export interface FunnelStep {
 }
 
 /**
- * Une **cohorte de rétention** : les personnes inscrites une semaine donnée, et la
- * part (0..1) d'entre elles ayant commandé la k-ième semaine après l'inscription
- * (`retention[0]` = semaine d'inscription). Rendu en heatmap.
+ * Une **cohorte de rétention** : les sociétés déclarées une semaine donnée, et la
+ * part (0..1) d'entre elles ayant commandé la k-ième semaine après la déclaration
+ * (`retention[0]` = semaine de déclaration). Rendu en heatmap. Jusqu'au lot P3
+ * (2026-10-25), la cohorte était celle des **personnes inscrites** — particuliers
+ * compris.
  */
 export interface CohortRow {
   readonly cohortWeek: string;
@@ -249,9 +214,6 @@ export interface CohortRow {
 export interface GrowthStatsView {
   readonly kpis: GrowthKpis;
   readonly acquisition: readonly AcquisitionPoint[];
-  readonly temperatureFlow: readonly TemperatureFlowPoint[];
-  /** Transferts entre bandes de chaleur : état au début → état à la fin de la période. */
-  readonly temperatureTransitions: LifecycleFlow;
   readonly coldFunnel: readonly FunnelStep[];
   readonly activationFunnel: readonly FunnelStep[];
   readonly cohorts: readonly CohortRow[];

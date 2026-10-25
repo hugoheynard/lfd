@@ -102,6 +102,21 @@ export interface AdminCompanyView {
    * « Sous-compte de _Principal_ » de la liste (sous-comptes §4).
    */
   readonly parent: CompanyRefView | null;
+  /**
+   * Par qui la société a été déclarée : `self` = le client par la porte pro,
+   * `staff` = le back-office. `null` = inconnu — une société dont le fait de
+   * déclaration n'a jamais atteint le journal, que la migration n'a donc pas
+   * pu rattraper. Le filtre « Inscrit seul · dossier incomplet » ne retient
+   * que `self` ; un `null` n'y entre pas (plan auto-acquisition pro, P1).
+   */
+  readonly declaredVia: "self" | "staff" | null;
+  /**
+   * Les pièces du dossier présentes AUJOURD'HUI, dans l'ordre canonique
+   * (TVA, KBIS, facturation, livraison) — lues sur la société, pas dans le
+   * journal. Une pièce retirée (adresse archivée) n'y est donc plus, là où
+   * l'étage Activation de Prospects la comptait encore comme franchie.
+   */
+  readonly piecesReached: readonly ActivationPiece[];
 }
 
 /**

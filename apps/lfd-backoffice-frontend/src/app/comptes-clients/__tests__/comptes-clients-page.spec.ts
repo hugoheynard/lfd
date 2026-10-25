@@ -43,6 +43,8 @@ function makeCompany(
     hasOpenSupportRequest,
     parent: null,
     createdAt: '2026-07-30T10:00:00.000Z',
+    declaredVia: null,
+    piecesReached: [],
     activatedAt: null,
     warnings: [],
   };
@@ -91,6 +93,17 @@ async function setup(
 describe('ComptesClientsPage', () => {
   beforeEach(() => {
     TestBed.resetTestingModule();
+  });
+
+  it('« Inscrit seul · dossier incomplet » ne garde que les pending déclarées par le client', async () => {
+    const page = await setup([
+      { ...makeCompany('s', 'pending'), declaredVia: 'self' },
+      { ...makeCompany('t', 'pending'), declaredVia: 'staff' },
+      { ...makeCompany('u', 'pending'), declaredVia: null },
+      { ...makeCompany('v', 'active'), declaredVia: 'self' },
+    ]);
+    page['onFilterChange']('self_signup');
+    expect(page['filtered']().map((company) => company.id)).toEqual(['s']);
   });
 
   it('charge les sociétés et passe à ready', async () => {

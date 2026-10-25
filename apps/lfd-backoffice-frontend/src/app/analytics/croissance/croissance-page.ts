@@ -53,8 +53,6 @@ import {
   sectorRevenueOption,
   recoveryReactionWeeklyOption,
   recoveryTrendOption,
-  temperatureFlowOption,
-  temperatureTransitionsOption,
   terminationRecoveryOption,
   velocityBoxplotOption,
   zoneVelocityOption,
@@ -81,8 +79,8 @@ interface Kpi {
 
 /**
  * Onglet **Croissance** : le dashboard analytique PLG, dérivé du journal (`GET
- * /admin/growth/stats`). Tuiles KPI + acquisition + momentum du vivier (part par
- * chaleur + transferts entre bandes) + entonnoirs (cold & activation) + cycle de vie
+ * /admin/growth/stats`). Tuiles KPI + acquisition + entonnoirs (démarchage &
+ * activation) + cycle de vie
  * + vélocité + mix + Lorenz + heatmap de cohortes. Rendus par `<app-chart>` (ECharts) /
  * `<app-lorenz>`
  * (D3), options construites par des fonctions pures. Chaque carte porte une bulle
@@ -143,13 +141,12 @@ export class CroissancePage {
     }
     const k = s.kpis;
     return [
+      { label: 'Prospects', value: `${k.prospects}`, hint: 'établissements démarchés en cours' },
       {
-        label: 'Prospects',
-        value: `${k.prospects}`,
-        hint: `${k.hot} chauds · ${k.mid} tièdes · ${k.cold} froids`,
+        label: 'Commandes',
+        value: `${k.orders}`,
+        hint: `${euros(k.ordersTotalCents)} au total, pour des sociétés`,
       },
-      { label: 'Commandes', value: `${k.orders}`, hint: `${euros(k.ordersTotalCents)} au total` },
-      { label: 'Leads actifs', value: `${k.activeLeads}`, hint: 'démarchage en cours' },
       {
         label: 'Conversion',
         value: `${Math.round(k.conversionRate * 100)} %`,
@@ -253,16 +250,6 @@ export class CroissancePage {
       return null;
     }
     return zoneVelocityOption(trends);
-  });
-  protected readonly temperatureFlow = computed<ChartOption | null>(() => {
-    const s = this.stats();
-    return s === null ? null : temperatureFlowOption(s.temperatureFlow);
-  });
-  protected readonly transitions = computed<ChartOption | null>(() => {
-    const s = this.stats();
-    return s === null || s.temperatureTransitions.links.length === 0
-      ? null
-      : temperatureTransitionsOption(s.temperatureTransitions);
   });
   protected readonly coldFunnel = computed<ChartOption | null>(() => {
     const s = this.stats();

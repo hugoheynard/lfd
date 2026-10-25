@@ -104,6 +104,7 @@ describe("CreateCompanyByStaffHandler", () => {
 
     await expect(handler.execute(command())).resolves.toMatchObject({ id: "company_unowned" });
     expect(unowned).toHaveLength(1);
+    expect(unowned[0]?.declaredVia).toBe("staff");
     // Jamais de rattachement : pas de membership à la création admin.
     expect(owned.count).toBe(0);
   });

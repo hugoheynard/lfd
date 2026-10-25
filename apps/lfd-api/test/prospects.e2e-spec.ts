@@ -1,16 +1,16 @@
 /**
  * E2E de la surface **prospects** (`GET /admin/prospects`) — sur un vrai Postgres.
  *
- * Ce que seul le vrai SQL prouve : la projection lit le **journal**
- * (`growth.activity_events`, schéma dédié), dérive hot/mid, exclut qui transacte
- * pour une société, et la route est **murée staff** (porte admin). On sème le
- * journal directement (déterministe) — l'émission, elle, est testée ailleurs.
+ * Ce que seul le vrai SQL prouve : la file lit l'agrégat `Lead` (`growth.leads`)
+ * tel que la saisie l'écrit, n'en garde que les étapes ouvertes, et ne montre
+ * plus aucun particulier venu du journal (lot P3 du plan
+ * `documentation/b2b/plan-auto-acquisition-pro.md`, 2026-10-25). La route est
+ * **murée staff**. Les leads sont saisis par la vraie route, pas par Prisma.
  */
-import type { ProspectView } from "@lfd/contracts";
+import type { CreatedLeadResponse, ProspectView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { createUser } from "./factories.js";
 import type { InputJsonObject } from "../src/platform/database/client/internal/prismaNamespace.js";
 
 /** Staff doublé : accepte n'importe quel jeton porteur comme staff synthétique. */
@@ -42,8 +42,16 @@ function staff(): ReturnType<E2eContext["http"]> {
   return ctx.http().set("Authorization", "Bearer staff-e2e");
 }
 
-/** Insère une ligne de journal (sujet = personne). Ids/clés uniques par séquence. */
-async function seed(
+/** Saisit un établissement démarché par la route du commercial. */
+async function capture(payload: Record<string, string>): Promise<string> {
+  const created = jsonBody<CreatedLeadResponse>(
+    await staff().post("/admin/leads").send(payload).expect(201),
+  );
+  return created.id;
+}
+
+/** Insère une ligne de journal sur une personne — ce que la file lisait avant P3. */
+async function seedPerson(
   type: string,
   subjectId: string,
   occurredAt: string,
@@ -65,114 +73,60 @@ async function seed(
   });
 }
 
-/**
- * Les dates de la fixture, dites par leur INTENTION et non par un jour du
- * calendrier (cf. `daysAgo`). La température d'un prospect se lit sur une
- * fenêtre glissante de 14 jours ancrée à `now` : une date en dur y devient
- * fausse le jour où le calendrier la dépasse, sans qu'une ligne ait bougé.
- *
- * Ce que la fixture veut dire : « il s'est inscrit il y a dix jours et a
- * commandé il y a cinq » — les deux à l'intérieur de la fenêtre, ce qui est
- * précisément ce qui le rend `hot`.
- */
-const HOT_REGISTERED = daysAgo(10);
-const HOT_LAST_ORDER = daysAgo(5);
-const MID_REGISTERED = daysAgo(2);
-const CLIENT_ORDER = daysAgo(8);
-
 describe("GET /admin/prospects", () => {
   it("mure la route côté staff (401 sans jeton porteur)", async () => {
     await ctx.http().get("/admin/prospects").expect(401);
   });
 
-  // Des lignes d'AVANT le lot B du plan des phrases : `user.registered` y
-  // recopiait l'e-mail, que la file relit encore pour une personne que la
-  // table ne connaît pas (le journal ne se réécrit pas).
-  it("dérive hot/mid du journal et exclut qui transacte pour une société", async () => {
-    await seed("user.registered", "u_mid", MID_REGISTERED, { email: "mid@resto.fr" });
-    await seed("user.registered", "u_hot", HOT_REGISTERED, { email: "hot@resto.fr" });
-    await seed("order.placed", "u_hot", HOT_LAST_ORDER, {
-      totalCents: 633,
-      companyId: null,
-    });
-    await seed("order.placed", "u_client", CLIENT_ORDER, {
-      totalCents: 5000,
-      companyId: "company_1",
+  it("rend un établissement démarché avec ses colonnes : contact, coordonnées, étape, depuis", async () => {
+    const id = await capture({
+      businessName: "Bistrot du Coin",
+      contactName: "Paul Martin",
+      email: "paul@bistrot.fr",
+      phone: "06 12 34 56 78",
     });
 
     const prospects = jsonBody<ProspectView[]>(await staff().get("/admin/prospects").expect(200));
 
-    // Le client (companyId non nul) est exclu ; hot avant mid.
-    expect(prospects.map((p) => p.subjectId)).toEqual(["u_hot", "u_mid"]);
-    const hot = prospects[0];
-    expect(hot).toMatchObject({
-      temperature: "hot",
-      email: "hot@resto.fr",
-      orderCount: 1,
-      totalCents: 633,
-      lastOrderAt: HOT_LAST_ORDER,
+    expect(prospects).toHaveLength(1);
+    expect(prospects[0]).toMatchObject({
+      leadId: id,
+      businessName: "Bistrot du Coin",
+      contactName: "Paul Martin",
+      email: "paul@bistrot.fr",
+      phone: "06 12 34 56 78",
+      status: "new",
+      lastContactedAt: null,
     });
-    expect(prospects[1]).toMatchObject({
-      temperature: "mid",
-      email: "mid@resto.fr",
-      orderCount: 0,
-    });
+    expect(Number.isNaN(Date.parse(prospects[0]?.capturedAt ?? ""))).toBe(false);
+  });
+
+  it("suit l'étape posée depuis la ligne, et sort le lead clos (converti, perdu)", async () => {
+    const open = await capture({ businessName: "En cours" });
+    const won = await capture({ businessName: "Converti" });
+    const lost = await capture({ businessName: "Perdu" });
+    await staff().patch(`/admin/leads/${open}`).send({ status: "qualified" }).expect(204);
+    await staff().patch(`/admin/leads/${won}`).send({ status: "converted" }).expect(204);
+    await staff().patch(`/admin/leads/${lost}`).send({ status: "lost" }).expect(204);
+
+    const prospects = jsonBody<ProspectView[]>(await staff().get("/admin/prospects").expect(200));
+
+    expect(prospects.map((p) => p.leadId)).toEqual([open]);
+    expect(prospects[0]?.status).toBe("qualified");
+    expect(prospects[0]?.lastContactedAt).not.toBeNull();
   });
 
   /**
-   * Lot B du plan des phrases (2026-09-19) : `user.registered` ne porte plus
-   * l'e-mail — une coordonnée n'entre pas au journal. La file le lit sur la
-   * fiche de la personne, et la préfère à celui d'une ligne ancienne.
+   * Régression (lot P3, 2026-10-25) : la file dérivait du journal des
+   * personnes — `hot` (commande sans société) et `mid` (inscrit sans
+   * commande). Depuis la boutique, c'étaient des clients particuliers.
    */
-  it("lit l'e-mail d'un prospect sur sa fiche, plus dans le journal", async () => {
-    const fresh = await createUser(ctx.prisma, {
-      auth0Sub: "auth0|prospect-fresh",
-      email: "fiche@resto.fr",
-    });
-    const moved = await createUser(ctx.prisma, {
-      auth0Sub: "auth0|prospect-moved",
-      email: "nouvelle@resto.fr",
-    });
-    await seed("user.registered", fresh.id, MID_REGISTERED, {});
-    await seed("user.registered", moved.id, MID_REGISTERED, { email: "ancienne@resto.fr" });
+  it("ne montre aucun particulier, inscrit ou client sans société", async () => {
+    await seedPerson("user.registered", "u_mid", daysAgo(2), {});
+    await seedPerson("order.placed", "u_hot", daysAgo(5), { totalCents: 633, companyId: null });
 
     const prospects = jsonBody<ProspectView[]>(await staff().get("/admin/prospects").expect(200));
 
-    expect(prospects.find((p) => p.subjectId === fresh.id)?.email).toBe("fiche@resto.fr");
-    expect(prospects.find((p) => p.subjectId === moved.id)?.email).toBe("nouvelle@resto.fr");
-  });
-
-  it("unifie les leads cold (agrégat) avec la projection entrante, hot → mid → cold", async () => {
-    await seed("order.placed", "u_hot", HOT_LAST_ORDER, {
-      totalCents: 900,
-      companyId: null,
-    });
-    await ctx.prisma.lead.create({
-      data: {
-        id: "lead_cold",
-        businessName: "Traiteur Démarché",
-        email: "démarché@resto.fr",
-        status: "contacted",
-      },
-    });
-
-    const prospects = jsonBody<ProspectView[]>(await staff().get("/admin/prospects").expect(200));
-    const cold = prospects.find((p) => p.subjectId === "lead_cold");
-    expect(cold).toMatchObject({
-      temperature: "cold",
-      source: "outbound",
-      label: "Traiteur Démarché",
-    });
-    // Le hot entrant reste avant le cold sortant.
-    expect(prospects[0]?.temperature).toBe("hot");
-    expect(prospects.at(-1)?.temperature).toBe("cold");
-  });
-
-  it("n'affiche pas un lead clos (converted/lost) dans la file — dédup avec le journal", async () => {
-    await ctx.prisma.lead.create({
-      data: { id: "lead_won", businessName: "Converti", status: "converted" },
-    });
-    const prospects = jsonBody<ProspectView[]>(await staff().get("/admin/prospects").expect(200));
-    expect(prospects.some((p) => p.subjectId === "lead_won")).toBe(false);
+    expect(prospects).toEqual([]);
   });
 });

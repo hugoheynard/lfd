@@ -7,19 +7,16 @@ type BadgeVariant = 'neutral' | 'accent' | 'info' | 'warning' | 'alert' | 'succe
 
 /** Ce qu'est chaque **play** : le geste commercial à faire, pas l'état du lead. */
 const PLAY: Readonly<Record<PlayType, { label: string; variant: BadgeVariant; hint: string }>> = {
-  lock_in: {
-    label: 'Verrouiller',
-    variant: 'warning',
-    hint: 'Prospect chaud à convertir en abonné',
-  },
   rescue: {
     label: 'Rescousse',
     variant: 'alert',
     hint: "Dossier d'activation bloqué à débloquer",
   },
-  upgrade: { label: 'Upgrade', variant: 'success', hint: 'Compte engagé à étendre' },
-  win_back: { label: 'Reconquête', variant: 'info', hint: 'Lead qui refroidit à relancer' },
-  nurture: { label: 'Démarchage', variant: 'neutral', hint: 'Lead sortant à faire avancer' },
+  nurture: {
+    label: 'Démarchage',
+    variant: 'neutral',
+    hint: 'Établissement démarché à faire avancer',
+  },
 };
 
 /** Une ligne de la file, calculée une fois. */

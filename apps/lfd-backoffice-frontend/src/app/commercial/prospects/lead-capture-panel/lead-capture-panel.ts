@@ -11,8 +11,8 @@ import { NotifyService } from '../../../notify.service';
 import { LeadsService } from '../../leads.service';
 
 /**
- * Panneau **Ajouter un lead** (démarchage) : saisit un prospect **sortant** que le
- * commercial a rencontré/appelé. Seule la raison sociale est requise ; l'e-mail,
+ * Panneau **Ajouter un établissement démarché** : saisit un établissement que le
+ * commercial a rencontré ou appelé et qui n'est pas encore client. Seule la raison sociale est requise ; l'e-mail,
  * s'il est fourni, sert de **clé de rapprochement** — si la personne s'inscrit plus
  * tard, le lead se convertit tout seul. Container mince : signaux → payload → POST,
  * ferme avec `true` pour que la page recharge la file.
@@ -57,7 +57,7 @@ export class LeadCapturePanel {
     };
     try {
       await this.leads.capture(payload);
-      this.notify.success('Lead ajouté au démarchage.');
+      this.notify.success('Établissement ajouté aux prospects.');
       this.ref.close(true);
     } catch (error) {
       this.notify.error(error);

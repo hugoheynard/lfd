@@ -36,6 +36,8 @@ const view: AdminCompanyView = {
   // `createdAt` est celle qui date le chiffre d'affaires.
   activatedAt: null,
   createdAt: "2026-07-30T10:00:00.000Z",
+  declaredVia: null,
+  piecesReached: [],
 };
 
 describe("ListAllCompaniesHandler", () => {

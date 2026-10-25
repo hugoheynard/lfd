@@ -31,6 +31,7 @@ import { PendingAlertsService } from '../shared/alerts/pending-alerts.service';
 import { PortfolioBar } from './portfolio-bar/portfolio-bar';
 import { WarningsGallery } from './warnings-gallery/warnings-gallery';
 import { SubAccountBadge } from './sub-account-badge/sub-account-badge';
+import { SelfSignupPipeline } from './self-signup-pipeline/self-signup-pipeline';
 import { PortfolioMetricsService } from './portfolio-metrics.service';
 import { AdminCompaniesService } from './admin-companies.service';
 import { STATUS_LABELS, type AdminCompany, type CompanyStatus } from './admin-company';
@@ -56,8 +57,12 @@ const PAGINATOR_LABELS: FoldPaginatorLabels = {
   range: (start, end, total) => `${start}–${end} sur ${total}`,
 };
 
-/** Valeur du filtre : un statut, ou `all` pour la vue d'ensemble. */
-type FilterValue = 'all' | CompanyStatus;
+/**
+ * Valeur du filtre : un statut, `all` pour la vue d'ensemble, ou `self_signup`
+ * — le pipeline des pros inscrits seuls (plan auto-acquisition pro, P1), qui a
+ * son propre tableau.
+ */
+type FilterValue = 'all' | CompanyStatus | 'self_signup';
 
 /** Ordre des statuts dans le filtre — `all` en tête, l'actionnable (`pending`) en 2ᵉ. */
 const FILTER_ORDER: readonly FilterValue[] = [
@@ -66,6 +71,7 @@ const FILTER_ORDER: readonly FilterValue[] = [
   'active',
   'suspended',
   'terminated',
+  'self_signup',
 ];
 
 /**
@@ -115,6 +121,7 @@ function isFilterValue(value: string): value is FilterValue {
     PortfolioBar,
     WarningsGallery,
     SubAccountBadge,
+    SelfSignupPipeline,
     RouterLink,
     FoldEmptyStateComponent,
   ],
@@ -193,6 +200,7 @@ export class ComptesClientsPage {
     { value: 'active', label: 'Actif' },
     { value: 'suspended', label: 'Suspendu' },
     { value: 'terminated', label: 'Résilié' },
+    { value: 'self_signup', label: 'Inscrit seul · dossier incomplet' },
   ];
 
   /** Segments du filtre de hiérarchie — dans l'ordre de `HIERARCHY_ORDER`. */
@@ -253,9 +261,26 @@ export class ComptesClientsPage {
     const current = this.filter();
     const term = this.search();
     const all = this.companies();
-    const byStatus = current === 'all' ? all : all.filter((company) => company.status === current);
+    const byStatus =
+      current === 'all'
+        ? all
+        : all.filter((company) =>
+            current === 'self_signup'
+              ? company.status === 'pending' && company.declaredVia === 'self'
+              : company.status === current,
+          );
     const byPlace = byStatus.filter((company) => this.inHierarchy(company));
     return term === '' ? byPlace : byPlace.filter((company) => matchesCompanySearch(company, term));
+  });
+
+  /**
+   * Toutes les sociétés qui répondent à la recherche, sans filtre de statut :
+   * le pipeline des inscrits seuls compte aussi les activées dans son entonnoir.
+   */
+  protected readonly searched = computed<readonly AdminCompany[]>(() => {
+    const term = this.search();
+    const all = this.companies();
+    return term === '' ? all : all.filter((company) => matchesCompanySearch(company, term));
   });
 
   /**

@@ -49,7 +49,7 @@ export class CreateSubAccountHandler implements ICommandHandler<CreateSubAccount
     if (aspects.includes("pricing") && !command.mayDecidePricing) {
       throw new PricingFollowNotAllowedError();
     }
-    const company = Company.declare(command.payload, null);
+    const company = Company.declare(command.payload, null, "staff");
     const siret = company.siret;
     if (siret !== null && (await this.companies.existsBySiret(siret.value))) {
       throw new SiretAlreadyRegisteredError(siret.value);

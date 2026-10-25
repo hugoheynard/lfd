@@ -42,6 +42,8 @@ function detail(over: Partial<AdminCompanyDetailView> = {}): AdminCompanyDetailV
     // `createdAt` est celle qui date le chiffre d'affaires.
     activatedAt: null,
     createdAt: "2026-07-30T10:00:00.000Z",
+    declaredVia: null,
+    piecesReached: [],
     vatNumberRequired: true,
     hasBankAccount: false,
     addresses: { billing: null, deliveries: [] },

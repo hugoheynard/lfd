@@ -1,113 +1,83 @@
 <section class="page">
-  <!-- Le titre est porté par le shell : ne restent ici que les compteurs et
+  <!-- Le titre est porté par le shell : ne restent ici que le compteur et
        l'action. -->
   <div class="page-actions">
-    @if (state() === 'ready') {
-      <div class="queues">
-        @if (hotCount() > 0) {
-          <fold-badge variant="warning" [content]="hotCount() + ' chauds'" />
-        }
-        @if (coldCount() > 0) {
-          <fold-badge variant="neutral" [content]="coldCount() + ' froids'" />
-        }
-      </div>
+    @if (state() === 'ready' && count() > 0) {
+      <fold-badge
+        variant="neutral"
+        [content]="count() + (count() > 1 ? ' établissements' : ' établissement')"
+      />
     }
-    <button foldButton intent="primary" (click)="openCapture()">Ajouter un lead</button>
+    <button foldButton intent="primary" (click)="openCapture()">
+      Ajouter un établissement démarché
+    </button>
   </div>
 
-  <!-- Deux moments d'un MÊME parcours : on change d'étage, pas de sujet. -->
-  <fold-view-toggle
-    class="stage"
-    ariaLabel="Étage du parcours"
-    [options]="stages"
-    [value]="stage()"
-    (valueChange)="onStageChange($event)"
-  />
-
-  <!-- L'entonnoir de l'étage : la seule vue qui dise OÙ ça se perd, plutôt que
-       combien il en reste. -->
+  <!-- L'entonnoir du démarchage : la seule vue qui dise OÙ ça se perd, plutôt
+       que combien il en reste. -->
   @if (funnel(); as option) {
     <app-chart class="funnel" [option]="option" height="180px" />
   }
 
-  @if (stage() === 'activation') {
-    <app-activation-table />
-  } @else if (state() === 'error') {
+  @if (state() === 'error') {
     <fold-empty-state tone="alert" title="Impossible de charger les prospects">
       <button foldButton (click)="load()">Réessayer</button>
     </fold-empty-state>
   } @else {
-    <fold-view-toggle
-      class="filter"
-      ariaLabel="Filtrer les prospects par température"
-      [options]="segments"
-      [value]="filter()"
-      (valueChange)="onFilterChange($event)"
-    />
-
     <fold-data-table
-      caption="Prospects (hot / mid)"
+      caption="Établissements démarchés"
       hover
       stickyFirst
       [columns]="columns"
-      [rows]="filtered()"
+      [rows]="prospects()"
       [rowKey]="rowKey"
       [loading]="state() === 'loading'"
       [empty]="emptyState()"
     >
-      <ng-template foldCell="temperature" let-row>
-        <fold-badge [variant]="temperatureOf(row).variant" [content]="temperatureOf(row).label" />
+      <ng-template foldCell="businessName" let-row>
+        <span class="prospect">{{ row.businessName }}</span>
+      </ng-template>
+
+      <ng-template foldCell="contactName" let-row>
+        {{ orDash(row.contactName) }}
+      </ng-template>
+
+      <ng-template foldCell="phone" let-row>
+        <span class="num">{{ orDash(row.phone) }}</span>
       </ng-template>
 
       <ng-template foldCell="email" let-row>
-        <span class="prospect">{{ row.label }}</span>
-        @if (row.source === 'outbound') {
-          <span class="via">démarchage</span>
-        }
+        {{ orDash(row.email) }}
       </ng-template>
 
-      <ng-template foldCell="momentum" let-row>
-        <fold-badge [variant]="momentumOf(row).variant" [content]="momentumOf(row).label" />
+      <ng-template foldCell="status" let-row>
+        <fold-badge [variant]="stageOf(row.status).variant" [content]="stageOf(row.status).label" />
       </ng-template>
 
-      <ng-template foldCell="orderCount" let-row>
-        <span class="num">{{ row.orderCount }}</span>
-      </ng-template>
-
-      <ng-template foldCell="totalCents" let-row>
-        <span class="num">{{ euros(row.totalCents) }}</span>
-      </ng-template>
-
-      <ng-template foldCell="lastOrderAt" let-row>
-        <span class="date">{{ formatDate(row.lastOrderAt) }}</span>
-      </ng-template>
-
-      <ng-template foldCell="recencyDays" let-row>
-        <span class="num">{{ row.recencyDays }} j</span>
+      <ng-template foldCell="capturedAt" let-row>
+        <span class="date">{{ formatDate(row.capturedAt) }}</span>
       </ng-template>
 
       <ng-template foldCell="actions" let-row>
-        @if (actionsFor(row).length > 0) {
-          <fold-dropdown placement="bottom-end" ariaLabel="Actions du lead">
-            <button
-              foldPopoverTrigger="menu"
-              type="button"
-              class="menu-trigger"
-              aria-label="Actions du lead"
+        <fold-dropdown placement="bottom-end" ariaLabel="Actions de l'établissement">
+          <button
+            foldPopoverTrigger="menu"
+            type="button"
+            class="menu-trigger"
+            aria-label="Actions de l'établissement"
+          >
+            <fold-icon name="more-vertical" [size]="18" />
+          </button>
+          @for (action of actionsOf(row); track action.status) {
+            <fold-dropdown-item
+              [icon]="action.icon"
+              [tone]="action.danger ? 'danger' : 'default'"
+              (selected)="advance(row, action.status)"
             >
-              <fold-icon name="more-vertical" [size]="18" />
-            </button>
-            @for (action of actionsFor(row); track action.status) {
-              <fold-dropdown-item
-                [icon]="action.icon"
-                [tone]="action.danger ? 'danger' : 'default'"
-                (selected)="advance(row, action.status)"
-              >
-                {{ action.label }}
-              </fold-dropdown-item>
-            }
-          </fold-dropdown>
-        }
+              {{ action.label }}
+            </fold-dropdown-item>
+          }
+        </fold-dropdown>
       </ng-template>
     </fold-data-table>
   }

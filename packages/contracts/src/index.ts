@@ -1622,10 +1622,8 @@ export type {
 } from "./subscription.js";
 
 export type {
-  ProspectTemperature,
-  ProspectSource,
-  MomentumTrajectory,
   ProspectView,
+  ActiveLeadStatus,
   ActivationStatus,
   ActivationStep,
   ActivationView,
@@ -1638,7 +1636,6 @@ export type {
   CreatedLeadResponse,
   GrowthKpis,
   AcquisitionPoint,
-  TemperatureFlowPoint,
   FunnelStep,
   CohortRow,
   GrowthStatsView,

@@ -1,15 +1,19 @@
 import type {
   AcquisitionPoint,
-  CohortRow,
   FunnelStep,
   GrowthKpis,
   GrowthStatsView,
   LeadView,
-  ProspectView,
 } from "@lfd/contracts";
 
 import { ACTIVITY_TYPES } from "./activity-event.js";
-import { weekStart, type GrowthStatsEvent } from "./growth-week.js";
+import { shiftWeek, weekStart, type GrowthStatsEvent } from "./growth-week.js";
+import {
+  cohorts,
+  companyOrdersOf,
+  firstOrderByCompany,
+  type CompanyOrder,
+} from "./company-cohorts.js";
 
 // Ré-exportés : les lecteurs historiques (readers Prisma, handlers) gardent
 // leur chemin. Ils sont DÉFINIS dans `growth-week.ts`, qui ne dépend de rien —
@@ -24,20 +28,22 @@ import {
   lifecycleFlow,
   velocityMetrics,
 } from "./growth-stats-advanced.js";
-import { deriveProspects } from "./prospect.js";
-import { temperatureFlow, temperatureTransitions } from "./temperature-flow.js";
 
 /**
  * **Stats de croissance** — la dérivation PURE derrière l'onglet Croissance et le
- * rappel du dashboard. Compose les projections existantes (prospects, activations)
- * et calcule les séries temporelles (acquisition hebdo), la distribution de
- * momentum, les entonnoirs (cold + activation) et les **cohortes de rétention**.
+ * rappel du dashboard. Compose la projection des activations et les leads
+ * démarchés, et calcule les séries temporelles (acquisition hebdo), les
+ * entonnoirs (démarchage + activation) et les **cohortes de rétention**.
+ *
+ * Les **particuliers** n'y entrent plus depuis le lot P3 (2026-10-25,
+ * `documentation/b2b/plan-auto-acquisition-pro.md`) : plus de bandes de chaleur
+ * `hot`/`mid`, des commandes comptées pour une société seulement, des cohortes
+ * de sociétés déclarées plutôt que de personnes inscrites.
  * Déterministe (temps injecté) ; lit le journal + les leads, jamais les tables
  * voisines. Bucketing hebdo au lundi UTC (raffinement Europe/Paris = plus tard).
  */
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const WEEK_MS = 7 * DAY_MS;
 const ACTIVE_LEAD = new Set(["new", "contacted", "qualified", "negotiating"]);
 const LEAD_RANK: Record<string, number> = {
   new: 0,
@@ -56,18 +62,16 @@ export function deriveGrowthStats(
   const userEvents = events.filter((e) => e.subjectType === "user");
   const companyEvents = events.filter((e) => e.subjectType === "company");
   const leadEvents = events.filter((e) => e.subjectType === "lead");
-  const prospects = deriveProspects(userEvents, now);
+  const companyOrders = companyOrdersOf(userEvents);
   const activations = deriveActivations(companyEvents, now);
   const window = weekStarts(now, weeks);
 
   return {
-    kpis: kpis(prospects, activations, leads, userEvents),
-    acquisition: acquisition(userEvents, window),
-    temperatureFlow: temperatureFlow(userEvents, leadEvents, window),
-    temperatureTransitions: temperatureTransitions(userEvents, leadEvents, window),
+    kpis: kpis(activations, leads, companyOrders),
+    acquisition: acquisition(companyEvents, leadEvents, companyOrders, window),
     coldFunnel: coldFunnel(leads, leadEvents),
     activationFunnel: activationFunnel(activations),
-    cohorts: cohorts(userEvents, window),
+    cohorts: cohorts(companyEvents, companyOrders, window),
     lifecycle: lifecycleFlow(events),
     velocity: velocityMetrics(events),
     concentration: accountConcentration(userEvents),
@@ -78,46 +82,39 @@ export function deriveGrowthStats(
 }
 
 function kpis(
-  prospects: readonly ProspectView[],
   activations: readonly { status: string }[],
   leads: readonly LeadView[],
-  userEvents: readonly GrowthStatsEvent[],
+  orders: readonly CompanyOrder[],
 ): GrowthKpis {
-  const hot = prospects.filter((p) => p.temperature === "hot").length;
-  const mid = prospects.filter((p) => p.temperature === "mid").length;
-  const cold = leads.filter((l) => ACTIVE_LEAD.has(l.status)).length;
-  const orders = userEvents.filter((e) => e.type === ACTIVITY_TYPES.orderPlaced);
   const declared = activations.length;
   const activated = activations.filter((a) => a.status === "active").length;
   return {
-    prospects: hot + mid + cold,
-    hot,
-    mid,
-    cold,
-    activeLeads: cold,
+    prospects: leads.filter((l) => ACTIVE_LEAD.has(l.status)).length,
     orders: orders.length,
-    ordersTotalCents: orders.reduce((s, e) => s + numberOr0(e.payload["totalCents"]), 0),
+    ordersTotalCents: orders.reduce((s, o) => s + o.totalCents, 0),
     companiesDeclared: declared,
     companiesActivated: activated,
     conversionRate: declared === 0 ? 0 : activated / declared,
   };
 }
 
-/** Acquisition hebdo : inscriptions, 1res commandes, leads saisis par semaine. */
+/** Acquisition hebdo : sociétés déclarées, 1res commandes de société, leads saisis. */
 function acquisition(
-  userEvents: readonly GrowthStatsEvent[],
+  companyEvents: readonly GrowthStatsEvent[],
+  leadEvents: readonly GrowthStatsEvent[],
+  orders: readonly CompanyOrder[],
   window: readonly string[],
 ): AcquisitionPoint[] {
-  const reg = countByWeek(userEvents, ACTIVITY_TYPES.userRegistered, window);
-  const leads = countByWeek(userEvents, ACTIVITY_TYPES.leadCaptured, window);
-  const firsts = firstOrderWeeks(userEvents);
+  const declared = countByWeek(companyEvents, ACTIVITY_TYPES.companyDeclared, window);
+  const leads = countByWeek(leadEvents, ACTIVITY_TYPES.leadCaptured, window);
   const firstByWeek = new Map<string, number>();
-  for (const w of firsts) {
+  for (const date of firstOrderByCompany(orders).values()) {
+    const w = weekStart(date);
     firstByWeek.set(w, (firstByWeek.get(w) ?? 0) + 1);
   }
   return window.map((weekStart) => ({
     weekStart,
-    registrations: reg.get(weekStart) ?? 0,
+    companiesDeclared: declared.get(weekStart) ?? 0,
     firstOrders: firstByWeek.get(weekStart) ?? 0,
     leadsCaptured: leads.get(weekStart) ?? 0,
   }));
@@ -191,37 +188,6 @@ function activationFunnel(
   ];
 }
 
-/** Cohortes de rétention : par semaine d'inscription, part ayant commandé en semaine +k. */
-function cohorts(userEvents: readonly GrowthStatsEvent[], window: readonly string[]): CohortRow[] {
-  const regWeekByUser = firstEventWeekByUser(userEvents, ACTIVITY_TYPES.userRegistered);
-  const orderWeeksByUser = orderWeeksByUserMap(userEvents);
-  const bySignup = new Map<string, string[]>();
-  for (const [userId, week] of regWeekByUser) {
-    if (window.includes(week)) {
-      (bySignup.get(week) ?? bySignup.set(week, []).get(week)!).push(userId);
-    }
-  }
-  return window
-    .filter((week) => bySignup.has(week))
-    .map((week) => cohortRow(week, bySignup.get(week) ?? [], orderWeeksByUser, window));
-}
-
-function cohortRow(
-  week: string,
-  users: readonly string[],
-  orderWeeksByUser: Map<string, Set<string>>,
-  window: readonly string[],
-): CohortRow {
-  const span = window.length - window.indexOf(week);
-  const retention: number[] = [];
-  for (let k = 0; k < span; k += 1) {
-    const target = shiftWeek(week, k);
-    const active = users.filter((u) => orderWeeksByUser.get(u)?.has(target) === true).length;
-    retention.push(users.length === 0 ? 0 : active / users.length);
-  }
-  return { cohortWeek: week, size: users.length, retention };
-}
-
 // ── Helpers de bucketing hebdomadaire ──────────────────────────────────────────
 
 export function weekStarts(now: Date, weeks: number): string[] {
@@ -231,12 +197,6 @@ export function weekStarts(now: Date, weeks: number): string[] {
     out.push(shiftWeek(current, -i));
   }
   return out;
-}
-
-function shiftWeek(weekStartIso: string, byWeeks: number): string {
-  return new Date(new Date(`${weekStartIso}T00:00:00.000Z`).getTime() + byWeeks * WEEK_MS)
-    .toISOString()
-    .slice(0, 10);
 }
 
 /** Jour (UTC, « YYYY-MM-DD ») d'une date — grain le plus fin pour le bucketing. */
@@ -273,56 +233,4 @@ function countByWeek(
     }
   }
   return out;
-}
-
-/** Semaine de la 1re commande de chaque personne (une entrée par personne). */
-function firstOrderWeeks(events: readonly GrowthStatsEvent[]): string[] {
-  const first = new Map<string, Date>();
-  for (const e of events) {
-    if (e.type !== ACTIVITY_TYPES.orderPlaced) {
-      continue;
-    }
-    const prev = first.get(e.subjectId);
-    if (prev === undefined || e.occurredAt.getTime() < prev.getTime()) {
-      first.set(e.subjectId, e.occurredAt);
-    }
-  }
-  return [...first.values()].map(weekStart);
-}
-
-function firstEventWeekByUser(
-  events: readonly GrowthStatsEvent[],
-  type: string,
-): Map<string, string> {
-  const first = new Map<string, Date>();
-  for (const e of events) {
-    if (e.type !== type) {
-      continue;
-    }
-    const prev = first.get(e.subjectId);
-    if (prev === undefined || e.occurredAt.getTime() < prev.getTime()) {
-      first.set(e.subjectId, e.occurredAt);
-    }
-  }
-  const out = new Map<string, string>();
-  for (const [user, date] of first) {
-    out.set(user, weekStart(date));
-  }
-  return out;
-}
-
-function orderWeeksByUserMap(events: readonly GrowthStatsEvent[]): Map<string, Set<string>> {
-  const out = new Map<string, Set<string>>();
-  for (const e of events) {
-    if (e.type !== ACTIVITY_TYPES.orderPlaced) {
-      continue;
-    }
-    const set = out.get(e.subjectId) ?? out.set(e.subjectId, new Set()).get(e.subjectId)!;
-    set.add(weekStart(e.occurredAt));
-  }
-  return out;
-}
-
-function numberOr0(v: unknown): number {
-  return typeof v === "number" && Number.isFinite(v) ? v : 0;
 }

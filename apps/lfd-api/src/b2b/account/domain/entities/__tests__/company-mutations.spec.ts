@@ -94,6 +94,7 @@ describe("Company — reconstitution + mutations souples", () => {
         vatNumber: "",
       },
       ContactDetails.create(CONTACT),
+      "self",
     );
     expect(company.id).toBeNull();
     // Aucun crédit accordé : elle paie à la commande, comme tout le monde.

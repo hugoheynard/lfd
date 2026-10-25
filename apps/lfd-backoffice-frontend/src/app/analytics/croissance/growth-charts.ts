@@ -14,7 +14,6 @@ import type {
   RecoveryReactionByWeek,
   RecoveryReactionStat,
   RecoveryTrendPoint,
-  TemperatureFlowPoint,
   TerminationRecovery,
   TerminationStatsView,
   VelocityMetric,
@@ -107,7 +106,7 @@ function line(
   };
 }
 
-/** Mini-courbe (sparkline) des inscriptions — pour le rappel du dashboard. */
+/** Mini-courbe (sparkline) des sociétés déclarées et premières commandes — pour le rappel du cockpit. */
 export function sparklineOption(points: readonly AcquisitionPoint[]): EChartsOption {
   return {
     grid: { left: 2, right: 2, top: 6, bottom: 2 },
@@ -119,106 +118,9 @@ export function sparklineOption(points: readonly AcquisitionPoint[]): EChartsOpt
         type: 'line',
         smooth: true,
         symbol: 'none',
-        data: points.map((p) => p.registrations + p.firstOrders),
+        data: points.map((p) => p.companiesDeclared + p.firstOrders),
         lineStyle: { color: PALETTE.blue, width: 2 },
         areaStyle: { color: PALETTE.blue, opacity: 0.15 },
-      },
-    ],
-  };
-}
-
-/**
- * **Momentum du vivier** : la part de prospects par chaleur, semaine après semaine, en
- * **aires empilées** (base à 0). L'épaisseur d'une bande = sa **part** ; l'enveloppe du
- * haut = le **volume total** du vivier. La bande chaude est en bas de la pile pour
- * garder une base plate honnête. Dégradé de chaleur : chauds (rouge), tièdes (ambre),
- * froids (bleu). Chaque point = le stock debout à la clôture de la semaine. La direction
- * *par bande* (qui se réchauffe / refroidit) se lit sur le diagramme de transferts.
- */
-export function temperatureFlowOption(points: readonly TemperatureFlowPoint[]): EChartsOption {
-  const weeks = points.map((p) => weekLabel(p.weekStart));
-  const band = (name: string, data: readonly number[], color: string): Record<string, unknown> => ({
-    name,
-    type: 'line',
-    stack: 'vivier',
-    smooth: true,
-    symbol: 'none',
-    data: [...data],
-    itemStyle: { color },
-    lineStyle: { color, width: 1 },
-    areaStyle: { color, opacity: 0.55 },
-  });
-  return {
-    legend: {
-      top: 0,
-      data: ['Chauds', 'Tièdes', 'Froids'],
-      textStyle: { color: PALETTE.slate },
-    },
-    tooltip: { trigger: 'axis' },
-    xAxis: { type: 'category', data: weeks, boundaryGap: false },
-    yAxis: { type: 'value', minInterval: 1 },
-    // Ordre de pile : chauds en bas (base plate honnête) → tièdes → froids.
-    series: [
-      band(
-        'Chauds',
-        points.map((p) => p.hot),
-        PALETTE.red,
-      ),
-      band(
-        'Tièdes',
-        points.map((p) => p.mid),
-        PALETTE.amber,
-      ),
-      band(
-        'Froids',
-        points.map((p) => p.cold),
-        PALETTE.blue,
-      ),
-    ],
-  };
-}
-
-/** Couleur d'un état de chaleur (les nœuds du diagramme de transferts en héritent). */
-const TEMP_COLOR: Record<string, string> = {
-  new: PALETTE.violet,
-  cold: PALETTE.blue,
-  mid: PALETTE.amber,
-  hot: PALETTE.red,
-  converted: PALETTE.green,
-  lost: PALETTE.slate,
-};
-
-/**
- * **Transferts entre bandes** (Sankey) : l'état de chaque prospect au **début** de la
- * période (colonne « avant », à gauche) vers son état à la **fin** (« après », à
- * droite). Un ruban « Tiède → Chaud » = les personnes qui se sont réchauffées ; « Chaud
- * → Froid » celles qui ont refroidi ; plus les entrées (Nouveau) et sorties
- * (Converti / Perdu). Largeur du ruban = nombre de personnes.
- */
-export function temperatureTransitionsOption(flow: LifecycleFlow): EChartsOption {
-  const labelByKey = new Map(flow.nodes.map((n) => [n.key, n.label]));
-  const nameOf = (key: string): string =>
-    `${labelByKey.get(key) ?? key}${key.startsWith('from_') ? ' ·avant' : ' ·après'}`;
-  const colorOf = (key: string): string =>
-    TEMP_COLOR[key.replace(/^(from_|to_)/, '')] ?? PALETTE.slate;
-  return {
-    tooltip: { trigger: 'item', formatter: '{b} : {c}' },
-    series: [
-      {
-        type: 'sankey',
-        emphasis: { focus: 'adjacency' },
-        nodeGap: 12,
-        data: flow.nodes.map((n) => ({
-          name: nameOf(n.key),
-          itemStyle: { color: colorOf(n.key), borderColor: 'transparent' },
-        })),
-        links: flow.links.map((l) => ({
-          source: nameOf(l.source),
-          target: nameOf(l.target),
-          value: l.value,
-        })),
-        lineStyle: { color: 'gradient', opacity: 0.35 },
-        label: { color: 'inherit' },
       },
     ],
   };

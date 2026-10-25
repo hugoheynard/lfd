@@ -508,52 +508,10 @@
 
             @case ('vivier') {
               <p class="section-lead">
-                <strong>Que vaut le pipeline ?</strong> La répartition des prospects par chaleur,
-                comment ils se réchauffent ou refroidissent, et où ils bloquent — à l'onboarding
-                comme dans le pipeline de démarchage.
+                <strong>Que vaut le pipeline ?</strong> Où les établissements bloquent — à
+                l'ouverture du compte comme dans le pipeline de démarchage.
               </p>
               <div class="grid">
-                <fold-card>
-                  <fold-element-title variant="title" title="Momentum du vivier — part par chaleur">
-                    <div titleAction class="head-controls">
-                      <fold-info
-                        label="Momentum du vivier"
-                        text="La part de prospects dans chaque bande à la clôture de chaque semaine : chauds (ont commandé en perso), tièdes (inscrits, zéro commande), froids (démarchage en cours). Aires empilées : l'épaisseur d'une bande = sa part, l'enveloppe du haut = le volume total du vivier. La direction par bande (qui se réchauffe/refroidit) se lit sur les transferts ci-contre."
-                      />
-                    </div>
-                  </fold-element-title>
-                  @if (temperatureFlow(); as opt) {
-                    <app-chart [option]="opt" height="280px" />
-                    <app-chart-note
-                      goal="Voir comment se répartit le vivier de prospects par chaleur au fil des semaines."
-                      read="Aires empilées chauds / tièdes / froids ; l'épaisseur d'une bande = sa part, l'enveloppe du haut = le volume total."
-                    />
-                  }
-                </fold-card>
-
-                <fold-card>
-                  <fold-element-title
-                    variant="title"
-                    title="Transferts entre bandes (sur la période)"
-                  >
-                    <div titleAction class="head-controls">
-                      <fold-info
-                        label="Transferts entre bandes"
-                        text="Comment les prospects ont changé de chaleur entre le début (« avant », à gauche) et la fin (« après », à droite) de la période : qui est passé de tiède à chaud, de chaud à froid, converti, perdu, ou vient d'entrer. La largeur d'un ruban = le nombre de personnes qui ont fait ce passage."
-                      />
-                    </div>
-                  </fold-element-title>
-                  @if (transitions(); as opt) {
-                    <app-chart [option]="opt" height="280px" />
-                    <app-chart-note
-                      goal="Voir comment les prospects changent de chaleur entre le début et la fin de la période."
-                      read="Rubans du « avant » (gauche) vers « après » (droite) ; la largeur = le nombre de personnes qui font ce passage."
-                    />
-                  } @else {
-                    <p class="muted">Pas encore assez de mouvements pour tracer les transferts.</p>
-                  }
-                </fold-card>
-
                 <fold-card>
                   <fold-element-title variant="title" title="Entonnoir d'activation">
                     <div titleAction class="head-controls">
@@ -595,7 +553,7 @@
             @case ('usage') {
               <p class="section-lead">
                 <strong>Comment se comporte le parcours produit ?</strong> Le trajet du clic à
-                l'activation avec ses fuites, la rétention des cohortes d'inscrits, et les délais
+                l'activation avec ses fuites, la rétention des cohortes de sociétés, et les délais
                 clés du cycle.
               </p>
               <div class="grid">
@@ -620,19 +578,19 @@
                 </fold-card>
 
                 <fold-card class="wide">
-                  <fold-element-title variant="title" title="Rétention par cohorte d'inscription">
+                  <fold-element-title variant="title" title="Rétention par cohorte de sociétés">
                     <div titleAction class="head-controls">
                       <fold-info
                         label="Rétention par cohorte"
-                        text="Pour chaque semaine d'inscription (une ligne), la part de la cohorte ayant commandé k semaines plus tard. La couleur va du clair (faible rétention) au foncé (forte rétention)."
+                        text="Pour chaque semaine de déclaration (une ligne), la part des sociétés déclarées cette semaine-là ayant commandé k semaines plus tard. Les particuliers n'y entrent pas. La couleur va du clair (faible rétention) au foncé (forte rétention)."
                       />
                     </div>
                   </fold-element-title>
                   @if (cohorts(); as opt) {
                     <app-chart [option]="opt" height="320px" />
                     <app-chart-note
-                      goal="Voir si les nouvelles cohortes d'inscrits reviennent commander dans le temps."
-                      read="Une ligne par semaine d'inscription ; la couleur fonce avec la part qui recommande k semaines après l'inscription."
+                      goal="Voir si les sociétés nouvellement déclarées reviennent commander dans le temps."
+                      read="Une ligne par semaine de déclaration ; la couleur fonce avec la part qui commande k semaines après la déclaration."
                     />
                   } @else {
                     <p class="muted">Pas encore assez de cohortes pour une heatmap.</p>

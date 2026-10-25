@@ -1,0 +1,43 @@
+:host {
+  display: block;
+}
+
+.pipeline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+}
+
+.scope {
+  align-self: flex-start;
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  max-width: 40rem;
+}
+
+.company {
+  display: block;
+  font-weight: 600;
+}
+
+.ref {
+  display: block;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.pieces {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}
+
+.count {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

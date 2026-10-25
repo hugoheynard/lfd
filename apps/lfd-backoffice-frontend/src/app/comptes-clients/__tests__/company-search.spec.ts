@@ -32,6 +32,8 @@ function company(overrides: Partial<AdminCompany> = {}): AdminCompany {
     hasOpenSupportRequest: false,
     parent: null,
     createdAt: '2026-08-01T09:00:00.000Z',
+    declaredVia: null,
+    piecesReached: [],
     activatedAt: null,
     warnings: [],
     ...overrides,
