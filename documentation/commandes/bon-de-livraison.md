@@ -315,9 +315,17 @@ forme du bon de commande
   L'écran (`RunSheetStop`) réutilise le composant du comptoir : « Départ
   incomplet. Ces articles ne partent pas : <n> <produit> ». `remainder` ne vaut
   que `abandoned` ; il voyage jusqu'à l'écran pour qu'un « à relivrer » (E7)
-  dise « reste relivré le <date> ». Non couverts : « Ma tournée » (fiche lue
-  sur la feuille d'atelier, par le canal de la livraison) et le PDF de
-  tournée, qui n'affiche aucune quantité.
+  dise « reste relivré le <date> ». Non couvert : le PDF de tournée, qui
+  n'affiche aucune quantité.
+- **Dans « Ma tournée »**, l'écran du coursier (2026-10-25) : la fiche de
+  l'arrêt (`MyDeliveryStopView.sheet`) dit les quantités QUI PARTENT — un
+  article qui ne part pas du tout en est absent — et l'arrêt porte
+  `shortfall`, de la même forme que la feuille de route. La livraison le lit
+  par `DeliveryDeparturesReader` (`delivery/channels/commerce/`, déclaré par
+  la livraison), que le commerce implémente par le même `DEPARTURE_SELECT` /
+  `departureOf` ; les bacs attendus suivent ce qui part. `MyRoundStop`
+  réutilise le composant du comptoir. La proposition de colisage, elle, lit
+  toujours les lignes DUES (`DeliveryOrderLinesReader`).
 
 ## Les décisions
 

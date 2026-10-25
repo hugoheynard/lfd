@@ -193,7 +193,7 @@ describe("myDeliveryRoundView — la vue du livreur (MT-D5 v2)", () => {
         procedures: new Map([
           ["o_a", [{ id: "st_1", title: "Cour", body: "", hasPhoto: true, photoRevision: "rev1" }]],
         ]),
-        stopSheets: new Map([["o_a", { lines: [LINE], binsExpected: 2 }]]),
+        stopSheets: new Map([["o_a", { lines: [LINE], shortfall: null, binsExpected: 2 }]]),
       }),
     );
 
@@ -228,6 +228,8 @@ describe("myDeliveryRoundView — la vue du livreur (MT-D5 v2)", () => {
         "rank",
         "reference",
         "sheet",
+        // Le départ incomplet décidé (2026-10-25).
+        "shortfall",
         "signatureRequired",
         "stopId",
         "window",
@@ -402,8 +404,8 @@ describe("myDeliveryRoundView — « Ma tournée » suit le colisage (PL4)", () 
       inputs({
         round: round([stop("a", 1), stop("b", 2, { bins: 0, coldBins: 0 }), stop("c", 3)], null),
         stopSheets: new Map([
-          ["o_a", { lines: [LINE], binsExpected: 2 }],
-          ["o_b", { lines: [LINE], binsExpected: null }],
+          ["o_a", { lines: [LINE], shortfall: null, binsExpected: 2 }],
+          ["o_b", { lines: [LINE], shortfall: null, binsExpected: null }],
         ]),
         readyOrders: new Set(["o_a", "o_c"]),
       }),
@@ -427,7 +429,7 @@ describe("myDeliveryRoundView — « Ma tournée » suit le colisage (PL4)", () 
     const view = myDeliveryRoundView(
       inputs({
         round: round([stop("a", 1)], null),
-        stopSheets: new Map([["o_a", { lines: [LINE], binsExpected: null }]]),
+        stopSheets: new Map([["o_a", { lines: [LINE], shortfall: null, binsExpected: null }]]),
       }),
     );
 
@@ -439,11 +441,36 @@ describe("myDeliveryRoundView — « Ma tournée » suit le colisage (PL4)", () 
     const view = myDeliveryRoundView(
       inputs({
         round: round([stop("a", 1)], null),
-        stopSheets: new Map([["o_a", { lines: [leaky], binsExpected: 1 }]]),
+        stopSheets: new Map([["o_a", { lines: [leaky], shortfall: null, binsExpected: 1 }]]),
       }),
     );
 
     expect(view.stops[0]?.sheet).toEqual([LINE]);
     expect(JSON.stringify(view)).not.toMatch(/cents|price|total|amount|prix|montant/iu);
+  });
+});
+
+describe("myDeliveryRoundView — un départ incomplet décidé", () => {
+  /** Régression : « Ma tournée » disait les quantités commandées d'un départ incomplet, sans rien en dire (2026-10-25). */
+  it("porte le reste qui ne part pas et son sort, champ par champ", () => {
+    const abandoned = { sku: "VIE-001", productName: "Croissant", quantity: 2 };
+    const view = myDeliveryRoundView(
+      inputs({
+        round: round([stop("a", 1), stop("b", 2)], null),
+        stopSheets: new Map([
+          [
+            "o_a",
+            {
+              lines: [LINE],
+              shortfall: { remainder: "abandoned", lines: [{ ...abandoned, lineTotalCents: 9 }] },
+              binsExpected: 1,
+            },
+          ],
+        ]),
+      }),
+    );
+
+    expect(view.stops[0]?.shortfall).toEqual({ remainder: "abandoned", lines: [abandoned] });
+    expect(view.stops[1]?.shortfall).toBeNull();
   });
 });

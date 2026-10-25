@@ -160,6 +160,17 @@ function stopView(
     decision: decision === null ? null : stopDecisionView(decision),
     orderState: inputs.orderStates.get(stop.orderId) ?? "open",
     sheet: (sheet?.lines ?? []).map(sheetLineView),
+    shortfall:
+      sheet === undefined || sheet.shortfall === null
+        ? null
+        : {
+            remainder: sheet.shortfall.remainder,
+            lines: sheet.shortfall.lines.map((line) => ({
+              sku: line.sku,
+              productName: line.productName,
+              quantity: line.quantity,
+            })),
+          },
     packing: inputs.readyOrders.has(stop.orderId) ? "ready" : "in_progress",
     binsDeclared: stop.bins,
     ...(sheet !== undefined && sheet.binsExpected !== null

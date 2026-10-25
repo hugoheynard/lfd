@@ -24,6 +24,12 @@ export {
   type DeliveryStopWindow,
 } from "./delivery-orders.reader.js";
 export { DeliveryOrderLinesReader, type DeliveryOrderLine } from "./delivery-order-lines.reader.js";
+export {
+  DeliveryDeparturesReader,
+  type DeliveryAbandonedLine,
+  type DeliveryDeparture,
+  type DeliveryShortfall,
+} from "./delivery-departures.reader.js";
 export { DeliveryProductsReader, type DeliveryProduct } from "./delivery-products.reader.js";
 export {
   DeliveryProceduresReader,

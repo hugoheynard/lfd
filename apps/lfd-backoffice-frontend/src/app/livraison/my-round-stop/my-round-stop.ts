@@ -14,6 +14,7 @@ import {
 
 import { parisTimeOf } from '../delivery-loading';
 import { closeWithoutHandoverLabel } from '../delivery-incidents';
+import { MissingItems } from '../../handover-shop/missing-items/missing-items';
 import { DepositForm } from '../deposit-form/deposit-form';
 import { HandoverForm } from '../handover-form/handover-form';
 import { IncidentReportForm } from '../incident-report-form/incident-report-form';
@@ -37,7 +38,9 @@ import { LogisticsSwatch } from '../../shared/logistics-colors/logistics-swatch/
  *
  * **La fiche en évidence** (`parcours-du-livreur.md`, PL4) : le contenu de la
  * feuille d'atelier — produits, quantités, froid — dépliable et ouvert
- * d'emblée, avec l'avancement du colisage (« En préparation », « Prête », les
+ * d'emblée — aux quantités qui PARTENT : un départ incomplet décidé se dit
+ * « Départ incomplet. Ces articles ne partent pas » (2026-10-25), sans
+ * phrase qui invite à prévenir le client —, avec l'avancement du colisage (« En préparation », « Prête », les
  * bacs déclarés et, s'il est connu, le nombre ATTENDU, toujours dit
  * « environ » : c'est une proposition).
  *
@@ -74,6 +77,7 @@ import { LogisticsSwatch } from '../../shared/logistics-colors/logistics-swatch/
     DepositForm,
     HandoverForm,
     IncidentReportForm,
+    MissingItems,
     MyRoundStepPhoto,
     LogisticsSwatch,
   ],

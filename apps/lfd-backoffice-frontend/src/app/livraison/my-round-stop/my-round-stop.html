@@ -52,6 +52,14 @@
       </fold-disclosure>
     }
 
+    @if (item.shortfall; as shortfall) {
+      <app-missing-items
+        [lines]="shortfall.lines"
+        fulfillmentMethod="delivery"
+        [remainder]="shortfall.remainder"
+      />
+    }
+
     <fold-field-list>
       <fold-field label="Adresse" placeholder="Aucune adresse" [empty]="item.address === null">
         @for (line of addressLines(); track $index) {

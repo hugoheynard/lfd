@@ -7,6 +7,7 @@ import { CatalogDeliveryProductsReader } from "../b2b/catalog/infrastructure/cat
 import { OrdersModule } from "../b2b/orders/orders.module.js";
 import { PrismaCommerceDayVersionReader } from "../b2b/orders/infrastructure/prisma-commerce-day-version.reader.js";
 import { PrismaDeliveryOrderStatesReader } from "../b2b/orders/infrastructure/prisma-delivery-order-states.reader.js";
+import { PrismaDeliveryDeparturesReader } from "../b2b/orders/infrastructure/prisma-delivery-departures.reader.js";
 import { PrismaDeliveryOrderLinesReader } from "../b2b/orders/infrastructure/prisma-delivery-order-lines.reader.js";
 import { PrismaDeliveryAddressPointsReader } from "../b2b/orders/infrastructure/prisma-delivery-address-points.reader.js";
 import { PrismaDeliveryOrdersReader } from "../b2b/orders/infrastructure/prisma-delivery-orders.reader.js";
@@ -31,6 +32,7 @@ import {
   TransferOrderColorsReader,
   BinLabelColorsReader,
   DeliveryAddressPointsReader,
+  DeliveryDeparturesReader,
   DeliveryOrderLinesReader,
   DeliveryOrdersReader,
   DeliveryOrderStatesReader,
@@ -65,6 +67,8 @@ import { ResolvedDepartureSiteReader } from "../delivery/infrastructure/resolved
  *   `catalog/`, qui exporte `ProductCatalogReader` : d'où `CatalogModule` ;
  * - `DeliveryOrderLinesReader` — les lignes d'une commande (SKU, nom figé,
  *   quantité), pour le colisage proposé (lot 4 bis, L4b-C4) ;
+ * - `DeliveryDeparturesReader` — ce qui PART d'une commande (départ incomplet
+ *   décidé compris), pour la fiche de « Ma tournée » (2026-10-25) ;
  * - `DeliveryProceduresReader` — la procédure de l'adresse d'une commande, lue
  *   vivante pour le livreur (plan « Ma tournée », MT-D5 v2) ;
  * - `DeliveryStepPhotosReader` — la photo d'une étape de cette procédure,
@@ -112,6 +116,7 @@ import { ResolvedDepartureSiteReader } from "../delivery/infrastructure/resolved
     { provide: DeliveryOrdersReader, useClass: PrismaDeliveryOrdersReader },
     { provide: DeliveryProductsReader, useClass: CatalogDeliveryProductsReader },
     { provide: DeliveryOrderLinesReader, useClass: PrismaDeliveryOrderLinesReader },
+    { provide: DeliveryDeparturesReader, useClass: PrismaDeliveryDeparturesReader },
     { provide: DeliveryProceduresReader, useClass: PrismaDeliveryProceduresReader },
     { provide: DeliveryStepPhotosReader, useClass: PrismaDeliveryStepPhotosReader },
     { provide: DeliveryOrderStatesReader, useClass: PrismaDeliveryOrderStatesReader },
@@ -139,6 +144,7 @@ import { ResolvedDepartureSiteReader } from "../delivery/infrastructure/resolved
     DeliveryOrdersReader,
     DeliveryProductsReader,
     DeliveryOrderLinesReader,
+    DeliveryDeparturesReader,
     DeliveryProceduresReader,
     DeliveryStepPhotosReader,
     DeliveryOrderStatesReader,

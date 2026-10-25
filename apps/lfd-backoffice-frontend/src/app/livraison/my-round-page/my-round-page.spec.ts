@@ -744,6 +744,26 @@ describe('MyRoundPage — elle suit le colisage (PL4)', () => {
     expect(lines[1]?.querySelector('[data-sheet-cold]')).not.toBeNull();
   });
 
+  /** Régression : « Ma tournée » disait les quantités commandées d'un départ incomplet décidé (2026-10-25). */
+  it('un départ incomplet décidé : la fiche dit ce qui part, puis ce qui ne part pas', async () => {
+    const stop = myStopOf({
+      sheet: [mySheetLineOf({ sku: 'CRO-01', name: 'Croissant', quantity: 3 })],
+      shortfall: {
+        remainder: 'abandoned',
+        lines: [{ sku: 'CRO-01', productName: 'Croissant', quantity: 2 }],
+      },
+    });
+    const { element } = await boot({ round: myRoundOf({ stops: [stop, myStopOf()] }) });
+    const [first, second] = [...element.querySelectorAll('[data-my-stop]')];
+    expect(first?.querySelector('[data-sheet-line]')?.textContent).toContain('× 3');
+    const missing = first?.querySelector('[data-missing-items]')?.textContent ?? '';
+    expect(missing).toContain('Départ incomplet.');
+    expect(missing).toContain('Ces articles ne partent pas');
+    expect(missing).toContain('2 Croissant');
+    expect(missing).not.toMatch(/prévenir|client/iu);
+    expect(second?.querySelector('[data-missing-items]')).toBeNull();
+  });
+
   it('suit la version de « ma tournée » du jour, et relit la tournée ouverte sans la quitter', async () => {
     const { fixture, element } = await boot();
     expect(watched?.journals).toEqual(['my-round']);

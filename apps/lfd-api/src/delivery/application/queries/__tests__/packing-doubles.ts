@@ -1,6 +1,8 @@
 import type { BinTypeView } from "@lfd/contracts";
 
 import {
+  type DeliveryDeparture,
+  DeliveryDeparturesReader,
   type DeliveryOrderFacts,
   type DeliveryOrderLine,
   DeliveryOrderLinesReader,
@@ -22,6 +24,26 @@ export class FixedOrderLines extends DeliveryOrderLinesReader {
   linesOf(orderId: string): Promise<readonly DeliveryOrderLine[]> {
     return Promise.resolve(this.byOrder.get(orderId) ?? []);
   }
+}
+
+/** Ce qui part de chaque commande, figé ; une commande inconnue ne part de rien. */
+export class FixedDepartures extends DeliveryDeparturesReader {
+  constructor(private readonly byOrder: ReadonlyMap<string, DeliveryDeparture>) {
+    super();
+  }
+
+  departureOf(orderId: string): Promise<DeliveryDeparture> {
+    return Promise.resolve(this.byOrder.get(orderId) ?? { lines: [], shortfall: null });
+  }
+}
+
+/** Des lignes dues qui partent toutes : aucun départ incomplet. */
+export function departingAll(
+  byOrder: ReadonlyMap<string, readonly DeliveryOrderLine[]>,
+): FixedDepartures {
+  return new FixedDepartures(
+    new Map([...byOrder].map(([orderId, lines]) => [orderId, { lines, shortfall: null }])),
+  );
 }
 
 /**

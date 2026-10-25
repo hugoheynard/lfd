@@ -157,6 +157,78 @@ describe("la fiche de l'arrêt et l'avancement du colisage (PL4)", () => {
   });
 });
 
+/**
+ * Un départ incomplet décidé, posé en base comme l'écrivent le signal du
+ * colisage et « Décider du départ » (même dette que la commande de la scène :
+ * `shortfall-decision.e2e-spec.ts` traverse les vraies routes).
+ */
+async function decideShortfall(
+  orderId: string,
+  short: { readonly sku: string; readonly due: number; readonly packed: number },
+  alsoDeparting: readonly { readonly sku: string; readonly quantity: number }[] = [],
+) {
+  const at = new Date();
+  await ctx.prisma.order.update({
+    where: { id: orderId },
+    data: {
+      shortfallReportedAt: at,
+      shortfallLines: [short],
+      shortfallDecidedAt: at,
+      shortfallDecision: {
+        create: {
+          id: `dec_${orderId}`,
+          decidedAt: at,
+          decidedByStaffId: "staff_manager",
+          remainder: "abandoned",
+          // La décision nomme TOUT ce qui part, pas seulement l'article en manque.
+          departing: [{ sku: short.sku, quantity: short.packed }, ...alsoDeparting],
+          signalReportedAt: at,
+        },
+      },
+    },
+  });
+}
+
+describe("un départ incomplet décidé, dans « Ma tournée »", () => {
+  /** Régression : la fiche du coursier disait les quantités commandées d'un départ incomplet décidé (2026-10-25). */
+  it("la fiche dit ce qui part, et l'arrêt porte le reste abandonné", async () => {
+    const paul = await staffWithRole(ctx, "livreur-paul");
+    const { roundId, orders } = await myRoundOfTwo(paul.id);
+    await addLine(orders[0], "VIE-001", "Croissant", 6);
+    await addLine(orders[0], "PAI-002", "Pain", 4);
+    await decideShortfall(orders[0], { sku: "VIE-001", due: 6, packed: 0 }, [
+      { sku: "PAI-002", quantity: 4 },
+    ]);
+    await addLine(orders[1], "VIE-001", "Croissant", 5);
+    await decideShortfall(orders[1], { sku: "VIE-001", due: 5, packed: 3 });
+
+    const mine = await view(paul.agent, roundId);
+
+    expect(mine.stops[0]?.sheet).toEqual([
+      { sku: "PAI-002", name: "Pain", quantity: 4, requiresCold: false },
+    ]);
+    expect(mine.stops[0]?.shortfall).toEqual({
+      remainder: "abandoned",
+      lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 6 }],
+    });
+    expect(mine.stops[1]?.sheet).toEqual([
+      { sku: "VIE-001", name: "Croissant", quantity: 3, requiresCold: false },
+    ]);
+    expect(mine.stops[1]?.shortfall?.lines).toEqual([
+      { sku: "VIE-001", productName: "Croissant", quantity: 2 },
+    ]);
+    expect(keysOf(mine).filter((key) => MONEY.test(key))).toEqual([]);
+  });
+
+  it("sans décision, aucun départ incomplet", async () => {
+    const paul = await staffWithRole(ctx, "livreur-paul");
+    const { roundId, orders } = await myRoundOfTwo(paul.id);
+    await addLine(orders[0], "VIE-001", "Croissant", 6);
+
+    expect((await view(paul.agent, roundId)).stops[0]?.shortfall).toBeNull();
+  });
+});
+
 describe("la version de « ma tournée » (PL4)", () => {
   it("bouge sur un bac déclaré, puis sur une commande prête — et pas sans rien", async () => {
     const paul = await staffWithRole(ctx, "livreur-paul");

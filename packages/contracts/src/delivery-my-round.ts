@@ -1,6 +1,7 @@
 import type { BillingAddressPayload, DeliveryContact, GpsPoint } from "./address.js";
 import type { DriverTransferStopView } from "./delivery-transfers.js";
 import type { DeliveryIncidentView, DeliveryStopOrderState } from "./delivery-doorstep.js";
+import type { DeliveryRunSheetShortfallView } from "./delivery-run-sheet.js";
 import type { DeparturePointView } from "./delivery-settings.js";
 import type { StopDecisionView } from "./delivery-stop-decision.js";
 import type { FulfillmentSource } from "./order.js";
@@ -192,8 +193,18 @@ export interface MyDeliveryStopView {
    * retirée ou annulée se clôt sans remise (AP-D2).
    */
   readonly orderState: DeliveryStopOrderState;
-  /** La fiche : les produits de la commande, fusionnés par SKU, dans l'ordre de la commande. */
+  /**
+   * La fiche : ce qui PART de la commande, fusionné par SKU, dans l'ordre de la
+   * commande — réduit par un départ incomplet décidé (2026-10-25).
+   */
   readonly sheet: readonly MyDeliverySheetLineView[];
+  /**
+   * Le départ incomplet décidé (2026-10-25) : ce qui ne part pas, et le sort
+   * du reste — la même forme que la feuille de route. Absent ou `null` sans
+   * décision. Il informe le livreur ; prévenir le client reste une décision
+   * du commerce (E6d).
+   */
+  readonly shortfall?: DeliveryRunSheetShortfallView | null | undefined;
   /** L'avancement du colisage (PL4). */
   readonly packing: MyDeliveryStopPacking;
   /** Les bacs déclarés et non annulés — le même compte que {@link bins}, nommé pour l'avancement. */
