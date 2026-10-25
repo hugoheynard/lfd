@@ -215,7 +215,7 @@ export class PackingStock {
    * @returns les pièces rendues.
    */
   giveBack(requested: number): number {
-    const returned = Math.min(requested, this.free);
+    const returned = Math.max(0, Math.min(requested, this.free));
     this.returnedValue += returned;
     return returned;
   }
