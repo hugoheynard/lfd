@@ -105,7 +105,7 @@ describe("le semis, à la norme des sites", () => {
     ]);
   });
 
-  it("la journée porte des retraits particulier aux deux sites et une livraison particulier", async () => {
+  it("la journée porte des retraits particulier aux deux sites, et aucune livraison particulier", async () => {
     const sites = await sitesByLabel();
     const personal = await ctx.prisma.order.findMany({
       where: { requestedDeliveryDate: todayColumn(), clientele: "public" },
@@ -120,7 +120,9 @@ describe("le semis, à la norme des sites", () => {
     // Trois depuis le 2026-10-19 : le Village ne remet plus qu'aux particuliers
     // (Hugo), ses deux retraits pros du jour sont devenus particuliers.
     expect(pickupSites.filter((id) => id === sites.get("Le Village"))).toHaveLength(3);
-    expect(personal.filter((order) => order.fulfillmentMethod === "delivery")).toHaveLength(1);
+    // Hugo, 2026-10-25 : la livraison aux particuliers est FERMÉE en
+    // développement — aucune ne doit apparaître dans les commandes du semis.
+    expect(personal.filter((order) => order.fulfillmentMethod === "delivery")).toHaveLength(0);
   });
 
   /** Hugo (2026-10-19) : l'accueil public n'est plus vide après un rechargement. */

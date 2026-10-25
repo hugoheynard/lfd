@@ -3,7 +3,6 @@ import type {
   OpenPackingContainer,
   PlaceOrderPayload,
 } from "@lfd/contracts";
-import { orderFulfillmentSchema } from "@lfd/contracts";
 import type { CommandBus } from "@nestjs/cqrs";
 import { randomUUID } from "node:crypto";
 
@@ -123,12 +122,6 @@ export interface SeedOrder {
    * commande se passe avec un créneau depuis le 2026-10-14.
    */
   readonly window: SeedWindow | null;
-  /**
-   * **Une commande d'avant la règle**, passée avec `window` puis privée de sa
-   * tranche — le cas que le comptoir rencontrera dans les données longtemps
-   * après que la passation l'a interdit (cf. `counter-day.seed.ts`).
-   */
-  readonly historicWithoutWindow?: true;
   readonly lines: readonly SeedLine[];
   readonly paid: boolean;
   /**
@@ -297,22 +290,6 @@ async function chosenWindowOf(
 }
 
 /**
- * Retire la tranche d'une commande posée — l'historique d'avant la règle, qu'aucun
- * handler ne sait plus produire. Le bloc figé est relu par son schéma, jamais casté.
- */
-async function eraseWindow(context: SeedContext, orderId: string): Promise<void> {
-  const row = await context.prisma.order.findUniqueOrThrow({
-    where: { id: orderId },
-    select: { fulfillment: true },
-  });
-  const fulfillment = orderFulfillmentSchema.parse(row.fulfillment);
-  await context.prisma.order.update({
-    where: { id: orderId },
-    data: { fulfillment: { ...fulfillment, window: { value: null, source: "default" } } },
-  });
-}
-
-/**
  * Pose une commande par le vrai handler, recale sa date de création, et rend
  * son identifiant et son **numéro** — la clé par laquelle le colisage et la
  * remise la reprennent.
@@ -374,9 +351,6 @@ export async function place(
   // nombre d'alertes variait d'un rechargement à l'autre
   // (`dev-scenario-stability`, CI du 2026-10-10).
   await context.settle();
-  if (order.historicWithoutWindow === true) {
-    await eraseWindow(context, placed.id);
-  }
   const row = await context.prisma.order.update({
     where: { id: placed.id },
     data: {

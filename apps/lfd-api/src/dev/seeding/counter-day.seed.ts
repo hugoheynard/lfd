@@ -98,8 +98,6 @@ export interface CounterOrder {
   /** La tranche demandée, ou `null` : aucune n'a été demandée. */
   /** `start` nul = une échéance — la forme de toute livraison de la démo. */
   readonly window: { readonly start: string | null; readonly end: string } | null;
-  /** Posée avec `window`, puis privée de sa tranche — l'historique d'avant 2026-10-14. */
-  readonly historicWithoutWindow?: true;
   /** L'état que la file doit montrer, atteint par les vraies commandes. */
   readonly outcome: "expected" | "ready" | "handed_over";
   /**
@@ -130,28 +128,6 @@ export const COUNTER: readonly CounterOrder[] = [
   // tranche (6 h 30), et toujours là — la Supervision le compte « client pas
   // venu », en ambre (Hugo, 2026-09-28).
   { point: LABO, window: PICKUP_WINDOW, outcome: "ready", step: 1, client: 1 },
-  // 🔴 **Sans tranche, et c'est de l'HISTORIQUE** — pas une lacune du semis.
-  // Jusqu'au 2026-09-11, l'écran de saisie staff n'envoyait aucune tranche et un
-  // retrait ne prend aucun défaut : TOUTE commande prise au téléphone arrivait
-  // ici sans créneau. Le créneau y est désormais obligatoire, donc ce cas ne se
-  // crée plus — mais il vit dans les données, et la file doit continuer de le
-  // montrer. Elle le descend en fin de liste sans lui inventer d'heure, et ne
-  // parle pas de son retard : on ne reproche pas une heure que personne n'a
-  // donnée.
-  //
-  // ⚠️ Le retirer du semis ferait disparaître des postes de développement le
-  // seul exemplaire d'un cas que le comptoir rencontrera pendant des mois.
-  //
-  // Depuis le 2026-10-14 la passation la refuse : elle est posée avec la
-  // tranche pro, puis privée de sa tranche (`historicWithoutWindow`).
-  {
-    point: LABO,
-    window: PICKUP_WINDOW,
-    historicWithoutWindow: true,
-    outcome: "expected",
-    step: 2,
-    client: 0,
-  },
   // Le Village — deux tranches, donc un onglet avec son propre compteur.
   // Prête au Labo, et pas encore retirée : depuis le 2026-10-14 le Village
   // est approvisionné PAR TRANSFERT, et le comptoir refuse de tendre une
@@ -246,7 +222,6 @@ export async function placeCounter(
       method: entry.point === null ? "delivery" : "pickup",
       point: entry.point,
       window: entry.window,
-      ...(entry.historicWithoutWindow === true ? { historicWithoutWindow: true as const } : {}),
       lines: entry.wide === true ? day.wide : linesFor(entry.step),
       // Réglée par carte : sans règlement, elle ne serait pas au plan.
       paid: entry.personal === true,

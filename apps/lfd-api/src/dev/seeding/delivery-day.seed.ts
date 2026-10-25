@@ -9,7 +9,7 @@ import {
   type SeedWindow,
   type Target,
 } from "./order-placing.seed.js";
-import { isPersonal, PERSONAL_ENSEIGNE } from "./personal-orders.seed.js";
+import { isPersonal } from "./personal-orders.seed.js";
 import { placedByKeys, scenarioOrderKey } from "./scenario-keys.seed.js";
 
 /**
@@ -17,8 +17,8 @@ import { placedByKeys, scenarioOrderKey } from "./scenario-keys.seed.js";
  * projeter dans la feuille de route, l'écran des tournées et « Proposer », et
  * le chargement.
  *
- * Dix-huit livraisons de plus que la file du comptoir (dont une particulier,
- * 2026-10-14), dans trois vallées : Val
+ * Dix-sept livraisons de plus que la file du comptoir (la livraison particulier
+ * est retirée le 2026-10-25 : fermée en dev), dans trois vallées : Val
  * d'Isère, Bourg-Saint-Maurice et les Arcs, La Rosière. Posées HIER par le
  * vrai handler (l'heure limite s'y oppose comme au client), AVANT le plan du
  * soir — sans quoi elles ne seraient ni en fournée ni au colisage.
@@ -242,22 +242,6 @@ export const DELIVERY_DAY: readonly DeliveryDayEntry[] = [
     lines: [
       { sku: "PAI-001", quantity: 14 },
       { sku: "PAI-013", quantity: 6 },
-    ],
-  },
-  // 🔴 La livraison PARTICULIER (2026-10-14) : le client de référence pour lui-
-  // même, à une adresse dictée — la couleur de livraison particulier du Labo.
-  // Sans carnet, son point vient du cache de géocodage que le semis remplit
-  // (`situatePersonalAddress`).
-  {
-    enseigne: PERSONAL_ENSEIGNE,
-    deliveryLabel: "Domicile",
-    // Une échéance : sans carnet, c'est le réglage global qui s'applique, et
-    // celui de la démo livre « avant HH:MM ».
-    window: { start: null, end: "11:00" },
-    ready: true,
-    lines: [
-      { sku: "VIE-001", quantity: 4 },
-      { sku: "PAI-001", quantity: 2 },
     ],
   },
 ];

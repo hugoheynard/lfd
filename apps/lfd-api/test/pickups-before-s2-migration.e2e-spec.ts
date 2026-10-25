@@ -80,6 +80,13 @@ async function seedPickup(seed: PickupSeed): Promise<string> {
       requestedDeliveryDate: new Date(daysAgo(seed.daysBefore)),
       fulfillmentMethod: "pickup",
       pickupAddress: seed.snapshot,
+      // Un retrait porte son créneau (CHECK `orders_pickup_has_window`,
+      // 2026-10-25) ; la migration S2 éprouvée ici ne lit que le site.
+      fulfillment: {
+        window: { value: { start: "05:30", end: "06:30" }, source: "override" },
+        contact: { value: null, source: "default" },
+        signatureRequired: { value: false, source: "default" },
+      },
     },
   });
   return order.id;

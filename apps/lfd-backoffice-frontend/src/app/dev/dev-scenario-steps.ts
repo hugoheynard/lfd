@@ -31,7 +31,7 @@ export const DEV_SCENARIO_STEPS: readonly DevScenarioStepText[] = [
     step: 0,
     title: 'Commandes passées',
     explanation:
-      'Les clients ont commandé hier pour aujourd’hui : 9 retraits au comptoir, dont 3 de particuliers (2 au Labo, 1 au Village), et 3 au Village, approvisionné par transfert depuis le Labo ; et 19 livraisons, dont une en début d’après-midi (13:30–14:30) et une chez un particulier (avant 11:00). Chaque commande porte son site, et les écrans la colorent par catégorie. Rien n’est encore produit.',
+      'Les clients ont commandé hier pour aujourd’hui : 8 retraits au comptoir, dont 3 de particuliers (2 au Labo, 1 au Village), et 3 au Village, approvisionné par transfert depuis le Labo ; et 18 livraisons, toutes de pros (la livraison aux particuliers est fermée en développement), dont une en début d’après-midi (13:30–14:30). Chaque commande porte son site, et les écrans la colorent par catégorie. Rien n’est encore produit.',
     meaning: 'les commandes sont passées, rien n’est encore produit',
     loading: 'Passage des commandes d’hier, d’aujourd’hui et des jours à venir…',
     // Aucun écran ne liste toutes les commandes du jour (vérifié le 2026-10-05) :

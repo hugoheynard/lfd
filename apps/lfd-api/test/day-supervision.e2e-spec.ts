@@ -89,6 +89,21 @@ interface OrderSeed {
 let seq = 0;
 
 /** Écriture brute assumée : cf. l'en-tête (plan T, exception du 2026-10-25). */
+const PICKUP_FULFILLMENT = {
+  window: { value: { start: "05:30", end: "06:30" }, source: "override" },
+  contact: { value: null, source: "default" },
+  signatureRequired: { value: false, source: "default" },
+};
+
+function fulfillmentOf(seed: OrderSeed): { fulfillment?: Prisma.InputJsonValue } {
+  if (seed.fulfillment !== undefined) {
+    return { fulfillment: seed.fulfillment };
+  }
+  return (seed.fulfillmentMethod ?? "pickup") === "pickup"
+    ? { fulfillment: PICKUP_FULFILLMENT }
+    : {};
+}
+
 async function seedOrder(seed: OrderSeed): Promise<void> {
   seq += 1;
   await ctx.prisma.order.create({
@@ -101,7 +116,9 @@ async function seedOrder(seed: OrderSeed): Promise<void> {
       paymentStatus: seed.paymentStatus ?? "not_required",
       requestedDeliveryDate: seed.day === null ? null : new Date(`${seed.day}T00:00:00.000Z`),
       fulfillmentMethod: seed.fulfillmentMethod ?? "pickup",
-      ...(seed.fulfillment === undefined ? {} : { fulfillment: seed.fulfillment }),
+      // Un retrait porte son créneau (CHECK `orders_pickup_has_window`,
+      // 2026-10-25) : la Supervision n'en lit pas la tranche ici.
+      ...fulfillmentOf(seed),
       subtotalCents: 1000 + seq,
       totalCents: 1234 + seq,
     },

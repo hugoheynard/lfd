@@ -17,7 +17,7 @@ import {
   type ScenarioDay,
   scenarioDayOf,
 } from "./today.seed.js";
-import { openDeliveryToPersonal, situatePersonalAddress } from "./personal-orders.seed.js";
+import { closeDeliveryToPersonal, situatePersonalAddress } from "./personal-orders.seed.js";
 import { featureSeededItems } from "./featured.seed.js";
 import { paintSeededSites } from "./site-colors.seed.js";
 import { placeTomorrowRounds, TOMORROW_ROUNDS_SKUS } from "./tomorrow-rounds.seed.js";
@@ -147,7 +147,7 @@ export async function resetScenario(
   // commandes : la livraison particulier du jour serait refusée sinon, et les
   // écrans la coloreraient en teinte neutre (2026-10-14).
   await paintSeededSites(context);
-  await openDeliveryToPersonal(context);
+  await closeDeliveryToPersonal(context);
   await situatePersonalAddress(context);
   // Les « Incontournables » des deux accueils (2026-10-19).
   await featureSeededItems(context);

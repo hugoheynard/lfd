@@ -90,21 +90,22 @@ export function isPersonal(target: Target): boolean {
 }
 
 /**
- * Ouvre la livraison aux particuliers, par la commande de l'écran « Livraison »,
- * si elle est fermée — sans quoi la livraison particulier du jour serait
- * refusée (`DeliveryClosedForAudienceError`). Rien n'est écrit si elle l'est
- * déjà : un réglage reposé à l'identique écrirait un fait à chaque rechargement.
+ * **Ferme la livraison aux particuliers** en développement (Hugo, 2026-10-25 :
+ * « livraison particulier doit être désactivée en dev, ça ne peut pas
+ * apparaître dans les commandes »), par la commande de l'écran « Livraison ».
+ * Rien n'est écrit si elle l'est déjà : un réglage reposé à l'identique
+ * écrirait un fait à chaque rechargement.
  */
-export async function openDeliveryToPersonal(context: SeedContext): Promise<void> {
+export async function closeDeliveryToPersonal(context: SeedContext): Promise<void> {
   const current = await context.prisma.deliveryAvailability.findFirst({
     select: { openToB2c: true },
   });
-  if (current?.openToB2c === true) {
+  if (current?.openToB2c !== true) {
     return;
   }
   await asStaff(context.now, () =>
     context.commands.execute(
-      new UpdateDeliveryAvailabilityCommand({ openToB2c: true }, SEED_STAFF_SUB),
+      new UpdateDeliveryAvailabilityCommand({ openToB2c: false }, SEED_STAFF_SUB),
     ),
   );
 }
