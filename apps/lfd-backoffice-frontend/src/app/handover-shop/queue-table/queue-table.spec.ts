@@ -309,4 +309,20 @@ describe('QueueTable', () => {
 
     expect(seen).toEqual(['reminder', 'opened']);
   });
+
+  it('🔴 la ligne d’un départ incomplet décidé porte son reste abandonné', () => {
+    const fixture = render([
+      entry({
+        abandonedRemainder: [{ sku: 'CROI-NAT', productName: 'Croissant nature', quantity: 2 }],
+      }),
+      entry({ orderId: 'o2', reference: 'CMD-2' }),
+    ]);
+    const notes = [
+      ...(fixture.nativeElement as HTMLElement).querySelectorAll('tbody tr.folddt-note-row'),
+    ].map((row) => row.textContent ?? '');
+
+    expect(notes).toHaveLength(1);
+    expect(notes[0]).toContain('Commande incomplète');
+    expect(notes[0]).toContain('2 Croissant nature');
+  });
 });

@@ -75,6 +75,12 @@
     aucune autre.
   -->
   <ng-template foldRowNote let-row>
+    <!-- Départ incomplet décidé (2026-10-25) : le comptoir voit ce qui ne part
+         pas AVANT d'ouvrir la fiche. Il informe ; prévenir le client est une
+         décision du commerce (« Écrire au client », E6d). -->
+    @if (abandoned(row); as lines) {
+      <app-missing-items [lines]="lines" [fulfillmentMethod]="row.fulfillmentMethod" />
+    }
     <!-- Le transfert du site n'est pas reçu : la remise est refusée, et la
          ligne dit pourquoi (plan du transfert interne, §6.2). -->
     @if (transferBlock(row); as why) {

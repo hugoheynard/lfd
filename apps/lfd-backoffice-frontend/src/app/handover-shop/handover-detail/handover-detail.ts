@@ -12,6 +12,7 @@ import type {
   HandoverQueueEntryView,
   OrderHandoverLine,
   OrderHandoverView,
+  PackingAbandonedLine,
   PackingSheet,
 } from '@lfd/contracts';
 import {
@@ -27,6 +28,7 @@ import {
 import { NotifyService } from '../../notify.service';
 import { PackingService } from '../../production/packing.service';
 import { HandoverQueueService } from '../handover-queue.service';
+import { MissingItems } from '../missing-items/missing-items';
 import { SheetPanel, type SheetPanelData } from '../sheet-panel/sheet-panel';
 import { formatWindow, stillRemittable } from '../handover-queue';
 import { transferBlockReason } from '../handover-transfer';
@@ -75,6 +77,7 @@ const PLACED_AT = new Intl.DateTimeFormat('fr-FR', {
   selector: 'app-handover-detail',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    MissingItems,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldEmptyStateComponent,
@@ -139,6 +142,11 @@ export class HandoverDetail {
     () => this.order()?.lines ?? [],
   );
   protected readonly remitting = signal(false);
+
+  /** Le reste abandonné d'un départ incomplet décidé — vide sinon. */
+  protected readonly abandoned = computed<readonly PackingAbandonedLine[]>(
+    () => this.entry()?.abandonedRemainder ?? [],
+  );
 
   /**
    * Le sur-titre : **où** et **quand**, les deux faits qui tranchent « est-ce

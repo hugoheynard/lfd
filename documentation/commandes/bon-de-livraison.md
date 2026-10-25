@@ -298,6 +298,16 @@ forme du bon de commande
   décidé. Le même lecteur rend la décision elle-même (reste, instant, auteur
   nommé par l'annuaire du staff) : le poste dit « Décision : départ
   incomplet, reste abandonné — par <nom> à <heure> » (`shortfallDecision`).
+- **Au comptoir** (2026-10-25) : la file et la fiche de retrait lisent
+  `HandoverQueueEntryView.abandonedRemainder` et des quantités QUI PARTENT
+  (`totalUnits`, lignes de `OrderHandoverView`) — le commerce les sert par
+  `HandoverQueueReader` / `HandoverSubjectReader` (déclarés par le retrait,
+  `handover/channels/commerce/`), via `departureOf`
+  (`b2b/orders/infrastructure/handover-order.query.ts`), qui réutilise
+  `abandonedOf` et `decisionMarkOf`. Au retrait : « Commande incomplète — ces
+  articles ne sont pas dans le sac : <n> <produit> » ; en livraison :
+  « Départ incomplet. Ces articles ne partent pas : ». Il informe le vendeur ;
+  prévenir le client reste « Écrire au client » (E6d).
 
 ## Les décisions
 

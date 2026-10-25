@@ -4,6 +4,9 @@ import { billingAddressPayloadSchema, isSettled, type BillingAddressPayload } fr
 import type { HandoverQueueWindow } from "../domain/ports/order.reader.js";
 import { fulfillmentOf, windowOf } from "./order-fulfillment.parse.js";
 import { siteIdOf } from "./pickup-site.parse.js";
+import { abandonedOf, decisionMarkOf } from "./prisma-shortfall-aftermath.reader.js";
+import { departingOf } from "./prisma-shortfall-decision.reader.js";
+import { shortfallLinesOf } from "./prisma-order-shortfall.repository.js";
 
 /**
  * **La lecture d'une commande POUR LA REMISE**, partagée par les deux
@@ -136,6 +139,11 @@ export const HANDOVER_SELECT = {
   company: { select: { raisonSociale: true } },
   placedBy: { select: { email: true, firstName: true, lastName: true } },
   lines: { select: { sku: true, productNameSnapshot: true, quantity: true } },
+  // Le départ incomplet décidé : ce qui PART, et le reste abandonné (2026-10-25).
+  shortfallLines: true,
+  shortfallDecision: {
+    select: { decidedAt: true, decidedByStaffId: true, remainder: true, departing: true },
+  },
 } as const;
 
 /** Ce que la FILE lit de chaque commande du jour. Aucune ligne, un compte. */
@@ -153,7 +161,12 @@ export const HANDOVER_QUEUE_SELECT = {
   clientele: true,
   company: { select: { raisonSociale: true, enseigne: true } },
   placedBy: { select: { email: true, firstName: true, lastName: true } },
-  lines: { select: { quantity: true } },
+  lines: { select: { sku: true, productNameSnapshot: true, quantity: true } },
+  // Le départ incomplet décidé : ce qui PART, et le reste abandonné (2026-10-25).
+  shortfallLines: true,
+  shortfallDecision: {
+    select: { decidedAt: true, decidedByStaffId: true, remainder: true, departing: true },
+  },
 } as const;
 
 type HandoverRow = Prisma.OrderGetPayload<{ select: typeof HANDOVER_SELECT }>;
@@ -192,11 +205,7 @@ export function toHandoverSubject(row: HandoverRow): {
     settled: isSettled(row.paymentStatus),
     fulfillmentMethod: row.fulfillmentMethod,
     note: row.note,
-    lines: row.lines.map((line) => ({
-      sku: line.sku,
-      productName: line.productNameSnapshot,
-      quantity: line.quantity,
-    })),
+    lines: departureOf(row).lines,
   };
 }
 
@@ -212,12 +221,14 @@ export function toQueueEntry(row: QueueRow): {
   readonly fulfillmentMethod: QueueRow["fulfillmentMethod"];
   readonly window: HandoverQueueWindow | null;
   readonly totalUnits: number;
+  readonly abandoned: readonly DepartureLine[];
   readonly status: string;
   readonly settled: boolean;
   readonly readyAt: Date | null;
   readonly placedAt: Date;
 } {
   const label = customerLabelOf(row);
+  const departure = departureOf(row);
   return {
     orderId: row.id,
     reference: row.orderNumber,
@@ -230,10 +241,73 @@ export function toQueueEntry(row: QueueRow): {
     siteId: siteIdOf(row.pickupAddress),
     fulfillmentMethod: row.fulfillmentMethod,
     window: windowOf(fulfillmentOf(row.fulfillment)),
-    totalUnits: row.lines.reduce((sum, line) => sum + line.quantity, 0),
+    totalUnits: departure.lines.reduce((sum, line) => sum + line.quantity, 0),
+    abandoned: departure.abandoned,
     status: row.status,
     settled: isSettled(row.paymentStatus),
     readyAt: row.readyAt,
     placedAt: row.createdAt,
   };
+}
+
+/** Une ligne nommée : l'article, son nom à la commande, une quantité. */
+export interface DepartureLine {
+  readonly sku: string;
+  readonly productName: string;
+  readonly quantity: number;
+}
+
+/** Ce qu'il faut d'une commande pour dire ce qui part au comptoir. */
+interface DepartingRow {
+  readonly id: string;
+  readonly lines: readonly {
+    readonly sku: string;
+    readonly productNameSnapshot: string;
+    readonly quantity: number;
+  }[];
+  readonly shortfallLines: Prisma.JsonValue | null;
+  readonly shortfallDecision: {
+    readonly decidedAt: Date;
+    readonly decidedByStaffId: string;
+    readonly remainder: string;
+    readonly departing: Prisma.JsonValue;
+  } | null;
+}
+
+/**
+ * **Ce qui part, et ce qui ne part pas** (Hugo, 2026-10-25 : « est-ce que ça
+ * se reflète au comptoir ? »). Les lignes de commande gardent le dû ; un départ
+ * incomplet décidé les réduit aux quantités décidées — la même répartition que
+ * `departingSourceOf` (première ligne d'un SKU d'abord, une ligne qui ne part
+ * pas reste à zéro) — et nomme le reste abandonné par la lecture que le
+ * colisage reçoit déjà (`abandonedOf`, `decisionMarkOf`).
+ */
+export function departureOf(row: DepartingRow): {
+  readonly lines: readonly DepartureLine[];
+  readonly abandoned: readonly DepartureLine[];
+} {
+  const named = row.lines.map((line) => ({
+    sku: line.sku,
+    productName: line.productNameSnapshot,
+    quantity: line.quantity,
+  }));
+  const decision = row.shortfallDecision;
+  if (decision === null) {
+    return { lines: named, abandoned: [] };
+  }
+  const left = new Map(departingOf(row.id, decision.departing).map((l) => [l.sku, l.quantity]));
+  const lines = named.map((line) => {
+    const wanted = left.get(line.sku) ?? 0;
+    const quantity = Math.min(wanted, line.quantity);
+    left.set(line.sku, wanted - quantity);
+    return { ...line, quantity };
+  });
+  const abandoned =
+    decisionMarkOf(decision) === null || row.shortfallLines === null
+      ? []
+      : abandonedOf(
+          shortfallLinesOf(row.shortfallLines),
+          new Map(named.map((line) => [line.sku, line.productName])),
+        );
+  return { lines, abandoned };
 }

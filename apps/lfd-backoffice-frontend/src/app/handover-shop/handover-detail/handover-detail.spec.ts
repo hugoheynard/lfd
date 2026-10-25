@@ -356,7 +356,7 @@ describe('HandoverDetail', () => {
     const asked: HandoverQueueEntryView[] = [];
     fixture.componentInstance.scanned.subscribe((row) => asked.push(row));
 
-    buttonSaying(fixture, 'Scanner')?.click();
+    buttonSaying(fixture, 'Scanner le QR code du client')?.click();
     await fixture.whenStable();
 
     expect(asked.map((row) => row.reference)).toEqual(['CMD-1042']);
@@ -367,7 +367,7 @@ describe('HandoverDetail', () => {
       entry({ state: 'handed_over', handedOverAt: `${DAY}T06:41:00.000Z`, handedOverVia: 'scan' }),
     );
 
-    expect(buttonSaying(fixture, 'Scanner')).toBeNull();
+    expect(buttonSaying(fixture, 'Scanner le QR code du client')).toBeNull();
   });
 
   it('🔴 le retrait saisi dit qu’il est SANS CODE, et part sur le numéro', async () => {
@@ -423,5 +423,24 @@ describe('HandoverDetail', () => {
 
     expect(text(fixture)).toContain('Croissant nature');
     expect(buttonSaying(fixture, 'Voir le bon')).not.toBeNull();
+  });
+
+  it('🔴 une commande incomplète est annoncée AVANT le sac, article par article', async () => {
+    const fixture = await render(
+      entry({
+        abandonedRemainder: [{ sku: 'CROI-NAT', productName: 'Croissant nature', quantity: 2 }],
+      }),
+    );
+
+    expect(text(fixture)).toContain('Commande incomplète');
+    expect(text(fixture)).toContain('2 Croissant nature');
+    // Il informe ; prévenir le client est une décision du commerce (E6d).
+    expect(text(fixture)).not.toMatch(/prévenez|dites-le/i);
+  });
+
+  it('sans reste abandonné, rien n’est annoncé', async () => {
+    const fixture = await render(entry());
+
+    expect(text(fixture)).not.toContain('Commande incomplète');
   });
 });

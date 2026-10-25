@@ -36,6 +36,7 @@ function entry(overrides: Partial<HandoverQueueEntry> = {}): HandoverQueueEntry 
     fulfillmentMethod: "pickup",
     window: null,
     totalUnits: 3,
+    abandoned: [],
     status: "ready",
     settled: true,
     readyAt: null,
@@ -445,5 +446,16 @@ describe("GetHandoverQueueHandler — un transfert de réassort seul (R3c, R3e)"
         resupplyCount: 2,
       },
     ]);
+  });
+});
+
+describe("GetHandoverQueueHandler — un départ incomplet décidé", () => {
+  it("rend le reste abandonné sur la ligne, pour que le comptoir le voie avant de tendre le sac", async () => {
+    const abandoned = [{ sku: "CRO-01", productName: "Croissant", quantity: 2 }];
+    const { handler } = handlerOf([entry({ totalUnits: 1, abandoned })], new Map());
+
+    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10"));
+
+    expect(view.entries[0]).toMatchObject({ totalUnits: 1, abandonedRemainder: abandoned });
   });
 });

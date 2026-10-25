@@ -58,6 +58,12 @@
         <fold-callout appearance="inset" [variant]="verdict().tone" [icon]="verdict().icon">
           {{ verdict().text }}
         </fold-callout>
+        <!-- Départ incomplet décidé (2026-10-25) : ce qui ne part pas, lu
+             AVANT de tendre le sac. Il informe le vendeur ; prévenir le client
+             est une décision du commerce (« Écrire au client », E6d). -->
+        @if (abandoned().length > 0) {
+          <app-missing-items [lines]="abandoned()" [fulfillmentMethod]="row.fulfillmentMethod" />
+        }
         <!-- Deux étapes, deux barres (Hugo, 2026-09-28) : le four PUIS le bac.
              « Déclarée prête » ne disait que la seconde. -->
         @if (row.state !== 'handed_over') {
@@ -162,7 +168,7 @@
           data-action="scan"
           (click)="scan()"
         >
-          Scanner le code
+          Scanner le QR code du client
         </button>
         <button
           foldButton

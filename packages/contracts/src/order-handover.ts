@@ -14,6 +14,7 @@
 
 import type { OrderTransferView, ResupplyTransferView } from "./delivery-transfers.js";
 import type { FulfillmentMethod, FulfillmentSource } from "./order.js";
+import type { PackingAbandonedLine } from "./production-packing.js";
 
 /**
  * **Comment** un retrait a été constaté.
@@ -204,8 +205,13 @@ export interface HandoverQueueEntryView {
   readonly round?: HandoverQueueRoundView | null | undefined;
   /** Le créneau convenu, ou `null` si aucune tranche n'a été demandée. */
   readonly window: HandoverQueueWindowView | null;
-  /** Somme des quantités — le chiffre qu'on recompte à voix haute. */
+  /** Somme des quantités QUI PARTENT — réduite par un départ incomplet décidé. */
   readonly totalUnits: number;
+  /**
+   * Le reste abandonné d'un départ incomplet décidé, par article (2026-10-25) :
+   * le comptoir le sait avant de tendre le sac (prévenir le client reste une décision du commerce, E6d). Vide sinon.
+   */
+  readonly abandonedRemainder?: readonly PackingAbandonedLine[] | undefined;
   /** ISO. Passée le. */
   readonly placedAt: string;
   /**

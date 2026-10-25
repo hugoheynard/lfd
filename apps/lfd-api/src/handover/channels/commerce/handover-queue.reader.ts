@@ -86,8 +86,16 @@ export interface HandoverQueueEntry {
   readonly fulfillmentMethod: "pickup" | "delivery";
   /** Le créneau convenu, ou `null` si aucun n'a été demandé. */
   readonly window: HandoverWindow | null;
-  /** Somme des quantités — le chiffre qu'on recompte à voix haute. */
+  /**
+   * Somme des quantités QUI PARTENT — le chiffre qu'on recompte à voix haute.
+   * Un départ incomplet décidé la réduit aux quantités décidées.
+   */
   readonly totalUnits: number;
+  /**
+   * Le reste abandonné d'un départ incomplet décidé, par article — vide
+   * sinon. Le comptoir le sait avant de tendre le sac ; prévenir le client reste une décision du commerce (E6d).
+   */
+  readonly abandoned: readonly HandoverAbandonedLine[];
   /** L'état côté COMMERCE. La règle de retrait le lit, elle ne l'écrit pas. */
   readonly status: string;
   /**
@@ -121,4 +129,11 @@ export interface HandoverWindow {
   /** `HH:mm`. */
   readonly end: string;
   readonly source: "default" | "override";
+}
+
+/** Une ligne du reste abandonné : l'article, son nom à la commande, les pièces qui ne partent pas. */
+export interface HandoverAbandonedLine {
+  readonly sku: string;
+  readonly productName: string;
+  readonly quantity: number;
 }

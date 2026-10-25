@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
-import type { HandoverQueueEntryView, OrderClientele } from '@lfd/contracts';
+import type { HandoverQueueEntryView, OrderClientele, PackingAbandonedLine } from '@lfd/contracts';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
@@ -27,6 +27,7 @@ import {
   sortedQueue,
   stillRemittable,
 } from '../handover-queue';
+import { MissingItems } from '../missing-items/missing-items';
 import { transferBlockReason } from '../handover-transfer';
 
 /**
@@ -72,6 +73,7 @@ const CLIENTELE_LABELS: Readonly<Record<OrderClientele, string>> = {
   selector: 'app-queue-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    MissingItems,
     FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
@@ -185,7 +187,13 @@ export class QueueTable {
    * référence perdrait le composant et lèverait au premier rendu.
    */
   protected readonly hasNote = (entry: HandoverQueueEntryView): boolean =>
-    this.late(entry) || this.transferBlock(entry) !== null;
+    this.late(entry) || this.transferBlock(entry) !== null || this.abandoned(entry) !== null;
+
+  /** Le reste abandonné d'un départ incomplet décidé, ou `null` s'il n'y en a pas. */
+  protected abandoned(entry: HandoverQueueEntryView): readonly PackingAbandonedLine[] | null {
+    const lines = entry.abandonedRemainder ?? [];
+    return lines.length === 0 ? null : lines;
+  }
 
   /**
    * Pourquoi la ligne ne se remet pas encore — son transfert n'est pas reçu

@@ -31,6 +31,7 @@ export {
 } from "./delivery-run-sheet.reader.js";
 export {
   HandoverQueueReader,
+  type HandoverAbandonedLine,
   type HandoverQueueEntry,
   type HandoverWindow,
 } from "./handover-queue.reader.js";

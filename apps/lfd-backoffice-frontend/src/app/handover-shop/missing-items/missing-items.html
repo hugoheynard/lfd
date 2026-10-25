@@ -1,0 +1,15 @@
+@if (lines().length > 0) {
+  <fold-callout appearance="inset" variant="warning" icon="info" data-missing-items>
+    @if (pickup()) {
+      <strong>Commande incomplète</strong> — ces articles ne sont pas dans le sac&nbsp;:
+      <ul class="mi-lines">
+        @for (line of lines(); track line.sku) {
+          <li>{{ line.quantity }} {{ line.productName }}</li>
+        }
+      </ul>
+    } @else {
+      <strong>Départ incomplet.</strong> Ces articles ne partent pas&nbsp;:
+      <app-abandoned-remainder [lines]="lines()" />
+    }
+  </fold-callout>
+}

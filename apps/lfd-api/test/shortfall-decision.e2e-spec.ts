@@ -10,7 +10,12 @@
  * réouverture de la journée épargne la commande décidée, et le papier
  * imprimé avant la décision est dit à réimprimer.
  */
-import type { AdminOrderView, StaffNote } from "@lfd/contracts";
+import type {
+  AdminOrderView,
+  HandoverQueueView,
+  OrderHandoverView,
+  StaffNote,
+} from "@lfd/contracts";
 
 import { OrderPlanRelease } from "../src/b2b/orders/domain/ports/order-plan-release.js";
 import { PackingListWithdrawal } from "../src/packing/domain/ports/packing-list-withdrawal.js";
@@ -283,5 +288,26 @@ describe("« Décider du départ » — reste abandonné (E6b + E6c1)", () => {
     const [note] = await notesOf(order.id);
     await printCarrier(order.id, note?.number ?? "");
     expect((await sheetOf(ctx, order.orderNumber)).deliveryNotePrint).toBe("reprinted");
+  });
+
+  /** Régression : le comptoir tendait les quantités commandées d'un départ incomplet décidé, sans en rien dire (2026-10-25). */
+  it("au comptoir, la file et la fiche disent ce qui part et le reste abandonné", async () => {
+    const order = await accountOrder(1);
+    await report(order.id);
+    await decide(order.id);
+
+    const file = jsonBody<HandoverQueueView>(
+      await ctx.asSub(STAFF).get(`/admin/handover/file?jour=${SERVICE_DAY}`).expect(200),
+    );
+    const entry = file.entries.find((line) => line.orderId === order.id);
+    expect(entry?.totalUnits).toBe(1);
+    expect(entry?.abandonedRemainder?.map(({ sku, quantity }) => ({ sku, quantity }))).toEqual([
+      { sku: CROISSANT, quantity: 2 },
+    ]);
+    const fiche = jsonBody<OrderHandoverView>(
+      await ctx.asSub(STAFF).get(`/admin/handover/order/${order.id}`).expect(200),
+    );
+    expect(fiche.lines.map((line) => line.quantity)).toEqual([1]);
+    expect(fiche.totalUnits).toBe(1);
   });
 });

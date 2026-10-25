@@ -113,6 +113,7 @@ function toEntryView(
     fulfillmentMethod: entry.fulfillmentMethod,
     window: entry.window,
     totalUnits: entry.totalUnits,
+    abandonedRemainder: entry.abandoned,
     placedAt: entry.placedAt.toISOString(),
     state,
     // L'ordre de `handoverBlocker` (D4) : une commande retirée ou annulée dit
