@@ -95,7 +95,7 @@ describe("renderFacturXml — facture simple", () => {
     expect(xml).toContain("Pas d&apos;escompte pour paiement anticipé.");
     expect(xml).toContain("Catégorie d&apos;opération : livraison de biens.");
     expect(xml).toContain(
-      "Bons de commande : ORD-001 (reçue le 12/09/2026), ORD-002 (reçue le 13/09/2026).",
+      "Confirmations de commande : ORD-001 (reçue le 12/09/2026), ORD-002 (reçue le 13/09/2026).",
     );
   });
 

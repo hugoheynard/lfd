@@ -327,5 +327,5 @@ constitué ; le verbe (`settle` désigne déjà le RÈGLEMENT ici).
   chaque terme par `cartAdjustmentCents` / `discountCentsOf` avec le
   `deliveryVatMode` et le taux de surtaxe de la commande, puis passe les mêmes
   gardes que `Order.draft`.
-- **Le texte de facture** « Bons de commande : … » devient « Confirmations de
+- ✅ **Le texte de facture** (bâti le 2026-10-25) « Bons de commande : … » devient « Confirmations de
   commande : … » (Hugo).
