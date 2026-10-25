@@ -145,14 +145,19 @@ bien avant. Test : annulée après l'arrêt → BL `voided`.
 - les colonnes `packing_order.withdrawn_at` et
   `order_withdrawal.after_inscription`.
 
-## 4. Questions pour Hugo
+## 4. Décisions de Hugo (2026-10-25)
 
-| #   | Question                                                        | Défaut proposé                                  |
-| --- | --------------------------------------------------------------- | ----------------------------------------------- |
-| Q1  | Le staff peut-il retirer une commande **de société** inscrite ? | Non (C7) — un départ incomplet ou un avoir      |
-| Q2  | C7b, jusqu'au retrait au comptoir                               | Non                                             |
-| Q3  | Remboursement intégral après l'arrêt                            | Oui (noyau C4)                                  |
-| Q4  | Le surplus rendu : un geste pour le vendre                      | Non : il retourne au colisage, qui le réutilise |
+| #   | Question                                     | Décision                                                                                                                                                                |
+| --- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Q1  | Retirer une commande **de société** inscrite | **Non.** Avant l'arrêt, le staff annule déjà, heure limite et grâce ignorées (R1) ; après l'arrêt, « c'est de la quantité » : départ incomplet ou avoir.                |
+| Q2  | Aller jusqu'au retrait au comptoir (C7b)     | **Non.** Jusqu'où un particulier peut annuler reste une **décision de l'admin**, au réglage : « arrêt du plan » ou « prête ».                                           |
+| Q3  | Remboursement intégral après l'arrêt         | **Oui** (noyau C4).                                                                                                                                                     |
+| Q4  | Le pain rendu par une annulation             | **Un geste pour le vendre** : « Envoyer en boutique » depuis la réserve du colisage (lot A1.4). Rien ne s'encaisse par notre système : la boutique le vend à sa caisse. |
+
+**À vérifier au bâti (A1.1)** : l'arrêt automatique du plan doit tomber après
+la fin de la grâce (`order_cutoff.grace_minutes`) ; sinon une commande prise
+au téléphone pendant la grâce est déjà inscrite, et le staff ne peut plus
+l'annuler.
 
 ## 5. Lots
 
