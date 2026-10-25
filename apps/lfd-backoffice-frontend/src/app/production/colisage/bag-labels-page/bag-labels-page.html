@@ -9,7 +9,11 @@
       >
         @if (shown().length > 0) {
           <button foldButton titleAction icon="print" (click)="print()" data-print-all>
-            Imprimer les {{ shown().length }} étiquettes
+            {{
+              shown().length === 1
+                ? 'Imprimer l’étiquette'
+                : 'Imprimer les ' + shown().length + ' étiquettes'
+            }}
           </button>
         }
       </fold-element-title>
