@@ -2,6 +2,7 @@ import type { CustomerCancellationStage } from "@lfd/contracts";
 import { Injectable, Logger } from "@nestjs/common";
 
 import { CommerceOrderCancelledFact } from "../../../../delivery/channels/commerce/index.js";
+import { OrderHandoverHistoryReader } from "../../../../handover/channels/commerce/index.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { BusinessError, DomainError } from "../../../../platform/shared/errors/app-error.js";
@@ -132,6 +133,7 @@ export class OrderCancellation {
     private readonly deliveryNotes: DeliveryNoteFollowing,
     private readonly unitOfWork: UnitOfWork,
     private readonly clock: Clock,
+    private readonly handovers: OrderHandoverHistoryReader,
   ) {}
 
   /**
@@ -228,6 +230,7 @@ export class OrderCancellation {
         throw new OrderNotFoundError(orderId);
       }
       const regime = await this.rule.regimeOf(locked, allowance);
+      await this.ensureNotHandedOver(locked.orderId);
       const afterInscription = await this.workshops.withdraw(locked, allowance, intent.actor);
       const now = this.clock.now();
       const written = await this.cancellations.cancel(
@@ -249,6 +252,19 @@ export class OrderCancellation {
         stageApplied: stageOfAllowance(allowance),
       });
     });
+  }
+
+  /**
+   * **Retirée pendant le clic** (C3.6, 2026-10-25). Le comptoir prend la même
+   * ligne `orders` avant d'attester : sous ce verrou, une attestation validée
+   * se voit ici, alors que le statut `fulfilled` n'arrive au commerce que par
+   * le fait durable, plus tard. Régression : les deux gestes passaient.
+   */
+  private async ensureNotHandedOver(orderId: string): Promise<void> {
+    const handed = await this.handovers.ofOrders([orderId]);
+    if (handed.has(orderId)) {
+      throw new OrderNotCancellableError(orderId, { kind: "fulfilled" });
+    }
   }
 
   /** Le bon restitué et le fait durable — seulement quand l'écriture a franchi. */

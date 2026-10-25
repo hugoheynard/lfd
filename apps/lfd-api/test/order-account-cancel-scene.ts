@@ -11,7 +11,13 @@ import { FixedClock } from "../src/platform/time/fixed-clock.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import { setUpEntity } from "./collection-returns-scene.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";
-import { addBillingAddress, attachTo, createCompany, createUser, handOver } from "./factories.js";
+import {
+  addBillingAddress,
+  attachTo,
+  createCompany,
+  createUser,
+  markDelivered,
+} from "./factories.js";
 import { pickupSite, placeOrder } from "./order-factory.js";
 import { LATEST_DELIVERY_FULFILLMENT } from "./delivery-deadline-fixture.js";
 
@@ -229,8 +235,13 @@ export async function accountOrder(
     where: { id: placed.id },
     select: { id: true, orderNumber: true, createdAt: true, totalCents: true },
   });
-  // Retiré au comptoir : un bon sans date de livraison ne se facture pas (M5).
-  await handOver(ctx.prisma, row);
+  // Livré : un bon sans date de livraison ne se facture pas (M5). La date
+  // seule, SANS attestation de retrait : une commande attestée est retirée,
+  // et une retirée ne s'annule plus (C3.6, course fermée le 2026-10-25). La
+  // scène attestait sans que le fait ne bascule la commande — un état que
+  // seule la fenêtre de la boîte d'envoi produisait, et que l'annulation
+  // refuse désormais sous son verrou.
+  await markDelivered(ctx.prisma, row.id, new Date(row.createdAt.getTime() + HOUR_MS));
   return { id: row.id, orderNumber: row.orderNumber, totalCents: row.totalCents };
 }
 

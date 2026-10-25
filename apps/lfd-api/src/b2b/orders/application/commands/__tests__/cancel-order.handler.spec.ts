@@ -1,3 +1,4 @@
+import { FixedHandoverHistory } from "./handover-history-double.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { CommerceOrderCancelledFact } from "../../../../../delivery/channels/commerce/index.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
@@ -66,6 +67,8 @@ interface Scene {
   /** Lot C5 : l'engagement comptable lu hors verrou, puis sous verrou. */
   readonly engagement?: AccountEngagement | null;
   readonly engagementUnderLock?: AccountEngagement | null;
+  /** C3.6 : les commandes que le comptoir a déjà attestées. */
+  readonly handedOver?: readonly string[];
 }
 
 function scene(options: Scene = {}) {
@@ -102,6 +105,7 @@ function scene(options: Scene = {}) {
       new RecordingNoteVoiding(),
       new DirectUnitOfWork(),
       new FixedClock(NOW),
+      new FixedHandoverHistory(options.handedOver),
     ),
   );
   return { handler, trace, rows, gateway, vouchers, durable, engagements, refundStore, dispatch };
@@ -371,6 +375,22 @@ describe("CancelOrderHandler — les refus", () => {
     expect(durable.facts).toEqual([]);
   });
 
+  /**
+   * Régression (2026-10-25) : le comptoir remettait la commande pendant
+   * l'annulation, et les deux passaient — attestation orpheline sur une
+   * commande annulée et remboursée. Sous le verrou, l'attestation se voit.
+   */
+  it("retirée au comptoir pendant le clic : refus sous verrou, ni retrait au fournil ni écriture", async () => {
+    const { handler, rows, trace, durable } = scene({ handedOver: ["ord_1"] });
+
+    await expect(handler.execute(cancel())).rejects.toMatchObject({
+      code: "orders.cancel.fulfilled",
+    });
+    expect(rows.records).toEqual([]);
+    expect(trace.filter((step) => step.startsWith("withdraw:"))).toEqual([]);
+    expect(durable.facts).toEqual([]);
+  });
+
   it.each([
     [
       "payée, un remboursement en vol",
@@ -419,6 +439,7 @@ describe("CancelOrderHandler — les refus", () => {
         new RecordingNoteVoiding(),
         new DirectUnitOfWork(),
         new FixedClock(NOW),
+        new FixedHandoverHistory(),
       ),
     );
 

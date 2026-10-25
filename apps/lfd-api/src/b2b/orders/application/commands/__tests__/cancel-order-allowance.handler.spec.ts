@@ -1,3 +1,4 @@
+import { FixedHandoverHistory } from "./handover-history-double.js";
 import type { CustomerCancellationStage } from "@lfd/contracts";
 
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
@@ -74,6 +75,7 @@ function scene(input: {
       new RecordingNoteVoiding(trace),
       new DirectUnitOfWork(),
       new FixedClock(NOW),
+      new FixedHandoverHistory(),
     ),
   );
   return { handler, trace, settings, rows, bakery, packing, durable };

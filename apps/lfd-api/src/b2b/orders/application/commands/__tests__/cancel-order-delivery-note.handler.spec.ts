@@ -1,3 +1,4 @@
+import { FixedHandoverHistory } from "./handover-history-double.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import type { OrderWithdrawalOutcome } from "../../../../../production/channels/commerce/index.js";
@@ -59,6 +60,7 @@ function scene(desk: OrderWithdrawalOutcome = "withdrawn") {
       notes,
       new DirectUnitOfWork(),
       new FixedClock(NOW),
+      new FixedHandoverHistory(),
     ),
   );
   return { handler, trace, notes };

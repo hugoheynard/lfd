@@ -1,3 +1,4 @@
+import { FixedHandoverHistory } from "./handover-history-double.js";
 import type { CustomerCancellationSettingsView } from "@lfd/contracts";
 
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
@@ -88,6 +89,7 @@ export function customerScene(options: CustomerScene) {
     new RecordingNoteVoiding(),
     new DirectUnitOfWork(),
     new FixedClock(options.now),
+    new FixedHandoverHistory(),
   );
   const customers = new FixedCustomerSubjects(customer);
   const signer = new ReadableSigner();

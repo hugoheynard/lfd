@@ -13,6 +13,7 @@ import {
   TransferNotYetComposedError,
 } from "../../../domain/errors/handover-errors.js";
 import { OrderHandoverRepository } from "../../../domain/ports/order-handover.repository.js";
+import { FixedOrderLock } from "../../__tests__/fixed-order-lock.js";
 import { FixedQualityHolds } from "../../__tests__/fixed-quality-holds.js";
 import { FixedTransferStatus } from "../../__tests__/fixed-transfer-status.js";
 import { HandoverAttestation } from "../handover-attestation.service.js";
@@ -104,6 +105,7 @@ function attestationOf(
   won: boolean,
   holds: FixedQualityHolds = new FixedQualityHolds(),
   transfers: FixedTransferStatus = new FixedTransferStatus(),
+  lock: FixedOrderLock = new FixedOrderLock(),
 ) {
   const { repository, written } = repositoryOf(existing, won);
   const events = new Outbox();
@@ -115,8 +117,9 @@ function attestationOf(
     AUTHORS,
     holds,
     transfers,
+    lock,
   );
-  return { service, written, events };
+  return { service, written, events, lock };
 }
 
 /**
@@ -314,6 +317,7 @@ describe("HandoverAttestation", () => {
       AUTHORS,
       new FixedQualityHolds(),
       new FixedTransferStatus(),
+      new FixedOrderLock(),
     );
 
     await expect(service.attest(subject(), "staff-2", "manual")).rejects.toBeInstanceOf(
@@ -323,6 +327,40 @@ describe("HandoverAttestation", () => {
     expect(events.published).toEqual([
       factOf({ at: new Date("2026-09-07T16:29:00.000Z"), by: "staff-winner", via: "scan" }, AT),
     ]);
+  });
+
+  describe("la course avec l'annulation (annulation-par-le-staff.md, C3.6)", () => {
+    /**
+     * Régression (2026-10-25) : le comptoir remettait une commande que le
+     * staff annulait au même instant, et les deux gestes passaient — une
+     * attestation orpheline sur une commande annulée et remboursée.
+     */
+    it("annulée pendant que le comptoir la tenait : refus nommé, rien gravé ni publié", async () => {
+      const { service, written, events, lock } = attestationOf(
+        null,
+        true,
+        undefined,
+        undefined,
+        new FixedOrderLock("cancelled"),
+      );
+
+      await expect(service.attest(subject(), "staff-1", "manual")).rejects.toMatchObject({
+        code: "handover.refused",
+        message: expect.stringContaining("vient d'être annulée") as string,
+      });
+      expect(lock.locked).toEqual(["ord_1"]);
+      expect(written).toEqual([]);
+      expect(events.published).toEqual([]);
+    });
+
+    it("prend le verrou de la commande avant de graver", async () => {
+      const { service, written, lock } = attestationOf(null, true);
+
+      await service.attest(subject(), "staff-1", "manual");
+
+      expect(lock.locked).toEqual(["ord_1"]);
+      expect(written).toHaveLength(1);
+    });
   });
 
   describe("la retenue qualité (plan-controle-qualite.md, D4)", () => {

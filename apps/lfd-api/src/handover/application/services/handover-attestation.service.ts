@@ -5,6 +5,7 @@ import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import type { DurableFact } from "../../../platform/outbox/durable-event.js";
 import { DurablePublisher } from "../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../platform/time/clock.js";
+import { HandoverOrderLock } from "../../channels/commerce/handover-order.lock.js";
 import type { HandoverSubject } from "../../channels/commerce/handover-subject.reader.js";
 import { OrderHandedOverEvent } from "../../channels/commerce/order-handed-over.event.js";
 import { OrderHandover } from "../../domain/entities/order-handover.js";
@@ -55,6 +56,7 @@ export class HandoverAttestation {
     private readonly staffAuthors: StaffAuthorDirectory,
     private readonly holds: QualityHoldsReader,
     private readonly transfers: TransferStatusReader,
+    private readonly orderLock: HandoverOrderLock,
   ) {}
 
   /**
@@ -130,6 +132,7 @@ export class HandoverAttestation {
     by: string,
     via: HandoverVia,
   ): Promise<OrderHandover> {
+    const current = await this.lockOrder(subject);
     // 🔴 La retenue est lue ici, AVANT l'écriture et sans verrou commun avec le
     // contrôle : un blocage rendu dans l'intervalle laisse partir le sac. C'est
     // une vérification, pas une interdiction — assumé au plan
@@ -149,7 +152,7 @@ export class HandoverAttestation {
     // L'agrégat refuse ici — commande annulée, pas encore passée, déjà
     // retirée, retenue au contrôle.
     const handover = OrderHandover.attest(
-      subject,
+      current,
       { handedOverAt: existing === null ? null : existing.handedOverAt, qualityHold },
       at,
       by,
@@ -170,6 +173,23 @@ export class HandoverAttestation {
   }
 
   /**
+   * **Le verrou commun avec l'annulation** (C3.6, 2026-10-25) : la ligne
+   * `orders` d'abord, l'état relu sous elle. Une annulation validée pendant
+   * l'attente se voit ici, et le retrait refuse en la nommant. Dans l'autre
+   * ordre, l'annulation attend ce verrou, puis trouve l'attestation et refuse.
+   *
+   * Régression : remise et annulation en parallèle passaient TOUTES LES DEUX
+   * — une attestation écrite sur une commande annulée et remboursée.
+   */
+  private async lockOrder(subject: HandoverSubject): Promise<HandoverSubject> {
+    const status = await this.orderLock.lockForHandover(subject.orderId);
+    if (status === "cancelled" && subject.status !== "cancelled") {
+      throw new HandoverRefusedError(CANCELLED_JUST_NOW);
+    }
+    return status === null ? subject : { ...subject, status };
+  }
+
+  /**
    * Réannonce l'attestation en base, ou ne fait rien s'il n'y en a pas.
    *
    * Sans danger, et c'est ce qui permet de l'appeler sur tous les refus sans y
@@ -184,6 +204,10 @@ export class HandoverAttestation {
     }
   }
 }
+
+/** La commande a été annulée pendant que le comptoir la tenait à l'écran. */
+const CANCELLED_JUST_NOW =
+  "Cette commande vient d'être annulée : ne la donnez pas. Rechargez la file du comptoir.";
 
 /** Le fait d'une attestation — son heure et son auteur, jamais ceux d'un rescan. */
 function factOf(handover: OrderHandover, reannouncedAt: Date | null): DurableFact {

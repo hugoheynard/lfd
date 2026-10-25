@@ -16,6 +16,10 @@
  *   facturation, DF3) : même sens — publié ET implémenté par le retrait, lu
  *   par la comptabilité du commerce pour l'historique de chaque bon.
  *
+ * - `HandoverOrderLock` (2026-10-25) : déclaré par le retrait, implémenté par
+ *   le commerce — la ligne `orders` verrouillée avant d'attester, pour que
+ *   remise et annulation ne passent jamais toutes les deux (C3.6).
+ *
  * Les deux sont de la surface, donc les deux vivent ici : un événement qu'un
  * autre bloc consomme fait partie de ce qui est publié, au même titre qu'un
  * port. La porte l'a imposé une fois déjà, du côté du fournil.
@@ -42,6 +46,7 @@ export {
   type HandoverSubjectLine,
 } from "./handover-subject.reader.js";
 export { HandoverProofReader } from "./handover-proof.reader.js";
+export { HandoverOrderLock } from "./handover-order.lock.js";
 export {
   OrderHandoverHistoryReader,
   type OrderHandoverHistoryFact,

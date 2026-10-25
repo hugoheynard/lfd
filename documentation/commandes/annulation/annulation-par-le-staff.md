@@ -218,8 +218,35 @@ Le rejeu n'existe que pour la branche Stripe : pour une carte payée (C4), un
 | fournil      | une ligne `order_withdrawal`, écartée par l'agrégat à la clôture et au retirage                                                                 |
 | colisage     | aucun : la liste naît de l'instantané de clôture                                                                                                |
 | livraison    | rien n'est défait (l'adresse géocodée reste) ; prévisionnel et départ relisent le statut                                                        |
-| retrait      | `markFulfilled` porte `status <> cancelled` : un retrait n'écrase pas une annulation                                                            |
+| retrait      | les deux gestes verrouillent la ligne `orders` (voir ci-dessous) : un seul passe ; `markFulfilled` porte en plus `status <> cancelled`          |
 | comptabilité | au compte : ligne `order_collection` fermée (C5.4) ; carte payée : aucune facture carte possible (elle exige une commande retirée), aucun avoir |
+
+**Retrait × annulation — un seul gagne (2026-10-25).** Jusqu'à cette date, la
+phrase « un retrait n'écrase pas une annulation » était vraie et insuffisante :
+lancés ensemble, les deux gestes passaient — l'attestation `order_handover`
+écrite (201), la commande annulée et remboursée (204), et le sac tendu au
+comptoir. Le retrait n'apprend le statut `fulfilled` au commerce que par un
+fait durable, APRÈS sa transaction ; l'annulation ne pouvait donc pas le voir.
+
+Désormais les deux prennent la **même ligne `orders` en `FOR UPDATE`** dans
+leur transaction, et le second relit sous le verrou :
+
+- le retrait verrouille par `HandoverOrderLock` (déclaré par le retrait dans
+  `handover/channels/commerce/`, implémenté par le commerce), AVANT de lire
+  l'existant et d'écrire ; une commande annulée entre-temps est refusée :
+  « Cette commande vient d'être annulée : ne la donnez pas. » (409,
+  `handover.refused`) ;
+- l'annulation, sous son verrou, demande au retrait s'il a attesté
+  (`OrderHandoverHistoryReader`) ; si oui : `orders.cancel.fulfilled`,
+  « déjà retirée : elle ne s'annule plus » (409), rien n'est touché.
+
+Au comptoir, le verrou du retrait est le premier de sa transaction. À la
+porte (`attestQuietly`, dans l'unité du livreur), il vient APRÈS ceux que la
+clôture de l'arrêt tient déjà : l'ordre des verrous de la livraison face à
+celui de l'annulation (`verrous-de-l-annulation.md`) **n'a pas été relu** le
+2026-10-25. Un interblocage y serait détecté par Postgres (une des deux
+transactions échoue, rien n'est écrit à moitié), pas silencieux.
+Éprouvé par `test/order-staff-cancel-races.e2e-spec.ts`, rejoué cinq fois.
 
 ### C3.7 Les refus nommés
 

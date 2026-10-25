@@ -5,9 +5,11 @@ import { SiteRunSheetColorsReader } from "../b2b/sites/infrastructure/site-run-s
 import { SitesModule } from "../b2b/sites/sites.module.js";
 import { PrismaDeliveryRunSheetReader } from "../b2b/orders/infrastructure/prisma-delivery-run-sheet.reader.js";
 import { PrismaHandoverQueueReader } from "../b2b/orders/infrastructure/prisma-handover-queue.reader.js";
+import { PrismaHandoverOrderLock } from "../b2b/orders/infrastructure/prisma-handover-order.lock.js";
 import { PrismaHandoverSubjectReader } from "../b2b/orders/infrastructure/prisma-handover-subject.reader.js";
 import {
   DeliveryRunSheetReader,
+  HandoverOrderLock,
   HandoverProofReader,
   HandoverQueueReader,
   HandoverSubjectReader,
@@ -51,6 +53,8 @@ import { ProductionModule } from "../production/production.module.js";
  *   commande. Même figure que `QualityHoldsReader`, dans l'autre sens.
  * - `OrderHandoverHistoryReader` (2026-10-08) — même sens : le retrait de
  *   chaque bon, pour le dossier de facturation de la comptabilité (DF3).
+ * - `HandoverOrderLock` (2026-10-25) — la remise déclare, le commerce
+ *   implémente : la ligne `orders` verrouillée avant d'attester (C3.6).
  * - `RunSheetColorsReader` (2026-10-13, plan du tri et des couleurs, L5) — la
  *   remise déclare, les sites du commerce implémentent : la couleur de
  *   chaque arrêt de la feuille de route.
@@ -71,6 +75,7 @@ import { ProductionModule } from "../production/production.module.js";
   providers: [
     { provide: HandoverSubjectReader, useClass: PrismaHandoverSubjectReader },
     { provide: HandoverQueueReader, useClass: PrismaHandoverQueueReader },
+    { provide: HandoverOrderLock, useClass: PrismaHandoverOrderLock },
     { provide: AttestedHandoversReader, useClass: PrismaAttestedHandoversReader },
     { provide: QualityHoldsReader, useClass: PrismaQualityHoldsReader },
     { provide: DeliveryRunSheetReader, useClass: PrismaDeliveryRunSheetReader },
@@ -83,6 +88,7 @@ import { ProductionModule } from "../production/production.module.js";
   exports: [
     HandoverSubjectReader,
     HandoverQueueReader,
+    HandoverOrderLock,
     AttestedHandoversReader,
     QualityHoldsReader,
     DeliveryRunSheetReader,
