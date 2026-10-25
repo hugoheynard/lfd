@@ -60,6 +60,7 @@ describe("DeliveryNotePlanner — le BL prévu à l'arrêt du plan (plan E1)", (
         orderId: "ord_1",
         rank: 1,
         number: "BL-1042-1",
+        serviceDay: null,
         status: "planned",
         plannedAt: NOW,
         // Le papier (plan E6, § 14) : version 1, jamais imprimé.

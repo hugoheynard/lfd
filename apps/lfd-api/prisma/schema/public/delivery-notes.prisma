@@ -18,13 +18,18 @@ enum DeliveryNoteStatus {
 /// réannonce ou une re-clôture réécrivent le BL prévu, sans en créer. Un BL
 /// annulé consomme son rang et son numéro — un numéro ne se réemploie jamais.
 model DeliveryNote {
-  id      String @id
-  orderId String @map("order_id")
-  order   Order  @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  id         String    @id
+  orderId    String    @map("order_id")
+  order      Order     @relation(fields: [orderId], references: [id], onDelete: Restrict)
   /// 1, 2… — CHECK `rank >= 1` dans la migration.
-  rank    Int
+  rank       Int
   /// `BL-<numéro de commande sans ORD->-<rang>` (Q-E4, Q-E1-1).
-  number  String @unique
+  number     String    @unique
+  /// Le jour de service d'un **reliquat** (rang > 1), choisi dans la décision
+  /// (plan E7, choix 2 et 10). `NULL` au rang 1, pour toujours : sa date est
+  /// celle de la commande. CHECK `rank = 1 OR service_day IS NOT NULL`
+  /// (migration `20261026050000`).
+  serviceDay DateTime? @map("service_day") @db.Date
 
   status       DeliveryNoteStatus
   plannedAt    DateTime           @map("planned_at") @db.Timestamptz(6)

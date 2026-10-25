@@ -16,6 +16,7 @@ import {
   type DeliveryNoteTerms,
 } from "../value-objects/delivery-note-terms.js";
 import { DeliveryNoteNumber } from "../value-objects/delivery-note-number.js";
+import { RemainderSchedule } from "../value-objects/remainder-schedule.js";
 
 /**
  * Le cycle d'un BL : `planned` à l'arrêt du plan (E1), `prepared` au bac
@@ -44,12 +45,22 @@ export interface DeliveryNoteSource {
   readonly departureDecided?: boolean;
 }
 
+/** La source d'un reliquat : la commande, et son jour demandé `AAAA-MM-JJ` (D1). */
+export interface DeliveryNoteRemainderSource extends DeliveryNoteSource {
+  readonly orderDay: string;
+}
+
 /** L'état complet d'un BL, tel que l'adaptateur l'écrit et le relit. */
 export interface DeliveryNoteState {
   readonly id: string;
   readonly orderId: string;
   readonly rank: number;
   readonly number: string;
+  /**
+   * Jour de service `AAAA-MM-JJ` d'un reliquat (rang > 1) ; `null` au rang 1,
+   * dont le jour est celui de la commande (plan E7, choix 2).
+   */
+  readonly serviceDay: string | null;
   readonly status: DeliveryNoteStatus;
   readonly plannedAt: Date;
   readonly voidedAt: Date | null;
@@ -131,6 +142,38 @@ export class DeliveryNote {
       orderId: source.orderId,
       rank: FIRST_DELIVERY_NOTE_RANK,
       number: number.value,
+      serviceDay: null,
+      plannedAt,
+    };
+    const note = new DeliveryNote(identity, PLANNED, linesOf(source), null, FIRST_PAPER);
+    note.copyTermsFrom(source);
+    return note;
+  }
+
+  /**
+   * **Un reliquat** (plan E7, lot L1) : un BL de rang > 1, né d'une décision,
+   * prévu pour SON jour de service, ses lignes celles du reste à relivrer. Les
+   * lots suivants s'en servent aussi pour leurs données de test.
+   *
+   * @throws {InvalidDeliveryNoteRemainderError} rang 1, jour absent ou mal
+   *   formé, jour antérieur à celui de la commande.
+   * @throws {DeliveryNoteWithoutLinesError} le reste n'a aucune ligne.
+   */
+  static planRemainder(
+    id: string,
+    source: DeliveryNoteRemainderSource,
+    rank: number,
+    serviceDay: string,
+    plannedAt: Date,
+  ): DeliveryNote {
+    const schedule = RemainderSchedule.of(source.orderNumber, rank, serviceDay, source.orderDay);
+    const number = DeliveryNoteNumber.of(source.orderNumber, schedule.rank);
+    const identity = {
+      id,
+      orderId: source.orderId,
+      rank: schedule.rank,
+      number: number.value,
+      serviceDay: schedule.serviceDay,
       plannedAt,
     };
     const note = new DeliveryNote(identity, PLANNED, linesOf(source), null, FIRST_PAPER);
@@ -141,8 +184,8 @@ export class DeliveryNote {
   /** Recharge un BL écrit ; ses lignes revalident. */
   static rehydrate(state: DeliveryNoteState): DeliveryNote {
     const { status, voidedAt, preparedAt, handedOverAt, receivedOn, lines, terms } = state;
-    const { id, orderId, rank, number, plannedAt, contentVersion, printed } = state;
-    const head = { id, orderId, rank, number, plannedAt };
+    const { id, orderId, rank, number, serviceDay, plannedAt, contentVersion, printed } = state;
+    const head = { id, orderId, rank, number, serviceDay, plannedAt };
     return new DeliveryNote(
       head,
       { status, voidedAt, preparedAt, handedOverAt, receivedOn },

@@ -44,6 +44,7 @@ export function stateOf(row: NoteRow): DeliveryNoteState {
     orderId: row.orderId,
     rank: row.rank,
     number: row.number,
+    serviceDay: dayOf(row.serviceDay),
     status: row.status,
     plannedAt: row.plannedAt,
     voidedAt: row.voidedAt,

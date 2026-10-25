@@ -160,3 +160,17 @@ export class DecisionNoteNotFollowedError extends BusinessError {
     );
   }
 }
+
+/**
+ * Un reliquat (BL de rang > 1, plan E7, lot L1) se prévoit avec un rang au-delà
+ * du premier et un jour de service valide, au plus tôt celui de la commande.
+ */
+export class InvalidDeliveryNoteRemainderError extends DomainError {
+  constructor(orderNumber: string, reason: string) {
+    super(
+      "delivery_notes.remainder.invalid",
+      `Reste à relivrer de la commande ${orderNumber} refusé : ${reason}. ` +
+        "Aucun bon n'a été écrit ; reprendre la décision, et prévenir l'équipe technique si le refus revient.",
+    );
+  }
+}

@@ -132,6 +132,7 @@
   "test/delivery-notes-following.e2e-spec.ts": 11503,
   "test/delivery-notes-planned.e2e-spec.ts": 9723,
   "test/delivery-notes-printed.e2e-spec.ts": 13044,
+  "test/delivery-notes-service-day.e2e-spec.ts": 6153,
   "test/delivery-notes-terms-scenario.e2e-spec.ts": 40412,
   "test/delivery-notes-terms.e2e-spec.ts": 10131,
   "test/delivery-packing-rounds.e2e-spec.ts": 3447,
