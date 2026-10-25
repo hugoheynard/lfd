@@ -42,6 +42,11 @@ export interface AuthorizedLine {
  * `null` si le bac n'est plus celui du signal : un article au bac en d'autres
  * quantités, un article décidé absent de la fiche, une ligne de la fiche que
  * la décision ne nomme pas.
+ *
+ * Une ligne décidée à zéro **sort** de la fiche : la commande part sans ce
+ * produit, c'est le sens de « reste abandonné ». La garder à zéro violerait
+ * `packing_line.quantity > 0` (bogue du 2026-10-25 : la décision tombait en
+ * erreur technique). Le BL, lui, garde sa ligne à zéro — c'est sa règle.
  */
 export function authorizedLinesOf(
   lines: readonly SheetLine[],
@@ -58,7 +63,9 @@ export function authorizedLinesOf(
     if (quantity === undefined || quantity !== allocatedOf(line.sku) || quantity > line.quantity) {
       return null;
     }
-    reduced.push({ ...line, quantity });
+    if (quantity > 0) {
+      reduced.push({ ...line, quantity });
+    }
   }
   return reduced;
 }

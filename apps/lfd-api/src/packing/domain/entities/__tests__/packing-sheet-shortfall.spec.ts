@@ -137,6 +137,29 @@ describe("PackingSheet — le départ incomplet décidé (E6b)", () => {
     expect(target.seal({ at: LATER, by: "staff_3" }).fresh).toBe(true);
   });
 
+  /**
+   * Régression : une ligne à 0 au bac restait due à 0, et l'écriture violait
+   * `packing_line.quantity > 0` — la décision tombait en erreur technique.
+   */
+  it("une ligne à 0 au bac ne casse plus la décision, elle sort de la feuille", () => {
+    const target = sheet();
+    target.openContainer(bag("c_1"));
+    target.allocate("c_1", "CRO", 12, MARK);
+    target.reportShortfall(FIRST);
+
+    target.authorizeShortfall(
+      [
+        { sku: "CRO", quantity: 12 },
+        { sku: "PAC", quantity: 0 },
+      ],
+      { at: LATER, by: "staff_2" },
+    );
+
+    expect(target.lines.map((line) => [line.sku, line.quantity])).toEqual([["CRO", 12]]);
+    expect(target.toSnapshot().lines.map((line) => line.sku)).toEqual(["CRO"]);
+    expect(target.seal({ at: LATER, by: "staff_3" }).fresh).toBe(true);
+  });
+
   it("refuse si le bac a changé depuis le signal", () => {
     const target = shortOfThree();
     target.reportShortfall(FIRST);

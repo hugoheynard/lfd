@@ -15,7 +15,10 @@ import type {
   ShortfallDecisionSnapshot,
 } from "../../../domain/entities/shortfall-decision.js";
 import { OrderNotFoundError } from "../../../domain/errors/order-errors.js";
-import { CardOrderShortfallError } from "../../../domain/errors/shortfall-decision-errors.js";
+import {
+  CardOrderShortfallError,
+  NothingDepartsError,
+} from "../../../domain/errors/shortfall-decision-errors.js";
 import { OrderShortfallRepository } from "../../../domain/ports/order-shortfall.repository.js";
 import {
   ShortfallDecisionRepository,
@@ -99,7 +102,12 @@ class BoxClosedError extends BusinessError {
   }
 }
 
-function locked(settlementRegime: "account" | "paid" = "account"): LockedShortfallSubject {
+type SignalLine = { readonly sku: string; readonly due: number; readonly packed: number };
+
+function locked(
+  settlementRegime: "account" | "paid" = "account",
+  lines: readonly SignalLine[] = [{ sku: "CRO", due: 12, packed: 9 }],
+): LockedShortfallSubject {
   return {
     subject: {
       orderId: "ord_1",
@@ -115,7 +123,7 @@ function locked(settlementRegime: "account" | "paid" = "account"): LockedShortfa
       orderId: "ord_1",
       reference: "ORD-0001",
       reportedAt: REPORTED_AT,
-      lines: [{ sku: "CRO", due: 12, packed: 9 }],
+      lines,
       clearedAt: null,
     },
   };
@@ -181,6 +189,32 @@ describe("DecideOrderShortfallHandler — « Décider du départ » (E6b)", () =
         },
       },
     ]);
+  });
+
+  /** Régression : une ligne à 0 au bac faisait tomber la décision en erreur technique. */
+  it("une ligne à 0 au bac ne casse plus la décision : elle part à 0 vers le colisage", async () => {
+    const lines = [
+      { sku: "CRO", due: 12, packed: 12 },
+      { sku: "PAI", due: 4, packed: 0 },
+    ];
+    const { desk, decisions, handler } = scene(locked("account", lines));
+
+    await handler.execute(COMMAND);
+
+    expect(desk.authorized[0]?.departing).toEqual([
+      { sku: "CRO", quantity: 12 },
+      { sku: "PAI", quantity: 0 },
+    ]);
+    expect(decisions.saved).toHaveLength(1);
+  });
+
+  it("rien au bac : refusé avant le colisage, rien n'est écrit", async () => {
+    const lines = [{ sku: "PAI", due: 4, packed: 0 }];
+    const { trace, notes, handler } = scene(locked("account", lines));
+
+    await expect(handler.execute(COMMAND)).rejects.toThrow(NothingDepartsError);
+    expect(trace).toEqual(["lock-order"]);
+    expect(notes.calls).toEqual([]);
   });
 
   it("un refus de l'agrégat n'écrit rien, et le colisage n'est pas appelé", async () => {

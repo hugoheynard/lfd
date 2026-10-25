@@ -28,8 +28,18 @@ export interface Drawn extends PlacedTestOrder {
   readonly sheet: PackingSheet;
 }
 
-/** Une commande au compte de 3 croissants, tirée au colisage, `packed` au sac. */
-export async function accountOrder(ctx: E2eContext, packed: number): Promise<Drawn> {
+/** Une ligne commandée en plus des croissants — jamais mise au bac par la scène. */
+export interface ExtraLine {
+  readonly sku: string;
+  readonly quantity: number;
+}
+
+/** Une commande au compte de 3 croissants (+ `extra`), tirée au colisage, `packed` croissants au sac. */
+export async function accountOrder(
+  ctx: E2eContext,
+  packed: number,
+  extra: readonly ExtraLine[] = [],
+): Promise<Drawn> {
   const company = await createCompany(ctx.prisma);
   await ctx.prisma.company.update({
     where: { id: company.id },
@@ -44,7 +54,7 @@ export async function accountOrder(ctx: E2eContext, packed: number): Promise<Dra
     settlement: "account",
     forDay: SERVICE_DAY,
     fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
-    lines: [{ sku: CROISSANT, quantity: 3 }],
+    lines: [{ sku: CROISSANT, quantity: 3 }, ...extra],
   });
   return drawn(ctx, placed, packed);
 }

@@ -66,7 +66,7 @@ export class NothingDepartsError extends BusinessError {
   constructor(reference: string) {
     super(
       "orders.shortfall_decision.nothing_departs",
-      `Aucune pièce de ${reference} n'est au bac : rien ne partirait. Annulez la commande.`,
+      `Aucune pièce de ${reference} n'est au bac : ce n'est pas un départ incomplet. Annulez la commande, ou attendez la production et remplissez le bac.`,
     );
   }
 }

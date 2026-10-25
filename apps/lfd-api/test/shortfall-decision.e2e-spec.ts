@@ -36,6 +36,9 @@ import {
   type Drawn,
 } from "./shortfall-decision-scene.js";
 
+/** Une seconde ligne au catalogue des e2e, que la scène ne met jamais au bac. */
+const BAGUETTE = "PAI-001";
+
 let ctx: E2eContext;
 let issued: string[];
 
@@ -129,6 +132,26 @@ describe("« Décider du départ » — reste abandonné (E6b + E6c1)", () => {
       code: "orders.shortfall_decision.already_decided",
     });
     expect(await ctx.prisma.orderShortfallDecision.count()).toBe(1);
+  });
+
+  /**
+   * Régression (2026-10-25) : une ligne à 0 au bac restait due à 0 sur la
+   * fiche, `packing_line_quantity_check` refusait, et la décision tombait en
+   * « erreur technique ».
+   */
+  it("une ligne à 0 au bac ne casse plus la décision, elle sort de la feuille", async () => {
+    const order = await sceneAccountOrder(ctx, 3, [{ sku: BAGUETTE, quantity: 2 }]);
+    expect(await report(order.id)).toBe(204);
+
+    expect((await decide(order.id)).status).toBe(204);
+
+    const sheet = await sheetOf(ctx, order.orderNumber);
+    expect(sheet.lines.map((line) => [line.sku, line.quantity])).toEqual([[CROISSANT, 3]]);
+    expect(await ctx.prisma.packingLine.count({ where: { orderId: order.id } })).toBe(1);
+    const [planned] = await notesOf(order.id);
+    const departing = planned?.lines.filter((line) => line.quantity > 0).map((line) => line.sku);
+    expect(departing).toEqual([CROISSANT]);
+    expect(await closeOrder(ctx, order.id)).toBe(204);
   });
 
   it("refuse « rien ne part »", async () => {

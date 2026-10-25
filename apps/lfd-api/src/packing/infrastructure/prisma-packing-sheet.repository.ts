@@ -125,6 +125,15 @@ export class PrismaPackingSheetRepository extends PackingSheetRepository {
       },
     });
     await saveContainers(this.prisma, snapshot);
+    // Une ligne absente de l'agrégat en est sortie : décidée à zéro au départ
+    // incomplet (E6b). Rien d'autre ne retire une ligne d'une fiche vivante.
+    await this.prisma.packingLine.deleteMany({
+      where: {
+        serviceDay: snapshot.serviceDay,
+        orderId: snapshot.orderId,
+        sku: { notIn: snapshot.lines.map((line) => line.sku) },
+      },
+    });
     for (const line of snapshot.lines) {
       await this.prisma.packingLine.update({
         where: {
