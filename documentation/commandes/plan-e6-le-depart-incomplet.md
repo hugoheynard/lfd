@@ -335,3 +335,141 @@ constitué ; le verbe (`settle` désigne déjà le RÈGLEMENT ici).
   BL-1043-1 » — dans le PDF et la note Factur-X (`facturx-mentions.ts`,
   `ordersText`). Le titre « FACTURE » et le numéro de facture ne changent pas ;
   une facture déjà émise garde son texte archivé.
+
+## 12. Plan de bâti d'E6b et d'E6c (2026-10-25) — l'emporte sur les § 4, § 5, § 9
+
+### 12.1 Ce qui a été rouvert pour E6b
+
+- **Le tirage de la liste** : `PrismaPackingShadowLedger.drawOrder`
+  (`packing/infrastructure/prisma-packing-shadow.ledger.ts`) écrit la fiche et
+  ses lignes en `createMany … skipDuplicates` : un second tirage n'écrase pas
+  une fiche existante. Une ligne due réduite par une décision **survit** à un
+  retirage.
+- **La réouverture d'une journée** : `withdrawUntouched`
+  (`packing-list-withdrawal` / son adaptateur) ne retire que les fiches **non
+  touchées** (`packedAt` nul, aucun contenant, aucune ligne colisée). Une fiche
+  qui porte un manque a des pièces au bac : elle **reste**.
+
+### 12.2 E6b — la décision (_décidé par l'assistant_)
+
+- **Agrégat `ShortfallDecision`** (commerce) : une par commande, définitive
+  (Q-I4) ; auteur, instant, quantités partantes (celles du signal en vigueur),
+  reste `to_redeliver` (+ date) ou `abandoned`. Refuse : pas de signal en
+  vigueur ; commande carte (§ 7) ; commande non `confirmed`.
+- **`ShortfallDesk.authorize(commande, quantités)`**, déclaré **et** implémenté
+  par le colisage (`packing/channels/commerce/`), appelé dans la transaction de
+  la décision : réduit les lignes dues de la fiche aux quantités décidées et
+  efface la marque « manque » côté colisage (la limite notée en E6a). Refuse
+  une fiche **déjà fermée** (409 nommé : « le bac est déjà fermé complet »).
+- **Ordre des verrous** : la décision verrouille la **commande** puis la
+  **fiche** ; la fermeture du bac ne verrouille que la fiche, et l'abonné
+  « prête » verrouille la commande après, dans sa propre transaction : pas de
+  cycle.
+- **Réouverture de la journée après une décision** : la fiche reste (§ 12.1) ;
+  la commande repasse `placed` par `releaseFromPlan` — _décidé_ : une
+  commande qui porte une décision **refuse la révision** (garde ajoutée à la
+  révision M1), pour que la décision et la commande ne divergent jamais.
+- **La pièce qui arrive après la décision** : la ligne due est réduite, le bac
+  ne la prend plus ; elle part au reliquat (E7) si le reste est
+  `to_redeliver`, sinon elle reste en réserve. Dit à l'écran de la décision.
+- **Le BL-1** est préparé aux **quantités décidées** : le suivi d'E2 lit la
+  décision et ne réaligne pas le BL sur la commande.
+- **Écran** : sur la fiche commande, sous « Manque signalé — décision
+  attendue », le geste « Décider du départ » (quantités en lecture, reste à
+  relivrer avec une date, ou abandonné), réservé à `b2b_orders_shortfall`.
+
+🔴 **E6b ne part pas en production sans E6c2** : un BL partiel facturé sur la
+commande entière serait faux.
+
+### 12.3 E6c en deux temps
+
+**E6c1 — l'ombre de l'argent (aucun lecteur ne change).**
+
+- Colonnes `billable_*` et `settled_on` sur `orders`, nullables, un CHECK tout
+  ou rien, un déclencheur qui refuse toute réécriture d'une valeur posée
+  (NOT NULL → autre, et NOT NULL → NULL).
+- La **fabrique du BL partiel** (`DeliveryNoteTerms.composePartial`) : chaque
+  terme calculé par `cartAdjustmentCents` / `discountCentsOf` sur les lignes
+  livrées, assiette éligible lue sur la **ligne de commande**, mode de TVA du
+  port et taux de surtaxe de la **commande**, puis `computeOrderTotals` et les
+  mêmes gardes que `Order.draft` ; décisions Q-E6-1/2 (§ 11).
+- **`Order.closeBilling`** (le verbe `settle` désigne déjà le règlement) : pose
+  `billable_*` = Σ des BL remis et `settled_on`, quand la commande est
+  soldée ; une commande annulée n'est jamais soldée ; une commande carte est
+  soldée comme aujourd'hui (recopie). Écrivain unique : le suivi d'E2 à la
+  remise qui solde ; le réconciliateur pour l'existant.
+- **Contrôle** : pour toute commande à un BL complet, `billable_*` =
+  totaux de la commande, à zéro écart ; pour une commande partielle, la
+  recomposition par la fabrique = `billable_*`.
+
+**E6c2 — la bascule (sur ordre de Hugo, irréversible à la première facture).**
+
+- Le **recensement** des lecteurs de `b2b/accounting` (61 fichiers lisent un
+  total, domaine compris) dressé fichier par fichier dans son plan : bascule
+  sur `billable_*` / `settled_on`, ou reste sur la commande, avec la raison.
+- Les deux critères gardent `totalCents > 0` **et** exigent `billable_total_cents`
+  posé ; une commande au compte non soldée est écartée **et nommée**.
+- L'encaissement et les candidats au prélèvement excluent les commandes non
+  soldées ; le contrôle de cohérence garde la comparaison à `totalCents` pour
+  les commandes à un BL complet ; la ligne de référence de la facture cite
+  commandes et BL (§ 11).
+
+## 13. Contradiction du plan de bâti (2026-10-25) — l'emporte sur le § 12
+
+_Toutes décidées par l'assistant (« prends les meilleures décisions »)._
+
+**BLOQUANTS, résolus :**
+
+1. **Trois écrivains réécrivent le BL sur la commande**, pas un : la règle
+   d'alignement partagée par le suivi et le réconciliateur
+   (`delivery-note-alignment.ts`, `replanFrom` / `completeTermsFrom`) et le
+   planificateur d'E1 (`delivery-note-planner.ts`, `replanFrom` à chaque
+   clôture). **La décision devient une entrée** de la règle d'alignement et du
+   planificateur : un port de lecture (`ShortfallDecisionReader`) fournit les
+   quantités décidées ; quand une décision existe, les trois réécrivent le BL
+   sur **ces** quantités, jamais sur la commande entière.
+2. **`composePartial` passe dans E6b** : E6b et E6c1 se bâtissent **ensemble**
+   (un BL partiel porte toujours ses montants).
+3. **Une fiche signalée sans aucune pièce** : la décision **refuse « rien ne
+   part »** (refus nommé : « aucune pièce au bac — annulez la commande ») ;
+   `withdrawUntouched` **épargne** une fiche qui porte une décision ; et
+   `releaseFromPlan` **épargne** une commande décidée (elle reste confirmée,
+   comme une commande prête) — la re-clôture ne la refabrique donc pas en
+   entier.
+
+**SÉRIEUX, résolus :**
+
+- `authorize` vérifie, **sous le verrou de la fiche**, que le contenu des
+  contenants est exactement les quantités décidées (sinon 409 : « le bac a
+  changé depuis le signal — signalez de nouveau ») ; `reportShortfall` refuse
+  une fiche autorisée.
+- `authorize` **ne publie pas** `shortfall_cleared` : le commerce passe lui-même
+  son `OrderShortfall` à l'état **décidé** dans la transaction de la décision
+  (le signal n'est pas effacé, il est résolu).
+- **Les verrous** : le bâtisseur recense toutes les transactions qui touchent
+  la fiche ou les bacs (`BinDesk`, `ContainerManagedOrders`, l'annulation,
+  `packing_stock`) et établit l'ordre « commande, puis fiche » partout, ou dit
+  où il ne tient pas.
+- **`closeBilling`, deux écrivains** (suivi et réconciliateur) : exclusion par
+  le `WHERE billable_total_cents IS NULL` de l'écriture conditionnelle, sous le
+  verrou de la commande.
+- **Le gel de `billable_*` se pose en E6c2**, pas en E6c1 : l'ombre reste
+  corrigeable ; E6c1 écrit un geste de correction (le réconciliateur recompose
+  une commande dont `billable_*` diffère de la fabrique, tant que rien n'est
+  facturé).
+- **Refus nommés** à la décision : commande **carte** ; commande portant un
+  **bon de fidélité** (`voucherDiscountCents > 0`) ; commande dont un
+  ajustement figé manque alors que son montant n'est pas nul (commandes
+  d'avant le 2026-09-09) — « commande trop ancienne pour un départ
+  incomplet ».
+- **« À relivrer » attend E7.** _Décidé_ : la première version n'offre que
+  **« reste abandonné »** ; « à relivrer » arrive avec E7. Sinon une commande
+  à reliquat ne serait jamais soldée, donc jamais facturée.
+- **Le recensement** (56 fichiers hors tests lisent un total, compté par
+  `vitruve` le 2026-10-25) se dresse **dans le plan d'E6c2**, avant toute
+  bascule ; E6c2 ne part pas sans lui.
+
+**Ordre de bâti et de déploiement** : **E6b + E6c1** (décision « abandonné »,
+BL partiel avec ses montants, `billable_*` en ombre, contrôle) → plan et
+`vitruve` d'**E6c2** → E6c2 → les trois partent **ensemble** en production,
+sur ordre de Hugo. E6d (l'e-mail) suit. E7 rouvre « à relivrer ».
