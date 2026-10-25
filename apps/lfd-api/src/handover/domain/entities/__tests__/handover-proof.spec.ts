@@ -41,3 +41,27 @@ describe("HandoverProof.imageKeys — ce qu'un effacement retire du stockage", (
     ]);
   });
 });
+
+describe("HandoverProof — la photo du bon signé (signedSlipKey)", () => {
+  // Trois états d'une absence : `null` = pas de bon (sans signature exigée, ou
+  // d'avant) · `""` = une clé vide, refusée · une clé = rangée.
+  it("accepte l'absence de bon (null) et une clé posée, refuse la clé vide", () => {
+    expect(() => HandoverProof.attach(state({ signedSlipKey: null }))).not.toThrow();
+    expect(() =>
+      HandoverProof.attach(state({ signedSlipKey: "handover/proofs/p_1/slip" })),
+    ).not.toThrow();
+    expect(() => HandoverProof.attach(state({ signedSlipKey: "" }))).toThrow(HandoverRefusedError);
+  });
+
+  // Une image oubliée ici resterait au stockage après l'effacement de la ligne,
+  // seule à en garder la clé.
+  it("rend le bon signé dans les images à effacer, après photo et signature", () => {
+    const proof = HandoverProof.rehydrate(state({ signatureKey: "sig", signedSlipKey: "slip" }));
+    expect(proof.imageKeys()).toEqual(["handover/proofs/p_1/photo", "sig", "slip"]);
+  });
+
+  it("rend le bon signé même sans signature dessinée", () => {
+    const proof = HandoverProof.rehydrate(state({ signedSlipKey: "slip" }));
+    expect(proof.imageKeys()).toEqual(["handover/proofs/p_1/photo", "slip"]);
+  });
+});
