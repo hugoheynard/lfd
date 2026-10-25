@@ -77,7 +77,7 @@ describe("GetOrderBinLabelsPdfHandler", () => {
     expect(pages).toHaveLength(2);
     expect(pages[0]).toContain("Camionnette 1");
     expect(pages[0]).toContain("Arrêt 2");
-    expect(pages[1]).toContain("bac 2 / 2");
+    expect(pages[1]).toContain("Bac 2/2");
     expect(colors.asked).toEqual(["ord_1"]);
   });
 

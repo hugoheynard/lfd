@@ -53,7 +53,8 @@ function labelOf(bin: DeliveryBinView, title: string, base: string | null): BinL
   return {
     reference: bin.transfer === null || bin.transfer === undefined ? bin.reference : title,
     customerLabel: bin.customerLabel,
-    indexLabel: `bac ${String(bin.index ?? 0)} / ${String(bin.total)}`,
+    rank: bin.index ?? 0,
+    of: bin.total,
     kind: half === null ? bin.binType.name : `${bin.binType.name} · ${half}`,
     sharedWith:
       bin.sharedWith === null

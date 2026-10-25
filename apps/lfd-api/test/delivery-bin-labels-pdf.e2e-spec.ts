@@ -156,7 +156,7 @@ describe("les étiquettes des bacs d'un transfert interne", () => {
     const pages = pagesOf(response);
     expect(pages).toHaveLength(2);
     expect(pages[0]).toContain("Transfert Val Village");
-    expect(pages[1]).toContain("bac 2 / 2");
+    expect(pages[1]).toContain("Bac 2/2");
   });
 
   it("un transfert inconnu : 404", async () => {

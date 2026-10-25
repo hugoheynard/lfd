@@ -65,7 +65,8 @@ describe("binLabelsPaperOf", () => {
       {
         reference: "ORD-0042",
         customerLabel: "Le Refuge",
-        indexLabel: "bac 1 / 2",
+        rank: 1,
+        of: 2,
         kind: "Bac M · ½ gauche",
         sharedWith: "partagé avec ORD-7 · La Cantine",
         innerBags: "2 sacs dedans",

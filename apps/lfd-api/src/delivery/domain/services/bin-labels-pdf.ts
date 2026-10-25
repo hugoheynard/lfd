@@ -15,14 +15,16 @@ import { type Doc, MM, render } from "../../../platform/pdf/paper-pdf-kit.js";
 /** Le côté du QR du bac : il se scanne au chargement, bac posé au sol. */
 const QR_SIZE = 40 * MM;
 const CODE_SIZE = 24;
+const RANK_SIZE = 18;
 const CODE_SPACING = 3;
 
 /** Une étiquette de bac, tout composé : le rendu ne fait que poser. */
 export interface BinLabelSheet {
   readonly reference: string;
   readonly customerLabel: string;
-  /** « bac 1 / 2 ». */
-  readonly indexLabel: string;
+  /** Le rang du bac dans sa commande, et leur nombre : « Bac 1/2 ». */
+  readonly rank: number;
+  readonly of: number;
   /** « Bac M · ½ gauche ». */
   readonly kind: string;
   /** « partagé avec ORD-12 · Le Refuge », ou `null`. */
@@ -85,11 +87,18 @@ function drawBinLabel(doc: Doc, paper: BinLabelsPaper, label: BinLabelSheet, log
   }
   y = putSwatchLine(doc, paper.color, label.reference, y, { max: 22, min: 12 });
   y = putCentered(doc, label.customerLabel, y, { max: 13, min: 8, bold: true });
-  y = putCentered(doc, `${label.indexLabel} · ${label.kind}`, y + 1 * MM, { max: 12, min: 8 });
+  y = putCentered(doc, label.kind, y + 1 * MM, { max: 12, min: 8 });
   for (const extra of [label.sharedWith, label.innerBags]) {
     if (extra !== null) {
       y = putCentered(doc, extra, y, { max: 11, min: 7 });
     }
+  }
+  // « Bac n/N » encadré, comme « Sac n/N » (Hugo, 2026-10-25) — seulement
+  // s'il y a plusieurs bacs.
+  if (label.of > 1) {
+    y = putBoxedCentered(doc, `Bac ${String(label.rank)}/${String(label.of)}`, y + 2 * MM, {
+      size: RANK_SIZE,
+    });
   }
   const codeHeight = CODE_SIZE * 1.6;
   const codeTop = LABEL_BOTTOM - codeHeight;

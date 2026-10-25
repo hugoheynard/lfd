@@ -23,7 +23,8 @@ function specimenPaper(base: string | null, printedAt: Date): BinLabelsPaper {
     labels: [
       {
         ...common,
-        indexLabel: "bac 1 / 2",
+        rank: 1,
+        of: 2,
         kind: "Bac M",
         sharedWith: null,
         innerBags: null,
@@ -32,7 +33,8 @@ function specimenPaper(base: string | null, printedAt: Date): BinLabelsPaper {
       },
       {
         ...common,
-        indexLabel: "bac 2 / 2",
+        rank: 2,
+        of: 2,
         kind: "Bac L isotherme · ½ gauche",
         sharedWith: "partagé avec ORD-0124 · La Cantine",
         innerBags: "2 sacs dedans",

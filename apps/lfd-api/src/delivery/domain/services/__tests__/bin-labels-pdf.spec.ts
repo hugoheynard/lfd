@@ -14,7 +14,8 @@ function label(over: Partial<BinLabelSheet> = {}): BinLabelSheet {
   return {
     reference: "ORD-0042",
     customerLabel: "Le Refuge",
-    indexLabel: "bac 1 / 2",
+    rank: 1,
+    of: 2,
     kind: "Bac M",
     sharedWith: null,
     innerBags: null,
@@ -29,7 +30,7 @@ function paper(over: Partial<BinLabelsPaper> = {}): BinLabelsPaper {
     title: "ORD-0042",
     round: { title: "Camion 1", stop: 3 },
     color: "#C2410C",
-    labels: [label(), label({ indexLabel: "bac 2 / 2", code: "R4TB9C" })],
+    labels: [label(), label({ rank: 2, of: 2, code: "R4TB9C" })],
     printedAt: AT,
     ...over,
   };
@@ -43,7 +44,7 @@ describe("renderBinLabelsPdf", () => {
     expect(pages[0]).toContain("Arrêt 3");
     expect(pages[0]).toContain("ORD-0042");
     expect(pages[0]).toContain("Le Refuge");
-    expect(pages[0]).toContain("bac 1 / 2 · Bac M");
+    expect(pages[0]).toContain("Bac 1/2");
     expect(pages[0]).toContain("A3KM7Q");
     expect(pages[1]).toContain("R4TB9C");
   });
