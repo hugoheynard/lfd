@@ -25,7 +25,6 @@ export const EXECUTION_SELECT = {
   parkingLng: true,
   depositAllowed: true,
   doorstepRule: true,
-  arrivedAt: true,
 } as const;
 
 /** La forme de la ligne lue, sans type Prisma. */
@@ -45,7 +44,6 @@ export interface ExecutionRecord {
   readonly parkingLng: number | null;
   readonly depositAllowed: boolean;
   readonly doorstepRule: string;
-  readonly arrivedAt: Date | null;
 }
 
 /** La fenêtre telle que le départ la fige (`DepartureWindow`). */
@@ -85,6 +83,5 @@ export function departedStopOf(record: ExecutionRecord): DepartedStopRow {
     depositAllowed: record.depositAllowed,
     // Un CHECK tient la valeur en base : une autre lève plutôt que d'être devinée.
     doorstepRule: doorstepRuleSchema.parse(record.doorstepRule),
-    arrivedAt: record.arrivedAt,
   };
 }

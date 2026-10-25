@@ -35,8 +35,6 @@ export interface DepartedStopRow {
   readonly depositAllowed: boolean;
   /** La décision réglée d'avance, résolue et figée au départ (B3 bis) ; `ask` avant la migration. */
   readonly doorstepRule: DoorstepRule;
-  /** « Je suis arrivé » (AP-D6), ou `null`. */
-  readonly arrivedAt: Date | null;
 }
 
 /** Un arrêt non retiré de ma tournée. */

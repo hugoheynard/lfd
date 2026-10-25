@@ -31,7 +31,6 @@ export function myStopOf(overrides: Partial<MyDeliveryStopView> = {}): MyDeliver
     bins: 1,
     coldBins: 0,
     closedAt: null,
-    arrivedAt: null,
     depositAllowed: false,
     canDeposit: false,
     decision: null,

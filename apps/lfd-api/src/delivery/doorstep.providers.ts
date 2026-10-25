@@ -3,7 +3,6 @@ import type { Provider, Type } from "@nestjs/common";
 import { AuthorizeStopDepositHandler } from "./application/commands/authorize-stop-deposit.handler.js";
 import { BringStopBackHandler } from "./application/commands/bring-stop-back.handler.js";
 import { CloseStopWithoutHandoverHandler } from "./application/commands/close-stop-without-handover.handler.js";
-import { DeclareStopArrivalHandler } from "./application/commands/declare-stop-arrival.handler.js";
 import { DepositStopHandler } from "./application/commands/deposit-stop.handler.js";
 import { HandOverStopHandler } from "./application/commands/hand-over-stop.handler.js";
 import { ReportDeliveryIncidentHandler } from "./application/commands/report-delivery-incident.handler.js";
@@ -50,12 +49,12 @@ import { PrismaUndeliveredStopsReader } from "./infrastructure/prisma-undelivere
 /**
  * **À la porte** (`documentation/livraisons/livreur/a-la-porte.md`, lot A), rangé
  * à part pour que `delivery.module.ts` reste lisible : les gestes du livreur
- * sous `delivery_doorstep` (arriver, signaler, clore sans remise, « Tournée
+ * sous `delivery_doorstep` (signaler, clore sans remise, « Tournée
  * terminée »), et leur lecture par l'admin sous `delivery_rounds`
  * (signalements, « Non remis »). Le retour par l'admin vit sur
  * `DeliveryRoundsController` (PL2).
  *
- * « Remis au client » (B1) et « Déposé avec preuve » (B2) s'y ajoutent, sur
+ * « Commande déposée » (B1, « Remis au client » jusqu'au 2026-10-25) et « Déposé avec preuve » (B2) s'y ajoutent, sur
  * un même `DoorstepHandover` : `DoorstepHandoverAttestor`
  * vient du fil du retrait (`appBootstrap/delivery-handover-feed.module.ts`).
  *
@@ -77,7 +76,6 @@ export const DOORSTEP_CONTROLLERS: readonly Type[] = [
 ];
 
 export const DOORSTEP_PROVIDERS: readonly Provider[] = [
-  DeclareStopArrivalHandler,
   ReportDeliveryIncidentHandler,
   CloseStopWithoutHandoverHandler,
   HandOverStopHandler,

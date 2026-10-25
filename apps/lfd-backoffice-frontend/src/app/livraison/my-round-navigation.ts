@@ -29,7 +29,7 @@ const GOOGLE_DIR = 'https://www.google.com/maps/dir/?api=1';
 /** Le séparateur d'étapes, `|`, encodé comme Google le demande. */
 const WAYPOINT_SEPARATOR = '%7C';
 
-/** Les applications proposées pour « Y aller ». */
+/** Les applications proposées pour « Aller chez ce client » et « Aller à ce site ». */
 export type NavigationApp = 'google' | 'waze' | 'apple';
 
 export const NAVIGATION_APPS: readonly { readonly value: NavigationApp; readonly label: string }[] =
@@ -110,7 +110,7 @@ export function transferTargetOf(
 
 /**
  * Le dernier tronçon, à pied, du stationnement à la porte — `null` quand l'un
- * des deux manque : « Y aller » vise alors déjà la porte.
+ * des deux manque : « Aller chez ce client » vise alors déjà la porte.
  */
 export function walkToDoorHref(stop: MyDeliveryStopView): string | null {
   if (stop.parking === null || stop.gps === null) {
@@ -189,7 +189,7 @@ export function routeLegs(stops: readonly MyDeliveryStopView[]): readonly Naviga
 }
 
 /**
- * **« Y aller »** : un seul arrêt, dans l'application choisie (YA-D1, YA-D3).
+ * **« Aller chez ce client »** (« Aller à ce site » pour un transfert) : un seul arrêt, dans l'application choisie (YA-D1, YA-D3).
  * `null` quand l'arrêt n'a ni point ni adresse.
  */
 export function goToHref(app: NavigationApp, target: NavigationTarget): string | null {

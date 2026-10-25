@@ -50,7 +50,6 @@ function departed(rule: DoorstepRule): DepartedStopRow {
     depositAllowed: false,
     doorstepRule: rule,
     parking: null,
-    arrivedAt: null,
   };
 }
 

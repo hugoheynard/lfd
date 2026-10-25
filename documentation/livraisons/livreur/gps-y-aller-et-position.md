@@ -8,6 +8,16 @@
 > celle de `16d367e3a^`.
 > Ce qui n'est pas bâti est dans **Reste à faire**, à la fin. Les corrections
 > du carnet suggérées au bureau (§6) sont bâties depuis le 2026-10-06.
+>
+> 🔴 **2026-10-25, décision de Hugo** : le bouton « Y aller » s'appelle
+> **« Aller chez ce client »** (« Aller à ce site » sur un arrêt de transfert),
+> « Remis au client » s'appelle **« Commande déposée »**, et **« Je suis
+> arrivé » est retiré du code** (bouton, route, handler). Les colonnes
+> `arrived_*` restent en base, **plus écrites** : la suggestion de
+> **stationnement** (§6), qui part des positions d'arrivée, ne lit donc plus
+> que les relevés d'avant cette date, et la purge à 60 jours continue de les
+> effacer. Ce que la suggestion de stationnement deviendra n'est pas décidé.
+> Le titre et les repères (« YA ») gardent l'ancien nom.
 
 Trois choses — deux sur l'écran « Ma tournée » du livreur (`/coursier`), une
 au bureau :
@@ -49,9 +59,8 @@ flowchart LR
   K -. "plus rien" .-> H["« Rentrer »<br/>vers le point de départ"]
 ```
 
-« Y aller » est sur la carte de **chaque** arrêt restant tant que la tournée
-est en route (`my-round-stop.html`) ; seul « Je suis arrivé » est réservé au
-suivant — le premier restant —, tant que son arrivée n'est pas déclarée.
+« Aller chez ce client » est sur la carte de **chaque** arrêt restant tant que
+la tournée est en route (`my-round-stop.html`).
 
 La chaîne est éprouvée de bout en bout (YA3, 2026-10-06) :
 
@@ -117,12 +126,12 @@ La position du téléphone (latitude, longitude, précision en mètres) est lue
 **une fois, au geste**, par `navigator.geolocation.getCurrentPosition` — jamais
 `watchPosition`, jamais en arrière-plan, rien entre deux gestes.
 
-| Geste                  | Où elle s'écrit                                                                     |
-| ---------------------- | ----------------------------------------------------------------------------------- |
-| « Je suis arrivé »     | `delivery.delivery_stop_execution.arrived_lat`, `arrived_lng`, `arrived_accuracy_m` |
-| « Remis au client »    | `delivery.delivery_round_stop.closed_lat`, `closed_lng`, `closed_accuracy_m`        |
-| « Déposé avec preuve » | idem                                                                                |
-| « Clore sans remise »  | idem                                                                                |
+| Geste                                                 | Où elle s'écrit                                                                     |
+| ----------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| « Je suis arrivé » (retiré le 2026-10-25, plus écrit) | `delivery.delivery_stop_execution.arrived_lat`, `arrived_lng`, `arrived_accuracy_m` |
+| « Commande déposée »                                  | `delivery.delivery_round_stop.closed_lat`, `closed_lng`, `closed_accuracy_m`        |
+| « Déposé avec preuve »                                | idem                                                                                |
+| « Clore sans remise »                                 | idem                                                                                |
 
 L'arrivée est relevée **en plus** de la clôture (Hugo, 2026-10-06) : l'écart
 entre l'adresse prévue, l'endroit où le livreur arrive (où il se gare) et
@@ -181,8 +190,6 @@ sequenceDiagram
   seulement dans cette écriture).
 - **Les champs sont à plat** (`positionLat`, `positionLng`, `positionAccuracyM`)
   parce que la remise et le dépôt sont en multipart.
-- « Je suis arrivé » garde un corps **facultatif** : un appel sans corps vaut
-  « sans position ».
 
 ### La finalité (Hugo, 2026-10-06)
 

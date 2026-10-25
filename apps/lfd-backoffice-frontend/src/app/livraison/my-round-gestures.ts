@@ -12,7 +12,7 @@ import { MyDeliveryRoundService } from './my-delivery-round.service';
 import type { MyRoundReader } from './my-round-reader';
 
 /**
- * Les gestes du livreur sur « Ma tournée » : partir, arriver, clore sans
+ * Les gestes du livreur sur « Ma tournée » : partir, clore sans
  * remise, rentrer. Chacun part avec la version lue, affiche le refus du
  * serveur tel quel (MT-D3 v2) et relit la tournée dans tous les cas.
  *
@@ -71,14 +71,6 @@ export class MyRoundGestures {
       );
       return false;
     }
-  }
-
-  /** « Je suis arrivé » sur l'arrêt suivant. */
-  arrive(stop: MyDeliveryStopView): Promise<void> {
-    return this.gesture(
-      async (round) => this.service.arrive(round.id, stop.stopId, await this.positions.read()),
-      'L’arrivée n’a pas pu être enregistrée.',
-    );
   }
 
   /** Clore sans remise, avec la version lue : une tournée changée entre-temps est refusée. */

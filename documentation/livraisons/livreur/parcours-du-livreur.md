@@ -26,11 +26,10 @@ flowchart TD
   C --> D{"4 · Tout est chargé ?"}
   D -- "non : bac manquant,<br/>bac à refaire" --> C
   D -- oui --> E["5 · Commencer ma tournée<br/>(départ : la tournée se fige)"]
-  E --> F["6 · Rouler vers l'arrêt suivant<br/>« Y aller » / « Toute la tournée »"]
-  F --> G["7 · Je suis arrivé"]
-  G --> H["8 · Sortir LES bacs de cet arrêt<br/>(et seulement eux)"]
+  E --> F["6 · Rouler vers l'arrêt suivant<br/>« Aller chez ce client » / « Toute la tournée »"]
+  F --> H["8 · Sortir LES bacs de cet arrêt<br/>(et seulement eux)"]
   H --> I{"9 · À la porte"}
-  I -- "quelqu'un réceptionne" --> J["Remis au client<br/>photo, nom (+ signature si exigée)"]
+  I -- "quelqu'un réceptionne" --> J["Commande déposée<br/>photo, nom (+ signature si exigée)"]
   I -- "personne, dépôt permis<br/>(par le client sans signature,<br/>ou par un commercial)" --> K["Déposé avec preuve<br/>photo"]
   I -- "personne, dépôt interdit<br/>ou refus, accès…" --> L["Problème à la remise<br/>l'arrêt reste ouvert :<br/>le commercial décide"]
   I -- "commande déjà retirée<br/>ou annulée" --> M["Clore sans remise"]
@@ -53,7 +52,7 @@ flowchart TD
 | `delivery_driving`  | read   | « Ma tournée » : ses tournées, fiches, avancement, version, plan et état du chargement, procédures de ses arrêts ; « Mes données » (texte d'information) |
 | `delivery_driving`  | write  | scanner / décharger un bac de sa tournée, « Commencer ma tournée », « J'ai compris » (l'accusé du texte d'information)                                   |
 | `delivery_doorstep` | read   | revoir la photo d'un signalement                                                                                                                         |
-| `delivery_doorstep` | write  | « Je suis arrivé », « Remis au client », « Déposé avec preuve », signaler, clore sans remise, « Tournée terminée »                                       |
+| `delivery_doorstep` | write  | « Commande déposée », « Déposé avec preuve », signaler, clore sans remise, « Tournée terminée »                                                          |
 
 Rien d'autre : ni `delivery_loading`, ni `delivery_rounds`, ni
 `delivery_procedures`, ni `delivery_run_sheet`, ni `staff_notifications`.
@@ -173,11 +172,11 @@ comme avant.
 
 ### 6 · Rouler
 
-🔑 `delivery_driving:read` — liens « Y aller » / « Toute la tournée », et la procédure de SES arrêts (texte et photos) par sa route murée. Pas besoin de `delivery_procedures`, qui est le droit d'éditer côté staff.
+🔑 `delivery_driving:read` — liens « Aller chez ce client » (« Aller à ce site » pour un transfert) / « Toute la tournée », et la procédure de SES arrêts (texte et photos) par sa route murée. Pas besoin de `delivery_procedures`, qui est le droit d'éditer côté staff.
 
-🖥️ **Boutons**, une fois partie : « Y aller » sur chaque arrêt restant (Google Maps, Waze, Plans) et « Toute la tournée » (tronçons) — ✅ bâtis. Procédure dépliable sur la carte de l'arrêt. « Déclarer un problème » de la tournée (technique ou routier), en route — ✅ bâti.
+🖥️ **Boutons**, une fois partie : « Aller chez ce client » sur chaque arrêt restant (Google Maps, Waze, Plans) et « Toute la tournée » (tronçons) — ✅ bâtis. Procédure dépliable sur la carte de l'arrêt. « Déclarer un problème » de la tournée (technique ou routier), en route — ✅ bâti.
 
-- ✅ « Y aller » vise le **stationnement** du carnet quand il est connu, sinon
+- ✅ « Aller chez ce client » vise le **stationnement** du carnet quand il est connu, sinon
   la porte (point GPS), sinon l'adresse (`driveTargetOf`) ; « Toute la
   tournée » en tronçons de trois étapes et une destination.
 - ✅ Les arrêts clos disparaissent des liens (`remainingStops`,
@@ -185,17 +184,17 @@ comme avant.
   ou un « Rapporter » clôt l'arrêt. YA3, éprouvé de bout en bout le 2026-10-06
   (`delivery-gesture-position.e2e-spec.ts`, `my-round-page.spec.ts`).
 
-### 7 · Je suis arrivé
+### 7 · Arrivé à l'arrêt
 
-🔑 `delivery_doorstep:write` — « Je suis arrivé ».
+🔑 aucun — pas de geste.
 
-🖥️ **Bouton** « Je suis arrivé » sur l'arrêt suivant seulement — ✅ bâti. Facultatif : remettre sans l'avoir déclaré est permis.
+🖥️ Ni écran ni bouton.
 
-- ✅ Lot A d'« À la porte » (2026-10-01) : l'heure d'arrivée
-  (`delivery_stop_execution.arrived_at`), écrite une seule fois.
-- ✅ La position du téléphone, quand il la donne, écrite avec l'arrivée (YA4,
-  bâti le 2026-10-06 : `declare-stop-arrival.handler.ts`,
-  `prisma-doorstep-stop.repository.ts`).
+- ❌ **Retiré le 2026-10-25, décision de Hugo** : « Je suis arrivé » existait
+  (lot A d'« À la porte », 2026-10-01) ; « cette étape ne sert à rien ». La
+  remise n'en dépendait pas. Bouton, route et champ `arrivedAt` de « Ma
+  tournée » sont partis ; `delivery_stop_execution.arrived_at` reste en base,
+  plus écrit ([`a-la-porte.md`](a-la-porte.md), bandeau du 2026-10-25).
 
 ### 8 · Sortir les bacs de cet arrêt
 
@@ -210,12 +209,12 @@ comme avant.
 
 ### 9 · À la porte
 
-🔑 `delivery_doorstep:write` — « Remis au client », « Déposé avec preuve », signaler un problème, clore sans remise. `delivery_doorstep:read` pour revoir la photo d'un signalement.
+🔑 `delivery_doorstep:write` — « Commande déposée », « Déposé avec preuve », signaler un problème, clore sans remise. `delivery_doorstep:read` pour revoir la photo d'un signalement.
 
-🖥️ **Boutons** sur l'arrêt — ✅ bâtis : « Remis au client » (photo et nom, signature si exigée), « Déposé avec preuve » (photo, quand le dépôt est permis), « Déclarer un problème » (formulaire avec photo), « Clore sans remise » (avec confirmation, quand la commande est déjà retirée ou annulée).
+🖥️ **Boutons** sur l'arrêt — ✅ bâtis : « Commande déposée » (photo et nom, signature si exigée), « Déposé avec preuve » (photo, quand le dépôt est permis), « Déclarer un problème » (formulaire avec photo), « Clore sans remise » (avec confirmation, quand la commande est déjà retirée ou annulée).
 
 - ✅ Lot A (2026-10-01) : « Déclarer un problème », « Clore sans remise ».
-- ✅ Lot B (2026-10-01) : « Remis au client » (B1), « Déposé avec preuve »
+- ✅ Lot B (2026-10-01) : « Commande déposée » (B1, « Remis au client » jusqu'au 2026-10-25), « Déposé avec preuve »
   (B2), la décision du commercial (B3) et la décision réglée d'avance (B3 bis).
 - ✅ **Le dépôt est permis** quand un commercial l'a autorisé pour cet arrêt,
   **ou** quand le client l'autorise à l'adresse et qu'aucune signature n'est

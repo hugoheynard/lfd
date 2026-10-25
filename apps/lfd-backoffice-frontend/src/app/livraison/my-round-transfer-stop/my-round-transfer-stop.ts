@@ -19,7 +19,7 @@ import { TransferLines } from '../transfer-lines/transfer-lines';
  * geste de l'arrêt, « Remis au site ». Aucun client, aucune adresse de client.
  *
  * Depuis le 2026-10-13 (décisions de Hugo) : le manifeste détaillé par
- * section, le nombre de bacs, l'adresse du site et « Y aller » — tout vient
+ * section, le nombre de bacs, l'adresse du site et « Aller à ce site » — tout vient
  * de la vue de « Ma tournée », lue sous le mur du livreur ; plus besoin de
  * `delivery_rounds:read`.
  *
@@ -45,7 +45,7 @@ export class MyRoundTransferStop {
   /** En route, et le droit tenu. */
   readonly gestures = input(false);
   readonly busy = input(false);
-  /** Le lien « Y aller » vers le site, ou `null` : au dépôt, ou site sans point ni adresse. */
+  /** Le lien « Aller à ce site », ou `null` : au dépôt, ou site sans point ni adresse. */
   readonly goTo = input<string | null>(null);
 
   readonly dropped = output<DriverTransferStopView>();

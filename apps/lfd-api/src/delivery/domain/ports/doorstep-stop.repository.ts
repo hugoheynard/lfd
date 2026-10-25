@@ -1,8 +1,9 @@
 import type { DoorstepStop } from "../entities/doorstep-stop.js";
 
 /**
- * Port d'**écriture** de l'arrêt à la porte (`a-la-porte.md`, AP-D6) —
- * l'exécution, jamais la tournée.
+ * L'arrêt à la porte (`a-la-porte.md`, AP-D6), chargé pour les gestes qui le
+ * closent — l'exécution, jamais la tournée. Il n'écrit plus rien depuis que
+ * « Je suis arrivé » est retiré (2026-10-25, décision de Hugo).
  */
 export abstract class DoorstepStopRepository {
   /**
@@ -15,10 +16,4 @@ export abstract class DoorstepStopRepository {
     stopId: string,
     staffUserId: string,
   ): Promise<DoorstepStop | null>;
-
-  /**
-   * Écrit l'arrivée — seulement si aucune n'est encore écrite : deux appareils
-   * qui arrivent ensemble gardent le premier instant, jamais le second.
-   */
-  abstract save(stop: DoorstepStop): Promise<void>;
 }

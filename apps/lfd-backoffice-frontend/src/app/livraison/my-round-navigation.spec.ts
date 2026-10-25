@@ -124,7 +124,7 @@ describe('routeLegs — les tronçons de « Toute la tournée »', () => {
   });
 });
 
-describe('goToHref — « Y aller »', () => {
+describe('goToHref — « Aller chez ce client »', () => {
   const gps = { gps: { lat: 45.5, lng: 6.9 }, address: null };
   const text = myStopOf({ gps: null });
   const encoded = encodeURIComponent('1 rue du Lac, 73320 Tignes');
@@ -181,7 +181,7 @@ describe('le stationnement (`gps-y-aller-et-position.md`, §6)', () => {
   const DOOR = { lat: 45.5651, lng: 5.9182 };
   const PARKING = { lat: 45.5641, lng: 5.9182 };
 
-  it('« Y aller » conduit au stationnement quand il est connu, sinon à la porte', () => {
+  it('« Aller chez ce client » conduit au stationnement quand il est connu, sinon à la porte', () => {
     expect(driveTargetOf(myStopOf({ gps: DOOR, parking: PARKING })).gps).toEqual(PARKING);
     expect(driveTargetOf(myStopOf({ gps: DOOR, parking: null })).gps).toEqual(DOOR);
     expect(goToHref('google', driveTargetOf(myStopOf({ gps: DOOR, parking: PARKING })))).toContain(
@@ -203,7 +203,7 @@ describe('le stationnement (`gps-y-aller-et-position.md`, §6)', () => {
   });
 });
 
-describe('transferTargetOf — « Y aller » vers le site d’un transfert', () => {
+describe('transferTargetOf — « Aller à ce site » vers le site d’un transfert', () => {
   const address = {
     label: 'Val Village',
     ligne1: 'Route du Village',

@@ -97,7 +97,6 @@ const FROZEN: DepartedStopRow = {
   parking: null,
   depositAllowed: false,
   doorstepRule: "ask",
-  arrivedAt: null,
 };
 
 function stopRow(orderId: string, overrides: Partial<RoundPaperStopRow> = {}): RoundPaperStopRow {

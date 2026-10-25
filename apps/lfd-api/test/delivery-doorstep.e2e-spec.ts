@@ -1,10 +1,10 @@
 /**
  * E2E **à la porte** (`documentation/livraisons/livreur/a-la-porte.md`, lot A) —
- * « Je suis arrivé », « Déclarer un problème », clore sans remise, le dépôt
+ * « Déclarer un problème », clore sans remise, le dépôt
  * autorisé figé et la règle de la signature, « Non remis ».
  *
  * Ce que seul le vrai SQL prouve : le mur du livreur dans le `where` de chaque
- * geste (404), l'arrivée écrite UNE fois, la clôture qui pose `closed_at` et
+ * geste (404), la clôture qui pose `closed_at` et
  * libère l'index des arrêts vivants, la photo rangée au bucket des pièces.
  */
 import type {
@@ -119,50 +119,7 @@ async function stopIdOf(orderId: string): Promise<string> {
   ).id;
 }
 
-describe("« Je suis arrivé » (AP-D6)", () => {
-  it("écrit l'instant une fois ; rejouée, 204 sans réécrire ; un fait au journal", async () => {
-    const paul = await staffWithRole(ctx, "livreur-paul");
-    const { roundId, orderIds } = await departedRound(paul, 1);
-    const stopId = await stopIdOf(orderIds[0] ?? "");
-
-    await paul.agent.post(`${MY_ROUND}/${roundId}/stops/${stopId}/arrival`).expect(204);
-    const first = await ctx.prisma.deliveryStopExecution.findUniqueOrThrow({
-      where: { stopId },
-      select: { arrivedAt: true },
-    });
-    await paul.agent.post(`${MY_ROUND}/${roundId}/stops/${stopId}/arrival`).expect(204);
-
-    const again = await ctx.prisma.deliveryStopExecution.findUniqueOrThrow({
-      where: { stopId },
-      select: { arrivedAt: true },
-    });
-    expect(first.arrivedAt).not.toBeNull();
-    expect(again.arrivedAt).toEqual(first.arrivedAt);
-    expect((await myRound(paul.agent, roundId)).stops[0]?.arrivedAt).toBe(
-      first.arrivedAt?.toISOString(),
-    );
-    expect(
-      await ctx.prisma.activityEvent.count({
-        where: { subjectId: roundId, type: "delivery_round.stop_arrived" },
-      }),
-    ).toBe(1);
-  });
-
-  it("🔴 le mur : un autre livreur prend 404, et rien ne s'écrit", async () => {
-    const paul = await staffWithRole(ctx, "livreur-paul");
-    const lea = await staffWithRole(ctx, "livreur-lea");
-    const { roundId, orderIds } = await departedRound(paul, 1);
-    const stopId = await stopIdOf(orderIds[0] ?? "");
-
-    await lea.agent.post(`${MY_ROUND}/${roundId}/stops/${stopId}/arrival`).expect(404);
-
-    const execution = await ctx.prisma.deliveryStopExecution.findUniqueOrThrow({
-      where: { stopId },
-      select: { arrivedAt: true },
-    });
-    expect(execution.arrivedAt).toBeNull();
-  });
-
+describe("le droit des gestes à la porte (AP-D9)", () => {
   /**
    * Depuis l'audit 2026-10-07 (B8), un conducteur sans les gestes à la porte
    * n'est plus affectable : le cas ne naît plus que d'un droit perdu en route.
@@ -184,7 +141,13 @@ describe("« Je suis arrivé » (AP-D6)", () => {
       })
       .expect(204);
 
-    await paul.agent.post(`${MY_ROUND}/${roundId}/stops/${stopId}/arrival`).expect(403);
+    await paul.agent
+      .post(`${MY_ROUND}/${roundId}/incidents`)
+      .field("family", "doorstep")
+      .field("reason", "nobody_present")
+      .field("stopId", stopId)
+      .expect(403);
+    expect(await ctx.prisma.deliveryIncident.count()).toBe(0);
   });
 });
 
@@ -503,7 +466,7 @@ describe("« Tournée terminée » (PL2)", () => {
     expect((await roundOf(ctx, DAY, roundId)).returnedAt).toBeNull();
   });
 
-  it("rentrée, elle refuse l'arrivée, le signalement et la clôture sans remise — en le disant", async () => {
+  it("rentrée, elle refuse le signalement et la clôture sans remise — en le disant", async () => {
     const paul = await staffWithRole(ctx, "livreur-paul");
     const { roundId, orderIds } = await departedRound(paul, 1);
     const stopId = await stopIdOf(orderIds[0] ?? "");
@@ -515,9 +478,6 @@ describe("« Tournée terminée » (PL2)", () => {
     await admin(ctx).post(`${ROUNDS}/${roundId}/return`).expect(204);
     const { version } = await myRound(paul.agent, roundId);
 
-    const arrival = await paul.agent
-      .post(`${MY_ROUND}/${roundId}/stops/${stopId}/arrival`)
-      .expect(409);
     const incident = await paul.agent
       .post(`${MY_ROUND}/${roundId}/incidents`)
       .field("family", "road")
@@ -528,7 +488,7 @@ describe("« Tournée terminée » (PL2)", () => {
       .send({ version })
       .expect(409);
 
-    for (const refused of [arrival, incident, closing]) {
+    for (const refused of [incident, closing]) {
       expect(messageOf(refused)).toContain("Cette tournée est terminée");
     }
     expect(await ctx.prisma.deliveryIncident.count()).toBe(0);

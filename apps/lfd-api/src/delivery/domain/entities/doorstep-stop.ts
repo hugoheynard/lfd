@@ -1,14 +1,10 @@
 import type { StopDecisionState } from "@lfd/contracts";
 
 import {
-  DeliveryRoundReturnedError,
   DepositNotAllowedError,
   DepositSignatureRequiredError,
-  DoorstepRoundNotDepartedError,
-  DoorstepStopClosedError,
 } from "../errors/delivery-doorstep-errors.js";
 import { depositPermitted } from "../services/deposit-rule.js";
-import type { GesturePosition } from "../value-objects/gesture-position.js";
 
 /** La tournée d'un arrêt, telle que le journal la cite : véhicule, jour, passage. */
 export interface DoorstepRoundKey {
@@ -31,7 +27,6 @@ export interface DoorstepStopState {
   readonly reference: string;
   /** Clos par la tournée (`closeStop`), ou `null`. */
   readonly closedAt: Date | null;
-  readonly arrivedAt: Date | null;
   /**
    * La signature exigée, FIGÉE au départ (`a-la-porte.md`, AP-D4) ;
    * `false` au dépôt — aucune exécution n'existe encore.
@@ -51,20 +46,14 @@ export interface DoorstepStopState {
 
 /**
  * **Un arrêt, à la porte** (`documentation/livraisons/livreur/a-la-porte.md`,
- * AP-D6) — l'EXÉCUTION de l'arrêt, pas la tournée : `arrived_at` vit dans
- * `delivery_stop_execution`, que la tournée n'écrit jamais.
+ * AP-D6) — l'EXÉCUTION de l'arrêt, lue sous le mur du livreur.
  *
- * Il ne mute que l'arrivée. La clôture appartient à la tournée
+ * Il ne mute rien : « Je suis arrivé », son seul geste, est retiré le
+ * 2026-10-25 (décision de Hugo). La clôture appartient à la tournée
  * (`DeliveryRound.closeStop`) : ici, `closedAt` est lu, jamais écrit.
  */
 export class DoorstepStop {
-  private currentArrivedAt: Date | null;
-  /** La position relevée à CETTE arrivée ; jamais réhydratée (YA-D4). */
-  private currentArrivalPosition: GesturePosition | null = null;
-
-  private constructor(private readonly state: DoorstepStopState) {
-    this.currentArrivedAt = state.arrivedAt;
-  }
+  private constructor(private readonly state: DoorstepStopState) {}
 
   static restore(state: DoorstepStopState): DoorstepStop {
     return new DoorstepStop(state);
@@ -93,44 +82,6 @@ export class DoorstepStop {
   /** Le numéro figé au départ, ou l'id nu sans instantané — tel que le livreur le lit. */
   get label(): string {
     return this.state.reference === "" ? this.state.orderId : this.state.reference;
-  }
-
-  get arrivedAt(): Date | null {
-    return this.currentArrivedAt;
-  }
-
-  /** La position du téléphone à l'arrivée déclarée par ce geste, ou `null`. */
-  get arrivalPosition(): GesturePosition | null {
-    return this.currentArrivalPosition;
-  }
-
-  /**
-   * **« Je suis arrivé »** — une fois par arrêt. Une seconde arrivée (un
-   * nouvel essai après une perte de réseau) rend `false` et ne réécrit rien :
-   * le premier instant fait foi — et sa position, facultative (YA-D4), avec
-   * lui. Vérifiée AVANT la clôture : un arrêt arrivé
-   * puis clos répond encore « déjà fait » à qui rejoue son arrivée.
-   *
-   * @throws {DoorstepRoundNotDepartedError} la tournée est au dépôt.
-   * @throws {DeliveryRoundReturnedError} elle est rentrée (PL2).
-   * @throws {DoorstepStopClosedError} l'arrêt est clos sans arrivée déclarée.
-   */
-  arrive(at: Date, position: GesturePosition | null = null): boolean {
-    if (this.currentArrivedAt !== null) {
-      return false;
-    }
-    if (this.state.departedAt === null) {
-      throw new DoorstepRoundNotDepartedError();
-    }
-    if (this.state.returnedAt !== null) {
-      throw new DeliveryRoundReturnedError();
-    }
-    if (this.state.closedAt !== null) {
-      throw new DoorstepStopClosedError();
-    }
-    this.currentArrivedAt = at;
-    this.currentArrivalPosition = position;
-    return true;
   }
 
   /** Un commercial a décidé de rapporter cette commande (B3, LB-Q2). */

@@ -6,8 +6,8 @@
  * - YA3 : un geste qui clôt un arrêt pose `closed_at`, et « Ma tournée » le
  *   relit — l'arrêt suivant devient le premier restant, celui que « Y aller »
  *   vise (`remainingStops` côté écran filtre ce `closedAt`) ;
- * - la position facultative arrive en base avec le geste (arrivée, remise,
- *   clôture sans remise), le CHECK l'accepte, et son absence n'empêche rien ;
+ * - la position facultative arrive en base avec le geste (remise, clôture
+ *   sans remise), le CHECK l'accepte, et son absence n'empêche rien ;
  * - la purge efface les COLONNES à 60 jours, garde la ligne, et sa route est
  *   fermée sans jeton machine ;
  * - la v2 du texte d'information rouvre le dialogue d'un livreur qui avait
@@ -131,29 +131,6 @@ describe("YA-D4 — la position au geste", () => {
 
     expect((await closedPosition(stopId)).closedAt).toBeNull();
   });
-
-  it("« Je suis arrivé » avec position, puis sans corps : la première fait foi", async () => {
-    const paul = await staffWithRole(ctx, "livreur-paul");
-    const { roundId, stops } = await departedStops(ctx, paul, 1);
-    const stopId = stops[0]?.stopId ?? "";
-
-    await paul.agent
-      .post(`${MY_ROUND}/${roundId}/stops/${stopId}/arrival`)
-      .send(AT_DOOR)
-      .expect(204);
-    await paul.agent.post(`${MY_ROUND}/${roundId}/stops/${stopId}/arrival`).expect(204);
-
-    const execution = await ctx.prisma.deliveryStopExecution.findUniqueOrThrow({
-      where: { stopId },
-      select: { arrivedAt: true, arrivedLat: true, arrivedLng: true, arrivedAccuracyM: true },
-    });
-    expect(execution.arrivedAt).not.toBeNull();
-    expect(execution).toMatchObject({
-      arrivedLat: 45.4612,
-      arrivedLng: 6.9031,
-      arrivedAccuracyM: 14,
-    });
-  });
 });
 
 describe("la purge des positions à 60 jours", () => {
@@ -166,10 +143,6 @@ describe("la purge des positions à 60 jours", () => {
     const { roundId, stops } = await departedStops(ctx, paul, 2);
     const [old = { stopId: "" }, recent = { stopId: "" }] = stops;
     for (const stop of [old, recent]) {
-      await paul.agent
-        .post(`${MY_ROUND}/${roundId}/stops/${stop.stopId}/arrival`)
-        .send(AT_DOOR)
-        .expect(204);
       expect((await handOver(paul, roundId, stop.stopId, AT_DOOR)).status).toBe(204);
     }
     // Le temps ne se rejoue pas par un geste : on vieillit les deux relevés.
@@ -184,7 +157,15 @@ describe("la purge des positions à 60 jours", () => {
       });
       await ctx.prisma.deliveryStopExecution.update({
         where: { stopId: stop.stopId },
-        data: { arrivedAt: at },
+        // Aucun geste n'écrit plus l'arrivée depuis le retrait de « Je suis
+        // arrivé » (2026-10-25) ; ses relevés passés restent en base, et la
+        // purge doit encore les effacer.
+        data: {
+          arrivedAt: at,
+          arrivedLat: AT_DOOR.positionLat,
+          arrivedLng: AT_DOOR.positionLng,
+          arrivedAccuracyM: AT_DOOR.positionAccuracyM,
+        },
       });
     }
 

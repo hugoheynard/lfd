@@ -218,7 +218,7 @@
                   </button>
                 } @else if (rolling()) {
                   <fold-view-toggle
-                    ariaLabel="Application pour « Y aller »"
+                    ariaLabel="Application pour aller chez le client ou au site"
                     [options]="appOptions"
                     [value]="app()"
                     (valueChange)="pickApp($event)"
@@ -294,10 +294,8 @@
                       [category]="categories().get(entry.stop.stopId) ?? null"
                       [goTo]="goToOf(entry.stop)"
                       [gestures]="gestures()"
-                      [next]="entry.stop.stopId === nextStop()?.stopId"
                       [busy]="busy()"
                       [version]="round.version"
-                      (arrive)="arrive(entry.stop)"
                       (closeWithoutHandover)="closeWithoutHandover(entry.stop)"
                       (reported)="retryRound()"
                       (handedOver)="retryRound()"

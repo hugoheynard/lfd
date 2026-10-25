@@ -12,8 +12,8 @@ import { DepartedStopRepository } from "../domain/ports/departed-stop.repository
  *
  * Depuis le 2026-10-01, il fige aussi le rang de passage et le point GPS du
  * carnet (plan « Ma tournée », MT-D5 v2), et « dépôt autorisé » (plan « À la
- * porte », AP-D5), et la décision réglée d'avance résolue (B3 bis). Il n'écrit JAMAIS `arrived_at` : c'est la porte
- * (`PrismaStopArrivalRepository`) qui l'écrit, une fois.
+ * porte », AP-D5), et la décision réglée d'avance résolue (B3 bis). Il n'écrit JAMAIS `arrived_at` : c'était
+ * « Je suis arrivé », retiré le 2026-10-25 (décision de Hugo) — la colonne reste, plus écrite.
  *
  * `DbNull` et non `JsonNull` : une commande sans adresse, sans contact ou sans
  * fenêtre n'en a PAS — ce n'est pas un `null` JSON stocké.

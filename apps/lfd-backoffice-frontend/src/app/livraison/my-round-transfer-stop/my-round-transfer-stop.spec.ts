@@ -7,7 +7,7 @@ import { MyRoundTransferStop } from './my-round-transfer-stop';
 
 /**
  * L'arrêt de transfert de « Ma tournée » : ce qu'on décharge — par section —,
- * les bacs, l'adresse du site, « Y aller », et « Remis au site » seulement en
+ * les bacs, l'adresse du site, « Aller à ce site », et « Remis au site » seulement en
  * route et sur un arrêt encore ouvert.
  */
 
@@ -85,7 +85,7 @@ describe('MyRoundTransferStop', () => {
     expect(none.querySelector('[data-transfer-address]')).toBeNull();
   });
 
-  it('« Y aller » mène au site quand le lien est donné', async () => {
+  it('« Aller à ce site » mène au site quand le lien est donné', async () => {
     const href = 'https://www.google.com/maps/dir/?api=1&destination=45.45,6.98';
     const link = (await render(STOP, true, href)).querySelector('[data-go-to]');
     expect(link?.getAttribute('href')).toBe(href);

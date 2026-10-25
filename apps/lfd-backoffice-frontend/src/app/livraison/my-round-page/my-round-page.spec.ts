@@ -138,10 +138,6 @@ async function boot(
             return Promise.resolve();
           },
           stepPhoto: (): Promise<Blob> => Promise.resolve(new Blob(['x'])),
-          arrive: (id: string, stopId: string, position: unknown): Promise<void> =>
-            gesture(
-              `arrive ${id} ${stopId}${position === null ? '' : ` ${JSON.stringify(position)}`}`,
-            ),
           closeWithoutHandover: (id: string, stopId: string, payload: unknown): Promise<void> =>
             gesture(`close ${id} ${stopId} ${JSON.stringify(payload)}`),
           returnToDepot: (id: string): Promise<void> => gesture(`return ${id}`),
@@ -187,6 +183,20 @@ function click(element: Element, selector: string): void {
     throw new Error(`introuvable : ${selector}`);
   }
   found.click();
+}
+
+/** « Clore sans remise » sur le premier arrêt, confirmé dans la carte. */
+async function closeFirstStop(
+  fixture: ComponentFixture<MyRoundPage>,
+  element: Element,
+): Promise<void> {
+  const card = element.querySelectorAll('[data-my-stop]')[0];
+  card?.querySelector<HTMLElement>('[data-close-without]')?.click();
+  await settle(fixture);
+  [...(card?.querySelectorAll<HTMLButtonElement>('button') ?? [])]
+    .find((button) => button.textContent?.trim() === 'Clore')
+    ?.click();
+  await settle(fixture);
 }
 
 beforeEach(() => {
@@ -296,7 +306,7 @@ describe('MyRoundPage — au dépôt', () => {
 describe('MyRoundPage — partie', () => {
   const departedAt = '2026-10-01T05:42:00.000Z';
 
-  it('« Toute la tournée » par tronçons, « Y aller » sur chaque arrêt restant', async () => {
+  it('« Toute la tournée » par tronçons, « Aller chez ce client » sur chaque arrêt restant', async () => {
     const stops = Array.from({ length: 7 }, (_, index) =>
       myStopOf({ rank: index + 1, gps: { lat: 45, lng: index + 1 } }),
     );
@@ -315,7 +325,7 @@ describe('MyRoundPage — partie', () => {
     );
   });
 
-  it('§6 : un stationnement au carnet — « Y aller » y conduit, la carte le marque « P » et finit à pied', async () => {
+  it('§6 : un stationnement au carnet — « Aller chez ce client » y conduit, la carte le marque « P » et finit à pied', async () => {
     const stop = myStopOf({
       rank: 1,
       gps: { lat: 45.5651, lng: 5.9182 },
@@ -340,7 +350,7 @@ describe('MyRoundPage — partie', () => {
     expect(element.querySelector('[data-walk-to-door]')).toBeNull();
   });
 
-  it('mémorise l’application choisie pour « Y aller »', async () => {
+  it('mémorise l’application choisie pour « Aller chez ce client »', async () => {
     localStorage.setItem(NAVIGATION_APP_KEY, 'waze');
     const { element } = await boot({ round: myRoundOf({ departedAt }) });
     expect(element.querySelector('[data-go-to]')?.getAttribute('href')).toMatch(
@@ -434,7 +444,6 @@ describe('MyRoundPage — à la porte (lot A, PL2)', () => {
     const { element } = await boot();
     expect(element.querySelector('[data-report-round]')).toBeNull();
     expect(element.querySelector('[data-return]')).toBeNull();
-    expect(element.querySelector('[data-arrive]')).toBeNull();
     expect(element.querySelector('[data-report-stop]')).toBeNull();
   });
 
@@ -446,32 +455,23 @@ describe('MyRoundPage — à la porte (lot A, PL2)', () => {
     expect(element.querySelector('[data-go-to]')).not.toBeNull();
     expect(element.querySelector('[data-report-round]')).toBeNull();
     expect(element.querySelector('[data-return]')).toBeNull();
-    expect(element.querySelector('[data-arrive]')).toBeNull();
     expect(element.querySelector('[data-report-stop]')).toBeNull();
     expect(element.querySelector('[data-hand-over]')).toBeNull();
   });
 
-  it('« Je suis arrivé » sur l’arrêt suivant seulement, puis relit et affiche l’heure', async () => {
-    const arrived = myRoundOf({
-      departedAt,
-      stops: [myStopOf({ rank: 1, arrivedAt: '2026-10-01T06:05:00.000Z' }), myStopOf({ rank: 2 })],
-    });
-    const { fixture, element } = await boot({
-      round: myRoundOf({ departedAt }),
-      afterGesture: arrived,
-    });
-    const buttons = element.querySelectorAll('[data-arrive]');
-    expect(buttons).toHaveLength(1);
-    expect(
-      element.querySelectorAll('[data-my-stop]')[0]?.querySelector('[data-arrive]'),
-    ).not.toBeNull();
+  /**
+   * « Je suis arrivé » est retiré le 2026-10-25 (décision de Hugo : « cette
+   * étape ne sert à rien ») ; « Y aller » et « Remis au client » sont renommés.
+   */
+  it('partie : « Aller chez ce client » et « Commande déposée », plus de « Je suis arrivé »', async () => {
+    const { element } = await boot({ round: myRoundOf({ departedAt }) });
+    const first = element.querySelectorAll('[data-my-stop]')[0];
 
-    click(element, '[data-arrive]');
-    await settle(fixture);
-    expect(wire.calls.slice(-2)).toEqual(['arrive r-1 s-1', 'round r-1']);
-    expect(element.querySelector('[data-arrived]')?.textContent).toContain('Arrivé à 8 h 05');
-    // Une fois : l'arrêt arrivé ne le propose plus.
+    expect(first?.querySelector('[data-go-to]')?.textContent?.trim()).toBe('Aller chez ce client');
+    expect(first?.querySelector('[data-hand-over]')?.textContent?.trim()).toBe('Commande déposée');
     expect(element.querySelector('[data-arrive]')).toBeNull();
+    expect(element.querySelector('[data-arrived]')).toBeNull();
+    expect(element.textContent).not.toContain('Je suis arrivé');
   });
 
   it('« Clore sans remise » n’existe que pour une commande retirée ou annulée, et envoie la version lue', async () => {
@@ -581,7 +581,7 @@ describe('MyRoundPage — à la porte (lot A, PL2)', () => {
     expect(atDepot.element.querySelector('[data-deposit]')).toBeNull();
   });
 
-  it('« Remis au client » : seulement sur une commande à remettre, et ouvre la remise (B1)', async () => {
+  it('« Commande déposée » : seulement sur une commande à remettre, et ouvre la remise (B1)', async () => {
     const { fixture, element } = await boot({
       round: myRoundOf({
         departedAt,
@@ -597,7 +597,7 @@ describe('MyRoundPage — à la porte (lot A, PL2)', () => {
     expect(cards[0]?.querySelector('[data-handover-form]')).not.toBeNull();
   });
 
-  it('au dépôt, ou tournée rentrée, « Remis au client » n’est pas offert', async () => {
+  it('au dépôt, ou tournée rentrée, « Commande déposée » n’est pas offert', async () => {
     const atDepot = await boot({ round: myRoundOf({ departedAt: null }) });
     expect(atDepot.element.querySelector('[data-hand-over]')).toBeNull();
     const returned = await boot({
@@ -609,11 +609,10 @@ describe('MyRoundPage — à la porte (lot A, PL2)', () => {
   it('un refus du serveur s’affiche tel quel', async () => {
     const message = 'Cette tournée est rentrée : plus aucun geste n’est accepté.';
     const { fixture, element } = await boot({
-      round: myRoundOf({ departedAt }),
+      round: myRoundOf({ departedAt, stops: [myStopOf({ rank: 1, orderState: 'cancelled' })] }),
       refuse: new HttpErrorResponse({ status: 409, error: { message } }),
     });
-    click(element, '[data-arrive]');
-    await settle(fixture);
+    await closeFirstStop(fixture, element);
     expect(element.querySelector('[data-refusal]')?.textContent?.trim()).toBe(message);
   });
 
@@ -665,7 +664,6 @@ describe('MyRoundPage — à la porte (lot A, PL2)', () => {
     );
     expect(element.querySelector('[data-return]')).toBeNull();
     expect(element.querySelector('[data-report-round]')).toBeNull();
-    expect(element.querySelector('[data-arrive]')).toBeNull();
     expect(element.querySelector('[data-report-stop]')).toBeNull();
     expect(element.querySelector('[data-go-to]')).toBeNull();
   });
@@ -813,7 +811,7 @@ describe('MyRoundPage — YA3 : un arrêt clos sort des liens, de bout en bout',
    * c'est son `closedAt` — posé par le serveur — qui retire l'arrêt de « Y
    * aller » et de « Toute la tournée ». Rien n'est mémorisé dans le téléphone.
    */
-  it('clore le premier arrêt : « Y aller » vise le suivant, les tronçons ne le portent plus', async () => {
+  it('clore le premier arrêt : « Aller chez ce client » vise le suivant, les tronçons ne le portent plus', async () => {
     const first = myStopOf({ rank: 1, orderState: 'cancelled' });
     const second = myStopOf({ rank: 2 });
     const { fixture, element } = await boot({
@@ -850,27 +848,28 @@ describe('MyRoundPage — YA3 : un arrêt clos sort des liens, de bout en bout',
 describe('MyRoundPage — la position au geste (YA-D4)', () => {
   const departedAt = '2026-10-01T06:00:00.000Z';
 
-  it('« Je suis arrivé » envoie la position relevée au geste, sans mention', async () => {
-    const { fixture, element } = await boot({ round: myRoundOf({ departedAt }) });
+  const cancelled = (): ReturnType<typeof myRoundOf> =>
+    myRoundOf({ departedAt, stops: [myStopOf({ rank: 1, orderState: 'cancelled' })] });
+
+  it('« Clore sans remise » envoie la position relevée au geste, sans mention', async () => {
+    const { fixture, element } = await boot({ round: cancelled() });
     TestBed.inject(GesturePositionReader).source = fixedGeolocation(45.46, 6.9, 12);
 
-    click(element, '[data-arrive]');
-    await settle(fixture);
+    await closeFirstStop(fixture, element);
 
     expect(wire.calls).toContain(
-      'arrive r-1 s-1 {"positionLat":45.46,"positionLng":6.9,"positionAccuracyM":12}',
+      'close r-1 s-1 {"version":3,"positionLat":45.46,"positionLng":6.9,"positionAccuracyM":12}',
     );
     expect(element.querySelector('[data-position-unavailable]')).toBeNull();
   });
 
   it('position refusée : le geste part quand même, et l’écran dit « position indisponible »', async () => {
-    const { fixture, element } = await boot({ round: myRoundOf({ departedAt }) });
+    const { fixture, element } = await boot({ round: cancelled() });
     TestBed.inject(GesturePositionReader).source = refusingGeolocation();
 
-    click(element, '[data-arrive]');
-    await settle(fixture);
+    await closeFirstStop(fixture, element);
 
-    expect(wire.calls).toContain('arrive r-1 s-1');
+    expect(wire.calls).toContain('close r-1 s-1 {"version":3}');
     expect(element.querySelector('[data-position-unavailable]')?.textContent).toContain(
       'Position indisponible',
     );

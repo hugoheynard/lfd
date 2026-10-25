@@ -1,17 +1,11 @@
 import { DoorstepStop, type DoorstepStopState } from "../doorstep-stop.js";
 import {
-  DeliveryRoundReturnedError,
   DepositNotAllowedError,
   DepositSignatureRequiredError,
-  DoorstepRoundNotDepartedError,
-  DoorstepStopClosedError,
 } from "../../errors/delivery-doorstep-errors.js";
-import { GesturePosition } from "../../value-objects/gesture-position.js";
 
-// Des instants comparés entre eux seulement, jamais à l'horloge.
+// Un instant de départ qui n'est comparé à rien.
 const DEPARTED = new Date(1_000);
-const ARRIVED = new Date(2_000);
-const LATER = new Date(3_000);
 
 function stop(overrides: Partial<DoorstepStopState> = {}): DoorstepStop {
   return DoorstepStop.restore({
@@ -22,65 +16,12 @@ function stop(overrides: Partial<DoorstepStopState> = {}): DoorstepStop {
     returnedAt: null,
     reference: "ORD-1",
     closedAt: null,
-    arrivedAt: null,
     signatureRequired: false,
     depositAllowed: false,
     decision: null,
     ...overrides,
   });
 }
-
-describe("DoorstepStop.arrive — « Je suis arrivé » (AP-D6)", () => {
-  it("pose l'instant d'arrivée, une fois", () => {
-    const door = stop();
-
-    expect(door.arrive(ARRIVED)).toBe(true);
-    expect(door.arrivedAt).toBe(ARRIVED);
-  });
-
-  it("porte la position du téléphone avec l'arrivée, et rien sans relevé (YA-D4)", () => {
-    const position = GesturePosition.take({ lat: 45.46, lng: 6.9, accuracyM: 8 });
-    const door = stop();
-    expect(door.arrive(ARRIVED, position)).toBe(true);
-    expect(door.arrivalPosition).toBe(position);
-
-    const blind = stop();
-    blind.arrive(ARRIVED);
-    expect(blind.arrivalPosition).toBeNull();
-  });
-
-  it("une seconde arrivée ne garde pas sa position : le premier relevé fait foi", () => {
-    const door = stop({ arrivedAt: ARRIVED });
-
-    expect(door.arrive(LATER, GesturePosition.take({ lat: 1, lng: 1, accuracyM: 1 }))).toBe(false);
-    expect(door.arrivalPosition).toBeNull();
-  });
-
-  it("une seconde arrivée ne réécrit rien : le premier instant fait foi", () => {
-    const door = stop({ arrivedAt: ARRIVED });
-
-    expect(door.arrive(LATER)).toBe(false);
-    expect(door.arrivedAt).toBe(ARRIVED);
-  });
-
-  it("rejouée sur un arrêt arrivé PUIS clos, elle répond encore « déjà fait »", () => {
-    const door = stop({ arrivedAt: ARRIVED, closedAt: LATER });
-
-    expect(door.arrive(LATER)).toBe(false);
-  });
-
-  it("refuse une tournée encore au dépôt", () => {
-    expect(() => stop({ departedAt: null }).arrive(ARRIVED)).toThrow(DoorstepRoundNotDepartedError);
-  });
-
-  it("refuse une tournée rentrée (PL2)", () => {
-    expect(() => stop({ returnedAt: LATER }).arrive(ARRIVED)).toThrow(DeliveryRoundReturnedError);
-  });
-
-  it("refuse un arrêt clos sans arrivée déclarée", () => {
-    expect(() => stop({ closedAt: LATER }).arrive(ARRIVED)).toThrow(DoorstepStopClosedError);
-  });
-});
 
 describe("DoorstepStop.ensureDepositPermitted — « Déposé avec preuve » (B2, AP-Q6)", () => {
   it("permis quand le dépôt est autorisé au départ et qu'aucune signature n'est exigée", () => {

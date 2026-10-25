@@ -26,9 +26,6 @@
       @if (decision(); as decided) {
         <fold-badge [variant]="decided.variant" [content]="decided.label" data-decision />
       }
-      @if (arrivedLabel(); as arrived) {
-        <fold-badge variant="success" [content]="arrived" data-arrived />
-      }
       @if (closeLabel(); as state) {
         <fold-badge variant="warning" [content]="state" data-order-state />
       }
@@ -137,25 +134,11 @@
         rel="noopener"
         data-go-to
       >
-        Y aller
+        Aller chez ce client
       </a>
     }
 
     @if (gestures()) {
-      @if (next() && item.arrivedAt === null) {
-        <button
-          foldButton
-          block
-          size="lg"
-          icon="map-pin"
-          [loading]="busy()"
-          [disabled]="busy()"
-          (click)="arrive.emit()"
-          data-arrive
-        >
-          Je suis arrivé
-        </button>
-      }
       @if (canHandOver()) {
         @if (handingOver()) {
           <app-handover-form
@@ -184,7 +167,7 @@
             (click)="handingOver.set(true)"
             data-hand-over
           >
-            Remis au client
+            Commande déposée
           </button>
           @if (item.canDeposit) {
             <button

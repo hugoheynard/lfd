@@ -20,7 +20,7 @@ function browserGeolocation(): GeolocationSource {
 
 /**
  * **La position du téléphone AU GESTE** (`documentation/livraisons/livreur/gps-y-aller-et-position.md`,
- * YA-D4) — « Je suis arrivé », « Remis au client », « Déposé avec preuve »,
+ * YA-D4) — « Commande déposée », « Déposé avec preuve »,
  * « Clore sans remise ». Un relevé ponctuel (`getCurrentPosition`), JAMAIS
  * `watchPosition` : rien n'est lu entre deux gestes.
  *

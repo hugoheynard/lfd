@@ -44,7 +44,6 @@ function frozen(rank: number | null, overrides: Partial<DepartedStopRow> = {}): 
     depositAllowed: false,
     doorstepRule: "ask",
     parking: null,
-    arrivedAt: null,
     ...overrides,
   };
 }
@@ -204,8 +203,8 @@ describe("myDeliveryRoundView — la vue du livreur (MT-D5 v2)", () => {
       [
         "address",
         "addressNote",
-        // Plan « À la porte », lot A : décidés, pas commodes (AP-D5, AP-D6, AP-Q6, AP-D2).
-        "arrivedAt",
+        // Plan « À la porte », lot A : décidés, pas commodes (AP-D5, AP-Q6, AP-D2) ;
+        // `arrivedAt` est retiré le 2026-10-25 avec « Je suis arrivé » (décision de Hugo).
         "bins",
         // « Ma tournée » suit le colisage (PL4) : la fiche sans montant, l'avancement.
         "binsDeclared",
@@ -256,7 +255,7 @@ describe("myDeliveryRoundView — la vue du livreur (MT-D5 v2)", () => {
 });
 
 describe("myDeliveryRoundView — à la porte (plan « À la porte », lot A)", () => {
-  const ARRIVED = new Date(60_000);
+  const REPORTED = new Date(60_000);
 
   it("🔴 signature exigée ⇒ jamais de dépôt, même si l'adresse l'autorise (AP-Q6)", () => {
     const view = myDeliveryRoundView(
@@ -351,18 +350,14 @@ describe("myDeliveryRoundView — à la porte (plan « À la porte », lot A)", 
     expect(view.stops[0]).toMatchObject({
       depositAllowed: true,
       canDeposit: true,
-      arrivedAt: null,
     });
   });
 
-  it("porte l'arrivée figée, l'état de la commande lu au commerce, et les signalements", () => {
+  it("porte l'état de la commande lu au commerce, et les signalements", () => {
     const view = myDeliveryRoundView(
       inputs({
         round: round(
-          [
-            stop("a", 1, { departed: frozen(1, { arrivedAt: ARRIVED }) }),
-            stop("b", 2, { departed: frozen(2) }),
-          ],
+          [stop("a", 1, { departed: frozen(1) }), stop("b", 2, { departed: frozen(2) })],
           AT,
         ),
         orderStates: new Map([["o_a", "handed_over"]]),
@@ -376,7 +371,7 @@ describe("myDeliveryRoundView — à la porte (plan « À la porte », lot A)", 
             reason: "nobody_present",
             note: "",
             hasPhoto: false,
-            reportedAt: ARRIVED,
+            reportedAt: REPORTED,
             reportedBy: "staff_paul",
             reportedByName: "",
           },
@@ -384,10 +379,8 @@ describe("myDeliveryRoundView — à la porte (plan « À la porte », lot A)", 
       }),
     );
 
-    expect(view.stops.map((s) => [s.arrivedAt, s.orderState])).toEqual([
-      [ARRIVED.toISOString(), "handed_over"],
-      [null, "open"],
-    ]);
+    expect(view.stops.map((s) => s.orderState)).toEqual(["handed_over", "open"]);
+    expect(view.stops[0]).not.toHaveProperty("arrivedAt");
     expect(view.incidents).toEqual([
       expect.objectContaining({
         id: "inc_1",

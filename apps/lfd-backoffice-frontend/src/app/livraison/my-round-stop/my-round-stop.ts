@@ -12,7 +12,6 @@ import {
   FoldLinkComponent,
 } from 'fold-ng';
 
-import { parisTimeOf } from '../delivery-loading';
 import { closeWithoutHandoverLabel } from '../delivery-incidents';
 import { MissingItems } from '../../handover-shop/missing-items/missing-items';
 import { DepositForm } from '../deposit-form/deposit-form';
@@ -50,10 +49,10 @@ import { LogisticsSwatch } from '../../shared/logistics-colors/logistics-swatch/
  * Les photos de procédure se lisent par la route de « ma tournée », murée à
  * ses arrêts : celle de la fiche client lui est fermée.
  *
- * **À la porte** (`a-la-porte.md`, lot A) : « Je suis arrivé » sur
- * l'arrêt suivant, « Déclarer un problème », et « Clore sans remise » quand le
- * commerce dit la commande déjà retirée ou annulée. **« Remis au client »**
- * (lot B, B1) : sur un arrêt ouvert dont la commande reste à remettre — la
+ * **À la porte** (`a-la-porte.md`, lot A) : « Déclarer un problème », et
+ * « Clore sans remise » quand le commerce dit la commande déjà retirée ou
+ * annulée (« Je suis arrivé » est retiré le 2026-10-25, décision de Hugo).
+ * **« Commande déposée »** (lot B, B1 ; « Remis au client » jusqu'au 2026-10-25) : sur un arrêt ouvert dont la commande reste à remettre — la
  * photo, le nom, la signature si l'arrêt l'exige. **« Déposé avec preuve »**
  * (B2) : au même endroit, seulement si `canDeposit` (dépôt autorisé figé au
  * départ, et aucune signature exigée — la règle est celle du serveur, lue
@@ -89,18 +88,15 @@ export class MyRoundStop {
   readonly stop = input.required<MyDeliveryStopView>();
   /** La catégorie de l'arrêt, lue à l'affichage (L1b) ; `null` : aucune pastille. */
   readonly category = input<LogisticsCategory | null>(null);
-  /** Le lien « Y aller », ou `null` : tournée au dépôt, ou arrêt sans point ni adresse. */
+  /** Le lien « Aller chez ce client », ou `null` : tournée au dépôt, ou arrêt sans point ni adresse. */
   readonly goTo = input<string | null>(null);
   /** Les gestes à la porte sont offerts : droit tenu, tournée partie et non rentrée. */
   readonly gestures = input(false);
-  /** L'arrêt suivant — le seul où l'on déclare son arrivée. */
-  readonly next = input(false);
   /** Une écriture de la page est en vol. */
   readonly busy = input(false);
   /** La version de la tournée lue par la page — la remise la présente. */
   readonly version = input(0);
 
-  readonly arrive = output();
   readonly closeWithoutHandover = output();
   /** Un signalement vient d'être enregistré : la page relit la tournée. */
   readonly reported = output();
@@ -111,7 +107,7 @@ export class MyRoundStop {
   protected readonly reporting = signal(false);
   protected readonly handingOver = signal(false);
   protected readonly depositing = signal(false);
-  /** « Remis au client » : l'arrêt est ouvert, et la commande reste à remettre. */
+  /** « Commande déposée » : l'arrêt est ouvert, et la commande reste à remettre. */
   protected readonly canHandOver = computed(
     () => this.stop().closedAt === null && this.stop().orderState === 'open',
   );
@@ -137,10 +133,6 @@ export class MyRoundStop {
   protected readonly expectedBins = computed(() => expectedBinsLabelOf(this.stop()));
   protected readonly packing = computed(() => packingBadgeOf(this.stop().packing));
   protected readonly sheetSummary = computed(() => sheetSummaryOf(this.stop().sheet));
-  protected readonly arrivedLabel = computed(() => {
-    const arrivedAt = this.stop().arrivedAt;
-    return arrivedAt === null ? null : `Arrivé à ${parisTimeOf(arrivedAt)}`;
-  });
   /** La décision du commercial (B3) — « Autorisé : déposer », « Rapporté » —, ou `null`. */
   protected readonly decision = computed(() => decisionBadgeOf(this.stop().decision));
   /** « Déjà retirée au comptoir », « Annulée » — ou `null` : le geste n'existe pas. */

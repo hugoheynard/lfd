@@ -23,7 +23,6 @@ import {
   DriverRoundsReader,
   type DriverRoundSummaryRow,
 } from "../../../domain/ports/driver-rounds.reader.js";
-import type { GesturePosition } from "../../../domain/value-objects/gesture-position.js";
 
 /**
  * Les doubles de la porte (`a-la-porte.md`, lot A) — chacun hérite de son
@@ -32,9 +31,6 @@ import type { GesturePosition } from "../../../domain/value-objects/gesture-posi
 
 /** Des arrêts « en base », sous le mur : un arrêt n'existe que pour le livreur de sa tournée. */
 export class InMemoryDoorstepStops extends DoorstepStopRepository {
-  readonly saves: string[] = [];
-  /** La position écrite avec l'arrivée, comme l'adaptateur (YA-D4). */
-  readonly arrivalPositions = new Map<string, GesturePosition | null>();
   private readonly rows = new Map<string, { state: DoorstepStopState; driver: string }>();
 
   constructor(driver: string, ...states: readonly DoorstepStopState[]) {
@@ -53,20 +49,6 @@ export class InMemoryDoorstepStops extends DoorstepStopRepository {
     const mine =
       row !== undefined && row.driver === staffUserId && row.state.round.roundId === roundId;
     return Promise.resolve(mine ? DoorstepStop.restore(row.state) : null);
-  }
-
-  save(stop: DoorstepStop): Promise<void> {
-    const row = this.rows.get(stop.stopId);
-    if (row !== undefined && row.state.arrivedAt === null) {
-      this.rows.set(stop.stopId, { ...row, state: { ...row.state, arrivedAt: stop.arrivedAt } });
-      this.arrivalPositions.set(stop.stopId, stop.arrivalPosition);
-    }
-    this.saves.push(stop.stopId);
-    return Promise.resolve();
-  }
-
-  arrivedAt(stopId: string): Date | null {
-    return this.rows.get(stopId)?.state.arrivedAt ?? null;
   }
 }
 

@@ -83,7 +83,7 @@ async function typeName(fixture: ComponentFixture<HandoverForm>, name: string): 
   await settle(fixture);
 }
 
-describe('HandoverForm — « Remis au client » (B1)', () => {
+describe('HandoverForm — « Commande déposée » (B1)', () => {
   it('n’envoie qu’avec la photo ET un nom de 2 caractères au moins', async () => {
     const { fixture } = await boot();
     expect(sendButton(fixture).disabled).toBe(true);

@@ -51,7 +51,6 @@ export function doorstep(overrides: Partial<DoorstepStopState> = {}): DoorstepSt
     returnedAt: null,
     reference: "ORD-1",
     closedAt: null,
-    arrivedAt: null,
     signatureRequired: false,
     depositAllowed: false,
     decision: null,

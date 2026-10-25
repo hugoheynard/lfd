@@ -4,7 +4,7 @@ import { FoldButtonComponent } from 'fold-ng';
 /**
  * **La photo d'une remise à la porte** (`a-la-porte.md`, B1, B2, § 9) —
  * l'appareil photo du téléphone, la photo jointe, la retirer. Commune à
- * « Remis au client » et « Déposé avec preuve » : toute remise porte une photo.
+ * « Commande déposée » et « Déposé avec preuve » : toute remise porte une photo.
  */
 @Component({
   selector: 'app-proof-photo',

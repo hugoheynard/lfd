@@ -25,7 +25,7 @@ import {
 } from "./delivery-handover-scene.js";
 import { ADMIN_VERIFIER_OVERRIDE, forgetCustomer } from "./delivery-rounds-scene.js";
 import { forgetRoutingScene } from "./delivery-routing-scene.js";
-import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 
 const SUGGESTIONS = "/admin/delivery/address-corrections";
 /** Le point du carnet que la scène sème (`delivery-handover-scene.ts`). */
@@ -86,8 +86,8 @@ async function relinkTo(orderId: string, sameAs: string): Promise<void> {
 }
 
 /**
- * Une tournée de `doors.length` arrêts à la MÊME adresse : chacun arrive à
- * `arrivals[i]` (s'il est donné) et remet à `doors[i]`.
+ * Une tournée de `doors.length` arrêts à la MÊME adresse : chacun remet à
+ * `doors[i]`, et porte un relevé d'arrivée passé à `arrivals[i]` (s'il est donné).
  */
 async function deliveredAt(
   doors: readonly GpsPoint[],
@@ -98,14 +98,22 @@ async function deliveredAt(
   const firstOrderId = stops[0]?.orderId ?? "";
   for (const [index, stop] of stops.entries()) {
     await relinkTo(stop.orderId, firstOrderId);
+    await handOver(paul, roundId, stop.stopId, doors[index] ?? CARNET);
     const arrival = arrivals[index];
     if (arrival !== undefined) {
-      await paul.agent
-        .post(`${MY_ROUND}/${roundId}/stops/${stop.stopId}/arrival`)
-        .send({ positionLat: arrival.lat, positionLng: arrival.lng, positionAccuracyM: 6 })
-        .expect(204);
+      // « Je suis arrivé » est retiré le 2026-10-25 (décision de Hugo) : plus
+      // aucun geste n'écrit ce relevé, mais ceux d'avant restent en base et le
+      // lecteur des suggestions de stationnement les lit encore.
+      await ctx.prisma.deliveryStopExecution.update({
+        where: { stopId: stop.stopId },
+        data: {
+          arrivedAt: daysAgo(0),
+          arrivedLat: arrival.lat,
+          arrivedLng: arrival.lng,
+          arrivedAccuracyM: 6,
+        },
+      });
     }
-    await handOver(paul, roundId, stop.stopId, doors[index] ?? CARNET);
   }
   return { firstOrderId, paul };
 }

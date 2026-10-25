@@ -1,8 +1,6 @@
 import {
   type CloseStopWithoutHandoverPayload,
   closeStopWithoutHandoverPayloadSchema,
-  type DeclareStopArrivalPayload,
-  declareStopArrivalPayloadSchema,
   type DepositStopFields,
   type DropTransferAtSitePayload,
   dropTransferAtSitePayloadSchema,
@@ -35,7 +33,6 @@ import { StaffUserId } from "../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../platform/shared/http/zod-body.pipe.js";
 import type { StoredDocument } from "../../platform/storage/document-store.js";
 import { CloseStopWithoutHandoverCommand } from "../application/commands/close-stop-without-handover.command.js";
-import { DeclareStopArrivalCommand } from "../application/commands/declare-stop-arrival.command.js";
 import { DepositStopCommand } from "../application/commands/deposit-stop.command.js";
 import { DropTransferAtSiteCommand } from "../application/commands/drop-transfer-at-site.command.js";
 import { HandOverStopCommand } from "../application/commands/hand-over-stop.command.js";
@@ -67,20 +64,6 @@ export class MyDeliveryDoorstepController {
     private readonly commands: CommandBus,
     private readonly queries: QueryBus,
   ) {}
-
-  /** « Je suis arrivé » — 204, même rejoué ; la position facultative (YA-D4). */
-  @Post(":roundId/stops/:stopId/arrival")
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async arrive(
-    @StaffUserId() staffUserId: string,
-    @Param("roundId") roundId: string,
-    @Param("stopId") stopId: string,
-    @Body(new ZodBody(declareStopArrivalPayloadSchema)) payload: DeclareStopArrivalPayload,
-  ): Promise<void> {
-    await this.commands.execute<DeclareStopArrivalCommand, void>(
-      new DeclareStopArrivalCommand(staffUserId, roundId, stopId, payload),
-    );
-  }
 
   /** « Déclarer un problème » — multipart, la photo facultative. */
   @Post(":roundId/incidents")

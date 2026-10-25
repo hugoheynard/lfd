@@ -105,15 +105,6 @@ export class MyDeliveryRoundService {
 
   // ── À la porte (`a-la-porte.md`, lot A), sous `delivery_doorstep` ──
 
-  /** « Je suis arrivé » — rejouée, la route répond pareil ; la position facultative (YA-D4). */
-  async arrive(
-    roundId: string,
-    stopId: string,
-    position: GesturePositionFields | null,
-  ): Promise<void> {
-    await firstValueFrom(this.http.post(`${stopUrl(roundId, stopId)}/arrival`, position ?? {}));
-  }
-
   /** « Déclarer un problème » — en multipart, la photo sous `photo`. */
   async report(roundId: string, report: IncidentReport): Promise<string> {
     const body = new FormData();
@@ -156,7 +147,7 @@ export class MyDeliveryRoundService {
   }
 
   /**
-   * « Remis au client » (B1) — en multipart : la photo sous `photo`, la
+   * « Commande déposée » (B1) — en multipart : la photo sous `photo`, la
    * signature sous `signature`. Rejouée, la route répond pareil.
    */
   async handOver(roundId: string, stopId: string, handover: DoorstepHandover): Promise<void> {

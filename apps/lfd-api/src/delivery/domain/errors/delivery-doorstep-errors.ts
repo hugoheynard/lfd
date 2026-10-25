@@ -84,16 +84,6 @@ export class RoundStopsWithoutOutcomeError extends BusinessError {
   }
 }
 
-/** « Je suis arrivé » sur un arrêt déjà clos. */
-export class DoorstepStopClosedError extends BusinessError {
-  constructor() {
-    super(
-      "delivery.doorstep_stop_closed",
-      "Cet arrêt est déjà clos : il n'y a plus d'arrivée à déclarer. Rechargez la page pour voir l'arrêt suivant.",
-    );
-  }
-}
-
 /**
  * Clore sans remise une commande qui attend encore son client (AP-D2) : on ne
  * ferme pas un arrêt sans remise tant que la marchandise reste à remettre.

@@ -7,9 +7,7 @@ import { z } from "zod";
  *
  * Routes du livreur (`admin/delivery/my-round/:roundId…`, sous
  * `delivery_doorstep`, le même mur que « Ma tournée ») :
- * - `POST /arrets/:stopId/arrivee` (corps facultatif
- *   {@link declareStopArrivalPayloadSchema}) → 204, idempotente ;
- * - l'arrivée et les trois gestes qui closent un arrêt acceptent la position du téléphone,
+ * - les trois gestes qui closent un arrêt acceptent la position du téléphone,
  *   facultative ({@link GesturePositionFields}, YA-D4) ;
  * - `POST /incidents` (multipart : {@link reportDeliveryIncidentFieldsSchema}
  *   + `photo` facultative) → {@link ReportedDeliveryIncidentResponse} ;
@@ -17,7 +15,7 @@ import { z } from "zod";
  *   {@link closeStopWithoutHandoverPayloadSchema}) → 204, idempotente ;
  * - `POST /arrets/:stopId/remise` (multipart : {@link handOverStopFieldsSchema}
  *   + `photo` obligatoire + `signature` quand la signature est exigée) → 204,
- *   idempotente — « Remis au client » (lot B, B1) ;
+ *   idempotente — « Commande déposée » (lot B, B1 ; « Remis au client » jusqu'au 2026-10-25) ;
  * - `POST /arrets/:stopId/depot` (multipart : {@link depositStopFieldsSchema}
  *   + `photo` obligatoire) → 204, idempotente — « Déposé avec preuve » (B2),
  *   refusé si le dépôt n'est pas autorisé ou la signature exigée ;
@@ -123,17 +121,6 @@ export interface GesturePositionFields {
   readonly positionLng?: number | undefined;
   readonly positionAccuracyM?: number | undefined;
 }
-
-/**
- * « Je suis arrivé » — le corps est FACULTATIF : la position du téléphone, ou
- * rien (YA-D4). Un appel sans corps reste valide.
- */
-export const declareStopArrivalPayloadSchema = z.preprocess(
-  // Sans corps (l'écran d'avant, un rejeu) : Nest passe `undefined`.
-  (body) => body ?? {},
-  z.object({ ...gesturePositionShape }).refine(positionAllOrNone, POSITION_ALL_OR_NONE),
-);
-export type DeclareStopArrivalPayload = z.infer<typeof declareStopArrivalPayloadSchema>;
 
 /**
  * Clore un arrêt SANS remise — la commande a déjà été retirée au comptoir, ou

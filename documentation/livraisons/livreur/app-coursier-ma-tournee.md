@@ -84,7 +84,7 @@ flowchart TD
     N -->|oui| H[POST …/depart]
     H -->|refus| R[Phrase du livreur affichée, tournée relue] --> D
     H -->|ok| I[Partie : « Toute la tournée », arrêts]
-    I --> J[Par arrêt : « Y aller », « À pied jusqu'à la porte »,<br/>« Je suis arrivé », « Remis au client », « Déposé avec preuve »,<br/>« Clore sans remise », « Déclarer un problème »]
+    I --> J[Par arrêt : « Aller chez ce client », « À pied jusqu'à la porte »,<br/>« Commande déposée », « Déposé avec preuve »,<br/>« Clore sans remise », « Déclarer un problème »]
     J -->|arrêt clos| I
     I -->|plus rien à faire| K[« Rentrer » — vers le point de départ]
     K --> L[« Tournée terminée » → POST …/retour]
@@ -137,7 +137,7 @@ elle, l'exige par construction : son verrou porte `driver_staff_id`.
 Partie et non rentrée, la tournée offre « Toute la tournée » — des tronçons
 Google Maps de **3 étapes + 1 destination** au plus (`MAX_WAYPOINTS = 3`,
 liens bornés à `MAX_URL_LENGTH = 2048`,
-`livraison/my-round-navigation.ts:18-21`) — et, par arrêt, « Y aller » vers
+`livraison/my-round-navigation.ts:18-21`) — et, par arrêt, « Aller chez ce client » vers
 Google Maps, Waze ou Apple Plans, choix mémorisé **sur l'appareil**
 (`NAVIGATION_APP_KEY`, `my-round-navigation.ts:38`). Le point de
 **stationnement** passe d'abord quand il est connu (`driveTargetOf`), puis « À
@@ -147,7 +147,8 @@ pied jusqu’à la porte ». Les arrêts restants sont ceux sans `closedAt`
 ### 2.6 À la porte
 
 Sous `delivery_doorstep:write` et seulement en route (`gestures`,
-`my-round-page.ts`) : « Je suis arrivé », « Remis au client », « Déposé avec
+`my-round-page.ts`) : « Commande déposée » (« Remis au client » jusqu'au
+2026-10-25 ; « Je suis arrivé » retiré ce jour-là, décision de Hugo), « Déposé avec
 preuve » (quand le serveur dit `canDeposit`), « Clore sans remise »,
 « Déclarer un problème » (sur l'arrêt ou sur la tournée). Chaque geste relève
 la position du téléphone une fois ; indisponible, il part sans elle. Le
@@ -235,7 +236,6 @@ Toutes sous `/admin/delivery/`. L'action se déduit du verbe : `GET` demande
 | `GET`   | `ma-tournee/:roundId/chargement/plan`                        | `delivery_driving:read`   | `my-delivery-loading.controller.ts:48`         |
 | `POST`  | `ma-tournee/:roundId/chargement/bacs`                        | `delivery_driving:write`  | `my-delivery-loading.controller.ts:58`         |
 | `POST`  | `ma-tournee/:roundId/chargement/bacs/:binId/dechargement`    | `delivery_driving:write`  | `my-delivery-loading.controller.ts:70`         |
-| `POST`  | `ma-tournee/:roundId/arrets/:stopId/arrivee`                 | `delivery_doorstep:write` | `my-delivery-doorstep.controller.ts:69`        |
 | `POST`  | `ma-tournee/:roundId/incidents`                              | `delivery_doorstep:write` | `my-delivery-doorstep.controller.ts:83`        |
 | `POST`  | `ma-tournee/:roundId/arrets/:stopId/cloture-sans-remise`     | `delivery_doorstep:write` | `my-delivery-doorstep.controller.ts:99`        |
 | `POST`  | `ma-tournee/:roundId/arrets/:stopId/remise`                  | `delivery_doorstep:write` | `my-delivery-doorstep.controller.ts:117`       |
@@ -315,7 +315,7 @@ Tranchées le 2026-10-01 et le 2026-10-07, texte dans
 - **MT-Q2** — le livreur est un rôle, créé à l'écran (MT-D1 v2 : sans valeur
   d'enum, sans cloche).
 - **MT-Q3** — « il faut que ça marche partout » : 3 étapes par lien Google
-  Maps ; « Y aller » au choix Google Maps, Waze, Apple Plans.
+  Maps ; « Aller chez ce client » au choix Google Maps, Waze, Apple Plans.
 - **MT-Q4** — un livreur est affecté à la tournée par qui compose.
 - **MT-Q5** — la route du chargeur ne change pas ; seule celle du livreur
   exige l'affectation.

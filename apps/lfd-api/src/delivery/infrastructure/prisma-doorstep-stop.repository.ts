@@ -10,15 +10,15 @@ import { TransferStopNotAnOrderError } from "../domain/errors/delivery-round-err
  * **Adaptateur Prisma de l'arrêt à la porte** (`a-la-porte.md`, AP-D6).
  *
  * Il LIT l'arrêt, sa tournée, son exécution et la décision vivante du
- * commercial (B3) ; il n'ÉCRIT que `arrived_at`
- * de `delivery_stop_execution` — l'exécution, jamais la tournée (C10).
+ * commercial (B3) ; il n'écrit rien. `arrived_at` reste en base, plus
+ * écrit depuis le retrait de « Je suis arrivé » (2026-10-25, décision de Hugo).
  *
  * 🔴 **Le mur est dans la requête** : `driver_staff_id` de la tournée entre
  * dans le `where` de l'arrêt, comme dans `PrismaDriverRoundsReader`.
  *
  * Une tournée partie dont l'arrêt n'a pas d'exécution — partie avant que le
  * départ ne fige quoi que ce soit (lot 4) — est lue comme au dépôt : il n'y
- * a nulle part où écrire l'arrivée, et l'écrire ailleurs serait inventer.
+ * a pas d'instantané à lire, et le lire ailleurs serait inventer.
  */
 @Injectable()
 export class PrismaDoorstepStopRepository extends DoorstepStopRepository {
@@ -50,7 +50,6 @@ export class PrismaDoorstepStopRepository extends DoorstepStopRepository {
         execution: {
           select: {
             reference: true,
-            arrivedAt: true,
             signatureRequired: true,
             depositAllowed: true,
           },
@@ -85,27 +84,9 @@ export class PrismaDoorstepStopRepository extends DoorstepStopRepository {
       returnedAt: row.round.returnedAt,
       reference: row.execution?.reference ?? "",
       closedAt: row.closedAt,
-      arrivedAt: row.execution?.arrivedAt ?? null,
       signatureRequired: row.execution?.signatureRequired ?? false,
       depositAllowed: row.execution?.depositAllowed ?? false,
       decision: decision === null ? null : (outcomeOf(decision.outcome) ?? "pending"),
-    });
-  }
-
-  /** `arrived_at IS NULL` dans le `where` : deux arrivées simultanées gardent la première. */
-  async save(stop: DoorstepStop): Promise<void> {
-    if (stop.arrivedAt === null) {
-      return;
-    }
-    await this.prisma.deliveryStopExecution.updateMany({
-      where: { stopId: stop.stopId, arrivedAt: null },
-      data: {
-        arrivedAt: stop.arrivedAt,
-        // La position au geste (YA-D4), écrite avec l'arrivée et jamais relue.
-        arrivedLat: stop.arrivalPosition?.lat ?? null,
-        arrivedLng: stop.arrivalPosition?.lng ?? null,
-        arrivedAccuracyM: stop.arrivalPosition?.accuracyM ?? null,
-      },
     });
   }
 }

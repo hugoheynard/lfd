@@ -4,7 +4,7 @@ import type { JournalFactType } from "@lfd/contracts/journal-facts";
 import type { JournalFact, JournaledEvent } from "../../../platform/journal/journal-fact.js";
 import type { DeliveryIncident } from "../entities/delivery-incident.js";
 import type { DeliveryRound } from "../entities/delivery-round.js";
-import type { DoorstepRoundKey, DoorstepStop } from "../entities/doorstep-stop.js";
+import type { DoorstepRoundKey } from "../entities/doorstep-stop.js";
 import type { CitedOrder } from "./delivery-round.events.js";
 
 /**
@@ -15,7 +15,6 @@ import type { CitedOrder } from "./delivery-round.events.js";
  */
 export const DOORSTEP_FACTS = {
   returned: "delivery_round.returned",
-  stopArrived: "delivery_round.stop_arrived",
   incidentReported: "delivery_round.incident_reported",
   stopClosedWithoutHandover: "delivery_round.stop_closed_without_handover",
   stopHandedOver: "delivery_round.stop_handed_over",
@@ -70,17 +69,6 @@ export class DeliveryRoundReturnedEvent implements JournaledEvent {
   journalFact(): JournalFact {
     return doorstepFact(DOORSTEP_FACTS.returned, roundKeyOf(this.round), {
       openStops: this.round.liveStops.length,
-    });
-  }
-}
-
-/** « Je suis arrivé » — une fois : une seconde arrivée n'écrit rien, donc ne publie rien. */
-export class DeliveryStopArrivedEvent implements JournaledEvent {
-  constructor(readonly stop: DoorstepStop) {}
-
-  journalFact(): JournalFact {
-    return doorstepFact(DOORSTEP_FACTS.stopArrived, this.stop.round, {
-      order: citeStopOrder(this.stop.orderId, this.stop.reference),
     });
   }
 }

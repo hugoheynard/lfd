@@ -1,6 +1,5 @@
 import {
   closeStopWithoutHandoverPayloadSchema,
-  declareStopArrivalPayloadSchema,
   depositStopFieldsSchema,
   handOverStopFieldsSchema,
 } from "../delivery-doorstep.js";
@@ -50,12 +49,5 @@ describe("la position facultative des gestes qui closent un arrêt", () => {
     { positionLat: "abc", positionLng: 6, positionAccuracyM: 10 },
   ])("refuse une position hors bornes : %o", (position) => {
     expect(depositStopFieldsSchema.safeParse({ version: 1, ...position }).success).toBe(false);
-  });
-});
-
-describe("« Je suis arrivé » : le corps reste facultatif", () => {
-  it("accepte l'absence de corps, comme avant la position", () => {
-    expect(declareStopArrivalPayloadSchema.parse(undefined)).toEqual({});
-    expect(declareStopArrivalPayloadSchema.parse(null)).toEqual({});
   });
 });

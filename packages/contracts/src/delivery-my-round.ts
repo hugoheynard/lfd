@@ -30,7 +30,7 @@ import type { OrderClientele } from "./order-handover.js";
  *   (`LoadDeliveryBinPayload`) → 204 ; `POST
  *   /:roundId/chargement/bacs/:binId/dechargement` → 204.
  *
- * Les gestes à la porte (arriver, signaler, clore sans remise) sont dans
+ * Les gestes à la porte (signaler, remettre, déposer, clore sans remise) sont dans
  * `delivery-doorstep.ts`, sous `delivery_doorstep`.
  *
  * Le mur est dans la requête : seules les tournées où la personne qui appelle
@@ -167,8 +167,6 @@ export interface MyDeliveryStopView {
    * réglé d'avance (`stop-decision-by-setting.ts`).
    */
   readonly closedAt: string | null;
-  /** « Je suis arrivé » le (ISO), ou `null` : aucune arrivée déclarée. */
-  readonly arrivedAt: string | null;
   /**
    * Le client autorise le dépôt sans personne à cette adresse — FIGÉ au départ,
    * lu vivant au dépôt ; `false` sans adresse reliée au carnet (AP-D5).

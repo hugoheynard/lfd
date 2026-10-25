@@ -155,7 +155,6 @@ function stopView(
     bins: stop.bins,
     coldBins: stop.coldBins,
     closedAt: stop.closedAt?.toISOString() ?? null,
-    arrivedAt: stop.departed?.arrivedAt?.toISOString() ?? null,
     canDeposit: depositPermitted({ ...door, depositAuthorized }),
     decision: decision === null ? null : stopDecisionView(decision),
     orderState: inputs.orderStates.get(stop.orderId) ?? "open",

@@ -81,7 +81,7 @@ function deviceStorage(): Storage | null {
  *
  * **À la porte** (`a-la-porte.md`, lot A ; `parcours-du-livreur.md`,
  * PL2) : partie et non rentrée, sous `delivery_doorstep:write`, la tournée
- * offre « Je suis arrivé », « Déclarer un problème », « Clore sans remise » et
+ * offre « Déclarer un problème », « Commande déposée », « Clore sans remise » et
  * « Tournée terminée ». Rentrée, elle le dit et n'offre plus aucun geste.
  *
  * **Elle suit le colisage** (`parcours-du-livreur.md`, PL4) : « n arrêts
@@ -258,7 +258,7 @@ export class MyRoundPage {
     return this.rolling() ? goToHref(this.app(), driveTargetOf(stop)) : null;
   }
 
-  /** « Y aller » vers le site d'un transfert : son point, sinon son adresse. */
+  /** « Aller à ce site » vers le site d'un transfert : son point, sinon son adresse. */
   protected transferGoToOf(stop: DriverTransferStopView): string | null {
     return this.rolling() ? goToHref(this.app(), transferTargetOf(stop)) : null;
   }
@@ -277,8 +277,6 @@ export class MyRoundPage {
   protected readonly retryRound = (): void => this.reader.retryRound();
 
   protected readonly depart = (): Promise<void> => this.doorstep.depart();
-  protected readonly arrive = (stop: MyDeliveryStopView): Promise<void> =>
-    this.doorstep.arrive(stop);
   protected readonly closeWithoutHandover = (stop: MyDeliveryStopView): Promise<void> =>
     this.doorstep.closeWithoutHandover(stop);
   protected readonly returnToDepot = (): Promise<void> => this.doorstep.returnToDepot();

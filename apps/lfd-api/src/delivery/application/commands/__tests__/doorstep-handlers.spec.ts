@@ -7,11 +7,8 @@ import {
   FixedStaffAuthorDirectory,
 } from "../../../../staff/directory/domain/__tests__/fixed-staff-author-directory.js";
 import { DeliveryRound } from "../../../domain/entities/delivery-round.js";
-import type { DoorstepStopState } from "../../../domain/entities/doorstep-stop.js";
 import {
-  DoorstepRoundNotDepartedError,
   DoorstepRoundStaleError,
-  DoorstepStopClosedError,
   DoorstepStopNotFoundError,
   InvalidIncidentPhotoError,
   RoundNotDepartedForReturnError,
@@ -22,8 +19,6 @@ import { DriverRoundNotFoundError } from "../../../domain/errors/delivery-driver
 import type { DriverRoundRow } from "../../../domain/ports/driver-rounds.reader.js";
 import { CloseStopWithoutHandoverCommand } from "../close-stop-without-handover.command.js";
 import { CloseStopWithoutHandoverHandler } from "../close-stop-without-handover.handler.js";
-import { DeclareStopArrivalCommand } from "../declare-stop-arrival.command.js";
-import { DeclareStopArrivalHandler } from "../declare-stop-arrival.handler.js";
 import { ReportDeliveryIncidentCommand } from "../report-delivery-incident.command.js";
 import { ReportDeliveryIncidentHandler } from "../report-delivery-incident.handler.js";
 import { StopDecisionBySetting } from "../../stop-decision-by-setting.js";
@@ -38,7 +33,6 @@ import {
   FixedDriverRounds,
   FixedOrderStates,
   InMemoryDocuments,
-  InMemoryDoorstepStops,
   InMemoryIncidents,
 } from "./doorstep-doubles.js";
 import {
@@ -54,94 +48,7 @@ const DAY = "2030-03-12";
 const DEPARTED = new Date(1_000);
 const NOW = new Date(5_000);
 const PAUL = "staff_paul";
-const KEY = { roundId: "r_1", vehicleName: "Kangoo", serviceDay: DAY, passage: 1 };
 const JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10]);
-
-function doorstep(overrides: Partial<DoorstepStopState> = {}): DoorstepStopState {
-  return {
-    stopId: "s_1",
-    orderId: "o_1",
-    round: KEY,
-    departedAt: DEPARTED,
-    returnedAt: null,
-    reference: "ORD-1",
-    closedAt: null,
-    arrivedAt: null,
-    signatureRequired: false,
-    depositAllowed: false,
-    decision: null,
-    ...overrides,
-  };
-}
-
-describe("DeclareStopArrivalHandler — « Je suis arrivé » (AP-D6)", () => {
-  function arrival(state: DoorstepStopState = doorstep()) {
-    const stops = new InMemoryDoorstepStops(PAUL, state);
-    const events = new RecordingPublisher();
-    const handler = new DeclareStopArrivalHandler(
-      stops,
-      new FixedClock(NOW),
-      events,
-      new DirectUnitOfWork(),
-    );
-    return { handler, stops, events };
-  }
-
-  it("écrit l'instant du `Clock` dans l'exécution, et le journalise", async () => {
-    const { handler, stops, events } = arrival();
-
-    await handler.execute(new DeclareStopArrivalCommand(PAUL, "r_1", "s_1"));
-
-    expect(stops.arrivedAt("s_1")).toEqual(NOW);
-    expect(events.traced[0]?.journalFact()).toEqual({
-      type: "delivery_round.stop_arrived",
-      subjectType: "delivery_round",
-      subjectId: "r_1",
-      payload: {
-        subjectLabel: "Kangoo",
-        day: DAY,
-        passage: 1,
-        order: { id: "o_1", name: "ORD-1" },
-      },
-    });
-  });
-
-  it("une seconde arrivée ne réécrit rien et ne journalise rien", async () => {
-    const first = new Date(2_000);
-    const { handler, stops, events } = arrival(doorstep({ arrivedAt: first }));
-
-    await handler.execute(new DeclareStopArrivalCommand(PAUL, "r_1", "s_1"));
-
-    expect(stops.arrivedAt("s_1")).toEqual(first);
-    expect(stops.saves).toEqual([]);
-    expect(events.traced).toEqual([]);
-  });
-
-  it("🔴 le mur : un autre livreur, ou une autre tournée, prend 404", async () => {
-    const { handler, stops } = arrival();
-
-    await expect(
-      handler.execute(new DeclareStopArrivalCommand("staff_autre", "r_1", "s_1")),
-    ).rejects.toThrow(DoorstepStopNotFoundError);
-    await expect(
-      handler.execute(new DeclareStopArrivalCommand(PAUL, "r_2", "s_1")),
-    ).rejects.toThrow(DoorstepStopNotFoundError);
-    expect(stops.saves).toEqual([]);
-  });
-
-  it("refuse une tournée au dépôt, et un arrêt clos sans arrivée", async () => {
-    await expect(
-      arrival(doorstep({ departedAt: null })).handler.execute(
-        new DeclareStopArrivalCommand(PAUL, "r_1", "s_1"),
-      ),
-    ).rejects.toThrow(DoorstepRoundNotDepartedError);
-    await expect(
-      arrival(doorstep({ closedAt: NOW })).handler.execute(
-        new DeclareStopArrivalCommand(PAUL, "r_1", "s_1"),
-      ),
-    ).rejects.toThrow(DoorstepStopClosedError);
-  });
-});
 
 describe("CloseStopWithoutHandoverHandler — « déjà retirée / annulée » (AP-D2)", () => {
   function departedRound(): DeliveryRound {

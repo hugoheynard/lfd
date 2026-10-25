@@ -1,4 +1,4 @@
-# À la porte — arriver, remettre ou déposer, signaler, décider
+# À la porte — remettre ou déposer, signaler, décider
 
 > ✅ **Doc d'état** depuis le 2026-10-06 (ménage documentaire, Hugo : « fais le
 > ménage »). Ce fichier était le plan « plan à la porte » du lot 6 a ; il
@@ -17,6 +17,20 @@
 > section** de l'ancien plan (« § 10 ter », « § 10 bis »…), qui ne sont pas
 > ceux de ce document. Le § 9 dit où chacun mène désormais.
 
+> 🔴 **2026-10-25, décision de Hugo** (pré-release, contrat cassé dans le même
+> déploiement) : **« Je suis arrivé » est retiré du code** — « cette étape ne
+> sert à rien ». La remise n'en dépendait pas (`canHandOver` ne lisait pas
+> l'arrivée). Partis avec lui : le bouton, la route `…/stops/:stopId/arrival`,
+> `DeclareStopArrivalHandler`, `DoorstepStop.arrive`, `DoorstepStopClosedError`,
+> le champ `arrivedAt` de « Ma tournée » et la ligne « Arrivé à hh:mm ». La
+> colonne `arrived_at` (et `arrived_lat/lng/accuracy_m`) **reste en base**,
+> plus écrite ; ses lecteurs restent : « Non remis » (« Arrivée déclarée »),
+> la suggestion de stationnement, la purge à 60 jours. Le fait
+> `delivery_round.stop_arrived` reste lisible au journal pour les faits passés.
+> Le même jour, deux libellés changent : « Y aller » devient **« Aller chez ce
+> client »** (« Aller à ce site » sur un arrêt de transfert), et « Remis au
+> client » devient **« Commande déposée »**.
+
 Suit « Ma tournée » ([`app-coursier-ma-tournee.md`](app-coursier-ma-tournee.md)) : la page du
 livreur, son mur « sa tournée ». La conception d'origine du lot 6 (L6-C1 à
 L6-C14) est dans [`plan-preparation-de-tournee.md`](../tournees/plan-preparation-de-tournee.md),
@@ -33,17 +47,11 @@ une tournée d'un autre rend 404). Routes sous
 stateDiagram-v2
   direction LR
   [*] --> EnRoute: départ de la tournée (garde au livreur, BQ)
-  EnRoute --> Arrive: « Je suis arrivé »
   EnRoute --> EnRoute: « Déclarer un problème »
-  Arrive --> Arrive: « Déclarer un problème »
-  EnRoute --> Remis: « Remis au client »
-  Arrive --> Remis: « Remis au client »
+  EnRoute --> Remis: « Commande déposée »
   EnRoute --> Depose: « Déposé avec preuve » (si permis)
-  Arrive --> Depose: « Déposé avec preuve » (si permis)
   EnRoute --> CloSansRemise: commande retirée au comptoir ou annulée
-  Arrive --> CloSansRemise: idem
   EnRoute --> Rapporte: commercial ou réglage « Rapporter »
-  Arrive --> Rapporte: idem
   Remis --> [*]
   Depose --> [*]
   CloSansRemise --> [*]
@@ -52,8 +60,7 @@ stateDiagram-v2
 
 | Geste                         | Route (`POST`)                       | Ce qu'il exige, ce qu'il écrit                                                                                                                                                                                                                     |
 | ----------------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Je suis arrivé**            | `arrets/:stopId/arrivee`             | l'instant d'arrivée dans `delivery_stop_execution` (AP-D6) ; 204 même rejoué. Facultatif : remettre sans l'avoir déclaré est permis, l'arrivée reste nulle                                                                                         |
-| **Remis au client** (B1)      | `arrets/:stopId/remise` (multipart)  | **photo** obligatoire, **nom** de qui réceptionne (2 à 80, `HANDOVER_RECEIVER_NAME_MIN/MAX`), **signature au doigt** si `signatureRequired` figé au départ ; attestation `via = manual` chez `handover` + `closeStop`, une unité de travail        |
+| **Commande déposée** (B1)     | `arrets/:stopId/remise` (multipart)  | **photo** obligatoire, **nom** de qui réceptionne (2 à 80, `HANDOVER_RECEIVER_NAME_MIN/MAX`), **signature au doigt** si `signatureRequired` figé au départ ; attestation `via = manual` chez `handover` + `closeStop`, une unité de travail        |
 | **Déposé avec preuve** (B2)   | `arrets/:stopId/depot` (multipart)   | **photo** seule ; attestation `via = deposit`, mêmes effets qu'une remise (AP-Q5) ; refusé si `DoorstepStop.ensureDepositPermitted()` refuse (§ 4)                                                                                                 |
 | **Déclarer un problème**      | `incidents` (multipart)              | un signalement (§ 3) ; **ne clôt rien**                                                                                                                                                                                                            |
 | **Clore sans remise** (AP-D2) | `arrets/:stopId/cloture-sans-remise` | seulement si le commerce dit la commande retirée ou annulée — sinon 409 `StopStillToHandOverError` ; aucune attestation. Filet de sécurité « invisible » : le métier tient le cas pour impossible (Hugo, 2026-10-01)                               |
@@ -80,8 +87,9 @@ la ligne, retirées si la ligne échoue. Faits
 
 ## 2. Le temps qu'on accumule
 
-Par arrêt : `departed_at` (départ de la tournée) et `arrived_at` dans
-`delivery_stop_execution`, la clôture dans `delivery_round_stop.closed_at`
+Par arrêt : `departed_at` (départ de la tournée) dans
+`delivery_stop_execution` — `arrived_at` y reste, plus écrit depuis le
+2026-10-25 (« Je suis arrivé » retiré, décision de Hugo) —, la clôture dans `delivery_round_stop.closed_at`
 (écrite par la tournée, `closeStop`). Rien n'est calculé à l'écriture : des
 instants du `Clock`, les durées (trajet, sur place, écart à la fenêtre) se
 liront. **Aucun écran de statistiques n'existe** ; la position relevée aux
