@@ -203,7 +203,8 @@ export function packingOrderPath(orderId: string, day = SERVICE_DAY): string {
 
 /**
  * **Un sac, et des lignes glissées dedans** — le geste du colisage pour un
- * retrait. Sans `lines`, toutes les lignes de la commande, entières. Rend le
+ * retrait (une livraison passe son bac en `container`). Sans `lines`, toutes
+ * les lignes de la commande, entières. Rend le
  * statut de la DERNIÈRE répartition (204 attendu) : un refus du colisage
  * (« pas encore sorti du four ») est ce que certaines suites éprouvent.
  */
@@ -211,12 +212,13 @@ export async function bagLines(
   ctx: E2eContext,
   sheet: Pick<PackingSheet, "orderId" | "lines">,
   lines: readonly { readonly sku: string; readonly quantity: number }[] = sheet.lines,
+  container: object = { nature: "bag" },
 ): Promise<number> {
   const bag = jsonBody<OpenedPackingContainer>(
     await ctx
       .asSub(STAFF)
       .post(`${packingOrderPath(sheet.orderId)}/containers`)
-      .send({ nature: "bag" })
+      .send(container)
       .expect(201),
   );
   let status = 204;

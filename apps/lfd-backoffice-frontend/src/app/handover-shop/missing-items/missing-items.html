@@ -1,15 +1,20 @@
 @if (lines().length > 0) {
   <fold-callout appearance="inset" variant="warning" icon="info" data-missing-items>
-    @if (pickup()) {
-      <strong>Commande incomplète</strong> — ces articles ne sont pas dans le sac&nbsp;:
-      <ul class="mi-lines">
-        @for (line of lines(); track line.sku) {
-          <li>{{ line.quantity }} {{ line.productName }}</li>
+    <!-- Un seul sort aujourd'hui : le reste abandonné. « À relivrer » (reliquat,
+         E7) dira « reste relivré le <date> » dans sa propre branche. -->
+    @switch (remainder()) {
+      @case ('abandoned') {
+        @if (pickup()) {
+          <strong>Commande incomplète</strong> — ces articles ne sont pas dans le sac&nbsp;:
+        } @else {
+          <strong>Départ incomplet.</strong> Ces articles ne partent pas&nbsp;:
         }
-      </ul>
-    } @else {
-      <strong>Départ incomplet.</strong> Ces articles ne partent pas&nbsp;:
-      <app-abandoned-remainder [lines]="lines()" />
+      }
     }
+    <ul class="mi-lines">
+      @for (line of lines(); track line.sku) {
+        <li>{{ line.quantity }} {{ line.productName }}</li>
+      }
+    </ul>
   </fold-callout>
 }

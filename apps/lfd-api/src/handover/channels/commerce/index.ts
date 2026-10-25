@@ -27,6 +27,7 @@ export {
   DeliveryRunSheetReader,
   type DeliveryRunSheetAddressBook,
   type DeliveryRunSheetEntry,
+  type DeliveryRunSheetShortfall,
   type DeliveryRunSheetStep,
 } from "./delivery-run-sheet.reader.js";
 export {

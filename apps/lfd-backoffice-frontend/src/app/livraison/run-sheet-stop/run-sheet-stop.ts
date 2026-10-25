@@ -20,6 +20,7 @@ import {
   telHrefOf,
   windowLabel,
 } from '../run-sheet';
+import { MissingItems } from '../../handover-shop/missing-items/missing-items';
 import { RunSheetStepPhoto } from '../run-sheet-step-photo/run-sheet-step-photo';
 
 /**
@@ -40,6 +41,7 @@ import { RunSheetStepPhoto } from '../run-sheet-step-photo/run-sheet-step-photo'
     FoldFieldComponent,
     FoldFieldListComponent,
     FoldLinkComponent,
+    MissingItems,
     RunSheetStepPhoto,
   ],
   templateUrl: './run-sheet-stop.html',

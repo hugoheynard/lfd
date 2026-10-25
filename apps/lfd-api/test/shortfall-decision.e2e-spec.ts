@@ -12,6 +12,7 @@
  */
 import type {
   AdminOrderView,
+  DeliveryRunSheetView,
   HandoverQueueView,
   OrderHandoverView,
   StaffNote,
@@ -38,6 +39,7 @@ import {
   decide as sceneDecide,
   drawn as sceneDrawn,
   report as sceneReport,
+  SCENE_DELIVERY,
   type Drawn,
 } from "./shortfall-decision-scene.js";
 
@@ -309,5 +311,30 @@ describe("« Décider du départ » — reste abandonné (E6b + E6c1)", () => {
     );
     expect(fiche.lines.map((line) => line.quantity)).toEqual([1]);
     expect(fiche.totalUnits).toBe(1);
+  });
+
+  /** Régression : la feuille de route comptait les pièces commandées d'un départ incomplet décidé, sans en rien dire (2026-10-25). */
+  it("sur la feuille de route, l'arrêt dit ce qui part, le reste abandonné et le sort décidé", async () => {
+    await ctx.prisma.deliveryZone.create({
+      data: { postalPrefixes: ["73150"], label: "Val d'Isère", feeMode: "amount", feeValue: 2000 },
+    });
+    const placed = await sceneAccountOrder(ctx, 1, [], SCENE_DELIVERY);
+    await report(placed.id);
+
+    const before = jsonBody<DeliveryRunSheetView>(
+      await ctx.asSub(STAFF).get(`/admin/delivery/run-sheet?day=${SERVICE_DAY}`).expect(200),
+    ).stops.find((stop) => stop.orderId === placed.id);
+    expect(before?.totalUnits).toBe(3);
+    expect(before?.shortfall ?? null).toBeNull();
+
+    await decide(placed.id);
+    const stop = jsonBody<DeliveryRunSheetView>(
+      await ctx.asSub(STAFF).get(`/admin/delivery/run-sheet?day=${SERVICE_DAY}`).expect(200),
+    ).stops.find((line) => line.orderId === placed.id);
+    expect(stop?.totalUnits).toBe(1);
+    expect(stop?.shortfall?.remainder).toBe("abandoned");
+    expect(stop?.shortfall?.lines.map(({ sku, quantity }) => ({ sku, quantity }))).toEqual([
+      { sku: CROISSANT, quantity: 2 },
+    ]);
   });
 });

@@ -240,3 +240,28 @@ describe("GetDeliveryRunSheetHandler", () => {
     });
   });
 });
+
+describe("GetDeliveryRunSheetHandler — un départ incomplet décidé", () => {
+  /** Régression : la feuille de route comptait les pièces commandées d'un départ incomplet, sans rien en dire (2026-10-25). */
+  it("rend ce qui part, le reste et le sort décidé, pour que le livreur le voie", async () => {
+    const lines = [{ sku: "CRO-01", productName: "Croissant", quantity: 2 }];
+    const { handler } = handlerOf([
+      entry({ totalUnits: 1, shortfall: { remainder: "abandoned", lines } }),
+    ]);
+
+    const view = await handler.execute(new GetDeliveryRunSheetQuery(DAY, true));
+
+    expect(view.stops[0]).toMatchObject({
+      totalUnits: 1,
+      shortfall: { remainder: "abandoned", lines },
+    });
+  });
+
+  it("sans décision, l'arrêt ne porte aucun départ incomplet", async () => {
+    const { handler } = handlerOf([entry()]);
+
+    const view = await handler.execute(new GetDeliveryRunSheetQuery(DAY, true));
+
+    expect(view.stops[0]?.shortfall).toBeNull();
+  });
+});

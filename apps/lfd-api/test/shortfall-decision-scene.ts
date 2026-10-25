@@ -7,9 +7,16 @@
 import type { PackingSheet } from "@lfd/contracts";
 
 import { DeferredTerm } from "../src/platform/database/client/client.js";
+import { binTypeId } from "./delivery-loading-scene.js";
 import { E2E_STAFF_ID, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
-import { pickupSite, placeOrderForCustomer, type PlacedTestOrder } from "./order-factory.js";
+import {
+  type FulfillmentSeed,
+  type OrderSeed,
+  pickupSite,
+  placeOrderForCustomer,
+  type PlacedTestOrder,
+} from "./order-factory.js";
 import {
   bagLines,
   closePlan,
@@ -34,11 +41,40 @@ export interface ExtraLine {
   readonly quantity: number;
 }
 
-/** Une commande au compte de 3 croissants (+ `extra`), tirée au colisage, `packed` croissants au sac. */
+/** Comment la commande part : son acheminement, et la fenêtre qu'il exige. */
+export interface SceneFulfillment {
+  readonly fulfillment: FulfillmentSeed;
+  readonly window?: OrderSeed["window"];
+}
+
+/**
+ * Une livraison à une adresse dictée, « avant 10 h » (une adresse livrée à
+ * échéance refuse une heure de début). La zone du 73150 est à semer.
+ */
+export const SCENE_DELIVERY: SceneFulfillment = {
+  fulfillment: {
+    method: "delivery",
+    address: {
+      label: "",
+      ligne1: "1 rue du Test",
+      ligne2: "",
+      codePostal: "73150",
+      ville: "Val-d'Isère",
+      pays: "France",
+    },
+  },
+  window: { start: null, end: "10:00" },
+};
+
+/**
+ * Une commande au compte de 3 croissants (+ `extra`), tirée au colisage,
+ * `packed` croissants au sac. Au retrait, sauf `how` contraire.
+ */
 export async function accountOrder(
   ctx: E2eContext,
   packed: number,
   extra: readonly ExtraLine[] = [],
+  how?: SceneFulfillment,
 ): Promise<Drawn> {
   const company = await createCompany(ctx.prisma);
   await ctx.prisma.company.update({
@@ -53,16 +89,26 @@ export async function accountOrder(
     staffUserId: E2E_STAFF_ID,
     settlement: "account",
     forDay: SERVICE_DAY,
-    fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
+    fulfillment: how?.fulfillment ?? {
+      method: "pickup",
+      pickupSiteId: await pickupSite(ctx.prisma),
+    },
+    ...(how?.window === undefined ? {} : { window: how.window }),
     lines: [{ sku: CROISSANT, quantity: 3 }, ...extra],
   });
-  return drawn(ctx, placed, packed);
+  const container =
+    how?.fulfillment.method === "delivery"
+      ? { nature: "bin", binTypeId: await binTypeId(ctx), half: false, innerBags: 0 }
+      : undefined;
+  return drawn(ctx, placed, packed, container);
 }
 
+/** `container` : le contenant ouvert au colisage — un sac par défaut, un bac pour une livraison. */
 export async function drawn(
   ctx: E2eContext,
   placed: PlacedTestOrder,
   packed: number,
+  container?: object,
 ): Promise<Drawn> {
   const { orderNumber } = placed;
   await closePlan(ctx);
@@ -71,7 +117,7 @@ export async function drawn(
   await ctx.drain();
   const sheet = await sheetOf(ctx, orderNumber);
   if (packed > 0) {
-    expect(await bagLines(ctx, sheet, [{ sku: CROISSANT, quantity: packed }])).toBe(204);
+    expect(await bagLines(ctx, sheet, [{ sku: CROISSANT, quantity: packed }], container)).toBe(204);
   }
   return { ...placed, sheet: await sheetOf(ctx, orderNumber) };
 }

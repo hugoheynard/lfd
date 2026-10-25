@@ -122,6 +122,19 @@ export function expectedOnWhere(day: string): Prisma.OrderWhereInput {
 }
 
 /** Ce que la remise lit d'UNE commande. Aucun montant : on ne facture pas ici. */
+/**
+ * Ce qu'il faut lire d'une commande pour dire ce qui PART (`departureOf`) :
+ * les lignes nommées, le manque signalé et sa décision. Partagé par le
+ * comptoir et la feuille de route (2026-10-25).
+ */
+export const DEPARTURE_SELECT = {
+  lines: { select: { sku: true, productNameSnapshot: true, quantity: true } },
+  shortfallLines: true,
+  shortfallDecision: {
+    select: { decidedAt: true, decidedByStaffId: true, remainder: true, departing: true },
+  },
+} as const;
+
 export const HANDOVER_SELECT = {
   id: true,
   orderNumber: true,
@@ -138,12 +151,7 @@ export const HANDOVER_SELECT = {
   note: true,
   company: { select: { raisonSociale: true } },
   placedBy: { select: { email: true, firstName: true, lastName: true } },
-  lines: { select: { sku: true, productNameSnapshot: true, quantity: true } },
-  // Le départ incomplet décidé : ce qui PART, et le reste abandonné (2026-10-25).
-  shortfallLines: true,
-  shortfallDecision: {
-    select: { decidedAt: true, decidedByStaffId: true, remainder: true, departing: true },
-  },
+  ...DEPARTURE_SELECT,
 } as const;
 
 /** Ce que la FILE lit de chaque commande du jour. Aucune ligne, un compte. */
@@ -161,12 +169,7 @@ export const HANDOVER_QUEUE_SELECT = {
   clientele: true,
   company: { select: { raisonSociale: true, enseigne: true } },
   placedBy: { select: { email: true, firstName: true, lastName: true } },
-  lines: { select: { sku: true, productNameSnapshot: true, quantity: true } },
-  // Le départ incomplet décidé : ce qui PART, et le reste abandonné (2026-10-25).
-  shortfallLines: true,
-  shortfallDecision: {
-    select: { decidedAt: true, decidedByStaffId: true, remainder: true, departing: true },
-  },
+  ...DEPARTURE_SELECT,
 } as const;
 
 type HandoverRow = Prisma.OrderGetPayload<{ select: typeof HANDOVER_SELECT }>;
@@ -285,6 +288,11 @@ interface DepartingRow {
 export function departureOf(row: DepartingRow): {
   readonly lines: readonly DepartureLine[];
   readonly abandoned: readonly DepartureLine[];
+  /**
+   * Le sort du reste décidé, `null` sans décision lisible. `abandoned` seul
+   * aujourd'hui ; « à relivrer » viendra avec le reliquat (E7).
+   */
+  readonly remainder: "abandoned" | null;
 } {
   const named = row.lines.map((line) => ({
     sku: line.sku,
@@ -293,7 +301,7 @@ export function departureOf(row: DepartingRow): {
   }));
   const decision = row.shortfallDecision;
   if (decision === null) {
-    return { lines: named, abandoned: [] };
+    return { lines: named, abandoned: [], remainder: null };
   }
   const left = new Map(departingOf(row.id, decision.departing).map((l) => [l.sku, l.quantity]));
   const lines = named.map((line) => {
@@ -302,12 +310,13 @@ export function departureOf(row: DepartingRow): {
     left.set(line.sku, wanted - quantity);
     return { ...line, quantity };
   });
+  const mark = decisionMarkOf(decision);
   const abandoned =
-    decisionMarkOf(decision) === null || row.shortfallLines === null
+    mark === null || row.shortfallLines === null
       ? []
       : abandonedOf(
           shortfallLinesOf(row.shortfallLines),
           new Map(named.map((line) => [line.sku, line.productName])),
         );
-  return { lines, abandoned };
+  return { lines, abandoned, remainder: mark?.remainder ?? null };
 }

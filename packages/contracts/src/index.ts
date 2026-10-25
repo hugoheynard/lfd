@@ -1259,6 +1259,7 @@ export { DELIVERY_PROOF_PERMISSION } from "./order-handover-proof.js";
 export type {
   DeliveryRunSheetAddressBookView,
   DeliveryRunSheetRoundView,
+  DeliveryRunSheetShortfallView,
   DeliveryRunSheetStepView,
   DeliveryRunSheetStopView,
   DeliveryRunSheetView,

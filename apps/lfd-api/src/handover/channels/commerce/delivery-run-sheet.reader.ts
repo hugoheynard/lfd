@@ -1,6 +1,6 @@
 import type { BillingAddressPayload, DeliveryContact, GpsPoint } from "@lfd/contracts";
 
-import type { HandoverWindow } from "./handover-queue.reader.js";
+import type { HandoverAbandonedLine, HandoverWindow } from "./handover-queue.reader.js";
 
 /**
  * **Ce qui part en livraison ce jour-là, et comment livrer chaque adresse** —
@@ -73,7 +73,10 @@ export interface DeliveryRunSheetEntry {
    * un lien vers le carnet d'une autre maison rend `null`, jamais ses consignes.
    */
   readonly addressBook: DeliveryRunSheetAddressBook | null;
+  /** Somme des quantités QUI PARTENT — réduite par un départ incomplet décidé. */
   readonly totalUnits: number;
+  /** Le départ incomplet décidé, ou `null` sans décision. */
+  readonly shortfall: DeliveryRunSheetShortfall | null;
   /** L'état côté COMMERCE, lu par la règle d'état — jamais écrit par le retrait. */
   readonly status: string;
   readonly readyAt: Date | null;
@@ -101,4 +104,16 @@ export interface DeliveryRunSheetStep {
   readonly hasPhoto: boolean;
   /** Ce qui invalide l'image en cache — la même révision que la procédure staff. */
   readonly photoRevision: string | null;
+}
+
+/**
+ * **Un départ incomplet décidé**, vu de la feuille de route (2026-10-25) : ce
+ * qui ne part pas, et le sort décidé pour lui. `remainder` voyage jusqu'à
+ * l'écran pour qu'un futur « à relivrer » (reliquat, E7) dise autre chose que
+ * l'abandon ; aujourd'hui il ne vaut que `abandoned`.
+ */
+export interface DeliveryRunSheetShortfall {
+  readonly remainder: "abandoned";
+  /** Par article, les pièces qui ne partent pas. */
+  readonly lines: readonly HandoverAbandonedLine[];
 }

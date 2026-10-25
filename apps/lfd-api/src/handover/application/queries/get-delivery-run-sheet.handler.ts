@@ -136,6 +136,10 @@ function toStopView(
     addressBook:
       entry.addressBook === null ? null : toAddressBookView(entry.addressBook, withProcedures),
     totalUnits: entry.totalUnits,
+    shortfall:
+      entry.shortfall === null
+        ? null
+        : { remainder: entry.shortfall.remainder, lines: [...entry.shortfall.lines] },
     state: queueStateOf(entry, attestation),
     readyAt: entry.readyAt === null ? null : entry.readyAt.toISOString(),
     withoutAtelierSheet,

@@ -11,7 +11,12 @@ import type {
 } from "../../../handover/channels/commerce/index.js";
 import type { Prisma } from "../../../platform/database/client/client.js";
 import { photoCardRevision } from "../../shared/photo-cards/domain/value-objects/photo-revision.js";
-import { customerLabelOf, tradeNameOf } from "./handover-order.query.js";
+import {
+  customerLabelOf,
+  DEPARTURE_SELECT,
+  departureOf,
+  tradeNameOf,
+} from "./handover-order.query.js";
 import { fulfillmentOf, windowOf } from "./order-fulfillment.parse.js";
 
 /**
@@ -38,7 +43,8 @@ export const RUN_SHEET_ORDER_SELECT = {
   deliveryAddressId: true,
   company: { select: { raisonSociale: true, enseigne: true } },
   placedBy: { select: { email: true, firstName: true, lastName: true } },
-  lines: { select: { quantity: true } },
+  // Ce qui PART d'un départ incomplet décidé, et le reste (2026-10-25).
+  ...DEPARTURE_SELECT,
 } as const;
 
 /** Les consignes d'une adresse du carnet. */
@@ -96,6 +102,7 @@ export function toRunSheetEntry(
 ): DeliveryRunSheetEntry {
   const agreed = fulfillmentOf(row.fulfillment);
   const label = customerLabelOf(row);
+  const departure = departureOf(row);
   return {
     orderId: row.id,
     reference: row.orderNumber,
@@ -108,7 +115,11 @@ export function toRunSheetEntry(
     signatureRequired: agreed.signatureRequired.value,
     orderNote: row.note,
     addressBook: addressBookOf(row, addresses, procedures),
-    totalUnits: row.lines.reduce((sum, line) => sum + line.quantity, 0),
+    totalUnits: departure.lines.reduce((sum, line) => sum + line.quantity, 0),
+    shortfall:
+      departure.remainder === null
+        ? null
+        : { remainder: departure.remainder, lines: departure.abandoned },
     status: row.status,
     readyAt: row.readyAt,
     placedAt: row.createdAt,

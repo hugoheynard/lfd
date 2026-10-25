@@ -4,6 +4,7 @@ import type {
   HandoverQueueWindowView,
   OrderClientele,
 } from "./order-handover.js";
+import type { PackingAbandonedLine } from "./production-packing.js";
 
 /**
  * **La feuille de route du jour** — ce qui part en livraison, et comment livrer
@@ -50,8 +51,14 @@ export interface DeliveryRunSheetStopView {
    * que le lien soit écrit (2026-09-29). L'écran le dit, il ne devine pas.
    */
   readonly addressBook: DeliveryRunSheetAddressBookView | null;
-  /** Somme des quantités — ce qu'on recompte au chargement. */
+  /** Somme des quantités QUI PARTENT — ce qu'on recompte au chargement. */
   readonly totalUnits: number;
+  /**
+   * Le départ incomplet décidé (2026-10-25) : ce qui ne part pas, et le sort
+   * du reste. Absent ou `null` sans décision. Il informe le livreur ;
+   * prévenir le client reste une décision du commerce (E6d).
+   */
+  readonly shortfall?: DeliveryRunSheetShortfallView | null | undefined;
   /** Le même état que la file du comptoir. */
   readonly state: HandoverQueueState;
   /** Colisée (le bac est fait) le, ou `null`. */
@@ -77,6 +84,17 @@ export interface DeliveryRunSheetStopView {
    * n'ouvre pas la palette.
    */
   readonly color?: string;
+}
+
+/**
+ * Un départ incomplet décidé. `remainder` voyage jusqu'à l'écran pour qu'un
+ * futur « à relivrer » (reliquat, E7) dise « reste relivré le … » ; il ne vaut
+ * aujourd'hui que `abandoned`.
+ */
+export interface DeliveryRunSheetShortfallView {
+  readonly remainder: "abandoned";
+  /** Par article, les pièces qui ne partent pas. */
+  readonly lines: readonly PackingAbandonedLine[];
 }
 
 /** La tournée d'un arrêt, et sa place dedans. */

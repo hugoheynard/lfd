@@ -46,6 +46,16 @@
     }
   </div>
 
+  <!-- Un départ incomplet décidé (2026-10-25) : ce qui ne part pas, avant
+       l'adresse. Il informe le livreur, il ne l'invite pas à prévenir. -->
+  @if (item.shortfall; as shortfall) {
+    <app-missing-items
+      fulfillmentMethod="delivery"
+      [remainder]="shortfall.remainder"
+      [lines]="shortfall.lines"
+    />
+  }
+
   <fold-field-list>
     <fold-field
       label="Adresse"

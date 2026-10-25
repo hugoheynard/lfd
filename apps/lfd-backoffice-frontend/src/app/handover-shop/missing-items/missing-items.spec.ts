@@ -33,7 +33,8 @@ describe('MissingItems', () => {
     const said = text(await render('delivery'));
 
     expect(said).toContain('Départ incomplet. Ces articles ne partent pas');
-    expect(said).toContain('Reste abandonné : 2 Croissant nature');
+    expect(said).toContain('2 Croissant nature');
+    expect(said).not.toContain('Reste abandonné');
   });
 
   it('n’invite jamais à prévenir le client — c’est une décision du commerce', async () => {

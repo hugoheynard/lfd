@@ -308,6 +308,16 @@ forme du bon de commande
   articles ne sont pas dans le sac : <n> <produit> » ; en livraison :
   « Départ incomplet. Ces articles ne partent pas : ». Il informe le vendeur ;
   prévenir le client reste « Écrire au client » (E6d).
+- **Sur la feuille de route du livreur** (2026-10-25) : chaque arrêt porte
+  `DeliveryRunSheetStopView.shortfall` (`{ remainder, lines }`, `null` sans
+  décision) et un `totalUnits` QUI PART. Le commerce le sert par
+  `DeliveryRunSheetReader` (déclaré par le retrait), via le même `departureOf`.
+  L'écran (`RunSheetStop`) réutilise le composant du comptoir : « Départ
+  incomplet. Ces articles ne partent pas : <n> <produit> ». `remainder` ne vaut
+  que `abandoned` ; il voyage jusqu'à l'écran pour qu'un « à relivrer » (E7)
+  dise « reste relivré le <date> ». Non couverts : « Ma tournée » (fiche lue
+  sur la feuille d'atelier, par le canal de la livraison) et le PDF de
+  tournée, qui n'affiche aucune quantité.
 
 ## Les décisions
 

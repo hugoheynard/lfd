@@ -25,3 +25,28 @@ describe('RunSheetStop — la couleur de l’arrêt (plan du tri et des couleurs
     expect(render(stopOf()).querySelector('[data-stop-color]')).toBeNull();
   });
 });
+
+describe('RunSheetStop — un départ incomplet décidé (2026-10-25)', () => {
+  const text = (host: HTMLElement): string => (host.textContent ?? '').replace(/\s+/g, ' ');
+
+  it('dit « Départ incomplet. Ces articles ne partent pas » et chaque article', () => {
+    const host = render(
+      stopOf({
+        totalUnits: 1,
+        shortfall: {
+          remainder: 'abandoned',
+          lines: [{ sku: 'CRO', productName: 'Croissant', quantity: 2 }],
+        },
+      }),
+    );
+
+    expect(text(host)).toContain('Départ incomplet. Ces articles ne partent pas');
+    expect(text(host)).toContain('2 Croissant');
+    expect(text(host)).not.toMatch(/prévenez|prévenir/i);
+  });
+
+  it('sans décision, rien', () => {
+    expect(render(stopOf({ shortfall: null })).querySelector('[data-missing-items]')).toBeNull();
+    expect(render(stopOf()).querySelector('[data-missing-items]')).toBeNull();
+  });
+});

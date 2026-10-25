@@ -32,6 +32,7 @@ describe("departureOf — ce que le comptoir tend", () => {
     const out = departureOf(row(false));
     expect(out.lines.map((l) => l.quantity)).toEqual([4, 3]);
     expect(out.abandoned).toEqual([]);
+    expect(out.remainder).toBeNull();
   });
 
   /** Régression : le comptoir affichait les quantités commandées d'un départ incomplet décidé (2026-10-25). */
@@ -39,5 +40,6 @@ describe("departureOf — ce que le comptoir tend", () => {
     const out = departureOf(row(true));
     expect(out.lines.map((l) => l.quantity)).toEqual([2, 3]);
     expect(out.abandoned).toEqual([{ sku: "CRO", productName: "Croissant", quantity: 2 }]);
+    expect(out.remainder).toBe("abandoned");
   });
 });

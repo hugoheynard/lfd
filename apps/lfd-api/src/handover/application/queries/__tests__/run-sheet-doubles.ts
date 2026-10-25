@@ -60,6 +60,7 @@ export function entry(overrides: Partial<DeliveryRunSheetEntry> = {}): DeliveryR
       ],
     },
     totalUnits: 3,
+    shortfall: null,
     status: "confirmed",
     readyAt: null,
     placedAt: PLACED_AT,
