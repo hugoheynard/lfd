@@ -1,5 +1,5 @@
 @if (order(); as order) {
-  <fold-panel-header title="Confirmation de commande" [subtitle]="order.orderNumber" />
+  <fold-panel-header title="Bon de retrait" [subtitle]="order.orderNumber" />
 
   <fold-panel-body>
     <!-- Le papier, tel qu'on le coche : une en-tête, une liste, un compte. La
@@ -43,7 +43,7 @@
           </tr>
         </thead>
         <tbody>
-          @for (line of order.lines; track line.sku) {
+          @for (line of lines(); track line.sku) {
             <tr>
               <td class="sh-qty">{{ line.quantity }}</td>
               <td>{{ line.productName }}</td>
@@ -53,6 +53,10 @@
           }
         </tbody>
       </table>
+
+      @if (abandoned().length > 0) {
+        <app-missing-items [lines]="abandoned()" [fulfillmentMethod]="order.fulfillmentMethod" />
+      }
 
       <p class="sh-total">
         <strong>{{ totalUnits() }}</strong> pièce{{ totalUnits() > 1 ? 's' : '' }} au total.

@@ -1,5 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
-import type { HandoverQueueWindowView, OrderHandoverView } from '@lfd/contracts';
+import type {
+  HandoverQueueWindowView,
+  OrderHandoverView,
+  PackingAbandonedLine,
+} from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldPanelBodyComponent,
@@ -15,6 +19,7 @@ import { NotifyService } from '../../notify.service';
 import { AdminOrdersService } from '../../commandes/orders.service';
 import { saveBlob } from '../../shared/download/save-blob';
 import { formatWindow } from '../handover-queue';
+import { MissingItems } from '../missing-items/missing-items';
 
 /**
  * Ce que la file remet au bon : la commande déjà lue par le rail, **dans la vue
@@ -39,6 +44,12 @@ export interface SheetPanelData {
    * l'écran, et ouvrirait la porte à deux heures différentes sur le même bon.
    */
   readonly window: HandoverQueueWindowView | null;
+  /**
+   * Ce qui ne part pas — un départ incomplet décidé. Les lignes de `order`
+   * portent déjà ce qui part : sans cette liste, le panneau montrait les
+   * articles abandonnés à 0 (Hugo, 2026-10-25).
+   */
+  readonly abandoned: readonly PackingAbandonedLine[];
 }
 
 const PLACED_AT = new Intl.DateTimeFormat('fr-FR', {
@@ -76,6 +87,7 @@ const PLACED_AT = new Intl.DateTimeFormat('fr-FR', {
     FoldPanelBodyComponent,
     FoldPanelFooterComponent,
     FoldPanelHeaderComponent,
+    MissingItems,
   ],
   templateUrl: './sheet-panel.html',
   styleUrl: './sheet-panel.scss',
@@ -127,8 +139,17 @@ export class SheetPanel implements FoldPanelContent<SheetPanelData> {
     return date === null || date === undefined ? '' : PLACED_AT.format(new Date(date));
   });
 
+  /** Ce qui est dans le sac : une ligne abandonnée (à 0) n'y figure pas. */
+  protected readonly lines = computed(() =>
+    (this.order()?.lines ?? []).filter((line) => line.quantity > 0),
+  );
+
+  protected readonly abandoned = computed<readonly PackingAbandonedLine[]>(
+    () => this.data()?.abandoned ?? [],
+  );
+
   protected readonly totalUnits = computed<number>(() =>
-    (this.order()?.lines ?? []).reduce((sum, line) => sum + line.quantity, 0),
+    this.lines().reduce((sum, line) => sum + line.quantity, 0),
   );
 
   /**

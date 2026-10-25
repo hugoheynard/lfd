@@ -295,6 +295,7 @@ export class HandoverDetail {
       // Le créneau vient de la LIGNE : la vue de retrait sert d'abord l'écran du
       // scan, qui n'a pas de file derrière lui, et ne le porte donc pas.
       window: entry.window,
+      abandoned: this.abandoned(),
     };
     this.panels.open<SheetPanelData>(SheetPanel, { data });
   }

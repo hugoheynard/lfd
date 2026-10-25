@@ -100,6 +100,7 @@ const data = (over: Partial<SheetPanelData> = {}): SheetPanelData => ({
   pickupLabel: 'Le Labo',
   customerLabel: 'Boulangerie Marin',
   window: { start: '06:00', end: '08:00', source: 'override' },
+  abandoned: [],
   ...over,
 });
 
@@ -156,5 +157,26 @@ describe('SheetPanel', () => {
     const fixture = await render({ ...data(), order: order({ note: 'Livrer par la cour' }) });
 
     expect(text(fixture)).toContain('Livrer par la cour');
+  });
+
+  /**
+   * Régression (Hugo, 2026-10-25) : le panneau montrait les articles
+   * abandonnés d'un départ incomplet avec une quantité à 0.
+   */
+  it('ne liste que ce qui est dans le sac, et dit à part ce qui ne part pas', async () => {
+    const base = order();
+    const fixture = await render(
+      data({
+        order: {
+          ...base,
+          lines: [...base.lines, { ...base.lines[0]!, sku: 'ABS-1', quantity: 0 }],
+        },
+        abandoned: [{ sku: 'ABS-1', productName: 'Pain absent', quantity: 5 }],
+      }),
+    );
+
+    expect(text(fixture)).not.toContain('ABS-1');
+    expect(text(fixture)).toContain('Bon de retrait');
+    expect(text(fixture)).toContain('Pain absent');
   });
 });
