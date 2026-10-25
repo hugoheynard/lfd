@@ -50,8 +50,22 @@ export interface BoardStock {
 }
 
 /** Ce que le colisage tient d'une journée — ses commandes et ses réserves. */
+/**
+ * Une feuille retirée par une annulation après l'arrêt (plan A1, lot A1.3) —
+ * hors du poste, montrée à part sous le badge « annulée après l'arrêt ».
+ */
+export interface BoardWithdrawnSheet {
+  readonly orderId: string;
+  readonly reference: string;
+  readonly customerLabel: string;
+  readonly drawnAt: Date;
+  readonly withdrawnAt: Date;
+}
+
 export interface PackingBoardDay {
+  /** Les feuilles du poste — jamais une feuille retirée. */
   readonly orders: readonly BoardOrder[];
+  readonly withdrawn: readonly BoardWithdrawnSheet[];
   readonly stocks: readonly BoardStock[];
 }
 

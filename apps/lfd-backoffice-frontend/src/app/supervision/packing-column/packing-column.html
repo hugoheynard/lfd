@@ -204,4 +204,35 @@
       </fold-card>
     }
   }
+
+  <!-- Plan A1, lot A1.3 : annulées APRÈS l'arrêt. Le compte à produire les
+       garde ; leur feuille est retirée du colisage — plus aucun geste. -->
+  @if (board().withdrawn.length > 0) {
+    <p class="divider" data-withdrawn-divider>
+      <span class="divider-label">{{ withdrawnCount() }}</span>
+    </p>
+    @for (sheet of board().withdrawn; track sheet.orderId) {
+      <fold-card
+        radius="sm"
+        class="order compact"
+        [class.narrow]="narrow()"
+        data-packing="withdrawn"
+        [attr.data-reference]="sheet.reference"
+      >
+        <div class="order-head">
+          <div class="order-id">
+            <span class="customer">{{ sheet.customerLabel }}</span>
+            <span class="meta">{{ sheet.reference }}</span>
+          </div>
+          <fold-badge
+            class="pastille"
+            radius="square"
+            variant="neutral"
+            content="Annulée après l'arrêt"
+            data-withdrawn
+          />
+        </div>
+      </fold-card>
+    }
+  }
 }

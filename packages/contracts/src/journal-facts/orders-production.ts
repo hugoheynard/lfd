@@ -1,7 +1,10 @@
 import { z } from "zod";
 
 import { weekdaySchema } from "../address.js";
-import { CUSTOMER_CANCELLATION_REASON_CODES } from "../customer-cancellation.values.js";
+import {
+  CUSTOMER_CANCELLATION_REASON_CODES,
+  CUSTOMER_CANCELLATION_STAGES,
+} from "../customer-cancellation.values.js";
 import { ORDER_REVISION_CHANGES } from "../order-revision.values.js";
 import { WINDOW_MODES } from "../delivery-availability.values.js";
 import { DELIVERY_BIN_FACTS } from "./delivery-bins.js";
@@ -15,6 +18,7 @@ import { HANDOVER_PROOF_FACTS } from "./handover-proofs.js";
 import { ORDER_CHANGE_REQUEST_FACTS } from "./order-change-requests.js";
 import { ORDER_REFUND_FACTS } from "./order-refunds.js";
 import { ORDER_SHORTFALL_FACTS } from "./order-shortfalls.js";
+import { AFTER_CLOSE_WITHDRAWAL_FACTS } from "./after-close-withdrawals.js";
 import { PACKING_CONTAINER_FACTS } from "./packing-containers.js";
 import { PRODUCTION_SETTINGS_FACTS } from "./production-settings.js";
 import { DELIVERY_SIMULATION_FACTS } from "./delivery-simulation.js";
@@ -380,6 +384,12 @@ export const ORDERS_PRODUCTION_FACTS = {
    * 2026-10-21) : `cancelledFromPrincipal` — le compte principal (son
    * enseigne du moment) dont le client qui a annulé la commande d'un SITE est
    * membre, sans l'être du site. ABSENT sinon, et de tout fait d'avant.
+   *
+   * Plan A1 (lot A1.3, 2026-10-25) : `afterInscription` — la commande était
+   * déjà inscrite au compte à produire, et les ateliers l'ont retirée ;
+   * `stageApplied` — jusqu'où l'annulation pouvait aller (`production_plan`
+   * ou `ready`, la valeur du réglage appliquée à cette commande). ABSENTS des
+   * faits d'avant, qui se lisent `false` / `production_plan`.
    */
   "order.cancelled": fact(
     payload({
@@ -403,6 +413,8 @@ export const ORDERS_PRODUCTION_FACTS = {
         })
         .nullable(),
       refund: z.object({ announcedCents: cents() }).nullable().optional(),
+      afterInscription: z.boolean().optional(),
+      stageApplied: z.enum(CUSTOMER_CANCELLATION_STAGES).optional(),
     }),
   ),
   /**
@@ -650,6 +662,8 @@ export const ORDERS_PRODUCTION_FACTS = {
   /** **Les remboursements Stripe constatés** (lot R1) — même famille. */
   ...ORDER_REFUND_FACTS,
   ...ORDER_SHORTFALL_FACTS,
+  /** **Retirée après l'arrêt du plan** (plan A1, lot A1.3) — même famille. */
+  ...AFTER_CLOSE_WITHDRAWAL_FACTS,
   /** **Les demandes de modification** après l'heure limite (plan de modification, M4). */
   ...ORDER_CHANGE_REQUEST_FACTS,
   ...PACKING_CONTAINER_FACTS,

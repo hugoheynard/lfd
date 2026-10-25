@@ -25,6 +25,7 @@ function state(overrides: Partial<CancellationState> = {}): CancellationState {
     inscribedDay: null,
     engagement: null,
     refunds: { refundableCents: 0, inFlightCents: 0 },
+    packed: false,
     ...overrides,
   };
 }
@@ -256,6 +257,21 @@ describe("cancellationOf — l'autorisation du plan A1", () => {
       expect(cancellationRefusalOf(block)).toMatch(/Voyez|Rechargez/);
     },
   );
+
+  it("lot A1.3 : l'aperçu qui sait le bac fermé dit « packed » avant le geste", () => {
+    expect(
+      cancellationBlocker(state({ inscribedDay: "2026-10-14", packed: true }), {
+        allowance: "before_packing",
+      }),
+    ).toEqual({ kind: "packed" });
+  });
+
+  it("lot A1.3 : sous l'étape « arrêt du plan », un bac fermé reste « inscrite »", () => {
+    expect(
+      cancellationBlocker(state({ inscribedDay: "2026-10-14", packed: true }), BEFORE_INSCRIPTION)
+        ?.kind,
+    ).toBe("inscribed");
+  });
 
   it("étape ready : ce qui s'annulait s'annule toujours", () => {
     expect(cancellationOf(state(), { allowance: "before_packing" })).toEqual({

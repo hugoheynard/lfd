@@ -156,3 +156,60 @@ describe("OrderCancelledEvent — l'auteur client (lot C6)", () => {
     expect(() => OrderCancelledEvent.fromPayload(payload)).toThrow(OrderSettlementPayloadError);
   });
 });
+
+/**
+ * Plan A1 (lot A1.3) : `afterInscription` et `stageApplied` sont ADDITIFS —
+ * un fait d'avant se relit `false` / `production_plan`.
+ */
+describe("OrderCancelledEvent — après l'arrêt du plan (plan A1)", () => {
+  const BEFORE_A1 = {
+    orderId: "o1",
+    orderNumber: "ORD-1",
+    placedByUserId: "usr_1",
+    cancelledBy: "staff_1",
+    reason: "Le client a appelé",
+    regime: "due",
+    voucher: null,
+    refund: null,
+  };
+
+  it("un fait d'avant A1.3 se lit `false` / `production_plan`", () => {
+    const event = OrderCancelledEvent.fromPayload(BEFORE_A1);
+
+    expect(event.afterInscription).toBe(false);
+    expect(event.stageApplied).toBe("production_plan");
+  });
+
+  it("annulée après l'arrêt fait l'aller-retour", () => {
+    const event = new OrderCancelledEvent(
+      "o1",
+      "ORD-1",
+      "usr_1",
+      null,
+      null,
+      "paid",
+      null,
+      { announcedCents: 500 },
+      "customer",
+      "usr_1",
+      null,
+      null,
+      null,
+      true,
+      "ready",
+    );
+
+    expect(event.durableFact().payload).toMatchObject({
+      afterInscription: true,
+      stageApplied: "ready",
+    });
+    expect(OrderCancelledEvent.fromPayload(event.durableFact().payload)).toEqual(event);
+  });
+
+  it.each([
+    ["un `afterInscription` qui n'est pas un booléen", { ...BEFORE_A1, afterInscription: "oui" }],
+    ["une étape hors liste", { ...BEFORE_A1, stageApplied: "handover" }],
+  ])("%s est un fait hors forme", (_label, payload) => {
+    expect(() => OrderCancelledEvent.fromPayload(payload)).toThrow(OrderSettlementPayloadError);
+  });
+});

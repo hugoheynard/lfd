@@ -7,6 +7,7 @@ import { citeContainer } from "../domain/events/packing-container.events.js";
 import {
   type BoardContainer,
   type BoardOrder,
+  type BoardWithdrawnSheet,
   PackingBoardReader,
   type PackingBoardDay,
 } from "../domain/ports/packing-board.reader.js";
@@ -30,6 +31,7 @@ const ORDER_SELECT = {
   containerMode: true,
   shortfallReportedAt: true,
   shortfallAuthorizedAt: true,
+  withdrawnAt: true,
   containers: CONTAINER_SELECT,
   lines: {
     select: {
@@ -49,6 +51,9 @@ const ORDER_SELECT = {
  *
  * Défense en profondeur (K2b, §5.1, B1) : un contenant dont le bac n'est plus vivant chez la livraison n'est ni servi,
  * ni compté.
+ *
+ * Une feuille retirée (plan A1, lot A1.3) sort du poste : elle n'est rendue
+ * qu'à part, sans lignes ni contenants — elle ne se colise plus.
  */
 @Injectable()
 export class PrismaPackingBoardReader extends PackingBoardReader {
@@ -73,11 +78,13 @@ export class PrismaPackingBoardReader extends PackingBoardReader {
       }),
       reservationsOn(this.prisma, serviceDay),
     ]);
+    const active = orders.filter((order) => order.withdrawnAt === null);
     const liveBins = await this.desk.liveBins(
-      orders.flatMap((order) => order.containers.flatMap((row) => row.binId ?? [])),
+      active.flatMap((order) => order.containers.flatMap((row) => row.binId ?? [])),
     );
     return {
-      orders: orders.map((row) => boardOrderOf(row, liveBins)),
+      orders: active.map((row) => boardOrderOf(row, liveBins)),
+      withdrawn: orders.flatMap(withdrawnSheetOf),
       stocks: stocks.map((stock) => ({
         ...stock,
         reserved: reservedOf(reservations.get(stock.sku) ?? []),
@@ -102,6 +109,7 @@ interface OrderRow {
   readonly containerMode: string;
   readonly shortfallReportedAt: Date | null;
   readonly shortfallAuthorizedAt: Date | null;
+  readonly withdrawnAt: Date | null;
   readonly containers: Parameters<typeof containerOf>[0][];
   readonly lines: readonly {
     readonly sku: string;
@@ -148,6 +156,20 @@ function boardOrderOf(row: OrderRow, liveBins: ReadonlySet<string>): BoardOrder 
     shortfallReportedAt: row.shortfallReportedAt,
     shortfallAuthorizedAt: row.shortfallAuthorizedAt,
   };
+}
+
+function withdrawnSheetOf(row: OrderRow): BoardWithdrawnSheet[] {
+  return row.withdrawnAt === null
+    ? []
+    : [
+        {
+          orderId: row.orderId,
+          reference: row.reference,
+          customerLabel: row.customerLabel,
+          drawnAt: row.drawnAt,
+          withdrawnAt: row.withdrawnAt,
+        },
+      ];
 }
 
 function isLive(container: PackingContainerState, liveBins: ReadonlySet<string>): boolean {

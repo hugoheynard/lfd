@@ -945,6 +945,7 @@ export type {
   ProductionPackingQuery,
   ProductionPackingView,
 } from "./production-packing.js";
+export type { WithdrawnPackingSheet } from "./production-packing-withdrawn.js";
 export {
   SHELF_LABEL_OFF_CATALOG,
   SHELF_LABEL_UNKNOWN,

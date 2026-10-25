@@ -37,6 +37,7 @@ const BOARD: PackingBoard = {
   packed: [card('CMD-3', { state: 'packed', packedAt: '5 h 12' })],
   toPack: 15,
   awaitingOven: 1,
+  withdrawn: [],
 };
 
 async function mountFixture(
@@ -69,6 +70,33 @@ async function mount(board: PackingBoard, matches: SupervisionMatches = NO_MATCH
 }
 
 describe('PackingColumn', () => {
+  /** Plan A1, lot A1.3 : une commande annulée après l'arrêt n'est plus une carte à coliser. */
+  it('montre à part les feuilles retirées, sous le badge « annulée après l’arrêt »', async () => {
+    const element = await mount({
+      ...BOARD,
+      withdrawn: [
+        {
+          orderId: 'o-CMD-9',
+          reference: 'CMD-9',
+          customerLabel: 'Camille',
+          withdrawnAt: '2030-03-12T07:00:00.000Z',
+        },
+      ],
+    });
+
+    expect(element.querySelector('[data-withdrawn-divider]')?.textContent).toContain(
+      "Annulées après l'arrêt · 1",
+    );
+    const card = element.querySelector('[data-packing="withdrawn"][data-reference="CMD-9"]');
+    expect(card?.querySelector('[data-withdrawn]')?.textContent).toContain("Annulée après l'arrêt");
+  });
+
+  it('sans feuille retirée, rien de plus', async () => {
+    const element = await mount(BOARD);
+
+    expect(element.querySelector('[data-withdrawn-divider]')).toBeNull();
+  });
+
   /** Hugo, 2026-09-28 : l'heure où la commande a été déclarée prête manquait. */
   it('donne l’heure de déclaration aux commandes colisées', async () => {
     const element = await mount(BOARD);

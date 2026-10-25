@@ -54,6 +54,7 @@ function scene(input: {
   const rows = new InMemoryCancellations(subject, trace);
   const bakery = new ScriptedDesk(input.desk ?? "withdrawn", trace);
   const packing = new ScriptedPackingDesk(input.packing ?? "withdrawn", trace);
+  const durable = new RecordingDurable();
   const handler = new CancelOrderHandler(
     new OrderCancellation(
       subjects,
@@ -69,13 +70,13 @@ function scene(input: {
         new InMemoryRefundRequests(new RefundStore()),
         new RecordingDispatch(),
       ),
-      new RecordingDurable(),
+      durable,
       new RecordingNoteVoiding(trace),
       new DirectUnitOfWork(),
       new FixedClock(NOW),
     ),
   );
-  return { handler, trace, settings, rows, bakery, packing };
+  return { handler, trace, settings, rows, bakery, packing, durable };
 }
 
 const cancel = () => new CancelOrderCommand("ord_1", "fiche-marie", "Le client a rappelé");
@@ -193,11 +194,41 @@ describe("OrderCancellation — l'autorisation du plan A1", () => {
   });
 
   it("étape ready, commande non inscrite : annulée comme avant", async () => {
-    const { handler, rows } = scene({ stage: "ready" });
+    const { handler, rows, durable } = scene({ stage: "ready" });
 
     await handler.execute(cancel());
 
     expect(rows.records).toHaveLength(1);
+    expect(cancelledPayload(durable)).toMatchObject({
+      afterInscription: false,
+      stageApplied: "ready",
+    });
+  });
+
+  it("lot A1.3 : retirée après l'arrêt, le fait `order.cancelled` le dit", async () => {
+    const { handler, durable } = scene({
+      stage: "ready",
+      desk: "withdrawn_after_inscription",
+      subject: { status: "confirmed" },
+    });
+
+    await handler.execute(cancel());
+
+    expect(cancelledPayload(durable)).toMatchObject({
+      afterInscription: true,
+      stageApplied: "ready",
+    });
+  });
+
+  it("lot A1.3 : sous l'étape « arrêt du plan », le fait dit `production_plan`", async () => {
+    const { handler, durable } = scene({ stage: "production_plan" });
+
+    await handler.execute(cancel());
+
+    expect(cancelledPayload(durable)).toMatchObject({
+      afterInscription: false,
+      stageApplied: "production_plan",
+    });
   });
 
   it("lit le réglage UNE fois pour une commande personnelle, relecture sous verrou comprise", async () => {
@@ -216,3 +247,10 @@ describe("OrderCancellation — l'autorisation du plan A1", () => {
     expect(settings.reads).toBe(0);
   });
 });
+
+/** La charge du fait `order.cancelled` publié. */
+function cancelledPayload(
+  durable: RecordingDurable,
+): Readonly<Record<string, unknown>> | undefined {
+  return durable.facts.find((fact) => fact.type === "order.cancelled")?.payload;
+}

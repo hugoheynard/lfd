@@ -190,6 +190,15 @@ export class SupervisionPage {
       .join(', '),
   );
 
+  /**
+   * **Annulées après l'arrêt** (plan A1, lot A1.3) : gardées au compte à
+   * produire, leur feuille retirée du colisage — le compteur que le serveur
+   * tient par acheminement, additionné.
+   */
+  protected readonly cancelledAfterPlan = computed(() =>
+    (dataOf(this.day())?.flow ?? []).reduce((sum, line) => sum + line.cancelledAfterPlan, 0),
+  );
+
   protected readonly latenessUnknown = computed(() => {
     const day = this.day();
     return day.status !== 'ready' || day.stale;

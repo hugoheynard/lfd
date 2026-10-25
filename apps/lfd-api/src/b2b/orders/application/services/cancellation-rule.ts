@@ -33,12 +33,17 @@ import { settlementRegimeOf } from "../../domain/services/settlement-regime.js";
 export class CancellationRule {
   constructor(private readonly engagements: AccountOrderEngagementReader) {}
 
-  /** L'état complet que la règle lit. */
+  /**
+   * L'état complet que la règle lit. `packed` : le bac fermé au colisage, lu
+   * par les aperçus seulement (plan A1, lot A1.3) — le geste le laisse à son
+   * guichet, sous verrou.
+   */
   async stateOf(
     subject: CancellationSubject,
     inscribedDay: string | null,
+    packed = false,
   ): Promise<CancellationState> {
-    return cancellationStateOf(subject, inscribedDay, await this.engagementOf(subject));
+    return cancellationStateOf(subject, inscribedDay, await this.engagementOf(subject), packed);
   }
 
   /**

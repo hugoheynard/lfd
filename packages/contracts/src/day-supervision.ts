@@ -70,6 +70,13 @@ export const supervisionFlowSchema = z.object({
   ready: z.number().int().nonnegative(),
   handedOver: z.number().int().nonnegative(),
   cancelled: z.number().int().nonnegative(),
+  /**
+   * Parmi `cancelled`, celles annulées APRÈS l'arrêt du plan (plan A1, lot
+   * A1.3) : le fournil les a gardées au compte à produire, le colisage a
+   * retiré leur feuille. Le compteur explique un compte plus grand que les
+   * feuilles.
+   */
+  cancelledAfterPlan: z.number().int().nonnegative(),
 });
 export type SupervisionFlow = z.infer<typeof supervisionFlowSchema>;
 

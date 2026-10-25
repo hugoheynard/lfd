@@ -49,6 +49,12 @@ export class PackingDayReader {
   readonly sheets = computed(() => this.view()?.sheets ?? []);
 
   /**
+   * Les feuilles retirées par une annulation après l'arrêt (plan A1, lot
+   * A1.3) — hors du poste, dites à part : plus aucun geste ne les touche.
+   */
+  readonly withdrawnSheets = computed(() => this.view()?.withdrawnSheets ?? []);
+
+  /**
    * La marchandise à répartir, pour la journée entière et **telle que servie** :
    * l'écran ne la recompte plus. Le sélecteur de pile ne la touche pas.
    */

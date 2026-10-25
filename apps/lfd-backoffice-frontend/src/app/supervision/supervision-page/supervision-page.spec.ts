@@ -107,6 +107,7 @@ function packingView(closedAt: string | null = 'x'): ProductionPackingView {
     todoCount: 1,
     readyCount: 0,
     relativeDay: 'today',
+    withdrawnSheets: [],
     sheets:
       closedAt === null
         ? []
@@ -410,6 +411,38 @@ describe('SupervisionPage', () => {
     const fixture = await mount();
 
     expect(root(fixture).querySelector('[data-awaiting-decision]')).toBeNull();
+  });
+
+  /** Plan A1, lot A1.3 : le compte à produire dépasse les feuilles, et l'écran dit pourquoi. */
+  it('compte les annulées après l’arrêt, tous acheminements confondus', async () => {
+    const line = {
+      placed: 0,
+      inProduction: 0,
+      ready: 0,
+      handedOver: 0,
+      cancelled: 2,
+      cancelledAfterPlan: 2,
+    };
+    const fixture = await mount({
+      day: () =>
+        Promise.resolve({
+          ...DAY,
+          flow: [
+            { ...line, fulfillmentMethod: 'pickup' as const },
+            { ...line, fulfillmentMethod: 'delivery' as const, cancelledAfterPlan: 0 },
+          ],
+        }),
+    });
+
+    expect(
+      root(fixture).querySelector('.masthead [data-cancelled-after-plan]')?.textContent,
+    ).toContain("Annulées après l'arrêt : 2.");
+  });
+
+  it('ne dit rien quand aucune commande n’a été annulée après l’arrêt', async () => {
+    const fixture = await mount();
+
+    expect(root(fixture).querySelector('[data-cancelled-after-plan]')).toBeNull();
   });
 
   it('montre les renvois à qui peut ouvrir les postes', async () => {

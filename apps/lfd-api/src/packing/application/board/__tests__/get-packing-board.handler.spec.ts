@@ -135,6 +135,7 @@ describe("GetPackingBoardHandler — le poste lu au colisage (K3a)", () => {
   it("compose ses tables avec la retenue et la destination du fournil, et les auteurs du staff", async () => {
     const { handler, held, authors } = setup({
       orders: [order("1", "staff_1"), order("2", null)],
+      withdrawn: [],
       stocks: [],
     });
 
@@ -152,7 +153,7 @@ describe("GetPackingBoardHandler — le poste lu au colisage (K3a)", () => {
   });
 
   it("une journée vide ne demande pas la destination au fournil", async () => {
-    const { handler, destinations } = setup({ orders: [], stocks: [] });
+    const { handler, destinations } = setup({ orders: [], withdrawn: [], stocks: [] });
 
     const view = await handler.execute(new GetPackingBoardQuery(DAY));
 
@@ -174,7 +175,7 @@ describe("GetPackingBoardHandler — le poste lu au colisage (K3a)", () => {
       dueAt: "05:00",
     };
     const { handler, departures } = setup(
-      { orders: [delivery, onSite, viaTransfer, notComposed], stocks: [] },
+      { orders: [delivery, onSite, viaTransfer, notComposed], withdrawn: [], stocks: [] },
       [
         { orderId: "1", at: parisAt(DAY, "07:10"), via: "delivery", departed: false },
         { orderId: "3", at: parisAt(DAY, "06:30"), via: "transfer", departed: false },

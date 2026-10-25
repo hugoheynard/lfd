@@ -123,9 +123,22 @@ function orderCancelled(fact: PhraseFact): Said {
   return staffGesture(
     fact,
     'cancelledBy',
-    [text(' a annulé la commande '), name(orDash(fact.payload['orderNumber']))],
-    ['orderNumber'],
+    [
+      text(' a annulé la commande '),
+      name(orDash(fact.payload['orderNumber'])),
+      ...afterThePlan(fact),
+    ],
+    ['orderNumber', 'afterInscription'],
   );
+}
+
+/**
+ * « … après l'arrêt du plan » (plan A1, lot A1.3) : la commande était déjà
+ * inscrite au compte à produire, et les ateliers l'ont retirée. Rien sur un
+ * fait d'avant, qui n'a pas la clé, ni sur une annulation d'avant l'arrêt.
+ */
+function afterThePlan(fact: PhraseFact): Segment[] {
+  return fact.payload['afterInscription'] === true ? [text(' après l’arrêt du plan')] : [];
 }
 
 /**
@@ -190,9 +203,11 @@ function customerCancelled(fact: PhraseFact, kind: 'customer' | 'guest'): Said {
       text(' a annulé '),
       text(principal === undefined || principal === null ? 'sa commande ' : 'la commande '),
       name(orDash(fact.payload['orderNumber'])),
+      ...afterThePlan(fact),
     ],
     [
       'orderNumber',
+      'afterInscription',
       'cancelledBy',
       'cancelledByKind',
       'cancelledByCustomer',

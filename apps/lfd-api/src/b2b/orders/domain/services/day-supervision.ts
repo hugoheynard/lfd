@@ -104,6 +104,8 @@ export interface StageCounts {
   readonly ready: number;
   readonly handedOver: number;
   readonly cancelled: number;
+  /** Parmi les annulées, celles retirées des ateliers après l'arrêt (plan A1, lot A1.3). */
+  readonly cancelledAfterPlan: number;
 }
 
 /** Une commande en retard, avec la règle qui la signale. */
@@ -124,23 +126,34 @@ export interface DaySupervision {
  * Le flux et les retards d'une journée. Les brouillons sont écartés ; les deux
  * acheminements ont toujours leur ligne, même vide — une ligne absente ne dit
  * pas « zéro ».
+ *
+ * `withdrawnAfterPlan` : les commandes dont le colisage a retiré la feuille
+ * (plan A1, lot A1.3) — comptées à part parmi les annulées, parce qu'elles
+ * restent au compte à produire.
  */
 export function superviseDay(
   day: string,
   orders: readonly SupervisedOrder[],
   now: Date,
+  withdrawnAfterPlan: ReadonlySet<string> = new Set(),
 ): DaySupervision {
   const staged = orders.flatMap((order) => {
     const stage = stageOf(order.status);
     return stage === null ? [] : [{ order, stage }];
   });
   return {
-    flow: METHODS.map((method) =>
-      countStages(
-        method,
-        staged.filter(({ order }) => order.fulfillmentMethod === method).map(({ stage }) => stage),
-      ),
-    ),
+    flow: METHODS.map((method) => {
+      const ofMethod = staged.filter(({ order }) => order.fulfillmentMethod === method);
+      return {
+        ...countStages(
+          method,
+          ofMethod.map(({ stage }) => stage),
+        ),
+        cancelledAfterPlan: ofMethod.filter(
+          ({ order, stage }) => stage === "cancelled" && withdrawnAfterPlan.has(order.orderId),
+        ).length,
+      };
+    }),
     late: staged.flatMap(({ order, stage }) => {
       const rule = latenessOf(stage, order.window, day, now);
       return rule === null || order.window === null
@@ -153,7 +166,7 @@ export function superviseDay(
 function countStages(
   fulfillmentMethod: FulfillmentMethod,
   stages: readonly SupervisionStage[],
-): StageCounts {
+): Omit<StageCounts, "cancelledAfterPlan"> {
   const count = (wanted: SupervisionStage): number =>
     stages.filter((stage) => stage === wanted).length;
   return {

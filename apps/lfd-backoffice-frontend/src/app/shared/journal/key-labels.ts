@@ -28,6 +28,7 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   address: 'Adresse',
   addressId: 'Adresse',
   after: 'Après',
+  afterInscription: 'Annulée après l’arrêt du plan',
   alertAt: 'Heure d’alerte',
   aligned: 'Aligné sur le défaut',
   allergens: 'Allergènes',
@@ -244,6 +245,7 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   priceCents: 'Prix TTC',
   priceMillicents: 'Prix HT',
   priority: 'Priorité',
+  productName: 'Article',
   productRules: 'Règles par produit',
   promisedQuantity: 'Quantité promise',
   // Lot P : le prix pro HT saisi (`product.pricing_saved`, `product.pro_price_prefilled`).
@@ -263,6 +265,7 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   // Lot C4 : ce que l'annulation d'une payée a promis de rendre (`order.cancelled`).
   refund: 'Remboursement promis',
   regime: 'Ce qui était dû',
+  released: 'Rendu à la réserve',
   remainderValueCents: 'Valeur du reliquat',
   // Le sort du reste d'un départ incomplet (`order.shortfall_decided`).
   remainder: 'Le reste',
@@ -305,6 +308,7 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   skus: 'Articles',
   source: 'Source de la reprise',
   staffUserId: 'Fiche du personnel',
+  stageApplied: 'Limite appliquée',
   startAt: 'Début',
   startDate: 'Début',
   startsOn: 'Premier jour',

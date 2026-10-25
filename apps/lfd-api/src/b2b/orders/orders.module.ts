@@ -87,6 +87,7 @@ import { CancelOrderHandler } from "./application/commands/cancel-order.handler.
 import { VoucherRestitutionRefusal } from "./application/services/voucher-restitution-refusal.js";
 import { CancellationAllowanceGate } from "./application/services/cancellation-allowance-gate.js";
 import { CancellationRule } from "./application/services/cancellation-rule.js";
+import { CancellationPreview } from "./application/services/cancellation-preview.js";
 import { SendOrderCancelledMail } from "./application/handlers/send-order-cancelled-mail.handler.js";
 import { CancellationSubjectReader } from "./domain/ports/cancellation-subject.reader.js";
 import { OrderCancellationRepository } from "./domain/ports/order-cancellation.repository.js";
@@ -374,6 +375,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // relié par `appBootstrap/account-order-engagement.module.ts`.
     CancellationRule,
     CancellationAllowanceGate,
+    CancellationPreview,
     SendOrderCancelledMail,
     { provide: CancellationSubjectReader, useClass: PrismaCancellationSubjectReader },
     { provide: OrderCancellationRepository, useClass: PrismaOrderCancellationRepository },

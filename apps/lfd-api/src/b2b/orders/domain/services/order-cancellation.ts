@@ -51,6 +51,12 @@ export interface CancellationState {
   readonly engagement: AccountEngagement | null;
   /** Lot C4 : le reste à rendre et ce qui est en vol, lus au carnet. */
   readonly refunds: RefundPosition;
+  /**
+   * Plan A1 (lot A1.3) : le colisage a fermé le bac — lu par l'APERÇU, sans
+   * verrou. `false` pour le geste : son guichet le tranche sous le verrou de
+   * la feuille.
+   */
+  readonly packed: boolean;
 }
 
 /**
@@ -62,6 +68,7 @@ export function cancellationStateOf(
   subject: CancellationSubject,
   inscribedDay: string | null,
   engagement: AccountEngagement | null,
+  packed = false,
 ): CancellationState {
   return {
     status: subject.status,
@@ -73,6 +80,7 @@ export function cancellationStateOf(
     inscribedDay,
     engagement,
     refunds: subject.refunds,
+    packed,
   };
 }
 
@@ -161,7 +169,7 @@ export function cancellationOf(
   }
   if (state.inscribedDay !== null || state.status !== "placed") {
     const day = state.inscribedDay ?? state.serviceDay;
-    const inscribed = inscribedBlockUnder(allowance, state.fulfillmentMethod, day);
+    const inscribed = inscribedBlockUnder(allowance, state, day);
     if (inscribed !== null) {
       return { cancellable: false, block: inscribed };
     }
@@ -173,19 +181,24 @@ export function cancellationOf(
  * Le refus « inscrite », selon l'autorisation (plan A1, § 1) : sous
  * `before_inscription`, la règle d'avant ; sous `before_packing`, une commande
  * de retrait inscrite s'annule — le colisage dira, sous son verrou, si son bac
- * est fermé (`packed`) ou porte un bac de livraison (`delivery_bin`) — et une
- * livraison inscrite reste refusée.
+ * est fermé (`packed`) ou porte un bac de livraison (`delivery_bin`) ; l'aperçu
+ * le sait déjà quand il a lu `packed` (lot A1.3) — et une livraison inscrite
+ * reste refusée.
  */
 function inscribedBlockUnder(
   allowance: CancellationAllowance,
-  fulfillmentMethod: "pickup" | "delivery",
+  state: CancellationState,
   day: string | null,
 ): CancellationBlock | null {
   switch (allowance.allowance) {
     case "before_inscription":
       return { kind: "inscribed", day };
     case "before_packing":
-      return fulfillmentMethod === "delivery" ? { kind: "delivery_after_plan", day } : null;
+      if (state.fulfillmentMethod === "delivery") {
+        return { kind: "delivery_after_plan", day };
+      }
+      // Lot A1.3 : l'aperçu sait déjà que le bac est fermé.
+      return state.packed ? { kind: "packed" } : null;
   }
 }
 

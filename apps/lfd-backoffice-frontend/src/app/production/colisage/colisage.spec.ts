@@ -126,6 +126,7 @@ function view(over: Partial<ProductionPackingView> = {}): ProductionPackingView 
     // date en dur y deviendrait fausse le lendemain.
     closedAt: `${today()}T20:05:00`,
     sheets: [bac()],
+    withdrawnSheets: [],
     resources: [
       resource(),
       resource({ sku: 'BAG', productName: 'Baguette', produced: 20, remaining: 20 }),
@@ -427,6 +428,32 @@ describe('le poste de colisage', () => {
 
       expect(said(el.querySelector('.co-offset'))).toContain('demain');
       expect(said(el.querySelector('.co-eyebrow'))).not.toContain('aujourd’hui');
+    });
+
+    /** Plan A1, lot A1.3 : une commande annulée après l'arrêt n'est plus au poste. */
+    it('dit à part les feuilles retirées, sous le badge « annulée après l’arrêt »', async () => {
+      api.packingView = view({
+        withdrawnSheets: [
+          {
+            orderId: 'o-9',
+            reference: 'CMD-9',
+            customerLabel: 'Camille',
+            withdrawnAt: `${today()}T06:00:00`,
+          },
+        ],
+      });
+
+      const { el } = await render();
+
+      const said9 = el.querySelector('[data-withdrawn-sheets] [data-withdrawn-reference="CMD-9"]');
+      expect(said(said9)).toContain('CMD-9 · Camille');
+      expect(said(said9)).toContain("Annulée après l'arrêt");
+    });
+
+    it('sans feuille retirée, aucun avis', async () => {
+      const { el } = await render();
+
+      expect(el.querySelector('[data-withdrawn-sheets]')).toBeNull();
     });
 
     it('ne dit ni « aujourd’hui » ni « demain » quand le serveur ne dit rien', async () => {

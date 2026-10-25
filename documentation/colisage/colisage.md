@@ -82,6 +82,7 @@ qu'une fois.
 | `packing.order_packed`           | colisage   | une commande est fermée — clé `packing.order_packed:<orderId>`         | `OnPackingOrderPacked` (commerce) — `markReady`                                  |
 | `production.resupply_list_drawn` | fournil    | l'arrêt du plan : un réassort d'un point **servi par transfert** (R3b) | `OnResupplyListDrawn` — crée la `packing_resupply` et ses lignes                 |
 | `production.resupply_launched`   | fournil    | un réassort « au plus tôt » lancé dans la journée (R4a)                | `OnResupplyLaunched` — fiche `asap` et réservation, si servi par transfert (R4b) |
+| `packing.sheet_withdrawn`        | colisage   | une feuille retirée par une annulation après l'arrêt (A1.3, §4.7)      | aucun (plan A1 § 3) — journalisé `packing_sheet.withdrawn`                       |
 
 Les trois abonnés du colisage écrivent par `PackingShadowLedger` : le nom date
 de l'ombre du premier lot, et reste parce que les noms d'abonnés sont les clés
@@ -89,6 +90,7 @@ des reçus déjà posés.
 
 Les gestes sur les contenants sont **journalisés** (pas publiés) :
 `packing_container.opened | filled | emptied | voided`, sujet la commande.
+Le retrait d'une feuille (§4.7) est l'exception : publié ET journalisé.
 Rouvrir une commande ne l'est pas : aucun type de fait n'existe pour lui.
 
 ### 2.2 Le réassort (lot R3b, 2026-10-21)
@@ -293,6 +295,47 @@ elle reste immédiate et le fait `return_requested` le dit (`legacy: true`).
 Pour tout le reste, une journée `legacy` n'a plus de bac fermé aux yeux du
 fournil (`SealedDayReading` demande au colisage pour toute journée).
 
+### 4.7 La feuille retirée — l'annulation après l'arrêt (plan A1, 2026-10-25)
+
+> 🟡 **Bâti (A1.2, A1.3), pas encore commité pour A1.3.** Plan :
+> [`plan-a1-retirer-une-commande-inscrite.md`](../commandes/annulation/plan-a1-retirer-une-commande-inscrite.md).
+
+Quand le réglage d'un particulier va jusqu'à « prête », le commerce annule une
+commande de **retrait** déjà inscrite : le fournil l'écarte sans toucher au
+compte à produire, puis le colisage retire sa feuille, dans la même
+transaction, par `PackingWithdrawalDesk` (`packing/channels/commerce/`,
+déclaré et implémenté ici, implémentation `PackingSheetWithdrawalDesk`).
+
+- **`packing_order.withdrawn_at`** marque la feuille retirée. Si la liste à
+  coliser n'est pas encore arrivée, le retrait pose une **pierre tombale** :
+  une `packing_order` sans ligne, avec l'en-tête que le fournil a figé
+  (`InscribedOrderHeaderReader`, `production/channels/packing/`) ; le tirage
+  qui arrive ensuite n'insère pas les lignes d'une feuille retirée. La
+  réouverture de la journée efface feuilles et pierres tombales non entamées
+  (voulu : rien n'a été fabriqué, plan A1 § 2.5).
+- **Feuille entamée** : chaque contenant vivant est annulé par le geste du
+  poste (`PackingContainerVoiding`, partagé avec « annuler un contenant ») —
+  le bac chez la livraison, le contenant, puis la réserve par `release`,
+  jamais `giveBack`. Refus sans écriture : bac fermé (`packed`), bac de
+  livraison vivant (`delivery_bin`).
+- **La garde** : `PackingSheet.assertNotWithdrawn()` en tête de chaque méthode
+  qui mute ; une feuille retirée refuse tout geste
+  (`PackingSheetWithdrawnError`, 409). Un test lit le prototype pour qu'une
+  méthode ajoutée sans garde rougisse.
+- **Le fait** `packing.sheet_withdrawn` (jour, commande, lignes rendues à la
+  réserve) part dans la transaction du retrait, une fois, sans abonné ; il est
+  journalisé `packing_sheet.withdrawn`. Le fournil publie de son côté
+  `production.order_withdrawn_after_close`, journalisé
+  `production_day.order_withdrawn`.
+- **Le poste l'écarte** : le tableau ne la sert plus parmi les `sheets` ni
+  dans ses comptes ; il la rend à part (`withdrawnSheets`), et l'écran la dit
+  sous le badge « Annulée après l'arrêt » — au poste comme dans la colonne
+  colisage de la Supervision. « Proposer » ne la voit pas : il ne sert que des
+  livraisons, qu'un retrait ne touche jamais.
+- **Le commerce lit l'état** par `OrderPackingStateReader.packedAmong`
+  (`packed` | `withdrawn`, par lot) : les aperçus d'annulation disent « prête »
+  quand le bac est fermé, et la Supervision compte les annulées après l'arrêt.
+
 ## 5. Les routes HTTP
 
 Toutes dans `apps/lfd-api/src/packing/http/`, sous la ressource
@@ -347,19 +390,19 @@ Les écritures rendent peu ou rien : l'écran relit le `board`.
 `production`, `delivery` ni `public` : une commande et un bac y sont des
 identifiants opaques plus un instantané.
 
-| Table                       | Clé                               | Ce qu'elle tient                                                                               |
-| --------------------------- | --------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `packing_order`             | `(service_day, order_id)`         | la commande reçue : référence, client, mode, échéance, `drawn_at`, fermeture, `container_mode` |
-| `packing_line`              | `(service_day, order_id, sku)`    | une ligne due, et sa marque « au bac »                                                         |
-| `packing_stock`             | `(service_day, sku)`              | la réserve : `received`, `returned`, `packed`                                                  |
-| `packing_receipt`           | `id`                              | un reçu par remise du fournil (idempotence)                                                    |
-| `packing_return`            | `request_id`                      | une demande de retour et sa réponse                                                            |
-| `container`                 | `id`                              | un contenant : `bag` ou `bin` (+ instantané `bin_id`, `bin_code`, `bin_half`), ouvert / annulé |
-| `container_line`            | `(container_id, sku)`             | ce qu'un contenant porte d'un article                                                          |
-| `day_change`                | `id` (auto)                       | le journal de version du poste, lu par la relecture des écrans                                 |
-| `packing_resupply`          | `(service_day, resupply_id)`      | une fiche de réassort (R3b) : point, `kind` (`evening`/`asap`, R4b), `drawn_at`, clôture       |
-| `packing_resupply_line`     | `(service_day, resupply_id, sku)` | demandé, emballé saisi (`0 ≤ packed ≤ quantity`, CHECK)                                        |
-| `packing_stock_reservation` | `(service_day, resupply_id, sku)` | la part réservée par un réassort lancé (R4b) : `quantity`, `reserved_at`, `released_at`        |
+| Table                       | Clé                               | Ce qu'elle tient                                                                                                      |
+| --------------------------- | --------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `packing_order`             | `(service_day, order_id)`         | la commande reçue : référence, client, mode, échéance, `drawn_at`, fermeture, `container_mode`, `withdrawn_at` (§4.7) |
+| `packing_line`              | `(service_day, order_id, sku)`    | une ligne due, et sa marque « au bac »                                                                                |
+| `packing_stock`             | `(service_day, sku)`              | la réserve : `received`, `returned`, `packed`                                                                         |
+| `packing_receipt`           | `id`                              | un reçu par remise du fournil (idempotence)                                                                           |
+| `packing_return`            | `request_id`                      | une demande de retour et sa réponse                                                                                   |
+| `container`                 | `id`                              | un contenant : `bag` ou `bin` (+ instantané `bin_id`, `bin_code`, `bin_half`), ouvert / annulé                        |
+| `container_line`            | `(container_id, sku)`             | ce qu'un contenant porte d'un article                                                                                 |
+| `day_change`                | `id` (auto)                       | le journal de version du poste, lu par la relecture des écrans                                                        |
+| `packing_resupply`          | `(service_day, resupply_id)`      | une fiche de réassort (R3b) : point, `kind` (`evening`/`asap`, R4b), `drawn_at`, clôture                              |
+| `packing_resupply_line`     | `(service_day, resupply_id, sku)` | demandé, emballé saisi (`0 ≤ packed ≤ quantity`, CHECK)                                                               |
+| `packing_stock_reservation` | `(service_day, resupply_id, sku)` | la part réservée par un réassort lancé (R4b) : `quantity`, `reserved_at`, `released_at`                               |
 
 ## 8. Ce qui reste en base
 

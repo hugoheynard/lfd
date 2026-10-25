@@ -66,6 +66,7 @@ function packing(
     date: '2026-09-25',
     closedAt,
     sheets,
+    withdrawnSheets: [],
     resources: [],
     orderCount: sheets.length,
     todoCount: 0,

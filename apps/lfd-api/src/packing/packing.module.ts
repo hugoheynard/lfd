@@ -36,6 +36,7 @@ import { PackingBoardReader } from "./domain/ports/packing-board.reader.js";
 import { PackingBoardController } from "./http/packing-board.controller.js";
 import { PackingOrdersController } from "./http/packing-orders.controller.js";
 import { PrismaPackedOrdersReader } from "./infrastructure/prisma-packed-orders.reader.js";
+import { PrismaOrderPackingStateReader } from "./infrastructure/prisma-order-packing-state.reader.js";
 import { PrismaPackingBoardReader } from "./infrastructure/prisma-packing-board.reader.js";
 import { OnResupplyListDrawn } from "./application/handlers/on-resupply-list-drawn.handler.js";
 import { OnResupplyLaunched } from "./application/handlers/on-resupply-launched.handler.js";
@@ -148,11 +149,13 @@ import { PackingResuppliesController } from "./http/packing-resupplies.controlle
     { provide: PackingResupplyBoardReader, useClass: PrismaPackingResupplyBoardReader },
     { provide: PackingDayStocksReader, useClass: PrismaPackingDayStocksReader },
     PrismaPackedResuppliesReader,
+    PrismaOrderPackingStateReader,
   ],
   exports: [
     PrismaContainerManagedOrders,
     PrismaPackedOrdersReader,
     PrismaPackedResuppliesReader,
+    PrismaOrderPackingStateReader,
     PackingShortfallDesk,
     PackingSheetWithdrawalDesk,
   ],

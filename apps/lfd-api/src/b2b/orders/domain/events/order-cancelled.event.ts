@@ -1,13 +1,18 @@
-import {
-  CUSTOMER_CANCELLATION_REASON_CODES,
-  type CustomerCancellationReasonCode,
-} from "@lfd/contracts";
+import type { CustomerCancellationReasonCode, CustomerCancellationStage } from "@lfd/contracts";
 
 import type { DurableEvent, DurableFact } from "../../../../platform/outbox/durable-event.js";
 import { OrderSettlementPayloadError } from "../errors/order-settlement-payload.error.js";
 import type { CancellingPrincipal } from "../ports/cancelling-member.reader.js";
 import type { CancellationActorKind } from "../services/cancellation-actor.js";
 import type { CancellableRegime } from "../services/order-cancellation.js";
+import {
+  afterInscriptionOf,
+  authorOf,
+  principalOf,
+  refundOf,
+  stageAppliedOf,
+  voucherOf,
+} from "./order-cancelled.payload.js";
 
 /**
  * Ce que l'annulation a fait du bon de fidélité de la commande (lot C3b,
@@ -69,6 +74,11 @@ export const ORDER_CANCELLED = "order.cancelled";
  * `cancelledFromPrincipal`, ADDITIF — le compte principal par lequel le client
  * a atteint la commande d'un site dont il n'est pas membre. Un fait sans la
  * clé se lit `null`.
+ *
+ * Plan A1 (lot A1.3, 2026-10-25) : `afterInscription` (la commande était
+ * inscrite au compte à produire, et les ateliers l'ont retirée) et
+ * `stageApplied` (jusqu'où l'annulation pouvait aller), ADDITIFS — un fait
+ * d'avant se lit `false` / `production_plan`.
  */
 export class OrderCancelledEvent implements DurableEvent {
   constructor(
@@ -88,6 +98,8 @@ export class OrderCancelledEvent implements DurableEvent {
     readonly reasonCode: CustomerCancellationReasonCode | null = null,
     readonly policy: CancellationPolicyApplied | null = null,
     readonly cancelledFromPrincipal: CancellingPrincipal | null = null,
+    readonly afterInscription = false,
+    readonly stageApplied: CustomerCancellationStage = "production_plan",
   ) {}
 
   durableFact(): DurableFact {
@@ -111,6 +123,8 @@ export class OrderCancelledEvent implements DurableEvent {
         reasonCode: this.reasonCode,
         policy: this.policy,
         cancelledFromPrincipal: this.cancelledFromPrincipal,
+        afterInscription: this.afterInscription,
+        stageApplied: this.stageApplied,
       },
     };
   }
@@ -129,6 +143,8 @@ export class OrderCancelledEvent implements DurableEvent {
     const refund = refundOf(payload["refund"]);
     const author = authorOf(payload, text);
     const fromPrincipal = principalOf(payload["cancelledFromPrincipal"]);
+    const afterInscription = afterInscriptionOf(payload["afterInscription"]);
+    const stageApplied = stageAppliedOf(payload["stageApplied"]);
     if (
       orderId === null ||
       orderNumber === null ||
@@ -137,7 +153,9 @@ export class OrderCancelledEvent implements DurableEvent {
       voucher === undefined ||
       refund === undefined ||
       author === undefined ||
-      fromPrincipal === undefined
+      fromPrincipal === undefined ||
+      afterInscription === undefined ||
+      stageApplied === undefined
     ) {
       throw new OrderSettlementPayloadError(ORDER_CANCELLED);
     }
@@ -155,123 +173,8 @@ export class OrderCancelledEvent implements DurableEvent {
       author.reasonCode,
       author.policy,
       fromPrincipal,
+      afterInscription,
+      stageApplied,
     );
   }
-}
-
-/** Le principal d'un fait — `null` absent (fait d'avant C1), `undefined` hors forme. */
-function principalOf(raw: unknown): CancellingPrincipal | null | undefined {
-  if (raw === undefined || raw === null) {
-    return null;
-  }
-  if (typeof raw !== "object") {
-    return undefined;
-  }
-  const companyId: unknown = Reflect.get(raw, "companyId");
-  const name: unknown = Reflect.get(raw, "name");
-  return typeof companyId === "string" && typeof name === "string"
-    ? { companyId, name }
-    : undefined;
-}
-
-interface CancellationAuthorPayload {
-  readonly kind: CancellationActorKind;
-  readonly cancelledBy: string | null;
-  readonly userId: string | null;
-  readonly reason: string | null;
-  readonly reasonCode: CustomerCancellationReasonCode | null;
-  readonly policy: CancellationPolicyApplied | null;
-}
-
-/**
- * Qui a annulé, et pourquoi — `undefined` : hors forme. Sans `cancelledByKind`
- * (fait d'avant C6, S8) : l'équipe, avec sa fiche et son motif obligatoires.
- */
-function authorOf(
-  payload: Readonly<Record<string, unknown>>,
-  text: (key: string) => string | null,
-): CancellationAuthorPayload | undefined {
-  const rawKind = payload["cancelledByKind"];
-  const kind = rawKind === undefined || rawKind === null ? "staff" : rawKind;
-  const reasonCode = reasonCodeOf(payload["reasonCode"]);
-  const policy = policyOf(payload["policy"]);
-  if (reasonCode === undefined || policy === undefined) {
-    return undefined;
-  }
-  const cancelledBy = text("cancelledBy");
-  const reason = text("reason");
-  if (kind === "staff") {
-    return cancelledBy === null || reason === null
-      ? undefined
-      : { kind, cancelledBy, userId: null, reason, reasonCode, policy };
-  }
-  const userId = text("cancelledByUserId");
-  if ((kind !== "customer" && kind !== "guest") || userId === null) {
-    return undefined;
-  }
-  return { kind, cancelledBy: null, userId, reason, reasonCode, policy };
-}
-
-function reasonCodeOf(raw: unknown): CustomerCancellationReasonCode | null | undefined {
-  if (raw === undefined || raw === null) {
-    return null;
-  }
-  return CUSTOMER_CANCELLATION_REASON_CODES.find((code) => code === raw);
-}
-
-function policyOf(raw: unknown): CancellationPolicyApplied | null | undefined {
-  if (raw === undefined || raw === null) {
-    return null;
-  }
-  if (typeof raw !== "object") {
-    return undefined;
-  }
-  const hours = "hoursBefore" in raw ? Reflect.get(raw, "hoursBefore") : undefined;
-  return typeof hours === "number" && Number.isInteger(hours) && hours >= 0
-    ? { hoursBefore: hours }
-    : undefined;
-}
-
-/** `undefined` : hors forme. Une clé absente (fait d'avant C4) se lit `null`. */
-function refundOf(raw: unknown): CancelledOrderRefund | null | undefined {
-  if (raw === null || raw === undefined) {
-    return null;
-  }
-  if (typeof raw !== "object") {
-    return undefined;
-  }
-  const announced = "announcedCents" in raw ? Reflect.get(raw, "announcedCents") : undefined;
-  if (typeof announced !== "number" || !Number.isInteger(announced) || announced <= 0) {
-    return undefined;
-  }
-  return { announcedCents: announced };
-}
-
-/** `undefined` : hors forme. */
-function voucherOf(raw: unknown): CancelledOrderVoucher | null | undefined {
-  if (raw === null) {
-    return null;
-  }
-  if (typeof raw !== "object" || raw === undefined) {
-    return undefined;
-  }
-  const field = (key: string): unknown => (key in raw ? Reflect.get(raw, key) : undefined);
-  const outcome = field("outcome");
-  const value = field("voucherValueCents");
-  const remainder = field("remainderValueCents");
-  const expiresAt = field("expiresAt");
-  if (
-    (outcome !== "returned" && outcome !== "merged" && outcome !== "lapsed") ||
-    typeof value !== "number" ||
-    !Number.isInteger(value) ||
-    !(remainder === null || (typeof remainder === "number" && Number.isInteger(remainder))) ||
-    typeof expiresAt !== "string"
-  ) {
-    return undefined;
-  }
-  const at = new Date(expiresAt);
-  if (Number.isNaN(at.getTime())) {
-    return undefined;
-  }
-  return { outcome, voucherValueCents: value, remainderValueCents: remainder, expiresAt: at };
 }

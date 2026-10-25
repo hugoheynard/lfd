@@ -18,11 +18,12 @@ describe("OrderWorkshopWithdrawal", () => {
     const packing = new ScriptedPackingDesk("withdrawn", trace);
     const workshops = new OrderWorkshopWithdrawal(new ScriptedDesk("withdrawn", trace), packing);
 
-    await workshops.withdraw(cancellationSubject(), BEFORE_PACKING, {
+    const after = await workshops.withdraw(cancellationSubject(), BEFORE_PACKING, {
       kind: "staff",
       staffUserId: "fiche-marie",
     });
 
+    expect(after).toBe(false);
     expect(trace).toEqual(["withdraw:2026-10-13:ord_1"]);
     expect(packing.calls).toEqual([]);
   });
@@ -34,11 +35,13 @@ describe("OrderWorkshopWithdrawal", () => {
       packing,
     );
 
-    await workshops.withdraw(cancellationSubject(), BEFORE_PACKING, {
+    const after = await workshops.withdraw(cancellationSubject(), BEFORE_PACKING, {
       kind: "guest",
       userId: "usr_invite",
     });
 
+    // Lot A1.3 : le fait `order.cancelled` dira `afterInscription`.
+    expect(after).toBe(true);
     expect(packing.calls).toEqual([{ day: "2026-10-13", orderId: "ord_1", by: "usr_invite" }]);
   });
 

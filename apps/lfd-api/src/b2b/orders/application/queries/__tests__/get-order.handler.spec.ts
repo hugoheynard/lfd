@@ -20,6 +20,7 @@ import {
   ScriptedEngagements,
 } from "../../commands/__tests__/cancellation-doubles.js";
 import type { AccountEngagement } from "../../../domain/ports/account-order-engagement.js";
+import { FixedPackingStates, previewOf } from "../../commands/__tests__/packing-state-doubles.js";
 import { CancellationRule } from "../../services/cancellation-rule.js";
 import { CancellationAllowanceGate } from "../../services/cancellation-allowance-gate.js";
 import { FixedCancellationSettings } from "../../commands/__tests__/customer-cancellation-doubles.js";
@@ -252,6 +253,8 @@ function adminHandler(
   refunds: RefundStore = new RefundStore(),
   revisable: RevisableOrder | null = PLACED,
   shortfall: OrderShortfallReading | null = null,
+  settings: FixedCancellationSettings = new FixedCancellationSettings(),
+  packing: FixedPackingStates = new FixedPackingStates(),
 ): GetAdminOrderHandler {
   const subjects = new FixedSubjects(subject, others);
   const inscriptions = new FixedInscription(inscribedDay);
@@ -264,7 +267,7 @@ function adminHandler(
     inscriptions,
     preview,
     new VoucherRestitutionRefusal(subjects, inscriptions, rule),
-    rule,
+    previewOf(rule, new CancellationAllowanceGate(settings), packing),
     new AdminOrderRefundView(
       new InMemoryRefundReader(refunds),
       new FixedWallClock(VOUCHER_EXPIRES),
@@ -276,7 +279,6 @@ function adminHandler(
       revisingAt(new FixedClock(NOW), { engagements: new FixedEngagements(engagement) }),
     ),
     new FixedShortfall(shortfall),
-    new CancellationAllowanceGate(new FixedCancellationSettings()),
   );
 }
 
@@ -520,6 +522,54 @@ describe("GetAdminOrderHandler", () => {
       reason:
         "Le fournil a déjà inscrit cette commande au compte à produire du 13/10 : elle sera fabriquée. Voyez avec le fournil.",
     });
+  });
+
+  it("lot A1.3 : réglage « prête », retrait inscrit au bac fermé — la phrase du colisage", async () => {
+    const handler = adminHandler(
+      ofCompany("cmp_1"),
+      { customer: CUSTOMER, company: COMPANY, placedByStaffId: null },
+      directory(),
+      cancellationSubject({ companyId: null, fulfillmentMethod: "pickup" }),
+      "2026-10-13",
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      new FixedCancellationSettings({ b2cCancellableUntil: "ready" }),
+      new FixedPackingStates({ ord_1: "packed" }),
+    );
+
+    const view = await handler.execute(new GetAdminOrderQuery("ord_1"));
+
+    expect(view.cancellability).toEqual({
+      cancellable: false,
+      reason:
+        "Le colisage a déjà fermé le bac de cette commande : elle est prête et ne s'annule plus. Voyez avec le colisage.",
+    });
+  });
+
+  it("lot A1.3 : réglage « prête », retrait inscrit au bac ouvert — annulable", async () => {
+    const handler = adminHandler(
+      ofCompany("cmp_1"),
+      { customer: CUSTOMER, company: COMPANY, placedByStaffId: null },
+      directory(),
+      cancellationSubject({ companyId: null, fulfillmentMethod: "pickup" }),
+      "2026-10-13",
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      new FixedCancellationSettings({ b2cCancellableUntil: "ready" }),
+      new FixedPackingStates(),
+    );
+
+    const view = await handler.execute(new GetAdminOrderQuery("ord_1"));
+
+    expect(view.cancellability.cancellable).toBe(true);
   });
 
   it("payée par carte : annulable, et la confirmation dit le montant rendu (lot C4, C4.9)", async () => {

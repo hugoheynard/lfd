@@ -62,12 +62,13 @@ function sources(day: PackingBoardDay, overrides: Partial<BoardSources> = {}): B
 
 describe("packingBoardOf — le poste servi par le colisage (K3a)", () => {
   it("une journée dont la liste n'est pas arrivée se lit « plan non arrêté », sans lever", () => {
-    const view = packingBoardOf(sources({ orders: [], stocks: [] }));
+    const view = packingBoardOf(sources({ orders: [], withdrawn: [], stocks: [] }));
 
     expect(view).toEqual({
       date: TODAY,
       closedAt: null,
       sheets: [],
+      withdrawnSheets: [],
       resources: [],
       orderCount: 0,
       todoCount: 0,
@@ -83,6 +84,7 @@ describe("packingBoardOf — le poste servi par le colisage (K3a)", () => {
           order({ orderId: "vv", siteId: "site_vv", dueAt: "09:30" }),
           order({ orderId: "ancienne" }),
         ],
+        withdrawn: [],
         stocks: [],
       }),
     );
@@ -99,6 +101,7 @@ describe("packingBoardOf — le poste servi par le colisage (K3a)", () => {
           order({ orderId: "b", drawnAt: RETAKEN }),
           order({ orderId: "a", drawnAt: CLOSED }),
         ],
+        withdrawn: [],
         stocks: [],
       }),
     );
@@ -113,6 +116,7 @@ describe("packingBoardOf — le poste servi par le colisage (K3a)", () => {
           order({ orderId: "2", lines: [line("CRO", 1)] }),
           order({ orderId: "1", lines: [line("CRO", 1, true)], packed: { at: AT, by: "s1" } }),
         ],
+        withdrawn: [],
         stocks: [],
       }),
     );
@@ -129,6 +133,7 @@ describe("packingBoardOf — le poste servi par le colisage (K3a)", () => {
           order({ orderId: "2", clientele: "public" }),
           order({ orderId: "3", clientele: null }),
         ],
+        withdrawn: [],
         stocks: [],
       }),
     );
@@ -143,6 +148,7 @@ describe("packingBoardOf — le poste servi par le colisage (K3a)", () => {
           orders: [
             order({ orderId: "1", packed: { at: AT, by: "s1" }, lines: [line("CRO", 1, true)] }),
           ],
+          withdrawn: [],
           stocks: [],
         },
         { heldOrders: new Set(["1"]) },
@@ -170,6 +176,7 @@ describe("packingBoardOf — le poste servi par le colisage (K3a)", () => {
           // Colisée avec l'ancien poste : lecture seule (K3c, §17.6), même pleine.
           order({ orderId: "4", lines: full, containerMode: "counted" }),
         ],
+        withdrawn: [],
         stocks: [],
       }),
     );
@@ -196,6 +203,7 @@ describe("packingBoardOf — le poste servi par le colisage (K3a)", () => {
             ],
           }),
         ],
+        withdrawn: [],
         stocks: [{ sku: "CRO", received: 10, returned: 0, packed: 6, reserved: 0 }],
       }),
     );
@@ -228,6 +236,7 @@ describe("packingBoardOf — le poste servi par le colisage (K3a)", () => {
             lines: [line("CRO", 5, true), line("PAI", 2)],
           }),
         ],
+        withdrawn: [],
         stocks: [],
       }),
     );
@@ -244,6 +253,7 @@ describe("packingBoardOf — le poste servi par le colisage (K3a)", () => {
     const view = packingBoardOf(
       sources({
         orders: [order({ orderId: "1", lines: [line("CRO", 5), line("PAI", 2)] })],
+        withdrawn: [],
         stocks: [
           { sku: "CRO", received: 6, returned: 2, packed: 0, reserved: 0 },
           { sku: "PAI", received: 2, returned: 0, packed: 0, reserved: 0 },
@@ -269,6 +279,7 @@ describe("packingBoardOf — le poste servi par le colisage (K3a)", () => {
           }),
           order({ orderId: "2", lines: [line("CRO", 3, false, "Croissant")] }),
         ],
+        withdrawn: [],
         stocks: [{ sku: "CRO", received: 7, returned: 0, packed: 4, reserved: 0 }],
       }),
     );
@@ -287,7 +298,9 @@ describe("packingBoardOf — le poste servi par le colisage (K3a)", () => {
   });
 
   it("dit « demain » d'après l'instant du serveur", () => {
-    const view = packingBoardOf(sources({ orders: [], stocks: [] }, { date: addDays(TODAY, 1) }));
+    const view = packingBoardOf(
+      sources({ orders: [], withdrawn: [], stocks: [] }, { date: addDays(TODAY, 1) }),
+    );
 
     expect(view.relativeDay).toBe("tomorrow");
   });
@@ -326,6 +339,7 @@ describe("packingBoardOf — le poste servi par le colisage (K3a)", () => {
           order({ orderId: "C", lines: [line("CRO", 41, false, "Croissant")] }),
           order({ orderId: "D", lines: [line("CRO", 16, false, "Croissant")] }),
         ],
+        withdrawn: [],
         stocks: [
           { sku: "BAG", received: 23, returned: 0, packed: 23, reserved: 0 },
           { sku: "CHA", received: 6, returned: 0, packed: 6, reserved: 0 },
@@ -348,5 +362,61 @@ describe("packingBoardOf — le poste servi par le colisage (K3a)", () => {
       unallocated: 20,
       awaitingProduction: false,
     });
+  });
+});
+
+/** Plan A1, lot A1.3 : une feuille retirée sort du poste et se montre à part. */
+describe("packingBoardOf — les feuilles retirées après l'arrêt (plan A1)", () => {
+  const WITHDRAWN_AT = new Date(CLOSED.getTime() + 60_000);
+
+  it("une feuille retirée n'est ni à coliser ni comptée : elle est rendue à part", () => {
+    const view = packingBoardOf(
+      sources({
+        orders: [order({ orderId: "1" })],
+        withdrawn: [
+          {
+            orderId: "2",
+            reference: "ORD-2",
+            customerLabel: "Camille",
+            drawnAt: CLOSED,
+            withdrawnAt: WITHDRAWN_AT,
+          },
+        ],
+        stocks: [],
+      }),
+    );
+
+    expect(view.sheets.map((sheet) => sheet.reference)).toEqual(["ORD-1"]);
+    expect(view.orderCount).toBe(1);
+    expect(view.withdrawnSheets).toEqual([
+      {
+        orderId: "2",
+        reference: "ORD-2",
+        customerLabel: "Camille",
+        withdrawnAt: WITHDRAWN_AT.toISOString(),
+      },
+    ]);
+  });
+
+  it("toutes les feuilles retirées : la journée reste tirée, pas « plan non arrêté »", () => {
+    const view = packingBoardOf(
+      sources({
+        orders: [],
+        withdrawn: [
+          {
+            orderId: "2",
+            reference: "ORD-2",
+            customerLabel: "Camille",
+            drawnAt: CLOSED,
+            withdrawnAt: WITHDRAWN_AT,
+          },
+        ],
+        stocks: [],
+      }),
+    );
+
+    expect(view.closedAt).toBe(CLOSED.toISOString());
+    expect(view.sheets).toEqual([]);
+    expect(view.withdrawnSheets).toHaveLength(1);
   });
 });

@@ -106,6 +106,11 @@ export class PackingColumn {
 
   protected readonly packedCount = computed(() => `Colisées · ${String(this.packed().length)}`);
 
+  /** Plan A1, lot A1.3 : les feuilles retirées, tous points confondus. */
+  protected readonly withdrawnCount = computed(
+    () => `Annulées après l'arrêt · ${String(this.board().withdrawn.length)}`,
+  );
+
   protected readonly overflowLabel = computed(
     () => `+ ${countLabel(this.overflow(), 'commande', 'commandes')} · triées par heure de retrait`,
   );

@@ -14,7 +14,11 @@ import {
 } from "../../../domain/ports/packing-sheet-tombstones.js";
 import { ScriptedBinDesk } from "../../__tests__/bin-desk-double.js";
 import { InMemoryShadow } from "../../__tests__/shadow-doubles.js";
-import { InMemorySheets, InMemoryStocks } from "../../__tests__/station-doubles.js";
+import {
+  InMemorySheets,
+  InMemoryStocks,
+  RecordingDurable,
+} from "../../__tests__/station-doubles.js";
 import { AllocateToContainerCommand } from "../../containers/allocate-to-container.command.js";
 import { AllocateToContainerHandler } from "../../containers/allocate-to-container.handler.js";
 import { OpenPackingContainerCommand } from "../../containers/open-packing-container.command.js";
@@ -104,6 +108,7 @@ function setup() {
   const clock = new FixedClock(NOW);
   const uow = new DirectUnitOfWork();
   const tombstones = new InMemoryTombstones(sheets);
+  const durable = new RecordingDurable();
   const desk = new PackingSheetWithdrawalDesk(
     sheets,
     tombstones,
@@ -111,6 +116,8 @@ function setup() {
     new PackingContainerVoiding(stocks, binDesk, events),
     clock,
     uow,
+    events,
+    durable,
   );
   const open = new OpenPackingContainerHandler(
     sheets,
@@ -121,7 +128,7 @@ function setup() {
     uow,
   );
   const allocate = new AllocateToContainerHandler(sheets, stocks, binDesk, clock, events, uow);
-  return { desk, sheets, stocks, binDesk, events, tombstones, open, allocate };
+  return { desk, sheets, stocks, binDesk, events, durable, tombstones, open, allocate };
 }
 
 describe("PackingSheetWithdrawalDesk", () => {
@@ -157,6 +164,53 @@ describe("PackingSheetWithdrawalDesk", () => {
     expect(context.tombstones.laid).toEqual([]);
   });
 
+  it("publie packing.sheet_withdrawn, durable et journalisé, avec ce qui est revenu à la réserve", async () => {
+    const context = setup();
+    context.sheets.put(sheetRow());
+    const bag = await context.open.execute(
+      new OpenPackingContainerCommand(DAY, "ord_1", { nature: "bag" }, STAFF),
+    );
+    await context.allocate.execute(
+      new AllocateToContainerCommand(DAY, "ord_1", bag, "CRO", 4, STAFF),
+    );
+
+    await context.desk.withdraw(DAY, "ord_1", "staff_cancel");
+
+    expect(context.durable.of("packing.sheet_withdrawn")).toEqual([
+      {
+        type: "packing.sheet_withdrawn",
+        key: `packing.sheet_withdrawn:${DAY}:ord_1`,
+        payload: {
+          serviceDay: DAY,
+          orderId: "ord_1",
+          reference: "ORD-0001",
+          withdrawnAt: NOW.toISOString(),
+          released: [{ sku: "CRO", productName: "Croissant", quantity: 4 }],
+        },
+      },
+    ]);
+    const journaled = context.events.traced.map((event) => event.journalFact());
+    expect(journaled.at(-1)).toEqual({
+      type: "packing_sheet.withdrawn",
+      subjectType: "order",
+      subjectId: "ord_1",
+      payload: {
+        subjectLabel: "ORD-0001",
+        serviceDay: DAY,
+        released: [{ sku: "CRO", productName: "Croissant", quantity: 4 }],
+      },
+    });
+  });
+
+  it("la pierre tombale publie le fait sans ligne rendue", async () => {
+    const context = setup();
+
+    await context.desk.withdraw(DAY, "ord_1", "staff_cancel");
+
+    expect(context.durable.of("packing.sheet_withdrawn")[0]?.payload["released"]).toEqual([]);
+    expect(context.events.factTypes()).toEqual(["packing_sheet.withdrawn"]);
+  });
+
   it("pas encore de feuille : la pierre tombale, avec l'en-tête figé par le fournil", async () => {
     const context = setup();
 
@@ -175,6 +229,7 @@ describe("PackingSheetWithdrawalDesk", () => {
 
     await expect(context.desk.withdraw(DAY, "ord_1", "staff_cancel")).resolves.toBe("packed");
     expect(context.sheets.of(DAY, "ord_1")?.withdrawnAt).toBeUndefined();
+    expect(context.durable.facts).toEqual([]);
   });
 
   it("un bac de livraison vivant : `delivery_bin`, et on ne le défait pas", async () => {
@@ -205,6 +260,7 @@ describe("PackingSheetWithdrawalDesk", () => {
 
     await expect(context.desk.withdraw(DAY, "ord_1", "staff_cancel")).resolves.toBe("withdrawn");
     expect(context.tombstones.laid).toHaveLength(1);
+    expect(context.events.factTypes()).toEqual(["packing_sheet.withdrawn"]);
   });
 
   it("inscrite ailleurs qu'à ce jour : refus, plutôt qu'un retrait à moitié", async () => {

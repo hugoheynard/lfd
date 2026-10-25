@@ -1,7 +1,10 @@
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
+import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
 import { RecordingDayLock } from "../../__tests__/batch-doubles.js";
+import { RecordingDurable } from "../../__tests__/handoff-doubles.js";
+import { closedDay, FixedDays } from "../../__tests__/quality-doubles.js";
 import {
   FixedInscriptions,
   InMemoryWithdrawalLedger,
@@ -22,14 +25,19 @@ const DAY = ServiceDay.of("2026-10-13");
 function subject(inscribed: ReadonlyMap<string, string> = new Map()) {
   const trace: string[] = [];
   const withdrawals = new InMemoryWithdrawals();
+  const events = new RecordingPublisher();
+  const durable = new RecordingDurable();
   const desk = new ProductionOrderWithdrawalDesk(
     new RecordingDayLock(trace),
     new FixedInscriptions(inscribed, trace),
     new InMemoryWithdrawalLedger(withdrawals, trace),
     new FixedClock(NOW),
     new DirectUnitOfWork(),
+    new FixedDays(closedDay(DAY, NOW, [])),
+    events,
+    durable,
   );
-  return { desk, trace, withdrawals };
+  return { desk, trace, withdrawals, events, durable };
 }
 
 describe("ProductionOrderWithdrawalDesk", () => {
@@ -83,12 +91,50 @@ describe("ProductionOrderWithdrawalDesk", () => {
     });
 
     it("une commande pas encore inscrite : le retrait d'avant, sans `after_inscription`", async () => {
-      const { desk, withdrawals } = subject();
+      const { desk, withdrawals, events, durable } = subject();
 
       const outcome = await desk.withdraw(DAY, "ord_1", "before_packing");
 
       expect(outcome).toBe("withdrawn");
       expect(withdrawals.rows.get("ord_1")?.afterInscription).toBe(false);
+      expect(events.traced).toEqual([]);
+      expect(durable.facts).toEqual([]);
+    });
+
+    it("retirée après l'inscription : production.order_withdrawn_after_close, durable et journalisé", async () => {
+      const { desk, events, durable } = subject(new Map([["ord_1", DAY.value]]));
+
+      await desk.withdraw(DAY, "ord_1", "before_packing");
+
+      expect(durable.facts).toEqual([
+        {
+          type: "production.order_withdrawn_after_close",
+          key: `production.order_withdrawn_after_close:${DAY.value}:ord_1`,
+          payload: { serviceDay: DAY.value, orderId: "ord_1", withdrawnAt: NOW.toISOString() },
+        },
+      ]);
+      expect(events.traced.map((event) => event.journalFact())).toEqual([
+        {
+          type: "production_day.order_withdrawn",
+          subjectType: "production_day",
+          subjectId: DAY.value,
+          payload: {
+            subjectLabel: DAY.value,
+            serviceDay: DAY.value,
+            orderId: "ord_1",
+            orderNumber: "ORD-0001",
+          },
+        },
+      ]);
+    });
+
+    it("refusée (`inscribed`) : aucun fait", async () => {
+      const { desk, events, durable } = subject(new Map([["ord_1", DAY.value]]));
+
+      await desk.withdraw(DAY, "ord_1", "before_inscription");
+
+      expect(events.traced).toEqual([]);
+      expect(durable.facts).toEqual([]);
     });
   });
 });

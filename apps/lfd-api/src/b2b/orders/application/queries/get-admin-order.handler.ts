@@ -25,17 +25,13 @@ import {
 } from "../../domain/ports/order-shortfall.reader.js";
 import { VoucherRestitutionPreview } from "../../domain/ports/voucher-restitution-preview.js";
 import { cancellationVoucherSentenceOf } from "../../domain/services/order-cancellation-voucher.js";
-import { CancellationAllowanceGate } from "../services/cancellation-allowance-gate.js";
-import {
-  cancellationBlocker,
-  cancellationRefusalOf,
-} from "../../domain/services/order-cancellation.js";
+import { cancellationRefusalOf } from "../../domain/services/order-cancellation.js";
 import { cancellationRefundSentenceOf } from "../../domain/services/order-cancellation-refund.js";
 import { settlementRegimeOf } from "../../domain/services/settlement-regime.js";
 import type { CancellationSubject } from "../../domain/ports/cancellation-subject.reader.js";
 import { AdminOrderRefundView } from "../services/admin-order-refund-view.js";
 import { OrderRevisabilityReading } from "../services/order-revisability-reading.js";
-import { CancellationRule } from "../services/cancellation-rule.js";
+import { CancellationPreview } from "../services/cancellation-preview.js";
 import { VoucherRestitutionRefusal } from "../services/voucher-restitution-refusal.js";
 import { GetAdminOrderQuery } from "./get-admin-order.query.js";
 
@@ -48,7 +44,7 @@ import { GetAdminOrderQuery } from "./get-admin-order.query.js";
  *
  * Depuis le 2026-10-12 (doc `documentation/commandes/annulation/annulation-par-le-staff.md`, C3.8), il
  * dit aussi si la commande s'annule, par la MÊME règle que le geste
- * (`cancellationBlocker`), sans verrou : c'est un affichage. L'inscription au
+ * (`CancellationPreview`), sans verrou : c'est un affichage. L'inscription au
  * fournil se demande au fournil, par son canal.
  *
  * Lot C3b (C3b.7) : quand la règle de commande laisse passer et que la
@@ -72,12 +68,11 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
     private readonly inscriptions: OrderInscriptionReader,
     private readonly restitutions: VoucherRestitutionPreview,
     private readonly refusals: VoucherRestitutionRefusal,
-    private readonly rule: CancellationRule,
+    private readonly preview: CancellationPreview,
     private readonly refunds: AdminOrderRefundView,
     private readonly clock: Clock,
     private readonly revisions: OrderRevisabilityReading,
     private readonly shortfalls: OrderShortfallReader,
-    private readonly allowances: CancellationAllowanceGate,
   ) {}
 
   async execute(query: GetAdminOrderQuery): Promise<AdminOrderView> {
@@ -123,14 +118,10 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
     // Lot C5 : au compte, la règle lit aussi l'engagement comptable — par le
     // port de LECTURE seul (ISP), sans verrou : c'est un affichage.
     // Plan A1 : l'autorisation du geste, lue au réglage — le staff suit la
-    // limite du particulier. Le bac fermé n'est connu que du colisage, sous
-    // son verrou : l'aperçu ne le dit pas encore (lecteur du lot A1.3).
-    const block = cancellationBlocker(
-      await this.rule.stateOf(subject, inscribedDay),
-      await this.allowances.of(subject),
-    );
-    if (block !== null) {
-      return { cancellable: false, reason: cancellationRefusalOf(block) };
+    // limite du particulier —, et le bac fermé au colisage (lot A1.3).
+    const decision = await this.preview.decisionOf(subject, inscribedDay);
+    if (!decision.cancellable) {
+      return { cancellable: false, reason: cancellationRefusalOf(decision.block) };
     }
     const refund = refundPreviewOf(subject);
     if (subject.loyaltyVoucherId === null) {

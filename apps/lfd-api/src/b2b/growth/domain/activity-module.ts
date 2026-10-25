@@ -173,6 +173,8 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     "production_container.",
     "production_quality.",
     "packing_container.",
+    // La feuille retirée par une annulation après l'arrêt (plan A1, lot A1.3).
+    "packing_sheet.",
     // Les réglages du fournil — l'arrêt du plan, les jours fermés (A1, 2026-10-06).
     "production_settings.",
     "production_closed_day.",

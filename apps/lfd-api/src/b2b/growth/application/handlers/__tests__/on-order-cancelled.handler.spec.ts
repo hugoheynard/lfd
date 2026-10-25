@@ -59,6 +59,8 @@ describe("OnOrderCancelled", () => {
       reason: "Le client a appelé",
     });
     expect(payload).not.toHaveProperty("cancelledByKind");
+    // Plan A1 (lot A1.3) : un fait d'avant se relit `false` / `production_plan`.
+    expect(payload).toMatchObject({ afterInscription: false, stageApplied: "production_plan" });
     expect(JOURNAL_FACTS["order.cancelled"].payload.safeParse(payload).success).toBe(true);
   });
 
@@ -114,6 +116,33 @@ describe("OnOrderCancelled", () => {
 
     const payload = payloadOf(recorder);
     expect(payload).toMatchObject({ cancelledByCustomer: "user_x", policy: { hoursBefore: 24 } });
+    expect(JOURNAL_FACTS["order.cancelled"].payload.safeParse(payload).success).toBe(true);
+  });
+
+  it("plan A1 : annulée après l'arrêt, le journal le dit avec l'étape appliquée", async () => {
+    const { recorder, run } = handler();
+    const event = new OrderCancelledEvent(
+      "order_9",
+      "ORD-9",
+      "user_7",
+      null,
+      null,
+      "paid",
+      null,
+      { announcedCents: 900 },
+      "customer",
+      "user_7",
+      null,
+      null,
+      null,
+      true,
+      "ready",
+    );
+
+    await run.handle(delivery({ ...event.durableFact().payload }));
+
+    const payload = payloadOf(recorder);
+    expect(payload).toMatchObject({ afterInscription: true, stageApplied: "ready" });
     expect(JOURNAL_FACTS["order.cancelled"].payload.safeParse(payload).success).toBe(true);
   });
 });

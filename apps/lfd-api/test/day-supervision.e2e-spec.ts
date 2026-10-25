@@ -168,6 +168,7 @@ describe("la Supervision du jour", () => {
         ready: 1,
         handedOver: 1,
         cancelled: 1,
+        cancelledAfterPlan: 0,
       },
       {
         fulfillmentMethod: "delivery",
@@ -176,6 +177,7 @@ describe("la Supervision du jour", () => {
         ready: 1,
         handedOver: 0,
         cancelled: 0,
+        cancelledAfterPlan: 0,
       },
     ]);
   });

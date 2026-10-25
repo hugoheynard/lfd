@@ -1,3 +1,4 @@
+import type { CustomerCancellationStage } from "@lfd/contracts";
 import { Injectable, Logger } from "@nestjs/common";
 
 import { CommerceOrderCancelledFact } from "../../../../delivery/channels/commerce/index.js";
@@ -29,7 +30,10 @@ import { OrderCancellationRepository } from "../../domain/ports/order-cancellati
 import { AccountOrderEngagement } from "../../domain/ports/account-order-engagement.js";
 import { DeliveryNoteFollowing } from "../../domain/ports/delivery-note-following.js";
 import { customerUserOf, staffSheetOf } from "../../domain/services/cancellation-actor.js";
-import type { CancellationAllowance } from "../../domain/services/cancellation-allowance.js";
+import {
+  stageOfAllowance,
+  type CancellationAllowance,
+} from "../../domain/services/cancellation-allowance.js";
 import type { CancellableRegime } from "../../domain/services/order-cancellation.js";
 import { CancellationAllowanceGate } from "./cancellation-allowance-gate.js";
 import { recordOf, type CancellationIntent } from "./cancellation-intent.js";
@@ -224,7 +228,7 @@ export class OrderCancellation {
         throw new OrderNotFoundError(orderId);
       }
       const regime = await this.rule.regimeOf(locked, allowance);
-      await this.workshops.withdraw(locked, allowance, intent.actor);
+      const afterInscription = await this.workshops.withdraw(locked, allowance, intent.actor);
       const now = this.clock.now();
       const written = await this.cancellations.cancel(
         locked.orderId,
@@ -240,7 +244,10 @@ export class OrderCancellation {
         await this.rule.regimeOf(again, allowance);
         throw new OrderNotCancellableError(locked.orderId, { kind: "state_changed" });
       }
-      await this.afterCancelled(locked, intent, regime, now);
+      await this.afterCancelled(locked, intent, regime, now, {
+        afterInscription,
+        stageApplied: stageOfAllowance(allowance),
+      });
     });
   }
 
@@ -250,6 +257,7 @@ export class OrderCancellation {
     intent: CancellationIntent,
     regime: CancellableRegime,
     now: Date,
+    workshop: WorkshopOutcome,
   ): Promise<void> {
     const staffSheet = staffSheetOf(intent.actor);
     if (regime === "account") {
@@ -279,6 +287,8 @@ export class OrderCancellation {
         intent.reasonCode,
         intent.policy,
         intent.fromPrincipal ?? null,
+        workshop.afterInscription,
+        workshop.stageApplied,
       ).durableFact(),
     );
     // La livraison sort la commande de son transfert prévu (lot T2) : même transaction.
@@ -318,6 +328,12 @@ export class OrderCancellation {
         };
     }
   }
+}
+
+/** Ce que les ateliers ont fait, et sous quelle étape — recopié au fait (lot A1.3). */
+interface WorkshopOutcome {
+  readonly afterInscription: boolean;
+  readonly stageApplied: CustomerCancellationStage;
 }
 
 /** Un refus dit la même chose au second essai : on ne le rejoue pas. */

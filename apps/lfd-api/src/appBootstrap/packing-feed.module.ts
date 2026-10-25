@@ -4,6 +4,7 @@ import { PrismaPackingDayVersionReader } from "../packing/infrastructure/prisma-
 import { PrismaDayPackingProgressReader } from "../packing/infrastructure/prisma-day-packing-progress.reader.js";
 import { PrismaPackedOrdersReader } from "../packing/infrastructure/prisma-packed-orders.reader.js";
 import {
+  OrderPackingStateReader,
   PackedResuppliesReader,
   PackingWithdrawalDesk,
   ShortfallDesk,
@@ -11,6 +12,7 @@ import {
 import { PackingSheetWithdrawalDesk } from "../packing/application/withdrawal/packing-sheet-withdrawal.desk.js";
 import { PackingShortfallDesk } from "../packing/application/station/packing-shortfall-desk.js";
 import { PrismaPackedResuppliesReader } from "../packing/infrastructure/prisma-packed-resupplies.reader.js";
+import { PrismaOrderPackingStateReader } from "../packing/infrastructure/prisma-order-packing-state.reader.js";
 import { PackingModule } from "../packing/packing.module.js";
 import {
   DayPackingProgressReader,
@@ -70,6 +72,7 @@ import { ProductionModule } from "../production/production.module.js";
     // déclare ET implémente, le commerce l'appelle après le guichet du
     // fournil ; la pierre tombale lit l'en-tête que le fournil publie.
     { provide: PackingWithdrawalDesk, useExisting: PackingSheetWithdrawalDesk },
+    { provide: OrderPackingStateReader, useExisting: PrismaOrderPackingStateReader },
     { provide: InscribedOrderHeaderReader, useExisting: DayInscribedOrderHeaderReader },
   ],
   exports: [
@@ -81,6 +84,7 @@ import { ProductionModule } from "../production/production.module.js";
     PackedResuppliesReader,
     ShortfallDesk,
     PackingWithdrawalDesk,
+    OrderPackingStateReader,
     InscribedOrderHeaderReader,
   ],
 })

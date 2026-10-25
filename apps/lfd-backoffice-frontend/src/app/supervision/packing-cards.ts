@@ -3,6 +3,7 @@ import type {
   HandoverQueueView,
   PackingSheet,
   ProductionPackingView,
+  WithdrawnPackingSheet,
 } from '@lfd/contracts';
 
 import { clockLabel } from './supervision-labels';
@@ -82,6 +83,12 @@ export interface PackingBoard {
   readonly toPack: number;
   /** Les commandes qui attendent le four — la pastille sur l'onglet Préparation. */
   readonly awaitingOven: number;
+  /**
+   * Les feuilles retirées par une annulation après l'arrêt (plan A1, lot
+   * A1.3) — hors des cartes et des comptes, montrées à part sous le badge
+   * « annulée après l'arrêt ».
+   */
+  readonly withdrawn: readonly WithdrawnPackingSheet[];
 }
 
 /** Au-delà, la colonne dit « + N commandes » plutôt que de défiler sans fin. */
@@ -180,6 +187,7 @@ export function packingBoard(
     packed: cards.filter((card) => card.state === 'packed'),
     toPack: open.length,
     awaitingOven: cards.filter((card) => card.state === 'awaiting_oven').length,
+    withdrawn: view.withdrawnSheets,
   };
 }
 

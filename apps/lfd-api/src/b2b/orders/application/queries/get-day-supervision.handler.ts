@@ -6,6 +6,7 @@ import {
 } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
+import { OrderPackingStateReader } from "../../../../packing/channels/commerce/index.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { DaySupervisionReader } from "../../domain/ports/day-supervision.reader.js";
 import {
@@ -21,6 +22,11 @@ import { GetDaySupervisionQuery } from "./get-day-supervision.query.js";
  * compte des commandes sans date. Les règles vivent dans le domaine
  * (`superviseDay`) ; l'instant vient du `Clock`, une seule fois, et c'est lui
  * que la réponse rend en `asOf` — l'écran dit ainsi à quelle heure il juge.
+ *
+ * Plan A1 (lot A1.3) : parmi les annulées, celles dont le colisage a retiré
+ * la feuille — annulées APRÈS l'arrêt, gardées au compte à produire — sont
+ * comptées à part (`cancelledAfterPlan`). Le colisage le dit par son canal ;
+ * seules les annulées lui sont demandées.
  */
 @QueryHandler(GetDaySupervisionQuery)
 export class GetDaySupervisionHandler implements IQueryHandler<
@@ -30,6 +36,7 @@ export class GetDaySupervisionHandler implements IQueryHandler<
   constructor(
     private readonly reader: DaySupervisionReader,
     private readonly clock: Clock,
+    private readonly packing: OrderPackingStateReader,
   ) {}
 
   async execute(query: GetDaySupervisionQuery): Promise<DaySupervisionView> {
@@ -41,7 +48,7 @@ export class GetDaySupervisionHandler implements IQueryHandler<
       this.reader.ordersOn(day),
       this.reader.countUndated(),
     ]);
-    const { flow, late } = superviseDay(day, orders, now);
+    const { flow, late } = superviseDay(day, orders, now, await this.withdrawnAmong(orders));
     return {
       date: day,
       asOf: now.toISOString(),
@@ -50,6 +57,18 @@ export class GetDaySupervisionHandler implements IQueryHandler<
       awaitingDecision: awaitingDecisionOf(orders).map(toAwaitingDecision),
       undated,
     };
+  }
+
+  /** Les annulées dont la feuille est retirée au colisage. */
+  private async withdrawnAmong(orders: readonly SupervisedOrder[]): Promise<ReadonlySet<string>> {
+    const cancelled = orders
+      .filter((order) => order.status === "cancelled")
+      .map((order) => order.orderId);
+    if (cancelled.length === 0) {
+      return new Set();
+    }
+    const states = await this.packing.packedAmong(cancelled);
+    return new Set(cancelled.filter((orderId) => states.get(orderId) === "withdrawn"));
   }
 }
 

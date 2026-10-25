@@ -122,6 +122,7 @@ class FakePacking {
       date,
       closedAt: this.sheets.length === 0 ? null : 'x',
       sheets: this.sheets,
+      withdrawnSheets: [],
       resources: [],
       orderCount: this.sheets.length,
       todoCount: 0,

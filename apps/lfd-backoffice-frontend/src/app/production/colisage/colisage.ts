@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import {
+  FoldBadgeComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldEmptyStateComponent,
@@ -74,6 +75,7 @@ const COMPACT_MASTHEAD_QUERY = '(max-width: 1366px)';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ClienteleBadge,
+    FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldEmptyStateComponent,

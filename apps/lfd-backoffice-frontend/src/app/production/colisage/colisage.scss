@@ -144,6 +144,14 @@
   margin-top: var(--fold-space-md);
 }
 
+/* Une feuille retirée après l'arrêt (plan A1, lot A1.3) : la référence et son badge, sur une ligne. */
+.co-withdrawn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  margin-inline-start: var(--fold-space-sm);
+}
+
 /* Le champ prend toute la bande : une grande cible, visée les mains prises. Il
    ne défile pas — il appartient à la tête, pas aux colonnes. Au-dessus de
    1366 px il passe à la ligne sous le titre ; en dessous, il partage la ligne. */

@@ -12,12 +12,8 @@ import {
 } from "../../domain/ports/cancellation-subject.reader.js";
 import type { CustomerCancellationSubject } from "../../domain/ports/customer-cancellation-subject.reader.js";
 import { customerRefusalOf } from "../../domain/services/customer-cancellation-refusal.js";
-import {
-  cancellationOf,
-  type CancellableRegime,
-} from "../../domain/services/order-cancellation.js";
-import { CancellationAllowanceGate } from "./cancellation-allowance-gate.js";
-import { CancellationRule } from "./cancellation-rule.js";
+import type { CancellableRegime } from "../../domain/services/order-cancellation.js";
+import { CancellationPreview } from "./cancellation-preview.js";
 import { CustomerCancellationPolicyGate } from "./customer-cancellation-policy.js";
 
 /**
@@ -38,9 +34,8 @@ export class CustomerCancellability {
   constructor(
     private readonly subjects: CancellationSubjectReader,
     private readonly inscriptions: OrderInscriptionReader,
-    private readonly rule: CancellationRule,
+    private readonly preview: CancellationPreview,
     private readonly policy: CustomerCancellationPolicyGate,
-    private readonly allowances: CancellationAllowanceGate,
   ) {}
 
   async of(
@@ -55,12 +50,9 @@ export class CustomerCancellability {
     if (staffSubject === null) {
       return refused("not_allowed");
     }
-    // Plan A1 : l'autorisation du geste, lue au réglage. Le bac fermé n'est
-    // connu que du colisage : l'aperçu ne le dit pas encore (lot A1.3).
-    const decision = cancellationOf(
-      await this.rule.stateOf(staffSubject, inscribedDay),
-      await this.allowances.of(staffSubject),
-    );
+    // Plan A1 : l'autorisation du geste, lue au réglage, et le bac fermé au
+    // colisage (lot A1.3) — « prête » plutôt qu'un bouton que le geste refuserait.
+    const decision = await this.preview.decisionOf(staffSubject, inscribedDay);
     if (!decision.cancellable) {
       return refused(customerRefusalOf(decision.block) ?? "not_allowed");
     }

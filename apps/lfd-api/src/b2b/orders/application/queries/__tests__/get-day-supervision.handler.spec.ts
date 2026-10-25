@@ -1,4 +1,5 @@
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
+import { FixedPackingStates } from "../../commands/__tests__/packing-state-doubles.js";
 import {
   DaySupervisionReader,
   type SupervisedOrder,
@@ -43,9 +44,11 @@ const LATE: SupervisedOrder = {
 describe("GetDaySupervisionHandler", () => {
   it("lit le jour demandé et rend l'instant du Clock en `asOf`", async () => {
     const reader = new StubReader([], 0);
-    const view = await new GetDaySupervisionHandler(reader, new FixedClock(NOW)).execute(
-      new GetDaySupervisionQuery(DAY),
-    );
+    const view = await new GetDaySupervisionHandler(
+      reader,
+      new FixedClock(NOW),
+      new FixedPackingStates(),
+    ).execute(new GetDaySupervisionQuery(DAY));
 
     expect(reader.days).toEqual([DAY]);
     expect(view.date).toBe(DAY);
@@ -58,6 +61,7 @@ describe("GetDaySupervisionHandler", () => {
     const view = await new GetDaySupervisionHandler(
       reader,
       new FixedClock(new Date(`${DAY}T23:30:00.000Z`)),
+      new FixedPackingStates(),
     ).execute(new GetDaySupervisionQuery());
 
     expect(reader.days).toEqual(["2026-11-11"]);
@@ -68,6 +72,7 @@ describe("GetDaySupervisionHandler", () => {
     const view = await new GetDaySupervisionHandler(
       new StubReader([], 3),
       new FixedClock(NOW),
+      new FixedPackingStates(),
     ).execute(new GetDaySupervisionQuery(DAY));
 
     expect(view.undated).toBe(3);
@@ -80,6 +85,7 @@ describe("GetDaySupervisionHandler", () => {
         0,
       ),
       new FixedClock(NOW),
+      new FixedPackingStates(),
     ).execute(new GetDaySupervisionQuery(DAY));
 
     expect(view.awaitingDecision).toEqual([
@@ -97,6 +103,7 @@ describe("GetDaySupervisionHandler", () => {
     const view = await new GetDaySupervisionHandler(
       new StubReader([LATE], 0),
       new FixedClock(NOW),
+      new FixedPackingStates(),
     ).execute(new GetDaySupervisionQuery(DAY));
 
     expect(view.late).toEqual([
@@ -110,5 +117,19 @@ describe("GetDaySupervisionHandler", () => {
         rule: "not_handed_over_after_window",
       },
     ]);
+  });
+
+  it("plan A1 : compte à part les annulées dont le colisage a retiré la feuille", async () => {
+    const cancelled: SupervisedOrder = { ...LATE, status: "cancelled", window: null };
+    const packing = new FixedPackingStates({ o1: "withdrawn", o9: "packed" });
+    const view = await new GetDaySupervisionHandler(
+      new StubReader([cancelled, { ...LATE, orderId: "o9" }], 0),
+      new FixedClock(NOW),
+      packing,
+    ).execute(new GetDaySupervisionQuery(DAY));
+
+    expect(view.flow[0]).toMatchObject({ cancelled: 1, cancelledAfterPlan: 1 });
+    // Seules les annulées sont demandées au colisage.
+    expect(packing.asked).toEqual([["o1"]]);
   });
 });

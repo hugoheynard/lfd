@@ -24,6 +24,10 @@ export const CUSTOMER_CANCELLATION_BELL = "order.cancelled_by_customer";
  * cloche part si — et seulement si — l'annulation est écrite. Silencieux pour
  * une annulation de l'équipe : elle la connaît. Une clé par commande : un
  * rejeu de la boîte d'envoi ne sonne pas deux fois.
+ *
+ * Plan A1 (lot A1.3) : annulée APRÈS l'arrêt du plan, la cloche le dit —
+ * « après l'arrêt : feuille retirée du colisage » — pour que l'équipe sache
+ * pourquoi le compte à produire dépasse les feuilles.
  */
 @Injectable()
 @DurableHandler({ type: ORDER_CANCELLED, subscriber: RING_CUSTOMER_CANCELLATION })
@@ -44,13 +48,22 @@ export class RingCustomerCancellation implements DurableSubscriber {
       {
         kind: CUSTOMER_CANCELLATION_BELL,
         subject: `Commande annulée par le client — ${event.orderNumber}`,
-        body:
-          `La commande ${event.orderNumber} a été annulée par ${who}. ` +
-          "Elle n'entrera pas au compte à produire, et l'argent suit les règles d'une annulation : rien à faire.",
+        body: `La commande ${event.orderNumber} a été annulée par ${who}. ${consequenceOf(event)}`,
         link: `/commandes/${event.orderId}`,
         idempotencyKey: `notification:${CUSTOMER_CANCELLATION_BELL}:${event.orderId}`,
         occurredAt: this.clock.now(),
       },
     ]);
   }
+}
+
+/** Ce que l'annulation change aux ateliers — et ce qu'il reste à faire : rien. */
+function consequenceOf(event: OrderCancelledEvent): string {
+  if (event.afterInscription) {
+    return (
+      "Après l'arrêt : feuille retirée du colisage. Le compte à produire ne change pas, " +
+      "ce qui était au bac est revenu à la réserve, et l'argent suit les règles d'une annulation : rien à faire."
+    );
+  }
+  return "Elle n'entrera pas au compte à produire, et l'argent suit les règles d'une annulation : rien à faire.";
 }

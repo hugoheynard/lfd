@@ -144,6 +144,7 @@ describe("superviseDay", () => {
         ready: 1,
         handedOver: 1,
         cancelled: 1,
+        cancelledAfterPlan: 0,
       },
       {
         fulfillmentMethod: "delivery",
@@ -152,8 +153,20 @@ describe("superviseDay", () => {
         ready: 1,
         handedOver: 0,
         cancelled: 0,
+        cancelledAfterPlan: 0,
       },
     ]);
+  });
+
+  it("plan A1 : parmi les annulées, celles retirées après l'arrêt sont comptées à part", () => {
+    const { flow } = superviseDay(
+      DAY,
+      [order("1", "cancelled"), order("2", "cancelled"), order("3", "ready")],
+      at("03:00"),
+      new Set(["2", "3"]),
+    );
+
+    expect(flow[0]).toMatchObject({ cancelled: 2, cancelledAfterPlan: 1 });
   });
 
   it("garde une ligne par acheminement même sans commande", () => {

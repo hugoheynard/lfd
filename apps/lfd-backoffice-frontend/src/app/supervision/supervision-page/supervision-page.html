@@ -135,6 +135,12 @@
         Manque signalé — décision attendue : {{ orders }}.
       </fold-callout>
     }
+    @if (cancelledAfterPlan() > 0) {
+      <fold-callout variant="info" data-cancelled-after-plan>
+        Annulées après l'arrêt : {{ cancelledAfterPlan() }}. Le compte à produire les garde ; leur
+        feuille est retirée du colisage, et ce qui était au bac est revenu à la réserve.
+      </fold-callout>
+    }
     @if (showCompositionGaps()) {
       <app-composition-gaps-callout />
     }

@@ -36,6 +36,41 @@ describe("RingCustomerCancellation (C6.9, Q-C6.8)", () => {
     ]);
   });
 
+  it("annulée après l'arrêt du plan : la cloche dit « feuille retirée du colisage » (plan A1)", async () => {
+    const { notifier, done } = ring(
+      new OrderCancelledEvent(
+        "o1",
+        "ORD-1",
+        "u1",
+        null,
+        null,
+        "paid",
+        null,
+        { announcedCents: 1200 },
+        "customer",
+        "u1",
+        null,
+        null,
+        null,
+        true,
+        "ready",
+      ),
+    );
+    await done;
+
+    expect(notifier.notices[0]?.body).toContain("Après l'arrêt : feuille retirée du colisage.");
+    expect(notifier.notices[0]?.body).not.toContain("n'entrera pas au compte à produire");
+  });
+
+  it("annulée avant l'arrêt : la phrase d'avant", async () => {
+    const { notifier, done } = ring(
+      new OrderCancelledEvent("o1", "ORD-1", "u1", null, null, "due", null, null, "customer", "u1"),
+    );
+    await done;
+
+    expect(notifier.notices[0]?.body).toContain("Elle n'entrera pas au compte à produire");
+  });
+
   it("se tait quand c'est l'équipe : elle le sait", async () => {
     const { notifier, done } = ring(
       new OrderCancelledEvent("o1", "ORD-1", "u1", "fiche_1", "motif", "due", null),

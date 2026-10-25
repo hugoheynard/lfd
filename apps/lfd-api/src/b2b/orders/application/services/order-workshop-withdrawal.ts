@@ -33,16 +33,21 @@ export class OrderWorkshopWithdrawal {
     private readonly packing: PackingWithdrawalDesk,
   ) {}
 
-  /** @throws {OrderNotCancellableError} inscrite, livraison après l'arrêt, bac fermé, bac de livraison. */
+  /**
+   * @returns `true` si la commande était inscrite et que les deux ateliers
+   *   l'ont retirée — le fait `order.cancelled` le dit (`afterInscription`,
+   *   lot A1.3).
+   * @throws {OrderNotCancellableError} inscrite, livraison après l'arrêt, bac fermé, bac de livraison.
+   */
   async withdraw(
     locked: CancellationSubject,
     allowance: CancellationAllowance,
     actor: CancellationActor,
-  ): Promise<void> {
+  ): Promise<boolean> {
     // Sans jour de service, une commande n'est jamais producible (`planWhere`
     // lit `requested_delivery_date`) : il n'y a rien à retirer.
     if (locked.serviceDay === null) {
-      return;
+      return false;
     }
     const day = locked.serviceDay;
     const outcome = await this.bakery.withdraw(
@@ -52,7 +57,7 @@ export class OrderWorkshopWithdrawal {
     );
     switch (outcome) {
       case "withdrawn":
-        return;
+        return false;
       case "inscribed":
         throw new OrderNotCancellableError(
           locked.orderId,
@@ -62,7 +67,7 @@ export class OrderWorkshopWithdrawal {
         );
       case "withdrawn_after_inscription":
         await this.withdrawFromPacking(locked.orderId, day, actor);
-        return;
+        return true;
     }
   }
 

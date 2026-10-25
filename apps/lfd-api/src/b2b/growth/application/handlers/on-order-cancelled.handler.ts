@@ -72,6 +72,10 @@ export class OnOrderCancelled implements DurableSubscriber {
             ? null
             : { ...event.voucher, expiresAt: event.voucher.expiresAt.toISOString() },
         refund: event.refund,
+        // Plan A1 (lot A1.3) : retirée des ateliers après l'arrêt, et jusqu'où
+        // l'annulation pouvait aller — toujours écrits désormais.
+        afterInscription: event.afterInscription,
+        stageApplied: event.stageApplied,
         ...(await this.customerAuthor(event)),
       },
     });

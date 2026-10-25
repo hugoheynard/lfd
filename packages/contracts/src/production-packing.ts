@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import type { PackingContainerView } from "./packing-containers.js";
+import type { WithdrawnPackingSheet } from "./production-packing-withdrawn.js";
 
 /**
  * **Le colisage** — répartir ce qui est sorti du four dans les bacs des clients.
@@ -296,6 +297,11 @@ export interface ProductionPackingView {
   readonly date: string;
   readonly closedAt: string | null;
   readonly sheets: readonly PackingSheet[];
+  /**
+   * Les feuilles retirées par une annulation après l'arrêt (plan A1, lot
+   * A1.3) — hors de `sheets` et des comptes, montrées à part.
+   */
+  readonly withdrawnSheets: readonly WithdrawnPackingSheet[];
   readonly resources: readonly PackingResource[];
   /** Toutes les commandes de la journée. */
   readonly orderCount: number;

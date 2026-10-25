@@ -14,6 +14,7 @@ import {
   customerSubject,
   FixedCancellationSettings,
 } from "../../commands/__tests__/customer-cancellation-doubles.js";
+import { FixedPackingStates, previewOf } from "../../commands/__tests__/packing-state-doubles.js";
 import type { CancellationSubject } from "../../../domain/ports/cancellation-subject.reader.js";
 
 /**
@@ -29,6 +30,7 @@ function serviceOf(options: {
   readonly inscribed?: string;
   readonly delay?: boolean;
   readonly stage?: CustomerCancellationStage;
+  readonly packing?: FixedPackingStates;
 }) {
   const order = cancellationSubject({ serviceDay: SERVICE_DAY, ...options.order });
   const settings = new FixedCancellationSettings({
@@ -39,9 +41,12 @@ function serviceOf(options: {
   return new CustomerCancellability(
     new FixedSubjects(order),
     new FixedInscriptions(options.inscribed === undefined ? {} : { ord_1: options.inscribed }),
-    new CancellationRule(new ScriptedEngagements({ kind: "free" })),
+    previewOf(
+      new CancellationRule(new ScriptedEngagements({ kind: "free" })),
+      new CancellationAllowanceGate(settings),
+      options.packing,
+    ),
     new CustomerCancellationPolicyGate(settings),
-    new CancellationAllowanceGate(settings),
   );
 }
 
@@ -136,6 +141,28 @@ describe("CustomerCancellability", () => {
       }).of(PERSONAL, NOW, true);
 
       expect(preview).toEqual({ cancellable: false, code: "in_preparation", until: null });
+    });
+
+    it("lot A1.3 : « prête », bac fermé au colisage — « prête », le bouton disparaît", async () => {
+      const packing = new FixedPackingStates({ ord_1: "packed" });
+      const preview = await serviceOf({
+        inscribed: SERVICE_DAY,
+        delay: false,
+        stage: "ready",
+        order: { fulfillmentMethod: "pickup" },
+        packing,
+      }).of(PERSONAL, NOW, true);
+
+      expect(preview).toEqual({ cancellable: false, code: "ready", until: null });
+      expect(packing.asked).toEqual([["ord_1"]]);
+    });
+
+    it("lot A1.3 : pas inscrite, le colisage n'est pas interrogé", async () => {
+      const packing = new FixedPackingStates({ ord_1: "packed" });
+
+      await serviceOf({ delay: false, stage: "ready", packing }).of(PERSONAL, NOW, true);
+
+      expect(packing.asked).toEqual([]);
     });
   });
 });

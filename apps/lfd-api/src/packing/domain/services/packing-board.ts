@@ -63,6 +63,7 @@ export function packingBoardOf(sources: BoardSources): ProductionPackingView {
       date: sources.date,
       closedAt: null,
       sheets: [],
+      withdrawnSheets: [],
       resources: [],
       orderCount: 0,
       todoCount: 0,
@@ -88,6 +89,12 @@ export function packingBoardOf(sources: BoardSources): ProductionPackingView {
           compareReadyBy(left.readyBy ?? null, right.readyBy ?? null) ||
           left.reference.localeCompare(right.reference),
       ),
+    withdrawnSheets: sources.day.withdrawn.map((sheet) => ({
+      orderId: sheet.orderId,
+      reference: sheet.reference,
+      customerLabel: sheet.customerLabel,
+      withdrawnAt: sheet.withdrawnAt.toISOString(),
+    })),
     resources: resourcesOf(sources.day, awaiting),
     orderCount: orders.length,
     todoCount: orders.length - readyCount,
@@ -96,8 +103,9 @@ export function packingBoardOf(sources: BoardSources): ProductionPackingView {
   };
 }
 
+/** Retirées comprises : une journée dont toutes les feuilles sont retirées a bien été tirée. */
 function firstDrawnAt(day: PackingBoardDay): Date | null {
-  return day.orders.reduce<Date | null>(
+  return [...day.orders, ...day.withdrawn].reduce<Date | null>(
     (first, order) => (first === null || order.drawnAt < first ? order.drawnAt : first),
     null,
   );

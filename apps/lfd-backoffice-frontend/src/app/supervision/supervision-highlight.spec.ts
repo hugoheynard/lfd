@@ -43,6 +43,7 @@ const PACKING: ProductionPackingView = {
   date: '2026-09-28',
   closedAt: 'x',
   sheets: [sheet('CMD-1', ['BRI']), sheet('CMD-2', [])],
+  withdrawnSheets: [],
   resources: [],
   orderCount: 2,
   todoCount: 0,
@@ -63,6 +64,7 @@ function highlight(): SupervisionHighlight {
       packed: [],
       toPack: 0,
       awaitingOven: 1,
+      withdrawn: [],
     }),
     handoverBoard: signal(null),
   });

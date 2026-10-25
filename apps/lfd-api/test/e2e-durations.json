@@ -195,6 +195,7 @@
   "test/order-account-cancel.e2e-spec.ts": 11000,
   "test/order-card-settled-before-all.e2e-spec.ts": 4000,
   "test/order-cancel-after-plan-races.e2e-spec.ts": 14000,
+  "test/order-cancel-after-plan-traces.e2e-spec.ts": 14000,
   "test/order-cancel-after-plan.e2e-spec.ts": 14000,
   "test/order-cancel-stage.e2e-spec.ts": 9910,
   "test/order-customer-cancel.e2e-spec.ts": 14568,

@@ -60,6 +60,7 @@ function packing(sheets: readonly PackingSheet[]): ProductionPackingView {
     date: '2026-09-28',
     closedAt: 'x',
     sheets,
+    withdrawnSheets: [],
     resources: [],
     orderCount: sheets.length,
     todoCount: 0,

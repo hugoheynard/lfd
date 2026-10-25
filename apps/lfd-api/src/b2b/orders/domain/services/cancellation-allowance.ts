@@ -27,3 +27,11 @@ export function cancellationAllowanceOf(
   }
   return BEFORE_INSCRIPTION;
 }
+
+/**
+ * L'étape que l'autorisation applique, telle que le fait `order.cancelled` la
+ * dit (`stageApplied`, lot A1.3) : `before_packing` va jusqu'à « prête ».
+ */
+export function stageOfAllowance(allowance: CancellationAllowance): CustomerCancellationStage {
+  return allowance.allowance === "before_packing" ? "ready" : "production_plan";
+}

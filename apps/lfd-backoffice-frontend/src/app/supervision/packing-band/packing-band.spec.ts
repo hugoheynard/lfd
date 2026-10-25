@@ -30,6 +30,7 @@ const BOARD: PackingBoard = {
   packed: [card('C', 'Mairie')],
   toPack: 2,
   awaitingOven: 0,
+  withdrawn: [],
 };
 
 async function mount() {

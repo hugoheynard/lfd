@@ -132,6 +132,23 @@
     }
 
     <!--
+      Plan A1, lot A1.3 : les commandes annulées APRÈS l'arrêt. Leur feuille est
+      retirée — ni à coliser, ni proposée — et ce qui était au bac est revenu à
+      la réserve : l'équipe sait pourquoi le compte dépasse les feuilles.
+    -->
+    @if (day.withdrawnSheets().length > 0) {
+      <fold-callout variant="info" class="co-note" data-withdrawn-sheets>
+        Feuilles retirées du colisage : ce qui était au bac est revenu à la réserve.
+        @for (sheet of day.withdrawnSheets(); track sheet.orderId) {
+          <span class="co-withdrawn" [attr.data-withdrawn-reference]="sheet.reference">
+            {{ sheet.reference }} · {{ sheet.customerLabel }}
+            <fold-badge variant="neutral" content="Annulée après l'arrêt" />
+          </span>
+        }
+      </fold-callout>
+    }
+
+    <!--
       🔴 Une référence scannée qui n'est pas dans la journée ouverte : on la dit
       EN TOUTES LETTRES. C'est le cas d'un QR d'hier, et un écran muet laisserait
       croire que la commande est faite.

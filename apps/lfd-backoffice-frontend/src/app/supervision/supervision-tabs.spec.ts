@@ -18,6 +18,7 @@ function packing(overrides: Partial<PackingBoard> = {}): PackingBoard {
     packed: [],
     toPack: 0,
     awaitingOven: 0,
+    withdrawn: [],
     ...overrides,
   };
 }

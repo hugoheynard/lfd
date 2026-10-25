@@ -1,5 +1,20 @@
 # Plan A1 — retirer une commande inscrite au plan
 
+> 🟡 **2026-10-25 : A1.3 bâti, pas encore commité.** Les faits durables
+> `production.order_withdrawn_after_close` et `packing.sheet_withdrawn`, publiés
+> dans la transaction du retrait, sans abonné, journalisés
+> `production_day.order_withdrawn` / `packing_sheet.withdrawn` (libellés au
+> back-office) ; `order.cancelled` porte `afterInscription` / `stageApplied`
+> (faits anciens lus `false` / `production_plan`) ; la cloche dit « Après
+> l'arrêt : feuille retirée du colisage ». `OrderPackingStateReader.packedAmong`
+> (`packing/channels/commerce/`, `packed` | `withdrawn`) nourrit
+> `CancellationPreview`, partagé par la fiche staff et « Mes commandes », et le
+> compteur `cancelledAfterPlan` de la Supervision. Le poste sert les feuilles
+> retirées à part (`withdrawnSheets`), sous le badge « Annulée après l'arrêt ».
+> Choix de bâti à relire : le lecteur rend aussi `withdrawn` (une seule
+> lecture pour l'aperçu et le compteur) ; la cloche reste muette quand
+> l'équipe annule elle-même, comme avant. E2E écrits, pas encore passés.
+
 > 🟡 **2026-10-25 : A1.2 bâti, pas encore commité.** Migration
 > `20261025210000_retirer_une_commande_inscrite` (`order_withdrawal.after_inscription`,
 > `packing_order.withdrawn_at`). Le guichet du fournil prend l'autorisation ;
@@ -168,12 +183,12 @@ bien avant. Test : annulée après l'arrêt → BL `voided`.
 
 ## 4. Décisions de Hugo (2026-10-25)
 
-| #   | Question                                     | Décision                                                                                                                                                                |
-| --- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Q1  | Retirer une commande **de société** inscrite | **Non.** Avant l'arrêt, le staff annule déjà, heure limite et grâce ignorées (R1) ; après l'arrêt, « c'est de la quantité » : départ incomplet ou avoir.                |
-| Q2  | Aller jusqu'au retrait au comptoir (C7b)     | **Non.** Jusqu'où un particulier peut annuler reste une **décision de l'admin**, au réglage : « arrêt du plan » ou « prête ».                                           |
-| Q3  | Remboursement intégral après l'arrêt         | **Oui** (noyau C4).                                                                                                                                                     |
-| Q4  | Le pain rendu par une annulation             | **Un geste pour le vendre** : « Envoyer en boutique » depuis la réserve du colisage (lot A1.4). Rien ne s'encaisse par notre système : la boutique le vend à sa caisse. |
+| #   | Question                                     | Décision                                                                                                                                                                                                                                                 |
+| --- | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Q1  | Retirer une commande **de société** inscrite | **Non.** Avant l'arrêt, le staff annule déjà, heure limite et grâce ignorées (R1) ; après l'arrêt, « c'est de la quantité » : départ incomplet ou avoir.                                                                                                 |
+| Q2  | Aller jusqu'au retrait au comptoir (C7b)     | **Non.** Jusqu'où un particulier peut annuler reste une **décision de l'admin**, au réglage : « arrêt du plan » ou « prête ».                                                                                                                            |
+| Q3  | Remboursement intégral après l'arrêt         | **Oui** (noyau C4).                                                                                                                                                                                                                                      |
+| Q4  | Le pain rendu par une annulation             | **Un geste pour le vendre** : « Envoyer en boutique », geste de superviseur à la Supervision (lot A1.4, [`plan-a1-4-envoyer-en-boutique.md`](plan-a1-4-envoyer-en-boutique.md)). Rien ne s'encaisse par notre système : la boutique le vend à sa caisse. |
 
 **À vérifier au bâti (A1.1)** : l'arrêt automatique du plan doit tomber après
 la fin de la grâce (`order_cutoff.grace_minutes`) ; sinon une commande prise

@@ -138,6 +138,15 @@ export const CANCELLATION_VOUCHER_OUTCOME = domain('sort du bon à une annulatio
   lapsed: 'Échu, non rendu',
 });
 
+/**
+ * Jusqu'où l'annulation pouvait aller (`order.cancelled`, plan A1, lot A1.3) —
+ * la valeur du réglage appliquée à la commande.
+ */
+export const CANCELLATION_STAGE = domain('limite d’une annulation', {
+  production_plan: 'Jusqu’à l’arrêt du plan',
+  ready: 'Jusqu’à ce que la commande soit prête',
+});
+
 /** Qui a annulé, quand ce n'est pas l'équipe (`order.cancelled`, lot C6) — absent d'une annulation staff. */
 export const CANCELLATION_ACTOR_KIND = domain('auteur d’une annulation', {
   customer: 'Le client',
@@ -287,6 +296,7 @@ export const ORDERS_VALUES: ValueFamily = {
     CANCELLATION_REGIME,
     CANCELLATION_VOUCHER_OUTCOME,
     CANCELLATION_ACTOR_KIND,
+    CANCELLATION_STAGE,
     CUSTOMER_CANCELLATION_REASON,
     REFUND_STATUS,
     REFUND_REJECTION,
