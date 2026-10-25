@@ -191,7 +191,8 @@ describe("GET /orders/:id et /admin/orders/:id — la modification dite par la v
     expect((await adminView(orderId)).revisability).toEqual({ revisable: true });
   });
 
-  it("inscrite au fournil : ni le client ni l'équipe, et l'équipe lit la phrase du geste", async () => {
+  // A2 (2026-10-25) : après l'arrêt, l'équipe garde les QUANTITÉS d'une commande au compte.
+  it("inscrite au fournil : fermée au client ; l'équipe peut, en quantités seulement", async () => {
     const { orderId } = await scene();
     await staff().post(`/admin/production/batch/${DAY}/close`).expect(201);
     await ctx.drain();
@@ -201,10 +202,8 @@ describe("GET /orders/:id et /admin/orders/:id — la modification dite par la v
       code: "in_preparation",
     });
     const theirs = await adminView(orderId);
-    expect(theirs.revisability).toMatchObject({ revisable: false });
-    expect(JSON.stringify(theirs.revisability)).toContain(
-      "Le fournil a déjà inscrit cette commande",
-    );
+    expect(theirs.revisability).toMatchObject({ revisable: true });
+    expect(JSON.stringify(theirs.revisability)).toContain("seules les quantités");
   });
 
   it("réglée par carte : le client lit `card_settled`, l'équipe la raison", async () => {

@@ -373,7 +373,9 @@ describe("la boîte des demandes — l'équipe répond", () => {
       .expect(400);
   });
 
-  it("inscrite au fournil entre-temps : « Appliquer » refusé, l'écran le dit, la demande reste en attente", async () => {
+  // A2 (2026-10-25) : après l'arrêt, l'équipe applique encore une demande qui ne
+  // change QUE des quantités d'une commande au compte — le fournil suit le dû.
+  it("inscrite au fournil entre-temps : une demande de quantités s'applique encore", async () => {
     const s = await scene();
     const id = await requested(s);
     // Une heure limite posée interdit d'arrêter le plan à la main avant celle du
@@ -382,20 +384,12 @@ describe("la boîte des demandes — l'équipe répond", () => {
     await staff().post(`/admin/production/batch/${DAY}/close`).expect(201);
     await ctx.drain();
 
-    const quote = await staff()
-      .get(`/admin/customer-requests/${id}/order-change/quote`)
-      .expect(409);
-    expect(JSON.stringify(quote.body)).toContain("Le fournil a déjà inscrit cette commande");
-    await staff().post(`/admin/customer-requests/${id}/order-change/apply`).expect(409);
+    await staff().get(`/admin/customer-requests/${id}/order-change/quote`).expect(200);
+    await staff().post(`/admin/customer-requests/${id}/order-change/apply`).expect(200);
 
-    expect(await quantities(s.orderId)).toEqual([{ sku: "VIE-001", quantity: 10 }]);
+    expect(await quantities(s.orderId)).toEqual([{ sku: "VIE-001", quantity: 12 }]);
     const row = await ctx.prisma.customerRequest.findUniqueOrThrow({ where: { id } });
-    expect(row.handledAt).toBeNull();
-    // Elle se refuse encore.
-    await staff()
-      .post(`/admin/customer-requests/${id}/order-change/refuse`)
-      .send({ reason: "Déjà en préparation." })
-      .expect(204);
+    expect(row.handledAt).not.toBeNull();
   });
 
   it("« Marquer traité » ne s'applique pas à une demande de modification (409)", async () => {

@@ -221,10 +221,12 @@ async function stepEveStop(flow: Flow): Promise<void> {
     resupplies: [{ resupplyId: flow.resupplyId, lines: [{ quantity: ASKED }] }],
   });
   const pages = await dossierPdfFirstAndLast();
-  // La fiche de poste : le total d'abord, la part du réassort ensuite ; puis le bon.
+  // La couverture dit la part du réassort au rayon, et que le point est servi
+  // par transfert (mise en page du 2026-10-25) ; le bon ferme le dossier.
   expect(pages[0]).toMatch(
-    new RegExp(`${String(ORDERED + ASKED)} .{0,2}dont ${String(ASKED)} réassort`, "u"),
+    new RegExp(`dont ${String(ASKED)} réassort\\s+${String(ORDERED + ASKED)} pièces`, "u"),
   );
+  expect(pages[0]).toContain("Par transfert");
   expect(pages.at(-1)).toContain("RÉASSORT 1/1");
 }
 

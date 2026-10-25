@@ -359,17 +359,25 @@ describe("POST /orders/:id/revisions — les refus", () => {
       .expect(200);
   });
 
-  it("R1 : une commande inscrite au fournil ne se modifie plus, même par l'équipe", async () => {
+  // A2 (2026-10-25) : après l'arrêt, l'équipe ne change plus que les quantités ;
+  // le client reste refusé. Le cas « l'équipe change une quantité » est dans
+  // order-revise-after-plan.e2e-spec.ts.
+  it("R1 : inscrite au fournil, le client est refusé ; l'équipe, hors quantités, aussi", async () => {
     const { orderId, pickupId } = await scene();
     await staff().post(`/admin/production/batch/${DAY}/close`).expect(201);
     await ctx.drain();
+
+    const client = await buyer()
+      .post(`/orders/${orderId}/revisions`)
+      .send({ expectedRevision: 0, ...content(pickupId, { note: "Client" }) })
+      .expect(409);
+    expect(JSON.stringify(client.body)).toContain("Le fournil a déjà inscrit cette commande");
 
     const refused = await staff()
       .post(`/admin/orders/${orderId}/revisions`)
       .send({ expectedRevision: 0, ...content(pickupId, { note: "Trop tard" }) })
       .expect(409);
-
-    expect(JSON.stringify(refused.body)).toContain("Le fournil a déjà inscrit cette commande");
+    expect(JSON.stringify(refused.body)).toContain("seules les quantités");
   });
 
   it("le mur : un client d'une autre maison ne trouve pas la commande (404)", async () => {

@@ -325,8 +325,9 @@ describe("Prod manager voit les réassorts (R3d)", () => {
       .expect(200);
     const pages = Buffer.isBuffer(pdf.body) ? pdfPages(pdf.body) : [];
     expect(pages[0]).toMatch(/1 commande .*· 1 réassort · 22 pièces dont 18 de réassort/);
-    // La fiche de poste du croissant : le total d'abord, la part ensuite.
-    expect(pages[0]).toMatch(/22 .{0,2}dont 18 réassort/);
+    // La couverture dit la part du réassort au rayon (mise en page du 2026-10-25) ;
+    // la fiche de poste du croissant suit, plus loin dans le dossier.
+    expect(pages[0]).toMatch(/dont 18 réassort\s+22 pièces/);
     expect(pages.at(-1)).toContain("RÉASSORT 1/1");
   });
 });

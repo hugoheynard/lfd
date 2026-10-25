@@ -202,7 +202,8 @@ async function stepEveStop(flow: Flow): Promise<void> {
   });
   const last = (await dossierPages()).at(-1);
   expect(last).toContain("RÉASSORT 1/1");
-  expect(last).toContain("Servi sur place");
+  // « Servi sur place » retiré (Hugo, 2026-10-25) : seul le transfert se dit.
+  expect(last).not.toContain("Par transfert");
 }
 
 /** R3b (Q1 révisée) et R3c : ni fiche au colisage, ni transfert pour le Labo. */
