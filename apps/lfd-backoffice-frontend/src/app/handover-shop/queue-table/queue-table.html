@@ -68,9 +68,9 @@
   </ng-template>
 
   <!--
-    **Le retard s'annonce SOUS la ligne**, et pas dans une colonne : il vient
-    avec un geste. Une pastille dit un état ; ici il faut dire l'état ET
-    proposer d'y répondre, ce qui ne tient pas dans une cellule.
+    **Le retard s'annonce SOUS la ligne**, et pas dans une colonne. Il n'y
+    porte plus de geste : « Envoyer un rappel » est parti à la supervision le
+    2026-10-25 (Hugo).
 
     🔴 Une NOTE et non un tiroir (`foldRowNote`, fold 0.26). Le tiroir fait
     pousser un chevron sur CHAQUE ligne, parce qu'il cache quelque chose ; un
@@ -93,28 +93,6 @@
     @if (late(row)) {
       <fold-callout appearance="inset" variant="warning" icon="info">
         <strong>{{ lateText(row) }}</strong> sur la tranche convenue.
-        @if (canRemind() && !remindable(row) && !reminderSent(row)) {
-          Le fournil ne l'a pas encore déclarée prête&nbsp;: un rappel ferait venir le client pour
-          rien.
-        }
-        @if (canRemind()) {
-          <div actions>
-            @if (reminderSent(row)) {
-              <span class="qt-muted">Rappel envoyé</span>
-            } @else {
-              <button
-                foldButton
-                emphasis="outline"
-                icon="mail"
-                [disabled]="!remindable(row)"
-                [loading]="busy(row)"
-                (click)="reminder.emit(row); $event.stopPropagation()"
-              >
-                Envoyer un rappel
-              </button>
-            }
-          </div>
-        }
       </fold-callout>
     }
   </ng-template>

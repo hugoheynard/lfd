@@ -286,3 +286,9 @@
 .is-current {
   box-shadow: 0 0 0 5px color-mix(in srgb, var(--fold-color-primary) 20%, transparent);
 }
+
+.reminded {
+  flex: none;
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+}

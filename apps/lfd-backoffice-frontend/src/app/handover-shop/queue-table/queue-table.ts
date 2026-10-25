@@ -14,7 +14,6 @@ import {
 import type { HandoverQueueEntryView, OrderClientele, PackingAbandonedLine } from '@lfd/contracts';
 import {
   FoldBadgeComponent,
-  FoldButtonComponent,
   FoldCalloutComponent,
   FoldDataTableCellDirective,
   FoldDataTableComponent,
@@ -37,7 +36,6 @@ import {
   matchingQueue,
   rowTone,
   sortedQueue,
-  stillRemittable,
 } from '../handover-queue';
 import { MissingItems } from '../missing-items/missing-items';
 import { transferBlockReason } from '../handover-transfer';
@@ -59,7 +57,8 @@ const CLIENTELE_LABELS: Readonly<Record<OrderClientele, string>> = {
  *
  * 🔴 Elle ne charge rien, n'appelle aucun service, ne connaît ni la journée
  * choisie ni les onglets. Elle reçoit des lignes et **émet des intentions** :
- * ouvrir, scanner, rappeler. C'est ce qui la rend éprouvable sans HTTP ni
+ * ouvrir, scanner. (« Envoyer un rappel » est parti à la supervision le
+ * 2026-10-25, Hugo : relancer un client est une décision de superviseur.) C'est ce qui la rend éprouvable sans HTTP ni
  * panneau — on lui passe six lignes et on lit ce qu'elle rend.
  *
  * L'écran, lui, garde ce qui demande le monde extérieur : la lecture, les
@@ -87,7 +86,6 @@ const CLIENTELE_LABELS: Readonly<Record<OrderClientele, string>> = {
   imports: [
     MissingItems,
     FoldBadgeComponent,
-    FoldButtonComponent,
     FoldCalloutComponent,
     FoldDataTableCellDirective,
     FoldDataTableComponent,
@@ -112,19 +110,6 @@ export class QueueTable {
    * Angular repeint — donc un test ne pourrait plus poser l'heure qu'il veut.
    */
   readonly now = input.required<Date>();
-
-  /** La commande dont le rappel est en vol — au plus une, et le bouton le dit. */
-  readonly busyId = input<string | null>(null);
-
-  /** Les rappels déjà partis, pour ne pas les réarmer à l'identique. */
-  readonly reminded = input<ReadonlySet<string>>(new Set());
-
-  /**
-   * Le staff peut-il envoyer un rappel ? La route exige `b2b_orders:write`, la
-   * file seulement `handover_counter:read` : sans le droit, le retard reste dit,
-   * mais aucun bouton ne promet un 403.
-   */
-  readonly canRemind = input<boolean>(true);
 
   /**
    * Le terme cherché, ou `''` — un **filtre de ce qui est affiché**, jamais une
@@ -182,9 +167,6 @@ export class QueueTable {
 
   /** On a touché la ligne : elle s'ouvre dans le rail. */
   readonly opened = output<HandoverQueueEntryView>();
-
-  /** On renvoie le courriel de retrait à ce client. */
-  readonly reminder = output<HandoverQueueEntryView>();
 
   /**
    * La file : ordonnée d'abord, filtrée ensuite.
@@ -307,22 +289,5 @@ export class QueueTable {
 
   protected variant(entry: HandoverQueueEntryView): FoldBadgeVariant {
     return entryStateVariant(entry);
-  }
-
-  /**
-   * Le rappel n'a de sens que sur une commande **déclarée prête**. Le serveur le
-   * refuse aussi — la règle vit là-bas ; ici on évite d'armer un bouton dont on
-   * connaît déjà la réponse.
-   */
-  protected remindable(entry: HandoverQueueEntryView): boolean {
-    return stillRemittable(entry.state) && entry.readyAt !== null && !this.reminderSent(entry);
-  }
-
-  protected reminderSent(entry: HandoverQueueEntryView): boolean {
-    return this.reminded().has(entry.orderId);
-  }
-
-  protected busy(entry: HandoverQueueEntryView): boolean {
-    return this.busyId() === entry.orderId;
   }
 }

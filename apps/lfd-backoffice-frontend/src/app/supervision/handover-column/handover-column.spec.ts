@@ -1,6 +1,10 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+import { PermissionsStore } from '../../auth/permissions.store';
+import { AdminOrdersService } from '../../commandes/orders.service';
+import { NotifyService } from '../../notify.service';
 
 import type { HandoverBoard, SlotGroup, SlotRow } from '../handover-slots';
 import { NO_MATCHES } from '../supervision-search';
@@ -63,8 +67,25 @@ const BOARD: HandoverBoard = {
   held: 0,
 };
 
-async function mount(board: HandoverBoard) {
-  TestBed.configureTestingModule({ providers: [provideRouter([])] });
+interface World {
+  readonly canWrite?: boolean;
+  readonly remindHandover?: (id: string) => Promise<void>;
+}
+
+const notified = { success: vi.fn(), error: vi.fn() };
+
+async function mount(board: HandoverBoard, world: World = {}) {
+  TestBed.configureTestingModule({
+    providers: [
+      provideRouter([]),
+      {
+        provide: AdminOrdersService,
+        useValue: { remindHandover: world.remindHandover ?? (() => Promise.resolve()) },
+      },
+      { provide: NotifyService, useValue: notified },
+      { provide: PermissionsStore, useValue: { can: (): boolean => world.canWrite ?? true } },
+    ],
+  });
   const fixture = TestBed.createComponent(HandoverColumn);
   fixture.componentRef.setInput('board', board);
   fixture.componentRef.setInput('showLinks', true);
@@ -279,5 +300,69 @@ describe('HandoverColumn — la carte de livraison', () => {
       'Pas encore dans une tournée',
     );
     expect(text(el, '[data-reference="SEULE"] .sub')).toBe('Prête');
+  });
+
+  describe('le rappel du client (venu du comptoir, Hugo le 2026-10-25)', () => {
+    const absent = row('ABSENT', {
+      state: 'overdue',
+      readyAt: '6 h 48',
+      overdueMinutes: 20,
+      overdueCause: 'customer',
+    });
+    const board: HandoverBoard = {
+      ...BOARD,
+      pickup: [{ ...BOARD.pickup[0]!, rows: [...BOARD.pickup[0]!.rows, absent] }],
+    };
+    const button = (el: HTMLElement, ref: string) =>
+      el.querySelector<HTMLButtonElement>(`[data-reference="${ref}"] button[data-remind]`);
+
+    it('ne se propose que sur un retrait prêt dont le client n’est pas venu', async () => {
+      const el: HTMLElement = (await mount(board)).nativeElement;
+
+      expect(button(el, 'ABSENT')?.textContent).toContain('Envoyer un rappel');
+      // Retard de notre fait : le client viendrait devant un comptoir vide.
+      expect(button(el, 'TARD')).toBeNull();
+      expect(button(el, 'PRETE')).toBeNull();
+    });
+
+    it('🔴 sans `b2b_orders:write`, aucun bouton ne promet un 403', async () => {
+      const el: HTMLElement = (await mount(board, { canWrite: false })).nativeElement;
+
+      expect(button(el, 'ABSENT')).toBeNull();
+    });
+
+    it('envoie, le dit, et ne se réarme pas', async () => {
+      const sent: string[] = [];
+      const fixture = await mount(board, {
+        remindHandover: (id) => {
+          sent.push(id);
+          return Promise.resolve();
+        },
+      });
+      const el: HTMLElement = fixture.nativeElement;
+
+      button(el, 'ABSENT')?.click();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(sent).toEqual(['o-ABSENT']);
+      expect(notified.success).toHaveBeenCalledWith('Rappel envoyé pour ABSENT.');
+      expect(button(el, 'ABSENT')).toBeNull();
+      expect(el.querySelector('[data-reference="ABSENT"] [data-reminded]')?.textContent).toContain(
+        'Rappel envoyé',
+      );
+    });
+
+    it('un échec est dit, et le bouton reste', async () => {
+      const fixture = await mount(board, { remindHandover: () => Promise.reject(new Error('x')) });
+      const el: HTMLElement = fixture.nativeElement;
+
+      button(el, 'ABSENT')?.click();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(notified.error).toHaveBeenCalled();
+      expect(button(el, 'ABSENT')).not.toBeNull();
+    });
   });
 });

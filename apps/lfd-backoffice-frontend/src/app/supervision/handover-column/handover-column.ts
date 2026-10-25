@@ -19,6 +19,9 @@ import {
   FoldIconComponent,
 } from 'fold-ng';
 
+import { PermissionsStore } from '../../auth/permissions.store';
+import { AdminOrdersService } from '../../commandes/orders.service';
+import { NotifyService } from '../../notify.service';
 import { ALL_POINTS, atPoint, slotLayout } from '../handover-layout';
 import type { SlotItem } from '../handover-layout';
 import { UNPLACED_LINE } from '../handover-slots';
@@ -34,7 +37,10 @@ import { NO_MATCHES } from '../supervision-search';
  * tranches terminées repliées en bas (A8).
  *
  * Ni Remettre, ni Scanner, ni Appeler (plan §1) : une commande prête renvoie
- * vers le retrait, qui opère. La tournée de la maquette n'a pas de donnée
+ * vers le retrait, qui opère. Une exception, voulue par Hugo le 2026-10-25 :
+ * **« Envoyer un rappel »** a quitté le comptoir pour la supervision — relancer
+ * un client qui n'est pas venu est une décision de superviseur, pas un geste
+ * de comptoir. La tournée de la maquette n'a pas de donnée
  * (plan §7) : l'onglet Livraison liste les commandes par créneau, sans ordre
  * de route.
  */
@@ -64,6 +70,25 @@ export class HandoverColumn {
   protected readonly link = SUPERVISION_LINKS.handover;
   protected readonly unplaced = UNPLACED_LINE;
   private readonly host: ElementRef<HTMLElement> = inject(ElementRef);
+  private readonly orders = inject(AdminOrdersService);
+  private readonly notify = inject(NotifyService);
+  private readonly permissions = inject(PermissionsStore);
+
+  /** `POST /admin/orders/:id/pickup-reminder` exige `b2b_orders:write` : sans lui, aucun bouton ne promet un 403. */
+  protected readonly canRemind = computed(() => this.permissions.can('b2b_orders:write'));
+
+  /** La commande dont le rappel est en vol — au plus une, et le bouton le dit. */
+  protected readonly remindingId = signal<string | null>(null);
+
+  /**
+   * Les rappels déjà partis, dans cette session d'écran.
+   *
+   * ⚠️ **Local, et assumé comme tel** (repris tel quel du comptoir) : le serveur
+   * ne garde pas trace d'un rappel dans la file ; sans ce jeu, le bouton se
+   * réarmerait et on enverrait trois courriels en trois minutes. Rechargé,
+   * l'écran oublie.
+   */
+  protected readonly reminded = signal<ReadonlySet<string>>(new Set());
 
   /** L'acheminement lu — choisi par la bande (`app-handover-band`), relié par la page. */
   readonly method = model<FulfillmentMethod>('pickup');
@@ -177,6 +202,35 @@ export class HandoverColumn {
 
   private readyLine(row: SlotRow): string {
     return row.readyAt === null ? 'Prête' : `Prête depuis ${row.readyAt}`;
+  }
+
+  /**
+   * Le rappel ne se propose que sur un retrait **prêt à temps et pas retiré** —
+   * le client n'est pas venu. Retard de notre fait : un rappel ferait venir
+   * quelqu'un devant un comptoir vide, et le serveur le refuse de toute façon.
+   */
+  protected remindable(row: SlotRow): boolean {
+    return (
+      this.canRemind() &&
+      row.method === 'pickup' &&
+      row.state === 'overdue' &&
+      row.overdueCause === 'customer' &&
+      !row.heldForQuality
+    );
+  }
+
+  /** Renvoie au client le courriel de retrait (« votre commande vous attend », avec le QR). */
+  protected async remind(row: SlotRow): Promise<void> {
+    this.remindingId.set(row.orderId);
+    try {
+      await this.orders.remindHandover(row.orderId);
+      this.reminded.update((sent) => new Set([...sent, row.orderId]));
+      this.notify.success(`Rappel envoyé pour ${row.reference}.`);
+    } catch (caught) {
+      this.notify.error(caught, "Le rappel n'a pas pu être envoyé.");
+    } finally {
+      this.remindingId.set(null);
+    }
   }
 
   /** Le renvoi remplace « Remettre » : seulement là où la maquette le posait, au retrait. */

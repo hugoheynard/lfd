@@ -25,14 +25,12 @@ import {
 } from 'fold-ng';
 
 import { narrowViewport } from '../../shared/viewport/narrow-viewport';
-import { NotifyService } from '../../notify.service';
 import { matchingQueue, scanNotice, type ScanProof } from '../handover-queue';
 import { HandoverQueueStore } from '../handover-queue.store';
 import { QueueTable } from '../queue-table/queue-table';
 import { HandoverDetail } from '../handover-detail/handover-detail';
 import { TransferStrip } from '../transfer-strip/transfer-strip';
 import { ScanDialog, type ScanDialogData, type ScanOutcome } from '../scan-dialog/scan-dialog';
-import { AdminOrdersService } from '../../commandes/orders.service';
 import { PermissionsStore } from '../../auth/permissions.store';
 
 /** Le seuil de `fold-aside-layout` (`@container (max-width: 1040px)`, lu le 2026-10-12). */
@@ -64,7 +62,7 @@ const STACK_AT_PX = 1040;
  * vivent dans `HandoverQueueStore`, fourni par l'espace du comptoir : la bande
  * de tête les affiche sur les trois vues, et ils survivent au changement
  * d'onglet (Hugo, 2026-10-12). Cette vue n'y ajoute que ce qui est à elle — la
- * recherche, la ligne choisie, le scan, le rappel.
+ * recherche, la ligne choisie, le scan.
  */
 @Component({
   selector: 'app-handover-shop-page',
@@ -90,13 +88,8 @@ const STACK_AT_PX = 1040;
 export class HandoverShopPage {
   /** La file du comptoir — partagée avec la bande de tête. */
   protected readonly store = inject(HandoverQueueStore);
-  private readonly orders = inject(AdminOrdersService);
   private readonly panels = inject(FoldPanelHostService);
-  private readonly notify = inject(NotifyService);
   private readonly permissions = inject(PermissionsStore);
-
-  /** `POST /admin/orders/:id/pickup-reminder` exige `b2b_orders:write`, pas la garde de la file. */
-  protected readonly canRemind = computed(() => this.permissions.can('b2b_orders:write'));
 
   /** « Réceptionner » un transfert exige la garde du comptoir en écriture. */
   protected readonly canReceive = computed(() => this.permissions.can('handover_counter:write'));
@@ -130,26 +123,6 @@ export class HandoverShopPage {
   protected readonly stacked = computed(
     () => this.narrowWindow() || (this.boardWidth() > 0 && this.boardWidth() <= STACK_AT_PX),
   );
-
-  /** La commande dont on envoie le rappel — au plus une, et le bouton le dit. */
-  private readonly reminding = signal<string | null>(null);
-
-  /** Ce que la file a besoin de savoir des rappels : lequel est en vol… */
-  protected readonly remindingId = this.reminding.asReadonly();
-
-  /**
-   * Les rappels déjà partis, dans cette session d'écran.
-   *
-   * ⚠️ **Local, et assumé comme tel.** Le serveur ne garde pas trace d'un
-   * rappel dans la file ; sans ce jeu, le bouton se réarmerait à l'identique et
-   * on enverrait trois courriels à la même personne en trois minutes. Rechargé,
-   * l'écran oublie — c'est le prix, et il est plus honnête qu'un compteur
-   * inventé côté client.
-   */
-  private readonly reminded = signal<ReadonlySet<string>>(new Set());
-
-  /** …et lesquels sont déjà partis. */
-  protected readonly remindedIds = this.reminded.asReadonly();
 
   /**
    * La commande ouverte dans le rail, **par identifiant et non par objet**.
@@ -305,27 +278,6 @@ export class HandoverShopPage {
   protected remitted(): void {
     this.proof.set(null);
     void this.store.load();
-  }
-
-  /**
-   * **Renvoie au client le courriel de retrait.**
-   *
-   * Le geste du comptoir quand personne n'est venu : le message dit « votre
-   * commande vous attend » et reporte le QR. Le serveur REFUSE sur une commande
-   * que le fournil n'a pas colisée — un rappel qui ferait venir quelqu'un
-   * devant un comptoir vide est pire que pas de rappel.
-   */
-  protected async remind(entry: HandoverQueueEntryView): Promise<void> {
-    this.reminding.set(entry.orderId);
-    try {
-      await this.orders.remindHandover(entry.orderId);
-      this.reminded.update((sent) => new Set([...sent, entry.orderId]));
-      this.notify.success(`Rappel envoyé pour ${entry.reference}.`);
-    } catch (caught) {
-      this.notify.error(caught, "Le rappel n'a pas pu être envoyé.");
-    } finally {
-      this.reminding.set(null);
-    }
   }
 
   /** Referme le rail. Il reste à l'écran, vide — rien ne disparaît. */

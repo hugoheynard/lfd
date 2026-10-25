@@ -91,6 +91,24 @@
               }}</span>
             }
           </div>
+          @if (remindable(row)) {
+            @if (reminded().has(row.orderId)) {
+              <span class="reminded" data-reminded>Rappel envoyé</span>
+            } @else {
+              <button
+                foldButton
+                type="button"
+                emphasis="outline"
+                size="sm"
+                icon="mail"
+                data-remind
+                [loading]="remindingId() === row.orderId"
+                (click)="remind(row)"
+              >
+                Envoyer un rappel
+              </button>
+            }
+          }
           @if (linksTo(row)) {
             <a class="renvoi" [routerLink]="link.path">{{ link.label }} →</a>
           }

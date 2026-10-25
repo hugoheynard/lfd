@@ -51,9 +51,6 @@ function entry(over: Partial<HandoverQueueEntryView> = {}): HandoverQueueEntryVi
 
 interface Options {
   readonly now?: Date;
-  readonly reminded?: ReadonlySet<string>;
-  readonly busyId?: string | null;
-  readonly canRemind?: boolean;
 }
 
 function render(
@@ -65,9 +62,6 @@ function render(
   fixture.componentRef.setInput('entries', entries);
   fixture.componentRef.setInput('day', DAY);
   fixture.componentRef.setInput('now', options.now ?? new Date(`${DAY}T07:00:00`));
-  fixture.componentRef.setInput('reminded', options.reminded ?? new Set());
-  fixture.componentRef.setInput('busyId', options.busyId ?? null);
-  fixture.componentRef.setInput('canRemind', options.canRemind ?? true);
   fixture.detectChanges();
   return fixture;
 }
@@ -237,42 +231,14 @@ describe('QueueTable', () => {
     expect(el.querySelector('tbody [aria-expanded]')).toBeNull();
   });
 
-  it('🔴 le rappel est DÉSARMÉ tant que le fournil n’a rien déclaré prêt', () => {
-    // Un rappel qui ferait venir quelqu'un devant un comptoir vide est pire que
-    // pas de rappel. Le serveur refuse aussi ; ici on évite d'armer un bouton
-    // dont on connaît la réponse, et on dit pourquoi.
-    const fixture = render([entry({ window: LATE, readyAt: null })], {
-      now: new Date(`${DAY}T09:00:00`),
-    });
-    const button = (fixture.nativeElement as HTMLElement).querySelector(
-      'tr.folddt-note-row button',
-    );
-
-    expect(button?.hasAttribute('disabled')).toBe(true);
-    expect(note(fixture)).toContain('pas encore déclarée prête');
-  });
-
-  it('🔴 sans `b2b_orders:write`, le retard est dit mais aucun rappel n’est proposé', () => {
-    // Écart 2 de droits-des-commandes.md (2026-10-12) : la route exige
-    // `b2b_orders:write`, la file seulement `handover_counter:read`.
+  it('🔴 le retard est dit, sans aucun rappel : il est parti à la supervision', () => {
+    // Hugo, 2026-10-25 : « Envoyer un rappel doit disparaître du comptoir et
+    // passer au superviseur ».
     const fixture = render([entry({ window: LATE, readyAt: `${DAY}T05:00:00.000Z` })], {
       now: new Date(`${DAY}T09:00:00`),
-      canRemind: false,
     });
 
     expect(note(fixture)).toContain('sur la tranche convenue');
-    expect(
-      (fixture.nativeElement as HTMLElement).querySelector('tr.folddt-note-row button'),
-    ).toBeNull();
-  });
-
-  it('un rappel déjà parti ne se réarme pas à l’identique', () => {
-    const fixture = render([entry({ window: LATE, readyAt: `${DAY}T05:00:00.000Z` })], {
-      now: new Date(`${DAY}T09:00:00`),
-      reminded: new Set(['ord_1']),
-    });
-
-    expect(note(fixture)).toContain('Rappel envoyé');
     expect(
       (fixture.nativeElement as HTMLElement).querySelector('tr.folddt-note-row button'),
     ).toBeNull();
@@ -295,19 +261,14 @@ describe('QueueTable', () => {
     expect(rows[0] ?? '').not.toContain('Envoyer un rappel');
   });
 
-  it('émet les intentions plutôt que d’agir : ouvrir, rappeler', () => {
-    const fixture = render([entry({ window: LATE, readyAt: `${DAY}T05:00:00.000Z` })], {
-      now: new Date(`${DAY}T09:00:00`),
-    });
+  it('émet l’intention plutôt que d’agir : ouvrir', () => {
+    const fixture = render([entry()]);
     const seen: string[] = [];
     fixture.componentInstance.opened.subscribe(() => seen.push('opened'));
-    fixture.componentInstance.reminder.subscribe(() => seen.push('reminder'));
 
-    const el = fixture.nativeElement as HTMLElement;
-    el.querySelector<HTMLElement>('tr.folddt-note-row button')?.click();
-    el.querySelector<HTMLElement>('tr.folddt-row')?.click();
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('tr.folddt-row')?.click();
 
-    expect(seen).toEqual(['reminder', 'opened']);
+    expect(seen).toEqual(['opened']);
   });
 
   it('🔴 la ligne d’un départ incomplet décidé porte son reste abandonné', () => {

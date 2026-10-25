@@ -119,12 +119,8 @@
                   [query]="query()"
                   [day]="store.day()"
                   [now]="store.now()"
-                  [busyId]="remindingId()"
-                  [reminded]="remindedIds()"
-                  [canRemind]="canRemind()"
                   [currentId]="selected()?.orderId ?? null"
                   (opened)="select($event)"
-                  (reminder)="remind($event)"
                 />
               </fold-tab-panel>
             }
