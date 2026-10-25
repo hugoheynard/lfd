@@ -6,6 +6,7 @@ import type {
 import {
   activeBatchesOf,
   implicitBatchId,
+  countedBatch,
   implicitBatchesOf,
   outputOf,
 } from "../production-output.js";
@@ -114,5 +115,63 @@ describe("implicitBatchesOf — la coche de l'ancien binaire", () => {
 
   it("n'existe pas sans coche", () => {
     expect(implicitBatchesOf(DAY, [count(30, null)], [])).toEqual([]);
+  });
+});
+
+describe("frontières du compte", () => {
+  it("pile à la quantité : complète, sans surplus ni reste, datée par la fournée qui y arrive", () => {
+    // `produced ≥ quantity` est inclusif : 48/48 est complet, pas « presque ».
+    const output = outputOf(48, [batch("a", 24), batch("b", 24, SIX)]);
+
+    expect(output).toMatchObject({ produced: 48, remaining: 0, surplus: 0, complete: true });
+    expect(output.completedBy?.id).toBe("b");
+  });
+
+  it("une unité avant la quantité : pas complète, personne ne l'a datée", () => {
+    const output = outputOf(48, [batch("a", 47)]);
+
+    expect(output).toMatchObject({ produced: 47, remaining: 1, complete: false });
+    expect(output.completedBy).toBeNull();
+  });
+
+  it("une fournée seule qui dépasse date la ligne, et les suivantes ne la redatent pas", () => {
+    const output = outputOf(10, [batch("a", 12), batch("b", 5, SIX)]);
+
+    expect(output.completedBy?.id).toBe("a");
+    expect(output.surplus).toBe(7);
+  });
+
+  it("deux fournées au même instant se rangent par id, d'un appel à l'autre", () => {
+    const forward = activeBatchesOf([batch("b", 1), batch("a", 1)], "VIE-001");
+    const backward = activeBatchesOf([batch("a", 1), batch("b", 1)], "VIE-001");
+
+    expect(forward.map((entry) => entry.id)).toEqual(["a", "b"]);
+    expect(backward.map((entry) => entry.id)).toEqual(["a", "b"]);
+  });
+
+  it("une ligne à quantité zéro n'engendre pas de fournée implicite, même cochée", () => {
+    const coche: DoneMark = { at: FIVE, by: "auth0|karim", initials: "KA" };
+
+    expect(implicitBatchesOf(DAY, [count(0, coche)], [])).toEqual([]);
+  });
+});
+
+describe("countedBatch — ce que le colisage a rendu", () => {
+  it("sans retour, rend la fournée telle quelle", () => {
+    const entry = batch("a", 30);
+
+    expect(countedBatch(entry)).toBe(entry);
+  });
+
+  it("retire ce qui est rendu, et la demande en attente ne retire rien", () => {
+    const entry = { ...batch("a", 30), returned: 8, pendingReturn: 5 };
+
+    expect(countedBatch(entry).quantity).toBe(22);
+  });
+
+  it("tout rendu : la fournée compte zéro et la ligne n'est plus complète", () => {
+    const entry = { ...batch("a", 30), returned: 30 };
+
+    expect(outputOf(30, [countedBatch(entry)])).toMatchObject({ produced: 0, complete: false });
   });
 });
