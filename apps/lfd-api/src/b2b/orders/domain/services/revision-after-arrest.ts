@@ -56,7 +56,8 @@ export function isQuantitiesOnly(
   const before = new Set(previous.map((line) => line.sku));
   const after = revision.state.lines;
   return (
-    after.length === before.size &&
+    // Les articles DISTINCTS : un doublon de A ne remplace pas B (vérifié le 2026-10-25).
+    new Set(after.map((line) => line.sku)).size === before.size &&
     after.every((line) => before.has(line.sku) && line.quantity >= 1)
   );
 }

@@ -81,3 +81,50 @@ describe("isQuantitiesOnly", () => {
     expect(isQuantitiesOnly(ORDER, revisionWith(changes, lines))).toBe(false);
   });
 });
+
+describe("isQuantitiesOnly — les frontières de la promesse « au moins 1, mêmes articles »", () => {
+  const ORDER: readonly Line[] = [
+    { sku: "A", quantity: 2 },
+    { sku: "B", quantity: 3 },
+  ];
+
+  // « Pour retirer un article, laissez-en 1 » : 0 n'est pas une quantité, c'est un retrait.
+  it("non : une quantité à 0 est un retrait déguisé", () => {
+    const revision = revisionWith(
+      ["lines"],
+      [
+        { sku: "A", quantity: 0 },
+        { sku: "B", quantity: 3 },
+      ],
+    );
+    expect(isQuantitiesOnly(ORDER, revision)).toBe(false);
+  });
+
+  it("oui : la quantité 1 est la plus petite admise (borne incluse)", () => {
+    const revision = revisionWith(
+      ["lines"],
+      [
+        { sku: "A", quantity: 1 },
+        { sku: "B", quantity: 1 },
+      ],
+    );
+    expect(isQuantitiesOnly(ORDER, revision)).toBe(true);
+  });
+
+  // Même nombre de lignes, mais B disparaît au profit d'un doublon de A :
+  // la clé (jour, commande, article) du colisage perdrait B.
+  it("non : un article en double qui en masque un autre", () => {
+    const revision = revisionWith(
+      ["lines"],
+      [
+        { sku: "A", quantity: 2 },
+        { sku: "A", quantity: 3 },
+      ],
+    );
+    expect(isQuantitiesOnly(ORDER, revision)).toBe(false);
+  });
+
+  it("une carte remboursée (descendue de « payée ») n'ouvre pas la révision après l'arrêt", () => {
+    expect(quantitiesAfterArrestAllowed("staff", "refunded", 1_000)).toBe(false);
+  });
+});
