@@ -116,8 +116,9 @@ export function timeLabel(time: string): string {
 /**
  * « 8 h 00 – 10 h 00 », « avant 10 h 00 » sans début — le formateur du
  * back-office (`shared/window-label.ts`), recopié parce qu'un front et un
- * serveur ne partagent pas de code de présentation. Une fenêtre par défaut le
- * dit : ce n'est pas une promesse.
+ * serveur ne partagent pas de code de présentation. Une fenêtre par défaut
+ * s'imprime comme les autres : la préciser chargeait la feuille pour rien
+ * (Hugo, 2026-10-26).
  */
 export function windowPaperLabel(window: DepartureWindow | null): string {
   if (window === null) {
@@ -127,7 +128,7 @@ export function windowPaperLabel(window: DepartureWindow | null): string {
     window.start === null
       ? `avant ${timeLabel(window.end)}`
       : `${timeLabel(window.start)} – ${timeLabel(window.end)}`;
-  return window.source === "default" ? `${bounds} (horaire par défaut)` : bounds;
+  return bounds;
 }
 
 const METERS_PER_KM = 1000;

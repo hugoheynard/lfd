@@ -250,9 +250,9 @@ describe("renderRoundPaperPdf — la feuille de tournée", () => {
 });
 
 describe("libellés du papier", () => {
-  it("écrit une échéance sans début « avant », et dit l'horaire par défaut", () => {
+  it("écrit une échéance sans début « avant », sans préciser un horaire par défaut", () => {
     expect(windowPaperLabel({ start: null, end: "10:00", source: "default" })).toBe(
-      "avant 10 h 00 (horaire par défaut)",
+      "avant 10 h 00",
     );
     expect(windowPaperLabel(null)).toBe("Sans créneau");
   });
