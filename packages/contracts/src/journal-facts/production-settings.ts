@@ -42,6 +42,18 @@ export const PRODUCTION_SETTINGS_FACTS = {
   "production_settings.close_changed": retired(
     payload({ before: closeSettings(), after: closeSettings() }),
   ),
+  /**
+   * Où le contrôle qualité se rend (Réglages › Commandes, décision de Hugo,
+   * 2026-10-26) : l'état posé et celui qu'il remplace, défauts compris. Un
+   * réglage unique, sans `subjectLabel`.
+   */
+  "production_quality_settings.updated": fact(
+    payload({
+      lineChecks: z.boolean(),
+      orderChecks: z.boolean(),
+      previous: payload({ lineChecks: z.boolean(), orderChecks: z.boolean() }),
+    }),
+  ),
   /** Un jour où le fournil ne produit pas. */
   "production_closed_day.added": fact(closedDay()),
   /** Ce jour redevient un jour de production. */

@@ -42,6 +42,18 @@ export class QualityBoardStore {
   /** Lu à chaque rendu : un droit accordé en cours de session ouvre le bouton. */
   readonly canCheck = computed(() => this.permissions.can(QUALITY_WRITE));
 
+  /**
+   * Où « Contrôler » se propose (Réglages › Commandes, Hugo, 2026-10-26) : le
+   * droit ET le niveau ouvert, lu dans les pastilles. Pastilles jamais lues :
+   * rien n'est proposé — le serveur refuserait de toute façon un niveau fermé.
+   */
+  readonly canCheckLines = computed(
+    () => this.canCheck() && dataOf(this.state())?.enabled.lineChecks === true,
+  );
+  readonly canCheckOrders = computed(
+    () => this.canCheck() && dataOf(this.state())?.enabled.orderChecks === true,
+  );
+
   /** Une relecture qui échoue garde les pastilles, et le dit. */
   read(date: string): Promise<void> {
     this.asked = date;

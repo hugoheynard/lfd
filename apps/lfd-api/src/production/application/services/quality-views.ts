@@ -7,6 +7,7 @@ import type {
 
 import type { ProductionDay } from "../../domain/entities/production-day.js";
 import type { QualityCheck } from "../../domain/entities/quality-check.js";
+import type { QualityControlSettings } from "../../domain/entities/quality-control-settings.js";
 import { plannedLinesOf } from "../../domain/services/quality-check-scope.js";
 import { currentChecks, heldOrderIds, isStale } from "../../domain/services/quality-verdicts.js";
 
@@ -20,6 +21,7 @@ import { currentChecks, heldOrderIds, isStale } from "../../domain/services/qual
 export function qualityBoardOf(
   day: ProductionDay,
   checks: readonly QualityCheck[],
+  settings: QualityControlSettings,
 ): QualityBoardView {
   const current = [...currentChecks(checks).values()];
   const quantities = new Map(day.counts.map((count) => [count.sku, count.quantity]));
@@ -44,6 +46,7 @@ export function qualityBoardOf(
     lines: lines.sort((left, right) => left.sku.localeCompare(right.sku)),
     orders: orders.sort((left, right) => left.orderId.localeCompare(right.orderId)),
     heldOrderIds: [...heldOrderIds(day.day, checks, plannedLinesOf(day))].sort(),
+    enabled: { lineChecks: settings.lineChecks, orderChecks: settings.orderChecks },
   };
 }
 

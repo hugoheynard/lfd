@@ -95,6 +95,7 @@ describe('les pastilles du contrôle qualité', () => {
         { orderId: 'o-2', reference: null, verdict: 'blocking', checkedAt: 'x' },
       ],
       heldOrderIds: ['o-2'],
+      enabled: { lineChecks: true, orderChecks: true },
     };
     const lookup = qualityLookup(board);
 

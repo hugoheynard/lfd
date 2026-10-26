@@ -1,0 +1,50 @@
+<fold-page-layout icon="shield" title="Contrôle qualité">
+  <p description>
+    Où le superviseur rend ses verdicts (OK, Réserve, Bloquant) sur la Supervision. Chaque réglage
+    s'applique dès qu'on le change.
+  </p>
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Chargement des réglages du contrôle qualité…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Impossible de charger les réglages du contrôle qualité">
+        <button foldButton (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      <fold-card>
+        <fold-element-title
+          cardHeader
+          variant="title"
+          title="Contrôles proposés"
+          subtitle="Désactivé, « Contrôler » disparaît à cet endroit. Les verdicts déjà rendus restent lisibles, et une commande déjà retenue par un Bloquant le reste jusqu'à ce qu'un nouveau verdict la lève."
+        />
+
+        @for (view of shown(); track view) {
+          <fold-checkbox
+            label="Contrôle qualité au fournil"
+            hint="Les lignes de préparation : un verdict sur un produit du jour. Un Bloquant retient toutes les commandes qui le portent."
+            [checked]="view.lineChecks"
+            (checkedChange)="set('lineChecks', $event)"
+            [disabled]="!canWrite() || saving()"
+            data-line-checks
+          />
+          <fold-checkbox
+            label="Contrôle qualité au colisage"
+            hint="Les commandes colisées : un verdict sur un sac ou un bac déclaré prêt. Un Bloquant retient la commande au retrait."
+            [checked]="view.orderChecks"
+            (checkedChange)="set('orderChecks', $event)"
+            [disabled]="!canWrite() || saving()"
+            data-order-checks
+          />
+        }
+
+        @if (failure(); as message) {
+          <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+        }
+      </fold-card>
+    }
+  }
+</fold-page-layout>

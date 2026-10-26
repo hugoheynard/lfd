@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { QualityControlSettingsPayload } from "./quality-control-settings.js";
+
 /**
  * **Le contrôle qualité du superviseur** — le contrat des routes de la
  * Supervision (`documentation/production/plan-controle-qualite.md`, lot QC2).
@@ -114,6 +116,12 @@ export interface QualityBoardView {
   readonly orders: readonly QualityOrderStatus[];
   /** Les commandes retenues au retrait par un blocage courant (D4, D6), triées. */
   readonly heldOrderIds: readonly string[];
+  /**
+   * Où « Contrôler » se propose (Réglages › Commandes, décision de Hugo,
+   * 2026-10-26). Un niveau désactivé garde ses pastilles : ce qui est déjà
+   * rendu reste lisible, et le serveur refuse un verdict neuf (409).
+   */
+  readonly enabled: QualityControlSettingsPayload;
 }
 
 /** Une photo jointe, sans ses octets : ils se lisent par sa route, en `write`. */

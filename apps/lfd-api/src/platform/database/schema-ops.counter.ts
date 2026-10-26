@@ -232,6 +232,8 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   ProductionQualityCheck: "production",
   ProductionQualityPhoto: "production",
   ProductionQualityUpload: "production",
+  // Où le contrôle se rend (Réglages › Commandes, 2026-10-26) : un réglage unique.
+  ProductionQualitySettings: "production",
   // La remise au colisage (2026-10-04, `colisage/colisage.md`, K1) :
   // une ligne par fournée déclarée, et une par retour.
   ProductionHandoff: "production",

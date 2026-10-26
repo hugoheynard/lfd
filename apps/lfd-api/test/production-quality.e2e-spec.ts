@@ -37,6 +37,7 @@ import { createUser } from "./factories.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 import { storageKeys } from "./storage.js";
 import { coliseOrder } from "./production-day-fixture.js";
+import { openQualityControl } from "./quality-control-settings.js";
 
 const MEMBER = "auth0|member-quality";
 const READER = "staff-supervision-lecture";
@@ -96,6 +97,8 @@ beforeEach(async () => {
   await ctx.reset();
   await repairJournal();
   await createUser(ctx.prisma, { auth0Sub: MEMBER });
+  // Le contrôle au fournil est désactivé par défaut (Réglages › Commandes, 2026-10-26).
+  await openQualityControl(ctx);
 });
 
 const admin = (): ReturnType<E2eContext["asSub"]> => ctx.asSub(E2E_STAFF_SUB);

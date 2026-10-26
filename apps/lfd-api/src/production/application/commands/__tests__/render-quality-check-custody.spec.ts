@@ -1,3 +1,4 @@
+import { InMemoryQualityControlSettings } from "../../__tests__/quality-control-settings-doubles.js";
 import { SealedDayReading } from "../../services/sealed-day-reading.service.js";
 import { sealedAt } from "../../__tests__/station-doubles.js";
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
@@ -47,6 +48,7 @@ function subject(gone: ReadonlyMap<string, OrderOutOfHand> = new Map()) {
     ),
     new QualityPhotoAttachment(new InMemoryUploads(table), new InMemoryProductionStore(), clock),
     new FixedOrderCustody(gone),
+    InMemoryQualityControlSettings.allOpen().reader(),
     events,
     clock,
     new DirectUnitOfWork(),
@@ -129,6 +131,7 @@ describe("RenderQualityCheckHandler — la garde (BQ)", () => {
         new FixedClock(new Date(0)),
       ),
       custody,
+      InMemoryQualityControlSettings.allOpen().reader(),
       new RecordingPublisher(),
       new FixedClock(new Date(0)),
       new DirectUnitOfWork(),

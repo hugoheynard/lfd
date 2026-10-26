@@ -58,6 +58,10 @@ const UNWATCHED: Readonly<Record<string, string>> = {
   "production.production_container": "un réglage par SKU, sans journée",
   // Les réglages du fournil (plan d'arrêt du plan, A1, 2026-10-06).
   "production.production_settings": "le réglage unique de l'arrêt du plan, sans journée",
+  // Où le contrôle qualité se rend (Réglages › Commandes, 2026-10-26) : un réglage.
+  // Ce qu'il permet — un verdict — s'écrit dans `production_quality_check`.
+  "production.production_quality_settings":
+    "les réglages du contrôle qualité, un réglage unique sans journée",
   // Les destinataires du dossier du jour (plan d'envoi du dossier, E2, 2026-10-06).
   "production.production_dossier_recipient":
     "la liste des destinataires du dossier, un réglage sans journée — l'envoi d'une journée (E3) aura sa trace à lui",

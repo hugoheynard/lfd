@@ -172,6 +172,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'reglages/commandes/ouverture': 'lfc_order_opening:read',
   'reglages/commandes/heure-limite': 'lfc_order_settings:read',
   'reglages/commandes/jour-meme': 'lfc_order_settings:read',
+  'reglages/commandes/controle-qualite': 'lfc_order_settings:read',
   'reglages/commandes/annulation': 'lfc_order_settings:read',
 
   // **Médiathèque** — hors de `pim/`, derrière SA ressource : le mur que la

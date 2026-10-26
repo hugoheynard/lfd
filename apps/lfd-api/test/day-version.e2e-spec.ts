@@ -28,6 +28,7 @@ import {
 import { placeLateByStaff } from "./staff-late-order.js";
 import { createUser } from "./factories.js";
 import { packingOrderPath } from "./production-day-fixture.js";
+import { openQualityControl } from "./quality-control-settings.js";
 
 const MEMBER = "auth0|member-day-version";
 const DAY = serviceDay();
@@ -334,6 +335,8 @@ describe("le journal du FOURNIL avance à chaque geste du fournil", () => {
   it("contrôler la qualité", async () => {
     await place([{ sku: CROISSANT, quantity: 6 }]);
     await close();
+    // Le contrôle au fournil est désactivé par défaut (Réglages › Commandes, 2026-10-26).
+    await openQualityControl(ctx);
     const { before, after } = await around("production", () =>
       staff()
         .post(`/admin/supervision/quality/checks`)

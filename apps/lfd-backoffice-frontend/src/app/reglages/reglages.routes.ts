@@ -133,6 +133,17 @@ export const reglagesRoutes: Routes = [
           import('./commandes/same-day-page/same-day-page').then((m) => m.SameDayPage),
       },
       {
+        // Où le contrôle qualité se rend (Hugo, 2026-10-26,
+        // `plan-controle-qualite.md` D10) : même droit que les voisins.
+        path: 'commandes/controle-qualite',
+        canActivate: [permissionGuard('lfc_order_settings:read')],
+        title: 'Contrôle qualité — LFC B2B admin',
+        loadComponent: () =>
+          import('./commandes/quality-control-page/quality-control-page').then(
+            (m) => m.QualityControlPage,
+          ),
+      },
+      {
         path: 'commandes/annulation',
         canActivate: [permissionGuard('lfc_order_settings:read')],
         title: 'Annulation de commande — LFC B2B admin',

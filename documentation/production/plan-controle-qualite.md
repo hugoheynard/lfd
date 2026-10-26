@@ -6,6 +6,12 @@
 > reçue par Hugo : un contrôle qualité fait par le superviseur. Les réponses de
 > Hugo du même jour sont au §1 ; elles tranchent la forme.
 >
+> **2026-10-26, décision de Hugo : le contrôle se règle par niveau** dans
+> Réglages › Commandes — au fournil (lignes de préparation) **désactivé par
+> défaut**, au colisage (commandes colisées) activé par défaut. Voir D10 et le
+> lot QC6. ⚠️ Conséquence : depuis ce lot, un verdict de LIGNE est refusé tant
+> que personne n'a activé le fournil.
+>
 > Il déplace une **frontière de sécurité** (un geste neuf sous une
 > permission) et **bloque un retrait** : contredit par `vitruve` le 2026-09-28
 > (**3 BLOQUANT, 9 SÉRIEUX**), tous repris ou assumés au §9.
@@ -297,6 +303,58 @@ Un blocage de **ligne** porte dans son fait **la liste des commandes retenues à
 cet instant** : sans elle, « qui a été retenu par ce blocage » ne se
 reconstituerait pas depuis le journal — le plan bouge au retirage.
 
+### D10 — Le contrôle se règle par niveau (décision de Hugo, 2026-10-26)
+
+Dans **Réglages › Commandes › Contrôle qualité**
+(`/reglages/commandes/controle-qualite`), deux cases :
+
+| Case                             | Cible                 | Défaut         |
+| -------------------------------- | --------------------- | -------------- |
+| **Contrôle qualité au fournil**  | lignes de préparation | **désactivée** |
+| **Contrôle qualité au colisage** | commandes colisées    | activée        |
+
+**Désactivé, à ce niveau :**
+
+- « Contrôler » n'est plus proposé sur la Supervision (colonne Préparation pour
+  le fournil, colonne Colisage pour le colisage). Les deux interrupteurs
+  voyagent dans les pastilles (`QualityBoardView.enabled`) : l'écran ne fait
+  pas d'appel de plus. Les autres écrans du fournil et du colisage ne
+  proposaient pas le geste — rien à y masquer (vérifié le 2026-10-26).
+- le serveur **refuse** un verdict neuf (409,
+  `production.quality.disabled`, « Le contrôle qualité au fournil (lignes de
+  préparation) est désactivé dans Réglages › Commandes … »). Le refus vient
+  **après** l'idempotence : un rejeu d'un verdict écrit avant la désactivation
+  rend toujours son `id`, sans rien écrire.
+- **rien n'est créé par la nuit** : le seul balayage nocturne du contrôle
+  (`45 3 * * *`, D8) retire des dépôts de photos orphelins ; il n'a jamais
+  rendu de verdict, à aucun niveau (vérifié le 2026-10-26 : seul
+  `RenderQualityCheckHandler` crée un contrôle).
+
+**Ce qui est déjà enregistré reste lisible** : pastilles, historique, notes,
+photos.
+
+🔴 **Une retenue Bloquante en cours RESTE jusqu'à sa levée** — on ne la lève
+pas en douce. Désactiver un niveau n'écrit aucun verdict, et la retenue se
+dérive des verdicts (D2) : la commande reste « en vérification » au comptoir.
+Pour la lever, on **réactive** le niveau le temps de rendre un nouveau verdict
+(OK ou réserve), puis on le désactive si on veut. C'est le prix de « jamais une
+levée sans auteur » ; un geste de levée qui contournerait le réglage ferait
+une seconde porte au même droit.
+
+**Persistance** : `production.production_quality_settings`, une ligne, clé
+`quality` (migration additive `20261026150000_les_reglages_du_controle_qualite`,
+retour arrière en tête) ; ligne absente = les défauts ci-dessus. Le domaine
+porte la règle (`QualityControlSettings.assertCanCheck`), lu par
+`RenderQualityCheckHandler`.
+
+**Droit** : `lfc_order_settings`, celui des réglages de commande voisins
+(heure limite, jour même, relances) — lecture pour voir, écriture pour régler.
+Route `admin/production/quality-settings` (`GET` / `PUT`). Aucun droit neuf.
+
+**Journal** : `production_quality_settings.updated` (l'état posé et celui
+qu'il remplace), rangé sous le module Production. Reposer l'état en vigueur
+n'écrit rien.
+
 ---
 
 ## 4. Le flux
@@ -349,6 +407,7 @@ sur la ligne, avant qu'on scanne — le refus au scan reste la garantie.
 | **QC3** | `QualityHoldsReader` par lot, en-tête du canal réécrit, `HandoverCandidate.qualityHold` aux trois lecteurs, `heldForQuality` dans la file, e2e : refus, levée, sac déjà parti, coursier. ✅ Bâti le 2026-09-28 (rail de la file compris : `get-handover-by-order` est un quatrième lecteur).                                                                                                 | `batisseur`                           |
 | **QC4** | Supervision : panneau, pastilles, masthead, colonne Retrait. ✅ Bâti le 2026-09-28 (`c57706a43`).                                                                                                                                                                                                                                                                                            | `pablo`                               |
 | **QC5** | Retrait boutique : « En vérification » dans la file. ✅ Bâti le 2026-09-28.                                                                                                                                                                                                                                                                                                                  | `pablo`                               |
+| **QC6** | Les deux interrupteurs de Réglages › Commandes (D10) : table, domaine, refus, pastilles, page, Supervision. 🟦 Bâti le 2026-10-26, non commité.                                                                                                                                                                                                                                              | `batisseur`                           |
 
 ---
 

@@ -6,6 +6,7 @@ import { DomainEventPublisher } from "../../../platform/events/domain-event-publ
 import { Clock } from "../../../platform/time/clock.js";
 import type { ProductionDay } from "../../domain/entities/production-day.js";
 import { QualityCheck } from "../../domain/entities/quality-check.js";
+import { QualityControlSettings } from "../../domain/entities/quality-control-settings.js";
 import {
   QualityCheckReplayConflictError,
   QualityCheckWriteRaceError,
@@ -19,6 +20,7 @@ import {
 } from "../../domain/events/quality-check.events.js";
 import { QualityCheckReader } from "../../domain/ports/quality-check.reader.js";
 import { QualityCheckRepository } from "../../domain/ports/quality-check.repository.js";
+import { QualityControlSettingsReader } from "../../domain/ports/quality-control-settings.reader.js";
 import {
   isSameQualityIntent,
   plannedLinesOf,
@@ -43,6 +45,12 @@ import { RenderQualityCheckCommand } from "./render-quality-check.command.js";
  * sans rien écrire — un double clic, un réseau mobile qui rejoue. Avec un autre
  * contenu : 409. Et si deux rejeux se croisent, la base arbitre (clé primaire),
  * le perdant relit et repasse par la même comparaison.
+ *
+ * ## Puis le réglage
+ *
+ * Un niveau désactivé dans Réglages › Commandes (2026-10-26) refuse le verdict
+ * (409) — après l'idempotence : un rejeu d'un verdict écrit AVANT la
+ * désactivation rend toujours son `id`, il n'écrit rien de neuf.
  *
  * ## Puis la journée, la garde, les photos, et une transaction
  *
@@ -74,6 +82,7 @@ export class RenderQualityCheckHandler implements ICommandHandler<
     private readonly days: SealedDayReading,
     private readonly attachment: QualityPhotoAttachment,
     private readonly custody: OrderCustodyReader,
+    private readonly settings: QualityControlSettingsReader,
     private readonly events: DomainEventPublisher,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
@@ -85,6 +94,8 @@ export class RenderQualityCheckHandler implements ICommandHandler<
     if (existing !== null) {
       return replayed(existing, intent);
     }
+    const settings = (await this.settings.current()) ?? QualityControlSettings.defaults();
+    settings.assertCanCheck(intent.target.kind);
     // Sur une journée `packing`, « la commande est-elle colisée ? » se lit au
     // colisage (`PackedOrdersReader`, K3a).
     const day = await this.days.load(intent.serviceDay);

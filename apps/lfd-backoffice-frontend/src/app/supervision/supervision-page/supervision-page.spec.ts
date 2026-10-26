@@ -1,5 +1,6 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -20,6 +21,8 @@ import { FoldPanelHostService } from 'fold-ng';
 import { type DayWatch, DayVersionWatcher } from '../../shared/day-version/day-version-watcher';
 import { PermissionsStore } from '../../auth/permissions.store';
 import { DeliveryRoundsService } from '../../livraison/delivery-rounds.service';
+import { PackingColumn } from '../packing-column/packing-column';
+import { PreparationColumn } from '../preparation-column/preparation-column';
 import { QualityService } from '../quality.service';
 import { SupervisionService } from '../supervision.service';
 import { shiftServiceDay } from '../supervision-day';
@@ -172,7 +175,13 @@ const QUEUE: HandoverQueueView = {
   ],
 };
 
-const NO_CHECK: QualityBoardView = { date: DATE, lines: [], orders: [], heldOrderIds: [] };
+const NO_CHECK: QualityBoardView = {
+  date: DATE,
+  lines: [],
+  orders: [],
+  heldOrderIds: [],
+  enabled: { lineChecks: true, orderChecks: true },
+};
 
 interface Reads {
   quality?: () => Promise<QualityBoardView>;
@@ -632,6 +641,40 @@ describe('SupervisionPage', () => {
     TestBed.resetTestingModule();
     const judge = await mount({}, ['b2b_supervision:read', 'b2b_supervision:write']);
     expect(column(judge, 'preparation')?.querySelector('[data-check="pac"]')).not.toBeNull();
+  });
+
+  it('cache « Contrôler » au niveau désactivé dans Réglages › Commandes (2026-10-26)', async () => {
+    const judge: readonly StaffPermission[] = ['b2b_supervision:read', 'b2b_supervision:write'];
+    const offered = (fixture: Awaited<ReturnType<typeof mount>>) => ({
+      lines: fixture.debugElement
+        .query(By.directive(PreparationColumn))
+        .injector.get(PreparationColumn)
+        .canCheck(),
+      orders: fixture.debugElement
+        .query(By.directive(PackingColumn))
+        .injector.get(PackingColumn)
+        .canCheck(),
+    });
+    const linesOff = await mount(
+      {
+        quality: () =>
+          Promise.resolve({ ...NO_CHECK, enabled: { lineChecks: false, orderChecks: true } }),
+      },
+      judge,
+    );
+    expect(offered(linesOff)).toEqual({ lines: false, orders: true });
+    expect(column(linesOff, 'preparation')?.querySelector('[data-check]')).toBeNull();
+
+    TestBed.resetTestingModule();
+    const ordersOff = await mount(
+      {
+        quality: () =>
+          Promise.resolve({ ...NO_CHECK, enabled: { lineChecks: true, orderChecks: false } }),
+      },
+      judge,
+    );
+    expect(offered(ordersOff)).toEqual({ lines: true, orders: false });
+    expect(column(ordersOff, 'preparation')?.querySelector('[data-check="pac"]')).not.toBeNull();
   });
 
   it('relit la page après un verdict enregistré, pas après une annulation', async () => {

@@ -24,6 +24,7 @@ import {
 import { createUser } from "./factories.js";
 import { binTypeId } from "./delivery-loading-scene.js";
 import { coliseOrder } from "./production-day-fixture.js";
+import { openQualityControl } from "./quality-control-settings.js";
 
 const MEMBER = "auth0|member-quality-hold";
 const DAY = serviceDay();
@@ -81,6 +82,8 @@ beforeEach(async () => {
   await ctx.prisma.deliveryZone.create({
     data: { postalPrefixes: ["73150"], label: "Val d'Isère", feeMode: "amount", feeValue: 2000 },
   });
+  // Le contrôle au fournil est désactivé par défaut (Réglages › Commandes, 2026-10-26).
+  await openQualityControl(ctx);
 });
 
 const staff = (): ReturnType<E2eContext["asSub"]> => ctx.asSub(E2E_STAFF_SUB);
@@ -269,5 +272,44 @@ describe("un blocage de ligne (D6)", () => {
     );
     const line = (await queue()).entries.find((entry) => entry.orderId === croissants);
     expect(line).toMatchObject({ state: "handed_over", heldForQuality: false });
+  });
+});
+
+/**
+ * Réglages › Commandes (décision de Hugo, 2026-10-26) : désactiver un niveau
+ * refuse un verdict NEUF, mais ne lève pas en douce une retenue déjà posée —
+ * elle reste jusqu'à ce qu'un nouveau verdict la lève (plan, D10).
+ */
+describe("désactiver le contrôle au fournil", () => {
+  it("garde la retenue en cours, refuse un verdict neuf ; réactivé, un OK la lève", async () => {
+    const { croissants } = await seedDay();
+    await judge({ kind: "line", sku: CROISSANT }, "blocking");
+    const settings = (lineChecks: boolean) =>
+      staff()
+        .put("/admin/production/quality-settings")
+        .send({ lineChecks, orderChecks: true })
+        .expect(204);
+
+    await settings(false);
+
+    expect(heldOf(await queue(), croissants)).toBe(true);
+    const refused = await staff()
+      .post(`/admin/supervision/quality/checks`)
+      .send({
+        id: ulid(),
+        serviceDay: DAY,
+        target: { kind: "line", sku: CROISSANT },
+        verdict: "ok",
+        note: null,
+        uploadIds: [],
+      })
+      .expect(409);
+    expect(jsonBody<{ code: string }>(refused).code).toBe("production.quality.disabled");
+    expect(heldOf(await queue(), croissants)).toBe(true);
+
+    await settings(true);
+    await judge({ kind: "line", sku: CROISSANT }, "ok");
+
+    expect(heldOf(await queue(), croissants)).toBe(false);
   });
 });

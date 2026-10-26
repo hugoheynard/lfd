@@ -70,20 +70,23 @@ describe("moduleOf — le fournil", () => {
     ["production_quality.hold_lifted", "production"],
     ["production_settings.close_changed", "production"],
     ["production_closed_day.added", "production"],
+    ["production_quality_settings.updated", "production"],
     ["production_dossier_recipient.added", "production"],
   ])("%s se range sous %s", (type, module) => {
     expect(moduleOf(type)).toBe(module);
   });
 
-  it("le filtre du module production ne ramène que ses neuf préfixes", () => {
+  it("le filtre du module production ne ramène que ses dix préfixes", () => {
     // Les contenants du colisage (K2b, 2026-10-04) : le poste est au fournil.
     // La feuille retirée après l'arrêt (plan A1, lot A1.3, 2026-10-25).
     // La sortie de réserve vers une boutique (plan A1, lot A1.4, 2026-10-25).
     // Les réglages du fournil (A1, 2026-10-06) : l'arrêt du plan, les jours fermés.
+    // Où le contrôle qualité se rend (Réglages › Commandes, 2026-10-26).
     expect(prefixesOf("production")).toEqual([
       "production_day.",
       "production_container.",
       "production_quality.",
+      "production_quality_settings.",
       "packing_container.",
       "packing_sheet.",
       "packing_stock.",

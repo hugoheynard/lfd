@@ -213,7 +213,7 @@
               [matches]="highlight.matches()"
               [lateSkus]="lateSkus()"
               [quality]="quality.lookup()"
-              [canCheck]="quality.canCheck()"
+              [canCheck]="quality.canCheckLines()"
               (check)="check($event)"
             />
           }
@@ -249,7 +249,7 @@
               [narrow]="narrow()"
               [matches]="highlight.matches()"
               [quality]="quality.lookup()"
-              [canCheck]="quality.canCheck()"
+              [canCheck]="quality.canCheckOrders()"
               (check)="check($event)"
               [canSendToShop]="reserveShop.canSend()"
               (sendToShop)="sendToShop($event)"

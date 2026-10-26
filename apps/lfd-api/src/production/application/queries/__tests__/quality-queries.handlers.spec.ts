@@ -1,3 +1,4 @@
+import { InMemoryQualityControlSettings } from "../../__tests__/quality-control-settings-doubles.js";
 import { QualityCheck, type QualityVerdict } from "../../../domain/entities/quality-check.js";
 import { QualityPhotoNotFoundError } from "../../../domain/errors/quality-record-errors.js";
 import type { QualityCheckTargetInput } from "../../../domain/value-objects/quality-check-target.js";
@@ -78,6 +79,7 @@ describe("GetQualityBoardHandler — les pastilles (D5, D7)", () => {
     const handler = new GetQualityBoardHandler(
       new FixedDays(closedDay(DAY, START, ["ord_1"])),
       new InMemoryCheckReader(table),
+      new InMemoryQualityControlSettings().reader(),
     );
 
     const view = await handler.execute(new GetQualityBoardQuery(DAY.value));
@@ -96,6 +98,8 @@ describe("GetQualityBoardHandler — les pastilles (D5, D7)", () => {
       expect.objectContaining({ orderId: "ord_1", reference: "ORD-0001", verdict: "ok" }),
     ]);
     expect(view.heldOrderIds).toEqual(["ord_1", "ord_2"]);
+    // Personne n'a rien réglé : les défauts de Réglages › Commandes (2026-10-26).
+    expect(view.enabled).toEqual({ lineChecks: false, orderChecks: true });
     expect(JSON.stringify(view)).not.toContain("Note du superviseur");
   });
 });

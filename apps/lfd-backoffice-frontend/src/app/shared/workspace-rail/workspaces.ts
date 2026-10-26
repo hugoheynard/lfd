@@ -341,6 +341,15 @@ export const EXPLOITATION_VIEWS: readonly WorkspaceView[] = [
     needs: 'lfc_order_settings:read',
   },
   {
+    // Où le contrôle qualité se rend (Hugo, 2026-10-26, `plan-controle-qualite.md` D10).
+    key: 'commandes-controle-qualite',
+    label: 'Contrôle qualité',
+    link: '/reglages/commandes/controle-qualite',
+    icon: 'shield',
+    section: 'Commandes',
+    needs: 'lfc_order_settings:read',
+  },
+  {
     key: 'commandes-annulation',
     label: 'Annulation de commande',
     link: '/reglages/commandes/annulation',

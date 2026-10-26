@@ -1,3 +1,4 @@
+import { InMemoryQualityControlSettings } from "../../__tests__/quality-control-settings-doubles.js";
 import { SealedDayReading } from "../../services/sealed-day-reading.service.js";
 import { sealedAt } from "../../__tests__/station-doubles.js";
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
@@ -59,6 +60,7 @@ function subject(packed: readonly string[] = ["ord_2"]) {
     new SealedDayReading(days, sealedAt(clock.now(), packed)),
     attachment,
     new FixedOrderCustody(),
+    InMemoryQualityControlSettings.allOpen().reader(),
     events,
     clock,
     new DirectUnitOfWork(),

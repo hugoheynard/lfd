@@ -172,6 +172,9 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     "production_day.",
     "production_container.",
     "production_quality.",
+    // Où le contrôle se rend (Réglages › Commandes, 2026-10-26) — ⚠️
+    // `production_quality_settings.` ne tombe PAS sous `production_quality.`.
+    "production_quality_settings.",
     "packing_container.",
     // La feuille retirée par une annulation après l'arrêt (plan A1, lot A1.3).
     "packing_sheet.",

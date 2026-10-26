@@ -859,3 +859,23 @@ model ProductionResupplyLine {
   @@map("production_resupply_line")
   @@schema("production")
 }
+
+/// **Où le contrôle qualité se rend** — Réglages › Commandes (décision de Hugo,
+/// 2026-10-26, `plan-controle-qualite.md`, D10) : UNE ligne, clé naturelle
+/// `quality`, comme `packing_settings`. Ligne absente : les défauts — fournil
+/// DÉSACTIVÉ, colisage activé.
+///
+/// **Aucune journée** : exception écrite dans `test/day-change-triggers.e2e-spec.ts`.
+model ProductionQualitySettings {
+  /// Toujours `quality` : il n'y a qu'un réglage.
+  key         String   @id
+  /// « Contrôle qualité au fournil » — les lignes de préparation ; désactivé par défaut.
+  lineChecks  Boolean  @default(false) @map("line_checks")
+  /// « Contrôle qualité au colisage » — les commandes colisées ; activé par défaut.
+  orderChecks Boolean  @default(true) @map("order_checks")
+  updatedAt   DateTime @map("updated_at") @db.Timestamptz(6)
+  updatedBy   String   @map("updated_by")
+
+  @@map("production_quality_settings")
+  @@schema("production")
+}
