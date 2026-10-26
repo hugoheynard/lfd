@@ -69,10 +69,11 @@ export class DeliveryNoteAligner {
     now: Date,
     { strict, revised }: { readonly strict: boolean; readonly revised: boolean },
   ): Promise<AlignedOutcome | "rank_taken"> {
-    const [notes, decided] = await Promise.all([
-      this.notes.loadForOrders([order.orderId]),
-      this.decisions.decidedFor([order.orderId]),
-    ]);
+    // Séquentiel, pas `Promise.all` : appelé sous une unité de travail, les deux
+    // lectures partageraient le client de la transaction, que `pg` file en
+    // silence (DeprecationWarning, retiré de pg@9) — cf. le blocage e2e du 2026-10-26.
+    const notes = await this.notes.loadForOrders([order.orderId]);
+    const decided = await this.decisions.decidedFor([order.orderId]);
     const decision = decided.get(order.orderId);
     const alignment = strict
       ? alignmentOf(departingSourceOf(order, decision), notes, {

@@ -8,7 +8,7 @@ import type { DevSeedReport } from "@lfd/contracts";
 
 import { CLIENT_RAISON_SOCIALE } from "../src/dev/seeding/client.seed.js";
 import { FEATURED_SKUS } from "../src/dev/seeding/featured.seed.js";
-import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, jsonBody, watchSeed, type E2eContext } from "./e2e-harness.js";
 import { ADMIN_VERIFIER_OVERRIDE, admin } from "./delivery-rounds-scene.js";
 import { seedDriverRole } from "./delivery-driver-scene.js";
 import { PAYMENT_GATEWAY_OVERRIDE } from "./dev-scenario-scene.js";
@@ -26,9 +26,12 @@ beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [ADMIN_VERIFIER_OVERRIDE, PAYMENT_GATEWAY_OVERRIDE, ...ROAD_ROUTING_OVERRIDES],
   });
-  await ctx.reset();
-  await seedDriverRole(ctx);
-  report = await reload();
+  // Surveillé : ce semis s'est figé en CI le 2026-10-26 sans rien dire.
+  report = await watchSeed("dev-seed-sites · semis", async () => {
+    await ctx.reset();
+    await seedDriverRole(ctx);
+    return reload();
+  });
 }, TIMEOUT_MS);
 
 afterAll(async () => {

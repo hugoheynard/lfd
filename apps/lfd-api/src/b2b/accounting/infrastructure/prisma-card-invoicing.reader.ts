@@ -52,10 +52,13 @@ export class PrismaCardInvoicingReader extends CardInvoicingReader {
     if (order === null) {
       return null;
     }
-    const [invoiced, follows] = await Promise.all([
-      this.prisma.invoiceOrder.count({ where: { orderId, invoiceType: COMMERCIAL_INVOICE } }),
-      this.followsOf(order.companyId),
-    ]);
+    // Séquentiel, pas `Promise.all` : appelé sous une unité de travail, les deux
+    // lectures partageraient le client de la transaction, que `pg` file en
+    // silence (DeprecationWarning, retiré de pg@9) — cf. le blocage e2e du 2026-10-26.
+    const invoiced = await this.prisma.invoiceOrder.count({
+      where: { orderId, invoiceType: COMMERCIAL_INVOICE },
+    });
+    const follows = await this.followsOf(order.companyId);
     return {
       orderId: order.id,
       orderNumber: order.orderNumber,

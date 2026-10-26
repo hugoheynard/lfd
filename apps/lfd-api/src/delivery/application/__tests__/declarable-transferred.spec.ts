@@ -5,6 +5,7 @@ import {
 import { deliveryOn, FixedDeliveryOrders } from "../commands/__tests__/round-doubles.js";
 import { declarableReference } from "../delivery-loading-support.js";
 import { FixedTransferredOrders } from "./transfer-doubles.js";
+import type { DeliveryOrderFacts } from "../../channels/commerce/delivery-orders.reader.js";
 
 // Des jours comparés entre eux seulement, jamais à l'horloge.
 const DAY = "2030-03-12";
@@ -40,4 +41,59 @@ describe("un retrait porté par un transfert ne reçoit plus de bac à lui (lot 
       BinsNotDeclarableError,
     );
   });
+});
+
+/** Le nombre de lectures en vol, partagé par les deux doubles ci-dessous. */
+class InFlight {
+  current = 0;
+  peak = 0;
+
+  async around<T>(read: () => Promise<T>): Promise<T> {
+    this.current += 1;
+    this.peak = Math.max(this.peak, this.current);
+    // Un tour de boucle : une seconde lecture lancée en parallèle entrerait ici.
+    await Promise.resolve();
+    try {
+      return await read();
+    } finally {
+      this.current -= 1;
+    }
+  }
+}
+
+class CountedOrders extends FixedDeliveryOrders {
+  constructor(private readonly inFlight: InFlight) {
+    super([deliveryOn("o_delivered", DAY)]);
+  }
+
+  override byIds(orderIds: readonly string[]): Promise<readonly DeliveryOrderFacts[]> {
+    return this.inFlight.around(() => super.byIds(orderIds));
+  }
+}
+
+class CountedTransferred extends FixedTransferredOrders {
+  constructor(private readonly inFlight: InFlight) {
+    super();
+  }
+
+  override transferredAmong(orderIds: readonly string[]): Promise<ReadonlySet<string>> {
+    return this.inFlight.around(() => super.transferredAmong(orderIds));
+  }
+}
+
+/**
+ * Régression : les deux lectures partaient en `Promise.all` sous l'unité de
+ * travail du bac, donc sur le MÊME client de transaction — `pg` les file en
+ * avertissant (DeprecationWarning à chaque boot des e2e du semis, 2026-10-26).
+ */
+it("lit la commande puis le transfert, jamais les deux à la fois", async () => {
+  const inFlight = new InFlight();
+
+  await declarableReference(
+    new CountedOrders(inFlight),
+    new CountedTransferred(inFlight),
+    "o_delivered",
+  );
+
+  expect(inFlight.peak).toBe(1);
 });

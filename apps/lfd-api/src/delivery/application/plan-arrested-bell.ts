@@ -48,10 +48,11 @@ export class PlanArrestedBell {
     readonly total: number;
     readonly at: Date;
   }): Promise<void> {
-    const [measuredVehicleIds, activeBinTypeIds] = await Promise.all([
-      this.vehicles.measuredIds(),
-      this.binTypes.activeIds(),
-    ]);
+    // Séquentiel, pas `Promise.all` : appelé sous une unité de travail, les deux
+    // lectures partageraient le client de la transaction, que `pg` file en
+    // silence (DeprecationWarning, retiré de pg@9) — cf. le blocage e2e du 2026-10-26.
+    const measuredVehicleIds = await this.vehicles.measuredIds();
+    const activeBinTypeIds = await this.binTypes.activeIds();
     const gap = compositionGapOf({ measuredVehicleIds, activeBinTypeIds });
     const words = planArrestedWords({ ...input, gap });
     const notice = {

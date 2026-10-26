@@ -51,6 +51,7 @@ import { prismaSchemaSource } from "../src/platform/database/prisma-schema-sourc
 import { addDays, instantToLocal, localToInstant } from "@lfd/contracts";
 import { testDatabaseUrl } from "./setup-env.js";
 import { waitForDatabase } from "./database-readiness.js";
+import { armSessionTimeouts, watchStall } from "./database-stall.js";
 import { BootStopwatch } from "./e2e-boot-log.js";
 import { ensureTestBucket, resetStorage } from "./storage.js";
 import { seedE2eCatalog } from "./catalog-fixture.js";
@@ -127,12 +128,23 @@ export interface E2eOptions {
   readonly imports?: readonly Type[];
 }
 
+/**
+ * Surveille une étape lourde d'une suite (le semis d'un `beforeAll`) : la base
+ * du worker est photographiée si l'étape tarde ou échoue (`database-stall.ts`).
+ */
+export function watchSeed<T>(label: string, step: () => Promise<T>): Promise<T> {
+  return watchStall(testDatabaseUrl(), label, step);
+}
+
 /** Boote l'app e2e et vérifie que la base de test est bien joignable et migrée. */
 export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext> {
   const stopwatch = new BootStopwatch();
   // Avant le boot : `app.init()` interroge déjà la base, et quatre workers qui
   // démarrent ensemble peuvent la trouver pas encore prête (cf. le fichier).
   await waitForDatabase(testDatabaseUrl());
+  // Avant le boot, pour que le pool de l'application en hérite : une attente de
+  // verrou devient une erreur nommée en 30 s, pas un hook muet (2026-10-26).
+  await armSessionTimeouts(testDatabaseUrl());
   const builder = Test.createTestingModule({ imports: [AppModule, ...(options.imports ?? [])] })
     .overrideProvider(AccessTokenVerifier)
     .useValue(stubVerifier)

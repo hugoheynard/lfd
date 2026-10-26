@@ -158,10 +158,11 @@ export class HandoverAttestation {
     // contrôle : un blocage rendu dans l'intervalle laisse partir le sac. C'est
     // une vérification, pas une interdiction — assumé au plan
     // (`plan-controle-qualite.md`, D4, « La course »).
-    const [existing, qualityHold] = await Promise.all([
-      this.handovers.findByShipment(shipment),
-      isHeldForQuality(this.holds, subject),
-    ]);
+    // Séquentiel, pas `Promise.all` : appelé sous une unité de travail, les deux
+    // lectures partageraient le client de la transaction, que `pg` file en
+    // silence (DeprecationWarning, retiré de pg@9) — cf. le blocage e2e du 2026-10-26.
+    const existing = await this.handovers.findByShipment(shipment);
+    const qualityHold = await isHeldForQuality(this.holds, subject);
     // Lot T2 du transfert interne : pas de remise d'une commande dont le
     // transfert n'a pas été reçu au site (Q-T2). Une commande déjà retirée
     // passe à l'agrégat, qui dit « déjà retirée » — le mot juste.

@@ -102,10 +102,11 @@ export async function declarableReference(
   transferred: TransferredOrdersReader,
   orderId: string,
 ): Promise<string> {
-  const [[order], carried] = await Promise.all([
-    orders.byIds([orderId]),
-    transferred.transferredAmong([orderId]),
-  ]);
+  // Séquentiel, pas `Promise.all` : appelé sous une unité de travail, les deux
+  // lectures partageraient le client de la transaction, que `pg` file en
+  // silence (DeprecationWarning, retiré de pg@9) — cf. le blocage e2e du 2026-10-26.
+  const [order] = await orders.byIds([orderId]);
+  const carried = await transferred.transferredAmong([orderId]);
   if (order !== undefined && order.status !== "cancelled" && carried.has(orderId)) {
     throw new OrderBinsCarriedByTransferError(order.reference);
   }

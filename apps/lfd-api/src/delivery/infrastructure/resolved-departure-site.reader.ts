@@ -22,13 +22,14 @@ export class ResolvedDepartureSiteReader extends DepartureSiteReader {
   }
 
   async currentSiteId(): Promise<string | null> {
-    const [row, candidates] = await Promise.all([
-      this.prisma.deliveryDeparture.findUnique({
-        where: { key: DEPARTURE_KEY },
-        select: { pickupAddressId: true },
-      }),
-      this.candidates.list(),
-    ]);
+    // Séquentiel, pas `Promise.all` : appelé sous une unité de travail, les deux
+    // lectures partageraient le client de la transaction, que `pg` file en
+    // silence (DeprecationWarning, retiré de pg@9) — cf. le blocage e2e du 2026-10-26.
+    const row = await this.prisma.deliveryDeparture.findUnique({
+      where: { key: DEPARTURE_KEY },
+      select: { pickupAddressId: true },
+    });
+    const candidates = await this.candidates.list();
     return departureViewOf(row?.pickupAddressId ?? null, candidates).point?.pickupAddressId ?? null;
   }
 }

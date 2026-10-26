@@ -75,10 +75,11 @@ export async function ensureNewOrdersAssignable(
   day: string,
   orderIds: readonly string[],
 ): Promise<void> {
-  const [known, anyDay] = await Promise.all([
-    orders.byIds(orderIds),
-    broughtBack.lastAmong(orderIds),
-  ]);
+  // Séquentiel, pas `Promise.all` : appelé sous une unité de travail, les deux
+  // lectures partageraient le client de la transaction, que `pg` file en
+  // silence (DeprecationWarning, retiré de pg@9) — cf. le blocage e2e du 2026-10-26.
+  const known = await orders.byIds(orderIds);
+  const anyDay = await broughtBack.lastAmong(orderIds);
   const facts = new Map(known.map((order) => [order.orderId, order]));
   for (const orderId of orderIds) {
     const order = facts.get(orderId);

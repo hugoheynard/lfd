@@ -126,10 +126,11 @@ export class MarkOrderFulfilledHandler implements ICommandHandler<MarkOrderFulfi
 
   /** Le jour de réception (`AAAA-MM-JJ`, Paris) : la règle de la facture, sinon le jour du fait. */
   private async receivedOnOf(orderId: string, at: Date): Promise<string> {
-    const [handovers, stops] = await Promise.all([
-      this.handovers.ofOrders([orderId]),
-      this.deliveries.ofOrders([orderId]),
-    ]);
+    // Séquentiel, pas `Promise.all` : appelé sous une unité de travail, les deux
+    // lectures partageraient le client de la transaction, que `pg` file en
+    // silence (DeprecationWarning, retiré de pg@9) — cf. le blocage e2e du 2026-10-26.
+    const handovers = await this.handovers.ofOrders([orderId]);
+    const stops = await this.deliveries.ofOrders([orderId]);
     return receivedOnOrDayOf(
       handovers.get(orderId) ?? null,
       stops.filter((stop) => stop.orderId === orderId),

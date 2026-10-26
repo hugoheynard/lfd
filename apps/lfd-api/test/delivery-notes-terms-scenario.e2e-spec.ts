@@ -10,7 +10,7 @@
 import type { DevScenarioResetReport } from "@lfd/contracts";
 
 import type { DeliveryNoteReconciliationReport } from "../src/b2b/delivery-notes/application/commands/reconcile-delivery-notes.command.js";
-import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, jsonBody, watchSeed, type E2eContext } from "./e2e-harness.js";
 import { ADMIN_VERIFIER_OVERRIDE, admin } from "./delivery-rounds-scene.js";
 import { seedDriverRole } from "./delivery-driver-scene.js";
 import { ROAD_ROUTING_OVERRIDES } from "./delivery-routing-scene.js";
@@ -27,10 +27,13 @@ beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [ADMIN_VERIFIER_OVERRIDE, PAYMENT_GATEWAY_OVERRIDE, ...ROAD_ROUTING_OVERRIDES],
   });
-  await ctx.reset();
-  await seedDriverRole(ctx);
-  await admin(ctx).post("/admin/dev/seed/reload").expect(200);
-  await ctx.drain();
+  // Surveillé : ce semis s'est figé en CI le 2026-10-26 sans rien dire.
+  await watchSeed("delivery-notes-terms-scenario · semis", async () => {
+    await ctx.reset();
+    await seedDriverRole(ctx);
+    await admin(ctx).post("/admin/dev/seed/reload").expect(200);
+    await ctx.drain();
+  });
 }, TIMEOUT_MS);
 
 afterAll(async () => {

@@ -48,10 +48,11 @@ export class DeliveryNotePlanner {
       return;
     }
     const ids = confirmed.map((order) => order.orderId);
-    const [existing, decided] = await Promise.all([
-      this.notes.loadForOrders(ids),
-      this.decisions.decidedFor(ids),
-    ]);
+    // Séquentiel, pas `Promise.all` : appelé sous une unité de travail, les deux
+    // lectures partageraient le client de la transaction, que `pg` file en
+    // silence (DeprecationWarning, retiré de pg@9) — cf. le blocage e2e du 2026-10-26.
+    const existing = await this.notes.loadForOrders(ids);
+    const decided = await this.decisions.decidedFor(ids);
     for (const order of confirmed) {
       const notes = existing.filter((note) => note.orderId === order.orderId);
       const note = this.guardedNoteFor(order, decided.get(order.orderId), notes);
