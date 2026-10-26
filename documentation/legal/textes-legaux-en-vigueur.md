@@ -36,9 +36,9 @@ la version de référence ; le texte en ligne en facilite la lecture.
 
 ## 3. Les mentions légales
 
-L'article 2 renvoyait à des CGU qui n'existaient pas : il renvoie aux CGV,
-acceptées à chaque commande. **Depuis l'ajout de la mention CGU, il devrait
-renvoyer aux CGU** — à faire au back-office.
+L'article 2 renvoie aux CGU pour l'accès au Site, et aux CGV pour les
+commandes (repointé le 2026-10-26, à la demande de Hugo, dans les trois
+langues).
 
 ## 4. Les CGU
 
@@ -94,7 +94,6 @@ Chambéry, préavis de clôture de 15 jours.
 
 - **Le médiateur de la consommation** (CGV particuliers, article 17).
 - **Vérifier l'adresse de Cloudflare** (mentions légales, article 1).
-- **Repointer l'article 2 des mentions légales** vers les CGU.
 - **Relecture juridique** des adaptations des tableaux ci-dessus.
 - Toute modification d'une CGV fait monter sa révision : les clients qui ont
   le panier ouvert devront recocher (409 `orders.sales_terms_outdated`).
