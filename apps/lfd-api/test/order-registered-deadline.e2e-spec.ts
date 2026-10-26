@@ -95,6 +95,7 @@ function orderWithin(
 ): Record<string, unknown> {
   return {
     idempotencyKey: randomUUID(),
+    salesTerms: null,
     requestedDeliveryDate: serviceDay(),
     fulfillmentMethod: "delivery",
     deliveryAddress: POSTAL,

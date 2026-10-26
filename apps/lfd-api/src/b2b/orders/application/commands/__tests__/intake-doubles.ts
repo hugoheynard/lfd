@@ -17,6 +17,7 @@ import {
 } from "../../../domain/ports/order-recipient.reader.js";
 import { CustomerAudiences } from "../../services/customer-audiences.service.js";
 import { OrderIntake } from "../../services/order-intake.service.js";
+import { FixedSalesTerms } from "./fixed-sales-terms.js";
 
 /** Le réglage d'ouverture tel qu'un geste l'aurait posé ; par défaut, ouverte aux deux. */
 export class FixedOrderOpening extends OrderOpeningReader {
@@ -66,18 +67,21 @@ export class FixedRecipients extends OrderRecipientReader {
 /**
  * La porte de la passation, sur le VRAI service : un réglage, un statut de
  * société, et — pour une boutique fermée — les exemptions et les adresses.
- * Ouverte aux deux par défaut — l'état de toute base.
+ * Ouverte aux deux par défaut — l'état de toute base — et sans CGV rédigées.
  */
 export function intakeAt(
   opening: PublicOrderOpeningView = DEFAULT_ORDER_OPENING,
   companyStatus: OrderCompanyStatus | null = "active",
   exemptions: readonly OrderOpeningExemption[] = [],
   emails: Readonly<Record<string, string>> = {},
+  // Par défaut, aucun texte rédigé : seule une passation sans case passe.
+  salesTerms: FixedSalesTerms = new FixedSalesTerms(),
 ): OrderIntake {
   return new OrderIntake(
     new FixedOrderOpening(opening),
     new CustomerAudiences(new FixedCompanyStatus(companyStatus)),
     new FixedExemptions(exemptions),
     new FixedRecipients(emails),
+    salesTerms,
   );
 }

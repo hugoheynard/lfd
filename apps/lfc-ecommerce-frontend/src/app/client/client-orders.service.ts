@@ -10,6 +10,8 @@ import {
   type PlacedOrderResponse,
   type ShopQuoteView,
 } from '@lfd/contracts';
+// Par le sous-chemin sans zod : ce service est chargé au démarrage.
+import { SALES_TERMS_OUTDATED } from '@lfd/contracts/shop-values';
 import { httpErrorCode, httpErrorMessage } from '@lfd/endpoints';
 import { unitPriceCents } from '@lfd/money';
 import { firstValueFrom } from 'rxjs';
@@ -19,6 +21,7 @@ import { AUTH_CONFIG } from '../auth/auth.config';
 import { AuthFacade } from '../auth/auth.facade';
 import { NotifyService } from '../notify.service';
 import { ClientCart } from './cart/client-cart.service';
+import { SalesTermsConsent } from './cart/sales-terms-consent.service';
 import { LOYALTY_REFUSAL_PREFIX, VoucherChoice } from './cart/voucher-choice.service';
 import { ClientLocale, type LocaleCode } from './client-locale.service';
 import { ClientWorkspace } from './client-workspace.service';
@@ -265,6 +268,8 @@ export class ClientOrders {
   private readonly notify = inject(NotifyService);
   private readonly workspace = inject(ClientWorkspace);
   private readonly voucher = inject(VoucherChoice);
+  /** La case des CGV du panier : sa version part avec la commande, son refus la renouvelle. */
+  private readonly salesTerms = inject(SalesTermsConsent);
   private readonly locale = inject(ClientLocale);
 
   /** Les commandes gardées pour l'espace COURANT — vide tant qu'il n'est pas connu. */
@@ -429,6 +434,7 @@ export class ClientOrders {
     }
     const payload: PlaceShopOrderPayload = {
       ...guestContentOf(service, lines, this.attemptKey(GUEST_WORKSPACE), this.locale.current()),
+      salesTerms: this.salesTerms.accepted(),
       buyer,
     };
     const placed = await this.sendAsGuest(payload);
@@ -456,6 +462,9 @@ export class ClientOrders {
       // une panne, et l'annoncer comme telle inquiéterait au pire moment.
       if (httpErrorCode(error) === IN_FLIGHT) {
         this.notify.info(httpErrorMessage(error, ''));
+        return null;
+      }
+      if (this.salesTermsOutdated(error)) {
         return null;
       }
       this.notify.error(error, "La commande n'a pas pu être passée.");
@@ -646,6 +655,8 @@ export class ClientOrders {
         settlement,
         this.locale.current(),
       ),
+      // La version des CGV cochée au panier, `null` s'il n'y avait rien à cocher.
+      salesTerms: this.salesTerms.accepted(),
       // Omis sans bon, jamais `null` : le contrat le déclare facultatif.
       ...(voucherId === null ? {} : { voucherId }),
     };
@@ -671,6 +682,9 @@ export class ClientOrders {
         this.notify.info(httpErrorMessage(error, ''));
         return null;
       }
+      if (this.salesTermsOutdated(error)) {
+        return null;
+      }
       // `NotifyService.error` filtre déjà l'enveloppe : le message du serveur
       // quand il est sûr, ce repli sinon. Jamais un détail interne.
       this.notify.error(error, "La commande n'a pas pu être passée.");
@@ -682,6 +696,19 @@ export class ClientOrders {
       }
       return null;
     }
+  }
+
+  /**
+   * Les CGV ont changé depuis l'affichage du panier (409) : la case se
+   * décoche, le texte se relit, et le panier le dit dans SA langue — pas de
+   * bulle en plus du message à l'endroit où l'on recoche.
+   */
+  private salesTermsOutdated(error: unknown): boolean {
+    if (httpErrorCode(error) !== SALES_TERMS_OUTDATED) {
+      return false;
+    }
+    this.salesTerms.renew();
+    return true;
   }
 }
 
@@ -710,7 +737,7 @@ function payloadOf(
   idempotencyKey: string,
   settlement: OrderSettlement | null,
   locale: LocaleCode,
-): PlaceOrderPayload {
+): Omit<PlaceOrderPayload, 'salesTerms'> {
   return {
     // 🔴 **Plus de `companyId` ici, et ce n'est plus au navigateur d'en parler.**
     //
@@ -789,7 +816,7 @@ function guestContentOf(
   lines: readonly { product: { sku: string }; quantity: number }[],
   idempotencyKey: string,
   locale: LocaleCode,
-): Omit<PlaceOrderPayload, 'settlement'> {
+): Omit<PlaceOrderPayload, 'settlement' | 'salesTerms'> {
   const { settlement, ...content } = payloadOf(service, lines, idempotencyKey, null, locale);
   // Un visiteur n'a pas de carnet : aucun identifiant d'adresse ne part d'ici,
   // quoi que porte le choix stocké.

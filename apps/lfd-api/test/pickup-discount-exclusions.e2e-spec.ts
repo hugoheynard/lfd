@@ -176,6 +176,7 @@ describe("la remise de retrait, une famille exclue", () => {
         .post("/orders")
         .send({
           idempotencyKey: randomUUID(),
+          salesTerms: null,
           pickupAddressId: point,
           requestedDeliveryDate: serviceDay(),
           fulfillmentMethod: "pickup",

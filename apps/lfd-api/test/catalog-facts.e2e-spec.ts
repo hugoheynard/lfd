@@ -268,6 +268,7 @@ describe("l'audience décide à qui l'article se vend (servedTo)", () => {
       .post("/orders")
       .send({
         idempotencyKey: randomUUID(),
+        salesTerms: null,
         companyId: buyer.companyId,
         requestedDeliveryDate: serviceDay(),
         note: "",

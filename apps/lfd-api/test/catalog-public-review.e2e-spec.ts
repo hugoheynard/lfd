@@ -122,6 +122,7 @@ function proOrder(buyer: { companyId: string; pickupId: string }, productSku: st
     .post("/orders")
     .send({
       idempotencyKey: randomUUID(),
+      salesTerms: null,
       companyId: buyer.companyId,
       requestedDeliveryDate: serviceDay(),
       note: "",

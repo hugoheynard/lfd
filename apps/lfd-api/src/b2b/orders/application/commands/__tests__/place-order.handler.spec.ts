@@ -31,6 +31,7 @@ import {
   PickupNotConfiguredError,
   TermsNotGrantedError,
 } from "../../../domain/errors/order-errors.js";
+import { SalesTermsOutdatedError } from "../../../domain/errors/sales-terms-outdated.error.js";
 import { UnknownSkuError } from "../../../../catalog/domain/errors/unknown-sku.error.js";
 import {
   OrderGuardReader,
@@ -59,7 +60,11 @@ import {
   CompanyStatusReader,
   type OrderCompanyStatus as CompanyStatusOf,
 } from "../../../domain/ports/company-status.reader.js";
-import { DEFAULT_DELIVERY_AVAILABILITY, type DeliveryAvailabilityView } from "@lfd/contracts";
+import {
+  DEFAULT_DELIVERY_AVAILABILITY,
+  DEFAULT_ORDER_OPENING,
+  type DeliveryAvailabilityView,
+} from "@lfd/contracts";
 import { OrderDrafting } from "../../services/order-drafting.service.js";
 import { OrderOperations } from "../../services/order-operations.service.js";
 import { noSaleOperations } from "../../../../catalog/application/__tests__/sale-operations-doubles.js";
@@ -555,6 +560,7 @@ const CHOSEN_WINDOW = { start: "07:00", end: "08:00" };
 function payload(over: Partial<PlaceOrderPayload> = {}): PlaceOrderPayload {
   return {
     idempotencyKey: "3f2504e0-4f89-41d3-9a0c-0305e82c3301",
+    salesTerms: null,
     fulfillmentMethod: "pickup",
     deliveryAddress: null,
     deliveryAddressId: null,
@@ -2185,6 +2191,109 @@ describe("PlaceOrderHandler — les CGV en vigueur", () => {
     const placed = await placeAs("active", new FixedSalesTerms());
 
     expect(placed?.salesTerms).toEqual({ document: "salesTermsPro", revision: null, fileId: null });
+  });
+});
+
+/**
+ * La case du panier (2026-10-26) : le client coche la version en vigueur pour
+ * l'audience qui tarife ; un refus tombe avant toute composition, clé rendue.
+ */
+describe("PlaceOrderHandler — les CGV cochées au panier", () => {
+  function acceptingScene(salesTerms: FixedSalesTerms) {
+    const sink = { placed: null as OrderToPlace | null };
+    const released: string[] = [];
+    const keys: OrderIdempotencyStore = {
+      claim: () => Promise.resolve({ kind: "claimed" as const }),
+      release: (_user, key) => {
+        released.push(key);
+        return Promise.resolve();
+      },
+      resolve: () => Promise.resolve(),
+    };
+    const handler = new PlaceOrderHandler(
+      guard("orders", "active"),
+      drafting(pickups(LABO_POINT), zones(), { status: "active", salesTerms }),
+      capturingRepo(sink),
+      payments(),
+      events(),
+      noWaivers,
+      new FixedClock(PRICED_AT),
+      keys,
+      noReader,
+      directWork,
+      new FixedVoucherQuotes(),
+      new RecordingRedemption(),
+      new RecordingDurable(),
+      intakeAt(DEFAULT_ORDER_OPENING, "active", [], {}, salesTerms),
+    );
+    return { handler, sink, released };
+  }
+  const PRO_TERMS = { salesTermsPro: { revision: 4, fileId: null } } as const;
+
+  it("accepte la version en vigueur de l'audience, et fige celle que le serveur résout", async () => {
+    const { handler, sink } = acceptingScene(new FixedSalesTerms(PRO_TERMS));
+
+    await handler.execute(
+      new PlaceOrderCommand(
+        "u1",
+        payload({ salesTerms: { key: "salesTermsPro", revision: 4 } }),
+        "c1",
+      ),
+    );
+
+    expect(sink.placed?.salesTerms).toMatchObject({ document: "salesTermsPro", revision: 4 });
+  });
+
+  it("refuse une révision périmée avant toute composition, et rend la clé", async () => {
+    const { handler, sink, released } = acceptingScene(new FixedSalesTerms(PRO_TERMS));
+
+    await expect(
+      handler.execute(
+        new PlaceOrderCommand(
+          "u1",
+          payload({ salesTerms: { key: "salesTermsPro", revision: 3 } }),
+          "c1",
+        ),
+      ),
+    ).rejects.toBeInstanceOf(SalesTermsOutdatedError);
+    expect(sink.placed).toBeNull();
+    expect(released).toEqual(["3f2504e0-4f89-41d3-9a0c-0305e82c3301"]);
+  });
+
+  it("refuse les CGV particuliers cochées par une société active", async () => {
+    const { handler } = acceptingScene(
+      new FixedSalesTerms({ ...PRO_TERMS, salesTerms: { revision: 4, fileId: null } }),
+    );
+
+    await expect(
+      handler.execute(
+        new PlaceOrderCommand(
+          "u1",
+          payload({ salesTerms: { key: "salesTerms", revision: 4 } }),
+          "c1",
+        ),
+      ),
+    ).rejects.toBeInstanceOf(SalesTermsOutdatedError);
+  });
+
+  it("refuse une passation sans case quand un texte est en vigueur", async () => {
+    const { handler } = acceptingScene(new FixedSalesTerms(PRO_TERMS));
+
+    await expect(
+      handler.execute(new PlaceOrderCommand("u1", payload({ salesTerms: null }), "c1")),
+    ).rejects.toBeInstanceOf(SalesTermsOutdatedError);
+  });
+
+  it("CGV pro jamais rédigées : rien à cocher, la commande passe sans révision", async () => {
+    const { handler, sink } = acceptingScene(new FixedSalesTerms());
+
+    await handler.execute(new PlaceOrderCommand("u1", payload({ salesTerms: null }), "c1"));
+
+    expect(sink.placed?.salesTerms).toEqual({
+      document: "salesTermsPro",
+      revision: null,
+      fileId: null,
+    });
   });
 });
 

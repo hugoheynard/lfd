@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import type { PlaceOrderPayload } from '@lfd/contracts';
+import type { PlaceOrderPayload, PlaceShopOrderPayload } from '@lfd/contracts';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { AuthFacade } from '../auth/auth.facade';
@@ -16,6 +16,7 @@ import {
   RECOGNISED,
 } from './client-orders.fixture';
 import { loyaltyDouble, provideLoyalty, type LoyaltyDouble } from './client-loyalty.fixture';
+import { SalesTermsConsent } from './cart/sales-terms-consent.service';
 import { VoucherChoice } from './cart/voucher-choice.service';
 import { provideWorkspace, workspaceDouble } from './client-workspace.fixture';
 import { OrderContextStore, type ServiceChoice } from './order-context.store';
@@ -670,5 +671,102 @@ describe('passer commande avec un bon de fidélité', () => {
     await (await send()).answer(201);
 
     expect(loyalty.reads.count).toBe(0);
+  });
+});
+
+/**
+ * La case des CGV (Hugo, 2026-10-26) : la version cochée part avec la
+ * commande, connectée comme invitée ; un 409 « CGV périmées » décoche et relit.
+ */
+describe('passer commande — les CGV cochées', () => {
+  const LEGAL = (key: string): string => `/content/legal/${key}`;
+
+  async function checked(http: HttpTestingController, revision: number): Promise<void> {
+    const consent = TestBed.inject(SalesTermsConsent);
+    consent.load();
+    http
+      .expectOne((r) => r.url.endsWith(LEGAL('salesTerms')))
+      .flush({
+        content: { title: { fr: 'CGV', en: 'Terms', it: 'CGV' }, paragraphs: [] },
+        revision,
+        updatedAt: '1970-01-01T00:00:00.000Z',
+        updatedBy: null,
+        pdf: null,
+      });
+    consent.check(true);
+    await Promise.resolve();
+  }
+
+  it('envoie le texte et la révision cochés', async () => {
+    const http = boot();
+    TestBed.inject(OrderContextStore).choice.set(AU_LABO);
+    TestBed.inject(ClientCart).add('VIE-001');
+    await checked(http, 3);
+
+    const placing = TestBed.inject(ClientOrders).place();
+    await Promise.resolve();
+    await Promise.resolve();
+    const body = sentBody(http);
+    await placing;
+
+    expect(body.salesTerms).toEqual({ key: 'salesTerms', revision: 3 });
+  });
+
+  it('sans texte publié, envoie `null` : rien à accepter', async () => {
+    const http = boot();
+    TestBed.inject(OrderContextStore).choice.set(AU_LABO);
+    TestBed.inject(ClientCart).add('VIE-001');
+
+    const placing = TestBed.inject(ClientOrders).place();
+    await Promise.resolve();
+    await Promise.resolve();
+    const body = sentBody(http);
+    await placing;
+
+    expect(body.salesTerms).toBeNull();
+  });
+
+  it('l’invité envoie aussi la version cochée', async () => {
+    const http = boot();
+    TestBed.inject(OrderContextStore).choice.set(AU_LABO);
+    TestBed.inject(ClientCart).add('VIE-001');
+    await checked(http, 2);
+
+    const placing = TestBed.inject(ClientOrders).placeAsGuest({
+      firstName: 'Jean',
+      email: 'jean@example.com',
+      phone: '0600000000',
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+    const request = http.expectOne((r) => r.url.endsWith('/shop/orders'));
+    const body = request.request.body as PlaceShopOrderPayload;
+    request.flush({ id: 'ord_1', orderNumber: 'CMD-0007' });
+    await placing;
+
+    expect(body.salesTerms).toEqual({ key: 'salesTerms', revision: 2 });
+  });
+
+  it('au 409 « CGV périmées » : décoche, relit le texte, et ne passe rien', async () => {
+    const http = boot();
+    TestBed.inject(OrderContextStore).choice.set(AU_LABO);
+    TestBed.inject(ClientCart).add('VIE-001');
+    await checked(http, 3);
+
+    const placing = TestBed.inject(ClientOrders).place();
+    await Promise.resolve();
+    await Promise.resolve();
+    http
+      .expectOne((r) => r.url.endsWith('/orders'))
+      .flush(
+        { code: 'orders.sales_terms_outdated', message: 'Les CGV ont changé.' },
+        { status: 409, statusText: 'Conflict' },
+      );
+
+    expect(await placing).toBeNull();
+    const consent = TestBed.inject(SalesTermsConsent);
+    expect(consent.outdated()).toBe(true);
+    expect(consent.checked()).toBe(false);
+    http.expectOne((r) => r.url.endsWith(LEGAL('salesTerms')));
   });
 });

@@ -110,6 +110,7 @@ const staff = (): ReturnType<E2eContext["asSub"]> => ctx.asSub(E2E_STAFF_SUB);
 function clientOrder(): Record<string, unknown> {
   return {
     idempotencyKey: randomUUID(),
+    salesTerms: null,
     pickupAddressId: pickupId,
     requestedDeliveryDate: SERVICE_DAY,
     fulfillmentMethod: "pickup",
@@ -124,6 +125,7 @@ async function placeAsGuest(email = "camille@visiteur.fr"): Promise<unknown> {
   const result = await ctx.app.get(PlaceShopOrderHandler).execute(
     new PlaceShopOrderCommand({
       idempotencyKey: randomUUID(),
+      salesTerms: null,
       buyer: { firstName: "Camille", email, phone: "0600000000" },
       fulfillmentMethod: "pickup",
       // Pas de commande sans créneau (2026-10-14).

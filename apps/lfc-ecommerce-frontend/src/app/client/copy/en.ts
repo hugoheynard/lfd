@@ -348,6 +348,10 @@ export const EN: ClientCopy = {
     slotMissing: 'Choose a time slot to pay: tap “Change” and pick the time.',
     ordersClosed: 'Orders are closed for the moment.',
     ordersClosedHint: 'You can still browse the catalogue, and your basket is kept.',
+    salesTermsAccept: 'I accept the',
+    salesTermsLink: 'terms and conditions of sale',
+    salesTermsOutdated:
+      'The terms and conditions of sale have changed since your basket was displayed: please read them and tick the box again.',
     settleTitle: 'How are you paying?',
     settleCard: 'Pay now',
     settleAccount: 'Add to the account',

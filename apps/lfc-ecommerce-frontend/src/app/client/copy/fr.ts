@@ -345,6 +345,10 @@ export const FR: ClientCopy = {
     slotMissing: 'Choisissez un créneau pour régler : touchez « Modifier » et choisissez l’heure.',
     ordersClosed: 'Les commandes sont fermées pour le moment.',
     ordersClosedHint: 'Le catalogue reste consultable, et votre panier est gardé.',
+    salesTermsAccept: 'J’accepte les',
+    salesTermsLink: 'conditions générales de vente',
+    salesTermsOutdated:
+      'Les conditions générales de vente ont changé depuis l’affichage de votre panier : relisez-les et cochez à nouveau.',
     settleTitle: 'Comment réglez-vous ?',
     settleCard: 'Paiement direct',
     settleAccount: 'Ajouter au compte',

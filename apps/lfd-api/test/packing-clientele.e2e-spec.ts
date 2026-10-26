@@ -63,6 +63,7 @@ async function placeForCompany(quantity: number): Promise<void> {
     .post(`/orders`)
     .send({
       idempotencyKey: randomUUID(),
+      salesTerms: null,
       companyId,
       requestedDeliveryDate: SERVICE_DAY,
       fulfillmentMethod: "pickup",

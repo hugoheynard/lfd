@@ -1097,6 +1097,7 @@ export {
   hasPickupPointWhenPickedUp,
   pickupPointIssue,
   deliveryAddressIssue,
+  acceptedSalesTermsSchema,
   placeOrderPayloadSchema,
   orderSettlementSchema,
   orderLocaleSchema,
@@ -2214,6 +2215,11 @@ export type {
   UnorderedReceiptLineView,
   UnorderedReceiptView,
 } from "./resupply-receipt.js";
+export {
+  SALES_TERMS_OUTDATED,
+  SALES_TERMS_REQUIRED_MESSAGE,
+  type AcceptedSalesTerms,
+} from "./sales-terms-acceptance.values.js";
 export {
   DEFAULT_ORDER_OPENING,
   ORDERS_CLOSED_FOR_AUDIENCE,

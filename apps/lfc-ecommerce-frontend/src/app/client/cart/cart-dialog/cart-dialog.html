@@ -99,6 +99,36 @@
        Le bouton ne se grise que faute de savoir qui commande, ou faute de
        créneau choisi (2026-10-14) — les deux cas où il n'a nulle part où
        mener, et la phrase dessous dit lequel. -->
+  @if (!ordersClosed() && termsShown()) {
+    <!-- La case des CGV (Hugo, 2026-10-26) : le texte de la clientèle,
+         ouvert dans un nouvel onglet pour ne pas perdre le panier. Elle
+         n'existe que si un texte est publié ; sa version part avec la
+         commande, et le serveur la refuse si elle a changé. -->
+    @if (salesTerms.outdated()) {
+      <fold-callout variant="warning" data-terms-outdated>{{
+        t().cart.salesTermsOutdated
+      }}</fold-callout>
+    }
+    @if (salesTerms.asked()) {
+      <div class="terms" data-sales-terms>
+        <fold-checkbox
+          [checked]="salesTerms.checked()"
+          [ariaLabel]="t().cart.salesTermsAccept + ' ' + t().cart.salesTermsLink"
+          (checkedChange)="salesTerms.check($event)"
+        />
+        <span class="terms-text">
+          {{ t().cart.salesTermsAccept }}
+          <a
+            routerLink="/cgv"
+            [queryParams]="salesTerms.pageQuery()"
+            target="_blank"
+            rel="noopener"
+            >{{ t().cart.salesTermsLink }}</a
+          >
+        </span>
+      </div>
+    }
+  }
   @if (ordersClosed()) {
     <!-- La boutique ne prend pas les commandes de cette clientèle : le
          catalogue et le panier restent, le bouton cède la place à l'encadré.

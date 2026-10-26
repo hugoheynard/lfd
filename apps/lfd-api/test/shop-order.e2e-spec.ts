@@ -107,6 +107,7 @@ async function seedPickup(): Promise<string> {
 function payload(over: Partial<PlaceShopOrderPayload> = {}): PlaceShopOrderPayload {
   return {
     idempotencyKey: randomUUID(),
+    salesTerms: null,
     buyer: { firstName: "Camille", email: "camille@visiteur.fr", phone: "0600000000" },
     fulfillmentMethod: "pickup",
     // Pas de commande sans créneau (2026-10-14).

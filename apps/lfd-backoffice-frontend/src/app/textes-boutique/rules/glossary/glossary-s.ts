@@ -1,6 +1,9 @@
 /** Segments de clé `S` → ce que le texte est, dit comme la boutique le dit. */
 export const GLOSSARY_S: Readonly<Record<string, string>> = {
   salesTerms: 'Conditions générales de vente',
+  salesTermsAccept: 'Panier — case « j’accepte les CGV »',
+  salesTermsLink: 'Panier — lien vers les CGV',
+  salesTermsOutdated: 'Panier — CGV changées, à recocher',
   sameDeadlinesEveryDay: 'Mêmes échéances tous les jours',
   sameDeadlinesEveryDayHint: 'Mêmes échéances tous les jours — aide',
   sameEveryDay: 'Mêmes créneaux tous les jours',

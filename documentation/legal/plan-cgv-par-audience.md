@@ -193,6 +193,51 @@ par le déplacement des mentions.
 **C1′ — CGV pro absentes** : aucune ligne semée ; l'absence de
 `sales-terms-pro` rend l'état « en cours de rédaction », jamais une 404.
 
+### C6 — La case « J'accepte les CGV » au panier (Hugo, 2026-10-26) — bâtie le 2026-10-26
+
+> « Sur chaque commande, une checkbox au panier : j'accepte les conditions
+> générales de vente (lien), et la référence de la version des CGV notée dans
+> la commande. »
+
+**Le contrat.** Les deux passations du CLIENT — `POST /orders` et
+`POST /shop/orders` — portent `salesTerms: { key, revision } | null`
+(`acceptedSalesTermsSchema`, `packages/contracts/src/order.ts`) : le texte et
+la révision que la boutique a lus avec ce qu'elle a affiché.
+
+- Champ **requis** : un corps qui ne le porte pas est refusé en **400** par
+  Zod, « Vous devez accepter les conditions générales de vente. ».
+- `null` dit **« rien à cocher »** : aucune révision publiée pour l'audience
+  (C1′, « en cours de rédaction »). La commande passe alors sans révision,
+  comme avant la case ; l'écran ne montre pas la case.
+- La saisie du staff (`POST /admin/orders`) ne porte pas le champ : inchangée,
+  ses CGV restent « applicables » (C4′).
+
+**Le refus.** `OrderIntake.admit` confronte la case à la révision en vigueur
+pour l'audience qui TARIFE (`audienceOf`, C2″), juste après le contrôle
+d'ouverture de la boutique, **avant toute composition** — même position que
+`orders.closed_for_audience` : la clé d'idempotence est rendue, le visiteur
+n'est pas inscrit, et le rejeu d'une commande déjà passée n'est jamais
+confronté aux CGV du jour. La comparaison est stricte dans les deux sens
+(`ensureSalesTermsAccepted`) ; un écart est un **409**
+`orders.sales_terms_outdated` : « Les conditions générales de vente ont changé
+depuis l'affichage de votre panier : relisez-les et cochez à nouveau. »
+
+La version **figée** sur la commande reste celle que le serveur résout
+(`OrderDrafting`, C4′) ; elle est celle qu'on vient d'admettre, au délai près
+d'une publication entre les deux lectures. Le PDF n'entre pas dans la
+version : en déposer un ne périme pas une case cochée.
+
+**La boutique.** Au pied du panier (`cart-dialog`), une `fold-checkbox` suivie
+de « J'accepte les [conditions générales de vente] » — le lien ouvre `/cgv`
+du côté de la clientèle, dans un nouvel onglet. Le bouton de commande est
+désactivé tant que le texte se lit ou que la case n'est pas cochée ; mêmes
+règles pour l'invité. `SalesTermsConsent` retient la VERSION cochée (une
+bascule d'espace ou un texte relu décochent d'eux-mêmes). Sur le 409 : la case
+se décoche, le texte se relit, un encadré dit le message.
+
+**Le semis** (`acceptedSalesTermsFor`, `dev/seeding/`) coche la révision en
+vigueur, lue en base : il passe par le vrai handler.
+
 ## 3. Lots
 
 | Lot | Contenu                                                                                                                          |
@@ -201,6 +246,7 @@ par le déplacement des mentions.
 | 1   | `sales-terms-pro` (clé, semis vide), lecture par audience au serveur, page « en cours de rédaction » ; onglets au back-office    |
 | 2   | `legal_document_files` + dépôt R2 + téléchargement boutique et back-office, ligne « version de référence », alerte de divergence |
 | 3   | Version acceptée sur la commande (migration additive), affichage au détail de commande                                           |
+| 4   | La case du panier (C6) : `salesTerms` au contrat des deux passations client, refus 400 / 409, case et lien dans la boutique      |
 
 Migrations : toutes additives (`legal_document_files`, trois colonnes
 nullables sur `orders`). Aucune donnée réécrite.

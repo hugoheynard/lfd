@@ -1,4 +1,4 @@
-import { signal } from '@angular/core';
+import { computed, signal } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
@@ -23,6 +23,7 @@ import { FoldPanelRef } from 'fold-ng';
 
 import { PieceRequest } from '../../shop/piece-request.service';
 import { GuestIdentityForm } from '../guest-identity-form/guest-identity-form';
+import { SalesTermsConsent } from '../sales-terms-consent.service';
 import { CartDialog } from './cart-dialog';
 
 const AU_LABO: ServiceChoice = {
@@ -68,6 +69,31 @@ interface Monde {
   readonly unservable?: boolean;
   /** Une exemption couvre qui regarde, boutique fermée (2026-10-26) ; absent = non. */
   readonly exempted?: boolean;
+  /** Des CGV publiées pour cette clientèle (la case paraît) ; absent = aucune. */
+  readonly cgv?: boolean;
+  /** Le serveur vient de refuser des CGV périmées (409). */
+  readonly cgvOutdated?: boolean;
+}
+
+/**
+ * La case des CGV, doublée : publiée ou non, cochée ou non. Sa logique propre
+ * (version cochée, relecture au 409) est éprouvée dans
+ * `sales-terms-consent.service.spec.ts`.
+ */
+function consentDouble(published: boolean, outdated: boolean) {
+  const checked = signal(false);
+  const asked = signal(published);
+  return {
+    asked,
+    checked,
+    outdated: signal(outdated),
+    blocking: computed(() => asked() && !checked()),
+    pageQuery: signal({ pour: 'particulier' }),
+    load: (): void => undefined,
+    check: (on: boolean): void => {
+      checked.set(on);
+    },
+  };
 }
 
 /** Les adresses d'invité que l'écran a soumises à la question de l'exemption. */
@@ -93,6 +119,8 @@ function boot({
   opening,
   unservable = false,
   exempted = false,
+  cgv = false,
+  cgvOutdated = false,
 }: Monde = {}): ComponentFixture<CartDialog> {
   localStorage.clear();
   TestBed.resetTestingModule();
@@ -104,6 +132,7 @@ function boot({
       provideRouter([]),
       provideWorkspace(workspaceDouble()),
       { provide: AuthFacade, useValue: auth },
+      { provide: SalesTermsConsent, useValue: consentDouble(cgv, cgvOutdated) },
       {
         provide: OrderAdmissionStore,
         useValue: {
@@ -581,5 +610,64 @@ describe('CartDialog — la suggestion ouvre une fiche', () => {
     fixture.detectChanges();
 
     expect(fermetures).toEqual([true]);
+  });
+});
+
+/**
+ * Hugo, 2026-10-26 : « sur chaque commande, une checkbox au panier : j'accepte
+ * les conditions générales de vente (lien) ». Le bouton attend la case ; sans
+ * texte publié, pas de case.
+ */
+describe('le panier fait accepter les CGV', () => {
+  const caseCgv = (fixture: ComponentFixture<CartDialog>): Element | null =>
+    el(fixture).querySelector('[data-sales-terms]');
+
+  it('grise Commander tant que la case n’est pas cochée, puis le rend', () => {
+    const fixture = boot({ auth: RECONNU, cgv: true });
+
+    expect(caseCgv(fixture)?.textContent).toContain(FR.cart.salesTermsAccept);
+    expect(bouton(fixture)?.disabled).toBe(true);
+
+    TestBed.inject(SalesTermsConsent).check(true);
+    fixture.detectChanges();
+
+    expect(bouton(fixture)?.disabled).toBe(false);
+  });
+
+  it('le lien mène à la page CGV, dans un nouvel onglet', () => {
+    const fixture = boot({ auth: RECONNU, cgv: true });
+    const lien = caseCgv(fixture)?.querySelector('a');
+
+    expect(lien?.textContent?.trim()).toBe(FR.cart.salesTermsLink);
+    expect(lien?.getAttribute('target')).toBe('_blank');
+    expect(lien?.getAttribute('href')).toBe('/cgv?pour=particulier');
+  });
+
+  it('les mêmes règles pour l’invité', () => {
+    const fixture = boot({ cgv: true });
+
+    expect(caseCgv(fixture)).not.toBeNull();
+    expect(bouton(fixture)?.disabled).toBe(true);
+  });
+
+  it('sans CGV publiées : pas de case, et rien n’est retenu', () => {
+    const fixture = boot({ auth: RECONNU });
+
+    expect(caseCgv(fixture)).toBeNull();
+    expect(bouton(fixture)?.disabled).toBe(false);
+  });
+
+  it('dit que les CGV ont changé après un refus du serveur', () => {
+    const fixture = boot({ auth: RECONNU, cgv: true, cgvOutdated: true });
+
+    expect(el(fixture).querySelector('[data-terms-outdated]')?.textContent?.trim()).toBe(
+      FR.cart.salesTermsOutdated,
+    );
+  });
+
+  it('pas de case devant un panier vide', () => {
+    const fixture = boot({ auth: RECONNU, cgv: true, panier: false });
+
+    expect(caseCgv(fixture)).toBeNull();
   });
 });

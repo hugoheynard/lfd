@@ -12,6 +12,7 @@ import {
 import { ownPayers } from "./payer-doubles.js";
 import { intakeAt } from "./intake-doubles.js";
 import { OrdersClosedForAudienceError } from "../../../domain/errors/orders-closed-for-audience.error.js";
+import { SalesTermsOutdatedError } from "../../../domain/errors/sales-terms-outdated.error.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
@@ -420,6 +421,7 @@ const CHOSEN_WINDOW = { start: "07:00", end: "08:00" };
 function payload(over: Partial<PlaceShopOrderPayload> = {}): PlaceShopOrderPayload {
   return {
     idempotencyKey: KEY,
+    salesTerms: null,
     buyer: { firstName: "Camille", email: "camille@exemple.fr", phone: "0600000000" },
     fulfillmentMethod: "pickup",
     deliveryAddress: null,
@@ -465,7 +467,7 @@ function scene(
     noReader,
     new DirectUnitOfWork(),
     durable,
-    intakeAt(options.opening),
+    intakeAt(options.opening, "active", [], {}, options.salesTerms),
     earning,
     new FakeWelcome(options.welcomeBonus ?? null),
   );
@@ -822,9 +824,13 @@ describe("PlaceShopOrderHandler — les CGV en vigueur", () => {
     const salesTerms = new FixedSalesTerms({ salesTerms: { revision: 3, fileId: "ldf_part_2" } });
     const { handler, sink } = scene({ salesTerms });
 
-    await handler.execute(new PlaceShopOrderCommand(payload()));
+    await handler.execute(
+      new PlaceShopOrderCommand(payload({ salesTerms: { key: "salesTerms", revision: 3 } })),
+    );
 
-    expect(salesTerms.asked).toEqual(["salesTerms"]);
+    // Lues deux fois : à la porte (la case cochée), puis à la composition (ce
+    // qui se fige). Le même texte, celui de l'audience qui tarife.
+    expect(salesTerms.asked).toEqual(["salesTerms", "salesTerms"]);
     expect(sink.placed?.salesTerms).toEqual({
       document: "salesTerms",
       revision: 3,
@@ -844,5 +850,56 @@ describe("PlaceShopOrderHandler — les CGV en vigueur", () => {
 
     expect(salesTerms.asked).toEqual([]);
     expect(sink.placed).toBeNull();
+  });
+});
+
+/**
+ * La case du panier (2026-10-26) : le visiteur coche la version en vigueur, et
+ * un refus tombe avant d'inscrire qui que ce soit, clé rendue.
+ */
+describe("PlaceShopOrderHandler — les CGV cochées au panier", () => {
+  it("refuse une révision périmée avant d'inscrire le porteur, et rend la clé", async () => {
+    const salesTerms = new FixedSalesTerms({ salesTerms: { revision: 4, fileId: null } });
+    const { handler, sink, buyers, keys } = scene({ salesTerms });
+
+    await expect(
+      handler.execute(
+        new PlaceShopOrderCommand(payload({ salesTerms: { key: "salesTerms", revision: 3 } })),
+      ),
+    ).rejects.toBeInstanceOf(SalesTermsOutdatedError);
+    expect(buyers.registered).toEqual([]);
+    expect(sink.placed).toBeNull();
+    expect(keys.released).toEqual([KEY]);
+  });
+
+  it("refuse une passation sans case quand un texte est en vigueur", async () => {
+    const salesTerms = new FixedSalesTerms({ salesTerms: { revision: 1, fileId: null } });
+    const { handler } = scene({ salesTerms });
+
+    await expect(handler.execute(new PlaceShopOrderCommand(payload()))).rejects.toBeInstanceOf(
+      SalesTermsOutdatedError,
+    );
+  });
+
+  it("passe sans case quand aucun texte n'est rédigé, et ne fige aucune révision", async () => {
+    const { handler, sink } = scene();
+
+    await handler.execute(new PlaceShopOrderCommand(payload({ salesTerms: null })));
+
+    expect(sink.placed?.salesTerms).toMatchObject({ document: "salesTerms", revision: null });
+  });
+
+  it("un rejeu d'une commande déjà passée n'est pas confronté aux CGV du jour", async () => {
+    const salesTerms = new FixedSalesTerms({ salesTerms: { revision: 9, fileId: null } });
+    const { handler } = scene({ claim: { kind: "replayed", orderId: "order_1" }, salesTerms });
+
+    await handler
+      .execute(
+        new PlaceShopOrderCommand(payload({ salesTerms: { key: "salesTerms", revision: 2 } })),
+      )
+      .catch((error: unknown) => {
+        expect(error).not.toBeInstanceOf(SalesTermsOutdatedError);
+      });
+    expect(salesTerms.asked).toEqual([]);
   });
 });

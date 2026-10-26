@@ -152,6 +152,7 @@ function order(sku: string, day: string) {
     .send({
       companyId,
       idempotencyKey: randomUUID(),
+      salesTerms: null,
       pickupAddressId: pickupId,
       requestedDeliveryDate: day,
       fulfillmentMethod: "pickup",

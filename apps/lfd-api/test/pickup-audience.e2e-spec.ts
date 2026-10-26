@@ -145,6 +145,7 @@ function quote(siteId: string): Record<string, unknown> {
 function order(siteId: string): Record<string, unknown> {
   return {
     idempotencyKey: randomUUID(),
+    salesTerms: null,
     pickupAddressId: siteId,
     requestedDeliveryDate: SERVICE_DAY,
     fulfillmentMethod: "pickup",

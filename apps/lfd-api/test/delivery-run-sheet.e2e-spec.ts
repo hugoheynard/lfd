@@ -162,6 +162,7 @@ async function place(
       .post(`/orders`)
       .send({
         idempotencyKey: randomUUID(),
+        salesTerms: null,
         requestedDeliveryDate: DAY,
         fulfillmentMethod: fulfillment,
         ...where,
@@ -265,6 +266,7 @@ describe("la feuille de route du jour", () => {
       .post(`/orders`)
       .send({
         idempotencyKey: randomUUID(),
+        salesTerms: null,
         requestedDeliveryDate: DAY,
         fulfillmentMethod: "delivery",
         deliveryAddress: SITE,

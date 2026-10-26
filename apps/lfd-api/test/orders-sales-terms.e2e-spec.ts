@@ -11,6 +11,7 @@
 import { randomUUID } from "node:crypto";
 
 import type {
+  AcceptedSalesTerms,
   AdminPlacedOrderResponse,
   LegalDocumentFileDeposited,
   OrderSalesTermsResponse,
@@ -101,11 +102,14 @@ async function seedCompany(status: CompanyStatus): Promise<{ companyId: string; 
   return { companyId: company.id, buyerId: buyer.id };
 }
 
-/** Rédige un article du texte, pour qu'il ait une révision. */
-async function writeText(mention: "salesTerms" | "salesTermsPro"): Promise<void> {
+/** Rédige un article du texte, pour qu'il ait une révision (la suivante d'`expectedRevision`). */
+async function writeText(
+  mention: "salesTerms" | "salesTermsPro",
+  expectedRevision = 0,
+): Promise<void> {
   await staff()
     .post(`/admin/content/legal/${mention}/paragraphs`)
-    .send({ ...prose(mention), expectedRevision: 0 })
+    .send({ ...prose(mention), expectedRevision })
     .expect(201);
 }
 
@@ -117,9 +121,14 @@ async function depositPdf(mention: "salesTerms" | "salesTermsPro"): Promise<stri
   return jsonBody<LegalDocumentFileDeposited>(response).id;
 }
 
-const order = (companyId: string | null): Record<string, unknown> => ({
+/** `accepted` : la case du panier ; `null` = rien à cocher (aucun texte rédigé). */
+const order = (
+  companyId: string | null,
+  accepted: AcceptedSalesTerms | null = null,
+): Record<string, unknown> => ({
   companyId,
   idempotencyKey: randomUUID(),
+  salesTerms: accepted,
   pickupAddressId: pickupId,
   requestedDeliveryDate: SERVICE_DAY,
   fulfillmentMethod: "pickup",
@@ -141,7 +150,11 @@ describe("le client pour lui-même (place-order)", () => {
     const fileId = await depositPdf("salesTermsPro");
 
     const placed = jsonBody<PlacedOrderResponse>(
-      await ctx.asSub(MEMBER).post("/orders").send(order(companyId)).expect(201),
+      await ctx
+        .asSub(MEMBER)
+        .post("/orders")
+        .send(order(companyId, { key: "salesTermsPro", revision: 1 }))
+        .expect(201),
     );
 
     const { salesTerms } = await salesTermsOf(placed.id);
@@ -211,6 +224,7 @@ describe("la boutique sans compte (place-shop-order)", () => {
     const fileId = await depositPdf("salesTerms");
     const payload = {
       idempotencyKey: randomUUID(),
+      salesTerms: { key: "salesTerms" as const, revision: 1 },
       buyer: { firstName: "Camille", email: "camille@visiteur.fr", phone: "0600000000" },
       fulfillmentMethod: "pickup" as const,
       requestedWindow: { start: "07:00", end: "08:00" },
@@ -238,6 +252,84 @@ describe("la boutique sans compte (place-shop-order)", () => {
       file: { id: fileId },
       placedByStaff: false,
     });
+  });
+});
+
+/**
+ * La case du panier (2026-10-26) : la version cochée est confrontée à celle en
+ * vigueur pour l'audience, avant toute composition ; la clé est rendue.
+ */
+describe("les CGV cochées au panier", () => {
+  it("un corps sans le champ est refusé (400) avec le message lisible", async () => {
+    const { companyId } = await seedCompany(CompanyStatus.active);
+    const { salesTerms: _absent, ...body } = order(companyId);
+
+    const response = await ctx.asSub(MEMBER).post("/orders").send(body).expect(400);
+
+    expect(JSON.stringify(response.body)).toContain(
+      "Vous devez accepter les conditions générales de vente.",
+    );
+    expect(await ctx.prisma.order.count()).toBe(0);
+  });
+
+  it("une révision périmée est refusée (409), et la même clé repasse une fois relue", async () => {
+    const { companyId } = await seedCompany(CompanyStatus.active);
+    await writeText("salesTermsPro");
+    await writeText("salesTermsPro", 1);
+    const stale = order(companyId, { key: "salesTermsPro", revision: 1 });
+
+    const refused = await ctx.asSub(MEMBER).post("/orders").send(stale).expect(409);
+    expect(refused.body).toMatchObject({ code: "orders.sales_terms_outdated" });
+    expect(await ctx.prisma.order.count()).toBe(0);
+
+    const placed = jsonBody<PlacedOrderResponse>(
+      await ctx
+        .asSub(MEMBER)
+        .post("/orders")
+        .send({ ...stale, salesTerms: { key: "salesTermsPro", revision: 2 } })
+        .expect(201),
+    );
+    expect((await salesTermsOf(placed.id)).salesTerms).toMatchObject({ revision: 2 });
+  });
+
+  it("refuse une passation sans case quand un texte est en vigueur (409)", async () => {
+    const { companyId } = await seedCompany(CompanyStatus.active);
+    await writeText("salesTermsPro");
+
+    await ctx.asSub(MEMBER).post("/orders").send(order(companyId, null)).expect(409);
+  });
+
+  it("le rejeu d'une commande déjà passée reste accepté après une republication", async () => {
+    const { companyId } = await seedCompany(CompanyStatus.active);
+    await writeText("salesTermsPro");
+    const body = order(companyId, { key: "salesTermsPro", revision: 1 });
+    const first = jsonBody<PlacedOrderResponse>(
+      await ctx.asSub(MEMBER).post("/orders").send(body).expect(201),
+    );
+    await writeText("salesTermsPro", 1);
+
+    const replayed = jsonBody<PlacedOrderResponse>(
+      await ctx.asSub(MEMBER).post("/orders").send(body).expect(201),
+    );
+
+    expect(replayed.id).toBe(first.id);
+  });
+
+  it("la boutique sans compte refuse aussi une version périmée (409)", async () => {
+    await writeText("salesTerms");
+    await writeText("salesTerms", 1);
+
+    const refused = await ctx
+      .http()
+      .post("/shop/orders")
+      .send({
+        ...order(null, { key: "salesTerms", revision: 1 }),
+        companyId: undefined,
+        buyer: { firstName: "Camille", email: "camille@visiteur.fr", phone: "0600000000" },
+      })
+      .expect(409);
+
+    expect(refused.body).toMatchObject({ code: "orders.sales_terms_outdated" });
   });
 });
 

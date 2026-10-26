@@ -352,6 +352,10 @@ export const IT: ClientCopy = {
     slotMissing: 'Scelga una fascia oraria per pagare: tocchi « Modifica » e scelga l’orario.',
     ordersClosed: 'Gli ordini sono chiusi per il momento.',
     ordersClosedHint: 'Il catalogo resta consultabile e il carrello viene conservato.',
+    salesTermsAccept: 'Accetto le',
+    salesTermsLink: 'condizioni generali di vendita',
+    salesTermsOutdated:
+      'Le condizioni generali di vendita sono cambiate dalla visualizzazione del carrello: le rilegga e spunti di nuovo la casella.',
     settleTitle: 'Come pagate ?',
     settleCard: 'Pagamento diretto',
     settleAccount: 'Aggiungi al conto',

@@ -15,6 +15,7 @@ import { AllocateToContainerCommand } from "../../packing/application/containers
 import { OpenPackingContainerCommand } from "../../packing/application/containers/open-packing-container.command.js";
 import { MarkWorksheetLineCommand } from "../../production/application/commands/mark-worksheet-line.command.js";
 import { ClosePackingOrderCommand } from "../../packing/application/station/close-packing-order.command.js";
+import { acceptedSalesTermsFor } from "./accepted-sales-terms.seed.js";
 import { carnetWindowOf } from "./carnet-window.seed.js";
 import { CLIENT_RAISON_SOCIALE } from "./client.seed.js";
 
@@ -317,6 +318,7 @@ export async function place(
     // Le semis ne choisit pas son règlement : il laisse le serveur décider comme
     // il l'a toujours fait — au compte si les termes sont accordés, carte sinon.
     settlement: order.settlement ?? null,
+    salesTerms: await acceptedSalesTermsFor(context.prisma, target.companyId),
     fulfillmentMethod: order.method,
     deliveryAddress: delivery?.postal ?? null,
     // L'IDENTITÉ de l'adresse, en plus de son instantané postal : sans elle le

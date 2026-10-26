@@ -163,6 +163,7 @@ async function placeAndClose(): Promise<{ readonly reference: string; readonly o
       .post(`/orders`)
       .send({
         idempotencyKey: randomUUID(),
+        salesTerms: null,
         companyId: null,
         requestedDeliveryDate: SERVICE_DAY,
         fulfillmentMethod: "pickup",

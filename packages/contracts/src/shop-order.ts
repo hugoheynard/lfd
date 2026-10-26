@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import {
+  acceptedSalesTermsSchema,
   deliveryAddressIssue,
   hasAddressWhenDelivered,
   hasPickupPointWhenPickedUp,
@@ -101,6 +102,8 @@ export const placeShopOrderPayloadSchema = z
     buyer: guestBuyerSchema,
     /** La langue de la boutique à la passation, ou absente (`orderLocaleSchema`, lot A3). */
     locale: orderLocaleSchema.optional(),
+    /** Les CGV cochées au panier — mêmes règles que la passation connectée. */
+    salesTerms: acceptedSalesTermsSchema,
     ...orderContentShape,
   })
   .refine(hasAddressWhenDelivered, deliveryAddressIssue())

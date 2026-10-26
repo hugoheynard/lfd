@@ -182,6 +182,7 @@ async function expectParity(
       .post("/orders")
       .send({
         idempotencyKey: randomUUID(),
+        salesTerms: null,
         companyId: null,
         requestedDeliveryDate: SERVICE_DAY,
         note: "",
@@ -308,6 +309,7 @@ describe("le devis de la vitrine et la facture", () => {
         .post("/orders")
         .send({
           idempotencyKey: randomUUID(),
+          salesTerms: null,
           companyId: null,
           requestedDeliveryDate: SERVICE_DAY,
           note: "",
@@ -345,6 +347,7 @@ describe("le devis de la vitrine et la facture", () => {
         .post("/orders")
         .send({
           idempotencyKey: randomUUID(),
+          salesTerms: null,
           companyId: null,
           requestedDeliveryDate: SERVICE_DAY,
           note: "",
@@ -390,6 +393,7 @@ describe("le devis de la vitrine et la facture", () => {
         .post("/orders")
         .send({
           idempotencyKey: randomUUID(),
+          salesTerms: null,
           companyId: null,
           requestedDeliveryDate: SERVICE_DAY,
           note: "",
@@ -419,6 +423,7 @@ describe("le devis de la vitrine et la facture", () => {
         .post("/orders")
         .send({
           idempotencyKey: randomUUID(),
+          salesTerms: null,
           companyId: null,
           requestedDeliveryDate: SERVICE_DAY,
           note: "",
@@ -461,6 +466,7 @@ describe("le devis et la facture, selon le mode de TVA du port", () => {
         .post("/orders")
         .send({
           idempotencyKey: randomUUID(),
+          salesTerms: null,
           companyId: null,
           requestedDeliveryDate: SERVICE_DAY,
           note: "",

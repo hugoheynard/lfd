@@ -198,6 +198,7 @@ async function placeOrder(g: Group, settlement: "account" | "card"): Promise<str
     .set(WORKSPACE_HEADER, g.site)
     .send({
       idempotencyKey: randomUUID(),
+      salesTerms: null,
       requestedDeliveryDate: SERVICE_DAY,
       fulfillmentMethod: "pickup",
       requestedWindow: { start: "07:00", end: "08:00" },

@@ -111,6 +111,7 @@ async function place(lines: Lines, fulfillment: "pickup" | "delivery" = "pickup"
       .post(`/orders`)
       .send({
         idempotencyKey: randomUUID(),
+        salesTerms: null,
         companyId: null,
         requestedDeliveryDate: DAY,
         fulfillmentMethod: fulfillment,

@@ -83,6 +83,7 @@ async function placeOrder(): Promise<PlacedOrderResponse> {
       .send({
         companyId: company.id,
         idempotencyKey: randomUUID(),
+        salesTerms: null,
         pickupAddressId: point.id,
         requestedDeliveryDate: SERVICE_DAY,
         fulfillmentMethod: "pickup",

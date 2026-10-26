@@ -122,6 +122,7 @@ function contentOf(seed: OrderContentSeed) {
   const { fulfillment } = seed;
   return {
     idempotencyKey: randomUUID(),
+    salesTerms: null,
     fulfillmentMethod: fulfillment.method,
     pickupAddressId: fulfillment.method === "pickup" ? fulfillment.pickupSiteId : null,
     deliveryAddress: fulfillment.method === "delivery" ? fulfillment.address : null,

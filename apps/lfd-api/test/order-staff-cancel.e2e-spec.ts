@@ -292,6 +292,7 @@ describe("le bon de fidélité", () => {
       .post("/orders")
       .send({
         idempotencyKey: randomUUID(),
+        salesTerms: null,
         fulfillmentMethod: "pickup",
         // Pas de commande sans créneau (2026-10-14).
         requestedWindow: { start: "07:00", end: "08:00" },

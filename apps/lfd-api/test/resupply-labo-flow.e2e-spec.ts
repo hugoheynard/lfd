@@ -137,6 +137,7 @@ async function customerOrdersAtLabo(labo: string): Promise<void> {
     .post("/orders")
     .send({
       idempotencyKey: randomUUID(),
+      salesTerms: null,
       companyId: null,
       requestedDeliveryDate: SERVICE_DAY,
       fulfillmentMethod: "pickup",

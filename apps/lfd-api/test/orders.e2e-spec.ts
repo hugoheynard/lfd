@@ -127,6 +127,7 @@ function pickupOrder(companyId: string | null): Record<string, unknown> {
   return {
     companyId,
     idempotencyKey: randomUUID(),
+    salesTerms: null,
     pickupAddressId: pickupId,
     requestedDeliveryDate: SERVICE_DAY,
     fulfillmentMethod: "pickup",
@@ -377,6 +378,7 @@ describe("checkout → Order", () => {
       .post(`/orders`)
       .send({
         idempotencyKey: randomUUID(),
+        salesTerms: null,
         companyId: null,
         requestedDeliveryDate: SERVICE_DAY,
         fulfillmentMethod: "delivery",
@@ -414,6 +416,7 @@ describe("checkout → Order", () => {
       .post(`/orders`)
       .send({
         idempotencyKey: randomUUID(),
+        salesTerms: null,
         companyId: null,
         requestedDeliveryDate: SERVICE_DAY,
         fulfillmentMethod: "delivery",
@@ -438,6 +441,7 @@ describe("retrait", () => {
       .post(`/orders`)
       .send({
         idempotencyKey: randomUUID(),
+        salesTerms: null,
         companyId,
         pickupAddressId: pickupId,
         requestedDeliveryDate: SERVICE_DAY,
@@ -467,6 +471,7 @@ describe("retrait", () => {
       .post(`/orders`)
       .send({
         idempotencyKey: randomUUID(),
+        salesTerms: null,
         companyId,
         pickupAddressId: pickupId,
         requestedDeliveryDate: SERVICE_DAY,

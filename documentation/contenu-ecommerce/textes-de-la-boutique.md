@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1598 textes
+## Sommaire — 1601 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -30,7 +30,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Choix de l’heure — le sélecteur de créneau](#espace-slotpicker) | `slotPicker` | 19 |
 | [Choix de l’heure — l’étape du créneau](#espace-slotstep) | `slotStep` | 11 |
 | [Choix de l’heure — le rappel téléphonique](#espace-rappel) | `rappel` | 12 |
-| [Panier, connexion et saisie invité](#espace-cart) | `cart` | 58 |
+| [Panier, connexion et saisie invité](#espace-cart) | `cart` | 61 |
 | [Règlement](#espace-pay) | `pay` | 21 |
 | [Confirmation](#espace-done) | `done` | 28 |
 | [Confirmation — le QR de retrait](#espace-qr) | `qr` | 8 |
@@ -47,7 +47,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
-| **Total** | | **1598** |
+| **Total** | | **1601** |
 
 ## Le parcours de commande
 
@@ -665,7 +665,7 @@ Source : `fr.ts · en.ts · it.ts` · 12 textes.
 
 ### Panier, connexion et saisie invité — `cart`
 
-Source : `fr.ts · en.ts · it.ts` · 58 textes.
+Source : `fr.ts · en.ts · it.ts` · 61 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -708,6 +708,9 @@ Source : `fr.ts · en.ts · it.ts` · 58 textes.
 | `cart.slotMissing` | Choisissez un créneau pour régler : touchez « Modifier » et choisissez l’heure. | Choose a time slot to pay: tap “Change” and pick the time. | Scelga una fascia oraria per pagare: tocchi « Modifica » e scelga l’orario. |  |
 | `cart.ordersClosed` | Les commandes sont fermées pour le moment. | Orders are closed for the moment. | Gli ordini sono chiusi per il momento. |  |
 | `cart.ordersClosedHint` | Le catalogue reste consultable, et votre panier est gardé. | You can still browse the catalogue, and your basket is kept. | Il catalogo resta consultabile e il carrello viene conservato. |  |
+| `cart.salesTermsAccept` | J’accepte les | I accept the | Accetto le |  |
+| `cart.salesTermsLink` | conditions générales de vente | terms and conditions of sale | condizioni generali di vendita |  |
+| `cart.salesTermsOutdated` | Les conditions générales de vente ont changé depuis l’affichage de votre panier : relisez-les et cochez à nouveau. | The terms and conditions of sale have changed since your basket was displayed: please read them and tick the box again. | Le condizioni generali di vendita sono cambiate dalla visualizzazione del carrello: le rilegga e spunti di nuovo la casella. |  |
 | `cart.settleTitle` | Comment réglez-vous ? | How are you paying? | Come pagate ? |  |
 | `cart.settleCard` | Paiement direct | Pay now | Pagamento diretto |  |
 | `cart.settleAccount` | Ajouter au compte | Add to the account | Aggiungi al conto |  |

@@ -92,6 +92,7 @@ async function placeUnpaid(): Promise<{ readonly id: string; readonly number: st
       .post(`/orders`)
       .send({
         idempotencyKey: randomUUID(),
+        salesTerms: null,
         companyId: null,
         requestedDeliveryDate: DAY,
         fulfillmentMethod: "pickup",

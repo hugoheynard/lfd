@@ -343,6 +343,7 @@ describe("commander pour un site, depuis le principal (S6, R5)", () => {
       .set(WORKSPACE_HEADER, g.site)
       .send({
         idempotencyKey: randomUUID(),
+        salesTerms: null,
         pickupAddressId: pickup.id,
         requestedDeliveryDate: serviceDay(),
         fulfillmentMethod: "pickup",

@@ -143,6 +143,7 @@ async function placeDelivery(addressId: string): Promise<string> {
     .post("/orders")
     .send({
       idempotencyKey: randomUUID(),
+      salesTerms: null,
       requestedDeliveryDate: SERVICE_DAY,
       fulfillmentMethod: "delivery",
       deliveryAddress: POSTAL,

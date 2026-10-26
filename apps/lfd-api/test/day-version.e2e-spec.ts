@@ -126,6 +126,7 @@ async function place(lines: Lines, settle = true, day = DAY): Promise<string> {
       .post(`/orders`)
       .send({
         idempotencyKey: randomUUID(),
+        salesTerms: null,
         companyId: null,
         requestedDeliveryDate: day,
         fulfillmentMethod: "pickup",

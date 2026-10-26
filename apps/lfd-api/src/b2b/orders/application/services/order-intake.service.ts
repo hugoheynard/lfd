@@ -1,4 +1,4 @@
-import { ordersOpenTo, type CustomerAudience } from "@lfd/contracts";
+import { ordersOpenTo, type AcceptedSalesTerms, type CustomerAudience } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { admitsOrder } from "../../../order-opening/domain/order-admission.js";
@@ -6,6 +6,9 @@ import { ActiveOrderOpeningExemptions } from "../../../order-opening/domain/port
 import { OrderOpeningReader } from "../../../order-opening/domain/ports/order-opening.reader.js";
 import { OrdersClosedForAudienceError } from "../../domain/errors/orders-closed-for-audience.error.js";
 import { OrderRecipientReader } from "../../domain/ports/order-recipient.reader.js";
+import { OrderSalesTermsReader } from "../../domain/ports/order-sales-terms.reader.js";
+import { ensureSalesTermsAccepted } from "../../domain/services/sales-terms-acceptance.js";
+import { salesTermsOf } from "../../domain/services/sales-terms-of.js";
 import { CustomerAudiences } from "./customer-audiences.service.js";
 
 /**
@@ -46,7 +49,32 @@ export class OrderIntake {
     private readonly audiences: CustomerAudiences,
     private readonly exemptions: ActiveOrderOpeningExemptions,
     private readonly recipients: OrderRecipientReader,
+    private readonly salesTerms: OrderSalesTermsReader,
   ) {}
+
+  /**
+   * **La porte entière d'une passation client** : la boutique ouverte à cette
+   * clientèle, puis les CGV cochées au panier (2026-10-26), confrontées au
+   * texte en vigueur pour la MÊME audience — celle qui tarifera la commande.
+   *
+   * Les deux refus tombent avant toute composition : l'appelant rend sa clé
+   * d'idempotence, et un rejeu d'une commande déjà passée n'arrive jamais ici.
+   * La version figée sur la commande reste celle que `OrderDrafting` résout ;
+   * elle est celle qu'on vient d'admettre, au délai d'une publication près.
+   *
+   * @throws {OrdersClosedForAudienceError} cf. {@link ensureOpenFor}.
+   * @throws {SalesTermsOutdatedError} la case ne porte pas la version en vigueur.
+   */
+  async admit(
+    companyId: string | null,
+    buyer: IntakeBuyer,
+    accepted: AcceptedSalesTerms | null,
+  ): Promise<void> {
+    const audience = await this.openAudienceOf(companyId, buyer);
+    const document = salesTermsOf(audience);
+    const { revision } = await this.salesTerms.inForce(document);
+    ensureSalesTermsAccepted(accepted, document, revision);
+  }
 
   /**
    * `companyId` `null` = espace perso ou commande sans compte : particulier.
@@ -55,10 +83,19 @@ export class OrderIntake {
    *   clientèle, et aucune exemption ne couvre ni la société ni l'adresse.
    */
   async ensureOpenFor(companyId: string | null, buyer: IntakeBuyer): Promise<void> {
+    await this.openAudienceOf(companyId, buyer);
+  }
+
+  /** La clientèle de qui commande, si la boutique la prend ; sinon le refus. */
+  private async openAudienceOf(
+    companyId: string | null,
+    buyer: IntakeBuyer,
+  ): Promise<CustomerAudience> {
     const standing = await this.standingFor(companyId, buyer);
     if (!standing.canOrder) {
       throw new OrdersClosedForAudienceError(standing.audience);
     }
+    return standing.audience;
   }
 
   /**

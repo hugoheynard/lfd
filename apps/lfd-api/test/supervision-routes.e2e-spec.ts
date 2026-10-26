@@ -150,6 +150,7 @@ async function place(lines: readonly { sku: string; quantity: number }[]): Promi
     .post(`/orders`)
     .send({
       idempotencyKey: randomUUID(),
+      salesTerms: null,
       companyId: null,
       requestedDeliveryDate: SERVICE_DAY,
       fulfillmentMethod: "pickup",

@@ -37,6 +37,7 @@ export {
   type OrderRevisability,
   type OrderRevisionRefusal,
 } from "./order-revision.values.js";
+export { SALES_TERMS_OUTDATED, type AcceptedSalesTerms } from "./sales-terms-acceptance.values.js";
 export {
   DEFAULT_ORDER_OPENING,
   ORDERS_CLOSED_FOR_AUDIENCE,

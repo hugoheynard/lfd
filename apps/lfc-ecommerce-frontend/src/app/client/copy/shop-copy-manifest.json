@@ -3466,6 +3466,27 @@
           "variables": []
         },
         {
+          "key": "cart.salesTermsAccept",
+          "fr": "J’accepte les",
+          "en": "I accept the",
+          "it": "Accetto le",
+          "variables": []
+        },
+        {
+          "key": "cart.salesTermsLink",
+          "fr": "conditions générales de vente",
+          "en": "terms and conditions of sale",
+          "it": "condizioni generali di vendita",
+          "variables": []
+        },
+        {
+          "key": "cart.salesTermsOutdated",
+          "fr": "Les conditions générales de vente ont changé depuis l’affichage de votre panier : relisez-les et cochez à nouveau.",
+          "en": "The terms and conditions of sale have changed since your basket was displayed: please read them and tick the box again.",
+          "it": "Le condizioni generali di vendita sono cambiate dalla visualizzazione del carrello: le rilegga e spunti di nuovo la casella.",
+          "variables": []
+        },
+        {
           "key": "cart.settleTitle",
           "fr": "Comment réglez-vous ?",
           "en": "How are you paying?",

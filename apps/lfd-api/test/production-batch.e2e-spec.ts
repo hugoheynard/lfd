@@ -154,6 +154,7 @@ describe("la fiche de production lit ce qui a été convenu", () => {
       .post(`/orders`)
       .send({
         idempotencyKey: randomUUID(),
+        salesTerms: null,
         companyId,
         requestedDeliveryDate: SERVICE_DAY,
         fulfillmentMethod: "delivery",
@@ -204,6 +205,7 @@ describe("la fiche de production lit ce qui a été convenu", () => {
       .post(`/orders`)
       .send({
         idempotencyKey: randomUUID(),
+        salesTerms: null,
         companyId: null,
         requestedDeliveryDate: SERVICE_DAY,
         fulfillmentMethod: "delivery",
@@ -271,6 +273,7 @@ describe("la fiche de production lit ce qui a été convenu", () => {
       .post(`/orders`)
       .send({
         idempotencyKey: randomUUID(),
+        salesTerms: null,
         requestedDeliveryDate: SERVICE_DAY,
         fulfillmentMethod: "delivery",
         requestedWindow: { start: null, end: "10:00" },
@@ -370,6 +373,7 @@ describe("le colisage", () => {
       .post(`/orders`)
       .send({
         idempotencyKey: randomUUID(),
+        salesTerms: null,
         companyId: null,
         requestedDeliveryDate: SERVICE_DAY,
         fulfillmentMethod: "delivery",
@@ -593,6 +597,7 @@ describe("les courriels d'une commande", () => {
       .post(`/orders`)
       .send({
         idempotencyKey: randomUUID(),
+        salesTerms: null,
         companyId: null,
         requestedDeliveryDate: SERVICE_DAY,
         fulfillmentMethod: "pickup",
@@ -677,6 +682,7 @@ describe("le journal d'une commande", () => {
         .post(`/orders`)
         .send({
           idempotencyKey: randomUUID(),
+          salesTerms: null,
           companyId: null,
           requestedDeliveryDate: SERVICE_DAY,
           fulfillmentMethod: "pickup",
@@ -779,6 +785,7 @@ describe("le plan du soir", () => {
         .post(`/orders`)
         .send({
           idempotencyKey: randomUUID(),
+          salesTerms: null,
           companyId: null,
           requestedDeliveryDate: day,
           fulfillmentMethod: "pickup",
@@ -1066,6 +1073,7 @@ describe("la remise en livraison", () => {
         .post(`/orders`)
         .send({
           idempotencyKey: randomUUID(),
+          salesTerms: null,
           companyId: null,
           requestedDeliveryDate: SERVICE_DAY,
           fulfillmentMethod: "delivery",
@@ -1185,6 +1193,7 @@ describe("la file de remise", () => {
         .post(`/orders`)
         .send({
           idempotencyKey: randomUUID(),
+          salesTerms: null,
           companyId,
           requestedDeliveryDate: SERVICE_DAY,
           fulfillmentMethod: "pickup",

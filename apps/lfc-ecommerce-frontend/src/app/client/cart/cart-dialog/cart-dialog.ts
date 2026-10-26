@@ -7,10 +7,11 @@ import {
   input,
   signal,
 } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { instantToLocal } from '@lfd/contracts';
 import {
   FoldCalloutComponent,
+  FoldCheckboxComponent,
   FoldPanelBodyComponent,
   type FoldPanelDefaults,
   FoldPanelFooterComponent,
@@ -36,6 +37,7 @@ import { ClientOrders } from '../../client-orders.service';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { dialogSide } from '../../panel-side';
 import { CartSummary } from '../cart-summary/cart-summary';
+import { SalesTermsConsent } from '../sales-terms-consent.service';
 import { OrderDoors } from '../../shop/order-doors';
 import { OrderAdmissionStore } from '../../shop/order-admission.store';
 import { OrderOpeningStore } from '../../shop/order-opening.store';
@@ -77,7 +79,9 @@ const AFTER_SIGN_IN = '/boutique';
   imports: [
     CartSummary,
     FoldCalloutComponent,
+    FoldCheckboxComponent,
     GuestIdentityForm,
+    RouterLink,
     SignInChoices,
     FoldPanelBodyComponent,
     FoldPanelFooterComponent,
@@ -150,8 +154,16 @@ export class CartDialog {
     () => !this.opening.ordersOpen() && !this.admission.admitted(),
   );
 
+  /**
+   * La case des CGV (Hugo, 2026-10-26) — invité compris : la version cochée
+   * part avec la commande. Pas de texte publié pour cette clientèle, pas de
+   * case (`SalesTermsConsent`).
+   */
+  protected readonly salesTerms = inject(SalesTermsConsent);
+
   constructor() {
     void this.opening.hydrate();
+    this.salesTerms.load();
     // La suggestion du panier ouvre la fiche de son article (Hugo,
     // 2026-10-18) : le panier s'efface pour qu'elle se voie.
     const pieces = inject(PieceRequest);
@@ -224,15 +236,23 @@ export class CartDialog {
 
   /**
    * Le règlement attend qu'on sache qui commande — un compte, ou une saisie
-   * complète — et que le créneau soit choisi.
+   * complète —, que le créneau soit choisi, et que les CGV soient cochées.
    */
   protected readonly payBlocked = computed(
     () =>
       this.slotMissing() ||
       (this.identityNeeded() && this.guest() === null) ||
       // Rien à choisir (2026-10-16) : le bouton ne mène pas à une question vide.
-      (this.choice() === null && !this.cart.isEmpty() && !this.serviceOffered()),
+      (this.choice() === null && !this.cart.isEmpty() && !this.serviceOffered()) ||
+      // Les CGV publiées se cochent avant de commander (2026-10-26).
+      (this.termsShown() && this.salesTerms.blocking()),
   );
+
+  /**
+   * La case ne paraît que devant une commande réglable, et un texte publié :
+   * un panier vide n'a rien à accepter.
+   */
+  protected readonly termsShown = computed(() => !this.cart.isEmpty() && this.choice() !== null);
 
   /**
    * « demain · créneau choisi », avec la VRAIE journée : celle que le serveur a

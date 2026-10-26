@@ -116,6 +116,7 @@ async function bookAddress(specs: Partial<DeliveryAddressPayload["specs"]> = {})
 function deliveryOrder(addressId: string | null, window?: unknown): Record<string, unknown> {
   return {
     idempotencyKey: randomUUID(),
+    salesTerms: null,
     requestedDeliveryDate: SERVICE_DAY,
     fulfillmentMethod: "delivery",
     deliveryAddress: POSTAL,
@@ -256,6 +257,7 @@ describe("pas de commande sans créneau CHOISI (2026-10-14)", () => {
       .post("/orders")
       .send({
         idempotencyKey: randomUUID(),
+        salesTerms: null,
         requestedDeliveryDate: SERVICE_DAY,
         fulfillmentMethod: "pickup",
         pickupAddressId: site.id,

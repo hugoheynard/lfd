@@ -314,7 +314,12 @@ describe("POST /orders/:id/revisions — les refus", () => {
       await buyer()
         .post("/orders")
         .set(WORKSPACE_HEADER, PERSONAL_WORKSPACE)
-        .send({ idempotencyKey: randomUUID(), settlement: "card", ...content(pickupId) })
+        .send({
+          idempotencyKey: randomUUID(),
+          salesTerms: null,
+          settlement: "card",
+          ...content(pickupId),
+        })
         .expect(201),
     );
 

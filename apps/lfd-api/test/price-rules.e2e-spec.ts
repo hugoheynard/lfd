@@ -105,6 +105,7 @@ beforeEach(async () => {
 /** L'acheminement minimal d'une commande valide : un jour de service et un point. */
 const pickupContent = (): Record<string, unknown> => ({
   idempotencyKey: randomUUID(),
+  salesTerms: null,
   fulfillmentMethod: "pickup",
   // Pas de commande sans créneau (2026-10-14).
   requestedWindow: { start: "07:00", end: "08:00" },

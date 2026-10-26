@@ -147,6 +147,7 @@ async function placeOrder(
     .post(`/orders`)
     .send({
       idempotencyKey: randomUUID(),
+      salesTerms: null,
       companyId,
       requestedDeliveryDate: day,
       fulfillmentMethod: "delivery",

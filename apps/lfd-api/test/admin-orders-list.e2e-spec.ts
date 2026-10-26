@@ -111,6 +111,7 @@ async function place(sub: string, body: Record<string, unknown>): Promise<string
     .post("/orders")
     .send({
       idempotencyKey: randomUUID(),
+      salesTerms: null,
       requestedDeliveryDate: SERVICE_DAY,
       lines: [{ sku: "VIE-001", quantity: 1 }],
       ...body,

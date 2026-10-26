@@ -71,6 +71,8 @@ export class ClientLegalDocuments {
   private readonly pdfs = signal<Partial<Record<LegalDocumentKey, LegalDocumentPdfView | null>>>(
     {},
   );
+  /** La révision publiée que la lecture a rendue. Absent = pas encore lu. */
+  private readonly revisions = signal<Partial<Record<LegalDocumentKey, number>>>({});
 
   /**
    * Où en est la lecture d'une mention — c'est ce que le panneau donne à ses
@@ -126,6 +128,7 @@ export class ClientLegalDocuments {
         next: (view) => {
           this.documents.update((all) => ({ ...all, [mention]: view.content }));
           this.pdfs.update((all) => ({ ...all, [mention]: view.pdf }));
+          this.revisions.update((all) => ({ ...all, [mention]: view.revision }));
           this.setStatus(mention, 'ready');
         },
         // Dit, pas avalé : le visiteur a ouvert ce dialogue pour lire un
@@ -133,6 +136,30 @@ export class ClientLegalDocuments {
         // pire qu'une panne annoncée.
         error: () => this.setStatus(mention, 'failed'),
       });
+  }
+
+  /**
+   * **La révision publiée** du texte lu, ou `null` : pas encore lu, lecture
+   * ratée, ou jamais rédigé (révision 0, « en cours de rédaction », C1′).
+   *
+   * C'est elle que la case des CGV du panier envoie avec la commande : la
+   * version lue AVEC le texte, celle que le client a pu ouvrir.
+   */
+  publishedRevisionOf(mention: LegalDocumentKey): number | null {
+    const revision = this.revisions()[mention] ?? 0;
+    return revision > 0 ? revision : null;
+  }
+
+  /**
+   * Relit le document même s'il l'a déjà été — le serveur vient de dire qu'il
+   * a changé (une commande refusée pour des CGV périmées).
+   */
+  reload(mention: LegalDocumentKey): void {
+    if (this.statusOf(mention) === 'loading') {
+      return;
+    }
+    this.setStatus(mention, 'idle');
+    this.ensureLoaded(mention);
   }
 
   /** Le document lu, ou le repli — un titre, aucun article. */

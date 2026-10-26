@@ -346,6 +346,7 @@ describe("client — active par B, A expirée : AUCUNE porte de A ne s'ouvre", (
           userId,
           placeOrderPayloadSchema.parse({
             idempotencyKey: randomUUID(),
+            salesTerms: null,
             pickupAddressId: "pickup-quelconque",
             requestedDeliveryDate: serviceDay(),
             fulfillmentMethod: "pickup",

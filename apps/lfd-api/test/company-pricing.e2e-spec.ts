@@ -731,6 +731,7 @@ describe("🔴 reposer sur une période close", () => {
       .post("/orders")
       .send({
         idempotencyKey: randomUUID(),
+        salesTerms: null,
         companyId: company.id,
         requestedDeliveryDate: serviceDay(),
         note: "",

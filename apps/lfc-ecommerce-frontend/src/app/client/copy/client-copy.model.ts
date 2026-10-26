@@ -658,6 +658,16 @@ export interface ClientCopy {
     readonly ordersClosed: string;
     /** Sous la fermeture : ce qui reste possible — le catalogue, le panier (2026-10-26). */
     readonly ordersClosedHint: string;
+    /**
+     * **La case des CGV au pied du panier** (Hugo, 2026-10-26) : la phrase
+     * précède le lien, qui ouvre le texte de l'audience dans un nouvel onglet.
+     * Elle n'apparaît que si un texte est publié pour cette clientèle.
+     */
+    readonly salesTermsAccept: string;
+    /** Le lien de la case — le nom du document. */
+    readonly salesTermsLink: string;
+    /** Le texte a changé entre l'affichage et la commande (409) : relire, recocher. */
+    readonly salesTermsOutdated: string;
 
     /**
      * **Le choix du règlement, au panier** — et il n'apparaît qu'à qui l'a

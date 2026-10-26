@@ -117,6 +117,7 @@ async function orderSku(companyId: string, sku: string, quantity: number): Promi
     .post("/orders")
     .send({
       idempotencyKey: randomUUID(),
+      salesTerms: null,
       companyId,
       pickupAddressId: pickupId,
       requestedDeliveryDate: SERVICE_DAY,
@@ -136,6 +137,7 @@ async function order(companyId: string, quantity: number): Promise<void> {
     .post("/orders")
     .send({
       idempotencyKey: randomUUID(),
+      salesTerms: null,
       companyId,
       pickupAddressId: pickupId,
       requestedDeliveryDate: SERVICE_DAY,

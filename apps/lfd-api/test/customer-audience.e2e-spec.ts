@@ -150,6 +150,7 @@ const DELIVERY_QUOTE = { lines: LINES, fulfillment: { method: "delivery", codePo
 function pickupOrder(pickupAddressId: string): Record<string, unknown> {
   return {
     idempotencyKey: randomUUID(),
+    salesTerms: null,
     pickupAddressId,
     requestedDeliveryDate: SERVICE_DAY,
     fulfillmentMethod: "pickup",
@@ -163,6 +164,7 @@ function pickupOrder(pickupAddressId: string): Record<string, unknown> {
 function deliveryOrder(deliveryAddressId: string | null = null): Record<string, unknown> {
   return {
     idempotencyKey: randomUUID(),
+    salesTerms: null,
     deliveryAddressId,
     requestedDeliveryDate: SERVICE_DAY,
     fulfillmentMethod: "delivery",

@@ -254,6 +254,19 @@
   color: var(--lfc-color-text-subtle);
 }
 
+/* ── La case des CGV (2026-10-26) ───────────────────────────────────────── */
+
+.terms {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+.terms-text {
+  font-size: var(--fold-text-sm);
+  line-height: var(--lfc-leading-note);
+}
+
 /* ── Le choix du règlement, pour qui l'a ─────────────────────────────────── */
 
 /* La question, au-dessus des deux actions : sans elle, deux boutons côte à côte

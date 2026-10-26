@@ -78,6 +78,7 @@ async function place(pickupAddressId: string): Promise<string> {
     .post("/orders")
     .send({
       idempotencyKey: randomUUID(),
+      salesTerms: null,
       requestedDeliveryDate: SERVICE_DAY,
       lines: [{ sku: "VIE-001", quantity: 1 }],
       companyId: null,

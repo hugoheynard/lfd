@@ -296,6 +296,7 @@ function placeOrder(sub: string, settlement: "account" | "card" | null) {
     .post("/orders")
     .send({
       idempotencyKey: randomUUID(),
+      salesTerms: null,
       requestedDeliveryDate: SERVICE_DAY,
       fulfillmentMethod: "pickup",
       // Pas de commande sans créneau (2026-10-14).

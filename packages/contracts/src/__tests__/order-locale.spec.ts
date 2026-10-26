@@ -19,6 +19,7 @@ describe("la langue au contrat de passation", () => {
     const parsed = placeOrderPayloadSchema.parse({
       ...CONTENT,
       idempotencyKey: "3f2504e0-4f89-41d3-9a0c-0305e82c3301",
+      salesTerms: null,
     });
     expect(parsed.locale).toBe("en");
   });
@@ -29,6 +30,7 @@ describe("la langue au contrat de passation", () => {
         ...CONTENT,
         locale: "es",
         idempotencyKey: "3f2504e0-4f89-41d3-9a0c-0305e82c3301",
+        salesTerms: null,
       }),
     ).toThrow();
   });

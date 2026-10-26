@@ -146,7 +146,12 @@ async function placeUnpaidCard(where: Scene): Promise<string> {
     .asSub(BUYER)
     .post("/orders")
     .set(WORKSPACE_HEADER, PERSONAL_WORKSPACE)
-    .send({ idempotencyKey: randomUUID(), settlement: "card", ...content(where.pickupId, 3) })
+    .send({
+      idempotencyKey: randomUUID(),
+      salesTerms: null,
+      settlement: "card",
+      ...content(where.pickupId, 3),
+    })
     .expect(201);
   return jsonBody<{ id: string }>(response).id;
 }

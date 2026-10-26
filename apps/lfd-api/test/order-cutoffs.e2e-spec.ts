@@ -144,6 +144,7 @@ function order(over: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     companyId,
     idempotencyKey: randomUUID(),
+    salesTerms: null,
     pickupAddressId: pickupId,
     fulfillmentMethod: "pickup",
     // Pas de commande sans créneau (2026-10-14).

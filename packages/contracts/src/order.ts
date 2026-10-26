@@ -16,7 +16,8 @@ import type { LateFeeAdjustment } from "./order-late-fee.js";
 import type { SettlementRegime } from "./order-sheet.js";
 import type { OrderCutoffStatus } from "./order-cutoff.js";
 import { exposedHandoverToken } from "./order-settlement.values.js";
-import { contentLocales } from "./platform-content.defaults.js";
+import { contentLocales, salesTermsDocuments } from "./platform-content.defaults.js";
+import { SALES_TERMS_REQUIRED_MESSAGE } from "./sales-terms-acceptance.values.js";
 
 /**
  * Contrat de fil des **commandes** B2B.
@@ -370,6 +371,25 @@ export type OrderSettlement = z.infer<typeof orderSettlementSchema>;
 export const orderLocaleSchema = z.enum(contentLocales, "langue de commande inconnue");
 
 /**
+ * **Les CGV cochées au panier** — cf. `AcceptedSalesTerms`
+ * (`sales-terms-acceptance.values.ts`).
+ *
+ * REQUIS et nullable, et la nuance est le dispositif : un corps qui ne porte
+ * pas le champ n'a pas coché (400, ce message) ; `null` dit qu'il n'y avait
+ * rien à cocher, et le serveur le refuse (409) si une révision est en vigueur.
+ * La saisie du staff ne le porte pas : le client n'est pas devant l'écran.
+ */
+export const acceptedSalesTermsSchema = z
+  .object(
+    {
+      key: z.enum(salesTermsDocuments, SALES_TERMS_REQUIRED_MESSAGE),
+      revision: z.number(SALES_TERMS_REQUIRED_MESSAGE).int().positive(),
+    },
+    SALES_TERMS_REQUIRED_MESSAGE,
+  )
+  .nullable();
+
+/**
  * 🔴 **Aucun `companyId` ici, et c'est le point.**
  *
  * La société pour laquelle la commande est passée est **résolue au serveur**, à
@@ -395,6 +415,8 @@ export const placeOrderPayloadSchema = z
     voucherId: z.string().min(1).optional(),
     /** La langue de la boutique à la passation, ou absente. Cf. {@link orderLocaleSchema}. */
     locale: orderLocaleSchema.optional(),
+    /** Les CGV cochées au panier. Cf. {@link acceptedSalesTermsSchema}. */
+    salesTerms: acceptedSalesTermsSchema,
     ...orderContentShape,
   })
   .refine(hasAddressWhenDelivered, deliveryAddressIssue())

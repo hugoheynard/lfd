@@ -12,6 +12,7 @@ import { placeShopOrderPayloadSchema } from "../shop-order.js";
 function payload(over: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     idempotencyKey: "3f2504e0-4f89-41d3-9a0c-0305e82c3301",
+    salesTerms: null,
     buyer: { firstName: "Camille", email: "camille@exemple.fr", phone: "0600000000" },
     fulfillmentMethod: "pickup",
     pickupAddressId: "pickup_1",

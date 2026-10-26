@@ -219,6 +219,7 @@ describe("la borne de quantité, séparée le jour où un vrai devis l'a franchi
       .post("/orders")
       .send({
         idempotencyKey: "11111111-1111-4111-8111-111111111111",
+        salesTerms: null,
         companyId,
         requestedDeliveryDate: relativeDay(7).slice(0, 10),
         note: "",

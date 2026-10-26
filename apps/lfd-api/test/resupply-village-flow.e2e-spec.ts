@@ -133,6 +133,7 @@ async function customerOrdersAtVillage(village: string): Promise<void> {
     .post("/orders")
     .send({
       idempotencyKey: randomUUID(),
+      salesTerms: null,
       companyId: null,
       requestedDeliveryDate: SERVICE_DAY,
       fulfillmentMethod: "pickup",

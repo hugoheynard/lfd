@@ -1035,6 +1035,7 @@ describe("le rapport prix / volume", () => {
       .post("/orders")
       .send({
         idempotencyKey: randomUUID(),
+        salesTerms: null,
         fulfillmentMethod: "pickup",
         // Pas de commande sans créneau (2026-10-14).
         requestedWindow: { start: "07:00", end: "08:00" },
@@ -1359,6 +1360,7 @@ describe("l’écran daté et la comparaison", () => {
       .post("/orders")
       .send({
         idempotencyKey: randomUUID(),
+        salesTerms: null,
         fulfillmentMethod: "pickup",
         // Pas de commande sans créneau (2026-10-14).
         requestedWindow: { start: "07:00", end: "08:00" },
@@ -1770,6 +1772,7 @@ describe("POST /admin/pricing/projection", () => {
       .post("/orders")
       .send({
         idempotencyKey: randomUUID(),
+        salesTerms: null,
         fulfillmentMethod: "pickup",
         // Pas de commande sans créneau (2026-10-14).
         requestedWindow: { start: "07:00", end: "08:00" },
