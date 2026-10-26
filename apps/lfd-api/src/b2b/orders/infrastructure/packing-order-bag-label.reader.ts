@@ -16,6 +16,11 @@ import { PrismaOrderPrintColors } from "./prisma-order-print-colors.reader.js";
  * courriels et du bon (`handoverUrlOf`), sur le jeton qu'on a le droit de
  * montrer (`exposedHandoverToken` — une commande carte non réglée n'a pas de
  * QR, ni sur son bon ni sur ses sacs).
+ *
+ * **Le même QR sur le sac d'un reste** (plan E7 reliquat, choix 13, L4c) : le
+ * jeton est un par COMMANDE, et le scan rend ensuite les envois prêts de la
+ * commande. Rien ici ne lit le rang, et c'est voulu — le client garde un seul
+ * code pour toute sa commande.
  */
 @Injectable()
 export class PackingOrderBagLabelReader extends OrderBagLabelReader {

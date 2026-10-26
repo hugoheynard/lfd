@@ -56,6 +56,9 @@ function order(over: Partial<OrderHandoverView> = {}): OrderHandoverView {
     handedOverByName: null,
     handedOverVia: null,
     blockedReason: null,
+    rank: 1,
+    reference: 'CMD-1042',
+    shipments: [],
     ...over,
   };
 }

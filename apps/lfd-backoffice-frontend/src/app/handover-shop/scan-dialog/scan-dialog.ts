@@ -27,6 +27,7 @@ import {
 import { NotifyService } from '../../notify.service';
 import { HandoverService } from '../../retrait/handover.service';
 import { outsideTheCounter } from '../handover-queue';
+import { allRanks, ShipmentChoice } from '../shipment-choice/shipment-choice';
 import { readQrCode, scannerAvailable, tokenOf } from './qr-reader';
 
 /**
@@ -147,6 +148,7 @@ type Stage = 'starting' | 'scanning' | 'unsupported' | 'denied' | 'found' | 'don
     FoldPanelBodyComponent,
     FoldPanelFooterComponent,
     FoldPanelHeaderComponent,
+    ShipmentChoice,
   ],
   templateUrl: './scan-dialog.html',
   styleUrl: './scan-dialog.scss',
@@ -196,6 +198,25 @@ export class ScanDialog implements FoldPanelContent<ScanDialogData> {
    */
   protected readonly elsewhere = signal<string | null>(null);
   protected readonly subject = signal<OrderHandoverView | null>(null);
+
+  /** Les envois prêts quand il y en a deux ou plus (plan E7 reliquat, L4c) ; vide sinon. */
+  protected readonly shipments = computed(() => {
+    const shipments = this.subject()?.shipments ?? [];
+    return shipments.length > 1 ? shipments : [];
+  });
+  /** Les rangs cochés — tous, au code lu. */
+  protected readonly checked = signal<readonly number[]>([]);
+  protected readonly nothingChecked = computed(
+    () => this.shipments().length > 0 && this.checked().length === 0,
+  );
+  protected readonly remitLabel = computed(() => {
+    if (this.shipments().length > 0) {
+      return 'Remettre les envois cochés';
+    }
+    return (this.subject()?.rank ?? 1) > 1
+      ? 'Remettre le reste de la commande'
+      : 'Remettre la commande';
+  });
 
   /** La commande qu'on croit avoir en face, quand le scan part d'une ligne. */
   protected readonly expected = computed(() => this.data()?.expected ?? null);
@@ -267,13 +288,16 @@ export class ScanDialog implements FoldPanelContent<ScanDialogData> {
     this.busy.set(true);
     try {
       const view = await this.handovers.byToken(token);
-      if (this.data()?.inQueue(view.orderId) === true) {
+      // La fiche de la file est celle de la COMMANDE : un reste montré seul
+      // (la commande déjà retirée) se remet ici (plan E7 reliquat, L4c).
+      if (view.rank === 1 && this.data()?.inQueue(view.orderId) === true) {
         // La file la connaît : sa fiche s'ouvre, et rien n'est remis ici.
         this.panel.close({ kind: 'identified', token, view } satisfies ScanOutcome);
         return;
       }
       this.elsewhere.set(outsideTheCounter(view, this.data()?.openTab ?? ''));
       this.subject.set(view);
+      this.checked.set(allRanks(view.shipments));
       this.stage.set('found');
       this.token = token;
     } catch (caught) {
@@ -294,7 +318,7 @@ export class ScanDialog implements FoldPanelContent<ScanDialogData> {
     }
     this.busy.set(true);
     try {
-      await this.handovers.confirm(token);
+      await this.handovers.confirm(token, this.shipments().length > 0 ? this.checked() : null);
       this.stage.set('done');
       this.panel.close({ kind: 'remitted' } satisfies ScanOutcome);
     } catch (caught) {

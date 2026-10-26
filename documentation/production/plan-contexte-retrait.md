@@ -526,11 +526,11 @@ plus** — le `DROP` est passé — et l'ancienne image la vise encore.
 pas une écriture perdue, c'est un `undefined_table` en **500** sur trois routes
 ouvertes :
 
-| Route                             | Pourquoi elle touche la table                                                                                                                     |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /admin/…/handover/:token`    | [`get-handover.handler.ts:39`](../../apps/lfd-api/src/handover/application/queries/get-handover.handler.ts) — `findByOrderId` **même en lecture** |
-| `POST /admin/…/handover/:token`   | `handover-attestation.service.ts` — la lecture précède l'attestation                                                                              |
-| `GET /admin/production/day/:jour` | `get-production-day-status.handler.ts:66` — `referencesAttestedSince`                                                                             |
+| Route                             | Pourquoi elle touche la table                                                                                                                                                                                |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `GET /admin/…/handover/:token`    | [`handover-counter-view.ts`](../../apps/lfd-api/src/handover/application/services/handover-counter-view.ts) — `findByShipment` **même en lecture** (lu par `get-handover.handler.ts` depuis L4c, 2026-10-26) |
+| `POST /admin/…/handover/:token`   | `handover-attestation.service.ts` — la lecture précède l'attestation                                                                                                                                         |
+| `GET /admin/production/day/:jour` | `get-production-day-status.handler.ts:66` — `referencesAttestedSince`                                                                                                                                        |
 
 Un client au comptoir prend donc un 500 pendant une à deux minutes, **que la
 table ait été vide ou non**. La vue règle ça :

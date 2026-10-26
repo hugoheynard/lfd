@@ -23,11 +23,13 @@ export function shipmentsOf(shipments: readonly ShipmentRef[]): {
  * elle-même.
  *
  * Ce qui le lit encore, depuis L4b, répond à une question **sur la
- * commande** et non sur un envoi (vérifié le 2026-10-26) : la file du comptoir
- * et la feuille de route (une ligne par commande ; la liste des envois est
- * L4c, le « reste relivré » L8), le dossier de facturation, le jour de
- * réception et l'annulation (`OrderHandoverHistoryReader` — la commande se
- * solde en L5), la garde au contrôle qualité (le fournil retient une
+ * commande** et non sur un envoi (vérifié le 2026-10-26, relu en L4c) : la
+ * file du comptoir et la feuille de route (une ligne par commande ; les
+ * envois prêts se listent dans la fiche depuis L4c, le « reste relivré » est
+ * L8), le dossier de facturation et le jour de réception
+ * (`OrderHandoverHistoryReader` — la commande se solde en L5 ; l'annulation
+ * ne le lit plus depuis L4c, elle lit `ShipmentHandoverReader`, tous rangs),
+ * la garde au contrôle qualité (le fournil retient une
  * commande), le retard du commerce sur la clôture (comparé aux numéros de
  * commande). Un reliquat n'y passe pas pour la commande.
  */

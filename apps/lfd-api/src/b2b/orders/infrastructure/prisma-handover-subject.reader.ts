@@ -6,6 +6,7 @@ import {
 } from "../../../handover/channels/commerce/index.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { HANDOVER_SELECT, toHandoverSubject } from "./handover-order.query.js";
+import { LATER_SHIPMENTS_SELECT, laterShipmentsOf } from "./handover-later-shipments.query.js";
 
 /**
  * **Ce que le commerce rend à la remise pour UNE commande**, et rien de plus.
@@ -66,7 +67,13 @@ export class PrismaHandoverSubjectReader extends HandoverSubjectReader {
       | { readonly orderNumber: string }
       | { readonly id: string },
   ): Promise<HandoverSubject | null> {
-    const row = await this.prisma.order.findUnique({ where, select: HANDOVER_SELECT });
-    return row === null ? null : toHandoverSubject(row);
+    const row = await this.prisma.order.findUnique({
+      where,
+      select: { ...HANDOVER_SELECT, deliveryNotes: LATER_SHIPMENTS_SELECT },
+    });
+    // Les restes avec la commande (L4c) : le comptoir liste les envois prêts.
+    return row === null
+      ? null
+      : { ...toHandoverSubject(row), laterShipments: laterShipmentsOf(row.deliveryNotes) };
   }
 }

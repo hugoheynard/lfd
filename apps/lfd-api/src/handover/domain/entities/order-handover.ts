@@ -2,6 +2,7 @@ import { FIRST_SHIPMENT_RANK, ShipmentRef } from "../../../production/channels/h
 import { HandoverRefusedError } from "../errors/handover-errors.js";
 import type { HandoverSubject } from "../../channels/commerce/handover-subject.reader.js";
 import { handoverBlocker, type HandoverVia } from "../services/handover.js";
+import { shipmentPrepared, shipmentReference } from "../services/handover-shipments.js";
 
 /** Ce que la règle lit d'une commande et que le commerce ne porte pas. */
 export interface HandoverStanding {
@@ -79,6 +80,8 @@ export class OrderHandover {
       status: subject.status,
       rank: shipment.rank,
       handedOverAt: standing.handedOverAt,
+      // Un reste pas encore colisé n'est pas un sac (L4c) ; le rang 1 l'est toujours.
+      prepared: shipmentPrepared(subject, shipment.rank),
       qualityHold: standing.qualityHold,
       settled: subject.settled,
     });
@@ -124,14 +127,4 @@ export class OrderHandover {
   get shipment(): ShipmentRef {
     return ShipmentRef.of(this.orderId, this.rank);
   }
-}
-
-/**
- * La référence gravée d'un envoi : le numéro de commande au rang 1, à
- * l'identique (rien de ce qui est déjà en base ne change), suffixé `-<rang>`
- * au-delà (plan E7 reliquat, choix 13). `order_handover.reference` est unique
- * sur toute la table : sans suffixe, le reliquat heurterait le rang 1.
- */
-export function shipmentReference(orderNumber: string, rank: number): string {
-  return rank === FIRST_SHIPMENT_RANK ? orderNumber : `${orderNumber}-${String(rank)}`;
 }

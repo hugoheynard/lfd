@@ -42,6 +42,26 @@ export interface HandoverSubject {
   /** La note du client — elle est sur le bon, donc elle traverse. */
   readonly note: string;
   readonly lines: readonly HandoverSubjectLine[];
+  /**
+   * Les **restes** de la commande (rang > 1) dont le bon de livraison est
+   * vivant, par rang (plan E7 reliquat, choix 13, lot L4c). Le commerce dit
+   * lesquels sont colisés (`prepared`) ; le retrait, qui tient ses
+   * attestations, dit lesquels sont déjà partis. Vide sans reliquat.
+   */
+  readonly laterShipments: readonly HandoverSubjectShipment[];
+}
+
+/** Un reste de la commande, tel que son bon de livraison le porte. */
+export interface HandoverSubjectShipment {
+  /** Toujours > 1 : le rang 1 est la commande, et ses lignes sont `lines`. */
+  readonly rank: number;
+  /**
+   * Son bac est fermé : le BL est préparé (ou déjà remis). Un reste prévu,
+   * pas encore colisé, n'est pas à tendre — contrairement au rang 1, que la
+   * règle laisse remettre sans regarder le colisage.
+   */
+  readonly prepared: boolean;
+  readonly lines: readonly HandoverSubjectLine[];
 }
 
 /** Ce qu'on recompte à voix haute au comptoir. Aucun montant : on ne facture pas ici. */

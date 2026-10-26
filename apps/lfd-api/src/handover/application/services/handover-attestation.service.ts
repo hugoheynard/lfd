@@ -1,4 +1,3 @@
-import type { OrderHandoverView } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
@@ -12,8 +11,6 @@ import { OrderHandover } from "../../domain/entities/order-handover.js";
 import { HandoverRefusedError } from "../../domain/errors/handover-errors.js";
 import { OrderHandoverRepository } from "../../domain/ports/order-handover.repository.js";
 import type { HandoverVia } from "../../domain/services/handover.js";
-import { StaffAuthorDirectory } from "../../../staff/directory/domain/staff-author-directory.js";
-import { authorsOf, toHandoverView } from "../queries/get-handover.handler.js";
 import {
   FIRST_SHIPMENT_RANK,
   QualityHoldsReader,
@@ -57,38 +54,44 @@ export class HandoverAttestation {
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
     private readonly durable: DurablePublisher,
-    private readonly staffAuthors: StaffAuthorDirectory,
     private readonly holds: QualityHoldsReader,
     private readonly transfers: TransferStatusReader,
     private readonly orderLock: HandoverOrderLock,
   ) {}
 
   /**
-   * Atteste, écrit le fait, et rend l'attestation obtenue — au comptoir.
+   * Atteste les envois `ranks` de la commande, écrit leurs faits, et rend les
+   * attestations obtenues — au comptoir.
    *
-   * Rendre une vue depuis une écriture est assumé, comme au comptoir d'avant :
-   * la confirmation doit s'afficher dans la seconde où le client attend son sac,
-   * sans un second aller-retour. Ce n'est pas un modèle de lecture déguisé —
-   * c'est l'accusé de réception de l'écriture.
+   * **Une seule transaction pour tous les envois cochés** (plan E7 reliquat,
+   * choix 13, lot L4c) : deux sacs tendus d'un geste partent ensemble, ou
+   * aucun — un refus sur l'un (déjà retiré, pas colisé) annule l'autre, et le
+   * comptoir relit. Une attestation et un fait par envoi. Avec un seul rang,
+   * le geste d'avant à l'identique.
    *
-   * `rank` est l'envoi remis (plan E7 reliquat, L4b) : 1 = la commande, à
-   * l'identique d'avant ; au-delà, un reliquat, jugé et gravé pour lui-même.
+   * La vue de l'accusé est l'affaire de l'appelant (`HandoverCounterView`) :
+   * elle dépend aussi des envois qui restent, que ce service n'a pas à lire.
    *
    * @throws {HandoverRefusedError} l'état l'interdit, ou un autre poste a gagné.
    */
   async attest(
     subject: HandoverSubject,
-    rank: number,
+    ranks: readonly number[],
     by: string,
     via: HandoverVia,
-  ): Promise<OrderHandoverView> {
-    const shipment = ShipmentRef.of(subject.orderId, rank);
-    let handover: OrderHandover;
+  ): Promise<readonly OrderHandover[]> {
+    const shipments = ranks.map((rank) => ShipmentRef.of(subject.orderId, rank));
     try {
-      // Le fait n'est écrit que par le GAGNANT : le perdant lève dans l'unité,
-      // qui annule tout — sa violation d'unicité a de toute façon condamné la
-      // transaction.
-      handover = await this.uow.run(() => this.engrave(subject, shipment, by, via));
+      // Les faits ne sont écrits que par le GAGNANT : le perdant lève dans
+      // l'unité, qui annule tout — sa violation d'unicité a de toute façon
+      // condamné la transaction.
+      return await this.uow.run(async () => {
+        const engraved: OrderHandover[] = [];
+        for (const shipment of shipments) {
+          engraved.push(await this.engrave(subject, shipment, by, via));
+        }
+        return engraved;
+      });
     } catch (error) {
       // 🔴 **Le geste est refusé, la propagation est réparée.** Les deux ne sont
       // pas la même question : le sac est peut-être parti (rien à refaire), sans
@@ -97,22 +100,19 @@ export class HandoverAttestation {
       // pour un retrait attesté avant le 2026-10-04, dont le fait en mémoire
       // perdu n'a aucune ligne à rejouer.
       //
-      // On réannonce l'attestation EXISTANTE, relue après l'annulation — jamais
-      // la nôtre : l'heure et l'auteur sont ceux du vrai retrait, et un perdant
-      // de course trouve ainsi celle du gagnant. Puis le refus part tel quel :
-      // c'est l'agrégat qui choisit le mot, et « annulée » explique la situation
-      // mieux que « déjà retirée » quand les deux sont vraies.
+      // On réannonce les attestations EXISTANTES, relues après l'annulation —
+      // jamais la nôtre : l'heure et l'auteur sont ceux du vrai retrait, et un
+      // perdant de course trouve ainsi celle du gagnant. Puis le refus part tel
+      // quel : c'est l'agrégat qui choisit le mot.
       if (error instanceof HandoverRefusedError) {
         await this.uow.run(async () => {
-          await this.reannounceExisting(shipment);
+          for (const shipment of shipments) {
+            await this.reannounceExisting(shipment);
+          }
         });
       }
       throw error;
     }
-
-    // Gagnée, l'attestation fait dire « déjà retirée » à la règle : la retenue
-    // n'a plus rien à ajouter à l'accusé.
-    return toHandoverView(subject, handover, false, await authorsOf(this.staffAuthors, handover));
   }
 
   /**

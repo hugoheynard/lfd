@@ -1247,8 +1247,12 @@ export type {
   HandoverQueueWindowView,
   OrderClientele,
   OrderHandoverLine,
+  OrderHandoverShipmentView,
   OrderHandoverView,
 } from "./order-handover.js";
+// Le retrait par envoi, plan E7 reliquat, lot L4c (2026-10-26).
+export { confirmHandoverPayloadSchema, HANDOVER_RANKS_MAX } from "./order-handover-confirm.js";
+export type { ConfirmHandoverPayload } from "./order-handover-confirm.js";
 export type {
   OrderHandoverProofMode,
   OrderHandoverProofPieces,

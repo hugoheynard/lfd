@@ -16,6 +16,10 @@
  *   facturation, DF3) : même sens — publié ET implémenté par le retrait, lu
  *   par la comptabilité du commerce pour l'historique de chaque bon.
  *
+ * - `ShipmentHandoverReader` (2026-10-26, plan E7 reliquat, L4c) : publié ET
+ *   implémenté par le retrait, lu par l'annulation — un envoi, quel qu'il
+ *   soit, est-il déjà retiré ?
+ *
  * - `HandoverOrderLock` (2026-10-25) : déclaré par le retrait, implémenté par
  *   le commerce — la ligne `orders` verrouillée avant d'attester, pour que
  *   remise et annulation ne passent jamais toutes les deux (C3.6).
@@ -44,9 +48,11 @@ export {
   HandoverSubjectReader,
   type HandoverSubject,
   type HandoverSubjectLine,
+  type HandoverSubjectShipment,
 } from "./handover-subject.reader.js";
 export { HandoverProofReader } from "./handover-proof.reader.js";
 export { HandoverOrderLock } from "./handover-order.lock.js";
+export { ShipmentHandoverReader } from "./shipment-handover.reader.js";
 export {
   OrderHandoverHistoryReader,
   type OrderHandoverHistoryFact,

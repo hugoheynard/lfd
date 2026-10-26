@@ -181,6 +181,9 @@
         @if (caution(); as why) {
           <p class="hd-muted-note" data-muted-note>{{ why }}</p>
         }
+        @if (shipments().length > 0) {
+          <app-shipment-choice [shipments]="shipments()" [(checked)]="checked" />
+        }
         @if (activeProof() === null) {
           <button
             foldButton
@@ -210,9 +213,10 @@
           [intent]="muted() ? 'neutral' : 'primary'"
           data-action="remit"
           [loading]="remitting()"
+          [disabled]="nothingChecked()"
           (click)="remit()"
         >
-          Remettre la commande
+          {{ shipments().length > 0 ? 'Remettre les envois cochés' : 'Remettre la commande' }}
         </button>
       }
     </footer>

@@ -13,6 +13,11 @@ import { OrderHandover } from "../order-handover.js";
 
 const AT = new Date("2026-09-07T16:30:00.000Z");
 
+/** Un reste colisé : son bac est fermé, le BL du rang 2 préparé (plan E7 reliquat, L4c). */
+function withPackedRest(): HandoverSubject {
+  return subject({ laterShipments: [{ rank: 2, prepared: true, lines: [] }] });
+}
+
 /** Ni attestation déjà gravée, ni retenue qualité. */
 const FREE = { handedOverAt: null, qualityHold: false } as const;
 
@@ -30,6 +35,7 @@ function subject(overrides: Partial<HandoverSubject> = {}): HandoverSubject {
     fulfillmentMethod: "pickup",
     note: "",
     lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 2 }],
+    laterShipments: [],
     ...overrides,
   };
 }
@@ -132,7 +138,7 @@ describe("OrderHandover — le rang de l'envoi (plan E7 reliquat, L3d)", () => {
   });
 
   it("au rang 2, attest grave le reliquat, sa référence suffixée -2 (L4b)", () => {
-    const handover = OrderHandover.attest(subject(), 2, FREE, AT, "staff-1", "scan");
+    const handover = OrderHandover.attest(withPackedRest(), 2, FREE, AT, "staff-1", "scan");
 
     expect(handover.rank).toBe(2);
     expect(handover.reference).toBe("ORD-ABCD-1234-2");
@@ -143,6 +149,19 @@ describe("OrderHandover — le rang de l'envoi (plan E7 reliquat, L3d)", () => {
     expect(() =>
       OrderHandover.attest(subject(), 2, { handedOverAt: AT, qualityHold: false }, AT, "s", "scan"),
     ).toThrow("Le reste de cette commande (envoi 2) a déjà été retiré.");
+  });
+
+  it("refuse un reste dont le bac n'est pas fermé, ou qu'aucun bon ne porte (L4c)", () => {
+    const planned = subject({ laterShipments: [{ rank: 2, prepared: false, lines: [] }] });
+
+    for (const [candidate, rank] of [
+      [planned, 2],
+      [subject(), 2],
+    ] as const) {
+      expect(() => OrderHandover.attest(candidate, rank, FREE, AT, "staff-1", "scan")).toThrow(
+        `Le reste de cette commande (envoi ${String(rank)}) n'est pas prêt`,
+      );
+    }
   });
 
   it("refuse un rang hors forme : un envoi de rang 0 n'existe pas", () => {

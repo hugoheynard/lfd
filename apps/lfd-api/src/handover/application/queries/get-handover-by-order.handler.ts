@@ -3,12 +3,8 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { HandoverSubjectReader } from "../../channels/commerce/handover-subject.reader.js";
 import { HandoverTokenNotFoundError } from "../../domain/errors/handover-errors.js";
-import { OrderHandoverRepository } from "../../domain/ports/order-handover.repository.js";
+import { HandoverCounterView } from "../services/handover-counter-view.js";
 import { GetHandoverByOrderQuery } from "./get-handover-by-order.query.js";
-import { StaffAuthorDirectory } from "../../../staff/directory/domain/staff-author-directory.js";
-import { authorsOf, toHandoverView } from "./get-handover.handler.js";
-import { QualityHoldsReader, ShipmentRef } from "../../../production/channels/handover/index.js";
-import { isHeldForQuality } from "../services/quality-hold.js";
 
 /**
  * **Le sac d'une commande ouverte depuis la file** — mêmes octets que l'écran
@@ -31,6 +27,9 @@ import { isHeldForQuality } from "../services/quality-hold.js";
  * Il part AVEC la commande (`blockedReason`) plutôt qu'à sa place : une erreur
  * sèche ferait disparaître de l'écran le numéro et le client, les deux seules
  * choses avec lesquelles on décroche un téléphone.
+ *
+ * Par envoi depuis L4c (plan E7 reliquat) : la ligne de file est la commande,
+ * la vue rend ses envois prêts — deux, et le rail les fait cocher.
  */
 @QueryHandler(GetHandoverByOrderQuery)
 export class GetHandoverByOrderHandler implements IQueryHandler<
@@ -39,9 +38,7 @@ export class GetHandoverByOrderHandler implements IQueryHandler<
 > {
   constructor(
     private readonly subjects: HandoverSubjectReader,
-    private readonly handovers: OrderHandoverRepository,
-    private readonly staffAuthors: StaffAuthorDirectory,
-    private readonly holds: QualityHoldsReader,
+    private readonly counter: HandoverCounterView,
   ) {}
 
   async execute(query: GetHandoverByOrderQuery): Promise<OrderHandoverView> {
@@ -52,13 +49,6 @@ export class GetHandoverByOrderHandler implements IQueryHandler<
       // donner deux formulations ne l'aiderait pas.
       throw new HandoverTokenNotFoundError();
     }
-    const [handover, qualityHold] = await Promise.all([
-      // Le rail de la file ouvre la commande, c'est-à-dire son rang 1 : la
-      // file par envoi est le lot L4c.
-      this.handovers.findByShipment(ShipmentRef.firstOf(subject.orderId)),
-      isHeldForQuality(this.holds, subject),
-    ]);
-    const authors = await authorsOf(this.staffAuthors, handover);
-    return toHandoverView(subject, handover, qualityHold, authors);
+    return this.counter.viewOf(subject);
   }
 }

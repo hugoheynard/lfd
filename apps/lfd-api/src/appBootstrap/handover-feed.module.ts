@@ -15,8 +15,10 @@ import {
   HandoverSubjectReader,
   OrderHandoverHistoryReader,
   RunSheetColorsReader,
+  ShipmentHandoverReader,
 } from "../handover/channels/commerce/index.js";
 import { PrismaHandoverProofReader } from "../handover/infrastructure/prisma-handover-proof.reader.js";
+import { PrismaShipmentHandoverReader } from "../handover/infrastructure/prisma-shipment-handover.reader.js";
 import { PrismaOrderHandoverHistoryReader } from "../handover/infrastructure/prisma-order-handover-history.reader.js";
 import { PrismaAttestedHandoversReader } from "../handover/infrastructure/prisma-attested-handovers.reader.js";
 import { PrismaOrderCustodyReader } from "../handover/infrastructure/prisma-order-custody.reader.js";
@@ -53,6 +55,8 @@ import { ProductionModule } from "../production/production.module.js";
  *   commande. Même figure que `QualityHoldsReader`, dans l'autre sens.
  * - `OrderHandoverHistoryReader` (2026-10-08) — même sens : le retrait de
  *   chaque bon, pour le dossier de facturation de la comptabilité (DF3).
+ * - `ShipmentHandoverReader` (2026-10-26) — même sens : un envoi de la
+ *   commande, quel que soit son rang, est-il retiré ? L'annulation le lit.
  * - `HandoverOrderLock` (2026-10-25) — la remise déclare, le commerce
  *   implémente : la ligne `orders` verrouillée avant d'attester (C3.6).
  * - `RunSheetColorsReader` (2026-10-13, plan du tri et des couleurs, L5) — la
@@ -84,6 +88,7 @@ import { ProductionModule } from "../production/production.module.js";
     { provide: HandoverProofReader, useClass: PrismaHandoverProofReader },
     { provide: OrderHandoverHistoryReader, useClass: PrismaOrderHandoverHistoryReader },
     { provide: RunSheetColorsReader, useClass: SiteRunSheetColorsReader },
+    { provide: ShipmentHandoverReader, useClass: PrismaShipmentHandoverReader },
   ],
   exports: [
     HandoverSubjectReader,
@@ -97,6 +102,7 @@ import { ProductionModule } from "../production/production.module.js";
     HandoverProofReader,
     OrderHandoverHistoryReader,
     RunSheetColorsReader,
+    ShipmentHandoverReader,
   ],
 })
 export class HandoverFeedModule {}

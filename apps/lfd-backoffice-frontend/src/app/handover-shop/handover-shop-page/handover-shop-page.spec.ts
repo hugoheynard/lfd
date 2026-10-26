@@ -576,6 +576,9 @@ describe('HandoverShopPage — changer de journée', () => {
           handedOverByName: null,
           handedOverVia: null,
           blockedReason: null,
+          rank: 1,
+          reference: orderNumber,
+          shipments: [],
         },
       };
     }

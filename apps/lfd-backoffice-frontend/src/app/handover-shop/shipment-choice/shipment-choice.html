@@ -1,0 +1,13 @@
+<fold-fieldset
+  legend="Envois prêts"
+  hint="Cochés par défaut : décochez ce que le client ne prend pas maintenant."
+>
+  @for (shipment of shipments(); track shipment.rank) {
+    <fold-checkbox
+      [label]="label(shipment)"
+      [checked]="isChecked(shipment.rank)"
+      (checkedChange)="toggle(shipment.rank, $event)"
+      [attr.data-shipment]="shipment.rank"
+    />
+  }
+</fold-fieldset>

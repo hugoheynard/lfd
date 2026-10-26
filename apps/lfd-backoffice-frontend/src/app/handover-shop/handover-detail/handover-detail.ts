@@ -30,6 +30,7 @@ import { PackingService } from '../../production/packing.service';
 import { HandoverQueueService } from '../handover-queue.service';
 import { MissingItems } from '../missing-items/missing-items';
 import { SheetPanel, type SheetPanelData } from '../sheet-panel/sheet-panel';
+import { allRanks, ShipmentChoice } from '../shipment-choice/shipment-choice';
 import { formatWindow, stillRemittable, type ScanProof } from '../handover-queue';
 import { transferBlockReason } from '../handover-transfer';
 import { bagReadiness, gestureCaution, readyVerdict } from './bag-readiness';
@@ -84,6 +85,7 @@ const PLACED_AT = new Intl.DateTimeFormat('fr-FR', {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     MissingItems,
+    ShipmentChoice,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldEmptyStateComponent,
@@ -160,6 +162,21 @@ export class HandoverDetail {
     () => this.order()?.lines ?? [],
   );
   protected readonly remitting = signal(false);
+
+  /**
+   * Les envois prêts quand il y en a au moins DEUX (plan E7 reliquat, choix
+   * 13, L4c) — vide sinon, et l'écran reste celui d'avant.
+   */
+  protected readonly shipments = computed(() => {
+    const shipments = this.order()?.shipments ?? [];
+    return shipments.length > 1 ? shipments : [];
+  });
+  /** Les rangs cochés — tous, à chaque commande ouverte. */
+  protected readonly checked = signal<readonly number[]>([]);
+  /** Deux envois et aucun coché : rien à remettre, le bouton se tait. */
+  protected readonly nothingChecked = computed(
+    () => this.shipments().length > 0 && this.checked().length === 0,
+  );
 
   /** Le reste abandonné d'un départ incomplet décidé — vide sinon. */
   protected readonly abandoned = computed<readonly PackingAbandonedLine[]>(
@@ -272,7 +289,9 @@ export class HandoverDetail {
     }
     this.state.set('loading');
     try {
-      this.order.set(await this.handovers.byOrderId(entry.orderId));
+      const order = await this.handovers.byOrderId(entry.orderId);
+      this.order.set(order);
+      this.checked.set(allRanks(order.shipments));
       this.state.set('ready');
     } catch {
       this.state.set('error');
@@ -346,12 +365,14 @@ export class HandoverDetail {
       return;
     }
     const proof = this.activeProof();
+    // Deux envois prêts : les rangs cochés ; un seul : le corps d'avant (L4c).
+    const ranks = this.shipments().length > 0 ? this.checked() : null;
     this.remitting.set(true);
     try {
       if (proof !== null) {
-        await this.handovers.confirmScanned(proof.token);
+        await this.handovers.confirmScanned(proof.token, ranks);
       } else {
-        await this.handovers.confirmManually(entry.reference);
+        await this.handovers.confirmManually(entry.reference, ranks);
       }
       this.remitted.emit();
     } catch (caught) {

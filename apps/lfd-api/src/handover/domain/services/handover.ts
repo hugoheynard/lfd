@@ -40,6 +40,14 @@ export interface HandoverCandidate {
    */
   readonly handedOverAt: Date | null;
   /**
+   * L'envoi est **prêt à tendre** (plan E7 reliquat, L4c). Toujours vrai au
+   * rang 1 — la règle est permissive sur l'avancement de la commande, cf.
+   * {@link handoverBlocker} ; au-delà, le bac du reste est fermé
+   * (`shipmentPrepared`). Un reste prévu, pas encore colisé, n'existe pas
+   * encore en sac.
+   */
+  readonly prepared: boolean;
+  /**
    * La commande est **retenue par un contrôle qualité** — dit par la
    * production (`QualityHoldsReader`), jamais déduit ici.
    *
@@ -113,6 +121,9 @@ export function handoverBlocker(candidate: HandoverCandidate): string | null {
       ? "Cette commande a déjà été retirée."
       : `Le reste de cette commande (envoi ${String(candidate.rank)}) a déjà été retiré.`;
   }
+  if (!candidate.prepared) {
+    return notPreparedReason(candidate.rank);
+  }
   if (!candidate.settled) {
     return UNSETTLED_REASON;
   }
@@ -120,6 +131,14 @@ export function handoverBlocker(candidate: HandoverCandidate): string | null {
     return QUALITY_HOLD_REASON;
   }
   return null;
+}
+
+/**
+ * La phrase d'un reste pas encore colisé : il n'y a pas de sac à tendre, et
+ * c'est au colisage qu'il se prépare.
+ */
+export function notPreparedReason(rank: number): string {
+  return `Le reste de cette commande (envoi ${String(rank)}) n'est pas prêt : son bac n'a pas été fermé au colisage. Ne le remettez pas encore.`;
 }
 
 /**

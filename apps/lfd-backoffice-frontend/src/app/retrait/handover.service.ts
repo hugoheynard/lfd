@@ -5,6 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import type { OrderHandoverView } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../api/api-config';
+import { confirmPayloadOf } from '../handover-shop/handover-queue.service';
 
 /**
  * Le **retrait au comptoir**, côté staff. Deux appels et rien d'autre : lire ce
@@ -37,12 +38,15 @@ export class HandoverService {
     );
   }
 
-  /** Atteste le retrait ; rend l'attestation obtenue (qui, quand). */
-  async confirm(token: string): Promise<OrderHandoverView> {
+  /**
+   * Atteste le retrait ; rend l'attestation obtenue (qui, quand). `ranks` :
+   * les envois cochés quand il y en a deux prêts (plan E7 reliquat, L4c).
+   */
+  async confirm(token: string, ranks: readonly number[] | null = null): Promise<OrderHandoverView> {
     return firstValueFrom(
       this.http.post<OrderHandoverView>(
         `${B2B_API_BASE}/admin/handover/${encodeURIComponent(token)}`,
-        {},
+        confirmPayloadOf(ranks),
       ),
     );
   }

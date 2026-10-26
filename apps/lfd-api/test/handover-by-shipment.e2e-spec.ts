@@ -236,7 +236,7 @@ async function handOver(orderId: string, rank: number): Promise<void> {
   if (subject === null) {
     throw new TypeError(`commande ${orderId} introuvable côté commerce`);
   }
-  await ctx.app.get(HandoverAttestation).attest(subject, rank, E2E_STAFF_ID, "manual");
+  await ctx.app.get(HandoverAttestation).attest(subject, [rank], E2E_STAFF_ID, "manual");
   await ctx.drain();
 }
 

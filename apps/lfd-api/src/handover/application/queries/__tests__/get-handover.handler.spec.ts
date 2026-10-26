@@ -3,7 +3,10 @@ import {
   type HandoverSubject,
 } from "../../../channels/commerce/handover-subject.reader.js";
 import { OrderHandover } from "../../../domain/entities/order-handover.js";
+import { HandedOverOrdersReader } from "../../../domain/ports/handed-over-orders.reader.js";
 import { OrderHandoverRepository } from "../../../domain/ports/order-handover.repository.js";
+import { ShipmentRef } from "../../../../production/channels/handover/index.js";
+import { HandoverCounterView } from "../../services/handover-counter-view.js";
 import { FixedStaffAuthorDirectory } from "../../../../staff/directory/domain/__tests__/fixed-staff-author-directory.js";
 import { FixedQualityHolds } from "../../__tests__/fixed-quality-holds.js";
 import { GetHandoverByOrderHandler } from "../get-handover-by-order.handler.js";
@@ -35,6 +38,7 @@ function subject(overrides: Partial<HandoverSubject> = {}): HandoverSubject {
     fulfillmentMethod: "pickup",
     note: "",
     lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 2 }],
+    laterShipments: [],
     ...overrides,
   };
 }
@@ -58,13 +62,27 @@ class FixedSubjects extends HandoverSubjectReader {
   }
 }
 
+/** Les attestations gravées, par envoi — aucune par défaut. */
 class FixedHandovers extends OrderHandoverRepository {
-  constructor(private readonly existing: OrderHandover | null) {
+  private readonly byRank: ReadonlyMap<number, OrderHandover>;
+
+  constructor(existing: readonly OrderHandover[]) {
     super();
+    this.byRank = new Map(existing.map((handover) => [handover.rank, handover]));
   }
 
-  findByShipment(): Promise<OrderHandover | null> {
-    return Promise.resolve(this.existing);
+  findByShipment(shipment: ShipmentRef): Promise<OrderHandover | null> {
+    return Promise.resolve(this.byRank.get(shipment.rank) ?? null);
+  }
+
+  /** Le même dépôt, lu comme la question « lesquels sont partis ? ». */
+  asHandedOver(): HandedOverOrdersReader {
+    const ranks = new Set(this.byRank.keys());
+    return new (class extends HandedOverOrdersReader {
+      handedOverAmong(shipments: readonly ShipmentRef[]): Promise<readonly ShipmentRef[]> {
+        return Promise.resolve(shipments.filter((shipment) => ranks.has(shipment.rank)));
+      }
+    })();
   }
 
   attest(): Promise<boolean> {
@@ -72,26 +90,35 @@ class FixedHandovers extends OrderHandoverRepository {
   }
 }
 
+/** Une attestation, plusieurs (une par envoi), ou aucune. */
+type Attested = OrderHandover | null | readonly OrderHandover[];
+
+function counterOf(existing: Attested, holds: FixedQualityHolds): HandoverCounterView {
+  const handovers = new FixedHandovers(
+    existing === null ? [] : existing instanceof OrderHandover ? [existing] : existing,
+  );
+  return new HandoverCounterView(
+    handovers,
+    handovers.asHandedOver(),
+    new FixedStaffAuthorDirectory(),
+    holds,
+  );
+}
+
 const READERS = [
   {
     name: "le scan (GetHandoverHandler)",
-    read: (found: HandoverSubject, existing: OrderHandover | null, holds: FixedQualityHolds) =>
-      new GetHandoverHandler(
-        new FixedSubjects(found),
-        new FixedHandovers(existing),
-        new FixedStaffAuthorDirectory(),
-        holds,
-      ).execute(new GetHandoverQuery("jeton")),
+    read: (found: HandoverSubject, existing: Attested, holds: FixedQualityHolds) =>
+      new GetHandoverHandler(new FixedSubjects(found), counterOf(existing, holds)).execute(
+        new GetHandoverQuery("jeton"),
+      ),
   },
   {
     name: "le rail de la file (GetHandoverByOrderHandler)",
-    read: (found: HandoverSubject, existing: OrderHandover | null, holds: FixedQualityHolds) =>
-      new GetHandoverByOrderHandler(
-        new FixedSubjects(found),
-        new FixedHandovers(existing),
-        new FixedStaffAuthorDirectory(),
-        holds,
-      ).execute(new GetHandoverByOrderQuery("ord_1")),
+    read: (found: HandoverSubject, existing: Attested, holds: FixedQualityHolds) =>
+      new GetHandoverByOrderHandler(new FixedSubjects(found), counterOf(existing, holds)).execute(
+        new GetHandoverByOrderQuery("ord_1"),
+      ),
   },
 ];
 
@@ -148,5 +175,86 @@ describe.each(READERS)("$name — la retenue qualité", ({ read }) => {
 
     expect(view.blockedReason).toBeNull();
     expect(holds.asked).toEqual([]);
+  });
+});
+
+/** Un reste de la commande, colisé ou non (plan E7 reliquat, L4c). */
+function withRemainder(prepared: boolean): HandoverSubject {
+  return subject({
+    laterShipments: [
+      { rank: 2, prepared, lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 1 }] },
+    ],
+  });
+}
+
+function attestedAt(rank: number): OrderHandover {
+  return OrderHandover.rehydrate(
+    "ord_1",
+    rank === 1 ? "ORD-ABCD-1234" : `ORD-ABCD-1234-${String(rank)}`,
+    new Date("2026-09-08T07:00:00.000Z"),
+    "staff-0",
+    "scan",
+    rank,
+  );
+}
+
+describe.each(READERS)("$name — les envois prêts (plan E7 reliquat, L4c)", ({ read }) => {
+  it("un seul envoi : la commande, au rang 1, comme avant", async () => {
+    const view = await read(subject(), null, new FixedQualityHolds());
+
+    expect(view).toMatchObject({ rank: 1, reference: "ORD-ABCD-1234", totalUnits: 2 });
+    expect(view.shipments.map(({ rank }) => rank)).toEqual([1]);
+  });
+
+  it("deux envois prêts, rien de retiré : les deux sont rendus, la vue reste sur la commande", async () => {
+    const view = await read(withRemainder(true), null, new FixedQualityHolds());
+
+    expect(view.rank).toBe(1);
+    expect(view.shipments).toEqual([
+      {
+        rank: 1,
+        reference: "ORD-ABCD-1234",
+        totalUnits: 2,
+        lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 2 }],
+      },
+      {
+        rank: 2,
+        reference: "ORD-ABCD-1234-2",
+        totalUnits: 1,
+        lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 1 }],
+      },
+    ]);
+  });
+
+  it("la commande retirée, son reste colisé : la vue montre le reste, remettable", async () => {
+    const view = await read(withRemainder(true), attestedAt(1), new FixedQualityHolds());
+
+    expect(view).toMatchObject({
+      rank: 2,
+      reference: "ORD-ABCD-1234-2",
+      totalUnits: 1,
+      handedOverAt: null,
+      blockedReason: null,
+    });
+    expect(view.shipments.map(({ rank }) => rank)).toEqual([2]);
+  });
+
+  it("un reste prévu, pas encore colisé, n'est pas à tendre", async () => {
+    const view = await read(withRemainder(false), attestedAt(1), new FixedQualityHolds());
+
+    expect(view.rank).toBe(1);
+    expect(view.blockedReason).toBe("Cette commande a déjà été retirée.");
+    expect(view.shipments).toEqual([]);
+  });
+
+  it("tout est retiré : la vue dit la commande « déjà retirée », plus rien à cocher", async () => {
+    const view = await read(
+      withRemainder(true),
+      [attestedAt(1), attestedAt(2)],
+      new FixedQualityHolds(),
+    );
+
+    expect(view.blockedReason).toBe("Cette commande a déjà été retirée.");
+    expect(view.shipments).toEqual([]);
   });
 });

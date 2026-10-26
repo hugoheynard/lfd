@@ -20,6 +20,7 @@ function candidate(overrides: Partial<HandoverCandidate> = {}): HandoverCandidat
     status: "ready",
     rank: 1,
     handedOverAt: null,
+    prepared: true,
     qualityHold: false,
     settled: true,
     ...overrides,
@@ -126,6 +127,20 @@ describe("handoverBlocker", () => {
       expect(handoverBlocker(candidate({ status: "draft", qualityHold: true }))).toBe(
         "Cette commande n'est pas encore passée.",
       );
+    });
+  });
+
+  describe("un reste pas encore colisé (plan E7 reliquat, L4c)", () => {
+    it("refuse en disant que le bac n'est pas fermé", () => {
+      expect(handoverBlocker(candidate({ rank: 2, prepared: false }))).toBe(
+        "Le reste de cette commande (envoi 2) n'est pas prêt : son bac n'a pas été fermé au colisage. Ne le remettez pas encore.",
+      );
+    });
+
+    it("« déjà retiré » passe devant : le sac est parti", () => {
+      expect(
+        handoverBlocker(candidate({ rank: 2, prepared: false, handedOverAt: new Date() })),
+      ).toBe("Le reste de cette commande (envoi 2) a déjà été retiré.");
     });
   });
 });

@@ -2,7 +2,7 @@ import type { CustomerCancellationStage } from "@lfd/contracts";
 import { Injectable, Logger } from "@nestjs/common";
 
 import { CommerceOrderCancelledFact } from "../../../../delivery/channels/commerce/index.js";
-import { OrderHandoverHistoryReader } from "../../../../handover/channels/commerce/index.js";
+import { ShipmentHandoverReader } from "../../../../handover/channels/commerce/index.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { BusinessError, DomainError } from "../../../../platform/shared/errors/app-error.js";
@@ -133,7 +133,7 @@ export class OrderCancellation {
     private readonly deliveryNotes: DeliveryNoteFollowing,
     private readonly unitOfWork: UnitOfWork,
     private readonly clock: Clock,
-    private readonly handovers: OrderHandoverHistoryReader,
+    private readonly handovers: ShipmentHandoverReader,
   ) {}
 
   /**
@@ -259,10 +259,13 @@ export class OrderCancellation {
    * ligne `orders` avant d'attester : sous ce verrou, une attestation validée
    * se voit ici, alors que le statut `fulfilled` n'arrive au commerce que par
    * le fait durable, plus tard. Régression : les deux gestes passaient.
+   *
+   * **Tout envoi compte** (plan E7 reliquat, L4c) : un reliquat retiré avant
+   * son rang 1 est un sac parti. Régression : seule l'attestation du rang 1
+   * était lue, et la commande s'annulait sous un reste déjà remis.
    */
   private async ensureNotHandedOver(orderId: string): Promise<void> {
-    const handed = await this.handovers.ofOrders([orderId]);
-    if (handed.has(orderId)) {
+    if (await this.handovers.anyHandedOver(orderId)) {
       throw new OrderNotCancellableError(orderId, { kind: "fulfilled" });
     }
   }

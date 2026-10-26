@@ -8,10 +8,6 @@ import type { StoredDocument } from "../../../../platform/storage/document-store
 import { ProductionDocumentStore } from "../../../../platform/storage/production-document-store.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import {
-  authorsKnownAs,
-  FixedStaffAuthorDirectory,
-} from "../../../../staff/directory/domain/__tests__/fixed-staff-author-directory.js";
-import {
   type HandoverSubject,
   HandoverSubjectReader,
 } from "../../../channels/commerce/handover-subject.reader.js";
@@ -53,6 +49,7 @@ function subjectOf(orderId: string, status: HandoverSubject["status"] = "ready")
     fulfillmentMethod: "delivery",
     note: "",
     lines: [],
+    laterShipments: [],
   };
 }
 
@@ -150,7 +147,6 @@ function attestorOf(subjects: readonly HandoverSubject[] = [subjectOf("o_1")]) {
     clock,
     uow,
     new TransactionalDurablePublisher(uow),
-    new FixedStaffAuthorDirectory(authorsKnownAs({ firstName: "Paul", lastName: "R" }, "paul")),
     new FixedQualityHolds(),
     new FixedTransferStatus(),
     new FixedOrderLock(),

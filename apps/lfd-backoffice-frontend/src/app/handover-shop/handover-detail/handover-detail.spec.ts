@@ -81,8 +81,12 @@ function line(over: Partial<OrderHandoverLine> = {}): OrderHandoverLine {
  */
 class FakeHandovers {
   lines: readonly OrderHandoverLine[] = [line()];
+  /** Les envois prêts (plan E7 reliquat, L4c) — vide : la vue d'avant. */
+  shipments: OrderHandoverView['shipments'] = [];
   fails = false;
   readonly remitted: string[] = [];
+  /** Les rangs envoyés à chaque « Remettre » — `null` : le corps d'avant. */
+  readonly ranks: (readonly number[] | null)[] = [];
 
   byOrderId(orderId: string): Promise<OrderHandoverView> {
     if (this.fails) {
@@ -104,18 +108,29 @@ class FakeHandovers {
       handedOverByName: null,
       handedOverVia: null,
       blockedReason: null,
+      rank: 1,
+      reference: 'CMD-1042',
+      shipments: this.shipments,
     });
   }
 
   readonly scanned: string[] = [];
 
-  confirmScanned(token: string): Promise<Pick<OrderHandoverView, 'orderNumber'>> {
+  confirmScanned(
+    token: string,
+    ranks: readonly number[] | null = null,
+  ): Promise<Pick<OrderHandoverView, 'orderNumber'>> {
     this.scanned.push(token);
+    this.ranks.push(ranks);
     return Promise.resolve({ orderNumber: 'CMD-1042' });
   }
 
-  confirmManually(reference: string): Promise<Pick<OrderHandoverView, 'orderNumber'>> {
+  confirmManually(
+    reference: string,
+    ranks: readonly number[] | null = null,
+  ): Promise<Pick<OrderHandoverView, 'orderNumber'>> {
     this.remitted.push(reference);
+    this.ranks.push(ranks);
     return Promise.resolve({ orderNumber: reference });
   }
 }
@@ -503,5 +518,58 @@ describe('HandoverDetail', () => {
     expect(bon?.closest('.hd-identity')).not.toBeNull();
     expect(bon?.closest('.hd-actions')).toBeNull();
     expect(element.textContent).not.toContain('Aucun montant');
+  });
+});
+
+describe('HandoverDetail — les envois prêts (plan E7 reliquat, L4c)', () => {
+  const twoShipments: OrderHandoverView['shipments'] = [
+    { rank: 1, reference: 'CMD-1042', totalUnits: 12, lines: [] },
+    { rank: 2, reference: 'CMD-1042-2', totalUnits: 2, lines: [] },
+  ];
+
+  it('un seul envoi : ni liste à cocher, et « Remettre la commande » part avec le corps d’avant', async () => {
+    const handovers = new FakeHandovers();
+    handovers.shipments = [{ rank: 1, reference: 'CMD-1042', totalUnits: 12, lines: [] }];
+    const fixture = await render(entry(), { handovers });
+
+    expect((fixture.nativeElement as HTMLElement).querySelector('app-shipment-choice')).toBeNull();
+    buttonSaying(fixture, 'Remettre la commande')?.click();
+    await fixture.whenStable();
+
+    expect(handovers.ranks).toEqual([null]);
+  });
+
+  it('deux envois prêts : les deux sont cochés, et « Remettre » les envoie ensemble', async () => {
+    const handovers = new FakeHandovers();
+    handovers.shipments = twoShipments;
+    const fixture = await render(entry(), { handovers });
+
+    expect(text(fixture)).toContain('La commande — CMD-1042, 12 pièces');
+    expect(text(fixture)).toContain('Le reste de la commande — CMD-1042-2, 2 pièces');
+    buttonSaying(fixture, 'Remettre les envois cochés')?.click();
+    await fixture.whenStable();
+
+    expect(handovers.remitted).toEqual(['CMD-1042']);
+    expect(handovers.ranks).toEqual([[1, 2]]);
+  });
+
+  it('un envoi décoché reste au comptoir ; aucun coché, et le geste se tait', async () => {
+    const handovers = new FakeHandovers();
+    handovers.shipments = twoShipments;
+    const fixture = await render(entry(), { handovers });
+    const element: HTMLElement = fixture.nativeElement;
+    const box = (rank: number): HTMLInputElement | null =>
+      element.querySelector(`[data-shipment="${String(rank)}"] input[type="checkbox"]`);
+
+    box(1)?.click();
+    fixture.detectChanges();
+    buttonSaying(fixture, 'Remettre les envois cochés')?.click();
+    await fixture.whenStable();
+    expect(handovers.ranks).toEqual([[2]]);
+
+    box(2)?.click();
+    fixture.detectChanges();
+    const remit = buttonSaying(fixture, 'Remettre les envois cochés') as HTMLButtonElement | null;
+    expect(remit?.disabled).toBe(true);
   });
 });

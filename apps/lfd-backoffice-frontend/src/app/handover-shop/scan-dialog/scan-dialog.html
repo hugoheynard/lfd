@@ -37,9 +37,13 @@
           </fold-callout>
         }
         <fold-callout appearance="inset" variant="success" icon="check">
-          <strong>{{ found.customerLabel }}</strong> — {{ found.orderNumber }},
+          <strong>{{ found.customerLabel }}</strong> —
+          {{ found.rank > 1 ? 'le reste de la commande ' : '' }}{{ found.reference }},
           {{ found.totalUnits }} pièce{{ found.totalUnits > 1 ? 's' : '' }}.
         </fold-callout>
+        @if (shipments().length > 0) {
+          <app-shipment-choice [shipments]="shipments()" [(checked)]="checked" />
+        }
         @if (found.blockedReason; as blocked) {
           <fold-callout appearance="inset" variant="alert" icon="info">
             {{ blocked }}
@@ -75,8 +79,14 @@
 -->
 @if (subject() !== null) {
   <fold-panel-footer align="end">
-    <button foldButton icon="check" [loading]="busy()" (click)="confirm()">
-      Remettre la commande
+    <button
+      foldButton
+      icon="check"
+      [loading]="busy()"
+      [disabled]="nothingChecked()"
+      (click)="confirm()"
+    >
+      {{ remitLabel() }}
     </button>
   </fold-panel-footer>
 }
