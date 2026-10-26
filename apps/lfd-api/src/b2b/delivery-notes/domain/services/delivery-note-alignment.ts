@@ -7,7 +7,14 @@ import { DeliveryNoteNumber } from "../value-objects/delivery-note-number.js";
 
 /** Les statuts d'une commande, tels que le BL les lit. */
 export type FollowedOrderStatus =
-  "draft" | "placed" | "confirmed" | "in_production" | "ready" | "fulfilled" | "cancelled";
+  | "draft"
+  | "placed"
+  | "confirmed"
+  | "in_production"
+  | "ready"
+  | "partially_handed_over"
+  | "fulfilled"
+  | "cancelled";
 
 /** Une commande, vue du BL qui la suit : ses lignes, son statut, ses instants. */
 export interface FollowedOrder extends DeliveryNoteSource {
@@ -256,9 +263,16 @@ function targetOf(order: FollowedOrder): Target | null {
       return order.readyAt === null || plannedAt === null
         ? null
         : { ...base, plannedAt, status: "prepared", preparedAt: order.readyAt };
+    // Plan E7 reliquat (L5a) : en partie retirée, c'est le rang 1 qui est
+    // parti — le BL-1 se remet comme sous `fulfilled`, les restes suivent
+    // leur envoi.
+    case "partially_handed_over":
     case "fulfilled":
       return fulfilledTarget(order, plannedAt);
-    default:
+    case "draft":
+    case "placed":
+    case "in_production":
+    case "cancelled":
       return null;
   }
 }

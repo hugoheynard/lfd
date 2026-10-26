@@ -17,6 +17,8 @@ export const CUSTOMER_REFUSAL_PHRASES: Readonly<Record<CustomerCancellationRefus
     "Votre commande est déjà en préparation : elle ne peut plus être annulée. Contactez-nous si besoin.",
   ready: "Votre commande est prête : elle ne peut plus être annulée.",
   fulfilled: "Votre commande est déjà retirée : elle ne peut plus être annulée.",
+  partially_handed_over:
+    "Une partie de votre commande est déjà retirée : elle ne peut plus être annulée. Contactez-nous pour le reste.",
   too_late: "Il est trop tard pour annuler en ligne. Contactez-nous.",
   payment_in_progress:
     "Un paiement est en cours sur cette commande. Réessayez dans quelques minutes.",
@@ -77,6 +79,9 @@ export function customerRefusalOf(block: CancellationBlock): CustomerCancellatio
       return "in_preparation";
     case "packed":
       return "ready";
+    case "partially_handed_over":
+    case "remainder_handed_over":
+      return "partially_handed_over";
     case "state_changed":
       return "not_recorded";
     case "refund_in_flight":

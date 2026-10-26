@@ -10,6 +10,9 @@ describe("les refus de la règle staff, dits à un client (C6.7)", () => {
     [{ kind: "already_cancelled", at: null } as const, "already_cancelled"],
     [{ kind: "ready" } as const, "ready"],
     [{ kind: "fulfilled" } as const, "fulfilled"],
+    // Plan E7 reliquat (L5a) : la partie retirée a son code, quel que soit le rang parti.
+    [{ kind: "partially_handed_over" } as const, "partially_handed_over"],
+    [{ kind: "remainder_handed_over" } as const, "partially_handed_over"],
     [{ kind: "inscribed", day: "2030-01-15" } as const, "in_preparation"],
     [{ kind: "paid_just_now" } as const, "paid_just_now"],
     [{ kind: "refund_in_flight", amountCents: 500 } as const, "payment_in_progress"],

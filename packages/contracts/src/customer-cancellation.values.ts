@@ -35,6 +35,8 @@ export const CUSTOMER_CANCELLATION_REFUSALS = [
   "in_preparation",
   "ready",
   "fulfilled",
+  /** Plan E7 reliquat (L5a) : une partie est retirée, le reste ne l'est pas. */
+  "partially_handed_over",
   "too_late",
   "payment_in_progress",
   "paid_just_now",

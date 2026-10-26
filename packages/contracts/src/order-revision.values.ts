@@ -25,7 +25,9 @@ export type OrderRevisionChange = (typeof ORDER_REVISION_CHANGES)[number];
  * `documentation/commandes/modification/plan-modifier-une-commande.md`, R1, §6) — des codes,
  * pas des phrases : la boutique les dit dans la langue du client.
  *
- * - `cancelled`, `ready`, `fulfilled` : l'état de la commande le dit déjà ;
+ * - `cancelled`, `ready`, `partially_handed_over`, `fulfilled` : l'état de
+ *   la commande le dit déjà (`partially_handed_over` : une partie est
+ *   retirée, plan E7 reliquat) ;
  * - `in_preparation` : inscrite au compte à produire, ou plan du jour arrêté ;
  * - `card_settled` : réglée par carte (lot M2, à concevoir) ;
  * - `too_late` : l'heure limite de sa date est passée (M4 : la demande) ;
@@ -37,6 +39,7 @@ export type OrderRevisionChange = (typeof ORDER_REVISION_CHANGES)[number];
 export const ORDER_REVISION_REFUSALS = [
   "cancelled",
   "ready",
+  "partially_handed_over",
   "fulfilled",
   "in_preparation",
   "card_settled",

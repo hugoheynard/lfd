@@ -41,7 +41,9 @@ export class OrderReportableOrderReader extends ReportableOrderReader {
       id: owned.view.id,
       number: owned.view.orderNumber,
       companyId: owned.companyId,
-      fulfilled: owned.view.status === "fulfilled",
+      // Plan E7 reliquat (L5a) : une partie reçue se signale déjà — le
+      // problème porte sur ce qui est arrivé, le reste n'y change rien.
+      fulfilled: owned.view.status === "fulfilled" || owned.view.status === "partially_handed_over",
       site: await this.siteOf(orderId),
     };
   }

@@ -280,3 +280,34 @@ describe("cancellationOf — l'autorisation du plan A1", () => {
     });
   });
 });
+
+describe("plan E7 reliquat (L5a) — la commande en partie retirée", () => {
+  /**
+   * Régression : `statusBlock` finissait par `default: return null`. Une
+   * commande au compte dont un envoi est retiré, sous l'étape « avant
+   * colisage », passait pour annulable — le compilateur ne disait rien.
+   */
+  it("au compte, rien d'engagé, étape « avant colisage » : refusée, pas annulable", () => {
+    const partial = state({
+      status: "partially_handed_over",
+      paymentStatus: "not_required",
+      engagement: { kind: "free" },
+    });
+    expect(cancellationOf(partial, { allowance: "before_packing" })).toEqual({
+      cancellable: false,
+      block: { kind: "partially_handed_over" },
+    });
+  });
+
+  it("le refus nomme la partie retirée et le geste de sortie", () => {
+    expect(cancellationRefusalOf({ kind: "partially_handed_over" })).toBe(
+      "Une partie de cette commande est déjà retirée : elle ne s'annule plus. Voyez avec la Supervision pour le reste.",
+    );
+  });
+
+  it("un reste retiré avant la commande a son propre mot", () => {
+    expect(cancellationRefusalOf({ kind: "remainder_handed_over" })).toBe(
+      "Le reste de cette commande est déjà retiré : elle ne s'annule plus.",
+    );
+  });
+});

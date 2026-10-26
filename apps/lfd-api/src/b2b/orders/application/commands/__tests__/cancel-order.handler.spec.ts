@@ -69,6 +69,8 @@ interface Scene {
   readonly engagementUnderLock?: AccountEngagement | null;
   /** C3.6 : les commandes que le comptoir a déjà attestées. */
   readonly handedOver?: readonly string[];
+  /** Plan E7 reliquat (L5a) : les commandes dont seul un reste est retiré. */
+  readonly remaindersHandedOver?: readonly string[];
 }
 
 function scene(options: Scene = {}) {
@@ -105,7 +107,7 @@ function scene(options: Scene = {}) {
       new RecordingNoteVoiding(),
       new DirectUnitOfWork(),
       new FixedClock(NOW),
-      new FixedHandoverHistory(options.handedOver),
+      new FixedHandoverHistory(options.handedOver, options.remaindersHandedOver),
     ),
   );
   return { handler, trace, rows, gateway, vouchers, durable, engagements, refundStore, dispatch };
@@ -391,6 +393,17 @@ describe("CancelOrderHandler — les refus", () => {
     expect(durable.facts).toEqual([]);
   });
 
+  /** Plan E7 reliquat (L5a) : le refus nomme le reste, pas la commande entière. */
+  it("un reste retiré avant la commande : refus « le reste est déjà retiré », rien d'écrit", async () => {
+    const { handler, rows, durable } = scene({ remaindersHandedOver: ["ord_1"] });
+
+    await expect(handler.execute(cancel())).rejects.toMatchObject({
+      code: "orders.cancel.remainder_handed_over",
+    });
+    expect(rows.records).toEqual([]);
+    expect(durable.facts).toEqual([]);
+  });
+
   it.each([
     [
       "payée, un remboursement en vol",
@@ -399,6 +412,11 @@ describe("CancelOrderHandler — les refus", () => {
     ],
     ["prête", { status: "ready" }, "orders.cancel.ready"],
     ["retirée", { status: "fulfilled" }, "orders.cancel.fulfilled"],
+    [
+      "en partie retirée (plan E7 reliquat, L5a)",
+      { status: "partially_handed_over" },
+      "orders.cancel.partially_handed_over",
+    ],
   ] as const)("refuse une commande %s, sans rien appeler", async (_, overrides, code) => {
     const { handler, trace } = scene({ subject: cancellationSubject(overrides) });
 

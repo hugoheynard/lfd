@@ -48,6 +48,12 @@ export const orderStatusSchema = z.enum([
    * un sac est prêt sans aller voir dans le fournil.
    */
   "ready",
+  /**
+   * **Un envoi est retiré, un reste ne l'est pas encore** (plan E7 reliquat,
+   * choix 8) : réservé aux commandes au compte. Rien n'y est facturable ;
+   * la commande passe `fulfilled` au dernier envoi retiré.
+   */
+  "partially_handed_over",
   "fulfilled",
   "cancelled",
 ]);

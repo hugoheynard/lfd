@@ -40,6 +40,7 @@ export function reviseOfferOf(
   switch (code) {
     case 'cancelled':
     case 'ready':
+    case 'partially_handed_over':
     case 'fulfilled':
       return { kind: 'none' };
     case 'card_settled':

@@ -71,6 +71,11 @@ export class PrismaPendingOrdersReader extends PendingCommerceOrdersReader {
    * close. Tout ce qui n'est pas `fulfilled` est en retard — y compris
    * `cancelled`, et c'est voulu : une commande annulée qu'on a pourtant remise
    * est une divergence qu'on veut voir, pas un cas à taire.
+   *
+   * `partially_handed_over` n'y est PAS (plan E7 reliquat, L5a) : les
+   * références attestées sont celles du rang 1 (`referencesAttestedSince`,
+   * relu le 2026-10-26), et une commande dont le rang 1 est retiré a suivi
+   * son attestation — c'est son reste qui attend, pas elle.
    */
   async behindOnHandover(references: readonly string[]): Promise<number> {
     return this.countAmong(references, [

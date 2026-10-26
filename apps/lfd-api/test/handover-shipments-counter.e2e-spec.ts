@@ -352,13 +352,33 @@ describe("le comptoir par envoi (plan E7 reliquat, lot L4c)", () => {
     await staff().post(`/admin/handover/manual/${number}-2`).send({}).expect(201);
     await ctx.drain();
 
-    await staff()
+    const refused = await staff()
       .post(`/admin/orders/${account}/cancel`)
       .send({ reason: "Le client a renoncé." })
       .expect(409);
+    // L5a : le refus nomme le reste, pas la commande entière.
+    expect(refused.body).toMatchObject({ code: "orders.cancel.remainder_handed_over" });
 
     expect((await ctx.prisma.order.findUniqueOrThrow({ where: { id: account } })).status).not.toBe(
       "cancelled",
     );
+  });
+
+  /**
+   * Plan E7 reliquat (L5a) : l'alignement laisse un reste à son envoi ; une
+   * commande annulée n'a plus rien à livrer, ses restes s'annulent avec elle.
+   */
+  it("annuler une commande annule aussi son reste prévu", async () => {
+    const account = await placeOnAccount(await scene());
+    await planRemainder(account);
+
+    await staff()
+      .post(`/admin/orders/${account}/cancel`)
+      .send({ reason: "Le client a renoncé." })
+      .expect(204);
+
+    expect((await notesOf(account)).map((note) => [note.rank, note.status])).toEqual([
+      [2, "voided"],
+    ]);
   });
 });

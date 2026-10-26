@@ -14,6 +14,10 @@
  * lecture et l'écriture de l'annulation.
  */
 export abstract class ShipmentHandoverReader {
-  /** Vrai dès qu'un envoi de la commande, quel que soit son rang, porte une attestation. */
-  abstract anyHandedOver(orderId: string): Promise<boolean>;
+  /**
+   * Les rangs des envois de la commande qui portent une attestation, en ordre
+   * croissant ; vide si aucun. Le rang dit QUEL refus nommer : la commande
+   * (rang 1) ou son reste (plan E7 reliquat, L5a).
+   */
+  abstract handedOverRanks(orderId: string): Promise<readonly number[]>;
 }

@@ -6290,6 +6290,13 @@
           "variables": []
         },
         {
+          "key": "orderCancel.refusals.partially_handed_over",
+          "fr": "Une partie de votre commande a déjà été retirée : elle ne peut plus être annulée. Contactez-nous pour le reste.",
+          "en": "Part of your order has already been collected: it can no longer be cancelled. Contact us about the rest.",
+          "it": "Una parte del vostro ordine è già stata ritirata: non può più essere annullato. Contattateci per il resto.",
+          "variables": []
+        },
+        {
           "key": "orderCancel.refusals.too_late",
           "fr": "Il est trop tard pour annuler en ligne : c’était possible jusqu’au {when}. Contactez-nous.",
           "en": "It is too late to cancel online: it was possible until {when}. Contact us.",

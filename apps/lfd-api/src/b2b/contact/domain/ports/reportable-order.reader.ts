@@ -10,7 +10,10 @@ export interface ReportableOrder {
    * l'espace de travail (`plan-commandes-des-sites.md`, §7.3).
    */
   readonly companyId: string | null;
-  /** Retirée ou livrée (`status === 'fulfilled'`, la source du suivi). */
+  /**
+   * Retirée ou livrée, en tout ou en partie (`fulfilled` ou
+   * `partially_handed_over`, plan E7 reliquat) : un envoi est arrivé.
+   */
   readonly fulfilled: boolean;
   /**
    * La société de la commande et son principal COPIÉ à la passation, ou

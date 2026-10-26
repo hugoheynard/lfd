@@ -17,7 +17,14 @@ import {
  * commandes issues d'un abonnement, elles, sont dedans — c'est du volume réel, et
  * à LFC c'est même le volume principal.
  */
-const COUNTED_STATUSES = ["placed", "confirmed", "in_production", "fulfilled"] as const;
+// Plan E7 reliquat (L5a) : en partie retirée, la commande reste un achat.
+const COUNTED_STATUSES = [
+  "placed",
+  "confirmed",
+  "in_production",
+  "partially_handed_over",
+  "fulfilled",
+] as const;
 
 /**
  * L'historique d'un compte, en **trois** requêtes quelle que soit la taille du

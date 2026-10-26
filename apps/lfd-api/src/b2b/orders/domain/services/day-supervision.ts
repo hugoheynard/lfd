@@ -54,6 +54,9 @@ const STAGE_OF_STATUS: Readonly<Record<OrderStatus, SupervisionStage | null>> = 
   confirmed: "in_production",
   in_production: "in_production",
   ready: "ready",
+  // Plan E7 reliquat (L5a) : le jour de la commande voit SON envoi, le rang 1,
+  // et il est parti. Le reste se supervise à son jour (L7, L8), jamais ici.
+  partially_handed_over: "handed_over",
   fulfilled: "handed_over",
   cancelled: "cancelled",
 };

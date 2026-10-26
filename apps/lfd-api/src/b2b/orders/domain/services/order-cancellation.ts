@@ -90,6 +90,10 @@ export type CancellationBlock =
   | { readonly kind: "draft" }
   | { readonly kind: "ready" }
   | { readonly kind: "fulfilled" }
+  /** Plan E7 reliquat (L5a) : un envoi est retiré, un reste ne l'est pas. */
+  | { readonly kind: "partially_handed_over" }
+  /** L5a : seul un reste est retiré — lu sous verrou (`ShipmentHandoverReader`). */
+  | { readonly kind: "remainder_handed_over" }
   /** Lot C5 : au compte, et déjà engagée en comptabilité (C5.6). */
   | EngagementBlock
   /** Lot C4 : un remboursement attend encore son issue chez Stripe (C4.4). */
@@ -211,18 +215,24 @@ export function cancellationBlocker(
   return decision.cancellable ? null : decision.block;
 }
 
+// Exhaustif, sans `default` : son `default: return null` rendait annulable
+// toute valeur neuve, en silence (plan E7 reliquat, annexe F).
 function statusBlock(state: CancellationState): CancellationBlock | null {
   switch (state.status) {
+    case "placed":
+    case "confirmed":
+    case "in_production":
+      return null;
     case "cancelled":
       return { kind: "already_cancelled", at: state.cancelledAt };
     case "draft":
       return { kind: "draft" };
     case "ready":
       return { kind: "ready" };
+    case "partially_handed_over":
+      return { kind: "partially_handed_over" };
     case "fulfilled":
       return { kind: "fulfilled" };
-    default:
-      return null;
   }
 }
 
@@ -259,6 +269,10 @@ export function cancellationRefusalOf(block: CancellationBlock): string {
       return "Cette commande est déjà prête : elle ne s'annule plus. Voyez avec le fournil.";
     case "fulfilled":
       return "Cette commande est déjà retirée : elle ne s'annule plus.";
+    case "partially_handed_over":
+      return "Une partie de cette commande est déjà retirée : elle ne s'annule plus. Voyez avec la Supervision pour le reste.";
+    case "remainder_handed_over":
+      return "Le reste de cette commande est déjà retiré : elle ne s'annule plus.";
     case "invoiced":
     case "collecting":
     case "collected":

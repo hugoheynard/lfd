@@ -271,3 +271,12 @@ describe('canSettle', () => {
     expect(['paid', 'failed', 'refunded'].filter((s) => canSettle(s as PaymentStatus))).toEqual([]);
   });
 });
+
+describe('buildTimeline — plan E7 reliquat, la commande en partie retirée', () => {
+  it('le retrait du rang 1 est l’étape franchie, comme une commande retirée', () => {
+    const partial = buildTimeline(order('partially_handed_over', 'not_required'));
+    const whole = buildTimeline(order('fulfilled', 'not_required'));
+
+    expect(partial.map((s) => s.state)).toEqual(whole.map((s) => s.state));
+  });
+});

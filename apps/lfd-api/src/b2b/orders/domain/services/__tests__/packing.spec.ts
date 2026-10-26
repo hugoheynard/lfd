@@ -38,6 +38,12 @@ describe("packingBlocker", () => {
     );
   });
 
+  it("plan E7 reliquat : refuse une commande en partie retirée, même sans `readyAt`", () => {
+    expect(packingBlocker(subject({ status: "partially_handed_over", readyAt: null }))).toBe(
+      "Cette commande a déjà été retirée.",
+    );
+  });
+
   it("refuse un second colisage, et ne se tait pas", () => {
     expect(packingBlocker(subject({ readyAt: new Date() }))).toBe(
       "Cette commande est déjà déclarée prête.",

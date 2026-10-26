@@ -6,6 +6,8 @@ import type { FollowedOrder } from "./delivery-note-alignment.js";
 const CONTROLLED_STATUSES: ReadonlySet<FollowedOrder["status"]> = new Set([
   "confirmed",
   "ready",
+  // Plan E7 reliquat (L5a) : le BL-1 est remis, contrôlé comme sous `fulfilled`.
+  "partially_handed_over",
   "fulfilled",
 ]);
 

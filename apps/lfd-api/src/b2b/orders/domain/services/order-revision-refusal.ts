@@ -26,6 +26,10 @@ export function revisionRefusalOf(block: CancellationBlock): string {
       return "Cette commande est déjà prête : elle ne se modifie plus. Voyez avec le fournil.";
     case "fulfilled":
       return "Cette commande est déjà retirée : elle ne se modifie plus.";
+    case "partially_handed_over":
+      return "Une partie de cette commande est déjà retirée : elle ne se modifie plus.";
+    case "remainder_handed_over":
+      return "Le reste de cette commande est déjà retiré : elle ne se modifie plus.";
     case "inscribed":
       return block.day === null
         ? "Le fournil a déjà inscrit cette commande au compte à produire : elle ne se modifie plus. Voyez avec le fournil."

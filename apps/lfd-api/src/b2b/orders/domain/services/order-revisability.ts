@@ -146,7 +146,10 @@ function customerCodeOf(block: CancellationBlock): OrderRevisionRefusal {
       return "cancelled";
     case "ready":
     case "fulfilled":
+    case "partially_handed_over":
       return block.kind;
+    case "remainder_handed_over":
+      return "partially_handed_over";
     case "inscribed":
     case "delivery_after_plan":
     case "delivery_bin":

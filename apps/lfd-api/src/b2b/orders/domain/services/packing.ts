@@ -40,7 +40,9 @@ export function packingBlocker(subject: PackingSubject): string | null {
   if (subject.status === "draft") {
     return "Cette commande n'est pas encore passée.";
   }
-  if (subject.status === "fulfilled") {
+  // Plan E7 reliquat (L5a) : en partie retirée, le rang 1 est parti ; un
+  // reste se colise par son BL (`OnRemainderPacked`), jamais par ici.
+  if (subject.status === "fulfilled" || subject.status === "partially_handed_over") {
     return "Cette commande a déjà été retirée.";
   }
   if (subject.readyAt !== null) {

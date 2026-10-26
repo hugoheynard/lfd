@@ -36,6 +36,8 @@ const REVENUE_STATUSES: readonly OrderStatus[] = [
   OrderStatus.placed,
   OrderStatus.confirmed,
   OrderStatus.in_production,
+  // Plan E7 reliquat (L5a) : en partie retirée, la commande reste une commande passée.
+  OrderStatus.partially_handed_over,
   OrderStatus.fulfilled,
 ];
 

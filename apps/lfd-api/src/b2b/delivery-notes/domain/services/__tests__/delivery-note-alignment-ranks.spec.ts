@@ -172,3 +172,42 @@ describe("termsGapsOf — le reliquat porte ses propres montants", () => {
     ).toEqual(["BL-7-1"]);
   });
 });
+
+describe("plan E7 reliquat (L5a) — la commande en partie retirée", () => {
+  it("le BL-1 se remet comme sous `fulfilled`, le reste ne bouge pas", () => {
+    const first = firstNote();
+    first.prepare(READY_AT);
+    const rest = remainder();
+    const before = rest.toState();
+
+    const result = alignmentOf(order({ status: "partially_handed_over" }), [first, rest], context);
+
+    expect(result).toEqual({ change: "advanced", writes: [first] });
+    expect(first.status).toBe("handed_over");
+    expect(rest.toState()).toEqual(before);
+  });
+
+  it("BL-1 remis et reste vivant : aligné", () => {
+    expect(
+      alignmentOf(
+        order({ status: "partially_handed_over" }),
+        [handedOverFirst(), remainder()],
+        context,
+      ),
+    ).toEqual({ change: "none" });
+  });
+
+  it("le BL-1 reste contrôlé contre sa commande", () => {
+    const shorter = DeliveryNote.planFromOrder(
+      "dn_1",
+      { ...SOURCE, lines: [BREAD, { ...BREAD, sku: "PAIN-002" }] },
+      CONFIRMED_AT,
+    );
+
+    expect(
+      termsGapsOf(order({ status: "partially_handed_over" }), [shorter, remainder()]).map(
+        (gap) => gap.noteNumber,
+      ),
+    ).toEqual(["BL-7-1"]);
+  });
+});

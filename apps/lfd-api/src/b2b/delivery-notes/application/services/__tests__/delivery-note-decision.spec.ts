@@ -107,6 +107,7 @@ function scene() {
     aligner,
     clock,
     closer,
+    notes,
   );
   const reconciler = new ReconcileDeliveryNotesHandler(
     progress.scan,

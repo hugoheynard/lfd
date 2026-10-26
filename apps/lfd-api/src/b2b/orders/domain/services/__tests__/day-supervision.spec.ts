@@ -33,6 +33,10 @@ describe("stageOf", () => {
   it("range `fulfilled` en retirée / livrée", () => {
     expect(stageOf("fulfilled")).toBe("handed_over");
   });
+
+  it("plan E7 reliquat : en partie retirée, le jour de la commande la voit retirée", () => {
+    expect(stageOf("partially_handed_over")).toBe("handed_over");
+  });
 });
 
 describe("latenessOf — pas retirée après son créneau", () => {

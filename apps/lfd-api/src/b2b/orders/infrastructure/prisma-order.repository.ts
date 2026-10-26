@@ -326,7 +326,15 @@ export class PrismaOrderRepository extends OrderRepository {
       where: {
         orderNumber: reference,
         readyAt: null,
-        status: { notIn: [OrderStatus.cancelled, OrderStatus.draft, OrderStatus.fulfilled] },
+        // Plan E7 reliquat (L5a) : un rang 1 retiré n'est plus « prêt ».
+        status: {
+          notIn: [
+            OrderStatus.cancelled,
+            OrderStatus.draft,
+            OrderStatus.partially_handed_over,
+            OrderStatus.fulfilled,
+          ],
+        },
       },
       data: { readyAt: at, readyBy: by, status: OrderStatus.ready },
     });

@@ -27,6 +27,9 @@ enum OrderStatus {
   /// Fabrication finie, en attente de remise. Écrit par l'ATELIER, au scan du
   /// QR de colisage de la fiche. Cf. documentation/commandes/la-commande/architecture-cycle-de-vie-commande.md
   ready
+  /// Un envoi est retiré, un reste vivant ne l'est pas encore (plan E7
+  /// reliquat, choix 8). Soldée = `fulfilled`, au dernier envoi retiré.
+  partially_handed_over
   fulfilled
   cancelled
 

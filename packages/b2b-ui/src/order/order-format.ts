@@ -39,6 +39,8 @@ const STATUS: Readonly<Record<OrderStatus, Labelled>> = {
   // coursier, pas une action de la maison. Ce qui distingue « Prête » de
   // « Livrée » est le libellé, pas la couleur.
   ready: { label: 'Prête', variant: 'success' },
+  // Plan E7 reliquat : `warning`, un reste attend encore son retrait.
+  partially_handed_over: { label: 'En partie retirée', variant: 'warning' },
   fulfilled: { label: 'Livrée', variant: 'success' },
   cancelled: { label: 'Annulée', variant: 'alert' },
 };

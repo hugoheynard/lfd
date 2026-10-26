@@ -3,18 +3,19 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../platform/database/prisma.service.js";
 import { ShipmentHandoverReader } from "../channels/commerce/shipment-handover.reader.js";
 
-/** `order_handover`, tous rangs confondus — une ligne suffit à répondre. */
+/** `order_handover`, tous rangs confondus. */
 @Injectable()
 export class PrismaShipmentHandoverReader extends ShipmentHandoverReader {
   constructor(private readonly prisma: PrismaService) {
     super();
   }
 
-  async anyHandedOver(orderId: string): Promise<boolean> {
-    const row = await this.prisma.orderHandover.findFirst({
+  async handedOverRanks(orderId: string): Promise<readonly number[]> {
+    const rows = await this.prisma.orderHandover.findMany({
       where: { orderId },
       select: { rank: true },
+      orderBy: { rank: "asc" },
     });
-    return row !== null;
+    return rows.map((row) => row.rank);
   }
 }

@@ -2,7 +2,14 @@ import type { DeliveryNoteOrder } from "./order-lines-for-delivery-note.js";
 
 /** Les statuts d'une commande, tels que le bon de livraison les lit. */
 export type DeliveryNoteOrderStatus =
-  "draft" | "placed" | "confirmed" | "in_production" | "ready" | "fulfilled" | "cancelled";
+  | "draft"
+  | "placed"
+  | "confirmed"
+  | "in_production"
+  | "ready"
+  | "partially_handed_over"
+  | "fulfilled"
+  | "cancelled";
 
 /** Une commande, vue du BL qui la suit : ses lignes, son statut, les instants qui le datent. */
 export interface DeliveryNoteOrderProgress extends DeliveryNoteOrder {

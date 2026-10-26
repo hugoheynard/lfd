@@ -102,6 +102,8 @@ const FR: OrderCancelCopy = {
       'Votre commande est déjà en préparation : elle ne peut plus être annulée. Contactez-nous si besoin.',
     ready: 'Votre commande est prête : elle ne peut plus être annulée.',
     fulfilled: 'Votre commande a déjà été retirée : elle ne peut plus être annulée.',
+    partially_handed_over:
+      'Une partie de votre commande a déjà été retirée : elle ne peut plus être annulée. Contactez-nous pour le reste.',
     too_late:
       'Il est trop tard pour annuler en ligne : c’était possible jusqu’au {when}. Contactez-nous.',
     payment_in_progress:
@@ -169,6 +171,8 @@ const EN: OrderCancelCopy = {
       'Your order is already being prepared: it can no longer be cancelled. Contact us if needed.',
     ready: 'Your order is ready: it can no longer be cancelled.',
     fulfilled: 'Your order has already been collected: it can no longer be cancelled.',
+    partially_handed_over:
+      'Part of your order has already been collected: it can no longer be cancelled. Contact us about the rest.',
     too_late: 'It is too late to cancel online: it was possible until {when}. Contact us.',
     payment_in_progress: 'A payment is in progress on this order. Try again in a few minutes.',
     paid_just_now: 'Your payment has just gone through. Reload the page to cancel with a refund.',
@@ -234,6 +238,8 @@ const IT: OrderCancelCopy = {
       'Il vostro ordine è già in preparazione: non può più essere annullato. Contattateci se necessario.',
     ready: 'Il vostro ordine è pronto: non può più essere annullato.',
     fulfilled: 'Il vostro ordine è già stato ritirato: non può più essere annullato.',
+    partially_handed_over:
+      'Una parte del vostro ordine è già stata ritirata: non può più essere annullato. Contattateci per il resto.',
     too_late: 'È troppo tardi per annullare online: era possibile fino al {when}. Contattateci.',
     payment_in_progress: 'Un pagamento è in corso su questo ordine. Riprovate tra qualche minuto.',
     paid_just_now:

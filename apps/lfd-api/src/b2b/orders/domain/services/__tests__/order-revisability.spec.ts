@@ -121,3 +121,15 @@ describe("les mots du refus", () => {
     ).toBe("accounting");
   });
 });
+
+describe("plan E7 reliquat (L5a) — la commande en partie retirée", () => {
+  it.each(["partially_handed_over", "remainder_handed_over"] as const)(
+    "%s : l'équipe lit une phrase qui nomme ce qui est parti, le client un code à part",
+    (kind) => {
+      const blocked = { kind: "order", block: { kind } } as const;
+
+      expect(revisionBlockReasonOf(blocked)).toMatch(/déjà retiré/);
+      expect(customerRevisionRefusalOf(blocked)).toBe("partially_handed_over");
+    },
+  );
+});

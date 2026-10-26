@@ -87,6 +87,9 @@ const STATUS_RANK: Readonly<Record<OrderStatus, number>> = {
   confirmed: 2,
   in_production: 3,
   ready: 4,
+  // Plan E7 reliquat : le rang 1 est retiré, `handedOverAt` date ce premier
+  // retrait — l'étape est franchie, le reste se suit par son bon.
+  partially_handed_over: 5,
   fulfilled: 5,
   cancelled: -1,
 };

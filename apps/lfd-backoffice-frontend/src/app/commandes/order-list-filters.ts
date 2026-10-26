@@ -66,6 +66,7 @@ const STATUSES: Readonly<Record<OrderStatus, true>> = {
   confirmed: true,
   in_production: true,
   ready: true,
+  partially_handed_over: true,
   fulfilled: true,
   cancelled: true,
 };

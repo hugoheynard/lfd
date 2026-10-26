@@ -3,6 +3,7 @@ import { Injectable, Logger } from "@nestjs/common";
 
 import { CommerceOrderCancelledFact } from "../../../../delivery/channels/commerce/index.js";
 import { ShipmentHandoverReader } from "../../../../handover/channels/commerce/index.js";
+import { FIRST_SHIPMENT_RANK } from "../../../../production/channels/commerce/index.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { BusinessError, DomainError } from "../../../../platform/shared/errors/app-error.js";
@@ -262,12 +263,16 @@ export class OrderCancellation {
    *
    * **Tout envoi compte** (plan E7 reliquat, L4c) : un reliquat retiré avant
    * son rang 1 est un sac parti. Régression : seule l'attestation du rang 1
-   * était lue, et la commande s'annulait sous un reste déjà remis.
+   * était lue, et la commande s'annulait sous un reste déjà remis. Le refus
+   * nomme ce qui est parti : la commande (rang 1), ou son reste (L5a).
    */
   private async ensureNotHandedOver(orderId: string): Promise<void> {
-    if (await this.handovers.anyHandedOver(orderId)) {
-      throw new OrderNotCancellableError(orderId, { kind: "fulfilled" });
+    const ranks = await this.handovers.handedOverRanks(orderId);
+    if (ranks.length === 0) {
+      return;
     }
+    const kind = ranks.includes(FIRST_SHIPMENT_RANK) ? "fulfilled" : "remainder_handed_over";
+    throw new OrderNotCancellableError(orderId, { kind });
   }
 
   /** Le bon restitué et le fait durable — seulement quand l'écriture a franchi. */

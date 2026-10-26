@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1594 textes
+## Sommaire — 1595 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -39,7 +39,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [La navigation](#espace-nav) | `nav` | 24 |
 | [La colonne d’accompagnement](#espace-aside) | `aside` | 4 |
 | [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 234 |
-| [Annuler une commande — Mes commandes et la page invité](#espace-ordercancel) | `orderCancel` | 54 |
+| [Annuler une commande — Mes commandes et la page invité](#espace-ordercancel) | `orderCancel` | 55 |
 | [Fidélité](#espace-loyalty) | `loyalty` | 38 |
 | [Mon compte (factures comprises)](#espace-account) | `account` | 525 |
 | [Le compte pro — le dictionnaire général](#espace-pro) | `pro` | 8 |
@@ -47,7 +47,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
-| **Total** | | **1594** |
+| **Total** | | **1595** |
 
 ## Le parcours de commande
 
@@ -1156,7 +1156,7 @@ Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/ord
 
 ### Annuler une commande — Mes commandes et la page invité — `orderCancel`
 
-Source : `screens/order-cancel.copy.ts` · 54 textes.
+Source : `screens/order-cancel.copy.ts` · 55 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -1188,6 +1188,7 @@ Source : `screens/order-cancel.copy.ts` · 54 textes.
 | `orderCancel.refusals.in_preparation` | Votre commande est déjà en préparation : elle ne peut plus être annulée. Contactez-nous si besoin. | Your order is already being prepared: it can no longer be cancelled. Contact us if needed. | Il vostro ordine è già in preparazione: non può più essere annullato. Contattateci se necessario. |  |
 | `orderCancel.refusals.ready` | Votre commande est prête : elle ne peut plus être annulée. | Your order is ready: it can no longer be cancelled. | Il vostro ordine è pronto: non può più essere annullato. |  |
 | `orderCancel.refusals.fulfilled` | Votre commande a déjà été retirée : elle ne peut plus être annulée. | Your order has already been collected: it can no longer be cancelled. | Il vostro ordine è già stato ritirato: non può più essere annullato. |  |
+| `orderCancel.refusals.partially_handed_over` | Une partie de votre commande a déjà été retirée : elle ne peut plus être annulée. Contactez-nous pour le reste. | Part of your order has already been collected: it can no longer be cancelled. Contact us about the rest. | Una parte del vostro ordine è già stata ritirata: non può più essere annullato. Contattateci per il resto. |  |
 | `orderCancel.refusals.too_late` | Il est trop tard pour annuler en ligne : c’était possible jusqu’au {when}. Contactez-nous. | It is too late to cancel online: it was possible until {when}. Contact us. | È troppo tardi per annullare online: era possibile fino al {when}. Contattateci. | `{when}` |
 | `orderCancel.refusals.payment_in_progress` | Un paiement est en cours sur cette commande. Réessayez dans quelques minutes. | A payment is in progress on this order. Try again in a few minutes. | Un pagamento è in corso su questo ordine. Riprovate tra qualche minuto. |  |
 | `orderCancel.refusals.paid_just_now` | Votre paiement vient d’aboutir. Rechargez la page pour annuler avec remboursement. | Your payment has just gone through. Reload the page to cancel with a refund. | Il vostro pagamento è appena andato a buon fine. Ricaricate la pagina per annullare con rimborso. |  |

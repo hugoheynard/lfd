@@ -18,6 +18,7 @@ import {
 const RECONCILED_STATUSES = [
   OrderStatus.confirmed,
   OrderStatus.ready,
+  OrderStatus.partially_handed_over,
   OrderStatus.fulfilled,
   OrderStatus.cancelled,
   OrderStatus.draft,
