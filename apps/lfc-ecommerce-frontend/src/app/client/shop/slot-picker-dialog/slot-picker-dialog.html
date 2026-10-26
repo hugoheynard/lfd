@@ -21,14 +21,17 @@
          pas une. -->
     <fold-empty-state [title]="c().days.none" [subtitle]="c().empty.subtitle" />
   } @else {
-    <div class="days" role="tablist" [attr.aria-label]="c().title">
+    <!-- UN CHOIX, PAS DES ONGLETS (RGAA 7.1, lot A2) : `tablist` promettait des
+         panneaux que rien ne déclarait. Le jour est un groupe radio, au clavier
+         du motif — un arrêt, les flèches (`appRovingRadioGroup`). -->
+    <div class="days" role="radiogroup" appRovingRadioGroup [attr.aria-label]="c().days.group">
       @for (tab of days(); track tab.day) {
         <button
           class="day"
           type="button"
-          role="tab"
+          role="radio"
           [class.on]="day() === tab.day"
-          [attr.aria-selected]="day() === tab.day"
+          [attr.aria-checked]="day() === tab.day"
           (click)="showDay(tab.day)"
         >
           {{ tab.label }}
@@ -56,7 +59,7 @@
            Seule la seconde moitié a une source ; le moment de la journée n'en a
            aucune, et le déduire de l'heure ferait appeler « après-ski » un
            créneau de 16 h en plein août. -->
-      <div class="batches" role="radiogroup" [attr.aria-label]="c().title">
+      <div class="batches" role="radiogroup" appRovingRadioGroup [attr.aria-label]="c().title">
         @for (batch of batches(); track $index) {
           @if (batch.label) {
             <p class="batch-label">{{ batch.label }}</p>

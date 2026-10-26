@@ -44,7 +44,10 @@ const REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
  * - il s'ARRÊTE au premier toucher : sur un téléphone, il n'y a pas de
  *   « sortie » du survol, et un contenu qui file sous le pouce se perd ;
  * - il ne démarre JAMAIS sous `prefers-reduced-motion`, ni côté serveur — il
- *   n'est armé qu'après le premier rendu dans le navigateur.
+ *   n'est armé qu'après le premier rendu dans le navigateur ;
+ * - un bouton pause / lecture, toujours visible tant qu'il défile, le
+ *   suspend et le reprend (RGAA 13.8, lot A4 du 2026-10-26) : le survol et
+ *   le focus ne suffisent pas à qui ne peut pas les tenir.
  */
 @Component({
   selector: 'app-storefront-slot',
@@ -100,6 +103,12 @@ export class StorefrontSlot {
   private readonly armed = signal(false);
   private readonly holds = signal<ReadonlySet<Hold>>(new Set());
   private readonly stopped = signal(false);
+
+  /** La case défile seule : c'est là, et là seulement, qu'il faut de quoi l'arrêter. */
+  protected readonly autoplays = computed(() => this.active()?.autoplay === true && this.armed());
+
+  /** Arrêtée, par le bouton ou par un toucher : le bouton propose alors de reprendre. */
+  protected readonly paused = this.stopped.asReadonly();
 
   constructor() {
     afterNextRender(() => {
@@ -159,5 +168,10 @@ export class StorefrontSlot {
 
   protected stop(): void {
     this.stopped.set(true);
+  }
+
+  /** Le bouton pause / lecture : il arrête, ou relance un défilement arrêté. */
+  protected togglePause(): void {
+    this.stopped.update((stopped) => !stopped);
   }
 }

@@ -40,6 +40,8 @@ import { ProVisitNote } from '../pro-visit-note/pro-visit-note';
 import { ProVisit } from '../pro-visit.service';
 import { PieceRequest } from '../piece-request.service';
 import { OperationNotice } from '../operation-notice/operation-notice';
+import { CartAnnouncement } from '../cart-announcement/cart-announcement';
+import { CartAnnouncer } from '../cart-announcer.service';
 import { ShelfGrid } from './shelf-grid/shelf-grid';
 import { ShelfNav } from './shelf-nav/shelf-nav';
 
@@ -68,6 +70,7 @@ import { ShelfNav } from './shelf-nav/shelf-nav';
   selector: 'app-shop-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    CartAnnouncement,
     CartBar,
     OrderBar,
     ClientBannerOutlet,
@@ -109,6 +112,7 @@ export class ShopPage {
   private readonly storefront = inject(ShopStorefront);
   private readonly audience = inject(ProductAudience);
   private readonly entries = inject(CartEntries);
+  private readonly announcer = inject(CartAnnouncer);
 
   /**
    * L'état de la page de vitrine du rayon affiché — `null` pendant une
@@ -186,6 +190,7 @@ export class ShopPage {
     if (entering && this.cart.quantityOf(id) > 0) {
       this.entries.entered(id);
     }
+    this.announcer.announce(id);
     this.pieceAddress.close();
   }
 

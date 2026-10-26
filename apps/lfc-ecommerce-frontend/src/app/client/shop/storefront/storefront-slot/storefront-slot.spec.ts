@@ -149,6 +149,31 @@ describe('StorefrontSlot', () => {
     expect(current()).toBe('Le rayon de Noël');
   });
 
+  /** RGAA 13.8 : un contenu qui défile seul se met en pause d'un geste nommé. */
+  it('un bouton pause, nommé, arrête le défilement ; le même le reprend', async () => {
+    await render([NOEL, PAQUES, FETE], AUTO);
+    await wait(0);
+    const pause = (): HTMLButtonElement | undefined => buttons()[0];
+    expect(buttons()).toHaveLength(6);
+    expect(pause()?.getAttribute('aria-label')).toBe('Mettre en pause le défilement');
+
+    pause()?.click();
+    await wait(60);
+    expect(current()).toBe('Le rayon de Noël');
+    expect(pause()?.getAttribute('aria-label')).toBe('Reprendre le défilement');
+
+    pause()?.click();
+    await wait(8);
+    expect(current()).toBe('Pâques');
+  });
+
+  it('pas de bouton pause quand rien ne défile seul', async () => {
+    motionReduced(true);
+    await render([NOEL, PAQUES], AUTO);
+    await wait(0);
+    expect(el().querySelector('[aria-label="Mettre en pause le défilement"]')).toBeNull();
+  });
+
   it('ne défile pas quand l’objet ne le demande pas', async () => {
     await render([NOEL, PAQUES], { ...AUTO, autoplay: false });
 

@@ -1,13 +1,17 @@
 import {
+  afterNextRender,
   ChangeDetectionStrategy,
   Component,
   computed,
   effect,
+  ElementRef,
   inject,
+  Injector,
   output,
   signal,
 } from '@angular/core';
-import { FoldCalloutComponent, FoldInputComponent } from 'fold-ng';
+import type { ValidationError } from '@angular/forms/signals';
+import { FoldInputComponent } from 'fold-ng';
 
 import { ClientCopyService } from '../../copy/client-copy.service';
 import { isRecord, readLocal, readString, writeLocal } from '../../local-store';
@@ -111,7 +115,7 @@ const PLAUSIBLE_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
 @Component({
   selector: 'app-guest-identity-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldCalloutComponent, FoldInputComponent],
+  imports: [FoldInputComponent],
   templateUrl: './guest-identity-form.html',
   styleUrl: './guest-identity-form.scss',
 })
@@ -137,15 +141,73 @@ export class GuestIdentityForm {
    * — on n'a pas fini. Retaper dans le champ le fait taire jusqu'à la sortie
    * suivante.
    */
-  private readonly confirmLeft = signal(false);
+  protected readonly confirmLeft = signal(false);
 
   private readonly emailsMatch = computed(
     () => normalize(this.email()) === normalize(this.emailAgain()),
   );
 
-  protected readonly mismatch = computed(
-    () => this.confirmLeft() && this.emailAgain().trim() !== '' && !this.emailsMatch(),
+  /** Un envoi a été tenté : les champs VIDES se disent aussi, plus seulement les mal formés. */
+  private readonly revealed = signal(false);
+
+  protected readonly firstNameTouched = signal(false);
+  protected readonly emailTouched = signal(false);
+  protected readonly phoneTouched = signal(false);
+
+  protected readonly firstNameErrors = computed(() =>
+    errorsOf(this.missing(this.firstName()) ? this.t().cart.guestFirstNameMissing : null),
   );
+
+  protected readonly emailErrors = computed(() => {
+    const value = this.email().trim();
+    if (value === '') {
+      return errorsOf(this.revealed() ? this.t().cart.guestEmailMissing : null);
+    }
+    return errorsOf(PLAUSIBLE_EMAIL.test(value) ? null : this.t().cart.guestEmailInvalid);
+  });
+
+  /** L'écart des deux adresses ; fold ne le montre qu'une fois le champ QUITTÉ (`confirmLeft`). */
+  protected readonly emailAgainErrors = computed(() => {
+    if (this.emailAgain().trim() === '') {
+      return errorsOf(this.revealed() ? this.t().cart.guestEmailAgainMissing : null);
+    }
+    return errorsOf(this.emailsMatch() ? null : this.t().cart.guestEmailMismatch);
+  });
+
+  protected readonly phoneErrors = computed(() =>
+    errorsOf(this.missing(this.phone()) ? this.t().cart.guestPhoneMissing : null),
+  );
+
+  private missing(value: string): boolean {
+    return this.revealed() && value.trim() === '';
+  }
+
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly injector = inject(Injector);
+
+  /**
+   * **L'envoi tenté avec une saisie incomplète** (RGAA 11.10, lot A3) : chaque
+   * champ fautif dit son erreur, et le focus va au PREMIER — c'est lui que
+   * le lecteur d'écran lit alors, avec son message.
+   *
+   * Appelé par le panier au clic sur le règlement ; le bouton n'est plus grisé
+   * pour une identité incomplète, sans quoi personne ne saurait quoi corriger.
+   */
+  reveal(): void {
+    this.revealed.set(true);
+    this.firstNameTouched.set(true);
+    this.emailTouched.set(true);
+    this.confirmLeft.set(true);
+    this.phoneTouched.set(true);
+    afterNextRender(
+      () => {
+        this.host.nativeElement
+          .querySelector<HTMLInputElement>('input[aria-invalid="true"]')
+          ?.focus();
+      },
+      { injector: this.injector },
+    );
+  }
 
   protected typeConfirmation(value: string): void {
     this.emailAgain.set(value);
@@ -184,6 +246,11 @@ export class GuestIdentityForm {
       this.identityChange.emit(this.identity());
     });
   }
+}
+
+/** Une erreur au format que `fold-input` lit, ou aucune. */
+function errorsOf(message: string | null): readonly ValidationError.WithOptionalFieldTree[] {
+  return message === null ? [] : [{ kind: 'guest', message }];
 }
 
 function normalize(email: string): string {

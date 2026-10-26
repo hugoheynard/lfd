@@ -45,6 +45,7 @@ import {
   weekdayOfIsoDate,
 } from '../delivery-window';
 import { ServicePoints } from '../pickup-points.store';
+import { RovingRadioGroup } from '../../a11y/roving-radio-group';
 
 /** Ce qu'il faut pour ouvrir la porte : l'adresse déjà retenue, s'il y en a une. */
 export interface DeliveryAddressData {
@@ -140,6 +141,7 @@ interface Entry {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldButtonComponent,
+    RovingRadioGroup,
     FoldCalloutComponent,
     FoldEmptyStateComponent,
     FoldInputComponent,

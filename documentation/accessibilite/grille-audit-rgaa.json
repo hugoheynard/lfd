@@ -1350,23 +1350,23 @@
       "resultats": {
         "P01": {
           "statut": "NT",
-          "preuve": "",
-          "lot": ""
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : text-muted 4,21:1 sur le bandeau (paper-200), 4,40:1 en registre sombre sur sa carte ; « TTC » (text-subtle) 3,73:1 sur la carte — corrigé (lot A4), à revérifier à l'audit : jetons du thème papier relevés (src/styles/_lfc-app-theme.scss, spec lfc-app-theme-contrast) : text-muted soot-600 #665f50 (4,82:1 sur le bandeau, 6,23 sur la carte), text-subtle aligné sur text-muted (« TTC » 6,23:1 sur la carte), text-faded soot-550 (≥ 3,14:1), ink-300 #b4c8ee (4,84:1 sur la carte du registre sombre)",
+          "lot": "A4 — fait, à revérifier à l'audit"
         },
         "P02": {
           "statut": "NT",
-          "preuve": "",
-          "lot": ""
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : text-muted 4,21:1 sur le bandeau (paper-200), 4,40:1 en registre sombre sur sa carte ; « TTC » (text-subtle) 3,73:1 sur la carte — corrigé (lot A4), à revérifier à l'audit : jetons du thème papier relevés (src/styles/_lfc-app-theme.scss, spec lfc-app-theme-contrast) : text-muted soot-600 #665f50 (4,82:1 sur le bandeau, 6,23 sur la carte), text-subtle aligné sur text-muted (« TTC » 6,23:1 sur la carte), text-faded soot-550 (≥ 3,14:1), ink-300 #b4c8ee (4,84:1 sur la carte du registre sombre)",
+          "lot": "A4 — fait, à revérifier à l'audit"
         },
         "P03": {
           "statut": "NT",
-          "preuve": "",
-          "lot": ""
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : text-muted 4,21:1 sur le bandeau (paper-200), 4,40:1 en registre sombre sur sa carte ; « TTC » (text-subtle) 3,73:1 sur la carte — corrigé (lot A4), à revérifier à l'audit : jetons du thème papier relevés (src/styles/_lfc-app-theme.scss, spec lfc-app-theme-contrast) : text-muted soot-600 #665f50 (4,82:1 sur le bandeau, 6,23 sur la carte), text-subtle aligné sur text-muted (« TTC » 6,23:1 sur la carte), text-faded soot-550 (≥ 3,14:1), ink-300 #b4c8ee (4,84:1 sur la carte du registre sombre)",
+          "lot": "A4 — fait, à revérifier à l'audit"
         },
         "P04": {
           "statut": "NT",
-          "preuve": "",
-          "lot": ""
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : text-muted 4,21:1 sur le bandeau (paper-200), 4,40:1 en registre sombre sur sa carte ; « TTC » (text-subtle) 3,73:1 sur la carte — corrigé (lot A4), à revérifier à l'audit : jetons du thème papier relevés (src/styles/_lfc-app-theme.scss, spec lfc-app-theme-contrast) : text-muted soot-600 #665f50 (4,82:1 sur le bandeau, 6,23 sur la carte), text-subtle aligné sur text-muted (« TTC » 6,23:1 sur la carte), text-faded soot-550 (≥ 3,14:1), ink-300 #b4c8ee (4,84:1 sur la carte du registre sombre)",
+          "lot": "A4 — fait, à revérifier à l'audit"
         },
         "P05": {
           "statut": "NT",
@@ -1375,13 +1375,13 @@
         },
         "P06": {
           "statut": "NT",
-          "preuve": "",
-          "lot": ""
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : text-muted 4,21:1 sur le bandeau (paper-200), 4,40:1 en registre sombre sur sa carte ; « TTC » (text-subtle) 3,73:1 sur la carte — corrigé (lot A4), à revérifier à l'audit : jetons du thème papier relevés (src/styles/_lfc-app-theme.scss, spec lfc-app-theme-contrast) : text-muted soot-600 #665f50 (4,82:1 sur le bandeau, 6,23 sur la carte), text-subtle aligné sur text-muted (« TTC » 6,23:1 sur la carte), text-faded soot-550 (≥ 3,14:1), ink-300 #b4c8ee (4,84:1 sur la carte du registre sombre)",
+          "lot": "A4 — fait, à revérifier à l'audit"
         },
         "P07": {
           "statut": "NT",
-          "preuve": "",
-          "lot": ""
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : text-muted 4,21:1 sur le bandeau (paper-200), 4,40:1 en registre sombre sur sa carte ; « TTC » (text-subtle) 3,73:1 sur la carte — corrigé (lot A4), à revérifier à l'audit : jetons du thème papier relevés (src/styles/_lfc-app-theme.scss, spec lfc-app-theme-contrast) : text-muted soot-600 #665f50 (4,82:1 sur le bandeau, 6,23 sur la carte), text-subtle aligné sur text-muted (« TTC » 6,23:1 sur la carte), text-faded soot-550 (≥ 3,14:1), ink-300 #b4c8ee (4,84:1 sur la carte du registre sombre)",
+          "lot": "A4 — fait, à revérifier à l'audit"
         },
         "P08": {
           "statut": "NT",
@@ -1395,8 +1395,8 @@
         },
         "P10": {
           "statut": "NT",
-          "preuve": "",
-          "lot": ""
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : text-muted 4,21:1 sur le bandeau (paper-200), 4,40:1 en registre sombre sur sa carte ; « TTC » (text-subtle) 3,73:1 sur la carte — corrigé (lot A4), à revérifier à l'audit : jetons du thème papier relevés (src/styles/_lfc-app-theme.scss, spec lfc-app-theme-contrast) : text-muted soot-600 #665f50 (4,82:1 sur le bandeau, 6,23 sur la carte), text-subtle aligné sur text-muted (« TTC » 6,23:1 sur la carte), text-faded soot-550 (≥ 3,14:1), ink-300 #b4c8ee (4,84:1 sur la carte du registre sombre)",
+          "lot": "A4 — fait, à revérifier à l'audit"
         },
         "P11": {
           "statut": "NT",
@@ -1445,8 +1445,8 @@
         },
         "P02": {
           "statut": "NC",
-          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : « TTC/HT » à 3,73:1 en 10,5 px, mesuré en prod. shop/product-tile/product-tile.scss:185-189 ; raccourcis text-faded 2,56:1, shop/shortcut-row/shortcut-row.scss:151,201",
-          "lot": "A4"
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : « TTC/HT » à 3,73:1 en 10,5 px, mesuré en prod. shop/product-tile/product-tile.scss:185-189 ; raccourcis text-faded 2,56:1, shop/shortcut-row/shortcut-row.scss:151,201 — corrigé (lot A4), à revérifier à l'audit : jetons du thème papier relevés (src/styles/_lfc-app-theme.scss, spec lfc-app-theme-contrast) : text-muted soot-600 #665f50 (4,82:1 sur le bandeau, 6,23 sur la carte), text-subtle aligné sur text-muted (« TTC » 6,23:1 sur la carte), text-faded soot-550 (≥ 3,14:1), ink-300 #b4c8ee (4,84:1 sur la carte du registre sombre)",
+          "lot": "A4 — fait, à revérifier à l'audit"
         },
         "P03": {
           "statut": "NT",
@@ -1455,8 +1455,8 @@
         },
         "P04": {
           "statut": "NC",
-          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : text-faded 2,56:1, cart/cart-dialog/cart-dialog.scss:244 ; contour des champs 1,25:1 (--fold-color-border, src/styles/_lfc-app-theme.scss l.105)",
-          "lot": "A4 / F (tokens)"
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : text-faded 2,56:1, cart/cart-dialog/cart-dialog.scss:244 ; contour des champs 1,25:1 (--fold-color-border, src/styles/_lfc-app-theme.scss l.105) — corrigé (lot A4), à revérifier à l'audit : jetons du thème papier relevés (src/styles/_lfc-app-theme.scss, spec lfc-app-theme-contrast) : text-muted soot-600 #665f50 (4,82:1 sur le bandeau, 6,23 sur la carte), text-subtle aligné sur text-muted (« TTC » 6,23:1 sur la carte), text-faded soot-550 (≥ 3,14:1), ink-300 #b4c8ee (4,84:1 sur la carte du registre sombre)",
+          "lot": "A4 — fait, à revérifier à l'audit"
         },
         "P05": {
           "statut": "NT",
@@ -3387,8 +3387,8 @@
         },
         "P04": {
           "statut": "NC",
-          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : <dialog> sans nom (dialog/client-dialog.html:3) ; créneaux role=tablist/tab sans tabpanel ni flèches, role=radio sans roving tabindex (shop/slot-picker-dialog/slot-picker-dialog.html:24,29,73) ; même motif dans shop/delivery-address-dialog/delivery-address-dialog.html:65 et shop/public-house-picker-dialog/public-house-picker-dialog.html:25",
-          "lot": "A1 (nom du dialogue, fait 60f5dc181) + A2 (rôles ARIA maison)"
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : <dialog> sans nom (dialog/client-dialog.html:3) ; créneaux role=tablist/tab sans tabpanel ni flèches, role=radio sans roving tabindex (shop/slot-picker-dialog/slot-picker-dialog.html:24,29,73) ; même motif dans shop/delivery-address-dialog/delivery-address-dialog.html:65 et shop/public-house-picker-dialog/public-house-picker-dialog.html:25 — corrigé (lot A2), à revérifier à l'audit : rôles ARIA maison : jours en radiogroup (plus de tablist), créneaux, maisons et adresses au motif radio — un arrêt de tabulation par groupe, flèches/Début/Fin, la sélection suit le focus (a11y/roving-radio-group.ts ; fold n'a pas de radiogroup à rangée riche)",
+          "lot": "A1 (nom du dialogue, fait 60f5dc181) + A2 (rôles ARIA maison) — fait, à revérifier à l'audit"
         },
         "P05": {
           "statut": "NT",
@@ -3697,8 +3697,8 @@
         },
         "P02": {
           "statut": "NC",
-          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : Ajout au panier et changement de quantité sans message d'état (aucun aria-live dans la boutique) ; pastille quantité aria-hidden. product-tile.html:23 ; quantity-rail.html:9",
-          "lot": "A2"
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : Ajout au panier et changement de quantité sans message d'état (aucun aria-live dans la boutique) ; pastille quantité aria-hidden. product-tile.html:23 ; quantity-rail.html:9 — corrigé (lot A2), à revérifier à l'audit : région role=status hors de la grille (shop/cart-announcement) : « {name} : {n} au panier » / « {name} retiré du panier », fr/en/it, à la tuile et à la fiche, sur la boutique et l'accueil",
+          "lot": "A2 — fait, à revérifier à l'audit"
         },
         "P03": {
           "statut": "NT",
@@ -4542,8 +4542,8 @@
         },
         "P02": {
           "statut": "NC",
-          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : Aucun h1, aucun titre de rayon ni de produit, observé en prod. shop/shop-page/shop-page.html, shelf-grid.html, product-tile.html",
-          "lot": "A1 (h1, fait 60f5dc181) + A2 (h2 rayons, h3 produits)"
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : Aucun h1, aucun titre de rayon ni de produit, observé en prod. shop/shop-page/shop-page.html, shelf-grid.html, product-tile.html — corrigé (lot A2), à revérifier à l'audit : h2 du rayon ou de la recherche (lu, non affiché), h3 par produit (nom de la tuile) et par case d'annonce (info-card), h2 « La vitrine » sur l'accueil",
+          "lot": "A1 (h1, fait 60f5dc181) + A2 (h2 rayons, h3 produits) — fait, à revérifier à l'audit"
         },
         "P03": {
           "statut": "NT",
@@ -4706,8 +4706,8 @@
         },
         "P02": {
           "statut": "NC",
-          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : Grille de produits en div, pas en liste. shelf-grid.html:2",
-          "lot": "A2"
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : Grille de produits en div, pas en liste. shelf-grid.html:2 — corrigé (lot A2), à revérifier à l'audit : grille en role=list / listitem (rayon d'aujourd'hui et vitrine composée), le vide n'est pas une liste",
+          "lot": "A2 — fait, à revérifier à l'audit"
         },
         "P03": {
           "statut": "NT",
@@ -5324,23 +5324,23 @@
       "resultats": {
         "P01": {
           "statut": "NT",
-          "preuve": "",
-          "lot": ""
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : boutons maison sans anneau propre, anneau par défaut du navigateur — corrigé (lot A4), à revérifier à l'audit : :focus-visible global du thème lfc-app, 2 px de --fold-color-primary (≥ 7,5:1 sur papier et sur encre), à spécificité nulle : les anneaux fold et ceux des écrans l'emportent, aucun n'est doublé",
+          "lot": "A4 — fait, à revérifier à l'audit"
         },
         "P02": {
           "statut": "NT",
-          "preuve": "",
-          "lot": ""
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : boutons maison sans anneau propre, anneau par défaut du navigateur — corrigé (lot A4), à revérifier à l'audit : :focus-visible global du thème lfc-app, 2 px de --fold-color-primary (≥ 7,5:1 sur papier et sur encre), à spécificité nulle : les anneaux fold et ceux des écrans l'emportent, aucun n'est doublé",
+          "lot": "A4 — fait, à revérifier à l'audit"
         },
         "P03": {
           "statut": "NT",
-          "preuve": "",
-          "lot": ""
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : boutons maison sans anneau propre, anneau par défaut du navigateur — corrigé (lot A4), à revérifier à l'audit : :focus-visible global du thème lfc-app, 2 px de --fold-color-primary (≥ 7,5:1 sur papier et sur encre), à spécificité nulle : les anneaux fold et ceux des écrans l'emportent, aucun n'est doublé",
+          "lot": "A4 — fait, à revérifier à l'audit"
         },
         "P04": {
           "statut": "NT",
-          "preuve": "",
-          "lot": ""
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : boutons maison sans anneau propre, anneau par défaut du navigateur — corrigé (lot A4), à revérifier à l'audit : :focus-visible global du thème lfc-app, 2 px de --fold-color-primary (≥ 7,5:1 sur papier et sur encre), à spécificité nulle : les anneaux fold et ceux des écrans l'emportent, aucun n'est doublé",
+          "lot": "A4 — fait, à revérifier à l'audit"
         },
         "P05": {
           "statut": "NT",
@@ -5349,38 +5349,38 @@
         },
         "P06": {
           "statut": "NT",
-          "preuve": "",
-          "lot": ""
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : boutons maison sans anneau propre, anneau par défaut du navigateur — corrigé (lot A4), à revérifier à l'audit : :focus-visible global du thème lfc-app, 2 px de --fold-color-primary (≥ 7,5:1 sur papier et sur encre), à spécificité nulle : les anneaux fold et ceux des écrans l'emportent, aucun n'est doublé",
+          "lot": "A4 — fait, à revérifier à l'audit"
         },
         "P07": {
           "statut": "NT",
-          "preuve": "",
-          "lot": ""
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : boutons maison sans anneau propre, anneau par défaut du navigateur — corrigé (lot A4), à revérifier à l'audit : :focus-visible global du thème lfc-app, 2 px de --fold-color-primary (≥ 7,5:1 sur papier et sur encre), à spécificité nulle : les anneaux fold et ceux des écrans l'emportent, aucun n'est doublé",
+          "lot": "A4 — fait, à revérifier à l'audit"
         },
         "P08": {
           "statut": "NT",
-          "preuve": "",
-          "lot": ""
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : boutons maison sans anneau propre, anneau par défaut du navigateur — corrigé (lot A4), à revérifier à l'audit : :focus-visible global du thème lfc-app, 2 px de --fold-color-primary (≥ 7,5:1 sur papier et sur encre), à spécificité nulle : les anneaux fold et ceux des écrans l'emportent, aucun n'est doublé",
+          "lot": "A4 — fait, à revérifier à l'audit"
         },
         "P09": {
           "statut": "NT",
-          "preuve": "",
-          "lot": ""
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : boutons maison sans anneau propre, anneau par défaut du navigateur — corrigé (lot A4), à revérifier à l'audit : :focus-visible global du thème lfc-app, 2 px de --fold-color-primary (≥ 7,5:1 sur papier et sur encre), à spécificité nulle : les anneaux fold et ceux des écrans l'emportent, aucun n'est doublé",
+          "lot": "A4 — fait, à revérifier à l'audit"
         },
         "P10": {
           "statut": "NT",
-          "preuve": "",
-          "lot": ""
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : boutons maison sans anneau propre, anneau par défaut du navigateur — corrigé (lot A4), à revérifier à l'audit : :focus-visible global du thème lfc-app, 2 px de --fold-color-primary (≥ 7,5:1 sur papier et sur encre), à spécificité nulle : les anneaux fold et ceux des écrans l'emportent, aucun n'est doublé",
+          "lot": "A4 — fait, à revérifier à l'audit"
         },
         "P11": {
           "statut": "NT",
-          "preuve": "",
-          "lot": ""
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : boutons maison sans anneau propre, anneau par défaut du navigateur — corrigé (lot A4), à revérifier à l'audit : :focus-visible global du thème lfc-app, 2 px de --fold-color-primary (≥ 7,5:1 sur papier et sur encre), à spécificité nulle : les anneaux fold et ceux des écrans l'emportent, aucun n'est doublé",
+          "lot": "A4 — fait, à revérifier à l'audit"
         },
         "P12": {
           "statut": "NT",
-          "preuve": "",
-          "lot": ""
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : boutons maison sans anneau propre, anneau par défaut du navigateur — corrigé (lot A4), à revérifier à l'audit : :focus-visible global du thème lfc-app, 2 px de --fold-color-primary (≥ 7,5:1 sur papier et sur encre), à spécificité nulle : les anneaux fold et ceux des écrans l'emportent, aucun n'est doublé",
+          "lot": "A4 — fait, à revérifier à l'audit"
         }
       }
     },
@@ -5644,23 +5644,23 @@
       "resultats": {
         "P01": {
           "statut": "NT",
-          "preuve": "",
-          "lot": ""
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : « BOULANGERIE · VAL D'ISÈRE » chevauche langue et panier à 320 px — corrigé (lot A4), à revérifier à l'audit : kicker d'en-tête sur une ligne rognée (ellipse), masqué sous 360 px (shell/client-shell.scss)",
+          "lot": "A4 — fait, à revérifier à l'audit"
         },
         "P02": {
           "statut": "NT",
-          "preuve": "",
-          "lot": ""
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : « BOULANGERIE · VAL D'ISÈRE » chevauche langue et panier à 320 px — corrigé (lot A4), à revérifier à l'audit : kicker d'en-tête sur une ligne rognée (ellipse), masqué sous 360 px (shell/client-shell.scss)",
+          "lot": "A4 — fait, à revérifier à l'audit"
         },
         "P03": {
           "statut": "NT",
-          "preuve": "",
-          "lot": ""
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : « BOULANGERIE · VAL D'ISÈRE » chevauche langue et panier à 320 px — corrigé (lot A4), à revérifier à l'audit : kicker d'en-tête sur une ligne rognée (ellipse), masqué sous 360 px (shell/client-shell.scss)",
+          "lot": "A4 — fait, à revérifier à l'audit"
         },
         "P04": {
           "statut": "NT",
-          "preuve": "",
-          "lot": ""
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : « BOULANGERIE · VAL D'ISÈRE » chevauche langue et panier à 320 px — corrigé (lot A4), à revérifier à l'audit : kicker d'en-tête sur une ligne rognée (ellipse), masqué sous 360 px (shell/client-shell.scss)",
+          "lot": "A4 — fait, à revérifier à l'audit"
         },
         "P05": {
           "statut": "NT",
@@ -5669,38 +5669,38 @@
         },
         "P06": {
           "statut": "NT",
-          "preuve": "",
-          "lot": ""
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : « BOULANGERIE · VAL D'ISÈRE » chevauche langue et panier à 320 px — corrigé (lot A4), à revérifier à l'audit : kicker d'en-tête sur une ligne rognée (ellipse), masqué sous 360 px (shell/client-shell.scss)",
+          "lot": "A4 — fait, à revérifier à l'audit"
         },
         "P07": {
           "statut": "NT",
-          "preuve": "",
-          "lot": ""
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : « BOULANGERIE · VAL D'ISÈRE » chevauche langue et panier à 320 px — corrigé (lot A4), à revérifier à l'audit : kicker d'en-tête sur une ligne rognée (ellipse), masqué sous 360 px (shell/client-shell.scss)",
+          "lot": "A4 — fait, à revérifier à l'audit"
         },
         "P08": {
           "statut": "NT",
-          "preuve": "",
-          "lot": ""
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : « BOULANGERIE · VAL D'ISÈRE » chevauche langue et panier à 320 px — corrigé (lot A4), à revérifier à l'audit : kicker d'en-tête sur une ligne rognée (ellipse), masqué sous 360 px (shell/client-shell.scss)",
+          "lot": "A4 — fait, à revérifier à l'audit"
         },
         "P09": {
           "statut": "NT",
-          "preuve": "",
-          "lot": ""
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : « BOULANGERIE · VAL D'ISÈRE » chevauche langue et panier à 320 px — corrigé (lot A4), à revérifier à l'audit : kicker d'en-tête sur une ligne rognée (ellipse), masqué sous 360 px (shell/client-shell.scss)",
+          "lot": "A4 — fait, à revérifier à l'audit"
         },
         "P10": {
           "statut": "NT",
-          "preuve": "",
-          "lot": ""
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : « BOULANGERIE · VAL D'ISÈRE » chevauche langue et panier à 320 px — corrigé (lot A4), à revérifier à l'audit : kicker d'en-tête sur une ligne rognée (ellipse), masqué sous 360 px (shell/client-shell.scss)",
+          "lot": "A4 — fait, à revérifier à l'audit"
         },
         "P11": {
           "statut": "NT",
-          "preuve": "",
-          "lot": ""
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : « BOULANGERIE · VAL D'ISÈRE » chevauche langue et panier à 320 px — corrigé (lot A4), à revérifier à l'audit : kicker d'en-tête sur une ligne rognée (ellipse), masqué sous 360 px (shell/client-shell.scss)",
+          "lot": "A4 — fait, à revérifier à l'audit"
         },
         "P12": {
           "statut": "NT",
-          "preuve": "",
-          "lot": ""
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : « BOULANGERIE · VAL D'ISÈRE » chevauche langue et panier à 320 px — corrigé (lot A4), à revérifier à l'audit : kicker d'en-tête sur une ligne rognée (ellipse), masqué sous 360 px (shell/client-shell.scss)",
+          "lot": "A4 — fait, à revérifier à l'audit"
         }
       }
     },
@@ -6748,8 +6748,8 @@
         },
         "P04": {
           "statut": "NC",
-          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : Identité invité : pas d'erreur par champ (e-mail, téléphone), guest-identity-form.html:7,15,26,35 ; bouton payer désactivé sans raison annoncée, cart-dialog.ts:241-249",
-          "lot": "A3"
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : Identité invité : pas d'erreur par champ (e-mail, téléphone), guest-identity-form.html:7,15,26,35 ; bouton payer désactivé sans raison annoncée, cart-dialog.ts:241-249 — corrigé (lot A3), à revérifier à l'audit : erreurs par champ reliées (fold-input errors, role=alert), focus au premier champ fautif au clic, raison du blocage sous le bouton (aria-describedby), refus serveur en callout annoncé dans le panier",
+          "lot": "A3 — fait, à revérifier à l'audit"
         },
         "P05": {
           "statut": "NT",
@@ -6984,8 +6984,8 @@
         },
         "P04": {
           "statut": "NC",
-          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : Identité invité : aucun autocomplete (given-name, email, tel). guest-identity-form.html:7,15,26,35",
-          "lot": "A3"
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : Identité invité : aucun autocomplete (given-name, email, tel). guest-identity-form.html:7,15,26,35 — corrigé (lot A3), à revérifier à l'audit : given-name, email (×2), tel",
+          "lot": "A3 — fait, à revérifier à l'audit"
         },
         "P05": {
           "statut": "NT",
@@ -8470,23 +8470,23 @@
       "resultats": {
         "P01": {
           "statut": "NT",
-          "preuve": "",
-          "lot": ""
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : carrousel automatique sans bouton pause ; 6 feuilles sur 29 écoutaient prefers-reduced-motion — corrigé (lot A4), à revérifier à l'audit : bouton pause / lecture nommé et traduit (fr/en/it) sur toute case qui défile seule (shop/storefront/storefront-slot) ; règle globale prefers-reduced-motion: reduce (styles.scss)",
+          "lot": "A4 — fait, à revérifier à l'audit"
         },
         "P02": {
           "statut": "NT",
-          "preuve": "",
-          "lot": ""
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : 29 SCSS animent, 6 seulement gèrent prefers-reduced-motion ; le dialogue glisse par transform — corrigé (lot A4), à revérifier à l'audit : règle globale prefers-reduced-motion: reduce — transitions et animations ramenées à une image (styles.scss)",
+          "lot": "A4 — fait, à revérifier à l'audit"
         },
         "P03": {
           "statut": "NT",
-          "preuve": "",
-          "lot": ""
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : 29 SCSS animent, 6 seulement gèrent prefers-reduced-motion ; le dialogue glisse par transform — corrigé (lot A4), à revérifier à l'audit : règle globale prefers-reduced-motion: reduce — transitions et animations ramenées à une image (styles.scss)",
+          "lot": "A4 — fait, à revérifier à l'audit"
         },
         "P04": {
           "statut": "NT",
-          "preuve": "",
-          "lot": ""
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : 29 SCSS animent, 6 seulement gèrent prefers-reduced-motion ; le dialogue glisse par transform — corrigé (lot A4), à revérifier à l'audit : règle globale prefers-reduced-motion: reduce — transitions et animations ramenées à une image (styles.scss)",
+          "lot": "A4 — fait, à revérifier à l'audit"
         },
         "P05": {
           "statut": "NT",
@@ -8840,5 +8840,201 @@
         }
       }
     }
-  ]
+  ],
+  "corrections": [
+    {
+      "theme": 1,
+      "date": "2026-10-26",
+      "statut": "fait",
+      "commit": "60f5dc181",
+      "libelle": {
+        "fr": "Alternatives textuelles des images : elles ne reprennent plus l’adresse du fichier",
+        "en": "Image text alternatives no longer repeat the file address",
+        "it": "Le alternative testuali delle immagini non riportano più l’indirizzo del file"
+      }
+    },
+    {
+      "theme": 8,
+      "date": "2026-10-26",
+      "statut": "fait",
+      "commit": "60f5dc181",
+      "libelle": {
+        "fr": "Langue de la page et titre de l’onglet suivent la langue choisie",
+        "en": "Page language and tab title follow the chosen language",
+        "it": "La lingua della pagina e il titolo della scheda seguono la lingua scelta"
+      }
+    },
+    {
+      "theme": 12,
+      "date": "2026-10-26",
+      "statut": "fait",
+      "commit": "60f5dc181",
+      "libelle": {
+        "fr": "Lien d’évitement traduit",
+        "en": "Skip link translated",
+        "it": "Link per saltare al contenuto tradotto"
+      }
+    },
+    {
+      "theme": 7,
+      "date": "2026-10-26",
+      "statut": "fait",
+      "commit": "60f5dc181",
+      "libelle": {
+        "fr": "Les dialogues ont un nom accessible",
+        "en": "Dialogs have an accessible name",
+        "it": "Le finestre di dialogo hanno un nome accessibile"
+      }
+    },
+    {
+      "theme": 9,
+      "date": "2026-10-26",
+      "statut": "fait",
+      "commit": "60f5dc181",
+      "libelle": {
+        "fr": "Titre principal de la page Boutique",
+        "en": "Main heading on the Shop page",
+        "it": "Titolo principale della pagina Negozio"
+      }
+    },
+    {
+      "theme": 12,
+      "date": "2026-10-26",
+      "statut": "fait",
+      "commit": "b7d91f49f",
+      "libelle": {
+        "fr": "Le focus revient à son point de départ à la fermeture des panneaux",
+        "en": "Focus returns to where it started when a panel closes",
+        "it": "Il focus torna al punto di partenza alla chiusura dei pannelli"
+      }
+    },
+    {
+      "theme": 10,
+      "date": "2026-10-26",
+      "statut": "fait",
+      "commit": "b7d91f49f",
+      "libelle": {
+        "fr": "Anneaux de focus visibles",
+        "en": "Visible focus rings",
+        "it": "Indicatori di focus visibili"
+      }
+    },
+    {
+      "theme": 3,
+      "date": "2026-10-26",
+      "statut": "fait",
+      "commit": "b7d91f49f",
+      "libelle": {
+        "fr": "Contraste des bordures de champ et des textes gris",
+        "en": "Contrast of field borders and grey text",
+        "it": "Contrasto dei bordi dei campi e dei testi grigi"
+      }
+    },
+    {
+      "theme": 11,
+      "date": "2026-10-26",
+      "statut": "fait",
+      "commit": "b7d91f49f",
+      "libelle": {
+        "fr": "La case des CGV est nommée par sa phrase, lien compris",
+        "en": "The terms of sale checkbox is named by its sentence, link included",
+        "it": "La casella delle condizioni di vendita è nominata dalla sua frase, link compreso"
+      }
+    },
+    {
+      "theme": 3,
+      "date": "2026-10-26",
+      "statut": "fait",
+      "commit": "1bf23944c",
+      "libelle": {
+        "fr": "Contour des champs sur le bandeau : contraste porté à 3:1",
+        "en": "Field outline on the banner: contrast raised to 3:1",
+        "it": "Contorno dei campi sulla fascia: contrasto portato a 3:1"
+      }
+    },
+    {
+      "theme": 9,
+      "date": "2026-10-26",
+      "statut": "fait",
+      "libelle": {
+        "fr": "Structure de la boutique : titres et listes",
+        "en": "Shop structure: headings and lists",
+        "it": "Struttura del negozio: titoli ed elenchi"
+      }
+    },
+    {
+      "theme": 12,
+      "date": "2026-10-26",
+      "statut": "fait",
+      "libelle": {
+        "fr": "Ordre de tabulation dans la boutique",
+        "en": "Tab order in the shop",
+        "it": "Ordine di tabulazione nel negozio"
+      }
+    },
+    {
+      "theme": 11,
+      "date": "2026-10-26",
+      "statut": "fait",
+      "libelle": {
+        "fr": "Formulaires du panier : saisie automatique, messages d’erreur, raison d’un bouton de paiement inactif",
+        "en": "Cart forms: autocomplete, error messages, reason for an inactive payment button",
+        "it": "Moduli del carrello: compilazione automatica, messaggi di errore, motivo di un pulsante di pagamento inattivo"
+      }
+    },
+    {
+      "theme": 3,
+      "date": "2026-10-26",
+      "statut": "fait",
+      "libelle": {
+        "fr": "Contraste du texte secondaire et des mentions « TTC » relevé",
+        "en": "Contrast of secondary text and “incl. VAT” notes raised",
+        "it": "Contrasto del testo secondario e delle diciture « IVA incl. » aumentato"
+      }
+    },
+    {
+      "theme": 10,
+      "date": "2026-10-26",
+      "statut": "fait",
+      "libelle": {
+        "fr": "Focus clavier visible partout, en-tête lisible à 320 px",
+        "en": "Keyboard focus visible everywhere, header readable at 320 px",
+        "it": "Focus da tastiera visibile ovunque, intestazione leggibile a 320 px"
+      }
+    },
+    {
+      "theme": 13,
+      "date": "2026-10-26",
+      "statut": "fait",
+      "libelle": {
+        "fr": "Mouvement réduit respecté, carrousel avec bouton pause",
+        "en": "Reduced motion respected, carousel with a pause button",
+        "it": "Movimento ridotto rispettato, carosello con pulsante di pausa"
+      }
+    },
+    {
+      "theme": 3,
+      "date": null,
+      "statut": "prevu",
+      "libelle": {
+        "fr": "Contrastes restants",
+        "en": "Remaining contrasts",
+        "it": "Contrasti restanti"
+      }
+    },
+    {
+      "theme": null,
+      "date": null,
+      "statut": "prevu",
+      "libelle": {
+        "fr": "Audit complet sur la grille RGAA 4.1.2",
+        "en": "Full audit against the RGAA 4.1.2 checklist",
+        "it": "Audit completo sulla griglia RGAA 4.1.2"
+      }
+    }
+  ],
+  "audit": {
+    "prevu": null,
+    "fait": null
+  }
 }

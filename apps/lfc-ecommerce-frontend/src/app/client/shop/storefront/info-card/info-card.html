@@ -19,7 +19,9 @@
       @if (badge(); as badge) {
         <span class="badge">{{ badge }}</span>
       }
-      <h2 class="title">{{ title() }}</h2>
+      <!-- `h3` : une case de la vitrine, au rang des tuiles qu'elle côtoie, sous
+           le titre du rayon (RGAA 9.1, lot A2). -->
+      <h3 class="title">{{ title() }}</h3>
       @if (lede(); as lede) {
         <p class="lede">{{ lede }}</p>
       }

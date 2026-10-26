@@ -1,4 +1,10 @@
+<!-- Ce que devient le panier sous un « + » ou un « − » (RGAA 7.5) : posée hors
+     de la condition, la région existe avant le premier geste. -->
+<app-cart-announcement />
 @if (shown(); as page) {
+  <!-- Le titre de la vitrine — lu, pas affiché : ses cases et ses produits y
+       sont des `h3`, comme au rayon (RGAA 9.1, lot A2). -->
+  <h2 class="title">{{ t().shop.storefrontTitle }}</h2>
   <app-shelf-grid
     [products]="products"
     [page]="page"

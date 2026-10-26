@@ -360,6 +360,21 @@
   letter-spacing: var(--lfc-tracking-kicker);
   text-transform: uppercase;
   color: var(--fold-color-text-muted);
+  /* RGAA 10.11 (lot A4, 2026-10-26) : à 320 px, « BOULANGERIE » à +0,2 em ne
+     tenait pas dans ce qui reste à la marque, et passait SOUS la langue et le
+     panier. Une ligne, rognée si besoin — jamais un débordement. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Sous 360 px, il ne reste à la marque que de quoi tenir son nom : la ligne de
+   la maison n'y serait plus qu'une ellipse. Elle s'efface : c'est une
+   signature, pas une information que l'écran perdrait. */
+@media (max-width: 359.98px) {
+  .brand-kicker {
+    display: none;
+  }
 }
 
 /* ── L'identité, en fin de rangée ────────────────────────────────────────── */

@@ -29,6 +29,7 @@ import { serviceDayLabel } from '../../format-day';
 import { dialogSide } from '../../panel-side';
 import { ORDER_DIALOG } from '../order-dialog';
 import { PublicSlots } from '../public-slots.gateway';
+import { RovingRadioGroup } from '../../a11y/roving-radio-group';
 
 /**
  * Combien de journées le visiteur peut regarder d'un coup.
@@ -133,6 +134,7 @@ interface DayTab {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldButtonComponent,
+    RovingRadioGroup,
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
     FoldPanelBodyComponent,

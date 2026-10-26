@@ -26,6 +26,15 @@
       } @else {
         <app-legal-articles [articles]="articles()" />
       }
+      <!-- Le suivi des corrections, sous la déclaration d'accessibilité
+           seulement (Hugo, 2026-10-26). Différé : ni lui, ni la table fold,
+           ni ses textes ne partent au démarrage — ils viennent avec le
+           dialogue. -->
+      @if (data() === 'accessibility') {
+        @defer (on immediate) {
+          <app-accessibility-follow-up />
+        }
+      }
     }
     <!-- `idle` et `loading` disent la même chose au visiteur : ça arrive. -->
     @default {

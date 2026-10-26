@@ -68,5 +68,41 @@ case est `NT`, il refuse de rendre un statut et répond « audit incomplet ».
   sera publié avant la fin de l'audit** : la déclaration reprendra le taux, la liste des NC,
   les dérogations (iframe Stripe, PDF) et l'échantillon de cette grille une fois toutes les
   cases tranchées et contre-vérifiées.
-- **La porte axe à venir** : un contrôle automatique ne couvre qu'une partie des critères ;
-  il empêchera une régression sur ce qu'il voit, mais ne remplace pas une case de la grille.
+- **La [porte axe](porte-axe.md)** (`pnpm a11y:axe`) : un contrôle automatique ne couvre qu'une partie des critères ;
+  il empêche une régression sur ce qu'il voit, mais ne remplace pas une case de la grille.
+
+## Le suivi des corrections publié
+
+Décidé par Hugo le 2026-10-26 : le dialogue « Accessibilité » de la boutique montre, sous la
+déclaration, un **tableau de suivi des corrections** — sans aucun taux tant que l'audit n'est pas
+fait. Sa source est dans cette grille, à deux clés de premier niveau :
+
+- **`corrections`** : une liste de `{ theme, date, statut, commit, libelle }`.
+  - `theme` : le numéro de la thématique RGAA (1 à 13), ou `null` pour une ligne transversale
+    (l'audit lui-même) ;
+  - `statut` : `fait`, `en_cours` ou `prevu` ;
+  - `date` (`AAAA-MM-JJ`) : le jour de livraison pour `fait` (obligatoire), le jour de début pour
+    `en_cours`, `null` pour ce qui n'est pas daté ;
+  - `commit` : le commit qui l'a livrée, pour nous — il n'est pas publié ;
+  - `libelle` : `{ fr, en, it }`, les trois obligatoires, écrits pour le public.
+- **`audit`** : `{ prevu: null | "AAAA-MM", fait: null | "AAAA-MM-JJ" }`. Aucune date ne s'y écrit
+  avant d'être décidée.
+
+Le cycle :
+
+1. modifier `corrections` ou `audit` ici ;
+2. lancer `pnpm rgaa:digest`
+   ([`dev-toolbox/rgaa-digest.mjs`](../../dev-toolbox/rgaa-digest.mjs)) : il valide les entrées et
+   écrit la part publique dans l'API
+   (`apps/lfd-api/src/b2b/content/infrastructure/embedded/accessibility-follow-up.json`) ;
+3. commiter la grille et le fichier généré ensemble — `pnpm lint:rgaa-digest` refuse un fichier
+   embarqué qui ne suit plus la grille ;
+4. déployer l'API : c'est elle qui sert `GET /content/accessibility-follow-up`.
+
+**Le second mode.** Quand `audit.fait` est daté et qu'aucune case n'est plus `NT`, le même script
+ajoute les comptes C, NC et NA, globaux et par thématique (`conformity`) — le taux s'en déduit. Il
+refuse un `audit.fait` daté tant qu'une case reste `NT`. La boutique ne l'affiche pas encore :
+l'emplacement est prévu dans le contrat (`AccessibilityFollowUpView`), l'écran viendra avec l'audit.
+
+Le dialogue lui-même est décrit dans
+[`../b2b/mentions-legales.md`](../b2b/mentions-legales.md), §6.

@@ -1,0 +1,29 @@
+@switch (status()) {
+  @case ('ready') {
+    <section class="follow-up" aria-labelledby="accessibility-follow-up-title">
+      <h3 id="accessibility-follow-up-title" class="title">{{ c().title }}</h3>
+      <p class="audit" data-audit>{{ audit() }}</p>
+      @if (rows().length > 0) {
+        <!-- `scroll` : en largeur étroite, le tableau défile dans son propre
+             conteneur, jamais la page (320 px, RGAA 10.11). -->
+        <fold-data-table
+          narrowLayout="scroll"
+          density="compact"
+          [caption]="c().caption"
+          [columns]="columns()"
+          [rows]="rows()"
+          [rowKey]="rowKey"
+        >
+          <!-- Le statut est un MOT dans une pastille : la couleur ne le dit
+               jamais seule (RGAA 3.1). -->
+          <ng-template foldCell="status" let-row>
+            <fold-badge [content]="row.statusLabel" [variant]="row.badge" />
+          </ng-template>
+        </fold-data-table>
+      }
+    </section>
+  }
+  @case ('failed') {
+    <fold-callout class="failed" variant="neutral">{{ c().loadFailed }}</fold-callout>
+  }
+}

@@ -3,6 +3,7 @@ import { Module } from "@nestjs/common";
 import { AddLegalDocumentParagraphHandler } from "./application/add-legal-document-paragraph.handler.js";
 import { AddRequiredLegalSectionHandler } from "./application/add-required-legal-section.handler.js";
 import { EditLegalDocumentParagraphHandler } from "./application/edit-legal-document-paragraph.handler.js";
+import { GetAccessibilityFollowUpHandler } from "./application/get-accessibility-follow-up.handler.js";
 import { GetFooterContentHandler } from "./application/get-footer-content.handler.js";
 import { GetLegalDocumentHandler } from "./application/get-legal-document.handler.js";
 import { GetPublishedLegalDocumentHandler } from "./application/get-published-legal-document.handler.js";
@@ -10,10 +11,12 @@ import { MoveLegalDocumentParagraphHandler } from "./application/move-legal-docu
 import { RemoveLegalDocumentParagraphHandler } from "./application/remove-legal-document-paragraph.handler.js";
 import { SaveFooterContentHandler } from "./application/save-footer-content.handler.js";
 import { SetLegalDocumentTitleHandler } from "./application/set-legal-document-title.handler.js";
+import { AccessibilityFollowUpReader } from "./domain/accessibility-follow-up.reader.js";
 import { PlatformContentRepository } from "./domain/platform-content.repository.js";
 import { AdminFooterContentController } from "./http/admin-footer-content.controller.js";
 import { AdminPlatformContentController } from "./http/admin-platform-content.controller.js";
 import { PlatformContentController } from "./http/platform-content.controller.js";
+import { EmbeddedAccessibilityFollowUpReader } from "./infrastructure/embedded-accessibility-follow-up.reader.js";
 import { PrismaPlatformContentRepository } from "./infrastructure/prisma-platform-content.repository.js";
 import { OrderSalesTermsReader } from "../orders/domain/ports/order-sales-terms.reader.js";
 import { DepositLegalDocumentFileHandler } from "./application/deposit-legal-document-file.handler.js";
@@ -63,6 +66,9 @@ import { PrismaOrderSalesTermsReader } from "./infrastructure/prisma-order-sales
     DepositLegalDocumentFileHandler,
     ListLegalDocumentFilesHandler,
     GetLegalDocumentFileHandler,
+    // Le suivi d'accessibilité : embarqué, tiré de la grille d'audit RGAA.
+    { provide: AccessibilityFollowUpReader, useClass: EmbeddedAccessibilityFollowUpReader },
+    GetAccessibilityFollowUpHandler,
     // Les CGV en vigueur, lues par la passation (C4′) : le port est déclaré par
     // la commande, implémenté ici où vivent les textes.
     { provide: OrderSalesTermsReader, useClass: PrismaOrderSalesTermsReader },

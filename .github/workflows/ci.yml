@@ -740,6 +740,31 @@ jobs:
           specs=$(node dev-toolbox/ci/front-shard.mjs apps/lfc-ecommerce-frontend ${{ matrix.shard }} 2)
           pnpm --filter lfc-ecommerce-frontend exec ng test $specs
 
+  # La porte d'accessibilité (Hugo, 2026-10-26 — documentation/accessibilite/porte-axe.md) :
+  # axe-core sur les scènes de l'aperçu, à 1280 et 320 px, contre une référence
+  # comptée qui ne peut que décroître. Un job À PART plutôt qu'une étape du
+  # build : il lui faut Chromium, et il tourne en parallèle des tests au lieu
+  # de s'ajouter à leur durée. Pas dans le `pre-push` : un test navigateur.
+  front-platform-a11y:
+    name: Front boutique · porte axe
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.front_platform == 'true'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Construire les paquets
+        run: pnpm --filter "./packages/**" build
+      - name: Installer Chromium
+        run: pnpm --filter lfc-ecommerce-frontend exec playwright install --with-deps chromium
+      - name: Porte axe
+        run: pnpm a11y:axe
+
   # ── La porte ────────────────────────────────────────────────────────────────
   # Le SEUL statut à exiger sur la branche. `always()` + le test explicite sur
   # `result` est ce qui fait qu'un job annulé ou sauté ne passe pas pour un
@@ -817,6 +842,7 @@ jobs:
         front-admin-tests,
         front-platform-build,
         front-platform-tests,
+        front-platform-a11y,
         gateway,
         route-planner,
       ]
@@ -843,6 +869,7 @@ jobs:
           echo "front-admin-tests   : ${{ needs.front-admin-tests.result }}"
           echo "front-platform-build: ${{ needs.front-platform-build.result }}"
           echo "front-platform-tests: ${{ needs.front-platform-tests.result }}"
+          echo "front-platform-a11y : ${{ needs.front-platform-a11y.result }}"
           echo "gateway       : ${{ needs.gateway.result }}"
           echo "route-planner : ${{ needs.route-planner.result }}"
 
@@ -870,6 +897,7 @@ jobs:
             "${{ needs.front-admin-tests.result }}" \
             "${{ needs.front-platform-build.result }}" \
             "${{ needs.front-platform-tests.result }}" \
+            "${{ needs.front-platform-a11y.result }}" \
             "${{ needs.gateway.result }}" \
             "${{ needs.route-planner.result }}"; do
             case "$etat" in

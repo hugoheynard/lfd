@@ -1,0 +1,189 @@
+{
+  "corrections": [
+    {
+      "theme": 1,
+      "date": "2026-10-26",
+      "status": "done",
+      "label": {
+        "fr": "Alternatives textuelles des images : elles ne reprennent plus l’adresse du fichier",
+        "en": "Image text alternatives no longer repeat the file address",
+        "it": "Le alternative testuali delle immagini non riportano più l’indirizzo del file"
+      }
+    },
+    {
+      "theme": 8,
+      "date": "2026-10-26",
+      "status": "done",
+      "label": {
+        "fr": "Langue de la page et titre de l’onglet suivent la langue choisie",
+        "en": "Page language and tab title follow the chosen language",
+        "it": "La lingua della pagina e il titolo della scheda seguono la lingua scelta"
+      }
+    },
+    {
+      "theme": 12,
+      "date": "2026-10-26",
+      "status": "done",
+      "label": {
+        "fr": "Lien d’évitement traduit",
+        "en": "Skip link translated",
+        "it": "Link per saltare al contenuto tradotto"
+      }
+    },
+    {
+      "theme": 7,
+      "date": "2026-10-26",
+      "status": "done",
+      "label": {
+        "fr": "Les dialogues ont un nom accessible",
+        "en": "Dialogs have an accessible name",
+        "it": "Le finestre di dialogo hanno un nome accessibile"
+      }
+    },
+    {
+      "theme": 9,
+      "date": "2026-10-26",
+      "status": "done",
+      "label": {
+        "fr": "Titre principal de la page Boutique",
+        "en": "Main heading on the Shop page",
+        "it": "Titolo principale della pagina Negozio"
+      }
+    },
+    {
+      "theme": 12,
+      "date": "2026-10-26",
+      "status": "done",
+      "label": {
+        "fr": "Le focus revient à son point de départ à la fermeture des panneaux",
+        "en": "Focus returns to where it started when a panel closes",
+        "it": "Il focus torna al punto di partenza alla chiusura dei pannelli"
+      }
+    },
+    {
+      "theme": 10,
+      "date": "2026-10-26",
+      "status": "done",
+      "label": {
+        "fr": "Anneaux de focus visibles",
+        "en": "Visible focus rings",
+        "it": "Indicatori di focus visibili"
+      }
+    },
+    {
+      "theme": 3,
+      "date": "2026-10-26",
+      "status": "done",
+      "label": {
+        "fr": "Contraste des bordures de champ et des textes gris",
+        "en": "Contrast of field borders and grey text",
+        "it": "Contrasto dei bordi dei campi e dei testi grigi"
+      }
+    },
+    {
+      "theme": 11,
+      "date": "2026-10-26",
+      "status": "done",
+      "label": {
+        "fr": "La case des CGV est nommée par sa phrase, lien compris",
+        "en": "The terms of sale checkbox is named by its sentence, link included",
+        "it": "La casella delle condizioni di vendita è nominata dalla sua frase, link compreso"
+      }
+    },
+    {
+      "theme": 3,
+      "date": "2026-10-26",
+      "status": "done",
+      "label": {
+        "fr": "Contour des champs sur le bandeau : contraste porté à 3:1",
+        "en": "Field outline on the banner: contrast raised to 3:1",
+        "it": "Contorno dei campi sulla fascia: contrasto portato a 3:1"
+      }
+    },
+    {
+      "theme": 9,
+      "date": "2026-10-26",
+      "status": "done",
+      "label": {
+        "fr": "Structure de la boutique : titres et listes",
+        "en": "Shop structure: headings and lists",
+        "it": "Struttura del negozio: titoli ed elenchi"
+      }
+    },
+    {
+      "theme": 12,
+      "date": "2026-10-26",
+      "status": "done",
+      "label": {
+        "fr": "Ordre de tabulation dans la boutique",
+        "en": "Tab order in the shop",
+        "it": "Ordine di tabulazione nel negozio"
+      }
+    },
+    {
+      "theme": 11,
+      "date": "2026-10-26",
+      "status": "done",
+      "label": {
+        "fr": "Formulaires du panier : saisie automatique, messages d’erreur, raison d’un bouton de paiement inactif",
+        "en": "Cart forms: autocomplete, error messages, reason for an inactive payment button",
+        "it": "Moduli del carrello: compilazione automatica, messaggi di errore, motivo di un pulsante di pagamento inattivo"
+      }
+    },
+    {
+      "theme": 3,
+      "date": "2026-10-26",
+      "status": "done",
+      "label": {
+        "fr": "Contraste du texte secondaire et des mentions « TTC » relevé",
+        "en": "Contrast of secondary text and “incl. VAT” notes raised",
+        "it": "Contrasto del testo secondario e delle diciture « IVA incl. » aumentato"
+      }
+    },
+    {
+      "theme": 10,
+      "date": "2026-10-26",
+      "status": "done",
+      "label": {
+        "fr": "Focus clavier visible partout, en-tête lisible à 320 px",
+        "en": "Keyboard focus visible everywhere, header readable at 320 px",
+        "it": "Focus da tastiera visibile ovunque, intestazione leggibile a 320 px"
+      }
+    },
+    {
+      "theme": 13,
+      "date": "2026-10-26",
+      "status": "done",
+      "label": {
+        "fr": "Mouvement réduit respecté, carrousel avec bouton pause",
+        "en": "Reduced motion respected, carousel with a pause button",
+        "it": "Movimento ridotto rispettato, carosello con pulsante di pausa"
+      }
+    },
+    {
+      "theme": 3,
+      "date": null,
+      "status": "planned",
+      "label": {
+        "fr": "Contrastes restants",
+        "en": "Remaining contrasts",
+        "it": "Contrasti restanti"
+      }
+    },
+    {
+      "theme": null,
+      "date": null,
+      "status": "planned",
+      "label": {
+        "fr": "Audit complet sur la grille RGAA 4.1.2",
+        "en": "Full audit against the RGAA 4.1.2 checklist",
+        "it": "Audit completo sulla griglia RGAA 4.1.2"
+      }
+    }
+  ],
+  "audit": {
+    "plannedFor": null,
+    "completedOn": null
+  },
+  "conformity": null
+}

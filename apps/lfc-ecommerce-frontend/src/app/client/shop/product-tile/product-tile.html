@@ -5,8 +5,11 @@
   [class.contain]="mediaFit() === 'contain'"
 >
   <div class="media">
-    <!-- Le bouton porte le nom du produit : l'image est décorative (RGAA 1.2). -->
-    <button class="photo" type="button" [attr.aria-label]="product().name" (click)="opened.emit()">
+    <!-- La photo s'ouvre à la souris et au doigt, mais n'est PAS un arrêt de
+         tabulation (RGAA 12.8, lot A2) : le clavier et le lecteur d'écran ont le
+         nom du produit, seul contrôle d'ouverture de la tuile. L'image est
+         décorative (RGAA 1.2). -->
+    <div class="photo" (click)="opened.emit()">
       <!-- `sizes` dit la place RÉELLE que le CSS donnera : sans lui, le
            navigateur suppose la pleine largeur de la fenêtre et choisit
            toujours la plus grande. Deux colonnes en pile ; au-delà du pli, cinq
@@ -20,7 +23,7 @@
         loading="lazy"
         decoding="async"
       />
-    </button>
+    </div>
 
     @if (product().isFeatured) {
       <span class="badge">★ {{ t().product.bestSeller }}</span>
@@ -36,8 +39,14 @@
   </div>
 
   <div class="content">
-    <button class="body" type="button" (click)="opened.emit()">
-      <span class="name">{{ product().name }}</span>
+    <!-- UN SEUL ARRÊT PAR PRODUIT (RGAA 12.8, lot A2) : le nom, titre de la
+         tuile (RGAA 9.1), est le bouton qui ouvre la fiche. Il n'a pas de
+         gestionnaire propre — son clic remonte au bloc, qui garde la surface
+         cliquable du texte entier sans en faire un second contrôle. -->
+    <div class="body" (click)="opened.emit()">
+      <h3 class="name">
+        <button class="open" type="button">{{ product().name }}</button>
+      </h3>
       @if (product().note; as note) {
         <!-- Le texte court, sur TOUTES les cartes (Hugo, 2026-09-24) — coupé à
              deux lignes pour que les rangées gardent une hauteur. La fiche le
@@ -49,7 +58,7 @@
       @if (madeToOrder(); as limit) {
         <span class="made-to-order" data-made-to-order>{{ limit }}</span>
       }
-    </button>
+    </div>
 
     <div class="foot">
       <span class="price">
@@ -73,18 +82,29 @@
              devenait le chiffre, et le doigt qui revenait ajouter tombait sur
              un compteur. Une fois l'article pris, un « − » plus petit paraît
              à sa gauche ; la quantité, elle, est sur la photo. -->
+        <!-- « + » et « − » restent à la souris et au doigt, HORS de la
+             tabulation (`tabindex="-1"`) : trois arrêts par tuile rendaient le
+             rayon interminable au clavier. Le clavier règle la quantité dans la
+             fiche, que le nom ouvre (RGAA 12.8, lot A2). -->
         <div class="steps">
           @if (quantity() > 0) {
             <button
               class="quick less"
               type="button"
+              tabindex="-1"
               [attr.aria-label]="removeLabel()"
               (click)="removed.emit()"
             >
               <fold-icon name="minus" />
             </button>
           }
-          <button class="quick" type="button" [attr.aria-label]="addLabel()" (click)="added.emit()">
+          <button
+            class="quick"
+            type="button"
+            tabindex="-1"
+            [attr.aria-label]="addLabel()"
+            (click)="added.emit()"
+          >
             <fold-icon name="plus" />
           </button>
         </div>

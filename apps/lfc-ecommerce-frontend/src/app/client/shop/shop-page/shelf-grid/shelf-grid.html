@@ -1,10 +1,15 @@
+<!-- LA GRILLE EST UNE LISTE (RGAA 9.3, lot A2) : `role` et non `ul`, parce
+     que la grille CSS se pose sur l'élément même — un `ul` y apporterait ses
+     puces et ses marges à défaire. Chaque case en est un élément ; le vide,
+     lui, n'est pas une liste. -->
 @if (cells(); as cells) {
-  <div class="board">
+  <div class="board" role="list">
     @for (cell of cells; track cell.key) {
       @let slot = cell.slot;
       @if (slot.kind === 'object') {
         <app-storefront-slot
           class="cell"
+          role="listitem"
           [class.alone]="cell.desk.alone"
           [class.tall]="cell.desk.rows > 1"
           [class.banner]="slot.object.shape === 'banner'"
@@ -26,6 +31,7 @@
       } @else if (slot.kind === 'fill' && bySku().get(slot.sku); as piece) {
         <app-product-tile
           class="cell"
+          role="listitem"
           shape="card"
           [style.--d-col]="cell.desk.col"
           [style.--d-row]="cell.desk.row"
@@ -38,7 +44,7 @@
           [quantity]="cart.quantityOf(piece.sku)"
           (opened)="actions.productOpened.next(piece.sku)"
           (added)="addPiece(piece.sku)"
-          (removed)="cart.remove(piece.sku)"
+          (removed)="removePiece(piece.sku)"
         />
       }
     }
@@ -52,12 +58,13 @@
   }
   @for (piece of products(); track piece.sku) {
     <app-product-tile
+      role="listitem"
       [class.featured]="piece.isFeatured"
       [product]="piece"
       [quantity]="cart.quantityOf(piece.sku)"
       (opened)="actions.productOpened.next(piece.sku)"
       (added)="addPiece(piece.sku)"
-      (removed)="cart.remove(piece.sku)"
+      (removed)="removePiece(piece.sku)"
     />
   }
 }

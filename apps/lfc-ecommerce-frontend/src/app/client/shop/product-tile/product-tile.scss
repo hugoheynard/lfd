@@ -113,7 +113,10 @@
   cursor: pointer;
 }
 
+/* Le titre de la tuile (RGAA 9.1, lot A2) : un `h3` qui ne remet rien de
+   son registre de titre — marge nulle, la graisse et le corps sont ceux du nom. */
 .name {
+  margin: 0;
   /* Pogonia grasse, pas Chunk (Hugo, 2026-09-24) : Chunk est une face de
      display, et un rayon de vingt noms en capitales Chunk se lisait comme vingt
      titres. Le registre `caps` est celui des petites capitales du dépôt. */
@@ -128,6 +131,19 @@
      que de déborder de la tuile. */
   overflow-wrap: break-word;
   hyphens: auto;
+}
+
+/* Le bouton d'ouverture n'a pas d'habit propre : il porte le nom tel quel. */
+.open {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: inherit;
+  text-transform: inherit;
+  cursor: pointer;
 }
 
 .note {

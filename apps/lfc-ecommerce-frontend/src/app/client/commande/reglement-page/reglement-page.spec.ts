@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { type AbandonOutcome, ClientOrderAbandon } from '../../client-order-abandon.service';
 import { CARD_DUE, provideRecognised } from '../../client-orders.fixture';
+import { ClientLocale } from '../../client-locale.service';
 import { ClientWorkspace } from '../../client-workspace.service';
 import { ClientOrders } from '../../client-orders.service';
 import { FR } from '../../copy/fr';
@@ -150,6 +151,37 @@ describe('ReglementPage', () => {
    * Le succès donne le droit d'AFFICHER « réglé », rien de plus : c'est le
    * webhook serveur qui écrit `paid` dans notre base.
    */
+  /**
+   * RGAA 8.7 (lot A3) : sans `locale`, Stripe parlait la langue du navigateur,
+   * pas celle de la page — et la suivait encore moins quand on en change.
+   */
+  it('passe la langue de la boutique au Payment Element, et la suit', async () => {
+    const options: unknown[] = [];
+    const updates: unknown[] = [];
+    const loader = {
+      load: () =>
+        Promise.resolve({
+          elements: (given: unknown) => {
+            options.push(given);
+            return {
+              create: () => ({ mount: () => undefined }),
+              update: (next: unknown) => updates.push(next),
+            };
+          },
+          confirmPayment: () => Promise.resolve({}),
+        }),
+    };
+    const { fixture } = await boot(loader);
+
+    expect(options).toEqual([expect.objectContaining({ locale: 'fr' })]);
+
+    TestBed.inject(ClientLocale).current.set('it');
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(updates).toEqual([{ locale: 'it' }]);
+  });
+
   it('marque la commande réglée et mène à la confirmation sur un succès', async () => {
     const { fixture, gone } = await boot(
       stripeThatAnswers({ paymentIntent: { status: 'succeeded' } }),

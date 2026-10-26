@@ -16,9 +16,11 @@
        le dit avant qu'on ait lu quoi que ce soit. Une liste de cartes sans
        marque de sélection laissait la maison retenue se signaler par un seul
        filet, que rien ne nommait. -->
-  <ul class="houses" role="radiogroup" [attr.aria-label]="c().title">
+  <!-- Le clavier du motif radio : un arrêt, les flèches (RGAA 7.1, lot A2).
+       La rangée n'est pas un élément de liste pour qui lit le groupe. -->
+  <ul class="houses" role="radiogroup" appRovingRadioGroup [attr.aria-label]="c().title">
     @for (house of houses(); track house.point.id) {
-      <li>
+      <li role="none">
         <button
           class="house"
           type="button"

@@ -3,6 +3,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   type ElementRef,
   inject,
   signal,
@@ -23,6 +24,7 @@ import { ClientChrome } from '../../client-chrome.service';
 import { type AbandonOutcome, ClientOrderAbandon } from '../../client-order-abandon.service';
 import { ClientOrders } from '../../client-orders.service';
 import { ClientWorkspace } from '../../client-workspace.service';
+import { ClientLocale, type LocaleCode } from '../../client-locale.service';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { formatCents } from '../../format-money';
 import { NotifyService } from '../../../notify.service';
@@ -105,6 +107,17 @@ export class ReglementPage {
   private stripe: Stripe | null = null;
   private elements: StripeElements | null = null;
 
+  /**
+   * La langue de la boutique, passée au Payment Element (RGAA 8.7, lot A3) :
+   * sans elle, Stripe parle la langue du NAVIGATEUR, et un formulaire de carte
+   * en anglais sous une page en français n'est plus lu avec la bonne voix.
+   * Les trois langues de la boutique (fr, en, it) sont des locales Stripe.
+   */
+  private readonly locale = inject(ClientLocale).current;
+
+  /** La langue avec laquelle les champs ont été montés — pour ne relancer que sur un CHANGEMENT. */
+  private mountedLocale: LocaleCode | null = null;
+
   private readonly mountRef = viewChild.required<ElementRef<HTMLDivElement>>('mount');
 
   protected readonly phase = signal<Phase>('loading');
@@ -163,6 +176,14 @@ export class ReglementPage {
     // Aucune flèche de retour : derrière cet écran il y a un panier vide et une
     // commande déjà passée. La sortie est l'abandon, qui dit ce qu'il fait.
     this.chrome.back.set(null);
+    // La langue changée PENDANT le règlement suit dans les champs de carte.
+    effect(() => {
+      const locale = this.locale();
+      if (this.elements !== null && this.mountedLocale !== locale) {
+        this.mountedLocale = locale;
+        this.elements.update({ locale });
+      }
+    });
     // Navigateur uniquement : `afterNextRender` ne tourne pas en SSR, et le nœud
     // de montage du Payment Element existe alors dans le DOM.
     afterNextRender(() => {
@@ -206,7 +227,9 @@ export class ReglementPage {
     }
     try {
       this.stripe = stripe;
-      this.elements = stripe.elements({ clientSecret: payment.clientSecret });
+      const locale = this.locale();
+      this.mountedLocale = locale;
+      this.elements = stripe.elements({ clientSecret: payment.clientSecret, locale });
       this.elements.create('payment', PAYMENT_ELEMENT_OPTIONS).mount(this.mountRef().nativeElement);
       this.phase.set('ready');
     } catch {

@@ -8,6 +8,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { hydrateWith, TEST_CATALOGUE, TEST_ITEMS } from '../../shop-catalogue.fixture';
 import { ShopCatalogue } from '../../shop-catalogue.store';
 import { NOEL, productContent, storefrontObject } from '../../storefront/storefront.fixture';
+import { CartAnnouncer } from '../../cart-announcer.service';
 import { ShelfGrid } from './shelf-grid';
 
 describe('ShelfGrid', () => {
@@ -84,6 +85,37 @@ describe('ShelfGrid', () => {
 
     expect(cart.quantityOf(first)).toBe(2);
     expect(entries.latest()).toEqual({ id: 1, sku: first });
+  });
+
+  /** La grille est une LISTE de produits (RGAA 9.3, lot A2) — et le vide n'en est pas une. */
+  it('est une liste dont chaque produit est un élément', () => {
+    expect(el().getAttribute('role')).toBe('list');
+    expect(tiles().every((tile) => tile.getAttribute('role') === 'listitem')).toBe(true);
+
+    fixture.componentRef.setInput('products', []);
+    fixture.detectChanges();
+    expect(el().getAttribute('role')).toBeNull();
+  });
+
+  /**
+   * Un « + » ne change rien là où l'on regarde : la quantité monte en pastille
+   * muette. La région d'état le dit (RGAA 7.5, lot A2).
+   */
+  it('fait dire au panier ce qu’il devient sous un « + » et un « − »', () => {
+    const announcer = TestBed.inject(CartAnnouncer);
+    const name = TEST_ITEMS[0]?.name ?? '';
+    const plus = () => tiles()[0]?.querySelector<HTMLButtonElement>('.quick:not(.less)');
+
+    plus()?.click();
+    fixture.detectChanges();
+    plus()?.click();
+    fixture.detectChanges();
+    expect(announcer.message()).toBe(`${name} : 2 au panier`);
+
+    tiles()[0]?.querySelector<HTMLButtonElement>('.quick.less')?.click();
+    tiles()[0]?.querySelector<HTMLButtonElement>('.quick.less')?.click();
+    fixture.detectChanges();
+    expect(announcer.message()).toBe(`${name} retiré du panier`);
   });
 
   /** La fiche, elle, est un état de l'ÉCRAN — la grille ne fait que le signaler. */

@@ -31,6 +31,8 @@ export interface SlotPickerCopy {
     readonly tomorrow: string;
     /** Ce que dit l'onglet quand le serveur n'offre aucune journée. */
     readonly none: string;
+    /** Le nom du groupe des journées, lu par le lecteur d'écran (RGAA 7.1). */
+    readonly group: string;
   };
 
   /** Ce qu'un créneau dit de lui-même, sous son heure. */
@@ -72,6 +74,7 @@ export const SLOT_PICKER_FR: SlotPickerCopy = {
     today: 'Aujourd’hui',
     tomorrow: 'Demain',
     none: 'Aucune journée ouverte',
+    group: 'Jour du retrait',
   },
   state: {
     open: 'Ouvert',
@@ -102,6 +105,7 @@ export const SLOT_PICKER_EN: SlotPickerCopy = {
     today: 'Today',
     tomorrow: 'Tomorrow',
     none: 'No day open',
+    group: 'Pickup day',
   },
   state: {
     open: 'Open',
@@ -132,6 +136,7 @@ export const SLOT_PICKER_IT: SlotPickerCopy = {
     today: 'Oggi',
     tomorrow: 'Domani',
     none: 'Nessuna giornata aperta',
+    group: 'Giorno del ritiro',
   },
   state: {
     open: 'Aperto',

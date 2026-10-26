@@ -22,6 +22,7 @@ import { dialogSide } from '../../panel-side';
 import { ORDER_DIALOG } from '../order-dialog';
 import { pickupOffer } from '../pickup-discount';
 import { ServicePoints } from '../pickup-points.store';
+import { RovingRadioGroup } from '../../a11y/roving-radio-group';
 
 /** Ce qu'il faut pour ouvrir le sélecteur : la maison déjà retenue, s'il y en a une. */
 export interface HousePickerData {
@@ -78,6 +79,7 @@ interface House {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldButtonComponent,
+    RovingRadioGroup,
     FoldPanelBodyComponent,
     FoldPanelFooterComponent,
     FoldPanelHeaderComponent,

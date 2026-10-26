@@ -1604,6 +1604,20 @@
           "variables": ["n", "count"]
         },
         {
+          "key": "shop.slidePause",
+          "fr": "Mettre en pause le défilement",
+          "en": "Pause the slideshow",
+          "it": "Metti in pausa lo scorrimento",
+          "variables": []
+        },
+        {
+          "key": "shop.slidePlay",
+          "fr": "Reprendre le défilement",
+          "en": "Resume the slideshow",
+          "it": "Riprendi lo scorrimento",
+          "variables": []
+        },
+        {
           "key": "shop.shelvesGroup",
           "fr": "Les rayons",
           "en": "The shelves",
@@ -1686,6 +1700,27 @@
           "en": "Remove {name}",
           "it": "Togli {name}",
           "variables": ["name"]
+        },
+        {
+          "key": "shop.cartStatusCount",
+          "fr": "{name} : {count} au panier",
+          "en": "{name}: {count} in your basket",
+          "it": "{name}: {count} nel carrello",
+          "variables": ["name", "count"]
+        },
+        {
+          "key": "shop.cartStatusRemoved",
+          "fr": "{name} retiré du panier",
+          "en": "{name} removed from your basket",
+          "it": "{name} tolto dal carrello",
+          "variables": ["name"]
+        },
+        {
+          "key": "shop.storefrontTitle",
+          "fr": "La vitrine",
+          "en": "Shop window",
+          "it": "La vetrina",
+          "variables": []
         },
         {
           "key": "shop.cartTitle",
@@ -2933,6 +2968,13 @@
           "variables": []
         },
         {
+          "key": "slotPicker.days.group",
+          "fr": "Jour du retrait",
+          "en": "Pickup day",
+          "it": "Giorno del ritiro",
+          "variables": []
+        },
+        {
           "key": "slotPicker.state.open",
           "fr": "Ouvert",
           "en": "Open",
@@ -3617,6 +3659,76 @@
           "fr": "Pour vous joindre si quelque chose cloche avec votre commande.",
           "en": "So we can reach you if something is wrong with your order.",
           "it": "Per contattarla se qualcosa non va con il suo ordine.",
+          "variables": []
+        },
+        {
+          "key": "cart.guestFirstNameMissing",
+          "fr": "Indiquez votre prénom.",
+          "en": "Enter your first name.",
+          "it": "Indichi il suo nome.",
+          "variables": []
+        },
+        {
+          "key": "cart.guestEmailMissing",
+          "fr": "Indiquez votre adresse e-mail.",
+          "en": "Enter your email address.",
+          "it": "Indichi il suo indirizzo e-mail.",
+          "variables": []
+        },
+        {
+          "key": "cart.guestEmailInvalid",
+          "fr": "Cette adresse e-mail semble incomplète, par exemple nom@domaine.fr.",
+          "en": "This email address looks incomplete, for example name@domain.com.",
+          "it": "Questo indirizzo e-mail sembra incompleto, ad esempio nome@dominio.it.",
+          "variables": []
+        },
+        {
+          "key": "cart.guestEmailAgainMissing",
+          "fr": "Retapez votre adresse e-mail.",
+          "en": "Type your email address again.",
+          "it": "Riscriva il suo indirizzo e-mail.",
+          "variables": []
+        },
+        {
+          "key": "cart.guestPhoneMissing",
+          "fr": "Indiquez un numéro de téléphone.",
+          "en": "Enter a phone number.",
+          "it": "Indichi un numero di telefono.",
+          "variables": []
+        },
+        {
+          "key": "cart.payBlockedIdentity",
+          "fr": "Indiquez votre prénom, votre adresse e-mail et votre téléphone pour commander.",
+          "en": "Enter your first name, email address and phone number to order.",
+          "it": "Indichi nome, indirizzo e-mail e telefono per ordinare.",
+          "variables": []
+        },
+        {
+          "key": "cart.payBlockedSignIn",
+          "fr": "Connectez-vous, ou commandez en tant qu’invité, pour commander.",
+          "en": "Sign in, or order as a guest, to place your order.",
+          "it": "Acceda, oppure ordini come ospite, per ordinare.",
+          "variables": []
+        },
+        {
+          "key": "cart.payBlockedTerms",
+          "fr": "Cochez les conditions générales de vente pour commander.",
+          "en": "Tick the terms and conditions of sale to order.",
+          "it": "Spunti le condizioni generali di vendita per ordinare.",
+          "variables": []
+        },
+        {
+          "key": "cart.payBlockedTermsLoading",
+          "fr": "Les conditions générales de vente se chargent…",
+          "en": "The terms and conditions of sale are loading…",
+          "it": "Le condizioni generali di vendita si stanno caricando…",
+          "variables": []
+        },
+        {
+          "key": "cart.placeFailed",
+          "fr": "La commande n’a pas pu être passée.",
+          "en": "The order could not be placed.",
+          "it": "Non è stato possibile effettuare l’ordine.",
           "variables": []
         }
       ],
@@ -4528,6 +4640,13 @@
           "en": "Close the menu",
           "it": "Chiudi il menu",
           "variables": []
+        },
+        {
+          "key": "nav.newTab",
+          "fr": "{name} (nouvel onglet)",
+          "en": "{name} (new tab)",
+          "it": "{name} (nuova scheda)",
+          "variables": ["name"]
         },
         {
           "key": "nav.newOrder",
@@ -11484,6 +11603,211 @@
           "fr": "Conditions générales de vente professionnelles en cours de rédaction.",
           "en": "Business terms and conditions of sale are being drafted.",
           "it": "Condizioni generali di vendita professionali in corso di redazione.",
+          "variables": []
+        }
+      ],
+      "unrecorded": []
+    },
+    {
+      "space": "accessibilityFollowUp",
+      "title": "Le suivi des corrections d’accessibilité — sous la déclaration",
+      "source": "screens/accessibility-follow-up.copy.ts",
+      "journey": false,
+      "entries": [
+        {
+          "key": "accessibilityFollowUp.title",
+          "fr": "Suivi des corrections",
+          "en": "Corrections log",
+          "it": "Registro delle correzioni",
+          "variables": []
+        },
+        {
+          "key": "accessibilityFollowUp.caption",
+          "fr": "Corrections d’accessibilité, par thématique du RGAA",
+          "en": "Accessibility corrections, by RGAA topic",
+          "it": "Correzioni di accessibilità, per tematica RGAA",
+          "variables": []
+        },
+        {
+          "key": "accessibilityFollowUp.columnTheme",
+          "fr": "Thématique",
+          "en": "Topic",
+          "it": "Tematica",
+          "variables": []
+        },
+        {
+          "key": "accessibilityFollowUp.columnCorrection",
+          "fr": "Correction",
+          "en": "Correction",
+          "it": "Correzione",
+          "variables": []
+        },
+        {
+          "key": "accessibilityFollowUp.columnDate",
+          "fr": "Date",
+          "en": "Date",
+          "it": "Data",
+          "variables": []
+        },
+        {
+          "key": "accessibilityFollowUp.columnStatus",
+          "fr": "Statut",
+          "en": "Status",
+          "it": "Stato",
+          "variables": []
+        },
+        {
+          "key": "accessibilityFollowUp.correctionDone",
+          "fr": "Fait",
+          "en": "Done",
+          "it": "Fatto",
+          "variables": []
+        },
+        {
+          "key": "accessibilityFollowUp.correctionInProgress",
+          "fr": "En cours",
+          "en": "In progress",
+          "it": "In corso",
+          "variables": []
+        },
+        {
+          "key": "accessibilityFollowUp.correctionPlanned",
+          "fr": "Prévu",
+          "en": "Planned",
+          "it": "Previsto",
+          "variables": []
+        },
+        {
+          "key": "accessibilityFollowUp.wholeSite",
+          "fr": "Ensemble du site",
+          "en": "Whole site",
+          "it": "Intero sito",
+          "variables": []
+        },
+        {
+          "key": "accessibilityFollowUp.dateToCome",
+          "fr": "À dater",
+          "en": "To be dated",
+          "it": "Da datare",
+          "variables": []
+        },
+        {
+          "key": "accessibilityFollowUp.auditPlanned",
+          "fr": "Audit complet prévu en {month}.",
+          "en": "Full audit planned for {month}.",
+          "it": "Audit completo previsto per {month}.",
+          "variables": ["month"]
+        },
+        {
+          "key": "accessibilityFollowUp.auditNotPlanned",
+          "fr": "Audit complet : non encore planifié.",
+          "en": "Full audit: not yet scheduled.",
+          "it": "Audit completo: non ancora pianificato.",
+          "variables": []
+        },
+        {
+          "key": "accessibilityFollowUp.auditDone",
+          "fr": "Audit complet réalisé le {date}.",
+          "en": "Full audit completed on {date}.",
+          "it": "Audit completo svolto il {date}.",
+          "variables": ["date"]
+        },
+        {
+          "key": "accessibilityFollowUp.loadFailed",
+          "fr": "Le suivi des corrections n’a pas pu être chargé.",
+          "en": "The corrections log could not be loaded.",
+          "it": "Non è stato possibile caricare il registro delle correzioni.",
+          "variables": []
+        },
+        {
+          "key": "accessibilityFollowUp.rgaaThemes.0",
+          "fr": "Images",
+          "en": "Images",
+          "it": "Immagini",
+          "variables": []
+        },
+        {
+          "key": "accessibilityFollowUp.rgaaThemes.1",
+          "fr": "Cadres",
+          "en": "Frames",
+          "it": "Frame",
+          "variables": []
+        },
+        {
+          "key": "accessibilityFollowUp.rgaaThemes.2",
+          "fr": "Couleurs",
+          "en": "Colours",
+          "it": "Colori",
+          "variables": []
+        },
+        {
+          "key": "accessibilityFollowUp.rgaaThemes.3",
+          "fr": "Multimédia",
+          "en": "Multimedia",
+          "it": "Multimedia",
+          "variables": []
+        },
+        {
+          "key": "accessibilityFollowUp.rgaaThemes.4",
+          "fr": "Tableaux",
+          "en": "Tables",
+          "it": "Tabelle",
+          "variables": []
+        },
+        {
+          "key": "accessibilityFollowUp.rgaaThemes.5",
+          "fr": "Liens",
+          "en": "Links",
+          "it": "Link",
+          "variables": []
+        },
+        {
+          "key": "accessibilityFollowUp.rgaaThemes.6",
+          "fr": "Scripts",
+          "en": "Scripts",
+          "it": "Script",
+          "variables": []
+        },
+        {
+          "key": "accessibilityFollowUp.rgaaThemes.7",
+          "fr": "Éléments obligatoires",
+          "en": "Mandatory elements",
+          "it": "Elementi obbligatori",
+          "variables": []
+        },
+        {
+          "key": "accessibilityFollowUp.rgaaThemes.8",
+          "fr": "Structuration de l’information",
+          "en": "Information structure",
+          "it": "Strutturazione dell’informazione",
+          "variables": []
+        },
+        {
+          "key": "accessibilityFollowUp.rgaaThemes.9",
+          "fr": "Présentation de l’information",
+          "en": "Presentation of information",
+          "it": "Presentazione dell’informazione",
+          "variables": []
+        },
+        {
+          "key": "accessibilityFollowUp.rgaaThemes.10",
+          "fr": "Formulaires",
+          "en": "Forms",
+          "it": "Moduli",
+          "variables": []
+        },
+        {
+          "key": "accessibilityFollowUp.rgaaThemes.11",
+          "fr": "Navigation",
+          "en": "Navigation",
+          "it": "Navigazione",
+          "variables": []
+        },
+        {
+          "key": "accessibilityFollowUp.rgaaThemes.12",
+          "fr": "Consultation",
+          "en": "Consultation",
+          "it": "Consultazione",
           "variables": []
         }
       ],

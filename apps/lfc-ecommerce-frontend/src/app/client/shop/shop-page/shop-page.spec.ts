@@ -261,6 +261,25 @@ describe('ShopPage', () => {
     });
   });
 
+  /**
+   * La navigation par titres (RGAA 9.1, lot A2) : la page, son rayon, ses
+   * produits — sans saut de niveau. Le rayon suit la pastille, la recherche
+   * se nomme elle-même.
+   */
+  it('titre la page, le rayon puis chaque produit, sans saut de niveau', () => {
+    expect(el().querySelector('h1')?.textContent?.trim()).toBe(FR.chrome.kickerShop);
+    expect(el().querySelector('h2')?.textContent?.trim()).toBe(FR.shop.allShelvesTitle);
+    expect(tiles().every((tile) => tile.querySelector('h3') !== null)).toBe(true);
+
+    type('pain');
+    expect(el().querySelector('h2')?.textContent?.trim()).toBe('Résultats pour « pain »');
+  });
+
+  /** La région d'état existe AVANT le premier geste : sans quoi rien ne s'annonce. */
+  it('pose la région d’état du panier dès l’ouverture', () => {
+    expect(el().querySelector('app-cart-announcement [role="status"]')).not.toBeNull();
+  });
+
   it('la recherche TRAVERSE les rayons — le client ne sait pas où c’est rangé', () => {
     type('pain');
 

@@ -6,6 +6,7 @@ import {
   inject,
   input,
   signal,
+  viewChild,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { instantToLocal } from '@lfd/contracts';
@@ -238,15 +239,76 @@ export class CartDialog {
    * Le règlement attend qu'on sache qui commande — un compte, ou une saisie
    * complète —, que le créneau soit choisi, et que les CGV soient cochées.
    */
-  protected readonly payBlocked = computed(
-    () =>
-      this.slotMissing() ||
-      (this.identityNeeded() && this.guest() === null) ||
-      // Rien à choisir (2026-10-16) : le bouton ne mène pas à une question vide.
-      (this.choice() === null && !this.cart.isEmpty() && !this.serviceOffered()) ||
-      // Les CGV publiées se cochent avant de commander (2026-10-26).
-      (this.termsShown() && this.salesTerms.blocking()),
+  protected readonly payBlocked = computed(() => this.blockReason() !== null);
+
+  /**
+   * **Pourquoi le bouton ne mène nulle part**, en clair (RGAA 11.10/11.11,
+   * lot A3) — `null` s'il y mène. La phrase s'affiche sous le bouton et lui
+   * est reliée (`aria-describedby`) : un bouton grisé sans raison laissait
+   * deviner, et un lecteur d'écran n'entendait que « indisponible ».
+   *
+   * Une seule raison à la fois, dans l'ordre où on les lève.
+   *
+   * 🔴 Une saisie d'invité INCOMPLÈTE ne grise pas le bouton : elle a une
+   * raison à dire, mais le clic sert — il montre l'erreur de chaque champ et
+   * porte le focus sur le premier (`GuestIdentityForm.reveal`). Seule la
+   * porte « Me connecter » le grise : il n'y a alors rien à corriger ici.
+   */
+  protected readonly blockReason = computed<string | null>(() => {
+    const c = this.t().cart;
+    // Rien à choisir (2026-10-16) : le bouton ne mène pas à une question vide.
+    // L'encadré du corps le dit déjà, on le redit à côté du bouton.
+    if (this.choice() === null && !this.cart.isEmpty() && !this.serviceOffered()) {
+      return this.t().shop.noService;
+    }
+    if (this.slotMissing()) {
+      return c.slotMissing;
+    }
+    if (this.identityNeeded() && this.signingIn()) {
+      return c.payBlockedSignIn;
+    }
+    // Les CGV publiées se cochent avant de commander (2026-10-26).
+    if (this.termsShown() && this.salesTerms.blocking()) {
+      return this.salesTerms.asked() ? c.payBlockedTerms : c.payBlockedTermsLoading;
+    }
+    return null;
+  });
+
+  /** Ce que dit la ligne sous le bouton : ce qui manque, sinon comment on règle. */
+  protected readonly payNote = computed(() => {
+    const reason = this.blockReason();
+    if (reason !== null) {
+      return reason;
+    }
+    return this.identityNeeded() && this.guest() === null
+      ? this.t().cart.payBlockedIdentity
+      : this.t().cart.payHint;
+  });
+
+  /** La note dit-elle ce qui manque ? Alors elle décrit le bouton. */
+  protected readonly payNoteIsReason = computed(
+    () => this.blockReason() !== null || (this.identityNeeded() && this.guest() === null),
   );
+
+  /** Le nom du lien des CGV : son texte, puis « nouvel onglet » (RGAA 13.2). */
+  protected readonly termsLinkName = computed(() =>
+    fill(this.t().nav.newTab, { name: this.t().cart.salesTermsLink }),
+  );
+
+  /** L'identifiant de la note, que le bouton cite dans `aria-describedby`. */
+  protected readonly payNoteId = 'cart-pay-note';
+
+  /** La saisie de l'invité, à qui l'on demande de montrer ses erreurs au clic. */
+  private readonly guestForm = viewChild(GuestIdentityForm);
+
+  /** Le refus du serveur à la passation, dit DANS le panier (cf. `ClientOrders.refusal`). */
+  protected readonly refusal = computed(() => {
+    const message = this.orders.refusal();
+    if (message === null) {
+      return null;
+    }
+    return message === '' ? this.t().cart.placeFailed : message;
+  });
 
   /**
    * La case ne paraît que devant une commande réglable, et un texte publié :
@@ -417,8 +479,13 @@ export class CartDialog {
     // Un visiteur commande avec ce qu'il a saisi dans la carte : `POST
     // /shop/orders` rend l'intention Stripe AVEC la commande, et la suite est
     // celle d'un client connecté.
+    if (this.payBlocked()) {
+      return;
+    }
     const buyer = this.guest();
     if (this.identityNeeded() && buyer === null) {
+      // L'envoi tenté : chaque champ fautif le dit, le focus va au premier.
+      this.guestForm()?.reveal();
       return;
     }
     const placed =

@@ -153,6 +153,31 @@ describe('ProductTile', () => {
   });
 
   /**
+   * 🔴 **Un seul arrêt de tabulation par produit** (RGAA 12.8, lot A2) : la
+   * photo, le texte et le « + » en faisaient trois, quatre avec le « − », et un
+   * rayon de vingt pièces en demandait soixante. Le nom, titre `h3` de la tuile
+   * (RGAA 9.1), est le seul contrôle atteint ; il ouvre la fiche, où se règle
+   * la quantité.
+   */
+  it('n’offre qu’un arrêt de tabulation : le nom, titre de la tuile, qui ouvre la fiche', () => {
+    const el = fixture.nativeElement as HTMLElement;
+    fixture.componentRef.setInput('quantity', 2);
+    fixture.detectChanges();
+    const opened: string[] = [];
+    fixture.componentInstance.opened.subscribe(() => opened.push('fiche'));
+
+    const stops = [...el.querySelectorAll<HTMLElement>('button, a[href], [tabindex]')].filter(
+      (node) => node.tabIndex >= 0,
+    );
+    expect(stops).toHaveLength(1);
+    expect(stops[0]?.closest('h3')).not.toBeNull();
+    expect(stops[0]?.textContent?.trim()).toBe(TEST_ITEMS[0]?.name);
+
+    stops[0]?.click();
+    expect(opened).toEqual(['fiche']);
+  });
+
+  /**
    * Le best-seller se distingue par sa pastille ; une pièce ordinaire n'en a
    * pas — aucun chiffre de vente n'est servi, aucun n'est affiché.
    */

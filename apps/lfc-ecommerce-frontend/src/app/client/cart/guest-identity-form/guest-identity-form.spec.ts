@@ -168,4 +168,46 @@ describe('GuestIdentityForm', () => {
       phone: '06 12 34 56 78',
     });
   });
+
+  /** RGAA 11.13 (lot A3) : le navigateur peut remplir chaque champ. */
+  it('déclare la finalité de chaque champ (`autocomplete`)', () => {
+    fixture = mount();
+
+    expect(field(FR.cart.guestFirstName).getAttribute('autocomplete')).toBe('given-name');
+    expect(field(FR.cart.guestEmail).getAttribute('autocomplete')).toBe('email');
+    expect(field(FR.cart.guestEmailAgain).getAttribute('autocomplete')).toBe('email');
+    expect(field(FR.cart.guestPhone).getAttribute('autocomplete')).toBe('tel');
+  });
+
+  /** RGAA 11.10 (lot A3) : l'erreur est sous SON champ, reliée et annoncée. */
+  it('dit une adresse mal formée sous son champ, en quittant le champ', () => {
+    fixture = mount();
+    type(FR.cart.guestEmail, 'jean.exemple.fr');
+    expect(el().textContent).not.toContain(FR.cart.guestEmailInvalid);
+
+    leave(FR.cart.guestEmail);
+
+    const input = field(FR.cart.guestEmail);
+    const message = el().querySelector(`[id="${input.getAttribute('aria-describedby') ?? ''}"]`);
+    expect(input.getAttribute('aria-invalid')).toBe('true');
+    expect(message?.textContent?.trim()).toBe(FR.cart.guestEmailInvalid);
+    expect(message?.getAttribute('role')).toBe('alert');
+  });
+
+  it('ne dit pas un champ vide avant l’envoi, le dit après, et va au premier fautif', async () => {
+    fixture = mount();
+    type(FR.cart.guestFirstName, 'Jean');
+    leave(FR.cart.guestPhone);
+    expect(el().textContent).not.toContain(FR.cart.guestPhoneMissing);
+
+    fixture.componentInstance.reveal();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(el().textContent).not.toContain(FR.cart.guestFirstNameMissing);
+    expect(el().textContent).toContain(FR.cart.guestEmailMissing);
+    expect(el().textContent).toContain(FR.cart.guestEmailAgainMissing);
+    expect(el().textContent).toContain(FR.cart.guestPhoneMissing);
+    expect(document.activeElement).toBe(field(FR.cart.guestEmail));
+  });
 });

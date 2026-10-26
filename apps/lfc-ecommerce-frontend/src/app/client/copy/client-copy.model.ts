@@ -168,6 +168,11 @@ export interface ClientCopy {
     readonly soon: string;
     readonly close: string;
     readonly newOrder: string;
+    /**
+     * Le nom d'un lien qui ouvre un NOUVEL ONGLET (RGAA 13.2, lot A3) :
+     * `{name}` est remplacé par son texte visible, qui reste en tête du nom.
+     */
+    readonly newTab: string;
     readonly newOrderSub: string;
     readonly house: string;
     /** Les trois liens « la maison » : libellé, puis sa note à droite. */
@@ -449,6 +454,12 @@ export interface ClientCopy {
     readonly slideNext: string;
     /** Un point du défilement. `{n}` et `{count}` sont remplacés. */
     readonly slideGoTo: string;
+    /**
+     * Le bouton pause / lecture d'une case qui défile seule (RGAA 13.8). Le
+     * libellé dit l'action, pas l'état : il change avec elle.
+     */
+    readonly slidePause: string;
+    readonly slidePlay: string;
     readonly shelvesGroup: string;
     /**
      * `{price}` est remplacé par le montant. Le rayon affiche du **hors taxe**,
@@ -487,6 +498,15 @@ export interface ClientCopy {
     /** `{name}` est remplacé par le nom de la pièce. */
     readonly addAria: string;
     readonly removeAria: string;
+    /**
+     * Ce que la région d'état dit après un « + » ou un « − » (RGAA 7.5).
+     * `{name}` = la pièce, `{count}` = sa quantité au panier.
+     */
+    readonly cartStatusCount: string;
+    /** La même, quand la dernière pièce sort du panier. `{name}` = la pièce. */
+    readonly cartStatusRemoved: string;
+    /** Le titre (lu, non affiché) de la vitrine composée de l'accueil (RGAA 9.1). */
+    readonly storefrontTitle: string;
     /** `{count}` est remplacé par le nombre de pièces au panier. */
     readonly cartTitle: string;
     readonly cartEmpty: string;
@@ -756,6 +776,23 @@ export interface ClientCopy {
     readonly guestPhone: string;
     /** Le téléphone est requis : c'est le seul recours si l'adresse est fausse. */
     readonly guestPhoneHint: string;
+    /** Les erreurs par champ (RGAA 11.10, lot A3) — un champ vide ne se dit qu'à l'envoi. */
+    readonly guestFirstNameMissing: string;
+    readonly guestEmailMissing: string;
+    /** Pas d'arobase, ou rien après le point : le garde-fou de frappe, pas la règle du serveur. */
+    readonly guestEmailInvalid: string;
+    readonly guestEmailAgainMissing: string;
+    readonly guestPhoneMissing: string;
+    /**
+     * Sous le bouton de règlement, ce qui manque encore (RGAA 11.10/11.11,
+     * lot A3) : relié au bouton, il dit pourquoi il ne mène nulle part.
+     */
+    readonly payBlockedIdentity: string;
+    readonly payBlockedSignIn: string;
+    readonly payBlockedTerms: string;
+    readonly payBlockedTermsLoading: string;
+    /** Le refus du serveur à la passation, quand il n'a pas de message sûr à dire. */
+    readonly placeFailed: string;
   };
   /** L'écran du **QR de retrait** — celui que le client présente au comptoir. */
   readonly qr: {

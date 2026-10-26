@@ -209,3 +209,23 @@ summary,
 .panel:has(app-slot-picker-dialog, app-public-house-picker-dialog) .ph__close::after {
   content: attr(aria-label);
 }
+
+/* ── LE MOUVEMENT RÉDUIT, POUR TOUTE L'APP ───────────────────────────────────
+   RGAA 13.8 (lot A4, 2026-10-26). Vingt-neuf feuilles de `client/` animent,
+   six seulement écoutaient la préférence. Plutôt que d'en courir vingt-trois,
+   une règle : sous `reduce`, une transition ou une animation dure le temps
+   d'une image, et ne se répète pas. Elle aboutit quand même — un
+   `animationend` attendu arrive, un état final est atteint.
+
+   `!important` : c'est la préférence de la personne contre le style de
+   l'écran, et c'est elle qui doit gagner, quelle que soit la spécificité. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

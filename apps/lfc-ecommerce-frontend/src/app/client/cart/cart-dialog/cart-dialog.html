@@ -95,6 +95,12 @@
 </fold-panel-body>
 
 <fold-panel-footer>
+  <!-- Le refus du serveur à la passation reste DANS le panier, annoncé
+       (`announce` : `role="alert"`) : un toast vivait derrière le voile du
+       dialogue, inerte pour un lecteur d'écran (lot A3). -->
+  @if (refusal(); as message) {
+    <fold-callout variant="alert" announce data-place-refused>{{ message }}</fold-callout>
+  }
   <!-- Un panier vide n'a pas de bouton gris à offrir : il a un rayon à rouvrir.
        Le bouton ne se grise que faute de savoir qui commande, ou faute de
        créneau choisi (2026-10-14) — les deux cas où il n'a nulle part où
@@ -105,7 +111,7 @@
          n'existe que si un texte est publié ; sa version part avec la
          commande, et le serveur la refuse si elle a changé. -->
     @if (salesTerms.outdated()) {
-      <fold-callout variant="warning" data-terms-outdated>{{
+      <fold-callout variant="warning" announce data-terms-outdated>{{
         t().cart.salesTermsOutdated
       }}</fold-callout>
     }
@@ -118,11 +124,13 @@
         [checked]="salesTerms.checked()"
         (checkedChange)="salesTerms.check($event)"
         >{{ t().cart.salesTermsAccept }}
+        <!-- Le nouvel onglet se DIT dans le nom du lien (RGAA 13.2, lot A3). -->
         <a
           routerLink="/cgv"
           [queryParams]="salesTerms.pageQuery()"
           target="_blank"
           rel="noopener"
+          [attr.aria-label]="termsLinkName()"
           >{{ t().cart.salesTermsLink }}</a
         ></fold-checkbox
       >
@@ -144,28 +152,48 @@
          fait du crédit un défaut dont il faut sortir. -->
     <p class="settle-title">{{ t().cart.settleTitle }}</p>
     <div class="settle">
-      <button class="pay" type="button" [disabled]="payBlocked()" (click)="void proceedOnAccount()">
+      <button
+        class="pay"
+        type="button"
+        [disabled]="payBlocked()"
+        [attr.aria-describedby]="payNoteIsReason() ? payNoteId : null"
+        (click)="void proceedOnAccount()"
+      >
         {{ t().cart.settleAccount }}
       </button>
       <button
         class="pay is-quiet"
         type="button"
         [disabled]="payBlocked()"
+        [attr.aria-describedby]="payNoteIsReason() ? payNoteId : null"
         (click)="void proceedByCard()"
       >
         {{ t().cart.settleCard }}
       </button>
     </div>
   } @else {
-    <button class="pay" type="button" [disabled]="payBlocked()" (click)="void proceed()">
+    <button
+      class="pay"
+      type="button"
+      [disabled]="payBlocked()"
+      [attr.aria-describedby]="payNoteIsReason() ? payNoteId : null"
+      (click)="void proceed()"
+    >
       {{ ctaLabel() }}
     </button>
   }
   @if (!ordersClosed()) {
-    @if (slotMissing()) {
-      <p class="hint" role="status" data-slot-missing>{{ t().cart.slotMissing }}</p>
-    } @else {
-      <p class="hint">{{ t().cart.payHint }}</p>
-    }
+    <!-- Ce qui manque pour régler, ou comment on règle (RGAA 11.10/11.11,
+         lot A3) : une région `status` qui reste en place, pour que son
+         CHANGEMENT s'annonce, et que le bouton cite tant qu'elle dit un manque. -->
+    <p
+      class="hint"
+      role="status"
+      [id]="payNoteId"
+      [attr.data-pay-blocked]="payNoteIsReason() ? '' : null"
+      [attr.data-slot-missing]="slotMissing() ? '' : null"
+    >
+      {{ payNote() }}
+    </p>
   }
 </fold-panel-footer>

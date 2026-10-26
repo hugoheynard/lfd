@@ -108,4 +108,7 @@ export const GLOSSARY_A_B: Readonly<Record<string, string>> = {
   browseTitle: 'Visiter la boutique — titre',
   busy: 'Conversion en cours',
   buyer: 'Acheteur (facture)',
+  auditDone: 'Suivi d’accessibilité — audit réalisé',
+  auditNotPlanned: 'Suivi d’accessibilité — audit non planifié',
+  auditPlanned: 'Suivi d’accessibilité — audit prévu',
 };

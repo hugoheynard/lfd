@@ -190,6 +190,29 @@ describe('le dialogue d’une mention légale', () => {
     }
   });
 
+  /**
+   * Le suivi des corrections (2026-10-26) vit sous la déclaration
+   * d'accessibilité, et sous elle seule : les autres mentions ne le lisent
+   * pas — `http.verify()` refuserait une requête de trop.
+   */
+  it('montre le suivi des corrections sous la déclaration d’accessibilité', async () => {
+    pending().flush(VIEW);
+
+    ouvrir('accessibility');
+    pending('accessibility').flush(COOKIES);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    http
+      .expectOne(`${AUTH_CONFIG.apiBaseUrl}/content/accessibility-follow-up`)
+      .flush({ corrections: [], audit: { plannedFor: null, completedOn: null }, conformity: null });
+    fixture.detectChanges();
+
+    expect(el().querySelector('app-accessibility-follow-up')).not.toBeNull();
+    expect(text()).toContain('Traceurs');
+  });
+
   it('le bouton de l’état d’erreur rejoue la lecture', () => {
     pending().flush('nope', { status: 500, statusText: 'Server Error' });
     fixture.detectChanges();

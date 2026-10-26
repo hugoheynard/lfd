@@ -8,6 +8,7 @@ import { CartEntries } from '../../../cart/cart-entries';
 import { ClientCart } from '../../../cart/client-cart.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
 import { ProductTile } from '../../product-tile/product-tile';
+import { CartAnnouncer } from '../../cart-announcer.service';
 import { ShopCatalogue } from '../../shop-catalogue.store';
 import { composedCells } from '../../storefront/composed-cells';
 import { StorefrontActions } from '../../storefront/storefront-actions';
@@ -44,7 +45,12 @@ import { StorefrontSlot } from '../../storefront/storefront-slot/storefront-slot
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ProductTile, StorefrontSlot],
   providers: [StorefrontActions],
-  host: { '[class.composed]': 'cells() !== null' },
+  host: {
+    '[class.composed]': 'cells() !== null',
+    // Le rayon d'aujourd'hui pose ses tuiles sur l'hôte même : c'est lui la
+    // liste — sauf vide, où il ne porte qu'un message (RGAA 9.3).
+    '[attr.role]': "cells() === null && products().length > 0 ? 'list' : null",
+  },
   templateUrl: './shelf-grid.html',
   styleUrl: './shelf-grid.scss',
 })
@@ -71,6 +77,7 @@ export class ShelfGrid {
   private readonly catalogue = inject(ShopCatalogue);
   private readonly audience = inject(ProductAudience);
   private readonly entries = inject(CartEntries);
+  private readonly announcer = inject(CartAnnouncer);
 
   /** Ce que le catalogue sert — un objet peut montrer un article d'un autre rayon. */
   private readonly served = computed(() => new Set(this.catalogue.items().map((item) => item.sku)));
@@ -118,6 +125,13 @@ export class ShelfGrid {
     if (entering && this.cart.quantityOf(sku) > 0) {
       this.entries.entered(sku);
     }
+    this.announcer.announce(sku);
+  }
+
+  /** Retire une pièce, et le dit (RGAA 7.5). */
+  protected removePiece(sku: string): void {
+    this.cart.remove(sku);
+    this.announcer.announce(sku);
   }
 
   constructor() {
@@ -125,7 +139,7 @@ export class ShelfGrid {
       this.addPiece(sku);
     });
     this.actions.productRemoved.pipe(takeUntilDestroyed()).subscribe((sku) => {
-      this.cart.remove(sku);
+      this.removePiece(sku);
     });
   }
 }

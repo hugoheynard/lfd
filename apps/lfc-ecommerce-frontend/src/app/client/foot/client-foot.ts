@@ -10,6 +10,7 @@ import {
 } from '@lfd/contracts/content-values';
 
 import { ClientContent } from '../client-content.service';
+import { ClientCopyService, fill } from '../copy/client-copy.service';
 import { LegalDocumentPanel } from '../legal-document-panel/legal-document-panel';
 import { LEGAL_YEAR } from './legal-identity';
 
@@ -56,12 +57,22 @@ export class ClientFoot {
    * pas ici : il vient du contrat, pour que le back-office et la vitrine
    * écrivent le même mot.
    */
+  private readonly t = inject(ClientCopyService).t;
+
+  /**
+   * Chaque réseau s'ouvre dans un nouvel onglet, et son NOM le dit (RGAA 13.2,
+   * lot A3) : le libellé visible en tête, « nouvel onglet » à la suite.
+   */
   protected readonly socials = computed(() =>
-    this.legal().socials.map((social) => ({
-      channel: social.channel,
-      url: social.url,
-      label: socialChannelLabels[social.channel],
-    })),
+    this.legal().socials.map((social) => {
+      const label = socialChannelLabels[social.channel];
+      return {
+        channel: social.channel,
+        url: social.url,
+        label,
+        name: fill(this.t().nav.newTab, { name: label }),
+      };
+    }),
   );
 
   /**

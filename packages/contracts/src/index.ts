@@ -1897,6 +1897,15 @@ export type {
   LegalMentionDisplay,
 } from "./platform-content.js";
 export type {
+  AccessibilityAuditView,
+  AccessibilityConformityCounts,
+  AccessibilityConformityView,
+  AccessibilityCorrectionStatus,
+  AccessibilityCorrectionView,
+  AccessibilityFollowUpView,
+  AccessibilityThemeConformity,
+} from "./accessibility-follow-up.js";
+export type {
   LegalMention,
   LegalDocumentKey,
   SalesTermsDocument,

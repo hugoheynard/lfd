@@ -10,7 +10,12 @@
  * 3. le refus du schéma traverse le pipe Zod et le filtre d'erreurs pour
  *    ressortir en `400`, pas en `500`.
  */
-import { DEFAULT_FOOTER_CONTENT, type FooterContent, type FooterContentView } from "@lfd/contracts";
+import {
+  DEFAULT_FOOTER_CONTENT,
+  type AccessibilityFollowUpView,
+  type FooterContent,
+  type FooterContentView,
+} from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, jsonBody, E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";
@@ -70,6 +75,17 @@ describe("la lecture publique du pied de page", () => {
 
   it("n'exige aucune authentification — la vitrine se rend avant toute connexion", async () => {
     await ctx.http().get("/content/footer").expect(200);
+  });
+});
+
+describe("le suivi d'accessibilité", () => {
+  it("se lit sans jeton, et ne publie aucun compte avant l'audit", async () => {
+    const view = jsonBody<AccessibilityFollowUpView>(
+      await ctx.http().get("/content/accessibility-follow-up").expect(200),
+    );
+    expect(view.corrections.length).toBeGreaterThan(0);
+    expect(view.corrections[0]?.label.it).toEqual(expect.any(String));
+    expect(view.conformity).toBeNull();
   });
 });
 

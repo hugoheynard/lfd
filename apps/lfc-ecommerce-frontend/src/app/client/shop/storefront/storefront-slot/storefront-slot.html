@@ -20,6 +20,23 @@
 
   @if (active()) {
     <div class="controls">
+      @if (autoplays()) {
+        <!-- Le toucher arrête le défilement de toute la case : sur ce bouton,
+             il le relancerait aussitôt au clic. Le geste s'arrête donc ici. -->
+        <button
+          foldButton
+          type="button"
+          size="sm"
+          shape="pill"
+          emphasis="soft"
+          intent="neutral"
+          [attr.aria-label]="paused() ? t().shop.slidePlay : t().shop.slidePause"
+          (touchstart)="$event.stopPropagation()"
+          (click)="togglePause()"
+        >
+          <fold-icon [name]="paused() ? 'play' : 'pause'" />
+        </button>
+      }
       @if (arrows()) {
         <button
           foldButton

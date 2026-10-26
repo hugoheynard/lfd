@@ -71,6 +71,7 @@ export const GLOSSARY_M_O: Readonly<Record<string, string>> = {
   newOrderSub: 'Nouvelle commande — sous-titre',
   newOrderTitle: 'Nouvelle commande — titre',
   newStepHeading: 'Nouvelle étape',
+  newTab: 'Lien — nouvel onglet, nom lu',
   nextOpen: 'Complet — prochain créneau libre',
   noContact: 'Pas de contact sur place',
   noContactHint: 'Pas de contact sur place — aide',

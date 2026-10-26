@@ -1,0 +1,109 @@
+{
+  "personal/cart@1280": {
+    "label": 2,
+    "list": 1
+  },
+  "personal/cart@320": {
+    "label": 2,
+    "list": 1
+  },
+  "personal/confirmation@1280": {},
+  "personal/confirmation@320": {},
+  "personal/loyalty@1280": {},
+  "personal/loyalty@320": {},
+  "personal/orders@1280": {
+    "color-contrast": 2
+  },
+  "personal/orders@320": {
+    "color-contrast": 2
+  },
+  "personal/payment@1280": {},
+  "personal/payment@320": {},
+  "personal/routing@1280": {},
+  "personal/routing@320": {},
+  "personal/shop@1280": {},
+  "personal/shop@320": {},
+  "personal/time@1280": {},
+  "personal/time@320": {},
+  "personal/welcome@1280": {},
+  "personal/welcome@320": {},
+  "pro/account@1280": {},
+  "pro/account@320": {
+    "target-size": 8
+  },
+  "pro/cart@1280": {
+    "label": 2,
+    "list": 1
+  },
+  "pro/cart@320": {
+    "label": 2,
+    "list": 1
+  },
+  "pro/confirmation@1280": {},
+  "pro/confirmation@320": {},
+  "pro/orders@1280": {
+    "color-contrast": 2
+  },
+  "pro/orders@320": {
+    "color-contrast": 2
+  },
+  "pro/payment@1280": {},
+  "pro/payment@320": {},
+  "pro/routing@1280": {},
+  "pro/routing@320": {},
+  "pro/shop@1280": {},
+  "pro/shop@320": {},
+  "pro/time@1280": {},
+  "pro/time@320": {},
+  "pro/welcome@1280": {},
+  "pro/welcome@320": {},
+  "visitor/cart@1280": {
+    "label": 2,
+    "list": 1
+  },
+  "visitor/cart@320": {
+    "label": 2,
+    "list": 1,
+    "target-size": 2
+  },
+  "visitor/confirmation@1280": {
+    "target-size": 1
+  },
+  "visitor/confirmation@320": {
+    "target-size": 2
+  },
+  "visitor/payment@1280": {
+    "target-size": 1
+  },
+  "visitor/payment@320": {
+    "target-size": 2
+  },
+  "visitor/routing@1280": {
+    "target-size": 1
+  },
+  "visitor/routing@320": {
+    "target-size": 2
+  },
+  "visitor/shop+product-sheet@1280": {},
+  "visitor/shop+product-sheet@320": {},
+  "visitor/shop@1280": {
+    "target-size": 1
+  },
+  "visitor/shop@320": {
+    "target-size": 2
+  },
+  "visitor/time@1280": {
+    "target-size": 1
+  },
+  "visitor/time@320": {
+    "target-size": 2
+  },
+  "visitor/welcome+legal-accessibility@1280": {},
+  "visitor/welcome+legal-terms@1280": {},
+  "visitor/welcome@1280": {
+    "target-size": 1
+  },
+  "visitor/welcome@320": {
+    "target-size": 3
+  }
+}

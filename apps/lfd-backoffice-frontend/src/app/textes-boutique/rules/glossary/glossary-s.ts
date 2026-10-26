@@ -58,6 +58,8 @@ export const GLOSSARY_S: Readonly<Record<string, string>> = {
   siren_missing: 'Manque — SIREN',
   slideGoTo: 'Carrousel — aller à',
   slideNext: 'Carrousel — suivant',
+  slidePause: 'Carrousel — mettre en pause',
+  slidePlay: 'Carrousel — reprendre',
   slidePrevious: 'Carrousel — précédent',
   slipped: 'Jour retenu dépassé — prochain possible',
   slot: 'Créneau',
@@ -121,4 +123,5 @@ export const GLOSSARY_S: Readonly<Record<string, string>> = {
   switchLabel: 'Type de compte',
   signUp: 'Bouton « Créer un compte »',
   skipLink: 'Lien « aller au contenu » (clavier, lecteur d’écran)',
+  storefrontTitle: 'Titre de la vitrine (lecteur d’écran)',
 };

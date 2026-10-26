@@ -1,0 +1,32 @@
+/* Sous les articles, au même registre administratif : un intertitre du rang
+   d'un article (h3, sous le h2 du dialogue), pas d'accent de vitrine. */
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.follow-up {
+  margin-top: var(--fold-space-2xl);
+  max-width: 68ch;
+  min-width: 0;
+}
+
+.title {
+  margin: 0 0 var(--fold-space-sm);
+  font-size: var(--fold-text-md);
+  font-weight: var(--fold-weight-semibold);
+  line-height: var(--fold-leading-snug);
+  letter-spacing: var(--fold-tracking-wide);
+  font-variant-caps: small-caps;
+  color: var(--fold-color-text);
+}
+
+.audit {
+  margin: 0 0 var(--fold-space-md);
+  color: var(--fold-color-text);
+}
+
+.failed {
+  display: block;
+  margin-top: var(--fold-space-2xl);
+}

@@ -51,4 +51,5 @@ export const GLOSSARY_Q_R: Readonly<Record<string, string>> = {
   rolePlaceholder: 'Rôle — exemple',
   roles: 'Rôles',
   registration: 'Inscription',
+  rgaaThemes: 'Thématiques du RGAA',
 };

@@ -14,9 +14,14 @@
       @if (socials().length > 0) {
         <div class="social">
           @for (social of socials(); track social.channel) {
-            <a class="social-pill" [href]="social.url" rel="noopener" target="_blank">{{
-              social.label
-            }}</a>
+            <a
+              class="social-pill"
+              [href]="social.url"
+              rel="noopener"
+              target="_blank"
+              [attr.aria-label]="social.name"
+              >{{ social.label }}</a
+            >
           }
         </div>
       }

@@ -18,6 +18,7 @@ import {
 
 import type { LegalMention } from '@lfd/contracts/content-values';
 
+import { AccessibilityFollowUp } from '../accessibility-follow-up/accessibility-follow-up';
 import { LegalArticles } from '../legal-articles/legal-articles';
 import { ClientLegalDocuments } from '../client-legal-documents.service';
 import { ClientCopyService } from '../copy/client-copy.service';
@@ -48,6 +49,7 @@ import { ClientLocale } from '../client-locale.service';
   selector: 'app-legal-document-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    AccessibilityFollowUp,
     FoldButtonComponent,
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,

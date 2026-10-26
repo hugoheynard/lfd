@@ -115,15 +115,16 @@ gagne aucune méthode qui écrirait un champ à partir de primitives.
 Toutes sous `AdminPlatformContentController` (`@AdminSurface("b2b_settings")`),
 sauf la dernière.
 
-| Verbe    | Chemin                                                           | Rend                |
-| -------- | ---------------------------------------------------------------- | ------------------- |
-| `GET`    | `/admin/content/legal/:mention`                                  | `LegalDocumentView` |
-| `PUT`    | `/admin/content/legal/:mention/title`                            | `204`               |
-| `POST`   | `/admin/content/legal/:mention/paragraphs`                       | `201` + `{ id }`    |
-| `PUT`    | `/admin/content/legal/:mention/paragraphs/:paragraphId`          | `204`               |
-| `DELETE` | `/admin/content/legal/:mention/paragraphs/:paragraphId`          | `204`               |
-| `PUT`    | `/admin/content/legal/:mention/paragraphs/:paragraphId/position` | `204`               |
-| `GET`    | `/content/legal/:mention` (public, throttlé)                     | `LegalDocumentView` |
+| Verbe    | Chemin                                                           | Rend                        |
+| -------- | ---------------------------------------------------------------- | --------------------------- |
+| `GET`    | `/admin/content/legal/:mention`                                  | `LegalDocumentView`         |
+| `PUT`    | `/admin/content/legal/:mention/title`                            | `204`                       |
+| `POST`   | `/admin/content/legal/:mention/paragraphs`                       | `201` + `{ id }`            |
+| `PUT`    | `/admin/content/legal/:mention/paragraphs/:paragraphId`          | `204`                       |
+| `DELETE` | `/admin/content/legal/:mention/paragraphs/:paragraphId`          | `204`                       |
+| `PUT`    | `/admin/content/legal/:mention/paragraphs/:paragraphId/position` | `204`                       |
+| `GET`    | `/content/legal/:mention` (public, throttlé)                     | `LegalDocumentView`         |
+| `GET`    | `/content/accessibility-follow-up` (public, throttlé)            | `AccessibilityFollowUpView` |
 
 🔴 **`:mention` est le vocabulaire fermé, validé AU BORD** (`LegalMentionParam`),
 et une mention inconnue rend **404** — pas 400 : le segment désigne une
@@ -212,6 +213,30 @@ lien vivant, et c'est le mort qui ressemblait le plus à un lien. Les lignes
 **déjà enregistrées en base le portent encore** — un contenu éditorial ne se
 réécrit pas dans le dos de celui qui l'a saisi. Il se retire depuis l'écran
 **App footer**.
+
+### Le suivi des corrections, sous la déclaration d'accessibilité
+
+Décidé par Hugo le 2026-10-26. Le dialogue de la mention `accessibility` — et
+lui seul — montre, sous les articles, une section **« Suivi des corrections »** :
+un tableau (`fold-data-table`, `<caption>` et en-têtes `scope`) qui dit, par
+thématique RGAA, ce qui est fait, en cours et prévu, avec un statut écrit dans
+une pastille fold (jamais la couleur seule), et une ligne sur l'audit complet
+(« prévu en … » ou « non encore planifié »). **Aucun taux** : l'audit n'est pas
+fait.
+
+- La source est la grille d'audit, clé `corrections` et `audit`
+  ([`../accessibilite/grille-audit-rgaa.md`](../accessibilite/grille-audit-rgaa.md)) ;
+  l'API sert sa part publique, embarquée par `pnpm rgaa:digest`, par
+  `GET /content/accessibility-follow-up`. Aucune table, aucune édition au
+  back-office.
+- Le composant (`client/accessibility-follow-up/`) est **différé** (`@defer`)
+  dans le dialogue : ni lui, ni la table fold, ni ses textes
+  (`copy/screens/accessibility-follow-up.copy.ts`) ne partent au démarrage.
+- Une lecture ratée se dit dans un `fold-callout` discret ; la déclaration reste
+  lisible.
+- Le contrat prévoit un second mode (`conformity` : comptes C, NC, NA, globaux
+  et par thématique) ; il vaut `null` jusqu'à ce que l'audit soit daté et la
+  grille tranchée, et la boutique ne l'affiche pas encore.
 
 ### 🔴 L'hôte des panneaux manquait dans la boutique
 

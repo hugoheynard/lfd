@@ -142,6 +142,13 @@ export const OTHER_SPACES = [
     fn: "contactDialogCopy",
   },
   { kind: "dictionary", space: "legalDocument", title: "Les documents légaux" },
+  {
+    kind: "screen",
+    space: "accessibilityFollowUp",
+    title: "Le suivi des corrections d’accessibilité — sous la déclaration",
+    file: "screens/accessibility-follow-up.copy.ts",
+    fn: "accessibilityFollowUpCopy",
+  },
 ];
 
 /**

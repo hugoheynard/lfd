@@ -1,5 +1,5 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { computed, effect, inject, Injectable, signal, untracked } from '@angular/core';
+import { computed, effect, inject, Injectable, isDevMode, signal, untracked } from '@angular/core';
 import {
   WORKSPACE_HEADER,
   type GuestBuyerPayload,
@@ -272,6 +272,17 @@ export class ClientOrders {
   private readonly salesTerms = inject(SalesTermsConsent);
   private readonly locale = inject(ClientLocale);
 
+  /**
+   * **Le dernier refus de la passation**, dit DANS le panier (RGAA 11.10,
+   * lot A3) — `''` quand le serveur n'a pas de message sûr à dire, `null`
+   * sans refus. Il était un toast : or le panier est un dialogue modal, et
+   * fold rend `inert` tout ce qui l'entoure, toasts compris (vérifié dans
+   * `fold-ng.mjs` 0.34.0 le 2026-10-26) — le refus s'affichait derrière le
+   * voile sans être annoncé. Remis à `null` à chaque tentative.
+   */
+  private readonly lastRefusal = signal<string | null>(null);
+  readonly refusal = this.lastRefusal.asReadonly();
+
   /** Les commandes gardées pour l'espace COURANT — vide tant qu'il n'est pas connu. */
   private readonly placed = signal<readonly PlacedOrder[]>([]);
 
@@ -339,6 +350,7 @@ export class ClientOrders {
    *   mensuel : c'est une facilité, pas une obligation.
    */
   async place(settlement: OrderSettlement | null = null): Promise<PlacedOrder | null> {
+    this.lastRefusal.set(null);
     const service = this.order.choice();
     const lines = this.cart.lines();
     // L'espace est CAPTURÉ ici : c'est celui dans lequel le client a composé et
@@ -427,6 +439,7 @@ export class ClientOrders {
    * @returns la commande passée, ou `null` — le refus a déjà été dit.
    */
   async placeAsGuest(buyer: GuestBuyerPayload): Promise<PlacedOrder | null> {
+    this.lastRefusal.set(null);
     const service = this.order.choice();
     const lines = this.cart.lines();
     if (service === null || lines.length === 0) {
@@ -467,7 +480,7 @@ export class ClientOrders {
       if (this.salesTermsOutdated(error)) {
         return null;
       }
-      this.notify.error(error, "La commande n'a pas pu être passée.");
+      this.refuse(error);
       return null;
     }
   }
@@ -687,7 +700,7 @@ export class ClientOrders {
       }
       // `NotifyService.error` filtre déjà l'enveloppe : le message du serveur
       // quand il est sûr, ce repli sinon. Jamais un détail interne.
-      this.notify.error(error, "La commande n'a pas pu être passée.");
+      this.refuse(error);
       if (voucherId !== null && httpErrorCode(error)?.startsWith(LOYALTY_REFUSAL_PREFIX) === true) {
         // Le bon est refusé (expiré, déjà utilisé, pris par un autre onglet) :
         // le message du serveur est dit, le choix revient à « aucun », la liste
@@ -703,6 +716,14 @@ export class ClientOrders {
    * décoche, le texte se relit, et le panier le dit dans SA langue — pas de
    * bulle en plus du message à l'endroit où l'on recoche.
    */
+  /** Garde le refus pour le panier ; le message du serveur seulement s'il est sûr. */
+  private refuse(error: unknown): void {
+    if (isDevMode()) {
+      console.error('[commande] passation refusée', error);
+    }
+    this.lastRefusal.set(httpErrorMessage(error, ''));
+  }
+
   private salesTermsOutdated(error: unknown): boolean {
     if (httpErrorCode(error) !== SALES_TERMS_OUTDATED) {
       return false;

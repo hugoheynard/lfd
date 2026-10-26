@@ -224,4 +224,19 @@ describe('le pied de page — la barre légale', () => {
     expect(host.querySelector('.phone-hours')).toBeNull();
     expect(host.textContent).not.toContain('04 79 06 12 40');
   });
+
+  /** RGAA 13.2 (lot A3) : un lien qui ouvre un nouvel onglet le dit dans son nom. */
+  it('nomme chaque réseau social en disant qu’il ouvre un nouvel onglet', () => {
+    const host = boot();
+    servirMentions(toutesSauf([]));
+
+    const pills = [...host.querySelectorAll<HTMLAnchorElement>('a.social-pill')];
+    expect(pills.length).toBeGreaterThan(0);
+    for (const pill of pills) {
+      expect(pill.target).toBe('_blank');
+      expect(pill.getAttribute('aria-label')).toBe(
+        `${pill.textContent?.trim() ?? ''} (nouvel onglet)`,
+      );
+    }
+  });
 });

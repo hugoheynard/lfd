@@ -1,0 +1,11 @@
+/* Le titre de la vitrine, pour la navigation par titres : hors de la vue et
+   hors du flux, il ne prend aucune place. */
+.title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

@@ -128,4 +128,5 @@ export const GLOSSARY_T_W: Readonly<Record<string, string>> = {
   write: 'Bouton « écrire »',
   writeFailed: 'Enregistrement échoué',
   welcome: 'Accueil',
+  wholeSite: 'Ensemble du site',
 };

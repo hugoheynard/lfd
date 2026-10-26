@@ -1,0 +1,14 @@
+/* Hors de la vue ET hors du flux, sur l'hôte même : posée dans une grille, une
+   région en flux y prendrait une case et un écart. */
+:host {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.said {
+  margin: 0;
+}

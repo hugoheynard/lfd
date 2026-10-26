@@ -1,4 +1,5 @@
 import type {
+  AccessibilityFollowUpView,
   FooterContentView,
   LegalDocumentKey,
   PublishedLegalDocumentView,
@@ -8,6 +9,7 @@ import { QueryBus } from "@nestjs/cqrs";
 import { Throttle } from "@nestjs/throttler";
 
 import { Public } from "../../../platform/auth/public.decorator.js";
+import { GetAccessibilityFollowUpQuery } from "../application/get-accessibility-follow-up.query.js";
 import { GetFooterContentQuery } from "../application/get-footer-content.query.js";
 import { GetPublishedLegalDocumentQuery } from "../application/get-published-legal-document.query.js";
 import { LegalMentionParam } from "./legal-mention.pipe.js";
@@ -30,6 +32,21 @@ export class PlatformContentController {
   footer(): Promise<FooterContentView> {
     return this.queries.execute<GetFooterContentQuery, FooterContentView>(
       new GetFooterContentQuery(),
+    );
+  }
+
+  /**
+   * Le **suivi d'accessibilité** — les corrections et l'état de l'audit RGAA,
+   * que la boutique montre sous la déclaration d'accessibilité, à l'ouverture
+   * du dialogue (Hugo, 2026-10-26). Public : c'est ce qu'on publie.
+   *
+   * Déclarée AVANT `legal/:mention` par lisibilité seulement : les deux
+   * chemins ne se recouvrent pas.
+   */
+  @Get("accessibility-follow-up")
+  accessibilityFollowUp(): Promise<AccessibilityFollowUpView> {
+    return this.queries.execute<GetAccessibilityFollowUpQuery, AccessibilityFollowUpView>(
+      new GetAccessibilityFollowUpQuery(),
     );
   }
 

@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1622 textes
+## Sommaire — 1667 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -19,7 +19,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Accueil — la carte d'événement](#espace-event) | `event` | 5 |
 | [Connexion et création de compte](#espace-signup) | `signup` | 24 |
 | [Commander — l'écran d'entrée de la commande](#espace-commande) | `commande` | 39 |
-| [Rayon / boutique](#espace-shop) | `shop` | 61 |
+| [Rayon / boutique](#espace-shop) | `shop` | 66 |
 | [Rayon — la fiche produit](#espace-product) | `product` | 19 |
 | [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 36 |
 | [Choix du lieu — la maison](#espace-housepicker) | `housePicker` | 8 |
@@ -27,16 +27,16 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Choix du lieu — le retrait](#espace-pickupdialog) | `pickupDialog` | 11 |
 | [Choix du lieu — l’adresse de livraison](#espace-addressdialog) | `addressDialog` | 24 |
 | [Choix du lieu — la saisie d’une adresse de livraison](#espace-deliveryaddress) | `deliveryAddress` | 38 |
-| [Choix de l’heure — le sélecteur de créneau](#espace-slotpicker) | `slotPicker` | 19 |
+| [Choix de l’heure — le sélecteur de créneau](#espace-slotpicker) | `slotPicker` | 20 |
 | [Choix de l’heure — l’étape du créneau](#espace-slotstep) | `slotStep` | 11 |
 | [Choix de l’heure — le rappel téléphonique](#espace-rappel) | `rappel` | 12 |
-| [Panier, connexion et saisie invité](#espace-cart) | `cart` | 61 |
+| [Panier, connexion et saisie invité](#espace-cart) | `cart` | 71 |
 | [Règlement](#espace-pay) | `pay` | 21 |
 | [Confirmation](#espace-done) | `done` | 28 |
 | [Confirmation — le QR de retrait](#espace-qr) | `qr` | 8 |
 | **Le reste de la boutique** | | |
 | [Le cadre — bandeaux, installation, erreurs générales](#espace-chrome) | `chrome` | 59 |
-| [La navigation](#espace-nav) | `nav` | 24 |
+| [La navigation](#espace-nav) | `nav` | 25 |
 | [La colonne d’accompagnement](#espace-aside) | `aside` | 4 |
 | [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 239 |
 | [Annuler une commande — Mes commandes et la page invité](#espace-ordercancel) | `orderCancel` | 57 |
@@ -47,7 +47,8 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
-| **Total** | | **1622** |
+| [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
+| **Total** | | **1667** |
 
 ## Le parcours de commande
 
@@ -326,7 +327,7 @@ Source : `fr.ts · en.ts · it.ts` · 39 textes.
 
 ### Rayon / boutique — `shop`
 
-Source : `fr.ts · en.ts · it.ts` · 61 textes.
+Source : `fr.ts · en.ts · it.ts` · 66 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -352,6 +353,8 @@ Source : `fr.ts · en.ts · it.ts` · 61 textes.
 | `shop.slidePrevious` | Contenu précédent | Previous | Precedente |  |
 | `shop.slideNext` | Contenu suivant | Next | Successivo |  |
 | `shop.slideGoTo` | Contenu {n} sur {count} | Item {n} of {count} | Contenuto {n} di {count} | `{n}` `{count}` |
+| `shop.slidePause` | Mettre en pause le défilement | Pause the slideshow | Metti in pausa lo scorrimento |  |
+| `shop.slidePlay` | Reprendre le défilement | Resume the slideshow | Riprendi lo scorrimento |  |
 | `shop.shelvesGroup` | Les rayons | The shelves | I reparti |  |
 | `shop.priceHt` | {price} HT | {price} excl. VAT | {price} IVA escl. | `{price}` |
 | `shop.htSuffix` | HT | excl. VAT | IVA escl. |  |
@@ -364,6 +367,9 @@ Source : `fr.ts · en.ts · it.ts` · 61 textes.
 | `shop.addAriaProVisit` | Se connecter pour commander {name} | Sign in to order {name} | Accedi per ordinare {name} | `{name}` |
 | `shop.addAria` | Ajouter {name} | Add {name} | Aggiungi {name} | `{name}` |
 | `shop.removeAria` | Retirer {name} | Remove {name} | Togli {name} | `{name}` |
+| `shop.cartStatusCount` | {name} : {count} au panier | {name}: {count} in your basket | {name}: {count} nel carrello | `{name}` `{count}` |
+| `shop.cartStatusRemoved` | {name} retiré du panier | {name} removed from your basket | {name} tolto dal carrello | `{name}` |
+| `shop.storefrontTitle` | La vitrine | Shop window | La vetrina |  |
 | `shop.cartTitle` | Votre panier | Your basket | Il suo carrello |  |
 | `shop.cartEmpty` | Panier vide. La fournée du matin part vite — le ski praliné ne fait jamais l’après-midi. | Empty basket. The morning batch goes fast — the praline ski never sees the afternoon. | Carrello vuoto. L’infornata del mattino va via in fretta — lo sci al pralinato non arriva mai al pomeriggio. |  |
 | `shop.staffAdvice` | Notre conseil | Our advice | Il nostro consiglio |  |
@@ -596,7 +602,7 @@ Source : `screens/delivery-address.copy.ts` · 38 textes.
 
 ### Choix de l’heure — le sélecteur de créneau — `slotPicker`
 
-Source : `screens/slot-picker.copy.ts` · 19 textes.
+Source : `screens/slot-picker.copy.ts` · 20 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -607,6 +613,7 @@ Source : `screens/slot-picker.copy.ts` · 19 textes.
 | `slotPicker.days.today` | Aujourd’hui | Today | Oggi |  |
 | `slotPicker.days.tomorrow` | Demain | Tomorrow | Domani |  |
 | `slotPicker.days.none` | Aucune journée ouverte | No day open | Nessuna giornata aperta |  |
+| `slotPicker.days.group` | Jour du retrait | Pickup day | Giorno del ritiro |  |
 | `slotPicker.state.open` | Ouvert | Open | Aperto |  |
 | `slotPicker.state.full` | Complet | Full | Esaurito |  |
 | `slotPicker.full.tag` | Complet | Full | Esaurito |  |
@@ -665,7 +672,7 @@ Source : `fr.ts · en.ts · it.ts` · 12 textes.
 
 ### Panier, connexion et saisie invité — `cart`
 
-Source : `fr.ts · en.ts · it.ts` · 61 textes.
+Source : `fr.ts · en.ts · it.ts` · 71 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -730,6 +737,16 @@ Source : `fr.ts · en.ts · it.ts` · 61 textes.
 | `cart.guestEmailMismatch` | Les deux adresses ne sont pas identiques. | The two addresses are not the same. | I due indirizzi non coincidono. |  |
 | `cart.guestPhone` | Téléphone | Phone | Telefono |  |
 | `cart.guestPhoneHint` | Pour vous joindre si quelque chose cloche avec votre commande. | So we can reach you if something is wrong with your order. | Per contattarla se qualcosa non va con il suo ordine. |  |
+| `cart.guestFirstNameMissing` | Indiquez votre prénom. | Enter your first name. | Indichi il suo nome. |  |
+| `cart.guestEmailMissing` | Indiquez votre adresse e-mail. | Enter your email address. | Indichi il suo indirizzo e-mail. |  |
+| `cart.guestEmailInvalid` | Cette adresse e-mail semble incomplète, par exemple nom@domaine.fr. | This email address looks incomplete, for example name@domain.com. | Questo indirizzo e-mail sembra incompleto, ad esempio nome@dominio.it. |  |
+| `cart.guestEmailAgainMissing` | Retapez votre adresse e-mail. | Type your email address again. | Riscriva il suo indirizzo e-mail. |  |
+| `cart.guestPhoneMissing` | Indiquez un numéro de téléphone. | Enter a phone number. | Indichi un numero di telefono. |  |
+| `cart.payBlockedIdentity` | Indiquez votre prénom, votre adresse e-mail et votre téléphone pour commander. | Enter your first name, email address and phone number to order. | Indichi nome, indirizzo e-mail e telefono per ordinare. |  |
+| `cart.payBlockedSignIn` | Connectez-vous, ou commandez en tant qu’invité, pour commander. | Sign in, or order as a guest, to place your order. | Acceda, oppure ordini come ospite, per ordinare. |  |
+| `cart.payBlockedTerms` | Cochez les conditions générales de vente pour commander. | Tick the terms and conditions of sale to order. | Spunti le condizioni generali di vendita per ordinare. |  |
+| `cart.payBlockedTermsLoading` | Les conditions générales de vente se chargent… | The terms and conditions of sale are loading… | Le condizioni generali di vendita si stanno caricando… |  |
+| `cart.placeFailed` | La commande n’a pas pu être passée. | The order could not be placed. | Non è stato possibile effettuare l’ordine. |  |
 
 <a id="espace-pay"></a>
 
@@ -889,7 +906,7 @@ Source : `fr.ts · en.ts · it.ts` · 59 textes.
 
 ### La navigation — `nav`
 
-Source : `fr.ts · en.ts · it.ts` · 24 textes.
+Source : `fr.ts · en.ts · it.ts` · 25 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -904,6 +921,7 @@ Source : `fr.ts · en.ts · it.ts` · 24 textes.
 | `nav.cart` | Mon panier | My basket | Il mio carrello |  |
 | `nav.soon` | Bientôt | Soon | Presto |  |
 | `nav.close` | Fermer le menu | Close the menu | Chiudi il menu |  |
+| `nav.newTab` | {name} (nouvel onglet) | {name} (new tab) | {name} (nuova scheda) | `{name}` |
 | `nav.newOrder` | Nouvelle commande | New order | Nuovo ordine |  |
 | `nav.newOrderSub` | Retrait ou coursier, vous choisissez | Pickup or courier, you choose | Ritiro o corriere, scegliete voi |  |
 | `nav.house` | La maison | The bakery | La casa |  |
@@ -1989,6 +2007,43 @@ Source : `fr.ts · en.ts · it.ts` · 14 textes.
 | `legalDocument.salesTerms.downloadPdf` | Télécharger les CGV (PDF) | Download the terms (PDF) | Scarica le condizioni (PDF) |  |
 | `legalDocument.salesTerms.pdfReference` | La version de référence est le document PDF ; ce texte en facilite la lecture. | The PDF document is the reference version; this text makes it easier to read. | La versione di riferimento è il documento PDF; questo testo ne facilita la lettura. |  |
 | `legalDocument.salesTerms.proDraftTitle` | Conditions générales de vente professionnelles en cours de rédaction. | Business terms and conditions of sale are being drafted. | Condizioni generali di vendita professionali in corso di redazione. |  |
+
+<a id="espace-accessibilityfollowup"></a>
+
+### Le suivi des corrections d’accessibilité — sous la déclaration — `accessibilityFollowUp`
+
+Source : `screens/accessibility-follow-up.copy.ts` · 28 textes.
+
+| Clé | FR | EN | IT | Variables |
+| --- | --- | --- | --- | --- |
+| `accessibilityFollowUp.title` | Suivi des corrections | Corrections log | Registro delle correzioni |  |
+| `accessibilityFollowUp.caption` | Corrections d’accessibilité, par thématique du RGAA | Accessibility corrections, by RGAA topic | Correzioni di accessibilità, per tematica RGAA |  |
+| `accessibilityFollowUp.columnTheme` | Thématique | Topic | Tematica |  |
+| `accessibilityFollowUp.columnCorrection` | Correction | Correction | Correzione |  |
+| `accessibilityFollowUp.columnDate` | Date | Date | Data |  |
+| `accessibilityFollowUp.columnStatus` | Statut | Status | Stato |  |
+| `accessibilityFollowUp.correctionDone` | Fait | Done | Fatto |  |
+| `accessibilityFollowUp.correctionInProgress` | En cours | In progress | In corso |  |
+| `accessibilityFollowUp.correctionPlanned` | Prévu | Planned | Previsto |  |
+| `accessibilityFollowUp.wholeSite` | Ensemble du site | Whole site | Intero sito |  |
+| `accessibilityFollowUp.dateToCome` | À dater | To be dated | Da datare |  |
+| `accessibilityFollowUp.auditPlanned` | Audit complet prévu en {month}. | Full audit planned for {month}. | Audit completo previsto per {month}. | `{month}` |
+| `accessibilityFollowUp.auditNotPlanned` | Audit complet : non encore planifié. | Full audit: not yet scheduled. | Audit completo: non ancora pianificato. |  |
+| `accessibilityFollowUp.auditDone` | Audit complet réalisé le {date}. | Full audit completed on {date}. | Audit completo svolto il {date}. | `{date}` |
+| `accessibilityFollowUp.loadFailed` | Le suivi des corrections n’a pas pu être chargé. | The corrections log could not be loaded. | Non è stato possibile caricare il registro delle correzioni. |  |
+| `accessibilityFollowUp.rgaaThemes.0` | Images | Images | Immagini |  |
+| `accessibilityFollowUp.rgaaThemes.1` | Cadres | Frames | Frame |  |
+| `accessibilityFollowUp.rgaaThemes.2` | Couleurs | Colours | Colori |  |
+| `accessibilityFollowUp.rgaaThemes.3` | Multimédia | Multimedia | Multimedia |  |
+| `accessibilityFollowUp.rgaaThemes.4` | Tableaux | Tables | Tabelle |  |
+| `accessibilityFollowUp.rgaaThemes.5` | Liens | Links | Link |  |
+| `accessibilityFollowUp.rgaaThemes.6` | Scripts | Scripts | Script |  |
+| `accessibilityFollowUp.rgaaThemes.7` | Éléments obligatoires | Mandatory elements | Elementi obbligatori |  |
+| `accessibilityFollowUp.rgaaThemes.8` | Structuration de l’information | Information structure | Strutturazione dell’informazione |  |
+| `accessibilityFollowUp.rgaaThemes.9` | Présentation de l’information | Presentation of information | Presentazione dell’informazione |  |
+| `accessibilityFollowUp.rgaaThemes.10` | Formulaires | Forms | Moduli |  |
+| `accessibilityFollowUp.rgaaThemes.11` | Navigation | Navigation | Navigazione |  |
+| `accessibilityFollowUp.rgaaThemes.12` | Consultation | Consultation | Consultazione |  |
 
 ## Non recensé
 

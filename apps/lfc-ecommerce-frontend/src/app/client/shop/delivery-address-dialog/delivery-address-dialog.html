@@ -56,9 +56,11 @@
          d'un PRO appartiennent à sa société, pas à la commande. -->
     <fold-empty-state [title]="c().empty.title" [subtitle]="c().empty.subtitle" />
   } @else {
-    <ul class="entries" role="radiogroup" [attr.aria-label]="c().title">
+    <!-- Le clavier du motif radio : un arrêt, les flèches (RGAA 7.1, lot A2).
+         La rangée n'est pas un élément de liste pour qui lit le groupe. -->
+    <ul class="entries" role="radiogroup" appRovingRadioGroup [attr.aria-label]="c().title">
       @for (entry of entries(); track entry.address.id) {
-        <li>
+        <li role="none">
           <button
             class="entry"
             type="button"

@@ -2,6 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, inject, input } from '@an
 import { Router } from '@angular/router';
 import type { PublicStorefrontPageView } from '@lfd/contracts';
 
+import { ClientCopyService } from '../../copy/client-copy.service';
+import { CartAnnouncement } from '../../shop/cart-announcement/cart-announcement';
 import { ShelfGrid } from '../../shop/shop-page/shelf-grid/shelf-grid';
 import { ShopCatalogue } from '../../shop/shop-catalogue.store';
 import { SHELF_PARAM } from '../../shop/shelves';
@@ -30,13 +32,15 @@ const NO_PRODUCTS: readonly never[] = [];
 @Component({
   selector: 'app-home-storefront',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ShelfGrid],
+  imports: [CartAnnouncement, ShelfGrid],
   templateUrl: './home-storefront.html',
+  styleUrl: './home-storefront.scss',
 })
 export class HomeStorefront {
   /** La page `home`, ou `null` tant qu'elle n'est pas lue — ou si elle ne l'a pas été. */
   readonly page = input.required<PublicStorefrontPageView | null>();
 
+  protected readonly t = inject(ClientCopyService).t;
   private readonly router = inject(Router);
   private readonly catalogue = inject(ShopCatalogue);
 

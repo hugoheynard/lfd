@@ -105,6 +105,9 @@ let regle: (string | null)[] = [];
 /** Les identités d'invité passées à `placeAsGuest()`. */
 let invites: unknown[] = [];
 
+/** Le refus de passation que `ClientOrders` garde pour le panier — `''` = sans message sûr. */
+const refus = signal<string | null>(null);
+
 /** Ce que l'écran a demandé aux portes, où il est allé, et s'il s'est fermé. */
 let ouvertes: string[] = [];
 let visitees: string[] = [];
@@ -163,6 +166,7 @@ function boot({
       {
         provide: ClientOrders,
         useValue: {
+          refusal: refus,
           place: (settlement: string | null = null): Promise<null> => {
             regle.push(settlement);
             // `null` : on observe CE QUI EST DEMANDÉ, pas la suite — une
@@ -203,6 +207,7 @@ function boot({
   regle = [];
   invites = [];
   adresses = [];
+  refus.set(null);
   hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
   TestBed.inject(OrderContextStore).choice.set(service);
   const cart = TestBed.inject(ClientCart);
@@ -232,17 +237,48 @@ const invite = (fixture: ComponentFixture<CartDialog>): Element | null =>
 const bouton = (fixture: ComponentFixture<CartDialog>): HTMLButtonElement | null =>
   el(fixture).querySelector('.pay');
 
+/** La ligne sous le bouton : ce qui manque, sinon comment on règle. */
+const note = (fixture: ComponentFixture<CartDialog>): HTMLElement | null =>
+  el(fixture).querySelector('[role="status"].hint');
+
 describe('le panier demande qui commande', () => {
   /**
    * Régression : `place()` rendait `null` en silence pour un visiteur, et
    * `proceed()` commentait « le refus a déjà été dit ». Il ne l'était pas — le
    * clic ne produisait RIEN. L'écran devait le dire ; il ne le disait pas.
    */
-  it('retient le règlement et s’explique, devant un visiteur', () => {
+  it('retient le règlement et s’explique, devant un visiteur', async () => {
     const fixture = boot({ auth: VISITEUR });
 
     expect(invite(fixture)).not.toBeNull();
-    expect(bouton(fixture)?.disabled).toBe(true);
+    expect(note(fixture)?.textContent?.trim()).toBe(FR.cart.payBlockedIdentity);
+    expect(bouton(fixture)?.getAttribute('aria-describedby')).toBe(note(fixture)?.id);
+
+    bouton(fixture)?.click();
+    await fixture.whenStable();
+
+    expect(invites).toEqual([]);
+  });
+
+  /**
+   * RGAA 11.10 (lot A3) : le bouton grisé ne disait pas ce qui manquait, et un
+   * clic ne montrait rien. Le clic montre désormais l'erreur de chaque champ,
+   * et porte le focus sur le premier.
+   */
+  it('au clic sur une saisie incomplète, dit l’erreur de chaque champ et va au premier', async () => {
+    const fixture = boot({ auth: VISITEUR });
+
+    expect(bouton(fixture)?.disabled).toBe(false);
+    bouton(fixture)?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const form = el(fixture).querySelector('app-guest-identity-form');
+    const fautifs = [...(form?.querySelectorAll('input[aria-invalid="true"]') ?? [])];
+    expect(fautifs).toHaveLength(4);
+    expect(form?.textContent).toContain(FR.cart.guestFirstNameMissing);
+    expect(document.activeElement).toBe(fautifs[0]);
   });
 
   /**
@@ -278,6 +314,7 @@ describe('le panier demande qui commande', () => {
     expect(el(fixture).querySelector('app-sign-in-choices')).not.toBeNull();
     expect(door(1)?.getAttribute('aria-pressed')).toBe('true');
     expect(bouton(fixture)?.disabled).toBe(true);
+    expect(note(fixture)?.textContent?.trim()).toBe(FR.cart.payBlockedSignIn);
 
     door(0)?.click();
     fixture.detectChanges();
@@ -561,6 +598,7 @@ describe('le panier exige un créneau choisi', () => {
     expect(el(fixture).querySelector('[data-slot-missing]')?.textContent?.trim()).toBe(
       FR.cart.slotMissing,
     );
+    expect(bouton(fixture)?.getAttribute('aria-describedby')).toBe(note(fixture)?.id);
     bouton(fixture)?.click();
     await Promise.resolve();
     expect(regle).toEqual([]);
@@ -634,6 +672,29 @@ describe('le panier fait accepter les CGV', () => {
     expect(bouton(fixture)?.disabled).toBe(false);
   });
 
+  /** RGAA 11.10/11.11 (lot A3) : la raison est À CÔTÉ du bouton, et le bouton la cite. */
+  it('dit pourquoi Commander est grisé, et relie la phrase au bouton', () => {
+    const fixture = boot({ auth: RECONNU, cgv: true });
+
+    expect(note(fixture)?.textContent?.trim()).toBe(FR.cart.payBlockedTerms);
+    expect(bouton(fixture)?.getAttribute('aria-describedby')).toBe(note(fixture)?.id);
+
+    TestBed.inject(SalesTermsConsent).check(true);
+    fixture.detectChanges();
+
+    expect(note(fixture)?.textContent?.trim()).toBe(FR.cart.payHint);
+    expect(bouton(fixture)?.getAttribute('aria-describedby')).toBeNull();
+  });
+
+  /** RGAA 13.2 (lot A3) : le nouvel onglet se dit dans le nom du lien. */
+  it('le nom du lien annonce le nouvel onglet', () => {
+    const fixture = boot({ auth: RECONNU, cgv: true });
+
+    expect(caseCgv(fixture)?.querySelector('a')?.getAttribute('aria-label')).toBe(
+      `${FR.cart.salesTermsLink} (nouvel onglet)`,
+    );
+  });
+
   it('le lien mène à la page CGV, dans un nouvel onglet', () => {
     const fixture = boot({ auth: RECONNU, cgv: true });
     const lien = caseCgv(fixture)?.querySelector('a');
@@ -677,6 +738,27 @@ describe('le panier fait accepter les CGV', () => {
 
     expect(el(fixture).querySelector('[data-terms-outdated]')?.textContent?.trim()).toBe(
       FR.cart.salesTermsOutdated,
+    );
+    expect(el(fixture).querySelector('[data-terms-outdated]')?.getAttribute('role')).toBe('status');
+  });
+
+  /**
+   * RGAA 11.10 (lot A3) : le refus de la passation était un toast, inerte
+   * derrière le voile du dialogue. Il se dit dans le panier, et s'annonce.
+   */
+  it('dit le refus du serveur dans le panier, annoncé', () => {
+    const fixture = boot({ auth: RECONNU });
+    refus.set('L’heure limite est dépassée.');
+    fixture.detectChanges();
+
+    const callout = el(fixture).querySelector('[data-place-refused]');
+    expect(callout?.textContent?.trim()).toBe('L’heure limite est dépassée.');
+    expect(callout?.getAttribute('role')).toBe('alert');
+
+    refus.set('');
+    fixture.detectChanges();
+    expect(el(fixture).querySelector('[data-place-refused]')?.textContent?.trim()).toBe(
+      FR.cart.placeFailed,
     );
   });
 

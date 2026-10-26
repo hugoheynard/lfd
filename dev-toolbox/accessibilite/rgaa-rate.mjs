@@ -16,25 +16,11 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 
+import { criterionStatus as statutDuCritere } from "./rgaa-follow-up.mjs";
+
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const path = process.argv[2] ?? resolve(ROOT, "documentation/accessibilite/grille-audit-rgaa.json");
 const grille = JSON.parse(readFileSync(path, "utf8"));
-const STATUTS = new Set(["C", "NC", "NA", "NT"]);
-
-/** Statut d'un critère à partir de ses cases par page. */
-function statutDuCritere(critere) {
-  const valeurs = Object.entries(critere.resultats).map(([page, r]) => {
-    if (!STATUTS.has(r.statut)) {
-      throw new Error(`${critere.numero} / ${page} : statut inconnu « ${r.statut} »`);
-    }
-    return r.statut;
-  });
-  if (valeurs.includes("NC")) return "NC";
-  if (valeurs.includes("NT")) return "NT";
-  if (valeurs.includes("C")) return "C";
-  return "NA";
-}
-
 const compte = { C: 0, NC: 0, NA: 0, NT: 0 };
 const nonTestes = [];
 let casesNT = 0;
