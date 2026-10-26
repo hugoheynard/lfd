@@ -200,4 +200,18 @@ describe('le pied de page — la barre légale', () => {
     // qu'ouvrir, et l'hôte des panneaux est doublé ici.
     expect(opened).toHaveLength(1);
   });
+
+  /**
+   * Régression : le pied de page affichait un numéro par défaut inventé
+   * (« 04 79 06 12 40 ») tant qu'aucun n'était saisi (2026-10-26, Hugo : « on
+   * ne peut plus afficher une information fausse »).
+   */
+  it("n'affiche ni numéro ni horaires d'appel quand aucun numéro n'est saisi", () => {
+    const host = boot();
+    servirMentions(toutesSauf([]));
+
+    expect(host.querySelector('.phone')).toBeNull();
+    expect(host.querySelector('.phone-hours')).toBeNull();
+    expect(host.textContent).not.toContain('04 79 06 12 40');
+  });
 });

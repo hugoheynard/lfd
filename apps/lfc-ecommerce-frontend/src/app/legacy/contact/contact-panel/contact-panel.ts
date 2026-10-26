@@ -55,9 +55,13 @@ export class ContactPanel {
   private readonly audience = inject(ClientAudience).shown;
   private readonly locale = inject(ClientLocale).current;
 
-  /** Les numéros réglés au back-office pour ce public ; aucun → le numéro de repli. */
+  /** Les numéros réglés au back-office pour ce public ; aucun → aucun numéro (2026-10-26). */
   protected readonly phones = computed(() =>
     phonesFor(this.settings.settings(), this.audience(), this.locale()),
+  );
+  /** « Afficher le formulaire de contact » de la carte de ce public (2026-10-26). */
+  protected readonly canWrite = computed(
+    () => this.settings.settings().cards[this.audience()].showForm !== false,
   );
   protected readonly telHref = telHref;
 

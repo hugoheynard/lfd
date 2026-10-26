@@ -15,14 +15,22 @@
 <div class="acts">
   <!-- Un seul numéro : « Appeler » EST son lien `tel:`. Plusieurs : il ouvre
        « Nous appeler », qui les montre tous — un dialogue pour un seul choix
-       serait une étape pour rien. -->
+       serait une étape pour rien. Aucun : pas d'« Appeler » du
+       tout — un numéro ne s'invente pas (Hugo, 2026-10-26). -->
   @if (copy().phones.length === 1) {
     <a class="call" [href]="telHref(copy().phones[0]!.number)">
       <span>{{ copy().call }}</span>
       <span class="number">{{ copy().phones[0]!.number }}</span>
     </a>
-  } @else {
+  } @else if (copy().phones.length > 1) {
     <button class="call" type="button" (click)="call()">{{ copy().call }}</button>
   }
-  <button class="write" type="button" (click)="write()">{{ copy().write }}</button>
+  @if (copy().canWrite) {
+    <button class="write" type="button" (click)="write()">{{ copy().write }}</button>
+  }
+  <!-- Ni numéro ni formulaire : la carte dit pourquoi, avec les mots réglés
+       au back-office (décision de Hugo, 2026-10-26). -->
+  @if (copy().noContact) {
+    <p class="no-contact">{{ copy().noContact }}</p>
+  }
 </div>

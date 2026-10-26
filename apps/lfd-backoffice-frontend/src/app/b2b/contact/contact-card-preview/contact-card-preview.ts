@@ -7,9 +7,12 @@ export interface ContactCardPreviewText {
   readonly kicker: string;
   readonly title: string;
   readonly body: string;
-  /** Un bouton par numéro : « Appeler · Boutique · +33 … », ou celui de repli. */
+  /** Un bouton par numéro : « Appeler · Boutique · +33 … » ; aucun, aucun bouton (2026-10-26). */
   readonly calls: readonly string[];
+  /** Le mot du bouton « Écrire » ; vide quand la carte coupe le formulaire. */
   readonly write: string;
+  /** Le message d'une carte sans numéro ni formulaire ; vide sinon. */
+  readonly noContact: string;
 }
 
 /**

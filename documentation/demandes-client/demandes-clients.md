@@ -9,16 +9,16 @@
 
 ## 1. Ce que voit chacun
 
-| Qui                   | Où                                          | Ce qu'il fait                                                                                                |
-| --------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Visiteur, client      | Boutique — la carte de contact              | surtitre (s'il est réglé), titre, phrase ; « Appeler » ; « Écrire »                                          |
-| Visiteur, client      | Boutique — « Nous appeler »                 | la liste des numéros de son public (s'il y en a plus d'un) ; chaque ligne lance l'appel                      |
-| Visiteur, client      | Boutique — « Nous écrire »                  | motif `contact`, nom, e-mail, téléphone facultatif, message                                                  |
-| Client connecté       | Mes commandes — « Signaler un problème »    | sur une commande **retirée ou livrée** seulement : motif `order_problem`, un mot, jusqu'à 3 photos           |
-| Staff (`b2b_contact`) | Back-office › Commercial › Demandes clients | toutes les demandes, filtres type / priorité / état, photos, commande liée, « Marquer traité »               |
-| Staff (`b2b_contact`) | Commercial › Réglages › Motifs des demandes | un onglet par formulaire : « Nous écrire », « Signaler un problème »                                         |
-| Staff (`b2b_contact`) | Réglages › Contact                          | la carte (surtitre, titre, phrase par public et par langue) et les numéros                                   |
-| Équipe destinataire   | Sa boîte mail                               | un courriel par demande (référence de commande, nombre de photos, lien vers la boîte), `Reply-To` = l'auteur |
+| Qui                   | Où                                          | Ce qu'il fait                                                                                                                                                                            |
+| --------------------- | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Visiteur, client      | Boutique — la carte de contact              | surtitre (s'il est réglé), titre, phrase ; « Appeler » et « Écrire » si la carte les affiche, sinon son message « sans contact »                                                         |
+| Visiteur, client      | Boutique — « Nous appeler »                 | la liste des numéros de son public (s'il y en a plus d'un) ; chaque ligne lance l'appel                                                                                                  |
+| Visiteur, client      | Boutique — « Nous écrire »                  | motif `contact`, nom, e-mail, téléphone facultatif, message                                                                                                                              |
+| Client connecté       | Mes commandes — « Signaler un problème »    | sur une commande **retirée ou livrée** seulement : motif `order_problem`, un mot, jusqu'à 3 photos                                                                                       |
+| Staff (`b2b_contact`) | Back-office › Commercial › Demandes clients | toutes les demandes, filtres type / priorité / état, photos, commande liée, « Marquer traité »                                                                                           |
+| Staff (`b2b_contact`) | Commercial › Réglages › Motifs des demandes | un onglet par formulaire : « Nous écrire », « Signaler un problème »                                                                                                                     |
+| Staff (`b2b_contact`) | Réglages › Contact                          | la carte (surtitre, titre, phrase, mots des deux boutons, message sans contact, par public et par langue ; « Afficher le numéro », « Afficher le formulaire » par public) et les numéros |
+| Équipe destinataire   | Sa boîte mail                               | un courriel par demande (référence de commande, nombre de photos, lien vers la boîte), `Reply-To` = l'auteur                                                                             |
 
 Le compteur du menu « Demandes clients » et la cloche disent les demandes à
 traiter, tous types.
@@ -107,8 +107,29 @@ la priorité, la cloche, le compteur et l'anonymisation ne bougent pas.
   `order_id`. Pas de `DELETE` de la demande. Registre RGPD : personne
   `contact`, tables `customer_request` et `customer_request_photo`, tenu par
   `lint:rgpd-staff`.
-- **Carte de contact** : surtitre sans repli (vide = rien) ; titre, phrase et
-  numéro de repli à un seul endroit, `CONTACT_CARD_DEFAULTS`.
+- **Carte de contact** : surtitre sans repli (vide = rien) ; titre et phrase
+  de repli à un seul endroit, `CONTACT_CARD_DEFAULTS`. **Plus de numéro de
+  repli** (décision de Hugo, 2026-10-26 : « on ne peut plus afficher une
+  information fausse ») : aucun numéro actif pour le public, la boutique et
+  l'aperçu du back-office ne montrent ni numéro ni « Appeler » ; « Écrire »
+  reste.
+- **Ce que la carte offre** (décision de Hugo, 2026-10-26) : par public, deux
+  interrupteurs, « Afficher le numéro de téléphone » et « Afficher le
+  formulaire de contact » (affichés par défaut, migration
+  `20261026120000_la_carte_de_contact_sans_contact`). Numéro coupé : aucun
+  numéro sur cette carte, et la route publique ne sert pas un numéro qu'aucune
+  carte de son public n'affiche (`servedPhones`). Formulaire coupé : pas de
+  « Écrire ». Les deux coupés : la carte montre son **message sans contact**
+  (fr, en, it ; « Nous vous contacterons bientôt »), sans repli —
+  `ContactSettings.pose` refuse le réglage s'il est vide en français
+  (`ContactCardSilentError`, 400 : « une carte sans numéro ni formulaire doit
+  dire quelque chose »). Si la carte affiche le numéro mais qu'aucun n'est
+  réglé et que le formulaire est coupé, la boutique montre le message s'il
+  est écrit, et rien sinon.
+- **Les mots des deux boutons** (décision de Hugo, 2026-10-26) : « Appeler »
+  et « Écrire » se règlent par public et par langue ; vides, la boutique garde
+  ceux de son dictionnaire (`accueil-public.copy.ts`, §contact), que l'aperçu
+  du back-office recopie dans `shop-contact-fallback.ts`.
 
 ## 4. Les routes
 

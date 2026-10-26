@@ -14,6 +14,8 @@ const COPY: ContactBandCopy = {
   who: 'Camille et Malik, au Labo, de 7 h à 19 h.',
   call: 'Appeler',
   write: 'Écrire',
+  canWrite: true,
+  noContact: '',
 };
 
 let opened: unknown[];
@@ -117,5 +119,34 @@ describe('ContactBand', () => {
 
     expect(text(fixture, '.who')).toBe('Un buffet ?');
     expect(text(fixture, '.kicker')).toBe(COPY.kicker);
+  });
+
+  /** Régression : sans numéro réglé, la bande montrait un numéro inventé (retiré le 2026-10-26). */
+  it('sans numéro, aucun « Appeler » — « Écrire » reste', () => {
+    const band = boot({ ...COPY, phones: [] }).nativeElement as HTMLElement;
+
+    expect(band.querySelector('.call')).toBeNull();
+    expect(band.querySelector('.write')).not.toBeNull();
+  });
+
+  it('formulaire coupé : pas de « Écrire »', () => {
+    const band = boot({ ...COPY, canWrite: false }).nativeElement as HTMLElement;
+
+    expect(band.querySelector('.write')).toBeNull();
+    expect(band.querySelector('.call')).not.toBeNull();
+  });
+
+  it('ni numéro ni formulaire : la carte dit son message, sans bouton', () => {
+    const fixture = boot({
+      ...COPY,
+      phones: [],
+      canWrite: false,
+      noContact: 'Nous vous contacterons bientôt',
+    });
+    const band = fixture.nativeElement as HTMLElement;
+
+    expect(text(fixture, '.no-contact')).toBe('Nous vous contacterons bientôt');
+    expect(band.querySelector('.call')).toBeNull();
+    expect(band.querySelector('.write')).toBeNull();
   });
 });

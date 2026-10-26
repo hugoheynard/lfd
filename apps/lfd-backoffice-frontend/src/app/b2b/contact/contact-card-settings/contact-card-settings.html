@@ -72,6 +72,59 @@
                 (valueChange)="setText('body', $event)"
                 data-body
               />
+              <fold-input
+                label="Bouton d’appel"
+                optional
+                optionalLabel="facultatif"
+                hint="Vide : « Appeler », le mot de la boutique."
+                [readOnly]="!canWrite()"
+                [value]="form.cards[audience()].callLabel[lang()]"
+                (valueChange)="setText('callLabel', $event)"
+                data-call-label
+              />
+              <fold-input
+                label="Bouton d’écriture"
+                optional
+                optionalLabel="facultatif"
+                hint="Vide : « Écrire », le mot de la boutique."
+                [readOnly]="!canWrite()"
+                [value]="form.cards[audience()].writeLabel[lang()]"
+                (valueChange)="setText('writeLabel', $event)"
+                data-write-label
+              />
+              <!-- Les deux interrupteurs valent pour la carte montrée, toutes
+                   langues (décision de Hugo, 2026-10-26). -->
+              <fold-checkbox
+                label="Afficher le numéro de téléphone"
+                hint="Décoché, la carte ne montre aucun numéro, même réglé."
+                [disabled]="!canWrite()"
+                [checked]="form.cards[audience()].showPhone"
+                (checkedChange)="setSwitch('showPhone', $event)"
+                data-show-phone
+              />
+              <fold-checkbox
+                label="Afficher le formulaire de contact"
+                hint="Décoché, la carte n’a plus de bouton « Écrire »."
+                [disabled]="!canWrite()"
+                [checked]="form.cards[audience()].showForm"
+                (checkedChange)="setSwitch('showForm', $event)"
+                data-show-form
+              />
+              <fold-textarea
+                label="Message sans contact"
+                [optional]="!silent()"
+                optionalLabel="facultatif"
+                [rows]="2"
+                [hint]="
+                  silent()
+                    ? 'Ni numéro ni formulaire : la carte dit ceci à la place, par exemple « Nous vous contacterons bientôt ». Obligatoire en français.'
+                    : 'Affiché seulement quand la carte n’offre ni numéro ni formulaire.'
+                "
+                [readOnly]="!canWrite()"
+                [value]="form.cards[audience()].noContactMessage[lang()]"
+                (valueChange)="setText('noContactMessage', $event)"
+                data-no-contact
+              />
             </div>
 
             @if (preview(); as text) {

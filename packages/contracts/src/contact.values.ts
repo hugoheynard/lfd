@@ -54,6 +54,10 @@ export const CONTACT_BOUNDS = {
   cardKicker: 60,
   cardTitle: 120,
   cardBody: 400,
+  /** Le texte d'un bouton de la carte (« Appeler », « Écrire ») — 2026-10-26. */
+  cardButton: 40,
+  /** Le message d'une carte sans numéro ni formulaire — 2026-10-26. */
+  cardNoContact: 400,
   phoneLabel: 80,
   /** Le mot du commerce qui refuse une demande de modification de commande. */
   changeRefusal: 1000,
@@ -92,12 +96,33 @@ export interface PublicRequestReasonView {
   readonly label: ContactLocalizedText;
 }
 
-/** Le texte d'une carte de contact. Vide = le texte du dictionnaire de la boutique. */
+/**
+ * **Une carte de contact**, pour une clientèle : ses textes, ses deux boutons,
+ * et ce qu'elle offre (décision de Hugo, 2026-10-26).
+ *
+ * Un texte vide retombe sur le français, puis sur le dictionnaire de la
+ * boutique — sauf le surtitre et `noContactMessage`, qui n'ont pas de repli.
+ * Le nom `…Text` date du temps où la carte n'était que du texte.
+ */
 export interface ContactCardText {
-  /** Le surtitre (« On répond » à la boutique). Vide = le texte de la boutique. */
+  /** Le surtitre (« On répond » à la boutique). Vide = pas de surtitre. */
   readonly kicker: ContactLocalizedText;
   readonly title: ContactLocalizedText;
   readonly body: ContactLocalizedText;
+  /** Le mot du bouton d'appel. Vide = « Appeler » du dictionnaire de la boutique. */
+  readonly callLabel: ContactLocalizedText;
+  /** Le mot du bouton du formulaire. Vide = « Écrire » du dictionnaire de la boutique. */
+  readonly writeLabel: ContactLocalizedText;
+  /** « Afficher le numéro de téléphone » : coupé, la carte ne montre aucun numéro. */
+  readonly showPhone: boolean;
+  /** « Afficher le formulaire de contact » : coupé, pas de bouton « Écrire ». */
+  readonly showForm: boolean;
+  /**
+   * Ce que dit la carte quand elle n'offre ni numéro ni formulaire (« Nous vous
+   * contacterons bientôt »). Le domaine le refuse vide en français quand les
+   * deux interrupteurs sont coupés : une carte sans contact doit dire quelque chose.
+   */
+  readonly noContactMessage: ContactLocalizedText;
 }
 
 /**
@@ -125,7 +150,10 @@ export interface PublicContactPhoneView {
 
 /** La carte de contact de la boutique, telle que la route publique la sert (`GET /contact-settings`). */
 export interface PublicContactSettingsView {
-  /** Les numéros actifs, par rang. Vide = le numéro du dictionnaire. */
+  /**
+   * Les numéros actifs, par rang. Vide = aucun numéro affiché (plus de repli,
+   * 2026-10-26). Un numéro qu'aucune carte de son public n'affiche n'est pas servi.
+   */
   readonly phones: readonly PublicContactPhoneView[];
   readonly cards: { readonly b2b: ContactCardText; readonly b2c: ContactCardText };
 }
@@ -143,9 +171,21 @@ export interface ContactSettingsView {
 }
 
 const EMPTY_TEXT: ContactLocalizedText = { fr: "", en: "", it: "" };
-const EMPTY_CARD: ContactCardText = { kicker: EMPTY_TEXT, title: EMPTY_TEXT, body: EMPTY_TEXT };
+const EMPTY_CARD: ContactCardText = {
+  kicker: EMPTY_TEXT,
+  title: EMPTY_TEXT,
+  body: EMPTY_TEXT,
+  callLabel: EMPTY_TEXT,
+  writeLabel: EMPTY_TEXT,
+  showPhone: true,
+  showForm: true,
+  noContactMessage: EMPTY_TEXT,
+};
 
-/** Le réglage tant que personne ne l'a posé : tout vide, la boutique garde ses textes. */
+/**
+ * Le réglage tant que personne ne l'a posé : tout vide, numéro et formulaire
+ * affichés — la boutique garde ses textes et son affichage d'avant le 2026-10-26.
+ */
 export const DEFAULT_CONTACT_SETTINGS: ContactSettingsView = {
   cards: { b2b: EMPTY_CARD, b2c: EMPTY_CARD },
   updatedAt: null,
@@ -281,12 +321,15 @@ export interface ContactCardFallback {
  *
  * 🔴 **Pas de surtitre** : « si pas de surtitre en admin, pas de fallback en
  * front » (Hugo). Un surtitre vide ne s'affiche pas.
+ *
+ * 🔴 **Pas de numéro** (décision de Hugo, 2026-10-26 : « on ne peut plus
+ * afficher une information fausse ») : le numéro de repli s'affichait en
+ * production quand aucun n'était réglé. Il est retiré ; aucun numéro réglé,
+ * aucun numéro affiché.
  */
 export const CONTACT_CARD_DEFAULTS: {
-  readonly phone: string;
   readonly cards: { readonly b2b: ContactCardFallback; readonly b2c: ContactCardFallback };
 } = {
-  phone: "+33 4 79 06 12 40",
   cards: {
     b2b: {
       title: { fr: "Nous contacter", en: "Contact us", it: "Contattaci" },

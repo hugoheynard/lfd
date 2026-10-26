@@ -9,7 +9,14 @@
       @for (call of text().calls; track $index) {
         <button foldButton type="button" tabindex="-1" data-preview-call>{{ call }}</button>
       }
-      <button foldButton emphasis="outline" type="button" tabindex="-1">{{ text().write }}</button>
+      @if (text().write !== '') {
+        <button foldButton emphasis="outline" type="button" tabindex="-1" data-preview-write>
+          {{ text().write }}
+        </button>
+      }
+      @if (text().noContact !== '') {
+        <p class="ccp-no-contact" data-preview-no-contact>{{ text().noContact }}</p>
+      }
     </div>
   </div>
 </fold-card>

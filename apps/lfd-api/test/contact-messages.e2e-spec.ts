@@ -281,6 +281,8 @@ describe("le staff traite", () => {
       cards: {
         ...DEFAULT_CONTACT_SETTINGS.cards,
         b2b: {
+          ...DEFAULT_CONTACT_SETTINGS.cards.b2b,
+          callLabel: { fr: "Nous appeler", en: "", it: "" },
           kicker: { fr: "Votre commercial", en: "Your sales rep", it: "" },
           title: { fr: "Une question pro ?", en: "", it: "" },
           body: { fr: "Votre commercial vous répond.", en: "", it: "" },
@@ -309,6 +311,44 @@ describe("le staff traite", () => {
     expect(
       jsonBody<PublicContactSettingsView>(await visitor().get("/contact-settings").expect(200)),
     ).toEqual({ cards: payload.cards, phones: [{ ...shop, number: "04 79 00 00 00" }] });
+  });
+
+  /** Décision de Hugo du 2026-10-26 : une carte peut couper le numéro et le formulaire. */
+  it("une carte sans numéro ni formulaire doit dire quelque chose ; sans numéro, la boutique n'en reçoit aucun", async () => {
+    await staff()
+      .post("/admin/contact/phones")
+      .send({
+        label: { fr: "Particuliers", en: "", it: "" },
+        audience: "b2c",
+        number: "04 79 22 22 22",
+        position: 0,
+        active: true,
+      })
+      .expect(201);
+    const silent: ContactSettingsPayload = {
+      cards: {
+        ...DEFAULT_CONTACT_SETTINGS.cards,
+        b2c: { ...DEFAULT_CONTACT_SETTINGS.cards.b2c, showPhone: false, showForm: false },
+      },
+    };
+    const refused = await staff().put("/admin/contact/settings").send(silent).expect(400);
+    expect(JSON.stringify(refused.body)).toContain("doit dire quelque chose");
+
+    const soon = { fr: "Nous vous contacterons bientôt", en: "We will contact you soon", it: "" };
+    const said: ContactSettingsPayload = {
+      cards: { ...silent.cards, b2c: { ...silent.cards.b2c, noContactMessage: soon } },
+    };
+    await staff().put("/admin/contact/settings").send(said).expect(204);
+
+    const served = jsonBody<PublicContactSettingsView>(
+      await visitor().get("/contact-settings").expect(200),
+    );
+    expect(served.phones.map((phone) => phone.number)).not.toContain("04 79 22 22 22");
+    expect(served.cards.b2c).toMatchObject({
+      showPhone: false,
+      showForm: false,
+      noContactMessage: soon,
+    });
   });
 });
 

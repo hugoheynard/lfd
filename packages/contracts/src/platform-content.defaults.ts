@@ -339,8 +339,10 @@ export const DEFAULT_FOOTER_CONTENT: FooterContent = {
     siret: "",
     rcs: "",
     vat: "",
-    phone: "04 79 06 12 40",
-    phoneHref: "tel:+33479061240",
+    // Pas de numéro inventé (Hugo, 2026-10-26 : « on ne peut plus afficher
+    // une information fausse ») : vide tant qu'il n'est pas saisi.
+    phone: "",
+    phoneHref: "",
     email: "contact@lafoliecoffee.fr",
     socials: [
       { channel: "instagram", url: "https://www.instagram.com/" },

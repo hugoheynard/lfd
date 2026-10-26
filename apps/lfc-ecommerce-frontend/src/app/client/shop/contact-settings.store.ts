@@ -2,7 +2,6 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable, signal } from '@angular/core';
 // Valeurs par le sous-chemin sans zod : l'accueil est au démarrage (budget `cloudflare`).
 import {
-  CONTACT_CARD_DEFAULTS,
   DEFAULT_CONTACT_SETTINGS,
   type ContactLocalizedText,
   type CustomerAudience,
@@ -84,16 +83,72 @@ export interface ShownPhone {
 
 /**
  * Les numéros de ce public (`both` compris), dans l'ordre réglé, libellés dans
- * la langue de l'écran ; aucun → le seul numéro de repli de `CONTACT_CARD_DEFAULTS`.
+ * la langue de l'écran — aucun si la carte de ce public coupe le numéro
+ * (« Afficher le numéro de téléphone », 2026-10-26). Aucun → liste VIDE, et l'écran ne montre pas de numéro :
+ * le numéro de repli a été retiré parce qu'il affichait une information fausse
+ * (décision de Hugo, 2026-10-26 — « on ne peut plus afficher une information
+ * fausse »).
  */
 export function phonesFor(
   settings: PublicContactSettingsView,
   audience: CustomerAudience,
   locale: LocaleCode,
 ): readonly ShownPhone[] {
-  const kept = settings.phones
+  // `=== false`, pas `!` : une API d'avant le 2026-10-26 ne sert pas
+  // l'interrupteur, et son absence veut dire « affiché », comme avant.
+  if (settings.cards[audience].showPhone === false) {
+    return [];
+  }
+  return settings.phones
     .filter((phone) => phone.audience === 'both' || phone.audience === audience)
     .map((phone) => ({ label: localizedOr(phone.label, locale, ''), number: phone.number.trim() }))
     .filter((phone) => phone.number !== '');
-  return kept.length > 0 ? kept : [{ label: '', number: CONTACT_CARD_DEFAULTS.phone }];
+}
+
+/** Un mot de bouton absent : une API d'avant le 2026-10-26 ne le sert pas. */
+const EMPTY_LABEL: ContactLocalizedText = { fr: '', en: '', it: '' };
+
+/** Les mots de la boutique pour les deux boutons, quand le réglage n'en pose pas. */
+export interface ContactWords {
+  readonly call: string;
+  readonly write: string;
+}
+
+/** Ce qu'une carte offre, réglage et dictionnaire déjà fondus. */
+export interface ShownContact {
+  readonly phones: readonly ShownPhone[];
+  readonly call: string;
+  readonly write: string;
+  /** « Afficher le formulaire de contact » : faux, pas de bouton « Écrire ». */
+  readonly canWrite: boolean;
+  /**
+   * Le message d'une carte qui n'offre ni numéro ni formulaire (« Nous vous
+   * contacterons bientôt ») ; `''` dès qu'elle offre l'un des deux.
+   */
+  readonly noContact: string;
+}
+
+/**
+ * **Ce que la carte de ce public offre** (décision de Hugo, 2026-10-26) : ses
+ * numéros, ses deux mots de bouton (le réglage, sinon le dictionnaire), et son
+ * message quand elle n'offre rien. Aucun repli pour ce message : vide, rien.
+ */
+export function contactFor(
+  settings: PublicContactSettingsView,
+  audience: CustomerAudience,
+  locale: LocaleCode,
+  words: ContactWords,
+): ShownContact {
+  const card = settings.cards[audience];
+  const phones = phonesFor(settings, audience, locale);
+  // `=== false` : absent (API d'avant), le formulaire reste affiché.
+  const canWrite = card.showForm !== false;
+  const silent = phones.length === 0 && !canWrite;
+  return {
+    phones,
+    call: localizedOr(card.callLabel ?? EMPTY_LABEL, locale, words.call),
+    write: localizedOr(card.writeLabel ?? EMPTY_LABEL, locale, words.write),
+    canWrite,
+    noContact: silent ? localizedOr(card.noContactMessage ?? EMPTY_LABEL, locale, '') : '',
+  };
 }

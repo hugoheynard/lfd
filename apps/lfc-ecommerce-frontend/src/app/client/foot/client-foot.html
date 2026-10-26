@@ -51,8 +51,12 @@
       <h2 class="col-head">{{ foot().help.head }}</h2>
       <!-- Le téléphone en premier et en grand : c'est l'information la plus
            demandée d'un pied de page de commerce. -->
-      <a class="phone" [href]="legal().phoneHref">{{ legal().phone }}</a>
-      <p class="phone-hours">{{ foot().help.phoneHours }}</p>
+      <!-- Aucun numéro inventé (Hugo, 2026-10-26) : sans numéro saisi, ni
+           numéro ni horaires d'appel. -->
+      @if (legal().phone !== '' && legal().phoneHref !== '') {
+        <a class="phone" [href]="legal().phoneHref">{{ legal().phone }}</a>
+        <p class="phone-hours">{{ foot().help.phoneHours }}</p>
+      }
       <!-- Par position, pour la même raison que la colonne « Commander ». -->
       @for (link of foot().help.links; track $index) {
         <span class="link">{{ link }}</span>

@@ -46,13 +46,17 @@ export interface DoorCopy {
 /** La bande de contact telle que son composant la reçoit, réglage et replis déjà fondus. */
 export interface ContactBandCopy {
   readonly kicker: string;
-  /** Les numéros à appeler, dans l'ordre : ceux du réglage, sinon celui du dictionnaire. */
+  /** Les numéros à appeler, dans l'ordre ; vide = aucun « Appeler » (plus de repli, 2026-10-26). */
   readonly phones: readonly ShownPhone[];
   readonly title: string;
   /** La phrase sous le titre. */
   readonly who: string;
   readonly call: string;
   readonly write: string;
+  /** Faux quand la carte coupe le formulaire : pas de bouton « Écrire ». */
+  readonly canWrite: boolean;
+  /** Le message d'une carte sans numéro ni formulaire ; `''` sinon. */
+  readonly noContact: string;
 }
 
 export interface AccueilPublicCopy {
@@ -240,8 +244,9 @@ export interface AccueilPublicCopy {
    * encore si ce qu'il veut est faisable.
    *
    * Ne restent ici que les libellés des boutons : surtitre, titre, phrase et
-   * numéros viennent du réglage (`GET /contact-settings`), avec leurs replis
-   * dans `CONTACT_CARD_DEFAULTS` (`@lfd/contracts/shop-values`).
+   * numéros viennent du réglage (`GET /contact-settings`) ; titre et phrase ont
+   * leurs replis dans `CONTACT_CARD_DEFAULTS` (`@lfd/contracts/shop-values`),
+   * le numéro n'en a plus (Hugo, 2026-10-26) : aucun réglé, aucun affiché.
    */
   readonly contact: {
     readonly call: string;

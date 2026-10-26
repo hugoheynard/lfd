@@ -341,6 +341,37 @@ describe('ProLanding — l’accueil pro public (/pro)', () => {
     expect(call?.getAttribute('href')).toBe('tel:+33479061240');
   });
 
+  /** Régression : sans numéro réglé, le contact pro montrait un numéro inventé (retiré le 2026-10-26). */
+  it('sans numéro réglé, aucun « Appeler »', async () => {
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne((r) => r.url.endsWith('/contact-settings')).flush(NO_CONTACT_SETTINGS);
+    await settle();
+    expect(maybe('pro-call')).toBeNull();
+  });
+
+  it('carte pros sans numéro ni formulaire : son message, sans bouton (2026-10-26)', async () => {
+    const http = TestBed.inject(HttpTestingController);
+    const pros = NO_CONTACT_SETTINGS.cards.b2b;
+    http
+      .expectOne((r) => r.url.endsWith('/contact-settings'))
+      .flush({
+        ...NO_CONTACT_SETTINGS,
+        cards: {
+          ...NO_CONTACT_SETTINGS.cards,
+          b2b: {
+            ...pros,
+            showPhone: false,
+            showForm: false,
+            noContactMessage: { fr: 'Nous vous contacterons bientôt', en: '', it: '' },
+          },
+        },
+      });
+    await settle();
+    expect(maybe('pro-call')).toBeNull();
+    expect(maybe('pro-write')).toBeNull();
+    expect(maybe('pro-no-contact')?.textContent).toContain('Nous vous contacterons bientôt');
+  });
+
   it('« Écrire » ouvre le dialogue « Nous écrire » de /bienvenue', () => {
     const write = el('pro-write');
     write.click();

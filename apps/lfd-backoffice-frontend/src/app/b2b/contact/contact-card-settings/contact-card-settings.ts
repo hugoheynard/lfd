@@ -1,7 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import {
-  CONTACT_BOUNDS,
-  CONTACT_CARD_DEFAULTS,
   type ContactCardText,
   type ContactPhoneView,
   type ContactSettingsPayload,
@@ -13,6 +11,7 @@ import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
+  FoldCheckboxComponent,
   FoldElementTitleComponent,
   FoldEmptyStateComponent,
   FoldInputComponent,
@@ -32,15 +31,20 @@ import {
   contactLangOf,
   langName,
   langToggleOptions,
-  localizedOr,
   type ContactLang,
 } from '../contact-langs';
 import { ContactPhones } from '../contact-phones/contact-phones';
 import { ContactService } from '../contact.service';
-import { SHOP_CONTACT_BUTTONS } from '../shop-contact-fallback';
+import {
+  draftIssue,
+  offersNothing,
+  previewOf,
+  trimmedPayload,
+  type CardSwitch,
+  type CardTextPart,
+} from './contact-card-draft';
 
 type LoadState = 'loading' | 'ready' | 'error';
-type Part = 'kicker' | 'title' | 'body';
 
 const AUDIENCES: readonly CustomerAudience[] = ['b2b', 'b2c'];
 const AUDIENCE_LABELS: Readonly<Record<CustomerAudience, string>> = {
@@ -62,8 +66,10 @@ function payloadOf(view: ContactSettingsView): ContactSettingsPayload {
 }
 
 /**
- * **La carte de contact de la boutique** — le numéro, et pour chaque clientèle
- * un titre et une phrase en trois langues (plan « Nous écrire », §4).
+ * **La carte de contact de la boutique** — les numéros, et pour chaque
+ * clientèle ses textes et ses deux boutons en trois langues, et ses deux
+ * interrupteurs « Afficher le numéro » / « Afficher le formulaire » (plan
+ * « Nous écrire », §4 ; décision de Hugo, 2026-10-26).
  *
  * Un champ vide n'est pas une faute : la boutique y garde le texte de son
  * dictionnaire. Le réglage part toujours ENTIER (`PUT`) ; Enregistrer ne
@@ -76,6 +82,7 @@ function payloadOf(view: ContactSettingsView): ContactSettingsPayload {
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCardComponent,
+    FoldCheckboxComponent,
     FoldElementTitleComponent,
     FoldEmptyStateComponent,
     FoldInputComponent,
@@ -110,22 +117,13 @@ export class ContactCardSettings {
   /** Ce qui empêche l'envoi, en clair — ou `''`. */
   protected readonly issue = computed(() => {
     const draft = this.draft();
-    if (draft === null) return '';
-    for (const audience of AUDIENCES) {
-      const card: ContactCardText = draft.cards[audience];
-      for (const lang of CONTACT_LANGS) {
-        if (card.kicker[lang].trim().length > CONTACT_BOUNDS.cardKicker) {
-          return `Surtitre trop long (${String(CONTACT_BOUNDS.cardKicker)} caractères au plus).`;
-        }
-        if (card.title[lang].trim().length > CONTACT_BOUNDS.cardTitle) {
-          return `Titre trop long (${String(CONTACT_BOUNDS.cardTitle)} caractères au plus).`;
-        }
-        if (card.body[lang].trim().length > CONTACT_BOUNDS.cardBody) {
-          return `Phrase trop longue (${String(CONTACT_BOUNDS.cardBody)} caractères au plus).`;
-        }
-      }
-    }
-    return '';
+    return draft === null ? '' : draftIssue(draft);
+  });
+
+  /** La carte montrée n'offre ni numéro ni formulaire : son message devient obligatoire. */
+  protected readonly silent = computed(() => {
+    const draft = this.draft();
+    return draft !== null && offersNothing(draft.cards[this.audience()]);
   });
 
   /** Pros / Particuliers ; un point quand une langue de cette carte n'est pas écrite. */
@@ -169,28 +167,7 @@ export class ContactCardSettings {
   /** La carte telle que la boutique l'affichera, pour la clientèle et la langue montrées. */
   protected readonly preview = computed<ContactCardPreviewText | null>(() => {
     const draft = this.draft();
-    if (draft === null) return null;
-    const audience = this.audience();
-    const lang = this.lang();
-    const fallback = CONTACT_CARD_DEFAULTS.cards[audience];
-    const card = draft.cards[audience];
-    const phones = this.phones().filter(
-      (p) => p.active && (p.audience === 'both' || p.audience === audience),
-    );
-    const call = SHOP_CONTACT_BUTTONS.call[lang];
-    return {
-      // Pas de repli : sans surtitre réglé, la carte n'en a pas.
-      kicker: localizedOr(card.kicker, lang, ''),
-      title: localizedOr(card.title, lang, fallback.title[lang]),
-      body: localizedOr(card.body, lang, fallback.body[lang]),
-      calls:
-        phones.length === 0
-          ? [`${call} · ${CONTACT_CARD_DEFAULTS.phone}`]
-          : [...phones]
-              .sort((a, b) => a.position - b.position)
-              .map((p) => `${call} · ${localizedOr(p.label, lang, '')} · ${p.number}`),
-      write: SHOP_CONTACT_BUTTONS.write[lang],
-    };
+    return draft === null ? null : previewOf(draft, this.phones(), this.audience(), this.lang());
   });
 
   private readonly changed = computed(() => {
@@ -199,7 +176,7 @@ export class ContactCardSettings {
     return (
       served !== null &&
       draft !== null &&
-      JSON.stringify(payloadOf(served)) !== JSON.stringify(this.trimmed(draft))
+      JSON.stringify(payloadOf(served)) !== JSON.stringify(trimmedPayload(draft))
     );
   });
 
@@ -243,7 +220,7 @@ export class ContactCardSettings {
   }
 
   /** Pose un texte de la carte et de la langue montrées. */
-  protected setText(part: Part, value: string): void {
+  protected setText(part: CardTextPart, value: string): void {
     const draft = this.draft();
     if (draft === null) return;
     const audience = this.audience();
@@ -255,13 +232,24 @@ export class ContactCardSettings {
     });
   }
 
+  /** Pose un interrupteur de la carte montrée (« Afficher le numéro », « Afficher le formulaire »). */
+  protected setSwitch(name: CardSwitch, value: boolean): void {
+    const draft = this.draft();
+    if (draft === null) return;
+    const audience = this.audience();
+    this.draft.set({
+      ...draft,
+      cards: { ...draft.cards, [audience]: { ...draft.cards[audience], [name]: value } },
+    });
+  }
+
   protected async submit(): Promise<void> {
     const draft = this.draft();
     if (!this.canSubmit() || draft === null) return;
     this.saving.set(true);
     this.refusal.set(null);
     try {
-      await this.api.updateSettings(this.trimmed(draft));
+      await this.api.updateSettings(trimmedPayload(draft));
       this.apply(await this.api.settings());
     } catch (error) {
       this.refusal.set(httpErrorMessage(error, "La carte de contact n'a pas pu être enregistrée."));
@@ -273,21 +261,5 @@ export class ContactCardSettings {
   private apply(view: ContactSettingsView): void {
     this.served.set(view);
     this.draft.set(payloadOf(view));
-  }
-
-  private trimmed(draft: ContactSettingsPayload): ContactSettingsPayload {
-    const text = (t: ContactCardText['title']) => ({
-      fr: t.fr.trim(),
-      en: t.en.trim(),
-      it: t.it.trim(),
-    });
-    const card = (c: ContactCardText): ContactCardText => ({
-      kicker: text(c.kicker),
-      title: text(c.title),
-      body: text(c.body),
-    });
-    return {
-      cards: { b2b: card(draft.cards.b2b), b2c: card(draft.cards.b2c) },
-    };
   }
 }

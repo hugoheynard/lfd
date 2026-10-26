@@ -77,6 +77,11 @@ const card = z
     kicker: localized(CONTACT_BOUNDS.cardKicker),
     title: localized(CONTACT_BOUNDS.cardTitle),
     body: localized(CONTACT_BOUNDS.cardBody),
+    callLabel: localized(CONTACT_BOUNDS.cardButton),
+    writeLabel: localized(CONTACT_BOUNDS.cardButton),
+    showPhone: z.boolean(),
+    showForm: z.boolean(),
+    noContactMessage: localized(CONTACT_BOUNDS.cardNoContact),
   })
   .strict();
 

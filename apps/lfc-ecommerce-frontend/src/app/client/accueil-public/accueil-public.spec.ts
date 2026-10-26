@@ -565,7 +565,7 @@ describe('AccueilPublic — les trois états', () => {
       ...NO_CONTACT_SETTINGS,
       cards: {
         ...NO_CONTACT_SETTINGS.cards,
-        b2c: { kicker: text('Au Labo'), title: text(''), body: text('') },
+        b2c: { ...NO_CONTACT_SETTINGS.cards.b2c, kicker: text('Au Labo') },
       },
     };
     const fixture = await mount(POINTS, 'visiteur');

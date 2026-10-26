@@ -157,6 +157,7 @@ describe('ContactCardSettings', () => {
       cards: {
         ...DEFAULT_CONTACT_SETTINGS.cards,
         b2b: {
+          ...DEFAULT_CONTACT_SETTINGS.cards.b2b,
           kicker: { fr: '', en: 'Hello', it: '' },
           title: { fr: 'Un souci ?', en: '', it: '' },
           body: { fr: '', en: '', it: '' },
@@ -193,9 +194,46 @@ describe('ContactCardSettings', () => {
     );
   });
 
-  it('sans numéro réglé, l’aperçu montre celui de la boutique', async () => {
+  /**
+   * Régression : sans numéro réglé, l’aperçu (comme la boutique) montrait un
+   * numéro de repli inventé (retiré le 2026-10-26, décision de Hugo).
+   */
+  it('sans numéro réglé, l’aperçu ne montre aucun numéro', async () => {
     const fixture = await mount(new FakeContact(DEFAULT_CONTACT_SETTINGS));
-    expect(fixture.componentInstance['preview']()?.calls).toEqual(['Appeler · +33 4 79 06 12 40']);
+    expect(fixture.componentInstance['preview']()?.calls).toEqual([]);
+    fixture.detectChanges();
+    expect(host(fixture).querySelector('[data-preview-call]')).toBeNull();
+  });
+
+  it('les interrupteurs coupent numéro et formulaire ; sans message, l’envoi est refusé en clair', async () => {
+    const api = new FakeContact(DEFAULT_CONTACT_SETTINGS, PHONES);
+    const fixture = await mount(api);
+    const check = (selector: string): void => {
+      const box = host(fixture).querySelector<HTMLInputElement>(`${selector} input`);
+      box?.click();
+      fixture.detectChanges();
+    };
+
+    check('[data-show-phone]');
+    expect(host(fixture).querySelector('[data-preview-call]')).toBeNull();
+    check('[data-show-form]');
+    expect(host(fixture).querySelector('[data-preview-write]')).toBeNull();
+    expect(host(fixture).querySelector('[data-issue]')?.textContent).toContain(
+      'une carte sans numéro ni formulaire doit dire quelque chose',
+    );
+    expect(save(fixture)?.disabled).toBe(true);
+
+    type(fixture, '[data-no-contact] textarea', 'Nous vous contacterons bientôt');
+    expect(host(fixture).querySelector('[data-preview-no-contact]')?.textContent).toContain(
+      'Nous vous contacterons bientôt',
+    );
+    save(fixture)?.click();
+    await fixture.whenStable();
+    expect(api.puts[0]?.cards.b2b).toMatchObject({
+      showPhone: false,
+      showForm: false,
+      noContactMessage: { fr: 'Nous vous contacterons bientôt', en: '', it: '' },
+    });
   });
 
   it('la bascule de langue signale ce qui n’est pas écrit', async () => {

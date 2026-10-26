@@ -7,7 +7,11 @@ describe("CONTACT_CARD_DEFAULTS — les replis de la carte de contact", () => {
         expect([text.fr, text.en, text.it].every((value) => value.trim() !== "")).toBe(true);
       }
     }
-    expect(CONTACT_CARD_DEFAULTS.phone).toBe("+33 4 79 06 12 40");
+  });
+
+  // Régression : ce numéro de repli s'affichait en production (retiré le 2026-10-26, Hugo).
+  it("n'a PAS de numéro : aucun numéro réglé, aucun numéro affiché", () => {
+    expect(CONTACT_CARD_DEFAULTS).not.toHaveProperty("phone");
   });
 
   it("n'a PAS de surtitre : sans surtitre réglé, la boutique n'en montre aucun", () => {

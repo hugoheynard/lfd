@@ -6,7 +6,8 @@
 
 .ccp-kicker,
 .ccp-title,
-.ccp-body {
+.ccp-body,
+.ccp-no-contact {
   margin: 0;
 }
 
@@ -25,7 +26,8 @@
   white-space: pre-line;
 }
 
-.ccp-body {
+.ccp-body,
+.ccp-no-contact {
   color: var(--fold-color-text-muted);
 }
 

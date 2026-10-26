@@ -1,13 +1,14 @@
 import type { PublicContactSettingsView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
+import { servedPhones } from "../../domain/served-phones.js";
 import { ContactPhoneReader } from "../../domain/ports/contact-phone.reader.js";
 import { ContactSettingsReader } from "../../domain/ports/contact-settings.reader.js";
 import { GetPublicContactSettingsQuery } from "./get-public-contact-settings.query.js";
 
 /**
- * Sert à la boutique, en UN appel, ses numéros publiés et les textes de ses
- * cartes ; l'instant et l'auteur restent au back-office. Lecture pure.
+ * Sert à la boutique, en UN appel, ses numéros publiés — ceux qu'une carte
+ * affiche — et le réglage de ses cartes ; l'instant et l'auteur restent au back-office. Lecture pure.
  */
 @QueryHandler(GetPublicContactSettingsQuery)
 export class GetPublicContactSettingsHandler implements IQueryHandler<
@@ -24,6 +25,6 @@ export class GetPublicContactSettingsHandler implements IQueryHandler<
       this.settings.current(),
       this.phones.published(),
     ]);
-    return { phones, cards: settings.cards };
+    return { phones: servedPhones(settings.cards, phones), cards: settings.cards };
   }
 }

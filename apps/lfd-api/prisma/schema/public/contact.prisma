@@ -175,8 +175,9 @@ model CustomerRequestPhoto {
   @@schema("public")
 }
 
-/// La **carte de contact** de la boutique : le numéro, et le titre et la phrase
-/// de la carte pour les pros et pour les particuliers, en trois langues. Une
+/// La **carte de contact** de la boutique : pour les pros et pour les
+/// particuliers, en trois langues, ses textes, ses boutons et ses deux
+/// interrupteurs (numéro, formulaire — 2026-10-26). Une
 /// ligne unique (clé `contact`) ; absente ou vide, la boutique garde les textes
 /// de son dictionnaire.
 model ContactSettings {
@@ -184,25 +185,55 @@ model ContactSettings {
   key String @id
 
   /// Le surtitre de la carte (« On répond » à la boutique) — 2026-10-09.
-  b2bKickerFr String @default("") @map("b2b_kicker_fr")
-  b2bKickerEn String @default("") @map("b2b_kicker_en")
-  b2bKickerIt String @default("") @map("b2b_kicker_it")
-  b2bTitleFr  String @default("") @map("b2b_title_fr")
-  b2bTitleEn  String @default("") @map("b2b_title_en")
-  b2bTitleIt  String @default("") @map("b2b_title_it")
-  b2bBodyFr   String @default("") @map("b2b_body_fr")
-  b2bBodyEn   String @default("") @map("b2b_body_en")
-  b2bBodyIt   String @default("") @map("b2b_body_it")
+  b2bKickerFr           String  @default("") @map("b2b_kicker_fr")
+  b2bKickerEn           String  @default("") @map("b2b_kicker_en")
+  b2bKickerIt           String  @default("") @map("b2b_kicker_it")
+  b2bTitleFr            String  @default("") @map("b2b_title_fr")
+  b2bTitleEn            String  @default("") @map("b2b_title_en")
+  b2bTitleIt            String  @default("") @map("b2b_title_it")
+  b2bBodyFr             String  @default("") @map("b2b_body_fr")
+  b2bBodyEn             String  @default("") @map("b2b_body_en")
+  b2bBodyIt             String  @default("") @map("b2b_body_it")
+  /// Les deux interrupteurs de la carte — décision de Hugo, 2026-10-26. Par défaut
+  /// affichés : la boutique garde son affichage d'avant.
+  b2bShowPhone          Boolean @default(true) @map("b2b_show_phone")
+  b2bShowForm           Boolean @default(true) @map("b2b_show_form")
+  /// Les mots des deux boutons ; vides, ceux du dictionnaire de la boutique.
+  b2bCallLabelFr        String  @default("") @map("b2b_call_label_fr")
+  b2bCallLabelEn        String  @default("") @map("b2b_call_label_en")
+  b2bCallLabelIt        String  @default("") @map("b2b_call_label_it")
+  b2bWriteLabelFr       String  @default("") @map("b2b_write_label_fr")
+  b2bWriteLabelEn       String  @default("") @map("b2b_write_label_en")
+  b2bWriteLabelIt       String  @default("") @map("b2b_write_label_it")
+  /// Ce que dit une carte sans numéro ni formulaire ; le domaine le veut en français.
+  b2bNoContactMessageFr String  @default("") @map("b2b_no_contact_message_fr")
+  b2bNoContactMessageEn String  @default("") @map("b2b_no_contact_message_en")
+  b2bNoContactMessageIt String  @default("") @map("b2b_no_contact_message_it")
   /// Le surtitre de la carte (« On répond » à la boutique) — 2026-10-09.
-  b2cKickerFr String @default("") @map("b2c_kicker_fr")
-  b2cKickerEn String @default("") @map("b2c_kicker_en")
-  b2cKickerIt String @default("") @map("b2c_kicker_it")
-  b2cTitleFr  String @default("") @map("b2c_title_fr")
-  b2cTitleEn  String @default("") @map("b2c_title_en")
-  b2cTitleIt  String @default("") @map("b2c_title_it")
-  b2cBodyFr   String @default("") @map("b2c_body_fr")
-  b2cBodyEn   String @default("") @map("b2c_body_en")
-  b2cBodyIt   String @default("") @map("b2c_body_it")
+  b2cKickerFr           String  @default("") @map("b2c_kicker_fr")
+  b2cKickerEn           String  @default("") @map("b2c_kicker_en")
+  b2cKickerIt           String  @default("") @map("b2c_kicker_it")
+  b2cTitleFr            String  @default("") @map("b2c_title_fr")
+  b2cTitleEn            String  @default("") @map("b2c_title_en")
+  b2cTitleIt            String  @default("") @map("b2c_title_it")
+  b2cBodyFr             String  @default("") @map("b2c_body_fr")
+  b2cBodyEn             String  @default("") @map("b2c_body_en")
+  b2cBodyIt             String  @default("") @map("b2c_body_it")
+  /// Les deux interrupteurs de la carte — décision de Hugo, 2026-10-26. Par défaut
+  /// affichés : la boutique garde son affichage d'avant.
+  b2cShowPhone          Boolean @default(true) @map("b2c_show_phone")
+  b2cShowForm           Boolean @default(true) @map("b2c_show_form")
+  /// Les mots des deux boutons ; vides, ceux du dictionnaire de la boutique.
+  b2cCallLabelFr        String  @default("") @map("b2c_call_label_fr")
+  b2cCallLabelEn        String  @default("") @map("b2c_call_label_en")
+  b2cCallLabelIt        String  @default("") @map("b2c_call_label_it")
+  b2cWriteLabelFr       String  @default("") @map("b2c_write_label_fr")
+  b2cWriteLabelEn       String  @default("") @map("b2c_write_label_en")
+  b2cWriteLabelIt       String  @default("") @map("b2c_write_label_it")
+  /// Ce que dit une carte sans numéro ni formulaire ; le domaine le veut en français.
+  b2cNoContactMessageFr String  @default("") @map("b2c_no_contact_message_fr")
+  b2cNoContactMessageEn String  @default("") @map("b2c_no_contact_message_en")
+  b2cNoContactMessageIt String  @default("") @map("b2c_no_contact_message_it")
 
   /// Instant du geste, lu du `Clock`.
   updatedAt        DateTime @map("updated_at")

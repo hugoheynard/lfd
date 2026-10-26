@@ -3,13 +3,14 @@
 <div class="body">
   <section class="cp-block">
     <p class="cp-label">Contact direct</p>
-    <!-- Un numéro : le lien direct ; plusieurs : le dialogue « Nous appeler ». -->
+    <!-- Un numéro : le lien direct ; plusieurs : le dialogue « Nous appeler » ;
+         aucun : rien, un numéro ne s'invente pas (Hugo, 2026-10-26). -->
     @if (phones().length === 1) {
       <a class="cp-row" [href]="telHref(phones()[0]!.number)">
         <fold-icon name="phone" [size]="18" />
         <span>{{ phones()[0]!.number }}</span>
       </a>
-    } @else {
+    } @else if (phones().length > 1) {
       <button type="button" class="cp-row" (click)="call()">
         <fold-icon name="phone" [size]="18" />
         <span>Nous appeler</span>
@@ -17,10 +18,12 @@
     }
     <!-- « Écrire » ouvre le dialogue « Nous écrire » de la boutique, et non plus
          un `mailto:` (plan « Nous écrire », §4). -->
-    <button type="button" class="cp-row" (click)="write()">
-      <fold-icon name="mail" [size]="18" />
-      <span>Nous écrire</span>
-    </button>
+    @if (canWrite()) {
+      <button type="button" class="cp-row" (click)="write()">
+        <fold-icon name="mail" [size]="18" />
+        <span>Nous écrire</span>
+      </button>
+    }
     <p class="cp-hours">{{ hours }}</p>
   </section>
 

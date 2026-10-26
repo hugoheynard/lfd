@@ -92,7 +92,8 @@
       <div class="contact" data-test="pro-contact">
         <span class="contact-lead">{{ c().contact }}</span>
         <!-- Les gestes de la bande de `/bienvenue` : un seul numéro, « Appeler »
-             EST son `tel:` ; plusieurs, le dialogue « Nous appeler ». -->
+             EST son `tel:` ; plusieurs, le dialogue « Nous appeler » ; aucun,
+             pas de geste d'appel : un numéro ne s'invente pas (Hugo, 2026-10-26). -->
         @if (contact().phones.length === 1) {
           <a
             foldButton
@@ -105,7 +106,7 @@
             <fold-icon name="phone" size="sm" />
             {{ contact().call }} · {{ contact().phones[0]!.number }}
           </a>
-        } @else {
+        } @else if (contact().phones.length > 1) {
           <button
             foldButton
             emphasis="outline"
@@ -119,18 +120,24 @@
             {{ contact().call }}
           </button>
         }
-        <button
-          foldButton
-          emphasis="outline"
-          intent="neutral"
-          size="sm"
-          type="button"
-          data-test="pro-write"
-          (click)="write()"
-        >
-          <fold-icon name="mail" size="sm" />
-          {{ contact().write }}
-        </button>
+        @if (contact().canWrite) {
+          <button
+            foldButton
+            emphasis="outline"
+            intent="neutral"
+            size="sm"
+            type="button"
+            data-test="pro-write"
+            (click)="write()"
+          >
+            <fold-icon name="mail" size="sm" />
+            {{ contact().write }}
+          </button>
+        }
+        <!-- Ni numéro ni formulaire : le message réglé (Hugo, 2026-10-26). -->
+        @if (contact().noContact) {
+          <span class="contact-silent" data-test="pro-no-contact">{{ contact().noContact }}</span>
+        }
       </div>
       <a foldButton size="lg" block data-test="pro-browse" [routerLink]="shop" fragment="pro">
         {{ c().browse }}

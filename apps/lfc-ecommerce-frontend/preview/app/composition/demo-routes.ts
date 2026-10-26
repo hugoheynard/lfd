@@ -57,7 +57,16 @@ export const DEMO_ORDER_ID = 'demo-order';
 const FEATURE_LEVELS: FeatureLevelsView = { customerMandate: 'closed', facebookLogin: 'hidden' };
 const EMPTY_STOREFRONT: PublicStorefrontPageView = { rows: 0, objects: [] };
 const EMPTY_TEXT = { fr: '', en: '', it: '' } as const;
-const EMPTY_CARD = { kicker: EMPTY_TEXT, title: EMPTY_TEXT, body: EMPTY_TEXT } as const;
+const EMPTY_CARD = {
+  kicker: EMPTY_TEXT,
+  title: EMPTY_TEXT,
+  body: EMPTY_TEXT,
+  callLabel: EMPTY_TEXT,
+  writeLabel: EMPTY_TEXT,
+  showPhone: true,
+  showForm: true,
+  noContactMessage: EMPTY_TEXT,
+} as const;
 /** Cartes vides : la boutique garde alors ses propres textes — ceux qu'on édite. */
 const CONTACT_SETTINGS: PublicContactSettingsView = {
   phones: [],

@@ -107,3 +107,12 @@
   font-size: var(--lfc-text-note);
   cursor: pointer;
 }
+
+/* Une carte sans numéro ni formulaire (2026-10-26) : sa phrase prend la place
+   des boutons, à la voix de la carte et sans faux air de bouton. */
+.no-contact {
+  margin: 0;
+  font-size: var(--fold-text-lg);
+  line-height: var(--lfc-leading-body);
+  color: var(--lfc-ink-900);
+}

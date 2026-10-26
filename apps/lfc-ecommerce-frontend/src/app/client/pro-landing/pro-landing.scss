@@ -336,6 +336,12 @@
   color: var(--fold-color-text-muted);
 }
 
+/* Une carte sans numéro ni formulaire : sa phrase, à la place des boutons (2026-10-26). */
+.contact-silent {
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text);
+}
+
 /* Les incontournables : des cartes éditoriales. Une colonne pleine largeur en
    pile ; au bureau, autant de colonnes de 300px au moins que la feuille en
    tient (deux ou trois), sans jamais étirer un article seul au-delà. */

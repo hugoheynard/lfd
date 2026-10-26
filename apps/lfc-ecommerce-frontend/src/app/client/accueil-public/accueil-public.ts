@@ -46,7 +46,7 @@ import { isLive, rowCopyOf, trackedOf } from '../mes-commandes/order-rows';
 import { ClientCart } from '../cart/client-cart.service';
 import { CONTACT_CARD_DEFAULTS } from '@lfd/contracts/shop-values';
 import { ContactBand } from '../shop/contact-band/contact-band';
-import { ContactSettingsStore, localizedOr, phonesFor } from '../shop/contact-settings.store';
+import { ContactSettingsStore, contactFor, localizedOr } from '../shop/contact-settings.store';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
 import { ShopWarmup } from '../shop/warmup/shop-warmup';
 import { datedEventOf, featuredOperation, type DatedEvent } from '../shop/operation-event';
@@ -292,9 +292,7 @@ export class AccueilPublic {
     return {
       // Pas de surtitre réglé, pas de surtitre (Hugo, 2026-10-09).
       kicker: localizedOr(card.kicker, locale, ''),
-      phones: phonesFor(settings, this.pro() ? 'b2b' : 'b2c', locale),
-      call: contact.call,
-      write: contact.write,
+      ...contactFor(settings, this.pro() ? 'b2b' : 'b2c', locale, contact),
       title: localizedOr(card.title, locale, fallback.title[locale]),
       who: localizedOr(card.body, locale, fallback.body[locale]),
     };

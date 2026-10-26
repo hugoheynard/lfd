@@ -29,7 +29,7 @@ import { ClientLocale } from '../client-locale.service';
 import { accueilPublicCopy } from '../copy/screens/accueil-public.copy';
 import { CallDialog } from '../shop/call-dialog/call-dialog';
 import { ContactDialog } from '../shop/contact-dialog/contact-dialog';
-import { ContactSettingsStore, phonesFor, telHref } from '../shop/contact-settings.store';
+import { ContactSettingsStore, contactFor, telHref } from '../shop/contact-settings.store';
 import { ProFeaturedCard } from './pro-featured-card/pro-featured-card';
 import { proLandingCopy } from '../copy/screens/pro-landing.copy';
 import { screenCopy } from '../copy/shop-copy-composer';
@@ -139,16 +139,17 @@ export class ProLanding {
   /**
    * Les numéros et les deux verbes du contact, tels que `/bienvenue` les
    * compose pour un PRO (`accueil-public.ts`, `contact`, relu le 2026-10-19) :
-   * le réglage public `GET /contact-settings` côté `b2b`, sinon le numéro de
-   * `CONTACT_CARD_DEFAULTS`. Aucune lecture qui demande une connexion.
+   * le réglage public `GET /contact-settings` côté `b2b` ; aucun numéro réglé,
+   * aucun geste d'appel (plus de repli, Hugo 2026-10-26). Aucune lecture qui
+   * demande une connexion.
    */
   protected readonly contact = computed(() => {
-    const words = this.welcome().contact;
-    return {
-      phones: phonesFor(this.contactSettings.settings(), 'b2b', this.locale.current()),
-      call: words.call,
-      write: words.write,
-    };
+    return contactFor(
+      this.contactSettings.settings(),
+      'b2b',
+      this.locale.current(),
+      this.welcome().contact,
+    );
   });
 
   protected readonly telHref = telHref;

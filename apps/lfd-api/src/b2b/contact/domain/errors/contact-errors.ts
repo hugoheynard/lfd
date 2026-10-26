@@ -44,6 +44,20 @@ export class ContactTextTooLongError extends DomainError {
   }
 }
 
+/**
+ * Une carte qui n'affiche ni numéro ni formulaire, et ne dit rien : le client
+ * n'aurait aucun moyen de joindre la boutique, ni de savoir pourquoi
+ * (décision de Hugo, 2026-10-26).
+ */
+export class ContactCardSilentError extends DomainError {
+  constructor(card: string) {
+    super(
+      "contact.card.silent",
+      `${card} : une carte sans numéro ni formulaire doit dire quelque chose. Écrire le message « sans contact » en français (par exemple « Nous vous contacterons bientôt »), ou réafficher le numéro ou le formulaire.`,
+    );
+  }
+}
+
 /** Un rang (motif, numéro) qui n'est pas un entier positif. */
 export class ContactPositionInvalidError extends DomainError {
   constructor(position: number) {
