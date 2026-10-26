@@ -7,7 +7,8 @@ import {
   type DossierRound,
   tightestDeadlineOf,
 } from "../day-rounds-dossier.js";
-import { renderDayRoundsDossierPdf } from "../day-rounds-dossier-pdf.js";
+import type { DossierCheck } from "../day-rounds-dossier-checks.js";
+import { dayRoundsDossierFileName, renderDayRoundsDossierPdf } from "../day-rounds-dossier-pdf.js";
 import type { RoundPaper, RoundPaperSheetStop } from "../round-paper.js";
 
 /** Les dates ne sont comparées qu'entre elles : rien ici ne lit l'horloge. */
@@ -95,13 +96,14 @@ function loading(id: string): LoadingRoundRow {
   };
 }
 
-function dossierOf(rounds: readonly DossierRound[]) {
+function dossierOf(rounds: readonly DossierRound[], checks: readonly DossierCheck[] = []) {
   return dayRoundsDossierOf({
     serviceDay: DAY,
     printedAt: PRINTED,
     rounds,
     siteColors: new Map([["site_vv", "#8e24aa"]]),
     unplaced: [{ reference: "ORD-9", customerLabel: "Hôtel du Col" }],
+    checks,
   });
 }
 
@@ -183,8 +185,56 @@ describe("renderDayRoundsDossierPdf", () => {
     expect(pages[2]).toContain("Camion 2 · passage 1");
   });
 
+  it("imprime « À vérifier » : chaque commande, sa tournée, et une ligne par alerte", async () => {
+    const dossier = dossierOf(
+      [{ paper: paper("Camion 1", 1, "06:00"), loading: null }],
+      [
+        {
+          reference: "ORD-3",
+          customerLabel: "Café de la Gare",
+          roundTitle: "Camion 1 · passage 1",
+          reasons: ["Adresse non reliée au carnet : ni point GPS, ni consignes, ni procédure"],
+        },
+        {
+          reference: "ORD-9",
+          customerLabel: "Hôtel du Col",
+          roundTitle: null,
+          reasons: ["Aucune adresse sur la commande", "Aucun contact sur la commande"],
+        },
+      ],
+    );
+    const [dispatch] = pdfPages(await renderDayRoundsDossierPdf(dossier, { logo: BRAND_LOGO }));
+    expect(dispatch).toContain("À VÉRIFIER");
+    expect(dispatch).toContain("· 2 à vérifier");
+    expect(dispatch).toContain("Adresse non reliée au carnet");
+    expect(dispatch).toContain("Hors tournée");
+    expect(dispatch).toContain("Aucun contact sur la commande");
+  });
+
+  it("dit qu'il n'y a rien à vérifier plutôt que de taire la section", async () => {
+    const [dispatch] = pdfPages(
+      await renderDayRoundsDossierPdf(dossierOf([]), { logo: BRAND_LOGO }),
+    );
+    expect(dispatch).toContain("Rien à vérifier sur les livraisons du jour.");
+  });
+
   it("dit un jour sans tournée plutôt que de rendre une page vide", async () => {
     const pages = pdfPages(await renderDayRoundsDossierPdf(dossierOf([]), { logo: BRAND_LOGO }));
     expect(pages[0]).toContain("Aucune tournée composée pour ce jour.");
+  });
+});
+
+describe("dayRoundsDossierFileName (décision de Hugo, 2026-10-26)", () => {
+  it("dit le jour, le mois en toutes lettres sans accent, et l'année", () => {
+    expect(dayRoundsDossierFileName("2026-10-26")).toBe(
+      "dossier-de-livraison-du-26-octobre-2026.pdf",
+    );
+    expect(dayRoundsDossierFileName("2027-02-03")).toBe(
+      "dossier-de-livraison-du-3-fevrier-2027.pdf",
+    );
+    expect(dayRoundsDossierFileName("2027-08-01")).toBe("dossier-de-livraison-du-1-aout-2027.pdf");
+    expect(dayRoundsDossierFileName("2027-12-31")).toBe(
+      "dossier-de-livraison-du-31-decembre-2027.pdf",
+    );
   });
 });

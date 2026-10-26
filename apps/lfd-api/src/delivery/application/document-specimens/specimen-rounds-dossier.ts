@@ -2,6 +2,11 @@ import { localToInstant } from "@lfd/contracts";
 
 import type { DayRoundsDossier } from "../../domain/services/day-rounds-dossier.js";
 import { tightestDeadlineOf } from "../../domain/services/day-rounds-dossier.js";
+import {
+  dossierChecksOf,
+  type DossierOrderFacts,
+} from "../../domain/services/day-rounds-dossier-checks.js";
+import { sectionTitleOf } from "../../domain/services/day-rounds-dossier-pdf.js";
 import type { RoundPaper } from "../../domain/services/round-paper.js";
 import { PlannedTiming } from "../../domain/value-objects/planned-timing.js";
 import { specimenRoundPaper } from "./specimen-data.js";
@@ -79,6 +84,38 @@ export function specimenRoundsDossier(now: Date): DayRoundsDossier {
       },
     ],
     unplaced: [{ reference: "EXEMPLE-0009", customerLabel: "EXEMPLE — Hôtel du Col" }],
+    // Les alertes de l'ancienne feuille de route (2026-10-26), par les règles mêmes.
+    checks: dossierChecksOf([
+      specimenFacts("EXEMPLE-0003", "Café de la Gare", sectionTitleOf(first), {
+        linkedToAddressBook: false,
+        hasContact: false,
+      }),
+      specimenFacts("EXEMPLE-0007", "Le Refuge", sectionTitleOf(second), {
+        shortfall: [{ productName: "EXEMPLE — Tarte aux myrtilles", quantity: 2 }],
+      }),
+      specimenFacts("EXEMPLE-0009", "Hôtel du Col", null, { hasAddress: false }),
+    ]),
     papers: [first, second],
+  };
+}
+
+/** Une commande d'exemple saine, sauf ce que `flaws` lui retire. */
+function specimenFacts(
+  reference: string,
+  customer: string,
+  roundTitle: string | null,
+  flaws: Partial<
+    Pick<DossierOrderFacts, "hasAddress" | "hasContact" | "linkedToAddressBook" | "shortfall">
+  >,
+): DossierOrderFacts {
+  return {
+    orderId: reference,
+    roundTitle,
+    order: { reference, customerLabel: `EXEMPLE — ${customer}`, cancelled: false },
+    hasAddress: true,
+    hasContact: true,
+    linkedToAddressBook: true,
+    shortfall: [],
+    ...flaws,
   };
 }

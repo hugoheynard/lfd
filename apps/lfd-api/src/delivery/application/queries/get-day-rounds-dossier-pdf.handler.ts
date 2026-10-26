@@ -16,7 +16,9 @@ import {
 import {
   dayRoundsDossierFileName,
   renderDayRoundsDossierPdf,
+  sectionTitleOf,
 } from "../../domain/services/day-rounds-dossier-pdf.js";
+import { DayRoundsDossierChecks } from "../day-rounds-dossier-checks.js";
 import { RoundPaperAssembler } from "../round-paper-assembly.js";
 import type { RoundPaperFile } from "./get-round-paper-pdf.handler.js";
 import { GetDayRoundsDossierPdfQuery } from "./get-day-rounds-dossier-pdf.query.js";
@@ -43,6 +45,7 @@ export class GetDayRoundsDossierPdfHandler implements IQueryHandler<
     private readonly orders: DeliveryOrdersReader,
     private readonly composition: DeliveryRoundsReader,
     private readonly siteColors: TransferSiteColorsReader,
+    private readonly checks: DayRoundsDossierChecks,
     private readonly logo: BrandLogoSource,
     private readonly clock: Clock,
   ) {}
@@ -57,7 +60,7 @@ export class GetDayRoundsDossierPdfHandler implements IQueryHandler<
       this.logo.load(),
     ]);
     const loadingById = new Map(loading.map((round) => [round.id, round]));
-    const [rounds, siteColors] = await Promise.all([
+    const [rounds, siteColors, checks] = await Promise.all([
       Promise.all(
         rows.map(async (row) => ({
           paper: await this.papers.paperOf(row, draw),
@@ -65,13 +68,22 @@ export class GetDayRoundsDossierPdfHandler implements IQueryHandler<
         })),
       ),
       this.siteColors.colorsOf(siteIdsOf(loading)),
+      // Les alertes de l'ancienne feuille de route (2026-10-26) : les commandes
+      // des tournées du jour, puis celles qu'aucune ne porte.
+      this.checks.checksOf([
+        ...rows.flatMap((row) =>
+          row.stops.map((stop) => ({ orderId: stop.orderId, roundTitle: sectionTitleOf(row) })),
+        ),
+        ...unplaced.map((order) => ({ orderId: order.orderId, roundTitle: null })),
+      ]),
     ]);
     const dossier = dayRoundsDossierOf({
       serviceDay: query.day,
       printedAt,
       rounds,
       siteColors,
-      unplaced,
+      unplaced: unplaced.map(({ reference, customerLabel }) => ({ reference, customerLabel })),
+      checks,
     });
     return {
       fileName: dayRoundsDossierFileName(query.day),
@@ -84,7 +96,7 @@ export class GetDayRoundsDossierPdfHandler implements IQueryHandler<
    * ne porte — de n'importe quel jour (I3) : une commande composée ailleurs
    * n'est pas « non placée ». Par référence, pour qu'elles se retrouvent.
    */
-  private async unplacedOn(day: string): Promise<readonly UnplacedDelivery[]> {
+  private async unplacedOn(day: string): Promise<readonly UnplacedOrder[]> {
     const expected = (await this.orders.expectedOn(day)).filter(
       (order) => order.status !== "cancelled",
     );
@@ -104,11 +116,17 @@ export class GetDayRoundsDossierPdfHandler implements IQueryHandler<
     );
     return loose
       .map((order) => ({
+        orderId: order.orderId,
         reference: order.reference,
         customerLabel: facts.get(order.orderId)?.customerLabel ?? "",
       }))
       .sort((a, b) => a.reference.localeCompare(b.reference));
   }
+}
+
+/** Une livraison non placée, avec l'identifiant que « À vérifier » relit. */
+interface UnplacedOrder extends UnplacedDelivery {
+  readonly orderId: string;
 }
 
 /** Les sites des arrêts de transfert du jour, sans doublon. */

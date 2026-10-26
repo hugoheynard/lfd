@@ -6,6 +6,7 @@ import {
   MM,
   parisDateTime,
   put,
+  REGULAR,
   putCaps,
   putRight,
   render,
@@ -19,6 +20,7 @@ import {
 import { CONTENT_BOTTOM, CONTENT_TOP, PaperPages } from "../../../platform/pdf/paper-pages.js";
 import { fillBox } from "../../../platform/pdf/paper-pdf-shapes.js";
 import type { DayRoundsDossier, RoundDispatchRow, UnplacedDelivery } from "./day-rounds-dossier.js";
+import type { DossierCheck } from "./day-rounds-dossier-checks.js";
 import { stopCountPaperLabel, timeLabel } from "./round-paper.js";
 import { drawRoundPaper } from "./round-paper-pdf.js";
 import { MUTED } from "./round-paper-pdf-layout.js";
@@ -32,6 +34,9 @@ export interface RoundsDossierPrint {
 const DISPATCH_ROW = 19 * MM;
 const UNPLACED_ROW = 7 * MM;
 const SWATCH = 3.2 * MM;
+const CHECK_HEAD = 6 * MM;
+const CHECK_REASON = 5 * MM;
+const REASON_WIDTH = WIDTH - 4 * MM;
 
 /**
  * **Le dossier des tournées du jour, en PDF** (décision de Hugo du
@@ -73,9 +78,32 @@ export function renderDayRoundsDossierPdf(
   );
 }
 
-/** Le nom de fichier proposé au téléchargement. */
+/** Les mois, en toutes lettres et sans accent : un nom de fichier n'en porte pas. */
+const FILE_MONTHS = [
+  "janvier",
+  "fevrier",
+  "mars",
+  "avril",
+  "mai",
+  "juin",
+  "juillet",
+  "aout",
+  "septembre",
+  "octobre",
+  "novembre",
+  "decembre",
+] as const;
+
+/**
+ * Le nom de fichier proposé au téléchargement (décision de Hugo,
+ * 2026-10-26) — `dossier-de-livraison-du-26-octobre-2026.pdf`. Le jour de
+ * service est déjà un jour de Paris : aucun fuseau ici. Le back-office nomme
+ * son lien de repli de la même façon (`dayDossierFileName`).
+ */
 export function dayRoundsDossierFileName(serviceDay: string): string {
-  return `dossier-tournees-${serviceDay}.pdf`;
+  const [year = "", month = "", date = ""] = serviceDay.split("-");
+  const monthName = FILE_MONTHS[Number(month) - 1] ?? month;
+  return `dossier-de-livraison-du-${String(Number(date))}-${monthName}-${year}.pdf`;
 }
 
 /** « Camion 1 · passage 1 » — le passage toujours dit, même le premier. */
@@ -108,10 +136,11 @@ function drawDispatch(doc: Doc, dossier: DayRoundsDossier, pages: PaperPages): v
     drawDispatchRow(doc, row, y);
     y += DISPATCH_ROW;
   }
-  drawUnplaced(doc, dossier.unplaced, y + 4 * MM, room);
+  y = drawUnplaced(doc, dossier.unplaced, y + 4 * MM, room);
+  drawChecks(doc, dossier.checks, y + 6 * MM, room);
 }
 
-/** « 3 tournées · 14 arrêts · 9/12 bacs chargés · 2 livraisons non placées ». */
+/** « 3 tournées · 14 arrêts · 9/12 bacs chargés · 2 livraisons non placées · 1 à vérifier ». */
 function countLine(dossier: DayRoundsDossier): string {
   const rounds = dossier.dispatch.length;
   const stops = dossier.dispatch.reduce((sum, row) => sum + row.stopCount, 0);
@@ -125,6 +154,7 @@ function countLine(dossier: DayRoundsDossier): string {
     ...(unplaced === 0
       ? []
       : [unplaced === 1 ? "1 livraison non placée" : `${String(unplaced)} livraisons non placées`]),
+    ...(dossier.checks.length === 0 ? [] : [`${String(dossier.checks.length)} à vérifier`]),
   ].join(" · ");
 }
 
@@ -172,19 +202,61 @@ function drawUnplaced(
   unplaced: readonly UnplacedDelivery[],
   top: number,
   room: (at: number, needed: number) => number,
-): void {
+): number {
   let y = room(top, 3 * UNPLACED_ROW);
   putCaps(doc, `LIVRAISONS NON PLACÉES — ${String(unplaced.length)}`, LEFT, y);
   rule(doc, y + 5 * MM, 1);
   y += 8 * MM;
   if (unplaced.length === 0) {
     put(doc, "Toutes les livraisons du jour sont dans une tournée.", LEFT, y, { size: 11 });
-    return;
+    return y + UNPLACED_ROW;
   }
   for (const order of unplaced) {
     y = room(y, UNPLACED_ROW);
     put(doc, order.reference, LEFT, y, { size: 11, bold: true });
     put(doc, order.customerLabel, LEFT + 32 * MM, y, { size: 11, color: MUTED });
     y += UNPLACED_ROW;
+  }
+  return y;
+}
+
+/**
+ * **À vérifier** (2026-10-26) — les alertes de l'ancienne feuille de route :
+ * la commande, sa tournée, puis une ligne par raison. Une commande ne se
+ * coupe pas entre deux pages.
+ */
+function drawChecks(
+  doc: Doc,
+  checks: readonly DossierCheck[],
+  top: number,
+  room: (at: number, needed: number) => number,
+): void {
+  let y = room(top, 3 * UNPLACED_ROW);
+  putCaps(doc, `À VÉRIFIER — ${String(checks.length)}`, LEFT, y);
+  rule(doc, y + 5 * MM, 1);
+  y += 8 * MM;
+  if (checks.length === 0) {
+    put(doc, "Rien à vérifier sur les livraisons du jour.", LEFT, y, { size: 11 });
+    return;
+  }
+  for (const check of checks) {
+    const lines = check.reasons.map((reason) => `•  ${reason}`);
+    const heights = lines.map((text) =>
+      Math.max(
+        CHECK_REASON,
+        doc.font(REGULAR).fontSize(10.5).heightOfString(text, { width: REASON_WIDTH }),
+      ),
+    );
+    const height = CHECK_HEAD + heights.reduce((sum, h) => sum + h, 0) + 2 * MM;
+    y = room(y, height);
+    put(doc, check.reference, LEFT, y, { size: 11, bold: true });
+    put(doc, check.customerLabel, LEFT + 32 * MM, y, { size: 11, color: MUTED });
+    putRight(doc, check.roundTitle ?? "Hors tournée", RIGHT, y, 10.5, false);
+    let line = y + CHECK_HEAD;
+    lines.forEach((text, index) => {
+      put(doc, text, LEFT + 4 * MM, line, { size: 10.5, width: REASON_WIDTH });
+      line += heights[index] ?? CHECK_REASON;
+    });
+    y += height;
   }
 }

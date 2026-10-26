@@ -1,6 +1,7 @@
 import { instantToLocal } from "@lfd/contracts";
 
 import type { LoadingRoundRow } from "../ports/delivery-loading.reader.js";
+import type { DossierCheck } from "./day-rounds-dossier-checks.js";
 import type { RoundPaper, RoundPaperStop } from "./round-paper.js";
 
 /** Un transfert d'une tournée, vers un site, et la couleur de transfert de ce site. */
@@ -36,14 +37,19 @@ export interface UnplacedDelivery {
 
 /**
  * **Le dossier des tournées d'un jour** (décision de Hugo du 2026-10-26) : la
- * répartition, les livraisons non placées, puis la feuille de chaque tournée,
- * dans le même ordre que la répartition.
+ * répartition, les livraisons non placées, les commandes à vérifier, puis la
+ * feuille de chaque tournée, dans le même ordre que la répartition.
  */
 export interface DayRoundsDossier {
   readonly serviceDay: string;
   readonly printedAt: Date;
   readonly dispatch: readonly RoundDispatchRow[];
   readonly unplaced: readonly UnplacedDelivery[];
+  /**
+   * Les alertes de l'ancienne feuille de route (2026-10-26), par référence ;
+   * vide : rien à vérifier.
+   */
+  readonly checks: readonly DossierCheck[];
   /** Les feuilles remises aux livreurs, une par tournée, dans l'ordre de `dispatch`. */
   readonly papers: readonly RoundPaper[];
 }
@@ -62,6 +68,7 @@ export interface DayRoundsDossierInputs {
   /** La couleur de transfert de chaque site, par `siteId` ; absent : aucun carré. */
   readonly siteColors: ReadonlyMap<string, string>;
   readonly unplaced: readonly UnplacedDelivery[];
+  readonly checks: readonly DossierCheck[];
 }
 
 /**
@@ -76,6 +83,7 @@ export function dayRoundsDossierOf(inputs: DayRoundsDossierInputs): DayRoundsDos
     printedAt: inputs.printedAt,
     dispatch: ordered.map((round) => dispatchRowOf(round, inputs.siteColors)),
     unplaced: inputs.unplaced,
+    checks: inputs.checks,
     papers: ordered.map((round) => round.paper),
   };
 }

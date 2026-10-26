@@ -2,6 +2,7 @@ import type { Provider, Type } from "@nestjs/common";
 
 import { GetDayRoundsDossierPdfHandler } from "./application/queries/get-day-rounds-dossier-pdf.handler.js";
 import { GetDayRoundsDossierSpecimenHandler } from "./application/queries/get-day-rounds-dossier-specimen.handler.js";
+import { DayRoundsDossierChecks } from "./application/day-rounds-dossier-checks.js";
 import { RoundPaperAssembler } from "./application/round-paper-assembly.js";
 import { GetRoundPaperPdfHandler } from "./application/queries/get-round-paper-pdf.handler.js";
 import { GetRoundPaperSpecimenHandler } from "./application/queries/get-round-paper-specimen.handler.js";
@@ -34,5 +35,6 @@ export const ROUND_PAPER_PROVIDERS: readonly Provider[] = [
   GetDayRoundsDossierPdfHandler,
   GetDayRoundsDossierSpecimenHandler,
   RoundPaperAssembler,
+  DayRoundsDossierChecks,
   { provide: DayRoundPapersReader, useClass: PrismaDayRoundPapersReader },
 ];

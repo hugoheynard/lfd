@@ -7,7 +7,9 @@ import {
 } from "../../../../staff/directory/domain/staff-author-directory.js";
 import {
   type DeliveryColors,
+  DeliveryAddressPointsReader,
   DeliveryColorsReader,
+  type DeliveryOrderAddress,
   type DeliveryOrderProcedure,
   DeliveryProceduresReader,
   TransferSiteColorsReader,
@@ -32,10 +34,11 @@ import {
 import { FixedTransferSitePlaces } from "../../__tests__/transfer-site-places-double.js";
 import { resupplyContentsOver } from "../../__tests__/resupply-transfer-doubles.js";
 import { FixedTransferOrderColors } from "../../__tests__/transfer-colors-doubles.js";
+import { DayRoundsDossierChecks } from "../../day-rounds-dossier-checks.js";
 import { RoundPaperAssembler } from "../../round-paper-assembly.js";
 import { GetDayRoundsDossierPdfHandler } from "../get-day-rounds-dossier-pdf.handler.js";
 import { GetDayRoundsDossierPdfQuery } from "../get-day-rounds-dossier-pdf.query.js";
-import { FixedLoading, roundRow } from "./packing-doubles.js";
+import { FixedDepartures, FixedLoading, roundRow } from "./packing-doubles.js";
 
 /** Le jour n'est que recopié et comparé à lui-même : rien ne le compare à l'horloge. */
 const DAY = "2026-10-07";
@@ -97,6 +100,13 @@ class NoSiteColors extends TransferSiteColorsReader {
   }
 }
 
+/** Le carnet : aucune commande n'y est reliée — chacune est « à vérifier ». */
+class NoAddressBook extends DeliveryAddressPointsReader {
+  addressesOfOrders(): Promise<readonly DeliveryOrderAddress[]> {
+    return Promise.resolve([]);
+  }
+}
+
 function paperRow(
   id: string,
   vehicleName: string,
@@ -150,6 +160,7 @@ function subject() {
     orders,
     new ComposedAmong(new Set(["o_late", "o_early"])),
     new NoSiteColors(),
+    new DayRoundsDossierChecks(orders, new NoAddressBook(), new FixedDepartures(new Map())),
     new FixedBrandLogo(),
     new FixedClock(NOW),
   );
@@ -162,7 +173,7 @@ describe("GetDayRoundsDossierPdfHandler — le dossier des tournées du jour", (
     const file = await handler.execute(new GetDayRoundsDossierPdfQuery(DAY, true));
     const pages = pdfPages(file.bytes);
     expect(papers.asked).toEqual([DAY]);
-    expect(file.fileName).toBe("dossier-tournees-2026-10-07.pdf");
+    expect(file.fileName).toBe("dossier-de-livraison-du-7-octobre-2026.pdf");
     expect(pages).toHaveLength(3);
     expect(pages[1]).toContain("Camion matinal · passage 1");
     expect(pages[2]).toContain("Camion tardif · passage 1");
@@ -176,6 +187,18 @@ describe("GetDayRoundsDossierPdfHandler — le dossier des tournées du jour", (
     );
     expect(dispatch).toContain("Hôtel du Col");
     expect(dispatch).toContain("1 livraison non placée");
+    expect(dispatch).not.toContain("ORD-o_gone");
+  });
+
+  it("reprend les alertes de la feuille de route sous « À vérifier », hors tournée compris", async () => {
+    const { handler } = subject();
+    const [dispatch] = pdfPages(
+      (await handler.execute(new GetDayRoundsDossierPdfQuery(DAY, true))).bytes,
+    );
+    expect(dispatch).toContain("À VÉRIFIER");
+    expect(dispatch).toContain("· 3 à vérifier");
+    expect(dispatch).toContain("Adresse non reliée au carnet");
+    expect(dispatch).toContain("Hors tournée");
     expect(dispatch).not.toContain("ORD-o_gone");
   });
 
