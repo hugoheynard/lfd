@@ -221,11 +221,13 @@ describe("buildAllergenMatrix — le périmètre et les filtres", () => {
     expect(rowsOf([product("vide"), published], { includeUndeclared: false })).toHaveLength(1);
   });
 
-  it("filtre une famille, et range les familles par leur rang", () => {
+  it("filtre une famille, et range les familles par ordre alphabétique, pas par leur rang", () => {
+    // « Viennoiseries » a le rang 1 et « Pains » le rang 2 : l'alphabet l'emporte
+    // (décision de Hugo, 2026-10-26).
     const pain = product("pain", { categoryId: OTHER_FAMILY_ID });
     expect(build([pain, published]).families.map((f) => f.id)).toEqual([
-      FAMILY_ID,
       OTHER_FAMILY_ID,
+      FAMILY_ID,
     ]);
     expect(
       build([pain, published], { categoryId: OTHER_FAMILY_ID }).families.map((f) => f.id),
@@ -242,6 +244,26 @@ describe("buildAllergenMatrix — le périmètre et les filtres", () => {
 
   it("refuse une famille inconnue", () => {
     expect(() => build([], { categoryId: "cat_inconnue" })).toThrow(CategoryNotFoundError);
+  });
+});
+
+describe("buildAllergenMatrix — l'ordre alphabétique (Hugo, 2026-10-26)", () => {
+  it("range les fiches à la française : ni la casse ni l'accent ne comptent", () => {
+    const named = (id: string, fr: string) => product(id, { name: { fr } });
+    const rows = rowsOf([
+      named("f", "Fougasse"),
+      named("e2", "éclair"),
+      named("b", "brioche"),
+      named("e1", "Eau de fleur"),
+      named("a", "Abricotine"),
+    ]);
+    expect(rows.map((row) => row.productName)).toEqual([
+      "Abricotine",
+      "brioche",
+      "Eau de fleur",
+      "éclair",
+      "Fougasse",
+    ]);
   });
 });
 
@@ -268,6 +290,26 @@ describe("allergenMatrixCsv", () => {
     expect(lines).toContain(
       '"Viennoiseries";"Produit vide";"";"SKU-vide_v1";"Non renseigné";"";"";"";""',
     );
+  });
+
+  it("suit l'ordre alphabétique des familles, puis des fiches dans chaque famille", () => {
+    const lines = linesOf(
+      allergenMatrixCsv(
+        build([
+          product("z", { name: { fr: "Zébré" } }),
+          product("pz", { name: { fr: "Pain zéro" }, categoryId: OTHER_FAMILY_ID }),
+          product("a", { name: { fr: "Abricot" } }),
+          product("pa", { name: { fr: "Pain azyme" }, categoryId: OTHER_FAMILY_ID }),
+        ]),
+        "fr",
+      ),
+    );
+    expect(lines.slice(1).map((line) => line.split(";").slice(0, 2).join(";"))).toEqual([
+      '"Pains";"Pain azyme"',
+      '"Pains";"Pain zéro"',
+      '"Viennoiseries";"Abricot"',
+      '"Viennoiseries";"Zébré"',
+    ]);
   });
 
   it("parle la langue demandée, jusqu'aux mots fixes", () => {

@@ -91,29 +91,6 @@ function cellOf(category: IncoCategory, product: SpecimenProduct): MatrixCell {
   };
 }
 
-const VIENNOISERIES: readonly SpecimenProduct[] = [
-  {
-    sku: "EXEMPLE-CRO",
-    name: "EXEMPLE — Croissant pur beurre",
-    state: "declared",
-    contains: { gluten: ["Blé"], milk: [], eggs: [] },
-    traces: { tree_nuts: ["Amandes"], sesame: [] },
-  },
-  {
-    sku: "EXEMPLE-AMA",
-    name: "EXEMPLE — Croissant aux amandes",
-    state: "declared",
-    contains: { gluten: ["Blé"], milk: [], eggs: [], tree_nuts: ["Amandes"] },
-    traces: { tree_nuts: ["Noisettes"] },
-  },
-  {
-    sku: "EXEMPLE-CHO",
-    name: "EXEMPLE — Chausson du jour",
-    state: "to_review",
-    contains: { gluten: ["Blé"], milk: [] },
-  },
-];
-
 const PAINS: readonly SpecimenProduct[] = [
   {
     sku: "EXEMPLE-BAG",
@@ -122,6 +99,7 @@ const PAINS: readonly SpecimenProduct[] = [
     contains: { gluten: ["Blé"] },
     traces: { sesame: [], soybeans: [] },
   },
+  { sku: "EXEMPLE-EAU", name: "EXEMPLE — Eau minérale", state: "none_declared" },
   {
     sku: "EXEMPLE-SAR",
     name: "EXEMPLE — Pain au sarrasin",
@@ -133,8 +111,30 @@ const PAINS: readonly SpecimenProduct[] = [
       traces: [],
     },
   },
-  { sku: "EXEMPLE-EAU", name: "EXEMPLE — Eau minérale", state: "none_declared" },
   { sku: "EXEMPLE-NEU", name: "EXEMPLE — Pain du mois", state: "not_declared" },
+];
+
+const VIENNOISERIES: readonly SpecimenProduct[] = [
+  {
+    sku: "EXEMPLE-CHO",
+    name: "EXEMPLE — Chausson du jour",
+    state: "to_review",
+    contains: { gluten: ["Blé"], milk: [] },
+  },
+  {
+    sku: "EXEMPLE-AMA",
+    name: "EXEMPLE — Croissant aux amandes",
+    state: "declared",
+    contains: { gluten: ["Blé"], milk: [], eggs: [], tree_nuts: ["Amandes"] },
+    traces: { tree_nuts: ["Noisettes"] },
+  },
+  {
+    sku: "EXEMPLE-CRO",
+    name: "EXEMPLE — Croissant pur beurre",
+    state: "declared",
+    contains: { gluten: ["Blé"], milk: [], eggs: [] },
+    traces: { tree_nuts: ["Amandes"], sesame: [] },
+  },
 ];
 
 const SPECIMEN_FILTERS: MatrixFilters = {
@@ -147,8 +147,9 @@ const SPECIMEN_FILTERS: MatrixFilters = {
 const SPECIMEN_MATRIX: AllergenMatrix = {
   columns: COLUMNS,
   families: [
-    { id: "specimen-family-1", name: "EXEMPLE — Viennoiseries", rows: VIENNOISERIES.map(rowOf) },
+    // Familles et fiches par ordre alphabétique, comme la vraie matrice (Hugo, 2026-10-26).
     { id: "specimen-family-2", name: "EXEMPLE — Pains", rows: PAINS.map(rowOf) },
+    { id: "specimen-family-1", name: "EXEMPLE — Viennoiseries", rows: VIENNOISERIES.map(rowOf) },
   ],
   mentionsTranslated: true,
 };

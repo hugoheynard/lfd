@@ -126,6 +126,21 @@ ou non les non renseignés (défaut : inclus, pour qu'on les voie).
   d'une fiche : [date] » au-dessus des boutons d'export, pour qu'on sache
   s'il faut réimprimer. Rien ne suit les impressions.
 
+### 2.1 Ordre et pagination — décision de Hugo (2026-10-26)
+
+- **Tout est rangé par ordre alphabétique**, dans le PDF, le tableur (et le
+  JSON de l'écran, qui sort de la même construction) : les familles entre
+  elles, puis les fiches dans chaque famille. Ordre français quelle que soit la
+  langue du document — insensible à la casse et aux accents
+  (`localeCompare(…, "fr", { sensitivity: "base" })`). Les familles se
+  rangeaient jusque-là par leur rang de rayon (`position`) ; les déclinaisons
+  d'une fiche gardent l'ordre de la fiche.
+- **PDF** : chaque famille commence sur une page neuve, son nom EN GROS
+  au-dessus de sa table ; quand elle déborde, son titre porte sa pagination
+  — « Pains (1/2) », « Pains (2/2) » —, et rien quand elle tient sur une page,
+  comme les papiers du fournil. Le bandeau gris « (suite) » est retiré.
+  Implémenté le 2026-10-26 (`apps/lfd-api/src/pim/catalogue/allergen-matrix/domain/allergen-matrix-pdf-titles.ts`).
+
 ## 3. Les lots
 
 | Lot                                 | Contenu                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Agent     |

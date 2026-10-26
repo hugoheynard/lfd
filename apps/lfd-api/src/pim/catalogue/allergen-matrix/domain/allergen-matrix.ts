@@ -169,8 +169,10 @@ function familiesOf(input: MatrixInput, ranking: MatrixRanking): MatrixFamily[] 
   const { filters } = input;
   const byId = new Map(input.families.map((family) => [family.id, family]));
   const grouped = new Map<string, MatrixRow[]>();
-  const products = retainedProducts(input).sort((a, b) =>
-    nameOf(a.name, filters.locale).localeCompare(nameOf(b.name, filters.locale)),
+  const products = retainedProducts(input).sort(
+    (a, b) =>
+      alphabetical(nameOf(a.name, filters.locale), nameOf(b.name, filters.locale)) ||
+      a.id.localeCompare(b.id),
   );
   for (const product of products) {
     if (!byId.has(product.categoryId)) {
@@ -187,12 +189,23 @@ function familiesOf(input: MatrixInput, ranking: MatrixRanking): MatrixFamily[] 
       const family = byId.get(id);
       return family === undefined ? [] : [{ family, rows }];
     })
-    .sort((a, b) => a.family.position - b.family.position || a.family.id.localeCompare(b.family.id))
     .map(({ family, rows }) => ({
       id: family.id,
       name: nameOf(family.name, filters.locale),
       rows,
-    }));
+    }))
+    .sort((a, b) => alphabetical(a.name, b.name) || a.id.localeCompare(b.id));
+}
+
+/**
+ * **Tout est rangé par ordre alphabétique** — les familles entre elles, les
+ * fiches dans chaque famille (décision de Hugo, 2026-10-26). L'ordre est
+ * FRANÇAIS quelle que soit la langue du document : insensible à la casse et
+ * aux accents (« éclair » entre « Eau » et « Fougasse »). Les familles se
+ * rangeaient jusque-là par leur rang de rayon (`position`).
+ */
+function alphabetical(left: string, right: string): number {
+  return left.localeCompare(right, "fr", { sensitivity: "base" });
 }
 
 /**

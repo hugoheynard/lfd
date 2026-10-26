@@ -10,7 +10,7 @@ import {
   type AllergenMatrixPaper,
 } from "../allergen-matrix-pdf.js";
 import type { AllergenCategoryView } from "../../../../allergens/domain/ports/allergen-catalogue.reader.js";
-import { families, product, referential, variant } from "./matrix-fixtures.js";
+import { families, OTHER_FAMILY_ID, product, referential, variant } from "./matrix-fixtures.js";
 import type { ProductRecord } from "../../../product/domain/ports/product.repository.js";
 
 /**
@@ -145,7 +145,46 @@ describe("renderAllergenMatrixPdf", () => {
       expect(page).toContain(`Page ${String(index + 1)}/${String(pages.length)}`);
       expect(page).toContain("Établie à partir des fiches au 20 octobre 2026");
     });
-    expect(pages[1]).toContain("(suite)");
+    // La famille déborde : son titre porte sa pagination (Hugo, 2026-10-26).
+    pages.forEach((page, index) => {
+      expect(page).toContain(`Viennoiseries (${String(index + 1)}/${String(pages.length)})`);
+    });
+    expect(pages[1]).not.toContain("(suite)");
+  });
+
+  it("ouvre chaque famille sur une page neuve, titrée en gros, par ordre alphabétique", async () => {
+    const pages = await pagesOf(
+      paper([
+        product("v", { name: { fr: "Croissant" } }),
+        product("p", { name: { fr: "Baguette" }, categoryId: OTHER_FAMILY_ID }),
+      ]),
+    );
+    expect(pages).toHaveLength(2);
+    // « Pains » avant « Viennoiseries », chacune seule sur sa page, sans « (1/1) ».
+    // Les titres s'écrivent en fin de rendu, une fois le compte connu : ils
+    // sortent après les lignes dans le texte extrait.
+    expect(pages[0]).toContain("Pains");
+    expect(pages[0]).not.toContain("Viennoiseries");
+    expect(pages[0]).toContain("Baguette");
+    expect(pages[0]).not.toContain("Croissant");
+    expect(pages[1]).toContain("Viennoiseries");
+    expect(pages[1]).not.toContain("Pains");
+    expect(pages[1]).toContain("Croissant");
+    expect(pages.join(" ")).not.toContain("(1/1)");
+  });
+
+  it("range les fiches d'une famille par ordre alphabétique français", async () => {
+    const [page] = await pagesOf(
+      paper([
+        product("f", { name: { fr: "Fougasse" } }),
+        product("e", { name: { fr: "éclair" } }),
+        product("b", { name: { fr: "brioche" } }),
+      ]),
+    );
+    const at = (name: string) => page?.indexOf(name) ?? -1;
+    expect(at("brioche")).toBeGreaterThan(-1);
+    expect(at("brioche")).toBeLessThan(at("éclair"));
+    expect(at("éclair")).toBeLessThan(at("Fougasse"));
   });
 
   it("est ENTIER en italien, et dit en tête qu'une mention manque (Q4)", async () => {

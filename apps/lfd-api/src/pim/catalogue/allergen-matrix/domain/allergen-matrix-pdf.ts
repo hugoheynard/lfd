@@ -27,6 +27,7 @@ import {
   SHEET_RIGHT,
 } from "./allergen-matrix-pdf-grid.js";
 import { drawPageFoot, FOOT_HEIGHT } from "./allergen-matrix-pdf-foot.js";
+import { FamilyTitles } from "./allergen-matrix-pdf-titles.js";
 import { fill, localDateTime } from "./allergen-matrix-pdf-words.js";
 
 /** Ce que le PDF imprime : la matrice, son périmètre et ses deux dates. */
@@ -40,8 +41,6 @@ export interface AllergenMatrixPaper {
 }
 
 const LOGO_SIZE = 16 * MM;
-const FAMILY_BAND = 13;
-const BAND_GRAY = "#E2E2E2";
 const CONTENT_BOTTOM = SHEET_HEIGHT - MARGIN_Y - FOOT_HEIGHT;
 
 /** Le nom du fichier servi : la langue y est, un PDF par langue (Q4). */
@@ -55,6 +54,7 @@ interface Sheet {
   readonly paper: AllergenMatrixPaper;
   readonly wording: AllergenMatrixWording;
   readonly grid: Grid;
+  readonly titles: FamilyTitles;
   y: number;
 }
 
@@ -106,38 +106,28 @@ function untranslatedNotice(sheet: Sheet): void {
   sheet.y += box.height + 2 * MM;
 }
 
-/** La tête des pages suivantes : le titre seul, la date est au pied. */
+/** La tête des pages suivantes : le titre du document seul, la date est au pied. */
 function nextPage(sheet: Sheet): void {
   sheet.doc.addPage();
   put(sheet.doc, sheet.wording.title, SHEET_LEFT, MARGIN_Y, { size: 9, bold: true });
   sheet.y = MARGIN_Y + 5 * MM;
-  sheet.y = drawColumnHeaders(sheet.doc, sheet.grid, sheet.y, sheet.wording);
 }
 
-function familyBand(sheet: Sheet, family: MatrixFamily, continued: boolean): void {
-  const { doc } = sheet;
-  fillBox(
-    doc,
-    { x: SHEET_LEFT, y: sheet.y, width: SHEET_RIGHT - SHEET_LEFT, height: FAMILY_BAND },
-    BAND_GRAY,
-  );
-  const name = continued ? `${family.name} ${sheet.wording.document.continued}` : family.name;
-  put(doc, name, SHEET_LEFT + 3, sheet.y + 3, { size: 8.5, bold: true });
-  sheet.y += FAMILY_BAND;
-}
-
-/** Une famille, ligne à ligne ; une page pleine se tourne et redit la famille. */
+/**
+ * Une famille, ligne à ligne, à partir d'une page qui lui est propre
+ * (décision de Hugo, 2026-10-26) : son titre en gros, les en-têtes de
+ * colonnes, ses lignes ; une page pleine se tourne et redit titre et en-têtes.
+ */
 function drawFamily(sheet: Sheet, family: MatrixFamily): void {
   const heights = family.rows.map((row) => rowHeight(sheet.doc, sheet.grid, row, sheet.wording));
-  if (sheet.y + FAMILY_BAND + (heights[0] ?? 0) > CONTENT_BOTTOM) {
-    nextPage(sheet);
-  }
-  familyBand(sheet, family, false);
+  sheet.y = sheet.titles.open(family.name, sheet.y);
+  sheet.y = drawColumnHeaders(sheet.doc, sheet.grid, sheet.y, sheet.wording);
   family.rows.forEach((row, index) => {
     const height = heights[index] ?? 0;
     if (sheet.y + height > CONTENT_BOTTOM) {
       nextPage(sheet);
-      familyBand(sheet, family, true);
+      sheet.y = sheet.titles.continue(family.name, sheet.y);
+      sheet.y = drawColumnHeaders(sheet.doc, sheet.grid, sheet.y, sheet.wording);
     }
     drawRow(sheet.doc, sheet.grid, row, sheet.y, height, index % 2 === 1, sheet.wording);
     sheet.y += height;
@@ -146,16 +136,22 @@ function drawFamily(sheet: Sheet, family: MatrixFamily): void {
 
 function drawBody(sheet: Sheet, logo: Buffer): void {
   firstHeader(sheet, logo);
-  sheet.y = drawColumnHeaders(sheet.doc, sheet.grid, sheet.y, sheet.wording);
-  if (sheet.paper.matrix.families.length === 0) {
+  const { families } = sheet.paper.matrix;
+  if (families.length === 0) {
+    sheet.y = drawColumnHeaders(sheet.doc, sheet.grid, sheet.y, sheet.wording);
     put(sheet.doc, sheet.wording.document.empty, SHEET_LEFT, sheet.y + 4 * MM, {
       size: 10,
       bold: true,
     });
   }
-  for (const family of sheet.paper.matrix.families) {
+  families.forEach((family, index) => {
+    // Chaque famille commence sur une page neuve ; la première suit la tête.
+    if (index > 0) {
+      nextPage(sheet);
+    }
     drawFamily(sheet, family);
-  }
+  });
+  sheet.titles.finish();
 }
 
 /**
@@ -163,7 +159,8 @@ function drawBody(sheet: Sheet, logo: Buffer): void {
  * (plan `documentation/pim/plan-matrice-des-allergenes.md`, lot AM2, Q4).
  *
  * Pure : le logo est passé (port `BrandLogoSource`), l'instant aussi — mêmes
- * entrées, mêmes octets. Les en-têtes de colonnes se répètent à chaque page ;
+ * entrées, mêmes octets. Une famille par page au moins, triées par ordre
+ * alphabétique (Hugo, 2026-10-26) ; les en-têtes de colonnes se répètent à chaque page ;
  * chaque page porte au pied la légende, la date de génération et son folio.
  */
 export function renderAllergenMatrixPdf(paper: AllergenMatrixPaper, logo: Buffer): Promise<Buffer> {
@@ -172,7 +169,14 @@ export function renderAllergenMatrixPdf(paper: AllergenMatrixPaper, logo: Buffer
     paper.generatedAt,
     wording.title,
     (doc) => {
-      const sheet: Sheet = { doc, paper, wording, grid: gridOf(paper.matrix.columns), y: MARGIN_Y };
+      const sheet: Sheet = {
+        doc,
+        paper,
+        wording,
+        grid: gridOf(paper.matrix.columns),
+        titles: new FamilyTitles(doc),
+        y: MARGIN_Y,
+      };
       drawBody(sheet, logo);
       drawPageFoot(doc, wording, paper.generatedAt, paper.matrix.columns);
     },
