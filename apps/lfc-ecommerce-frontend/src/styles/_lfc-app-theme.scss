@@ -52,6 +52,7 @@
   --lfc-soot-900: #23201a;
   --lfc-soot-700: #5c5548;
   --lfc-soot-600: #6f6858;
+  --lfc-soot-550: #857c6c;
   --lfc-soot-500: #8b8272;
   --lfc-soot-400: #a49a86;
 
@@ -104,9 +105,11 @@
   /* ── Rôles fold : bordures ── */
   --fold-color-border: var(--lfc-paper-300);
   --fold-color-border-subtle: #ebe3d2;
-  /* Le contour d'un champ au repos (fold 0.34.0, WCAG 1.4.11) : 3,49:1 sur la
-     page, 3,73:1 sur la carte. Les deux filets au-dessus restent décoratifs. */
-  --fold-color-border-field: var(--lfc-soot-500);
+  /* Le contour d'un champ au repos (fold 0.34.0, WCAG 1.4.11, RGAA 3.3) : 3,79:1
+     sur la page, 4,05:1 sur la carte, 3,14:1 sur le bandeau (paper-200) — soot-500
+     n'y tenait que 2,89:1 (Hugo, 2026-10-26). Les deux filets au-dessus restent
+     décoratifs. */
+  --fold-color-border-field: var(--lfc-soot-550);
 
   /* ── Rôles fold : texte ── */
   --fold-color-text: var(--lfc-soot-900);
