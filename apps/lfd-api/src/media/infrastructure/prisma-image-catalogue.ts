@@ -3,7 +3,7 @@ import { readAltColumn } from "./alt-columns.js";
 
 import { ImageCatalogue, type CatalogueImage } from "../../pim/channels/media/image-catalogue.js";
 import { MediaPrismaService } from "../infra/database/media-prisma.service.js";
-import { SOURCE_LOCALE } from "../domain/value-objects/alt-text.js";
+import { storedAlt } from "../domain/value-objects/alt-text.js";
 
 /**
  * Ce que la **bibliothèque** répond aux porteurs.
@@ -43,9 +43,8 @@ export class PrismaImageCatalogue extends ImageCatalogue {
         {
           url: row.url,
           name: row.name,
-          // Le repli sur l'URL vaut mieux qu'une chaîne vide : une alternative
-          // absente doit se VOIR, pas se confondre avec une alternative écrite.
-          alt: readAltColumn(row.alt) ?? { [SOURCE_LOCALE]: row.url },
+          // Jamais l'URL : un lecteur d'écran la lisait (RGAA, 2026-10-26).
+          alt: storedAlt(readAltColumn(row.alt), row.url),
           width: row.width,
           height: row.height,
           bytes: row.bytes,

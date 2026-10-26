@@ -43,8 +43,8 @@ export class PrismaMediaLibrary extends MediaLibrary {
         url: entry.url,
         // Le texte alternatif se saisit à la médiathèque, sur l'image (plus
         // sur la fiche depuis le 2026-09-23). Au dépôt personne n'est là pour
-        // l'écrire : la colonne est obligatoire, elle porte le repli sur l'URL
-        // — la même règle que la description, au domaine (`imageAlt`).
+        // l'écrire : la colonne est obligatoire, elle porte l'absence (source
+        // vide, jamais l'URL) — la même règle que la description (`imageAlt`).
         alt: altColumn(imageAlt(null, entry.url)),
         storageKey: entry.storageKey,
         contentType: entry.contentType,

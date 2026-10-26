@@ -75,6 +75,7 @@ interface LibraryItem {
   readonly tags: readonly string[];
   readonly uses: number;
   readonly focal: { readonly x: number; readonly y: number } | null;
+  readonly alt: Readonly<Record<string, string>>;
 }
 
 /** Ce qu'un écran décide d'une image — la forme du corps envoyé au `PUT`. */
@@ -447,6 +448,31 @@ describe("une image, une ligne", () => {
 
     const row = await ctx.prisma.mediaAsset.findUnique({ where: { url: CROISSANT } });
     expect((row?.alt as { fr: string }).fr).toBe("Croissant doré sur une grille");
+  });
+});
+
+/**
+ * Régression : une alternative absente se rangeait — et se relisait — sous
+ * l'URL du fichier, que le lecteur d'écran de la boutique annonçait (pré-audit
+ * RGAA, 2026-10-26 : 58 images sur 89).
+ */
+describe("une image sans alternative", () => {
+  it("se dépose sans alternative, et non avec son URL", async () => {
+    const row = await ctx.prisma.mediaAsset.findUnique({ where: { url: CROISSANT } });
+    expect(row?.alt).toEqual({ fr: "" });
+    const item = (await library()).find((entry) => entry.url === CROISSANT);
+    expect(item?.alt).toEqual({ fr: "" });
+  });
+
+  it("se relit sans alternative quand la ligne porte l'ancien repli sur l'URL", async () => {
+    await ctx.prisma.mediaAsset.update({
+      where: { url: CROISSANT },
+      data: { alt: { fr: CROISSANT } },
+    });
+
+    const item = (await library()).find((entry) => entry.url === CROISSANT);
+
+    expect(item?.alt).toEqual({ fr: "" });
   });
 });
 

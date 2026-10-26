@@ -25,7 +25,7 @@ export {
 } from "./media.js";
 export { mediaItemPayloadSchema, setMediaPayloadSchema } from "./attached-media.js";
 export type { AttachedMediaView, SetMediaPayload } from "./attached-media.js";
-export { isMediaAltWritten, mediaAltOrUrl, type DraftAlt } from "./media-alt.js";
+export { isDescriptiveAltText, isMediaAltWritten, type DraftAlt } from "./media-alt.js";
 export {
   PALETTE_LIMITS,
   PALETTE_MAX_SWATCHES,

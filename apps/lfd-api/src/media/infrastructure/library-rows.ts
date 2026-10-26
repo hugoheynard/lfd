@@ -2,7 +2,7 @@ import { readAltColumn } from "./alt-columns.js";
 import { readDayColumn } from "./series-day.js";
 import { readPaletteColumn } from "./palette-column.js";
 
-import { SOURCE_LOCALE } from "../domain/value-objects/alt-text.js";
+import { storedAlt } from "../domain/value-objects/alt-text.js";
 import type { RankedImage } from "../domain/value-objects/library-order.js";
 import type { LibraryMediaRecord } from "../domain/ports/media-library-reader.js";
 
@@ -59,9 +59,8 @@ export function recordOf(row: AssetRow, uses: number): LibraryMediaRecord {
     url: row.url,
     name: row.name,
     tags: row.tags,
-    // Le repli sur l'URL vaut mieux qu'une chaîne vide : une alternative
-    // absente doit se VOIR, pas se confondre avec une alternative écrite.
-    alt: readAltColumn(row.alt) ?? { [SOURCE_LOCALE]: row.url },
+    // Jamais l'URL : un lecteur d'écran la lisait (RGAA, 2026-10-26).
+    alt: storedAlt(readAltColumn(row.alt), row.url),
     storageKey: row.storageKey,
     contentType: row.contentType,
     width: row.width,

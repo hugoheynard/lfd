@@ -149,3 +149,45 @@ describe("SaveMediaDetailsHandler — l'annonce aux porteurs", () => {
     expect(durable.facts).toEqual([]);
   });
 });
+
+class RecordingWriter extends SilentWriter {
+  readonly described: MediaDetails[] = [];
+  override describe(url: string, details: MediaDetails, ticket: WriteTicket): Promise<boolean> {
+    this.described.push(details);
+    return super.describe(url, details, ticket);
+  }
+}
+
+function recordingSetup() {
+  const writer = new RecordingWriter();
+  const handler = new SaveMediaDetailsHandler(
+    writer,
+    new OneImage(image(null)),
+    new NoSeries(),
+    new RecordingMediaJournal(),
+    new DirectUnitOfWork(),
+    new RecordingDurable(),
+    new GestureIds(),
+  );
+  return { handler, writer };
+}
+
+/** Régression : une alternative absente se rangeait sous l'URL du fichier (RGAA, 2026-10-26). */
+describe("SaveMediaDetailsHandler — l'alternative absente", () => {
+  it("range une alternative laissée vide comme absente, jamais comme l'URL", async () => {
+    const { handler, writer } = recordingSetup();
+
+    await handler.execute(save(null, { alt: "" }));
+
+    expect(writer.described.map((details) => details.alt)).toEqual([{ fr: "" }]);
+  });
+
+  it("refuse une adresse en guise d'alternative, sans rien écrire", async () => {
+    const { handler, writer } = recordingSetup();
+
+    await expect(
+      handler.execute(save(null, { alt: "https://media.lafoliecoffee.info/images/x.webp" })),
+    ).rejects.toMatchObject({ code: "media.alt_not_descriptive" });
+    expect(writer.described).toEqual([]);
+  });
+});
