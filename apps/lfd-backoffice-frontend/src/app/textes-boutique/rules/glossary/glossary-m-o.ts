@@ -124,6 +124,7 @@ export const GLOSSARY_M_O: Readonly<Record<string, string>> = {
   orEmail: 'Ou par e-mail',
   orders: 'Commandes',
   ordersClosed: 'Commandes fermées',
+  ordersClosedHint: 'Commandes fermées — précision',
   originPhone: 'Origine — par téléphone',
   originRecurring: 'Origine — panier récurrent',
   other: 'Autre heure',
