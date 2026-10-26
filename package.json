@@ -20,6 +20,7 @@
     "dev:apps": "bash dev-toolbox/dev-stack.sh --filter=lfc-ecommerce-frontend... --filter=lfd-backoffice-frontend... --filter=lfd-api...",
     "dev:gateway": "SUITE_URL=http://b2b-admin.localhost:8787 bash dev-toolbox/dev-stack.sh --filter=lfd-gateway... --filter=lfc-ecommerce-frontend... --filter=lfd-api... --filter=lfd-backoffice-frontend...",
     "dev:status": "node dev-toolbox/suite-status.mjs",
+    "rgaa:rate": "node dev-toolbox/accessibilite/rgaa-rate.mjs",
     "dev:watch": "turbo run dev --filter=lfd-backoffice-frontend --filter=lfd-api",
     "lint": "turbo run lint",
     "lint:clock-port": "node dev-toolbox/gates/clock-port.mjs",
