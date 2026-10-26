@@ -182,8 +182,10 @@ export class RoundColumn {
     );
   });
 
-  /** « Supprimer la tournée ? Ses 3 arrêts retournent à répartir. » */
-  protected readonly removalMessage = computed(() => removalMessageOf(this.round().stops.length));
+  /** « Supprimer la tournée ? Ses 3 arrêts retournent à répartir. » — transferts compris (Hugo, 2026-10-26). */
+  protected readonly removalMessage = computed(() =>
+    removalMessageOf(this.round().stops.length + this.transferStops().length),
+  );
 
   /**
    * La catégorie d'un arrêt : une LIVRAISON, peinte de la couleur de livraison
