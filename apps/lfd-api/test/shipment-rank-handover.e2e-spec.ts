@@ -74,8 +74,9 @@ describe("Le rang de l'envoi en base — le retrait (L3d)", () => {
       { rank: 1, reference: "ORD-0042" },
       { rank: 2, reference: "ORD-0042-2" },
     ]);
-    // La lecture « par commande » reste celle de la commande : le rang 1.
-    expect((await handovers.findByOrderId(ORDER))?.reference).toBe("ORD-0042");
+    // La lecture par envoi (L4b) rend chacun sous sa référence.
+    expect((await handovers.findByShipment(FIRST))?.reference).toBe("ORD-0042");
+    expect((await handovers.findByShipment(REMAINDER))?.reference).toBe("ORD-0042-2");
   });
 
   it("order_departure : deux rangs, deux lignes ; le retour de l'un ne ramène pas l'autre", async () => {
@@ -100,7 +101,9 @@ describe("Le rang de l'envoi en base — le retrait (L3d)", () => {
     await proofs.record(proof(2));
 
     await expect(proofs.record(proof(2))).rejects.toThrow();
-    expect((await proofs.findByOrderId(ORDER))?.state.rank).toBe(1);
+    expect((await proofs.findByShipment(FIRST))?.state.rank).toBe(1);
+    expect((await proofs.findByShipment(REMAINDER))?.state.rank).toBe(2);
+    expect((await proofs.findAllOfOrder(ORDER)).map((found) => found.state.rank)).toEqual([1, 2]);
 
     expect(await ctx.app.get(HandoverProofEraser).erase(ORDER, 2)).toBe(true);
     const left = await ctx.prisma.orderHandoverProof.findMany({

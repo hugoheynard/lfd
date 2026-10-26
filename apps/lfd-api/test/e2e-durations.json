@@ -182,6 +182,7 @@
   "test/gesture-rights.e2e-spec.ts": 5171,
   "test/growth-stats.e2e-spec.ts": 4077,
   "test/guest-account-claim.e2e-spec.ts": 9036,
+  "test/handover-by-shipment.e2e-spec.ts": 7881,
   "test/handover-departure-custody.e2e-spec.ts": 6820,
   "test/handover-durable.e2e-spec.ts": 3056,
   "test/handover-proof-purge.e2e-spec.ts": 2792,

@@ -4,6 +4,7 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { OrdersToReconcileDeliveryNotes } from "../../../orders/domain/ports/order-progress-for-delivery-note.js";
 import { RemainderNoteNotFoundError } from "../../domain/errors/delivery-note-errors.js";
 import { DeliveryNoteRepository } from "../../domain/ports/delivery-note.repository.js";
+import { remainderNoteOf } from "../services/remainder-note-of.js";
 import { PrepareRemainderNoteCommand } from "./prepare-remainder-note.command.js";
 
 /**
@@ -42,8 +43,7 @@ export class PrepareRemainderNoteHandler implements ICommandHandler<
       }
       const notes = await this.notes.loadForOrders([command.orderId]);
       // Le vivant de ce rang d'abord ; à défaut un annulé, que `prepare` refusera.
-      const ofRank = notes.filter((candidate) => candidate.rank === command.rank);
-      const note = ofRank.find((candidate) => candidate.isLive) ?? ofRank[0];
+      const note = remainderNoteOf(notes, command.rank);
       if (note === undefined) {
         throw new RemainderNoteNotFoundError(command.orderId, command.rank);
       }

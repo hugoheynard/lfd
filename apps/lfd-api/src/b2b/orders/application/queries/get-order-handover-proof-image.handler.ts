@@ -1,6 +1,7 @@
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { HandoverProofReader } from "../../../../handover/channels/commerce/index.js";
+import { ShipmentRef } from "../../../../production/channels/commerce/index.js";
 import type { StoredDocument } from "../../../../platform/storage/document-store.js";
 import { OrderHandoverProofImageNotFoundError } from "../../domain/errors/order-handover-proof-errors.js";
 import { GetOrderHandoverProofImageQuery } from "./get-order-handover-proof-image.query.js";
@@ -20,7 +21,8 @@ export class GetOrderHandoverProofImageHandler implements IQueryHandler<
   constructor(private readonly proofs: HandoverProofReader) {}
 
   async execute(query: GetOrderHandoverProofImageQuery): Promise<StoredDocument> {
-    const image = await this.proofs.image(query.orderId, query.piece);
+    // Rang 1, comme la carte qui l'affiche (`GetOrderHandoverProofHandler`).
+    const image = await this.proofs.image(ShipmentRef.firstOf(query.orderId), query.piece);
     if (image === null) {
       throw new OrderHandoverProofImageNotFoundError(query.piece);
     }

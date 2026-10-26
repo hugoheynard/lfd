@@ -8,6 +8,7 @@ import {
   type HandoverPublication,
   type StagedHandoverProofs,
 } from "../../../delivery/channels/handover/index.js";
+import { FIRST_SHIPMENT_RANK, ShipmentRef } from "../../../production/channels/handover/index.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { ProductionDocumentStore } from "../../../platform/storage/production-document-store.js";
 import { Clock } from "../../../platform/time/clock.js";
@@ -106,6 +107,9 @@ export class HandoverDoorstepAttestor extends DoorstepHandoverAttestor {
     }
     const handover = await this.attestation.attestQuietly(
       subject,
+      // Un arrêt ne porte encore que le rang 1 (`DeliveryRound.assign`) : la
+      // remise à la porte d'un reliquat naît avec son arrêt (L7/L8).
+      FIRST_SHIPMENT_RANK,
       request.by,
       request.mode === "deposited" ? DEPOSIT_VIA : HANDED_VIA,
     );
@@ -126,9 +130,12 @@ export class HandoverDoorstepAttestor extends DoorstepHandoverAttestor {
   }
 
   async republication(orderId: string): Promise<HandoverPublication | null> {
+    // Le rang 1, comme `attest` ci-dessus : le canal de la livraison ne
+    // nomme encore que la commande.
+    const shipment = ShipmentRef.firstOf(orderId);
     const [proof, handover] = await Promise.all([
-      this.proofs.findByOrderId(orderId),
-      this.handovers.findByOrderId(orderId),
+      this.proofs.findByShipment(shipment),
+      this.handovers.findByShipment(shipment),
     ]);
     if (proof === null || handover === null) {
       return null;

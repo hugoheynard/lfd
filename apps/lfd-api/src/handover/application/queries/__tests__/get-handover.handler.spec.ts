@@ -63,7 +63,7 @@ class FixedHandovers extends OrderHandoverRepository {
     super();
   }
 
-  findByOrderId(): Promise<OrderHandover | null> {
+  findByShipment(): Promise<OrderHandover | null> {
     return Promise.resolve(this.existing);
   }
 

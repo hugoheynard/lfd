@@ -10,8 +10,8 @@ import {
   HANDOVER_HANDED_OVER,
   OrderHandedOverEvent,
 } from "../../../../handover/channels/commerce/index.js";
+import { FIRST_SHIPMENT_RANK } from "../../../../production/channels/commerce/index.js";
 import { MarkOrderFulfilledCommand } from "../commands/mark-order-fulfilled.command.js";
-import { ensureFirstShipment } from "./later-shipment-guard.js";
 
 /** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
 export const ON_ORDER_HANDED_OVER = "b2b.orders.mark-fulfilled";
@@ -45,7 +45,12 @@ export class OnOrderHandedOver implements DurableSubscriber {
 
   async handle(delivery: DurableDelivery): Promise<void> {
     const event = OrderHandedOverEvent.fromPayload(delivery.payload);
-    ensureFirstShipment(event, HANDOVER_HANDED_OVER, "L4b");
+    // Un reliquat remis ne ferme pas la commande : son BL a son abonné
+    // (`OnRemainderHandedOver`, bons de livraison, L4b). La commande reste au
+    // rang 1 jusqu'au solde dérivé (L5).
+    if (event.rank !== FIRST_SHIPMENT_RANK) {
+      return;
+    }
     // L'identité et l'instant viennent du FAIT, pas de l'horloge d'ici : le
     // retrait a eu lieu au comptoir ou à la porte, et c'est cette heure-là.
     await this.commands.execute(

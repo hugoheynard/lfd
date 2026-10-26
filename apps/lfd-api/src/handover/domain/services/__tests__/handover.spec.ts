@@ -16,7 +16,14 @@ import {
  */
 
 function candidate(overrides: Partial<HandoverCandidate> = {}): HandoverCandidate {
-  return { status: "ready", handedOverAt: null, qualityHold: false, settled: true, ...overrides };
+  return {
+    status: "ready",
+    rank: 1,
+    handedOverAt: null,
+    qualityHold: false,
+    settled: true,
+    ...overrides,
+  };
 }
 
 describe("handoverBlocker", () => {
@@ -80,6 +87,11 @@ describe("handoverBlocker", () => {
     // depuis qu'il le constate.
     const blocker = handoverBlocker(candidate({ handedOverAt: new Date() }));
     expect(blocker).toBe("Cette commande a déjà été retirée.");
+  });
+
+  it("nomme l'ENVOI déjà remis quand c'est un reliquat (plan E7 reliquat, L4b)", () => {
+    const blocker = handoverBlocker(candidate({ rank: 2, handedOverAt: new Date() }));
+    expect(blocker).toBe("Le reste de cette commande (envoi 2) a déjà été retiré.");
   });
 
   it("refuse l'annulation AVANT de constater la remise déjà faite", () => {

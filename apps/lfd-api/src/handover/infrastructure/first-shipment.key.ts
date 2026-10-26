@@ -1,22 +1,36 @@
-import { FIRST_SHIPMENT_RANK } from "../../production/channels/handover/index.js";
+import { FIRST_SHIPMENT_RANK, type ShipmentRef } from "../../production/channels/handover/index.js";
 
 /**
- * La clé de l'envoi de RANG 1 d'une commande, sur les trois tables du retrait
+ * La clé d'UN envoi `(commande, rang)` sur les trois tables du retrait
  * (`order_handover`, `order_departure`, `order_handover_proof`, plan E7
- * reliquat, lot L3d).
- *
- * Les lecteurs et dépôts « par commande » du retrait lisent la commande
- * elle-même, c'est-à-dire son rang 1, jusqu'à ce que le retrait par envoi
- * (L4) leur donne un rang à lire. Un filtre écrit une fois : une ligne de
- * rang > 1 ne peut ainsi jamais passer pour l'attestation de la commande.
+ * reliquat, lots L3d et L4b).
  */
-export function firstShipmentKey(orderId: string): {
+export function shipmentKey(shipment: ShipmentRef): {
   readonly orderId_rank: { readonly orderId: string; readonly rank: number };
 } {
-  return { orderId_rank: { orderId, rank: FIRST_SHIPMENT_RANK } };
+  return { orderId_rank: { orderId: shipment.orderId, rank: shipment.rank } };
 }
 
-/** Le filtre `findMany` des mêmes lignes, pour plusieurs commandes. */
+/** Le filtre `findMany` de plusieurs envois, quel que soit leur rang. */
+export function shipmentsOf(shipments: readonly ShipmentRef[]): {
+  readonly OR: { readonly orderId: string; readonly rank: number }[];
+} {
+  return { OR: shipments.map(({ orderId, rank }) => ({ orderId, rank })) };
+}
+
+/**
+ * Le filtre des envois de RANG 1 de plusieurs commandes — la commande
+ * elle-même.
+ *
+ * Ce qui le lit encore, depuis L4b, répond à une question **sur la
+ * commande** et non sur un envoi (vérifié le 2026-10-26) : la file du comptoir
+ * et la feuille de route (une ligne par commande ; la liste des envois est
+ * L4c, le « reste relivré » L8), le dossier de facturation, le jour de
+ * réception et l'annulation (`OrderHandoverHistoryReader` — la commande se
+ * solde en L5), la garde au contrôle qualité (le fournil retient une
+ * commande), le retard du commerce sur la clôture (comparé aux numéros de
+ * commande). Un reliquat n'y passe pas pour la commande.
+ */
 export function firstShipmentsOf(orderIds: readonly string[]): {
   readonly orderId: { readonly in: string[] };
   readonly rank: number;

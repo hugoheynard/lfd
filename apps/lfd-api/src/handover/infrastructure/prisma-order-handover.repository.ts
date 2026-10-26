@@ -4,7 +4,8 @@ import { PrismaService } from "../../platform/database/prisma.service.js";
 import { OrderHandover } from "../domain/entities/order-handover.js";
 import { OrderHandoverRepository } from "../domain/ports/order-handover.repository.js";
 import type { HandoverVia } from "../domain/services/handover.js";
-import { firstShipmentKey } from "./first-shipment.key.js";
+import type { ShipmentRef } from "../../production/channels/handover/index.js";
+import { shipmentKey } from "./first-shipment.key.js";
 import { handoverViaOf } from "./handover-via.mapper.js";
 
 /**
@@ -24,8 +25,8 @@ export class PrismaOrderHandoverRepository extends OrderHandoverRepository {
     super();
   }
 
-  async findByOrderId(orderId: string): Promise<OrderHandover | null> {
-    const row = await this.prisma.orderHandover.findUnique({ where: firstShipmentKey(orderId) });
+  async findByShipment(shipment: ShipmentRef): Promise<OrderHandover | null> {
+    const row = await this.prisma.orderHandover.findUnique({ where: shipmentKey(shipment) });
     return row === null ? null : toDomain(row);
   }
 

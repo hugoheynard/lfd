@@ -11,7 +11,11 @@ import type { OrderHandover } from "../../domain/entities/order-handover.js";
 import { HandoverTokenNotFoundError } from "../../domain/errors/handover-errors.js";
 import { OrderHandoverRepository } from "../../domain/ports/order-handover.repository.js";
 import { handoverBlocker } from "../../domain/services/handover.js";
-import { QualityHoldsReader } from "../../../production/channels/handover/index.js";
+import {
+  FIRST_SHIPMENT_RANK,
+  QualityHoldsReader,
+  ShipmentRef,
+} from "../../../production/channels/handover/index.js";
 import { isHeldForQuality } from "../services/quality-hold.js";
 import { GetHandoverQuery } from "./get-handover.query.js";
 
@@ -45,7 +49,7 @@ export class GetHandoverHandler implements IQueryHandler<GetHandoverQuery, Order
       throw new HandoverTokenNotFoundError();
     }
     const [handover, qualityHold] = await Promise.all([
-      this.handovers.findByOrderId(subject.orderId),
+      this.handovers.findByShipment(ShipmentRef.firstOf(subject.orderId)),
       isHeldForQuality(this.holds, subject),
     ]);
     const authors = await authorsOf(this.staffAuthors, handover);
@@ -99,6 +103,9 @@ export function toHandoverView(
     handedOverVia: handover === null ? null : handover.via,
     blockedReason: handoverBlocker({
       status: subject.status,
+      // L'envoi relu ; sans attestation, l'écran montre encore la commande
+      // (rang 1) — la liste des envois au comptoir est le lot L4c.
+      rank: handover === null ? FIRST_SHIPMENT_RANK : handover.rank,
       handedOverAt: handover === null ? null : handover.handedOverAt,
       qualityHold,
       settled: subject.settled,

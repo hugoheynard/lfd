@@ -4,6 +4,7 @@ import {
   HandoverProofReader,
 } from "../../../../../handover/channels/commerce/index.js";
 import type { StoredDocument } from "../../../../../platform/storage/document-store.js";
+import type { ShipmentRef } from "../../../../../production/channels/commerce/index.js";
 import {
   authorsKnownAs,
   FixedStaffAuthorDirectory,
@@ -33,13 +34,17 @@ class FixedProofs extends HandoverProofReader {
     super();
   }
 
-  ofOrder(orderId: string): Promise<HandoverProofExhibit | null> {
-    return Promise.resolve(orderId === "ord_1" ? this.exhibit : null);
+  readonly askedRanks: number[] = [];
+
+  ofShipment(shipment: ShipmentRef): Promise<HandoverProofExhibit | null> {
+    this.askedRanks.push(shipment.rank);
+    return Promise.resolve(shipment.orderId === "ord_1" ? this.exhibit : null);
   }
 
-  image(orderId: string, piece: HandoverProofPiece): Promise<StoredDocument | null> {
-    this.askedImages.push([orderId, piece]);
-    return Promise.resolve(orderId === "ord_1" && piece === "photo" ? PHOTO : null);
+  image(shipment: ShipmentRef, piece: HandoverProofPiece): Promise<StoredDocument | null> {
+    this.askedImages.push([shipment.orderId, piece]);
+    this.askedRanks.push(shipment.rank);
+    return Promise.resolve(shipment.orderId === "ord_1" && piece === "photo" ? PHOTO : null);
   }
 }
 
@@ -65,13 +70,14 @@ describe("GetOrderHandoverProofHandler", () => {
     const authors = new FixedStaffAuthorDirectory(
       authorsKnownAs({ firstName: "Paul", lastName: "Livreur" }, "stf_paul"),
     );
-    const response = await new GetOrderHandoverProofHandler(
-      new FixedProofs(HANDED),
-      authors,
-    ).execute(new GetOrderHandoverProofQuery("ord_1"));
+    const proofs = new FixedProofs(HANDED);
+    const response = await new GetOrderHandoverProofHandler(proofs, authors).execute(
+      new GetOrderHandoverProofQuery("ord_1"),
+    );
 
     expect(response.proof?.courierName).toBe("Paul Livreur");
     expect(response.proof?.pieces?.receiverName).toBe("Mme Durand");
+    expect(proofs.askedRanks).toEqual([1]);
   });
 
   it("une fiche staff illisible laisse le livreur sans nom", async () => {
@@ -105,6 +111,8 @@ describe("GetOrderHandoverProofImageHandler", () => {
 
     expect(image).toBe(PHOTO);
     expect(proofs.askedImages).toEqual([["ord_1", "photo"]]);
+    // La fiche d'une commande montre son rang 1 (L4b) ; un reliquat y entre en L8.
+    expect(proofs.askedRanks).toEqual([1]);
   });
 
   it("une pièce absente — autre commande, pas de signature — est un 404", async () => {

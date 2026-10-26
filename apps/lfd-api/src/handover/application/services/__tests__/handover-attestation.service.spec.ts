@@ -13,6 +13,7 @@ import {
   TransferNotYetComposedError,
 } from "../../../domain/errors/handover-errors.js";
 import { OrderHandoverRepository } from "../../../domain/ports/order-handover.repository.js";
+import { ShipmentRef } from "../../../../production/channels/handover/index.js";
 import { FixedOrderLock } from "../../__tests__/fixed-order-lock.js";
 import { FixedQualityHolds } from "../../__tests__/fixed-quality-holds.js";
 import { FixedTransferStatus } from "../../__tests__/fixed-transfer-status.js";
@@ -53,14 +54,18 @@ function subject(): HandoverSubject {
 /** Un dépôt qui rend ce qu'on lui dit, et note ce qu'on lui a gravé. */
 function repositoryOf(existing: OrderHandover | null, won: boolean) {
   const written: OrderHandover[] = [];
+  const asked: ShipmentRef[] = [];
   const repository: OrderHandoverRepository = {
-    findByOrderId: () => Promise.resolve(existing),
+    findByShipment: (shipment) => {
+      asked.push(shipment);
+      return Promise.resolve(existing);
+    },
     attest: (handover) => {
       written.push(handover);
       return Promise.resolve(won);
     },
   };
-  return { repository, written };
+  return { repository, written, asked };
 }
 
 /** Les faits `handover.handed_over` VALIDÉS — ceux d'une unité annulée n'y sont pas. */
@@ -108,7 +113,7 @@ function attestationOf(
   transfers: FixedTransferStatus = new FixedTransferStatus(),
   lock: FixedOrderLock = new FixedOrderLock(),
 ) {
-  const { repository, written } = repositoryOf(existing, won);
+  const { repository, written, asked } = repositoryOf(existing, won);
   const events = new Outbox();
   const service = new HandoverAttestation(
     repository,
@@ -120,7 +125,7 @@ function attestationOf(
     transfers,
     lock,
   );
-  return { service, written, events, lock };
+  return { service, written, events, lock, asked };
 }
 
 /**
@@ -138,7 +143,7 @@ class SequentialOrderHandoverRepository extends OrderHandoverRepository {
     super();
   }
 
-  findByOrderId(): Promise<OrderHandover | null> {
+  findByShipment(): Promise<OrderHandover | null> {
     const value = this.reads[this.nextRead] ?? null;
     this.nextRead += 1;
     return Promise.resolve(value);
@@ -153,7 +158,7 @@ describe("HandoverAttestation", () => {
   it("grave, écrit le fait durable dans la même unité de travail, et rend l'attestation", async () => {
     const { service, written, events } = attestationOf(null, true);
 
-    const view = await service.attest(subject(), "staff-1", "scan");
+    const view = await service.attest(subject(), 1, "staff-1", "scan");
 
     expect(written).toHaveLength(1);
     expect(view.handedOverBy).toBe("staff-1");
@@ -175,7 +180,7 @@ describe("HandoverAttestation", () => {
         new FixedTransferStatus(new Map([["ord_1", state]])),
       );
 
-      const refusal = service.attest(subject(), "staff-1", "scan");
+      const refusal = service.attest(subject(), 1, "staff-1", "scan");
 
       await expect(refusal).rejects.toBeInstanceOf(TransferNotReceivedError);
       await expect(refusal).rejects.toThrow(/Réceptionner/u);
@@ -197,7 +202,7 @@ describe("HandoverAttestation", () => {
       new FixedTransferStatus(new Map([["ord_1", "awaiting"]])),
     );
 
-    const refusal = service.attest(subject(), "staff-1", "scan");
+    const refusal = service.attest(subject(), 1, "staff-1", "scan");
 
     await expect(refusal).rejects.toBeInstanceOf(TransferNotYetComposedError);
     await expect(refusal).rejects.toThrow(/aucun transfert ne la porte encore/u);
@@ -213,7 +218,7 @@ describe("HandoverAttestation", () => {
       new FixedTransferStatus(new Map([["ord_1", "received"]])),
     );
 
-    await service.attest(subject(), "staff-1", "scan");
+    await service.attest(subject(), 1, "staff-1", "scan");
 
     expect(written).toHaveLength(1);
   });
@@ -223,7 +228,7 @@ describe("HandoverAttestation", () => {
     // et le journal compterait deux retraits — pour un seul sac qui part.
     const { service, events } = attestationOf(null, false);
 
-    await expect(service.attest(subject(), "staff-2", "scan")).rejects.toThrow(
+    await expect(service.attest(subject(), 1, "staff-2", "scan")).rejects.toThrow(
       HandoverRefusedError,
     );
     expect(events.published).toEqual([]);
@@ -235,7 +240,7 @@ describe("HandoverAttestation", () => {
     // que le fait publié.
     const { service, written, events } = attestationOf(null, true);
 
-    await service.attest(subject(), "staff-1", "manual");
+    await service.attest(subject(), 1, "staff-1", "manual");
 
     expect(written[0]?.handedOverAt).toBe(AT);
     expect(events.published[0]?.payload).toMatchObject({ handedOverAt: AT.toISOString() });
@@ -254,7 +259,9 @@ describe("HandoverAttestation", () => {
     );
     const { service, written } = attestationOf(earlier, true);
 
-    await expect(service.attest(subject(), "staff-1", "scan")).rejects.toThrow(/déjà été retirée/u);
+    await expect(service.attest(subject(), 1, "staff-1", "scan")).rejects.toThrow(
+      /déjà été retirée/u,
+    );
     expect(written).toEqual([]);
   });
 
@@ -274,7 +281,9 @@ describe("HandoverAttestation", () => {
     );
     const { service, events } = attestationOf(earlier, true);
 
-    await expect(service.attest(subject(), "staff-1", "scan")).rejects.toThrow(/déjà été retirée/u);
+    await expect(service.attest(subject(), 1, "staff-1", "scan")).rejects.toThrow(
+      /déjà été retirée/u,
+    );
 
     // Une RÉANNONCE : un fait neuf par geste, sous la clé de l'instant du geste.
     expect(events.published).toEqual([
@@ -288,7 +297,7 @@ describe("HandoverAttestation", () => {
     const { service, events } = attestationOf(null, true);
 
     await expect(
-      service.attest({ ...subject(), status: "cancelled" }, "staff-1", "scan"),
+      service.attest({ ...subject(), status: "cancelled" }, 1, "staff-1", "scan"),
     ).rejects.toThrow(/annulée/u);
 
     expect(events.published).toEqual([]);
@@ -321,7 +330,7 @@ describe("HandoverAttestation", () => {
       new FixedOrderLock(),
     );
 
-    await expect(service.attest(subject(), "staff-2", "manual")).rejects.toBeInstanceOf(
+    await expect(service.attest(subject(), 1, "staff-2", "manual")).rejects.toBeInstanceOf(
       HandoverRefusedError,
     );
 
@@ -345,7 +354,7 @@ describe("HandoverAttestation", () => {
         new FixedOrderLock("cancelled"),
       );
 
-      await expect(service.attest(subject(), "staff-1", "manual")).rejects.toMatchObject({
+      await expect(service.attest(subject(), 1, "staff-1", "manual")).rejects.toMatchObject({
         code: "handover.refused",
         message: expect.stringContaining("vient d'être annulée") as string,
       });
@@ -357,7 +366,7 @@ describe("HandoverAttestation", () => {
     it("prend le verrou de la commande avant de graver", async () => {
       const { service, written, lock } = attestationOf(null, true);
 
-      await service.attest(subject(), "staff-1", "manual");
+      await service.attest(subject(), 1, "staff-1", "manual");
 
       expect(lock.locked).toEqual(["ord_1"]);
       expect(written).toHaveLength(1);
@@ -376,7 +385,7 @@ describe("HandoverAttestation", () => {
       const holds = new FixedQualityHolds(["ord_1"]);
       const { service, written, events } = attestationOf(null, true, holds);
 
-      await expect(service.attest(planned(), "staff-1", "scan")).rejects.toThrow(
+      await expect(service.attest(planned(), 1, "staff-1", "scan")).rejects.toThrow(
         "Commande en cours de vérification.",
       );
       expect(written).toEqual([]);
@@ -395,7 +404,7 @@ describe("HandoverAttestation", () => {
       const holds = new FixedQualityHolds(["ord_1"]);
       const { service, events } = attestationOf(earlier, true, holds);
 
-      await expect(service.attest(planned(), "staff-1", "scan")).rejects.toThrow(
+      await expect(service.attest(planned(), 1, "staff-1", "scan")).rejects.toThrow(
         /déjà été retirée/u,
       );
       expect(events.published).toHaveLength(1);
@@ -405,7 +414,7 @@ describe("HandoverAttestation", () => {
       const holds = new FixedQualityHolds(["ord_1"]);
       const { service, written } = attestationOf(null, true, holds);
 
-      await service.attest(subject(), "staff-1", "manual");
+      await service.attest(subject(), 1, "staff-1", "manual");
 
       expect(written).toHaveLength(1);
       expect(holds.asked).toEqual([]);
@@ -417,7 +426,7 @@ describe("HandoverAttestation — le rang de la ligne (plan E7 reliquat, L3d)", 
   it("une attestation gravée au comptoir émet le rang 1 : clé et charge d'aujourd'hui", async () => {
     const { service, events } = attestationOf(null, true);
 
-    await service.attest(subject(), "staff-1", "scan");
+    await service.attest(subject(), 1, "staff-1", "scan");
 
     expect(events.published).toEqual([factOf({ at: AT, by: "staff-1", via: "scan" })]);
     expect(events.published[0]?.key).toBe("handover.handed_over:ord_1");
@@ -439,5 +448,71 @@ describe("HandoverAttestation — le rang de la ligne (plan E7 reliquat, L3d)", 
     const [fact] = events.published;
     expect(fact?.payload).toMatchObject({ orderId: "ord_1", rank: 2 });
     expect(fact?.key).toBe(`handover.handed_over:ord_1:r2:reannounced:${AT.toISOString()}`);
+  });
+});
+
+describe("HandoverAttestation — le retrait par envoi (plan E7 reliquat, L4b)", () => {
+  it("grave le reliquat sous SA référence et SON rang, et le fait porte sa clé", async () => {
+    const { service, written, events, asked } = attestationOf(null, true);
+
+    await service.attest({ ...subject(), status: "fulfilled" }, 2, "staff-1", "scan");
+
+    expect(asked).toEqual([ShipmentRef.of("ord_1", 2)]);
+    expect(written.map(({ rank, reference }) => ({ rank, reference }))).toEqual([
+      { rank: 2, reference: "ORD-ABCD-1234-2" },
+    ]);
+    expect(events.published[0]?.payload).toMatchObject({ rank: 2, reference: "ORD-ABCD-1234-2" });
+    expect(events.published[0]?.key).toBe("handover.handed_over:ord_1:r2");
+  });
+
+  it("une commande déjà soldée au rang 1 laisse remettre son reliquat", async () => {
+    // `fulfilled` est le statut du rang 1 (L5 le dérivera) : la règle ne bloque
+    // que `draft` et `cancelled`, et « déjà retiré » se lit sur l'envoi demandé.
+    const { service, written } = attestationOf(null, true);
+
+    await service.attest({ ...subject(), status: "fulfilled" }, 2, "staff-1", "manual");
+
+    expect(written).toHaveLength(1);
+  });
+
+  it("un reliquat déjà retiré est refusé en le nommant, et SA réannonce part", async () => {
+    const remainder = OrderHandover.rehydrate("ord_1", "ORD-ABCD-1234-2", AT, "staff-0", "scan", 2);
+    const { service, written, events } = attestationOf(remainder, true);
+
+    await expect(
+      service.attest({ ...subject(), status: "fulfilled" }, 2, "staff-1", "scan"),
+    ).rejects.toThrow("Le reste de cette commande (envoi 2) a déjà été retiré.");
+
+    expect(written).toEqual([]);
+    expect(events.published.map((fact) => fact.payload)).toEqual([
+      expect.objectContaining({ rank: 2, reference: "ORD-ABCD-1234-2" }),
+    ]);
+  });
+
+  it("le reliquat perdu à la course est refusé en nommant le reste", async () => {
+    const { service } = attestationOf(null, false);
+
+    await expect(
+      service.attest({ ...subject(), status: "fulfilled" }, 2, "staff-1", "scan"),
+    ).rejects.toThrow("Le reste de cette commande vient d'être retiré à un autre poste.");
+  });
+
+  it("prend le verrou commun avec l'annulation, et refuse un reliquat d'une commande annulée", async () => {
+    const lock = new FixedOrderLock("cancelled");
+    const { service, written, events } = attestationOf(
+      null,
+      true,
+      new FixedQualityHolds(),
+      new FixedTransferStatus(),
+      lock,
+    );
+
+    await expect(
+      service.attest({ ...subject(), status: "fulfilled" }, 2, "staff-1", "scan"),
+    ).rejects.toThrow(/vient d'être annulée/u);
+
+    expect(lock.locked).toEqual(["ord_1"]);
+    expect(written).toEqual([]);
+    expect(events.published).toEqual([]);
   });
 });

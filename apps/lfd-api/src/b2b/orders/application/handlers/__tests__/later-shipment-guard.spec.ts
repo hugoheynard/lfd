@@ -43,7 +43,6 @@ async function subject(handlerClass: SubscriberClass) {
 
 function factsOf(rank: number): readonly (readonly [SubscriberClass, DurableEvent])[] {
   return [
-    [OnOrderHandedOver, new OrderHandedOverEvent("ord_1", rank, "ORD-0001", AT, "s1", "scan")],
     [
       OnPackingShortfallReported,
       new PackingShortfallReportedEvent("ord_1", rank, "ORD-0001", AT, "s1", [
@@ -60,7 +59,7 @@ function factsOf(rank: number): readonly (readonly [SubscriberClass, DurableEven
  * de reliquat aurait rendu remise ou en manque la commande ENTIÈRE. Ignoré
  * avec trace en L3b, il est REFUSÉ depuis L4a : le message reste rejouable.
  */
-describe("Abonnés du commerce face à un fait de reliquat (L3b, L4a)", () => {
+describe("Abonnés du commerce face à un fait de reliquat (L3b, L4a, L4b)", () => {
   it.each(factsOf(REMAINDER_RANK).map(([cls, event]) => [cls.name, cls, event] as const))(
     "%s refuse un fait de rang 2, rejouable, sans rien demander au commerce",
     async (_name, handlerClass, event) => {
@@ -85,6 +84,35 @@ describe("Abonnés du commerce face à un fait de reliquat (L3b, L4a)", () => {
       expect(sent).toHaveLength(1);
     },
   );
+
+  it("OnOrderHandedOver applique un retrait de rang 1, comme avant", async () => {
+    const { sent, handler } = await subject(OnOrderHandedOver);
+    const fact = new OrderHandedOverEvent("ord_1", 1, "ORD-0001", AT, "s1", "scan").durableFact();
+
+    await handler.handle({ eventId: "evt_1", type: fact.type, payload: fact.payload });
+
+    expect(sent).toHaveLength(1);
+  });
+
+  /**
+   * Régression (L4b) : un reliquat remis ne ferme pas la commande — il
+   * était refusé (L4a) ; il est laissé à son bon de livraison.
+   */
+  it("OnOrderHandedOver laisse le retrait d'un reliquat à son bon de livraison", async () => {
+    const { sent, handler } = await subject(OnOrderHandedOver);
+    const fact = new OrderHandedOverEvent(
+      "ord_1",
+      REMAINDER_RANK,
+      "ORD-0001-2",
+      AT,
+      "s1",
+      "scan",
+    ).durableFact();
+
+    await handler.handle({ eventId: "evt_1", type: fact.type, payload: fact.payload });
+
+    expect(sent).toEqual([]);
+  });
 
   it("OnPackingOrderPacked laisse le bac d'un reliquat à son bon de livraison", async () => {
     const { sent, handler } = await subject(OnPackingOrderPacked);
@@ -111,7 +139,7 @@ describe("ensureFirstShipment", () => {
 
   it("refuse un rang > 1 en nommant le fait, le rang, la commande et le lot", () => {
     expect(() => {
-      ensureFirstShipment({ orderId: "ord_1", rank: 2 }, "handover.handed_over", "L4b");
-    }).toThrow(/handover\.handed_over.*rang 2.*ord_1.*L4b/);
+      ensureFirstShipment({ orderId: "ord_1", rank: 2 }, "packing.shortfall_reported", "LB");
+    }).toThrow(/packing\.shortfall_reported.*rang 2.*ord_1.*LB/);
   });
 });

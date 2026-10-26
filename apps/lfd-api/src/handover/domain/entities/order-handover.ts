@@ -1,4 +1,4 @@
-import { FIRST_SHIPMENT_RANK } from "../../../production/channels/handover/index.js";
+import { FIRST_SHIPMENT_RANK, ShipmentRef } from "../../../production/channels/handover/index.js";
 import { HandoverRefusedError } from "../errors/handover-errors.js";
 import type { HandoverSubject } from "../../channels/commerce/handover-subject.reader.js";
 import { handoverBlocker, type HandoverVia } from "../services/handover.js";
@@ -39,7 +39,7 @@ export class OrderHandover {
     readonly orderId: string,
     /**
      * Le rang de l'envoi retiré — 1 = la commande (plan E7 reliquat, choix 5,
-     * lot L3d). `attest` grave encore le rang 1 : le retrait par envoi est L4.
+     * lot L3d) ; au-delà, un reliquat, retiré pour lui-même (lot L4b).
      */
     readonly rank: number,
     readonly reference: string,
@@ -49,7 +49,13 @@ export class OrderHandover {
   ) {}
 
   /**
-   * Atteste le retrait de cette commande, ou **refuse en nommant l'empêchement**.
+   * Atteste le retrait de l'envoi `(commande, rang)`, ou **refuse en nommant
+   * l'empêchement**.
+   *
+   * Par envoi depuis le lot L4b (plan E7 reliquat) : `standing.handedOverAt`
+   * est celui de CET envoi, donc « déjà retiré » se juge envoi par envoi, et
+   * la référence gravée porte `-<rang>` au-delà du rang 1 — le rang 1 garde le
+   * numéro de commande, à l'identique.
    *
    * `standing` porte ce que le sujet ne sait pas : `handedOverAt` vient de la
    * table du retrait — le commerce n'est plus l'autorité sur ce fait, et le lui
@@ -61,13 +67,17 @@ export class OrderHandover {
    */
   static attest(
     subject: HandoverSubject,
+    rank: number,
     standing: HandoverStanding,
     at: Date,
     by: string,
     via: HandoverVia,
   ): OrderHandover {
+    // Refuse un rang hors forme avant toute règle : un envoi de rang 0 n'existe pas.
+    const shipment = ShipmentRef.of(subject.orderId, rank);
     const blocker = handoverBlocker({
       status: subject.status,
+      rank: shipment.rank,
       handedOverAt: standing.handedOverAt,
       qualityHold: standing.qualityHold,
       settled: subject.settled,
@@ -82,9 +92,9 @@ export class OrderHandover {
       throw new HandoverRefusedError("Un retrait sans auteur n'est pas une attestation.");
     }
     return new OrderHandover(
-      subject.orderId,
-      FIRST_SHIPMENT_RANK,
-      subject.orderNumber,
+      shipment.orderId,
+      shipment.rank,
+      shipmentReference(subject.orderNumber, shipment.rank),
       at,
       by,
       via,
@@ -109,4 +119,19 @@ export class OrderHandover {
   ): OrderHandover {
     return new OrderHandover(orderId, rank, reference, handedOverAt, handedOverBy, via);
   }
+
+  /** L'envoi retiré. */
+  get shipment(): ShipmentRef {
+    return ShipmentRef.of(this.orderId, this.rank);
+  }
+}
+
+/**
+ * La référence gravée d'un envoi : le numéro de commande au rang 1, à
+ * l'identique (rien de ce qui est déjà en base ne change), suffixé `-<rang>`
+ * au-delà (plan E7 reliquat, choix 13). `order_handover.reference` est unique
+ * sur toute la table : sans suffixe, le reliquat heurterait le rang 1.
+ */
+export function shipmentReference(orderNumber: string, rank: number): string {
+  return rank === FIRST_SHIPMENT_RANK ? orderNumber : `${orderNumber}-${String(rank)}`;
 }

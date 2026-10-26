@@ -7,7 +7,7 @@ import { OrderHandoverRepository } from "../../domain/ports/order-handover.repos
 import { GetHandoverByOrderQuery } from "./get-handover-by-order.query.js";
 import { StaffAuthorDirectory } from "../../../staff/directory/domain/staff-author-directory.js";
 import { authorsOf, toHandoverView } from "./get-handover.handler.js";
-import { QualityHoldsReader } from "../../../production/channels/handover/index.js";
+import { QualityHoldsReader, ShipmentRef } from "../../../production/channels/handover/index.js";
 import { isHeldForQuality } from "../services/quality-hold.js";
 
 /**
@@ -53,7 +53,9 @@ export class GetHandoverByOrderHandler implements IQueryHandler<
       throw new HandoverTokenNotFoundError();
     }
     const [handover, qualityHold] = await Promise.all([
-      this.handovers.findByOrderId(subject.orderId),
+      // Le rail de la file ouvre la commande, c'est-à-dire son rang 1 : la
+      // file par envoi est le lot L4c.
+      this.handovers.findByShipment(ShipmentRef.firstOf(subject.orderId)),
       isHeldForQuality(this.holds, subject),
     ]);
     const authors = await authorsOf(this.staffAuthors, handover);

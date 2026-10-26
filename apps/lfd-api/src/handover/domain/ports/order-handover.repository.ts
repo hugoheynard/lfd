@@ -1,3 +1,4 @@
+import type { ShipmentRef } from "../../../production/channels/handover/index.js";
 import type { OrderHandover } from "../entities/order-handover.js";
 
 /**
@@ -10,10 +11,10 @@ import type { OrderHandover } from "../entities/order-handover.js";
  */
 export abstract class OrderHandoverRepository {
   /**
-   * L'attestation de cette commande — son envoi de rang 1 (L3d ; le retrait
-   * par envoi est L4) —, ou `null` si elle reste à faire.
+   * L'attestation de cet envoi `(commande, rang)` (plan E7 reliquat, L4b), ou
+   * `null` s'il reste à retirer.
    */
-  abstract findByOrderId(orderId: string): Promise<OrderHandover | null>;
+  abstract findByShipment(shipment: ShipmentRef): Promise<OrderHandover | null>;
 
   /**
    * Grave l'attestation. Rend `false` si une autre était déjà là.

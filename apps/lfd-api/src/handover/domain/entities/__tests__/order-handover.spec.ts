@@ -1,5 +1,6 @@
 import type { HandoverSubject } from "../../../channels/commerce/handover-subject.reader.js";
 import { HandoverRefusedError } from "../../errors/handover-errors.js";
+import { ShipmentRef } from "../../../../production/channels/handover/index.js";
 import { OrderHandover } from "../order-handover.js";
 
 /**
@@ -35,7 +36,7 @@ function subject(overrides: Partial<HandoverSubject> = {}): HandoverSubject {
 
 describe("OrderHandover.attest", () => {
   it("grave la référence et l'auteur du sujet, pas de la charge utile", () => {
-    const handover = OrderHandover.attest(subject(), FREE, AT, "staff-1", "scan");
+    const handover = OrderHandover.attest(subject(), 1, FREE, AT, "staff-1", "scan");
 
     expect(handover.orderId).toBe("ord_1");
     expect(handover.reference).toBe("ORD-ABCD-1234");
@@ -46,7 +47,7 @@ describe("OrderHandover.attest", () => {
 
   it("refuse une commande annulée en NOMMANT le cas", () => {
     expect(() =>
-      OrderHandover.attest(subject({ status: "cancelled" }), FREE, AT, "staff-1", "scan"),
+      OrderHandover.attest(subject({ status: "cancelled" }), 1, FREE, AT, "staff-1", "scan"),
     ).toThrow(HandoverRefusedError);
   });
 
@@ -56,7 +57,7 @@ describe("OrderHandover.attest", () => {
    */
   it("refuse une commande NON RÉGLÉE en nommant le cas", () => {
     expect(() =>
-      OrderHandover.attest(subject({ settled: false }), FREE, AT, "staff-1", "scan"),
+      OrderHandover.attest(subject({ settled: false }), 1, FREE, AT, "staff-1", "scan"),
     ).toThrow(/n'est pas réglée/);
   });
 
@@ -66,6 +67,7 @@ describe("OrderHandover.attest", () => {
     expect(() =>
       OrderHandover.attest(
         subject(),
+        1,
         { handedOverAt: new Date("2026-09-07T15:00:00.000Z"), qualityHold: false },
         AT,
         "staff-1",
@@ -80,6 +82,7 @@ describe("OrderHandover.attest", () => {
     expect(() =>
       OrderHandover.attest(
         subject(),
+        1,
         { handedOverAt: null, qualityHold: true },
         AT,
         "staff-1",
@@ -92,6 +95,7 @@ describe("OrderHandover.attest", () => {
     expect(() =>
       OrderHandover.attest(
         subject(),
+        1,
         { handedOverAt: new Date("2026-09-07T15:00:00.000Z"), qualityHold: true },
         AT,
         "staff-1",
@@ -103,7 +107,7 @@ describe("OrderHandover.attest", () => {
   it("refuse une attestation SANS AUTEUR", () => {
     // Une preuve sans auteur n'est pas une preuve. Le contrôleur le refuse déjà ;
     // l'agrégat le refuse aussi, pour le jour où un second appelant existera.
-    expect(() => OrderHandover.attest(subject(), FREE, AT, "", "manual")).toThrow(
+    expect(() => OrderHandover.attest(subject(), 1, FREE, AT, "", "manual")).toThrow(
       HandoverRefusedError,
     );
   });
@@ -120,8 +124,29 @@ describe("OrderHandover.attest", () => {
 });
 
 describe("OrderHandover — le rang de l'envoi (plan E7 reliquat, L3d)", () => {
-  it("attest grave le rang 1 : la commande elle-même, tant que le retrait par envoi n'existe pas", () => {
-    expect(OrderHandover.attest(subject(), FREE, AT, "staff-1", "scan").rank).toBe(1);
+  it("au rang 1, attest grave la commande elle-même, sous son numéro, à l'identique", () => {
+    const handover = OrderHandover.attest(subject(), 1, FREE, AT, "staff-1", "scan");
+
+    expect(handover.rank).toBe(1);
+    expect(handover.reference).toBe("ORD-ABCD-1234");
+  });
+
+  it("au rang 2, attest grave le reliquat, sa référence suffixée -2 (L4b)", () => {
+    const handover = OrderHandover.attest(subject(), 2, FREE, AT, "staff-1", "scan");
+
+    expect(handover.rank).toBe(2);
+    expect(handover.reference).toBe("ORD-ABCD-1234-2");
+    expect(handover.shipment.equals(ShipmentRef.of("ord_1", 2))).toBe(true);
+  });
+
+  it("« déjà retiré » se juge par envoi : le refus nomme le reliquat", () => {
+    expect(() =>
+      OrderHandover.attest(subject(), 2, { handedOverAt: AT, qualityHold: false }, AT, "s", "scan"),
+    ).toThrow("Le reste de cette commande (envoi 2) a déjà été retiré.");
+  });
+
+  it("refuse un rang hors forme : un envoi de rang 0 n'existe pas", () => {
+    expect(() => OrderHandover.attest(subject(), 0, FREE, AT, "staff-1", "scan")).toThrow(/rang/u);
   });
 
   it("rehydrate relit le rang de la ligne, et le rang 1 quand on ne le dit pas", () => {

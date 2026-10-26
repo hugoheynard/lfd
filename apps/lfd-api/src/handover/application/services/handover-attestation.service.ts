@@ -14,7 +14,11 @@ import { OrderHandoverRepository } from "../../domain/ports/order-handover.repos
 import type { HandoverVia } from "../../domain/services/handover.js";
 import { StaffAuthorDirectory } from "../../../staff/directory/domain/staff-author-directory.js";
 import { authorsOf, toHandoverView } from "../queries/get-handover.handler.js";
-import { QualityHoldsReader } from "../../../production/channels/handover/index.js";
+import {
+  FIRST_SHIPMENT_RANK,
+  QualityHoldsReader,
+  ShipmentRef,
+} from "../../../production/channels/handover/index.js";
 import { isHeldForQuality } from "./quality-hold.js";
 import { TransferStatusReader } from "../../../delivery/channels/handover/index.js";
 import { ensureArrivedAtSite } from "./transfer-arrival.js";
@@ -67,15 +71,24 @@ export class HandoverAttestation {
    * sans un second aller-retour. Ce n'est pas un modèle de lecture déguisé —
    * c'est l'accusé de réception de l'écriture.
    *
+   * `rank` est l'envoi remis (plan E7 reliquat, L4b) : 1 = la commande, à
+   * l'identique d'avant ; au-delà, un reliquat, jugé et gravé pour lui-même.
+   *
    * @throws {HandoverRefusedError} l'état l'interdit, ou un autre poste a gagné.
    */
-  async attest(subject: HandoverSubject, by: string, via: HandoverVia): Promise<OrderHandoverView> {
+  async attest(
+    subject: HandoverSubject,
+    rank: number,
+    by: string,
+    via: HandoverVia,
+  ): Promise<OrderHandoverView> {
+    const shipment = ShipmentRef.of(subject.orderId, rank);
     let handover: OrderHandover;
     try {
       // Le fait n'est écrit que par le GAGNANT : le perdant lève dans l'unité,
       // qui annule tout — sa violation d'unicité a de toute façon condamné la
       // transaction.
-      handover = await this.uow.run(() => this.engrave(subject, by, via));
+      handover = await this.uow.run(() => this.engrave(subject, shipment, by, via));
     } catch (error) {
       // 🔴 **Le geste est refusé, la propagation est réparée.** Les deux ne sont
       // pas la même question : le sac est peut-être parti (rien à refaire), sans
@@ -91,7 +104,7 @@ export class HandoverAttestation {
       // mieux que « déjà retirée » quand les deux sont vraies.
       if (error instanceof HandoverRefusedError) {
         await this.uow.run(async () => {
-          await this.reannounceExisting(subject.orderId);
+          await this.reannounceExisting(shipment);
         });
       }
       throw error;
@@ -113,10 +126,12 @@ export class HandoverAttestation {
    */
   async attestQuietly(
     subject: HandoverSubject,
+    rank: number,
     by: string,
     via: HandoverVia,
   ): Promise<OrderHandover> {
-    return this.uow.run(() => this.engrave(subject, by, via));
+    const shipment = ShipmentRef.of(subject.orderId, rank);
+    return this.uow.run(() => this.engrave(subject, shipment, by, via));
   }
 
   /**
@@ -127,8 +142,14 @@ export class HandoverAttestation {
     await this.uow.run(() => this.durable.publish(factOf(handover, this.clock.now())));
   }
 
+  /**
+   * La règle, par envoi (L4b) : le verrou de la COMMANDE d'abord — commun
+   * avec l'annulation, quel que soit le rang : une commande annulée n'a plus
+   * d'envoi à remettre —, puis « déjà retiré » lu sur CET envoi.
+   */
   private async engrave(
     subject: HandoverSubject,
+    shipment: ShipmentRef,
     by: string,
     via: HandoverVia,
   ): Promise<OrderHandover> {
@@ -138,7 +159,7 @@ export class HandoverAttestation {
     // une vérification, pas une interdiction — assumé au plan
     // (`plan-controle-qualite.md`, D4, « La course »).
     const [existing, qualityHold] = await Promise.all([
-      this.handovers.findByOrderId(subject.orderId),
+      this.handovers.findByShipment(shipment),
       isHeldForQuality(this.holds, subject),
     ]);
     // Lot T2 du transfert interne : pas de remise d'une commande dont le
@@ -153,6 +174,7 @@ export class HandoverAttestation {
     // retirée, retenue au contrôle.
     const handover = OrderHandover.attest(
       current,
+      shipment.rank,
       { handedOverAt: existing === null ? null : existing.handedOverAt, qualityHold },
       at,
       by,
@@ -165,7 +187,11 @@ export class HandoverAttestation {
       // et notre écriture. On ne réécrit rien — l'attestation de l'autre est la
       // seule vraie, et elle est peut-être la FORTE —, et on lève : l'unité de
       // travail est déjà condamnée par la violation d'unicité.
-      throw new HandoverRefusedError("Cette commande vient d'être retirée à un autre poste.");
+      throw new HandoverRefusedError(
+        shipment.rank === FIRST_SHIPMENT_RANK
+          ? "Cette commande vient d'être retirée à un autre poste."
+          : "Le reste de cette commande vient d'être retiré à un autre poste.",
+      );
     }
 
     await this.durable.publish(factOf(handover, null));
@@ -197,8 +223,8 @@ export class HandoverAttestation {
    * commerce, donc un fait rejoué qui a déjà été traité n'écrit rien et
    * n'écrit pas de second `order.fulfilled` — ni point, ni ligne de journal.
    */
-  private async reannounceExisting(orderId: string): Promise<void> {
-    const existing = await this.handovers.findByOrderId(orderId);
+  private async reannounceExisting(shipment: ShipmentRef): Promise<void> {
+    const existing = await this.handovers.findByShipment(shipment);
     if (existing !== null) {
       await this.durable.publish(factOf(existing, this.clock.now()));
     }

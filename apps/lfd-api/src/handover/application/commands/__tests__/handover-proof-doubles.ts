@@ -1,3 +1,7 @@
+import {
+  FIRST_SHIPMENT_RANK,
+  type ShipmentRef,
+} from "../../../../production/channels/handover/index.js";
 import type { StoredDocument } from "../../../../platform/storage/document-store.js";
 import { ProductionDocumentStore } from "../../../../platform/storage/production-document-store.js";
 import {
@@ -14,17 +18,32 @@ export class ProofRows {
   readonly rows = new Map<string, HandoverProof>();
 }
 
+/** La clé d'une ligne : la commande seule au rang 1, `:r<rang>` au-delà (L4b). */
+export function proofRowKey(orderId: string, rank: number): string {
+  return rank === FIRST_SHIPMENT_RANK ? orderId : `${orderId}:r${String(rank)}`;
+}
+
 export class InMemoryProofRepository extends HandoverProofRepository {
   constructor(private readonly table: ProofRows) {
     super();
   }
 
-  findByOrderId(orderId: string): Promise<HandoverProof | null> {
-    return Promise.resolve(this.table.rows.get(orderId) ?? null);
+  findByShipment(shipment: ShipmentRef): Promise<HandoverProof | null> {
+    return Promise.resolve(
+      this.table.rows.get(proofRowKey(shipment.orderId, shipment.rank)) ?? null,
+    );
+  }
+
+  findAllOfOrder(orderId: string): Promise<readonly HandoverProof[]> {
+    return Promise.resolve(
+      [...this.table.rows.values()]
+        .filter((proof) => proof.state.orderId === orderId)
+        .sort((a, b) => a.state.rank - b.state.rank),
+    );
   }
 
   record(proof: HandoverProof): Promise<void> {
-    this.table.rows.set(proof.state.orderId, proof);
+    this.table.rows.set(proofRowKey(proof.state.orderId, proof.state.rank), proof);
     return Promise.resolve();
   }
 }
@@ -44,9 +63,9 @@ export class InMemoryProofEraser extends HandoverProofEraser {
     );
   }
 
-  erase(orderId: string): Promise<boolean> {
-    this.erased.push(orderId);
-    return Promise.resolve(this.table.rows.delete(orderId));
+  erase(orderId: string, rank: number): Promise<boolean> {
+    this.erased.push(proofRowKey(orderId, rank));
+    return Promise.resolve(this.table.rows.delete(proofRowKey(orderId, rank)));
   }
 }
 

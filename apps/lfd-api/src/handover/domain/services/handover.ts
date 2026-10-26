@@ -1,5 +1,7 @@
 import type { OrderStatus } from "@lfd/contracts";
 
+import { FIRST_SHIPMENT_RANK } from "../../../production/channels/handover/index.js";
+
 /**
  * La règle du **retrait en main propre**, pure et sans dépendance : à partir
  * de l'état d'une commande, dire si on peut la remettre — et sinon, pourquoi.
@@ -24,6 +26,12 @@ import type { OrderStatus } from "@lfd/contracts";
  */
 export interface HandoverCandidate {
   readonly status: OrderStatus;
+  /**
+   * Le rang de l'envoi qu'on s'apprête à remettre — 1 = la commande elle-même,
+   * au-delà un reliquat (plan E7 reliquat, lot L4b). Il ne change que la phrase
+   * de « déjà retiré » : c'est l'envoi qui l'a été, pas forcément la commande.
+   */
+  readonly rank: number;
   /**
    * L'instant du retrait **déjà constaté par le fournil**, ou `null`.
    *
@@ -101,7 +109,9 @@ export function handoverBlocker(candidate: HandoverCandidate): string | null {
     return "Cette commande n'est pas encore passée.";
   }
   if (candidate.handedOverAt !== null) {
-    return "Cette commande a déjà été retirée.";
+    return candidate.rank === FIRST_SHIPMENT_RANK
+      ? "Cette commande a déjà été retirée."
+      : `Le reste de cette commande (envoi ${String(candidate.rank)}) a déjà été retiré.`;
   }
   if (!candidate.settled) {
     return UNSETTLED_REASON;

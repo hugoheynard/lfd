@@ -1,6 +1,7 @@
 import type { OrderHandoverView } from "@lfd/contracts";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { FIRST_SHIPMENT_RANK } from "../../../production/channels/handover/index.js";
 import { HandoverSubjectReader } from "../../channels/commerce/handover-subject.reader.js";
 import { HandoverTokenNotFoundError } from "../../domain/errors/handover-errors.js";
 import { HandoverAttestation } from "../services/handover-attestation.service.js";
@@ -33,6 +34,8 @@ export class ConfirmHandoverHandler implements ICommandHandler<
     if (subject === null) {
       throw new HandoverTokenNotFoundError();
     }
-    return this.attestation.attest(subject, command.staffUserId, "scan");
+    // Le scan et la saisie résolvent la COMMANDE, donc son rang 1 : rendre
+    // les envois prêts de la commande est le lot L4c (plan E7 reliquat).
+    return this.attestation.attest(subject, FIRST_SHIPMENT_RANK, command.staffUserId, "scan");
   }
 }

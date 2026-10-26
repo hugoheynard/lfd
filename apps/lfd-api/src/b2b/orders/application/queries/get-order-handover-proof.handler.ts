@@ -2,6 +2,7 @@ import type { OrderHandoverProofResponse } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { HandoverProofReader } from "../../../../handover/channels/commerce/index.js";
+import { ShipmentRef } from "../../../../production/channels/commerce/index.js";
 import { StaffAuthorDirectory } from "../../../../staff/directory/domain/staff-author-directory.js";
 import { GetOrderHandoverProofQuery } from "./get-order-handover-proof.query.js";
 import { toOrderHandoverProofView } from "./order-handover-proof-view.js";
@@ -24,7 +25,9 @@ export class GetOrderHandoverProofHandler implements IQueryHandler<
   ) {}
 
   async execute(query: GetOrderHandoverProofQuery): Promise<OrderHandoverProofResponse> {
-    const exhibit = await this.proofs.ofOrder(query.orderId);
+    // La fiche d'une commande montre la preuve de son rang 1 ; celle d'un
+    // reliquat y entre avec « reste relivré » (plan E7 reliquat, L8).
+    const exhibit = await this.proofs.ofShipment(ShipmentRef.firstOf(query.orderId));
     if (exhibit === null) {
       return { proof: null };
     }

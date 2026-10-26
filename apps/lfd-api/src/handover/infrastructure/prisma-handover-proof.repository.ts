@@ -3,7 +3,8 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../platform/database/prisma.service.js";
 import { HandoverProof } from "../domain/entities/handover-proof.js";
 import { HandoverProofRepository } from "../domain/ports/handover-proof.repository.js";
-import { firstShipmentKey } from "./first-shipment.key.js";
+import type { ShipmentRef } from "../../production/channels/handover/index.js";
+import { shipmentKey } from "./first-shipment.key.js";
 
 /**
  * Les pièces des remises à la porte (`production.order_handover_proof`,
@@ -19,11 +20,19 @@ export class PrismaHandoverProofRepository extends HandoverProofRepository {
     super();
   }
 
-  async findByOrderId(orderId: string): Promise<HandoverProof | null> {
+  async findByShipment(shipment: ShipmentRef): Promise<HandoverProof | null> {
     const row = await this.prisma.orderHandoverProof.findUnique({
-      where: firstShipmentKey(orderId),
+      where: shipmentKey(shipment),
     });
     return row === null ? null : HandoverProof.rehydrate(row);
+  }
+
+  async findAllOfOrder(orderId: string): Promise<readonly HandoverProof[]> {
+    const rows = await this.prisma.orderHandoverProof.findMany({
+      where: { orderId },
+      orderBy: { rank: "asc" },
+    });
+    return rows.map((row) => HandoverProof.rehydrate(row));
   }
 
   async record(proof: HandoverProof): Promise<void> {

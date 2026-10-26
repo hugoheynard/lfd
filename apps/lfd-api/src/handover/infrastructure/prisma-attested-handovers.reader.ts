@@ -1,7 +1,10 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../platform/database/prisma.service.js";
-import { AttestedHandoversReader } from "../../production/channels/handover/index.js";
+import {
+  AttestedHandoversReader,
+  FIRST_SHIPMENT_RANK,
+} from "../../production/channels/handover/index.js";
 
 /**
  * **Ce que le retrait répond au fournil**, et rien d'autre.
@@ -24,7 +27,9 @@ export class PrismaAttestedHandoversReader extends AttestedHandoversReader {
 
   async referencesAttestedSince(since: Date): Promise<readonly string[]> {
     const rows = await this.prisma.orderHandover.findMany({
-      where: { handedOverAt: { gte: since } },
+      // Les commandes seules : le commerce compare ces références à ses numéros
+      // de commande, et une référence `-2` de reliquat n'en est pas un (L4b).
+      where: { handedOverAt: { gte: since }, rank: FIRST_SHIPMENT_RANK },
       select: { reference: true },
     });
     return rows.map((row) => row.reference);

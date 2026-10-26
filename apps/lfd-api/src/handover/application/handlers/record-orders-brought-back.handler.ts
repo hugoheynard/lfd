@@ -4,13 +4,13 @@ import {
   DELIVERY_ORDERS_BROUGHT_BACK,
   DeliveryOrdersBroughtBackFact,
 } from "../../../delivery/channels/handover/index.js";
-import { ShipmentRef } from "../../../production/channels/handover/index.js";
 import type { DurableDelivery } from "../../../platform/outbox/durable-event.js";
 import {
   DurableHandler,
   type DurableSubscriber,
 } from "../../../platform/outbox/durable-handler.js";
 import { OrderDepartureRepository } from "../../domain/ports/order-departure.repository.js";
+import { distinctShipments as distinct } from "../services/distinct-shipments.js";
 
 /** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
 export const RECORD_ORDERS_BROUGHT_BACK = "handover.record-orders-brought-back";
@@ -31,12 +31,7 @@ export class RecordOrdersBroughtBack implements DurableSubscriber {
 
   async handle(delivery: DurableDelivery): Promise<void> {
     const fact = DeliveryOrdersBroughtBackFact.fromPayload(delivery.payload);
-    // Le retrait tient encore la garde par COMMANDE (l'envoi y entre en L4) :
-    // les commandes distinctes des envois du fait, rangées au rang 1 (L3d).
-    const orderIds = [...new Set(fact.shipments.map((shipment) => shipment.orderId))];
-    await this.departures.recordReturned(
-      orderIds.map((orderId) => ShipmentRef.firstOf(orderId)),
-      fact.broughtBackAt,
-    );
+    // La garde par ENVOI depuis L4b, comme au départ.
+    await this.departures.recordReturned(distinct(fact.shipments), fact.broughtBackAt);
   }
 }

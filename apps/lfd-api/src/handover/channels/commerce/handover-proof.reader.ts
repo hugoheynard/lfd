@@ -1,3 +1,4 @@
+import type { ShipmentRef } from "../../../production/channels/handover/index.js";
 import type { StoredDocument } from "../../../platform/storage/document-store.js";
 import type { HandoverProofExhibit } from "../../domain/services/handover-proof-exhibit.js";
 import type { HandoverProofPiece } from "../../domain/value-objects/handover-proof-image.js";
@@ -16,14 +17,17 @@ import type { HandoverProofPiece } from "../../domain/value-objects/handover-pro
  * Une clé reçue d'un client ouvrirait n'importe quelle image du bucket.
  */
 export abstract class HandoverProofReader {
-  /** La preuve à montrer, ou `null` : cette commande n'a pas été remise à la porte. */
-  abstract ofOrder(orderId: string): Promise<HandoverProofExhibit | null>;
+  /**
+   * La preuve à montrer pour cet envoi `(commande, rang)` (plan E7 reliquat,
+   * L4b), ou `null` : il n'a pas été remis à la porte.
+   */
+  abstract ofShipment(shipment: ShipmentRef): Promise<HandoverProofExhibit | null>;
 
   /**
-   * L'image de cette pièce, pour CETTE commande, ou `null` : pas de pièce, pas
+   * L'image de cette pièce, pour CET envoi, ou `null` : pas de pièce, pas
    * de signature, ou déjà effacée.
    *
    * @throws {HandoverProofImageUnreadableError} les octets rangés ne sont pas une image.
    */
-  abstract image(orderId: string, piece: HandoverProofPiece): Promise<StoredDocument | null>;
+  abstract image(shipment: ShipmentRef, piece: HandoverProofPiece): Promise<StoredDocument | null>;
 }

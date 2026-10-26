@@ -190,3 +190,19 @@ export class RemainderNoteNotFoundError extends ResourceNotFoundError {
     );
   }
 }
+
+/**
+ * Le retrait a remis un reliquat dont le commerce n'a aucun BL (plan E7
+ * reliquat, lot L4b). Un envoi de rang > 1 ne naît que d'un BL de ce rang :
+ * c'est une divergence, pas un cas d'usage.
+ */
+export class HandedOverRemainderNoteNotFoundError extends ResourceNotFoundError {
+  constructor(orderId: string, rank: number) {
+    super(
+      "delivery_notes.remainder.handed_over_not_found",
+      `Le reliquat de rang ${String(rank)} de la commande ${orderId} a été remis au client, ` +
+        "mais aucun bon de livraison de ce rang n'existe pour elle. Rien n'a été écrit ; " +
+        "prévenir l'équipe technique, puis rejouer ce message depuis la carte de santé.",
+    );
+  }
+}

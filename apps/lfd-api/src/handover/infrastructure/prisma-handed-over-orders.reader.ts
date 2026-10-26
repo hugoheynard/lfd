@@ -1,24 +1,25 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../platform/database/prisma.service.js";
+import { ShipmentRef } from "../../production/channels/handover/index.js";
 import { HandedOverOrdersReader } from "../domain/ports/handed-over-orders.reader.js";
-import { firstShipmentsOf } from "./first-shipment.key.js";
+import { shipmentsOf } from "./first-shipment.key.js";
 
-/** Les attestations de retrait des commandes demandées — une requête, quel que soit leur nombre. */
+/** Les attestations de retrait des envois demandés — une requête, quel que soit leur nombre. */
 @Injectable()
 export class PrismaHandedOverOrdersReader extends HandedOverOrdersReader {
   constructor(private readonly prisma: PrismaService) {
     super();
   }
 
-  async handedOverAmong(orderIds: readonly string[]): Promise<ReadonlySet<string>> {
-    if (orderIds.length === 0) {
-      return new Set();
+  async handedOverAmong(shipments: readonly ShipmentRef[]): Promise<readonly ShipmentRef[]> {
+    if (shipments.length === 0) {
+      return [];
     }
     const rows = await this.prisma.orderHandover.findMany({
-      where: firstShipmentsOf(orderIds),
-      select: { orderId: true },
+      where: shipmentsOf(shipments),
+      select: { orderId: true, rank: true },
     });
-    return new Set(rows.map((row) => row.orderId));
+    return rows.map((row) => ShipmentRef.of(row.orderId, row.rank));
   }
 }

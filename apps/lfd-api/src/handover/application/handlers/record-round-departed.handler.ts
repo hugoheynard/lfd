@@ -4,7 +4,6 @@ import {
   DELIVERY_ROUND_DEPARTED,
   DeliveryRoundDepartedFact,
 } from "../../../delivery/channels/handover/index.js";
-import { ShipmentRef } from "../../../production/channels/handover/index.js";
 import type { DurableDelivery } from "../../../platform/outbox/durable-event.js";
 import {
   DurableHandler,
@@ -12,6 +11,7 @@ import {
 } from "../../../platform/outbox/durable-handler.js";
 import { HandedOverOrdersReader } from "../../domain/ports/handed-over-orders.reader.js";
 import { OrderDepartureRepository } from "../../domain/ports/order-departure.repository.js";
+import { distinctShipments as distinct } from "../services/distinct-shipments.js";
 
 /** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
 export const RECORD_ROUND_DEPARTED = "handover.record-round-departed";
@@ -41,14 +41,11 @@ export class RecordRoundDeparted implements DurableSubscriber {
 
   async handle(delivery: DurableDelivery): Promise<void> {
     const fact = DeliveryRoundDepartedFact.fromPayload(delivery.payload);
-    // Le retrait tient encore la garde par COMMANDE (l'envoi y entre en L4) :
-    // les commandes distinctes des envois du fait, rangées au rang 1 (L3d).
-    const orderIds = [...new Set(fact.shipments.map((shipment) => shipment.orderId))];
-    const done = await this.handedOver.handedOverAmong(orderIds);
-    const departed = orderIds.filter((orderId) => !done.has(orderId));
-    await this.departures.recordDeparted(
-      departed.map((orderId) => ShipmentRef.firstOf(orderId)),
-      fact.departedAt,
-    );
+    // La garde par ENVOI depuis L4b : chaque envoi du fait, tel qu'il est
+    // parti — un reliquat remis ne « repart » pas, le rang 1 non plus.
+    const shipments = distinct(fact.shipments);
+    const done = await this.handedOver.handedOverAmong(shipments);
+    const departed = shipments.filter((shipment) => !done.some((d) => d.equals(shipment)));
+    await this.departures.recordDeparted(departed, fact.departedAt);
   }
 }

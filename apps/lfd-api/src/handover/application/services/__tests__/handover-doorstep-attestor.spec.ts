@@ -3,6 +3,7 @@ import {
   TransactionalUnitOfWork,
 } from "../../../../platform/outbox/__tests__/transactional-durable.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
+import type { ShipmentRef } from "../../../../production/channels/handover/index.js";
 import type { StoredDocument } from "../../../../platform/storage/document-store.js";
 import { ProductionDocumentStore } from "../../../../platform/storage/production-document-store.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
@@ -76,8 +77,9 @@ class FixedSubjects extends HandoverSubjectReader {
 class InMemoryHandovers extends OrderHandoverRepository {
   readonly rows = new Map<string, OrderHandover>();
 
-  findByOrderId(orderId: string): Promise<OrderHandover | null> {
-    return Promise.resolve(this.rows.get(orderId) ?? null);
+  findByShipment(shipment: ShipmentRef): Promise<OrderHandover | null> {
+    const row = this.rows.get(shipment.orderId);
+    return Promise.resolve(row?.rank === shipment.rank ? row : null);
   }
 
   attest(handover: OrderHandover): Promise<boolean> {
@@ -92,8 +94,14 @@ class InMemoryHandovers extends OrderHandoverRepository {
 class InMemoryProofs extends HandoverProofRepository {
   readonly rows = new Map<string, HandoverProof>();
 
-  findByOrderId(orderId: string): Promise<HandoverProof | null> {
-    return Promise.resolve(this.rows.get(orderId) ?? null);
+  findByShipment(shipment: ShipmentRef): Promise<HandoverProof | null> {
+    const row = this.rows.get(shipment.orderId);
+    return Promise.resolve(row?.state.rank === shipment.rank ? row : null);
+  }
+
+  findAllOfOrder(orderId: string): Promise<readonly HandoverProof[]> {
+    const row = this.rows.get(orderId);
+    return Promise.resolve(row === undefined ? [] : [row]);
   }
 
   record(proof: HandoverProof): Promise<void> {

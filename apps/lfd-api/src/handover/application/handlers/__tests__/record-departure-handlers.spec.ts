@@ -46,6 +46,11 @@ class RecordingDepartures extends OrderDepartureRepository {
   }
 }
 
+/** La clé lisible d'un envoi : la commande seule au rang 1, `:r<rang>` au-delà. */
+function keyOf(shipment: ShipmentRef): string {
+  return shipment.rank === 1 ? shipment.orderId : `${shipment.orderId}:r${String(shipment.rank)}`;
+}
+
 class FixedHandedOver extends HandedOverOrdersReader {
   readonly asked: (readonly string[])[] = [];
 
@@ -53,9 +58,9 @@ class FixedHandedOver extends HandedOverOrdersReader {
     super();
   }
 
-  handedOverAmong(orderIds: readonly string[]): Promise<ReadonlySet<string>> {
-    this.asked.push(orderIds);
-    return Promise.resolve(new Set(orderIds.filter((id) => this.done.includes(id))));
+  handedOverAmong(shipments: readonly ShipmentRef[]): Promise<readonly ShipmentRef[]> {
+    this.asked.push(shipments.map(keyOf));
+    return Promise.resolve(shipments.filter((shipment) => this.done.includes(keyOf(shipment))));
   }
 }
 
@@ -103,9 +108,7 @@ describe("RecordRoundDeparted — la garde passe au livreur", () => {
     expect(departures.departed).toEqual([{ orderIds: ["o_2"], at: DEPARTED }]);
   });
 
-  it("L3d : la garde s'écrit au rang 1, une fois par commande, quel que soit le rang du fait", async () => {
-    // Le retrait par envoi est L4 : d'ici là, un envoi de rang 2 parti avec
-    // le rang 1 ne fait qu'une ligne, celle de la commande.
+  it("L4b : la garde s'écrit par envoi — le rang 1 et le reliquat partis ensemble, deux lignes", async () => {
     const departures = new RecordingDepartures();
     const subject = new RecordRoundDeparted(new FixedHandedOver(), departures);
 
@@ -118,8 +121,8 @@ describe("RecordRoundDeparted — la garde passe au livreur", () => {
       ),
     );
 
-    expect(departures.departed).toEqual([{ orderIds: ["o_1"], at: DEPARTED }]);
-    expect(departures.ranks).toEqual([1]);
+    expect(departures.departed).toEqual([{ orderIds: ["o_1", "o_1"], at: DEPARTED }]);
+    expect(departures.ranks).toEqual([1, 2]);
   });
 
   it("rejoué, il redemande la même écriture au même instant — l'adaptateur la rend sans effet", async () => {
@@ -138,20 +141,24 @@ describe("RecordRoundDeparted — la garde passe au livreur", () => {
     ]);
   });
 
-  it("deux envois d'une même commande : la commande ne part qu'une fois (garde par commande jusqu'à L4)", async () => {
+  it("L4b : un rang 1 déjà remis ne retient pas son reliquat, qui part seul", async () => {
     const departures = new RecordingDepartures();
-    const subject = new RecordRoundDeparted(new FixedHandedOver(), departures);
+    const handedOver = new FixedHandedOver(["o_1"]);
+    const subject = new RecordRoundDeparted(handedOver, departures);
 
     await subject.handle(
       delivered(
         new DeliveryRoundDepartedFact("r_1", "2030-03-12", DEPARTED, [
           ShipmentRef.firstOf("o_1"),
           ShipmentRef.of("o_1", 2),
+          ShipmentRef.of("o_1", 2),
         ]),
       ),
     );
 
+    expect(handedOver.asked).toEqual([["o_1", "o_1:r2"]]);
     expect(departures.departed).toEqual([{ orderIds: ["o_1"], at: DEPARTED }]);
+    expect(departures.ranks).toEqual([2]);
   });
 
   it("une charge illisible est une faute d'émetteur : elle lève, et rien ne s'écrit", async () => {
@@ -179,5 +186,21 @@ describe("RecordOrdersBroughtBack — la garde rentre au dépôt", () => {
 
     expect(departures.returned).toEqual([{ orderIds: ["o_1"], at: BROUGHT_BACK }]);
     expect(departures.departed).toEqual([]);
+  });
+
+  it("L4b : rapporte chaque envoi, reliquat compris, une fois", async () => {
+    const departures = new RecordingDepartures();
+    const shipments = [
+      ShipmentRef.firstOf("o_1"),
+      ShipmentRef.of("o_1", 2),
+      ShipmentRef.of("o_1", 2),
+    ];
+
+    await new RecordOrdersBroughtBack(departures).handle(
+      delivered(new DeliveryOrdersBroughtBackFact("r_1", shipments, BROUGHT_BACK)),
+    );
+
+    expect(departures.returned).toEqual([{ orderIds: ["o_1", "o_1"], at: BROUGHT_BACK }]);
+    expect(departures.ranks).toEqual([1, 2]);
   });
 });

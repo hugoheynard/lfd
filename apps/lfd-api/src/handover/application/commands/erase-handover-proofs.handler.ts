@@ -8,6 +8,8 @@ import { EraseHandoverProofsCommand } from "./erase-handover-proofs.command.js";
  * **L'effacement à la demande** (`documentation/livraisons/livreur/a-la-porte.md`,
  * « Les pièces de remise : conservées sans limite, purgeables »).
  *
+ * Par commande, tous ses envois (plan E7 reliquat, L4b).
+ *
  * Idempotent : une commande sans pièce — jamais remise à la porte, ou déjà
  * effacée — n'a rien à effacer, et ce n'est pas un refus. Rien n'est écrit au
  * journal dans ce cas : rien ne s'est passé.
@@ -29,8 +31,10 @@ export class EraseHandoverProofsHandler implements ICommandHandler<
   ) {}
 
   async execute(command: EraseHandoverProofsCommand): Promise<void> {
-    const proof = await this.proofs.findByOrderId(command.orderId);
-    if (proof !== null) {
+    // Tous les envois de la commande (L4b) : la personne qui demande
+    // l'effacement ne distingue pas le reliquat de la commande. Une pièce à la
+    // fois, chacune avec son fait ; un échec arrête, et rejouer reprend.
+    for (const proof of await this.proofs.findAllOfOrder(command.orderId)) {
       await this.erasure.erase(proof, "request");
     }
   }

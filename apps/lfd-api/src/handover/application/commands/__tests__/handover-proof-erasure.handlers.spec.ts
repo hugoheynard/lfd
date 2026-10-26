@@ -14,6 +14,7 @@ import { PurgeHandoverProofsOlderThanHandler } from "../purge-handover-proofs-ol
 import {
   InMemoryProofEraser,
   InMemoryProofRepository,
+  proofRowKey,
   InMemoryProofStore,
   NumberedSubjects,
   ProofRows,
@@ -44,18 +45,18 @@ function scene() {
   );
   const purge = new PurgeHandoverProofsOlderThanHandler(eraser, erasure, new FixedClock(NOW));
   const erase = new EraseHandoverProofsHandler(new InMemoryProofRepository(table), erasure);
-  const add = (orderId: string, ageDays: number, signed = false): HandoverProof => {
+  const add = (orderId: string, ageDays: number, signed = false, rank = 1): HandoverProof => {
     const proof = HandoverProof.rehydrate({
       orderId,
-      rank: 1,
+      rank,
       receiverName: signed ? "Mme Durand" : null,
-      photoKey: `handover/proofs/${orderId}/photo`,
+      photoKey: `handover/proofs/${proofRowKey(orderId, rank)}/photo`,
       signatureKey: signed ? `handover/proofs/${orderId}/signature` : null,
       signedSlipKey: null,
       recordedBy: "stf_paul",
       recordedAt: new Date(NOW.getTime() - ageDays * DAY),
     });
-    table.rows.set(orderId, proof);
+    table.rows.set(proofRowKey(orderId, rank), proof);
     for (const key of proof.imageKeys()) {
       store.objects.set(key, JPEG);
     }
@@ -145,6 +146,19 @@ describe("EraseHandoverProofsHandler", () => {
     expect([...s.table.rows.keys()]).toEqual(["o_old"]);
     expect([...s.store.objects.keys()]).toEqual(["handover/proofs/o_old/photo"]);
     expect(s.events.traced[0]?.journalFact().payload).toMatchObject({ cause: "request" });
+  });
+
+  it("efface les pièces de TOUS les envois de la commande, reliquat compris (L4b)", async () => {
+    const s = scene();
+    s.add("o_signed", 1, true);
+    s.add("o_signed", 1, false, 2);
+    s.add("o_old", 120);
+
+    await s.erase.execute(new EraseHandoverProofsCommand("o_signed"));
+
+    expect([...s.table.rows.keys()]).toEqual(["o_old"]);
+    expect(s.eraser.erased).toEqual(["o_signed", "o_signed:r2"]);
+    expect(s.events.traced).toHaveLength(2);
   });
 
   it("ne fait rien, sans fait, pour une commande sans pièce : rejouer est sans effet", async () => {

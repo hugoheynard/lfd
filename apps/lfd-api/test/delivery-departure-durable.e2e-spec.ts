@@ -60,7 +60,7 @@ class FlakyHandedOver extends HandedOverOrdersReader {
   inner: HandedOverOrdersReader | null = null;
   failuresLeft = 0;
 
-  handedOverAmong(orderIds: readonly string[]): Promise<ReadonlySet<string>> {
+  handedOverAmong(shipments: readonly ShipmentRef[]): Promise<readonly ShipmentRef[]> {
     if (this.failuresLeft > 0) {
       this.failuresLeft -= 1;
       return Promise.reject(new TypeError("lecture des remises en panne (e2e)"));
@@ -68,7 +68,7 @@ class FlakyHandedOver extends HandedOverOrdersReader {
     if (this.inner === null) {
       return Promise.reject(new TypeError("lecteur réel non branché"));
     }
-    return this.inner.handedOverAmong(orderIds);
+    return this.inner.handedOverAmong(shipments);
   }
 }
 const handedOver = new FlakyHandedOver();

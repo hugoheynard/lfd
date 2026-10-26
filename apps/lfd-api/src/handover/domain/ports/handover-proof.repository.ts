@@ -1,3 +1,4 @@
+import type { ShipmentRef } from "../../../production/channels/handover/index.js";
 import type { HandoverProof } from "../entities/handover-proof.js";
 
 /**
@@ -11,10 +12,17 @@ import type { HandoverProof } from "../entities/handover-proof.js";
  */
 export abstract class HandoverProofRepository {
   /**
-   * Les pièces de cette commande — son envoi de rang 1 (L3d) —, ou `null` :
-   * elle n'a pas été remise à la porte.
+   * Les pièces de cet envoi `(commande, rang)` (L4b), ou `null` : il n'a pas
+   * été remis à la porte.
    */
-  abstract findByOrderId(orderId: string): Promise<HandoverProof | null>;
+  abstract findByShipment(shipment: ShipmentRef): Promise<HandoverProof | null>;
+
+  /**
+   * Les pièces de TOUS les envois de cette commande, par rang croissant —
+   * l'effacement à la demande d'une personne vise la commande, reliquats
+   * compris (L4b). Vide : rien n'a été remis à la porte.
+   */
+  abstract findAllOfOrder(orderId: string): Promise<readonly HandoverProof[]>;
 
   /** Grave les pièces, dans la transaction ambiante — celle de l'attestation. */
   abstract record(proof: HandoverProof): Promise<void>;
