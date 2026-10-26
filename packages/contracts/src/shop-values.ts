@@ -41,6 +41,8 @@ export {
   DEFAULT_ORDER_OPENING,
   ORDERS_CLOSED_FOR_AUDIENCE,
   ordersOpenTo,
+  type GuestOrderAdmissionView,
+  type MyOrderAdmissionView,
   type OrderOpeningView,
   type PublicOrderOpeningView,
 } from "./order-opening.values.js";

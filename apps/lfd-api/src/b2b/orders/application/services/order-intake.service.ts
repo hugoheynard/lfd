@@ -1,4 +1,4 @@
-import { ordersOpenTo } from "@lfd/contracts";
+import { ordersOpenTo, type CustomerAudience } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { admitsOrder } from "../../../order-opening/domain/order-admission.js";
@@ -13,6 +13,16 @@ import { CustomerAudiences } from "./customer-audiences.service.js";
  * adresse se lit au besoin), ou l'adresse saisie d'une commande sans compte.
  */
 export type IntakeBuyer = { readonly userId: string } | { readonly email: string };
+
+/**
+ * Ce que la porte sait de qui commande : sa clientèle, si la boutique lui est
+ * ouverte, et si sa passation serait prise (exemptions comprises).
+ */
+export interface IntakeStanding {
+  readonly audience: CustomerAudience;
+  readonly ordersOpen: boolean;
+  readonly canOrder: boolean;
+}
 
 /**
  * **La boutique prend-elle cette commande ?** — le réglage « Ouverture de la
@@ -45,18 +55,33 @@ export class OrderIntake {
    *   clientèle, et aucune exemption ne couvre ni la société ni l'adresse.
    */
   async ensureOpenFor(companyId: string | null, buyer: IntakeBuyer): Promise<void> {
+    const standing = await this.standingFor(companyId, buyer);
+    if (!standing.canOrder) {
+      throw new OrdersClosedForAudienceError(standing.audience);
+    }
+  }
+
+  /**
+   * La même décision, sans refus : ce que la boutique demande AVANT de montrer
+   * un bouton de commande (2026-10-26). Une seule règle pour les deux, donc
+   * l'écran ne peut pas promettre ce que la passation refuserait.
+   *
+   * Ouverte : ni la liste ni l'adresse ne sont lues — c'est le cas de chaque
+   * passation tant que personne n'a rien fermé.
+   */
+  async standingFor(companyId: string | null, buyer: IntakeBuyer): Promise<IntakeStanding> {
     const audience = await this.audiences.of(companyId);
     const opening = await this.opening.current();
-    // Ouverte : ni la liste ni l'adresse ne sont lues — c'est le cas de
-    // chaque passation tant que personne n'a rien fermé.
     if (ordersOpenTo(opening, audience)) {
-      return;
+      return { audience, ordersOpen: true, canOrder: true };
     }
     const party = { companyId, email: await this.emailOf(buyer) };
     const exemptions = await this.exemptions.active();
-    if (!admitsOrder({ opening, audience, exemptions, party })) {
-      throw new OrdersClosedForAudienceError(audience);
-    }
+    return {
+      audience,
+      ordersOpen: false,
+      canOrder: admitsOrder({ opening, audience, exemptions, party }),
+    };
   }
 
   private async emailOf(buyer: IntakeBuyer): Promise<string | null> {

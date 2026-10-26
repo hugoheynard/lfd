@@ -259,6 +259,9 @@ import { AdminProductionController } from "./http/admin-production.controller.js
 import { OrdersController } from "./http/orders.controller.js";
 import { MyShopCatalogueController } from "./http/my-shop-catalogue.controller.js";
 import { MyShopQuoteController } from "./http/my-shop-quote.controller.js";
+import { OrderAdmissionController } from "./http/order-admission.controller.js";
+import { GetMyOrderAdmissionHandler } from "./application/queries/get-my-order-admission.handler.js";
+import { GetGuestOrderAdmissionHandler } from "./application/queries/get-guest-order-admission.handler.js";
 import { ReadMyShopCatalogueHandler } from "./application/queries/read-my-shop-catalogue.js";
 import { GetDaySupervisionHandler } from "./application/queries/get-day-supervision.handler.js";
 import { DaySupervisionReader } from "./domain/ports/day-supervision.reader.js";
@@ -315,6 +318,8 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     OrdersController,
     MyShopCatalogueController,
     MyShopQuoteController,
+    // « Puis-je commander ? » — exemptions à la fermeture (2026-10-26).
+    OrderAdmissionController,
     CompanyOrdersController,
     AdminOrdersController,
     AdminOrderSalesTermsController,
@@ -367,6 +372,8 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     CustomerAudiences,
     ListCustomerPickupsHandler,
     OrderIntake,
+    GetMyOrderAdmissionHandler,
+    GetGuestOrderAdmissionHandler,
     PlaceOrderHandler,
     PlaceOrderForCustomerHandler,
     ConfirmOrderPaymentHandler,

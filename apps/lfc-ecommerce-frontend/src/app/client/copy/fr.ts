@@ -344,6 +344,7 @@ export const FR: ClientCopy = {
     payHint: 'Paiement en ligne. Vous présentez votre QR au comptoir, rien à régler sur place.',
     slotMissing: 'Choisissez un créneau pour régler : touchez « Modifier » et choisissez l’heure.',
     ordersClosed: 'Les commandes sont fermées pour le moment.',
+    ordersClosedHint: 'Le catalogue reste consultable, et votre panier est gardé.',
     settleTitle: 'Comment réglez-vous ?',
     settleCard: 'Paiement direct',
     settleAccount: 'Ajouter au compte',

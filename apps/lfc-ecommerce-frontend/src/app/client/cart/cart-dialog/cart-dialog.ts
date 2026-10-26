@@ -37,6 +37,7 @@ import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { dialogSide } from '../../panel-side';
 import { CartSummary } from '../cart-summary/cart-summary';
 import { OrderDoors } from '../../shop/order-doors';
+import { OrderAdmissionStore } from '../../shop/order-admission.store';
 import { OrderOpeningStore } from '../../shop/order-opening.store';
 import { PieceRequest } from '../../shop/piece-request.service';
 import { ServiceDayNotice } from '../../shop/service-day-notice';
@@ -142,7 +143,12 @@ export class CartDialog {
    * place du bouton. Le serveur refuse de toute façon en 409.
    */
   private readonly opening = inject(OrderOpeningStore);
-  protected readonly ordersClosed = computed(() => !this.opening.ordersOpen());
+  // Fermée, sauf pour qui une exemption couvre (2026-10-26) : le serveur le
+  // dit pour CETTE personne, sans rien révéler des autres.
+  private readonly admission = inject(OrderAdmissionStore);
+  protected readonly ordersClosed = computed(
+    () => !this.opening.ordersOpen() && !this.admission.admitted(),
+  );
 
   constructor() {
     void this.opening.hydrate();
@@ -319,8 +325,14 @@ export class CartDialog {
     if (this.signingIn()) {
       return;
     }
-    this.guest.set(null);
+    this.identify(null);
     this.signingIn.set(true);
+  }
+
+  /** La saisie de l'invité ; son adresse, complète, sert aussi à demander l'exemption. */
+  protected identify(identity: GuestIdentity | null): void {
+    this.guest.set(identity);
+    this.admission.guestTyped(identity?.email ?? null);
   }
 
   protected showGuest(): void {

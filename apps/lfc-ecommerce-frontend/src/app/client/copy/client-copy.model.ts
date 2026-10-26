@@ -656,6 +656,8 @@ export interface ClientCopy {
      * boutique », 2026-10-09). Le catalogue et les prix restent visibles.
      */
     readonly ordersClosed: string;
+    /** Sous la fermeture : ce qui reste possible — le catalogue, le panier (2026-10-26). */
+    readonly ordersClosedHint: string;
 
     /**
      * **Le choix du règlement, au panier** — et il n'apparaît qu'à qui l'a

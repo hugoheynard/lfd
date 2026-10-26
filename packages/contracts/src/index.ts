@@ -2216,9 +2216,13 @@ export {
   DEFAULT_ORDER_OPENING,
   ORDERS_CLOSED_FOR_AUDIENCE,
   ordersOpenTo,
+  guestOrderAdmissionPayloadSchema,
   orderOpeningPatchSchema,
 } from "./order-opening.js";
 export type {
+  GuestOrderAdmissionPayload,
+  GuestOrderAdmissionView,
+  MyOrderAdmissionView,
   OrderOpeningPatch,
   OrderOpeningView,
   PublicOrderOpeningView,

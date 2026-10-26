@@ -49,7 +49,7 @@
         @if (signingIn()) {
           <app-sign-in-choices [target]="afterSignIn" />
         } @else {
-          <app-guest-identity-form (identityChange)="guest.set($event)" />
+          <app-guest-identity-form (identityChange)="identify($event)" />
         }
       </section>
     }
@@ -101,8 +101,12 @@
        mener, et la phrase dessous dit lequel. -->
   @if (ordersClosed()) {
     <!-- La boutique ne prend pas les commandes de cette clientèle : le
-         catalogue et le panier restent, le bouton cède la place à la phrase. -->
-    <p class="closed" role="status">{{ t().cart.ordersClosed }}</p>
+         catalogue et le panier restent, le bouton cède la place à l'encadré.
+         Une personne exemptée (2026-10-26) garde son bouton. -->
+    <fold-callout variant="info" data-orders-closed>
+      <strong>{{ t().cart.ordersClosed }}</strong>
+      {{ t().cart.ordersClosedHint }}
+    </fold-callout>
   } @else if (mayUseAccount()) {
     <!-- 🔴 DEUX ACTIONS, et non un interrupteur (Hugo, 2026-09-21). Payer
          comptant reste TOUJOURS possible, y compris au mensuel : régler tout de

@@ -2,6 +2,7 @@ import { signal } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { provideRouter, Router } from '@angular/router';
 import { of } from 'rxjs';
 import { describe, expect, it, vi } from 'vitest';
@@ -14,12 +15,14 @@ import { FR } from '../../copy/fr';
 import { ClientCompany } from '../../client-company.service';
 import { ClientOrders } from '../../client-orders.service';
 import { OrderDoors } from '../../shop/order-doors';
+import { OrderAdmissionStore } from '../../shop/order-admission.store';
 import { OrderOpeningStore } from '../../shop/order-opening.store';
 import { hydrateWith, TEST_CATALOGUE } from '../../shop/shop-catalogue.fixture';
 import { ShopCatalogue } from '../../shop/shop-catalogue.store';
 import { FoldPanelRef } from 'fold-ng';
 
 import { PieceRequest } from '../../shop/piece-request.service';
+import { GuestIdentityForm } from '../guest-identity-form/guest-identity-form';
 import { CartDialog } from './cart-dialog';
 
 const AU_LABO: ServiceChoice = {
@@ -63,7 +66,12 @@ interface Monde {
   readonly opening?: { readonly ordersOpenToB2b: boolean; readonly ordersOpenToB2c: boolean };
   /** Ni retrait ni coursier proposés à qui regarde (2026-10-16) ; absent = servi. */
   readonly unservable?: boolean;
+  /** Une exemption couvre qui regarde, boutique fermée (2026-10-26) ; absent = non. */
+  readonly exempted?: boolean;
 }
+
+/** Les adresses d'invité que l'écran a soumises à la question de l'exemption. */
+let adresses: (string | null)[] = [];
 
 /** Le mode de règlement passé à `place()` — `null` = « le serveur décide ». */
 let regle: (string | null)[] = [];
@@ -84,6 +92,7 @@ function boot({
   blocked = false,
   opening,
   unservable = false,
+  exempted = false,
 }: Monde = {}): ComponentFixture<CartDialog> {
   localStorage.clear();
   TestBed.resetTestingModule();
@@ -95,6 +104,15 @@ function boot({
       provideRouter([]),
       provideWorkspace(workspaceDouble()),
       { provide: AuthFacade, useValue: auth },
+      {
+        provide: OrderAdmissionStore,
+        useValue: {
+          admitted: signal(exempted),
+          guestTyped: (email: string | null): void => {
+            adresses.push(email);
+          },
+        },
+      },
       // Le panier est un DIALOGUE : sa référence de panneau existe toujours
       // quand il est monté, et `close()` est ce qu'il appelle pour partir.
       {
@@ -155,6 +173,7 @@ function boot({
   fermetures = [];
   regle = [];
   invites = [];
+  adresses = [];
   hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
   TestBed.inject(OrderContextStore).choice.set(service);
   const cart = TestBed.inject(ClientCart);
@@ -440,9 +459,48 @@ describe('la boutique fermée à la commande', () => {
     const fixture = boot({ opening: { ordersOpenToB2b: true, ordersOpenToB2c: false } });
 
     expect(bouton(fixture)).toBeNull();
-    expect(el(fixture).textContent).toContain(FR.cart.ordersClosed);
+    // Un encadré fold, qui dit aussi ce qui reste possible (2026-10-26).
+    const callout = el(fixture).querySelector('fold-callout[data-orders-closed]');
+    expect(callout?.textContent).toContain(FR.cart.ordersClosed);
+    expect(callout?.textContent).toContain(FR.cart.ordersClosedHint);
     // Le panier reste : seule la commande est fermée.
     expect(el(fixture).querySelector('app-cart-summary')).not.toBeNull();
+  });
+
+  /** Les exemptions à la fermeture (2026-10-26) : le serveur dit « vous, si ». */
+  it('garde le bouton de qui une exemption couvre, sans encadré de fermeture', () => {
+    const fixture = boot({
+      auth: RECONNU,
+      opening: { ordersOpenToB2b: false, ordersOpenToB2c: false },
+      exempted: true,
+    });
+
+    expect(bouton(fixture)).not.toBeNull();
+    expect(el(fixture).querySelector('[data-orders-closed]')).toBeNull();
+  });
+
+  it('cache le bouton d’un client connecté qu’aucune exemption ne couvre', () => {
+    const fixture = boot({
+      auth: RECONNU,
+      opening: { ordersOpenToB2b: false, ordersOpenToB2c: false },
+    });
+
+    expect(bouton(fixture)).toBeNull();
+    expect(el(fixture).querySelector('[data-orders-closed]')).not.toBeNull();
+  });
+
+  it('soumet l’adresse complète de l’invité, et l’oublie quand il choisit de se connecter', () => {
+    const fixture = boot({ opening: { ordersOpenToB2b: true, ordersOpenToB2c: false } });
+    const form = fixture.debugElement
+      .query(By.directive(GuestIdentityForm))
+      .injector.get(GuestIdentityForm);
+
+    adresses = []; // la saisie vide s'annonce à l'ouverture
+    form.identityChange.emit({ firstName: 'Camille', email: 'camille@visiteur.fr', phone: '06' });
+    const doors = el(fixture).querySelectorAll<HTMLButtonElement>('.who-door');
+    doors[1]?.click();
+
+    expect(adresses).toEqual(['camille@visiteur.fr', null]);
   });
 
   it('garde le bouton d’un particulier quand seule la boutique pro est fermée', () => {

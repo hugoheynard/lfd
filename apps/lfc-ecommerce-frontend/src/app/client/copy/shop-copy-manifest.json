@@ -3459,6 +3459,13 @@
           "variables": []
         },
         {
+          "key": "cart.ordersClosedHint",
+          "fr": "Le catalogue reste consultable, et votre panier est gardé.",
+          "en": "You can still browse the catalogue, and your basket is kept.",
+          "it": "Il catalogo resta consultabile e il carrello viene conservato.",
+          "variables": []
+        },
+        {
           "key": "cart.settleTitle",
           "fr": "Comment réglez-vous ?",
           "en": "How are you paying?",

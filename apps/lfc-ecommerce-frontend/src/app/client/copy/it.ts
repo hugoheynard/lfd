@@ -351,6 +351,7 @@ export const IT: ClientCopy = {
     payHint: 'Pagamento online. Mostri il QR al banco, non deve saldare nulla sul posto.',
     slotMissing: 'Scelga una fascia oraria per pagare: tocchi « Modifica » e scelga l’orario.',
     ordersClosed: 'Gli ordini sono chiusi per il momento.',
+    ordersClosedHint: 'Il catalogo resta consultabile e il carrello viene conservato.',
     settleTitle: 'Come pagate ?',
     settleCard: 'Pagamento diretto',
     settleAccount: 'Aggiungi al conto',

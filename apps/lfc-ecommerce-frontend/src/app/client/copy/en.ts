@@ -347,6 +347,7 @@ export const EN: ClientCopy = {
     payHint: 'Paid online. You show your QR at the counter, nothing to settle there.',
     slotMissing: 'Choose a time slot to pay: tap “Change” and pick the time.',
     ordersClosed: 'Orders are closed for the moment.',
+    ordersClosedHint: 'You can still browse the catalogue, and your basket is kept.',
     settleTitle: 'How are you paying?',
     settleCard: 'Pay now',
     settleAccount: 'Add to the account',

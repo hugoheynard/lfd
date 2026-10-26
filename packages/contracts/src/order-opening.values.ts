@@ -43,3 +43,25 @@ export function ordersOpenTo(
 
 /** Le code du refus (409) quand la boutique est fermée à la clientèle de qui commande. */
 export const ORDERS_CLOSED_FOR_AUDIENCE = "orders.closed_for_audience";
+
+/**
+ * **Puis-je commander ?** — la lecture servie à la personne CONNECTÉE
+ * (`GET /order-admission/mine`, 2026-10-26).
+ *
+ * `ordersOpen` dit si la boutique est ouverte à SA clientèle ; `canOrder`, si
+ * sa passation serait prise — vrai aussi quand la boutique est fermée et
+ * qu'une exemption couvre sa société ou son adresse. Ni la liste des
+ * exemptions ni la raison ne sortent : « fermée, mais vous pouvez commander ».
+ */
+export interface MyOrderAdmissionView {
+  readonly ordersOpen: boolean;
+  readonly canOrder: boolean;
+}
+
+/**
+ * La même question pour une commande SANS compte, sur l'adresse saisie
+ * (`POST /order-admission/guest`) : un booléen pour CETTE adresse, rien d'autre.
+ */
+export interface GuestOrderAdmissionView {
+  readonly canOrder: boolean;
+}

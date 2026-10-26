@@ -250,6 +250,7 @@
   "test/order-account-cancel-history.e2e-spec.ts": 9000,
   "test/order-account-cancel-races.e2e-spec.ts": 13000,
   "test/order-account-cancel.e2e-spec.ts": 11000,
+  "test/order-admission.e2e-spec.ts": 7946,
   "test/order-cancel-after-plan-races.e2e-spec.ts": 14000,
   "test/order-cancel-after-plan-traces.e2e-spec.ts": 14000,
   "test/order-cancel-after-plan.e2e-spec.ts": 14000,

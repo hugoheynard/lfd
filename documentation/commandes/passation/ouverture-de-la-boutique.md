@@ -101,11 +101,41 @@ tout est ouvert. La carte « Exemptions » liste, ajoute (panneau : une adresse,
 ou une société cherchée comme dans les comptes clients) et retire (zone de
 danger).
 
-⚠️ **Non bâti : la boutique ne connaît pas les exemptions.** Le pied du panier
-remplace le bouton de commande par la phrase dès que la clientèle est fermée ;
-un client exempté n'y voit donc pas de bouton. L'exemption tient aujourd'hui
-au serveur — une commande arrivée par la boutique d'un exempté passe — mais
-l'écran de la boutique ne la lui propose pas.
+### La boutique et les exemptions (décision de Hugo du 2026-10-26, option A)
+
+Bâti le 2026-10-26, non commité à l'écriture. `GET /order-opening` ne dit
+qu'à qui la boutique est ouverte ; il ne peut pas dire qu'un client est
+exempté sans publier la liste. Deux lectures répondent donc pour **une**
+personne, par la même porte que la passation (`OrderIntake.standingFor`,
+dont `ensureOpenFor` n'est que le refus) — l'écran ne peut pas promettre ce
+que la passation refuserait :
+
+| Route                         | Pour qui                 | Rend                                 |
+| ----------------------------- | ------------------------ | ------------------------------------ |
+| `GET /order-admission/mine`   | la personne connectée    | `{ ordersOpen, canOrder }`           |
+| `POST /order-admission/guest` | une commande sans compte | `{ canOrder }` pour l'adresse donnée |
+
+- **Connecté** : la société est celle du contexte, résolue en base depuis
+  les rattachements (`@ActingCompany`) ; aucun identifiant n'est passé.
+  « Fermée mais vous pouvez commander » = `ordersOpen: false, canOrder: true`.
+- **Sans compte** : l'adresse voyage dans le corps (forme de
+  `guestBuyerSchema`), débit 10/min/IP. Boutique ouverte aux particuliers,
+  la réponse est `true` pour toute adresse sans lire les exemptions.
+- Ni la liste, ni laquelle couvre la personne, ni l'exemption d'une autre
+  société ne sortent : deux booléens au plus.
+
+Côté boutique, `apps/lfc-ecommerce-frontend/src/app/client/shop/order-admission.store.ts` ne demande rien tant
+que la clientèle est ouverte. Fermée : une fois par espace pour le client
+connecté, une fois par adresse pour l'invité — et seulement quand sa saisie
+est complète (prénom, adresse confirmée, téléphone). Un échec de lecture
+laisse le bouton caché. Le pied du panier garde le bouton de qui est
+admis ; aux autres, un `fold-callout` (`info`) dit « Les commandes sont
+fermées pour le moment. » et que le catalogue reste consultable, le panier
+gardé (`cart.ordersClosed`, `cart.ordersClosedHint`, fr/en/it).
+
+⚠️ Une réponse est gardée pour la session : une exemption accordée ou
+retirée pendant qu'un client a la boutique ouverte se voit au prochain
+chargement ; entre-temps, le serveur tranche à la passation.
 
 ## Le modèle
 
@@ -147,7 +177,11 @@ elles restent ouvertes aux professionnels ».
   `grant-exemption-panel/` — Réglages ›
   Commandes › Ouverture du e-commerce (`/reglages/commandes/ouverture`), sous
   `lfc_order_opening` depuis le 2026-10-13 (`plan-reglages-commandes.md`).
-- Boutique : `client/shop/order-opening.store.ts`, pied de `cart-dialog`.
+- `apps/lfd-api/src/b2b/orders/http/order-admission.controller.ts` et
+  `application/queries/get-{my,guest}-order-admission.*` — « puis-je
+  commander ? » (2026-10-26).
+- Boutique : `client/shop/order-opening.store.ts`,
+  `apps/lfc-ecommerce-frontend/src/app/client/shop/order-admission.store.ts`, pied de `cart-dialog`.
 
 ## Ce qui reste
 
