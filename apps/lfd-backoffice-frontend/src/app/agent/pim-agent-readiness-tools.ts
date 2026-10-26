@@ -6,6 +6,15 @@ import type { Category, Variant } from '../pim/data/models';
 
 import { isPublishedMediaRole } from '../pim/catalogue/media-roles';
 import { said } from './agent-tool-text';
+import { mapWithConcurrency } from './bounded-pool';
+import { declarePimPublishReadyAgentTool } from './pim-agent-publish-ready-tool';
+
+/**
+ * Lectures de détail en vol à la fois. La ligne de liste ne porte ni les
+ * déclinaisons, ni les visuels, ni même la signature `readiness` (qui n'est de
+ * toute façon pas un verdict) : le détail reste nécessaire, mais borné.
+ */
+const DETAIL_READS_IN_FLIGHT = 4;
 
 /** Les contextes dont la TVA effective conditionne la vente (consigne du 2026-10-17). */
 const REQUIRED_VAT_CONTEXTS: readonly { readonly key: string; readonly label: string }[] = [
@@ -78,10 +87,13 @@ export function declarePimReadinessAgentTools(): readonly string[] {
   void declareExperimentalWebMcpTool({
     name: 'pim_product_readiness',
     description:
-      "Dit ce qui manque pour qu'une fiche soit vendable : prix public, prix pro, TVA effective à emporter et B2B (fiche par-dessus famille), allergènes déclarés, au moins une photo en ouverture ou en vignette (la galerie ne paraît nulle part). Avec productId : cette fiche ; sans : toutes les fiches non archivées. Lecture seule. À appeler avant pim_product_publish.",
+      "Dit ce qui manque pour qu'une fiche soit vendable : prix public, prix pro, TVA effective à emporter et B2B (fiche par-dessus famille), allergènes déclarés, au moins une photo en ouverture ou en vignette (la galerie ne paraît nulle part). Avec productId : cette fiche ; sans : toutes les fiches non archivées, ou celles du status donné (draft | published), lues quatre à la fois. Lecture seule. À appeler avant pim_product_publish.",
     inputSchema: {
       type: 'object',
-      properties: { productId: { type: 'string' } },
+      properties: {
+        productId: { type: 'string' },
+        status: { type: 'string', enum: ['draft', 'published'] },
+      },
       additionalProperties: false,
     },
     execute: (args) =>
@@ -93,8 +105,12 @@ export function declarePimReadinessAgentTools(): readonly string[] {
             ? `Aucune fiche pour l'identifiant ${args.productId}.`
             : verdict(detail, families);
         }
-        const rows = (await products.list()).filter((row) => row.status !== 'archived');
-        const details = await Promise.all(rows.map((row) => products.getDetail(row.id)));
+        const rows = (await products.list()).filter((row) =>
+          args.status === undefined ? row.status !== 'archived' : row.status === args.status,
+        );
+        const details = await mapWithConcurrency(rows, DETAIL_READS_IN_FLIGHT, (row) =>
+          products.getDetail(row.id),
+        );
         const lines = details
           .filter((detail) => detail !== null)
           .map((detail) => verdict(detail, families));
@@ -136,5 +152,10 @@ export function declarePimReadinessAgentTools(): readonly string[] {
       }),
   });
 
-  return ['pim_product_readiness', 'pim_product_publish', 'pim_product_unpublish'];
+  return [
+    'pim_product_readiness',
+    'pim_product_publish',
+    declarePimPublishReadyAgentTool(),
+    'pim_product_unpublish',
+  ];
 }

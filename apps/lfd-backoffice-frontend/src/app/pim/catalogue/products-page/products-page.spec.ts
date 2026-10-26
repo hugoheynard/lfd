@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -24,7 +25,10 @@ const PRODUCTS = [
   product('v2', 'vien', 'archived'),
 ];
 
-async function render(queryParams: Readonly<Record<string, string>> = {}) {
+async function render(
+  queryParams: Readonly<Record<string, string>> = {},
+  publishProduct: (id: string) => Promise<void> = () => Promise.resolve(),
+) {
   TestBed.configureTestingModule({
     imports: [ProductsPage],
     providers: [
@@ -35,6 +39,7 @@ async function render(queryParams: Readonly<Record<string, string>> = {}) {
           listProducts: () => Promise.resolve(PRODUCTS),
           listCategories: () => Promise.resolve(CATEGORIES),
           listVatRates: () => Promise.resolve([]),
+          publishProduct,
         },
       },
       {
@@ -152,5 +157,55 @@ describe('ProductsPage — filtres famille, état et masque des archivées', () 
     expect(element.textContent).toContain('Actions (3)');
     await chip('data-products-family', 'Viennoiseries');
     expect(element.textContent).toContain('Actions (1)');
+  });
+});
+
+describe('ProductsPage — « Activer » refusé', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  /**
+   * Régression : le 409 `catalogue.product.not_activatable` s'affichait
+   * « Erreur inattendue. » — une `HttpErrorResponse` n'est pas une `Error`
+   * (constaté le 2026-10-26).
+   */
+  it('montre le message du serveur, qui nomme chaque déclinaison', async () => {
+    const message = 'Activation refusée — P2-1 : prix pro absent ; P2-2 : allergènes non déclarés.';
+    const refusal = new HttpErrorResponse({
+      status: 409,
+      error: { code: 'catalogue.product.not_activatable', message },
+    });
+    const { fixture, element, settle } = await render({}, () => Promise.reject(refusal));
+    await fixture.componentInstance['publish'](PRODUCTS[1] as Product);
+    await settle();
+    const callout = element.querySelector('fold-callout')?.textContent ?? '';
+    expect(callout).toContain(message);
+    expect(callout).not.toContain('Erreur inattendue');
+  });
+});
+
+describe('ProductsPage — « Activer la sélection »', () => {
+  afterEach(() => TestBed.resetTestingModule());
+
+  it('active en série, liste les refus et ne s’arrête pas au premier', async () => {
+    const order: string[] = [];
+    let inFlight = 0;
+    const publish = async (id: string): Promise<void> => {
+      inFlight += 1;
+      expect(inFlight).toBe(1);
+      order.push(id);
+      await Promise.resolve();
+      inFlight -= 1;
+      if (id === 'p2') {
+        throw new HttpErrorResponse({ status: 409, error: { message: 'P2-1 : prix pro absent' } });
+      }
+    };
+    const { fixture, element, settle } = await render({}, publish);
+    fixture.componentInstance['selection'].set(new Set(['p2', 'p1']));
+    await fixture.componentInstance['activateSelected']();
+    await settle();
+    expect(order).toEqual(['p1', 'p2']);
+    const callout = element.querySelector('fold-callout')?.textContent ?? '';
+    expect(callout).toContain('1 fiche(s) activée(s)');
+    expect(callout).toContain('P2 — P2-1 : prix pro absent');
   });
 });

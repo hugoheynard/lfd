@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -37,6 +38,8 @@ import {
   type ProductsFilter,
   type StatusFilter,
 } from './products-filter';
+import { httpErrorMessage } from '@lfd/endpoints';
+
 import { nextSort, sortRows } from './products-sort';
 
 @Component({
@@ -333,6 +336,40 @@ export class ProductsPage {
 
   // ── Actions groupées (sur la sélection) ──────────────────────────────────
 
+  /**
+   * Active la sélection **une fiche à la fois** : un refus n'arrête pas la
+   * suite, il entre au bilan avec le message du serveur. Un 429 ou un serveur
+   * muet l'arrête — insister aggraverait le blocage de la passerelle.
+   */
+  protected async activateSelected(): Promise<void> {
+    const chosen = this.products().filter((p) => this.selection().has(p.id));
+    if (chosen.length === 0) {
+      return;
+    }
+    this.busy.set(true);
+    this.error.set(null);
+    let activated = 0;
+    const refusals: string[] = [];
+    for (const product of chosen) {
+      try {
+        await this.api.publishProduct(product.id);
+        activated += 1;
+      } catch (caught) {
+        refusals.push(`${product.sku} — ${failureMessageOf(caught)}`);
+        if (caught instanceof HttpErrorResponse && (caught.status === 429 || caught.status === 0)) {
+          refusals.push('Série arrêtée : les fiches suivantes n’ont pas été tentées.');
+          break;
+        }
+      }
+    }
+    await this.reload();
+    this.selection.set(new Set());
+    if (refusals.length > 0) {
+      this.error.set(`${activated} fiche(s) activée(s). ${refusals.join(' · ')}`);
+    }
+    this.busy.set(false);
+  }
+
   protected async archiveSelected(): Promise<void> {
     await this.batch((id) => this.api.archiveProduct(id));
   }
@@ -351,7 +388,7 @@ export class ProductsPage {
       await this.reload();
       this.selection.set(new Set());
     } catch (caught) {
-      this.error.set(caught instanceof Error ? caught.message : 'Erreur inattendue.');
+      this.error.set(failureMessageOf(caught));
     } finally {
       this.busy.set(false);
     }
@@ -364,7 +401,7 @@ export class ProductsPage {
       await action();
       await this.reload();
     } catch (caught) {
-      this.error.set(caught instanceof Error ? caught.message : 'Erreur inattendue.');
+      this.error.set(failureMessageOf(caught));
     } finally {
       this.busy.set(false);
     }
@@ -381,7 +418,20 @@ export class ProductsPage {
       this.rates.set(rates);
       this.categories.set(categories.filter((category) => !category.isArchived));
     } catch (caught) {
-      this.error.set(caught instanceof Error ? caught.message : 'Erreur inattendue.');
+      this.error.set(failureMessageOf(caught));
     }
   }
+}
+
+/**
+ * Le message à montrer pour un geste refusé : celui du serveur d'abord.
+ *
+ * Une `HttpErrorResponse` n'est pas une `Error` : le test `instanceof Error`
+ * rendait « Erreur inattendue. » sur le refus `catalogue.product.not_activatable`,
+ * dont le message nomme pourtant chaque déclinaison et ce qui lui manque
+ * (constaté le 2026-10-26).
+ */
+function failureMessageOf(caught: unknown): string {
+  const fallback = caught instanceof Error ? caught.message : 'Erreur inattendue.';
+  return httpErrorMessage(caught, fallback);
 }

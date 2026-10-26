@@ -78,8 +78,10 @@ describe('AgentToolsPage', () => {
 
     // Le tarif, la TVA et la publication ont été ouverts par Hugo le
     // 2026-10-17 ; la signature et l'archivage restent au clic.
+    // `pim_products_publish_ready` publie les brouillons, il ne signe rien.
+    const signatures = listed.filter((name) => name !== 'pim_products_publish_ready');
     for (const forbidden of ['archive', 'ready']) {
-      expect(listed.some((name) => name.includes(forbidden))).toBe(false);
+      expect(signatures.some((name) => name.includes(forbidden))).toBe(false);
     }
   });
 

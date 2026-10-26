@@ -92,6 +92,9 @@
              exactement la même route. Qui voulait retirer une fiche cliquait
              dessus, la voyait disparaître de la liste, et croyait que c'était
              fait. Le back-office ne supprime aucune fiche : il archive. -->
+        <fold-dropdown-item icon="check" (selected)="activateSelected()">
+          Activer la sélection
+        </fold-dropdown-item>
         <fold-dropdown-item icon="folder" (selected)="archiveSelected()">
           Archiver la sélection
         </fold-dropdown-item>
