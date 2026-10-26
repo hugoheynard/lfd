@@ -10,7 +10,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { FoldIconComponent } from 'fold-ng';
+import { FoldIconComponent, FoldIdService } from 'fold-ng';
 
 import { AuthFacade } from '../../../auth/auth.facade';
 import { ClientIdentity } from '../../client-identity.service';
@@ -60,6 +60,9 @@ export class ClientMenu {
   readonly closed = output<void>();
 
   protected readonly t = inject(ClientCopyService).t;
+
+  /** L'id du libellé « Menu » : le `<dialog>` se nomme par lui (RGAA 7.1). */
+  protected readonly labelId = inject(FoldIdService).next('client-menu-label');
   protected readonly nav = inject(ClientNav);
   protected readonly identity = inject(ClientIdentity);
   protected readonly workspace = inject(ClientWorkspace);

@@ -127,4 +127,5 @@ export const GLOSSARY_T_W: Readonly<Record<string, string>> = {
   workspaceVia: 'Site atteint — via son principal',
   write: 'Bouton « écrire »',
   writeFailed: 'Enregistrement échoué',
+  welcome: 'Accueil',
 };

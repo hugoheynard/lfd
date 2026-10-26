@@ -5,8 +5,7 @@ import { productUrl, SHOP_PATH } from '@lfd/contracts/product-path';
 import type { ShopItemView } from '@lfd/contracts';
 import { ZONE_CLIENT_FRONT } from '@lfd/endpoints';
 
-/** Le titre de la boutique — celui que sa route déclare. */
-const SHOP_TITLE = 'Boutique — La Folie Coffee';
+import { ClientCopyService } from '../copy/client-copy.service';
 
 /** La marque, après le nom d'un article dans l'onglet. */
 const TITLE_SUFFIX = ' — La Folie Coffee';
@@ -56,6 +55,7 @@ export class PieceHead {
   private readonly title = inject(Title);
   private readonly meta = inject(Meta);
   private readonly document = inject(DOCUMENT);
+  private readonly t = inject(ClientCopyService).t;
 
   /** La fiche d'un article en vente. */
   show(item: ShopItemView): void {
@@ -90,7 +90,8 @@ export class PieceHead {
 
   /** Retour à la grille. */
   reset(): void {
-    this.title.setTitle(SHOP_TITLE);
+    // Le titre de la boutique, celui que sa route déclare — dans la langue choisie.
+    this.title.setTitle(this.t().chrome.pageTitles.shop);
     for (const selector of PIECE_TAGS) {
       this.meta.removeTag(selector);
     }

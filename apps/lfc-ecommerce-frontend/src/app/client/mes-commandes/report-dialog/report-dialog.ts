@@ -154,6 +154,11 @@ export class ReportDialog {
     return fill(this.t().orders.photoRemaining, { n: String(this.remaining()) });
   }
 
+  /** L'alternative d'un aperçu : son rang, jamais le nom du fichier (RGAA 1.3). */
+  protected attachedLabel(index: number): string {
+    return fill(this.t().orders.photoAttached, { n: String(index + 1) });
+  }
+
   protected removeLabel(photo: PickedPhoto): string {
     return fill(this.t().orders.photoRemove, { name: photo.file.name });
   }

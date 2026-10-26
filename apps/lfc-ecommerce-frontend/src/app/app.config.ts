@@ -5,7 +5,7 @@ import {
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
-import { provideRouter } from '@angular/router';
+import { provideRouter, TitleStrategy } from '@angular/router';
 import { provideFoldCommonLabels, provideFoldToasts } from 'fold-ng';
 
 import { routes } from './app.routes';
@@ -21,6 +21,7 @@ import { ADDRESS_WRITER, LFD_NOTIFY } from '@lfd/b2b-ui/panel';
 import { AddressesService } from './legacy/entreprises/addresses.service';
 import { NotifyService } from './notify.service';
 import { provideAuth } from './auth/auth.providers';
+import { ClientTitleStrategy } from './client/client-title.strategy';
 import {
   provideNewVersionWatch,
   provideSentry,
@@ -48,6 +49,8 @@ export const appConfig: ApplicationConfig = {
     }),
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
+    // L'onglet suit la langue choisie (RGAA 8.6) — `client-title.strategy.ts`.
+    { provide: TitleStrategy, useExisting: ClientTitleStrategy },
     // L'espace de travail déclaré sur chaque requête vers l'API, une fois connu
     // (`documentation/comptes-client/espace-de-travail.md`).
     provideHttpClient(

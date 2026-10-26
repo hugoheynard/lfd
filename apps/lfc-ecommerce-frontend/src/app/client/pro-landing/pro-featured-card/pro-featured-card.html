@@ -7,13 +7,15 @@
   [ariaLabel]="card().label"
   (activated)="activated.emit()"
 >
+  <!-- La carte est un bouton nommé par `ariaLabel` : son image est décorative
+       (RGAA 1.2) — l'alternative répéterait le nom, ou lirait une URL. -->
   <div class="art">
     <img
       class="art-image"
       [src]="card().src"
       [attr.srcset]="card().srcset || null"
       sizes="(min-width: 1100px) 33vw, (min-width: 600px) 50vw, 100vw"
-      [attr.alt]="card().alt"
+      alt=""
       [style.object-position]="card().position"
       loading="lazy"
       decoding="async"

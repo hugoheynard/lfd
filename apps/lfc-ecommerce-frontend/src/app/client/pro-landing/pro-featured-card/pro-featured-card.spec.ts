@@ -8,7 +8,6 @@ const CARD: FeaturedCard = {
   name: 'Baguette tradition',
   note: 'Levain naturel, cuite le matin',
   label: 'Se connecter pour voir le tarif de Baguette tradition',
-  alt: 'Une baguette',
   src: 'https://media.example/baguette-grande.jpg?w=560',
   srcset: 'https://media.example/baguette-grande.jpg?w=560 560w',
   position: '50% 30%',
@@ -40,7 +39,7 @@ describe('ProFeaturedCard — un incontournable de /pro', () => {
     const img = host.querySelector('img');
     expect(img?.getAttribute('src')).toBe(CARD.src);
     expect(img?.getAttribute('srcset')).toBe(CARD.srcset);
-    expect(img?.getAttribute('alt')).toBe('Une baguette');
+    expect(img?.getAttribute('alt')).toBe('');
     expect(img?.getAttribute('loading')).toBe('lazy');
     expect(img?.style.objectPosition).toBe('50% 30%');
     expect(host.querySelector('.name')?.textContent?.trim()).toBe('Baguette tradition');

@@ -40,6 +40,10 @@
   [class.under-bar]="!proVisit() && (!needsService() || !cart.isEmpty())"
   [class.with-pro-visit]="proVisit()"
 >
+  <!-- Le titre de la page, pour la navigation par titres (RGAA 9.1) : le
+       bandeau n'en porte plus (2026-09-24), et l'œil n'en a pas besoin — la
+       pastille de rayon et l'onglet le disent. Absolu, il ne prend pas de case. -->
+  <h1 class="page-title">{{ t().chrome.kickerShop }}</h1>
   <!-- Le repère de la visite pro : rien pour un particulier ni un connecté.
        La rangée n'existe qu'avec lui, sans quoi le `gap` laisserait un vide. -->
   @if (proVisit()) {

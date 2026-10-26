@@ -1,5 +1,7 @@
 import type { ShopImageFocal, ShopImageView, ShopItemView } from '@lfd/contracts';
 
+import { imageAlt } from './image-alt';
+
 /**
  * **Ce que la vitrine ajoute au catalogue**, et que le référentiel ne dit pas
  * encore.
@@ -65,7 +67,19 @@ export function shelfArtOf(shelfId: string): string {
  * qu'on voit — pas mentir sur une photo qui n'existe pas.
  */
 export function artOf(item: ShopItemView): ShopImageView {
-  return item.image ?? { url: shelfArtOf(item.shelfId), alt: item.name, width: null, height: null };
+  return named(
+    item.image ?? { url: shelfArtOf(item.shelfId), alt: item.name, width: null, height: null },
+    item.name,
+  );
+}
+
+/**
+ * Le visuel, son alternative assainie : une URL ou un nom de fichier venu de
+ * la médiathèque cède la place au nom de l'article (RGAA 1.3).
+ */
+export function named(image: ShopImageView, name: string): ShopImageView {
+  const alt = imageAlt(image.alt, name);
+  return alt === image.alt ? image : { ...image, alt };
 }
 
 /**
@@ -84,7 +98,7 @@ export function artOf(item: ShopItemView): ShopImageView {
  * attend la pièce entière.
  */
 export function tileArtOf(item: ShopItemView): ShopImageView {
-  return item.thumbnail ?? artOf(item);
+  return item.thumbnail ? named(item.thumbnail, item.name) : artOf(item);
 }
 
 /**

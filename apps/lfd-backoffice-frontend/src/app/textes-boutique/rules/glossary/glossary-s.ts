@@ -120,4 +120,5 @@ export const GLOSSARY_S: Readonly<Record<string, string>> = {
   suspended: 'Compte suspendu',
   switchLabel: 'Type de compte',
   signUp: 'Bouton « Créer un compte »',
+  skipLink: 'Lien « aller au contenu » (clavier, lecteur d’écran)',
 };

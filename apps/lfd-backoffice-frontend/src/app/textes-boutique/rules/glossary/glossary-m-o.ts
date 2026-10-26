@@ -134,4 +134,6 @@ export const GLOSSARY_M_O: Readonly<Record<string, string>> = {
   outOfZone: 'Hors zone de livraison',
   outOfZoneNote: 'Hors zone de livraison — note',
   oven: 'Fournée',
+  orderRevision: 'Modifier ma commande',
+  orderConfirmed: 'Commande confirmée',
 };

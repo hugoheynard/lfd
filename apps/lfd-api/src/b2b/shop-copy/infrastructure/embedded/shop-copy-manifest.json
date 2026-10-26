@@ -4322,6 +4322,132 @@
           "en": "View my basket",
           "it": "Vedi il mio carrello",
           "variables": []
+        },
+        {
+          "key": "chrome.skipLink",
+          "fr": "Aller au contenu",
+          "en": "Skip to content",
+          "it": "Vai al contenuto",
+          "variables": []
+        },
+        {
+          "key": "chrome.pageTitles.welcome",
+          "fr": "La Folie Coffee — commander, retirer, déguster",
+          "en": "La Folie Coffee — order, pick up, enjoy",
+          "it": "La Folie Coffee — ordinare, ritirare, gustare",
+          "variables": []
+        },
+        {
+          "key": "chrome.pageTitles.registration",
+          "fr": "Inscription — La Folie Coffee",
+          "en": "Sign up — La Folie Coffee",
+          "it": "Registrazione — La Folie Coffee",
+          "variables": []
+        },
+        {
+          "key": "chrome.pageTitles.proLanding",
+          "fr": "Espace pro — La Folie Coffee",
+          "en": "Business space — La Folie Coffee",
+          "it": "Spazio professionisti — La Folie Coffee",
+          "variables": []
+        },
+        {
+          "key": "chrome.pageTitles.proOpening",
+          "fr": "Ouverture de compte pro — La Folie Coffee",
+          "en": "Open a business account — La Folie Coffee",
+          "it": "Apertura di un conto professionale — La Folie Coffee",
+          "variables": []
+        },
+        {
+          "key": "chrome.pageTitles.orders",
+          "fr": "Mes commandes — La Folie Coffee",
+          "en": "My orders — La Folie Coffee",
+          "it": "I miei ordini — La Folie Coffee",
+          "variables": []
+        },
+        {
+          "key": "chrome.pageTitles.invoices",
+          "fr": "Mes factures — La Folie Coffee",
+          "en": "My invoices — La Folie Coffee",
+          "it": "Le mie fatture — La Folie Coffee",
+          "variables": []
+        },
+        {
+          "key": "chrome.pageTitles.account",
+          "fr": "Mon compte — La Folie Coffee",
+          "en": "My account — La Folie Coffee",
+          "it": "Il mio conto — La Folie Coffee",
+          "variables": []
+        },
+        {
+          "key": "chrome.pageTitles.profile",
+          "fr": "Mon profil — La Folie Coffee",
+          "en": "My profile — La Folie Coffee",
+          "it": "Il mio profilo — La Folie Coffee",
+          "variables": []
+        },
+        {
+          "key": "chrome.pageTitles.loyalty",
+          "fr": "Ma fidélité — La Folie Coffee",
+          "en": "My loyalty — La Folie Coffee",
+          "it": "La mia fedeltà — La Folie Coffee",
+          "variables": []
+        },
+        {
+          "key": "chrome.pageTitles.shop",
+          "fr": "Boutique — La Folie Coffee",
+          "en": "Shop — La Folie Coffee",
+          "it": "Bottega — La Folie Coffee",
+          "variables": []
+        },
+        {
+          "key": "chrome.pageTitles.payment",
+          "fr": "Régler ma commande — La Folie Coffee",
+          "en": "Pay for my order — La Folie Coffee",
+          "it": "Pagare il mio ordine — La Folie Coffee",
+          "variables": []
+        },
+        {
+          "key": "chrome.pageTitles.pickupQr",
+          "fr": "Mon QR de retrait — La Folie Coffee",
+          "en": "My pickup QR code — La Folie Coffee",
+          "it": "Il mio QR di ritiro — La Folie Coffee",
+          "variables": []
+        },
+        {
+          "key": "chrome.pageTitles.orderRevision",
+          "fr": "Modifier ma commande — La Folie Coffee",
+          "en": "Change my order — La Folie Coffee",
+          "it": "Modificare il mio ordine — La Folie Coffee",
+          "variables": []
+        },
+        {
+          "key": "chrome.pageTitles.guestOrder",
+          "fr": "Votre commande — La Folie Coffee",
+          "en": "Your order — La Folie Coffee",
+          "it": "Il vostro ordine — La Folie Coffee",
+          "variables": []
+        },
+        {
+          "key": "chrome.pageTitles.salesTerms",
+          "fr": "Conditions générales de vente — La Folie Coffee",
+          "en": "General terms of sale — La Folie Coffee",
+          "it": "Condizioni generali di vendita — La Folie Coffee",
+          "variables": []
+        },
+        {
+          "key": "chrome.pageTitles.orderConfirmed",
+          "fr": "Commande confirmée — La Folie Coffee",
+          "en": "Order confirmed — La Folie Coffee",
+          "it": "Ordine confermato — La Folie Coffee",
+          "variables": []
+        },
+        {
+          "key": "chrome.pageTitles.connection",
+          "fr": "Connexion — La Folie Coffee",
+          "en": "Sign in — La Folie Coffee",
+          "it": "Accesso — La Folie Coffee",
+          "variables": []
         }
       ],
       "unrecorded": []
@@ -6013,6 +6139,13 @@
           "en": "Remove {name}",
           "it": "Togliere {name}",
           "variables": ["name"]
+        },
+        {
+          "key": "orders.photoAttached",
+          "fr": "Photo jointe {n}",
+          "en": "Attached photo {n}",
+          "it": "Foto allegata {n}",
+          "variables": ["n"]
         },
         {
           "key": "orders.photoBadType",

@@ -29,6 +29,7 @@ export const GLOSSARY_P: Readonly<Record<string, string>> = {
   phoneHint: 'Téléphone — aide',
   phonePlaceholder: 'Téléphone — exemple',
   phoneUnknown: 'Téléphone du compte',
+  photoAttached: 'Photo jointe — description de l’aperçu',
   photoBadType: 'Photo — format refusé',
   photoHead: 'Photos — titre',
   photoHint: 'Photos — aide',
@@ -127,4 +128,9 @@ export const GLOSSARY_P: Readonly<Record<string, string>> = {
   proof: 'Preuves',
   purchaseOrder: 'Confirmation de commande',
   purchaseOrderFailed: 'Confirmation de commande non téléchargée',
+  pageTitles: 'Titres d’onglet du navigateur',
+  proLanding: 'Espace pro (page d’accueil pro)',
+  proOpening: 'Ouverture de compte pro',
+  profile: 'Mon profil',
+  pickupQr: 'Mon QR de retrait',
 };

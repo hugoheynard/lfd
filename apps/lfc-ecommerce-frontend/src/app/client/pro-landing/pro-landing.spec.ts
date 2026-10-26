@@ -192,7 +192,8 @@ describe('ProLanding — l’accueil pro public (/pro)', () => {
     expect(first?.textContent).toContain('Baguette tradition');
     expect(first?.textContent).toContain('Levain naturel');
     const img = first?.querySelector('img');
-    expect(img?.getAttribute('alt')).toBe('Une baguette');
+    // La carte est un bouton nommé : l'image est décorative (RGAA 1.2).
+    expect(img?.getAttribute('alt')).toBe('');
     expect(img?.getAttribute('src')).toContain('baguette');
     // Sans photo : l'illustration du rayon, pas un cadre vide.
     expect(second?.querySelector('img')?.getAttribute('src')).toContain('products/');
@@ -233,7 +234,8 @@ describe('ProLanding — l’accueil pro public (/pro)', () => {
       '[data-test="pro-featured-card"] img',
     );
     expect(img?.getAttribute('src')).toContain('baguette-grande');
-    expect(img?.getAttribute('alt')).toBe('Grande');
+    // La carte est un bouton nommé : l'image est décorative (RGAA 1.2).
+    expect(img?.getAttribute('alt')).toBe('');
   });
 
   it('ordre : les modes, puis la rangée contact · boutique, puis les incontournables', async () => {

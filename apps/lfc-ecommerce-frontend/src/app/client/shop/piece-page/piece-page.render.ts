@@ -24,6 +24,8 @@
 
 import { productUrl } from '@lfd/contracts/product-path';
 
+import { imageAlt } from '../image-alt';
+
 /** La marque, après le nom d'un article — celle de {@link PieceHead}. */
 const TITLE_SUFFIX = ' — La Folie Coffee';
 
@@ -94,7 +96,7 @@ function pieceImage(value: unknown, name: string): PieceImage | null {
   const alt = value['alt'];
   return {
     url: value['url'],
-    alt: typeof alt === 'string' && alt.trim() !== '' && !/^https?:\/\//.test(alt) ? alt : name,
+    alt: imageAlt(typeof alt === 'string' ? alt : null, name),
     width: positiveInteger(value['width']),
     height: positiveInteger(value['height']),
   };

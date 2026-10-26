@@ -2,7 +2,12 @@
      FILET. Si jamais la hauteur d'un écran ne se borne pas, la page défile
      comme avant — dégradée, pas coupée. Avec `stage`, la même erreur clipperait
      le contenu en silence. -->
-<fold-app-shell mobileNav="none" scroll="scroll" footerBehavior="scroll">
+<fold-app-shell
+  mobileNav="none"
+  scroll="scroll"
+  footerBehavior="scroll"
+  [skipLinkLabel]="t().chrome.skipLink"
+>
   <div header class="bar">
     <!-- Un seul occupant à gauche, et l'ordre dit la priorité : d'où l'on
          revient prime sur ce qu'on peut ouvrir, qui prime sur la marque. -->

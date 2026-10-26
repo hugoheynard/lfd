@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1603 textes
+## Sommaire — 1622 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -35,10 +35,10 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Confirmation](#espace-done) | `done` | 28 |
 | [Confirmation — le QR de retrait](#espace-qr) | `qr` | 8 |
 | **Le reste de la boutique** | | |
-| [Le cadre — bandeaux, installation, erreurs générales](#espace-chrome) | `chrome` | 41 |
+| [Le cadre — bandeaux, installation, erreurs générales](#espace-chrome) | `chrome` | 59 |
 | [La navigation](#espace-nav) | `nav` | 24 |
 | [La colonne d’accompagnement](#espace-aside) | `aside` | 4 |
-| [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 238 |
+| [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 239 |
 | [Annuler une commande — Mes commandes et la page invité](#espace-ordercancel) | `orderCancel` | 57 |
 | [Fidélité](#espace-loyalty) | `loyalty` | 38 |
 | [Mon compte (factures comprises)](#espace-account) | `account` | 523 |
@@ -47,7 +47,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
-| **Total** | | **1603** |
+| **Total** | | **1622** |
 
 ## Le parcours de commande
 
@@ -821,7 +821,7 @@ Source : `fr.ts · en.ts · it.ts` · 8 textes.
 
 ### Le cadre — bandeaux, installation, erreurs générales — `chrome`
 
-Source : `fr.ts · en.ts · it.ts` · 41 textes.
+Source : `fr.ts · en.ts · it.ts` · 59 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -866,6 +866,24 @@ Source : `fr.ts · en.ts · it.ts` · 41 textes.
 | `chrome.notificationsMarkAll` | Tout marquer comme lu | Mark all as read | Segna tutto come letto |  |
 | `chrome.notificationsEmpty` | Rien à signaler. | Nothing to report. | Nulla da segnalare. |  |
 | `chrome.cartOpen` | Voir mon panier | View my basket | Vedi il mio carrello |  |
+| `chrome.skipLink` | Aller au contenu | Skip to content | Vai al contenuto |  |
+| `chrome.pageTitles.welcome` | La Folie Coffee — commander, retirer, déguster | La Folie Coffee — order, pick up, enjoy | La Folie Coffee — ordinare, ritirare, gustare |  |
+| `chrome.pageTitles.registration` | Inscription — La Folie Coffee | Sign up — La Folie Coffee | Registrazione — La Folie Coffee |  |
+| `chrome.pageTitles.proLanding` | Espace pro — La Folie Coffee | Business space — La Folie Coffee | Spazio professionisti — La Folie Coffee |  |
+| `chrome.pageTitles.proOpening` | Ouverture de compte pro — La Folie Coffee | Open a business account — La Folie Coffee | Apertura di un conto professionale — La Folie Coffee |  |
+| `chrome.pageTitles.orders` | Mes commandes — La Folie Coffee | My orders — La Folie Coffee | I miei ordini — La Folie Coffee |  |
+| `chrome.pageTitles.invoices` | Mes factures — La Folie Coffee | My invoices — La Folie Coffee | Le mie fatture — La Folie Coffee |  |
+| `chrome.pageTitles.account` | Mon compte — La Folie Coffee | My account — La Folie Coffee | Il mio conto — La Folie Coffee |  |
+| `chrome.pageTitles.profile` | Mon profil — La Folie Coffee | My profile — La Folie Coffee | Il mio profilo — La Folie Coffee |  |
+| `chrome.pageTitles.loyalty` | Ma fidélité — La Folie Coffee | My loyalty — La Folie Coffee | La mia fedeltà — La Folie Coffee |  |
+| `chrome.pageTitles.shop` | Boutique — La Folie Coffee | Shop — La Folie Coffee | Bottega — La Folie Coffee |  |
+| `chrome.pageTitles.payment` | Régler ma commande — La Folie Coffee | Pay for my order — La Folie Coffee | Pagare il mio ordine — La Folie Coffee |  |
+| `chrome.pageTitles.pickupQr` | Mon QR de retrait — La Folie Coffee | My pickup QR code — La Folie Coffee | Il mio QR di ritiro — La Folie Coffee |  |
+| `chrome.pageTitles.orderRevision` | Modifier ma commande — La Folie Coffee | Change my order — La Folie Coffee | Modificare il mio ordine — La Folie Coffee |  |
+| `chrome.pageTitles.guestOrder` | Votre commande — La Folie Coffee | Your order — La Folie Coffee | Il vostro ordine — La Folie Coffee |  |
+| `chrome.pageTitles.salesTerms` | Conditions générales de vente — La Folie Coffee | General terms of sale — La Folie Coffee | Condizioni generali di vendita — La Folie Coffee |  |
+| `chrome.pageTitles.orderConfirmed` | Commande confirmée — La Folie Coffee | Order confirmed — La Folie Coffee | Ordine confermato — La Folie Coffee |  |
+| `chrome.pageTitles.connection` | Connexion — La Folie Coffee | Sign in — La Folie Coffee | Accesso — La Folie Coffee |  |
 
 <a id="espace-nav"></a>
 
@@ -917,7 +935,7 @@ Source : `fr.ts · en.ts · it.ts` · 4 textes.
 
 ### Mes commandes (récapitulatif compris) — `orders`
 
-Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/order-change-request.copy.ts` · 238 textes.
+Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/order-change-request.copy.ts` · 239 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -1141,6 +1159,7 @@ Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/ord
 | `orders.reasonPlaceholder` | Choisir une raison | Choose a reason | Scegliere un motivo |  |
 | `orders.photoRemaining` | Jusqu’à {n} photo(s) de plus — JPEG, PNG ou WebP, 5 Mo chacune. | Up to {n} more photo(s) — JPEG, PNG or WebP, 5 MB each. | Fino a {n} foto in più — JPEG, PNG o WebP, 5 MB ciascuna. | `{n}` |
 | `orders.photoRemove` | Retirer {name} | Remove {name} | Togliere {name} | `{name}` |
+| `orders.photoAttached` | Photo jointe {n} | Attached photo {n} | Foto allegata {n} | `{n}` |
 | `orders.photoBadType` | « {name} » n’est pas une photo JPEG, PNG ou WebP. | “{name}” is not a JPEG, PNG or WebP photo. | «{name}» non è una foto JPEG, PNG o WebP. | `{name}` |
 | `orders.photoTooBig` | « {name} » dépasse 5 Mo. | “{name}” is larger than 5 MB. | «{name}» supera 5 MB. | `{name}` |
 | `orders.photoTooMany` | {n} photos au plus. | {n} photos at most. | {n} foto al massimo. | `{n}` |

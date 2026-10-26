@@ -8,6 +8,7 @@ import {
   workspaceHomeGuard,
 } from './client/client-workspace.guard';
 import { ClientShell } from './client/shell/client-shell';
+import { pageTitle } from './client/client-title.strategy';
 import { PRODUCT_SEGMENT } from '@lfd/contracts/product-path';
 import { PIECE_SKU_PARAM } from './client/shop/piece-route';
 import { noProVisitGuard } from './client/shop/pro-visit.guard';
@@ -158,7 +159,7 @@ export const routes: Routes = [
         // depuis ici — sans quoi les deux sens du mot coexisteraient sans que
         // rien ne les départage.
         path: 'bienvenue',
-        title: 'La Folie Coffee — commander, retirer, déguster',
+        data: pageTitle('welcome'),
         loadComponent: () =>
           import('./client/accueil-public/accueil-public').then((m) => m.AccueilPublic),
       },
@@ -169,7 +170,7 @@ export const routes: Routes = [
         // Maquette : rien ne part sur le réseau, et `/login` (Auth0) reste la
         // porte réelle en attendant.
         path: 'inscription',
-        title: 'Inscription — La Folie Coffee',
+        data: pageTitle('registration'),
         loadComponent: () => import('./login/accueil-page/accueil-page').then((m) => m.AccueilPage),
       },
       {
@@ -182,7 +183,7 @@ export const routes: Routes = [
         // vers la racine — l'ancienne adresse de la boutique
         // (gateway/src/routes.ts, `resolveTarget`). Pas d'enfant sous `pro`.
         path: 'pro',
-        title: 'Espace pro — La Folie Coffee',
+        data: pageTitle('proLanding'),
         loadComponent: () => import('./client/pro-landing/pro-landing').then((m) => m.ProLanding),
       },
       {
@@ -201,15 +202,14 @@ export const routes: Routes = [
         // justement ce que cette adresse dit, à savoir QUELLE porte ouvrir. Le
         // `data` le dit sans qu'aucun paramètre d'URL ait à le porter.
         path: 'ouverture-compte-pro',
-        title: 'Ouverture de compte pro — La Folie Coffee',
-        data: { door: 'pro' },
+        data: { ...pageTitle('proOpening'), door: 'pro' },
         loadComponent: () => import('./login/accueil-page/accueil-page').then((m) => m.AccueilPage),
       },
       {
         // LE SUIVI, PUIS LA MÉMOIRE. Deux registres et l'ordre n'est pas
         // négociable : ce qui est en route d'abord, ce qui est passé ensuite.
         path: 'mes-commandes',
-        title: 'Mes commandes — La Folie Coffee',
+        data: pageTitle('orders'),
         loadComponent: () =>
           import('./client/mes-commandes/commandes-page/commandes-page').then(
             (m) => m.CommandesPage,
@@ -221,7 +221,7 @@ export const routes: Routes = [
         // n'était qu'une carte. Écran de SOCIÉTÉ, même garde que le dossier.
         path: 'mes-factures',
         canActivate: [companyWorkspaceGuard],
-        title: 'Mes factures — La Folie Coffee',
+        data: pageTitle('invoices'),
         loadComponent: () =>
           import('./client/mes-factures/invoices-page/invoices-page').then((m) => m.InvoicesPage),
       },
@@ -232,7 +232,7 @@ export const routes: Routes = [
         path: 'mon-compte',
         // En perso, pour qui a une société : fermé (cf. la garde).
         canActivate: [companyWorkspaceGuard],
-        title: 'Mon compte — La Folie Coffee',
+        data: pageTitle('account'),
         loadComponent: () =>
           import('./client/mon-compte/compte-page/compte-page').then((m) => m.ComptePage),
       },
@@ -245,7 +245,7 @@ export const routes: Routes = [
         // un formulaire de SIRET à qui demandait son compte.
         path: 'mon-profil',
         canActivate: [authenticatedGuard],
-        title: 'Mon profil — La Folie Coffee',
+        data: pageTitle('profile'),
         loadComponent: () =>
           import('./client/profile/profile-page/profile-page').then((m) => m.ProfilePage),
       },
@@ -257,7 +257,7 @@ export const routes: Routes = [
         // sans promettre « bientôt », et le menu n'y mène pas.
         path: 'ma-fidelite',
         canActivate: [authenticatedGuard, personalWorkspaceGuard],
-        title: 'Ma fidélité — La Folie Coffee',
+        data: pageTitle('loyalty'),
         loadComponent: () =>
           import('./client/ma-fidelite/fidelite-page/fidelite-page').then((m) => m.FidelitePage),
       },
@@ -284,7 +284,7 @@ export const routes: Routes = [
         // d'ailleurs survit à ce qui la rendait vraie, et fait garder un
         // détour pour une raison qui n'existe plus.
         path: 'boutique',
-        title: 'Boutique — La Folie Coffee',
+        data: pageTitle('shop'),
         loadComponent: () => import('./client/shop/shop-page/shop-page').then((m) => m.ShopPage),
         // LA FICHE D'UN ARTICLE a son adresse, stable pour toujours (Hugo,
         // 2026-10-23) : `/boutique/article/<sku>`. Un enfant SANS composant :
@@ -301,7 +301,7 @@ export const routes: Routes = [
         // rechargement, et se rouvrir plus tard sur une commande restée à payer.
         // Un panneau dans le panier n'aurait tenu ni l'un ni l'autre.
         path: 'reglement/:id',
-        title: 'Régler ma commande — La Folie Coffee',
+        data: pageTitle('payment'),
         // En visite pro, on ne règle pas : la connexion d'abord (2026-10-19).
         canActivate: [noProVisitGuard],
         loadComponent: () =>
@@ -313,7 +313,7 @@ export const routes: Routes = [
         // `annulation-par-le-client.md`, décision du 2026-10-13). Gardée : la
         // connexion est demandée, et `returnTo` ramène ici après elle.
         path: 'mes-commandes/:orderId',
-        title: 'Mes commandes — La Folie Coffee',
+        data: pageTitle('orders'),
         canActivate: [authenticatedGuard],
         loadComponent: () =>
           import('./client/mes-commandes/commandes-page/commandes-page').then(
@@ -326,7 +326,7 @@ export const routes: Routes = [
         // lendemain matin, depuis l'historique ou un signet, longtemps après
         // que la commande a cessé d'être « nouvelle ».
         path: 'mes-commandes/retrait/:id',
-        title: 'Mon QR de retrait — La Folie Coffee',
+        data: pageTitle('pickupQr'),
         loadComponent: () =>
           import('./client/mes-commandes/retrait-page/retrait-page').then((m) => m.RetraitPage),
       },
@@ -335,7 +335,7 @@ export const routes: Routes = [
         // M3) : une page et non un panneau — elle compose un panier entier,
         // ouvre les dialogues de retrait, et doit survivre à un rechargement.
         path: 'mes-commandes/modifier/:id',
-        title: 'Modifier ma commande — La Folie Coffee',
+        data: pageTitle('orderRevision'),
         canActivate: [authenticatedGuard],
         loadComponent: () =>
           import('./client/order-revision/order-revision-page/order-revision-page').then(
@@ -349,7 +349,7 @@ export const routes: Routes = [
         // (`/annuler#<id>.<jeton>`), jamais dans le chemin : le serveur ne le
         // voit pas, et la page ne l'envoie que dans le corps d'un `POST`.
         path: 'annuler',
-        title: 'Votre commande — La Folie Coffee',
+        data: pageTitle('guestOrder'),
         loadComponent: () =>
           import('./client/order-cancellation/guest-cancel-page/guest-cancel-page').then(
             (m) => m.GuestCancelPage,
@@ -362,13 +362,13 @@ export const routes: Routes = [
         // professionnel — le lien d'une landing pro. Le pied de page ouvre le
         // même contenu en dialogue.
         path: 'cgv',
-        title: 'Conditions générales de vente — La Folie Coffee',
+        data: pageTitle('salesTerms'),
         loadComponent: () =>
           import('./client/sales-terms-page/sales-terms-page').then((m) => m.SalesTermsPage),
       },
       {
         path: 'confirmation-de-commande',
-        title: 'Commande confirmée — La Folie Coffee',
+        data: pageTitle('orderConfirmed'),
         loadComponent: () =>
           import('./client/commande/confirmation-page/confirmation-page').then(
             (m) => m.ConfirmationPage,
@@ -402,7 +402,7 @@ export const routes: Routes = [
         // la connexion par code. Sans garde, comme l'inscription : on entre
         // à tous les niveaux de la boutique. Aucune adresse dans l'URL.
         path: 'connexion/code',
-        title: 'Connexion — La Folie Coffee',
+        data: pageTitle('connection'),
         loadComponent: () =>
           import('./login/email-code-entry/email-code-entry').then((m) => m.EmailCodeEntry),
       },
@@ -411,7 +411,7 @@ export const routes: Routes = [
         // retour porte une erreur (`errorPath`). Sans garde : on n'est pas
         // connecté, par définition.
         path: 'connexion/erreur',
-        title: 'Connexion — La Folie Coffee',
+        data: pageTitle('connection'),
         loadComponent: () =>
           import('./login/sign-in-failure/sign-in-failure').then((m) => m.SignInFailure),
       },

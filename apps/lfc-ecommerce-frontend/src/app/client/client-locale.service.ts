@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { DOCUMENT, effect, inject, Injectable, signal } from '@angular/core';
 
 /** Les trois langues de la station. */
 export const LOCALES = [
@@ -17,8 +17,18 @@ export type LocaleCode = (typeof LOCALES)[number]['code'];
  * 2026-10-18 — une phrase disait « il ne traduit rien »). Val d'Isère
  * est frontalière et anglophone — la langue est une question d'accueil, pas une
  * option de réglages, d'où sa place dans le chrome et non dans un menu.
+ *
+ * Il tient aussi `<html lang>` (RGAA 8.3, 8.7) : sans lui, un lecteur d'écran
+ * lisait l'anglais et l'italien avec la voix française de `index.html`.
  */
 @Injectable({ providedIn: 'root' })
 export class ClientLocale {
   readonly current = signal<LocaleCode>('fr');
+
+  constructor() {
+    const root = inject(DOCUMENT).documentElement;
+    effect(() => {
+      root.lang = this.current();
+    });
+  }
 }

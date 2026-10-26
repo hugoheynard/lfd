@@ -9,7 +9,7 @@ import {
   output,
   viewChild,
 } from '@angular/core';
-import { FoldIconComponent } from 'fold-ng';
+import { FoldIconComponent, FoldIdService } from 'fold-ng';
 
 import { ClientCopyService } from '../copy/client-copy.service';
 
@@ -87,6 +87,9 @@ export class ClientDialog {
   readonly back = output<void>();
 
   protected readonly t = inject(ClientCopyService).t;
+
+  /** L'id du titre : le `<dialog>` se nomme par lui (RGAA 7.1). */
+  protected readonly titleId = inject(FoldIdService).next('client-dialog-title');
 
   /**
    * Le décalage du rail. Calculé ici plutôt que passé en propriété

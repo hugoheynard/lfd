@@ -160,4 +160,5 @@ export const GLOSSARY_D_H: Readonly<Record<string, string>> = {
   houseLinks: 'Liens de la maison',
   houses: 'Maisons',
   htSuffix: 'Mention HT',
+  guestOrder: 'Commande d’un invité',
 };

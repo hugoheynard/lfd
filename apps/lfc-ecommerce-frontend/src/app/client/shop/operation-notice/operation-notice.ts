@@ -8,6 +8,7 @@ import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { mediaSrcset, SHEET_WIDTHS, sizedMedia } from '../media-source';
 import { operationText, pickupSpan, shortDate, shortTime } from '../operations';
 import { objectPositionOf } from '../shelf-display';
+import { DECORATIVE_ALT, imageAlt } from '../image-alt';
 
 /**
  * **L'encart qui ouvre le rayon d'une opération** — image, nom, chapeau, et
@@ -71,7 +72,7 @@ export class OperationNotice {
     return {
       src: sizedMedia(image.url, SHEET_WIDTHS[0]),
       srcset: mediaSrcset(image.url, SHEET_WIDTHS),
-      alt: image.alt,
+      alt: imageAlt(image.alt, DECORATIVE_ALT),
       position: objectPositionOf(image),
     };
   });

@@ -1,11 +1,11 @@
 <!-- `(close)` couvre les deux sorties que le natif gère seul : `Escape` et
      l'appel programmé — l'écran reste la seule source de vérité. -->
-<dialog #dlg class="menu" (close)="closed.emit()">
+<dialog #dlg class="menu" [attr.aria-labelledby]="labelId" (close)="closed.emit()">
   <div class="bar">
     <button class="close" type="button" [attr.aria-label]="t().nav.close" (click)="closed.emit()">
       <fold-icon name="close" />
     </button>
-    <span class="bar-label">{{ t().chrome.menu }}</span>
+    <span class="bar-label" [id]="labelId">{{ t().chrome.menu }}</span>
   </div>
 
   <div class="body">

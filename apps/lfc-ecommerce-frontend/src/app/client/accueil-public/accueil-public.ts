@@ -63,6 +63,7 @@ import { StaffHomePicksRow } from '../suggestions/staff-home-picks/staff-home-pi
 import { UsualPicksRow } from '../suggestions/usual-picks/usual-picks';
 import { HomeFeatured } from './home-featured/home-featured';
 import { HomeStorefront } from './home-storefront/home-storefront';
+import { isMeaningfulAlt } from '../shop/image-alt';
 
 /**
  * **La boutique** — où l'on va une fois la maison et l'heure choisies, et aussi
@@ -476,7 +477,8 @@ export class AccueilPublic {
       return null;
     }
     const translated = alt[this.locale.current()];
-    return translated !== undefined && translated.trim() !== '' ? translated : alt.fr;
+    const text = translated !== undefined && translated.trim() !== '' ? translated : alt.fr;
+    return isMeaningfulAlt(text) ? text : null;
   });
 
   /** Le rail des maisons, pour lire sa position de défilement. */

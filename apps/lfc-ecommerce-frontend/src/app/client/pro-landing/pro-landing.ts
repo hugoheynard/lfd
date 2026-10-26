@@ -38,7 +38,7 @@ import { mediaSrcset, SHEET_WIDTHS, sizedMedia } from '../shop/media-source';
 import { ShopStorefront } from '../shop/storefront/shop-storefront.store';
 import { ProFeaturedGateway } from '../shop/pro-featured.gateway';
 import { ProPickupListGateway } from '../shop/pro-pickup-list.gateway';
-import { objectPositionOf, shelfArtOf } from '../shop/shelf-display';
+import { named, objectPositionOf, shelfArtOf } from '../shop/shelf-display';
 
 /**
  * Un incontournable tel que la carte éditoriale le pose : l'ouverture (la
@@ -49,7 +49,6 @@ export interface FeaturedCard {
   readonly name: string;
   readonly note: string | null;
   readonly label: string;
-  readonly alt: string;
   readonly src: string;
   readonly srcset: string;
   readonly position: string;
@@ -57,9 +56,15 @@ export interface FeaturedCard {
 
 /** L’image d’un incontournable : l’ouverture, sinon la vignette, sinon le rayon. */
 export function artOfFeatured(item: ShopFeaturedItemView): ShopImageView {
-  return (
+  return named(
     item.image ??
-    item.thumbnail ?? { url: shelfArtOf(item.shelfId), alt: item.name, width: null, height: null }
+      item.thumbnail ?? {
+        url: shelfArtOf(item.shelfId),
+        alt: item.name,
+        width: null,
+        height: null,
+      },
+    item.name,
   );
 }
 
@@ -202,7 +207,6 @@ export class ProLanding {
         name: item.name,
         note: item.note,
         label: fill(this.c().featured.signInLabel, { name: item.name }),
-        alt: art.alt,
         src: sizedMedia(art.url, FEATURED_WIDTHS[0]),
         srcset: mediaSrcset(art.url, FEATURED_WIDTHS),
         position: objectPositionOf(art),

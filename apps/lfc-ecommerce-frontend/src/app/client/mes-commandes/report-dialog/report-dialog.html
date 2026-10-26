@@ -55,9 +55,9 @@
 
           @if (photos().length > 0) {
             <ul class="previews">
-              @for (photo of photos(); track photo.preview) {
+              @for (photo of photos(); track photo.preview; let index = $index) {
                 <li class="preview">
-                  <img [src]="photo.preview" [alt]="photo.file.name" />
+                  <img [src]="photo.preview" [alt]="attachedLabel(index)" />
                   <fold-button-icon
                     class="remove"
                     size="sm"

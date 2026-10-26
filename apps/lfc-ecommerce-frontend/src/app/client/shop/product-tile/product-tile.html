@@ -5,6 +5,7 @@
   [class.contain]="mediaFit() === 'contain'"
 >
   <div class="media">
+    <!-- Le bouton porte le nom du produit : l'image est décorative (RGAA 1.2). -->
     <button class="photo" type="button" [attr.aria-label]="product().name" (click)="opened.emit()">
       <!-- `sizes` dit la place RÉELLE que le CSS donnera : sans lui, le
            navigateur suppose la pleine largeur de la fenêtre et choisit
@@ -14,7 +15,7 @@
         [src]="artSrc()"
         [attr.srcset]="artSrcset() || null"
         [attr.sizes]="sizes()"
-        [attr.alt]="art().alt"
+        alt=""
         [style.object-position]="artPosition()"
         loading="lazy"
         decoding="async"

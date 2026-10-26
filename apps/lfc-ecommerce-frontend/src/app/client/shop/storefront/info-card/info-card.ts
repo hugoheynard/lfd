@@ -19,6 +19,7 @@ import { objectPositionOf } from '../../shelf-display';
 import { operationBadge } from '../operation-badge';
 import { StorefrontActions } from '../storefront-actions';
 import type { StorefrontRenderer } from '../storefront-renderers';
+import { DECORATIVE_ALT, imageAlt } from '../../image-alt';
 
 /** Le texte dans la langue du visiteur, le français sinon — il est toujours là. */
 function localized(text: StorefrontText, locale: LocaleCode): string {
@@ -115,7 +116,7 @@ export class InfoCard implements StorefrontRenderer {
   /** Le texte alternatif ; vide quand la médiathèque n'en a pas — l'image est alors décorative. */
   protected readonly imageAlt = computed(() => {
     const alt = this.image()?.alt ?? null;
-    return alt === null ? '' : localized(alt, this.locale());
+    return alt === null ? DECORATIVE_ALT : imageAlt(localized(alt, this.locale()), DECORATIVE_ALT);
   });
 
   /**

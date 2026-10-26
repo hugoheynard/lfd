@@ -459,6 +459,8 @@ export interface OrdersCopy {
   readonly photoRemaining: string;
   /** `{name}` : la photo retirée. */
   readonly photoRemove: string;
+  /** `{n}` : le rang de la photo jointe — l'alternative de son aperçu (RGAA 1.3). */
+  readonly photoAttached: string;
   /** `{name}` : le fichier refusé avant l'envoi. */
   readonly photoBadType: string;
   readonly photoTooBig: string;
@@ -582,6 +584,7 @@ export const ORDERS_FR: OrdersCopy = {
   reasonPlaceholder: 'Choisir une raison',
   photoRemaining: 'Jusqu’à {n} photo(s) de plus — JPEG, PNG ou WebP, 5 Mo chacune.',
   photoRemove: 'Retirer {name}',
+  photoAttached: 'Photo jointe {n}',
   photoBadType: '« {name} » n’est pas une photo JPEG, PNG ou WebP.',
   photoTooBig: '« {name} » dépasse 5 Mo.',
   photoTooMany: '{n} photos au plus.',
@@ -704,6 +707,7 @@ export const ORDERS_EN: OrdersCopy = {
   reasonPlaceholder: 'Choose a reason',
   photoRemaining: 'Up to {n} more photo(s) — JPEG, PNG or WebP, 5 MB each.',
   photoRemove: 'Remove {name}',
+  photoAttached: 'Attached photo {n}',
   photoBadType: '“{name}” is not a JPEG, PNG or WebP photo.',
   photoTooBig: '“{name}” is larger than 5 MB.',
   photoTooMany: '{n} photos at most.',
@@ -827,6 +831,7 @@ export const ORDERS_IT: OrdersCopy = {
   reasonPlaceholder: 'Scegliere un motivo',
   photoRemaining: 'Fino a {n} foto in più — JPEG, PNG o WebP, 5 MB ciascuna.',
   photoRemove: 'Togliere {name}',
+  photoAttached: 'Foto allegata {n}',
   photoBadType: '«{name}» non è una foto JPEG, PNG o WebP.',
   photoTooBig: '«{name}» supera 5 MB.',
   photoTooMany: '{n} foto al massimo.',

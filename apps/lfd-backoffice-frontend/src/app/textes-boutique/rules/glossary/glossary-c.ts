@@ -110,4 +110,5 @@ export const GLOSSARY_C: Readonly<Record<string, string>> = {
   cutoffLeftHoursMinutes: 'Heure limite — durée en heures et minutes',
   cutoffLeftMinutes: 'Heure limite — durée en minutes',
   checking: 'Vérification en cours',
+  connection: 'Connexion',
 };

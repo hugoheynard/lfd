@@ -14,6 +14,30 @@ import type { AccountCopy } from './screens/account.copy';
 import type { LoyaltyCopy } from './screens/loyalty.copy';
 import type { OrdersCopy } from './screens/orders.copy';
 
+/** Les titres d'onglet, par page. */
+export interface PageTitles {
+  readonly welcome: string;
+  readonly registration: string;
+  readonly proLanding: string;
+  readonly proOpening: string;
+  readonly orders: string;
+  readonly invoices: string;
+  readonly account: string;
+  readonly profile: string;
+  readonly loyalty: string;
+  readonly shop: string;
+  readonly payment: string;
+  readonly pickupQr: string;
+  readonly orderRevision: string;
+  readonly guestOrder: string;
+  readonly salesTerms: string;
+  readonly orderConfirmed: string;
+  readonly connection: string;
+}
+
+/** La clé d'un titre d'onglet — ce qu'une route porte en `data.pageTitle`. */
+export type PageTitleKey = keyof PageTitles;
+
 export interface ClientCopy {
   readonly chrome: {
     /** L'avis après une connexion Google refusée : un compte porte déjà l'adresse. */
@@ -109,6 +133,19 @@ export interface ClientCopy {
 
     /** Le pied du popover du panier : il mène à la page où l'on règle. */
     readonly cartOpen: string;
+
+    /**
+     * Le lien d'évitement du shell, premier arrêt du clavier (RGAA 12.7) : fold
+     * l'écrit en anglais par défaut, il se donne donc dans la langue de la page.
+     */
+    readonly skipLink: string;
+
+    /**
+     * Le titre de l'onglet (`<title>`) de chaque page du shell client, marque
+     * comprise — lu par `ClientTitleStrategy` sur la clé `pageTitle` de la
+     * route (RGAA 8.6 : il suit la langue choisie).
+     */
+    readonly pageTitles: PageTitles;
   };
 
   readonly nav: {

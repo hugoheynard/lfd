@@ -61,7 +61,6 @@ export class HomeFeatured {
             name: item.name,
             note: item.note,
             label: `${item.name}, ${price}`,
-            alt: art.alt,
             src: sizedMedia(art.url, FEATURED_WIDTHS[0]),
             srcset: mediaSrcset(art.url, FEATURED_WIDTHS),
             position: objectPositionOf(art),

@@ -8,6 +8,7 @@ import { SHOP_TIME_ZONE } from '../shop-time-zone';
 import { objectPositionOf } from './shelf-display';
 import { SHELF_PARAM } from './shelves';
 import { operationShelfId, operationText, pickupSpan, shortDate } from './operations';
+import { DECORATIVE_ALT, imageAlt } from './image-alt';
 
 /**
  * **L'opération datée mise en avant sur l'accueil** — Pâques, Noël, ce que le
@@ -151,7 +152,8 @@ function imageOf(operation: ShopOperationView): DatedEventImage | null {
   return {
     src: sizedMedia(url, SHEET_WIDTHS[0]),
     srcset: mediaSrcset(url, SHEET_WIDTHS),
-    alt,
+    // Le titre de l'opération est écrit à côté : sans alternative rédigée, l'image est décorative.
+    alt: imageAlt(alt, DECORATIVE_ALT),
     position: objectPositionOf(operation.image),
   };
 }
