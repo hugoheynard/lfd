@@ -1,4 +1,6 @@
-import type { Route } from '@angular/router';
+import { Component } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
+import { provideRouter, Router, type Route } from '@angular/router';
 import type { StaffPermission } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
@@ -9,6 +11,9 @@ import { comptoirLanding } from '../comptoir/comptoir-landing';
 import { tourManagerLanding } from '../livraison/tour-manager/tour-manager-views';
 import { prodManagerLanding } from '../production/prod-manager/prod-manager-views';
 import type { AnyPermissionGuard, PermissionGuard } from '../auth/permission.guard';
+
+@Component({ template: '' })
+class Blank {}
 
 /**
  * **Quel droit ouvre quel écran** — la table entière, écrite une fois.
@@ -81,7 +86,6 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'comptabilite/procedure-de-prelevement/:id': null,
   'comptabilite/arretes-de-facturation/:id': null,
   'comptabilite/factures/:id': null,
-  'comptabilite/limites-de-prix': 'lfc_price_limits:read',
   // Le prélèvement d'essai et nos établissements (2026-10-22, plan-prelevement-d-essai.md).
   'comptabilite/prelevement-d-essai': 'collection_test:read',
   'comptabilite/nos-etablissements': 'collection_test:read',
@@ -192,6 +196,8 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // bascule) depuis le retrait de l'écran du référentiel (2026-10-16).
   operations: 'lfc_operations:read',
   fidelite: 'lfc_loyalty:read',
+  // En Gestion Boutique depuis le 2026-10-26 (décision de Hugo), sous LEUR droit.
+  'limites-de-prix': 'lfc_price_limits:read',
   suggestions: 'lfc_suggestions:read',
   // Les formules (2026-10-19, F2a), sous LEUR droit.
   formules: 'shop_bundles:read',
@@ -576,6 +582,32 @@ describe("l'arbre de routes du back-office", () => {
     expect(legacy?.redirectTo).toBe('/fidelite');
     expect(legacy?.canActivate).toBeUndefined();
     expect(paths.indexOf('comptabilite/fidelite')).toBeLessThan(paths.indexOf('comptabilite'));
+  });
+
+  it('renvoie l’ancienne adresse des limites de prix vers Gestion Boutique, HORS de la coquille comptable', () => {
+    // Parties le 2026-10-26 (décision de Hugo) : même raison d'ordre que la
+    // fidélité — la coquille exige `b2b_accounting:read`.
+    const paths = routes.map((route) => route.path);
+    const legacy = routes.find((route) => route.path === 'comptabilite/limites-de-prix');
+
+    expect(typeof legacy?.redirectTo).toBe('function');
+    expect(legacy?.canActivate).toBeUndefined();
+    expect(paths.indexOf('comptabilite/limites-de-prix')).toBeLessThan(
+      paths.indexOf('comptabilite'),
+    );
+  });
+
+  it('garde les paramètres de requête en suivant l’ancienne adresse des limites de prix', async () => {
+    const legacy = routes.find((route) => route.path === 'comptabilite/limites-de-prix');
+    if (legacy === undefined) throw new Error('redirection absente');
+    TestBed.configureTestingModule({
+      providers: [provideRouter([legacy, { path: 'limites-de-prix', component: Blank }])],
+    });
+    const router = TestBed.inject(Router);
+
+    await router.navigateByUrl('/comptabilite/limites-de-prix?portee=pro');
+
+    expect(router.url).toBe('/limites-de-prix?portee=pro');
   });
 
   it('renvoie l’ancienne adresse du pied de page vers la section Communication', () => {

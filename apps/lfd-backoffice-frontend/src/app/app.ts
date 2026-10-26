@@ -330,7 +330,15 @@ export class App {
       this.canSeeLoyalty() ||
       this.canSeeSuggestions() ||
       this.canSeeBundles() ||
-      this.canSeeFeatured(),
+      this.canSeeFeatured() ||
+      this.canSeePriceLimits(),
+  );
+  /**
+   * Les limites de prix : leur droit à elles (`lfc_price_limits`), venues de
+   * la Comptabilité le 2026-10-26 (décision de Hugo).
+   */
+  protected readonly canSeePriceLimits = computed(() =>
+    this.permissions.can('lfc_price_limits:read'),
   );
   /** La mise en avant : le droit du catalogue publié (`lfc_catalog`, 2026-10-18). */
   protected readonly canSeeFeatured = computed(() => this.permissions.can('lfc_catalog:read'));

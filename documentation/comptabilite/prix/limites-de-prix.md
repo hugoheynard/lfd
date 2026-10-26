@@ -64,7 +64,7 @@ contexte `b2b/pricing`) :
 | ------------------------------------------------- | --------- | ------------------------------------------------------------------- |
 | `PrismaPriceFloorReader`                          | `pro`     | la résolution (commande, devis), cache + `listAll(at)` pour le daté |
 | `prisma-pricing-decisions.reader.ts`              | `pro`     | Tarification B2B, tarif d'un client, prix affichés                  |
-| `ListPriceLimitsQuery` (`price-limits.reader.ts`) | au choix  | l'écran Comptabilité                                                |
+| `ListPriceLimitsQuery` (`price-limits.reader.ts`) | au choix  | l'écran Gestion Boutique › Limites de prix                          |
 
 ## 4. Le droit et les routes
 
@@ -92,8 +92,13 @@ contexte `b2b/pricing`) :
 
 ## 5. Les écrans (back-office)
 
-**Comptabilité › Limites de prix** (`comptabilite/limites-de-prix/`, garde
-`lfc_price_limits:read`) :
+**Gestion Boutique › Limites de prix** (`/limites-de-prix`, garde
+`lfc_price_limits:read` ; composant dans `comptabilite/limites-de-prix/`).
+L'entrée a quitté l'espace Comptabilité le 2026-10-26 (**décision de Hugo**) :
+elle est la **dernière** de la section Gestion Boutique, au rail comme aux
+tuiles du menu mobile, et ce seul droit fait paraître la section.
+`/comptabilite/limites-de-prix` redirige vers `/limites-de-prix` en gardant
+les paramètres de requête (favoris) :
 
 - segmenté **Pro · Public** ; sous Public, une bannière dit que la limite ne
   borne encore aucun prix ;

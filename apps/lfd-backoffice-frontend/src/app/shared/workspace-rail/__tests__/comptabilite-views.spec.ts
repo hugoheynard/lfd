@@ -26,4 +26,13 @@ describe('les vues de la comptabilité', () => {
       }),
     );
   });
+
+  /** Parties en Gestion Boutique le 2026-10-26 (décision de Hugo). */
+  it('ne proposent plus « Limites de prix », dans aucun espace', () => {
+    const links = Object.values(WORKSPACES).flatMap((workspace) =>
+      workspace.views.map((view) => view.link),
+    );
+    expect(links).not.toContain('/comptabilite/limites-de-prix');
+    expect(COMPTABILITE_VIEWS.map((view) => view.key)).not.toContain('limites-de-prix');
+  });
 });

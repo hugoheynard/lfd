@@ -1,4 +1,5 @@
-import { type Routes } from '@angular/router';
+import { inject } from '@angular/core';
+import { Router, type Routes } from '@angular/router';
 import { NEW_VERSION_BANNER } from '@lfd/front-ops';
 
 import { anyPermissionGuard, permissionGuard } from './auth/permission.guard';
@@ -145,6 +146,29 @@ export const routes: Routes = [
   // dont la coquille exige `b2b_accounting:read` — y loger la redirection
   // refuserait qui n'a que `lfc_loyalty`.
   { path: 'comptabilite/fidelite', pathMatch: 'full', redirectTo: '/fidelite' },
+  {
+    // LES LIMITES DE PRIX — pro et publiques — en Gestion Boutique depuis le
+    // 2026-10-26 (décision de Hugo), sous LEUR droit (`lfc_price_limits`) :
+    // elles n'ont jamais relevé de `b2b_accounting`. Les gestes demandent
+    // `lfc_price_limits:write` ; l'écran les masque sans lui.
+    // Doc : documentation/comptabilite/prix/limites-de-prix.md.
+    path: 'limites-de-prix',
+    canActivate: [permissionGuard('lfc_price_limits:read')],
+    title: 'Limites de prix — LFC B2B admin',
+    loadComponent: () =>
+      import('./comptabilite/limites-de-prix/limites-de-prix-page').then(
+        (m) => m.LimitesDePrixPage,
+      ),
+  },
+  {
+    // L'ancienne adresse, dans des favoris : même raison d'ORDRE que la
+    // fidélité. Une fonction, pas une chaîne : une `redirectTo` absolue en
+    // chaîne PERD les paramètres de requête (constaté au test le 2026-10-26).
+    path: 'comptabilite/limites-de-prix',
+    pathMatch: 'full',
+    redirectTo: ({ queryParams }) =>
+      inject(Router).createUrlTree(['/limites-de-prix'], { queryParams }),
+  },
   {
     // LES PROMOTIONS — l'ancienne « Tarification B2B », premier niveau depuis
     // le 2026-10-13 (Hugo), sans le rail de l'e-commerce : on y vient depuis

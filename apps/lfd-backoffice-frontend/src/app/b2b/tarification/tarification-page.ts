@@ -45,7 +45,7 @@ type LoadState = 'loading' | 'ready' | 'error';
  * Elle se lit de **gauche à droite**, comme le prix se construit : l'article et
  * son tarif, l'altération de sa famille, la sienne, et le prix qui en sort. La
  * limite qui le protège se LIT sous l'article ; elle se pose dans la
- * Comptabilité, sous `lfc_price_limits`. Chaque cellule vide porte un `+` en pointillés : la
+ * Gestion Boutique (depuis le 2026-10-26), sous `lfc_price_limits`. Chaque cellule vide porte un `+` en pointillés : la
  * colonne dit où poser, sans qu'on ait à chercher dans un menu.
  *
  * Deux colonnes suivent, qui ne construisent plus le prix mais le **commentent** :

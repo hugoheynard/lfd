@@ -43,7 +43,7 @@ import { dynamicFloorLabel, floorLabel, roomEuros, roomPercent } from '../pricin
  *
  * **La limite se LIT ici, elle ne se règle plus.** Elle avait sa colonne, avec
  * ses boutons poser / modifier ; les limites relèvent désormais de
- * `lfc_price_limits` et se posent dans la Comptabilité
+ * `lfc_price_limits` et se posent en Gestion Boutique (depuis le 2026-10-26)
  * (`limites-de-prix.md`). Il en reste une ligne sous la référence et
  * le tarif de chaque article — la limite pro qui s'applique, et d'où elle vient.
  *

@@ -814,15 +814,10 @@ export const COMPTABILITE_VIEWS: readonly WorkspaceView[] = [
   // « Fidélité » est partie en Gestion Boutique le 2026-10-16 (Hugo), sous
   // son droit `lfc_loyalty` : elle est au rail principal et au lanceur mobile,
   // dans `app.html`. `/comptabilite/fidelite` redirige vers `/fidelite`.
-  {
-    // Son propre droit : les limites relèvent de `lfc_price_limits`, pas de la
-    // comptabilité (plan `limites-de-prix.md`).
-    key: 'limites-de-prix',
-    label: 'Limites de prix',
-    link: '/comptabilite/limites-de-prix',
-    icon: 'shield',
-    needs: 'lfc_price_limits:read',
-  },
+  // « Limites de prix » est partie en Gestion Boutique le 2026-10-26 (décision
+  // de Hugo), sous `lfc_price_limits` : rail principal et lanceur mobile, dans
+  // `app.html`. `/comptabilite/limites-de-prix` redirige vers `/limites-de-prix`.
+
   {
     // Son propre droit aussi : la surtaxe de retard relève de `b2b_late_fee`,
     // sortie des Réglages le 2026-09-29 (Hugo).

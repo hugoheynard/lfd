@@ -189,6 +189,49 @@ describe('App — Gestion Boutique', () => {
   });
 
   /**
+   * Parties de la Comptabilité le 2026-10-26 (décision de Hugo) : leur droit
+   * seul ouvre la section, et elles en sont la DERNIÈRE entrée, dans les deux
+   * arbres.
+   */
+  it('montre « Limites de prix » sous lfc_price_limits:read seul, en dernier, dans les deux arbres', () => {
+    const link = '/limites-de-prix';
+    const entry = render(['lfc_price_limits:read']).querySelector(rail(link));
+    expect(entry?.getAttribute('label')).toBe('Limites de prix');
+    expect(entry?.closest('fold-menu-section')?.getAttribute('label')).toBe('Gestion Boutique');
+    expect(
+      render(['lfc_price_limits:read'], true).querySelector(tile(link))?.getAttribute('label'),
+    ).toBe('Limites de prix');
+    expect(render(['b2b_accounting:read']).querySelector(rail(link))).toBeNull();
+    expect(render(['b2b_accounting:read'], true).querySelector(tile(link))).toBeNull();
+  });
+
+  it('range « Limites de prix » après toutes les autres entrées de Gestion Boutique', () => {
+    const all: StaffPermission[] = [
+      'b2b_settings:read',
+      'lfc_catalog:read',
+      'lfc_operations:read',
+      'lfc_loyalty:read',
+      'lfc_suggestions:read',
+      'shop_bundles:read',
+      'lfc_price_limits:read',
+    ];
+    const railLabels = [
+      ...render(all).querySelectorAll(
+        'fold-menu-section[label="Gestion Boutique"] a[fold-menu-item]',
+      ),
+    ].map((a) => a.getAttribute('label'));
+    expect(railLabels.at(-1)).toBe('Limites de prix');
+    expect(railLabels).toHaveLength(8);
+    const tileLabels = [
+      ...render(all, true).querySelectorAll(
+        'fold-nav-section[label="Gestion Boutique"] a[fold-nav-tile]',
+      ),
+    ].map((a) => a.getAttribute('label'));
+    expect(tileLabels.at(-1)).toBe('Limites de prix');
+    expect(tileLabels).toHaveLength(8);
+  });
+
+  /**
    * Parti en Admin le 2026-10-19 (Hugo) : plus aucune entrée de Gestion
    * Boutique ne mène au webhook, ni au rail ni aux tuiles, et son seul droit
    * ne fait plus paraître la section.

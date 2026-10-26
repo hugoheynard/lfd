@@ -328,6 +328,20 @@
               (click)="mobileNavOpen.set(false)"
             ></a>
           }
+          @if (canSeePriceLimits()) {
+            <!-- Les LIMITES DE PRIX, venues de la Comptabilité le 2026-10-26
+                 (décision de Hugo), sous leur droit `lfc_price_limits`. -->
+            <a
+              fold-menu-item
+              icon="shield"
+              label="Limites de prix"
+              routerLink="/limites-de-prix"
+              routerLinkActive
+              #priceLimitsRla="routerLinkActive"
+              [active]="priceLimitsRla.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
         </fold-menu-section>
       }
 
@@ -1048,6 +1062,19 @@
               routerLinkActive
               #bundlesTile="routerLinkActive"
               [active]="bundlesTile.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
+          @if (canSeePriceLimits()) {
+            <!-- Les LIMITES DE PRIX : la même entrée qu'au rail (deux arbres). -->
+            <a
+              fold-nav-tile
+              icon="shield"
+              label="Limites de prix"
+              routerLink="/limites-de-prix"
+              routerLinkActive
+              #priceLimitsTile="routerLinkActive"
+              [active]="priceLimitsTile.isActive"
               (click)="mobileNavOpen.set(false)"
             ></a>
           }

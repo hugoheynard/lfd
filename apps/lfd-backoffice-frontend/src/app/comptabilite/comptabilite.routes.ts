@@ -6,9 +6,10 @@ import { permissionGuard } from '../auth/permission.guard';
  * Les routes de l'**espace Comptabilité**.
  *
  * Un seul droit à l'entrée (`b2b_accounting:read`), et une garde par vue là
- * seulement où la vue relève d'un autre mur — les limites de prix
- * (`lfc_price_limits:read`, 2026-09-25) et la surtaxe de retard
- * (`b2b_late_fee:read`, 2026-09-29). Le reste n'en porte pas :
+ * seulement où la vue relève d'un autre mur — la surtaxe de retard
+ * (`b2b_late_fee:read`, 2026-09-29). Les limites de prix
+ * (`lfc_price_limits:read`) en sont parties le 2026-10-26 pour Gestion
+ * Boutique (décision de Hugo). Le reste n'en porte pas :
  * contrairement à l'Admin, dont les écrans relèvent de deux murs différents,
  * tout ce qui vit ici relève du même — l'identité d'émetteur, ses coordonnées,
  * et bientôt ses factures. Le jour où une vue demandera autre chose, elle
@@ -148,18 +149,9 @@ export const comptabiliteRoutes: Routes = [
       // `/comptabilite/fidelite` y redirige HORS de cette coquille (dans
       // `app.routes.ts`) — sans quoi qui n'a que `lfc_loyalty` serait refusé.
       // Plan : documentation/comptabilite/fidelite/plan-fidelite-en-gestion-boutique.md, F2.
-      {
-        // Les limites de prix, pro et publiques. Elles relèvent de
-        // `lfc_price_limits`, PAS de `b2b_accounting` : la vue porte donc son
-        // propre garde, comme l'annonce l'en-tête de ce fichier. Les gestes
-        // demandent `lfc_price_limits:write` ; l'écran les masque sans lui.
-        // Plan : documentation/comptabilite/prix/limites-de-prix.md.
-        path: 'limites-de-prix',
-        canActivate: [permissionGuard('lfc_price_limits:read')],
-        title: 'Limites de prix — LFC B2B admin',
-        loadComponent: () =>
-          import('./limites-de-prix/limites-de-prix-page').then((m) => m.LimitesDePrixPage),
-      },
+      // Les LIMITES DE PRIX ont quitté cet espace le 2026-10-26 (décision de
+      // Hugo) pour Gestion Boutique : `/limites-de-prix`, et l'ancienne adresse
+      // y redirige HORS de cette coquille (`app.routes.ts`).
       {
         // La surtaxe de retard — ce qu'une dérogation coûte. Venue des Réglages
         // le 2026-09-29 avec son propre droit, `b2b_late_fee` (Hugo) : ni
