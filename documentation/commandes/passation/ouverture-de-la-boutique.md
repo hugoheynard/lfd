@@ -121,6 +121,9 @@ que la passation refuserait :
 - **Sans compte** : l'adresse voyage dans le corps (forme de
   `guestBuyerSchema`), débit 10/min/IP. Boutique ouverte aux particuliers,
   la réponse est `true` pour toute adresse sans lire les exemptions.
+  **Assumé par Hugo le 2026-10-26** : cette route dit, adresse par adresse
+  et à 10 essais par minute au plus, si une adresse précise est exemptée.
+  On la garde : l'invité exempté doit voir son bouton.
 - Ni la liste, ni laquelle couvre la personne, ni l'exemption d'une autre
   société ne sortent : deux booléens au plus.
 
