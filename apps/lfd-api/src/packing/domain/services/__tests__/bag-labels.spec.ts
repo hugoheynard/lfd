@@ -28,6 +28,7 @@ function bin(id: string): BoardContainer {
 function order(containerList: readonly BoardContainer[]): BoardOrder {
   return {
     orderId: "ord_1",
+    rank: 1,
     reference: "ORD-0042",
     customerLabel: "Le Bistrot",
     fulfillmentMethod: "pickup",

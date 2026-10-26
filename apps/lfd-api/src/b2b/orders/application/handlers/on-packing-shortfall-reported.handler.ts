@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
 
 import type { DurableDelivery } from "../../../../platform/outbox/durable-event.js";
@@ -11,6 +11,7 @@ import {
   PackingShortfallReportedEvent,
 } from "../../../../packing/channels/commerce/index.js";
 import { RecordOrderShortfallCommand } from "../commands/record-order-shortfall.command.js";
+import { appliesToOrder } from "./later-shipment-guard.js";
 
 /** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
 export const ON_PACKING_SHORTFALL_REPORTED = "b2b.orders.record-shortfall-from-packing";
@@ -23,10 +24,15 @@ export const ON_PACKING_SHORTFALL_REPORTED = "b2b.orders.record-shortfall-from-p
 @Injectable()
 @DurableHandler({ type: PACKING_SHORTFALL_REPORTED, subscriber: ON_PACKING_SHORTFALL_REPORTED })
 export class OnPackingShortfallReported implements DurableSubscriber {
+  private readonly logger = new Logger(OnPackingShortfallReported.name);
+
   constructor(private readonly commands: CommandBus) {}
 
   async handle(delivery: DurableDelivery): Promise<void> {
     const event = PackingShortfallReportedEvent.fromPayload(delivery.payload);
+    if (!appliesToOrder(event, PACKING_SHORTFALL_REPORTED, this.logger)) {
+      return;
+    }
     // L'instant vient du FAIT : c'est lui qui départage deux signalements.
     await this.commands.execute(
       new RecordOrderShortfallCommand(event.reference, event.reportedAt, event.lines),

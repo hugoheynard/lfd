@@ -33,10 +33,11 @@ function drawn(
   orderId = "ord_1",
   clientele: "pro" | "public" | null = null,
   siteId: string | null = null,
+  rank = 1,
 ) {
   return new PackingListDrawnEvent(DAY, AT, {
     orderId,
-    rank: 1,
+    rank,
     reference: `ORD-${orderId}`,
     customerLabel: "Trois Ponts",
     fulfillmentMethod: "pickup",
@@ -84,6 +85,7 @@ describe("OnPackingListDrawn", () => {
       {
         serviceDay: DAY,
         orderId: "ord_1",
+        rank: 1,
         reference: "ORD-ord_1",
         customerLabel: "Trois Ponts",
         fulfillmentMethod: "pickup",
@@ -119,6 +121,18 @@ describe("OnPackingListDrawn", () => {
     expect([...shadow.orders.values()].map((order) => [order.orderId, order.siteId])).toEqual([
       ["ord_vv", "site_vv"],
       ["ord_sans", null],
+    ]);
+  });
+
+  it("inscrit le reliquat du même jour comme une feuille distincte, à son rang (L3b)", async () => {
+    const { shadow, list } = setup();
+
+    await list.handle(delivery(drawn("ord_1")));
+    await list.handle(delivery(drawn("ord_1", null, null, 2)));
+
+    expect([...shadow.orders.values()].map((order) => [order.orderId, order.rank])).toEqual([
+      ["ord_1", 1],
+      ["ord_1", 2],
     ]);
   });
 

@@ -23,6 +23,7 @@ function line(sku: string, quantity: number, packed = false, name = sku): SheetL
 function order(overrides: Partial<BoardOrder> & Pick<BoardOrder, "orderId">): BoardOrder {
   return {
     reference: `ORD-${overrides.orderId}`,
+    rank: 1,
     customerLabel: "Le Bistrot",
     fulfillmentMethod: "delivery",
     clientele: null,

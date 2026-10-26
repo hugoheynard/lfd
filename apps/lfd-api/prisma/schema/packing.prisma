@@ -18,6 +18,10 @@ model PackingOrder {
   serviceDay String @map("service_day") @db.VarChar(10)
   /// L'identifiant de la commande côté COMMERCE, opaque.
   orderId    String @map("order_id")
+  /// **Le rang de l'envoi** (plan E7 reliquat, choix 5 et 14, lot L3b) : 1 =
+  /// la commande, au-delà un reliquat — sa feuille est distincte, sur le même
+  /// stock du jour. CHECK ≥ 1 en base.
+  rank       Int    @default(1)
 
   reference         String
   customerLabel     String  @map("customer_label")
@@ -60,7 +64,7 @@ model PackingOrder {
   lines      PackingLine[]
   containers PackingContainer[]
 
-  @@id([serviceDay, orderId])
+  @@id([serviceDay, orderId, rank])
   @@map("packing_order")
   @@schema("packing")
 }
@@ -69,7 +73,9 @@ model PackingOrder {
 model PackingLine {
   serviceDay String       @map("service_day") @db.VarChar(10)
   orderId    String       @map("order_id")
-  order      PackingOrder @relation(fields: [serviceDay, orderId], references: [serviceDay, orderId], onDelete: Restrict)
+  /// Le rang de l'envoi de la feuille (lot L3b) ; 1 = la commande.
+  rank       Int          @default(1)
+  order      PackingOrder @relation(fields: [serviceDay, orderId, rank], references: [serviceDay, orderId, rank], onDelete: Restrict)
 
   sku         String
   productName String @map("product_name")
@@ -81,7 +87,7 @@ model PackingLine {
   packedBy       String?   @map("packed_by")
   packedInitials String    @default("") @map("packed_initials")
 
-  @@id([serviceDay, orderId, sku])
+  @@id([serviceDay, orderId, rank, sku])
   @@map("packing_line")
   @@schema("packing")
 }
@@ -175,7 +181,9 @@ model PackingContainer {
   id         String       @id
   serviceDay String       @map("service_day") @db.VarChar(10)
   orderId    String       @map("order_id")
-  order      PackingOrder @relation(fields: [serviceDay, orderId], references: [serviceDay, orderId], onDelete: Restrict)
+  /// Le rang de l'envoi de la feuille (lot L3b) ; 1 = la commande.
+  rank       Int          @default(1)
+  order      PackingOrder @relation(fields: [serviceDay, orderId, rank], references: [serviceDay, orderId, rank], onDelete: Restrict)
 
   /// `bin` ou `bag` (CHECK).
   nature  String  @db.VarChar(4)

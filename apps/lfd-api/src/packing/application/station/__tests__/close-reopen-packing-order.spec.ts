@@ -102,6 +102,20 @@ describe("ClosePackingOrderHandler — « Déclarer prête » au colisage", () =
     ]);
   });
 
+  it("ferme la feuille du reliquat du même jour à son rang, sans toucher la feuille de la commande (L3b)", async () => {
+    const { close, sheets, durable } = setup(filled());
+    sheets.put(filled({ rank: 2, reference: "ORD-0001", shortfallReportedAt: FIRST }));
+
+    await close.execute(new ClosePackingOrderCommand(DAY, "ord_1", "s2", 2));
+
+    expect(sheets.of(DAY, "ord_1", 2)?.packed).toEqual({ at: FIRST, by: "s2" });
+    expect(sheets.of(DAY, "ord_1")?.packed).toBeNull();
+    expect(durable.facts.map((fact) => [fact.key, fact.payload["rank"]])).toEqual([
+      [`${PACKED}:ord_1:r2`, 2],
+      [`packing.shortfall_cleared:ord_1:${FIRST.toISOString()}`, 2],
+    ]);
+  });
+
   it("refuse une ligne pas entièrement répartie, et ne publie rien", async () => {
     const { close, sheets, durable } = setup(sheet({ containerList: [], containers: 0 }));
 

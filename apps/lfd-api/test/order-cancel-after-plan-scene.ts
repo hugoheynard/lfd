@@ -94,7 +94,7 @@ export const codeOf = (response: request.Response): string =>
 /** La feuille du colisage telle que la base la porte — même une pierre tombale. */
 export function packingRowOf(ctx: E2eContext, orderId: string) {
   return ctx.prisma.packingOrder.findUnique({
-    where: { serviceDay_orderId: { serviceDay: SERVICE_DAY, orderId } },
+    where: { serviceDay_orderId_rank: { serviceDay: SERVICE_DAY, orderId, rank: 1 } },
     select: {
       withdrawnAt: true,
       packedAt: true,

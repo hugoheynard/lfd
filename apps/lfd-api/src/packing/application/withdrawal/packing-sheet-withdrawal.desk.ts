@@ -98,8 +98,7 @@ export class PackingSheetWithdrawalDesk extends PackingWithdrawalDesk {
     const event = new PackingSheetWithdrawnEvent(
       sheet.serviceDay,
       sheet.orderId,
-      // La feuille n'a pas encore de rang (L3b) : elle est celle de la commande.
-      FIRST_SHIPMENT_RANK,
+      sheet.rank,
       sheet.reference,
       at,
       released,
@@ -111,13 +110,15 @@ export class PackingSheetWithdrawalDesk extends PackingWithdrawalDesk {
   /**
    * La feuille sous verrou — ou la pierre tombale, posée puis relue sous
    * verrou (`laid`). Si le tirage est passé entre-temps, c'est sa feuille.
+   * Celle de rang 1 : aucun reliquat n'est encore inscrit au colisage (L8), et
+   * retirer TOUS les envois d'une commande annulée est un verrou de L5.
    */
   private async lockedOrLaid(
     serviceDay: string,
     orderId: string,
     at: Date,
   ): Promise<{ readonly sheet: PackingSheet; readonly laid: boolean }> {
-    const existing = await this.sheets.lock(serviceDay, orderId);
+    const existing = await this.sheets.lock(serviceDay, orderId, FIRST_SHIPMENT_RANK);
     if (existing !== null) {
       return { sheet: existing, laid: false };
     }
@@ -126,7 +127,7 @@ export class PackingSheetWithdrawalDesk extends PackingWithdrawalDesk {
       throw new InscribedOrderNotOnDayError(orderId, serviceDay);
     }
     await this.tombstones.lay({ serviceDay, orderId, ...header, withdrawnAt: at });
-    const laid = await this.sheets.lock(serviceDay, orderId);
+    const laid = await this.sheets.lock(serviceDay, orderId, FIRST_SHIPMENT_RANK);
     if (laid === null) {
       throw new InscribedOrderNotOnDayError(orderId, serviceDay);
     }

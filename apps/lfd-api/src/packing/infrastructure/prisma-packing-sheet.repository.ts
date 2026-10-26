@@ -45,14 +45,14 @@ export class PrismaPackingSheetRepository extends PackingSheetRepository {
     super();
   }
 
-  async lock(serviceDay: string, orderId: string): Promise<PackingSheet | null> {
-    assertInsideUnitOfWork(`du bac ${orderId} (${serviceDay})`);
+  async lock(serviceDay: string, orderId: string, rank: number): Promise<PackingSheet | null> {
+    assertInsideUnitOfWork(`du bac ${orderId} (${serviceDay}, rang ${String(rank)})`);
     await this.prisma.$queryRaw`
       SELECT "order_id" FROM "packing"."packing_order"
-       WHERE "service_day" = ${serviceDay} AND "order_id" = ${orderId}
+       WHERE "service_day" = ${serviceDay} AND "order_id" = ${orderId} AND "rank" = ${rank}
          FOR UPDATE`;
     const row = await this.prisma.packingOrder.findUnique({
-      where: { serviceDay_orderId: { serviceDay, orderId } },
+      where: { serviceDay_orderId_rank: { serviceDay, orderId, rank } },
       select: {
         reference: true,
         packedAt: true,
@@ -83,6 +83,7 @@ export class PrismaPackingSheetRepository extends PackingSheetRepository {
     return PackingSheet.fromSnapshot({
       serviceDay,
       orderId,
+      rank,
       reference: row.reference,
       packed:
         row.packedAt === null || row.packedBy === null
@@ -99,22 +100,28 @@ export class PrismaPackingSheetRepository extends PackingSheetRepository {
     });
   }
 
-  async lockLatestOf(orderId: string): Promise<PackingSheet | null> {
-    assertInsideUnitOfWork(`du bac le plus récent de ${orderId}`);
+  async lockLatestOf(orderId: string, rank: number): Promise<PackingSheet | null> {
+    assertInsideUnitOfWork(`du bac le plus récent de ${orderId} (rang ${String(rank)})`);
     const days = await this.prisma.$queryRaw<{ service_day: string }[]>`
       SELECT "service_day" FROM "packing"."packing_order"
-       WHERE "order_id" = ${orderId}
+       WHERE "order_id" = ${orderId} AND "rank" = ${rank}
        ORDER BY "service_day" DESC
        LIMIT 1
          FOR UPDATE`;
     const day = days[0]?.service_day;
-    return day === undefined ? null : this.lock(day, orderId);
+    return day === undefined ? null : this.lock(day, orderId, rank);
   }
 
   async save(sheet: PackingSheet): Promise<void> {
     const snapshot = sheet.toSnapshot();
     await this.prisma.packingOrder.update({
-      where: { serviceDay_orderId: { serviceDay: snapshot.serviceDay, orderId: snapshot.orderId } },
+      where: {
+        serviceDay_orderId_rank: {
+          serviceDay: snapshot.serviceDay,
+          orderId: snapshot.orderId,
+          rank: sheet.rank,
+        },
+      },
       data: {
         packedAt: snapshot.packed?.at ?? null,
         packedBy: snapshot.packed?.by ?? null,
@@ -124,22 +131,24 @@ export class PrismaPackingSheetRepository extends PackingSheetRepository {
         withdrawnAt: snapshot.withdrawnAt ?? null,
       },
     });
-    await saveContainers(this.prisma, snapshot);
+    await saveContainers(this.prisma, snapshot, sheet.rank);
     // Une ligne absente de l'agrégat en est sortie : décidée à zéro au départ
     // incomplet (E6b). Rien d'autre ne retire une ligne d'une fiche vivante.
     await this.prisma.packingLine.deleteMany({
       where: {
         serviceDay: snapshot.serviceDay,
         orderId: snapshot.orderId,
+        rank: sheet.rank,
         sku: { notIn: snapshot.lines.map((line) => line.sku) },
       },
     });
     for (const line of snapshot.lines) {
       await this.prisma.packingLine.update({
         where: {
-          serviceDay_orderId_sku: {
+          serviceDay_orderId_rank_sku: {
             serviceDay: snapshot.serviceDay,
             orderId: snapshot.orderId,
+            rank: sheet.rank,
             sku: line.sku,
           },
         },

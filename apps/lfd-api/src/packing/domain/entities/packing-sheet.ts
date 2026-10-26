@@ -20,6 +20,7 @@ import {
   PackingSheetHasLiveContainersError,
   PackingSheetWithdrawnError,
 } from "../errors/packing-withdrawal-errors.js";
+import { FIRST_SHIPMENT_RANK } from "../../../production/channels/packing/index.js";
 import { type DueRevision, type RevisedDueLine, revisedDueOf } from "../services/revised-due.js";
 import {
   type AuthorizedLine,
@@ -80,6 +81,8 @@ export class PackingSheet {
   private constructor(
     readonly serviceDay: string,
     readonly orderId: string,
+    /** Le rang de l'envoi colisé — 1 = la commande (L3b). */
+    readonly rank: number,
     readonly reference: string,
     private packedValue: SheetMark | null,
     private containersValue: number,
@@ -98,6 +101,7 @@ export class PackingSheet {
     return new PackingSheet(
       snapshot.serviceDay,
       snapshot.orderId,
+      snapshot.rank ?? FIRST_SHIPMENT_RANK,
       snapshot.reference,
       snapshot.packed,
       snapshot.containers,
@@ -325,6 +329,7 @@ export class PackingSheet {
     return {
       serviceDay: this.serviceDay,
       orderId: this.orderId,
+      rank: this.rank,
       reference: this.reference,
       packed: this.packedValue,
       containers: this.containers,

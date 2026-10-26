@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../platform/database/prisma.service.js";
+import { FIRST_SHIPMENT_RANK } from "../../production/channels/packing/index.js";
 import {
   OrderPackingStateReader,
   type OrderPackingState,
@@ -24,7 +25,10 @@ export class PrismaOrderPackingStateReader extends OrderPackingStateReader {
       return states;
     }
     const rows = await this.prisma.packingOrder.findMany({
-      where: { orderId: { in: [...orderIds] } },
+      // La feuille de la COMMANDE (rang 1) : le port répond par commande, et un
+      // reliquat fermé ne dit rien de la commande (plan E7 reliquat, L3b ;
+      // l'état par envoi est L4/L5).
+      where: { orderId: { in: [...orderIds] }, rank: FIRST_SHIPMENT_RANK },
       select: { orderId: true, packedAt: true, withdrawnAt: true },
       orderBy: { serviceDay: "asc" },
     });

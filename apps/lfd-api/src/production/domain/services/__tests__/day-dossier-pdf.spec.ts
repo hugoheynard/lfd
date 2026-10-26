@@ -21,6 +21,7 @@ function order(reference: string, quantity: number): ProductionOrderSnapshot {
   return {
     packed: null,
     orderId: `id-${reference}`,
+    rank: 1,
     reference,
     customerLabel: `Client ${reference}`,
     fulfillmentMethod: "delivery",

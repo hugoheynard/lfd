@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../platform/database/prisma.service.js";
+import { FIRST_SHIPMENT_RANK } from "../domain/value-objects/shipment-ref.value-object.js";
 import { OrderInscriptionReader } from "../channels/commerce/order-inscription.reader.js";
 
 /**
@@ -15,7 +16,9 @@ export class PrismaOrderInscriptionReader extends OrderInscriptionReader {
 
   async inscribedDayOf(orderId: string): Promise<string | null> {
     const row = await this.prisma.productionOrder.findFirst({
-      where: { orderId },
+      // La commande elle-même (rang 1) : un reliquat porte son propre jour, et
+      // `findFirst` sans ordre rendrait l'un ou l'autre (plan E7 reliquat, L3b).
+      where: { orderId, rank: FIRST_SHIPMENT_RANK },
       select: { serviceDay: true },
     });
     return row?.serviceDay ?? null;

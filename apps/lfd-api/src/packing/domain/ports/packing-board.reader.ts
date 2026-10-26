@@ -15,6 +15,8 @@ export interface BoardContainer {
 /** Une commande de la liste à coliser, avec son rangement. */
 export interface BoardOrder {
   readonly orderId: string;
+  /** Le rang de l'envoi (L3b) — 1 = la commande ; une feuille par rang. */
+  readonly rank: number;
   readonly reference: string;
   readonly customerLabel: string;
   readonly fulfillmentMethod: "pickup" | "delivery";

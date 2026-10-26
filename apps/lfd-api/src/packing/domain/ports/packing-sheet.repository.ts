@@ -9,15 +9,20 @@ import type { PackingSheet } from "../entities/packing-sheet.js";
  * et la fermeture n'a pas besoin d'écriture conditionnée.
  */
 export abstract class PackingSheetRepository {
-  /** @returns `null` si la liste à coliser n'a pas encore livré cette commande. */
-  abstract lock(serviceDay: string, orderId: string): Promise<PackingSheet | null>;
+  /**
+   * La feuille d'un envoi `(jour, commande, rang)` — le rang depuis L3b (plan
+   * E7 reliquat, choix 5) : un reliquat du même jour a sa propre feuille.
+   *
+   * @returns `null` si la liste à coliser n'a pas encore livré cet envoi.
+   */
+  abstract lock(serviceDay: string, orderId: string, rank: number): Promise<PackingSheet | null>;
 
   /**
-   * Le bac le plus récent d'une commande, sous verrou — celui que la décision
-   * du départ incomplet autorise (E6b), qui ne connaît que la commande.
-   * `null` si la liste ne l'a jamais inscrite.
+   * Le bac le plus récent d'un envoi, sous verrou — celui que la décision
+   * du départ incomplet autorise (E6b), qui ne connaît pas le jour.
+   * `null` si la liste ne l'a jamais inscrit.
    */
-  abstract lockLatestOf(orderId: string): Promise<PackingSheet | null>;
+  abstract lockLatestOf(orderId: string, rank: number): Promise<PackingSheet | null>;
 
   abstract save(sheet: PackingSheet): Promise<void>;
 }

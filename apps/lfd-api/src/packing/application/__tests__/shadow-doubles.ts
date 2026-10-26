@@ -14,7 +14,7 @@ export class InMemoryShadow extends PackingShadowLedger {
   readonly stocks = new Map<string, { received: number; returned: number }>();
 
   drawOrder(order: ShadowOrderToDraw): Promise<void> {
-    const key = `${order.serviceDay}/${order.orderId}`;
+    const key = `${order.serviceDay}/${order.orderId}/${String(order.rank)}`;
     if (!this.orders.has(key)) {
       this.orders.set(key, order);
     }

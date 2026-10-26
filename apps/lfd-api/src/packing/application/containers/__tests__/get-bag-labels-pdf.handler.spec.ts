@@ -52,6 +52,7 @@ class FixedCommerce extends OrderBagLabelReader {
 function sheet(containerList: BoardOrder["containerList"]): BoardOrder {
   return {
     orderId: "ord_1",
+    rank: 1,
     reference: "ORD-0042",
     customerLabel: "Le Bistrot",
     fulfillmentMethod: "pickup",

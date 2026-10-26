@@ -54,6 +54,7 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
         orders: {
           select: {
             orderId: true,
+            rank: true,
             reference: true,
             customerLabel: true,
             fulfillmentMethod: true,
@@ -112,6 +113,7 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
         // qui le tient, et `SealedDayReading` le pose en lecture.
         packed: null,
         orderId: order.orderId,
+        rank: order.rank,
         reference: order.reference,
         customerLabel: order.customerLabel,
         // Le mode d'acheminement est un mot du domaine, pas une colonne : on le
@@ -214,6 +216,7 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
           data: {
             serviceDay: snapshot.serviceDay,
             orderId: order.orderId,
+            rank: order.rank,
             reference: order.reference,
             customerLabel: order.customerLabel,
             fulfillmentMethod: order.fulfillmentMethod,
@@ -222,13 +225,13 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
             clientele: order.clientele,
             siteId: order.siteId,
             ...sheetRowOf(order.sheetDetails),
-            ...carried.orders.get(order.orderId),
+            ...carried.orders.get(carriedKey(order.orderId, order.rank)),
             lines: {
               create: order.lines.map((line) => ({
                 sku: line.sku,
                 productName: line.productName,
                 quantity: line.quantity,
-                ...carried.lines.get(`${order.orderId}/${line.sku}`),
+                ...carried.lines.get(`${carriedKey(order.orderId, order.rank)}/${line.sku}`),
               })),
             },
           },
@@ -270,8 +273,9 @@ interface CarriedLinePacking {
 
 /** Ce que `carriedPacking` relit d'une journée — la seule lecture restante des colonnes mortes. */
 interface CarriedPacking {
+  /** Par envoi — cf. `carriedKey`. */
   readonly orders: ReadonlyMap<string, CarriedOrderPacking>;
-  /** Par `<orderId>/<sku>`. */
+  /** Par `<envoi>/<sku>`. */
   readonly lines: ReadonlyMap<string, CarriedLinePacking>;
 }
 
@@ -282,6 +286,7 @@ interface PackingCarrierClient {
       where: { serviceDay: string };
       select: {
         orderId: true;
+        rank: true;
         packedAt: true;
         packedBy: true;
         containerCount: true;
@@ -290,10 +295,16 @@ interface PackingCarrierClient {
     }): Promise<
       readonly (CarriedOrderPacking & {
         readonly orderId: string;
+        readonly rank: number;
         readonly lines: readonly (CarriedLinePacking & { readonly sku: string })[];
       })[]
     >;
   };
+}
+
+/** La clé d'un envoi dans les tables de recopie — interne à ce fichier, jamais écrite. */
+function carriedKey(orderId: string, rank: number): string {
+  return `${orderId}:r${String(rank)}`;
 }
 
 /**
@@ -310,6 +321,7 @@ async function carriedPacking(
     where: { serviceDay },
     select: {
       orderId: true,
+      rank: true,
       packedAt: true,
       packedBy: true,
       containerCount: true,
@@ -319,14 +331,14 @@ async function carriedPacking(
   return {
     orders: new Map(
       rows.map((row) => [
-        row.orderId,
+        carriedKey(row.orderId, row.rank),
         { packedAt: row.packedAt, packedBy: row.packedBy, containerCount: row.containerCount },
       ]),
     ),
     lines: new Map(
       rows.flatMap((row) =>
         row.lines.map((line) => [
-          `${row.orderId}/${line.sku}`,
+          `${carriedKey(row.orderId, row.rank)}/${line.sku}`,
           { packedAt: line.packedAt, packedBy: line.packedBy, packedInitials: line.packedInitials },
         ]),
       ),

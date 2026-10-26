@@ -1,3 +1,4 @@
+import { FIRST_SHIPMENT_RANK } from "../../../production/channels/packing/index.js";
 import { Injectable } from "@nestjs/common";
 
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
@@ -44,7 +45,9 @@ export class PackingSheetRevisionDesk extends PackingRevisionDesk {
     revisedBy: string,
   ): Promise<PackingRevisionOutcome> {
     return this.uow.run(async () => {
-      const sheet = await this.sheets.lock(serviceDay, orderId);
+      // Une révision vise la commande, donc sa feuille de rang 1 (annexe A,
+      // « commande (révision, rang 1) »).
+      const sheet = await this.sheets.lock(serviceDay, orderId, FIRST_SHIPMENT_RANK);
       if (sheet === null) {
         return "sheet_missing";
       }

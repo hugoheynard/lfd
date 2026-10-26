@@ -90,6 +90,7 @@ function parisAt(day: string, time: string): Date {
 function order(orderId: string, packedBy: string | null): BoardOrder {
   return {
     orderId,
+    rank: 1,
     reference: `ORD-${orderId}`,
     customerLabel: "Le Bistrot",
     fulfillmentMethod: "pickup",

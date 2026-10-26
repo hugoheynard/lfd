@@ -29,6 +29,7 @@ describe("renderAtelierSheetPdf — la pastille de la commande", () => {
   const ORDER: ProductionOrderSnapshot = {
     packed: null,
     orderId: "ord-1",
+    rank: 1,
     reference: "ORD-0001",
     customerLabel: "Hôtel des Trois Ponts",
     fulfillmentMethod: "pickup",
@@ -64,6 +65,7 @@ describe("renderAtelierSheetPdf — en-tête et acheminement", () => {
   const ORDER: ProductionOrderSnapshot = {
     packed: null,
     orderId: "ord-1",
+    rank: 1,
     reference: "ORD-0001",
     customerLabel: "Hôtel des Trois Ponts",
     fulfillmentMethod: "pickup",

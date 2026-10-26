@@ -54,6 +54,7 @@ class FixedCommerce extends OrderBagLabelReader {
 
 const SHEET: BoardOrder = {
   orderId: "ord_1",
+  rank: 1,
   reference: "ORD-0042",
   customerLabel: "Le Bistrot",
   fulfillmentMethod: "pickup",

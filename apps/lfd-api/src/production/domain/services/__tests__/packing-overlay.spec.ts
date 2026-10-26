@@ -10,6 +10,7 @@ function order(
 ): ProductionOrderSnapshot {
   return {
     orderId,
+    rank: 1,
     reference: `ORD-${orderId}`,
     customerLabel: "Trois Ponts",
     fulfillmentMethod: "pickup",

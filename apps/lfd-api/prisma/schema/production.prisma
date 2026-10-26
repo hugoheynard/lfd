@@ -96,6 +96,9 @@ model ProductionOrder {
   /// L'identifiant de la commande côté COMMERCE. Opaque : on le garde pour
   /// pouvoir en reparler, jamais pour aller lire à côté.
   orderId   String @map("order_id")
+  /// **Le rang de l'envoi** (plan E7 reliquat, choix 5, lot L3b) : 1 = la
+  /// commande elle-même, au-delà un reliquat. CHECK ≥ 1 en base.
+  rank      Int    @default(1)
   reference String
 
   /// De quoi poser la feuille sur la bonne pile, et charger le bon véhicule.
@@ -175,9 +178,11 @@ model ProductionOrder {
 
   lines ProductionOrderLine[]
 
-  /// Une commande n'entre qu'UNE fois dans une journée. Refusé en base plutôt
+  /// Un envoi n'entre qu'UNE fois dans une journée. Refusé en base plutôt
   /// que vérifié : une clôture rejouée ne doit pas doubler ce qu'on fabrique.
-  @@unique([serviceDay, orderId])
+  /// Le rang y entre depuis L3b (plan E7 reliquat) : un reliquat du même jour
+  /// est un second envoi de la même commande, pas un doublon.
+  @@unique([serviceDay, orderId, rank])
   @@index([serviceDay, packedAt])
   @@map("production_order")
   @@schema("production")

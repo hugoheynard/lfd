@@ -50,6 +50,12 @@ export interface ProductionOrderSnapshot {
    */
   readonly packed: PackedMark | null;
   readonly orderId: string;
+  /**
+   * Le rang de l'envoi (plan E7 reliquat, choix 5, lot L3b) : 1 = la commande
+   * elle-même. Rien n'inscrit encore de reliquat au plan (L7, L8) ; le rang
+   * est porté pour que la liste à coliser et les faits le recopient.
+   */
+  readonly rank: number;
   readonly reference: string;
   readonly customerLabel: string;
   readonly fulfillmentMethod: "pickup" | "delivery";

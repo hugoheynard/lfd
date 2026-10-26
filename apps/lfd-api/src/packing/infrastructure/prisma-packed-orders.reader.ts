@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../platform/database/prisma.service.js";
 import {
+  FIRST_SHIPMENT_RANK,
   PackedOrdersReader,
   type PackedOrderSeal,
 } from "../../production/channels/packing/index.js";
@@ -20,7 +21,9 @@ export class PrismaPackedOrdersReader extends PackedOrdersReader {
 
   async packedOn(serviceDay: string): Promise<ReadonlyMap<string, PackedOrderSeal>> {
     const rows = await this.prisma.packingOrder.findMany({
-      where: { serviceDay, packedAt: { not: null } },
+      // Le port répond par commande : la feuille de rang 1. Un reliquat fermé
+      // ne scelle pas la ligne de la commande au plan (plan E7 reliquat, L3b).
+      where: { serviceDay, rank: FIRST_SHIPMENT_RANK, packedAt: { not: null } },
       select: { orderId: true, packedAt: true, packedBy: true },
     });
     const sealed = new Map<string, PackedOrderSeal>();

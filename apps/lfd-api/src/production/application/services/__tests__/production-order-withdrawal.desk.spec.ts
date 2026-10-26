@@ -1,6 +1,7 @@
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
+import { ProductionDay } from "../../../domain/entities/production-day.js";
 import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
 import { RecordingDayLock } from "../../__tests__/batch-doubles.js";
 import { RecordingDurable } from "../../__tests__/handoff-doubles.js";
@@ -22,7 +23,10 @@ import { ProductionOrderWithdrawalDesk } from "../production-order-withdrawal.de
 const NOW = new Date("2026-10-12T15:00:00.000Z");
 const DAY = ServiceDay.of("2026-10-13");
 
-function subject(inscribed: ReadonlyMap<string, string> = new Map()) {
+function subject(
+  inscribed: ReadonlyMap<string, string> = new Map(),
+  plan: ProductionDay = closedDay(DAY, NOW, []),
+) {
   const trace: string[] = [];
   const withdrawals = new InMemoryWithdrawals();
   const events = new RecordingPublisher();
@@ -33,7 +37,7 @@ function subject(inscribed: ReadonlyMap<string, string> = new Map()) {
     new InMemoryWithdrawalLedger(withdrawals, trace),
     new FixedClock(NOW),
     new DirectUnitOfWork(),
-    new FixedDays(closedDay(DAY, NOW, [])),
+    new FixedDays(plan),
     events,
     durable,
   );
@@ -130,6 +134,26 @@ describe("ProductionOrderWithdrawalDesk", () => {
             orderNumber: "ORD-0001",
           },
         },
+      ]);
+    });
+
+    it("une commande à deux envois au plan : un fait par envoi, le reliquat sous sa clé (L3b)", async () => {
+      const closed = closedDay(DAY, NOW, []).toSnapshot();
+      const first = closed.orders.find((order) => order.orderId === "ord_1");
+      if (first === undefined) {
+        throw new TypeError("la journée de test doit porter ord_1");
+      }
+      const plan = ProductionDay.fromSnapshot({
+        ...closed,
+        orders: [...closed.orders, { ...first, rank: 2 }],
+      });
+      const { desk, durable } = subject(new Map([["ord_1", DAY.value]]), plan);
+
+      await desk.withdraw(DAY, "ord_1", "before_packing");
+
+      expect(durable.facts.map((fact) => [fact.key, fact.payload["rank"]])).toEqual([
+        [`production.order_withdrawn_after_close:${DAY.value}:ord_1`, 1],
+        [`production.order_withdrawn_after_close:${DAY.value}:ord_1:r2`, 2],
       ]);
     });
 

@@ -6,6 +6,7 @@ import type {
   ProductionOrderSnapshot,
   ProductionResupplySnapshot,
 } from "../entities/production-day.snapshot.js";
+import { FIRST_SHIPMENT_RANK } from "../value-objects/shipment-ref.value-object.js";
 
 /** Ce que le compte additionne : une commande ou un réassort — des lignes. */
 export interface CountedItem {
@@ -33,6 +34,9 @@ export function freezeOrder(order: ProducibleOrder): ProductionOrderSnapshot {
     // bac fait.
     packed: null,
     orderId: order.orderId,
+    // Ce que le commerce sert au plan est la commande elle-même (rang 1) :
+    // aucun reliquat n'entre encore au plan (plan E7 reliquat, L7 et L8).
+    rank: FIRST_SHIPMENT_RANK,
     reference: order.reference,
     customerLabel: order.customerLabel,
     fulfillmentMethod: order.fulfillmentMethod,

@@ -20,6 +20,7 @@ function sheet(orderId: string): ProductionOrderSnapshot {
   return {
     packed: null,
     orderId,
+    rank: 1,
     reference: `ORD-${orderId}`,
     customerLabel: "Trois Ponts",
     fulfillmentMethod: "pickup",
@@ -63,5 +64,11 @@ describe("la remise au colisage", () => {
     expect(arrivalsBetween(before, [...before, sheet("c")])).toEqual([sheet("c")]);
     expect(arrivalsBetween(before, before)).toEqual([]);
     expect(arrivalsBetween([], [sheet("a")])).toEqual([sheet("a")]);
+  });
+
+  it("le reliquat d'une commande déjà au plan est une arrivée — par envoi, pas par commande (L3b)", () => {
+    const remainder = { ...sheet("a"), rank: 2 };
+
+    expect(arrivalsBetween([sheet("a")], [sheet("a"), remainder])).toEqual([remainder]);
   });
 });

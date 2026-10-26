@@ -16,6 +16,7 @@ import type { ProductionOrderSnapshot } from "../../domain/entities/production-d
 export const SPECIMEN_ORDER: ProductionOrderSnapshot = {
   packed: null,
   orderId: "specimen-order",
+  rank: 1,
   reference: "EXEMPLE-0001",
   customerLabel: "EXEMPLE — Hôtel des Trois Ponts",
   fulfillmentMethod: "delivery",

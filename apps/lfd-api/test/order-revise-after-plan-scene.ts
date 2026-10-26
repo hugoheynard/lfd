@@ -61,7 +61,9 @@ export async function ovenCount(ctx: E2eContext): Promise<number | undefined> {
 /** La ligne due de la feuille du colisage, pour le croissant. */
 export async function packingDueOf(ctx: E2eContext, orderId: string): Promise<number | undefined> {
   const line = await ctx.prisma.packingLine.findUnique({
-    where: { serviceDay_orderId_sku: { serviceDay: SERVICE_DAY, orderId, sku: CROISSANT } },
+    where: {
+      serviceDay_orderId_rank_sku: { serviceDay: SERVICE_DAY, orderId, rank: 1, sku: CROISSANT },
+    },
     select: { quantity: true },
   });
   return line?.quantity;

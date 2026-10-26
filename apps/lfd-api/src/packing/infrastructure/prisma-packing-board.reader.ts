@@ -19,6 +19,7 @@ import { reservationsOn } from "./packing-stock-reservation.rows.js";
 /** Ce qu'on relit d'une commande pour le poste. */
 const ORDER_SELECT = {
   orderId: true,
+  rank: true,
   reference: true,
   customerLabel: true,
   fulfillmentMethod: true,
@@ -70,7 +71,7 @@ export class PrismaPackingBoardReader extends PackingBoardReader {
       this.prisma.packingOrder.findMany({
         where: { serviceDay },
         select: ORDER_SELECT,
-        orderBy: [{ drawnAt: "asc" }, { orderId: "asc" }],
+        orderBy: [{ drawnAt: "asc" }, { orderId: "asc" }, { rank: "asc" }],
       }),
       this.prisma.packingStock.findMany({
         where: { serviceDay },
@@ -97,6 +98,7 @@ export class PrismaPackingBoardReader extends PackingBoardReader {
 /** Une ligne de `packing_order`, telle que `ORDER_SELECT` la relit. */
 interface OrderRow {
   readonly orderId: string;
+  readonly rank: number;
   readonly reference: string;
   readonly customerLabel: string;
   readonly fulfillmentMethod: string;
@@ -128,6 +130,7 @@ function boardOrderOf(row: OrderRow, liveBins: ReadonlySet<string>): BoardOrder 
   const live = all.filter((container) => isLive(container, liveBins));
   return {
     orderId: row.orderId,
+    rank: row.rank,
     reference: row.reference,
     customerLabel: row.customerLabel,
     // Même lecture que le dépôt des bacs (`PrismaPackingSheetRepository`).

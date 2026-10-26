@@ -378,6 +378,7 @@
   "test/resupply-transfer.e2e-spec.ts": 6806,
   "test/resupply-village-flow.e2e-spec.ts": 7114,
   "test/schema.e2e-spec.ts": 3429,
+  "test/shipment-rank-sheets.e2e-spec.ts": 8043,
   "test/shop-cart.e2e-spec.ts": 6279,
   "test/shop-catalogue-languages.e2e-spec.ts": 10435,
   "test/shop-catalogue-order-limits.e2e-spec.ts": 3000,

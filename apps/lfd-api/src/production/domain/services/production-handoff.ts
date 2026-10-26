@@ -3,6 +3,7 @@ import type {
   ProductionBatchSnapshot,
   ProductionOrderSnapshot,
 } from "../entities/production-day.snapshot.js";
+import { ShipmentRef } from "../value-objects/shipment-ref.value-object.js";
 
 /**
  * **Une remise au colisage**, ou un retour (plan
@@ -82,6 +83,10 @@ export function arrivalsBetween(
   before: readonly ProductionOrderSnapshot[],
   after: readonly ProductionOrderSnapshot[],
 ): readonly ProductionOrderSnapshot[] {
-  const known = new Set(before.map((order) => order.orderId));
-  return after.filter((order) => !known.has(order.orderId));
+  // Par envoi (L3b) : un reliquat d'une commande déjà au plan est une arrivée.
+  const known = before.map((order) => ShipmentRef.of(order.orderId, order.rank));
+  return after.filter(
+    (order) =>
+      !known.some((shipment) => shipment.equals(ShipmentRef.of(order.orderId, order.rank))),
+  );
 }

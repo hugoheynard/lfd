@@ -37,6 +37,12 @@ export type ContainerMode = "counted" | "listed";
 export interface PackingSheetSnapshot {
   readonly serviceDay: string;
   readonly orderId: string;
+  /**
+   * Le rang de l'envoi (plan E7 reliquat, choix 5, lot L3b) : la feuille est
+   * `(jour, commande, rang)`. Absent = 1, la commande elle-même — une fixture
+   * qui n'en parle pas.
+   */
+  readonly rank?: number;
   readonly reference: string;
   readonly packed: SheetMark | null;
   /** Sur `listed`, le nombre de contenants vivants — l'agrégat le tient. */

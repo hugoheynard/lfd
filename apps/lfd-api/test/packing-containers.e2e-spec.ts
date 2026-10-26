@@ -55,12 +55,12 @@ class BreakableSheets extends PackingSheetRepository {
   inner: PrismaPackingSheetRepository | null = null;
   failNextSave = false;
 
-  lock(serviceDay: string, orderId: string): Promise<PackingSheet | null> {
-    return this.real().lock(serviceDay, orderId);
+  lock(serviceDay: string, orderId: string, rank: number): Promise<PackingSheet | null> {
+    return this.real().lock(serviceDay, orderId, rank);
   }
 
-  lockLatestOf(orderId: string): Promise<PackingSheet | null> {
-    return this.real().lockLatestOf(orderId);
+  lockLatestOf(orderId: string, rank: number): Promise<PackingSheet | null> {
+    return this.real().lockLatestOf(orderId, rank);
   }
 
   save(sheet: PackingSheet): Promise<void> {

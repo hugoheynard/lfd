@@ -8,6 +8,7 @@ function order(orderId: string, croissants: number): ProductionOrderSnapshot {
   return {
     packed: null,
     orderId,
+    rank: 1,
     reference: `REF-${orderId}`,
     customerLabel: "Client",
     fulfillmentMethod: "pickup",

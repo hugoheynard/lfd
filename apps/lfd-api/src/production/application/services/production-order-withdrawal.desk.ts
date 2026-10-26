@@ -74,19 +74,30 @@ export class ProductionOrderWithdrawalDesk extends OrderWithdrawalDesk {
     });
   }
 
-  /** Le fait, avec la référence que le plan a figée — lue sous le verrou déjà pris. */
+  /**
+   * Les faits, un par envoi de la commande au plan (L3b), avec la référence
+   * que le plan a figée — lue sous le verrou déjà pris. Le retrait vise la
+   * commande entière (plan E7 reliquat, choix 5) ; chaque feuille du colisage
+   * attend le sien. Une commande absente du plan garde le fait de rang 1, sans
+   * référence, comme avant.
+   */
   private async announce(day: ServiceDay, orderId: string, at: Date): Promise<void> {
     const plan = await this.days.load(day);
-    const reference = plan.orders.find((order) => order.orderId === orderId)?.reference ?? null;
-    const event = new OrderWithdrawnAfterCloseEvent(
-      day.value,
-      orderId,
-      // Le plan n'a pas encore de rang (L3b) : la journée ne porte que la commande.
-      FIRST_SHIPMENT_RANK,
-      reference,
-      at,
-    );
-    await this.events.publishTraced(event);
-    await this.durable.publish(event.durableFact());
+    const planned = plan.orders.filter((order) => order.orderId === orderId);
+    const shipments =
+      planned.length === 0
+        ? [{ rank: FIRST_SHIPMENT_RANK, reference: null }]
+        : planned.map((order) => ({ rank: order.rank, reference: order.reference }));
+    for (const shipment of shipments) {
+      const event = new OrderWithdrawnAfterCloseEvent(
+        day.value,
+        orderId,
+        shipment.rank,
+        shipment.reference,
+        at,
+      );
+      await this.events.publishTraced(event);
+      await this.durable.publish(event.durableFact());
+    }
   }
 }

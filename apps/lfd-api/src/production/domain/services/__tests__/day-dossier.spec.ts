@@ -21,6 +21,7 @@ function order(
   return {
     packed: null,
     orderId: `id-${reference}`,
+    rank: 1,
     reference,
     customerLabel: `Client ${reference}`,
     fulfillmentMethod: "pickup",

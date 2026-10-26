@@ -28,6 +28,7 @@ const CLOSED = new Date("2026-10-06T16:00:00.000Z");
 const ORDER: ProductionOrderSnapshot = {
   packed: null,
   orderId: "ord-1",
+  rank: 1,
   reference: "ORD-0001",
   customerLabel: "Hôtel des Trois Ponts",
   fulfillmentMethod: "pickup",

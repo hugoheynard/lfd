@@ -1,3 +1,4 @@
+import { FIRST_SHIPMENT_RANK } from "../../../production/channels/packing/index.js";
 import type { PackingSheet } from "../../domain/entities/packing-sheet.js";
 import { PackingOrderNotDrawnYetError } from "../../domain/errors/packing-station-errors.js";
 import type { PackingSheetRepository } from "../../domain/ports/packing-sheet.repository.js";
@@ -11,14 +12,19 @@ import type { CitedPackingOrder } from "../../domain/events/packing-container.ev
 /**
  * Le bac de la commande, SOUS VERROU — dans l'unité de travail de l'appelant.
  *
+ * La feuille de rang 1 par défaut : les gestes du poste n'adressent encore que
+ * la commande — leurs routes ne portent pas de rang, et aucun reliquat n'est
+ * inscrit au colisage avant que le commerce n'en crée (plan E7 reliquat, L8).
+ *
  * @throws {PackingOrderNotDrawnYetError} la liste à coliser n'est pas arrivée.
  */
 export async function lockedSheet(
   sheets: PackingSheetRepository,
   serviceDay: string,
   orderId: string,
+  rank: number = FIRST_SHIPMENT_RANK,
 ): Promise<PackingSheet> {
-  const sheet = await sheets.lock(serviceDay, orderId);
+  const sheet = await sheets.lock(serviceDay, orderId, rank);
   if (sheet === null) {
     throw new PackingOrderNotDrawnYetError(orderId);
   }

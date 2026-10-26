@@ -70,6 +70,7 @@ describe("dossierCountsOf", () => {
       fulfillmentMethod: "pickup" | "delivery" = "pickup",
     ) => ({
       orderId,
+      rank: 1,
       reference: orderId,
       customerLabel: "",
       fulfillmentMethod,

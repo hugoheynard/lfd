@@ -4,6 +4,8 @@ import type { ContainerMode } from "../entities/packing-sheet.js";
 export interface ShadowOrderToDraw {
   readonly serviceDay: string;
   readonly orderId: string;
+  /** Le rang de l'envoi (`PackingListOrder.rank`, L3b) : l'identité de la feuille. */
+  readonly rank: number;
   readonly reference: string;
   readonly customerLabel: string;
   readonly fulfillmentMethod: "pickup" | "delivery";

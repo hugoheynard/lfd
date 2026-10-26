@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
 
 import type { DurableDelivery } from "../../../../platform/outbox/durable-event.js";
@@ -11,6 +11,7 @@ import {
   PackingOrderPackedEvent,
 } from "../../../../production/channels/commerce/index.js";
 import { MarkOrderReadyCommand } from "../commands/mark-order-ready.command.js";
+import { appliesToOrder } from "./later-shipment-guard.js";
 
 /** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
 export const ON_PACKING_ORDER_PACKED = "b2b.orders.mark-ready-from-packing";
@@ -27,10 +28,15 @@ export const ON_PACKING_ORDER_PACKED = "b2b.orders.mark-ready-from-packing";
 @Injectable()
 @DurableHandler({ type: PACKING_ORDER_PACKED, subscriber: ON_PACKING_ORDER_PACKED })
 export class OnPackingOrderPacked implements DurableSubscriber {
+  private readonly logger = new Logger(OnPackingOrderPacked.name);
+
   constructor(private readonly commands: CommandBus) {}
 
   async handle(delivery: DurableDelivery): Promise<void> {
     const event = PackingOrderPackedEvent.fromPayload(delivery.payload);
+    if (!appliesToOrder(event, PACKING_ORDER_PACKED, this.logger)) {
+      return;
+    }
     // L'identité et l'instant viennent du FAIT : la fermeture a eu lieu au colisage.
     await this.commands.execute(
       new MarkOrderReadyCommand(event.reference, event.packedBy, event.packedAt),

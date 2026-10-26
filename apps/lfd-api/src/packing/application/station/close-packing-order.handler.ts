@@ -3,10 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { DurablePublisher } from "../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../platform/time/clock.js";
-import {
-  FIRST_SHIPMENT_RANK,
-  PackingOrderPackedEvent,
-} from "../../../production/channels/packing/index.js";
+import { PackingOrderPackedEvent } from "../../../production/channels/packing/index.js";
 import { PackingShortfallClearedEvent } from "../../channels/commerce/index.js";
 import { PackingSheetRepository } from "../../domain/ports/packing-sheet.repository.js";
 import { lockedSheet } from "../containers/container-support.js";
@@ -53,7 +50,12 @@ export class ClosePackingOrderHandler implements ICommandHandler<ClosePackingOrd
 
   async execute(command: ClosePackingOrderCommand): Promise<void> {
     await this.uow.run(async () => {
-      const sheet = await lockedSheet(this.sheets, command.serviceDay, command.orderId);
+      const sheet = await lockedSheet(
+        this.sheets,
+        command.serviceDay,
+        command.orderId,
+        command.rank,
+      );
       const now = this.clock.now();
       const signalled = sheet.shortfallReportedAt !== null;
       const sealed = sheet.seal({ at: now, by: command.staffUserId });
@@ -63,8 +65,7 @@ export class ClosePackingOrderHandler implements ICommandHandler<ClosePackingOrd
       await this.durable.publish(
         new PackingOrderPackedEvent(
           sheet.orderId,
-          // La feuille n'a pas encore de rang (L3b) : elle est celle de la commande.
-          FIRST_SHIPMENT_RANK,
+          sheet.rank,
           sheet.reference,
           sealed.mark.at,
           sealed.mark.by,
@@ -75,7 +76,7 @@ export class ClosePackingOrderHandler implements ICommandHandler<ClosePackingOrd
         await this.durable.publish(
           new PackingShortfallClearedEvent(
             sheet.orderId,
-            FIRST_SHIPMENT_RANK,
+            sheet.rank,
             sheet.reference,
             now,
           ).durableFact(),

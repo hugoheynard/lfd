@@ -64,6 +64,17 @@ function setup(snapshot: PackingSheetSnapshot) {
 }
 
 describe("ReportPackingShortfallHandler — « Il manque » au colisage", () => {
+  it("signale le manque de la feuille du reliquat à son rang, sans toucher celle de la commande (L3b)", async () => {
+    const { report, sheets, durable } = setup(sheet(3));
+    sheets.put(sheet(3, { rank: 2 }));
+
+    await report.execute(new ReportPackingShortfallCommand(DAY, "ord_1", "s2", 2));
+
+    expect(sheets.of(DAY, "ord_1", 2)?.shortfallReportedAt).toEqual(FIRST);
+    expect(sheets.of(DAY, "ord_1")?.shortfallReportedAt ?? null).toBeNull();
+    expect(durable.of(REPORTED).map((fact) => fact.payload["rank"])).toEqual([2]);
+  });
+
   it("retient le signalement sur le bac et publie les quantités au bac, sous une clé datée", async () => {
     const { report, sheets, durable } = setup(sheet(3));
 

@@ -35,22 +35,25 @@ export class RecordingDurable extends DurablePublisher {
   }
 }
 
-/** Les bacs en mémoire, rendus entiers ; le « verrou » ne fait que charger. */
+/**
+ * Les bacs en mémoire, rendus entiers ; le « verrou » ne fait que charger.
+ * Clés par envoi `(jour, commande, rang)`, comme la base depuis L3b.
+ */
 export class InMemorySheets extends PackingSheetRepository {
   readonly rows = new Map<string, PackingSheetSnapshot>();
 
   put(snapshot: PackingSheetSnapshot): void {
-    this.rows.set(`${snapshot.serviceDay}/${snapshot.orderId}`, snapshot);
+    this.rows.set(sheetKey(snapshot.serviceDay, snapshot.orderId, snapshot.rank ?? 1), snapshot);
   }
 
-  lock(serviceDay: string, orderId: string): Promise<PackingSheet | null> {
-    const row = this.rows.get(`${serviceDay}/${orderId}`);
+  lock(serviceDay: string, orderId: string, rank: number): Promise<PackingSheet | null> {
+    const row = this.rows.get(sheetKey(serviceDay, orderId, rank));
     return Promise.resolve(row === undefined ? null : PackingSheet.fromSnapshot(row));
   }
 
-  lockLatestOf(orderId: string): Promise<PackingSheet | null> {
+  lockLatestOf(orderId: string, rank: number): Promise<PackingSheet | null> {
     const latest = [...this.rows.values()]
-      .filter((row) => row.orderId === orderId)
+      .filter((row) => row.orderId === orderId && (row.rank ?? 1) === rank)
       .sort((a, b) => b.serviceDay.localeCompare(a.serviceDay))[0];
     return Promise.resolve(latest === undefined ? null : PackingSheet.fromSnapshot(latest));
   }
@@ -60,9 +63,13 @@ export class InMemorySheets extends PackingSheetRepository {
     return Promise.resolve();
   }
 
-  of(serviceDay: string, orderId: string): PackingSheetSnapshot | undefined {
-    return this.rows.get(`${serviceDay}/${orderId}`);
+  of(serviceDay: string, orderId: string, rank = 1): PackingSheetSnapshot | undefined {
+    return this.rows.get(sheetKey(serviceDay, orderId, rank));
   }
+}
+
+function sheetKey(serviceDay: string, orderId: string, rank: number): string {
+  return `${serviceDay}/${orderId}/${String(rank)}`;
 }
 
 /** La réserve, adossée à celle de l'ombre (reçu, rendu) et à un compte au bac. */

@@ -95,6 +95,8 @@ export function containerOf(row: ContainerRow): PackingContainerState {
 export async function saveContainers(
   prisma: PrismaService,
   snapshot: PackingSheetSnapshot,
+  /** Le rang de la feuille (L3b) — la clé étrangère vise `(jour, commande, rang)`. */
+  rank: number,
 ): Promise<void> {
   for (const container of snapshot.containerList) {
     await prisma.packingContainer.upsert({
@@ -103,6 +105,7 @@ export async function saveContainers(
         id: container.id,
         serviceDay: snapshot.serviceDay,
         orderId: snapshot.orderId,
+        rank,
         nature: container.nature,
         binId: container.bin?.binId ?? null,
         binCode: container.bin?.code ?? null,

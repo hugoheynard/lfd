@@ -1,3 +1,4 @@
+import { FIRST_SHIPMENT_RANK } from "../../../production/channels/packing/index.js";
 import { Injectable } from "@nestjs/common";
 
 import { Clock } from "../../../platform/time/clock.js";
@@ -27,7 +28,9 @@ export class PackingShortfallDesk extends ShortfallDesk {
     departing: readonly DepartingLine[],
     decidedBy: string,
   ): Promise<void> {
-    const sheet = await this.sheets.lockLatestOf(orderId);
+    // La décision du commerce vise encore la commande — rang 1 — jusqu'au
+    // manque par envoi (plan E7 reliquat, LB).
+    const sheet = await this.sheets.lockLatestOf(orderId, FIRST_SHIPMENT_RANK);
     if (sheet === null) {
       throw new ShortfallSheetNotFoundError(orderId);
     }

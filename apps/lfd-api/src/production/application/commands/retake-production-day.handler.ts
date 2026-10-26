@@ -122,8 +122,8 @@ export class RetakeProductionDayHandler implements ICommandHandler<
         await this.events.publishTraced(new ProductionDayRetakenJournalEvent(day.value, absorbed));
         const arrivals = arrivalsBetween(before, locked.orders);
         await this.publishArrivals(day, arrivals, now, locked.reopened?.at ?? null);
-        // Le plan n'a pas encore de rang (L3b) : chaque arrivée est l'envoi de rang 1.
-        const shipments = arrivals.map((order) => ShipmentRef.firstOf(order.orderId));
+        // Chaque arrivée est l'envoi de sa ligne de plan (L3b).
+        const shipments = arrivals.map((order) => ShipmentRef.of(order.orderId, order.rank));
         await this.durable.publish(
           new ProductionDayRetakenEvent(day.value, now, absorbed, shipments).durableFact(),
         );

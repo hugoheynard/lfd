@@ -24,6 +24,7 @@ export class PrismaPackingShadowLedger extends PackingShadowLedger {
         {
           serviceDay: order.serviceDay,
           orderId: order.orderId,
+          rank: order.rank,
           reference: order.reference,
           customerLabel: order.customerLabel,
           fulfillmentMethod: order.fulfillmentMethod,
@@ -41,7 +42,13 @@ export class PrismaPackingShadowLedger extends PackingShadowLedger {
     // Relue APRÈS l'insertion : une pierre tombale en cours d'écriture fait
     // attendre l'`INSERT`, et la relecture voit alors son `withdrawn_at`.
     const drawn = await this.prisma.packingOrder.findUnique({
-      where: { serviceDay_orderId: { serviceDay: order.serviceDay, orderId: order.orderId } },
+      where: {
+        serviceDay_orderId_rank: {
+          serviceDay: order.serviceDay,
+          orderId: order.orderId,
+          rank: order.rank,
+        },
+      },
       select: { withdrawnAt: true },
     });
     if (drawn !== null && drawn.withdrawnAt !== null) {
@@ -51,6 +58,7 @@ export class PrismaPackingShadowLedger extends PackingShadowLedger {
       data: order.lines.map((line) => ({
         serviceDay: order.serviceDay,
         orderId: order.orderId,
+        rank: order.rank,
         sku: line.sku,
         productName: line.productName,
         quantity: line.quantity,

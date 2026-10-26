@@ -35,6 +35,7 @@ export class OnPackingListDrawn implements DurableSubscriber {
     await this.shadow.drawOrder({
       serviceDay: event.serviceDay,
       orderId: event.order.orderId,
+      rank: event.order.rank,
       reference: event.order.reference,
       customerLabel: event.order.customerLabel,
       fulfillmentMethod: event.order.fulfillmentMethod,
