@@ -8,12 +8,13 @@
 
 ## 1. Les textes
 
-| Mention            | Écran                                        | Source                                                    | Articles                    | PDF de référence                      |
-| ------------------ | -------------------------------------------- | --------------------------------------------------------- | --------------------------- | ------------------------------------- |
-| Mentions légales   | `/reglages/legal/mentions-legales`           | `3_MENTIONS LEGALES_CRAZEATIVITY_LA FOLIE COFFEE.docx`    | 6                           | —                                     |
-| CGV particuliers   | `/reglages/legal/cgv`, onglet Particuliers   | `6_CGV_CRAZEATIVITY_LA_FOLIE_COFFEE.odt`, parties I et II | 20 + annexe de rétractation | `cgv-particuliers-2026-10-26.pdf`     |
-| CGV professionnels | `/reglages/legal/cgv`, onglet Professionnels | même document, parties I et III                           | 19                          | `cgv-professionnels-2026-10-26.pdf`   |
-| CGU                | `/reglages/legal/cgu`                        | `4_CGU_CRAZEATIVITY_LA FOLIE COFFEE.pdf`                  | 11                          | — (le dépôt ne vaut que pour les CGV) |
+| Mention                     | Écran                                        | Source                                                    | Articles                    | PDF de référence                      |
+| --------------------------- | -------------------------------------------- | --------------------------------------------------------- | --------------------------- | ------------------------------------- |
+| Mentions légales            | `/reglages/legal/mentions-legales`           | `3_MENTIONS LEGALES_CRAZEATIVITY_LA FOLIE COFFEE.docx`    | 6                           | —                                     |
+| CGV particuliers            | `/reglages/legal/cgv`, onglet Particuliers   | `6_CGV_CRAZEATIVITY_LA_FOLIE_COFFEE.odt`, parties I et II | 20 + annexe de rétractation | `cgv-particuliers-2026-10-26.pdf`     |
+| CGV professionnels          | `/reglages/legal/cgv`, onglet Professionnels | même document, parties I et III                           | 19                          | `cgv-professionnels-2026-10-26.pdf`   |
+| CGU                         | `/reglages/legal/cgu`                        | `4_CGU_CRAZEATIVITY_LA FOLIE COFFEE.pdf`                  | 11                          | — (le dépôt ne vaut que pour les CGV) |
+| Déclaration d'accessibilité | `/reglages/legal/accessibilite`              | pré-audit interne du 2026-10-26                           | 6                           | —                                     |
 
 Les textes s'éditent article par article ; chaque écriture fait monter la
 **révision**, et c'est la révision des CGV que la case du panier fait accepter
@@ -90,7 +91,16 @@ Gardés du juriste : pénalités de retard (BCE + 10 points), indemnité de 40 �
 réserve de propriété, plafond de responsabilité, Tribunal de commerce de
 Chambéry, préavis de clôture de 15 jours.
 
-## 6. Ce qui reste à faire
+## 6. La déclaration d'accessibilité
+
+Publiée le 2026-10-26 avec le statut **« non conforme »** : aucun audit
+complet n'existe, et un taux ne s'affiche qu'après un audit humain (décision de
+Hugo, 2026-10-26). Elle liste les non-conformités du pré-audit, le contact
+(contact@lafoliecoffee.com) et les voies de recours vers le Défenseur des
+droits. **À mettre à jour à chaque lot de correction**, et à régénérer depuis
+le fichier de données une fois l'audit fait.
+
+## 7. Ce qui reste à faire
 
 - **Le médiateur de la consommation** (CGV particuliers, article 17).
 - **Vérifier l'adresse de Cloudflare** (mentions légales, article 1).
