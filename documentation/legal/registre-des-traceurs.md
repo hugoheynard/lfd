@@ -21,6 +21,7 @@
 | `lfc-invitation-expired`, `lfc-identity-link-required`, `lfd.shop.pro-visit` | CRAZEATIVITY             | stockage de session | messages après une connexion                                     | fermeture de l'onglet                        | `auth/invitation-expired.ts`, `auth/identity-conflict.ts`, `client/shop/pro-visit.service.ts` |
 | `@@auth0spajs@@::…`                                                          | Auth0 (authentification) | stockage local      | session de connexion (`cacheLocation: 'localstorage'`)           | session, effacée à la déconnexion            | `auth/auth.providers.ts`                                                                      |
 | `__stripe_mid`, `__stripe_sid`                                               | Stripe (paiement)        | cookies             | prévention de la fraude, déposés à l'étape du paiement seulement | 1 an / 30 minutes (documentation Stripe)     | `client/stripe-loader.service.ts`                                                             |
+| `auth0.<client>.is.authenticated`, `_legacy_auth0.<client>.is.authenticated` | Auth0 (authentification) | cookies             | indiquent qu'une session existe, sans donnée personnelle         | 1 jour                                       | `@auth0/auth0-spa-js` (`auth/auth.providers.ts`)                                              |
 
 `lfc-dev-signed-out` (`auth/auth.facade.ts`) ne sert qu'en développement et
 n'est pas listé.
@@ -40,12 +41,20 @@ catégories et la règle du consentement, pour le jour où on en ajoutera).
 2. L'inscrire dans ce registre et dans la politique cookies (trois langues).
 3. Seulement ensuite, le déposer.
 
-## Vérifié et non vérifié
+## Relevé dans le navigateur (2026-10-26)
 
-- Les noms et durées des cookies Stripe viennent de la documentation de
-  Stripe, non relevés dans un navigateur : **à confirmer** à l'écran de
-  paiement.
-- Cloudflare peut déposer un cookie de protection (`__cf_bm`) selon la
-  configuration de la zone : **non vérifié**.
+Relevé sur https://lafoliecoffee.info (`cookieStore.getAll()`, Stripe.js chargé
+comme l'écran de règlement le fait) :
+
+- `__stripe_mid` : 365 jours, `SameSite=Strict`, `Secure` ; `__stripe_sid` :
+  30 minutes — conformes à la documentation de Stripe.
+- `auth0.<client>.is.authenticated` (`SameSite=None`) et
+  `_legacy_auth0.<client>.is.authenticated` (`SameSite=Lax`) : environ 1 jour —
+  **absents de la première liste**, ajoutés à la politique le même jour.
+- Aucun cookie Cloudflare (`__cf_bm`) : ni la boutique ni l'API n'en posent
+  (`Set-Cookie` absent des réponses).
+- Le stockage local d'un ancien visiteur peut encore contenir `lfc-b2b-cart-v1`
+  : le code ne l'écrit plus (aucune occurrence dans `src/`), c'est un reste
+  d'une version passée, non listé dans la politique.
 - Les cookies posés par Auth0 sur son propre domaine (page de connexion) ne
   sont pas listés : ils relèvent d'Auth0.
