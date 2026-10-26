@@ -53,6 +53,7 @@ describe("la feuille de tournée — l'arrêt de transfert", () => {
     expect(text).toContain("COMMANDES · 3 COMMANDES");
     expect(text).toContain("12 × Croissant");
     expect(text).toContain("Remis");
+    expect(text.split("Déposé à").length - 1).toBe(1);
     expect(text).toContain("2 bacs à charger");
     expect(text).not.toContain("RÉASSORT");
   });

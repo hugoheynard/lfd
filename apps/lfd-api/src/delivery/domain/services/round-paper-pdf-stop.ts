@@ -32,6 +32,7 @@ import {
   VOID,
   WINDOW_SIZE,
 } from "./round-paper-pdf-rows.js";
+import { droppedAtRow } from "./round-paper-pdf-dropped.js";
 import type { RoundPaperAbsentStop, RoundPaperSheetStop } from "./round-paper.js";
 import { windowPaperLabel } from "./round-paper.js";
 
@@ -244,6 +245,8 @@ export function sheetStopBlock(doc: Doc, stop: RoundPaperSheetStop, rank: number
       reference,
       ...(stop.cancelled ? [cancelledBanner()] : []),
       ...bodyRows(doc, stop, tone),
+      // Une annulée ne se dépose pas : ni case « Livré », ni heure de dépôt.
+      ...(stop.cancelled ? [] : [droppedAtRow()]),
     ],
     continuation: textRow(doc, `${String(rank)} · ${stop.customerLabel} (suite)`, {
       size: SMALL_SIZE,

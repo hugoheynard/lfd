@@ -8,6 +8,7 @@ import {
   MUTED,
   type Row,
 } from "./round-paper-pdf-layout.js";
+import { droppedAtRow } from "./round-paper-pdf-dropped.js";
 import { rail } from "./round-paper-pdf-stop.js";
 import { BODY_SIZE, LIVE, NAME_SIZE, SMALL_SIZE, textRow } from "./round-paper-pdf-rows.js";
 import {
@@ -96,7 +97,8 @@ function sectionRows(
  * manifeste — commandes et réassorts, totalisés par article (les réassorts
  * nommés sous leur titre, R1g), une pastille par commande colorée sous
  * le titre des commandes (§0 bis, 2026-10-22). La
- * case dit « Remis » : le geste de l'arrêt est « Remis au site ».
+ * case dit « Remis » : le geste de l'arrêt est « Remis au site ». En pied,
+ * la case « Déposé à __ h __ », comme sur un arrêt de livraison (2026-10-26).
  */
 export function transferStopBlock(doc: Doc, stop: RoundPaperTransferStop, rank: number): Block {
   const arrival = stop.arrivalBy === null ? "Sans heure" : `avant ${timeLabel(stop.arrivalBy)}`;
@@ -138,6 +140,7 @@ export function transferStopBlock(doc: Doc, stop: RoundPaperTransferStop, rank: 
       gap(1 * MM),
       textRow(doc, binsLabel(stop.binCount), { size: BODY_SIZE, bold: true, color: LIVE.ink }),
       ...sections,
+      droppedAtRow(),
     ],
     continuation: textRow(doc, `${String(rank)} · Vers ${stop.siteLabel} (suite)`, {
       size: SMALL_SIZE,

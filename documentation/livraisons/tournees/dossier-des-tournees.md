@@ -25,6 +25,13 @@ section déborde, numéro de page encadré, « Tiré le … » au pied).
    corps dessiné (`drawRoundPaper`), seul le cadre change. Chaque section
    commence sur une page neuve et se titre « Camion 1 · passage 1 (1/2) ».
 
+**Case « Déposé à __ h __ »** (décision de Hugo du 2026-10-26) : en pied de
+chaque arrêt de la feuille — livraison comme transfert vers un site —, un
+cadre au bord droit où le livreur note au stylo l'heure de dépôt. Aucune sur
+une commande annulée ni sur un arrêt absent de la feuille de route. La case
+est une rangée du bloc de l'arrêt : elle compte dans la décision de tourner
+la page et ne s'en sépare pas (`apps/lfd-api/src/delivery/domain/services/round-paper-pdf-dropped.ts`).
+
 **Ordre** : heure de départ prévue, puis passage ; une tournée sans horaire
 vient en dernier, on ne lui invente pas d'heure.
 

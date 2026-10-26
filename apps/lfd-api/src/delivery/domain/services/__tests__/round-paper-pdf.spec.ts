@@ -238,6 +238,29 @@ describe("renderRoundPaperPdf — la feuille de tournée", () => {
     expect(pages.join("\n")).toContain("Hôtel ORD-0029");
   });
 
+  it("pose une case « Déposé à » par arrêt vivant, aucune sur une annulée ni un absent (Hugo, 2026-10-26)", async () => {
+    const stops = [
+      stop("D-1"),
+      stop("D-2"),
+      stop("D-3", { cancelled: true }),
+      { kind: "absent" as const, orderId: "ord_9" },
+    ];
+    const text = pdfPages(await renderRoundPaperPdf(paper({ stops }))).join("\n");
+    expect(text.split("Déposé à").length - 1).toBe(2);
+  });
+
+  it("tient la pagination avec beaucoup d'arrêts : chaque case sur la page de son arrêt", async () => {
+    const many = Array.from({ length: 40 }, (_, index) => stop(`P-${String(index)}`));
+    const pages = pdfPages(await renderRoundPaperPdf(paper({ stops: many })));
+    expect(pages.length).toBeGreaterThan(1);
+    expect(pages.join("\n").split("Déposé à").length - 1).toBe(40);
+    for (const page of pages) {
+      // Autant de cases que d'arrêts commencés sur la page : aucune ne glisse à la suivante.
+      expect(page.split("Déposé à").length).toBe(page.split("Commande P-").length);
+    }
+    expect(pages.some((page) => page.includes("(suite)"))).toBe(false);
+  });
+
   it("rend les mêmes octets pour le même papier", async () => {
     const [a, b] = await Promise.all([renderRoundPaperPdf(paper()), renderRoundPaperPdf(paper())]);
     expect(a.equals(b)).toBe(true);
