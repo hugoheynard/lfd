@@ -20,7 +20,10 @@ import {
   ProcedureOrdersReader,
   type ProcedureOrderRow,
 } from "../src/b2b/accounting/domain/ports/procedure-orders.reader.js";
-import { procedureOrderStatus } from "../src/b2b/accounting/domain/services/collection-procedure-invoices.js";
+import {
+  invoicesStatus,
+  procedureOrderStatus,
+} from "../src/b2b/accounting/domain/services/collection-procedure-invoices.js";
 import { UnconfirmedDeliveriesReader } from "../src/b2b/accounting/domain/ports/unconfirmed-deliveries.reader.js";
 import { DeliveryNote } from "../src/b2b/delivery-notes/domain/entities/delivery-note.js";
 import { DeliveryNoteRepository } from "../src/b2b/delivery-notes/domain/ports/delivery-note.repository.js";
@@ -343,13 +346,18 @@ describe("le solde dérivé (plan E7 reliquat, L5b)", () => {
     expect((await orderRow(order.id)).status).toBe("partially_handed_over");
     const row = await procedureRowOf(order.id);
     expect(row).toMatchObject({ partiallyHandedOver: true, remainderPlannedOn: REMAINDER_DAY });
-    expect(
-      procedureOrderStatus({
-        invoiced: row?.invoice !== null,
-        handedOver: row?.handedOver ?? false,
-        receivedOn: row?.receivedOn ?? null,
-        awaitingRemainder: row?.partiallyHandedOver ?? false,
-      }),
-    ).toBe("awaiting_remainder");
+    const status = procedureOrderStatus({
+      invoiced: row?.invoice !== null,
+      handedOver: row?.handedOver ?? false,
+      receivedOn: row?.receivedOn ?? null,
+      awaitingRemainder: row?.partiallyHandedOver ?? false,
+    });
+    expect(status).toBe("awaiting_remainder");
+    // Régression (2026-10-26) : seule, elle laissait l'onglet à « fait / tout
+    // facturé ». Décision de Hugo : l'onglet est « partiel ».
+    expect(invoicesStatus({ reached: true, open: true, statuses: [status] })).toEqual({
+      state: "partial",
+      reason: "awaiting_remainders",
+    });
   });
 });

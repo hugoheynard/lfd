@@ -59,8 +59,9 @@
 >   (`delivery-deposit-toggle`), sa route (`PUT admin/companies/…/deposit`)
 >   et le champ `depositAllowed` de « Ma tournée » (seul `canDeposit` y
 >   reste). La colonne `deposit_allowed` **reste en base**, sans migration ;
->   son gel au départ est annoté mort. Le client le règle encore sur ses
->   adresses (`company-addresses.controller.ts`, boutique) — non tranché.
+>   son gel au départ est annoté mort. Le même jour, il sort aussi de la
+>   **boutique** : case du dialogue d'adresse et champ de la charge client
+>   retirés. Plus personne ne le règle.
 > - ⏳ **Décision PROVISOIRE** (« pour le moment », à revoir) : quand le client
 >   n'autorise pas le dépôt mais que le réglage du commercial autorise le
 >   dépôt « sauvage », **le commercial l'emporte**.
@@ -156,16 +157,17 @@ note (≤ 500) et une photo facultatives. Table `delivery.delivery_incident`.
 
 ## 4. Qui décide du dépôt
 
-`ensureDepositPermitted()` (`delivery/domain/entities/doorstep-stop.ts`,
-vérifié le 2026-10-06) permet le dépôt si :
+`ensureDepositPermitted()` (`delivery/domain/entities/doorstep-stop.ts`) s'en
+remet à `depositPermitted` (`deposit-rule.ts` : `depositAuthorized ||
+!signatureRequired`, vérifié le 2026-10-26). Le dépôt est permis si :
 
-1. une **décision vivante « Autoriser le dépôt »** existe pour l'arrêt — elle
-   l'emporte **même sur la signature exigée** (LB-Q5) ; sinon
-2. l'adresse autorise le dépôt (`depositAllowed`, **figé au départ**, AP-D5)
-   **et** la signature n'est pas exigée (AP-Q6 : la signature l'emporte pour le
-   livreur seul).
+1. **la signature n'est pas exigée** — que l'adresse « autorise le dépôt » ou
+   non, ce réglage n'est plus lu (« dépôt A », 2026-10-25) ; sinon
+2. une **décision vivante « Autoriser le dépôt »** d'un commercial existe pour
+   l'arrêt — la seule chose qui l'emporte sur la signature exigée (LB-Q5).
 
-Refus nommés : `DepositSignatureRequiredError`, puis `DepositNotAllowedError`.
+Refus nommé : `DepositSignatureRequiredError`. `DepositNotAllowedError` n'existe
+plus (retirée avec « dépôt A », devenue inatteignable).
 
 **La décision du commercial (B3)** — table `delivery.stop_decision`, une par
 arrêt, conditionnée par sa `version`, tracée (qui, quand, `source` = `staff` ou
@@ -203,11 +205,14 @@ de « À décider »), que le commercial **redéfinit par adresse**
 décision, une règle autre que `ask` s'applique aussitôt (`source = setting`,
 sans auteur, **sans notification**). Défaut global : `ask`.
 
-**« Dépôt autorisé » de l'adresse** — réglé par le client sur ses adresses
-(`company-addresses.controller.ts`). ⚠️ Sans effet sur le dépôt depuis le
-2026-10-25 (« dépôt A », bandeau en tête) ; la route du commercial et
-l'affichage ont été retirés le 2026-10-26 (décision de Hugo). Il est encore
-figé au départ, annoté mort, et lu par personne.
+**« Dépôt autorisé » de l'adresse** — plus réglé par personne. Sans effet
+sur le dépôt depuis le 2026-10-25 (« dépôt A ») ; retiré de l'écran du
+commercial, puis de la boutique le 2026-10-26 (décisions de Hugo) : la case
+du dialogue d'adresse et le champ de la charge
+`PATCH companies/:c/delivery-addresses/:a` sont partis — un front périmé qui
+l'envoie encore voit la clé écartée, rien n'est écrit. La colonne
+`deposit_allowed` **reste en base**, se lit encore dans la vue des adresses,
+est figée au départ (annotée morte) et ne décide plus rien.
 
 **Prévenir (B5)** — une notice « Livraison à décider » par signalement qui
 ouvre une décision, après validation, adressée par droit
@@ -280,7 +285,7 @@ Une attestation sans pièce se lit « Preuve effacée ».
 | `delivery_doorstep`    | les gestes du livreur (§ 1, § 3), distincts de conduire sa tournée (AP-D9)          |
 | `delivery_rounds:read` | signalements, photos, « Non remis » côté admin                                      |
 | `delivery_decisions`   | « À décider » : lire (`read`), répondre (`write`) ; audience de la notice (`write`) |
-| `delivery_procedures`  | dépôt autorisé et règle par adresse ; réglage global de la porte                    |
+| `delivery_procedures`  | règle de la porte par adresse ; réglage global de la porte                          |
 | `delivery_proofs:read` | la preuve de livraison d'une commande                                               |
 
 Accordées à l'écran des rôles, jamais par migration :

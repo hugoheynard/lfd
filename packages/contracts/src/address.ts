@@ -341,21 +341,14 @@ export type DeliveryAddressPayload = z.infer<typeof deliveryAddressPayloadSchema
 /**
  * La charge d'édition d'une adresse de livraison **par le client**
  * (`PATCH companies/:companyId/delivery-addresses/:addressId`) : la charge
- * commune, plus « dépôt autorisé » (`documentation/livraisons/livreur/a-la-porte.md`,
- * AP-Q1, AP-D5).
+ * commune, rien de plus.
  *
- * 🔴 **Facultatif, et absent veut dire INCHANGÉ** — jamais `false`. Un front en
- * ligne qui ne connaît pas le champ ne l'envoie pas ; le lire comme un refus
- * retirerait en silence ce que le client a autorisé. C'est aussi pourquoi il
- * n'est pas une clé de `specs`, que l'écran réécrit d'un bloc.
- *
- * Le staff ne passe pas par ici : sa route d'édition d'adresse (sous
- * `b2b_companies`) ne le touche pas. Sa route à part a été retirée le
- * 2026-10-26 (décision de Hugo) : la règle du dépôt ne lit plus ce réglage.
+ * « Dépôt autorisé » en est sorti le 2026-10-26 (décision de Hugo) : la règle
+ * du dépôt ne le lit plus (`documentation/livraisons/livreur/a-la-porte.md`,
+ * §4). Un front périmé qui l'enverrait encore voit la clé écartée par Zod, pas
+ * refusée. La colonne reste en base, et se lit encore dans la vue.
  */
-export const memberDeliveryAddressPayloadSchema = deliveryAddressFieldsSchema()
-  .extend({ depositAllowed: z.boolean().optional() })
-  .superRefine(refuseDeliveryPayload);
+export const memberDeliveryAddressPayloadSchema = deliveryAddressPayloadSchema;
 export type MemberDeliveryAddressPayload = z.infer<typeof memberDeliveryAddressPayloadSchema>;
 
 // ─── Vues de LECTURE (réponses) ──────────────────────────────────────────────
@@ -381,7 +374,8 @@ export interface DeliveryAddressView extends BillingAddressView {
   readonly procedureStepCount: number;
   /**
    * Le client autorise-t-il le livreur à **déposer** sans personne pour
-   * réceptionner (AP-Q1) ? `false` par défaut. Distinct de « signature
+   * réceptionner (AP-Q1) ? `false` par défaut. Plus réglable ni lu par la
+   * règle du dépôt depuis le 2026-10-26 ; la colonne reste. Distinct de « signature
    * exigée » : remettre sans signer n'est pas laisser sans personne. Une
    * signature exigée l'emporte toujours (AP-Q6).
    */

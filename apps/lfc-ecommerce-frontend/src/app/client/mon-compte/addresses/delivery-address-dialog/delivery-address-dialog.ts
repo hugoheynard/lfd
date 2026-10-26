@@ -22,7 +22,6 @@ import {
   FOLD_INLINE_CONFIRM_LABELS,
   FoldButtonComponent,
   FoldCalloutComponent,
-  FoldCheckboxComponent,
   FoldDangerZoneComponent,
   type FoldInlineConfirmLabels,
   FoldPanelBodyComponent,
@@ -105,7 +104,6 @@ function removeConfirmLabels(): FoldInlineConfirmLabels {
     DeliveryAddressForm,
     FoldButtonComponent,
     FoldCalloutComponent,
-    FoldCheckboxComponent,
     FoldDangerZoneComponent,
     FoldPanelBodyComponent,
     FoldPanelFooterComponent,
@@ -168,12 +166,6 @@ export class DeliveryAddressDialog {
   );
 
   protected readonly draft = signal<DeliveryDraft>(EMPTY_DELIVERY_DRAFT);
-  /**
-   * « Dépôt autorisé » (AP-Q1) — hors du brouillon partagé : c'est une colonne
-   * de l'adresse, pas une clé des consignes, et le staff a sa propre route.
-   * Proposé en correction seulement : la route de création ne le porte pas.
-   */
-  protected readonly depositAllowed = signal(false);
   protected readonly saving = signal(false);
   protected readonly refusal = signal<string | null>(null);
   protected readonly removing = signal(false);
@@ -198,8 +190,7 @@ export class DeliveryAddressDialog {
   private readonly changed = computed(
     () =>
       JSON.stringify(toDeliveryPayload(this.draft())) !==
-        JSON.stringify(toDeliveryPayload(this.initial())) ||
-      this.depositAllowed() !== (this.data().address?.depositAllowed ?? false),
+      JSON.stringify(toDeliveryPayload(this.initial())),
   );
 
   /** Enregistrer attend une modification ET un formulaire complet (règle « Saisir »). */
@@ -213,11 +204,7 @@ export class DeliveryAddressDialog {
     // Une entrée requise n'est pas posée quand le constructeur tourne.
     effect(() => {
       const initial = this.initial();
-      const depositAllowed = this.data().address?.depositAllowed ?? false;
-      untracked(() => {
-        this.draft.set(initial);
-        this.depositAllowed.set(depositAllowed);
-      });
+      untracked(() => this.draft.set(initial));
     });
   }
 
@@ -232,10 +219,7 @@ export class DeliveryAddressDialog {
     const refusal =
       address === null
         ? await this.addresses.addDelivery(companyId, payload)
-        : await this.addresses.updateDelivery(companyId, address.id, {
-            ...payload,
-            depositAllowed: this.depositAllowed(),
-          });
+        : await this.addresses.updateDelivery(companyId, address.id, payload);
     this.saving.set(false);
     if (refusal === null) {
       this.notify.success(this.t().account.addressSavedToast);

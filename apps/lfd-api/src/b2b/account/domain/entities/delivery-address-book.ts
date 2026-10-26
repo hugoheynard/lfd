@@ -168,27 +168,8 @@ export class DeliveryAddressBook {
   }
 
   /**
-   * Autorise — ou retire — le dépôt sans personne à cette adresse (AP-D5).
-   * Le seul chemin qui l'écrit : {@link edit} ne le touche jamais, pour qu'une
-   * charge qui ne le connaît pas ne le remette pas à `false`.
-   *
-   * Rend `false` quand la valeur ne change pas — rien à journaliser.
-   *
-   * @throws {CompanyAddressNotFoundError} l'adresse n'est pas à ce carnet.
-   */
-  allowDeposit(addressId: string, allowed: boolean): boolean {
-    const entry = this.require(addressId);
-    if (entry.depositAllowed === allowed) {
-      return false;
-    }
-    entry.depositAllowed = allowed;
-    return true;
-  }
-
-  /**
    * Redéfinit — ou rend au réglage global (`null`) — la décision réglée
-   * d'avance à la porte (B3 bis, LB-Q6). Comme {@link allowDeposit}, le seul
-   * chemin qui l'écrit ; `false` quand rien ne change.
+   * d'avance à la porte (B3 bis, LB-Q6). Le seul chemin qui l'écrit ; `false` quand rien ne change.
    *
    * @throws {CompanyAddressNotFoundError} l'adresse n'est pas à ce carnet.
    */

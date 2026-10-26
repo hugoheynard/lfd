@@ -50,6 +50,9 @@ export function figureOf(
   }
 }
 
+/** L'état « partiel » de l'onglet, dit en tête de sa phrase. */
+export const PARTIAL_HEAD = 'Partiel — des commandes attendent leur reste :';
+
 /** Le libellé du bouton global, compté. */
 export function issueLabel(count: number): string {
   return `Émettre les factures des réceptions confirmées (${String(count)})`;
@@ -70,6 +73,9 @@ export function invoicesSentence(view: CollectionProcedureInvoicesView): string 
       return 'Cette période se clôt avant la mise en service de la facture du mois : rien à y facturer.';
     case 'no_closure':
       return 'Aucune clôture de facturation pour cette procédure : rien à émettre.';
+    // Décision de Hugo du 2026-10-26 : l'onglet ne dit pas « fait » tant qu'un reste attend.
+    case 'awaiting_remainders':
+      return `${PARTIAL_HEAD} ${figuresSentence(view.figures)}`;
     default:
       return figuresSentence(view.figures);
   }

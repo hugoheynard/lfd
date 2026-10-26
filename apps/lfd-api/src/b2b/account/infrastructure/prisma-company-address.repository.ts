@@ -232,7 +232,7 @@ export class PrismaCompanyAddressRepository extends CompanyAddressRepository {
         const columns = {
           ...entry.lines,
           deliverySpecs: entry.specs,
-          // Relu au chargement, réécrit tel quel : seul `allowDeposit` le change.
+          // Relu au chargement, réécrit tel quel : plus rien ne le change depuis le 2026-10-26.
           depositAllowed: entry.depositAllowed,
           // De même : seul `setDoorstepRule` le change (B3 bis).
           doorstepRule: entry.doorstepRule,

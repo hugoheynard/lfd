@@ -713,6 +713,7 @@ et décidé par `invoicesStatus` (`apps/lfd-api/src/b2b/accounting/domain/servic
 | fait       | `before_service`               | la clôture précède la mise en service de la facture du mois                                  |
 | à faire    | `receipts_to_confirm` (§ 12.4) | des commandes de la période attendent qu'on confirme leur réception (premier geste)          |
 | à faire    | `receipts_to_invoice` (§ 12.4) | des réceptions confirmées n'ont pas leur facture                                             |
+| partiel    | `awaiting_remainders`          | rien à confirmer ni à facturer, mais des commandes attendent leur reste (Hugo, 2026-10-26)   |
 | fait       | `all_invoiced`                 | tout est facturé, rien à constater                                                           |
 | fait       | `no_closure`                   | aucune clôture, ou une clôture hors du calendrier de facturation (un lot d'un ancien rythme) |
 

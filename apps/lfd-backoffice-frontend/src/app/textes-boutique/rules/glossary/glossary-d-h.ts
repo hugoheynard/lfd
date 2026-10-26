@@ -44,8 +44,6 @@ export const GLOSSARY_D_H: Readonly<Record<string, string>> = {
   deliveryNoteWide: 'Livraison — note, grand écran',
   deliverySubtitle: 'Livraison seule — sous-titre',
   deliveryTitle: 'Livraison — titre',
-  depositAllowedHint: 'Dépôt sans personne — aide',
-  depositAllowedLabel: 'Dépôt sans personne',
   deskKicker: 'Surtitre de l’en-tête',
   destinations: 'Rubriques',
   detailFailed: 'Détail illisible',

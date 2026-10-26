@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1599 textes
+## Sommaire — 1597 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -41,13 +41,13 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 238 |
 | [Annuler une commande — Mes commandes et la page invité](#espace-ordercancel) | `orderCancel` | 55 |
 | [Fidélité](#espace-loyalty) | `loyalty` | 38 |
-| [Mon compte (factures comprises)](#espace-account) | `account` | 525 |
+| [Mon compte (factures comprises)](#espace-account) | `account` | 523 |
 | [Le compte pro — le dictionnaire général](#espace-pro) | `pro` | 8 |
 | [Le compte pro — l’écran](#espace-proaccount) | `proAccount` | 27 |
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
-| **Total** | | **1599** |
+| **Total** | | **1597** |
 
 ## Le parcours de commande
 
@@ -1271,7 +1271,7 @@ Source : `screens/loyalty.copy.ts` · 38 textes.
 
 ### Mon compte (factures comprises) — `account`
 
-Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 525 textes.
+Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 523 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -1446,8 +1446,6 @@ Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 
 | `account.addressRemovedToast` | Adresse supprimée. | Address removed. | Indirizzo eliminato. |  |
 | `account.addressActionFailed` | Le carnet n’a pas été modifié. | The address book was not changed. | La rubrica non è stata modificata. |  |
 | `account.deliveryDialogSubtitle` | Une adresse postale complète, et comment on y livre. | A full postal address, and how we deliver there. | Un indirizzo postale completo, e come vi consegniamo. |  |
-| `account.depositAllowedLabel` | Dépôt autorisé sans personne | Drop-off allowed with nobody present | Deposito autorizzato senza nessuno |  |
-| `account.depositAllowedHint` | Vous autorisez le livreur à déposer la commande sans personne pour la réceptionner, avec une photo pour preuve. | You allow the driver to leave the order with nobody there to receive it, with a photo as proof. | Autorizzate il corriere a lasciare l’ordine senza nessuno a riceverlo, con una foto come prova. |  |
 | `account.deliveryAddSubmit` | Ajouter | Add | Aggiungi |  |
 | `account.addressForm.label` | Nom de l'adresse | Address name | Nome dell'indirizzo |  |
 | `account.addressForm.labelHint` | ex. Siège, Boutique Bastille | e.g. Head office, Bastille shop | es. Sede, Negozio Bastille |  |

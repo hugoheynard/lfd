@@ -1,13 +1,12 @@
 /**
  * E2E du **« dépôt autorisé »** sur une adresse de livraison
- * (`documentation/livraisons/livreur/a-la-porte.md`, AP-Q1, AP-D5) — une colonne
- * du carnet, réglée par le client sur sa route d'édition. La route à part du
- * staff a été retirée le 2026-10-26 (décision de Hugo) : la règle du dépôt ne
- * lit plus ce réglage.
+ * (`documentation/livraisons/livreur/a-la-porte.md`, §4) — une colonne du
+ * carnet que plus personne ne règle depuis le 2026-10-26 (décision de Hugo) :
+ * la règle du dépôt ne la lit plus. La colonne reste en base.
  *
- * 🔴 Ce que seul le vrai SQL prouve : une édition du client qui ne l'envoie
- * pas — un front en ligne qui ne le connaît pas — ne le remet pas à `false`,
- * et l'édition staff de l'adresse (sous `b2b_companies`) ne le touche pas.
+ * 🔴 Ce que seul le vrai SQL prouve : un front périmé qui l'envoie encore
+ * n'écrit rien, et aucune édition d'adresse — client ou staff — ne remet à
+ * `false` une valeur déjà en base.
  */
 import type { CompanyAddressesView, DeliveryAddressPayload } from "@lfd/contracts";
 
@@ -71,40 +70,47 @@ const CLIENT_EDIT = (): string => `/companies/${companyId}/delivery-addresses/${
 const STAFF_DEPOSIT = (): string =>
   `/admin/companies/${companyId}/delivery-addresses/${addressId}/deposit`;
 
-describe("« dépôt autorisé » (AP-D5)", () => {
+async function storeDeposit(value: boolean): Promise<void> {
+  await ctx.prisma.address.update({
+    where: { id: addressId },
+    data: { depositAllowed: value },
+  });
+}
+
+describe("« dépôt autorisé », retiré du client (2026-10-26)", () => {
   it("une adresse neuve n'autorise rien", async () => {
     expect(await depositOf()).toBe(false);
   });
 
-  it("🔴 le client l'autorise ; une édition qui ne l'envoie pas le garde", async () => {
+  it("🔴 un front périmé qui l'envoie encore n'écrit rien, et aucun fait ne part", async () => {
     await ctx
       .asSub(OWNER)
       .patch(CLIENT_EDIT())
       .send({ ...ADDRESS, depositAllowed: true })
       .expect(204);
-    expect(await depositOf()).toBe(true);
 
-    await ctx
-      .asSub(OWNER)
-      .patch(CLIENT_EDIT())
-      .send({ ...ADDRESS, label: "Boutique (cour)" })
-      .expect(204);
-
-    expect(await depositOf()).toBe(true);
+    expect(await depositOf()).toBe(false);
     expect(
       await ctx.prisma.activityEvent.count({ where: { type: "company.delivery_deposit_set" } }),
-    ).toBe(1);
+    ).toBe(0);
   });
 
-  it("le staff n'a plus de route pour le régler (retirée le 2026-10-26) ; son édition d'adresse ne le touche pas", async () => {
-    await admin(ctx).put(STAFF_DEPOSIT()).send({ depositAllowed: true }).expect(404);
-    expect(await depositOf()).toBe(false);
+  it("🔴 une édition du client ne remet pas à `false` une valeur déjà en base", async () => {
+    await storeDeposit(true);
 
     await ctx
       .asSub(OWNER)
       .patch(CLIENT_EDIT())
-      .send({ ...ADDRESS, depositAllowed: true })
+      .send({ ...ADDRESS, label: "Boutique (cour)", depositAllowed: false })
       .expect(204);
+
+    expect(await depositOf()).toBe(true);
+  });
+
+  it("le staff n'a plus de route pour le régler ; son édition d'adresse ne le touche pas", async () => {
+    await admin(ctx).put(STAFF_DEPOSIT()).send({ depositAllowed: true }).expect(404);
+    await storeDeposit(true);
+
     await admin(ctx)
       .patch(`/admin/companies/${companyId}/delivery-addresses/${addressId}`)
       .send({ ...ADDRESS, depositAllowed: false })

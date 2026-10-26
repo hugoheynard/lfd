@@ -207,6 +207,7 @@ export type {
 } from "./collection-procedure-bank-limits.js";
 export type {
   CollectionProcedureInvoicesReasonView,
+  CollectionProcedureInvoicesStateView,
   CollectionProcedureInvoicesView,
   ProcedureOrderFiguresView,
   ProcedureOrderStatusView,

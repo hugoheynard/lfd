@@ -2,6 +2,7 @@ import type {
   BillingRhythmKind,
   CollectionProcedureBatchView,
   CollectionProcedureIdentityView,
+  CollectionProcedureInvoicesStateView,
   CollectionProcedureStepKeyView,
   CollectionProcedureStepStateView,
   CollectionProcedureView,
@@ -36,10 +37,17 @@ const STEP_LABELS: Readonly<Record<CollectionProcedureStepKeyView, string>> = {
   returns: '5 Retours de la banque',
 };
 
-const STATE_ICONS: Readonly<Record<CollectionProcedureStepStateView, FoldIconName | undefined>> = {
+/** « Partiel » n'est connu que de l'onglet Factures (décision de Hugo du 2026-10-26). */
+const STATE_ICONS: Readonly<
+  Record<
+    CollectionProcedureStepStateView | CollectionProcedureInvoicesStateView,
+    FoldIconName | undefined
+  >
+> = {
   locked: 'lock',
   to_do: undefined,
   waiting: 'clock',
+  partial: 'minus',
   done: 'check-circle',
 };
 

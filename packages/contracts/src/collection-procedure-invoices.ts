@@ -19,6 +19,9 @@ import type { MonthlyClosureView } from "./monthly-invoices.js";
  * - `before_service` — la clôture précède la mise en service de la facture du mois ;
  * - `receipts_to_confirm` — des commandes de la période attendent qu'on confirme leur réception ;
  * - `receipts_to_invoice` — des réceptions confirmées n'ont pas encore leur facture ;
+ * - `awaiting_remainders` — rien n'est à confirmer ni à facturer, mais des
+ *   commandes attendent leur reste (état `partial`, décision de Hugo du
+ *   2026-10-26) ;
  * - `all_invoiced` — toutes les commandes de la période sont facturées ;
  * - `no_closure` — aucune clôture à montrer, ou la clôture n'est pas une
  *   clôture de facturation du calendrier : rien ne s'y émet.
@@ -28,6 +31,7 @@ export type CollectionProcedureInvoicesReasonView =
   | "before_service"
   | "receipts_to_confirm"
   | "receipts_to_invoice"
+  | "awaiting_remainders"
   | "all_invoiced"
   | "no_closure";
 
@@ -77,9 +81,17 @@ export interface ProcedureOrderFiguresView {
   readonly awaitingRemainder: number;
 }
 
+/**
+ * L'état de l'onglet Factures : ceux de tous les onglets, plus `partial` —
+ * seules des commandes attendant leur reste restent non facturées ; l'onglet
+ * ne dit pas « fait » (décision de Hugo du 2026-10-26).
+ */
+export type CollectionProcedureInvoicesStateView =
+  "locked" | "to_do" | "waiting" | "partial" | "done";
+
 /** Onglet 3 — les factures de LA période de la procédure. */
 export interface CollectionProcedureInvoicesView {
-  readonly state: "locked" | "to_do" | "waiting" | "done";
+  readonly state: CollectionProcedureInvoicesStateView;
   readonly reason: CollectionProcedureInvoicesReasonView;
   /** Les commandes de la période, par jour demandé puis par numéro. */
   readonly orders: readonly ProcedureOrderView[];

@@ -58,11 +58,21 @@ describe("le statut d'une commande de la période", () => {
     expect(procedureOrderStatus(facts)).toBe("awaiting_remainder");
   });
 
-  it("une partielle ne bloque pas l'onglet : rien à confirmer ni à facturer", () => {
+  /**
+   * Régression : une partielle seule laissait l'onglet à « fait / tout
+   * facturé », alors qu'elle n'est pas facturée (décision de Hugo du 2026-10-26).
+   */
+  it("une partielle n'appelle aucun geste, mais l'onglet n'est pas « fait » : il est partiel", () => {
     expect(invoicesStatus({ ...FACTS, statuses: ["invoiced", "awaiting_remainder"] })).toEqual({
-      state: "done",
-      reason: "all_invoiced",
+      state: "partial",
+      reason: "awaiting_remainders",
     });
+  });
+
+  it("un geste à faire passe avant une partielle", () => {
+    expect(
+      invoicesStatus({ ...FACTS, statuses: ["awaiting_remainder", "receipt_confirmed"] }),
+    ).toEqual({ state: "to_do", reason: "receipts_to_invoice" });
   });
 });
 

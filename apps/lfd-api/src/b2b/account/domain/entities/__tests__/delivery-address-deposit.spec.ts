@@ -71,28 +71,12 @@ describe("« dépôt autorisé » sur une adresse du carnet (AP-D5)", () => {
     expect(book.deliveries()[0]?.depositAllowed).toBe(false);
   });
 
-  it("s'autorise, se retire, et dit quand rien ne change", () => {
-    const book = bookWith(false);
-
-    expect(book.allowDeposit("a1", true)).toBe(true);
-    expect(book.deliveries()[0]?.depositAllowed).toBe(true);
-    expect(book.allowDeposit("a1", true)).toBe(false);
-    expect(book.allowDeposit("a1", false)).toBe(true);
-    expect(book.toPersistence().entries[0]?.depositAllowed).toBe(false);
-  });
-
   it("🔴 modifier l'adresse ne le remet jamais à `false`", () => {
     const book = bookWith(true);
 
     book.edit("a1", payload());
 
     expect(book.deliveries()[0]?.depositAllowed).toBe(true);
-  });
-
-  it("refuse une adresse qui n'est pas à ce carnet", () => {
-    expect(() => bookWith(false).allowDeposit("ailleurs", true)).toThrow(
-      CompanyAddressNotFoundError,
-    );
   });
 });
 

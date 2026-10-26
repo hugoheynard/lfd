@@ -153,6 +153,8 @@ describe('l’onglet Factures de la procédure', () => {
   it('une partielle : son statut, le jour de son reste, aucun geste ni bouton', () => {
     const { fixture } = boot(
       procedureInvoices({
+        state: 'partial',
+        reason: 'awaiting_remainders',
         orders: [order('p', 'awaiting_remainder', { remainderPlannedOn: '2026-10-22' })],
         figures: { invoiced: 0, receiptConfirmed: 0, receiptToConfirm: 0, awaitingRemainder: 1 },
         issuableCount: 0,
@@ -167,8 +169,11 @@ describe('l’onglet Factures de la procédure', () => {
     expect(host.querySelector('[data-order-remainder-day]')).not.toBeNull();
     expect(host.querySelector('[data-confirm-receipt]')).toBeNull();
     expect(host.querySelector('[data-issue-invoices]')).toBeNull();
-    expect(host.querySelector('[data-invoices-reason]')?.textContent).toContain(
-      '1 partielle, reste à relivrer.',
+    // Décision de Hugo du 2026-10-26 : l'onglet le dit « partiel », jamais « fait ».
+    const reason = host.querySelector('[data-invoices-reason]');
+    expect(reason?.getAttribute('data-invoices-reason')).toBe('awaiting_remainders');
+    expect(reason?.textContent).toContain(
+      'Partiel — des commandes attendent leur reste : 1 partielle, reste à relivrer.',
     );
     expect(host.querySelector('[data-figure="awaiting_remainder"]')).not.toBeNull();
   });

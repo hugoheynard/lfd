@@ -264,10 +264,11 @@ export type ProcedureStepKey = "accounts" | "mandates" | "invoices" | "file" | "
 
 /**
  * L'onglet ouvert à l'arrivée (§ 1) : le premier qui attend un geste, à
- * faire ou en attente ; le premier sinon.
+ * faire ou en attente ; le premier sinon. « Partiel » (l'onglet Factures,
+ * des restes à relivrer) n'attend aucun geste : il n'ouvre pas.
  */
 export function arrivalStepOf(
-  states: Readonly<Record<ProcedureStepKey, ProcedureStepState>>,
+  states: Readonly<Record<ProcedureStepKey, ProcedureStepState | "partial">>,
 ): ProcedureStepKey {
   const order: readonly ProcedureStepKey[] = [
     "accounts",

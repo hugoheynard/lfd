@@ -209,46 +209,23 @@ describe('DeliveryAddressDialog', () => {
     expect(submitButton(fixture)?.disabled).toBe(true);
   });
 
-  describe('« dépôt autorisé » (AP-Q1)', () => {
-    const box = (fixture: ComponentFixture<DeliveryAddressDialog>): HTMLInputElement | null =>
-      (fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>(
-        '[data-deposit-allowed] input[type="checkbox"]',
-      );
-
-    it('n’est pas proposé à la création : la route de création ne le porte pas', () => {
-      expect(box(boot(CREATE))).toBeNull();
-    });
-
-    it('en correction, dit ce qu’on autorise et part avec l’adresse, Enregistrer armé par la case seule', async () => {
-      const fixture = boot({ ...CREATE, address: CHALET, firstOfBook: false });
-      const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
-      expect(text).toContain(FR.account.depositAllowedLabel);
-      expect(text).toContain(FR.account.depositAllowedHint);
-      expect(box(fixture)?.checked).toBe(false);
-      expect(submitButton(fixture)?.disabled).toBe(true);
-
-      box(fixture)?.click();
-      fixture.detectChanges();
-      expect(submitButton(fixture)?.disabled).toBe(false);
-      await submit(fixture);
-
-      expect(wire.updates).toEqual([
-        { addressId: 'adr_1', payload: expect.objectContaining({ depositAllowed: true }) },
-      ]);
-    });
-
-    it('une correction qui ne touche pas la case renvoie la valeur lue, jamais `false` par défaut', async () => {
+  /** Retiré le 2026-10-26 (décision de Hugo) : la règle du dépôt ne le lit plus. */
+  describe('« dépôt autorisé », retiré', () => {
+    it('n’est proposé ni en correction, ni dans la charge envoyée', async () => {
       const fixture = boot({
         ...CREATE,
         address: { ...CHALET, depositAllowed: true },
         firstOfBook: false,
       });
-      expect(box(fixture)?.checked).toBe(true);
+      const host = fixture.nativeElement as HTMLElement;
+      expect(host.querySelector('[data-deposit-allowed]')).toBeNull();
+      expect(host.textContent ?? '').not.toContain('Dépôt autorisé');
       form(fixture).value.set({ ...form(fixture).value(), ville: 'Tignes' });
       fixture.detectChanges();
       await submit(fixture);
 
-      expect(wire.updates[0]?.payload).toMatchObject({ ville: 'Tignes', depositAllowed: true });
+      expect(wire.updates[0]?.payload).toMatchObject({ ville: 'Tignes' });
+      expect(wire.updates[0]?.payload).not.toHaveProperty('depositAllowed');
     });
   });
 

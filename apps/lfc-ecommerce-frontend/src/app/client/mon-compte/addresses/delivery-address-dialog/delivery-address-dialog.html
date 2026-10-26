@@ -20,16 +20,6 @@
     [globalWindowMode]="globalWindowMode()"
   />
 
-  @if (!isCreate()) {
-    <fold-checkbox
-      [label]="t().account.depositAllowedLabel"
-      [hint]="t().account.depositAllowedHint"
-      [checked]="depositAllowed()"
-      (checkedChange)="depositAllowed.set($event)"
-      data-deposit-allowed
-    />
-  }
-
   <!-- SUPPRIMER vit ici, en correction seulement — jamais en ligne dans le carnet. -->
   @if (!isCreate()) {
     @if (removeRefusal(); as message) {

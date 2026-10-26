@@ -11,6 +11,8 @@
     "account.invoices.count": null,
     "account.invoices.countOne": null,
     "account.invoices.delivered": null,
-    "account.invoices.notDelivered": null
+    "account.invoices.notDelivered": null,
+    "account.depositAllowedLabel": null,
+    "account.depositAllowedHint": null
   }
 }

@@ -7982,20 +7982,6 @@
           "variables": []
         },
         {
-          "key": "account.depositAllowedLabel",
-          "fr": "Dépôt autorisé sans personne",
-          "en": "Drop-off allowed with nobody present",
-          "it": "Deposito autorizzato senza nessuno",
-          "variables": []
-        },
-        {
-          "key": "account.depositAllowedHint",
-          "fr": "Vous autorisez le livreur à déposer la commande sans personne pour la réceptionner, avec une photo pour preuve.",
-          "en": "You allow the driver to leave the order with nobody there to receive it, with a photo as proof.",
-          "it": "Autorizzate il corriere a lasciare l’ordine senza nessuno a riceverlo, con una foto come prova.",
-          "variables": []
-        },
-        {
           "key": "account.deliveryAddSubmit",
           "fr": "Ajouter",
           "en": "Add",

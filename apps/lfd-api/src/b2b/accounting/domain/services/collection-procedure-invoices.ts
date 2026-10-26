@@ -62,6 +62,9 @@ export function procedureOrderStatus(facts: ProcedureOrderFacts): ProcedureOrder
  *   du mois (ou le plancher a disparu) : rien ne s'y facture ;
  * - `receipts_to_confirm` — des commandes attendent qu'on confirme leur réception ;
  * - `receipts_to_invoice` — des réceptions confirmées n'ont pas leur facture ;
+ * - `awaiting_remainders` — rien n'est à confirmer ni à facturer, mais des
+ *   commandes attendent leur reste : l'onglet est « partiel », pas « fait »
+ *   (décision de Hugo du 2026-10-26) ;
  * - `all_invoiced` — tout est facturé ;
  * - `no_closure` — la page n'a aucune clôture à montrer.
  */
@@ -70,6 +73,7 @@ export type InvoicesReason =
   | "before_service"
   | "receipts_to_confirm"
   | "receipts_to_invoice"
+  | "awaiting_remainders"
   | "all_invoiced"
   | "no_closure";
 
@@ -82,17 +86,24 @@ export interface InvoicesFacts {
 }
 
 /**
- * Une commande `awaiting_remainder` ne bloque rien : aucun geste de l'onglet
- * ne la fait avancer, son reste se livre ailleurs (décision de Hugo du
- * 2026-10-26).
+ * L'état de l'onglet : ceux de tous les onglets, plus « partiel », que seul
+ * celui-ci connaît — une période dont des commandes attendent leur reste.
+ */
+export type InvoicesStepState = ProcedureStepState | "partial";
+
+/**
+ * Une commande `awaiting_remainder` n'appelle aucun geste de l'onglet : son
+ * reste se livre ailleurs. Mais elle n'est pas facturée, et l'onglet ne dit
+ * donc pas « fait » : il dit « partiel » (décisions de Hugo du 2026-10-26).
  *
- * « Fait » quand plus aucune commande n'est « à confirmer » ni « confirmée
- * non facturée » ; « à faire » sinon ; « verrouillé » tant que la clôture est
- * à venir. Confirmer passe en premier : c'est le premier geste — la réception
+ * « Fait » quand plus aucune commande n'est « à confirmer », « confirmée non
+ * facturée » ni en attente de son reste ; « à faire » tant qu'un geste
+ * attend ; « partiel » quand seul le reste attend ; « verrouillé » tant que
+ * la clôture est à venir. Confirmer passe en premier : c'est le premier geste — la réception
  * confirmée fait entrer la commande dans l'assiette, puis l'émission la facture.
  */
 export function invoicesStatus(facts: InvoicesFacts): {
-  readonly state: ProcedureStepState;
+  readonly state: InvoicesStepState;
   readonly reason: InvoicesReason;
 } {
   if (!facts.reached) {
@@ -106,6 +117,9 @@ export function invoicesStatus(facts: InvoicesFacts): {
   }
   if (facts.statuses.includes("receipt_confirmed")) {
     return { state: "to_do", reason: "receipts_to_invoice" };
+  }
+  if (facts.statuses.includes("awaiting_remainder")) {
+    return { state: "partial", reason: "awaiting_remainders" };
   }
   return { state: "done", reason: "all_invoiced" };
 }

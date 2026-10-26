@@ -279,6 +279,18 @@ describe("l'onglet ouvert à l'arrivée", () => {
     ).toBe("mandates");
   });
 
+  it("des factures « partielles » n'appellent aucun geste : l'onglet n'ouvre pas", () => {
+    expect(
+      arrivalStepOf({
+        accounts: "done",
+        mandates: "done",
+        invoices: "partial",
+        file: "to_do",
+        returns: "locked",
+      }),
+    ).toBe("file");
+  });
+
   it("tout est fait : le premier onglet", () => {
     expect(
       arrivalStepOf({

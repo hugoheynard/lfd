@@ -89,9 +89,9 @@ export class CompanyAddressesController {
   }
 
   /**
-   * Remplace une adresse de livraison (gestionnaire). `depositAllowed`,
-   * facultatif, règle le dépôt sans personne ; absent, il reste inchangé
-   * (`a-la-porte.md`, AP-D5).
+   * Remplace une adresse de livraison (gestionnaire). Un `depositAllowed` qu'un
+   * front périmé enverrait encore est ignoré : le client ne le règle plus
+   * depuis le 2026-10-26.
    */
   @Patch(":companyId/delivery-addresses/:addressId")
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -101,9 +101,8 @@ export class CompanyAddressesController {
     @Param("addressId") addressId: string,
     @Body(new ZodBody(memberDeliveryAddressPayloadSchema)) payload: MemberDeliveryAddressPayload,
   ): Promise<void> {
-    const { depositAllowed, ...address } = payload;
     await this.commands.execute<UpdateDeliveryAddressCommand, void>(
-      new UpdateDeliveryAddressCommand(user.userId, companyId, addressId, address, depositAllowed),
+      new UpdateDeliveryAddressCommand(user.userId, companyId, addressId, payload),
     );
   }
 

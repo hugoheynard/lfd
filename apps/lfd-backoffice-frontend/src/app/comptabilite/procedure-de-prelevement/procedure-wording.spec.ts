@@ -92,6 +92,20 @@ describe('l’onglet Factures dans la barre', () => {
   });
 });
 
+describe('l’onglet Factures « partiel » (décision de Hugo du 2026-10-26)', () => {
+  it('ne porte pas la coche du « fait » : son icône dit le partiel, sans badge', () => {
+    const view = procedureView({
+      invoices: procedureInvoices({
+        state: 'partial',
+        reason: 'awaiting_remainders',
+        figures: { invoiced: 3, receiptConfirmed: 0, receiptToConfirm: 0, awaitingRemainder: 1 },
+      }),
+    });
+    const tab = procedureTabs(view).find((item) => item.key === 'invoices');
+    expect(tab).toMatchObject({ icon: 'minus', badge: null });
+  });
+});
+
 describe('la clôture mutualisée', () => {
   it('mutualisée dès que deux rythmes closent le même jour, pas avec un seul', () => {
     expect(isPooled(['weekly', 'monthly'])).toBe(true);

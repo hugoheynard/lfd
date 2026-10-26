@@ -1,6 +1,8 @@
 <div class="pi-stack">
   <fold-callout
-    [variant]="view().state === 'to_do' ? 'warning' : 'neutral'"
+    [variant]="
+      view().state === 'to_do' ? 'warning' : view().state === 'partial' ? 'info' : 'neutral'
+    "
     [attr.data-invoices-reason]="view().reason"
   >
     {{ sentence() }}
