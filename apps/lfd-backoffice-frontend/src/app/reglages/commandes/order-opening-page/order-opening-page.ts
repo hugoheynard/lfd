@@ -1,5 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import type { CustomerAudience, OrderOpeningPatch, OrderOpeningView } from '@lfd/contracts';
+import type {
+  CustomerAudience,
+  OrderOpeningExemptionView,
+  OrderOpeningPatch,
+  OrderOpeningView,
+} from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
   FoldBadgeComponent,
@@ -14,7 +19,11 @@ import {
 } from 'fold-ng';
 
 import { PermissionsStore } from '../../../auth/permissions.store';
+import { NotifyService } from '../../../notify.service';
+import { OrderOpeningExemptionsCard } from '../order-opening-exemptions-card/order-opening-exemptions-card';
+import { OrderOpeningExemptionsService } from '../order-opening-exemptions.service';
 import { OrderOpeningService } from '../order-opening.service';
+import { closureNotice, type ClosureNotice } from './closure-notice';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -61,6 +70,11 @@ interface AudienceRow {
  * confirmation qui dit son effet — un clic de travers fermerait la boutique à
  * toute une clientèle (la leçon de « Livraison », 2026-09-15).
  *
+ * Depuis le 2026-10-26 (décision de Hugo) : un encadré en tête dit, quand la
+ * boutique est fermée, à qui, ce que ça veut dire et combien d'exemptions
+ * jouent ; et la liste des exemptions — sociétés et adresses qui commandent
+ * malgré la fermeture — se tient sous les interrupteurs.
+ *
  * L'écran ne décide rien : il pose le réglage, et le serveur l'applique.
  */
 @Component({
@@ -76,12 +90,15 @@ interface AudienceRow {
     FoldInlineConfirmComponent,
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
+    OrderOpeningExemptionsCard,
   ],
   templateUrl: './order-opening-page.html',
   styleUrl: './order-opening-page.scss',
 })
 export class OrderOpeningPage {
   private readonly service = inject(OrderOpeningService);
+  private readonly exemptionsApi = inject(OrderOpeningExemptionsService);
+  private readonly notify = inject(NotifyService);
   private readonly permissions = inject(PermissionsStore);
 
   /**
@@ -92,6 +109,7 @@ export class OrderOpeningPage {
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly settings = signal<OrderOpeningView | null>(null);
+  protected readonly exemptions = signal<readonly OrderOpeningExemptionView[]>([]);
   /** La clientèle dont la bascule est en vol ; `null` au repos. */
   protected readonly pending = signal<CustomerAudience | null>(null);
   /** Le dernier refus, en clair ; `null` quand le dernier envoi a abouti. */
@@ -108,6 +126,12 @@ export class OrderOpeningPage {
     ];
   });
 
+  /** L'encadré d'en-tête ; `null` quand tout est ouvert. */
+  protected readonly notice = computed<ClosureNotice | null>(() => {
+    const view = this.settings();
+    return view === null ? null : closureNotice(view, this.exemptions().length);
+  });
+
   constructor() {
     void this.load();
   }
@@ -115,10 +139,28 @@ export class OrderOpeningPage {
   protected async load(): Promise<void> {
     this.state.set('loading');
     try {
-      this.settings.set(await this.service.read());
+      const [settings, exemptions] = await Promise.all([
+        this.service.read(),
+        this.exemptionsApi.list(),
+      ]);
+      this.settings.set(settings);
+      this.exemptions.set(exemptions);
       this.state.set('ready');
     } catch {
       this.state.set('error');
+    }
+  }
+
+  /** Après un ajout ou un retrait : la liste relue, l'encadré recompté. Un échec garde l'ancienne. */
+  protected async reloadExemptions(): Promise<void> {
+    try {
+      this.exemptions.set(await this.exemptionsApi.list());
+    } catch (error) {
+      // Le geste a abouti ; seule la relecture a échoué, et la liste affichée reste l'ancienne.
+      this.notify.error(
+        error,
+        'La liste des exemptions n’a pas pu être relue : rechargez la page.',
+      );
     }
   }
 

@@ -2219,6 +2219,16 @@ export type {
   PublicOrderOpeningView,
 } from "./order-opening.js";
 export {
+  ORDER_OPENING_EXEMPTION_ERRORS,
+  ORDER_OPENING_EXEMPTION_KINDS,
+  orderOpeningExemptionPayloadSchema,
+} from "./order-opening-exemptions.js";
+export type {
+  OrderOpeningExemptionKind,
+  OrderOpeningExemptionPayload,
+  OrderOpeningExemptionView,
+} from "./order-opening-exemptions.js";
+export {
   ALL_DISCOUNT_AUDIENCES,
   audiencePickupDiscountSchema,
   pickupAddressUpdatePayloadSchema,

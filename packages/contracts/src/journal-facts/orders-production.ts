@@ -74,6 +74,14 @@ const adjustment = () =>
     payload({ mode: z.literal("amount"), cents: cents() }),
   ]);
 
+/** Une exemption à la fermeture de la boutique : ce qu'elle visait, nommé au geste. */
+const exemptionFact = () =>
+  payload({
+    subjectLabel: subjectLabel(),
+    kind: z.enum(["company", "email"]),
+    company: named("company").nullable(),
+  });
+
 /** Le nom et la plaque d'un véhicule de la flotte, tels qu'écrits. */
 const vehicleIdentity = () =>
   payload({
@@ -635,6 +643,14 @@ export const ORDERS_PRODUCTION_FACTS = {
       previous: payload({ ordersOpenToB2b: z.boolean(), ordersOpenToB2c: z.boolean() }),
     }),
   ),
+  /**
+   * **Les exemptions à la fermeture** (décision de Hugo du 2026-10-26) : une
+   * société ou une adresse qui commande malgré la fermeture de sa clientèle.
+   * Le libellé est le nom de la société figé au geste, ou l'adresse
+   * normalisée ; `company` cite la société visée, `null` pour une adresse.
+   */
+  "order_opening.exemption_granted": fact(exemptionFact()),
+  "order_opening.exemption_withdrawn": fact(exemptionFact()),
 
   /**
    * **La flotte** (2026-09-29, `plan-preparation-de-tournee.md`, lot 2). Le

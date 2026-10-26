@@ -13,6 +13,16 @@ import { GetOrderOpeningHandler } from "./application/queries/get-order-opening.
 import { OrderOpeningReader } from "./domain/ports/order-opening.reader.js";
 import { OrderOpeningRepository } from "./domain/ports/order-opening.repository.js";
 import { AdminOrderOpeningController } from "./http/admin-order-opening.controller.js";
+import { AdminOrderOpeningExemptionsController } from "./http/admin-order-opening-exemptions.controller.js";
+import { GrantOrderOpeningExemptionHandler } from "./application/commands/grant-order-opening-exemption.handler.js";
+import { WithdrawOrderOpeningExemptionHandler } from "./application/commands/withdraw-order-opening-exemption.handler.js";
+import { ListOrderOpeningExemptionsHandler } from "./application/queries/list-order-opening-exemptions.handler.js";
+import { ActiveOrderOpeningExemptions } from "./domain/ports/active-order-opening-exemptions.reader.js";
+import { OrderOpeningExemptionListReader } from "./domain/ports/order-opening-exemption-list.reader.js";
+import { OrderOpeningExemptionRepository } from "./domain/ports/order-opening-exemption.repository.js";
+import { PrismaActiveOrderOpeningExemptions } from "./infrastructure/prisma-active-order-opening-exemptions.js";
+import { PrismaOrderOpeningExemptionListReader } from "./infrastructure/prisma-order-opening-exemption-list.reader.js";
+import { PrismaOrderOpeningExemptionRepository } from "./infrastructure/prisma-order-opening-exemption.repository.js";
 import { OrderOpeningController } from "./http/order-opening.controller.js";
 import { PrismaOrderOpeningReader } from "./infrastructure/prisma-order-opening.reader.js";
 import { PrismaOrderOpeningRepository } from "./infrastructure/prisma-order-opening.repository.js";
@@ -23,7 +33,8 @@ import { PrismaOrderOpeningRepository } from "./infrastructure/prisma-order-open
  *
  * Importe `AccountModule` pour le seul `StaffDirectory` (l'auteur figé du geste).
  * Exporte le port de LECTURE seul : `orders` refuse une passation, il ne pose
- * jamais le réglage.
+ * jamais le réglage. Même chose, depuis le 2026-10-26, pour les exemptions à
+ * la fermeture : `orders` lit les actives, il n'en accorde ni n'en retire.
  *
  * Porte aussi, depuis le lot C6 (C6.5), le réglage « les particuliers peuvent
  * annuler eux-mêmes » : la même nature de réglage, le même écran, le même
@@ -35,6 +46,7 @@ import { PrismaOrderOpeningRepository } from "./infrastructure/prisma-order-open
     OrderOpeningController,
     AdminOrderOpeningController,
     AdminCustomerCancellationController,
+    AdminOrderOpeningExemptionsController,
   ],
   providers: [
     { provide: OrderOpeningReader, useClass: PrismaOrderOpeningReader },
@@ -51,7 +63,13 @@ import { PrismaOrderOpeningRepository } from "./infrastructure/prisma-order-open
     },
     GetCustomerCancellationSettingsHandler,
     UpdateCustomerCancellationSettingsHandler,
+    { provide: ActiveOrderOpeningExemptions, useClass: PrismaActiveOrderOpeningExemptions },
+    { provide: OrderOpeningExemptionRepository, useClass: PrismaOrderOpeningExemptionRepository },
+    { provide: OrderOpeningExemptionListReader, useClass: PrismaOrderOpeningExemptionListReader },
+    GrantOrderOpeningExemptionHandler,
+    WithdrawOrderOpeningExemptionHandler,
+    ListOrderOpeningExemptionsHandler,
   ],
-  exports: [OrderOpeningReader, CustomerCancellationSettingsReader],
+  exports: [OrderOpeningReader, CustomerCancellationSettingsReader, ActiveOrderOpeningExemptions],
 })
 export class OrderOpeningModule {}

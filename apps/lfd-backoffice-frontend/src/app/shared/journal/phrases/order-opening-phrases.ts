@@ -1,7 +1,15 @@
 import type { JournalFactType } from '@lfd/contracts/journal-facts';
 
 import { recordOf } from '../payload-read';
-import { byActor, text, type Phrase, type PhraseFact, type Segment } from '../phrase';
+import {
+  byActor,
+  name,
+  subjectLabelOf,
+  text,
+  type Phrase,
+  type PhraseFact,
+  type Segment,
+} from '../phrase';
 
 /**
  * **L'ouverture de la boutique à la commande** (Hugo, 2026-10-09) — le miroir
@@ -67,11 +75,45 @@ function orderOpening(fact: PhraseFact): Segment[] {
   return [text([changes.join(' et '), ...rest].join(' ; '))];
 }
 
+/**
+ * **Les exemptions à la fermeture** (décision de Hugo du 2026-10-26) : la
+ * société ou l'adresse, nommée au geste. « a laissé commander « Chez Paul »
+ * malgré la fermeture de la boutique ».
+ */
+function exemptionTarget(fact: PhraseFact): Segment[] {
+  const label = subjectLabelOf(fact);
+  const kind = fact.payload['kind'];
+  const what = kind === 'company' ? 'la société ' : kind === 'email' ? 'l’adresse ' : '';
+  return label === null ? [text('un client')] : [text(what), name(label)];
+}
+
+const EXEMPTION_KEYS = ['subjectLabel', 'kind', 'company'];
+
 export const ORDER_OPENING_PHRASES = {
   'order_opening.updated': (fact) =>
     byActor(
       fact,
       orderOpening(fact),
       openings(fact) === null ? [] : ['ordersOpenToB2b', 'ordersOpenToB2c', 'previous'],
+    ),
+  'order_opening.exemption_granted': (fact) =>
+    byActor(
+      fact,
+      [
+        text('a laissé commander '),
+        ...exemptionTarget(fact),
+        text(' malgré la fermeture de la boutique'),
+      ],
+      EXEMPTION_KEYS,
+    ),
+  'order_opening.exemption_withdrawn': (fact) =>
+    byActor(
+      fact,
+      [
+        text('a retiré l’exemption de '),
+        ...exemptionTarget(fact),
+        text(' : la fermeture de la boutique s’y applique de nouveau'),
+      ],
+      EXEMPTION_KEYS,
     ),
 } satisfies Partial<Record<JournalFactType, Phrase>>;

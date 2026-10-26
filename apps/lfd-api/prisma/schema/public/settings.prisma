@@ -281,6 +281,41 @@ model OrderOpening {
   @@schema("public")
 }
 
+/// **Les exemptions à la fermeture de la boutique** (décision de Hugo du
+/// 2026-10-26) : une société ou une adresse qui commande malgré la fermeture
+/// de sa clientèle. Doc : `documentation/commandes/passation/ouverture-de-la-boutique.md`.
+///
+/// Retirer ARCHIVE (`withdrawn_at`), n'efface pas. Une cible n'a qu'une
+/// exemption ACTIVE à la fois : deux index uniques partiels posés en SQL brut
+/// dans `20261026130000_les_exemptions_a_la_fermeture` (Prisma ne sait pas les
+/// écrire), avec la contrainte qui lie `kind` à sa colonne.
+model OrderOpeningExemption {
+  /// ULID fourni par l'`IdGenerator`.
+  id   String @id
+  /// `company` ou `email`.
+  kind String
+
+  /// La société visée (identifiant opaque, sans clé étrangère) et son nom figé à l'ajout.
+  companyId   String? @map("company_id")
+  companyName String? @map("company_name")
+  /// L'adresse visée, normalisée (sans espace, en minuscules).
+  email       String?
+
+  grantedAt        DateTime @map("granted_at")
+  grantedByStaffId String   @map("granted_by_staff_id")
+  grantedByName    String   @map("granted_by_name")
+  grantedByRole    String   @map("granted_by_role")
+
+  /// `null` tant qu'elle est active.
+  withdrawnAt        DateTime? @map("withdrawn_at")
+  withdrawnByStaffId String?   @map("withdrawn_by_staff_id")
+  withdrawnByName    String?   @map("withdrawn_by_name")
+  withdrawnByRole    String?   @map("withdrawn_by_role")
+
+  @@map("order_opening_exemptions")
+  @@schema("public")
+}
+
 /// **L'interrupteur de l'heure limite générale** (plan
 /// `documentation/commandes/passation/plan-reglages-commandes.md`, §8.1, lot O3, Hugo
 /// 2026-10-14). Désactivée, la règle `OrderCutoff` n'est plus servie (passation,

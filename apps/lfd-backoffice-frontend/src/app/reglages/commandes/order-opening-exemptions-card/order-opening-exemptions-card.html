@@ -1,0 +1,55 @@
+<fold-card>
+  <fold-element-title
+    cardHeader
+    variant="title"
+    title="Exemptions"
+    subtitle="Ces clients peuvent commander même quand la boutique est fermée à leur clientèle."
+  >
+    @if (canWrite()) {
+      <button
+        foldButton
+        titleAction
+        size="sm"
+        emphasis="outline"
+        data-add-exemption
+        (click)="add()"
+      >
+        Ajouter une exemption
+      </button>
+    }
+  </fold-element-title>
+
+  @if (exemptions().length === 0) {
+    <fold-empty-state
+      title="Aucune exemption"
+      subtitle="Quand la boutique est fermée, personne de la clientèle fermée ne peut commander."
+    >
+      <fold-icon empty-icon name="mail" />
+    </fold-empty-state>
+  } @else {
+    <ul class="exemptions">
+      @for (exemption of exemptions(); track exemption.id) {
+        <li class="exemption" [attr.data-exemption]="exemption.id">
+          <div class="what">
+            <p class="label">{{ exemption.label }}</p>
+            <p class="since">{{ since(exemption) }}</p>
+          </div>
+          <fold-badge variant="neutral" [content]="kindLabel(exemption)" />
+          @if (canWrite()) {
+            <fold-danger-zone
+              appearance="section"
+              [title]="'Retirer l’exemption de ' + exemption.label"
+              actionLabel="Retirer"
+              (confirmed)="withdraw(exemption)"
+            >
+              <p>
+                Si la boutique est fermée à sa clientèle, ce client ne pourra plus commander.
+                L’exemption reste au journal.
+              </p>
+            </fold-danger-zone>
+          }
+        </li>
+      }
+    </ul>
+  }
+</fold-card>

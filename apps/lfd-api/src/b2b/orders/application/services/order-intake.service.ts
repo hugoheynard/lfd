@@ -1,13 +1,23 @@
 import { ordersOpenTo } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
+import { admitsOrder } from "../../../order-opening/domain/order-admission.js";
+import { ActiveOrderOpeningExemptions } from "../../../order-opening/domain/ports/active-order-opening-exemptions.reader.js";
 import { OrderOpeningReader } from "../../../order-opening/domain/ports/order-opening.reader.js";
 import { OrdersClosedForAudienceError } from "../../domain/errors/orders-closed-for-audience.error.js";
+import { OrderRecipientReader } from "../../domain/ports/order-recipient.reader.js";
 import { CustomerAudiences } from "./customer-audiences.service.js";
 
 /**
+ * Qui commande, tel que la passation le connaît : la personne connectée (son
+ * adresse se lit au besoin), ou l'adresse saisie d'une commande sans compte.
+ */
+export type IntakeBuyer = { readonly userId: string } | { readonly email: string };
+
+/**
  * **La boutique prend-elle cette commande ?** — le réglage « Ouverture de la
- * boutique » appliqué à la clientèle de qui commande.
+ * boutique » appliqué à la clientèle de qui commande, puis, s'il la ferme,
+ * les exemptions (décision de Hugo du 2026-10-26).
  *
  * Appelé par les deux passations CLIENT seulement (`PlaceOrderHandler`,
  * `PlaceShopOrderHandler`), et jamais par `OrderDrafting` : la composition est
@@ -16,24 +26,43 @@ import { CustomerAudiences } from "./customer-audiences.service.js";
  * pouvoir la saisir boutique fermée (Hugo, 2026-10-09).
  *
  * La clientèle se déduit par {@link CustomerAudiences}, la même règle que la
- * remise et la livraison : B2B pour une société active seulement.
+ * remise et la livraison : B2B pour une société active seulement. La décision
+ * elle-même est {@link admitsOrder}, pure ; ce service ne fait que lire.
  */
 @Injectable()
 export class OrderIntake {
   constructor(
     private readonly opening: OrderOpeningReader,
     private readonly audiences: CustomerAudiences,
+    private readonly exemptions: ActiveOrderOpeningExemptions,
+    private readonly recipients: OrderRecipientReader,
   ) {}
 
   /**
-   * `null` = espace perso ou commande sans compte : particulier.
+   * `companyId` `null` = espace perso ou commande sans compte : particulier.
    *
-   * @throws {OrdersClosedForAudienceError} la boutique est fermée à cette clientèle.
+   * @throws {OrdersClosedForAudienceError} la boutique est fermée à cette
+   *   clientèle, et aucune exemption ne couvre ni la société ni l'adresse.
    */
-  async ensureOpenFor(companyId: string | null): Promise<void> {
+  async ensureOpenFor(companyId: string | null, buyer: IntakeBuyer): Promise<void> {
     const audience = await this.audiences.of(companyId);
-    if (!ordersOpenTo(await this.opening.current(), audience)) {
+    const opening = await this.opening.current();
+    // Ouverte : ni la liste ni l'adresse ne sont lues — c'est le cas de
+    // chaque passation tant que personne n'a rien fermé.
+    if (ordersOpenTo(opening, audience)) {
+      return;
+    }
+    const party = { companyId, email: await this.emailOf(buyer) };
+    const exemptions = await this.exemptions.active();
+    if (!admitsOrder({ opening, audience, exemptions, party })) {
       throw new OrdersClosedForAudienceError(audience);
     }
+  }
+
+  private async emailOf(buyer: IntakeBuyer): Promise<string | null> {
+    if ("email" in buyer) {
+      return buyer.email;
+    }
+    return (await this.recipients.findById(buyer.userId))?.email ?? null;
   }
 }

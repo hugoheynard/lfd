@@ -131,7 +131,7 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
     // La boutique fermée à la clientèle refuse ici, avant tout calcul : la clé
     // est rendue, et un rejeu d'une commande déjà passée (plus haut) passe
     // toujours — elle a été prise quand la boutique était ouverte.
-    await this.intake.ensureOpenFor(companyId);
+    await this.intake.ensureOpenFor(companyId, { userId: command.actorUserId });
 
     // Le bon se LIT ici, sans rien engager : sa valeur entre dans le total, donc
     // dans l'intention Stripe. C'est la réservation, plus bas, qui tranche une

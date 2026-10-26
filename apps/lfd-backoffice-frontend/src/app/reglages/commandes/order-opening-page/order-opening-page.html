@@ -14,6 +14,12 @@
       </fold-empty-state>
     }
     @case ('ready') {
+      @if (notice(); as notice) {
+        <fold-callout variant="warning" data-closure-notice>
+          <strong>{{ notice.title }}.</strong> {{ notice.body }} {{ notice.exemptions }}
+        </fold-callout>
+      }
+
       <fold-card>
         <fold-element-title
           cardHeader
@@ -63,6 +69,12 @@
           <fold-callout variant="alert" announce>{{ message }}</fold-callout>
         }
       </fold-card>
+
+      <app-order-opening-exemptions-card
+        [exemptions]="exemptions()"
+        [canWrite]="canWrite()"
+        (changed)="reloadExemptions()"
+      />
     }
   }
 </fold-page-layout>

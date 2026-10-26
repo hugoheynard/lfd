@@ -13,7 +13,12 @@
  */
 import { randomUUID } from "node:crypto";
 
-import type { OrderOpeningView, PublicOrderOpeningView } from "@lfd/contracts";
+import type {
+  CreatedIdResponse,
+  OrderOpeningExemptionView,
+  OrderOpeningView,
+  PublicOrderOpeningView,
+} from "@lfd/contracts";
 
 import { PlaceShopOrderCommand } from "../src/b2b/orders/application/commands/place-shop-order.command.js";
 import { PlaceShopOrderHandler } from "../src/b2b/orders/application/commands/place-shop-order.handler.js";
@@ -115,11 +120,11 @@ function clientOrder(): Record<string, unknown> {
   };
 }
 
-async function placeAsGuest(): Promise<unknown> {
+async function placeAsGuest(email = "camille@visiteur.fr"): Promise<unknown> {
   const result = await ctx.app.get(PlaceShopOrderHandler).execute(
     new PlaceShopOrderCommand({
       idempotencyKey: randomUUID(),
-      buyer: { firstName: "Camille", email: "camille@visiteur.fr", phone: "0600000000" },
+      buyer: { firstName: "Camille", email, phone: "0600000000" },
       fulfillmentMethod: "pickup",
       // Pas de commande sans créneau (2026-10-14).
       requestedWindow: { start: "07:00", end: "08:00" },
@@ -241,5 +246,96 @@ describe("fermée aux pros", () => {
     await setOpening({ ordersOpenToB2b: true });
 
     await ctx.asSub(ACTIVE).post("/orders").send(clientOrder()).expect(201);
+  });
+});
+
+/**
+ * Les exemptions à la fermeture (décision de Hugo du 2026-10-26) : une
+ * société ou une adresse commande malgré la fermeture de sa clientèle.
+ */
+describe("les exemptions à la fermeture", () => {
+  async function exempt(body: Record<string, unknown>): Promise<string> {
+    const response = await staff().post("/admin/order-opening/exemptions").send(body).expect(201);
+    return jsonBody<CreatedIdResponse>(response).id;
+  }
+
+  it("un pro refusé passe une fois sa société exemptée, et de nouveau refusé une fois l'exemption retirée", async () => {
+    await setOpening({ ordersOpenToB2b: false });
+    await ctx.asSub(ACTIVE).post("/orders").send(clientOrder()).expect(409);
+
+    const id = await exempt({ kind: "company", companyId: pro.companyId });
+    await ctx.asSub(ACTIVE).post("/orders").send(clientOrder()).expect(201);
+
+    const listed = jsonBody<OrderOpeningExemptionView[]>(
+      await staff().get("/admin/order-opening/exemptions").expect(200),
+    );
+    expect(listed).toEqual([
+      expect.objectContaining({
+        id,
+        kind: "company",
+        companyId: pro.companyId,
+        label: "Café de Test SAS",
+      }),
+    ]);
+
+    await staff().delete(`/admin/order-opening/exemptions/${id}`).expect(204);
+    await ctx.asSub(ACTIVE).post("/orders").send(clientOrder()).expect(409);
+    // Archivée, pas effacée : la ligne reste, datée de son retrait.
+    const row = await ctx.prisma.orderOpeningExemption.findUniqueOrThrow({ where: { id } });
+    expect(row.withdrawnAt).not.toBeNull();
+    expect(await staff().get("/admin/order-opening/exemptions").expect(200)).toHaveProperty(
+      "body",
+      [],
+    );
+    const facts = await ctx.prisma.activityEvent.findMany({
+      where: { type: { startsWith: "order_opening.exemption_" } },
+      orderBy: { occurredAt: "asc" },
+      select: { type: true, subjectId: true },
+    });
+    expect(facts).toEqual([
+      { type: "order_opening.exemption_granted", subjectId: id },
+      { type: "order_opening.exemption_withdrawn", subjectId: id },
+    ]);
+  });
+
+  it("une commande sans compte refusée passe une fois son adresse exemptée, casse et espaces ignorés", async () => {
+    await setOpening({ ordersOpenToB2c: false });
+    await expect(placeAsGuest("camille@visiteur.fr")).rejects.toBeInstanceOf(
+      OrdersClosedForAudienceError,
+    );
+
+    await exempt({ kind: "email", email: "  Camille@Visiteur.FR " });
+
+    await placeAsGuest("camille@visiteur.fr");
+    await expect(placeAsGuest("autre@visiteur.fr")).rejects.toBeInstanceOf(
+      OrdersClosedForAudienceError,
+    );
+    expect(await ctx.prisma.order.count()).toBe(1);
+  });
+
+  it("une personne connectée passe par son adresse", async () => {
+    await setOpening({ ordersOpenToB2c: false });
+    await exempt({ kind: "email", email: `${PERSO}@test.fr`.toUpperCase() });
+
+    await ctx.asSub(PERSO).post("/orders").send(clientOrder()).expect(201);
+  });
+
+  it("refuse une société inconnue, une société résiliée, et un doublon", async () => {
+    const terminated = await createCompany(ctx.prisma, { status: CompanyStatus.terminated });
+
+    await staff()
+      .post("/admin/order-opening/exemptions")
+      .send({ kind: "company", companyId: "inconnue" })
+      .expect(404);
+    const refused = await staff()
+      .post("/admin/order-opening/exemptions")
+      .send({ kind: "company", companyId: terminated.id })
+      .expect(409);
+    expect((refused.body as { message?: string }).message).toContain("Exemptez plutôt l'adresse");
+    await exempt({ kind: "email", email: "jean@folie.fr" });
+    await staff()
+      .post("/admin/order-opening/exemptions")
+      .send({ kind: "email", email: "JEAN@folie.fr" })
+      .expect(409);
   });
 });

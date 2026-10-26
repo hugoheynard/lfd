@@ -126,7 +126,7 @@ export class PlaceShopOrderHandler implements ICommandHandler<
     const buyer = GuestIdentity.declare(payload.buyer);
     // Sans compte = particulier. Refusé AVANT d'inscrire le porteur : une
     // boutique fermée ne laisse pas de personne sans commande derrière elle.
-    await this.intake.ensureOpenFor(null);
+    await this.intake.ensureOpenFor(null, { email: buyer.forRegistration().email });
     // 🔴 **Inscrit AVANT la composition**, et ce n'est pas gratuit : un refus
     // levé plus bas — SKU inconnu, secteur non desservi, heure limite dépassée —
     // laisse derrière lui une personne sans commande.

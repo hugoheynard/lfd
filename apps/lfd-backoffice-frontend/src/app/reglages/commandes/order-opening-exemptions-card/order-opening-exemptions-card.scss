@@ -1,0 +1,34 @@
+// Une ligne par exemption : la cible, depuis quand, son genre, le retrait.
+.exemptions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.exemption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-md);
+}
+
+.exemption fold-danger-zone {
+  flex: 1 1 100%;
+}
+
+.what {
+  flex: 1;
+}
+
+.label {
+  margin: 0;
+  font-weight: var(--fold-weight-semibold);
+}
+
+.since {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+}

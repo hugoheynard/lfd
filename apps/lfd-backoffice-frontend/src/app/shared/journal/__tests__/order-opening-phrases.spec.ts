@@ -51,3 +51,44 @@ describe('l’ouverture de la boutique (order_opening.updated)', () => {
     );
   });
 });
+
+/** Les exemptions à la fermeture (décision de Hugo du 2026-10-26). */
+describe('les exemptions à la fermeture (order_opening.exemption_*)', () => {
+  function exemption(type: string, payload: Readonly<Record<string, unknown>>): FactInput {
+    return {
+      type,
+      payload,
+      subjectType: 'order_opening',
+      subjectId: 'ex_1',
+      actorName: 'Colette Martin',
+      actorType: 'staff',
+    };
+  }
+
+  it('dit la société laissée commander, sans détail résiduel', () => {
+    const input = exemption('order_opening.exemption_granted', {
+      subjectLabel: 'Chez Paul',
+      kind: 'company',
+      company: { id: 'c1', name: 'Chez Paul' },
+    });
+
+    expect(sentence(input)).toBe(
+      'Colette Martin a laissé commander la société Chez Paul malgré la fermeture de la boutique',
+    );
+    expect(renderFact(input).detail).toEqual([]);
+  });
+
+  it('dit le retrait d’une adresse', () => {
+    expect(
+      sentence(
+        exemption('order_opening.exemption_withdrawn', {
+          subjectLabel: 'jean@folie.fr',
+          kind: 'email',
+          company: null,
+        }),
+      ),
+    ).toBe(
+      'Colette Martin a retiré l’exemption de l’adresse jean@folie.fr : la fermeture de la boutique s’y applique de nouveau',
+    );
+  });
+});

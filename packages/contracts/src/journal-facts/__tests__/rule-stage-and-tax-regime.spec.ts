@@ -121,3 +121,29 @@ describe("order_opening.updated — l'avant et l'après de chaque clientèle", (
     ).not.toBeNull();
   });
 });
+
+/** Les exemptions à la fermeture (décision de Hugo du 2026-10-26). */
+describe("order_opening.exemption_* — la cible nommée au geste", () => {
+  it("s'écrit pour une société, nommée, et pour une adresse, sans société", () => {
+    expect(
+      checkJournalFact("order_opening.exemption_granted", {
+        subjectLabel: "Chez Paul",
+        kind: "company",
+        company: { id: "c1", name: "Chez Paul" },
+      }),
+    ).toBeNull();
+    expect(
+      checkJournalFact("order_opening.exemption_withdrawn", {
+        subjectLabel: "jean@folie.fr",
+        kind: "email",
+        company: null,
+      }),
+    ).toBeNull();
+  });
+
+  it("refuse une charge sans libellé", () => {
+    expect(
+      checkJournalFact("order_opening.exemption_granted", { kind: "email", company: null }),
+    ).not.toBeNull();
+  });
+});

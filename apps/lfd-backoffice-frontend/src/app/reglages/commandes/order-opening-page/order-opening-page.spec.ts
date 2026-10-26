@@ -1,8 +1,15 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
-import type { OrderOpeningPatch, OrderOpeningView, StaffPermission } from '@lfd/contracts';
+import type {
+  OrderOpeningExemptionView,
+  OrderOpeningPatch,
+  OrderOpeningView,
+  StaffPermission,
+} from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { PermissionsStore } from '../../../auth/permissions.store';
+import { OrderOpeningExemptionsCard } from '../order-opening-exemptions-card/order-opening-exemptions-card';
+import { OrderOpeningExemptionsService } from '../order-opening-exemptions.service';
 import { OrderOpeningService } from '../order-opening.service';
 import { OrderOpeningPage } from './order-opening-page';
 
@@ -47,15 +54,43 @@ class FakeOpening {
   }
 }
 
+/** Les exemptions servies, et les retraits demandés. */
+class FakeExemptions {
+  readonly withdrawn: string[] = [];
+
+  constructor(private current: readonly OrderOpeningExemptionView[] = []) {}
+
+  list(): Promise<readonly OrderOpeningExemptionView[]> {
+    return Promise.resolve(this.current);
+  }
+
+  withdraw(id: string): Promise<void> {
+    this.withdrawn.push(id);
+    this.current = this.current.filter((exemption) => exemption.id !== id);
+    return Promise.resolve();
+  }
+}
+
+const PAUL: OrderOpeningExemptionView = {
+  id: 'ex_1',
+  kind: 'company',
+  companyId: 'c1',
+  label: 'Chez Paul',
+  grantedAt: '2026-10-26T08:00:00.000Z',
+  grantedBy: 'Colette Martin',
+};
+
 async function mount(
   api: FakeOpening,
   permissions: readonly StaffPermission[] = ['lfc_order_opening:read', 'lfc_order_opening:write'],
+  exemptions: FakeExemptions = new FakeExemptions(),
 ): Promise<ComponentFixture<OrderOpeningPage>> {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [OrderOpeningPage],
     providers: [
       { provide: OrderOpeningService, useValue: api },
+      { provide: OrderOpeningExemptionsService, useValue: exemptions },
       {
         provide: PermissionsStore,
         useValue: { can: (p: StaffPermission): boolean => permissions.includes(p) },
@@ -65,6 +100,8 @@ async function mount(
   const fixture = TestBed.createComponent(OrderOpeningPage);
   fixture.detectChanges();
   await fixture.whenStable();
+  // Deux lectures en parallèle : une macrotâche laisse leurs promesses se régler.
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
   fixture.detectChanges();
   return fixture;
 }
@@ -178,5 +215,76 @@ describe('OrderOpeningPage', () => {
     const fixture = await mount(new FakeOpening(new Error('panne')));
 
     expect(host(fixture).textContent).toContain("Impossible de charger l'ouverture de la boutique");
+  });
+
+  it('ne dit rien en tête quand tout est ouvert', async () => {
+    const fixture = await mount(new FakeOpening(OPEN));
+
+    expect(host(fixture).querySelector('[data-closure-notice]')).toBeNull();
+  });
+
+  it('dit en tête la fermeture aux pros, ce qu’elle veut dire, et l’absence d’exemption', async () => {
+    const fixture = await mount(new FakeOpening({ ...OPEN, ordersOpenToB2b: false }));
+    const notice = host(fixture).querySelector('[data-closure-notice]')?.textContent ?? '';
+
+    expect(notice).toContain('La boutique est fermée aux pros');
+    expect(notice).toContain('Le catalogue et les prix restent visibles');
+    expect(notice).toContain('Aucune exemption active');
+  });
+
+  it('dit la fermeture aux particuliers', async () => {
+    const fixture = await mount(new FakeOpening({ ...OPEN, ordersOpenToB2c: false }));
+
+    expect(host(fixture).querySelector('[data-closure-notice]')?.textContent).toContain(
+      'La boutique est fermée aux particuliers',
+    );
+  });
+
+  it('dit la fermeture à tous, avec le nombre d’exemptions actives', async () => {
+    const fixture = await mount(
+      new FakeOpening({ ...OPEN, ordersOpenToB2b: false, ordersOpenToB2c: false }),
+      undefined,
+      new FakeExemptions([
+        PAUL,
+        { ...PAUL, id: 'ex_2', kind: 'email', companyId: null, label: 'jean@folie.fr' },
+      ]),
+    );
+    const notice = host(fixture).querySelector('[data-closure-notice]')?.textContent ?? '';
+
+    expect(notice).toContain('La boutique est fermée à tous');
+    expect(notice).toContain('2 exemptions actives');
+  });
+
+  it('liste les exemptions, et retire celle qu’on confirme', async () => {
+    const exemptions = new FakeExemptions([PAUL]);
+    const fixture = await mount(new FakeOpening(OPEN), undefined, exemptions);
+
+    expect(host(fixture).querySelector('[data-exemption="ex_1"]')?.textContent).toContain(
+      'Chez Paul',
+    );
+    expect(host(fixture).querySelector('[data-exemption="ex_1"] fold-danger-zone')).not.toBeNull();
+
+    const card = fixture.debugElement.query(
+      (node) => node.name === 'app-order-opening-exemptions-card',
+    );
+    await (card.componentInstance as OrderOpeningExemptionsCard)['withdraw'](PAUL);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(exemptions.withdrawn).toEqual(['ex_1']);
+    expect(host(fixture).querySelector('[data-exemption="ex_1"]')).toBeNull();
+    expect(host(fixture).textContent).toContain('Aucune exemption');
+  });
+
+  it('sans le droit d’écrire, liste les exemptions sans geste', async () => {
+    const fixture = await mount(
+      new FakeOpening(OPEN),
+      ['lfc_order_opening:read'],
+      new FakeExemptions([PAUL]),
+    );
+
+    expect(host(fixture).querySelector('[data-exemption="ex_1"]')).not.toBeNull();
+    expect(host(fixture).querySelector('fold-danger-zone')).toBeNull();
+    expect(host(fixture).querySelector('[data-add-exemption]')).toBeNull();
   });
 });
