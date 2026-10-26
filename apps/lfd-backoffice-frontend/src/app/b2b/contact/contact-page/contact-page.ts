@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { FoldPageLayoutComponent } from 'fold-ng';
+import { RouterLink } from '@angular/router';
+import { FoldButtonComponent, FoldPageLayoutComponent } from 'fold-ng';
 
 import { ContactCardSettings } from '../contact-card-settings/contact-card-settings';
 
@@ -14,7 +15,7 @@ import { ContactCardSettings } from '../contact-card-settings/contact-card-setti
 @Component({
   selector: 'app-contact-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ContactCardSettings, FoldPageLayoutComponent],
+  imports: [ContactCardSettings, FoldButtonComponent, FoldPageLayoutComponent, RouterLink],
   templateUrl: './contact-page.html',
 })
 export class ContactPage {}
