@@ -549,7 +549,7 @@ describe('AccueilPublic — les trois états', () => {
   it.each([
     ['visiteur', 'On répond au plus vite'],
     ['perso', 'On répond au plus vite'],
-    ['pro', 'Nos équipes commerciales sont à votre écoute'],
+    ['pro', 'Nos équipes sont à votre écoute'],
   ] as const)('répond à un %s dans ses mots', async (who, fragment) => {
     const fixture = await mount(POINTS, who);
     const band = fixture.nativeElement.querySelector('app-contact-band');

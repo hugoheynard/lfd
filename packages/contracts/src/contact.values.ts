@@ -334,9 +334,10 @@ export const CONTACT_CARD_DEFAULTS: {
     b2b: {
       title: { fr: "Nous contacter", en: "Contact us", it: "Contattaci" },
       body: {
-        fr: "Nos équipes commerciales sont à votre écoute",
-        en: "Our sales team is here for you",
-        it: "Il nostro team commerciale è a vostra disposizione",
+        // Hugo, 2026-10-26 : « nos équipes sont à votre écoute ».
+        fr: "Nos équipes sont à votre écoute",
+        en: "Our team is here for you",
+        it: "Il nostro team è a vostra disposizione",
       },
     },
     b2c: {

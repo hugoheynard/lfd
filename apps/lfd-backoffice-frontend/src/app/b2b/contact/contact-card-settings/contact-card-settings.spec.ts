@@ -174,7 +174,7 @@ describe('ContactCardSettings', () => {
       // Les numéros actifs des pros, `both` compris, par rang ; le masqué n'y est pas.
       calls: ['Appeler · Boutique · 04 79 11 22 33', 'Appeler · Service pro · 04 79 99 99 99'],
     });
-    expect(preview()?.body).toBe('Nos équipes commerciales sont à votre écoute');
+    expect(preview()?.body).toBe('Nos équipes sont à votre écoute');
 
     fixture.componentInstance['selectLang']('en');
     // L'anglais vide : le français réglé, comme la boutique.
