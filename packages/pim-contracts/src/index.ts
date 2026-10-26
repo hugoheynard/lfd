@@ -208,6 +208,8 @@ export type {
   VariantNutritionView,
   VariantView,
   ProductView,
+  ProductListView,
+  ProductActivationGapsView,
   ProductEditorialView,
   ProductDetailView,
   ProductReadinessView,

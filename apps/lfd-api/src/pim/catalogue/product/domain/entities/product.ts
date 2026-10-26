@@ -26,7 +26,7 @@ import type { Sku } from "../value-objects/sku.value-object.js";
 import type { ProPriceHt } from "../value-objects/pro-price-ht.js";
 import type { Audience } from "../../../shared/domain/value-objects/audience.js";
 import type { CategoryVatPercents } from "../../../shared/domain/ports/catalogue-reader.js";
-import { activationGaps, isActivatable } from "../services/activation-gaps.js";
+import { activationGaps, isActivatable, type ActivationGaps } from "../services/activation-gaps.js";
 import type { CompletenessRules } from "../services/variant-completeness.js";
 
 export type ProductKind = "daily" | "made_to_order" | "resale";
@@ -324,6 +324,32 @@ export class Product {
    * et la déclaration du défaut qu'elle suit. Taux, contextes et règle du prix
    * pro arrivent résolus : ils dépendent de registres que la fiche ne voit pas.
    */
+  /**
+   * **Ce qui manque pour activer**, sans rien muter — le même jugement que
+   * `activate` refuse (elle l'appelle), pour que la liste dise « activable »
+   * avec exactement le code qui accepte ou refuse le geste.
+   *
+   * Jugé sur les déclinaisons RÉSOLUES, quel que soit le statut : le statut
+   * est l'affaire de {@link Product.isActivatableWith}.
+   */
+  activationGapsWith(vatPercents: CategoryVatPercents, rules: CompletenessRules): ActivationGaps {
+    const resolved = this.variantList.map((variant) => this.resolvedSnapshot(variant));
+    return activationGaps(resolved, vatPercents, rules);
+  }
+
+  /**
+   * Une activation **changerait-elle** la fiche ? Vrai seulement pour un
+   * brouillon complet. Une fiche publiée rend `false` (l'activer ne fait rien,
+   * elle n'est pas « à activer »), une archivée aussi (`activate` la refuse :
+   * elle se restaure d'abord). Choix du 2026-10-26 : le filtre « Activables »
+   * de la liste ne montre que ce que « Activer » ferait passer en vente.
+   */
+  isActivatableWith(vatPercents: CategoryVatPercents, rules: CompletenessRules): boolean {
+    return (
+      this.statusValue === "draft" && isActivatable(this.activationGapsWith(vatPercents, rules))
+    );
+  }
+
   activate(vatPercents: CategoryVatPercents, rules: CompletenessRules): StatusChanged {
     if (this.statusValue === "archived") {
       throw new ArchivedProductNotPublishableError(this.identity);
@@ -331,8 +357,7 @@ export class Product {
     if (this.statusValue === "published") {
       return false;
     }
-    const resolved = this.variantList.map((variant) => this.resolvedSnapshot(variant));
-    const gaps = activationGaps(resolved, vatPercents, rules);
+    const gaps = this.activationGapsWith(vatPercents, rules);
     if (!isActivatable(gaps)) {
       throw new ProductNotActivatableError(this.identity, gaps);
     }

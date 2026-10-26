@@ -1,14 +1,34 @@
 import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 
+import { AccountingRulesReader } from "../../../accounting-rules/domain/ports/accounting-rules.reader.js";
+import { ActiveSalesContextsReader } from "../../../sales-contexts/domain/ports/active-sales-contexts.reader.js";
 import { CategoryNotFoundError } from "../../category/domain/errors/category-errors.js";
 import { CategoryRepository } from "../../category/domain/ports/category.repository.js";
+import {
+  CatalogueReader,
+  type CategoryVatPercents,
+} from "../../shared/domain/ports/catalogue-reader.js";
 import type { Audience } from "../../shared/domain/value-objects/audience.js";
-import type { ProductSnapshot } from "../domain/entities/product.js";
+import type { Product, ProductSnapshot } from "../domain/entities/product.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
+import type { ActivationGaps } from "../domain/services/activation-gaps.js";
+import type { CompletenessRules } from "../domain/services/variant-completeness.js";
 import { audienceView, type AudienceView } from "./audience-view.js";
+import { readCompletenessRules } from "./completeness-support.js";
 
-/** Une fiche telle que la liste la rend : son état, plus son audience résolue. */
-export type ProductListItem = ProductSnapshot & AudienceView;
+/**
+ * Ce qu'une activation dirait de la fiche — jugé par l'agrégat, avec le code
+ * même qui accepte ou refuse `PUT :id/publish`. `activationGaps` vaut `null`
+ * hors brouillon : une publiée n'a rien à activer, une archivée se restaure
+ * d'abord ; dans les deux cas `activatable` est `false`.
+ */
+export interface ActivationView {
+  readonly activatable: boolean;
+  readonly activationGaps: ActivationGaps | null;
+}
+
+/** Une fiche telle que la liste la rend : son état, son audience résolue, son activabilité. */
+export type ProductListItem = ProductSnapshot & AudienceView & ActivationView;
 
 /** Lecture du catalogue — dispatchée par le `QueryBus`. Sans paramètre. */
 export class ListProductsQuery {}
@@ -18,27 +38,51 @@ export class ListProductsHandler implements IQueryHandler<ListProductsQuery, Pro
   constructor(
     private readonly products: ProductRepository,
     private readonly categories: CategoryRepository,
+    private readonly catalogue: CatalogueReader,
+    private readonly accounting: AccountingRulesReader,
+    private readonly contexts: ActiveSalesContextsReader,
   ) {}
 
   /**
-   * Les familles sont lues une fois pour toutes, jamais une par fiche. Une
-   * fiche rattachée à une famille inconnue est un REFUS, comme dans le lecteur
-   * du catalogue : un rattachement cassé ne se maquille pas en héritage.
+   * Familles, taux, contextes et règle du prix pro sont lus UNE fois pour
+   * toute la liste, jamais une fois par fiche. Une fiche rattachée à une
+   * famille inconnue est un REFUS, comme dans le lecteur du catalogue : un
+   * rattachement cassé ne se maquille pas en héritage.
    */
   async execute(): Promise<ProductListItem[]> {
-    const [products, categories] = await Promise.all([
+    const [products, categories, rules] = await Promise.all([
       this.products.listAll(),
       this.categories.listAll(),
+      readCompletenessRules(this.contexts, this.accounting),
     ]);
     const audiences = new Map<string, Audience>(
       categories.map((category) => [category.id, category.audience]),
     );
+    const vat = await this.catalogue.vatPercents(products.map((product) => product.snapshot()));
     return products.map((product) => {
       const categoryAudience = audiences.get(product.categoryId);
       if (categoryAudience === undefined) {
         throw new CategoryNotFoundError(product.categoryId);
       }
-      return { ...product.snapshot(), ...audienceView(product, categoryAudience) };
+      return {
+        ...product.snapshot(),
+        ...audienceView(product, categoryAudience),
+        ...activationView(product, vat.get(product.id) ?? {}, rules),
+      };
     });
   }
+}
+
+function activationView(
+  product: Product,
+  vat: CategoryVatPercents,
+  rules: CompletenessRules,
+): ActivationView {
+  if (product.status !== "draft") {
+    return { activatable: false, activationGaps: null };
+  }
+  return {
+    activatable: product.isActivatableWith(vat, rules),
+    activationGaps: product.activationGapsWith(vat, rules),
+  };
 }

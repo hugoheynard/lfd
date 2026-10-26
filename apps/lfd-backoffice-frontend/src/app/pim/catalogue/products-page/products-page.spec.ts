@@ -28,6 +28,7 @@ const PRODUCTS = [
 async function render(
   queryParams: Readonly<Record<string, string>> = {},
   publishProduct: (id: string) => Promise<void> = () => Promise.resolve(),
+  products: readonly Product[] = PRODUCTS,
 ) {
   TestBed.configureTestingModule({
     imports: [ProductsPage],
@@ -36,7 +37,7 @@ async function render(
       {
         provide: CatalogueApi,
         useValue: {
-          listProducts: () => Promise.resolve(PRODUCTS),
+          listProducts: () => Promise.resolve(products),
           listCategories: () => Promise.resolve(CATEGORIES),
           listVatRates: () => Promise.resolve([]),
           publishProduct,
@@ -95,6 +96,7 @@ describe('ProductsPage — filtres famille, état et masque des archivées', () 
       'Toutes',
       'Actives',
       'Inactives',
+      'Activables',
       'Archivées',
     ]);
   });
@@ -141,6 +143,36 @@ describe('ProductsPage — filtres famille, état et masque des archivées', () 
     await chip('data-products-status', 'Inactives');
     expect(rows(element)).toEqual([]);
     expect(element.textContent).toContain('Aucune fiche ne correspond');
+  });
+
+  /**
+   * « Activables » (2026-10-26) lit le jugement du serveur, pas le statut :
+   * deux brouillons, un seul que l'activation accepterait.
+   */
+  describe('« Activables »', () => {
+    const JUDGED = [
+      { ...product('p1', 'pain', 'published'), activatable: false },
+      { ...product('p2', 'pain', 'draft'), activatable: true },
+      { ...product('p4', 'pain', 'draft'), activatable: false },
+      product('v1', 'vien', 'draft'),
+    ];
+
+    it('ne montre que les fiches que le serveur dit activables, et l’écrit dans l’URL', async () => {
+      const { element, chip, navigate } = await render({}, undefined, JUDGED);
+      await chip('data-products-status', 'Activables');
+      expect(rows(element)).toEqual(['P2']);
+      expect(navigate).toHaveBeenCalledWith(
+        [],
+        expect.objectContaining({
+          queryParams: { famille: null, etat: 'activatable', archivees: null },
+        }),
+      );
+    });
+
+    it('relit `etat=activatable` de l’URL au chargement', async () => {
+      const { element } = await render({ etat: 'activatable' }, undefined, JUDGED);
+      expect(rows(element)).toEqual(['P2']);
+    });
   });
 
   it('relit les filtres de l’URL au chargement', async () => {

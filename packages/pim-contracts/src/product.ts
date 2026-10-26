@@ -319,6 +319,35 @@ export interface ProductView {
 }
 
 /**
+ * Ce qui empêche une fiche d'être activée — la forme exacte que le refus
+ * `catalogue.product.not_activatable` décrit.
+ */
+export interface ProductActivationGapsView {
+  /** Toutes les déclinaisons sont arrêtées : rien ne se vendrait. */
+  readonly allDiscontinued: boolean;
+  /**
+   * SKU → ce qui lui manque. Vide dès qu'UNE déclinaison est complète : une
+   * seule suffit à activer.
+   */
+  readonly byVariant: Readonly<Record<string, readonly string[]>>;
+}
+
+/**
+ * Une ligne de la LISTE des fiches : la vue, plus ce qu'une activation en
+ * dirait. Séparée de {@link ProductView} parce que le détail ne la calcule pas.
+ */
+export interface ProductListView extends ProductView {
+  /**
+   * Une activation la mettrait en vente maintenant. Calculé par le même code
+   * que le refus d'activation. `false` pour une fiche déjà publiée (rien à
+   * activer) ou archivée (elle se restaure d'abord).
+   */
+  readonly activatable: boolean;
+  /** Les manques jugés pour un brouillon ; `null` pour une publiée ou une archivée. */
+  readonly activationGaps: ProductActivationGapsView | null;
+}
+
+/**
  * Couche éditoriale rendue **dans toutes ses langues** ; `null` = non renseigné.
  *
  * La vue rendait le français à plat, avec pour raison « le back-office est

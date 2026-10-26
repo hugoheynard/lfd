@@ -182,6 +182,11 @@ export interface Product {
   descriptionFr?: string;
   /** Poids en grammes, quand le produit se vend au format/poids. */
   weightGrams?: number | null;
+  /**
+   * Une activation la mettrait en vente maintenant — rendu par la LISTE seule,
+   * jugé au serveur par le code du refus d'activation. Absent ailleurs.
+   */
+  activatable?: boolean;
   /** Étiquettes de workflow interne : `a-decrire`, `prix-a-verifier`,
    *  `titre-a-verifier`, `tva-a-valider` — ce qui reste à compléter. */
   workflowFlags?: string[];

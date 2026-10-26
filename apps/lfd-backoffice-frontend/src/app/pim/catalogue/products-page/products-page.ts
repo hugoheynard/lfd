@@ -29,6 +29,7 @@ import { CatalogueApi, type Category, type Product, type VatRate } from '../cata
 import { productStatusLabel, productStatusVariant } from '../product-status';
 import type { ProductStatus } from '../../data/models';
 import {
+  ACTIVATABLE,
   ALL_STATUSES,
   familyOptions,
   filterFromParams,
@@ -97,6 +98,7 @@ export class ProductsPage {
     { value: ALL_STATUSES, label: 'Toutes' },
     { value: 'published', label: 'Actives' },
     { value: 'draft', label: 'Inactives' },
+    { value: ACTIVATABLE, label: 'Activables' },
     { value: 'archived', label: 'Archivées' },
   ];
   /** Le masque est sans effet hors de « Toutes » : la case se grise alors. */

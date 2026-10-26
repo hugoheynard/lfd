@@ -9,7 +9,7 @@ import {
   type ProductDetailView,
   type ProductEditorialPayload,
   type ProductReadinessView,
-  type ProductView,
+  type ProductListView,
   type UpdateProductIdentityPayload,
   type UpdateVariantPricingPayload,
   setProductMediaPayloadSchema,
@@ -78,8 +78,8 @@ export class ProductController {
   ) {}
 
   @Get()
-  listProducts(): Promise<ProductView[]> {
-    return this.queries.execute<ListProductsQuery, ProductView[]>(new ListProductsQuery());
+  listProducts(): Promise<ProductListView[]> {
+    return this.queries.execute<ListProductsQuery, ProductListView[]>(new ListProductsQuery());
   }
 
   /** Détail complet d'un produit : le socle + sa couche éditoriale (pour l'édition). */

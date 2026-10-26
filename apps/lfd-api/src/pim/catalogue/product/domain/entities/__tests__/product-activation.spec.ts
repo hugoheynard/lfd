@@ -164,3 +164,49 @@ describe("Product.changeAudience — un réglage sans refus", () => {
     expect(Product.reconstitute(tarte.persistenceSnapshot()).audience).toBe("both");
   });
 });
+
+/**
+ * Le jugement sans effet que la liste lit (« Activables », 2026-10-26) : il
+ * doit rendre exactement ce que `activate` refuse ou accepte.
+ */
+describe("Product.activationGapsWith / isActivatableWith — le jugement sans effet", () => {
+  it("rend les manques que le refus d'activation porte, sans muter la fiche", () => {
+    const tarte = product({ variants: [variant({ priceCents: null })] });
+
+    const gaps = tarte.activationGapsWith(ALL_RATES, RULES);
+
+    expect(Object.keys(gaps.byVariant)).toEqual(["PAT-1"]);
+    expect(tarte.isActivatableWith(ALL_RATES, RULES)).toBe(false);
+    expect(tarte.status).toBe("draft");
+    let refusal: unknown = null;
+    try {
+      tarte.activate(ALL_RATES, RULES);
+    } catch (error) {
+      refusal = error;
+    }
+    expect(refusal).toBeInstanceOf(ProductNotActivatableError);
+    expect(refusal).toMatchObject({ gaps });
+  });
+
+  it("dit activable un brouillon complet, que l'activation accepte ensuite", () => {
+    const tarte = product();
+
+    expect(tarte.isActivatableWith(ALL_RATES, RULES)).toBe(true);
+    expect(tarte.status).toBe("draft");
+    expect(tarte.activate(ALL_RATES, RULES)).toBe(true);
+  });
+
+  it("dit non activable une fiche dont toutes les déclinaisons sont arrêtées", () => {
+    const tarte = product({ variants: [variant({ isDiscontinued: true })] });
+
+    expect(tarte.activationGapsWith(ALL_RATES, RULES).allDiscontinued).toBe(true);
+    expect(tarte.isActivatableWith(ALL_RATES, RULES)).toBe(false);
+  });
+
+  it.each(["published", "archived"] as const)(
+    "dit non activable une fiche %s, même complète",
+    (status) => {
+      expect(product({ status }).isActivatableWith(ALL_RATES, RULES)).toBe(false);
+    },
+  );
+});

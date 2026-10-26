@@ -8,7 +8,11 @@
  * où rien n'est saisi, et jamais sur une déclinaison alignée.
  */
 import { htMillicentsOf } from "@lfd/money";
-import { proPriceFromPublic, type ProPricePrefillPreviewView } from "@lfd/pim-contracts";
+import {
+  proPriceFromPublic,
+  type ProductListView,
+  type ProPricePrefillPreviewView,
+} from "@lfd/pim-contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { makeActivatable } from "./pim-sellable.js";
@@ -82,6 +86,16 @@ async function defaultOf(id: string): Promise<VariantDetail> {
     throw new TypeError("la fiche n'a pas de déclinaison par défaut");
   }
   return found;
+}
+
+/** La ligne de la LISTE pour cette fiche — celle que le filtre « Activables » lit. */
+async function listed(id: string): Promise<ProductListView> {
+  const rows = jsonBody<ProductListView[]>(await staff().get(PRODUCTS).expect(200));
+  const row = rows.find((candidate) => candidate.id === id);
+  if (row === undefined) {
+    throw new TypeError("la fiche manque à la liste");
+  }
+  return row;
 }
 
 function priceVariant(id: string, variantId: string, body: Readonly<Record<string, unknown>>) {
@@ -196,13 +210,20 @@ describe("la méthode « Prix saisi »", () => {
     await staff().put(`${RULES}/pro-price-ratio`).send({ ratioBp: RATIO_BP }).expect(200);
     await chooseMethod("entered");
 
+    // La liste dit « pas activable » avec le jugement même du refus (2026-10-26).
+    const before = await listed(id);
+    expect(before.activatable).toBe(false);
+    expect(Object.keys(before.activationGaps?.byVariant ?? {})).toEqual([variant.sku]);
     const refus = await staff().put(`${PRODUCTS}/${id}/publish`).send({}).expect(409);
     expect(jsonBody<{ code: string }>(refus).code).toBe("catalogue.product.not_activatable");
     expect(jsonBody<{ message: string }>(refus).message).toContain("prix pro HT");
 
     await priceVariant(id, variant.id, { priceCents: 200, proPriceHt: "1.70616" }).expect(200);
+    expect(await listed(id)).toMatchObject({ activatable: true });
     await staff().put(`${PRODUCTS}/${id}/publish`).send({}).expect(200);
     expect((await detailOf(id)).status).toBe("published");
+    // Publiée : plus rien à activer.
+    expect(await listed(id)).toMatchObject({ activatable: false, activationGaps: null });
   });
 });
 

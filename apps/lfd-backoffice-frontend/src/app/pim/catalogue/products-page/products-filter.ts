@@ -9,8 +9,14 @@ export const ALL_FAMILIES = '';
 /** « Tous les états » — idem. */
 export const ALL_STATUSES = '';
 
-/** Ce que l'état peut valoir dans le filtre : un statut, ou tous. */
-export type StatusFilter = typeof ALL_STATUSES | ProductStatus;
+/**
+ * « Activables » — les brouillons qu'une activation accepterait. Valeur
+ * d'URL dans la langue des statuts (`etat=draft`), décidé le 2026-10-26.
+ */
+export const ACTIVATABLE = 'activatable';
+
+/** Ce que l'état peut valoir dans le filtre : un statut, les activables, ou tous. */
+export type StatusFilter = typeof ALL_STATUSES | typeof ACTIVATABLE | ProductStatus;
 
 /** Les trois filtres de la liste, tels que l'URL les retient. */
 export interface ProductsFilter {
@@ -26,7 +32,7 @@ export const DEFAULT_FILTER: ProductsFilter = {
   hideArchived: true,
 };
 
-const STATUSES: readonly ProductStatus[] = ['draft', 'published', 'archived'];
+const STATUSES: readonly StatusFilter[] = ['draft', 'published', 'archived', ACTIVATABLE];
 
 /** Noms des paramètres d'URL. Seul ce qui s'écarte du défaut y est écrit. */
 const PARAM_FAMILY = 'famille';
@@ -49,9 +55,20 @@ export function filterProducts(products: readonly Product[], filter: ProductsFil
   return products.filter(
     (p) =>
       (filter.family === ALL_FAMILIES || p.categoryId === filter.family) &&
-      (filter.status === ALL_STATUSES || p.status === filter.status) &&
+      statusMatches(p, filter.status) &&
       !(hide && p.status === 'archived'),
   );
+}
+
+/**
+ * « Activables » lit le jugement du serveur, jamais le statut : une fiche dont
+ * la liste ne dit rien (`activatable` absent) n'est pas activable.
+ */
+function statusMatches(product: Product, status: StatusFilter): boolean {
+  if (status === ACTIVATABLE) {
+    return product.activatable === true;
+  }
+  return status === ALL_STATUSES || product.status === status;
 }
 
 /**

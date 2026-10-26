@@ -5,6 +5,7 @@ import type {
   ProductIngredientAllergensView,
   ProductReadinessView,
   ProductEditorialView,
+  ProductListView,
   ProductView,
   VariantNutritionView,
   VariantView,
@@ -221,8 +222,10 @@ export class ProductHttpApi {
   private readonly base = inject(API_BASE_URL);
 
   async list(): Promise<Product[]> {
-    const rows = await firstValueFrom(this.http.get<ProductView[]>(this.url('products')));
-    return rows.map((row) => backendToProduct(row));
+    const rows = await firstValueFrom(this.http.get<ProductListView[]>(this.url('products')));
+    // `activatable` n'existe que sur la liste : le serveur le juge avec le code
+    // même du refus d'activation, le front ne le recalcule pas.
+    return rows.map((row) => ({ ...backendToProduct(row), activatable: row.activatable }));
   }
 
   async get(id: string): Promise<Product | null> {
