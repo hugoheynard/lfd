@@ -288,7 +288,8 @@
 }
 
 .reminded {
-  flex: none;
+  margin: 0;
+  padding-top: var(--fold-space-xs);
   font-size: var(--fold-text-xs);
   color: var(--fold-color-text-muted);
 }

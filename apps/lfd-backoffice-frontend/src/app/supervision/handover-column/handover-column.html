@@ -92,9 +92,7 @@
             }
           </div>
           @if (nudgeOf(row); as offer) {
-            @if (offer.kind === 'sent') {
-              <span class="reminded" data-nudge-sent>{{ offer.label }}</span>
-            } @else {
+            @if (offer.kind !== 'sent') {
               <button
                 foldButton
                 type="button"
@@ -113,6 +111,13 @@
             <a class="renvoi" [routerLink]="link.path">{{ link.label }} →</a>
           }
         </div>
+        <!-- Ce qui a été envoyé se lit en bas de la carte : serré dans la
+             ligne, il écrasait le client et la référence (Hugo, 2026-10-26). -->
+        @if (nudgeOf(row); as offer) {
+          @if (offer.kind === 'sent') {
+            <p class="reminded" data-nudge-sent>{{ offer.label }}</p>
+          }
+        }
       </fold-card>
     }
   }
