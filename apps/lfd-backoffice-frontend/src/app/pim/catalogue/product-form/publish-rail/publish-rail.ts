@@ -208,7 +208,7 @@ export class PublishRail {
     const signed = this.store.readiness();
     return signed === null
       ? null
-      : `Déclarée publiable le ${DATE_FORMAT.format(new Date(signed.readyAt))} par ${staffAuthor(signed.readyBy, signed.readyByName)}`;
+      : `Déclarée conforme le ${DATE_FORMAT.format(new Date(signed.readyAt))} par ${staffAuthor(signed.readyBy, signed.readyByName)}`;
   });
 
   /** Déclare la fiche publiable — le store porte le geste, le rail le déclenche. */

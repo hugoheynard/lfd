@@ -48,7 +48,7 @@
 </section>
 
 <section class="pr-block" aria-labelledby="pr-ready">
-  <fold-element-title id="pr-ready" title="Publiable" />
+  <fold-element-title id="pr-ready" title="Conformité" />
   <fold-card>
     @if (signature(); as signed) {
       <p class="pr-signature">{{ signed }}</p>
@@ -98,7 +98,7 @@
         [disabled]="signatureBlocked()"
         (click)="declare()"
       >
-        {{ signature() === null ? 'Déclarer publiable' : 'Déclarer à nouveau' }}
+        {{ signature() === null ? 'Déclarer la fiche conforme' : 'Déclarer à nouveau' }}
       </button>
 
       @if (!complete()) {

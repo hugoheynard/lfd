@@ -161,7 +161,7 @@ describe('PublishRail — la déclaration « publiable »', () => {
     store['readinessStaleValue'].set(false);
 
     const host = render();
-    expect(text(host)).toContain('Déclarée publiable le 31 août 2026');
+    expect(text(host)).toContain('Déclarée conforme le 31 août 2026');
     expect(text(host)).toContain('staff_hugo');
     // Signée et à jour : plus rien à déclarer, donc plus de bouton.
     expect(readyButton(host)).toBeUndefined();
