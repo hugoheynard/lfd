@@ -7,7 +7,7 @@
  *    dialogue de la boutique n'a pas d'instant vide ;
  * 2. le cycle complet — ajouter, relire, modifier, déplacer, retirer — survit à
  *    l'aller-retour JSONB, accents et trois langues compris ;
- * 3. les cinq mentions vivent sur **cinq lignes** : écrire dans l'une n'en
+ * 3. les six mentions vivent sur **six lignes** : écrire dans l'une n'en
  *    touche aucune autre, ce qu'un double en mémoire ne peut qu'affirmer ;
  * 4. une mention hors vocabulaire rend **404**, sur la surface staff comme sur
  *    la publique ;
@@ -78,7 +78,7 @@ describe("la lecture publique d'une mention", () => {
     expect(view.content.paragraphs).toEqual([]);
   });
 
-  it("sert les CINQ mentions, chacune sous son propre titre", async () => {
+  it("sert TOUTES les mentions (CGU comprises), chacune sous son propre titre", async () => {
     const titles = new Set<string>();
     for (const mention of legalMentionOrder) {
       const view = await publicView(mention);
@@ -86,9 +86,15 @@ describe("la lecture publique d'une mention", () => {
       titles.add(view.content.title.fr);
     }
 
-    // Cinq titres distincts : une route qui servirait toujours le même document
+    // Autant de titres que de mentions : une route qui servirait toujours le même document
     // passerait tous les tests précédents sans que rien ne le dise.
     expect(titles.size).toBe(legalMentionOrder.length);
+  });
+
+  it("sert les CGU sous leur titre de départ (décision du 2026-10-26)", async () => {
+    const view = await publicView("termsOfUse");
+    expect(view.content.title.fr).toBe("Conditions générales d'utilisation");
+    expect(view.content.paragraphs).toEqual([]);
   });
 
   it("n'exige aucune authentification — le dialogue s'ouvre avant toute connexion", async () => {
@@ -211,6 +217,15 @@ describe("l'écriture staff", () => {
 
     // Une ligne par mention écrite, et pas une de plus.
     expect(await ctx.prisma.platformContent.count()).toBe(1);
+  });
+
+  it("les CGU s'écrivent sur leur propre ligne, `terms-of-use`", async () => {
+    const id = await addParagraph("usage", "termsOfUse");
+
+    expect((await publicView("termsOfUse")).content.paragraphs.map((p) => p.id)).toEqual([id]);
+    expect((await publicView("salesTerms")).content.paragraphs).toEqual([]);
+    const rows = await ctx.prisma.platformContent.findMany({ select: { key: true } });
+    expect(rows.map((row) => row.key)).toEqual(["terms-of-use"]);
   });
 
   it("l'écran d'édition voit la révision et la dernière main, que le public ignore", async () => {

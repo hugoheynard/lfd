@@ -236,6 +236,7 @@ export const legalMentionDisplaySchema = z.object({
   privacy: z.boolean().default(true),
   cookies: z.boolean().default(true),
   accessibility: z.boolean().default(true),
+  termsOfUse: z.boolean().default(true),
   // `satisfies` et non un cast : il VÉRIFIE que les champs déclarés ici sont
   // exactement le vocabulaire, sans rien affirmer au compilateur. Ajouter une
   // mention à la liste sans l'ajouter ici cesse de compiler — c'est ce qui
@@ -280,6 +281,7 @@ export const footerContentSchema = z.object({
     privacy: true,
     cookies: true,
     accessibility: true,
+    termsOfUse: true,
   }),
   fr: footerLocaleContentSchema,
   en: footerLocaleContentSchema,

@@ -5,7 +5,7 @@ import { UnknownLegalMentionError } from "../domain/errors/legal-document-errors
 
 /**
  * Valide le segment `:mention` contre le **vocabulaire fermé** du contrat —
- * les cinq mentions et les CGV professionnelles (`legalDocumentKeys`, plan
+ * les six mentions et les CGV professionnelles (`legalDocumentKeys`, plan
  * `legal/plan-cgv-par-audience.md`, C1).
  *
  * 🔴 C'est la garde du bord, et elle n'est pas décorative : sans elle, une clé

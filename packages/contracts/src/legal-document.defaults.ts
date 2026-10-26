@@ -76,7 +76,7 @@ export const DEMO_LEGAL_SECTIONS: Readonly<Record<LegalSectionKey, LegalDocument
   };
 
 /**
- * Les cinq documents de démonstration, **par mention**.
+ * Les six documents de démonstration, **par mention**.
  *
  * Exporté parce que le semis de développement les repose **par les commandes**
  * — il ne réécrit aucune ligne en direct. Le corpus de démonstration et le
@@ -187,10 +187,25 @@ export const DEMO_LEGAL_DOCUMENTS: Readonly<Record<LegalMention, DemoLegalDocume
       article("Voies de recours", "Remedies", "Vie di ricorso"),
     ],
   },
+  termsOfUse: {
+    title: {
+      fr: "Conditions générales d'utilisation",
+      en: "Terms of use",
+      it: "Condizioni generali d'uso",
+    },
+    paragraphs: [
+      article("Objet", "Purpose", "Oggetto"),
+      article("Accès au site", "Access to the site", "Accesso al sito"),
+      article("Compte utilisateur", "User account", "Account utente"),
+      article("Propriété intellectuelle", "Intellectual property", "Proprietà intellettuale"),
+      article("Responsabilité", "Liability", "Responsabilità"),
+      article("Droit applicable", "Governing law", "Legge applicabile"),
+    ],
+  },
 };
 
 /**
- * Le titre de départ de chaque document — celui des cinq mentions repris de
+ * Le titre de départ de chaque document — celui des six mentions repris de
  * {@link DEMO_LEGAL_DOCUMENTS}, plus celui des CGV professionnelles.
  *
  * ⚠️ Les CGV pro n'ont PAS de document de démonstration, et c'est voulu
@@ -204,6 +219,7 @@ export const LEGAL_DOCUMENT_TITLES: Readonly<Record<LegalDocumentKey, LegalDocum
   privacy: DEMO_LEGAL_DOCUMENTS.privacy.title,
   cookies: DEMO_LEGAL_DOCUMENTS.cookies.title,
   accessibility: DEMO_LEGAL_DOCUMENTS.accessibility.title,
+  termsOfUse: DEMO_LEGAL_DOCUMENTS.termsOfUse.title,
   salesTermsPro: {
     fr: "Conditions générales de vente professionnelles",
     en: "Terms and conditions of sale for professionals",

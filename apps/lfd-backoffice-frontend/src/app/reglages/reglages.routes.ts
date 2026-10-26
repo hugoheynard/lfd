@@ -266,10 +266,10 @@ export const reglagesRoutes: Routes = [
           ),
       },
 
-      // RÉGLAGES › LÉGAL (Hugo, 2026-10-15) — les cinq mentions légales,
+      // RÉGLAGES › LÉGAL (Hugo, 2026-10-15) — les six mentions légales,
       // venues de E-commerce › Contenu (`/b2b/contenu/mentions/<clé>`, qui
       // redirige). UN écran paramétré par son segment français
-      // (`legal-mention-slugs.ts`) : elles ont la même forme, et cinq
+      // (`legal-mention-slugs.ts`) : elles ont la même forme, et six
       // composants auraient divergé au premier correctif. Sous LEUR droit,
       // `lfc_legal` (plan `legal/plan-cgv-par-audience.md`, C0) — elles ont
       // gardé `b2b_settings` le temps du déménagement, et le commercial voyait

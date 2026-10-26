@@ -27,6 +27,7 @@ const REQUIRED_SECTIONS: Readonly<Record<LegalDocumentKey, readonly LegalSection
   privacy: ["dataDeletion"],
   cookies: [],
   accessibility: [],
+  termsOfUse: [],
   salesTermsPro: [],
 };
 

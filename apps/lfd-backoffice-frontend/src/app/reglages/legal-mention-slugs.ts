@@ -15,6 +15,7 @@ export const LEGAL_MENTION_SLUGS: Readonly<Record<LegalMention, string>> = {
   privacy: 'confidentialite',
   cookies: 'cookies',
   accessibility: 'accessibilite',
+  termsOfUse: 'cgu',
 };
 
 /** L'adresse absolue de l'écran d'une mention. */
@@ -35,6 +36,7 @@ export function legalMentionOfSlug(slug: string): LegalMention | null {
  */
 const LEGAL_MENTION_MENU_LABELS: Readonly<Partial<Record<LegalMention, string>>> = {
   salesTerms: 'CGV',
+  termsOfUse: 'CGU',
 };
 
 /** Le libellé d'une mention dans le menu — rail et lanceur mobile. */

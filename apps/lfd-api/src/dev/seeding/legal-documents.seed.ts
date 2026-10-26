@@ -64,6 +64,7 @@ const SEED_KEYS: Readonly<Record<LegalMention, string>> = {
   privacy: "privacy",
   cookies: "cookies",
   accessibility: "accessibility",
+  termsOfUse: "terms-of-use",
 };
 
 /** Ce dont le semis a besoin : le bus pour écrire, la base pour constater. */

@@ -124,7 +124,7 @@ describe('le dialogue d’une mention légale', () => {
 
   /**
    * La mention est un PARAMÈTRE, pas un composant de plus : le même dialogue
-   * sert les cinq, et il lit celui qu'on lui a donné.
+   * sert les six, et il lit celui qu'on lui a donné.
    */
   it('sert une autre mention sans rien partager avec les CGV', () => {
     // Le montage du `beforeEach` a déjà demandé les CGV ; on le solde.
@@ -136,6 +136,27 @@ describe('le dialogue d’une mention légale', () => {
 
     expect(text()).toContain('Gestion des cookies');
     expect(articles()).toEqual(['1. Traceurs']);
+    expect(text()).not.toContain('Le tribunal compétent.');
+  });
+
+  it('ouvre les CGU (2026-10-26) à leur propre adresse, sous leur titre', () => {
+    pending().flush(VIEW);
+
+    ouvrir('termsOfUse');
+    pending('termsOfUse').flush({
+      ...COOKIES,
+      content: {
+        ...COOKIES.content,
+        title: {
+          fr: "Conditions générales d'utilisation",
+          en: 'Terms of use',
+          it: "Condizioni generali d'uso",
+        },
+      },
+    });
+    fixture.detectChanges();
+
+    expect(text()).toContain("Conditions générales d'utilisation");
     expect(text()).not.toContain('Le tribunal compétent.');
   });
 

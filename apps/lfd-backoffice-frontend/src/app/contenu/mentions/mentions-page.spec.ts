@@ -95,6 +95,7 @@ class FakeContent {
     privacy: legalView('Confidentialité', 'conf'),
     cookies: legalView('Cookies', 'ck'),
     accessibility: legalView('Accessibilité', 'acc'),
+    termsOfUse: legalView('Utilisation', 'cgu'),
     salesTermsPro: legalView('Conditions pro', 'pro'),
   };
 
@@ -620,6 +621,16 @@ describe('MentionsPage — les CGV par audience', () => {
 
     expect(api.reads).toEqual(['salesTerms', 'salesTermsPro']);
     expect(api.fileReads).toEqual(['salesTerms', 'salesTermsPro']);
+  });
+
+  it('ouvre les CGU sous `/reglages/legal/cgu`, titrées du contrat, sans onglets ni PDF', async () => {
+    const api = new FakeContent();
+    const fixture = await render(api, 'cgu');
+
+    expect(api.reads).toEqual(['termsOfUse']);
+    expect(text(fixture)).toContain("Conditions générales d'utilisation");
+    expect(host(fixture).querySelector('app-legal-pdf-card')).toBeNull();
+    expect(api.fileReads).toEqual([]);
   });
 
   it('n’a pas d’onglets ni de PDF hors des CGV', async () => {

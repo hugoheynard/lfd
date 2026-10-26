@@ -668,6 +668,7 @@ describe("l'arbre de routes du back-office", () => {
       '/reglages/legal/confidentialite',
       '/reglages/legal/cookies',
       '/reglages/legal/accessibilite',
+      '/reglages/legal/cgu',
     ]);
     // Une clé inventée garde son segment : l'écran dira « Mention inconnue ».
     expect(legacyLegalMentionRedirect({ params: { mention: 'inventee' } })).toBe(

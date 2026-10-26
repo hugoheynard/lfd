@@ -75,6 +75,7 @@ describe('le pied de page — la barre légale', () => {
     privacy: !cachees.includes('privacy'),
     cookies: !cachees.includes('cookies'),
     accessibility: !cachees.includes('accessibility'),
+    termsOfUse: !cachees.includes('termsOfUse'),
   });
 
   /** Les liens VIVANTS de la barre — `fold-link` rend un `<button>` en mode bouton. */
@@ -112,7 +113,16 @@ describe('le pied de page — la barre légale', () => {
       legalMentionLabels.fr.privacy,
       legalMentionLabels.fr.cookies,
       legalMentionLabels.fr.accessibility,
+      legalMentionLabels.fr.termsOfUse,
     ]);
+  });
+
+  it('masque les CGU décochées, et elles seules', () => {
+    const host = boot();
+    servirMentions(toutesSauf(['termsOfUse']));
+
+    expect(liens(host)).toHaveLength(legalMentionOrder.length - 1);
+    expect(mentionsAffichees(host)).not.toContain(legalMentionLabels.fr.termsOfUse);
   });
 
   /**
@@ -120,7 +130,7 @@ describe('le pied de page — la barre légale', () => {
    * qu'on peut lire. Le compte s'affirme AVANT toute lecture élément par
    * élément — une barre vide passerait toutes les assertions d'une boucle.
    */
-  it('rend les cinq mentions cochées en liens vivants', () => {
+  it('rend toutes les mentions cochées en liens vivants', () => {
     const host = boot();
     servirMentions(toutesSauf([]));
 

@@ -1,22 +1,32 @@
-# Les mentions légales — cinq documents, trois surfaces
+# Les mentions légales — six documents, trois surfaces
 
 > État : **les CGV implémentées le 2026-09-13**, les quatre autres mentions
 > généralisées depuis le même code le même jour. Ce document a d'abord décrit
 > les seules CGV ; il a été élargi quand il est apparu que les cinq mentions
 > ont exactement la même forme, et que les écrire cinq fois aurait été la faute.
+>
+> **Sixième mention le 2026-10-26** (décision de Hugo) : les **Conditions
+> générales d'utilisation** (`termsOfUse`, clé `terms-of-use`, segment
+> back-office `/reglages/legal/cgu`, « CGU » au menu). Elle a pris tout le
+> chemin des cinq autres sans code propre : contrat, pipe, agrégat, lecture
+> publique, écran, case du pied de page, dialogue. Aucune migration (pas de
+> CHECK sur les clés de `platform_content`). Pas de PDF de référence : le CHECK
+> de `legal_document_files.document_key` reste limité aux deux CGV, et c'est
+> voulu. Là où ce texte dit « cinq » plus bas, lire « six ».
 
-Le bandeau légal du pied de page porte **cinq mentions**, et ce ne sont pas des
+Le bandeau légal du pied de page porte **six mentions**, et ce ne sont pas des
 textes qu'on ajoute : ce sont des **prérequis**, affichables ou non, comme le
 bandeau cookies. Le vocabulaire est fermé ; ce qui se décide, c'est lesquelles
 paraissent — et ce que chacune dit.
 
-| Mention                       | Clé de stockage |
-| ----------------------------- | --------------- |
-| Mentions légales              | `legal-notice`  |
-| Conditions générales de vente | `sales-terms`   |
-| Confidentialité               | `privacy`       |
-| Cookies                       | `cookies`       |
-| Accessibilité                 | `accessibility` |
+| Mention                            | Clé de stockage |
+| ---------------------------------- | --------------- |
+| Mentions légales                   | `legal-notice`  |
+| Conditions générales de vente      | `sales-terms`   |
+| Confidentialité                    | `privacy`       |
+| Cookies                            | `cookies`       |
+| Accessibilité                      | `accessibility` |
+| Conditions générales d'utilisation | `terms-of-use`  |
 
 Chacune est un **document** de même forme : un titre, puis des articles titrés,
 dans les trois langues. Un seul agrégat, un seul jeu de handlers, un seul écran

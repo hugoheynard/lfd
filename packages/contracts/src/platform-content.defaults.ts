@@ -44,12 +44,13 @@ export const legalMentionOrder = [
   "privacy",
   "cookies",
   "accessibility",
+  "termsOfUse",
 ] as const;
 
 export type LegalMention = (typeof legalMentionOrder)[number];
 
 /**
- * Les **documents légaux** que le staff rédige — les cinq mentions, plus les
+ * Les **documents légaux** que le staff rédige — les six mentions, plus les
  * CGV professionnelles (`documentation/legal/plan-cgv-par-audience.md`, C1).
  *
  * 🔴 Deux listes, et pas une : `salesTermsPro` n'est PAS une mention du
@@ -98,6 +99,7 @@ export const legalMentionLabels: Readonly<
     privacy: "Confidentialité",
     cookies: "Cookies",
     accessibility: "Accessibilité",
+    termsOfUse: "Conditions générales d'utilisation",
   },
   en: {
     legalNotice: "Legal notice",
@@ -105,6 +107,7 @@ export const legalMentionLabels: Readonly<
     privacy: "Privacy",
     cookies: "Cookies",
     accessibility: "Accessibility",
+    termsOfUse: "Terms of use",
   },
   it: {
     legalNotice: "Note legali",
@@ -112,6 +115,7 @@ export const legalMentionLabels: Readonly<
     privacy: "Privacy",
     cookies: "Cookie",
     accessibility: "Accessibilità",
+    termsOfUse: "Condizioni generali d'uso",
   },
 };
 
@@ -320,6 +324,7 @@ export const DEFAULT_FOOTER_CONTENT: FooterContent = {
     privacy: true,
     cookies: true,
     accessibility: true,
+    termsOfUse: true,
   },
   // Le contact de la carte « service commercial » de Mon compte — à part de
   // l'identité que le pied de page affiche. Pas de téléphone pour le moment

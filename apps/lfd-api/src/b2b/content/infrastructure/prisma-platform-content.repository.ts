@@ -41,6 +41,8 @@ const LEGAL_DOCUMENT_KEYS: Readonly<Record<LegalDocumentKey, string>> = {
   privacy: "privacy",
   cookies: "cookies",
   accessibility: "accessibility",
+  // Clé NEUVE (décision de Hugo, 2026-10-26) : les CGU, sixième mention.
+  termsOfUse: "terms-of-use",
   // Clé NEUVE (plan `legal/plan-cgv-par-audience.md`, C1) : aucune ligne semée,
   // son absence se lit « en cours de rédaction ».
   salesTermsPro: "sales-terms-pro",

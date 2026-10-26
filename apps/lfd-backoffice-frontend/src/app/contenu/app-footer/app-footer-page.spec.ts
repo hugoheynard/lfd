@@ -102,12 +102,13 @@ describe('AppFooterPage — les mentions légales', () => {
     const { fixture } = await render();
 
     const shown = labels(fixture);
-    expect(shown).toHaveLength(5);
+    expect(shown).toHaveLength(6);
     expect(shown[0]).toContain('Mentions légales');
     expect(shown[1]).toContain('Conditions générales de vente');
     expect(shown[2]).toContain('Confidentialité');
     expect(shown[3]).toContain('Cookies');
     expect(shown[4]).toContain('Accessibilité');
+    expect(shown[5]).toContain("Conditions générales d'utilisation");
   });
 
   /**
@@ -137,6 +138,7 @@ describe('AppFooterPage — les mentions légales', () => {
       privacy: true,
       cookies: false,
       accessibility: true,
+      termsOfUse: true,
     });
   });
 

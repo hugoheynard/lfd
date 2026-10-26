@@ -79,4 +79,14 @@ describe("GetPublishedLegalDocumentHandler", () => {
     expect(view.pdf).toBeNull();
     expect(files.reads).toBe(0);
   });
+
+  it("sert les CGU sous leur titre de départ, sans PDF ni lecture de dépôt", async () => {
+    const files = new CurrentFilesReader(new Map([["salesTerms", proPdf()]]));
+
+    const view = await handlerWith(files).execute(new GetPublishedLegalDocumentQuery("termsOfUse"));
+
+    expect(view.content.title.fr).toBe("Conditions générales d'utilisation");
+    expect(view.pdf).toBeNull();
+    expect(files.reads).toBe(0);
+  });
 });
