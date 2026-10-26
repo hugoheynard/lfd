@@ -188,6 +188,8 @@ export class HistoryTable {
       bakery: copy.statusBakery,
       ready: copy.statusReady,
       route: copy.statusRoute,
+      partlyDone: copy.statusPartlyDone,
+      partlyDelivered: copy.statusPartlyDelivered,
       done: copy.statusDone,
       delivered: copy.statusDelivered,
       cancelled: copy.statusCancelled,

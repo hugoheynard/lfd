@@ -134,15 +134,32 @@ export interface TrackedOrder {
  * cet écran, et `in_production` garde son « en route » d'origine.
  */
 export type OrderRowStatus =
-  'received' | 'bakery' | 'ready' | 'route' | 'done' | 'delivered' | 'cancelled';
+  | 'received'
+  | 'bakery'
+  | 'ready'
+  | 'route'
+  | 'partlyDone'
+  | 'partlyDelivered'
+  | 'done'
+  | 'delivered'
+  | 'cancelled';
 
 /**
- * La commande est-elle RETIRÉE ou LIVRÉE (`status === 'fulfilled'` au serveur) ?
- * C'est la seule condition d'un signalement de problème (plan
+ * La commande est-elle RETIRÉE ou LIVRÉE, en tout ou en partie
+ * (`fulfilled` ou `partially_handed_over` au serveur) ? C'est la seule
+ * condition d'un signalement de problème (plan
  * `documentation/demandes-client/demandes-clients.md`, §6.6).
+ *
+ * En partie depuis le plan E7 reliquat (L5c) : une partie est arrivée, elle
+ * peut avoir un problème — le serveur l'accepte depuis L5a.
  */
 export function isFulfilled(row: { readonly status: OrderRowStatus }): boolean {
-  return row.status === 'done' || row.status === 'delivered';
+  return (
+    row.status === 'done' ||
+    row.status === 'delivered' ||
+    row.status === 'partlyDone' ||
+    row.status === 'partlyDelivered'
+  );
 }
 
 /** D'où la commande est entrée, quand ce n'est PAS l'app. */
@@ -241,6 +258,8 @@ export interface RowCopy {
   readonly stepReady: string;
   readonly stepHandedPickup: string;
   readonly stepHandedDelivery: string;
+  readonly stepPartlyHandedPickup: string;
+  readonly stepPartlyHandedDelivery: string;
   readonly qrReady: string;
   readonly noWindow: string;
   /** « avant » — le mot devant une échéance. */
@@ -272,6 +291,8 @@ export function rowCopyOf(copy: {
   readonly stepReady: string;
   readonly stepHandedPickup: string;
   readonly stepHandedDelivery: string;
+  readonly stepPartlyHandedPickup: string;
+  readonly stepPartlyHandedDelivery: string;
   readonly qrReady: string;
   readonly noWindow: string;
   readonly before: string;
@@ -286,6 +307,8 @@ export function rowCopyOf(copy: {
     stepReady: copy.stepReady,
     stepHandedPickup: copy.stepHandedPickup,
     stepHandedDelivery: copy.stepHandedDelivery,
+    stepPartlyHandedPickup: copy.stepPartlyHandedPickup,
+    stepPartlyHandedDelivery: copy.stepPartlyHandedDelivery,
     qrReady: copy.qrReady,
     noWindow: copy.noWindow,
     before: copy.before,
@@ -306,17 +329,35 @@ export function rowCopyOf(copy: {
  * `draft` ne l'atteint jamais et `cancelled` a son propre traitement. Le repli
  * de l'appelant ne couvre donc plus rien de réel — il reste comme filet pour un
  * statut ajouté demain, pas comme mécanisme.
+ *
+ * `partially_handed_over` (plan E7 reliquat, L5c) est à la dernière étape,
+ * mais EN COURS : une partie est retirée, le reste suit. Il retombait sur le
+ * `?? 0` — la commande se lisait « panier validé » après son premier retrait.
  */
 const STEP_OF_STATUS: Readonly<Record<string, number>> = {
   placed: 0,
   confirmed: 1,
   in_production: 1,
   ready: 2,
+  partially_handed_over: 3,
   fulfilled: 3,
 };
 
+/** Les étapes du suivi — l'avancement se dessine en fractions de ce nombre. */
+const STEP_COUNT = 4;
+
+/**
+ * Une étape en cours compte pour moitié : la barre d'une commande en partie
+ * retirée ne doit pas être pleine.
+ */
+const HALF_STEP = 0.5;
+
 /**
  * Une commande est-elle encore VIVANTE ? Le suivi ne montre que celles-là.
+ *
+ * Une commande en partie retirée l'est (`partially_handed_over` n'est ni
+ * `fulfilled` ni `cancelled`) : le reste est à venir, et son QR sert encore
+ * au comptoir (L4c).
  *
  * 🔴 **Réglée, aussi** (`isSettled` du contrat). Une commande carte « À
  * régler » montrait sa carte de suivi et son QR de retrait (constaté en
@@ -344,8 +385,9 @@ export function trackedOf(order: RowSource, copy: RowCopy): TrackedOrder {
     total: amountOf(order) / 100,
     pretax: order.settlement === 'account',
     pieces: piecesOf(order),
-    // Le statut, DESSINÉ : quatre étapes, donc un quart par étape franchie.
-    percent: Math.round(((at + 1) / 4) * 100),
+    // Le statut, DESSINÉ : quatre étapes, donc un quart par étape franchie —
+    // la dernière à moitié tant qu'un reste suit.
+    percent: Math.round(((at + (isPartlyHanded(order) ? HALF_STEP : 1)) / STEP_COUNT) * 100),
     steps: stepsOf(order, copy),
     at,
     pickup: order.fulfillmentMethod === 'pickup' ? place : '',
@@ -460,14 +502,27 @@ function refundOf(order: CustomerOrderView): OrderRefund {
  * l'étape reste vide plutôt que d'emprunter l'heure de sa voisine.
  */
 function stepsOf(order: CustomerOrderView, copy: RowCopy): readonly TrackStep[] {
-  const handed =
-    order.fulfillmentMethod === 'pickup' ? copy.stepHandedPickup : copy.stepHandedDelivery;
+  const handed = handedStepOf(order, copy);
   return [
     { label: copy.stepPlaced, at: hour(order.placedAt) },
     { label: copy.stepBakery, at: hourOrNothing(order.confirmedAt) },
     { label: copy.stepReady, at: hourOrNothing(order.readyAt) },
     { label: handed, at: hourOrNothing(order.handedOverAt) },
   ];
+}
+
+/** Le mot de la dernière étape : en partie tant qu'un reste suit (L5c). */
+function handedStepOf(order: CustomerOrderView, copy: RowCopy): string {
+  const pickup = order.fulfillmentMethod === 'pickup';
+  if (isPartlyHanded(order)) {
+    return pickup ? copy.stepPartlyHandedPickup : copy.stepPartlyHandedDelivery;
+  }
+  return pickup ? copy.stepHandedPickup : copy.stepHandedDelivery;
+}
+
+/** Une partie retirée ou livrée, le reste à venir (plan E7 reliquat). */
+function isPartlyHanded(order: CustomerOrderView): boolean {
+  return order.status === 'partially_handed_over';
 }
 
 /**
@@ -485,6 +540,9 @@ function statusOf(order: CustomerOrderView): OrderRowStatus {
   }
   if (order.status === 'fulfilled') {
     return order.fulfillmentMethod === 'pickup' ? 'done' : 'delivered';
+  }
+  if (isPartlyHanded(order)) {
+    return order.fulfillmentMethod === 'pickup' ? 'partlyDone' : 'partlyDelivered';
   }
   if (order.status === 'in_production') {
     return 'route';

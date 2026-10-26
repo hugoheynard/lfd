@@ -157,6 +157,16 @@ describe('OrderDetail', () => {
     expect(el().querySelector('button[intent="danger"]')).not.toBeNull();
   });
 
+  /** Plan E7 reliquat, L5c : une partie est arrivée, elle peut avoir un problème. */
+  it.each(['partlyDone', 'partlyDelivered'] as const)(
+    'le propose sur une commande %s, dont un reste suit',
+    (status) => {
+      fixture.componentRef.setInput('order', { ...ROWS[0]!, status });
+      fixture.detectChanges();
+      expect(el().querySelector('button[intent="danger"]')).not.toBeNull();
+    },
+  );
+
   /** Plan des points, E2.3 : la part HT du bon, seulement quand il y en a une. */
   it('montre la ligne « Bon de fidélité (HT) » seulement quand un bon a été imputé', () => {
     expect(el().textContent).not.toContain(FR.cart.voucherHtLine);

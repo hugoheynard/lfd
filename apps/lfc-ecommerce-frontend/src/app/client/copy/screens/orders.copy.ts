@@ -347,6 +347,12 @@ export interface OrdersCopy {
   readonly stepReady: string;
   readonly stepHandedPickup: string;
   readonly stepHandedDelivery: string;
+  /**
+   * La dernière étape quand une partie seulement est retirée ou livrée, et
+   * que le reste suit (plan E7 reliquat, L5c) — l'étape reste en cours.
+   */
+  readonly stepPartlyHandedPickup: string;
+  readonly stepPartlyHandedDelivery: string;
   /** Affiché quand le jeton de remise EXISTE — jamais par principe. */
   readonly qrReady: string;
   /** Un client peut ne demander aucune tranche : c'est un choix, pas un trou. */
@@ -370,6 +376,12 @@ export interface OrdersCopy {
   readonly statusRoute: string;
   readonly statusDone: string;
   readonly statusDelivered: string;
+  /**
+   * Une partie retirée ou livrée, le reste à venir (`partially_handed_over`,
+   * L5c). Jamais « reçue » : une partie est arrivée.
+   */
+  readonly statusPartlyDone: string;
+  readonly statusPartlyDelivered: string;
   readonly payAccount: string;
   readonly payCard: string;
   /** Une commande carte passée, dont le paiement n'a pas encore abouti. */
@@ -511,6 +523,8 @@ export const ORDERS_FR: OrdersCopy = {
   stepReady: 'Prête',
   stepHandedPickup: 'Retirée',
   stepHandedDelivery: 'Livrée',
+  stepPartlyHandedPickup: 'Retirée en partie',
+  stepPartlyHandedDelivery: 'Livrée en partie',
   qrReady: 'Votre QR est prêt — présentez-le au comptoir',
   noWindow: 'Aucune tranche demandée',
   before: 'avant',
@@ -522,6 +536,8 @@ export const ORDERS_FR: OrdersCopy = {
   statusRoute: 'En route',
   statusDone: 'Retirée',
   statusDelivered: 'Livrée',
+  statusPartlyDone: 'En partie retirée',
+  statusPartlyDelivered: 'En partie livrée',
   payAccount: 'Au compte',
   payCard: 'Réglée · CB',
   payDue: 'À régler',
@@ -629,6 +645,8 @@ export const ORDERS_EN: OrdersCopy = {
   stepReady: 'Ready',
   stepHandedPickup: 'Collected',
   stepHandedDelivery: 'Delivered',
+  stepPartlyHandedPickup: 'Partly collected',
+  stepPartlyHandedDelivery: 'Partly delivered',
   qrReady: 'Your QR is ready — show it at the counter',
   noWindow: 'No time slot requested',
   before: 'before',
@@ -640,6 +658,8 @@ export const ORDERS_EN: OrdersCopy = {
   statusRoute: 'On the way',
   statusDone: 'Collected',
   statusDelivered: 'Delivered',
+  statusPartlyDone: 'Partly collected',
+  statusPartlyDelivered: 'Partly delivered',
   payAccount: 'On account',
   payCard: 'Paid · card',
   payDue: 'To pay',
@@ -747,6 +767,8 @@ export const ORDERS_IT: OrdersCopy = {
   stepReady: 'Pronta',
   stepHandedPickup: 'Ritirata',
   stepHandedDelivery: 'Consegnata',
+  stepPartlyHandedPickup: 'Ritirata in parte',
+  stepPartlyHandedDelivery: 'Consegnata in parte',
   qrReady: 'Il suo QR è pronto — lo mostri al banco',
   noWindow: 'Nessuna fascia richiesta',
   before: 'entro le',
@@ -758,6 +780,8 @@ export const ORDERS_IT: OrdersCopy = {
   statusRoute: 'In viaggio',
   statusDone: 'Ritirato',
   statusDelivered: 'Consegnato',
+  statusPartlyDone: 'Ritirato in parte',
+  statusPartlyDelivered: 'Consegnato in parte',
   payAccount: 'Sul conto',
   payCard: 'Pagato · carta',
   payDue: 'Da pagare',

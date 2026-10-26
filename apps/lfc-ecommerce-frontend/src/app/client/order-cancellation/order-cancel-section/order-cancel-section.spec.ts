@@ -102,6 +102,19 @@ describe('OrderCancelSection', () => {
     expect(el.querySelector('[data-refusal]')).toBeNull();
   });
 
+  /**
+   * Plan E7 reliquat, L5c : l'étiquette dit « en partie retirée », pas ce
+   * qu'il advient du reste — la phrase et la boutique restent.
+   */
+  it('dit pourquoi, avec la boutique, pour une commande en partie retirée', async () => {
+    const { el } = await mount({ cancellable: false, code: 'partially_handed_over', until: null });
+    expect(el.querySelector('[data-cancel]')).toBeNull();
+    expect(el.querySelector('[data-refusal]')?.textContent).toContain(
+      FR.refusals.partially_handed_over,
+    );
+    expect(el.querySelector('[data-contact]')).not.toBeNull();
+  });
+
   it('dit l’échec de lecture sans cacher le tiroir, et propose de relire', async () => {
     const { el } = await mount(null);
     expect(el.querySelector('[data-failed]')?.textContent).toContain(FR.loadFailed);

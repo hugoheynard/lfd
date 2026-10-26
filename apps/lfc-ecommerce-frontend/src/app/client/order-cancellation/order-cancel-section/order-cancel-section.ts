@@ -35,6 +35,10 @@ type SectionState =
  * Les refus qui se TAISENT dans le tiroir : l'état de la commande les dit déjà
  * (annulée, retirée), ou le bouton disparaît sans phrase (`not_allowed`,
  * contrat). Les autres disent pourquoi, et proposent la boutique.
+ *
+ * `partially_handed_over` n'y est PAS (plan E7 reliquat, L5c) : l'étiquette
+ * dit « en partie retirée », mais pas à qui s'adresser pour le reste — la
+ * phrase le dit, et le bouton de la boutique l'offre.
  */
 const SILENT = new Set<string>(['already_cancelled', 'fulfilled', 'not_allowed']);
 

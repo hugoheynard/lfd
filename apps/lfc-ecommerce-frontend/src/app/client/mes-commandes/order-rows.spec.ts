@@ -1,6 +1,6 @@
 import type { CustomerOrderView } from '@lfd/contracts';
 
-import { historyRowOf, isLive, trackedOf, type RowCopy } from './order-rows';
+import { historyRowOf, isFulfilled, isLive, trackedOf, type RowCopy } from './order-rows';
 
 const COPY: RowCopy = {
   pickup: 'Retrait',
@@ -10,6 +10,8 @@ const COPY: RowCopy = {
   stepReady: 'Prête',
   stepHandedPickup: 'Retirée',
   stepHandedDelivery: 'Livrée',
+  stepPartlyHandedPickup: 'Retirée en partie',
+  stepPartlyHandedDelivery: 'Livrée en partie',
   qrReady: 'Votre QR est prêt',
   noWindow: 'Aucune tranche demandée',
   before: 'avant',
@@ -277,6 +279,51 @@ describe('le statut annoncé au client', () => {
 
   it('garde l’annulation au-dessus de tout le reste', () => {
     expect(statusFor('cancelled')).toBe('cancelled');
+  });
+});
+
+/**
+ * 🔴 **Régression (plan E7 reliquat, L5c) : une commande en partie retirée se
+ * lisait « Enregistrée ».** `partially_handed_over` n'avait de branche ni dans
+ * `statusOf` ni dans la table des étapes : le suivi la remettait à « panier
+ * validé » au moment où une partie venait d'arriver, et le signalement d'un
+ * problème lui était refusé.
+ */
+describe('une commande en partie retirée', () => {
+  const PARTLY = {
+    ...ORDER,
+    status: 'partially_handed_over',
+    handedOverAt: '2026-09-07T07:30:00.000Z',
+  } as CustomerOrderView;
+  const PARTLY_DELIVERED = { ...PARTLY, fulfillmentMethod: 'delivery' } as CustomerOrderView;
+
+  it('se dit « en partie retirée » ou « en partie livrée », jamais « reçue »', () => {
+    expect(historyRowOf(PARTLY, '', COPY).status).toBe('partlyDone');
+    expect(historyRowOf(PARTLY_DELIVERED, '', COPY).status).toBe('partlyDelivered');
+  });
+
+  it('reste suivie : le reste est à venir, et son QR sert encore', () => {
+    expect(isLive(PARTLY)).toBe(true);
+  });
+
+  it('se suit à la dernière étape, EN COURS, sous son mot', () => {
+    const tracked = trackedOf(PARTLY, COPY);
+    expect(tracked.at).toBe(3);
+    expect(tracked.steps[3]?.label).toBe('Retirée en partie');
+    expect(trackedOf(PARTLY_DELIVERED, COPY).steps[3]?.label).toBe('Livrée en partie');
+    // Ni pleine ni reculée : trois étapes et demie sur quatre.
+    expect(tracked.percent).toBe(88);
+  });
+
+  it('peut être signalée — une partie est arrivée', () => {
+    expect(isFulfilled(historyRowOf(PARTLY, '', COPY))).toBe(true);
+    expect(isFulfilled(historyRowOf(PARTLY_DELIVERED, '', COPY))).toBe(true);
+  });
+
+  it('ne change rien à une commande retirée en entier', () => {
+    const done = trackedOf({ ...ORDER, status: 'fulfilled' } as CustomerOrderView, COPY);
+    expect(done.steps[3]?.label).toBe('Retirée');
+    expect(done.percent).toBe(100);
   });
 });
 

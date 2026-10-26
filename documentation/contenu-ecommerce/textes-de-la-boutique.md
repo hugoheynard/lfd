@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1595 textes
+## Sommaire — 1599 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -38,7 +38,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le cadre — bandeaux, installation, erreurs générales](#espace-chrome) | `chrome` | 41 |
 | [La navigation](#espace-nav) | `nav` | 24 |
 | [La colonne d’accompagnement](#espace-aside) | `aside` | 4 |
-| [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 234 |
+| [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 238 |
 | [Annuler une commande — Mes commandes et la page invité](#espace-ordercancel) | `orderCancel` | 55 |
 | [Fidélité](#espace-loyalty) | `loyalty` | 38 |
 | [Mon compte (factures comprises)](#espace-account) | `account` | 525 |
@@ -47,7 +47,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
-| **Total** | | **1595** |
+| **Total** | | **1599** |
 
 ## Le parcours de commande
 
@@ -913,7 +913,7 @@ Source : `fr.ts · en.ts · it.ts` · 4 textes.
 
 ### Mes commandes (récapitulatif compris) — `orders`
 
-Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/order-change-request.copy.ts` · 234 textes.
+Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/order-change-request.copy.ts` · 238 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -1080,6 +1080,8 @@ Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/ord
 | `orders.stepReady` | Prête | Ready | Pronta |  |
 | `orders.stepHandedPickup` | Retirée | Collected | Ritirata |  |
 | `orders.stepHandedDelivery` | Livrée | Delivered | Consegnata |  |
+| `orders.stepPartlyHandedPickup` | Retirée en partie | Partly collected | Ritirata in parte |  |
+| `orders.stepPartlyHandedDelivery` | Livrée en partie | Partly delivered | Consegnata in parte |  |
 | `orders.qrReady` | Votre QR est prêt — présentez-le au comptoir | Your QR is ready — show it at the counter | Il suo QR è pronto — lo mostri al banco |  |
 | `orders.noWindow` | Aucune tranche demandée | No time slot requested | Nessuna fascia richiesta |  |
 | `orders.before` | avant | before | entro le |  |
@@ -1091,6 +1093,8 @@ Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/ord
 | `orders.statusRoute` | En route | On the way | In viaggio |  |
 | `orders.statusDone` | Retirée | Collected | Ritirato |  |
 | `orders.statusDelivered` | Livrée | Delivered | Consegnato |  |
+| `orders.statusPartlyDone` | En partie retirée | Partly collected | Ritirato in parte |  |
+| `orders.statusPartlyDelivered` | En partie livrée | Partly delivered | Consegnato in parte |  |
 | `orders.payAccount` | Au compte | On account | Sul conto |  |
 | `orders.payCard` | Réglée · CB | Paid · card | Pagato · carta |  |
 | `orders.payDue` | À régler | To pay | Da pagare |  |

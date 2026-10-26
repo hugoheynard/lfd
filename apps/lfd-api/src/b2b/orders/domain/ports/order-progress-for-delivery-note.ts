@@ -39,13 +39,21 @@ export abstract class OrderProgressForDeliveryNote {
  * **Les commandes que le réconciliateur des BL passe en revue** (plan E2,
  * § 8.2) — port de lecture déclaré par les commandes. Séparé de
  * {@link OrderProgressForDeliveryNote} (ISP) : seul le réconciliateur
- * parcourt et verrouille.
+ * PARCOURT (`pageAfter`).
+ *
+ * ⚠️ Il disait « seul le réconciliateur parcourt et verrouille » : faux
+ * depuis L4a du plan E7 reliquat. `lockProgressOf` est aussi pris par le prêt
+ * et la remise d'un reste (`prepare-remainder-note.handler.ts`,
+ * `hand-over-remainder-note.handler.ts`) et par l'impression d'un BL
+ * (`record-delivery-note-print.handler.ts`) ; la remise du rang 1 prend la
+ * même ligne par `OrderLock` (vérifié le 2026-10-26).
  */
 export abstract class OrdersToReconcileDeliveryNotes {
   /**
    * Une page de commandes, par identifiant croissant après `afterId`, parmi
    * celles qu'un BL suit ou pourrait suivre à tort (`confirmed`, `ready`,
-   * `fulfilled`, `cancelled`, et les statuts morts `draft` / `in_production`,
+   * `partially_handed_over`, `fulfilled`, `cancelled`, et les statuts morts
+   * `draft` / `in_production`,
    * pour les compter). Sans verrou : la décision se refait sous verrou.
    */
   abstract pageAfter(

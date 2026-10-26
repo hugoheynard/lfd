@@ -9,6 +9,9 @@ import {
 } from "../domain/ports/procedure-orders.reader.js";
 import { accountOrderWhere, billableOrderWhere, dayColumnOf } from "./billable-order-criterion.js";
 
+/** Une partie retirée, le reste à venir : pas facturable avant son solde. */
+const PARTIALLY_HANDED_OVER = "partially_handed_over" as const;
+
 /** `AAAA-MM-JJ`. */
 const DAY_LENGTH = 10;
 
@@ -47,6 +50,14 @@ export class PrismaProcedureOrdersReader extends ProcedureOrdersReader {
             ...accountOrderWhere(),
             // Pas soldée (E6c2) : une commande remise en partie attend encore.
             settledOn: null,
+            // Ni en partie retirée (plan E7 reliquat, L5c) : son reste suit, elle
+            // ne se facture qu'à son solde — ni « réception confirmée », ni « à
+            // facturer ». Exclue plutôt qu'un statut de plus au contrat
+            // (`ProcedureOrderStatusView`) : aucun geste de l'onglet ne la
+            // concerne, et les bons à constater disent déjà le jour du reste.
+            // En `AND` : un `status` à côté écraserait celui du critère
+            // partagé (`not: cancelled`).
+            AND: [{ status: { not: PARTIALLY_HANDED_OVER } }],
             requestedDeliveryDate: {
               gte: dayColumnOf(scope.servedFrom),
               lte: dayColumnOf(scope.servedThrough),

@@ -42,8 +42,10 @@ export interface ProcedureOrderRow {
  * Une commande en est si l'une des trois est vraie :
  * 1. une facture de la clôture la porte ;
  * 2. elle est dans l'assiette de l'émission (`billableOrderWhere`) ;
- * 3. passée au compte, sans jour de réception, son jour demandé est dans la
- *    période et passé.
+ * 3. passée au compte, non soldée, son jour demandé est dans la période et
+ *    passé — sauf en partie retirée (plan E7 reliquat, L5c) : son reste suit,
+ *    elle n'est facturable qu'à son solde, et l'onglet n'a aucun geste pour
+ *    elle.
  *
  * L'adaptateur ne décide rien d'autre : le tri par payeur et le statut
  * appartiennent à l'application et au domaine.

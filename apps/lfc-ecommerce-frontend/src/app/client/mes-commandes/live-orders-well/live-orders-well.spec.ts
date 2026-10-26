@@ -13,6 +13,8 @@ const COPY = rowCopyOf({
   stepReady: 'Prête',
   stepHandedPickup: 'Retirée',
   stepHandedDelivery: 'Livrée',
+  stepPartlyHandedPickup: 'Retirée en partie',
+  stepPartlyHandedDelivery: 'Livrée en partie',
   qrReady: 'Votre QR est prêt',
   noWindow: '',
   before: 'avant',

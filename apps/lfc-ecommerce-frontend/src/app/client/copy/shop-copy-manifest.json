@@ -5594,6 +5594,20 @@
           "variables": []
         },
         {
+          "key": "orders.stepPartlyHandedPickup",
+          "fr": "Retirée en partie",
+          "en": "Partly collected",
+          "it": "Ritirata in parte",
+          "variables": []
+        },
+        {
+          "key": "orders.stepPartlyHandedDelivery",
+          "fr": "Livrée en partie",
+          "en": "Partly delivered",
+          "it": "Consegnata in parte",
+          "variables": []
+        },
+        {
           "key": "orders.qrReady",
           "fr": "Votre QR est prêt — présentez-le au comptoir",
           "en": "Your QR is ready — show it at the counter",
@@ -5668,6 +5682,20 @@
           "fr": "Livrée",
           "en": "Delivered",
           "it": "Consegnato",
+          "variables": []
+        },
+        {
+          "key": "orders.statusPartlyDone",
+          "fr": "En partie retirée",
+          "en": "Partly collected",
+          "it": "Ritirato in parte",
+          "variables": []
+        },
+        {
+          "key": "orders.statusPartlyDelivered",
+          "fr": "En partie livrée",
+          "en": "Partly delivered",
+          "it": "Consegnato in parte",
           "variables": []
         },
         {

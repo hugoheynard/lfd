@@ -16,6 +16,7 @@
  * le passage à `paid`, qu'aucune route ne fait pour une commande au compte.
  */
 import { MonthlyInvoicingReader } from "../src/b2b/accounting/domain/ports/monthly-invoicing.reader.js";
+import { ProcedureOrdersReader } from "../src/b2b/accounting/domain/ports/procedure-orders.reader.js";
 import { UnconfirmedDeliveriesReader } from "../src/b2b/accounting/domain/ports/unconfirmed-deliveries.reader.js";
 import { DeliveryNote } from "../src/b2b/delivery-notes/domain/entities/delivery-note.js";
 import { DeliveryNoteRepository } from "../src/b2b/delivery-notes/domain/ports/delivery-note.repository.js";
@@ -186,6 +187,20 @@ async function invoicingOf(orderId: string) {
   return orders.find((one) => one.orderId === orderId);
 }
 
+/** L'onglet « Factures » d'une procédure qui couvre le jour servi, ce jour passé. */
+async function procedureHas(orderId: string): Promise<boolean> {
+  const { from, to } = windowAroundServiceDay();
+  const rows = await ctx.app.get(ProcedureOrdersReader, { strict: false }).ofPeriod({
+    periodInvoiceIds: [],
+    deliveredFrom: from,
+    deliveredTo: to,
+    servedFrom: SERVICE_DAY,
+    servedThrough: SERVICE_DAY,
+    servedBefore: LATER_DAY,
+  });
+  return rows.some((row) => row.orderId === orderId);
+}
+
 describe("le solde dérivé (plan E7 reliquat, L5b)", () => {
   it("rang 1 retiré, reste prévu : « en partie retirée », rien de facturable, ni fait du solde ni points", async () => {
     const order = await decidedOrder();
@@ -303,5 +318,22 @@ describe("le solde dérivé (plan E7 reliquat, L5b)", () => {
       notes.reduce((total, note) => total + (note.totalCents ?? 0), 0),
     );
     expect(await fulfilledFacts(order.id)).toBe(1);
+  });
+
+  /**
+   * Régression (L5c) : l'onglet « Factures » de la procédure classait une
+   * commande en partie retirée « réception confirmée » et la comptait « à
+   * facturer », alors qu'elle ne se facture qu'à son solde.
+   */
+  it("l'onglet « Factures » de la procédure ne la montre pas tant que son reste suit", async () => {
+    const order = await decidedOrder();
+    await planRemainder(order);
+    // Témoin : son jour passé, non retirée, elle y est (« réception à confirmer »).
+    expect(await procedureHas(order.id)).toBe(true);
+
+    await handOverAtCounter(order.orderNumber);
+
+    expect((await orderRow(order.id)).status).toBe("partially_handed_over");
+    expect(await procedureHas(order.id)).toBe(false);
   });
 });

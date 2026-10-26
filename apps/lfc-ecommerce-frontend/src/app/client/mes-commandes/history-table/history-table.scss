@@ -105,7 +105,11 @@
   color: var(--fold-color-info-text);
 }
 
+// En partie retirée ou livrée : le reste suit, la commande est encore en
+// cours — la teinte de « en route », pas celle d'une commande close.
 .tag[data-status='route'],
+.tag[data-status='partlyDone'],
+.tag[data-status='partlyDelivered'],
 .tag[data-payment='due'] {
   background: var(--fold-color-warning-surface);
   color: var(--fold-color-warning-text);
