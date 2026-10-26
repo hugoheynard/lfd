@@ -103,3 +103,45 @@ describe("GET /admin/delivery/rounds/:roundId/round.pdf", () => {
     await support.get(`${ROUNDS}/${round}/round.pdf`).expect(403);
   });
 });
+
+describe("GET /admin/delivery/rounds/day/:day/dossier.pdf", () => {
+  it("sert le dossier du jour : répartition, feuilles, livraison non placée", async () => {
+    const round = await openRound(ctx, DAY, await addVehicle(ctx, "Kangoo blanc"));
+    const placed = await seedDelivery(ctx, DAY);
+    const loose = await seedDelivery(ctx, DAY);
+    await assign(ctx, DAY, round, placed.id);
+
+    const response = await admin(ctx)
+      .get(`${ROUNDS}/day/${DAY}/dossier.pdf`)
+      .buffer(true)
+      .parse((res, callback) => {
+        const chunks: Buffer[] = [];
+        res.on("data", (chunk: Buffer) => chunks.push(chunk));
+        res.on("end", () => {
+          callback(null, Buffer.concat(chunks));
+        });
+      })
+      .expect(200);
+
+    expect(response.headers["content-type"]).toContain("application/pdf");
+    expect(response.headers["content-disposition"]).toContain(`dossier-tournees-${DAY}.pdf`);
+    const body: unknown = response.body;
+    if (!(body instanceof Uint8Array)) {
+      throw new TypeError("le corps servi n'est pas binaire");
+    }
+    const pages = pdfPages(Buffer.from(body));
+    expect(pages[0]).toContain("Répartition des tournées");
+    expect(pages[0]).toContain(loose.reference);
+    expect(pages.join("\n")).toContain("Kangoo blanc · passage 1");
+    expect(pages.join("\n")).toContain(`Commande ${placed.reference}`);
+  });
+
+  it("refuse un jour mal formé (400)", async () => {
+    await admin(ctx).get(`${ROUNDS}/day/demain/dossier.pdf`).expect(400);
+  });
+
+  it("refuse le support, qui n'a pas `delivery_rounds` (403)", async () => {
+    const support = await asRole("support");
+    await support.get(`${ROUNDS}/day/${DAY}/dossier.pdf`).expect(403);
+  });
+});

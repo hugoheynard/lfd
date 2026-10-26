@@ -1,11 +1,17 @@
 import type { Provider, Type } from "@nestjs/common";
 
+import { GetDayRoundsDossierPdfHandler } from "./application/queries/get-day-rounds-dossier-pdf.handler.js";
+import { GetDayRoundsDossierSpecimenHandler } from "./application/queries/get-day-rounds-dossier-specimen.handler.js";
+import { RoundPaperAssembler } from "./application/round-paper-assembly.js";
 import { GetRoundPaperPdfHandler } from "./application/queries/get-round-paper-pdf.handler.js";
 import { GetRoundPaperSpecimenHandler } from "./application/queries/get-round-paper-specimen.handler.js";
-import { RoundPaperReader } from "./domain/ports/round-paper.reader.js";
+import { DayRoundPapersReader, RoundPaperReader } from "./domain/ports/round-paper.reader.js";
 import { AdminRoundPaperSpecimenController } from "./http/admin-round-paper-specimen.controller.js";
 import { DeliveryRoundPaperController } from "./http/delivery-round-paper.controller.js";
-import { PrismaRoundPaperReader } from "./infrastructure/prisma-round-paper.reader.js";
+import {
+  PrismaDayRoundPapersReader,
+  PrismaRoundPaperReader,
+} from "./infrastructure/prisma-round-paper.reader.js";
 
 /**
  * **La feuille de tournée en PDF**, rangée à part pour que `delivery.module.ts`
@@ -24,4 +30,9 @@ export const ROUND_PAPER_PROVIDERS: readonly Provider[] = [
   GetRoundPaperPdfHandler,
   GetRoundPaperSpecimenHandler,
   { provide: RoundPaperReader, useClass: PrismaRoundPaperReader },
+  // Le dossier des tournées du jour (décision de Hugo du 2026-10-26).
+  GetDayRoundsDossierPdfHandler,
+  GetDayRoundsDossierSpecimenHandler,
+  RoundPaperAssembler,
+  { provide: DayRoundPapersReader, useClass: PrismaDayRoundPapersReader },
 ];

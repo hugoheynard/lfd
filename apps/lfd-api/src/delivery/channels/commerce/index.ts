@@ -95,6 +95,8 @@ export { DeliveryColorsReader, type DeliveryColors } from "./delivery-colors.rea
 // La pastille par commande du transfert interne imprimé (2026-10-22).
 export { TransferOrderColorsReader } from "./transfer-order-colors.reader.js";
 export { BinLabelColorsReader } from "./bin-label-colors.reader.js";
+// La teinte de transfert des sites, pour la répartition du dossier des tournées (2026-10-26).
+export { TransferSiteColorsReader } from "./transfer-site-colors.reader.js";
 export {
   type TransferOrderCategory,
   TransferOrderContentsReader,

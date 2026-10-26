@@ -27,6 +27,8 @@ const DOCUMENTS = [
   "invoice.pdf",
   "atelier-sheet.pdf",
   "round-paper.pdf",
+  // Le dossier des tournées du jour (décision de Hugo du 2026-10-26).
+  "rounds-dossier.pdf",
   "sepa-mandate-b2b.pdf",
   "sepa-mandate-core.pdf",
   "order-summary.pdf",

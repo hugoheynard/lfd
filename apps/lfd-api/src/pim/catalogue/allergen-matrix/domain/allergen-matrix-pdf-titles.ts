@@ -17,7 +17,7 @@ interface FamilyTitleMark {
  * **Les titres de famille** de la matrice (décision de Hugo, 2026-10-26) : le
  * nom EN GROS au-dessus de la table, sur chaque page de la famille, et
  * « Pain (1/2) », « Pain (2/2) » quand elle déborde — rien quand elle tient
- * sur une page, comme les papiers du fournil (`production/domain/services/
+ * sur une page, comme les papiers du fournil (`platform/pdf/
  * paper-pages.ts`, vérifié le 2026-10-26).
  *
  * Le compte des pages d'une famille n'est connu qu'une fois tout dessiné : on

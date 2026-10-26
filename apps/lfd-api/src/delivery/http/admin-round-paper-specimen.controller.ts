@@ -5,6 +5,7 @@ import type { Response } from "express";
 
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
 import type { RoundPaperFile } from "../application/queries/get-round-paper-pdf.handler.js";
+import { GetDayRoundsDossierSpecimenQuery } from "../application/queries/get-day-rounds-dossier-specimen.query.js";
 import { GetRoundPaperSpecimenQuery } from "../application/queries/get-round-paper-specimen.query.js";
 
 /**
@@ -31,6 +32,20 @@ export class AdminRoundPaperSpecimenController {
     response.setHeader(
       "Content-Disposition",
       contentDispositionInline(sanitiseFileName(pdf.fileName, "exemple-feuille-de-tournee.pdf")),
+    );
+    return new StreamableFile(pdf.bytes);
+  }
+
+  /** Le dossier des tournées du jour d'exemple (décision de Hugo du 2026-10-26). */
+  @Get("rounds-dossier.pdf")
+  async roundsDossier(@Res({ passthrough: true }) response: Response): Promise<StreamableFile> {
+    const pdf = await this.queries.execute<GetDayRoundsDossierSpecimenQuery, RoundPaperFile>(
+      new GetDayRoundsDossierSpecimenQuery(),
+    );
+    response.setHeader("Content-Type", "application/pdf");
+    response.setHeader(
+      "Content-Disposition",
+      contentDispositionInline(sanitiseFileName(pdf.fileName, "exemple-dossier-tournees.pdf")),
     );
     return new StreamableFile(pdf.bytes);
   }

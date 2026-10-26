@@ -13,8 +13,8 @@ import {
   putRight,
   rule,
   type Doc,
-} from "../../../platform/pdf/paper-pdf-kit.js";
-import { strokeBox } from "../../../platform/pdf/paper-pdf-shapes.js";
+} from "./paper-pdf-kit.js";
+import { strokeBox } from "./paper-pdf-shapes.js";
 
 /**
  * **Le cadre des papiers du fournil** (Hugo, 2026-10-25 : « très
@@ -89,12 +89,28 @@ export class PaperPages {
 
   /** Une page neuve qu'un autre dessine, avec les pages qu'il tourne lui-même. */
   foreign(draw: (doc: Doc) => void): void {
-    this.doc.addPage();
+    this.handOver(null, draw);
+  }
+
+  /**
+   * Une section **titrée** que son propre rendu dessine entre `CONTENT_TOP`
+   * et `CONTENT_BOTTOM`, en tournant lui-même ses pages (la feuille de
+   * tournée dans le dossier des tournées, 2026-10-26) : le cadre pose
+   * l'en-tête, « (1/2) » et le pied sur chacune.
+   */
+  drawn(title: string, draw: (doc: Doc) => void): void {
+    this.handOver(title, draw);
+  }
+
+  private handOver(title: string | null, draw: (doc: Doc) => void): void {
+    if (this.marks.length > 0) {
+      this.doc.addPage();
+    }
     const before = this.count() - 1;
     draw(this.doc);
     this.section += 1;
     for (let index = before; index < this.count(); index++) {
-      this.marks.push({ section: this.section, title: null });
+      this.marks.push({ section: this.section, title });
     }
   }
 

@@ -20,7 +20,7 @@ import {
 import { drawCountPie } from "./count-color-pie.js";
 import type { CountColorShare } from "./count-color-shares.js";
 import { drawRouting } from "./order-routing-pdf.js";
-import { PaperPages } from "./paper-pages.js";
+import { PaperPages } from "../../../platform/pdf/paper-pages.js";
 
 /**
  * **Les papiers du fournil** — la feuille d'une commande, et le compte du jour.

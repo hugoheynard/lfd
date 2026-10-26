@@ -24,12 +24,14 @@ import { SiteTransferPlacesReader } from "../b2b/pickup-addresses/infrastructure
 import { DeliveryTransferOrderColorsReader } from "../b2b/orders/infrastructure/delivery-transfer-order-colors.reader.js";
 import { DeliveryBinLabelColorsReader } from "../b2b/orders/infrastructure/delivery-bin-label-colors.reader.js";
 import { SiteDeliveryColorsReader } from "../b2b/sites/infrastructure/site-delivery-colors.reader.js";
+import { SiteTransferColorsReader } from "../b2b/sites/infrastructure/site-transfer-colors.reader.js";
 import { SitesModule } from "../b2b/sites/sites.module.js";
 import {
   CommerceDayVersionReader,
   DeliveryAddressPointCorrector,
   DeliveryColorsReader,
   TransferOrderColorsReader,
+  TransferSiteColorsReader,
   BinLabelColorsReader,
   DeliveryAddressPointsReader,
   DeliveryDeparturesReader,
@@ -138,6 +140,8 @@ import { ResolvedDepartureSiteReader } from "../delivery/infrastructure/resolved
     { provide: TransferOrderColorsReader, useClass: DeliveryTransferOrderColorsReader },
     // Le carré de l'étiquette de bac imprimée (2026-10-25) : la règle du bon.
     { provide: BinLabelColorsReader, useClass: DeliveryBinLabelColorsReader },
+    // Le carré d'un transfert dans le dossier des tournées (2026-10-26).
+    { provide: TransferSiteColorsReader, useClass: SiteTransferColorsReader },
   ],
   exports: [
     DepartureCandidatesReader,
@@ -161,6 +165,7 @@ import { ResolvedDepartureSiteReader } from "../delivery/infrastructure/resolved
     DeliveryColorsReader,
     TransferOrderColorsReader,
     BinLabelColorsReader,
+    TransferSiteColorsReader,
   ],
 })
 export class DeliveryFeedModule {}

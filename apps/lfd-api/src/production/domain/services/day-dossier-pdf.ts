@@ -25,7 +25,7 @@ import {
   type Doc,
 } from "../../../platform/pdf/paper-pdf-kit.js";
 import { drawRouting } from "./order-routing-pdf.js";
-import { PaperPages } from "./paper-pages.js";
+import { PaperPages } from "../../../platform/pdf/paper-pages.js";
 
 /**
  * **Le dossier du jour, en PDF** — une couverture, le récapitulatif (un rayon

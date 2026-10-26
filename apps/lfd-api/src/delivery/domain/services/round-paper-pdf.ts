@@ -25,7 +25,7 @@ import {
   roundPaperTitle,
   stopCountPaperLabel,
 } from "./round-paper.js";
-import { type Cursor, placeBlock, SOFT } from "./round-paper-pdf-layout.js";
+import { type Cursor, placeBlock, sheetCursor, SOFT } from "./round-paper-pdf-layout.js";
 import { absentStopBlock, sheetStopBlock } from "./round-paper-pdf-stop.js";
 import { transferStopBlock } from "./round-paper-pdf-transfer.js";
 
@@ -49,25 +49,34 @@ export function renderRoundPaperPdf(paper: RoundPaper): Promise<Buffer> {
     paper.printedAt,
     title,
     (doc) => {
-      const cursor: Cursor = { y: MARGIN_Y };
-      header(doc, cursor, paper);
-      paper.stops.forEach((stop, index) => {
-        if (index > 0) {
-          rule(doc, cursor.y + STOP_GAP, 0.5, ROW_GRAY);
-          cursor.y += 2 * STOP_GAP;
-        }
-        const block =
-          stop.kind === "absent"
-            ? absentStopBlock(doc, stop, index + 1)
-            : stop.kind === "transfer"
-              ? transferStopBlock(doc, stop, index + 1)
-              : sheetStopBlock(doc, stop, index + 1);
-        placeBlock(doc, cursor, block);
-      });
+      drawRoundPaper(doc, sheetCursor(), paper);
       footers(doc, paper);
     },
     true,
   );
+}
+
+/**
+ * **Le corps de la feuille** — l'en-tête, le récap, les arrêts —, à partir
+ * du curseur donné et dans ses bornes, sans pied. La feuille seule y ajoute
+ * le sien ; le dossier des tournées (2026-10-26) l'encadre du sien : c'est le
+ * même papier, pas une copie.
+ */
+export function drawRoundPaper(doc: Doc, cursor: Cursor, paper: RoundPaper): void {
+  header(doc, cursor, paper);
+  paper.stops.forEach((stop, index) => {
+    if (index > 0) {
+      rule(doc, cursor.y + STOP_GAP, 0.5, ROW_GRAY);
+      cursor.y += 2 * STOP_GAP;
+    }
+    const block =
+      stop.kind === "absent"
+        ? absentStopBlock(doc, stop, index + 1)
+        : stop.kind === "transfer"
+          ? transferStopBlock(doc, stop, index + 1)
+          : sheetStopBlock(doc, stop, index + 1);
+    placeBlock(doc, cursor, block);
+  });
 }
 
 /** Le nom de fichier proposé au téléchargement. */

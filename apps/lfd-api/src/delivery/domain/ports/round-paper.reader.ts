@@ -45,3 +45,13 @@ export abstract class RoundPaperReader {
   /** La tournée, ou `null` : aucune sous cet identifiant. */
   abstract roundOf(roundId: string): Promise<RoundPaperRow | null>;
 }
+
+/**
+ * Port de **lecture** des tournées d'un jour à imprimer — le dossier des
+ * tournées (décision de Hugo du 2026-10-26). Un port à lui (ISP) : la feuille
+ * seule ne lit qu'une tournée, le dossier toutes celles du jour.
+ */
+export abstract class DayRoundPapersReader {
+  /** Les tournées du jour, dans l'ordre de la flotte puis du passage ; vide : aucune. */
+  abstract roundsOn(serviceDay: string): Promise<readonly RoundPaperRow[]>;
+}
