@@ -31,9 +31,7 @@ function configureApp(granted: readonly StaffPermission[]): void {
   TestBed.configureTestingModule({
     imports: [App],
     providers: [
-      provideRouter([
-        { path: 'tour-manager', component: Blank },
-      ]),
+      provideRouter([{ path: 'tour-manager', component: Blank }]),
       {
         provide: StaffAuth,
         useValue: {
@@ -165,7 +163,10 @@ describe('les anciennes adresses de la feuille de route (2026-10-26)', () => {
 
   it.each([
     ['/livraison?jour=2026-10-27', '/tour-manager/feuille-de-route?jour=2026-10-27'],
-    ['/livraison/feuille-de-route?jour=2026-10-27', '/tour-manager/feuille-de-route?jour=2026-10-27'],
+    [
+      '/livraison/feuille-de-route?jour=2026-10-27',
+      '/tour-manager/feuille-de-route?jour=2026-10-27',
+    ],
     ['/livraison/tournees?jour=2026-10-27', '/tour-manager/tournees?jour=2026-10-27'],
   ])('%s → %s', async (from, to) => {
     expect(await land(from, ['delivery_rounds:read', 'delivery_run_sheet:read'])).toBe(to);
@@ -176,7 +177,10 @@ describe('les anciennes adresses de la feuille de route (2026-10-26)', () => {
       '/tour-manager/feuille-de-route?jour=2026-10-27',
     );
     expect(
-      await land('/tour-manager?jour=2026-10-27', ['delivery_rounds:read', 'delivery_run_sheet:read']),
+      await land('/tour-manager?jour=2026-10-27', [
+        'delivery_rounds:read',
+        'delivery_run_sheet:read',
+      ]),
     ).toBe('/tour-manager/tournees?jour=2026-10-27');
   });
 });
