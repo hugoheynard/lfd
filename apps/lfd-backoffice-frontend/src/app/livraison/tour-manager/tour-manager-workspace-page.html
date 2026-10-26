@@ -1,11 +1,31 @@
-<!-- La bande des onglets, au-dessus des vues : elle reste quand on change d'onglet. -->
-<header class="masthead" foldSurface="chrome" data-tour-manager-tabs>
-  <fold-view-nav
-    [items]="views()"
-    direction="horizontal"
-    size="compact"
-    activeStyle="fill"
-    background="transparent"
-  />
+<!-- Le bandeau, sur le modèle de celui de la Supervision : il reste quand on change d'onglet. -->
+<header class="masthead" foldSurface="chrome" data-tour-manager-masthead>
+  <div class="masthead-row">
+    <fold-view-toggle
+      ariaLabel="Ce que Tour manager montre"
+      activeStyle="raised"
+      [options]="viewOptions()"
+      [value]="view()"
+      (valueChange)="pickView($event)"
+      data-tour-manager-tabs
+    />
+    <div class="day-nav" data-day-nav>
+      <fold-view-toggle
+        ariaLabel="Jour de livraison"
+        activeStyle="raised"
+        [options]="dayOptions"
+        [value]="days.dayValue()"
+        (valueChange)="days.pickRelative($event)"
+        data-day-toggle
+      />
+      <app-day-calendar
+        [selected]="days.day()"
+        [today]="days.today"
+        [custom]="days.dayValue() === ''"
+        (pick)="days.show($event)"
+      />
+    </div>
+    <span class="stamp" data-stamp>{{ stamp() }}</span>
+  </div>
 </header>
 <router-outlet />

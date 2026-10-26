@@ -8,8 +8,12 @@ import {
   FoldPopoverTriggerDirective,
 } from 'fold-ng';
 
-import { dayLabelOf } from '../../production/worksheet-day';
-
+/** « mercredi 16 septembre » — la date lointaine, en toutes lettres sur le bouton. */
+const DAY_LABEL = new Intl.DateTimeFormat('fr-FR', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+});
 const MONTH_TITLE = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' });
 
 /** `AAAA-MM-JJ` → le 1er du mois d'avant ou d'après. */
@@ -20,16 +24,19 @@ export function shiftMonth(isoDay: string, months: number): string {
 }
 
 /**
- * **Le calendrier du masthead** (Supervision v2, A1) : un bouton, et un
+ * **Le calendrier d'un bandeau** (Supervision v2, A1) : un bouton, et un
  * popover pour toute date hors d'hier, aujourd'hui et demain. Il ne sait pas
- * naviguer : il rend un jour (`pick`), ou `null` pour revenir au jour du
- * serveur — la page porte `goTo()` et l'adresse.
+ * naviguer : il rend un jour (`pick`), ou `null` pour revenir au jour de
+ * référence (`today`) — l'écran porte l'adresse.
+ *
+ * Sorti de la Supervision le 2026-10-26 (Hugo) : le bandeau de Tour manager
+ * ouvre une date lointaine par le même contrôle.
  *
  * La grille est un `fold-calendar-month` sans événement, resserré par ses
  * variables ; le jour choisi se dit par une classe de la cellule projetée.
  */
 @Component({
-  selector: 'app-supervision-calendar',
+  selector: 'app-day-calendar',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldButtonComponent,
@@ -39,10 +46,10 @@ export function shiftMonth(isoDay: string, months: number): string {
     FoldPopoverComponent,
     FoldPopoverTriggerDirective,
   ],
-  templateUrl: './supervision-calendar.html',
-  styleUrl: './supervision-calendar.scss',
+  templateUrl: './day-calendar.html',
+  styleUrl: './day-calendar.scss',
 })
-export class SupervisionCalendar {
+export class DayCalendar {
   /** Le jour regardé, `null` tant qu'il n'est pas connu. */
   readonly selected = input<string | null>(null);
   /** Le jour du serveur — cerclé. */
@@ -64,7 +71,9 @@ export class SupervisionCalendar {
 
   protected readonly label = computed(() => {
     const selected = this.selected();
-    return this.custom() && selected !== null ? dayLabelOf(selected) : '';
+    return this.custom() && selected !== null
+      ? DAY_LABEL.format(new Date(`${selected}T00:00:00`))
+      : '';
   });
 
   protected toggle(open: boolean): void {

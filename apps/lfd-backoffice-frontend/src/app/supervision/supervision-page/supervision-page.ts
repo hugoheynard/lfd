@@ -40,7 +40,7 @@ import type { QualityRequest } from '../quality-badges';
 import { qualityContextOf } from '../quality-context';
 import { QualityBoardStore } from '../quality-board.store';
 import { ReserveShopLauncher } from '../reserve-shop-panel/reserve-shop-launcher';
-import { SupervisionCalendar } from '../supervision-calendar/supervision-calendar';
+import { DayCalendar } from '../../shared/day-calendar/day-calendar';
 import { SupervisionColumn } from '../supervision-column/supervision-column';
 import { dayDiff, dayStripOf, serviceDayParam, shiftServiceDay, stampOf } from '../supervision-day';
 import { SupervisionHighlight } from '../supervision-highlight';
@@ -103,7 +103,7 @@ const BOARD_NARROW = '(max-width: 900px)';
     PackingColumn,
     PreparationBand,
     PreparationColumn,
-    SupervisionCalendar,
+    DayCalendar,
     SupervisionColumn,
     StockBoard,
   ],

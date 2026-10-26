@@ -13,7 +13,8 @@
 
   <!--
     **La bande de tête**, sur le modèle du Prévisionnel (Hugo, 2026-10-06) : le
-    jour, ce qu'il pèse, et de quoi le changer — sur une ligne.
+    jour, ce qu'il pèse, et de quoi l'imprimer — sur une ligne. Le jour se
+    choisit au bandeau de Tour manager, commun aux deux onglets (2026-10-26).
   -->
   <fold-page-section bleed class="rs-masthead" foldSurface="chrome">
     <div class="rs-masthead-bar">
@@ -30,14 +31,7 @@
           }
         }
       </div>
-      <div class="rs-nav no-print" data-day-bar>
-        <fold-view-toggle
-          ariaLabel="Jour de livraison"
-          [options]="dayOptions"
-          [value]="dayChoice()"
-          (valueChange)="pickChoice($event)"
-        />
-        <fold-date label="Date" [value]="day()" (valueChange)="pickDate($event)" />
+      <div class="rs-nav no-print">
         <button foldButton emphasis="outline" icon="print" (click)="print()">Imprimer</button>
       </div>
     </div>

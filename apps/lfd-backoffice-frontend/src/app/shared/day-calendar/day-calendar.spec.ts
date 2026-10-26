@@ -2,12 +2,12 @@ import { Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 
-import { shiftMonth, SupervisionCalendar } from './supervision-calendar';
+import { shiftMonth, DayCalendar } from './day-calendar';
 
 @Component({
-  imports: [SupervisionCalendar],
+  imports: [DayCalendar],
   template: `
-    <app-supervision-calendar
+    <app-day-calendar
       [selected]="selected()"
       [today]="'2026-09-25'"
       [custom]="custom()"
@@ -35,7 +35,7 @@ describe('shiftMonth', () => {
   });
 });
 
-describe('SupervisionCalendar', () => {
+describe('DayCalendar', () => {
   it('un bouton d’icône seul pour hier, aujourd’hui, demain', async () => {
     const fixture = await mount();
     const element: HTMLElement = fixture.nativeElement;

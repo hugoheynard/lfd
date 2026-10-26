@@ -1,12 +1,10 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
 import type {
   DeliveryIncidentView,
   DeliveryPlacementSuggestionView,
   DeliveryRoundsDayView,
 } from '@lfd/contracts';
 
-import { dayChoiceOf, OTHER, TODAY } from './day-choice';
 import {
   composeDay,
   type ComposedDay,
@@ -24,8 +22,8 @@ import {
   NO_TIMING,
 } from './rounds-board-model';
 import { relaidBoard } from './rounds-board-lists';
-import { DAY_QUERY_PARAM, dayOfQuery, isServiceDay, parisDayOf, shiftDay } from './run-sheet';
 import { RunSheetService } from './run-sheet.service';
+import { TourManagerDay } from './tour-manager/tour-manager-day';
 
 /** Ce que l'organisateur a lu du jour : en cours, raté, ou la composition jointe. */
 export type ComposeState =
@@ -49,26 +47,19 @@ export type ComposeState =
  * chronométrage (CA5) et les places suggérées (CA7) suivent chaque lecture,
  * et une réponse lente d'une lecture dépassée n'écrase pas la bonne.
  *
- * Il tient aussi le jour affiché, lu dans l'URL et réécrit dans l'URL. Fourni
- * par la page, pas à la racine, comme {@link RoundsPreview} : le jour affiché
- * appartient à un écran.
+ * Le jour affiché est celui du bandeau de Tour manager ({@link TourManagerDay},
+ * commun aux deux onglets depuis le 2026-10-26) : la composition le lit, elle
+ * ne le choisit plus. Fourni par la page, pas à la racine, comme
+ * {@link RoundsPreview}.
  */
 @Injectable()
 export class RoundsDay {
   private readonly rounds = inject(DeliveryRoundsService);
   private readonly runSheet = inject(RunSheetService);
   private readonly routing = inject(DeliveryRoutingService);
-  private readonly route = inject(ActivatedRoute);
-  private readonly router = inject(Router);
 
-  readonly today = parisDayOf(new Date());
-  /** Le jour de l'URL (`?jour=`) s'il est lisible, sinon demain. */
-  readonly day = signal(
-    dayOfQuery(this.route.snapshot.queryParamMap.get(DAY_QUERY_PARAM)) ?? shiftDay(this.today, 1),
-  );
-  /** « Autre jour » choisi : la date s'ouvre, même sur aujourd'hui ou demain. */
-  private readonly otherPicked = signal(false);
-  readonly dayChoice = computed(() => dayChoiceOf(this.day(), this.today, this.otherPicked()));
+  /** Le jour du bandeau de Tour manager. */
+  readonly day = inject(TourManagerDay).day;
 
   readonly state = signal<ComposeState>({ status: 'loading' });
   /** Les tracés et les alertes rouges (CA5) de la composition enregistrée, chronométrée à la lecture. */
@@ -110,36 +101,6 @@ export class RoundsDay {
     const pending = this.optimistic();
     return pending === null ? board : relaidBoard(board, pending);
   });
-
-  pickChoice(value: string): void {
-    if (value === OTHER) {
-      this.otherPicked.set(true);
-      return;
-    }
-    this.otherPicked.set(false);
-    this.showDay(shiftDay(this.today, value === TODAY ? 0 : 1));
-  }
-
-  pickDate(value: string): void {
-    if (isServiceDay(value)) {
-      this.showDay(value);
-    }
-  }
-
-  /**
-   * Le jour choisi s'écrit dans l'URL — un lien partagé ou une page rechargée
-   * rouvre le même. `replaceUrl` : parcourir dix jours n'empile pas dix pages
-   * à dépiler avec « retour ».
-   */
-  private showDay(day: string): void {
-    this.day.set(day);
-    void this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: { [DAY_QUERY_PARAM]: day },
-      queryParamsHandling: 'merge',
-      replaceUrl: true,
-    });
-  }
 
   roundById(id: string): ComposedRound | null {
     return this.composed()?.rounds.find(({ round }) => round.id === id) ?? null;

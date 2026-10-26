@@ -1,11 +1,4 @@
 <fold-page-layout class="rounds-page">
-  <header class="no-print head" data-rounds-head>
-    <h1 class="head-title">Organisation de tournées</h1>
-    <span class="head-lede">
-      Répartir les livraisons entre les véhicules, puis les ranger dans l’ordre de passage.
-    </span>
-  </header>
-
   <app-composition-gaps-callout class="no-print" />
 
   @if (pdfFailed()) {
@@ -25,19 +18,8 @@
 
   <div class="page">
     <div class="no-print screen">
-      <div class="toolbar" data-day-bar>
-        <fold-view-toggle
-          ariaLabel="Jour de livraison"
-          activeStyle="solid"
-          [options]="dayOptions"
-          [value]="dayChoice()"
-          (valueChange)="pickChoice($event)"
-        />
-        @if (dayChoice() === 'other') {
-          <fold-date label="Date" [value]="day()" (valueChange)="pickDate($event)" />
-        }
-        <span class="day" data-day-label>{{ dayLabel() }}</span>
-
+      <!-- Le jour se choisit au bandeau de Tour manager, commun aux deux onglets (2026-10-26). -->
+      <div class="toolbar" data-rounds-toolbar>
         @if (board() !== null) {
           <div class="summary" data-summary>
             @if (summary().pool > 0) {

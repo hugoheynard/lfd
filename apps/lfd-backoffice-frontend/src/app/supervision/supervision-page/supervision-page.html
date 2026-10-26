@@ -51,7 +51,7 @@
           [value]="dayValue()"
           (valueChange)="pickDay($event)"
         />
-        <app-supervision-calendar
+        <app-day-calendar
           [selected]="date()"
           [today]="serverDay()"
           [custom]="dayValue() === ''"

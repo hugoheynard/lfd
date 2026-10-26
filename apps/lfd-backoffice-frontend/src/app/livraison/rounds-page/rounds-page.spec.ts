@@ -15,6 +15,7 @@ import type {
   StaffPermission,
   VehicleView,
 } from '@lfd/contracts';
+import { of } from 'rxjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { PermissionsStore } from '../../auth/permissions.store';
@@ -32,6 +33,7 @@ import { PlannerPopover } from '../planner-popover/planner-popover';
 import type { BoardDrop } from '../rounds-board-model';
 import { POOL_KEY } from '../rounds-board-model';
 import { RoundsBoard } from '../rounds-board/rounds-board';
+import { TourManagerDay } from '../tour-manager/tour-manager-day';
 import { RoundsPage } from './rounds-page';
 import { SitePaletteService } from '../../shared/logistics-colors/site-palette.service';
 
@@ -265,8 +267,13 @@ async function boot(
       { provide: MAP_TILES, useValue: { baseUrl: '', wholeFile: false } },
       {
         provide: ActivatedRoute,
-        useValue: { snapshot: { queryParamMap: convertToParamMap(query) } },
+        useValue: {
+          snapshot: { queryParamMap: convertToParamMap(query) },
+          queryParamMap: of(convertToParamMap(query)),
+        },
       },
+      // Le jour vient du bandeau de Tour manager, qui le fournit à ses onglets.
+      TourManagerDay,
       {
         provide: DeliveryRoundsService,
         useValue: {
@@ -755,25 +762,17 @@ describe('RoundsPage', () => {
     expect(wire.reads.rounds).toEqual([shiftDay(parisDayOf(new Date()), 1)]);
   });
 
-  it('« Autre jour » ouvre la date, qui s’écrit dans l’URL sans empiler l’historique', async () => {
+  it('n’a plus son propre sélecteur de jour : il lit celui du bandeau de Tour manager', async () => {
     const { fixture, element } = await boot();
-    expect(element.querySelector('[data-day-bar] fold-date')).toBeNull();
-    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
-    fixture.debugElement
-      .query(By.css('[data-day-bar] fold-view-toggle'))
-      .triggerEventHandler('valueChange', 'other');
-    fixture.detectChanges();
-    fixture.debugElement
-      .query(By.css('[data-day-bar] fold-date'))
-      .triggerEventHandler('valueChange', '2026-10-24');
+    expect(element.querySelector('[data-rounds-toolbar] fold-date')).toBeNull();
+    expect(element.querySelector('fold-view-toggle[arialabel="Jour de livraison"]')).toBeNull();
+    expect(element.querySelector('[data-rounds-head]')).toBeNull();
+
+    vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    TestBed.inject(TourManagerDay).show('2026-10-24');
     await settle(fixture);
 
     expect(wire.reads.rounds.at(-1)).toBe('2026-10-24');
-    expect(element.querySelector('[data-day-label]')?.textContent).toContain('samedi 24 octobre');
-    expect(navigate).toHaveBeenCalledWith(
-      [],
-      expect.objectContaining({ queryParams: { jour: '2026-10-24' }, replaceUrl: true }),
-    );
   });
 
   describe('l’aperçu d’une proposition (§ 6)', () => {

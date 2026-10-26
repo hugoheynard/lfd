@@ -7,46 +7,31 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import type { DeliveryRunSheetView } from '@lfd/contracts';
-import type { FoldViewToggleOption } from 'fold-ng';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
-  FoldDateComponent,
   FoldEmptyStateComponent,
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
   FoldPageSectionComponent,
   FoldSurfaceDirective,
-  FoldViewToggleComponent,
 } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { DayVersionWatcher } from '../../shared/day-version/day-version-watcher';
 import { ordersFromOtherDays } from '../delivery-rounds';
 import { DeliveryRoundsService } from '../delivery-rounds.service';
-import {
-  DAY_QUERY_PARAM,
-  dayOfQuery,
-  headlineOf,
-  isServiceDay,
-  longDayOf,
-  parisDayOf,
-  shiftDay,
-  sortStops,
-  summaryOf,
-} from '../run-sheet';
+import { headlineOf, longDayOf, sortStops, summaryOf } from '../run-sheet';
 import { RunSheetService } from '../run-sheet.service';
 import { RunSheetStop } from '../run-sheet-stop/run-sheet-stop';
+import { TourManagerDay } from '../tour-manager/tour-manager-day';
 
 type SheetState =
   | { readonly status: 'loading' }
   | { readonly status: 'error' }
   | { readonly status: 'ready'; readonly day: string; readonly view: DeliveryRunSheetView };
-
-const TODAY = '0';
-const TOMORROW = '1';
 
 /**
  * **La feuille de route du jour** — ce qui part en livraison, et comment livrer
@@ -64,7 +49,9 @@ const TOMORROW = '1';
  * (`plan-droits-par-geste.md`, DG-D8) — ni texte ni photo — et l'écran ne tente
  * pas une lecture qui serait refusée.
  *
- * Imprimable : le choix du jour et le bouton disparaissent sur papier.
+ * Le jour est celui du bandeau de Tour manager (`TourManagerDay`), commun aux
+ * deux onglets depuis le 2026-10-26 : la page ne le choisit plus, elle le lit.
+ * Imprimable : le bouton disparaît sur papier, le jour reste dit.
  */
 @Component({
   selector: 'app-livraison-page',
@@ -72,13 +59,11 @@ const TOMORROW = '1';
   imports: [
     FoldBadgeComponent,
     FoldButtonComponent,
-    FoldDateComponent,
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
     FoldPageSectionComponent,
     FoldSurfaceDirective,
-    FoldViewToggleComponent,
     RouterLink,
     RunSheetStop,
   ],
@@ -90,28 +75,8 @@ export class DeliveryPage {
   private readonly rounds = inject(DeliveryRoundsService);
   private readonly permissions = inject(PermissionsStore);
 
-  /** Le jour du poste, à Paris : le serveur n'en rend pas sans qu'on le demande. */
-  private readonly today = parisDayOf(new Date());
-
-  protected readonly dayOptions: readonly FoldViewToggleOption[] = [
-    { value: TODAY, label: 'Aujourd’hui' },
-    { value: TOMORROW, label: 'Demain' },
-  ];
-
-  private readonly router = inject(Router);
-  private readonly route = inject(ActivatedRoute);
-
-  /** Le jour de l'URL (`?jour=`) s'il est lisible, sinon demain. */
-  protected readonly day = signal(
-    dayOfQuery(this.route.snapshot.queryParamMap.get(DAY_QUERY_PARAM)) ?? shiftDay(this.today, 1),
-  );
-  protected readonly dayChoice = computed(() => {
-    const day = this.day();
-    if (day === this.today) {
-      return TODAY;
-    }
-    return day === shiftDay(this.today, 1) ? TOMORROW : '';
-  });
+  /** Le jour du bandeau de Tour manager, commun aux deux onglets. */
+  protected readonly day = inject(TourManagerDay).day;
 
   protected readonly state = signal<SheetState>({ status: 'loading' });
   private readonly reload = signal(0);
@@ -162,31 +127,6 @@ export class DeliveryPage {
     return (
       this.permissions.can('delivery_rounds:read') || this.permissions.can('delivery_loading:read')
     );
-  }
-
-  protected pickChoice(value: string): void {
-    this.showDay(shiftDay(this.today, value === TODAY ? 0 : 1));
-  }
-
-  protected pickDate(value: string): void {
-    if (isServiceDay(value)) {
-      this.showDay(value);
-    }
-  }
-
-  /**
-   * Le jour choisi s'écrit dans l'URL — un lien partagé ou une page rechargée
-   * rouvre le même. `replaceUrl` : parcourir dix jours n'empile pas dix pages
-   * à dépiler avec « retour ».
-   */
-  private showDay(day: string): void {
-    this.day.set(day);
-    void this.router.navigate([], {
-      relativeTo: this.route,
-      queryParams: { [DAY_QUERY_PARAM]: day },
-      queryParamsHandling: 'merge',
-      replaceUrl: true,
-    });
   }
 
   protected retry(): void {

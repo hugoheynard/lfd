@@ -6,6 +6,7 @@ export type SpecimenKey =
   | 'order-sheet-public'
   | 'atelier-sheet'
   | 'round-paper'
+  | 'rounds-dossier'
   | 'invoice'
   | 'sepa-mandate-b2b'
   | 'sepa-mandate-core'
@@ -24,6 +25,7 @@ export const SPECIMEN_LABELS: Readonly<Record<SpecimenKey, string>> = {
   'order-sheet-public': 'Confirmation de commande — public',
   'atelier-sheet': "Fiche d'atelier",
   'round-paper': 'Feuille de tournée (livreur)',
+  'rounds-dossier': 'Dossier des tournées du jour',
   invoice: 'Facture Factur-X',
   'sepa-mandate-b2b': 'Mandat SEPA interentreprises (B2B)',
   'sepa-mandate-core': 'Mandat SEPA CORE',
@@ -59,7 +61,12 @@ function group(title: string, keys: readonly SpecimenKey[]): SpecimenGroup {
  */
 export const SPECIMEN_GROUPS: readonly SpecimenGroup[] = [
   group('Bons chiffrés', ['order-sheet-pro', 'order-sheet-public', 'delivery-note-client-pro']),
-  group('Bons non chiffrés', ['atelier-sheet', 'round-paper', 'delivery-note-carrier']),
+  group('Bons non chiffrés', [
+    'atelier-sheet',
+    'round-paper',
+    'rounds-dossier',
+    'delivery-note-carrier',
+  ]),
   group('Fournil', ['production-count', 'day-dossier']),
   group('Factures', ['invoice']),
   group('Mandats', ['sepa-mandate-b2b', 'sepa-mandate-core']),

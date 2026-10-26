@@ -1,32 +1,10 @@
-/* La bande d'en-tête collée sous le header de l'app, pleine largeur (comme `.lr-head`). */
+/* Le contenu porte sa gouttière (`.page`) : la barre d'outils va d'un bord à l'autre. */
 .rounds-page {
   --fold-page-gutter: 0px;
   --fold-page-pad-top: 0px;
 }
 
-.head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--fold-space-md);
-  padding: var(--fold-space-md) var(--fold-space-lg);
-  border-top: 1px solid color-mix(in srgb, var(--fold-color-bg-header) 85%, var(--fold-ref-white));
-  background: color-mix(in srgb, var(--fold-color-bg-header) 94%, var(--fold-ref-white));
-  color: var(--fold-ref-white);
-}
-
-.head-title {
-  margin: 0;
-  font-size: var(--fold-text-md);
-  font-weight: var(--fold-weight-bold);
-}
-
-.head-lede {
-  color: color-mix(in srgb, var(--fold-ref-white) 60%, var(--fold-color-bg-header));
-  font-size: var(--fold-text-sm);
-}
-
-/* La gouttière revient au contenu, l'en-tête seul va d'un bord à l'autre. */
+/* La gouttière revient au contenu, la barre d'outils seule va d'un bord à l'autre. */
 .page {
   padding: 0 var(--fold-space-lg) var(--fold-space-lg);
   min-inline-size: 0;
@@ -74,11 +52,6 @@
   --b-base: var(--fold-color-text);
   --b-strong: color-mix(in srgb, var(--fold-color-text) 84%, var(--fold-color-bg-page));
   --b-on: var(--fold-color-surface-card);
-}
-
-.day {
-  font-weight: var(--fold-weight-bold);
-  white-space: nowrap;
 }
 
 .summary,

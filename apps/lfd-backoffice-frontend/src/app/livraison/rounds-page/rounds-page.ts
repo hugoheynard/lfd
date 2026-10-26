@@ -16,23 +16,20 @@ import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
-  FoldDateComponent,
   FoldDropdownComponent,
   FoldDropdownItemComponent,
   FoldPageLayoutComponent,
   FoldPanelHostService,
   FoldPopoverTriggerDirective,
   FoldToastComponent,
-  FoldViewToggleComponent,
 } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { DayVersionWatcher } from '../../shared/day-version/day-version-watcher';
-import { DAY_OPTIONS } from '../day-choice';
 import { DayReadinessBanner } from '../day-readiness-banner/day-readiness-banner';
 import type { MapDeparture } from '../delivery-map/delivery-map';
 import { vehicleColors } from '../delivery-planning';
-import { serviceDayLabel, vehiclesActiveOn } from '../delivery-rounds';
+import { vehiclesActiveOn } from '../delivery-rounds';
 import { DeliveryIncidentsService } from '../delivery-incidents.service';
 import { modeLabel } from '../delivery-routing';
 import { canReadDeliverySettings } from '../delivery-settings-access';
@@ -91,13 +88,11 @@ const UNDO_MS = 8000;
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCardComponent,
-    FoldDateComponent,
     FoldDropdownComponent,
     FoldDropdownItemComponent,
     FoldPageLayoutComponent,
     FoldPopoverTriggerDirective,
     FoldToastComponent,
-    FoldViewToggleComponent,
     CompositionGapsCallout,
     DayReadinessBanner,
     PlannerPopover,
@@ -119,9 +114,7 @@ export class RoundsPage {
   /** La palette des sites — la pastille de chaque arrêt (plan du tri et des couleurs, L1b). */
   protected readonly palette = inject(SitePaletteStore);
 
-  protected readonly dayOptions = DAY_OPTIONS;
   protected readonly day = this.read.day;
-  protected readonly dayChoice = this.read.dayChoice;
 
   protected readonly state = this.read.state;
   /** La dernière lecture finie : le bandeau du plan arrêté se relit une fois par lecture. */
@@ -217,7 +210,6 @@ export class RoundsPage {
       (this.preview.applyPayload()?.rounds.length ?? 0) > 0,
   );
 
-  protected readonly dayLabel = computed(() => serviceDayLabel(this.day()));
   protected readonly kmLabel = roundKmLabel;
   protected readonly undoMs = UNDO_MS;
 
@@ -261,9 +253,6 @@ export class RoundsPage {
       }
     });
   }
-
-  protected readonly pickChoice = (value: string): void => this.read.pickChoice(value);
-  protected readonly pickDate = (value: string): void => this.read.pickDate(value);
 
   protected retry(): void {
     this.reload.update((n) => n + 1);

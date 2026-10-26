@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
-import { By } from '@angular/platform-browser';
 import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
 import type { DeliveryRoundsDayView, DeliveryRunSheetView } from '@lfd/contracts';
+import { of } from 'rxjs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { PermissionsStore } from '../../auth/permissions.store';
@@ -10,6 +10,7 @@ import { DeliveryRoundsService } from '../delivery-rounds.service';
 import { parisDayOf, shiftDay } from '../run-sheet';
 import { stopOf } from '../run-sheet.fixture';
 import { RunSheetService } from '../run-sheet.service';
+import { TourManagerDay } from '../tour-manager/tour-manager-day';
 import { DeliveryPage } from './livraison-page';
 
 /** Le veilleur de journée, doublé : le test déclenche la relecture qu'on lui confie. */
@@ -34,8 +35,13 @@ async function mount(
     providers: [
       {
         provide: ActivatedRoute,
-        useValue: { snapshot: { queryParamMap: convertToParamMap(query) } },
+        useValue: {
+          snapshot: { queryParamMap: convertToParamMap(query) },
+          queryParamMap: of(convertToParamMap(query)),
+        },
       },
+      // Le jour vient du bandeau de Tour manager, qui le fournit à ses onglets.
+      TourManagerDay,
       {
         provide: RunSheetService,
         useValue: {
@@ -163,21 +169,20 @@ describe('DeliveryPage', () => {
     ]);
   });
 
-  it('écrit le jour choisi dans l’URL sans empiler l’historique', async () => {
-    const { fixture, asked } = await mount((day) =>
+  it('n’a plus son propre sélecteur de jour : il lit celui du bandeau de Tour manager', async () => {
+    const { fixture, element, asked } = await mount((day) =>
       Promise.resolve({ day, roundCount: 0, stops: [] }),
     );
-    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
-    fixture.debugElement
-      .query(By.css('fold-date'))
-      .triggerEventHandler('valueChange', '2026-10-24');
+    expect(element.querySelector('fold-date')).toBeNull();
+    expect(element.querySelector('fold-view-toggle')).toBeNull();
+    expect(element.querySelector('[data-day-bar]')).toBeNull();
+
+    vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    TestBed.inject(TourManagerDay).show('2026-10-24');
+    fixture.detectChanges();
     await fixture.whenStable();
 
     expect(asked.at(-1)).toBe('2026-10-24');
-    expect(navigate).toHaveBeenCalledWith(
-      [],
-      expect.objectContaining({ queryParams: { jour: '2026-10-24' }, replaceUrl: true }),
-    );
   });
 
   it('nomme à la feuille les rapportées placées ce jour-là, pour qui lit les tournées (§ 4)', async () => {

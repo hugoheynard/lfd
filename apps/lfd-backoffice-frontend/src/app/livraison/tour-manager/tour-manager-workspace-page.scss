@@ -2,14 +2,40 @@
   display: block;
 }
 
-/* `foldSurface` bascule la polarité, sans peindre : le fond se pose ici,
-   celui de la barre de l'app — comme la bande de Prod manager. */
+/* Le bandeau de la Supervision : le fond du rail secondaire, un filet du
+   chrome dessous ; `foldSurface` bascule la polarité, sans peindre. */
 .masthead {
-  padding: var(--fold-space-sm) var(--fold-page-gutter) 0;
-  background: var(--fold-color-bg-header);
+  padding: var(--fold-space-sm) var(--fold-page-gutter);
+  background: var(--fold-color-bg-rail-secondary);
+  border-bottom: 1px solid var(--fold-color-bg-header);
 }
 
-/* La feuille de route s'imprime sans les onglets. */
+.masthead-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm) var(--fold-space-lg);
+}
+
+.day-nav {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}
+
+/* La date et l'heure, à droite — `margin-left: auto` pousse, il n'espace pas. */
+.stamp {
+  flex: none;
+  margin-left: auto;
+  padding: var(--fold-space-xs) var(--fold-space-sm);
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-xs);
+  white-space: nowrap;
+  color: var(--fold-ref-navyink-200);
+}
+
+/* La feuille de route s'imprime sans le bandeau. */
 @media print {
   .masthead {
     display: none;
