@@ -236,6 +236,18 @@ describe('ContactCardSettings', () => {
     });
   });
 
+  it('formulaire coupé sans numéro pour la clientèle : le refus se dit avant d’enregistrer', async () => {
+    const api = new FakeContact(DEFAULT_CONTACT_SETTINGS);
+    const fixture = await mount(api);
+    host(fixture).querySelector<HTMLInputElement>('[data-show-form] input')?.click();
+    fixture.detectChanges();
+
+    expect(host(fixture).querySelector('[data-issue]')?.textContent).toContain(
+      'Ajoutez un numéro, réaffichez le formulaire ou écrivez un message',
+    );
+    expect(save(fixture)?.disabled).toBe(true);
+  });
+
   it('la bascule de langue signale ce qui n’est pas écrit', async () => {
     const fixture = await mount(new FakeContact(DEFAULT_CONTACT_SETTINGS));
     type(fixture, '[data-kicker] input', 'Surtitre');

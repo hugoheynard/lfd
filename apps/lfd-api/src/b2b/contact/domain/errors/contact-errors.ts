@@ -58,6 +58,21 @@ export class ContactCardSilentError extends DomainError {
   }
 }
 
+/**
+ * Une carte qui affiche le numéro alors qu'aucun numéro actif n'est réglé pour
+ * sa clientèle, formulaire coupé et sans message : elle n'offrirait aucun
+ * geste (décision de Hugo, 2026-10-26). Levée en posant la carte comme en
+ * retirant le dernier numéro.
+ */
+export class ContactCardUnreachableError extends BusinessError {
+  constructor(card: string) {
+    super(
+      "contact.card.unreachable",
+      `${card} n'offrirait aucun moyen de joindre la boutique : elle affiche le numéro, mais aucun numéro actif n'est réglé pour sa clientèle, et son formulaire est coupé. Ajoutez un numéro, réaffichez le formulaire ou écrivez un message « sans contact ».`,
+    );
+  }
+}
+
 /** Un rang (motif, numéro) qui n'est pas un entier positif. */
 export class ContactPositionInvalidError extends DomainError {
   constructor(position: number) {

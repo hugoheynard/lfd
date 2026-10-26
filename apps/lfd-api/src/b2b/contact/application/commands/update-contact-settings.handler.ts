@@ -4,11 +4,13 @@ import { Clock } from "../../../../platform/time/clock.js";
 import { StaffDirectory } from "../../../account/domain/ports/staff-directory.js";
 import { authorOf } from "../../../feature-access/application/feature-access-author.js";
 import { ContactSettings } from "../../domain/contact-settings.js";
+import { ContactPhoneReader } from "../../domain/ports/contact-phone.reader.js";
 import { ContactSettingsRepository } from "../../domain/ports/contact-settings.repository.js";
 import { UpdateContactSettingsCommand } from "./update-contact-settings.command.js";
 
 /**
- * Pose la carte de contact — le réglage entier, d'un bloc.
+ * Pose la carte de contact — le réglage entier, d'un bloc. Lit les numéros
+ * réglés : une carte qui affiche le numéro sans en avoir est refusée.
  *
  * @sans-journal un réglage de textes sans règle de refus métier ; la ligne
  * porte son instant et son auteur, comme `order_opening_settings`.
@@ -20,14 +22,16 @@ export class UpdateContactSettingsHandler implements ICommandHandler<
 > {
   constructor(
     private readonly settings: ContactSettingsRepository,
+    private readonly phones: ContactPhoneReader,
     private readonly staff: StaffDirectory,
     private readonly clock: Clock,
   ) {}
 
   async execute(command: UpdateContactSettingsCommand): Promise<void> {
     const author = await authorOf(this.staff, command.staffUserId);
+    const phones = await this.phones.list();
     await this.settings.put(
-      ContactSettings.pose({ settings: command.payload, at: this.clock.now(), author }),
+      ContactSettings.pose({ settings: command.payload, at: this.clock.now(), author, phones }),
     );
   }
 }

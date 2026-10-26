@@ -70,17 +70,29 @@ describe('previewOf — la carte selon ses deux interrupteurs (Hugo, 2026-10-26)
 
 describe('draftIssue', () => {
   it('rien à redire sur le réglage par défaut', () => {
-    expect(draftIssue(DEFAULT_CONTACT_SETTINGS)).toBe('');
+    expect(draftIssue(DEFAULT_CONTACT_SETTINGS, [])).toBe('');
   });
 
   it('refuse une carte sans numéro ni formulaire qui ne dit rien, en la nommant', () => {
-    expect(draftIssue(withB2c({ showPhone: false, showForm: false }))).toContain(
+    expect(draftIssue(withB2c({ showPhone: false, showForm: false }), [])).toContain(
       'Carte particuliers : une carte sans numéro ni formulaire doit dire quelque chose',
     );
   });
 
+  it('refuse une carte au numéro affiché sans numéro de sa clientèle, formulaire coupé (2026-10-26)', () => {
+    const phoneOnly = withB2c({ showForm: false });
+    expect(draftIssue(phoneOnly, [{ ...PHONE, audience: 'b2b' }])).toContain(
+      'Ajoutez un numéro, réaffichez le formulaire ou écrivez un message',
+    );
+    expect(draftIssue(phoneOnly, [{ ...PHONE, active: false }])).not.toBe('');
+    expect(draftIssue(phoneOnly, [PHONE])).toBe('');
+    expect(draftIssue(withB2c({ showForm: false, noContactMessage: text('Bientôt') }), [])).toBe(
+      '',
+    );
+  });
+
   it('refuse un mot de bouton trop long', () => {
-    expect(draftIssue(withB2c({ writeLabel: text('x'.repeat(41)) }))).toContain(
+    expect(draftIssue(withB2c({ writeLabel: text('x'.repeat(41)) }), [])).toContain(
       'Bouton d’écriture trop long (40 caractères au plus)',
     );
   });

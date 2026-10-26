@@ -1,7 +1,11 @@
 import { DEFAULT_CONTACT_SETTINGS } from "@lfd/contracts";
 
 import { ContactSettings } from "../contact-settings.js";
-import { ContactCardSilentError, ContactTextTooLongError } from "../errors/contact-errors.js";
+import {
+  ContactCardSilentError,
+  ContactCardUnreachableError,
+  ContactTextTooLongError,
+} from "../errors/contact-errors.js";
 
 const AUTHOR = { staffUserId: "staff_1", name: "Camille", role: "admin" };
 
@@ -17,6 +21,7 @@ describe("ContactSettings — la carte de contact", () => {
       },
       at: new Date(0),
       author: AUTHOR,
+      phones: [],
     });
     expect(settings.cards.b2b.title.fr).toBe("Une question ?");
     expect(settings.cards.b2b.kicker.fr).toBe("Une question ?");
@@ -35,6 +40,7 @@ describe("ContactSettings — la carte de contact", () => {
         },
         at: new Date(0),
         author: AUTHOR,
+        phones: [],
       }),
     ).toThrow(ContactTextTooLongError);
   });
@@ -51,13 +57,18 @@ describe("ContactSettings — la carte de contact", () => {
         },
         at: new Date(0),
         author: AUTHOR,
+        phones: [],
       }),
     ).toThrow(ContactTextTooLongError);
   });
 
   describe("les interrupteurs et le message sans contact (Hugo, 2026-10-26)", () => {
     const EMPTY = { fr: "", en: "", it: "" };
-    const pose = (b2c: Partial<typeof DEFAULT_CONTACT_SETTINGS.cards.b2c>) =>
+    const B2C_PHONE = { audience: "b2c" as const, active: true };
+    const pose = (
+      b2c: Partial<typeof DEFAULT_CONTACT_SETTINGS.cards.b2c>,
+      phones: readonly { audience: "b2b" | "b2c" | "both"; active: boolean }[] = [B2C_PHONE],
+    ) =>
       ContactSettings.pose({
         settings: {
           cards: {
@@ -67,6 +78,7 @@ describe("ContactSettings — la carte de contact", () => {
         },
         at: new Date(0),
         author: AUTHOR,
+        phones,
       });
 
     it("par défaut, numéro et formulaire sont affichés", () => {
@@ -99,7 +111,11 @@ describe("ContactSettings — la carte de contact", () => {
       expect(settings.cards.b2c.noContactMessage.fr).toBe("Nous vous contacterons bientôt");
     });
 
-    it("un seul interrupteur coupé : le message peut rester vide", () => {
+    it("affiche le numéro sans numéro réglé, formulaire coupé, sans message : refusé", () => {
+      expect(() => pose({ showForm: false }, [])).toThrow(ContactCardUnreachableError);
+    });
+
+    it("un seul interrupteur coupé : le message peut rester vide, s'il reste un numéro", () => {
       expect(pose({ showPhone: false }).cards.b2c.showForm).toBe(true);
       expect(pose({ showForm: false }).cards.b2c.showPhone).toBe(true);
     });

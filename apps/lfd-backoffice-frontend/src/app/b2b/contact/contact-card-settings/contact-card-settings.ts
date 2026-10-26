@@ -117,7 +117,7 @@ export class ContactCardSettings {
   /** Ce qui empêche l'envoi, en clair — ou `''`. */
   protected readonly issue = computed(() => {
     const draft = this.draft();
-    return draft === null ? '' : draftIssue(draft);
+    return draft === null ? '' : draftIssue(draft, this.phones());
   });
 
   /** La carte montrée n'offre ni numéro ni formulaire : son message devient obligatoire. */

@@ -5,6 +5,7 @@ import {
 } from "@lfd/contracts";
 
 import type { StaffTrace } from "../../account/domain/value-objects/staff-trace.js";
+import { assertCardsReachable, CARD_NAMES, type ReachPhone } from "./contact-reach.js";
 import { localizedText } from "./contact-text.js";
 import { ContactCardSilentError } from "./errors/contact-errors.js";
 
@@ -15,7 +16,8 @@ import { ContactCardSilentError } from "./errors/contact-errors.js";
  * Pas un agrégat : un réglage unique sans transition, comme `OrderOpening`.
  * Ce qu'elle garantit : des textes rognés et bornés, la TRACE — un réglage
  * posé porte son instant et son auteur —, et qu'une carte qui n'offre ni
- * numéro ni formulaire dit quelque chose (décision de Hugo, 2026-10-26). Un
+ * numéro ni formulaire dit quelque chose, et qu'une carte qui affiche le
+ * numéro en a un (décision de Hugo, 2026-10-26). Un
  * autre texte vide est permis : il fait retomber la boutique sur son dictionnaire.
  */
 export class ContactSettings {
@@ -29,16 +31,16 @@ export class ContactSettings {
     readonly settings: Pick<PublicContactSettingsView, "cards">;
     readonly at: Date;
     readonly author: StaffTrace;
+    /** Les numéros réglés : une carte qui affiche le numéro doit en avoir un. */
+    readonly phones: readonly ReachPhone[];
   }): ContactSettings {
     const { settings } = input;
-    return new ContactSettings(
-      {
-        b2b: card("Carte pros", settings.cards.b2b),
-        b2c: card("Carte particuliers", settings.cards.b2c),
-      },
-      input.at,
-      input.author,
-    );
+    const cards = {
+      b2b: card(CARD_NAMES.b2b, settings.cards.b2b),
+      b2c: card(CARD_NAMES.b2c, settings.cards.b2c),
+    };
+    assertCardsReachable(cards, input.phones);
+    return new ContactSettings(cards, input.at, input.author);
   }
 }
 

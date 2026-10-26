@@ -124,8 +124,16 @@ la priorité, la cloche, le compteur et l'anonymisation ne bougent pas.
   `ContactSettings.pose` refuse le réglage s'il est vide en français
   (`ContactCardSilentError`, 400 : « une carte sans numéro ni formulaire doit
   dire quelque chose »). Si la carte affiche le numéro mais qu'aucun n'est
-  réglé et que le formulaire est coupé, la boutique montre le message s'il
-  est écrit, et rien sinon.
+  réglé et que le formulaire est coupé, la boutique montre le message — et
+  sans message, ce réglage est refusé (règle suivante).
+- **Une carte offre toujours un geste** (décision de Hugo, 2026-10-26) : une
+  carte qui affiche le numéro alors qu'aucun numéro actif n'est réglé pour sa
+  clientèle (`both` compris), formulaire coupé et message vide, n'existe pas.
+  `assertCardsReachable` (`domain/contact-reach.ts`) la refuse
+  (`ContactCardUnreachableError`, 409 : « Ajoutez un numéro, réaffichez le
+  formulaire ou écrivez un message ») en posant la carte — le handler lit les
+  numéros — comme en archivant, désactivant ou changeant de clientèle le
+  dernier numéro qui la servait. Le back-office le dit avant d'enregistrer.
 - **Les mots des deux boutons** (décision de Hugo, 2026-10-26) : « Appeler »
   et « Écrire » se règlent par public et par langue ; vides, la boutique garde
   ceux de son dictionnaire (`accueil-public.copy.ts`, §contact), que l'aperçu

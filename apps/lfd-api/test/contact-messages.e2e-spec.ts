@@ -352,6 +352,43 @@ describe("le staff traite", () => {
   });
 });
 
+/** Décision de Hugo du 2026-10-26 : une carte qui affiche le numéro en a un. */
+describe("une carte n'existe pas sans geste", () => {
+  it("refuse de poser une carte pros au numéro affiché sans numéro pro, puis d'en archiver le dernier", async () => {
+    const phoneOnly: ContactSettingsPayload = {
+      cards: {
+        ...DEFAULT_CONTACT_SETTINGS.cards,
+        b2b: { ...DEFAULT_CONTACT_SETTINGS.cards.b2b, showForm: false },
+      },
+    };
+    const refused = await staff().put("/admin/contact/settings").send(phoneOnly).expect(409);
+    expect(JSON.stringify(refused.body)).toContain(
+      "Ajoutez un numéro, réaffichez le formulaire ou écrivez un message",
+    );
+
+    const pro = jsonBody<CreatedIdResponse>(
+      await staff()
+        .post("/admin/contact/phones")
+        .send({
+          label: { fr: "Service pro", en: "", it: "" },
+          audience: "b2b",
+          number: "04 79 33 33 33",
+          position: 0,
+          active: true,
+        })
+        .expect(201),
+    ).id;
+    await staff().put("/admin/contact/settings").send(phoneOnly).expect(204);
+
+    const archive = await staff().post(`/admin/contact/phones/${pro}/archive`).expect(409);
+    expect(JSON.stringify(archive.body)).toContain("Carte pros");
+    const shown = jsonBody<PublicContactSettingsView>(
+      await visitor().get("/contact-settings").expect(200),
+    );
+    expect(shown.phones.map((phone) => phone.number)).toContain("04 79 33 33 33");
+  });
+});
+
 describe("l'anonymisation à douze mois", () => {
   it("vide un traité il y a plus d'un an ET un jamais traité reçu il y a plus d'un an — pas les récents", async () => {
     const subjectId = await createSubject();

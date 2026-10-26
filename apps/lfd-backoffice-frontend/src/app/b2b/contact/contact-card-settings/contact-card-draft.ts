@@ -41,10 +41,29 @@ export function offersNothing(card: ContactCardText): boolean {
 }
 
 /**
+ * La carte affiche le numéro sans en avoir, formulaire coupé, sans message —
+ * la règle que le domaine tient aussi (`contact-reach.ts`, décision de Hugo,
+ * 2026-10-26).
+ */
+function offersNoGesture(
+  card: ContactCardText,
+  phones: readonly ContactPhoneView[],
+  audience: CustomerAudience,
+): boolean {
+  const hasPhone = phones.some(
+    (p) => p.active && (p.audience === 'both' || p.audience === audience),
+  );
+  return card.showPhone && !hasPhone && !card.showForm && card.noContactMessage.fr.trim() === '';
+}
+
+/**
  * Ce qui empêche l'envoi, en clair — ou `''`. Le domaine refuse la même chose ;
  * le dire avant évite un aller-retour, pas la règle.
  */
-export function draftIssue(draft: ContactSettingsPayload): string {
+export function draftIssue(
+  draft: ContactSettingsPayload,
+  phones: readonly ContactPhoneView[],
+): string {
   for (const audience of AUDIENCES) {
     const card = draft.cards[audience];
     for (const [part, sentence, max] of PART_BOUNDS) {
@@ -54,6 +73,9 @@ export function draftIssue(draft: ContactSettingsPayload): string {
     }
     if (offersNothing(card) && card.noContactMessage.fr.trim() === '') {
       return `${CARD_NAMES[audience]} : une carte sans numéro ni formulaire doit dire quelque chose. Écrivez le message « sans contact » en français, ou réaffichez le numéro ou le formulaire.`;
+    }
+    if (offersNoGesture(card, phones, audience)) {
+      return `${CARD_NAMES[audience]} n’offrirait aucun moyen de joindre la boutique : elle affiche le numéro, mais aucun numéro actif n’est réglé pour sa clientèle, et son formulaire est coupé. Ajoutez un numéro, réaffichez le formulaire ou écrivez un message « sans contact ».`;
     }
   }
   return '';
