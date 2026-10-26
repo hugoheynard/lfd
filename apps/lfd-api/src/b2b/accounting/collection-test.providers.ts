@@ -15,6 +15,7 @@ import { CollectionTestReturnTargetsReader } from "./domain/ports/collection-tes
 import { CollectionTestRepository } from "./domain/ports/collection-test.repository.js";
 import { CollectionTestsReader } from "./domain/ports/collection-tests.reader.js";
 import { EstablishmentCompaniesReader } from "./domain/ports/establishment-companies.reader.js";
+import { MandateCollectionTestsReader } from "./domain/ports/mandate-collection-tests.reader.js";
 import { OwnEstablishmentRepository } from "./domain/ports/own-establishment.repository.js";
 import { OwnEstablishmentsReader } from "./domain/ports/own-establishments.reader.js";
 import { AdminCollectionTestsController } from "./http/admin-collection-tests.controller.js";
@@ -25,6 +26,7 @@ import {
   PrismaCollectionTestFileReader,
   PrismaCollectionTestReturnTargetsReader,
   PrismaCollectionTestsReader,
+  PrismaMandateCollectionTestsReader,
 } from "./infrastructure/prisma-collection-tests.reader.js";
 import {
   PrismaEstablishmentCompaniesReader,
@@ -48,6 +50,7 @@ export const COLLECTION_TEST_PROVIDERS: readonly Provider[] = [
   { provide: BatchedMandatesReader, useClass: PrismaBatchedMandatesReader },
   { provide: CollectionTestRepository, useClass: PrismaCollectionTestRepository },
   { provide: CollectionTestsReader, useClass: PrismaCollectionTestsReader },
+  { provide: MandateCollectionTestsReader, useClass: PrismaMandateCollectionTestsReader },
   { provide: CollectionTestFileReader, useClass: PrismaCollectionTestFileReader },
   { provide: CollectionTestReturnTargetsReader, useClass: PrismaCollectionTestReturnTargetsReader },
   DeclareOwnEstablishmentHandler,

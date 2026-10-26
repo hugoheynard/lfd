@@ -10,6 +10,7 @@ import type {
   CollectionTestsView,
 } from "@lfd/contracts";
 import { instantToLocal } from "@lfd/contracts";
+import { LOOKALIKE_WINDOW_DAYS } from "../src/b2b/accounting/domain/services/collection-test-lookalike.js";
 import { TEST_COLLECTION_MIN_BUSINESS_DAYS } from "../src/b2b/accounting/domain/services/collection-test-file.js";
 import { businessDaysAfter } from "../src/b2b/accounting/domain/services/target2-calendar.js";
 import { pain008XsdErrors } from "../src/b2b/accounting/domain/services/__tests__/pain008-xsd.js";
@@ -71,6 +72,29 @@ describe("générer un prélèvement d'essai", () => {
     await generate(companyId, { requestedCollectionDay: day, amountCents: 101 }).expect(400);
     await generate(companyId, { requestedCollectionDay: day, sequence: "FNAL" }).expect(400);
     expect(await ctx.prisma.collectionTest.count()).toBe(0);
+  });
+
+  it("refuse le même montant qu'un essai récent du même mandat (409), admet un autre montant, puis le même passé quinze jours", async () => {
+    const entityId = await entity();
+    const { companyId } = await ourCompany(entityId);
+    await declare(companyId);
+    const day = await proposedDay();
+    const first = jsonBody<CollectionTestCreatedView>(
+      await generate(companyId, { requestedCollectionDay: day, amountCents: 50 }).expect(201),
+    );
+
+    const refused = await generate(companyId, {
+      requestedCollectionDay: day,
+      amountCents: 50,
+    }).expect(409);
+    expect(JSON.stringify(refused.body)).toContain(`ESS-${first.testId}`);
+    expect(JSON.stringify(refused.body)).toContain("Choisissez un autre montant");
+    await generate(companyId, { requestedCollectionDay: day, amountCents: 49 }).expect(201);
+
+    clock.set(new Date(clock.now().getTime() + (LOOKALIKE_WINDOW_DAYS + 1) * DAY_MS));
+    const later = await proposedDay();
+    await generate(companyId, { requestedCollectionDay: later, amountCents: 50 }).expect(201);
+    expect(await ctx.prisma.collectionTest.count()).toBe(3);
   });
 
   it("refuse OOFF sur un mandat ponctuel qu'un lot réel porte (409)", async () => {

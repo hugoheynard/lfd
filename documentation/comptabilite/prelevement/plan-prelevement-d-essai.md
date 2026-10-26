@@ -2,7 +2,10 @@
 
 > 📬 **2026-10-23** : Q7 a sa réponse — la banque n'exige plus `FRST`, tout
 > peut partir en `RCUR` (garder `FRST` dans l'essai est la décision D3 de
-> [`reponses-de-la-banque.md`](reponses-de-la-banque.md)). L'hypothèse « J + 2 jours ouvrés » tient : la banque dit
+> [`reponses-de-la-banque.md`](reponses-de-la-banque.md) — **tranchée par Hugo
+> le 2026-10-26** : `FRST` reste, `RCUR` par défaut ; et un essai ne répète
+> plus le montant d'un essai récent du même mandat, cf. `prelevement-sepa.md`
+> §7 bis). L'hypothèse « J + 2 jours ouvrés » tient : la banque dit
 > « au plus tard J-2 » et, ailleurs, J-1 avant 13 h 45 en B2B. Le test se fait
 > **en envoyant le fichier par mail** à la banque.
 

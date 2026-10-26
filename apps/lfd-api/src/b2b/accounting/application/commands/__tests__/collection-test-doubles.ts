@@ -15,6 +15,8 @@ import {
   CollectionTestReturnTargetsReader,
   type CollectionTestReturnTarget,
 } from "../../../domain/ports/collection-test-return-targets.reader.js";
+import { MandateCollectionTestsReader } from "../../../domain/ports/mandate-collection-tests.reader.js";
+import type { PriorCollectionTest } from "../../../domain/services/collection-test-lookalike.js";
 
 /** Les essais en mémoire ; `save` crée ou réécrit. */
 export class MemoryCollectionTests extends CollectionTestRepository {
@@ -39,6 +41,26 @@ export class MemoryCollectionTests extends CollectionTestRepository {
     this.saveCount += 1;
     this.saved.set(test.id, test);
     return Promise.resolve();
+  }
+}
+
+/** Les essais d'un mandat, lus dans la mémoire des essais gardés. */
+export class MemoryMandateCollectionTests extends MandateCollectionTestsReader {
+  constructor(private readonly tests: MemoryCollectionTests) {
+    super();
+  }
+
+  generatedSince(mandateId: string, since: Date): Promise<readonly PriorCollectionTest[]> {
+    return Promise.resolve(
+      [...this.tests.saved.values()]
+        .map((test) => test.toPersistence())
+        .filter((state) => state.mandateId === mandateId && state.created.at >= since)
+        .map((state) => ({
+          endToEndId: state.endToEndId,
+          amountCents: state.amountCents,
+          createdAt: state.created.at,
+        })),
+    );
   }
 }
 

@@ -14,6 +14,8 @@ import {
   CollectionTestsReader,
   type CollectionTestSummary,
 } from "../domain/ports/collection-tests.reader.js";
+import { MandateCollectionTestsReader } from "../domain/ports/mandate-collection-tests.reader.js";
+import type { PriorCollectionTest } from "../domain/services/collection-test-lookalike.js";
 import { toCollectionTestState } from "./collection-test.mapper.js";
 
 /** La liste « Essais », du plus récent au plus ancien. Le fichier n'en sort pas. */
@@ -112,5 +114,22 @@ export class PrismaCollectionTestReturnTargetsReader extends CollectionTestRetur
         },
       ]),
     );
+  }
+}
+
+/** Les essais d'un mandat depuis un instant — la garde anti-doublon les compare. */
+@Injectable()
+export class PrismaMandateCollectionTestsReader extends MandateCollectionTestsReader {
+  constructor(private readonly prisma: PrismaService) {
+    super();
+  }
+
+  async generatedSince(mandateId: string, since: Date): Promise<readonly PriorCollectionTest[]> {
+    const rows = await this.prisma.collectionTest.findMany({
+      where: { mandateId, createdAt: { gte: since } },
+      select: { endToEndId: true, amountCents: true, createdAt: true },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    });
+    return rows;
   }
 }

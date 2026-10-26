@@ -279,3 +279,22 @@ export class CollectionTestMandateNotExportableError extends BusinessError {
     );
   }
 }
+
+/**
+ * Même montant qu'un essai généré sur le même mandat il y a moins de
+ * `windowDays` jours : la banque pourrait y voir un doublon (réponse 21 ;
+ * décision de Hugo du 2026-10-26).
+ */
+export class CollectionTestLookalikeError extends BusinessError {
+  constructor(
+    readonly previousEndToEndId: string,
+    readonly previousDay: string,
+    readonly amountCents: number,
+    readonly windowDays: number,
+  ) {
+    super(
+      "accounting.collection_test.lookalike",
+      `Montant refusé (${String(amountCents)} centimes) : l'essai ${previousEndToEndId}, généré le ${previousDay} sur le même mandat, porte déjà ce montant, et la banque peut prendre pour un doublon deux prélèvements identiques à moins de ${String(windowDays)} jours d'écart. Choisissez un autre montant.`,
+    );
+  }
+}

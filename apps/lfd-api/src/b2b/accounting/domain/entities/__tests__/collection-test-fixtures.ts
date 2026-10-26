@@ -48,6 +48,7 @@ export function generateInput(
     amountCents: 100,
     requestedCollectionDay: DUE_DAY,
     remittance: null,
+    recentOnMandate: [],
     ...overrides,
   };
 }

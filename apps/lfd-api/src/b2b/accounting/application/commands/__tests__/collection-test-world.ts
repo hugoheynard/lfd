@@ -28,6 +28,7 @@ import {
   FakeBatchedMandates,
   FakeEstablishmentCompanies,
   MemoryCollectionTests,
+  MemoryMandateCollectionTests,
   MemoryOwnEstablishments,
   MemoryOwnEstablishmentsReader,
 } from "./collection-test-doubles.js";
@@ -83,6 +84,7 @@ export function collectionTestWorld(creditor: CreditorSnapshot | null = CREDITOR
       batched,
       creditors,
       tests,
+      new MemoryMandateCollectionTests(tests),
       new UlidSequence(),
       clock,
       events,

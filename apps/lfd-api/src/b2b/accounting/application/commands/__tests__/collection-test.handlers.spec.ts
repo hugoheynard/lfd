@@ -2,6 +2,7 @@ import {
   CollectionTestAmountOutOfRangeError,
   CollectionTestCompanyNotFoundError,
   CollectionTestCreditorNotFoundError,
+  CollectionTestLookalikeError,
   CollectionTestOneOffUsedError,
   CollectionTestSequenceMismatchError,
   NotOwnEstablishmentError,
@@ -131,6 +132,16 @@ describe("générer un prélèvement d'essai", () => {
     });
     expect(JSON.stringify(fact)).not.toContain(DEBTOR_IBAN);
     expect(JSON.stringify(fact)).not.toContain(`RUM-${OUR_COMPANY.replaceAll("_", "-")}`);
+  });
+
+  it("le même montant sur le même mandat est refusé, un autre montant passe", async () => {
+    const w = await declared();
+    await w.generate.execute(generate());
+
+    await expect(w.generate.execute(generate())).rejects.toThrow(CollectionTestLookalikeError);
+    expect(w.tests.saveCount).toBe(1);
+    await expect(w.generate.execute(generate({ amountCents: 99 }))).resolves.toBeDefined();
+    expect(w.tests.saveCount).toBe(2);
   });
 
   it("OOFF sur un mandat récurrent est refusé", async () => {

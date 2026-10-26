@@ -1,6 +1,14 @@
-import { generated } from "../../entities/__tests__/collection-test-fixtures.js";
+import {
+  CREATED_AT,
+  DUE_DAY,
+  OUR_COMPANY,
+  TEST_ID,
+  generated,
+} from "../../entities/__tests__/collection-test-fixtures.js";
 import { assembleCollection } from "../collection-assembly.js";
 import { renderBatchFile } from "../collection-batch-file.js";
+import { DEFAULT_TEST_REMITTANCE, renderTestFile } from "../collection-test-file.js";
+import type { TestSequence } from "../pain008-document.js";
 import { BATCH_ID, CREDITOR, ENTITY_ID, SEPTEMBER, mandate, order } from "./collection-fixtures.js";
 import { pain008XsdErrors } from "./pain008-xsd.js";
 
@@ -50,6 +58,33 @@ describe("le XSD pain.008.001.02", () => {
 
   it.each(["RCUR", "FRST"] as const)("valide le fichier d'un essai en %s", async (sequence) => {
     expect(await pain008XsdErrors(generated({ sequence }).toPersistence().xml)).toEqual([]);
+  });
+
+  /**
+   * Le rendu ACTUEL de `renderTestFile`, appelé en direct pour chaque séquence
+   * qu'un essai admet — OOFF sur un mandat ponctuel (décision de Hugo du
+   * 2026-10-26).
+   */
+  it.each([
+    ["RCUR", "recurrent"],
+    ["FRST", "recurrent"],
+    ["OOFF", "one_off"],
+  ] as const)("valide le rendu d'un essai en %s", async (sequence: TestSequence, paymentType) => {
+    const { xml } = renderTestFile({
+      testId: TEST_ID,
+      creditor: CREDITOR,
+      scheme: "B2B",
+      sequence,
+      createdAt: CREATED_AT,
+      requestedCollectionDay: DUE_DAY,
+      debtorName: "Folie Douce Val",
+      amountCents: 100,
+      mandate: mandate(OUR_COMPANY, { paymentType }),
+      remittance: DEFAULT_TEST_REMITTANCE,
+    });
+
+    expect(xml).toContain(`<SeqTp>${sequence}</SeqTp>`);
+    expect(await pain008XsdErrors(xml)).toEqual([]);
   });
 
   it("refuse un fichier dont la séquence n'existe pas (le validateur n'est pas creux)", async () => {

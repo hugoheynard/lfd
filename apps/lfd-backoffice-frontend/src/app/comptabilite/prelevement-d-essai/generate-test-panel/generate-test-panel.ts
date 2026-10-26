@@ -43,6 +43,15 @@ export function eligibleDebtors(
 }
 
 /**
+ * La séquence proposée d'office : `RCUR` dès que le mandat l'admet, comme les
+ * vrais lots (réponse 20 de la banque ; D3 tranchée par Hugo le 2026-10-26) ;
+ * sinon la seule que le serveur propose (`OOFF` sur un mandat ponctuel).
+ */
+export function defaultSequence(sequences: readonly TestSequenceView[]): TestSequenceView | null {
+  return sequences.includes('RCUR') ? 'RCUR' : (sequences[0] ?? null);
+}
+
+/**
  * **Générer un prélèvement d'essai** (plan `plan-prelevement-d-essai.md`) —
  * un débiteur parmi nos établissements, un montant d'au plus le plafond,
  * l'échéance la plus proche (J + 2 jours ouvrés, sans pré-notification : Q6),
@@ -119,11 +128,11 @@ export class GenerateTestPanel {
   );
 
   constructor() {
-    // Un débiteur choisi propose SON échéance et SA première séquence.
+    // Un débiteur choisi propose SON échéance, et RCUR s'il l'admet.
     effect(() => {
       const debtor = this.debtor();
       this.collectionDay.set(debtor?.earliestCollectionDay ?? '');
-      this.sequence.set(debtor?.sequences[0] ?? null);
+      this.sequence.set(defaultSequence(debtor?.sequences ?? []));
     });
     effect(() => {
       const [first] = this.debtors();

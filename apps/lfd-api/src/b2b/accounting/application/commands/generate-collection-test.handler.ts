@@ -12,6 +12,8 @@ import { CollectionMandatesReader } from "../../domain/ports/collection-mandates
 import { CollectionTestRepository } from "../../domain/ports/collection-test.repository.js";
 import { CreditorReader } from "../../domain/ports/creditor.reader.js";
 import { EstablishmentCompaniesReader } from "../../domain/ports/establishment-companies.reader.js";
+import { MandateCollectionTestsReader } from "../../domain/ports/mandate-collection-tests.reader.js";
+import { lookalikeWindowStart } from "../../domain/services/collection-test-lookalike.js";
 import { testDebtorVerdictOf } from "../collection-test-support.js";
 import { establishmentCompanyOrFail } from "../own-establishment-support.js";
 import { GenerateCollectionTestCommand } from "./generate-collection-test.command.js";
@@ -35,6 +37,7 @@ export class GenerateCollectionTestHandler implements ICommandHandler<
     private readonly batched: BatchedMandatesReader,
     private readonly creditors: CreditorReader,
     private readonly tests: CollectionTestRepository,
+    private readonly history: MandateCollectionTestsReader,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
@@ -56,6 +59,10 @@ export class GenerateCollectionTestHandler implements ICommandHandler<
       if (creditor === null) {
         throw new CollectionTestCreditorNotFoundError(verdict.mandate.reference);
       }
+      const recentOnMandate = await this.history.generatedSince(
+        verdict.mandate.mandateId,
+        lookalikeWindowStart(at),
+      );
       const test = CollectionTest.generate({
         id: this.ids.next(),
         created: { at, staffId: command.staffUserId },
@@ -67,6 +74,7 @@ export class GenerateCollectionTestHandler implements ICommandHandler<
         amountCents: command.amountCents,
         requestedCollectionDay: command.requestedCollectionDay,
         remittance: command.remittance,
+        recentOnMandate,
       });
       await this.tests.save(test);
       await this.events.publishTraced(new CollectionTestGeneratedEvent(test, creditor.name, at));

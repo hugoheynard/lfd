@@ -263,8 +263,10 @@ global) et niveau transaction (`EndToEndId`, RUM, IBAN, montant, échéance),
   reconstitué prend un nouvel ULID ✔.
 - ⚪ Rien pour le lot. ❓ Un **essai** répété à l'identique (même débiteur,
   même montant, même échéance) dans les 15 jours pourrait être pris pour un
-  doublon au niveau transaction, même avec un `EndToEndId` neuf — varier le
-  montant ou l'échéance d'un essai à l'autre.
+  doublon au niveau transaction, même avec un `EndToEndId` neuf. ✅
+  **Décision de Hugo du 2026-10-26** : l'essai refuse le même montant qu'un
+  essai du même mandat généré depuis moins de 15 jours, et demande d'en
+  choisir un autre ([`prelevement-sepa.md`](prelevement-sepa.md) §7 bis).
 
 ### Étape 6 — Le dépôt
 

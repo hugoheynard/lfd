@@ -17,6 +17,10 @@ import {
   renderTestFile,
   testRemittanceOf,
 } from "../services/collection-test-file.js";
+import {
+  assertNoLookalike,
+  type PriorCollectionTest,
+} from "../services/collection-test-lookalike.js";
 import { isAuditCoherent } from "../services/pain008-audit.js";
 import type { TestSequence } from "../services/pain008-document.js";
 import { isTarget2BusinessDay, onOrAfterBusinessDay } from "../services/target2-calendar.js";
@@ -78,6 +82,11 @@ export interface GenerateCollectionTestInput {
   readonly amountCents: number;
   readonly requestedCollectionDay: string;
   readonly remittance: string | null;
+  /**
+   * Les essais déjà générés sur le même mandat dans la fenêtre anti-doublon
+   * (`lookalikeWindowStart`) — l'agrégat refuse d'en répéter le montant.
+   */
+  readonly recentOnMandate: readonly PriorCollectionTest[];
 }
 
 /**
@@ -94,12 +103,13 @@ export class CollectionTest {
 
   /**
    * Génère le fichier et l'essai qui le garde. Refuse avant de rendre quoi
-   * que ce soit : montant, séquence, échéance, libellé ; puis relit le fichier
+   * que ce soit : montant (et son doublon possible), séquence, échéance, libellé ; puis relit le fichier
    * par le contrôle des lots avant de le garder.
    */
   static generate(input: GenerateCollectionTestInput): CollectionTest {
     const { verdict, creditor } = input;
     assertAmount(input.amountCents);
+    assertNoLookalike(input.recentOnMandate, input.amountCents, input.created.at);
     const sequence = admittedSequence(verdict, input.sequence);
     assertCollectionDay(input.requestedCollectionDay, earliestTestCollectionDay(input.created.at));
     const remittance = testRemittanceOf(input.remittance);

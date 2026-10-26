@@ -5,7 +5,7 @@ import { FoldPanelRef } from 'fold-ng';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { CollectionTestsService } from '../../collection-tests.service';
-import { GenerateTestPanel } from './generate-test-panel';
+import { GenerateTestPanel, defaultSequence } from './generate-test-panel';
 
 /**
  * Ce que ces cas tiennent : l'échéance proposée est celle du serveur (J + 2
@@ -45,7 +45,10 @@ class FakeApi {
   }
 }
 
-function mount(api: FakeApi): ComponentFixture<GenerateTestPanel> {
+function mount(
+  api: FakeApi,
+  tool: CollectionTestDebtorsView = TOOL,
+): ComponentFixture<GenerateTestPanel> {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
@@ -54,7 +57,7 @@ function mount(api: FakeApi): ComponentFixture<GenerateTestPanel> {
     ],
   });
   const fixture = TestBed.createComponent(GenerateTestPanel);
-  fixture.componentRef.setInput('data', { tool: TOOL });
+  fixture.componentRef.setInput('data', { tool });
   fixture.detectChanges();
   return fixture;
 }
@@ -81,6 +84,21 @@ describe('GenerateTestPanel', () => {
 
     expect(fixture.componentInstance['collectionDay']()).toBe(EARLIEST);
     expect(fixture.componentInstance['earliestDay']()).toBe(EARLIEST);
+  });
+
+  it('propose RCUR d’office, même quand le serveur l’offre en second (D3)', () => {
+    const tool: CollectionTestDebtorsView = {
+      ...TOOL,
+      debtors: TOOL.debtors.map((debtor) => ({ ...debtor, sequences: ['FRST', 'RCUR'] })),
+    };
+    const fixture = mount(new FakeApi(), tool);
+
+    expect(fixture.componentInstance['sequence']()).toBe('RCUR');
+  });
+
+  it('propose la seule séquence d’un mandat ponctuel', () => {
+    expect(defaultSequence(['OOFF'])).toBe('OOFF');
+    expect(defaultSequence([])).toBeNull();
   });
 
   it('exporte le mandat de l’établissement choisi, seul', async () => {
