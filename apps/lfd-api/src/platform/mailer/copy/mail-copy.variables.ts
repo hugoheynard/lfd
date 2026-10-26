@@ -36,6 +36,7 @@ export const MAIL_COPY_VARIABLES: MailCopyVariables = {
     qrAlt: ["ref"],
     subjectReminder: ["ref"],
     introReminder: ["site"],
+    subjectRemainder: ["ref"],
   },
   "customer.delivery-en-route": {},
   "customer.order-delayed": { subject: ["ref"] },

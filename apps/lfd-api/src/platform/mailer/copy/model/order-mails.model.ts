@@ -127,6 +127,18 @@ export interface OrderReadyCopy {
   readonly introReminder: string;
   /** Le même, pour une commande qui n'a pas figé le nom de son point. */
   readonly introReminderWithoutSite: string;
+  /**
+   * **Le reste de la commande** (plan E7 reliquat, choix 17) : le courriel
+   * d'un envoi de rang > 1, qui ne dit plus « votre commande » mais « le
+   * reste de votre commande » — le client a déjà reçu « prête » pour le
+   * premier envoi. `{ref}` = le numéro de commande.
+   */
+  readonly subjectRemainder: string;
+  readonly kickerRemainder: string;
+  readonly titleRemainderPickup: string;
+  readonly titleRemainderDelivery: string;
+  readonly introRemainderPickup: string;
+  readonly introRemainderDelivery: string;
 }
 
 /**
@@ -170,6 +182,10 @@ export interface DeliveryEnRouteCopy {
   readonly addressLabel: string;
   readonly cta: string;
   readonly footer: string;
+  /** Le départ d'un envoi de rang > 1 — « le reste de votre commande » (plan E7 reliquat, choix 17). */
+  readonly subjectRemainder: string;
+  readonly titleRemainder: string;
+  readonly introRemainder: string;
 }
 
 /**

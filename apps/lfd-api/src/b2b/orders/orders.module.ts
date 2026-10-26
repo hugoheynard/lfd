@@ -83,6 +83,8 @@ import { PrismaCompletedOrderReader } from "./infrastructure/prisma-completed-or
 import { VoucherOrderReader } from "./domain/ports/voucher-order.reader.js";
 import { PrismaVoucherOrderReader } from "./infrastructure/prisma-voucher-order.reader.js";
 import { PrismaOrderRecipientReader } from "./infrastructure/prisma-order-recipient.reader.js";
+import { RemainderShipmentReader } from "./domain/ports/remainder-shipment.reader.js";
+import { PrismaRemainderShipmentReader } from "./infrastructure/prisma-remainder-shipment.reader.js";
 import { AbandonOrderHandler } from "./application/commands/abandon-order.handler.js";
 import { CancelOrderHandler } from "./application/commands/cancel-order.handler.js";
 import { VoucherRestitutionRefusal } from "./application/services/voucher-restitution-refusal.js";
@@ -518,6 +520,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     { provide: OrderDayChangePruner, useClass: PrismaOrderDayChangePruner },
     ResendOrderPaymentLinkHandler,
     { provide: OrderRecipientReader, useClass: PrismaOrderRecipientReader },
+    { provide: RemainderShipmentReader, useClass: PrismaRemainderShipmentReader },
     {
       // Les deux origines, extraites de la configuration à la racine de
       // composition. L'abonné dépend du port étroit, pas des trente lectures

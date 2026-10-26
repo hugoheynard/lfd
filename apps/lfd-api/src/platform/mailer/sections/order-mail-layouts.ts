@@ -27,6 +27,8 @@ const ITINERARY = { id: "itinerary", texts: texts("itinerary") } as const;
 
 /** Le « Rappel au client » de la Supervision : le même e-mail, renvoyé à qui n'est pas venu. */
 const REMINDER = "Rappel au client qui n'est pas venu";
+/** Le variant d'un envoi de rang > 1 (plan E7 reliquat, choix 17). */
+const REMAINDER = "Le reste de la commande";
 
 /** Les e-mails d'une commande et de son règlement. */
 export const ORDER_MAIL_LAYOUTS: Readonly<
@@ -77,8 +79,8 @@ export const ORDER_MAIL_LAYOUTS: Readonly<
     ],
   },
   "customer.order-ready": {
-    subject: [...SUBJECT, ...variants({ subjectReminder: REMINDER })],
-    header: [...KICKER, ...variants({ kickerReminder: REMINDER })],
+    subject: [...SUBJECT, ...variants({ subjectReminder: REMINDER, subjectRemainder: REMAINDER })],
+    header: [...KICKER, ...variants({ kickerReminder: REMINDER, kickerRemainder: REMAINDER })],
     sections: [
       {
         id: "title",
@@ -86,6 +88,8 @@ export const ORDER_MAIL_LAYOUTS: Readonly<
           titlePickup: "Commande en retrait",
           titleDelivery: "Commande livrée",
           titleReminder: REMINDER,
+          titleRemainderPickup: `${REMAINDER}, en retrait`,
+          titleRemainderDelivery: `${REMAINDER}, livré`,
         }),
       },
       {
@@ -95,6 +99,8 @@ export const ORDER_MAIL_LAYOUTS: Readonly<
           introDelivery: "Commande livrée",
           introReminder: REMINDER,
           introReminderWithoutSite: `${REMINDER}, sans nom de point`,
+          introRemainderPickup: `${REMAINDER}, en retrait`,
+          introRemainderDelivery: `${REMAINDER}, livré`,
         }),
       },
       { id: "summary", texts: texts("whereLabel", "contentLabel", "piecesLabel") },
@@ -105,11 +111,11 @@ export const ORDER_MAIL_LAYOUTS: Readonly<
     ],
   },
   "customer.delivery-en-route": {
-    subject: SUBJECT,
+    subject: [...SUBJECT, ...variants({ subjectRemainder: REMAINDER })],
     header: KICKER,
     sections: [
-      { id: "title", texts: texts("title") },
-      { id: "body", texts: texts("intro") },
+      { id: "title", texts: [...texts("title"), ...variants({ titleRemainder: REMAINDER })] },
+      { id: "body", texts: [...texts("intro"), ...variants({ introRemainder: REMAINDER })] },
       { id: "summary", texts: texts("referenceLabel", "addressLabel") },
       { id: "cta", texts: texts("cta") },
       { id: "footer", texts: texts("footer") },

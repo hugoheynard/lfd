@@ -24,6 +24,7 @@ import {
   minutesAfterEnd,
   nudgeSnapshot,
 } from "./customer-nudge-doubles.js";
+import { FixedRemainders } from "../../handlers/__tests__/remainder-shipment-doubles.js";
 
 /**
  * **« Rappel au client »**, depuis la Supervision (2026-10-25) : ce qui part,
@@ -75,7 +76,7 @@ function setup(
     nudges,
     new FixedNudgeDelays({ pickupReminderMinutes: options.delay ?? 0, delayWarningMinutes: 0 }),
     recipients,
-    new OrderReadyMail(orders, recipients, new FixedOrigins(), mailer),
+    new OrderReadyMail(orders, recipients, new FixedOrigins(), mailer, new FixedRemainders()),
     new FixedClock(options.now ?? minutesAfterEnd(20)),
     new DirectUnitOfWork(),
     work,

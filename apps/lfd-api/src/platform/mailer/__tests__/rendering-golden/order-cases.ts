@@ -156,6 +156,22 @@ export const ORDER_CASES: Pick<
       locale: "fr",
       reminder: true,
     },
+    remainderPickup: {
+      sheet: PAID,
+      handoverToken: "tok_abc",
+      orderUrl: "https://shop.lfc.test/c/1",
+      handoverUrl: HANDOVER,
+      locale: "fr",
+      remainder: { pieces: 3 },
+    },
+    remainderDelivery: {
+      sheet: DELIVERY,
+      handoverToken: null,
+      orderUrl: "",
+      handoverUrl: "",
+      locale: "fr",
+      remainder: { pieces: 2 },
+    },
   },
   "customer.delivery-en-route": {
     full: {
@@ -165,6 +181,13 @@ export const ORDER_CASES: Pick<
       locale: "fr",
     },
     bare: { reference: "ORD-4812", addressLines: [], orderUrl: "", locale: "fr" },
+    remainder: {
+      reference: "ORD-4812",
+      addressLines: ["1 rue du Col", "", "73150 Val d'Isère"],
+      orderUrl: "https://shop.lfc.test/c/1",
+      locale: "fr",
+      remainder: true,
+    },
   },
   "customer.order-delayed": {
     full: {

@@ -57,6 +57,12 @@ export const ORDER_MAILS_EN: OrderMailsCopy = {
     titleReminder: "It's waiting for you.",
     introReminder: "Your order is waiting for you at the {site} pickup point.",
     introReminderWithoutSite: "Your order is waiting for you at the pickup point.",
+    subjectRemainder: "The rest of your order {ref} is ready",
+    kickerRemainder: "The rest",
+    titleRemainderPickup: "The rest is ready.",
+    titleRemainderDelivery: "The rest is ready to go.",
+    introRemainderPickup: "The rest of your order is waiting for you at the counter.",
+    introRemainderDelivery: "The rest of your order is on its way to you.",
   },
   "customer.delivery-en-route": {
     kicker: "Delivery on its way",
@@ -67,6 +73,10 @@ export const ORDER_MAILS_EN: OrderMailsCopy = {
     addressLabel: "Delivered to",
     cta: "View my order",
     footer: "Le Labo · route de la Balme, Val d'Isère — 7 am – 7 pm",
+    subjectRemainder: "The rest of your order is on its way",
+    titleRemainder: "The rest of your order is on its way.",
+    introRemainder:
+      "Your driver has left with the rest of your order and will arrive during the day.",
   },
   "customer.order-delayed": {
     kicker: "Delayed",

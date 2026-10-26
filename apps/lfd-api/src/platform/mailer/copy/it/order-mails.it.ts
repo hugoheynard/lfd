@@ -58,6 +58,12 @@ export const ORDER_MAILS_IT: OrderMailsCopy = {
     titleReminder: "La aspetta.",
     introReminder: "Il suo ordine la aspetta al punto di ritiro {site}.",
     introReminderWithoutSite: "Il suo ordine la aspetta al punto di ritiro.",
+    subjectRemainder: "Il resto del suo ordine {ref} è pronto",
+    kickerRemainder: "Il resto",
+    titleRemainderPickup: "Il resto è pronto.",
+    titleRemainderDelivery: "Il resto è pronto a partire.",
+    introRemainderPickup: "Il resto del suo ordine la aspetta al banco.",
+    introRemainderDelivery: "Il resto del suo ordine è in viaggio verso di lei.",
   },
   "customer.delivery-en-route": {
     kicker: "Consegna in arrivo",
@@ -68,6 +74,9 @@ export const ORDER_MAILS_IT: OrderMailsCopy = {
     addressLabel: "Consegna a",
     cta: "Vedere il mio ordine",
     footer: "Le Labo · route de la Balme, Val d'Isère — 7 – 19",
+    subjectRemainder: "Il resto del suo ordine è in viaggio",
+    titleRemainder: "Il resto del suo ordine è in viaggio.",
+    introRemainder: "Il suo corriere è partito con il resto del suo ordine, arriverà in giornata.",
   },
   "customer.order-delayed": {
     kicker: "In ritardo",

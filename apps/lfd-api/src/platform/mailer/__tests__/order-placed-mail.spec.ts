@@ -290,6 +290,16 @@ describe("le courriel « votre commande est prête »", () => {
     expect(html).not.toContain("Total TTC");
   });
 
+  // Plan E7 reliquat, choix 17 : le reste prêt n'annonce pas la commande entière.
+  it("le reste prêt dit « le reste de votre commande » et compte SES pièces", () => {
+    const rendered = renderReady({ remainder: { pieces: 3 } });
+
+    expect(rendered.subject).toContain("Le reste de votre commande");
+    expect(rendered.html).toContain("Le reste de votre commande vous attend au comptoir");
+    expect(rendered.html).toContain("3 pièces");
+    expect(rendered.html).not.toContain("Votre commande vous attend au comptoir");
+  });
+
   it("REPORTE le QR — c'est maintenant qu'on s'en sert", () => {
     // Il était dans la confirmation, et personne ne remonte un fil de courriels
     // le téléphone à la main devant un comptoir.

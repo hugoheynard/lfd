@@ -60,6 +60,11 @@ import {
  * cas neufs de `customer.order-ready`, `reminder` et `reminderWithoutSite`
  * (« Rappel au client ») — leurs empreintes ajoutées sans toucher aux
  * existantes.
+ *
+ * 2026-10-26 (plan E7 reliquat, lot L4d) : cas neufs `remainderPickup`,
+ * `remainderDelivery` (« prête ») et `remainder` (« en route ») — « le reste
+ * de votre commande ». Empreintes ajoutées, aucune existante touchée : le
+ * premier envoi rend le même courriel qu'avant.
  */
 
 const REGISTRY = b2bMailTemplates({

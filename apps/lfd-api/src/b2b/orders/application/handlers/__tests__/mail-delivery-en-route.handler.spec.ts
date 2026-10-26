@@ -23,6 +23,8 @@ import { MAIL_DELIVERY_EN_ROUTE, MailDeliveryEnRoute } from "../mail-delivery-en
 import { OneRecipientReader, orderView, RecordingMailer } from "./payment-failure-doubles.js";
 import { AT_PLACEMENT } from "../../../domain/services/order-sheet.js";
 import { ShipmentRef } from "../../../../../production/channels/commerce/index.js";
+import type { RemainderShipment } from "../../../domain/ports/remainder-shipment.reader.js";
+import { FixedRemainders } from "./remainder-shipment-doubles.js";
 
 /*
  * Le commerce entend le départ, fait durable (en-route.md ; plan-depart-durable.md,
@@ -156,12 +158,14 @@ function subscriber(
   views: readonly OrderView[],
   mailer: RecordingMailer = new RecordingMailer(),
   email: string | null = "camille@halles.test",
+  remainders: ReadonlyMap<string, RemainderShipment> = new Map(),
 ) {
   const mail = new DeliveryEnRouteMail(
     new ManyOrdersReader(views),
     new OneRecipientReader(email),
     new FixedOrigins(),
     mailer,
+    new FixedRemainders(remainders),
   );
   const work = new BackgroundWork();
   const handler = new MailDeliveryEnRoute(mail, new AmbientAfterCommit(), work);
@@ -169,13 +173,15 @@ function subscriber(
 }
 
 /** Le fait tel que le relais le livre : relu de sa charge, comme en production. */
-function departed(roundId: string, orderIds: readonly string[]): DurableDelivery {
-  const fact = new DeliveryRoundDepartedFact(
-    roundId,
-    "2030-03-12",
-    DEPARTED,
-    orderIds.map((orderId) => ShipmentRef.firstOf(orderId)),
-  );
+function departed(
+  roundId: string,
+  orderIds: readonly string[],
+  extra: readonly ShipmentRef[] = [],
+): DurableDelivery {
+  const fact = new DeliveryRoundDepartedFact(roundId, "2030-03-12", DEPARTED, [
+    ...orderIds.map((orderId) => ShipmentRef.firstOf(orderId)),
+    ...extra,
+  ]);
   const { type, payload } = fact.durableFact();
   return { eventId: `evt_${roundId}`, type, payload };
 }
@@ -240,6 +246,61 @@ describe("MailDeliveryEnRoute — abonné durable « en route »", () => {
     await subject.handle(departed("r_1", ["o_1", "o_2", "o_3", "o_4"]));
 
     expect(mailer.sent.map((sent) => sent.idempotencyKey)).toEqual(["delivery.en_route:o_4:r_1"]);
+  });
+
+  describe("par envoi (plan E7 reliquat, choix 17)", () => {
+    const REST = ShipmentRef.of("o_1", 2);
+
+    it("le reste a son courriel, sa clé, et dit « le reste »", async () => {
+      const { subject, mailer } = subscriber(
+        [delivered("o_1", { status: "fulfilled", handedOverAt: new Date(0).toISOString() })],
+        new RecordingMailer(),
+        "camille@halles.test",
+        new Map([["o_1:2", { pieces: 2, handedOver: false }]]),
+      );
+
+      await subject.handle(departed("r_1", [], [REST]));
+
+      expect(mailer.sent.map((sent) => sent.idempotencyKey)).toEqual([
+        "delivery.en_route:o_1:r_1:r2",
+      ]);
+      expect(mailer.sent[0]?.data).toMatchObject({ reference: "ORD-o_1", remainder: true });
+    });
+
+    it("deux envois de la même commande dans la tournée : deux courriels", async () => {
+      const { subject, mailer } = subscriber(
+        [delivered("o_1")],
+        new RecordingMailer(),
+        "camille@halles.test",
+        new Map([["o_1:2", { pieces: 2, handedOver: false }]]),
+      );
+
+      await subject.handle(departed("r_1", ["o_1"], [REST]));
+
+      expect(mailer.sent.map((sent) => sent.idempotencyKey)).toEqual([
+        "delivery.en_route:o_1:r_1",
+        "delivery.en_route:o_1:r_1:r2",
+      ]);
+      expect(mailer.sent[0]?.data).not.toHaveProperty("remainder");
+    });
+
+    it("se tait pour un reste remis, annulé, ou d'une commande annulée", async () => {
+      const { subject, mailer } = subscriber(
+        [delivered("o_1"), delivered("o_2", { status: "cancelled" })],
+        new RecordingMailer(),
+        "camille@halles.test",
+        new Map([
+          ["o_1:2", { pieces: 2, handedOver: true }],
+          ["o_2:2", { pieces: 2, handedOver: false }],
+        ]),
+      );
+
+      await subject.handle(
+        departed("r_1", [], [REST, ShipmentRef.of("o_1", 3), ShipmentRef.of("o_2", 2)]),
+      );
+
+      expect(mailer.sent).toEqual([]);
+    });
   });
 
   it("se tait pour une commande disparue ou un client sans adresse", async () => {

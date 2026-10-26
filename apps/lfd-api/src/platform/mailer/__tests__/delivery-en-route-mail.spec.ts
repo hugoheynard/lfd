@@ -47,6 +47,19 @@ describe("le courriel « votre livraison est en route »", () => {
     expect(rendered.html).not.toContain("Voir ma commande");
   });
 
+  // Plan E7 reliquat, choix 17 : le reste qui part a son courriel.
+  it("le reste en route dit « le reste de votre commande »", () => {
+    const rendered = render({ remainder: true });
+
+    expect(rendered.subject).toBe("Le reste de votre commande est en route");
+    expect(rendered.html).toContain("parti avec le reste de votre commande");
+    expect(rendered.html).toContain("ORD-4812");
+  });
+
+  it("sans reste, le courriel est celui d'avant", () => {
+    expect(render({ remainder: false })).toEqual(render());
+  });
+
   it("parle la langue demandée", () => {
     expect(render({ locale: "en" }).subject).toBe("Your delivery is on its way");
     expect(render({ locale: "it" }).subject).toBe("La sua consegna è in viaggio");

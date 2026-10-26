@@ -10,6 +10,7 @@ import {
   InMemoryDeliveryNotes,
   InMemoryOrderProgress,
 } from "../../__tests__/delivery-note-doubles.js";
+import { RecordingDurable } from "../../../../orders/application/commands/__tests__/durable-doubles.js";
 import { PrepareRemainderNoteCommand } from "../prepare-remainder-note.command.js";
 import { PrepareRemainderNoteHandler } from "../prepare-remainder-note.handler.js";
 
@@ -64,8 +65,14 @@ async function scene(options: { readonly remainder: boolean } = { remainder: tru
       DeliveryNote.planRemainder("dn_2", source, REMAINDER_RANK, ORDER_DAY, DECIDED_AT),
     );
   }
-  const handler = new PrepareRemainderNoteHandler(orders.scan, notes, new DirectUnitOfWork());
-  return { notes, orders, handler };
+  const durable = new RecordingDurable();
+  const handler = new PrepareRemainderNoteHandler(
+    orders.scan,
+    notes,
+    new DirectUnitOfWork(),
+    durable,
+  );
+  return { notes, orders, handler, durable };
 }
 
 function stateOf(notes: InMemoryDeliveryNotes, id: string) {
@@ -98,6 +105,22 @@ describe("PrepareRemainderNoteHandler — prêt par envoi (L4a)", () => {
     expect(stateOf(notes, "dn_2").preparedAt).toEqual(PACKED_AT);
   });
 
+  // Lot L4d, choix 17 : le reste prêt prévient le client, une fois.
+  it("publie `order.ready` au rang du reste, et une seule fois", async () => {
+    const { handler, durable } = await scene();
+
+    await handler.execute(new PrepareRemainderNoteCommand("ord_a", REMAINDER_RANK, PACKED_AT));
+    await handler.execute(new PrepareRemainderNoteCommand("ord_a", REMAINDER_RANK, LATER));
+
+    expect(durable.facts).toEqual([
+      {
+        type: "order.ready",
+        key: "order.ready:ord_a:r2",
+        payload: { orderId: "ord_a", rank: REMAINDER_RANK },
+      },
+    ]);
+  });
+
   it("refuse, rejouable, quand la commande n'a aucun BL de ce rang", async () => {
     const { handler } = await scene({ remainder: false });
 
@@ -125,5 +148,14 @@ describe("PrepareRemainderNoteHandler — prêt par envoi (L4a)", () => {
     await expect(
       handler.execute(new PrepareRemainderNoteCommand("ord_a", REMAINDER_RANK, PACKED_AT)),
     ).rejects.toBeInstanceOf(DeliveryNoteTransitionRefusedError);
+  });
+
+  it("ne publie rien quand il refuse", async () => {
+    const { handler, durable } = await scene({ remainder: false });
+
+    await expect(
+      handler.execute(new PrepareRemainderNoteCommand("ord_a", REMAINDER_RANK, PACKED_AT)),
+    ).rejects.toBeInstanceOf(RemainderNoteNotFoundError);
+    expect(durable.facts).toEqual([]);
   });
 });

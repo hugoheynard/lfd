@@ -279,6 +279,40 @@
         "variables": [],
         "required": [],
         "fr": "Votre commande vous attend au point de retrait."
+      },
+      "subjectRemainder": {
+        "variables": [
+          "ref"
+        ],
+        "required": [
+          "ref"
+        ],
+        "fr": "Le reste de votre commande {ref} est prêt"
+      },
+      "kickerRemainder": {
+        "variables": [],
+        "required": [],
+        "fr": "Le reste"
+      },
+      "titleRemainderPickup": {
+        "variables": [],
+        "required": [],
+        "fr": "Le reste est prêt."
+      },
+      "titleRemainderDelivery": {
+        "variables": [],
+        "required": [],
+        "fr": "Le reste est prêt à partir."
+      },
+      "introRemainderPickup": {
+        "variables": [],
+        "required": [],
+        "fr": "Le reste de votre commande vous attend au comptoir."
+      },
+      "introRemainderDelivery": {
+        "variables": [],
+        "required": [],
+        "fr": "Le reste de votre commande part vers vous."
       }
     },
     "customer.delivery-en-route": {
@@ -321,6 +355,21 @@
         "variables": [],
         "required": [],
         "fr": "Le Labo · route de la Balme, Val d'Isère — 7 h – 19 h"
+      },
+      "subjectRemainder": {
+        "variables": [],
+        "required": [],
+        "fr": "Le reste de votre commande est en route"
+      },
+      "titleRemainder": {
+        "variables": [],
+        "required": [],
+        "fr": "Le reste de votre commande est en route."
+      },
+      "introRemainder": {
+        "variables": [],
+        "required": [],
+        "fr": "Votre livreur est parti avec le reste de votre commande, il arrive dans la journée."
       }
     },
     "customer.order-delayed": {

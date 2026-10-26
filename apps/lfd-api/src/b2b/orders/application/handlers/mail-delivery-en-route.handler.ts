@@ -19,7 +19,9 @@ export const MAIL_DELIVERY_EN_ROUTE = "b2b.mail-delivery-en-route";
 
 /**
  * **« Votre livraison est en route »** — le commerce entend le départ d'une
- * tournée (`documentation/livraisons/livreur/en-route.md`) : un courriel par commande.
+ * tournée (`documentation/livraisons/livreur/en-route.md`) : un courriel par
+ * ENVOI (plan E7 reliquat, choix 17, lot L4d) — le reste d'une commande a le
+ * sien, qui dit « le reste de votre commande ».
  *
  * Abonné DURABLE depuis le 2026-10-06 (DD1) : le relais le livre au premier
  * réveil après la validation du départ, et le balayage rattrape un réveil
@@ -69,17 +71,20 @@ export class MailDeliveryEnRoute implements DurableSubscriber {
     return Promise.resolve();
   }
 
-  /** Une commande après l'autre, toutes tentées ; ne lève jamais. */
+  /** Un envoi après l'autre, tous tentés ; ne lève jamais. */
   private async sendAll(fact: DeliveryRoundDepartedFact): Promise<void> {
     const failed: string[] = [];
     let firstCause: unknown = null;
-    // Un courriel par COMMANDE jusqu'à L4, qui le rend par envoi (choix 17).
-    const orderIds = [...new Set(fact.shipments.map((shipment) => shipment.orderId))];
-    for (const orderId of orderIds) {
+    // Un courriel par ENVOI (choix 17) ; un envoi répété dans le fait n'en
+    // fait partir qu'un.
+    const shipments = fact.shipments.filter(
+      (shipment, index) => fact.shipments.findIndex((other) => other.equals(shipment)) === index,
+    );
+    for (const shipment of shipments) {
       try {
-        await this.mail.send(orderId, fact.roundId);
+        await this.mail.send(shipment, fact.roundId);
       } catch (cause: unknown) {
-        failed.push(orderId);
+        failed.push(`${shipment.orderId}${shipment.keySuffix()}`);
         firstCause ??= cause;
       }
     }

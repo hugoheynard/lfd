@@ -13,6 +13,8 @@ import { OrderReader, type OwnedOrder } from "../../../domain/ports/order.reader
 import { OrderReadyMail } from "../../services/order-ready-mail.service.js";
 import { SendOrderReadyMail } from "../send-order-ready-mail.handler.js";
 import { AT_PLACEMENT } from "../../../domain/services/order-sheet.js";
+import type { RemainderShipment } from "../../../domain/ports/remainder-shipment.reader.js";
+import { FixedRemainders } from "./remainder-shipment-doubles.js";
 
 /**
  * Le courriel de mise à disposition. Ce qu'on éprouve ici est ce que l'abonné ne
@@ -25,6 +27,13 @@ const DELIVERY = {
   eventId: "evt_1",
   ...new OrderReadyFact("order_1", 1).durableFact(),
 };
+
+/** Le reste de rang 2 de `order_1`, colisé : trois pièces. */
+const REMAINDER: ReadonlyMap<string, RemainderShipment> = new Map([
+  ["order_1:2", { pieces: 3, handedOver: false }],
+]);
+
+const REMAINDER_READY = { eventId: "evt_2", ...new OrderReadyFact("order_1", 2).durableFact() };
 
 function view(overrides: Partial<OrderView> = {}): OrderView {
   return {
@@ -196,8 +205,14 @@ function handler(options: {
   email?: string | null;
   client?: string | null;
   admin?: string | null;
-}): { readonly run: SendOrderReadyMail; readonly mailer: RecordingMailer } {
+  remainders?: ReadonlyMap<string, RemainderShipment>;
+}): {
+  readonly run: SendOrderReadyMail;
+  readonly mailer: RecordingMailer;
+  readonly remainders: FixedRemainders;
+} {
   const mailer = new RecordingMailer();
+  const remainders = new FixedRemainders(options.remainders);
   // 🔴 L'abonné est monté SUR le composeur réel, pas sur un doublé de celui-ci.
   // Ce que ces cas tiennent — à qui on écrit, ce que le message emporte, la clé
   // — se joue dans `OrderReadyMail` depuis que le rappel du comptoir partage le
@@ -212,9 +227,10 @@ function handler(options: {
         options.admin === undefined ? "https://admin.lfc.test" : options.admin,
       ),
       mailer,
+      remainders,
     ),
   );
-  return { run, mailer };
+  return { run, mailer, remainders };
 }
 
 /** Joue l'abonné comme la boîte d'envoi le livre. */
@@ -285,13 +301,44 @@ describe("le courriel « votre commande est prête »", () => {
 
   /** Plan E7 reliquat, choix 17 : une clé oubliée avale le courriel du second envoi. */
   it("un reliquat prêt a sa clé de courriel", async () => {
-    const subject = handler({});
+    const subject = handler({ remainders: REMAINDER });
     await subject.run.handle({
       eventId: "evt_2",
       ...new OrderReadyFact("order_1", 2).durableFact(),
     });
 
     expect(subject.mailer.sent?.idempotencyKey).toBe("order.ready:order_1:r2");
+  });
+
+  it("un reste prêt dit « le reste », avec les pièces de SON bon", async () => {
+    const subject = handler({ remainders: REMAINDER });
+    await subject.run.handle(REMAINDER_READY);
+
+    const data = subject.mailer.sent?.data as B2bMails["customer.order-ready"];
+    expect(data.remainder).toEqual({ pieces: 3 });
+    // Le QR reste celui de la commande : le comptoir montre le reste prêt (L4c).
+    expect(data.handoverUrl).toBe("https://admin.lfc.test/retrait/tok_secret_42");
+  });
+
+  it("le premier envoi est composé comme avant : sans reste, sans lire de bon", async () => {
+    const subject = handler({ remainders: REMAINDER });
+    await fire(subject);
+
+    const data = subject.mailer.sent?.data as B2bMails["customer.order-ready"];
+    expect(data).not.toHaveProperty("remainder");
+    expect(subject.remainders.asked).toEqual([]);
+  });
+
+  it("se tait pour un reste déjà remis, annulé ou absent", async () => {
+    const handedOver = handler({
+      remainders: new Map([["order_1:2", { pieces: 3, handedOver: true }]]),
+    });
+    await handedOver.run.handle(REMAINDER_READY);
+    const absent = handler({});
+    await absent.run.handle(REMAINDER_READY);
+
+    expect(handedOver.mailer.sent).toBeNull();
+    expect(absent.mailer.sent).toBeNull();
   });
 
   it("n'invente pas de code sur une LIVRAISON", async () => {

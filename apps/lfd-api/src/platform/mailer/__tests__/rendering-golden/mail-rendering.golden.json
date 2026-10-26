@@ -41,6 +41,16 @@
       "subject": "Votre commande ORD-4812 vous attend",
       "htmlSha256": "09ffc3a0c26a48dc02c1203b18b88721d733f32c2eed34d1955041afddb8caf6",
       "attachmentsSha256": "4ed8d0c0f72da35145b273e7ed226c309e4b3eb021722537cdc72fef82d2207f"
+    },
+    "remainderPickup": {
+      "subject": "Le reste de votre commande ORD-4812 est prêt",
+      "htmlSha256": "da8510b8b146bca2a928caf209e1e7776c85d9c5ee14af1639d6f1769a239e68",
+      "attachmentsSha256": "4ed8d0c0f72da35145b273e7ed226c309e4b3eb021722537cdc72fef82d2207f"
+    },
+    "remainderDelivery": {
+      "subject": "Le reste de votre commande ORD-4812 est prêt",
+      "htmlSha256": "c21479c99678ec044f0e4d2fa2031ed6da4371337220f2b199bc5dd2987696fb",
+      "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     }
   },
   "customer.delivery-en-route": {
@@ -52,6 +62,11 @@
     "bare": {
       "subject": "Votre livraison est en route",
       "htmlSha256": "73f2011dd9ca2ff3ce29620dc69876f4c3e0c9957e578f4aae20d360c3cc1b24",
+      "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
+    },
+    "remainder": {
+      "subject": "Le reste de votre commande est en route",
+      "htmlSha256": "36e5da14b4549a23557d898f3b4260f0590a4cb0a83605c5ca8e32ab564183c5",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     }
   },

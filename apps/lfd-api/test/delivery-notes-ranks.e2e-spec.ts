@@ -309,3 +309,39 @@ describe("prêt par envoi (plan E7, choix 4, lot L4a)", () => {
     expect(receipts).toEqual([]);
   });
 });
+
+/** Les clés des faits `order.ready` d'une commande, et le nombre de courriels « prête » partis. */
+async function readinessOf(orderId: string) {
+  await ctx.drain();
+  const facts = await ctx.prisma.outboxMessage.findMany({
+    where: { type: "order.ready", key: { startsWith: `order.ready:${orderId}` } },
+    orderBy: { key: "asc" },
+    select: { key: true },
+  });
+  const mails = await ctx.prisma.mailSend.count({ where: { template: "customer.order-ready" } });
+  return { keys: facts.map(({ key }) => key), mails };
+}
+
+describe("le reste prêt prévient le client (plan E7, choix 17, lot L4d)", () => {
+  it("avec un seul envoi : un fait, sa clé d'avant, un courriel", async () => {
+    const account = await placeOnAccount(await scene());
+    await closePlan();
+
+    await packed(account, 1);
+
+    expect(await readinessOf(account)).toEqual({ keys: [`order.ready:${account}`], mails: 1 });
+  });
+
+  it("le reste colisé publie `order.ready` à son rang, et un second courriel part", async () => {
+    const account = await handedOverOnAccount();
+    await planRemainder(account);
+    const before = await readinessOf(account);
+
+    await packed(account, 2);
+    await packed(account, 2);
+
+    const after = await readinessOf(account);
+    expect(after.keys).toEqual([...before.keys, `order.ready:${account}:r2`]);
+    expect(after.mails).toBe(before.mails + 1);
+  });
+});

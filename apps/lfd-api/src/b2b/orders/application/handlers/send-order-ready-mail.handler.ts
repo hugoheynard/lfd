@@ -58,9 +58,13 @@ export class SendOrderReadyMail implements DurableSubscriber {
     // compose une datée — c'est la même fonction d'envoi, et c'est l'appelant
     // qui choisit s'il se répète.
     // Par ENVOI (plan E7 reliquat, choix 17) : le rang 1 garde la clé d'avant.
+    // Un reste (rang > 1) dit « le reste de votre commande » (lot L4d).
     await this.mail.send(
       fact.orderId,
       `order.ready:${fact.orderId}${shipmentKeySuffix(fact.rank)}`,
+      {
+        rank: fact.rank,
+      },
     );
   }
 }
