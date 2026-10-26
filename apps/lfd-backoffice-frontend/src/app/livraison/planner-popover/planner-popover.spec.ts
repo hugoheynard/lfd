@@ -72,12 +72,12 @@ describe('PlannerPopover', () => {
         mounted.element.querySelector('.heading'),
         mounted.element.querySelector('[data-propose]'),
       ].map((element) => element?.textContent?.trim());
-    expect(said()).toEqual(['Proposer les tournées', 'Proposer les tournées', 'Proposer']);
+    expect(said()).toEqual(['Plus d’options', 'Proposer les tournées', 'Proposer']);
 
     mounted.fixture.componentRef.setInput('saved', true);
     mounted.fixture.detectChanges();
 
-    expect(said()).toEqual(['Recomposer les tournées', 'Recomposer les tournées', 'Recomposer']);
+    expect(said()).toEqual(['Plus d’options', 'Recomposer les tournées', 'Recomposer']);
   });
 
   it('propose sur les véhicules cochés, jamais celui dont tout est parti, puis se ferme', async () => {

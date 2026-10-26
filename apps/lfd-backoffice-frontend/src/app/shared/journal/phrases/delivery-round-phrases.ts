@@ -136,6 +136,27 @@ export const DELIVERY_ROUND_PHRASES = {
       [text('a retiré '), ...cite(ORDER, fact.payload['order']), text(' de '), ...round(fact)],
       [...ROUND_KEYS, 'order'],
     ),
+  // « Supprimer la tournée » (décision de Hugo, 2026-10-26) ; chaque arrêt a
+  // aussi son propre « a retiré ».
+  'delivery_round.removed': (fact) => {
+    const stops = count(fact.payload['stops']);
+    return byActor(
+      fact,
+      [
+        text('a supprimé '),
+        ...round(fact),
+        ...(stops === null || stops === 0
+          ? []
+          : [
+              text(', '),
+              value(
+                `${String(stops)} arrêt${stops > 1 ? 's' : ''} retourné${stops > 1 ? 's' : ''} à répartir`,
+              ),
+            ]),
+      ],
+      [...ROUND_KEYS, 'stops'],
+    );
+  },
   'delivery_round.reordered': (fact) =>
     byActor(
       fact,

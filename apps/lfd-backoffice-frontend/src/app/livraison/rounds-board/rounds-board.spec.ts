@@ -7,7 +7,9 @@ import { MAP_TILES } from '../map-tiles.config';
 import { RoundColumn } from '../round-column/round-column';
 import type { Board, BoardDrop, BoardRound, BoardStop } from '../rounds-board-model';
 import { POOL_KEY } from '../rounds-board-model';
-import { RoundsBoard } from './rounds-board';
+import { FoldButtonIconComponent } from 'fold-ng';
+import { type BoardFocus, roundChoiceLabel } from '../rounds-board-view';
+import { POOL_INLINE_SIZE, RoundsBoard } from './rounds-board';
 
 function stop(orderId: string): BoardStop {
   return {
@@ -118,30 +120,66 @@ describe('RoundsBoard', () => {
     const { element } = mount();
     expect(element.querySelectorAll('[data-vehicle-group]')).toHaveLength(2);
     expect(element.querySelector('[data-passages]')?.textContent).toContain('2 passages');
-    expect(element.querySelector('[data-map-title]')?.textContent).toContain('Toutes les tournées');
+    // « Toutes » n'a plus de carte : elle est dans « Par véhicule » (2026-10-26).
+    expect(element.querySelector('[data-map-panel]')).toBeNull();
     expect(element.querySelector('[data-tab="all"]')?.textContent).toContain('3 tournées');
   });
 
-  it('un onglet véhicule filtre le centre et met la carte sur « Ce véhicule » ; « Toutes » la remet', () => {
+  it('un onglet véhicule ouvre « Par véhicule » : ses tournées, la carte sur « Ce véhicule », sans onglets', () => {
     const { fixture, element } = mount();
     click(element, '[data-tab="v-1"]');
     fixture.detectChanges();
 
     const columns = fixture.debugElement.queryAll(By.directive(RoundColumn));
+    // Deux passages : le premier seul, le sélecteur choisit l'autre.
     expect(columns.map((column) => (column.componentInstance as RoundColumn).round().key)).toEqual([
       'r-1',
-      'r-3',
     ]);
     // L'onglet dit déjà le véhicule : pas d'en-tête de bloc.
     expect(element.querySelector('[data-passages]')).toBeNull();
     expect(element.querySelector('[data-map-title]')?.textContent).toContain('Kangoo blanc');
     expect(fixture.componentInstance['scope']()).toBe('vehicle');
     expect(element.querySelector('[data-round-title]')?.textContent).toContain('Passage 1');
+    // Les onglets restent en « Toutes » seulement : ici, ce sont les flèches.
+    expect(element.querySelector('[role="tablist"]')).toBeNull();
+    expect(element.querySelector('[data-vehicle-stepper]')).not.toBeNull();
+  });
 
-    click(element, '[data-tab="all"]');
+  it('les onglets par véhicule sont là en « Toutes »', () => {
+    const { element } = mount();
+    expect(element.querySelector('[role="tablist"]')).not.toBeNull();
+    expect(element.querySelector('[data-tab="v-1"]')).not.toBeNull();
+  });
+
+  it('« Passage » : seulement à deux passages ou plus ; il choisit la tournée, et revient à 1 au véhicule suivant', () => {
+    const { fixture, element } = mount();
+    const focuses: BoardFocus[] = [];
+    fixture.componentInstance.focusChange.subscribe((focus) => focuses.push(focus));
+    fixture.componentRef.setInput('focus', {
+      view: 'vehicule',
+      vehicleId: 'v-1',
+      passage: 1,
+      map: false,
+    });
     fixture.detectChanges();
-    expect(fixture.componentInstance['scope']()).toBe('all');
-    expect(element.querySelector('[data-map-title]')?.textContent).toContain('Toutes les tournées');
+    const shown = (): string[] =>
+      fixture.debugElement
+        .queryAll(By.directive(RoundColumn))
+        .map((column) => (column.componentInstance as RoundColumn).round().key);
+
+    expect(element.querySelector('[data-passage]')).not.toBeNull();
+    fixture.debugElement.query(By.css('[data-passage]')).triggerEventHandler('valueChange', '2');
+    fixture.detectChanges();
+    expect(focuses).toEqual([{ view: 'vehicule', vehicleId: 'v-1', passage: 2, map: false }]);
+    expect(shown()).toEqual(['r-3']);
+    expect(fixture.componentInstance['mains']().map((round) => round.key)).toEqual(['r-3']);
+
+    fixture.debugElement.query(By.css('[data-vehicle-next]')).triggerEventHandler('clicked');
+    fixture.detectChanges();
+    expect(focuses.at(-1)).toEqual({ view: 'vehicule', vehicleId: 'v-2', passage: 1, map: false });
+    // Un seul passage : pas de sélecteur.
+    expect(element.querySelector('[data-passage]')).toBeNull();
+    expect(shown()).toEqual(['r-2']);
   });
 
   it('dépôt sur un onglet : en fin du dernier passage en préparation, puis l’onglet s’ouvre', () => {
@@ -160,14 +198,156 @@ describe('RoundsBoard', () => {
     expect(missed).toEqual(['Trafic frigo']);
   });
 
-  it('« Mettre dans » : un bouton par tournée en préparation, qui envoie en fin de tournée', () => {
-    const { element, drops } = mount();
-    const buttons = [...element.querySelectorAll<HTMLButtonElement>('[data-order] [data-assign]')];
-    expect(buttons.map((button) => button.textContent?.trim())).toEqual(['Kangoo · 2']);
-    buttons[0]?.click();
+  it('« Mettre dans » : un sélecteur des tournées ouvertes, qui envoie en fin de tournée', () => {
+    const { fixture, drops } = mount();
+    fixture.componentRef.setInput('colors', new Map([['v-1', '#123456']]));
+    fixture.detectChanges();
+    const listbox = fixture.debugElement.query(By.css('[data-order] [data-assign]'));
+    const options = [
+      ...(listbox.nativeElement as HTMLElement).querySelectorAll('[data-assign-option]'),
+    ];
+    // Kangoo part deux fois : « · P2 ». Le carré à la couleur de la tournée, avant le nom.
+    expect(options.map((option) => option.textContent?.trim())).toEqual(['Kangoo blanc · P2']);
+    expect(
+      options[0]
+        ?.querySelector<HTMLElement>('[data-assign-swatch]')
+        ?.style.getPropertyValue('--vehicle-color'),
+    ).toBe('#123456');
+    listbox.triggerEventHandler('selectionChange', 'r-3');
     expect(drops).toEqual([
       { orderId: '4', from: { list: POOL_KEY, index: 0 }, to: { list: 'r-3', index: 0 } },
     ]);
+  });
+
+  it('le nom d’une tournée : le véhicule seul, « · P1 » quand il part plusieurs fois', () => {
+    const rounds = BOARD.rounds;
+    expect(roundChoiceLabel(rounds[1]!, rounds)).toBe('Trafic frigo');
+    expect(roundChoiceLabel(rounds[0]!, rounds)).toBe('Kangoo blanc · P1');
+    expect(roundChoiceLabel(rounds[2]!, rounds)).toBe('Kangoo blanc · P2');
+  });
+
+  it('« Par véhicule » : un véhicule, ses tournées et la carte ; la bascule remonte à la page', () => {
+    const { fixture, element } = mount();
+    const focuses: BoardFocus[] = [];
+    fixture.componentInstance.focusChange.subscribe((focus) => focuses.push(focus));
+
+    fixture.debugElement
+      .query(By.css('[data-board-view]'))
+      .triggerEventHandler('valueChange', 'vehicule');
+    fixture.detectChanges();
+
+    expect(focuses).toEqual([{ view: 'vehicule', vehicleId: null, passage: 1, map: false }]);
+    expect(element.querySelector('[data-board]')?.classList).not.toContain('all-view');
+    expect(element.querySelector('[data-map-panel]')).not.toBeNull();
+    expect(element.querySelector('[data-vehicle-name]')?.textContent).toContain('Kangoo blanc');
+    expect(element.querySelector('[data-vehicle-count]')?.textContent?.trim()).toBe('1 / 2');
+    expect(element.querySelectorAll('[data-vehicle-group]')).toHaveLength(1);
+    // Ni liste ni note sous la carte (Hugo, 2026-10-26).
+    expect(element.querySelector('[data-map-rows]')).toBeNull();
+    expect(element.querySelector('[data-map-note]')).toBeNull();
+
+    fixture.debugElement
+      .query(By.css('[data-board-view]'))
+      .triggerEventHandler('valueChange', 'toutes');
+    fixture.detectChanges();
+    expect(focuses.at(-1)).toEqual({ view: 'toutes', vehicleId: null, passage: 1, map: false });
+    expect(element.querySelector('[data-map-panel]')).toBeNull();
+    expect(element.querySelector('[data-vehicle-stepper]')).toBeNull();
+  });
+
+  it('les flèches passent d’un véhicule à l’autre, et s’éteignent au premier et au dernier', () => {
+    const { fixture, element } = mount();
+    const focuses: BoardFocus[] = [];
+    fixture.componentInstance.focusChange.subscribe((focus) => focuses.push(focus));
+    fixture.componentRef.setInput('focus', {
+      view: 'vehicule',
+      vehicleId: 'v-1',
+      passage: 1,
+      map: false,
+    });
+    fixture.detectChanges();
+    const arrow = (which: 'prev' | 'next'): FoldButtonIconComponent =>
+      fixture.debugElement.query(By.css(`[data-vehicle-${which}]`))
+        .componentInstance as FoldButtonIconComponent;
+
+    expect(arrow('prev').disabled()).toBe(true);
+    expect(arrow('next').disabled()).toBe(false);
+
+    fixture.debugElement.query(By.css('[data-vehicle-next]')).triggerEventHandler('clicked');
+    fixture.detectChanges();
+    expect(focuses).toEqual([{ view: 'vehicule', vehicleId: 'v-2', passage: 1, map: false }]);
+    expect(element.querySelector('[data-vehicle-name]')?.textContent).toContain('Trafic frigo');
+    expect(element.querySelector('[data-vehicle-count]')?.textContent?.trim()).toBe('2 / 2');
+    expect(arrow('next').disabled()).toBe(true);
+    expect(arrow('prev').disabled()).toBe(false);
+
+    fixture.debugElement.query(By.css('[data-vehicle-prev]')).triggerEventHandler('clicked');
+    fixture.detectChanges();
+    expect(focuses.at(-1)).toEqual({ view: 'vehicule', vehicleId: 'v-1', passage: 1, map: false });
+  });
+
+  it('un véhicule inconnu du jour retombe sur le premier', () => {
+    const { fixture, element } = mount();
+    fixture.componentRef.setInput('focus', {
+      view: 'vehicule',
+      vehicleId: 'v-disparu',
+      passage: 1,
+      map: false,
+    });
+    fixture.detectChanges();
+    expect(element.querySelector('[data-vehicle-name]')?.textContent).toContain('Kangoo blanc');
+  });
+
+  it('« Toutes » sur la carte : une colonne de tous les arrêts, la carte en grand ; puis retour aux colonnes', () => {
+    const { fixture, element } = mount();
+    const focuses: BoardFocus[] = [];
+    fixture.componentInstance.focusChange.subscribe((focus) => focuses.push(focus));
+    expect(element.querySelector('[data-map-switch]')?.textContent).toContain('Afficher la carte');
+
+    click(element, '[data-map-switch]');
+    fixture.detectChanges();
+    expect(focuses).toEqual([{ view: 'toutes', vehicleId: null, passage: 1, map: true }]);
+    expect(element.querySelector('[data-board]')?.classList).not.toContain('all-view');
+    expect(element.querySelector('[data-map-panel]')).not.toBeNull();
+    expect(element.querySelector('[data-vehicle-group]')).toBeNull();
+    const rows = [...element.querySelectorAll('[data-stop-row]')].map((row) => row.textContent);
+    // Les arrêts de TOUTES les tournées, marqués par véhicule.
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toContain('Kangoo');
+    expect(rows[1]).toContain('Trafic');
+    expect(element.querySelector('[data-map-switch]')?.textContent).toContain(
+      'Afficher les tournées',
+    );
+
+    click(element, '[data-map-switch]');
+    fixture.detectChanges();
+    expect(focuses.at(-1)).toEqual({ view: 'toutes', vehicleId: null, passage: 1, map: false });
+    expect(element.querySelector('[data-map-panel]')).toBeNull();
+    expect(element.querySelector('[data-vehicle-group]')).not.toBeNull();
+  });
+
+  it('« À répartir » garde la même largeur dans toutes les vues', () => {
+    const { fixture, element } = mount();
+    const board = element.querySelector<HTMLElement>('[data-board]');
+    const width = (): string | undefined => board?.style.getPropertyValue('--pool-inline-size');
+    const widths = [width()];
+    fixture.componentRef.setInput('focus', {
+      view: 'vehicule',
+      vehicleId: 'v-2',
+      passage: 1,
+      map: false,
+    });
+    fixture.detectChanges();
+    widths.push(width());
+    fixture.componentRef.setInput('focus', {
+      view: 'toutes',
+      vehicleId: null,
+      passage: 1,
+      map: true,
+    });
+    fixture.detectChanges();
+    widths.push(width());
+    expect(widths).toEqual([POOL_INLINE_SIZE, POOL_INLINE_SIZE, POOL_INLINE_SIZE]);
   });
 
   it('lâcher une commande à répartir sur « À répartir » ne fait rien', () => {
@@ -192,7 +372,7 @@ describe('RoundsBoard', () => {
     expect(element.querySelector('[data-order]')?.textContent).not.toContain('⋮⋮');
     // La carte et les onglets restent.
     expect(element.querySelector('[data-tab="v-1"]')).not.toBeNull();
-    expect(element.querySelector('[data-map-panel]')).not.toBeNull();
+    expect(element.querySelector('[data-board-view]')).not.toBeNull();
   });
 
   it('vide : « Tout est réparti »', () => {

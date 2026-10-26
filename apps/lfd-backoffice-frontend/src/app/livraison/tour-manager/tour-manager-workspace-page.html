@@ -34,8 +34,17 @@
         (click)="printDossier()"
         data-print-dossier
       >
-        Imprimer le dossier du jour
+        {{ dossierLabel() }}
       </button>
+    }
+    @if (summary(); as summary) {
+      <fold-badge
+        radius="square"
+        variant="neutral"
+        class="summary"
+        [content]="summary"
+        data-masthead-summary
+      />
     }
     <span class="stamp" data-stamp>{{ stamp() }}</span>
   </div>

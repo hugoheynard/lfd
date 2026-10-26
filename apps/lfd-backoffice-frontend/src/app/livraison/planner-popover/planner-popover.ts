@@ -93,8 +93,6 @@ export class PlannerPopover {
   readonly canReadSettings = input(false);
   /** Une écriture de la page est en vol. */
   readonly disabled = input(false);
-  /** Un aperçu est à l'écran : le bouton s'efface devant « Appliquer ». */
-  readonly previewing = input(false);
   /**
    * Le jour a déjà des tournées enregistrées — en général composées à l'arrêt
    * du plan : le geste se dit alors « Recomposer » (Hugo, 2026-10-07).

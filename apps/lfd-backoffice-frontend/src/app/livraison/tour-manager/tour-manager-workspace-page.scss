@@ -27,7 +27,17 @@
   gap: var(--fold-space-xs);
 }
 
-/* La date et l'heure, à droite — `margin-left: auto` pousse, il n'espace pas. */
+/* Le résumé du jour, poussé à droite juste avant la date — `margin-left: auto`
+   pousse, il n'espace pas ; sans résumé, c'est la date qui pousse. */
+.summary {
+  margin-left: auto;
+}
+
+.summary + .stamp {
+  margin-left: 0;
+}
+
+/* La date et l'heure, à droite. */
 .stamp {
   flex: none;
   margin-left: auto;

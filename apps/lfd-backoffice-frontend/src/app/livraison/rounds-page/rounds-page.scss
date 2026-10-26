@@ -21,50 +21,26 @@
   min-inline-size: 0;
 }
 
-/* Une seule ligne, sur fond clair séparé du tableau. */
-.toolbar {
+/* Les gestes de la page, projetés à droite de la rangée d'outils du tableau. */
+.board-actions {
   display: flex;
-  flex-wrap: nowrap;
   align-items: center;
-  gap: var(--fold-space-sm) var(--fold-space-md);
-  margin-inline: calc(-1 * var(--fold-space-lg));
-  padding: var(--fold-space-sm) var(--fold-space-lg);
-  background: var(--fold-color-surface-card);
-  border-block-end: 1px solid var(--fold-color-border);
-}
-
-.toolbar > * {
-  flex: none;
-}
-
-/* Faute de place, les badges passent sur deux lignes ; la barre, jamais. */
-.toolbar > .summary {
-  flex: 0 1 auto;
-  min-inline-size: 0;
-}
-
-.toolbar > .actions {
-  flex-wrap: nowrap;
+  gap: var(--fold-space-sm);
 }
 
 /* « + Nouvelle tournée » : plein sombre, comme la maquette. */
-.actions .new-round {
+.new-round {
   --b-base: var(--fold-color-text);
   --b-strong: color-mix(in srgb, var(--fold-color-text) 84%, var(--fold-color-bg-page));
   --b-on: var(--fold-color-surface-card);
 }
 
 .summary,
-.actions,
 .preview-band {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--fold-space-sm);
-}
-
-.actions {
-  margin-inline-start: auto;
 }
 
 .choice {

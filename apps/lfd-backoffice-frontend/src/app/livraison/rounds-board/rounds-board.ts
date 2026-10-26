@@ -9,10 +9,13 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  ElementRef,
   inject,
   input,
   output,
+  linkedSignal,
   signal,
+  viewChild,
 } from '@angular/core';
 import { Router } from '@angular/router';
 import type {
@@ -21,20 +24,23 @@ import type {
   DeliveryRoundTransferStopView,
   SitePaletteEntryView,
 } from '@lfd/contracts';
-import type { FoldSelectOption } from 'fold-ng';
+import type { FoldSelectOption, FoldViewToggleOption } from 'fold-ng';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
+  FoldButtonIconComponent,
   FoldElementTitleComponent,
   FoldEmptyStateComponent,
   FoldIconComponent,
   FoldLinkComponent,
+  FoldListboxComponent,
+  FoldOptionComponent,
   FoldLoadingStateComponent,
   FoldViewToggleComponent,
 } from 'fold-ng';
 
 import { DeliveryMap, type MapDeparture } from '../delivery-map/delivery-map';
-import { passageCountLabel, roundCountLabel, shortRoundLabel } from '../delivery-rounds';
+import { passageCountLabel, roundCountLabel } from '../delivery-rounds';
 import type { IncidentPhotoLoader } from '../incident-photo/incident-photo';
 import { OrderCard } from '../order-card/order-card';
 import { PlacementSuggestion } from '../placement-suggestion/placement-suggestion';
@@ -59,10 +65,14 @@ import {
   draggedTo,
   mapDashedOf,
   mapMutedOf,
+  ALL_FOCUS,
+  BOARD_VIEW_OPTIONS,
+  type BoardFocus,
   MAP_SCOPE_OPTIONS,
-  mapNoteOf,
+  VIEW_VEHICLE,
   mapRoundsOf,
   mapRowsOf,
+  roundChoiceLabel,
   mapSubtitleOf,
   orderMetaOf,
   orderWindowOf,
@@ -98,6 +108,17 @@ const TAB_PREFIX = 'tab:';
  * aperçu, recompose localement. Il ne garde que l'état de la vue : l'onglet,
  * la portée de la carte, l'arrêt survolé.
  */
+/**
+ * La largeur de « À répartir », UNE pour toutes les vues de l'onglet (Hugo,
+ * 2026-10-26) : un tiers du tableau environ, entre 260 et 360 px — le nom du
+ * client et la référence y tiennent. À 1366 px dans le shell (~910 px de
+ * tableau), ~275 px.
+ */
+/** Combien de temps « À répartir » se signale. */
+const POOL_FLASH_MS = 1600;
+
+export const POOL_INLINE_SIZE = 'clamp(16.25rem, 30%, 22.5rem)';
+
 @Component({
   selector: 'app-rounds-board',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -108,10 +129,13 @@ const TAB_PREFIX = 'tab:';
     CdkDropListGroup,
     FoldBadgeComponent,
     FoldButtonComponent,
+    FoldButtonIconComponent,
     FoldElementTitleComponent,
     FoldEmptyStateComponent,
     FoldIconComponent,
     FoldLinkComponent,
+    FoldListboxComponent,
+    FoldOptionComponent,
     FoldLoadingStateComponent,
     FoldViewToggleComponent,
     DeliveryMap,
@@ -145,6 +169,13 @@ export class RoundsBoard {
   readonly canOpenClients = input(false);
   /** La place suggérée de chaque commande à répartir (CA7), par commande ; vide en aperçu. */
   readonly suggestions = input<ReadonlyMap<string, DeliveryPlacementSuggestionView>>(new Map());
+  /**
+   * La vue de l'onglet (Hugo, 2026-10-26) : « Toutes » sans carte, ou « Par
+   * véhicule » — un véhicule, ses tournées et la carte en grand. La page la
+   * tient dans l'adresse (`?vue=vehicule&vehicule=…`) ; le tableau la montre
+   * et remonte chaque changement par {@link focusChange}.
+   */
+  readonly focus = input<BoardFocus>(ALL_FOCUS);
 
   readonly dropped = output<BoardDrop>();
   readonly shifted = output<RoundGesture<StopShift>>();
@@ -155,6 +186,7 @@ export class RoundsBoard {
   readonly returned = output<string>();
   readonly printed = output<string>();
   readonly retry = output();
+  readonly focusChange = output<BoardFocus>();
   /** « Placer ici » : la commande à poser à sa place suggérée (CA7). */
   readonly placed = output<string>();
   /** Un dépôt sur l'onglet d'un véhicule qui n'a aucune tournée en préparation. */
@@ -176,25 +208,43 @@ export class RoundsBoard {
     return transferTargetsOf(this.board()?.rounds ?? [], round.key);
   }
 
+  protected readonly poolInlineSize = POOL_INLINE_SIZE;
   protected readonly poolKey = POOL_KEY;
   protected readonly tabPrefix = TAB_PREFIX;
-  /** `all`, ou l'identifiant du véhicule dont l'onglet est ouvert. */
-  protected readonly tab = signal<string>(ALL);
+  /** Posée tout de suite au geste, puis recalée sur ce que la page relit de l'adresse. */
+  protected readonly current = linkedSignal(() => this.focus());
   /** La carte montre aussi les autres tournées, estompées. */
-  protected readonly mapAll = signal(true);
+  protected readonly mapAll = linkedSignal(() => this.current().view !== VIEW_VEHICLE);
   protected readonly highlighted = signal<string | null>(null);
-  /** Un glisser est en cours : l'onglet véhicule rappelle qu'on peut déposer sur un onglet. */
-  protected readonly dragging = signal(false);
+  /** « À répartir » se signale, le temps de {@link POOL_FLASH_MS}. */
+  protected readonly poolFlash = signal(false);
+  private readonly poolColumn = viewChild<ElementRef<HTMLElement>>('poolColumn');
   protected readonly tabOver = signal<string | null>(null);
 
   private readonly rounds = computed(() => this.board()?.rounds ?? []);
   protected readonly pool = computed(() => this.board()?.pool ?? []);
   protected readonly groups = computed(() => vehicleGroupsOf(this.rounds()));
 
-  /** L'onglet ouvert, s'il désigne toujours un véhicule du jour. */
+  /**
+   * Le véhicule regardé en « Par véhicule » : celui de l'adresse s'il roule ce
+   * jour-là, sinon le premier. `null` sur « Toutes », ou sans aucun véhicule.
+   */
   protected readonly vehicleTab = computed(() => {
-    const tab = this.tab();
-    return this.groups().find((group) => group.vehicleId === tab) ?? null;
+    const focus = this.current();
+    if (focus.view !== VIEW_VEHICLE) {
+      return null;
+    }
+    const groups = this.groups();
+    return groups.find((group) => group.vehicleId === focus.vehicleId) ?? groups[0] ?? null;
+  });
+
+  protected readonly viewOptions = BOARD_VIEW_OPTIONS;
+  protected readonly view = computed(() => this.current().view);
+
+  /** « 2 / 4 » entre les flèches, et leurs bornes : elles s'éteignent, sans boucler. */
+  protected readonly vehicleIndex = computed(() => {
+    const vehicle = this.vehicleTab();
+    return vehicle === null ? -1 : this.groups().indexOf(vehicle);
   });
 
   protected readonly visibleGroups = computed(() => {
@@ -202,15 +252,62 @@ export class RoundsBoard {
     return vehicle === null ? this.groups() : [vehicle];
   });
 
+  /** « Passage 1 / Passage 2 » : seulement quand le véhicule part plusieurs fois. */
+  protected readonly passageOptions = computed<readonly FoldViewToggleOption[]>(() => {
+    const rounds = this.vehicleTab()?.rounds ?? [];
+    return rounds.length < 2
+      ? []
+      : rounds.map((round, index) => ({
+          value: String(index + 1),
+          label: roundChoiceLabel(round, rounds),
+        }));
+  });
+
+  /** Le passage regardé, de 1 au nombre de passages ; un passage disparu retombe sur le premier. */
+  protected readonly passage = computed(() => {
+    const count = this.passageOptions().length;
+    const asked = this.current().passage;
+    return asked >= 1 && asked <= count ? asked : 1;
+  });
+
+  /** La tournée montrée seule, carte et liste ; `null` : un seul passage, ou « Toutes ». */
+  protected readonly passageKey = computed(() =>
+    this.passageOptions().length === 0
+      ? null
+      : (this.vehicleTab()?.rounds[this.passage() - 1]?.key ?? null),
+  );
+
+  /** « Toutes » sur la carte : une colonne de tous les arrêts, à la place des tournées. */
+  protected readonly allStops = computed(
+    () => this.vehicleTab() === null && this.current().view !== VIEW_VEHICLE && this.current().map,
+  );
+  /** La carte en grand : en « Par véhicule », ou en « Toutes » quand on l'a demandée. */
+  protected readonly mapShown = computed(() => this.vehicleTab() !== null || this.allStops());
+  protected readonly stopRows = computed(() =>
+    mapRowsOf(this.rounds(), (vehicleId) => this.colorOf(vehicleId)),
+  );
+
   protected readonly tabs = computed(() => vehicleTabsOf(this.groups()));
   protected readonly allCount = computed(() => roundCountLabel(this.rounds().length));
   protected readonly allAlerts = computed(() => alertTotalOf(this.rounds()));
 
   /** Les tournées où « Mettre dans » peut envoyer une commande. */
   protected readonly openRounds = computed(() => this.rounds().filter((round) => !round.frozen));
+  /** Le sélecteur « Mettre dans » d'une commande à répartir : une option par tournée ouverte. */
+  protected readonly placeOptions = computed(() =>
+    this.openRounds().map((round) => ({
+      value: round.key,
+      label: roundChoiceLabel(round, this.rounds()),
+      color: this.colorOf(round.vehicleId),
+    })),
+  );
 
   /** Ce que la carte regarde : toutes les tournées, ou celles du véhicule ouvert. */
-  private readonly mains = computed(() => this.vehicleTab()?.rounds ?? this.rounds());
+  private readonly mains = computed(() => {
+    const key = this.passageKey();
+    const vehicle = this.vehicleTab()?.rounds ?? this.rounds();
+    return key === null ? vehicle : vehicle.filter((round) => round.key === key);
+  });
 
   protected readonly scopeOptions = MAP_SCOPE_OPTIONS;
   protected readonly scope = computed(() =>
@@ -221,9 +318,20 @@ export class RoundsBoard {
     mapRoundsOf(this.scope() === SCOPE_ALL ? this.rounds() : this.mains()),
   );
   /** Les autres tournées, en pointillé à 40 %, quand un véhicule est ouvert sur « Toutes ». */
-  protected readonly mapMuted = computed(() => mapMutedOf(this.rounds(), this.vehicleTab()));
+  protected readonly mapMuted = computed(() => {
+    const key = this.passageKey();
+    return key === null
+      ? mapMutedOf(this.rounds(), this.vehicleTab())
+      : new Set(
+          this.rounds()
+            .filter((round) => round.key !== key)
+            .map((round) => round.key),
+        );
+  });
   /** Le second passage du véhicule ouvert, en tirets. */
-  protected readonly mapDashed = computed(() => mapDashedOf(this.vehicleTab()));
+  protected readonly mapDashed = computed(() =>
+    this.passageKey() === null ? mapDashedOf(this.vehicleTab()) : new Set<string>(),
+  );
 
   protected readonly mapTitle = computed(
     () => this.vehicleTab()?.vehicleName ?? 'Toutes les tournées',
@@ -232,18 +340,11 @@ export class RoundsBoard {
     mapSubtitleOf(this.mains(), this.departure(), this.vehicleTab() !== null),
   );
 
-  protected readonly mapRows = computed(() =>
-    mapRowsOf(this.mains(), this.vehicleTab() !== null, (vehicleId) => this.colorOf(vehicleId)),
-  );
-
-  protected readonly mapNote = computed(() => mapNoteOf(this.mains()));
-
   protected readonly poolSubtitle = computed(() => poolSubtitleOf(this.preview()));
 
   protected readonly titleOf = cardTitleOf;
   protected readonly tagsOf = orderTagsOf;
   protected readonly ariaOf = orderAriaOf;
-  protected readonly shortRoundLabel = shortRoundLabel;
   protected readonly passageCountLabel = passageCountLabel;
   protected readonly needsGps = needsGps;
 
@@ -262,8 +363,60 @@ export class RoundsBoard {
   protected readonly passageNote = passageNoteOf;
 
   protected pickTab(vehicleId: string): void {
-    this.tab.set(vehicleId);
-    this.mapAll.set(vehicleId === ALL);
+    this.show(
+      vehicleId === ALL ? ALL_FOCUS : { view: VIEW_VEHICLE, vehicleId, passage: 1, map: false },
+    );
+  }
+
+  /** La bascule « Toutes » / « Par véhicule » ; le véhicule déjà choisi est gardé. */
+  protected pickView(view: string): void {
+    if (view === VIEW_VEHICLE) {
+      this.show({
+        view: VIEW_VEHICLE,
+        vehicleId: this.current().vehicleId,
+        passage: 1,
+        map: false,
+      });
+    } else {
+      this.pickTab(ALL);
+    }
+  }
+
+  /**
+   * « Les placer à la main » (encadré du plan arrêté) : la colonne « À
+   * répartir » vient à l'écran et se signale brièvement.
+   */
+  highlightPool(): void {
+    this.poolColumn()?.nativeElement.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' });
+    this.poolFlash.set(true);
+    setTimeout(() => this.poolFlash.set(false), POOL_FLASH_MS);
+  }
+
+  /** « Afficher la carte » / « Afficher les tournées », en « Toutes ». */
+  protected toggleMap(): void {
+    this.show({ ...ALL_FOCUS, map: !this.current().map });
+  }
+
+  /** « Passage 1 / Passage 2 » : la tournée du véhicule montrée sur la carte et dans la liste. */
+  protected pickPassage(value: string): void {
+    const vehicle = this.vehicleTab();
+    const passage = Number(value);
+    if (vehicle !== null && Number.isInteger(passage)) {
+      this.show({ view: VIEW_VEHICLE, vehicleId: vehicle.vehicleId, passage, map: false });
+    }
+  }
+
+  /** ← → : le véhicule précédent ou suivant ; rien au-delà du premier ou du dernier. */
+  protected stepVehicle(delta: number): void {
+    const next = this.groups()[this.vehicleIndex() + delta];
+    if (next !== undefined) {
+      this.pickTab(next.vehicleId);
+    }
+  }
+
+  private show(focus: BoardFocus): void {
+    this.current.set(focus);
+    this.focusChange.emit(focus);
   }
 
   /** Sans véhicule ouvert, « Ce véhicule » n'a rien à montrer : la carte reste sur toutes. */
@@ -272,6 +425,14 @@ export class RoundsBoard {
   }
 
   /** « Mettre dans » : l'équivalent clavier du glisser, en fin de tournée. */
+  /** « Mettre dans » : la tournée choisie au sélecteur. */
+  protected putIn(order: BoardOrder, index: number, key: string): void {
+    const round = this.openRounds().find((candidate) => candidate.key === key);
+    if (round !== undefined) {
+      this.put(order, index, round);
+    }
+  }
+
   protected put(order: BoardOrder, index: number, round: BoardRound): void {
     this.dropped.emit(putDropOf(order, index, round));
   }

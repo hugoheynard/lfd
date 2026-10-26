@@ -1,13 +1,15 @@
 <fold-popover placement="bottom-end" [(open)]="open">
+  <!-- Les gestes rares, derrière un seul bouton de la rangée d'outils (2026-10-26). -->
   <button
     foldButton
     foldPopoverTrigger
-    icon="edit"
-    [emphasis]="previewing() ? 'soft' : 'solid'"
+    size="sm"
+    emphasis="outline"
+    iconTrailing="chevron-down"
     [disabled]="disabled()"
     data-planner-open
   >
-    {{ verb() }} les tournées
+    Plus d’options
   </button>
   <div
     foldPopoverPanel

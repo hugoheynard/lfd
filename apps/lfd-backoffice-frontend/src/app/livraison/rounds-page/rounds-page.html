@@ -18,87 +18,17 @@
 
   <div class="page">
     <div class="no-print screen">
-      <!-- Le jour se choisit au bandeau de Tour manager, commun aux deux onglets (2026-10-26). -->
-      <div class="toolbar" data-rounds-toolbar>
-        @if (board() !== null) {
-          <div class="summary" data-summary>
-            @if (summary().pool > 0) {
-              <fold-badge
-                radius="square"
-                variant="warning"
-                [content]="summary().pool + ' à répartir'"
-                data-summary-pool
-              />
-            } @else {
-              <fold-badge
-                radius="square"
-                variant="success"
-                content="Tout est réparti"
-                data-summary-pool
-              />
-            }
-            <fold-badge radius="square" variant="neutral" [content]="summary().rounds" />
-            @if (summary().alerts > 0) {
-              <fold-badge
-                radius="square"
-                variant="alert"
-                [content]="summary().alerts + ' à régler'"
-                data-summary-alerts
-              />
-            }
-          </div>
-        }
-
-        <div class="actions">
-          @if (canWrite()) {
-            <app-planner-popover
-              [day]="day()"
-              [vehicles]="plannerVehicles()"
-              [canWrite]="canWrite()"
-              [canReadSettings]="canReadSettings()"
-              [disabled]="busy() || state().status !== 'ready'"
-              [previewing]="preview.active()"
-              [saved]="(composed()?.rounds.length ?? 0) > 0"
-              [(open)]="plannerOpen"
-              (proposed)="showProposal($event)"
-              (located)="located()"
-            />
-            <fold-dropdown placement="bottom-end" ariaLabel="Choisir un véhicule">
-              <button
-                foldButton
-                foldPopoverTrigger="menu"
-                class="new-round"
-                icon="plus"
-                [disabled]="busy() || preview.active() || newRoundChoices().length === 0"
-                data-open-round
-              >
-                Nouvelle tournée
-              </button>
-              @for (vehicle of newRoundChoices(); track vehicle.id) {
-                <fold-dropdown-item (selected)="openRound(vehicle.id)" data-vehicle-choice>
-                  <span class="choice">
-                    <span
-                      class="swatch"
-                      aria-hidden="true"
-                      [style.background]="vehicle.color"
-                    ></span>
-                    <span class="choice-name">{{ vehicle.name }}</span>
-                    <span class="choice-sub">{{ vehicle.sub }}</span>
-                  </span>
-                </fold-dropdown-item>
-              }
-            </fold-dropdown>
-          }
-        </div>
-      </div>
-
       @if (!preview.active()) {
         @if (lastLoad(); as loaded) {
           <app-day-readiness-banner
             [day]="loaded.day"
             [refresh]="loaded.count"
-            [canWrite]="canWrite()"
-            (propose)="plannerOpen.set(true)"
+            [canWrite]="canCompose()"
+            [past]="past()"
+            [placing]="autoPlacing()"
+            [refusal]="autoRefusal()"
+            (autoPlace)="autoPlace()"
+            (placeByHand)="placeByHand()"
           />
         }
       }
@@ -108,7 +38,7 @@
           <div class="preview-band" role="status">
             <fold-badge radius="square" variant="info" content="APERÇU" />
             <span class="preview-text" data-proposal-mode>
-              <strong>{{ previewMode() }}</strong> — rien n’est écrit tant que vous n’appliquez pas.
+              <strong>{{ previewMode() }}</strong> — rien n’est écrit tant que vous ne validez pas.
               Glissez pour ajuster ; les arrêts proposés sont en bleu.
             </span>
             <div class="summary" data-plan-summary>
@@ -159,7 +89,7 @@
               (click)="discard()"
               data-discard
             >
-              Jeter
+              Annuler
             </button>
             @if (canWrite()) {
               <button
@@ -169,7 +99,7 @@
                 (click)="apply()"
                 data-apply
               >
-                Appliquer
+                Valider
               </button>
             }
           </div>
@@ -209,6 +139,8 @@
         [departure]="departure()"
         [canOpenClients]="canSeePhotos()"
         [suggestions]="shownSuggestions()"
+        [focus]="focus()"
+        (focusChange)="showFocus($event)"
         (dropped)="onDrop($event)"
         (shifted)="onShift($event)"
         (removed)="onRemove($event)"
@@ -223,7 +155,56 @@
         (transferManifest)="openManifest($event)"
         (transferRemoved)="removeTransferStop($event)"
         (transferMoved)="moveTransferStop($event)"
-      />
+      >
+        <div boardActions class="board-actions">
+          @if (summary().alerts > 0) {
+            <fold-badge
+              radius="square"
+              variant="alert"
+              [content]="summary().alerts + ' à régler'"
+              data-summary-alerts
+            />
+          }
+          @if (canCompose()) {
+            <app-planner-popover
+              [day]="day()"
+              [vehicles]="plannerVehicles()"
+              [canWrite]="canWrite()"
+              [canReadSettings]="canReadSettings()"
+              [disabled]="busy() || state().status !== 'ready'"
+              [saved]="(composed()?.rounds.length ?? 0) > 0"
+              (proposed)="showProposal($event)"
+              (located)="located()"
+            />
+            <fold-dropdown placement="bottom-end" ariaLabel="Choisir un véhicule">
+              <button
+                foldButton
+                foldPopoverTrigger="menu"
+                size="sm"
+                class="new-round"
+                icon="plus"
+                [disabled]="busy() || preview.active() || newRoundChoices().length === 0"
+                data-open-round
+              >
+                Nouvelle tournée
+              </button>
+              @for (vehicle of newRoundChoices(); track vehicle.id) {
+                <fold-dropdown-item (selected)="openRound(vehicle.id)" data-vehicle-choice>
+                  <span class="choice">
+                    <span
+                      class="swatch"
+                      aria-hidden="true"
+                      [style.background]="vehicle.color"
+                    ></span>
+                    <span class="choice-name">{{ vehicle.name }}</span>
+                    <span class="choice-sub">{{ vehicle.sub }}</span>
+                  </span>
+                </fold-dropdown-item>
+              }
+            </fold-dropdown>
+          }
+        </div>
+      </app-rounds-board>
     </div>
   </div>
 

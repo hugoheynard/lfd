@@ -58,6 +58,15 @@ describe('la composition des tournées (delivery_round.*)', () => {
     );
   });
 
+  it('dit une tournée supprimée et ses arrêts retournés à répartir', () => {
+    expect(sentence(fact('delivery_round.removed', { ...ROUND, stops: 3 }))).toBe(
+      'Colette Martin a supprimé la tournée « Kangoo » du 1 octobre 2026, passage 2, 3 arrêts retournés à répartir',
+    );
+    expect(sentence(fact('delivery_round.removed', { ...ROUND, stops: 0 }))).toBe(
+      'Colette Martin a supprimé la tournée « Kangoo » du 1 octobre 2026, passage 2',
+    );
+  });
+
   it('dit un retrait et un réordonnancement, avant et après', () => {
     expect(
       sentence(

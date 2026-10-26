@@ -11,7 +11,12 @@ import { DeliveryRoundsService } from '../delivery-rounds.service';
 import { DayCalendar } from '../../shared/day-calendar/day-calendar';
 import { parisDayOf, shiftDay } from '../run-sheet';
 import { daysBetween, TourManagerDay } from './tour-manager-day';
-import { stampLabelOf, TourManagerWorkspacePage } from './tour-manager-workspace-page';
+import { TourManagerSummary } from './tour-manager-summary';
+import {
+  dossierLabelOf,
+  stampLabelOf,
+  TourManagerWorkspacePage,
+} from './tour-manager-workspace-page';
 
 /** Un onglet doublé : il dit le jour qu'il lit au bandeau. */
 @Component({ template: '<p data-tab-day>{{ day() }}</p>' })
@@ -77,6 +82,39 @@ describe('le bandeau de Tour manager (2026-10-26)', () => {
     expect(tabDay(element)).toBe('2026-10-27');
   });
 
+  it('montre le résumé du jour publié par l’onglet Tournées, juste avant la date', async () => {
+    const { harness, element } = await open('/tour-manager/tournees?jour=2026-10-27');
+    expect(element.querySelector('[data-masthead-summary]')).toBeNull();
+    const summaries = harness.fixture.debugElement
+      .query(By.directive(TourManagerWorkspacePage))
+      .injector.get(TourManagerSummary);
+
+    summaries.publish('2026-10-27', '4 tournées · 20 arrêts');
+    harness.detectChanges();
+    const badge = element.querySelector('[data-masthead-summary]');
+    expect(badge?.getAttribute('content') ?? badge?.textContent).toContain(
+      '4 tournées · 20 arrêts',
+    );
+    expect(badge?.nextElementSibling?.hasAttribute('data-stamp')).toBe(true);
+
+    // Un résumé d'un autre jour ne s'affiche pas.
+    summaries.publish('2026-10-28', '1 tournée · 2 arrêts');
+    harness.detectChanges();
+    expect(element.querySelector('[data-masthead-summary]')).toBeNull();
+  });
+
+  it('avec la seule feuille de route : pas de résumé', async () => {
+    const { harness, element } = await open('/tour-manager/feuille-de-route?jour=2026-10-27', [
+      'delivery_run_sheet:read',
+    ]);
+    harness.fixture.debugElement
+      .query(By.directive(TourManagerWorkspacePage))
+      .injector.get(TourManagerSummary)
+      .publish('2026-10-27', '4 tournées · 20 arrêts');
+    harness.detectChanges();
+    expect(element.querySelector('[data-masthead-summary]')).toBeNull();
+  });
+
   it('n’offre que les onglets permis', async () => {
     const { harness } = await open('/tour-manager/feuille-de-route', ['delivery_run_sheet:read']);
     const toggle = harness.fixture.debugElement.query(By.css('[data-tour-manager-tabs]'));
@@ -130,13 +168,26 @@ describe('daysBetween / stampLabelOf', () => {
   });
 
   describe('le dossier du jour (2026-10-26)', () => {
+    it('le libellé suit le jour choisi', async () => {
+      const { harness, element } = await open('/tour-manager/tournees?jour=2026-10-27');
+      harness.fixture.debugElement
+        .query(By.directive(TourManagerWorkspacePage))
+        .injector.get(TourManagerDay)
+        .day.set('2026-11-02');
+      harness.detectChanges();
+      expect(element.querySelector('[data-print-dossier]')?.textContent).toContain(
+        'Voir le dossier du lundi 2 nov.',
+      );
+      expect(dossierLabelOf('2026-03-29')).toBe('Voir le dossier du dimanche 29 mars');
+    });
+
     it('ouvre le dossier des tournées du jour commun', async () => {
       dayDossierPdf.mockClear();
       const open$ = vi.spyOn(window, 'open').mockReturnValue(null);
       vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:dossier');
       const { harness, element } = await open('/tour-manager/feuille-de-route?jour=2026-10-27');
       const button = element.querySelector<HTMLButtonElement>('[data-print-dossier]');
-      expect(button?.textContent).toContain('Imprimer le dossier du jour');
+      expect(button?.textContent).toContain('Voir le dossier du mardi 27 oct.');
 
       button?.click();
       await harness.fixture.whenStable();

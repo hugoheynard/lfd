@@ -1,16 +1,68 @@
 /*
- * Trois colonnes fixes : À répartir 260 · les tournées · la carte 340. Dans le
+ * « Par véhicule » : À répartir (`POOL_INLINE_SIZE`) · les tournées · la carte
+ * en grand, à parts égales (2026-10-26 ; avant : 260 · 1fr · 340). Dans le
  * shell (rail + menu Livraison), le tableau n'a que ~985 px à 1440 : les
  * latérales sont resserrées, et la colonne des tournées défile DANS sa zone
  * plutôt que la page (décision d'Hugo, 2026-10-03).
  */
 .board {
   display: grid;
-  grid-template-columns: 16.25rem minmax(20rem, 1fr) 21.25rem;
+  grid-template-columns: var(--pool-inline-size) minmax(20rem, 1fr) minmax(18rem, 1fr);
   min-inline-size: 0;
   gap: var(--fold-space-md);
   block-size: 75dvh;
   min-block-size: 36rem;
+}
+
+/* « Toutes » : les tournées sans carte. « À répartir » garde sa largeur unique
+ * (`POOL_INLINE_SIZE`) dans les deux vues. */
+.all-view {
+  grid-template-columns: var(--pool-inline-size) minmax(20rem, 1fr);
+}
+
+/* UNE rangée d'outils au-dessus des colonnes (2026-10-26) : la vue et ses
+ * choix à gauche, les gestes de la page à droite ; elle passe à la ligne
+ * quand la largeur manque. */
+.frame {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.board-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+
+  .tabs {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+  }
+}
+
+.board-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  margin-inline-start: auto;
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}
+
+.stepper-name {
+  font-weight: var(--fold-weight-semibold);
+  white-space: nowrap;
+}
+
+.stepper-count {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+  font-variant-numeric: tabular-nums;
 }
 
 .pool,
@@ -28,6 +80,12 @@
   background: var(--fold-color-surface-card);
   border: 1px solid var(--fold-color-border);
   border-radius: var(--fold-radius-lg);
+}
+
+/* « Les placer à la main » : la colonne se signale un instant. */
+.pool.flash {
+  outline: 2px solid var(--fold-color-primary);
+  outline-offset: 2px;
 }
 
 /* Un arrêt de tournée en vol : la colonne l'accueille pour le retirer. */
@@ -63,18 +121,6 @@
   text-align: center;
   border: 1px dashed var(--fold-color-primary);
   border-radius: var(--fold-radius-md);
-}
-
-.quick {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--fold-space-xs);
-}
-
-.quick-label {
-  color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-xs);
 }
 
 .swatch {
@@ -157,14 +203,6 @@
 
 .active .tab-count {
   color: var(--fold-color-primary-text);
-}
-
-.drag-hint {
-  padding: var(--fold-space-xs) var(--fold-space-md);
-  color: var(--fold-color-primary-text);
-  font-size: var(--fold-text-xs);
-  font-weight: var(--fold-weight-semibold);
-  background: var(--fold-color-info-surface);
 }
 
 .lanes {
@@ -263,20 +301,28 @@
   font-weight: var(--fold-weight-bold);
 }
 
-.map-sub,
-.map-note {
+.map-sub {
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-xs);
 }
 
-/* Sa hauteur est celle de la carte elle-même : une boîte plus courte la laissait déborder sur la liste. */
+/* La carte en grand : son canevas prend la hauteur libre (2026-10-26). */
 .map-canvas {
   display: flex;
-  flex: none;
+  flex: 1;
+  min-block-size: 0;
   flex-direction: column;
 }
 
-.map-rows {
+/* ─── « Toutes » sur la carte : tous les arrêts, une colonne ─── */
+
+.choice {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}
+
+.stop-list {
   display: flex;
   flex-direction: column;
   margin: 0;
@@ -284,7 +330,7 @@
   list-style: none;
 }
 
-.map-row {
+.stop-row {
   display: flex;
   align-items: center;
   gap: var(--fold-space-sm);
@@ -302,7 +348,7 @@
   color: var(--fold-color-warning-text);
 }
 
-.map-num {
+.stop-num {
   display: grid;
   flex: none;
   place-items: center;
@@ -315,7 +361,7 @@
   border-radius: var(--fold-radius-round);
 }
 
-.map-row-title {
+.stop-title {
   flex: 1;
   min-inline-size: 0;
   overflow: hidden;
@@ -323,7 +369,7 @@
   white-space: nowrap;
 }
 
-.map-row-window {
+.stop-window {
   font-family: var(--fold-font-mono);
   font-size: var(--fold-text-xs);
   font-weight: var(--fold-weight-bold);

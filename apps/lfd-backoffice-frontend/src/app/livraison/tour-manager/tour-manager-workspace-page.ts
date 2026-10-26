@@ -12,6 +12,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import type { FoldViewToggleOption } from 'fold-ng';
 import {
+  FoldBadgeComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldSurfaceDirective,
@@ -24,6 +25,7 @@ import { DayCalendar } from '../../shared/day-calendar/day-calendar';
 import { RoundPdf } from '../round-pdf';
 import { DAY_QUERY_PARAM } from '../run-sheet';
 import { TOUR_MANAGER_DAY_OPTIONS, TourManagerDay } from './tour-manager-day';
+import { TourManagerSummary } from './tour-manager-summary';
 import { permittedTourManagerViews } from './tour-manager-views';
 
 /** L'horloge du bandeau avance à la minute ; la relire plus souvent ne montre rien. */
@@ -48,6 +50,14 @@ export function stampLabelOf(now: Date): string {
 }
 
 /**
+ * « Voir le dossier du lundi 26 oct. » — le jour commun, au format de la date
+ * du bandeau. Midi UTC : le même jour civil à Paris, été comme hiver.
+ */
+export function dossierLabelOf(day: string): string {
+  return `Voir le dossier du ${STAMP_DAY.format(new Date(`${day}T12:00:00Z`))}`;
+}
+
+/**
  * **L'espace Tour manager** — le bandeau, puis la vue ouverte (Hugo,
  * 2026-10-26 : « le haut s'inspire du bandeau de la Supervision »).
  *
@@ -66,13 +76,14 @@ export function stampLabelOf(now: Date): string {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     DayCalendar,
+    FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldSurfaceDirective,
     FoldViewToggleComponent,
     RouterOutlet,
   ],
-  providers: [TourManagerDay, RoundPdf],
+  providers: [TourManagerDay, TourManagerSummary, RoundPdf],
   templateUrl: './tour-manager-workspace-page.html',
   styleUrl: './tour-manager-workspace-page.scss',
 })
@@ -87,6 +98,16 @@ export class TourManagerWorkspacePage {
 
   /** Le dossier du jour, sous le droit de lire les tournées — quel que soit l'onglet. */
   protected readonly canPrintDossier = computed(() => this.permissions.can('delivery_rounds:read'));
+
+  private readonly summaries = inject(TourManagerSummary);
+  protected readonly dossierLabel = computed(() => dossierLabelOf(this.days.day()));
+  /**
+   * « 4 tournées · 20 arrêts », avant la date : publié par l'onglet Tournées,
+   * sous le même droit — avec la seule feuille de route, rien.
+   */
+  protected readonly summary = computed(() =>
+    this.canPrintDossier() ? this.summaries.labelFor(this.days.day()) : null,
+  );
 
   /** Les onglets permis : un onglet sans droit mènerait à un refus du garde. */
   private readonly views = computed(() =>

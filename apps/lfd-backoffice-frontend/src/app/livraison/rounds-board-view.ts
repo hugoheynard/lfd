@@ -2,7 +2,7 @@ import type { CdkDragDrop } from '@angular/cdk/drag-drop';
 import type { FoldSelectOption, FoldViewToggleOption } from 'fold-ng';
 
 import type { MapDeparture } from './delivery-map/delivery-map';
-import { type PlannedRound, stopPointOf } from './delivery-planning';
+import type { PlannedRound } from './delivery-planning';
 import {
   type ListSlot,
   passageCountLabel,
@@ -39,7 +39,42 @@ export const MAP_SCOPE_OPTIONS: readonly FoldViewToggleOption[] = [
   { value: SCOPE_ALL, label: 'Toutes' },
 ];
 
-/** Une ligne de la liste sous la carte. */
+/** La vue « Par véhicule » de l'onglet Tournées — aussi sa valeur dans l'adresse. */
+export const VIEW_VEHICLE = 'vehicule' as const;
+/** La vue « Toutes » : les tournées côte à côte, sans carte. */
+export const VIEW_ALL = 'toutes' as const;
+
+/** Ce que l'onglet regarde : une vue, et en « Par véhicule », le véhicule demandé. */
+export interface BoardFocus {
+  readonly view: typeof VIEW_ALL | typeof VIEW_VEHICLE;
+  /** Le véhicule demandé ; `null` : le premier du jour. */
+  readonly vehicleId: string | null;
+  /** Le passage regardé, à partir de 1 — remis à 1 à chaque changement de véhicule. */
+  readonly passage: number;
+  /** En « Toutes », la carte à côté d'une colonne de tous les arrêts (`?carte=1`). */
+  readonly map: boolean;
+}
+
+export const ALL_FOCUS: BoardFocus = { view: VIEW_ALL, vehicleId: null, passage: 1, map: false };
+
+export const BOARD_VIEW_OPTIONS: readonly FoldViewToggleOption[] = [
+  { value: VIEW_ALL, label: 'Toutes' },
+  { value: VIEW_VEHICLE, label: 'Par véhicule' },
+];
+
+/**
+ * Le nom d'une tournée dans Tour manager : le véhicule, et « · P2 » quand il
+ * part plusieurs fois ce jour-là — « Camionnette 1 · P1 » (Hugo, 2026-10-26).
+ */
+export function roundChoiceLabel(
+  round: Pick<BoardRound, 'vehicleId' | 'vehicleName' | 'passage'>,
+  rounds: readonly Pick<BoardRound, 'vehicleId'>[],
+): string {
+  const passages = rounds.filter((other) => other.vehicleId === round.vehicleId).length;
+  return passages > 1 ? `${round.vehicleName} · P${String(round.passage)}` : round.vehicleName;
+}
+
+/** Un arrêt de la colonne « tous les arrêts » de « Toutes » sur la carte. */
 export interface MapRow {
   readonly orderId: string;
   readonly number: number;
@@ -47,6 +82,23 @@ export interface MapRow {
   readonly title: string;
   readonly window: string;
   readonly clash: boolean;
+}
+
+/** Tous les arrêts, numérotés par tournée, marqués et colorés par véhicule. */
+export function mapRowsOf(
+  mains: readonly BoardRound[],
+  colorOf: (vehicleId: string) => string,
+): readonly MapRow[] {
+  return mains.flatMap((round) =>
+    round.stops.map((stop, index) => ({
+      orderId: stop.orderId,
+      number: index + 1,
+      color: colorOf(round.vehicleId),
+      title: `${mapRowPrefixOf(round, false, mains.length > 1)}${cardTitleOf(stop)}`,
+      window: windowShortLabel(stop.window),
+      clash: stop.windowClash !== null,
+    })),
+  );
 }
 
 /** « 6 arrêts · départ et retour Fournil · passage 2 en tirets ». */
@@ -64,40 +116,6 @@ export function mapSubtitleOf(
     parts.push('passage 2 en tirets');
   }
   return parts.join(' · ');
-}
-
-/** La liste sous la carte, numérotée par tournée et colorée par véhicule. */
-export function mapRowsOf(
-  mains: readonly BoardRound[],
-  inVehicle: boolean,
-  colorOf: (vehicleId: string) => string,
-): readonly MapRow[] {
-  return mains.flatMap((round) =>
-    round.stops.map((stop, index) => ({
-      orderId: stop.orderId,
-      number: index + 1,
-      color: colorOf(round.vehicleId),
-      title: `${mapRowPrefixOf(round, inVehicle, mains.length > 1)}${cardTitleOf(stop)}`,
-      window: windowShortLabel(stop.window),
-      clash: stop.windowClash !== null,
-    })),
-  );
-}
-
-/** Ce que la carte ne montre pas, dit sous elle : arrêts non situés, ordre intenable. */
-export function mapNoteOf(mains: readonly BoardRound[]): string {
-  const stops = mains.flatMap((round) => round.stops);
-  const missing = stops.filter((stop) => stopPointOf({ sheet: stop.sheet }) === null).length;
-  const parts: string[] = [];
-  if (missing === 1) {
-    parts.push('1 arrêt non situé, absent de la carte.');
-  } else if (missing > 1) {
-    parts.push(`${String(missing)} arrêts non situés, absents de la carte.`);
-  }
-  if (stops.some((stop) => stop.windowClash !== null)) {
-    parts.push('Fenêtre intenable : l’ordre fait revenir en arrière.');
-  }
-  return parts.join(' ');
 }
 
 /** « Passage 1 » / « Tournée unique ». */

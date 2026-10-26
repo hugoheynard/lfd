@@ -3,45 +3,68 @@
     L’état du plan de ce jour n’a pas pu être lu : on ne sait pas s’il est arrêté. Rechargez la page
     pour réessayer.
   </fold-callout>
+} @else if (past()) {
+  @if (state().status === 'ready') {
+    @if (arrest(); as arrest) {
+      <fold-callout
+        [variant]="arrest.unplacedCount > 0 ? 'warning' : 'success'"
+        data-readiness-past
+      >
+        <strong>Journée passée</strong> — {{ pastWords() }}
+      </fold-callout>
+    } @else {
+      <fold-callout variant="info" data-readiness-past>
+        <strong>Journée passée</strong> — le plan n’a pas été arrêté ce jour-là.
+      </fold-callout>
+    }
+  }
 } @else if (arrest(); as arrest) {
   @if (gapWords(); as gap) {
     <fold-callout variant="alert" data-readiness-gap>
       <strong>Plan arrêté — {{ countLabel() }}</strong
       >, mais impossible de proposer les tournées : {{ gap }}.
     </fold-callout>
-  } @else if (imminentWords(); as imminent) {
-    <fold-callout variant="warning" data-readiness-imminent>
-      <strong>{{ imminent }}</strong> — le plan est arrêté ({{ countLabel() }}). Composez ou
-      placez-les avant le départ.
+  } @else if (arrest.unplacedCount > 0) {
+    <fold-callout [variant]="imminent() ? 'warning' : 'info'" data-readiness-unplaced>
+      <span class="body">
+        <strong data-readiness-headline>{{ unplacedWords() }}</strong>
+        <span class="aside" data-readiness-aside>{{ asideWords() }}</span>
+        @if (refusal(); as message) {
+          <span class="refusal" role="alert" data-readiness-refusal>
+            {{ message }}
+            <fold-link (clicked)="openSettings()" data-readiness-settings
+              >Réglages du calcul</fold-link
+            >
+          </span>
+        }
+      </span>
       @if (canWrite()) {
-        <button
-          actions
-          foldButton
-          size="sm"
-          icon="edit"
-          (click)="propose.emit()"
-          data-readiness-propose
-        >
-          Proposer les tournées
-        </button>
+        <span actions class="actions">
+          <button
+            foldButton
+            size="sm"
+            [loading]="placing()"
+            (click)="autoPlace.emit()"
+            data-readiness-auto
+          >
+            Les placer automatiquement
+          </button>
+          <button
+            foldButton
+            size="sm"
+            emphasis="outline"
+            [disabled]="placing()"
+            (click)="placeByHand.emit()"
+            data-readiness-by-hand
+          >
+            Les placer à la main
+          </button>
+        </span>
       }
     </fold-callout>
   } @else {
     <fold-callout variant="success" data-readiness-arrested>
-      <strong>Plan arrêté</strong> — {{ countLabel() }}, dont {{ arrest.unplacedCount }} hors
-      tournée.
-      @if (canWrite() && arrest.unplacedCount > 0) {
-        <button
-          actions
-          foldButton
-          size="sm"
-          icon="edit"
-          (click)="propose.emit()"
-          data-readiness-propose
-        >
-          Proposer les tournées
-        </button>
-      }
+      <strong>Plan arrêté</strong> — {{ countLabel() }}, toutes en tournée.
     </fold-callout>
   }
 }

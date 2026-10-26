@@ -4,9 +4,14 @@ import {
   computed,
   effect,
   inject,
+  linkedSignal,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, type ParamMap, Router } from '@angular/router';
+import { map } from 'rxjs';
 import type {
   DeliveryPlacementSuggestionView,
   DeliveryRoundTransferStopView,
@@ -40,13 +45,18 @@ import { RoundPdf } from '../round-pdf';
 import { boardSummaryOf, newRoundChoicesOf, plannerVehiclesOf } from '../round-vehicle-choices';
 import { type BoardDrop, roundKmLabel } from '../rounds-board-model';
 import { type RoundGesture, RoundsBoard } from '../rounds-board/rounds-board';
+import { ALL_FOCUS, type BoardFocus, VIEW_ALL, VIEW_VEHICLE } from '../rounds-board-view';
 import { RoundsDay } from '../rounds-day';
+import { parisDayOf } from '../run-sheet';
 import { RoundsDayWriter } from '../rounds-day-writer';
 import { RoundsLayoutGestures } from '../rounds-layout-gestures';
 import { CompositionGapsCallout } from '../composition-gaps-callout/composition-gaps-callout';
 import { RoundsPreview } from '../rounds-preview';
 import { SitePaletteStore } from '../../shared/logistics-colors/site-palette.store';
 import { RoundsSettingsReads } from '../rounds-settings-reads';
+import { DeliveryRoutingService } from '../delivery-routing.service';
+import { TourManagerSummary } from '../tour-manager/tour-manager-summary';
+import { httpErrorMessage } from '@lfd/endpoints';
 import {
   TransferManifestDialog,
   type TransferManifestDialogData,
@@ -55,6 +65,25 @@ import type { TransferStopMove } from '../transfer-stop-card/transfer-stop-card'
 
 /** Le temps de lire le bandeau et de se raviser. */
 const UNDO_MS = 8000;
+/** La vue de l'onglet — `?vue=vehicule` ; absent : « Toutes ». */
+const VIEW_QUERY_PARAM = 'vue';
+/** Le véhicule regardé en « Par véhicule » — `?vehicule=<id>` ; absent : le premier. */
+const VEHICLE_QUERY_PARAM = 'vehicule';
+/** Le passage regardé quand le véhicule part plusieurs fois — `?passage=2` ; absent : le premier. */
+const PASSAGE_QUERY_PARAM = 'passage';
+/** En « Toutes », la carte et tous les arrêts — `?carte=1`. */
+const MAP_QUERY_PARAM = 'carte';
+
+function boardFocusOf(params: ParamMap): BoardFocus {
+  return params.get(VIEW_QUERY_PARAM) === VIEW_VEHICLE
+    ? {
+        view: VIEW_VEHICLE,
+        vehicleId: params.get(VEHICLE_QUERY_PARAM),
+        passage: Number(params.get(PASSAGE_QUERY_PARAM) ?? 1),
+        map: false,
+      }
+    : { ...ALL_FOCUS, map: params.get(MAP_QUERY_PARAM) === '1' };
+}
 
 /**
  * **Livraison › Organisation de tournées** — l'organisateur (`handoff-tournees/SPEC.md`) :
@@ -116,14 +145,39 @@ export class RoundsPage {
 
   protected readonly day = this.read.day;
 
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  /** La vue de l'onglet, relue de l'adresse : un rechargement garde la vue et le véhicule. */
+  protected readonly focus = toSignal(this.route.queryParamMap.pipe(map(boardFocusOf)), {
+    initialValue: boardFocusOf(this.route.snapshot.queryParamMap),
+  });
+
   protected readonly state = this.read.state;
   /** La dernière lecture finie : le bandeau du plan arrêté se relit une fois par lecture. */
   protected readonly lastLoad = this.read.lastLoad;
   private readonly reload = signal(0);
 
   protected readonly canWrite = computed(() => this.permissions.can('delivery_rounds:write'));
+  /**
+   * Le jour est passé, à Paris — la même référence que le bandeau : on n'y
+   * compose plus. « Nouvelle tournée », « Plus d'options » et les gestes de
+   * placement de l'encadré sont masqués (Hugo, 2026-10-26) ; retirer, rentrer,
+   * affecter un livreur restent permis.
+   */
+  protected readonly past = computed(() => this.day() < parisDayOf(new Date()));
+  /** Composer : le droit, sur un jour qui n'est pas passé. */
+  protected readonly canCompose = computed(() => this.canWrite() && !this.past());
   /** Le panneau « Proposer les tournées » — le bandeau du plan arrêté peut l'ouvrir (CA6a). */
-  protected readonly plannerOpen = signal(false);
+  private readonly routing = inject(DeliveryRoutingService);
+  private readonly boardView = viewChild(RoundsBoard);
+  /** « Les placer automatiquement » est en vol. */
+  protected readonly autoPlacing = signal(false);
+  /** Le refus du calcul, dit dans l'encadré du plan arrêté. */
+  protected readonly autoRefusal = linkedSignal<string | null>(() => {
+    this.day();
+    return null;
+  });
+  private readonly summaries = inject(TourManagerSummary, { optional: true });
   protected readonly canReadSettings = computed(() =>
     canReadDeliverySettings((permission) => this.permissions.can(permission)),
   );
@@ -214,6 +268,13 @@ export class RoundsPage {
   protected readonly undoMs = UNDO_MS;
 
   constructor() {
+    // « 4 tournées · 20 arrêts » monte au bandeau de Tour manager (2026-10-26).
+    effect(() => {
+      const summaries = this.summaries;
+      if (summaries !== null && this.board() !== null) {
+        summaries.publish(this.day(), this.summary().rounds);
+      }
+    });
     effect(() => {
       const day = this.day();
       this.reload();
@@ -251,6 +312,26 @@ export class RoundsPage {
       if (this.canReadSettings()) {
         untracked(() => void this.reads.loadDeparture());
       }
+    });
+  }
+
+  /**
+   * « Toutes » / « Par véhicule » et le véhicule regardé, fusionnés à l'adresse
+   * (le `?jour=` reste), en `replaceUrl` comme le jour : un rechargement garde
+   * la vue, Précédent ne rejoue pas chaque flèche.
+   */
+  protected showFocus(focus: BoardFocus): void {
+    const vehicle = focus.view === VIEW_VEHICLE;
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {
+        [VIEW_QUERY_PARAM]: vehicle ? VIEW_VEHICLE : VIEW_ALL,
+        [VEHICLE_QUERY_PARAM]: vehicle ? focus.vehicleId : null,
+        [PASSAGE_QUERY_PARAM]: vehicle && focus.passage > 1 ? focus.passage : null,
+        [MAP_QUERY_PARAM]: !vehicle && focus.map ? 1 : null,
+      },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
     });
   }
 
@@ -310,6 +391,40 @@ export class RoundsPage {
     this.toast.set(null);
     this.refusal.set(null);
     this.preview.show(result.proposal, this.composed(), result.recomposed);
+  }
+
+  /**
+   * « Les placer automatiquement » : la même proposition que le panneau, en
+   * `insert` (garde ce qui est placé, ajoute le reste), sans l'ouvrir. Proposer
+   * est une lecture ; l'aperçu attend « Valider ».
+   */
+  protected async autoPlace(): Promise<void> {
+    if (this.autoPlacing() || this.busy()) {
+      return;
+    }
+    const day = this.day();
+    this.autoPlacing.set(true);
+    this.autoRefusal.set(null);
+    try {
+      const proposal = await this.routing.propose({
+        day,
+        vehicleIds: null,
+        recomposeAll: false,
+        mode: 'insert',
+      });
+      if (day === this.day()) {
+        this.showProposal({ proposal, recomposed: false });
+      }
+    } catch (error) {
+      this.autoRefusal.set(httpErrorMessage(error, 'La proposition n’a pas pu être calculée.'));
+    } finally {
+      this.autoPlacing.set(false);
+    }
+  }
+
+  /** « Les placer à la main » : chaque commande à répartir a son sélecteur de tournée. */
+  protected placeByHand(): void {
+    this.boardView()?.highlightPool();
   }
 
   /** Les arrêts viennent d'être situés : un aperçu affiché les ignorait. */
