@@ -244,6 +244,12 @@ export const PRODUCTION_CLOSE_MODE = domain('mode d’arrêt du plan', {
 });
 
 /** La forme d'un destinataire du dossier du jour (plan `dossier-prod-du-jour.md`, E2). */
+/** La cible d'une exemption à la fermeture (`order_opening.exemption_*`, 2026-10-26). */
+export const ORDER_OPENING_EXEMPTION_KIND = domain('cible d’exemption', {
+  company: 'Société',
+  email: 'Adresse e-mail',
+});
+
 export const DOSSIER_RECIPIENT_KIND = domain('sorte de destinataire', {
   staff: 'Personnel',
   external: 'Autre personne',
@@ -313,6 +319,7 @@ export const ORDERS_VALUES: ValueFamily = {
     PRODUCTION_CLOSE_MODE,
     DOSSIER_RECIPIENT_KIND,
     DELIVERY_VAT_MODE,
+    ORDER_OPENING_EXEMPTION_KIND,
   ],
   literals: {
     // Ce qu'un contrôle qualité juge (`target.kind`).
@@ -323,8 +330,5 @@ export const ORDERS_VALUES: ValueFamily = {
     amount: 'Montant',
     // Le sort du reste d'un départ incomplet (`order.shortfall_decided`, plan E6c2).
     abandoned: 'Abandonné, non relivré',
-    // La cible d'une exemption à la fermeture (`order_opening.exemption_*`).
-    company: 'Société',
-    email: 'Adresse e-mail',
   },
 };
