@@ -93,6 +93,21 @@ describe("la vitrine publique", () => {
   });
 
   /**
+   * Régression : le contrat de la médiathèque repliait une alternative absente
+   * sur l'URL du fichier, et les copies `catalog_items` l'ont gardée. Un
+   * lecteur d'écran lisait l'adresse ; la copie est servie VIDE (2026-10-26).
+   */
+  it("sert vide une alternative qui n'est que l'URL de l'image", async () => {
+    await push([{ sku: "VIE-001", priceMillicents: 140_000, image: { ...SHOT, alt: SHOT.url } }]);
+    const row = await ctx.prisma.catalogItem.findFirstOrThrow({ select: { imageAlt: true } });
+    expect(row.imageAlt).toBe(SHOT.url);
+
+    const item = (await catalogue()).items[0];
+
+    expect(item?.image).toMatchObject({ url: SHOT.url, alt: "" });
+  });
+
+  /**
    * 🔴 **Le SKU du PRODUIT, jamais celui de la déclinaison.** C'est celui
    * qu'acceptent la commande et le devis, et celui qui est écrit dans les
    * commandes passées. Servir `VIE-001-1` ici rendrait un panier que la caisse

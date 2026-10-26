@@ -1,10 +1,12 @@
 import {
+  isDescriptiveAltText,
   isMediaAltWritten,
   LOCALES,
   SOURCE_LOCALE,
   type DraftAlt,
   type Locale,
   type LocalizedText,
+  type TranslatedLocale,
 } from "@lfd/pim-contracts";
 
 import { buildLocalized, type Languages } from "../../../platform/i18n/localized-text.js";
@@ -44,6 +46,25 @@ export function altText(
  */
 export const NO_ALT: LocalizedText = Object.freeze({ [SOURCE_LOCALE]: "" });
 
+/**
+ * **Les traductions qui décrivent l'image**, gardées quand la langue source ne
+ * décrit rien. Ne jamais effacer un texte valide (Hugo, 2026-10-26) : une
+ * source héritée du repli sur l'URL ne doit pas emporter un `en` ou un `it`
+ * rédigés — l'écran les masquerait, et le prochain enregistrement les perdrait.
+ */
+function descriptiveTranslations(alt: DraftAlt | null): LocalizedText {
+  const translations: Partial<Record<TranslatedLocale, string>> = {};
+  for (const locale of LOCALES) {
+    const text = alt?.[locale];
+    if (locale !== SOURCE_LOCALE && isDescriptiveAltText(text)) {
+      translations[locale] = text.trim();
+    }
+  }
+  return Object.keys(translations).length === 0
+    ? NO_ALT
+    : Object.freeze({ ...translations, [SOURCE_LOCALE]: "" });
+}
+
 /** Une alternative qui est une URL, un chemin ou un nom de fichier : ce n'est pas une description. */
 export class NonDescriptiveAltError extends DomainError {
   constructor(readonly text: string) {
@@ -72,7 +93,7 @@ export function imageAlt(draft: DraftAlt | null, url: string): LocalizedText {
   if (source !== "" && source !== url) {
     throw new NonDescriptiveAltError(source);
   }
-  return NO_ALT;
+  return descriptiveTranslations(draft);
 }
 
 /**
@@ -82,5 +103,8 @@ export function imageAlt(draft: DraftAlt | null, url: string): LocalizedText {
  * `documentation/mediatheque/plan-alternatives-urls.md`).
  */
 export function storedAlt(stored: LocalizedText | null, url: string): LocalizedText {
-  return stored !== null && isMediaAltWritten(stored, url) ? stored : NO_ALT;
+  if (stored === null) {
+    return NO_ALT;
+  }
+  return isMediaAltWritten(stored, url) ? stored : descriptiveTranslations(stored);
 }

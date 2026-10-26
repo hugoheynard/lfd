@@ -10,7 +10,13 @@ describe("l'alternative d'une image — à l'écriture", () => {
   it("range l'absence en source vide, jamais l'URL", () => {
     expect(imageAlt(null, URL)).toEqual({ fr: "" });
     expect(imageAlt({ fr: "  " }, URL)).toBe(NO_ALT);
-    expect(imageAlt({ en: "A croissant" }, URL)).toBe(NO_ALT);
+  });
+
+  /** Régression évitée : une source vide ou héritée ne doit pas emporter une traduction rédigée. */
+  it("garde les traductions qui décrivent l'image quand la source manque", () => {
+    expect(imageAlt({ en: "A croissant" }, URL)).toEqual({ fr: "", en: "A croissant" });
+    expect(imageAlt({ fr: URL, it: " Un cornetto " }, URL)).toEqual({ fr: "", it: "Un cornetto" });
+    expect(imageAlt({ fr: "", en: "IMG_1.jpg" }, URL)).toBe(NO_ALT);
   });
 
   it("lit l'URL de l'image elle-même comme une absence (ancien repli renvoyé)", () => {
@@ -37,6 +43,13 @@ describe("l'alternative d'une image — à la lecture", () => {
     expect(storedAlt(null, URL)).toBe(NO_ALT);
     expect(storedAlt({ fr: URL }, URL)).toBe(NO_ALT);
     expect(storedAlt({ fr: "IMG_0042.jpg" }, URL)).toBe(NO_ALT);
+  });
+
+  it("ne masque pas une traduction valide derrière une source héritée de l'URL", () => {
+    expect(storedAlt({ fr: URL, en: "A butter croissant" }, URL)).toEqual({
+      fr: "",
+      en: "A butter croissant",
+    });
   });
 
   it("rend telle quelle une alternative qui décrit l'image", () => {

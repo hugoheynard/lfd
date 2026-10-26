@@ -2,6 +2,7 @@ import { CatalogItem } from "../domain/entities/catalog-item.js";
 import { catalogAudienceOf } from "../domain/served-to.js";
 import { allergenLabelsOf } from "./allergen-labels.js";
 import { publicByContextOf } from "./public-by-context.js";
+import { servedImageAlt } from "./catalog-image-alt.js";
 
 /** La ligne telle que Prisma la rend, décision jointe. Aucun type `Prisma.*` exporté. */
 export interface ItemRow {
@@ -86,7 +87,7 @@ function imageOf(row: ItemRow) {
   }
   return {
     url: row.imageUrl,
-    alt: row.imageAlt ?? "",
+    alt: servedImageAlt(row.imageAlt),
     width: row.imageWidth,
     height: row.imageHeight,
     focal: focalOf(row.imageFocalX, row.imageFocalY),
@@ -103,7 +104,7 @@ function thumbnailOf(row: ItemRow) {
   }
   return {
     url: row.thumbnailUrl,
-    alt: row.thumbnailAlt ?? "",
+    alt: servedImageAlt(row.thumbnailAlt),
     width: row.thumbnailWidth,
     height: row.thumbnailHeight,
     focal: focalOf(row.thumbnailFocalX, row.thumbnailFocalY),

@@ -14,6 +14,7 @@ import { publicByContextOf } from "./public-by-context.js";
 import { STILL_SOLD } from "./sellable-filter.js";
 import { translationsColumnOf } from "./catalog-translations-column.js";
 import { DECISION_COLUMNS } from "./catalog-decision-columns.js";
+import { servedImageAlt } from "./catalog-image-alt.js";
 
 /**
  * ⚠️ **`findSku` reste au tarif `pro`, et c'est écrit plutôt que laissé par
@@ -390,7 +391,7 @@ function imageOf(row: ItemRow): ResolvedCatalogItem["image"] {
   }
   return {
     url: row.imageUrl,
-    alt: row.imageAlt ?? "",
+    alt: servedImageAlt(row.imageAlt),
     width: row.imageWidth,
     height: row.imageHeight,
     focal: focalOf(row.imageFocalX, row.imageFocalY),
@@ -411,7 +412,7 @@ function thumbnailOf(row: ItemRow): ResolvedCatalogItem["thumbnail"] {
   }
   return {
     url: row.thumbnailUrl,
-    alt: row.thumbnailAlt ?? "",
+    alt: servedImageAlt(row.thumbnailAlt),
     width: row.thumbnailWidth,
     height: row.thumbnailHeight,
     focal: focalOf(row.thumbnailFocalX, row.thumbnailFocalY),
