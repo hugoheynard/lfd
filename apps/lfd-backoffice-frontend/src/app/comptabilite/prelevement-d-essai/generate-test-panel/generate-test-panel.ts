@@ -25,7 +25,6 @@ import {
 
 import { httpErrorMessage } from '@lfd/endpoints';
 
-import { saveBlob } from '../../../shared/download/save-blob';
 import { centsOf } from '../../cents-field';
 import { CollectionTestsService } from '../../collection-tests.service';
 import { day, euros } from '../../invoice-dossier-format';
@@ -85,7 +84,6 @@ export class GenerateTestPanel {
   protected readonly sequence = signal<TestSequenceView | null>(null);
   protected readonly remittance = signal('');
   protected readonly saving = signal(false);
-  protected readonly exporting = signal(false);
   protected readonly error = signal<string | null>(null);
 
   protected readonly debtors = computed(() => {
@@ -169,23 +167,6 @@ export class GenerateTestPanel {
   }
 
   /** Le CSV du seul mandat de l'établissement choisi, pour le portail de la banque. */
-  protected async exportMandate(): Promise<void> {
-    const debtor = this.debtor();
-    if (debtor === null || debtor.mandate === null) {
-      return;
-    }
-    this.exporting.set(true);
-    this.error.set(null);
-    try {
-      const file = await this.api.mandateFile(debtor.companyId);
-      saveBlob(file, `ESSAI-mandat-banque-${debtor.mandate.reference}.csv`);
-    } catch (caught) {
-      this.error.set(httpErrorMessage(caught, 'Le mandat n’a pas pu être exporté.'));
-    } finally {
-      this.exporting.set(false);
-    }
-  }
-
   protected close(): void {
     this.ref.close();
   }

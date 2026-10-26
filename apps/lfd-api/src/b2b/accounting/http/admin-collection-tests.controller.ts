@@ -18,6 +18,7 @@ import {
   Param,
   Post,
   Res,
+  StreamableFile,
 } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import type { Response } from "express";
@@ -26,13 +27,16 @@ import { AdminSurface, RequirePermission } from "../../../platform/auth/admin-su
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { GenerateCollectionTestCommand } from "../application/commands/generate-collection-test.command.js";
+import { RecordCollectionTestBankAccountDownloadCommand } from "../application/commands/record-collection-test-bank-account-download.command.js";
 import { MarkCollectionTestRefundedCommand } from "../application/commands/mark-collection-test-refunded.command.js";
 import {
+  ExportCollectionTestBankAccountQuery,
   ExportCollectionTestFileQuery,
   ExportCollectionTestMandateQuery,
   GetCollectionTestDebtorsQuery,
   ListCollectionTestsQuery,
 } from "../application/queries/collection-test-queries.js";
+import type { CollectionTestBankAccountFile } from "../application/queries/export-collection-test-bank-account.handler.js";
 import type { CollectionTestFile } from "../application/queries/export-collection-test-file.handler.js";
 import type { MandateBankFile } from "../application/queries/export-mandate-bank-file.handler.js";
 
@@ -107,6 +111,39 @@ export class AdminCollectionTestsController {
       contentDispositionAttachment(sanitiseFileName(file.fileName, "mandat-banque.csv")),
     );
     return file.csv;
+  }
+
+  /**
+   * Le RIB de l'établissement au format des comptes destinataires (en-tête,
+   * une ligne, Latin-1 comme l'export réel). IBAN en clair : sous l'ÉCRITURE.
+   * Ne fige ni ne marque aucun export. Calculé D'ABORD, journalisé ENSUITE :
+   * un refus n'est pas un téléchargement.
+   */
+  @Get("debtors/:companyId/bank-account.csv")
+  @RequirePermission("collection_test:write")
+  @Header("Content-Type", "text/csv; charset=iso-8859-1")
+  @Header("Cache-Control", "no-store")
+  async bankAccount(
+    @StaffUserId() staffUserId: string,
+    @Param("companyId") companyId: string,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<StreamableFile> {
+    const file = await this.queries.execute<
+      ExportCollectionTestBankAccountQuery,
+      CollectionTestBankAccountFile
+    >(new ExportCollectionTestBankAccountQuery(companyId));
+    await this.commands.execute<RecordCollectionTestBankAccountDownloadCommand, void>(
+      new RecordCollectionTestBankAccountDownloadCommand(
+        file.company,
+        file.legalEntity,
+        staffUserId,
+      ),
+    );
+    response.setHeader(
+      "Content-Disposition",
+      contentDispositionAttachment(sanitiseFileName(file.fileName, "rib-banque.csv")),
+    );
+    return new StreamableFile(Buffer.from(file.csv, "latin1"));
   }
 
   /** Le fichier GARDÉ — mêmes octets à chaque téléchargement, empreinte vérifiée. */

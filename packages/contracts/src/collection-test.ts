@@ -115,6 +115,8 @@ export interface CollectionTestReturnView {
 export interface CollectionTestView {
   readonly id: string;
   readonly messageId: string;
+  /** La société débitée — ce que les fichiers RIB et mandat de la ligne visent. */
+  readonly debtorCompanyId: string;
   readonly debtorName: string;
   readonly mandateReference: string;
   readonly scheme: "CORE" | "B2B";

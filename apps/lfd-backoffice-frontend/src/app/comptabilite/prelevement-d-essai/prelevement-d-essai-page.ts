@@ -34,6 +34,9 @@ import {
 } from './generate-test-panel/generate-test-panel';
 import { RefundTestPanel, type RefundTestPanelData } from './refund-test-panel/refund-test-panel';
 
+/** Les trois fichiers d'une ligne, dans l'ordre des boutons. */
+type RowFile = 'rib' | 'mandate' | 'debit';
+
 type BadgeVariant = 'success' | 'alert' | 'warning' | 'neutral';
 
 const STATUS_VARIANTS: Readonly<Record<CollectionTestStatusView, BadgeVariant>> = {
@@ -177,6 +180,31 @@ export class PrelevementDEssaiPage {
     await this.reload();
   }
 
+  protected isPending(row: CollectionTestView, file: RowFile): boolean {
+    return this.pending() === `${row.id}:${file}`;
+  }
+
+  /** Le compte de l'établissement, au format des comptes destinataires de la banque. */
+  protected async downloadRib(row: CollectionTestView): Promise<void> {
+    await this.save(
+      `${row.id}:rib`,
+      () => this.api.bankAccountFile(row.debtorCompanyId),
+      `ESSAI-rib-banque-${row.mandateReference}.csv`,
+      'Le RIB n’a pas pu être exporté.',
+    );
+  }
+
+  /** Le mandat de l'établissement, au format d'import des mandats de la banque. */
+  protected async downloadMandate(row: CollectionTestView): Promise<void> {
+    await this.save(
+      `${row.id}:mandate`,
+      () => this.api.mandateFile(row.debtorCompanyId),
+      `ESSAI-mandat-banque-${row.mandateReference}.csv`,
+      'Le mandat n’a pas pu être exporté.',
+    );
+  }
+
+  /** Le `pain.008` gardé de l'essai. */
   protected async downloadRow(row: CollectionTestView): Promise<void> {
     await this.download(row.id, `ESSAI-prelevement-${row.messageId}.xml`);
   }
@@ -194,12 +222,26 @@ export class PrelevementDEssaiPage {
   }
 
   private async download(testId: string, fileName: string): Promise<void> {
-    this.pending.set(testId);
+    await this.save(
+      `${testId}:debit`,
+      () => this.api.file(testId),
+      fileName,
+      'Le fichier n’a pas pu être téléchargé.',
+    );
+  }
+
+  private async save(
+    key: string,
+    read: () => Promise<Blob>,
+    fileName: string,
+    fallback: string,
+  ): Promise<void> {
+    this.pending.set(key);
     this.actionError.set(null);
     try {
-      saveBlob(await this.api.file(testId), fileName);
+      saveBlob(await read(), fileName);
     } catch (caught) {
-      this.actionError.set(httpErrorMessage(caught, 'Le fichier n’a pas pu être téléchargé.'));
+      this.actionError.set(httpErrorMessage(caught, fallback));
     } finally {
       this.pending.set(null);
     }

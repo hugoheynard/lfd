@@ -2,8 +2,10 @@ import type { Provider } from "@nestjs/common";
 
 import { DeclareOwnEstablishmentHandler } from "./application/commands/declare-own-establishment.handler.js";
 import { GenerateCollectionTestHandler } from "./application/commands/generate-collection-test.handler.js";
+import { RecordCollectionTestBankAccountDownloadHandler } from "./application/commands/record-collection-test-bank-account-download.handler.js";
 import { MarkCollectionTestRefundedHandler } from "./application/commands/mark-collection-test-refunded.handler.js";
 import { WithdrawOwnEstablishmentHandler } from "./application/commands/withdraw-own-establishment.handler.js";
+import { ExportCollectionTestBankAccountHandler } from "./application/queries/export-collection-test-bank-account.handler.js";
 import { ExportCollectionTestFileHandler } from "./application/queries/export-collection-test-file.handler.js";
 import { ExportCollectionTestMandateHandler } from "./application/queries/export-collection-test-mandate.handler.js";
 import { GetCollectionTestDebtorsHandler } from "./application/queries/get-collection-test-debtors.handler.js";
@@ -62,6 +64,8 @@ export const COLLECTION_TEST_PROVIDERS: readonly Provider[] = [
   ListCollectionTestsHandler,
   ExportCollectionTestFileHandler,
   ExportCollectionTestMandateHandler,
+  ExportCollectionTestBankAccountHandler,
+  RecordCollectionTestBankAccountDownloadHandler,
 ];
 
 export const COLLECTION_TEST_CONTROLLERS = [

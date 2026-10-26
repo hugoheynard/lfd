@@ -1,17 +1,15 @@
-import { HttpErrorResponse } from '@angular/common/http';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import type { CollectionTestDebtorsView } from '@lfd/contracts';
 import { FoldPanelRef } from 'fold-ng';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { CollectionTestsService } from '../../collection-tests.service';
 import { GenerateTestPanel, defaultSequence } from './generate-test-panel';
 
 /**
  * Ce que ces cas tiennent : l'échéance proposée est celle du serveur (J + 2
- * jours ouvrés), et le bouton « Exporter le mandat pour la banque » demande
- * le CSV de l'établissement CHOISI, sous un nom qui dit l'essai — un refus
- * s'affiche avec les mots du serveur.
+ * jours ouvrés), et la séquence proposée d'office. Les téléchargements (RIB,
+ * mandat) ont quitté le panneau pour la table des essais le 2026-10-26.
  */
 
 const EARLIEST = '2026-10-26';
@@ -31,19 +29,8 @@ const TOOL: CollectionTestDebtorsView = {
   ],
 };
 
-class FakeApi {
-  readonly asked: string[] = [];
-  refusal: string | null = null;
-  mandateFile(companyId: string): Promise<Blob> {
-    this.asked.push(companyId);
-    if (this.refusal !== null) {
-      return Promise.reject(
-        new HttpErrorResponse({ status: 409, error: { message: this.refusal } }),
-      );
-    }
-    return Promise.resolve(new Blob(['RUM-1;'], { type: 'text/csv' }));
-  }
-}
+/** Le panneau n'appelle le serveur qu'à la génération, que ces cas ne jouent pas. */
+class FakeApi {}
 
 function mount(
   api: FakeApi,
@@ -61,22 +48,6 @@ function mount(
   fixture.detectChanges();
   return fixture;
 }
-
-function downloads(): string[] {
-  const names: string[] = [];
-  vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mandat');
-  vi.spyOn(URL, 'revokeObjectURL').mockReturnValue(undefined);
-  vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
-    this: HTMLAnchorElement,
-  ) {
-    names.push(this.download);
-  });
-  return names;
-}
-
-afterEach(() => {
-  vi.restoreAllMocks();
-});
 
 describe('GenerateTestPanel', () => {
   it('propose l’échéance la plus proche du serveur', () => {
@@ -99,33 +70,5 @@ describe('GenerateTestPanel', () => {
   it('propose la seule séquence d’un mandat ponctuel', () => {
     expect(defaultSequence(['OOFF'])).toBe('OOFF');
     expect(defaultSequence([])).toBeNull();
-  });
-
-  it('exporte le mandat de l’établissement choisi, seul', async () => {
-    const api = new FakeApi();
-    const names = downloads();
-    const fixture = mount(api);
-    const button = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(
-      '[data-export-mandate]',
-    );
-
-    expect(button?.textContent).toContain('Exporter le mandat pour la banque');
-    await fixture.componentInstance['exportMandate']();
-
-    expect(api.asked).toEqual(['c1']);
-    expect(names).toEqual(['ESSAI-mandat-banque-RUM-1.csv']);
-  });
-
-  it('affiche le refus du serveur, sans rien télécharger', async () => {
-    const api = new FakeApi();
-    api.refusal = 'Le mandat RUM-1 ne peut pas partir dans le fichier de la banque.';
-    const names = downloads();
-    const fixture = mount(api);
-
-    await fixture.componentInstance['exportMandate']();
-    fixture.detectChanges();
-
-    expect(names).toEqual([]);
-    expect(String(fixture.nativeElement.textContent)).toContain(api.refusal);
   });
 });

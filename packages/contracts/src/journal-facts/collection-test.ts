@@ -49,4 +49,11 @@ export const COLLECTION_TEST_FACTS = {
       source: z.enum(["manual", "pain002", "camt054"]),
     }),
   ),
+  /**
+   * Le RIB de l'établissement est sorti, en clair, dans le fichier des comptes
+   * destinataires — depuis l'essai, sans figer aucun export (2026-10-26).
+   */
+  "collection.test_bank_account_exported": fact(
+    payload({ subjectLabel: subjectLabel(), legalEntity: named("legal_entity") }),
+  ),
 } as const;

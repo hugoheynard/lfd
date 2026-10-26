@@ -70,6 +70,19 @@ export class CollectionTestsService {
     );
   }
 
+  /**
+   * Le RIB de l'établissement au format des comptes destinataires de la
+   * banque — une seule ligne. Ne fige aucun export ; le serveur journalise
+   * chaque téléchargement.
+   */
+  async bankAccountFile(companyId: string): Promise<Blob> {
+    return firstValueFrom(
+      this.http.get(`${this.tests}/debtors/${companyId}/bank-account.csv`, {
+        responseType: 'blob',
+      }),
+    );
+  }
+
   async markRefunded(testId: string, refundedOn: string): Promise<void> {
     await firstValueFrom(this.http.post<void>(`${this.tests}/${testId}/refunded`, { refundedOn }));
   }

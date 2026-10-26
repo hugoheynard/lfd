@@ -73,6 +73,7 @@
   "test/collection-return-import.e2e-spec.ts": 9882,
   "test/collection-return-represent.e2e-spec.ts": 11977,
   "test/collection-schedule.e2e-spec.ts": 4000,
+  "test/collection-test-bank-account.e2e-spec.ts": 6815,
   "test/collection-test-establishments.e2e-spec.ts": 9507,
   "test/collection-test-generate.e2e-spec.ts": 9643,
   "test/collection-test-return.e2e-spec.ts": 4000,

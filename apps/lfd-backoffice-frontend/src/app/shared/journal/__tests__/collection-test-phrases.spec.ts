@@ -66,4 +66,15 @@ describe('le prélèvement d’essai au journal', () => {
       ).sentence,
     ).toContain('(AM04 : Provision insuffisante)');
   });
+
+  it('dit l’export du RIB depuis l’essai, sans IBAN', () => {
+    const said = renderFact(
+      onCompany('collection.test_bank_account_exported', {
+        legalEntity: { id: 'le_1', name: 'La Folie Douce' },
+      }),
+    );
+
+    expect(said.sentence).toContain('a exporté pour la banque le RIB de « Folie Douce Val »');
+    expect(said.sentence).toContain('« La Folie Douce »');
+  });
 });

@@ -52,6 +52,7 @@ function viewOf(
   return {
     id: row.id,
     messageId: row.messageId,
+    debtorCompanyId: row.debtorCompanyId,
     debtorName: row.debtorName,
     mandateReference: row.mandateReference,
     scheme: row.scheme,

@@ -167,8 +167,8 @@ factures, aux bons, aux lots ni à l'état d'encaissement.
   jour fermé de TARGET2. Les lots réels gardent `collectionDayOf`, inchangé.
   Première version (même jour) : le calendrier des lots, pré-notification
   comprise — « pas avant le 30 » pour un essai du 22.
-- **Mandat pour la banque** (2026-10-22) : bouton « Exporter le mandat pour la
-  banque » du panneau de génération → `GET
+- **Mandat pour la banque** (2026-10-22 ; bouton déplacé dans la table le
+  2026-10-26, voir plus bas) : `GET
 /admin/accounting/collection-tests/debtors/:companyId/mandate.csv` sous
   `collection_test:write`. Le fichier `ModeleImportMandats` de l'export des
   mandats (même rendu `mandateBankCsvOf`, même encodage), réduit au seul mandat
@@ -179,6 +179,23 @@ factures, aux bons, aux lots ni à l'état d'encaissement.
   l'export groupé sans preuve. Refus nommés : société non déclarée, zéro ou
   plusieurs mandats, entité sans ICS, mandat écarté de l'export (repris, sans
   RIB, sans BIC).
+- **RIB pour la banque** (2026-10-26, Hugo) : `GET
+/admin/accounting/collection-tests/debtors/:companyId/bank-account.csv` sous
+  `collection_test:write`. Le fichier des comptes destinataires
+  (`prerequis-export-ribs.md`), même rendu `accountBankCsvOf` et même encodage
+  Latin-1 que l'export des RIB, réduit au seul compte que débite le mandat de
+  l'essai (reconnu par l'empreinte de son IBAN). **Une lecture**, comme le
+  mandat : aucun export figé, rien de marqué — l'export groupé de l'entité
+  garde le compte « à exporter ». Jamais rangé (IBAN en clair), recalculé à
+  chaque téléchargement ; chaque téléchargement est journalisé par une
+  commande à part, après le calcul (`collection.test_bank_account_exported`,
+  sujet la société, jamais d'IBAN). Refus nommés : société non déclarée, zéro
+  ou plusieurs mandats, RIB sans BIC, RIB que l'entité ne débite pas.
+- **Les téléchargements vivent dans la table** (2026-10-26, Hugo) : chaque
+  ligne de la table « Essais » porte trois boutons, dans cet ordre — **RIB**,
+  **Mandat**, **Prélèvement** (le `pain.008` gardé). RIB et Mandat visent
+  l'établissement de la ligne (`debtorCompanyId`, ajouté à la vue). Le bouton
+  « Exporter le mandat pour la banque » a quitté le panneau de génération.
 - **Plafond** : `MAX_COLLECTION_TEST_CENTS = 100` (1 €), tenu par l'agrégat et
   par un CHECK en base.
 - **Q7** : « mandat ponctuel utilisé par un lot réel » = une ligne d'un lot
@@ -205,4 +222,8 @@ factures, aux bons, aux lots ni à l'état d'encaissement.
   l'exporte aussi par là ;
 - l'export du mandat ne s'offre que sur un établissement **essayable** (le
   panneau ne liste que ceux-là) : un mandat ponctuel déjà pris par un lot ne
-  s'exporte pas depuis l'essai.
+  s'exporte pas depuis l'essai. Depuis le 2026-10-26, les boutons RIB et Mandat
+  d'une ligne visent le mandat ACTUEL de l'établissement, pas forcément celui
+  sous lequel l'essai a été fait ; un établissement retiré depuis refuse (409) ;
+- un compte importé à la banque depuis l'essai réapparaît de même dans
+  l'export groupé des RIB (rien ne le sait).

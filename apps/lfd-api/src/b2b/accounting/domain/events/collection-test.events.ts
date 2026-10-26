@@ -2,6 +2,7 @@ import type { JournalFact, JournaledEvent } from "../../../../platform/journal/j
 import type { CollectionTest, TestBankReturn } from "../entities/collection-test.js";
 import { reasonDescription } from "../value-objects/bank-return-reason.js";
 import { COLLECTION_TEST_FACT_TYPES } from "./accounting-facts.js";
+import type { ExportEntity } from "./mandate-bank-export.events.js";
 
 /** La société, avec son nom du moment — le sujet de chacun de ces faits. */
 export interface TestSubject {
@@ -121,5 +122,20 @@ export class CollectionTestReturnedEvent implements JournaledEvent {
         source: bankReturn.source,
       },
     );
+  }
+}
+
+/** Le RIB d'un établissement est sorti pour la banque, depuis l'essai. */
+export class CollectionTestBankAccountExportedEvent implements JournaledEvent {
+  constructor(
+    readonly subject: TestSubject,
+    readonly legalEntity: ExportEntity,
+    readonly at: Date,
+  ) {}
+
+  journalFact(): JournalFact {
+    return companyFact(COLLECTION_TEST_FACT_TYPES.bankAccountExported, this.subject, this.at, {
+      legalEntity: { id: this.legalEntity.id, name: this.legalEntity.name },
+    });
   }
 }

@@ -17,17 +17,6 @@
           mandate.ibanLast4
         }}. Le schéma du fichier est celui du mandat.
       </fold-callout>
-      <button
-        foldButton
-        size="sm"
-        emphasis="outline"
-        intent="neutral"
-        data-export-mandate
-        [loading]="exporting()"
-        (click)="exportMandate()"
-      >
-        Exporter le mandat pour la banque
-      </button>
     }
   }
   <fold-input

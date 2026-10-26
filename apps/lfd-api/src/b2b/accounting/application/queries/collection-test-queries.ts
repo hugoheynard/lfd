@@ -19,3 +19,11 @@ export class ExportCollectionTestFileQuery {
 export class ExportCollectionTestMandateQuery {
   constructor(readonly companyId: string) {}
 }
+
+/**
+ * Le fichier des comptes destinataires d'UN établissement — le RIB sous lequel
+ * l'essai prélève, au format de l'export des RIB, sans figer d'export.
+ */
+export class ExportCollectionTestBankAccountQuery {
+  constructor(readonly companyId: string) {}
+}

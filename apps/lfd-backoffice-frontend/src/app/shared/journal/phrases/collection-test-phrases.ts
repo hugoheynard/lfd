@@ -130,10 +130,24 @@ const returned: Phrase = (fact) =>
     ],
   );
 
+const bankAccountExported: Phrase = (fact) =>
+  byActor(
+    fact,
+    [
+      text('a exporté pour la banque le RIB de '),
+      ...company(fact),
+      text(' '),
+      ...cite(ENTITY, fact.payload['legalEntity']),
+      text(', depuis l’essai'),
+    ],
+    ['subjectLabel', 'legalEntity'],
+  );
+
 export const COLLECTION_TEST_PHRASES = {
   'collection.own_establishment_declared': declared,
   'collection.own_establishment_withdrawn': withdrawn,
   'collection.test_generated': generated,
   'collection.test_refunded': refunded,
   'collection.test_returned': returned,
+  'collection.test_bank_account_exported': bankAccountExported,
 } as const satisfies Partial<Record<JournalFactType, Phrase>>;

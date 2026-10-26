@@ -3,7 +3,6 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 import {
   CollectionTestNoMandateError,
   CollectionTestMandateNotExportableError,
-  NotOwnEstablishmentError,
 } from "../../domain/errors/collection-test-errors.js";
 import { BankExportWithoutCreditorIdentifierError } from "../../domain/errors/mandate-bank-export-errors.js";
 import { CompanyNamesReader } from "../../domain/ports/company-names.reader.js";
@@ -14,12 +13,9 @@ import {
   MandatesForBankExportReader,
   type MandateForBankExport,
 } from "../../domain/ports/mandates-for-bank-export.reader.js";
-import {
-  ownSingleMandate,
-  type TestMandate,
-} from "../../domain/services/collection-test-debtor.js";
+import type { TestMandate } from "../../domain/services/collection-test-debtor.js";
+import { establishmentMandateOrFail } from "../collection-test-mandate-support.js";
 import { exportEntityOrFail, mandateBankCsvOf } from "../mandate-bank-export-support.js";
-import { establishmentCompanyOrFail } from "../own-establishment-support.js";
 import { ExportCollectionTestMandateQuery } from "./collection-test-queries.js";
 import type { MandateBankFile } from "./export-mandate-bank-file.handler.js";
 
@@ -48,18 +44,8 @@ export class ExportCollectionTestMandateHandler implements IQueryHandler<
   ) {}
 
   async execute(query: ExportCollectionTestMandateQuery): Promise<MandateBankFile> {
-    const company = await establishmentCompanyOrFail(this.companies, query.companyId);
-    if (!company.declared) {
-      throw new NotOwnEstablishmentError(company.name);
-    }
-    const carried = await this.mandates.activeFor([company.companyId]);
-    const own = ownSingleMandate(
-      company.name,
-      carried.filter((mandate) => mandate.companyId === company.companyId),
-    );
-    if (own.kind === "refused") {
-      throw own.refusal;
-    }
+    const own = await establishmentMandateOrFail(this.companies, this.mandates, query.companyId);
+    const { company } = own;
     const entity = await exportEntityOrFail(this.entities, own.mandate.creditorId);
     if (entity.ics === "") {
       throw new BankExportWithoutCreditorIdentifierError(entity.name);

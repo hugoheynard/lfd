@@ -412,3 +412,12 @@ donc les lignes de la première « en vol » : elle prend les suivants, ou est
 refusée (409) s'il ne reste rien. Même verrou, sorte `mandates`, pour
 l'export des mandats. E2E de course : `account-bank-export-race`,
 `mandate-bank-export-race`.
+
+### 8.1 Le RIB d'un établissement, depuis le prélèvement d'essai (2026-10-26)
+
+Le bouton **RIB** d'une ligne de la table des essais rend ce fichier réduit à
+une ligne — le compte que débite le mandat de l'essai — par le même rendu
+(`accountBankCsvOf`) et le même encodage. Il ne fige aucun export et ne marque
+rien : le compte reste « à exporter » ici. Chaque téléchargement est
+journalisé (`collection.test_bank_account_exported`). Détail :
+[`plan-prelevement-d-essai.md`](plan-prelevement-d-essai.md) §7.

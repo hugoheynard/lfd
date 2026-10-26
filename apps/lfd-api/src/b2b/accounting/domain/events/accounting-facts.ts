@@ -132,6 +132,8 @@ export const COLLECTION_TEST_FACT_TYPES = {
   generated: "collection.test_generated",
   refunded: "collection.test_refunded",
   returned: "collection.test_returned",
+  /** Le RIB d'un établissement sorti pour la banque depuis l'essai (2026-10-26). */
+  bankAccountExported: "collection.test_bank_account_exported",
 } as const satisfies Readonly<Record<string, JournalFactType>>;
 
 /**

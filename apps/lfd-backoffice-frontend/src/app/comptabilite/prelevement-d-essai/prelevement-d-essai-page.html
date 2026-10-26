@@ -78,10 +78,31 @@
                 foldButton
                 size="sm"
                 emphasis="outline"
-                [loading]="pending() === row.id"
+                data-download="rib"
+                [loading]="isPending(row, 'rib')"
+                (click)="downloadRib(row)"
+              >
+                RIB
+              </button>
+              <button
+                foldButton
+                size="sm"
+                emphasis="outline"
+                data-download="mandate"
+                [loading]="isPending(row, 'mandate')"
+                (click)="downloadMandate(row)"
+              >
+                Mandat
+              </button>
+              <button
+                foldButton
+                size="sm"
+                emphasis="outline"
+                data-download="debit"
+                [loading]="isPending(row, 'debit')"
                 (click)="downloadRow(row)"
               >
-                Télécharger
+                Prélèvement
               </button>
               @if (row.status === 'to_refund') {
                 <button foldButton size="sm" emphasis="outline" (click)="refund(row)">
