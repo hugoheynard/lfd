@@ -36,6 +36,7 @@ function drawn(
 ) {
   return new PackingListDrawnEvent(DAY, AT, {
     orderId,
+    rank: 1,
     reference: `ORD-${orderId}`,
     customerLabel: "Trois Ponts",
     fulfillmentMethod: "pickup",

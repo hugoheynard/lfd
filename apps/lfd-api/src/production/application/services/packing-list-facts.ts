@@ -4,6 +4,7 @@ import type {
   ProductionOrderSnapshot,
   ProductionResupplySnapshot,
 } from "../../domain/entities/production-day.js";
+import { FIRST_SHIPMENT_RANK } from "../../domain/value-objects/shipment-ref.value-object.js";
 import type { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
 
 /**
@@ -29,6 +30,9 @@ export function packingListFactsOf(
         drawnAt,
         {
           orderId: order.orderId,
+          // Le plan du fournil n'a pas encore de rang (L3b) : tout ce qu'il
+          // tire est la commande elle-même.
+          rank: FIRST_SHIPMENT_RANK,
           reference: order.reference,
           customerLabel: order.customerLabel,
           fulfillmentMethod: order.fulfillmentMethod,

@@ -12,6 +12,7 @@ import {
 } from "../../domain/errors/order-errors.js";
 import { OrderReadyEvent } from "../../domain/events/order-ready.event.js";
 import { OrderReadyFact } from "../../domain/events/order-ready.fact.js";
+import { FIRST_SHIPMENT_RANK } from "../../../../production/channels/commerce/index.js";
 import { DeliveryNoteFollowing } from "../../domain/ports/delivery-note-following.js";
 import { OrderReader, type PackingOrder } from "../../domain/ports/order.reader.js";
 import { OrderRepository } from "../../domain/ports/order.repository.js";
@@ -95,7 +96,9 @@ export class MarkOrderReadyHandler implements ICommandHandler<
     const won = await this.uow.run(async () => {
       const written = await this.repository.markReady(command.reference, at, command.staffUserId);
       if (written) {
-        await this.durable.publish(new OrderReadyFact(order.orderId).durableFact());
+        await this.durable.publish(
+          new OrderReadyFact(order.orderId, FIRST_SHIPMENT_RANK).durableFact(),
+        );
         // Plan E2, § 8.3 : le BL suit, dans la même transaction, et seulement
         // pour le gagnant — créé plein `prepared` s'il manquait (prête hors plan).
         await this.deliveryNotes.prepare(order.orderId);
@@ -117,6 +120,9 @@ export class MarkOrderReadyHandler implements ICommandHandler<
     // part plus non plus pour une écriture qu'une validation ratée annulerait.
     const ready = new OrderReadyEvent(
       order.orderId,
+      // `markReady` écrit la commande : c'est l'envoi de rang 1. Le prêt d'un
+      // reliquat (choix 4) passe par son BL, en L4.
+      FIRST_SHIPMENT_RANK,
       order.orderNumber,
       order.placedByUserId,
       command.staffUserId,

@@ -17,6 +17,7 @@ import { arrivalsBetween } from "../../domain/services/production-handoff.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
 import { FreshDayOrders } from "../services/fresh-day-orders.js";
 import { packingListFactsOf } from "../services/packing-list-facts.js";
+import { ShipmentRef } from "../../domain/value-objects/shipment-ref.value-object.js";
 import { RetakeProductionDayCommand } from "./retake-production-day.command.js";
 
 /**
@@ -121,9 +122,10 @@ export class RetakeProductionDayHandler implements ICommandHandler<
         await this.events.publishTraced(new ProductionDayRetakenJournalEvent(day.value, absorbed));
         const arrivals = arrivalsBetween(before, locked.orders);
         await this.publishArrivals(day, arrivals, now, locked.reopened?.at ?? null);
-        const orderIds = arrivals.map((order) => order.orderId);
+        // Le plan n'a pas encore de rang (L3b) : chaque arrivée est l'envoi de rang 1.
+        const shipments = arrivals.map((order) => ShipmentRef.firstOf(order.orderId));
         await this.durable.publish(
-          new ProductionDayRetakenEvent(day.value, now, absorbed, orderIds).durableFact(),
+          new ProductionDayRetakenEvent(day.value, now, absorbed, shipments).durableFact(),
         );
       }
       return { day: locked, absorbed };

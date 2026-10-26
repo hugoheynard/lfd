@@ -296,7 +296,10 @@ describe("RetakeProductionDayHandler — le fait du retirage (dossier-prod-du-jo
           serviceDay: DAY,
           retakenAt: NOW.toISOString(),
           absorbed: 2,
-          orderIds: ["ord_2", "ord_3"],
+          shipments: [
+            { orderId: "ord_2", rank: 1 },
+            { orderId: "ord_3", rank: 1 },
+          ],
         },
       },
     ]);

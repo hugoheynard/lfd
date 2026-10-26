@@ -9,6 +9,7 @@ import { DeliveryStopBroughtBackEvent } from "../../domain/events/delivery-doors
 import { DeliveryRoundRepository } from "../../domain/ports/delivery-round.repository.js";
 import { StopDecisionDesk } from "../stop-decision-desk.js";
 import { BringStopBackCommand } from "./bring-stop-back.command.js";
+import { ShipmentRef } from "../../../production/channels/delivery/index.js";
 
 /**
  * **« Rapporter »** (`documentation/livraisons/livreur/a-la-porte.md`, B3,
@@ -59,7 +60,12 @@ export class BringStopBackHandler implements ICommandHandler<BringStopBackComman
       await this.events.publishTraced(
         new DeliveryStopBroughtBackEvent(at.roundKey, at.order, "staff"),
       );
-      const fact = new DeliveryOrdersBroughtBackFact(at.round.id, [at.decision.orderId], now);
+      // Les arrêts n'ont pas encore de rang (L3b) : chacun est l'envoi de rang 1.
+      const fact = new DeliveryOrdersBroughtBackFact(
+        at.round.id,
+        [ShipmentRef.firstOf(at.decision.orderId)],
+        now,
+      );
       await this.durable.publish(fact.durableFact());
     });
   }

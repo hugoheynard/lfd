@@ -4,6 +4,10 @@ import {
   PackingListDrawnPayloadError,
   type PackingListOrder,
 } from "../packing-list-drawn.event.js";
+import {
+  PackingOrderPackedEvent,
+  PackingOrderPackedPayloadError,
+} from "../packing-order-packed.event.js";
 import { ReturnRequestedEvent, ReturnRequestedPayloadError } from "../return-requested.event.js";
 
 /**
@@ -17,6 +21,7 @@ const DAY = "2026-09-13";
 
 const ORDER: PackingListOrder = {
   orderId: "ord_1",
+  rank: 1,
   reference: "ORD-0001",
   customerLabel: "Trois Ponts",
   fulfillmentMethod: "delivery",
@@ -43,6 +48,27 @@ describe("PackingListDrawnEvent", () => {
     const before = new PackingListDrawnEvent(DAY, AT, ORDER).durableFact().key;
     const after = new PackingListDrawnEvent(DAY, AT, ORDER, reopenedAt).durableFact().key;
     expect(after).toBe(`${before}:after-reopening:${reopenedAt.toISOString()}`);
+  });
+
+  /** Plan E7 reliquat, §4 : une clé oubliée avale le second envoi sans erreur. */
+  it("deux rangs, deux clés — le rang 1 garde la clé d'avant, réouverture comprise", () => {
+    const reopenedAt = new Date(AT.getTime() + 1);
+    const two = { ...ORDER, rank: 2 };
+    expect(new PackingListDrawnEvent(DAY, AT, two).durableFact().key).toBe(
+      `production.packing_list_drawn:${DAY}:ord_1:r2`,
+    );
+    expect(new PackingListDrawnEvent(DAY, AT, two, reopenedAt).durableFact().key).toBe(
+      `production.packing_list_drawn:${DAY}:ord_1:r2:after-reopening:${reopenedAt.toISOString()}`,
+    );
+  });
+
+  it("🔴 un fait écrit SANS rang (binaire d'avant) se lit au rang 1 ; un rang nul est refusé", () => {
+    const { rank: _absent, ...older } = ORDER;
+    const payload = { ...new PackingListDrawnEvent(DAY, AT, ORDER).durableFact().payload };
+    expect(PackingListDrawnEvent.fromPayload({ ...payload, order: older }).order.rank).toBe(1);
+    expect(() =>
+      PackingListDrawnEvent.fromPayload({ ...payload, order: { ...ORDER, rank: 0 } }),
+    ).toThrow(PackingListDrawnPayloadError);
   });
 
   it("se relit à l'identique, échéance nulle comprise", () => {
@@ -146,5 +172,39 @@ describe("ReturnRequestedEvent", () => {
   ])("refuse une charge %s", (_label, override) => {
     const payload = { ...event.durableFact().payload, ...override };
     expect(() => ReturnRequestedEvent.fromPayload(payload)).toThrow(ReturnRequestedPayloadError);
+  });
+});
+
+describe("PackingOrderPackedEvent", () => {
+  const LATER = new Date(AT.getTime() + 60_000);
+
+  it("au rang 1, la clé d'avant ; une réannonce, une clé par geste", () => {
+    const one = new PackingOrderPackedEvent("ord_1", 1, "ORD-0001", AT, "s1").durableFact();
+    const again = new PackingOrderPackedEvent("ord_1", 1, "ORD-0001", AT, "s1", LATER);
+    expect(one.key).toBe("packing.order_packed:ord_1");
+    expect(again.durableFact().key).toBe(
+      `packing.order_packed:ord_1:reannounced:${LATER.toISOString()}`,
+    );
+  });
+
+  /** Plan E7 reliquat, §4 : la première annexe A oubliait cette clé. */
+  it("deux rangs, deux clés", () => {
+    const two = new PackingOrderPackedEvent("ord_1", 2, "ORD-0001", AT, "s1");
+    expect(two.durableFact().key).toBe("packing.order_packed:ord_1:r2");
+    expect(PackingOrderPackedEvent.fromPayload(two.durableFact().payload)).toEqual(two);
+  });
+
+  it("relit un fait écrit sans rang au rang 1, refuse un rang nul", () => {
+    const { rank: _absent, ...older } = new PackingOrderPackedEvent(
+      "ord_1",
+      1,
+      "ORD-0001",
+      AT,
+      "s1",
+    ).durableFact().payload;
+    expect(PackingOrderPackedEvent.fromPayload(older).rank).toBe(1);
+    expect(() => PackingOrderPackedEvent.fromPayload({ ...older, rank: 0 })).toThrow(
+      PackingOrderPackedPayloadError,
+    );
   });
 });

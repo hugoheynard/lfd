@@ -23,7 +23,7 @@ describe("OnOrderReady", () => {
   it("cite la fiche qui a scanné AVEC son nom, et nomme le client", async () => {
     const { handler, recorder, work } = build();
 
-    handler.handle(new OrderReadyEvent("order_9", "ORD-9", "user_7", "fiche_1", READY_AT));
+    handler.handle(new OrderReadyEvent("order_9", 1, "ORD-9", "user_7", "fiche_1", READY_AT));
     await work.whenIdle();
 
     expect(recorder.records).toEqual([
@@ -43,10 +43,24 @@ describe("OnOrderReady", () => {
     ]);
   });
 
+  /** Plan E7 reliquat, §4 : une clé oubliée avale le second envoi sans erreur. */
+  it("deux rangs, deux traces : le reliquat prêt a sa clé", async () => {
+    const { handler, recorder, work } = build();
+
+    handler.handle(new OrderReadyEvent("order_9", 1, "ORD-9", "user_7", "fiche_1", READY_AT));
+    handler.handle(new OrderReadyEvent("order_9", 2, "ORD-9", "user_7", "fiche_1", READY_AT));
+    await work.whenIdle();
+
+    expect(recorder.records.map((record) => record.idempotencyKey)).toEqual([
+      "order.ready:order_9",
+      "order.ready:order_9:r2",
+    ]);
+  });
+
   it("garde la fiche par son seul id quand l'annuaire ne la nomme pas — sans inventer", async () => {
     const { handler, recorder, work } = build();
 
-    handler.handle(new OrderReadyEvent("order_9", "ORD-9", "user_inconnu", "fiche_x", READY_AT));
+    handler.handle(new OrderReadyEvent("order_9", 1, "ORD-9", "user_inconnu", "fiche_x", READY_AT));
     await work.whenIdle();
 
     expect(recorder.records[0]?.payload).toEqual({

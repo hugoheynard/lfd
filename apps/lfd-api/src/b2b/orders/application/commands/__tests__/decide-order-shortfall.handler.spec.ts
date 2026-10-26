@@ -181,6 +181,7 @@ describe("DecideOrderShortfallHandler — « Décider du départ » (E6b)", () =
         key: "order.shortfall_decided:ord_1",
         payload: {
           orderId: "ord_1",
+          rank: 1,
           orderNumber: "ORD-0001",
           placedByUserId: "u_1",
           decidedByStaffId: "staff_1",

@@ -4,7 +4,10 @@ import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import { DurablePublisher } from "../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../platform/time/clock.js";
-import { InscribedOrderHeaderReader } from "../../../production/channels/packing/index.js";
+import {
+  FIRST_SHIPMENT_RANK,
+  InscribedOrderHeaderReader,
+} from "../../../production/channels/packing/index.js";
 import {
   PackingWithdrawalDesk,
   type PackingWithdrawalOutcome,
@@ -95,6 +98,8 @@ export class PackingSheetWithdrawalDesk extends PackingWithdrawalDesk {
     const event = new PackingSheetWithdrawnEvent(
       sheet.serviceDay,
       sheet.orderId,
+      // La feuille n'a pas encore de rang (L3b) : elle est celle de la commande.
+      FIRST_SHIPMENT_RANK,
       sheet.reference,
       at,
       released,

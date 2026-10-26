@@ -73,7 +73,9 @@ export class MailDeliveryEnRoute implements DurableSubscriber {
   private async sendAll(fact: DeliveryRoundDepartedFact): Promise<void> {
     const failed: string[] = [];
     let firstCause: unknown = null;
-    for (const orderId of fact.orderIds) {
+    // Un courriel par COMMANDE jusqu'à L4, qui le rend par envoi (choix 17).
+    const orderIds = [...new Set(fact.shipments.map((shipment) => shipment.orderId))];
+    for (const orderId of orderIds) {
       try {
         await this.mail.send(orderId, fact.roundId);
       } catch (cause: unknown) {

@@ -2,6 +2,7 @@ import { EventsHandler, type IEventHandler } from "@nestjs/cqrs";
 
 import { BackgroundWork } from "../../../../platform/events/background-work.js";
 import { OrderReadyEvent } from "../../../orders/domain/events/order-ready.event.js";
+import { shipmentKeySuffix } from "../../../../production/channels/commerce/index.js";
 import { ACTIVITY_TYPES } from "../../domain/activity-event.js";
 import { ActivityRecorder } from "../../domain/ports/activity-recorder.js";
 import { ActorNamer } from "../../domain/ports/actor-namer.js";
@@ -44,7 +45,9 @@ export class OnOrderReady implements IEventHandler<OrderReadyEvent> {
       type: ACTIVITY_TYPES.orderReady,
       subjectType: "user",
       subjectId: event.placedByUserId,
-      idempotencyKey: `${ACTIVITY_TYPES.orderReady}:${event.orderId}`,
+      // Une trace par ENVOI prêt (plan E7 reliquat, annexe A.2) : le rang 1
+      // garde la clé d'avant, un reliquat a la sienne.
+      idempotencyKey: `${ACTIVITY_TYPES.orderReady}:${event.orderId}${shipmentKeySuffix(event.rank)}`,
       payload: {
         ...subject,
         orderId: event.orderId,

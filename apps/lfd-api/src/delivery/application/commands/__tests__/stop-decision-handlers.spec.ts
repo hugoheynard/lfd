@@ -138,7 +138,11 @@ describe("BringStopBackHandler — « Rapporter » (B3, LB-Q2)", () => {
       {
         type: DELIVERY_ORDERS_BROUGHT_BACK,
         key: `${DELIVERY_ORDERS_BROUGHT_BACK}:r_1:o_1`,
-        payload: { roundId: "r_1", orderIds: ["o_1"], broughtBackAt: NOW.toISOString() },
+        payload: {
+          roundId: "r_1",
+          shipments: [{ orderId: "o_1", rank: 1 }],
+          broughtBackAt: NOW.toISOString(),
+        },
       },
     ]);
   });

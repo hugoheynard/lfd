@@ -5,6 +5,7 @@ import {
   DurableHandler,
   type DurableSubscriber,
 } from "../../../../platform/outbox/durable-handler.js";
+import { shipmentKeySuffix } from "../../../../production/channels/commerce/index.js";
 import { ORDER_READY, OrderReadyFact } from "../../domain/events/order-ready.fact.js";
 import { OrderReadyMail } from "../services/order-ready-mail.service.js";
 
@@ -56,6 +57,10 @@ export class SendOrderReadyMail implements DurableSubscriber {
     // ne fait pas partir un second message. Le rappel du comptoir, lui, en
     // compose une datée — c'est la même fonction d'envoi, et c'est l'appelant
     // qui choisit s'il se répète.
-    await this.mail.send(fact.orderId, `order.ready:${fact.orderId}`);
+    // Par ENVOI (plan E7 reliquat, choix 17) : le rang 1 garde la clé d'avant.
+    await this.mail.send(
+      fact.orderId,
+      `order.ready:${fact.orderId}${shipmentKeySuffix(fact.rank)}`,
+    );
   }
 }

@@ -17,7 +17,7 @@ import type { ProductionDocumentStore } from "../../../../platform/storage/produ
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import type { ProducibleOrder } from "../../../channels/commerce/day-orders.reader.js";
 import { ProductionDayClosedEvent } from "../../../channels/commerce/production-day-closed.event.js";
-import { ProductionDayRetakenEvent } from "../../../channels/delivery/index.js";
+import { ProductionDayRetakenEvent, ShipmentRef } from "../../../channels/delivery/index.js";
 import { ProductionDay } from "../../../domain/entities/production-day.js";
 import {
   DossierRecipientsReader,
@@ -104,7 +104,7 @@ export function closure(reannouncedAt: Date | null = null) {
 }
 
 export function retake(at: Date = RETAKEN) {
-  const fact = new ProductionDayRetakenEvent(DAY, at, 1, ["o1"]).durableFact();
+  const fact = new ProductionDayRetakenEvent(DAY, at, 1, [ShipmentRef.firstOf("o1")]).durableFact();
   return { eventId: "evt-2", type: fact.type, payload: fact.payload };
 }
 

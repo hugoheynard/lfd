@@ -1,5 +1,9 @@
 import type { DurableEvent, DurableFact } from "../../../platform/outbox/durable-event.js";
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
+import {
+  shipmentKeySuffix,
+  shipmentRankOf,
+} from "../../domain/value-objects/shipment-ref.value-object.js";
 import type { Clientele } from "../commerce/day-orders.reader.js";
 import { instantOf, piecesOf, recordOf, textOf } from "./payload-fields.js";
 
@@ -17,6 +21,11 @@ export interface PackingListLine {
 export interface PackingListOrder {
   /** Identifiant OPAQUE de la commande côté commerce. */
   readonly orderId: string;
+  /**
+   * Le rang de l'envoi (plan E7 reliquat, choix 5) : 1 = la commande, > 1 =
+   * un reliquat. Un fait écrit avant le champ se relit au rang 1.
+   */
+  readonly rank: number;
   readonly reference: string;
   readonly customerLabel: string;
   readonly fulfillmentMethod: "pickup" | "delivery";
@@ -45,7 +54,9 @@ export interface PackingListOrder {
  *
  * ## Un fait PAR COMMANDE, et pourquoi
  *
- * La clé est la commande : `production.packing_list_drawn:<jour>:<orderId>`.
+ * La clé est l'envoi : `production.packing_list_drawn:<jour>:<orderId>`, et
+ * `…:<orderId>:r<rang>` pour un reliquat (plan E7 reliquat, choix 6 — le
+ * rang 1 garde la clé d'avant à l'identique).
  * Une réannonce republie les mêmes clés — la boîte d'envoi les absorbe —, et
  * un retirage n'écrit que celles qu'il vient d'absorber. Un seul fait pour
  * toute la liste aurait demandé une clé par tirage, et fait recevoir deux fois
@@ -78,6 +89,7 @@ export class PackingListDrawnEvent implements DurableEvent {
       type: PRODUCTION_PACKING_LIST_DRAWN,
       key:
         `${PRODUCTION_PACKING_LIST_DRAWN}:${this.serviceDay}:${this.order.orderId}` +
+        shipmentKeySuffix(this.order.rank) +
         (this.reopenedAt === null ? "" : `:after-reopening:${this.reopenedAt.toISOString()}`),
       payload: {
         serviceDay: this.serviceDay,
@@ -108,6 +120,7 @@ function orderOf(value: unknown): PackingListOrder | null {
     return null;
   }
   const orderId = textOf(raw["orderId"]);
+  const rank = shipmentRankOf(raw["rank"]);
   const reference = textOf(raw["reference"]);
   const customerLabel = raw["customerLabel"];
   const method = raw["fulfillmentMethod"];
@@ -118,6 +131,7 @@ function orderOf(value: unknown): PackingListOrder | null {
   const lines = linesOf(raw["lines"]);
   if (
     orderId === null ||
+    rank === null ||
     reference === null ||
     typeof customerLabel !== "string" ||
     (method !== "pickup" && method !== "delivery") ||
@@ -128,6 +142,7 @@ function orderOf(value: unknown): PackingListOrder | null {
   }
   return {
     orderId,
+    rank,
     reference,
     customerLabel,
     fulfillmentMethod: method,

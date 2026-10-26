@@ -3,6 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { DurablePublisher } from "../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../platform/time/clock.js";
+import { FIRST_SHIPMENT_RANK } from "../../../production/channels/packing/index.js";
 import { PackingShortfallReportedEvent } from "../../channels/commerce/index.js";
 import { PackingSheetRepository } from "../../domain/ports/packing-sheet.repository.js";
 import { lockedSheet } from "../containers/container-support.js";
@@ -45,6 +46,8 @@ export class ReportPackingShortfallHandler implements ICommandHandler<
       await this.durable.publish(
         new PackingShortfallReportedEvent(
           sheet.orderId,
+          // La feuille n'a pas encore de rang (L3b) : elle est celle de la commande.
+          FIRST_SHIPMENT_RANK,
           sheet.reference,
           now,
           command.staffUserId,

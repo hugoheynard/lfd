@@ -22,6 +22,7 @@ import { DeliveryEnRouteMail } from "../../services/delivery-en-route-mail.servi
 import { MAIL_DELIVERY_EN_ROUTE, MailDeliveryEnRoute } from "../mail-delivery-en-route.handler.js";
 import { OneRecipientReader, orderView, RecordingMailer } from "./payment-failure-doubles.js";
 import { AT_PLACEMENT } from "../../../domain/services/order-sheet.js";
+import { ShipmentRef } from "../../../../../production/channels/commerce/index.js";
 
 /*
  * Le commerce entend le départ, fait durable (en-route.md ; plan-depart-durable.md,
@@ -169,7 +170,12 @@ function subscriber(
 
 /** Le fait tel que le relais le livre : relu de sa charge, comme en production. */
 function departed(roundId: string, orderIds: readonly string[]): DurableDelivery {
-  const fact = new DeliveryRoundDepartedFact(roundId, "2030-03-12", DEPARTED, orderIds);
+  const fact = new DeliveryRoundDepartedFact(
+    roundId,
+    "2030-03-12",
+    DEPARTED,
+    orderIds.map((orderId) => ShipmentRef.firstOf(orderId)),
+  );
   const { type, payload } = fact.durableFact();
   return { eventId: `evt_${roundId}`, type, payload };
 }

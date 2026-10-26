@@ -1,5 +1,6 @@
 import type { DurableEvent, DurableFact } from "../../../platform/outbox/durable-event.js";
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
+import { shipmentKeySuffix, shipmentRankOf } from "../../../production/channels/handover/index.js";
 import type { HandoverVia } from "../../domain/services/handover.js";
 
 /** Nom stable du fait, clé de routage vers `@DurableHandler`. */
@@ -31,15 +32,18 @@ const VIAS: readonly HandoverVia[] = ["scan", "manual", "deposit"];
  *
  * ## Le contrat
  *
- * `{ orderId, reference, handedOverAt, handedOverBy, via }`. La **référence**
+ * `{ orderId, rank, reference, handedOverAt, handedOverBy, via }` ; un fait
+ * écrit avant `rank` se relit au rang 1. La **référence**
  * est ce que le commerce résout ; l'identifiant ne sert qu'à la clé. Le `via`
  * voyage parce que le commerce le recopie : sans lui, un retrait saisi
  * deviendrait un scan en traversant la frontière.
  *
  * ## La clé
  *
- * - Attestation : `handover.handed_over:<orderId>` — une commande ne se retire
- *   qu'une fois (contrainte d'unicité de l'attestation).
+ * - Attestation : `handover.handed_over:<orderId>` — un envoi ne se retire
+ *   qu'une fois (contrainte d'unicité de l'attestation) ; un reliquat a la
+ *   sienne, `…:<orderId>:r<rang>` (plan E7 reliquat, choix 6 — la première
+ *   annexe A l'oubliait, et la seconde remise aurait été avalée).
  * - Réannonce (un rescan refusé au comptoir, un rejeu à la porte) :
  *   `…:<orderId>:reannounced:<instant du geste>`, un fait NEUF par geste, comme
  *   le rescan du colisage. L'effet reste unique : le commerce ne refait rien
@@ -52,6 +56,8 @@ export class OrderHandedOverEvent implements DurableEvent {
   constructor(
     /** L'identifiant opaque de la commande — la clé du fait, rien d'autre. */
     readonly orderId: string,
+    /** Le rang de l'envoi retiré — 1 = la commande (plan E7 reliquat, choix 5). */
+    readonly rank: number,
     /** La référence lisible, `ORD-1042`. */
     readonly reference: string,
     /** L'instant du retrait D'ORIGINE, jamais celui d'une réannonce. */
@@ -65,7 +71,7 @@ export class OrderHandedOverEvent implements DurableEvent {
   ) {}
 
   durableFact(): DurableFact {
-    const base = `${HANDOVER_HANDED_OVER}:${this.orderId}`;
+    const base = `${HANDOVER_HANDED_OVER}:${this.orderId}${shipmentKeySuffix(this.rank)}`;
     return {
       type: HANDOVER_HANDED_OVER,
       key:
@@ -74,6 +80,7 @@ export class OrderHandedOverEvent implements DurableEvent {
           : `${base}:reannounced:${this.reannouncedAt.toISOString()}`,
       payload: {
         orderId: this.orderId,
+        rank: this.rank,
         reference: this.reference,
         handedOverAt: this.handedOverAt.toISOString(),
         handedOverBy: this.handedOverBy,
@@ -92,8 +99,10 @@ export class OrderHandedOverEvent implements DurableEvent {
     const { orderId, reference, handedOverAt, handedOverBy, via } = payload;
     const at = typeof handedOverAt === "string" ? new Date(handedOverAt) : null;
     const knownVia = VIAS.find((candidate) => candidate === via);
+    const rank = shipmentRankOf(payload["rank"]);
     if (
       typeof orderId !== "string" ||
+      rank === null ||
       typeof reference !== "string" ||
       typeof handedOverBy !== "string" ||
       knownVia === undefined ||
@@ -102,7 +111,7 @@ export class OrderHandedOverEvent implements DurableEvent {
     ) {
       throw new OrderHandedOverPayloadError();
     }
-    return new OrderHandedOverEvent(orderId, reference, at, handedOverBy, knownVia);
+    return new OrderHandedOverEvent(orderId, rank, reference, at, handedOverBy, knownVia);
   }
 }
 
@@ -111,7 +120,7 @@ export class OrderHandedOverPayloadError extends TechnicalError {
   constructor() {
     super(
       "order_handed_over.payload_invalid",
-      "Le fait « commande retirée » reçu est illisible (commande, référence, instant, auteur ou mode manquant) : " +
+      "Le fait « commande retirée » reçu est illisible (commande, rang, référence, instant, auteur ou mode manquant) : " +
         "le commerce n'a pas clos la commande. Le message reste dans la boîte d'envoi ; " +
         "corriger l'émetteur puis le rejouer depuis la carte de santé.",
     );

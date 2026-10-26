@@ -24,3 +24,11 @@ export { AttestedHandoversReader } from "./attested-handovers.reader.js";
 export { AtelierSheetsReader } from "./atelier-sheets.reader.js";
 export { QualityHoldsReader } from "./quality-holds.reader.js";
 export { OrderCustodyReader, type OrderOutOfHand } from "./order-custody.reader.js";
+// L'envoi `(commande, rang)` (plan E7 reliquat, L3a, 2026-10-26) : une seule
+// définition, réexportée par chaque canal du fournil, comme `ServiceDay`.
+export {
+  FIRST_SHIPMENT_RANK,
+  ShipmentRef,
+  shipmentKeySuffix,
+  shipmentRankOf,
+} from "../../domain/value-objects/shipment-ref.value-object.js";

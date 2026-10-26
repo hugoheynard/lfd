@@ -151,7 +151,7 @@ describe("déclarer une commande prête", () => {
 
     expect(repository.writes).toBe(1);
     expect(events.published).toEqual([
-      new OrderReadyEvent("ord_1", REFERENCE, "user_1", "staff_a", PACKED_AT),
+      new OrderReadyEvent("ord_1", 1, REFERENCE, "user_1", "staff_a", PACKED_AT),
     ]);
     expect(view.readyAt).toBe(PACKED_AT.toISOString());
   });
@@ -162,7 +162,7 @@ describe("déclarer une commande prête", () => {
 
     await handler.execute(ready());
 
-    expect(durable.facts).toEqual([new OrderReadyFact("ord_1").durableFact()]);
+    expect(durable.facts).toEqual([new OrderReadyFact("ord_1", 1).durableFact()]);
   });
 
   /**

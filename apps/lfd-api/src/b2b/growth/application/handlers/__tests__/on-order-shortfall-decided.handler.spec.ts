@@ -27,6 +27,7 @@ function handler() {
 
 const EVENT = new OrderShortfallDecidedEvent(
   "order_9",
+  1,
   "ORD-9",
   "user_7",
   "fiche_1",
@@ -57,6 +58,19 @@ describe("OnOrderShortfallDecided", () => {
     expect(
       JOURNAL_FACTS["order.shortfall_decided"].payload.safeParse(record?.payload).success,
     ).toBe(true);
+  });
+
+  /** Plan E7 reliquat, §4 : une clé oubliée avale le second envoi sans erreur. */
+  it("deux rangs, deux témoins : le reliquat a sa clé", async () => {
+    const { recorder, run } = handler();
+
+    await run.handle(delivery(EVENT.durableFact().payload));
+    await run.handle(delivery({ ...EVENT.durableFact().payload, rank: 2 }));
+
+    expect(recorder.records.map((record) => record.idempotencyKey)).toEqual([
+      "order.shortfall_decided:order_9",
+      "order.shortfall_decided:order_9:r2",
+    ]);
   });
 
   it("une charge illisible n'écrit rien et le dit", async () => {

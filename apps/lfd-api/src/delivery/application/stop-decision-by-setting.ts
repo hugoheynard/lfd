@@ -15,6 +15,7 @@ import {
 import { DeliveryRoundRepository } from "../domain/ports/delivery-round.repository.js";
 import type { DriverStopRow } from "../domain/ports/driver-rounds.reader.js";
 import { StopDecisionRepository } from "../domain/ports/stop-decision.repository.js";
+import { ShipmentRef } from "../../production/channels/delivery/index.js";
 
 /** Le signalement qu'une règle figée tranche d'avance. */
 export interface SettledReport {
@@ -85,7 +86,12 @@ export class StopDecisionBySetting {
   private async bringBack(round: DeliveryRound, report: SettledReport): Promise<void> {
     round.closeStop(report.stop.stopId, report.at);
     await this.rounds.save(round);
-    const fact = new DeliveryOrdersBroughtBackFact(round.id, [report.stop.orderId], report.at);
+    // Les arrêts n'ont pas encore de rang (L3b) : chacun est l'envoi de rang 1.
+    const fact = new DeliveryOrdersBroughtBackFact(
+      round.id,
+      [ShipmentRef.firstOf(report.stop.orderId)],
+      report.at,
+    );
     await this.durable.publish(fact.durableFact());
   }
 }

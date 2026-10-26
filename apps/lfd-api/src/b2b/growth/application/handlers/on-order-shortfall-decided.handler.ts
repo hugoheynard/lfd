@@ -9,6 +9,7 @@ import {
   ORDER_SHORTFALL_DECIDED,
   OrderShortfallDecidedEvent,
 } from "../../../orders/domain/events/order-shortfall-decided.event.js";
+import { shipmentKeySuffix } from "../../../../production/channels/commerce/index.js";
 import { ACTIVITY_TYPES } from "../../domain/activity-event.js";
 import { ActivityRecorder } from "../../domain/ports/activity-recorder.js";
 import { ActorNamer } from "../../domain/ports/actor-namer.js";
@@ -45,7 +46,8 @@ export class OnOrderShortfallDecided implements DurableSubscriber {
       type: ACTIVITY_TYPES.orderShortfallDecided,
       subjectType: "user",
       subjectId: event.placedByUserId,
-      idempotencyKey: `${ACTIVITY_TYPES.orderShortfallDecided}:${event.orderId}`,
+      // Une trace par envoi décidé (plan E7 reliquat, annexe A.2).
+      idempotencyKey: `${ACTIVITY_TYPES.orderShortfallDecided}:${event.orderId}${shipmentKeySuffix(event.rank)}`,
       payload: {
         ...subject,
         orderId: event.orderId,

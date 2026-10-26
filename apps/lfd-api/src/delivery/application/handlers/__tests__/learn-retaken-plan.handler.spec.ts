@@ -4,6 +4,7 @@ import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import {
   ProductionDayClosedEvent,
   ProductionDayRetakenEvent,
+  ShipmentRef,
 } from "../../../../production/channels/delivery/index.js";
 import { RecordingStaffNotifier } from "../../commands/__tests__/decision-doubles.js";
 import { PlanArrestedBell } from "../../plan-arrested-bell.js";
@@ -76,7 +77,12 @@ function setup() {
     retake: (orderIds: readonly string[]) =>
       deliver(
         retakes,
-        new ProductionDayRetakenEvent(DAY, RETAKEN, orderIds.length, orderIds).durableFact(),
+        new ProductionDayRetakenEvent(
+          DAY,
+          RETAKEN,
+          orderIds.length,
+          orderIds.map((orderId) => ShipmentRef.firstOf(orderId)),
+        ).durableFact(),
       ),
     deliverRaw: (payload: Readonly<Record<string, unknown>>) =>
       deliver(retakes, { type: "production.day_retaken", payload }),

@@ -1,4 +1,5 @@
 import type { DurableEvent, DurableFact } from "../../../platform/outbox/durable-event.js";
+import { shipmentRankOf } from "../../../production/channels/packing/index.js";
 import { instantOf, textOf } from "../../../production/channels/packing/payload-fields.js";
 import { PackingShortfallPayloadError } from "./packing-shortfall-reported.event.js";
 
@@ -16,12 +17,16 @@ export const PACKING_SHORTFALL_CLEARED = "packing.shortfall_cleared";
  * SEULEMENT par une fermeture qui efface un signal (le bac le sait,
  * `packing_order.shortfall_reported_at`), jamais à chaque fermeture.
  *
- * Clé : `packing.shortfall_cleared:<orderId>:<clearedAt>`. Le commerce
+ * Clé : `packing.shortfall_cleared:<orderId>:<clearedAt>` — inchangée par le
+ * reliquat, qui ajoute `rank` à la charge (plan E7 reliquat, choix 15 ; absent
+ * = rang 1). Le commerce
  * n'efface que si son signal est antérieur à `clearedAt`.
  */
 export class PackingShortfallClearedEvent implements DurableEvent {
   constructor(
     readonly orderId: string,
+    /** Le rang de l'envoi dont le manque s'efface — 1 = la commande. */
+    readonly rank: number,
     readonly reference: string,
     readonly clearedAt: Date,
   ) {}
@@ -32,6 +37,7 @@ export class PackingShortfallClearedEvent implements DurableEvent {
       key: `${PACKING_SHORTFALL_CLEARED}:${this.orderId}:${this.clearedAt.toISOString()}`,
       payload: {
         orderId: this.orderId,
+        rank: this.rank,
         reference: this.reference,
         clearedAt: this.clearedAt.toISOString(),
       },
@@ -41,11 +47,12 @@ export class PackingShortfallClearedEvent implements DurableEvent {
   /** @throws {PackingShortfallPayloadError} */
   static fromPayload(payload: Readonly<Record<string, unknown>>): PackingShortfallClearedEvent {
     const orderId = textOf(payload["orderId"]);
+    const rank = shipmentRankOf(payload["rank"]);
     const reference = textOf(payload["reference"]);
     const clearedAt = instantOf(payload["clearedAt"]);
-    if (orderId === null || reference === null || clearedAt === null) {
+    if (orderId === null || rank === null || reference === null || clearedAt === null) {
       throw new PackingShortfallPayloadError("effacé");
     }
-    return new PackingShortfallClearedEvent(orderId, reference, clearedAt);
+    return new PackingShortfallClearedEvent(orderId, rank, reference, clearedAt);
   }
 }

@@ -40,8 +40,11 @@ export class RecordRoundDeparted implements DurableSubscriber {
 
   async handle(delivery: DurableDelivery): Promise<void> {
     const fact = DeliveryRoundDepartedFact.fromPayload(delivery.payload);
-    const done = await this.handedOver.handedOverAmong(fact.orderIds);
-    const departed = fact.orderIds.filter((orderId) => !done.has(orderId));
+    // Le retrait tient encore la garde par COMMANDE (l'envoi y entre en L4) :
+    // les commandes distinctes des envois du fait.
+    const orderIds = [...new Set(fact.shipments.map((shipment) => shipment.orderId))];
+    const done = await this.handedOver.handedOverAmong(orderIds);
+    const departed = orderIds.filter((orderId) => !done.has(orderId));
     await this.departures.recordDeparted(departed, fact.departedAt);
   }
 }

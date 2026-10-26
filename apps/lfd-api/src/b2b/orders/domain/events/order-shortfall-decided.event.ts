@@ -3,6 +3,10 @@ import type { ShortfallRemainder } from "@lfd/contracts";
 import type { DurableEvent, DurableFact } from "../../../../platform/outbox/durable-event.js";
 import { TechnicalError } from "../../../../platform/shared/errors/app-error.js";
 import type { DepartingQuantity } from "../entities/shortfall-decision.js";
+import {
+  shipmentKeySuffix,
+  shipmentRankOf,
+} from "../../../../production/channels/commerce/index.js";
 
 /** Nom stable du fait — une valeur du journal : elle ne se renomme que par migration. */
 export const ORDER_SHORTFALL_DECIDED = "order.shortfall_decided";
@@ -17,12 +21,15 @@ const REMAINDERS: readonly ShortfallRemainder[] = ["abandoned"];
  * part, plus la commande. Écrit dans la boîte d'envoi, dans la transaction de
  * la décision ; le journal en garde le témoin (qui, ce qui part, le reste).
  *
- * Clé `order.shortfall_decided:<orderId>` : une décision par commande,
- * définitive (Q-I4).
+ * Clé `order.shortfall_decided:<orderId>` : une décision par envoi,
+ * définitive (Q-I4) ; celle d'un reliquat est `…:<orderId>:r<rang>` (plan E7
+ * reliquat, choix 6 et 15). Un fait écrit avant `rank` se relit au rang 1.
  */
 export class OrderShortfallDecidedEvent implements DurableEvent {
   constructor(
     readonly orderId: string,
+    /** Le rang de l'envoi décidé — 1 = la commande. */
+    readonly rank: number,
     readonly orderNumber: string,
     readonly placedByUserId: string,
     readonly decidedByStaffId: string,
@@ -33,9 +40,10 @@ export class OrderShortfallDecidedEvent implements DurableEvent {
   durableFact(): DurableFact {
     return {
       type: ORDER_SHORTFALL_DECIDED,
-      key: `${ORDER_SHORTFALL_DECIDED}:${this.orderId}`,
+      key: `${ORDER_SHORTFALL_DECIDED}:${this.orderId}${shipmentKeySuffix(this.rank)}`,
       payload: {
         orderId: this.orderId,
+        rank: this.rank,
         orderNumber: this.orderNumber,
         placedByUserId: this.placedByUserId,
         decidedByStaffId: this.decidedByStaffId,
@@ -52,6 +60,7 @@ export class OrderShortfallDecidedEvent implements DurableEvent {
       return typeof value === "string" && value.length > 0 ? value : null;
     };
     const orderId = text("orderId");
+    const rank = shipmentRankOf(payload["rank"]);
     const orderNumber = text("orderNumber");
     const placedByUserId = text("placedByUserId");
     const decidedByStaffId = text("decidedByStaffId");
@@ -59,6 +68,7 @@ export class OrderShortfallDecidedEvent implements DurableEvent {
     const remainder = REMAINDERS.find((known) => known === payload["remainder"]) ?? null;
     if (
       orderId === null ||
+      rank === null ||
       orderNumber === null ||
       placedByUserId === null ||
       decidedByStaffId === null ||
@@ -69,6 +79,7 @@ export class OrderShortfallDecidedEvent implements DurableEvent {
     }
     return new OrderShortfallDecidedEvent(
       orderId,
+      rank,
       orderNumber,
       placedByUserId,
       decidedByStaffId,

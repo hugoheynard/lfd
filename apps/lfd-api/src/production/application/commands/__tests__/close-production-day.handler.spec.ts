@@ -168,6 +168,7 @@ function closedFact(
 function listFact(source: ProducibleOrder, drawnAt: Date) {
   return new PackingListDrawnEvent(DAY, drawnAt, {
     orderId: source.orderId,
+    rank: 1,
     reference: source.reference,
     customerLabel: source.customerLabel,
     fulfillmentMethod: source.fulfillmentMethod,

@@ -110,7 +110,12 @@ describe("ProductionOrderWithdrawalDesk", () => {
         {
           type: "production.order_withdrawn_after_close",
           key: `production.order_withdrawn_after_close:${DAY.value}:ord_1`,
-          payload: { serviceDay: DAY.value, orderId: "ord_1", withdrawnAt: NOW.toISOString() },
+          payload: {
+            serviceDay: DAY.value,
+            orderId: "ord_1",
+            rank: 1,
+            withdrawnAt: NOW.toISOString(),
+          },
         },
       ]);
       expect(events.traced.map((event) => event.journalFact())).toEqual([

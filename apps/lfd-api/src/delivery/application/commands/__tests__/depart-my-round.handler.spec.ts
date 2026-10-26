@@ -158,7 +158,7 @@ describe("DepartMyRoundHandler — « Commencer ma tournée » (MT-D3 v2)", () =
           roundId: "r_1",
           serviceDay: DAY,
           departedAt: NOW.toISOString(),
-          orderIds: ["o_1"],
+          shipments: [{ orderId: "o_1", rank: 1 }],
         },
       },
     ]);

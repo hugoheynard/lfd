@@ -91,7 +91,13 @@ describe("ClosePackingOrderHandler — « Déclarer prête » au colisage", () =
     expect(durable.of(PACKED).map((fact) => [fact.key, fact.payload])).toEqual([
       [
         `${PACKED}:ord_1`,
-        { orderId: "ord_1", reference: "ORD-0001", packedAt: FIRST.toISOString(), packedBy: "s2" },
+        {
+          orderId: "ord_1",
+          rank: 1,
+          reference: "ORD-0001",
+          packedAt: FIRST.toISOString(),
+          packedBy: "s2",
+        },
       ],
     ]);
   });
@@ -137,7 +143,13 @@ describe("ClosePackingOrderHandler — « Déclarer prête » au colisage", () =
     expect(durable.of(PACKED).map((fact) => [fact.key, fact.payload])).toEqual([
       [
         `${PACKED}:ord_1:reannounced:${LATER.toISOString()}`,
-        { orderId: "ord_1", reference: "ORD-0001", packedAt: FIRST.toISOString(), packedBy: "s1" },
+        {
+          orderId: "ord_1",
+          rank: 1,
+          reference: "ORD-0001",
+          packedAt: FIRST.toISOString(),
+          packedBy: "s1",
+        },
       ],
     ]);
   });

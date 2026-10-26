@@ -185,6 +185,7 @@ describe("PackingSheetWithdrawalDesk", () => {
         payload: {
           serviceDay: DAY,
           orderId: "ord_1",
+          rank: 1,
           reference: "ORD-0001",
           withdrawnAt: NOW.toISOString(),
           released: [{ sku: "CRO", productName: "Croissant", quantity: 4 }],

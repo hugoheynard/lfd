@@ -80,6 +80,7 @@ function factOf(
 ): DurableFact {
   return new OrderHandedOverEvent(
     "ord_1",
+    1,
     "ORD-ABCD-1234",
     handover.at,
     handover.by,

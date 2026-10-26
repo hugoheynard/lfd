@@ -19,6 +19,7 @@ import { PrismaHandedOverOrdersReader } from "../src/handover/infrastructure/pri
 import { RECORD_ROUND_DEPARTED } from "../src/handover/application/handlers/record-round-departed.handler.js";
 import { MAIL_DELIVERY_EN_ROUTE } from "../src/b2b/orders/application/handlers/mail-delivery-en-route.handler.js";
 import { DeliveryOrdersBroughtBackFact } from "../src/delivery/channels/handover/index.js";
+import { ShipmentRef } from "../src/production/channels/delivery/index.js";
 import { PrismaService } from "../src/platform/database/prisma.service.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
@@ -128,7 +129,7 @@ function receiptOf(subscriber: string) {
 
 /** Écrit un fait de retour comme « Rapporter » le fait : dans une unité de travail. */
 async function bringBack(roundId: string, orderId: string, at: Date): Promise<void> {
-  const fact = new DeliveryOrdersBroughtBackFact(roundId, [orderId], at);
+  const fact = new DeliveryOrdersBroughtBackFact(roundId, [ShipmentRef.firstOf(orderId)], at);
   await ctx.app
     .get(UnitOfWork)
     .run(() => ctx.app.get(DurablePublisher).publish(fact.durableFact()));

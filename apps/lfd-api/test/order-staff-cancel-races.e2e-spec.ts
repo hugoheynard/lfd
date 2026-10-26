@@ -153,7 +153,7 @@ describe("la course avec le retirage (C3.4)", () => {
       select: { payload: true },
     });
     expect(retaken).toHaveLength(1);
-    expect(retaken[0]?.payload).toMatchObject({ orderIds: [late.orderId] });
+    expect(retaken[0]?.payload).toMatchObject({ shipments: [{ orderId: late.orderId, rank: 1 }] });
   });
 });
 

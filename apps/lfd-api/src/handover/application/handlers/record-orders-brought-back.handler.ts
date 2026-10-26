@@ -30,6 +30,9 @@ export class RecordOrdersBroughtBack implements DurableSubscriber {
 
   async handle(delivery: DurableDelivery): Promise<void> {
     const fact = DeliveryOrdersBroughtBackFact.fromPayload(delivery.payload);
-    await this.departures.recordReturned(fact.orderIds, fact.broughtBackAt);
+    // Le retrait tient encore la garde par COMMANDE (l'envoi y entre en L4) :
+    // les commandes distinctes des envois du fait.
+    const orderIds = [...new Set(fact.shipments.map((shipment) => shipment.orderId))];
+    await this.departures.recordReturned(orderIds, fact.broughtBackAt);
   }
 }

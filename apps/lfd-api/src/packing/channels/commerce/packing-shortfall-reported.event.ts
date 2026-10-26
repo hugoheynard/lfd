@@ -1,5 +1,6 @@
 import type { DurableEvent, DurableFact } from "../../../platform/outbox/durable-event.js";
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
+import { shipmentRankOf } from "../../../production/channels/packing/index.js";
 import {
   instantOf,
   recordOf,
@@ -21,8 +22,11 @@ export interface ShortfallReportedLine {
  * plan E6 (`documentation/commandes/bon-de-livraison.md`) § 3). Le premier
  * fait que le colisage publie POUR le commerce, déclaré dans son canal.
  *
- * La charge : `{ orderId, reference, reportedAt, reportedBy, lines }` — les
- * lignes portent toutes les quantités dues et au bac, complètes comprises.
+ * La charge : `{ orderId, rank, reference, reportedAt, reportedBy, lines }` —
+ * les lignes portent toutes les quantités dues et au bac, complètes
+ * comprises. `rank` (plan E7 reliquat, choix 15) dit quel envoi manque ; la
+ * clé, qui porte l'instant, ne change pas. Un fait écrit avant le champ se
+ * relit au rang 1.
  *
  * 🔴 **La clé porte l'instant** (`packing.shortfall_reported:<orderId>:<iso>`),
  * et non `shortfall:<orderId>` comme l'écrit le plan : la boîte d'envoi absorbe
@@ -35,6 +39,8 @@ export interface ShortfallReportedLine {
 export class PackingShortfallReportedEvent implements DurableEvent {
   constructor(
     readonly orderId: string,
+    /** Le rang de l'envoi signalé — 1 = la commande. */
+    readonly rank: number,
     readonly reference: string,
     readonly reportedAt: Date,
     /** La fiche staff qui a signalé. */
@@ -48,6 +54,7 @@ export class PackingShortfallReportedEvent implements DurableEvent {
       key: `${PACKING_SHORTFALL_REPORTED}:${this.orderId}:${this.reportedAt.toISOString()}`,
       payload: {
         orderId: this.orderId,
+        rank: this.rank,
         reference: this.reference,
         reportedAt: this.reportedAt.toISOString(),
         reportedBy: this.reportedBy,
@@ -63,12 +70,14 @@ export class PackingShortfallReportedEvent implements DurableEvent {
    */
   static fromPayload(payload: Readonly<Record<string, unknown>>): PackingShortfallReportedEvent {
     const orderId = textOf(payload["orderId"]);
+    const rank = shipmentRankOf(payload["rank"]);
     const reference = textOf(payload["reference"]);
     const reportedAt = instantOf(payload["reportedAt"]);
     const reportedBy = textOf(payload["reportedBy"]);
     const lines = linesOf(payload["lines"]);
     if (
       orderId === null ||
+      rank === null ||
       reference === null ||
       reportedAt === null ||
       reportedBy === null ||
@@ -76,7 +85,14 @@ export class PackingShortfallReportedEvent implements DurableEvent {
     ) {
       throw new PackingShortfallPayloadError("signalé");
     }
-    return new PackingShortfallReportedEvent(orderId, reference, reportedAt, reportedBy, lines);
+    return new PackingShortfallReportedEvent(
+      orderId,
+      rank,
+      reference,
+      reportedAt,
+      reportedBy,
+      lines,
+    );
   }
 }
 
@@ -109,7 +125,7 @@ export class PackingShortfallPayloadError extends TechnicalError {
   constructor(what: "signalé" | "effacé") {
     super(
       "packing.shortfall.payload_invalid",
-      `Le fait « manque ${what} » reçu du colisage est illisible (commande, référence, instant, auteur ou lignes manquants) : ` +
+      `Le fait « manque ${what} » reçu du colisage est illisible (commande, rang, référence, instant, auteur ou lignes manquants) : ` +
         "la commande n'a pas été mise à jour. Le message reste dans la boîte d'envoi ; " +
         "corriger l'émetteur puis le rejouer depuis la carte de santé.",
     );

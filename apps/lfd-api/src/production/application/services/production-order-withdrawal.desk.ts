@@ -15,6 +15,7 @@ import { OrderWithdrawalLedger } from "../../domain/ports/order-withdrawal.ledge
 import { ProductionDayLock } from "../../domain/ports/production-day.lock.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import type { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
+import { FIRST_SHIPMENT_RANK } from "../../domain/value-objects/shipment-ref.value-object.js";
 
 /**
  * Le guichet du retrait, tel que le fournil l'implémente — cf.
@@ -77,7 +78,14 @@ export class ProductionOrderWithdrawalDesk extends OrderWithdrawalDesk {
   private async announce(day: ServiceDay, orderId: string, at: Date): Promise<void> {
     const plan = await this.days.load(day);
     const reference = plan.orders.find((order) => order.orderId === orderId)?.reference ?? null;
-    const event = new OrderWithdrawnAfterCloseEvent(day.value, orderId, reference, at);
+    const event = new OrderWithdrawnAfterCloseEvent(
+      day.value,
+      orderId,
+      // Le plan n'a pas encore de rang (L3b) : la journée ne porte que la commande.
+      FIRST_SHIPMENT_RANK,
+      reference,
+      at,
+    );
     await this.events.publishTraced(event);
     await this.durable.publish(event.durableFact());
   }

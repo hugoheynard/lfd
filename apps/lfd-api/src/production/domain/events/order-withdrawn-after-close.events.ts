@@ -2,6 +2,7 @@ import type { JournalFactType } from "@lfd/contracts/journal-facts";
 
 import type { JournalFact, JournaledEvent } from "../../../platform/journal/journal-fact.js";
 import type { DurableEvent, DurableFact } from "../../../platform/outbox/durable-event.js";
+import { shipmentKeySuffix } from "../value-objects/shipment-ref.value-object.js";
 
 /** Nom stable du fait durable — irréversible en production (plan A1, § 3). */
 export const PRODUCTION_ORDER_WITHDRAWN_AFTER_CLOSE = "production.order_withdrawn_after_close";
@@ -21,8 +22,9 @@ const JOURNAL_TYPE = "production_day.order_withdrawn" satisfies JournalFactType;
  * elle. Deux formes :
  *
  * - **durable** (`production.order_withdrawn_after_close`) — jour, commande.
- *   AUCUN abonné (§ 3). Clé `…:<serviceDay>:<orderId>` : une commande ne se
- *   retire qu'une fois d'une journée ;
+ *   AUCUN abonné (§ 3). Clé `…:<serviceDay>:<orderId>` : un envoi ne se
+ *   retire qu'une fois d'une journée ; un reliquat du même jour a la sienne,
+ *   `…:<orderId>:r<rang>` (plan E7 reliquat, choix 6) ;
  * - **journalisé** (`production_day.order_withdrawn`) — la journée, et la
  *   commande sous la référence figée au plan, `null` si le plan ne la porte
  *   plus.
@@ -32,6 +34,8 @@ export class OrderWithdrawnAfterCloseEvent implements JournaledEvent, DurableEve
     /** `AAAA-MM-JJ`. */
     readonly serviceDay: string,
     readonly orderId: string,
+    /** Le rang de l'envoi retiré — 1 = la commande (plan E7 reliquat, choix 5). */
+    readonly rank: number,
     readonly reference: string | null,
     readonly withdrawnAt: Date,
   ) {}
@@ -53,10 +57,13 @@ export class OrderWithdrawnAfterCloseEvent implements JournaledEvent, DurableEve
   durableFact(): DurableFact {
     return {
       type: PRODUCTION_ORDER_WITHDRAWN_AFTER_CLOSE,
-      key: `${PRODUCTION_ORDER_WITHDRAWN_AFTER_CLOSE}:${this.serviceDay}:${this.orderId}`,
+      key:
+        `${PRODUCTION_ORDER_WITHDRAWN_AFTER_CLOSE}:${this.serviceDay}:${this.orderId}` +
+        shipmentKeySuffix(this.rank),
       payload: {
         serviceDay: this.serviceDay,
         orderId: this.orderId,
+        rank: this.rank,
         withdrawnAt: this.withdrawnAt.toISOString(),
       },
     };

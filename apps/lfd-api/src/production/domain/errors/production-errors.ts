@@ -138,3 +138,18 @@ export class PlanClosedBeforeOrderCutoffError extends BusinessError {
     );
   }
 }
+
+/**
+ * Un envoi mal formé : commande vide, ou rang qui n'est pas un entier ≥ 1
+ * (plan `documentation/commandes/plan-e7-reliquat-bati.md`, choix 12).
+ */
+export class InvalidShipmentRefError extends DomainError {
+  constructor(orderId: string, rank: number) {
+    super(
+      "production.shipment_ref.invalid",
+      `Envoi invalide : commande « ${orderId} », rang ${String(rank)}. Un envoi désigne une ` +
+        "commande par son identifiant et un rang entier à partir de 1 (1 = la commande, " +
+        "2 et au-delà = un reliquat) ; corriger l'émetteur.",
+    );
+  }
+}

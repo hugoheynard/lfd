@@ -15,6 +15,7 @@ import type request from "supertest";
 
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { DeliveryOrdersBroughtBackFact } from "../src/delivery/channels/handover/index.js";
+import { ShipmentRef } from "../src/production/channels/delivery/index.js";
 import { DurablePublisher } from "../src/platform/outbox/durable-publisher.js";
 import { PrismaService } from "../src/platform/database/prisma.service.js";
 import { currentTransaction } from "../src/platform/database/transaction.store.js";
@@ -256,7 +257,11 @@ describe("la garde passe au livreur au départ (BQ)", () => {
     await ctx.drain();
 
     // Le fait durable que « Rapporter » écrit dans sa transaction (DD1).
-    const fact = new DeliveryOrdersBroughtBackFact(roundId, [orderId], new Date(daysAgo(0)));
+    const fact = new DeliveryOrdersBroughtBackFact(
+      roundId,
+      [ShipmentRef.firstOf(orderId)],
+      new Date(daysAgo(0)),
+    );
     await unitOfWork.run(() => ctx.app.get(DurablePublisher).publish(fact.durableFact()));
     await ctx.drain();
 

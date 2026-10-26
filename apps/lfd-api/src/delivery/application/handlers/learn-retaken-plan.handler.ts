@@ -54,10 +54,13 @@ export class LearnRetakenPlan implements DurableSubscriber {
 
   async handle(delivery: DurableDelivery): Promise<void> {
     const event = ProductionDayRetakenEvent.fromPayload(delivery.payload);
-    if (event.orderIds === null) {
+    if (event.shipments === null) {
       return;
     }
-    const deliveryIds = await activeDeliveriesAmong(this.orders, event.orderIds);
+    // La journée tient encore ses livraisons par COMMANDE (la table fille par
+    // envoi vient en L3c) : les commandes distinctes des envois absorbés.
+    const orderIds = [...new Set(event.shipments.map((shipment) => shipment.orderId))];
+    const deliveryIds = await activeDeliveriesAmong(this.orders, orderIds);
     const now = this.clock.now();
     const day =
       (await this.days.load(event.serviceDay)) ?? DeliveryDayReadiness.start(event.serviceDay, now);
@@ -68,7 +71,7 @@ export class LearnRetakenPlan implements DurableSubscriber {
     this.locating.locateDaySoon(day.serviceDay);
     // Lot T1 : les retraits absorbés rejoignent un transfert — un AUTRE quand
     // celui du jour est parti (Q-T3) ; le jour déjà composé, on le place.
-    const attached = await this.attachment.attachAmong(event.orderIds);
+    const attached = await this.attachment.attachAmong(orderIds);
     if (attached > 0 && day.closedAt !== null) {
       this.placer.placeDaySoon(day.serviceDay);
     }

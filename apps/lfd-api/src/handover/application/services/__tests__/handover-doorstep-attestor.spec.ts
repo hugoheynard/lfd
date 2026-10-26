@@ -165,7 +165,15 @@ function inCourierUnit<T>(uow: TransactionalUnitOfWork, work: () => Promise<T>):
 }
 
 function factOf(at: Date, via: "manual" | "deposit", reannouncedAt: Date | null = null) {
-  return new OrderHandedOverEvent("o_1", "ORD-o_1", at, "paul", via, reannouncedAt).durableFact();
+  return new OrderHandedOverEvent(
+    "o_1",
+    1,
+    "ORD-o_1",
+    at,
+    "paul",
+    via,
+    reannouncedAt,
+  ).durableFact();
 }
 
 const STAGED = { photoKey: "handover/proofs/p/photo", signatureKey: null, signedSlipKey: null };

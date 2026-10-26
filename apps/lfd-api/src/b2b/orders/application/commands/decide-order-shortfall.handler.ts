@@ -5,6 +5,7 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { Clock } from "../../../../platform/time/clock.js";
+import { FIRST_SHIPMENT_RANK } from "../../../../production/channels/commerce/index.js";
 import { OrderShortfall } from "../../domain/entities/order-shortfall.js";
 import { ShortfallDecision } from "../../domain/entities/shortfall-decision.js";
 import { OrderNotFoundError } from "../../domain/errors/order-errors.js";
@@ -75,6 +76,8 @@ export class DecideOrderShortfallHandler implements ICommandHandler<
       await this.durable.publish(
         new OrderShortfallDecidedEvent(
           command.orderId,
+          // La décision est encore unique par commande (LB la rend par envoi).
+          FIRST_SHIPMENT_RANK,
           locked.subject.reference,
           locked.placedByUserId,
           command.staffUserId,

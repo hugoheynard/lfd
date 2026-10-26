@@ -23,7 +23,7 @@ import { AT_PLACEMENT } from "../../../domain/services/order-sheet.js";
 
 const DELIVERY = {
   eventId: "evt_1",
-  ...new OrderReadyFact("order_1").durableFact(),
+  ...new OrderReadyFact("order_1", 1).durableFact(),
 };
 
 function view(overrides: Partial<OrderView> = {}): OrderView {
@@ -281,6 +281,17 @@ describe("le courriel « votre commande est prête »", () => {
     await fire(subject);
 
     expect(subject.mailer.sent?.idempotencyKey).toBe("order.ready:order_1");
+  });
+
+  /** Plan E7 reliquat, choix 17 : une clé oubliée avale le courriel du second envoi. */
+  it("un reliquat prêt a sa clé de courriel", async () => {
+    const subject = handler({});
+    await subject.run.handle({
+      eventId: "evt_2",
+      ...new OrderReadyFact("order_1", 2).durableFact(),
+    });
+
+    expect(subject.mailer.sent?.idempotencyKey).toBe("order.ready:order_1:r2");
   });
 
   it("n'invente pas de code sur une LIVRAISON", async () => {

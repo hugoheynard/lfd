@@ -76,6 +76,7 @@ describe("ReportPackingShortfallHandler — « Il manque » au colisage", () => 
         `${REPORTED}:ord_1:${FIRST.toISOString()}`,
         {
           orderId: "ord_1",
+          rank: 1,
           reference: "ORD-0001",
           reportedAt: FIRST.toISOString(),
           reportedBy: "s2",
@@ -128,7 +129,7 @@ describe("ClosePackingOrderHandler — la fermeture complète efface le manque",
     expect(durable.of(CLEARED).map((fact) => [fact.key, fact.payload])).toEqual([
       [
         `${CLEARED}:ord_1:${LATER.toISOString()}`,
-        { orderId: "ord_1", reference: "ORD-0001", clearedAt: LATER.toISOString() },
+        { orderId: "ord_1", rank: 1, reference: "ORD-0001", clearedAt: LATER.toISOString() },
       ],
     ]);
   });

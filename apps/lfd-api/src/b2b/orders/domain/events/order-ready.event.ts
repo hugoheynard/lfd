@@ -9,6 +9,11 @@
 export class OrderReadyEvent {
   constructor(
     readonly orderId: string,
+    /**
+     * Le rang de l'envoi prêt — 1 = la commande (plan E7 reliquat, choix 5) ;
+     * il entre dans la clé de la trace de croissance.
+     */
+    readonly rank: number,
     readonly orderNumber: string,
     /** Le client à qui elle appartient — le sujet de la trace. */
     readonly placedByUserId: string,

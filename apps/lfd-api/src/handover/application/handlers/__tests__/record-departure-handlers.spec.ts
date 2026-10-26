@@ -3,6 +3,7 @@ import {
   DeliveryRoundDepartedFact,
   DeliveryRoundDepartedPayloadError,
 } from "../../../../delivery/channels/handover/index.js";
+import { ShipmentRef } from "../../../../production/channels/handover/index.js";
 import type { DurableDelivery, DurableEvent } from "../../../../platform/outbox/durable-event.js";
 import { HandedOverOrdersReader } from "../../../domain/ports/handed-over-orders.reader.js";
 import { OrderDepartureRepository } from "../../../domain/ports/order-departure.repository.js";
@@ -57,6 +58,11 @@ function delivered(event: DurableEvent): DurableDelivery {
   return { eventId: "evt_1", type, payload };
 }
 
+/** Des envois de rang 1 — ce que la livraison émet tant que ses arrêts n'ont pas de rang. */
+function firsts(orderIds: readonly string[]): readonly ShipmentRef[] {
+  return orderIds.map((orderId) => ShipmentRef.firstOf(orderId));
+}
+
 describe("RecordRoundDeparted — la garde passe au livreur", () => {
   it("porte un nom d'abonné stable", () => {
     expect(RECORD_ROUND_DEPARTED).toBe("handover.record-round-departed");
@@ -67,7 +73,9 @@ describe("RecordRoundDeparted — la garde passe au livreur", () => {
     const subject = new RecordRoundDeparted(new FixedHandedOver(), departures);
 
     await subject.handle(
-      delivered(new DeliveryRoundDepartedFact("r_1", "2030-03-12", DEPARTED, ["o_1", "o_2"])),
+      delivered(
+        new DeliveryRoundDepartedFact("r_1", "2030-03-12", DEPARTED, firsts(["o_1", "o_2"])),
+      ),
     );
 
     expect(departures.departed).toEqual([{ orderIds: ["o_1", "o_2"], at: DEPARTED }]);
@@ -79,7 +87,9 @@ describe("RecordRoundDeparted — la garde passe au livreur", () => {
     const subject = new RecordRoundDeparted(handedOver, departures);
 
     await subject.handle(
-      delivered(new DeliveryRoundDepartedFact("r_1", "2030-03-12", DEPARTED, ["o_1", "o_2"])),
+      delivered(
+        new DeliveryRoundDepartedFact("r_1", "2030-03-12", DEPARTED, firsts(["o_1", "o_2"])),
+      ),
     );
 
     expect(handedOver.asked).toEqual([["o_1", "o_2"]]);
@@ -89,7 +99,9 @@ describe("RecordRoundDeparted — la garde passe au livreur", () => {
   it("rejoué, il redemande la même écriture au même instant — l'adaptateur la rend sans effet", async () => {
     const departures = new RecordingDepartures();
     const subject = new RecordRoundDeparted(new FixedHandedOver(), departures);
-    const fact = delivered(new DeliveryRoundDepartedFact("r_1", "2030-03-12", DEPARTED, ["o_1"]));
+    const fact = delivered(
+      new DeliveryRoundDepartedFact("r_1", "2030-03-12", DEPARTED, firsts(["o_1"])),
+    );
 
     await subject.handle(fact);
     await subject.handle(fact);
@@ -98,6 +110,22 @@ describe("RecordRoundDeparted — la garde passe au livreur", () => {
       { orderIds: ["o_1"], at: DEPARTED },
       { orderIds: ["o_1"], at: DEPARTED },
     ]);
+  });
+
+  it("deux envois d'une même commande : la commande ne part qu'une fois (garde par commande jusqu'à L4)", async () => {
+    const departures = new RecordingDepartures();
+    const subject = new RecordRoundDeparted(new FixedHandedOver(), departures);
+
+    await subject.handle(
+      delivered(
+        new DeliveryRoundDepartedFact("r_1", "2030-03-12", DEPARTED, [
+          ShipmentRef.firstOf("o_1"),
+          ShipmentRef.of("o_1", 2),
+        ]),
+      ),
+    );
+
+    expect(departures.departed).toEqual([{ orderIds: ["o_1"], at: DEPARTED }]);
   });
 
   it("une charge illisible est une faute d'émetteur : elle lève, et rien ne s'écrit", async () => {
@@ -120,7 +148,7 @@ describe("RecordOrdersBroughtBack — la garde rentre au dépôt", () => {
     const departures = new RecordingDepartures();
 
     await new RecordOrdersBroughtBack(departures).handle(
-      delivered(new DeliveryOrdersBroughtBackFact("r_1", ["o_1"], BROUGHT_BACK)),
+      delivered(new DeliveryOrdersBroughtBackFact("r_1", firsts(["o_1"]), BROUGHT_BACK)),
     );
 
     expect(departures.returned).toEqual([{ orderIds: ["o_1"], at: BROUGHT_BACK }]);

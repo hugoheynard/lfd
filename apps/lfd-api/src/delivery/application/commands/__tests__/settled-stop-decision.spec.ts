@@ -132,7 +132,11 @@ describe("ReportDeliveryIncidentHandler — la décision réglée d'avance (B3 b
     });
     // Le retour au retrait part en fait durable, dans la transaction du signalement (DD1).
     expect(durable.payloadsOf(DELIVERY_ORDERS_BROUGHT_BACK)).toEqual([
-      { roundId: "r_1", orderIds: ["o_1"], broughtBackAt: NOW.toISOString() },
+      {
+        roundId: "r_1",
+        shipments: [{ orderId: "o_1", rank: 1 }],
+        broughtBackAt: NOW.toISOString(),
+      },
     ]);
     expect(notifier.notified).toEqual([]);
   });
