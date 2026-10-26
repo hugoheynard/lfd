@@ -328,6 +328,8 @@ function seed(): RevisableOrder {
     salesTerms: { document: "salesTermsPro", revision: null, fileId: null },
     locale: null,
     catalogVersionId: null,
+    customerCancellation: { kind: "not_fixed" },
+    customerCancellableUntil: null,
   };
 }
 

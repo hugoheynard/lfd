@@ -68,7 +68,11 @@ const cancelColumns = (orderId: string) =>
 const deadlineOf = (orderId: string) =>
   ctx.prisma.order.findUniqueOrThrow({
     where: { id: orderId },
-    select: { customerCancellableUntil: true },
+    select: {
+      customerCancellableUntil: true,
+      customerCancellationFixed: true,
+      customerCancellationHoursBefore: true,
+    },
   });
 
 /** Une commande de société, et un membre ACCEPTÉ de cette société. */
@@ -209,7 +213,11 @@ describe("le réglage des particuliers (C6.3, C6.5)", () => {
     expect(codeOf(still)).toBe("orders.customer_cancel.too_late");
 
     const free = await seedCustomerOrder({ placedByUserId: author.id, inDays: 1 });
-    expect((await deadlineOf(free.orderId)).customerCancellableUntil).toBeNull();
+    expect(await deadlineOf(free.orderId)).toEqual({
+      customerCancellableUntil: null,
+      customerCancellationFixed: true,
+      customerCancellationHoursBefore: null,
+    });
     await customerCancel(author.sub, free.orderId).expect(204);
   });
 
@@ -236,7 +244,11 @@ describe("le réglage des particuliers (C6.3, C6.5)", () => {
 
   it("un pro reçoit nul à la passation : rien à figer", async () => {
     const pro = await proOrder();
-    expect((await deadlineOf(pro.orderId)).customerCancellableUntil).toBeNull();
+    expect(await deadlineOf(pro.orderId)).toEqual({
+      customerCancellableUntil: null,
+      customerCancellationFixed: false,
+      customerCancellationHoursBefore: null,
+    });
   });
 
   it("la route admin lit et pose le réglage, l'auteur figé ; un délai hors borne est un 400", async () => {
@@ -266,7 +278,11 @@ describe("le délai figé à la passation (2026-10-26)", () => {
       windowStart: null,
     });
 
-    expect((await deadlineOf(later.orderId)).customerCancellableUntil).toEqual(expected);
+    expect(await deadlineOf(later.orderId)).toEqual({
+      customerCancellableUntil: expected,
+      customerCancellationFixed: true,
+      customerCancellationHoursBefore: 24,
+    });
     const detail = await ctx.asSub(author.sub).get(`/orders/${later.orderId}`).expect(200);
     expect(jsonBody<CustomerOrderDetailView>(detail).cancellability).toMatchObject({
       cancellable: true,
@@ -295,14 +311,32 @@ describe("le délai figé à la passation (2026-10-26)", () => {
     expect(codeOf(refused)).toBe("orders.customer_cancel.too_late");
   });
 
-  it("une commande d'avant la colonne (nulle) garde le calcul au réglage du jour", async () => {
+  it("passée SANS délai puis délai réactivé : elle reste sans délai, jusqu'à l'arrêt du plan", async () => {
+    await setCancellation(false);
+    const author = await customer();
+    const free = await seedCustomerOrder({ placedByUserId: author.id, inDays: 1 });
+
+    // Au réglage du jour (une semaine), J+1 serait trop tard.
+    await setCancellation(true, 168);
+    const detail = await ctx.asSub(author.sub).get(`/orders/${free.orderId}`).expect(200);
+    expect(jsonBody<CustomerOrderDetailView>(detail).cancellability).toMatchObject({
+      cancellable: true,
+    });
+    await customerCancel(author.sub, free.orderId).expect(204);
+  });
+
+  it("une commande d'avant les colonnes (non figée) garde le calcul au réglage du jour", async () => {
     const author = await customer();
     const legacy = await seedCustomerOrder({ placedByUserId: author.id, inDays: 7 });
-    // L'état des commandes passées avant la migration : aucune passation ne
-    // l'écrit plus, seule la colonne vide le reproduit.
+    // L'état des commandes passées avant les migrations du 2026-10-26 : aucune
+    // passation ne l'écrit plus, seules les colonnes vides le reproduisent.
     await ctx.prisma.order.update({
       where: { id: legacy.orderId },
-      data: { customerCancellableUntil: null },
+      data: {
+        customerCancellableUntil: null,
+        customerCancellationFixed: false,
+        customerCancellationHoursBefore: null,
+      },
     });
 
     await setCancellation(true, 168);

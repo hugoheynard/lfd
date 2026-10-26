@@ -91,3 +91,60 @@ export function customerCancellationWindowOf(
 ): CustomerCancellationWindow {
   return customerCancellationWindowAt(customerCancellationDeadlineOf(hoursBefore, source), now);
 }
+
+/**
+ * **Ce que la commande a figé du délai à sa passation** (Hugo, 2026-10-26 —
+ * doc `annulation-par-le-client.md`, « Le délai figé »). Le délai LUI-MÊME,
+ * pas seulement l'instant : une révision du jour ou du créneau recalcule
+ * l'instant avec le délai d'origine, jamais avec le réglage du jour.
+ *
+ * - `not_fixed` : commande de société, saisie de l'équipe, ou commande
+ *   d'avant les colonnes — le réglage du jour juge (un pro n'a de toute façon
+ *   pas de délai) ;
+ * - `no_delay` : particulier passé quand le réglage n'imposait aucun délai —
+ *   seul l'arrêt du plan le limite, comme un pro, quel que soit le réglage du
+ *   jour ;
+ * - `delay` : particulier passé sous un délai de `hoursBefore` heures.
+ */
+export type FixedCustomerCancellation =
+  | { readonly kind: "not_fixed" }
+  | { readonly kind: "no_delay" }
+  | { readonly kind: "delay"; readonly hoursBefore: number };
+
+export const NOT_FIXED_CANCELLATION: FixedCustomerCancellation = { kind: "not_fixed" };
+
+/** Le délai que la passation d'un particulier fige, lu sur le réglage du moment. */
+export function fixedCancellationOf(policy: CustomerCancellationPolicy): FixedCustomerCancellation {
+  return policy.delayEnabled
+    ? { kind: "delay", hoursBefore: policy.hoursBefore }
+    : { kind: "no_delay" };
+}
+
+/**
+ * Le délai figé tel qu'il fait foi, y compris pour les commandes passées entre
+ * le 2026-10-26 (instant seul, `cc30f4f20`) et l'ajout du délai : leur délai
+ * se relit sur l'écart entre l'ancre et l'instant, à l'heure près, borné à
+ * zéro. Exact tant que le jour et le créneau n'avaient pas bougé — la
+ * révision ne recalculait pas encore l'instant.
+ */
+export function effectiveFixedCancellation(
+  fixed: FixedCustomerCancellation,
+  frozenUntil: Date | null,
+  source: CancellationAnchorSource,
+): FixedCustomerCancellation {
+  if (fixed.kind !== "not_fixed" || frozenUntil === null) {
+    return fixed;
+  }
+  const anchor = cancellationAnchorOf(source);
+  const hours =
+    anchor === null ? 0 : Math.round((anchor.getTime() - frozenUntil.getTime()) / HOUR_MS);
+  return { kind: "delay", hoursBefore: Math.max(0, hours) };
+}
+
+/** L'instant limite d'un délai figé ; `null` sans délai figé ou sans jour. */
+export function fixedCancellationDeadlineOf(
+  fixed: FixedCustomerCancellation,
+  source: CancellationAnchorSource,
+): Date | null {
+  return fixed.kind === "delay" ? customerCancellationDeadlineOf(fixed.hoursBefore, source) : null;
+}

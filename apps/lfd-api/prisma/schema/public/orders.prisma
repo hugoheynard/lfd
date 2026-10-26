@@ -421,8 +421,17 @@ model Order {
   /// réglage du moment (Hugo, 2026-10-26 : le délai est celui que les CGV ont
   /// rappelé avant la validation). NULL : société, saisie de l'équipe, réglage
   /// sans délai, commande sans date, ou commande d'avant la colonne — celle-ci
-  /// garde le calcul au réglage du jour. Écrit par la seule passation.
+  /// garde le calcul au réglage du jour. Écrit par la passation, recalculé par
+  /// une révision avec le délai figé ci-dessous.
   customerCancellableUntil DateTime? @map("customer_cancellable_until") @db.Timestamptz(3)
+  /// **Le délai figé lui-même** (Hugo, 2026-10-26) : `true` dès la passation
+  /// d'un particulier, avec ou sans délai — distingue « passée sans délai »
+  /// (figée, heures NULL : seul l'arrêt du plan la limite, quel que soit le
+  /// réglage du jour) de « d'avant les colonnes » (non figée, réglage du jour).
+  /// Une révision du jour ou du créneau recalcule `customerCancellableUntil`
+  /// avec `customerCancellationHoursBefore`, jamais avec le réglage du jour.
+  customerCancellationFixed       Boolean @default(false) @map("customer_cancellation_fixed")
+  customerCancellationHoursBefore Int?    @map("customer_cancellation_hours_before")
 
   /// **La révision de la commande** (plan `documentation/commandes/modification/plan-modifier-une-commande.md`,
   /// M1) : `0` à la passation, `+1` à chaque modification. Toute écriture d'une

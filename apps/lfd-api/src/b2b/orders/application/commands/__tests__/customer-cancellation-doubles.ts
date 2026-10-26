@@ -32,6 +32,7 @@ export function customerSubject(
     windowStart: null,
     placedAt: new Date(0),
     customerCancellableUntil: null,
+    customerCancellation: { kind: "not_fixed" },
     buyer: { hasAccount: true, active: true },
     ...overrides,
   };

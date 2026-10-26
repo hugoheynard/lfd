@@ -7,6 +7,7 @@ import {
   PaymentStatus,
   Prisma,
 } from "../../../platform/database/client/client.js";
+import { customerCancellationColumnsOf } from "./customer-cancellation.columns.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 import { SecretGenerator } from "../../../platform/secret/secret-generator.js";
@@ -121,6 +122,7 @@ export class PrismaOrderRepository extends OrderRepository {
         placedByStaffId: state.placedByStaffId,
         placedOffPlan: state.placedOffPlan,
         customerCancellableUntil: state.customerCancellableUntil,
+        ...customerCancellationColumnsOf(state.customerCancellation),
         requestedDeliveryDate: state.requestedDeliveryDate,
         // D'où venaient les articles, jamais à quel prix — celui-là est sur la
         // ligne. `null` = aucune version posée à cet instant, ce qui est la

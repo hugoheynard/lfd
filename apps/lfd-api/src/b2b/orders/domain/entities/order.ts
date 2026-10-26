@@ -38,8 +38,13 @@ import type {
   OrderToPlace,
 } from "./order-shapes.js";
 import {
-  customerCancellationDeadlineOf,
+  effectiveFixedCancellation,
+  fixedCancellationDeadlineOf,
+  fixedCancellationOf,
+  NOT_FIXED_CANCELLATION,
+  type CancellationAnchorSource,
   type CustomerCancellationPolicy,
+  type FixedCustomerCancellation,
 } from "../services/customer-cancellation-window.js";
 import { settlementRegimeOf } from "../services/settlement-regime.js";
 import { computeOrderTotals } from "../services/vat.js";
@@ -69,6 +74,7 @@ type Payment = { readonly status: PaymentStatus; readonly intentId: string | nul
 export class Order {
   private payment: Payment = null;
   private offPlan = false;
+  private customerCancellation: FixedCustomerCancellation = NOT_FIXED_CANCELLATION;
   private customerCancellableUntil: Date | null = null;
 
   private constructor(
@@ -203,6 +209,12 @@ export class Order {
     ensureRevisableSettlement(current);
     ensureNoShortfallDecision(current);
     const revised = Order.draft(input);
+    revised.carryCustomerCancellation(
+      effectiveFixedCancellation(current.customerCancellation, current.customerCancellableUntil, {
+        serviceDay: current.serviceDay,
+        windowStart: current.agreed.window.value?.start ?? null,
+      }),
+    );
     revised.deferPayment();
     return revisionOf(current, revised.toPersistence());
   }
@@ -284,24 +296,35 @@ export class Order {
   /**
    * **Le délai d'annulation du particulier, figé à sa passation** (Hugo,
    * 2026-10-26) : les CGV promettent le délai rappelé avant la validation,
-   * donc le réglage d'aujourd'hui, pas celui du jour où il annulera. Calculé
-   * par la règle même du refus P2 (`customerCancellationDeadlineOf`).
+   * donc le réglage d'aujourd'hui, pas celui du jour où il annulera. Le délai
+   * LUI-MÊME est figé — y compris « sans délai » —, et l'instant limite en
+   * découle par la règle même du refus P2 (`customerCancellationDeadlineOf`).
    *
-   * Reste `null` pour une commande de société — un pro annule jusqu'à l'arrêt
-   * du plan, qui n'est pas un délai à figer — et quand le réglage n'impose pas
-   * de délai : sans délai, seul l'arrêt du plan limite, et ce n'est pas non
-   * plus un instant connu à la passation.
+   * Une commande de société reste non figée : un pro annule jusqu'à l'arrêt
+   * du plan, et n'a pas de délai réglable.
    */
   fixCustomerCancellationDeadline(policy: CustomerCancellationPolicy): void {
-    if (this.companyId !== null || !policy.delayEnabled) {
-      this.customerCancellableUntil = null;
-      return;
-    }
-    this.customerCancellableUntil = customerCancellationDeadlineOf(policy.hoursBefore, {
+    this.carryCustomerCancellation(
+      this.companyId === null ? fixedCancellationOf(policy) : NOT_FIXED_CANCELLATION,
+    );
+  }
+
+  /**
+   * Le délai figé, reporté sur une recomposition : une révision du jour ou du
+   * créneau recalcule l'instant avec le délai d'ORIGINE, jamais avec le
+   * réglage du jour (Hugo, 2026-10-26).
+   */
+  private carryCustomerCancellation(fixed: FixedCustomerCancellation): void {
+    this.customerCancellation = fixed;
+    this.customerCancellableUntil = fixedCancellationDeadlineOf(fixed, this.anchorSource());
+  }
+
+  private anchorSource(): CancellationAnchorSource {
+    return {
       // `@db.Date` composé à minuit UTC : le jour se relit tel quel.
       serviceDay: this.requestedDeliveryDate?.toISOString().slice(0, 10) ?? null,
       windowStart: this.agreed.window.value?.start ?? null,
-    });
+    };
   }
 
   /** Sérialise pour l'adaptateur — refuse une commande au règlement non décidé. */
@@ -318,6 +341,7 @@ export class Order {
       placedByUserId: this.placedByUserId,
       placedByStaffId: this.placedByStaffId,
       placedOffPlan: this.offPlan,
+      customerCancellation: this.customerCancellation,
       customerCancellableUntil: this.customerCancellableUntil,
       fulfillmentMethod: this.fulfillment.method,
       deliveryZoneId: this.fulfillment.deliveryZoneId,

@@ -18,6 +18,7 @@ import { refundPositionOf, type RefundStatus } from "../domain/entities/order-re
 import type { RevisableOrder } from "../domain/entities/order-revision.js";
 import type { OrderSalesTerms } from "../domain/entities/order-shapes.js";
 import type { OrderLineSnapshot } from "../domain/value-objects/order-line.js";
+import { fixedCustomerCancellationOf } from "./customer-cancellation.columns.js";
 import { fulfillmentOf } from "./order-fulfillment.parse.js";
 import { parseAllergens, parseTrace, type OrderLineRow } from "./order-line-row.js";
 
@@ -87,6 +88,9 @@ export const REVISABLE_ORDER_SELECT = {
   salesTermsFileId: true,
   locale: true,
   catalogVersionId: true,
+  customerCancellableUntil: true,
+  customerCancellationFixed: true,
+  customerCancellationHoursBefore: true,
   // Un départ décidé sur UN envoi suffit à figer la commande (plan E7 reliquat, LB).
   shortfallDecisions: { select: { id: true }, take: 1 },
   lines: { select: LINE_SELECT, orderBy: { sku: "asc" } },
@@ -131,6 +135,9 @@ export interface RevisableOrderRow {
   readonly salesTermsFileId: string | null;
   readonly locale: string | null;
   readonly catalogVersionId: string | null;
+  readonly customerCancellableUntil: Date | null;
+  readonly customerCancellationFixed: boolean;
+  readonly customerCancellationHoursBefore: number | null;
   readonly shortfallDecisions: readonly { readonly id: string }[];
   readonly lines: readonly RevisableLineRow[];
 }
@@ -184,6 +191,8 @@ export function toRevisableOrder(row: RevisableOrderRow): RevisableOrder {
     salesTerms: salesTermsOf(row),
     locale: localeOf(row.locale),
     catalogVersionId: row.catalogVersionId,
+    customerCancellation: fixedCustomerCancellationOf(row),
+    customerCancellableUntil: row.customerCancellableUntil,
   };
 }
 

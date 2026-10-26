@@ -19,6 +19,7 @@ import {
   ShortfallDecidedRevisionError,
   UnchangedOrderRevisionError,
 } from "../errors/order-revision-errors.js";
+import type { FixedCustomerCancellation } from "../services/customer-cancellation-window.js";
 import { isCardSettlement } from "../services/order-revisability.js";
 import { settlementRegimeOf } from "../services/settlement-regime.js";
 import type { OrderLineSnapshot } from "../value-objects/order-line.js";
@@ -78,6 +79,10 @@ export interface RevisableOrder {
   readonly salesTerms: OrderSalesTerms | null;
   readonly locale: ContentLocale | null;
   readonly catalogVersionId: string | null;
+  /** Le délai d'annulation figé à la passation — la révision le reporte. */
+  readonly customerCancellation: FixedCustomerCancellation;
+  /** L'instant figé ; seul, il dit le délai d'une commande d'avant la colonne du délai. */
+  readonly customerCancellableUntil: Date | null;
 }
 
 /**

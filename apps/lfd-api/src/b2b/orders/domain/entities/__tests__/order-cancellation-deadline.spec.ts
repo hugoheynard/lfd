@@ -1,5 +1,6 @@
 import { millicentsFromCents } from "@lfd/money";
 
+import type { FixedCustomerCancellation } from "../../services/customer-cancellation-window.js";
 import { Order, type DraftOrderInput } from "../order.js";
 
 /**
@@ -74,6 +75,18 @@ function untilOf(
   return order.toPersistence().customerCancellableUntil;
 }
 
+function fixedOf(
+  policy: { readonly delayEnabled: boolean; readonly hoursBefore: number } | null,
+  over: Partial<DraftOrderInput> = {},
+): FixedCustomerCancellation {
+  const order = Order.draft(draftInput(over));
+  if (policy !== null) {
+    order.fixCustomerCancellationDeadline(policy);
+  }
+  order.deferPayment();
+  return order.toPersistence().customerCancellation;
+}
+
 describe("Order — le délai d'annulation figé à la passation", () => {
   it("un particulier : N heures avant le début du créneau, heure de Paris", () => {
     // 15 janvier 08:30 à Paris = 07:30 UTC ; 24 h avant.
@@ -99,8 +112,18 @@ describe("Order — le délai d'annulation figé à la passation", () => {
     expect(untilOf(DELAY_24, { companyId: "co_1" })).toBeNull();
   });
 
-  it("réglage sans délai : rien à figer, seul l'arrêt du plan limite", () => {
+  it("réglage sans délai : pas d'instant, seul l'arrêt du plan limite", () => {
     expect(untilOf({ delayEnabled: false, hoursBefore: 24 })).toBeNull();
+  });
+
+  it("fige le délai lui-même, « sans délai » compris (2026-10-26)", () => {
+    expect(fixedOf(DELAY_24)).toEqual({ kind: "delay", hoursBefore: 24 });
+    expect(fixedOf({ delayEnabled: false, hoursBefore: 24 })).toEqual({ kind: "no_delay" });
+  });
+
+  it("un pro et la saisie de l'équipe restent non figés", () => {
+    expect(fixedOf(DELAY_24, { companyId: "co_1" })).toEqual({ kind: "not_fixed" });
+    expect(fixedOf(null)).toEqual({ kind: "not_fixed" });
   });
 
   it("une commande sans date n'a pas d'instant", () => {

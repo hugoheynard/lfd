@@ -86,4 +86,29 @@ describe("CustomerCancellationPolicyGate — le délai figé à la passation", (
     );
     expect(applied).toBeNull();
   });
+
+  it("figée SANS délai puis délai réactivé : elle reste sans délai, comme un pro", async () => {
+    const applied = await gateWith(true, 24).windowOf(
+      customerSubject({
+        serviceDay: SERVICE_DAY,
+        customerCancellation: { kind: "no_delay" },
+        customerCancellableUntil: null,
+      }),
+      new Date(ANCHOR.getTime() - HOUR_MS),
+    );
+    expect(applied).toBeNull();
+  });
+
+  it("figée à 48 h, réglage passé à 1 h : l'instant figé et le délai d'origine jugent", async () => {
+    const frozen48 = new Date(ANCHOR.getTime() - 48 * HOUR_MS);
+    const applied = await gateWith(true, 1).windowOf(
+      customerSubject({
+        serviceDay: SERVICE_DAY,
+        customerCancellation: { kind: "delay", hoursBefore: 48 },
+        customerCancellableUntil: frozen48,
+      }),
+      new Date(ANCHOR.getTime() - 24 * HOUR_MS),
+    );
+    expect(applied).toEqual({ window: { kind: "too_late", until: frozen48 }, hoursBefore: 48 });
+  });
 });

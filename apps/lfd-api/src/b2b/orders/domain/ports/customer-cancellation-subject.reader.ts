@@ -1,3 +1,5 @@
+import type { FixedCustomerCancellation } from "../services/customer-cancellation-window.js";
+
 /**
  * **Une commande, vue de l'annulation par le client** (doc
  * `documentation/commandes/annulation/annulation-par-le-client.md`, lot C6,
@@ -15,11 +17,13 @@ export interface CustomerCancellationSubject {
   /** `HH:mm` du début du créneau figé, ou `null`. */
   readonly windowStart: string | null;
   /**
-   * Jusqu'à quand le particulier annule, FIGÉ à sa passation (2026-10-26) :
-   * posé, il fait foi contre le réglage du jour. `null` : commande d'avant la
-   * colonne (le réglage du jour juge), société, ou réglage sans délai.
+   * Jusqu'à quand le particulier annule, FIGÉ à sa passation (2026-10-26) et
+   * recalculé par une révision avec le délai d'origine : posé, il fait foi
+   * contre le réglage du jour.
    */
   readonly customerCancellableUntil: Date | null;
+  /** Le délai figé à la passation — « sans délai » compris (2026-10-26). */
+  readonly customerCancellation: FixedCustomerCancellation;
   /** L'instant de la passation — la borne des 90 jours d'un lien sans date (C6.4). */
   readonly placedAt: Date;
   /** La fiche de qui a commandé : un compte connectable, et active ou non (S3). */

@@ -121,6 +121,8 @@ function placed(
     salesTerms: state.salesTerms,
     locale: null,
     catalogVersionId: null,
+    customerCancellation: state.customerCancellation,
+    customerCancellableUntil: state.customerCancellableUntil,
     ...over,
   };
 }

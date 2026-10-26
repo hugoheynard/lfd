@@ -2437,13 +2437,23 @@ describe("PlaceOrderHandler — le délai d'annulation figé", () => {
     expect(sink.placed?.customerCancellableUntil).toEqual(new Date("2026-08-31T05:00:00.000Z"));
   });
 
-  it("un réglage sans délai ne fige rien : seul l'arrêt du plan limitera", async () => {
+  it("un réglage sans délai fige « sans délai » : pas d'instant, seul l'arrêt du plan limitera", async () => {
     const sink = { placed: null as OrderToPlace | null };
     const settings = new FixedCancellationSettings({ delayEnabled: false });
 
     await handlerWith(sink, settings).execute(new PlaceOrderCommand("u1", payload(), null));
 
     expect(sink.placed?.customerCancellableUntil).toBeNull();
+    expect(sink.placed?.customerCancellation).toEqual({ kind: "no_delay" });
+  });
+
+  it("fige le délai lui-même, pas seulement l'instant", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const settings = new FixedCancellationSettings({ delayEnabled: true, hoursBefore: 48 });
+
+    await handlerWith(sink, settings).execute(new PlaceOrderCommand("u1", payload(), null));
+
+    expect(sink.placed?.customerCancellation).toEqual({ kind: "delay", hoursBefore: 48 });
   });
 
   it("un pro reçoit nul : il annule jusqu'à l'arrêt du plan, sans délai réglable", async () => {
@@ -2455,5 +2465,6 @@ describe("PlaceOrderHandler — le délai d'annulation figé", () => {
     );
 
     expect(sink.placed?.customerCancellableUntil).toBeNull();
+    expect(sink.placed?.customerCancellation).toEqual({ kind: "not_fixed" });
   });
 });

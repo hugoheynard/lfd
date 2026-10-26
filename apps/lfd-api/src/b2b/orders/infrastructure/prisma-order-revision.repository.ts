@@ -8,6 +8,7 @@ import type {
   RevisionActor,
 } from "../domain/entities/order-revision.js";
 import { OrderRevisionRepository } from "../domain/ports/order-revision.repository.js";
+import { customerCancellationColumnsOf } from "./customer-cancellation.columns.js";
 import { toFulfillmentJson } from "./order-json.js";
 import { orderLineDataOf } from "./order-line.data.js";
 import { REVISABLE_ORDER_SELECT, toRevisableOrder } from "./revisable-order.row.js";
@@ -88,6 +89,9 @@ export class PrismaOrderRevisionRepository extends OrderRevisionRepository {
           amountCents: share.amountCents,
         })),
         totalCents: state.totalCents,
+        // Le délai d'origine reporté, l'instant recalculé sur le nouveau créneau.
+        customerCancellableUntil: state.customerCancellableUntil,
+        ...customerCancellationColumnsOf(state.customerCancellation),
       },
     });
     if (count === 0) {

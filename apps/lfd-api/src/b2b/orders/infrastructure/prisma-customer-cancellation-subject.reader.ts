@@ -5,6 +5,7 @@ import {
   CustomerCancellationSubjectReader,
   type CustomerCancellationSubject,
 } from "../domain/ports/customer-cancellation-subject.reader.js";
+import { fixedCustomerCancellationOf } from "./customer-cancellation.columns.js";
 import { fulfillmentOf } from "./order-fulfillment.parse.js";
 
 /**
@@ -29,6 +30,8 @@ export class PrismaCustomerCancellationSubjectReader extends CustomerCancellatio
         fulfillment: true,
         createdAt: true,
         customerCancellableUntil: true,
+        customerCancellationFixed: true,
+        customerCancellationHoursBefore: true,
         placedBy: { select: { auth0Sub: true, status: true } },
       },
     });
@@ -47,6 +50,7 @@ export class PrismaCustomerCancellationSubjectReader extends CustomerCancellatio
       windowStart: fulfillmentOf(row.fulfillment).window.value?.start ?? null,
       placedAt: row.createdAt,
       customerCancellableUntil: row.customerCancellableUntil,
+      customerCancellation: fixedCustomerCancellationOf(row),
       buyer: {
         hasAccount: row.placedBy.auth0Sub !== null,
         active: row.placedBy.status !== "disabled",

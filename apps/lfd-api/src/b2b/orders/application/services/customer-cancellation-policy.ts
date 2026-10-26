@@ -3,8 +3,9 @@ import { Injectable } from "@nestjs/common";
 import { CustomerCancellationSettingsReader } from "../../../order-opening/domain/ports/customer-cancellation-settings.reader.js";
 import type { CustomerCancellationSubject } from "../../domain/ports/customer-cancellation-subject.reader.js";
 import {
-  cancellationAnchorOf,
+  customerCancellationDeadlineOf,
   customerCancellationWindowAt,
+  effectiveFixedCancellation,
   customerCancellationWindowOf,
   type CustomerCancellationWindow,
 } from "../../domain/services/customer-cancellation-window.js";
@@ -21,10 +22,11 @@ export interface AppliedCustomerWindow {
  * de société (décision 2) et pour un particulier quand le réglage n'impose
  * pas de délai (décision du 2026-10-13).
  *
- * **L'instant figé à la passation fait foi** (Hugo, 2026-10-26) : posé, le
+ * **Le délai figé à la passation fait foi** (Hugo, 2026-10-26) : figé, le
  * réglage n'est pas lu du tout — ni son délai, ni son interrupteur. Les CGV
- * promettent le délai rappelé avant la validation. Seules les commandes
- * d'avant la colonne (`customerCancellableUntil` nul) jugent au réglage du jour.
+ * promettent le délai rappelé avant la validation. Figé SANS délai : `null`,
+ * comme un pro, même si le délai a été réactivé depuis. Seules les commandes
+ * non figées (d'avant les colonnes) jugent au réglage du jour.
  *
  * Le réglage est relu à chaque requête, sans verrou : un changement pendant
  * la requête s'applique à la suivante (S5). Le délai se compare au `now`
@@ -42,8 +44,19 @@ export class CustomerCancellationPolicyGate {
     if (subject.companyId !== null) {
       return null;
     }
-    if (subject.customerCancellableUntil !== null) {
-      return frozenWindowOf(subject, subject.customerCancellableUntil, now);
+    const fixed = effectiveFixedCancellation(
+      subject.customerCancellation,
+      subject.customerCancellableUntil,
+      subject,
+    );
+    if (fixed.kind === "no_delay") {
+      return null;
+    }
+    if (fixed.kind === "delay") {
+      const until =
+        subject.customerCancellableUntil ??
+        customerCancellationDeadlineOf(fixed.hoursBefore, subject);
+      return { window: customerCancellationWindowAt(until, now), hoursBefore: fixed.hoursBefore };
     }
     const policy = await this.settings.current();
     if (!policy.delayEnabled) {
@@ -54,21 +67,4 @@ export class CustomerCancellationPolicyGate {
       hoursBefore: policy.hoursBefore,
     };
   }
-}
-
-const HOUR_MS = 3_600_000;
-
-/**
- * P2 contre l'instant figé. Le délai que le fait `order.cancelled` fige se
- * relit sur l'écart entre l'ancre et l'instant — exact tant que le jour et le
- * créneau n'ont pas bougé depuis la passation, borné à zéro sinon.
- */
-function frozenWindowOf(
-  subject: CustomerCancellationSubject,
-  until: Date,
-  now: Date,
-): AppliedCustomerWindow {
-  const anchor = cancellationAnchorOf(subject);
-  const hours = anchor === null ? 0 : Math.round((anchor.getTime() - until.getTime()) / HOUR_MS);
-  return { window: customerCancellationWindowAt(until, now), hoursBefore: Math.max(0, hours) };
 }

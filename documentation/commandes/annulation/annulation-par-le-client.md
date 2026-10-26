@@ -128,53 +128,111 @@ du jour — la borne la plus tôt. P2 se compare au `now` **gelé** de la requê
 une attente de verrou ne repousse pas l'échéance. Un pro n'a pas de délai :
 seul le fournil ferme la porte.
 
-## C6.3 bis Le délai figé à la passation (2026-10-26)
+## C6.3 bis Le délai figé à la passation
 
-> **Bâti le 2026-10-26, non commité** (migration
-> `20261026170000_le_delai_d_annulation_fige`).
+> Décision de Hugo du 2026-10-26, bâtie en deux temps le même jour :
+> l'instant (`20261026170000_le_delai_d_annulation_fige`), puis le délai
+> lui-même (`20261026180000_le_delai_d_annulation_fige_lui_meme`, non commité
+> à l'écriture de cette section).
 
-Décision de Hugo du 2026-10-26 : les CGV promettent le délai « indiqué sur le
-Site, rappelé avant la validation de la Commande ». Le réglage était relu au
-moment où le client annule, si bien qu'un changement fait après la commande lui
-retirait ou lui donnait un droit que son contrat fixait.
+**Pourquoi.** Les CGV particuliers (article 12 « Annulation », publiées le 2026-10-26 — [`textes-legaux-en-vigueur.md`](../../legal/textes-legaux-en-vigueur.md))
+promettent l'annulation sans frais jusqu'au « délai indiqué sur le Site »,
+rappelé avant la validation de la commande — sans chiffre écrit, pour que le
+réglage reste réglable ([`textes-legaux-en-vigueur.md`](../../legal/textes-legaux-en-vigueur.md) §5).
+Le délai promis est donc celui du **moment de la commande**. Relire le réglage
+au moment où le client annule retirerait ou donnerait après coup un droit que
+son contrat fixe.
 
-- **Colonne** `orders.customer_cancellable_until` (`TIMESTAMPTZ(3)`, nullable,
-  additive). Écrite par la seule passation, jamais réécrite.
-- **À la passation client** (`PlaceOrderHandler`, `PlaceShopOrderHandler`),
-  avant l'écriture : `CustomerCancellationDeadline` lit le réglage du moment
-  et appelle `Order.fixCustomerCancellationDeadline`. L'instant est calculé
-  par `customerCancellationDeadlineOf`, la fonction même que P2 applique :
-  l'ancre (début du créneau, sinon minuit du jour, heure de Paris) moins N
-  heures. La règle n'est écrite qu'une fois.
-- **Reste NULL**, et pourquoi :
-  - **commande de société** : un pro annule jusqu'à l'arrêt du plan de
-    production (décision 2), qui n'est pas un délai réglable ni un instant
-    connu à la passation ;
-  - **saisie de l'équipe** : elle porte toujours une société
-    (`PlaceOrderForCustomerHandler`, `companyId` obligatoire) — même cas, et
-    le handler n'appelle pas le service ;
-  - **réglage sans délai** au moment de la passation : sans délai, seul
-    l'arrêt du plan limite (décision 5). Il n'y a pas d'instant à figer ; NULL
-    se lit alors comme « aucun délai », c'est-à-dire le calcul actuel avec le
-    réglage du jour — voir la limite ci-dessous ;
-  - **commande sans date** (`requested_delivery_date` nul) ;
-  - **commandes d'avant la colonne** : rien n'est rempli.
-- **À l'annulation** (`CustomerCancellationPolicyGate`) : posé, l'instant fait
-  foi et le réglage n'est pas lu — ni son délai, ni son interrupteur. NULL :
-  le calcul d'avant, au réglage du jour. L'annulation staff est inchangée.
-  Le fait `order.cancelled` garde son `policy.hoursBefore`, relu sur l'écart
-  entre l'ancre et l'instant figé.
-- **À la boutique** : `cancellability.until` (`GET /orders/:id`, contrat
-  `OrderCancellability`) porte cet instant. Le tiroir l'écrit « Annulable
-  jusqu'au jeudi 31 octobre, 9 h » — heure de Paris, jour mis en forme par la
-  langue, heure par le dictionnaire (`hourOnly`, `hourMinutes`).
+**Ce qui est figé, et quand.** À la passation d'un **particulier** — connecté
+(`PlaceOrderHandler`) ou invité (`PlaceShopOrderHandler`) —, avant l'écriture,
+`CustomerCancellationDeadline` lit le réglage du moment et appelle
+`Order.fixCustomerCancellationDeadline`. L'agrégat fige le **délai lui-même**,
+« sans délai » compris, et en déduit l'**instant limite** par
+`customerCancellationDeadlineOf` — la fonction même que P2 applique : l'ancre
+(début du créneau, sinon minuit du jour, heure de Paris) moins N heures. La
+règle n'est écrite qu'une fois. Le domaine le dit en un type,
+`FixedCustomerCancellation` (`customer-cancellation-window.ts`) :
+`not_fixed` | `no_delay` | `delay(hoursBefore)`.
 
-⚠️ **Limites connues, non tranchées** :
+### Les colonnes
 
-- un particulier passé **sans délai** garde NULL : si l'admin réactive le délai
-  ensuite, le réglage du jour lui en impose un ;
-- une **révision** de la commande (jour ou créneau changés,
-  `PrismaOrderRevisionRepository.save`) ne recalcule pas l'instant figé.
+| Colonne (`public.orders`)            | Type                             | Sens                                                                                 |
+| ------------------------------------ | -------------------------------- | ------------------------------------------------------------------------------------ |
+| `customer_cancellation_fixed`        | `BOOLEAN NOT NULL DEFAULT false` | `true` : le délai a été figé à la passation d'un particulier, avec ou sans délai     |
+| `customer_cancellation_hours_before` | `INTEGER`, nullable              | le délai figé en heures ; NULL quand il n'y a pas de délai figé                      |
+| `customer_cancellable_until`         | `TIMESTAMPTZ(3)`, nullable       | l'instant limite déduit du délai figé ; NULL sans délai figé ou sans date de service |
+
+Le booléen existe pour une seule raison : distinguer « passée **sans délai** »
+(figée, heures NULL) de « passée **avant les colonnes** » (non figée), que
+l'instant seul confondait. Les trois sont écrits par la passation et par la
+révision (`PrismaOrderRepository`, `PrismaOrderRevisionRepository`), lus par
+`apps/lfd-api/src/b2b/orders/infrastructure/customer-cancellation.columns.ts` et nulle part ailleurs.
+
+### Les quatre cas
+
+| Cas                                  | Colonnes                                | À l'annulation par le client                                                                  |
+| ------------------------------------ | --------------------------------------- | --------------------------------------------------------------------------------------------- |
+| **Non figée** (d'avant les colonnes) | `fixed = false`, heures et instant NULL | le calcul d'avant : réglage du jour, interrupteur et délai                                    |
+| **Figée avec délai**                 | `fixed = true`, heures N, instant posé  | l'instant figé juge (P2) ; le réglage n'est pas lu                                            |
+| **Figée sans délai**                 | `fixed = true`, heures et instant NULL  | aucune limite par délai, seul l'arrêt du plan, comme un pro — même si le délai a été réactivé |
+| **Pro, et saisie de l'équipe**       | `fixed = false`, heures et instant NULL | inchangé : un pro annule jusqu'à l'arrêt du plan (décision 2) ; la saisie porte une société   |
+
+Un cinquième état n'existe qu'en transition : une commande passée entre les
+deux migrations porte l'instant **sans** le délai (`fixed = false`, heures
+NULL, instant posé). Son délai se relit sur l'écart entre l'ancre et l'instant,
+à l'heure près (`effectiveFixedCancellation`), et elle se juge comme une
+figée avec délai. Une commande sans date de service figée avec délai n'a pas
+d'instant : elle est `too_late`, comme avant.
+
+### La révision recalcule avec le délai d'origine
+
+Quand l'équipe ou le client change le jour ou le créneau
+(`Order.recompose`, appelé par `Order.revise` et par le devis), la nouvelle
+composition **reprend le délai figé** de la commande et recalcule l'instant
+sur la nouvelle ancre. Le réglage du jour n'est pas lu. Figée sans délai, elle
+le reste ; non figée, elle le reste. `PrismaOrderRevisionRepository.save`
+écrit les trois colonnes avec le reste de la révision.
+
+⚠️ M1 ne révise que les commandes au compte ou à total nul : la commande d'un
+particulier, réglée par carte, n'est révisable que gratuite tant que M2
+n'existe pas. La règle est tenue dans l'agrégat pour le jour où elle le sera.
+
+### À l'annulation, et à la boutique
+
+`CustomerCancellationPolicyGate` lit le délai figé : `no_delay` rend `null`
+(aucun délai), `delay` juge sur l'instant figé et rapporte les heures figées
+au fait `order.cancelled` (`policy.hoursBefore`), `not_fixed` lit le réglage
+du jour. L'annulation staff est inchangée.
+
+La boutique reçoit l'instant dans `cancellability.until` (`GET /orders/:id`,
+contrat `OrderCancellability`) et l'écrit « Annulable jusqu'au jeudi
+31 octobre, 9 h » — heure de Paris, jour mis en forme par la langue, heure par
+le dictionnaire (`hourOnly`, `hourMinutes`). Figée sans délai, aucun instant :
+la boutique dit seulement que la commande est annulable, jusqu'à l'arrêt du
+plan.
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant P as Passation
+    participant R as Réglage
+    participant O as Order
+    participant V as Révision
+    participant A as Annulation
+    C->>P: commande d'un particulier
+    P->>R: réglage du moment
+    R-->>P: interrupteur et délai
+    P->>O: fixCustomerCancellationDeadline
+    O-->>P: délai figé (ou sans délai) et instant
+    Note over P: écrit fixed, hours_before, cancellable_until
+    V->>O: recompose (nouveau jour ou créneau)
+    O-->>V: même délai figé, instant recalculé
+    Note over V: le réglage du jour n'est pas lu
+    C->>A: annuler
+    A->>A: figée avec délai, l'instant juge
+    A->>A: figée sans délai, seul l'arrêt du plan
+    A->>R: non figée, réglage du jour
+```
 
 ## C6.4 L'invité : un lien d'annulation
 
