@@ -307,6 +307,8 @@ async function boot(
           unassignDriver: (roundId: string, payload: unknown) =>
             outcome(`unassignDriver ${roundId} ${JSON.stringify(payload)}`),
           returnToDepot: (roundId: string) => outcome(`return ${roundId}`),
+          removeRound: (roundId: string, payload: unknown) =>
+            outcome(`removeRound ${roundId} ${JSON.stringify(payload)}`),
           compositionGaps: () => Promise.resolve({ gaps: [] }),
           readiness: (day: string) => {
             readinessReads.push(day);
@@ -1035,6 +1037,64 @@ describe('RoundsPage — à la porte (lot A, PL2)', () => {
     confirm?.click();
     await settle(fixture);
     expect(wire.calls).toEqual(['return r-1']);
+  });
+
+  describe('« Supprimer la tournée » (supprimer-une-tournee.md, 2026-10-26)', () => {
+    function confirmRemoval(round: Element | undefined): void {
+      [...(round?.querySelectorAll<HTMLButtonElement>('button') ?? [])]
+        .find(
+          (candidate) =>
+            candidate.textContent?.trim() === 'Supprimer la tournée' &&
+            !candidate.hasAttribute('data-remove-round'),
+        )
+        ?.click();
+    }
+
+    it('demande confirmation, envoie la version lue, puis relit le jour', async () => {
+      const { fixture, element } = await boot();
+      const first = element.querySelectorAll('[data-round]')[0];
+      button(first, '[data-remove-round]').click();
+      await settle(fixture);
+      expect(wire.calls).toEqual([]);
+      expect(first?.textContent).toContain('retournent à répartir');
+      const reads = wire.reads.rounds.length;
+
+      confirmRemoval(first);
+      await settle(fixture);
+      expect(wire.calls).toEqual(['removeRound r-1 {"version":4}']);
+      expect(wire.reads.rounds.length).toBeGreaterThan(reads);
+    });
+
+    it('affiche le refus du serveur avec ses mots', async () => {
+      const { fixture, element } = await boot();
+      const message = 'Déchargez d’abord les bacs de cette tournée.';
+      wire.refuse = new HttpErrorResponse({ status: 409, error: { message } });
+      const first = element.querySelectorAll('[data-round]')[0];
+      button(first, '[data-remove-round]').click();
+      await settle(fixture);
+      confirmRemoval(first);
+      await settle(fixture);
+      expect(element.querySelector('[data-refusal]')?.textContent?.trim()).toBe(message);
+    });
+
+    it('absent sans delivery_rounds:write', async () => {
+      const { element } = await boot(['delivery_rounds:read']);
+      expect(element.querySelector('[data-remove-round]')).toBeNull();
+    });
+
+    it('absent sur une tournée partie ou rentrée', async () => {
+      firstDeparted = departedAt;
+      const { element } = await boot();
+      const rounds = element.querySelectorAll('[data-round]');
+      expect(rounds[0]?.querySelector('[data-remove-round]')).toBeNull();
+      expect(rounds[1]?.querySelector('[data-remove-round]')).not.toBeNull();
+    });
+
+    it('absent sur un jour passé', async () => {
+      const yesterday = shiftDay(parisDayOf(new Date()), -1);
+      const { element } = await boot(WRITE, undefined, { jour: yesterday });
+      expect(element.querySelector('[data-remove-round]')).toBeNull();
+    });
   });
 
   it('sans delivery_rounds:write, pas de « Déclarer rentrée »', async () => {

@@ -194,6 +194,22 @@ export class RoundsDayWriter {
     );
   }
 
+  /**
+   * « Supprimer la tournée » (`supprimer-une-tournee.md`, 2026-10-26), sous la
+   * version lue : ses arrêts retournent à répartir à la relecture. Un refus
+   * (partie, jour passé, bacs chargés, périmée) s'affiche avec ses mots.
+   */
+  deleteRound(key: string): Promise<boolean> {
+    const round = this.day.roundById(key)?.round;
+    if (round === undefined) {
+      return Promise.resolve(false);
+    }
+    return this.write(
+      () => this.rounds.removeRound(round.id, { version: round.version }),
+      'La tournée n’a pas pu être supprimée.',
+    );
+  }
+
   /** Retirer un arrêt de transfert : le transfert redevient sans arrêt (plan du transfert interne, §5). */
   removeTransferStop(key: string, stopId: string): Promise<boolean> {
     const round = this.day.roundById(key)?.round;

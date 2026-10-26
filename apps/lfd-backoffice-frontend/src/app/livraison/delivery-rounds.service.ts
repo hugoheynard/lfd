@@ -9,6 +9,7 @@ import type {
   DeliveryRoundsDayView,
   MoveDeliveryStopPayload,
   OpenDeliveryRoundPayload,
+  RemoveDeliveryRoundPayload,
   RemoveDeliveryStopPayload,
   ReorderDeliveryRoundPayload,
   UnassignDeliveryDriverPayload,
@@ -123,5 +124,12 @@ export class DeliveryRoundsService {
   /** « Déclarer rentrée » depuis Tournées (PL2), sous `delivery_rounds:write` — rejouée, pareil. */
   async returnToDepot(roundId: string): Promise<void> {
     await firstValueFrom(this.http.post(`${ROUNDS}/${encodeURIComponent(roundId)}/return`, null));
+  }
+
+  /** « Supprimer la tournée », sous `delivery_rounds:write` : 204, rejouée sans effet. */
+  async removeRound(roundId: string, payload: RemoveDeliveryRoundPayload): Promise<void> {
+    await firstValueFrom(
+      this.http.post(`${ROUNDS}/${encodeURIComponent(roundId)}/removal`, payload),
+    );
   }
 }

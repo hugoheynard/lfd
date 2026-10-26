@@ -198,8 +198,8 @@ export const LIVRAISON_VIEWS: readonly WorkspaceView[] = [
   // redirigent.
   // « Organisation de tournées » en est sortie le 2026-10-10 (Hugo) : c'est
   // « Tour manager », au premier niveau sous Prod manager (`/tour-manager`).
-  // La « Feuille de route » l'y a suivie le 2026-10-26 (Hugo), en onglet
-  // (`/tour-manager/feuille-de-route`) ; `/livraison/feuille-de-route` y redirige.
+  // La « Feuille de route » a été retirée le 2026-10-26 (Hugo) : le dossier du
+  // jour de Tour manager la remplace ; `/livraison/feuille-de-route` y redirige.
   {
     // Les arrêts restés ouverts des tournées (AP-D7).
     key: 'non-remis',

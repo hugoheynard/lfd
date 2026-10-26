@@ -1,14 +1,6 @@
-<!-- Le bandeau, sur le modèle de celui de la Supervision : il reste quand on change d'onglet. -->
+<!-- Le bandeau, sur le modèle de celui de la Supervision. -->
 <header class="masthead" foldSurface="chrome" data-tour-manager-masthead>
   <div class="masthead-row">
-    <fold-view-toggle
-      ariaLabel="Ce que Tour manager montre"
-      activeStyle="raised"
-      [options]="viewOptions()"
-      [value]="view()"
-      (valueChange)="pickView($event)"
-      data-tour-manager-tabs
-    />
     <div class="day-nav" data-day-nav>
       <fold-view-toggle
         ariaLabel="Jour de livraison"

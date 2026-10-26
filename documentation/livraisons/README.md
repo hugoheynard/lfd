@@ -15,14 +15,23 @@ nous manque c'est la livraison ». Ce dossier regroupe ce qui était dispersé d
 ## Où vivent les écrans du jour (décision de Hugo, 2026-10-26)
 
 **Tour manager** (`/tour-manager`, entrée de premier niveau sous Prod manager)
-est un espace à deux onglets, chacun sous son droit : **Tournées**
-(`/tour-manager/tournees`, `delivery_rounds:read`) et **Feuille de route**
-(`/tour-manager/feuille-de-route`, `delivery_run_sheet:read`, bouton
-« Imprimer » compris). L'entrée paraît à qui tient l'un **ou** l'autre droit ;
-`/tour-manager` ouvre le premier onglet permis. La feuille de route a quitté
-la section Livraison du rail de l'Exploitation ce jour-là : `/livraison`,
-`/livraison/feuille-de-route` et `/livraison/tournees` redirigent vers leur
-onglet, `?jour=` compris (`apps/lfd-backoffice-frontend/src/app/livraison/tour-manager/`).
+est **un seul écran**, les tournées (`/tour-manager/tournees`,
+`delivery_rounds:read`) ; `/tour-manager` l'ouvre. L'onglet « Feuille de
+route » qu'il a porté le matin du 2026-10-26 a été **retiré le même jour**
+(décision de Hugo) : ce qu'il montrait est dans le
+[dossier des tournées du jour](tournees/dossier-des-tournees.md), ouvert par
+le bouton « Voir le dossier du … » du bandeau. L'entrée du menu ne s'ouvre
+plus avec le seul `delivery_run_sheet:read` (le droit reste, la route API
+aussi : Tour manager la lit pour joindre la composition). `/livraison`,
+`/livraison/feuille-de-route`, `/livraison/tournees` et
+`/tour-manager/feuille-de-route` redirigent vers les tournées, `?jour=` compris
+(`apps/lfd-backoffice-frontend/src/app/livraison/tour-manager/`).
+
+## Les chantiers non pris
+
+[`todo-livraison.md`](todo-livraison.md) (ouvert le 2026-10-26) : ce que la
+livraison sait devoir corriger et que personne n'a pris — le journal qui perd
+des lignes, le retrait d'un arrêt dont un bac est chargé.
 
 ## Les thèmes (rangés le 2026-10-07)
 

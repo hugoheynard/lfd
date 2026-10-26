@@ -48,7 +48,7 @@
   color: var(--fold-ref-navyink-200);
 }
 
-/* La feuille de route s'imprime sans le bandeau. */
+/* L'écran s'imprime sans le bandeau. */
 @media print {
   .masthead {
     display: none;

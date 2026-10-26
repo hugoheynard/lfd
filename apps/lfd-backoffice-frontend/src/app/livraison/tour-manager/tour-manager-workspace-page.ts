@@ -8,9 +8,7 @@ import {
   PLATFORM_ID,
   signal,
 } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
-import type { FoldViewToggleOption } from 'fold-ng';
+import { RouterOutlet } from '@angular/router';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
@@ -18,15 +16,12 @@ import {
   FoldSurfaceDirective,
   FoldViewToggleComponent,
 } from 'fold-ng';
-import { filter, map } from 'rxjs';
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { DayCalendar } from '../../shared/day-calendar/day-calendar';
 import { RoundPdf } from '../round-pdf';
-import { DAY_QUERY_PARAM } from '../run-sheet';
 import { TOUR_MANAGER_DAY_OPTIONS, TourManagerDay } from './tour-manager-day';
 import { TourManagerSummary } from './tour-manager-summary';
-import { permittedTourManagerViews } from './tour-manager-views';
 
 /** L'horloge du bandeau avance à la minute ; la relire plus souvent ne montre rien. */
 const CLOCK_TICK_MS = 30_000;
@@ -61,15 +56,15 @@ export function dossierLabelOf(day: string): string {
  * **L'espace Tour manager** — le bandeau, puis la vue ouverte (Hugo,
  * 2026-10-26 : « le haut s'inspire du bandeau de la Supervision »).
  *
- * Le bandeau porte le switch des onglets (Tournées, Feuille de route), le
- * jour COMMUN aux deux (`TourManagerDay`, fourni ici pour survivre au
- * changement d'onglet) avec son calendrier pour une date lointaine, et la
- * date et l'heure à droite.
+ * Le bandeau porte le jour (`TourManagerDay`, fourni ici) avec son calendrier
+ * pour une date lointaine, le dossier du jour, le résumé, et la date et
+ * l'heure à droite. Plus de switch d'onglets depuis le 2026-10-26 (Hugo) :
+ * la « Feuille de route » est retirée, le dossier du jour porte ce qu'elle
+ * montrait.
  *
- * ⚠️ **Elle n'est pas une page** : aucun `fold-page-layout` ici, chaque vue
- * porte le sien. Chaque onglet garde son droit ; le
- * seul geste du bandeau, le dossier du jour, demande de lire les tournées. Le
- * bandeau disparaît à l'impression — la feuille de route dit son jour.
+ * ⚠️ **Elle n'est pas une page** : aucun `fold-page-layout` ici, la vue
+ * routée porte le sien. Le seul geste du bandeau, le dossier du jour, demande
+ * de lire les tournées.
  */
 @Component({
   selector: 'app-tour-manager-workspace-page',
@@ -89,7 +84,6 @@ export function dossierLabelOf(day: string): string {
 })
 export class TourManagerWorkspacePage {
   private readonly permissions = inject(PermissionsStore);
-  private readonly router = inject(Router);
   protected readonly days = inject(TourManagerDay);
   protected readonly dayOptions = TOUR_MANAGER_DAY_OPTIONS;
   private readonly pdf = inject(RoundPdf);
@@ -97,43 +91,15 @@ export class TourManagerWorkspacePage {
   protected readonly blockedPdfUrl = this.pdf.blockedUrl;
   protected readonly blockedPdfName = this.pdf.blockedFileName;
 
-  /** Le dossier du jour, sous le droit de lire les tournées — quel que soit l'onglet. */
+  /** Le dossier du jour, sous le droit de lire les tournées. */
   protected readonly canPrintDossier = computed(() => this.permissions.can('delivery_rounds:read'));
 
   private readonly summaries = inject(TourManagerSummary);
   protected readonly dossierLabel = computed(() => dossierLabelOf(this.days.day()));
-  /**
-   * « 4 tournées · 20 arrêts », avant la date : publié par l'onglet Tournées,
-   * sous le même droit — avec la seule feuille de route, rien.
-   */
+  /** « 4 tournées · 20 arrêts », avant la date : publié par l'écran des tournées. */
   protected readonly summary = computed(() =>
     this.canPrintDossier() ? this.summaries.labelFor(this.days.day()) : null,
   );
-
-  /** Les onglets permis : un onglet sans droit mènerait à un refus du garde. */
-  private readonly views = computed(() =>
-    permittedTourManagerViews((permission) => this.permissions.can(permission)),
-  );
-  protected readonly viewOptions = computed<readonly FoldViewToggleOption[]>(() =>
-    this.views().map(({ key, label, icon }) => ({
-      value: key,
-      label,
-      ...(icon === undefined ? {} : { icon }),
-    })),
-  );
-
-  private readonly url = toSignal(
-    this.router.events.pipe(
-      filter((event) => event instanceof NavigationEnd),
-      map((event) => event.urlAfterRedirects),
-    ),
-    { initialValue: this.router.url },
-  );
-  /** L'onglet ouvert, lu dans l'adresse. */
-  protected readonly view = computed(() => {
-    const path = this.url().split('?')[0] ?? '';
-    return this.views().find((view) => path === view.link)?.key ?? '';
-  });
 
   protected readonly now = signal(new Date());
   protected readonly stamp = computed(() => stampLabelOf(this.now()));
@@ -148,15 +114,5 @@ export class TourManagerWorkspacePage {
   /** Ouvre le dossier des tournées du jour commun. */
   protected printDossier(): Promise<void> {
     return this.pdf.printDay(this.days.day());
-  }
-
-  /** Changer d'onglet garde le jour : il part dans l'adresse de l'onglet choisi. */
-  protected pickView(key: string): void {
-    const view = this.views().find((candidate) => candidate.key === key);
-    if (view !== undefined) {
-      void this.router.navigate([view.link], {
-        queryParams: { [DAY_QUERY_PARAM]: this.days.day() },
-      });
-    }
   }
 }

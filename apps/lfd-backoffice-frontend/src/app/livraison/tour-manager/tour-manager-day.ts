@@ -25,13 +25,13 @@ export function daysBetween(isoDay: string, from: string): number {
 }
 
 /**
- * **Le jour de Tour manager** — UN pour les deux onglets (Hugo, 2026-10-26).
+ * **Le jour de Tour manager** (Hugo, 2026-10-26).
  *
- * Fourni par la coquille, et non par chaque page : changer d'onglet ne
- * recrée que la page, le jour reste. Il est lu dans `?jour=` et réécrit dans
+ * Fourni par la coquille, qui le montre au bandeau, et lu par l'écran des
+ * tournées. Il est lu dans `?jour=` et réécrit dans
  * `?jour=` — un favori ou un lien partagé rouvre le même —, et suit l'adresse
  * quand un lien la change. Sans jour lisible, **demain** : la tournée se
- * prépare la veille, défaut que les deux pages avaient déjà chacune.
+ * prépare la veille, défaut que les tournées avaient déjà.
  */
 @Injectable()
 export class TourManagerDay {

@@ -8,7 +8,7 @@ import { routes } from '../app.routes';
 import { legacyLegalMentionRedirect } from '../b2b/b2b.routes';
 import { LEGAL_MENTION_SLUGS } from '../reglages/legal-mention-slugs';
 import { comptoirLanding } from '../comptoir/comptoir-landing';
-import { tourManagerLanding } from '../livraison/tour-manager/tour-manager-views';
+import { toRoundsTab } from '../livraison/tour-manager/tour-manager-views';
 import { prodManagerLanding } from '../production/prod-manager/prod-manager-views';
 import type { AnyPermissionGuard, PermissionGuard } from '../auth/permission.guard';
 
@@ -336,10 +336,10 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // Le texte d'information du livreur (rgpd-livreur.md §7) : le droit de la page.
   'coursier/mes-donnees': 'delivery_driving:read',
   livraison: OPEN,
-  // UN ESPACE depuis le 2026-10-26 (Hugo) : coquille ouverte, onglets gardés.
+  // Coquille ouverte, l'écran gardé ; la « Feuille de route » est retirée
+  // (Hugo, 2026-10-26) et son adresse redirige.
   'tour-manager': OPEN,
   'tour-manager/tournees': 'delivery_rounds:read',
-  'tour-manager/feuille-de-route': 'delivery_run_sheet:read',
   'livraison/non-remis': 'delivery_rounds:read',
   // « À décider » (a-la-porte.md, B3) : le droit de décider, pas celui des
   // tournées ni des comptes (2026-10-02) ; la page s'ouvre en lecture, les
@@ -842,10 +842,12 @@ describe("l'arbre de routes du back-office", () => {
     expect(legacy?.redirectTo).toBe('/prod-manager/reassorts');
   });
 
-  it('ouvre Tour manager sur le premier onglet permis (2026-10-26)', () => {
+  it('ouvre Tour manager sur les tournées, et y mène la feuille de route retirée (2026-10-26)', () => {
     const tourManager = routes.find((route) => route.path === 'tour-manager');
-    const root = tourManager?.children?.find((child) => child.path === '');
-    expect(root?.redirectTo).toBe(tourManagerLanding);
+    const redirectOf = (path: string): unknown =>
+      tourManager?.children?.find((child) => child.path === path)?.redirectTo;
+    expect(redirectOf('')).toBe(toRoundsTab);
+    expect(redirectOf('feuille-de-route')).toBe(toRoundsTab);
   });
 
   it('ouvre le comptoir sur le premier onglet permis', () => {

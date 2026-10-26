@@ -4,11 +4,7 @@ import { NEW_VERSION_BANNER } from '@lfd/front-ops';
 
 import { anyPermissionGuard, permissionGuard } from './auth/permission.guard';
 import { comptoirLanding } from './comptoir/comptoir-landing';
-import {
-  toRoundsTab,
-  toRunSheetTab,
-  tourManagerLanding,
-} from './livraison/tour-manager/tour-manager-views';
+import { toRoundsTab } from './livraison/tour-manager/tour-manager-views';
 import { prodManagerLanding } from './production/prod-manager/prod-manager-views';
 import {
   ORDER_ENTRY_ORIGIN_KEY,
@@ -691,10 +687,10 @@ export const routes: Routes = [
     ],
   },
   // TOUR MANAGER (Hugo, 2026-10-10) : l'organisation des tournées sort de la
-  // Livraison pour une entrée de premier niveau, sous Prod manager. Un ESPACE
-  // depuis le 2026-10-26 (Hugo : « la Feuille de route devient un onglet de
-  // Tour manager ») : deux onglets, une route chacun, sous son propre droit.
-  // La coquille n'est pas gardée — le support n'y lit que la feuille de route.
+  // Livraison pour une entrée de premier niveau, sous Prod manager. UN SEUL
+  // ÉCRAN depuis le 2026-10-26 (Hugo) : l'onglet « Feuille de route », posé le
+  // matin même, est retiré — le dossier du jour, ouvert depuis le bandeau, porte
+  // ce qu'il montrait. Ses favoris mènent aux tournées, `?jour=` compris.
   {
     path: 'tour-manager',
     loadComponent: () =>
@@ -702,8 +698,7 @@ export const routes: Routes = [
         (m) => m.TourManagerWorkspacePage,
       ),
     children: [
-      // Le premier onglet PERMIS, dans l'ordre de `TOUR_MANAGER_VIEWS` ; `?jour=` suit.
-      { path: '', pathMatch: 'full', redirectTo: tourManagerLanding },
+      { path: '', pathMatch: 'full', redirectTo: toRoundsTab },
       {
         path: 'tournees',
         canActivate: [permissionGuard('delivery_rounds:read')],
@@ -711,13 +706,7 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./livraison/rounds-page/rounds-page').then((m) => m.RoundsPage),
       },
-      {
-        path: 'feuille-de-route',
-        canActivate: [permissionGuard('delivery_run_sheet:read')],
-        title: 'Feuille de route — Tour manager — LFC B2B admin',
-        loadComponent: () =>
-          import('./livraison/livraison-page/livraison-page').then((m) => m.DeliveryPage),
-      },
+      { path: 'feuille-de-route', pathMatch: 'full', redirectTo: toRoundsTab },
     ],
   },
   // LE FOURNIL (2026-10-06) : la fournée du jour sort de la Production pour
@@ -761,11 +750,11 @@ export const routes: Routes = [
         (m) => m.LivraisonWorkspacePage,
       ),
     children: [
-      // LA FEUILLE DE ROUTE est un onglet de Tour manager depuis le 2026-10-26
-      // (Hugo). `/livraison` et `/livraison/feuille-de-route` vivent dans des
-      // favoris : absolues, elles y redirigent, `?jour=` compris.
-      { path: '', pathMatch: 'full', redirectTo: toRunSheetTab },
-      { path: 'feuille-de-route', pathMatch: 'full', redirectTo: toRunSheetTab },
+      // LA FEUILLE DE ROUTE est retirée (Hugo, 2026-10-26) : `/livraison` et
+      // `/livraison/feuille-de-route` vivent dans des favoris, et mènent aux
+      // tournées de Tour manager, `?jour=` compris.
+      { path: '', pathMatch: 'full', redirectTo: toRoundsTab },
+      { path: 'feuille-de-route', pathMatch: 'full', redirectTo: toRoundsTab },
       // « MA TOURNÉE » A DÉMÉNAGÉ sous `/coursier` (2026-10-03) : un espace à
       // part, que le livreur voit sans la Livraison. Les anciennes adresses
       // vivent dans des favoris et des liens — elles redirigent.

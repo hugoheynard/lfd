@@ -13,7 +13,7 @@ import { describe, expect, it } from 'vitest';
 import { routes } from '../app.routes';
 import type { AnyPermissionGuard, PermissionGuard } from '../auth/permission.guard';
 import { PermissionsStore } from '../auth/permissions.store';
-import { toRoundsTab, toRunSheetTab } from '../livraison/tour-manager/tour-manager-views';
+import { toRoundsTab } from '../livraison/tour-manager/tour-manager-views';
 import { WorkspaceCatalogue } from '../shared/workspace-rail/workspaces';
 
 /**
@@ -131,7 +131,6 @@ describe("l'espace Livraison", () => {
       'depart',
     ]);
     expect(await opens('comptoir', 'tour-manager/tournees')).toBe(true);
-    expect(await opens('comptoir', 'tour-manager/feuille-de-route')).toBe(true);
     expect(await opens('comptoir', 'non-remis')).toBe(true);
     expect(await opens('comptoir', 'carnet-a-corriger')).toBe(true);
     expect(await opens('comptoir', 'simulateur')).toBe(true);
@@ -147,9 +146,8 @@ describe("l'espace Livraison", () => {
     expect(await opens('comptoir', 'depart')).toBe(true);
   });
 
-  it('garde au support la seule feuille de route (Q8), onglet de Tour manager depuis le 2026-10-26', async () => {
+  it('ne laisse au support aucun écran de livraison depuis le retrait de la feuille de route (2026-10-26)', async () => {
     expect(deliveryViewKeys('support')).toEqual([]);
-    expect(await opens('support', 'tour-manager/feuille-de-route')).toBe(true);
     expect(await opens('support', 'vehicules')).toBe(false);
     expect(await opens('support', 'tour-manager/tournees')).toBe(false);
     expect(await opens('support', 'chargement')).toBe(false);
@@ -180,14 +178,14 @@ describe("l'espace Livraison", () => {
     expect((shell?.canActivate ?? []).filter(isPermissionGuard)).toEqual([]);
   });
 
-  it('renvoie `/livraison`, la feuille de route et les tournées vers leurs onglets de Tour manager (2026-10-26)', () => {
+  it('renvoie `/livraison`, la feuille de route et les tournées vers les tournées de Tour manager (2026-10-26)', () => {
     const shell = routes.find((route) => route.path === 'livraison');
     const redirectOf = (path: string): unknown =>
       shell?.children?.find((child) => child.path === path)?.redirectTo;
     // Des fonctions, qui gardent `?jour=` (joué au vrai routeur dans
     // tour-manager-entry-access.spec.ts).
-    expect(redirectOf('')).toBe(toRunSheetTab);
-    expect(redirectOf('feuille-de-route')).toBe(toRunSheetTab);
+    expect(redirectOf('')).toBe(toRoundsTab);
+    expect(redirectOf('feuille-de-route')).toBe(toRoundsTab);
     expect(redirectOf('tournees')).toBe(toRoundsTab);
   });
 
@@ -201,7 +199,6 @@ describe("l'espace Livraison", () => {
     expect(await opens(LIVREUR, 'coursier')).toBe(true);
     expect(await opens(LIVREUR, 'coursier/:roundId/chargement')).toBe(true);
     expect(await opens(LIVREUR, 'tour-manager/tournees')).toBe(false);
-    expect(await opens(LIVREUR, 'tour-manager/feuille-de-route')).toBe(false);
     expect(await opens(LIVREUR, 'chargement')).toBe(false);
     expect(await opens('comptoir', 'coursier')).toBe(false);
     expect(await opens('comptoir', 'coursier/:roundId/chargement')).toBe(false);

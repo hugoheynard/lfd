@@ -92,6 +92,8 @@ export class RoundColumn {
   /** « part en premier », « après le passage 1 » — `null` pour une tournée unique. */
   readonly passageNote = input<string | null>(null);
   readonly canWrite = input(false);
+  /** Le jour montré est passé : on n'y supprime plus de tournée (2026-10-26). */
+  readonly pastDay = input(false);
   /** Une écriture est en vol : les gestes attendent. */
   readonly busy = input(false);
   /** L'aperçu d'une proposition : rien ne s'écrit, le livreur ne se change pas. */
@@ -111,6 +113,8 @@ export class RoundColumn {
   readonly driverRemoved = output<void>();
   readonly returned = output<void>();
   readonly printed = output<void>();
+  /** « Supprimer la tournée » confirmé (`supprimer-une-tournee.md`, 2026-10-26). */
+  readonly deleted = output<void>();
   readonly hovered = output<string | null>();
   /** Un arrêt est pris (`true`), puis lâché (`false`). */
   readonly dragging = output<boolean>();
@@ -162,6 +166,26 @@ export class RoundColumn {
   protected readonly stopCountLabel = stopCountLabel;
 
   /**
+   * « Supprimer la tournée » : le droit d'écrire, une tournée enregistrée,
+   * jamais partie ni rentrée, sur un jour qui n'est pas passé, hors aperçu.
+   * Le serveur refuse de toute façon (bacs chargés, version périmée).
+   */
+  protected readonly removable = computed(() => {
+    const round = this.round();
+    return (
+      this.canWrite() &&
+      !this.preview() &&
+      !this.pastDay() &&
+      round.roundId !== null &&
+      round.departedAt === null &&
+      round.returnedAt === null
+    );
+  });
+
+  /** « Supprimer la tournée ? Ses 3 arrêts retournent à répartir. » */
+  protected readonly removalMessage = computed(() => removalMessageOf(this.round().stops.length));
+
+  /**
    * La catégorie d'un arrêt : une LIVRAISON, peinte de la couleur de livraison
    * du site de départ pour sa clientèle — lue sur la feuille de route, qui la
    * porte (plan du tri et des couleurs, L1b). Sans feuille : neutre.
@@ -205,4 +229,15 @@ export class RoundColumn {
       to: { list: event.container.data, index: event.currentIndex },
     });
   }
+}
+
+/** La question de « Supprimer la tournée », au nombre de ses arrêts. */
+export function removalMessageOf(stops: number): string {
+  if (stops === 0) {
+    return 'Supprimer la tournée ? Elle n’a aucun arrêt.';
+  }
+  if (stops === 1) {
+    return 'Supprimer la tournée ? Son arrêt retourne à répartir.';
+  }
+  return `Supprimer la tournée ? Ses ${String(stops)} arrêts retournent à répartir.`;
 }

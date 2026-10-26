@@ -153,6 +153,8 @@ export class RoundsBoard {
   readonly board = input<Board | null>(null);
   readonly preview = input(false);
   readonly canWrite = input(false);
+  /** Le jour montré est passé : aucune tournée ne s'y supprime. */
+  readonly pastDay = input(false);
   readonly busy = input(false);
   /** La couleur de chaque véhicule, par identifiant. */
   readonly colors = input<ReadonlyMap<string, string>>(new Map());
@@ -185,6 +187,8 @@ export class RoundsBoard {
   readonly driverRemoved = output<string>();
   readonly returned = output<string>();
   readonly printed = output<string>();
+  /** « Supprimer la tournée » confirmé : la clé de la tournée. */
+  readonly roundDeleted = output<string>();
   readonly retry = output();
   readonly focusChange = output<BoardFocus>();
   /** « Placer ici » : la commande à poser à sa place suggérée (CA7). */

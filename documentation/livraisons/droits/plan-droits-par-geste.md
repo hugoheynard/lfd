@@ -213,8 +213,9 @@ Objections reprises du plan des procédures :
 - le **carnet d'adresses** sert `procedureStepCount` sous `b2b_companies` :
   masqué de même ;
 - les quatre écrans front qui testent `b2b_companies:read` pour les photos
-  (`livraison-page.ts:118`, `rounds-page.ts`, `run-sheet-stop.ts:49`,
-  `run-sheet-step-photo.ts:24`) testent `delivery_procedures:read`.
+  (la page de la feuille de route, `rounds-page.ts`, l'arrêt de la feuille et
+  sa photo d'étape — ces trois-là retirés le 2026-10-26 avec l'écran « Feuille
+  de route ») testent `delivery_procedures:read`.
 
 ### DG-D9 — L'écran des dérogations
 

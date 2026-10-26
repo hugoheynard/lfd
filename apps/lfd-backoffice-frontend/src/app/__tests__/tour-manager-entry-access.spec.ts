@@ -15,11 +15,10 @@ import { NavCountsService } from '../nav-counts.service';
 import { PushNotificationsService } from '../shared/push/push-notifications.service';
 
 /**
- * **L'entrée « Tour manager »** depuis le 2026-10-26 (Hugo : « la Feuille de
- * route devient un onglet de Tour manager ») : l'entrée s'ouvre à qui tient
- * les tournées OU la feuille de route, au rail ET aux tuiles ; et les
- * anciennes adresses de la feuille de route mènent à son onglet, `?jour=`
- * compris.
+ * **L'entrée « Tour manager »** : un seul écran depuis le 2026-10-26 (Hugo
+ * retire l'onglet « Feuille de route » posé le matin même). L'entrée s'ouvre
+ * à qui tient les tournées, au rail ET aux tuiles ; les anciennes adresses de
+ * la feuille de route mènent aux tournées, `?jour=` compris.
  */
 @Component({ template: '' })
 class Blank {}
@@ -104,9 +103,9 @@ async function tileLabels(granted: readonly StaffPermission[]): Promise<(string 
 }
 
 describe("App — l'entrée Tour manager (2026-10-26)", () => {
-  it('paraît au rail pour qui tient les tournées, ou la seule feuille de route', () => {
+  it('paraît au rail pour qui tient les tournées, plus pour la seule feuille de route (retirée le 2026-10-26)', () => {
     expect(railLabels(['delivery_rounds:read'])).toContain('Tour manager');
-    expect(railLabels(['delivery_run_sheet:read'])).toContain('Tour manager');
+    expect(railLabels(['delivery_run_sheet:read'])).not.toContain('Tour manager');
   });
 
   it('reste fermée au chargement seul', () => {
@@ -114,7 +113,7 @@ describe("App — l'entrée Tour manager (2026-10-26)", () => {
   });
 
   it('paraît aussi aux tuiles du menu mobile, sous les mêmes droits', async () => {
-    expect(await tileLabels(['delivery_run_sheet:read'])).toEqual(['Tour manager']);
+    expect(await tileLabels(['delivery_run_sheet:read'])).toEqual([]);
     expect(await tileLabels(['delivery_rounds:read'])).toEqual(['Tour manager']);
     expect(await tileLabels(['delivery_loading:read'])).toEqual([]);
   });
@@ -139,11 +138,7 @@ describe('les anciennes adresses de la feuille de route (2026-10-26)', () => {
           { path: 'livraison', children: redirectsOnly('livraison') },
           {
             path: 'tour-manager',
-            children: [
-              ...redirectsOnly('tour-manager'),
-              { path: 'tournees', component: Blank },
-              { path: 'feuille-de-route', component: Blank },
-            ],
+            children: [...redirectsOnly('tour-manager'), { path: 'tournees', component: Blank }],
           },
           { path: '**', component: Blank },
         ]),
@@ -162,25 +157,12 @@ describe('les anciennes adresses de la feuille de route (2026-10-26)', () => {
   }
 
   it.each([
-    ['/livraison?jour=2026-10-27', '/tour-manager/feuille-de-route?jour=2026-10-27'],
-    [
-      '/livraison/feuille-de-route?jour=2026-10-27',
-      '/tour-manager/feuille-de-route?jour=2026-10-27',
-    ],
+    ['/livraison?jour=2026-10-27', '/tour-manager/tournees?jour=2026-10-27'],
+    ['/livraison/feuille-de-route?jour=2026-10-27', '/tour-manager/tournees?jour=2026-10-27'],
     ['/livraison/tournees?jour=2026-10-27', '/tour-manager/tournees?jour=2026-10-27'],
+    ['/tour-manager/feuille-de-route?jour=2026-10-27', '/tour-manager/tournees?jour=2026-10-27'],
+    ['/tour-manager?jour=2026-10-27', '/tour-manager/tournees?jour=2026-10-27'],
   ])('%s → %s', async (from, to) => {
-    expect(await land(from, ['delivery_rounds:read', 'delivery_run_sheet:read'])).toBe(to);
-  });
-
-  it('ouvre `/tour-manager` sur le premier onglet permis, `?jour=` compris', async () => {
-    expect(await land('/tour-manager?jour=2026-10-27', ['delivery_run_sheet:read'])).toBe(
-      '/tour-manager/feuille-de-route?jour=2026-10-27',
-    );
-    expect(
-      await land('/tour-manager?jour=2026-10-27', [
-        'delivery_rounds:read',
-        'delivery_run_sheet:read',
-      ]),
-    ).toBe('/tour-manager/tournees?jour=2026-10-27');
+    expect(await land(from, ['delivery_rounds:read'])).toBe(to);
   });
 });

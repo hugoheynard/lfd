@@ -18,17 +18,17 @@ import {
   TourManagerWorkspacePage,
 } from './tour-manager-workspace-page';
 
-/** Un onglet doublé : il dit le jour qu'il lit au bandeau. */
+/** L'écran des tournées doublé : il dit le jour qu'il lit au bandeau. */
 @Component({ template: '<p data-tab-day>{{ day() }}</p>' })
 class TabStub {
   protected readonly day = inject(TourManagerDay).day;
 }
 
-const BOTH: readonly StaffPermission[] = ['delivery_rounds:read', 'delivery_run_sheet:read'];
+const ROUNDS: readonly StaffPermission[] = ['delivery_rounds:read'];
 
 const dayDossierPdf = vi.fn((_day: string) => Promise.resolve(new Blob()));
 
-async function open(url: string, granted: readonly StaffPermission[] = BOTH) {
+async function open(url: string, granted: readonly StaffPermission[] = ROUNDS) {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
@@ -36,10 +36,7 @@ async function open(url: string, granted: readonly StaffPermission[] = BOTH) {
         {
           path: 'tour-manager',
           component: TourManagerWorkspacePage,
-          children: [
-            { path: 'tournees', component: TabStub },
-            { path: 'feuille-de-route', component: TabStub },
-          ],
+          children: [{ path: 'tournees', component: TabStub }],
         },
       ]),
       {
@@ -60,29 +57,16 @@ function tabDay(element: HTMLElement): string | undefined {
 }
 
 describe('le bandeau de Tour manager (2026-10-26)', () => {
-  it('porte le switch des onglets, le jour et son calendrier, et la date et l’heure', async () => {
+  it('porte le jour et son calendrier, et la date et l’heure — plus de switch d’onglets (Feuille de route retirée)', async () => {
     const { element } = await open('/tour-manager/tournees?jour=2026-10-27');
-    expect(element.querySelector('[data-tour-manager-tabs]')).not.toBeNull();
+    expect(element.querySelector('[data-tour-manager-tabs]')).toBeNull();
+    expect(element.querySelectorAll('fold-view-toggle')).toHaveLength(1);
     expect(element.querySelector('[data-day-toggle]')).not.toBeNull();
     expect(element.querySelector('app-day-calendar')).not.toBeNull();
     expect(element.querySelector('[data-stamp]')?.textContent).toContain(' h ');
   });
 
-  it('change d’onglet en gardant le jour choisi', async () => {
-    const { harness, element } = await open('/tour-manager/tournees?jour=2026-10-27');
-    expect(tabDay(element)).toBe('2026-10-27');
-
-    harness.fixture.debugElement
-      .query(By.css('[data-tour-manager-tabs]'))
-      .triggerEventHandler('valueChange', 'feuille-de-route');
-    await harness.fixture.whenStable();
-    harness.detectChanges();
-
-    expect(TestBed.inject(Router).url).toBe('/tour-manager/feuille-de-route?jour=2026-10-27');
-    expect(tabDay(element)).toBe('2026-10-27');
-  });
-
-  it('montre le résumé du jour publié par l’onglet Tournées, juste avant la date', async () => {
+  it('montre le résumé du jour publié par l’écran des tournées, juste avant la date', async () => {
     const { harness, element } = await open('/tour-manager/tournees?jour=2026-10-27');
     expect(element.querySelector('[data-masthead-summary]')).toBeNull();
     const summaries = harness.fixture.debugElement
@@ -103,28 +87,6 @@ describe('le bandeau de Tour manager (2026-10-26)', () => {
     expect(element.querySelector('[data-masthead-summary]')).toBeNull();
   });
 
-  it('avec la seule feuille de route : pas de résumé', async () => {
-    const { harness, element } = await open('/tour-manager/feuille-de-route?jour=2026-10-27', [
-      'delivery_run_sheet:read',
-    ]);
-    harness.fixture.debugElement
-      .query(By.directive(TourManagerWorkspacePage))
-      .injector.get(TourManagerSummary)
-      .publish('2026-10-27', '4 tournées · 20 arrêts');
-    harness.detectChanges();
-    expect(element.querySelector('[data-masthead-summary]')).toBeNull();
-  });
-
-  it('n’offre que les onglets permis', async () => {
-    const { harness } = await open('/tour-manager/feuille-de-route', ['delivery_run_sheet:read']);
-    const toggle = harness.fixture.debugElement.query(By.css('[data-tour-manager-tabs]'));
-    expect(
-      (toggle.componentInstance as { options: () => readonly { value: string }[] })
-        .options()
-        .map((option) => option.value),
-    ).toEqual(['feuille-de-route']);
-  });
-
   it('demain par défaut, segment « Demain » allumé', async () => {
     const { harness, element } = await open('/tour-manager/tournees');
     expect(tabDay(element)).toBe(shiftDay(parisDayOf(new Date()), 1));
@@ -133,14 +95,14 @@ describe('le bandeau de Tour manager (2026-10-26)', () => {
   });
 
   it('ouvre une date lointaine par le calendrier : elle passe dans l’adresse, aucun segment allumé', async () => {
-    const { harness, element } = await open('/tour-manager/feuille-de-route');
+    const { harness, element } = await open('/tour-manager/tournees');
     const far = shiftDay(parisDayOf(new Date()), 40);
 
     harness.fixture.debugElement.query(By.directive(DayCalendar)).triggerEventHandler('pick', far);
     await harness.fixture.whenStable();
     harness.detectChanges();
 
-    expect(TestBed.inject(Router).url).toBe(`/tour-manager/feuille-de-route?jour=${far}`);
+    expect(TestBed.inject(Router).url).toBe(`/tour-manager/tournees?jour=${far}`);
     expect(tabDay(element)).toBe(far);
     expect(
       element.querySelector('app-day-calendar button[data-calendar]')?.textContent?.trim(),
@@ -185,7 +147,7 @@ describe('daysBetween / stampLabelOf', () => {
       dayDossierPdf.mockClear();
       const open$ = vi.spyOn(window, 'open').mockReturnValue(null);
       vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:dossier');
-      const { harness, element } = await open('/tour-manager/feuille-de-route?jour=2026-10-27');
+      const { harness, element } = await open('/tour-manager/tournees?jour=2026-10-27');
       const button = element.querySelector<HTMLButtonElement>('[data-print-dossier]');
       expect(button?.textContent).toContain('Voir le dossier du mardi 27 oct.');
 
@@ -198,7 +160,7 @@ describe('daysBetween / stampLabelOf', () => {
     });
 
     it('n’est pas offert sans le droit de lire les tournées', async () => {
-      const { element } = await open('/tour-manager/feuille-de-route', ['delivery_run_sheet:read']);
+      const { element } = await open('/tour-manager/tournees', ['delivery_run_sheet:read']);
       expect(element.querySelector('[data-print-dossier]')).toBeNull();
     });
   });

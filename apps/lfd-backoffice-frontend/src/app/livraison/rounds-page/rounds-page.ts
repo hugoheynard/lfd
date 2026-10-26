@@ -384,6 +384,7 @@ export class RoundsPage {
     this.writer.unassignDriver(key);
   protected readonly returnToDepot = (key: string): Promise<boolean> =>
     this.writer.returnToDepot(key);
+  protected readonly deleteRound = (key: string): Promise<boolean> => this.writer.deleteRound(key);
   protected readonly print = (roundId: string): Promise<void> => this.pdf.print(roundId);
 
   // ─── L'aperçu d'une proposition ────────────────────────────────────────

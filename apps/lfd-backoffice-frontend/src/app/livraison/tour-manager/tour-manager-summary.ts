@@ -9,7 +9,7 @@ interface DaySummary {
  * **Le résumé du jour au bandeau** — « 4 tournées · 20 arrêts » (Hugo,
  * 2026-10-26).
  *
- * Fourni par la coquille, comme le jour : l'onglet Tournées, qui lit déjà la
+ * Fourni par la coquille, comme le jour : l'écran des tournées, qui lit déjà la
  * composition, y publie son résumé, et le bandeau le montre sans relire le
  * serveur. Il est rangé avec SON jour : un résumé d'un autre jour ne
  * s'affiche pas.

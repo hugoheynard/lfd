@@ -6,10 +6,10 @@ import { firstValueFrom } from 'rxjs';
 import { B2B_API_BASE } from '../api/api-config';
 
 /**
- * **La feuille de route du jour**, en lecture seule — sous la même porte que la
- * route `tour-manager/feuille-de-route` (`delivery_run_sheet:read`, depuis le
- * 2026-09-29 ; `b2b_orders:read` avant). Aucun état : la page relit quand on
- * change de jour.
+ * **La feuille de route du jour**, en lecture seule (`delivery_run_sheet:read`
+ * côté API). Son seul lecteur est Tour manager (`rounds-day.ts`), qui la joint
+ * à la composition : l'écran « Feuille de route » a été retiré le 2026-10-26
+ * (décision de Hugo). Aucun état : l'appelant relit quand on change de jour.
  */
 @Injectable({ providedIn: 'root' })
 export class RunSheetService {

@@ -35,10 +35,10 @@ export const DEV_SCENARIO_STEPS: readonly DevScenarioStepText[] = [
     meaning: 'les commandes sont passées, rien n’est encore produit',
     loading: 'Passage des commandes d’hier, d’aujourd’hui et des jours à venir…',
     // Aucun écran ne liste toutes les commandes du jour (vérifié le 2026-10-05) :
-    // le comptoir et la feuille de route les montrent, chacun pour son mode.
+    // le comptoir et Tour manager les montrent, chacun pour son mode.
     links: [
       { label: 'Retrait boutique', route: '/comptoir/retrait' },
-      { label: 'Feuille de route', route: '/tour-manager/feuille-de-route' },
+      { label: 'Tour manager', route: '/tour-manager/tournees' },
     ],
   },
   {

@@ -3,7 +3,7 @@ import { By } from '@angular/platform-browser';
 import { describe, expect, it } from 'vitest';
 
 import type { BoardDrop, BoardRound, BoardStop } from '../rounds-board-model';
-import { RoundColumn, type StopShift } from './round-column';
+import { removalMessageOf, RoundColumn, type StopShift } from './round-column';
 
 function stop(orderId: string, overrides: Partial<BoardStop> = {}): BoardStop {
   return {
@@ -226,5 +226,32 @@ describe('RoundColumn', () => {
     expect(
       mount(round({ place: 'fits' })).element.querySelector('[data-place-warning]'),
     ).toBeNull();
+  });
+});
+
+describe('RoundColumn — « Supprimer la tournée » (2026-10-26)', () => {
+  it('dit combien d’arrêts retournent à répartir', () => {
+    expect(removalMessageOf(3)).toBe('Supprimer la tournée ? Ses 3 arrêts retournent à répartir.');
+    expect(removalMessageOf(1)).toBe('Supprimer la tournée ? Son arrêt retourne à répartir.');
+    expect(removalMessageOf(0)).toBe('Supprimer la tournée ? Elle n’a aucun arrêt.');
+  });
+
+  it('n’est offert ni en lecture, ni sur un jour passé, ni dans l’aperçu, ni sans tournée enregistrée', () => {
+    expect(mount(round()).element.querySelector('[data-remove-round]')).not.toBeNull();
+    expect(mount(round(), false).element.querySelector('[data-remove-round]')).toBeNull();
+    expect(mount(round({ roundId: null })).element.querySelector('[data-remove-round]')).toBeNull();
+    expect(
+      mount(
+        round({ returnedAt: '2026-10-01T10:00:00.000Z', departedAt: '2026-10-01T06:00:00.000Z' }),
+      ).element.querySelector('[data-remove-round]'),
+    ).toBeNull();
+    const past = mount(round());
+    past.fixture.componentRef.setInput('pastDay', true);
+    past.fixture.detectChanges();
+    expect(past.element.querySelector('[data-remove-round]')).toBeNull();
+    const preview = mount(round());
+    preview.fixture.componentRef.setInput('preview', true);
+    preview.fixture.detectChanges();
+    expect(preview.element.querySelector('[data-remove-round]')).toBeNull();
   });
 });

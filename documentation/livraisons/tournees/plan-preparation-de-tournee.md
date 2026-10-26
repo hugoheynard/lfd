@@ -106,7 +106,7 @@ la carte routière.
 | Le **colisage** : le bac est fait                                            | `production_order.packed_at`, et la commande passe `ready`                                     |
 | La **file du jour**, livraisons comprises                                    | `handover-queue.reader.ts` rend toute la journée ; le front écarte les livraisons au comptoir  |
 | La **Supervision** groupe déjà les livraisons par créneau                    | `supervision/handover-slots.ts` (`delivery: SlotGroup[]`, `deliveryExpected`)                  |
-| La **place** dans le back-office                                             | la route `/livraison`, vide exprès (`livraison-page.ts`)                                       |
+| La **place** dans le back-office                                             | la route `/livraison`, vide exprès (la page de livraison, retirée depuis le 2026-10-26)                                       |
 
 Les données pour **préparer** une tournée existent donc presque toutes. Ce qui
 manque, c'est l'écran qui les rassemble et les gestes qui s'appuient dessus.

@@ -109,6 +109,28 @@
       </fold-disclosure>
     }
 
+    @if (removable()) {
+      <fold-inline-confirm
+        intent="danger"
+        [message]="removalMessage()"
+        [labels]="{ confirm: 'Supprimer la tournée' }"
+        [loading]="busy()"
+        (confirmed)="deleted.emit()"
+        data-remove-round-confirm
+      >
+        <button
+          foldButton
+          size="sm"
+          emphasis="outline"
+          intent="danger"
+          [disabled]="busy()"
+          data-remove-round
+        >
+          Supprimer la tournée
+        </button>
+      </fold-inline-confirm>
+    }
+
     @if (round().departedAt !== null) {
       <div class="departed">
         <span class="note">Partie : gelée, rien ne s’y déplace.</span>
