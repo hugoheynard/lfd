@@ -484,6 +484,11 @@ export interface ClientCopy {
     readonly priceTtc: string;
     readonly ttcSuffix: string;
     /**
+     * Lu seulement, à la place d'un prix barré et du prix servi (RGAA 3.1,
+     * lot A5) : la rature ne s'entend pas. `{was}` l'ancien, `{now}` le nouveau.
+     */
+    readonly priceStruck: string;
+    /**
      * Le repère d'un visiteur venu de `/pro` : la boutique montre les tarifs pro
      * de base hors taxe, et le dit — ce ne sont pas encore SES conditions.
      */
@@ -698,6 +703,8 @@ export interface ClientCopy {
     readonly accountSoon: string;
     /** `{name}` est remplacé par la pièce. La corbeille retire la LIGNE. */
     readonly dropAria: string;
+    /** `{name}` est remplacé par la pièce. Le nom, lu seulement, du champ de quantité d'une ligne. */
+    readonly quantityAria: string;
     /** `{total}` est remplacé par le montant dû. */
     readonly pay: string;
     readonly payHint: string;

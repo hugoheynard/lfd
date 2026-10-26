@@ -231,6 +231,11 @@
   cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 2px;
+  /* RGAA 13.x / WCAG 2.5.8 (lot A5, 2026-10-26) : la phrase ne mesurait que la
+     hauteur de son texte (13 px). La zone de clic descend à 24 px SOUS le texte,
+     qui ne bouge pas : le haut reste collé au bouton, rien ne se décale. */
+  box-sizing: border-box;
+  min-block-size: 1.5rem;
 }
 
 .sign-link:hover {
@@ -374,6 +379,15 @@
 @media (max-width: 359.98px) {
   .brand-kicker {
     display: none;
+  }
+
+  /* WCAG 2.5.8 (lot A5, 2026-10-26) : avec l'entrée du visiteur, la barre est
+     pleine à 320 px et le nom n'y gardait qu'un demi-pixel — invisible, mais
+     lien focalisable, et cible tactile que axe comptait selon le rendu des
+     polices (1 en CI, 2 en local). `visibility` et non `display` : la place
+     reste réservée, rien ne bouge dans la rangée. Le logo garde le lien. */
+  .bar:has(.sign) .brand {
+    visibility: hidden;
   }
 }
 

@@ -4,7 +4,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import type { CustomerOrderView } from '@lfd/contracts';
 import { isSettled } from '@lfd/contracts/shop-values';
-import { FoldButtonComponent } from 'fold-ng';
+import { FoldButtonComponent, FoldLoadingStateComponent } from 'fold-ng';
 import { QrCode } from '@lfd/b2b-ui/order';
 import { map } from 'rxjs/operators';
 
@@ -49,7 +49,7 @@ type Phase = 'loading' | 'ready' | 'none';
 @Component({
   selector: 'app-retrait-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [QrCode, RouterLink, FoldButtonComponent],
+  imports: [QrCode, RouterLink, FoldButtonComponent, FoldLoadingStateComponent],
   templateUrl: './retrait-page.html',
   styleUrl: './retrait-page.scss',
 })

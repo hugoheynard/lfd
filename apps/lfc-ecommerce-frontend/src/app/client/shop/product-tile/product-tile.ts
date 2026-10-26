@@ -176,6 +176,15 @@ export class ProductTile {
     return catalogue === undefined ? null : formatCents(unitPriceCents(catalogue));
   });
 
+  /** Ce qu'entend un lecteur d'écran à la place des deux prix (RGAA 3.1, lot A5). */
+  protected readonly struckPhrase = computed(() => {
+    const shop = this.t().shop;
+    return fill(shop.priceStruck, {
+      was: this.striked() ?? '',
+      now: `${this.price()} ${this.showsTtc() ? shop.ttcSuffix : shop.htSuffix}`,
+    });
+  });
+
   /** Le visuel du référentiel, ou l'illustration de son rayon. */
   /**
    * En rayon, c'est la VIGNETTE qui prime — puis l'ouverture, puis

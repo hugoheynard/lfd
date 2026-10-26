@@ -91,6 +91,39 @@
     }
 
     <app-cart-summary />
+    @if (!ordersClosed() && termsShown()) {
+      <!-- La case des CGV (Hugo, 2026-10-26) : une rangée à part, juste sous
+           « Vider le panier » (Hugo, lot A5) — elle quitte le pied, où elle
+           serrait le bouton de règlement. Le texte de la clientèle,
+           ouvert dans un nouvel onglet pour ne pas perdre le panier. Elle
+           n'existe que si un texte est publié ; sa version part avec la
+           commande, et le serveur la refuse si elle a changé. -->
+      @if (salesTerms.outdated()) {
+        <fold-callout variant="warning" announce data-terms-outdated>{{
+          t().cart.salesTermsOutdated
+        }}</fold-callout>
+      }
+      @if (salesTerms.asked()) {
+        <!-- Le libellé est PROJETÉ (fold 0.34.0) : un clic sur le texte coche,
+             un clic sur le lien le suit, et la case est nommée par la phrase. -->
+        <fold-checkbox
+          class="terms"
+          data-sales-terms
+          [checked]="salesTerms.checked()"
+          (checkedChange)="salesTerms.check($event)"
+          >{{ t().cart.salesTermsAccept }}
+          <!-- Le nouvel onglet se DIT dans le nom du lien (RGAA 13.2, lot A3). -->
+          <a
+            routerLink="/cgv"
+            [queryParams]="salesTerms.pageQuery()"
+            target="_blank"
+            rel="noopener"
+            [attr.aria-label]="termsLinkName()"
+            >{{ t().cart.salesTermsLink }}</a
+          ></fold-checkbox
+        >
+      }
+    }
   </div>
 </fold-panel-body>
 
@@ -101,41 +134,15 @@
   @if (refusal(); as message) {
     <fold-callout variant="alert" announce data-place-refused>{{ message }}</fold-callout>
   }
+  <!-- La commande déjà en vol : une information, pas une panne — dite ici
+       pour la même raison que le refus (lot A5). -->
+  @if (inFlight(); as message) {
+    <fold-callout variant="info" announce data-place-in-flight>{{ message }}</fold-callout>
+  }
   <!-- Un panier vide n'a pas de bouton gris à offrir : il a un rayon à rouvrir.
        Le bouton ne se grise que faute de savoir qui commande, ou faute de
        créneau choisi (2026-10-14) — les deux cas où il n'a nulle part où
        mener, et la phrase dessous dit lequel. -->
-  @if (!ordersClosed() && termsShown()) {
-    <!-- La case des CGV (Hugo, 2026-10-26) : le texte de la clientèle,
-         ouvert dans un nouvel onglet pour ne pas perdre le panier. Elle
-         n'existe que si un texte est publié ; sa version part avec la
-         commande, et le serveur la refuse si elle a changé. -->
-    @if (salesTerms.outdated()) {
-      <fold-callout variant="warning" announce data-terms-outdated>{{
-        t().cart.salesTermsOutdated
-      }}</fold-callout>
-    }
-    @if (salesTerms.asked()) {
-      <!-- Le libellé est PROJETÉ (fold 0.34.0) : un clic sur le texte coche,
-           un clic sur le lien le suit, et la case est nommée par la phrase. -->
-      <fold-checkbox
-        class="terms"
-        data-sales-terms
-        [checked]="salesTerms.checked()"
-        (checkedChange)="salesTerms.check($event)"
-        >{{ t().cart.salesTermsAccept }}
-        <!-- Le nouvel onglet se DIT dans le nom du lien (RGAA 13.2, lot A3). -->
-        <a
-          routerLink="/cgv"
-          [queryParams]="salesTerms.pageQuery()"
-          target="_blank"
-          rel="noopener"
-          [attr.aria-label]="termsLinkName()"
-          >{{ t().cart.salesTermsLink }}</a
-        ></fold-checkbox
-      >
-    }
-  }
   @if (ordersClosed()) {
     <!-- La boutique ne prend pas les commandes de cette clientèle : le
          catalogue et le panier restent, le bouton cède la place à l'encadré.

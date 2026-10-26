@@ -66,11 +66,16 @@
              s'affiche que sur les articles négociés : une rature sur tout le
              rayon ne dirait plus rien, et sur aucun elle cacherait ce qu'on lui
              a consenti. -->
+        <!-- La rature ne s'entend pas (RGAA 3.1, lot A5) : une phrase lue
+             remplace le doublon visuel, caché aux lecteurs d'écran. -->
         @if (striked(); as catalogue) {
-          <s class="price-was">{{ catalogue }}</s>
+          <span class="sr-only">{{ struckPhrase() }}</span>
+          <s class="price-was" aria-hidden="true">{{ catalogue }}</s>
         }
-        {{ price() }}
-        <span class="price-ht">{{ showsTtc() ? t().shop.ttcSuffix : t().shop.htSuffix }}</span>
+        <span [attr.aria-hidden]="striked() ? 'true' : null">{{ price() }}&#32;</span>
+        <span class="price-ht" [attr.aria-hidden]="striked() ? 'true' : null">{{
+          showsTtc() ? t().shop.ttcSuffix : t().shop.htSuffix
+        }}</span>
       </span>
 
       @if (gate().label; as closedLabel) {

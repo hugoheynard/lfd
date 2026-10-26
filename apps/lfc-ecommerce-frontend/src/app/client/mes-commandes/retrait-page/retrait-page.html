@@ -1,6 +1,8 @@
 <div class="page">
   @if (phase() === 'loading') {
-    <p class="waiting">{{ t().qr.loading }}</p>
+    <!-- L'état de chargement passe par fold (lot A5) : un paragraphe maison ne
+         s'annonçait pas. -->
+    <fold-loading [message]="t().qr.loading" />
   } @else {
     <h1 class="title">{{ t().qr.title }}</h1>
 

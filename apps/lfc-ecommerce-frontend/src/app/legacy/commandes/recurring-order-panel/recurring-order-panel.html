@@ -1,6 +1,9 @@
 <fold-panel-header title="Panier récurrent" subtitle="Répétez cette commande automatiquement" />
 
 <div class="body">
+  @if (refusal(); as message) {
+    <fold-callout variant="alert" announce data-refused>{{ message }}</fold-callout>
+  }
   <p class="src">
     Depuis la commande <strong>{{ data().orderNumber }}</strong> —
     {{ data().lines.length }} article{{ data().lines.length > 1 ? 's' : '' }}.

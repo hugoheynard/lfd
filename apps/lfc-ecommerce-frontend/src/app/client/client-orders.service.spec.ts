@@ -334,6 +334,32 @@ describe('passer commande', () => {
   });
 
   /**
+   * Régression (lot A5, 2026-10-26) : la commande déjà en vol partait en
+   * toast, inerte derrière le panier modal. Elle est gardée pour le panier,
+   * et n'est pas un refus.
+   */
+  it('garde « déjà en vol » pour le panier, sans en faire un refus', async () => {
+    const http = boot();
+    TestBed.inject(OrderContextStore).choice.set(AU_LABO);
+    TestBed.inject(ClientCart).add('VIE-001');
+    const orders = TestBed.inject(ClientOrders);
+
+    const placing = orders.place();
+    await Promise.resolve();
+    await Promise.resolve();
+    http
+      .expectOne((r) => r.url.endsWith('/orders'))
+      .flush(
+        { code: 'orders.idempotency.in_flight', message: 'Votre commande part déjà.' },
+        { status: 409, statusText: 'Conflict' },
+      );
+
+    expect(await placing).toBeNull();
+    expect(orders.inFlight()).toBe('Votre commande part déjà.');
+    expect(orders.refusal()).toBeNull();
+  });
+
+  /**
    * Se connecter n'est pas un échec : la boutique se visite sans compte, une
    * commande a un propriétaire. Rien ne part, et le panier survit.
    */

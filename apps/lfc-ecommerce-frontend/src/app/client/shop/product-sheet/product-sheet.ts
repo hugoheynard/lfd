@@ -216,6 +216,14 @@ export class ProductSheet {
     return catalogue === undefined ? null : formatCents(unitPriceCents(catalogue));
   });
 
+  /** Ce qu'entend un lecteur d'écran à la place des prix (RGAA 3.1, lot A5). */
+  protected readonly struckPhrase = computed(() =>
+    fill(this.t().shop.priceStruck, {
+      was: this.striked() ?? '',
+      now: `${this.price()} ${this.basisSuffix()} ${this.t().product.perPiece}`,
+    }),
+  );
+
   /**
    * L'écart au tarif boutique, en pour cent entier — ou `null` quand il n'y a
    * rien à dire. Dérivé des deux montants servis, tous deux hors taxe : aucun

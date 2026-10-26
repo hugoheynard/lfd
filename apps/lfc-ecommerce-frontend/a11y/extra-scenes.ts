@@ -46,6 +46,37 @@ export const EXTRA_SCENES: readonly ExtraScene[] = [
     },
   },
   {
+    // P11 — la connexion : le dialogue que « Se connecter » ouvre (lot A5).
+    name: 'sign-in',
+    audience: 'visitor',
+    step: 'welcome',
+    enter: async (preview) => {
+      // Alt : un clic nu sur un texte de la boutique ouvre l'édition en place
+      // de l'aperçu (`copy-editing.ts`) ; Alt le laisse passer à la boutique.
+      await preview.locator('.sign-cta').click({ modifiers: ['Alt'] });
+      await preview.getByRole('dialog').waitFor();
+    },
+  },
+  {
+    // Le profil, ouvert par le menu du compte (lot A5).
+    name: 'profile',
+    audience: 'personal',
+    step: 'orders',
+    enter: async (preview) => {
+      // Les noms portent les marqueurs invisibles de l'aperçu : d'où les motifs.
+      // Au bureau, le menu du compte ; en poche, le menu de la barre.
+      const account = preview.getByRole('button', { name: /Mon compte personnel/ }).first();
+      if (await account.isVisible()) {
+        await account.click({ modifiers: ['Alt'] });
+        await preview.getByRole('link', { name: /Mon profil/ }).first().click({ modifiers: ['Alt'] });
+      } else {
+        await preview.getByRole('button', { name: /Menu/ }).first().click({ modifiers: ['Alt'] });
+        await preview.getByRole('button', { name: /Mon profil/ }).first().click({ modifiers: ['Alt'] });
+      }
+      await preview.waitForURL(/\/mon-profil/);
+    },
+  },
+  {
     name: 'legal-terms',
     audience: 'visitor',
     step: 'welcome',

@@ -1261,13 +1261,13 @@
         },
         "P02": {
           "statut": "NC",
-          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : Prix barré <s> sans texte : l'ancien prix n'est pas annoncé comme tel. shop/product-tile/product-tile.html:60",
-          "lot": "A4 (à confirmer)"
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : Prix barré <s> sans texte : l'ancien prix n'est pas annoncé comme tel. shop/product-tile/product-tile.html:60 — corrigé (lot A5), à revérifier à l'audit : une phrase masquée visuellement mais lue (« Ancien prix : X, nouveau prix : Y », fr/en/it, clé shop.priceStruck) remplace le prix barré et le prix servi, cachés aux lecteurs d'écran (product-tile.html, product-sheet.html) ; aucun changement visuel",
+          "lot": "A5 — fait, à revérifier à l'audit"
         },
         "P03": {
           "statut": "NC",
-          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : Prix barré <s> sans texte. product-sheet.html:53",
-          "lot": "A4 (à confirmer)"
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : Prix barré <s> sans texte. product-sheet.html:53 — corrigé (lot A5), à revérifier à l'audit : une phrase masquée visuellement mais lue (« Ancien prix : X, nouveau prix : Y », fr/en/it, clé shop.priceStruck) remplace le prix barré et le prix servi, cachés aux lecteurs d'écran (product-tile.html, product-sheet.html) ; aucun changement visuel",
+          "lot": "A5 — fait, à revérifier à l'audit"
         },
         "P04": {
           "statut": "NT",
@@ -1380,8 +1380,8 @@
         },
         "P07": {
           "statut": "NT",
-          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : text-muted 4,21:1 sur le bandeau (paper-200), 4,40:1 en registre sombre sur sa carte ; « TTC » (text-subtle) 3,73:1 sur la carte — corrigé (lot A4), à revérifier à l'audit : jetons du thème papier relevés (src/styles/_lfc-app-theme.scss, spec lfc-app-theme-contrast) : text-muted soot-600 #665f50 (4,82:1 sur le bandeau, 6,23 sur la carte), text-subtle aligné sur text-muted (« TTC » 6,23:1 sur la carte), text-faded soot-550 (≥ 3,14:1), ink-300 #b4c8ee (4,84:1 sur la carte du registre sombre)",
-          "lot": "A4 — fait, à revérifier à l'audit"
+          "preuve": "pré-audit 2026-10-26 (tmp/pre-audit-rgaa-boutique.md §2) : text-muted 4,21:1 sur le bandeau (paper-200), 4,40:1 en registre sombre sur sa carte ; « TTC » (text-subtle) 3,73:1 sur la carte — corrigé (lot A4), à revérifier à l'audit : jetons du thème papier relevés (src/styles/_lfc-app-theme.scss, spec lfc-app-theme-contrast) : text-muted soot-600 #665f50 (4,82:1 sur le bandeau, 6,23 sur la carte), text-subtle aligné sur text-muted (« TTC » 6,23:1 sur la carte), text-faded soot-550 (≥ 3,14:1), ink-300 #b4c8ee (4,84:1 sur la carte du registre sombre) — corrigé (lot A5), à revérifier à l'audit : « Nouvelle commande » sur le beurre d'action (blanc 2,99:1, sous-titre 2,61:1) passe sur accent-deep / on-accent-deep (nav/new-order-action, et le menu de poche)",
+          "lot": "A5 — fait, à revérifier à l'audit"
         },
         "P08": {
           "statut": "NT",
@@ -3707,8 +3707,8 @@
         },
         "P04": {
           "statut": "NT",
-          "preuve": "",
-          "lot": ""
+          "preuve": "corrigé (lot A5), à revérifier à l'audit : « commande déjà en vol » n'est plus un toast inerte derrière le panier modal : fold-callout info announce dans le panier (cart-dialog.html, ClientOrders.inFlight)",
+          "lot": "A5 — fait, à revérifier à l'audit"
         },
         "P05": {
           "statut": "NT",
@@ -3732,8 +3732,8 @@
         },
         "P09": {
           "statut": "NT",
-          "preuve": "",
-          "lot": ""
+          "preuve": "corrigé (lot A5), à revérifier à l'audit : le chargement du QR de retrait passe par fold-loading au lieu d'un paragraphe muet (retrait-page.html)",
+          "lot": "A5 — fait, à revérifier à l'audit"
         },
         "P10": {
           "statut": "NT",
@@ -4716,8 +4716,8 @@
         },
         "P04": {
           "statut": "NT",
-          "preuve": "",
-          "lot": ""
+          "preuve": "porte axe 2026-10-26 : list ×1 au panier — corrigé (lot A5), à revérifier à l'audit : la ligne du panier ne porte plus role=group : le <li> redevient un item de la liste (cart-product-line.ts)",
+          "lot": "A5 — fait, à revérifier à l'audit"
         },
         "P05": {
           "statut": "NT",
@@ -5993,8 +5993,8 @@
         },
         "P04": {
           "statut": "NT",
-          "preuve": "",
-          "lot": ""
+          "preuve": "porte axe 2026-10-26 : label ×2 au panier — corrigé (lot A5), à revérifier à l'audit : le champ de quantité de chaque ligne du panier est nommé par un <label for> masqué (« Quantité de {name} ») — fold-number-input n'a pas d'ariaLabel (cart-product-line.html)",
+          "lot": "A5 — fait, à revérifier à l'audit"
         },
         "P05": {
           "statut": "NT",
@@ -8038,8 +8038,8 @@
         },
         "P10": {
           "statut": "NT",
-          "preuve": "",
-          "lot": ""
+          "preuve": "corrigé (lot A5), à revérifier à l'audit : les boutons qui ouvrent le KBIS ou le mandat dans un onglet (window.open) le disent dans leur nom accessible (nav.newTab) : kbis-panel, mandate-panel, mandate-desk-card, mandate-mobile-card",
+          "lot": "A5 — fait, à revérifier à l'audit"
         },
         "P11": {
           "statut": "NT",
@@ -9010,6 +9010,66 @@
         "fr": "Mouvement réduit respecté, carrousel avec bouton pause",
         "en": "Reduced motion respected, carousel with a pause button",
         "it": "Movimento ridotto rispettato, carosello con pulsante di pausa"
+      }
+    },
+    {
+      "theme": 3,
+      "date": "2026-10-26",
+      "statut": "fait",
+      "libelle": {
+        "fr": "Prix barré : l’ancien et le nouveau prix sont lus",
+        "en": "Struck-through price: the previous and new prices are read out",
+        "it": "Prezzo barrato: il prezzo precedente e quello nuovo vengono letti"
+      }
+    },
+    {
+      "theme": 3,
+      "date": "2026-10-26",
+      "statut": "fait",
+      "libelle": {
+        "fr": "Contraste du bouton « Nouvelle commande »",
+        "en": "Contrast of the “New order” button",
+        "it": "Contrasto del pulsante «Nuovo ordine»"
+      }
+    },
+    {
+      "theme": 11,
+      "date": "2026-10-26",
+      "statut": "fait",
+      "libelle": {
+        "fr": "Panier : chaque quantité a un nom",
+        "en": "Basket: every quantity field has a name",
+        "it": "Carrello: ogni campo quantità ha un nome"
+      }
+    },
+    {
+      "theme": 13,
+      "date": "2026-10-26",
+      "statut": "fait",
+      "libelle": {
+        "fr": "Taille des cibles tactiles de l’en-tête et du rail du compte",
+        "en": "Touch target size in the header and the account rail",
+        "it": "Dimensione dei bersagli tattili nell’intestazione e nella barra dell’account"
+      }
+    },
+    {
+      "theme": 13,
+      "date": "2026-10-26",
+      "statut": "fait",
+      "libelle": {
+        "fr": "Les boutons qui ouvrent un onglet le disent",
+        "en": "Buttons that open a new tab say so",
+        "it": "I pulsanti che aprono una nuova scheda lo dicono"
+      }
+    },
+    {
+      "theme": 7,
+      "date": "2026-10-26",
+      "statut": "fait",
+      "libelle": {
+        "fr": "Messages affichés dans les dialogues plutôt qu’en bulle",
+        "en": "Messages shown inside dialogs rather than as pop-ups",
+        "it": "Messaggi mostrati nelle finestre di dialogo anziché in fumetti"
       }
     },
     {

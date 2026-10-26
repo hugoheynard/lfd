@@ -40,9 +40,9 @@ import { type CartLine } from '../cart-total';
   selector: 'li[app-cart-product-line]',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FoldIconComponent, FoldNumberInputComponent],
-  // Le stepper n'expose pas de nom accessible : c'est la LIGNE qu'on nomme, et
-  // le produit se lit alors avant la quantité comme avant la corbeille.
-  host: { role: 'group', '[attr.aria-label]': 'groupLabel()' },
+  // Plus de `role="group"` sur l'hôte (lot A5, 2026-10-26) : il effaçait le
+  // `listitem` du `<li>`, et la liste n'avait plus d'items (axe `list`). Le
+  // champ est nommé par son propre `<label for>`, la corbeille par le sien.
   templateUrl: './cart-product-line.html',
   styleUrl: './cart-product-line.scss',
 })
@@ -77,9 +77,18 @@ export class CartProductLine {
    */
   readonly excluded = input(false);
 
-  /** Le nom du groupe : celui du produit, et l'exclusion qu'un `*` ne dit pas à voix haute. */
-  protected readonly groupLabel = computed(() =>
-    this.excluded() ? fill(this.t().cart.excludedLineAria, { name: this.name() }) : this.name(),
+  /** Le nom lu de la ligne exclue : le produit, et l'exclusion qu'un `*` ne dit pas à voix haute. */
+  protected readonly excludedName = computed(() =>
+    fill(this.t().cart.excludedLineAria, { name: this.name() }),
+  );
+
+  /**
+   * Le nom du champ de quantité. `fold-number-input` n'a pas d'`ariaLabel`
+   * (fold-ng, vérifié le 2026-10-26) ; il expose `inputId`, que vise un
+   * `<label for>` masqué visuellement.
+   */
+  protected readonly quantityLabel = computed(() =>
+    fill(this.t().cart.quantityAria, { name: this.name() }),
   );
 
   protected readonly quantity = computed(() => this.line().quantity);

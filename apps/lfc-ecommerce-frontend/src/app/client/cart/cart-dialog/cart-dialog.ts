@@ -301,6 +301,12 @@ export class CartDialog {
   /** La saisie de l'invité, à qui l'on demande de montrer ses erreurs au clic. */
   private readonly guestForm = viewChild(GuestIdentityForm);
 
+  /** La commande déjà en vol, dite DANS le panier (cf. `ClientOrders.inFlight`) ; vide : rien. */
+  protected readonly inFlight = computed(() => {
+    const message = this.orders.inFlight();
+    return message === '' ? null : message;
+  });
+
   /** Le refus du serveur à la passation, dit DANS le panier (cf. `ClientOrders.refusal`). */
   protected readonly refusal = computed(() => {
     const message = this.orders.refusal();

@@ -192,6 +192,17 @@ describe('ProductSheet', () => {
     expect(el().querySelector('.discount')?.textContent?.trim()).toBe('Prix pro −10 %');
   });
 
+  /** RGAA 3.1 (lot A5) : la rature ne s'entend pas, une phrase la dit. */
+  it('dit l’ancien et le nouveau prix au lecteur d’écran, et cache le doublon', () => {
+    mount(NEGOTIATED, 0, true);
+
+    expect(el().querySelector('.pricing .sr-only')?.textContent?.trim()).toBe(
+      'Ancien prix : 1,56 €, nouveau prix : 1,40 € HT / pièce',
+    );
+    expect(el().querySelector('.price-was')?.getAttribute('aria-hidden')).toBe('true');
+    expect(el().querySelector('.amount')?.getAttribute('aria-hidden')).toBe('true');
+  });
+
   it('sans tarif barré, ni rature ni pourcentage', () => {
     mount(TEST_ITEMS[0] as ShopItemView, 0, true);
 

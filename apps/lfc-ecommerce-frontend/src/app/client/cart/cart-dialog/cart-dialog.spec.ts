@@ -108,6 +108,9 @@ let invites: unknown[] = [];
 /** Le refus de passation que `ClientOrders` garde pour le panier — `''` = sans message sûr. */
 const refus = signal<string | null>(null);
 
+/** La commande déjà en vol que `ClientOrders` garde pour le panier (lot A5). */
+const enVol = signal<string | null>(null);
+
 /** Ce que l'écran a demandé aux portes, où il est allé, et s'il s'est fermé. */
 let ouvertes: string[] = [];
 let visitees: string[] = [];
@@ -167,6 +170,7 @@ function boot({
         provide: ClientOrders,
         useValue: {
           refusal: refus,
+          inFlight: enVol,
           place: (settlement: string | null = null): Promise<null> => {
             regle.push(settlement);
             // `null` : on observe CE QUI EST DEMANDÉ, pas la suite — une
@@ -208,6 +212,7 @@ function boot({
   invites = [];
   adresses = [];
   refus.set(null);
+  enVol.set(null);
   hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
   TestBed.inject(OrderContextStore).choice.set(service);
   const cart = TestBed.inject(ClientCart);
@@ -672,6 +677,18 @@ describe('le panier fait accepter les CGV', () => {
     expect(bouton(fixture)?.disabled).toBe(false);
   });
 
+  /**
+   * Hugo (lot A5, 2026-10-26) : la case est une rangée à part, juste sous
+   * « Vider le panier » — dans le corps, après le décompte, plus dans le pied.
+   */
+  it('pose la case sous le décompte, hors du pied', () => {
+    const fixture = boot({ auth: RECONNU, cgv: true });
+    const terms = caseCgv(fixture);
+
+    expect(terms?.closest('fold-panel-footer')).toBeNull();
+    expect(terms?.previousElementSibling?.tagName.toLowerCase()).toBe('app-cart-summary');
+  });
+
   /** RGAA 11.10/11.11 (lot A3) : la raison est À CÔTÉ du bouton, et le bouton la cite. */
   it('dit pourquoi Commander est grisé, et relie la phrase au bouton', () => {
     const fixture = boot({ auth: RECONNU, cgv: true });
@@ -760,6 +777,22 @@ describe('le panier fait accepter les CGV', () => {
     expect(el(fixture).querySelector('[data-place-refused]')?.textContent?.trim()).toBe(
       FR.cart.placeFailed,
     );
+  });
+
+  /**
+   * Régression (lot A5, 2026-10-26) : « commande déjà en vol » partait en
+   * toast, inerte derrière le panier modal. Elle se dit dans le panier, en
+   * information annoncée — pas en refus.
+   */
+  it('dit la commande déjà en vol dans le panier, annoncée, sans refus', () => {
+    const fixture = boot({ auth: RECONNU });
+    enVol.set('Votre commande part déjà.');
+    fixture.detectChanges();
+
+    const callout = el(fixture).querySelector('[data-place-in-flight]');
+    expect(callout?.textContent?.trim()).toBe('Votre commande part déjà.');
+    expect(callout?.getAttribute('role')).not.toBeNull();
+    expect(el(fixture).querySelector('[data-place-refused]')).toBeNull();
   });
 
   it('pas de case devant un panier vide', () => {

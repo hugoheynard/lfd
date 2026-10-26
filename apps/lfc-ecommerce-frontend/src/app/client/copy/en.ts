@@ -270,6 +270,7 @@ export const EN: ClientCopy = {
     htSuffix: 'excl. VAT',
     priceTtc: '{price} incl. VAT',
     ttcSuffix: 'incl. VAT',
+    priceStruck: 'Previous price: {was}, new price: {now}',
     proVisitNote: 'Trade prices excluding VAT — your negotiated terms once signed in.',
     proVisitSignIn: 'Sign in',
     proVisitShowTtc: 'Show prices incl. VAT',
@@ -369,6 +370,7 @@ export const EN: ClientCopy = {
     accountSoon:
       'Charging to account lands in the next batch — it is waiting on your payment term.',
     dropAria: 'Remove {name} from the basket',
+    quantityAria: 'Quantity of {name}',
     pay: 'Pay for my order · {total}',
     payHint: 'Paid online. You show your QR at the counter, nothing to settle there.',
     slotMissing: 'Choose a time slot to pay: tap “Change” and pick the time.',

@@ -14,7 +14,7 @@ import {
 import { firstValueFrom } from 'rxjs';
 
 import { AccountService } from '../../../../account/account.service';
-import { ClientCopyService } from '../../../copy/client-copy.service';
+import { ClientCopyService, fill } from '../../../copy/client-copy.service';
 import { dialogSide } from '../../../panel-side';
 import { canUploadKbis, kbisFiledLabel, kbisStateLabel } from '../kbis-section';
 
@@ -77,6 +77,11 @@ export class KbisPanel {
   readonly data = input.required<KbisPanelData>();
 
   protected readonly t = inject(ClientCopyService).t;
+
+  /** Le bouton ouvre un onglet (`window.open`) : son nom le dit (RGAA 13.2, lot A5). */
+  protected readonly openName = computed(() =>
+    fill(this.t().nav.newTab, { name: this.t().account.kbisOpen }),
+  );
   private readonly account = inject(AccountService);
   private readonly ref = inject(FoldPanelRef);
 

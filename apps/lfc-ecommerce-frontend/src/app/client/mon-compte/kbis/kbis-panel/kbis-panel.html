@@ -26,6 +26,7 @@
           intent="neutral"
           size="sm"
           type="button"
+          [attr.aria-label]="openName()"
           (click)="open()"
         >
           {{ t().account.kbisOpen }}

@@ -17,12 +17,13 @@
 }
 
 /* The BOX is the tap target, the mark inside is what you see. A six-pixel dot
-   is not a target; a 22px box is. */
+   is not a target. 24 px both ways is the WCAG 2.5.8 floor (lot A5,
+   2026-10-26) : the 16 × 22 box failed it at 320 px. */
 .slot {
   display: grid;
   place-items: center;
-  width: 16px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   padding: 0;
   border: 0;
   background: none;
@@ -72,10 +73,6 @@
    Every mark is a dash: the items read as segments of one track rather than as
    siblings. Nothing moves — only the fill changes — so this is the variant for
    steps, where a travelling length would suggest a position that is not one. */
-:host([data-variant='lines']) .slot {
-  width: 22px;
-}
-
 :host([data-variant='lines']) .mark {
   width: 16px;
 }

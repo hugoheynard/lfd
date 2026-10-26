@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1667 textes
+## Sommaire — 1669 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -19,7 +19,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Accueil — la carte d'événement](#espace-event) | `event` | 5 |
 | [Connexion et création de compte](#espace-signup) | `signup` | 24 |
 | [Commander — l'écran d'entrée de la commande](#espace-commande) | `commande` | 39 |
-| [Rayon / boutique](#espace-shop) | `shop` | 66 |
+| [Rayon / boutique](#espace-shop) | `shop` | 67 |
 | [Rayon — la fiche produit](#espace-product) | `product` | 19 |
 | [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 36 |
 | [Choix du lieu — la maison](#espace-housepicker) | `housePicker` | 8 |
@@ -30,7 +30,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Choix de l’heure — le sélecteur de créneau](#espace-slotpicker) | `slotPicker` | 20 |
 | [Choix de l’heure — l’étape du créneau](#espace-slotstep) | `slotStep` | 11 |
 | [Choix de l’heure — le rappel téléphonique](#espace-rappel) | `rappel` | 12 |
-| [Panier, connexion et saisie invité](#espace-cart) | `cart` | 71 |
+| [Panier, connexion et saisie invité](#espace-cart) | `cart` | 72 |
 | [Règlement](#espace-pay) | `pay` | 21 |
 | [Confirmation](#espace-done) | `done` | 28 |
 | [Confirmation — le QR de retrait](#espace-qr) | `qr` | 8 |
@@ -48,7 +48,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1667** |
+| **Total** | | **1669** |
 
 ## Le parcours de commande
 
@@ -327,7 +327,7 @@ Source : `fr.ts · en.ts · it.ts` · 39 textes.
 
 ### Rayon / boutique — `shop`
 
-Source : `fr.ts · en.ts · it.ts` · 66 textes.
+Source : `fr.ts · en.ts · it.ts` · 67 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -360,6 +360,7 @@ Source : `fr.ts · en.ts · it.ts` · 66 textes.
 | `shop.htSuffix` | HT | excl. VAT | IVA escl. |  |
 | `shop.priceTtc` | {price} TTC | {price} incl. VAT | {price} IVA incl. | `{price}` |
 | `shop.ttcSuffix` | TTC | incl. VAT | IVA incl. |  |
+| `shop.priceStruck` | Ancien prix : {was}, nouveau prix : {now} | Previous price: {was}, new price: {now} | Prezzo precedente: {was}, nuovo prezzo: {now} | `{was}` `{now}` |
 | `shop.proVisitNote` | Tarifs professionnels hors taxe — vos conditions négociées après connexion. | Trade prices excluding VAT — your negotiated terms once signed in. | Prezzi professionali IVA esclusa — le vostre condizioni negoziate dopo l’accesso. |  |
 | `shop.proVisitSignIn` | Je me connecte | Sign in | Accedo |  |
 | `shop.proVisitShowTtc` | Voir les prix TTC | Show prices incl. VAT | Vedi i prezzi IVA incl. |  |
@@ -672,7 +673,7 @@ Source : `fr.ts · en.ts · it.ts` · 12 textes.
 
 ### Panier, connexion et saisie invité — `cart`
 
-Source : `fr.ts · en.ts · it.ts` · 71 textes.
+Source : `fr.ts · en.ts · it.ts` · 72 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -710,6 +711,7 @@ Source : `fr.ts · en.ts · it.ts` · 71 textes.
 | `cart.payOnAccount` | Ajouter au compte | Charge to account | Addebita sul conto |  |
 | `cart.accountSoon` | Le règlement au compte arrive au prochain lot — il attend votre condition de règlement. | Charging to account lands in the next batch — it is waiting on your payment term. | L’addebito sul conto arriva nel prossimo lotto — attende la vostra condizione di pagamento. |  |
 | `cart.dropAria` | Retirer {name} du panier | Remove {name} from the basket | Rimuovi {name} dal carrello | `{name}` |
+| `cart.quantityAria` | Quantité de {name} | Quantity of {name} | Quantità di {name} | `{name}` |
 | `cart.pay` | Régler ma commande · {total} | Pay for my order · {total} | Pago il mio ordine · {total} | `{total}` |
 | `cart.payHint` | Paiement en ligne. Vous présentez votre QR au comptoir, rien à régler sur place. | Paid online. You show your QR at the counter, nothing to settle there. | Pagamento online. Mostri il QR al banco, non deve saldare nulla sul posto. |  |
 | `cart.slotMissing` | Choisissez un créneau pour régler : touchez « Modifier » et choisissez l’heure. | Choose a time slot to pay: tap “Change” and pick the time. | Scelga una fascia oraria per pagare: tocchi « Modifica » e scelga l’orario. |  |

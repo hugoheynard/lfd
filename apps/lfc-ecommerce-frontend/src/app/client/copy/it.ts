@@ -273,6 +273,7 @@ export const IT: ClientCopy = {
     htSuffix: 'IVA escl.',
     priceTtc: '{price} IVA incl.',
     ttcSuffix: 'IVA incl.',
+    priceStruck: 'Prezzo precedente: {was}, nuovo prezzo: {now}',
     proVisitNote:
       'Prezzi professionali IVA esclusa — le vostre condizioni negoziate dopo l’accesso.',
     proVisitSignIn: 'Accedo',
@@ -373,6 +374,7 @@ export const IT: ClientCopy = {
     accountSoon:
       'L’addebito sul conto arriva nel prossimo lotto — attende la vostra condizione di pagamento.',
     dropAria: 'Rimuovi {name} dal carrello',
+    quantityAria: 'Quantità di {name}',
     pay: 'Pago il mio ordine · {total}',
     payHint: 'Pagamento online. Mostri il QR al banco, non deve saldare nulla sul posto.',
     slotMissing: 'Scelga una fascia oraria per pagare: tocchi « Modifica » e scelga l’orario.',

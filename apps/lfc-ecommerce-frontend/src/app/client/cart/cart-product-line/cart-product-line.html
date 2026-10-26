@@ -1,11 +1,13 @@
 <span class="what">
   <!-- La marque `*` d'une ligne hors remise de retrait, renvoyée sous le décompte. -->
-  <span class="name"
-    >{{ name() }}
-    @if (excluded()) {
-      <span class="excluded" aria-hidden="true">*</span>
-    }
-  </span>
+  @if (excluded()) {
+    <span class="name"
+      ><span aria-hidden="true">{{ name() }} <span class="excluded">*</span></span
+      ><span class="sr-only">{{ excludedName() }}</span></span
+    >
+  } @else {
+    <span class="name">{{ name() }}</span>
+  }
   <span class="unit">{{ unit() }}</span>
   @if (madeToOrder(); as limit) {
     <span class="made-to-order" data-made-to-order>{{ limit }}</span>
@@ -17,7 +19,9 @@
 <!-- Le stepper EMPILÉ de fold : les deux gestes tiennent dans la largeur du
      champ, et la quantité se tape directement — douze croissants ne se règlent
      pas en douze appuis. -->
+<label class="sr-only" [for]="qty.inputId">{{ quantityLabel() }}</label>
 <fold-number-input
+  #qty
   class="qty"
   size="sm"
   align="center"

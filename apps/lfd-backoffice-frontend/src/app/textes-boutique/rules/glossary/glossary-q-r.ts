@@ -5,6 +5,7 @@ export const GLOSSARY_Q_R: Readonly<Record<string, string>> = {
   qrReady: 'QR prêt',
   qrSend: 'Envoyer le QR',
   quantity: 'Quantité',
+  quantityAria: 'Quantité d’une ligne du panier — lecteur d’écran',
   railPosition: 'Position de la section',
   rappelIntro: 'Rappel — introduction',
   rappelTitle: 'Rappel — titre',

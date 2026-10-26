@@ -101,6 +101,7 @@ export const GLOSSARY_P: Readonly<Record<string, string>> = {
   preferences: 'Préférences',
   pretaxNote: 'Mention HT — note',
   priceHt: 'Prix HT',
+  priceStruck: 'Prix barré — ancien et nouveau, lecteur d’écran',
   priceTtc: 'Prix TTC',
   pro: 'Professionnel',
   proAccountAnother: 'Ouvrir un autre compte pro',

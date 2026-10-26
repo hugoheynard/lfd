@@ -121,6 +121,23 @@ describe('ProductTile', () => {
     const el = fixture.nativeElement as HTMLElement;
 
     expect(el.querySelector('.price-was')).toBeNull();
+    expect(el.querySelector('.price .sr-only')).toBeNull();
+  });
+
+  /** RGAA 3.1 (lot A5) : la rature ne s'entend pas, une phrase la dit. */
+  it('dit l’ancien et le nouveau prix au lecteur d’écran, et cache le doublon', () => {
+    fixture.componentRef.setInput('product', {
+      ...TEST_ITEMS[0],
+      catalogPriceMillicents: 155_560,
+    });
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(el.querySelector('.price .sr-only')?.textContent?.trim()).toBe(
+      'Ancien prix : 1,56 €, nouveau prix : 1,48 € TTC',
+    );
+    expect(el.querySelector('.price-was')?.getAttribute('aria-hidden')).toBe('true');
+    expect(el.querySelector('.price-ht')?.getAttribute('aria-hidden')).toBe('true');
   });
 
   /**

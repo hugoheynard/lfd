@@ -780,7 +780,8 @@ describe('CartSummary — une remise de retrait sur une partie du panier', () =>
     const lines = [...el.querySelectorAll('.lines > li')];
     expect(lines).toHaveLength(2);
     expect(lines.map((line) => line.querySelector('.excluded') !== null)).toEqual([false, true]);
-    expect(lines[1]?.getAttribute('aria-label')).toBe(
+    // Le `*` ne se lit pas : l'exclusion se dit dans le texte masqué du nom (lot A5).
+    expect(lines[1]?.querySelector('.name .sr-only')?.textContent?.trim()).toBe(
       'Pain au chocolat, non concerné par la remise retrait',
     );
     expect(el.querySelectorAll('.excluded-note')).toHaveLength(1);

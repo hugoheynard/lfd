@@ -28,6 +28,13 @@
   pointer-events: none;
 }
 
+// L'attribut `hidden` du calque doit gagner sur les `display` ci-dessous : sans
+// cette règle, le champ fermé restait dans le rendu (vide, invisible à l'œil),
+// et axe le comptait comme une cible tactile trop petite (lot A5, 2026-10-26).
+.preview-copy-layer [hidden] {
+  display: none;
+}
+
 .preview-copy-outline {
   position: absolute;
   box-sizing: border-box;

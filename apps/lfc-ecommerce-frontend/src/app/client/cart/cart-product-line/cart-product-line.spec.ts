@@ -126,13 +126,19 @@ describe('CartProductLine', () => {
     expect(el.querySelector('app-quantity-rail')).toBeNull();
   });
 
-  /** C'est la LIGNE qu'on nomme : le produit se lit avant la quantité. */
-  it('porte le nom du produit comme nom accessible', () => {
+  /**
+   * Régression (lot A5, 2026-10-26) : `role="group"` sur le `<li>` effaçait
+   * l'item de liste (axe `list`), et le champ de quantité n'avait aucun nom
+   * (axe `label`). Le `<li>` reste un item, et le champ porte le sien.
+   */
+  it('reste un item de liste et nomme son champ de quantité', () => {
     render(1);
     const el = fixture.nativeElement as HTMLElement;
+    const input = field();
+    const label = el.querySelector<HTMLLabelElement>(`label[for="${input?.id ?? ''}"]`);
 
-    expect(el.getAttribute('role')).toBe('group');
-    expect(el.getAttribute('aria-label')).toBe('Croissant au beurre');
+    expect(el.getAttribute('role')).toBeNull();
+    expect(label?.textContent?.trim()).toBe('Quantité de Croissant au beurre');
   });
 
   /**

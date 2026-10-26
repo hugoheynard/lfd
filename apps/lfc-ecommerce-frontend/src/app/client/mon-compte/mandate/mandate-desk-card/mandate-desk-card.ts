@@ -17,7 +17,7 @@ import {
 
 import { ClientCompany } from '../../../client-company.service';
 import { ClientMandate } from '../../../client-mandate.service';
-import { ClientCopyService } from '../../../copy/client-copy.service';
+import { ClientCopyService, fill } from '../../../copy/client-copy.service';
 import { MandateBlockers } from '../mandate-blockers/mandate-blockers';
 import { downloadMandate, openMandate } from '../mandate-document';
 import { MandateOptionsPanel } from '../mandate-options-panel/mandate-options-panel';
@@ -59,6 +59,11 @@ import {
 })
 export class MandateDeskCard {
   protected readonly t = inject(ClientCopyService).t;
+
+  /** Le bouton ouvre un onglet (`window.open`) : son nom le dit (RGAA 13.2, lot A5). */
+  protected readonly viewName = computed(() =>
+    fill(this.t().nav.newTab, { name: this.t().account.mandateView }),
+  );
   protected readonly mandates = inject(ClientMandate);
   private readonly client = inject(ClientCompany);
   private readonly panels = inject(FoldPanelHostService);

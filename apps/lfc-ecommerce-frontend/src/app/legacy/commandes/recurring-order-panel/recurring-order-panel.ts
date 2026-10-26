@@ -15,6 +15,7 @@ import type {
 } from '@lfd/contracts';
 import {
   FoldButtonComponent,
+  FoldCalloutComponent,
   FoldListboxComponent,
   type FoldPanelDefaults,
   FoldPanelFooterComponent,
@@ -26,6 +27,7 @@ import {
 } from 'fold-ng';
 
 import { RECURRENCE_OPTIONS, todayIso } from '@lfd/b2b-ui/subscription';
+import { httpErrorMessage } from '@lfd/endpoints';
 import { NotifyService } from '../../../notify.service';
 import { PickupAddressesService } from '../../entreprises/pickup-addresses.service';
 import { SubscriptionsService } from '../subscriptions.service';
@@ -46,6 +48,7 @@ type AddressField = 'ligne1' | 'ligne2' | 'codePostal' | 'ville';
     FoldPanelHeaderComponent,
     FoldPanelFooterComponent,
     FoldButtonComponent,
+    FoldCalloutComponent,
     FoldListboxComponent,
     FoldViewToggleComponent,
   ],
@@ -83,6 +86,11 @@ export class RecurringOrderPanel {
     ville: '',
   });
   protected readonly submitting = signal(false);
+  /**
+   * Le refus du serveur, dit DANS le panneau (lot A5, 2026-10-26) : c'était un
+   * toast, inerte derrière ce panneau modal, donc jamais annoncé.
+   */
+  protected readonly refusal = signal<string | null>(null);
 
   protected readonly isCourier = computed(() => this.method() === 'delivery');
 
@@ -154,6 +162,7 @@ export class RecurringOrderPanel {
       return;
     }
     this.submitting.set(true);
+    this.refusal.set(null);
     const order = this.data();
     const courier = this.isCourier();
     const a = this.address();
@@ -186,7 +195,7 @@ export class RecurringOrderPanel {
       },
       error: (error: unknown) => {
         this.submitting.set(false);
-        this.notify.error(error);
+        this.refusal.set(httpErrorMessage(error));
       },
     });
   }

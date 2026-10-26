@@ -19,7 +19,6 @@ import { switchMap } from 'rxjs/operators';
 
 import { AUTH_CONFIG } from '../auth/auth.config';
 import { AuthFacade } from '../auth/auth.facade';
-import { NotifyService } from '../notify.service';
 import { ClientCart } from './cart/client-cart.service';
 import { SalesTermsConsent } from './cart/sales-terms-consent.service';
 import { LOYALTY_REFUSAL_PREFIX, VoucherChoice } from './cart/voucher-choice.service';
@@ -265,7 +264,6 @@ export class ClientOrders {
   private readonly order = inject(OrderContextStore);
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthFacade);
-  private readonly notify = inject(NotifyService);
   private readonly workspace = inject(ClientWorkspace);
   private readonly voucher = inject(VoucherChoice);
   /** La case des CGV du panier : sa version part avec la commande, son refus la renouvelle. */
@@ -282,6 +280,15 @@ export class ClientOrders {
    */
   private readonly lastRefusal = signal<string | null>(null);
   readonly refusal = this.lastRefusal.asReadonly();
+
+  /**
+   * **La commande déjà en vol** (le serveur refuse un second envoi de la même
+   * clé), dite DANS le panier pour la même raison que le refus : c'était un
+   * toast, inerte derrière le dialogue modal (lot A5). Ce n'est pas une panne :
+   * le panier le dit en information. Remise à `null` à chaque tentative.
+   */
+  private readonly lastInFlight = signal<string | null>(null);
+  readonly inFlight = this.lastInFlight.asReadonly();
 
   /** Les commandes gardées pour l'espace COURANT — vide tant qu'il n'est pas connu. */
   private readonly placed = signal<readonly PlacedOrder[]>([]);
@@ -351,6 +358,7 @@ export class ClientOrders {
    */
   async place(settlement: OrderSettlement | null = null): Promise<PlacedOrder | null> {
     this.lastRefusal.set(null);
+    this.lastInFlight.set(null);
     const service = this.order.choice();
     const lines = this.cart.lines();
     // L'espace est CAPTURÉ ici : c'est celui dans lequel le client a composé et
@@ -440,6 +448,7 @@ export class ClientOrders {
    */
   async placeAsGuest(buyer: GuestBuyerPayload): Promise<PlacedOrder | null> {
     this.lastRefusal.set(null);
+    this.lastInFlight.set(null);
     const service = this.order.choice();
     const lines = this.cart.lines();
     if (service === null || lines.length === 0) {
@@ -474,7 +483,7 @@ export class ClientOrders {
       // Même lecture que le chemin connecté : une commande déjà en vol n'est pas
       // une panne, et l'annoncer comme telle inquiéterait au pire moment.
       if (httpErrorCode(error) === IN_FLIGHT) {
-        this.notify.info(httpErrorMessage(error, ''));
+        this.lastInFlight.set(httpErrorMessage(error, ''));
         return null;
       }
       if (this.salesTermsOutdated(error)) {
@@ -692,7 +701,7 @@ export class ClientOrders {
       // commande est précisément en train de partir serait le pire moment pour
       // l'inquiéter. Le CODE se branche, le message s'affiche.
       if (httpErrorCode(error) === IN_FLIGHT) {
-        this.notify.info(httpErrorMessage(error, ''));
+        this.lastInFlight.set(httpErrorMessage(error, ''));
         return null;
       }
       if (this.salesTermsOutdated(error)) {

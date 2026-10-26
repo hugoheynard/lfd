@@ -1653,6 +1653,13 @@
           "variables": []
         },
         {
+          "key": "shop.priceStruck",
+          "fr": "Ancien prix : {was}, nouveau prix : {now}",
+          "en": "Previous price: {was}, new price: {now}",
+          "it": "Prezzo precedente: {was}, nuovo prezzo: {now}",
+          "variables": ["was", "now"]
+        },
+        {
           "key": "shop.proVisitNote",
           "fr": "Tarifs professionnels hors taxe — vos conditions négociées après connexion.",
           "en": "Trade prices excluding VAT — your negotiated terms once signed in.",
@@ -3470,6 +3477,13 @@
           "fr": "Retirer {name} du panier",
           "en": "Remove {name} from the basket",
           "it": "Rimuovi {name} dal carrello",
+          "variables": ["name"]
+        },
+        {
+          "key": "cart.quantityAria",
+          "fr": "Quantité de {name}",
+          "en": "Quantity of {name}",
+          "it": "Quantità di {name}",
           "variables": ["name"]
         },
         {

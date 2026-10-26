@@ -78,6 +78,15 @@ describe('KbisPanel', () => {
     expect(labels).toEqual([FR.account.kbisOpen, FR.account.kbisDownload]);
   });
 
+  /** RGAA 13.2 (lot A5) : « Ouvrir » part dans un onglet, et son nom le dit. */
+  it('nomme le nouvel onglet dans le bouton qui ouvre le fichier', () => {
+    fixture = boot(FILED);
+
+    expect(el().querySelector('button[foldButton]')?.getAttribute('aria-label')).toBe(
+      `${FR.account.kbisOpen} (nouvel onglet)`,
+    );
+  });
+
   it('ne propose le dépôt qu’à qui gère la société', () => {
     fixture = boot({ ...FILED, canManage: false });
     expect(el().querySelector('fold-file-dropzone')).toBeNull();

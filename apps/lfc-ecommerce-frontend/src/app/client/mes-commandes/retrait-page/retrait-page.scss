@@ -34,13 +34,6 @@
 
 .lead,
 .none,
-.waiting {
-  margin: 0;
-  font-size: var(--fold-text-base);
-  line-height: var(--lfc-leading-body);
-  color: var(--fold-color-text-secondary);
-}
-
 /* Le carré vit sur du BLANC, quel que soit le thème : un lecteur de code lit un
    contraste, et un fond sombre derrière des modules sombres ne se scanne pas. */
 .code {

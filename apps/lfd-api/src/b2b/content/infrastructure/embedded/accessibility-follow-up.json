@@ -162,6 +162,66 @@
     },
     {
       "theme": 3,
+      "date": "2026-10-26",
+      "status": "done",
+      "label": {
+        "fr": "Prix barré : l’ancien et le nouveau prix sont lus",
+        "en": "Struck-through price: the previous and new prices are read out",
+        "it": "Prezzo barrato: il prezzo precedente e quello nuovo vengono letti"
+      }
+    },
+    {
+      "theme": 3,
+      "date": "2026-10-26",
+      "status": "done",
+      "label": {
+        "fr": "Contraste du bouton « Nouvelle commande »",
+        "en": "Contrast of the “New order” button",
+        "it": "Contrasto del pulsante «Nuovo ordine»"
+      }
+    },
+    {
+      "theme": 11,
+      "date": "2026-10-26",
+      "status": "done",
+      "label": {
+        "fr": "Panier : chaque quantité a un nom",
+        "en": "Basket: every quantity field has a name",
+        "it": "Carrello: ogni campo quantità ha un nome"
+      }
+    },
+    {
+      "theme": 13,
+      "date": "2026-10-26",
+      "status": "done",
+      "label": {
+        "fr": "Taille des cibles tactiles de l’en-tête et du rail du compte",
+        "en": "Touch target size in the header and the account rail",
+        "it": "Dimensione dei bersagli tattili nell’intestazione e nella barra dell’account"
+      }
+    },
+    {
+      "theme": 13,
+      "date": "2026-10-26",
+      "status": "done",
+      "label": {
+        "fr": "Les boutons qui ouvrent un onglet le disent",
+        "en": "Buttons that open a new tab say so",
+        "it": "I pulsanti che aprono una nuova scheda lo dicono"
+      }
+    },
+    {
+      "theme": 7,
+      "date": "2026-10-26",
+      "status": "done",
+      "label": {
+        "fr": "Messages affichés dans les dialogues plutôt qu’en bulle",
+        "en": "Messages shown inside dialogs rather than as pop-ups",
+        "it": "Messaggi mostrati nelle finestre di dialogo anziché in fumetti"
+      }
+    },
+    {
+      "theme": 3,
       "date": null,
       "status": "planned",
       "label": {

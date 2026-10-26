@@ -127,8 +127,11 @@
   border-radius: var(--fold-radius-lg);
   /* Le MÊME bouton que dans le bandeau — c'est la même action, elle doit se
      reconnaître d'un écran à l'autre, et les deux sont sur le registre sombre. */
-  background: var(--lfc-color-accent-action);
-  color: var(--lfc-paper-0);
+  /* RGAA 3.2 (lot A5, 2026-10-26) : le blanc sur le beurre d'action ne
+     tenait que 2,99:1 (titre) et 2,61:1 (sous-titre). Le beurre INTENSE est le
+     rôle du thème fait pour porter du texte clair. */
+  background: var(--lfc-color-accent-deep);
+  color: var(--lfc-color-on-accent-deep);
   text-decoration: none;
 }
 
@@ -159,7 +162,7 @@
 
 .new-order-sub {
   font-size: var(--fold-text-md);
-  color: color-mix(in srgb, var(--lfc-paper-0) 86%, transparent);
+  color: var(--lfc-color-on-accent-deep-muted);
 }
 
 .new-order-caret {

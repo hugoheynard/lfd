@@ -12,8 +12,11 @@
   min-height: 62px;
   padding: var(--fold-space-md) var(--fold-space-lg);
   border-radius: var(--fold-radius-lg);
-  background: var(--lfc-color-accent-action);
-  color: var(--lfc-paper-0);
+  /* RGAA 3.2 (lot A5, 2026-10-26) : le blanc sur le beurre d'action ne
+     tenait que 2,99:1 (titre) et 2,61:1 (sous-titre). Le beurre INTENSE est le
+     rôle du thème fait pour porter du texte clair. */
+  background: var(--lfc-color-accent-deep);
+  color: var(--lfc-color-on-accent-deep);
   text-decoration: none;
 }
 
@@ -51,7 +54,7 @@
      ⚠️ Ne PAS revenir à `accent-text` : c'est l'un des rôles que le sous-bloc
      `chrome` inverse, et le bandeau est dans le chrome — il y vaut un beurre
      pâle, illisible sur du beurre. */
-  color: color-mix(in srgb, var(--lfc-paper-0) 86%, transparent);
+  color: var(--lfc-color-on-accent-deep-muted);
 }
 
 /* 76 px : il faut ce poids pour tenir face à un titre de 38 px sur le registre

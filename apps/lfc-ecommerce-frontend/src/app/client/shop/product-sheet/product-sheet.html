@@ -47,10 +47,17 @@
 
       <div class="pricing">
         <p class="price">
-          <span class="amount">{{ price() }}</span>
-          <span class="per">{{ basisSuffix() }} {{ t().product.perPiece }}</span>
+          <!-- La rature ne s'entend pas (RGAA 3.1, lot A5) : une phrase lue
+               remplace les trois morceaux, cachés aux lecteurs d'écran. -->
+          @if (striked()) {
+            <span class="sr-only">{{ struckPhrase() }}</span>
+          }
+          <span class="amount" [attr.aria-hidden]="striked() ? 'true' : null">{{ price() }}</span>
+          <span class="per" [attr.aria-hidden]="striked() ? 'true' : null"
+            >{{ basisSuffix() }} {{ t().product.perPiece }}</span
+          >
           @if (striked(); as catalogue) {
-            <s class="price-was">{{ catalogue }}</s>
+            <s class="price-was" aria-hidden="true">{{ catalogue }}</s>
           }
         </p>
         @if (discountLabel(); as discount) {

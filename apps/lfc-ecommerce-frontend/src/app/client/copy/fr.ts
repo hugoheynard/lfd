@@ -268,6 +268,7 @@ export const FR: ClientCopy = {
     // au lieu d'en faire partie — d'où un suffixe, comme son voisin.
     priceTtc: '{price} TTC',
     ttcSuffix: 'TTC',
+    priceStruck: 'Ancien prix : {was}, nouveau prix : {now}',
     proVisitNote: 'Tarifs professionnels hors taxe — vos conditions négociées après connexion.',
     proVisitSignIn: 'Je me connecte',
     proVisitShowTtc: 'Voir les prix TTC',
@@ -366,6 +367,7 @@ export const FR: ClientCopy = {
     accountSoon:
       'Le règlement au compte arrive au prochain lot — il attend votre condition de règlement.',
     dropAria: 'Retirer {name} du panier',
+    quantityAria: 'Quantité de {name}',
     pay: 'Régler ma commande · {total}',
     payHint: 'Paiement en ligne. Vous présentez votre QR au comptoir, rien à régler sur place.',
     slotMissing: 'Choisissez un créneau pour régler : touchez « Modifier » et choisissez l’heure.',

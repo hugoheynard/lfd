@@ -24,7 +24,7 @@
     }
     @if (printable()) {
       <span class="icons">
-        <fold-button-icon icon="eye" [tooltip]="t().account.mandateView" (clicked)="view()" />
+        <fold-button-icon icon="eye" [tooltip]="viewName()" (clicked)="view()" />
         <fold-button-icon
           icon="download"
           [tooltip]="t().account.mandateDownload"

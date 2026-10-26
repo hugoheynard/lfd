@@ -142,8 +142,9 @@ describe('MandateDeskCard', () => {
     expect(text(el, '.state')).toBe(FR.account.mandateAwaiting);
     expect(text(el, '.reference')).toBe('RUM · LFD-MDT-0001');
     const icons = Array.from(el.querySelectorAll('fold-button-icon'));
+    // « Voir » ouvre un onglet, et son nom le dit (RGAA 13.2, lot A5).
     expect(icons.map((icon) => icon.querySelector('button')?.getAttribute('aria-label'))).toEqual([
-      FR.account.mandateView,
+      `${FR.account.mandateView} (nouvel onglet)`,
       FR.account.mandateDownload,
     ]);
 
