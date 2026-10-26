@@ -4,6 +4,7 @@ import { HandoverProof, type HandoverProofState } from "../handover-proof.js";
 function state(overrides: Partial<HandoverProofState> = {}): HandoverProofState {
   return {
     orderId: "ord_1",
+    rank: 1,
     receiverName: "Mme Durand",
     photoKey: "handover/proofs/p_1/photo",
     signatureKey: null,

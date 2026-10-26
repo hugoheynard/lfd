@@ -14,10 +14,7 @@ import { OrderHandoverRepository } from "../../domain/ports/order-handover.repos
 import type { HandoverVia } from "../../domain/services/handover.js";
 import { StaffAuthorDirectory } from "../../../staff/directory/domain/staff-author-directory.js";
 import { authorsOf, toHandoverView } from "../queries/get-handover.handler.js";
-import {
-  FIRST_SHIPMENT_RANK,
-  QualityHoldsReader,
-} from "../../../production/channels/handover/index.js";
+import { QualityHoldsReader } from "../../../production/channels/handover/index.js";
 import { isHeldForQuality } from "./quality-hold.js";
 import { TransferStatusReader } from "../../../delivery/channels/handover/index.js";
 import { ensureArrivedAtSite } from "./transfer-arrival.js";
@@ -216,8 +213,8 @@ const CANCELLED_JUST_NOW =
 function factOf(handover: OrderHandover, reannouncedAt: Date | null): DurableFact {
   return new OrderHandedOverEvent(
     handover.orderId,
-    // L'attestation n'a pas encore de rang (L4) : elle est celle de la commande.
-    FIRST_SHIPMENT_RANK,
+    // Le rang de SA ligne (L3d) — jamais un rang supposé.
+    handover.rank,
     handover.reference,
     handover.handedOverAt,
     handover.handedOverBy,

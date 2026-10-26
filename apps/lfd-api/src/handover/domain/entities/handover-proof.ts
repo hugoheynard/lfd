@@ -3,6 +3,8 @@ import { HandoverRefusedError } from "../errors/handover-errors.js";
 /** Ce qu'une remise à la porte joint à son attestation. */
 export interface HandoverProofState {
   readonly orderId: string;
+  /** Le rang de l'envoi remis — celui de l'attestation qu'elles prouvent (L3d). */
+  readonly rank: number;
   /** Le nom tapé de qui a réceptionné ; `null` : personne (le dépôt, B2). */
   readonly receiverName: string | null;
   readonly photoKey: string;

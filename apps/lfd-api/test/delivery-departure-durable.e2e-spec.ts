@@ -116,7 +116,7 @@ async function sweep(): Promise<void> {
 }
 
 function departureOf(orderId: string) {
-  return ctx.prisma.orderDeparture.findUnique({ where: { orderId } });
+  return ctx.prisma.orderDeparture.findUnique({ where: { orderId_rank: { orderId, rank: 1 } } });
 }
 
 function enRoute(): readonly SentMail[] {
@@ -151,6 +151,7 @@ describe("le départ au poste de chargement est un fait durable (DD1)", () => {
     const round = await ctx.prisma.deliveryRound.findUniqueOrThrow({ where: { id: roundId } });
     expect(await departureOf(orderId)).toEqual({
       orderId,
+      rank: 1,
       departedAt: round.departedAt,
       returnedAt: null,
     });
@@ -231,6 +232,7 @@ describe("reprise : l'abonné du retrait échoue, le balayage le relaie", () => 
 });
 
 describe("la ligne order_departure, monotone par instant (B1)", () => {
+  const O_1 = [ShipmentRef.firstOf("o_1")];
   const earlier = new Date(daysAgo(2));
   const later = new Date(daysAgo(1));
   const latest = new Date(daysAgo(0));
@@ -238,9 +240,9 @@ describe("la ligne order_departure, monotone par instant (B1)", () => {
   it("départ → retour → départ rejoué : la commande reste revenue", async () => {
     const departures = ctx.app.get(OrderDepartureRepository);
 
-    await departures.recordDeparted(["o_1"], earlier);
-    await departures.recordReturned(["o_1"], later);
-    await departures.recordDeparted(["o_1"], earlier);
+    await departures.recordDeparted(O_1, earlier);
+    await departures.recordReturned(O_1, later);
+    await departures.recordDeparted(O_1, earlier);
 
     expect(await departureOf("o_1")).toMatchObject({ departedAt: earlier, returnedAt: later });
   });
@@ -248,9 +250,9 @@ describe("la ligne order_departure, monotone par instant (B1)", () => {
   it("un départ plus récent que le retour (un second passage) la redit partie", async () => {
     const departures = ctx.app.get(OrderDepartureRepository);
 
-    await departures.recordDeparted(["o_1"], earlier);
-    await departures.recordReturned(["o_1"], later);
-    await departures.recordDeparted(["o_1"], latest);
+    await departures.recordDeparted(O_1, earlier);
+    await departures.recordReturned(O_1, later);
+    await departures.recordDeparted(O_1, latest);
 
     expect(await departureOf("o_1")).toMatchObject({ departedAt: latest, returnedAt: null });
   });
@@ -258,8 +260,8 @@ describe("la ligne order_departure, monotone par instant (B1)", () => {
   it("un retour plus ancien que le dernier départ ne la ramène pas", async () => {
     const departures = ctx.app.get(OrderDepartureRepository);
 
-    await departures.recordDeparted(["o_1"], latest);
-    await departures.recordReturned(["o_1"], later);
+    await departures.recordDeparted(O_1, latest);
+    await departures.recordReturned(O_1, later);
 
     expect(await departureOf("o_1")).toMatchObject({ departedAt: latest, returnedAt: null });
   });
@@ -267,10 +269,10 @@ describe("la ligne order_departure, monotone par instant (B1)", () => {
   it("rejouée, chaque écriture est sans effet de plus", async () => {
     const departures = ctx.app.get(OrderDepartureRepository);
 
-    await departures.recordDeparted(["o_1"], earlier);
-    await departures.recordDeparted(["o_1"], earlier);
-    await departures.recordReturned(["o_1"], later);
-    await departures.recordReturned(["o_1"], later);
+    await departures.recordDeparted(O_1, earlier);
+    await departures.recordDeparted(O_1, earlier);
+    await departures.recordReturned(O_1, later);
+    await departures.recordReturned(O_1, later);
 
     expect(await departureOf("o_1")).toMatchObject({ departedAt: earlier, returnedAt: later });
   });

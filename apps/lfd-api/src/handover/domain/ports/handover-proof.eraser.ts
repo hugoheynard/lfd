@@ -18,8 +18,9 @@ export abstract class HandoverProofEraser {
   abstract recordedBefore(cutoff: Date): Promise<readonly HandoverProof[]>;
 
   /**
-   * Efface la ligne, dans la transaction ambiante. `false` : elle n'existait
+   * Efface la ligne de CET envoi `(commande, rang)` — jamais les pièces d'un
+   * autre envoi de la même commande —, dans la transaction ambiante. `false` : elle n'existait
    * plus — un autre effacement est passé, et il a écrit son fait.
    */
-  abstract erase(orderId: string): Promise<boolean>;
+  abstract erase(orderId: string, rank: number): Promise<boolean>;
 }

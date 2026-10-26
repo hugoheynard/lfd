@@ -6,6 +6,7 @@ import {
   type OrderHandoverHistoryFact,
 } from "../channels/commerce/order-handover-history.reader.js";
 import { handoverViaOf } from "./handover-via.mapper.js";
+import { firstShipmentsOf } from "./first-shipment.key.js";
 
 /**
  * **Ce que le retrait dit au dossier de facturation** (`order_handover`,
@@ -27,11 +28,11 @@ export class PrismaOrderHandoverHistoryReader extends OrderHandoverHistoryReader
     const ids = [...orderIds];
     const [handovers, proofs] = await Promise.all([
       this.prisma.orderHandover.findMany({
-        where: { orderId: { in: ids } },
+        where: firstShipmentsOf(ids),
         select: { orderId: true, handedOverAt: true, handedOverVia: true },
       }),
       this.prisma.orderHandoverProof.findMany({
-        where: { orderId: { in: ids } },
+        where: firstShipmentsOf(ids),
         select: { orderId: true },
       }),
     ]);

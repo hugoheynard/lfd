@@ -412,3 +412,32 @@ describe("HandoverAttestation", () => {
     });
   });
 });
+
+describe("HandoverAttestation — le rang de la ligne (plan E7 reliquat, L3d)", () => {
+  it("une attestation gravée au comptoir émet le rang 1 : clé et charge d'aujourd'hui", async () => {
+    const { service, events } = attestationOf(null, true);
+
+    await service.attest(subject(), "staff-1", "scan");
+
+    expect(events.published).toEqual([factOf({ at: AT, by: "staff-1", via: "scan" })]);
+    expect(events.published[0]?.key).toBe("handover.handed_over:ord_1");
+  });
+
+  it("réannoncée, une attestation de rang 2 émet SON rang — jamais un rang supposé", async () => {
+    const remainder = OrderHandover.rehydrate(
+      "ord_1",
+      "ORD-ABCD-1234-2",
+      AT,
+      "staff-0",
+      "manual",
+      2,
+    );
+    const { service, events } = attestationOf(null, true);
+
+    await events.uow.run(() => service.reannounce(remainder));
+
+    const [fact] = events.published;
+    expect(fact?.payload).toMatchObject({ orderId: "ord_1", rank: 2 });
+    expect(fact?.key).toBe(`handover.handed_over:ord_1:r2:reannounced:${AT.toISOString()}`);
+  });
+});

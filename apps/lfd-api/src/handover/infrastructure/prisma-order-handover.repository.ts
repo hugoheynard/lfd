@@ -4,6 +4,7 @@ import { PrismaService } from "../../platform/database/prisma.service.js";
 import { OrderHandover } from "../domain/entities/order-handover.js";
 import { OrderHandoverRepository } from "../domain/ports/order-handover.repository.js";
 import type { HandoverVia } from "../domain/services/handover.js";
+import { firstShipmentKey } from "./first-shipment.key.js";
 import { handoverViaOf } from "./handover-via.mapper.js";
 
 /**
@@ -24,7 +25,7 @@ export class PrismaOrderHandoverRepository extends OrderHandoverRepository {
   }
 
   async findByOrderId(orderId: string): Promise<OrderHandover | null> {
-    const row = await this.prisma.orderHandover.findUnique({ where: { orderId } });
+    const row = await this.prisma.orderHandover.findUnique({ where: firstShipmentKey(orderId) });
     return row === null ? null : toDomain(row);
   }
 
@@ -45,6 +46,7 @@ export class PrismaOrderHandoverRepository extends OrderHandoverRepository {
       await this.prisma.orderHandover.create({
         data: {
           orderId: handover.orderId,
+          rank: handover.rank,
           reference: handover.reference,
           handedOverAt: handover.handedOverAt,
           handedOverBy: handover.handedOverBy,
@@ -64,6 +66,7 @@ export class PrismaOrderHandoverRepository extends OrderHandoverRepository {
 /** Une ligne du schéma `production`, telle que Prisma la rend. */
 interface HandoverRow {
   readonly orderId: string;
+  readonly rank: number;
   readonly reference: string;
   readonly handedOverAt: Date;
   readonly handedOverBy: string;
@@ -82,6 +85,7 @@ function toDomain(row: HandoverRow): OrderHandover {
     row.handedOverAt,
     row.handedOverBy,
     via,
+    row.rank,
   );
 }
 

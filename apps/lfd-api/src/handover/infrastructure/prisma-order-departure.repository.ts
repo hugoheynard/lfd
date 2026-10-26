@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../platform/database/prisma.service.js";
+import type { ShipmentRef } from "../../production/channels/handover/index.js";
 import { OrderDepartureRepository } from "../domain/ports/order-departure.repository.js";
 
 /**
@@ -26,19 +27,18 @@ export class PrismaOrderDepartureRepository extends OrderDepartureRepository {
    * est nul ou `<= at` ET `returned_at` nul ou `< at`. Un départ rejoué APRÈS un retour
    * plus récent que lui ne remet donc pas la commande « partie ».
    */
-  async recordDeparted(orderIds: readonly string[], at: Date): Promise<void> {
-    if (orderIds.length === 0) {
+  async recordDeparted(shipments: readonly ShipmentRef[], at: Date): Promise<void> {
+    if (shipments.length === 0) {
       return;
     }
-    const ids = [...orderIds];
     await this.prisma.$transaction([
       this.prisma.orderDeparture.createMany({
-        data: ids.map((orderId) => ({ orderId, departedAt: at })),
+        data: shipments.map(({ orderId, rank }) => ({ orderId, rank, departedAt: at })),
         skipDuplicates: true,
       }),
       this.prisma.orderDeparture.updateMany({
         where: {
-          orderId: { in: ids },
+          OR: shipments.map(({ orderId, rank }) => ({ orderId, rank })),
           AND: [
             { OR: [{ departedAt: null }, { departedAt: { lte: at } }] },
             { OR: [{ returnedAt: null }, { returnedAt: { lt: at } }] },
@@ -55,19 +55,23 @@ export class PrismaOrderDepartureRepository extends OrderDepartureRepository {
    * seulement si `departed_at` est nul ou `<= at` ET `returned_at` nul ou
    * `< at`. Une annonce tardive ne ramène pas une commande déjà repartie.
    */
-  async recordReturned(orderIds: readonly string[], at: Date): Promise<void> {
-    if (orderIds.length === 0) {
+  async recordReturned(shipments: readonly ShipmentRef[], at: Date): Promise<void> {
+    if (shipments.length === 0) {
       return;
     }
-    const ids = [...orderIds];
     await this.prisma.$transaction([
       this.prisma.orderDeparture.createMany({
-        data: ids.map((orderId) => ({ orderId, departedAt: null, returnedAt: at })),
+        data: shipments.map(({ orderId, rank }) => ({
+          orderId,
+          rank,
+          departedAt: null,
+          returnedAt: at,
+        })),
         skipDuplicates: true,
       }),
       this.prisma.orderDeparture.updateMany({
         where: {
-          orderId: { in: ids },
+          OR: shipments.map(({ orderId, rank }) => ({ orderId, rank })),
           AND: [
             { OR: [{ departedAt: null }, { departedAt: { lte: at } }] },
             { OR: [{ returnedAt: null }, { returnedAt: { lt: at } }] },

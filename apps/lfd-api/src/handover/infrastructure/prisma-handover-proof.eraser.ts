@@ -24,8 +24,10 @@ export class PrismaHandoverProofEraser extends HandoverProofEraser {
     return rows.map((row) => HandoverProof.rehydrate(row));
   }
 
-  async erase(orderId: string): Promise<boolean> {
-    const { count } = await this.prisma.orderHandoverProof.deleteMany({ where: { orderId } });
+  async erase(orderId: string, rank: number): Promise<boolean> {
+    const { count } = await this.prisma.orderHandoverProof.deleteMany({
+      where: { orderId, rank },
+    });
     return count > 0;
   }
 }

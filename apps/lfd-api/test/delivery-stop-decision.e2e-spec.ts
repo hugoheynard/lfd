@@ -132,7 +132,9 @@ describe("« À décider » — le commercial décide (B3)", () => {
     });
     expect((await deposit(paul.agent, roundId, stopId)).status).toBe(204);
     await ctx.drain();
-    const handover = await ctx.prisma.orderHandover.findUniqueOrThrow({ where: { orderId } });
+    const handover = await ctx.prisma.orderHandover.findUniqueOrThrow({
+      where: { orderId_rank: { orderId, rank: 1 } },
+    });
     expect(handover.handedOverVia).toBe("deposit");
     expect(await orderStatus(ctx, orderId)).toBe("fulfilled");
     expect((await pending(lea.agent)).decisions).toEqual([]);
@@ -154,7 +156,9 @@ describe("« À décider » — le commercial décide (B3)", () => {
     expect(stop.closedAt).not.toBeNull();
     expect(await ctx.prisma.orderHandover.count({ where: { orderId } })).toBe(0);
     expect(await orderStatus(ctx, orderId)).not.toBe("fulfilled");
-    const departure = await ctx.prisma.orderDeparture.findUniqueOrThrow({ where: { orderId } });
+    const departure = await ctx.prisma.orderDeparture.findUniqueOrThrow({
+      where: { orderId_rank: { orderId, rank: 1 } },
+    });
     expect(departure.returnedAt).not.toBeNull();
     expect(stopOf(await myRound(paul.agent, roundId))).toMatchObject({
       decision: { state: "bring_back" },

@@ -44,7 +44,7 @@ export class HandoverProofErasure {
     }
     const subject = await this.subjects.byOrderId(proof.state.orderId);
     await this.uow.run(async () => {
-      if (await this.eraser.erase(proof.state.orderId)) {
+      if (await this.eraser.erase(proof.state.orderId, proof.state.rank)) {
         await this.events.publishTraced(
           new HandoverProofErasedEvent(proof, subject?.orderNumber ?? null, cause),
         );

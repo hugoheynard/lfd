@@ -47,6 +47,7 @@ function scene() {
   const add = (orderId: string, ageDays: number, signed = false): HandoverProof => {
     const proof = HandoverProof.rehydrate({
       orderId,
+      rank: 1,
       receiverName: signed ? "Mme Durand" : null,
       photoKey: `handover/proofs/${orderId}/photo`,
       signatureKey: signed ? `handover/proofs/${orderId}/signature` : null,

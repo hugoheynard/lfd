@@ -200,16 +200,24 @@ model ProductionOrder {
 ///
 /// ## Ce que les deux uniques rendent impossible
 ///
-/// Une seconde remise ne s'écrit pas. Ce n'est pas une condition dans un `WHERE`
-/// qu'on peut oublier de recopier : c'est la base qui refuse, par le chemin du
-/// scan (`orderId`) comme par celui de la saisie (`reference`).
+/// Une seconde remise du même envoi ne s'écrit pas. Ce n'est pas une condition
+/// dans un `WHERE` qu'on peut oublier de recopier : c'est la base qui refuse,
+/// par le chemin du scan (`(orderId, rank)` depuis L3d) comme par celui de la
+/// saisie (`reference`).
 model OrderHandover {
   id String @id @default(cuid())
 
   /// L'identifiant de la commande côté COMMERCE. Opaque : on le garde pour
   /// pouvoir en reparler, jamais pour aller lire à côté.
-  orderId   String @unique @map("order_id")
+  orderId   String @map("order_id")
+  /// Le rang de l'envoi retiré — 1 = la commande elle-même, défaut de toute
+  /// ligne d'avant le reliquat (plan E7 reliquat, choix 5, lot L3d). Une
+  /// remise par ENVOI : `@@unique([orderId, rank])` remplace l'unicité par
+  /// commande. CHECK `rank >= 1` en base.
+  rank      Int    @default(1)
   /// Le numéro lisible, `ORD-…` — celui qu'on saisit quand le code manque.
+  /// Unique sur toutes les lignes : un reliquat prendra `ORD-…-2` (choix 13,
+  /// lot L4), le rang 1 garde la valeur d'aujourd'hui.
   reference String @unique
 
   handedOverAt  DateTime @map("handed_over_at")
@@ -221,6 +229,7 @@ model OrderHandover {
   /// « Déposé avec preuve », B2, vérifié le 2026-10-07).
   handedOverVia String   @map("handed_over_via")
 
+  @@unique([orderId, rank])
   @@map("order_handover")
   @@schema("production")
 }
@@ -236,11 +245,14 @@ model OrderHandover {
 /// lue par le fournil : un verdict qualité sur une commande partie est
 /// refusé — le produit n'est plus là.
 ///
-/// Une ligne par commande ; un second départ (une commande rapportée qui
+/// Une ligne par envoi (commande, rang) ; un second départ (une commande rapportée qui
 /// repart un autre jour) réécrit l'instant et efface le retour.
 model OrderDeparture {
   /// L'identifiant de la commande côté COMMERCE, opaque.
-  orderId    String    @id @map("order_id")
+  orderId    String    @map("order_id")
+  /// Le rang de l'envoi parti — 1 = la commande (plan E7 reliquat, choix 5,
+  /// lot L3d). La garde est tenue par envoi : clé `(order_id, rank)`.
+  rank       Int       @default(1)
   /// Nul : un retour est connu, son départ pas encore livré (la boîte
   /// d'envoi ne garantit aucun ordre — `plan-depart-durable.md`, B1).
   departedAt DateTime? @map("departed_at")
@@ -250,6 +262,7 @@ model OrderDeparture {
   /// écriture plus ancienne que l'état ne fait rien (DD1).
   returnedAt DateTime? @map("returned_at")
 
+  @@id([orderId, rank])
   @@map("order_departure")
   @@schema("production")
 }
@@ -258,8 +271,8 @@ model OrderDeparture {
 /// B1, § 9, L6-C9) : la photo (toujours), la signature au doigt (quand
 /// l'arrêt l'exigeait au départ), le nom tapé de qui a réceptionné.
 ///
-/// Elles appartiennent au RETRAIT, qui atteste la remise : une ligne par
-/// commande, écrite dans la même transaction que `order_handover`. Les images
+/// Elles appartiennent au RETRAIT, qui atteste la remise : une ligne par envoi (L3d) —
+/// la commande au rang 1 —, écrite dans la même transaction que `order_handover`. Les images
 /// sont au bucket des pièces (`ProductionDocumentStore`), sous ces clés.
 ///
 /// Une remise au comptoir n'en a pas : la présence d'une ligne est ce qui dit
@@ -267,7 +280,11 @@ model OrderDeparture {
 ///
 /// `order_id` est OPAQUE : aucune clé étrangère, comme `order_handover`.
 model OrderHandoverProof {
-  orderId       String   @id @map("order_id")
+  orderId       String   @map("order_id")
+  /// Le rang de l'envoi remis à la porte — 1 = la commande (plan E7
+  /// reliquat, choix 12, lot L3d) : une preuve par envoi, clé
+  /// `(order_id, rank)`, comme l'attestation qu'elle accompagne.
+  rank          Int      @default(1)
   /// Nul pour une remise sans personne (le dépôt, B2) ; 2 à 80 sinon.
   receiverName  String?  @map("receiver_name")
   photoKey      String   @map("photo_key")
@@ -279,6 +296,7 @@ model OrderHandoverProof {
   recordedBy    String   @map("recorded_by")
   recordedAt    DateTime @map("recorded_at")
 
+  @@id([orderId, rank])
   @@map("order_handover_proof")
   @@schema("production")
 }

@@ -9,7 +9,10 @@ import type { OrderHandover } from "../entities/order-handover.js";
  * plus rien.
  */
 export abstract class OrderHandoverRepository {
-  /** L'attestation de cette commande, ou `null` si elle reste à faire. */
+  /**
+   * L'attestation de cette commande — son envoi de rang 1 (L3d ; le retrait
+   * par envoi est L4) —, ou `null` si elle reste à faire.
+   */
   abstract findByOrderId(orderId: string): Promise<OrderHandover | null>;
 
   /**

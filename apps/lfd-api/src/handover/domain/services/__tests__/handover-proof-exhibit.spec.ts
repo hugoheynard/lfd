@@ -12,6 +12,7 @@ function attested(via: HandoverVia): OrderHandover {
 function proof(receiverName: string | null, signatureKey: string | null): HandoverProof {
   return HandoverProof.rehydrate({
     orderId: "ord_1",
+    rank: 1,
     receiverName,
     photoKey: "handover/proofs/x/photo",
     signatureKey,

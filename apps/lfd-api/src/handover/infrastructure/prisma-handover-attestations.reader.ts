@@ -6,6 +6,7 @@ import {
   type AttestedHandover,
 } from "../domain/ports/handover-attestations.reader.js";
 import { handoverViaOf } from "./handover-via.mapper.js";
+import { firstShipmentsOf } from "./first-shipment.key.js";
 
 /** Les attestations d'un lot de commandes, en une requête. */
 @Injectable()
@@ -23,7 +24,7 @@ export class PrismaHandoverAttestationsReader extends HandoverAttestationsReader
       return new Map();
     }
     const rows = await this.prisma.orderHandover.findMany({
-      where: { orderId: { in: [...orderIds] } },
+      where: firstShipmentsOf(orderIds),
       select: { orderId: true, handedOverAt: true, handedOverBy: true, handedOverVia: true },
     });
     return new Map(

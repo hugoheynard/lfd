@@ -15,6 +15,7 @@ import {
   type HandoverProofPiece,
   handoverProofImageContentType,
 } from "../domain/value-objects/handover-proof-image.js";
+import { firstShipmentKey } from "./first-shipment.key.js";
 import { handoverViaOf } from "./handover-via.mapper.js";
 
 /**
@@ -39,9 +40,9 @@ export class PrismaHandoverProofReader extends HandoverProofReader {
 
   async ofOrder(orderId: string): Promise<HandoverProofExhibit | null> {
     const [handover, proof, departure] = await Promise.all([
-      this.prisma.orderHandover.findUnique({ where: { orderId } }),
-      this.prisma.orderHandoverProof.findUnique({ where: { orderId } }),
-      this.prisma.orderDeparture.findUnique({ where: { orderId } }),
+      this.prisma.orderHandover.findUnique({ where: firstShipmentKey(orderId) }),
+      this.prisma.orderHandoverProof.findUnique({ where: firstShipmentKey(orderId) }),
+      this.prisma.orderDeparture.findUnique({ where: firstShipmentKey(orderId) }),
     ]);
     if (handover === null) {
       return null;
@@ -53,6 +54,7 @@ export class PrismaHandoverProofReader extends HandoverProofReader {
         handover.handedOverAt,
         handover.handedOverBy,
         handoverViaOf(handover.handedOverVia),
+        handover.rank,
       ),
       proof: proof === null ? null : HandoverProof.rehydrate(proof),
       departedWithRound: departure !== null && departure.returnedAt === null,
@@ -61,7 +63,7 @@ export class PrismaHandoverProofReader extends HandoverProofReader {
 
   async image(orderId: string, piece: HandoverProofPiece): Promise<StoredDocument | null> {
     const proof = await this.prisma.orderHandoverProof.findUnique({
-      where: { orderId },
+      where: firstShipmentKey(orderId),
       select: { photoKey: true, signatureKey: true },
     });
     const key = proof === null ? null : piece === "photo" ? proof.photoKey : proof.signatureKey;

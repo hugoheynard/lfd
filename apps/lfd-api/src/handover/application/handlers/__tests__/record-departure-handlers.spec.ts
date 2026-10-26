@@ -27,15 +27,22 @@ const BROUGHT_BACK = new Date(90_000);
 class RecordingDepartures extends OrderDepartureRepository {
   readonly departed: { readonly orderIds: readonly string[]; readonly at: Date }[] = [];
   readonly returned: { readonly orderIds: readonly string[]; readonly at: Date }[] = [];
+  /** Les rangs écrits, toutes écritures confondues. */
+  readonly ranks: number[] = [];
 
-  recordDeparted(orderIds: readonly string[], at: Date): Promise<void> {
-    this.departed.push({ orderIds, at });
+  recordDeparted(shipments: readonly ShipmentRef[], at: Date): Promise<void> {
+    this.departed.push({ orderIds: this.remember(shipments), at });
     return Promise.resolve();
   }
 
-  recordReturned(orderIds: readonly string[], at: Date): Promise<void> {
-    this.returned.push({ orderIds, at });
+  recordReturned(shipments: readonly ShipmentRef[], at: Date): Promise<void> {
+    this.returned.push({ orderIds: this.remember(shipments), at });
     return Promise.resolve();
+  }
+
+  private remember(shipments: readonly ShipmentRef[]): readonly string[] {
+    this.ranks.push(...shipments.map((shipment) => shipment.rank));
+    return shipments.map((shipment) => shipment.orderId);
   }
 }
 
@@ -94,6 +101,25 @@ describe("RecordRoundDeparted — la garde passe au livreur", () => {
 
     expect(handedOver.asked).toEqual([["o_1", "o_2"]]);
     expect(departures.departed).toEqual([{ orderIds: ["o_2"], at: DEPARTED }]);
+  });
+
+  it("L3d : la garde s'écrit au rang 1, une fois par commande, quel que soit le rang du fait", async () => {
+    // Le retrait par envoi est L4 : d'ici là, un envoi de rang 2 parti avec
+    // le rang 1 ne fait qu'une ligne, celle de la commande.
+    const departures = new RecordingDepartures();
+    const subject = new RecordRoundDeparted(new FixedHandedOver(), departures);
+
+    await subject.handle(
+      delivered(
+        new DeliveryRoundDepartedFact("r_1", "2030-03-12", DEPARTED, [
+          ShipmentRef.firstOf("o_1"),
+          ShipmentRef.of("o_1", 2),
+        ]),
+      ),
+    );
+
+    expect(departures.departed).toEqual([{ orderIds: ["o_1"], at: DEPARTED }]);
+    expect(departures.ranks).toEqual([1]);
   });
 
   it("rejoué, il redemande la même écriture au même instant — l'adaptateur la rend sans effet", async () => {

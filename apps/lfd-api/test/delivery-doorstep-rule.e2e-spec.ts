@@ -113,7 +113,9 @@ describe("la décision réglée d'avance à la porte (B3 bis)", () => {
       await ctx.prisma.deliveryStopDecision.findUniqueOrThrow({ where: { stopId } }),
     ).toMatchObject({ outcome: "bring_back", source: "setting", decidedBy: null });
     expect(await orderStatus(ctx, orderId)).not.toBe("fulfilled");
-    const departure = await ctx.prisma.orderDeparture.findUniqueOrThrow({ where: { orderId } });
+    const departure = await ctx.prisma.orderDeparture.findUniqueOrThrow({
+      where: { orderId_rank: { orderId, rank: 1 } },
+    });
     expect(departure.returnedAt).not.toBeNull();
     expect(await noticesOfDecision()).toBe(0);
     expect(stopOf(await myRound(paul.agent, roundId))).toMatchObject({

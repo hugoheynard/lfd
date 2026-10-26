@@ -51,6 +51,7 @@ async function proofTakenAt(orderId: string, recordedAt: string, signed: boolean
     : null;
   const proof = HandoverProof.attach({
     orderId,
+    rank: 1,
     receiverName: "Mme Durand",
     photoKey,
     signatureKey,

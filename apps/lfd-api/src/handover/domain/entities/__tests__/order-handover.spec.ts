@@ -118,3 +118,14 @@ describe("OrderHandover.attest", () => {
     expect(rehydrated.handedOverAt).toBe(AT);
   });
 });
+
+describe("OrderHandover — le rang de l'envoi (plan E7 reliquat, L3d)", () => {
+  it("attest grave le rang 1 : la commande elle-même, tant que le retrait par envoi n'existe pas", () => {
+    expect(OrderHandover.attest(subject(), FREE, AT, "staff-1", "scan").rank).toBe(1);
+  });
+
+  it("rehydrate relit le rang de la ligne, et le rang 1 quand on ne le dit pas", () => {
+    expect(OrderHandover.rehydrate("ord_1", "ORD-1", AT, "staff-1", "scan").rank).toBe(1);
+    expect(OrderHandover.rehydrate("ord_1", "ORD-1-2", AT, "staff-1", "scan", 2).rank).toBe(2);
+  });
+});

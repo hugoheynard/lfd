@@ -5,6 +5,7 @@ import {
   OrderCustodyReader,
   type OrderOutOfHand,
 } from "../../production/channels/handover/index.js";
+import { firstShipmentsOf } from "./first-shipment.key.js";
 
 /**
  * **Ce que le retrait répond au fournil** : lesquelles de ces commandes ne sont
@@ -28,11 +29,11 @@ export class PrismaOrderCustodyReader extends OrderCustodyReader {
     const [departed, handedOver] = await Promise.all([
       // Une commande « rapportée » (B3) est revenue : elle n'est plus partie.
       this.prisma.orderDeparture.findMany({
-        where: { orderId: { in: ids }, returnedAt: null },
+        where: { ...firstShipmentsOf(ids), returnedAt: null },
         select: { orderId: true },
       }),
       this.prisma.orderHandover.findMany({
-        where: { orderId: { in: ids } },
+        where: firstShipmentsOf(ids),
         select: { orderId: true },
       }),
     ]);

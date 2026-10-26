@@ -230,6 +230,7 @@ describe("HandoverDoorstepAttestor — la remise à la porte (B1)", () => {
     expect(handovers.rows.get("o_1")?.via).toBe("manual");
     expect(proofs.rows.get("o_1")?.state).toEqual({
       orderId: "o_1",
+      rank: 1,
       receiverName: "Mme Durand",
       photoKey: STAGED.photoKey,
       signatureKey: null,
@@ -334,6 +335,7 @@ describe("HandoverDoorstepAttestor — la remise à la porte (B1)", () => {
       "o_1",
       HandoverProof.rehydrate({
         orderId: "o_1",
+        rank: 1,
         receiverName: "Mme D",
         photoKey: STAGED.photoKey,
         signatureKey: null,

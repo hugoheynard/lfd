@@ -104,7 +104,7 @@ export class HandoverDoorstepAttestor extends DoorstepHandoverAttestor {
         "Cette commande n'existe plus côté commerce : ne la remettez pas, et appelez le dépôt.",
       );
     }
-    await this.attestation.attestQuietly(
+    const handover = await this.attestation.attestQuietly(
       subject,
       request.by,
       request.mode === "deposited" ? DEPOSIT_VIA : HANDED_VIA,
@@ -112,6 +112,8 @@ export class HandoverDoorstepAttestor extends DoorstepHandoverAttestor {
     await this.proofs.record(
       HandoverProof.attach({
         orderId: request.orderId,
+        // Les pièces prouvent CETTE attestation : son rang, jamais un rang supposé.
+        rank: handover.rank,
         receiverName: request.receiverName,
         photoKey: request.proofs.photoKey,
         signatureKey: request.proofs.signatureKey,

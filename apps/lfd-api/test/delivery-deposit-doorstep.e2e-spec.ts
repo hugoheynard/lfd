@@ -75,9 +75,13 @@ describe("« Déposé avec preuve » (B2)", () => {
     expect((await deposit(paul.agent, roundId, stopId)).status).toBe(204);
     await ctx.drain();
 
-    const handover = await ctx.prisma.orderHandover.findUniqueOrThrow({ where: { orderId } });
+    const handover = await ctx.prisma.orderHandover.findUniqueOrThrow({
+      where: { orderId_rank: { orderId, rank: 1 } },
+    });
     expect(handover).toMatchObject({ handedOverBy: paul.id, handedOverVia: "deposit" });
-    const proof = await ctx.prisma.orderHandoverProof.findUniqueOrThrow({ where: { orderId } });
+    const proof = await ctx.prisma.orderHandoverProof.findUniqueOrThrow({
+      where: { orderId_rank: { orderId, rank: 1 } },
+    });
     expect(proof).toMatchObject({ receiverName: null, signatureKey: null });
     expect(await ctx.app.get(ProductionDocumentStore).readIfPresent(proof.photoKey)).toEqual(JPEG);
     const stop = await ctx.prisma.deliveryRoundStop.findUniqueOrThrow({ where: { id: stopId } });
@@ -96,7 +100,9 @@ describe("« Déposé avec preuve » (B2)", () => {
     expect((await deposit(paul.agent, roundId, stopId)).status).toBe(204);
     await ctx.drain();
 
-    const handover = await ctx.prisma.orderHandover.findUniqueOrThrow({ where: { orderId } });
+    const handover = await ctx.prisma.orderHandover.findUniqueOrThrow({
+      where: { orderId_rank: { orderId, rank: 1 } },
+    });
     expect(handover.handedOverVia).toBe("deposit");
   });
 
@@ -130,12 +136,16 @@ describe("« Déposé avec preuve » (B2)", () => {
     await frozeAtDeparture(stopId, { depositAllowed: true });
     expect((await deposit(paul.agent, roundId, stopId)).status).toBe(204);
     await ctx.drain();
-    const first = await ctx.prisma.orderHandover.findUniqueOrThrow({ where: { orderId } });
+    const first = await ctx.prisma.orderHandover.findUniqueOrThrow({
+      where: { orderId_rank: { orderId, rank: 1 } },
+    });
 
     expect((await deposit(paul.agent, roundId, stopId)).status).toBe(204);
     await ctx.drain();
 
-    const again = await ctx.prisma.orderHandover.findUniqueOrThrow({ where: { orderId } });
+    const again = await ctx.prisma.orderHandover.findUniqueOrThrow({
+      where: { orderId_rank: { orderId, rank: 1 } },
+    });
     expect(again.handedOverAt).toEqual(first.handedOverAt);
     expect(await depositFacts(roundId)).toBe(1);
   });

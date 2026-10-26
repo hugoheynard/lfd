@@ -1,5 +1,7 @@
+import type { ShipmentRef } from "../../../production/channels/handover/index.js";
+
 /**
- * **La garde passée au livreur**, par commande
+ * **La garde passée au livreur**, par envoi `(commande, rang)` depuis L3d
  * (`documentation/livraisons/livreur/a-la-porte.md`, § 10 ter, BQ).
  *
  * Une écriture nue, et c'est voulu : c'est la PROJECTION de faits déjà
@@ -16,7 +18,7 @@ export abstract class OrderDepartureRepository {
    * `at`. Un départ plus récent qu'un retour l'efface : la commande est de
    * nouveau partie ; un départ plus ancien que l'état ne fait rien.
    */
-  abstract recordDeparted(orderIds: readonly string[], at: Date): Promise<void>;
+  abstract recordDeparted(shipments: readonly ShipmentRef[], at: Date): Promise<void>;
 
   /**
    * La commande « rapportée » est revenue (B3, LB-Q2) — seulement si son
@@ -25,5 +27,5 @@ export abstract class OrderDepartureRepository {
    * départ s'écrit quand même (la boîte d'envoi ne garantit aucun ordre) : le
    * départ, plus ancien, ne l'effacera pas.
    */
-  abstract recordReturned(orderIds: readonly string[], at: Date): Promise<void>;
+  abstract recordReturned(shipments: readonly ShipmentRef[], at: Date): Promise<void>;
 }

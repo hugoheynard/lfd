@@ -10,7 +10,10 @@ import type { HandoverProof } from "../entities/handover-proof.js";
  * `HandoverProofEraser`, que le geste qui grave n'injecte pas.
  */
 export abstract class HandoverProofRepository {
-  /** Les pièces de cette commande, ou `null` : elle n'a pas été remise à la porte. */
+  /**
+   * Les pièces de cette commande — son envoi de rang 1 (L3d) —, ou `null` :
+   * elle n'a pas été remise à la porte.
+   */
   abstract findByOrderId(orderId: string): Promise<HandoverProof | null>;
 
   /** Grave les pièces, dans la transaction ambiante — celle de l'attestation. */

@@ -127,9 +127,13 @@ describe("« Remis au client » (B1)", () => {
     expect((await handOver(paul.agent, roundId, stopId)).status).toBe(204);
     await ctx.drain();
 
-    const handover = await ctx.prisma.orderHandover.findUniqueOrThrow({ where: { orderId } });
+    const handover = await ctx.prisma.orderHandover.findUniqueOrThrow({
+      where: { orderId_rank: { orderId, rank: 1 } },
+    });
     expect(handover).toMatchObject({ handedOverBy: paul.id, handedOverVia: "manual" });
-    const proof = await ctx.prisma.orderHandoverProof.findUniqueOrThrow({ where: { orderId } });
+    const proof = await ctx.prisma.orderHandoverProof.findUniqueOrThrow({
+      where: { orderId_rank: { orderId, rank: 1 } },
+    });
     expect(proof).toMatchObject({ receiverName: "Mme Durand", signatureKey: null });
     const store = ctx.app.get(ProductionDocumentStore);
     expect(await store.readIfPresent(proof.photoKey)).toEqual(JPEG);
@@ -170,12 +174,16 @@ describe("« Remis au client » (B1)", () => {
     const { roundId, orderId, stopId } = await departedStop(paul);
     expect((await handOver(paul.agent, roundId, stopId)).status).toBe(204);
     await ctx.drain();
-    const first = await ctx.prisma.orderHandover.findUniqueOrThrow({ where: { orderId } });
+    const first = await ctx.prisma.orderHandover.findUniqueOrThrow({
+      where: { orderId_rank: { orderId, rank: 1 } },
+    });
 
     expect((await handOver(paul.agent, roundId, stopId)).status).toBe(204);
     await ctx.drain();
 
-    const again = await ctx.prisma.orderHandover.findUniqueOrThrow({ where: { orderId } });
+    const again = await ctx.prisma.orderHandover.findUniqueOrThrow({
+      where: { orderId_rank: { orderId, rank: 1 } },
+    });
     expect(again.handedOverAt).toEqual(first.handedOverAt);
     expect(
       await ctx.prisma.activityEvent.count({
@@ -225,7 +233,9 @@ describe("« Remis au client » (B1)", () => {
       signedSlip: true,
     });
     expect(complete.status).toBe(204);
-    const proof = await ctx.prisma.orderHandoverProof.findUniqueOrThrow({ where: { orderId } });
+    const proof = await ctx.prisma.orderHandoverProof.findUniqueOrThrow({
+      where: { orderId_rank: { orderId, rank: 1 } },
+    });
     expect(proof.signatureKey).not.toBeNull();
     expect(proof.signedSlipKey).not.toBeNull();
     const store = ctx.app.get(ProductionDocumentStore);
@@ -243,9 +253,13 @@ describe("« Remis au client » (B1)", () => {
     expect((await handOver(paul.agent, roundId, stopId, { name: "" })).status).toBe(204);
     await ctx.drain();
 
-    const handover = await ctx.prisma.orderHandover.findUniqueOrThrow({ where: { orderId } });
+    const handover = await ctx.prisma.orderHandover.findUniqueOrThrow({
+      where: { orderId_rank: { orderId, rank: 1 } },
+    });
     expect(handover.handedOverVia).toBe("manual");
-    const proof = await ctx.prisma.orderHandoverProof.findUniqueOrThrow({ where: { orderId } });
+    const proof = await ctx.prisma.orderHandoverProof.findUniqueOrThrow({
+      where: { orderId_rank: { orderId, rank: 1 } },
+    });
     expect(proof.receiverName).toBeNull();
   });
 

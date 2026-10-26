@@ -1,3 +1,4 @@
+import { FIRST_SHIPMENT_RANK } from "../../../production/channels/handover/index.js";
 import { HandoverRefusedError } from "../errors/handover-errors.js";
 import type { HandoverSubject } from "../../channels/commerce/handover-subject.reader.js";
 import { handoverBlocker, type HandoverVia } from "../services/handover.js";
@@ -36,6 +37,11 @@ export interface HandoverStanding {
 export class OrderHandover {
   private constructor(
     readonly orderId: string,
+    /**
+     * Le rang de l'envoi retiré — 1 = la commande (plan E7 reliquat, choix 5,
+     * lot L3d). `attest` grave encore le rang 1 : le retrait par envoi est L4.
+     */
+    readonly rank: number,
     readonly reference: string,
     readonly handedOverAt: Date,
     readonly handedOverBy: string,
@@ -75,7 +81,14 @@ export class OrderHandover {
       // une attestation anonyme en ayant simplement oublié cette garde-là.
       throw new HandoverRefusedError("Un retrait sans auteur n'est pas une attestation.");
     }
-    return new OrderHandover(subject.orderId, subject.orderNumber, at, by, via);
+    return new OrderHandover(
+      subject.orderId,
+      FIRST_SHIPMENT_RANK,
+      subject.orderNumber,
+      at,
+      by,
+      via,
+    );
   }
 
   /**
@@ -92,7 +105,8 @@ export class OrderHandover {
     handedOverAt: Date,
     handedOverBy: string,
     via: HandoverVia,
+    rank: number = FIRST_SHIPMENT_RANK,
   ): OrderHandover {
-    return new OrderHandover(orderId, reference, handedOverAt, handedOverBy, via);
+    return new OrderHandover(orderId, rank, reference, handedOverAt, handedOverBy, via);
   }
 }

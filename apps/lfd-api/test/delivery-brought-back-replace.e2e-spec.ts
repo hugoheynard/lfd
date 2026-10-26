@@ -145,7 +145,9 @@ describe("Une commande rapportée repart (RL1)", () => {
     expect(mine.stops[0]).toMatchObject({ reference: order.orderNumber, bins: 1 });
     expect(mine.stops[0]?.address?.ligne1).toMatch(/rue des Alpes/u);
     expect(mine.stops[0]?.gps).not.toBeNull();
-    const departure = await ctx.prisma.orderDeparture.findUniqueOrThrow({ where: { orderId } });
+    const departure = await ctx.prisma.orderDeparture.findUniqueOrThrow({
+      where: { orderId_rank: { orderId, rank: 1 } },
+    });
     expect(departure.returnedAt).toBeNull();
     expect(departure.departedAt?.getTime()).toBeGreaterThan(new Date(broughtBackAt ?? 0).getTime());
 
