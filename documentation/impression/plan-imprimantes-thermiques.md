@@ -15,6 +15,13 @@
 > réseau **attend** qu'on lui envoie un travail (§2). « Sans ordinateur,
 > connectée à la socket » ne tient donc plus tel quel : un relais sur le
 > réseau du site, ou l'impression depuis le poste. À trancher avant IM1.
+>
+> ✅ **Tranché le même jour par Hugo : l'impression depuis le poste.** Une
+> tablette ou un PC du site, pilote Brother installé, imprime le PDF de
+> l'étiquette que le serveur rend déjà. Ni Durable Object, ni route
+> publique, ni relais : les lots IM0 à IM2 ci-dessous ne sont plus à bâtir.
+> Reste à caler le format du PDF sur le rouleau choisi (la TD-2350 est une
+> imprimante de 2 pouces ; l'étiquette actuelle est en A6).
 
 ## 1. Ce qui existe (relu le 2026-10-04)
 
