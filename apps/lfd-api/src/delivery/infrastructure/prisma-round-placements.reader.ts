@@ -44,7 +44,7 @@ export class PrismaRoundPlacementsReader extends RoundPlacementsReader {
 
   async placementsOf(day: string, orderIds: readonly string[]): Promise<RoundPlacements> {
     const [roundCount, stops] = await Promise.all([
-      this.prisma.deliveryRound.count({ where: { serviceDay: day } }),
+      this.prisma.deliveryRound.count({ where: { serviceDay: day, removedAt: null } }),
       orderIds.length === 0
         ? Promise.resolve([])
         : this.prisma.deliveryRoundStop.findMany({

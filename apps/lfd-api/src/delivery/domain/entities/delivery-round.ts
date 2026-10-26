@@ -13,7 +13,7 @@ import type { DriverAccess } from "../value-objects/driver-access.js";
 import type { PlannedTiming } from "../value-objects/planned-timing.js";
 import { isCalendarDay } from "../value-objects/service-day.js";
 import type { DeliveryRoundIdentity } from "./delivery-round-base.js";
-import { DeliveryRoundOnTheRoad } from "./delivery-round-on-the-road.js";
+import { DeliveryRoundRemoval } from "./delivery-round-removal.js";
 import {
   type DeliveryRoundState,
   type DeliveryStopState,
@@ -56,6 +56,9 @@ export { orderIdOf, orderIdsOf, shipmentsOfStops } from "./delivery-round-state.
  * - **I10** — l'horaire prévu (décision Hugo 2026-10-06) ne survit à aucun
  *   changement de ses arrêts : affecter, déplacer, retirer, réordonner
  *   l'effacent. Seul `planTiming`, à l'application d'une proposition, le pose.
+ * - **I11** — une tournée supprimée (décision de Hugo, 2026-10-26) ne reprend
+ *   aucun geste ; elle ne se supprime qu'au dépôt, sans bac chargé, et pas
+ *   sur une journée passée (`removeRound`).
  *
  * **I3** (une commande dans au plus une tournée vivante, tous jours
  * confondus) concerne toutes les tournées : c'est la base qui la tient, par un
@@ -67,10 +70,11 @@ export { orderIdOf, orderIdsOf, shipmentsOfStops } from "./delivery-round-state.
  *
  * L'état, les lectures et les gardes partagées vivent dans
  * `DeliveryRoundBase` ; partir, clore un arrêt et rentrer dans
- * `DeliveryRoundOnTheRoad`. Les trois font UN agrégat : seule cette classe se
+ * `DeliveryRoundOnTheRoad` ; se supprimer (2026-10-26) dans
+ * `DeliveryRoundRemoval`. Les quatre font UN agrégat : seule cette classe se
  * construit, et les fabriques sont ici.
  */
-export class DeliveryRound extends DeliveryRoundOnTheRoad {
+export class DeliveryRound extends DeliveryRoundRemoval {
   private constructor(
     state: DeliveryRoundIdentity,
     loadedVersion: number | null,
@@ -146,6 +150,7 @@ export class DeliveryRound extends DeliveryRoundOnTheRoad {
     );
     round.currentReturn = state.returned ?? null;
     round.currentPlannedTiming = state.plannedTiming ?? null;
+    round.currentRemovedAt = state.removedAt ?? null;
     return round;
   }
 

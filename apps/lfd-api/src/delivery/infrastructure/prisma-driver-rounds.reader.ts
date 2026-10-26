@@ -48,7 +48,8 @@ export class PrismaDriverRoundsReader extends DriverRoundsReader {
 
   async roundsOf(staffUserId: string, day: string): Promise<readonly DriverRoundSummaryRow[]> {
     const rows = await this.prisma.deliveryRound.findMany({
-      where: { ...driverWall(staffUserId), serviceDay: day },
+      // Une tournée supprimée (2026-10-26) n'est plus la sienne.
+      where: { ...driverWall(staffUserId), serviceDay: day, removedAt: null },
       orderBy: [...ROUND_ORDER],
       select: {
         id: true,
@@ -69,7 +70,7 @@ export class PrismaDriverRoundsReader extends DriverRoundsReader {
 
   async roundOf(staffUserId: string, roundId: string): Promise<DriverRoundRow | null> {
     const row = await this.prisma.deliveryRound.findFirst({
-      where: { ...driverWall(staffUserId), id: roundId },
+      where: { ...driverWall(staffUserId), id: roundId, removedAt: null },
       select: {
         id: true,
         serviceDay: true,

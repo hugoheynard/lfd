@@ -65,6 +65,7 @@ export async function writeRound(
             driverStaffId: snapshot.driverStaffId,
             ...returnColumns(snapshot.returned ?? null),
             ...plannedColumns(snapshot.plannedTiming ?? null),
+            removedAt: snapshot.removedAt ?? null,
             createdAt: snapshot.createdAt,
             updatedAt: snapshot.updatedAt,
           },
@@ -80,6 +81,7 @@ export async function writeRound(
       driverStaffId: snapshot.driverStaffId,
       ...returnColumns(snapshot.returned ?? null),
       ...plannedColumns(snapshot.plannedTiming ?? null),
+      removedAt: snapshot.removedAt ?? null,
       updatedAt: snapshot.updatedAt,
     },
   });

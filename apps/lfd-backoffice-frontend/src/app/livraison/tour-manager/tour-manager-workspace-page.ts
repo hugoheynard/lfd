@@ -95,6 +95,7 @@ export class TourManagerWorkspacePage {
   private readonly pdf = inject(RoundPdf);
   protected readonly pdfFailed = this.pdf.failed;
   protected readonly blockedPdfUrl = this.pdf.blockedUrl;
+  protected readonly blockedPdfName = this.pdf.blockedFileName;
 
   /** Le dossier du jour, sous le droit de lire les tournées — quel que soit l'onglet. */
   protected readonly canPrintDossier = computed(() => this.permissions.can('delivery_rounds:read'));

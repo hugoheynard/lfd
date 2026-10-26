@@ -58,11 +58,19 @@ describe('la composition des tournées (delivery_round.*)', () => {
     );
   });
 
-  it('dit une tournée supprimée et ses arrêts retournés à répartir', () => {
-    expect(sentence(fact('delivery_round.removed', { ...ROUND, stops: 3 }))).toBe(
-      'Colette Martin a supprimé la tournée « Kangoo » du 1 octobre 2026, passage 2, 3 arrêts retournés à répartir',
+  it('dit une tournée supprimée et ce qui retourne à répartir', () => {
+    expect(
+      sentence(
+        fact('delivery_round.removed', {
+          ...ROUND,
+          orders: [{ id: 'o_1', name: 'CMD-1' }, 'o_2'],
+          transfers: [{ id: 't_1', name: 'Boutique du centre' }],
+        }),
+      ),
+    ).toBe(
+      'Colette Martin a supprimé la tournée « Kangoo » du 1 octobre 2026, passage 2 ; retournent à répartir : « CMD-1 », une commande (identifiant o_2), le transfert vers « Boutique du centre »',
     );
-    expect(sentence(fact('delivery_round.removed', { ...ROUND, stops: 0 }))).toBe(
+    expect(sentence(fact('delivery_round.removed', { ...ROUND, orders: [], transfers: [] }))).toBe(
       'Colette Martin a supprimé la tournée « Kangoo » du 1 octobre 2026, passage 2',
     );
   });

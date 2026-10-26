@@ -1,5 +1,6 @@
 import { DestroyRef, inject, Injectable, signal } from '@angular/core';
 
+import { dayDossierFileName } from './day-dossier-file-name';
 import { DeliveryRoundsService } from './delivery-rounds.service';
 
 /**
@@ -9,6 +10,9 @@ import { DeliveryRoundsService } from './delivery-rounds.service';
  *
  * Fournie par la page : l'URL vivante meurt avec l'écran.
  */
+/** Le nom de repli d'une feuille seule, comme celui du serveur. */
+const ROUND_FILE_NAME = 'tournee.pdf';
+
 @Injectable()
 export class RoundPdf {
   private readonly rounds = inject(DeliveryRoundsService);
@@ -20,6 +24,8 @@ export class RoundPdf {
    * propose alors de le télécharger. `null` sinon.
    */
   readonly blockedUrl = signal<string | null>(null);
+  /** Le nom que le lien de repli donne au fichier — celui que le serveur lui donne. */
+  readonly blockedFileName = signal(ROUND_FILE_NAME);
   /**
    * L'URL objet vivante. Révoquée au PDF suivant et à la destruction de
    * l'écran — pas après un délai, qui couperait un onglet encore en train de
@@ -37,17 +43,18 @@ export class RoundPdf {
    * téléchargement à la place.
    */
   print(roundId: string): Promise<void> {
-    return this.open(() => this.rounds.roundPdf(roundId));
+    return this.open(() => this.rounds.roundPdf(roundId), ROUND_FILE_NAME);
   }
 
   /** Le dossier des tournées du jour, ouvert par le même geste (2026-10-26). */
   printDay(day: string): Promise<void> {
-    return this.open(() => this.rounds.dayDossierPdf(day));
+    return this.open(() => this.rounds.dayDossierPdf(day), dayDossierFileName(day));
   }
 
-  private async open(download: () => Promise<Blob>): Promise<void> {
+  private async open(download: () => Promise<Blob>, fileName: string): Promise<void> {
     this.failed.set(false);
     this.blockedUrl.set(null);
+    this.blockedFileName.set(fileName);
     try {
       const blob = await download();
       this.revoke();

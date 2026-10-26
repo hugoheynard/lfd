@@ -38,6 +38,19 @@ export const DELIVERY_ROUND_FACTS = {
     payload({ ...roundKey(), order: namedOrBare("order"), from: roundRef(), position: count() }),
   ),
   "delivery_round.stop_removed": fact(payload({ ...roundKey(), order: namedOrBare("order") })),
+  /**
+   * « Supprimer la tournée » (décision de Hugo, 2026-10-26) — une tournée
+   * créée par erreur. UN fait pour le geste, jamais un `stop_removed` par
+   * arrêt (C7) : `orders` et `transfers` sont ce qui retourne à répartir,
+   * dans l'ordre de passage.
+   */
+  "delivery_round.removed": fact(
+    payload({
+      ...roundKey(),
+      orders: z.array(namedOrBare("order")),
+      transfers: z.array(named("internal_transfer")),
+    }),
+  ),
   /** L'ordre AVANT et APRÈS ; un réordonnancement qui ne change rien n'écrit rien. */
   "delivery_round.reordered": fact(
     payload({

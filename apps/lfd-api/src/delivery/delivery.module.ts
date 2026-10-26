@@ -73,6 +73,7 @@ import { CorrectVehicleHandler } from "./application/commands/correct-vehicle.ha
 import { MoveDeliveryStopHandler } from "./application/commands/move-delivery-stop.handler.js";
 import { OpenDeliveryRoundHandler } from "./application/commands/open-delivery-round.handler.js";
 import { ReactivateVehicleHandler } from "./application/commands/reactivate-vehicle.handler.js";
+import { RemoveDeliveryRoundHandler } from "./application/commands/remove-delivery-round.handler.js";
 import { RemoveDeliveryStopHandler } from "./application/commands/remove-delivery-stop.handler.js";
 import { ReorderDeliveryRoundHandler } from "./application/commands/reorder-delivery-round.handler.js";
 import { RetireVehicleHandler } from "./application/commands/retire-vehicle.handler.js";
@@ -194,6 +195,7 @@ import {
     MoveDeliveryStopHandler,
     ReorderDeliveryRoundHandler,
     RemoveDeliveryStopHandler,
+    RemoveDeliveryRoundHandler,
     GetDeliveryRoundsDayHandler,
     // Le guichet des bacs (K2b) : servi au colisage, qui l'atteint par
     // `BinDesk` (relié par `PackingBinsModule`), et à l'annulation de la

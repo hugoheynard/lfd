@@ -29,7 +29,8 @@ import {
  *
  * Sur `delivery_round`, il écrit aussi `departed_at` (lot 4, « Partir ») et
  * `driver_staff_id` (plan « Ma tournée », MT-D2), `returned_*` (« Tournée
- * terminée », PL2) et `planned_*` (l'horaire prévu, I10) — écrivain : la tournée. Il LIT et VERROUILLE `delivery_bin_load` (`saveMove`),
+ * terminée », PL2), `planned_*` (l'horaire prévu, I10) et `removed_at` (la
+ * tournée supprimée, 2026-10-26) — écrivain : la tournée. Il LIT et VERROUILLE `delivery_bin_load` (`saveMove`),
  * sans jamais l'écrire : l'écrivain en est l'exécution.
  *
  * `closed_at` — écrivain : la tournée, par `closeStop` (clôture sans remise,

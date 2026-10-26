@@ -50,8 +50,9 @@ export class PrismaRoundPaperReader extends RoundPaperReader {
   }
 
   async roundOf(roundId: string): Promise<RoundPaperRow | null> {
-    const row = await this.prisma.deliveryRound.findUnique({
-      where: { id: roundId },
+    // Une tournée supprimée (2026-10-26) n'a plus de feuille de route.
+    const row = await this.prisma.deliveryRound.findFirst({
+      where: { id: roundId, removedAt: null },
       select: PAPER_SELECT,
     });
     if (row === null) {
@@ -75,7 +76,7 @@ export class PrismaDayRoundPapersReader extends DayRoundPapersReader {
 
   async roundsOn(serviceDay: string): Promise<readonly RoundPaperRow[]> {
     const rows = await this.prisma.deliveryRound.findMany({
-      where: { serviceDay },
+      where: { serviceDay, removedAt: null },
       orderBy: [{ vehicle: { createdAt: "asc" } }, { vehicleId: "asc" }, { passage: "asc" }],
       select: PAPER_SELECT,
     });

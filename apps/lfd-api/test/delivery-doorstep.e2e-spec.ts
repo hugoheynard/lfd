@@ -106,6 +106,25 @@ async function departedRound(
   return { roundId, orderIds };
 }
 
+/**
+ * Fait VIEILLIR une tournée partie : ses jours de service reculent à `day`,
+ * comme le calendrier le ferait. Le seul chemin vers une tournée d'une
+ * journée passée depuis qu'on n'en compose plus (2026-10-26) — aucune règle
+ * n'est contournée, seul le temps est simulé.
+ */
+async function agedTo(roundId: string, day: string): Promise<void> {
+  await ctx.prisma.deliveryRound.update({ where: { id: roundId }, data: { serviceDay: day } });
+  await ctx.prisma.deliveryRoundStop.updateMany({ where: { roundId }, data: { serviceDay: day } });
+  await ctx.prisma.deliveryStopExecution.updateMany({
+    where: { roundId },
+    data: { serviceDay: day },
+  });
+  await ctx.prisma.deliveryBinLoad.updateMany({
+    where: { stop: { roundId } },
+    data: { serviceDay: day },
+  });
+}
+
 async function myRound(agent: Agent, roundId: string): Promise<MyDeliveryRoundView> {
   return jsonBody<MyDeliveryRoundView>(await agent.get(`${MY_ROUND}/${roundId}`).expect(200));
 }
@@ -382,7 +401,10 @@ describe("« Non remis » (AP-D7)", () => {
   it("liste les arrêts ouverts des tournées parties d'avant aujourd'hui, avec leurs signalements", async () => {
     const paul = await staffWithRole(ctx, "livreur-paul");
     const past = serviceDay(-2);
-    const old = await departedRound(paul, 1, past);
+    // On ne compose plus une journée passée (2026-10-26) : la tournée part
+    // aujourd'hui, puis le temps passe — ses jours de service reculent.
+    const old = await departedRound(paul, 1);
+    await agedTo(old.roundId, past);
     await report(paul.agent, old.roundId, { family: "technical", reason: "vehicle_breakdown" });
     await departedRound(paul, 1, DAY);
 

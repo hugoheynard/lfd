@@ -206,6 +206,7 @@ export class RoundsPage {
 
   protected readonly pdfFailed = this.pdf.failed;
   protected readonly blockedPdfUrl = this.pdf.blockedUrl;
+  protected readonly blockedPdfName = this.pdf.blockedFileName;
 
   protected readonly incidents = this.read.incidents;
   /** La photo d'un signalement, par la route de l'admin (`delivery_rounds`). */

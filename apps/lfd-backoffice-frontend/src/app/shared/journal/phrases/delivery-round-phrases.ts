@@ -28,6 +28,7 @@ import {
 
 const ORDER: Noun = { the: 'la commande', a: 'une commande' };
 const ROUND: Noun = { the: 'la tournée', a: 'une tournée' };
+const TRANSFER: Noun = { the: 'le transfert vers', a: 'un transfert' };
 
 /** « passage 2 » — rien au premier passage, comme l'écran. */
 function passageOf(raw: unknown): Segment[] {
@@ -71,6 +72,27 @@ export function orderList(raw: unknown): Segment[] {
     const cited = cite({ the: '', a: 'une commande' }, order);
     return index === 0 ? cited : [text(', '), ...cited];
   });
+}
+
+/** Ce qu'une tournée supprimée rend « à répartir » : ses commandes, puis ses transferts. */
+function backToDispatch(fact: PhraseFact): Segment[] {
+  const orders: readonly unknown[] = Array.isArray(fact.payload['orders'])
+    ? fact.payload['orders']
+    : [];
+  const transfers: readonly unknown[] = Array.isArray(fact.payload['transfers'])
+    ? fact.payload['transfers']
+    : [];
+  if (orders.length === 0 && transfers.length === 0) {
+    return [];
+  }
+  const cited = [
+    ...(orders.length === 0 ? [] : [orderList(orders)]),
+    ...transfers.map((transfer) => cite(TRANSFER, transfer)),
+  ];
+  return [
+    text(' ; retournent à répartir : '),
+    ...cited.flatMap((segments, index) => (index === 0 ? segments : [text(', '), ...segments])),
+  ];
 }
 
 /** La famille d'un problème signalé, dans la phrase (`a-la-porte.md`, § 3). */
@@ -136,27 +158,14 @@ export const DELIVERY_ROUND_PHRASES = {
       [text('a retiré '), ...cite(ORDER, fact.payload['order']), text(' de '), ...round(fact)],
       [...ROUND_KEYS, 'order'],
     ),
-  // « Supprimer la tournée » (décision de Hugo, 2026-10-26) ; chaque arrêt a
-  // aussi son propre « a retiré ».
-  'delivery_round.removed': (fact) => {
-    const stops = count(fact.payload['stops']);
-    return byActor(
+  // « Supprimer la tournée » (décision de Hugo, 2026-10-26) : UN fait, qui
+  // cite ce qui retourne à répartir.
+  'delivery_round.removed': (fact) =>
+    byActor(
       fact,
-      [
-        text('a supprimé '),
-        ...round(fact),
-        ...(stops === null || stops === 0
-          ? []
-          : [
-              text(', '),
-              value(
-                `${String(stops)} arrêt${stops > 1 ? 's' : ''} retourné${stops > 1 ? 's' : ''} à répartir`,
-              ),
-            ]),
-      ],
-      [...ROUND_KEYS, 'stops'],
-    );
-  },
+      [text('a supprimé '), ...round(fact), ...backToDispatch(fact)],
+      [...ROUND_KEYS, 'orders', 'transfers'],
+    ),
   'delivery_round.reordered': (fact) =>
     byActor(
       fact,

@@ -6,6 +6,7 @@ import {
   TransferStopNotAnOrderError,
 } from "../errors/delivery-round-errors.js";
 import { DeliveryRoundReturnedError } from "../errors/delivery-doorstep-errors.js";
+import { DeliveryRoundRemovedError } from "../errors/delivery-round-removal-errors.js";
 import type { PlannedTiming } from "../value-objects/planned-timing.js";
 import type {
   DeliveryRoundSnapshot,
@@ -21,7 +22,14 @@ import type { ShipmentRef } from "../../../production/channels/delivery/index.js
 /** L'identité d'une tournée : ce qui ne change plus après `open`. */
 export type DeliveryRoundIdentity = Omit<
   DeliveryRoundState,
-  "stops" | "version" | "updatedAt" | "departedAt" | "driverStaffId" | "returned" | "plannedTiming"
+  | "stops"
+  | "version"
+  | "updatedAt"
+  | "departedAt"
+  | "driverStaffId"
+  | "returned"
+  | "plannedTiming"
+  | "removedAt"
 >;
 
 /**
@@ -37,6 +45,7 @@ export abstract class DeliveryRoundBase {
   protected currentDepartedAt: Date | null;
   protected currentReturn: RoundReturn | null = null;
   protected currentPlannedTiming: PlannedTiming | null = null;
+  protected currentRemovedAt: Date | null = null;
 
   protected constructor(
     protected readonly state: DeliveryRoundIdentity,
@@ -89,6 +98,11 @@ export abstract class DeliveryRoundBase {
   /** Rentrée le (PL2), ou `null`. */
   get returnedAt(): Date | null {
     return this.currentReturn?.at ?? null;
+  }
+
+  /** Supprimée le (décision de Hugo, 2026-10-26), ou `null`. */
+  get removedAt(): Date | null {
+    return this.currentRemovedAt;
   }
 
   /** L'horaire prévu (I10), ou `null` : jamais calculé, ou effacé par un geste à la main. */
@@ -164,10 +178,14 @@ export abstract class DeliveryRoundBase {
   }
 
   /**
-   * Une tournée partie ne se compose plus (I6).
-   * @throws {DeliveryRoundDepartedError}
+   * Une tournée partie ne se compose plus (I6) — ni une tournée supprimée,
+   * qui ne reprend aucun geste (décision de Hugo, 2026-10-26).
+   * @throws {DeliveryRoundRemovedError} @throws {DeliveryRoundDepartedError}
    */
   ensureAtDepot(): void {
+    if (this.currentRemovedAt !== null) {
+      throw new DeliveryRoundRemovedError(this.state.vehicleName, this.state.serviceDay);
+    }
     if (this.currentDepartedAt !== null) {
       throw new DeliveryRoundDepartedError(this.state.vehicleName, this.state.serviceDay);
     }
@@ -181,6 +199,7 @@ export abstract class DeliveryRoundBase {
       driverStaffId: this.currentDriverStaffId,
       returned: this.currentReturn,
       plannedTiming: this.currentPlannedTiming,
+      removedAt: this.currentRemovedAt,
       updatedAt: this.currentUpdatedAt,
       stops: [
         ...this.open.map((stop, index) => ({ ...stop, position: index + 1, closedAt: null })),

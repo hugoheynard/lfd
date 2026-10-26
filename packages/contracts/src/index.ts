@@ -1328,6 +1328,7 @@ export {
   moveDeliveryStopPayloadSchema,
   reorderDeliveryRoundPayloadSchema,
   removeDeliveryStopPayloadSchema,
+  removeDeliveryRoundPayloadSchema,
   assignDeliveryDriverPayloadSchema,
   unassignDeliveryDriverPayloadSchema,
 } from "./delivery-rounds.js";
@@ -1345,6 +1346,7 @@ export type {
   MoveDeliveryStopPayload,
   ReorderDeliveryRoundPayload,
   RemoveDeliveryStopPayload,
+  RemoveDeliveryRoundPayload,
   DeliveryRoundDriverView,
   DeliveryRoundPlannedView,
   DeliveryDriversView,

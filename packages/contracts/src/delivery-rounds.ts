@@ -257,6 +257,16 @@ export const removeDeliveryStopPayloadSchema = z.object({
 });
 export type RemoveDeliveryStopPayload = z.infer<typeof removeDeliveryStopPayloadSchema>;
 
+/**
+ * « Supprimer la tournée » (décision de Hugo, 2026-10-26) : la version lue,
+ * comme tout geste de composition. Rejoué sur une tournée déjà supprimée :
+ * 204, sans effet.
+ */
+export const removeDeliveryRoundPayloadSchema = z.object({
+  version: versionField,
+});
+export type RemoveDeliveryRoundPayload = z.infer<typeof removeDeliveryRoundPayloadSchema>;
+
 /** Affecter un livreur à une tournée encore au dépôt (MT-D2). */
 export const assignDeliveryDriverPayloadSchema = z.object({
   staffUserId: idField("livreur"),

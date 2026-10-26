@@ -56,7 +56,7 @@
   @if (blockedPdfUrl(); as url) {
     <fold-callout variant="info" data-pdf-blocked>
       Le navigateur a bloqué l’ouverture d’un nouvel onglet.
-      <a foldButton emphasis="outline" size="sm" [href]="url" download="dossier-des-tournees.pdf">
+      <a foldButton emphasis="outline" size="sm" [href]="url" [download]="blockedPdfName()">
         Télécharger le dossier
       </a>
     </fold-callout>

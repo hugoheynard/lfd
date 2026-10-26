@@ -10,6 +10,8 @@ import {
   moveDeliveryStopPayloadSchema,
   type OpenDeliveryRoundPayload,
   openDeliveryRoundPayloadSchema,
+  type RemoveDeliveryRoundPayload,
+  removeDeliveryRoundPayloadSchema,
   type RemoveDeliveryStopPayload,
   removeDeliveryStopPayloadSchema,
   type ReorderDeliveryRoundPayload,
@@ -38,6 +40,7 @@ import { AssignDeliveryDriverCommand } from "../application/commands/assign-deli
 import { AssignDeliveryStopCommand } from "../application/commands/assign-delivery-stop.command.js";
 import { MoveDeliveryStopCommand } from "../application/commands/move-delivery-stop.command.js";
 import { OpenDeliveryRoundCommand } from "../application/commands/open-delivery-round.command.js";
+import { RemoveDeliveryRoundCommand } from "../application/commands/remove-delivery-round.command.js";
 import { RemoveDeliveryStopCommand } from "../application/commands/remove-delivery-stop.command.js";
 import { ReorderDeliveryRoundCommand } from "../application/commands/reorder-delivery-round.command.js";
 import { ReturnDeliveryRoundCommand } from "../application/commands/return-delivery-round.command.js";
@@ -141,6 +144,21 @@ export class DeliveryRoundsController {
       new OpenDeliveryRoundCommand(payload),
     );
     return { id };
+  }
+
+  /**
+   * « Supprimer la tournée » (décision de Hugo, 2026-10-26) : ses arrêts
+   * retournent à répartir, elle sort des lectures du jour. 204, même rejoué.
+   */
+  @Post(":roundId/removal")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async removeRound(
+    @Param("roundId") roundId: string,
+    @Body(new ZodBody(removeDeliveryRoundPayloadSchema)) payload: RemoveDeliveryRoundPayload,
+  ): Promise<void> {
+    await this.commands.execute<RemoveDeliveryRoundCommand, void>(
+      new RemoveDeliveryRoundCommand(roundId, payload),
+    );
   }
 
   @Post(":roundId/stops")

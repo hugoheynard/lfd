@@ -75,7 +75,8 @@ export class PrismaDeliveryLoadingReader extends DeliveryLoadingReader {
     where: { readonly id: string } | { readonly serviceDay: string },
   ): Promise<LoadingRoundRow[]> {
     const rounds = await this.prisma.deliveryRound.findMany({
-      where,
+      // Une tournée supprimée (2026-10-26) n'a plus rien à charger.
+      where: { ...where, removedAt: null },
       orderBy: [{ vehicle: { createdAt: "asc" } }, { vehicleId: "asc" }, { passage: "asc" }],
       select: ROUND_SELECT,
     });

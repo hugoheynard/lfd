@@ -59,7 +59,7 @@ export class DeliveryRoundPaperController {
         hasStaffPermission(permissions, "delivery_procedures:read"),
       ),
     );
-    return servePdf(response, file, "dossier-tournees.pdf");
+    return servePdf(response, file, "dossier-de-livraison.pdf");
   }
 }
 

@@ -148,6 +148,7 @@
   "test/delivery-road-routing.e2e-spec.ts": 3897,
   "test/delivery-round-finish.e2e-spec.ts": 3607,
   "test/delivery-round-paper.e2e-spec.ts": 6800,
+  "test/delivery-round-removal.e2e-spec.ts": 11036,
   "test/delivery-rounds-guards.e2e-spec.ts": 5442,
   "test/delivery-rounds.e2e-spec.ts": 6166,
   "test/delivery-routing-guards.e2e-spec.ts": 6368,

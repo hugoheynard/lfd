@@ -1,6 +1,8 @@
+import { instantToLocal } from "@lfd/contracts";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
+import { ensureServiceDayNotPast } from "../../domain/services/composable-day.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { DeliveryOrdersReader } from "../../channels/commerce/index.js";
@@ -39,11 +41,14 @@ export class ReorderDeliveryRoundHandler implements ICommandHandler<
     const { stopIds, version } = command.payload;
     await this.uow.run(async () => {
       const round = await loadRoundAt(this.rounds, command.roundId, version);
+      const now = this.clock.now();
+      // Une journée passée ne se réordonne plus (2026-10-26).
+      ensureServiceDayNotPast(round.serviceDay, instantToLocal(now).day);
       const before = round.orderIds;
       // L'écran ne range que les commandes : un arrêt de transfert qu'il ne
       // cite pas garde son rang (plan du transfert interne, §5).
       const complete = withTransferStopsInPlace(round.liveStops, stopIds);
-      if (!round.reorder(complete, this.clock.now())) {
+      if (!round.reorder(complete, now)) {
         return;
       }
       await this.rounds.save(round);

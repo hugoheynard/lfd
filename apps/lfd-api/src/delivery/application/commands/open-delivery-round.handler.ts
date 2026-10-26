@@ -1,6 +1,8 @@
+import { instantToLocal } from "@lfd/contracts";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
+import { ensureServiceDayNotPast } from "../../domain/services/composable-day.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { Clock } from "../../../platform/time/clock.js";
@@ -32,6 +34,9 @@ export class OpenDeliveryRoundHandler implements ICommandHandler<OpenDeliveryRou
 
   async execute(command: OpenDeliveryRoundCommand): Promise<string> {
     const { day, vehicleId } = command.payload;
+    const at = this.clock.now();
+    // Avant toute lecture : une journée passée ne s'ouvre plus (2026-10-26).
+    ensureServiceDayNotPast(day, instantToLocal(at).day);
     return this.uow.run(async () => {
       const vehicle = await loadVehicle(this.vehicles, vehicleId);
       const round = DeliveryRound.open({
@@ -39,7 +44,7 @@ export class OpenDeliveryRoundHandler implements ICommandHandler<OpenDeliveryRou
         serviceDay: day,
         vehicle,
         passage: await this.rounds.nextPassage(day, vehicle.id),
-        at: this.clock.now(),
+        at,
       });
       await this.rounds.save(round);
       await this.events.publishTraced(new DeliveryRoundOpenedEvent(round));

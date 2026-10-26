@@ -14,6 +14,7 @@ export const DELIVERY_ROUND_FACTS = {
   stopAssigned: "delivery_round.stop_assigned",
   stopMoved: "delivery_round.stop_moved",
   stopRemoved: "delivery_round.stop_removed",
+  removed: "delivery_round.removed",
   reordered: "delivery_round.reordered",
   driverAssigned: "delivery_round.driver_assigned",
   driverUnassigned: "delivery_round.driver_unassigned",
@@ -105,6 +106,27 @@ export class DeliveryStopRemovedEvent implements JournaledEvent {
 
   journalFact(): JournalFact {
     return roundFact(DELIVERY_ROUND_FACTS.stopRemoved, this.round, { order: this.order });
+  }
+}
+
+/**
+ * La tournée supprimée (décision de Hugo, 2026-10-26) — UN fait pour le geste
+ * (C7) : un fait par arrêt partagerait le sujet et la trace, donc la clé
+ * d'idempotence du journal, et seul le premier s'inscrirait. `orders` et
+ * `transfers` : ce qui retourne à répartir, dans l'ordre de passage.
+ */
+export class DeliveryRoundRemovedEvent implements JournaledEvent {
+  constructor(
+    readonly round: DeliveryRound,
+    readonly orders: readonly CitedOrder[],
+    readonly transfers: readonly { readonly id: string; readonly name: string }[],
+  ) {}
+
+  journalFact(): JournalFact {
+    return roundFact(DELIVERY_ROUND_FACTS.removed, this.round, {
+      orders: this.orders,
+      transfers: this.transfers,
+    });
   }
 }
 

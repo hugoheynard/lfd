@@ -10,6 +10,7 @@ import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
+import { PastServiceDayCompositionError } from "../../../domain/errors/delivery-round-removal-errors.js";
 import { LoadedStopMoveError } from "../../../domain/errors/delivery-loading-errors.js";
 import {
   OrderAlreadyInRoundError,
@@ -182,6 +183,17 @@ describe("ApplyDeliveryProposalHandler — « Appliquer » (L7-C6, L7-C11, L7-C1
         }),
       ),
     ).rejects.toThrow(ProposalOutdatedError);
+    expect(proposals.applied).toEqual([]);
+    expect(events.traced).toEqual([]);
+  });
+
+  it("une journée passée ne se recompose plus, rien d'écrit (2026-10-26)", async () => {
+    const { handler, proposals, events } = scene();
+
+    // L'horloge figée est à l'instant 0 : la veille de son jour de Paris.
+    await expect(
+      handler.execute(new ApplyDeliveryProposalCommand({ ...PROPOSAL, day: "1969-12-31" })),
+    ).rejects.toThrow(PastServiceDayCompositionError);
     expect(proposals.applied).toEqual([]);
     expect(events.traced).toEqual([]);
   });

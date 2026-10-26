@@ -164,6 +164,11 @@ model DeliveryRound {
   plannedDepartureAt DateTime? @map("planned_departure_at")
   plannedReturnAt    DateTime? @map("planned_return_at")
   plannedMeters      Int?      @map("planned_meters")
+  /// **Supprimée** le (décision de Hugo, 2026-10-26) — une tournée créée par
+  /// erreur. Écrivain : la tournée, par `removeRound`, au dépôt seulement
+  /// (CHECK `delivery_round_removed_never_departed`). Ses arrêts sont retirés
+  /// dans le même geste ; la ligne reste, et les lectures du jour l'ignorent.
+  removedAt          DateTime? @map("removed_at")
 
   createdAt DateTime @map("created_at")
   updatedAt DateTime @map("updated_at")

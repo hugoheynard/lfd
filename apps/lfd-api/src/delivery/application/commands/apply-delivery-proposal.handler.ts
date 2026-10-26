@@ -1,6 +1,8 @@
+import { instantToLocal } from "@lfd/contracts";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
+import { ensureServiceDayNotPast } from "../../domain/services/composable-day.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { Clock } from "../../../platform/time/clock.js";
@@ -69,6 +71,8 @@ export class ApplyDeliveryProposalHandler implements ICommandHandler<
   async execute(command: ApplyDeliveryProposalCommand): Promise<void> {
     const { payload } = command;
     const at = this.clock.now();
+    // Une journée passée ne se recompose plus (2026-10-26).
+    ensureServiceDayNotPast(payload.day, instantToLocal(at).day);
     const timings = await this.timing.timingsOf(payload.day, payload.rounds);
     await this.uow.run(async () => {
       const touched = await loadTouchedRounds(this.rounds, this.reader, payload);

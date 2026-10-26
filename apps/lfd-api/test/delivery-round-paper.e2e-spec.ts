@@ -20,6 +20,7 @@ import {
   ROUNDS,
   seedDelivery,
 } from "./delivery-rounds-scene.js";
+import { dayRoundsDossierFileName } from "../src/delivery/domain/services/day-rounds-dossier-pdf.js";
 import { bootstrapE2e, serviceDay, type E2eContext } from "./e2e-harness.js";
 
 const DAY = serviceDay();
@@ -124,7 +125,15 @@ describe("GET /admin/delivery/rounds/day/:day/dossier.pdf", () => {
       .expect(200);
 
     expect(response.headers["content-type"]).toContain("application/pdf");
-    expect(response.headers["content-disposition"]).toContain(`dossier-tournees-${DAY}.pdf`);
+    expect(response.headers["content-disposition"]).toContain(
+      `filename="${dayRoundsDossierFileName(DAY)}"`,
+    );
+    expect(response.headers["content-disposition"]).toContain(
+      `filename*=UTF-8''${dayRoundsDossierFileName(DAY)}`,
+    );
+    expect(dayRoundsDossierFileName(DAY)).toMatch(
+      /^dossier-de-livraison-du-\d{1,2}-[a-z]+-\d{4}\.pdf$/u,
+    );
     const body: unknown = response.body;
     if (!(body instanceof Uint8Array)) {
       throw new TypeError("le corps servi n'est pas binaire");

@@ -64,6 +64,11 @@ export interface DeliveryRoundState {
    * comme `returned` — absent vaut `null`.
    */
   readonly plannedTiming?: PlannedTiming | null;
+  /**
+   * Supprimée le (décision de Hugo, 2026-10-26), ou `null`. Facultatif à la
+   * RÉHYDRATATION seulement, comme `returned` — absent vaut `null`.
+   */
+  readonly removedAt?: Date | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;
   readonly stops: readonly DeliveryStopState[];

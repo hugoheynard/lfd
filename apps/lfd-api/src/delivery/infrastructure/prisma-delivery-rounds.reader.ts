@@ -24,7 +24,8 @@ export class PrismaDeliveryRoundsReader extends DeliveryRoundsReader {
 
   async roundsOn(serviceDay: string): Promise<readonly RoundRow[]> {
     const rows = await this.prisma.deliveryRound.findMany({
-      where: { serviceDay },
+      // Une tournée supprimée (2026-10-26) ne se compose plus : elle sort du jour.
+      where: { serviceDay, removedAt: null },
       orderBy: [{ vehicle: { createdAt: "asc" } }, { vehicleId: "asc" }, { passage: "asc" }],
       include: {
         vehicle: { select: { retiredAt: true } },
