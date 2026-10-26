@@ -4,9 +4,10 @@ import { By } from '@angular/platform-browser';
 import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import type { StaffPermission } from '@lfd/contracts';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { PermissionsStore } from '../../auth/permissions.store';
+import { DeliveryRoundsService } from '../delivery-rounds.service';
 import { DayCalendar } from '../../shared/day-calendar/day-calendar';
 import { parisDayOf, shiftDay } from '../run-sheet';
 import { daysBetween, TourManagerDay } from './tour-manager-day';
@@ -19,6 +20,8 @@ class TabStub {
 }
 
 const BOTH: readonly StaffPermission[] = ['delivery_rounds:read', 'delivery_run_sheet:read'];
+
+const dayDossierPdf = vi.fn((_day: string) => Promise.resolve(new Blob()));
 
 async function open(url: string, granted: readonly StaffPermission[] = BOTH) {
   TestBed.resetTestingModule();
@@ -38,6 +41,7 @@ async function open(url: string, granted: readonly StaffPermission[] = BOTH) {
         provide: PermissionsStore,
         useValue: { can: (permission: StaffPermission) => granted.includes(permission) },
       },
+      { provide: DeliveryRoundsService, useValue: { dayDossierPdf } },
     ],
   });
   const harness = await RouterTestingHarness.create();
@@ -123,5 +127,28 @@ describe('daysBetween / stampLabelOf', () => {
 
   it('dit l’heure comme au fournil, pas « 14:05 »', () => {
     expect(stampLabelOf(new Date('2026-10-26T13:05:00Z'))).toBe('lundi 26 oct. · 14 h 05');
+  });
+
+  describe('le dossier du jour (2026-10-26)', () => {
+    it('ouvre le dossier des tournées du jour commun', async () => {
+      dayDossierPdf.mockClear();
+      const open$ = vi.spyOn(window, 'open').mockReturnValue(null);
+      vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:dossier');
+      const { harness, element } = await open('/tour-manager/feuille-de-route?jour=2026-10-27');
+      const button = element.querySelector<HTMLButtonElement>('[data-print-dossier]');
+      expect(button?.textContent).toContain('Imprimer le dossier du jour');
+
+      button?.click();
+      await harness.fixture.whenStable();
+
+      expect(dayDossierPdf).toHaveBeenCalledWith('2026-10-27');
+      expect(open$).toHaveBeenCalledWith('blob:dossier', '_blank');
+      vi.restoreAllMocks();
+    });
+
+    it('n’est pas offert sans le droit de lire les tournées', async () => {
+      const { element } = await open('/tour-manager/feuille-de-route', ['delivery_run_sheet:read']);
+      expect(element.querySelector('[data-print-dossier]')).toBeNull();
+    });
   });
 });

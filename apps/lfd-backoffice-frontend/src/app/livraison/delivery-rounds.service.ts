@@ -48,6 +48,18 @@ export class DeliveryRoundsService {
     );
   }
 
+  /**
+   * **Le dossier des tournées d'un jour en PDF** — toutes les feuilles du
+   * jour, en un tirage (`dossier-des-tournees.md`). Même jeton, même `Blob`.
+   */
+  dayDossierPdf(day: string): Promise<Blob> {
+    return firstValueFrom(
+      this.http.get(`${ROUNDS}/day/${encodeURIComponent(day)}/dossier.pdf`, {
+        responseType: 'blob',
+      }),
+    );
+  }
+
   day(day: string): Promise<DeliveryRoundsDayView> {
     return firstValueFrom(
       this.http.get<DeliveryRoundsDayView>(`${ROUNDS}?day=${encodeURIComponent(day)}`),

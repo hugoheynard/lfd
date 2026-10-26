@@ -25,7 +25,32 @@
         (pick)="days.show($event)"
       />
     </div>
+    @if (canPrintDossier()) {
+      <button
+        foldButton
+        emphasis="outline"
+        size="sm"
+        icon="print"
+        (click)="printDossier()"
+        data-print-dossier
+      >
+        Imprimer le dossier du jour
+      </button>
+    }
     <span class="stamp" data-stamp>{{ stamp() }}</span>
   </div>
+  @if (pdfFailed()) {
+    <fold-callout variant="alert" data-pdf-failed>
+      Le dossier des tournées n’a pas pu être téléchargé. Vérifiez la connexion et réessayez.
+    </fold-callout>
+  }
+  @if (blockedPdfUrl(); as url) {
+    <fold-callout variant="info" data-pdf-blocked>
+      Le navigateur a bloqué l’ouverture d’un nouvel onglet.
+      <a foldButton emphasis="outline" size="sm" [href]="url" download="dossier-des-tournees.pdf">
+        Télécharger le dossier
+      </a>
+    </fold-callout>
+  }
 </header>
 <router-outlet />

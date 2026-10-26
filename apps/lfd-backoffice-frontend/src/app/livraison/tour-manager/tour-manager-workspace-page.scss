@@ -5,6 +5,9 @@
 /* Le bandeau de la Supervision : le fond du rail secondaire, un filet du
    chrome dessous ; `foldSurface` bascule la polarité, sans peindre. */
 .masthead {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
   padding: var(--fold-space-sm) var(--fold-page-gutter);
   background: var(--fold-color-bg-rail-secondary);
   border-bottom: 1px solid var(--fold-color-bg-header);

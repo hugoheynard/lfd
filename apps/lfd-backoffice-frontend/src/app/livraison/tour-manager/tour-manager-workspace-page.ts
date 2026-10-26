@@ -11,11 +11,17 @@ import {
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import type { FoldViewToggleOption } from 'fold-ng';
-import { FoldSurfaceDirective, FoldViewToggleComponent } from 'fold-ng';
+import {
+  FoldButtonComponent,
+  FoldCalloutComponent,
+  FoldSurfaceDirective,
+  FoldViewToggleComponent,
+} from 'fold-ng';
 import { filter, map } from 'rxjs';
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { DayCalendar } from '../../shared/day-calendar/day-calendar';
+import { RoundPdf } from '../round-pdf';
 import { DAY_QUERY_PARAM } from '../run-sheet';
 import { TOUR_MANAGER_DAY_OPTIONS, TourManagerDay } from './tour-manager-day';
 import { permittedTourManagerViews } from './tour-manager-views';
@@ -51,14 +57,22 @@ export function stampLabelOf(now: Date): string {
  * date et l'heure à droite.
  *
  * ⚠️ **Elle n'est pas une page** : aucun `fold-page-layout` ici, chaque vue
- * porte le sien. Aucun droit non plus : chaque onglet garde le sien. Le
+ * porte le sien. Chaque onglet garde son droit ; le
+ * seul geste du bandeau, le dossier du jour, demande de lire les tournées. Le
  * bandeau disparaît à l'impression — la feuille de route dit son jour.
  */
 @Component({
   selector: 'app-tour-manager-workspace-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DayCalendar, FoldSurfaceDirective, FoldViewToggleComponent, RouterOutlet],
-  providers: [TourManagerDay],
+  imports: [
+    DayCalendar,
+    FoldButtonComponent,
+    FoldCalloutComponent,
+    FoldSurfaceDirective,
+    FoldViewToggleComponent,
+    RouterOutlet,
+  ],
+  providers: [TourManagerDay, RoundPdf],
   templateUrl: './tour-manager-workspace-page.html',
   styleUrl: './tour-manager-workspace-page.scss',
 })
@@ -67,6 +81,12 @@ export class TourManagerWorkspacePage {
   private readonly router = inject(Router);
   protected readonly days = inject(TourManagerDay);
   protected readonly dayOptions = TOUR_MANAGER_DAY_OPTIONS;
+  private readonly pdf = inject(RoundPdf);
+  protected readonly pdfFailed = this.pdf.failed;
+  protected readonly blockedPdfUrl = this.pdf.blockedUrl;
+
+  /** Le dossier du jour, sous le droit de lire les tournées — quel que soit l'onglet. */
+  protected readonly canPrintDossier = computed(() => this.permissions.can('delivery_rounds:read'));
 
   /** Les onglets permis : un onglet sans droit mènerait à un refus du garde. */
   private readonly views = computed(() =>
@@ -101,6 +121,11 @@ export class TourManagerWorkspacePage {
       const timer = setInterval(() => this.now.set(new Date()), CLOCK_TICK_MS);
       inject(DestroyRef).onDestroy(() => clearInterval(timer));
     }
+  }
+
+  /** Ouvre le dossier des tournées du jour commun. */
+  protected printDossier(): Promise<void> {
+    return this.pdf.printDay(this.days.day());
   }
 
   /** Changer d'onglet garde le jour : il part dans l'adresse de l'onglet choisi. */

@@ -36,11 +36,20 @@ export class RoundPdf {
    * (`window.open` rend `null`), on garde l'URL et on propose un lien de
    * téléchargement à la place.
    */
-  async print(roundId: string): Promise<void> {
+  print(roundId: string): Promise<void> {
+    return this.open(() => this.rounds.roundPdf(roundId));
+  }
+
+  /** Le dossier des tournées du jour, ouvert par le même geste (2026-10-26). */
+  printDay(day: string): Promise<void> {
+    return this.open(() => this.rounds.dayDossierPdf(day));
+  }
+
+  private async open(download: () => Promise<Blob>): Promise<void> {
     this.failed.set(false);
     this.blockedUrl.set(null);
     try {
-      const blob = await this.rounds.roundPdf(roundId);
+      const blob = await download();
       this.revoke();
       const url = URL.createObjectURL(blob);
       this.objectUrl = url;
