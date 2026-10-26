@@ -9,21 +9,25 @@ function row(decided: boolean) {
       { sku: "CRO", productNameSnapshot: "Croissant", quantity: 4 },
       { sku: "PAC", productNameSnapshot: "Pain au chocolat", quantity: 3 },
     ],
-    shortfallLines: [
-      { sku: "CRO", due: 4, packed: 2 },
-      { sku: "PAC", due: 3, packed: 3 },
+    shortfalls: [
+      {
+        lines: [
+          { sku: "CRO", due: 4, packed: 2 },
+          { sku: "PAC", due: 3, packed: 3 },
+        ],
+        decision: decided
+          ? {
+              decidedAt: DECIDED_AT,
+              decidedByStaffId: "staff_1",
+              remainder: "abandoned",
+              departing: [
+                { sku: "CRO", quantity: 2 },
+                { sku: "PAC", quantity: 3 },
+              ],
+            }
+          : null,
+      },
     ],
-    shortfallDecision: decided
-      ? {
-          decidedAt: DECIDED_AT,
-          decidedByStaffId: "staff_1",
-          remainder: "abandoned",
-          departing: [
-            { sku: "CRO", quantity: 2 },
-            { sku: "PAC", quantity: 3 },
-          ],
-        }
-      : null,
   };
 }
 

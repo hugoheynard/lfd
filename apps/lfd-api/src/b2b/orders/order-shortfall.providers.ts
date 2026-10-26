@@ -4,13 +4,19 @@ import { DecideOrderShortfallHandler } from "./application/commands/decide-order
 import { WriteShortfallLetterHandler } from "./application/commands/write-shortfall-letter.handler.js";
 import { GetShortfallLetterDraftHandler } from "./application/queries/get-shortfall-letter-draft.handler.js";
 import { OrderBillingRepository } from "./domain/ports/order-billing.repository.js";
-import { ShortfallDecisionReader } from "./domain/ports/shortfall-decision.reader.js";
+import {
+  RemainderDecisionReader,
+  ShortfallDecisionReader,
+} from "./domain/ports/shortfall-decision.reader.js";
 import { ShortfallDecisionRepository } from "./domain/ports/shortfall-decision.repository.js";
 import { ShortfallLetterReader } from "./domain/ports/shortfall-letter.reader.js";
 import { ShortfallNoticeRepository } from "./domain/ports/shortfall-notice.repository.js";
 import { AdminOrderShortfallController } from "./http/admin-order-shortfall.controller.js";
 import { PrismaOrderBillingRepository } from "./infrastructure/prisma-order-billing.repository.js";
-import { PrismaShortfallDecisionReader } from "./infrastructure/prisma-shortfall-decision.reader.js";
+import {
+  PrismaRemainderDecisionReader,
+  PrismaShortfallDecisionReader,
+} from "./infrastructure/prisma-shortfall-decision.reader.js";
 import { PrismaShortfallDecisionRepository } from "./infrastructure/prisma-shortfall-decision.repository.js";
 import { PrismaShortfallLetterReader } from "./infrastructure/prisma-shortfall-letter.reader.js";
 import { PrismaShortfallNoticeRepository } from "./infrastructure/prisma-shortfall-notice.repository.js";
@@ -26,6 +32,7 @@ export const ORDER_SHORTFALL_PROVIDERS: readonly Provider[] = [
   DecideOrderShortfallHandler,
   { provide: ShortfallDecisionRepository, useClass: PrismaShortfallDecisionRepository },
   { provide: ShortfallDecisionReader, useClass: PrismaShortfallDecisionReader },
+  { provide: RemainderDecisionReader, useClass: PrismaRemainderDecisionReader },
   { provide: OrderBillingRepository, useClass: PrismaOrderBillingRepository },
   WriteShortfallLetterHandler,
   GetShortfallLetterDraftHandler,
@@ -34,6 +41,10 @@ export const ORDER_SHORTFALL_PROVIDERS: readonly Provider[] = [
 ];
 
 /** Ce que les bons de livraison lisent et écrivent par les ports de la commande. */
-export const ORDER_SHORTFALL_EXPORTS = [ShortfallDecisionReader, OrderBillingRepository] as const;
+export const ORDER_SHORTFALL_EXPORTS = [
+  ShortfallDecisionReader,
+  RemainderDecisionReader,
+  OrderBillingRepository,
+] as const;
 
 export const ORDER_SHORTFALL_CONTROLLERS: readonly Type[] = [AdminOrderShortfallController];

@@ -1,6 +1,7 @@
 import type { Prisma } from "../../../platform/database/client/client.js";
 import { billingAddressPayloadSchema, isSettled, type BillingAddressPayload } from "@lfd/contracts";
 
+import { FIRST_SHIPMENT_RANK } from "../../../production/channels/commerce/index.js";
 import type { HandoverQueueWindow } from "../domain/ports/order.reader.js";
 import { fulfillmentOf, windowOf } from "./order-fulfillment.parse.js";
 import { siteIdOf } from "./pickup-site.parse.js";
@@ -129,9 +130,17 @@ export function expectedOnWhere(day: string): Prisma.OrderWhereInput {
  */
 export const DEPARTURE_SELECT = {
   lines: { select: { sku: true, productNameSnapshot: true, quantity: true } },
-  shortfallLines: true,
-  shortfallDecision: {
-    select: { decidedAt: true, decidedByStaffId: true, remainder: true, departing: true },
+  // Le manque de la commande — son rang 1 — et sa décision : les lignes de
+  // la commande sont celles du rang 1 (plan E7 reliquat, LB). Ce qui part
+  // d'un reste se lit sur son BL (L8).
+  shortfalls: {
+    where: { rank: FIRST_SHIPMENT_RANK },
+    select: {
+      lines: true,
+      decision: {
+        select: { decidedAt: true, decidedByStaffId: true, remainder: true, departing: true },
+      },
+    },
   },
 } as const;
 
@@ -268,13 +277,16 @@ interface DepartingRow {
     readonly productNameSnapshot: string;
     readonly quantity: number;
   }[];
-  readonly shortfallLines: Prisma.JsonValue | null;
-  readonly shortfallDecision: {
-    readonly decidedAt: Date;
-    readonly decidedByStaffId: string;
-    readonly remainder: string;
-    readonly departing: Prisma.JsonValue;
-  } | null;
+  /** Le manque du rang 1, s'il en a un (au plus une ligne). */
+  readonly shortfalls: readonly {
+    readonly lines: Prisma.JsonValue | null;
+    readonly decision: {
+      readonly decidedAt: Date;
+      readonly decidedByStaffId: string;
+      readonly remainder: string;
+      readonly departing: Prisma.JsonValue;
+    } | null;
+  }[];
 }
 
 /**
@@ -299,8 +311,9 @@ export function departureOf(row: DepartingRow): {
     productName: line.productNameSnapshot,
     quantity: line.quantity,
   }));
-  const decision = row.shortfallDecision;
-  if (decision === null) {
+  const shortfall = row.shortfalls[0];
+  const decision = shortfall?.decision ?? null;
+  if (shortfall === undefined || decision === null) {
     return { lines: named, abandoned: [], remainder: null };
   }
   const left = new Map(departingOf(row.id, decision.departing).map((l) => [l.sku, l.quantity]));
@@ -312,10 +325,10 @@ export function departureOf(row: DepartingRow): {
   });
   const mark = decisionMarkOf(decision);
   const abandoned =
-    mark === null || row.shortfallLines === null
+    mark === null || shortfall.lines === null
       ? []
       : abandonedOf(
-          shortfallLinesOf(row.shortfallLines),
+          shortfallLinesOf(shortfall.lines),
           new Map(named.map((line) => [line.sku, line.productName])),
         );
   return { lines, abandoned, remainder: mark?.remainder ?? null };

@@ -10,6 +10,7 @@ import {
   InMemoryDeliveryNotes,
   InMemoryOrderBillings,
   InMemoryOrderProgress,
+  InMemoryRemainderDecisions,
   InMemoryShortfallDecisions,
   billingCloserOf,
 } from "../../__tests__/delivery-note-doubles.js";
@@ -17,6 +18,7 @@ import { DeliveryNote } from "../../../domain/entities/delivery-note.js";
 import { DecisionOutsideOrderError } from "../../../domain/errors/delivery-note-errors.js";
 import { DeliveryNoteAligner } from "../delivery-note-aligner.js";
 import { DeliveryNoteFollower } from "../delivery-note-follower.js";
+import { RemainderDecisionFollower } from "../remainder-decision-follower.js";
 import { DeliveryNotePlanner } from "../delivery-note-planner.js";
 
 // Instants et jours comparés entre eux, jamais à l'horloge.
@@ -108,6 +110,7 @@ function scene() {
     clock,
     closer,
     notes,
+    new RemainderDecisionFollower(progress, notes, new InMemoryRemainderDecisions()),
   );
   const reconciler = new ReconcileDeliveryNotesHandler(
     progress.scan,
@@ -148,7 +151,7 @@ describe("Le BL d'une commande décidée (E6b, plan E6 § 13)", () => {
     await plannedAndPrinted(notes);
     decisions.decided.set("ord_1", DECISION);
 
-    await follower.followDecision("ord_1");
+    await follower.followDecision("ord_1", 1);
 
     const [note] = notes.forOrder("ord_1");
     expect(note?.status).toBe("planned");
@@ -171,7 +174,7 @@ describe("Le BL d'une commande décidée (E6b, plan E6 § 13)", () => {
     const before = notes.forOrder("ord_1");
     decisions.decided.set("ord_1", { ...DECISION, departing: [{ sku: "CRO", quantity: 99 }] });
 
-    await expect(follower.followDecision("ord_1")).rejects.toThrow(DecisionOutsideOrderError);
+    await expect(follower.followDecision("ord_1", 1)).rejects.toThrow(DecisionOutsideOrderError);
     expect(notes.forOrder("ord_1")).toEqual(before);
   });
 
@@ -221,7 +224,7 @@ describe("Le BL d'une commande décidée (E6b, plan E6 § 13)", () => {
     progress.put(order());
     await plannedAndPrinted(notes);
     decisions.decided.set("ord_1", DECISION);
-    await follower.followDecision("ord_1");
+    await follower.followDecision("ord_1", 1);
     const before = notes.forOrder("ord_1");
 
     const report = await reconciler.execute();

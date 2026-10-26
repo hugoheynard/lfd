@@ -32,7 +32,9 @@ export class PrismaOrderPlanRelease extends OrderPlanRelease {
         readyAt: null,
         // Une commande dont le départ est décidé reste confirmée, comme une
         // prête : la re-clôture ne la refabrique pas en entier (E6b, § 13).
-        shortfallDecision: { is: null },
+        // Une décision sur n'importe quel envoi (LB) : un reste n'existe
+        // qu'après celle du rang 1.
+        shortfallDecisions: { none: {} },
       },
       data: { status: OrderStatus.placed, confirmedAt: null },
     });

@@ -168,15 +168,18 @@ async function decideShortfall(
   alsoDeparting: readonly { readonly sku: string; readonly quantity: number }[] = [],
 ) {
   const at = new Date();
-  await ctx.prisma.order.update({
-    where: { id: orderId },
+  // Le manque est par envoi depuis LB (plan E7 reliquat) : le rang 1, la commande.
+  await ctx.prisma.orderShortfall.create({
     data: {
-      shortfallReportedAt: at,
-      shortfallLines: [short],
-      shortfallDecidedAt: at,
-      shortfallDecision: {
+      orderId,
+      rank: 1,
+      reportedAt: at,
+      lines: [short],
+      decidedAt: at,
+      decision: {
         create: {
           id: `dec_${orderId}`,
+          order: { connect: { id: orderId } },
           decidedAt: at,
           decidedByStaffId: "staff_manager",
           remainder: "abandoned",

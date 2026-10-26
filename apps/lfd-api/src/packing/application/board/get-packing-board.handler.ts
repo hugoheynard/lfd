@@ -87,7 +87,7 @@ export class GetPackingBoardHandler implements IQueryHandler<
     // départ incomplet — une seule lecture de l'annuaire pour les deux.
     const authors = await this.staffAuthors.identify([
       ...day.orders.map((order) => order.packed?.by ?? null),
-      ...[...aftermath.values()].map((decided) => decided.decision?.decidedBy ?? null),
+      ...aftermath.map((decided) => decided.decision?.decidedBy ?? null),
     ]);
     return packingBoardOf({
       date: query.serviceDay,

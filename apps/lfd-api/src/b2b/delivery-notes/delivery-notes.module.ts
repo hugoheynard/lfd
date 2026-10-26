@@ -20,6 +20,7 @@ import { DeliveryNotesReconcileController } from "./http/delivery-notes-reconcil
 import { DeliveryNotePlanner } from "./application/services/delivery-note-planner.js";
 import { DeliveryNoteAligner } from "./application/services/delivery-note-aligner.js";
 import { DeliveryNoteFollower } from "./application/services/delivery-note-follower.js";
+import { RemainderDecisionFollower } from "./application/services/remainder-decision-follower.js";
 import { DeliveryNoteRepository } from "./domain/ports/delivery-note.repository.js";
 import { PrismaDeliveryNoteRepository } from "./infrastructure/prisma-delivery-note.repository.js";
 import { PrepareRemainderNoteHandler } from "./application/commands/prepare-remainder-note.handler.js";
@@ -75,6 +76,7 @@ import {
     DeliveryNotePlanner,
     DeliveryNoteAligner,
     DeliveryNoteFollower,
+    RemainderDecisionFollower,
     OrderBillingCloser,
     PrismaDeliveryNoteReprintsReader,
     ProductionPlannedDeliveryNotesReader,

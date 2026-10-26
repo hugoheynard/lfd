@@ -112,21 +112,23 @@ const ABANDONED_REMAINDER = "abandoned";
 
 /** Ce qu'il faut lire d'un bon non soldé pour savoir s'il attend un reste. */
 export const AWAITING_REMAINDER_SELECT = {
-  shortfallDecision: { select: { remainder: true } },
+  // Toutes les décisions de la commande, une par envoi (plan E7 reliquat, LB).
+  shortfallDecisions: { select: { remainder: true } },
   _count: { select: { deliveryNotes: { where: { status: { in: [...PENDING_NOTE_STATUSES] } } } } },
 } as const satisfies Prisma.OrderSelect;
 
 /**
- * Un reste est encore attendu : une décision « à relivrer » (E7), ou un BL ni
- * remis ni annulé. Sinon, un bon remis sans solde est une anomalie.
+ * Un reste est encore attendu : une décision « à relivrer » (E7) sur l'un de
+ * ses envois, ou un BL ni remis ni annulé. Sinon, un bon remis sans solde est
+ * une anomalie.
  */
 export function awaitsRemainder(row: {
-  readonly shortfallDecision: { readonly remainder: string } | null;
+  readonly shortfallDecisions: readonly { readonly remainder: string }[];
   readonly _count: { readonly deliveryNotes: number };
 }): boolean {
-  const decided = row.shortfallDecision;
   return (
-    (decided !== null && decided.remainder !== ABANDONED_REMAINDER) || row._count.deliveryNotes > 0
+    row.shortfallDecisions.some((decided) => decided.remainder !== ABANDONED_REMAINDER) ||
+    row._count.deliveryNotes > 0
   );
 }
 

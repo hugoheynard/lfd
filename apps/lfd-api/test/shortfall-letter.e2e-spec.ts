@@ -80,7 +80,7 @@ describe("« Écrire au client » (E6d)", () => {
     expect((await write(order.id, relu)).status).toBe(204);
 
     const decision = await ctx.prisma.orderShortfallDecision.findUniqueOrThrow({
-      where: { orderId: order.id },
+      where: { orderId_rank: { orderId: order.id, rank: 1 } },
     });
     expect(shortfallMails()).toEqual([
       expect.objectContaining({
@@ -121,7 +121,7 @@ describe("« Écrire au client » (E6d)", () => {
 
     expect(sentMails).toHaveLength(before);
     const decision = await ctx.prisma.orderShortfallDecision.findUniqueOrThrow({
-      where: { orderId: order.id },
+      where: { orderId_rank: { orderId: order.id, rank: 1 } },
     });
     expect(decision.customerNotifiedAt).toBeNull();
   });

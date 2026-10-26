@@ -38,6 +38,7 @@ type Trace = string[];
 
 class FixedSubjects extends ShortfallDecisionRepository {
   readonly saved: ShortfallDecisionSnapshot[] = [];
+  readonly asked: number[] = [];
 
   constructor(
     private readonly trace: Trace,
@@ -46,8 +47,9 @@ class FixedSubjects extends ShortfallDecisionRepository {
     super();
   }
 
-  lockSubject(): Promise<LockedShortfallSubject | null> {
+  lockSubject(_orderId: string, rank: number): Promise<LockedShortfallSubject | null> {
     this.trace.push("lock-order");
+    this.asked.push(rank);
     return Promise.resolve(this.locked);
   }
 
@@ -77,7 +79,12 @@ class RecordingShortfalls extends OrderShortfallRepository {
 }
 
 class RecordingDesk extends ShortfallDesk {
-  readonly authorized: { orderId: string; departing: readonly DepartingLine[]; by: string }[] = [];
+  readonly authorized: {
+    orderId: string;
+    rank: number;
+    departing: readonly DepartingLine[];
+    by: string;
+  }[] = [];
 
   constructor(
     private readonly trace: Trace,
@@ -86,12 +93,17 @@ class RecordingDesk extends ShortfallDesk {
     super();
   }
 
-  authorize(orderId: string, departing: readonly DepartingLine[], by: string): Promise<void> {
+  authorize(
+    orderId: string,
+    rank: number,
+    departing: readonly DepartingLine[],
+    by: string,
+  ): Promise<void> {
     this.trace.push("authorize-sheet");
     if (this.refusal !== null) {
       return Promise.reject(this.refusal);
     }
-    this.authorized.push({ orderId, departing, by });
+    this.authorized.push({ orderId, rank, departing, by });
     return Promise.resolve();
   }
 }
@@ -107,12 +119,18 @@ type SignalLine = { readonly sku: string; readonly due: number; readonly packed:
 function locked(
   settlementRegime: "account" | "paid" = "account",
   lines: readonly SignalLine[] = [{ sku: "CRO", due: 12, packed: 9 }],
+  shipment: { readonly rank: number; readonly status: "confirmed" | "ready" } = {
+    rank: 1,
+    status: "confirmed",
+  },
 ): LockedShortfallSubject {
   return {
     subject: {
       orderId: "ord_1",
       reference: "ORD-0001",
-      status: "confirmed",
+      rank: shipment.rank,
+      status: shipment.status,
+      remainderNoteStatus: shipment.rank === 1 ? null : "planned",
       settlementRegime,
       voucherDiscountCents: 0,
       frozenTerms: [],
@@ -121,6 +139,7 @@ function locked(
     placedByUserId: "u_1",
     shortfall: {
       orderId: "ord_1",
+      rank: shipment.rank,
       reference: "ORD-0001",
       reportedAt: REPORTED_AT,
       lines,
@@ -149,7 +168,7 @@ function scene(subject: LockedShortfallSubject | null, refusal: BusinessError | 
   return { trace, decisions, shortfalls, desk, notes, durable, handler };
 }
 
-const COMMAND = new DecideOrderShortfallCommand("ord_1", "staff_1", "abandoned");
+const COMMAND = new DecideOrderShortfallCommand("ord_1", "staff_1", "abandoned", 1);
 
 describe("DecideOrderShortfallHandler — « Décider du départ » (E6b)", () => {
   it("verrouille la commande, puis la fiche ; écrit la décision et le signal résolu ; réécrit le BL", async () => {
@@ -157,9 +176,11 @@ describe("DecideOrderShortfallHandler — « Décider du départ » (E6b)", () =
 
     await handler.execute(COMMAND);
 
-    expect(trace).toEqual(["lock-order", "authorize-sheet", "save-decision", "save-signal"]);
+    // Le signal avant la décision : depuis LB, la décision désigne sa ligne
+    // (clé étrangère vers `order_shortfall`).
+    expect(trace).toEqual(["lock-order", "authorize-sheet", "save-signal", "save-decision"]);
     expect(desk.authorized).toEqual([
-      { orderId: "ord_1", departing: [{ sku: "CRO", quantity: 9 }], by: "staff_1" },
+      { orderId: "ord_1", rank: 1, departing: [{ sku: "CRO", quantity: 9 }], by: "staff_1" },
     ]);
     expect(decisions.saved[0]).toMatchObject({
       decidedAt: NOW,
@@ -237,5 +258,26 @@ describe("DecideOrderShortfallHandler — « Décider du départ » (E6b)", () =
 
   it("une commande inconnue est une 404", async () => {
     await expect(scene(null).handler.execute(COMMAND)).rejects.toThrow(OrderNotFoundError);
+  });
+
+  /**
+   * Plan E7 reliquat, LB : le manque d'un reliquat se décide pendant que la
+   * commande est prête ; la fiche, le BL, le fait et la clé sont ceux de SON rang.
+   */
+  it("décide le manque d'un reliquat à son rang : fiche, BL, fait et clé de ce rang", async () => {
+    const { decisions, desk, notes, durable, handler } = scene(
+      locked("account", [{ sku: "CRO", due: 3, packed: 1 }], { rank: 2, status: "ready" }),
+    );
+
+    await handler.execute(new DecideOrderShortfallCommand("ord_1", "staff_1", "abandoned", 2));
+
+    expect(decisions.asked).toEqual([2]);
+    expect(decisions.saved[0]).toMatchObject({ rank: 2, departing: [{ sku: "CRO", quantity: 1 }] });
+    expect(desk.authorized[0]).toMatchObject({ orderId: "ord_1", rank: 2 });
+    expect(notes.calls).toEqual(["follow-decision:ord_1:r2"]);
+    expect(durable.facts[0]).toMatchObject({
+      key: "order.shortfall_decided:ord_1:r2",
+      payload: { rank: 2 },
+    });
   });
 });

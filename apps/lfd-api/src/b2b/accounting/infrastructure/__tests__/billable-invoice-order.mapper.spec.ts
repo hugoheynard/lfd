@@ -61,7 +61,7 @@ function row(overrides: Partial<BillableInvoiceOrderRow> = {}): BillableInvoiceO
     billableVatCents: null,
     billableVatShares: null,
     billableTotalCents: null,
-    shortfallDecision: null,
+    shortfallDecisions: [],
     deliveryNotes: [],
     ...overrides,
   };
@@ -105,7 +105,7 @@ describe("toBillableInvoiceOrder", () => {
     const frozen = toBillableInvoiceOrder(
       row({
         ...PARTIAL_BILLABLE,
-        shortfallDecision: { id: "dec_1" },
+        shortfallDecisions: [{ id: "dec_1" }],
         deliveryNotes: [
           {
             number: "BL-1042-1",
@@ -163,7 +163,7 @@ describe("toBillableInvoiceOrder", () => {
   });
 
   it("un départ incomplet sans solde n'est jamais facturé sur la commande entière", () => {
-    expect(() => toBillableInvoiceOrder(row({ shortfallDecision: { id: "dec_1" } }))).toThrow(
+    expect(() => toBillableInvoiceOrder(row({ shortfallDecisions: [{ id: "dec_1" }] }))).toThrow(
       UnsettledPartialOrderError,
     );
   });

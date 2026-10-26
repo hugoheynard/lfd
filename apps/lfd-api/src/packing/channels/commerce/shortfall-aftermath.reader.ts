@@ -31,6 +31,16 @@ export interface ShortfallAftermath {
 }
 
 /**
+ * Le départ décidé d'UN envoi `(commande, rang)` (plan E7 reliquat, LB) : une
+ * fiche du poste est celle d'un envoi, et deux envois d'une commande ont
+ * chacun leur décision, leur reste et leur BL.
+ */
+export interface ShipmentAftermath extends ShortfallAftermath {
+  readonly orderId: string;
+  readonly rank: number;
+}
+
+/**
  * **Après la décision d'un départ incomplet** (Hugo, 2026-10-25), vu du poste
  * de colisage — DÉCLARÉ par le colisage, IMPLÉMENTÉ par le commerce.
  *
@@ -39,6 +49,6 @@ export interface ShortfallAftermath {
  * parties ; le dû d'origine et le BL sont au commerce.
  */
 export abstract class ShortfallAftermathReader {
-  /** Parmi ces commandes, celles au départ incomplet décidé, par id. */
-  abstract among(orderIds: readonly string[]): Promise<ReadonlyMap<string, ShortfallAftermath>>;
+  /** Parmi les envois de ces commandes, ceux au départ incomplet décidé — un par envoi. */
+  abstract among(orderIds: readonly string[]): Promise<readonly ShipmentAftermath[]>;
 }

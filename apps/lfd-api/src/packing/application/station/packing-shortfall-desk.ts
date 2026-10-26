@@ -1,4 +1,3 @@
-import { FIRST_SHIPMENT_RANK } from "../../../production/channels/packing/index.js";
 import { Injectable } from "@nestjs/common";
 
 import { Clock } from "../../../platform/time/clock.js";
@@ -8,7 +7,7 @@ import { PackingSheetRepository } from "../../domain/ports/packing-sheet.reposit
 
 /**
  * L'implémentation du guichet du départ incomplet (E6b) : le bac le plus
- * récent de la commande, sous verrou, autorisé par l'agrégat, réécrit. Tourne
+ * récent de l'envoi `(commande, rang)` (plan E7 reliquat, LB), sous verrou, autorisé par l'agrégat, réécrit. Tourne
  * dans l'unité de travail du commerce — il n'en ouvre pas.
  *
  * @sans-journal la décision est l'acte, écrite par le commerce dans la même
@@ -25,12 +24,11 @@ export class PackingShortfallDesk extends ShortfallDesk {
 
   async authorize(
     orderId: string,
+    rank: number,
     departing: readonly DepartingLine[],
     decidedBy: string,
   ): Promise<void> {
-    // La décision du commerce vise encore la commande — rang 1 — jusqu'au
-    // manque par envoi (plan E7 reliquat, LB).
-    const sheet = await this.sheets.lockLatestOf(orderId, FIRST_SHIPMENT_RANK);
+    const sheet = await this.sheets.lockLatestOf(orderId, rank);
     if (sheet === null) {
       throw new ShortfallSheetNotFoundError(orderId);
     }

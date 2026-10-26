@@ -1,10 +1,12 @@
 import { Injectable } from "@nestjs/common";
 
 import type { Prisma } from "../../../platform/database/client/client.js";
+import { FIRST_SHIPMENT_RANK } from "../../../production/channels/commerce/index.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 import type { DepartingQuantity } from "../domain/entities/shortfall-decision.js";
 import {
+  RemainderDecisionReader,
   ShortfallDecisionReader,
   type DecidedDeparture,
 } from "../domain/ports/shortfall-decision.reader.js";
@@ -41,7 +43,22 @@ export function departingOf(
   });
 }
 
-/** La décision comme entrée du BL (E6b, § 13) — par le client routé. */
+const DECIDED_SELECT = {
+  orderId: true,
+  departing: true,
+  order: { select: FROZEN_ADJUSTMENT_SELECT },
+} as const satisfies Prisma.OrderShortfallDecisionSelect;
+
+type DecidedRow = Prisma.OrderShortfallDecisionGetPayload<{ select: typeof DECIDED_SELECT }>;
+
+function departureOf(row: DecidedRow): DecidedDeparture {
+  return {
+    departing: departingOf(row.orderId, row.departing),
+    adjustments: frozenAdjustmentsOf(row.orderId, row.order),
+  };
+}
+
+/** La décision du rang 1 comme entrée du BL-1 (E6b, § 13 ; LB) — par le client routé. */
 @Injectable()
 export class PrismaShortfallDecisionReader extends ShortfallDecisionReader {
   constructor(private readonly prisma: PrismaService) {
@@ -53,17 +70,25 @@ export class PrismaShortfallDecisionReader extends ShortfallDecisionReader {
       return new Map();
     }
     const rows = await this.prisma.orderShortfallDecision.findMany({
-      where: { orderId: { in: [...orderIds] } },
-      select: { orderId: true, departing: true, order: { select: FROZEN_ADJUSTMENT_SELECT } },
+      where: { orderId: { in: [...orderIds] }, rank: FIRST_SHIPMENT_RANK },
+      select: DECIDED_SELECT,
     });
-    return new Map(
-      rows.map((row) => [
-        row.orderId,
-        {
-          departing: departingOf(row.orderId, row.departing),
-          adjustments: frozenAdjustmentsOf(row.orderId, row.order),
-        },
-      ]),
-    );
+    return new Map(rows.map((row) => [row.orderId, departureOf(row)]));
+  }
+}
+
+/** La décision d'un reliquat comme entrée de SON BL (plan E7 reliquat, LB) — par le client routé. */
+@Injectable()
+export class PrismaRemainderDecisionReader extends RemainderDecisionReader {
+  constructor(private readonly prisma: PrismaService) {
+    super();
+  }
+
+  async decisionOf(orderId: string, rank: number): Promise<DecidedDeparture | null> {
+    const row = await this.prisma.orderShortfallDecision.findUnique({
+      where: { orderId_rank: { orderId, rank } },
+      select: DECIDED_SELECT,
+    });
+    return row === null ? null : departureOf(row);
   }
 }

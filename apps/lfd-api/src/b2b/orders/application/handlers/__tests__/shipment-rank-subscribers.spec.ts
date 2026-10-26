@@ -9,8 +9,8 @@ import {
 import { PackingOrderPackedEvent } from "../../../../../production/channels/commerce/index.js";
 import type { DurableEvent } from "../../../../../platform/outbox/durable-event.js";
 import type { DurableSubscriber } from "../../../../../platform/outbox/durable-handler.js";
-import { LaterShipmentNotYetHandledError } from "../../../domain/errors/order-errors.js";
-import { ensureFirstShipment } from "../later-shipment-guard.js";
+import { ClearOrderShortfallCommand } from "../../commands/clear-order-shortfall.command.js";
+import { RecordOrderShortfallCommand } from "../../commands/record-order-shortfall.command.js";
 import { OnOrderHandedOver } from "../on-order-handed-over.handler.js";
 import { OnPackingOrderPacked } from "../on-packing-order-packed.handler.js";
 import { OnPackingShortfallCleared } from "../on-packing-shortfall-cleared.handler.js";
@@ -57,21 +57,38 @@ function factsOf(rank: number): readonly (readonly [SubscriberClass, DurableEven
  * Régression (plan E7 reliquat, §3 bis) : depuis L3a, ces faits portent un
  * rang, et leurs abonnés du commerce le relisaient sans s'en servir — un fait
  * de reliquat aurait rendu remise ou en manque la commande ENTIÈRE. Ignoré
- * avec trace en L3b, il est REFUSÉ depuis L4a : le message reste rejouable.
+ * avec trace en L3b, refusé (rejouable) de L4a à LB ; depuis LB, le manque
+ * est PAR ENVOI : la commande transmise porte le rang du fait.
  */
-describe("Abonnés du commerce face à un fait de reliquat (L3b, L4a, L4b)", () => {
-  it.each(factsOf(REMAINDER_RANK).map(([cls, event]) => [cls.name, cls, event] as const))(
-    "%s refuse un fait de rang 2, rejouable, sans rien demander au commerce",
-    async (_name, handlerClass, event) => {
-      const { sent, handler } = await subject(handlerClass);
-      const fact = event.durableFact();
+describe("Abonnés du commerce face à un fait de reliquat (L3b, L4a, L4b, LB)", () => {
+  it("OnPackingShortfallReported transmet le rang du reliquat signalé", async () => {
+    const { sent, handler } = await subject(OnPackingShortfallReported);
+    const fact = new PackingShortfallReportedEvent("ord_1", REMAINDER_RANK, "ORD-0001", AT, "s1", [
+      { sku: "PAIN-1", due: 3, packed: 1 },
+    ]).durableFact();
 
-      await expect(
-        handler.handle({ eventId: "evt_1", type: fact.type, payload: fact.payload }),
-      ).rejects.toBeInstanceOf(LaterShipmentNotYetHandledError);
-      expect(sent).toEqual([]);
-    },
-  );
+    await handler.handle({ eventId: "evt_1", type: fact.type, payload: fact.payload });
+
+    expect(sent).toEqual([
+      new RecordOrderShortfallCommand("ORD-0001", REMAINDER_RANK, AT, [
+        { sku: "PAIN-1", due: 3, packed: 1 },
+      ]),
+    ]);
+  });
+
+  it("OnPackingShortfallCleared transmet le rang du reliquat effacé", async () => {
+    const { sent, handler } = await subject(OnPackingShortfallCleared);
+    const fact = new PackingShortfallClearedEvent(
+      "ord_1",
+      REMAINDER_RANK,
+      "ORD-0001",
+      AT,
+    ).durableFact();
+
+    await handler.handle({ eventId: "evt_1", type: fact.type, payload: fact.payload });
+
+    expect(sent).toEqual([new ClearOrderShortfallCommand("ORD-0001", REMAINDER_RANK, AT)]);
+  });
 
   it.each(factsOf(1).map(([cls, event]) => [cls.name, cls, event] as const))(
     "%s applique un fait de rang 1, comme avant",
@@ -127,19 +144,5 @@ describe("Abonnés du commerce face à un fait de reliquat (L3b, L4a, L4b)", () 
     await handler.handle({ eventId: "evt_1", type: fact.type, payload: fact.payload });
 
     expect(sent).toEqual([]);
-  });
-});
-
-describe("ensureFirstShipment", () => {
-  it("laisse passer le rang 1", () => {
-    expect(() => {
-      ensureFirstShipment({ orderId: "ord_1", rank: 1 }, "packing.shortfall_reported", "LB");
-    }).not.toThrow();
-  });
-
-  it("refuse un rang > 1 en nommant le fait, le rang, la commande et le lot", () => {
-    expect(() => {
-      ensureFirstShipment({ orderId: "ord_1", rank: 2 }, "packing.shortfall_reported", "LB");
-    }).toThrow(/packing\.shortfall_reported.*rang 2.*ord_1.*LB/);
   });
 });

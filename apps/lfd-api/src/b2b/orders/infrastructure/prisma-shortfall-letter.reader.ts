@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
+import { FIRST_SHIPMENT_RANK } from "../../../production/channels/commerce/index.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import {
   ShortfallLetterReader,
@@ -8,7 +9,11 @@ import {
 import { orderLocaleOf } from "./order-locale-column.js";
 import { shortfallLinesOf } from "./prisma-order-shortfall.repository.js";
 
-/** La proposition « Écrire au client » (E6d) — par le client routé, sans verrou. */
+/**
+ * La proposition « Écrire au client » (E6d) — par le client routé, sans
+ * verrou. Sur le manque de la commande, rang 1, comme son écriture
+ * (`PrismaShortfallNoticeRepository`, plan E7 reliquat, LB).
+ */
 @Injectable()
 export class PrismaShortfallLetterReader extends ShortfallLetterReader {
   constructor(private readonly prisma: PrismaService) {
@@ -21,19 +26,26 @@ export class PrismaShortfallLetterReader extends ShortfallLetterReader {
       select: {
         orderNumber: true,
         locale: true,
-        shortfallLines: true,
-        shortfallDecision: { select: { customerNotifiedAt: true } },
+        shortfalls: {
+          where: { rank: FIRST_SHIPMENT_RANK },
+          select: { lines: true, decision: { select: { customerNotifiedAt: true } } },
+        },
         lines: { select: { sku: true, productNameSnapshot: true } },
       },
     });
-    if (row === null || row.shortfallDecision === null || row.shortfallLines === null) {
+    const shortfall = row?.shortfalls[0];
+    if (row === null || shortfall === undefined) {
+      return null;
+    }
+    const { decision, lines } = shortfall;
+    if (decision === null || lines === null) {
       return null;
     }
     return {
       reference: row.orderNumber,
       locale: orderLocaleOf(row.locale),
-      notified: row.shortfallDecision.customerNotifiedAt !== null,
-      lines: shortfallLinesOf(row.shortfallLines),
+      notified: decision.customerNotifiedAt !== null,
+      lines: shortfallLinesOf(lines),
       names: new Map(row.lines.map((line) => [line.sku, line.productNameSnapshot])),
     };
   }

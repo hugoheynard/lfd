@@ -6,12 +6,14 @@ import {
   FixedConfirmedOrders,
   InMemoryDeliveryNotes,
   InMemoryOrderProgress,
+  InMemoryRemainderDecisions,
   InMemoryShortfallDecisions,
   billingCloserOf,
 } from "../../__tests__/delivery-note-doubles.js";
 import { DeliveryNote } from "../../../domain/entities/delivery-note.js";
 import { DeliveryNoteAligner } from "../delivery-note-aligner.js";
 import { DeliveryNoteFollower } from "../delivery-note-follower.js";
+import { RemainderDecisionFollower } from "../remainder-decision-follower.js";
 import { DeliveryNotePlanner } from "../delivery-note-planner.js";
 
 // Comparés entre eux seulement.
@@ -80,6 +82,7 @@ function scene() {
     clock,
     billingCloserOf(notes),
     notes,
+    new RemainderDecisionFollower(progress, notes, new InMemoryRemainderDecisions()),
   );
   return { notes, progress, follower };
 }
@@ -213,6 +216,7 @@ describe("DeliveryNoteFollower — les gestes (plan E2, § 8.3)", () => {
       clock,
       billingCloserOf(notes),
       notes,
+      new RemainderDecisionFollower(progress, notes, new InMemoryRemainderDecisions()),
     );
     await notes.save(DeliveryNote.planFromOrder("dn_other", order(), CONFIRMED_AT));
     progress.put(order({ status: "ready", readyAt: READY_AT }));

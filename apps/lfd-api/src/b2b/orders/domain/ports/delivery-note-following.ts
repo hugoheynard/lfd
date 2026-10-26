@@ -38,11 +38,13 @@ export abstract class DeliveryNoteFollowing {
   abstract handOver(orderId: string): Promise<void>;
 
   /**
-   * Le départ incomplet de la commande vient d'être décidé (E6b, plan E6
-   * § 13) : son BL prévu se réécrit aux quantités décidées, ses montants
-   * recomposés — par la même règle que les autres gestes.
+   * Le départ incomplet de l'envoi `rank` vient d'être décidé (E6b, plan E6
+   * § 13 ; par envoi depuis le plan E7 reliquat, LB) : SON BL prévu se
+   * réécrit aux quantités décidées, ses montants recomposés — le BL-1 par la
+   * même règle que les autres gestes, celui d'un reliquat sur ses propres
+   * lignes. Strict : un BL qui ne peut pas suivre fait échouer la décision.
    */
-  abstract followDecision(orderId: string): Promise<void>;
+  abstract followDecision(orderId: string, rank: number): Promise<void>;
 
   /**
    * Les quantités d'une commande inscrite viennent d'être révisées (plan A2,

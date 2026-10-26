@@ -39,6 +39,7 @@ export {
   type AbandonedLine,
   type ShortfallDecisionMark,
   type ShortfallAftermath,
+  type ShipmentAftermath,
 } from "./shortfall-aftermath.reader.js";
 export { OrderBagLabelReader, type OrderBagLabelFacts } from "./order-bag-label.reader.js";
 export {

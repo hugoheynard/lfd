@@ -18,7 +18,9 @@ const BILLING_SELECT = {
   orderNumber: true,
   status: true,
   receivedOn: true,
-  shortfallDecision: { select: { id: true } },
+  // « Partiel » = une décision existe pour UN envoi de la commande (plan E7
+  // reliquat, LB, choix 15) : une suffit à le dire.
+  shortfallDecisions: { select: { id: true }, take: 1 },
   ...ORDER_AMOUNTS_SELECT,
   ...BILLABLE_SELECT,
 } as const satisfies Prisma.OrderSelect;
@@ -30,7 +32,7 @@ function billingOf(row: BillingRow): OrderBilling {
     orderId: row.id,
     reference: row.orderNumber,
     status: row.status,
-    partial: row.shortfallDecision !== null,
+    partial: row.shortfallDecisions.length > 0,
     receivedOn: dayOf(row.receivedOn),
     orderAmounts: orderAmountsOf(row),
     billable: billableOf(row),

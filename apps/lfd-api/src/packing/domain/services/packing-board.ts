@@ -6,7 +6,7 @@ import {
   allocationOf,
   type Awaiting,
   byNameThenSku,
-  type DecidedShortfall,
+  type DecidedShipmentShortfall,
   sheetOf,
 } from "./packing-board-sheet.js";
 import { leftToPlace, shortfall } from "./placement.js";
@@ -53,8 +53,8 @@ export interface BoardSources {
   readonly departures: ReadonlyMap<string, LocalDeparture>;
   /** Les commandes dont le BL est à réimprimer (plan E6, § 14). Absent = aucune. */
   readonly reprintNeeded?: ReadonlySet<string>;
-  /** Les départs incomplets décidés, par id, lus au commerce. Absent = aucun. */
-  readonly aftermath?: ReadonlyMap<string, DecidedShortfall>;
+  /** Les départs incomplets décidés, un par envoi, lus au commerce. Absent = aucun. */
+  readonly aftermath?: readonly DecidedShipmentShortfall[];
 }
 
 /**

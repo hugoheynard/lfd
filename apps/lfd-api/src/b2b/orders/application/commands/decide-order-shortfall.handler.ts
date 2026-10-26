@@ -5,7 +5,6 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { Clock } from "../../../../platform/time/clock.js";
-import { FIRST_SHIPMENT_RANK } from "../../../../production/channels/commerce/index.js";
 import { OrderShortfall } from "../../domain/entities/order-shortfall.js";
 import { ShortfallDecision } from "../../domain/entities/shortfall-decision.js";
 import { OrderNotFoundError } from "../../domain/errors/order-errors.js";
@@ -21,14 +20,17 @@ import { DecideOrderShortfallCommand } from "./decide-order-shortfall.command.js
  *
  * Une transaction, et les verrous dans cet ordre — **commande, puis fiche** :
  *
- * 1. la ligne `orders` verrouillée et relue ; l'agrégat juge (signal en
- *    vigueur, confirmée, au compte, sans bon, règles figées, au moins une
- *    pièce au bac) et résout le signal ;
- * 2. le colisage autorise sous le verrou de sa fiche (`ShortfallDesk`) : le
- *    bac doit contenir exactement ce qui part, les lignes dues y sont réduites ;
+ * 1. la ligne `orders` verrouillée et relue, avec l'envoi signalé ; l'agrégat
+ *    juge (signal en vigueur, envoi encore à coliser — commande confirmée au
+ *    rang 1, BL du reliquat prévu au-delà —, au compte, sans bon, règles
+ *    figées, au moins une pièce au bac) et résout le signal ;
+ * 2. le colisage autorise sous le verrou de la fiche DE CET ENVOI
+ *    (`ShortfallDesk`) : le bac doit contenir exactement ce qui part, les
+ *    lignes dues y sont réduites ;
  * 3. la décision et le signal résolu s'écrivent ;
- * 4. le BL prévu se réécrit aux quantités décidées, ses montants recomposés
- *    (`DeliveryNoteFollowing.followDecision`).
+ * 4. le BL de l'envoi se réécrit aux quantités décidées, ses montants
+ *    recomposés (`DeliveryNoteFollowing.followDecision`) — le BL-1 au rang 1,
+ *    celui du reliquat au-delà ; l'autre ne bouge pas.
  *
  * Un refus à n'importe quelle étape annule tout : ni fiche réduite sans
  * décision, ni décision sans fiche réduite.
@@ -58,7 +60,7 @@ export class DecideOrderShortfallHandler implements ICommandHandler<
 
   async execute(command: DecideOrderShortfallCommand): Promise<void> {
     await this.uow.run(async () => {
-      const locked = await this.decisions.lockSubject(command.orderId);
+      const locked = await this.decisions.lockSubject(command.orderId, command.rank);
       if (locked === null) {
         throw new OrderNotFoundError(command.orderId);
       }
@@ -69,15 +71,20 @@ export class DecideOrderShortfallHandler implements ICommandHandler<
         decidedBy: command.staffUserId,
         remainder: command.remainder,
       });
-      await this.desk.authorize(command.orderId, decision.departing, command.staffUserId);
-      await this.decisions.save(decision);
+      await this.desk.authorize(
+        command.orderId,
+        command.rank,
+        decision.departing,
+        command.staffUserId,
+      );
+      // Le signal d'abord : la décision désigne sa ligne (clé étrangère).
       await this.shortfalls.save(shortfall);
-      await this.deliveryNotes.followDecision(command.orderId);
+      await this.decisions.save(decision);
+      await this.deliveryNotes.followDecision(command.orderId, command.rank);
       await this.durable.publish(
         new OrderShortfallDecidedEvent(
           command.orderId,
-          // La décision est encore unique par commande (LB la rend par envoi).
-          FIRST_SHIPMENT_RANK,
+          command.rank,
           locked.subject.reference,
           locked.placedByUserId,
           command.staffUserId,

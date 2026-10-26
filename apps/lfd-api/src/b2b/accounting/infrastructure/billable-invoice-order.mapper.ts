@@ -48,7 +48,8 @@ export const BILLABLE_INVOICE_ORDER_SELECT = {
   billableVatCents: true,
   billableVatShares: true,
   billableTotalCents: true,
-  shortfallDecision: { select: { id: true } },
+  // Une décision pour UN envoi suffit à dire « partiel » (plan E7 reliquat, LB).
+  shortfallDecisions: { select: { id: true }, take: 1 },
   deliveryNotes: {
     where: { status: HANDED_OVER },
     orderBy: { rank: "asc" },
@@ -101,7 +102,7 @@ const DAY_LENGTH = 10;
  */
 export function toBillableInvoiceOrder(row: BillableInvoiceOrderRow): FrozenInvoiceOrder {
   const ordered = toFrozenInvoiceOrder(row);
-  const partial = row.shortfallDecision !== null;
+  const partial = row.shortfallDecisions.length > 0;
   const fromNotes = partial || row.deliveryNotes.length > 1;
   if (row.billableTotalCents === null) {
     if (partial) {

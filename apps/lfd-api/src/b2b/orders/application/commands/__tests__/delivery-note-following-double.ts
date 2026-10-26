@@ -24,8 +24,9 @@ export class RecordingDeliveryNoteFollowing extends DeliveryNoteFollowing {
     return this.record(`hand-over:${orderId}`);
   }
 
-  followDecision(orderId: string): Promise<void> {
-    return this.record(`follow-decision:${orderId}`);
+  /** Le rang 1 garde la trace d'avant ; un reliquat la suffixe `:r<rang>`. */
+  followDecision(orderId: string, rank: number): Promise<void> {
+    return this.record(`follow-decision:${orderId}${rank === 1 ? "" : `:r${String(rank)}`}`);
   }
 
   followRevision(orderId: string): Promise<void> {

@@ -87,7 +87,8 @@ export const REVISABLE_ORDER_SELECT = {
   salesTermsFileId: true,
   locale: true,
   catalogVersionId: true,
-  shortfallDecidedAt: true,
+  // Un départ décidé sur UN envoi suffit à figer la commande (plan E7 reliquat, LB).
+  shortfallDecisions: { select: { id: true }, take: 1 },
   lines: { select: LINE_SELECT, orderBy: { sku: "asc" } },
 } as const;
 
@@ -130,7 +131,7 @@ export interface RevisableOrderRow {
   readonly salesTermsFileId: string | null;
   readonly locale: string | null;
   readonly catalogVersionId: string | null;
-  readonly shortfallDecidedAt: Date | null;
+  readonly shortfallDecisions: readonly { readonly id: string }[];
   readonly lines: readonly RevisableLineRow[];
 }
 
@@ -151,7 +152,7 @@ export function toRevisableOrder(row: RevisableOrderRow): RevisableOrder {
     status: row.status,
     paymentStatus: row.paymentStatus,
     totalCents: row.totalCents,
-    shortfallDecided: row.shortfallDecidedAt !== null,
+    shortfallDecided: row.shortfallDecisions.length > 0,
     stripePaymentIntentId: row.stripePaymentIntentId,
     cancelledAt: row.cancelledAt,
     refunds: refundPositionOf(row.totalCents, row.refunds),

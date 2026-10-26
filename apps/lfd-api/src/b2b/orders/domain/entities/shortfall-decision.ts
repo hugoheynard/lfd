@@ -5,6 +5,7 @@ import {
   CardOrderShortfallError,
   NothingDepartsError,
   OrderTooOldForShortfallError,
+  RemainderNotDecidableError,
   ShortfallAlreadyDecidedError,
   ShortfallOrderNotConfirmedError,
   VoucherOrderShortfallError,
@@ -23,16 +24,25 @@ export interface FrozenTerm {
   readonly hasAdjustment: boolean;
 }
 
-/** Ce que la décision lit de la commande, sous son verrou. */
+/** Ce que la décision lit de la commande et de l'envoi signalé, sous le verrou de la commande. */
 export interface ShortfallDecisionSubject {
   readonly orderId: string;
   readonly reference: string;
+  /** Le rang de l'envoi dont on décide (plan E7 reliquat, lot LB). */
+  readonly rank: number;
+  /** Le statut de la COMMANDE — celui de l'envoi de rang 1. */
   readonly status: OrderStatus;
+  /**
+   * Au-delà du rang 1, le statut du BL vivant de ce rang (`planned`,
+   * `prepared`, `handed_over`) ; `null` sans BL vivant. Ignoré au rang 1, dont
+   * l'état est celui de la commande (plan E7 reliquat, choix 3).
+   */
+  readonly remainderNoteStatus: string | null;
   readonly settlementRegime: SettlementRegime;
   readonly voucherDiscountCents: number;
   /** La remise, les frais de livraison et la surtaxe. */
   readonly frozenTerms: readonly FrozenTerm[];
-  /** Une décision existe déjà en base. */
+  /** Une décision existe déjà en base pour CET envoi. */
   readonly decided: boolean;
 }
 
@@ -40,6 +50,7 @@ export interface ShortfallDecisionSubject {
 export interface ShortfallDecisionSnapshot {
   readonly id: string;
   readonly orderId: string;
+  readonly rank: number;
   readonly reference: string;
   readonly decidedAt: Date;
   readonly decidedBy: string;
@@ -58,15 +69,23 @@ export interface ShortfallDecisionAct {
 
 const CARD_REGIMES: ReadonlySet<SettlementRegime> = new Set(["due", "paid"]);
 
+/** Le rang de la commande elle-même (comme `order-billing.ts`). */
+const FIRST_SHIPMENT_RANK = 1;
+
+/** Le seul état d'un reliquat dont le départ se décide : son bac n'est pas fermé. */
+const DECIDABLE_REMAINDER_NOTE = "planned";
+
 /**
  * **La décision du départ incomplet** (lot E6b,
  * plan E6 (`documentation/commandes/bon-de-livraison.md`) § 12.2 et § 13) :
- * une par commande, définitive (Q-I4). Ce qui part est EXACTEMENT ce que le
+ * une par ENVOI `(commande, rang)` depuis le plan E7 reliquat (lot LB,
+ * choix 15), définitive (Q-I4). Ce qui part est EXACTEMENT ce que le
  * colisage a figé au signal en vigueur — jamais une saisie : la fiche le
  * revérifie sous son verrou (`ShortfallDesk.authorize`).
  *
- * Elle porte l'invariant de ce qui peut partir incomplet : une commande
- * confirmée, au compte, sans bon de fidélité, dont chaque montant garde la
+ * Elle porte l'invariant de ce qui peut partir incomplet : un envoi encore à
+ * coliser — la commande confirmée au rang 1, le BL du reliquat prévu au-delà
+ * (choix 11) —, une commande au compte, sans bon de fidélité, dont chaque montant garde la
  * règle qui l'a produit — sans quoi le bon de livraison partiel ne saurait
  * pas recomposer ses montants (`composePartial`) —, et dont au moins une pièce
  * est au bac.
@@ -78,7 +97,8 @@ export class ShortfallDecision {
 
   /**
    * @throws {ShortfallAlreadyDecidedError} @throws {NoShortfallToDecideError}
-   * @throws {ShortfallOrderNotConfirmedError} @throws {CardOrderShortfallError}
+   * @throws {ShortfallOrderNotConfirmedError} @throws {RemainderNotDecidableError}
+   * @throws {CardOrderShortfallError}
    * @throws {VoucherOrderShortfallError} @throws {OrderTooOldForShortfallError}
    * @throws {NothingDepartsError}
    */
@@ -87,23 +107,25 @@ export class ShortfallDecision {
     shortfall: OrderShortfall,
     act: ShortfallDecisionAct,
   ): ShortfallDecision {
+    const shipment = shipmentLabelOf(subject);
     if (subject.decided || shortfall.decided) {
-      throw new ShortfallAlreadyDecidedError(subject.reference);
+      throw new ShortfallAlreadyDecidedError(shipment);
     }
     // Le signal d'abord : sans lui, le reste n'a pas de sens.
     const pending = shortfall.pending;
     if (pending === null) {
-      throw new NoShortfallToDecideError(subject.reference);
+      throw new NoShortfallToDecideError(shipment);
     }
     ensureDecidable(subject);
     const departing = pending.lines.map((line) => ({ sku: line.sku, quantity: line.packed }));
     if (departing.every((line) => line.quantity === 0)) {
-      throw new NothingDepartsError(subject.reference);
+      throw new NothingDepartsError(shipment);
     }
     shortfall.decide(act.decidedAt);
     return new ShortfallDecision({
       ...act,
       orderId: subject.orderId,
+      rank: subject.rank,
       reference: subject.reference,
       departing,
       signalReportedAt: pending.reportedAt,
@@ -120,9 +142,7 @@ export class ShortfallDecision {
 }
 
 function ensureDecidable(subject: ShortfallDecisionSubject): void {
-  if (subject.status !== "confirmed") {
-    throw new ShortfallOrderNotConfirmedError(subject.reference, subject.status);
-  }
+  ensureShipmentToPack(subject);
   if (CARD_REGIMES.has(subject.settlementRegime)) {
     throw new CardOrderShortfallError(subject.reference);
   }
@@ -132,4 +152,36 @@ function ensureDecidable(subject: ShortfallDecisionSubject): void {
   if (subject.frozenTerms.some((term) => term.amountCents !== 0 && !term.hasAdjustment)) {
     throw new OrderTooOldForShortfallError(subject.reference);
   }
+}
+
+/**
+ * L'envoi SIGNALÉ est encore à coliser (plan E7 reliquat, choix 11) : au
+ * rang 1, la commande confirmée, comme avant ; au-delà, le BL du reliquat
+ * prévu. Le même jour, la commande peut être prête pendant que son reste
+ * colise : c'est le reste qui décide.
+ */
+function ensureShipmentToPack(subject: ShortfallDecisionSubject): void {
+  if (subject.rank === FIRST_SHIPMENT_RANK) {
+    if (subject.status !== "confirmed") {
+      throw new ShortfallOrderNotConfirmedError(subject.reference, subject.status);
+    }
+    return;
+  }
+  if (subject.remainderNoteStatus !== DECIDABLE_REMAINDER_NOTE) {
+    throw new RemainderNotDecidableError(
+      subject.reference,
+      subject.rank,
+      subject.remainderNoteStatus,
+    );
+  }
+}
+
+/**
+ * L'envoi tel que l'équipe le lit : le numéro de commande au rang 1,
+ * `ORD-…-<rang>` au-delà — la référence du comptoir et du BL d'un reste.
+ */
+function shipmentLabelOf(subject: ShortfallDecisionSubject): string {
+  return subject.rank === FIRST_SHIPMENT_RANK
+    ? subject.reference
+    : `${subject.reference}-${String(subject.rank)}`;
 }

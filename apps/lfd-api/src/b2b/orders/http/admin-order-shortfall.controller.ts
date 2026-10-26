@@ -8,6 +8,7 @@ import {
   type AdminShortfallLetterPayload,
 } from "@lfd/contracts";
 
+import { FIRST_SHIPMENT_RANK } from "../../../production/channels/commerce/index.js";
 import { AdminSurface, RequirePermission } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
@@ -29,8 +30,9 @@ export class AdminOrderShortfallController {
   ) {}
 
   /**
-   * **« Décider du départ »**. Corps `{ remainder: "abandoned" }` — les
-   * quantités ne voyagent pas. Sous `b2b_orders_shortfall:write` ; l'auteur
+   * **« Décider du départ »**. Corps `{ remainder: "abandoned", rank? }` —
+   * les quantités ne voyagent pas ; `rank` absent = la commande elle-même
+   * (plan E7 reliquat, LB). Sous `b2b_orders_shortfall:write` ; l'auteur
    * vient de la porte. `204` : la commande se relit (`GET :id`).
    *
    * Refus (`409`, avec leur phrase) : déjà décidée, aucun manque signalé, pas
@@ -46,7 +48,12 @@ export class AdminOrderShortfallController {
     @Body(new ZodBody(adminShortfallDecisionPayloadSchema)) payload: AdminShortfallDecisionPayload,
   ): Promise<void> {
     await this.commands.execute<DecideOrderShortfallCommand, void>(
-      new DecideOrderShortfallCommand(id, staffUserId, payload.remainder),
+      new DecideOrderShortfallCommand(
+        id,
+        staffUserId,
+        payload.remainder,
+        payload.rank ?? FIRST_SHIPMENT_RANK,
+      ),
     );
   }
 

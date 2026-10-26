@@ -2,6 +2,7 @@ import { companyDisplayName, type AdminOrderRow } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import type { Prisma } from "../../../platform/database/client/client.js";
+import { FIRST_SHIPMENT_RANK } from "../../../production/channels/commerce/index.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import {
   AdminOrderListReader,
@@ -18,8 +19,12 @@ const ADMIN_ROW_SELECT = {
   orderNumber: true,
   status: true,
   placedOffPlan: true,
-  shortfallReportedAt: true,
-  shortfallDecidedAt: true,
+  // Le manque de la commande — son rang 1 —, celui que sa fiche montre et
+  // décide (plan E7 reliquat, LB) ; celui d'un reste vient avec L8.
+  shortfalls: {
+    where: { rank: FIRST_SHIPMENT_RANK },
+    select: { reportedAt: true, decidedAt: true },
+  },
   paymentStatus: true,
   fulfillmentMethod: true,
   requestedDeliveryDate: true,
@@ -154,6 +159,7 @@ function dateColumnOf(day: string): Date {
 }
 
 function toAdminRow(row: AdminRow): AdminOrderRow {
+  const shortfall = row.shortfalls[0];
   return {
     id: row.id,
     orderNumber: row.orderNumber,
@@ -166,8 +172,8 @@ function toAdminRow(row: AdminRow): AdminOrderRow {
     // Une commande annulée non plus (plan A1, § 2.6) : le signal reste écrit —
     // c'est de l'histoire —, mais il n'y a plus rien à décider.
     shortfallReportedAt:
-      row.shortfallDecidedAt === null && row.status !== "cancelled"
-        ? (row.shortfallReportedAt?.toISOString() ?? null)
+      shortfall !== undefined && shortfall.decidedAt === null && row.status !== "cancelled"
+        ? (shortfall.reportedAt?.toISOString() ?? null)
         : null,
     paymentStatus: row.paymentStatus,
     fulfillmentMethod: row.fulfillmentMethod,

@@ -20,6 +20,7 @@ import { AccountOrderSettlement } from "../../../orders/domain/ports/account-ord
 import { OrderBillingRepository } from "../../../orders/domain/ports/order-billing.repository.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import {
+  RemainderDecisionReader,
   ShortfallDecisionReader,
   type DecidedDeparture,
 } from "../../../orders/domain/ports/shortfall-decision.reader.js";
@@ -148,6 +149,15 @@ export class InMemoryShortfallDecisions extends ShortfallDecisionReader {
     return Promise.resolve(
       new Map([...this.decided].filter(([orderId]) => orderIds.includes(orderId))),
     );
+  }
+}
+
+/** Les décisions des reliquats (plan E7 reliquat, LB), par `commande:rang`, posées par le test. */
+export class InMemoryRemainderDecisions extends RemainderDecisionReader {
+  readonly decided = new Map<string, DecidedDeparture>();
+
+  decisionOf(orderId: string, rank: number): Promise<DecidedDeparture | null> {
+    return Promise.resolve(this.decided.get(`${orderId}:${String(rank)}`) ?? null);
   }
 }
 

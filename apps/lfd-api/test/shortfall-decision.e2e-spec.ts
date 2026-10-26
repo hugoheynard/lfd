@@ -239,9 +239,11 @@ describe("« Décider du départ » — reste abandonné (E6b + E6c1)", () => {
     expect((await decide(order.id)).status).toBe(500);
 
     expect(await ctx.prisma.orderShortfallDecision.count()).toBe(0);
-    const row = await ctx.prisma.order.findUniqueOrThrow({ where: { id: order.id } });
-    expect(row.shortfallDecidedAt).toBeNull();
-    expect(row.shortfallReportedAt).not.toBeNull();
+    const row = await ctx.prisma.orderShortfall.findUniqueOrThrow({
+      where: { orderId_rank: { orderId: order.id, rank: 1 } },
+    });
+    expect(row.decidedAt).toBeNull();
+    expect(row.reportedAt).not.toBeNull();
     const sheet = await sheetOf(ctx, order.orderNumber);
     expect(sheet.lines.map((line) => line.quantity)).toEqual([3]);
     expect(sheet.shortfallReportedAt).not.toBeNull();

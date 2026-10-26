@@ -11,7 +11,8 @@ export interface DepartingLine {
  * transaction de sa décision, après le verrou de la commande (ordre des
  * verrous : commande, puis fiche).
  *
- * `authorize` verrouille la fiche de la commande, vérifie que le bac contient
+ * `authorize` verrouille la fiche de l'envoi `(commande, rang)` (plan E7
+ * reliquat, LB) — la plus récente de ce rang —, vérifie que le bac contient
  * exactement les quantités décidées, réduit les lignes dues à ces quantités,
  * et lève la marque « manque » — SANS publier `packing.shortfall_cleared` :
  * le commerce résout lui-même son signal. Refus nommés (409) : pas de fiche,
@@ -20,6 +21,7 @@ export interface DepartingLine {
 export abstract class ShortfallDesk {
   abstract authorize(
     orderId: string,
+    rank: number,
     departing: readonly DepartingLine[],
     decidedBy: string,
   ): Promise<void>;

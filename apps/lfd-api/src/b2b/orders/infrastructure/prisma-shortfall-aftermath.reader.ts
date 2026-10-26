@@ -3,6 +3,7 @@ import { Injectable } from "@nestjs/common";
 import {
   ShortfallAftermathReader,
   type AbandonedLine,
+  type ShipmentAftermath,
   type ShortfallAftermath,
   type ShortfallDecisionMark,
 } from "../../../packing/channels/commerce/index.js";
@@ -18,9 +19,13 @@ export interface PrintedPaper {
 
 /**
  * Le commerce répond au poste de colisage (Hugo, 2026-10-25) : pour chaque
- * commande au départ incomplet décidé, le reste abandonné — relu sur le
- * signal que la décision a figé, `shortfall_lines`, que la décision ne
- * touche pas — et l'impression de ses BL vivants.
+ * ENVOI au départ incomplet décidé (plan E7 reliquat, LB), le reste abandonné
+ * — relu sur le signal que la décision a figé, `order_shortfall.lines`, que la
+ * décision ne touche pas — et l'impression du BL vivant DE CE RANG.
+ *
+ * 🔴 Régression (plan E7 reliquat, §3 bis) : l'impression comptait tous les
+ * BL vivants de la commande — un BL-1 imprimé et un reliquat neuf donnaient
+ * « à imprimer » à la fiche du rang 1, qui n'avait rien à réimprimer.
  *
  * Trois lectures, toutes bornées aux commandes décidées parmi celles du
  * poste ; jamais les lignes de toute la journée.
@@ -31,24 +36,23 @@ export class PrismaShortfallAftermathReader extends ShortfallAftermathReader {
     super();
   }
 
-  async among(orderIds: readonly string[]): Promise<ReadonlyMap<string, ShortfallAftermath>> {
+  async among(orderIds: readonly string[]): Promise<readonly ShipmentAftermath[]> {
     if (orderIds.length === 0) {
-      return new Map();
+      return [];
     }
-    const decided = await this.prisma.order.findMany({
-      where: { id: { in: [...orderIds] }, shortfallDecidedAt: { not: null } },
+    const decided = await this.prisma.orderShortfall.findMany({
+      where: { orderId: { in: [...orderIds] }, decidedAt: { not: null } },
       select: {
-        id: true,
-        shortfallLines: true,
-        shortfallDecision: {
-          select: { decidedAt: true, decidedByStaffId: true, remainder: true },
-        },
+        orderId: true,
+        rank: true,
+        lines: true,
+        decision: { select: { decidedAt: true, decidedByStaffId: true, remainder: true } },
       },
     });
     if (decided.length === 0) {
-      return new Map();
+      return [];
     }
-    const ids = decided.map((row) => row.id);
+    const ids = [...new Set(decided.map((row) => row.orderId))];
     const [lines, notes] = await Promise.all([
       this.prisma.orderLine.findMany({
         where: { orderId: { in: ids } },
@@ -56,26 +60,25 @@ export class PrismaShortfallAftermathReader extends ShortfallAftermathReader {
       }),
       this.prisma.deliveryNote.findMany({
         where: { orderId: { in: ids }, status: { not: "voided" } },
-        select: { orderId: true, contentVersion: true, printedVersion: true },
+        select: { orderId: true, rank: true, contentVersion: true, printedVersion: true },
       }),
     ]);
-    return new Map(
-      decided.map((row) => [
-        row.id,
-        {
-          abandoned: abandonedOf(
-            row.shortfallLines === null ? [] : shortfallLinesOf(row.shortfallLines),
-            new Map(
-              lines
-                .filter((line) => line.orderId === row.id)
-                .map((l) => [l.sku, l.productNameSnapshot]),
-            ),
-          ),
-          deliveryNote: printStateOf(notes.filter((note) => note.orderId === row.id)),
-          decision: decisionMarkOf(row.shortfallDecision),
-        },
-      ]),
-    );
+    return decided.map((row) => ({
+      orderId: row.orderId,
+      rank: row.rank,
+      abandoned: abandonedOf(
+        row.lines === null ? [] : shortfallLinesOf(row.lines),
+        new Map(
+          lines
+            .filter((line) => line.orderId === row.orderId)
+            .map((l) => [l.sku, l.productNameSnapshot]),
+        ),
+      ),
+      deliveryNote: printStateOf(
+        notes.filter((note) => note.orderId === row.orderId && note.rank === row.rank),
+      ),
+      decision: decisionMarkOf(row.decision),
+    }));
   }
 }
 

@@ -394,6 +394,8 @@
   "test/shop-order.e2e-spec.ts": 5551,
   "test/shop-quote.e2e-spec.ts": 6182,
   "test/shop-state-carry-over-migration.e2e-spec.ts": 3000,
+  "test/shortfall-by-shipment-migration.e2e-spec.ts": 5000,
+  "test/shortfall-by-shipment.e2e-spec.ts": 12600,
   "test/shortfall-decision.e2e-spec.ts": 9000,
   "test/shortfall-letter.e2e-spec.ts": 8605,
   "test/site-deadlines.e2e-spec.ts": 8354,

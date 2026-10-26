@@ -29,8 +29,8 @@ export interface SheetContext {
    * lues au commerce. Absent = aucune.
    */
   readonly reprintNeeded?: ReadonlySet<string>;
-  /** Les départs incomplets décidés, par id, lus au commerce. Absent = aucun. */
-  readonly aftermath?: ReadonlyMap<string, DecidedShortfall>;
+  /** Les départs incomplets décidés, un par envoi, lus au commerce. Absent = aucun. */
+  readonly aftermath?: readonly DecidedShipmentShortfall[];
 }
 
 /**
@@ -49,6 +49,19 @@ export interface DecidedShortfall {
     readonly decidedAt: Date;
     readonly decidedBy: string;
   } | null;
+}
+
+/** Le départ décidé d'un envoi `(commande, rang)` (plan E7 reliquat, LB). */
+export interface DecidedShipmentShortfall extends DecidedShortfall {
+  readonly orderId: string;
+  readonly rank: number;
+}
+
+/** Le départ décidé de l'envoi de cette fiche — jamais celui d'un autre rang. */
+function decidedOf(order: BoardOrder, context: SheetContext): DecidedShortfall | undefined {
+  return context.aftermath?.find(
+    (decided) => decided.orderId === order.orderId && decided.rank === order.rank,
+  );
 }
 
 /** La décision dite au poste, l'auteur nommé par l'annuaire ; `null` sans décision. */
@@ -181,14 +194,10 @@ export function sheetOf(order: BoardOrder, context: SheetContext): PackingSheet 
     deliveryNoteReprintNeeded: context.reprintNeeded?.has(order.orderId) ?? false,
     deliveryNotePrint: deliveryNotePrintOf(
       context.reprintNeeded?.has(order.orderId) ?? false,
-      context.aftermath?.get(order.orderId),
+      decidedOf(order, context),
     ),
-    abandonedRemainder:
-      context.aftermath?.get(order.orderId)?.abandoned.map((line) => ({ ...line })) ?? [],
-    shortfallDecision: shortfallDecisionOf(
-      context.aftermath?.get(order.orderId),
-      context.authorName,
-    ),
+    abandonedRemainder: decidedOf(order, context)?.abandoned.map((line) => ({ ...line })) ?? [],
+    shortfallDecision: shortfallDecisionOf(decidedOf(order, context), context.authorName),
     coldOutsideIsotherm: coldOutsideIsotherm(order, context.cold),
     packedAt: order.packed?.at.toISOString() ?? null,
     packedBy: order.packed?.by ?? null,

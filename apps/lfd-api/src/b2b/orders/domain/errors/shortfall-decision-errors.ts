@@ -6,7 +6,7 @@ import { BusinessError } from "../../../../platform/shared/errors/app-error.js";
  * Lus par l'équipe au téléphone : chacun nomme le cas et le geste de sortie.
  */
 
-/** Q-I4 : une décision par commande, définitive. */
+/** Q-I4 : une décision par envoi, définitive. */
 export class ShortfallAlreadyDecidedError extends BusinessError {
   constructor(reference: string) {
     super(
@@ -23,6 +23,23 @@ export class ShortfallOrderNotConfirmedError extends BusinessError {
       "orders.shortfall_decision.not_confirmed",
       `${reference} n'est pas une commande confirmée au plan du fournil (statut « ${status} ») : son départ ne se décide pas. ` +
         "Une commande déjà prête est partie complète ; une commande annulée ne part pas.",
+    );
+  }
+}
+
+/**
+ * Plan E7 reliquat, choix 11 : le départ d'un reliquat ne se décide que tant
+ * que son BL est prévu — son bac n'est pas fermé.
+ */
+export class RemainderNotDecidableError extends BusinessError {
+  constructor(reference: string, rank: number, noteStatus: string | null) {
+    super(
+      "orders.shortfall_decision.remainder_not_planned",
+      noteStatus === null
+        ? `Le reste n° ${String(rank)} de ${reference} n'a pas de bon de livraison vivant : il a été annulé ou n'existe pas, ` +
+            "et son départ ne se décide pas. Rechargez la commande pour voir ses envois."
+        : `Le reste n° ${String(rank)} de ${reference} n'est plus à coliser (bon de livraison « ${noteStatus} ») : ` +
+            "son départ ne se décide pas. Un reste déjà préparé est parti complet ; rechargez la commande pour le voir.",
     );
   }
 }

@@ -1,5 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
+import type { Prisma } from "../../../platform/database/client/client.js";
+import { FIRST_SHIPMENT_RANK } from "../../../production/channels/commerce/index.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import {
   DaySupervisionReader,
@@ -10,16 +12,21 @@ import { shortfallLinesOf } from "./prisma-order-shortfall.repository.js";
 import { fulfillmentOf, windowOf } from "./order-fulfillment.parse.js";
 import { settlementWhere } from "./plan-filter.js";
 
-/** Ce que la Supervision lit d'une commande : ni ligne, ni montant, ni contact. */
+/**
+ * Ce que la Supervision lit d'une commande : ni ligne, ni montant, ni contact.
+ * Le manque est celui du RANG 1 (plan E7 reliquat, LB) : la journée supervisée
+ * est celle de la commande ; un reste se supervise à son jour (L7, L8).
+ */
 const SUPERVISION_SELECT = {
   id: true,
   orderNumber: true,
   status: true,
   fulfillmentMethod: true,
   fulfillment: true,
-  shortfallReportedAt: true,
-  shortfallLines: true,
-  shortfallDecidedAt: true,
+  shortfalls: {
+    where: { rank: FIRST_SHIPMENT_RANK },
+    select: { reportedAt: true, lines: true, decidedAt: true },
+  },
   company: { select: { raisonSociale: true } },
   placedBy: { select: { firstName: true, lastName: true } },
 } as const;
@@ -51,25 +58,24 @@ export class PrismaDaySupervisionReader extends DaySupervisionReader {
       orderBy: { orderNumber: "asc" },
       select: SUPERVISION_SELECT,
     });
-    // Un manque décidé (E6b) n'attend plus de décision.
-    const pending = (row: (typeof rows)[number]): boolean =>
-      row.shortfallDecidedAt === null &&
-      row.shortfallReportedAt !== null &&
-      row.shortfallLines !== null;
-    const names = await this.productNames(rows.filter(pending).map((row) => row.id));
-    return rows.map((row) => ({
-      orderId: row.id,
-      reference: row.orderNumber,
-      customerName: nameOf(row.company, row.placedBy),
-      fulfillmentMethod: row.fulfillmentMethod,
-      status: row.status,
-      window: windowOf(fulfillmentOf(row.fulfillment)),
-      shortfallReportedAt: pending(row) ? row.shortfallReportedAt : null,
-      shortfallLines:
-        pending(row) && row.shortfallLines !== null
-          ? namedLines(shortfallLinesOf(row.shortfallLines), names.get(row.id))
-          : [],
-    }));
+    const pendingOf = new Map(rows.map((row) => [row.id, pendingShortfallOf(row.shortfalls)]));
+    const names = await this.productNames(
+      rows.filter((row) => pendingOf.get(row.id) !== null).map((row) => row.id),
+    );
+    return rows.map((row) => {
+      const pending = pendingOf.get(row.id) ?? null;
+      return {
+        orderId: row.id,
+        reference: row.orderNumber,
+        customerName: nameOf(row.company, row.placedBy),
+        fulfillmentMethod: row.fulfillmentMethod,
+        status: row.status,
+        window: windowOf(fulfillmentOf(row.fulfillment)),
+        shortfallReportedAt: pending?.reportedAt ?? null,
+        shortfallLines:
+          pending === null ? [] : namedLines(shortfallLinesOf(pending.lines), names.get(row.id)),
+      };
+    });
   }
 
   /**
@@ -123,6 +129,26 @@ function nameOf(
   }
   const fullName = `${person.firstName} ${person.lastName}`.trim();
   return fullName === "" ? null : fullName;
+}
+
+/** Le manque en vigueur : signalé, non décidé (E6b) — `null` sinon. */
+function pendingShortfallOf(
+  shortfalls: readonly {
+    readonly reportedAt: Date | null;
+    readonly lines: Prisma.JsonValue;
+    readonly decidedAt: Date | null;
+  }[],
+): { readonly reportedAt: Date; readonly lines: Prisma.JsonValue } | null {
+  const shortfall = shortfalls[0];
+  if (
+    shortfall === undefined ||
+    shortfall.decidedAt !== null ||
+    shortfall.reportedAt === null ||
+    shortfall.lines === null
+  ) {
+    return null;
+  }
+  return { reportedAt: shortfall.reportedAt, lines: shortfall.lines };
 }
 
 /** Le manque nommé ; un article absent des lignes garde son SKU plutôt qu'un nom inventé. */

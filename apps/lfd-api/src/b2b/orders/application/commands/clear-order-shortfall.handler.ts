@@ -27,7 +27,7 @@ export class ClearOrderShortfallHandler implements ICommandHandler<
 
   async execute(command: ClearOrderShortfallCommand): Promise<void> {
     await this.uow.run(async () => {
-      const shortfall = await this.shortfalls.lock(command.reference);
+      const shortfall = await this.shortfalls.lock(command.reference, command.rank);
       if (shortfall === null) {
         throw new OrderReferenceNotFoundError(command.reference);
       }

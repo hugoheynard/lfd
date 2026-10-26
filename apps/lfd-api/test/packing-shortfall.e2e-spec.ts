@@ -88,11 +88,13 @@ async function addToBag(sheet: PackingSheet, quantity: number): Promise<void> {
     .expect(204);
 }
 
+/** Le manque du rang 1 — la commande —, lu dans `order_shortfall` depuis LB (plan E7 reliquat). */
 async function shortfallOf(orderId: string) {
-  return ctx.prisma.order.findUniqueOrThrow({
-    where: { id: orderId },
-    select: { shortfallReportedAt: true, shortfallLines: true },
+  const row = await ctx.prisma.orderShortfall.findUniqueOrThrow({
+    where: { orderId_rank: { orderId, rank: 1 } },
+    select: { reportedAt: true, lines: true },
   });
+  return { shortfallReportedAt: row.reportedAt, shortfallLines: row.lines };
 }
 
 describe("« Il manque » au colisage → la commande attend une décision", () => {

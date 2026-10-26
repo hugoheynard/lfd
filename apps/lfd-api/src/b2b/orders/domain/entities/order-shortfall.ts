@@ -10,6 +10,11 @@ export interface ShortfallQuantity {
 /** L'état tel que l'adaptateur l'écrit et le relit. */
 export interface OrderShortfallSnapshot {
   readonly orderId: string;
+  /**
+   * Le rang de l'envoi signalé (plan E7 reliquat, lot LB, choix 15) : 1 = la
+   * commande elle-même, au-delà un reliquat.
+   */
+  readonly rank: number;
   readonly reference: string;
   /** Le signalement en vigueur ; `null` = aucun, rien n'attend de décision. */
   readonly reportedAt: Date | null;
@@ -31,8 +36,9 @@ export interface PendingShortfall {
 }
 
 /**
- * **Le manque signalé sur une commande** — « décision attendue » (lot E6a,
- * plan E6 (`documentation/commandes/bon-de-livraison.md`) § 3).
+ * **Le manque signalé sur un envoi** — « décision attendue » (lot E6a,
+ * plan E6 (`documentation/commandes/bon-de-livraison.md`) § 3 ; par envoi
+ * `(commande, rang)` depuis le plan E7 reliquat, lot LB, choix 15).
  *
  * Le snapshot de deux faits du colisage, `packing.shortfall_reported` et
  * `packing.shortfall_cleared`, livrés au moins une fois et dans un ordre que
@@ -49,6 +55,7 @@ export interface PendingShortfall {
 export class OrderShortfall {
   private constructor(
     readonly orderId: string,
+    readonly rank: number,
     readonly reference: string,
     private reportedAtValue: Date | null,
     private linesValue: readonly ShortfallQuantity[] | null,
@@ -59,6 +66,7 @@ export class OrderShortfall {
   static fromSnapshot(snapshot: OrderShortfallSnapshot): OrderShortfall {
     return new OrderShortfall(
       snapshot.orderId,
+      snapshot.rank,
       snapshot.reference,
       snapshot.reportedAt,
       snapshot.lines,
@@ -146,6 +154,7 @@ export class OrderShortfall {
   toSnapshot(): OrderShortfallSnapshot {
     return {
       orderId: this.orderId,
+      rank: this.rank,
       reference: this.reference,
       reportedAt: this.reportedAtValue,
       lines: this.linesValue,

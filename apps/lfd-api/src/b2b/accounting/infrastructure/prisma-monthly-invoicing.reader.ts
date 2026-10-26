@@ -53,7 +53,7 @@ export class PrismaMonthlyInvoicingReader extends MonthlyInvoicingReader {
         billedCompanyId: true,
         receivedOn: true,
         ...AWAITING_REMAINDER_SELECT,
-        shortfallDecision: { select: { id: true, remainder: true } },
+        shortfallDecisions: { select: { id: true, remainder: true } },
       },
     });
     const invoiced = await this.prisma.invoiceOrder.findMany({

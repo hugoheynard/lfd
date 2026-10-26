@@ -11,7 +11,6 @@ import {
   PackingShortfallClearedEvent,
 } from "../../../../packing/channels/commerce/index.js";
 import { ClearOrderShortfallCommand } from "../commands/clear-order-shortfall.command.js";
-import { ensureFirstShipment } from "./later-shipment-guard.js";
 
 /** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
 export const ON_PACKING_SHORTFALL_CLEARED = "b2b.orders.clear-shortfall-from-packing";
@@ -27,7 +26,8 @@ export class OnPackingShortfallCleared implements DurableSubscriber {
 
   async handle(delivery: DurableDelivery): Promise<void> {
     const event = PackingShortfallClearedEvent.fromPayload(delivery.payload);
-    ensureFirstShipment(event, PACKING_SHORTFALL_CLEARED, "LB");
-    await this.commands.execute(new ClearOrderShortfallCommand(event.reference, event.clearedAt));
+    await this.commands.execute(
+      new ClearOrderShortfallCommand(event.reference, event.rank, event.clearedAt),
+    );
   }
 }

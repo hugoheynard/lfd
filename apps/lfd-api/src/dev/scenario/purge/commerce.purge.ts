@@ -56,7 +56,9 @@ async function purgeOrderChildren(
 ): Promise<readonly { readonly count: number }[]> {
   const ofOrders = { orderId: { in: [...orderIds] } };
   return [
+    // La décision d'abord : elle tient le manque de son envoi (LB).
     await tx.orderShortfallDecision.deleteMany({ where: ofOrders }),
+    await tx.orderShortfall.deleteMany({ where: ofOrders }),
     await tx.orderRevisionEntry.deleteMany({ where: ofOrders }),
     await tx.orderRefund.deleteMany({ where: ofOrders }),
     await tx.orderRefundRequest.deleteMany({ where: ofOrders }),

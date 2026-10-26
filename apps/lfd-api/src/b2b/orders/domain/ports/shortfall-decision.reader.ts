@@ -23,11 +23,29 @@ export interface DecidedDeparture {
 /**
  * **La décision comme entrée du bon de livraison** (plan
  * plan E6 (`documentation/commandes/bon-de-livraison.md`) § 13, bloquant 1) —
- * port de lecture déclaré par les commandes, lu par les trois écrivains du BL
- * (le suivi, le réconciliateur, la prévision) : avec une décision, ils
+ * port de lecture déclaré par les commandes, lu par les trois écrivains du
+ * BL-1 (le suivi, le réconciliateur, la prévision) : avec une décision, ils
  * réécrivent le BL sur ces quantités, jamais sur la commande entière.
+ *
+ * Depuis le plan E7 reliquat (LB), la décision est par envoi : ce port ne
+ * rend que celle du RANG 1, la seule qui touche le BL qui suit sa commande.
+ * Celle d'un reliquat se lit par {@link RemainderDecisionReader}.
  */
 export abstract class ShortfallDecisionReader {
-  /** Les décisions de ces commandes, par identifiant ; une commande sans décision n'y est pas. */
+  /**
+   * Les décisions du rang 1 de ces commandes, par identifiant ; une commande
+   * sans décision au rang 1 n'y est pas.
+   */
   abstract decidedFor(orderIds: readonly string[]): Promise<ReadonlyMap<string, DecidedDeparture>>;
+}
+
+/**
+ * **La décision d'un reliquat** (plan E7 reliquat, lot LB) — lue par le seul
+ * suivi de la décision d'un envoi de rang > 1, qui réécrit le BL de ce rang
+ * sur ses propres lignes. Séparé de {@link ShortfallDecisionReader} : les
+ * écrivains du BL-1 n'en ont pas l'usage.
+ */
+export abstract class RemainderDecisionReader {
+  /** La décision de l'envoi `(commande, rang)`, ou `null` s'il n'en a pas. */
+  abstract decisionOf(orderId: string, rank: number): Promise<DecidedDeparture | null>;
 }

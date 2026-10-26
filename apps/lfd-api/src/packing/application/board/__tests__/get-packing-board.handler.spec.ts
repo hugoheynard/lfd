@@ -1,7 +1,7 @@
 import {
   DeliveryNoteReprintsReader,
   ShortfallAftermathReader,
-  type ShortfallAftermath,
+  type ShipmentAftermath,
 } from "../../../channels/commerce/index.js";
 import { localToInstant } from "@lfd/contracts";
 
@@ -118,12 +118,10 @@ class FixedReprints extends DeliveryNoteReprintsReader {
 
 /** Les départs incomplets décidés, lus au commerce : posés par le test. */
 class FixedAftermath extends ShortfallAftermathReader {
-  readonly decided = new Map<string, ShortfallAftermath>();
+  readonly decided: ShipmentAftermath[] = [];
 
-  among(orderIds: readonly string[]): Promise<ReadonlyMap<string, ShortfallAftermath>> {
-    return Promise.resolve(
-      new Map([...this.decided].filter(([orderId]) => orderIds.includes(orderId))),
-    );
+  among(orderIds: readonly string[]): Promise<readonly ShipmentAftermath[]> {
+    return Promise.resolve(this.decided.filter((one) => orderIds.includes(one.orderId)));
   }
 }
 
@@ -222,12 +220,20 @@ describe("GetPackingBoardHandler — le poste lu au colisage (K3a)", () => {
       withdrawn: [],
       stocks: [],
     });
-    aftermath.decided.set("1", {
+    aftermath.decided.push({
+      orderId: "1",
+      rank: 1,
       abandoned: [{ sku: "PAI", productName: "Baguette", quantity: 2 }],
       deliveryNote: "to_print",
       decision: null,
     });
-    aftermath.decided.set("2", { abandoned: [], deliveryNote: "printed", decision: null });
+    aftermath.decided.push({
+      orderId: "2",
+      rank: 1,
+      abandoned: [],
+      deliveryNote: "printed",
+      decision: null,
+    });
     // Changé depuis son impression, sans décision : à réimprimer aussi.
     reprints.needed.add("3");
 
@@ -254,7 +260,9 @@ describe("GetPackingBoardHandler — le poste lu au colisage (K3a)", () => {
       stocks: [],
     });
     const decidedAt = new Date(5_000);
-    aftermath.decided.set("1", {
+    aftermath.decided.push({
+      orderId: "1",
+      rank: 1,
       abandoned: [],
       deliveryNote: "printed",
       decision: { remainder: "abandoned", decidedAt, decidedBy: "staff_1" },
@@ -275,5 +283,36 @@ describe("GetPackingBoardHandler — le poste lu au colisage (K3a)", () => {
       ["2", null],
     ]);
     expect(authors.asked).toEqual([[null, null, "staff_1"]]);
+  });
+
+  /**
+   * Plan E7 reliquat, LB : deux fiches d'une commande, une par envoi. La
+   * décision du reliquat est la sienne, et la fiche du rang 1 n'en dit rien.
+   */
+  it("dit la décision d'un reliquat sur SA fiche, jamais sur celle du rang 1", async () => {
+    const { handler, aftermath } = setup({
+      orders: [order("1", null), { ...order("1", null), rank: 2 }],
+      withdrawn: [],
+      stocks: [],
+    });
+    aftermath.decided.push({
+      orderId: "1",
+      rank: 2,
+      abandoned: [{ sku: "CRO", productName: "Croissant", quantity: 1 }],
+      deliveryNote: "to_print",
+      decision: null,
+    });
+
+    const view = await handler.execute(new GetPackingBoardQuery(DAY));
+
+    // La vue ne porte pas le rang : les deux fiches se distinguent par ce qu'elles disent.
+    const said = view.sheets.map((sheet) => [sheet.deliveryNotePrint, sheet.abandonedRemainder]);
+    expect(said).toHaveLength(2);
+    expect(said).toEqual(
+      expect.arrayContaining([
+        [null, []],
+        ["to_reprint", [{ sku: "CRO", productName: "Croissant", quantity: 1 }]],
+      ]),
+    );
   });
 });

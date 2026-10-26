@@ -165,11 +165,11 @@ describe("le manque signalé d'un particulier (§ 2.6)", () => {
     await staffCancel(ctx, order.id).expect(204);
     await ctx.drain();
 
-    const written = await ctx.prisma.order.findUniqueOrThrow({
-      where: { id: order.id },
-      select: { shortfallReportedAt: true },
+    const written = await ctx.prisma.orderShortfall.findUniqueOrThrow({
+      where: { orderId_rank: { orderId: order.id, rank: 1 } },
+      select: { reportedAt: true },
     });
-    expect(written.shortfallReportedAt).not.toBeNull();
+    expect(written.reportedAt).not.toBeNull();
     const page = jsonBody<AdminOrdersPage>(await ctx.asSub(STAFF).get("/admin/orders").expect(200));
     expect(page.rows.find((row) => row.id === order.id)?.shortfallReportedAt).toBeNull();
   });
