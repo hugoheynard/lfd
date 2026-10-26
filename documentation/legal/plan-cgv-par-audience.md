@@ -1,8 +1,12 @@
 # Plan — des CGV par audience, leur PDF de référence, et la version acceptée à la commande
 
-> 📐 **Doc-first, rien n'est bâti** (rédigé le 2026-10-15). Se bâtit **après**
-> le déplacement des mentions dans Réglages › Légal (`/reglages/legal/…`), qui
-> touche le même écran.
+> ✅ **Bâti et en production (relu le 2026-10-26).** Les lots 0 à 3 existent :
+> CGV pro et particuliers servies par audience, PDF de référence déposés et
+> téléchargeables, version (clé, révision, PDF) posée sur chaque commande. Le
+> lot 4 (C6, la case « J'accepte les CGV » au panier et la version acceptée
+> exigée à la passation) est déployé le 2026-10-26. Les textes publiés et leurs
+> adaptations : [`textes-legaux-en-vigueur.md`](textes-legaux-en-vigueur.md).
+> Ce qui suit est le plan d'origine (rédigé le 2026-10-15, alors doc-first).
 
 ## 0. La demande (Hugo, 2026-10-15)
 
