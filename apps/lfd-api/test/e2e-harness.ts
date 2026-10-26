@@ -52,6 +52,14 @@ import { addDays, instantToLocal, localToInstant } from "@lfd/contracts";
 import { testDatabaseUrl } from "./setup-env.js";
 import { waitForDatabase } from "./database-readiness.js";
 import { armSessionTimeouts, watchStall } from "./database-stall.js";
+import { drainOrExplain } from "./drain-guard.js";
+import {
+  forbidOutboundFetch,
+  OfflineEstablishmentDirectory,
+  OfflineMarketDirectory,
+} from "./offline-network.js";
+import { EstablishmentDirectory } from "../src/b2b/account/domain/ports/establishment-directory.js";
+import { MarketDirectory } from "../src/b2b/growth/domain/ports/market-directory.js";
 import { BootStopwatch } from "./e2e-boot-log.js";
 import { ensureTestBucket, resetStorage } from "./storage.js";
 import { seedE2eCatalog } from "./catalog-fixture.js";
@@ -160,7 +168,15 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
     // ligne de bibliothèque à la main — c'est-à-dire aurait contourné
     // précisément la règle qu'on vient de poser.
     .overrideProvider(MediaStore)
-    .useValue(new InMemoryMediaStore());
+    .useValue(new InMemoryMediaStore())
+    // TROISIÈME frontière doublée : l'API publique des entreprises. Appelée
+    // en tâche de fond à chaque société déclarée, elle a figé des hooks
+    // quatre minutes en CI (2026-10-26, `test/offline-network.ts`).
+    .overrideProvider(EstablishmentDirectory)
+    .useValue(new OfflineEstablishmentDirectory())
+    .overrideProvider(MarketDirectory)
+    .useValue(new OfflineMarketDirectory());
+  forbidOutboundFetch();
 
   for (const override of options.overrides ?? []) {
     builder.overrideProvider(override.token).useValue(override.value);
@@ -230,10 +246,10 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
     // un échec qui accuse le mauvais test, une fois sur sept.
     // Le bucket est vidé avec les tables, et pour la même raison : une pièce
     // laissée par un test serait visible du suivant.
-    drain: () => background.whenIdle(),
+    drain: () => drainOrExplain(background, prisma, "drain()"),
     reset: () =>
       stopwatch.timeReset(async () => {
-        await background.whenIdle();
+        await drainOrExplain(background, prisma, "reset() avant de vider");
         await truncateAll(prisma);
         // Le registre des contextes est du VOCABULAIRE, pas de la donnée de test :
         // il est posé par migration, et une base qu'un `TRUNCATE` d'avant cette
@@ -289,7 +305,7 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
     // toujours verte quand on la rejoue seule.
     close: () =>
       stopwatch.timeClose(async () => {
-        await background.whenIdle();
+        await drainOrExplain(background, prisma, "close() avant de fermer");
         await app.close();
       }),
   };

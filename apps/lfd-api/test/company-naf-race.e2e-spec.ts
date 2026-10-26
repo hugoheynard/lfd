@@ -8,7 +8,9 @@
 import { CompanyNafWriter } from "../src/b2b/account/domain/ports/company-naf.writer.js";
 import { CompanyRepository } from "../src/b2b/account/domain/ports/company.repository.js";
 import { CompanyStatus } from "../src/platform/database/client/client.js";
+import { EstablishmentDirectory } from "../src/b2b/account/domain/ports/establishment-directory.js";
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
+import { OfflineEstablishmentDirectory, OutboundNetworkInE2eError } from "./offline-network.js";
 import { createCompany } from "./factories.js";
 
 /** Instant d'activation : comparé à lui-même seulement, jamais à l'horloge. */
@@ -54,4 +56,16 @@ it("le NAF écrit depuis un agrégat périmé ne défait ni l'activation ni le t
     nafCode: "56.10A",
     activatedAt: ACTIVATED_AT,
   });
+});
+
+/**
+ * Régression (2026-10-26) : chaque société déclarée appelait l'API publique
+ * des entreprises en tâche de fond, sans délai ; un appel sans réponse en CI
+ * figeait `drain()` quatre minutes, puis le hook expirait sans rien dire.
+ */
+it("la résolution du NAF ne sort pas sur Internet, et aucun fetch sortant ne passe", async () => {
+  expect(ctx.app.get(EstablishmentDirectory)).toBeInstanceOf(OfflineEstablishmentDirectory);
+  await expect(fetch("https://recherche-entreprises.api.gouv.fr/search")).rejects.toBeInstanceOf(
+    OutboundNetworkInE2eError,
+  );
 });

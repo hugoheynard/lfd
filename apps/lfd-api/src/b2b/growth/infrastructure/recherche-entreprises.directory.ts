@@ -2,6 +2,9 @@ import { Injectable } from "@nestjs/common";
 
 import { MarketDirectory } from "../domain/ports/market-directory.js";
 
+/** Même délai, et même raison, que la résolution du NAF (`RECHERCHE_ENTREPRISES_TIMEOUT_MS`). */
+const COUNT_TIMEOUT_MS = 5000;
+
 /**
  * Adaptateur **API Recherche d'entreprises** (recherche-entreprises.api.gouv.fr) —
  * l'API publique data.gouv, gratuite et sans authentification. On filtre par
@@ -17,7 +20,10 @@ export class RechercheEntreprisesDirectory extends MarketDirectory {
     const url =
       `${this.base}?activite_principale=${encodeURIComponent(nafCode)}` +
       `&code_postal=${encodeURIComponent(codePostal)}&page=1&per_page=1`;
-    const res = await fetch(url, { headers: { accept: "application/json" } });
+    const res = await fetch(url, {
+      headers: { accept: "application/json" },
+      signal: AbortSignal.timeout(COUNT_TIMEOUT_MS),
+    });
     if (!res.ok) {
       throw new Error(
         `recherche-entreprises a répondu ${res.status} pour ${nafCode}/${codePostal}`,

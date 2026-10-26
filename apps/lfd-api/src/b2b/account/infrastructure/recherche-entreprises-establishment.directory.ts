@@ -3,6 +3,14 @@ import { Injectable } from "@nestjs/common";
 import { EstablishmentDirectory } from "../domain/ports/establishment-directory.js";
 
 /**
+ * Délai d'une résolution. Sans lui, `fetch` attend la réponse jusqu'à cinq
+ * minutes (délais par défaut d'undici) : la tâche de fond qui l'appelle reste
+ * en vol tout ce temps. C'est ce qui figeait les e2e lourdes en CI le
+ * 2026-10-26 — l'API publique, limitée en débit par IP, ne répondait pas.
+ */
+export const RECHERCHE_ENTREPRISES_TIMEOUT_MS = 5000;
+
+/**
  * Adaptateur **API Recherche d'entreprises** (recherche-entreprises.api.gouv.fr) —
  * publique, gratuite, sans authentification. Résout le code NAF d'un SIRET : on
  * cherche par `q=<siret>` et on lit l'`activite_principale` de l'établissement
@@ -17,7 +25,10 @@ export class RechercheEntreprisesEstablishmentDirectory extends EstablishmentDir
   async resolveNaf(siret: string): Promise<string | null> {
     const url = `${this.base}?q=${encodeURIComponent(siret)}&page=1&per_page=1`;
     try {
-      const res = await fetch(url, { headers: { accept: "application/json" } });
+      const res = await fetch(url, {
+        headers: { accept: "application/json" },
+        signal: AbortSignal.timeout(RECHERCHE_ENTREPRISES_TIMEOUT_MS),
+      });
       if (!res.ok) {
         return null;
       }
