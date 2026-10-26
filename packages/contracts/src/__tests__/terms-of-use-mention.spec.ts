@@ -35,7 +35,11 @@ describe("la mention « Conditions générales d'utilisation »", () => {
 
   it("s'affiche au pied de page par défaut, même relue d'une ligne qui l'ignore", () => {
     expect(DEFAULT_FOOTER_CONTENT.legalMentions.termsOfUse).toBe(true);
-    const { termsOfUse: _omitted, ...before } = DEFAULT_FOOTER_CONTENT.legalMentions;
+    const before = Object.fromEntries(
+      Object.entries(DEFAULT_FOOTER_CONTENT.legalMentions).filter(
+        ([mention]) => mention !== "termsOfUse",
+      ),
+    );
     const parsed = footerContentSchema.parse({ ...DEFAULT_FOOTER_CONTENT, legalMentions: before });
     expect(parsed.legalMentions.termsOfUse).toBe(true);
   });

@@ -4,10 +4,12 @@ import type {
   PlacedOrderResponse,
   PublicContactSettingsView,
   PublicStorefrontPageView,
+  PublishedLegalDocumentView,
   PublishedShopCopyView,
   ShopCartResponse,
   ShopCartView,
 } from '@lfd/contracts';
+import { DEFAULT_LEGAL_DOCUMENT } from '@lfd/contracts';
 import { audienceOf, pickupOpenTo } from '@lfd/contracts/shop-values';
 
 import { DEMO_CATALOGUE } from '../demo-data/demo-catalogue';
@@ -203,6 +205,23 @@ export const DEMO_ROUTES: readonly DemoRoute[] = [
     pattern: /^\/content\/footer$/u,
     serves: 'rien : le pied de page garde le texte du code',
     answer: () => ({ status: 404, reason: 'pied de page du code' }),
+  },
+  {
+    method: 'GET',
+    pattern: /^\/content\/legal\/(salesTerms|salesTermsPro)$/u,
+    // Révision 0 : « en cours de rédaction », donc pas de case au panier. Les
+    // scènes passent commande sans la cocher, comme avant la case (2026-10-26).
+    serves: 'des CGV jamais rédigées : le panier ne demande rien à cocher',
+    answer: (_request, match) =>
+      ok({
+        content: DEFAULT_LEGAL_DOCUMENT(
+          match[1] === 'salesTermsPro' ? 'salesTermsPro' : 'salesTerms',
+        ),
+        revision: 0,
+        updatedAt: '1970-01-01T00:00:00.000Z',
+        updatedBy: null,
+        pdf: null,
+      } satisfies PublishedLegalDocumentView),
   },
   {
     method: 'GET',
