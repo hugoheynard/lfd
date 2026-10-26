@@ -119,11 +119,17 @@ export interface IngredientView {
    * place. Un ingrédient énonce un FAIT, pas une obligation européenne — le
    * filtre légal appartient à la déclaration de la déclinaison.
    *
-   * ⚠️ `[]` n'affirme RIEN. Contrairement à `NutritionDeclaration.allergens`,
-   * où la liste vide est une déclaration positive « aucun allergène », une
-   * matière sans code veut seulement dire que personne n'en a saisi.
+   * ⚠️ `[]` seul n'affirme RIEN : c'est {@link declaresNoAllergen} qui dit
+   * « vérifié, aucun ». Sans lui, une matière sans code veut seulement dire que
+   * personne n'en a saisi.
    */
   readonly allergens: readonly string[];
+  /**
+   * « Aucun allergène », DÉCLARÉ (décision de Hugo, 2026-10-26). Toujours
+   * `false` quand `allergens` n'est pas vide. Trois états : codes / aucun /
+   * non renseigné.
+   */
+  readonly declaresNoAllergen: boolean;
   /** Combien de fiches le citent — ce qui le retient à l'effacement. */
   readonly usedBy: number;
 }
@@ -157,6 +163,11 @@ const allergenCodeSchema = z.string().trim().min(1).max(48);
  */
 export const setIngredientAllergensPayloadSchema = z.object({
   codes: z.array(allergenCodeSchema).max(50),
+  /**
+   * « Aucun allergène » (2026-10-26). Absent = `false` : un client d'avant
+   * n'affirme rien. Avec des codes, le domaine refuse.
+   */
+  none: z.boolean().optional(),
 });
 export type SetIngredientAllergensPayload = z.infer<typeof setIngredientAllergensPayloadSchema>;
 

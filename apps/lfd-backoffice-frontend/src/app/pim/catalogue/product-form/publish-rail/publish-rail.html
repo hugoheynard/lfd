@@ -53,6 +53,21 @@
     @if (signature(); as signed) {
       <p class="pr-signature">{{ signed }}</p>
 
+      <!-- Le geste inverse (décision de Hugo, 2026-10-26) : une signature posée
+           par erreur se retire. Confirmée en place, comme l'archivage — c'est
+           une caution qu'on reprend, pas un clic de passage. -->
+      @if (store.status() !== 'archived') {
+        <fold-inline-confirm
+          intent="danger"
+          message="Retirer la signature de cette fiche ?"
+          (confirmed)="withdraw()"
+        >
+          <button foldButton size="sm" emphasis="soft" intent="neutral" [disabled]="store.busy()">
+            Retirer la signature
+          </button>
+        </fold-inline-confirm>
+      }
+
       @if (store.readinessStale()) {
         <fold-callout appearance="inset" variant="warning">
           La fiche a été modifiée depuis. La déclaration porte sur l'état précédent.

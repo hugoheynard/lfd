@@ -69,6 +69,10 @@ export type SyncCategory = z.infer<typeof syncCategorySchema>;
  *
  * La catégorie est la clé stable et non traduite — c'est elle qu'un écran
  * groupe, filtre ou compare ; le libellé est ce qu'il montre.
+ *
+ * Depuis le 2026-10-26 (décision de Hugo), un allergène connu **hors
+ * obligation UE** (sarrasin, maïs, noix de coco) voyage aussi, nommé : sa clé
+ * est alors son code GS1 (`BWD`), faute de catégorie de l'annexe II.
  */
 export const syncAllergenLabelSchema = z.object({
   category: z.string().min(1),
@@ -79,10 +83,11 @@ export type SyncAllergenLabel = z.infer<typeof syncAllergenLabelSchema>;
 /**
  * Les mentions projetées **et l'aveu que la liste peut être amputée**.
  *
- * `incomplete` n'est pas un confort : la projection INCO écarte silencieusement
- * ce qui ne porte pas d'obligation UE (sarrasin, maïs, noix de coco) et ce que
- * le référentiel ne connaît pas. Sans ce drapeau, un article déclarant la seule
- * noix de coco voyagerait avec `labels: []`, qu'un écran lirait « sans
+ * `incomplete` n'est pas un confort : il dit qu'un code déclaré n'a pas pu être
+ * nommé, parce que le référentiel ne le range nulle part. (Jusqu'au 2026-10-26
+ * il valait aussi pour le sarrasin, le maïs et la noix de coco ; ils sont
+ * désormais nommés — décision de Hugo.) Sans ce drapeau, un article déclarant
+ * un code inconnu voyagerait avec `labels: []`, qu'un écran lirait « sans
  * allergène » — l'affirmation positive à la place d'une liste tronquée. C'est
  * exactement le défaut corrigé le 2026-08-31 côté plateforme ; le rejouer sur le
  * fil serait le réintroduire par la fenêtre.

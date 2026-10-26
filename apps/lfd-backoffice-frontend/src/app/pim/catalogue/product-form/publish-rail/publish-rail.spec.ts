@@ -284,3 +284,29 @@ describe('PublishRail — la déclaration « publiable »', () => {
     });
   });
 });
+
+/** Décision de Hugo, 2026-10-26 : une signature posée par erreur se retire. */
+describe('PublishRail — retirer la signature', () => {
+  function withdrawButton(host: HTMLElement): HTMLButtonElement | undefined {
+    return [...host.querySelectorAll('button')].find(
+      (button) => text(button) === 'Retirer la signature',
+    );
+  }
+
+  it('offre le retrait sur une fiche signée', () => {
+    const store = setup();
+    store['readinessValue'].set({
+      readyAt: '2026-08-31T09:00:00.000Z',
+      readyBy: 'staff_hugo',
+      readyByName: null,
+    });
+
+    expect(withdrawButton(render())).toBeDefined();
+  });
+
+  it("ne l'offre pas sur une fiche que personne n'a signée", () => {
+    setup();
+
+    expect(withdrawButton(render())).toBeUndefined();
+  });
+});

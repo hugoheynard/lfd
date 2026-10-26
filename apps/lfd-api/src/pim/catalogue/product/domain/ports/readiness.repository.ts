@@ -42,4 +42,12 @@ export abstract class ReadinessRepository {
 
   /** Pose la déclaration, ou la remplace par une plus récente. */
   abstract declare(productId: string, readiness: ProductReadiness): Promise<void>;
+
+  /**
+   * Retire la signature courante. La ligne n'est qu'un ÉTAT — « qui a signé en
+   * dernier » — que `declare` écrase déjà ; l'historique des signatures et de
+   * leurs retraits est au journal (`product.declared_ready`,
+   * `product.ready_withdrawn`). Sans signature, ne fait rien.
+   */
+  abstract withdraw(productId: string): Promise<void>;
 }

@@ -95,7 +95,7 @@ export class IngredientController {
     @Body(new ZodBody(setIngredientAllergensPayloadSchema)) body: SetIngredientAllergensPayload,
   ) {
     await this.commands.execute<SetIngredientAllergensCommand, void>(
-      new SetIngredientAllergensCommand(key, body.codes),
+      new SetIngredientAllergensCommand(key, body.codes, body.none ?? false),
     );
     return { key };
   }

@@ -448,6 +448,10 @@ export const REFERENTIAL_CATALOGUE_FACTS = {
   ),
   "product.vat_changed": fact(vatChanged(), [vatByContextV1(), vatChangedLotB()]),
   "product.declared_ready": labelled(skuAndName()),
+  /** La signature retirée (2026-10-26) — née avec `subjectLabel`, sans forme d'avant. */
+  "product.ready_withdrawn": fact(
+    payload({ sku: z.string(), name: localizedText(), subjectLabel: subjectLabel() }),
+  ),
   "product.published": labelled(productOnSale()),
   "product.unpublished": labelled(productOnSale()),
   "product.archived": labelled(skuAndName()),

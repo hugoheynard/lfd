@@ -276,6 +276,20 @@ la confusion à trois états que tout le dépôt combat, cette fois au niveau de
 **matière** — et elle contamine la détection de contradiction, qui compare une
 déclaration à des listes dont elle ne sait pas si elles ont été remplies.
 
+> 🟦 **Bâti autrement le 2026-10-26 (décision de Hugo)** : une colonne
+> **booléenne** `declares_no_allergen` (migration
+> `20261026140000_ingredient_aucun_allergene`, défaut `false` — l'existant reste
+> « non renseigné »), posée par `PUT /pim/ingredients/:key/allergens` avec
+> `{ codes: [], none: true }`. Trois états : codes / aucun / non renseigné ;
+> l'agrégat refuse « aucun » avec des codes et en retire l'affirmation dès
+> qu'un code est posé. Pas d'événement à part : le fait
+> `ingredient.allergens_saved` porte `changes.noAllergen` quand l'affirmation
+> bouge, et sa date tient lieu du « depuis quand » ci-dessous. La couverture
+> (« dont trois jamais examinés ») n'est **pas** bâtie : le dérivé de D5 ne
+> conclut toujours rien. La liste des ingrédients l'affiche en badge : vert
+> « Aucun allergène », orange le compte, rouge « Non renseigné », avec un
+> filtre par état.
+
 **Décision :** une colonne `allergens_declared_at` sur `ingredient`, nullable
 et **datée**. `null` = jamais examiné ; renseignée = examiné, et les lignes de
 liaison sont la réponse, **y compris zéro**.
@@ -719,6 +733,18 @@ INCO disparaît de la projection sans que le récepteur puisse le savoir. C'est 
 défaut corrigé le 2026-08-31 dans `allergensOf`, et il se rejouerait ici.
 `allergenLabels` porte donc **aussi** `incomplete: boolean`, calculé côté PIM
 qui, lui, a le référentiel.
+
+> 🟦 **Corrigé le 2026-10-26 (décision de Hugo, Q3 portée jusqu'au fil).** Un
+> code connu **hors obligation UE** (`BWD`, `NM`, `SO`, et les entrées maison
+> d'une catégorie non archivée) voyage désormais **nommé** dans `labels`, sa
+> clé `category` étant son code GS1 ; `incomplete` ne se lève plus que pour un
+> code que le référentiel ne range nulle part (`IncoProjector.outsideAnnex()
+.unknown`, `pim/channels/b2b-platform/products/projection.ts`). Avant, la
+> noix de coco partait en `{ labels: [], incomplete: true }` : « un allergène
+> en plus, mais on ne sait pas lequel ». Les articles déjà reçus gardent
+> l'ancienne forme jusqu'à leur prochaine réémission. Côté fiche, l'encart
+> « la composition mentionne » nomme aussi ces codes (« Sarrasin (hors
+> obligation UE) ») par le référentiel monde, et les rend déclarables.
 
 #### Le backfill : un push complet, pas une migration
 

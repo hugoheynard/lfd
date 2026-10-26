@@ -165,6 +165,10 @@ model Ingredient {
   appellationId String?      @map("appellation_id")
   appellation   Appellation? @relation(fields: [appellationId], references: [id])
 
+  /// « Aucun allergène », DÉCLARÉ (2026-10-26). `false` sans code = personne
+  /// n'a rien dit. Jamais `true` avec des codes : l'agrégat le refuse.
+  declaresNoAllergen Boolean @default(false) @map("declares_no_allergen")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 

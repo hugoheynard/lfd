@@ -74,6 +74,35 @@ describe('la composition en regard de la déclaration', () => {
     expect(store.citedNotDeclared()).toEqual([]);
   });
 
+  /**
+   * Régression (2026-10-26) : un ingrédient au sarrasin, sur une fiche
+   * « aucun allergène », ouvrait l'encart de contradiction sur une liste VIDE —
+   * « un allergène en plus, mais on ne sait pas lequel ». La portée « UE » ne
+   * nommait pas `BWD` ; le référentiel monde le nomme.
+   */
+  it('nomme un allergène hors obligation UE que la composition cite', () => {
+    store.citedReference.set([
+      ...reference,
+      { code: 'BWD', label: 'Sarrasin', incoCategory: null, incoLabel: null },
+    ]);
+    store['citedAllergensValue'].set(['BWD']);
+    store.declareNoAllergen(true);
+
+    expect(store.citedContradictsNone()).toBe(true);
+    expect(store.citedNotDeclared()).toEqual([{ code: 'BWD', label: 'Sarrasin', outsideEu: true }]);
+  });
+
+  it('rend un code hors obligation UE déclarable par la reprise', () => {
+    store.citedReference.set([
+      { code: 'BWD', label: 'Sarrasin', incoCategory: null, incoLabel: null },
+    ]);
+    store['citedAllergensValue'].set(['BWD']);
+
+    store.adoptCitedAllergens();
+
+    expect(store.selected()).toEqual(['BWD']);
+  });
+
   describe('la reprise', () => {
     it('lève « aucun allergène » et coche ce qui est cité', () => {
       store['citedAllergensValue'].set(['milk']);

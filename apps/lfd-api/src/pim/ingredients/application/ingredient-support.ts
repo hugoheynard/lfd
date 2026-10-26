@@ -18,6 +18,7 @@ export function toIngredientView(record: IngredientRecord): IngredientView {
     description: record.description,
     origin: record.origin,
     allergens: record.allergens,
+    declaresNoAllergen: record.declaresNoAllergen,
     appellation:
       record.appellation === null
         ? null

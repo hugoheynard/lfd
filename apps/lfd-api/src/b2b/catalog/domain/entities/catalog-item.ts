@@ -119,9 +119,10 @@ export interface PimFacts {
    * la colonne prévue pour l'en dispenser. Une doctrine écrite ne tient pas une
    * frontière — c'est `lint:context-boundaries` qui la tient désormais.
    *
-   * `incomplete` compte autant que les libellés : un code sans obligation UE ou
-   * inconnu disparaît de la projection sans bruit, et une liste vide qui se tait
-   * s'affiche « sans allergène ».
+   * `incomplete` compte autant que les libellés : un code inconnu du
+   * référentiel disparaît de la projection, et une liste vide qui se tait
+   * s'affiche « sans allergène ». Un code sans obligation UE, lui, arrive
+   * NOMMÉ depuis le 2026-10-26 (décision de Hugo, `projection.ts` du PIM).
    */
   readonly allergenLabels: PimAllergenLabels | null;
   /**

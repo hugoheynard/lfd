@@ -47,6 +47,7 @@ const FARINE: IngredientView = {
   origin: 'Bretagne, France',
   appellation: null,
   allergens: ['BWD'],
+  declaresNoAllergen: false,
   usedBy: 1,
 };
 
@@ -263,10 +264,29 @@ describe('IngredientsPage — les allergènes dans la liste', () => {
    * pas — et sur ce sujet-là, le raccourci se paie ailleurs.
    */
   it('ne déclare JAMAIS « aucun allergène » sur une matière muette', () => {
+    // Le TABLEAU, pas la page : depuis le 2026-10-26 le filtre au-dessus porte
+    // l'option « Aucun allergène », qui est un choix et non une affirmation.
+    const element = renderList({ ...FARINE, allergens: [] }).querySelector('fold-data-table');
+
+    expect(element?.textContent).toContain('Non renseigné');
+    expect(element?.textContent?.toLowerCase()).not.toContain('aucun allergène');
+    expect(element?.textContent?.toLowerCase()).not.toContain('sans allergène');
+  });
+
+  /** Décision de Hugo, 2026-10-26 : trois états, trois couleurs. */
+  function badge(element: HTMLElement): { readonly text: string } {
+    return { text: (element.querySelector('fold-badge')?.textContent ?? '').trim() };
+  }
+
+  it('écrit « Aucun allergène » seulement quand il est DÉCLARÉ', () => {
+    const element = renderList({ ...FARINE, allergens: [], declaresNoAllergen: true });
+
+    expect(badge(element).text).toBe('Aucun allergène');
+  });
+
+  it('met « Non renseigné » en badge sur une matière muette', () => {
     const element = renderList({ ...FARINE, allergens: [] });
 
-    expect(element.textContent).toContain('Non renseigné');
-    expect(element.textContent?.toLowerCase()).not.toContain('aucun allergène');
-    expect(element.textContent?.toLowerCase()).not.toContain('sans allergène');
+    expect(badge(element).text).toBe('Non renseigné');
   });
 });

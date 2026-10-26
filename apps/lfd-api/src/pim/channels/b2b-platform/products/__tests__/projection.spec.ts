@@ -113,6 +113,34 @@ describe("projectVariant", () => {
     });
   });
 
+  /**
+   * Régression (2026-10-26) : une fiche à la noix de coco partait en
+   * `{ labels: [], incomplete: true }` — « un allergène en plus, mais on ne
+   * sait pas lequel ». Un code connu hors obligation UE est NOMMÉ.
+   */
+  it("nomme un allergène hors obligation UE au lieu de déclarer la liste incomplète", () => {
+    const sheet = { declared: ["UW", "SO"], mayContain: [] };
+    const v = projectVariant(variant({ allergenSheet: sheet }), 1, 5.5, 200, percents, INCO);
+
+    expect(v.allergenLabels).toEqual({
+      labels: [
+        { category: "gluten", label: "gluten" },
+        { category: "SO", label: "SO" },
+      ],
+      incomplete: false,
+    });
+  });
+
+  it("ne lève `incomplete` que pour un code que le référentiel ne range nulle part", () => {
+    const sheet = { declared: ["UW", "ZZ"], mayContain: [] };
+    const v = projectVariant(variant({ allergenSheet: sheet }), 1, 5.5, 200, percents, INCO);
+
+    expect(v.allergenLabels).toEqual({
+      labels: [{ category: "gluten", label: "gluten" }],
+      incomplete: true,
+    });
+  });
+
   it("distingue « aucune fiche » (null) de « fiche sans allergène » ([])", () => {
     const none = projectVariant(variant({ allergenSheet: null }), 1, 5.5, 200, percents, INCO);
     const empty = projectVariant(variant(), 1, 5.5, 200, percents, INCO);

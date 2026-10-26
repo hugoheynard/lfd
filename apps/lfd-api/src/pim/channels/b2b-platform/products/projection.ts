@@ -6,10 +6,7 @@ import type {
 } from "@lfd/catalog-sync";
 import { htMillicentsOf } from "@lfd/pim-contracts";
 
-import type {
-  IncoProjection,
-  IncoProjector,
-} from "../../../allergens/domain/services/inco-projector.js";
+import type { IncoProjector } from "../../../allergens/domain/services/inco-projector.js";
 import type { CatalogTranslations } from "./translations.js";
 import type { CategoryVatPercents } from "../../../catalogue/shared/domain/ports/catalogue-reader.js";
 import type { VariantRecord } from "../../../catalogue/product/domain/ports/product.repository.js";
@@ -98,7 +95,7 @@ export function projectVariant(
     position: variant.position,
     vatRatePercent,
     allergens: declared === null ? null : [...declared],
-    allergenLabels: declared === null ? null : labelsOf(inco.project(declared)),
+    allergenLabels: declared === null ? null : labelsOf(inco, declared),
   };
 }
 
@@ -135,11 +132,26 @@ function publicPricesOf(
   return byContext;
 }
 
-/** Du domaine au fil : seul le `readonly` tombe, surtout pas `incomplete`. */
-function labelsOf(projection: IncoProjection): SyncAllergenLabels {
+/**
+ * **Les mentions du fil : l'annexe II, puis ce qu'on sait NOMMER hors d'elle.**
+ *
+ * Décision de Hugo, 2026-10-26 (Q3 du 2026-10-20 portée jusqu'au fil) : le
+ * sarrasin, le maïs et la noix de coco sont connus du référentiel sans
+ * obligation UE. Ils partaient en `incomplete: true` sans libellé — la
+ * boutique savait qu'il y avait « un allergène en plus » sans pouvoir dire
+ * lequel. Ils voyagent désormais nommés, leur code GS1 en guise de clé
+ * (`category`), et `incomplete` ne se lève plus que pour un code que le
+ * référentiel ne range NULLE PART (`IncoProjector.outsideAnnex().unknown`).
+ */
+function labelsOf(inco: IncoProjector, declared: readonly string[]): SyncAllergenLabels {
+  const annex = inco.project(declared);
+  const outside = inco.outsideAnnex(declared);
   return {
-    labels: projection.labels.map((entry) => ({ category: entry.category, label: entry.label })),
-    incomplete: projection.incomplete,
+    labels: [
+      ...annex.labels.map((entry) => ({ category: entry.category, label: entry.label })),
+      ...outside.named.map((entry) => ({ category: entry.code, label: entry.label })),
+    ],
+    incomplete: outside.unknown.length > 0,
   };
 }
 

@@ -239,6 +239,26 @@ export class ArchivedProductNotReadyError extends BusinessError {
   }
 }
 
+/** On ne retire pas une signature que personne n'a posée. */
+export class ProductNotDeclaredReadyError extends BusinessError {
+  constructor(readonly productId: string) {
+    super(
+      "catalogue.product.not_declared_ready",
+      "Cette fiche n'est pas déclarée publiable : il n'y a pas de signature à retirer.",
+    );
+  }
+}
+
+/** Une fiche archivée ne bouge plus, sa signature non plus. */
+export class ArchivedProductReadinessError extends BusinessError {
+  constructor(readonly productId: string) {
+    super(
+      "catalogue.product.archived_readiness",
+      "Ce produit est archivé : le restaurer avant de retirer sa signature.",
+    );
+  }
+}
+
 /**
  * La déclinaison par défaut ne peut pas suivre la fiche réglementaire… d'elle-même.
  *

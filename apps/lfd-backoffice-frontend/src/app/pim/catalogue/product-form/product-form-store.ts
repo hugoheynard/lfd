@@ -37,6 +37,7 @@ import {
 import {
   bucketsOf,
   citedNotDeclaredIn,
+  mergedEntries,
   groupsOf,
   singlesOf,
   traceOptionsOf,
@@ -529,6 +530,12 @@ export class ProductFormStore {
   readonly rates = signal<VatRate[]>([]);
   readonly entries = signal<readonly AllergenEntry[]>([]);
   readonly scope = signal<AllergenScope>('eu');
+  /**
+   * Le référentiel MONDE, pour nommer ce que la composition cite hors de la
+   * portée affichée (sarrasin, maïs, noix de coco — décision de Hugo,
+   * 2026-10-26). Vide tant qu'il n'est pas lu : rien n'est alors nommé de plus.
+   */
+  readonly citedReference = signal<readonly AllergenEntry[]>([]);
 
   // Champs éditables
   /**
@@ -1063,12 +1070,16 @@ export class ProductFormStore {
    * enregistré : cocher une case doit faire disparaître la ligne tout de suite,
    * sinon l'encart reproche encore ce qu'on vient de corriger.
    *
-   * Un code que le référentiel du catalogue courant ne connaît pas est ignoré :
-   * la portée « UE » n'expose pas tout, et proposer un code sans libellé
-   * afficherait `en:e220` à un opérateur.
+   * Les codes hors de la portée affichée sont nommés par le référentiel monde
+   * (`citedReference`) : la portée « UE » ne connaît pas le sarrasin, et le
+   * taire faisait s'ouvrir l'encart de contradiction sur une liste vide.
    */
   readonly citedNotDeclared = computed(() =>
-    citedNotDeclaredIn(this.citedAllergens(), new Set(this.selected()), this.entries()),
+    citedNotDeclaredIn(
+      this.citedAllergens(),
+      new Set(this.selected()),
+      mergedEntries(this.entries(), this.citedReference()),
+    ),
   );
 
   /**
@@ -1106,6 +1117,12 @@ export class ProductFormStore {
       // laisser « aucun allergène » coché le démentirait quand même.
       withCitedAdopted(contradicts ? withNoAllergen(current, false) : current, missing),
     );
+    // Un code repris hors de la portée affichée doit SE VOIR coché : sans
+    // bascule, le sarrasin serait déclaré sans case à l'écran pour le décocher.
+    const shown = new Set(this.entries().map((entry) => entry.code));
+    if (missing.some((code) => !shown.has(code))) {
+      void this.changeScope('world');
+    }
   }
 
   readonly dirtySections = computed<SectionRef[]>(() => {
@@ -1724,6 +1741,29 @@ export class ProductFormStore {
   }
 
   /**
+   * **Retirer la signature** — une déclaration posée par erreur se défait
+   * (décision de Hugo, 2026-10-26). Le statut ne bouge pas ; l'avertissement
+   * de péremption tombe avec la signature qu'il commentait.
+   */
+  async withdrawReady(): Promise<void> {
+    const id = this.productId();
+    if (id === '' || this.busy()) {
+      return;
+    }
+    this.busy.set(true);
+    this.error.set(null);
+    try {
+      await this.products.withdrawReady(id);
+      this.readinessValue.set(null);
+      this.readinessStaleValue.set(false);
+    } catch (caught) {
+      this.error.set(messageOf(caught));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  /**
    * **Un geste du cycle de vie**, nommé par l'intention et non par le statut visé.
    *
    * 🔴 C'est la correction du défaut le plus coûteux de l'écran, et elle tient
@@ -2223,7 +2263,12 @@ export class ProductFormStore {
    */
   private async loadCitedAllergens(id: string): Promise<void> {
     try {
-      this.citedAllergensValue.set(await this.products.citedAllergens(id));
+      const [cited, world] = await Promise.all([
+        this.products.citedAllergens(id),
+        this.reference.allergens('world'),
+      ]);
+      this.citedAllergensValue.set(cited);
+      this.citedReference.set(world.entries);
       this.citedAllergensUnreadable.set(false);
     } catch {
       this.citedAllergensValue.set([]);

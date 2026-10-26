@@ -76,18 +76,27 @@
       subtitle="Le serveur n’a proposé aucun code. Rien à cocher tant qu’il n’en sert pas."
     />
   } @else {
+    <!-- « Aucun allergène », DÉCLARÉ (décision de Hugo, 2026-10-26) : distinct
+         de ne rien cocher, qui reste « non renseigné ». Exclusif des codes. -->
+    <fold-checkbox
+      label="Aucun allergène"
+      hint="Une affirmation vérifiée — différente d’une liste laissée vide."
+      [checked]="draftNoAllergen()"
+      (checkedChange)="declareNoAllergen($event)"
+    />
     <fold-multiselect
       label="Allergènes"
       placeholder="Aucun allergène renseigné"
       hint="Ce que cette matière contient — les fiches qui la citent s’en serviront."
-      info="Ne rien cocher n’affirme rien : c’est « personne n’a renseigné », jamais « sans allergène ». Le périmètre est mondial — le sarrasin, le maïs et la noix de coco n’ont pas d’obligation européenne mais restent des faits. Le filtre légal appartient à la fiche réglementaire de la déclinaison."
+      info="Ne rien cocher n’affirme rien : c’est « personne n’a renseigné ». Pour dire qu’il n’y en a pas, cochez « Aucun allergène ». Le périmètre est mondial — le sarrasin, le maïs et la noix de coco n’ont pas d’obligation européenne mais restent des faits. Le filtre légal appartient à la fiche réglementaire de la déclinaison."
       allowClear
       searchable
       searchLabel="Chercher un allergène"
       emptyText="Aucun allergène ne correspond"
       resultLabel="allergènes"
       [options]="allergenOptions()"
-      [(value)]="draftAllergens"
+      [value]="draftAllergens()"
+      (valueChange)="chooseAllergens($event)"
     />
   }
 

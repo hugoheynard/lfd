@@ -114,3 +114,17 @@ export class ArchivedIngredientAllergenError extends BusinessError {
     );
   }
 }
+
+/**
+ * « Aucun allergène » et des codes à la fois (décision de Hugo, 2026-10-26).
+ * L'affirmation est exclusive : décocher les allergènes, ou décocher « aucun ».
+ */
+export class NoAllergenWithCodesError extends DomainError {
+  constructor(key: string) {
+    super(
+      "catalogue.ingredient.no_allergen_with_codes",
+      `L'ingrédient « ${key} » ne peut pas être déclaré « aucun allergène » et porter ` +
+        `des allergènes : retirez les allergènes cochés, ou décochez « Aucun allergène ».`,
+    );
+  }
+}

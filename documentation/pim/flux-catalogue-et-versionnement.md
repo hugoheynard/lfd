@@ -112,6 +112,15 @@ un brouillon — mettre en vente est un second geste. La signature ne se périme
 pas en écriture : `readyAt` se compare au `max(updated_at)` de `product`,
 `product_variant`, `product_editorial`, `product_media`.
 
+**Elle se retire** (décision de Hugo, 2026-10-26) : `DELETE
+/pim/catalogue/products/:id/ready` (`withdraw-product-readiness.ts`), même droit
+que la pose, bouton « Retirer la signature » du rail avec confirmation. La ligne
+`product_readiness` est **supprimée** : elle n'a jamais porté d'historique —
+`declare` l'écrase à chaque signature — et l'historique vit au journal
+(`product.declared_ready`, `product.ready_withdrawn`). Refusé (409) sur une
+fiche non signée (`catalogue.product.not_declared_ready`) ou archivée. Le statut
+ne bouge pas ; la fiche est réémise, la capture de révision lisant la signature.
+
 ## 4. La descente vers les canaux
 
 ```mermaid

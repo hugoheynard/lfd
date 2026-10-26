@@ -144,8 +144,14 @@ export class ProvenanceStore {
    * Seuls les ingrédients se rechargent : un code d'allergène ne change rien à
    * une appellation.
    */
-  async setIngredientAllergens(key: string, codes: readonly string[]): Promise<void> {
-    const payload: SetIngredientAllergensPayload = { codes: [...codes] };
+  /**
+   * `none` = « aucun allergène » DÉCLARÉ (2026-10-26) ; n'est envoyé que vrai,
+   * l'absence valant `false` côté serveur. Le serveur refuse `none` avec des codes.
+   */
+  async setIngredientAllergens(key: string, codes: readonly string[], none = false): Promise<void> {
+    const payload: SetIngredientAllergensPayload = none
+      ? { codes: [...codes], none }
+      : { codes: [...codes] };
     await firstValueFrom(this.http.put(`${this.base}/ingredients/${key}/allergens`, payload));
     await this.reloadIngredients();
   }

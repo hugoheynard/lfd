@@ -127,6 +127,12 @@ export const PIM_EVENTS = {
    * question ni, souvent, la même personne.
    */
   productDeclaredReady: "product.declared_ready",
+  /**
+   * **La signature retirée** (décision de Hugo, 2026-10-26). Le geste inverse
+   * de `declared_ready`, tracé à part : « qui a retiré sa caution, et quand »
+   * est une question aussi légitime que « qui l'a donnée ».
+   */
+  productReadyWithdrawn: "product.ready_withdrawn",
   productPublished: "product.published",
   productUnpublished: "product.unpublished",
   /**

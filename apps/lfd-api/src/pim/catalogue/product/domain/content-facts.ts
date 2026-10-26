@@ -125,6 +125,8 @@ const CONTENT_FACTS: Readonly<Record<string, boolean>> = {
   // La signature elle-même. Se compter comme une modification la périmerait à
   // l'instant où elle est posée.
   [PIM_EVENTS.productDeclaredReady]: false,
+  // Son retrait non plus : il ne change rien de ce que la fiche dit.
+  [PIM_EVENTS.productReadyWithdrawn]: false,
 };
 
 /**

@@ -42,6 +42,7 @@ interface IngredientRow {
   readonly description: unknown;
   readonly origin: string;
   readonly appellationId: string | null;
+  readonly declaresNoAllergen: boolean;
   readonly allergens: readonly AllergenJoin[];
 }
 
@@ -69,6 +70,7 @@ function toAggregate(row: IngredientRow): IngredientAggregate {
     // L'agrégat range et déduplique : l'ordre des lignes de liaison n'est pas
     // une donnée, et on ne lui en demande donc pas un.
     allergens: row.allergens.map((link) => link.entry.code),
+    declaresNoAllergen: row.declaresNoAllergen,
   });
 }
 

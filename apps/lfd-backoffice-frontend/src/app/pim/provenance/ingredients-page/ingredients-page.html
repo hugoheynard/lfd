@@ -29,13 +29,41 @@
       <button foldButton emphasis="outline" (click)="retry()">Réessayer</button>
     </fold-empty-state>
   } @else {
+    <div class="filters">
+      <fold-view-toggle
+        data-ingredients-allergens
+        ariaLabel="Filtrer par état des allergènes"
+        size="sm"
+        [options]="allergenStateOptions"
+        [value]="allergenState()"
+        (valueChange)="chooseAllergenState($event)"
+      />
+    </div>
+
     <fold-data-table
       [columns]="columns()"
-      [rows]="ingredients()"
+      [rows]="pagedIngredients()"
       [rowKey]="rowKey"
       narrowLayout="cards"
       zebra
+      toolbarSurface="accent"
+      [empty]="noMatch"
     >
+      <div foldToolbar class="table-toolbar">
+        <fold-element-title
+          class="toolbar-title"
+          variant="bar"
+          icon="library"
+          title="Ingrédients"
+        />
+
+        <fold-search
+          class="toolbar-search"
+          placeholder="Filtrer par nom, origine ou appellation…"
+          (searchChange)="onSearch($event)"
+        />
+      </div>
+
       <ng-template foldCell="name" let-i>
         <strong>{{ i.name.fr }}</strong>
       </ng-template>
@@ -52,14 +80,12 @@
         }
       </ng-template>
 
-      <!-- Un compte, pas un verdict : sans code, on écrit « Non renseigné » et
-           surtout pas « aucun ». Le référentiel n'atteste que ce qu'on y a mis. -->
+      <!-- Trois états, trois couleurs (décision de Hugo, 2026-10-26) : « Aucun
+           allergène » n'est écrit que DÉCLARÉ ; sans code ni déclaration, c'est
+           « Non renseigné », en alerte — le référentiel n'atteste que ce qu'on
+           y a mis. -->
       <ng-template foldCell="allergens" let-i>
-        @if (i.allergens.length > 0) {
-          <fold-badge [content]="allergenCount(i)" variant="neutral" />
-        } @else {
-          <span class="muted">Non renseigné</span>
-        }
+        <fold-badge [content]="allergenBadge(i).label" [variant]="allergenBadge(i).variant" />
       </ng-template>
 
       <ng-template foldCell="used" let-i>
@@ -95,6 +121,17 @@
         </div>
       </ng-template>
     </fold-data-table>
+
+    @if (visibleIngredients().length > 0) {
+      <fold-paginator
+        class="ingredients-paginator"
+        [currentPage]="currentPage()"
+        [totalItems]="visibleIngredients().length"
+        [pageSize]="pageSize()"
+        (pageChange)="page.set($event)"
+        (pageSizeChange)="onPageSize($event)"
+      />
+    }
 
     <fold-callout class="pv-note" appearance="inset" variant="info">
       Ce référentiel n'est <strong>pas</strong> la liste réglementaire d'ingrédients. Celle-là est

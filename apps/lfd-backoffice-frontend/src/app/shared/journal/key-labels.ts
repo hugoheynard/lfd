@@ -198,6 +198,8 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   method: 'Mode',
   mode: 'Mode',
   name: 'Nom',
+  // « Aucun allergène » déclaré sur un ingrédient (2026-10-26).
+  noAllergen: 'Aucun allergène',
   note: 'Note',
   noteId: 'Note',
   openToB2b: 'Ouverte aux professionnels',

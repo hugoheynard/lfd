@@ -35,10 +35,11 @@ const BEURRE: IngredientView = {
   origin: 'Savoie, France',
   appellation: AOP,
   allergens: [],
+  declaresNoAllergen: false,
   usedBy: 2,
 };
 
-function setup(canWrite: boolean): void {
+function setup(canWrite: boolean, ingredients: readonly IngredientView[] = [BEURRE]): void {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
@@ -51,7 +52,7 @@ function setup(canWrite: boolean): void {
         // passerait sur un écran vide.
         useValue: {
           appellations: () => [AOP],
-          ingredients: () => [BEURRE],
+          ingredients: () => ingredients,
           offeredAppellations: () => [AOP],
           appellationError: () => null,
           ingredientError: () => null,
@@ -67,8 +68,9 @@ function setup(canWrite: boolean): void {
 function render<T>(
   page: Type<T>,
   canWrite = true,
+  ingredients: readonly IngredientView[] = [BEURRE],
 ): { element: HTMLElement; table: FoldDataTableComponent<unknown> } {
-  setup(canWrite);
+  setup(canWrite, ingredients);
   const fixture = TestBed.createComponent(page);
   fixture.detectChanges();
   const found = fixture.debugElement.query(By.directive(FoldDataTableComponent));
@@ -127,5 +129,30 @@ describe('IngredientsPage', () => {
 
     expect(element.textContent).not.toContain('Ajouter');
     expect(table.cellTemplate('actions')).toBeNull();
+  });
+
+  /** Demandé le 2026-10-26 : une liste longue sans recherche se parcourt à l'œil. */
+  it('offre une recherche dans la barre du tableau', () => {
+    const { element } = render(IngredientsPage);
+
+    expect(element.querySelector('fold-search')).not.toBeNull();
+  });
+
+  /** Demandé le 2026-10-26 : 25 lignes par page, comme la liste des fiches. */
+  it('pagine à 25 lignes, côté client', () => {
+    const many = Array.from({ length: 30 }, (_, at) => ({
+      ...BEURRE,
+      key: `ingredient-${String(at)}`,
+    }));
+    const { element, table } = render(IngredientsPage, true, many);
+
+    expect(table.rows().length).toBe(25);
+    expect(element.querySelector('fold-paginator')).not.toBeNull();
+  });
+
+  it('offre le filtre par état des allergènes', () => {
+    const { element } = render(IngredientsPage);
+
+    expect(element.querySelector('[data-ingredients-allergens]')).not.toBeNull();
   });
 });

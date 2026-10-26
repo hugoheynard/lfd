@@ -69,3 +69,41 @@
   display: block;
   margin-block-start: var(--fold-space-lg);
 }
+
+/* La rangée d'outils — le motif exact de `products-page` (2026-10-26). */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-md);
+}
+
+.table-toolbar {
+  container-type: inline-size;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-md);
+  width: 100%;
+}
+
+.toolbar-title {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.toolbar-search {
+  flex: 1 1 auto;
+  min-width: 12rem;
+  max-width: none;
+}
+
+.toolbar-title,
+.toolbar-search {
+  min-height: 2.5rem;
+}
+
+.ingredients-paginator {
+  /* Le host fold-paginator est déjà `display: flex` : on n'ajoute que la marge. */
+  margin-top: var(--fold-space-md);
+}

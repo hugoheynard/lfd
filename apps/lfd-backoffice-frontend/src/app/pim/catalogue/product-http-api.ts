@@ -276,6 +276,11 @@ export class ProductHttpApi {
     );
   }
 
+  /** Retire la signature — l'inverse de {@link declareReady} (décision de Hugo, 2026-10-26). */
+  async withdrawReady(id: string): Promise<void> {
+    await firstValueFrom(this.http.delete(this.url(`products/${id}/ready`)));
+  }
+
   /**
    * Crée le produit puis, si un prix/poids est fourni, tarife sa déclinaison par
    * défaut (le backend ne les prend pas à la création). La description part dans

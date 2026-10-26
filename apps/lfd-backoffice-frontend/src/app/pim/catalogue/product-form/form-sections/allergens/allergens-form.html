@@ -35,7 +35,12 @@
       </p>
       <ul class="cited-list">
         @for (item of store.citedNotDeclared(); track item.code) {
-          <li>{{ item.label }}</li>
+          <li>
+            {{ item.label }}
+            @if (item.outsideEu) {
+              <span class="cited-note">(hors obligation UE)</span>
+            }
+          </li>
         }
       </ul>
       <button foldButton size="sm" emphasis="outline" (click)="store.adoptCitedAllergens()">
@@ -49,7 +54,12 @@
       </p>
       <ul class="cited-list">
         @for (item of store.citedNotDeclared(); track item.code) {
-          <li>{{ item.label }}</li>
+          <li>
+            {{ item.label }}
+            @if (item.outsideEu) {
+              <span class="cited-note">(hors obligation UE)</span>
+            }
+          </li>
         }
       </ul>
       <button foldButton size="sm" emphasis="outline" (click)="store.adoptCitedAllergens()">

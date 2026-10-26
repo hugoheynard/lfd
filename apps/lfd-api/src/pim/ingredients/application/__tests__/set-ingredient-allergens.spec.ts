@@ -8,6 +8,7 @@ import { RecordingJournal } from "../../../journal/__tests__/recording-journal.j
 import {
   ArchivedIngredientAllergenError,
   IngredientNotFoundError,
+  NoAllergenWithCodesError,
   UnknownIngredientAllergenError,
 } from "../../domain/errors/ingredient-errors.js";
 import { CreateIngredientCommand, CreateIngredientHandler } from "../create-ingredient.js";
@@ -147,6 +148,37 @@ describe("SetIngredientAllergensHandler", () => {
     await handler.execute(new SetIngredientAllergensCommand("praline", ["BWD"]));
 
     expect(ingredients.at("praline")?.allergens).toEqual(["BWD"]);
+  });
+
+  describe("« aucun allergène » (2026-10-26)", () => {
+    it("se déclare, et se trace avec l'affirmation", async () => {
+      const { ingredients, journal, handler } = await fixture();
+
+      await handler.execute(new SetIngredientAllergensCommand("praline", [], true));
+
+      expect(ingredients.at("praline")?.declaresNoAllergen).toBe(true);
+      expect(journal.entries.at(-1)?.payload).toMatchObject({
+        changes: { noAllergen: { from: false, to: true } },
+      });
+    });
+
+    it("refuse « aucun » avec des codes, sans rien tracer", async () => {
+      const { journal, handler } = await fixture();
+
+      await expect(
+        handler.execute(new SetIngredientAllergensCommand("praline", ["SH"], true)),
+      ).rejects.toBeInstanceOf(NoAllergenWithCodesError);
+      expect(journal.types()).toEqual([]);
+    });
+
+    it("ne trace rien quand on redéclare « aucun »", async () => {
+      const { journal, handler } = await fixture();
+      await handler.execute(new SetIngredientAllergensCommand("praline", [], true));
+
+      await handler.execute(new SetIngredientAllergensCommand("praline", [], true));
+
+      expect(journal.types()).toEqual(["ingredient.allergens_saved"]);
+    });
   });
 
   describe("l'archivage (D2 bis)", () => {

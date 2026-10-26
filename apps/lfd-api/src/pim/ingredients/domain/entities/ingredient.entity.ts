@@ -1,5 +1,6 @@
 import type { LocalizedText } from "@lfd/pim-contracts";
 
+import { NoAllergenWithCodesError } from "../errors/ingredient-errors.js";
 import { cleanKey, cleanOptionalText, cleanRequiredText } from "../value-objects/reference-text.js";
 
 /** Ce qu'une révision remplace — tout ce qui est réglable, d'un bloc. */
@@ -39,6 +40,12 @@ export interface IngredientSnapshot extends IngredientRevision {
    * rangé par l'agrégat.
    */
   readonly allergens: readonly string[];
+  /**
+   * « Aucun allergène », DÉCLARÉ (décision de Hugo, 2026-10-26). Trois états
+   * en tout : `allergens` non vide ; `[]` + `true` = vérifié, il n'y en a pas ;
+   * `[]` + `false` = non renseigné. Jamais `true` avec des codes.
+   */
+  readonly declaresNoAllergen: boolean;
 }
 
 /**
@@ -67,6 +74,7 @@ export class IngredientAggregate {
     private originValue: string,
     private appellationValue: string | null,
     private allergenValues: readonly string[],
+    private declaresNone: boolean,
   ) {}
 
   static declare(input: NewIngredientInput): IngredientAggregate {
@@ -81,6 +89,7 @@ export class IngredientAggregate {
       // dit : les allergènes se posent par leur propre verbe, à l'écran comme
       // ici. Et cette liste vide n'affirme RIEN — cf. `declareAllergens`.
       [],
+      false,
     );
   }
 
@@ -93,6 +102,7 @@ export class IngredientAggregate {
       snapshot.origin,
       snapshot.appellationId,
       distinctCodes(snapshot.allergens),
+      snapshot.declaresNoAllergen && snapshot.allergens.length === 0,
     );
   }
 
@@ -136,13 +146,19 @@ export class IngredientAggregate {
    * référentiel vit en base ; le domaine ne le cherche pas, il le reçoit — comme
    * `nutritionDeclaration` reçoit `knownCodes()` (D3).
    *
-   * ⚠️ `[]` n'affirme pas « sans allergène ». La déclaration d'une déclinaison
-   * distingue `null` de `[]` parce qu'elle fait foi ; ici rien ne fait foi — la
-   * liste d'ingrédients est éditoriale, et son silence ne renseigne sur rien
-   * (D5).
+   * ⚠️ `[]` seul n'affirme pas « sans allergène » : c'est « non renseigné ».
+   * L'affirmation se pose par `none` (décision de Hugo, 2026-10-26), et elle
+   * est exclusive des codes — poser un code la retire, la poser avec des codes
+   * est refusé : une matière ne contient pas « rien et du lait ».
+   *
+   * @throws {NoAllergenWithCodesError} `none` avec au moins un code.
    */
-  declareAllergens(codes: readonly string[]): void {
+  declareAllergens(codes: readonly string[], none = false): void {
+    if (none && codes.length > 0) {
+      throw new NoAllergenWithCodesError(this.keyValue);
+    }
     this.allergenValues = distinctCodes(codes);
+    this.declaresNone = none;
   }
 
   snapshot(): IngredientSnapshot {
@@ -154,6 +170,7 @@ export class IngredientAggregate {
       origin: this.originValue,
       appellationId: this.appellationValue,
       allergens: this.allergenValues,
+      declaresNoAllergen: this.declaresNone,
     };
   }
 }

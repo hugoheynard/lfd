@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import type { IngredientView } from '@lfd/pim-contracts';
 
 import {
@@ -11,13 +11,23 @@ import {
   FoldEmptyStateComponent,
   FoldIconComponent,
   FoldPageLayoutComponent,
+  FoldElementTitleComponent,
+  FoldPaginatorComponent,
   FoldPanelHostService,
+  FoldViewToggleComponent,
+  FoldSearchComponent,
+  type FoldBadgeVariant,
   type FoldTableColumn,
 } from 'fold-ng';
 
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { IngredientPanel } from '../ingredient-panel/ingredient-panel';
 import { ProvenanceStore } from '../provenance.store';
+import {
+  ALLERGEN_STATE_OPTIONS,
+  visibleIngredients,
+  type AllergenStateFilter,
+} from './ingredients-filter';
 
 /**
  * **Ingrédients** — d'où vient ce qu'il y a dedans.
@@ -41,6 +51,10 @@ import { ProvenanceStore } from '../provenance.store';
     FoldEmptyStateComponent,
     FoldButtonComponent,
     FoldIconComponent,
+    FoldSearchComponent,
+    FoldElementTitleComponent,
+    FoldPaginatorComponent,
+    FoldViewToggleComponent,
   ],
   templateUrl: './ingredients-page.html',
   styleUrl: './ingredients-page.scss',
@@ -53,6 +67,27 @@ export class IngredientsPage {
   protected readonly canWrite = computed(() => this.permissions.can('pim_catalog:write'));
   protected readonly ingredients = this.store.ingredients;
   protected readonly loadError = this.store.ingredientError;
+  protected readonly query = signal('');
+  protected readonly allergenState = signal<AllergenStateFilter>('all');
+  protected readonly allergenStateOptions = ALLERGEN_STATE_OPTIONS;
+  protected readonly page = signal(1);
+  protected readonly pageSize = signal(25);
+
+  /** L'état d'allergènes puis la recherche, côté client — motif de `products-page`. */
+  protected readonly visibleIngredients = computed(() =>
+    visibleIngredients(this.ingredients(), this.allergenState(), this.query()),
+  );
+
+  private readonly pageCount = computed(() =>
+    Math.max(1, Math.ceil(this.visibleIngredients().length / this.pageSize())),
+  );
+
+  protected readonly currentPage = computed(() => Math.min(this.page(), this.pageCount()));
+
+  protected readonly pagedIngredients = computed(() => {
+    const start = (this.currentPage() - 1) * this.pageSize();
+    return this.visibleIngredients().slice(start, start + this.pageSize());
+  });
 
   private readonly allColumns: readonly FoldTableColumn[] = [
     { key: 'name', label: 'Ingrédient' },
@@ -94,6 +129,22 @@ export class IngredientsPage {
   }
 
   /**
+   * Le badge de la colonne : vert « Aucun allergène » (déclaré), orange le
+   * compte, rouge « Non renseigné » — décision de Hugo du 2026-10-26.
+   */
+  protected allergenBadge(row: IngredientView): {
+    readonly label: string;
+    readonly variant: FoldBadgeVariant;
+  } {
+    if (row.allergens.length > 0) {
+      return { label: this.allergenCount(row), variant: 'warning' };
+    }
+    return row.declaresNoAllergen
+      ? { label: 'Aucun allergène', variant: 'success' }
+      : { label: 'Non renseigné', variant: 'alert' };
+  }
+
+  /**
    * Sur la carte mobile, le silence est NOMMÉ.
    *
    * Un ingrédient sans code n'est pas un ingrédient « sans allergène » : c'est
@@ -102,7 +153,34 @@ export class IngredientsPage {
    * référentiel n'atteste pas, et sur ce sujet-là le raccourci se paie.
    */
   protected allergenSummary(row: IngredientView): string {
-    return row.allergens.length === 0 ? 'Allergènes non renseignés' : this.allergenCount(row);
+    if (row.allergens.length > 0) {
+      return this.allergenCount(row);
+    }
+    return row.declaresNoAllergen ? 'Aucun allergène' : 'Allergènes non renseignés';
+  }
+
+  /** Un référentiel rempli que la recherche vide ne doit pas inviter à créer. */
+  protected readonly noMatch = {
+    title: 'Aucun ingrédient ne correspond',
+    subtitle: 'Essayez une autre recherche, ou un autre état des allergènes.',
+  } as const;
+
+  /** Chercher ou filtrer remet en page 1 : on ne reste pas sur une page vide. */
+  protected onSearch(query: string): void {
+    this.query.set(query);
+    this.page.set(1);
+  }
+
+  protected chooseAllergenState(value: string): void {
+    this.allergenState.set(
+      ALLERGEN_STATE_OPTIONS.find((option) => option.value === value)?.value ?? 'all',
+    );
+    this.page.set(1);
+  }
+
+  protected onPageSize(size: number): void {
+    this.pageSize.set(size);
+    this.page.set(1);
   }
 
   protected open(ingredient?: IngredientView): void {

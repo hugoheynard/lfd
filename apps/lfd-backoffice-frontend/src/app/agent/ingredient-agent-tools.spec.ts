@@ -43,6 +43,7 @@ function ingredient(key: string, overrides: Partial<IngredientView> = {}): Ingre
     origin: 'Savoie, France',
     appellation: null,
     allergens: [],
+    declaresNoAllergen: false,
     usedBy: 0,
     ...overrides,
   };

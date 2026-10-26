@@ -14,6 +14,8 @@ export class SetIngredientAllergensCommand {
   constructor(
     readonly key: string,
     readonly codes: readonly string[],
+    /** « Aucun allergène » déclaré (2026-10-26) ; exclusif des codes. */
+    readonly none = false,
   ) {}
 }
 
@@ -47,17 +49,19 @@ export class SetIngredientAllergensHandler implements ICommandHandler<
   ) {}
 
   async execute(command: SetIngredientAllergensCommand): Promise<void> {
-    const { key, codes } = command;
+    const { key, codes, none } = command;
     const ingredient = await this.ingredients.findByKey(key);
     if (ingredient === null) {
       throw new IngredientNotFoundError(key);
     }
-    const before = ingredient.snapshot().allergens;
+    const { allergens: before, declaresNoAllergen: noneBefore } = ingredient.snapshot();
     await assertDeclarable(this.reference, codes, before);
-    ingredient.declareAllergens(codes);
-    const after = ingredient.snapshot().allergens;
+    ingredient.declareAllergens(codes, none);
+    const { allergens: after, declaresNoAllergen: noneAfter } = ingredient.snapshot();
     const unchanged =
-      before.length === after.length && before.every((code, at) => code === after[at]);
+      noneBefore === noneAfter &&
+      before.length === after.length &&
+      before.every((code, at) => code === after[at]);
 
     await this.uow.run(async () => {
       const ticket = unchanged
@@ -68,7 +72,14 @@ export class SetIngredientAllergensHandler implements ICommandHandler<
             subjectId: key,
             payload: {
               subjectLabel: ingredient.snapshot().name.fr,
-              changes: { allergens: { from: [...before], to: [...after] } },
+              changes: {
+                allergens: { from: [...before], to: [...after] },
+                // Seulement quand l'affirmation bouge : la ligne d'un simple
+                // changement de codes garde sa forme d'avant.
+                ...(noneBefore === noneAfter
+                  ? {}
+                  : { noAllergen: { from: noneBefore, to: noneAfter } }),
+              },
             },
           });
       await this.ingredients.save(ingredient, ticket);

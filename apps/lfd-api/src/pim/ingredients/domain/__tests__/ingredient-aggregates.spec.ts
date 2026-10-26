@@ -2,6 +2,7 @@ import { AppellationAggregate } from "../entities/appellation.entity.js";
 import { IngredientAggregate } from "../entities/ingredient.entity.js";
 import {
   LocalizedNameRequiredError,
+  NoAllergenWithCodesError,
   ReferenceKeyInvalidError,
 } from "../errors/ingredient-errors.js";
 
@@ -156,9 +157,57 @@ describe("IngredientAggregate", () => {
         key: "praline",
         origin: "Savoie",
         allergens: ["SH", "AC", "SH"],
+        declaresNoAllergen: false,
       });
 
       expect(ingredient.snapshot().allergens).toEqual(["AC", "SH"]);
+    });
+
+    /** Trois états, décision de Hugo du 2026-10-26 : codes / aucun / non renseigné. */
+    describe("« aucun allergène », déclaré", () => {
+      it("une matière neuve est NON RENSEIGNÉE, pas « sans allergène »", () => {
+        const snapshot = IngredientAggregate.declare(base).snapshot();
+
+        expect([snapshot.allergens, snapshot.declaresNoAllergen]).toEqual([[], false]);
+      });
+
+      it("pose l'affirmation sans code", () => {
+        const ingredient = IngredientAggregate.declare(base);
+
+        ingredient.declareAllergens([], true);
+
+        expect(ingredient.snapshot().declaresNoAllergen).toBe(true);
+      });
+
+      it("refuse « aucun » avec des codes, sans rien changer", () => {
+        const ingredient = IngredientAggregate.declare(base);
+        ingredient.declareAllergens(["SH"]);
+
+        expect(() => ingredient.declareAllergens(["SH"], true)).toThrow(NoAllergenWithCodesError);
+        expect(ingredient.snapshot()).toMatchObject({
+          allergens: ["SH"],
+          declaresNoAllergen: false,
+        });
+      });
+
+      it("poser un code retire « aucun »", () => {
+        const ingredient = IngredientAggregate.declare(base);
+        ingredient.declareAllergens([], true);
+
+        ingredient.declareAllergens(["SH"]);
+
+        expect(ingredient.snapshot().declaresNoAllergen).toBe(false);
+      });
+
+      it("ne relit jamais « aucun » sur une ligne qui porte des codes", () => {
+        const ingredient = IngredientAggregate.rehydrate({
+          ...base,
+          allergens: ["SH"],
+          declaresNoAllergen: true,
+        });
+
+        expect(ingredient.snapshot().declaresNoAllergen).toBe(false);
+      });
     });
   });
 });

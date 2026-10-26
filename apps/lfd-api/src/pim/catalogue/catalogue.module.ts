@@ -35,6 +35,7 @@ import { SaveVariantNutritionHandler } from "./product/application/save-variant-
 import { GetProductDetailHandler } from "./product/application/get-product-detail.js";
 import { ListProductsHandler } from "./product/application/list-products.js";
 import { DeclareProductReadyHandler } from "./product/application/declare-product-ready.js";
+import { WithdrawProductReadinessHandler } from "./product/application/withdraw-product-readiness.js";
 import { GetProductReadinessHandler } from "./product/application/get-product-readiness.js";
 import { ActivateProductHandler } from "./product/application/activate-product.js";
 import { SetProductAudienceHandler } from "./product/application/set-product-audience.js";
@@ -163,6 +164,7 @@ import {
     RestoreProductHandler,
     ListProductsHandler,
     DeclareProductReadyHandler,
+    WithdrawProductReadinessHandler,
     GetProductReadinessHandler,
     ActivateProductHandler,
     SetProductAudienceHandler,

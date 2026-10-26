@@ -57,6 +57,7 @@ interface IngredientRow {
   readonly origin: string;
   readonly appellation: AppellationRow | null;
   readonly allergens: string[];
+  readonly declaresNoAllergen: boolean;
   readonly usedBy: number;
 }
 
@@ -344,6 +345,44 @@ describe("les allergènes d'un ingrédient", () => {
     await setAllergens(key, ["BWD"]).expect(200);
 
     expect((await ingredients())[0]?.allergens).toEqual(["BWD"]);
+  });
+
+  /** Décision de Hugo, 2026-10-26 : « aucun allergène » se DÉCLARE. */
+  describe("« aucun allergène »", () => {
+    it("une matière neuve est non renseignée", async () => {
+      await anIngredient("praline");
+
+      expect((await ingredients())[0]?.declaresNoAllergen).toBe(false);
+    });
+
+    it("se déclare, et poser un code le retire", async () => {
+      const key = await anIngredient("eau");
+      await staff()
+        .put(`${INGREDIENTS}/${key}/allergens`)
+        .send({ codes: [], none: true })
+        .expect(200);
+      expect((await ingredients())[0]?.declaresNoAllergen).toBe(true);
+
+      await setAllergens(key, ["SH"]).expect(200);
+
+      expect((await ingredients())[0]).toMatchObject({
+        allergens: ["SH"],
+        declaresNoAllergen: false,
+      });
+    });
+
+    it("refuse « aucun » avec des codes", async () => {
+      const key = await anIngredient("praline");
+
+      const refus = await staff()
+        .put(`${INGREDIENTS}/${key}/allergens`)
+        .send({ codes: ["SH"], none: true });
+
+      expect(refus.status).toBe(400);
+      expect(jsonBody<{ code: string }>(refus).code).toBe(
+        "catalogue.ingredient.no_allergen_with_codes",
+      );
+    });
   });
 
   it("refuse un code que la table ne porte pas", async () => {

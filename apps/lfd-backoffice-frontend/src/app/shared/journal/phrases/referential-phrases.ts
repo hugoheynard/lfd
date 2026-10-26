@@ -358,6 +358,7 @@ export const REFERENTIAL_PHRASES = {
   'product.operation_only_changed': operationOnlyChanged,
   'product.cold_requirement_changed': coldRequirementChanged,
   'product.declared_ready': onProduct('a déclaré', ' prête à publier'),
+  'product.ready_withdrawn': onProduct('a retiré la signature de'),
   'product.published': onSale('a publié', ' au catalogue'),
   'product.unpublished': onSale('a retiré de la vente', ''),
   'product.archived': onProduct('a archivé'),

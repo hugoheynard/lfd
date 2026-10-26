@@ -71,4 +71,13 @@ export class PrismaReadinessRepository extends ReadinessRepository {
       update: { readyAt: readiness.readyAt, readyBy: readiness.readyBy },
     });
   }
+
+  /**
+   * `deleteMany` et non `delete` : retirer une signature absente n'est pas une
+   * erreur d'infrastructure (le handler a déjà refusé le cas, et une course
+   * entre deux retraits ne doit pas finir en 500).
+   */
+  async withdraw(productId: string): Promise<void> {
+    await this.prisma.productReadiness.deleteMany({ where: { productId } });
+  }
 }

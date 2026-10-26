@@ -24,6 +24,12 @@ export interface AllergenChoice {
   readonly label: string;
 }
 
+/** Ce que la composition mentionne : un choix, et s'il échappe à l'obligation UE. */
+export interface CitedAllergen extends AllergenChoice {
+  /** Sarrasin, maïs, noix de coco : nommés, déclarables, sans mention UE. */
+  readonly outsideEu: boolean;
+}
+
 /** Le libellé RÉGLEMENTAIRE d'une substance seule ; sinon son nom granulaire. */
 function labelOf(entry: AllergenEntry): string {
   return entry.incoLabel ?? entry.label;
@@ -105,20 +111,34 @@ export function traceOptionsOf(
  * cocher une case doit faire disparaître la ligne tout de suite, sinon l'encart
  * reproche encore ce qu'on vient de corriger.
  *
- * Un code que le référentiel du catalogue courant ne connaît pas est ignoré : la
- * portée « UE » n'expose pas tout, et proposer un code sans libellé afficherait
- * `en:e220` à un opérateur.
+ * `entries` est le référentiel **monde** (décision de Hugo, 2026-10-26) : la
+ * portée « UE » de l'écran ne nomme pas le sarrasin, et un ingrédient au
+ * sarrasin était jeté ici en silence — l'encart « la composition contredit
+ * cette déclaration » s'ouvrait alors sur une liste VIDE. Un code connu hors
+ * obligation UE est nommé et marqué ; seul un code que le référentiel entier
+ * ignore reste tu (un libellé `en:e220` n'apprendrait rien à l'opérateur).
  */
 export function citedNotDeclaredIn(
   cited: readonly string[],
   declared: ReadonlySet<string>,
   entries: readonly AllergenEntry[],
-): readonly AllergenChoice[] {
+): readonly CitedAllergen[] {
   const byCode = new Map(entries.map((entry) => [entry.code, entry]));
   return cited
     .filter((code) => !declared.has(code))
     .flatMap((code) => {
       const entry = byCode.get(code);
-      return entry === undefined ? [] : [{ code, label: labelOf(entry) }];
+      return entry === undefined
+        ? []
+        : [{ code, label: labelOf(entry), outsideEu: entry.incoCategory === null }];
     });
+}
+
+/** Le référentiel courant, complété de ce que l'autre portée seule connaît. */
+export function mergedEntries(
+  current: readonly AllergenEntry[],
+  extra: readonly AllergenEntry[],
+): readonly AllergenEntry[] {
+  const known = new Set(current.map((entry) => entry.code));
+  return [...current, ...extra.filter((entry) => !known.has(entry.code))];
 }

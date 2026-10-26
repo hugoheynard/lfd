@@ -150,8 +150,14 @@ const ingredientUpdatedV1 = payload({
   }),
 });
 const ingredientDeleted = payload({ name: localizedText() });
-/** Ce que la matière contient : l'avant et l'après, en codes d'allergènes. */
-const ingredientAllergens = payload({ changes: changes({ allergens: z.array(z.string()) }) });
+/**
+ * Ce que la matière contient : l'avant et l'après, en codes d'allergènes — et,
+ * depuis le 2026-10-26, l'affirmation « aucun allergène » quand elle bouge
+ * (`noAllergen`, absente des lignes d'avant).
+ */
+const ingredientAllergens = payload({
+  changes: changes({ allergens: z.array(z.string()), noAllergen: z.boolean() }),
+});
 
 const allergenCategoryCreated = payload({
   key: z.string(),

@@ -174,6 +174,43 @@ describe("Déclaration publiable", () => {
     );
   });
 
+  /** Décision de Hugo, 2026-10-26 : la signature se retire. */
+  describe("retirer la signature", () => {
+    it("efface la signature courante, garde le statut, et le trace", async () => {
+      const id = await aProduct();
+      await declareReady(id);
+
+      await staff().delete(`${PRODUCTS}/${id}/ready`).expect(200);
+
+      const view = await detail(id);
+      expect(view.readiness).toBeNull();
+      expect(view.status).toBe("draft");
+      const history = await staff().get(`${PRODUCTS}/${id}/history`).expect(200);
+      const types = jsonBody<{ entries: readonly { readonly type: string }[] }>(
+        history,
+      ).entries.map((entry) => entry.type);
+      expect(types).toContain("product.ready_withdrawn");
+      expect(types).toContain("product.declared_ready");
+    });
+
+    it("refuse une fiche que personne n'a signée", async () => {
+      const refus = await staff().delete(`${PRODUCTS}/${await aProduct()}/ready`);
+
+      expect(refus.status).toBe(409);
+      expect(jsonBody<{ code: string }>(refus).code).toBe("catalogue.product.not_declared_ready");
+    });
+
+    it("se resigne après un retrait", async () => {
+      const id = await aProduct();
+      await declareReady(id);
+      await staff().delete(`${PRODUCTS}/${id}/ready`).expect(200);
+
+      await declareReady(id);
+
+      expect((await detail(id)).readiness).not.toBeNull();
+    });
+  });
+
   /**
    * Les quatre tables, une par une. Chaque cas signe, modifie UNE table, et
    * vérifie que la signature est périmée — c'est la garantie que le `max` de

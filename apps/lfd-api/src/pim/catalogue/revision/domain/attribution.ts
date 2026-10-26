@@ -72,6 +72,7 @@ const TOUCHES: Readonly<Record<string, readonly string[] | "changes" | "*">> = {
   // elle. L'attribuer à un champ ferait dire à l'écran que quelqu'un a changé
   // un prix alors qu'il a seulement déclaré la fiche juste.
   [PIM_EVENTS.productDeclaredReady]: [],
+  [PIM_EVENTS.productReadyWithdrawn]: [],
   // La PROVENANCE ne figure dans aucune ancre — pour l'instant, et c'est une
   // constatation, pas un oubli. Une révision fige ce qui est PUBLIÉ, et rien ne
   // pousse encore les ingrédients vers un canal. Le jour où le B2B les affichera

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Put } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Post, Put } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import {
   createProductPayloadSchema,
@@ -42,6 +42,7 @@ import { AlignVariantOnDefaultCommand } from "../application/align-variant-on-de
 import { ArchiveProductCommand } from "../application/archive-product.js";
 import { CreateProductCommand } from "../application/create-product.js";
 import { DeclareProductReadyCommand } from "../application/declare-product-ready.js";
+import { WithdrawProductReadinessCommand } from "../application/withdraw-product-readiness.js";
 import { SaveVariantAllergensCommand } from "../application/save-variant-allergens.js";
 import { SaveVariantNutritionCommand } from "../application/save-variant-nutrition.js";
 import { GetProductDetailQuery } from "../application/get-product-detail.js";
@@ -351,6 +352,21 @@ export class ProductController {
    * un taux pour une clientèle de l'audience, ou si le produit est archivé —
    * c'est l'agrégat qui tranche.
    */
+  /**
+   * **Retirer la signature** — l'inverse de `PUT :id/ready`, même droit
+   * (décision de Hugo, 2026-10-26). Rend `null` : la fiche n'a plus de
+   * déclaration, et l'écran repeint sa vignette sans relire la fiche.
+   *
+   * Refusée (409) sur une fiche non signée ou archivée.
+   */
+  @Delete(":id/ready")
+  async withdrawProductReadiness(@Param("id") id: string): Promise<null> {
+    await this.commands.execute<WithdrawProductReadinessCommand, void>(
+      new WithdrawProductReadinessCommand(id),
+    );
+    return null;
+  }
+
   @Put(":id/publish")
   async activateProduct(@Param("id") id: string) {
     await this.commands.execute<ActivateProductCommand, void>(new ActivateProductCommand(id));

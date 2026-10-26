@@ -49,6 +49,11 @@ export class ReadProductIngredientAllergensHandler implements IQueryHandler<
       this.ingredients.ofProduct(query.productId),
       this.declarations.ofProduct(query.productId),
     ]);
+    // « Aucun allergène » déclaré sur un ingrédient (2026-10-26) n'ajoute aucun
+    // code, comme « non renseigné » : ce dérivé ne CONCLUT jamais — il propose
+    // ce qui est cité, et un vide n'y vaut rien (D5). Aucune lecture n'en tire
+    // donc « composition sans allergène » ; si elle venait, c'est
+    // `declaresNoAllergen` de CHAQUE ingrédient cité qu'elle devrait exiger.
     const citedByIngredients = union(cited.map((ingredient) => ingredient.allergens));
     return {
       productId: query.productId,

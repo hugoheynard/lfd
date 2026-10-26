@@ -216,6 +216,11 @@ export class PublishRail {
     void this.store.declareReady();
   }
 
+  /** Retire la signature — après confirmation en place. */
+  protected withdraw(): void {
+    void this.store.withdrawReady();
+  }
+
   /**
    * Vert une fois tout rempli, accent avant.
    *

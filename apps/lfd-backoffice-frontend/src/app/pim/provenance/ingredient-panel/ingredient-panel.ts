@@ -10,6 +10,7 @@ import {
 import type { AllergenEntry, IngredientView } from '@lfd/pim-contracts';
 
 import {
+  FoldCheckboxComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldEmptyStateComponent,
@@ -74,6 +75,7 @@ const WITHDRAWN = 'Retiré du référentiel';
     FoldListboxComponent,
     FoldOptionComponent,
     FoldMultiselectComponent,
+    FoldCheckboxComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldEmptyStateComponent,
@@ -97,6 +99,8 @@ export class IngredientPanel {
   protected readonly draftOrigin = signal('');
   protected readonly draftAppellation = signal<string>(NO_APPELLATION);
   protected readonly draftAllergens = signal<readonly string[]>([]);
+  /** « Aucun allergène », déclaré — exclusif des codes (décision de Hugo, 2026-10-26). */
+  protected readonly draftNoAllergen = signal(false);
   protected readonly confirmKey = signal('');
   protected readonly busy = signal(false);
   protected readonly dangerOpen = signal(false);
@@ -226,7 +230,11 @@ export class IngredientPanel {
   private readonly allergensChanged = computed(() => {
     const held = [...(this.ingredient()?.allergens ?? [])].sort();
     const draft = [...this.draftAllergens()].sort();
-    return held.length !== draft.length || held.some((code, index) => code !== draft[index]);
+    return (
+      (this.ingredient()?.declaresNoAllergen ?? false) !== this.draftNoAllergen() ||
+      held.length !== draft.length ||
+      held.some((code, index) => code !== draft[index])
+    );
   });
 
   protected readonly held = computed(() => this.ingredient()?.usedBy ?? 0);
@@ -251,8 +259,25 @@ export class IngredientPanel {
         this.draftOrigin.set(target.origin);
         this.draftAppellation.set(target.appellation?.code ?? NO_APPELLATION);
         this.draftAllergens.set([...target.allergens]);
+        this.draftNoAllergen.set(target.declaresNoAllergen);
       }
     });
+  }
+
+  /** Cocher « aucun » vide les codes : l'affirmation leur est exclusive. */
+  protected declareNoAllergen(none: boolean): void {
+    this.draftNoAllergen.set(none);
+    if (none) {
+      this.draftAllergens.set([]);
+    }
+  }
+
+  /** Poser un code retire « aucun » — même règle que l'agrégat. */
+  protected chooseAllergens(codes: readonly string[]): void {
+    this.draftAllergens.set(codes);
+    if (codes.length > 0) {
+      this.draftNoAllergen.set(false);
+    }
   }
 
   protected get canSubmit(): boolean {
@@ -326,8 +351,8 @@ export class IngredientPanel {
         origin: this.draftOrigin().trim(),
         appellationCode,
       });
-      if (this.draftAllergens().length > 0) {
-        await this.store.setIngredientAllergens(key, this.draftAllergens());
+      if (this.draftAllergens().length > 0 || this.draftNoAllergen()) {
+        await this.store.setIngredientAllergens(key, this.draftAllergens(), this.draftNoAllergen());
       }
       return;
     }
@@ -338,7 +363,11 @@ export class IngredientPanel {
       appellationCode,
     });
     if (this.allergensChanged()) {
-      await this.store.setIngredientAllergens(target.key, this.draftAllergens());
+      await this.store.setIngredientAllergens(
+        target.key,
+        this.draftAllergens(),
+        this.draftNoAllergen(),
+      );
     }
   }
 }
