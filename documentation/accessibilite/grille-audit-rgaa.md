@@ -106,3 +106,32 @@ l'emplacement est prévu dans le contrat (`AccessibilityFollowUpView`), l'écran
 
 Le dialogue lui-même est décrit dans
 [`../b2b/mentions-legales.md`](../b2b/mentions-legales.md), §6.
+
+## Ce qui reste à faire (relevé le 2026-10-26)
+
+Après les lots A1 à A4, le lot fold 0.34.0 et le lot A5 (prix barré, dette
+axe, écrans hors de la porte, onglets et toasts), décidé par Hugo le
+2026-10-26. Ce qui suit n'est pas pris :
+
+1. **Les textes alternatifs des images**, à saisir dans le back-office
+   (Médiathèque → une image → « texte alternatif », fr/en/it). La lecture
+   neutralise déjà l'ancien repli sur l'URL
+   ([`../mediatheque/plan-alternatives-urls.md`](../mediatheque/plan-alternatives-urls.md)),
+   mais une image sans description reste muette pour un lecteur d'écran. Les
+   outils agent « décrire » peuvent proposer un premier jet, à relire.
+2. **L'audit complet sur la grille** : les 106 critères sur les 12 pages de
+   l'échantillon, avec les lecteurs d'écran (NVDA + Firefox, JAWS + Chrome,
+   VoiceOver macOS et iOS, TalkBack). Rempli en interne, puis contre-vérifié par
+   un auditeur RGAA. C'est la seule étape qui produit un taux ; `pnpm
+rgaa:rate` refuse d'en donner un tant qu'une case est `NT`.
+3. **La déclaration mise à jour** avec ce taux : au-delà de 50 %, « partiellement
+   conforme ». Renseigner `audit.fait`, relancer `pnpm rgaa:digest` : le
+   dialogue de la boutique remplace alors le suivi par la table d'audit, sans
+   code nouveau. Mettre à jour la mention `accessibility` au back-office.
+4. **Hors du parcours client, plus tard** : les PDF remis aux clients
+   (factures, mandats, CGV), puis le back-office, outil de l'équipe —
+   l'obligation y est moindre.
+
+À côté, sans être de l'accessibilité : le bundle de démarrage de la boutique
+est à 1 395,2 kB pour une limite bloquante de 1 400 kB (`ng build -c
+cloudflare`, 2026-10-26). Tout ajout au démarrage doit être compensé.
