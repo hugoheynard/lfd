@@ -6,6 +6,16 @@
 > à la socket ». Imprimantes **pas encore achetées**. État : **doc-first**.
 > `vitruve` d'office : une nouvelle entrée publique (frontière de sécurité).
 
+> ⚠️ **2026-10-26 — Hugo a choisi le modèle : Brother TD-2350DSAH300**
+> (réf. TD2350DSAH300Z1), compatible avec le logiciel P-touch de Brother.
+> Relevé du jour chez les revendeurs : 300 dpi, écran tactile couleur, USB-C,
+> série, Wi-Fi, Bluetooth, réseau filaire selon un distributeur ; langages
+> P-touch Template et ESC/P, **ZPL non confirmé**. Ce plan supposait une
+> **Zebra Weblink**, qui ouvre elle-même sa connexion vers nous ; une Brother
+> réseau **attend** qu'on lui envoie un travail (§2). « Sans ordinateur,
+> connectée à la socket » ne tient donc plus tel quel : un relais sur le
+> réseau du site, ou l'impression depuis le poste. À trancher avant IM1.
+
 ## 1. Ce qui existe (relu le 2026-10-04)
 
 - L'étiquette d'un bac était une page A4 imprimée par le navigateur
