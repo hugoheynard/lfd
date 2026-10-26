@@ -100,7 +100,17 @@ Hugo, 2026-10-26). Elle liste les non-conformités du pré-audit, le contact
 droits. **À mettre à jour à chaque lot de correction**, et à régénérer depuis
 le fichier de données une fois l'audit fait.
 
-## 7. Ce qui reste à faire
+## 7. La politique cookies
+
+Réécrite le 2026-10-26 depuis `5_POLITIQUE COOKIES_CRAZEATIVITY_LA FOLIE COFFEE.odt` :
+le document annonçait un bandeau et un module « Paramétrer les cookies » qui
+n'existent pas, et une liste nominative « à compléter ». La version publiée dit
+ce qui est vrai aujourd'hui (seulement des traceurs strictement nécessaires,
+aucun bandeau), garde toutes les catégories et la règle du consentement pour
+le jour où on en ajoutera, et donne la liste réelle des traceurs, tenue dans
+[`registre-des-traceurs.md`](registre-des-traceurs.md).
+
+## 8. Ce qui reste à faire
 
 - **Le médiateur de la consommation** (CGV particuliers, article 17).
 - **Vérifier l'adresse de Cloudflare** (mentions légales, article 1).
