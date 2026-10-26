@@ -323,5 +323,8 @@ export const ORDERS_VALUES: ValueFamily = {
     amount: 'Montant',
     // Le sort du reste d'un départ incomplet (`order.shortfall_decided`, plan E6c2).
     abandoned: 'Abandonné, non relivré',
+    // La cible d'une exemption à la fermeture (`order_opening.exemption_*`).
+    company: 'Société',
+    email: 'Adresse e-mail',
   },
 };
